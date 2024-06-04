@@ -21,6 +21,7 @@ namespace System.Text.Json
             ReadOnlySpan<byte> unescapedPropertyName,
             ref ReadStack state,
             JsonSerializerOptions options,
+            out byte[] utf8PropertyName,
             out bool useExtensionProperty,
             bool createExtensionProperty = true)
         {
@@ -38,7 +39,7 @@ namespace System.Text.Json
             JsonPropertyInfo jsonPropertyInfo = jsonTypeInfo.GetProperty(
                 unescapedPropertyName,
                 ref state.Current,
-                out byte[] utf8PropertyName);
+                out utf8PropertyName);
 
             // Increment PropertyIndex so GetProperty() checks the next property first when called again.
             state.Current.PropertyIndex++;
@@ -80,29 +81,29 @@ namespace System.Text.Json
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static ReadOnlySpan<byte> GetPropertyName(
             scoped ref ReadStack state,
-            ref Utf8JsonReader reader)
+            ref Utf8JsonReader reader,
+            JsonSerializerOptions options,
+            out bool isAlreadyReadMetadataProperty)
         {
-            ReadOnlySpan<byte> unescapedPropertyName;
-            ReadOnlySpan<byte> propertyName = reader.GetSpan();
-
-            if (reader.ValueIsEscaped)
-            {
-                unescapedPropertyName = JsonReaderHelper.GetUnescapedSpan(propertyName);
-            }
-            else
-            {
-                unescapedPropertyName = propertyName;
-            }
+            ReadOnlySpan<byte> propertyName = reader.GetUnescapedSpan();
+            isAlreadyReadMetadataProperty = false;
 
             if (state.Current.CanContainMetadata)
             {
                 if (IsMetadataPropertyName(propertyName, state.Current.BaseJsonTypeInfo.PolymorphicTypeResolver))
                 {
-                    ThrowHelper.ThrowUnexpectedMetadataException(propertyName, ref reader, ref state);
+                    if (options.AllowOutOfOrderMetadataProperties)
+                    {
+                        isAlreadyReadMetadataProperty = true;
+                    }
+                    else
+                    {
+                        ThrowHelper.ThrowUnexpectedMetadataException(propertyName, ref reader, ref state);
+                    }
                 }
             }
 
-            return unescapedPropertyName;
+            return propertyName;
         }
 
         internal static void CreateExtensionDataProperty(

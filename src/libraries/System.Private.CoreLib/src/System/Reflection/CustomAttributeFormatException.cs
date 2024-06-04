@@ -22,7 +22,7 @@ namespace System.Reflection
         }
 
         public CustomAttributeFormatException(string? message, Exception? inner)
-            : base(message, inner)
+            : base(message ?? SR.Arg_CustomAttributeFormatException, inner)
         {
             HResult = HResults.COR_E_CUSTOMATTRIBUTEFORMAT;
         }

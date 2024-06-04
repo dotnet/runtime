@@ -44,12 +44,9 @@ PALTEST(debug_api_OutputDebugStringA_test1_paltest_outputdebugstringa_test1, "de
                         FALSE, 0, NULL, NULL, &si, &pi))
     {
         DWORD dwError = GetLastError();
-        free(name);
         Fail("ERROR: CreateProcess failed to load executable 'helper'.  "
              "GetLastError() returned %d.\n", dwError);
     }
-
-    free(name);
 
     /* This is the main loop.  It exits when the process which is being
        debugged is finished executing.

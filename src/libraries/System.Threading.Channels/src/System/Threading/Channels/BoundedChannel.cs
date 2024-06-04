@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 namespace System.Threading.Channels
 {
     /// <summary>Provides a channel with a bounded capacity.</summary>
-    [DebuggerDisplay("Items={ItemsCountForDebugger}, Capacity={_bufferedCapacity}, Mode={_mode}, Closed={ChannelIsClosedForDebugger}")]
+    [DebuggerDisplay("Items = {ItemsCountForDebugger}, Capacity = {_bufferedCapacity}, Mode = {_mode}, Closed = {ChannelIsClosedForDebugger}")]
     [DebuggerTypeProxy(typeof(DebugEnumeratorDebugView<>))]
     internal sealed class BoundedChannel<T> : Channel<T>, IDebugEnumerable<T>
     {
@@ -55,7 +55,7 @@ namespace System.Threading.Channels
             Writer = new BoundedChannelWriter(this);
         }
 
-        [DebuggerDisplay("Items={ItemsCountForDebugger}")]
+        [DebuggerDisplay("Items = {ItemsCountForDebugger}")]
         [DebuggerTypeProxy(typeof(DebugEnumeratorDebugView<>))]
         private sealed class BoundedChannelReader : ChannelReader<T>, IDebugEnumerable<T>
         {
@@ -293,7 +293,7 @@ namespace System.Threading.Channels
             IEnumerator<T> IDebugEnumerable<T>.GetEnumerator() => _parent._items.GetEnumerator();
         }
 
-        [DebuggerDisplay("Items={ItemsCountForDebugger}, Capacity={CapacityForDebugger}")]
+        [DebuggerDisplay("Items = {ItemsCountForDebugger}, Capacity = {CapacityForDebugger}")]
         [DebuggerTypeProxy(typeof(DebugEnumeratorDebugView<>))]
         private sealed class BoundedChannelWriter : ChannelWriter<T>, IDebugEnumerable<T>
         {

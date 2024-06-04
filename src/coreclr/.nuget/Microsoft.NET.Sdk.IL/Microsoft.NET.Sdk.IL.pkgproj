@@ -15,5 +15,29 @@
     </File>
   </ItemGroup>
 
+  <PropertyGroup>
+    <ILTargetsTemplateFile>Microsoft.NET.Sdk.IL.targets.template</ILTargetsTemplateFile>
+    <ILTargetsOutputFile>$(IntermediateOutputPath)Microsoft.NET.Sdk.IL.targets</ILTargetsOutputFile>
+  </PropertyGroup>
+
+  <Target Name="ReplaceTemplateParametersInILTargetsTemplate"
+          Inputs="$(ILTargetsTemplateFile)"
+          Outputs="$(ILTargetsOutputFile)"
+          BeforeTargets="GetPackageFiles"
+          DependsOnTargets="CalculatePackageVersion">
+
+    <GenerateFileFromTemplate TemplateFile="$(ILTargetsTemplateFile)"
+                              OutputPath="$(ILTargetsOutputFile)"
+                              Properties="IlAsmVersion=$(PackageVersion)">
+      <Output TaskParameter="ResolvedOutputPath" ItemName="FileWrites" />
+    </GenerateFileFromTemplate>
+
+    <ItemGroup>
+      <File Include="$(ILTargetsOutputFile)">
+        <TargetPath>targets</TargetPath>
+      </File>
+    </ItemGroup>
+  </Target>
+
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
 </Project>

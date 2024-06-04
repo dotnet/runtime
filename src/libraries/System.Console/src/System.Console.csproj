@@ -1,8 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-android;$(NetCoreAppCurrent)-ios;$(NetCoreAppCurrent)-tvos;$(NetCoreAppCurrent)-browser;$(NetCoreAppCurrent)-wasi;$(NetCoreAppCurrent)</TargetFrameworks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
   </PropertyGroup>
+
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
@@ -10,6 +13,7 @@
     <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'Browser'">$(DefineConstants);TARGET_BROWSER</DefineConstants>
     <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'wasi'">$(DefineConstants);TARGET_WASI</DefineConstants>
   </PropertyGroup>
+
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != ''">
     <Compile Include="System\Console.cs" />
     <Compile Include="System\ConsoleCancelEventArgs.cs" />
@@ -31,6 +35,7 @@
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.AppendSpanFormattable.cs"
              Link="Common\System\Text\ValueStringBuilder.AppendSpanFormattable.cs" />
   </ItemGroup>
+
   <!-- iOS/tvOS -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'ios' or '$(TargetPlatformIdentifier)' == 'tvos'">
     <Compile Include="System\ConsolePal.iOS.cs" />
@@ -39,6 +44,7 @@
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
              Link="Common\Interop\Unix\Interop.Libraries.cs" />
   </ItemGroup>
+
   <!-- Android -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'android'">
     <Compile Include="System\ConsolePal.Android.cs" />
@@ -49,6 +55,7 @@
       <Link>Common\Interop\Android\Interop.Libraries.cs</Link>
     </Compile>
   </ItemGroup>
+
   <!-- Browser -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'browser'">
     <Compile Include="System\ConsolePal.WebAssembly.cs" />
@@ -65,6 +72,7 @@
     <Compile Include="$(CommonPath)Interop\Unix\Interop.IOErrors.cs"
              Link="Common\Interop\Unix\Interop.IOErrors.cs" />
   </ItemGroup>
+
   <!-- WASI is like unix without dup and termio -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'wasi'">
     <Compile Include="System\ConsolePal.Wasi.cs" />
@@ -96,6 +104,7 @@
     <Compile Include="$(CommonPath)Interop\Unix\Interop.IOErrors.cs"
              Link="Common\Interop\Unix\Interop.IOErrors.cs" />
   </ItemGroup>
+
   <!-- Windows -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="System\ConsolePal.Windows.cs" />
@@ -188,6 +197,7 @@
     <Compile Include="$(CommonPath)System\IO\Win32Marshal.cs"
              Link="Common\System\IO\Win32Marshal.cs" />
   </ItemGroup>
+
   <!-- Unix -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix'">
     <Compile Include="System\ConsolePal.Unix.cs" />
@@ -260,6 +270,7 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.StdinReady.cs"
              Link="Common\Interop\Unix\Interop.StdinReady.cs" />
   </ItemGroup>
+
   <ItemGroup>
     <Reference Include="System.Collections" />
     <Reference Include="System.Memory" />
@@ -269,9 +280,5 @@
     <Reference Include="System.Threading" />
     <Reference Include="Microsoft.Win32.Primitives" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'browser'">
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\gen\Microsoft.Interop.SourceGeneration\Microsoft.Interop.SourceGeneration.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices.JavaScript\gen\JSImportGenerator\JSImportGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
-    <Reference Include="System.Runtime.InteropServices.JavaScript" />
-  </ItemGroup>
+
 </Project>

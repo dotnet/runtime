@@ -2,9 +2,11 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using ILLink.Shared.DataFlow;
 using Mono.Cecil;
+using Mono.Linker;
 using Mono.Linker.Dataflow;
 using TypeDefinition = Mono.Cecil.TypeDefinition;
 
@@ -14,11 +16,18 @@ namespace ILLink.Shared.TrimAnalysis
 	/// <summary>
 	/// Return value from a method
 	/// </summary>
-	internal partial record MethodReturnValue : IValueWithStaticType
+	internal partial record MethodReturnValue
 	{
-		public MethodReturnValue (TypeDefinition? staticType, MethodDefinition method, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
+		public static MethodReturnValue Create (MethodDefinition method, bool isNewObj, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes, LinkContext context)
 		{
-			StaticType = staticType;
+			Debug.Assert (!isNewObj || method.IsConstructor, "isNewObj can only be true for constructors");
+			var staticType = isNewObj ? method.DeclaringType : method.ReturnType.ResolveToTypeDefinition (context);
+			return new MethodReturnValue (staticType, method, dynamicallyAccessedMemberTypes);
+		}
+
+		private MethodReturnValue (TypeDefinition? staticType, MethodDefinition method, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
+		{
+			StaticType = staticType == null ? null : new (staticType);
 			Method = method;
 			DynamicallyAccessedMemberTypes = dynamicallyAccessedMemberTypes;
 		}
@@ -29,8 +38,6 @@ namespace ILLink.Shared.TrimAnalysis
 
 		public override IEnumerable<string> GetDiagnosticArgumentsForAnnotationMismatch ()
 			=> new string[] { DiagnosticUtilities.GetMethodSignatureDisplayName (Method) };
-
-		public TypeDefinition? StaticType { get; }
 
 		public override SingleValue DeepCopy () => this; // This value is immutable
 

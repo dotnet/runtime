@@ -614,5 +614,24 @@ namespace System.Linq.Tests
                 }
             }
         }
+
+        [Fact]
+        public void OrderBy_FirstLast_MatchesArray()
+        {
+            object[][] arrays =
+            [
+                [1],
+                [1, 1],
+                [1, 2, 1],
+                [1, 2, 1, 3],
+                [2, 1, 3, 1, 4],
+            ];
+
+            foreach (object[] objects in arrays)
+            {
+                Assert.Same(objects.OrderBy(x => x).First(), objects.OrderBy(x => x).ToArray().First());
+                Assert.Same(objects.OrderBy(x => x).Last(), objects.OrderBy(x => x).ToArray().Last());
+            }
+        }
     }
 }

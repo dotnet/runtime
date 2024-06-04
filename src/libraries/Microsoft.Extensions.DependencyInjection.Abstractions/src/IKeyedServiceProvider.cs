@@ -5,6 +5,10 @@ using System;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
+    /// <summary>
+    /// IKeyedServiceProvider is a service provider that can be used to retrieve services using a key in addition
+    /// to a type.
+    /// </summary>
     public interface IKeyedServiceProvider : IServiceProvider
     {
         /// <summary>
@@ -26,8 +30,14 @@ namespace Microsoft.Extensions.DependencyInjection
         object GetRequiredKeyedService(Type serviceType, object? serviceKey);
     }
 
+    /// <summary>
+    /// Statics for use with <see cref="IKeyedServiceProvider"/>.
+    /// </summary>
     public static class KeyedService
     {
+        /// <summary>
+        /// Represents a key that matches any key.
+        /// </summary>
         public static object AnyKey { get; } = new AnyKeyObj();
 
         private sealed class AnyKeyObj

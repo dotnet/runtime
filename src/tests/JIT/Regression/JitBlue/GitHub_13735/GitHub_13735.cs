@@ -52,9 +52,8 @@ public class GitHub_13735
     }
 
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         SampleA();
-        return 100;
     }
 }

@@ -163,7 +163,8 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
         };
 
         BuildConnGraphVisitor(ObjectAllocator* allocator)
-            : GenTreeVisitor<BuildConnGraphVisitor>(allocator->comp), m_allocator(allocator)
+            : GenTreeVisitor<BuildConnGraphVisitor>(allocator->comp)
+            , m_allocator(allocator)
         {
         }
 
@@ -317,7 +318,7 @@ void ObjectAllocator::ComputeStackObjectPointers(BitVecTraits* bitVecTraits)
 
                             if (DoesLclVarPointToStack(rhsLclNum))
                             {
-                                // The only assignment to lclNum local is definitely-stack-pointing
+                                // The only store to lclNum local is the definitely-stack-pointing
                                 // rhsLclNum local so lclNum local is also definitely-stack-pointing.
                                 MarkLclVarAsDefinitelyStackPointing(lclNum);
                             }
@@ -348,8 +349,8 @@ bool ObjectAllocator::MorphAllocObjNodes()
 
     for (BasicBlock* const block : comp->Blocks())
     {
-        const bool basicBlockHasNewObj       = (block->bbFlags & BBF_HAS_NEWOBJ) == BBF_HAS_NEWOBJ;
-        const bool basicBlockHasBackwardJump = (block->bbFlags & BBF_BACKWARD_JUMP) == BBF_BACKWARD_JUMP;
+        const bool basicBlockHasNewObj       = block->HasFlag(BBF_HAS_NEWOBJ);
+        const bool basicBlockHasBackwardJump = block->HasFlag(BBF_BACKWARD_JUMP);
 #ifndef DEBUG
         if (!basicBlockHasNewObj)
         {
@@ -504,13 +505,13 @@ unsigned int ObjectAllocator::MorphAllocObjNodeIntoStackAlloc(GenTreeAllocObj* a
     assert(m_AnalysisDone);
 
     const bool         shortLifetime = false;
-    const unsigned int lclNum     = comp->lvaGrabTemp(shortLifetime DEBUGARG("MorphAllocObjNodeIntoStackAlloc temp"));
-    const int unsafeValueClsCheck = true;
+    const unsigned int lclNum = comp->lvaGrabTemp(shortLifetime DEBUGARG("MorphAllocObjNodeIntoStackAlloc temp"));
+    const int          unsafeValueClsCheck = true;
     comp->lvaSetStruct(lclNum, allocObj->gtAllocObjClsHnd, unsafeValueClsCheck);
 
     // Initialize the object memory if necessary.
-    bool             bbInALoop  = (block->bbFlags & BBF_BACKWARD_JUMP) != 0;
-    bool             bbIsReturn = block->bbJumpKind == BBJ_RETURN;
+    bool             bbInALoop  = block->HasFlag(BBF_BACKWARD_JUMP);
+    bool             bbIsReturn = block->KindIs(BBJ_RETURN);
     LclVarDsc* const lclDsc     = comp->lvaGetDesc(lclNum);
     if (comp->fgVarNeedsExplicitZeroInit(lclNum, bbInALoop, bbIsReturn))
     {
@@ -636,7 +637,7 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
             {
                 GenTreeCall* asCall = parent->AsCall();
 
-                if (asCall->gtCallType == CT_HELPER)
+                if (asCall->IsHelperCall())
                 {
                     // TODO-ObjectStackAllocation: Special-case helpers here that
                     // 1. Don't make objects escape.
@@ -766,7 +767,8 @@ void ObjectAllocator::RewriteUses()
         };
 
         RewriteUsesVisitor(ObjectAllocator* allocator)
-            : GenTreeVisitor<RewriteUsesVisitor>(allocator->comp), m_allocator(allocator)
+            : GenTreeVisitor<RewriteUsesVisitor>(allocator->comp)
+            , m_allocator(allocator)
         {
         }
 

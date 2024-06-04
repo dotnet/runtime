@@ -2011,7 +2011,7 @@ namespace System.Collections.Generic
         }
 
         // Used for set checking operations (using enumerables) that rely on counting
-        private static int Log2(int value) => BitOperations.Log2((uint) value);
+        private static int Log2(int value) => BitOperations.Log2((uint)value);
 
         #endregion
     }

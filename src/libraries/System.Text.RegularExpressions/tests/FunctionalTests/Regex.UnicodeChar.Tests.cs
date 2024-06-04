@@ -288,7 +288,7 @@ namespace System.Text.RegularExpressions.Tests
             const string OrigPattern = @"abc";
 
             //shift each char in the pattern to the Wide-Latin alphabet of Unicode
-            string pattern_WL = new string(Array.ConvertAll(OrigPattern.ToCharArray(), c => (char)((int)c + 0xFF00 - 32)));
+            string pattern_WL = new string(Array.ConvertAll(OrigPattern.ToCharArray(), c => (char)(c + 0xFF00 - 32)));
             string pattern = $"({OrigPattern}==={pattern_WL})+";
 
             var re = await RegexHelpers.GetRegexAsync(engine, pattern, RegexOptions.IgnoreCase);

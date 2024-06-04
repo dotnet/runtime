@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.Win32.SafeHandles;
 using System;
 using System.Collections.Generic;
 using System.Net;
@@ -9,6 +8,7 @@ using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Security.Authentication.ExtendedProtection;
 using System.Threading;
+using Microsoft.Win32.SafeHandles;
 
 internal static partial class Interop
 {
@@ -16,8 +16,8 @@ internal static partial class Interop
     {
         internal static readonly HTTPAPI_VERSION s_version = new HTTPAPI_VERSION() { HttpApiMajorVersion = 2, HttpApiMinorVersion = 0 };
         internal static readonly bool s_supported = InitHttpApi(s_version);
-        internal static IPEndPoint s_any = new IPEndPoint(IPAddress.Any, IPEndPoint.MinPort);
-        internal static IPEndPoint s_ipv6Any = new IPEndPoint(IPAddress.IPv6Any, IPEndPoint.MinPort);
+        internal static readonly IPEndPoint s_any = new IPEndPoint(IPAddress.Any, IPEndPoint.MinPort);
+        internal static readonly IPEndPoint s_ipv6Any = new IPEndPoint(IPAddress.IPv6Any, IPEndPoint.MinPort);
         internal const int IPv4AddressSize = 16;
         internal const int IPv6AddressSize = 28;
 
@@ -470,14 +470,14 @@ internal static partial class Interop
         [LibraryImport(Libraries.HttpApi, SetLastError = true)]
         internal static partial uint HttpCloseUrlGroup(ulong urlGroupId);
 
-        [LibraryImport(Libraries.HttpApi,  SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        [LibraryImport(Libraries.HttpApi, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         internal static unsafe partial uint HttpCreateRequestQueue(HTTPAPI_VERSION version, string pName,
             Interop.Kernel32.SECURITY_ATTRIBUTES* pSecurityAttributes, uint flags, out HttpRequestQueueV2Handle pReqQueueHandle);
 
-        [LibraryImport(Libraries.HttpApi,  SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        [LibraryImport(Libraries.HttpApi, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         internal static partial uint HttpAddUrlToUrlGroup(ulong urlGroupId, string pFullyQualifiedUrl, ulong context, uint pReserved);
 
-        [LibraryImport(Libraries.HttpApi,  SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        [LibraryImport(Libraries.HttpApi, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         internal static partial uint HttpRemoveUrlFromUrlGroup(ulong urlGroupId, string pFullyQualifiedUrl, uint flags);
 
         [LibraryImport(Libraries.HttpApi, SetLastError = true)]

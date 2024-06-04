@@ -15,7 +15,7 @@ namespace System.Collections.Immutable
     /// <typeparam name="TValue">The type of the value.</typeparam>
     [DebuggerDisplay("Count = {Count}")]
     [DebuggerTypeProxy(typeof(ImmutableDictionaryDebuggerProxy<,>))]
-    public sealed partial class ImmutableDictionary<TKey, TValue> : IImmutableDictionary<TKey, TValue>, IImmutableDictionaryInternal<TKey, TValue>, IHashKeyCollection<TKey>, IDictionary<TKey, TValue>, IDictionary where TKey: notnull
+    public sealed partial class ImmutableDictionary<TKey, TValue> : IImmutableDictionary<TKey, TValue>, IImmutableDictionaryInternal<TKey, TValue>, IHashKeyCollection<TKey>, IDictionary<TKey, TValue>, IDictionary where TKey : notnull
     {
         /// <summary>
         /// An empty immutable dictionary with default equality comparers.
@@ -246,12 +246,12 @@ namespace System.Collections.Immutable
                 Requires.NotNullAllowStructs(key, nameof(key));
 
                 TValue value;
-                if (this.TryGetValue(key, out value!))
+                if (!this.TryGetValue(key, out value!))
                 {
-                    return value;
+                    ThrowHelper.ThrowKeyNotFoundException(key);
                 }
 
-                throw new KeyNotFoundException(SR.Format(SR.Arg_KeyNotFoundWithKey, key.ToString()));
+                return value;
             }
         }
 

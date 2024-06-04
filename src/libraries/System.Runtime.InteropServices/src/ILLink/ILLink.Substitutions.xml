@@ -1,0 +1,10 @@
+<linker>
+  <assembly fullname="System.Runtime.InteropServices">
+    <type fullname="System.Runtime.InteropServices.Marshalling.ComObject" feature="System.Runtime.InteropServices.Marshalling.EnableGeneratedComInterfaceComImportInterop" featurevalue="false">
+      <method signature="System.Boolean get_ComImportInteropEnabled()" body="stub" value="false" />
+    </type>
+    <type fullname="System.Runtime.InteropServices.Marshalling.ComObject" feature="System.Runtime.InteropServices.BuiltInComInterop.IsSupported" featurevalue="false">
+      <method signature="System.Boolean get_BuiltInComSupported()" body="stub" value="false" />
+    </type>
+  </assembly>
+</linker>

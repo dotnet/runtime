@@ -22,7 +22,7 @@ class ComPlusCallMethodDesc;
 #include <cgencpu.h>
 
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
 void ResumeAtJit(PT_CONTEXT pContext, LPVOID oldFP);
 #endif
 
@@ -83,8 +83,6 @@ extern "C" DWORD avx512StateSupport();
 BOOL GetAnyThunkTarget (T_CONTEXT *pctx, TADDR *pTarget, TADDR *pTargetMethodDesc);
 
 #endif // DACCESS_COMPILE
-
-
 
 //
 // ResetProcessorStateHolder saves/restores processor state around calls to

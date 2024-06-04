@@ -95,7 +95,7 @@ mono_utility_thread_launch (size_t payload_size, MonoUtilityThreadCallbacks *cal
 	mono_os_sem_init (&thread->work_queue_sem, 0);
 	mono_atomic_store_i32 (&thread->run_thread, 1);
 
-	if (!mono_native_thread_create (&thread->thread_id, utility_thread, thread))
+	if (!mono_native_thread_create (&thread->thread_id, (gpointer)utility_thread, thread))
 		g_error ("Could not create utility thread");
 
 	return thread;

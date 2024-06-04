@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 // test for classes
 public class A<T> {}
@@ -16,7 +17,7 @@ public class D : IB {}
   
                                        
 
-class Test_test137310
+public class Test_test137310
 {
 
 	public static void LoadC()
@@ -29,7 +30,8 @@ class Test_test137310
 		IA<D> d = new D();		
 	}
 
-	public static int Main()
+	[Fact]
+	public static int TestEntryPoint()
     	{
     		bool pass = true;
     		try

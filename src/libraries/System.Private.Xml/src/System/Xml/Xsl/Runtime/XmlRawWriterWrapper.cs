@@ -4,8 +4,8 @@
 using System;
 using System.IO;
 using System.Xml;
-using System.Xml.XPath;
 using System.Xml.Schema;
+using System.Xml.XPath;
 
 namespace System.Xml.Xsl.Runtime
 {

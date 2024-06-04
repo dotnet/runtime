@@ -23,10 +23,15 @@ namespace System.Net.WebSockets
         internal const int MaxDeflateWindowBits = 15;
 
         internal const int MaxControlFramePayloadLength = 123;
+#if TARGET_BROWSER
+        private const int ValidCloseStatusCodesFrom = 3000;
+        private const int ValidCloseStatusCodesTo = 4999;
+#else
         private const int CloseStatusCodeAbort = 1006;
         private const int CloseStatusCodeFailedTLSHandshake = 1015;
         private const int InvalidCloseStatusCodesFrom = 0;
         private const int InvalidCloseStatusCodesTo = 999;
+#endif
 
         // [0x21, 0x7E] except separators "()<>@,;:\\\"/[]?={} ".
         private static readonly SearchValues<char> s_validSubprotocolChars =
@@ -84,11 +89,15 @@ namespace System.Net.WebSockets
             }
 
             int closeStatusCode = (int)closeStatus;
-
+#if TARGET_BROWSER
+            // as defined in https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/close#code
+            if (closeStatus != WebSocketCloseStatus.NormalClosure && (closeStatusCode < ValidCloseStatusCodesFrom || closeStatusCode > ValidCloseStatusCodesTo))
+#else
             if ((closeStatusCode >= InvalidCloseStatusCodesFrom &&
                 closeStatusCode <= InvalidCloseStatusCodesTo) ||
                 closeStatusCode == CloseStatusCodeAbort ||
                 closeStatusCode == CloseStatusCodeFailedTLSHandshake)
+#endif
             {
                 // CloseStatus 1006 means Aborted - this will never appear on the wire and is reflected by calling WebSocket.Abort
                 throw new ArgumentException(SR.Format(SR.net_WebSockets_InvalidCloseStatusCode,

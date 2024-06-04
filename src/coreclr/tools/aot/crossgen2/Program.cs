@@ -74,6 +74,8 @@ namespace ILCompiler
             if (_singleFileCompilation && !_outNearInput)
                 throw new CommandLineException(SR.MissingOutNearInput);
 
+            var logger = new Logger(Console.Out, Get(_command.IsVerbose));
+
             // Crossgen2 is partial AOT and its pre-compiled methods can be
             // thrown away at runtime if they mismatch in required ISAs or
             // computed layouts of structs. Thus we want to ensure that usage
@@ -84,7 +86,7 @@ namespace ILCompiler
             TargetArchitecture targetArchitecture = Get(_command.TargetArchitecture);
             TargetOS targetOS = Get(_command.TargetOS);
             InstructionSetSupport instructionSetSupport = Helpers.ConfigureInstructionSetSupport(Get(_command.InstructionSet), Get(_command.MaxVectorTBitWidth), isVectorTOptimistic, targetArchitecture, targetOS,
-                SR.InstructionSetMustNotBe, SR.InstructionSetInvalidImplication);
+                SR.InstructionSetMustNotBe, SR.InstructionSetInvalidImplication, logger);
             SharedGenericsMode genericsMode = SharedGenericsMode.CanonicalReferenceTypes;
             var targetDetails = new TargetDetails(targetArchitecture, targetOS, Crossgen2RootCommand.IsArmel ? TargetAbi.NativeAotArmel : TargetAbi.NativeAot, instructionSetSupport.GetVectorTSimdVector());
 
@@ -279,7 +281,7 @@ namespace ILCompiler
                         typeSystemContext.SetSystemModule((EcmaModule)typeSystemContext.GetModuleForSimpleName(systemModuleName));
                     }
 
-                    RunSingleCompilation(singleCompilationInputFilePaths, instructionSetSupport, compositeRootPath, unrootedInputFilePaths, singleCompilationVersionBubbleModulesHash, typeSystemContext);
+                    RunSingleCompilation(singleCompilationInputFilePaths, instructionSetSupport, compositeRootPath, unrootedInputFilePaths, singleCompilationVersionBubbleModulesHash, typeSystemContext, logger);
                 }
 
                 // In case of inputbubble ni.dll are created as ni.dll.tmp in order to not interfere with crossgen2, move them all to ni.dll
@@ -297,13 +299,13 @@ namespace ILCompiler
             }
             else
             {
-                RunSingleCompilation(inputFilePaths, instructionSetSupport, compositeRootPath, unrootedInputFilePaths, versionBubbleModulesHash, typeSystemContext);
+                RunSingleCompilation(inputFilePaths, instructionSetSupport, compositeRootPath, unrootedInputFilePaths, versionBubbleModulesHash, typeSystemContext, logger);
             }
 
             return 0;
         }
 
-        private void RunSingleCompilation(Dictionary<string, string> inFilePaths, InstructionSetSupport instructionSetSupport, string compositeRootPath, Dictionary<string, string> unrootedInputFilePaths, HashSet<ModuleDesc> versionBubbleModulesHash, ReadyToRunCompilerContext typeSystemContext)
+        private void RunSingleCompilation(Dictionary<string, string> inFilePaths, InstructionSetSupport instructionSetSupport, string compositeRootPath, Dictionary<string, string> unrootedInputFilePaths, HashSet<ModuleDesc> versionBubbleModulesHash, ReadyToRunCompilerContext typeSystemContext, Logger logger)
         {
             //
             // Initialize output filename
@@ -383,8 +385,6 @@ namespace ILCompiler
 
                     // Single method mode?
                     MethodDesc singleMethod = CheckAndParseSingleMethodModeArguments(typeSystemContext);
-
-                    var logger = new Logger(Console.Out, Get(_command.IsVerbose));
 
                     List<string> mibcFiles = new List<string>();
                     foreach (var file in Get(_command.MibcFilePaths))
@@ -915,8 +915,7 @@ namespace ILCompiler
                 .UseVersion()
                 .UseExtendedHelp(Crossgen2RootCommand.GetExtendedHelp))
             {
-                ResponseFileTokenReplacer = Helpers.TryReadResponseFile,
-                EnableParseErrorReporting = true
+                ResponseFileTokenReplacer = Helpers.TryReadResponseFile
             }.Invoke(args);
     }
 }

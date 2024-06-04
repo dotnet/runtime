@@ -17,13 +17,13 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <_ReplacementValue Include="TargetFrameworkForNETCoreTasks" Value="$(TargetFrameworkForNETCoreTasks)" />
-      <_ReplacementValue Include="TargetFrameworkForNETFrameworkTasks" Value="$(TargetFrameworkForNETFrameworkTasks)" />
+      <_ReplacementValue Include="NetCoreAppToolCurrent" Value="$(NetCoreAppToolCurrent)" />
+      <_ReplacementValue Include="NetFrameworkToolCurrent" Value="$(NetFrameworkToolCurrent)" />
     </ItemGroup>
 
     <GenerateFileFromTemplate
       TemplateFile="Sdk/Sdk.props.in"
-      Properties="@(_ReplacementValue)"
+      Properties="@(_ReplacementValue->'%(Identity)=%(Value)')"
       OutputPath="$(SdkPropsPath)" />
 
     <ItemGroup>

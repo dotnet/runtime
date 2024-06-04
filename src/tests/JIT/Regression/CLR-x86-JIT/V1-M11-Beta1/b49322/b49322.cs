@@ -11,7 +11,7 @@ namespace Test
     {
         static ulong m_ul;
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             try
             {
@@ -29,7 +29,6 @@ namespace Test
                 }
             }
             catch (Exception) { }
-            return 100;
         }
     }
 }

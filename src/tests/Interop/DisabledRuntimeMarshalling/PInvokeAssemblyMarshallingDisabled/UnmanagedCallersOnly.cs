@@ -9,9 +9,9 @@ using static DisabledRuntimeMarshallingNative;
 
 namespace DisabledRuntimeMarshalling.PInvokeAssemblyMarshallingDisabled;
 
+[ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
 public unsafe class UnmanagedCallersOnly
 {
-
     [Fact]
     public static void UnmanagedCallersOnly_WithNonBlittableParameters_DoesNotMarshal()
     {

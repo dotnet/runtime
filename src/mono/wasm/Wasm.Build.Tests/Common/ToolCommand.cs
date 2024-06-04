@@ -95,7 +95,7 @@ namespace Wasm.Build.Tests
         {
             if (CurrentProcess is not null && !CurrentProcess.HasExited)
             {
-                CurrentProcess.KillTree();
+                CurrentProcess.Kill(entireProcessTree: true);
                 CurrentProcess.Dispose();
                 CurrentProcess = null;
             }

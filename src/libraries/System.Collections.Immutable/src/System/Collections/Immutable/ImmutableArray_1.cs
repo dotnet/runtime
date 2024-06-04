@@ -6,10 +6,12 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 
 namespace System.Collections.Immutable
 {
+    [CollectionBuilder(typeof(ImmutableArray), nameof(ImmutableArray.Create))]
     public readonly partial struct ImmutableArray<T> : IReadOnlyList<T>, IList<T>, IEquatable<ImmutableArray<T>>, IList, IImmutableArray, IStructuralComparable, IStructuralEquatable, IImmutableList<T>
     {
         /// <summary>
@@ -90,8 +92,16 @@ namespace System.Collections.Immutable
             }
         }
 
+        /// <summary>
+        /// Creates a new read-only span over this immutable array.
+        /// </summary>
+        /// <returns>The read-only span representation of this immutable array.</returns>
         public ReadOnlySpan<T> AsSpan() => new ReadOnlySpan<T>(array);
 
+        /// <summary>
+        /// Creates a new read-only memory region over this immutable array.
+        /// </summary>
+        /// <returns>The read-only memory representation of this immutable array.</returns>
         public ReadOnlyMemory<T> AsMemory() => new ReadOnlyMemory<T>(array);
 
         /// <summary>
@@ -870,7 +880,7 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="items">The values to add.</param>
         /// <returns>A new list with the elements added.</returns>
-        public ImmutableArray<T> AddRange(ReadOnlySpan<T> items)
+        public ImmutableArray<T> AddRange(params ReadOnlySpan<T> items)
         {
             ImmutableArray<T> self = this;
             return self.InsertRange(self.Length, items);
@@ -939,7 +949,7 @@ namespace System.Collections.Immutable
         /// <param name="index">The index at which to insert the value.</param>
         /// <param name="items">The elements to insert.</param>
         /// <returns>The new immutable collection.</returns>
-        public ImmutableArray<T> InsertRange(int index, ReadOnlySpan<T> items)
+        public ImmutableArray<T> InsertRange(int index, params ReadOnlySpan<T> items)
         {
             ImmutableArray<T> self = this;
             self.ThrowNullRefIfNotInitialized();

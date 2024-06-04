@@ -6,15 +6,15 @@
     <Compile Include="..\..\Common\tests\System\Threading\Tasks\Sources\ManualResetValueTaskSource.cs">
       <Link>Common\tests\System\Threading\Tasks\Sources\ManualResetValueTaskSource.cs</Link>
     </Compile>
-    <Compile Include="..\..\System.Threading.Tasks\tests\System.Runtime.CompilerServices\ConfiguredCancelableAsyncEnumerableTests.cs">
-      <Link>System.Threading.Tasks\tests\System.Runtime.CompilerServices\ConfiguredCancelableAsyncEnumerableTests.cs</Link>
+    <Compile Include="..\..\System.Runtime\tests\System.Threading.Tasks.Tests\System.Runtime.CompilerServices\ConfiguredCancelableAsyncEnumerableTests.cs">
+      <Link>System.Runtime\tests\System.Threading.Tasks.Tests\System.Runtime.CompilerServices\ConfiguredCancelableAsyncEnumerableTests.cs</Link>
     </Compile>
-    <Compile Include="..\..\System.Threading.Tasks\tests\System.Runtime.CompilerServices\ConfiguredAsyncDisposable.cs">
-      <Link>System.Threading.Tasks\tests\System.Runtime.CompilerServices\ConfiguredAsyncDisposable.cs</Link>
+    <Compile Include="..\..\System.Runtime\tests\System.Threading.Tasks.Tests\System.Runtime.CompilerServices\ConfiguredAsyncDisposable.cs">
+      <Link>System.Runtime\tests\System.Threading.Tasks.Tests\System.Runtime.CompilerServices\ConfiguredAsyncDisposable.cs</Link>
     </Compile>
-    <Compile Include="..\..\System.Threading.Tasks.Extensions\tests\ManualResetValueTaskSourceTests.cs"
+    <Compile Include="..\..\System.Runtime\tests\System.Threading.Tasks.Extensions.Tests\ManualResetValueTaskSourceTests.cs"
              Condition="'$(TargetFrameworkIdentifier)' != '.NETFramework'">
-      <Link>System.Threading.Tasks.Extensions\tests\ManualResetValueTaskSourceTests.cs</Link>
+      <Link>System.Runtime\tests\System.Threading.Tasks.Extensions.Tests\ManualResetValueTaskSourceTests.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>

@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 
@@ -14,6 +15,146 @@ namespace ILCompiler
     {
         private sealed partial class GraphBuilder
         {
+            // Generate the illegal recursion graph as specified in ECMA 335 II.9.2 Generics and recursive inheritance graphs
+            public GraphBuilder(EcmaType type)
+            {
+                _graph = new Graph<EcmaGenericParameter>();
+
+                if (type.HasInstantiation)
+                {
+                    HashSet<TypeDesc> types = new HashSet<TypeDesc>();
+                    List<TypeDesc> typesToProcess = new List<TypeDesc>();
+                    typesToProcess.Add(type);
+                    while (typesToProcess.Count > 0)
+                    {
+                        var processType = typesToProcess[typesToProcess.Count - 1];
+                        typesToProcess.RemoveAt(typesToProcess.Count - 1);
+
+                        if (processType.IsParameterizedType)
+                        {
+                            if (processType.GetParameterType() is InstantiatedType instantiatedType)
+                            {
+                                AddProcessType(instantiatedType.GetTypeDefinition());
+                                WalkFormals(instantiatedType, expanded: true);
+                            }
+                        }
+                        else if (processType.GetTypeDefinition() == processType)
+                        {
+                            if (processType.HasInstantiation && processType is EcmaType ecmaProcessType)
+                            {
+                                AddSpecializedType(ecmaProcessType.BaseType);
+                                foreach (var t in ecmaProcessType.ExplicitlyImplementedInterfaces)
+                                {
+                                    AddSpecializedType(t);
+                                }
+
+                                void AddSpecializedType(TypeDesc typeToSpecialize)
+                                {
+                                    if (typeToSpecialize != null)
+                                    {
+                                        var specializedType = typeToSpecialize.InstantiateSignature(processType.Instantiation, default(Instantiation));
+                                        AddProcessType(specializedType);
+                                    }
+                                }
+                            }
+                        }
+                        else if (processType is InstantiatedType instantiatedType)
+                        {
+                            AddProcessType(instantiatedType.GetTypeDefinition());
+                            WalkFormals(instantiatedType, expanded: false);
+                        }
+
+                        void WalkFormals(InstantiatedType instantiatedType, bool expanded)
+                        {
+                            for (int i = 0; i < instantiatedType.Instantiation.Length; i++)
+                            {
+                                var formal = instantiatedType.GetTypeDefinition().Instantiation[i] as GenericParameterDesc;
+                                if (instantiatedType.Instantiation[i] is GenericParameterDesc genParam)
+                                {
+                                    AddEdge(genParam, formal, expanded);
+                                }
+                                else
+                                {
+                                    foreach (var genParameter in GetGenericParameters(instantiatedType.Instantiation[i]))
+                                    {
+                                        AddEdge(genParameter, formal, true);
+                                    }
+                                }
+                            }
+                        }
+
+                        void AddProcessType(TypeDesc type)
+                        {
+                            if (type == null)
+                                return;
+
+                            if (types.Add(type))
+                            {
+                                typesToProcess.Add(type);
+                            }
+
+                            if (type is ParameterizedType paramType)
+                            {
+                                AddProcessType(paramType.GetParameterType());
+                            }
+
+                            foreach (var instType in type.Instantiation)
+                            {
+                                AddProcessType(instType);
+                            }
+                        }
+
+                        void AddEdge(GenericParameterDesc from, GenericParameterDesc to, bool flagged)
+                        {
+                            EcmaGenericParameter fromEcma = from as EcmaGenericParameter;
+                            EcmaGenericParameter toEcma = to as EcmaGenericParameter;
+                            if (fromEcma == null || toEcma == null)
+                                return;
+                            _graph.AddEdge(fromEcma, toEcma, flagged);
+                        }
+
+                        IEnumerable<GenericParameterDesc> GetGenericParameters(TypeDesc t)
+                        {
+                            if (t is GenericParameterDesc genParamDesc)
+                            {
+                                yield return genParamDesc;
+                            }
+                            else if (t is ParameterizedType paramType)
+                            {
+                                foreach (var genParamType in GetGenericParameters(paramType.GetParameterType()))
+                                {
+                                    yield return genParamType;
+                                }
+                            }
+                            else if (t.HasInstantiation)
+                            {
+                                foreach (var instType in t.Instantiation)
+                                {
+                                    foreach (var genParamType in GetGenericParameters(instType))
+                                    {
+                                        yield return genParamType;
+                                    }
+                                }
+                            }
+                            else if (t is FunctionPointerType fptrType)
+                            {
+                                foreach (var genParamType in GetGenericParameters(fptrType.Signature.ReturnType))
+                                {
+                                    yield return genParamType;
+                                }
+                                foreach (var parameterType in fptrType.Signature)
+                                {
+                                    foreach (var genParamType in GetGenericParameters(parameterType))
+                                    {
+                                        yield return genParamType;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
             public GraphBuilder(EcmaModule assembly)
             {
                 _graph = new Graph<EcmaGenericParameter>();
@@ -126,8 +267,10 @@ namespace ILCompiler
                                 || interfaceMethod.Signature.IsStatic != method.Signature.IsStatic)
                                 continue;
 
-                            MethodDesc impl = methodOwningType.ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod)?.GetMethodDefinition();
-                            if (impl == method)
+                            MethodDesc impl = interfaceMethod.Signature.IsStatic ?
+                                methodOwningType.ResolveInterfaceMethodToStaticVirtualMethodOnType(interfaceMethod) :
+                                methodOwningType.ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod);
+                            if (impl?.GetMethodDefinition() == method)
                             {
                                 RecordBinding(this, interfaceMethod.Instantiation, method.Instantiation);
                                 // Continue the loop in case this method implements multiple interfaces

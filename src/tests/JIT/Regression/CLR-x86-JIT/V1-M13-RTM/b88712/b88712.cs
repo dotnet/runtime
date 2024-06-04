@@ -13,9 +13,8 @@ public struct AA
         a += (a *= 60.0f);
     }
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         Static5();
-        return 100;
     }
 }

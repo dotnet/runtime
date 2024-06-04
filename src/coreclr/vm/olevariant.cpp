@@ -835,7 +835,7 @@ MethodTable* OleVariant::GetNativeMethodTableForVarType(VARTYPE vt, MethodTable*
         case VT_CARRAY:
             return CoreLibBinder::GetClass(CLASS__INTPTR);
         case VT_VARIANT:
-            return CoreLibBinder::GetClass(CLASS__NATIVEVARIANT);
+            return CoreLibBinder::GetClass(CLASS__COMVARIANT);
         case VTHACK_ANSICHAR:
             return CoreLibBinder::GetClass(CLASS__BYTE);
         case VT_UI2:
@@ -845,7 +845,7 @@ MethodTable* OleVariant::GetNativeMethodTableForVarType(VARTYPE vt, MethodTable*
             // MethodTable to ensure the correct size.
             return CoreLibBinder::GetClass(CLASS__UINT16);
         case VT_DECIMAL:
-            return CoreLibBinder::GetClass(CLASS__NATIVEDECIMAL);
+            return CoreLibBinder::GetClass(CLASS__DECIMAL);
         default:
             PREFIX_ASSUME(pManagedMT != NULL);
             return pManagedMT;
@@ -1154,15 +1154,6 @@ void VariantData::NewVariant(VariantData * const& dest, const CVTypes type, INT6
     }
 }
 
-void SafeVariantClearHelper(_Inout_ VARIANT* pVar)
-{
-    WRAPPER_NO_CONTRACT;
-
-    VariantClear(pVar);
-}
-
-class OutOfMemoryException;
-
 void SafeVariantClear(VARIANT* pVar)
 {
     CONTRACTL
@@ -1176,52 +1167,19 @@ void SafeVariantClear(VARIANT* pVar)
     if (pVar)
     {
         GCX_PREEMP();
-        SCAN_EHMARKER();
-        PAL_CPP_TRY
-        {
-            // These are holders to tell the contract system that we're catching all exceptions.
-            SCAN_EHMARKER_TRY();
-            CLR_TRY_MARKER();
+        VariantClear(pVar);
 
-            // Most of time, oleaut32.dll is loaded already when we get here.
-            // Sometimes, CLR initializes Variant without loading oleaut32.dll, e.g. VT_BOOL.
-            // It is better for performance with EX_TRY than
-
-            SafeVariantClearHelper(pVar);
-
-            SCAN_EHMARKER_END_TRY();
-        }
-#pragma warning(suppress: 4101)
-        PAL_CPP_CATCH_DERIVED(OutOfMemoryException, obj)
-        {
-            SCAN_EHMARKER_CATCH();
-
-#if defined(STACK_GUARDS_DEBUG)
-            // Catching and just swallowing an exception means we need to tell
-            // the SO code that it should go back to normal operation, as it
-            // currently thinks that the exception is still on the fly.
-            GetThread()->GetCurrentStackGuard()->RestoreCurrentGuard();
-#endif
-
-            SCAN_EHMARKER_END_CATCH();
-        }
-        PAL_CPP_ENDTRY;
-
-        FillMemory(pVar, sizeof(VARIANT), 0x00);
+        // VariantClear resets the instance to VT_EMPTY (0)
+        // COMPAT: Clear the remaining memory for compat. The instance remains set to VT_EMPTY (0).
+        ZeroMemory(pVar, sizeof(VARIANT));
     }
 }
 
-FORCEINLINE void EmptyVariant(VARIANT* value)
-{
-    WRAPPER_NO_CONTRACT;
-    SafeVariantClear(value);
-}
-
-class VariantEmptyHolder : public Wrapper<VARIANT*, ::DoNothing<VARIANT*>, EmptyVariant, NULL>
+class VariantEmptyHolder : public Wrapper<VARIANT*, ::DoNothing<VARIANT*>, SafeVariantClear, 0>
 {
 public:
     VariantEmptyHolder(VARIANT* p = NULL) :
-        Wrapper<VARIANT*, ::DoNothing<VARIANT*>, EmptyVariant, NULL>(p)
+        Wrapper<VARIANT*, ::DoNothing<VARIANT*>, SafeVariantClear, 0>(p)
     {
         WRAPPER_NO_CONTRACT;
     }
@@ -1230,7 +1188,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 
-        Wrapper<VARIANT*, ::DoNothing<VARIANT*>, EmptyVariant, NULL>::operator=(p);
+        Wrapper<VARIANT*, ::DoNothing<VARIANT*>, SafeVariantClear, 0>::operator=(p);
     }
 };
 
@@ -1247,11 +1205,11 @@ FORCEINLINE void RecordVariantRelease(VARIANT* value)
     }
 }
 
-class RecordVariantHolder : public Wrapper<VARIANT*, ::DoNothing<VARIANT*>, RecordVariantRelease, NULL>
+class RecordVariantHolder : public Wrapper<VARIANT*, ::DoNothing<VARIANT*>, RecordVariantRelease, 0>
 {
 public:
     RecordVariantHolder(VARIANT* p = NULL)
-        : Wrapper<VARIANT*, ::DoNothing<VARIANT*>, RecordVariantRelease, NULL>(p)
+        : Wrapper<VARIANT*, ::DoNothing<VARIANT*>, RecordVariantRelease, 0>(p)
     {
         WRAPPER_NO_CONTRACT;
     }
@@ -1259,7 +1217,7 @@ public:
     FORCEINLINE void operator=(VARIANT* p)
     {
         WRAPPER_NO_CONTRACT;
-        Wrapper<VARIANT*, ::DoNothing<VARIANT*>, RecordVariantRelease, NULL>::operator=(p);
+        Wrapper<VARIANT*, ::DoNothing<VARIANT*>, RecordVariantRelease, 0>::operator=(p);
     }
 };
 #endif  // FEATURE_COMINTEROP
@@ -2609,17 +2567,34 @@ void OleVariant::MarshalRecordVariantOleToCom(VARIANT *pOleVariant,
     if (!pRecInfo)
         COMPlusThrow(kArgumentException, IDS_EE_INVALID_OLE_VARIANT);
 
+    LPVOID pvRecord = V_RECORD(pOleVariant);
+    if (pvRecord == NULL)
+    {
+        pComVariant->SetObjRef(NULL);
+        return;
+    }
+
+    MethodTable* pValueClass = NULL;
+    {
+        GCX_PREEMP();
+        pValueClass = GetMethodTableForRecordInfo(pRecInfo);
+    }
+
+    if (pValueClass == NULL)
+    {
+        // This value type should have been registered through
+        // a TLB. CoreCLR doesn't support dynamic type mapping.
+        COMPlusThrow(kArgumentException, IDS_EE_CANNOT_MAP_TO_MANAGED_VC);
+    }
+    _ASSERTE(pValueClass->IsBlittable());
+
     OBJECTREF BoxedValueClass = NULL;
     GCPROTECT_BEGIN(BoxedValueClass)
     {
-        LPVOID pvRecord = V_RECORD(pOleVariant);
-        if (pvRecord)
-        {
-            // This value type should have been registered through
-            // a TLB. CoreCLR doesn't support dynamic type mapping.
-            COMPlusThrow(kArgumentException, IDS_EE_CANNOT_MAP_TO_MANAGED_VC);
-        }
-
+        // Now that we have a blittable value class, allocate an instance of the
+        // boxed value class and copy the contents of the record into it.
+        BoxedValueClass = AllocateObject(pValueClass);
+        memcpyNoGCRefs(BoxedValueClass->GetData(), (BYTE*)pvRecord, pValueClass->GetNativeSize());
         pComVariant->SetObjRef(BoxedValueClass);
     }
     GCPROTECT_END();
@@ -4756,11 +4731,8 @@ void OleVariant::ConvertValueClassToVariant(OBJECTREF *pBoxedValueClass, VARIANT
     // Marshal the contents of the value class into the record.
     MethodDesc* pStructMarshalStub;
     {
-        GCPROTECT_BEGIN(*pBoxedValueClass);
         GCX_PREEMP();
-
         pStructMarshalStub = NDirect::CreateStructMarshalILStub(pValueClassMT);
-        GCPROTECT_END();
     }
 
     MarshalStructViaILStub(pStructMarshalStub, (*pBoxedValueClass)->GetData(), (BYTE*)V_RECORD(pRecHolder), StructMarshalStubs::MarshalOperation::Marshal);

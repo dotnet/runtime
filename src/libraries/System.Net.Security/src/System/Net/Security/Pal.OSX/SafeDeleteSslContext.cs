@@ -95,7 +95,7 @@ namespace System.Net
                 throw;
             }
 
-            if (!string.IsNullOrEmpty(sslAuthenticationOptions.TargetHost) && !sslAuthenticationOptions.IsServer)
+            if (!string.IsNullOrEmpty(sslAuthenticationOptions.TargetHost) && !sslAuthenticationOptions.IsServer && !TargetHostNameHelper.IsValidAddress(sslAuthenticationOptions.TargetHost))
             {
                 Interop.AppleCrypto.SslSetTargetName(_sslContext, sslAuthenticationOptions.TargetHost);
             }
@@ -307,19 +307,20 @@ namespace System.Net
 
         internal int BytesReadyForConnection => _outputBuffer.ActiveLength;
 
-        internal byte[]? ReadPendingWrites()
+        internal void ReadPendingWrites(ref ProtocolToken token)
         {
             lock (_sslContext)
             {
                 if (_outputBuffer.ActiveLength == 0)
                 {
-                    return null;
+                    token.Size = 0;
+                    token.Payload = null;
+
+                    return;
                 }
 
-                byte[] buffer = _outputBuffer.ActiveSpan.ToArray();
+                token.SetPayload(_outputBuffer.ActiveSpan);
                 _outputBuffer.Discard(_outputBuffer.ActiveLength);
-
-                return buffer;
             }
         }
 

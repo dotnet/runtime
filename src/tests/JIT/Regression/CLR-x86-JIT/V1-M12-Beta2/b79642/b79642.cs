@@ -9,7 +9,7 @@ public class Test_b79642
     public byte m_value;
 
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         Test_b79642 a = new Test_b79642();
         Test_b79642 b = new Test_b79642();
@@ -23,6 +23,5 @@ public class Test_b79642
         Console.WriteLine(a.m_value < b.m_value);
         Console.WriteLine((byte)a.m_value < (byte)b.m_value);
         Console.WriteLine(b1 < b2);
-        return 100;
     }
 }

@@ -1,8 +1,8 @@
-include(FindPythonInterp)
+include(FindPython)
 
 set (GENERATE_SCRIPT ${CLR_DIR}/scripts/genDummyProvider.py)
 
-set(GENERATE_COMMAND ${PYTHON_EXECUTABLE} ${GENERATE_SCRIPT} --man ${EVENT_MANIFEST} --intermediate ${CMAKE_CURRENT_BINARY_DIR})
+set(GENERATE_COMMAND ${Python_EXECUTABLE} ${GENERATE_SCRIPT} --man ${EVENT_MANIFEST} --intermediate ${CMAKE_CURRENT_BINARY_DIR})
 
 execute_process(
   COMMAND ${GENERATE_COMMAND} --dry-run
@@ -24,7 +24,6 @@ foreach(DUMMY_PROVIDER_FILE ${DUMMY_PROVIDER_OUTPUT})
   list(APPEND DUMMY_PROVIDER_SOURCES ${DUMMY_PROVIDER_FILE})
 endforeach()
 
-add_definitions(-DPAL_STDCPP_COMPAT=1)
 include_directories(${COREPAL_SOURCE_DIR}/inc/rt)
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/dummy)
 

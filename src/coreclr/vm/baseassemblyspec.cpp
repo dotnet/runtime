@@ -11,10 +11,8 @@
 // ============================================================
 
 #include "common.h"
-#include "thekey.h"
 
 #include "strongnameinternal.h"
-#include "strongnameholders.h"
 
 BOOL BaseAssemblySpec::IsCoreLib()
 {
@@ -41,9 +39,6 @@ BOOL BaseAssemblySpec::IsCoreLib()
              ( (!SString::_strnicmp(m_pAssemblyName, g_psBaseLibraryName, CoreLibNameLen)) &&
                ( (iNameLen == CoreLibNameLen) || (m_pAssemblyName[CoreLibNameLen] == ',') ) ) ) );
 }
-
-#define CORELIB_PUBLICKEY g_rbTheSilverlightPlatformKey
-
 
 // A satellite assembly for CoreLib is named "System.Private.CoreLib.resources" or
 // System.Private.CoreLib.debug.resources.dll and uses the same public key as CoreLib.
@@ -72,12 +67,12 @@ BOOL BaseAssemblySpec::IsCoreLibSatellite() const
     size_t iNameLen = strlen(m_pAssemblyName);
 
     // we allow name to be of the form System.Private.CoreLib.resources.dll only
-    BOOL r = ( (m_cbPublicKeyOrToken == sizeof(CORELIB_PUBLICKEY)) &&
+    BOOL r = ( (m_cbPublicKeyOrToken == g_coreLibPublicKeyLen) &&
              (iNameLen >= CoreLibSatelliteNameLen) &&
              (!SString::_strnicmp(m_pAssemblyName, g_psBaseLibrarySatelliteAssemblyName, CoreLibSatelliteNameLen)) &&
              ( (iNameLen == CoreLibSatelliteNameLen) || (m_pAssemblyName[CoreLibSatelliteNameLen] == ',') ) );
 
-    r = r && ( memcmp(m_pbPublicKeyOrToken,CORELIB_PUBLICKEY,sizeof(CORELIB_PUBLICKEY)) == 0);
+    r = r && ( memcmp(m_pbPublicKeyOrToken, g_coreLibPublicKey, g_coreLibPublicKeyLen) == 0);
 
     return r;
 }
@@ -94,15 +89,13 @@ VOID BaseAssemblySpec::ConvertPublicKeyToToken()
     }
     CONTRACTL_END;
 
-    StrongNameBufferHolder<BYTE> pbPublicKeyToken;
-    DWORD cbPublicKeyToken;
+    StrongNameToken strongNameToken;
     IfFailThrow(StrongNameTokenFromPublicKey(m_pbPublicKeyOrToken,
         m_cbPublicKeyOrToken,
-        &pbPublicKeyToken,
-        &cbPublicKeyToken));
+        &strongNameToken));
 
-    BYTE *temp = new BYTE [cbPublicKeyToken];
-    memcpy(temp, pbPublicKeyToken, cbPublicKeyToken);
+    BYTE *temp = new BYTE [StrongNameToken::SIZEOF_TOKEN];
+    memcpy(temp, &strongNameToken, StrongNameToken::SIZEOF_TOKEN);
 
     if (m_ownedFlags & PUBLIC_KEY_OR_TOKEN_OWNED)
         delete [] m_pbPublicKeyOrToken;
@@ -110,7 +103,7 @@ VOID BaseAssemblySpec::ConvertPublicKeyToToken()
         m_ownedFlags |= PUBLIC_KEY_OR_TOKEN_OWNED;
 
     m_pbPublicKeyOrToken = temp;
-    m_cbPublicKeyOrToken = cbPublicKeyToken;
+    m_cbPublicKeyOrToken = StrongNameToken::SIZEOF_TOKEN;
     m_dwFlags &= ~afPublicKey;
 }
 

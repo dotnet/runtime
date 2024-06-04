@@ -118,7 +118,7 @@ namespace System.Net.Http.Headers
         public static bool TryParse([NotNullWhen(true)] string? input, [NotNullWhen(true)] out RangeHeaderValue? parsedValue)
         {
             int index = 0;
-             parsedValue = null;
+            parsedValue = null;
 
             if (GenericHeaderParser.RangeParser.TryParseValue(input, null, ref index, out object? output))
             {

@@ -849,8 +849,9 @@ public:
     }
 #endif // TARGET_AMD64
 
-#ifdef TARGET_LOONGARCH64
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     // Get layout information for the argument that the ArgIterator is currently visiting.
+    // TODO-RISCV64: support SIMD.
     void GetArgLoc(int argOffset, ArgLocDesc *pLoc)
     {
         LIMITED_METHOD_CONTRACT;
@@ -869,7 +870,7 @@ public:
             const int floatRegOfsInBytes = argOffset - TransitionBlock::GetOffsetOfFloatArgumentRegisters();
             _ASSERTE((floatRegOfsInBytes % FLOAT_REGISTER_SIZE) == 0);
 
-            pLoc->m_idxFloatReg = floatRegOfsInBytes / 8;
+            pLoc->m_idxFloatReg = floatRegOfsInBytes / FLOAT_REGISTER_SIZE;
 
             pLoc->m_cFloatReg = 1;
 
@@ -899,60 +900,7 @@ public:
         return;
     }
 
-#endif // TARGET_LOONGARCH64
-
-#ifdef TARGET_RISCV64
-    // Get layout information for the argument that the ArgIterator is currently visiting.
-    void GetArgLoc(int argOffset, ArgLocDesc *pLoc)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        pLoc->Init();
-
-        if (m_hasArgLocDescForStructInRegs)
-        {
-            *pLoc = m_argLocDescForStructInRegs;
-            return;
-        }
-
-        if (TransitionBlock::IsFloatArgumentRegisterOffset(argOffset))
-        {
-            // TODO-RISCV64: support SIMD.
-            // Dividing by 8 as size of each register in FloatArgumentRegisters is 8 bytes.
-            const int floatRegOfsInBytes = (argOffset - TransitionBlock::GetOffsetOfFloatArgumentRegisters());
-            _ASSERTE((floatRegOfsInBytes % FLOAT_REGISTER_SIZE) == 0);
-            pLoc->m_idxFloatReg = floatRegOfsInBytes / FLOAT_REGISTER_SIZE;
-
-            assert(!m_argTypeHandle.IsHFA());
-
-            pLoc->m_cFloatReg = 1;
-
-            return;
-        }
-
-        int cSlots = (GetArgSize() + 7)/ 8;
-
-        // Composites greater than 16bytes are passed by reference
-        if (GetArgType() == ELEMENT_TYPE_VALUETYPE && GetArgSize() > ENREGISTERED_PARAMTYPE_MAXSIZE)
-        {
-            cSlots = 1;
-        }
-
-        if (!TransitionBlock::IsStackArgumentOffset(argOffset))
-        {
-            // At least one used integer register passed.
-            pLoc->m_idxGenReg = TransitionBlock::GetArgumentIndexFromOffset(argOffset);
-            pLoc->m_cGenReg = cSlots;
-        }
-        else
-        {
-            pLoc->m_byteStackIndex = TransitionBlock::GetStackArgumentByteIndexFromOffset(argOffset);
-            pLoc->m_byteStackSize = cSlots << 3;
-        }
-
-        return;
-    }
-#endif // TARGET_RISCV64
+#endif // TARGET_LOONGARCH64 || TARGET_RISCV64
 protected:
     DWORD               m_dwFlags;              // Cached flags
     int                 m_nSizeOfArgStack;      // Cached value of SizeOfArgStack
@@ -1744,17 +1692,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
         }
         else
         {
-            MethodTable* pMethodTable = nullptr;
-
-            if (!thValueType.IsTypeDesc())
-                pMethodTable = thValueType.AsMethodTable();
-            else
-            {
-                _ASSERTE(thValueType.IsNativeValueType());
-                pMethodTable = thValueType.AsNativeValueType();
-            }
-            _ASSERTE(pMethodTable != nullptr);
-            flags = MethodTable::GetLoongArch64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable);
+            flags = MethodTable::GetLoongArch64PassStructInRegisterFlags(thValueType);
             if (flags & STRUCT_HAS_FLOAT_FIELDS_MASK)
             {
                 cFPRegs = (flags & STRUCT_FLOAT_FIELD_ONLY_TWO) ? 2 : 1;
@@ -1868,17 +1806,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
         }
         else
         {
-            MethodTable* pMethodTable = nullptr;
-
-            if (!thValueType.IsTypeDesc())
-                pMethodTable = thValueType.AsMethodTable();
-            else
-            {
-                _ASSERTE(thValueType.IsNativeValueType());
-                pMethodTable = thValueType.AsNativeValueType();
-            }
-            _ASSERTE(pMethodTable != nullptr);
-            flags = MethodTable::GetRiscv64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable);
+            flags = MethodTable::GetRiscV64PassStructInRegisterFlags(thValueType);
             if (flags & STRUCT_HAS_FLOAT_FIELDS_MASK)
             {
                 cFPRegs = (flags & STRUCT_FLOAT_FIELD_ONLY_TWO) ? 2 : 1;
@@ -2081,18 +2009,14 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ComputeReturnFlags()
             if  (size <= ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE)
             {
                 assert(!thValueType.IsTypeDesc());
-
-                MethodTable *pMethodTable = thValueType.AsMethodTable();
-                flags = (MethodTable::GetLoongArch64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable) & 0xff) << RETURN_FP_SIZE_SHIFT;
+                flags = (MethodTable::GetLoongArch64PassStructInRegisterFlags(thValueType) & 0xff) << RETURN_FP_SIZE_SHIFT;
                 break;
             }
 #elif defined(TARGET_RISCV64)
             if  (size <= ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE)
             {
                 assert(!thValueType.IsTypeDesc());
-
-                MethodTable *pMethodTable = thValueType.AsMethodTable();
-                flags = (MethodTable::GetRiscv64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable) & 0xff) << RETURN_FP_SIZE_SHIFT;
+                flags = (MethodTable::GetRiscV64PassStructInRegisterFlags(thValueType) & 0xff) << RETURN_FP_SIZE_SHIFT;
                 break;
             }
 #else
@@ -2373,6 +2297,16 @@ public:
     {
         m_pSig = pSig;
     }
+
+#ifdef FEATURE_INTERPRETER
+    ArgIterator(MetaSig* pSig, MethodDesc* pMD)
+    {
+        m_pSig = pSig;
+        bool fCtorOfVariableSizedObject = m_pSig->HasThis() && (pMD->GetMethodTable() == g_pStringClass) && pMD->IsCtor();
+        if (fCtorOfVariableSizedObject)
+            m_pSig->ClearHasThis();
+    }
+#endif // FEATURE_INTERPRETER
 
     // This API returns true if we are returning a structure in registers instead of using a byref return buffer
     BOOL HasNonStandardByvalReturn()

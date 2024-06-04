@@ -357,6 +357,18 @@ public:
         void* HandleTable[HandleHistogram32::SIZE];
     };
 
+    struct ValueHistogram32
+    {
+        uint32_t Count;
+        intptr_t ValueTable[HandleHistogram32::SIZE];
+    };
+
+    struct ValueHistogram64
+    {
+        uint64_t Count;
+        intptr_t ValueTable[HandleHistogram32::SIZE];
+    };
+
     enum class PgoInstrumentationKind
     {
         // This must be kept in sync with PgoInstrumentationKind in PgoFormat.cs
@@ -394,6 +406,11 @@ public:
         EdgeLongCount = (DescriptorMin * 6) | EightByte, // edge counter using unsigned 8 byte int
         GetLikelyClass = (DescriptorMin * 7) | TypeHandle, // Compressed get likely class data
         GetLikelyMethod = (DescriptorMin * 7) | MethodHandle, // Compressed get likely method data
+
+        // Same as type/method histograms, but for generic integer values
+        ValueHistogramIntCount = (DescriptorMin * 8) | FourByte | AlignPointer,
+        ValueHistogramLongCount = (DescriptorMin * 8) | EightByte,
+        ValueHistogram = (DescriptorMin * 9) | EightByte,
     };
 
     struct PgoInstrumentationSchema
@@ -435,7 +452,8 @@ public:
             uint32_t *                 pCountSchemaItems,          // OUT: pointer to the count of schema items in `pSchema` array.
             uint8_t **                 pInstrumentationData,       // OUT: `*pInstrumentationData` is set to the address of the instrumentation data
                                                                    // (pointer will not remain valid after jit completes).
-            PgoSource *                pPgoSource                  // OUT: value describing source of pgo data
+            PgoSource *                pPgoSource,                 // OUT: value describing source of pgo data
+            bool *                     pDynamicPgo                 // OUT: dynamic PGO is enabled (valid even when return value is failure)
             ) = 0;
 
     // Allocate a profile buffer for use in the current process

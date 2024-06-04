@@ -1,0 +1,65 @@
+<Project>
+  <!-- SDK tries to download runtime packs when RuntimeIdentifier is set, remove them from PackageDownload item. -->
+  <Target Name="RemoveRuntimePackFromDownloadItem"
+          AfterTargets="ProcessFrameworkReferences">
+    <ItemGroup>
+      <PackageDownload Remove="@(PackageDownload)"
+                       Condition="'$(UsePackageDownload)' == 'true' and $([System.String]::Copy('%(Identity)').StartsWith('Microsoft.NETCore.App.Runtime'))" />
+      <PackageReference Remove="@(PackageReference)"
+                        Condition="'$(UsePackageDownload)' != 'true' and $([System.String]::Copy('%(Identity)').StartsWith('Microsoft.NETCore.App.Runtime'))" />
+    </ItemGroup>
+  </Target>
+
+  <!-- Use local targeting pack for NetCoreAppCurrent. -->
+  <Target Name="UpdateTargetingAndRuntimePack"
+          AfterTargets="ResolveFrameworkReferences">
+    <ItemGroup>
+      <ResolvedRuntimePack
+          FrameworkName="Microsoft.NETCore.App"
+          NuGetPackageId="Microsoft.NETCore.App.Runtime.Mono.$(RuntimeIdentifier)"
+          NuGetPackageVersion="$(_RuntimePackInWorkloadVersionCurrent)"
+          PackageDirectory="$(NetCoreTargetingPackRoot)\%(Identity)\$(_RuntimePackInWorkloadVersionCurrent)"
+          RuntimeIdentifier="$(RuntimeIdentifier)" />
+
+      <ResolvedFrameworkReference
+          Condition="'%(Identity)' == 'Microsoft.NETCore.App'"
+          RuntimePackName="Microsoft.NETCore.App.Runtime.Mono.$(RuntimeIdentifier)"
+          RuntimePackVersion="$(_RuntimePackInWorkloadVersionCurrent)"
+          RuntimePackPath="$(NetCoreTargetingPackRoot)\Microsoft.NETCore.App.Runtime.Mono.$(RuntimeIdentifier)\$(_RuntimePackInWorkloadVersionCurrent)"
+          RuntimeIdentifier="$(RuntimeIdentifier)" />
+    </ItemGroup>
+  </Target>
+
+  <!-- Update the local targeting pack's version as it's written into the runtimeconfig.json file to select the right framework. -->
+  <Target Name="UpdateRuntimeFrameworkVersion"
+          AfterTargets="ResolveTargetingPackAssets">
+    <ItemGroup>
+      <RuntimeFramework Version="$(_RuntimePackInWorkloadVersionCurrent)"
+                        Condition="'%(RuntimeFramework.FrameworkName)' == 'Microsoft.NETCore.App'" />
+    </ItemGroup>
+  </Target>
+
+  <!-- Filter out conflicting implicit assembly references. -->
+  <Target Name="FilterImplicitAssemblyReferences"
+          DependsOnTargets="ResolveProjectReferences"
+          AfterTargets="ResolveTargetingPackAssets">
+    <ItemGroup>
+      <_targetingPackReferenceExclusion Include="$(TargetName)" />
+      <_targetingPackReferenceExclusion Include="@(_ResolvedProjectReferencePaths->'%(Filename)')" />
+      <_targetingPackReferenceExclusion Include="@(DefaultReferenceExclusion)" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <_targetingPackReferenceWithExclusion Include="@(Reference)">
+        <Exclusion>%(_targetingPackReferenceExclusion.Identity)</Exclusion>
+      </_targetingPackReferenceWithExclusion>
+      <Reference Remove="@(_targetingPackReferenceWithExclusion)"
+                 Condition="'%(_targetingPackReferenceWithExclusion.ExternallyResolved)' == 'true' and '%(_targetingPackReferenceWithExclusion.Filename)' == '%(_targetingPackReferenceWithExclusion.Exclusion)'" />
+    </ItemGroup>
+  </Target>
+
+  <ItemGroup>
+    <KnownWebAssemblySdkPack Update="Microsoft.NET.Sdk.WebAssembly.Pack"
+      WebAssemblySdkPackVersion="$(_RuntimePackInWorkloadVersionCurrent)" />
+  </ItemGroup>
+</Project>

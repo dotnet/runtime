@@ -66,7 +66,7 @@ namespace System.Reflection.Emit.Tests
                 return; // All others should fail with this exception
             }
 
-            Assert.True(false, "Type creation should have failed.");
+            Assert.Fail("Type creation should have failed.");
         }
 
         [Fact]

@@ -8,7 +8,7 @@
 // This module contains helper functions used to encode and manipulate
 // signatures for scenarios where runtime-specific signatures
 // including specific generic instantiations are persisted,
-// like Ready-To-Run decoding, IBC, and Multi-core JIT recording/playback
+// like Ready-To-Run decoding, and Multi-core JIT recording/playback
 //
 // ---------------------------------------------------------------------------
 

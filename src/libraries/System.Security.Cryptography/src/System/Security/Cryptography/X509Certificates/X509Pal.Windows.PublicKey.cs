@@ -6,11 +6,9 @@ using System.IO;
 using System.Runtime.InteropServices;
 using Internal.Cryptography;
 using Microsoft.Win32.SafeHandles;
-
+using static Interop.Crypt32;
 using NTSTATUS = Interop.BCrypt.NTSTATUS;
 using SafeBCryptKeyHandle = Microsoft.Win32.SafeHandles.SafeBCryptKeyHandle;
-
-using static Interop.Crypt32;
 
 namespace System.Security.Cryptography.X509Certificates
 {

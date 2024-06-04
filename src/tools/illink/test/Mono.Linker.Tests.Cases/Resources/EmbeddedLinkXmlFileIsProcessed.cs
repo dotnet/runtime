@@ -6,7 +6,6 @@ namespace Mono.Linker.Tests.Cases.Resources
 	[IgnoreDescriptors (false)]
 
 	[SetupCompileResource ("Dependencies/EmbeddedLinkXmlFileIsProcessed.xml", "ILLink.Descriptors.xml")]
-	[SkipPeVerify]
 	public class EmbeddedLinkXmlFileIsProcessed
 	{
 		public static void Main ()

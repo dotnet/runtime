@@ -344,18 +344,15 @@ namespace System.Net.Primitives.Unit.Tests
                 }
             }; // Empty header followed by another empty header at the end
 
-            if (!PlatformDetection.IsNetFramework)
+            yield return new object[]
             {
-                yield return new object[]
+                uSecure,
+                "hello world=value",
+                new Cookie[]
                 {
-                    uSecure,
-                    "hello world=value",
-                    new Cookie[]
-                    {
-                        new Cookie("hello world", "value"),
-                    }
-                }; // Name with space in it
-            }
+                    new Cookie("hello world", "value"),
+                }
+            }; // Name with space in it
         }
 
         [Theory]

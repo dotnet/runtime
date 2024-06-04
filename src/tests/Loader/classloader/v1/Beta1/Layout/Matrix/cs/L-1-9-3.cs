@@ -15,40 +15,43 @@
 //THIS NEEDS MORE COVERAGE
 
 using System;
+using Xunit;
 
-class Test{
-public static int Main(){
-  int mi_RetCode;
-  B b = new B();
-  mi_RetCode = b.Test();
-
-  if(mi_RetCode == 100)
-    Console.WriteLine("Pass");
-  else
-    Console.WriteLine("FAIL");
-
-  return mi_RetCode;
-}
-}
-
-class B : A{
-public int MethPubInst(){
-  Console.WriteLine("B::MethPubInst()");
-  return 100;
+public class Test
+{
+    [Fact]
+    public static int TestEntryPoint()
+    {
+        int mi_RetCode;
+        B b = new B();
+        mi_RetCode = b.Test();
+        
+        if(mi_RetCode == 100)
+            Console.WriteLine("Pass");
+        else
+            Console.WriteLine("FAIL");
+        
+        return mi_RetCode;
+    }
 }
 
-public int Test(){
-  int mi_RetCode = 100;
+class B : A
+{
+    public int MethPubInst()
+    {
+        Console.WriteLine("B::MethPubInst()");
+        return 100;
+    }
 
-  /////////////////////////////////
-  // Test instance method access  
-  if(MethPubInst() != 100)
-    mi_RetCode = 0;
-
-  return mi_RetCode;
+    public int Test()
+    {
+        int mi_RetCode = 100;
+        
+        /////////////////////////////////
+        // Test instance method access  
+        if(MethPubInst() != 100)
+            mi_RetCode = 0;
+        
+        return mi_RetCode;
+    }
 }
-}
-
-
-
-

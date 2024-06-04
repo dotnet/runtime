@@ -16,7 +16,6 @@
 #include <mono/utils/mono-dl.h>
 #include <mono/utils/mono-error-internals.h>
 #include <mono/utils/mono-dl-windows-internals.h>
-#include <mono/utils/mono-embed.h>
 #include <mono/utils/mono-path.h>
 
 #include <stdlib.h>
@@ -228,12 +227,6 @@ mono_dl_current_error_string (void)
 	return g_strdup_printf ("GetLastError=%d. FormatMessage not supported.", GetLastError ());
 }
 #endif /* HAVE_API_SUPPORT_WIN32_FORMAT_MESSAGE */
-
-const char*
-mono_dl_get_system_dir (void)
-{
-	return NULL;
-}
 
 #else
 

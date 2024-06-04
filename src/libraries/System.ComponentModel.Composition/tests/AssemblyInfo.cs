@@ -3,4 +3,4 @@
 
 using Xunit;
 
-[assembly: ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)] // flaky tests
+[assembly: ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)] // flaky tests. Note: remove IgnoreForCI from .csproj when reenabling

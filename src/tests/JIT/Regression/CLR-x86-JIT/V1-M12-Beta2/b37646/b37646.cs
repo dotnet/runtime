@@ -15,6 +15,9 @@ namespace Test
             object param4, ref float[] param5, ref object[] param6) { return null; }
 
         [Fact]
-        public static int TestEntryPoint() { Static2(__arglist()); return 100; }
+        public static void TestEntryPoint()
+        {
+            Static2(__arglist());
+        }
     }
 }

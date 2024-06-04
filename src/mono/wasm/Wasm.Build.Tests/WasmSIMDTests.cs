@@ -24,7 +24,6 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [MemberData(nameof(MainMethodSimdTestData), parameters: new object[] { /*aot*/ false, RunHost.All, true /* simd */ })]
-        [MemberData(nameof(MainMethodSimdTestData), parameters: new object[] { /*aot*/ false, RunHost.All, false /* simd */ })]
         public void Build_NoAOT_ShouldNotRelink(BuildArgs buildArgs, RunHost host, string id)
         {
             string projectName = $"build_with_workload_no_aot";
@@ -97,42 +96,6 @@ namespace Wasm.Build.Tests
                                     Assert.Contains("<-2094756296, -2094756296, -2094756296, -2094756296>", output);
                                     Assert.Contains("Hello, World!", output);
                                 }, host: host, id: id);
-        }
-
-        [Theory, TestCategory("no-workload")]
-        [InlineData("Debug", /*aot*/true, /*publish*/true)]
-        [InlineData("Debug", /*aot*/false, /*publish*/false)]
-        [InlineData("Debug", /*aot*/false, /*publish*/true)]
-        [InlineData("Release", /*aot*/true, /*publish*/true)]
-        [InlineData("Release", /*aot*/false, /*publish*/false)]
-        [InlineData("Release", /*aot*/false, /*publish*/true)]
-        public void BuildWithSIMDNeedsWorkload(string config, bool aot, bool publish)
-        {
-            string id = Path.GetRandomFileName();
-            string projectName = $"simd_no_workload_{config}_aot_{aot}";
-            BuildArgs buildArgs = new
-            (
-                ProjectName: projectName,
-                Config: config,
-                AOT: aot,
-                ProjectFileContents: "placeholder",
-                ExtraBuildArgs: string.Empty
-            );
-
-            string extraProperties = """
-            <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
-            <WasmEnableSIMD>true</WasmEnableSIMD>
-            """;
-            buildArgs = ExpandBuildArgs(buildArgs, extraProperties);
-
-            (_, string output) = BuildProject(buildArgs,
-                                    id: id,
-                                    new BuildProjectOptions(
-                                        InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_simdProgramText),
-                                        Publish: publish,
-                                        ExpectSuccess: false,
-                                        UseCache: false));
-            Assert.Contains("following workloads must be installed: wasm-tools", output);
         }
 
         private static string s_simdProgramText = @"

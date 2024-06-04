@@ -1,5 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <Import Project="$(MonoProjectRoot)wasm\build\WasmApp.InTree.props" />
+  <Import Project="$(BrowserProjectRoot)build\WasmApp.InTree.props" />
 
   <PropertyGroup>
     <Configuration>Release</Configuration>
@@ -51,9 +51,9 @@
 
   <!-- Set RoslynILDiffFullPath property to the path of roslynildiff -->
   <Import Project="..\DeltaHelper.targets" />
-  <Import Project="$(MonoProjectRoot)wasm\build\WasmApp.InTree.targets" />
+  <Import Project="$(BrowserProjectRoot)build\WasmApp.InTree.targets" />
 
   <Target Name="RunSample" DependsOnTargets="Build">
-    <Exec Command="$(_Dotnet) serve -o -d:bin/$(Configuration)/AppBundle -p:8000 --mime .mjs=text/javascript" IgnoreExitCode="true" YieldDuringToolExecution="true" />
+    <Exec Command="$(_Dotnet) serve -S -o -d:bin/$(Configuration)/AppBundle -p:8000 --mime .mjs=text/javascript" IgnoreExitCode="true" YieldDuringToolExecution="true" />
   </Target>
 </Project>

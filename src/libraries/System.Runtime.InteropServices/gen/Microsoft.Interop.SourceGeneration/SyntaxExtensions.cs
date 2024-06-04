@@ -98,12 +98,23 @@ namespace Microsoft.Interop
         public static SyntaxTokenList AddToModifiers(this SyntaxTokenList modifiers, SyntaxKind modifierToAdd)
         {
             if (modifiers.IndexOf(modifierToAdd) >= 0)
+            {
                 return modifiers;
+            }
 
-            int idx = modifiers.IndexOf(SyntaxKind.PartialKeyword);
-            return idx >= 0
-                ? modifiers.Insert(idx, SyntaxFactory.Token(modifierToAdd))
-                : modifiers.Add(SyntaxFactory.Token(modifierToAdd));
+            // https://github.com/dotnet/csharplang/blob/main/meetings/2018/LDM-2018-04-04.md#ordering-of-ref-and-partial-keywords
+            int idxPartial = modifiers.IndexOf(SyntaxKind.PartialKeyword);
+            int idxRef = modifiers.IndexOf(SyntaxKind.RefKeyword);
+
+            int idxInsert = (idxPartial, idxRef) switch
+            {
+                (-1, -1) => modifiers.Count,
+                (-1, _) => idxRef,
+                (_, -1) => idxPartial,
+                (_, _) => Math.Min(idxPartial, idxRef)
+            };
+
+            return modifiers.Insert(idxInsert, SyntaxFactory.Token(modifierToAdd));
         }
 
         public static bool IsInPartialContext(this TypeDeclarationSyntax syntax, [NotNullWhen(false)] out SyntaxToken? nonPartialIdentifier)

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Net.Quic;
 
 namespace System.Net.Http
 {
@@ -14,7 +15,7 @@ namespace System.Net.Http
     /// When calling <see cref="Stream"/> methods on the stream returned by <see cref="HttpContent.ReadAsStream()"/> or
     /// <see cref="HttpContent.ReadAsStreamAsync(Threading.CancellationToken)"/>, <see cref="HttpProtocolException"/> can be thrown directly.
     /// </remarks>
-    public sealed class HttpProtocolException : IOException
+    public sealed class HttpProtocolException : HttpIOException
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="HttpProtocolException"/> class with the specified error code,
@@ -24,7 +25,7 @@ namespace System.Net.Http
         /// <param name="message">The error message that explains the reason for the exception.</param>
         /// <param name="innerException">The exception that is the cause of the current exception.</param>
         public HttpProtocolException(long errorCode, string message, Exception? innerException)
-            : base(message, innerException)
+            : base(Http.HttpRequestError.HttpProtocolError, message, innerException)
         {
             ErrorCode = errorCode;
         }
@@ -47,10 +48,10 @@ namespace System.Net.Http
             return new HttpProtocolException((long)protocolError, message, null);
         }
 
-        internal static HttpProtocolException CreateHttp3StreamException(Http3ErrorCode protocolError)
+        internal static HttpProtocolException CreateHttp3StreamException(Http3ErrorCode protocolError, QuicException innerException)
         {
             string message = SR.Format(SR.net_http_http3_stream_error, GetName(protocolError), ((int)protocolError).ToString("x"));
-            return new HttpProtocolException((long)protocolError, message, null);
+            return new HttpProtocolException((long)protocolError, message, innerException);
         }
 
         internal static HttpProtocolException CreateHttp3ConnectionException(Http3ErrorCode protocolError, string? message = null)

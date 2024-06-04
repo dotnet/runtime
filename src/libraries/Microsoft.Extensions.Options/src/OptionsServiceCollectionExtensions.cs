@@ -32,6 +32,47 @@ namespace Microsoft.Extensions.DependencyInjection
         }
 
         /// <summary>
+        /// Adds services required for using options and enforces options validation check on start rather than in runtime.
+        /// </summary>
+        /// <remarks>
+        /// The <seealso cref="OptionsBuilderExtensions.ValidateOnStart{TOptions}(OptionsBuilder{TOptions})"/> extension is called by this method.
+        /// </remarks>
+        /// <typeparam name="TOptions">The options type to be configured.</typeparam>
+        /// <param name="services">The <see cref="IServiceCollection"/> to add the services to.</param>
+        /// <param name="name">The name of the options instance.</param>
+        /// <returns>The <see cref="OptionsBuilder{TOptions}"/> so that configure calls can be chained in it.</returns>
+        public static OptionsBuilder<TOptions> AddOptionsWithValidateOnStart<
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] TOptions>(
+            this IServiceCollection services,
+            string? name = null)
+            where TOptions : class
+        {
+            return new OptionsBuilder<TOptions>(services, name ?? Options.Options.DefaultName).ValidateOnStart();
+        }
+
+        /// <summary>
+        /// Adds services required for using options and enforces options validation check on start rather than in runtime.
+        /// </summary>
+        /// <remarks>
+        /// The <seealso cref="OptionsBuilderExtensions.ValidateOnStart{TOptions}(OptionsBuilder{TOptions})"/> extension is called by this method.
+        /// </remarks>
+        /// <typeparam name="TOptions">The options type to be configured.</typeparam>
+        /// <typeparam name="TValidateOptions">The <see cref="IValidateOptions{TOptions}"/> validator type.</typeparam>
+        /// <param name="services">The <see cref="IServiceCollection"/> to add the services to.</param>
+        /// <param name="name">The name of the options instance.</param>
+        /// <returns>The <see cref="OptionsBuilder{TOptions}"/> so that configure calls can be chained in it.</returns>
+        public static OptionsBuilder<TOptions> AddOptionsWithValidateOnStart<
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] TOptions,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TValidateOptions>(
+            this IServiceCollection services,
+            string? name = null)
+            where TOptions : class
+            where TValidateOptions : class, IValidateOptions<TOptions>
+        {
+            services.AddOptions().TryAddEnumerable(ServiceDescriptor.Singleton<IValidateOptions<TOptions>, TValidateOptions>());
+            return new OptionsBuilder<TOptions>(services, name ?? Options.Options.DefaultName).ValidateOnStart();
+        }
+        /// <summary>
         /// Registers an action used to configure a particular type of options.
         /// Note: These are run before all <seealso cref="PostConfigure{TOptions}(IServiceCollection, Action{TOptions})"/>.
         /// </summary>
@@ -146,7 +187,7 @@ namespace Microsoft.Extensions.DependencyInjection
             // Extracted the suppression to a local function as trimmer currently doesn't handle suppressions
             // on iterator methods correctly.
             [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
-                Justification="This method only looks for interfaces referenced in its code. " +
+                Justification = "This method only looks for interfaces referenced in its code. " +
                     "The trimmer will keep the interface and thus all of its implementations in that case. " +
                     "The call to GetInterfaces may return less results in trimmed apps, but it will " +
                     "include the interfaces this method looks for if they should be there.")]

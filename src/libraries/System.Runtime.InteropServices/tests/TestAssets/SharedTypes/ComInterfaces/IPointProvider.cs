@@ -15,6 +15,14 @@ namespace SharedTypes.ComInterfaces
         [PreserveSig]
         Point GetPoint();
 
-        void SetPoint(Point point);
+        [PreserveSig]
+        [return:MarshalAs(UnmanagedType.Error)]
+        HResult SetPoint(Point point);
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct HResult
+    {
+        public int Value;
     }
 }

@@ -5,7 +5,7 @@
 
 \begin{document}
 
-\begin{Name}{3}{libunwind-dynamic}{David Mosberger-Tang}{Programming Library}{Introduction to dynamic unwind-info}libunwind-dynamic -- libunwind-support for runtime-generated code
+\begin{Name}{3libunwind}{libunwind-dynamic}{David Mosberger-Tang}{Programming Library}{Introduction to dynamic unwind-info}libunwind-dynamic -- libunwind-support for runtime-generated code
 \end{Name}
 
 \section{Introduction}
@@ -124,7 +124,7 @@ structure as the sole argument.  The members of the
 \subsection{Proc-info format}
 
 This is the preferred dynamic unwind-info format and it is generally
-the one used by full-blown runtime code-generators.  In this format,
+the one used by full-blown runtime code generators.  In this format,
 the details of a procedure are described by a structure of type
 \Type{unw\_dyn\_proc\_info\_t}.  This structure contains the following
 members:
@@ -133,12 +133,12 @@ members:
 \item[\Type{unw\_word\_t} \Var{name\_ptr}] The address of a
   (human-readable) name of the procedure or 0 if no such name is
   available.  If non-zero, the string stored at this address must be
-  ASCII NUL terminated.  For source languages that use name-mangling
+  ASCII NUL terminated.  For source languages that use name mangling
   (such as C++ or Java) the string stored at this address should be
   the \emph{demangled} version of the name.
 
 \item[\Type{unw\_word\_t} \Var{handler}] The address of the
-  personality-routine for this procedure.  Personality-routines are
+  personality routine for this procedure.  Personality routines are
   used in conjunction with exception handling.  See the C++ ABI draft
   (http://www.codesourcery.com/cxx-abi/) for an overview and a
   description of the personality routine.  If the procedure has no
@@ -149,7 +149,7 @@ members:
   set to 0.
 
 \item[\Type{unw\_dyn\_region\_info\_t~*}\Var{regions}] A NULL-terminated
-  linked list of region-descriptors.  See section ``Region
+  linked list of region descriptors.  See section ``Region
   descriptors'' below for more details.
 
 \end{description}
@@ -183,7 +183,7 @@ This structure contains the following members:
   (\Type{unw\_word\_t}).
 
 \item[\Type{unw\_word\_t} \Var{table\_data}] A pointer to the actual
-  data encoding the unwind-info.  The exact format is
+  data encoding the unwind info.  The exact format is
   architecture-specific (see architecture-specific sections below).
 
 \end{description}
@@ -199,13 +199,13 @@ This implies that \Prog{libunwind} will have to access the table-data
 via the address-space's \Func{access\_mem}() call-back, rather than
 through a direct memory reference.
 
-From the point of view of a runtime-code generator, the remote
+From the point of view of a runtime code generator, the remote
 table-info format offers no advantage and it is expected that such
 generators will describe their procedures either with the proc-info
 format or the normal table-info format.  The main reason that the
 remote table-info format exists is to enable the
 address-space-specific \Func{find\_proc\_info}() callback (see
-\SeeAlso{unw\_create\_addr\_space}(3)) to return unwind tables whose
+\SeeAlso{unw\_create\_addr\_space}(3libunwind)) to return unwind tables whose
 data remains in remote memory.  This can speed up unwinding (e.g., for
 a debugger) because it reduces the amount of data that needs to be
 loaded from remote memory.
@@ -386,9 +386,9 @@ unw\_dyn\_op\_t
 
 \section{See Also}
 
-\SeeAlso{libunwind(3)},
-\SeeAlso{\_U\_dyn\_register(3)},
-\SeeAlso{\_U\_dyn\_cancel(3)}
+\SeeAlso{libunwind}(3libunwind),
+\SeeAlso{\_U\_dyn\_register}(3libunwind),
+\SeeAlso{\_U\_dyn\_cancel}(3libunwind)
 
 \section{Author}
 

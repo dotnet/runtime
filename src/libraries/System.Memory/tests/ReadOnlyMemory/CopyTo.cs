@@ -41,7 +41,7 @@ namespace System.MemoryTests
             ReadOnlyMemory<int> srcMemory = src;
             bool success = srcMemory.TryCopyTo(segment);
             Assert.True(success);
-            Assert.Equal<int>(src, segment);
+            Assert.Equal<int>(src.AsSpan(), segment);
         }
 
         [Fact]

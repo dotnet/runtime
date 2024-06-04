@@ -8,14 +8,16 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using Xunit;
 
 namespace MemoryMarshalGetArrayDataReferenceTest
 {
-    class Program
+    public class Program
     {
         private static int _errors = 0;
 
-        unsafe static int Main(string[] args)
+        [Fact]
+        public unsafe static int TestEntryPoint()
         {
             // use no inline methods to avoid indirect call inlining in the future
             [MethodImpl(MethodImplOptions.NoInlining)]
@@ -113,6 +115,101 @@ namespace MemoryMarshalGetArrayDataReferenceTest
 
             ThrowsNRE(() => ref ptrByte(NoInline<byte[]>(null)));
             ThrowsNRE(() => ref ptrString(NoInline<string[]>(null)));
+
+            // use no inline methods to avoid indirect call inlining in the future
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static delegate*<Array, ref byte> GetMdPtr() => &MemoryMarshal.GetArrayDataReference;
+            delegate*<Array, ref byte> ptrMd = GetMdPtr();
+
+            IsTrue(Unsafe.AreSame(ref MemoryMarshal.GetArrayDataReference((Array)testByteArray), ref testByteArray[0]));
+            IsTrue(Unsafe.AreSame(ref ptrMd(testByteArray), ref testByteArray[0]));
+
+            IsTrue(Unsafe.AreSame(ref MemoryMarshal.GetArrayDataReference((Array)NoInline(testByteArray)), ref testByteArray[0]));
+            IsTrue(Unsafe.AreSame(ref MemoryMarshal.GetArrayDataReference(NoInline<Array>(testByteArray)), ref testByteArray[0]));
+            IsTrue(Unsafe.AreSame(ref ptrMd(NoInline(testByteArray)), ref testByteArray[0]));
+
+            IsTrue(Unsafe.AreSame(ref Unsafe.As<byte, string>(ref MemoryMarshal.GetArrayDataReference((Array)testStringArray)), ref testStringArray[0]));
+            IsTrue(Unsafe.AreSame(ref Unsafe.As<byte, string>(ref ptrMd(testStringArray)), ref testStringArray[0]));
+
+            IsTrue(Unsafe.AreSame(ref Unsafe.As<byte, string>(ref MemoryMarshal.GetArrayDataReference((Array)NoInline(testStringArray))), ref testStringArray[0]));
+            IsTrue(Unsafe.AreSame(ref Unsafe.As<byte, string>(ref MemoryMarshal.GetArrayDataReference(NoInline<Array>(testStringArray))), ref testStringArray[0]));
+            IsTrue(Unsafe.AreSame(ref Unsafe.As<byte, string>(ref ptrMd(NoInline(testStringArray))), ref testStringArray[0]));
+
+            byte[,] testByteMdArray = new byte[1, 1];
+            IsTrue(Unsafe.AreSame(ref MemoryMarshal.GetArrayDataReference(testByteMdArray), ref testByteMdArray[0, 0]));
+            IsTrue(Unsafe.AreSame(ref ptrMd(testByteMdArray), ref testByteMdArray[0, 0]));
+
+            IsTrue(Unsafe.AreSame(ref MemoryMarshal.GetArrayDataReference(NoInline(testByteMdArray)), ref testByteMdArray[0, 0]));
+            IsTrue(Unsafe.AreSame(ref ptrMd(NoInline(testByteMdArray)), ref testByteMdArray[0, 0]));
+
+            string[,] testStringMdArray = new string[1, 1];
+            IsTrue(Unsafe.AreSame(ref Unsafe.As<byte, string>(ref MemoryMarshal.GetArrayDataReference(testStringMdArray)), ref testStringMdArray[0, 0]));
+            IsTrue(Unsafe.AreSame(ref Unsafe.As<byte, string>(ref ptrMd(testStringMdArray)), ref testStringMdArray[0, 0]));
+
+            IsTrue(Unsafe.AreSame(ref Unsafe.As<byte, string>(ref MemoryMarshal.GetArrayDataReference(NoInline(testStringMdArray))), ref testStringMdArray[0, 0]));
+            IsTrue(Unsafe.AreSame(ref Unsafe.As<byte, string>(ref ptrMd(NoInline(testStringMdArray))), ref testStringMdArray[0, 0]));
+
+            if (TestLibrary.PlatformDetection.IsNonZeroLowerBoundArraySupported)
+            {
+                Array nonZeroArray = Array.CreateInstance(typeof(string), new [] { 1 }, new [] { -1 });
+                string test = "test";
+                nonZeroArray.SetValue(test, -1);
+                IsTrue(ReferenceEquals(Unsafe.As<byte, string>(ref MemoryMarshal.GetArrayDataReference(nonZeroArray)), test));
+                IsTrue(ReferenceEquals(Unsafe.As<byte, string>(ref ptrMd(nonZeroArray)), test));
+
+                IsTrue(ReferenceEquals(Unsafe.As<byte, string>(ref MemoryMarshal.GetArrayDataReference(NoInline(nonZeroArray))), test));
+                IsTrue(ReferenceEquals(Unsafe.As<byte, string>(ref ptrMd(NoInline(nonZeroArray))), test));
+            }
+
+            IsFalse(Unsafe.IsNullRef(ref MemoryMarshal.GetArrayDataReference((Array)new byte[0])));
+            IsFalse(Unsafe.IsNullRef(ref MemoryMarshal.GetArrayDataReference((Array)new string[0])));
+            IsFalse(Unsafe.IsNullRef(ref MemoryMarshal.GetArrayDataReference(new byte[0, 0])));
+            IsFalse(Unsafe.IsNullRef(ref MemoryMarshal.GetArrayDataReference(new string[0, 0])));
+
+            IsFalse(Unsafe.IsNullRef(ref ptrMd(new byte[0])));
+            IsFalse(Unsafe.IsNullRef(ref ptrMd(new string[0])));
+            IsFalse(Unsafe.IsNullRef(ref ptrMd(new byte[0, 0])));
+            IsFalse(Unsafe.IsNullRef(ref ptrMd(new string[0, 0])));
+
+            IsFalse(Unsafe.IsNullRef(ref MemoryMarshal.GetArrayDataReference((Array)NoInline(new byte[0]))));
+            IsFalse(Unsafe.IsNullRef(ref MemoryMarshal.GetArrayDataReference((Array)NoInline(new string[0]))));
+            IsFalse(Unsafe.IsNullRef(ref MemoryMarshal.GetArrayDataReference(NoInline(new byte[0, 0]))));
+            IsFalse(Unsafe.IsNullRef(ref MemoryMarshal.GetArrayDataReference(NoInline(new string[0, 0]))));
+            IsFalse(Unsafe.IsNullRef(ref MemoryMarshal.GetArrayDataReference(NoInline<Array>(new byte[0]))));
+            IsFalse(Unsafe.IsNullRef(ref MemoryMarshal.GetArrayDataReference(NoInline<Array>(new string[0]))));
+            IsFalse(Unsafe.IsNullRef(ref MemoryMarshal.GetArrayDataReference(NoInline<Array>(new byte[0, 0]))));
+            IsFalse(Unsafe.IsNullRef(ref MemoryMarshal.GetArrayDataReference(NoInline<Array>(new string[0, 0]))));
+
+            IsFalse(Unsafe.IsNullRef(ref ptrMd(NoInline(new byte[0]))));
+            IsFalse(Unsafe.IsNullRef(ref ptrMd(NoInline(new string[0]))));
+            IsFalse(Unsafe.IsNullRef(ref ptrMd(NoInline(new byte[0, 0]))));
+            IsFalse(Unsafe.IsNullRef(ref ptrMd(NoInline(new string[0, 0]))));
+            IsFalse(Unsafe.IsNullRef(ref ptrMd(NoInline<Array>(new byte[0]))));
+            IsFalse(Unsafe.IsNullRef(ref ptrMd(NoInline<Array>(new string[0]))));
+            IsFalse(Unsafe.IsNullRef(ref ptrMd(NoInline<Array>(new byte[0, 0]))));
+            IsFalse(Unsafe.IsNullRef(ref ptrMd(NoInline<Array>(new string[0, 0]))));
+
+            ThrowsNRE(() => { _ = ref MemoryMarshal.GetArrayDataReference((Array)null); });
+            ThrowsNRE(() => { _ = ref ptrMd(null); });
+
+            ThrowsNRE(() => { _ = ref MemoryMarshal.GetArrayDataReference((Array)NoInline<byte[]>(null)); });
+            ThrowsNRE(() => { _ = ref MemoryMarshal.GetArrayDataReference((Array)NoInline<string[]>(null)); });
+            ThrowsNRE(() => { _ = ref MemoryMarshal.GetArrayDataReference(NoInline<Array>(null)); });
+
+            ThrowsNRE(() => { _ = ref ptrMd(NoInline<byte[]>(null)); });
+            ThrowsNRE(() => { _ = ref ptrMd(NoInline<string[]>(null)); });
+            ThrowsNRE(() => { _ = ref ptrMd(NoInline<Array>(null)); });
+
+            ThrowsNRE(() => ref MemoryMarshal.GetArrayDataReference((Array)null));
+            ThrowsNRE(() => ref ptrMd(null));
+
+            ThrowsNRE(() => ref MemoryMarshal.GetArrayDataReference((Array)NoInline<byte[]>(null)));
+            ThrowsNRE(() => ref MemoryMarshal.GetArrayDataReference((Array)NoInline<string[]>(null)));
+            ThrowsNRE(() => ref MemoryMarshal.GetArrayDataReference(NoInline<Array>(null)));
+
+            ThrowsNRE(() => ref ptrMd(NoInline<byte[]>(null)));
+            ThrowsNRE(() => ref ptrMd(NoInline<string[]>(null)));
+            ThrowsNRE(() => ref ptrMd(NoInline<Array>(null)));
 
             // from https://github.com/dotnet/runtime/issues/58312#issuecomment-993491291
             [MethodImpl(MethodImplOptions.NoInlining)]

@@ -25,7 +25,7 @@ bool MethodTable::Validate(bool assertOnFail /* default: true */)
         REPORT_FAILURE();
 
     // Verify object size is bigger than min_obj_size
-    size_t minObjSize = get_BaseSize();
+    size_t minObjSize = GetBaseSize();
     if (HasComponentSize())
     {
         // If it is an array, we will align the size to the nearest pointer alignment, even if there are
@@ -35,14 +35,14 @@ bool MethodTable::Validate(bool assertOnFail /* default: true */)
     if (minObjSize < (3 * sizeof(TADDR)))
         REPORT_FAILURE();
 
-    switch (get_Kind())
+    switch (GetKind())
     {
     case CanonicalEEType:
     {
         // If the parent type is NULL this had better look like Object.
         if (!IsInterface() && (m_RelatedType.m_pBaseType == NULL))
         {
-            if (get_IsValueType() ||
+            if (IsValueType() ||
                 HasFinalizer() ||
                 HasReferenceFields() ||
                 HasGenericVariance())
@@ -65,7 +65,7 @@ bool MethodTable::Validate(bool assertOnFail /* default: true */)
         if (GetComponentSize() == 0)
             REPORT_FAILURE();
 
-        if (get_IsValueType() ||
+        if (IsValueType() ||
             HasFinalizer() ||
             HasGenericVariance())
         {
@@ -93,13 +93,13 @@ bool MethodTable::Validate(bool assertOnFail /* default: true */)
 }
 
 //-----------------------------------------------------------------------------------------------------------
-MethodTable::Kinds MethodTable::get_Kind()
+MethodTable::Kinds MethodTable::GetKind()
 {
 	return (Kinds)(m_uFlags & (uint16_t)EETypeKindMask);
 }
 
 //-----------------------------------------------------------------------------------------------------------
-MethodTable * MethodTable::get_RelatedParameterType()
+MethodTable * MethodTable::GetRelatedParameterType()
 {
 	ASSERT(IsParameterizedType());
 

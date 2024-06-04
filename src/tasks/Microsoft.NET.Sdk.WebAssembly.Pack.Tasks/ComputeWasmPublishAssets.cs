@@ -3,12 +3,10 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
-using Microsoft.NET.Sdk.WebAssembly;
 
 namespace Microsoft.NET.Sdk.WebAssembly;
 
@@ -44,6 +42,12 @@ public class ComputeWasmPublishAssets : Task
 
     [Required]
     public bool InvariantGlobalization { get; set; }
+
+    [Required]
+    public bool HybridGlobalization { get; set; }
+
+    [Required]
+    public bool LoadFullICUData { get; set; }
 
     [Required]
     public bool CopySymbols { get; set; }
@@ -265,6 +269,7 @@ public class ComputeWasmPublishAssets : Task
 
                 ApplyPublishProperties(newDotNetWasm);
                 nativeStaticWebAssets.Add(newDotNetWasm);
+
                 if (resolvedNativeAssetToPublish.TryGetValue("dotnet.native.wasm", out var resolved))
                 {
                     filesToRemove.Add(resolved);
@@ -308,6 +313,7 @@ public class ComputeWasmPublishAssets : Task
     {
         var symbolStaticWebAssets = new List<ITaskItem>();
         var updateMap = new Dictionary<string, ITaskItem>();
+        var existingToRemove = new Dictionary<string, ITaskItem>();
 
         foreach (var kvp in symbolAssets)
         {
@@ -334,9 +340,14 @@ public class ComputeWasmPublishAssets : Task
                     resolvedPublishFilesToRemove.Remove(existing.ItemSpec);
                 }
             }
+            else
+            {
+                Log.LogMessage(MessageImportance.Low, "Marking '{0}' as removed for filtering compressed assets.", kvp.Key);
+                existingToRemove.Add(kvp.Key, kvp.Value);
+            }
         }
 
-        var compressedFiles = ProcessCompressedAssets(compressedRepresentations, symbolAssets, updateMap);
+        var compressedFiles = ProcessCompressedAssets(compressedRepresentations, symbolAssets, updateMap, existingToRemove);
 
         foreach (var file in compressedFiles)
         {
@@ -455,7 +466,8 @@ public class ComputeWasmPublishAssets : Task
     private List<ITaskItem> ProcessCompressedAssets(
         Dictionary<string, ITaskItem> compressedRepresentations,
         Dictionary<string, ITaskItem> assetsToUpdate,
-        Dictionary<string, ITaskItem> updatedAssets)
+        Dictionary<string, ITaskItem> updatedAssets,
+        Dictionary<string, ITaskItem> existingToRemove = null)
     {
         var processed = new List<string>();
         var runtimeAssetsToUpdate = new List<ITaskItem>();
@@ -465,7 +477,11 @@ public class ComputeWasmPublishAssets : Task
             var relatedAsset = compressedAsset.GetMetadata("RelatedAsset");
             if (assetsToUpdate.ContainsKey(relatedAsset))
             {
-                if (!updatedAssets.ContainsKey(relatedAsset))
+                if (existingToRemove?.ContainsKey(relatedAsset) == true)
+                {
+                    Log.LogMessage(MessageImportance.Low, "Removing compressed '{0}' because related '{1}' is not published.", compressedAsset.ItemSpec, relatedAsset);
+                }
+                else if (!updatedAssets.ContainsKey(relatedAsset))
                 {
                     Log.LogMessage(MessageImportance.Low, "Related assembly for '{0}' was not updated and the compressed asset can be reused.", relatedAsset);
                     var newCompressedAsset = new TaskItem(compressedAsset);
@@ -578,7 +594,7 @@ public class ComputeWasmPublishAssets : Task
         foreach (var candidate in resolvedFilesToPublish)
         {
 #pragma warning disable CA1864 // Prefer the 'IDictionary.TryAdd(TKey, TValue)' method. Dictionary.TryAdd() not available in .Net framework.
-            if (AssetsComputingHelper.ShouldFilterCandidate(candidate, TimeZoneSupport, InvariantGlobalization, CopySymbols, customIcuCandidateFilename, EnableThreads, EmitSourceMap, out var reason))
+            if (AssetsComputingHelper.ShouldFilterCandidate(candidate, TimeZoneSupport, InvariantGlobalization, HybridGlobalization, LoadFullICUData, CopySymbols, customIcuCandidateFilename, EnableThreads, EmitSourceMap, out var reason))
             {
                 Log.LogMessage(MessageImportance.Low, "Skipping asset '{0}' because '{1}'", candidate.ItemSpec, reason);
                 if (!resolvedFilesToPublishToRemove.ContainsKey(candidate.ItemSpec))
@@ -592,7 +608,14 @@ public class ComputeWasmPublishAssets : Task
                 continue;
             }
 
+            var fileName = candidate.GetMetadata("FileName");
             var extension = candidate.GetMetadata("Extension");
+            if (string.Equals(candidate.GetMetadata("AssetType"), "native", StringComparison.Ordinal) && (fileName == "dotnet" || fileName == "dotnet.native") && extension == ".wasm")
+            {
+                ResolveAsNativeAsset(Log, resolvedNativeAssetToPublish, candidate, extension);
+                continue;
+            }
+
             if (string.Equals(extension, ".dll", StringComparison.Ordinal) || string.Equals(extension, Utils.WebcilInWasmExtension, StringComparison.Ordinal))
             {
                 var culture = candidate.GetMetadata("Culture");
@@ -644,6 +667,12 @@ public class ComputeWasmPublishAssets : Task
             // upgraded
             if (string.Equals(candidate.GetMetadata("AssetType"), "native", StringComparison.Ordinal))
             {
+                ResolveAsNativeAsset(Log, resolvedNativeAssetToPublish, candidate, extension);
+                continue;
+            }
+
+            static void ResolveAsNativeAsset(TaskLoggingHelper log, Dictionary<string, ITaskItem> resolvedNativeAssetToPublish, ITaskItem candidate, string extension)
+            {
                 var candidateName = $"{candidate.GetMetadata("FileName")}{extension}";
                 if (!resolvedNativeAssetToPublish.ContainsKey(candidateName))
                 {
@@ -651,9 +680,8 @@ public class ComputeWasmPublishAssets : Task
                 }
                 else
                 {
-                    Log.LogMessage(MessageImportance.Low, "Duplicate candidate '{0}' found in ResolvedFilesToPublish", candidate.ItemSpec);
+                    log.LogMessage(MessageImportance.Low, "Duplicate candidate '{0}' found in ResolvedFilesToPublish", candidate.ItemSpec);
                 }
-                continue;
             }
 #pragma warning restore CA1864
         }

@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
+using System.Runtime.Intrinsics.Tests.Vectors;
 using Xunit;
 using Xunit.Sdk;
 
@@ -19,6 +20,32 @@ namespace System.Numerics.Tests
     [RequiresPreviewFeatures]
     public unsafe class GenericVectorTests
     {
+        /// <summary>Verifies that two <see cref="Vector{Single}" /> values are equal, within the <paramref name="variance" />.</summary>
+        /// <param name="expected">The expected value</param>
+        /// <param name="actual">The value to be compared against</param>
+        /// <param name="variance">The total variance allowed between the expected and actual results.</param>
+        /// <exception cref="EqualException">Thrown when the values are not equal</exception>
+        internal static void AssertEqual(Vector<float> expected, Vector<float> actual, Vector<float> variance)
+        {
+            for (int i = 0; i < Vector<float>.Count; i++)
+            {
+                AssertExtensions.Equal(expected.GetElement(i), actual.GetElement(i), variance.GetElement(i));
+            }
+        }
+
+        /// <summary>Verifies that two <see cref="Vector{Double}" /> values are equal, within the <paramref name="variance" />.</summary>
+        /// <param name="expected">The expected value</param>
+        /// <param name="actual">The value to be compared against</param>
+        /// <param name="variance">The total variance allowed between the expected and actual results.</param>
+        /// <exception cref="EqualException">Thrown when the values are not equal</exception>
+        internal static void AssertEqual(Vector<double> expected, Vector<double> actual, Vector<double> variance)
+        {
+            for (int i = 0; i < Vector<double>.Count; i++)
+            {
+                AssertExtensions.Equal(expected.GetElement(i), actual.GetElement(i), variance.GetElement(i));
+            }
+        }
+
         // Static constructor in top-level class\
         static System.Numerics.Vector<float> dummy;
         static GenericVectorTests()
@@ -3164,7 +3191,7 @@ namespace System.Numerics.Tests
             Vector<int> targetVec = Vector.ConvertToInt32(sourceVec);
             for (int i = 0; i < Vector<int>.Count; i++)
             {
-                Assert.Equal(unchecked((int)source[i]), targetVec[i]);
+                Assert.Equal(float.ConvertToInteger<int>(source[i]), targetVec[i]);
             }
         }
 
@@ -3176,7 +3203,7 @@ namespace System.Numerics.Tests
             Vector<uint> targetVec = Vector.ConvertToUInt32(sourceVec);
             for (int i = 0; i < Vector<uint>.Count; i++)
             {
-                Assert.Equal(unchecked((uint)source[i]), targetVec[i]);
+                Assert.Equal(float.ConvertToInteger<uint>(source[i]), targetVec[i]);
             }
         }
 
@@ -3188,7 +3215,7 @@ namespace System.Numerics.Tests
             Vector<long> targetVec = Vector.ConvertToInt64(sourceVec);
             for (int i = 0; i < Vector<long>.Count; i++)
             {
-                Assert.Equal(unchecked((long)source[i]), targetVec[i]);
+                Assert.Equal(double.ConvertToInteger<long>(source[i]), targetVec[i]);
             }
         }
 
@@ -3200,7 +3227,7 @@ namespace System.Numerics.Tests
             Vector<ulong> targetVec = Vector.ConvertToUInt64(sourceVec);
             for (int i = 0; i < Vector<ulong>.Count; i++)
             {
-                Assert.Equal(unchecked((ulong)source[i]), targetVec[i]);
+                Assert.Equal(double.ConvertToInteger<ulong>(source[i]), targetVec[i]);
             }
         }
 
@@ -4388,5 +4415,157 @@ namespace System.Numerics.Tests
             }
         }
         #endregion
+
+        [Fact]
+        public void GetIndicesByteTest() => TestGetIndices<byte>();
+
+        [Fact]
+        public void GetIndicesDoubleTest() => TestGetIndices<double>();
+
+        [Fact]
+        public void GetIndicesInt16Test() => TestGetIndices<short>();
+
+        [Fact]
+        public void GetIndicesInt32Test() => TestGetIndices<int>();
+
+        [Fact]
+        public void GetIndicesInt64Test() => TestGetIndices<long>();
+
+        [Fact]
+        public void GetIndicesNIntTest() => TestGetIndices<nint>();
+
+        [Fact]
+        public void GetIndicesNUIntTest() => TestGetIndices<nuint>();
+
+        [Fact]
+        public void GetIndicesSByteTest() => TestGetIndices<sbyte>();
+
+        [Fact]
+        public void GetIndicesSingleTest() => TestGetIndices<float>();
+
+        [Fact]
+        public void GetIndicesUInt16Test() => TestGetIndices<ushort>();
+
+        [Fact]
+        public void GetIndicesUInt32Test() => TestGetIndices<uint>();
+
+        [Fact]
+        public void GetIndicesUInt64Test() => TestGetIndices<ulong>();
+
+        private static void TestGetIndices<T>()
+            where T : INumber<T>
+        {
+            Vector<T> indices = Vector<T>.Indices;
+
+            for (int index = 0; index < Vector<T>.Count; index++)
+            {
+                Assert.Equal(T.CreateTruncating(index), indices.GetElement(index));
+            }
+        }
+
+        [Theory]
+        [InlineData(0, 2)]
+        [InlineData(3, 3)]
+        [InlineData(31, unchecked((byte)(-1)))]
+        public void CreateSequenceByteTest(byte start, byte step) => TestCreateSequence<byte>(start, step);
+
+        [Theory]
+        [InlineData(0.0, +2.0)]
+        [InlineData(3.0, +3.0)]
+        [InlineData(3.0, -1.0)]
+        public void CreateSequenceDoubleTest(double start, double step) => TestCreateSequence<double>(start, step);
+
+        [Theory]
+        [InlineData(0, +2)]
+        [InlineData(3, +3)]
+        [InlineData(15, -1)]
+        public void CreateSequenceInt16Test(short start, short step) => TestCreateSequence<short>(start, step);
+
+        [Theory]
+        [InlineData(0, +2)]
+        [InlineData(3, +3)]
+        [InlineData(7, -1)]
+        public void CreateSequenceInt32Test(int start, int step) => TestCreateSequence<int>(start, step);
+
+        [Theory]
+        [InlineData(0, +2)]
+        [InlineData(3, +3)]
+        [InlineData(15, -1)]
+        public void CreateSequenceInt64Test(long start, long step) => TestCreateSequence<long>(start, step);
+
+        [Theory]
+        [InlineData(0, +2)]
+        [InlineData(3, +3)]
+        [InlineData(31, -1)]
+        public void CreateSequenceSByteTest(sbyte start, sbyte step) => TestCreateSequence<sbyte>(start, step);
+
+        [Theory]
+        [InlineData(0.0f, +2.0f)]
+        [InlineData(3.0f, +3.0f)]
+        [InlineData(7.0f, -1.0f)]
+        public void CreateSequenceSingleTest(float start, float step) => TestCreateSequence<float>(start, step);
+
+        [Theory]
+        [InlineData(0, 2)]
+        [InlineData(3, 3)]
+        [InlineData(15, unchecked((ushort)(-1)))]
+        public void CreateSequenceUInt16Test(ushort start, ushort step) => TestCreateSequence<ushort>(start, step);
+
+        [Theory]
+        [InlineData(0, 2)]
+        [InlineData(3, 3)]
+        [InlineData(7, unchecked((uint)(-1)))]
+        public void CreateSequenceUInt32Test(uint start, uint step) => TestCreateSequence<uint>(start, step);
+
+        [Theory]
+        [InlineData(0, 2)]
+        [InlineData(3, 3)]
+        [InlineData(3, unchecked((ulong)(-1)))]
+        public void CreateSequenceUInt64Test(ulong start, ulong step) => TestCreateSequence<ulong>(start, step);
+
+        private static void TestCreateSequence<T>(T start, T step)
+            where T : INumber<T>
+        {
+            Vector<T> sequence = Vector.CreateSequence(start, step);
+            T expected = start;
+
+            for (int index = 0; index < Vector<T>.Count; index++)
+            {
+                Assert.Equal(expected, sequence.GetElement(index));
+                expected += step;
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(VectorTestMemberData.MultiplyAddDouble), MemberType = typeof(VectorTestMemberData))]
+        public void FusedMultiplyAddDoubleTest(double left, double right, double addend)
+        {
+            Vector<double> actualResult = Vector.FusedMultiplyAdd(new Vector<double>(left), new Vector<double>(right), new Vector<double>(addend));
+            AssertEqual(new Vector<double>(double.FusedMultiplyAdd(left, right, addend)), actualResult, Vector<double>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(VectorTestMemberData.MultiplyAddSingle), MemberType = typeof(VectorTestMemberData))]
+        public void FusedMultiplyAddSingleTest(float left, float right, float addend)
+        {
+            Vector<float> actualResult = Vector.FusedMultiplyAdd(new Vector<float>(left), new Vector<float>(right), new Vector<float>(addend));
+            AssertEqual(new Vector<float>(float.FusedMultiplyAdd(left, right, addend)), actualResult, Vector<float>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(VectorTestMemberData.MultiplyAddDouble), MemberType = typeof(VectorTestMemberData))]
+        public void MultiplyAddEstimateDoubleTest(double left, double right, double addend)
+        {
+            Vector<double> actualResult = Vector.MultiplyAddEstimate(new Vector<double>(left), new Vector<double>(right), new Vector<double>(addend));
+            AssertEqual(new Vector<double>(double.MultiplyAddEstimate(left, right, addend)), actualResult, Vector<double>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(VectorTestMemberData.MultiplyAddSingle), MemberType = typeof(VectorTestMemberData))]
+        public void MultiplyAddEstimateSingleTest(float left, float right, float addend)
+        {
+            Vector<float> actualResult = Vector.MultiplyAddEstimate(new Vector<float>(left), new Vector<float>(right), new Vector<float>(addend));
+            AssertEqual(new Vector<float>(float.MultiplyAddEstimate(left, right, addend)), actualResult, Vector<float>.Zero);
+        }
     }
 }

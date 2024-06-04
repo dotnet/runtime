@@ -39,7 +39,7 @@ namespace System.Diagnostics
             get => _entryType;
             set
             {
-                if (!Enum.IsDefined(typeof(EventLogEntryType), value))
+                if (!Enum.IsDefined(value))
                     throw new InvalidEnumArgumentException(nameof(EntryType), (int)value, typeof(EventLogEntryType));
 
                 _entryType = value;

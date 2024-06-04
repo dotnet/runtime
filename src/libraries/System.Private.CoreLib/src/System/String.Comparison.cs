@@ -533,6 +533,7 @@ namespace System
             return EndsWith(value, StringComparison.CurrentCulture);
         }
 
+        [Intrinsic] // Unrolled and vectorized for half-constant input (Ordinal)
         public bool EndsWith(string value, StringComparison comparisonType)
         {
             ArgumentNullException.ThrowIfNull(value);

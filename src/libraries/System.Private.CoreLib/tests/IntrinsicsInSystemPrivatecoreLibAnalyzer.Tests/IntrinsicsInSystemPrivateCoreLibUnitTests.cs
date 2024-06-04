@@ -5,7 +5,6 @@ using VerifyCS = IntrinsicsInSystemPrivateCoreLib.Test.CSharpAnalyzerVerifier<
 
 namespace IntrinsicsInSystemPrivateCoreLib.Test
 {
-    [SkipOnPlatform(TestPlatforms.Browser, "Do not try to run analyzer tests in the browser")]
     public class IntrinsicsInSystemPrivateCoreLibUnitTest
     {
         string BoilerPlate = @"

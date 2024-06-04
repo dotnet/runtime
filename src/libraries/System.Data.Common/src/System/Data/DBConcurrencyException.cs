@@ -21,12 +21,12 @@ namespace System.Data
         {
         }
 
-        public DBConcurrencyException(string? message, Exception? inner) : base(message, inner)
+        public DBConcurrencyException(string? message, Exception? inner) : base(message ?? SR.ADP_DBConcurrencyExceptionMessage, inner)
         {
             HResult = HResults.DBConcurrency;
         }
 
-        public DBConcurrencyException(string? message, Exception? inner, DataRow[]? dataRows) : base(message, inner)
+        public DBConcurrencyException(string? message, Exception? inner, DataRow[]? dataRows) : base(message ?? SR.ADP_DBConcurrencyExceptionMessage, inner)
         {
             HResult = HResults.DBConcurrency;
             _dataRows = dataRows;

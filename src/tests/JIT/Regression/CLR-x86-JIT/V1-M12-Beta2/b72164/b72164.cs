@@ -12,11 +12,10 @@ public unsafe class bug1
     }
 
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         double* a01 = stackalloc double[1];
         *a01 = 7;
         Func1(a01);
-        return 100;
     }
 }

@@ -21,13 +21,13 @@ namespace System.Threading
         }
 
         public SynchronizationLockException(string? message)
-            : base(message)
+            : base(message ?? SR.Arg_SynchronizationLockException)
         {
             HResult = HResults.COR_E_SYNCHRONIZATIONLOCK;
         }
 
         public SynchronizationLockException(string? message, Exception? innerException)
-            : base(message, innerException)
+            : base(message ?? SR.Arg_SynchronizationLockException, innerException)
         {
             HResult = HResults.COR_E_SYNCHRONIZATIONLOCK;
         }

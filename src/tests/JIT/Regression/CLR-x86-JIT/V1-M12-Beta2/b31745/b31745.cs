@@ -18,12 +18,11 @@ namespace Test
         { return Method1(m_auStatic1, ref param3[2], __arglist()); }
 
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             double[] ad = new double[16];
             float[] af = new float[16];
             Test(ref ad, ref af);
-            return 100;
         }
     }
 }

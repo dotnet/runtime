@@ -221,7 +221,7 @@ namespace System
                     ParseFailure.Format_GuidBrace => SR.Format_GuidBrace,
                     ParseFailure.Format_GuidComma => SR.Format_GuidComma,
                     ParseFailure.Format_GuidDashes => SR.Format_GuidDashes,
-                    ParseFailure.Format_GuidEndBrace=> SR.Format_GuidEndBrace,
+                    ParseFailure.Format_GuidEndBrace => SR.Format_GuidEndBrace,
                     ParseFailure.Format_GuidHexPrefix => SR.Format_GuidHexPrefix,
                     ParseFailure.Format_GuidInvalidChar => SR.Format_GuidInvalidChar,
                     ParseFailure.Format_GuidInvLen => SR.Format_GuidInvLen,
@@ -634,7 +634,7 @@ namespace System
             // Read in the number
             if (!TryParseHex(guidString.Slice(numStart, numLen), out result._b, ref overflow) || overflow)
             {
-                result.SetFailure(overflow ? ParseFailure.Overflow_UInt32: ParseFailure.Format_GuidInvalidChar);
+                result.SetFailure(overflow ? ParseFailure.Overflow_UInt32 : ParseFailure.Format_GuidInvalidChar);
                 return false;
             }
 
@@ -841,23 +841,19 @@ namespace System
             str[i] == '0' &&
             (str[i + 1] | 0x20) == 'x';
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe ReadOnlySpan<byte> AsBytes(in Guid source) =>
-            new ReadOnlySpan<byte>(Unsafe.AsPointer(ref Unsafe.AsRef(in source)), sizeof(Guid));
-
         // Returns an unsigned byte array containing the GUID.
         public byte[] ToByteArray()
         {
             var g = new byte[16];
             if (BitConverter.IsLittleEndian)
             {
-                MemoryMarshal.TryWrite(g, ref Unsafe.AsRef(in this));
+                MemoryMarshal.TryWrite(g, in this);
             }
             else
             {
                 // slower path for BigEndian
-                Guid guid = new Guid(AsBytes(this), false);
-                MemoryMarshal.TryWrite(g, ref Unsafe.AsRef(in guid));
+                Guid guid = new Guid(MemoryMarshal.AsBytes(new ReadOnlySpan<Guid>(in this)), false);
+                MemoryMarshal.TryWrite(g, in guid);
             }
             return g;
         }
@@ -869,13 +865,13 @@ namespace System
             var g = new byte[16];
             if (BitConverter.IsLittleEndian != bigEndian)
             {
-                MemoryMarshal.TryWrite(g, ref Unsafe.AsRef(in this));
+                MemoryMarshal.TryWrite(g, in this);
             }
             else
             {
                 // slower path for Reverse
-                Guid guid = new Guid(AsBytes(this), bigEndian);
-                MemoryMarshal.TryWrite(g, ref Unsafe.AsRef(in guid));
+                Guid guid = new Guid(MemoryMarshal.AsBytes(new ReadOnlySpan<Guid>(in this)), bigEndian);
+                MemoryMarshal.TryWrite(g, in guid);
             }
             return g;
         }
@@ -888,13 +884,13 @@ namespace System
 
             if (BitConverter.IsLittleEndian)
             {
-                MemoryMarshal.TryWrite(destination, ref Unsafe.AsRef(in this));
+                MemoryMarshal.TryWrite(destination, in this);
             }
             else
             {
                 // slower path for BigEndian
-                Guid guid = new Guid(AsBytes(this), false);
-                MemoryMarshal.TryWrite(destination, ref Unsafe.AsRef(in guid));
+                Guid guid = new Guid(MemoryMarshal.AsBytes(new ReadOnlySpan<Guid>(in this)), false);
+                MemoryMarshal.TryWrite(destination, in guid);
             }
             return true;
         }
@@ -910,13 +906,13 @@ namespace System
 
             if (BitConverter.IsLittleEndian != bigEndian)
             {
-                MemoryMarshal.TryWrite(destination, ref Unsafe.AsRef(in this));
+                MemoryMarshal.TryWrite(destination, in this);
             }
             else
             {
                 // slower path for Reverse
-                Guid guid = new Guid(AsBytes(this), bigEndian);
-                MemoryMarshal.TryWrite(destination, ref Unsafe.AsRef(in guid));
+                Guid guid = new Guid(MemoryMarshal.AsBytes(new ReadOnlySpan<Guid>(in this)), bigEndian);
+                MemoryMarshal.TryWrite(destination, in guid);
             }
             bytesWritten = 16;
             return true;
@@ -962,68 +958,11 @@ namespace System
             {
                 return 1;
             }
-            if (!(value is Guid))
+            if (value is not Guid other)
             {
                 throw new ArgumentException(SR.Arg_MustBeGuid, nameof(value));
             }
-            Guid g = (Guid)value;
-
-            if (g._a != _a)
-            {
-                return GetResult((uint)_a, (uint)g._a);
-            }
-
-            if (g._b != _b)
-            {
-                return GetResult((uint)_b, (uint)g._b);
-            }
-
-            if (g._c != _c)
-            {
-                return GetResult((uint)_c, (uint)g._c);
-            }
-
-            if (g._d != _d)
-            {
-                return GetResult(_d, g._d);
-            }
-
-            if (g._e != _e)
-            {
-                return GetResult(_e, g._e);
-            }
-
-            if (g._f != _f)
-            {
-                return GetResult(_f, g._f);
-            }
-
-            if (g._g != _g)
-            {
-                return GetResult(_g, g._g);
-            }
-
-            if (g._h != _h)
-            {
-                return GetResult(_h, g._h);
-            }
-
-            if (g._i != _i)
-            {
-                return GetResult(_i, g._i);
-            }
-
-            if (g._j != _j)
-            {
-                return GetResult(_j, g._j);
-            }
-
-            if (g._k != _k)
-            {
-                return GetResult(_k, g._k);
-            }
-
-            return 0;
+            return CompareTo(other);
         }
 
         public int CompareTo(Guid value)

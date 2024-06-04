@@ -12,6 +12,7 @@
 #include "mclist.h"
 #include "methodcontext.h"
 #include "logging.h"
+#include "spmiutil.h"
 
 // NOTE: this is parsed by parallelsuperpmi.cpp::ProcessChildStdOut() to determine if an incorrect
 // argument usage error has occurred.
@@ -21,8 +22,8 @@ void CommandLine::DumpHelp(const char* program)
 {
     printf("%s\n", g_SuperPMIUsageFirstLine);
     printf("\n");
-    printf("Usage: %s [options] jitname [jitname2] filename.mc\n", program);
-    printf(" jitname" PLATFORM_SHARED_LIB_SUFFIX_A " - path of jit to be tested\n");
+    printf("Usage: %s [options] [jitname] [jitname2] filename.mc\n", program);
+    printf(" jitname" PLATFORM_SHARED_LIB_SUFFIX_A " - optional path of jit to be tested (default is JIT in same directory as %s)\n", program);
     printf(" jitname2" PLATFORM_SHARED_LIB_SUFFIX_A " - optional path of second jit to be tested\n");
     printf(" filename.mc - load method contexts from filename.mc\n");
     printf(" -j[it] Name - optionally -jit can be used to specify jits\n");
@@ -84,11 +85,8 @@ void CommandLine::DumpHelp(const char* program)
     printf("         t - method throughput time\n");
     printf("         * - all available method stats\n");
     printf("\n");
-    printf(" -metricsSummary <file name>, -baseMetricsSummary <file name.csv>\n");
-    printf("     Emit a summary of metrics to the specified file\n");
-    printf("\n");
-    printf(" -diffMetricsSummary <file name>\n");
-    printf("     Same as above, but emit for the diff/second JIT");
+    printf(" -details <file name.csv>\n");
+    printf("     Emit detailed information about the replay/diff of each context into the specified file\n");
     printf("\n");
     printf(" -a[pplyDiff]\n");
     printf("     Compare the compile result generated from the provided JIT with the\n");
@@ -112,12 +110,21 @@ void CommandLine::DumpHelp(const char* program)
     printf("     If 'workerCount' is not specified, the number of workers used is\n");
     printf("     the number of processors on the machine.\n");
     printf("\n");
+    printf(" -streaming filename\n");
+    printf("     Streaming mode. Read and execute work requests from indicated file (can be 'stdin').\n");
+    printf("     Each line is a method context number and additional force jit options for that method.\n");
+    printf("     Blank line or EOF terminates\n");
+    printf("\n");
     printf(" -failureLimit <limit>\n");
     printf("     For a positive 'limit' number, replay and asm diffs will exit if it sees more than 'limit' failures.\n");
     printf("     Otherwise, all methods will be compiled.\n");
     printf("\n");
     printf(" -skipCleanup\n");
     printf("     Skip deletion of temporary files created by child SuperPMI processes with -parallel.\n");
+    printf("\n");
+    printf(" -repeatCount <repetition count>\n");
+    printf("     Number of times compilation should repeat for each method context. Usually used when\n");
+    printf("     trying to measure JIT throughput for a specific set of methods. Default=1.\n");
     printf("\n");
     printf(" -target <target>\n");
     printf("     Used by the assembly differences calculator. This specifies the target\n");
@@ -136,12 +143,14 @@ void CommandLine::DumpHelp(const char* program)
     printf(" -jitoption [force] key=value\n");
     printf("     Set the JIT option named \"key\" to \"value\" for JIT 1 if the option was not set.\n");
     printf("     With optional force flag overwrites the existing value if it was already set.\n");
-    printf("     NOTE: do not use a \"DOTNET_\" prefix, \"key\" and \"value\" are case sensitive!\n");
+    printf("     NOTE: do not use a \"DOTNET_\" prefix. \"key\" and \"value\" are case sensitive.\n");
+    printf("     \"key#value\" is also accepted.\n");
     printf("\n");
     printf(" -jit2option [force] key=value\n");
     printf("     Set the JIT option named \"key\" to \"value\" for JIT 2 if the option was not set.\n");
     printf("     With optional force flag overwrites the existing value if it was already set.\n");
-    printf("     NOTE: do not use a \"DOTNET_\" prefix, \"key\" and \"value\" are case sensitive!\n");
+    printf("     NOTE: do not use a \"DOTNET_\" prefix. \"key\" and \"value\" are case sensitive.\n");
+    printf("     \"key#value\" is also accepted.\n");
     printf("\n");
     printf("Inputs are case sensitive.\n");
     printf("\n");
@@ -166,12 +175,12 @@ void CommandLine::DumpHelp(const char* program)
     printf("     ; if there are any failures, record their MC numbers in the file fail.mcl\n");
 }
 
-static bool ParseJitOption(const char* optionString, WCHAR** key, WCHAR** value)
+bool CommandLine::ParseJitOption(const char* optionString, WCHAR** key, WCHAR** value)
 {
     char tempKey[1024];
 
     unsigned i;
-    for (i = 0; optionString[i] != '='; i++)
+    for (i = 0; (optionString[i] != '=') && (optionString[i] != '#'); i++)
     {
         if ((i >= 1023) || (optionString[i] == '\0'))
         {
@@ -289,6 +298,13 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
                 }
                 else
                 {
+                    if (o->nameOfJit2 != nullptr)
+                    {
+                        LogError("Too many JITs specified.");
+                        DumpHelp(argv[0]);
+                        return false;
+                    }
+
                     o->nameOfJit2 = tempStr;
                 }
             }
@@ -320,16 +336,6 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
                 }
 
                 o->mclFilename = argv[i];
-            }
-            else if ((_strnicmp(&argv[i][1], "diffsInfo", 9) == 0))
-            {
-                if (++i >= argc)
-                {
-                    DumpHelp(argv[0]);
-                    return false;
-                }
-
-                o->diffsInfo = argv[i];
             }
             else if ((_strnicmp(&argv[i][1], "target", 6) == 0))
             {
@@ -389,7 +395,7 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
 
                 o->methodStatsTypes = argv[i];
             }
-            else if ((_strnicmp(&argv[i][1], "metricsSummary", argLen) == 0) || (_strnicmp(&argv[i][1], "baseMetricsSummary", argLen) == 0))
+            else if ((_strnicmp(&argv[i][1], "details", argLen) == 0))
             {
                 if (++i >= argc)
                 {
@@ -397,17 +403,7 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
                     return false;
                 }
 
-                o->baseMetricsSummaryFile = argv[i];
-            }
-            else if ((_strnicmp(&argv[i][1], "diffMetricsSummary", argLen) == 0))
-            {
-                if (++i >= argc)
-                {
-                    DumpHelp(argv[0]);
-                    return false;
-                }
-
-                o->diffMetricsSummaryFile = argv[i];
+                o->details = argv[i];
             }
             else if ((_strnicmp(&argv[i][1], "applyDiff", argLen) == 0))
             {
@@ -477,6 +473,17 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
                 }
                 o->hash = argv[i];
             }
+            else if ((_strnicmp(&argv[i][1], "streaming", argLen) == 0))
+            {
+                if (++i >= argc)
+                {
+                    LogError("'-streaming' must be followed by a file name or 'stdin'.");
+                    DumpHelp(argv[0]);
+                    return false;
+                }
+
+                o->streamFile = argv[i];
+            }
             else if ((_strnicmp(&argv[i][1], "parallel", argLen) == 0))
             {
                 o->parallel = true;
@@ -538,6 +545,40 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
             else if ((_stricmp(&argv[i][1], "skipCleanup") == 0))
             {
                 o->skipCleanup = true;
+            }
+            else if ((_stricmp(&argv[i][1], "repeatCount") == 0))
+            {
+                if (++i >= argc)
+                {
+                    DumpHelp(argv[0]);
+                    return false;
+                }
+
+                bool isValidRepeatCount = true;
+                size_t nextlen          = strlen(argv[i]);
+                for (size_t j = 0; j < nextlen; j++)
+                {
+                    if (!isdigit(argv[i][j]))
+                    {
+                        isValidRepeatCount = false;
+                        break;
+                    }
+                }
+                if (isValidRepeatCount)
+                {
+                    o->repeatCount = atoi(argv[i]);
+                    if (o->repeatCount < 1)
+                    {
+                        isValidRepeatCount = false;
+                    }
+                }
+
+                if (!isValidRepeatCount)
+                {
+                    LogError("Invalid repeat count specified. Repeat count must be between 1 and INT_MAX.");
+                    DumpHelp(argv[0]);
+                    return false;
+                }
             }
             else if ((_strnicmp(&argv[i][1], "stride", argLen) == 0))
             {
@@ -637,24 +678,6 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
 
     // Do some argument validation.
 
-    if (o->nameOfJit == nullptr)
-    {
-        LogError("Missing name of a Jit.");
-        DumpHelp(argv[0]);
-        return false;
-    }
-    if (o->nameOfInputMethodContextFile == nullptr)
-    {
-        LogError("Missing name of an input file.");
-        DumpHelp(argv[0]);
-        return false;
-    }
-    if (o->diffsInfo != nullptr && !o->applyDiff)
-    {
-        LogError("-diffsInfo specified without -applyDiff.");
-        DumpHelp(argv[0]);
-        return false;
-    }
     if (o->targetArchitecture != nullptr)
     {
         if ((0 != _stricmp(o->targetArchitecture, "amd64")) &&
@@ -669,12 +692,178 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
             return false;
         }
     }
+
+    if (o->streamFile != nullptr)
+    {
+        if (o->parallel)
+        {
+            LogError("streaming mode and parallel mode are incompatible.");
+            return false;
+        }
+
+        if (o->nameOfJit2 != nullptr)
+        {
+            LogError("streaming mode and diff mode are incompatible.");
+            return false;
+        }
+    }
+
+    SPMI_TARGET_ARCHITECTURE defaultSpmiTargetArchitecture = GetSpmiTargetArchitecture();
+    SetSuperPmiTargetArchitecture(o->targetArchitecture);
+
+    if (o->nameOfInputMethodContextFile == nullptr)
+    {
+        LogError("Missing name of an input file.");
+        DumpHelp(argv[0]);
+        return false;
+    }
+
+    if (o->nameOfJit == nullptr)
+    {
+        // Try to find a JIT in the same directory as superpmi.exe. If found (based on targetArchitecture), use it.
+
+        bool allowDefaultJIT = true;
+
+        const char* hostOSTag = "";
+        const char* jitHostOSPrefix = "";
+        const char* jitHostOSExtension = "";
+
+#if defined(HOST_OSX) // NOTE: HOST_UNIX is also defined for HOST_OSX
+        hostOSTag = "unix";
+        jitHostOSPrefix = "lib";
+        jitHostOSExtension = ".dylib";
+#elif defined(HOST_UNIX)
+        hostOSTag = "unix";
+        jitHostOSPrefix = "lib";
+        jitHostOSExtension = ".so";
+#elif defined(HOST_WINDOWS)
+        hostOSTag = "win";
+        jitHostOSExtension = ".dll";
+#else
+        allowDefaultJIT = false;
+#endif
+
+        const char* hostArch = "";
+
+#if defined(HOST_AMD64)
+        hostArch = "x64";
+#elif defined(HOST_X86)
+        hostArch = "x86";
+#elif defined(HOST_ARM)
+        hostArch = "arm";
+#elif defined(HOST_ARM64)
+        hostArch = "arm64";
+#else
+        allowDefaultJIT = false;
+#endif
+
+        const char* targetArch = "";
+
+        switch (GetSpmiTargetArchitecture())
+        {
+            case SPMI_TARGET_ARCHITECTURE_AMD64:
+                targetArch = "x64";
+                break;
+            case SPMI_TARGET_ARCHITECTURE_X86:
+                targetArch = "x86";
+                break;
+            case SPMI_TARGET_ARCHITECTURE_ARM:
+                targetArch = "arm";
+                break;
+            case SPMI_TARGET_ARCHITECTURE_ARM64:
+                targetArch = "arm64";
+                break;
+            default:
+                allowDefaultJIT = false;
+                break;
+        }
+
+        size_t programPathLen = 0;
+        char* programPath = nullptr;
+        const char* lastSlash = strrchr(argv[0], DIRECTORY_SEPARATOR_CHAR_A);
+        if (lastSlash == nullptr)
+        {
+            allowDefaultJIT = false;
+        }
+        else
+        {
+            programPathLen = lastSlash - argv[0] + 1;
+            programPath = new char[programPathLen];
+            strncpy_s(programPath, programPathLen, argv[0], programPathLen - 1);
+        }
+
+        if (allowDefaultJIT)
+        {
+            const char* jitOSName = nullptr;
+
+            if (defaultSpmiTargetArchitecture != GetSpmiTargetArchitecture())
+            {
+                // SuperPMI doesn't know about "target OS" so always assume host OS.
+
+                switch (GetSpmiTargetArchitecture())
+                {
+                    case SPMI_TARGET_ARCHITECTURE_AMD64:
+                    case SPMI_TARGET_ARCHITECTURE_X86:
+                        jitOSName = hostOSTag;
+                        break;
+                    case SPMI_TARGET_ARCHITECTURE_ARM:
+                    case SPMI_TARGET_ARCHITECTURE_ARM64:
+                        jitOSName = "universal";
+                        break;
+                    default:
+                        // Can't get here if `allowDefaultJIT` was properly set above.
+                        break;
+                }
+            }
+
+            const char* const jitBaseName = "clrjit";
+            size_t len = programPathLen + strlen(jitHostOSPrefix) + strlen(jitBaseName) + strlen(jitHostOSExtension) + 1;
+            if (jitOSName != nullptr)
+            {
+                len += 3 /* underscores */ + strlen(jitOSName) + strlen(targetArch) + strlen(hostArch);
+            }
+            char* tempStr = new char[len];
+            if (jitOSName == nullptr)
+            {
+                sprintf_s(tempStr, len, "%s%c%s%s%s",
+                    programPath,
+                    DIRECTORY_SEPARATOR_CHAR_A,
+                    jitHostOSPrefix,
+                    jitBaseName,
+                    jitHostOSExtension);
+            }
+            else
+            {
+                sprintf_s(tempStr, len, "%s%c%s%s_%s_%s_%s%s",
+                    programPath,
+                    DIRECTORY_SEPARATOR_CHAR_A,
+                    jitHostOSPrefix,
+                    jitBaseName,
+                    jitOSName,
+                    targetArch,
+                    hostArch,
+                    jitHostOSExtension);
+            }
+
+            o->nameOfJit = tempStr;
+
+            LogInfo("Using default JIT: %s", o->nameOfJit);
+        }
+        else
+        {
+            LogError("Missing name of a Jit.");
+            DumpHelp(argv[0]);
+            return false;
+        }
+    }
+
     if (o->skipCleanup && !o->parallel)
     {
         LogError("-skipCleanup requires -parallel.");
         DumpHelp(argv[0]);
         return false;
     }
+
     return true;
 }
 

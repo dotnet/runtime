@@ -20,7 +20,7 @@ public struct AA
     }
 
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         try
         {
@@ -32,6 +32,5 @@ public struct AA
             Console.WriteLine("Exception handled: " + x.ToString());
         }
         Console.WriteLine("Passed.");
-        return 100;
     }
 }

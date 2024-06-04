@@ -1,0 +1,27 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-browser</TargetFrameworks>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DefineConstants Condition="'$(StabilizePackageVersion)' == 'true'">$(DefineConstants);STABILIZE_PACKAGE_VERSION</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="AssemblyInfo.cs" />
+    <Compile Include="CheckArchitectureTests.cs" />
+    <Compile Include="CheckPlatformTests.cs" />
+    <Compile Include="RuntimeIdentifierTests.cs" />
+    <Compile Include="DescriptionNameTests.cs" />
+    <Compile Include="$(CommonPath)Interop\Linux\os-release\Interop.OSReleaseFile.cs"
+             Link="Interop\Linux\os-release\Interop.OSReleaseFile.cs" />
+    <Compile Include="$(CommonPath)Interop\Linux\cgroups\Interop.cgroups.cs"
+             Link="Common\Interop\Linux\Interop.cgroups.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
+             Link="Common\Interop\Unix\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MountPoints.FormatInfo.cs"
+             Link="Common\Interop\Unix\System.Native\Interop.MountPoints.FormatInfo.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.UnixFileSystemTypes.cs"
+             Link="Common\Interop\Unix\System.Native\Interop.UnixFileSystemTypes.cs" />
+  </ItemGroup>
+</Project>

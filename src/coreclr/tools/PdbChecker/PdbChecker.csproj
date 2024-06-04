@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <AssemblyName>PdbChecker</AssemblyName>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <AppendTargetFrameworkToOutputPath Condition="'$(BuildingInsideVisualStudio)' == 'true'">true</AppendTargetFrameworkToOutputPath>
+    <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
+    <Nullable>enable</Nullable>
+    <OutputPath>$(RuntimeBinDir)\PdbChecker</OutputPath>
+    <RunAnalyzers>false</RunAnalyzers>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="$(TraceEventVersion)" />
+  </ItemGroup>
+
+  <Target Name="CopyMsdiaForTargetArchitecture" AfterTargets="AfterBuild" Condition="'$(TargetOS)' == 'windows'">
+    <PropertyGroup>
+      <ArchitectureFolder>$(TargetArchitecture)</ArchitectureFolder>
+      <ArchitectureFolder Condition="'$(TargetArchitecture)' == 'x64'">amd64</ArchitectureFolder>
+    </PropertyGroup>
+  
+    <Copy SourceFiles="$(OutputPath)\$(ArchitectureFolder)\msdia140.dll" DestinationFolder="$(OutputPath)" />
+  </Target>
+</Project>

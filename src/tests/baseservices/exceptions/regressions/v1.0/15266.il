@@ -13,7 +13,7 @@
 }
 .assembly '15266' {}
 
-.class private auto ansi beforefieldinit test
+.class public auto ansi beforefieldinit test
        extends [mscorlib]System.Object
 {
   .method public static int32 Main() cil managed

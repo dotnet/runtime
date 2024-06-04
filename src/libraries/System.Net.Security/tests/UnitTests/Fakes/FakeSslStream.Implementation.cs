@@ -14,6 +14,8 @@ namespace System.Net.Security
 {
     public partial class SslStream
     {
+        internal static bool DisableTlsResume { get; }
+
         private class FakeOptions
         {
             public string TargetHost;
@@ -92,9 +94,9 @@ namespace System.Net.Security
         {
         }
 
-        private byte[]? CreateShutdownToken()
+        private ProtocolToken CreateShutdownToken()
         {
-            return null;
+            return new ProtocolToken();
         }
 
         internal static X509Certificate2? FindCertificateWithPrivateKey(object instance, bool isServer, X509Certificate certificate)
@@ -108,7 +110,15 @@ namespace System.Net.Security
         public ProtocolToken()
         {
             Payload = null;
+            Size = 0;
         }
         internal byte[] Payload;
+        internal int Size;
+
+        internal void EnsureAvailableSpace(int size)
+        {
+        }
+
+        internal Span<byte> AvailableSpan => Span<byte>.Empty;
     }
 }

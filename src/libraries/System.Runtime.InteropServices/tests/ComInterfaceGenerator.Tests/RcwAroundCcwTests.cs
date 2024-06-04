@@ -7,7 +7,6 @@ using System.Runtime.InteropServices.Marshalling;
 using SharedTypes.ComInterfaces;
 using SharedTypes.ComInterfaces.MarshallingFails;
 using Xunit;
-using static ComInterfaceGenerator.Tests.ComInterfaces;
 
 namespace ComInterfaceGenerator.Tests
 {
@@ -22,18 +21,29 @@ namespace ComInterfaceGenerator.Tests
             return ifaceObject;
         }
 
+        static bool SystemFindsComCalleeException() => PlatformDetection.IsWindows && PlatformDetection.IsNotNativeAot;
+
         [Fact]
-        public void IGetAndSetInt()
+        public void IInt()
         {
-            var obj = CreateWrapper<GetAndSetInt, IGetAndSetInt>();
-            obj.SetInt(1);
-            Assert.Equal(1, obj.GetInt());
+            var obj = CreateWrapper<IIntImpl, IInt>();
+            obj.Set(1);
+            Assert.Equal(1, obj.Get());
+            var local = 4;
+            obj.SwapRef(ref local);
+            Assert.Equal(1, local);
+            Assert.Equal(4, obj.Get());
+            local = 2;
+            obj.SetIn(in local);
+            local = 0;
+            obj.GetOut(out local);
+            Assert.Equal(2, local);
         }
 
         [Fact]
         public void IDerived()
         {
-            var obj = CreateWrapper<Derived, IDerived>();
+            IDerived obj = CreateWrapper<Derived, IDerived>();
             obj.SetInt(1);
             Assert.Equal(1, obj.GetInt());
             obj.SetName("A");
@@ -63,10 +73,72 @@ namespace ComInterfaceGenerator.Tests
             var obj = CreateWrapper<IIntArrayImpl, IIntArray>();
             int[] data = new int[] { 1, 2, 3 };
             int length = data.Length;
-            obj.Set(data, length);
-            Assert.Equal(data, obj.Get(out int _));
-            obj.Get2(out var value);
+            obj.SetContents(data, length);
+            Assert.Equal(data, obj.GetReturn(out int _));
+            obj.GetOut(out var value);
             Assert.Equal(data, value);
+            obj.SwapArray(ref data, data.Length);
+            obj.PassIn(in data, data.Length);
+            data = new int[] { 1, 2, 3 };
+            obj.Double(data, data.Length);
+            Assert.True(data is [2, 4, 6]);
+        }
+
+        [Fact]
+        public void IArrayOfStatelessElements()
+        {
+            var obj = CreateWrapper<ArrayOfStatelessElements, IArrayOfStatelessElements>();
+            var data = new StatelessType[10];
+
+            // ByValueContentsOut should only free the returned values
+            var oldFreeCount = StatelessTypeMarshaller.AllFreeCount;
+            obj.MethodContentsOut(data, data.Length);
+            Assert.Equal(oldFreeCount + 10, StatelessTypeMarshaller.AllFreeCount);
+
+            // ByValueContentsOut should only free the elements after the call
+            oldFreeCount = StatelessTypeMarshaller.AllFreeCount;
+            obj.MethodContentsIn(data, data.Length);
+            Assert.Equal(oldFreeCount + 10, StatelessTypeMarshaller.AllFreeCount);
+
+            // ByValueContentsInOut should free elements in both directions
+            oldFreeCount = StatelessTypeMarshaller.AllFreeCount;
+            obj.MethodContentsInOut(data, data.Length);
+            Assert.Equal(oldFreeCount + 20, StatelessTypeMarshaller.AllFreeCount);
+        }
+
+        [Fact]
+        public void IArrayOfStatelessElementsThrows()
+        {
+            var obj = CreateWrapper<ArrayOfStatelessElementsThrows, IArrayOfStatelessElements>();
+            var data = new StatelessType[10];
+            var oldFreeCount = StatelessTypeMarshaller.AllFreeCount;
+            try
+            {
+                obj.MethodContentsOut(data, 10);
+            }
+            catch (Exception) { }
+            Assert.Equal(oldFreeCount, StatelessTypeMarshaller.AllFreeCount);
+
+            for (int i = 0; i < 10; i++)
+            {
+                data[i] = new StatelessType() { I = i };
+            }
+
+            oldFreeCount = StatelessTypeMarshaller.AllFreeCount;
+            try
+            {
+                obj.MethodContentsIn(data, 10);
+            }
+            catch (Exception) { }
+            Assert.Equal(oldFreeCount + 10, StatelessTypeMarshaller.AllFreeCount);
+
+            oldFreeCount = StatelessTypeMarshaller.AllFreeCount;
+            try
+            {
+                obj.MethodContentsInOut(data, 10);
+            }
+            catch (Exception) { }
+            Assert.Equal(oldFreeCount + 10, StatelessTypeMarshaller.AllFreeCount);
         }
 
         [Fact]
@@ -89,36 +161,180 @@ namespace ComInterfaceGenerator.Tests
         {
             var iint = CreateWrapper<IIntImpl, IInt>();
             var obj = CreateWrapper<IInterfaceImpl, IInterface>();
-            obj.Set(iint);
+            obj.SetInt(iint);
             _ = obj.Get();
+            obj.SwapRef(ref iint);
+            obj.InInt(in iint);
+            obj.GetOut(out var _);
+        }
+
+        [Fact]
+        public void IStatefulFinallyMarshalling()
+        {
+            var obj = CreateWrapper<StatefulFinallyMarshalling, IStatefulFinallyMarshalling>();
+            var data = new StatefulFinallyType() { i = -10 };
+            obj.Method(data);
+            obj.MethodIn(in data);
+            obj.MethodOut(out _);
+            obj.MethodRef(ref data);
+            _ = obj.Return();
+            _ = obj.ReturnPreserveSig();
+        }
+
+        [Fact]
+        public void IStatelessFinallyMarshalling()
+        {
+            var obj = CreateWrapper<StatelessFinallyMarshalling, IStatelessFinallyMarshalling>();
+            var data = new StatelessFinallyType() { I = -10 };
+            obj.Method(data);
+            obj.MethodIn(in data);
+            obj.MethodOut(out _);
+            obj.MethodRef(ref data);
+            _ = obj.Return();
+            _ = obj.ReturnPreserveSig();
+        }
+
+        [Fact]
+        public void StatefulMarshalling()
+        {
+            var obj = CreateWrapper<StatefulMarshalling, IStatefulMarshalling>();
+            var data = new StatefulType() { i = 42 };
+
+            int preCallFreeCount = StatefulTypeMarshaller.FreeCount;
+            obj.Method(data);
+            Assert.Equal(42, data.i);
+            Assert.Equal(preCallFreeCount + 2, StatefulTypeMarshaller.FreeCount);
+
+            preCallFreeCount = StatefulTypeMarshaller.FreeCount;
+            obj.MethodIn(in data);
+            Assert.Equal(42, data.i);
+            Assert.Equal(preCallFreeCount + 2, StatefulTypeMarshaller.FreeCount);
+
+            var oldData = data;
+            preCallFreeCount = StatefulTypeMarshaller.FreeCount;
+            obj.MethodRef(ref data);
+            Assert.Equal(preCallFreeCount + 2, StatefulTypeMarshaller.FreeCount);
+            Assert.True(oldData == data); // We want reference equality here
+
+            preCallFreeCount = StatefulTypeMarshaller.FreeCount;
+            obj.MethodOut(out data);
+            Assert.Equal(preCallFreeCount + 2, StatefulTypeMarshaller.FreeCount);
+            Assert.Equal(1, data.i);
+
+            preCallFreeCount = StatefulTypeMarshaller.FreeCount;
+            Assert.Equal(1, obj.Return().i);
+            Assert.Equal(preCallFreeCount + 2, StatefulTypeMarshaller.FreeCount);
+            preCallFreeCount = StatefulTypeMarshaller.FreeCount;
+            Assert.Equal(1, obj.ReturnPreserveSig().i);
+            Assert.Equal(preCallFreeCount + 2, StatefulTypeMarshaller.FreeCount);
+        }
+
+        [Fact]
+        public void StatelessCallerAllocatedBufferMarshalling()
+        {
+            var obj = CreateWrapper<StatelessCallerAllocatedBufferMarshalling, IStatelessCallerAllocatedBufferMarshalling>();
+            var data = new StatelessCallerAllocatedBufferType() { I = 42 };
+
+            // ManagedToUnmanagedIn should use Caller Allocated Buffer and not allocate
+            StatelessCallerAllocatedBufferTypeMarshaller.DisableAllocations();
+
+            var numFreeCalls = StatelessCallerAllocatedBufferTypeMarshaller.FreeCount;
+            obj.Method(data);
+            Assert.Equal(1 + numFreeCalls, StatelessCallerAllocatedBufferTypeMarshaller.FreeCount);
+            Assert.Equal(42, data.I);
+
+            numFreeCalls = StatelessCallerAllocatedBufferTypeMarshaller.FreeCount;
+            obj.MethodIn(in data);
+            Assert.Equal(1 + numFreeCalls, StatelessCallerAllocatedBufferTypeMarshaller.FreeCount);
+            Assert.Equal(42, data.I);
+
+            // Other marshal modes will allocate
+            StatelessCallerAllocatedBufferTypeMarshaller.EnableAllocations();
+
+            numFreeCalls = StatelessCallerAllocatedBufferTypeMarshaller.FreeCount;
+            obj.MethodRef(ref data);
+            Assert.Equal(2 + numFreeCalls, StatelessCallerAllocatedBufferTypeMarshaller.FreeCount);
+            StatelessCallerAllocatedBufferTypeMarshaller.AssertAllPointersFreed();
+            Assert.Equal(200, data.I);
+
+            numFreeCalls = StatelessCallerAllocatedBufferTypeMarshaller.FreeCount;
+            obj.MethodOut(out data);
+            Assert.Equal(1 + numFreeCalls, StatelessCallerAllocatedBufferTypeMarshaller.FreeCount);
+            StatelessCallerAllocatedBufferTypeMarshaller.AssertAllPointersFreed();
+            Assert.Equal(20, data.I);
+
+            numFreeCalls = StatelessCallerAllocatedBufferTypeMarshaller.FreeCount;
+            Assert.Equal(201, obj.Return().I);
+            Assert.Equal(1 + numFreeCalls, StatelessCallerAllocatedBufferTypeMarshaller.FreeCount);
+
+            numFreeCalls = StatelessCallerAllocatedBufferTypeMarshaller.FreeCount;
+            Assert.Equal(202, obj.ReturnPreserveSig().I);
+            Assert.Equal(1 + numFreeCalls, StatelessCallerAllocatedBufferTypeMarshaller.FreeCount);
+        }
+
+        [Fact]
+        public void StatefulPinnedMarshalling()
+        {
+            var obj = CreateWrapper<StatefulPinnedMarshalling, IStatefulPinnedMarshalling>();
+            var data = new StatefulPinnedType() { I = 4 };
+
+            StatefulPinnedTypeMarshaller.ManagedToUnmanagedIn.DisableNonPinnedPath();
+
+            obj.Method(data);
+            Assert.Equal(4, data.I);
+
+            obj.MethodIn(in data);
+            Assert.Equal(4, data.I);
+
+            StatefulPinnedTypeMarshaller.ManagedToUnmanagedIn.EnableNonPinnedPath();
+
+            obj.MethodOut(out data);
+            Assert.Equal(102, data.I);
+
+            obj.MethodRef(ref data);
+            Assert.Equal(103, data.I);
+
+            data = obj.Return();
+            Assert.Equal(104, data.I);
         }
 
         [Fact]
         public void ICollectionMarshallingFails()
         {
+            Type hrExceptionType = SystemFindsComCalleeException() ? typeof(MarshallingFailureException) : typeof(Exception);
+
             var obj = CreateWrapper<ICollectionMarshallingFailsImpl, ICollectionMarshallingFails>();
 
-            Assert.Throws<ArgumentException>(() =>
-                _ = obj.Get()
+            Assert.Throws<MarshallingFailureException>(() =>
+                obj.Set(new int[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 0 }, 10)
             );
-            Assert.Throws<ArgumentException>(() =>
-                obj.Set(new int[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 0 })
+
+            Assert.Throws(hrExceptionType, () =>
+                _ = obj.GetConstSize()
+            );
+
+            Assert.Throws(hrExceptionType, () =>
+                _ = obj.Get(out _)
             );
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/88111")]
         [Fact]
         public void IJaggedArrayMarshallingFails()
         {
+            Type hrExceptionType = SystemFindsComCalleeException() ? typeof(MarshallingFailureException) : typeof(Exception);
             var obj = CreateWrapper<IJaggedIntArrayMarshallingFailsImpl, IJaggedIntArrayMarshallingFails>();
 
-            Assert.Throws<ArgumentException>(() =>
+            Assert.Throws(hrExceptionType, () =>
+                _ = obj.GetConstSize()
+            );
+
+            Assert.Throws(hrExceptionType, () =>
                 _ = obj.Get(out _, out _)
             );
             var array = new int[][] { new int[] { 1, 2, 3 }, new int[] { 4, 5, }, new int[] { 6, 7, 8, 9 } };
-            var length = 3;
             var widths = new int[] { 3, 2, 4 };
-            Assert.Throws<ArgumentException>(() =>
+            var length = 3;
+            Assert.Throws<MarshallingFailureException>(() =>
                 obj.Set(array, widths, length)
             );
         }
@@ -127,294 +343,81 @@ namespace ComInterfaceGenerator.Tests
         public void IStringArrayMarshallingFails()
         {
             var obj = CreateWrapper<IStringArrayMarshallingFailsImpl, IStringArrayMarshallingFails>();
+            var hrException = SystemFindsComCalleeException() ? typeof(MarshallingFailureException) : typeof(Exception);
 
             var strings = IStringArrayMarshallingFailsImpl.StartingStrings;
 
             // All of these will marshal either to COM or the CCW will marshal on the return
-            Assert.Throws<ArgumentException>(() =>
+            Assert.Throws<MarshallingFailureException>(() =>
             {
                 obj.Param(strings);
             });
-            Assert.Throws<ArgumentException>(() =>
+            Assert.Throws<MarshallingFailureException>(() =>
             {
                 obj.RefParam(ref strings);
             });
-            Assert.Throws<ArgumentException>(() =>
+            Assert.Throws<MarshallingFailureException>(() =>
             {
                 obj.InParam(in strings);
             });
-            Assert.Throws<ArgumentException>(() =>
-            {
-                obj.OutParam(out strings);
-            });
-            // https://github.com/dotnet/runtime/issues/87845
-            //Assert.Throws<ArgumentException>(() =>
-            //{
-            //    obj.ByValueOutParam(strings);
-            //});
-            Assert.Throws<ArgumentException>(() =>
+            Assert.Throws<MarshallingFailureException>(() =>
             {
                 obj.ByValueInOutParam(strings);
             });
-            Assert.Throws<ArgumentException>(() =>
+            Assert.Throws(hrException, () =>
+            {
+                obj.OutParam(out strings);
+            });
+            Assert.Throws(hrException, () =>
             {
                 _ = obj.ReturnValue();
             });
         }
-    }
 
-    public static partial class ComInterfaces
-    {
-        [GeneratedComInterface]
-        [Guid("EE6D1F2A-3418-4317-A87C-35488F6546AB")]
-        internal partial interface IInt
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/87845")]
+        [Fact]
+        public void IStringArrayMarshallingFails_Failing()
         {
-            public int Get();
-            public void Set(int value);
-        }
+            var obj = CreateWrapper<IStringArrayMarshallingFailsImpl, IStringArrayMarshallingFails>();
 
-        [GeneratedComClass]
-        internal partial class IIntImpl : IInt
-        {
-            int _data;
-            public int Get() => _data;
-            public void Set(int value) => _data = value;
-        }
-
-        [GeneratedComInterface]
-        [Guid("5A9D3ED6-CC17-4FB9-8F82-0070489B7213")]
-        internal partial interface IBool
-        {
-            [return: MarshalAs(UnmanagedType.I1)]
-            bool Get();
-            void Set([MarshalAs(UnmanagedType.I1)] bool value);
-        }
-
-        [GeneratedComClass]
-        internal partial class IBoolImpl : IBool
-        {
-            bool _data;
-            public bool Get() => _data;
-            public void Set(bool value) => _data = value;
-        }
-
-        [GeneratedComInterface]
-        [Guid("9FA4A8A9-2D8F-48A8-B6FB-B44B5F1B9FB6")]
-        internal partial interface IFloat
-        {
-            float Get();
-            void Set(float value);
-        }
-
-        [GeneratedComClass]
-        internal partial class IFloatImpl : IFloat
-        {
-            float _data;
-            public float Get() => _data;
-            public void Set(float value) => _data = value;
-        }
-
-        [GeneratedComInterface]
-        [Guid("9FA4A8A9-3D8F-48A8-B6FB-B45B5F1B9FB6")]
-        internal partial interface IIntArray
-        {
-            [return: MarshalUsing(CountElementName = nameof(size))]
-            int[] Get(out int size);
-            int Get2([MarshalUsing(CountElementName = MarshalUsingAttribute.ReturnsCountValue)] out int[] array);
-            void Set([MarshalUsing(CountElementName = nameof(size))] int[] array, int size);
-        }
-
-        [GeneratedComClass]
-        internal partial class IIntArrayImpl : IIntArray
-        {
-            int[] _data;
-            public int[] Get(out int size)
+            var strings = IStringArrayMarshallingFailsImpl.StartingStrings;
+            Assert.Throws<MarshallingFailureException>(() =>
             {
-                size = _data.Length;
-                return _data;
-            }
-            public int Get2(out int[] array)
-            {
-                array = _data;
-                return array.Length;
-            }
-            public void Set(int[] array, int size)
-            {
-                _data = array;
-            }
+                obj.ByValueOutParam(strings);
+            });
         }
 
-        [GeneratedComInterface]
-        [Guid("9FA4A8A9-3D8F-48A8-B6FB-B45B5F1B9FB6")]
-        internal partial interface IJaggedIntArray
+        [Fact]
+        public unsafe void IHideWorksAsExpected()
         {
-            [return: MarshalUsing(CountElementName = nameof(length)),
-                MarshalUsing(ElementIndirectionDepth = 1, CountElementName = nameof(widths))]
-            int[][] Get(
-                [MarshalUsing(CountElementName = nameof(length))]
-                out int[] widths,
-                out int length);
+            IHide obj = CreateWrapper<HideBaseMethods, IHide3>();
 
-            int Get2(
-                [MarshalUsing(CountElementName = MarshalUsingAttribute.ReturnsCountValue),
-                MarshalUsing(ElementIndirectionDepth = 1, CountElementName = nameof(widths))]
-                out int[][] array,
-                [MarshalUsing(CountElementName = MarshalUsingAttribute.ReturnsCountValue)]
-                out int[] widths);
+            // IHide.SameMethod should be index 3
+            Assert.Equal(3, obj.SameMethod());
+            Assert.Equal(4, obj.DifferentMethod());
 
-            void Set(
-                [MarshalUsing(CountElementName = nameof(length)),
-                MarshalUsing(ElementIndirectionDepth = 1, CountElementName = nameof(widths))]
-                int[][] array,
-                [MarshalUsing(CountElementName = nameof(length))]
-                int[] widths,
-                int length);
-        }
+            IHide2 obj2 = (IHide2)obj;
 
-        [GeneratedComClass]
-        internal partial class IJaggedIntArrayImpl : IJaggedIntArray
-        {
-            int[][] _data = new int[][] { new int[] { 1, 2, 3 }, new int[] { 4, 5 }, new int[] { 6, 7, 8, 9 } };
-            int[] _widths = new int[] { 3, 2, 4 };
-            public int[][] Get(out int[] widths, out int length)
+            // IHide2.SameMethod should be index 5
+            Assert.Equal(5, obj2.SameMethod());
+            Assert.Equal(4, obj2.DifferentMethod());
+            Assert.Equal(6, obj2.DifferentMethod2());
+
+            IHide3 obj3 = (IHide3)obj;
+            // IHide3.SameMethod should be index 7
+            Assert.Equal(7, obj3.SameMethod());
+            Assert.Equal(4, obj3.DifferentMethod());
+            Assert.Equal(6, obj3.DifferentMethod2());
+            Assert.Equal(8, obj3.DifferentMethod3());
+
+            // Ensure each VTable method points to the correct method on HideBaseMethods
+            for (int i = 3; i < 9; i++)
             {
-                widths = _widths;
-                length = _data.Length;
-                return _data;
-            }
-            public int Get2(out int[][] array, out int[] widths)
-            {
-                array = _data;
-                widths = _widths;
-                return array.Length;
-            }
-            public void Set(int[][] array, int[] widths, int length)
-            {
-                _data = array;
-                _widths = widths;
-            }
-        }
-
-        [CustomMarshaller(typeof(int), MarshalMode.ElementIn, typeof(ThrowOn4thElementMarshalled))]
-        [CustomMarshaller(typeof(int), MarshalMode.ElementOut, typeof(ThrowOn4thElementMarshalled))]
-        internal static class ThrowOn4thElementMarshalled
-        {
-            static int _marshalledCount = 0;
-            static int _unmarshalledCount = 0;
-            public static nint ConvertToUnmanaged(int managed)
-            {
-                if (_marshalledCount++ == 3)
-                {
-                    _marshalledCount = 0;
-                    throw new ArgumentException("The element was the 4th element (with 0-based index 3)");
-                }
-                return managed;
-            }
-
-            public static int ConvertToManaged(nint unmanaged)
-            {
-                if (_unmarshalledCount++ == 3)
-                {
-                    _unmarshalledCount = 0;
-                    throw new ArgumentException("The element was the 4th element (with 0-based index 3)");
-                }
-                return (int)unmanaged;
-            }
-        }
-
-        [GeneratedComInterface]
-        [Guid("A4857395-06FB-4A6E-81DB-35461BE999C5")]
-        internal partial interface ICollectionMarshallingFails
-        {
-            [return: MarshalUsing(ConstantElementCount = 10)]
-            [return: MarshalUsing(typeof(ThrowOn4thElementMarshalled), ElementIndirectionDepth = 1)]
-            public int[] Get();
-            public void Set(
-                [MarshalUsing(ConstantElementCount = 10)]
-                [MarshalUsing(typeof(ThrowOn4thElementMarshalled), ElementIndirectionDepth = 1)]
-                int[] value);
-        }
-
-        [GeneratedComClass]
-        public partial class ICollectionMarshallingFailsImpl : ICollectionMarshallingFails
-        {
-            int[] _data = new[] { 1, 2, 3 };
-            public int[] Get() => _data;
-            public void Set(int[] value) => _data = value;
-        }
-
-        [GeneratedComInterface]
-        [Guid("9FA4A8A9-3D8F-48A8-B6FB-B45B5F1B9FB6")]
-        internal partial interface IJaggedIntArrayMarshallingFails
-        {
-            [return: MarshalUsing(CountElementName = nameof(length)),
-                MarshalUsing(ElementIndirectionDepth = 1, CountElementName = nameof(widths)),
-                MarshalUsing(typeof(ThrowOn4thElementMarshalled), ElementIndirectionDepth = 2)]
-            int[][] Get(
-                [MarshalUsing(CountElementName = nameof(length))]
-                out int[] widths,
-                out int length);
-
-            int Get2(
-                [MarshalUsing(CountElementName = MarshalUsingAttribute.ReturnsCountValue),
-                MarshalUsing(ElementIndirectionDepth = 1, CountElementName = nameof(widths)),
-                MarshalUsing(typeof(ThrowOn4thElementMarshalled), ElementIndirectionDepth = 2)]
-                out int[][] array,
-                [MarshalUsing(CountElementName = MarshalUsingAttribute.ReturnsCountValue)]
-                out int[] widths);
-
-            void Set(
-                [MarshalUsing(CountElementName = nameof(length)),
-                MarshalUsing(ElementIndirectionDepth = 1, CountElementName = nameof(widths)),
-                MarshalUsing(typeof(ThrowOn4thElementMarshalled), ElementIndirectionDepth = 2)]
-                int[][] array,
-                [MarshalUsing(CountElementName = nameof(length))]
-                int[] widths,
-                int length);
-        }
-
-        [GeneratedComClass]
-        internal partial class IJaggedIntArrayMarshallingFailsImpl : IJaggedIntArrayMarshallingFails
-        {
-            int[][] _data = new int[][] { new int[] { 1, 2, 3 }, new int[] { 4, 5 }, new int[] { 6, 7, 8, 9 } };
-            int[] _widths = new int[] { 3, 2, 4 };
-            public int[][] Get(out int[] widths, out int length)
-            {
-                widths = _widths;
-                length = _data.Length;
-                return _data;
-            }
-            public int Get2(out int[][] array, out int[] widths)
-            {
-                array = _data;
-                widths = _widths;
-                return array.Length;
-            }
-            public void Set(int[][] array, int[] widths, int length)
-            {
-                _data = array;
-                _widths = widths;
-            }
-        }
-
-        [GeneratedComInterface]
-        [Guid("A4857398-06FB-4A6E-81DB-35461BE999C5")]
-        internal partial interface IInterface
-        {
-            public IInt Get();
-            public void Set(IInt value);
-        }
-
-        [GeneratedComClass]
-        public partial class IInterfaceImpl : IInterface
-        {
-            IInt _data = new IIntImpl();
-            IInt IInterface.Get() => _data;
-            void IInterface.Set(IInt value)
-            {
-                int x = value.Get();
-                value.Set(x);
-                _data = value;
+                var (__this, __vtable_native) = ((global::System.Runtime.InteropServices.Marshalling.IUnmanagedVirtualMethodTableProvider)obj3).GetVirtualMethodTableInfoForKey(typeof(global::SharedTypes.ComInterfaces.IHide3));
+                int __retVal;
+                int __invokeRetVal;
+                __invokeRetVal = ((delegate* unmanaged[MemberFunction]<void*, int*, int>)__vtable_native[i])(__this, &__retVal);
+                Assert.Equal(i, __retVal);
             }
         }
     }

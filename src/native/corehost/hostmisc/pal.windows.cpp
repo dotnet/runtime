@@ -7,7 +7,6 @@
 #include "longfile.h"
 
 #include <cassert>
-#include <locale>
 #include <ShlObj.h>
 #include <ctime>
 

@@ -366,6 +366,18 @@ IStringTesting : IUnknown
         /*[out]*/ LCID* outLcid) = 0;
 };
 
+struct __declspec(uuid("7FBB8677-BDD0-4E5A-B38B-CA92A4555466"))
+IMiscTypesTesting : IUnknown
+{
+      virtual HRESULT STDMETHODCALLTYPE Marshal_Variant (
+        /*[in]*/ VARIANT obj,
+        /*[out,retval]*/ VARIANT* result) = 0;
+
+      virtual HRESULT STDMETHODCALLTYPE Marshal_Instance_Variant (
+        /*[in]*/ LPCWSTR init,
+        /*[out,retval]*/ VARIANT* result) = 0;
+};
+
 struct __declspec(uuid("592386a5-6837-444d-9de3-250815d18556"))
 IErrorMarshalTesting : IUnknown
 {
@@ -385,6 +397,7 @@ enum IDispatchTesting_Exception
 {
     IDispatchTesting_Exception_Disp,
     IDispatchTesting_Exception_HResult,
+    IDispatchTesting_Exception_Int,
 };
 
 struct __declspec(uuid("a5e04c1c-474e-46d2-bbc0-769d04e12b54"))
@@ -437,6 +450,12 @@ TestingEvents : IDispatch
 {
 #define DISPATCHTESTINGEVENTS_DISPID_ONEVENT 100
     // void OnEvent(_In_z_ BSTR t);
+};
+
+struct __declspec(uuid("b630a508-4da5-4c14-a7ab-618ad66b2ebf"))
+IDispatchCoerceTesting : IDispatch
+{
+    // Methods should only be invoked via IDispatch
 };
 
 struct __declspec(uuid("98cc27f0-d521-4f79-8b63-e980e3a92974"))

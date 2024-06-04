@@ -131,6 +131,7 @@ namespace System.Threading.Tasks
         {
             // Browser hosts do not support synchronous Wait so we want to run the
             //  replicated task directly instead of going through Task infrastructure
+#if !FEATURE_WASM_MANAGED_THREADS
             if (OperatingSystem.IsBrowser())
             {
                 // Since we are running on a single thread, we don't want the action to time out
@@ -142,6 +143,7 @@ namespace System.Threading.Tasks
                     throw new Exception("Replicated tasks cannot yield in this single-threaded browser environment");
             }
             else
+#endif
             {
                 int maxConcurrencyLevel = (options.EffectiveMaxConcurrencyLevel > 0) ? options.EffectiveMaxConcurrencyLevel : int.MaxValue;
 

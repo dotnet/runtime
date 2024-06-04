@@ -5,10 +5,9 @@
 using System;
 using System.Diagnostics;
 
+using Internal.NativeFormat;
 using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerServices;
-
-using Internal.NativeFormat;
 using Internal.TypeSystem;
 using Internal.TypeSystem.NoMetadata;
 
@@ -338,9 +337,19 @@ namespace Internal.Runtime.TypeLoader
             {
                 IntPtr result = TypeLoaderEnvironment.TryGetDefaultConstructorForType(Type);
 
-
-                if (result == IntPtr.Zero)
+                if (result != IntPtr.Zero)
+                {
+                    if (Type.IsValueType)
+                    {
+                        result = TypeLoaderEnvironment.ConvertUnboxingFunctionPointerToUnderlyingNonUnboxingPointer(result,
+                            builder.GetRuntimeTypeHandle(Type));
+                    }
+                }
+                else
+                {
                     result = RuntimeAugments.GetFallbackDefaultConstructor();
+                }
+
                 return result;
             }
         }

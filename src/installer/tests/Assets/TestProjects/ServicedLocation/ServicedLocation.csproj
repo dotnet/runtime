@@ -1,9 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-
-  <PropertyGroup>
-    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <RuntimeFrameworkVersion>$(MNAVersion)</RuntimeFrameworkVersion>
-    <AssemblyName>Location</AssemblyName>
-  </PropertyGroup>
-
-</Project>

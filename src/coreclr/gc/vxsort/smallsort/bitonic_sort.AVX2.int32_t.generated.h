@@ -39,7 +39,7 @@ extern "C" const uint8_t mask_table_8[M8_SIZE];
 
 template<> struct bitonic<int32_t, AVX2> {
     static const int N = 8;
-    static constexpr int32_t MAX = std::numeric_limits<int32_t>::Max();
+    static constexpr int32_t MAX = std::numeric_limits<int32_t>::max();
 public:
 
     static INLINE void sort_01v_ascending(__m256i& d01) {

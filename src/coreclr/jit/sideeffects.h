@@ -13,7 +13,8 @@
 //
 class LclVarSet final
 {
-    union {
+    union
+    {
         hashBv*  m_bitVector;
         unsigned m_lclNum;
     };
@@ -150,6 +151,7 @@ public:
     void AddNode(Compiler* compiler, GenTree* node);
     bool InterferesWith(const AliasSet& other) const;
     bool InterferesWith(const NodeInfo& node) const;
+    bool WritesLocal(unsigned lclNum) const;
     void Clear();
 };
 
@@ -180,6 +182,11 @@ public:
     bool InterferesWith(const SideEffectSet& other, bool strict) const;
     bool InterferesWith(Compiler* compiler, GenTree* node, bool strict) const;
     void Clear();
+
+    bool WritesLocal(unsigned lclNum) const
+    {
+        return m_aliasSet.WritesLocal(lclNum);
+    }
 };
 
 #endif // _SIDEEFFECTS_H_

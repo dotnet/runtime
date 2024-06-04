@@ -18,6 +18,7 @@ Generic virtual methods:
 */
 
 using System;
+using Xunit;
 
 
 public class A<T>
@@ -239,7 +240,8 @@ public class Test_Class_ImplicitOverrideVirtualNewslotFinal
 
 
 	
-	public static int Main()
+	[Fact]
+	public static int TestEntryPoint()
 	{
 
 		TestNonGenInterface_NonGenType();

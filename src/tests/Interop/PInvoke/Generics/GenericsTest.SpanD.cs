@@ -23,9 +23,11 @@ unsafe partial class GenericsNative
     public static extern Span<double> AddSpanDs(in Span<double> pValues, int count);
 }
 
-unsafe partial class GenericsTest
+public unsafe partial class GenericsTest
 {
-    private static void TestSpanD()
+    [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/177", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
+    public static void TestSpanD()
     {
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetSpanD(1.0));
 

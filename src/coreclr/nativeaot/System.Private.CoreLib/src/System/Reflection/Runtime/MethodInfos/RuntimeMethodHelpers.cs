@@ -2,13 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Text;
-using System.Reflection;
-using System.Diagnostics;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Reflection;
 using System.Reflection.Runtime.General;
-using System.Reflection.Runtime.TypeInfos;
 using System.Reflection.Runtime.ParameterInfos;
+using System.Reflection.Runtime.TypeInfos;
+using System.Text;
 
 using Internal.Reflection.Core;
 using Internal.Reflection.Core.Execution;
@@ -30,7 +30,7 @@ namespace System.Reflection.Runtime.MethodInfos
         internal static RuntimeParameterInfo[] GetRuntimeParameters<TRuntimeMethodCommon>(ref TRuntimeMethodCommon runtimeMethodCommon, MethodBase contextMethod, RuntimeTypeInfo[] methodTypeArguments, out RuntimeParameterInfo returnParameter)
             where TRuntimeMethodCommon : IRuntimeMethodCommon<TRuntimeMethodCommon>, IEquatable<TRuntimeMethodCommon>
         {
-            TypeContext typeContext = contextMethod.DeclaringType.CastToRuntimeTypeInfo().TypeContext;
+            TypeContext typeContext = contextMethod.DeclaringType.ToRuntimeTypeInfo().TypeContext;
             typeContext = new TypeContext(typeContext.GenericTypeArguments, methodTypeArguments);
             QSignatureTypeHandle[] typeSignatures = runtimeMethodCommon.QualifiedMethodSignature;
             int count = typeSignatures.Length;
@@ -73,7 +73,7 @@ namespace System.Reflection.Runtime.MethodInfos
             {
                 if (i != 0)
                     sb.Append(", ");
-                string parameterTypeString = parameters[i].ParameterType.FormatTypeNameForReflection();
+                string parameterTypeString = parameters[i].ParameterType.FormatTypeName();
 
                 // Legacy: Why use "ByRef" for by ref parameters? What language is this?
                 // VB uses "ByRef" but it should precede (not follow) the parameter name.
@@ -94,7 +94,7 @@ namespace System.Reflection.Runtime.MethodInfos
         internal static string ComputeToString(MethodBase contextMethod, RuntimeTypeInfo[] methodTypeArguments, RuntimeParameterInfo[] parameters, RuntimeParameterInfo returnParameter)
         {
             StringBuilder sb = new StringBuilder(30);
-            sb.Append(returnParameter == null ? "Void" : returnParameter.ParameterType.FormatTypeNameForReflection());  // ConstructorInfos allowed to pass in null rather than craft a ReturnParameterInfo that's always of type void.
+            sb.Append(returnParameter == null ? "Void" : returnParameter.ParameterType.FormatTypeName());  // ConstructorInfos allowed to pass in null rather than craft a ReturnParameterInfo that's always of type void.
             sb.Append(' ');
             sb.Append(contextMethod.Name);
             if (methodTypeArguments.Length != 0)

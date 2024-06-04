@@ -152,7 +152,7 @@ is not needed.   This works, but will increase startup time for your code by som
 can tolerate that (you probably can), then this is an alternative.   You were already setting environment variables
 in order to get symbols, you simply need to add one more.
 	> ```bash
-	> export DOTNET_ZapDisable=1
+	> export DOTNET_ReadyToRun=0
 	> ```
 With this change you should get the symbols for all .NET code.
 

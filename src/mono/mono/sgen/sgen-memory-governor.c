@@ -130,6 +130,20 @@ sgen_memgov_calculate_minor_collection_allowance (void)
 	}
 }
 
+// This can be called while sweep is running to determine earlier if there is so much memory growth
+// that we know we will require a GC once sweep finishes.
+static gboolean
+sgen_need_major_collection_conservative (void)
+{
+	size_t min_heap_size = sgen_los_memory_usage + sgen_major_collector.get_min_live_major_sections () * sgen_major_collector.section_size;
+
+	size_t max_last_collection_heap_size = last_collection_los_memory_usage + sgen_major_collector.get_max_last_major_survived_sections () * sgen_major_collector.section_size;
+	size_t max_allowance = GDOUBLE_TO_SIZE (max_last_collection_heap_size * SGEN_DEFAULT_ALLOWANCE_HEAP_SIZE_RATIO);
+	max_allowance = MAX (max_allowance, GDOUBLE_TO_SIZE (MIN_MINOR_COLLECTION_ALLOWANCE));
+
+	return min_heap_size > max_allowance;
+}
+
 static size_t
 get_heap_size (void)
 {
@@ -184,9 +198,11 @@ sgen_need_major_collection (mword space_needed, gboolean *forced)
 		return FALSE;
 	}
 
-	/* FIXME: This is a cop-out.  We should have some way of figuring this out. */
-	if (!sgen_major_collector.have_swept ())
+	if (!sgen_major_collector.have_swept ()) {
+		if (sgen_need_major_collection_conservative ())
+			return TRUE;
 		return FALSE;
+	}
 
 	if (space_needed > sgen_memgov_available_free_space ())
 		return TRUE;
@@ -231,6 +247,7 @@ sgen_memgov_minor_collection_end (const char *reason, gboolean is_overflow)
 		log_entry->promoted_size = (mword)sgen_gc_info.total_promoted_bytes;
 		log_entry->major_size = (mword)sgen_gc_info.total_major_size_bytes;
 		log_entry->major_size_in_use = (mword)sgen_gc_info.total_major_size_in_use_bytes;
+		log_entry->major_empty_reserved_size = (mword)sgen_major_collector.get_num_empty_blocks () * sgen_major_collector.section_size;
 		log_entry->los_size = (mword)sgen_gc_info.total_los_size_bytes;
 		log_entry->los_size_in_use = (mword)sgen_gc_info.total_los_size_in_use_bytes;
 
@@ -333,7 +350,7 @@ sgen_output_log_entry (SgenLogEntry *entry, gint64 stw_time, int generation)
 
 	switch (entry->type) {
 		case SGEN_LOG_NURSERY:
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_GC, "GC_MINOR%s: (%s) time %.2fms, %s promoted %luK major size: %luK in use: %luK los size: %luK in use: %luK",
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_GC, "GC_MINOR%s: (%s) time %.2fms, %s promoted %luK major size: %luK in use: %luK empty reserved: %luK los size: %luK in use: %luK",
 				entry->is_overflow ? "_OVERFLOW" : "",
 				entry->reason ? entry->reason : "",
 				entry->time / 10000.0f,
@@ -341,6 +358,7 @@ sgen_output_log_entry (SgenLogEntry *entry, gint64 stw_time, int generation)
 				(unsigned long)entry->promoted_size / 1024,
 				(unsigned long)entry->major_size / 1024,
 				(unsigned long)entry->major_size_in_use / 1024,
+				(unsigned long)entry->major_empty_reserved_size / 1024,
 				(unsigned long)entry->los_size / 1024,
 				(unsigned long)entry->los_size_in_use / 1024);
 			break;
@@ -365,9 +383,10 @@ sgen_output_log_entry (SgenLogEntry *entry, gint64 stw_time, int generation)
 				(unsigned long)entry->los_size_in_use / 1024);
 			break;
 		case SGEN_LOG_MAJOR_SWEEP_FINISH:
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_GC, "GC_MAJOR_SWEEP: major size: %luK in use: %luK",
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_GC, "GC_MAJOR_SWEEP: major size: %luK in use: %luK empty reserved: %luK",
 				(unsigned long)entry->major_size / 1024,
-				(unsigned long)entry->major_size_in_use / 1024);
+				(unsigned long)entry->major_size_in_use / 1024,
+				(unsigned long)entry->major_empty_reserved_size / 1024);
 			break;
 		default:
 			SGEN_ASSERT (0, FALSE, "Invalid log entry type");

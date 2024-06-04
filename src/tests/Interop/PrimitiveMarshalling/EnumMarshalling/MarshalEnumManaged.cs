@@ -3,10 +3,11 @@ using System.Collections.Generic;
 using System.Text;
 using TestLibrary;
 using System.Runtime.InteropServices;
+using Xunit;
 
 namespace EnumRoundtrip
 {
-    class MarshalEnumManaged
+    public class MarshalEnumManaged
     {
         [Flags]
         public enum DialogResult
@@ -36,7 +37,9 @@ namespace EnumRoundtrip
 
         #endregion
         [System.Security.SecuritySafeCritical]
-        static int Main()
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
+        public static int TestEntryPoint()
         {
             bool result = true;
             int r = 0;
@@ -62,7 +65,6 @@ namespace EnumRoundtrip
                 return 101;
             }
 
-            Console.WriteLine("PASS");
             return 100;
         }
     }

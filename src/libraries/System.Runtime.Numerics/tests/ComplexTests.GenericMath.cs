@@ -27,7 +27,7 @@ namespace System.Numerics.Tests
                 return;
             }
 
-            throw new Xunit.Sdk.EqualException(expected, actual);
+            throw Xunit.Sdk.EqualException.ForMismatchedValues(expected, actual);
         }
 
         private static void AssertBitwiseEqual(Complex expected, Complex actual)

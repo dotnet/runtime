@@ -962,11 +962,11 @@ void MulticoreJitProfilePlayer::CompileMethodInfoRecord(Module *pModule, MethodD
                     return;
                 }
 
-                pModule = pMethod->GetModule_NoLogging();
+                pModule = pMethod->GetModule();
             }
         }
 
-        if (pMethod->GetNativeCode() == NULL && !GetAppDomain()->GetMulticoreJitManager().GetMulticoreJitCodeStorage().LookupMethodCode(pMethod))
+        if (pMethod->GetNativeCode() == (PCODE)NULL && !GetAppDomain()->GetMulticoreJitManager().GetMulticoreJitCodeStorage().LookupMethodCode(pMethod))
         {
             if (CompileMethodDesc(pModule, pMethod))
             {

@@ -16,7 +16,7 @@ public class My
     }
 
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
 
         Thread t = new Thread(new ThreadStart(Worker));
@@ -28,8 +28,5 @@ public class My
             x *= i;
         }
         Console.WriteLine((object)x);
-
-        return 100;
     }
-
 }

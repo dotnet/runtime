@@ -6,7 +6,6 @@
 #include "rhassert.h"
 #include "RedhawkWarnings.h"
 #include "slist.h"
-#include "gcrhinterface.h"
 #include "varint.h"
 #include "regdisplay.h"
 #include "StackFrameIterator.h"
@@ -16,6 +15,10 @@
 #include "RuntimeInstance.h"
 #include "CachedInterfaceDispatch.h"
 #include "shash.h"
+#include <minipal/cpufeatures.h>
+
+#include "CommonMacros.inl"
+#include "GCMemoryHelpers.inl"
 
 class AsmOffsets
 {

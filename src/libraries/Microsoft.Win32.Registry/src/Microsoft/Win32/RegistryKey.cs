@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.Win32.SafeHandles;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
@@ -12,6 +11,7 @@ using System.Runtime.InteropServices;
 using System.Security;
 using System.Security.AccessControl;
 using System.Text;
+using Microsoft.Win32.SafeHandles;
 
 /*
   Note on ACL support:
@@ -66,8 +66,8 @@ namespace Microsoft.Win32
         private const int MaxKeyLength = 255;
         private const int MaxValueLength = 16383;
 
-        private volatile SafeRegistryHandle _hkey;
-        private volatile string _keyName;
+        private SafeRegistryHandle _hkey;
+        private string _keyName;
         private readonly bool _remoteKey;
         private volatile StateFlags _state;
         private volatile RegistryKeyPermissionCheck _checkMode;
@@ -334,65 +334,36 @@ namespace Microsoft.Win32
 
             subkey = FixupName(subkey); // Fixup multiple slashes to a single slash
 
+            // If the key has values, it must be opened with KEY_SET_VALUE,
+            // or RegDeleteTree will fail with ERROR_ACCESS_DENIED.
+
             RegistryKey? key = InternalOpenSubKeyWithoutSecurityChecks(subkey, true);
             if (key != null)
             {
                 using (key)
                 {
-                    if (key.SubKeyCount > 0)
+                    int ret = Interop.Advapi32.RegDeleteTree(key._hkey, string.Empty);
+                    if (ret != 0)
                     {
-                        string[] keys = key.GetSubKeyNames();
+                        Win32Error(ret, null);
+                    }
 
-                        for (int i = 0; i < keys.Length; i++)
-                        {
-                            key.DeleteSubKeyTreeInternal(keys[i]);
-                        }
+                    // RegDeleteTree doesn't self-delete when lpSubKey is empty.
+                    // Manually delete the key to restore old behavior.
+
+                    ret = Interop.Advapi32.RegDeleteKeyEx(key._hkey, string.Empty, (int)_regView, 0);
+                    if (ret != 0)
+                    {
+                        Win32Error(ret, null);
                     }
                 }
-
-                DeleteSubKeyTreeCore(subkey);
-            }
-            else if (throwOnMissingSubKey)
-            {
-                throw new ArgumentException(SR.Arg_RegSubKeyAbsent);
-            }
-        }
-
-        /// <summary>
-        /// An internal version which does no security checks or argument checking.  Skipping the
-        /// security checks should give us a slight perf gain on large trees.
-        /// </summary>
-        private void DeleteSubKeyTreeInternal(string subkey)
-        {
-            RegistryKey? key = InternalOpenSubKeyWithoutSecurityChecks(subkey, true);
-            if (key != null)
-            {
-                using (key)
-                {
-                    if (key.SubKeyCount > 0)
-                    {
-                        string[] keys = key.GetSubKeyNames();
-                        for (int i = 0; i < keys.Length; i++)
-                        {
-                            key.DeleteSubKeyTreeInternal(keys[i]);
-                        }
-                    }
-                }
-
-                DeleteSubKeyTreeCore(subkey);
             }
             else
             {
-                throw new ArgumentException(SR.Arg_RegSubKeyAbsent);
-            }
-        }
-
-        private void DeleteSubKeyTreeCore(string subkey)
-        {
-            int ret = Interop.Advapi32.RegDeleteKeyEx(_hkey, subkey, (int)_regView, 0);
-            if (ret != 0)
-            {
-                Win32Error(ret, null);
+                if (throwOnMissingSubKey)
+                {
+                    throw new ArgumentException(SR.Arg_RegSubKeyAbsent);
+                }
             }
         }
 

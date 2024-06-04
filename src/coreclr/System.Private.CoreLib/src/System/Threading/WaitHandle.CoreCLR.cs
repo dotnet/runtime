@@ -9,9 +9,9 @@ namespace System.Threading
     public abstract partial class WaitHandle
     {
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern int WaitOneCore(IntPtr waitHandle, int millisecondsTimeout);
+        private static extern int WaitOneCore(IntPtr waitHandle, int millisecondsTimeout, bool useTrivialWaits);
 
-        internal static unsafe int WaitMultipleIgnoringSyncContext(Span<IntPtr> waitHandles, bool waitAll, int millisecondsTimeout)
+        private static unsafe int WaitMultipleIgnoringSyncContextCore(Span<IntPtr> waitHandles, bool waitAll, int millisecondsTimeout)
         {
             fixed (IntPtr* pWaitHandles = &MemoryMarshal.GetReference(waitHandles))
             {

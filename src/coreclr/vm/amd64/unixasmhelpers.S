@@ -71,14 +71,16 @@ NESTED_ENTRY NDirectImportThunk, _TEXT, NoHandler
         //
         // Save integer parameter registers.
         // Make sure to preserve r11 as well as it is used to pass the stack argument size from JIT
+        // Make sure to preserve rax as well as it is used for the return buffer for Swift calls
         //
         PUSH_ARGUMENT_REGISTERS
         push_register r11
+        push_register rax
 
         //
-        // Allocate space for XMM parameter registers
+        // Allocate space for XMM parameter registers and alignment
         //
-        alloc_stack     0x80
+        alloc_stack     0x88
 
         SAVE_FLOAT_ARGUMENT_REGISTERS 0
 
@@ -89,33 +91,25 @@ NESTED_ENTRY NDirectImportThunk, _TEXT, NoHandler
         //
         mov             rdi, METHODDESC_REGISTER
         call            C_FUNC(NDirectImportWorker)
+        mov             r10, rax
 
         RESTORE_FLOAT_ARGUMENT_REGISTERS 0
 
         //
-        // epilogue, rax contains the native target address
+        // epilogue, r10 contains the native target address
         //
-        free_stack      0x80
+        free_stack      0x88
 
         //
-        // Restore integer parameter registers and r11
+        // Restore integer parameter registers, r11 and rax
         //
+        pop_register rax
         pop_register r11
         POP_ARGUMENT_REGISTERS
 
-    TAILJMP_RAX
+        jmp r10
+    
 NESTED_END NDirectImportThunk, _TEXT
-
-// EXTERN_C void moveOWord(LPVOID* src, LPVOID* target);
-// <NOTE>
-// MOVDQA is not an atomic operation.  You need to call this function in a crst.
-// </NOTE>
-LEAF_ENTRY moveOWord, _TEXT
-        movdqu          xmm0, xmmword ptr [rdi]
-        movdqu          xmmword ptr [rsi], xmm0
-
-        ret
-LEAF_END moveOWord, _TEXT
 
 //------------------------------------------------
 // JIT_RareDisableHelper

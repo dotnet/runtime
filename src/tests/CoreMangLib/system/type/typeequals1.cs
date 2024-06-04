@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
+using Xunit;
 
 /// <summary>
 /// System.Type.Equals(System.Object)
@@ -188,7 +189,8 @@ public class TypeEquals1
     #endregion
     #endregion
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         TypeEquals1 test = new TypeEquals1();
 

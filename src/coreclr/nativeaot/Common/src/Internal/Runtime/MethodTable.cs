@@ -183,18 +183,6 @@ namespace Internal.Runtime
             }
         }
 
-        /// <summary>
-        /// Gets a value indicating whether writable data is supported.
-        /// </summary>
-        internal static bool SupportsWritableData
-        {
-            get
-            {
-                // For now just key this off of SupportsRelativePointer to avoid this on both CppCodegen and WASM.
-                return SupportsRelativePointers;
-            }
-        }
-
         [Intrinsic]
         internal static extern MethodTable* Of<T>();
 
@@ -422,6 +410,15 @@ namespace Internal.Runtime
             }
         }
 
+        internal bool IsDefType
+        {
+            get
+            {
+                EETypeKind kind = Kind;
+                return kind == EETypeKind.CanonicalEEType || kind == EETypeKind.GenericTypeDefEEType;
+            }
+        }
+
         internal bool IsCanonical
         {
             get
@@ -506,20 +503,19 @@ namespace Internal.Runtime
             get
             {
                 Debug.Assert(IsGeneric);
-                if (IsDynamicType || !SupportsRelativePointers)
-                    return GetField<IatAwarePointer<MethodTable>>(EETypeField.ETF_GenericDefinition).Value;
 
-                return GetField<IatAwareRelativePointer<MethodTable>>(EETypeField.ETF_GenericDefinition).Value;
+                uint offset = GetFieldOffset(EETypeField.ETF_GenericDefinition);
+
+                if (IsDynamicType || !SupportsRelativePointers)
+                    return GetField<Pointer<MethodTable>>(offset).Value;
+
+                return GetField<RelativePointer<MethodTable>>(offset).Value;
             }
 #if TYPE_LOADER_IMPLEMENTATION
             set
             {
                 Debug.Assert(IsGeneric && IsDynamicType);
-                uint cbOffset = GetFieldOffset(EETypeField.ETF_GenericDefinition);
-                fixed (MethodTable* pThis = &this)
-                {
-                    *((MethodTable**)((byte*)pThis + cbOffset)) = value;
-                }
+                GetField<IntPtr>(EETypeField.ETF_GenericDefinition) = (IntPtr)value;
             }
 #endif
         }
@@ -533,11 +529,7 @@ namespace Internal.Runtime
         internal void SetGenericComposition(IntPtr data)
         {
             Debug.Assert(IsGeneric && IsDynamicType);
-            uint cbOffset = GetFieldOffset(EETypeField.ETF_GenericComposition);
-            fixed (MethodTable* pThis = &this)
-            {
-                *((IntPtr*)((byte*)pThis + cbOffset)) = data;
-            }
+            GetField<IntPtr>(EETypeField.ETF_GenericComposition) = data;
         }
 #endif
 
@@ -589,14 +581,16 @@ namespace Internal.Runtime
                 if (IsGeneric)
                     return GenericDefinition->GenericVariance;
 
-                if (IsDynamicType || !SupportsRelativePointers)
-                    return GetField<Pointer<GenericVariance>>(EETypeField.ETF_GenericComposition).Value;
+                uint offset = GetFieldOffset(EETypeField.ETF_GenericComposition);
 
-                return GetField<RelativePointer<GenericVariance>>(EETypeField.ETF_GenericComposition).Value;
+                if (IsDynamicType || !SupportsRelativePointers)
+                    return GetField<Pointer<GenericVariance>>(offset).Value;
+
+                return GetField<RelativePointer<GenericVariance>>(offset).Value;
             }
         }
 
-        internal bool IsPointerType
+        internal bool IsPointer
         {
             get
             {
@@ -604,7 +598,7 @@ namespace Internal.Runtime
             }
         }
 
-        internal bool IsByRefType
+        internal bool IsByRef
         {
             get
             {
@@ -644,7 +638,7 @@ namespace Internal.Runtime
             }
         }
 
-        internal bool IsFunctionPointerType
+        internal bool IsFunctionPointer
         {
             get
             {
@@ -676,13 +670,13 @@ namespace Internal.Runtime
         {
             get
             {
-                Debug.Assert(IsFunctionPointerType);
+                Debug.Assert(IsFunctionPointer);
                 return _uBaseSize & ~FunctionPointerFlags.FlagsMask;
             }
 #if TYPE_LOADER_IMPLEMENTATION
             set
             {
-                Debug.Assert(IsFunctionPointerType);
+                Debug.Assert(IsFunctionPointer);
                 _uBaseSize = value | (_uBaseSize & FunctionPointerFlags.FlagsMask);
             }
 #endif
@@ -692,13 +686,13 @@ namespace Internal.Runtime
         {
             get
             {
-                Debug.Assert(IsFunctionPointerType);
+                Debug.Assert(IsFunctionPointer);
                 return (_uBaseSize & FunctionPointerFlags.IsUnmanaged) != 0;
             }
 #if TYPE_LOADER_IMPLEMENTATION
             set
             {
-                Debug.Assert(IsFunctionPointerType);
+                Debug.Assert(IsFunctionPointer);
                 if (value)
                     _uBaseSize |= FunctionPointerFlags.IsUnmanaged;
                 else
@@ -722,13 +716,13 @@ namespace Internal.Runtime
         {
             get
             {
-                Debug.Assert(IsFunctionPointerType);
+                Debug.Assert(IsFunctionPointer);
                 return _relatedType._pRelatedParameterType;
             }
 #if TYPE_LOADER_IMPLEMENTATION
             set
             {
-                Debug.Assert(IsDynamicType && IsFunctionPointerType);
+                Debug.Assert(IsDynamicType && IsFunctionPointer);
                 _relatedType._pRelatedParameterType = value;
             }
 #endif
@@ -837,7 +831,7 @@ namespace Internal.Runtime
             get
             {
                 Debug.Assert(IsValueType);
-                // get_BaseSize returns the GC size including space for the sync block index field, the MethodTable* and
+                // BaseSize returns the GC size including space for the sync block index field, the MethodTable* and
                 // padding for GC heap alignment. Must subtract all of these to get the size used for locals, array
                 // elements or fields of another type.
                 return BaseSize - ((uint)sizeof(ObjHeader) + (uint)sizeof(MethodTable*) + ValueTypeFieldPadding);
@@ -869,18 +863,18 @@ namespace Internal.Runtime
                 if (!HasDispatchMap)
                     return null;
 
-                if (IsDynamicType || !SupportsRelativePointers)
-                    return GetField<Pointer<DispatchMap>>(EETypeField.ETF_DispatchMap).Value;
+                uint offset = GetFieldOffset(EETypeField.ETF_DispatchMap);
 
-                return GetField<RelativePointer<DispatchMap>>(EETypeField.ETF_DispatchMap).Value;
+                if (IsDynamicType || !SupportsRelativePointers)
+                    return GetField<Pointer<DispatchMap>>(offset).Value;
+
+                return GetField<RelativePointer<DispatchMap>>(offset).Value;
             }
 #if TYPE_LOADER_IMPLEMENTATION
             set
             {
                 Debug.Assert(IsDynamicType && HasDispatchMap);
-
-                fixed (MethodTable* pThis = &this)
-                    *(DispatchMap**)((byte*)pThis + GetFieldOffset(EETypeField.ETF_DispatchMap)) = value;
+                GetField<IntPtr>(EETypeField.ETF_DispatchMap) = (IntPtr)value;
             }
 #endif
         }
@@ -892,18 +886,18 @@ namespace Internal.Runtime
             {
                 Debug.Assert(IsFinalizable);
 
-                if (IsDynamicType || !SupportsRelativePointers)
-                    return GetField<Pointer>(EETypeField.ETF_Finalizer).Value;
+                uint offset = GetFieldOffset(EETypeField.ETF_Finalizer);
 
-                return GetField<RelativePointer>(EETypeField.ETF_Finalizer).Value;
+                if (IsDynamicType || !SupportsRelativePointers)
+                    return GetField<Pointer>(offset).Value;
+
+                return GetField<RelativePointer>(offset).Value;
             }
 #if TYPE_LOADER_IMPLEMENTATION
             set
             {
                 Debug.Assert(IsDynamicType && IsFinalizable);
-
-                fixed (MethodTable* pThis = &this)
-                    *(IntPtr*)((byte*)pThis + GetFieldOffset(EETypeField.ETF_Finalizer)) = value;
+                GetField<IntPtr>(EETypeField.ETF_Finalizer) = value;
             }
 #endif
         }
@@ -927,7 +921,7 @@ namespace Internal.Runtime
             {
                 Debug.Assert(IsDynamicType);
                 Debug.Assert(!IsParameterizedType);
-                Debug.Assert(!IsFunctionPointerType);
+                Debug.Assert(!IsFunctionPointer);
                 Debug.Assert(IsCanonical);
                 _relatedType._pBaseType = value;
             }
@@ -995,14 +989,8 @@ namespace Internal.Runtime
 
         internal unsafe IntPtr* GetVTableStartAddress()
         {
-            byte* pResult;
-
             // EETypes are always in unmanaged memory, so 'leaking' the 'fixed pointer' is safe.
-            fixed (MethodTable* pThis = &this)
-                pResult = (byte*)pThis;
-
-            pResult += sizeof(MethodTable);
-            return (IntPtr*)pResult;
+            return (IntPtr*)((byte*)Unsafe.AsPointer(ref this) + sizeof(MethodTable));
         }
 
         private static IntPtr FollowRelativePointer(int* pDist)
@@ -1053,10 +1041,12 @@ namespace Internal.Runtime
                 if (!HasOptionalFields)
                     return null;
 
-                if (IsDynamicType || !SupportsRelativePointers)
-                    return GetField<Pointer<byte>>(EETypeField.ETF_OptionalFieldsPtr).Value;
+                uint offset = GetFieldOffset(EETypeField.ETF_OptionalFieldsPtr);
 
-                return GetField<RelativePointer<byte>>(EETypeField.ETF_OptionalFieldsPtr).Value;
+                if (IsDynamicType || !SupportsRelativePointers)
+                    return GetField<Pointer<byte>>(offset).Value;
+
+                return GetField<RelativePointer<byte>>(offset).Value;
             }
 #if TYPE_LOADER_IMPLEMENTATION
             set
@@ -1065,11 +1055,7 @@ namespace Internal.Runtime
 
                 _uFlags |= (uint)EETypeFlags.OptionalFieldsFlag;
 
-                uint cbOptionalFieldsOffset = GetFieldOffset(EETypeField.ETF_OptionalFieldsPtr);
-                fixed (MethodTable* pThis = &this)
-                {
-                    *(byte**)((byte*)pThis + cbOptionalFieldsOffset) = value;
-                }
+                GetField<IntPtr>(EETypeField.ETF_OptionalFieldsPtr) = (IntPtr)value;
             }
 #endif
         }
@@ -1079,21 +1065,13 @@ namespace Internal.Runtime
             get
             {
                 Debug.Assert(IsDynamicType);
-                uint cbOffset = GetFieldOffset(EETypeField.ETF_DynamicTemplateType);
-                fixed (MethodTable* pThis = &this)
-                {
-                    return *(MethodTable**)((byte*)pThis + cbOffset);
-                }
+                return GetField<Pointer<MethodTable>>(EETypeField.ETF_DynamicTemplateType).Value;
             }
 #if TYPE_LOADER_IMPLEMENTATION
             set
             {
                 Debug.Assert(IsDynamicType);
-                uint cbOffset = GetFieldOffset(EETypeField.ETF_DynamicTemplateType);
-                fixed (MethodTable* pThis = &this)
-                {
-                    *(MethodTable**)((byte*)pThis + cbOffset) = value;
-                }
+                GetField<IntPtr>(EETypeField.ETF_DynamicTemplateType) = (IntPtr)value;
             }
 #endif
         }
@@ -1103,21 +1081,13 @@ namespace Internal.Runtime
             get
             {
                 Debug.Assert((RareFlags & EETypeRareFlags.IsDynamicTypeWithGcStatics) != 0);
-                uint cbOffset = GetFieldOffset(EETypeField.ETF_DynamicGcStatics);
-                fixed (MethodTable* pThis = &this)
-                {
-                    return *(IntPtr*)((byte*)pThis + cbOffset);
-                }
+                return GetField<IntPtr>(EETypeField.ETF_DynamicGcStatics);
             }
 #if TYPE_LOADER_IMPLEMENTATION
             set
             {
                 Debug.Assert((RareFlags & EETypeRareFlags.IsDynamicTypeWithGcStatics) != 0);
-                uint cbOffset = GetFieldOffset(EETypeField.ETF_DynamicGcStatics);
-                fixed (MethodTable* pThis = &this)
-                {
-                    *(IntPtr*)((byte*)pThis + cbOffset) = value;
-                }
+                GetField<IntPtr>(EETypeField.ETF_DynamicGcStatics) = value;
             }
 #endif
         }
@@ -1127,21 +1097,13 @@ namespace Internal.Runtime
             get
             {
                 Debug.Assert((RareFlags & EETypeRareFlags.IsDynamicTypeWithNonGcStatics) != 0);
-                uint cbOffset = GetFieldOffset(EETypeField.ETF_DynamicNonGcStatics);
-                fixed (MethodTable* pThis = &this)
-                {
-                    return *(IntPtr*)((byte*)pThis + cbOffset);
-                }
+                return GetField<IntPtr>(EETypeField.ETF_DynamicNonGcStatics);
             }
 #if TYPE_LOADER_IMPLEMENTATION
             set
             {
                 Debug.Assert((RareFlags & EETypeRareFlags.IsDynamicTypeWithNonGcStatics) != 0);
-                uint cbOffset = GetFieldOffset(EETypeField.ETF_DynamicNonGcStatics);
-                fixed (MethodTable* pThis = &this)
-                {
-                    *(IntPtr*)((byte*)pThis + cbOffset) = value;
-                }
+                GetField<IntPtr>(EETypeField.ETF_DynamicNonGcStatics) = value;
             }
 #endif
         }
@@ -1151,21 +1113,13 @@ namespace Internal.Runtime
             get
             {
                 Debug.Assert((RareFlags & EETypeRareFlags.IsDynamicTypeWithThreadStatics) != 0);
-                uint cbOffset = GetFieldOffset(EETypeField.ETF_DynamicThreadStaticOffset);
-                fixed (MethodTable* pThis = &this)
-                {
-                    return *(IntPtr*)((byte*)pThis + cbOffset);
-                }
+                return GetField<IntPtr>(EETypeField.ETF_DynamicThreadStaticOffset);
             }
 #if TYPE_LOADER_IMPLEMENTATION
             set
             {
                 Debug.Assert((RareFlags & EETypeRareFlags.IsDynamicTypeWithThreadStatics) != 0);
-                uint cbOffset = GetFieldOffset(EETypeField.ETF_DynamicThreadStaticOffset);
-                fixed (MethodTable* pThis = &this)
-                {
-                    *(IntPtr*)((byte*)pThis + cbOffset) = value;
-                }
+                GetField<IntPtr>(EETypeField.ETF_DynamicThreadStaticOffset) = value;
             }
 #endif
         }
@@ -1174,11 +1128,13 @@ namespace Internal.Runtime
         {
             get
             {
+                uint offset = GetFieldOffset(EETypeField.ETF_TypeManagerIndirection);
+
                 IntPtr typeManagerIndirection;
                 if (IsDynamicType || !SupportsRelativePointers)
-                    typeManagerIndirection = GetField<Pointer>(EETypeField.ETF_TypeManagerIndirection).Value;
+                    typeManagerIndirection = GetField<Pointer>(offset).Value;
                 else
-                    typeManagerIndirection = GetField<RelativePointer>(EETypeField.ETF_TypeManagerIndirection).Value;
+                    typeManagerIndirection = GetField<RelativePointer>(offset).Value;
 
                 return *(TypeManagerHandle*)typeManagerIndirection;
             }
@@ -1188,17 +1144,17 @@ namespace Internal.Runtime
         {
             get
             {
-                if (IsDynamicType || !SupportsRelativePointers)
-                    return GetField<Pointer>(EETypeField.ETF_TypeManagerIndirection).Value;
+                uint offset = GetFieldOffset(EETypeField.ETF_TypeManagerIndirection);
 
-                return GetField<RelativePointer>(EETypeField.ETF_TypeManagerIndirection).Value;
+                if (IsDynamicType || !SupportsRelativePointers)
+                    return GetField<Pointer>(offset).Value;
+
+                return GetField<RelativePointer>(offset).Value;
             }
             set
             {
                 Debug.Assert(IsDynamicType);
-                uint cbOffset = GetFieldOffset(EETypeField.ETF_TypeManagerIndirection);
-                // This is always a pointer to a pointer to a type manager
-                *(TypeManagerHandle**)((byte*)Unsafe.AsPointer(ref this) + cbOffset) = (TypeManagerHandle*)value;
+                GetField<IntPtr>(EETypeField.ETF_TypeManagerIndirection) = value;
             }
         }
 #endif
@@ -1212,11 +1168,9 @@ namespace Internal.Runtime
         {
             get
             {
-                Debug.Assert(SupportsWritableData);
-
                 uint offset = GetFieldOffset(EETypeField.ETF_WritableData);
 
-                if (!IsDynamicType)
+                if (!IsDynamicType && SupportsRelativePointers)
                     return (void*)GetField<RelativePointer>(offset).Value;
                 else
                     return (void*)GetField<Pointer>(offset).Value;
@@ -1224,10 +1178,8 @@ namespace Internal.Runtime
 #if TYPE_LOADER_IMPLEMENTATION
             set
             {
-                Debug.Assert(IsDynamicType && SupportsWritableData);
-
-                uint cbOffset = GetFieldOffset(EETypeField.ETF_WritableData);
-                *(void**)((byte*)Unsafe.AsPointer(ref this) + cbOffset) = value;
+                Debug.Assert(IsDynamicType);
+                GetField<IntPtr>(EETypeField.ETF_WritableData) = (IntPtr)value;
             }
 #endif
         }
@@ -1308,14 +1260,11 @@ namespace Internal.Runtime
             cbOffset += relativeOrFullPointerOffset;
 
             // Followed by writable data.
-            if (SupportsWritableData)
+            if (eField == EETypeField.ETF_WritableData)
             {
-                if (eField == EETypeField.ETF_WritableData)
-                {
-                    return cbOffset;
-                }
-                cbOffset += relativeOrFullPointerOffset;
+                return cbOffset;
             }
+            cbOffset += relativeOrFullPointerOffset;
 
             // Followed by pointer to the dispatch map
             if (eField == EETypeField.ETF_DispatchMap)
@@ -1374,10 +1323,10 @@ namespace Internal.Runtime
 
             if (eField == EETypeField.ETF_FunctionPointerParameters)
             {
-                Debug.Assert(IsFunctionPointerType);
+                Debug.Assert(IsFunctionPointer);
                 return cbOffset;
             }
-            if (IsFunctionPointerType)
+            if (IsFunctionPointer)
             {
                 cbOffset += NumFunctionPointerParameters * relativeOrFullPointerOffset;
             }
@@ -1417,11 +1366,13 @@ namespace Internal.Runtime
             return 0;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ref T GetField<T>(EETypeField eField)
         {
             return ref Unsafe.As<byte, T>(ref *((byte*)Unsafe.AsPointer(ref this) + GetFieldOffset(eField)));
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ref T GetField<T>(uint offset)
         {
             return ref Unsafe.As<byte, T>(ref *((byte*)Unsafe.AsPointer(ref this) + offset));
@@ -1445,13 +1396,13 @@ namespace Internal.Runtime
                 (IntPtr.Size * cVirtuals) +
                 (sizeof(MethodTable*) * cInterfaces) +
                 sizeof(IntPtr) + // TypeManager
-                (SupportsWritableData ? sizeof(IntPtr) : 0) + // WritableData
+                sizeof(IntPtr) + // WritableData
                 (fHasDispatchMap ? sizeof(UIntPtr) : 0) +
                 (fHasFinalizer ? sizeof(UIntPtr) : 0) +
                 (fRequiresOptionalFields ? sizeof(IntPtr) : 0) +
                 (fHasSealedVirtuals ? sizeof(IntPtr) : 0) +
                 cFunctionPointerTypeParameters * sizeof(IntPtr) +
-                (fHasGenericInfo ? sizeof(IntPtr)*2 : 0) + // pointers to GenericDefinition and GenericComposition
+                (fHasGenericInfo ? sizeof(IntPtr) * 2 : 0) + // pointers to GenericDefinition and GenericComposition
                 (fHasNonGcStatics ? sizeof(IntPtr) : 0) + // pointer to data
                 (fHasGcStatics ? sizeof(IntPtr) : 0) +  // pointer to data
                 (fHasThreadStatics ? sizeof(IntPtr) : 0)); // threadstatic index cell
@@ -1465,13 +1416,7 @@ namespace Internal.Runtime
     {
         private readonly IntPtr _value;
 
-        public IntPtr Value
-        {
-            get
-            {
-                return _value;
-            }
-        }
+        public IntPtr Value => _value;
     }
 
     // Wrapper around pointers
@@ -1480,30 +1425,7 @@ namespace Internal.Runtime
     {
         private readonly T* _value;
 
-        public T* Value
-        {
-            get
-            {
-                return _value;
-            }
-        }
-    }
-
-    // Wrapper around pointers that might be indirected through IAT
-    [StructLayout(LayoutKind.Sequential)]
-    internal readonly unsafe struct IatAwarePointer<T> where T : unmanaged
-    {
-        private readonly T* _value;
-
-        public T* Value
-        {
-            get
-            {
-                if (((int)_value & IndirectionConstants.IndirectionCellPointer) == 0)
-                    return _value;
-                return *(T**)((byte*)_value - IndirectionConstants.IndirectionCellPointer);
-            }
-        }
+        public T* Value => _value;
     }
 
     // Wrapper around relative pointers
@@ -1512,13 +1434,7 @@ namespace Internal.Runtime
     {
         private readonly int _value;
 
-        public unsafe IntPtr Value
-        {
-            get
-            {
-                return (IntPtr)((byte*)Unsafe.AsPointer(ref Unsafe.AsRef(in _value)) + _value);
-            }
-        }
+        public unsafe IntPtr Value => (IntPtr)((byte*)Unsafe.AsPointer(ref Unsafe.AsRef(in _value)) + _value);
     }
 
     // Wrapper around relative pointers
@@ -1527,35 +1443,7 @@ namespace Internal.Runtime
     {
         private readonly int _value;
 
-        public T* Value
-        {
-            get
-            {
-                return (T*)((byte*)Unsafe.AsPointer(ref Unsafe.AsRef(in _value)) + _value);
-            }
-        }
-    }
-
-    // Wrapper around relative pointers that might be indirected through IAT
-    [StructLayout(LayoutKind.Sequential)]
-    internal readonly unsafe struct IatAwareRelativePointer<T> where T : unmanaged
-    {
-        private readonly int _value;
-
-        public T* Value
-        {
-            get
-            {
-                if ((_value & IndirectionConstants.IndirectionCellPointer) == 0)
-                {
-                    return (T*)((byte*)Unsafe.AsPointer(ref Unsafe.AsRef(in _value)) + _value);
-                }
-                else
-                {
-                    return *(T**)((byte*)Unsafe.AsPointer(ref Unsafe.AsRef(in _value)) + (_value & ~IndirectionConstants.IndirectionCellPointer));
-                }
-            }
-        }
+        public T* Value => (T*)((byte*)Unsafe.AsPointer(ref Unsafe.AsRef(in _value)) + _value);
     }
 
     // Abstracts a list of MethodTable pointers that could either be relative

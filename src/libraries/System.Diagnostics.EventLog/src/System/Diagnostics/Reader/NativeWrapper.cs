@@ -4,8 +4,8 @@
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
-using System.Text;
 using System.Security.Principal;
+using System.Text;
 using Microsoft.Win32;
 
 namespace System.Diagnostics.Eventing.Reader
@@ -967,7 +967,13 @@ namespace System.Diagnostics.Eventing.Reader
                 EventLogException.Throw(error);
             }
 
-            int len = bufferNeeded - 1; // buffer includes null terminator
+
+            // buffer may include null terminators
+            int len = bufferNeeded;
+            while (len > 0 && buffer[len - 1] == '\0')
+            {
+                len--;
+            }
             if (len <= 0)
                 return string.Empty;
 

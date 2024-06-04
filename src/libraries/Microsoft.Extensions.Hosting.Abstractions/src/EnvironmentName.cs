@@ -13,8 +13,19 @@ namespace Microsoft.Extensions.Hosting
     [System.Obsolete("EnvironmentName has been deprecated. Use Microsoft.Extensions.Hosting.Environments instead.")]
     public static class EnvironmentName
     {
+        /// <summary>
+        /// The name of the Development environment.
+        /// </summary>
         public static readonly string Development = "Development";
+
+        /// <summary>
+        /// The name of the Staging environment.
+        /// </summary>
         public static readonly string Staging = "Staging";
+
+        /// <summary>
+        /// The name of the Production environment.
+        /// </summary>
         public static readonly string Production = "Production";
     }
 }

@@ -99,7 +99,7 @@ namespace System.SpanTests
 #pragma warning disable 0618
                 bool result = left.Equals(new object());
 #pragma warning restore 0618
-                Assert.True(false);
+                Assert.Fail();
             }
             catch (Exception ex)
             {

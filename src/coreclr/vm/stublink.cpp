@@ -360,6 +360,12 @@ StubLinker::StubLinker()
     m_cbStackFrame      = 0;
     m_fPushArgRegs      = FALSE;
 #endif
+#ifdef TARGET_RISCV64
+    m_fProlog           = FALSE;
+    m_cIntRegArgs       = 0;
+    m_cFpRegArgs        = 0;
+    m_cbStackSpace      = 0;
+#endif
 #ifdef STUBLINKER_GENERATES_UNWIND_INFO
 #ifdef _DEBUG
     m_pUnwindInfoCheckLabel = NULL;
@@ -428,7 +434,7 @@ VOID StubLinker::EmitBytes(const BYTE *pBytes, UINT numBytes)
 //---------------------------------------------------------------
 // Append code bytes.
 //---------------------------------------------------------------
-VOID StubLinker::Emit8 (unsigned __int8  val)
+VOID StubLinker::Emit8 (uint8_t  val)
 {
     CONTRACTL
     {
@@ -439,7 +445,7 @@ VOID StubLinker::Emit8 (unsigned __int8  val)
 
     CodeRun *pCodeRun = GetLastCodeRunIfAny();
     if (pCodeRun && (CODERUNSIZE - pCodeRun->m_numcodebytes) >= sizeof(val)) {
-        *((unsigned __int8 *)(pCodeRun->m_codebytes + pCodeRun->m_numcodebytes)) = val;
+        *((uint8_t *)(pCodeRun->m_codebytes + pCodeRun->m_numcodebytes)) = val;
         pCodeRun->m_numcodebytes += sizeof(val);
     } else {
         EmitBytes((BYTE*)&val, sizeof(val));
@@ -449,7 +455,7 @@ VOID StubLinker::Emit8 (unsigned __int8  val)
 //---------------------------------------------------------------
 // Append code bytes.
 //---------------------------------------------------------------
-VOID StubLinker::Emit16(unsigned __int16 val)
+VOID StubLinker::Emit16(uint16_t val)
 {
     CONTRACTL
     {
@@ -470,7 +476,7 @@ VOID StubLinker::Emit16(unsigned __int16 val)
 //---------------------------------------------------------------
 // Append code bytes.
 //---------------------------------------------------------------
-VOID StubLinker::Emit32(unsigned __int32 val)
+VOID StubLinker::Emit32(uint32_t val)
 {
     CONTRACTL
     {
@@ -491,7 +497,7 @@ VOID StubLinker::Emit32(unsigned __int32 val)
 //---------------------------------------------------------------
 // Append code bytes.
 //---------------------------------------------------------------
-VOID StubLinker::Emit64(unsigned __int64 val)
+VOID StubLinker::Emit64(uint64_t val)
 {
     CONTRACTL
     {
@@ -1048,7 +1054,7 @@ bool StubLinker::EmitStub(Stub* pStub, int globalsize, int totalSize, LoaderHeap
                 case CodeElement::kLabelRef: {
                     LabelRef *pLabelRef = (LabelRef*)pCodeElem;
                     InstructionFormat *pIF  = pLabelRef->m_pInstructionFormat;
-                    __int64 fixupval;
+                    int64_t fixupval;
 
                     LPBYTE srcglobaladdr = pCode +
                                            pLabelRef->m_globaloffset +
@@ -1063,9 +1069,9 @@ bool StubLinker::EmitStub(Stub* pStub, int globalsize, int totalSize, LoaderHeap
                         targetglobaladdr = (LPBYTE)(pLabelRef->m_target->e.m_pExternalAddress);
                     }
                     if ((pLabelRef->m_target->m_fAbsolute)) {
-                        fixupval = (__int64)(size_t)targetglobaladdr;
+                        fixupval = (int64_t)(size_t)targetglobaladdr;
                     } else
-                        fixupval = (__int64)(targetglobaladdr - srcglobaladdr);
+                        fixupval = (int64_t)(targetglobaladdr - srcglobaladdr);
 
                     pLabelRef->m_pInstructionFormat->EmitInstruction(
                         pLabelRef->m_refsize,
@@ -1891,7 +1897,30 @@ UINT StubLinker::GetStackFrameSize()
     return m_cbStackSpace + (2 + m_cCalleeSavedRegs + m_cIntRegArgs + m_cVecRegArgs)*sizeof(void*);
 }
 
-#endif // ifdef TARGET_ARM, elif defined(TARGET_ARM64)
+#elif defined(TARGET_RISCV64)
+void StubLinker::DescribeProlog(UINT cIntRegArgs, UINT cFpRegArgs, UINT cbStackSpace)
+{
+    m_fProlog               = TRUE;
+    m_cIntRegArgs           = cIntRegArgs;
+    m_cFpRegArgs            = cFpRegArgs;
+    m_cbStackSpace          = cbStackSpace;
+}
+
+UINT StubLinker::GetSavedRegArgsOffset()
+{
+    _ASSERTE(m_fProlog);
+    // This is the offset from SP
+    // We're assuming that the stublinker will push the arg registers to the bottom of the stack frame
+    return m_cbStackSpace + 2 * sizeof(void*); // 2 is for FP and LR
+}
+
+UINT StubLinker::GetStackFrameSize()
+{
+    _ASSERTE(m_fProlog);
+    return m_cbStackSpace + (2 + m_cIntRegArgs + m_cFpRegArgs) * sizeof(void*);
+}
+
+#endif // ifdef TARGET_ARM, elif defined(TARGET_ARM64), elif defined(TARGET_RISCV64)
 
 #endif // #ifndef DACCESS_COMPILE
 
@@ -2278,7 +2307,7 @@ ArgBasedStubCache::ArgBasedStubCache(UINT fixedSlots)
     m_aStub = new Stub * [m_numFixedSlots];
     _ASSERTE(m_aStub != NULL);
 
-    for (unsigned __int32 i = 0; i < m_numFixedSlots; i++) {
+    for (uint32_t i = 0; i < m_numFixedSlots; i++) {
         m_aStub[i] = NULL;
     }
     m_pSlotEntries = NULL;
@@ -2297,7 +2326,7 @@ ArgBasedStubCache::~ArgBasedStubCache()
     }
     CONTRACTL_END;
 
-    for (unsigned __int32 i = 0; i < m_numFixedSlots; i++) {
+    for (uint32_t i = 0; i < m_numFixedSlots; i++) {
         Stub *pStub = m_aStub[i];
         if (pStub) {
             pStub->DecRef();

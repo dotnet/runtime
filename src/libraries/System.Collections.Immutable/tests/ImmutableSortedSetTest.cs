@@ -289,7 +289,7 @@ namespace System.Collections.Immutable.Tests
             Assert.Equal(1, set.Count);
             Assert.Same(comparer, set.KeyComparer);
 
-            set = ImmutableSortedSet.Create("a", "b");
+            set = ImmutableSortedSet.Create(new [] { "a", "b" });
             Assert.Equal(2, set.Count);
             Assert.Same(Comparer<string>.Default, set.KeyComparer);
 
@@ -297,7 +297,7 @@ namespace System.Collections.Immutable.Tests
             Assert.Equal(2, set.Count);
             Assert.Same(Comparer<string>.Default, set.KeyComparer);
 
-            set = ImmutableSortedSet.Create(comparer, "a", "b");
+            set = ImmutableSortedSet.Create(comparer, new[] { "a", "b" });
             Assert.Equal(2, set.Count);
             Assert.Same(comparer, set.KeyComparer);
 
@@ -410,7 +410,7 @@ namespace System.Collections.Immutable.Tests
             var array = new[] { 1, 2, 3 }.ToImmutableSortedSet();
 
             ref readonly int safeRef = ref array.ItemRef(1);
-            ref int unsafeRef = ref Unsafe.AsRef(safeRef);
+            ref int unsafeRef = ref Unsafe.AsRef(in safeRef);
 
             Assert.Equal(2, array.ItemRef(1));
 

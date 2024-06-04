@@ -2,22 +2,22 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Reflection;
-using System.Diagnostics;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
+using System.Diagnostics;
+using System.Reflection;
+using System.Reflection.Runtime.CustomAttributes;
 using System.Reflection.Runtime.General;
-using System.Reflection.Runtime.TypeInfos;
-using System.Reflection.Runtime.TypeInfos.NativeFormat;
 using System.Reflection.Runtime.MethodInfos;
 using System.Reflection.Runtime.MethodInfos.NativeFormat;
 using System.Reflection.Runtime.ParameterInfos;
-using System.Reflection.Runtime.CustomAttributes;
+using System.Reflection.Runtime.TypeInfos;
+using System.Reflection.Runtime.TypeInfos.NativeFormat;
+using System.Runtime.CompilerServices;
 
 using Internal.Metadata.NativeFormat;
-using NativeFormatMethodSemanticsAttributes = global::Internal.Metadata.NativeFormat.MethodSemanticsAttributes;
-
 using Internal.Reflection.Core.Execution;
+
+using NativeFormatMethodSemanticsAttributes = global::Internal.Metadata.NativeFormat.MethodSemanticsAttributes;
 
 namespace System.Reflection.Runtime.EventInfos.NativeFormat
 {
@@ -140,7 +140,7 @@ namespace System.Reflection.Runtime.EventInfos.NativeFormat
         {
             get
             {
-                return _event.Type.Resolve(_reader, ContextTypeInfo.TypeContext);
+                return _event.Type.Resolve(_reader, ContextTypeInfo.TypeContext).ToType();
             }
         }
 

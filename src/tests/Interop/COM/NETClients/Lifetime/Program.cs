@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Xunit;
 namespace NetClient
 {
     using System;
@@ -12,7 +13,7 @@ namespace NetClient
     using Server.Contract;
     using Server.Contract.Servers;
 
-    unsafe class Program
+    public unsafe class Program
     {
         static delegate* unmanaged<int> GetAllocationCount;
 
@@ -82,7 +83,8 @@ namespace NetClient
             Assert.False(Marshal.AreComObjectsAvailableForCleanup());
         }
 
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             // RegFree COM and STA apartments are not supported on Windows Nano
             if (Utilities.IsWindowsNanoServer)

@@ -12,7 +12,7 @@ namespace Test
         static void Static1(ulong param2, object param3) { }
 
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             ulong[] arr = new ulong[16];
             uint u = 11u;
@@ -25,7 +25,6 @@ namespace Test
                 }
                 catch (Exception) { }
             }
-            return 100;
         }
     }
 }

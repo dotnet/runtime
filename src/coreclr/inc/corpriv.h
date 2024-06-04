@@ -334,17 +334,8 @@ typedef enum {
     // code relative address fixup
     srRelocCodeRelative,
 
-    // generate a .reloc for a 64 bit address in an ia64 movl instruction
-    srRelocIA64Imm64,
-
     // generate a .reloc for a 64 bit address
     srRelocDir64,
-
-    // generate a .reloc for a 25-bit PC relative address in an ia64 br.call instruction
-    srRelocIA64PcRel25,
-
-    // generate a .reloc for a 64-bit PC relative address in an ia64 brl.call instruction
-    srRelocIA64PcRel64,
 
     // generate a 30-bit section-relative reloc, used for tagged pointer values
     srRelocAbsoluteTagged,
@@ -366,7 +357,6 @@ typedef enum {
     srRelocAbsolutePtr = srRelocPtr + srRelocAbsolute,
     srRelocHighLowPtr = srRelocPtr + srRelocHighLow,
     srRelocRelativePtr = srRelocPtr + srRelocRelative,
-    srRelocIA64Imm64Ptr = srRelocPtr + srRelocIA64Imm64,
     srRelocDir64Ptr = srRelocPtr + srRelocDir64,
 
 } CeeSectionRelocType;

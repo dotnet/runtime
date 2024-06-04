@@ -616,7 +616,7 @@ namespace System.Reflection.Metadata
             return new EntityHandle(tokenType | (value >> 2));
         }
 
-        private static ReadOnlySpan<uint> CorEncodeTokenArray => new uint[] { TokenTypeIds.TypeDef, TokenTypeIds.TypeRef, TokenTypeIds.TypeSpec, 0 };
+        private static ReadOnlySpan<uint> CorEncodeTokenArray => [TokenTypeIds.TypeDef, TokenTypeIds.TypeRef, TokenTypeIds.TypeSpec, 0];
 
         /// <summary>
         /// Reads a #Blob heap handle encoded as a compressed integer.

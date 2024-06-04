@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern System.Console { }
+.assembly extern xunit.core {}
 /* RDawson - 12/1/200
 
    Check classes can obtain contracted method bodies via itself and from its
@@ -29,7 +30,7 @@
 	.method virtual abstract public void f3(){}
 }
 
-.class Foo extends C1 implements I1{
+.class public Foo extends C1 implements I1{
 	.method specialname public void .ctor(){
 		ldarg.0
 		call	instance void [mscorlib]System.Object::.ctor()
@@ -45,6 +46,9 @@
 
 
 .method public static int32 main(){
+	.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+	    01 00 00 00
+	)
 	.entrypoint
 	.maxstack 8
 

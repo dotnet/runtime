@@ -3,7 +3,6 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-browser</TargetFrameworks>
-    <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
   </PropertyGroup>
   <PropertyGroup>
     <!-- SYSTEM_NET_PRIMITIVES_DLL is required to allow source-level code sharing for types defined within the
@@ -39,6 +38,10 @@
              Link="Common\System\HexConverter.cs" />
     <Compile Include="$(CommonPath)System\Obsoletions.cs"
              Link="Common\System\Obsoletions.cs" />
+    <Compile Include="$(CommonPath)System\Net\IPEndPointExtensions.cs"
+             Link="Common\System\Net\IPEndPointExtensions.cs" />
+    <Compile Include="$(CommonPath)System\Net\SocketAddressExtensions.cs"
+             Link="Common\System\Net\SocketAddressExtensions.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="HostInformationPalTest.cs" />

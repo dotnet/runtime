@@ -13,10 +13,9 @@ namespace GitHub_24114
     public class Program
     {
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             Test();
-            return 100;
         }
         
         [MethodImpl(MethodImplOptions.NoInlining)]

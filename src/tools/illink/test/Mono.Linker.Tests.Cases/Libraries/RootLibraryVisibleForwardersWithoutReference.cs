@@ -8,6 +8,9 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Libraries
 {
+	[IgnoreTestCase ("NativeAOT doesn't implement library trimming the same way", IgnoredBy = Tool.NativeAot)]
+	[KeptAttributeAttribute (typeof (IgnoreTestCaseAttribute), By = Tool.Trimmer)]
+
 	[SetupCompileBefore ("library.dll", new[] { "Dependencies/RootLibraryVisibleForwarders_Lib.cs" }, outputSubFolder: "isolated")]
 	[SetupLinkerLinkPublicAndFamily]
 	[SetupLinkerArgument ("-a", "isolated/library.dll", "visible")] // Checks for no-eager exported type resolving

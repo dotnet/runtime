@@ -33,8 +33,6 @@ extern void trace_verbose_printf(const char* format, ...);
 #endif
 
 #include <windows.h>
-#include <winternl.h>
-#include <winver.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <stddef.h>
@@ -53,6 +51,8 @@ typedef int T_CONTEXT;
 #include <arrayholder.h>
 #include <releaseholder.h>
 #ifdef HOST_UNIX
+#include <minipal/utf8.h>
+#include <dn-u16.h>
 #include <dumpcommon.h>
 #include <clrconfignocache.h>
 #include <unistd.h>
@@ -72,7 +72,6 @@ typedef int T_CONTEXT;
 #include <dirent.h>
 #include <fcntl.h>
 #include <dlfcn.h>
-#include <cxxabi.h>
 #ifdef __APPLE__
 #include <ELF.h>
 #else
@@ -82,6 +81,7 @@ typedef int T_CONTEXT;
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
 #else
+#include <winternl.h>
 #include <dbghelp.h>
 #endif
 #include <map>
@@ -117,7 +117,8 @@ typedef struct
     int Signal;
     int SignalCode;
     int SignalErrno;
-    void* SignalAddress;
+    uint64_t SignalAddress;
+    uint64_t ExceptionRecord;
 } CreateDumpOptions;
 
 #ifdef HOST_UNIX
@@ -134,6 +135,7 @@ typedef struct
 #include "crashreportwriter.h"
 #include "dumpwriter.h"
 #include "runtimeinfo.h"
+#include "specialdiaginfo.h"
 #endif
 
 #ifndef MAX_LONGPATH

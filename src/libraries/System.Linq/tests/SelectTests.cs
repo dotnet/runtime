@@ -747,7 +747,7 @@ namespace System.Linq.Tests
             var iterator = NumberRangeGuaranteedNotCollectionType(0, 3).Select(i => i);
             // Don't insist on this behaviour, but check it's correct if it happens
             var en = iterator as IEnumerator<int>;
-            Assert.False(en != null && en.MoveNext());
+            Assert.False(en is not null && en.MoveNext());
         }
 
         [Fact]
@@ -756,7 +756,7 @@ namespace System.Linq.Tests
             var iterator = NumberRangeGuaranteedNotCollectionType(0, 3).Select((e, i) => i);
             // Don't insist on this behaviour, but check it's correct if it happens
             var en = iterator as IEnumerator<int>;
-            Assert.False(en != null && en.MoveNext());
+            Assert.False(en is not null && en.MoveNext());
         }
 
         [Fact]
@@ -764,7 +764,7 @@ namespace System.Linq.Tests
         {
             var iterator = NumberRangeGuaranteedNotCollectionType(0, 3).ToArray().Select(i => i);
             var en = iterator as IEnumerator<int>;
-            Assert.False(en != null && en.MoveNext());
+            Assert.False(en is not null && en.MoveNext());
         }
 
         [Fact]
@@ -772,7 +772,7 @@ namespace System.Linq.Tests
         {
             var iterator = NumberRangeGuaranteedNotCollectionType(0, 3).ToList().Select(i => i);
             var en = iterator as IEnumerator<int>;
-            Assert.False(en != null && en.MoveNext());
+            Assert.False(en is not null && en.MoveNext());
         }
 
         [Fact]
@@ -780,7 +780,7 @@ namespace System.Linq.Tests
         {
             var iterator = NumberRangeGuaranteedNotCollectionType(0, 3).ToList().AsReadOnly().Select(i => i);
             var en = iterator as IEnumerator<int>;
-            Assert.False(en != null && en.MoveNext());
+            Assert.False(en is not null && en.MoveNext());
         }
 
         [Fact]
@@ -788,7 +788,7 @@ namespace System.Linq.Tests
         {
             var iterator = NumberRangeGuaranteedNotCollectionType(0, 3).ToList().AsReadOnly().Select(i => i).Skip(1);
             var en = iterator as IEnumerator<int>;
-            Assert.False(en != null && en.MoveNext());
+            Assert.False(en is not null && en.MoveNext());
         }
 
         [Fact]
@@ -1108,6 +1108,13 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public void Select_SourceIsIPartitionToArray()
+        {
+            Assert.Equal(Array.Empty<int>(), new List<int>().Order().Select(i => i * 2).ToArray());
+            Assert.Equal(new[] { 2, 4, 6, 8 }, new List<int> { 1, 2, 3, 4 }.Order().Select(i => i * 2).ToArray());
+        }
+
+        [Fact]
         public void Select_SourceIsListSkipTakeCount()
         {
             Assert.Equal(3, new List<int> { 1, 2, 3, 4 }.Select(i => i * 2).Take(3).Count());
@@ -1132,6 +1139,13 @@ namespace System.Linq.Tests
             Assert.Equal(new[] { 2, 4, 6, 8 }, new List<int> { 1, 2, 3, 4 }.Select(i => i * 2).Take(9).ToList());
             Assert.Equal(new[] { 6, 8 }, new List<int> { 1, 2, 3, 4 }.Select(i => i * 2).Skip(2).ToList());
             Assert.Empty(new List<int> { 1, 2, 3, 4 }.Select(i => i * 2).Skip(8).ToList());
+        }
+
+        [Fact]
+        public void Select_SourceIsIPartitionToList()
+        {
+            Assert.Equal(Array.Empty<int>(), new List<int>().Order().Select(i => i * 2).ToList());
+            Assert.Equal(new[] { 2, 4, 6, 8 }, new List<int> { 1, 2, 3, 4 }.Order().Select(i => i * 2).ToList());
         }
 
         [Theory]
@@ -1197,7 +1211,7 @@ namespace System.Linq.Tests
                 e => new LinkedList<int>(e) // Implements IList<T>.
             };
 
-            var r = new Random(unchecked((int)0x984bf1a3));
+            var r = new Random(42);
 
             for (int i = 0; i <= 5; i++)
             {

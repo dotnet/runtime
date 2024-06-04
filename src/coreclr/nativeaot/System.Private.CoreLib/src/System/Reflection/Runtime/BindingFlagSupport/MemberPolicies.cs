@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Reflection.Runtime.TypeInfos;
 
 namespace System.Reflection.Runtime.BindingFlagSupport
@@ -88,8 +88,8 @@ namespace System.Reflection.Runtime.BindingFlagSupport
             if (method1.Name != method2.Name)
                 return false;
 
-            ParameterInfo[] p1 = method1.GetParametersNoCopy();
-            ParameterInfo[] p2 = method2.GetParametersNoCopy();
+            ReadOnlySpan<ParameterInfo> p1 = method1.GetParametersAsSpan();
+            ReadOnlySpan<ParameterInfo> p2 = method2.GetParametersAsSpan();
             if (p1.Length != p2.Length)
                 return false;
 

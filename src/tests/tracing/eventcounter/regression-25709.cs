@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Diagnostics;
+using Xunit;
 
 namespace EventCounterRegressionTests
 {
@@ -86,7 +87,8 @@ namespace EventCounterRegressionTests
             }
         }
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             Task exceptionTask = Task.Run(ThrowExceptionTask);
             Thread.Sleep(5000);

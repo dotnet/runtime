@@ -801,15 +801,14 @@ void TypeString::AppendType(TypeNameBuilder& tnb, TypeHandle ty, Instantiation t
             StackSString ss;
             AppendType(ss, retAndArgTypes[0], format);
 
-            SString ssOpening(SString::Literal, "(");
-            ss += ssOpening;
-        
+            ss.Append(W("("));
+
             SString ssComma(SString::Literal, ", ");
             DWORD cArgs = fnPtr->GetNumArgs();
             for (DWORD i = 1; i <= cArgs; i++)
             {
                 if (i != 1)
-                    ss += ssComma;
+                    ss.Append(ssComma);
 
                 AppendType(ss, retAndArgTypes[i], format);
             }
@@ -817,20 +816,18 @@ void TypeString::AppendType(TypeNameBuilder& tnb, TypeHandle ty, Instantiation t
             if ((fnPtr->GetCallConv() & IMAGE_CEE_CS_CALLCONV_MASK) == IMAGE_CEE_CS_CALLCONV_VARARG)
             {
                 if (cArgs)
-                    ss += ssComma;
+                    ss.Append(ssComma);
 
-                SString ssEllipsis(SString::Literal, "...");
-                ss += ssEllipsis;
-            }        
+                ss.Append(W("..."));
+            }
 
-            SString ssClosing(SString::Literal, ")");
-            ss += ssClosing;
-            
+            ss.Append(W(")"));
+
             tnb.AddNameNoEscaping(ss);
         }
         else
-        {        
-            tnb.AddNameNoEscaping(W(""));            
+        {
+            tnb.AddNameNoEscaping(W(""));
         }
     }
 
@@ -941,13 +938,11 @@ void TypeString::AppendMethodImpl(SString& ss, MethodDesc *pMD, Instantiation ty
         {
             if (pMD->IsLCGMethod())
             {
-                SString sss(SString::Literal, "DynamicClass");
-                ss += sss;
+                ss.AppendUTF8("DynamicClass");
             }
             else if (pMD->IsILStub())
             {
-                SString sss(SString::Literal, ILStubResolver::GetStubClassName(pMD));
-                ss += sss;
+                ss.AppendUTF8(ILStubResolver::GetStubClassName(pMD));
             }
         }
         else
@@ -956,10 +951,8 @@ void TypeString::AppendMethodImpl(SString& ss, MethodDesc *pMD, Instantiation ty
             AppendType(ss, th, typeInstantiation, format);
         }
 
-        SString sss1(SString::Literal, NAMESPACE_SEPARATOR_STR);
-        ss += sss1;
-        SString sss2(SString::Utf8, pMD->GetName());
-        ss += sss2;
+        ss.AppendUTF8(NAMESPACE_SEPARATOR_STR);
+        ss.AppendUTF8(pMD->GetName());
 
         if (pMD->HasMethodInstantiation() && !pMD->IsGenericMethodDefinition())
         {
@@ -972,40 +965,34 @@ void TypeString::AppendMethodImpl(SString& ss, MethodDesc *pMD, Instantiation ty
 
             SigFormat sigFormatter(pMD, th);
             const char* sigStr = sigFormatter.GetCStringParmsOnly();
-            SString sss(SString::Utf8, sigStr);
-            ss += sss;
+            ss.AppendUTF8(sigStr);
         }
 
-        if (format & FormatStubInfo) {
+        if (format & FormatStubInfo)
+        {
             if (pMD->IsInstantiatingStub())
             {
-                SString sss(SString::Literal, "{inst-stub}");
-                ss += sss;
+                ss.AppendUTF8("{inst-stub}");
             }
             if (pMD->IsUnboxingStub())
             {
-                SString sss(SString::Literal, "{unbox-stub}");
-                ss += sss;
+                ss.AppendUTF8("{unbox-stub}");
             }
             if (pMD->IsSharedByGenericMethodInstantiations())
             {
-                SString sss(SString::Literal, "{method-shared}");
-                ss += sss;
+                ss.AppendUTF8("{method-shared}");
             }
             else if (pMD->IsSharedByGenericInstantiations())
             {
-                SString sss(SString::Literal, "{shared}");
-                ss += sss;
+                ss.AppendUTF8("{shared}");
             }
             if (pMD->RequiresInstMethodTableArg())
             {
-                SString sss(SString::Literal, "{requires-mt-arg}");
-                ss += sss;
+                ss.AppendUTF8("{requires-mt-arg}");
             }
             if (pMD->RequiresInstMethodDescArg())
             {
-                SString sss(SString::Literal, "{requires-mdesc-arg}");
-                ss += sss;
+                ss.AppendUTF8("{requires-mdesc-arg}");
             }
         }
     }
@@ -1091,7 +1078,7 @@ void TypeString::AppendTypeDebug(SString& ss, TypeHandle t)
 #endif
 }
 
-void TypeString::AppendTypeKeyDebug(SString& ss, TypeKey *pTypeKey)
+void TypeString::AppendTypeKeyDebug(SString& ss, const TypeKey *pTypeKey)
 {
     CONTRACTL
     {
@@ -1123,7 +1110,7 @@ void TypeString::AppendTypeKeyDebug(SString& ss, TypeKey *pTypeKey)
 #endif // _DEBUG
 
 
-void TypeString::AppendTypeKey(TypeNameBuilder& tnb, TypeKey *pTypeKey, DWORD format)
+void TypeString::AppendTypeKey(TypeNameBuilder& tnb, const TypeKey *pTypeKey, DWORD format)
 {
     CONTRACT_VOID
     {
@@ -1207,7 +1194,7 @@ void TypeString::AppendTypeKey(TypeNameBuilder& tnb, TypeKey *pTypeKey, DWORD fo
     RETURN;
 }
 
-void TypeString::AppendTypeKey(SString& ss, TypeKey *pTypeKey, DWORD format)
+void TypeString::AppendTypeKey(SString& ss, const TypeKey *pTypeKey, DWORD format)
 {
     CONTRACT_VOID
     {

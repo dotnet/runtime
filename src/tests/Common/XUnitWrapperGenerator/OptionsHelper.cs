@@ -6,8 +6,10 @@ namespace XUnitWrapperGenerator;
 
 public static class OptionsHelper
 {
+    private const string InMergedTestDirectoryOption = "build_property.InMergedTestDirectory";
     private const string IsMergedTestRunnerAssemblyOption = "build_property.IsMergedTestRunnerAssembly";
     private const string PriorityOption = "build_property.Priority";
+    private const string TestBuildModeOption = "build_property.TestBuildMode";
     private const string RuntimeFlavorOption = "build_property.RuntimeFlavor";
     private const string IsOutOfProcessTestAssemblyOption = "build_metadata.AdditionalFiles.IsOutOfProcessTestAssembly";
     private const string TestFilterOption = "build_property.TestFilter";
@@ -29,11 +31,15 @@ public static class OptionsHelper
                 ? result : 0;
     }
 
+    internal static bool InMergedTestDirectory(this AnalyzerConfigOptions options) => options.GetBoolOption(InMergedTestDirectoryOption);
+
     internal static bool IsMergedTestRunnerAssembly(this AnalyzerConfigOptions options) => options.GetBoolOption(IsMergedTestRunnerAssemblyOption);
 
     internal static int? Priority(this AnalyzerConfigOptions options) => options.GetIntOption(PriorityOption);
 
     internal static string RuntimeFlavor(this AnalyzerConfigOptions options) => options.TryGetValue(RuntimeFlavorOption, out string? flavor) ? flavor : "CoreCLR";
+
+    internal static string? TestBuildMode(this AnalyzerConfigOptions options) => options.TryGetValue(TestBuildModeOption, out string? option) ? option : null;
 
     internal static bool IsOutOfProcessTestAssembly(this AnalyzerConfigOptions options) => options.GetBoolOption(IsOutOfProcessTestAssemblyOption);
 

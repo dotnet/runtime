@@ -199,8 +199,8 @@ namespace System.Text.Json.Nodes
 
             if (dictionary is null)
             {
-                bool caseInsensitive = Options.HasValue ? Options.Value.PropertyNameCaseInsensitive : false;
-                dictionary = new JsonPropertyDictionary<JsonNode?>(caseInsensitive);
+                dictionary = new JsonPropertyDictionary<JsonNode?>(IsCaseInsensitive(Options));
+
                 if (jsonElement.HasValue)
                 {
                     foreach (JsonProperty jElementProperty in jsonElement.Value.EnumerateObject())
@@ -223,6 +223,9 @@ namespace System.Text.Json.Nodes
 
             return dictionary;
         }
+
+        private static bool IsCaseInsensitive(JsonNodeOptions? options) =>
+            options?.PropertyNameCaseInsensitive ?? false;
 
         /// <summary>
         /// Provides a coherent view of the underlying representation of the current node.

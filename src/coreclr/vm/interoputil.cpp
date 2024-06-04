@@ -919,9 +919,9 @@ int InternalWideToAnsi(_In_reads_(iNumWideChars) LPCWSTR szWideString, int iNumW
 
         if (retval == 0)
         {
-            INSTALL_UNWIND_AND_CONTINUE_HANDLER;
+            INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX;
             COMPlusThrowHR(HRESULT_FROM_WIN32(lastError));
-            UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
+            UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(true);
         }
 
         if (DefaultCharUsed)
@@ -952,9 +952,9 @@ int InternalWideToAnsi(_In_reads_(iNumWideChars) LPCWSTR szWideString, int iNumW
 
         if (retval == 0)
         {
-            INSTALL_UNWIND_AND_CONTINUE_HANDLER;
+            INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX;
             COMPlusThrowHR(HRESULT_FROM_WIN32(lastError));
-            UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
+            UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(true);
         }
     }
 
@@ -2509,7 +2509,7 @@ HRESULT GetTypeLibVersionForAssembly(
     // Check to see if the TypeLibVersionAttribute is set.
     IfFailRet(pAssembly->GetMDImport()->GetCustomAttributeByName(TokenFromRid(1, mdtAssembly), INTEROP_TYPELIBVERSION_TYPE, (const void**)&pbData, &cbData));
 
-    // For attribute contents, see https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.typelibversionattribute
+    // For attribute contents, see https://learn.microsoft.com/dotnet/api/system.runtime.interopservices.typelibversionattribute
     if (cbData >= (2 + 2 * sizeof(UINT32)))
     {
         CustomAttributeParser cap(pbData, cbData);
@@ -2558,7 +2558,7 @@ BOOL IsMethodVisibleFromCom(MethodDesc *pMD)
     mdMethodDef md = pMD->GetMemberDef();
 
     // See if there is property information for this member.
-    hr = pMD->GetModule()->GetPropertyInfoForMethodDef(md, &pd, &pPropName, &uSemantic);
+    hr = pMD->GetMDImport()->GetPropertyInfoForMethodDef(md, &pd, &pPropName, &uSemantic);
     IfFailThrow(hr);
 
     if (hr == S_OK)
@@ -3026,11 +3026,11 @@ FORCEINLINE void DispParamHolderRelease(VARIANT* value)
     }
 }
 
-class DispParamHolder : public Wrapper<VARIANT*, DispParamHolderDoNothing, DispParamHolderRelease, NULL>
+class DispParamHolder : public Wrapper<VARIANT*, DispParamHolderDoNothing, DispParamHolderRelease, 0>
 {
 public:
     DispParamHolder(VARIANT* p = NULL)
-        : Wrapper<VARIANT*, DispParamHolderDoNothing, DispParamHolderRelease, NULL>(p)
+        : Wrapper<VARIANT*, DispParamHolderDoNothing, DispParamHolderRelease, 0>(p)
     {
         WRAPPER_NO_CONTRACT;
     }
@@ -3038,7 +3038,7 @@ public:
     FORCEINLINE void operator=(VARIANT* p)
     {
         WRAPPER_NO_CONTRACT;
-        Wrapper<VARIANT*, DispParamHolderDoNothing, DispParamHolderRelease, NULL>::operator=(p);
+        Wrapper<VARIANT*, DispParamHolderDoNothing, DispParamHolderRelease, 0>::operator=(p);
     }
 };
 

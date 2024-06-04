@@ -22,13 +22,13 @@ namespace System.Runtime.InteropServices
         }
 
         public SafeArrayTypeMismatchException(string? message)
-            : base(message)
+            : base(message ?? SR.Arg_SafeArrayTypeMismatchException)
         {
             HResult = HResults.COR_E_SAFEARRAYTYPEMISMATCH;
         }
 
         public SafeArrayTypeMismatchException(string? message, Exception? inner)
-            : base(message, inner)
+            : base(message ?? SR.Arg_SafeArrayTypeMismatchException, inner)
         {
             HResult = HResults.COR_E_SAFEARRAYTYPEMISMATCH;
         }

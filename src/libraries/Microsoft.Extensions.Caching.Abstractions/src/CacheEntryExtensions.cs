@@ -7,6 +7,9 @@ using Microsoft.Extensions.Primitives;
 
 namespace Microsoft.Extensions.Caching.Memory
 {
+    /// <summary>
+    /// Provide extensions methods for <see cref="ICacheEntry"/> operations.
+    /// </summary>
     public static class CacheEntryExtensions
     {
         /// <summary>

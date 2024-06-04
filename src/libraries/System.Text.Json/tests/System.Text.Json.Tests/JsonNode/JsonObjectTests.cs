@@ -291,7 +291,7 @@ namespace System.Text.Json.Nodes.Tests
             const string Json = "{\"myProperty\":42}";
 
             var options = new JsonSerializerOptions();
-            options.PropertyNamingPolicy = new SimpleSnakeCasePolicy();
+            options.PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower;
 
             JsonObject obj = JsonSerializer.Deserialize<JsonObject>(Json, options);
             string json = obj.ToJsonString();
@@ -1126,7 +1126,7 @@ namespace System.Text.Json.Nodes.Tests
 
             public string Name { get; set; }
 
-            public SimpleClass NestedObject { get; set; }
+            public SimpleClass? NestedObject { get; set; }
         }
 
         [Fact]

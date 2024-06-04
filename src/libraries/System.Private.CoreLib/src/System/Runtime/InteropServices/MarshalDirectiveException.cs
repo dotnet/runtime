@@ -21,13 +21,13 @@ namespace System.Runtime.InteropServices
         }
 
         public MarshalDirectiveException(string? message)
-            : base(message)
+            : base(message ?? SR.Arg_MarshalDirectiveException)
         {
             HResult = HResults.COR_E_MARSHALDIRECTIVE;
         }
 
         public MarshalDirectiveException(string? message, Exception? inner)
-            : base(message, inner)
+            : base(message ?? SR.Arg_MarshalDirectiveException, inner)
         {
             HResult = HResults.COR_E_MARSHALDIRECTIVE;
         }

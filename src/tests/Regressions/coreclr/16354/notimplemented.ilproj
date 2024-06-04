@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <!-- Needed for CrossGenTest -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
 
     <!-- Crossgen is not intended to serve as an IL verifier, and is not designed to provide error semantics on bad input. -->
     <CrossGenTest>false</CrossGenTest>

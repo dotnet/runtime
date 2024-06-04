@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Reflection;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using System.Reflection.Runtime.TypeInfos;
 
 using Internal.Reflection.Core;
@@ -165,7 +165,7 @@ namespace System.Reflection.Runtime.General
                     return true;
 
                 Type walk = fromTypeInfo;
-                for (;;)
+                for (; ; )
                 {
                     Type? baseType = walk.BaseType;
                     if (baseType == null)

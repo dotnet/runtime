@@ -21,13 +21,13 @@ namespace System
         }
 
         public InvalidProgramException(string? message)
-            : base(message)
+            : base(message ?? SR.InvalidProgram_Default)
         {
             HResult = HResults.COR_E_INVALIDPROGRAM;
         }
 
         public InvalidProgramException(string? message, Exception? inner)
-            : base(message, inner)
+            : base(message ?? SR.InvalidProgram_Default, inner)
         {
             HResult = HResults.COR_E_INVALIDPROGRAM;
         }

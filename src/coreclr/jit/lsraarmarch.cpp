@@ -30,7 +30,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 //                       of an indirection operation.
 //
 // Arguments:
-//    indirTree - GT_IND, GT_STOREIND or block gentree node
+//    indirTree - GT_IND, GT_STOREIND or block GenTree node
 //
 // Return Value:
 //    The number of sources consumed by this node.
@@ -92,13 +92,6 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
                 buildInternalIntRegisterDefForNode(indirTree);
             }
         }
-#ifdef TARGET_ARM64
-        else if (addr->OperGet() == GT_CLS_VAR_ADDR)
-        {
-            // Reserve int to load constant from memory (IF_LARGELDC)
-            buildInternalIntRegisterDefForNode(indirTree);
-        }
-#endif // TARGET_ARM64
     }
 
 #ifdef FEATURE_SIMD
@@ -134,9 +127,9 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
 //
 int LinearScan::BuildCall(GenTreeCall* call)
 {
-    bool                  hasMultiRegRetVal = false;
-    const ReturnTypeDesc* retTypeDesc       = nullptr;
-    regMaskTP             dstCandidates     = RBM_NONE;
+    bool                  hasMultiRegRetVal   = false;
+    const ReturnTypeDesc* retTypeDesc         = nullptr;
+    SingleTypeRegSet      singleDstCandidates = RBM_NONE;
 
     int srcCount = 0;
     int dstCount = 0;
@@ -155,8 +148,8 @@ int LinearScan::BuildCall(GenTreeCall* call)
         }
     }
 
-    GenTree*  ctrlExpr           = call->gtControlExpr;
-    regMaskTP ctrlExprCandidates = RBM_NONE;
+    GenTree*         ctrlExpr           = call->gtControlExpr;
+    SingleTypeRegSet ctrlExprCandidates = RBM_NONE;
     if (call->gtCallType == CT_INDIRECT)
     {
         // either gtControlExpr != null or gtCallAddr != null.
@@ -181,23 +174,32 @@ int LinearScan::BuildCall(GenTreeCall* call)
             ctrlExprCandidates = allRegs(TYP_INT) & RBM_INT_CALLEE_TRASH & ~RBM_LR;
             if (compiler->getNeedsGSSecurityCookie())
             {
-                ctrlExprCandidates &= ~(genRegMask(REG_GSCOOKIE_TMP_0) | genRegMask(REG_GSCOOKIE_TMP_1));
+                ctrlExprCandidates &=
+                    ~(genSingleTypeRegMask(REG_GSCOOKIE_TMP_0) | genSingleTypeRegMask(REG_GSCOOKIE_TMP_1));
             }
             assert(ctrlExprCandidates != RBM_NONE);
         }
     }
     else if (call->IsR2ROrVirtualStubRelativeIndir())
     {
-        // For R2R and VSD we have stub address in REG_R2R_INDIRECT_PARAM
-        // and will load call address into the temp register from this register.
-        regMaskTP candidates = RBM_NONE;
         if (call->IsFastTailCall())
         {
-            candidates = allRegs(TYP_INT) & RBM_INT_CALLEE_TRASH;
+            // For R2R and VSD we have stub address in REG_R2R_INDIRECT_PARAM
+            // and will load call address into the temp register from this register.
+            SingleTypeRegSet candidates = allRegs(TYP_INT) & RBM_INT_CALLEE_TRASH;
             assert(candidates != RBM_NONE);
+            buildInternalIntRegisterDefForNode(call, candidates);
         }
-
-        buildInternalIntRegisterDefForNode(call, candidates);
+        else
+        {
+            // For arm64 we can use REG_INDIRECT_CALL_TARGET_REG (IP0) for non-tailcalls
+            // so we skip the internal register as a TP optimization. We could do the same for
+            // arm32, but loading into IP cannot be encoded in 2 bytes, so
+            // another register is usually better.
+#ifdef TARGET_ARM
+            buildInternalIntRegisterDefForNode(call);
+#endif
+        }
     }
 #ifdef TARGET_ARM
     else
@@ -212,41 +214,39 @@ int LinearScan::BuildCall(GenTreeCall* call)
         // the target. We do not handle these constraints on the same
         // refposition too well so we help ourselves a bit here by forcing the
         // null check with LR.
-        regMaskTP candidates = call->IsFastTailCall() ? RBM_LR : RBM_NONE;
+        SingleTypeRegSet candidates = call->IsFastTailCall() ? RBM_LR : RBM_NONE;
         buildInternalIntRegisterDefForNode(call, candidates);
     }
 #endif // TARGET_ARM
 
     RegisterType registerType = call->TypeGet();
 
-// Set destination candidates for return value of the call.
+    // Set destination candidates for return value of the call.
 
 #ifdef TARGET_ARM
     if (call->IsHelperCall(compiler, CORINFO_HELP_INIT_PINVOKE_FRAME))
     {
         // The ARM CORINFO_HELP_INIT_PINVOKE_FRAME helper uses a custom calling convention that returns with
         // TCB in REG_PINVOKE_TCB. fgMorphCall() sets the correct argument registers.
-        dstCandidates = RBM_PINVOKE_TCB;
+        singleDstCandidates = RBM_PINVOKE_TCB;
     }
     else
 #endif // TARGET_ARM
-        if (hasMultiRegRetVal)
-    {
-        assert(retTypeDesc != nullptr);
-        dstCandidates = retTypeDesc->GetABIReturnRegs();
-    }
-    else if (varTypeUsesFloatArgReg(registerType))
-    {
-        dstCandidates = RBM_FLOATRET;
-    }
-    else if (registerType == TYP_LONG)
-    {
-        dstCandidates = RBM_LNGRET;
-    }
-    else
-    {
-        dstCandidates = RBM_INTRET;
-    }
+        if (!hasMultiRegRetVal)
+        {
+            if (varTypeUsesFloatArgReg(registerType))
+            {
+                singleDstCandidates = RBM_FLOATRET;
+            }
+            else if (registerType == TYP_LONG)
+            {
+                singleDstCandidates = RBM_LNGRET;
+            }
+            else
+            {
+                singleDstCandidates = RBM_INTRET;
+            }
+        }
 
     // First, count reg args
     // Each register argument corresponds to one source.
@@ -292,7 +292,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
                 }
 #endif // TARGET_ARM
 #endif
-                BuildUse(use.GetNode(), genRegMask(use.GetNode()->GetRegNum()));
+                BuildUse(use.GetNode(), genSingleTypeRegMask(use.GetNode()->GetRegNum()));
                 srcCount++;
             }
         }
@@ -302,7 +302,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
             assert(regCount == abiInfo.NumRegs);
             for (unsigned int i = 0; i < regCount; i++)
             {
-                BuildUse(argNode, genRegMask(argNode->AsPutArgSplit()->GetRegNumByIdx(i)), i);
+                BuildUse(argNode, genSingleTypeRegMask(argNode->AsPutArgSplit()->GetRegNumByIdx(i)), i);
             }
             srcCount += regCount;
         }
@@ -318,14 +318,14 @@ int LinearScan::BuildCall(GenTreeCall* call)
             if (argNode->TypeGet() == TYP_LONG)
             {
                 assert(argNode->IsMultiRegNode());
-                BuildUse(argNode, genRegMask(argNode->GetRegNum()), 0);
-                BuildUse(argNode, genRegMask(genRegArgNext(argNode->GetRegNum())), 1);
+                BuildUse(argNode, genSingleTypeRegMask(argNode->GetRegNum()), 0);
+                BuildUse(argNode, genSingleTypeRegMask(genRegArgNext(argNode->GetRegNum())), 1);
                 srcCount += 2;
             }
             else
 #endif // TARGET_ARM
             {
-                BuildUse(argNode, genRegMask(argNode->GetRegNum()));
+                BuildUse(argNode, genSingleTypeRegMask(argNode->GetRegNum()));
                 srcCount++;
             }
         }
@@ -375,6 +375,21 @@ int LinearScan::BuildCall(GenTreeCall* call)
 
     if (ctrlExpr != nullptr)
     {
+#ifdef TARGET_ARM64
+        if (compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && TargetOS::IsUnix && (call->gtArgs.CountArgs() == 0) &&
+            ctrlExpr->IsTlsIconHandle())
+        {
+            // For NativeAOT linux/arm64, we generate the needed code as part of
+            // call node because the generated code has to be in specific format
+            // that linker can patch. As such, the code needs specific registers
+            // that we will attach to this node to guarantee that they are available
+            // during generating this node.
+            assert(call->gtFlags & GTF_TLS_GET_ADDR);
+            newRefPosition(REG_R0, currentLoc, RefTypeFixedReg, nullptr, genSingleTypeRegMask(REG_R0));
+            newRefPosition(REG_R1, currentLoc, RefTypeFixedReg, nullptr, genSingleTypeRegMask(REG_R1));
+            ctrlExprCandidates = genSingleTypeRegMask(REG_R2);
+        }
+#endif
         BuildUse(ctrlExpr, ctrlExprCandidates);
         srcCount++;
     }
@@ -383,7 +398,32 @@ int LinearScan::BuildCall(GenTreeCall* call)
 
     // Now generate defs and kills.
     regMaskTP killMask = getKillSetForCall(call);
-    BuildDefsWithKills(call, dstCount, dstCandidates, killMask);
+    if (dstCount > 0)
+    {
+        if (hasMultiRegRetVal)
+        {
+            assert(retTypeDesc != nullptr);
+            regMaskTP multiDstCandidates = retTypeDesc->GetABIReturnRegs(call->GetUnmanagedCallConv());
+            assert(genCountBits(multiDstCandidates) > 0);
+            BuildCallDefsWithKills(call, dstCount, multiDstCandidates, killMask);
+        }
+        else
+        {
+            assert(dstCount == 1);
+            BuildDefWithKills(call, singleDstCandidates, killMask);
+        }
+    }
+    else
+    {
+        BuildKills(call, killMask);
+    }
+
+#ifdef SWIFT_SUPPORT
+    if (call->HasSwiftErrorHandling())
+    {
+        MarkSwiftErrorBusyForCall(call);
+    }
+#endif // SWIFT_SUPPORT
 
     // No args are placed in registers anymore.
     placedArgRegs      = RBM_NONE;
@@ -425,15 +465,11 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* argNode)
                 srcCount++;
 
 #if defined(FEATURE_SIMD)
-                if (compMacOsArm64Abi())
+                if (use.GetType() == TYP_SIMD12)
                 {
-                    if (use.GetType() == TYP_SIMD12)
-                    {
-                        // Vector3 is read/written as two reads/writes: 8 byte and 4 byte.
-                        // To assemble the vector properly we would need an additional int register.
-                        // The other platforms can write it as 16-byte using 1 write.
-                        buildInternalIntRegisterDefForNode(use.GetNode());
-                    }
+                    // Vector3 is read/written as two reads/writes: 8 byte and 4 byte.
+                    // To assemble the vector properly we would need an additional int register.
+                    buildInternalIntRegisterDefForNode(use.GetNode());
                 }
 #endif // FEATURE_SIMD
             }
@@ -466,7 +502,7 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* argNode)
         assert(!src->isContained());
         srcCount = BuildOperandUses(src);
 #if defined(FEATURE_SIMD)
-        if (compMacOsArm64Abi() && argNode->GetStackByteSize() == 12)
+        if (compAppleArm64Abi() && argNode->GetStackByteSize() == 12)
         {
             // Vector3 is read/written as two reads/writes: 8 byte and 4 byte.
             // To assemble the vector properly we would need an additional int register.
@@ -501,14 +537,16 @@ int LinearScan::BuildPutArgSplit(GenTreePutArgSplit* argNode)
     // Registers for split argument corresponds to source
     int dstCount = argNode->gtNumRegs;
 
-    regNumber argReg  = argNode->GetRegNum();
-    regMaskTP argMask = RBM_NONE;
+    regNumber        argReg  = argNode->GetRegNum();
+    SingleTypeRegSet argMask = RBM_NONE;
     for (unsigned i = 0; i < argNode->gtNumRegs; i++)
     {
         regNumber thisArgReg = (regNumber)((unsigned)argReg + i);
-        argMask |= genRegMask(thisArgReg);
+        argMask |= genSingleTypeRegMask(thisArgReg);
         argNode->SetRegNumByIdx(thisArgReg, i);
     }
+    assert((argMask == RBM_NONE) || ((argMask & availableIntRegs) != RBM_NONE) ||
+           ((argMask & availableFloatRegs) != RBM_NONE));
 
     if (src->OperGet() == GT_FIELD_LIST)
     {
@@ -542,10 +580,10 @@ int LinearScan::BuildPutArgSplit(GenTreePutArgSplit* argNode)
             // go into registers.
             for (unsigned regIndex = 0; regIndex < currentRegCount; regIndex++)
             {
-                regMaskTP sourceMask = RBM_NONE;
+                SingleTypeRegSet sourceMask = RBM_NONE;
                 if (sourceRegCount < argNode->gtNumRegs)
                 {
-                    sourceMask = genRegMask((regNumber)((unsigned)argReg + sourceRegCount));
+                    sourceMask = genSingleTypeRegMask((regNumber)((unsigned)argReg + sourceRegCount));
                 }
                 sourceRegCount++;
                 BuildUse(node, sourceMask, regIndex);
@@ -600,9 +638,9 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
 
     GenTree* srcAddrOrFill = nullptr;
 
-    regMaskTP dstAddrRegMask = RBM_NONE;
-    regMaskTP srcRegMask     = RBM_NONE;
-    regMaskTP sizeRegMask    = RBM_NONE;
+    SingleTypeRegSet dstAddrRegMask = RBM_NONE;
+    SingleTypeRegSet srcRegMask     = RBM_NONE;
+    SingleTypeRegSet sizeRegMask    = RBM_NONE;
 
     if (blkNode->OperIsInitBlkOp())
     {
@@ -635,11 +673,9 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
 #endif // TARGET_ARM64
             break;
 
-            case GenTreeBlk::BlkOpKindHelper:
-                assert(!src->isContained());
-                dstAddrRegMask = RBM_ARG_0;
-                srcRegMask     = RBM_ARG_1;
-                sizeRegMask    = RBM_ARG_2;
+            case GenTreeBlk::BlkOpKindLoop:
+                // Needed for offsetReg
+                buildInternalIntRegisterDefForNode(blkNode, availableIntRegs);
                 break;
 
             default:
@@ -661,7 +697,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                 // We don't need to materialize the struct size but we still need
                 // a temporary register to perform the sequence of loads and stores.
                 // We can't use the special Write Barrier registers, so exclude them from the mask
-                regMaskTP internalIntCandidates =
+                SingleTypeRegSet internalIntCandidates =
                     allRegs(TYP_INT) & ~(RBM_WRITE_BARRIER_DST_BYREF | RBM_WRITE_BARRIER_SRC_BYREF);
                 buildInternalIntRegisterDefForNode(blkNode, internalIntCandidates);
 
@@ -670,6 +706,13 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                     // We will use ldp/stp to reduce code size and improve performance
                     // so we need to reserve an extra internal register
                     buildInternalIntRegisterDefForNode(blkNode, internalIntCandidates);
+                }
+
+                if (size >= 4 * REGSIZE_BYTES && compiler->IsBaselineSimdIsaSupported())
+                {
+                    // We can use 128-bit SIMD ldp/stp for larger block sizes
+                    buildInternalFloatRegisterDefForNode(blkNode, internalFloatRegCandidates());
+                    buildInternalFloatRegisterDefForNode(blkNode, internalFloatRegCandidates());
                 }
 
                 // If we have a dest address we want it in RBM_WRITE_BARRIER_DST_BYREF.
@@ -774,22 +817,12 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
             }
             break;
 
-            case GenTreeBlk::BlkOpKindHelper:
-                dstAddrRegMask = RBM_ARG_0;
-                if (srcAddrOrFill != nullptr)
-                {
-                    assert(!srcAddrOrFill->isContained());
-                    srcRegMask = RBM_ARG_1;
-                }
-                sizeRegMask = RBM_ARG_2;
-                break;
-
             default:
                 unreached();
         }
     }
 
-    if (!blkNode->OperIs(GT_STORE_DYN_BLK) && (sizeRegMask != RBM_NONE))
+    if (sizeRegMask != RBM_NONE)
     {
         // Reserve a temp register for the block size argument.
         buildInternalIntRegisterDefForNode(blkNode, sizeRegMask);
@@ -820,15 +853,9 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
         }
     }
 
-    if (blkNode->OperIs(GT_STORE_DYN_BLK))
-    {
-        useCount++;
-        BuildUse(blkNode->AsStoreDynBlk()->gtDynamicSize, sizeRegMask);
-    }
-
     buildInternalRegisterUses();
     regMaskTP killMask = getKillSetForBlockStore(blkNode);
-    BuildDefsWithKills(blkNode, 0, RBM_NONE, killMask);
+    BuildKills(blkNode, killMask);
     return useCount;
 }
 

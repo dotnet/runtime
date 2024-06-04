@@ -9,7 +9,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
     {
         public bool IsCurveValid(Oid oid)
         {
-            if (PlatformDetection.IsOSXLike)
+            if (PlatformDetection.IsApplePlatform)
             {
                 return false;
             }
@@ -25,7 +25,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         {
             get
             {
-                if (PlatformDetection.IsOSXLike)
+                if (PlatformDetection.IsApplePlatform)
                 {
                     return false;
                 }

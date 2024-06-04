@@ -9,7 +9,7 @@ using System.CommandLine.Invocation;
 using System.CommandLine.Parsing;
 using System.Diagnostics;
 using System.IO;
-using System.Reflection;
+using System.Reflection.Metadata;
 
 namespace Microsoft.Diagnostics.Tools.Pgo
 {
@@ -45,6 +45,14 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             new("--exclude-events-before") { DefaultValueFactory = _ => Double.MinValue, Description = "Exclude data from events before specified time. Time is specified as milliseconds from the start of the trace" };
         public CliOption<double> ExcludeEventsAfter { get; } =
             new("--exclude-events-after") { DefaultValueFactory = _ => Double.MaxValue, Description = "Exclude data from events after specified time. Time is specified as milliseconds from the start of the trace" };
+        public CliOption<string> ExcludeEventsBeforeJittingMethod { get; } =
+            new("--exclude-events-before-jitting-method") { DefaultValueFactory = _ => string.Empty, Description = "Exclude data from events before observing a specific method getting jitted. Method is matched using a regular expression against the method name. Note that the method name is formatted the same as in PerfView which includes typed parameters." };
+        public CliOption<string> ExcludeEventsAfterJittingMethod { get; } =
+            new("--exclude-events-after-jitting-method") { DefaultValueFactory = _ => string.Empty, Description = "Exclude data from events after observing a specific method getting jitted. Method is matched using a regular expression against the method name. Note that the method name is formatted the same as in PerfView which includes typed parameters." };
+        public CliOption<string> IncludeMethods { get; } =
+            new("--include-methods") { DefaultValueFactory = _ => string.Empty, Description = "Include methods with names matching regular expression. Note that the method names are formatted the same as in PerfView which includes typed parameters." };
+        public CliOption<string> ExcludeMethods { get; } =
+            new("--exclude-methods") { DefaultValueFactory = _ => string.Empty, Description = "Exclude methods with names matching regular expression. Note that the method names are formatted the same as in PerfView which includes typed parameters." };
         public CliOption<bool> Compressed { get; } =
             new("--compressed") { DefaultValueFactory = _ => true, Description = "Generate compressed mibc" };
         public CliOption<int> DumpWorstOverlapGraphs { get; } =
@@ -53,7 +61,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             new("--dump-worst-overlap-graphs-to") { Description = "Number of graphs to dump to .dot format in dump-worst-overlap-graphs-to directory" };
         public CliOption<bool> AutomaticReferences { get; } =
             new("--automatic-references") { DefaultValueFactory = _ => true, Description = "Attempt to find references by using paths embedded in the trace file. Defaults to true" };
-        public CliOption<AssemblyName[]> IncludedAssemblies { get; } =
+        public CliOption<AssemblyNameInfo[]> IncludedAssemblies { get; } =
             new("--include-reference") { CustomParser = MakeAssemblyNameArray, DefaultValueFactory = MakeAssemblyNameArray, Description = "If specified, include in Mibc file only references to the specified assemblies. Assemblies are specified as assembly names, not filenames. For instance, `System.Private.CoreLib` not `System.Private.CoreLib.dll`. Multiple --include-reference options may be specified." };
 
         private CliOption<bool> _includeReadyToRun { get; } =
@@ -99,6 +107,10 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 ClrInstanceId,
                 ExcludeEventsBefore,
                 ExcludeEventsAfter,
+                ExcludeEventsBeforeJittingMethod,
+                ExcludeEventsAfterJittingMethod,
+                IncludeMethods,
+                ExcludeMethods,
                 AutomaticReferences,
                 _verbosity,
                 Compressed,
@@ -248,9 +260,9 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             }
         }
 
-        public static IEnumerable<Action<HelpContext>> GetExtendedHelp(HelpContext context)
+        public static IEnumerable<Func<HelpContext, bool>> GetExtendedHelp(HelpContext context)
         {
-            foreach (Action<HelpContext> sectionDelegate in HelpBuilder.Default.GetLayout())
+            foreach (Func<HelpContext, bool> sectionDelegate in HelpBuilder.Default.GetLayout())
                 yield return sectionDelegate;
 
             if (context.Command.Name == "create-mibc" || context.Command.Name == "create-jittrace")
@@ -268,20 +280,21 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 ""perfview collect -LogFile:logOfCollection.txt -DataFile:jittrace.etl -Zip:false -merge:false -providers:Microsoft-Windows-DotNETRuntime:0x1E000080018:4""
 - Capture Jit and R2R events via perfview of all processes running using ETW tracing
 ");
+                    return true;
                 };
             }
         }
 
-        private static AssemblyName[] MakeAssemblyNameArray(ArgumentResult result)
+        private static AssemblyNameInfo[] MakeAssemblyNameArray(ArgumentResult result)
         {
             if (result.Tokens.Count > 0)
             {
-                var includedAssemblies = new List<AssemblyName>();
+                var includedAssemblies = new List<AssemblyNameInfo>();
                 foreach (CliToken token in result.Tokens)
                 {
                     try
                     {
-                        includedAssemblies.Add(new AssemblyName(token.Value));
+                        includedAssemblies.Add(new AssemblyNameInfo(token.Value));
                     }
                     catch
                     {
@@ -291,7 +304,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 return includedAssemblies.ToArray();
             }
 
-            return Array.Empty<AssemblyName>();
+            return Array.Empty<AssemblyNameInfo>();
         }
     }
 }

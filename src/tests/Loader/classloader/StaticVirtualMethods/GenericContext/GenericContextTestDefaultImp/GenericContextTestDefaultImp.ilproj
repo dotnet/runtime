@@ -1,12 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <!-- Needed for mechanical merging of all remaining tests, this particular project may not actually need process isolation -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>Full</DebugType>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="GenericContextCommonAndImplementation.ilproj" />
+    <ProjectReference Include="GenericContextCommonAndImplementationDefaultImp.ilproj" />
     <ProjectReference Include="../GenericContextCommonCs.csproj" />
     <Compile Include="GenericContextTestDefaultImp.il" />
   </ItemGroup>

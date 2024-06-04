@@ -28,7 +28,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
     /// <remarks>This type is not thread-safe.</remarks>
     [DebuggerDisplay("Count = {Count}")]
     [DebuggerTypeProxy(typeof(EnumerableDebugView<,>))]
-    internal sealed class QueuedMap<TKey, TValue> where TKey: notnull
+    internal sealed class QueuedMap<TKey, TValue> where TKey : notnull
     {
         /// <summary>
         /// A queue structure that uses an array-based list to store its items

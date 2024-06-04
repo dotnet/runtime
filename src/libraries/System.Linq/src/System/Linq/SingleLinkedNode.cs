@@ -27,7 +27,7 @@ namespace System.Linq
         /// <param name="item">The item to place in this node.</param>
         private SingleLinkedNode(SingleLinkedNode<TSource> linked, TSource item)
         {
-            Debug.Assert(linked != null);
+            Debug.Assert(linked is not null);
             Linked = linked;
             Item = item;
         }
@@ -54,7 +54,7 @@ namespace System.Linq
         public int GetCount()
         {
             int count = 0;
-            for (SingleLinkedNode<TSource>? node = this; node != null; node = node.Linked)
+            for (SingleLinkedNode<TSource>? node = this; node is not null; node = node.Linked)
             {
                 count++;
             }
@@ -77,7 +77,7 @@ namespace System.Linq
             for (; index > 0; index--)
             {
                 node = node.Linked!;
-                Debug.Assert(node != null);
+                Debug.Assert(node is not null);
             }
 
             return node;
@@ -92,15 +92,36 @@ namespace System.Linq
             Debug.Assert(count == GetCount());
 
             TSource[] array = new TSource[count];
-            int index = count;
-            for (SingleLinkedNode<TSource>? node = this; node != null; node = node.Linked)
+            FillReversed(array);
+            return array;
+        }
+
+        /// <summary>
+        /// Fills a start of a span with the items of this node's singly-linked list.
+        /// </summary>
+        /// <param name="span">The span to fill. Must be at least the size required.</param>
+        public void Fill(Span<TSource> span)
+        {
+            int index = 0;
+            for (SingleLinkedNode<TSource>? node = this; node is not null; node = node.Linked)
+            {
+                span[index] = node.Item;
+                index++;
+            }
+        }
+
+        /// <summary>
+        /// Fills the end of a span with the items of this node's singly-linked list in reverse.
+        /// </summary>
+        /// <param name="span">The span to fill.</param>
+        public void FillReversed(Span<TSource> span)
+        {
+            int index = span.Length;
+            for (SingleLinkedNode<TSource>? node = this; node is not null; node = node.Linked)
             {
                 --index;
-                array[index] = node.Item;
+                span[index] = node.Item;
             }
-
-            Debug.Assert(index == 0);
-            return array;
         }
     }
 }

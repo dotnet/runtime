@@ -81,7 +81,7 @@ protected:
     template <BOOL bGrow, BOOL bThrow>
     void *_Alloc(SIZE_T iItems)
     {
-#if defined(_BLD_CLR) && defined(_DEBUG)
+#if defined(_DEBUG)
         {  // Exercise heap for OOM-fault injection purposes
             BYTE * pb = NSQuickBytesHelper::_AllocBytes<bThrow>::Invoke(iItems);
             _ASSERTE(!bThrow || pb != NULL); // _AllocBytes would have thrown if bThrow == TRUE
@@ -294,15 +294,12 @@ public:
     }
 
     // Copy single byte string and hold it
-    const char * SetStringNoThrow(const char * pStr, SIZE_T len)
+    const char * SetString(const char * pStr, SIZE_T len)
     {
-        LPSTR buffer = (LPSTR) AllocNoThrow(len + 1);
+        LPSTR buffer = (LPSTR) AllocThrows(len + 1);
 
-        if (buffer != NULL)
-        {
-            memcpy(buffer, pStr, len);
-            buffer[len] = 0;
-        }
+        memcpy(buffer, pStr, len);
+        buffer[len] = 0;
 
         return buffer;
     }
@@ -477,12 +474,12 @@ private:
 template <class T> class CQuickArray : public CQuickArrayBase<T>
 {
 public:
-    CQuickArray<T>()
+    CQuickArray()
     {
         this->Init();
     }
 
-    ~CQuickArray<T>()
+    ~CQuickArray()
     {
         this->Destroy();
     }

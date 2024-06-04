@@ -7,8 +7,8 @@
 
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Permissions\src\System.Security.Permissions.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Transactions.Local\src\System.Transactions.Local.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)shims\stubs\System.Security.Permissions.csproj" PrivateAssets="all" />
   </ItemGroup>
 
 </Project>

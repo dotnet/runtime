@@ -3,6 +3,8 @@
 
 using System;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
+
 namespace Microsoft.Interop.Analyzers
 {
     public static class AnalyzerDiagnostics
@@ -30,7 +32,7 @@ namespace Microsoft.Interop.Analyzers
         }
 
         public static readonly DiagnosticDescriptor ConvertToGeneratedComInterface =
-            new DiagnosticDescriptor(
+            DiagnosticDescriptorHelper.Create(
                 Ids.ConvertToGeneratedComInterface,
                 GetResourceString(nameof(SR.ConvertToGeneratedComInterfaceTitle)),
                 GetResourceString(nameof(SR.ConvertToGeneratedComInterfaceMessage)),
@@ -40,7 +42,7 @@ namespace Microsoft.Interop.Analyzers
                 description: GetResourceString(nameof(SR.ConvertToGeneratedComInterfaceDescription)));
 
         public static readonly DiagnosticDescriptor AddGeneratedComClassAttribute =
-            new DiagnosticDescriptor(
+            DiagnosticDescriptorHelper.Create(
                 Ids.AddGeneratedComClassAttribute,
                 GetResourceString(nameof(SR.AddGeneratedComClassAttributeTitle)),
                 GetResourceString(nameof(SR.AddGeneratedComClassAttributeMessage)),
@@ -50,7 +52,7 @@ namespace Microsoft.Interop.Analyzers
                 description: GetResourceString(nameof(SR.AddGeneratedComClassAttributeDescription)));
 
         public static readonly DiagnosticDescriptor ComHostingDoesNotSupportGeneratedComInterface =
-            new DiagnosticDescriptor(
+            DiagnosticDescriptorHelper.Create(
                 Ids.ComHostingDoesNotSupportGeneratedComInterface,
                 GetResourceString(nameof(SR.ComHostingDoesNotSupportGeneratedComInterfaceTitle)),
                 GetResourceString(nameof(SR.ComHostingDoesNotSupportGeneratedComInterfaceMessage)),
@@ -60,7 +62,7 @@ namespace Microsoft.Interop.Analyzers
                 description: GetResourceString(nameof(SR.ComHostingDoesNotSupportGeneratedComInterfaceDescription)));
 
         public static readonly DiagnosticDescriptor RuntimeComApisDoNotSupportSourceGeneratedCom =
-            new DiagnosticDescriptor(
+            DiagnosticDescriptorHelper.Create(
                 Ids.RuntimeComAndGeneratedComDoNotMix,
                 GetResourceString(nameof(SR.RuntimeComApisDoNotSupportSourceGeneratedComTitle)),
                 GetResourceString(nameof(SR.RuntimeComApisDoNotSupportSourceGeneratedComMessage)),
@@ -70,7 +72,7 @@ namespace Microsoft.Interop.Analyzers
                 description: GetResourceString(nameof(SR.RuntimeComApisDoNotSupportSourceGeneratedComDescription)));
 
         public static readonly DiagnosticDescriptor CastsBetweenRuntimeComAndSourceGeneratedComNotSupported =
-            new DiagnosticDescriptor(
+            DiagnosticDescriptorHelper.Create(
                 Ids.RuntimeComAndGeneratedComDoNotMix,
                 GetResourceString(nameof(SR.CastsBetweenRuntimeComAndSourceGeneratedComNotSupportedTitle)),
                 GetResourceString(nameof(SR.CastsBetweenRuntimeComAndSourceGeneratedComNotSupportedMessage)),

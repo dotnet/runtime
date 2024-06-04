@@ -14,7 +14,7 @@ namespace System
         [RuntimeExport("GetSystemArrayEEType")]
         private static unsafe MethodTable* GetSystemArrayEEType()
         {
-            return EETypePtr.EETypePtrOf<Array>().ToPointer();
+            return MethodTable.Of<Array>();
         }
     }
 }

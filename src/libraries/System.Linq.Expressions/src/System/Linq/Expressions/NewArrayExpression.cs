@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Dynamic.Utils;
 using System.Runtime.CompilerServices;
 
@@ -13,6 +14,7 @@ namespace System.Linq.Expressions
     /// Represents creating a new array and possibly initializing the elements of the new array.
     /// </summary>
     [DebuggerTypeProxy(typeof(NewArrayExpressionProxy))]
+    [RequiresDynamicCode(Expression.NewArrayRequiresDynamicCode)]
     public class NewArrayExpression : Expression
     {
         internal NewArrayExpression(Type type, ReadOnlyCollection<Expression> expressions)
@@ -76,6 +78,7 @@ namespace System.Linq.Expressions
         }
     }
 
+    [RequiresDynamicCode(Expression.NewArrayRequiresDynamicCode)]
     internal sealed class NewArrayInitExpression : NewArrayExpression
     {
         internal NewArrayInitExpression(Type type, ReadOnlyCollection<Expression> expressions)
@@ -91,6 +94,7 @@ namespace System.Linq.Expressions
         public sealed override ExpressionType NodeType => ExpressionType.NewArrayInit;
     }
 
+    [RequiresDynamicCode(Expression.NewArrayRequiresDynamicCode)]
     internal sealed class NewArrayBoundsExpression : NewArrayExpression
     {
         internal NewArrayBoundsExpression(Type type, ReadOnlyCollection<Expression> expressions)
@@ -115,6 +119,7 @@ namespace System.Linq.Expressions
         /// <param name="type">A Type that represents the element type of the array.</param>
         /// <param name="initializers">The expressions used to create the array elements.</param>
         /// <returns>A <see cref="NewArrayExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.NewArrayInit"/> and the <see cref="NewArrayExpression.Expressions"/> property set to the specified value.</returns>
+        [RequiresDynamicCode(Expression.NewArrayRequiresDynamicCode)]
         public static NewArrayExpression NewArrayInit(Type type, params Expression[] initializers)
         {
             return NewArrayInit(type, (IEnumerable<Expression>)initializers);
@@ -126,6 +131,7 @@ namespace System.Linq.Expressions
         /// <param name="type">A Type that represents the element type of the array.</param>
         /// <param name="initializers">The expressions used to create the array elements.</param>
         /// <returns>A <see cref="NewArrayExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.NewArrayInit"/> and the <see cref="NewArrayExpression.Expressions"/> property set to the specified value.</returns>
+        [RequiresDynamicCode(Expression.NewArrayRequiresDynamicCode)]
         public static NewArrayExpression NewArrayInit(Type type, IEnumerable<Expression> initializers)
         {
             ArgumentNullException.ThrowIfNull(type);
@@ -172,6 +178,13 @@ namespace System.Linq.Expressions
             return NewArrayExpression.Make(ExpressionType.NewArrayInit, type.MakeArrayType(), initializerList);
         }
 
+        [UnconditionalSuppressMessage("DynamicCode", "IL3050",
+            Justification = "Creating object arrays should always be possible, as it is fundamental to the runtime.")]
+        internal static NewArrayExpression NewObjectArrayInit(IEnumerable<Expression> initializers)
+        {
+            return NewArrayInit(typeof(object), initializers);
+        }
+
         #endregion
 
         #region NewArrayBounds
@@ -182,6 +195,7 @@ namespace System.Linq.Expressions
         /// <param name="type">A <see cref="System.Type"/> that represents the element type of the array.</param>
         /// <param name="bounds">An array that contains Expression objects to use to populate the <see cref="NewArrayExpression.Expressions"/> collection.</param>
         /// <returns>A <see cref="NewArrayExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.NewArrayBounds"/> and the <see cref="NewArrayExpression.Expressions"/> property set to the specified value.</returns>
+        [RequiresDynamicCode(Expression.NewArrayRequiresDynamicCode)]
         public static NewArrayExpression NewArrayBounds(Type type, params Expression[] bounds)
         {
             return NewArrayBounds(type, (IEnumerable<Expression>)bounds);
@@ -193,6 +207,7 @@ namespace System.Linq.Expressions
         /// <param name="type">A <see cref="System.Type"/> that represents the element type of the array.</param>
         /// <param name="bounds">An <see cref="IEnumerable{T}"/> that contains <see cref="Expression"/> objects to use to populate the <see cref="NewArrayExpression.Expressions"/> collection.</param>
         /// <returns>A <see cref="NewArrayExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.NewArrayBounds"/> and the <see cref="NewArrayExpression.Expressions"/> property set to the specified value.</returns>
+        [RequiresDynamicCode(Expression.NewArrayRequiresDynamicCode)]
         public static NewArrayExpression NewArrayBounds(Type type, IEnumerable<Expression> bounds)
         {
             ArgumentNullException.ThrowIfNull(type);

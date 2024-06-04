@@ -4,6 +4,22 @@ if(ENABLE_PERFTRACING OR FEATURE_PERFTRACING)
     set (SHARED_DIAGNOSTIC_SERVER_SOURCES "")
     set (SHARED_DIAGNOSTIC_SERVER_HEADERS "")
 
+    if (FEATURE_PERFTRACING_PAL_TCP)
+        add_definitions(-DENABLE_PERFTRACING_PAL_TCP)
+    endif (FEATURE_PERFTRACING_PAL_TCP)
+
+    if (FEATURE_PERFTRACING_DISABLE_PERFTRACING_LISTEN_PORTS)
+        add_definitions(-DDISABLE_PERFTRACING_LISTEN_PORTS)
+    endif (FEATURE_PERFTRACING_DISABLE_PERFTRACING_LISTEN_PORTS)
+
+    if (FEATURE_PERFTRACING_DISABLE_DEFAULT_LISTEN_PORT)
+        add_definitions(-DDISABLE_PERFTRACING_DEFAULT_LISTEN_PORT)
+    endif (FEATURE_PERFTRACING_DISABLE_DEFAULT_LISTEN_PORT)
+
+    if (FEATURE_PERFTRACING_DISABLE_CONNECT_PORTS)
+        add_definitions(-DDISABLE_PERFTRACING_CONNECT_PORTS)
+    endif (FEATURE_PERFTRACING_DISABLE_CONNECT_PORTS)
+
     list(APPEND SHARED_EVENTPIPE_SOURCES
         ep-sources.c
         ep.c
@@ -24,6 +40,7 @@ if(ENABLE_PERFTRACING OR FEATURE_PERFTRACING)
         ep-session-provider.c
         ep-stack-contents.c
         ep-stream.c
+        ep-string.c
         ep-thread.c
     )
 
@@ -55,6 +72,7 @@ if(ENABLE_PERFTRACING OR FEATURE_PERFTRACING)
         ep-session-provider.h
         ep-stack-contents.h
         ep-stream.h
+        ep-string.h
         ep-thread.h
         ep-types.h
         ep-types-forward.h

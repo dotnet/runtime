@@ -14,6 +14,9 @@ using ThrowHelper = System.ThrowHelper;
 
 namespace Microsoft.Extensions.Logging
 {
+    /// <summary>
+    /// Provides extension methods for the <see cref="ILoggingBuilder"/> and <see cref="ILoggerProviderConfiguration{ConsoleLoggerProvider}"/> classes.
+    /// </summary>
     [UnsupportedOSPlatform("browser")]
     public static partial class ConsoleLoggerExtensions
     {

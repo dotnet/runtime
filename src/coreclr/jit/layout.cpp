@@ -21,7 +21,8 @@ class ClassLayoutTable
     typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, unsigned>               BlkLayoutIndexMap;
     typedef JitHashTable<CORINFO_CLASS_HANDLE, JitPtrKeyFuncs<CORINFO_CLASS_STRUCT_>, unsigned> ObjLayoutIndexMap;
 
-    union {
+    union
+    {
         // Up to 3 layouts can be stored "inline" and finding a layout by handle/size can be done using linear search.
         // Most methods need no more than 2 layouts.
         ClassLayout* m_layoutArray[3];
@@ -43,7 +44,10 @@ class ClassLayoutTable
     ClassLayout m_zeroSizedBlockLayout;
 
 public:
-    ClassLayoutTable() : m_layoutCount(0), m_layoutLargeCapacity(0), m_zeroSizedBlockLayout(0)
+    ClassLayoutTable()
+        : m_layoutCount(0)
+        , m_layoutLargeCapacity(0)
+        , m_zeroSizedBlockLayout(0)
     {
     }
 
@@ -414,6 +418,59 @@ void ClassLayout::InitializeGCPtrs(Compiler* compiler)
     }
 
     INDEBUG(m_gcPtrsInitialized = true;)
+}
+
+//------------------------------------------------------------------------
+// IsStackOnly: does the layout represent a block that can never be on the heap?
+//
+// Parameters:
+//   comp - The Compiler object
+//
+// Return value:
+//    true if the block is stack only
+//
+bool ClassLayout::IsStackOnly(Compiler* comp) const
+{
+    // Byref-like structs are stack only
+    if ((m_classHandle != NO_CLASS_HANDLE) &&
+        (((comp->info.compCompHnd->getClassAttribs(m_classHandle)) & CORINFO_FLG_BYREF_LIKE) != 0))
+    {
+        return true;
+    }
+    return false;
+}
+
+//------------------------------------------------------------------------
+// IntersectsGCPtr: check if the specified interval intersects with a GC
+// pointer.
+//
+// Parameters:
+//   offset - The start offset of the interval
+//   size   - The size of the interval
+//
+// Return value:
+//   True if it does.
+//
+bool ClassLayout::IntersectsGCPtr(unsigned offset, unsigned size) const
+{
+    if (!HasGCPtr())
+    {
+        return false;
+    }
+
+    unsigned startSlot = offset / TARGET_POINTER_SIZE;
+    unsigned endSlot   = (offset + size - 1) / TARGET_POINTER_SIZE;
+    assert((startSlot < GetSlotCount()) && (endSlot < GetSlotCount()));
+
+    for (unsigned i = startSlot; i <= endSlot; i++)
+    {
+        if (IsGCPtr(i))
+        {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 //------------------------------------------------------------------------

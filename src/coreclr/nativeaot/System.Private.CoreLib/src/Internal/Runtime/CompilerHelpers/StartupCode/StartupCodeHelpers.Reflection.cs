@@ -7,7 +7,7 @@ using Assembly = System.Reflection.Assembly;
 
 namespace Internal.Runtime.CompilerHelpers
 {
-    public partial class StartupCodeHelpers
+    internal partial class StartupCodeHelpers
     {
         private static RuntimeTypeHandle s_entryAssemblyType;
 

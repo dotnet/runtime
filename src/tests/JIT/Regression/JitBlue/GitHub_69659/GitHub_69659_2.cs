@@ -12,10 +12,9 @@ public class _65659_2
     public static bool[] s_10;
     public static ushort[][] s_29;
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         bool vr1 = M47();
-        return 100;
     }
 
     public static bool M47()

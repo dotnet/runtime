@@ -2,13 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Runtime.Caching.Hosting;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.Caching.Resources;
 using System.Globalization;
+using System.Runtime.Caching.Hosting;
+using System.Runtime.Caching.Resources;
 using System.Security;
 using System.Text;
 using System.Threading;
@@ -98,7 +98,7 @@ namespace System.Runtime.Caching
 #pragma warning disable IDE0074 // Use compound assignment
                 if (fcn == null)
                 {
-#if NETCOREAPP
+#if NET
                     if (OperatingSystem.IsBrowser() || (OperatingSystem.IsIOS() && !OperatingSystem.IsMacCatalyst()) || OperatingSystem.IsTvOS())
                     {
                         throw new PlatformNotSupportedException();

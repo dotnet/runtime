@@ -1,5 +1,7 @@
+.\" *********************************** start of \input{common.tex}
+.\" *********************************** end of \input{common.tex}
 '\" t
-.\" Manual page created with latex2man on Sun Aug 29 23:45:06 CEST 2021
+.\" Manual page created with latex2man on Tue Aug 29 12:09:48 2023
 .\" NOTE: This file is generated, DO NOT EDIT.
 .de Vb
 .ft CW
@@ -10,7 +12,7 @@
 
 .fi
 ..
-.TH "UNW\\_GET\\_PROC\\_INFO" "3" "29 August 2021" "Programming Library " "Programming Library "
+.TH "UNW\\_GET\\_PROC\\_INFO" "3libunwind" "29 August 2023" "Programming Library " "Programming Library "
 .SH NAME
 unw_get_proc_info
 \-\- get info on current procedure 
@@ -59,7 +61,7 @@ member is cleared to 0.
 .TP
 unw_word_t lsda
  The address of the 
-language\-specific data\-area (LSDA). This area normally contains 
+language\-specific data area (LSDA). This area normally contains 
 language\-specific information needed during exception handling. If 
 the procedure has no such area, this member is cleared to 0. 
 .br
@@ -73,11 +75,11 @@ member is cleared to 0.
 .br
 .TP
 unw_word_t gp
- The global\-pointer of the 
+ The global pointer of the 
 procedure. On platforms that do not use a global pointer, this 
 member may contain an undefined value. On all other platforms, it 
-must be set either to the correct global\-pointer value of the 
-procedure or to 0 if the proper global\-pointer cannot be 
+must be set either to the correct global pointer value of the 
+procedure or to 0 if the proper global pointer cannot be 
 obtained for some reason. 
 .br
 .TP
@@ -86,23 +88,23 @@ unw_word_t flags
 currently no target\-independent flags. For the IA\-64 target, the 
 flag UNW_PI_FLAG_IA64_RBS_SWITCH
 is set if the 
-procedure may switch the register\-backing store.
+procedure may switch the register backing store.
 .br
 .TP
 int format
- The format of the unwind\-info for this 
-procedure. If the unwind\-info consists of dynamic procedure info, 
+ The format of the unwind info for this 
+procedure. If the unwind info consists of dynamic procedure info, 
 format
 is equal to UNW_INFO_FORMAT_DYNAMIC\&.
 If the 
-unwind\-info consists of a (target\-specific) unwind table, it is 
+unwind info consists of a (target\-specific) unwind table, it is 
 equal to UNW_INFO_FORMAT_TABLE\&.
 All other values are 
 reserved for future use by libunwind\&.
 This member exists 
 for use by the find_proc_info()
-call\-back (see 
-unw_create_addr_space(3)).
+callback (see 
+unw_create_addr_space(3libunwind)).
 The 
 unw_get_proc_info()
 routine 
@@ -110,11 +112,11 @@ may return an undefined value in this member.
 .br
 .TP
 int unwind_info_size
- The size of the unwind\-info 
+ The size of the unwind info 
 in bytes. This member exists for use by the 
 find_proc_info()
-call\-back (see 
-unw_create_addr_space(3)).
+callback (see 
+unw_create_addr_space(3libunwind)).
 The 
 unw_get_proc_info()
 routine 
@@ -122,13 +124,13 @@ may return an undefined value in this member.
 .br
 .TP
 void *unwind_info
- The pointer to the unwind\-info. 
+ The pointer to the unwind info. 
 If no unwind info is available, this member must be set to 
 NULL\&.
 This member exists for use by the 
 find_proc_info()
-call\-back (see 
-unw_create_addr_space(3)).
+callback (see 
+unw_create_addr_space(3libunwind)).
 The 
 unw_get_proc_info()
 routine 
@@ -151,16 +153,16 @@ separate procedure.
 .PP
 On successful completion, unw_get_proc_info()
 returns 0. 
-Otherwise the negative value of one of the error\-codes below is 
+Otherwise the negative value of one of the error codes below is 
 returned. 
 .PP
 .SH THREAD AND SIGNAL SAFETY
 
 .PP
 unw_get_proc_info()
-is thread\-safe. If cursor cp
+is thread safe. If cursor cp
 is 
-in the local address\-space, this routine is also safe to use from a 
+in the local address space, this routine is also safe to use from a 
 signal handler. 
 .PP
 .SH ERRORS
@@ -173,24 +175,24 @@ UNW_EUNSPEC
 UNW_ENOINFO
  Libunwind
 was unable to locate 
-unwind\-info for the procedure. 
+unwind info for the procedure. 
 .TP
 UNW_EBADVERSION
- The unwind\-info for the procedure has 
+ The unwind info for the procedure has 
 version or format that is not understood by libunwind\&.
 .PP
 In addition, unw_get_proc_info()
 may return any error 
 returned by the access_mem()
-call\-back (see 
-unw_create_addr_space(3)).
+callback (see 
+unw_create_addr_space(3libunwind)).
 .PP
 .SH SEE ALSO
 
 .PP
-libunwind(3),
-unw_create_addr_space(3),
-unw_get_proc_name(3)
+libunwind(3libunwind),
+unw_create_addr_space(3libunwind),
+unw_get_proc_name(3libunwind)
 .PP
 .SH AUTHOR
 

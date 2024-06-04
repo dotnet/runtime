@@ -3,6 +3,7 @@
 
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Dynamic.Utils;
 using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
@@ -19,6 +20,7 @@ namespace System.Dynamic
     /// as input. On the other hand, the <see cref="DynamicMetaObjectBinder"/> participates in the <see cref="DynamicMetaObject"/>
     /// binding protocol.
     /// </remarks>
+    [RequiresDynamicCode(Expression.CallSiteRequiresDynamicCode)]
     public abstract class DynamicMetaObjectBinder : CallSiteBinder
     {
         /// <summary>

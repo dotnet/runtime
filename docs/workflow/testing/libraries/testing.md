@@ -79,6 +79,9 @@ cd src\libraries\System.Collections.Immutable\tests
 dotnet build /t:Test
 ```
 
+**NOTE**: if your environment doesn't have the required SDK installed (e.g. inside [Docker container](/docs/workflow/building/coreclr/linux-instructions.md#build-using-docker)),
+use `./dotnet.sh`/`.\dotnet.cmd` instead of `dotnet`.
+
 ### Running only certain tests
 
 It is possible to pass parameters to the underlying xunit runner via the `XUnitOptions` parameter, e.g., to filter to tests in just one fixture (class):

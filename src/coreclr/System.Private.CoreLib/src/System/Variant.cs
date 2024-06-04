@@ -17,7 +17,7 @@ using System.Runtime.InteropServices;
 
 namespace System
 {
-    internal struct Variant
+    internal partial struct Variant
     {
         // Do Not change the order of these fields.
         // They are mapped to the native VariantData * data structure.
@@ -34,7 +34,7 @@ namespace System
         // What are the consequences of making this an enum?
         ///////////////////////////////////////////////////////////////////////
         // If you update this, update the corresponding stuff in OAVariantLib.cs,
-        // COMOAVariant.cpp (2 tables, forwards and reverse), and perhaps OleVariant.h
+        // OAVariant.cpp (2 tables, forwards and reverse), and perhaps OleVariant.h
         ///////////////////////////////////////////////////////////////////////
         internal const int CV_EMPTY = 0x0;
         internal const int CV_VOID = 0x1;
@@ -69,6 +69,14 @@ namespace System
         internal static Variant Empty => default;
         internal static Variant Missing => new Variant(CV_MISSING, Type.Missing, 0);
         internal static Variant DBNull => new Variant(CV_NULL, System.DBNull.Value, 0);
+
+        internal static bool IsSystemDrawingColor(Type type) => type.FullName == "System.Drawing.Color"; // Matches the behavior of IsTypeRefOrDef
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Variant_ConvertSystemColorToOleColor")]
+        internal static partial uint ConvertSystemColorToOleColor(ObjectHandleOnStack obj);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Variant_ConvertOleColorToSystemColor")]
+        internal static partial void ConvertOleColorToSystemColor(ObjectHandleOnStack objret, uint value, IntPtr pMT);
 
         //
         // Native Methods

@@ -9,8 +9,8 @@ namespace ILCompiler.Dataflow
 {
     public readonly record struct TrimAnalysisFieldAccessPattern
     {
-        public FieldDesc Field { init; get; }
-        public MessageOrigin Origin { init; get; }
+        public FieldDesc Field { get; init; }
+        public MessageOrigin Origin { get; init; }
 
         public TrimAnalysisFieldAccessPattern(FieldDesc field, MessageOrigin origin)
         {

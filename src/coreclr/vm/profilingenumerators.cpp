@@ -103,7 +103,12 @@ BOOL ProfilerObjectEnum::Init()
     }
     CONTRACTL_END;
 
-    FrozenObjectHeapManager* foh = SystemDomain::GetFrozenObjectHeapManager();
+    FrozenObjectHeapManager* foh = SystemDomain::GetFrozenObjectHeapManagerNoThrow();
+    if (foh == nullptr)
+    {
+        return TRUE;
+    }
+
     CrstHolder ch(&foh->m_Crst);
 
     const unsigned segmentsCount = foh->m_FrozenSegments.GetCount();
@@ -113,7 +118,6 @@ BOOL ProfilerObjectEnum::Init()
         for (unsigned segmentIdx = 0; segmentIdx < segmentsCount; segmentIdx++)
         {
             const FrozenObjectSegment* segment = segments[segmentIdx];
-
             Object* currentObj = segment->GetFirstObject();
             while (currentObj != nullptr)
             {

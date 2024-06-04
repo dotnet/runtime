@@ -1,20 +1,20 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Xml;
-using System.Data.Common;
-using System.ComponentModel;
-using System.Diagnostics;
-using System.Globalization;
-using System.Data.SqlTypes;
-using System.Xml.Serialization;
-using System.Runtime.CompilerServices;
+using System.Collections;
 using System.Collections.Generic;
-using System.Threading;
+using System.ComponentModel;
+using System.Data.Common;
+using System.Data.SqlTypes;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Numerics;
 using System.Reflection;
-using System.Collections;
-using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
+using System.Threading;
+using System.Xml;
+using System.Xml.Serialization;
 
 namespace System.Data
 {

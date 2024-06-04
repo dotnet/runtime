@@ -29,6 +29,9 @@ namespace Microsoft.Extensions.DependencyInjection
 
             services.AddLogging();
             services.AddOptions();
+#if NET8_0_OR_GREATER
+            services.AddMetrics();
+#endif
 
             //
             // Core abstractions
@@ -48,6 +51,9 @@ namespace Microsoft.Extensions.DependencyInjection
             // Misc infrastructure
             //
             services.TryAddEnumerable(ServiceDescriptor.Singleton<IHttpMessageHandlerBuilderFilter, LoggingHttpMessageHandlerBuilderFilter>());
+#if NET8_0_OR_GREATER
+            services.TryAddEnumerable(ServiceDescriptor.Singleton<IHttpMessageHandlerBuilderFilter, MetricsFactoryHttpMessageHandlerFilter>());
+#endif
 
             // This is used to track state and report errors **DURING** service registration. This has to be an instance
             // because we access it by reaching into the service collection.

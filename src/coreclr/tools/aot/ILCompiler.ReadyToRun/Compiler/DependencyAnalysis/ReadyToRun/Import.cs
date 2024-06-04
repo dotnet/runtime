@@ -19,6 +19,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         internal readonly MethodDesc CallingMethod;
 
+        public Signature Signature => ImportSignature.Target;
+
         public Import(ImportSectionNode tableNode, Signature importSignature, MethodDesc callingMethod = null)
         {
             Table = tableNode;
@@ -52,7 +54,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public virtual void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(Table.Name);
-            sb.Append("->");
+            sb.Append("->"u8);
             ImportSignature.AppendMangledName(nameMangler, sb);
         }
 

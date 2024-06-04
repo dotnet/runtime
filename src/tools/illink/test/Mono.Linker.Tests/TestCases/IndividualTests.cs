@@ -250,12 +250,12 @@ namespace Mono.Linker.Tests.TestCases
 			return TestDatabase.CreateCollector ().CreateIndividualCase (testCaseType);
 		}
 
-		protected LinkedTestCaseResult Run (TestCase testCase)
+		protected TrimmedTestCaseResult Run (TestCase testCase)
 		{
 			return Run (testCase, out _);
 		}
 
-		protected virtual LinkedTestCaseResult Run (TestCase testCase, out TestRunner runner)
+		protected virtual TrimmedTestCaseResult Run (TestCase testCase, out TestRunner runner)
 		{
 			runner = new TestRunner (new ObjectFactory ());
 			return runner.Run (testCase);

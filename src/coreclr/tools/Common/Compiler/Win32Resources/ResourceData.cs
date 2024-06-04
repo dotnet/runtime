@@ -4,13 +4,19 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 
+#if !HOST_MODEL
 using ILCompiler.DependencyAnalysis;
-using Internal.TypeSystem.Ecma;
+#endif
 
+#if HOST_MODEL
+namespace Microsoft.NET.HostModel.Win32Resources
+#else
 namespace ILCompiler.Win32Resources
+#endif
 {
     /// <summary>
     /// Resource abstraction to allow examination
@@ -18,11 +24,26 @@ namespace ILCompiler.Win32Resources
     /// </summary>
     public unsafe partial class ResourceData
     {
+#if HOST_MODEL
+        /// <summary>
+        /// Initialize a ResourceData instance from a PE file
+        /// </summary>
+        /// <param name="peFile"></param>
+        public ResourceData(PEReader peFile)
+        {
+            DirectoryEntry resourceDirectory = peFile.PEHeaders.PEHeader!.ResourceTableDirectory;
+            if (resourceDirectory.Size != 0)
+            {
+                BlobReader resourceDataBlob = peFile.GetSectionData(resourceDirectory.RelativeVirtualAddress).GetReader(0, resourceDirectory.Size);
+                ReadResourceData(resourceDataBlob, peFile, null);
+            }
+        }
+#else
         /// <summary>
         /// Initialize a ResourceData instance from a PE file
         /// </summary>
         /// <param name="ecmaModule"></param>
-        public ResourceData(EcmaModule ecmaModule, Func<object, object, ushort, bool> resourceFilter = null)
+        public ResourceData(Internal.TypeSystem.Ecma.EcmaModule ecmaModule, Func<object, object, ushort, bool> resourceFilter = null)
         {
             System.Collections.Immutable.ImmutableArray<byte> ecmaData = ecmaModule.PEReader.GetEntireImage().GetContent();
             PEReader peFile = ecmaModule.PEReader;
@@ -34,6 +55,7 @@ namespace ILCompiler.Win32Resources
                 ReadResourceData(resourceDataBlob, peFile, resourceFilter);
             }
         }
+#endif
 
         /// <summary>
         /// Find a resource in the resource data
@@ -67,6 +89,44 @@ namespace ILCompiler.Win32Resources
             return FindResourceInternal(name, type, language);
         }
 
+        /// <summary>
+        /// Add or update resource
+        /// </summary>
+        public void AddResource(string name, string type, ushort language, byte[] data) => AddResourceInternal(name, type, language, data);
+
+        /// <summary>
+        /// Add or update resource
+        /// </summary>
+        public void AddResource(string name, ushort type, ushort language, byte[] data) => AddResourceInternal(name, type, language, data);
+
+        /// <summary>
+        /// Add or update resource
+        /// </summary>
+        public void AddResource(ushort name, string type, ushort language, byte[] data) => AddResourceInternal(name, type, language, data);
+
+        /// <summary>
+        /// Add or update resource
+        /// </summary>
+        public void AddResource(ushort name, ushort type, ushort language, byte[] data) => AddResourceInternal(name, type, language, data);
+
+        public IEnumerable<(object name, object type, ushort language, byte[] data)> GetAllResources()
+        {
+            return _resTypeHeadID.SelectMany(typeIdPair => SelectResType(typeIdPair.Key, typeIdPair.Value))
+                .Concat(_resTypeHeadName.SelectMany(typeNamePair => SelectResType(typeNamePair.Key, typeNamePair.Value)));
+
+            IEnumerable<(object name, object type, ushort language, byte[] data)> SelectResType(object type, ResType resType)
+            {
+                return resType.NameHeadID.SelectMany(nameIdPair => SelectResName(type, nameIdPair.Key, nameIdPair.Value))
+                    .Concat(resType.NameHeadName.SelectMany(nameNamePair =>
+                        SelectResName(type, nameNamePair.Key, nameNamePair.Value)));
+            }
+
+            IEnumerable<(object name, object type, ushort language, byte[] data)> SelectResName(object type, object name, ResName resType)
+            {
+                return resType.Languages.Select((lang) => (name, type, lang.Key, lang.Value.DataEntry));
+            }
+        }
+
         public bool IsEmpty
         {
             get
@@ -81,12 +141,32 @@ namespace ILCompiler.Win32Resources
             }
         }
 
+        /// <summary>
+        /// Add all resources in the specified ResourceData struct.
+        /// </summary>
+        public void CopyResourcesFrom(ResourceData moduleResources)
+        {
+            foreach ((object name, object type, ushort language, byte[] data) in moduleResources.GetAllResources())
+                AddResourceInternal(name, type, language, data);
+        }
+
+#if HOST_MODEL
+        public void WriteResources(int sectionBase, ref ObjectDataBuilder dataBuilder)
+        {
+            WriteResources(sectionBase, ref dataBuilder, ref dataBuilder);
+        }
+#else
         public void WriteResources(ISymbolNode nodeAssociatedWithDataBuilder, ref ObjectDataBuilder dataBuilder)
         {
             WriteResources(nodeAssociatedWithDataBuilder, ref dataBuilder, ref dataBuilder);
         }
+#endif
 
+#if HOST_MODEL
+        public void WriteResources(int sectionBase, ref ObjectDataBuilder dataBuilder, ref ObjectDataBuilder contentBuilder)
+#else
         public void WriteResources(ISymbolNode nodeAssociatedWithDataBuilder, ref ObjectDataBuilder dataBuilder, ref ObjectDataBuilder contentBuilder)
+#endif
         {
             Debug.Assert(dataBuilder.CountBytes == 0);
 
@@ -159,7 +239,11 @@ namespace ILCompiler.Win32Resources
             foreach (Tuple<ResLanguage, ObjectDataBuilder.Reservation> language in resLanguages)
             {
                 dataBuilder.EmitInt(language.Item2, dataBuilder.CountBytes);
+#if HOST_MODEL
+                IMAGE_RESOURCE_DATA_ENTRY.Write(ref dataBuilder, sectionBase, dataEntryTable[language.Item1], language.Item1.DataEntry.Length);
+#else
                 IMAGE_RESOURCE_DATA_ENTRY.Write(ref dataBuilder, nodeAssociatedWithDataBuilder, dataEntryTable[language.Item1], language.Item1.DataEntry.Length);
+#endif
             }
             dataBuilder.PadAlignment(4); // resource data entries are 4 byte aligned
         }

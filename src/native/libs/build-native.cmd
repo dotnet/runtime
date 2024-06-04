@@ -20,6 +20,7 @@ set CMAKE_BUILD_TYPE=Debug
 set __Ninja=1
 set __icuDir=""
 set __usePThreads=0
+set __ExtraCmakeParams=
 
 :Arg_Loop
 :: Since the native build requires some configuration information before msbuild is called, we have to do some manual args parsing
@@ -47,6 +48,8 @@ if /i [%1] == [msbuild] ( set __Ninja=0&&shift&goto Arg_Loop)
 if /i [%1] == [icudir] ( set __icuDir=%2&&shift&&shift&goto Arg_Loop)
 if /i [%1] == [usepthreads] ( set __usePThreads=1&&shift&goto Arg_Loop)
 
+if /i [%1] == [-fsanitize] ( set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCLR_CMAKE_ENABLE_SANITIZERS=$2"&&shift&&shift&goto Arg_Loop)
+
 shift
 goto :Arg_Loop
 
@@ -62,7 +65,7 @@ call "%__engNativeDir%\version\copy_version_files.cmd"
 
 :: cmake requires forward slashes in paths
 set __cmakeRepoRoot=%__repoRoot:\=/%
-set __ExtraCmakeParams="-DCMAKE_REPO_ROOT=%__cmakeRepoRoot%"
+set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCMAKE_REPO_ROOT=%__cmakeRepoRoot%"
 set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCMAKE_BUILD_TYPE=%CMAKE_BUILD_TYPE%"
 
 if NOT %__icuDir% == "" (
@@ -99,10 +102,8 @@ echo %MSBUILD_EMPTY_PROJECT_CONTENT% > "%__artifactsDir%\obj\native\Directory.Bu
 
 :: Regenerate the VS solution
 
-pushd "%__IntermediatesDir%"
 call "%__repoRoot%\eng\native\gen-buildsys.cmd" "%__sourceRootDir%" "%__IntermediatesDir%" %__VSVersion% %__BuildArch% %__TargetOS% %__ExtraCmakeParams%
 if NOT [%errorlevel%] == [0] goto :Failure
-popd
 
 :BuildNativeProj
 :: Build the project created by Cmake

@@ -40,7 +40,7 @@ namespace System
             {
                 int fieldOffset = __GetFieldHelper(i, out MethodTable* fieldType);
 
-                Debug.Assert(!fieldType->IsPointerType && !fieldType->IsFunctionPointerType);
+                Debug.Assert(!fieldType->IsPointer && !fieldType->IsFunctionPointer);
 
                 // Fetch the value of the field on both types
                 object thisResult = RuntimeImports.RhBoxAny(ref Unsafe.Add(ref thisRawData, fieldOffset), fieldType);
@@ -67,7 +67,7 @@ namespace System
             {
                 int fieldOffset = __GetFieldHelper(i, out MethodTable* fieldType);
 
-                Debug.Assert(!fieldType->IsPointerType && !fieldType->IsFunctionPointerType);
+                Debug.Assert(!fieldType->IsPointer && !fieldType->IsFunctionPointer);
 
                 object? fieldValue = RuntimeImports.RhBoxAny(ref Unsafe.Add(ref thisRawData, fieldOffset), fieldType);
 

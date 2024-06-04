@@ -21,13 +21,13 @@ namespace System.Threading
         }
 
         public ThreadStateException(string? message)
-            : base(message)
+            : base(message ?? SR.Arg_ThreadStateException)
         {
             HResult = HResults.COR_E_THREADSTATE;
         }
 
         public ThreadStateException(string? message, Exception? innerException)
-            : base(message, innerException)
+            : base(message ?? SR.Arg_ThreadStateException, innerException)
         {
             HResult = HResults.COR_E_THREADSTATE;
         }

@@ -9,7 +9,7 @@ namespace ILCompiler.DependencyAnalysis
     {
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(nameMangler.CompilationUnitPrefix).Append("tls_InlinedThreadStatics");
+            sb.Append(nameMangler.CompilationUnitPrefix).Append("tls_InlinedThreadStatics"u8);
         }
         public int Offset => 0;
         public override bool IsShareable => false;
@@ -26,10 +26,15 @@ namespace ILCompiler.DependencyAnalysis
             objData.RequireInitialPointerAlignment();
             objData.AddSymbol(this);
 
-            // root
+            // storage for InlinedThreadStaticRoot instances
+
+            // m_threadStaticsBase
             objData.EmitZeroPointer();
 
-            // next
+            // m_next
+            objData.EmitZeroPointer();
+
+            // m_typeManager
             objData.EmitZeroPointer();
 
             return objData.ToObjectData();

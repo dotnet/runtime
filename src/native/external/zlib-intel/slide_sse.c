@@ -18,7 +18,7 @@ void slide_hash_sse(deflate_state *s)
     unsigned n;
     Posf *p;
     uInt wsize = s->w_size;
-    z_const __m128i xmm_wsize = _mm_set1_epi16(s->w_size);
+    z_const __m128i xmm_wsize = _mm_set1_epi16((short)s->w_size);
 
     n = s->hash_size;
     p = &s->head[n] - 8;

@@ -577,7 +577,7 @@ X509* CryptoNative_SslGetPeerCertificate(SSL* ssl)
     long len = SSL_get_tlsext_status_ocsp_resp(ssl, &data);
     X509* cert = SSL_get1_peer_certificate(ssl);
 
-    if (len > 0 && cert != NULL)
+    if (len > 0 && cert != NULL && !X509_get_ex_data(cert, g_x509_ocsp_index))
     {
         OCSP_RESPONSE* ocspResp = d2i_OCSP_RESPONSE(NULL, &data, len);
 
@@ -699,6 +699,11 @@ int CryptoNative_SslCtxSetCaching(SSL_CTX* ctx, int mode, int cacheSize, int con
     }
 
     return retValue;
+}
+
+int CryptoNative_SslCtxRemoveSession(SSL_CTX* ctx, SSL_SESSION* session)
+{
+    return SSL_CTX_remove_session(ctx, session);
 }
 
 const char* CryptoNative_SslGetServerName(SSL* ssl)
@@ -1003,6 +1008,13 @@ void CryptoNative_SslSetClientCertCallback(SSL* ssl, int set)
     // void shim functions don't lead to exceptions, so skip the unconditional error clearing.
 
     SSL_set_cert_cb(ssl, set ? client_certificate_cb : NULL, NULL);
+}
+
+void CryptoNative_SslCtxSetKeylogCallback(SSL_CTX* ctx, SslCtxSetKeylogCallback cb)
+{
+    // void shim functions don't lead to exceptions, so skip the unconditional error clearing.
+
+    SSL_CTX_set_keylog_callback(ctx, cb);
 }
 
 void CryptoNative_SslSetPostHandshakeAuth(SSL* ssl, int32_t val)

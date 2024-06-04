@@ -10,11 +10,10 @@ public class Program
     public static ulong[] s_14;
     public static uint s_34;
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         var vr2 = new ulong[][]{new ulong[]{0}};
         M27(s_34, vr2);
-        return 100;
     }
 
     internal static void M27(uint arg4, ulong[][] arg5)

@@ -11,13 +11,16 @@ namespace System.Linq.Tests
     {
         public static IEnumerable<object[]> Min_AllTypes_TestData()
         {
-            for (int length = 2; length < 33; length++)
+            for (int length = 2; length < 65; length++)
             {
                 yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (byte)i)), (byte)length };
                 yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (byte)i).ToArray()), (byte)length };
 
-                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (sbyte)i)), (sbyte)length };
-                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (sbyte)i).ToArray()), (sbyte)length };
+                // Unit Tests does +T.One so we should generate data up to one value below sbyte.MaxValue, otherwise the type overflows
+                if ((length + length) < sbyte.MaxValue) {
+                    yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (sbyte)i)), (sbyte)length };
+                    yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (sbyte)i).ToArray()), (sbyte)length };
+                }
 
                 yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (ushort)i)), (ushort)length };
                 yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (ushort)i).ToArray()), (ushort)length };
@@ -133,6 +136,8 @@ namespace System.Linq.Tests
         {
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<int>().Min());
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<int>().Min(x => x));
+            Assert.Throws<InvalidOperationException>(() => ForceNotCollection(Enumerable.Empty<int>()).Min());
+            Assert.Throws<InvalidOperationException>(() => ForceNotCollection(Enumerable.Empty<int>()).Min(x => x));
             Assert.Throws<InvalidOperationException>(() => Array.Empty<int>().Min());
             Assert.Throws<InvalidOperationException>(() => new List<int>().Min());
         }
@@ -179,6 +184,8 @@ namespace System.Linq.Tests
         {
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<long>().Min());
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<long>().Min(x => x));
+            Assert.Throws<InvalidOperationException>(() => ForceNotCollection(Enumerable.Empty<long>()).Min());
+            Assert.Throws<InvalidOperationException>(() => ForceNotCollection(Enumerable.Empty<long>()).Min(x => x));
             Assert.Throws<InvalidOperationException>(() => Array.Empty<long>().Min());
             Assert.Throws<InvalidOperationException>(() => new List<long>().Min());
         }
@@ -247,6 +254,8 @@ namespace System.Linq.Tests
         {
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<float>().Min());
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<float>().Min(x => x));
+            Assert.Throws<InvalidOperationException>(() => ForceNotCollection(Enumerable.Empty<float>()).Min());
+            Assert.Throws<InvalidOperationException>(() => ForceNotCollection(Enumerable.Empty<float>()).Min(x => x));
             Assert.Throws<InvalidOperationException>(() => Array.Empty<float>().Min());
             Assert.Throws<InvalidOperationException>(() => new List<float>().Min());
         }
@@ -313,6 +322,8 @@ namespace System.Linq.Tests
         {
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<double>().Min());
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<double>().Min(x => x));
+            Assert.Throws<InvalidOperationException>(() => ForceNotCollection(Enumerable.Empty<double>()).Min());
+            Assert.Throws<InvalidOperationException>(() => ForceNotCollection(Enumerable.Empty<double>()).Min(x => x));
             Assert.Throws<InvalidOperationException>(() => Array.Empty<double>().Min());
             Assert.Throws<InvalidOperationException>(() => new List<double>().Min());
         }
@@ -352,6 +363,8 @@ namespace System.Linq.Tests
         {
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<decimal>().Min());
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<decimal>().Min(x => x));
+            Assert.Throws<InvalidOperationException>(() => ForceNotCollection(Enumerable.Empty<decimal>()).Min());
+            Assert.Throws<InvalidOperationException>(() => ForceNotCollection(Enumerable.Empty<decimal>()).Min(x => x));
             Assert.Throws<InvalidOperationException>(() => Array.Empty<decimal>().Min());
             Assert.Throws<InvalidOperationException>(() => new List<decimal>().Min());
         }
@@ -592,6 +605,8 @@ namespace System.Linq.Tests
         {
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<DateTime>().Min());
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<DateTime>().Min(x => x));
+            Assert.Throws<InvalidOperationException>(() => ForceNotCollection(Enumerable.Empty<DateTime>()).Min());
+            Assert.Throws<InvalidOperationException>(() => ForceNotCollection(Enumerable.Empty<DateTime>()).Min(x => x));
             Assert.Throws<InvalidOperationException>(() => Array.Empty<DateTime>().Min());
             Assert.Throws<InvalidOperationException>(() => new List<DateTime>().Min());
         }
@@ -855,6 +870,7 @@ namespace System.Linq.Tests
         public void Min_Bool_EmptySource_ThrowsInvalodOperationException()
         {
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<bool>().Min());
+            Assert.Throws<InvalidOperationException>(() => ForceNotCollection(Enumerable.Empty<bool>()).Min());
         }
 
         [Fact]

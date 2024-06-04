@@ -9,13 +9,12 @@ public class test
 {
     static byte by = 13;
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         byte by1 = (byte)(by >> 1);
         byte by2 = (byte)(by >> 1);
 
         Console.WriteLine(by1);
         Console.WriteLine(by2);
-        return 100;
     }
 }

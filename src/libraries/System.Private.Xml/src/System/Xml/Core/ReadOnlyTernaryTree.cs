@@ -48,8 +48,8 @@ namespace System.Xml
             RightTree = 2,
             Data = 3
         }
-        private static ReadOnlySpan<byte> HtmlElements => new byte[]
-        {
+        private static ReadOnlySpan<byte> HtmlElements =>
+        [
             73, 4, 147, 0, 77, 140, 162, 0, 71, 0, 0, 0, 0, 0, 0, 11, 68, 4, 85, 0, 73, 71, 92, 0, 86, 81, 0, 0,
             0, 0, 0, 64, 66, 3, 45, 0, 82, 21, 55, 0, 0, 0, 0, 8, 65, 0, 0, 0, 82, 4, 0, 0, 69, 0, 0, 0,
             65, 0, 0, 0, 0, 0, 0, 75, 68, 7, 8, 0, 68, 0, 0, 0, 82, 0, 0, 0, 69, 0, 0, 0, 83, 0, 0, 0,
@@ -94,9 +94,9 @@ namespace System.Xml
             0, 0, 0, 2, 0, 0, 0, 66, 82, 2, 0, 0, 0, 0, 0, 64, 73, 0, 0, 0, 84, 0, 0, 0, 76, 0, 0, 0,
             69, 0, 0, 0, 0, 0, 0, 64, 85, 0, 3, 0, 76, 0, 0, 0, 0, 0, 0, 66, 88, 0, 0, 0, 77, 0, 0, 0,
             80, 0, 0, 0, 0, 0, 0, 64,
-        };
-        private static ReadOnlySpan<byte> HtmlAttributes => new byte[]
-        {
+        ];
+        private static ReadOnlySpan<byte> HtmlAttributes =>
+        [
             72, 5, 77, 0, 82, 0, 0, 0, 69, 0, 0, 0, 70, 0, 0, 0, 0, 0, 0, 1, 67, 12, 40, 0, 79, 7, 0, 0,
             77, 31, 0, 0, 80, 0, 0, 0, 65, 0, 0, 0, 67, 0, 0, 0, 84, 0, 0, 0, 0, 0, 0, 2, 73, 11, 18, 0,
             84, 0, 0, 0, 69, 0, 0, 0, 0, 0, 0, 1, 65, 0, 0, 0, 67, 0, 0, 0, 84, 0, 0, 0, 73, 0, 0, 0,
@@ -121,7 +121,7 @@ namespace System.Xml
             83, 0, 12, 0, 82, 3, 0, 0, 67, 0, 0, 0, 0, 0, 0, 1, 69, 0, 0, 0, 76, 0, 0, 0, 69, 0, 0, 0,
             67, 0, 0, 0, 84, 0, 0, 0, 69, 0, 0, 0, 68, 0, 0, 0, 0, 0, 0, 2, 85, 0, 0, 0, 83, 0, 0, 0,
             69, 0, 0, 0, 77, 0, 0, 0, 65, 0, 0, 0, 80, 0, 0, 0, 0, 0, 0, 1,
-        };
+        ];
         public static ElementProperties FindElementProperty(ReadOnlySpan<char> stringToFind)
         {
             return (ElementProperties)FindCaseInsensitiveString(stringToFind, HtmlElements);

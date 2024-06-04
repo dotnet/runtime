@@ -6,7 +6,7 @@
     <!-- For example, they may take dependencies on pre-built packages that aren't build-from-source. e.g. 'Microsoft.DotNet.CilStrip.Sources' -->
     <ProjectReference Remove="MonoTargetsTasks\MonoTargetsTasks.csproj;
                               MonoTargetsTasks\ILStrip\AssemblyStripper\AssemblyStripper.csproj"
-                      Condition="'$(DotNetBuildFromSource)' == 'true'" />
+                      Condition="'$(DotNetBuildSourceOnly)' == 'true'" />
   </ItemGroup>
 
   <!--
@@ -24,7 +24,7 @@
     </ItemGroup>
 
     <MSBuild Projects="@(TaskProject)"
-             Properties="Configuration=Debug;Platform=AnyCPU"
+             Properties="Configuration=$(TasksConfiguration);LibrariesConfiguration=$(LibrariesConfiguration);Platform=AnyCPU"
              Targets="Build" />
 
     <WriteLinesToFile File="$(TasksIntermediateFile)"
@@ -35,7 +35,7 @@
   <Target Name="GetTasksSrc"
           DependsOnTargets="PrepareProjectReferences">
     <PropertyGroup>
-      <TasksIntermediateFile>$([MSBuild]::NormalizePath('$(ArtifactsObjDir)', '$(MSBuildProjectName)', 'Debug', 'build-semaphore.txt'))</TasksIntermediateFile>
+      <TasksIntermediateFile>$([MSBuild]::NormalizePath('$(ArtifactsObjDir)', '$(MSBuildProjectName)', '$(TasksConfiguration)', 'build-semaphore.txt'))</TasksIntermediateFile>
     </PropertyGroup>
 
     <!-- Include both the project file and its sources as an input. -->

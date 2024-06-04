@@ -18,11 +18,10 @@ public class Runtime_77886
     public static uint s_17;
     public static short s_18;
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         bool vr6 = default(bool);
         M37(s_11, vr6, s_18);
-        return 100;
     }
 
     internal static void M37(sbyte arg0, bool arg1, short arg2)

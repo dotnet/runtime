@@ -3,7 +3,7 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-browser</TargetFrameworks>
     <!-- SYSLIB0021: Derived cryptographic types are obsolete -->
     <NoWarn>$(NoWarn);SYSLIB0021</NoWarn>
-    <!--Remove once this is fixed, https://github.com/dotnet/runtime/issues/71506 -->
+    <!-- These APIs are not trim safe but IlcTrimMetadata happens to make the tests using them work -->
     <IlcTrimMetadata>false</IlcTrimMetadata>
   </PropertyGroup>
   <ItemGroup>

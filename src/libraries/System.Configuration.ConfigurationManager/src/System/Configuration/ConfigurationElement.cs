@@ -2,14 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
-using System.Collections.Specialized;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Reflection;
-using System.Xml;
-using System.Globalization;
 using System.Text;
+using System.Xml;
 
 namespace System.Configuration
 {
@@ -1725,7 +1725,7 @@ namespace System.Configuration
                 // Validate the loaded and converted value
                 prop.Validate(propertyValue);
             }
-            catch (ConfigurationException ce)
+            catch (ConfigurationErrorsException ce)
             {
                 // If the error is incomplete - complete it :)
                 if (string.IsNullOrEmpty(ce.Filename)) ce = new ConfigurationErrorsException(ce.Message, reader);

@@ -11,7 +11,7 @@ set -e
 os="$(echo "$1" | tr "[:upper:]" "[:lower:]")"
 
 if [ -z "$os" ]; then
-    . "$(dirname "$0")"/native/init-os-and-arch.sh
+    . "$(dirname "$0")"/common/native/init-os-and-arch.sh
 fi
 
 case "$os" in
@@ -20,17 +20,19 @@ case "$os" in
             . /etc/os-release
         fi
 
-        if [ "$ID" != "debian" ] && [ "$ID_LIKE" != "debian" ]; then
+        if [ "$ID" = "debian" ] || [ "$ID_LIKE" = "debian" ]; then
+            apt update
+
+            apt install -y build-essential gettext locales cmake llvm clang lldb liblldb-dev libunwind8-dev libicu-dev liblttng-ust-dev \
+                libssl-dev libkrb5-dev zlib1g-dev
+
+            localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
+        elif [ "$ID" = "alpine" ]; then
+            apk add build-base cmake bash curl clang llvm-dev krb5-dev lttng-ust-dev icu-dev zlib-dev openssl-dev
+        else
             echo "Unsupported distro. distro: $ID"
             exit 1
         fi
-
-        apt update
-
-        apt install -y build-essential gettext locales cmake llvm clang lldb liblldb-dev libunwind8-dev libicu-dev liblttng-ust-dev \
-            libssl-dev libkrb5-dev zlib1g-dev
-
-        localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
         ;;
 
     osx|maccatalyst|ios|iossimulator|tvos|tvossimulator)

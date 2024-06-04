@@ -105,6 +105,16 @@ By default the `build` script only builds the product libraries and none of the 
 
 For Windows, replace `./build.sh` with `build.cmd`.
 
+### Building the native components with native sanitizers
+
+The libraries native components can be built with native sanitizers like AddressSanitizer to help catch memory safety issues. To build the project with native sanitizers, add the `-fsanitize` argument to the build script like the following:
+
+```bash
+build.sh -s libs -fsanitize address
+```
+
+When building the repo with any native sanitizers, you should build all native components in the repo with the same set of sanitizers.
+
 ### How to build native components only
 
 The libraries build contains some native code. This includes shims over libc, openssl, gssapi, and zlib. The build system uses CMake to generate Makefiles using clang. The build also uses git for generating some version information.

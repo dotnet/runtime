@@ -27,10 +27,10 @@ internal sealed class ValueTaskSource : IValueTaskSource
     private CancellationTokenRegistration _cancellationRegistration;
     private GCHandle _keepAlive;
 
-    public ValueTaskSource(bool runContinuationsAsynchronously = true)
+    public ValueTaskSource()
     {
         _state = State.None;
-        _valueTaskSource = new ManualResetValueTaskSourceCore<bool>() { RunContinuationsAsynchronously = runContinuationsAsynchronously };
+        _valueTaskSource = new ManualResetValueTaskSourceCore<bool>() { RunContinuationsAsynchronously = true };
         _cancellationRegistration = default;
         _keepAlive = default;
     }

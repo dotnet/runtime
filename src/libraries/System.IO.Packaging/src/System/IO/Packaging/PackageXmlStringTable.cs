@@ -3,9 +3,9 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Xml;
-using System.Runtime.InteropServices;
 
 namespace System.IO.Packaging
 {

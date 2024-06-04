@@ -3,14 +3,12 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Text.Json.Serialization;
-using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Text;
+using SourceGenerators;
 
 namespace System.Text.Json.SourceGeneration
 {
@@ -22,6 +20,7 @@ namespace System.Text.Json.SourceGeneration
             private const string CreateValueInfoMethodName = "CreateValueInfo";
             private const string CtorParamInitMethodNameSuffix = "CtorParamInit";
             private const string DefaultOptionsStaticVarName = "s_defaultOptions";
+            private const string InstanceMemberBindingFlagsVariableName = "InstanceMemberBindingFlags";
             private const string OriginatingResolverPropertyName = "OriginatingResolver";
             private const string InfoVarName = "info";
             private const string NumberHandlingPropName = "NumberHandling";
@@ -43,6 +42,7 @@ namespace System.Text.Json.SourceGeneration
 
             // global::fully.qualified.name for referenced types
             private const string InvalidOperationExceptionTypeRef = "global::System.InvalidOperationException";
+            private const string JsonExceptionTypeRef = "global::System.Text.Json.JsonException";
             private const string TypeTypeRef = "global::System.Type";
             private const string UnsafeTypeRef = "global::System.Runtime.CompilerServices.Unsafe";
             private const string EqualityComparerTypeRef = "global::System.Collections.Generic.EqualityComparer";
@@ -501,6 +501,7 @@ namespace System.Text.Json.SourceGeneration
 
                 string? propInitMethodName = null;
                 string? propInitAdapterFunc = null;
+                string? constructorInfoFactoryFunc = null;
                 string? ctorParamMetadataInitMethodName = null;
                 string? serializeMethodName = null;
 
@@ -509,9 +510,19 @@ namespace System.Text.Json.SourceGeneration
                     propInitMethodName = $"{typeFriendlyName}{PropInitMethodNameSuffix}";
                     propInitAdapterFunc = $"_ => {propInitMethodName}({OptionsLocalVariableName})";
 
-                    if (constructionStrategy == ObjectConstructionStrategy.ParameterizedConstructor)
+                    if (constructionStrategy is ObjectConstructionStrategy.ParameterizedConstructor)
                     {
                         ctorParamMetadataInitMethodName = $"{typeFriendlyName}{CtorParamInitMethodNameSuffix}";
+                    }
+
+                    if (constructionStrategy is ObjectConstructionStrategy.ParameterlessConstructor
+                                             or ObjectConstructionStrategy.ParameterizedConstructor)
+                    {
+                        string argTypes = typeMetadata.CtorParamGenSpecs.Count == 0
+                            ? "global::System.Array.Empty<global::System.Type>()"
+                            : $$"""new[] {{{string.Join(", ", typeMetadata.CtorParamGenSpecs.Select(p => $"typeof({p.ParameterType.FullyQualifiedName})"))}}}""";
+
+                        constructorInfoFactoryFunc = $"static () => typeof({typeMetadata.TypeRef.FullyQualifiedName}).GetConstructor({InstanceMemberBindingFlagsVariableName}, binder: null, {argTypes}, modifiers: null)";
                     }
                 }
 
@@ -532,7 +543,8 @@ namespace System.Text.Json.SourceGeneration
                         ObjectWithParameterizedConstructorCreator = {{parameterizedCreatorInvocation}},
                         PropertyMetadataInitializer = {{propInitAdapterFunc ?? "null"}},
                         ConstructorParameterMetadataInitializer = {{ctorParamMetadataInitMethodName ?? "null"}},
-                        {{SerializeHandlerPropName}} = {{serializeMethodName ?? "null"}}
+                        ConstructorAttributeProviderFactory = {{constructorInfoFactoryFunc ?? "null"}},
+                        {{SerializeHandlerPropName}} = {{serializeMethodName ?? "null"}},
                     };
 
                     {{JsonTypeInfoLocalVariableName}} = {{JsonMetadataServicesTypeRef}}.CreateObjectInfo<{{typeMetadata.TypeRef.FullyQualifiedName}}>({{OptionsLocalVariableName}}, {{ObjectInfoVarName}});
@@ -640,19 +652,20 @@ namespace System.Text.Json.SourceGeneration
                     writer.WriteLine($$"""
                         var {{InfoVarName}}{{i}} = new {{JsonPropertyInfoValuesTypeRef}}<{{propertyTypeFQN}}>
                         {
-                            IsProperty = {{FormatBool(property.IsProperty)}},
-                            IsPublic = {{FormatBool(property.IsPublic)}},
-                            IsVirtual = {{FormatBool(property.IsVirtual)}},
+                            IsProperty = {{FormatBoolLiteral(property.IsProperty)}},
+                            IsPublic = {{FormatBoolLiteral(property.IsPublic)}},
+                            IsVirtual = {{FormatBoolLiteral(property.IsVirtual)}},
                             DeclaringType = typeof({{property.DeclaringType.FullyQualifiedName}}),
                             Converter = {{converterInstantiationExpr ?? "null"}},
                             Getter = {{getterValue}},
                             Setter = {{setterValue}},
                             IgnoreCondition = {{ignoreConditionNamedArg}},
-                            HasJsonInclude = {{FormatBool(property.HasJsonInclude)}},
-                            IsExtensionData = {{FormatBool(property.IsExtensionData)}},
+                            HasJsonInclude = {{FormatBoolLiteral(property.HasJsonInclude)}},
+                            IsExtensionData = {{FormatBoolLiteral(property.IsExtensionData)}},
                             NumberHandling = {{FormatNumberHandling(property.NumberHandling)}},
                             PropertyName = {{FormatStringLiteral(property.MemberName)}},
-                            JsonPropertyName = {{FormatStringLiteral(property.JsonPropertyName)}}
+                            JsonPropertyName = {{FormatStringLiteral(property.JsonPropertyName)}},
+                            AttributeProviderFactory = static () => typeof({{property.DeclaringType.FullyQualifiedName}}).GetMember({{FormatStringLiteral(property.MemberName)}}, {{InstanceMemberBindingFlagsVariableName}}) is { Length: > 0 } results ? results[0] : null,
                         };
 
                         properties[{{i}}] = {{JsonMetadataServicesTypeRef}}.CreatePropertyInfo<{{propertyTypeFQN}}>({{OptionsLocalVariableName}}, {{InfoVarName}}{{i}});
@@ -669,6 +682,20 @@ namespace System.Text.Json.SourceGeneration
                         writer.WriteLine($"properties[{i}].ObjectCreationHandling = {FormatObjectCreationHandling(property.ObjectCreationHandling.Value)};");
                     }
 
+                    if (property.Order != 0)
+                    {
+                        writer.WriteLine($"properties[{i}].Order = {property.Order};");
+                    }
+
+                    if (property.IsGetterNonNullableAnnotation)
+                    {
+                        writer.WriteLine($"properties[{i}].IsGetNullable = false;");
+                    }
+                    if (property.IsSetterNonNullableAnnotation)
+                    {
+                        writer.WriteLine($"properties[{i}].IsSetNullable = false;");
+                    }
+
                     writer.WriteLine();
                 }
 
@@ -679,33 +706,34 @@ namespace System.Text.Json.SourceGeneration
 
             private static void GenerateCtorParamMetadataInitFunc(SourceWriter writer, string ctorParamMetadataInitMethodName, TypeGenerationSpec typeGenerationSpec)
             {
-                const string parametersVarName = "parameters";
-
                 ImmutableEquatableArray<ParameterGenerationSpec> parameters = typeGenerationSpec.CtorParamGenSpecs;
                 ImmutableEquatableArray<PropertyInitializerGenerationSpec> propertyInitializers = typeGenerationSpec.PropertyInitializerSpecs;
                 int paramCount = parameters.Count + propertyInitializers.Count(propInit => !propInit.MatchesConstructorParameter);
                 Debug.Assert(paramCount > 0);
 
-                writer.WriteLine($"private static {JsonParameterInfoValuesTypeRef}[] {ctorParamMetadataInitMethodName}()");
+                writer.WriteLine($"private static {JsonParameterInfoValuesTypeRef}[] {ctorParamMetadataInitMethodName}() => new {JsonParameterInfoValuesTypeRef}[]");
                 writer.WriteLine('{');
                 writer.Indentation++;
 
-                writer.WriteLine($"var {parametersVarName} = new {JsonParameterInfoValuesTypeRef}[{paramCount}];");
-                writer.WriteLine();
-
+                int i = 0;
                 foreach (ParameterGenerationSpec spec in parameters)
                 {
                     writer.WriteLine($$"""
-                        {{parametersVarName}}[{{spec.ParameterIndex}}] = new()
+                        new()
                         {
-                            Name = "{{spec.Name}}",
+                            Name = {{FormatStringLiteral(spec.Name)}},
                             ParameterType = typeof({{spec.ParameterType.FullyQualifiedName}}),
                             Position = {{spec.ParameterIndex}},
-                            HasDefaultValue = {{FormatBool(spec.HasDefaultValue)}},
-                            DefaultValue = {{FormatDefaultConstructorParameter(spec.DefaultValue, spec.ParameterType)}}
-                        };
-
+                            HasDefaultValue = {{FormatBoolLiteral(spec.HasDefaultValue)}},
+                            DefaultValue = {{(spec.HasDefaultValue ? CSharpSyntaxUtilities.FormatLiteral(spec.DefaultValue, spec.ParameterType) : "null")}},
+                            IsNullable = {{FormatBoolLiteral(spec.IsNullable)}},
+                        },
                         """);
+
+                    if (++i < paramCount)
+                    {
+                        writer.WriteLine();
+                    }
                 }
 
                 foreach (PropertyInitializerGenerationSpec spec in propertyInitializers)
@@ -716,25 +744,28 @@ namespace System.Text.Json.SourceGeneration
                     }
 
                     writer.WriteLine($$"""
-                        {{parametersVarName}}[{{spec.ParameterIndex}}] = new()
+                        new()
                         {
-                            Name = "{{spec.Name}}",
+                            Name = {{FormatStringLiteral(spec.Name)}},
                             ParameterType = typeof({{spec.ParameterType.FullyQualifiedName}}),
                             Position = {{spec.ParameterIndex}},
-                        };
-
+                            IsMemberInitializer = true,
+                        },
                         """);
+
+                    if (++i < paramCount)
+                    {
+                        writer.WriteLine();
+                    }
                 }
 
-                writer.WriteLine($"return {parametersVarName};");
-
                 writer.Indentation--;
-                writer.WriteLine('}');
+                writer.WriteLine("};");
             }
 
             private void GenerateFastPathFuncForObject(SourceWriter writer, ContextGenerationSpec contextSpec, string serializeMethodName, TypeGenerationSpec typeGenSpec)
             {
-                if (!TryResolveFastPathPropertyNameConflicts(typeGenSpec, out List<PropertyGenerationSpec>? properties))
+                if (typeGenSpec.FastPathPropertyIndices is null)
                 {
                     // Type uses configuration that doesn't support fast-path: emit a stub that just throws.
                     GenerateFastPathFuncHeader(writer, typeGenSpec, serializeMethodName, skipNullCheck: true);
@@ -757,9 +788,13 @@ namespace System.Text.Json.SourceGeneration
                 writer.WriteLine($"{WriterVarName}.WriteStartObject();");
                 writer.WriteLine();
 
+                bool generateDisallowNullThrowHelper = false;
+
                 // Provide generation logic for each prop.
-                foreach (PropertyGenerationSpec propertyGenSpec in properties)
+                foreach (int i in typeGenSpec.FastPathPropertyIndices)
                 {
+                    PropertyGenerationSpec propertyGenSpec = typeGenSpec.PropertyGenSpecs[i];
+
                     if (!propertyGenSpec.ShouldIncludePropertyForFastPath(contextSpec))
                     {
                         continue;
@@ -779,7 +814,7 @@ namespace System.Text.Json.SourceGeneration
                     Debug.Assert(!_propertyNames.TryGetValue(effectiveJsonPropertyName, out string? existingName) || existingName == propertyNameFieldName);
                     _propertyNames.TryAdd(effectiveJsonPropertyName, propertyNameFieldName);
 
-                    DefaultCheckType defaultCheckType = GetDefaultCheckType(contextSpec, propertyGenSpec);
+                    SerializedValueCheckType defaultCheckType = GetCheckType(contextSpec, propertyGenSpec);
 
                     // For properties whose declared type differs from that of the serialized type
                     // perform an explicit cast -- this is to account for hidden properties or diamond ambiguity.
@@ -788,10 +823,10 @@ namespace System.Text.Json.SourceGeneration
                         : ValueVarName;
 
                     string propValueExpr;
-                    if (defaultCheckType != DefaultCheckType.None)
+                    if (defaultCheckType != SerializedValueCheckType.None)
                     {
                         // Use temporary variable to evaluate property value only once
-                        string localVariableName =  $"__value_{propertyGenSpec.NameSpecifiedInSourceCode}";
+                        string localVariableName =  $"__value_{propertyGenSpec.NameSpecifiedInSourceCode.TrimStart('@')}";
                         writer.WriteLine($"{propertyGenSpec.PropertyType.FullyQualifiedName} {localVariableName} = {objectExpr}.{propertyGenSpec.NameSpecifiedInSourceCode};");
                         propValueExpr = localVariableName;
                     }
@@ -802,25 +837,44 @@ namespace System.Text.Json.SourceGeneration
 
                     switch (defaultCheckType)
                     {
-                        case DefaultCheckType.Null:
+                        case SerializedValueCheckType.IgnoreWhenNull:
                             writer.WriteLine($"if ({propValueExpr} != null)");
                             writer.WriteLine('{');
                             writer.Indentation++;
+
+                            GenerateSerializePropertyStatement(writer, propertyTypeSpec, propertyNameFieldName, propValueExpr);
+
+                            writer.Indentation--;
+                            writer.WriteLine('}');
                             break;
 
-                        case DefaultCheckType.Default:
+                        case SerializedValueCheckType.IgnoreWhenDefault:
                             writer.WriteLine($"if (!{EqualityComparerTypeRef}<{propertyGenSpec.PropertyType.FullyQualifiedName}>.Default.Equals(default, {propValueExpr}))");
                             writer.WriteLine('{');
                             writer.Indentation++;
+
+                            GenerateSerializePropertyStatement(writer, propertyTypeSpec, propertyNameFieldName, propValueExpr);
+
+                            writer.Indentation--;
+                            writer.WriteLine('}');
                             break;
-                    }
 
-                    GenerateSerializePropertyStatement(writer, propertyTypeSpec, propertyNameFieldName, propValueExpr);
+                        case SerializedValueCheckType.DisallowNull:
+                            writer.WriteLine($$"""
+                                if ({{propValueExpr}} is null)
+                                {
+                                   ThrowPropertyNullException({{FormatStringLiteral(propertyGenSpec.EffectiveJsonPropertyName)}});
+                                }
 
-                    if (defaultCheckType != DefaultCheckType.None)
-                    {
-                        writer.Indentation--;
-                        writer.WriteLine('}');
+                                """);
+
+                            GenerateSerializePropertyStatement(writer, propertyTypeSpec, propertyNameFieldName, propValueExpr);
+                            generateDisallowNullThrowHelper = true;
+                            break;
+
+                        default:
+                            GenerateSerializePropertyStatement(writer, propertyTypeSpec, propertyNameFieldName, propValueExpr);
+                            break;
                     }
                 }
 
@@ -832,6 +886,17 @@ namespace System.Text.Json.SourceGeneration
                 {
                     writer.WriteLine();
                     writer.WriteLine($"((global::{JsonConstants.IJsonOnSerializedFullName}){ValueVarName}).OnSerialized();");
+                }
+
+                if (generateDisallowNullThrowHelper)
+                {
+                    writer.WriteLine();
+                    writer.WriteLine($$"""
+                        static void ThrowPropertyNullException(string propertyName)
+                        {
+                            throw new {{JsonExceptionTypeRef}}(string.Format("{{ExceptionMessages.PropertyGetterDisallowNull}}", propertyName, {{FormatStringLiteral(typeGenSpec.TypeRef.Name)}}));
+                        }
+                        """);
                 }
 
                 writer.Indentation--;
@@ -973,20 +1038,22 @@ namespace System.Text.Json.SourceGeneration
                 }
             }
 
-            private enum DefaultCheckType
+            private enum SerializedValueCheckType
             {
                 None,
-                Null,
-                Default,
+                IgnoreWhenNull,
+                IgnoreWhenDefault,
+                DisallowNull,
             }
 
-            private static DefaultCheckType GetDefaultCheckType(ContextGenerationSpec contextSpec, PropertyGenerationSpec propertySpec)
+            private static SerializedValueCheckType GetCheckType(ContextGenerationSpec contextSpec, PropertyGenerationSpec propertySpec)
             {
                 return (propertySpec.DefaultIgnoreCondition ?? contextSpec.GeneratedOptionsSpec?.DefaultIgnoreCondition) switch
                 {
-                    JsonIgnoreCondition.WhenWritingNull => propertySpec.PropertyType.CanBeNull ? DefaultCheckType.Null : DefaultCheckType.None,
-                    JsonIgnoreCondition.WhenWritingDefault => propertySpec.PropertyType.CanBeNull ? DefaultCheckType.Null : DefaultCheckType.Default,
-                    _ => DefaultCheckType.None,
+                    JsonIgnoreCondition.WhenWritingNull => propertySpec.PropertyType.CanBeNull ? SerializedValueCheckType.IgnoreWhenNull : SerializedValueCheckType.None,
+                    JsonIgnoreCondition.WhenWritingDefault => propertySpec.PropertyType.CanBeNull ? SerializedValueCheckType.IgnoreWhenNull : SerializedValueCheckType.IgnoreWhenDefault,
+                    _ when propertySpec.IsGetterNonNullableAnnotation && contextSpec.GeneratedOptionsSpec?.RespectNullableAnnotations is true => SerializedValueCheckType.DisallowNull,
+                    _ => SerializedValueCheckType.None,
                 };
             }
 
@@ -1002,7 +1069,9 @@ namespace System.Text.Json.SourceGeneration
                     /// <summary>
                     /// Defines the source generated JSON serialization contract metadata for a given type.
                     /// </summary>
+                    #nullable disable annotations // Marking the property type as nullable-oblivious.
                     public {{typeInfoFQN}} {{typeInfoPropertyName}}
+                    #nullable enable annotations
                     {
                         get => _{{typeInfoPropertyName}} ??= ({{typeInfoFQN}}){{OptionsInstanceVariableName}}.GetTypeInfo(typeof({{typeFQN}}));
                     }
@@ -1045,7 +1114,14 @@ namespace System.Text.Json.SourceGeneration
 
                 GetLogicForDefaultSerializerOptionsInit(contextSpec.GeneratedOptionsSpec, writer);
 
-                writer.WriteLine();
+                writer.WriteLine($"""
+
+                    private const global::System.Reflection.BindingFlags {InstanceMemberBindingFlagsVariableName} =
+                        global::System.Reflection.BindingFlags.Instance |
+                        global::System.Reflection.BindingFlags.Public |
+                        global::System.Reflection.BindingFlags.NonPublic;
+
+                    """);
 
                 writer.WriteLine($$"""
                     /// <summary>
@@ -1098,8 +1174,11 @@ namespace System.Text.Json.SourceGeneration
                 writer.WriteLine('{');
                 writer.Indentation++;
 
+                if (optionsSpec.AllowOutOfOrderMetadataProperties is bool allowOutOfOrderMetadataProperties)
+                    writer.WriteLine($"AllowOutOfOrderMetadataProperties = {FormatBoolLiteral(allowOutOfOrderMetadataProperties)},");
+
                 if (optionsSpec.AllowTrailingCommas is bool allowTrailingCommas)
-                    writer.WriteLine($"AllowTrailingCommas = {FormatBool(allowTrailingCommas)},");
+                    writer.WriteLine($"AllowTrailingCommas = {FormatBoolLiteral(allowTrailingCommas)},");
 
                 if (optionsSpec.Converters is { Count: > 0 } converters)
                 {
@@ -1125,17 +1204,23 @@ namespace System.Text.Json.SourceGeneration
                 if (optionsSpec.DictionaryKeyPolicy is JsonKnownNamingPolicy dictionaryKeyPolicy)
                     writer.WriteLine($"DictionaryKeyPolicy = {FormatNamingPolicy(dictionaryKeyPolicy)},");
 
+                if (optionsSpec.RespectNullableAnnotations is bool respectNullableAnnotations)
+                    writer.WriteLine($"RespectNullableAnnotations = {FormatBoolLiteral(respectNullableAnnotations)},");
+
                 if (optionsSpec.IgnoreReadOnlyFields is bool ignoreReadOnlyFields)
-                    writer.WriteLine($"IgnoreReadOnlyFields = {FormatBool(ignoreReadOnlyFields)},");
+                    writer.WriteLine($"IgnoreReadOnlyFields = {FormatBoolLiteral(ignoreReadOnlyFields)},");
 
                 if (optionsSpec.IgnoreReadOnlyProperties is bool ignoreReadOnlyProperties)
-                    writer.WriteLine($"IgnoreReadOnlyProperties = {FormatBool(ignoreReadOnlyProperties)},");
+                    writer.WriteLine($"IgnoreReadOnlyProperties = {FormatBoolLiteral(ignoreReadOnlyProperties)},");
 
                 if (optionsSpec.IncludeFields is bool includeFields)
-                    writer.WriteLine($"IncludeFields = {FormatBool(includeFields)},");
+                    writer.WriteLine($"IncludeFields = {FormatBoolLiteral(includeFields)},");
 
                 if (optionsSpec.MaxDepth is int maxDepth)
                     writer.WriteLine($"MaxDepth = {maxDepth},");
+
+                if (optionsSpec.NewLine is string newLine)
+                    writer.WriteLine($"NewLine = {FormatStringLiteral(newLine)},");
 
                 if (optionsSpec.NumberHandling is JsonNumberHandling numberHandling)
                     writer.WriteLine($"NumberHandling = {FormatNumberHandling(numberHandling)},");
@@ -1144,7 +1229,7 @@ namespace System.Text.Json.SourceGeneration
                     writer.WriteLine($"PreferredObjectCreationHandling = {FormatObjectCreationHandling(preferredObjectCreationHandling)},");
 
                 if (optionsSpec.PropertyNameCaseInsensitive is bool propertyNameCaseInsensitive)
-                    writer.WriteLine($"PropertyNameCaseInsensitive = {FormatBool(propertyNameCaseInsensitive)},");
+                    writer.WriteLine($"PropertyNameCaseInsensitive = {FormatBoolLiteral(propertyNameCaseInsensitive)},");
 
                 if (optionsSpec.PropertyNamingPolicy is JsonKnownNamingPolicy propertyNamingPolicy)
                     writer.WriteLine($"PropertyNamingPolicy = {FormatNamingPolicy(propertyNamingPolicy)},");
@@ -1159,7 +1244,13 @@ namespace System.Text.Json.SourceGeneration
                     writer.WriteLine($"UnmappedMemberHandling = {FormatUnmappedMemberHandling(unmappedMemberHandling)},");
 
                 if (optionsSpec.WriteIndented is bool writeIndented)
-                    writer.WriteLine($"WriteIndented = {FormatBool(writeIndented)},");
+                    writer.WriteLine($"WriteIndented = {FormatBoolLiteral(writeIndented)},");
+
+                if (optionsSpec.IndentCharacter is char indentCharacter)
+                    writer.WriteLine($"IndentCharacter = {FormatCharLiteral(indentCharacter)},");
+
+                if (optionsSpec.IndentSize is int indentSize)
+                    writer.WriteLine($"IndentSize = {indentSize},");
 
                 writer.Indentation--;
                 writer.WriteLine("};");
@@ -1222,7 +1313,7 @@ namespace System.Text.Json.SourceGeneration
                         {
                             throw new {{InvalidOperationExceptionTypeRef}}(string.Format("{{ExceptionMessages.IncompatibleConverterType}}", converter.GetType(), type));
                         }
-                    
+
                         if (converter is {{JsonConverterFactoryTypeRef}} factory)
                         {
                             converter = factory.CreateConverter(type, options);
@@ -1231,7 +1322,7 @@ namespace System.Text.Json.SourceGeneration
                                 throw new {{InvalidOperationExceptionTypeRef}}(string.Format("{{ExceptionMessages.InvalidJsonConverterFactoryOutput}}", factory.GetType()));
                             }
                         }
-                    
+
                         return converter;
                     }
                     """);
@@ -1247,7 +1338,7 @@ namespace System.Text.Json.SourceGeneration
                             {
                                 return ({{JsonConverterTypeRef}}<{{TypeParameter}}?>){{ExpandConverterMethodName}}(typeof({{TypeParameter}}?), converter, options, validateCanConvert: false);
                             }
-                    
+
                             converter = {{ExpandConverterMethodName}}(typeof({{TypeParameter}}), converter, options);
                             {{JsonTypeInfoTypeRef}}<{{TypeParameter}}> typeInfo = {{JsonMetadataServicesTypeRef}}.{{CreateValueInfoMethodName}}<{{TypeParameter}}>(options, converter);
                             return {{JsonMetadataServicesTypeRef}}.GetNullableConverter<{{TypeParameter}}>(typeInfo);
@@ -1304,7 +1395,7 @@ namespace System.Text.Json.SourceGeneration
 
                 foreach (KeyValuePair<string, string> name_varName_pair in _propertyNames)
                 {
-                    writer.WriteLine($$"""private static readonly {{JsonEncodedTextTypeRef}} {{name_varName_pair.Value}} = {{JsonEncodedTextTypeRef}}.Encode("{{name_varName_pair.Key}}");""");
+                    writer.WriteLine($$"""private static readonly {{JsonEncodedTextTypeRef}} {{name_varName_pair.Value}} = {{JsonEncodedTextTypeRef}}.Encode({{FormatStringLiteral(name_varName_pair.Key)}});""");
                 }
 
                 return CompleteSourceFileAndReturnText(writer);
@@ -1335,8 +1426,9 @@ namespace System.Text.Json.SourceGeneration
 
             private static string GetCreateValueInfoMethodRef(string typeCompilableName) => $"{CreateValueInfoMethodName}<{typeCompilableName}>";
 
-            private static string FormatBool(bool value) => value ? "true" : "false";
-            private static string FormatStringLiteral(string? value) => value is null ? "null" : $"\"{value}\"";
+            private static string FormatBoolLiteral(bool value) => value ? "true" : "false";
+            private static string FormatStringLiteral(string? value) => value is null ? "null" : SymbolDisplay.FormatLiteral(value, quote: true);
+            private static string FormatCharLiteral(char value) => SymbolDisplay.FormatLiteral(value, quote: true);
 
             /// <summary>
             /// Method used to generate JsonTypeInfo given options instance
@@ -1344,56 +1436,6 @@ namespace System.Text.Json.SourceGeneration
             private static string CreateTypeInfoMethodName(TypeGenerationSpec typeSpec)
                 => $"Create_{typeSpec.TypeInfoPropertyName}";
 
-            private static string FormatDefaultConstructorParameter(object? value, TypeRef type)
-            {
-                if (value == null)
-                {
-                    return $"default({type.FullyQualifiedName})";
-                }
-
-                if (type.TypeKind is TypeKind.Enum)
-                {
-                    // Return the numeric value.
-                    return FormatNumber();
-                }
-
-                switch (value)
-                {
-                    case string @string:
-                        return SymbolDisplay.FormatLiteral(@string, quote: true); ;
-                    case char @char:
-                        return SymbolDisplay.FormatLiteral(@char, quote: true);
-                    case double.NegativeInfinity:
-                        return "double.NegativeInfinity";
-                    case double.PositiveInfinity:
-                        return "double.PositiveInfinity";
-                    case double.NaN:
-                        return "double.NaN";
-                    case double @double:
-                        return $"({type.FullyQualifiedName})({@double.ToString(JsonConstants.DoubleFormatString, CultureInfo.InvariantCulture)})";
-                    case float.NegativeInfinity:
-                        return "float.NegativeInfinity";
-                    case float.PositiveInfinity:
-                        return "float.PositiveInfinity";
-                    case float.NaN:
-                        return "float.NaN";
-                    case float @float:
-                        return $"({type.FullyQualifiedName})({@float.ToString(JsonConstants.SingleFormatString, CultureInfo.InvariantCulture)})";
-                    case decimal.MaxValue:
-                        return "decimal.MaxValue";
-                    case decimal.MinValue:
-                        return "decimal.MinValue";
-                    case decimal @decimal:
-                        return @decimal.ToString(CultureInfo.InvariantCulture);
-                    case bool @bool:
-                        return FormatBool(@bool);
-                    default:
-                        // Assume this is a number.
-                        return FormatNumber();
-                }
-
-                string FormatNumber() => $"({type.FullyQualifiedName})({Convert.ToString(value, CultureInfo.InvariantCulture)})";
-            }
 
             private static string FormatDefaultConstructorExpr(TypeGenerationSpec typeSpec)
             {
@@ -1442,120 +1484,6 @@ namespace System.Text.Json.SourceGeneration
 
             private static bool IsGenerationModeSpecified(TypeGenerationSpec typeSpec, JsonSourceGenerationMode mode)
                 => typeSpec.GenerationMode == JsonSourceGenerationMode.Default || (mode & typeSpec.GenerationMode) != 0;
-
-            /// <summary>
-            /// Runs the property name conflict resolution algorithm for the fast-path serializer
-            /// using the compile-time specified naming policies. Note that the metadata serializer
-            /// does not consult these results since its own run-time configuration can be different.
-            /// Instead the same algorithm is executed at run-time within the JsonTypeInfo infrastructure.
-            /// </summary>
-            private static bool TryResolveFastPathPropertyNameConflicts(
-                TypeGenerationSpec typeSpec,
-                [NotNullWhen(true)] out List<PropertyGenerationSpec>? resolvedProperties)
-            {
-                Debug.Assert(typeSpec.IsFastPathSupported());
-
-                PropertyHierarchyResolutionState state = new();
-
-                foreach (PropertyGenerationSpec property in typeSpec.PropertyGenSpecs)
-                {
-                    // In case of JsonInclude fail if either:
-                    // 1. the getter is not accessible by the source generator or
-                    // 2. neither getter or setter methods are public.
-                    if (property.HasJsonInclude && (!property.CanUseGetter || !property.IsPublic))
-                    {
-                        resolvedProperties = null;
-                        return false;
-                    }
-
-                    if (!AddPropertyWithConflictResolution(typeSpec, property, ref state))
-                    {
-                        resolvedProperties = null;
-                        return false;
-                    }
-                }
-
-                resolvedProperties = state.Properties;
-                return true;
-            }
-
-            private ref struct PropertyHierarchyResolutionState
-            {
-                public PropertyHierarchyResolutionState() { }
-                public readonly List<PropertyGenerationSpec> Properties = new();
-                public Dictionary<string, (PropertyGenerationSpec, int index)> AddedProperties = new();
-                public HashSet<string>? IgnoredMembers;
-            }
-
-            private static bool AddPropertyWithConflictResolution(
-                TypeGenerationSpec typeSpec,
-                PropertyGenerationSpec propertySpec,
-                ref PropertyHierarchyResolutionState state)
-            {
-                // Algorithm should be kept in sync with the reflection equivalent in JsonTypeInfo.cs
-                string memberName = propertySpec.MemberName;
-
-                if (state.AddedProperties.TryAdd(propertySpec.EffectiveJsonPropertyName, (propertySpec, state.Properties.Count)))
-                {
-                    state.Properties.Add(propertySpec);
-                }
-                else
-                {
-                    // The JsonPropertyNameAttribute or naming policy resulted in a collision.
-                    (PropertyGenerationSpec other, int index) = state.AddedProperties[propertySpec.EffectiveJsonPropertyName];
-
-                    if (other.DefaultIgnoreCondition == JsonIgnoreCondition.Always)
-                    {
-                        // Overwrite previously cached property since it has [JsonIgnore].
-                        state.AddedProperties[propertySpec.EffectiveJsonPropertyName] = (propertySpec, index);
-                        state.Properties[index] = propertySpec;
-                    }
-                    else
-                    {
-                        bool ignoreCurrentProperty;
-
-                        if (typeSpec.TypeRef.TypeKind is not TypeKind.Interface)
-                        {
-                            ignoreCurrentProperty =
-                                // Does the current property have `JsonIgnoreAttribute`?
-                                propertySpec.DefaultIgnoreCondition == JsonIgnoreCondition.Always ||
-                                // Is the current property hidden by the previously cached property
-                                // (with `new` keyword, or by overriding)?
-                                other.MemberName == memberName ||
-                                // Was a property with the same CLR name ignored? That property hid the current property,
-                                // thus, if it was ignored, the current property should be ignored too.
-                                state.IgnoredMembers?.Contains(memberName) == true;
-                        }
-                        else
-                        {
-                            // Unlike classes, interface hierarchies reject all naming conflicts for non-ignored properties.
-                            // Conflicts like this are possible in two cases:
-                            // 1. Diamond ambiguity in property names, or
-                            // 2. Linear interface hierarchies that use properties with DIMs.
-                            //
-                            // Diamond ambiguities are not supported. Assuming there is demand, we might consider
-                            // adding support for DIMs in the future, however that would require adding more APIs
-                            // for the case of source gen.
-
-                            ignoreCurrentProperty = propertySpec.DefaultIgnoreCondition == JsonIgnoreCondition.Always;
-                        }
-
-                        if (!ignoreCurrentProperty)
-                        {
-                            // Property name conflict cannot be reconciled
-                            // Signal the fast-path generator to emit a throwing stub method.
-                            return false;
-                        }
-                    }
-                }
-
-                if (propertySpec.DefaultIgnoreCondition == JsonIgnoreCondition.Always)
-                {
-                    (state.IgnoredMembers ??= new()).Add(memberName);
-                }
-
-                return true;
-            }
         }
     }
 }

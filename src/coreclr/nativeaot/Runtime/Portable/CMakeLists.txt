@@ -1,6 +1,6 @@
 project(PortableRuntime)
 
-# Portable version of the runtime is designed to be used with CppCodeGen or WASM.
+# Portable version of the runtime is designed to be used with WASM.
 # It should be written in pure C/C++, with no assembly code.
 
 add_definitions(-DUSE_PORTABLE_HELPERS)
@@ -13,7 +13,7 @@ set(ASM_OFFSETS_CSPP ${RUNTIME_DIR}/../Runtime.Base/src/AsmOffsets.cspp)
 
 if(WIN32)
     set(COMPILER_LANGUAGE "")
-    set(PREPROCESSOR_FLAGS -EP)
+    set(PREPROCESSOR_FLAGS -EP -nologo)
     set(ASM_OFFSETS_CPP ${RUNTIME_DIR}/windows/AsmOffsets.cpp)
 else()
     set(COMPILER_LANGUAGE -x c++)

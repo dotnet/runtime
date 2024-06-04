@@ -9,7 +9,7 @@
     <_NativeOptimizationDataPackageTarget Condition="'$(TargetOS)' == 'windows'">windows_nt-$(TargetArchitecture.ToLower())</_NativeOptimizationDataPackageTarget>
 
   </PropertyGroup>
-  <ItemGroup Condition="'$(optimizationPGOCoreCLRVersion)'!='' and '$(DotNetBuildFromSource)' != 'true'">
+  <ItemGroup Condition="'$(optimizationPGOCoreCLRVersion)'!='' and '$(DotNetBuildSourceOnly)' != 'true'">
     <PackageReference Include="optimization.windows_nt-x64.PGO.CoreCLR"
       Version="$(optimizationPGOCoreCLRVersion)"
       GeneratePathProperty="true" />

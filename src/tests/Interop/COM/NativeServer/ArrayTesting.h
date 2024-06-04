@@ -38,7 +38,7 @@ private:
         switch (type)
         {
         case VT_UI1:
-            *r = Mean(*l, static_cast<unsigned char*>(d->pvData));
+            *r = Mean(*l, static_cast<uint8_t*>(d->pvData));
             break;
         case VT_I2:
             *r = Mean(*l, static_cast<int16_t*>(d->pvData));

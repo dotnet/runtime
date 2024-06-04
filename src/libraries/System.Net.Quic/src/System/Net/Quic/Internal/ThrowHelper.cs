@@ -1,12 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.Quic;
-using System.Security.Authentication;
+using System.Diagnostics.CodeAnalysis;
 using System.Net.Security;
 using System.Net.Sockets;
+using System.Runtime.CompilerServices;
+using System.Security.Authentication;
+using System.Threading;
 using static Microsoft.Quic.MsQuic;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Net.Quic;
 
@@ -27,32 +28,49 @@ internal static class ThrowHelper
         return new QuicException(QuicError.OperationAborted, null, message ?? SR.net_quic_operationaborted);
     }
 
-    internal static bool TryGetStreamExceptionForMsQuicStatus(int status, [NotNullWhen(true)] out Exception? exception)
+    internal static bool TryGetStreamExceptionForMsQuicStatus(int status, [NotNullWhen(true)] out Exception? exception, bool streamWasSuccessfullyStarted = true, string? message = null)
     {
         if (status == QUIC_STATUS_ABORTED)
         {
-            // If status == QUIC_STATUS_ABORTED, we will receive an event later, which will complete the task source.
-            exception = null;
-            return false;
+            // Connection has been closed by the peer (either at transport or application level),
+            if (streamWasSuccessfullyStarted)
+            {
+                // we will receive an event later, which will complete the stream with concrete
+                // information why the connection was aborted.
+                exception = null;
+                return false;
+            }
+            else
+            {
+                // we won't be receiving any event callback for shutdown on this stream, so we don't
+                // necessarily know which error to report. So we throw an exception which we can distinguish
+                // at the caller (ConnectionAborted normally has App error code) and throw the correct
+                // exception from there.
+                exception = new QuicException(QuicError.ConnectionAborted, null, "");
+                return true;
+            }
         }
         else if (status == QUIC_STATUS_INVALID_STATE)
         {
             // If status == QUIC_STATUS_INVALID_STATE, we have closed the connection.
-            exception = ThrowHelper.GetOperationAbortedException();
+            exception = GetOperationAbortedException();
             return true;
         }
         else if (StatusFailed(status))
         {
-            exception = ThrowHelper.GetExceptionForMsQuicStatus(status);
+            exception = GetExceptionForMsQuicStatus(status, message: message);
             return true;
         }
         exception = null;
         return false;
     }
 
-    internal static Exception GetExceptionForMsQuicStatus(int status, string? message = null)
+    // see TryGetStreamExceptionForMsQuicStatus for explanation
+    internal static bool IsConnectionAbortedWhenStartingStreamException(Exception ex) => ex is QuicException qe && qe.QuicError == QuicError.ConnectionAborted && qe.ApplicationErrorCode is null;
+
+    internal static Exception GetExceptionForMsQuicStatus(int status, long? errorCode = default, string? message = null)
     {
-        Exception ex = GetExceptionInternal(status, message);
+        Exception ex = GetExceptionInternal(status, errorCode, message);
         if (status != 0)
         {
             // Include the raw MsQuic status in the HResult property for better diagnostics
@@ -61,17 +79,17 @@ internal static class ThrowHelper
 
         return ex;
 
-        static Exception GetExceptionInternal(int status, string? message)
+        static Exception GetExceptionInternal(int status, long? errorCode, string? message)
         {
             //
             // Start by checking for statuses mapped to QuicError enum
             //
-            if (status == QUIC_STATUS_CONNECTION_REFUSED) return new QuicException(QuicError.ConnectionRefused, null, SR.net_quic_connection_refused);
-            if (status == QUIC_STATUS_CONNECTION_TIMEOUT) return new QuicException(QuicError.ConnectionTimeout, null, SR.net_quic_timeout);
-            if (status == QUIC_STATUS_VER_NEG_ERROR) return new QuicException(QuicError.VersionNegotiationError, null, SR.net_quic_ver_neg_error);
-            if (status == QUIC_STATUS_CONNECTION_IDLE) return new QuicException(QuicError.ConnectionIdle, null, SR.net_quic_connection_idle);
-            if (status == QUIC_STATUS_PROTOCOL_ERROR) return new QuicException(QuicError.TransportError, null, SR.net_quic_protocol_error);
-            if (status == QUIC_STATUS_ALPN_IN_USE) return new QuicException(QuicError.AlpnInUse, null, SR.net_quic_protocol_error);
+            if (status == QUIC_STATUS_CONNECTION_REFUSED) return new QuicException(QuicError.ConnectionRefused, null, errorCode, SR.net_quic_connection_refused);
+            if (status == QUIC_STATUS_CONNECTION_TIMEOUT) return new QuicException(QuicError.ConnectionTimeout, null, errorCode, SR.net_quic_timeout);
+            if (status == QUIC_STATUS_VER_NEG_ERROR) return new QuicException(QuicError.VersionNegotiationError, null, errorCode, SR.net_quic_ver_neg_error);
+            if (status == QUIC_STATUS_CONNECTION_IDLE) return new QuicException(QuicError.ConnectionIdle, null, errorCode, SR.net_quic_connection_idle);
+            if (status == QUIC_STATUS_PROTOCOL_ERROR) return new QuicException(QuicError.TransportError, null, errorCode, SR.net_quic_protocol_error);
+            if (status == QUIC_STATUS_ALPN_IN_USE) return new QuicException(QuicError.AlpnInUse, null, errorCode, SR.net_quic_protocol_error);
 
             //
             // Transport errors will throw SocketException
@@ -79,9 +97,10 @@ internal static class ThrowHelper
             if (status == QUIC_STATUS_INVALID_ADDRESS) return new SocketException((int)SocketError.AddressNotAvailable);
             if (status == QUIC_STATUS_ADDRESS_IN_USE) return new SocketException((int)SocketError.AddressAlreadyInUse);
             if (status == QUIC_STATUS_UNREACHABLE) return new SocketException((int)SocketError.HostUnreachable);
+            if (status == QUIC_STATUS_ADDRESS_NOT_AVAILABLE) return new SocketException((int)SocketError.AddressFamilyNotSupported);
 
             //
-            // TLS and certificate erros throw AuthenticationException to match SslStream
+            // TLS and certificate errors throw AuthenticationException to match SslStream
             //
             if (status == QUIC_STATUS_TLS_ERROR ||
                 status == QUIC_STATUS_CERT_EXPIRED ||
@@ -125,12 +144,18 @@ internal static class ThrowHelper
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal static void ThrowIfMsQuicError(int status, string? message = null)
     {
         if (StatusFailed(status))
         {
-            throw GetExceptionForMsQuicStatus(status, message);
+            ThrowMsQuicException(status, message);
         }
+    }
+
+    internal static void ThrowMsQuicException(int status, string? message = null)
+    {
+        throw GetExceptionForMsQuicStatus(status, message: message);
     }
 
     internal static string GetErrorMessageForStatus(int status, string? message)
@@ -176,5 +201,32 @@ internal static class ThrowHelper
         else if (status == QUIC_STATUS_CERT_UNTRUSTED_ROOT) return "QUIC_STATUS_CERT_UNTRUSTED_ROOT";
         else if (status == QUIC_STATUS_CERT_NO_CERT) return "QUIC_STATUS_CERT_NO_CERT";
         else return $"Unknown (0x{status:x})";
+    }
+
+    public static void ValidateErrorCode(string argumentName, long value, [CallerArgumentExpression(nameof(value))] string? propertyName = null)
+     => ValidateInRange(argumentName, value, QuicDefaults.MaxErrorCodeValue, propertyName);
+
+    public static void ValidateInRange(string argumentName, long value, long max, [CallerArgumentExpression(nameof(value))] string? propertyName = null)
+    {
+        if (value < 0 || value > max)
+        {
+            throw new ArgumentOutOfRangeException(argumentName, value, SR.Format(SR.net_quic_in_range, propertyName, max));
+        }
+    }
+
+    public static void ValidateTimeSpan(string argumentName, TimeSpan value, [CallerArgumentExpression(nameof(value))] string? propertyName = null)
+    {
+        if (value < TimeSpan.Zero && value != Timeout.InfiniteTimeSpan)
+        {
+            throw new ArgumentOutOfRangeException(argumentName, value, SR.Format(SR.net_quic_timeout_use_gt_zero, propertyName));
+        }
+    }
+
+    public static void ValidateNotNull(string argumentName, string resourceName, object value, [CallerArgumentExpression(nameof(value))] string? propertyName = null)
+    {
+        if (value is null)
+        {
+            throw new ArgumentNullException(argumentName, SR.Format(resourceName, propertyName));
+        }
     }
 }

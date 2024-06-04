@@ -23,13 +23,13 @@ DispatchImpl::DispatchImpl(GUID guid, void *instance, const wchar_t* tlb)
         throw hr;
 }
 
-HRESULT DispatchImpl::DoGetTypeInfoCount(UINT* pctinfo)
+HRESULT DispatchImpl::DoGetTypeInfoCount(uint32_t* pctinfo)
 {
     *pctinfo = 1;
     return S_OK;
 }
 
-HRESULT DispatchImpl::DoGetTypeInfo(UINT iTInfo, ITypeInfo** ppTInfo)
+HRESULT DispatchImpl::DoGetTypeInfo(uint32_t iTInfo, ITypeInfo** ppTInfo)
 {
     if (iTInfo != 0)
         return DISP_E_BADINDEX;
@@ -38,12 +38,12 @@ HRESULT DispatchImpl::DoGetTypeInfo(UINT iTInfo, ITypeInfo** ppTInfo)
     return _typeInfo->QueryInterface(__uuidof(*ppTInfo), (void**)ppTInfo);
 }
 
-HRESULT DispatchImpl::DoGetIDsOfNames(LPOLESTR* rgszNames, UINT cNames, DISPID* rgDispId)
+HRESULT DispatchImpl::DoGetIDsOfNames(LPOLESTR* rgszNames, uint32_t cNames, DISPID* rgDispId)
 {
     return _typeInfo->GetIDsOfNames(rgszNames, cNames, rgDispId);
 }
 
-HRESULT DispatchImpl::DoInvoke(DISPID dispIdMember, WORD wFlags, DISPPARAMS* pDispParams, VARIANT* pVarResult, EXCEPINFO* pExcepInfo, UINT* puArgErr)
+HRESULT DispatchImpl::DoInvoke(DISPID dispIdMember, uint16_t wFlags, DISPPARAMS* pDispParams, VARIANT* pVarResult, EXCEPINFO* pExcepInfo, uint32_t* puArgErr)
 {
     return _typeInfo->Invoke(_instance, dispIdMember, wFlags, pDispParams, pVarResult, pExcepInfo, puArgErr);
 }

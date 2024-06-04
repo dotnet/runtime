@@ -36,7 +36,7 @@ namespace System.Xml.XmlSchemaValidatorApiTests
                 return;
             }
 
-            Assert.True(false);
+            Assert.Fail();
         }
 
         [Fact]
@@ -143,7 +143,7 @@ namespace System.Xml.XmlSchemaValidatorApiTests
                 return;
             }
 
-            Assert.True(false);
+            Assert.Fail();
         }
 
         [Fact]
@@ -166,7 +166,7 @@ namespace System.Xml.XmlSchemaValidatorApiTests
                 return;
             }
 
-            Assert.True(false);
+            Assert.Fail();
         }
     }
 
@@ -198,7 +198,7 @@ namespace System.Xml.XmlSchemaValidatorApiTests
                 return;
             }
 
-            Assert.True(false);
+            Assert.Fail();
         }
 
         [Fact]
@@ -269,7 +269,7 @@ namespace System.Xml.XmlSchemaValidatorApiTests
                 return;
             }
 
-            Assert.True(false);
+            Assert.Fail();
         }
 
         [Fact]
@@ -288,7 +288,7 @@ namespace System.Xml.XmlSchemaValidatorApiTests
             catch (Exception) // Replace with concrete exception type
             {
                 // Verify exception ????
-                Assert.True(false);
+                Assert.Fail();
             }
 
             return;
@@ -463,7 +463,7 @@ namespace System.Xml.XmlSchemaValidatorApiTests
             {
                 return;
             }
-            Assert.True(false);
+            Assert.Fail();
         }
 
         [Fact]
@@ -488,7 +488,7 @@ namespace System.Xml.XmlSchemaValidatorApiTests
                 return;
             }
 
-            Assert.True(false);
+            Assert.Fail();
         }
 
         [Fact]
@@ -569,7 +569,7 @@ namespace System.Xml.XmlSchemaValidatorApiTests
                     break;
 
                 default:
-                    Assert.True(false);
+                    Assert.Fail();
                     break;
             }
 
@@ -612,7 +612,7 @@ namespace System.Xml.XmlSchemaValidatorApiTests
                     try
                     {
                         val.ValidateEndElement(info);
-                        Assert.True(false);
+                        Assert.Fail();
                     }
                     catch (XmlSchemaValidationException e)
                     {
@@ -630,7 +630,7 @@ namespace System.Xml.XmlSchemaValidatorApiTests
                 try
                 {
                     val.ValidateEndElement(info);
-                    Assert.True(false);
+                    Assert.Fail();
                 }
                 catch (XmlSchemaValidationException e)
                 {
@@ -725,7 +725,7 @@ namespace System.Xml.XmlSchemaValidatorApiTests
                 return;
             }
 
-            Assert.True(false);
+            Assert.Fail();
         }
     }
 
@@ -855,7 +855,7 @@ namespace System.Xml.XmlSchemaValidatorApiTests
                 return;
             }
 
-            Assert.True(false);
+            Assert.Fail();
         }
     }
 }

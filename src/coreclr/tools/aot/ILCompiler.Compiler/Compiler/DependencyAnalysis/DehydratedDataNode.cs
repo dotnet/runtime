@@ -46,7 +46,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(nameMangler.CompilationUnitPrefix).Append("__dehydrated_data");
+            sb.Append(nameMangler.CompilationUnitPrefix).Append("__dehydrated_data"u8);
         }
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
@@ -228,7 +228,8 @@ namespace ILCompiler.DependencyAnalysis
                             // Reloc goes through the lookup table
                             int relocCommand = reloc.RelocType switch
                             {
-                                RelocType.IMAGE_REL_BASED_DIR64 => DehydratedDataCommand.PtrReloc,
+                                RelocType.IMAGE_REL_BASED_DIR64 => DehydratedDataCommand.PtrReloc, // 64-bit platforms
+                                RelocType.IMAGE_REL_BASED_HIGHLOW => DehydratedDataCommand.PtrReloc, // 32-bit platforms
                                 RelocType.IMAGE_REL_BASED_RELPTR32 => DehydratedDataCommand.RelPtr32Reloc,
                                 _ => throw new NotSupportedException(),
                             };
@@ -294,7 +295,8 @@ namespace ILCompiler.DependencyAnalysis
                             // Now update the byte we reserved with the command to emit for the run
                             int relocCommand = reloc.RelocType switch
                             {
-                                RelocType.IMAGE_REL_BASED_DIR64 => DehydratedDataCommand.InlinePtrReloc,
+                                RelocType.IMAGE_REL_BASED_DIR64 => DehydratedDataCommand.InlinePtrReloc, // 64-bit platforms
+                                RelocType.IMAGE_REL_BASED_HIGHLOW => DehydratedDataCommand.InlinePtrReloc, // 32-bit platforms
                                 RelocType.IMAGE_REL_BASED_RELPTR32 => DehydratedDataCommand.InlineRelPtr32Reloc,
                                 _ => throw new NotSupportedException(),
                             };

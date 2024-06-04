@@ -16,7 +16,6 @@
 #define DENSELWM(map, value) LWM(map, this_is_an_error, value)
 #endif
 
-LWM(AddressMap, DWORDLONG, Agnostic_AddressMap)
 LWM(AllocGCInfo, DWORD, Agnostic_AllocGCInfo)
 LWM(AllocMem, DWORD, Agnostic_AllocMemDetails)
 DENSELWM(AllocUnwindInfo, Agnostic_AllocUnwindInfo)

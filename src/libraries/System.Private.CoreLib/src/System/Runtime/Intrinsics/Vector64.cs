@@ -6,6 +6,8 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.X86;
+using System.Text;
 
 namespace System.Runtime.Intrinsics
 {
@@ -236,21 +238,44 @@ namespace System.Runtime.Intrinsics
         /// <summary>Computes the ceiling of each element in a vector.</summary>
         /// <param name="vector">The vector that will have its ceiling computed.</param>
         /// <returns>A vector whose elements are the ceiling of the elements in <paramref name="vector" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector64<T> Ceiling<T>(Vector64<T> vector)
+        {
+            if ((typeof(T) == typeof(byte))
+             || (typeof(T) == typeof(short))
+             || (typeof(T) == typeof(int))
+             || (typeof(T) == typeof(long))
+             || (typeof(T) == typeof(nint))
+             || (typeof(T) == typeof(nuint))
+             || (typeof(T) == typeof(sbyte))
+             || (typeof(T) == typeof(ushort))
+             || (typeof(T) == typeof(uint))
+             || (typeof(T) == typeof(ulong)))
+            {
+                return vector;
+            }
+            else
+            {
+                Unsafe.SkipInit(out Vector64<T> result);
+
+                for (int index = 0; index < Vector64<T>.Count; index++)
+                {
+                    T value = Scalar<T>.Ceiling(vector.GetElementUnsafe(index));
+                    result.SetElementUnsafe(index, value);
+                }
+
+                return result;
+            }
+        }
+
+        /// <summary>Computes the ceiling of each element in a vector.</summary>
+        /// <param name="vector">The vector that will have its ceiling computed.</param>
+        /// <returns>A vector whose elements are the ceiling of the elements in <paramref name="vector" />.</returns>
         /// <seealso cref="MathF.Ceiling(float)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector64<float> Ceiling(Vector64<float> vector)
-        {
-            Unsafe.SkipInit(out Vector64<float> result);
-
-            for (int index = 0; index < Vector64<float>.Count; index++)
-            {
-                float value = Scalar<float>.Ceiling(vector.GetElementUnsafe(index));
-                result.SetElementUnsafe(index, value);
-            }
-
-            return result;
-        }
+        public static Vector64<float> Ceiling(Vector64<float> vector) => Ceiling<float>(vector);
 
         /// <summary>Computes the ceiling of each element in a vector.</summary>
         /// <param name="vector">The vector that will have its ceiling computed.</param>
@@ -258,18 +283,7 @@ namespace System.Runtime.Intrinsics
         /// <seealso cref="Math.Ceiling(double)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector64<double> Ceiling(Vector64<double> vector)
-        {
-            Unsafe.SkipInit(out Vector64<double> result);
-
-            for (int index = 0; index < Vector64<double>.Count; index++)
-            {
-                double value = Scalar<double>.Ceiling(vector.GetElementUnsafe(index));
-                result.SetElementUnsafe(index, value);
-            }
-
-            return result;
-        }
+        public static Vector64<double> Ceiling(Vector64<double> vector) => Ceiling<double>(vector);
 
         /// <summary>Conditionally selects a value from two vectors on a bitwise basis.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -327,7 +341,7 @@ namespace System.Runtime.Intrinsics
             return result;
         }
 
-        /// <summary>Converts a <see cref="Vector64{Single}" /> to a <see cref="Vector64{Int32}" />.</summary>
+        /// <summary>Converts a <see cref="Vector64{Single}" /> to a <see cref="Vector64{Int32}" /> using saturation on overflow.</summary>
         /// <param name="vector">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
@@ -338,14 +352,32 @@ namespace System.Runtime.Intrinsics
 
             for (int i = 0; i < Vector64<int>.Count; i++)
             {
-                int value = (int)vector.GetElementUnsafe(i);
+                int value = float.ConvertToInteger<int>(vector.GetElementUnsafe(i));
                 result.SetElementUnsafe(i, value);
             }
 
             return result;
         }
 
-        /// <summary>Converts a <see cref="Vector64{Double}" /> to a <see cref="Vector64{Int64}" />.</summary>
+        /// <summary>Converts a <see cref="Vector64{Single}" /> to a <see cref="Vector64{Int32}" /> using platform specific behavior on overflow.</summary>
+        /// <param name="vector">The vector to convert.</param>
+        /// <returns>The converted vector.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe Vector64<int> ConvertToInt32Native(Vector64<float> vector)
+        {
+            Unsafe.SkipInit(out Vector64<int> result);
+
+            for (int i = 0; i < Vector64<int>.Count; i++)
+            {
+                int value = float.ConvertToIntegerNative<int>(vector.GetElementUnsafe(i));
+                result.SetElementUnsafe(i, value);
+            }
+
+            return result;
+        }
+
+        /// <summary>Converts a <see cref="Vector64{Double}" /> to a <see cref="Vector64{Int64}" /> using saturation on overflow.</summary>
         /// <param name="vector">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
@@ -356,7 +388,25 @@ namespace System.Runtime.Intrinsics
 
             for (int i = 0; i < Vector64<long>.Count; i++)
             {
-                long value = (long)vector.GetElementUnsafe(i);
+                long value = double.ConvertToInteger<long>(vector.GetElementUnsafe(i));
+                result.SetElementUnsafe(i, value);
+            }
+
+            return result;
+        }
+
+        /// <summary>Converts a <see cref="Vector64{Double}" /> to a <see cref="Vector64{Int64}" /> using platform specific behavior on overflow.</summary>
+        /// <param name="vector">The vector to convert.</param>
+        /// <returns>The converted vector.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe Vector64<long> ConvertToInt64Native(Vector64<double> vector)
+        {
+            Unsafe.SkipInit(out Vector64<long> result);
+
+            for (int i = 0; i < Vector64<long>.Count; i++)
+            {
+                long value = double.ConvertToIntegerNative<long>(vector.GetElementUnsafe(i));
                 result.SetElementUnsafe(i, value);
             }
 
@@ -400,7 +450,7 @@ namespace System.Runtime.Intrinsics
             return result;
         }
 
-        /// <summary>Converts a <see cref="Vector64{Single}" /> to a <see cref="Vector64{UInt32}" />.</summary>
+        /// <summary>Converts a <see cref="Vector64{Single}" /> to a <see cref="Vector64{UInt32}" /> using saturation on overflow.</summary>
         /// <param name="vector">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
@@ -412,14 +462,33 @@ namespace System.Runtime.Intrinsics
 
             for (int i = 0; i < Vector64<uint>.Count; i++)
             {
-                uint value = (uint)vector.GetElementUnsafe(i);
+                uint value = float.ConvertToInteger<uint>(vector.GetElementUnsafe(i));
                 result.SetElementUnsafe(i, value);
             }
 
             return result;
         }
 
-        /// <summary>Converts a <see cref="Vector64{Double}" /> to a <see cref="Vector64{UInt64}" />.</summary>
+        /// <summary>Converts a <see cref="Vector64{Single}" /> to a <see cref="Vector64{UInt32}" /> using platform specific behavior on overflow.</summary>
+        /// <param name="vector">The vector to convert.</param>
+        /// <returns>The converted vector.</returns>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe Vector64<uint> ConvertToUInt32Native(Vector64<float> vector)
+        {
+            Unsafe.SkipInit(out Vector64<uint> result);
+
+            for (int i = 0; i < Vector64<uint>.Count; i++)
+            {
+                uint value = float.ConvertToIntegerNative<uint>(vector.GetElementUnsafe(i));
+                result.SetElementUnsafe(i, value);
+            }
+
+            return result;
+        }
+
+        /// <summary>Converts a <see cref="Vector64{Double}" /> to a <see cref="Vector64{UInt64}" /> using saturation on overflow.</summary>
         /// <param name="vector">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
@@ -431,7 +500,26 @@ namespace System.Runtime.Intrinsics
 
             for (int i = 0; i < Vector64<ulong>.Count; i++)
             {
-                ulong value = (ulong)vector.GetElementUnsafe(i);
+                ulong value = double.ConvertToInteger<ulong>(vector.GetElementUnsafe(i));
+                result.SetElementUnsafe(i, value);
+            }
+
+            return result;
+        }
+
+        /// <summary>Converts a <see cref="Vector64{Double}" /> to a <see cref="Vector64{UInt64}" /> using platform specific behavior on overflow.</summary>
+        /// <param name="vector">The vector to convert.</param>
+        /// <returns>The converted vector.</returns>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe Vector64<ulong> ConvertToUInt64Native(Vector64<double> vector)
+        {
+            Unsafe.SkipInit(out Vector64<ulong> result);
+
+            for (int i = 0; i < Vector64<ulong>.Count; i++)
+            {
+                ulong value = double.ConvertToIntegerNative<ulong>(vector.GetElementUnsafe(i));
                 result.SetElementUnsafe(i, value);
             }
 
@@ -688,18 +776,16 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector64<byte> Create(byte e0, byte e1, byte e2, byte e3, byte e4, byte e5, byte e6, byte e7)
         {
-            byte* pResult = stackalloc byte[8]
-            {
-                e0,
-                e1,
-                e2,
-                e3,
-                e4,
-                e5,
-                e6,
-                e7,
-            };
-            return Unsafe.AsRef<Vector64<byte>>(pResult);
+            Unsafe.SkipInit(out Vector64<byte> result);
+            result.SetElementUnsafe(0, e0);
+            result.SetElementUnsafe(1, e1);
+            result.SetElementUnsafe(2, e2);
+            result.SetElementUnsafe(3, e3);
+            result.SetElementUnsafe(4, e4);
+            result.SetElementUnsafe(5, e5);
+            result.SetElementUnsafe(6, e6);
+            result.SetElementUnsafe(7, e7);
+            return result;
         }
 
         /// <summary>Creates a new <see cref="Vector64{Int16}" /> instance with each element initialized to the corresponding specified value.</summary>
@@ -713,14 +799,12 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector64<short> Create(short e0, short e1, short e2, short e3)
         {
-            short* pResult = stackalloc short[4]
-            {
-                e0,
-                e1,
-                e2,
-                e3,
-            };
-            return Unsafe.AsRef<Vector64<short>>(pResult);
+            Unsafe.SkipInit(out Vector64<short> result);
+            result.SetElementUnsafe(0, e0);
+            result.SetElementUnsafe(1, e1);
+            result.SetElementUnsafe(2, e2);
+            result.SetElementUnsafe(3, e3);
+            return result;
         }
 
         /// <summary>Creates a new <see cref="Vector64{Int32}" /> instance with each element initialized to the corresponding specified value.</summary>
@@ -732,12 +816,10 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector64<int> Create(int e0, int e1)
         {
-            int* pResult = stackalloc int[2]
-            {
-                e0,
-                e1,
-            };
-            return Unsafe.AsRef<Vector64<int>>(pResult);
+            Unsafe.SkipInit(out Vector64<int> result);
+            result.SetElementUnsafe(0, e0);
+            result.SetElementUnsafe(1, e1);
+            return result;
         }
 
         /// <summary>Creates a new <see cref="Vector64{SByte}" /> instance with each element initialized to the corresponding specified value.</summary>
@@ -756,18 +838,16 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector64<sbyte> Create(sbyte e0, sbyte e1, sbyte e2, sbyte e3, sbyte e4, sbyte e5, sbyte e6, sbyte e7)
         {
-            sbyte* pResult = stackalloc sbyte[8]
-            {
-                e0,
-                e1,
-                e2,
-                e3,
-                e4,
-                e5,
-                e6,
-                e7,
-            };
-            return Unsafe.AsRef<Vector64<sbyte>>(pResult);
+            Unsafe.SkipInit(out Vector64<sbyte> result);
+            result.SetElementUnsafe(0, e0);
+            result.SetElementUnsafe(1, e1);
+            result.SetElementUnsafe(2, e2);
+            result.SetElementUnsafe(3, e3);
+            result.SetElementUnsafe(4, e4);
+            result.SetElementUnsafe(5, e5);
+            result.SetElementUnsafe(6, e6);
+            result.SetElementUnsafe(7, e7);
+            return result;
         }
 
         /// <summary>Creates a new <see cref="Vector64{Single}" /> instance with each element initialized to the corresponding specified value.</summary>
@@ -778,12 +858,10 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector64<float> Create(float e0, float e1)
         {
-            float* pResult = stackalloc float[2]
-            {
-                e0,
-                e1,
-            };
-            return Unsafe.AsRef<Vector64<float>>(pResult);
+            Unsafe.SkipInit(out Vector64<float> result);
+            result.SetElementUnsafe(0, e0);
+            result.SetElementUnsafe(1, e1);
+            return result;
         }
 
         /// <summary>Creates a new <see cref="Vector64{UInt16}" /> instance with each element initialized to the corresponding specified value.</summary>
@@ -798,14 +876,12 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector64<ushort> Create(ushort e0, ushort e1, ushort e2, ushort e3)
         {
-            ushort* pResult = stackalloc ushort[4]
-            {
-                e0,
-                e1,
-                e2,
-                e3,
-            };
-            return Unsafe.AsRef<Vector64<ushort>>(pResult);
+            Unsafe.SkipInit(out Vector64<ushort> result);
+            result.SetElementUnsafe(0, e0);
+            result.SetElementUnsafe(1, e1);
+            result.SetElementUnsafe(2, e2);
+            result.SetElementUnsafe(3, e3);
+            return result;
         }
 
         /// <summary>Creates a new <see cref="Vector64{UInt32}" /> instance with each element initialized to the corresponding specified value.</summary>
@@ -818,12 +894,10 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector64<uint> Create(uint e0, uint e1)
         {
-            uint* pResult = stackalloc uint[2]
-            {
-                e0,
-                e1,
-            };
-            return Unsafe.AsRef<Vector64<uint>>(pResult);
+            Unsafe.SkipInit(out Vector64<uint> result);
+            result.SetElementUnsafe(0, e0);
+            result.SetElementUnsafe(1, e1);
+            return result;
         }
 
         /// <summary>Creates a new <see cref="Vector64{T}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
@@ -1037,6 +1111,15 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector64<ulong> CreateScalarUnsafe(ulong value) => CreateScalarUnsafe<ulong>(value);
 
+        /// <summary>Creates a new <see cref="Vector64{T}" /> instance where the elements begin at a specified value and which are spaced apart according to another specified value.</summary>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <param name="start">The value that element 0 will be initialized to.</param>
+        /// <param name="step">The value that indicates how far apart each element should be from the previous.</param>
+        /// <returns>A new <see cref="Vector64{T}" /> instance with the first element initialized to <paramref name="start" /> and each subsequent element initialized to the the value of the previous element plus <paramref name="step" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector64<T> CreateSequence<T>(T start, T step) => (Vector64<T>.Indices * step) + Create(start);
+
         /// <summary>Divides two vectors to compute their quotient.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="left">The vector that will be divided by <paramref name="right" />.</param>
@@ -1144,6 +1227,52 @@ namespace System.Runtime.Intrinsics
             return false;
         }
 
+        internal static Vector64<T> Exp<T>(Vector64<T> vector)
+            where T : IExponentialFunctions<T>
+        {
+            Unsafe.SkipInit(out Vector64<T> result);
+
+            for (int index = 0; index < Vector64<T>.Count; index++)
+            {
+                T value = T.Exp(vector.GetElementUnsafe(index));
+                result.SetElementUnsafe(index, value);
+            }
+
+            return result;
+        }
+
+        /// <summary>Computes the exp of each element in a vector.</summary>
+        /// <param name="vector">The vector that will have its Exp computed.</param>
+        /// <returns>A vector whose elements are the exp of the elements in <paramref name="vector" />.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector64<double> Exp(Vector64<double> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.ExpDouble<Vector64<double>, Vector64<long>, Vector64<ulong>>(vector);
+            }
+            else
+            {
+                return Exp<double>(vector);
+            }
+        }
+
+        /// <summary>Computes the exp of each element in a vector.</summary>
+        /// <param name="vector">The vector that will have its exp computed.</param>
+        /// <returns>A vector whose elements are the exp of the elements in <paramref name="vector" />.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector64<float> Exp(Vector64<float> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.ExpSingle<Vector64<float>, Vector64<uint>, Vector64<double>, Vector64<ulong>>(vector);
+            }
+            else
+            {
+                return Exp<float>(vector);
+            }
+        }
+
         /// <summary>Extracts the most significant bit from each element in a vector.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="vector">The vector whose elements should have their most significant bit extracted.</param>
@@ -1168,21 +1297,44 @@ namespace System.Runtime.Intrinsics
         /// <summary>Computes the floor of each element in a vector.</summary>
         /// <param name="vector">The vector that will have its floor computed.</param>
         /// <returns>A vector whose elements are the floor of the elements in <paramref name="vector" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector64<T> Floor<T>(Vector64<T> vector)
+        {
+            if ((typeof(T) == typeof(byte))
+             || (typeof(T) == typeof(short))
+             || (typeof(T) == typeof(int))
+             || (typeof(T) == typeof(long))
+             || (typeof(T) == typeof(nint))
+             || (typeof(T) == typeof(nuint))
+             || (typeof(T) == typeof(sbyte))
+             || (typeof(T) == typeof(ushort))
+             || (typeof(T) == typeof(uint))
+             || (typeof(T) == typeof(ulong)))
+            {
+                return vector;
+            }
+            else
+            {
+                Unsafe.SkipInit(out Vector64<T> result);
+
+                for (int index = 0; index < Vector64<T>.Count; index++)
+                {
+                    T value = Scalar<T>.Floor(vector.GetElementUnsafe(index));
+                    result.SetElementUnsafe(index, value);
+                }
+
+                return result;
+            }
+        }
+
+        /// <summary>Computes the floor of each element in a vector.</summary>
+        /// <param name="vector">The vector that will have its floor computed.</param>
+        /// <returns>A vector whose elements are the floor of the elements in <paramref name="vector" />.</returns>
         /// <seealso cref="MathF.Floor(float)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector64<float> Floor(Vector64<float> vector)
-        {
-            Unsafe.SkipInit(out Vector64<float> result);
-
-            for (int index = 0; index < Vector64<float>.Count; index++)
-            {
-                float value = Scalar<float>.Floor(vector.GetElementUnsafe(index));
-                result.SetElementUnsafe(index, value);
-            }
-
-            return result;
-        }
+        public static Vector64<float> Floor(Vector64<float> vector) => Floor<float>(vector);
 
         /// <summary>Computes the floor of each element in a vector.</summary>
         /// <param name="vector">The vector that will have its floor computed.</param>
@@ -1190,13 +1342,50 @@ namespace System.Runtime.Intrinsics
         /// <seealso cref="Math.Floor(double)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector64<double> Floor(Vector64<double> vector)
+        public static Vector64<double> Floor(Vector64<double> vector) => Floor<double>(vector);
+
+        /// <summary>Computes (<paramref name="left"/> * <paramref name="right"/>) + <paramref name="addend"/>, rounded as one ternary operation.</summary>
+        /// <param name="left">The vector to be multiplied with <paramref name="right" />.</param>
+        /// <param name="right">The vector to be multiplied with <paramref name="left" />.</param>
+        /// <param name="addend">The vector to be added to the result of <paramref name="left" /> multiplied by <paramref name="right" />.</param>
+        /// <returns>(<paramref name="left"/> * <paramref name="right"/>) + <paramref name="addend"/>, rounded as one ternary operation.</returns>
+        /// <remarks>
+        ///   <para>This computes (<paramref name="left"/> * <paramref name="right"/>) as if to infinite precision, adds <paramref name="addend" /> to that result as if to infinite precision, and finally rounds to the nearest representable value.</para>
+        ///   <para>This differs from the non-fused sequence which would compute (<paramref name="left"/> * <paramref name="right"/>) as if to infinite precision, round the result to the nearest representable value, add <paramref name="addend" /> to the rounded result as if to infinite precision, and finally round to the nearest representable value.</para>
+        /// </remarks>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector64<double> FusedMultiplyAdd(Vector64<double> left, Vector64<double> right, Vector64<double> addend)
         {
             Unsafe.SkipInit(out Vector64<double> result);
 
             for (int index = 0; index < Vector64<double>.Count; index++)
             {
-                double value = Scalar<double>.Floor(vector.GetElementUnsafe(index));
+                double value = double.FusedMultiplyAdd(left.GetElementUnsafe(index), right.GetElementUnsafe(index), addend.GetElementUnsafe(index));
+                result.SetElementUnsafe(index, value);
+            }
+
+            return result;
+        }
+
+        /// <summary>Computes (<paramref name="left"/> * <paramref name="right"/>) + <paramref name="addend"/>, rounded as one ternary operation.</summary>
+        /// <param name="left">The vector to be multiplied with <paramref name="right" />.</param>
+        /// <param name="right">The vector to be multiplied with <paramref name="left" />.</param>
+        /// <param name="addend">The vector to be added to the result of <paramref name="left" /> multiplied by <paramref name="right" />.</param>
+        /// <returns>(<paramref name="left"/> * <paramref name="right"/>) + <paramref name="addend"/>, rounded as one ternary operation.</returns>
+        /// <remarks>
+        ///   <para>This computes (<paramref name="left"/> * <paramref name="right"/>) as if to infinite precision, adds <paramref name="addend" /> to that result as if to infinite precision, and finally rounds to the nearest representable value.</para>
+        ///   <para>This differs from the non-fused sequence which would compute (<paramref name="left"/> * <paramref name="right"/>) as if to infinite precision, round the result to the nearest representable value, add <paramref name="addend" /> to the rounded result as if to infinite precision, and finally round to the nearest representable value.</para>
+        /// </remarks>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector64<float> FusedMultiplyAdd(Vector64<float> left, Vector64<float> right, Vector64<float> addend)
+        {
+            Unsafe.SkipInit(out Vector64<float> result);
+
+            for (int index = 0; index < Vector64<float>.Count; index++)
+            {
+                float value = float.FusedMultiplyAdd(left.GetElementUnsafe(index), right.GetElementUnsafe(index), addend.GetElementUnsafe(index));
                 result.SetElementUnsafe(index, value);
             }
 
@@ -1524,11 +1713,11 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="source" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector64<T> LoadUnsafe<T>(ref T source)
+        public static Vector64<T> LoadUnsafe<T>(ref readonly T source)
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector64BaseType<T>();
-            ref byte address = ref Unsafe.As<T, byte>(ref source);
-            return Unsafe.ReadUnaligned<Vector64<T>>(ref address);
+            ref readonly byte address = ref Unsafe.As<T, byte>(ref Unsafe.AsRef(in source));
+            return Unsafe.ReadUnaligned<Vector64<T>>(in address);
         }
 
         /// <summary>Loads a vector from the given source and element offset.</summary>
@@ -1540,11 +1729,103 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector64<T> LoadUnsafe<T>(ref T source, nuint elementOffset)
+        public static Vector64<T> LoadUnsafe<T>(ref readonly T source, nuint elementOffset)
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector64BaseType<T>();
-            source = ref Unsafe.Add(ref source, (nint)elementOffset);
-            return Unsafe.ReadUnaligned<Vector64<T>>(ref Unsafe.As<T, byte>(ref source));
+            ref readonly byte address = ref Unsafe.As<T, byte>(ref Unsafe.Add(ref Unsafe.AsRef(in source), (nint)elementOffset));
+            return Unsafe.ReadUnaligned<Vector64<T>>(in address);
+        }
+
+        internal static Vector64<T> Log<T>(Vector64<T> vector)
+            where T : ILogarithmicFunctions<T>
+        {
+            Unsafe.SkipInit(out Vector64<T> result);
+
+            for (int index = 0; index < Vector64<T>.Count; index++)
+            {
+                T value = T.Log(vector.GetElementUnsafe(index));
+                result.SetElementUnsafe(index, value);
+            }
+
+            return result;
+        }
+
+        /// <summary>Computes the log of each element in a vector.</summary>
+        /// <param name="vector">The vector that will have its log computed.</param>
+        /// <returns>A vector whose elements are the log of the elements in <paramref name="vector" />.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector64<double> Log(Vector64<double> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.LogDouble<Vector64<double>, Vector64<long>, Vector64<ulong>>(vector);
+            }
+            else
+            {
+                return Log<double>(vector);
+            }
+        }
+
+        /// <summary>Computes the log of each element in a vector.</summary>
+        /// <param name="vector">The vector that will have its log computed.</param>
+        /// <returns>A vector whose elements are the log of the elements in <paramref name="vector" />.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector64<float> Log(Vector64<float> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.LogSingle<Vector64<float>, Vector64<int>, Vector64<uint>>(vector);
+            }
+            else
+            {
+                return Log<float>(vector);
+            }
+        }
+
+        internal static Vector64<T> Log2<T>(Vector64<T> vector)
+            where T : ILogarithmicFunctions<T>
+        {
+            Unsafe.SkipInit(out Vector64<T> result);
+
+            for (int index = 0; index < Vector64<T>.Count; index++)
+            {
+                T value = T.Log2(vector.GetElementUnsafe(index));
+                result.SetElementUnsafe(index, value);
+            }
+
+            return result;
+        }
+
+        /// <summary>Computes the log2 of each element in a vector.</summary>
+        /// <param name="vector">The vector that will have its log2 computed.</param>
+        /// <returns>A vector whose elements are the log2 of the elements in <paramref name="vector" />.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector64<double> Log2(Vector64<double> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.Log2Double<Vector64<double>, Vector64<long>, Vector64<ulong>>(vector);
+            }
+            else
+            {
+                return Log2<double>(vector);
+            }
+        }
+
+        /// <summary>Computes the log2 of each element in a vector.</summary>
+        /// <param name="vector">The vector that will have its log2 computed.</param>
+        /// <returns>A vector whose elements are the log2 of the elements in <paramref name="vector" />.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector64<float> Log2(Vector64<float> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.Log2Single<Vector64<float>, Vector64<int>, Vector64<uint>>(vector);
+            }
+            else
+            {
+                return Log2<float>(vector);
+            }
         }
 
         /// <summary>Computes the maximum of two vectors on a per-element basis.</summary>
@@ -1618,6 +1899,54 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector64<T> Multiply<T>(T left, Vector64<T> right) => left * right;
+
+        /// <summary>Computes an estimate of (<paramref name="left"/> * <paramref name="right"/>) + <paramref name="addend"/>.</summary>
+        /// <param name="left">The vector to be multiplied with <paramref name="right" />.</param>
+        /// <param name="right">The vector to be multiplied with <paramref name="left" />.</param>
+        /// <param name="addend">The vector to be added to the result of <paramref name="left" /> multiplied by <paramref name="right" />.</param>
+        /// <returns>An estimate of (<paramref name="left"/> * <paramref name="right"/>) + <paramref name="addend"/>.</returns>
+        /// <remarks>
+        ///   <para>On hardware that natively supports <see cref="FusedMultiplyAdd" />, this may return a result that was rounded as one ternary operation.</para>
+        ///   <para>On hardware without specialized support, this may just return (<paramref name="left"/> * <paramref name="right"/>) + <paramref name="addend"/>.</para>
+        /// </remarks>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector64<double> MultiplyAddEstimate(Vector64<double> left, Vector64<double> right, Vector64<double> addend)
+        {
+            Unsafe.SkipInit(out Vector64<double> result);
+
+            for (int index = 0; index < Vector64<double>.Count; index++)
+            {
+                double element = double.MultiplyAddEstimate(left.GetElementUnsafe(index), right.GetElementUnsafe(index), addend.GetElementUnsafe(index));
+                result.SetElementUnsafe(index, element);
+            }
+
+            return result;
+        }
+
+        /// <summary>Computes an estimate of (<paramref name="left"/> * <paramref name="right"/>) + <paramref name="addend"/>.</summary>
+        /// <param name="left">The vector to be multiplied with <paramref name="right" />.</param>
+        /// <param name="right">The vector to be multiplied with <paramref name="left" />.</param>
+        /// <param name="addend">The vector to be added to the result of <paramref name="left" /> multiplied by <paramref name="right" />.</param>
+        /// <returns>An estimate of (<paramref name="left"/> * <paramref name="right"/>) + <paramref name="addend"/>.</returns>
+        /// <remarks>
+        ///   <para>On hardware that natively supports <see cref="FusedMultiplyAdd" />, this may return a result that was rounded as one ternary operation.</para>
+        ///   <para>On hardware without specialized support, this may just return (<paramref name="left"/> * <paramref name="right"/>) + <paramref name="addend"/>.</para>
+        /// </remarks>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector64<float> MultiplyAddEstimate(Vector64<float> left, Vector64<float> right, Vector64<float> addend)
+        {
+            Unsafe.SkipInit(out Vector64<float> result);
+
+            for (int index = 0; index < Vector64<float>.Count; index++)
+            {
+                float element = float.MultiplyAddEstimate(left.GetElementUnsafe(index), right.GetElementUnsafe(index), addend.GetElementUnsafe(index));
+                result.SetElementUnsafe(index, element);
+            }
+
+            return result;
+        }
 
         /// <summary>Narrows two <see cref="Vector64{Double}"/> instances into one <see cref="Vector64{Single}" />.</summary>
         /// <param name="lower">The vector that will be narrowed to the lower half of the result vector.</param>
@@ -1822,6 +2151,14 @@ namespace System.Runtime.Intrinsics
         /// <returns>A vector whose elements where shifted left by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector64<T> ShiftLeft<T>(Vector64<T> vector, int shiftCount) => vector << shiftCount;
+
+        /// <summary>Shifts each element of a vector left by the specified amount.</summary>
+        /// <param name="vector">The vector whose elements are to be shifted.</param>
+        /// <param name="shiftCount">The number of bits by which to shift each element.</param>
+        /// <returns>A vector whose elements where shifted left by <paramref name="shiftCount" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector64<byte> ShiftLeft(Vector64<byte> vector, int shiftCount) => vector << shiftCount;
 
         /// <summary>Shifts each element of a vector left by the specified amount.</summary>
@@ -1907,6 +2244,14 @@ namespace System.Runtime.Intrinsics
         /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector64<T> ShiftRightArithmetic<T>(Vector64<T> vector, int shiftCount) => vector >> shiftCount;
+
+        /// <summary>Shifts (signed) each element of a vector right by the specified amount.</summary>
+        /// <param name="vector">The vector whose elements are to be shifted.</param>
+        /// <param name="shiftCount">The number of bits by which to shift each element.</param>
+        /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector64<short> ShiftRightArithmetic(Vector64<short> vector, int shiftCount) => vector >> shiftCount;
 
         /// <summary>Shifts (signed) each element of a vector right by the specified amount.</summary>
@@ -1941,6 +2286,14 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector64<sbyte> ShiftRightArithmetic(Vector64<sbyte> vector, int shiftCount) => vector >> shiftCount;
+
+        /// <summary>Shifts (unsigned) each element of a vector right by the specified amount.</summary>
+        /// <param name="vector">The vector whose elements are to be shifted.</param>
+        /// <param name="shiftCount">The number of bits by which to shift each element.</param>
+        /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector64<T> ShiftRightLogical<T>(Vector64<T> vector, int shiftCount) => vector >>> shiftCount;
 
         /// <summary>Shifts (unsigned) each element of a vector right by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>

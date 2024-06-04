@@ -22,7 +22,7 @@
 	.method public hidebysig virtual instance int32 GetHashCode() cil managed { ldc.i4.0 ret }
 	.method public hidebysig virtual instance string ToString() cil managed { ldstr "ToString()" ret }
 }
-.class private auto ansi beforefieldinit Framework {
+.class public auto ansi beforefieldinit Framework {
 	.method public hidebysig static void StructCallvirtVerificationTest() cil managed
 	{
 		.maxstack  10

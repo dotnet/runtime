@@ -31,7 +31,7 @@ namespace System.Threading.Tasks
         /// </remarks>
         public static IAsyncResult Begin(Task task, AsyncCallback? callback, object? state)
         {
-#if NET6_0_OR_GREATER
+#if NET
             ArgumentNullException.ThrowIfNull(task);
 #else
             if (task is null)
@@ -52,6 +52,7 @@ namespace System.Threading.Tasks
             Unwrap(asyncResult).GetAwaiter().GetResult();
 
         /// <summary>Waits for the <see cref="Task{TResult}"/> wrapped by the <see cref="IAsyncResult"/> returned by <see cref="Begin"/> to complete.</summary>
+        /// <typeparam name="TResult">The type of the result produced.</typeparam>
         /// <param name="asyncResult">The <see cref="IAsyncResult"/> for which to wait.</param>
         /// <returns>The result of the <see cref="Task{TResult}"/> wrapped by the <see cref="IAsyncResult"/>.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="asyncResult"/> is null.</exception>
@@ -67,7 +68,7 @@ namespace System.Threading.Tasks
         /// <exception cref="ArgumentException"><paramref name="asyncResult"/> was not produced by a call to <see cref="Begin"/>.</exception>
         public static Task Unwrap(IAsyncResult asyncResult)
         {
-#if NET6_0_OR_GREATER
+#if NET
             ArgumentNullException.ThrowIfNull(asyncResult);
 #else
             if (asyncResult is null)
@@ -85,6 +86,7 @@ namespace System.Threading.Tasks
         }
 
         /// <summary>Extracts the underlying <see cref="Task{TResult}"/> from an <see cref="IAsyncResult"/> created by <see cref="Begin"/>.</summary>
+        /// <typeparam name="TResult">The type of the result produced by the returned task.</typeparam>
         /// <param name="asyncResult">The <see cref="IAsyncResult"/> created by <see cref="Begin"/>.</param>
         /// <returns>The <see cref="Task{TResult}"/> wrapped by the <see cref="IAsyncResult"/>.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="asyncResult"/> is null.</exception>
@@ -95,7 +97,7 @@ namespace System.Threading.Tasks
         /// </exception>
         public static Task<TResult> Unwrap<TResult>(IAsyncResult asyncResult)
         {
-#if NET6_0_OR_GREATER
+#if NET
             ArgumentNullException.ThrowIfNull(asyncResult);
 #else
             if (asyncResult is null)

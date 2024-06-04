@@ -190,8 +190,7 @@ namespace System.Xml.Linq
 
         public override void WriteSurrogateCharEntity(char lowCh, char highCh)
         {
-            ReadOnlySpan<char> entity = stackalloc char[] { highCh, lowCh };
-            AddString(new string(entity));
+            AddString(new string([highCh, lowCh]));
         }
 
         public override void WriteValue(DateTimeOffset value)

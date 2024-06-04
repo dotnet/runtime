@@ -44,7 +44,7 @@ PALTEST(filemapping_memmgt_GetModuleFileNameA_test1_paltest_getmodulefilenamea_t
 
 
     //load a module
-    ModuleHandle = LoadLibrary(ModuleName);
+    ModuleHandle = LoadLibraryExA(ModuleName, NULL, 0);
     if(!ModuleHandle)
     {
         Fail("Failed to call LoadLibrary API!\n");
@@ -58,12 +58,13 @@ PALTEST(filemapping_memmgt_GetModuleFileNameA_test1_paltest_getmodulefilenamea_t
                 MODULENAMEBUFFERSIZE);
 
     //strip out all full path
-    TempBuf = strtok(ModuleFileNameBuf,Delimiter);
+    char* context;
+    TempBuf = strtok_r(ModuleFileNameBuf,Delimiter, &context);
     LastBuf = TempBuf;
     while(NULL != TempBuf)
     {
         LastBuf = TempBuf;
-        TempBuf = strtok(NULL,Delimiter);
+        TempBuf = strtok_r(NULL,Delimiter, &context);
     }
 
 

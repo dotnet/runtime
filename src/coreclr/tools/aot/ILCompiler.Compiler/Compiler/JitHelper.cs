@@ -67,22 +67,48 @@ namespace ILCompiler
                 case ReadyToRunHelper.CheckedWriteBarrier:
                     mangledName = context.Target.Architecture == TargetArchitecture.ARM64 ? "RhpCheckedAssignRefArm64" : "RhpCheckedAssignRef";
                     break;
+                case ReadyToRunHelper.BulkWriteBarrier:
+                   mangledName = "RhBuffer_BulkMoveWithWriteBarrier";
+                   break;
                 case ReadyToRunHelper.ByRefWriteBarrier:
                     mangledName = context.Target.Architecture == TargetArchitecture.ARM64 ? "RhpByRefAssignRefArm64" : "RhpByRefAssignRef";
                     break;
                 case ReadyToRunHelper.WriteBarrier_EAX:
                     mangledName = "RhpAssignRefEAX";
                     break;
+                case ReadyToRunHelper.WriteBarrier_EBX:
+                    mangledName = "RhpAssignRefEBX";
+                    break;
                 case ReadyToRunHelper.WriteBarrier_ECX:
                     mangledName = "RhpAssignRefECX";
+                    break;
+                case ReadyToRunHelper.WriteBarrier_EDI:
+                    mangledName = "RhpAssignRefEDI";
+                    break;
+                case ReadyToRunHelper.WriteBarrier_ESI:
+                    mangledName = "RhpAssignRefESI";
+                    break;
+                case ReadyToRunHelper.WriteBarrier_EBP:
+                    mangledName = "RhpAssignRefEBP";
                     break;
                 case ReadyToRunHelper.CheckedWriteBarrier_EAX:
                     mangledName = "RhpCheckedAssignRefEAX";
                     break;
+                case ReadyToRunHelper.CheckedWriteBarrier_EBX:
+                    mangledName = "RhpCheckedAssignRefEBX";
+                    break;
                 case ReadyToRunHelper.CheckedWriteBarrier_ECX:
                     mangledName = "RhpCheckedAssignRefECX";
                     break;
-
+                case ReadyToRunHelper.CheckedWriteBarrier_EDI:
+                    mangledName = "RhpCheckedAssignRefEDI";
+                    break;
+                case ReadyToRunHelper.CheckedWriteBarrier_ESI:
+                    mangledName = "RhpCheckedAssignRefESI";
+                    break;
+                case ReadyToRunHelper.CheckedWriteBarrier_EBP:
+                    mangledName = "RhpCheckedAssignRefEBP";
+                    break;
                 case ReadyToRunHelper.Box:
                 case ReadyToRunHelper.Box_Nullable:
                     mangledName = "RhBox";
@@ -116,10 +142,16 @@ namespace ILCompiler
                     break;
 
                 case ReadyToRunHelper.MemCpy:
-                    mangledName = "memcpy"; // TODO: Null reference handling
+                    mangledName = "RhSpanHelpers_MemCopy";
                     break;
                 case ReadyToRunHelper.MemSet:
-                    mangledName = "memset"; // TODO: Null reference handling
+                    mangledName = "RhSpanHelpers_MemSet";
+                    break;
+                case ReadyToRunHelper.MemZero:
+                    mangledName = "RhSpanHelpers_MemZero";
+                    break;
+                case ReadyToRunHelper.NativeMemSet:
+                    mangledName = "memset";
                     break;
 
                 case ReadyToRunHelper.GetRuntimeTypeHandle:
@@ -156,39 +188,41 @@ namespace ILCompiler
                     break;
 
                 case ReadyToRunHelper.Dbl2IntOvf:
-                    methodDesc = context.GetHelperEntryPoint("MathHelpers", "Dbl2IntOvf");
+                    methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("ConvertToInt32Checked", null);
                     break;
                 case ReadyToRunHelper.Dbl2UIntOvf:
-                    methodDesc = context.GetHelperEntryPoint("MathHelpers", "Dbl2UIntOvf");
+                    methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("ConvertToUInt32Checked", null);
                     break;
                 case ReadyToRunHelper.Dbl2LngOvf:
-                    methodDesc = context.GetHelperEntryPoint("MathHelpers", "Dbl2LngOvf");
+                    methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("ConvertToInt64Checked", null);
                     break;
                 case ReadyToRunHelper.Dbl2ULngOvf:
-                    methodDesc = context.GetHelperEntryPoint("MathHelpers", "Dbl2ULngOvf");
+                    methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("ConvertToUInt64Checked", null);
                     break;
 
                 case ReadyToRunHelper.DblRem:
-                    mangledName = "RhpDblRem";
+                    mangledName = "fmod";
                     break;
                 case ReadyToRunHelper.FltRem:
-                    mangledName = "RhpFltRem";
-                    break;
-                case ReadyToRunHelper.DblRound:
-                    mangledName = "RhpDblRound";
-                    break;
-                case ReadyToRunHelper.FltRound:
-                    mangledName = "RhpFltRound";
+                    mangledName = "fmodf";
                     break;
 
                 case ReadyToRunHelper.LMul:
                     mangledName = "RhpLMul";
                     break;
                 case ReadyToRunHelper.LMulOfv:
-                    methodDesc = context.GetHelperEntryPoint("MathHelpers", "LMulOvf");
+                    {
+                        TypeDesc t = context.GetWellKnownType(WellKnownType.Int64);
+                        methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("MultiplyChecked",
+                            new MethodSignature(MethodSignatureFlags.Static, 0, t, [t, t]));
+                    }
                     break;
                 case ReadyToRunHelper.ULMulOvf:
-                    methodDesc = context.GetHelperEntryPoint("MathHelpers", "ULMulOvf");
+                    {
+                        TypeDesc t = context.GetWellKnownType(WellKnownType.UInt64);
+                        methodDesc = context.SystemModule.GetKnownType("System", "Math").GetKnownMethod("MultiplyChecked",
+                            new MethodSignature(MethodSignatureFlags.Static, 0, t, [t, t]));
+                    }
                     break;
 
                 case ReadyToRunHelper.Mod:
@@ -242,19 +276,10 @@ namespace ILCompiler
                     break;
 
                 case ReadyToRunHelper.CheckCastAny:
-                    mangledName = "RhTypeCast_CheckCast";
-                    break;
-                case ReadyToRunHelper.CheckInstanceAny:
-                    mangledName = "RhTypeCast_IsInstanceOf";
-                    break;
-                case ReadyToRunHelper.IsInstanceOfException:
-                    mangledName = "RhTypeCast_IsInstanceOfException";
+                    mangledName = "RhTypeCast_CheckCastAny";
                     break;
                 case ReadyToRunHelper.CheckCastInterface:
                     mangledName = "RhTypeCast_CheckCastInterface";
-                    break;
-                case ReadyToRunHelper.CheckInstanceInterface:
-                    mangledName = "RhTypeCast_IsInstanceOfInterface";
                     break;
                 case ReadyToRunHelper.CheckCastClass:
                     mangledName = "RhTypeCast_CheckCastClass";
@@ -262,14 +287,18 @@ namespace ILCompiler
                 case ReadyToRunHelper.CheckCastClassSpecial:
                     mangledName = "RhTypeCast_CheckCastClassSpecial";
                     break;
+
+                case ReadyToRunHelper.CheckInstanceAny:
+                    mangledName = "RhTypeCast_IsInstanceOfAny";
+                    break;
+                case ReadyToRunHelper.CheckInstanceInterface:
+                    mangledName = "RhTypeCast_IsInstanceOfInterface";
+                    break;
                 case ReadyToRunHelper.CheckInstanceClass:
                     mangledName = "RhTypeCast_IsInstanceOfClass";
                     break;
-                case ReadyToRunHelper.CheckCastArray:
-                    mangledName = "RhTypeCast_CheckCastArray";
-                    break;
-                case ReadyToRunHelper.CheckInstanceArray:
-                    mangledName = "RhTypeCast_IsInstanceOfArray";
+                case ReadyToRunHelper.IsInstanceOfException:
+                    mangledName = "RhTypeCast_IsInstanceOfException";
                     break;
 
                 case ReadyToRunHelper.MonitorEnter:
@@ -328,14 +357,6 @@ namespace ILCompiler
                 return "RhpNewFinalizable";
 
             return "RhpNewFast";
-        }
-
-        public static string GetNewArrayHelperForType(TypeDesc type)
-        {
-            if (type.RequiresAlign8())
-                return "RhpNewArrayAlign8";
-
-            return "RhpNewArray";
         }
     }
 }

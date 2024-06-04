@@ -2,9 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #define TRACE
-using System;
 using System.Diagnostics.CodeAnalysis;
-using System.Collections;
 using System.Threading;
 
 namespace System.Diagnostics
@@ -40,7 +38,7 @@ namespace System.Diagnostics
 
         /// <devdoc>
         ///    <para>
-        ///       Gets or sets whether <see cref='System.Diagnostics.Trace.Flush'/> should be called on the <see cref='System.Diagnostics.Trace.Listeners'/> after every write.
+        ///       Gets or sets whether <see cref='Flush'/> should be called on the <see cref='Listeners'/> after every write.
         ///    </para>
         /// </devdoc>
         public static bool AutoFlush
@@ -92,19 +90,19 @@ namespace System.Diagnostics
 
         /// <devdoc>
         ///    <para>Clears the output buffer, and causes buffered data to
-        ///       be written to the <see cref='System.Diagnostics.Trace.Listeners'/>.</para>
+        ///       be written to the <see cref='Listeners'/>.</para>
         /// </devdoc>
-        [System.Diagnostics.Conditional("TRACE")]
+        [Conditional("TRACE")]
         public static void Flush()
         {
             TraceInternal.Flush();
         }
 
         /// <devdoc>
-        /// <para>Clears the output buffer, and then closes the <see cref='System.Diagnostics.Trace.Listeners'/> so that they no
+        /// <para>Clears the output buffer, and then closes the <see cref='Listeners'/> so that they no
         ///    longer receive debugging output.</para>
         /// </devdoc>
-        [System.Diagnostics.Conditional("TRACE")]
+        [Conditional("TRACE")]
         public static void Close()
         {
             TraceInternal.Close();
@@ -115,8 +113,8 @@ namespace System.Diagnostics
         ///       condition
         ///       is <see langword='false'/>.</para>
         /// </devdoc>
-        [System.Diagnostics.Conditional("TRACE")]
-        public static void Assert(bool condition)
+        [Conditional("TRACE")]
+        public static void Assert([DoesNotReturnIf(false)] bool condition)
         {
             TraceInternal.Assert(condition);
         }
@@ -125,8 +123,8 @@ namespace System.Diagnostics
         ///    <para>Checks for a condition, and displays a message if the condition is
         ///    <see langword='false'/>. </para>
         /// </devdoc>
-        [System.Diagnostics.Conditional("TRACE")]
-        public static void Assert(bool condition, string? message)
+        [Conditional("TRACE")]
+        public static void Assert([DoesNotReturnIf(false)] bool condition, string? message)
         {
             TraceInternal.Assert(condition, message);
         }
@@ -135,8 +133,8 @@ namespace System.Diagnostics
         ///    <para>Checks for a condition, and displays both messages if the condition
         ///       is <see langword='false'/>. </para>
         /// </devdoc>
-        [System.Diagnostics.Conditional("TRACE")]
-        public static void Assert(bool condition, string? message, string? detailMessage)
+        [Conditional("TRACE")]
+        public static void Assert([DoesNotReturnIf(false)] bool condition, string? message, string? detailMessage)
         {
             TraceInternal.Assert(condition, message, detailMessage);
         }
@@ -144,7 +142,8 @@ namespace System.Diagnostics
         /// <devdoc>
         ///    <para>Emits or displays a message for an assertion that always fails.</para>
         /// </devdoc>
-        [System.Diagnostics.Conditional("TRACE")]
+        [Conditional("TRACE")]
+        [DoesNotReturn]
         public static void Fail(string? message)
         {
             TraceInternal.Fail(message);
@@ -153,7 +152,8 @@ namespace System.Diagnostics
         /// <devdoc>
         ///    <para>Emits or displays both messages for an assertion that always fails.</para>
         /// </devdoc>
-        [System.Diagnostics.Conditional("TRACE")]
+        [Conditional("TRACE")]
+        [DoesNotReturn]
         public static void Fail(string? message, string? detailMessage)
         {
             TraceInternal.Fail(message, detailMessage);
@@ -177,47 +177,47 @@ namespace System.Diagnostics
             TraceInternal.Refresh();
         }
 
-        [System.Diagnostics.Conditional("TRACE")]
+        [Conditional("TRACE")]
         public static void TraceInformation(string? message)
         {
             TraceInternal.TraceEvent(TraceEventType.Information, 0, message, null);
         }
 
-        [System.Diagnostics.Conditional("TRACE")]
+        [Conditional("TRACE")]
         public static void TraceInformation([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params object?[]? args)
         {
             TraceInternal.TraceEvent(TraceEventType.Information, 0, format, args);
         }
 
-        [System.Diagnostics.Conditional("TRACE")]
+        [Conditional("TRACE")]
         public static void TraceWarning(string? message)
         {
             TraceInternal.TraceEvent(TraceEventType.Warning, 0, message, null);
         }
 
-        [System.Diagnostics.Conditional("TRACE")]
+        [Conditional("TRACE")]
         public static void TraceWarning([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params object?[]? args)
         {
             TraceInternal.TraceEvent(TraceEventType.Warning, 0, format, args);
         }
 
-        [System.Diagnostics.Conditional("TRACE")]
+        [Conditional("TRACE")]
         public static void TraceError(string? message)
         {
             TraceInternal.TraceEvent(TraceEventType.Error, 0, message, null);
         }
 
-        [System.Diagnostics.Conditional("TRACE")]
+        [Conditional("TRACE")]
         public static void TraceError([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params object?[]? args)
         {
             TraceInternal.TraceEvent(TraceEventType.Error, 0, format, args);
         }
 
         /// <devdoc>
-        /// <para>Writes a message to the trace listeners in the <see cref='System.Diagnostics.Trace.Listeners'/>
+        /// <para>Writes a message to the trace listeners in the <see cref='Listeners'/>
         /// collection.</para>
         /// </devdoc>
-        [System.Diagnostics.Conditional("TRACE")]
+        [Conditional("TRACE")]
         public static void Write(string? message)
         {
             TraceInternal.Write(message);
@@ -225,9 +225,9 @@ namespace System.Diagnostics
 
         /// <devdoc>
         /// <para>Writes the name of the <paramref name="value "/>
-        /// parameter to the trace listeners in the <see cref='System.Diagnostics.Trace.Listeners'/> collection.</para>
+        /// parameter to the trace listeners in the <see cref='Listeners'/> collection.</para>
         /// </devdoc>
-        [System.Diagnostics.Conditional("TRACE")]
+        [Conditional("TRACE")]
         public static void Write(object? value)
         {
             TraceInternal.Write(value);
@@ -235,9 +235,9 @@ namespace System.Diagnostics
 
         /// <devdoc>
         ///    <para>Writes a category name and message to the trace listeners
-        ///       in the <see cref='System.Diagnostics.Trace.Listeners'/> collection.</para>
+        ///       in the <see cref='Listeners'/> collection.</para>
         /// </devdoc>
-        [System.Diagnostics.Conditional("TRACE")]
+        [Conditional("TRACE")]
         public static void Write(string? message, string? category)
         {
             TraceInternal.Write(message, category);
@@ -245,9 +245,9 @@ namespace System.Diagnostics
 
         /// <devdoc>
         ///    <para>Writes a category name and the name of the value parameter to the trace listeners
-        ///       in the <see cref='System.Diagnostics.Trace.Listeners'/> collection.</para>
+        ///       in the <see cref='Listeners'/> collection.</para>
         /// </devdoc>
-        [System.Diagnostics.Conditional("TRACE")]
+        [Conditional("TRACE")]
         public static void Write(object? value, string? category)
         {
             TraceInternal.Write(value, category);
@@ -255,20 +255,20 @@ namespace System.Diagnostics
 
         /// <devdoc>
         ///    <para>Writes a message followed by a line terminator to the
-        ///       trace listeners in the <see cref='System.Diagnostics.Trace.Listeners'/> collection.
+        ///       trace listeners in the <see cref='Listeners'/> collection.
         ///       The default line terminator is a carriage return followed by a line feed (\r\n).</para>
         /// </devdoc>
-        [System.Diagnostics.Conditional("TRACE")]
+        [Conditional("TRACE")]
         public static void WriteLine(string? message)
         {
             TraceInternal.WriteLine(message);
         }
 
         /// <devdoc>
-        /// <para>Writes the name of the <paramref name="value "/> parameter followed by a line terminator to the trace listeners in the <see cref='System.Diagnostics.Trace.Listeners'/> collection. The default line
+        /// <para>Writes the name of the <paramref name="value "/> parameter followed by a line terminator to the trace listeners in the <see cref='Listeners'/> collection. The default line
         ///    terminator is a carriage return followed by a line feed (\r\n).</para>
         /// </devdoc>
-        [System.Diagnostics.Conditional("TRACE")]
+        [Conditional("TRACE")]
         public static void WriteLine(object? value)
         {
             TraceInternal.WriteLine(value);
@@ -276,11 +276,11 @@ namespace System.Diagnostics
 
         /// <devdoc>
         ///    <para>Writes a category name and message followed by a line terminator to the trace
-        ///       listeners in the <see cref='System.Diagnostics.Trace.Listeners'/>
+        ///       listeners in the <see cref='Listeners'/>
         ///       collection. The default line terminator is a carriage return followed by a line
         ///       feed (\r\n).</para>
         /// </devdoc>
-        [System.Diagnostics.Conditional("TRACE")]
+        [Conditional("TRACE")]
         public static void WriteLine(string? message, string? category)
         {
             TraceInternal.WriteLine(message, category);
@@ -288,20 +288,20 @@ namespace System.Diagnostics
 
         /// <devdoc>
         /// <para>Writes a <paramref name="category "/>name and the name of the <paramref name="value "/> parameter followed by a line
-        ///    terminator to the trace listeners in the <see cref='System.Diagnostics.Trace.Listeners'/> collection. The default line
+        ///    terminator to the trace listeners in the <see cref='Listeners'/> collection. The default line
         ///    terminator is a carriage return followed by a line feed (\r\n).</para>
         /// </devdoc>
-        [System.Diagnostics.Conditional("TRACE")]
+        [Conditional("TRACE")]
         public static void WriteLine(object? value, string? category)
         {
             TraceInternal.WriteLine(value, category);
         }
 
         /// <devdoc>
-        /// <para>Writes a message to the trace listeners in the <see cref='System.Diagnostics.Trace.Listeners'/> collection
+        /// <para>Writes a message to the trace listeners in the <see cref='Listeners'/> collection
         ///    if a condition is <see langword='true'/>.</para>
         /// </devdoc>
-        [System.Diagnostics.Conditional("TRACE")]
+        [Conditional("TRACE")]
         public static void WriteIf(bool condition, string? message)
         {
             TraceInternal.WriteIf(condition, message);
@@ -309,20 +309,20 @@ namespace System.Diagnostics
 
         /// <devdoc>
         /// <para>Writes the name of the <paramref name="value "/>
-        /// parameter to the trace listeners in the <see cref='System.Diagnostics.Trace.Listeners'/> collection if a condition is
+        /// parameter to the trace listeners in the <see cref='Listeners'/> collection if a condition is
         /// <see langword='true'/>. </para>
         /// </devdoc>
-        [System.Diagnostics.Conditional("TRACE")]
+        [Conditional("TRACE")]
         public static void WriteIf(bool condition, object? value)
         {
             TraceInternal.WriteIf(condition, value);
         }
 
         /// <devdoc>
-        /// <para>Writes a category name and message to the trace listeners in the <see cref='System.Diagnostics.Trace.Listeners'/>
+        /// <para>Writes a category name and message to the trace listeners in the <see cref='Listeners'/>
         /// collection if a condition is <see langword='true'/>. </para>
         /// </devdoc>
-        [System.Diagnostics.Conditional("TRACE")]
+        [Conditional("TRACE")]
         public static void WriteIf(bool condition, string? message, string? category)
         {
             TraceInternal.WriteIf(condition, message, category);
@@ -330,10 +330,10 @@ namespace System.Diagnostics
 
         /// <devdoc>
         /// <para>Writes a category name and the name of the <paramref name="value"/> parameter to the trace
-        ///    listeners in the <see cref='System.Diagnostics.Trace.Listeners'/> collection
+        ///    listeners in the <see cref='Listeners'/> collection
         ///    if a condition is <see langword='true'/>. </para>
         /// </devdoc>
-        [System.Diagnostics.Conditional("TRACE")]
+        [Conditional("TRACE")]
         public static void WriteIf(bool condition, object? value, string? category)
         {
             TraceInternal.WriteIf(condition, value, category);
@@ -341,11 +341,11 @@ namespace System.Diagnostics
 
         /// <devdoc>
         ///    <para>Writes a message followed by a line terminator to the trace listeners in the
-        ///    <see cref='System.Diagnostics.Trace.Listeners'/> collection if a condition is
+        ///    <see cref='Listeners'/> collection if a condition is
         ///    <see langword='true'/>. The default line terminator is a carriage return followed
         ///       by a line feed (\r\n).</para>
         /// </devdoc>
-        [System.Diagnostics.Conditional("TRACE")]
+        [Conditional("TRACE")]
         public static void WriteLineIf(bool condition, string? message)
         {
             TraceInternal.WriteLineIf(condition, message);
@@ -353,12 +353,12 @@ namespace System.Diagnostics
 
         /// <devdoc>
         /// <para>Writes the name of the <paramref name="value"/> parameter followed by a line terminator to the
-        ///    trace listeners in the <see cref='System.Diagnostics.Trace.Listeners'/> collection
+        ///    trace listeners in the <see cref='Listeners'/> collection
         ///    if a condition is
         /// <see langword='true'/>. The default line
         ///    terminator is a carriage return followed by a line feed (\r\n).</para>
         /// </devdoc>
-        [System.Diagnostics.Conditional("TRACE")]
+        [Conditional("TRACE")]
         public static void WriteLineIf(bool condition, object? value)
         {
             TraceInternal.WriteLineIf(condition, value);
@@ -366,10 +366,10 @@ namespace System.Diagnostics
 
         /// <devdoc>
         ///    <para>Writes a category name and message followed by a line terminator to the trace
-        ///       listeners in the <see cref='System.Diagnostics.Trace.Listeners'/> collection if a condition is
+        ///       listeners in the <see cref='Listeners'/> collection if a condition is
         ///    <see langword='true'/>. The default line terminator is a carriage return followed by a line feed (\r\n).</para>
         /// </devdoc>
-        [System.Diagnostics.Conditional("TRACE")]
+        [Conditional("TRACE")]
         public static void WriteLineIf(bool condition, string? message, string? category)
         {
             TraceInternal.WriteLineIf(condition, message, category);
@@ -377,11 +377,11 @@ namespace System.Diagnostics
 
         /// <devdoc>
         /// <para>Writes a category name and the name of the <paramref name="value "/> parameter followed by a line
-        ///    terminator to the trace listeners in the <see cref='System.Diagnostics.Trace.Listeners'/> collection
+        ///    terminator to the trace listeners in the <see cref='Listeners'/> collection
         ///    if a <paramref name="condition"/> is <see langword='true'/>. The
         ///    default line terminator is a carriage return followed by a line feed (\r\n).</para>
         /// </devdoc>
-        [System.Diagnostics.Conditional("TRACE")]
+        [Conditional("TRACE")]
         public static void WriteLineIf(bool condition, object? value, string? category)
         {
             TraceInternal.WriteLineIf(condition, value, category);
@@ -390,7 +390,7 @@ namespace System.Diagnostics
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        [System.Diagnostics.Conditional("TRACE")]
+        [Conditional("TRACE")]
         public static void Indent()
         {
             TraceInternal.Indent();
@@ -399,7 +399,7 @@ namespace System.Diagnostics
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        [System.Diagnostics.Conditional("TRACE")]
+        [Conditional("TRACE")]
         public static void Unindent()
         {
             TraceInternal.Unindent();

@@ -2175,6 +2175,7 @@ access_reg(unw_addr_space_t as, unw_regnum_t regnum, unw_word_t *valp, int write
     case UNW_PPC64_NIP:    *valp = (unw_word_t)winContext->Nip; break;
 #elif defined(TARGET_RISCV64)
     case UNW_RISCV_X1:     *valp = (unw_word_t)winContext->Ra; break;
+    case UNW_RISCV_X2:     *valp = (unw_word_t)winContext->Sp; break;
     case UNW_RISCV_X3:     *valp = (unw_word_t)winContext->Gp; break;
     case UNW_RISCV_X4:     *valp = (unw_word_t)winContext->Tp; break;
     case UNW_RISCV_X8:     *valp = (unw_word_t)winContext->Fp; break;
@@ -2189,7 +2190,7 @@ access_reg(unw_addr_space_t as, unw_regnum_t regnum, unw_word_t *valp, int write
     case UNW_RISCV_X25:    *valp = (unw_word_t)winContext->S9; break;
     case UNW_RISCV_X26:    *valp = (unw_word_t)winContext->S10; break;
     case UNW_RISCV_X27:    *valp = (unw_word_t)winContext->S11; break;
-    case UNW_RISCV_PC:    *valp = (unw_word_t)winContext->Pc; break;
+    case UNW_RISCV_PC:     *valp = (unw_word_t)winContext->Pc; break;
 #else
 #error unsupported architecture
 #endif
@@ -2218,8 +2219,7 @@ resume(unw_addr_space_t as, unw_cursor_t *cp, void *arg)
 static int
 get_proc_name(unw_addr_space_t as, unw_word_t addr, char *bufp, size_t buf_len, unw_word_t *offp, void *arg)
 {
-    ASSERT("Not supposed to be ever called\n");
-    return -UNW_EINVAL;
+    return -UNW_ENOINFO;
 }
 
 static int

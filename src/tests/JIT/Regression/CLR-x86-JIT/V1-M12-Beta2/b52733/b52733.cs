@@ -14,14 +14,13 @@ namespace Test
         private static float[] Method1() { return s_af = new float[5]; }
 
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             bool b = false;
             if (b)
                 b = __refvalue(__makeref(s_b), bool);
             else
                 Method1();
-            return 100;
         }
     }
 }

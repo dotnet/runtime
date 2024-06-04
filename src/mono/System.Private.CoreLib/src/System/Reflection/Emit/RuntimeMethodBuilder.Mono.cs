@@ -347,7 +347,7 @@ namespace System.Reflection.Emit
             {
                 foreach (MethodInfo m in override_methods)
                 {
-                    if (m.IsVirtual && !IsVirtual)
+                    if (m.IsVirtual && !IsVirtual && !IsStatic && !ReflectedType!.IsInterface)
                         throw new TypeLoadException(SR.Format(SR.TypeLoad_MethodOverrideNotVirtual, name, m));
                 }
             }
@@ -603,7 +603,9 @@ namespace System.Reflection.Emit
                 Array.Copy(parameterTypes, this.parameters, parameterTypes.Length);
             }
 
-            rtype = returnType;
+            if (returnType != null)
+                rtype = returnType;
+
             returnModReq = returnTypeRequiredCustomModifiers;
             returnModOpt = returnTypeOptionalCustomModifiers;
             paramModReq = parameterTypeRequiredCustomModifiers;

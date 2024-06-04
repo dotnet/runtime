@@ -461,7 +461,9 @@ namespace UniversalGen
         [MethodImpl(MethodImplOptions.NoInlining)]
         public unsafe void TestAsPointer(T x)
         {
-            IntPtr unsafeValuePtr = (IntPtr)Unsafe.AsPointer(ref x);
+#pragma warning disable CS8500 // takes address of managed type
+            IntPtr unsafeValuePtr = (IntPtr)&x;
+#pragma warning restore CS8500
             GC.Collect();
             GC.Collect();
             GC.Collect();
@@ -487,6 +489,7 @@ namespace UniversalGen
         [MethodImpl(MethodImplOptions.NoInlining)]
         unsafe IntPtr someFuncWithByRefArgs(ref T x)
         {
+            // Unsafe.AsPointer is safe since the reference is expected to be pinned
             return (IntPtr)Unsafe.AsPointer(ref x);
         }
 

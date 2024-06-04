@@ -2,13 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Net.Security;
-using System.IO;
-using System.Runtime.Versioning;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
+using System.IO;
+using System.Net.Http.Metrics;
+using System.Net.Security;
+using System.Runtime.Versioning;
+using System.Security.Principal;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Net.Http
 {
@@ -28,6 +30,7 @@ namespace System.Net.Http
 
         internal bool _preAuthenticate = HttpHandlerDefaults.DefaultPreAuthenticate;
         internal ICredentials? _credentials;
+        internal TokenImpersonationLevel _impersonationLevel = HttpHandlerDefaults.DefaultImpersonationLevel;   // this is here to support impersonation on HttpWebRequest
 
         internal bool _allowAutoRedirect = HttpHandlerDefaults.DefaultAutomaticRedirection;
         internal int _maxAutomaticRedirections = HttpHandlerDefaults.DefaultMaxAutomaticRedirections;
@@ -37,6 +40,7 @@ namespace System.Net.Http
         internal TimeSpan _maxResponseDrainTime = HttpHandlerDefaults.DefaultResponseDrainTimeout;
         internal int _maxResponseHeadersLength = HttpHandlerDefaults.DefaultMaxResponseHeadersLength;
         internal IMeterFactory? _meterFactory;
+        internal SocketsHttpHandlerMetrics? _metrics;
 
         internal TimeSpan _pooledConnectionLifetime = HttpHandlerDefaults.DefaultPooledConnectionLifetime;
         internal TimeSpan _pooledConnectionIdleTimeout = HttpHandlerDefaults.DefaultPooledConnectionIdleTimeout;
@@ -104,6 +108,7 @@ namespace System.Net.Http
                 _maxResponseDrainTime = _maxResponseDrainTime,
                 _maxResponseHeadersLength = _maxResponseHeadersLength,
                 _meterFactory = _meterFactory,
+                _metrics = _metrics,
                 _pooledConnectionLifetime = _pooledConnectionLifetime,
                 _pooledConnectionIdleTimeout = _pooledConnectionIdleTimeout,
                 _preAuthenticate = _preAuthenticate,
@@ -125,6 +130,7 @@ namespace System.Net.Http
                 _defaultCredentialsUsedForProxy = _proxy != null && (_proxy.Credentials == CredentialCache.DefaultCredentials || _defaultProxyCredentials == CredentialCache.DefaultCredentials),
                 _defaultCredentialsUsedForServer = _credentials == CredentialCache.DefaultCredentials,
                 _clientCertificateOptions = _clientCertificateOptions,
+                _impersonationLevel = _impersonationLevel,
             };
 
             return settings;

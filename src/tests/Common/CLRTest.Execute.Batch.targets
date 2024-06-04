@@ -164,8 +164,8 @@ IF NOT "%CLRTestExitCode%"=="%CLRTestExpectedExitCode%" (
 :TakeLock
 md %lockFolder%
 IF NOT "!ERRORLEVEL!"=="0" (
-timeout /t 10 /nobreak
-goto :TakeLock
+  timeout /t 10 /nobreak
+  goto :TakeLock
 )
 Exit /b 2
 
@@ -318,8 +318,6 @@ IF NOT "%CLRCustomTestLauncher%"=="" (
   set LAUNCHER=%_DebuggerFullPath% $(CLRTestRunFile)
 )
 
-$(BatchIlrtTestLaunchCmds)
-
 if defined RunCrossGen2 (
   call :TakeLock
 )
@@ -403,15 +401,17 @@ IF /I [%1] == [-%(Identity)] set cond=1
 IF /I [%1] == [/%(Identity)] set cond=1
 IF %cond% EQU 1 (
 %(Command)
-shift
-IF /I [%(HasParam)] == [true] shift
-goto NextArg
+    shift
+    IF /I [%(HasParam)] == [true] shift
+    goto NextArg
 )','
 ')
 
+:ExtraArgs
 if NOT "%1" == "" (
-set CLRTestExecutionArguments=%*
-goto :ArgsDone
+    set CLRTestExecutionArguments=%CLRTestExecutionArguments% %1
+    shift
+    goto :ExtraArgs
 )
 
 goto ArgsDone

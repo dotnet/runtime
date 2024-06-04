@@ -6,9 +6,8 @@ using System;
 using System.Diagnostics;
 using System.Threading;
 
-using Internal.Runtime.CompilerServices;
-
 using Internal.NativeFormat;
+using Internal.Runtime.CompilerServices;
 using Internal.TypeSystem;
 
 namespace Internal.Runtime.TypeLoader
@@ -154,7 +153,7 @@ namespace Internal.Runtime.TypeLoader
 
                 DefType parsedDeclaringType = context.ResolveRuntimeTypeHandle(parsedDeclaringTypeHandle) as DefType;
                 Instantiation parsedArgs = context.ResolveRuntimeTypeHandles(parsedArgsHandles);
-                InstantiatedMethod parsedGenericMethod = (InstantiatedMethod)context.ResolveGenericMethodInstantiation(false, parsedDeclaringType, nameAndSignature, parsedArgs, IntPtr.Zero, false);
+                InstantiatedMethod parsedGenericMethod = (InstantiatedMethod)context.ResolveGenericMethodInstantiation(false, parsedDeclaringType, nameAndSignature, parsedArgs);
 
                 return parsedGenericMethod == _methodToLookup;
             }
@@ -165,7 +164,7 @@ namespace Internal.Runtime.TypeLoader
 
                 DefType parsedDeclaringType = context.ResolveRuntimeTypeHandle(entry._declaringTypeHandle) as DefType;
                 Instantiation parsedArgs = context.ResolveRuntimeTypeHandles(entry._genericMethodArgumentHandles);
-                InstantiatedMethod parsedGenericMethod = (InstantiatedMethod)context.ResolveGenericMethodInstantiation(false, parsedDeclaringType, entry._methodNameAndSignature, parsedArgs, IntPtr.Zero, false);
+                InstantiatedMethod parsedGenericMethod = (InstantiatedMethod)context.ResolveGenericMethodInstantiation(false, parsedDeclaringType, entry._methodNameAndSignature, parsedArgs);
 
                 return parsedGenericMethod == _methodToLookup;
             }
@@ -268,13 +267,11 @@ namespace Internal.Runtime.TypeLoader
                 return false;
             }
 
-            methodPointer = templateMethod.IsCanonicalMethod(CanonicalFormKind.Universal) ?
-                templateMethod.UsgFunctionPointer :
-                templateMethod.FunctionPointer;
+            methodPointer = templateMethod.FunctionPointer;
 
             if (!TryLookupGenericMethodDictionary(new MethodDescBasedGenericMethodLookup(method), out dictionaryPointer))
             {
-                using (LockHolder.Hold(_typeLoaderLock))
+                using (_typeLoaderLock.EnterScope())
                 {
                     // Now that we hold the lock, we may find that existing types can now find
                     // their associated RuntimeTypeHandle. Flush the type builder states as a way
@@ -297,7 +294,7 @@ namespace Internal.Runtime.TypeLoader
         {
             result = IntPtr.Zero;
 
-            using (LockHolder.Hold(_dynamicGenericsLock))
+            using (_dynamicGenericsLock.EnterScope())
             {
                 GenericMethodEntry entry;
                 if (!_dynamicGenericMethods.TryGetValue(lookupData, out entry))
@@ -349,7 +346,7 @@ namespace Internal.Runtime.TypeLoader
             methodNameAndSignature = null;
             genericMethodArgumentHandles = null;
 
-            using (LockHolder.Hold(_dynamicGenericsLock))
+            using (_dynamicGenericsLock.EnterScope())
             {
                 GenericMethodEntry entry;
                 if (!_dynamicGenericMethodComponents.TryGetValue(methodDictionary, out entry))

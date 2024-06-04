@@ -16,11 +16,16 @@
     <Platforms>AnyCPU;x64</Platforms>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <RunAnalyzers>false</RunAnalyzers>
+    <!--
+      The SDK warns if a project targets a framework that doesn't support trimming and IsTrimmable is true.
+      We set IsTrimmable higher up in the Directory.Build.props files, so we reset it to false here.
+    -->
+    <IsTrimmable>false</IsTrimmable>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataVersion)" />
-    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="6.0.0" />
+    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="$(SystemRuntimeCompilerServicesUnsafeVersion)" />
   </ItemGroup>
 
   <ItemGroup>

@@ -316,6 +316,50 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        public async Task ReadAsStreamShouldRewindOffset()
+        {
+            using (MemoryStream textMemoryStream = new MemoryStream(Encoding.UTF8.GetBytes("Hello World")))
+            using (StreamContent streamContent = new StreamContent(textMemoryStream))
+            {
+                using (MemoryStream copyToDestinationMemoryStream = new MemoryStream())
+                {
+                    await streamContent.CopyToAsync(copyToDestinationMemoryStream);
+                    using (StreamReader streamReader = new StreamReader(copyToDestinationMemoryStream))
+                    {
+                        streamReader.ReadToEnd();
+
+                        using (Stream resultStream = streamContent.ReadAsStream())
+                        {
+                            Assert.Equal(0, resultStream.Position);
+                        }
+                    }
+                }
+            }
+        }
+
+        [Fact]
+        public async Task ReadAsStreamAsyncShouldRewindOffset()
+        {
+            using (MemoryStream textMemoryStream = new MemoryStream(Encoding.UTF8.GetBytes("Hello World")))
+            using (StreamContent streamContent = new StreamContent(textMemoryStream))
+            {
+                using (MemoryStream copyToDestinationMemoryStream = new MemoryStream())
+                {
+                    await streamContent.CopyToAsync(copyToDestinationMemoryStream);
+                    using (StreamReader streamReader = new StreamReader(copyToDestinationMemoryStream))
+                    {
+                        streamReader.ReadToEnd();
+
+                        using (Stream resultStream = await streamContent.ReadAsStreamAsync())
+                        {
+                            Assert.Equal(0, resultStream.Position);
+                        }
+                    }
+                }
+            }
+        }
+
+        [Fact]
         public async Task LoadIntoBufferAsync_BufferSizeSmallerThanContentSizeWithCalculatedContentLength_ThrowsHttpRequestException()
         {
             var content = new MockContent(MockOptions.CanCalculateLength);
@@ -613,7 +657,6 @@ namespace System.Net.Http.Functional.Tests
 
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/86326", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
         public async Task ReadAsStringAsync_Buffered_IgnoresCancellationToken()
         {
             string content = Guid.NewGuid().ToString();
@@ -671,7 +714,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/86326", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
         public async Task ReadAsStringAsync_Unbuffered_CanBeCanceled()
         {
             var cts = new CancellationTokenSource();
@@ -709,7 +751,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/86326", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
         public async Task ReadAsByteArrayAsync_Buffered_IgnoresCancellationToken()
         {
             string content = Guid.NewGuid().ToString();
@@ -768,7 +809,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/86326", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
         public async Task ReadAsByteArrayAsync_Unbuffered_CanBeCanceled()
         {
             var cts = new CancellationTokenSource();
@@ -808,7 +848,6 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/86326", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
         public async Task ReadAsStreamAsync_Buffered_IgnoresCancellationToken(bool readStreamAsync)
         {
             string content = Guid.NewGuid().ToString();
@@ -840,7 +879,6 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/86326", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
         public async Task ReadAsStreamAsync_Unbuffered_IgnoresCancellationToken(bool readStreamAsync)
         {
             if(PlatformDetection.IsBrowser && !readStreamAsync)

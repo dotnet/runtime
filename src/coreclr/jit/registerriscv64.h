@@ -50,6 +50,7 @@ REGDEF(T5,     30, 0x40000000, "t5"  )
 REGDEF(T6,     31, 0x80000000, "t6"  )
 
 REGALIAS(R8, FP)
+REGALIAS(ZERO, R0)
 
 #define FBASE 32
 #define FMASK(x) (1ULL << (FBASE+(x)))

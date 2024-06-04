@@ -48,7 +48,7 @@ namespace System.Globalization
         private const int MinAdvancedHijri = -2;
         private const int MaxAdvancedHijri = 2;
 
-        private static ReadOnlySpan<int> HijriMonthDays => new int[] { 0, 30, 59, 89, 118, 148, 177, 207, 236, 266, 295, 325, 355 };
+        private static ReadOnlySpan<int> HijriMonthDays => [0, 30, 59, 89, 118, 148, 177, 207, 236, 266, 295, 325, 355];
 
         private int _hijriAdvance = int.MinValue;
 

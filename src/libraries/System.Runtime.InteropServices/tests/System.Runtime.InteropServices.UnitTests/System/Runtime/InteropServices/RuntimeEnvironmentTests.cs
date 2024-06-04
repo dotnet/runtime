@@ -17,7 +17,8 @@ namespace System.Runtime.InteropServices
         [Fact]
         public void RuntimeEnvironmentSysVersion()
         {
-            Assert.NotEmpty(RuntimeEnvironment.GetSystemVersion());
+            // The historical format of this API is "vX.Y.Z", so we validate and retain that.
+            Assert.Equal($"v{Environment.Version}", RuntimeEnvironment.GetSystemVersion());
         }
 
 #pragma warning disable SYSLIB0019 // RuntimeEnvironment members SystemConfigurationFile, GetRuntimeInterfaceAsIntPtr, and GetRuntimeInterfaceAsObject are no longer supported and throw PlatformNotSupportedException.

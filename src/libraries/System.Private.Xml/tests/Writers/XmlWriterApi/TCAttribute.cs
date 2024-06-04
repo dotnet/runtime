@@ -135,7 +135,7 @@ namespace System.Xml.XmlWriterApiTests
                 }
             }
             CError.WriteLine("Did not throw exception");
-            Assert.True(false);
+            Assert.Fail();
         }
 
         // Duplicate attribute 'ns1:attr1'
@@ -159,7 +159,7 @@ namespace System.Xml.XmlWriterApiTests
                 }
             }
             CError.WriteLine("Did not throw exception");
-            Assert.True(false);
+            Assert.Fail();
         }
 
         // Attribute name = String.Empty should error
@@ -182,7 +182,7 @@ namespace System.Xml.XmlWriterApiTests
                 }
             }
             CError.WriteLine("Did not throw exception");
-            Assert.True(false);
+            Assert.Fail();
         }
 
         // Attribute name = null
@@ -205,7 +205,7 @@ namespace System.Xml.XmlWriterApiTests
                 }
             }
             CError.WriteLine("Did not throw exception");
-            Assert.True(false);
+            Assert.Fail();
         }
 
         // WriteAttribute with names Foo, fOo, foO, FOO
@@ -246,7 +246,7 @@ namespace System.Xml.XmlWriterApiTests
                 }
             }
             CError.WriteLine("Did not throw exception");
-            Assert.True(false);
+            Assert.Fail();
         }
 
         // SingleQuote in attribute value should be allowed
@@ -445,7 +445,7 @@ namespace System.Xml.XmlWriterApiTests
                 }
             }
             CError.WriteLine("Did not throw error for duplicate attrs");
-            Assert.True(false);
+            Assert.Fail();
         }
 
         // WriteStartAttribute(attr) when element has ns:attr
@@ -516,7 +516,7 @@ namespace System.Xml.XmlWriterApiTests
                     return;
                 }
             }
-            Assert.True(false);
+            Assert.Fail();
         }
     }
 }

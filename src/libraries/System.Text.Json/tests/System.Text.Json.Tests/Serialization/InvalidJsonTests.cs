@@ -202,7 +202,7 @@ namespace System.Text.Json.Serialization.Tests
             }
             else if (!type.IsGenericType)
             {
-                Assert.True(false, "Expected generic type");
+                Assert.Fail("Expected generic type");
                 yield break;
             }
             else
@@ -219,7 +219,7 @@ namespace System.Text.Json.Serialization.Tests
                 }
                 else
                 {
-                    Assert.True(false, "Expected List or Dictionary type");
+                    Assert.Fail("Expected List or Dictionary type");
                     yield break;
                 }
             }

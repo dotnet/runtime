@@ -3,12 +3,12 @@
 
 using System;
 using System.Buffers.Binary;
-using System.IO;
 using System.Diagnostics;
+using System.IO;
+using System.Runtime.CompilerServices;
+using System.Security;
 using System.Text;
 using System.Threading;
-using System.Security;
-using System.Runtime.CompilerServices;
 
 namespace System.Text
 {

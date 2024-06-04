@@ -26,6 +26,12 @@ namespace System.Text.Json.Serialization.Tests
             SimpleKeyedCollection kc = await Serializer.DeserializeWrapper<SimpleKeyedCollection>("[true]");
             Assert.Equal(1, kc.Count);
             Assert.True(kc[0]);
+
+            MyKeyedCollection mkc = await Serializer.DeserializeWrapper<MyKeyedCollection>("[1,2,3]");
+            Assert.Equal(3, mkc.Count);
+            Assert.Equal(1, mkc[1]);
+            Assert.Equal(2, mkc[2]);
+            Assert.Equal(3, mkc[3]);
         }
 
         [Fact]

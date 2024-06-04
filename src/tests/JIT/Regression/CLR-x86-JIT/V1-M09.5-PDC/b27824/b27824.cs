@@ -13,7 +13,7 @@ namespace Test
         static void GoToEnd() { throw new Exception(); }
 
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             bool param1 = false;
             bool[] local2 = new bool[7];
@@ -44,7 +44,6 @@ namespace Test
             catch (Exception)
             {
             }
-            return 100;
         }
     }
 }

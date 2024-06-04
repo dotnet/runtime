@@ -130,13 +130,17 @@ namespace Microsoft.Interop.Analyzers
                     }
                 }, OperationKind.Invocation);
 
+                bool enableGeneratedComInterfaceComImportInterop = context.Options.AnalyzerConfigOptionsProvider.GlobalOptions.TryGetValue("build_property.EnableGeneratedComInterfaceComImportInterop", out string enableSourceGeneratedBuiltInInteropOption)
+                    && bool.TryParse(enableSourceGeneratedBuiltInInteropOption, out bool enableSourceGeneratedBuiltInInterop)
+                    && enableSourceGeneratedBuiltInInterop;
+
                 var getObjectForIUnknown = marshalType.GetMembers("GetObjectForIUnknown")[0];
 
                 context.RegisterOperationAction(context =>
                 {
                     var operation = (IConversionOperation)context.Operation;
 
-                    if (operation.Type is INamedTypeSymbol { IsComImport: true })
+                    if (operation.Type is INamedTypeSymbol { IsComImport: true } && !enableGeneratedComInterfaceComImportInterop)
                     {
                         IOperation operand = operation.Operand;
                         if (operand is IConversionOperation { Type.SpecialType: SpecialType.System_Object } objConversion)
@@ -171,7 +175,7 @@ namespace Microsoft.Interop.Analyzers
                             {
                                 operand = objConversion.Operand;
                             }
-                            if (operand.Type is INamedTypeSymbol { IsComImport: true })
+                            if (operand.Type is INamedTypeSymbol { IsComImport: true } && !enableGeneratedComInterfaceComImportInterop)
                             {
                                 context.ReportDiagnostic(
                                     Diagnostic.Create(
@@ -181,6 +185,8 @@ namespace Microsoft.Interop.Analyzers
                             }
                             else if (operand is IInvocationOperation invocation && invocation.TargetMethod.Equals(getObjectForIUnknown, SymbolEqualityComparer.Default))
                             {
+                                // The returned value from Marshal.GetObjectForIUnknown will always be a built-in COM object, which can't be cast to a source-generated COM type,
+                                // even with the interop feature enabled.
                                 context.ReportDiagnostic(
                                     Diagnostic.Create(
                                         CastsBetweenRuntimeComAndSourceGeneratedComNotSupported,

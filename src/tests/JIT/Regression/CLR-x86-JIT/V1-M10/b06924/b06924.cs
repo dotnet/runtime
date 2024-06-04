@@ -12,11 +12,10 @@ namespace AAAA
     {
         private static int iTest = 5;
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             iTest++;
             Console.WriteLine("iTest is " + iTest);
-            return 100;
         }
     }
 }

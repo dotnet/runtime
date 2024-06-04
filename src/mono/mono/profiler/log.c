@@ -2902,7 +2902,7 @@ start_helper_thread (void)
 
 	mono_profhelper_setup_command_server (&log_profiler.server_socket, &log_profiler.command_port, "log");
 
-	if (!mono_native_thread_create (&log_profiler.helper_thread, helper_thread, NULL)) {
+	if (!mono_native_thread_create (&log_profiler.helper_thread, (gpointer)helper_thread, NULL)) {
 		mono_profiler_printf_err ("Could not start log profiler helper thread");
 		mono_profhelper_close_socket_fd (log_profiler.server_socket);
 		exit (1);
@@ -3038,7 +3038,7 @@ start_writer_thread (void)
 {
 	mono_atomic_store_i32 (&log_profiler.run_writer_thread, 1);
 
-	if (!mono_native_thread_create (&log_profiler.writer_thread, writer_thread, NULL)) {
+	if (!mono_native_thread_create (&log_profiler.writer_thread, (gpointer)writer_thread, NULL)) {
 		mono_profiler_printf_err ("Could not start log profiler writer thread");
 		exit (1);
 	}
@@ -3161,7 +3161,7 @@ start_dumper_thread (void)
 {
 	mono_atomic_store_i32 (&log_profiler.run_dumper_thread, 1);
 
-	if (!mono_native_thread_create (&log_profiler.dumper_thread, dumper_thread, NULL)) {
+	if (!mono_native_thread_create (&log_profiler.dumper_thread, (gpointer)dumper_thread, NULL)) {
 		mono_profiler_printf_err ("Could not start log profiler dumper thread");
 		exit (1);
 	}

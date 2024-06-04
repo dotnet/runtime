@@ -3,10 +3,13 @@
 
 #include <mono/utils/mono-publib.h>
 #include <mono/utils/mono-logger.h>
+#include <mono/metadata/appdomain.h>
 #include <mono/metadata/assembly.h>
+#include <mono/metadata/class.h>
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/mono-gc.h>
 #include <mono/metadata/exception.h>
+#include <mono/metadata/object.h>
 #include <mono/jit/jit.h>
 #include <mono/jit/mono-private-unstable.h>
 
@@ -22,6 +25,22 @@
 #include <sys/mman.h>
 #include <assert.h>
 #include <unistd.h>
+
+/********* exported symbols *********/
+
+/* JNI exports */
+
+void
+Java_net_dot_MonoRunner_setEnv (JNIEnv* env, jobject thiz, jstring j_key, jstring j_value);
+
+int
+Java_net_dot_MonoRunner_initRuntime (JNIEnv* env, jobject thiz, jstring j_files_dir, jstring j_cache_dir, jstring j_testresults_dir, jstring j_entryPointLibName, jobjectArray j_args, long current_local_time);
+
+// called from C#
+void
+invoke_external_native_api (void (*callback)(void));
+
+/********* implementation *********/
 
 static char *bundle_path;
 static char *executable;
@@ -124,7 +143,7 @@ free_aot_data (MonoAssembly *assembly, int size, void *user_data, void *handle)
     munmap (handle, size);
 }
 
-char *
+static char *
 strdup_printf (const char *msg, ...)
 {
     va_list args;
@@ -165,7 +184,7 @@ mono_droid_fetch_exception_property_string (MonoObject *obj, const char *name, b
     return str ? mono_string_to_utf8 (str) : NULL;
 }
 
-void
+static void
 unhandled_exception_handler (MonoObject *exc, void *user_data)
 {
     MonoClass *type = mono_object_get_class (exc);
@@ -181,7 +200,7 @@ unhandled_exception_handler (MonoObject *exc, void *user_data)
     exit (1);
 }
 
-void
+static void
 log_callback (const char *log_domain, const char *log_level, const char *message, mono_bool fatal, void *user_data)
 {
     LOG_INFO ("(%s %s) %s", log_domain, log_level, message);
@@ -195,14 +214,14 @@ log_callback (const char *log_domain, const char *log_level, const char *message
 void register_aot_modules (void);
 #endif
 
-void
+static void
 cleanup_runtime_config (MonovmRuntimeConfigArguments *args, void *user_data)
 {
     free (args);
     free (user_data);
 }
 
-int
+static int
 mono_droid_runtime_init (const char* executable, int managed_argc, char* managed_argv[], int local_date_time_offset)
 {
     // NOTE: these options can be set via command line args for adb or xharness, see AndroidSampleApp.csproj
@@ -215,7 +234,7 @@ mono_droid_runtime_init (const char* executable, int managed_argc, char* managed
 
     // build using DiagnosticPorts property in AndroidAppBuilder
     // or set DOTNET_DiagnosticPorts env via adb, xharness when undefined.
-    // NOTE, using DOTNET_DiagnosticPorts requires app build using AndroidAppBuilder and RuntimeComponents=diagnostics_tracing
+    // NOTE, using DOTNET_DiagnosticPorts requires app build using AndroidAppBuilder and RuntimeComponents to include 'diagnostics_tracing' component
 #ifdef DIAGNOSTIC_PORTS
     setenv ("DOTNET_DiagnosticPorts", DIAGNOSTIC_PORTS, true);
 #endif
@@ -266,7 +285,7 @@ mono_droid_runtime_init (const char* executable, int managed_argc, char* managed
     mono_set_crash_chaining (true);
 
     if (wait_for_debugger) {
-        char* options[] = { "--debugger-agent=transport=dt_socket,server=y,address=0.0.0.0:55555" };
+        char* options[] = { "--debugger-agent=transport=dt_socket,server=y,address=0.0.0.0:55556" };
         mono_jit_parse_options (1, options);
     }
 
@@ -348,7 +367,7 @@ Java_net_dot_MonoRunner_initRuntime (JNIEnv* env, jobject thiz, jstring j_files_
     for (int i = 0; i < args_len; ++i)
     {
         jstring j_arg = (*env)->GetObjectArrayElement(env, j_args, i);
-        managed_argv[i + 1] = (*env)->GetStringUTFChars(env, j_arg, NULL);
+        managed_argv[i + 1] = (char*)((*env)->GetStringUTFChars(env, j_arg, NULL));
     }
 
     int res = mono_droid_runtime_init (executable, managed_argc, managed_argv, current_local_time);

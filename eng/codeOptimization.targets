@@ -27,4 +27,17 @@
     </PropertyGroup>
   </Target>
 
+  <Target Name="AddReadyToRunPgoOptions" DependsOnTargets="ResolveRuntimeFilesFromLocalBuild" BeforeTargets="ResolveReadyToRunCompilers" Condition="'$(PublishReadyToRun)' == 'true'">
+    <PropertyGroup>
+      <!-- Only use mibc files if UsingToolIbcOptimization is false. Allows enabling/disabling using ibc instead of mibc data -->
+      <IncludeMibcFilesInReadyToRun Condition="'$(UsingToolIbcOptimization)' != 'true' and '$(EnableNgenOptimization)' == 'true' and '$(DotNetBuildSourceOnly)' != 'true'">true</IncludeMibcFilesInReadyToRun>
+    </PropertyGroup>
+    <ItemGroup>
+      <PublishReadyToRunPgoFiles Condition="'$(IncludeMibcFilesInReadyToRun)' == 'true'" Include="$(CoreCLRArtifactsPath)StandardOptimizationData.mibc"/>
+    </ItemGroup>
+
+    <PropertyGroup Condition="'$(IncludeMibcFilesInReadyToRun)' == 'true'">
+      <PublishReadyToRunCrossgen2ExtraArgs>$(PublishReadyToRunCrossgen2ExtraArgs);--embed-pgo-data</PublishReadyToRunCrossgen2ExtraArgs>
+    </PropertyGroup>
+  </Target>
 </Project>

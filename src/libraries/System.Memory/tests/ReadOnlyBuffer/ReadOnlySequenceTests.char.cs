@@ -80,7 +80,7 @@ namespace System.Memory.Tests
         {
             char[] array = Enumerable.Range(0, 255).Select(i => (char)i).ToArray();
             ReadOnlySequence<char> buffer = Factory.CreateWithContent(array);
-            Assert.Equal(array, buffer.ToString());
+            Assert.Equal(new string(array), buffer.ToString());
         }
 
         [Theory]
@@ -159,7 +159,7 @@ namespace System.Memory.Tests
             SequencePosition? result = buffer.PositionOf((char)searchFor);
 
             Assert.NotNull(result);
-            Assert.Equal(buffer.Slice(result.Value).ToArray(), raw.Substring(expectIndex));
+            Assert.Equal(buffer.Slice(result.Value).ToArray(), raw.Substring(expectIndex).ToCharArray());
         }
 
         [Fact]

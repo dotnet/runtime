@@ -3,7 +3,7 @@
 ## Usage:
 ## ./build-local.ps1 [StressConfiguration] [LibrariesConfiguration]
 
-$Version="8.0"
+$Version="9.0"
 $RepoRoot="$(git rev-parse --show-toplevel)"
 $DailyDotnetRoot= "./.dotnet-daily"
 

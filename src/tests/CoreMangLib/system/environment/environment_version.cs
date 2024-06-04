@@ -2,10 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
-class environment_version
+public class environment_version
 {
-    static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Version ver = Environment.Version;
         Console.WriteLine($"Environment.Version = {ver}");

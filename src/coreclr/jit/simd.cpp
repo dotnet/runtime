@@ -456,7 +456,8 @@ GenTree* Compiler::impSIMDPopStack()
 {
     StackEntry se   = impPopStack();
     GenTree*   tree = se.val;
-    assert(varTypeIsSIMD(tree));
+
+    assert(varTypeIsSIMDOrMask(tree));
 
     // Handle calls that may return the struct via a return buffer.
     if (tree->OperIs(GT_CALL, GT_RET_EXPR))
@@ -549,8 +550,6 @@ bool areFieldAddressesTheSame(GenTreeFieldAddr* op1, GenTreeFieldAddr* op2)
 bool Compiler::areFieldsContiguous(GenTreeIndir* op1, GenTreeIndir* op2)
 {
     assert(op1->isIndir() && op2->isIndir());
-    // TODO-1stClassStructs: delete once IND<struct> nodes are no more.
-    assert(!op1->TypeIs(TYP_STRUCT) && !op2->TypeIs(TYP_STRUCT));
 
     var_types         op1Type      = op1->TypeGet();
     var_types         op2Type      = op2->TypeGet();
@@ -739,9 +738,9 @@ GenTree* Compiler::CreateAddressNodeForSimdHWIntrinsicCreate(GenTree* tree, var_
 }
 
 //-------------------------------------------------------------------------------
-// impMarkContiguousSIMDFieldStores: Try to identify if there are contiguous
-// assignments from SIMD field to memory. If there are, then mark the related
-// lclvar so that it won't be promoted.
+// impMarkContiguousSIMDFieldStores: Try to identify if there are contiguous stores
+// from SIMD field to memory. If there are, then mark the related lclvar so that it
+// won't be promoted.
 //
 // Arguments:
 //      stmt - GenTree*. Input statement node.

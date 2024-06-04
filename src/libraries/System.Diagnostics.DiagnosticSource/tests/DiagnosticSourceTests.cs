@@ -116,6 +116,10 @@ namespace System.Diagnostics.Tests
             listener.Dispose();
             Assert.True(observer.Completed);
 
+            // Subscriptions are removed when listener is disposed and don't receive further notifications
+            listener.Write("AnotherNotification", null);
+            Assert.Equal(1, result.Count);
+
             // confirm that we can unsubscribe without crashing
             subscription.Dispose();
 
@@ -789,7 +793,7 @@ namespace System.Diagnostics.Tests
 
         public void OnError(Exception error)
         {
-            Assert.True(false, "Error happened on IObserver");
+            Assert.Fail("Error happened on IObserver");
         }
 
         public void OnNext(T value)

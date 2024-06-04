@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using Xunit;
 
 public abstract class AComponent { }
 public class Component : AComponent { }
@@ -18,12 +19,11 @@ public sealed class Concrete<T> : Abstract
     public override IReadOnlyList<T> New => throw null;
 }
 
-class Program
+public class Program
 {
-    static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         new Concrete<Component>();
-
-        return 100;
     }
 }

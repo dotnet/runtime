@@ -720,10 +720,17 @@ namespace System.Security.Cryptography.Xml
             return collection;
         }
 
+#if NET
+        internal static string EncodeHexString(byte[] sArray)
+        {
+            return Convert.ToHexString(sArray);
+        }
+#else
         internal static string EncodeHexString(byte[] sArray)
         {
             return HexConverter.ToString(sArray);
         }
+#endif
 
         internal static byte[] DecodeHexString(string s)
         {
@@ -754,7 +761,7 @@ namespace System.Security.Cryptography.Xml
         {
             AsymmetricAlgorithm? algorithm = (AsymmetricAlgorithm?)certificate.GetRSAPublicKey() ?? certificate.GetECDsaPublicKey();
 
-#if NETCOREAPP
+#if NET
             if (algorithm is null && !OperatingSystem.IsTvOS() && !OperatingSystem.IsIOS())
             {
                 algorithm = certificate.GetDSAPublicKey();

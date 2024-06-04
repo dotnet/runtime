@@ -10,6 +10,7 @@
 #include "UnixContext.h"
 #include "HardwareExceptions.h"
 #include "UnixSignals.h"
+#include "PalCreateDump.h"
 
 #if defined(HOST_APPLE)
 #include <mach/mach.h>
@@ -559,6 +560,8 @@ void SIGSEGVHandler(int code, siginfo_t *siginfo, void *context)
         // Restore the original or default handler and restart h/w exception
         RestoreSignalHandler(code, &g_previousSIGSEGV);
     }
+
+    PalCreateCrashDumpIfEnabled(code, siginfo);
 }
 
 // Handler for the SIGFPE signal
@@ -579,6 +582,8 @@ void SIGFPEHandler(int code, siginfo_t *siginfo, void *context)
         // Restore the original or default handler and restart h/w exception
         RestoreSignalHandler(code, &g_previousSIGFPE);
     }
+
+    PalCreateCrashDumpIfEnabled(code, siginfo);
 }
 
 // Initialize hardware exception handling

@@ -96,30 +96,19 @@ static DWORD Hash(TypeHandle declaringType, mdMethodDef token, Instantiation ins
 
     DWORD dwHash = 0x87654321;
 #define INST_HASH_ADD(_value) dwHash = ((dwHash << 5) + dwHash) ^ (_value)
+#ifdef TARGET_64BIT
+#define INST_HASH_ADDPOINTER(_value) INST_HASH_ADD((uint32_t)(uintptr_t)_value); INST_HASH_ADD((uint32_t)(((uintptr_t)_value) >> 32))
+#else
+#define INST_HASH_ADDPOINTER(_value) INST_HASH_ADD((uint32_t)(uintptr_t)_value);
+#endif
 
-    INST_HASH_ADD(declaringType.GetCl());
+    INST_HASH_ADDPOINTER(declaringType.AsPtr());
     INST_HASH_ADD(token);
 
     for (DWORD i = 0; i < inst.GetNumArgs(); i++)
     {
         TypeHandle thArg = inst[i];
-
-        if (thArg.GetMethodTable())
-        {
-            INST_HASH_ADD(thArg.GetCl());
-
-            Instantiation sArgInst = thArg.GetInstantiation();
-            for (DWORD j = 0; j < sArgInst.GetNumArgs(); j++)
-            {
-                TypeHandle thSubArg = sArgInst[j];
-                if (thSubArg.GetMethodTable())
-                    INST_HASH_ADD(thSubArg.GetCl());
-                else
-                    INST_HASH_ADD(thSubArg.GetSignatureCorElementType());
-            }
-        }
-        else
-            INST_HASH_ADD(thArg.GetSignatureCorElementType());
+        INST_HASH_ADDPOINTER(thArg.AsPtr());
     }
 
     return dwHash;

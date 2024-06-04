@@ -22,7 +22,7 @@ struct StructWithStructField
     public Struct16bytes structField;
 }
 
-public class DevDiv_714266
+public class DevDiv_718151
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     int foo(int a1, int a2, int a3, int a4, int a5, int a6, int a7, int a8, int a9, int a10, Struct16bytes s)
@@ -38,7 +38,7 @@ public class DevDiv_714266
         StructWithStructField s = new StructWithStructField();
         s.structField.a = 100;
 
-        DevDiv_714266 test = new DevDiv_714266();
+        DevDiv_718151 test = new DevDiv_718151();
         return test.foo(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, s.structField);
     }
 

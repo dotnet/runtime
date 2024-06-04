@@ -29,7 +29,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(nameMangler.CompilationUnitPrefix).Append("__VirtualInvokeMap");
+            sb.Append(nameMangler.CompilationUnitPrefix).Append("__VirtualInvokeMap"u8);
         }
 
         int INodeWithSize.Size => _size.Value;
@@ -39,15 +39,12 @@ namespace ILCompiler.DependencyAnalysis
         public override bool StaticDependenciesAreComputed => true;
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
-        public static bool NeedsVirtualInvokeInfo(MethodDesc method)
+        public static bool NeedsVirtualInvokeInfo(NodeFactory factory, MethodDesc method)
         {
             if (!method.IsVirtual)
                 return false;
 
-            if (method.IsFinal)
-                return false;
-
-            if (method.OwningType.IsSealed())
+            if (factory.DevirtualizationManager.IsEffectivelySealed(method))
                 return false;
 
             return true;
@@ -83,7 +80,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public static void GetVirtualInvokeMapDependencies(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
         {
-            if (NeedsVirtualInvokeInfo(method))
+            if (NeedsVirtualInvokeInfo(factory, method))
             {
                 dependencies ??= new DependencyList();
 
@@ -98,7 +95,7 @@ namespace ILCompiler.DependencyAnalysis
                 if (!method.HasInstantiation)
                 {
                     MethodDesc slotDefiningMethod = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(method);
-                    if (!factory.VTable(slotDefiningMethod.OwningType).HasFixedSlots)
+                    if (!factory.VTable(slotDefiningMethod.OwningType).HasKnownVirtualMethodUse)
                     {
                         dependencies.Add(factory.VirtualMethodUse(slotDefiningMethod), "Reflection virtual invoke method");
                     }
@@ -137,7 +134,7 @@ namespace ILCompiler.DependencyAnalysis
                     continue;
 
                 // Only virtual methods are interesting
-                if (!NeedsVirtualInvokeInfo(method))
+                if (!NeedsVirtualInvokeInfo(factory, method))
                     continue;
 
                 //

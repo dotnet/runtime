@@ -1,0 +1,21 @@
+project(SwiftErrorHandling)
+include ("${CLR_INTEROP_TEST_ROOT}/Interop.cmake")
+
+set(SOURCE SwiftErrorHandling)
+
+if (NOT SWIFT_COMPILER_TARGET AND CLR_CMAKE_TARGET_OSX)
+    set(SWIFT_PLATFORM "macosx")
+    set(SWIFT_PLATFORM_SUFFIX "")
+    set(SWIFT_DEPLOYMENT_TARGET ${CMAKE_OSX_DEPLOYMENT_TARGET})
+    set(SWIFT_COMPILER_TARGET "${CMAKE_OSX_ARCHITECTURES}-apple-${SWIFT_PLATFORM}${SWIFT_DEPLOYMENT_TARGET}${SWIFT_PLATFORM_SUFFIX}")
+endif()
+
+add_custom_target(${SOURCE} ALL
+    COMMAND xcrun swiftc -target ${SWIFT_COMPILER_TARGET} -emit-library ${CMAKE_CURRENT_SOURCE_DIR}/${SOURCE}.swift -o ${CMAKE_CURRENT_BINARY_DIR}/lib${SOURCE}.dylib
+    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${SOURCE}.swift
+    COMMENT "Generating ${SOURCE} library"
+)
+
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/lib${SOURCE}.dylib
+    DESTINATION bin
+)

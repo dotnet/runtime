@@ -31,9 +31,6 @@ namespace System.Text.Json.Serialization.Metadata
         private DefaultJsonTypeInfoResolver(bool mutable)
         {
             _mutable = mutable;
-
-            s_defaultFactoryConverters ??= GetDefaultFactoryConverters();
-            s_defaultSimpleConverters ??= GetDefaultSimpleConverters();
         }
 
         /// <summary>
@@ -127,21 +124,22 @@ namespace System.Text.Json.Serialization.Metadata
             // provided that no user extensions have been made on the class.
             => _modifiers is null or { Count: 0 } && GetType() == typeof(DefaultJsonTypeInfoResolver);
 
-        internal static bool IsDefaultInstanceRooted => s_defaultInstance is not null;
-        private static DefaultJsonTypeInfoResolver? s_defaultInstance;
-
-        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
-        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
-        internal static DefaultJsonTypeInfoResolver RootDefaultInstance()
+        internal static DefaultJsonTypeInfoResolver DefaultInstance
         {
-            if (s_defaultInstance is DefaultJsonTypeInfoResolver result)
+            [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+            [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
+            get
             {
-                return result;
-            }
+                if (s_defaultInstance is DefaultJsonTypeInfoResolver result)
+                {
+                    return result;
+                }
 
-            var newInstance = new DefaultJsonTypeInfoResolver(mutable: false);
-            DefaultJsonTypeInfoResolver? originalInstance = Interlocked.CompareExchange(ref s_defaultInstance, newInstance, comparand: null);
-            return originalInstance ?? newInstance;
+                var newInstance = new DefaultJsonTypeInfoResolver(mutable: false);
+                return Interlocked.CompareExchange(ref s_defaultInstance, newInstance, comparand: null) ?? newInstance;
+            }
         }
+
+        private static DefaultJsonTypeInfoResolver? s_defaultInstance;
     }
 }

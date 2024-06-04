@@ -13,10 +13,9 @@ public class TestClass13
         Console.WriteLine();
     }
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         TestClass13 objTestClass13 = new TestClass13();
         objTestClass13.Method0();
-        return 100;
     }
 }

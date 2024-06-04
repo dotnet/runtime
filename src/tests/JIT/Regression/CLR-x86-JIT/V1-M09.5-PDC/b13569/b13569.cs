@@ -7,11 +7,9 @@ using Xunit;
 
 public class Foo
 {
-
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
-
         const int a = 0x7fffffff; // highest positive int
         const int b = -a - 1; // lowest negative int
         int intMin = b;
@@ -57,9 +55,5 @@ public class Foo
         {
             Console.WriteLine(f);
         }
-
-        return 100;
-
     }
-
 }

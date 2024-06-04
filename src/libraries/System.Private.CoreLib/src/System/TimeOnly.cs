@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Numerics;
 using System.Globalization;
-using System.ComponentModel;
+using System.Numerics;
 
 namespace System
 {
@@ -44,7 +44,7 @@ namespace System
         /// </summary>
         /// <param name="hour">The hours (0 through 23).</param>
         /// <param name="minute">The minutes (0 through 59).</param>
-        public TimeOnly(int hour, int minute) : this(DateTime.TimeToTicks(hour, minute, 0, 0)) {}
+        public TimeOnly(int hour, int minute) : this(DateTime.TimeToTicks(hour, minute, 0, 0)) { }
 
         /// <summary>
         /// Initializes a new instance of the timeOnly structure to the specified hour, minute, and second.
@@ -52,7 +52,7 @@ namespace System
         /// <param name="hour">The hours (0 through 23).</param>
         /// <param name="minute">The minutes (0 through 59).</param>
         /// <param name="second">The seconds (0 through 59).</param>
-        public TimeOnly(int hour, int minute, int second) : this(DateTime.TimeToTicks(hour, minute, second, 0)) {}
+        public TimeOnly(int hour, int minute, int second) : this(DateTime.TimeToTicks(hour, minute, second, 0)) { }
 
         /// <summary>
         /// Initializes a new instance of the timeOnly structure to the specified hour, minute, second, and millisecond.
@@ -759,7 +759,7 @@ namespace System
                 // flags from the caller and return the result.
                 DateTimeResult dtResult = default;
                 dtResult.Init(s);
-                if (DateTimeParse.TryParseExact(s, format, dtfiToUse, style, ref dtResult) &&  ((dtResult.flags & ParseFlagsTimeMask) == 0))
+                if (DateTimeParse.TryParseExact(s, format, dtfiToUse, style, ref dtResult) && ((dtResult.flags & ParseFlagsTimeMask) == 0))
                 {
                     result = new TimeOnly(dtResult.parsedDate.TimeOfDay.Ticks);
                     return ParseFailureKind.None;

@@ -221,12 +221,8 @@ LEAF_END RhpCheckedAssignRef\EXPORT_REG_NAME, _TEXT
 // just one write barrier that assumes the input register is RSI.
 DEFINE_CHECKED_WRITE_BARRIER RSI, ESI
 
-// WARNING: Code in EHHelpers.cpp makes assumptions about write barrier code, in particular:
-// - Function "InWriteBarrierHelper" assumes an AV due to passed in null pointer will happen at RhpCheckedLockCmpXchgAVLocation
-// - Function "UnwindSimpleHelperToCaller" assumes the stack contains just the pushed return address
 LEAF_ENTRY RhpCheckedLockCmpXchg, _TEXT
     mov             rax, rdx
-ALTERNATE_ENTRY RhpCheckedLockCmpXchgAVLocation
     lock cmpxchg    [rdi], rsi
     jne             LOCAL_LABEL(RhpCheckedLockCmpXchg_NoBarrierRequired_RSI)
 
@@ -234,15 +230,11 @@ ALTERNATE_ENTRY RhpCheckedLockCmpXchgAVLocation
 
 LEAF_END RhpCheckedLockCmpXchg, _TEXT
 
-// WARNING: Code in EHHelpers.cpp makes assumptions about write barrier code, in particular:
-// - Function "InWriteBarrierHelper" assumes an AV due to passed in null pointer will happen at RhpCheckedXchgAVLocation
-// - Function "UnwindSimpleHelperToCaller" assumes the stack contains just the pushed return address
 LEAF_ENTRY RhpCheckedXchg, _TEXT
 
     // Setup rax with the new object for the exchange, that way it will automatically hold the correct result
     // afterwards and we can leave rdx unaltered ready for the GC write barrier below.
     mov             rax, rsi
-ALTERNATE_ENTRY RhpCheckedXchgAVLocation
     xchg            [rdi], rax
 
     DEFINE_CHECKED_WRITE_BARRIER_CORE RhpCheckedXchg, RSI
@@ -258,7 +250,10 @@ LEAF_END RhpCheckedXchg, _TEXT
 //
 // On exit:
 //      rdi, rsi are incremented by 8,
-//      rcx, r10, r11: trashed
+//      rcx, rax: trashed
+//
+// NOTE: Keep in sync with RBM_CALLEE_TRASH_WRITEBARRIER_BYREF and RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF
+//       if you add more trashed registers.
 //
 // WARNING: Code in EHHelpers.cpp makes assumptions about write barrier code, in particular:
 // - Function "InWriteBarrierHelper" assumes an AV due to passed in null pointer will happen at RhpByRefAssignRefAVLocation1/2
@@ -280,16 +275,15 @@ ALTERNATE_ENTRY RhpByRefAssignRefAVLocation2
     UPDATE_GC_SHADOW BASENAME, rcx, rdi
 
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-    mov     r11, [C_VAR(g_write_watch_table)]
-    cmp     r11, 0x0
+    cmp     qword ptr [C_VAR(g_write_watch_table)], 0x0
     je      LOCAL_LABEL(RhpByRefAssignRef_CheckCardTable)
 
-    mov     r10, rdi
-    shr     r10, 0xC // SoftwareWriteWatch::AddressToTableByteIndexShift
-    add     r10, r11
-    cmp     byte ptr [r10], 0x0
+    mov     rax, rdi
+    shr     rax, 0xC // SoftwareWriteWatch::AddressToTableByteIndexShift
+    add     rax, [C_VAR(g_write_watch_table)]
+    cmp     byte ptr [rax], 0x0
     jne     LOCAL_LABEL(RhpByRefAssignRef_CheckCardTable)
-    mov     byte ptr [r10], 0xFF
+    mov     byte ptr [rax], 0xFF
 #endif
 
 LOCAL_LABEL(RhpByRefAssignRef_CheckCardTable):
@@ -309,12 +303,12 @@ LOCAL_LABEL(RhpByRefAssignRef_CheckCardTable):
     // an entire byte in the card table since it's quicker than messing around with bitmasks and we only write
     // the byte if it hasn't already been done since writes are expensive and impact scaling.
     shr     rcx, 0x0B
-    mov     r10, [C_VAR(g_card_table)]
-    cmp     byte ptr [rcx + r10], 0x0FF
+    mov     rax, [C_VAR(g_card_table)]
+    cmp     byte ptr [rcx + rax], 0x0FF
     je      LOCAL_LABEL(RhpByRefAssignRef_NoBarrierRequired)
 
 // We get here if it's necessary to update the card table.
-    mov     byte ptr [rcx + r10], 0xFF
+    mov     byte ptr [rcx + rax], 0xFF
 
 #ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
     // Shift rcx by 0x0A more to get the card bundle byte (we shifted by 0x0B already)

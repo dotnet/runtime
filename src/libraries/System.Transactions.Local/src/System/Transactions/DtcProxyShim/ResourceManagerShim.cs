@@ -3,8 +3,8 @@
 
 using System;
 using System.Runtime.InteropServices;
-using System.Transactions.Oletx;
 using System.Transactions.DtcProxyShim.DtcInterfaces;
+using System.Transactions.Oletx;
 
 namespace System.Transactions.DtcProxyShim;
 

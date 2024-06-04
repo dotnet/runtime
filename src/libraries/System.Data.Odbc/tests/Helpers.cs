@@ -16,7 +16,7 @@ namespace System.Data.Odbc.Tests
 #if TargetsWindows
                 !PlatformDetection.IsWindowsNanoServer && (!PlatformDetection.IsWindowsServerCore || Environment.Is64BitProcess);
 #else
-                NativeLibrary.TryLoad(Interop.Libraries.Odbc32, out _);
+                NativeLibrary.TryLoad(Interop.Odbc.GetNativeLibraryName(), out _);
 #endif
     }
 }

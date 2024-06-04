@@ -3,11 +3,11 @@
 
 using System;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
-using System.Text;
 using System.Resources;
 using System.Runtime.Serialization;
-using System.Diagnostics;
+using System.Text;
 
 namespace System.Xml.Schema
 {

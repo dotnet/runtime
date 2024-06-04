@@ -8,7 +8,7 @@ To help enable an easy workflow and reduce the number of formatting changes requ
 
 ### C#/VB
 
-C# and VB code in the repository use the built-in Roslyn support for EditorConfig to enable auto-formatting in many IDEs. As a result, no additional tools are required to enable keeping your code formatted. If you want to use `dotnet format` to do formatting or are using the git pre-commit hook mentioned later in this document, you can run `./dotnet.cmd tool restore` or `./dotnet.sh tool restore` from the root of the repository to enable the `dotnet format` command.
+C# and VB code in the repository use the built-in Roslyn support for EditorConfig to enable auto-formatting in many IDEs. As a result, no additional tools are required to enable keeping your code formatted. You can also use the `dotnet format` command from the dotnet SDK to do formatting or use the git pre-commit hook mentioned later in this document.
 
 ### C/C++
 

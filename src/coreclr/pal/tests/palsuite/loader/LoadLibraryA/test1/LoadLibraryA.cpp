@@ -6,7 +6,7 @@
 ** Source:  loadlibrarya.c
 **
 ** Purpose: Positive test the LoadLibrary API.
-**          Call LoadLibrary to map a module into the calling 
+**          Call LoadLibrary to map a module into the calling
 **          process address space(DLL file)
 **
 **
@@ -34,7 +34,7 @@ PALTEST(loader_LoadLibraryA_test1_paltest_loadlibrarya_test1, "loader/LoadLibrar
     }
 
     /* load a module */
-    ModuleHandle = LoadLibrary(ModuleName);
+    ModuleHandle = LoadLibraryExA(ModuleName, NULL, 0);
     if(!ModuleHandle)
     {
         Fail("Failed to call LoadLibrary API!\n");

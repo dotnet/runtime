@@ -21,7 +21,7 @@ namespace DefaultNamespace
          * via the command line.
          */
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             int i = 10;
             int j = i - 5;              // j = 5
@@ -36,7 +36,6 @@ namespace DefaultNamespace
             sum = Add(40, j);  // sum = 43
 
             x();
-            return 100;
         }
 
         public static int Add(int a, int b)

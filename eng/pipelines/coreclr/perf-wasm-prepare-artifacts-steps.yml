@@ -16,7 +16,8 @@ steps:
       cp -r $(Build.SourcesDirectory)/artifacts/bin/dotnet-latest $(Build.SourcesDirectory)/artifacts/staging &&
       cp -r $(Build.SourcesDirectory)/artifacts/bin/microsoft.netcore.app.runtime.browser-wasm $(Build.SourcesDirectory)/artifacts/staging &&
       cp -r $(Build.SourcesDirectory)/artifacts/bin/microsoft.netcore.app.ref $(Build.SourcesDirectory)/artifacts/staging &&
-      cp -r $(Build.SourcesDirectory)/artifacts/packages/${{ parameters.configForBuild }}/Shipping/Microsoft.NET.Sdk.WebAssembly.Pack* $(Build.SourcesDirectory)/artifacts/staging/built-nugets
+      cp -r $(Build.SourcesDirectory)/artifacts/packages/${{ parameters.configForBuild }}/Shipping/Microsoft.NET.Sdk.WebAssembly.Pack* $(Build.SourcesDirectory)/artifacts/staging/built-nugets &&
+      cp -r $(Build.SourcesDirectory)/artifacts/packages/${{ parameters.configForBuild }}/Shipping/Microsoft.NETCore.App.Ref* $(Build.SourcesDirectory)/artifacts/staging/built-nugets
     displayName: "Prepare artifacts staging directory"
 
   - template: /eng/pipelines/common/upload-artifact-step.yml

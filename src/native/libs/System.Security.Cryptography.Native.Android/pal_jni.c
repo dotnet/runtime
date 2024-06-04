@@ -86,6 +86,7 @@ jmethodID g_SSLParametersSetServerNames;
 // com/android/org/conscrypt/OpenSSLEngineImpl
 jclass    g_ConscryptOpenSSLEngineImplClass;
 jfieldID  g_ConscryptOpenSSLEngineImplSslParametersField;
+jfieldID  g_ConscryptOpenSSLEngineImplHandshakeSessionField;
 
 // com/android/org/conscrypt/SSLParametersImpl
 jclass    g_ConscryptSSLParametersImplClass;
@@ -627,6 +628,17 @@ jfieldID GetField(JNIEnv *env, bool isStatic, jclass klass, const char* name, co
     return fid;
 }
 
+jfieldID GetOptionalField(JNIEnv *env, bool isStatic, jclass klass, const char* name, const char* sig)
+{
+    jfieldID fid = isStatic ? (*env)->GetStaticFieldID(env, klass, name, sig) : (*env)->GetFieldID(env, klass, name, sig);
+    if (!fid) {
+        LOG_INFO("optional field %s %s was not found", name, sig);
+        // Failing to find an optional field causes an exception state, which we need to clear.
+        TryClearJNIExceptions(env);
+    }
+    return fid;
+}
+
 static void DetachThreadFromJNI(void* unused)
 {
     LOG_DEBUG("Detaching thread from JNI");
@@ -761,6 +773,7 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     if (g_ConscryptOpenSSLEngineImplClass != NULL)
     {
         g_ConscryptOpenSSLEngineImplSslParametersField =  GetField(env, false,  g_ConscryptOpenSSLEngineImplClass, "sslParameters", "Lcom/android/org/conscrypt/SSLParametersImpl;");
+        g_ConscryptOpenSSLEngineImplHandshakeSessionField = GetOptionalField(env, false,  g_ConscryptOpenSSLEngineImplClass, "handshakeSession", "Lcom/android/org/conscrypt/OpenSSLSessionImpl;");
 
         g_ConscryptSSLParametersImplClass = GetClassGRef(env, "com/android/org/conscrypt/SSLParametersImpl");
         g_ConscryptSSLParametersImplSetUseSni = GetMethod(env, false,  g_ConscryptSSLParametersImplClass, "setUseSni", "(Z)V");

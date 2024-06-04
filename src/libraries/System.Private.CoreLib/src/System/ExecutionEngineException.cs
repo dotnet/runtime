@@ -21,13 +21,13 @@ namespace System
         }
 
         public ExecutionEngineException(string? message)
-            : base(message)
+            : base(message ?? SR.Arg_ExecutionEngineException)
         {
             HResult = HResults.COR_E_EXECUTIONENGINE;
         }
 
         public ExecutionEngineException(string? message, Exception? innerException)
-            : base(message, innerException)
+            : base(message ?? SR.Arg_ExecutionEngineException, innerException)
         {
             HResult = HResults.COR_E_EXECUTIONENGINE;
         }

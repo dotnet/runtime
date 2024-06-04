@@ -5,6 +5,7 @@ using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Collections.ObjectModel;
 using System.Reflection;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
@@ -117,6 +118,9 @@ namespace System.Text.Json.SourceGeneration
         public INamedTypeSymbol? IImmutableDictionaryType => GetOrResolveType(typeof(IImmutableDictionary<,>), ref _IImmutableDictionaryType);
         private Option<INamedTypeSymbol?> _IImmutableDictionaryType;
 
+        public INamedTypeSymbol? KeyedCollectionType => GetOrResolveType(typeof(KeyedCollection<,>), ref _KeyedCollectionType);
+        private Option<INamedTypeSymbol?> _KeyedCollectionType;
+
         public INamedTypeSymbol ObjectType => _ObjectType ??= Compilation.GetSpecialType(SpecialType.System_Object);
         private INamedTypeSymbol? _ObjectType;
 
@@ -134,6 +138,15 @@ namespace System.Text.Json.SourceGeneration
 
         public INamedTypeSymbol? TimeOnlyType => GetOrResolveType("System.TimeOnly", ref _TimeOnlyType);
         private Option<INamedTypeSymbol?> _TimeOnlyType;
+
+        public INamedTypeSymbol? Int128Type => GetOrResolveType("System.Int128", ref _Int128Type);
+        private Option<INamedTypeSymbol?> _Int128Type;
+
+        public INamedTypeSymbol? UInt128Type => GetOrResolveType("System.UInt128", ref _UInt128Type);
+        private Option<INamedTypeSymbol?> _UInt128Type;
+
+        public INamedTypeSymbol? HalfType => GetOrResolveType("System.Half", ref _HalfType);
+        private Option<INamedTypeSymbol?> _HalfType;
 
         public IArrayTypeSymbol? ByteArrayType => _ByteArrayType.HasValue
             ? _ByteArrayType.Value
@@ -217,6 +230,9 @@ namespace System.Text.Json.SourceGeneration
 
         public INamedTypeSymbol? JsonStringEnumConverterType => GetOrResolveType("System.Text.Json.Serialization.JsonStringEnumConverter", ref _JsonStringEnumConverterType);
         private Option<INamedTypeSymbol?> _JsonStringEnumConverterType;
+
+        public INamedTypeSymbol? JsonStringEnumConverterOfTType => GetOrResolveType("System.Text.Json.Serialization.JsonStringEnumConverter`1", ref _JsonStringEnumConverterOfTType);
+        private Option<INamedTypeSymbol?> _JsonStringEnumConverterOfTType;
 
         public INamedTypeSymbol? IJsonOnSerializingType => GetOrResolveType(JsonConstants.IJsonOnSerializingFullName, ref _IJsonOnSerializingType);
         private Option<INamedTypeSymbol?> _IJsonOnSerializingType;

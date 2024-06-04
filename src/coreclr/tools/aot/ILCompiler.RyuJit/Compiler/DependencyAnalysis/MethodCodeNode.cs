@@ -58,6 +58,8 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool StaticDependenciesAreComputed => _methodCode != null;
 
+        public override bool InterestingForDynamicDependencyAnalysis => _method.HasInstantiation || _method.OwningType.HasInstantiation;
+
         public virtual void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.GetMangledMethodName(_method));
@@ -91,7 +93,7 @@ namespace ILCompiler.DependencyAnalysis
                 dependencies.Add(_ehInfo, "Exception handling information");
             }
 
-            if (MethodAssociatedDataNode.MethodHasAssociatedData(factory, this))
+            if (MethodAssociatedDataNode.MethodHasAssociatedData(this))
             {
                 dependencies ??= new DependencyList();
                 dependencies.Add(new DependencyListEntry(factory.MethodAssociatedData(this), "Method associated data"));
@@ -121,7 +123,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public ISymbolNode GetAssociatedDataNode(NodeFactory factory)
         {
-            if (MethodAssociatedDataNode.MethodHasAssociatedData(factory, this))
+            if (MethodAssociatedDataNode.MethodHasAssociatedData(this))
                 return factory.MethodAssociatedData(this);
 
             return null;
@@ -195,12 +197,23 @@ namespace ILCompiler.DependencyAnalysis
                 i++;
             }
 
-            var localNames = new string[_localTypes.Length];
-
-            foreach (var local in _debugInfo.GetLocalVariables())
+            string[] localNames;
+            if (_localTypes.Length > 0)
             {
-                if (!local.CompilerGenerated && local.Slot < localNames.Length)
-                    localNames[local.Slot] = local.Name;
+                localNames = new string[_localTypes.Length];
+                var localVariables = _debugInfo.GetLocalVariables();
+                if (localVariables != null)
+                {
+                    foreach (var local in localVariables)
+                    {
+                        if (!local.CompilerGenerated && local.Slot < localNames.Length)
+                            localNames[local.Slot] = local.Name;
+                    }
+                }
+            }
+            else
+            {
+                localNames = Array.Empty<string>();
             }
 
             foreach (var varInfo in _debugVarInfos)

@@ -27,14 +27,14 @@ public:
 
 public: // IDispatch
         virtual HRESULT STDMETHODCALLTYPE GetTypeInfoCount(
-            /* [out] */ __RPC__out UINT *pctinfo)
+            /* [out] */ __RPC__out uint32_t *pctinfo)
         {
             *pctinfo = 0;
             return S_OK;
         }
 
         virtual HRESULT STDMETHODCALLTYPE GetTypeInfo(
-            /* [in] */ UINT iTInfo,
+            /* [in] */ uint32_t iTInfo,
             /* [in] */ LCID lcid,
             /* [out] */ __RPC__deref_out_opt ITypeInfo **ppTInfo)
         {
@@ -44,13 +44,13 @@ public: // IDispatch
         virtual HRESULT STDMETHODCALLTYPE GetIDsOfNames(
             /* [in] */ __RPC__in REFIID,
             /* [size_is][in] */ __RPC__in_ecount_full(cNames) LPOLESTR *rgszNames,
-            /* [range][in] */ __RPC__in_range(0,16384) UINT cNames,
+            /* [range][in] */ __RPC__in_range(0,16384) uint32_t cNames,
             /* [in] */ LCID,
             /* [size_is][out] */ __RPC__out_ecount_full(cNames) DISPID *rgDispId)
         {
             bool containsUnknown = false;
             DISPID *curr = rgDispId;
-            for (UINT i = 0; i < cNames; ++i)
+            for (uint32_t i = 0; i < cNames; ++i)
             {
                 *curr = DISPID_UNKNOWN;
                 LPOLESTR name = rgszNames[i];
@@ -75,11 +75,11 @@ public: // IDispatch
             /* [annotation][in] */ _In_  DISPID dispIdMember,
             /* [annotation][in] */ _In_  REFIID riid,
             /* [annotation][in] */ _In_  LCID lcid,
-            /* [annotation][in] */ _In_  WORD wFlags,
+            /* [annotation][in] */ _In_  uint16_t wFlags,
             /* [annotation][out][in] */ _In_  DISPPARAMS *pDispParams,
             /* [annotation][out] */ _Out_opt_  VARIANT *pVarResult,
             /* [annotation][out] */ _Out_opt_  EXCEPINFO *pExcepInfo,
-            /* [annotation][out] */ _Out_opt_  UINT *puArgErr)
+            /* [annotation][out] */ _Out_opt_  uint32_t *puArgErr)
         {
             //
             // Note that arguments are received in reverse order for IDispatch::Invoke()

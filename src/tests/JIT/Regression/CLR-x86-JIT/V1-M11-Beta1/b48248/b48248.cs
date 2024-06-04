@@ -28,13 +28,11 @@ public struct test
         int7 = i;
     }
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         test t = new test();
 
         if (t.str != null)
             Console.WriteLine("Got String");
-
-        return 100;
     }
 }

@@ -1,0 +1,41 @@
+{
+  "solution": {
+    "path": "..\\..\\System.Runtime.sln",
+    "projects": [
+      "..\\..\\coreclr\\System.Private.CoreLib\\System.Private.CoreLib.csproj",
+      "..\\..\\tools\\illink\\src\\ILLink.CodeFix\\ILLink.CodeFixProvider.csproj",
+      "..\\..\\tools\\illink\\src\\ILLink.RoslynAnalyzer\\ILLink.RoslynAnalyzer.csproj",
+      "..\\..\\tools\\illink\\src\\ILLink.Tasks\\ILLink.Tasks.csproj",
+      "..\\..\\tools\\illink\\src\\linker\\Mono.Linker.csproj",
+      "..\\..\\tools\\illink\\src\\linker\\ref\\Mono.Linker.csproj",
+      "..\\Common\\tests\\TestUtilities\\TestUtilities.csproj",
+      "..\\System.Private.CoreLib\\gen\\System.Private.CoreLib.Generators.csproj",
+      "..\\System.Private.CoreLib\\ref\\System.Private.CoreLib.csproj",
+      "..\\System.Private.Uri\\src\\System.Private.Uri.csproj",
+      "..\\System.Runtime.InteropServices\\gen\\ComInterfaceGenerator\\ComInterfaceGenerator.csproj",
+      "..\\System.Runtime.InteropServices\\gen\\LibraryImportGenerator\\LibraryImportGenerator.csproj",
+      "..\\System.Runtime.InteropServices\\gen\\Microsoft.Interop.SourceGeneration\\Microsoft.Interop.SourceGeneration.csproj",
+      "ref\\System.Runtime.csproj",
+      "src\\System.Runtime.csproj",
+      "tests\\System.Reflection.Tests\\AssemblyVersion\\System.Reflection.Tests.Assembly_0_0_0_0.csproj",
+      "tests\\System.Reflection.Tests\\AssemblyVersion\\System.Reflection.Tests.Assembly_1_0_0_0.csproj",
+      "tests\\System.Reflection.Tests\\AssemblyVersion\\System.Reflection.Tests.Assembly_1_1_0_0.csproj",
+      "tests\\System.Reflection.Tests\\AssemblyVersion\\System.Reflection.Tests.Assembly_1_1_1_0.csproj",
+      "tests\\System.Reflection.Tests\\AssemblyVersion\\System.Reflection.Tests.Assembly_1_1_1_2.csproj",
+      "tests\\System.Reflection.Tests\\AssemblyVersion\\System.Reflection.Tests.Assembly_1_1_1_3.csproj",
+      "tests\\System.Reflection.Tests\\AssemblyVersion\\System.Reflection.Tests.Assembly_1_1_2_0.csproj",
+      "tests\\System.Reflection.Tests\\AssemblyVersion\\System.Reflection.Tests.Assembly_1_1_3_0.csproj",
+      "tests\\System.Reflection.Tests\\AssemblyVersion\\System.Reflection.Tests.Assembly_1_2_0_0.csproj",
+      "tests\\System.Reflection.Tests\\AssemblyVersion\\System.Reflection.Tests.Assembly_1_3_0_0.csproj",
+      "tests\\System.Reflection.Tests\\AssemblyVersion\\System.Reflection.Tests.Assembly_3_0_0_0.csproj",
+      "tests\\System.Reflection.Tests\\CoreCLR\\System.Reflection.CoreCLR.Tests.csproj",
+      "tests\\System.Reflection.Tests\\ForwardedTypesAssembly\\ForwardedTypesAssembly.csproj",
+      "tests\\System.Reflection.Tests\\InvokeEmit\\System.Reflection.InvokeEmit.Tests.csproj",
+      "tests\\System.Reflection.Tests\\InvokeInterpreted\\System.Reflection.InvokeInterpreted.Tests.csproj",
+      "tests\\System.Reflection.Tests\\System.Reflection.Tests.csproj",
+      "tests\\System.Reflection.Tests\\TestAssembly\\TestAssembly.csproj",
+      "tests\\System.Reflection.Tests\\TestExe\\System.Reflection.TestExe.csproj",
+      "tests\\System.Reflection.Tests\\UnloadableAssembly\\UnloadableAssembly.csproj"
+    ]
+  }
+}

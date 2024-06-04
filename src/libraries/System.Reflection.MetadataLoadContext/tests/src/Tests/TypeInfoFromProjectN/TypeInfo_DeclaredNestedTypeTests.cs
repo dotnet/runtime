@@ -113,11 +113,11 @@ namespace System.Reflection.Tests
 
             if (present && (!found))
             {
-                Assert.False(true, string.Format("Nested Type {0} not found", name));
+                Assert.Fail(string.Format("Nested Type {0} not found", name));
             }
             else if ((!present) && found)
             {
-                Assert.False(true, string.Format("Nested Type {0} was not expected to be found", name));
+                Assert.Fail(string.Format("Nested Type {0} was not expected to be found", name));
             }
         }
     }

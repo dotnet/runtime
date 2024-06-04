@@ -20,7 +20,7 @@ namespace Microsoft.Interop
     {
         private BoundGenerators() { }
 
-        public static BoundGenerators Create(ImmutableArray<TypePositionInfo> elementTypeInfo, IMarshallingGeneratorFactory generatorFactory, StubCodeContext context, IMarshallingGenerator fallbackGenerator, out ImmutableArray<GeneratorDiagnostic> generatorBindingDiagnostics)
+        public static BoundGenerators Create(ImmutableArray<TypePositionInfo> elementTypeInfo, IMarshallingGeneratorResolver generatorResolver, StubCodeContext context, IMarshallingGenerator fallbackGenerator, out ImmutableArray<GeneratorDiagnostic> generatorBindingDiagnostics)
         {
             BoundGenerator defaultBoundGenerator = new BoundGenerator(new TypePositionInfo(SpecialTypeInfo.Void, NoMarshallingInfo.Instance), fallbackGenerator);
             BoundGenerators result = new();
@@ -45,7 +45,7 @@ namespace Microsoft.Interop
                     continue;
                 }
 
-                BoundGenerator generator = new BoundGenerator(argType, CreateGenerator(argType, generatorFactory));
+                BoundGenerator generator = new BoundGenerator(argType, CreateGenerator(argType, generatorResolver));
 
                 signatureMarshallers.Add(generator);
                 if (argType.IsManagedReturnPosition)
@@ -84,11 +84,11 @@ namespace Microsoft.Interop
                     };
                 }
 
-                IMarshallingGeneratorFactory exceptionHandlerFactory = new ExtendedInvariantsValidator(nativeReturnMarshaller.Generator.AsNativeType(nativeReturnMarshaller.TypeInfo), generatorFactory);
+                IMarshallingGeneratorResolver exceptionHandlerFactory = new ExtendedInvariantsValidator(nativeReturnMarshaller.Generator.AsNativeType(nativeReturnMarshaller.TypeInfo), generatorResolver);
 
                 // We explicitly don't include exceptionMarshaller in the signatureMarshallers collection
                 // as it needs to be specially emitted.
-                managedExceptionMarshaller = new(managedExceptionInfo, CreateGenerator(managedExceptionInfo, generatorFactory));
+                managedExceptionMarshaller = new(managedExceptionInfo, CreateGenerator(managedExceptionInfo, generatorResolver));
             }
 
             generatorBindingDiagnostics = generatorDiagnostics.ToImmutable();
@@ -153,11 +153,11 @@ namespace Microsoft.Interop
                 return (false, info.NativeIndex);
             }
 
-            IMarshallingGenerator CreateGenerator(TypePositionInfo p, IMarshallingGeneratorFactory factory)
+            IMarshallingGenerator CreateGenerator(TypePositionInfo p, IMarshallingGeneratorResolver factory)
             {
                 ResolvedGenerator generator = factory.Create(p, context);
                 generatorDiagnostics.AddRange(generator.Diagnostics);
-                return generator.ResolvedSuccessfully ? generator.Generator : fallbackGenerator;
+                return generator.IsResolvedWithoutErrors ? generator.Generator : fallbackGenerator;
             }
         }
 
@@ -192,12 +192,12 @@ namespace Microsoft.Interop
 
         public bool HasManagedExceptionMarshaller => ManagedExceptionMarshaller.Generator is not Forwarder;
 
-        private sealed class ExtendedInvariantsValidator : IMarshallingGeneratorFactory
+        private sealed class ExtendedInvariantsValidator : IMarshallingGeneratorResolver
         {
             private readonly ManagedTypeInfo _nativeReturnType;
-            private readonly IMarshallingGeneratorFactory _inner;
+            private readonly IMarshallingGeneratorResolver _inner;
 
-            public ExtendedInvariantsValidator(ManagedTypeInfo nativeReturnType, IMarshallingGeneratorFactory inner)
+            public ExtendedInvariantsValidator(ManagedTypeInfo nativeReturnType, IMarshallingGeneratorResolver inner)
             {
                 _nativeReturnType = nativeReturnType;
                 _inner = inner;
@@ -206,7 +206,7 @@ namespace Microsoft.Interop
             public ResolvedGenerator Create(TypePositionInfo info, StubCodeContext context)
             {
                 ResolvedGenerator generator = _inner.Create(info, context);
-                if (!generator.ResolvedSuccessfully)
+                if (!generator.IsResolvedWithoutErrors)
                 {
                     return generator;
                 }

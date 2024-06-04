@@ -4,11 +4,13 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using Xunit;
 
 // A smoke test for all DOTNET_TieredPGO strategies
-class Program : IDisposable
+public class Program : IDisposable
 {
-    static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         Program p = new();
         for (int i = 0; i < 100; i++)
@@ -16,7 +18,6 @@ class Program : IDisposable
             HotLoop(p);
             Thread.Sleep(40); // cold loop
         }
-        return 100;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]

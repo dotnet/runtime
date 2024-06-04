@@ -63,7 +63,7 @@ namespace System.Diagnostics
         private void InitializeForException(Exception e, int skipFrames, bool needFileInfo)
         {
             MonoStackFrame[]? frames = null;
-            GetTrace (ObjectHandleOnStack.Create (ref e), ObjectHandleOnStack.Create (ref frames), skipFrames, needFileInfo);
+            GetTrace(ObjectHandleOnStack.Create(ref e), ObjectHandleOnStack.Create(ref frames), skipFrames, needFileInfo);
             _numOfFrames = frames!.Length;
 
             int foreignFrames;

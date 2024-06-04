@@ -44,7 +44,7 @@ Areas are tracked by labels area-&#42; (e.g. area-System.Collections). Each area
 
 | Area        | Owners / experts | Description |
 |-------------|------------------|-------------|
-| Tizen | [@alpencolt](https://github.com/alpencolt), [@gbalykov](https://github.com/gbalykov) | For issues around Tizen CI and build issues |
+| Tizen | [@gbalykov](https://github.com/gbalykov) [@t-mustafin](https://github.com/t-mustafin) | For issues around Tizen CI and build issues |
 
 ### Triage rules - simplified
 

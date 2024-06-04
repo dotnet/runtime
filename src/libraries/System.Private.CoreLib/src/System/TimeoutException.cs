@@ -21,13 +21,13 @@ namespace System
         }
 
         public TimeoutException(string? message)
-            : base(message)
+            : base(message ?? SR.Arg_TimeoutException)
         {
             HResult = HResults.COR_E_TIMEOUT;
         }
 
         public TimeoutException(string? message, Exception? innerException)
-            : base(message, innerException)
+            : base(message ?? SR.Arg_TimeoutException, innerException)
         {
             HResult = HResults.COR_E_TIMEOUT;
         }

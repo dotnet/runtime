@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
@@ -98,6 +99,7 @@ namespace System.Linq.Expressions.Compiler
             }
         }
 
+        [RequiresDynamicCode(Expression.StrongBoxRequiresDynamicCode)]
         private sealed class ElementBoxStorage : Storage
         {
             private readonly int _index;
@@ -153,6 +155,7 @@ namespace System.Linq.Expressions.Compiler
             }
         }
 
+        [RequiresDynamicCode(Expression.StrongBoxRequiresDynamicCode)]
         private sealed class LocalBoxStorage : Storage
         {
             private readonly LocalBuilder _boxLocal;

@@ -40,7 +40,16 @@ namespace System.IO.Strategies
         {
             if (!Interop.Kernel32.FlushFileBuffers(handle))
             {
-                throw Win32Marshal.GetExceptionForLastWin32Error(handle.Path);
+                int errorCode = Marshal.GetLastPInvokeError();
+
+                // NOTE: unlike fsync() on Unix, the FlushFileBuffers() function on Windows doesn't
+                // support flushing handles opened for read-only access and will return an error. We
+                // ignore this error to harmonize the two platforms: i.e. users can flush handles
+                // opened for read-only access on BOTH platforms and no exception will be thrown.
+                if (errorCode != Interop.Errors.ERROR_ACCESS_DENIED)
+                {
+                    throw Win32Marshal.GetExceptionForLastWin32Error(handle.Path);
+                }
             }
         }
 

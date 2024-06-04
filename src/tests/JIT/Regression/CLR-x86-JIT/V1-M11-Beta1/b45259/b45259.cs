@@ -10,7 +10,7 @@ namespace Test
     public class AA
     {
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             try
             {
@@ -21,7 +21,6 @@ namespace Test
                 float[] af = new float[7];
                 af[0] = af[1];
             }
-            return 100;
         }
     }
 

@@ -72,7 +72,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        public void Ctor_PassNullForMediaType_DefaultMediaTypeUsed()
+        public void Ctor_PassNullStringForMediaType_DefaultMediaTypeUsed()
         {
             string sourceString = "\u00C4\u00E4\u00FC\u00DC";
             Encoding defaultStringEncoding = Encoding.GetEncoding("utf-8");
@@ -81,7 +81,18 @@ namespace System.Net.Http.Functional.Tests
             // If no media is passed-in, the default is used
             Assert.Equal("text/plain", content.Headers.ContentType.MediaType);
         }
-        
+
+        [Fact]
+        public void Ctor_PassNullHeaderValueForMediaType_NoMediaTypeUsed()
+        {
+            string sourceString = "\u00C4\u00E4\u00FC\u00DC";
+            Encoding defaultStringEncoding = Encoding.GetEncoding("utf-8");
+            var content = new StringContent(sourceString, defaultStringEncoding, ((Headers.MediaTypeHeaderValue)null)!);
+
+            // If no media header value is passed-in, there is none
+            Assert.Null(content.Headers.ContentType);
+        }
+
         [Fact]
         public async Task Ctor_UseCustomMediaTypeHeaderValue_SpecificEncoding()
         {

@@ -15,14 +15,13 @@ namespace Test
     {
         float Method1() { return 0; }
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             CC[] cc = new CC[10];
             byte[] ab = new byte[10];
 #pragma warning disable 1717
             cc[ab[0] ^ (AA.m_sb = AA.m_sb)].Method1();
 #pragma warning restore
-            return 100;
         }
     }
 }

@@ -4,8 +4,8 @@
 using System;
 using System.Reflection;
 
-using Internal.Runtime.Augments;
 using Internal.Reflection.Core.Execution;
+using Internal.Runtime.Augments;
 
 namespace Internal.Reflection.Execution.FieldAccessors
 {

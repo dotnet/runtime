@@ -21,13 +21,13 @@ namespace System
         }
 
         public RankException(string? message)
-            : base(message)
+            : base(message ?? SR.Arg_RankException)
         {
             HResult = HResults.COR_E_RANK;
         }
 
         public RankException(string? message, Exception? innerException)
-            : base(message, innerException)
+            : base(message ?? SR.Arg_RankException, innerException)
         {
             HResult = HResults.COR_E_RANK;
         }

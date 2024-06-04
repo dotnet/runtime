@@ -574,7 +574,6 @@ LPCSTR Exception::GetHRSymbolicName(HRESULT hr)
     CASE_HRESULT(COR_E_CANNOTUNLOADAPPDOMAIN)
     CASE_HRESULT(MSEE_E_ASSEMBLYLOADINPROGRESS)
     CASE_HRESULT(FUSION_E_REF_DEF_MISMATCH)
-    CASE_HRESULT(FUSION_E_PRIVATE_ASM_DISALLOWED)
     CASE_HRESULT(FUSION_E_INVALID_NAME)
     CASE_HRESULT(CLDB_E_FILE_BADREAD)
     CASE_HRESULT(CLDB_E_FILE_BADWRITE)
@@ -1154,7 +1153,7 @@ void GetHRMsg(HRESULT hr, SString &result, BOOL bNoGeekStuff/* = FALSE*/)
     }
     CONTRACTL_END;
 
-    result = W("");     // Make sure this routine isn't an inadvertent data-leak exploit!
+    result.Set(W(""));     // Make sure this routine isn't an inadvertent data-leak exploit!
 
     SString strDescr;
     BOOL    fHaveDescr = FALSE;
@@ -1220,7 +1219,7 @@ void GenerateTopLevelHRExceptionMessage(HRESULT hresult, SString &result)
     }
     CONTRACTL_END;
 
-    result = W("");     // Make sure this routine isn't an inadvertent data-leak exploit!
+    result.Set(W(""));     // Make sure this routine isn't an inadvertent data-leak exploit!
 
     GetHRMsg(hresult, result);
 }

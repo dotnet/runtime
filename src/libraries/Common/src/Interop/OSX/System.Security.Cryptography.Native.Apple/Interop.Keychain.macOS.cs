@@ -253,15 +253,15 @@ internal static partial class Interop
             RandomNumberGenerator.Fill(random);
 
             // Create hex-like UTF8 string.
-            Span<byte> utf8Passphrase =  stackalloc byte[RandomSize * 2 +1];
+            Span<byte> utf8Passphrase = stackalloc byte[RandomSize * 2 + 1];
             utf8Passphrase[RandomSize * 2] = 0; // null termination for C string.
 
             for (int i = 0; i < random.Length; i++)
             {
                 // Instead of true hexadecimal, we simply take lower and upper 4 bits and we offset them from ASCII 'A'
                 // to get printable form. We dont use managed string to avoid lingering copies.
-                utf8Passphrase[i*2] = (byte)((random[i] & 0x0F) + 65);
-                utf8Passphrase[i*2 + 1] = (byte)((random[i] >> 4) & 0x0F + 65);
+                utf8Passphrase[i * 2] = (byte)((random[i] & 0x0F) + 65);
+                utf8Passphrase[i * 2 + 1] = (byte)((random[i] >> 4) & 0x0F + 65);
             }
 
             // clear the binary bits.
@@ -296,7 +296,7 @@ internal static partial class Interop
             return keychain;
         }
 
-        internal static void SecKeychainDelete(IntPtr handle, bool throwOnError=true)
+        internal static void SecKeychainDelete(IntPtr handle, bool throwOnError = true)
         {
             int osStatus = AppleCryptoNative_SecKeychainDelete(handle);
 

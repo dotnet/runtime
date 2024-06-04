@@ -8,13 +8,24 @@
 // Assertion checking infrastructure
 // ---------------------------------------------------------------------------
 
-
 #ifndef CHECK_H_
 #define CHECK_H_
 
 #include "static_assert.h"
 #include "daccess.h"
 #include "unreachable.h"
+
+// Use the C++ detection idiom (https://isocpp.org/blog/2017/09/detection-idiom-a-stopgap-for-concepts-simon-brand)
+template <class... > struct make_void { using type = void; };
+template <class... T> using void_t = typename make_void<T...>::type;
+
+// Macros for creating type traits to check if a member exists
+#define DEFINE_MEMBER_EXISTENCE_CHECK(Member) \
+template<typename T, typename = void> \
+struct has_##Member : std::false_type {}; \
+\
+template<typename T> \
+struct has_##Member<T, void_t<decltype(std::declval<T>().Member)>> : std::true_type {};
 
 #ifdef _DEBUG
 
@@ -111,7 +122,7 @@ public: // !!! NOTE: Called from macros only!!!
 #ifdef _DEBUG
               , m_condition (NULL)
               , m_file(NULL)
-              , m_line(NULL)
+              , m_line(0)
               , m_pCount(NULL)
 #endif
     {}
@@ -282,19 +293,34 @@ do                                                                  \
 
 #if CHECK_INVARIANTS
 
+DEFINE_MEMBER_EXISTENCE_CHECK(Invariant);
+DEFINE_MEMBER_EXISTENCE_CHECK(InternalInvariant);
+
+template <typename TYPENAME>
+typename std::enable_if<has_Invariant<TYPENAME>::value, CHECK>::type CheckInvariantOnly(TYPENAME &obj)
+{
+    CHECK(obj.Invariant());
+    CHECK_OK;
+}
+
+template <typename TYPENAME>
+typename std::enable_if<!has_Invariant<TYPENAME>::value, CHECK>::type CheckInvariantOnly(TYPENAME &obj) { CHECK_OK; }
+
+template <typename TYPENAME>
+typename std::enable_if<has_InternalInvariant<TYPENAME>::value, CHECK>::type CheckInternalInvariantOnly(TYPENAME &obj)
+{
+    CHECK(obj.InternalInvariant());
+    CHECK_OK;
+}
+
+template <typename TYPENAME>
+typename std::enable_if<!has_InternalInvariant<TYPENAME>::value, CHECK>::type CheckInternalInvariantOnly(TYPENAME &obj) { CHECK_OK; }
+
 template <typename TYPENAME>
 CHECK CheckInvariant(TYPENAME &obj)
 {
-#if defined(_MSC_VER) || defined(__llvm__)
-    __if_exists(TYPENAME::Invariant)
-    {
-        CHECK(obj.Invariant());
-    }
-    __if_exists(TYPENAME::InternalInvariant)
-    {
-        CHECK(obj.InternalInvariant());
-    }
-#endif
+    CheckInvariantOnly(obj);
+    CheckInternalInvariantOnly(obj);
 
     CHECK_OK;
 }
@@ -331,8 +357,9 @@ enum IsNullOK
 };
 
 #if CHECK_INVARIANTS
+DEFINE_MEMBER_EXISTENCE_CHECK(Check);
 template <typename TYPENAME>
-CHECK CheckPointer(TYPENAME *o, IsNullOK ok = NULL_NOT_OK)
+typename std::enable_if<has_Check<TYPENAME>::value, CHECK>::type CheckPointer(TYPENAME *o, IsNullOK ok = NULL_NOT_OK)
 {
     if (o == NULL)
     {
@@ -340,29 +367,35 @@ CHECK CheckPointer(TYPENAME *o, IsNullOK ok = NULL_NOT_OK)
     }
     else
     {
-#if defined(_MSC_VER) || defined(__llvm__)
-        __if_exists(TYPENAME::Check)
-        {
-            CHECK(o->Check());
-        }
-#endif
+        CHECK(o->Check());
     }
 
     CHECK_OK;
 }
 
 template <typename TYPENAME>
-CHECK CheckValue(TYPENAME &val)
+typename std::enable_if<!has_Check<TYPENAME>::value, CHECK>::type CheckPointer(TYPENAME *o, IsNullOK ok = NULL_NOT_OK)
 {
-#if defined(_MSC_VER) || defined(__llvm__)
-    __if_exists(TYPENAME::Check)
+    if (o == NULL)
     {
-        CHECK(val.Check());
+        CHECK_MSG(ok, "Illegal null pointer");
     }
-#endif
 
+    CHECK_OK;
+}
+
+template <typename TYPENAME>
+typename std::enable_if<has_Check<TYPENAME>::value, CHECK>::type CheckValue(TYPENAME &val)
+{
+    CHECK(val.Check());
     CHECK(CheckInvariant(val));
+    CHECK_OK;
+}
 
+template <typename TYPENAME>
+typename std::enable_if<!has_Check<TYPENAME>::value, CHECK>::type CheckValue(TYPENAME &val)
+{
+    CHECK(CheckInvariant(val));
     CHECK_OK;
 }
 #else // CHECK_INVARIANTS
@@ -684,6 +717,9 @@ CHECK CheckAligned(UINT value, UINT alignment);
 CHECK CheckAligned(ULONG value, UINT alignment);
 #endif
 CHECK CheckAligned(UINT64 value, UINT alignment);
+#ifdef __APPLE__
+CHECK CheckAligned(SIZE_T value, UINT alignment);
+#endif
 CHECK CheckAligned(const void *address, UINT alignment);
 
 CHECK CheckOverflow(UINT value1, UINT value2);
@@ -691,6 +727,9 @@ CHECK CheckOverflow(UINT value1, UINT value2);
 CHECK CheckOverflow(ULONG value1, ULONG value2);
 #endif
 CHECK CheckOverflow(UINT64 value1, UINT64 value2);
+#ifdef __APPLE__
+CHECK CheckOverflow(SIZE_T value1, SIZE_T value2);
+#endif
 CHECK CheckOverflow(PTR_CVOID address, UINT offset);
 #if defined(_MSC_VER)
 CHECK CheckOverflow(const void *address, ULONG offset);
@@ -702,11 +741,17 @@ CHECK CheckUnderflow(UINT value1, UINT value2);
 CHECK CheckUnderflow(ULONG value1, ULONG value2);
 #endif
 CHECK CheckUnderflow(UINT64 value1, UINT64 value2);
+#ifdef __APPLE__
+CHECK CheckUnderflow(SIZE_T value1, SIZE_T value2);
+#endif
 CHECK CheckUnderflow(const void *address, UINT offset);
 #if defined(_MSC_VER)
 CHECK CheckUnderflow(const void *address, ULONG offset);
 #endif
 CHECK CheckUnderflow(const void *address, UINT64 offset);
+#ifdef __APPLE__
+CHECK CheckUnderflow(const void *address, SIZE_T offset);
+#endif
 CHECK CheckUnderflow(const void *address, void *address2);
 
 CHECK CheckZeroedMemory(const void *memory, SIZE_T size);

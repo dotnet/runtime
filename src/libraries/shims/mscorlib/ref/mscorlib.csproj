@@ -5,7 +5,6 @@
     <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.Concurrent\ref\System.Collections.Concurrent.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.NonGeneric\ref\System.Collections.NonGeneric.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Collections\ref\System.Collections.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections\ref\System.Collections.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.ComponentModel\ref\System.ComponentModel.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Console\ref\System.Console.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Diagnostics.Contracts\ref\System.Diagnostics.Contracts.csproj" />
@@ -27,15 +26,15 @@
     <ProjectReference Include="$(LibrariesProjectRoot)System.Security.AccessControl\ref\System.Security.AccessControl.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Claims\ref\System.Security.Claims.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography\ref\System.Security.Cryptography.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Permissions\ref\System.Security.Permissions.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Principal.Windows\ref\System.Security.Principal.Windows.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Text.Encoding.Extensions\ref\System.Text.Encoding.Extensions.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading.AccessControl\ref\System.Threading.AccessControl.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Threading.Overlapped\ref\System.Threading.Overlapped.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Threading.Tasks.Parallel\ref\System.Threading.Tasks.Parallel.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Threading.ThreadPool\ref\System.Threading.ThreadPool.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Threading.Thread\ref\System.Threading.Thread.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Threading\ref\System.Threading.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)shims\stubs\System.Security.Permissions.csproj" PrivateAssets="all" />
+    <ProjectReference Include="$(LibrariesProjectRoot)shims\stubs\System.Threading.AccessControl.csproj" PrivateAssets="all" />
   </ItemGroup>
 
 </Project>

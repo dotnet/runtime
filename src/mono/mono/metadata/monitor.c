@@ -1434,7 +1434,7 @@ ves_icall_System_Threading_Monitor_Monitor_Enter (MonoObjectHandle obj, MonoErro
 }
 
 gint64
-ves_icall_System_Threading_Monitor_Monitor_LockContentionCount (void)
+ves_icall_System_Threading_Monitor_Monitor_get_lock_contention_count (void)
 {
 	return thread_contentions;
 }

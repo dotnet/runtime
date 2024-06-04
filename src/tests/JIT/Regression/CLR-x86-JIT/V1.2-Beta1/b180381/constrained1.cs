@@ -14,10 +14,9 @@ public class Test_constrained1
     }
 
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         M("Hello"); // Works fine
         M(3); // CLR crashes
-        return 100;
     }
 }

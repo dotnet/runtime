@@ -9,11 +9,10 @@ using Xunit;
 public class Test_Github_21011
 {
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         Test_Github_21011 test = new Test_Github_21011();
         test.GetPair();
-        return 100;
     }
 
     [MethodImpl(MethodImplOptions.Synchronized | MethodImplOptions.NoInlining)]

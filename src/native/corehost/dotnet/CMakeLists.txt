@@ -15,3 +15,7 @@ list(APPEND SOURCES
 )
 
 include(../exe.cmake)
+
+if (CLR_CMAKE_HOST_APPLE)
+    adhoc_sign_with_entitlements(dotnet "${CLR_ENG_NATIVE_DIR}/entitlements.plist")
+endif()

@@ -32,7 +32,7 @@ HINSTANCE LoadImageHlp()
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;
     SCAN_IGNORE_FAULT; // Faults from Wsz funcs are handled.
 
-    return LoadLibraryExA("imagehlp.dll", NULL, 0);
+    return WszLoadLibrary(W("imagehlp.dll"), NULL, 0);
 }
 
 HINSTANCE LoadDbgHelp()
@@ -41,7 +41,7 @@ HINSTANCE LoadDbgHelp()
     STATIC_CONTRACT_GC_NOTRIGGER;
     SCAN_IGNORE_FAULT; // Faults from Wsz funcs are handled.
 
-    return LoadLibraryExA("dbghelp.dll", NULL, 0);
+    return WszLoadLibrary(W("dbghelp.dll"), NULL, 0);
 }
 
 /****************************************************************************

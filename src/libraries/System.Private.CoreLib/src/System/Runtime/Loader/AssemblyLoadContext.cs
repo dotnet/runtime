@@ -30,7 +30,7 @@ namespace System.Runtime.Loader
             Unloading
         }
 
-        private static volatile Dictionary<long, WeakReference<AssemblyLoadContext>>? s_allContexts;
+        private static Dictionary<long, WeakReference<AssemblyLoadContext>>? s_allContexts;
         private static long s_nextId;
 
         [MemberNotNull(nameof(s_allContexts))]
@@ -135,25 +135,32 @@ namespace System.Runtime.Loader
         {
             RaiseUnloadEvent();
 
+            InternalState previousState;
+
             // When in Unloading state, we are not supposed to be called on the finalizer
             // as the native side is holding a strong reference after calling Unload
             lock (_unloadLock)
             {
-                Debug.Assert(_state == InternalState.Alive);
+                previousState = _state;
+                if (previousState == InternalState.Alive)
+                {
+                    var thisStrongHandle = GCHandle.Alloc(this, GCHandleType.Normal);
+                    var thisStrongHandlePtr = GCHandle.ToIntPtr(thisStrongHandle);
+                    // The underlying code will transform the original weak handle
+                    // created by InitializeLoadContext to a strong handle
+                    PrepareForAssemblyLoadContextRelease(_nativeAssemblyLoadContext, thisStrongHandlePtr);
 
-                var thisStrongHandle = GCHandle.Alloc(this, GCHandleType.Normal);
-                var thisStrongHandlePtr = GCHandle.ToIntPtr(thisStrongHandle);
-                // The underlying code will transform the original weak handle
-                // created by InitializeLoadContext to a strong handle
-                PrepareForAssemblyLoadContextRelease(_nativeAssemblyLoadContext, thisStrongHandlePtr);
-
-                _state = InternalState.Unloading;
+                    _state = InternalState.Unloading;
+                }
             }
 
-            Dictionary<long, WeakReference<AssemblyLoadContext>> allContexts = AllContexts;
-            lock (allContexts)
+            if (previousState == InternalState.Alive)
             {
-                allContexts.Remove(_id);
+                Dictionary<long, WeakReference<AssemblyLoadContext>> allContexts = AllContexts;
+                lock (allContexts)
+                {
+                    allContexts.Remove(_id);
+                }
             }
         }
 
@@ -613,31 +620,24 @@ namespace System.Runtime.Loader
             Justification = "The code handles the Assembly.Location equals null")]
         private Assembly? GetFirstResolvedAssemblyFromResolvingEvent(AssemblyName assemblyName)
         {
-            Assembly? resolvedAssembly = null;
-
-            Func<AssemblyLoadContext, AssemblyName, Assembly>? resolvingHandler = _resolving;
-
-            if (resolvingHandler != null)
+            // Loop through the event subscribers and return the first non-null Assembly instance
+            foreach (Func<AssemblyLoadContext, AssemblyName, Assembly> handler in Delegate.EnumerateInvocationList(_resolving))
             {
-                // Loop through the event subscribers and return the first non-null Assembly instance
-                foreach (Func<AssemblyLoadContext, AssemblyName, Assembly> handler in resolvingHandler.GetInvocationList())
-                {
-                    resolvedAssembly = handler(this, assemblyName);
+                Assembly? resolvedAssembly = handler(this, assemblyName);
 #if CORECLR
-                    if (IsTracingEnabled())
-                    {
-                        TraceResolvingHandlerInvoked(
-                            assemblyName.FullName,
-                            handler.Method.Name,
-                            this != Default ? ToString() : Name,
-                            resolvedAssembly?.FullName,
-                            resolvedAssembly != null && !resolvedAssembly.IsDynamic ? resolvedAssembly.Location : null);
-                    }
+                if (IsTracingEnabled())
+                {
+                    TraceResolvingHandlerInvoked(
+                        assemblyName.FullName,
+                        handler.Method.Name,
+                        this != Default ? ToString() : Name,
+                        resolvedAssembly?.FullName,
+                        resolvedAssembly != null && !resolvedAssembly.IsDynamic ? resolvedAssembly.Location : null);
+                }
 #endif // CORECLR
-                    if (resolvedAssembly != null)
-                    {
-                        return resolvedAssembly;
-                    }
+                if (resolvedAssembly != null)
+                {
+                    return resolvedAssembly;
                 }
             }
 
@@ -734,7 +734,7 @@ namespace System.Runtime.Loader
 
             var args = new ResolveEventArgs(name, assembly);
 
-            foreach (ResolveEventHandler handler in eventHandler.GetInvocationList())
+            foreach (ResolveEventHandler handler in Delegate.EnumerateInvocationList(eventHandler))
             {
                 Assembly? asm = handler(AppDomain.CurrentDomain, args);
 #if CORECLR
@@ -778,7 +778,7 @@ namespace System.Runtime.Loader
 
             string? parentDirectory = Path.GetDirectoryName(parentAssembly.Location);
             if (parentDirectory == null)
-                 return null;
+                return null;
 
             string assemblyPath = Path.Combine(parentDirectory, assemblyName.CultureName!, $"{assemblyName.Name}.dll");
 
@@ -808,20 +808,13 @@ namespace System.Runtime.Loader
 
         internal IntPtr GetResolvedUnmanagedDll(Assembly assembly, string unmanagedDllName)
         {
-            IntPtr resolvedDll = IntPtr.Zero;
-
-            Func<Assembly, string, IntPtr>? dllResolveHandler = _resolvingUnmanagedDll;
-
-            if (dllResolveHandler != null)
+            // Loop through the event subscribers and return the first non-null native library handle
+            foreach (Func<Assembly, string, IntPtr> handler in Delegate.EnumerateInvocationList(_resolvingUnmanagedDll))
             {
-                // Loop through the event subscribers and return the first non-null native library handle
-                foreach (Func<Assembly, string, IntPtr> handler in dllResolveHandler.GetInvocationList())
+                IntPtr resolvedDll = handler(assembly, unmanagedDllName);
+                if (resolvedDll != IntPtr.Zero)
                 {
-                    resolvedDll = handler(assembly, unmanagedDllName);
-                    if (resolvedDll != IntPtr.Zero)
-                    {
-                        return resolvedDll;
-                    }
+                    return resolvedDll;
                 }
             }
 

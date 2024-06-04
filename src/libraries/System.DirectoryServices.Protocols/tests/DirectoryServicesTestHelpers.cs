@@ -22,10 +22,10 @@ namespace System.DirectoryServices.Protocols.Tests
         {
             get
             {
-#if NETCOREAPP
+#if NET
                 if (!_isLibLdapInstalled.HasValue)
                 {
-                    if (PlatformDetection.IsOSXLike)
+                    if (PlatformDetection.IsApplePlatform)
                     {
                         _isLibLdapInstalled = NativeLibrary.TryLoad("libldap.dylib", out _);
                     }

@@ -53,7 +53,7 @@ namespace System.Xml.XmlSchemaTests
                 // GLOBALIZATION
                 return;
             }
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //-----------------------------------------------------------------------------------
@@ -137,7 +137,7 @@ namespace System.Xml.XmlSchemaTests
             catch (Exception e)
             {
                 _output.WriteLine(e.ToString());
-                Assert.True(false);
+                Assert.Fail();
             }
 
             return;
@@ -176,7 +176,7 @@ namespace System.Xml.XmlSchemaTests
             catch (Exception e)
             {
                 _output.WriteLine(e.ToString());
-                Assert.True(false);
+                Assert.Fail();
             }
             return;
         }
@@ -226,7 +226,7 @@ namespace System.Xml.XmlSchemaTests
             catch (Exception e)
             {
                 _output.WriteLine(e.ToString());
-                Assert.True(false);
+                Assert.Fail();
             }
             return;
         }
@@ -266,7 +266,7 @@ namespace System.Xml.XmlSchemaTests
             catch (Exception e)
             {
                 _output.WriteLine(e.ToString());
-                Assert.True(false);
+                Assert.Fail();
             }
             return;
         }
@@ -306,7 +306,7 @@ namespace System.Xml.XmlSchemaTests
             catch (Exception e)
             {
                 _output.WriteLine(e.ToString());
-                Assert.True(false);
+                Assert.Fail();
             }
             return;
         }
@@ -340,7 +340,7 @@ namespace System.Xml.XmlSchemaTests
             {
                 _output.WriteLine("Exception : " + e.Message);
             }
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //-----------------------------------------------------------------------------------
@@ -402,7 +402,7 @@ namespace System.Xml.XmlSchemaTests
             catch (Exception e)
             {
                 _output.WriteLine(e.ToString());
-                Assert.True(false);
+                Assert.Fail();
             }
             return;
         }
@@ -441,7 +441,7 @@ namespace System.Xml.XmlSchemaTests
             catch (Exception e)
             {
                 _output.WriteLine(e.ToString());
-                Assert.True(false);
+                Assert.Fail();
             }
             return;
         }

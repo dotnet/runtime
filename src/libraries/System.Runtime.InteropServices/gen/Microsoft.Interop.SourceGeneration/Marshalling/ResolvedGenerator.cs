@@ -2,17 +2,20 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 
 namespace Microsoft.Interop
 {
-    public record struct ResolvedGenerator(IMarshallingGenerator Generator, ImmutableArray<GeneratorDiagnostic> Diagnostics)
+    public record struct ResolvedGenerator([property: MemberNotNullWhen(true, nameof(ResolvedGenerator.IsResolved), nameof(ResolvedGenerator.IsResolvedWithoutErrors))] IMarshallingGenerator? Generator, ImmutableArray<GeneratorDiagnostic> Diagnostics)
     {
         private static readonly Forwarder s_forwarder = new();
 
-        private bool? _resolvedSuccessfully;
+        private bool? _resolvedWithoutErrors;
 
-        public bool ResolvedSuccessfully => _resolvedSuccessfully ??= Diagnostics.All(d => !d.IsFatal);
+        public bool IsResolvedWithoutErrors => _resolvedWithoutErrors ??= IsResolved && Diagnostics.All(d => !d.IsFatal);
+
+        public readonly bool IsResolved => Generator is not null;
 
         public static ResolvedGenerator Resolved(IMarshallingGenerator generator)
         {
@@ -28,5 +31,7 @@ namespace Microsoft.Interop
         {
             return new(generator, diagnostics);
         }
+
+        public static ResolvedGenerator UnresolvedGenerator { get; } = new(null, ImmutableArray<GeneratorDiagnostic>.Empty);
     }
 }

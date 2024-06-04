@@ -17,5 +17,11 @@ namespace Internal
 
         public static void WriteLine() =>
             Write(Environment.NewLineConst);
+
+        public static partial class Error
+        {
+            public static void WriteLine() =>
+                Write(Environment.NewLineConst);
+        }
     }
 }

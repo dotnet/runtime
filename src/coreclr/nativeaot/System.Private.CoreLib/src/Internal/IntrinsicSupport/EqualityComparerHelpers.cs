@@ -11,32 +11,32 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+
+using Internal.Runtime;
 using Internal.Runtime.Augments;
 
 namespace Internal.IntrinsicSupport
 {
     internal static class EqualityComparerHelpers
     {
-        private static bool ImplementsIEquatable(RuntimeTypeHandle t)
+        private static unsafe bool ImplementsIEquatable(RuntimeTypeHandle t)
         {
-            EETypePtr objectType = t.ToEETypePtr();
-            EETypePtr iequatableType = typeof(IEquatable<>).TypeHandle.ToEETypePtr();
-            int interfaceCount = objectType.Interfaces.Count;
+            MethodTable* objectType = t.ToMethodTable();
+            MethodTable* iequatableType = typeof(IEquatable<>).TypeHandle.ToMethodTable();
+            int interfaceCount = objectType->NumInterfaces;
             for (int i = 0; i < interfaceCount; i++)
             {
-                EETypePtr interfaceType = objectType.Interfaces[i];
+                MethodTable* interfaceType = objectType->InterfaceMap[i];
 
-                if (!interfaceType.IsGeneric)
+                if (!interfaceType->IsGeneric)
                     continue;
 
-                if (interfaceType.GenericDefinition == iequatableType)
+                if (interfaceType->GenericDefinition == iequatableType)
                 {
-                    var instantiation = interfaceType.Instantiation;
-
-                    if (instantiation.Length != 1)
+                    if (interfaceType->GenericArity != 1)
                         continue;
 
-                    if (instantiation[0] == objectType)
+                    if (interfaceType->GenericArguments[0] == objectType)
                     {
                         return true;
                     }
@@ -46,9 +46,9 @@ namespace Internal.IntrinsicSupport
             return false;
         }
 
-        internal static bool IsEnum(RuntimeTypeHandle t)
+        internal static unsafe bool IsEnum(RuntimeTypeHandle t)
         {
-            return t.ToEETypePtr().IsEnum;
+            return t.ToMethodTable()->IsEnum;
         }
 
         // this function utilizes the template type loader to generate new

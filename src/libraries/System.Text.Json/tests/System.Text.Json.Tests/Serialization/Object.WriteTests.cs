@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.Encodings.Web;
 using System.Text.Json.Tests;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
@@ -161,42 +162,49 @@ namespace System.Text.Json.Serialization.Tests
         [OuterLoop]
         public static void SerializeLargeListOfObjects()
         {
-            Dto dto = new()
-            {
-                Prop1 = int.MaxValue,
-                Prop2 = int.MinValue,
-                Prop3 = "AC",
-                Prop4 = 500,
-                Prop5 = int.MaxValue / 2,
-                Prop6 = 250M,
-                Prop7 = 250M,
-                Prop8 = 250M,
-                Prop9 = 250M,
-                Prop10 = 250M,
-                Prop11 = 150M,
-                Prop12 = 150M,
-                Prop13 = DateTimeOffset.MaxValue,
-                Prop14 = DateTimeOffset.MaxValue,
-                Prop15 = DateTimeOffset.MaxValue,
-                Prop16 = DateTimeOffset.MaxValue,
-                Prop17 = 3,
-                Prop18 = DateTime.MaxValue,
-                Prop19 = DateTime.MaxValue,
-                Prop20 = 25000,
-                Prop21 = DateTime.MaxValue
-            };
-
-            // It takes a little over 4,338,000 items to reach a payload size above the Array.MaxLength value.
-            List<Dto> items = Enumerable.Repeat(dto, 4_338_000).ToList();
-
             try
             {
-                JsonSerializer.SerializeToUtf8Bytes(items);
-            }
-            catch (OutOfMemoryException) { }
+                Dto dto = new()
+                {
+                    Prop1 = int.MaxValue,
+                    Prop2 = int.MinValue,
+                    Prop3 = "AC",
+                    Prop4 = 500,
+                    Prop5 = int.MaxValue / 2,
+                    Prop6 = 250M,
+                    Prop7 = 250M,
+                    Prop8 = 250M,
+                    Prop9 = 250M,
+                    Prop10 = 250M,
+                    Prop11 = 150M,
+                    Prop12 = 150M,
+                    Prop13 = DateTimeOffset.MaxValue,
+                    Prop14 = DateTimeOffset.MaxValue,
+                    Prop15 = DateTimeOffset.MaxValue,
+                    Prop16 = DateTimeOffset.MaxValue,
+                    Prop17 = 3,
+                    Prop18 = DateTime.MaxValue,
+                    Prop19 = DateTime.MaxValue,
+                    Prop20 = 25000,
+                    Prop21 = DateTime.MaxValue
+                };
 
-            items.AddRange(Enumerable.Repeat(dto, 1000).ToList());
-            Assert.Throws<OutOfMemoryException>(() => JsonSerializer.SerializeToUtf8Bytes(items));
+                // It takes a little over 4,338,000 items to reach a payload size above the Array.MaxLength value.
+                List<Dto> items = Enumerable.Repeat(dto, 4_338_000).ToList();
+
+                try
+                {
+                    JsonSerializer.SerializeToUtf8Bytes(items);
+                }
+                catch (OutOfMemoryException) { }
+
+                items.AddRange(Enumerable.Repeat(dto, 1000).ToList());
+                Assert.Throws<OutOfMemoryException>(() => JsonSerializer.SerializeToUtf8Bytes(items));
+            }
+            catch (OutOfMemoryException)
+            {
+                throw new SkipTestException("Out of memory allocating large objects");
+            }
         }
 
         class Dto

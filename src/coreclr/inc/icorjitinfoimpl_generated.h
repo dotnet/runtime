@@ -24,6 +24,9 @@ public:
 bool isIntrinsic(
           CORINFO_METHOD_HANDLE ftn) override;
 
+bool notifyMethodInfoUsage(
+          CORINFO_METHOD_HANDLE ftn) override;
+
 uint32_t getMethodAttribs(
           CORINFO_METHOD_HANDLE ftn) override;
 
@@ -40,6 +43,10 @@ bool getMethodInfo(
           CORINFO_METHOD_HANDLE ftn,
           CORINFO_METHOD_INFO* info,
           CORINFO_CONTEXT_HANDLE context) override;
+
+bool haveSameMethodDefinition(
+          CORINFO_METHOD_HANDLE meth1Hnd,
+          CORINFO_METHOD_HANDLE meth2Hnd) override;
 
 CorInfoInline canInline(
           CORINFO_METHOD_HANDLE callerHnd,
@@ -97,6 +104,7 @@ CORINFO_CLASS_HANDLE getDefaultEqualityComparerClass(
 
 void expandRawHandleIntrinsic(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,
+          CORINFO_METHOD_HANDLE callerHandle,
           CORINFO_GENERICHANDLE_RESULT* pResult) override;
 
 bool isIntrinsicType(
@@ -182,10 +190,6 @@ size_t printClassName(
 bool isValueClass(
           CORINFO_CLASS_HANDLE cls) override;
 
-CorInfoInlineTypeCheck canInlineTypeCheck(
-          CORINFO_CLASS_HANDLE cls,
-          CorInfoInlineTypeCheckSource source) override;
-
 uint32_t getClassAttribs(
           CORINFO_CLASS_HANDLE cls) override;
 
@@ -254,8 +258,7 @@ bool checkMethodModifier(
           bool fOptional) override;
 
 CorInfoHelpFunc getNewHelper(
-          CORINFO_RESOLVED_TOKEN* pResolvedToken,
-          CORINFO_METHOD_HANDLE callerHandle,
+          CORINFO_CLASS_HANDLE classHandle,
           bool* pHasSideEffects) override;
 
 CorInfoHelpFunc getNewArrHelper(
@@ -295,12 +298,14 @@ bool getReadyToRunHelper(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,
           CORINFO_LOOKUP_KIND* pGenericLookupKind,
           CorInfoHelpFunc id,
+          CORINFO_METHOD_HANDLE callerHandle,
           CORINFO_CONST_LOOKUP* pLookup) override;
 
 void getReadyToRunDelegateCtorHelper(
           CORINFO_RESOLVED_TOKEN* pTargetMethod,
           mdToken targetConstraint,
           CORINFO_CLASS_HANDLE delegateType,
+          CORINFO_METHOD_HANDLE callerHandle,
           CORINFO_LOOKUP* pLookup) override;
 
 CorInfoInitClassResult initClass(
@@ -335,6 +340,12 @@ TypeCompareState compareTypesForEquality(
 bool isMoreSpecificType(
           CORINFO_CLASS_HANDLE cls1,
           CORINFO_CLASS_HANDLE cls2) override;
+
+bool isExactType(
+          CORINFO_CLASS_HANDLE cls) override;
+
+TypeCompareState isNullableType(
+          CORINFO_CLASS_HANDLE cls) override;
 
 TypeCompareState isEnum(
           CORINFO_CLASS_HANDLE cls,
@@ -396,6 +407,9 @@ void getThreadLocalStaticBlocksInfo(
           CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo,
           bool isGCType) override;
 
+void getThreadLocalStaticInfo_NativeAOT(
+          CORINFO_THREAD_STATIC_INFO_NATIVEAOT* pInfo) override;
+
 bool isFieldStatic(
           CORINFO_FIELD_HANDLE fldHnd) override;
 
@@ -429,6 +443,11 @@ void reportRichMappings(
           uint32_t numInlineTreeNodes,
           ICorDebugInfo::RichOffsetMapping* mappings,
           uint32_t numMappings) override;
+
+void reportMetadata(
+          const char* key,
+          const void* value,
+          size_t length) override;
 
 void* allocateArray(
           size_t cBytes) override;
@@ -491,6 +510,10 @@ bool getSystemVAmd64PassStructInRegisterDescriptor(
           CORINFO_CLASS_HANDLE structHnd,
           SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* structPassInRegDescPtr) override;
 
+void getSwiftLowering(
+          CORINFO_CLASS_HANDLE structHnd,
+          CORINFO_SWIFT_LOWERING* pLowering) override;
+
 uint32_t getLoongArch64PassStructInRegisterFlags(
           CORINFO_CLASS_HANDLE structHnd) override;
 
@@ -543,6 +566,7 @@ CORINFO_FIELD_HANDLE embedFieldHandle(
 void embedGenericHandle(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,
           bool fEmbedParent,
+          CORINFO_METHOD_HANDLE callerHandle,
           CORINFO_GENERICHANDLE_RESULT* pResult) override;
 
 void getLocationOfThisType(
@@ -687,7 +711,8 @@ JITINTERFACE_HRESULT getPgoInstrumentationResults(
           ICorJitInfo::PgoInstrumentationSchema** pSchema,
           uint32_t* pCountSchemaItems,
           uint8_t** pInstrumentationData,
-          ICorJitInfo::PgoSource* pgoSource) override;
+          ICorJitInfo::PgoSource* pPgoSource,
+          bool* pDynamicPgo) override;
 
 JITINTERFACE_HRESULT allocPgoInstrumentationBySchema(
           CORINFO_METHOD_HANDLE ftnHnd,

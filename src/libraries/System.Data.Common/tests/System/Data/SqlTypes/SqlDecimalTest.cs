@@ -196,6 +196,7 @@ namespace System.Data.Tests.SqlTypes
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/95195", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnApplePlatform))]
         public void ConvertToPrecScale()
         {
             Assert.Equal(new SqlDecimal(6464.6m).Value, SqlDecimal.ConvertToPrecScale(_test1, 5, 1).Value);

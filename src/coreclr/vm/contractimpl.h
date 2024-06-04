@@ -47,11 +47,11 @@ public:
 
     //------------------------------------------------------------------------
     inline BOOL IsNull()
-    { LIMITED_METHOD_CONTRACT; return (m_slot == NULL); }
+    { LIMITED_METHOD_CONTRACT; return (m_slot == 0); }
 
     //------------------------------------------------------------------------
     inline void SetNull()
-    { LIMITED_METHOD_CONTRACT; m_slot = NULL; }
+    { LIMITED_METHOD_CONTRACT; m_slot = 0; }
 
     //------------------------------------------------------------------------
     inline PCODE GetTarget()
@@ -847,7 +847,6 @@ public:
 
     //------------------------------------------------------------------------
     static void CreateEncodedMapping(
-        MethodTable *        pMT,
         DispatchMapBuilder * pMapBuilder,
         StackingAllocator *  pAllocator,
         BYTE **              ppbMap,

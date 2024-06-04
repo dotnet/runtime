@@ -6,7 +6,7 @@ using System.Threading;
 
 namespace System
 {
-    public class Lazy<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]T, TMetadata> : Lazy<T>
+    public class Lazy<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] T, TMetadata> : Lazy<T>
     {
         private readonly TMetadata _metadata;
 

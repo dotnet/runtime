@@ -129,7 +129,7 @@ namespace System.IO.Enumeration
                             }
                         }
 
-                        if (!isSpecialDirectory && _options.AttributesToSkip != 0)
+                        if (!isSpecialDirectory && _options.AttributesToSkip != FileAttributes.None)
                         {
                             // entry.IsHidden and entry.IsReadOnly will hit the disk if the caches had not been
                             // initialized yet and we could not soft-retrieve the attributes in Initialize

@@ -16,13 +16,12 @@ public class Runtime_84619
 {
     public static sbyte s_27;
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         long vr1 = 0;
         for (int vr3 = 0; vr3 < -1; vr3++)
         {
             s_27 = (sbyte)(vr1 | vr1);
         }
-        return 100;
     }
 }

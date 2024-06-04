@@ -28,7 +28,6 @@
 #include "profiler-private.h"
 #include <mono/metadata/loader.h>
 #include "marshal.h"
-#include "coree.h"
 #include <mono/metadata/exception-internals.h>
 #include <mono/utils/checked-build.h>
 #include <mono/utils/mono-logger-internals.h>
@@ -1731,60 +1730,6 @@ mono_image_open_from_data (char *data, guint32 data_len, gboolean need_copy, Mon
 	return result;
 }
 
-#ifdef HOST_WIN32
-static MonoImageStorage *
-mono_image_storage_open_from_module_handle (HMODULE module_handle, const char *fname, gboolean has_entry_point)
-{
-	char *key = g_strdup (fname);
-	MonoImageStorage *published_storage = NULL;
-	if (mono_image_storage_tryaddref (key, &published_storage)) {
-		g_free (key);
-		return published_storage;
-	}
-
-	MonoImageStorage *storage = g_new0 (MonoImageStorage, 1);
-	mono_refcount_init (storage, mono_image_storage_dtor);
-	storage->raw_data = (char*) module_handle;
-	storage->is_module_handle = TRUE;
-	storage->has_entry_point = !!has_entry_point;
-
-	storage->key = key;
-
-	MonoImageStorage *other_storage = NULL;
-	if (!mono_image_storage_trypublish (storage, &other_storage)) {
-		mono_image_storage_close (storage);
-		storage = other_storage;
-	}
-	return storage;
-}
-
-/* fname is not duplicated. */
-MonoImage*
-mono_image_open_from_module_handle (MonoAssemblyLoadContext *alc, HMODULE module_handle, char* fname, gboolean has_entry_point, MonoImageOpenStatus* status)
-{
-	MonoImage* image;
-	MonoCLIImageInfo* iinfo;
-
-	MonoImageStorage *storage = mono_image_storage_open_from_module_handle (module_handle, fname, has_entry_point);
-	image = g_new0 (MonoImage, 1);
-	image->storage = storage;
-	mono_image_init_raw_data (image, storage);
-	iinfo = g_new0 (MonoCLIImageInfo, 1);
-	image->image_info = iinfo;
-	image->name = fname;
-	image->filename = g_strdup (image->name);
-	image->ref_count = has_entry_point ? 0 : 1;
-	image->alc = alc;
-
-	MonoImageLoadOptions options = {0, };
-	image = do_mono_image_load (image, status, &options);
-	if (image == NULL)
-		return NULL;
-
-	return register_image (mono_alc_get_loaded_images (alc), image);
-}
-#endif
-
 /**
  * mono_image_open_full:
  */
@@ -1808,80 +1753,6 @@ mono_image_open_a_lot_parameterized (MonoLoadedImages *li, MonoAssemblyLoadConte
 	char *absfname;
 
 	g_return_val_if_fail (fname != NULL, NULL);
-
-#ifdef HOST_WIN32
-	// Win32 path: If we are running with mixed-mode assemblies enabled (ie have loaded mscoree.dll),
-	// then assemblies need to be loaded with LoadLibrary:
-	if (coree_module_handle) {
-		HMODULE module_handle;
-		gunichar2 *fname_utf16;
-
-		absfname = mono_path_resolve_symlinks (fname);
-		fname_utf16 = NULL;
-
-		/* There is little overhead because the OS loader lock is held by LoadLibrary. */
-		mono_images_lock ();
-		image = (MonoImage*)g_hash_table_lookup (loaded_images, absfname);
-		if (image) { // Image already loaded
-			g_assert (m_image_is_module_handle (image));
-			if (m_image_has_entry_point (image) && image->ref_count == 0) {
-				/* Increment reference count on images loaded outside of the runtime. */
-				fname_utf16 = g_utf8_to_utf16 (absfname, -1, NULL, NULL, NULL);
-				/* The image is already loaded because _CorDllMain removes images from the hash. */
-				module_handle = LoadLibrary (fname_utf16);
-				g_assert (module_handle == (HMODULE) image->raw_data);
-			}
-			mono_image_addref (image);
-			mono_images_unlock ();
-			if (fname_utf16)
-				g_free (fname_utf16);
-			g_free (absfname);
-			return image;
-		}
-
-		DWORD last_error = ERROR_SUCCESS;
-
-		// Image not loaded, load it now
-		fname_utf16 = g_utf8_to_utf16 (absfname, -1, NULL, NULL, NULL);
-		module_handle = MonoLoadImage (fname_utf16);
-		if (status && module_handle == NULL)
-			last_error = GetLastError ();
-
-		/* mono_image_open_from_module_handle is called by _CorDllMain. */
-		image = (MonoImage*)g_hash_table_lookup (loaded_images, absfname);
-		if (image)
-			mono_image_addref (image);
-		mono_images_unlock ();
-
-		g_free (fname_utf16);
-
-		if (module_handle == NULL) {
-			g_assert (!image);
-			g_free (absfname);
-			if (status) {
-				if (last_error == ERROR_BAD_EXE_FORMAT || last_error == STATUS_INVALID_IMAGE_FORMAT) {
-					if (status)
-						*status = MONO_IMAGE_IMAGE_INVALID;
-				} else {
-					if (last_error == ERROR_FILE_NOT_FOUND || last_error == ERROR_PATH_NOT_FOUND)
-						mono_set_errno (ENOENT);
-					else
-						mono_set_errno (0);
-				}
-			}
-			return NULL;
-		}
-
-		if (image) {
-			g_assert (m_image_is_module_handle (image));
-			g_assert (m_image_has_entry_point (image));
-			g_free (absfname);
-			return image;
-		}
-
-		return mono_image_open_from_module_handle (alc, module_handle, absfname, FALSE, status);
-	}
-#endif
 
 	absfname = mono_path_resolve_symlinks (fname);
 
@@ -2044,6 +1915,12 @@ free_hash_table (gpointer key, gpointer val, gpointer user_data)
 	g_hash_table_destroy ((GHashTable*)val);
 }
 
+static void
+free_simdhash_table (const char *key, gpointer val, gpointer user_data)
+{
+	dn_simdhash_free ((dn_simdhash_t*)val);
+}
+
 /*
 static void
 free_mr_signatures (gpointer key, gpointer val, gpointer user_data)
@@ -2189,9 +2066,9 @@ mono_image_close_except_pools (MonoImage *image)
 	}
 
 	if (image->method_cache)
-		g_hash_table_destroy (image->method_cache);
+		dn_simdhash_free (image->method_cache);
 	if (image->methodref_cache)
-		g_hash_table_destroy (image->methodref_cache);
+		dn_simdhash_free (image->methodref_cache);
 	mono_internal_hash_table_destroy (&image->class_cache);
 	mono_conc_hashtable_destroy (image->field_cache);
 	if (image->array_cache) {
@@ -2203,8 +2080,8 @@ mono_image_close_except_pools (MonoImage *image)
 	if (image->ptr_cache)
 		g_hash_table_destroy (image->ptr_cache);
 	if (image->name_cache) {
-		g_hash_table_foreach (image->name_cache, free_hash_table, NULL);
-		g_hash_table_destroy (image->name_cache);
+		dn_simdhash_string_ptr_foreach (image->name_cache, free_simdhash_table, NULL);
+		dn_simdhash_free (image->name_cache);
 	}
 
 	free_hash (image->icall_wrapper_cache);
@@ -2586,6 +2463,7 @@ mono_image_load_file_for_image_checked (MonoImage *image, uint32_t fileidx, Mono
 	fname = mono_metadata_string_heap (image, fname_id);
 	base_dir = g_path_get_dirname (image->name);
 	name = g_build_filename (base_dir, fname, (const char*)NULL);
+	g_assert (name);
 	res = mono_image_open (name, NULL);
 	if (!res)
 		goto done;

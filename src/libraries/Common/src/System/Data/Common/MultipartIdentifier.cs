@@ -68,7 +68,7 @@ namespace System.Data.Common
                 throw ADP.InvalidMultipartNameToManyParts(property, name, limit);
             }
 
-            if (-1 != leftQuote.IndexOf(separator) || -1 != rightQuote.IndexOf(separator) || leftQuote.Length != rightQuote.Length)
+            if (leftQuote.Contains(separator) || rightQuote.Contains(separator) || leftQuote.Length != rightQuote.Length)
             {
                 throw ADP.InvalidMultipartNameIncorrectUsageOfQuotes(property, name);
             }
@@ -111,7 +111,7 @@ namespace System.Data.Common
                                 state = MPIState.MPI_ParseQuote;
                             }
                             else
-                            if (-1 != rightQuote.IndexOf(testchar))
+                            if (rightQuote.Contains(testchar))
                             { // If we shouldn't see a right quote
                                 throw ADP.InvalidMultipartNameIncorrectUsageOfQuotes(property, name);
                             }
@@ -133,12 +133,12 @@ namespace System.Data.Common
                                 state = MPIState.MPI_Value;
                             }
                             else // Quotes are not valid inside a non-quoted name
-                            if (-1 != rightQuote.IndexOf(testchar))
+                            if (rightQuote.Contains(testchar))
                             {
                                 throw ADP.InvalidMultipartNameIncorrectUsageOfQuotes(property, name);
                             }
                             else
-                            if (-1 != leftQuote.IndexOf(testchar))
+                            if (leftQuote.Contains(testchar))
                             {
                                 throw ADP.InvalidMultipartNameIncorrectUsageOfQuotes(property, name);
                             }

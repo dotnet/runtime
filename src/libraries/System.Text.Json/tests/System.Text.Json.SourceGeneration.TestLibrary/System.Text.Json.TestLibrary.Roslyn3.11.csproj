@@ -1,5 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
+  <PropertyGroup>
+    <!-- this Roslyn version brings in NS1.x dependencies -->
+    <FlagNetStandard1XDependencies>false</FlagNetStandard1XDependencies>
+  </PropertyGroup>
+
   <Import Project="System.Text.Json.TestLibrary.targets" />
 
   <ItemGroup>

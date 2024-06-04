@@ -1,13 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>exe</OutputType>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
     <CrossGenTest>false</CrossGenTest>
     <!-- https://github.com/dotnet/runtime/issues/73954 -->
     <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
+    <!-- This test launches crossgen2 with dotnet, so we would need a non-sanitzed jitinterface library. To simplify our infrastructure, we'll instead skip this test. -->
+    <CLRTestTargetUnsupported Condition="'$(EnableNativeSanitizers)' != ''">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="fieldgetter.ilproj" />
     <ProjectReference Include="testv1\test.csproj" />
+    <ProjectReference Include="testv2\test.csproj" ReferenceOutputAssembly="false" />
     <CMakeProjectReference Include="CMakeLists.txt" />
   </ItemGroup>
   <ItemGroup>
@@ -43,7 +47,7 @@ if not exist IL_DLLS\mainv2.dll (
 IF "%__TestDotNetCmd%"=="" set __TestDotNetCmd=dotnet
 
 REM NOTE THAT THIS IS WHERE WE BUILD THE R2R IMAGE using V2 of test not V1
-%__TestDotNetCmd% %Core_Root%\crossgen2\crossgen2.dll --map -r:%Core_Root%\*.dll -r:%25CD%\IL_DLLS\fieldgetter.dll -r:%25CD%\IL_DLLS\mainv2.dll -o:test.dll ..\testv2\test\test.dll
+%__TestDotNetCmd% %Core_Root%\crossgen2\crossgen2.dll --map -r:%Core_Root%\*.dll -r:%25CD%\IL_DLLS\fieldgetter.dll -r:%25CD%\IL_DLLS\mainv2.dll -o:test.dll testv2\test.dll
 
 set CrossGenStatus=!ERRORLEVEL!
 IF NOT !CrossGenStatus!==0 (
@@ -55,7 +59,7 @@ if not exist test.map (
     exit /b 1
 )
 
-%__TestDotNetCmd% %Core_Root%\crossgen2\crossgen2.dll --map -r:%Core_Root%\*.dll -r:%25CD%\IL_DLLS\mainv2.dll -r:..\testv1\test\test.dll -o:fieldgetter.dll IL_DLLS\fieldgetter.dll
+%__TestDotNetCmd% %Core_Root%\crossgen2\crossgen2.dll --map -r:%Core_Root%\*.dll -r:%25CD%\IL_DLLS\mainv2.dll -r:testv1\test.dll -o:fieldgetter.dll IL_DLLS\fieldgetter.dll
 
 set CrossGenStatus=!ERRORLEVEL!
 IF NOT !CrossGenStatus!==0 (
@@ -67,7 +71,7 @@ if not exist fieldgetter.map (
     exit /b 1
 )
 
-%__TestDotNetCmd% %Core_Root%\crossgen2\crossgen2.dll --map -r:%Core_Root%\*.dll -r:%25CD%\IL_DLLS\fieldgetter.dll -r:..\testv1\test\test.dll --opt-cross-module:test -o:mainv2.dll IL_DLLS\mainv2.dll
+%__TestDotNetCmd% %Core_Root%\crossgen2\crossgen2.dll --map -r:%Core_Root%\*.dll -r:%25CD%\IL_DLLS\fieldgetter.dll -r:testv1\test.dll --opt-cross-module:test -o:mainv2.dll IL_DLLS\mainv2.dll
 
 set CrossGenStatus=!ERRORLEVEL!
 IF NOT !CrossGenStatus!==0 (
@@ -110,7 +114,7 @@ then
 fi
 
 # NOTE THAT THIS IS WHERE WE BUILD THE R2R IMAGE using V2 of test not V1
-$CORE_ROOT/corerun $CORE_ROOT/crossgen2/crossgen2.dll --map -r:$CORE_ROOT/*.dll -r:IL_DLLS/fieldgetter.dll -r:IL_DLLS/mainv2.dll -o:test.dll ../testv2/test/test.dll
+$CORE_ROOT/corerun $CORE_ROOT/crossgen2/crossgen2.dll --map -r:$CORE_ROOT/*.dll -r:IL_DLLS/fieldgetter.dll -r:IL_DLLS/mainv2.dll -o:test.dll testv2/test.dll
 
 __cgExitCode=$?
 if [ $__cgExitCode -ne 0 ]
@@ -124,7 +128,7 @@ then
   exit 1
 fi
 
-$CORE_ROOT/corerun $CORE_ROOT/crossgen2/crossgen2.dll --map -r:$CORE_ROOT/*.dll -r:../testv1/test/test.dll -r:IL_DLLS/mainv2.dll -o:fieldgetter.dll IL_DLLS/fieldgetter.dll
+$CORE_ROOT/corerun $CORE_ROOT/crossgen2/crossgen2.dll --map -r:$CORE_ROOT/*.dll -r:testv1/test.dll -r:IL_DLLS/mainv2.dll -o:fieldgetter.dll IL_DLLS/fieldgetter.dll
 
 __cgExitCode=$?
 if [ $__cgExitCode -ne 0 ]
@@ -138,7 +142,7 @@ then
   exit 1
 fi
 
-$CORE_ROOT/corerun $CORE_ROOT/crossgen2/crossgen2.dll --map -r:$CORE_ROOT/*.dll -r:../testv1/test/test.dll -r:IL_DLLS/fieldgetter.dll --opt-cross-module:test -o:mainv2.dll IL_DLLS/mainv2.dll
+$CORE_ROOT/corerun $CORE_ROOT/crossgen2/crossgen2.dll --map -r:$CORE_ROOT/*.dll -r:testv1/test.dll -r:IL_DLLS/fieldgetter.dll --opt-cross-module:test -o:mainv2.dll IL_DLLS/mainv2.dll
 
 __cgExitCode=$?
 if [ $__cgExitCode -ne 0 ]
@@ -155,4 +159,18 @@ fi
 export DOTNET_GCName DOTNET_GCStress DOTNET_HeapVerify DOTNET_ReadyToRun
 ]]></CLRTestBashPreCommands>
   </PropertyGroup>
+
+  <Target Name="CopyTestAssemblyToOutputs" AfterTargets="Build" Condition="'$(CLRTestTargetUnsupported)' != 'true'">
+    <PropertyGroup>
+      <TestAssemblyName>test.dll</TestAssemblyName>
+      <TestV1AssemblySourcePath>$(OutputPath)/../testv1/test/</TestV1AssemblySourcePath>
+      <TestV1AssemblyTargetPath>$(OutputPath)/testv1</TestV1AssemblyTargetPath>
+      <TestV2AssemblySourcePath>$(OutputPath)/../testv2/test/</TestV2AssemblySourcePath>
+      <TestV2AssemblyTargetPath>$(OutputPath)/testv2</TestV2AssemblyTargetPath>
+    </PropertyGroup>
+    
+    <MakeDir Directories="$(TestV1AssemblyTargetPath);$(TestV2AssemblyTargetPath)" />
+    <Copy SourceFiles="$(TestV1AssemblySourcePath)$(TestAssemblyName)" DestinationFolder="$(TestV1AssemblyTargetPath)" />
+    <Copy SourceFiles="$(TestV2AssemblySourcePath)$(TestAssemblyName)" DestinationFolder="$(TestV2AssemblyTargetPath)" />
+  </Target>
 </Project>

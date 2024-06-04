@@ -43,6 +43,15 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.  */
 # define MAP_NORESERVE 0
 #endif
 
+void __attribute__((noinline)) push_some_stacks(int n)
+{
+  if (n >= 1)
+  {
+    push_some_stacks(n - 1);
+    push_some_stacks(n - 1);
+  }
+}
+
 int
 main (void)
 {
@@ -71,7 +80,7 @@ main (void)
 
   printf ("Turning on single-stepping...\n");
   kill (getpid (), SIGUSR1);	/* tell test-ptrace to start single-stepping */
-  printf ("Va bene?\n");
+  push_some_stacks (4);
   kill (getpid (), SIGUSR2);	/* tell test-ptrace to stop single-stepping */
   printf ("Turned single-stepping off...\n");
   return 0;

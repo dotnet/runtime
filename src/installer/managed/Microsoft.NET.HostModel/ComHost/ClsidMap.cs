@@ -18,6 +18,8 @@ namespace Microsoft.NET.HostModel.ComHost
 {
     public static class ClsidMap
     {
+        private static readonly JsonSerializerOptions s_jsonOptions = new JsonSerializerOptions { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull };
+
         private struct ClsidEntry
         {
             [JsonPropertyName("type")]
@@ -65,7 +67,7 @@ namespace Microsoft.NET.HostModel.ComHost
 
             using (StreamWriter writer = File.CreateText(clsidMapPath))
             {
-                writer.Write(JsonSerializer.Serialize(clsidMap, new JsonSerializerOptions { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull }));
+                writer.Write(JsonSerializer.Serialize(clsidMap, s_jsonOptions));
             }
         }
 

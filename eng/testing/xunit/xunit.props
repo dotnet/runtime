@@ -6,12 +6,15 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Condition="'$(IncludeRemoteExecutor)' == 'true'" Include="Microsoft.DotNet.RemoteExecutor" Version="$(MicrosoftDotNetRemoteExecutorVersion)" />
-
     <!-- Excluding xunit.core/build as it enables deps file generation. -->
-    <PackageReference Include="xunit" Version="$(XUnitVersion)" ExcludeAssets="build" />
-    <PackageReference Include="xunit.analyzers" Version="$(XUnitAnalyzersVersion)" ExcludeAssets="build" />
+    <PackageReference Include="xunit.core" Version="$(XUnitVersion)" IsImplicitlyDefined="true" PrivateAssets="all" Publish="true" ExcludeAssets="build" />
+    <PackageReference Include="xunit.analyzers" Version="$(XUnitAnalyzersVersion)" IsImplicitlyDefined="true" PrivateAssets="all" Publish="true" />
+
+    <PackageReference Include="xunit.assert" Version="$(XUnitVersion)" IsImplicitlyDefined="true" PrivateAssets="all" Publish="true" Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'" />
+    <PackageReference Include="Microsoft.DotNet.XUnitAssert" Version="$(MicrosoftDotNetXUnitAssertVersion)" IsImplicitlyDefined="true" PrivateAssets="all" Publish="true" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
+
     <PackageReference Include="Microsoft.DotNet.XUnitExtensions" Version="$(MicrosoftDotNetXUnitExtensionsVersion)" />
+    <PackageReference Include="Microsoft.DotNet.RemoteExecutor" Version="$(MicrosoftDotNetRemoteExecutorVersion)" Condition="'$(IncludeRemoteExecutor)' == 'true'" />
 
     <!--
       Microsoft.Net.Test.Sdk has a dependency on Newtonsoft.Json v9.0.1. We upgrade the dependency version

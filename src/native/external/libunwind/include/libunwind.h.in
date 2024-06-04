@@ -23,8 +23,6 @@
 # include "libunwind-x86.h"
 #elif defined __x86_64__
 # include "libunwind-x86_64.h"
-#elif defined __tilegx__
-# include "libunwind-tilegx.h"
 #elif defined __s390x__
 # include "libunwind-s390x.h"
 #elif defined __riscv || defined __riscv__

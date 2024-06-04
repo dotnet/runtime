@@ -14,11 +14,10 @@ namespace Test
         static bool Static1(ref int[] param1) { return false; }
 
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             AA local5 = new AA();
             while (AA.Static1(ref local5.m_anField3)) ;
-            return 100;
         }
     }
 }

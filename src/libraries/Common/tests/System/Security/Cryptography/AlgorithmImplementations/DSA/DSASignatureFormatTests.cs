@@ -354,7 +354,7 @@ namespace System.Security.Cryptography.Dsa.Tests
                 Assert.Equal(0, written);
             }
 
-            Assert.True(false, $"TryCreateSignature eventually succeeds with a {expectedSize}/{maxSize}-byte destination");
+            Assert.Fail($"TryCreateSignature eventually succeeds with a {expectedSize}/{maxSize}-byte destination");
         }
 
         [Fact]
@@ -382,7 +382,7 @@ namespace System.Security.Cryptography.Dsa.Tests
                 Assert.Equal(0, written);
             }
 
-            Assert.True(false, $"TrySignData eventually succeeds with a {expectedSize}/{maxSize}-byte destination");
+            Assert.Fail($"TrySignData eventually succeeds with a {expectedSize}/{maxSize}-byte destination");
         }
     }
 }

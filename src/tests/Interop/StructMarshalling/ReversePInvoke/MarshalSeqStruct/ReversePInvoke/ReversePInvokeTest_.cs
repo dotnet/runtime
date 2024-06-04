@@ -1516,7 +1516,7 @@ public class MarshalStructTest
                 Assert.True(DoCallBack_MarshalStructS11ByRef_Cdecl(new S11ByRefCdeclcaller(TestMethodForStructS11_ReversePInvokeByRef_Cdecl)));
                 break;
             default:
-                Assert.True(false, "DoCallBack_MarshalStructByRef_Cdecl:The structid (Managed Side) is wrong");
+                Assert.Fail("DoCallBack_MarshalStructByRef_Cdecl:The structid (Managed Side) is wrong");
                 break;
         }
     }
@@ -1588,7 +1588,7 @@ public class MarshalStructTest
                 Assert.True(DoCallBack_MarshalStructS11ByRef_StdCall(new S11ByRefStdCallcaller(TestMethodForStructS11_ReversePInvokeByRef_StdCall)));
                 break;
             default:
-                Assert.True(false, "DoCallBack_MarshalStructByRef_StdCall:The structid (Managed Side) is wrong");
+                Assert.Fail("DoCallBack_MarshalStructByRef_StdCall:The structid (Managed Side) is wrong");
                 break;
         }
     }
@@ -1702,7 +1702,7 @@ public class MarshalStructTest
                     new ByValCdeclcaller_ByteStruct3Byte(TestMethod_DoCallBack_MarshalStructByVal_ByteStruct3Byte_Cdecl)));
                 break;
             default:
-                Assert.True(false, "DoCallBack_MarshalStructByVal_Cdecl:The structid (Managed Side) is wrong");
+                Assert.Fail("DoCallBack_MarshalStructByVal_Cdecl:The structid (Managed Side) is wrong");
                 break;
         }
     }
@@ -1779,7 +1779,7 @@ public class MarshalStructTest
                     new ByValStdCallcaller_ByteStruct3Byte(TestMethod_DoCallBack_MarshalStructByVal_ByteStruct3Byte_StdCall)));
                 break;
             default:
-                Assert.True(false, "DoCallBack_MarshalStructByVal_StdCall:The structid (Managed Side) is wrong");
+                Assert.Fail("DoCallBack_MarshalStructByVal_StdCall:The structid (Managed Side) is wrong");
                 break;
         }
     }
@@ -1832,7 +1832,9 @@ public class MarshalStructTest
 
     #endregion
 
-    static int Main()
+    [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
+    public static int TestEntryPoint()
     {
         try{
 

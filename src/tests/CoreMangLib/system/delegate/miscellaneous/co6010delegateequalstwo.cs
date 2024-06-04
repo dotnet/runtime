@@ -4,6 +4,7 @@
 
 using System;
 using System.Diagnostics;
+using Xunit;
 
 delegate void Void_VoidDelegate();
 public class TestClass
@@ -20,7 +21,8 @@ public class TestClass
 		return a;
 	}
 
-	public static int Main() {
+	[Fact]
+	public static int TestEntryPoint() {
 		int iErrorCount = 0;
 		int iTestCount = 0;
 		{

@@ -15,9 +15,9 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Testing;
 using Microsoft.CodeAnalysis.Text;
+using Microsoft.DotNet.XUnitExtensions.Attributes;
 using Microsoft.Interop.UnitTests;
 using Xunit;
-using GeneratorDiagnostics = Microsoft.Interop.GeneratorDiagnostics;
 using VerifyCS = Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.Interop.LibraryImportGenerator>;
 
 namespace LibraryImportGenerator.UnitTests
@@ -41,6 +41,8 @@ namespace LibraryImportGenerator.UnitTests
             yield return new[] { ID(), CodeSnippets.AllLibraryImportNamedArguments };
             yield return new[] { ID(), CodeSnippets.DefaultParameters };
             yield return new[] { ID(), CodeSnippets.UseCSharpFeaturesForConstants };
+            yield return new[] { ID(), CodeSnippets.LibraryImportInRefStruct };
+            yield return new[] { ID(), CodeSnippets.ExplicitThis };
 
             // Parameter / return types
             yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<byte>() };
@@ -256,6 +258,7 @@ namespace LibraryImportGenerator.UnitTests
 
             // Parameter modifiers
             yield return new[] { ID(), CodeSnippets.SingleParameterWithModifier("int", "scoped ref") };
+            yield return new[] { ID(), CodeSnippets.SingleParameterWithModifier("int", "ref readonly") };
         }
 
         public static IEnumerable<object[]> CustomCollections()
@@ -717,7 +720,7 @@ namespace LibraryImportGenerator.UnitTests
 
         [Theory]
         [MemberData(nameof(CodeSnippetsToVerifyNoTreesProduced))]
-        public async Task ValidateNoGeneratedOuptutForNoImport(string id, string source, TestTargetFramework framework)
+        public async Task ValidateNoGeneratedOutputForNoImport(string id, string source, TestTargetFramework framework)
         {
             TestUtils.Use(id);
             var test = new NoChangeTest(framework)
@@ -743,29 +746,6 @@ namespace LibraryImportGenerator.UnitTests
                 Assert.Same(originalCompilation, newCompilation);
                 return (newCompilation, diagnostics);
             }
-        }
-
-        public static IEnumerable<object[]> ByValueMarshalKindSnippets()
-        {
-            // Blittable array
-            yield return new object[] { ID(), CodeSnippets.ByValueParameterWithModifier<int[]>("{|#10:Out|}"), new DiagnosticResult[] { } };
-
-            yield return new object[] { ID(), CodeSnippets.ByValueParameterWithModifier<int[]>("{|#10:In|}, {|#11:Out|}"), new[]
-            {
-                VerifyCS.Diagnostic(GeneratorDiagnostics.UnnecessaryParameterMarshallingInfo)
-                    .WithLocation(0)
-                    .WithLocation(10)
-                    .WithLocation(11)
-                    .WithArguments("[In] and [Out] attributes", "p", SR.PinnedMarshallingIsInOutByDefault)
-            } };
-        }
-
-        [MemberData(nameof(ByValueMarshalKindSnippets))]
-        [Theory]
-        public async Task ValidateDiagnosticsForUnnecessaryByValueMarshalKindAttributes(string id, string source, DiagnosticResult[] diagnostics)
-        {
-            _ = id;
-            await VerifyCS.VerifySourceGeneratorAsync(source, diagnostics);
         }
     }
 }

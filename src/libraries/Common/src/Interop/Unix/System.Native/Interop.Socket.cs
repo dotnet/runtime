@@ -3,7 +3,6 @@
 
 using System;
 using System.Net;
-using System.Net.Internals;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
 
@@ -12,6 +11,6 @@ internal static partial class Interop
     internal static partial class Sys
     {
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_Socket")]
-        internal static unsafe partial Error Socket(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType, IntPtr* socket);
+        internal static unsafe partial Error Socket(int addressFamily, int socketType, int protocolType, IntPtr* socket);
     }
 }

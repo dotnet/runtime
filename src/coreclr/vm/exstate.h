@@ -24,6 +24,11 @@ class EHClauseInfo;
 
 extern StackWalkAction COMPlusUnwindCallback(CrawlFrame *pCf, ThrowCallbackType *pData);
 
+#ifdef FEATURE_EH_FUNCLETS
+struct ExInfo;
+typedef DPTR(ExInfo) PTR_ExInfo;
+#endif // !FEATURE_EH_FUNCLETS
+
 //
 // This class serves as a forwarding and abstraction layer for the EH subsystem.
 // Since we have two different implementations, this class is needed to unify
@@ -47,6 +52,7 @@ class ThreadExceptionState
 
 #ifdef FEATURE_EH_FUNCLETS
     friend class ExceptionTracker;
+    friend struct ExInfo;
 #else
     friend class ExInfo;
 #endif // FEATURE_EH_FUNCLETS
@@ -75,7 +81,6 @@ public:
     PTR_EXCEPTION_RECORD GetExceptionRecord();
     PTR_CONTEXT          GetContextRecord();
     BOOL                IsExceptionInProgress();
-    void                GetLeafFrameInfo(StackTraceElement* pStackTrace);
 
     ExceptionFlags*     GetFlags();
 
@@ -143,14 +148,23 @@ private:
     Thread* GetMyThread();
 
 #ifdef FEATURE_EH_FUNCLETS
-    PTR_ExceptionTracker    m_pCurrentTracker;
+    PTR_ExceptionTrackerBase m_pCurrentTracker;
     ExceptionTracker        m_OOMTracker;
 public:
-    PTR_ExceptionTracker    GetCurrentExceptionTracker()
+    PTR_ExceptionTrackerBase GetCurrentExceptionTracker()
     {
         LIMITED_METHOD_CONTRACT;
         return m_pCurrentTracker;
     }
+
+#ifndef DACCESS_COMPILE
+    void SetCurrentExceptionTracker(ExceptionTrackerBase* pTracker)
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_pCurrentTracker = pTracker;
+    }
+#endif // DACCESS_COMPILE
+
 #else
     ExInfo                  m_currentExInfo;
 public:

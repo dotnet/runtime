@@ -45,6 +45,12 @@ namespace System.Buffers.Binary
         /// <summary>
         /// Reads a <see cref="short" /> from the beginning of a read-only span of bytes, as big endian.
         /// </summary>
+        /// <param name="source">The read-only span to read.</param>
+        /// <returns>The big endian value.</returns>
+        /// <remarks>Reads exactly 2 bytes from the beginning of the span.</remarks>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="source"/> is too small to contain a <see cref="short" />.
+        /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static short ReadInt16BigEndian(ReadOnlySpan<byte> source)
         {
@@ -56,6 +62,12 @@ namespace System.Buffers.Binary
         /// <summary>
         /// Reads a <see cref="int" /> from the beginning of a read-only span of bytes, as big endian.
         /// </summary>
+        /// <param name="source">The read-only span to read.</param>
+        /// <returns>The big endian value.</returns>
+        /// <remarks>Reads exactly 4 bytes from the beginning of the span.</remarks>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="source"/> is too small to contain a <see cref="int" />.
+        /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int ReadInt32BigEndian(ReadOnlySpan<byte> source)
         {
@@ -67,6 +79,12 @@ namespace System.Buffers.Binary
         /// <summary>
         /// Reads a <see cref="long" /> from the beginning of a read-only span of bytes, as big endian.
         /// </summary>
+        /// <param name="source">The read-only span to read.</param>
+        /// <returns>The big endian value.</returns>
+        /// <remarks>Reads exactly 8 bytes from the beginning of the span.</remarks>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="source"/> is too small to contain a <see cref="long" />.
+        /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static long ReadInt64BigEndian(ReadOnlySpan<byte> source)
         {
@@ -78,6 +96,12 @@ namespace System.Buffers.Binary
         /// <summary>
         /// Reads a <see cref="Int128" /> from the beginning of a read-only span of bytes, as big endian.
         /// </summary>
+        /// <param name="source">The read-only span to read.</param>
+        /// <returns>The big endian value.</returns>
+        /// <remarks>Reads exactly 16 bytes from the beginning of the span.</remarks>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="source"/> is too small to contain a <see cref="Int128" />.
+        /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Int128 ReadInt128BigEndian(ReadOnlySpan<byte> source)
         {
@@ -89,6 +113,12 @@ namespace System.Buffers.Binary
         /// <summary>
         /// Reads a <see cref="nint" /> from the beginning of a read-only span of bytes, as big endian.
         /// </summary>
+        /// <param name="source">The read-only span to read.</param>
+        /// <returns>The big endian value.</returns>
+        /// <remarks>Reads exactly 4 bytes on 32-bit platforms -or- 8 bytes on 64-bit platforms from the beginning of the span.</remarks>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="source"/> is too small to contain a <see cref="nint" />.
+        /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static nint ReadIntPtrBigEndian(ReadOnlySpan<byte> source)
         {
@@ -117,6 +147,12 @@ namespace System.Buffers.Binary
         /// <summary>
         /// Reads a <see cref="ushort" /> from the beginning of a read-only span of bytes, as big endian.
         /// </summary>
+        /// <param name="source">The read-only span to read.</param>
+        /// <returns>The big endian value.</returns>
+        /// <remarks>Reads exactly 2 bytes from the beginning of the span.</remarks>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="source"/> is too small to contain a <see cref="ushort" />.
+        /// </exception>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ushort ReadUInt16BigEndian(ReadOnlySpan<byte> source)
@@ -129,6 +165,12 @@ namespace System.Buffers.Binary
         /// <summary>
         /// Reads a <see cref="uint" /> from the beginning of a read-only span of bytes, as big endian.
         /// </summary>
+        /// <param name="source">The read-only span to read.</param>
+        /// <returns>The big endian value.</returns>
+        /// <remarks>Reads exactly 4 bytes from the beginning of the span.</remarks>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="source"/> is too small to contain a <see cref="uint" />.
+        /// </exception>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static uint ReadUInt32BigEndian(ReadOnlySpan<byte> source)
@@ -141,6 +183,12 @@ namespace System.Buffers.Binary
         /// <summary>
         /// Reads a <see cref="ulong" /> from the beginning of a read-only span of bytes, as big endian.
         /// </summary>
+        /// <param name="source">The read-only span to read.</param>
+        /// <returns>The big endian value.</returns>
+        /// <remarks>Reads exactly 8 bytes from the beginning of the span.</remarks>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="source"/> is too small to contain a <see cref="ulong" />.
+        /// </exception>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ulong ReadUInt64BigEndian(ReadOnlySpan<byte> source)
@@ -153,6 +201,12 @@ namespace System.Buffers.Binary
         /// <summary>
         /// Reads a <see cref="UInt128" /> from the beginning of a read-only span of bytes, as big endian.
         /// </summary>
+        /// <param name="source">The read-only span to read.</param>
+        /// <returns>The big endian value.</returns>
+        /// <remarks>Reads exactly 16 bytes from the beginning of the span.</remarks>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="source"/> is too small to contain a <see cref="UInt128" />.
+        /// </exception>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static UInt128 ReadUInt128BigEndian(ReadOnlySpan<byte> source)
@@ -165,6 +219,12 @@ namespace System.Buffers.Binary
         /// <summary>
         /// Reads a <see cref="nuint" /> from the beginning of a read-only span of bytes, as big endian.
         /// </summary>
+        /// <param name="source">The read-only span to read.</param>
+        /// <returns>The big endian value.</returns>
+        /// <remarks>Reads exactly 4 bytes on 32-bit platforms -or- 8 bytes on 64-bit platforms from the beginning of the span.</remarks>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="source"/> is too small to contain a <see cref="nuint" />.
+        /// </exception>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static nuint ReadUIntPtrBigEndian(ReadOnlySpan<byte> source)
@@ -178,7 +238,7 @@ namespace System.Buffers.Binary
         /// Reads a <see cref="double" /> from the beginning of a read-only span of bytes, as big endian.
         /// </summary>
         /// <param name="source">The read-only span of bytes to read.</param>
-        /// <param name="value">When this method returns, the value read out of the read-only span of bytes, as big endian.</param>
+        /// <param name="value">When this method returns, contains the value read out of the read-only span of bytes, as big endian.</param>
         /// <returns>
         /// <see langword="true" /> if the span is large enough to contain a <see cref="double" />; otherwise, <see langword="false" />.
         /// </returns>
@@ -200,7 +260,7 @@ namespace System.Buffers.Binary
         /// Reads a <see cref="Half" /> from the beginning of a read-only span of bytes, as big endian.
         /// </summary>
         /// <param name="source">The read-only span of bytes to read.</param>
-        /// <param name="value">When this method returns, the value read out of the read-only span of bytes, as big endian.</param>
+        /// <param name="value">When this method returns, contains the value read out of the read-only span of bytes, as big endian.</param>
         /// <returns>
         /// <see langword="true" /> if the span is large enough to contain a <see cref="Half" />; otherwise, <see langword="false" />.
         /// </returns>
@@ -221,7 +281,12 @@ namespace System.Buffers.Binary
         /// <summary>
         /// Reads a <see cref="short" /> from the beginning of a read-only span of bytes, as big endian.
         /// </summary>
-        /// <returns>If the span is too small to contain a <see cref="short" />, return false.</returns>
+        /// <param name="source">The read-only span of bytes to read.</param>
+        /// <param name="value">When this method returns, contains the value read out of the read-only span of bytes, as big endian.</param>
+        /// <returns>
+        /// <see langword="true" /> if the span is large enough to contain a <see cref="short" />; otherwise, <see langword="false" />.
+        /// </returns>
+        /// <remarks>Reads exactly 2 bytes from the beginning of the span.</remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryReadInt16BigEndian(ReadOnlySpan<byte> source, out short value)
         {
@@ -238,7 +303,12 @@ namespace System.Buffers.Binary
         /// <summary>
         /// Reads a <see cref="int" /> from the beginning of a read-only span of bytes, as big endian.
         /// </summary>
-        /// <returns>If the span is too small to contain a <see cref="int" />, return false.</returns>
+        /// <param name="source">The read-only span of bytes to read.</param>
+        /// <param name="value">When this method returns, contains the value read out of the read-only span of bytes, as big endian.</param>
+        /// <returns>
+        /// <see langword="true" /> if the span is large enough to contain a <see cref="int" />; otherwise, <see langword="false" />.
+        /// </returns>
+        /// <remarks>Reads exactly 4 bytes from the beginning of the span.</remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryReadInt32BigEndian(ReadOnlySpan<byte> source, out int value)
         {
@@ -255,7 +325,12 @@ namespace System.Buffers.Binary
         /// <summary>
         /// Reads a <see cref="long" /> from the beginning of a read-only span of bytes, as big endian.
         /// </summary>
-        /// <returns>If the span is too small to contain a <see cref="long" />, return false.</returns>
+        /// <param name="source">The read-only span of bytes to read.</param>
+        /// <param name="value">When this method returns, contains the value read out of the read-only span of bytes, as big endian.</param>
+        /// <returns>
+        /// <see langword="true" /> if the span is large enough to contain a <see cref="long" />; otherwise, <see langword="false" />.
+        /// </returns>
+        /// <remarks>Reads exactly 8 bytes from the beginning of the span.</remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryReadInt64BigEndian(ReadOnlySpan<byte> source, out long value)
         {
@@ -272,7 +347,12 @@ namespace System.Buffers.Binary
         /// <summary>
         /// Reads a <see cref="Int128" /> from the beginning of a read-only span of bytes, as big endian.
         /// </summary>
-        /// <returns>If the span is too small to contain a <see cref="Int128" />, return false.</returns>
+        /// <param name="source">The read-only span of bytes to read.</param>
+        /// <param name="value">When this method returns, contains the value read out of the read-only span of bytes, as big endian.</param>
+        /// <returns>
+        /// <see langword="true" /> if the span is large enough to contain a <see cref="Int128" />; otherwise, <see langword="false" />.
+        /// </returns>
+        /// <remarks>Reads exactly 16 bytes from the beginning of the span.</remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryReadInt128BigEndian(ReadOnlySpan<byte> source, out Int128 value)
         {
@@ -289,7 +369,12 @@ namespace System.Buffers.Binary
         /// <summary>
         /// Reads a <see cref="nint" /> from the beginning of a read-only span of bytes, as big endian.
         /// </summary>
-        /// <returns>If the span is too small to contain a <see cref="nint" />, return false.</returns>
+        /// <param name="source">The read-only span of bytes to read.</param>
+        /// <param name="value">When this method returns, contains the value read out of the read-only span of bytes, as big endian.</param>
+        /// <returns>
+        /// <see langword="true" /> if the span is large enough to contain a <see cref="nint" />; otherwise, <see langword="false" />.
+        /// </returns>
+        /// <remarks>Reads exactly 4 bytes on 32-bit platforms -or- 8 bytes on 64-bit platforms from the beginning of the span.</remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryReadIntPtrBigEndian(ReadOnlySpan<byte> source, out nint value)
         {
@@ -307,7 +392,7 @@ namespace System.Buffers.Binary
         /// Reads a <see cref="float" /> from the beginning of a read-only span of bytes, as big endian.
         /// </summary>
         /// <param name="source">The read-only span of bytes to read.</param>
-        /// <param name="value">When this method returns, the value read out of the read-only span of bytes, as big endian.</param>
+        /// <param name="value">When this method returns, contains the value read out of the read-only span of bytes, as big endian.</param>
         /// <returns>
         /// <see langword="true" /> if the span is large enough to contain a <see cref="float" />; otherwise, <see langword="false" />.
         /// </returns>
@@ -327,7 +412,12 @@ namespace System.Buffers.Binary
         /// <summary>
         /// Reads a <see cref="ushort" /> from the beginning of a read-only span of bytes, as big endian.
         /// </summary>
-        /// <returns>If the span is too small to contain a <see cref="ushort" />, return false.</returns>
+        /// <param name="source">The read-only span of bytes to read.</param>
+        /// <param name="value">When this method returns, contains the value read out of the read-only span of bytes, as big endian.</param>
+        /// <returns>
+        /// <see langword="true" /> if the span is large enough to contain a <see cref="ushort" />; otherwise, <see langword="false" />.
+        /// </returns>
+        /// <remarks>Reads exactly 2 bytes from the beginning of the span.</remarks>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryReadUInt16BigEndian(ReadOnlySpan<byte> source, out ushort value)
@@ -345,7 +435,12 @@ namespace System.Buffers.Binary
         /// <summary>
         /// Reads a <see cref="uint" /> from the beginning of a read-only span of bytes, as big endian.
         /// </summary>
-        /// <returns>If the span is too small to contain a <see cref="uint" />, return false.</returns>
+        /// <param name="source">The read-only span of bytes to read.</param>
+        /// <param name="value">When this method returns, contains the value read out of the read-only span of bytes, as big endian.</param>
+        /// <returns>
+        /// <see langword="true" /> if the span is large enough to contain a <see cref="uint" />; otherwise, <see langword="false" />.
+        /// </returns>
+        /// <remarks>Reads exactly 4 bytes from the beginning of the span.</remarks>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryReadUInt32BigEndian(ReadOnlySpan<byte> source, out uint value)
@@ -363,7 +458,12 @@ namespace System.Buffers.Binary
         /// <summary>
         /// Reads a <see cref="ulong" /> from the beginning of a read-only span of bytes, as big endian.
         /// </summary>
-        /// <returns>If the span is too small to contain a <see cref="ulong" />, return false.</returns>
+        /// <param name="source">The read-only span of bytes to read.</param>
+        /// <param name="value">When this method returns, contains the value read out of the read-only span of bytes, as big endian.</param>
+        /// <returns>
+        /// <see langword="true" /> if the span is large enough to contain a <see cref="ulong" />; otherwise, <see langword="false" />.
+        /// </returns>
+        /// <remarks>Reads exactly 8 bytes from the beginning of the span.</remarks>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryReadUInt64BigEndian(ReadOnlySpan<byte> source, out ulong value)
@@ -381,7 +481,12 @@ namespace System.Buffers.Binary
         /// <summary>
         /// Reads a <see cref="UInt128" /> from the beginning of a read-only span of bytes, as big endian.
         /// </summary>
-        /// <returns>If the span is too small to contain a <see cref="UInt128" />, return false.</returns>
+        /// <param name="source">The read-only span of bytes to read.</param>
+        /// <param name="value">When this method returns, contains the value read out of the read-only span of bytes, as big endian.</param>
+        /// <returns>
+        /// <see langword="true" /> if the span is large enough to contain a <see cref="UInt128" />; otherwise, <see langword="false" />.
+        /// </returns>
+        /// <remarks>Reads exactly 16 bytes from the beginning of the span.</remarks>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryReadUInt128BigEndian(ReadOnlySpan<byte> source, out UInt128 value)
@@ -399,7 +504,13 @@ namespace System.Buffers.Binary
         /// <summary>
         /// Reads a <see cref="nuint" /> from the beginning of a read-only span of bytes, as big endian.
         /// </summary>
-        /// <returns>If the span is too small to contain a <see cref="nuint" />, return false.</returns>
+
+        /// <param name="source">The read-only span of bytes to read.</param>
+        /// <param name="value">When this method returns, contains the value read out of the read-only span of bytes, as big endian.</param>
+        /// <returns>
+        /// <see langword="true" /> if the span is large enough to contain a <see cref="nuint" />; otherwise, <see langword="false" />.
+        /// </returns>
+        /// <remarks>Reads exactly 4 bytes on 32-bit platforms -or- 8 bytes on 64-bit platforms from the beginning of the span.</remarks>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryReadUIntPtrBigEndian(ReadOnlySpan<byte> source, out nuint value)

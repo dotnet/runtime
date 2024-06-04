@@ -1,5 +1,7 @@
+.\" *********************************** start of \input{common.tex}
+.\" *********************************** end of \input{common.tex}
 '\" t
-.\" Manual page created with latex2man on Sun Aug 29 23:45:06 CEST 2021
+.\" Manual page created with latex2man on Tue Aug 29 11:41:44 2023
 .\" NOTE: This file is generated, DO NOT EDIT.
 .de Vb
 .ft CW
@@ -10,7 +12,7 @@
 
 .fi
 ..
-.TH "UNW\\_REG\\_STATES\\_ITERATE" "3" "29 August 2021" "Programming Library " "Programming Library "
+.TH "UNW\\_REG\\_STATES\\_ITERATE" "3libunwind" "29 August 2023" "Programming Library " "Programming Library "
 .SH NAME
 unw_reg_states_iterate
 \-\- get register state info on current procedure 
@@ -87,15 +89,15 @@ On successful completion, unw_reg_states_iterate()
 returns 
 0. If the callback function returns a nonzero value, that indicates 
 failure and the function returns immediately. Otherwise the negative 
-value of one of the error\-codes below is returned. 
+value of one of the error codes below is returned. 
 .PP
 .SH THREAD AND SIGNAL SAFETY
 
 .PP
 unw_reg_states_iterate()
-is thread\-safe. If cursor cp
+is thread safe. If cursor cp
 is 
-in the local address\-space, this routine is also safe to use from a 
+in the local address space, this routine is also safe to use from a 
 signal handler. 
 .PP
 .SH ERRORS
@@ -118,13 +120,13 @@ In addition, unw_reg_states_iterate()
 may return any error 
 returned by the access_mem()
 call\-back (see 
-unw_create_addr_space(3)).
+unw_create_addr_space(3libunwind)).
 .PP
 .SH SEE ALSO
 
 .PP
-libunwind(3),
-unw_apply_reg_state(3)
+libunwind(3libunwind),
+unw_apply_reg_state(3libunwind)
 .PP
 .SH AUTHOR
 

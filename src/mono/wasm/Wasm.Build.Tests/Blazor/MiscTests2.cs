@@ -9,7 +9,7 @@ using Xunit.Abstractions;
 
 namespace Wasm.Build.Tests.Blazor;
 
-public class MiscTests2 : BuildTestBase
+public class MiscTests2 : BlazorWasmTestBase
 {
     public MiscTests2(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
         : base(output, buildContext)
@@ -51,7 +51,7 @@ public class MiscTests2 : BuildTestBase
 
     private CommandResult PublishForRequiresWorkloadTest(string config, string extraItems="", string extraProperties="")
     {
-        string id = $"needs_workload_{config}_{Path.GetRandomFileName()}";
+        string id = $"needs_workload_{config}_{GetRandomId()}";
         CreateBlazorWasmTemplateProject(id);
 
         AddItemsPropertiesToProject(Path.Combine(_projectDir!, $"{id}.csproj"),

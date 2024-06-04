@@ -248,50 +248,6 @@ test_basename (void)
 	return OK;
 }
 
-static gchar *
-test_ppath (void)
-{
-	char *s;
-#ifdef G_OS_WIN32
-	const gchar *searchfor = "explorer.exe";
-#else
-	const gchar *searchfor = "ls";
-#endif
-	s = g_find_program_in_path (searchfor);
-	if (s == NULL)
-		return FAILED ("No %s on this system?", searchfor);
-	g_free (s);
-	return OK;
-}
-
-static gchar *
-test_ppath2 (void)
-{
-	char *s;
-	const char *path = g_getenv ("PATH");
-#ifdef G_OS_WIN32
-	const gchar *searchfor = "test_eglib.exe";
-#else
-	const gchar *searchfor = "test-eglib";
-#endif
-
-	g_setenv ("PATH", "", TRUE);
-	s = g_find_program_in_path ("ls");
-	if (s != NULL) {
-		g_setenv ("PATH", path, TRUE);
-		return FAILED ("Found something interesting here: %s", s);
-	}
-	g_free (s);
-	s = g_find_program_in_path (searchfor);
-	if (s == NULL) {
-		g_setenv ("PATH", path, TRUE);
-		return FAILED ("It should find '%s' in the current directory.", searchfor);
-	}
-	g_free (s);
-	g_setenv ("PATH", path, TRUE);
-	return OK;
-}
-
 #ifndef DISABLE_FILESYSTEM_TESTS
 static gchar *
 test_cwd (void)
@@ -345,8 +301,6 @@ static Test path_tests [] = {
 	{"g_buildpath", test_buildpath},
 	{"g_path_get_dirname", test_dirname},
 	{"g_path_get_basename", test_basename},
-	{"g_find_program_in_path", test_ppath},
-	{"g_find_program_in_path2", test_ppath2},
 	{"test_cwd", test_cwd },
 	{"test_misc", test_misc },
 	{NULL, NULL}

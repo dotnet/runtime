@@ -11,6 +11,18 @@ namespace System.Buffers
     {
         private fixed uint _values[8];
 
+        public readonly BitVector256 CreateInverse()
+        {
+            BitVector256 inverse = default;
+
+            for (int i = 0; i < 8; i++)
+            {
+                inverse._values[i] = ~_values[i];
+            }
+
+            return inverse;
+        }
+
         public void Set(int c)
         {
             Debug.Assert(c < 256);

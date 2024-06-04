@@ -22,10 +22,9 @@ public class CC
         }
     }
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         ulong ul = 0;
         Method1(ref ul, __arglist());
-        return 100;
     }
 }

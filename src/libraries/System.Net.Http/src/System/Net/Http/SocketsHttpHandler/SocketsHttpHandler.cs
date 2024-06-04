@@ -2,16 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.Metrics;
 using System.IO;
+using System.Net.Http.Metrics;
 using System.Net.Security;
 using System.Runtime.Versioning;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Diagnostics.CodeAnalysis;
-using System.Text;
-using System.Diagnostics;
-using System.Diagnostics.Metrics;
-using System.Net.Http.Metrics;
 
 namespace System.Net.Http
 {
@@ -516,7 +516,9 @@ namespace System.Net.Http
                 handler = new DiagnosticsHandler(handler, propagator, settings._allowAutoRedirect);
             }
 
-            handler = new MetricsHandler(handler, _settings._meterFactory);
+            handler = new MetricsHandler(handler, settings._meterFactory, out Meter meter);
+
+            settings._metrics = new SocketsHttpHandlerMetrics(meter);
 
             if (settings._allowAutoRedirect)
             {
@@ -608,7 +610,7 @@ namespace System.Net.Http
 
         private static Exception? ValidateAndNormalizeRequest(HttpRequestMessage request)
         {
-            if (request.Version.Major == 0)
+            if (request.Version != HttpVersion.Version10 && request.Version != HttpVersion.Version11 && request.Version != HttpVersion.Version20 && request.Version != HttpVersion.Version30)
             {
                 return new NotSupportedException(SR.net_http_unsupported_version);
             }

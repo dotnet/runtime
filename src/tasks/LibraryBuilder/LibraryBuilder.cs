@@ -9,6 +9,9 @@ using System.IO;
 using System.Text;
 using System.Linq;
 using System.Runtime.InteropServices;
+using Microsoft.Android.Build;
+using Microsoft.Apple.Build;
+using Microsoft.Mobile.Build.Clang;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 
@@ -17,7 +20,6 @@ public class LibraryBuilderTask : AppBuilderTask
     private bool isSharedLibrary = true;
     private string nativeLibraryType = "SHARED";
 
-    private string cmakeProjectLanguages = "";
     private string targetOS = "";
     private bool usesAOTDataFile;
     private List<string> exportedAssemblies = new List<string>();
@@ -26,8 +28,7 @@ public class LibraryBuilderTask : AppBuilderTask
     /// The name of the library being generated
     /// </summary>
     [Required]
-    [NotNull]
-    public string? Name { get; set; }
+    public string? Name { get; set; } = ""!;
 
     /// <summary>
     /// The name of the OS being targeted
@@ -117,25 +118,11 @@ public class LibraryBuilderTask : AppBuilderTask
         get => Path.Combine(OutputDirectory, "mobile_symbols.txt");
     }
 
-    private string CMakeProjectLanguages
-    {
-        get
-        {
-            if (string.IsNullOrEmpty(cmakeProjectLanguages))
-            {
-                cmakeProjectLanguages = (TargetOS == "android") ? "C ASM" : "OBJC ASM";
-            }
-
-            return cmakeProjectLanguages;
-        }
-    }
-
     public override bool Execute()
     {
-        StringBuilder aotSources = new StringBuilder();
-        StringBuilder aotObjects = new StringBuilder();
-        StringBuilder extraSources = new StringBuilder();
-        StringBuilder linkerArgs = new StringBuilder();
+        List<string> sources = new List<string>();
+        List<string> libs = new List<string>();
+        List<string> linkerArgs = new List<string>();
 
         if (!ValidateValidTargetOS())
         {
@@ -148,8 +135,7 @@ public class LibraryBuilderTask : AppBuilderTask
             return false;
         }
 
-        GatherAotSourcesObjects(aotSources, aotObjects, extraSources, linkerArgs);
-        GatherLinkerArgs(linkerArgs);
+        GatherSourcesAndLibs(sources, libs, linkerArgs);
 
         File.WriteAllText(Path.Combine(OutputDirectory, "library-builder.h"),
             Utils.GetEmbeddedResource("library-builder.h"));
@@ -159,34 +145,45 @@ public class LibraryBuilderTask : AppBuilderTask
         if (UsesRuntimeInitCallback && !UsesCustomRuntimeInitCallback)
         {
             WriteAutoInitializationFromTemplate();
-            extraSources.AppendLine("    autoinit.c");
         }
 
-        WriteCMakeFileFromTemplate(aotSources.ToString(), aotObjects.ToString(), extraSources.ToString(), linkerArgs.ToString());
-        OutputPath = BuildLibrary();
+        if (TargetOS == "android")
+        {
+            OutputPath = BuildAndroidLibrary(sources, libs, linkerArgs);
+        }
+        else
+        {
+            OutputPath = BuildAppleLibrary(sources, libs, linkerArgs);
+        }
 
         return true;
     }
 
-    private void GatherAotSourcesObjects(StringBuilder aotSources, StringBuilder aotObjects, StringBuilder extraSources, StringBuilder linkerArgs)
+    // Intended for native toolchain specific builds
+    private void GatherSourcesAndLibs(List<string> sources, List<string> libs, List<string> linkerArgs)
     {
         List<string> exportedSymbols = new List<string>();
 
         foreach (CompiledAssembly compiledAssembly in CompiledAssemblies)
         {
-            if (!string.IsNullOrEmpty(compiledAssembly.AssemblerFile))
-            {
-                aotSources.AppendLine($"    {compiledAssembly.AssemblerFile}");
-            }
-
             if (!usesAOTDataFile && !string.IsNullOrEmpty(compiledAssembly.DataFile))
             {
                 usesAOTDataFile = true;
             }
 
+            if (!string.IsNullOrEmpty(compiledAssembly.AssemblerFile))
+            {
+                sources.Add(compiledAssembly.AssemblerFile);
+            }
+
             if (!string.IsNullOrEmpty(compiledAssembly.LlvmObjectFile))
             {
-                aotObjects.AppendLine($"    {compiledAssembly.LlvmObjectFile}");
+                sources.Add(compiledAssembly.LlvmObjectFile);
+            }
+
+            if (!string.IsNullOrEmpty(compiledAssembly.ObjectFile))
+            {
+                sources.Add(compiledAssembly.ObjectFile);
             }
 
             if (!string.IsNullOrEmpty(compiledAssembly.ExportsFile))
@@ -198,6 +195,25 @@ public class LibraryBuilderTask : AppBuilderTask
                     exportedAssemblies.Add(Path.GetFileName(compiledAssembly.Path));
                 }
             }
+        }
+
+        foreach (ITaskItem lib in RuntimeLibraries)
+        {
+            string ext = Path.GetExtension(lib.ItemSpec);
+
+            if (ext == ".so" || ext == ".dylib")
+            {
+                libs.Add(lib.ItemSpec);
+            }
+            else
+            {
+                sources.Add(lib.ItemSpec);
+            }
+        }
+
+        foreach (ITaskItem item in ExtraLinkerArguments)
+        {
+            linkerArgs.Add(item.ItemSpec);
         }
 
         if (exportedAssemblies.Count == 0)
@@ -213,7 +229,7 @@ public class LibraryBuilderTask : AppBuilderTask
             if (TargetOS == "android")
             {
                 WriteLinkerScriptFile(MobileSymbolFileName, exportedSymbols);
-                WriteLinkerScriptArg(MobileSymbolFileName, linkerArgs);
+                linkerArgs.Add($"\"--version-script={MobileSymbolFileName}\"");
             }
             else
             {
@@ -221,36 +237,16 @@ public class LibraryBuilderTask : AppBuilderTask
                     MobileSymbolFileName,
                     string.Join("\n", exportedSymbols.Select(symbol => symbol))
                 );
-                WriteExportedSymbolsArg(MobileSymbolFileName, linkerArgs);
+                linkerArgs.Add($"-exported_symbols_list {MobileSymbolFileName}");
             }
         }
 
         foreach (ITaskItem item in ExtraSources)
         {
-            extraSources.AppendLine($"    {item.ItemSpec}");
+            sources.Add(item.ItemSpec);
         }
 
         ExportedSymbols = exportedSymbols.ToArray();
-    }
-
-    private void GatherLinkerArgs(StringBuilder linkerArgs)
-    {
-        string libForceLoad = "";
-
-        if (TargetOS != "android")
-        {
-            libForceLoad = "-force_load ";
-        }
-
-        foreach (ITaskItem item in RuntimeLibraries)
-        {
-            linkerArgs.AppendLine($"    \"{libForceLoad}{item.ItemSpec}\"");
-        }
-
-        foreach (ITaskItem item in ExtraLinkerArguments)
-        {
-            linkerArgs.AppendLine($"    \"{item.ItemSpec}\"");
-        }
     }
 
     private static int GatherExportedSymbols(string exportsFile, List<string> exportedSymbols)
@@ -264,16 +260,6 @@ public class LibraryBuilderTask : AppBuilderTask
         }
 
         return count;
-    }
-
-    private static void WriteExportedSymbolsArg(string exportsFile, StringBuilder linkerArgs)
-    {
-        linkerArgs.AppendLine($"    \"-Wl,-exported_symbols_list {exportsFile}\"");
-    }
-
-    private static void WriteLinkerScriptArg(string exportsFile, StringBuilder linkerArgs)
-    {
-        linkerArgs.AppendLine($"    \"-Wl,--version-script={exportsFile}\"");
     }
 
     private static void WriteLinkerScriptFile(string exportsFile, List<string> exportedSymbols)
@@ -319,6 +305,10 @@ public class LibraryBuilderTask : AppBuilderTask
                 .Replace("%RUNTIME_CONFIG_DATA%", dataSymbol)
                 .Replace("%RUNTIME_CONFIG_DATA_LEN%", dataLenSymbol);
         }
+        else
+        {
+            autoInitialization = autoInitialization.Replace("%EXTERN_BUNDLED_RESOURCES_SYMBOLS%", string.Empty);
+        }
 
         File.WriteAllText(Path.Combine(OutputDirectory, "autoinit.c"), autoInitialization);
     }
@@ -336,60 +326,88 @@ public class LibraryBuilderTask : AppBuilderTask
                 .Replace("%ASSEMBLIES_PRELOADER%", string.Join("\n    ", assemblyPreloaders)));
     }
 
-    private void WriteCMakeFileFromTemplate(string aotSources, string aotObjects, string extraSources, string linkerArgs)
+    private string BuildAndroidLibrary(List<string> sources, List<string> libs, List<string> linkerArgs)
     {
-        string extraDefinitions = GenerateExtraDefinitions();
-        // BundleDir
-        File.WriteAllText(Path.Combine(OutputDirectory, "CMakeLists.txt"),
-            Utils.GetEmbeddedResource("CMakeLists.txt.template")
-                .Replace("%LIBRARY_NAME%", Name)
-                .Replace("%LIBRARY_TYPE%", nativeLibraryType)
-                .Replace("%CMAKE_LANGS%", CMakeProjectLanguages)
-                .Replace("%MonoInclude%", MonoRuntimeHeaders)
-                .Replace("%AotSources%", aotSources)
-                .Replace("%AotObjects%", aotObjects)
-                .Replace("%ExtraDefinitions%", extraDefinitions)
-                .Replace("%ExtraSources%", extraSources)
-                .Replace("%LIBRARY_LINKER_ARGS%", linkerArgs));
-    }
+        string libraryName = GetLibraryName();
 
-    private string GenerateExtraDefinitions()
-    {
-        var extraDefinitions = new StringBuilder();
+        ClangBuildOptions buildOptions = new ClangBuildOptions();
+        buildOptions.CompilerArguments.Add("-D ANDROID=1");
+        buildOptions.CompilerArguments.Add("-D HOST_ANDROID=1");
+        buildOptions.CompilerArguments.Add("-fPIC");
+        buildOptions.CompilerArguments.Add(IsSharedLibrary ? $"-shared -o {libraryName}" : $"-o {libraryName}");
+        buildOptions.IncludePaths.Add(MonoRuntimeHeaders);
+        buildOptions.LinkerArguments.Add($"--soname={libraryName}");
+        buildOptions.LinkerArguments.AddRange(linkerArgs);
+        buildOptions.NativeLibraryPaths.AddRange(libs);
+        buildOptions.Sources.AddRange(sources);
+        buildOptions.Sources.Add("preloaded-assemblies.c");
 
-        if (usesAOTDataFile)
+        if (UsesRuntimeInitCallback && !UsesCustomRuntimeInitCallback)
         {
-            extraDefinitions.AppendLine("add_definitions(-DUSES_AOT_DATA=1)");
+            buildOptions.Sources.Add("autoinit.c");
         }
 
         if (BundlesResources)
         {
-            extraDefinitions.AppendLine("add_definitions(-DBUNDLED_RESOURCES=1)");
+            buildOptions.CompilerArguments.Add("-D BUNDLED_RESOURCES=1");
         }
 
-        return extraDefinitions.ToString();
+        if (usesAOTDataFile)
+        {
+            buildOptions.CompilerArguments.Add("-D USES_AOT_DATA=1");
+        }
+
+        AndroidProject project = new AndroidProject("netlibrary", RuntimeIdentifier, Log);
+        project.Build(OutputDirectory, buildOptions, StripDebugSymbols);
+
+        return Path.Combine(OutputDirectory, libraryName);
     }
 
-    private string BuildLibrary()
+    private string BuildAppleLibrary(List<string> sources, List<string> libs, List<string> linkerArgs)
     {
-        string libraryOutputPath;
+        string libraryName = GetLibraryName();
 
-        if (TargetOS == "android")
+        ClangBuildOptions buildOptions = new ClangBuildOptions();
+        buildOptions.CompilerArguments.Add(IsSharedLibrary ? $"-dynamiclib -o {libraryName}" : $"-o {libraryName}");
+        buildOptions.CompilerArguments.Add("-D HOST_APPLE_MOBILE=1");
+        buildOptions.CompilerArguments.Add("-D FORCE_AOT=1");
+        buildOptions.IncludePaths.Add(MonoRuntimeHeaders);
+        buildOptions.NativeLibraryPaths.AddRange(libs);
+        buildOptions.Sources.AddRange(sources);
+        buildOptions.Sources.Add("preloaded-assemblies.c");
+
+        if (IsSharedLibrary)
         {
-            AndroidProject project = new AndroidProject("netlibrary", RuntimeIdentifier, Log);
-            project.GenerateCMake(OutputDirectory, StripDebugSymbols);
-            libraryOutputPath = project.BuildCMake(OutputDirectory, StripDebugSymbols);
+            linkerArgs.Add("-Wl,-headerpad_max_install_names");
         }
-        else
+
+        buildOptions.LinkerArguments.AddRange(linkerArgs);
+
+        if (UsesRuntimeInitCallback && !UsesCustomRuntimeInitCallback)
         {
-            Xcode project = new Xcode(Log, RuntimeIdentifier);
-            project.CreateXcodeProject("netlibrary", OutputDirectory);
-
-            string xcodeProjectPath = Path.Combine(OutputDirectory, "netlibrary", $"{Name}.xcodeproj");
-            libraryOutputPath = project.BuildAppBundle(xcodeProjectPath, StripDebugSymbols, "-");
+            buildOptions.Sources.Add("autoinit.c");
         }
 
-        return Path.Combine(libraryOutputPath, GetLibraryName());
+        if (BundlesResources)
+        {
+            buildOptions.CompilerArguments.Add("-D BUNDLED_RESOURCES=1");
+        }
+
+        if (usesAOTDataFile)
+        {
+            buildOptions.CompilerArguments.Add("-D USES_AOT_DATA=1");
+        }
+
+        AppleProject project = new AppleProject("netlibrary", RuntimeIdentifier, Log);
+        project.Build(OutputDirectory, buildOptions, StripDebugSymbols);
+
+        if (IsSharedLibrary)
+        {
+            string installToolArgs = $"install_name_tool -id @rpath/{libraryName} {libraryName}";
+            Utils.RunProcess(Log, "xcrun", workingDir: OutputDirectory, args: installToolArgs);
+        }
+
+        return Path.Combine(OutputDirectory, libraryName);
     }
 
     private string GetLibraryName()
@@ -413,7 +431,7 @@ public class LibraryBuilderTask : AppBuilderTask
     private bool ValidateValidTargetOS() =>
         TargetOS switch
         {
-            "android" or "ios" or "tvos" or "maccatalyst" => true,
+            "android" or "ios" or "iossimulator" or "tvos" or "tvossimulator" or "maccatalyst" => true,
             _ => false
         };
 }

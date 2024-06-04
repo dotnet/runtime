@@ -119,7 +119,7 @@ namespace System.IO.Ports.Tests
                 {
                     if (null != expectedException && throwAt == ThrowAt.Set)
                     {
-                        Assert.True(false, $"Err_7212ahsdj Expected Ctor to throw {expectedException}");
+                        Assert.Fail($"Err_7212ahsdj Expected Ctor to throw {expectedException}");
                     }
 
                     serPortProp.SetAllPropertiesToDefaults();
@@ -128,7 +128,7 @@ namespace System.IO.Ports.Tests
                     serPortProp.VerifyPropertiesAndPrint(com);
                 }
             }
-            catch (TrueException)
+            catch (FailException)
             {
                 // This is an inner failure
                 throw;
@@ -137,15 +137,15 @@ namespace System.IO.Ports.Tests
             {
                 if (null == expectedException)
                 {
-                    Assert.True(false, $"Err_07081hadnh Did not expect exception to be thrown and the following was thrown: \n{e}");
+                    Assert.Fail($"Err_07081hadnh Did not expect exception to be thrown and the following was thrown: \n{e}");
                 }
                 else if (throwAt == ThrowAt.Open)
                 {
-                    Assert.True(false, $"Err_88916adfa Expected {expectedException} to be thrown at Open and the following was thrown at Set: \n{e}");
+                    Assert.Fail($"Err_88916adfa Expected {expectedException} to be thrown at Open and the following was thrown at Set: \n{e}");
                 }
                 else if (e.GetType() != expectedException)
                 {
-                    Assert.True(false, $"Err_90282ahwhp Expected {expectedException} to be thrown and the following was thrown: \n{e}");
+                    Assert.Fail($"Err_90282ahwhp Expected {expectedException} to be thrown and the following was thrown: \n{e}");
                 }
             }
         }

@@ -36,7 +36,7 @@ namespace System.Xml.XslCompiledTransformApiTests
             retObj = m_xsltArg.GetParam("myArg1", szEmpty);
             _output.WriteLine("Added Value:{0}\nRetrieved Value: {1}", "Test1", retObj);
             if (retObj.ToString() != "Test1")
-                Assert.True(false);
+                Assert.Fail();
             return;
         }
 
@@ -107,7 +107,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 _output.WriteLine(e.Message);
                 return;
             }
-            Assert.True(false);
+            Assert.Fail();
         }
 
         public class TestDynamicObject : DynamicObject
@@ -128,7 +128,7 @@ namespace System.Xml.XslCompiledTransformApiTests
             if (retObj != null)
             {
                 _output.WriteLine("Did not return NULL for null param name {0}", retObj);
-                Assert.True(false);
+                Assert.Fail();
             }
             else
                 return;
@@ -144,7 +144,7 @@ namespace System.Xml.XslCompiledTransformApiTests
             if (retObj != null)
             {
                 _output.WriteLine("Did not return NULL for empty string param name: {0}", retObj);
-                Assert.True(false);
+                Assert.Fail();
             }
             return;
         }
@@ -159,7 +159,7 @@ namespace System.Xml.XslCompiledTransformApiTests
             if (retObj != null)
             {
                 _output.WriteLine("Did not return NULL for non-existent parameter name: {0}", retObj);
-                Assert.True(false);
+                Assert.Fail();
             }
             return;
         }
@@ -174,7 +174,7 @@ namespace System.Xml.XslCompiledTransformApiTests
             if (retObj != null)
             {
                 _output.WriteLine("Did not return NULL for an invalid param name");
-                Assert.True(false);
+                Assert.Fail();
             }
             return;
         }
@@ -189,7 +189,7 @@ namespace System.Xml.XslCompiledTransformApiTests
             retObj = m_xsltArg.GetParam(szLongString, szEmpty);
             _output.WriteLine("Added Value:{0}\nRetrieved Value: {1}", "Test6", retObj);
             if (retObj.ToString() != "Test6")
-                Assert.True(false);
+                Assert.Fail();
             return;
         }
 
@@ -203,7 +203,7 @@ namespace System.Xml.XslCompiledTransformApiTests
             if (retObj != null)
             {
                 _output.WriteLine("Did not return NULL for null namespace System.Xml.Tests");
-                Assert.True(false);
+                Assert.Fail();
             }
             return;
         }
@@ -218,7 +218,7 @@ namespace System.Xml.XslCompiledTransformApiTests
             retObj = m_xsltArg.GetParam("myArg1", szEmpty);
             _output.WriteLine("Added Value:{0}\nRetrieved Value: {1}", "Test8", retObj);
             if (retObj.ToString() != "Test8")
-                Assert.True(false);
+                Assert.Fail();
             return;
         }
 
@@ -233,7 +233,7 @@ namespace System.Xml.XslCompiledTransformApiTests
             if (retObj != null)
             {
                 _output.WriteLine("Did not retrieve a null value for non-existent uri");
-                Assert.True(false);
+                Assert.Fail();
             }
 
             m_xsltArg.AddParam("myArg2", "http://www.msn.com", "Test1");
@@ -241,14 +241,14 @@ namespace System.Xml.XslCompiledTransformApiTests
             if (retObj != null)
             {
                 _output.WriteLine("Did not retrieve a null value for non-existent uri");
-                Assert.True(false);
+                Assert.Fail();
             }
 
             retObj = m_xsltArg.GetParam("myArg2", szEmpty);
             if (retObj != null)
             {
                 _output.WriteLine("Did not retrieve a null value for non-existent uri");
-                Assert.True(false);
+                Assert.Fail();
             }
             return;
         }
@@ -263,7 +263,7 @@ namespace System.Xml.XslCompiledTransformApiTests
             retObj = m_xsltArg.GetParam("myArg1", szLongNS);
             _output.WriteLine("Added Value:{0}\nRetrieved Value: {1}", "Test10", retObj);
             if (retObj.ToString() != "Test10")
-                Assert.True(false);
+                Assert.Fail();
             return;
         }
 
@@ -294,7 +294,7 @@ namespace System.Xml.XslCompiledTransformApiTests
             {
                 _output.WriteLine("Failed to add/get a value for {0} of type {1}", "0.00", "string");
                 _output.WriteLine("Retrieved: {0}  ", retObj);
-                Assert.True(false);
+                Assert.Fail();
             }
 
             //int -- check conversions and value for original object and returned object
@@ -313,7 +313,7 @@ namespace System.Xml.XslCompiledTransformApiTests
             {
                 _output.WriteLine("Failed to add/get a value for {0} of type {1}", bF.ToString(), "boolean");
                 _output.WriteLine("Retrieved: {0}  ", retObj);
-                Assert.True(false);
+                Assert.Fail();
             }
 
             bool bT = (1 == 1);
@@ -324,7 +324,7 @@ namespace System.Xml.XslCompiledTransformApiTests
             {
                 _output.WriteLine("Failed to add/get a value for {0} of type {1}", bT.ToString(), "boolean");
                 _output.WriteLine("Retrieved: {0}  ", retObj);
-                Assert.True(false);
+                Assert.Fail();
             }
 
             XPathDocument xd = new XPathDocument(FullFilePath("Fish.xml"));
@@ -335,7 +335,7 @@ namespace System.Xml.XslCompiledTransformApiTests
             {
                 _output.WriteLine("Failed to add/get a value of type {1}", "XPathNavigator");
                 _output.WriteLine("Retrieved: {0}  ", retObj);
-                Assert.True(false);
+                Assert.Fail();
             }
             return;
         }
@@ -349,13 +349,13 @@ namespace System.Xml.XslCompiledTransformApiTests
             m_xsltArg.AddParam("myArg1", szEmpty, "Test1");
             retObj = m_xsltArg.GetParam("myarg1", szEmpty);
             if (retObj != null)
-                Assert.True(false);
+                Assert.Fail();
             retObj = m_xsltArg.GetParam("myArg1 ", szEmpty);
             if (retObj != null)
-                Assert.True(false);
+                Assert.Fail();
             retObj = m_xsltArg.GetParam("myArg", szEmpty);
             if (retObj != null)
-                Assert.True(false);
+                Assert.Fail();
 
             return;
         }
@@ -374,7 +374,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 if (retObj.ToString() != "Test" + str)
                 {
                     _output.WriteLine("Error processing {0} test for whitespace arg in first set", i);
-                    Assert.True(false);
+                    Assert.Fail();
                 }
                 i++;
             }
@@ -386,7 +386,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 if (retObj != null)
                 {
                     _output.WriteLine("Error processing {0} test for whitespace arg in second set. Returned object is not null.", i);
-                    Assert.True(false);
+                    Assert.Fail();
                 }
                 i++;
             }
@@ -404,7 +404,7 @@ namespace System.Xml.XslCompiledTransformApiTests
             retObj = m_xsltArg.GetParam("myArg1", szEmpty);
 
             if (retObj != null)
-                Assert.True(false);
+                Assert.Fail();
             return;
         }
 
@@ -423,7 +423,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 {
                     _output.WriteLine("Failed after retrieving {0} times", i);
                     _output.WriteLine("Added Value:{0}\nRetrieved Value: {1}", "Test16", retObj);
-                    Assert.True(false);
+                    Assert.Fail();
                 }
             }
             _output.WriteLine("Retrievied {0} times", i);
@@ -443,7 +443,7 @@ namespace System.Xml.XslCompiledTransformApiTests
             if (retObj != null)
             {
                 _output.WriteLine("Return a non-null value when retrieving Param with namespace {0}", szXslNS);
-                Assert.True(false);
+                Assert.Fail();
             }
             return;
         }
@@ -463,13 +463,13 @@ namespace System.Xml.XslCompiledTransformApiTests
             _output.WriteLine("Added Value:{0}\nRetrieved Value: {1}", "Test2", retObj);
 
             if (retObj.ToString() != "Test2")
-                Assert.True(false);
+                Assert.Fail();
 
             retObj = m_xsltArg.GetParam("myArg1", szEmpty);
             _output.WriteLine("Retrieve Original Value:{0}\nActual Retrieved Value: {1}", "Test1", retObj);
 
             if (retObj.ToString() != "Test1")
-                Assert.True(false);
+                Assert.Fail();
             return;
         }
 
@@ -483,7 +483,7 @@ namespace System.Xml.XslCompiledTransformApiTests
             if (retObj != null)
             {
                 _output.WriteLine("Did not return NULL for null parameter name");
-                Assert.True(false);
+                Assert.Fail();
             }
             return;
         }
@@ -509,7 +509,7 @@ namespace System.Xml.XslCompiledTransformApiTests
             {
                 _output.WriteLine("Failed to add/get a value for {0}", d1);
                 _output.WriteLine("Retrieved: {0}  ", retObj);
-                Assert.True(false);
+                Assert.Fail();
             }
 
             m_xsltArg.AddParam("myArg2", szEmpty, d2);
@@ -519,7 +519,7 @@ namespace System.Xml.XslCompiledTransformApiTests
             {
                 _output.WriteLine("Failed to add/get a value for {0}", d2);
                 _output.WriteLine("Retrieved: {0}  ", retObj);
-                Assert.True(false);
+                Assert.Fail();
             }
 
             m_xsltArg.AddParam("myArg3", szEmpty, d3);
@@ -529,7 +529,7 @@ namespace System.Xml.XslCompiledTransformApiTests
             {
                 _output.WriteLine("Failed to add/get a value for {0}", d3);
                 _output.WriteLine("Retrieved: {0}  ", retObj);
-                Assert.True(false);
+                Assert.Fail();
             }
 
             m_xsltArg.AddParam("myArg4", szEmpty, d4);
@@ -539,7 +539,7 @@ namespace System.Xml.XslCompiledTransformApiTests
             {
                 _output.WriteLine("Failed to add/get a value for {0}", d4);
                 _output.WriteLine("Retrieved: {0}  ", retObj);
-                Assert.True(false);
+                Assert.Fail();
             }
 
             m_xsltArg.AddParam("myArg5", szEmpty, d5);
@@ -549,7 +549,7 @@ namespace System.Xml.XslCompiledTransformApiTests
             {
                 _output.WriteLine("Failed to add/get a value for {0}", d5);
                 _output.WriteLine("Retrieved: {0}  ", retObj);
-                Assert.True(false);
+                Assert.Fail();
             }
 
             m_xsltArg.AddParam("myArg6", szEmpty, d6);
@@ -559,7 +559,7 @@ namespace System.Xml.XslCompiledTransformApiTests
             {
                 _output.WriteLine("Failed to add/get a value for {0}", d6);
                 _output.WriteLine("Retrieved: {0}  ", retObj);
-                Assert.True(false);
+                Assert.Fail();
             }
 
             m_xsltArg.AddParam("myArg7", szEmpty, d7);
@@ -569,7 +569,7 @@ namespace System.Xml.XslCompiledTransformApiTests
             {
                 _output.WriteLine("Failed to add/get a value for {0}", d7);
                 _output.WriteLine("Retrieved: {0}  ", retObj);
-                Assert.True(false);
+                Assert.Fail();
             }
             return;
         }
@@ -624,7 +624,7 @@ namespace System.Xml.XslCompiledTransformApiTests
             if (((MyObject)retObj).MyValue() != obj.MyValue())
             {
                 _output.WriteLine("Set and retrieved value appear to be different");
-                Assert.True(false);
+                Assert.Fail();
             }
 
             string expXml = "<?xml version=\"1.0\" encoding=\"utf-8\"?><result xmlns:myObj=\"urn:my-object\"><func1>1.Test1</func1><func2>2.Test2</func2><func3>3.Test3</func3></result>";
@@ -634,7 +634,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 return;
             }
             else
-                Assert.True(false);
+                Assert.Fail();
         }
 
         //[Variation("Namespace URI = null")]
@@ -670,7 +670,7 @@ namespace System.Xml.XslCompiledTransformApiTests
             catch (Exception e)
             {
                 _output.WriteLine(e.ToString());
-                Assert.True(false);
+                Assert.Fail();
             }
 
             if ((LoadXSL("showParam.xsl", xslInputType, readerType) == 1) && (Transform_ArgList("fruits.xml", outputType, navType) == 1))
@@ -679,7 +679,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 return;
             }
             else
-                Assert.True(false);
+                Assert.Fail();
         }
 
         //[Variation("Namespace URI non-existent")]
@@ -694,7 +694,7 @@ namespace System.Xml.XslCompiledTransformApiTests
             if (retObj != null)
             {
                 _output.WriteLine("Did not return a NULL value for a non-existent URI");
-                Assert.True(false);
+                Assert.Fail();
             }
             try
             {
@@ -706,7 +706,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 return;
             }
             _output.WriteLine("Did not throw exception for an invalid transform");
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation("Very long namespace System.Xml.Tests")]
@@ -723,7 +723,7 @@ namespace System.Xml.XslCompiledTransformApiTests
             if (((MyObject)retObj).MyValue() != obj.MyValue())
             {
                 _output.WriteLine("Set and retrieved value appear to be different");
-                Assert.True(false);
+                Assert.Fail();
             }
 
             string expXml = "<?xml version=\"1.0\" encoding=\"utf-8\"?><result xmlns:myObj=\"http://www.microsoft.com/this/is/a/very/long/namespace/uri/to/do/the/api/testing/for/xslt/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/0123456789/\"><func1>1.Test1</func1><func2>2.Test2</func2><func3>3.Test3</func3></result>";
@@ -733,7 +733,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 return;
             }
             else
-                Assert.True(false);
+                Assert.Fail();
         }
 
         //[Variation("Invalid namespace System.Xml.Tests")]
@@ -764,7 +764,7 @@ namespace System.Xml.XslCompiledTransformApiTests
             {
                 _output.WriteLine("Failed to add/get a value for {0} of type {1}", "0.00", "string");
                 _output.WriteLine("Retrieved: {0}  ", retObj);
-                Assert.True(false);
+                Assert.Fail();
             }
 
             int i = 8;
@@ -776,12 +776,12 @@ namespace System.Xml.XslCompiledTransformApiTests
             {
                 _output.WriteLine("Failed to add/get a value for {0} with conversion from int to double", i);
                 _output.WriteLine("Retrieved: {0}", retObj.ToString());
-                Assert.True(false);
+                Assert.Fail();
             }
 
             //must also be same instance!!!
             if (i != (int)retObj)
-                Assert.True(false);
+                Assert.Fail();
 
             bool bF = (1 == 0);
 
@@ -792,7 +792,7 @@ namespace System.Xml.XslCompiledTransformApiTests
             {
                 _output.WriteLine("Failed to add/get a value for {0} of type {1}", bF.ToString(), "boolean");
                 _output.WriteLine("Retrieved: {0}  ", retObj);
-                Assert.True(false);
+                Assert.Fail();
             }
 
             bool bT = (1 == 1);
@@ -804,7 +804,7 @@ namespace System.Xml.XslCompiledTransformApiTests
             {
                 _output.WriteLine("Failed to add/get a value for {0} of type {1}", bT.ToString(), "boolean");
                 _output.WriteLine("Retrieved: {0}  ", retObj);
-                Assert.True(false);
+                Assert.Fail();
             }
             return;
         }
@@ -823,28 +823,28 @@ namespace System.Xml.XslCompiledTransformApiTests
             if (((MyObject)retObj).MyValue() != obj.MyValue())
             {
                 _output.WriteLine("Set and retrieved value appear to be different");
-                Assert.True(false);
+                Assert.Fail();
             }
 
             retObj = m_xsltArg.GetExtensionObject("URN:MY-OBJECT");
             if (retObj != null)
             {
                 _output.WriteLine("Set and retrieved value appear to be different for URN:MY-OBJECT");
-                Assert.True(false);
+                Assert.Fail();
             }
 
             retObj = m_xsltArg.GetExtensionObject("urn:My-Object");
             if (retObj != null)
             {
                 _output.WriteLine("Set and retrieved value appear to be different for urn:My-Object");
-                Assert.True(false);
+                Assert.Fail();
             }
 
             retObj = m_xsltArg.GetExtensionObject("urn-my:object");
             if (retObj != null)
             {
                 _output.WriteLine("Set and retrieved value appear to be different for urn-my:object");
-                Assert.True(false);
+                Assert.Fail();
             }
 
             string expXml = "<?xml version=\"1.0\" encoding=\"utf-8\"?><result xmlns:myObj=\"urn:my-object\"><func1>1.Test1</func1><func2>2.Test2</func2><func3>3.Test3</func3></result>";
@@ -854,7 +854,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 return;
             }
             else
-                Assert.True(false);
+                Assert.Fail();
         }
 
         //[Variation("Whitespace")]
@@ -874,7 +874,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 if (((MyObject)retObj).MyValue() != i)
                 {
                     _output.WriteLine("Error processing {0} test for whitespace arg", i);
-                    Assert.True(false);
+                    Assert.Fail();
                 }
                 i++;
             }
@@ -889,7 +889,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 return;
             }
             _output.WriteLine("Did not throw expected exception: System.Xml.Xsl.XsltException");
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation("Call after object has been removed")]
@@ -907,7 +907,7 @@ namespace System.Xml.XslCompiledTransformApiTests
             if (retObj != null)
             {
                 _output.WriteLine("Did not retrieve a NULL value for a non-existent object returned");
-                Assert.True(false);
+                Assert.Fail();
             }
 
             try
@@ -920,7 +920,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 return;
             }
             _output.WriteLine("Did not throw expected exception: System.Xml.Xsl.XsltException");
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation("Call multiple times")]
@@ -939,7 +939,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 if (((MyObject)retObj).MyValue() != obj.MyValue())
                 {
                     _output.WriteLine("Set and retrieved value appear to be different after {i} tries", i);
-                    Assert.True(false);
+                    Assert.Fail();
                 }
             }
             string expXml = "<?xml version=\"1.0\" encoding=\"utf-8\"?><result xmlns:myObj=\"urn:my-object\"><func1>1.Test1</func1><func2>2.Test2</func2><func3>3.Test3</func3></result>";
@@ -949,7 +949,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 return;
             }
             else
-                Assert.True(false);
+                Assert.Fail();
         }
 
         //[Variation("Using XSL Namespace")]
@@ -962,7 +962,7 @@ namespace System.Xml.XslCompiledTransformApiTests
             if (retObj != null)
             {
                 _output.WriteLine("Did not retrieve null value when using namespace {0}", szXslNS);
-                Assert.True(false);
+                Assert.Fail();
             }
             return;
         }
@@ -1012,7 +1012,7 @@ namespace System.Xml.XslCompiledTransformApiTests
             retObj = m_xsltArg.GetParam("myArg1", szEmpty);
             _output.WriteLine("Added Value:{0}\nRetrieved Value: {1}", "Test1", retObj);
             if (retObj.ToString() != "Test1")
-                Assert.True(false);
+                Assert.Fail();
 
             if ((LoadXSL("showParam.xsl", xslInputType, readerType) == 1) && (Transform_ArgList("fruits.xml", outputType, navType) == 1))
             {
@@ -1020,7 +1020,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 return;
             }
             else
-                Assert.True(false);
+                Assert.Fail();
         }
 
         //[Variation("Param  = null")]
@@ -1038,7 +1038,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 return;
             }
             _output.WriteLine("System.ArgumentNullException not thrown for adding null param");
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation("Param name is empty string")]
@@ -1056,7 +1056,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 return;
             }
             _output.WriteLine("System.ArgumentException not thrown for param name empty string");
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation("Very Long Param Name", Param = "LongParam.txt")]
@@ -1079,7 +1079,7 @@ namespace System.Xml.XslCompiledTransformApiTests
             retObj = m_xsltArg.GetParam(szLongString, szEmpty);
             _output.WriteLine("Added Value:{0}\nRetrieved Value: {1}", "Test1", retObj);
             if (retObj.ToString() != "Test1")
-                Assert.True(false);
+                Assert.Fail();
 
             if ((LoadXSL("showParamLongName.xsl", xslInputType, readerType) == 1) && (Transform_ArgList("fruits.xml", outputType, navType) == 1))
             {
@@ -1087,7 +1087,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 return;
             }
             else
-                Assert.True(false);
+                Assert.Fail();
         }
 
         //[Variation("Invalid Param name")]
@@ -1105,7 +1105,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 return;
             }
             _output.WriteLine("System.Xml.XmlException not thrown for invalid param name");
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation("Namespace URI = null")]
@@ -1123,7 +1123,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 return;
             }
             _output.WriteLine("System.ArgumentNullException not thrown for null namespace System.Xml.Tests");
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation("Namespace URI is empty string", Param = "showParam7.txt")]
@@ -1147,7 +1147,7 @@ namespace System.Xml.XslCompiledTransformApiTests
 
             _output.WriteLine("Added Value:{0}\nRetrieved Value: {1}", "Test7", retObj);
             if (retObj.ToString() != "Test7")
-                Assert.True(false);
+                Assert.Fail();
 
             if ((LoadXSL("showParam.xsl", xslInputType, readerType) == 1) && (Transform_ArgList("fruits.xml", outputType, navType) == 1))
             {
@@ -1155,7 +1155,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 return;
             }
             else
-                Assert.True(false);
+                Assert.Fail();
         }
 
         //[Variation("Very long namespace System.Xml.Tests", Param = "showParam.txt")]
@@ -1178,7 +1178,7 @@ namespace System.Xml.XslCompiledTransformApiTests
             retObj = m_xsltArg.GetParam("myArg1", szLongNS);
             _output.WriteLine("Added Value:{0}\nRetrieved Value: {1}", "Test1", retObj);
             if (retObj.ToString() != "Test8")
-                Assert.True(false);
+                Assert.Fail();
 
             if ((LoadXSL("showParam.xsl", xslInputType, readerType) == 1) && (Transform_ArgList("fruits.xml", outputType, navType) == 1))
             {
@@ -1186,7 +1186,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 return;
             }
             else
-                Assert.True(false);
+                Assert.Fail();
         }
 
         //[Variation("Invalid Namespace URI")]
@@ -1215,7 +1215,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 return;
             }
             _output.WriteLine("Did not throw System.ArgumentException for adding a param that already exists");
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation("Object with same name, different namespace System.Xml.Tests", Param = "AddParam12.txt")]
@@ -1239,20 +1239,20 @@ namespace System.Xml.XslCompiledTransformApiTests
             retObj = m_xsltArg.GetParam("myArg1", szEmpty);
             _output.WriteLine("Added Value:{0}\nRetrieved Value: {1}", "Test1", retObj);
             if (retObj.ToString() != "Test1")
-                Assert.True(false);
+                Assert.Fail();
 
             m_xsltArg.AddParam("myArg1", "http://www.msn.com", "Test2");
             retObj = m_xsltArg.GetParam("myArg1", "http://www.msn.com");
             _output.WriteLine("Added Value:{0}\nRetrieved Value: {1}", "Test2", retObj);
 
             if (retObj.ToString() != "Test2")
-                Assert.True(false);
+                Assert.Fail();
 
             retObj = m_xsltArg.GetParam("myArg1", szEmpty);
             _output.WriteLine("Retrieve Original Value:{0}\nActual Retrieved Value: {1}", "Test1", retObj);
 
             if (retObj.ToString() != "Test1")
-                Assert.True(false);
+                Assert.Fail();
 
             if ((LoadXSL("showParam.xsl", xslInputType, readerType) == 1) && (Transform_ArgList("fruits.xml", outputType, navType) == 1))
             {
@@ -1260,7 +1260,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 return;
             }
             else
-                Assert.True(false);
+                Assert.Fail();
         }
 
         //[Variation("Object with same namespace System.Xml.Tests, different name", Param = "AddParam13.txt")]
@@ -1283,20 +1283,20 @@ namespace System.Xml.XslCompiledTransformApiTests
             retObj = m_xsltArg.GetParam("myArg1", szEmpty);
             _output.WriteLine("Added Value:{0}\nRetrieved Value: {1}", "Test1", retObj);
             if (retObj.ToString() != "Test1")
-                Assert.True(false);
+                Assert.Fail();
 
             m_xsltArg.AddParam("myArg2", szEmpty, "Test2");
             retObj = m_xsltArg.GetParam("myArg2", szEmpty);
             _output.WriteLine("Added Value:{0}\nRetrieved Value: {1}", "Test2", retObj);
 
             if (retObj.ToString() != "Test2")
-                Assert.True(false);
+                Assert.Fail();
 
             retObj = m_xsltArg.GetParam("myArg1", szEmpty);
             _output.WriteLine("Retrieve Original Value:{0}\nActual Retrieved Value: {1}", "Test1", retObj);
 
             if (retObj.ToString() != "Test1")
-                Assert.True(false);
+                Assert.Fail();
 
             if ((LoadXSL("showParam.xsl", xslInputType, readerType) == 1) && (Transform_ArgList("fruits.xml", outputType, navType) == 1))
             {
@@ -1304,7 +1304,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 return;
             }
             else
-                Assert.True(false);
+                Assert.Fail();
         }
 
         //[Variation("Case Sensitivity", Param = "AddParam14.txt")]
@@ -1327,25 +1327,25 @@ namespace System.Xml.XslCompiledTransformApiTests
             retObj = m_xsltArg.GetParam("myArg1", szEmpty);
             _output.WriteLine("Added Value:{0}\nRetrieved Value: {1}", "Test1", retObj);
             if (retObj.ToString() != "Test1")
-                Assert.True(false);
+                Assert.Fail();
 
             m_xsltArg.AddParam("myarg1", szEmpty, "Test2");
             retObj = m_xsltArg.GetParam("myarg1", szEmpty);
             _output.WriteLine("Added Value:{0}\nRetrieved Value: {1}", "Test2", retObj);
             if (retObj.ToString() != "Test2")
-                Assert.True(false);
+                Assert.Fail();
 
             m_xsltArg.AddParam("myArg2", szEmpty, "Test2");
             retObj = m_xsltArg.GetParam("myArg2", szEmpty);
             _output.WriteLine("Added Value:{0}\nRetrieved Value: {1}", "Test2", retObj);
             if (retObj.ToString() != "Test2")
-                Assert.True(false);
+                Assert.Fail();
 
             m_xsltArg.AddParam("myarg3", szEmpty, "Test3");
             retObj = m_xsltArg.GetParam("myarg3", szEmpty);
             _output.WriteLine("Added Value:{0}\nRetrieved Value: {1}", "Test3", retObj);
             if (retObj.ToString() != "Test3")
-                Assert.True(false);
+                Assert.Fail();
 
             if ((LoadXSL("showParam.xsl", xslInputType, readerType) == 1) && (Transform_ArgList("fruits.xml", outputType, navType) == 1))
             {
@@ -1353,7 +1353,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 return;
             }
             else
-                Assert.True(false);
+                Assert.Fail();
         }
 
         //[Variation("Object is null")]
@@ -1371,7 +1371,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 return;
             }
             _output.WriteLine("System.ArgumentNullException not thrown for null object");
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation("Add/remove object many times", Param = "AddParam16.txt")]
@@ -1398,7 +1398,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 if (retObj.ToString() != ("Test" + i))
                 {
                     _output.WriteLine("Failed to add/remove iteration {0}", i);
-                    Assert.True(false);
+                    Assert.Fail();
                 }
                 m_xsltArg.RemoveParam("myArg2", szEmpty);
             }
@@ -1410,7 +1410,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 if (retObj.ToString() != (obj + i))
                 {
                     _output.WriteLine("Failed in 2nd part to add/remove iteration {0}", i);
-                    Assert.True(false);
+                    Assert.Fail();
                 }
                 m_xsltArg.RemoveParam("myArg2", szEmpty);
             }
@@ -1423,14 +1423,14 @@ namespace System.Xml.XslCompiledTransformApiTests
             m_xsltArg.AddParam("myArg2", szEmpty, obj + "2");
             retObj = m_xsltArg.GetParam("myArg2", szEmpty);
             if (retObj.ToString() != "Test2")
-                Assert.True(false);
+                Assert.Fail();
             if ((LoadXSL("showParam.xsl", xslInputType, readerType) == 1) && (Transform_ArgList("fruits.xml", outputType, navType) == 1))
             {
                 VerifyResult(Baseline, _strOutFile);
                 return;
             }
             else
-                Assert.True(false);
+                Assert.Fail();
         }
 
         //[Variation("Whitespace in URI and param", Param = "AddParam17.txt")]
@@ -1460,7 +1460,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 catch (System.Xml.XmlException)
                 {
                     _output.WriteLine("Improperly reported an exception for a whitespace value");
-                    Assert.True(false);
+                    Assert.Fail();
                 }
                 i++;
             }
@@ -1484,7 +1484,7 @@ namespace System.Xml.XslCompiledTransformApiTests
             if (errCount != 0)
             {
                 _output.WriteLine("At least one whitespace test failed.");
-                Assert.True(false);
+                Assert.Fail();
             }
 
             if ((LoadXSL("showParam.xsl", xslInputType, readerType) == 1) && (Transform_ArgList("fruits.xml", outputType, navType) == 1))
@@ -1493,7 +1493,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 return;
             }
             else
-                Assert.True(false);
+                Assert.Fail();
         }
 
         //[Variation("Adding many objects", Param = "AddParam18.txt")]
@@ -1518,7 +1518,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 m_xsltArg.AddParam("myArg" + +i, szEmpty, obj + i);
                 retObj = m_xsltArg.GetParam("myArg" + i, szEmpty);
                 if (retObj.ToString() != ("Test" + i))
-                    Assert.True(false);
+                    Assert.Fail();
             }
 
             if ((LoadXSL("showParam.xsl", xslInputType, readerType) == 1) && (Transform_ArgList("fruits.xml", outputType, navType) == 1))
@@ -1527,7 +1527,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 return;
             }
             else
-                Assert.True(false);
+                Assert.Fail();
         }
 
         //[Variation("Add same object many times", Param = "AddParam19.txt")]
@@ -1554,7 +1554,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 if (retObj.ToString() != ("Test" + "1"))
                 {
                     _output.WriteLine("Failed to add {0}", "myArg" + i);
-                    Assert.True(false);
+                    Assert.Fail();
                 }
                 m_xsltArg.RemoveParam("myArg" + i, szEmpty);
             }
@@ -1562,14 +1562,14 @@ namespace System.Xml.XslCompiledTransformApiTests
             m_xsltArg.AddParam("myArg2", szEmpty, "Test2");
             retObj = m_xsltArg.GetParam("myArg2", szEmpty);
             if (retObj.ToString() != ("Test2"))
-                Assert.True(false);
+                Assert.Fail();
             if ((LoadXSL("showParam.xsl", xslInputType, readerType) == 1) && (Transform_ArgList("fruits.xml", outputType, navType) == 1))
             {
                 VerifyResult(Baseline, _strOutFile);
                 return;
             }
             else
-                Assert.True(false);
+                Assert.Fail();
         }
 
         //[Variation("Using Different XSLT namespace", Param = "AddParam20.txt")]
@@ -1593,25 +1593,25 @@ namespace System.Xml.XslCompiledTransformApiTests
             retObj = m_xsltArg.GetParam("myArg1", "urn:" + szXslNS);
             _output.WriteLine("Added Value:{0}\nRetrieved Value: {1}", "Test1", retObj);
             if (retObj.ToString() != "Test1")
-                Assert.True(false);
+                Assert.Fail();
 
             m_xsltArg.AddParam("myArg2", "urn:tmp", "Test2");
             retObj = m_xsltArg.GetParam("myArg2", "urn:tmp");
             _output.WriteLine("Added Value:{0}\nRetrieved Value: {1}", "Test2", retObj);
             if (retObj.ToString() != "Test2")
-                Assert.True(false);
+                Assert.Fail();
 
             m_xsltArg.AddParam("myArg3", "urn:my-object", "Test3");
             retObj = m_xsltArg.GetParam("myArg3", "urn:my-object");
             _output.WriteLine("Added Value:{0}\nRetrieved Value: {1}", "Test3", retObj);
             if (retObj.ToString() != "Test3")
-                Assert.True(false);
+                Assert.Fail();
 
             m_xsltArg.AddParam("myArg4", "urn:MY-OBJECT", "Test4");
             retObj = m_xsltArg.GetParam("myArg4", "urn:MY-OBJECT");
             _output.WriteLine("Added Value:{0}\nRetrieved Value: {1}", "Test4", retObj);
             if (retObj.ToString() != "Test4")
-                Assert.True(false);
+                Assert.Fail();
 
             if ((LoadXSL("showParamNS.xsl", xslInputType, readerType) == 1) && (Transform_ArgList("fruits.xml", outputType, navType) == 1))
             {
@@ -1619,7 +1619,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 return;
             }
             else
-                Assert.True(false);
+                Assert.Fail();
         }
 
         //[Variation("Using Default XSLT namespace")]
@@ -1669,7 +1669,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                     }
                 }
             }
-            Assert.True(false);
+            Assert.Fail();
         }
     }
 
@@ -1998,7 +1998,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 return;
             }
             else
-                Assert.True(false);
+                Assert.Fail();
         }
 
         //All the below variations, param is sent from client code
@@ -2305,7 +2305,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 return;
             }
             else
-                Assert.True(false);
+                Assert.Fail();
         }
 
         //All the below variations, empty param is sent from client code
@@ -2395,7 +2395,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 return;
             }
             else
-                Assert.True(false);
+                Assert.Fail();
         }
     }
 
@@ -2448,7 +2448,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 return;
             }
             else
-                Assert.True(false);
+                Assert.Fail();
         }
 
         //[Variation("namespace System.Xml.Tests = null")]
@@ -2467,7 +2467,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 return;
             }
             _output.WriteLine("System.ArgumentNullException not generated for null namespace System.Xml.Tests");
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation("namespace System.Xml.Tests is empty string")]
@@ -2507,7 +2507,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 return;
             }
             else
-                Assert.True(false);
+                Assert.Fail();
         }
 
         //[Variation("Invalid namespace System.Xml.Tests")]
@@ -2539,7 +2539,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 return;
             }
             _output.WriteLine("Did not launch exception 'System.ArgumentException' for an item already added");
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation("Case sensitivity", Param = "myObjectDef.txt")]
@@ -2565,7 +2565,7 @@ namespace System.Xml.XslCompiledTransformApiTests
             if (((MyObject)retObj).MyValue() != obj.MyValue())
             {
                 _output.WriteLine("Set and retrieved value appear to be different");
-                Assert.True(false);
+                Assert.Fail();
             }
             m_xsltArg.AddExtensionObject("URN:MY-OBJECT", obj);
             m_xsltArg.AddExtensionObject("urn:My-Object", obj);
@@ -2577,7 +2577,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 return;
             }
             else
-                Assert.True(false);
+                Assert.Fail();
         }
 
         //[Variation("Set a null object")]
@@ -2596,7 +2596,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 return;
             }
             _output.WriteLine("Did not launch exception 'System.ArgumentNullException' for adding a null-valued item");
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation("Uninitialized and NULL return values from the methods in the extension object")]
@@ -2628,7 +2628,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 return;
             }
             else
-                Assert.True(false);
+                Assert.Fail();
         }
 
         //[Variation("Add many objects", Param = "myObjectDef.txt")]
@@ -2663,7 +2663,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 return;
             }
             else
-                Assert.True(false);
+                Assert.Fail();
         }
 
         //[Variation("Whitespace")]
@@ -2699,7 +2699,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 return;
             }
             _output.WriteLine("Did not throw expected exception");
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation("Add object many times")]
@@ -2719,7 +2719,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 return;
             }
             _output.WriteLine("Did not exception for adding an extension object that already exists");
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation("Add and Remove multiple times", Param = "myObjectDef.txt")]
@@ -2752,7 +2752,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 return;
             }
             else
-                Assert.True(false);
+                Assert.Fail();
         }
 
         //[Variation("Namespace URI non-existent")]
@@ -2783,7 +2783,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 return;
             }
             _output.WriteLine("Did not throw expected exception");
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation("Accessing Private and protected Items")]
@@ -2829,7 +2829,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                     }
                 }
             }
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation("Writing To Output")]
@@ -2860,7 +2860,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 return;
             }
             else
-                Assert.True(false);
+                Assert.Fail();
         }
 
         //[Variation("Recursive Functions", Param = "myObject_Recursion.txt")]
@@ -2888,7 +2888,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 return;
             }
             else
-                Assert.True(false);
+                Assert.Fail();
         }
 
         //[Variation("Function-exists tests", Param = "MyObject_FnExists.txt")]
@@ -2916,7 +2916,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 return;
             }
             else
-                Assert.True(false);
+                Assert.Fail();
         }
 
         //[Variation("Argument Tests", Param = "MyObject_Arguments.txt")]
@@ -2944,7 +2944,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 return;
             }
             else
-                Assert.True(false);
+                Assert.Fail();
         }
 
         //[Variation("Multiple Objects in same NameSpace")]
@@ -2966,7 +2966,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 return;
             }
             _output.WriteLine("Exception not thrown for URI namespace System.Xml.Tests in use");
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation("Case Sensitivity")]
@@ -2988,7 +2988,7 @@ namespace System.Xml.XslCompiledTransformApiTests
             m_xsltArg.AddExtensionObject(szDefaultNS, obj);
             LoadXSL("MyObject_CaseSensitive.xsl", xslInputType, readerType);
             var e = Assert.ThrowsAny<XsltException>(() => Transform_ArgList("fruits.xml", outputType, navType));
-            var exceptionSourceAssembly = PlatformDetection.IsNetFramework ? "System.Data.SqlXml" : "System.Xml";
+            var exceptionSourceAssembly = "System.Xml";
             CheckExpectedError(e, exceptionSourceAssembly, "XmlIl_NoExtensionMethod", new[] { "urn:my-object", "FN3", "0" });
         }
 
@@ -3022,7 +3022,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 }
             }
             _output.WriteLine("Exception not thrown for NS not found");
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation("Maintaining State", Param = "MyObject_KeepingState.txt")]
@@ -3050,7 +3050,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 return;
             }
             else
-                Assert.True(false);
+                Assert.Fail();
         }
 
         //[Variation("Deliberately Messing Up the Stylesheet", Param = "MyObject_KillerStrings.txt")]
@@ -3081,7 +3081,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 return;
             }
             else
-                Assert.True(false);
+                Assert.Fail();
         }
 
         //[Variation("Function not found in Object")]
@@ -3114,7 +3114,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 }
             }
             _output.WriteLine("Exception not thrown for method not found");
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation("Using Default XSLT namespace")]
@@ -3168,7 +3168,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                     }
                 }
             }
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation(id = 33, Desc = "Calling extension object from select in xsl:apply-templates", Params = new object[] { "apply-templates.xsl", "apply-templates.txt" })]
@@ -3252,7 +3252,7 @@ namespace System.Xml.XslCompiledTransformApiTests
         [InlineData("sort.xsl", "sort.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData("sort.xsl", "sort.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         public void AddExtObject33(object param0, object param1, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             ExObj obj = new ExObj(0, _output);
@@ -3268,7 +3268,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 return;
             }
             else
-                Assert.True(false);
+                Assert.Fail();
         }
 
         //[Variation(id = 41, Desc = "Calling extension function from select in xsl:variable and variable is used for incrementing an integer", Params = new object[] { "variable2.xsl", "variable2.txt" })]
@@ -3352,7 +3352,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 return;
             }
             else
-                Assert.True(false);
+                Assert.Fail();
         }
     }
 
@@ -3417,7 +3417,7 @@ namespace System.Xml.XslCompiledTransformApiTests
             if (retObj != null)
             {
                 _output.WriteLine("Value of Removed Object is not null : {0}", retObj);
-                Assert.True(false);
+                Assert.Fail();
             }
             m_xsltArg.AddParam("myArg1", szEmpty, "Test1");
             retObj = m_xsltArg.GetParam("myArg1", szEmpty);
@@ -3426,7 +3426,7 @@ namespace System.Xml.XslCompiledTransformApiTests
             if (retObj.ToString() != "Test1")
             {
                 _output.WriteLine("Value of removed object is not as expected : {0}", retObj);
-                Assert.True(false);
+                Assert.Fail();
             }
 
             _baseline = Path.Combine("baseline", (string)param);
@@ -3436,7 +3436,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 return;
             }
             else
-                Assert.True(false);
+                Assert.Fail();
         }
 
         //[Variation(id = 2, Desc = "Param name is null", Pri = 1, Param = "RemoveParam2.txt")]
@@ -3448,7 +3448,7 @@ namespace System.Xml.XslCompiledTransformApiTests
             if (retObj != null)
             {
                 _output.WriteLine("Did not return NULL for null parameter name");
-                Assert.True(false);
+                Assert.Fail();
             }
             return;
         }
@@ -3471,7 +3471,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 return;
             }
             else
-                Assert.True(false);
+                Assert.Fail();
         }
 
         //[Variation("Param name is non-existent", Param = "showParam.txt")]
@@ -3492,7 +3492,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 return;
             }
             else
-                Assert.True(false);
+                Assert.Fail();
         }
 
         //[Variation("Invalid Param name", Param = "showParam.txt")]
@@ -3513,7 +3513,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 return;
             }
             else
-                Assert.True(false);
+                Assert.Fail();
         }
 
         //[Variation("Very long param name", Param = "showParamLongName.txt")]
@@ -3536,7 +3536,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 return;
             }
             else
-                Assert.True(false);
+                Assert.Fail();
         }
 
         //[Variation("Namespace URI is null")]
@@ -3549,7 +3549,7 @@ namespace System.Xml.XslCompiledTransformApiTests
             if (retObj != null)
             {
                 _output.WriteLine("Did not return NULL for null URI namespace");
-                Assert.True(false);
+                Assert.Fail();
             }
             return;
         }
@@ -3574,7 +3574,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 return;
             }
             else
-                Assert.True(false);
+                Assert.Fail();
         }
 
         //[Variation("Namespace URI is non-existent", Param = "RemoveParam9.txt")]
@@ -3597,7 +3597,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 return;
             }
             else
-                Assert.True(false);
+                Assert.Fail();
         }
 
         //[Variation("Very long namespace System.Xml.Tests", Param = "showParam.txt")]
@@ -3620,7 +3620,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 return;
             }
             else
-                Assert.True(false);
+                Assert.Fail();
         }
 
         //[Variation("Different Data Types", Param = "showParam.txt")]
@@ -3649,7 +3649,7 @@ namespace System.Xml.XslCompiledTransformApiTests
             if (retObj != null)
             {
                 _output.WriteLine("Failed to remove {0}", d1);
-                Assert.True(false);
+                Assert.Fail();
             }
 
             m_xsltArg.AddParam("myArg2", szEmpty, d2);
@@ -3658,7 +3658,7 @@ namespace System.Xml.XslCompiledTransformApiTests
             if (retObj != null)
             {
                 _output.WriteLine("Failed to remove {0}", d2);
-                Assert.True(false);
+                Assert.Fail();
             }
 
             m_xsltArg.AddParam("myArg3", szEmpty, d3);
@@ -3667,7 +3667,7 @@ namespace System.Xml.XslCompiledTransformApiTests
             if (retObj != null)
             {
                 _output.WriteLine("Failed to remove {0}", d3);
-                Assert.True(false);
+                Assert.Fail();
             }
 
             m_xsltArg.AddParam("myArg4", szEmpty, d4);
@@ -3676,7 +3676,7 @@ namespace System.Xml.XslCompiledTransformApiTests
             if (retObj != null)
             {
                 _output.WriteLine("Failed to remove {0}", d4);
-                Assert.True(false);
+                Assert.Fail();
             }
 
             m_xsltArg.AddParam("myArg5", szEmpty, d5);
@@ -3685,7 +3685,7 @@ namespace System.Xml.XslCompiledTransformApiTests
             if (retObj != null)
             {
                 _output.WriteLine("Failed to remove {0}", d5);
-                Assert.True(false);
+                Assert.Fail();
             }
 
             m_xsltArg.AddParam("myArg6", szEmpty, d6);
@@ -3694,7 +3694,7 @@ namespace System.Xml.XslCompiledTransformApiTests
             if (retObj != null)
             {
                 _output.WriteLine("Failed to remove {0}", d6);
-                Assert.True(false);
+                Assert.Fail();
             }
 
             m_xsltArg.AddParam("myArg7", szEmpty, d7);
@@ -3703,7 +3703,7 @@ namespace System.Xml.XslCompiledTransformApiTests
             if (retObj != null)
             {
                 _output.WriteLine("Failed to remove {0}", d7);
-                Assert.True(false);
+                Assert.Fail();
             }
 
             string obj = "0.00";
@@ -3715,7 +3715,7 @@ namespace System.Xml.XslCompiledTransformApiTests
             if (retObj != null)
             {
                 _output.WriteLine("Failed to remove {0}", obj);
-                Assert.True(false);
+                Assert.Fail();
             }
 
             //int
@@ -3727,7 +3727,7 @@ namespace System.Xml.XslCompiledTransformApiTests
             if (retObj != null)
             {
                 _output.WriteLine("Failed to remove {0}", i);
-                Assert.True(false);
+                Assert.Fail();
             }
 
             bool bF = (1 == 0);
@@ -3737,7 +3737,7 @@ namespace System.Xml.XslCompiledTransformApiTests
             if (retObj != null)
             {
                 _output.WriteLine("Failed to remove {0}", bF);
-                Assert.True(false);
+                Assert.Fail();
             }
 
             bool bT = (1 == 1);
@@ -3747,7 +3747,7 @@ namespace System.Xml.XslCompiledTransformApiTests
             if (retObj != null)
             {
                 _output.WriteLine("Failed to remove {0}", bT);
-                Assert.True(false);
+                Assert.Fail();
             }
 
             m_xsltArg.AddParam("myArg2", szEmpty, (short)i);
@@ -3756,7 +3756,7 @@ namespace System.Xml.XslCompiledTransformApiTests
             if (retObj != null)
             {
                 _output.WriteLine("Failed to remove {0}", i);
-                Assert.True(false);
+                Assert.Fail();
             }
 
             m_xsltArg.AddParam("myArg2", szEmpty, (ushort)i);
@@ -3765,7 +3765,7 @@ namespace System.Xml.XslCompiledTransformApiTests
             if (retObj != null)
             {
                 _output.WriteLine("Failed to remove {0}", i);
-                Assert.True(false);
+                Assert.Fail();
             }
 
             m_xsltArg.AddParam("myArg2", szEmpty, (int)i);
@@ -3774,7 +3774,7 @@ namespace System.Xml.XslCompiledTransformApiTests
             if (retObj != null)
             {
                 _output.WriteLine("Failed to remove {0}", i);
-                Assert.True(false);
+                Assert.Fail();
             }
 
             m_xsltArg.AddParam("myArg2", szEmpty, (uint)i);
@@ -3783,7 +3783,7 @@ namespace System.Xml.XslCompiledTransformApiTests
             if (retObj != null)
             {
                 _output.WriteLine("Failed to remove {0}", i);
-                Assert.True(false);
+                Assert.Fail();
             }
 
             m_xsltArg.AddParam("myArg2", szEmpty, (long)i);
@@ -3792,7 +3792,7 @@ namespace System.Xml.XslCompiledTransformApiTests
             if (retObj != null)
             {
                 _output.WriteLine("Failed to remove {0}", i);
-                Assert.True(false);
+                Assert.Fail();
             }
 
             m_xsltArg.AddParam("myArg2", szEmpty, (ulong)i);
@@ -3801,7 +3801,7 @@ namespace System.Xml.XslCompiledTransformApiTests
             if (retObj != null)
             {
                 _output.WriteLine("Failed to remove {0}", i);
-                Assert.True(false);
+                Assert.Fail();
             }
 
             m_xsltArg.AddParam("myArg2", szEmpty, (float)i);
@@ -3810,7 +3810,7 @@ namespace System.Xml.XslCompiledTransformApiTests
             if (retObj != null)
             {
                 _output.WriteLine("Failed to remove {0}", i);
-                Assert.True(false);
+                Assert.Fail();
             }
 
             m_xsltArg.AddParam("myArg2", szEmpty, (decimal)i);
@@ -3819,7 +3819,7 @@ namespace System.Xml.XslCompiledTransformApiTests
             if (retObj != null)
             {
                 _output.WriteLine("Failed to remove {0}", i);
-                Assert.True(false);
+                Assert.Fail();
             }
 
             if ((LoadXSL("showParam.xsl", xslInputType, readerType) == 1) && (Transform_ArgList("fruits.xml", outputType, navType) == 1))
@@ -3828,7 +3828,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 return;
             }
             else
-                Assert.True(false);
+                Assert.Fail();
         }
 
         //[Variation("Case Sensitivity", Param = "RemoveParam12.txt")]
@@ -3854,7 +3854,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 return;
             }
             else
-                Assert.True(false);
+                Assert.Fail();
         }
 
         //[Variation("Whitespace", Param = "RemoveParam13.txt")]
@@ -3877,7 +3877,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 if (retObj != null)
                 {
                     _output.WriteLine("Error removing case #{0} from this test", i);
-                    Assert.True(false);
+                    Assert.Fail();
                 }
                 i++;
             }
@@ -3891,7 +3891,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 if (retObj != null)
                 {
                     _output.WriteLine("Error removing case #{0} in the second batch from this test", i);
-                    Assert.True(false);
+                    Assert.Fail();
                 }
                 i++;
             }
@@ -3903,7 +3903,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 return;
             }
             else
-                Assert.True(false);
+                Assert.Fail();
         }
 
         //[Variation("Call Multiple Times", Param = "showParam.txt")]
@@ -3928,7 +3928,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 return;
             }
             else
-                Assert.True(false);
+                Assert.Fail();
         }
 
         //[Variation("Using Default XSLT Namespace")]
@@ -3982,7 +3982,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 return;
             }
             _output.WriteLine("Did not throw expected exception");
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation("Namespace URI is null")]
@@ -4001,7 +4001,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 return;
             }
             _output.WriteLine("Exception not generated for null parameter name");
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation("Call Multiple Times", Param = "showParam.txt")]
@@ -4026,7 +4026,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 return;
             }
             else
-                Assert.True(false);
+                Assert.Fail();
         }
 
         //[Variation("Namespace URI is non-existent", Param = "MyObjectDef.txt")]
@@ -4050,7 +4050,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 return;
             }
             else
-                Assert.True(false);
+                Assert.Fail();
         }
 
         //[Variation("Very long namespace System.Xml.Tests")]
@@ -4077,7 +4077,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 return;
             }
             _output.WriteLine("Did not throw expected exception");
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation("Different Data Types", Param = "showParam.txt")]
@@ -4116,7 +4116,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 return;
             }
             else
-                Assert.True(false);
+                Assert.Fail();
         }
 
         //[Variation("Case Sensitivity", Param = "MyObjectDef.txt")]
@@ -4144,7 +4144,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 return;
             }
             else
-                Assert.True(false);
+                Assert.Fail();
         }
 
         //[Variation("Whitespace")]
@@ -4168,7 +4168,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 if (retObj != null)
                 {
                     _output.WriteLine("Error deleting case #{0} for whitespace arg", i);
-                    Assert.True(false);
+                    Assert.Fail();
                 }
                 i++;
             }
@@ -4183,7 +4183,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 return;
             }
             _output.WriteLine("Did not exception for object that could not be executed");
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation("Using default XSLT namespace", Param = "showParam.txt")]
@@ -4207,7 +4207,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 return;
             }
             else
-                Assert.True(false);
+                Assert.Fail();
         }
     }
 
@@ -4240,7 +4240,7 @@ namespace System.Xml.XslCompiledTransformApiTests
             m_xsltArg.Clear();
             retObj = m_xsltArg.GetParam("myArg1", szEmpty);
             if (retObj != null)
-                Assert.True(false);
+                Assert.Fail();
 
             if ((LoadXSL("showParam.xsl", xslInputType, readerType) == 1) && (Transform_ArgList("fruits.xml", outputType, navType) == 1))
             {
@@ -4248,7 +4248,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 return;
             }
             else
-                Assert.True(false);
+                Assert.Fail();
         }
 
         //[Variation("Clear with nothing loaded", Param = "showParam.txt")]
@@ -4266,7 +4266,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 return;
             }
             else
-                Assert.True(false);
+                Assert.Fail();
         }
 
         //[Variation("Clear Params", Param = "showParam.txt")]
@@ -4285,7 +4285,7 @@ namespace System.Xml.XslCompiledTransformApiTests
             m_xsltArg.Clear();
             retObj = m_xsltArg.GetParam("myArg1", szEmpty);
             if (retObj != null)
-                Assert.True(false);
+                Assert.Fail();
 
             if ((LoadXSL("showParam.xsl", xslInputType, readerType) == 1) && (Transform_ArgList("fruits.xml", outputType, navType) == 1))
             {
@@ -4293,7 +4293,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 return;
             }
             else
-                Assert.True(false);
+                Assert.Fail();
         }
 
         //[Variation("Clear Extension Objects")]
@@ -4310,7 +4310,7 @@ namespace System.Xml.XslCompiledTransformApiTests
             if (retObj != null)
             {
                 _output.WriteLine("Did not appear to clear an extension object");
-                Assert.True(false);
+                Assert.Fail();
             }
 
             if ((LoadXSL("myObjectDef.xsl", xslInputType, readerType) == 1))
@@ -4325,7 +4325,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 }
             }
             _output.WriteLine("Exception not thrown for NS not found");
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation("Clear Many Objects", Param = "showParam.txt")]
@@ -4346,7 +4346,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                     _output.WriteLine("Failed to add/remove iteration {0}", i);
                     _output.WriteLine("{0} : {1}", retObj, obj + i);
 
-                    Assert.True(false);
+                    Assert.Fail();
                 }
                 m_xsltArg.Clear();
             }
@@ -4358,7 +4358,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 if (retObj.ToString() != (obj + i))
                 {
                     _output.WriteLine("Failed in 2nd part to add/remove iteration {0}", i);
-                    Assert.True(false);
+                    Assert.Fail();
                 }
             }
 
@@ -4370,7 +4370,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 return;
             }
             else
-                Assert.True(false);
+                Assert.Fail();
         }
 
         //[Variation("Clear Multiple Times", Param = "showParam.txt")]
@@ -4390,7 +4390,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 m_xsltArg.Clear();
             retObj = m_xsltArg.GetParam("myArg1", szEmpty);
             if (retObj != null)
-                Assert.True(false);
+                Assert.Fail();
 
             if ((LoadXSL("showParam.xsl", xslInputType, readerType) == 1) && (Transform_ArgList("fruits.xml", outputType, navType) == 1))
             {
@@ -4398,7 +4398,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 return;
             }
             else
-                Assert.True(false);
+                Assert.Fail();
         }
 
         //[Variation("Loading one object, but clearing another", Param = "ClearParam7.txt")]
@@ -4423,7 +4423,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 return;
             }
             else
-                Assert.True(false);
+                Assert.Fail();
         }
 
         //[Variation("Clear after objects have been \"Removed\"", Param = "showParam.txt")]
@@ -4442,7 +4442,7 @@ namespace System.Xml.XslCompiledTransformApiTests
             m_xsltArg.Clear();
 
             if ((LoadXSL("showParam.xsl", xslInputType, readerType) != 1) || (Transform_ArgList("fruits.xml", outputType, navType) != 1))
-                Assert.True(false);
+                Assert.Fail();
 
             VerifyResult(Baseline, _strOutFile);
 
@@ -4464,7 +4464,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 }
             }
             _output.WriteLine("Exception not thrown for NS not found");
-            Assert.True(false);
+            Assert.Fail();
         }
     }
 
@@ -4557,7 +4557,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 {
                     xslt.Transform(nav, argList, xw);
                     _output.WriteLine("**** XsltException NOT Raised ****");
-                    Assert.True(false);
+                    Assert.Fail();
                 }
                 catch (XsltException e)
                 {
@@ -4582,7 +4582,7 @@ namespace System.Xml.XslCompiledTransformApiTests
                 if (EventHandlerExists == "yes")
                 {
                     _output.WriteLine("**** OnMessageEvent NOT Raised ****");
-                    Assert.True(false);
+                    Assert.Fail();
                 }
                 else
                 {

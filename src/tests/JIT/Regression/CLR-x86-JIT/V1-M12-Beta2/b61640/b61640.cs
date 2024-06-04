@@ -16,10 +16,9 @@ namespace Test
         }
 
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             foo(true, true);
-            return 100;
         }
 
         public static bool foo(bool b1, bool b2)

@@ -80,7 +80,9 @@ struct Access
 #endif
 
     Access(unsigned offset, var_types accessType, ClassLayout* layout)
-        : Layout(layout), Offset(offset), AccessType(accessType)
+        : Layout(layout)
+        , Offset(offset)
+        , AccessType(accessType)
     {
     }
 
@@ -220,7 +222,8 @@ bool AggregateInfo::OverlappingReplacements(unsigned      offset,
 //   numLocals - Number of locals to support in the map
 //
 AggregateInfoMap::AggregateInfoMap(CompAllocator allocator, unsigned numLocals)
-    : m_aggregates(allocator), m_numLocals(numLocals)
+    : m_aggregates(allocator)
+    , m_numLocals(numLocals)
 {
     m_lclNumToAggregateIndex = new (allocator) unsigned[numLocals];
     for (unsigned i = 0; i < numLocals; i++)
@@ -277,7 +280,9 @@ struct PrimitiveAccess
     unsigned  Offset;
     var_types AccessType;
 
-    PrimitiveAccess(unsigned offset, var_types accessType) : Offset(offset), AccessType(accessType)
+    PrimitiveAccess(unsigned offset, var_types accessType)
+        : Offset(offset)
+        , AccessType(accessType)
     {
     }
 };
@@ -290,7 +295,8 @@ class LocalUses
 
 public:
     LocalUses(Compiler* comp)
-        : m_accesses(comp->getAllocator(CMK_Promotion)), m_inducedAccesses(comp->getAllocator(CMK_Promotion))
+        : m_accesses(comp->getAllocator(CMK_Promotion))
+        , m_inducedAccesses(comp->getAllocator(CMK_Promotion))
     {
     }
 
@@ -621,6 +627,38 @@ public:
     bool EvaluateReplacement(
         Compiler* comp, unsigned lclNum, const Access& access, unsigned inducedCount, weight_t inducedCountWtd)
     {
+        // Verify that this replacement has proper GC ness compared to the
+        // layout. While reinterpreting GC fields to integers can be considered
+        // UB, there are scenarios where it can happen safely:
+        //
+        // * The user code could have guarded the access with a dynamic check
+        //   that it doesn't contain a GC pointer, so that the access is actually
+        //   in dead code. This happens e.g. in span functions in SPC.
+        //
+        // * For byrefs, reinterpreting as an integer could be ok in a
+        //   restricted scope due to pinning.
+        //
+        // In theory we could allow these promotions in the restricted scope,
+        // but currently physical promotion works on a function-wide basis.
+
+        LclVarDsc*   lcl    = comp->lvaGetDesc(lclNum);
+        ClassLayout* layout = lcl->GetLayout();
+        if (layout->IntersectsGCPtr(access.Offset, genTypeSize(access.AccessType)))
+        {
+            if (((access.Offset % TARGET_POINTER_SIZE) != 0) ||
+                (layout->GetGCPtrType(access.Offset / TARGET_POINTER_SIZE) != access.AccessType))
+            {
+                return false;
+            }
+        }
+        else
+        {
+            if (varTypeIsGC(access.AccessType))
+            {
+                return false;
+            }
+        }
+
         unsigned countOverlappedCallArg        = 0;
         unsigned countOverlappedStoredFromCall = 0;
 
@@ -678,9 +716,8 @@ public:
 
         // Now look at the overlapping struct uses that promotion will make more expensive.
 
-        unsigned   countReadBacks    = 0;
-        weight_t   countReadBacksWtd = 0;
-        LclVarDsc* lcl               = comp->lvaGetDesc(lclNum);
+        unsigned countReadBacks    = 0;
+        weight_t countReadBacksWtd = 0;
         // For parameters or OSR locals we always need one read back.
         if (lcl->lvIsParam || lcl->lvIsOSRLocal)
         {
@@ -771,14 +808,27 @@ public:
         if ((cycleImprovementPerInvoc > 0) &&
             ((cycleImprovementPerInvoc * ALLOWED_SIZE_REGRESSION_PER_CYCLE_IMPROVEMENT) >= -sizeImprovement))
         {
-            JITDUMP("  Promoting replacement\n\n");
+            JITDUMP("  Promoting replacement (cycle improvement)\n\n");
+            return true;
+        }
+
+        // Similarly, even for a cycle-wise regression, if we see a large size
+        // wise improvement we may want to promote. The main case is where all
+        // uses are in blocks with bbWeight=0, but we still estimate a
+        // size-wise improvement.
+        const weight_t ALLOWED_CYCLE_REGRESSION_PER_SIZE_IMPROVEMENT = 0.01;
+
+        if ((sizeImprovement > 0) &&
+            ((sizeImprovement * ALLOWED_CYCLE_REGRESSION_PER_SIZE_IMPROVEMENT) >= -cycleImprovementPerInvoc))
+        {
+            JITDUMP("  Promoting replacement (size improvement)\n\n");
             return true;
         }
 
 #ifdef DEBUG
         if (comp->compStressCompile(Compiler::STRESS_PHYSICAL_PROMOTION_COST, 25))
         {
-            JITDUMP("  Promoting replacement due to stress\n\n");
+            JITDUMP("  Promoting replacement (stress)\n\n");
             return true;
         }
 #endif
@@ -929,7 +979,7 @@ public:
         , m_prom(prom)
         , m_candidateStores(prom->m_compiler->getAllocator(CMK_Promotion))
     {
-        m_uses = new (prom->m_compiler, CMK_Promotion) LocalUses*[prom->m_compiler->lvaCount]{};
+        m_uses = new (prom->m_compiler, CMK_Promotion) LocalUses* [prom->m_compiler->lvaCount] {};
     }
 
     //------------------------------------------------------------------------
@@ -1161,6 +1211,8 @@ public:
             }
         }
 
+        m_compiler->Metrics.PhysicallyPromotedFields += totalNumPromotions;
+
         if (totalNumPromotions <= 0)
         {
             return false;
@@ -1175,13 +1227,8 @@ public:
             for (Replacement& rep : reps)
             {
 #ifdef DEBUG
-                char buf[32];
-                sprintf_s(buf, sizeof(buf), "V%02u.[%03u..%03u)", agg->LclNum, rep.Offset,
-                          rep.Offset + genTypeSize(rep.AccessType));
-                size_t len  = strlen(buf) + 1;
-                char*  bufp = new (m_compiler, CMK_DebugOnly) char[len];
-                strcpy_s(bufp, len, buf);
-                rep.Description = bufp;
+                rep.Description = m_compiler->printfAlloc("V%02u.[%03u..%03u)", agg->LclNum, rep.Offset,
+                                                          rep.Offset + genTypeSize(rep.AccessType));
 #endif
 
                 rep.LclNum     = m_compiler->lvaGrabTemp(false DEBUGARG(rep.Description));
@@ -1198,19 +1245,18 @@ public:
             }
 #endif
 
-            StructSegments unpromotedParts =
-                m_prom->SignificantSegments(m_compiler->lvaGetDesc(agg->LclNum)->GetLayout());
+            agg->Unpromoted = m_prom->SignificantSegments(m_compiler->lvaGetDesc(agg->LclNum)->GetLayout());
             for (Replacement& rep : reps)
             {
-                unpromotedParts.Subtract(StructSegments::Segment(rep.Offset, rep.Offset + genTypeSize(rep.AccessType)));
+                agg->Unpromoted.Subtract(StructSegments::Segment(rep.Offset, rep.Offset + genTypeSize(rep.AccessType)));
             }
 
             JITDUMP("  Unpromoted remainder: ");
-            DBEXEC(m_compiler->verbose, unpromotedParts.Dump());
+            DBEXEC(m_compiler->verbose, agg->Unpromoted.Dump());
             JITDUMP("\n\n");
 
             StructSegments::Segment unpromotedSegment;
-            if (unpromotedParts.CoveringSegment(&unpromotedSegment))
+            if (agg->Unpromoted.CoveringSegment(&unpromotedSegment))
             {
                 agg->UnpromotedMin = unpromotedSegment.Start;
                 agg->UnpromotedMax = unpromotedSegment.End;
@@ -1400,9 +1446,8 @@ private:
             flags |= AccessKindFlags::IsStoreSource;
         }
 
-        if (user->OperIs(GT_RETURN))
+        if (user->OperIs(GT_RETURN, GT_SWIFT_ERROR_RET))
         {
-            assert(user->gtGetOp1()->gtEffectiveVal() == lcl);
             flags |= AccessKindFlags::IsReturned;
         }
 #endif
@@ -1457,6 +1502,31 @@ bool StructSegments::Segment::IntersectsOrAdjacent(const Segment& other) const
     }
 
     if (other.End < Start)
+    {
+        return false;
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------
+// Intersects:
+//   Check if this segment intersects another segment.
+//
+// Parameters:
+//   other - The other segment.
+//
+// Returns:
+//    True if so.
+//
+bool StructSegments::Segment::Intersects(const Segment& other) const
+{
+    if (End <= other.Start)
+    {
+        return false;
+    }
+
+    if (other.End <= Start)
     {
         return false;
     }
@@ -1555,7 +1625,7 @@ void StructSegments::Subtract(const Segment& segment)
         return;
     }
 
-    assert(m_segments[index].IntersectsOrAdjacent(segment));
+    assert(m_segments[index].Intersects(segment));
 
     if (m_segments[index].Contains(segment))
     {
@@ -1645,6 +1715,46 @@ bool StructSegments::CoveringSegment(Segment* result)
 
     result->Start = m_segments[0].Start;
     result->End   = m_segments[m_segments.size() - 1].End;
+    return true;
+}
+
+//------------------------------------------------------------------------
+// Intersects:
+//   Check if a segment intersects with any segment in this segment tree.
+//
+// Parameters:
+//   segment - The segment.
+//
+// Returns:
+//   True if the input segment intersects with any segment in the tree;
+//   otherwise false.
+//
+bool StructSegments::Intersects(const Segment& segment)
+{
+    size_t index = Promotion::BinarySearch<Segment, &Segment::End>(m_segments, segment.Start);
+    if ((ssize_t)index < 0)
+    {
+        index = ~index;
+    }
+    else
+    {
+        // Start == segment[index].End, which makes it non-interesting.
+        index++;
+    }
+
+    if (index >= m_segments.size())
+    {
+        return false;
+    }
+
+    // Here we know Start < segment[index].End. Do they not intersect at all?
+    if (m_segments[index].Start >= segment.End)
+    {
+        // Does not intersect any segment.
+        return false;
+    }
+
+    assert(m_segments[index].Intersects(segment));
     return true;
 }
 
@@ -1816,8 +1926,8 @@ void ReplaceVisitor::StartBlock(BasicBlock* block)
 #endif
 
     // OSR locals and parameters may need an initial read back, which we mark
-    // when we start the scratch BB.
-    if (!m_compiler->fgBBisScratch(block))
+    // when we start the initial BB.
+    if (block != m_compiler->fgFirstBB)
     {
         return;
     }
@@ -1830,7 +1940,7 @@ void ReplaceVisitor::StartBlock(BasicBlock* block)
             continue;
         }
 
-        JITDUMP("Marking fields of %s V%02u as needing read-back in scratch " FMT_BB "\n",
+        JITDUMP("Marking fields of %s V%02u as needing read-back in entry BB " FMT_BB "\n",
                 dsc->lvIsParam ? "parameter" : "OSR-local", agg->LclNum, block->bbNum);
 
         for (size_t i = 0; i < agg->Replacements.size(); i++)
@@ -1844,7 +1954,7 @@ void ReplaceVisitor::StartBlock(BasicBlock* block)
             }
             else
             {
-                JITDUMP("  V%02u (%s) not marked (not live-in to scratch BB)\n", rep.LclNum, rep.Description);
+                JITDUMP("  V%02u (%s) not marked (not live-in to entry BB)\n", rep.LclNum, rep.Description);
             }
         }
     }
@@ -2164,7 +2274,9 @@ void ReplaceVisitor::InsertPreStatementWriteBacks()
             DoPreOrder = true,
         };
 
-        Visitor(Compiler* comp, ReplaceVisitor* replacer) : GenTreeVisitor(comp), m_replacer(replacer)
+        Visitor(Compiler* comp, ReplaceVisitor* replacer)
+            : GenTreeVisitor(comp)
+            , m_replacer(replacer)
         {
         }
 
@@ -2309,8 +2421,36 @@ void ReplaceVisitor::ReadBackAfterCall(GenTreeCall* call, GenTree* user)
 //
 //   If the remainder of the struct local is dying, then we expect that this
 //   entire struct local is now dying, since all field accesses are going to be
-//   replaced with other locals. The exception is if there is a queued read
-//   back for any of the fields.
+//   replaced with other locals.
+//
+//   There are two exceptions to the above:
+//
+//     1) If there is a queued readback for any of the fields, then there is
+//     live state in the struct local, so it is not dying.
+//
+//     2) If there are further uses of the local in the same statement then we cannot
+//     actually act on the last-use information we would provide here. That's because
+//     uses of locals occur at the user and we do not model that here. In the real model
+//     there are cases where we do not have any place to insert any IR between the two uses.
+//     For example, consider:
+//
+//       ▌  CALL      void   Program:Foo(Program+S,Program+S)
+//       ├──▌  LCL_VAR   struct<Program+S, 4> V01 loc0
+//       └──▌  LCL_VAR   struct<Program+S, 4> V01 loc0
+//
+//     If V01 is promoted fully then both uses of V01 are last uses here; but
+//     replacing the IR with
+//
+//       ▌  CALL      void   Program:Foo(Program+S,Program+S)
+//       ├──▌  LCL_VAR   struct<Program+S, 4> V01 loc0          (last use)
+//       └──▌  COMMA     struct
+//          ├──▌  STORE_LCL_FLD int    V01 loc0         [+0]
+//          │  └──▌  LCL_VAR   int    V02 tmp0
+//          └──▌  LCL_VAR   struct<Program+S, 4> V01 loc0          (last use)
+//
+//     would be illegal since the created store overlaps with the first local,
+//     and does not take into account that both uses occur simultaneously at
+//     the position of the CALL node.
 //
 bool ReplaceVisitor::IsPromotedStructLocalDying(GenTreeLclVarCommon* lcl)
 {
@@ -2326,6 +2466,15 @@ bool ReplaceVisitor::IsPromotedStructLocalDying(GenTreeLclVarCommon* lcl)
     for (Replacement& rep : agg->Replacements)
     {
         if (rep.NeedsReadBack)
+        {
+            return false;
+        }
+    }
+
+    for (GenTree* cur = lcl->gtNext; cur != nullptr; cur = cur->gtNext)
+    {
+        assert(cur->OperIsAnyLocal());
+        if (cur->TypeIs(TYP_STRUCT) && (cur->AsLclVarCommon()->GetLclNum() == lcl->GetLclNum()))
         {
             return false;
         }
@@ -2396,7 +2545,7 @@ void ReplaceVisitor::ReplaceLocal(GenTree** use, GenTree* user)
         JITDUMP("Processing struct use [%06u] of V%02u.[%03u..%03u)\n", Compiler::dspTreeID(lcl), lclNum, offs,
                 offs + lcl->GetLayout(m_compiler)->GetSize());
 
-        assert(effectiveUser->OperIs(GT_CALL, GT_RETURN));
+        assert(effectiveUser->OperIs(GT_CALL, GT_RETURN, GT_SWIFT_ERROR_RET));
         unsigned size = lcl->GetLayout(m_compiler)->GetSize();
         WriteBackBeforeUse(use, lclNum, lcl->GetLclOffs(), size);
 
@@ -2546,7 +2695,7 @@ void ReplaceVisitor::WriteBackBeforeCurrentStatement(unsigned lcl, unsigned offs
 
         GenTree*   readBack = Promotion::CreateWriteBack(m_compiler, lcl, rep);
         Statement* stmt     = m_compiler->fgNewStmtFromTree(readBack);
-        JITDUMP("Writing back %s before " FMT_STMT "\n", rep.Description, stmt->GetID());
+        JITDUMP("Writing back %s before " FMT_STMT "\n", rep.Description, m_currentStmt->GetID());
         DISPSTMT(stmt);
         m_compiler->fgInsertStmtBefore(m_currentBlock, m_currentStmt, stmt);
         ClearNeedsWriteBack(rep);
@@ -2574,8 +2723,8 @@ void ReplaceVisitor::WriteBackBeforeUse(GenTree** use, unsigned lcl, unsigned of
 
         GenTreeOp* comma = m_compiler->gtNewOperNode(GT_COMMA, (*use)->TypeGet(),
                                                      Promotion::CreateWriteBack(m_compiler, lcl, rep), *use);
-        *use = comma;
-        use  = &comma->gtOp2;
+        *use             = comma;
+        use              = &comma->gtOp2;
 
         ClearNeedsWriteBack(rep);
         m_madeChanges = true;
@@ -2691,21 +2840,9 @@ PhaseStatus Promotion::Run()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
-    // Check for parameters and OSR locals that need to be read back on entry
-    // to the function.
-    for (AggregateInfo* agg : aggregates)
-    {
-        LclVarDsc* dsc = m_compiler->lvaGetDesc(agg->LclNum);
-        if (dsc->lvIsParam || dsc->lvIsOSRLocal)
-        {
-            // We will need an initial readback. We create the scratch BB ahead
-            // of time so that we get correct liveness and mark the
-            // parameters/OSR-locals as requiring read-back as part of
-            // ReplaceVisitor::StartBlock when we get to the scratch block.
-            m_compiler->fgEnsureFirstBBisScratch();
-            break;
-        }
-    }
+    // We should have a proper entry BB where we can put IR that will only be
+    // run once into. This is a precondition of the phase.
+    assert(m_compiler->fgFirstBB->bbPreds == nullptr);
 
     // Compute liveness for the fields and remainders.
     PromotionLiveness liveness(m_compiler, aggregates);
@@ -2861,8 +2998,8 @@ void Promotion::ExplicitlyZeroInitReplacementLocals(unsigned                    
 
 //------------------------------------------------------------------------
 // Promotion::InsertInitStatement:
-//   Insert a new statement after the specified statement in the scratch block,
-//   or at the beginning of the scratch block if no other statements were
+//   Insert a new statement after the specified statement in the entry block,
+//   or at the beginning of the entry block if no other statements were
 //   inserted yet.
 //
 // Parameters:
@@ -2871,7 +3008,6 @@ void Promotion::ExplicitlyZeroInitReplacementLocals(unsigned                    
 //
 void Promotion::InsertInitStatement(Statement** prevStmt, GenTree* tree)
 {
-    m_compiler->fgEnsureFirstBBisScratch();
     Statement* stmt = m_compiler->fgNewStmtFromTree(tree);
     if (*prevStmt != nullptr)
     {

@@ -52,7 +52,7 @@ namespace GcHole1
 
 
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             string result;
             IEnumerable<string> sequence;
@@ -61,7 +61,7 @@ namespace GcHole1
             result = sequence.SingleOrDefault(App.CheckString);
             Console.WriteLine("RESULT: `{0}'", result);
 
-            return 100;  //assume if run to completion, the test passes
+            //assume if run to completion, the test passes
         }
     }
 }

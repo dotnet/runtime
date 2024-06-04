@@ -20,6 +20,7 @@ public class GenerateIClassX
     public DateTime FieldValueType;
 }
 
+[ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
 partial class Test_VariantTest
 {
     private const byte NumericValue = 15;

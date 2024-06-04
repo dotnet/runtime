@@ -624,6 +624,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                             return ((_argSize > _transitionBlock.EnregisteredParamTypeMaxSize) || _transitionBlock.IsArgPassedByRef(_argTypeHandle));
                         }
                         return false;
+                    case TargetArchitecture.RiscV64:
+                        if (_argType == CorElementType.ELEMENT_TYPE_VALUETYPE)
+                        {
+                            Debug.Assert(!_argTypeHandle.IsNull());
+                            return ((_argSize > _transitionBlock.EnregisteredParamTypeMaxSize) || _transitionBlock.IsArgPassedByRef(_argTypeHandle));
+                        }
+                        return false;
                     default:
                         throw new NotImplementedException();
                 }
@@ -827,6 +834,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         _loongarch64IdxFPReg = 0;
                         break;
 
+                    case TargetArchitecture.RiscV64:
+                        _riscv64IdxGenReg = numRegistersUsed;
+                        _riscv64OfsStack = 0;
+
+                        _riscv64IdxFPReg = 0;
+                        break;
                     default:
                         throw new NotImplementedException();
                 }
@@ -1434,6 +1447,128 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         return argOfs;
                     }
 
+                case TargetArchitecture.RiscV64:
+                    {
+                        int cFPRegs = 0;
+                        uint floatFieldFlags = (uint)StructFloatFieldInfoFlags.STRUCT_NO_FLOAT_FIELD;
+                        _hasArgLocDescForStructInRegs = false;
+
+                        switch (argType)
+                        {
+                            case CorElementType.ELEMENT_TYPE_R4:
+                                // 32-bit floating point argument.
+                                cFPRegs = 1;
+                                break;
+
+                            case CorElementType.ELEMENT_TYPE_R8:
+                                // 64-bit floating point argument.
+                                cFPRegs = 1;
+                                break;
+
+                            case CorElementType.ELEMENT_TYPE_VALUETYPE:
+                                {
+                                    // Composite greater than 16 bytes should be passed by reference
+                                    if (argSize > _transitionBlock.EnregisteredParamTypeMaxSize)
+                                    {
+                                        argSize = _transitionBlock.PointerSize;
+                                    }
+                                    else
+                                    {
+                                        floatFieldFlags = RISCV64PassStructInRegister.GetRISCV64PassStructInRegisterFlags(_argTypeHandle.GetRuntimeTypeHandle());
+                                        if ((floatFieldFlags & (uint)StructFloatFieldInfoFlags.STRUCT_FLOAT_FIELD_ONLY_TWO) != 0)
+                                        {
+                                            cFPRegs = 2;
+                                        }
+                                        else if ((floatFieldFlags & (uint)StructFloatFieldInfoFlags.STRUCT_HAS_FLOAT_FIELDS_MASK) != 0)
+                                        {
+                                            cFPRegs = 1;
+                                        }
+                                    }
+
+                                    break;
+                                }
+
+                            default:
+                                break;
+                        }
+
+                        bool isValueType = (argType == CorElementType.ELEMENT_TYPE_VALUETYPE);
+                        int cbArg = _transitionBlock.StackElemSize(argSize, isValueType, false);
+
+                        if (cFPRegs > 0 && !IsVarArg)
+                        {
+                            if (isValueType && ((floatFieldFlags & (uint)StructFloatFieldInfoFlags.STRUCT_HAS_ONE_FLOAT_MASK) != 0))
+                            {
+                                Debug.Assert(cFPRegs == 1);
+                                if ((_riscv64IdxFPReg < 8) && (_riscv64IdxGenReg < 8))
+                                {
+                                    _argLocDescForStructInRegs = new ArgLocDesc();
+                                    _argLocDescForStructInRegs.m_idxFloatReg = _riscv64IdxFPReg;
+                                    _argLocDescForStructInRegs.m_cFloatReg = 1;
+
+                                    _argLocDescForStructInRegs.m_idxGenReg = _riscv64IdxGenReg;
+                                    _argLocDescForStructInRegs.m_cGenReg = 1;
+
+                                    _hasArgLocDescForStructInRegs = true;
+                                    _argLocDescForStructInRegs.m_floatFlags = floatFieldFlags;
+
+                                    int argOfsInner = _transitionBlock.OffsetOfFloatArgumentRegisters + _riscv64IdxFPReg * 8;
+                                    _riscv64IdxFPReg++;
+                                    _riscv64IdxGenReg++;
+                                    return argOfsInner;
+                                }
+                            }
+                            else if (cFPRegs + _riscv64IdxFPReg <= 8)
+                            {
+                                // Each floating point register in the argument area is 8 bytes.
+                                int argOfsInner = _transitionBlock.OffsetOfFloatArgumentRegisters + _riscv64IdxFPReg * 8;
+                                if (floatFieldFlags == (uint)StructFloatFieldInfoFlags.STRUCT_FLOAT_FIELD_ONLY_TWO)
+                                {
+                                    // struct with two single-float fields.
+                                    _argLocDescForStructInRegs = new ArgLocDesc();
+                                    _argLocDescForStructInRegs.m_idxFloatReg = _riscv64IdxFPReg;
+                                    _argLocDescForStructInRegs.m_cFloatReg = 2;
+                                    Debug.Assert(cFPRegs == 2);
+                                    Debug.Assert(argSize == 8);
+
+                                    _hasArgLocDescForStructInRegs = true;
+                                    _argLocDescForStructInRegs.m_floatFlags = (uint)StructFloatFieldInfoFlags.STRUCT_FLOAT_FIELD_ONLY_TWO;
+                                }
+                                _riscv64IdxFPReg += cFPRegs;
+                                return argOfsInner;
+                            }
+                            else
+                            {
+                                _riscv64IdxFPReg = 8;
+                            }
+                        }
+
+                        {
+                            Debug.Assert((cbArg % _transitionBlock.PointerSize) == 0);
+
+                            int regSlots = ALIGN_UP(cbArg, _transitionBlock.PointerSize) / _transitionBlock.PointerSize;
+                            // Only a0-a7 are valid argument registers.
+                            if (_riscv64IdxGenReg + regSlots <= 8)
+                            {
+                                // The entirety of the arg fits in the register slots.
+                                int argOfsInner = _transitionBlock.OffsetOfArgumentRegisters + _riscv64IdxGenReg * 8;
+                                _riscv64IdxGenReg += regSlots;
+                                return argOfsInner;
+                            }
+                            else if (_riscv64IdxGenReg < 8)
+                            {
+                                int argOfsInner = _transitionBlock.OffsetOfArgumentRegisters + _riscv64IdxGenReg * 8;
+                                _riscv64IdxGenReg = 8;
+                                _riscv64OfsStack += 8;
+                                return argOfsInner;
+                            }
+                        }
+
+                        argOfs = _transitionBlock.OffsetOfArgs + _riscv64OfsStack;
+                        _riscv64OfsStack += cbArg;
+                        return argOfs;
+                    }
+
                 default:
                     throw new NotImplementedException();
             }
@@ -1766,6 +1901,56 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         return pLoc;
                     }
 
+                case TargetArchitecture.RiscV64:
+                    {
+                        if (_hasArgLocDescForStructInRegs)
+                        {
+                            return _argLocDescForStructInRegs;
+                        }
+
+                        //        LIMITED_METHOD_CONTRACT;
+
+                        ArgLocDesc pLoc = new ArgLocDesc();
+
+                        if (_transitionBlock.IsFloatArgumentRegisterOffset(argOffset))
+                        {
+                            int floatRegOfsInBytes = argOffset - _transitionBlock.OffsetOfFloatArgumentRegisters;
+                            Debug.Assert((floatRegOfsInBytes % _transitionBlock.FloatRegisterSize) == 0);
+                            pLoc.m_idxFloatReg = floatRegOfsInBytes / _transitionBlock.FloatRegisterSize;
+                            pLoc.m_cFloatReg = 1;
+
+                            return pLoc;
+                        }
+
+                        int byteArgSize = GetArgSize();
+
+                        // Composites greater than 16bytes are passed by reference
+                        TypeHandle dummy;
+                        if (GetArgType(out dummy) == CorElementType.ELEMENT_TYPE_VALUETYPE && GetArgSize() > _transitionBlock.EnregisteredParamTypeMaxSize)
+                        {
+                            byteArgSize = _transitionBlock.PointerSize;
+                        }
+
+                        if (!_transitionBlock.IsStackArgumentOffset(argOffset))
+                        {
+                            pLoc.m_idxGenReg = _transitionBlock.GetArgumentIndexFromOffset(argOffset);
+                            if ((pLoc.m_idxGenReg == 7) && (byteArgSize > _transitionBlock.PointerSize))
+                            {
+                                pLoc.m_cGenReg = 1;
+                                pLoc.m_byteStackIndex = 0;
+                                pLoc.m_byteStackSize = 8;
+                            }
+                            else
+                                pLoc.m_cGenReg = (short)(ALIGN_UP(byteArgSize, _transitionBlock.PointerSize) / _transitionBlock.PointerSize);
+                        }
+                        else
+                        {
+                            pLoc.m_byteStackIndex = _transitionBlock.GetStackArgumentByteIndexFromOffset(argOffset);
+                            pLoc.m_byteStackSize = _transitionBlock.StackElemSize(byteArgSize, IsValueType(), IsFloatHfa());
+                        }
+                        return pLoc;
+                    }
+
                 case TargetArchitecture.X64:
                     if (_transitionBlock.IsX64UnixABI)
                     {
@@ -1854,6 +2039,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private int _loongarch64IdxGenReg;  // Next general register to be assigned a value
         private int _loongarch64OfsStack;   // Offset of next stack location to be assigned a value
         private int _loongarch64IdxFPReg;   // Next FP register to be assigned a value
+
+        private int _riscv64IdxGenReg;      // Next general register to be assigned a value
+        private int _riscv64OfsStack;       // Offset of next stack location to be assigned a value
+        private int _riscv64IdxFPReg;       // Next FP register to be assigned a value
 
         // These are enum flags in CallingConventions.h, but that's really ugly in C#, so I've changed them to bools.
         private bool _ITERATION_STARTED; // Started iterating over arguments

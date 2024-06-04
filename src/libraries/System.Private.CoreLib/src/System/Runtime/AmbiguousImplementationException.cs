@@ -17,13 +17,13 @@ namespace System.Runtime
         }
 
         public AmbiguousImplementationException(string? message)
-            : base(message)
+            : base(message ?? SR.Arg_AmbiguousImplementationException_NoMessage)
         {
             HResult = HResults.COR_E_AMBIGUOUSIMPLEMENTATION;
         }
 
         public AmbiguousImplementationException(string? message, Exception? innerException)
-            : base(message, innerException)
+            : base(message ?? SR.Arg_AmbiguousImplementationException_NoMessage, innerException)
         {
             HResult = HResults.COR_E_AMBIGUOUSIMPLEMENTATION;
         }

@@ -19,23 +19,9 @@
 //   Placeholder level used before type has been created or located in ngen image
 //
 //
-// CLASS_LOAD_UNRESTOREDTYPEKEY
-//
-//   Type lives in an ngen image and components of its type key need restoring:
-//     for methodtables: generic arguments, EEClass pointer, Module pointer in EEClass
-//     for typedescs: param type, template methodtable
-//
-//
-// CLASS_LOAD_UNRESTORED
-//
-//   Type lives in an ngen image and contains fields that need restoring
-//   (e.g. parent, interfaces, param type)
-//
-//
 // CLASS_LOAD_APPROXPARENTS
 //
-//   Type has been created, or loaded from an ngen image and fields
-//   have been restored, but some fields have been filled in with only
+//   Type has been created, but some fields have been filled in with only
 //   "approximate" information for generic type arguments. In
 //   particular, the parent class is approximate, and interfaces are
 //   generic (instantiation at formal type parameters). Other
@@ -71,8 +57,6 @@
 enum ClassLoadLevel
 {
     CLASS_LOAD_BEGIN,
-    CLASS_LOAD_UNRESTOREDTYPEKEY,
-    CLASS_LOAD_UNRESTORED,
     CLASS_LOAD_APPROXPARENTS,
     CLASS_LOAD_EXACTPARENTS,
     CLASS_DEPENDENCIES_LOADED,

@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 //
 // Implements the single finalizer thread for a Redhawk instance. Essentially waits for an event to fire
@@ -16,7 +16,7 @@ namespace System.Runtime
     // We choose this name to avoid clashing with any future public class with the name Finalizer.
     internal static class __Finalizer
     {
-        [UnmanagedCallersOnly(EntryPoint = "ProcessFinalizers", CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        [UnmanagedCallersOnly(EntryPoint = "ProcessFinalizers")]
         public static void ProcessFinalizers()
         {
 #if INPLACE_RUNTIME

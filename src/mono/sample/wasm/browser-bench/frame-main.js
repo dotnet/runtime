@@ -31,21 +31,16 @@ try {
     }
 
     const runtime = await dotnet
+        .withConfig({
+            maxParallelDownloads: 10000,
+            // diagnosticTracing:true,
+        })
         .withModuleConfig({
             printErr: () => undefined,
-            print: () => undefined,
-            onConfigLoaded: (config) => {
-                if (window.parent != window) {
-                    window.parent.resolveAppStartEvent("onConfigLoaded");
-                }
-                // config.diagnosticTracing = true;
-            }
+            print: () => undefined
         })
         .create();
 
-    if (window.parent != window) {
-        window.parent.resolveAppStartEvent("onDotnetReady");
-    }
     await frameApp.init(runtime);
 }
 catch (err) {

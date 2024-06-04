@@ -405,7 +405,7 @@ namespace System.Data.Tests
             foreach (Exception expectedEx in exceptionList)
                 if ((expectedEx.GetType()) == (ex.GetType()))
                     return;
-            Assert.True(false);
+            Assert.Fail();
         }
 
         [Fact]

@@ -35,10 +35,10 @@ namespace System.Runtime.CompilerServices
             UnmatchedValue = info.GetValue(nameof(UnmatchedValue), typeof(object));
         }
 
-        public SwitchExpressionException(string? message) : base(message) { }
+        public SwitchExpressionException(string? message) : base(message ?? SR.Arg_SwitchExpressionException) { }
 
         public SwitchExpressionException(string? message, Exception? innerException)
-            : base(message, innerException) { }
+            : base(message ?? SR.Arg_SwitchExpressionException, innerException) { }
 
         public object? UnmatchedValue { get; }
 

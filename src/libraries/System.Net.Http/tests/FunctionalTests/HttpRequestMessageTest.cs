@@ -210,6 +210,7 @@ namespace System.Net.Http.Functional.Tests
             Assert.Equal(
                 "Method: PUT, RequestUri: 'http://a.com/', Version: 1.0, Content: " + typeof(StringContent).ToString() + ", Headers:" + Environment.NewLine +
                 $"{{{Environment.NewLine}" +
+                "  Content-Length: 7" + Environment.NewLine +
                 "  Content-Type: text/plain; charset=utf-8" + Environment.NewLine +
                 "}", rm.ToString());
 
@@ -228,6 +229,7 @@ namespace System.Net.Http.Functional.Tests
                     "  Accept: text/xml; q=0.1" + Environment.NewLine +
                     "  Accept-Language: en-US,en;q=0.5" + Environment.NewLine +
                     "  Custom-Request-Header: value1" + Environment.NewLine +
+                    "  Content-Length: 7" + Environment.NewLine +
                     "  Content-Type: text/plain; charset=utf-8" + Environment.NewLine +
                     "  Custom-Content-Header: value2" + Environment.NewLine +
                     "}", rm.ToString());
@@ -239,6 +241,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("OPTIONS")]
         [InlineData("HEAD")]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/86317", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/101115", typeof(PlatformDetection), nameof(PlatformDetection.IsFirefox))]
         public async Task HttpRequest_BodylessMethod_NoContentLength(string method)
         {
             using (HttpClient client = CreateHttpClient())
@@ -267,7 +270,33 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/86326", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
+        public async Task HttpRequest_StringContent_WithoutMediaType()
+        {
+            using (HttpClient client = CreateHttpClient())
+            {
+                await LoopbackServer.CreateServerAsync(async (server, uri) =>
+                {
+                    var request = new HttpRequestMessage(HttpMethod.Post, uri);
+                    request.Content = new StringContent("", null, ((MediaTypeHeaderValue)null)!);
+
+                    Task<HttpResponseMessage> requestTask = client.SendAsync(request);
+                    await server.AcceptConnectionAsync(async connection =>
+                    {
+                        var requestData = await connection.ReadRequestDataAsync().ConfigureAwait(false);
+#if TARGET_BROWSER
+                        requestData = await connection.HandleCORSPreFlight(requestData);
+#endif
+
+                        Assert.DoesNotContain(requestData.Headers, line => line.Name.StartsWith("Content-Type"));
+
+                        await connection.SendResponseAsync();
+                        await requestTask;
+                    });
+                });
+            }
+        }
+
+        [Fact]
         public async Task HttpRequest_BodylessMethod_LargeContentLength()
         {
             using (HttpClient client = CreateHttpClient())

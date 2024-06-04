@@ -9,7 +9,7 @@ using Xunit.Abstractions;
 
 namespace Wasm.Build.Tests;
 
-public class ConfigSrcTests : BuildTestBase
+public class ConfigSrcTests : TestMainJsTestBase
 {
     public ConfigSrcTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext) : base(output, buildContext)
     { }
@@ -32,6 +32,6 @@ public class ConfigSrcTests : BuildTestBase
         string bundleDir = Path.Combine(binDir, "AppBundle");
         string configSrc = Path.GetFullPath(Path.Combine(bundleDir, "_framework", "blazor.boot.json"));
 
-        RunAndTestWasmApp(buildArgs, expectedExitCode: 42, host: host, id: id, extraXHarnessMonoArgs: $"--config-src={configSrc}");
+        RunAndTestWasmApp(buildArgs, expectedExitCode: 42, host: host, id: id, extraXHarnessMonoArgs: $"--config-src=\"{configSrc}\"");
     }
 }

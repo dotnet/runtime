@@ -40,7 +40,7 @@ namespace VectorMathTests
         }
 
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             System.Diagnostics.Stopwatch clock = new System.Diagnostics.Stopwatch();
             clock.Start();
@@ -59,7 +59,6 @@ namespace VectorMathTests
             {
                 sum(arr);
             }
-            return 100;
         }
     }
 }

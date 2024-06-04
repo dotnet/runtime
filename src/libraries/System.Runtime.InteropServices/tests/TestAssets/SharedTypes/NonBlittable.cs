@@ -84,6 +84,7 @@ namespace SharedTypes
 
         public static byte* ConvertToUnmanaged(double managed, Span<byte> buffer)
         {
+            // Unsafe.AsPointer is safe since buffer must be pinned
             BinaryPrimitives.WriteDoubleBigEndian(buffer, managed);
             return (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(buffer));
         }
@@ -305,6 +306,7 @@ namespace SharedTypes
             private IntWrapperWithoutGetPinnableReference _managed;
             public void FromManaged(IntWrapperWithoutGetPinnableReference managed) => _managed = managed;
 
+            // Unsafe.AsPointer is safe since buffer must be pinned
             public int* ToUnmanaged() => (int*)Unsafe.AsPointer(ref _managed.i);
 
             public ref int GetPinnableReference() => ref _managed.i;
@@ -463,6 +465,7 @@ namespace SharedTypes
             if (spaceRequired > buffer.Length)
                 throw new InvalidOperationException();
 
+            // Unsafe.AsPointer is safe since buffer must be pinned
             return (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(buffer));
         }
 
@@ -520,6 +523,7 @@ namespace SharedTypes
 
             public ref TUnmanagedElement GetPinnableReference() => ref MemoryMarshal.GetReference(_span);
 
+            // Unsafe.AsPointer is safe since buffer must be pinned
             public byte* ToUnmanaged() => (byte*)Unsafe.AsPointer(ref GetPinnableReference());
 
             public Span<T> GetManagedValuesDestination(int length)

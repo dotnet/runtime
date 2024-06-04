@@ -11,11 +11,10 @@ namespace Runtime_60035
     public class Program
     {
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             byte[] inputBytes = Encoding.UTF8.GetBytes("https://github.com/dotnet/runtime");
             Console.WriteLine(UrlEncoder.Default.FindFirstCharacterToEncodeUtf8(inputBytes));
-            return 100;
         }
     }
 }

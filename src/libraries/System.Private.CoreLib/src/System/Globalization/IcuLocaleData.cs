@@ -610,8 +610,8 @@ namespace System.Globalization
         //
         // value = index << 4 | length
         // byte0 = value >> 8; byte1 = value & 0xff
-        private static ReadOnlySpan<byte> LocalesNamesIndexes => new byte[CulturesCount * 2]
-        {
+        private static ReadOnlySpan<byte> LocalesNamesIndexes => // CulturesCount * 2
+        [
             0, 2,     // aa
             0, 5,     // aa-dj
             0, 85,    // aa-er
@@ -1476,13 +1476,12 @@ namespace System.Globalization
             210, 188, // zh-tw_radstr
             211, 114, // zu
             211, 117, // zu-za
-        };
+        ];
 
         private const int LocaleLongestName = 14;
-        private const int LcidCount = 448;
 
-        private static ReadOnlySpan<byte> LcidToCultureNameIndices => new byte[LcidCount * 4]
-        {
+        private static ReadOnlySpan<byte> LcidToCultureNameIndices => // 488 * 4
+        [
             0x00, 0x01, 0x02, 0x92,  // ar
             0x00, 0x02, 0x0f, 0x82,  // bg
             0x00, 0x03, 0x14, 0x62,  // ca
@@ -1936,7 +1935,7 @@ namespace System.Globalization
             // Sort 0x5
             0x08, 0x04, 0xcb, 0x0c,  // zh-cn_phoneb
             0x10, 0x04, 0xd0, 0x7c,  // zh-sg_phoneb
-        };
+        ];
 
         private const int LcidSortPrefix1Index = 1736;
         private const int LcidSortPrefix2Index = 1752;
@@ -2820,8 +2819,8 @@ namespace System.Globalization
         internal const int ArabicSemicolonSep    = 3 << 16;
         internal const int DoubleCommaSep        = 4 << 16;
 
-        private static ReadOnlySpan<byte> NameIndexToNumericData => new byte[CulturesCount * NumericLocaleDataBytesPerRow]
-        {
+        private static ReadOnlySpan<byte> NameIndexToNumericData => // CulturesCount * NumericLocaleDataBytesPerRow
+        [
             0x00, 0x10, 0x00, 0x00,  0x00, 0x01, 0x00, 0x02,  0x01, 0xf4, 0x00, 0x00,  0x00, 0x49, 0x11, 0x00,  0x30, 0xf0,  // 0    - aa
             0x00, 0x10, 0x00, 0x00,  0x00, 0x01, 0x00, 0x02,  0x01, 0xf4, 0x00, 0x00,  0x00, 0x3e, 0x11, 0x00,  0x10, 0xf0,  // 1    - aa-dj
             0x00, 0x10, 0x00, 0x00,  0x00, 0x01, 0x00, 0x02,  0x01, 0xf4, 0x00, 0x00,  0x00, 0x47, 0x11, 0x00,  0x20, 0xf0,  // 2    - aa-er
@@ -3686,7 +3685,7 @@ namespace System.Globalization
             0x04, 0x04, 0x04, 0x3b,  0x63, 0xb6, 0x27, 0x12,  0x01, 0xf4, 0x00, 0x00,  0x00, 0xed, 0x01, 0x35,  0xb3, 0x5b,  // 861  - zh-tw_radstr
             0x00, 0x00, 0x35, 0x4e,  0x43, 0x52, 0x27, 0x10,  0x01, 0xf4, 0x00, 0x00,  0x00, 0xd1, 0x11, 0x35,  0xf3, 0x5f,  // 862  - zu
             0x00, 0x04, 0x35, 0x4e,  0x43, 0x52, 0x27, 0x10,  0x01, 0xf4, 0x00, 0x00,  0x00, 0xd1, 0x11, 0x35,  0xf3, 0x5f,  // 863  - zu-za
-        };
+        ];
 
         internal static string? LCIDToLocaleName(int culture)
         {

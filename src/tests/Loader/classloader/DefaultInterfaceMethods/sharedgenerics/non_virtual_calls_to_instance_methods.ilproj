@@ -1,7 +1,4 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
-  <PropertyGroup>
-    <OutputType>Exe</OutputType>
-  </PropertyGroup>
   <ItemGroup>
     <Compile Include="non_virtual_calls_to_instance_methods.il" />
   </ItemGroup>

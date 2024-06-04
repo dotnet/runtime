@@ -1,6 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
+    <!-- This test requires explicit Main because modifying visibilities -->
+    <!-- to satisfy the wrapper generator affects test behavior. -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="HelloWorld.il" />

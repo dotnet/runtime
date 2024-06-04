@@ -155,8 +155,8 @@ namespace System.IO.Tests
         {
             using (var watcher = new TestFileSystemWatcher(TestDirectory, "*"))
             {
-                watcher.Created += (obj, e) => { Assert.False(true, "Created event should not occur"); };
-                watcher.Deleted += (obj, e) => { Assert.False(true, "Deleted event should not occur"); };
+                watcher.Created += (obj, e) => { Assert.Fail("Created event should not occur"); };
+                watcher.Deleted += (obj, e) => { Assert.Fail("Deleted event should not occur"); };
                 watcher.BeginInit();
                 watcher.EnableRaisingEvents = true;
                 new TempFile(Path.Combine(TestDirectory, GetTestFileName())).Dispose();
@@ -212,8 +212,8 @@ namespace System.IO.Tests
         {
             using (var watcher = new TestFileSystemWatcher(TestDirectory, "*"))
             {
-                watcher.Created += (obj, e) => { Assert.False(true, "Created event should not occur"); };
-                watcher.Deleted += (obj, e) => { Assert.False(true, "Deleted event should not occur"); };
+                watcher.Created += (obj, e) => { Assert.Fail("Created event should not occur"); };
+                watcher.Deleted += (obj, e) => { Assert.Fail("Deleted event should not occur"); };
                 watcher.BeginInit();
                 watcher.EndInit();
                 new TempFile(Path.Combine(TestDirectory, GetTestFileName())).Dispose();

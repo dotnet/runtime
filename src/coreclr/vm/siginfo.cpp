@@ -130,9 +130,9 @@ DEFINEELEMENTTYPEINFO(ELEMENT_TYPE_INTERNAL,       -1,                   TYPE_GC
 
 unsigned GetSizeForCorElementType(CorElementType etyp)
 {
-        LIMITED_METHOD_DAC_CONTRACT;
-        _ASSERTE(gElementTypeInfo[etyp].m_elementType == etyp);
-        return gElementTypeInfo[etyp].m_cbSize;
+    LIMITED_METHOD_DAC_CONTRACT;
+    _ASSERTE(gElementTypeInfo[etyp].m_elementType == etyp);
+    return gElementTypeInfo[etyp].m_cbSize;
 }
 
 #ifndef DACCESS_COMPILE
@@ -1988,9 +1988,6 @@ TypeHandle SigPointer::GetTypeVariable(CorElementType et,
         GC_NOTRIGGER;
         POSTCONDITION(CheckPointer(RETVAL, NULL_OK)); // will return TypeHandle() if index is out of range
         SUPPORTS_DAC;
-#ifndef DACCESS_COMPILE
-        //        POSTCONDITION(RETVAL.IsNull() || RETVAL.IsRestored() || RETVAL.GetMethodTable()->IsRestoring());
-#endif
         MODE_ANY;
     }
     CONTRACT_END
@@ -2603,7 +2600,7 @@ UINT MetaSig::GetElemSize(CorElementType etype, TypeHandle thValueType)
     if ((UINT)etype >= ARRAY_SIZE(gElementTypeInfo))
         ThrowHR(COR_E_BADIMAGEFORMAT, BFA_BAD_COMPLUS_SIG);
 
-    int cbsize = gElementTypeInfo[(UINT)etype].m_cbSize;
+    int cbsize = GetSizeForCorElementType(etype);
     if (cbsize != -1)
         return(cbsize);
 
@@ -3662,7 +3659,8 @@ MetaSig::CompareElementType(
     }
     CONTRACTL_END
 
-    CompareState temp{};
+    TokenPairList tempList { nullptr };
+    CompareState temp{ &tempList };
     if (state == NULL)
         state = &temp;
 
@@ -3967,7 +3965,7 @@ MetaSig::CompareElementType(
             argCnt1++;
 
             TokenPairList newVisited = TokenPairList::AdjustForTypeEquivalenceForbiddenScope(state->Visited);
-            state->Visited = &newVisited;
+            *state->Visited = newVisited;
 
             // Compare all parameters, incl. return parameter
             while (argCnt1 > 0)
@@ -3998,7 +3996,7 @@ MetaSig::CompareElementType(
                 pSig1 - 1,
                 (DWORD)(pEndSig1 - pSig1) + 1);
             TokenPairList newVisitedAlwaysForbidden = TokenPairList::AdjustForTypeEquivalenceForbiddenScope(state->Visited);
-            state->Visited = &newVisitedAlwaysForbidden;
+            *state->Visited = newVisitedAlwaysForbidden;
 
             // Type constructors - The actual type is never permitted to participate in type equivalence.
             if (!CompareElementType(
@@ -4024,7 +4022,7 @@ MetaSig::CompareElementType(
                 return FALSE;
             }
 
-            state->Visited = &newVisited;
+            *state->Visited = newVisited;
             while (argCnt1 > 0)
             {
                 if (!CompareElementType(
@@ -4203,7 +4201,6 @@ MetaSig::CompareTypeDefsUnderSubstitutions(
     SigPointer inst1 = pSubst1->GetInst();
     SigPointer inst2 = pSubst2->GetInst();
 
-    CompareState state{ pVisited };
     for (DWORD i = 0; i < pTypeDef1->GetNumGenericArgs(); i++)
     {
         PCCOR_SIGNATURE startInst1 = inst1.GetPtr();
@@ -4212,6 +4209,8 @@ MetaSig::CompareTypeDefsUnderSubstitutions(
         PCCOR_SIGNATURE startInst2 = inst2.GetPtr();
         IfFailThrow(inst2.SkipExactlyOne());
         PCCOR_SIGNATURE endInst2ptr = inst2.GetPtr();
+        TokenPairList visited{ pVisited };
+        CompareState state{ &visited };
         if (!CompareElementType(
                 startInst1,
                 startInst2,
@@ -4310,35 +4309,6 @@ MetaSig::CompareMethodSigs(
 
 //---------------------------------------------------------------------------------------
 //
-//static
-HRESULT
-MetaSig::CompareMethodSigsNT(
-    PCCOR_SIGNATURE      pSignature1,
-    DWORD                cSig1,
-    Module *             pModule1,
-    const Substitution * pSubst1,
-    PCCOR_SIGNATURE      pSignature2,
-    DWORD                cSig2,
-    Module *             pModule2,
-    const Substitution * pSubst2,
-    TokenPairList *      pVisited) //= NULL
-{
-    STATIC_CONTRACT_NOTHROW;
-
-    HRESULT hr = S_OK;
-    EX_TRY
-    {
-        if (CompareMethodSigs(pSignature1, cSig1, pModule1, pSubst1, pSignature2, cSig2, pModule2, pSubst2, FALSE, pVisited))
-            hr = S_OK;
-        else
-            hr = S_FALSE;
-    }
-    EX_CATCH_HRESULT_NO_ERRORINFO(hr);
-    return hr;
-}
-
-//---------------------------------------------------------------------------------------
-//
 // Compare two method sigs and return whether they are the same.
 // @GENERICS: instantiation of the type variables in the second signature
 //
@@ -4390,7 +4360,7 @@ MetaSig::CompareMethodSigs(
         return FALSE;
     }
 
-    __int8 callConv = *pSig1;
+    int8_t callConv = *pSig1;
 
     pSig1++;
     pSig2++;
@@ -4430,7 +4400,6 @@ MetaSig::CompareMethodSigs(
         // to correctly handle overloads, where there are a number of varargs methods
         // to pick from, like m1(int,...) and m2(int,int,...), etc.
 
-        CompareState state{ pVisited };
         // <= because we want to include a check of the return value!
         for (i = 0; i <= ArgCount1; i++)
         {
@@ -4462,6 +4431,8 @@ MetaSig::CompareMethodSigs(
             else
             {
                 // We are in bounds on both sides.  Compare the element.
+                TokenPairList visited{ pVisited };
+                CompareState state{ &visited };
                 if (!CompareElementType(
                     pSig1,
                     pSig2,
@@ -4486,7 +4457,6 @@ MetaSig::CompareMethodSigs(
     }
 
     // do return type as well
-    CompareState state{ pVisited };
     for (i = 0; i <= ArgCount1; i++)
     {
         if (i == 0 && skipReturnTypeSig)
@@ -4501,6 +4471,8 @@ MetaSig::CompareMethodSigs(
         }
         else
         {
+            TokenPairList visited{ pVisited };
+            CompareState state{ &visited };
             if (!CompareElementType(
                 pSig1,
                 pSig2,
@@ -4551,7 +4523,8 @@ BOOL MetaSig::CompareFieldSigs(
     pEndSig1 = pSig1 + cSig1;
     pEndSig2 = pSig2 + cSig2;
 
-    CompareState state{ pVisited };
+    TokenPairList visited { pVisited };
+    CompareState state{ &visited };
     return(CompareElementType(++pSig1, ++pSig2, pEndSig1, pEndSig2, pModule1, pModule2, NULL, NULL, &state));
 }
 
@@ -4840,9 +4813,11 @@ BOOL MetaSig::CompareVariableConstraints(const Substitution *pSubst1,
             if ((specialConstraints2 & (gpDefaultConstructorConstraint | gpNotNullableValueTypeConstraint)) == 0)
                 return FALSE;
         }
-        if ((specialConstraints1 & gpAcceptByRefLike) != 0)
+
+        // Constraints that 'allow' must check the overridden first
+        if ((specialConstraints2 & gpAllowByRefLike) != 0)
         {
-            if ((specialConstraints2 & gpAcceptByRefLike) == 0)
+            if ((specialConstraints1 & gpAllowByRefLike) == 0)
                 return FALSE;
         }
     }
@@ -4865,11 +4840,12 @@ BOOL MetaSig::CompareVariableConstraints(const Substitution *pSubst1,
         // because they
         // a) are vacuous, and
         // b) may be implicit (ie. absent) in the overridden variable's declaration
+        TokenPairList newVisited { nullptr };
         if (!(CompareTypeDefOrRefOrSpec(pModule1, tkConstraintType1, NULL,
-                                       CoreLibBinder::GetModule(), g_pObjectClass->GetCl(), NULL, NULL) ||
+                                       CoreLibBinder::GetModule(), g_pObjectClass->GetCl(), NULL, &newVisited) ||
           (((specialConstraints1 & gpNotNullableValueTypeConstraint) != 0) &&
            (CompareTypeDefOrRefOrSpec(pModule1, tkConstraintType1, NULL,
-                      CoreLibBinder::GetModule(), g_pValueTypeClass->GetCl(), NULL, NULL)))))
+                      CoreLibBinder::GetModule(), g_pValueTypeClass->GetCl(), NULL, &newVisited)))))
         {
             HENUMInternalHolder hEnum2(pInternalImport2);
             mdGenericParamConstraint tkConstraint2;
@@ -4882,7 +4858,7 @@ BOOL MetaSig::CompareVariableConstraints(const Substitution *pSubst1,
                 IfFailThrow(pInternalImport2->GetGenericParamConstraintProps(tkConstraint2, &tkParam2, &tkConstraintType2));
                 _ASSERTE(tkParam2 == tok2);
 
-                found = CompareTypeDefOrRefOrSpec(pModule1, tkConstraintType1, pSubst1, pModule2, tkConstraintType2, pSubst2, NULL);
+                found = CompareTypeDefOrRefOrSpec(pModule1, tkConstraintType1, pSubst1, pModule2, tkConstraintType2, pSubst2, &newVisited);
             }
             if (!found)
             {
@@ -4984,11 +4960,6 @@ void PromoteCarefully(promote_func   fn,
     assert(flags & GC_CALL_INTERIOR);
 
 #if !defined(DACCESS_COMPILE)
-
-    //
-    // Sanity check the stack scan limit
-    //
-    assert(sc->stack_limit != 0);
 
     // Note that the base is at a higher address than the limit, since the stack
     // grows downwards.

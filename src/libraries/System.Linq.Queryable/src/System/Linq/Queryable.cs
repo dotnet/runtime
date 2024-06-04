@@ -926,6 +926,22 @@ namespace System.Linq
                     Expression.Constant(comparer, typeof(IEqualityComparer<TKey>))));
         }
 
+        /// <summary>Return index and the associated item.</summary>
+        /// <typeparam name="TSource">The type of the elements of <paramref name="source" />.</typeparam>
+        /// <param name="source">An <see cref="IQueryable{T}" /> to return an element from.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
+        [DynamicDependency("Index`1", typeof(Enumerable))]
+        public static IQueryable<(int Index, TSource Item)> Index<TSource>(this IQueryable<TSource> source)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+
+            return source.Provider.CreateQuery<(int Index, TSource Item)>(
+                Expression.Call(
+                    null,
+                    new Func<IQueryable<TSource>, IQueryable<(int Index, TSource Item)>>(Index).Method,
+                    source.Expression));
+        }
+
         [DynamicDependency("Intersect`1", typeof(Enumerable))]
         public static IQueryable<TSource> Intersect<TSource>(this IQueryable<TSource> source1, IEnumerable<TSource> source2)
         {
@@ -1567,6 +1583,27 @@ namespace System.Linq
                     null,
                     new Func<IQueryable<TSource>, Expression<Func<TSource, bool>>, int>(Count).Method,
                     source.Expression, Expression.Quote(predicate)));
+        }
+
+        /// <summary>Returns the count of each element from a sequence according to a specified key selector function.</summary>
+        /// <typeparam name="TSource">The type of the elements of <paramref name="source" />.</typeparam>
+        /// <typeparam name="TKey">The type of key to distinguish elements by.</typeparam>
+        /// <param name="source">The sequence to count elements from.</param>
+        /// <param name="keySelector">A function to extract the key for each element.</param>
+        /// <param name="comparer">An <see cref="IEqualityComparer{TKey}" /> to compare keys.</param>
+        /// <returns>An <see cref="IQueryable{T}" /> that contains count for each distinct elements from the source sequence as a <see cref="KeyValuePair{TKey, TValue}"/> object.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
+        [DynamicDependency("CountBy`2", typeof(Enumerable))]
+        public static IQueryable<KeyValuePair<TKey, int>> CountBy<TSource, TKey>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector, IEqualityComparer<TKey>? comparer = null) where TKey : notnull
+        {
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(keySelector);
+
+            return source.Provider.CreateQuery<KeyValuePair<TKey, int>>(
+                Expression.Call(
+                    null,
+                    new Func<IQueryable<TSource>, Expression<Func<TSource, TKey>>, IEqualityComparer<TKey>, IQueryable<KeyValuePair<TKey, int>>>(CountBy).Method,
+                    source.Expression, Expression.Quote(keySelector), Expression.Constant(comparer, typeof(IEqualityComparer<TKey>))));
         }
 
         [DynamicDependency("LongCount`1", typeof(Enumerable))]
@@ -2313,6 +2350,35 @@ namespace System.Linq
                     null,
                     new Func<IQueryable<TSource>, TAccumulate, Expression<Func<TAccumulate, TSource, TAccumulate>>, Expression<Func<TAccumulate, TResult>>, TResult>(Aggregate).Method,
                     source.Expression, Expression.Constant(seed), Expression.Quote(func), Expression.Quote(selector)));
+        }
+
+        [DynamicDependency("AggregateBy`3", typeof(Enumerable))]
+        public static IQueryable<KeyValuePair<TKey, TAccumulate>> AggregateBy<TSource, TKey, TAccumulate>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector, TAccumulate seed, Expression<Func<TAccumulate, TSource, TAccumulate>> func, IEqualityComparer<TKey>? keyComparer = null) where TKey : notnull
+        {
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(keySelector);
+            ArgumentNullException.ThrowIfNull(func);
+
+            return source.Provider.CreateQuery<KeyValuePair<TKey, TAccumulate>>(
+                Expression.Call(
+                    null,
+                    new Func<IQueryable<TSource>, Expression<Func<TSource, TKey>>, TAccumulate, Expression<Func<TAccumulate, TSource, TAccumulate>>, IEqualityComparer<TKey>, IQueryable<KeyValuePair<TKey, TAccumulate>>>(AggregateBy).Method,
+                    source.Expression, Expression.Quote(keySelector), Expression.Constant(seed), Expression.Quote(func), Expression.Constant(keyComparer, typeof(IEqualityComparer<TKey>))));
+        }
+
+        [DynamicDependency("AggregateBy`3", typeof(Enumerable))]
+        public static IQueryable<KeyValuePair<TKey, TAccumulate>> AggregateBy<TSource, TKey, TAccumulate>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector, Expression<Func<TKey, TAccumulate>> seedSelector, Expression<Func<TAccumulate, TSource, TAccumulate>> func, IEqualityComparer<TKey>? keyComparer = null) where TKey : notnull
+        {
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(keySelector);
+            ArgumentNullException.ThrowIfNull(seedSelector);
+            ArgumentNullException.ThrowIfNull(func);
+
+            return source.Provider.CreateQuery<KeyValuePair<TKey, TAccumulate>>(
+                Expression.Call(
+                    null,
+                    new Func<IQueryable<TSource>, Expression<Func<TSource, TKey>>, Expression<Func<TKey, TAccumulate>>, Expression<Func<TAccumulate, TSource, TAccumulate>>, IEqualityComparer<TKey>, IQueryable<KeyValuePair<TKey, TAccumulate>>>(AggregateBy).Method,
+                    source.Expression, Expression.Quote(keySelector), Expression.Quote(seedSelector), Expression.Quote(func), Expression.Constant(keyComparer, typeof(IEqualityComparer<TKey>))));
         }
 
         [DynamicDependency("SkipLast`1", typeof(Enumerable))]

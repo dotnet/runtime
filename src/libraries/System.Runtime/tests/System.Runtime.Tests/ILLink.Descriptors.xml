@@ -1,0 +1,4 @@
+<linker>
+  <assembly fullname="TestLoadAssembly" />
+  <assembly fullname="TestILAssembly" />
+</linker>

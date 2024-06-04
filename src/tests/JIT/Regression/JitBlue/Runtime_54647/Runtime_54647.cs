@@ -17,14 +17,12 @@ namespace Runtime_54647
     public class Program
     {
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             var val1 = new Vector64x2();
             var val2 = new Vector64x2();
 
             Copy(ref val1, val2);
-
-            return 100;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]

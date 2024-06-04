@@ -3,6 +3,7 @@
 
 using System;
 using System.Threading;
+using Xunit;
 
 public class UserException1 : Exception {
 	int ExceptionId;
@@ -57,7 +58,8 @@ public class RethrowException {
 	}
 		
 	
-	public static int Main() {
+	[Fact]
+	public static int TestEntryPoint() {
 	  String s = "Done";
 	    System.IO.TextWriter t = Console.Out;
 	    Console.SetOut(t);

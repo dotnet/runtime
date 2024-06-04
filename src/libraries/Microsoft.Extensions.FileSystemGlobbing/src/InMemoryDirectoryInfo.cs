@@ -46,16 +46,25 @@ namespace Microsoft.Extensions.FileSystemGlobbing
             else
             {
                 var fileList = new List<string>(files.Count());
+                string normalizedRoot = Path.GetFullPath(rootDir.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar));
 
                 // normalize
                 foreach (string file in files)
                 {
-                    fileList.Add(Path.GetFullPath(file.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar)));
+                    string fileWithNormalSeparators = file.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
+                    if (Path.IsPathRooted(file))
+                    {
+                        fileList.Add(Path.GetFullPath(fileWithNormalSeparators));
+                    }
+                    else
+                    {
+                        fileList.Add(Path.GetFullPath(Path.Combine(normalizedRoot, fileWithNormalSeparators)));
+                    }
                 }
 
                 _files = fileList;
 
-                FullName = Path.GetFullPath(rootDir.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar));
+                FullName = normalizedRoot;
             }
         }
 

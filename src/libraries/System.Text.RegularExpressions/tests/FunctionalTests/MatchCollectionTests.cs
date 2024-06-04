@@ -130,7 +130,7 @@ namespace System.Text.RegularExpressions.Tests
             if (PlatformDetection.IsNonZeroLowerBoundArraySupported)
             {
                 // Array has a non-zero lower bound
-                Array o = Array.CreateInstance(typeof(object), new int[] { 10 }, new int[] { 10 });
+                Array o = Array.CreateInstance(typeof(object), [10], [10]);
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("destinationIndex", "dstIndex", () => collection.CopyTo(o, 0));
             }
 

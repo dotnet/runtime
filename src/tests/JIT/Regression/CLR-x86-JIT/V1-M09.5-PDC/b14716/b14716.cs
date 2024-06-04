@@ -12,11 +12,10 @@ using Xunit;
 public class Bug
 {
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         Decimal[] dcmlSecValues = new Decimal[2] { 2, 3 };
         Int32 aa = 1;
         Decimal dcml1 = --dcmlSecValues[aa];
-        return 100;
     }
 }

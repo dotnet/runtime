@@ -6,40 +6,19 @@ using System.Diagnostics;
 
 namespace System.Linq
 {
-    public partial class Lookup<TKey, TElement> : IIListProvider<IGrouping<TKey, TElement>>
+    public partial class Lookup<TKey, TElement>
     {
-        IGrouping<TKey, TElement>[] IIListProvider<IGrouping<TKey, TElement>>.ToArray()
-        {
-            IGrouping<TKey, TElement>[] array = new IGrouping<TKey, TElement>[_count];
-            int index = 0;
-            Grouping<TKey, TElement>? g = _lastGrouping;
-            if (g != null)
-            {
-                do
-                {
-                    g = g._next;
-                    Debug.Assert(g != null);
-
-                    array[index] = g;
-                    ++index;
-                }
-                while (g != _lastGrouping);
-            }
-
-            return array;
-        }
-
         internal TResult[] ToArray<TResult>(Func<TKey, IEnumerable<TElement>, TResult> resultSelector)
         {
             TResult[] array = new TResult[_count];
             int index = 0;
             Grouping<TKey, TElement>? g = _lastGrouping;
-            if (g != null)
+            if (g is not null)
             {
                 do
                 {
                     g = g._next;
-                    Debug.Assert(g != null);
+                    Debug.Assert(g is not null);
 
                     g.Trim();
                     array[index] = resultSelector(g._key, g._elements);
@@ -50,26 +29,5 @@ namespace System.Linq
 
             return array;
         }
-
-        List<IGrouping<TKey, TElement>> IIListProvider<IGrouping<TKey, TElement>>.ToList()
-        {
-            List<IGrouping<TKey, TElement>> list = new List<IGrouping<TKey, TElement>>(_count);
-            Grouping<TKey, TElement>? g = _lastGrouping;
-            if (g != null)
-            {
-                do
-                {
-                    g = g._next;
-                    Debug.Assert(g != null);
-
-                    list.Add(g);
-                }
-                while (g != _lastGrouping);
-            }
-
-            return list;
-        }
-
-        int IIListProvider<IGrouping<TKey, TElement>>.GetCount(bool onlyIfCheap) => _count;
     }
 }

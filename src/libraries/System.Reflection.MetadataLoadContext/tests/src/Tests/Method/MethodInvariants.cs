@@ -15,7 +15,7 @@ namespace System.Reflection.Tests
             else if (mb is ConstructorInfo c)
                 c.TestConstructorInfoInvariants();
             else
-                Assert.True(false, "What kind of MethodBase is this? " + mb);
+                Assert.Fail("What kind of MethodBase is this? " + mb);
         }
 
         public static void TestMethodInfoInvariants(this MethodInfo m)

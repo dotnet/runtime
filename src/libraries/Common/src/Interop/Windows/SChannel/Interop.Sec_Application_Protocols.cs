@@ -54,7 +54,7 @@ internal static partial class Interop
             byte[] buffer = new byte[sizeof(Sec_Application_Protocols) + protocolListSize];
             int index = 0;
 
-            MemoryMarshal.Write(buffer.AsSpan(index), ref protocols);
+            MemoryMarshal.Write(buffer.AsSpan(index), in protocols);
             index += sizeof(Sec_Application_Protocols);
 
             for (int i = 0; i < applicationProtocols.Count; i++)

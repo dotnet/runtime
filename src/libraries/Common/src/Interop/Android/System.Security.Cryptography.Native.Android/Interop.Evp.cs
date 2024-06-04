@@ -38,16 +38,6 @@ internal static partial class Interop
         [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "CryptoNative_GetMaxMdSize")]
         private static partial int GetMaxMdSize();
 
-        internal static unsafe int EvpDigestXOFOneShot(IntPtr type, ReadOnlySpan<byte> source, Span<byte> destination)
-        {
-            // The partial needs to match the OpenSSL parameters.
-            _ = type;
-            _ = source;
-            _ = destination;
-            Debug.Fail("Should have validated that XOF is not supported before getting here.");
-            throw new UnreachableException();
-        }
-
         internal static unsafe int EvpDigestFinalXOF(SafeEvpMdCtxHandle ctx, Span<byte> destination)
         {
             // The partial needs to match the OpenSSL parameters.
@@ -60,6 +50,21 @@ internal static partial class Interop
         internal static unsafe int EvpDigestCurrentXOF(SafeEvpMdCtxHandle ctx, Span<byte> destination)
         {
             // The partial needs to match the OpenSSL parameters.
+            _ = ctx;
+            _ = destination;
+            Debug.Fail("Should have validated that XOF is not supported before getting here.");
+            throw new UnreachableException();
+        }
+
+        internal static SafeEvpMdCtxHandle EvpMdCtxCopyEx(SafeEvpMdCtxHandle ctx)
+        {
+            _ = ctx;
+            Debug.Fail("Should have validated that XOF is not supported before getting here.");
+            throw new UnreachableException();
+        }
+
+        internal static int EvpDigestSqueeze(SafeEvpMdCtxHandle ctx, Span<byte> destination)
+        {
             _ = ctx;
             _ = destination;
             Debug.Fail("Should have validated that XOF is not supported before getting here.");

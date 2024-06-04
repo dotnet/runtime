@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics;
 using System.Globalization;
 
 namespace System.Reflection.Emit
@@ -24,8 +23,6 @@ namespace System.Reflection.Emit
         #region Constructor
         internal MethodOnTypeBuilderInstantiation(MethodInfo method, Type type)
         {
-            Debug.Assert(method is MethodBuilder || method is RuntimeMethodInfo);
-
             _method = method;
             _type = type;
         }
@@ -71,6 +68,32 @@ namespace System.Reflection.Emit
             throw new NotSupportedException();
         }
         public override CallingConventions CallingConvention => _method.CallingConvention;
+        public override bool ContainsGenericParameters
+        {
+            get
+            {
+                if (_method.ContainsGenericParameters || _type.ContainsGenericParameters)
+                {
+                    return true;
+                }
+
+                if (!IsGenericMethod)
+                {
+                    return false;
+                }
+
+                Type[] args = GetGenericArguments();
+                for (int i = 0; i < args.Length; i++)
+                {
+                    if (args[i].ContainsGenericParameters)
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+        }
 #if !MONO
         public override MethodInfo GetGenericMethodDefinition() { return _method; }
         public override bool IsGenericMethodDefinition => _method.IsGenericMethodDefinition;
@@ -78,18 +101,7 @@ namespace System.Reflection.Emit
         {
             return _method.GetGenericArguments();
         }
-        public override bool ContainsGenericParameters
-        {
-            get
-            {
-                if (_method.ContainsGenericParameters)
-                    return true;
-                if (!_method.IsGenericMethodDefinition)
-                    throw new NotSupportedException();
 
-                return _method.ContainsGenericParameters;
-            }
-        }
         [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public override MethodInfo MakeGenericMethod(params Type[] typeArgs)
         {

@@ -37,7 +37,7 @@ namespace System
             Assert.True(span.IsEmpty);
 
             // Validate that empty Span is not normalized to null
-            Assert.True(Unsafe.AsPointer(ref MemoryMarshal.GetReference(span)) != null);
+            Assert.False(Unsafe.IsNullRef(ref MemoryMarshal.GetReference(span)));
         }
 
         public delegate void AssertThrowsAction<T>(Span<T> span);
@@ -48,7 +48,7 @@ namespace System
             try
             {
                 action(span);
-                Assert.False(true, $"Expected exception: {typeof(E)}");
+                Assert.Fail($"Expected exception: {typeof(E)}");
             }
             catch (Exception ex)
             {
@@ -98,7 +98,7 @@ namespace System
             Assert.True(span.IsEmpty);
 
             // Validate that empty Span is not normalized to null
-            Assert.True(Unsafe.AsPointer(ref MemoryMarshal.GetReference(span)) != null);
+            Assert.False(Unsafe.IsNullRef(ref MemoryMarshal.GetReference(span)));
         }
 
         public delegate void AssertThrowsActionReadOnly<T>(ReadOnlySpan<T> span);
@@ -109,7 +109,7 @@ namespace System
             try
             {
                 action(span);
-                Assert.False(true, $"Expected exception: {typeof(E)}");
+                Assert.Fail($"Expected exception: {typeof(E)}");
             }
             catch (Exception ex)
             {

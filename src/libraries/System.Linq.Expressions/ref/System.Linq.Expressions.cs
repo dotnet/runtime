@@ -607,9 +607,13 @@ namespace System.Linq.Expressions
         public static System.Linq.Expressions.NewExpression New(System.Reflection.ConstructorInfo constructor, System.Collections.Generic.IEnumerable<System.Linq.Expressions.Expression>? arguments, params System.Reflection.MemberInfo[]? members) { throw null; }
         public static System.Linq.Expressions.NewExpression New(System.Reflection.ConstructorInfo constructor, params System.Linq.Expressions.Expression[]? arguments) { throw null; }
         public static System.Linq.Expressions.NewExpression New([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type type) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Creating arrays at runtime requires dynamic code generation.")]
         public static System.Linq.Expressions.NewArrayExpression NewArrayBounds(System.Type type, System.Collections.Generic.IEnumerable<System.Linq.Expressions.Expression> bounds) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Creating arrays at runtime requires dynamic code generation.")]
         public static System.Linq.Expressions.NewArrayExpression NewArrayBounds(System.Type type, params System.Linq.Expressions.Expression[] bounds) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Creating arrays at runtime requires dynamic code generation.")]
         public static System.Linq.Expressions.NewArrayExpression NewArrayInit(System.Type type, System.Collections.Generic.IEnumerable<System.Linq.Expressions.Expression> initializers) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Creating arrays at runtime requires dynamic code generation.")]
         public static System.Linq.Expressions.NewArrayExpression NewArrayInit(System.Type type, params System.Linq.Expressions.Expression[] initializers) { throw null; }
         public static System.Linq.Expressions.UnaryExpression Not(System.Linq.Expressions.Expression expression) { throw null; }
         public static System.Linq.Expressions.UnaryExpression Not(System.Linq.Expressions.Expression expression, System.Reflection.MethodInfo? method) { throw null; }
@@ -1028,6 +1032,7 @@ namespace System.Linq.Expressions
         System.Linq.Expressions.Expression System.Linq.Expressions.IArgumentProvider.GetArgument(int index) { throw null; }
         public System.Linq.Expressions.MethodCallExpression Update(System.Linq.Expressions.Expression? @object, System.Collections.Generic.IEnumerable<System.Linq.Expressions.Expression>? arguments) { throw null; }
     }
+    [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Creating arrays at runtime requires dynamic code generation.")]
     public partial class NewArrayExpression : System.Linq.Expressions.Expression
     {
         internal NewArrayExpression() { }

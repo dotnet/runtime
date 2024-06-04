@@ -232,7 +232,7 @@ namespace System.IO.Tests
             watcher.Filter = "abc.dll";
             Assert.Equal("abc.dll", watcher.Filter);
 
-            if (!PlatformDetection.IsOSXLike)
+            if (!PlatformDetection.IsApplePlatform)
             {
                 watcher.Filter = "ABC.DLL";
                 Assert.Equal("ABC.DLL", watcher.Filter);
@@ -371,7 +371,7 @@ namespace System.IO.Tests
 
                 fsw.Created += (o, e) =>
                 {
-                    Assert.True(fullPath.Equals(e.FullPath, StringComparison.OrdinalIgnoreCase));
+                    Assert.Equal(fullPath, e.FullPath, StringComparer.OrdinalIgnoreCase);
                     are.Set();
                 };
 

@@ -53,7 +53,7 @@ inline BOOL IsHandleNullUnchecked(OBJECTHANDLE handle)
 {
     LIMITED_METHOD_CONTRACT;
 
-    return (handle == NULL || (*(_UNCHECKED_OBJECTREF *)handle) == NULL);
+    return (handle == (OBJECTHANDLE)NULL || (*(_UNCHECKED_OBJECTREF *)handle) == NULL);
 }
 
 inline BOOL ObjectHandleIsNull(OBJECTHANDLE handle)
@@ -147,6 +147,18 @@ inline OBJECTHANDLE CreateDependentHandle(IGCHandleStore* store, OBJECTREF prima
     return hnd;
 }
 
+inline OBJECTHANDLE CreateWeakInteriorHandle(IGCHandleStore* store, OBJECTREF primary, void* interiorPointerLocation)
+{
+    OBJECTHANDLE hnd = store->CreateHandleWithExtraInfo(OBJECTREFToObject(primary), HNDTYPE_WEAK_INTERIOR_POINTER, interiorPointerLocation);
+    if (!hnd)
+    {
+        COMPlusThrowOM();
+    }
+
+    DiagHandleCreated(hnd, primary);
+    return hnd;
+}
+
 // Global handle creation convenience functions
 inline OBJECTHANDLE CreateGlobalHandleCommon(OBJECTREF object, HandleType type)
 {
@@ -195,19 +207,6 @@ inline OBJECTHANDLE CreateGlobalPinningHandle(OBJECTREF object)
 inline OBJECTHANDLE CreateGlobalRefcountedHandle(OBJECTREF object)
 {
     return CreateGlobalHandleCommon(object, HNDTYPE_REFCOUNTED);
-}
-
-// Creates a variable-strength handle
-inline OBJECTHANDLE CreateVariableHandle(IGCHandleStore* store, OBJECTREF object, uint32_t type)
-{
-    OBJECTHANDLE hnd = store->CreateHandleWithExtraInfo(OBJECTREFToObject(object), HNDTYPE_VARIABLE, (void*)((uintptr_t)type));
-    if (!hnd)
-    {
-        COMPlusThrowOM();
-    }
-
-    DiagHandleCreated(hnd, object);
-    return hnd;
 }
 
 // Handle object manipulation convenience functions
@@ -299,11 +298,6 @@ inline void DestroyDependentHandle(OBJECTHANDLE handle)
     DestroyHandleCommon(handle, HNDTYPE_DEPENDENT);
 }
 
-inline void  DestroyVariableHandle(OBJECTHANDLE handle)
-{
-    DestroyHandleCommon(handle, HNDTYPE_VARIABLE);
-}
-
 inline void DestroyGlobalHandle(OBJECTHANDLE handle)
 {
     DestroyHandleCommon(handle, HNDTYPE_DEFAULT);
@@ -339,6 +333,11 @@ inline void DestroyGlobalRefcountedHandle(OBJECTHANDLE handle)
     DestroyHandleCommon(handle, HNDTYPE_REFCOUNTED);
 }
 
+inline void DestroyWeakInteriorHandle(OBJECTHANDLE handle)
+{
+    DestroyHandleCommon(handle, HNDTYPE_WEAK_INTERIOR_POINTER);
+}
+
 inline void DestroyTypedHandle(OBJECTHANDLE handle)
 {
     DiagHandleDestroyed(handle);
@@ -349,13 +348,14 @@ inline void DestroyTypedHandle(OBJECTHANDLE handle)
 
 #ifndef FEATURE_NATIVEAOT
 typedef Wrapper<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, DestroyHandle>                   OHWrapper;
-typedef Wrapper<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, DestroyPinningHandle, NULL>      PinningHandleHolder;
-typedef Wrapper<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, DestroyAsyncPinningHandle, NULL> AsyncPinningHandleHolder;
+typedef Wrapper<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, DestroyPinningHandle, 0>      PinningHandleHolder;
+typedef Wrapper<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, DestroyAsyncPinningHandle, 0> AsyncPinningHandleHolder;
 typedef Wrapper<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, DestroyRefcountedHandle>         RefCountedOHWrapper;
 
 typedef Holder<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, DestroyLongWeakHandle>            LongWeakHandleHolder;
 typedef Holder<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, DestroyGlobalStrongHandle>        GlobalStrongHandleHolder;
 typedef Holder<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, DestroyGlobalShortWeakHandle>     GlobalShortWeakHandleHolder;
+typedef Holder<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, DestroyWeakInteriorHandle>        WeakInteriorHandleHolder;
 typedef Holder<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, ResetOBJECTHANDLE>                ObjectInHandleHolder;
 
 class RCOBJECTHANDLEHolder : public RefCountedOHWrapper

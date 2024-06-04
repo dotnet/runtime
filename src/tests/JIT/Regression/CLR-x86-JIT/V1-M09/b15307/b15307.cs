@@ -10,10 +10,9 @@ namespace DefaultNamespace
     public class bug
     {
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             CultureInfo ci = new CultureInfo("en-us");
-            return 100;
         }
     }
 }

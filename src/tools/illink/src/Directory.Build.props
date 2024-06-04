@@ -3,5 +3,7 @@
 
   <PropertyGroup>
     <Nullable>enable</Nullable>
+    <!-- Disable analyzer to prevent a circular dependency due to ProjectReference to ILLink.Tasks. -->
+    <EnableSingleFileAnalyzer>false</EnableSingleFileAnalyzer>
   </PropertyGroup>
 </Project>

@@ -353,7 +353,7 @@ class EEResourceException : public EEException
     InlineSString<32>        m_resourceName;
 
  public:
-    EEResourceException(RuntimeExceptionKind kind, const SString &resourceName);
+    EEResourceException(RuntimeExceptionKind kind, const WCHAR* resourceName);
 
     // Unmanaged message text containing only the resource name (GC safe)
     void GetMessage(SString &result);
@@ -934,7 +934,7 @@ LONG CLRNoCatchHandler(EXCEPTION_POINTERS* pExceptionInfo, PVOID pv);
 // ---------------------------------------------------------------------------
 
 inline CLRException::CLRException()
-  : m_throwableHandle(NULL)
+  : m_throwableHandle{}
 {
     LIMITED_METHOD_CONTRACT;
 }
@@ -1029,7 +1029,7 @@ inline EEMessageException::EEMessageException(RuntimeExceptionKind kind, HRESULT
 }
 
 
-inline EEResourceException::EEResourceException(RuntimeExceptionKind kind, const SString &resourceName)
+inline EEResourceException::EEResourceException(RuntimeExceptionKind kind, const WCHAR* resourceName)
   : EEException(kind),
     m_resourceName(resourceName)
 {

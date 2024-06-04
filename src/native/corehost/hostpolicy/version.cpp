@@ -51,29 +51,31 @@ bool version_t::operator >=(const version_t& b) const
 
 pal::string_t version_t::as_str() const
 {
-    pal::stringstream_t stream;
-
+    pal::string_t version;
     if (m_major >= 0)
     {
-        stream << m_major;
+        version += pal::to_string(m_major);
 
         if (m_minor >= 0)
         {
-            stream << _X(".") << m_minor;
+            version += _X('.');
+            version += pal::to_string(m_minor);
 
             if (m_build >= 0)
             {
-                stream << _X(".") << m_build;
+                version += _X('.');
+                version += pal::to_string(m_build);
 
                 if (m_revision >= 0)
                 {
-                    stream << _X(".") << m_revision;
+                    version += _X('.');
+                    version += pal::to_string(m_revision);
                 }
             }
         }
     }
 
-    return stream.str();
+    return version;
 }
 
 /*static*/ int version_t::compare(const version_t&a, const version_t& b)

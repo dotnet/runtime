@@ -317,5 +317,18 @@ namespace System.Diagnostics.TraceSourceConfigTests
 
             Assert.Contains("'value'", e.ToString());
         }
+
+        [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/74244", TestPlatforms.tvOS)]
+        public void UnsupportedAttribute_Throws()
+        {
+            CreateAndLoadConfigFile("testhost_UnsupportedAttribute_Throws.config");
+
+            var traceSource = new TraceSource("Foo", SourceLevels.Off);
+            // When the config is loaded and TraceUtil.CopyStringDictionary() works, you get
+            //   System.ArgumentException : 'foo' is not a valid attribute for type 'System.Diagnostics.TraceSource'.
+            Assert.Throws<ArgumentException>(() => traceSource.TraceInformation("Test"));
+        }
     }
 }

@@ -5,6 +5,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsTestProject Condition="'$(IsTestProject)' == ''">true</IsTestProject>
     <IsFunctionalTest>true</IsFunctionalTest>
+    <HybridGlobalization Condition="'$(TargetsAppleMobile)' == 'true'">true</HybridGlobalization>
   </PropertyGroup>
 
   <!-- Available feature switches: https://github.com/dotnet/runtime/blob/master/docs/workflow/trimming/feature-switches.md -->

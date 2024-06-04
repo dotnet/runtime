@@ -45,6 +45,8 @@ namespace System.Runtime.CompilerServices
     /// The runtime will try to find the matching method or field and forward the call
     /// to it. If the matching method or field is not found, the body of the <code>extern</code>
     /// method will throw <see cref="MissingFieldException" /> or <see cref="MissingMethodException" />.
+    /// Only the specific type defined will be examined for inaccessible members. The type hierarchy
+    /// is not walked looking for a match.
     ///
     /// For <see cref="UnsafeAccessorKind.Method"/>, <see cref="UnsafeAccessorKind.StaticMethod"/>,
     /// <see cref="UnsafeAccessorKind.Field"/>, and <see cref="UnsafeAccessorKind.StaticField"/>, the type of

@@ -11,6 +11,8 @@
     <UseRuntimePackageDisclaimer>true</UseRuntimePackageDisclaimer>
     <!-- This is a native package and doesn't contain any ref/lib assets. -->
     <NoWarn>$(NoWarn);NU5128</NoWarn>
+    <!-- Disabling baseline validation since this is  binary blob -nd we do not need API compat. -->
+    <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
   </PropertyGroup>
 
   <ItemGroup>

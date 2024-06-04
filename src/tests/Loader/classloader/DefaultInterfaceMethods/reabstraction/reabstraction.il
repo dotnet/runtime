@@ -4,7 +4,7 @@
 
 .assembly extern mscorlib { }
 .assembly extern xunit.core {}
-.assembly extern System.Runtime { }
+.assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
 
 .assembly reabstraction { }
 
@@ -87,7 +87,7 @@
   extends [mscorlib]System.Object
   implements I2
 {
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void .ctor() cil managed
   {
     ldarg.0
@@ -101,7 +101,7 @@
   extends [mscorlib]System.Object
   implements I3
 {
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void .ctor() cil managed
   {
     ldarg.0
@@ -115,7 +115,7 @@
   extends [mscorlib]System.Object
   implements I2, I4
 {
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void .ctor() cil managed
   {
     ldarg.0
@@ -129,7 +129,7 @@
   extends [mscorlib]System.Object
   implements I6
 {
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void .ctor() cil managed
   {
     ldarg.0
@@ -138,85 +138,89 @@
   }
 }
 
-.method private hidebysig static int32 Main() cil managed
+.class public auto ansi abstract sealed beforefieldinit reabstraction
+    extends [System.Runtime]System.Object
 {
-  .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
-      01 00 00 00
-  )
-  .entrypoint
-
-  .try
+  .method public hidebysig static int32 Main() cil managed
   {
-    newobj instance void C1::.ctor()
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
+    .entrypoint
+
+    .try
+    {
+      newobj instance void C1::.ctor()
+      ldc.i4.0
+      callvirt instance int32 I1::Add(int32)
+      pop
+      leave Fail
+    }
+    catch [mscorlib]System.EntryPointNotFoundException
+    {
+      pop
+      leave PureVirtualOK
+    }
+  PureVirtualOK:
+
+    .try
+    {
+      newobj instance void C1::.ctor()
+      dup
+      ldvirtftn instance int32 I1::Add(int32)
+      newobj instance void class [mscorlib]System.Func`2<int32,int32>::.ctor(object,
+                                                                            native int)
+      pop
+      leave Fail
+    }
+    catch [mscorlib]System.EntryPointNotFoundException
+    {
+      pop
+      leave PureVirtualDelegateOK
+    }
+  PureVirtualDelegateOK:
+
+    newobj instance void C2::.ctor()
     ldc.i4.0
     callvirt instance int32 I1::Add(int32)
-    pop
-    leave Fail
-  }
-  catch [mscorlib]System.EntryPointNotFoundException
-  {
-    pop
-    leave PureVirtualOK
-  }
-PureVirtualOK:
+    ldc.i4.2
+    bne.un Fail
 
-  .try
-  {
-    newobj instance void C1::.ctor()
-    dup
-    ldvirtftn instance int32 I1::Add(int32)
-    newobj instance void class [mscorlib]System.Func`2<int32,int32>::.ctor(object,
-                                                                           native int)
-    pop
-    leave Fail
-  }
-  catch [mscorlib]System.EntryPointNotFoundException
-  {
-    pop
-    leave PureVirtualDelegateOK
-  }
-PureVirtualDelegateOK:
+    .try
+    {
+      newobj instance void C3::.ctor()
+      ldc.i4.0
+      callvirt instance int32 I1::Add(int32)
+      pop
+      leave Fail
+    }
+    catch [System.Runtime]System.Runtime.AmbiguousImplementationException
+    {
+      pop
+      leave DiamondCaseOK
+    }
+  DiamondCaseOK:
 
-  newobj instance void C2::.ctor()
-  ldc.i4.0
-  callvirt instance int32 I1::Add(int32)
-  ldc.i4.2
-  bne.un Fail
+    .try
+    {
+      newobj instance void C4::.ctor()
+      ldc.i4.0
+      callvirt instance int32 I5::Add(int32)
+      pop
+      leave Fail
+    }
+    catch [mscorlib]System.EntryPointNotFoundException
+    {
+      pop
+      leave NeverImplementedOK
+    }
+  NeverImplementedOK:
 
-  .try
-  {
-    newobj instance void C3::.ctor()
-    ldc.i4.0
-    callvirt instance int32 I1::Add(int32)
-    pop
-    leave Fail
-  }
-  catch [System.Runtime]System.Runtime.AmbiguousImplementationException
-  {
-    pop
-    leave DiamondCaseOK
-  }
-DiamondCaseOK:
+    ldc.i4 100
+    ret
 
-  .try
-  {
-    newobj instance void C4::.ctor()
-    ldc.i4.0
-    callvirt instance int32 I5::Add(int32)
-    pop
-    leave Fail
+  Fail:
+    ldc.i4.m1
+    ret
   }
-  catch [mscorlib]System.EntryPointNotFoundException
-  {
-    pop
-    leave NeverImplementedOK
-  }
-NeverImplementedOK:
-
-  ldc.i4 100
-  ret
-
-Fail:
-  ldc.i4.m1
-  ret
 }

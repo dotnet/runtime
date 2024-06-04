@@ -10,7 +10,7 @@ using Xunit.Abstractions;
 
 namespace Wasm.Build.Tests
 {
-    public class NativeLibraryTests : BuildTestBase
+    public class NativeLibraryTests : TestMainJsTestBase
     {
         public NativeLibraryTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
             : base(output, buildContext)
@@ -91,7 +91,7 @@ public class Test
             Assert.Contains("Size: 26462 Height: 599, Width: 499", output);
         }
 
-        [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
+        [Theory]
         [BuildAndRun(aot: false, host: RunHost.Chrome)]
         [BuildAndRun(aot: true, host: RunHost.Chrome)]
         public void ProjectUsingBrowserNativeCrypto(BuildArgs buildArgs, RunHost host, string id)
@@ -135,6 +135,37 @@ public class Test
 
             string cryptoInitMsg = "MONO_WASM: Initializing Crypto WebWorker";
             Assert.DoesNotContain(cryptoInitMsg, output);
+        }
+
+        [Theory]
+        [BuildAndRun(aot: false)]
+        [BuildAndRun(aot: true)]
+        public void ProjectWithNativeLibrary(BuildArgs buildArgs, RunHost host, string id)
+        {
+            string projectName = $"AppUsingNativeLibrary-a";
+            buildArgs = buildArgs with { ProjectName = projectName };
+            buildArgs = ExpandBuildArgs(buildArgs, extraItems: "<NativeLibrary Include=\"native-lib.o\" />\n<NativeLibrary Include=\"DoesNotExist.o\" />");
+
+            if (!_buildContext.TryGetBuildFor(buildArgs, out BuildProduct? _))
+            {
+                InitPaths(id);
+                if (Directory.Exists(_projectDir))
+                    Directory.Delete(_projectDir, recursive: true);
+
+                Utils.DirectoryCopy(Path.Combine(BuildEnvironment.TestAssetsPath, "AppUsingNativeLib"), _projectDir);
+                File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", "native-lib.o"), Path.Combine(_projectDir, "native-lib.o"));
+            }
+
+            BuildProject(buildArgs,
+                            id: id,
+                            new BuildProjectOptions(DotnetWasmFromRuntimePack: false));
+
+            string output = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 0,
+                                test: output => {},
+                                host: host, id: id);
+
+            Assert.Contains("print_line: 100", output);
+            Assert.Contains("from pinvoke: 142", output);
         }
     }
 }

@@ -10,10 +10,10 @@ namespace System.Linq.Tests
     public static class TestExtensions
     {
         public static IEnumerable<T> RunOnce<T>(this IEnumerable<T> source) =>
-            source == null ? null : (source as IList<T>)?.RunOnce() ?? new RunOnceEnumerable<T>(source);
+            source is null ? null : (source as IList<T>)?.RunOnce() ?? new RunOnceEnumerable<T>(source);
 
         public static IEnumerable<T> RunOnce<T>(this IList<T> source)
-            => source == null ? null : new RunOnceList<T>(source);
+            => source is null ? null : new RunOnceList<T>(source);
 
         private class RunOnceEnumerable<T> : IEnumerable<T>
         {

@@ -81,12 +81,12 @@ namespace Runtime_45557
     public class Program
     {
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             ObjectBinderSnapshot o = ObjectBinder.GetSnapshot();
             Console.WriteLine($"Test output: {o.SomeValue}");
 
-            return 100; // success if we got here without crashing
+            // success if we got here without crashing
         }
     }
 }

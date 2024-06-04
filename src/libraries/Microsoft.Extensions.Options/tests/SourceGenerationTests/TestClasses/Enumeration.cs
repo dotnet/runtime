@@ -16,46 +16,46 @@ namespace Enumeration
     public class FirstModel
     {
         [ValidateEnumeratedItems]
-        public IList<SecondModel>? P1;
+        public IList<SecondModel>? P1 { get; set; }
 
         [ValidateEnumeratedItems(typeof(SecondValidator))]
-        public IList<SecondModel>? P2;
+        public IList<SecondModel>? P2 { get; set; }
 
         [ValidateEnumeratedItems]
-        public IList<SecondModel?>? P3;
+        public IList<SecondModel?>? P3 { get; set; }
 
         [ValidateEnumeratedItems]
-        public IList<ThirdModel>? P4;
+        public IList<ThirdModel>? P4 { get; set; }
 
         [ValidateEnumeratedItems]
-        public IList<ThirdModel?>? P5;
-
-        [ValidateEnumeratedItems]
-        [SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1125:Use shorthand for nullable types", Justification = "Testing System>Nullable<T>")]
-        public IList<Nullable<ThirdModel>>? P51;
-
-        [ValidateEnumeratedItems]
-        public SynteticEnumerable? P6;
-
-        [ValidateEnumeratedItems]
-        public SynteticEnumerable P7;
+        public IList<ThirdModel?>? P5 { get; set; }
 
         [ValidateEnumeratedItems]
         [SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1125:Use shorthand for nullable types", Justification = "Testing System>Nullable<T>")]
-        public Nullable<SynteticEnumerable> P8;
+        public IList<Nullable<ThirdModel>>? P51 { get; set; }
+
+        [ValidateEnumeratedItems]
+        public SynteticEnumerable? P6 { get; set; }
+
+        [ValidateEnumeratedItems]
+        public SynteticEnumerable P7 { get; set; }
+
+        [ValidateEnumeratedItems]
+        [SuppressMessage("StyleCop.CSharp.ReadabilityRules", "SA1125:Use shorthand for nullable types", Justification = "Testing System>Nullable<T>")]
+        public Nullable<SynteticEnumerable> P8 { get; set; }
     }
 
     public class SecondModel
     {
         [Required]
         [MinLength(5)]
-        public string P6 = string.Empty;
+        public string P6 { get; set; } = string.Empty;
     }
 
     public struct ThirdModel
     {
         [Range(0, 10)]
-        public int Value;
+        public int Value { get; set; }
     }
 
     public struct SynteticEnumerable : IEnumerable<SecondModel>

@@ -11,7 +11,6 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Testing;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Testing;
-using Microsoft.CodeAnalysis.Testing.Verifiers;
 
 namespace ILLink.RoslynAnalyzer.Tests
 {
@@ -25,10 +24,15 @@ namespace ILLink.RoslynAnalyzer.Tests
 		   where TAnalyzer : DiagnosticAnalyzer, new()
 		   where TCodeFix : Microsoft.CodeAnalysis.CodeFixes.CodeFixProvider, new()
 	{
-		public class Test : CSharpCodeFixTest<TAnalyzer, TCodeFix, XUnitVerifier>
+		public class Test : CSharpCodeFixTest<TAnalyzer, TCodeFix, DefaultVerifier>
 		{
 			public Test ()
 			{
+				// Clear out the default reference assemblies. We explicitly add references from the live ref pack,
+				// so we don't want the Roslyn test infrastructure to resolve/add any default reference assemblies
+				ReferenceAssemblies = new ReferenceAssemblies(string.Empty);
+				TestState.AdditionalReferences.AddRange(SourceGenerators.Tests.LiveReferencePack.GetMetadataReferences());
+
 				SolutionTransforms.Add ((solution, projectId) => {
 					var compilationOptions = solution.GetProject (projectId)!.CompilationOptions;
 					compilationOptions = compilationOptions!.WithSpecificDiagnosticOptions (

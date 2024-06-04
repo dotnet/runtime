@@ -3,8 +3,8 @@
 
 using System;
 using System.Diagnostics;
-using System.Security;
 using System.Runtime.InteropServices;
+using System.Security;
 
 namespace Microsoft.Win32.SafeHandles
 {

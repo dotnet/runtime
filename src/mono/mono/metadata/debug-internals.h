@@ -112,4 +112,6 @@ mono_debug_lookup_source_location_by_il (MonoMethod *method, guint32 il_offset, 
 MONO_COMPONENT_API char*
 mono_debug_image_get_sourcelink (MonoImage *image);
 
+mono_bool
+mono_debug_generate_enc_seq_points_without_debug_info (MonoDebugMethodInfo *minfo);
 #endif /* __DEBUG_INTERNALS_H__ */

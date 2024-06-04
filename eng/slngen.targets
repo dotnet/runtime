@@ -1,8 +1,10 @@
 <Project>
+
   <PropertyGroup>
-    <SlnGenSolutionFolder Condition="'$(IsGeneratorProject)' == 'true'">gen</SlnGenSolutionFolder>
-    <SlnGenSolutionFolder Condition="'$(IsReferenceAssemblyProject)' == 'true'">ref</SlnGenSolutionFolder>
-    <SlnGenSolutionFolder Condition="'$(IsTestProject)' == 'true' or '$(IsTrimmingTestProject)' == 'true' or '$(IsTestSupportProject)' == 'true'">tests</SlnGenSolutionFolder>
-    <SlnGenSolutionFolder Condition="'$(SlnGenSolutionFolder)' == ''">src</SlnGenSolutionFolder>
+    <SlnGenSolutionFolder Condition="'$(IsGeneratorProject)' == 'true'">$(SlnGenSolutionFolder)gen$(SlnGenSolutionInnerFolder)</SlnGenSolutionFolder>
+    <SlnGenSolutionFolder Condition="'$(IsReferenceAssemblyProject)' == 'true'">$(SlnGenSolutionFolder)ref$(SlnGenSolutionInnerFolder)</SlnGenSolutionFolder>
+    <SlnGenSolutionFolder Condition="'$(IsTestProject)' == 'true' or '$(IsTrimmingTestProject)' == 'true' or '$(IsTestSupportProject)' == 'true'">$(SlnGenSolutionFolder)tests$(SlnGenSolutionInnerFolder)</SlnGenSolutionFolder>
+    <SlnGenSolutionFolder Condition="'$(IsSourceProject)' == 'true' or '$(SlnGenSolutionFolder)' == ''">$(SlnGenSolutionFolder)src$(SlnGenSolutionInnerFolder)</SlnGenSolutionFolder>
   </PropertyGroup>
+
 </Project>

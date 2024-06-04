@@ -1,8 +1,8 @@
 // For format details, see https://aka.ms/devcontainer.json.
 {
-	"name": "C# (.NET)",
+	"name": "Libraries/Runtime development (prebuilt)",
 	"build": {
-		"dockerfile": "Dockerfile",
+		"dockerfile": "../Dockerfile",
 		"args": {
 			// Update 'VARIANT' to pick a .NET Core version: 6.0, 7.0
 			"VARIANT": "6.0-jammy"

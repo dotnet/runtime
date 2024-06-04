@@ -18,7 +18,6 @@
 #include <msodwwrap.h>
 #include <werapi.h>
 #include "dbginterface.h"
-#include <winver.h>
 #include "dlwrap.h"
 #include "eventreporter.h"
 #include "utilcode.h"
@@ -1061,7 +1060,7 @@ ContractFailureKind GetContractFailureKind(OBJECTREF obj)
                 // getting closer, now look for all three fields on ContractException
                 const int requiredFieldMatches = 3;
 
-                PTR_EEClass pEEClass = pMT->GetClass_NoLogging();
+                PTR_EEClass pEEClass = pMT->GetClass();
 
                 PTR_FieldDesc pFD = pEEClass->GetFieldDescList();
                 PTR_FieldDesc pFDEnd = pFD + numFields;

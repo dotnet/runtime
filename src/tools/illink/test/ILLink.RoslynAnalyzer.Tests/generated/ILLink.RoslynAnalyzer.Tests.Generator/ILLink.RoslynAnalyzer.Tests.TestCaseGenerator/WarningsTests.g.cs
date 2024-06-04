@@ -88,6 +88,12 @@ namespace ILLink.RoslynAnalyzer.Tests
 		}
 
 		[Fact]
+		public Task CanWarnAsErrorGlobal ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
 		public Task InvalidWarningVersion ()
 		{
 			return RunTest (allowMissingWarnings: true);

@@ -69,9 +69,9 @@ namespace System
 
         "y"     "0"         two digit year (year % 100) w/o leading zero           0
         "yy"    "00"        two digit year (year % 100) with leading zero          00
-        "yyy"   "D3"        year                                  2000
-        "yyyy"  "D4"        year                                  2000
-        "yyyyy" "D5"        year                                  2000
+        "yyy"   "D3"        year with leading zeroes              2000
+        "yyyy"  "D4"        year with leading zeroes              2000
+        "yyyyy" "D5"        year with leading zeroes              02000
         ...
 
         "z"     "+0;-0"     timezone offset w/o leading zero      -8
@@ -484,11 +484,11 @@ namespace System
                         tokenLen = ParseRepeatPattern(format, i, ch);
                         if (tokenLen <= MaxSecondsFractionDigits)
                         {
-                            long fraction = (dateTime.Ticks % Calendar.TicksPerSecond);
-                            fraction /= (long)Math.Pow(10, 7 - tokenLen);
+                            int fraction = (int)(dateTime.Ticks % Calendar.TicksPerSecond);
+                            fraction /= TimeSpanParse.Pow10UpToMaxFractionDigits(MaxSecondsFractionDigits - tokenLen);
                             if (ch == 'f')
                             {
-                                FormatFraction(ref result, (int)fraction, fixedNumberFormats[tokenLen - 1]);
+                                FormatFraction(ref result, fraction, fixedNumberFormats[tokenLen - 1]);
                             }
                             else
                             {
@@ -507,7 +507,7 @@ namespace System
                                 }
                                 if (effectiveDigits > 0)
                                 {
-                                    FormatFraction(ref result, (int)fraction, fixedNumberFormats[effectiveDigits - 1]);
+                                    FormatFraction(ref result, fraction, fixedNumberFormats[effectiveDigits - 1]);
                                 }
                                 else
                                 {
@@ -618,7 +618,7 @@ namespace System
                         // Notes about OS behavior:
                         // y: Always print (year % 100). No leading zero.
                         // yy: Always print (year % 100) with leading zero.
-                        // yyy/yyyy/yyyyy/... : Print year value.  No leading zero.
+                        // yyy/yyyy/yyyyy/... : Print year value.  With leading zeros.
 
                         int year = cal.GetYear(dateTime);
                         tokenLen = ParseRepeatPattern(format, i, ch);
@@ -1356,7 +1356,7 @@ namespace System
                 dest[2] = TChar.CastFrom(':');
                 Number.WriteTwoDigits((uint)minute, dest + 3);
                 dest[5] = TChar.CastFrom(':');
-                Number.WriteTwoDigits((uint)second, dest +6);
+                Number.WriteTwoDigits((uint)second, dest + 6);
             }
 
             return true;

@@ -15,3 +15,7 @@ file(GENERATE OUTPUT $<TARGET_FILE_DIR:COMClientDispatch>/CoreShim.X.manifest IN
 
 # add the install targets
 install (TARGETS COMClientDispatch DESTINATION bin)
+# If there's a dynamic ASAN runtime, then copy it to project output.
+if (NOT "${ASAN_RUNTIME}" STREQUAL "")
+    file(COPY "${ASAN_RUNTIME}" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
+endif()

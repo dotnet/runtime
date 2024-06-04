@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
+using Xunit;
 
 namespace TestShufflingThunk
 {
@@ -162,7 +163,7 @@ namespace TestShufflingThunk
         }
     }
 
-    class Test16833
+    public class Test16833
     {
         delegate string Delegate2m(TestClass tc, int i1, int i2, int i3, int i4, SIntDouble s, double f1, double f2, double f3, double f4, double f5, double f6, double f7, double f8, double f9, double f10, int i5);
         delegate string Delegate6m(TestClass tc, int i1, int i2, int i3, int i4, int i5, SIntDouble s, double f1, double f2, double f3, double f4, double f5, double f6, double f7, double f8, double f9, double f10);
@@ -178,7 +179,8 @@ namespace TestShufflingThunk
             }
         }
 
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             int exitCode = 100;
 

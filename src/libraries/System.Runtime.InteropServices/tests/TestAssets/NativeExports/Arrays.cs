@@ -242,7 +242,7 @@ namespace NativeExports
             const int NumBytesInLong = sizeof(long);
 
             byte* bytes = (byte*)Marshal.AllocCoTaskMem(NumBytesInLong);
-            MemoryMarshal.Write(new Span<byte>(bytes, NumBytesInLong), ref l);
+            MemoryMarshal.Write(new Span<byte>(bytes, NumBytesInLong), in l);
             return bytes;
         }
 

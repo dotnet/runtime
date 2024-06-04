@@ -1,6 +1,6 @@
 // Tencent is pleased to support the open source community by making RapidJSON available.
 // 
-// Copyright (C) 2015 THL A29 Limited, a Tencent company, and Milo Yip. All rights reserved.
+// Copyright (C) 2015 THL A29 Limited, a Tencent company, and Milo Yip.
 //
 // Licensed under the MIT License (the "License"); you may not use this file except
 // in compliance with the License. You may obtain a copy of the License at
@@ -128,17 +128,18 @@ inline bool StrtodFast(double d, int p, double* result) {
 }
 
 // Compute an approximation and see if it is within 1/2 ULP
-inline bool StrtodDiyFp(const char* decimals, int dLen, int dExp, double* result) {
+template<typename Ch>
+inline bool StrtodDiyFp(const Ch* decimals, int dLen, int dExp, double* result) {
     uint64_t significand = 0;
     int i = 0;   // 2^64 - 1 = 18446744073709551615, 1844674407370955161 = 0x1999999999999999    
     for (; i < dLen; i++) {
         if (significand  >  RAPIDJSON_UINT64_C2(0x19999999, 0x99999999) ||
-            (significand == RAPIDJSON_UINT64_C2(0x19999999, 0x99999999) && decimals[i] > '5'))
+            (significand == RAPIDJSON_UINT64_C2(0x19999999, 0x99999999) && decimals[i] > Ch('5')))
             break;
-        significand = significand * 10u + static_cast<unsigned>(decimals[i] - '0');
+        significand = significand * 10u + static_cast<unsigned>(decimals[i] - Ch('0'));
     }
     
-    if (i < dLen && decimals[i] >= '5') // Rounding
+    if (i < dLen && decimals[i] >= Ch('5')) // Rounding
         significand++;
 
     int remaining = dLen - i;
@@ -205,7 +206,8 @@ inline bool StrtodDiyFp(const char* decimals, int dLen, int dExp, double* result
     return halfWay - static_cast<unsigned>(error) >= precisionBits || precisionBits >= halfWay + static_cast<unsigned>(error);
 }
 
-inline double StrtodBigInteger(double approx, const char* decimals, int dLen, int dExp) {
+template<typename Ch>
+inline double StrtodBigInteger(double approx, const Ch* decimals, int dLen, int dExp) {
     RAPIDJSON_ASSERT(dLen >= 0);
     const BigInteger dInt(decimals, static_cast<unsigned>(dLen));
     Double a(approx);
@@ -223,7 +225,8 @@ inline double StrtodBigInteger(double approx, const char* decimals, int dLen, in
         return a.NextPositiveDouble();
 }
 
-inline double StrtodFullPrecision(double d, int p, const char* decimals, size_t length, size_t decimalPosition, int exp) {
+template<typename Ch>
+inline double StrtodFullPrecision(double d, int p, const Ch* decimals, size_t length, size_t decimalPosition, int exp) {
     RAPIDJSON_ASSERT(d >= 0.0);
     RAPIDJSON_ASSERT(length >= 1);
 

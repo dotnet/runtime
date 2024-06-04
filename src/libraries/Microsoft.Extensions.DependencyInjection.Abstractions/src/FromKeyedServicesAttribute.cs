@@ -5,11 +5,21 @@ using System;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
+    /// <summary>
+    /// Indicates that the parameter should be bound using the keyed service registered with the specified key.
+    /// </summary>
     [AttributeUsage(AttributeTargets.Parameter)]
     public class FromKeyedServicesAttribute : Attribute
     {
+        /// <summary>
+        /// Creates a new <see cref="FromKeyedServicesAttribute"/> instance.
+        /// </summary>
+        /// <param name="key">The key of the keyed service to bind to.</param>
         public FromKeyedServicesAttribute(object key) => Key = key;
 
+        /// <summary>
+        /// The key of the keyed service to bind to.
+        /// </summary>
         public object Key { get; }
     }
 }

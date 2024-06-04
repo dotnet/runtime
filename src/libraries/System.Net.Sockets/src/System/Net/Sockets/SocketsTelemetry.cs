@@ -77,7 +77,7 @@ namespace System.Net.Sockets
         }
 
         [NonEvent]
-        public void ConnectStart(Internals.SocketAddress address)
+        public void ConnectStart(SocketAddress address)
         {
             Interlocked.Increment(ref _currentOutgoingConnectAttempts);
 
@@ -107,7 +107,7 @@ namespace System.Net.Sockets
         }
 
         [NonEvent]
-        public void AcceptStart(Internals.SocketAddress address)
+        public void AcceptStart(SocketAddress address)
         {
             if (IsEnabled(EventLevel.Informational, EventKeywords.All))
             {

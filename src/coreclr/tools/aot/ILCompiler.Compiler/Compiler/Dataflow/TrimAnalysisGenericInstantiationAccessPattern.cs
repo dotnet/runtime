@@ -11,8 +11,8 @@ namespace ILCompiler.Dataflow
 {
     public readonly record struct TrimAnalysisGenericInstantiationAccessPattern
     {
-        public TypeSystemEntity Entity { init; get; }
-        public MessageOrigin Origin { init; get; }
+        public TypeSystemEntity Entity { get; init; }
+        public MessageOrigin Origin { get; init; }
 
         internal TrimAnalysisGenericInstantiationAccessPattern(TypeSystemEntity entity, MessageOrigin origin)
         {

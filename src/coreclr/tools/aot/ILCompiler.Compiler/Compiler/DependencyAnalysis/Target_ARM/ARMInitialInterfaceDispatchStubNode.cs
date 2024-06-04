@@ -9,6 +9,7 @@ using ILCompiler.DependencyAnalysis.X64;
 using ILCompiler.DependencyAnalysis.X86;
 using ILCompiler.DependencyAnalysis.ARM64;
 using ILCompiler.DependencyAnalysis.LoongArch64;
+using ILCompiler.DependencyAnalysis.RiscV64;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -24,7 +25,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(nameMangler.CompilationUnitPrefix).Append("_InitialInterfaceDispatchStub");
+            sb.Append(nameMangler.CompilationUnitPrefix).Append("_InitialInterfaceDispatchStub"u8);
         }
 
         public override bool IsShareable => false;
@@ -53,6 +54,10 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         protected override void EmitCode(NodeFactory factory, ref LoongArch64Emitter instructionEncoder, bool relocsOnly)
+        {
+            throw new NotImplementedException();
+        }
+        protected override void EmitCode(NodeFactory factory, ref RiscV64Emitter instructionEncoder, bool relocsOnly)
         {
             throw new NotImplementedException();
         }

@@ -151,11 +151,6 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
     memset(wzOutputFilename,0,sizeof(wzOutputFilename));
     memset(wzPdbFilename, 0, sizeof(wzPdbFilename));
 
-#ifdef _DEBUG
-    DisableThrowCheck();
-    //CONTRACT_VIOLATION(ThrowsViolation);
-#endif
-
     if(argc < 2) goto ErrorExit;
 #ifdef _PREFAST_
 #pragma warning(push)
@@ -535,7 +530,8 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
                     else
                     {
                     InvalidOption:
-                        fprintf(stderr, "Error : Invalid Option: %LS\n", argv[i]);
+                        MAKE_UTF8PTR_FROMWIDE_NOTHROW(invalidOpt, argv[i]);
+                        fprintf(stderr, "Error : Invalid Option: %s\n", invalidOpt);
                         goto ErrorExit;
                     }
                 }

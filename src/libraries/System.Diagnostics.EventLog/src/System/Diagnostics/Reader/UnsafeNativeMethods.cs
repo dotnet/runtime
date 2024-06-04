@@ -5,7 +5,7 @@ using Microsoft.Win32.SafeHandles;
 using System;
 using System.Diagnostics.Eventing.Reader;
 using System.Runtime.InteropServices;
-#if NET7_0_OR_GREATER
+#if NET
 using System.Runtime.InteropServices.Marshalling;
 #endif
 using System.Security;
@@ -341,7 +341,7 @@ namespace Microsoft.Win32
             EvtRpcLogin = 1
         }
 
-#if NET7_0_OR_GREATER
+#if NET
         [NativeMarshalling(typeof(Marshaller))]
 #endif
         [StructLayout(LayoutKind.Sequential)]
@@ -355,7 +355,7 @@ namespace Microsoft.Win32
             public string Domain;
             public CoTaskMemUnicodeSafeHandle Password;
             public int Flags;
-#if NET7_0_OR_GREATER
+#if NET
             [CustomMarshaller(typeof(EvtRpcLogin), MarshalMode.ManagedToUnmanagedRef, typeof(ValueMarshaller))]
             public static class Marshaller
             {
@@ -653,7 +653,7 @@ namespace Microsoft.Win32
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool EvtArchiveExportedLog(
                             EventLogHandle session,
-                            [MarshalAs(UnmanagedType.LPWStr)]string logFilePath,
+                            [MarshalAs(UnmanagedType.LPWStr)] string logFilePath,
                             int locale,
                             int flags);
 
@@ -661,8 +661,8 @@ namespace Microsoft.Win32
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool EvtClearLog(
                             EventLogHandle session,
-                            [MarshalAs(UnmanagedType.LPWStr)]string channelPath,
-                            [MarshalAs(UnmanagedType.LPWStr)]string targetFilePath,
+                            [MarshalAs(UnmanagedType.LPWStr)] string channelPath,
+                            [MarshalAs(UnmanagedType.LPWStr)] string targetFilePath,
                             int flags);
 
         // RENDERING
@@ -695,7 +695,7 @@ namespace Microsoft.Win32
                             out int buffUsed,
                             out int propCount);
 
-#if NET7_0_OR_GREATER
+#if NET
         [NativeMarshalling(typeof(Marshaller))]
 #endif
         [StructLayout(LayoutKind.Explicit, CharSet = CharSet.Unicode)]
@@ -708,7 +708,7 @@ namespace Microsoft.Win32
             [FieldOffset(12)]
             public uint Type;
 
-#if NET7_0_OR_GREATER
+#if NET
             [CustomMarshaller(typeof(EvtStringVariant), MarshalMode.Default, typeof(Marshaller))]
             public static class Marshaller
             {

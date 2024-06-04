@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 
 namespace System.Collections.Immutable
 {
@@ -10,6 +10,7 @@ namespace System.Collections.Immutable
     /// An immutable queue.
     /// </summary>
     /// <typeparam name="T">The type of elements in the queue.</typeparam>
+    [CollectionBuilder(typeof(ImmutableQueue), nameof(ImmutableQueue.Create))]
     public interface IImmutableQueue<T> : IEnumerable<T>
     {
         /// <summary>

@@ -3,7 +3,7 @@
 
 namespace System.Formats.Asn1
 {
-   public static partial class AsnDecoder
+    public static partial class AsnDecoder
     {
         /// <summary>
         ///   Reads a Set-Of value from <paramref name="source"/> with a specified tag

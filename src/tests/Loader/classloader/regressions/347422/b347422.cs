@@ -9,12 +9,14 @@
 
 
 using System;
+using Xunit;
 
 public interface IFoo{}
 
 public class Casting
 {
-	public static int Main()
+	[Fact]
+	public static int TestEntryPoint()
 	{
             Object obj = new Object();
             try

@@ -1,2486 +1,1568 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography.X509Certificates;
+using System.Text;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Numerics.Tensors.Tests
 {
-    public class TensorTests : TensorTestsBase
+    public class TensorTests
     {
-        [Theory()]
-        [MemberData(nameof(GetSingleTensorConstructors))]
-        public void ConstructTensorFromArrayRank1(TensorConstructor tensorConstructor)
+        [Fact]
+        public static void TensorSequenceEqualTests()
         {
-            var tensor = tensorConstructor.CreateFromArray<int>(new[] { 0, 1, 2 });
+            Tensor<int> t0 = Tensor.CreateFromEnumerable(Enumerable.Range(0, 3));
+            Tensor<int> t1 = Tensor.CreateFromEnumerable(Enumerable.Range(0, 3));
+            Tensor<bool> equal = Tensor.SequenceEqual(t0, t1);
 
-            Assert.Equal(tensorConstructor.IsReversedStride, tensor.IsReversedStride);
-            Assert.Equal(0, tensor[0]);
-            Assert.Equal(1, tensor[1]);
-            Assert.Equal(2, tensor[2]);
-        }
+            Assert.Equal([3], equal.Lengths.ToArray());
+            Assert.True(equal[0]);
+            Assert.True(equal[1]);
+            Assert.True(equal[2]);
 
-        [Theory()]
-        [MemberData(nameof(GetSingleTensorConstructors))]
-        public void ConstructTensorFromArrayRank2(TensorConstructor tensorConstructor)
-        {
-            var tensor = tensorConstructor.CreateFromArray<int>(new[,]
-            {
-                {0, 1, 2},
-                {3, 4, 5}
-            });
+            t0 = Tensor.CreateFromEnumerable(Enumerable.Range(0, 3)).Reshape(1, 3);
+            t1 = Tensor.CreateFromEnumerable(Enumerable.Range(0, 3));
+            equal = Tensor.SequenceEqual(t0, t1);
 
-            Assert.Equal(tensorConstructor.IsReversedStride, tensor.IsReversedStride);
-            Assert.Equal(0, tensor[0, 0]);
-            Assert.Equal(1, tensor[0, 1]);
-            Assert.Equal(2, tensor[0, 2]);
-            Assert.Equal(3, tensor[1, 0]);
-            Assert.Equal(4, tensor[1, 1]);
-            Assert.Equal(5, tensor[1, 2]);
-        }
+            Assert.Equal([1, 3], equal.Lengths.ToArray());
+            Assert.True(equal[0, 0]);
+            Assert.True(equal[0, 1]);
+            Assert.True(equal[0, 2]);
 
-        [Theory()]
-        [MemberData(nameof(GetSingleTensorConstructors))]
-        public void ConstructTensorFromArrayRank3(TensorConstructor tensorConstructor)
-        {
-            var tensor = tensorConstructor.CreateFromArray<int>(new[, ,]
-            {
-                {
-                    {0, 1, 2},
-                    {3, 4, 5}
-                },
-                {
-                    {6, 7 ,8 },
-                    {9, 10 ,11 },
-                },
-                {
-                    {12, 13 ,14 },
-                    {15, 16 ,17 },
-                },
-                {
-                    {18, 19 ,20 },
-                    {21, 22 ,23 },
-                }
-            });
+            t0 = Tensor.CreateFromEnumerable(Enumerable.Range(0, 3)).Reshape(1, 1, 3);
+            t1 = Tensor.CreateFromEnumerable(Enumerable.Range(0, 3));
+            equal = Tensor.SequenceEqual(t0, t1);
 
-            Assert.Equal(tensorConstructor.IsReversedStride, tensor.IsReversedStride);
+            Assert.Equal([1, 1, 3], equal.Lengths.ToArray());
+            Assert.True(equal[0, 0, 0]);
+            Assert.True(equal[0, 0, 1]);
+            Assert.True(equal[0, 0, 2]);
 
-            Assert.Equal(0, tensor[0, 0, 0]);
-            Assert.Equal(1, tensor[0, 0, 1]);
-            Assert.Equal(2, tensor[0, 0, 2]);
-            Assert.Equal(3, tensor[0, 1, 0]);
-            Assert.Equal(4, tensor[0, 1, 1]);
-            Assert.Equal(5, tensor[0, 1, 2]);
+            t0 = Tensor.CreateFromEnumerable(Enumerable.Range(0, 3));
+            t1 = Tensor.CreateFromEnumerable(Enumerable.Range(0, 3)).Reshape(1, 3);
+            equal = Tensor.SequenceEqual(t0, t1);
 
-            Assert.Equal(6, tensor[1, 0, 0]);
-            Assert.Equal(7, tensor[1, 0, 1]);
-            Assert.Equal(8, tensor[1, 0, 2]);
-            Assert.Equal(9, tensor[1, 1, 0]);
-            Assert.Equal(10, tensor[1, 1, 1]);
-            Assert.Equal(11, tensor[1, 1, 2]);
+            Assert.Equal([1, 3], equal.Lengths.ToArray());
+            Assert.True(equal[0, 0]);
+            Assert.True(equal[0, 1]);
+            Assert.True(equal[0, 2]);
 
-            Assert.Equal(12, tensor[2, 0, 0]);
-            Assert.Equal(13, tensor[2, 0, 1]);
-            Assert.Equal(14, tensor[2, 0, 2]);
-            Assert.Equal(15, tensor[2, 1, 0]);
-            Assert.Equal(16, tensor[2, 1, 1]);
-            Assert.Equal(17, tensor[2, 1, 2]);
+            t0 = Tensor.CreateFromEnumerable(Enumerable.Range(0, 3));
+            t1 = Tensor.CreateFromEnumerable(Enumerable.Range(0, 3)).Reshape(3, 1);
+            equal = Tensor.SequenceEqual(t0, t1);
 
-            Assert.Equal(18, tensor[3, 0, 0]);
-            Assert.Equal(19, tensor[3, 0, 1]);
-            Assert.Equal(20, tensor[3, 0, 2]);
-            Assert.Equal(21, tensor[3, 1, 0]);
-            Assert.Equal(22, tensor[3, 1, 1]);
-            Assert.Equal(23, tensor[3, 1, 2]);
+            Assert.Equal([3, 3], equal.Lengths.ToArray());
+            Assert.True(equal[0, 0]);
+            Assert.False(equal[0, 1]);
+            Assert.False(equal[0, 2]);
+            Assert.False(equal[1, 0]);
+            Assert.True(equal[1, 1]);
+            Assert.False(equal[1, 2]);
+            Assert.False(equal[2, 0]);
+            Assert.False(equal[2, 1]);
+            Assert.True(equal[2, 2]);
+
+            t0 = Tensor.CreateFromEnumerable(Enumerable.Range(0, 3)).Reshape(1, 3);
+            t1 = Tensor.CreateFromEnumerable(Enumerable.Range(0, 3)).Reshape(3, 1);
+            equal = Tensor.SequenceEqual(t0, t1);
+
+            Assert.Equal([3, 3], equal.Lengths.ToArray());
+            Assert.True(equal[0, 0]);
+            Assert.False(equal[0, 1]);
+            Assert.False(equal[0, 2]);
+            Assert.False(equal[1, 0]);
+            Assert.True(equal[1, 1]);
+            Assert.False(equal[1, 2]);
+            Assert.False(equal[2, 0]);
+            Assert.False(equal[2, 1]);
+            Assert.True(equal[2, 2]);
+
+            t0 = Tensor.CreateFromEnumerable(Enumerable.Range(0, 4));
+            t1 = Tensor.CreateFromEnumerable(Enumerable.Range(0, 3));
+            Assert.Throws<Exception>(() => Tensor.SequenceEqual(t0, t1));
         }
 
         [Fact]
-        public void ConstructDenseTensorFromPointer()
+        public static void TensorMultiplyTests()
         {
-            using (var nativeMemory = NativeMemoryFromArray(Enumerable.Range(0, 24).ToArray()))
-            {
-                var dimensions = new[] { 4, 2, 3 };
-                var tensor = new DenseTensor<int>(nativeMemory.Memory, dimensions, false);
+            Tensor<int> t0 = Tensor.CreateFromEnumerable(Enumerable.Range(0, 3));
+            Tensor<int> t1 = Tensor.CreateFromEnumerable(Enumerable.Range(0, 3)).Reshape(3, 1);
+            Tensor<int> t2 = Tensor.Multiply(t0, t1);
+
+            Assert.Equal([3,3], t2.Lengths.ToArray());
+            Assert.Equal(0, t2[0, 0]);
+            Assert.Equal(0, t2[0, 1]);
+            Assert.Equal(0, t2[0, 2]);
+            Assert.Equal(0, t2[1, 0]);
+            Assert.Equal(1, t2[1, 1]);
+            Assert.Equal(2, t2[1, 2]);
+            Assert.Equal(0, t2[2, 0]);
+            Assert.Equal(2, t2[2, 1]);
+            Assert.Equal(4, t2[2, 2]);
+
+            t2 = Tensor.Multiply(t1, t0);
+
+            Assert.Equal([3, 3], t2.Lengths.ToArray());
+            Assert.Equal(0, t2[0, 0]);
+            Assert.Equal(0, t2[0, 1]);
+            Assert.Equal(0, t2[0, 2]);
+            Assert.Equal(0, t2[1, 0]);
+            Assert.Equal(1, t2[1, 1]);
+            Assert.Equal(2, t2[1, 2]);
+            Assert.Equal(0, t2[2, 0]);
+            Assert.Equal(2, t2[2, 1]);
+            Assert.Equal(4, t2[2, 2]);
+
+            t1 = Tensor.CreateFromEnumerable(Enumerable.Range(0, 9)).Reshape(3, 3);
+            t2 = Tensor.Multiply(t0, t1);
+
+            Assert.Equal([3, 3], t2.Lengths.ToArray());
+            Assert.Equal(0, t2[0, 0]);
+            Assert.Equal(1, t2[0, 1]);
+            Assert.Equal(4, t2[0, 2]);
+            Assert.Equal(0, t2[1, 0]);
+            Assert.Equal(4, t2[1, 1]);
+            Assert.Equal(10, t2[1, 2]);
+            Assert.Equal(0, t2[2, 0]);
+            Assert.Equal(7, t2[2, 1]);
+            Assert.Equal(16, t2[2, 2]);
 
-                Assert.Equal(0, tensor[0, 0, 0]);
-                Assert.Equal(1, tensor[0, 0, 1]);
-                Assert.Equal(2, tensor[0, 0, 2]);
-                Assert.Equal(3, tensor[0, 1, 0]);
-                Assert.Equal(4, tensor[0, 1, 1]);
-                Assert.Equal(5, tensor[0, 1, 2]);
 
-                Assert.Equal(6, tensor[1, 0, 0]);
-                Assert.Equal(7, tensor[1, 0, 1]);
-                Assert.Equal(8, tensor[1, 0, 2]);
-                Assert.Equal(9, tensor[1, 1, 0]);
-                Assert.Equal(10, tensor[1, 1, 1]);
-                Assert.Equal(11, tensor[1, 1, 2]);
 
-                Assert.Equal(12, tensor[2, 0, 0]);
-                Assert.Equal(13, tensor[2, 0, 1]);
-                Assert.Equal(14, tensor[2, 0, 2]);
-                Assert.Equal(15, tensor[2, 1, 0]);
-                Assert.Equal(16, tensor[2, 1, 1]);
-                Assert.Equal(17, tensor[2, 1, 2]);
 
-                Assert.Equal(18, tensor[3, 0, 0]);
-                Assert.Equal(19, tensor[3, 0, 1]);
-                Assert.Equal(20, tensor[3, 0, 2]);
-                Assert.Equal(21, tensor[3, 1, 0]);
-                Assert.Equal(22, tensor[3, 1, 1]);
-                Assert.Equal(23, tensor[3, 1, 2]);
-            }
-        }
-
-        [Theory()]
-        [MemberData(nameof(GetSingleTensorConstructors))]
-        public void ConstructSparseTensor(TensorConstructor tensorConstructor)
-        {
-            var tensor = tensorConstructor.CreateFromArray<int>(new[,]
-            {
-                {0, 0, 0, 0},
-                {5, 8, 0, 0},
-                {0, 0, 3, 0},
-                {0, 6, 0, 0}
-            });
-
-            Assert.Equal(tensorConstructor.IsReversedStride, tensor.IsReversedStride);
-
-
-            Assert.Equal(0, tensor[0, 0]);
-            Assert.Equal(0, tensor[0, 1]);
-            Assert.Equal(0, tensor[0, 2]);
-            Assert.Equal(0, tensor[0, 3]);
-
-
-            Assert.Equal(5, tensor[1, 0]);
-            Assert.Equal(8, tensor[1, 1]);
-            Assert.Equal(0, tensor[1, 2]);
-            Assert.Equal(0, tensor[1, 3]);
-
-
-            Assert.Equal(0, tensor[2, 0]);
-            Assert.Equal(0, tensor[2, 1]);
-            Assert.Equal(3, tensor[2, 2]);
-            Assert.Equal(0, tensor[2, 3]);
-
-
-            Assert.Equal(0, tensor[3, 0]);
-            Assert.Equal(6, tensor[3, 1]);
-            Assert.Equal(0, tensor[3, 2]);
-            Assert.Equal(0, tensor[3, 3]);
-
-            if (tensorConstructor.TensorType == TensorType.CompressedSparse)
-            {
-                var compressedSparseTensor = (CompressedSparseTensor<int>)tensor;
-
-                Assert.Equal(4, compressedSparseTensor.NonZeroCount);
-
-                int[] expectedValues, expectedCompressedCounts, expectedIndices;
-
-                if (compressedSparseTensor.IsReversedStride)
-                {
-                    // csc
-                    expectedValues = new[] { 5, 8, 6, 3 };
-                    expectedCompressedCounts = new[] { 0, 1, 3, 4, 4 };
-                    expectedIndices = new[] { 1, 1, 3, 2 };
-                }
-                else
-                {
-                    // csr
-                    expectedValues = new[] { 5, 8, 3, 6 };
-                    expectedCompressedCounts = new[] { 0, 0, 2, 3, 4 };
-                    expectedIndices = new[] { 0, 1, 2, 1 };
-                }
-                Assert.Equal<int>(expectedValues, compressedSparseTensor.Values.Slice(0, compressedSparseTensor.NonZeroCount).ToArray());
-                Assert.Equal<int>(expectedCompressedCounts, compressedSparseTensor.CompressedCounts.ToArray());
-                Assert.Equal<int>(expectedIndices, compressedSparseTensor.Indices.Slice(0, compressedSparseTensor.NonZeroCount).ToArray());
-            }
-        }
-
-        [Theory()]
-        [InlineData(false)]
-        [InlineData(true)]
-        public void ConstructCompressedSparseTensorFromPointers(bool isReversedStride)
-        {
-            int[] values, compressedCounts, indices;
-            if (isReversedStride)
-            {
-                // csc
-                values = new[] { 5, 8, 6, 3 };
-                compressedCounts = new[] { 0, 1, 3, 4, 4 };
-                indices = new[] { 1, 1, 3, 2 };
-            }
-            else
-            {
-                // csr
-                values = new[] { 5, 8, 3, 6 };
-                compressedCounts = new[] { 0, 0, 2, 3, 4 };
-                indices = new[] { 0, 1, 2, 1 };
-            }
-            int[] dimensions = new[] { 4, 4 };
-
-            using (var valuesMemory = NativeMemoryFromArray(values))
-            using (var compressedCountsMemory = NativeMemoryFromArray(compressedCounts))
-            using (var indicesMemory = NativeMemoryFromArray(indices))
-            {
-                var tensor = new CompressedSparseTensor<int>(valuesMemory.Memory,
-                                                             compressedCountsMemory.Memory,
-                                                             indicesMemory.Memory,
-                                                             values.Length,
-                                                             dimensions,
-                                                             isReversedStride);
-
-                Assert.Equal(0, tensor[0, 0]);
-                Assert.Equal(0, tensor[0, 1]);
-                Assert.Equal(0, tensor[0, 2]);
-                Assert.Equal(0, tensor[0, 3]);
-
-
-                Assert.Equal(5, tensor[1, 0]);
-                Assert.Equal(8, tensor[1, 1]);
-                Assert.Equal(0, tensor[1, 2]);
-                Assert.Equal(0, tensor[1, 3]);
-
-
-                Assert.Equal(0, tensor[2, 0]);
-                Assert.Equal(0, tensor[2, 1]);
-                Assert.Equal(3, tensor[2, 2]);
-                Assert.Equal(0, tensor[2, 3]);
-
-
-                Assert.Equal(0, tensor[3, 0]);
-                Assert.Equal(6, tensor[3, 1]);
-                Assert.Equal(0, tensor[3, 2]);
-                Assert.Equal(0, tensor[3, 3]);
-            }
-        }
-
-        [Theory()]
-        [MemberData(nameof(GetSingleTensorConstructors))]
-        public void ConstructFromDimensions(TensorConstructor tensorConstructor)
-        {
-            var tensor = tensorConstructor.CreateFromDimensions<int>(new[] { 2, 3, 4 });
-            Assert.Equal(3, tensor.Rank);
-            Assert.Equal(3, tensor.Dimensions.Length);
-            Assert.Equal(2, tensor.Dimensions[0]);
-            Assert.Equal(3, tensor.Dimensions[1]);
-            Assert.Equal(4, tensor.Dimensions[2]);
-            Assert.Equal(24, tensor.Length);
-            Assert.Equal(tensorConstructor.IsReversedStride, tensor.IsReversedStride);
-
-            //Assert.Throws<ArgumentNullException>("dimensions", () => tensorConstructor.CreateFromDimensions<int>(dimensions: null));
-            Assert.Throws<ArgumentException>("dimensions", () => tensorConstructor.CreateFromDimensions<int>(dimensions: new int[0]));
-
-            Assert.Throws<ArgumentOutOfRangeException>("dimensions", () => tensorConstructor.CreateFromDimensions<int>(dimensions: new[] { 1, 0 }));
-            Assert.Throws<ArgumentOutOfRangeException>("dimensions", () => tensorConstructor.CreateFromDimensions<int>(dimensions: new[] { 1, -1 }));
-
-            // ensure dimensions are immutable
-            var dimensions = new[] { 1, 2, 3 };
-            tensor = tensorConstructor.CreateFromDimensions<int>(dimensions: dimensions);
-            dimensions[0] = dimensions[1] = dimensions[2] = 0;
-            Assert.Equal(1, tensor.Dimensions[0]);
-            Assert.Equal(2, tensor.Dimensions[1]);
-            Assert.Equal(3, tensor.Dimensions[2]);
-        }
-
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNonZeroLowerBoundArraySupported))]
-        [MemberData(nameof(GetSingleTensorConstructors))]
-        public void ConstructTensorFromArrayRank3WithLowerBounds(TensorConstructor tensorConstructor)
-        {
-            var dimensions = new[] { 2, 3, 4 };
-            var lowerBounds = new[] { 0, 5, 200 };
-            var arrayWithLowerBounds = Array.CreateInstance(typeof(int), dimensions, lowerBounds);
-
-            int value = 0;
-            for (int x = lowerBounds[0]; x < lowerBounds[0] + dimensions[0]; x++)
-            {
-                for (int y = lowerBounds[1]; y < lowerBounds[1] + dimensions[1]; y++)
-                {
-                    for (int z = lowerBounds[2]; z < lowerBounds[2] + dimensions[2]; z++)
-                    {
-                        arrayWithLowerBounds.SetValue(value++, x, y, z);
-                    }
-                }
-            }
-
-            var tensor = tensorConstructor.CreateFromArray<int>(arrayWithLowerBounds);
-
-            var expected = tensorConstructor.CreateFromArray<int>(new[, ,]
-                    {
-                        {
-                            { 0, 1, 2, 3 },
-                            { 4, 5, 6, 7 },
-                            { 8, 9, 10, 11 }
-                        },
-                        {
-                            { 12, 13, 14, 15 },
-                            { 16, 17, 18, 19 },
-                            { 20, 21, 22, 23 }
-                        }
-                    }
-                );
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(expected, tensor));
-            Assert.Equal(tensorConstructor.IsReversedStride, tensor.IsReversedStride);
-        }
-
-        [Theory()]
-        [MemberData(nameof(GetDualTensorConstructors))]
-        public void StructurallyEqualTensor(TensorConstructor leftConstructor, TensorConstructor rightConstructor)
-        {
-            var arr = new[, ,]
-            {
-                {
-                    {0, 1, 2},
-                    {3, 4, 5}
-                },
-                {
-                    {6, 7 ,8 },
-                    {9, 10 ,11 },
-                },
-                {
-                    {12, 13 ,14 },
-                    {15, 16 ,17 },
-                },
-                {
-                    {18, 19 ,20 },
-                    {21, 22 ,23 },
-                }
-            };
-            var tensor = leftConstructor.CreateFromArray<int>(arr);
-            var tensor2 = rightConstructor.CreateFromArray<int>(arr);
-
-            Assert.Equal(0, StructuralComparisons.StructuralComparer.Compare(tensor, tensor2));
-            Assert.Equal(0, StructuralComparisons.StructuralComparer.Compare(tensor2, tensor));
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(tensor, tensor2));
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(tensor2, tensor));
-            // Issue: should Tensors with different layout be structurally equal?
-            if (leftConstructor.IsReversedStride == leftConstructor.IsReversedStride)
-            {
-                Assert.Equal(StructuralComparisons.StructuralEqualityComparer.GetHashCode(tensor), StructuralComparisons.StructuralEqualityComparer.GetHashCode(tensor2));
-            }
-        }
-
-        [Theory()]
-        [MemberData(nameof(GetSingleTensorConstructors))]
-        public void StructurallyEqualArray(TensorConstructor tensorConstructor)
-        {
-            var arr = new[, ,]
-            {
-                {
-                    {0, 1, 2},
-                    {3, 4, 5}
-                },
-                {
-                    {6, 7 ,8 },
-                    {9, 10 ,11 },
-                },
-                {
-                    {12, 13 ,14 },
-                    {15, 16 ,17 },
-                },
-                {
-                    {18, 19 ,20 },
-                    {21, 22 ,23 },
-                }
-            };
-            var tensor = tensorConstructor.CreateFromArray<int>(arr);
-
-            Assert.Equal(0, StructuralComparisons.StructuralComparer.Compare(tensor, arr));
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(tensor, arr));
-
-        }
-
-        [Theory()]
-        [MemberData(nameof(GetSingleTensorConstructors))]
-        public void GetDiagonalSquare(TensorConstructor tensorConstructor)
-        {
-            var arr = new[,]
-            {
-               { 1, 2, 4 },
-               { 8, 3, 9 },
-               { 1, 7, 5 },
-            };
-
-            var tensor = tensorConstructor.CreateFromArray<int>(arr);
-            var diag = tensor.GetDiagonal();
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(diag, new[] { 1, 3, 5 }));
-            diag = tensor.GetDiagonal(1);
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(diag, new[] { 2, 9 }));
-            diag = tensor.GetDiagonal(2);
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(diag, new[] { 4 }));
-            Assert.Throws<ArgumentException>("offset", () => tensor.GetDiagonal(3));
-
-            diag = tensor.GetDiagonal(-1);
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(diag, new[] { 8, 7 }));
-            diag = tensor.GetDiagonal(-2);
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(diag, new[] { 1 }));
-            Assert.Throws<ArgumentException>("offset", () => tensor.GetDiagonal(-3));
-        }
-
-        [Theory()]
-        [MemberData(nameof(GetSingleTensorConstructors))]
-        public void GetDiagonalRectangle(TensorConstructor tensorConstructor)
-        {
-            var arr = new[,]
-            {
-               { 1, 2, 4, 3, 7 },
-               { 8, 3, 9, 2, 6 },
-               { 1, 7, 5, 2, 9 }
-            };
-
-            var tensor = tensorConstructor.CreateFromArray<int>(arr);
-            var diag = tensor.GetDiagonal();
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(diag, new[] { 1, 3, 5 }));
-            diag = tensor.GetDiagonal(1);
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(diag, new[] { 2, 9, 2 }));
-            diag = tensor.GetDiagonal(2);
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(diag, new[] { 4, 2, 9 }));
-            diag = tensor.GetDiagonal(3);
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(diag, new[] { 3, 6 }));
-            diag = tensor.GetDiagonal(4);
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(diag, new[] { 7 }));
-            Assert.Throws<ArgumentException>("offset", () => tensor.GetDiagonal(5));
-
-            diag = tensor.GetDiagonal(-1);
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(diag, new[] { 8, 7 }));
-            diag = tensor.GetDiagonal(-2);
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(diag, new[] { 1 }));
-            Assert.Throws<ArgumentException>("offset", () => tensor.GetDiagonal(-3));
-            Assert.Throws<ArgumentException>("offset", () => tensor.GetDiagonal(-4));
-            Assert.Throws<ArgumentException>("offset", () => tensor.GetDiagonal(-5));
-        }
-
-
-        [Theory()]
-        [MemberData(nameof(GetSingleTensorConstructors))]
-        public void GetDiagonalCube(TensorConstructor tensorConstructor)
-        {
-            var arr = new[, ,]
-            {
-                {
-                   { 1, 2, 4 },
-                   { 8, 3, 9 },
-                   { 1, 7, 5 },
-                },
-                {
-                   { 4, 5, 7 },
-                   { 1, 6, 2 },
-                   { 3, 0, 8 },
-                },
-                {
-                   { 5, 6, 1 },
-                   { 2, 2, 3 },
-                   { 4, 9, 4 },
-                },
-
-            };
-
-            var tensor = tensorConstructor.CreateFromArray<int>(arr);
-            var diag = tensor.GetDiagonal();
-            var expected = new[,]
-            {
-                { 1, 2, 4 },
-                { 1, 6, 2 },
-                { 4, 9, 4 }
-            };
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(diag, expected));
-            Assert.Equal(tensorConstructor.IsReversedStride, diag.IsReversedStride);
-        }
-
-        [Theory()]
-        [MemberData(nameof(GetSingleTensorConstructors))]
-        public void GetTriangleSquare(TensorConstructor tensorConstructor)
-        {
-            var arr = new[,]
-            {
-               { 1, 2, 4 },
-               { 8, 3, 9 },
-               { 1, 7, 5 },
-            };
-
-            var tensor = tensorConstructor.CreateFromArray<int>(arr);
-            var tri = tensor.GetTriangle(0);
-            Assert.Equal(tensorConstructor.IsReversedStride, tri.IsReversedStride);
-
-            var expected = tensorConstructor.CreateFromArray<int>(new[,]
-            {
-               { 1, 0, 0 },
-               { 8, 3, 0 },
-               { 1, 7, 5 },
-            });
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(tri, expected));
-            tri = tensor.GetTriangle(1);
-            expected = tensorConstructor.CreateFromArray<int>(new[,]
-            {
-               { 1, 2, 0 },
-               { 8, 3, 9 },
-               { 1, 7, 5 },
-            });
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(tri, expected));
-            tri = tensor.GetTriangle(2);
-            expected = tensorConstructor.CreateFromArray<int>(new[,]
-            {
-               { 1, 2, 4 },
-               { 8, 3, 9 },
-               { 1, 7, 5 },
-            });
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(tri, expected));
-
-            tri = tensor.GetTriangle(3);
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(tri, expected));
-
-            tri = tensor.GetTriangle(200);
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(tri, expected));
-
-            tri = tensor.GetTriangle(-1);
-            expected = tensorConstructor.CreateFromArray<int>(new[,]
-            {
-               { 0, 0, 0 },
-               { 8, 0, 0 },
-               { 1, 7, 0 },
-            });
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(tri, expected));
-            tri = tensor.GetTriangle(-2);
-            expected = tensorConstructor.CreateFromArray<int>(new[,]
-            {
-               { 0, 0, 0 },
-               { 0, 0, 0 },
-               { 1, 0, 0 },
-            });
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(tri, expected));
-
-
-            expected = tensorConstructor.CreateFromArray<int>(new[,]
-            {
-               { 0, 0, 0 },
-               { 0, 0, 0 },
-               { 0, 0, 0 },
-            });
-            tri = tensor.GetTriangle(-3);
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(tri, expected));
-
-            // same as -3, should it be an exception?
-            tri = tensor.GetTriangle(-4);
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(tri, expected));
-            tri = tensor.GetTriangle(-300);
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(tri, expected));
-        }
-
-        [Theory()]
-        [MemberData(nameof(GetSingleTensorConstructors))]
-        public void GetTriangleRectangle(TensorConstructor tensorConstructor)
-        {
-            var arr = new[,]
-            {
-               { 1, 2, 4, 3, 7 },
-               { 8, 3, 9, 2, 6 },
-               { 1, 7, 5, 2, 9 }
-            };
-
-            var tensor = tensorConstructor.CreateFromArray<int>(arr);
-            var tri = tensor.GetTriangle(0);
-            var expected = tensorConstructor.CreateFromArray<int>(new[,]
-            {
-               { 1, 0, 0, 0, 0 },
-               { 8, 3, 0, 0, 0 },
-               { 1, 7, 5, 0, 0 }
-            });
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(tri, expected));
-            Assert.Equal(tensorConstructor.IsReversedStride, tri.IsReversedStride);
-
-            tri = tensor.GetTriangle(1);
-            expected = tensorConstructor.CreateFromArray<int>(new[,]
-            {
-               { 1, 2, 0, 0, 0 },
-               { 8, 3, 9, 0, 0 },
-               { 1, 7, 5, 2, 0 }
-            });
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(tri, expected));
-            tri = tensor.GetTriangle(2);
-            expected = tensorConstructor.CreateFromArray<int>(new[,]
-            {
-               { 1, 2, 4, 0, 0 },
-               { 8, 3, 9, 2, 0 },
-               { 1, 7, 5, 2, 9 }
-            });
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(tri, expected));
-            tri = tensor.GetTriangle(3);
-            expected = tensorConstructor.CreateFromArray<int>(new[,]
-            {
-               { 1, 2, 4, 3, 0 },
-               { 8, 3, 9, 2, 6 },
-               { 1, 7, 5, 2, 9 }
-            });
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(tri, expected));
-
-            tri = tensor.GetTriangle(4);
-            expected = tensorConstructor.CreateFromArray<int>(new[,]
-            {
-               { 1, 2, 4, 3, 7 },
-               { 8, 3, 9, 2, 6 },
-               { 1, 7, 5, 2, 9 }
-            });
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(tri, expected));
-
-            // same as 4, should it be an exception?
-            tri = tensor.GetTriangle(5);
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(tri, expected));
-            tri = tensor.GetTriangle(1000);
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(tri, expected));
-
-            tri = tensor.GetTriangle(-1);
-            expected = tensorConstructor.CreateFromArray<int>(new[,]
-            {
-               { 0, 0, 0, 0, 0 },
-               { 8, 0, 0, 0, 0 },
-               { 1, 7, 0, 0, 0 }
-            });
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(tri, expected));
-
-            expected = tensorConstructor.CreateFromArray<int>(new[,]
-            {
-               { 0, 0, 0, 0, 0 },
-               { 0, 0, 0, 0, 0 },
-               { 1, 0, 0, 0, 0 }
-            });
-            tri = tensor.GetTriangle(-2);
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(tri, expected));
-
-            expected = tensorConstructor.CreateFromArray<int>(new[,]
-            {
-               { 0, 0, 0, 0, 0 },
-               { 0, 0, 0, 0, 0 },
-               { 0, 0, 0, 0, 0 }
-            });
-            tri = tensor.GetTriangle(-3);
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(tri, expected));
-
-            tri = tensor.GetTriangle(-4);
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(tri, expected));
-            tri = tensor.GetTriangle(-5);
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(tri, expected));
-            tri = tensor.GetTriangle(-100);
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(tri, expected));
-        }
-
-        [Theory()]
-        [MemberData(nameof(GetSingleTensorConstructors))]
-        public void GetTriangleCube(TensorConstructor tensorConstructor)
-        {
-            var arr = new[, ,]
-            {
-                {
-                   { 1, 2, 4 },
-                   { 8, 3, 9 },
-                   { 1, 7, 5 },
-                },
-                {
-                   { 4, 5, 7 },
-                   { 1, 6, 2 },
-                   { 3, 0, 8 },
-                },
-                {
-                   { 5, 6, 1 },
-                   { 2, 2, 3 },
-                   { 4, 9, 4 },
-                },
-
-            };
-
-            var tensor = tensorConstructor.CreateFromArray<int>(arr);
-            var tri = tensor.GetTriangle(0);
-            var expected = tensorConstructor.CreateFromArray<int>(new[, ,]
-            {
-                {
-                   { 1, 2, 4 },
-                   { 0, 0, 0 },
-                   { 0, 0, 0 },
-                },
-                {
-                   { 4, 5, 7 },
-                   { 1, 6, 2 },
-                   { 0, 0, 0 },
-                },
-                {
-                   { 5, 6, 1 },
-                   { 2, 2, 3 },
-                   { 4, 9, 4 },
-                },
-
-            });
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(tri, expected));
-            Assert.Equal(tensorConstructor.IsReversedStride, tri.IsReversedStride);
-        }
-
-        [Theory()]
-        [MemberData(nameof(GetSingleTensorConstructors))]
-        public void GetUpperTriangleSquare(TensorConstructor tensorConstructor)
-        {
-            var arr = new[,]
-            {
-               { 1, 2, 4 },
-               { 8, 3, 9 },
-               { 1, 7, 5 },
-            };
-
-            var tensor = tensorConstructor.CreateFromArray<int>(arr);
-            var tri = tensor.GetUpperTriangle(0);
-
-            var expected = tensorConstructor.CreateFromArray<int>(new[,]
-             {
-               { 1, 2, 4 },
-               { 0, 3, 9 },
-               { 0, 0, 5 },
-            });
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(tri, expected));
-            Assert.Equal(tensorConstructor.IsReversedStride, tri.IsReversedStride);
-
-            tri = tensor.GetUpperTriangle(1);
-            expected = tensorConstructor.CreateFromArray<int>(new[,]
-            {
-               { 0, 2, 4 },
-               { 0, 0, 9 },
-               { 0, 0, 0 },
-            });
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(tri, expected));
-            tri = tensor.GetUpperTriangle(2);
-            expected = tensorConstructor.CreateFromArray<int>(new[,]
-            {
-               { 0, 0, 4 },
-               { 0, 0, 0 },
-               { 0, 0, 0 },
-            });
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(tri, expected));
-
-            tri = tensor.GetUpperTriangle(3);
-            expected = tensorConstructor.CreateFromArray<int>(new[,]
-            {
-               { 0, 0, 0 },
-               { 0, 0, 0 },
-               { 0, 0, 0 },
-            });
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(tri, expected));
-
-            tri = tensor.GetUpperTriangle(4);
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(tri, expected));
-            tri = tensor.GetUpperTriangle(42);
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(tri, expected));
-
-            tri = tensor.GetUpperTriangle(-1);
-            expected = tensorConstructor.CreateFromArray<int>(new[,]
-            {
-               { 1, 2, 4 },
-               { 8, 3, 9 },
-               { 0, 7, 5 },
-            });
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(tri, expected));
-            tri = tensor.GetUpperTriangle(-2);
-            expected = tensorConstructor.CreateFromArray<int>(new[,]
-            {
-               { 1, 2, 4 },
-               { 8, 3, 9 },
-               { 1, 7, 5 },
-            });
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(tri, expected));
-
-            tri = tensor.GetUpperTriangle(-3);
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(tri, expected));
-            tri = tensor.GetUpperTriangle(-300);
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(tri, expected));
-        }
-
-        [Theory()]
-        [MemberData(nameof(GetSingleTensorConstructors))]
-        public void GetUpperTriangleRectangle(TensorConstructor tensorConstructor)
-        {
-            var arr = new[,]
-            {
-               { 1, 2, 4, 3, 7 },
-               { 8, 3, 9, 2, 6 },
-               { 1, 7, 5, 2, 9 }
-            };
-
-            var tensor = tensorConstructor.CreateFromArray<int>(arr);
-            var tri = tensor.GetUpperTriangle(0);
-            var expected = tensorConstructor.CreateFromArray<int>(new[,]
-            {
-               { 1, 2, 4, 3, 7 },
-               { 0, 3, 9, 2, 6 },
-               { 0, 0, 5, 2, 9 }
-            });
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(tri, expected));
-            Assert.Equal(tensorConstructor.IsReversedStride, tri.IsReversedStride);
-            tri = tensor.GetUpperTriangle(1);
-            expected = tensorConstructor.CreateFromArray<int>(new[,]
-            {
-               { 0, 2, 4, 3, 7 },
-               { 0, 0, 9, 2, 6 },
-               { 0, 0, 0, 2, 9 }
-            });
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(tri, expected));
-            tri = tensor.GetUpperTriangle(2);
-            expected = tensorConstructor.CreateFromArray<int>(new[,]
-            {
-               { 0, 0, 4, 3, 7 },
-               { 0, 0, 0, 2, 6 },
-               { 0, 0, 0, 0, 9 }
-            });
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(tri, expected));
-            tri = tensor.GetUpperTriangle(3);
-            expected = tensorConstructor.CreateFromArray<int>(new[,]
-            {
-               { 0, 0, 0, 3, 7 },
-               { 0, 0, 0, 0, 6 },
-               { 0, 0, 0, 0, 0 }
-            });
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(tri, expected));
-
-            tri = tensor.GetUpperTriangle(4);
-            expected = tensorConstructor.CreateFromArray<int>(new[,]
-            {
-               { 0, 0, 0, 0, 7 },
-               { 0, 0, 0, 0, 0 },
-               { 0, 0, 0, 0, 0 }
-            });
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(tri, expected));
-
-            expected = tensorConstructor.CreateFromArray<int>(new[,]
-            {
-               { 0, 0, 0, 0, 0 },
-               { 0, 0, 0, 0, 0 },
-               { 0, 0, 0, 0, 0 }
-            });
-            tri = tensor.GetUpperTriangle(5);
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(tri, expected));
-            tri = tensor.GetUpperTriangle(6);
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(tri, expected));
-            tri = tensor.GetUpperTriangle(1000);
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(tri, expected));
-
-            tri = tensor.GetUpperTriangle(-1);
-            expected = tensorConstructor.CreateFromArray<int>(new[,]
-            {
-               { 1, 2, 4, 3, 7 },
-               { 8, 3, 9, 2, 6 },
-               { 0, 7, 5, 2, 9 }
-            });
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(tri, expected));
-
-            expected = tensorConstructor.CreateFromArray<int>(new[,]
-            {
-               { 1, 2, 4, 3, 7 },
-               { 8, 3, 9, 2, 6 },
-               { 1, 7, 5, 2, 9 }
-            });
-            tri = tensor.GetUpperTriangle(-2);
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(tri, expected));
-
-            tri = tensor.GetUpperTriangle(-3);
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(tri, expected));
-            tri = tensor.GetUpperTriangle(-4);
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(tri, expected));
-            tri = tensor.GetUpperTriangle(-100);
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(tri, expected));
-        }
-
-        [Theory()]
-        [MemberData(nameof(GetSingleTensorConstructors))]
-        public void GetUpperTriangleCube(TensorConstructor tensorConstructor)
-        {
-            var arr = new[, ,]
-            {
-                {
-                   { 1, 2, 4 },
-                   { 8, 3, 9 },
-                   { 1, 7, 5 },
-                },
-                {
-                   { 4, 5, 7 },
-                   { 1, 6, 2 },
-                   { 3, 0, 8 },
-                },
-                {
-                   { 5, 6, 1 },
-                   { 2, 2, 3 },
-                   { 4, 9, 4 },
-                },
-
-            };
-
-            var tensor = tensorConstructor.CreateFromArray<int>(arr);
-            var tri = tensor.GetUpperTriangle(0);
-            var expected = tensorConstructor.CreateFromArray<int>(new[, ,]
-            {
-                {
-                   { 1, 2, 4 },
-                   { 8, 3, 9 },
-                   { 1, 7, 5 },
-                },
-                {
-                   { 0, 0, 0 },
-                   { 1, 6, 2 },
-                   { 3, 0, 8 },
-                },
-                {
-                   { 0, 0, 0 },
-                   { 0, 0, 0 },
-                   { 4, 9, 4 },
-                },
-
-            });
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(tri, expected));
-            Assert.Equal(tensorConstructor.IsReversedStride, tri.IsReversedStride);
-        }
-
-        [Theory()]
-        [MemberData(nameof(GetSingleTensorConstructors))]
-        public void Reshape(TensorConstructor tensorConstructor)
-        {
-            var arr = new[,]
-            {
-                { 1, 2, 3 },
-                { 4, 5, 6 }
-            };
-
-            var tensor = tensorConstructor.CreateFromArray<int>(arr);
-            var actual = tensor.Reshape(new[] { 3, 2 });
-
-            var expected = tensorConstructor.IsReversedStride ?
-                new[,]
-                {
-                    { 1, 5 },
-                    { 4, 3 },
-                    { 2, 6 }
-                } :
-                new[,]
-                {
-                    { 1, 2 },
-                    { 3, 4 },
-                    { 5, 6 }
-                };
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(actual, expected));
-            Assert.Equal(tensorConstructor.IsReversedStride, actual.IsReversedStride);
         }
 
         [Fact]
-        public void Identity()
+        public static void TensorBroadcastTests()
         {
-            var actual = Tensor.CreateIdentity<double>(3);
+            Tensor<int> t0 = Tensor.Reshape(Tensor.CreateFromEnumerable(Enumerable.Range(0, 3)), 1, 3, 1, 1, 1);
+            Tensor<int> t1 = Tensor.Broadcast(t0, [1, 3, 1, 2, 1]);
 
-            var expected = new[,]
+            Assert.Equal([1, 3, 1, 2, 1], t1.Lengths.ToArray());
+
+            Assert.Equal(0, t1[0, 0, 0, 0, 0]);
+            Assert.Equal(0, t1[0, 0, 0, 1, 0]);
+            Assert.Equal(1, t1[0, 1, 0, 0, 0]);
+            Assert.Equal(1, t1[0, 1, 0, 1, 0]);
+            Assert.Equal(2, t1[0, 2, 0, 0, 0]);
+            Assert.Equal(2, t1[0, 2, 0, 1, 0]);
+
+            t1 = Tensor.Broadcast(t0, [1, 3, 2, 1, 1]);
+            Assert.Equal([1, 3, 2, 1, 1], t1.Lengths.ToArray());
+
+            Assert.Equal(0, t1[0, 0, 0, 0, 0]);
+            Assert.Equal(0, t1[0, 0, 1, 0, 0]);
+            Assert.Equal(1, t1[0, 1, 0, 0, 0]);
+            Assert.Equal(1, t1[0, 1, 1, 0, 0]);
+            Assert.Equal(2, t1[0, 2, 0, 0, 0]);
+            Assert.Equal(2, t1[0, 2, 1, 0, 0]);
+
+            t0 = Tensor.CreateFromEnumerable(Enumerable.Range(0, 3)).Reshape(1, 3);
+            t1 = Tensor.CreateFromEnumerable(Enumerable.Range(0, 3)).Reshape(3, 1);
+            var t2 = Tensor.Broadcast(t0, [3, 3]);
+            Assert.Equal([3, 3], t2.Lengths.ToArray());
+
+            Assert.Equal(0, t2[0, 0]);
+            Assert.Equal(1, t2[0, 1]);
+            Assert.Equal(2, t2[0, 2]);
+            Assert.Equal(0, t2[1, 0]);
+            Assert.Equal(1, t2[1, 1]);
+            Assert.Equal(2, t2[1, 2]);
+            Assert.Equal(0, t2[2, 0]);
+            Assert.Equal(1, t2[2, 1]);
+            Assert.Equal(2, t2[2, 2]);
+
+            t1 = Tensor.CreateFromEnumerable(Enumerable.Range(0, 3)).Reshape(3, 1);
+            t2 = Tensor.Broadcast(t1, [3, 3]);
+            Assert.Equal([3, 3], t2.Lengths.ToArray());
+
+            Assert.Equal(0, t2[0, 0]);
+            Assert.Equal(0, t2[0, 1]);
+            Assert.Equal(0, t2[0, 2]);
+            Assert.Equal(1, t2[1, 0]);
+            Assert.Equal(1, t2[1, 1]);
+            Assert.Equal(1, t2[1, 2]);
+            Assert.Equal(2, t2[2, 0]);
+            Assert.Equal(2, t2[2, 1]);
+            Assert.Equal(2, t2[2, 2]);
+
+            var s1 = t2.AsTensorSpan();
+            Assert.Equal(0, s1[0, 0]);
+            Assert.Equal(0, s1[0, 1]);
+            Assert.Equal(0, s1[0, 2]);
+            Assert.Equal(1, s1[1, 0]);
+            Assert.Equal(1, s1[1, 1]);
+            Assert.Equal(1, s1[1, 2]);
+            Assert.Equal(2, s1[2, 0]);
+            Assert.Equal(2, s1[2, 1]);
+            Assert.Equal(2, s1[2, 2]);
+
+            var t3 = t2.Slice(0..1, ..);
+            Assert.Equal([1, 3], t3.Lengths.ToArray());
+
+            t1 = Tensor.CreateFromEnumerable(Enumerable.Range(0, 3));
+            t2 = Tensor.Broadcast(t1, [3, 3]);
+            Assert.Equal([3, 3], t2.Lengths.ToArray());
+
+            Assert.Equal(0, t2[0, 0]);
+            Assert.Equal(1, t2[0, 1]);
+            Assert.Equal(2, t2[0, 2]);
+            Assert.Equal(0, t2[1, 0]);
+            Assert.Equal(1, t2[1, 1]);
+            Assert.Equal(2, t2[1, 2]);
+            Assert.Equal(0, t2[2, 0]);
+            Assert.Equal(1, t2[2, 1]);
+            Assert.Equal(2, t2[2, 2]);
+        }
+
+        //// Needs internals visible
+        //[Fact]
+        //public static void TensorBroadcastToShapeCompatibleTests()
+        //{
+        //    Tensor<int> t0 = Tensor.Reshape(Tensor.FillRange(Enumerable.Range(0, 8)), 8);
+        //    Tensor<int> t1 = Tensor.Reshape(Tensor.FillRange(Enumerable.Range(0, 8)), 1, 8);
+
+        //    Assert.True(Tensor.AreShapesBroadcastToCompatible(t0.Lengths, t1.Lengths));
+        //    Assert.True(Tensor.AreShapesBroadcastToCompatible(t0, t1));
+
+        //    t1 = Tensor.Reshape(Tensor.FillRange(Enumerable.Range(0, 8)), 2, 4);
+        //    Assert.False(Tensor.AreShapesBroadcastToCompatible(t0, t1));
+
+        //    t0 = Tensor.FillRange(Enumerable.Range(0, 3));
+
+        //    Assert.False(Tensor.AreShapesBroadcastToCompatible(t0.Lengths, [1,3,1,1,1]));
+
+        //}
+
+        [Fact]
+        public static void TensorResizeTests()
+        {
+            Tensor<int> t0 = Tensor.Reshape(Tensor.CreateFromEnumerable(Enumerable.Range(0, 8)), 2, 2, 2);
+            var t1 = Tensor.Resize(t0, [1]);
+            Assert.Equal([1], t1.Lengths.ToArray());
+            Assert.Equal(0, t1[0]);
+
+            t1 = Tensor.Resize(t0, [1, 1]);
+            Assert.Equal([1, 1], t1.Lengths.ToArray());
+            Assert.Equal(0, t1[0, 0]);
+
+            t1 = Tensor.Resize(t0, [6]);
+            Assert.Equal([6], t1.Lengths.ToArray());
+            Assert.Equal(0, t1[0]);
+            Assert.Equal(1, t1[1]);
+            Assert.Equal(2, t1[2]);
+            Assert.Equal(3, t1[3]);
+            Assert.Equal(4, t1[4]);
+            Assert.Equal(5, t1[5]);
+
+            t1 = Tensor.Resize(t0, [10]);
+            Assert.Equal([10], t1.Lengths.ToArray());
+            Assert.Equal(0, t1[0]);
+            Assert.Equal(1, t1[1]);
+            Assert.Equal(2, t1[2]);
+            Assert.Equal(3, t1[3]);
+            Assert.Equal(4, t1[4]);
+            Assert.Equal(5, t1[5]);
+            Assert.Equal(6, t1[6]);
+            Assert.Equal(7, t1[7]);
+            Assert.Equal(0, t1[8]);
+            Assert.Equal(0, t1[9]);
+
+            t1 = Tensor.Resize(t0, [2, 5]);
+            Assert.Equal([2, 5], t1.Lengths.ToArray());
+            Assert.Equal(0, t1[0, 0]);
+            Assert.Equal(1, t1[0, 1]);
+            Assert.Equal(2, t1[0, 2]);
+            Assert.Equal(3, t1[0, 3]);
+            Assert.Equal(4, t1[0, 4]);
+            Assert.Equal(5, t1[1, 0]);
+            Assert.Equal(6, t1[1, 1]);
+            Assert.Equal(7, t1[1, 2]);
+            Assert.Equal(0, t1[1, 3]);
+            Assert.Equal(0, t1[1, 4]);
+        }
+
+        [Fact]
+        public static void TensorSplitTests()
+        {
+            Tensor<int> t0 = Tensor.Reshape(Tensor.CreateFromEnumerable(Enumerable.Range(0, 8)), 2, 2, 2);
+            var t1 = Tensor.Split(t0, 2, 0);
+            Assert.Equal([1, 2, 2], t1[0].Lengths.ToArray());
+            Assert.Equal([1, 2, 2], t1[1].Lengths.ToArray());
+            Assert.Equal(0, t1[0][0, 0, 0]);
+            Assert.Equal(1, t1[0][0, 0, 1]);
+            Assert.Equal(2, t1[0][0, 1, 0]);
+            Assert.Equal(3, t1[0][0, 1, 1]);
+            Assert.Equal(4, t1[1][0, 0, 0]);
+            Assert.Equal(5, t1[1][0, 0, 1]);
+            Assert.Equal(6, t1[1][0, 1, 0]);
+            Assert.Equal(7, t1[1][0, 1, 1]);
+
+            t1 = Tensor.Split(t0, 2, 1);
+            Assert.Equal([2, 1, 2], t1[0].Lengths.ToArray());
+            Assert.Equal([2, 1, 2], t1[1].Lengths.ToArray());
+            Assert.Equal(0, t1[0][0, 0, 0]);
+            Assert.Equal(1, t1[0][0, 0, 1]);
+            Assert.Equal(4, t1[0][1, 0, 0]);
+            Assert.Equal(5, t1[0][1, 0, 1]);
+            Assert.Equal(2, t1[1][0, 0, 0]);
+            Assert.Equal(3, t1[1][0, 0, 1]);
+            Assert.Equal(6, t1[1][1, 0, 0]);
+            Assert.Equal(7, t1[1][1, 0, 1]);
+
+            t1 = Tensor.Split(t0, 2, 2);
+            Assert.Equal([2, 2, 1], t1[0].Lengths.ToArray());
+            Assert.Equal([2, 2, 1], t1[1].Lengths.ToArray());
+            Assert.Equal(0, t1[0][0, 0, 0]);
+            Assert.Equal(2, t1[0][0, 1, 0]);
+            Assert.Equal(4, t1[0][1, 0, 0]);
+            Assert.Equal(6, t1[0][1, 1, 0]);
+            Assert.Equal(1, t1[1][0, 0, 0]);
+            Assert.Equal(3, t1[1][0, 1, 0]);
+            Assert.Equal(5, t1[1][1, 0, 0]);
+            Assert.Equal(7, t1[1][1, 1, 0]);
+        }
+
+        [Fact]
+        public static void TensorReverseTests()
+        {
+            Tensor<int> t0 = Tensor.Reshape(Tensor.CreateFromEnumerable(Enumerable.Range(0, 8)), 2, 2, 2);
+            var t1 = Tensor.Reverse(t0);
+            Assert.Equal(7, t1[0, 0, 0]);
+            Assert.Equal(6, t1[0, 0, 1]);
+            Assert.Equal(5, t1[0, 1, 0]);
+            Assert.Equal(4, t1[0, 1, 1]);
+            Assert.Equal(3, t1[1, 0, 0]);
+            Assert.Equal(2, t1[1, 0, 1]);
+            Assert.Equal(1, t1[1, 1, 0]);
+            Assert.Equal(0, t1[1, 1, 1]);
+
+            t1 = Tensor.Reverse(t0, 0);
+            Assert.Equal(4, t1[0, 0, 0]);
+            Assert.Equal(5, t1[0, 0, 1]);
+            Assert.Equal(6, t1[0, 1, 0]);
+            Assert.Equal(7, t1[0, 1, 1]);
+            Assert.Equal(0, t1[1, 0, 0]);
+            Assert.Equal(1, t1[1, 0, 1]);
+            Assert.Equal(2, t1[1, 1, 0]);
+            Assert.Equal(3, t1[1, 1, 1]);
+
+            t1 = Tensor.Reverse(t0, 1);
+            Assert.Equal(2, t1[0, 0, 0]);
+            Assert.Equal(3, t1[0, 0, 1]);
+            Assert.Equal(0, t1[0, 1, 0]);
+            Assert.Equal(1, t1[0, 1, 1]);
+            Assert.Equal(6, t1[1, 0, 0]);
+            Assert.Equal(7, t1[1, 0, 1]);
+            Assert.Equal(4, t1[1, 1, 0]);
+            Assert.Equal(5, t1[1, 1, 1]);
+
+            t1 = Tensor.Reverse(t0, 2);
+            Assert.Equal(1, t1[0, 0, 0]);
+            Assert.Equal(0, t1[0, 0, 1]);
+            Assert.Equal(3, t1[0, 1, 0]);
+            Assert.Equal(2, t1[0, 1, 1]);
+            Assert.Equal(5, t1[1, 0, 0]);
+            Assert.Equal(4, t1[1, 0, 1]);
+            Assert.Equal(7, t1[1, 1, 0]);
+            Assert.Equal(6, t1[1, 1, 1]);
+        }
+
+        [Fact]
+        public static void TensorSetSliceTests()
+        {
+            Tensor<int> t0 = Tensor.Reshape(Tensor.CreateFromEnumerable(Enumerable.Range(0, 10)), 2, 5);
+            Tensor<int> t1 = Tensor.Reshape(Tensor.CreateFromEnumerable(Enumerable.Range(10, 10)), 2, 5);
+            Tensor.SetSlice(t0, t1);
+
+            Assert.Equal(10, t0[0, 0]);
+            Assert.Equal(11, t0[0, 1]);
+            Assert.Equal(12, t0[0, 2]);
+            Assert.Equal(13, t0[0, 3]);
+            Assert.Equal(14, t0[0, 4]);
+            Assert.Equal(15, t0[1, 0]);
+            Assert.Equal(16, t0[1, 1]);
+            Assert.Equal(17, t0[1, 2]);
+            Assert.Equal(18, t0[1, 3]);
+            Assert.Equal(19, t0[1, 4]);
+
+            t0 = Tensor.Reshape(Tensor.CreateFromEnumerable(Enumerable.Range(0, 10)), 2, 5);
+            t1 = Tensor.Reshape(Tensor.CreateFromEnumerable(Enumerable.Range(10, 5)), 1, 5);
+            t0.SetSlice(t1, 0..1, ..);
+
+            Assert.Equal(10, t0[0, 0]);
+            Assert.Equal(11, t0[0, 1]);
+            Assert.Equal(12, t0[0, 2]);
+            Assert.Equal(13, t0[0, 3]);
+            Assert.Equal(14, t0[0, 4]);
+            Assert.Equal(5, t0[1, 0]);
+            Assert.Equal(6, t0[1, 1]);
+            Assert.Equal(7, t0[1, 2]);
+            Assert.Equal(8, t0[1, 3]);
+            Assert.Equal(9, t0[1, 4]);
+
+            t0 = Tensor.Reshape(Tensor.CreateFromEnumerable(Enumerable.Range(0, 10)), 2, 5);
+            t1 = Tensor.Reshape(Tensor.CreateFromEnumerable(Enumerable.Range(10, 5)), 1, 5);
+            Tensor.SetSlice(t0, t1, 1..2, ..);
+
+            Assert.Equal(0, t0[0, 0]);
+            Assert.Equal(1, t0[0, 1]);
+            Assert.Equal(2, t0[0, 2]);
+            Assert.Equal(3, t0[0, 3]);
+            Assert.Equal(4, t0[0, 4]);
+            Assert.Equal(10, t0[1, 0]);
+            Assert.Equal(11, t0[1, 1]);
+            Assert.Equal(12, t0[1, 2]);
+            Assert.Equal(13, t0[1, 3]);
+            Assert.Equal(14, t0[1, 4]);
+        }
+        [Fact]
+        public static void TensorStackTests()
+        {
+            Tensor<int> t0 = Tensor.CreateFromEnumerable(Enumerable.Range(0, 10)).Reshape(2, 5);
+            Tensor<int> t1 = Tensor.CreateFromEnumerable(Enumerable.Range(0, 10)).Reshape(2, 5);
+
+            var resultTensor = Tensor.Stack([t0, t1]);
+            Assert.Equal(3, resultTensor.Rank);
+            Assert.Equal(2, resultTensor.Lengths[0]);
+            Assert.Equal(2, resultTensor.Lengths[1]);
+            Assert.Equal(5, resultTensor.Lengths[2]);
+
+            Assert.Equal(0, resultTensor[0, 0, 0]);
+            Assert.Equal(1, resultTensor[0, 0, 1]);
+            Assert.Equal(2, resultTensor[0, 0, 2]);
+            Assert.Equal(3, resultTensor[0, 0, 3]);
+            Assert.Equal(4, resultTensor[0, 0, 4]);
+            Assert.Equal(5, resultTensor[0, 1, 0]);
+            Assert.Equal(6, resultTensor[0, 1, 1]);
+            Assert.Equal(7, resultTensor[0, 1, 2]);
+            Assert.Equal(8, resultTensor[0, 1, 3]);
+            Assert.Equal(9, resultTensor[0, 1, 4]);
+            Assert.Equal(0, resultTensor[1, 0, 0]);
+            Assert.Equal(1, resultTensor[1, 0, 1]);
+            Assert.Equal(2, resultTensor[1, 0, 2]);
+            Assert.Equal(3, resultTensor[1, 0, 3]);
+            Assert.Equal(4, resultTensor[1, 0, 4]);
+            Assert.Equal(5, resultTensor[1, 1, 0]);
+            Assert.Equal(6, resultTensor[1, 1, 1]);
+            Assert.Equal(7, resultTensor[1, 1, 2]);
+            Assert.Equal(8, resultTensor[1, 1, 3]);
+            Assert.Equal(9, resultTensor[1, 1, 4]);
+
+            resultTensor = Tensor.Stack([t0, t1], axis:1);
+            Assert.Equal(3, resultTensor.Rank);
+            Assert.Equal(2, resultTensor.Lengths[0]);
+            Assert.Equal(2, resultTensor.Lengths[1]);
+            Assert.Equal(5, resultTensor.Lengths[2]);
+
+            Assert.Equal(0, resultTensor[0, 0, 0]);
+            Assert.Equal(1, resultTensor[0, 0, 1]);
+            Assert.Equal(2, resultTensor[0, 0, 2]);
+            Assert.Equal(3, resultTensor[0, 0, 3]);
+            Assert.Equal(4, resultTensor[0, 0, 4]);
+            Assert.Equal(0, resultTensor[0, 1, 0]);
+            Assert.Equal(1, resultTensor[0, 1, 1]);
+            Assert.Equal(2, resultTensor[0, 1, 2]);
+            Assert.Equal(3, resultTensor[0, 1, 3]);
+            Assert.Equal(4, resultTensor[0, 1, 4]);
+            Assert.Equal(5, resultTensor[1, 0, 0]);
+            Assert.Equal(6, resultTensor[1, 0, 1]);
+            Assert.Equal(7, resultTensor[1, 0, 2]);
+            Assert.Equal(8, resultTensor[1, 0, 3]);
+            Assert.Equal(9, resultTensor[1, 0, 4]);
+            Assert.Equal(5, resultTensor[1, 1, 0]);
+            Assert.Equal(6, resultTensor[1, 1, 1]);
+            Assert.Equal(7, resultTensor[1, 1, 2]);
+            Assert.Equal(8, resultTensor[1, 1, 3]);
+            Assert.Equal(9, resultTensor[1, 1, 4]);
+
+            resultTensor = Tensor.Stack([t0, t1], axis: 2);
+            Assert.Equal(3, resultTensor.Rank);
+            Assert.Equal(2, resultTensor.Lengths[0]);
+            Assert.Equal(5, resultTensor.Lengths[1]);
+            Assert.Equal(2, resultTensor.Lengths[2]);
+
+            Assert.Equal(0, resultTensor[0, 0, 0]);
+            Assert.Equal(0, resultTensor[0, 0, 1]);
+            Assert.Equal(1, resultTensor[0, 1, 0]);
+            Assert.Equal(1, resultTensor[0, 1, 1]);
+            Assert.Equal(2, resultTensor[0, 2, 0]);
+            Assert.Equal(2, resultTensor[0, 2, 1]);
+            Assert.Equal(3, resultTensor[0, 3, 0]);
+            Assert.Equal(3, resultTensor[0, 3, 1]);
+            Assert.Equal(4, resultTensor[0, 4, 0]);
+            Assert.Equal(4, resultTensor[0, 4, 1]);
+            Assert.Equal(5, resultTensor[1, 0, 0]);
+            Assert.Equal(5, resultTensor[1, 0, 1]);
+            Assert.Equal(6, resultTensor[1, 1, 0]);
+            Assert.Equal(6, resultTensor[1, 1, 1]);
+            Assert.Equal(7, resultTensor[1, 2, 0]);
+            Assert.Equal(7, resultTensor[1, 2, 1]);
+            Assert.Equal(8, resultTensor[1, 3, 0]);
+            Assert.Equal(8, resultTensor[1, 3, 1]);
+            Assert.Equal(9, resultTensor[1, 4, 0]);
+            Assert.Equal(9, resultTensor[1, 4, 1]);
+        }
+
+        [Fact]
+        public static void TensorStdDevTests()
+        {
+            Tensor<float> t0 = Tensor.CreateFromEnumerable<float>((Enumerable.Range(0, 4).Select(i => (float)i))).Reshape(2, 2);
+            //Tensor.Sum(t0)
+
+            Assert.Equal(StdDev([0, 1, 2, 3]), Tensor.StdDev(t0), .1);
+
+
+        }
+
+        public static float StdDev(float[] values)
+        {
+            float mean = Mean(values);
+            float sum = 0;
+            for(int i = 0; i < values.Length; i++)
             {
-                {1.0, 0, 0 },
-                {0, 1.0, 0 },
-                {0, 0, 1.0 }
-            };
-
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(actual, expected));
+                sum += MathF.Pow(values[i] - mean, 2);
+            }
+            return sum / values.Length;
         }
 
-        [Theory]
-        [MemberData(nameof(GetSingleTensorConstructors))]
-        public void CreateWithDiagonal(TensorConstructor tensorConstructor)
+        [Fact]
+        public static void TensorMeanTests()
         {
-            var diagonal = tensorConstructor.CreateFromArray<int>(new[] { 1, 2, 3, 4, 5 });
-            var actual = Tensor.CreateFromDiagonal(diagonal);
+            Tensor<float> t0 = Tensor.CreateFromEnumerable<float>((Enumerable.Range(0, 4).Select(i => (float)i))).Reshape(2, 2);
 
-            var expected = new[,]
+            Assert.Equal(Mean([0, 1, 2, 3]), Tensor.Mean(t0), .1);
+        }
+
+        public static float Mean(float[] values)
+        {
+            float sum = 0;
+            for (int i = 0; i < values.Length; i++)
             {
-                {1, 0, 0, 0, 0 },
-                {0, 2, 0, 0, 0 },
-                {0, 0, 3, 0, 0 },
-                {0, 0, 0, 4, 0 },
-                {0, 0, 0, 0, 5 }
-            };
-
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(actual, expected));
+                sum += values[i];
+            }
+            return sum/values.Length;
         }
 
-        [Theory]
-        [MemberData(nameof(GetSingleTensorConstructors))]
-        public void CreateWithDiagonal3D(TensorConstructor tensorConstructor)
+        [Fact]
+        public static void TensorConcatenateTests()
         {
-            var diagonal = tensorConstructor.CreateFromArray<int>(new[,]
+            Tensor<float> t0 = Tensor.CreateFromEnumerable<float>((Enumerable.Range(0, 4).Select(i => (float)i))).Reshape(2, 2);
+            Tensor<float> t1 = Tensor.CreateFromEnumerable<float>((Enumerable.Range(0, 4).Select(i => (float)i))).Reshape(2, 2);
+            var resultTensor = Tensor.Concatenate([t0, t1]);
+
+            Assert.Equal(2, resultTensor.Rank);
+            Assert.Equal(4, resultTensor.Lengths[0]);
+            Assert.Equal(2, resultTensor.Lengths[1]);
+            Assert.Equal(0, resultTensor[0, 0]);
+            Assert.Equal(1, resultTensor[0, 1]);
+            Assert.Equal(2, resultTensor[1, 0]);
+            Assert.Equal(3, resultTensor[1, 1]);
+            Assert.Equal(0, resultTensor[2, 0]);
+            Assert.Equal(1, resultTensor[2, 1]);
+            Assert.Equal(2, resultTensor[3, 0]);
+            Assert.Equal(3, resultTensor[3, 1]);
+
+            resultTensor = Tensor.Concatenate([t0, t1], 1);
+            Assert.Equal(2, resultTensor.Rank);
+            Assert.Equal(2, resultTensor.Lengths[0]);
+            Assert.Equal(4, resultTensor.Lengths[1]);
+            Assert.Equal(0, resultTensor[0, 0]);
+            Assert.Equal(1, resultTensor[0, 1]);
+            Assert.Equal(0, resultTensor[0, 2]);
+            Assert.Equal(1, resultTensor[0, 3]);
+            Assert.Equal(2, resultTensor[1, 0]);
+            Assert.Equal(3, resultTensor[1, 1]);
+            Assert.Equal(2, resultTensor[1, 2]);
+            Assert.Equal(3, resultTensor[1, 3]);
+
+            resultTensor = Tensor.Concatenate([t0, t1], -1);
+            Assert.Equal(1, resultTensor.Rank);
+            Assert.Equal(8, resultTensor.Lengths[0]);
+            Assert.Equal(0, resultTensor[0]);
+            Assert.Equal(1, resultTensor[1]);
+            Assert.Equal(2, resultTensor[2]);
+            Assert.Equal(3, resultTensor[3]);
+            Assert.Equal(0, resultTensor[4]);
+            Assert.Equal(1, resultTensor[5]);
+            Assert.Equal(2, resultTensor[6]);
+            Assert.Equal(3, resultTensor[7]);
+
+            Tensor<float> t2 = Tensor.CreateFromEnumerable<float>((Enumerable.Range(0, 4).Select(i => (float)i))).Reshape(2, 2);
+            resultTensor = Tensor.Concatenate([t0, t1, t2]);
+
+            Assert.Equal(2, resultTensor.Rank);
+            Assert.Equal(6, resultTensor.Lengths[0]);
+            Assert.Equal(2, resultTensor.Lengths[1]);
+            Assert.Equal(0, resultTensor[0, 0]);
+            Assert.Equal(1, resultTensor[0, 1]);
+            Assert.Equal(2, resultTensor[1, 0]);
+            Assert.Equal(3, resultTensor[1, 1]);
+            Assert.Equal(0, resultTensor[2, 0]);
+            Assert.Equal(1, resultTensor[2, 1]);
+            Assert.Equal(2, resultTensor[3, 0]);
+            Assert.Equal(3, resultTensor[3, 1]);
+            Assert.Equal(0, resultTensor[4, 0]);
+            Assert.Equal(1, resultTensor[4, 1]);
+            Assert.Equal(2, resultTensor[5, 0]);
+            Assert.Equal(3, resultTensor[5, 1]);
+
+            resultTensor = Tensor.Concatenate([t0, t1, t2], -1);
+
+            Assert.Equal(1, resultTensor.Rank);
+            Assert.Equal(12, resultTensor.Lengths[0]);
+            Assert.Equal(0, resultTensor[0]);
+            Assert.Equal(1, resultTensor[1]);
+            Assert.Equal(2, resultTensor[2]);
+            Assert.Equal(3, resultTensor[3]);
+            Assert.Equal(0, resultTensor[4]);
+            Assert.Equal(1, resultTensor[5]);
+            Assert.Equal(2, resultTensor[6]);
+            Assert.Equal(3, resultTensor[7]);
+            Assert.Equal(0, resultTensor[8]);
+            Assert.Equal(1, resultTensor[9]);
+            Assert.Equal(2, resultTensor[10]);
+            Assert.Equal(3, resultTensor[11]);
+
+            resultTensor = Tensor.Concatenate([t0, t1, t2], 1);
+
+            Assert.Equal(2, resultTensor.Rank);
+            Assert.Equal(2, resultTensor.Lengths[0]);
+            Assert.Equal(6, resultTensor.Lengths[1]);
+            Assert.Equal(0, resultTensor[0, 0]);
+            Assert.Equal(1, resultTensor[0, 1]);
+            Assert.Equal(0, resultTensor[0, 2]);
+            Assert.Equal(1, resultTensor[0, 3]);
+            Assert.Equal(0, resultTensor[0, 4]);
+            Assert.Equal(1, resultTensor[0, 5]);
+            Assert.Equal(2, resultTensor[1, 0]);
+            Assert.Equal(3, resultTensor[1, 1]);
+            Assert.Equal(2, resultTensor[1, 2]);
+            Assert.Equal(3, resultTensor[1, 3]);
+            Assert.Equal(2, resultTensor[1, 4]);
+            Assert.Equal(3, resultTensor[1, 5]);
+
+            t0 = Tensor.CreateFromEnumerable<float>((Enumerable.Range(0, 12).Select(i => (float)i))).Reshape(2, 3, 2);
+            t1 = Tensor.CreateFromEnumerable<float>((Enumerable.Range(0, 12).Select(i => (float)i))).Reshape(2, 3, 2);
+            t2 = Tensor.CreateFromEnumerable<float>((Enumerable.Range(0, 8).Select(i => (float)i))).Reshape(2, 2, 2);
+            Assert.Throws<ArgumentException>(() => Tensor.Concatenate([t0, t1, t2]));
+            Assert.Throws<ArgumentException>(() => Tensor.Concatenate([t0, t1, t2], 2));
+            Assert.Throws<ArgumentException>(() => Tensor.Concatenate([t0, t1, t2], 5));
+            Assert.Throws<ArgumentException>(() => Tensor.Concatenate([t0, t1, t2], -2));
+            resultTensor = Tensor.Concatenate([t0, t1, t2], -1);
+            float[] result = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 0, 1, 2, 3, 4, 5, 6, 7];
+            Assert.Equal(1, resultTensor.Rank);
+            Assert.Equal(32, resultTensor.Lengths[0]);
+            Assert.Equal(result, resultTensor.ToArray());
+
+            resultTensor = Tensor.Concatenate([t0, t1, t2], 1);
+            result = [0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 6, 7, 8, 9, 10, 11, 6, 7, 8, 9, 10, 11, 4, 5, 6, 7];
+            Assert.Equal(3, resultTensor.Rank);
+            Assert.Equal(2, resultTensor.Lengths[0]);
+            Assert.Equal(8, resultTensor.Lengths[1]);
+            Assert.Equal(2, resultTensor.Lengths[2]);
+            Assert.Equal(result, resultTensor.ToArray());
+            nint[] indices = new nint[resultTensor.Rank];
+            for(int i  = 0; i < result.Length; i++)
             {
-                { 1, 2, 3, 4, 5 },
-                { 1, 2, 3, 4, 5 },
-                { 1, 2, 3, 4, 5 }
-            });
-            var actual = Tensor.CreateFromDiagonal(diagonal);
-            var expected = new[, ,]
-            {
-                {
-                    {1, 2, 3, 4, 5 },
-                    {0, 0, 0, 0, 0 },
-                    {0, 0, 0, 0, 0 }
-                },
-                {
-                    {0, 0, 0, 0, 0 },
-                    {1, 2, 3, 4, 5 },
-                    {0, 0, 0, 0, 0 }
-                },
-                {
-                    {0, 0, 0, 0, 0 },
-                    {0, 0, 0, 0, 0 },
-                    {1, 2, 3, 4, 5 }
-                }
-            };
-
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(actual, expected));
-        }
-
-        [Theory]
-        [MemberData(nameof(GetSingleTensorConstructors))]
-        public void CreateWithDiagonalAndOffset(TensorConstructor tensorConstructor)
-        {
-            var diagonal = tensorConstructor.CreateFromArray<int>(new[] { 1, 2, 3, 4 });
-            var actual = Tensor.CreateFromDiagonal(diagonal, 1);
-
-            var expected = new[,]
-            {
-                {0, 1, 0, 0, 0 },
-                {0, 0, 2, 0, 0 },
-                {0, 0, 0, 3, 0 },
-                {0, 0, 0, 0, 4 },
-                {0, 0, 0, 0, 0 }
-            };
-
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(actual, expected));
-
-            diagonal = tensorConstructor.CreateFromArray<int>(new[] { 1, 2, 3, 4 });
-            actual = Tensor.CreateFromDiagonal(diagonal, -1);
-
-            expected = new[,]
-            {
-                {0, 0, 0, 0, 0 },
-                {1, 0, 0, 0, 0 },
-                {0, 2, 0, 0, 0 },
-                {0, 0, 3, 0, 0 },
-                {0, 0, 0, 4, 0 }
-            };
-
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(actual, expected));
-
-            diagonal = tensorConstructor.CreateFromArray<int>(new[] { 1 });
-            actual = Tensor.CreateFromDiagonal(diagonal, -4);
-            expected = new[,]
-            {
-                {0, 0, 0, 0, 0 },
-                {0, 0, 0, 0, 0 },
-                {0, 0, 0, 0, 0 },
-                {0, 0, 0, 0, 0 },
-                {1, 0, 0, 0, 0 }
-            };
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(actual, expected));
-
-            diagonal = tensorConstructor.CreateFromArray<int>(new[] { 1 });
-            actual = Tensor.CreateFromDiagonal(diagonal, 4);
-            expected = new[,]
-            {
-                {0, 0, 0, 0, 1 },
-                {0, 0, 0, 0, 0 },
-                {0, 0, 0, 0, 0 },
-                {0, 0, 0, 0, 0 },
-                {0, 0, 0, 0, 0 }
-            };
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(actual, expected));
-        }
-
-        [Theory]
-        [MemberData(nameof(GetSingleTensorConstructors))]
-        public void CreateWithDiagonalAndOffset3D(TensorConstructor tensorConstructor)
-        {
-            var diagonal = tensorConstructor.CreateFromArray<int>(new[,]
-            {
-                { 1, 2, 3 },
-                { 1, 2, 3 },
-                { 1, 2, 3 }
-            });
-            var actual = Tensor.CreateFromDiagonal(diagonal, 1);
-
-            var expected = new[, ,]
-            {
-                {
-                    { 0, 0, 0 },
-                    { 1, 2, 3 },
-                    { 0, 0, 0 },
-                    { 0, 0, 0 }
-                },
-                {
-                    { 0, 0, 0 },
-                    { 0, 0, 0 },
-                    { 1, 2, 3 },
-                    { 0, 0, 0 }
-                },
-                {
-                    { 0, 0, 0 },
-                    { 0, 0, 0 },
-                    { 0, 0, 0 },
-                    { 1, 2, 3 }
-                },
-                {
-                    { 0, 0, 0 },
-                    { 0, 0, 0 },
-                    { 0, 0, 0 },
-                    { 0, 0, 0 }
-                }
-            };
-
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(actual, expected));
-
-            diagonal = tensorConstructor.CreateFromArray<int>(new[,]
-            {
-                { 1, 2, 3 },
-                { 1, 2, 3 },
-                { 1, 2, 3 }
-            });
-            actual = Tensor.CreateFromDiagonal(diagonal, -1);
-
-            expected = new[, ,]
-            {
-                {
-                    { 0, 0, 0 },
-                    { 0, 0, 0 },
-                    { 0, 0, 0 },
-                    { 0, 0, 0 }
-                },
-                {
-                    { 1, 2, 3 },
-                    { 0, 0, 0 },
-                    { 0, 0, 0 },
-                    { 0, 0, 0 }
-                },
-                {
-                    { 0, 0, 0 },
-                    { 1, 2, 3 },
-                    { 0, 0, 0 },
-                    { 0, 0, 0 }
-                },
-                {
-                    { 0, 0, 0 },
-                    { 0, 0, 0 },
-                    { 1, 2, 3 },
-                    { 0, 0, 0 }
-                }
-            };
-
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(actual, expected));
-
-            diagonal = tensorConstructor.CreateFromArray<int>(new[,]
-            {
-                { 1, 2, 3 }
-            });
-            actual = Tensor.CreateFromDiagonal(diagonal, 3);
-
-            expected = new[, ,]
-            {
-                {
-                    { 0, 0, 0 },
-                    { 0, 0, 0 },
-                    { 0, 0, 0 },
-                    { 1, 2, 3 },
-                },
-                {
-                    { 0, 0, 0 },
-                    { 0, 0, 0 },
-                    { 0, 0, 0 },
-                    { 0, 0, 0 }
-                },
-                {
-                    { 0, 0, 0 },
-                    { 0, 0, 0 },
-                    { 0, 0, 0 },
-                    { 0, 0, 0 }
-                },
-                {
-                    { 0, 0, 0 },
-                    { 0, 0, 0 },
-                    { 0, 0, 0 },
-                    { 0, 0, 0 }
-                }
-            };
-
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(actual, expected));
-
-            diagonal = tensorConstructor.CreateFromArray<int>(new[,]
-            {
-                { 1, 2, 3 }
-            });
-            actual = Tensor.CreateFromDiagonal(diagonal, -3);
-
-            expected = new[, ,]
-            {
-                {
-                    { 0, 0, 0 },
-                    { 0, 0, 0 },
-                    { 0, 0, 0 },
-                    { 0, 0, 0 },
-                },
-                {
-                    { 0, 0, 0 },
-                    { 0, 0, 0 },
-                    { 0, 0, 0 },
-                    { 0, 0, 0 }
-                },
-                {
-                    { 0, 0, 0 },
-                    { 0, 0, 0 },
-                    { 0, 0, 0 },
-                    { 0, 0, 0 }
-                },
-                {
-                    { 1, 2, 3 },
-                    { 0, 0, 0 },
-                    { 0, 0, 0 },
-                    { 0, 0, 0 }
-                }
-            };
-
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(actual, expected));
-        }
-
-        [Theory()]
-        [MemberData(nameof(GetDualTensorConstructors))]
-        public void Add(TensorConstructor leftConstructor, TensorConstructor rightConstructor)
-        {
-            var left = leftConstructor.CreateFromArray<int>(
-                new[,]
-                {
-                    {0, 1, 2},
-                    {3, 4, 5}
-                });
-            var right = rightConstructor.CreateFromArray<int>(
-                new[,]
-                {
-                    { 6, 7 ,8 },
-                    { 9, 10 ,11 },
-                });
-
-            var expected = leftConstructor.CreateFromArray<int>(
-                new[,]
-                {
-                    { 6, 8, 10 },
-                    { 12, 14, 16 },
-                });
-
-            var actual = TensorOperations.Add(left, right);
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(actual, expected));
-            Assert.Equal(leftConstructor.IsReversedStride, actual.IsReversedStride);
-
-        }
-
-        [Theory()]
-        [MemberData(nameof(GetSingleTensorConstructors))]
-        public void AddScalar(TensorConstructor tensorConstructor)
-        {
-            var tensor = tensorConstructor.CreateFromArray<int>(
-                new[,]
-                {
-                    {0, 1, 2},
-                    {3, 4, 5}
-                });
-
-            var expected = tensorConstructor.CreateFromArray<int>(
-                new[,]
-                {
-                    { 1, 2, 3 },
-                    { 4, 5, 6 },
-                });
-
-            var actual = TensorOperations.Add(tensor, 1);
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(actual, expected));
-            Assert.Equal(tensorConstructor.IsReversedStride, actual.IsReversedStride);
-
-        }
-
-        [Theory()]
-        [MemberData(nameof(GetSingleTensorConstructors))]
-        public void UnaryPlus(TensorConstructor tensorConstructor)
-        {
-            var tensor = tensorConstructor.CreateFromArray<int>(
-                new[,]
-                {
-                    {0, 1, 2},
-                    {3, 4, 5}
-                });
-
-            var expected = tensor;
-
-            var actual = TensorOperations.UnaryPlus(tensor);
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(actual, expected));
-            Assert.False(ReferenceEquals(actual, expected));
-            Assert.Equal(tensorConstructor.IsReversedStride, actual.IsReversedStride);
-        }
-
-
-        [Theory()]
-        [MemberData(nameof(GetDualTensorConstructors))]
-        public void Subtract(TensorConstructor leftConstructor, TensorConstructor rightConstructor)
-        {
-            var left = leftConstructor.CreateFromArray<int>(
-                new[,]
-                {
-                    {0, 1, 2},
-                    {3, 4, 5}
-                });
-            var right = rightConstructor.CreateFromArray<int>(
-                new[,]
-                {
-                    { 6, 7 ,8 },
-                    { 9, 10 ,11 },
-                });
-
-            var expected = leftConstructor.CreateFromArray<int>(
-                new[,]
-                {
-                    { -6, -6, -6 },
-                    { -6, -6, -6},
-                });
-
-            var actual = TensorOperations.Subtract(left, right);
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(actual, expected));
-            Assert.Equal(leftConstructor.IsReversedStride, actual.IsReversedStride);
-        }
-
-        [Theory()]
-        [MemberData(nameof(GetSingleTensorConstructors))]
-        public void SubtractScalar(TensorConstructor tensorConstructor)
-        {
-            var tensor = tensorConstructor.CreateFromArray<int>(
-                new[,]
-                {
-                    {0, 1, 2},
-                    {3, 4, 5}
-                });
-            var expected = tensorConstructor.CreateFromArray<int>(
-                new[,]
-                {
-                    { -1, 0, 1 },
-                    { 2, 3, 4 },
-                });
-
-            var actual = TensorOperations.Subtract(tensor, 1);
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(actual, expected));
-            Assert.Equal(tensorConstructor.IsReversedStride, actual.IsReversedStride);
-        }
-
-        [Theory()]
-        [MemberData(nameof(GetSingleTensorConstructors))]
-        public void UnaryMinus(TensorConstructor tensorConstructor)
-        {
-            var tensor = tensorConstructor.CreateFromArray<int>(
-                new[,]
-                {
-                    {0, 1, 2},
-                    {3, 4, 5}
-                });
-
-            var expected = tensorConstructor.CreateFromArray<int>(
-                new[,]
-                {
-                    {0, -1, -2},
-                    {-3, -4, -5}
-                });
-
-            var actual = TensorOperations.UnaryMinus(tensor);
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(actual, expected));
-            Assert.False(ReferenceEquals(actual, expected));
-            Assert.Equal(tensorConstructor.IsReversedStride, actual.IsReversedStride);
-        }
-
-        [Theory()]
-        [MemberData(nameof(GetSingleTensorConstructors))]
-        public void PrefixIncrement(TensorConstructor tensorConstructor)
-        {
-            Tensor<int> tensor = tensorConstructor.CreateFromArray<int>(
-                new[,]
-                {
-                    {0, 1, 2},
-                    {3, 4, 5}
-                });
-
-            var expectedResult = tensorConstructor.CreateFromArray<int>(
-                new[,]
-                {
-                    {1, 2, 3},
-                    {4, 5, 6}
-                });
-
-            var expectedTensor = expectedResult;
-
-            tensor = TensorOperations.Increment(tensor);
-            var actual = tensor;
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(actual, expectedResult));
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(tensor, expectedTensor));
-            Assert.True(ReferenceEquals(tensor, actual));
-            Assert.Equal(tensorConstructor.IsReversedStride, actual.IsReversedStride);
-        }
-
-
-        [Theory()]
-        [MemberData(nameof(GetSingleTensorConstructors))]
-        public void PostfixIncrement(TensorConstructor tensorConstructor)
-        {
-            Tensor<int> tensor = tensorConstructor.CreateFromArray<int>(
-                new[,]
-                {
-                    {0, 1, 2},
-                    {3, 4, 5}
-                });
-
-            // returns original value
-            var expectedResult = tensorConstructor.CreateFromArray<int>(
-                new[,]
-                {
-                    {0, 1, 2},
-                    {3, 4, 5}
-                });
-
-            // increments operand
-            var expectedTensor = tensorConstructor.CreateFromArray<int>(
-                new[,]
-                {
-                    {1, 2, 3},
-                    {4, 5, 6}
-                });
-
-            var actual = tensor;
-            tensor = TensorOperations.Increment(tensor);
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(actual, expectedResult));
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(tensor, expectedTensor));
-            Assert.False(ReferenceEquals(tensor, actual));
-            Assert.Equal(tensorConstructor.IsReversedStride, actual.IsReversedStride);
-        }
-
-
-        [Theory()]
-        [MemberData(nameof(GetSingleTensorConstructors))]
-        public void PrefixDecrement(TensorConstructor tensorConstructor)
-        {
-            Tensor<int> tensor = tensorConstructor.CreateFromArray<int>(
-                new[,]
-                {
-                    {0, 1, 2},
-                    {3, 4, 5}
-                });
-
-            var expectedResult = tensorConstructor.CreateFromArray<int>(
-                new[,]
-                {
-                    {-1, 0, 1},
-                    {2, 3, 4}
-                });
-
-            var expectedTensor = expectedResult;
-
-            tensor = TensorOperations.Decrement(tensor);
-            var actual = tensor;
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(actual, expectedResult));
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(tensor, expectedTensor));
-            Assert.True(ReferenceEquals(tensor, actual));
-            Assert.Equal(tensorConstructor.IsReversedStride, actual.IsReversedStride);
-        }
-
-        [Theory()]
-        [MemberData(nameof(GetSingleTensorConstructors))]
-        public void PostfixDecrement(TensorConstructor tensorConstructor)
-        {
-            Tensor<int> tensor = tensorConstructor.CreateFromArray<int>(
-                new[,]
-                {
-                    {0, 1, 2},
-                    {3, 4, 5}
-                });
-
-            // returns original value
-            var expectedResult = tensorConstructor.CreateFromArray<int>(
-                new[,]
-                {
-                    {0, 1, 2},
-                    {3, 4, 5}
-                });
-
-            // decrements operand
-            var expectedTensor = tensorConstructor.CreateFromArray<int>(
-                new[,]
-                {
-                    {-1, 0, 1},
-                    {2, 3, 4}
-                });
-
-            var actual = tensor;
-            tensor = TensorOperations.Decrement(tensor);
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(actual, expectedResult));
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(tensor, expectedTensor));
-            Assert.False(ReferenceEquals(tensor, actual));
-            Assert.Equal(tensorConstructor.IsReversedStride, actual.IsReversedStride);
-        }
-
-        [Theory()]
-        [MemberData(nameof(GetDualTensorConstructors))]
-        public void Multiply(TensorConstructor leftConstructor, TensorConstructor rightConstructor)
-        {
-            var left = leftConstructor.CreateFromArray<int>(
-                new[,]
-                {
-                    {0, 1, 2},
-                    {3, 4, 5}
-                });
-            var right = rightConstructor.CreateFromArray<int>(
-                new[,]
-                {
-                    {0, 1, 2},
-                    {3, 4, 5}
-                });
-
-            var expected = leftConstructor.CreateFromArray<int>(
-                new[,]
-                {
-                    {0, 1, 4},
-                    {9, 16, 25}
-                });
-
-            var actual = TensorOperations.Multiply(left, right);
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(actual, expected));
-            Assert.Equal(leftConstructor.IsReversedStride, actual.IsReversedStride);
-        }
-
-        [Theory()]
-        [MemberData(nameof(GetSingleTensorConstructors))]
-        public void MultiplyScalar(TensorConstructor tensorConstructor)
-        {
-            var tensor = tensorConstructor.CreateFromArray<int>(
-                new[,]
-                {
-                    {0, 1, 2},
-                    {3, 4, 5}
-                });
-
-            var expected = tensorConstructor.CreateFromArray<int>(
-                new[,]
-                {
-                    {0, 2, 4},
-                    {6, 8, 10}
-                });
-
-            var actual = TensorOperations.Multiply(tensor, 2);
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(actual, expected));
-            Assert.Equal(tensorConstructor.IsReversedStride, actual.IsReversedStride);
-        }
-
-        [Theory()]
-        [MemberData(nameof(GetDualTensorConstructors))]
-        public void Divide(TensorConstructor dividendConstructor, TensorConstructor divisorConstructor)
-        {
-            var dividend = dividendConstructor.CreateFromArray<int>(
-                new[,]
-                {
-                    {0, 1, 4},
-                    {9, 16, 25}
-                });
-
-            var divisor = divisorConstructor.CreateFromArray<int>(
-                new[,]
-                {
-                    {1, 1, 2},
-                    {3, 4, 5}
-                });
-
-            var expected = divisorConstructor.CreateFromArray<int>(
-                new[,]
-                {
-                    {0, 1, 2},
-                    {3, 4, 5}
-                });
-
-            var actual = TensorOperations.Divide(dividend, divisor);
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(actual, expected));
-            Assert.Equal(dividendConstructor.IsReversedStride, actual.IsReversedStride);
-        }
-
-        [Theory()]
-        [MemberData(nameof(GetSingleTensorConstructors))]
-        public void DivideScalar(TensorConstructor tensorConstructor)
-        {
-            var tensor = tensorConstructor.CreateFromArray<int>(
-                new[,]
-                {
-                    {0, 2, 4},
-                    {6, 8, 10}
-                });
-
-            var expected = tensorConstructor.CreateFromArray<int>(
-                new[,]
-                {
-                    {0, 1, 2},
-                    {3, 4, 5}
-                });
-
-            var actual = TensorOperations.Divide(tensor, 2);
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(actual, expected));
-            Assert.Equal(tensorConstructor.IsReversedStride, actual.IsReversedStride);
-        }
-
-        [Theory()]
-        [MemberData(nameof(GetDualTensorConstructors))]
-        public void Modulo(TensorConstructor dividendConstructor, TensorConstructor divisorConstructor)
-        {
-            var dividend = dividendConstructor.CreateFromArray<int>(
-                new[,]
-                {
-                    {0, 3, 8},
-                    {11, 14, 17}
-                });
-
-            var divisor = divisorConstructor.CreateFromArray<int>(
-                new[,]
-                {
-                    {1, 2, 3},
-                    {4, 5, 6}
-                });
-
-            var expected = dividendConstructor.CreateFromArray<int>(
-                new[,]
-                {
-                    {0, 1, 2},
-                    {3, 4, 5}
-                });
-
-            var actual = TensorOperations.Modulo(dividend, divisor);
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(actual, expected));
-            Assert.Equal(dividendConstructor.IsReversedStride, actual.IsReversedStride);
-        }
-
-        [Theory()]
-        [MemberData(nameof(GetSingleTensorConstructors))]
-        public void ModuloScalar(TensorConstructor tensorConstructor)
-        {
-            var tensor = tensorConstructor.CreateFromArray<int>(
-                new[,]
-                {
-                    {0, 3, 4},
-                    {7, 8, 9}
-                });
-
-            var expected = tensorConstructor.CreateFromArray<int>(
-                new[,]
-                {
-                    {0, 1, 0},
-                    {1, 0, 1}
-                });
-
-            var actual = TensorOperations.Modulo(tensor, 2);
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(actual, expected));
-            Assert.Equal(tensorConstructor.IsReversedStride, actual.IsReversedStride);
-        }
-
-        [Theory()]
-        [MemberData(nameof(GetDualTensorConstructors))]
-        public void And(TensorConstructor leftConstructor, TensorConstructor rightConstructor)
-        {
-            var left = leftConstructor.CreateFromArray<int>(
-                new[,]
-                {
-                    {0, 1, 3},
-                    {7, 15, 31}
-                });
-
-            var right = rightConstructor.CreateFromArray<int>(
-                new[,]
-                {
-                    {1, 1, 3},
-                    {2, 4, 8}
-                });
-
-            var expected = leftConstructor.CreateFromArray<int>(
-                new[,]
-                {
-                    {0, 1, 3},
-                    {2, 4, 8}
-                });
-
-            var actual = TensorOperations.And(left, right);
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(actual, expected));
-            Assert.Equal(leftConstructor.IsReversedStride, actual.IsReversedStride);
-        }
-
-        [Theory()]
-        [MemberData(nameof(GetSingleTensorConstructors))]
-        public void AndScalar(TensorConstructor tensorConstructor)
-        {
-            var left = tensorConstructor.CreateFromArray<int>(
-                new[,]
-                {
-                    {0, 1, 3},
-                    {5, 15, 31}
-                });
-
-            var expected = tensorConstructor.CreateFromArray<int>(
-                new[,]
-                {
-                    {0, 0, 0},
-                    {4, 4, 20}
-                });
-
-            var actual = TensorOperations.And(left, 20);
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(actual, expected));
-            Assert.Equal(tensorConstructor.IsReversedStride, actual.IsReversedStride);
-        }
-
-        [Theory()]
-        [MemberData(nameof(GetDualTensorConstructors))]
-        public void Or(TensorConstructor leftConstructor, TensorConstructor rightConstructor)
-        {
-            var left = leftConstructor.CreateFromArray<int>(
-                new[,]
-                {
-                    {0, 1, 3},
-                    {7, 14, 31}
-                });
-
-            var right = rightConstructor.CreateFromArray<int>(
-                new[,]
-                {
-                    {1, 2, 4},
-                    {2, 4, 8}
-                });
-
-            var expected = leftConstructor.CreateFromArray<int>(
-                new[,]
-                {
-                    {1, 3, 7},
-                    {7, 14, 31}
-                });
-
-            var actual = TensorOperations.Or(left, right);
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(actual, expected));
-            Assert.Equal(leftConstructor.IsReversedStride, actual.IsReversedStride);
-        }
-
-        [Theory()]
-        [MemberData(nameof(GetSingleTensorConstructors))]
-        public void OrScalar(TensorConstructor tensorConstructor)
-        {
-            var left = tensorConstructor.CreateFromArray<int>(
-                new[,]
-                {
-                    {0, 1, 2},
-                    {3, 4, 5}
-                });
-
-            var expected = tensorConstructor.CreateFromArray<int>(
-                new[,]
-                {
-                    {1, 1, 3},
-                    {3, 5, 5}
-                });
-
-            var actual = TensorOperations.Or(left, 1);
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(actual, expected));
-            Assert.Equal(tensorConstructor.IsReversedStride, actual.IsReversedStride);
-        }
-
-        [Theory()]
-        [MemberData(nameof(GetDualTensorConstructors))]
-        public void Xor(TensorConstructor leftConstructor, TensorConstructor rightConstructor)
-        {
-            var left = leftConstructor.CreateFromArray<int>(
-                new[,]
-                {
-                    {0, 1, 3},
-                    {7, 14, 31}
-                });
-
-            var right = rightConstructor.CreateFromArray<int>(
-                new[,]
-                {
-                    {1, 2, 4},
-                    {2, 4, 8}
-                });
-
-            var expected = leftConstructor.CreateFromArray<int>(
-                new[,]
-                {
-                    {1, 3, 7},
-                    {5, 10, 23}
-                });
-
-            var actual = TensorOperations.Xor(left, right);
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(actual, expected));
-            Assert.Equal(leftConstructor.IsReversedStride, actual.IsReversedStride);
-        }
-
-        [Theory()]
-        [MemberData(nameof(GetSingleTensorConstructors))]
-        public void XorScalar(TensorConstructor tensorConstructor)
-        {
-            var left = tensorConstructor.CreateFromArray<int>(
-                new[,]
-                {
-                    {0, 1, 2},
-                    {3, 4, 5}
-                });
-
-            var expected = tensorConstructor.CreateFromArray<int>(
-                new[,]
-                {
-                    {1, 0, 3},
-                    {2, 5, 4}
-                });
-
-            var actual = TensorOperations.Xor(left, 1);
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(actual, expected));
-            Assert.Equal(tensorConstructor.IsReversedStride, actual.IsReversedStride);
-        }
-
-        [Theory()]
-        [MemberData(nameof(GetSingleTensorConstructors))]
-        public void LeftShift(TensorConstructor tensorConstructor)
-        {
-            var left = tensorConstructor.CreateFromArray<int>(
-                new[,]
-                {
-                    {0, 1, 2},
-                    {3, 4, 5}
-                });
-
-            var expected = tensorConstructor.CreateFromArray<int>(
-                new[,]
-                {
-                    {0, 2, 4},
-                    {6, 8, 10}
-                });
-
-            var actual = TensorOperations.LeftShift(left, 1);
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(actual, expected));
-            Assert.Equal(tensorConstructor.IsReversedStride, actual.IsReversedStride);
-        }
-
-        [Theory()]
-        [MemberData(nameof(GetSingleTensorConstructors))]
-        public void RightShift(TensorConstructor tensorConstructor)
-        {
-            var left = tensorConstructor.CreateFromArray<int>(
-                new[,]
-                {
-                    {0, 1, 2},
-                    {3, 4, 5}
-                });
-
-            var expected = tensorConstructor.CreateFromArray<int>(
-                new[,]
-                {
-                    {0, 0, 1},
-                    {1, 2, 2}
-                });
-
-            var actual = TensorOperations.RightShift(left, 1);
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(actual, expected));
-            Assert.Equal(tensorConstructor.IsReversedStride, actual.IsReversedStride);
-        }
-
-        [Theory()]
-        [MemberData(nameof(GetDualTensorConstructors))]
-        public void ElementWiseEquals(TensorConstructor leftConstructor, TensorConstructor rightConstructor)
-        {
-            var left = leftConstructor.CreateFromArray<int>(
-                new[,]
-                {
-                    {0, 1, 2},
-                    {3, 4, 5}
-                });
-            var right = rightConstructor.CreateFromArray<int>(
-                new[,]
-                {
-                    {0, 1, -2},
-                    {2, 3, 5}
-                });
-
-            var expected = new[,]
-                {
-                    {true, true, false },
-                    {false, false, true}
-                }.ToTensor();
-
-            var actual = TensorOperations.Equals(left, right);
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(actual, expected));
-            Assert.Equal(leftConstructor.IsReversedStride, actual.IsReversedStride);
-        }
-
-        [Theory()]
-        [MemberData(nameof(GetDualTensorConstructors))]
-        public void ElementWiseNotEquals(TensorConstructor leftConstructor, TensorConstructor rightConstructor)
-        {
-            var left = leftConstructor.CreateFromArray<int>(
-                new[,]
-                {
-                    {0, 1, 2},
-                    {3, 4, 5}
-                });
-            var right = rightConstructor.CreateFromArray<int>(
-                new[,]
-                {
-                    {0, 1, -2},
-                    {2, 3, 5}
-                });
-
-            var expected = new[,]
-                {
-                    {false, false, true},
-                    {true, true, false}
-                }.ToTensor();
-
-            var actual = TensorOperations.NotEquals(left, right);
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(actual, expected));
-            Assert.Equal(leftConstructor.IsReversedStride, actual.IsReversedStride);
-        }
-
-        [Theory]
-        [MemberData(nameof(GetDualTensorConstructors))]
-        public void MatrixMultiply(TensorConstructor leftConstructor, TensorConstructor rightConstructor)
-        {
-            var left = leftConstructor.CreateFromArray<int>(
-                new[,]
-                {
-                    {0, 1, 2},
-                    {3, 4, 5}
-                });
-
-            var right = rightConstructor.CreateFromArray<int>(
-                new[,]
-                {
-                    {0, 1, 2, 3, 4},
-                    {5, 6, 7, 8, 9},
-                    {10, 11, 12, 13, 14}
-                });
-
-            var expected = leftConstructor.CreateFromArray<int>(
-                new[,]
-                {
-                    {0*0 + 1*5 + 2*10, 0*1 + 1*6 + 2*11, 0*2 + 1*7 + 2*12, 0*3 + 1*8 + 2*13, 0*4 + 1*9 + 2*14},
-                    {3*0 + 4*5 + 5*10, 3*1 + 4*6 + 5*11, 3*2 + 4*7 + 5*12, 3*3 + 4*8 + 5*13, 3*4 + 4*9 + 5*14}
-                });
-
-            var actual = left.MatrixMultiply(right);
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(actual, expected));
-        }
-
-
-        [Theory]
-        [MemberData(nameof(GetDualTensorConstructors))]
-        public void Contract(TensorConstructor leftConstructor, TensorConstructor rightConstructor)
-        {
-            var left = leftConstructor.CreateFromArray<int>(
-                new[, ,]
-                {
-                    {
-                        {0, 1},
-                        {2, 3}
-                    },
-                    {
-                        {4, 5},
-                        {6, 7}
-                    },
-                    {
-                        {8, 9},
-                        {10, 11}
-                    }
-                });
-
-            var right = rightConstructor.CreateFromArray<int>(
-                new[, ,]
-                {
-                    {
-                        {0, 1},
-                        {2, 3},
-                        {4, 5}
-                    },
-                    {
-                        {6, 7},
-                        {8, 9},
-                        {10, 11}
-                    },
-                    {
-                        {12, 13},
-                        {14, 15},
-                        {16, 17}
-                    },
-                    {
-                        {18, 19},
-                        {20, 21},
-                        {22, 23}
-                    }
-                });
-
-            // contract a 3*2*2 with a 4*3*2 tensor, summing on (3*2)*2 and 4*(3*2) to produce a 2*4 tensor
-            var expected = leftConstructor.CreateFromArray<int>(
-                new[,]
-                {
-                    {110, 290, 470, 650},
-                    {125, 341, 557, 773},
-                });
-            var actual = TensorOperations.Contract(left, right, new[] { 0, 1 }, new[] { 1, 2 });
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(actual, expected));
-
-            // contract a 3*2*2 with a 4*3*2 tensor, summing on (3)*2*(2) and 4*(3*2) to produce a 2*4 tensor
-            expected = leftConstructor.CreateFromArray<int>(
-                new[,]
-                {
-                    {101, 263, 425, 587},
-                    {131, 365, 599, 833},
-                });
-            actual = TensorOperations.Contract(left, right, new[] { 0, 2 }, new[] { 1, 2 });
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(actual, expected));
-        }
-
-
-        [Theory]
-        [MemberData(nameof(GetDualTensorConstructors))]
-        public void ContractWithSingleLengthDimension(TensorConstructor leftConstructor, TensorConstructor rightConstructor)
-        {
-            var left = leftConstructor.CreateFromArray<int>(
-                new[,]
-                {
-                    {1, 2, 3},
-                    {4, 5, 6},
-                });
-
-            var right = rightConstructor.CreateFromArray<int>(
-                new[,]
-                {
-                    { 1, 2 },
-                    { 3, 4 },
-                    { 5, 6 }
-                });
-
-            var expected = leftConstructor.CreateFromArray<int>(
-                new[,]
-                {
-                    { 22, 28 },
-                    { 49, 64 }
-                });
-
-            // contract a 2*3 with a 3*2 tensor, summing on 2*(3) and (3)*2 to produce a 2*2 tensor
-            var actual = TensorOperations.Contract(left, right, new[] { 1 }, new[] { 0 });
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(actual, expected));
-
-            // contract a 1*2*3*1 with a 3*2 tensor, summing on 1*2*(3)*1 and (3)*2 to produce a 1*2*1*2 tensor
-            var reshapedLeft = left.Reshape(new int[] { 1, 2, 3, 1 });
-            var reshapedExpected = expected.Reshape(new int[] { 1, 2, 1, 2 });
-            actual = TensorOperations.Contract(reshapedLeft, right, new[] { 2 }, new[] { 0 });
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(actual, reshapedExpected));
-
-        }
-
-        [Theory]
-        [MemberData(nameof(GetDualTensorConstructors))]
-        public void ContractMismatchedDimensions(TensorConstructor leftConstructor, TensorConstructor rightConstructor)
-        {
-            var left = leftConstructor.CreateFromArray<int>(
-                new[] { 0, 1, 2, 3 });
-
-            var right = rightConstructor.CreateFromArray<int>(
-                new[,]
-                {
-                    { 0 },
-                    { 1 },
-                    { 2 }
-                });
-
-            var expected = leftConstructor.CreateFromArray<int>(
-                new[,]
-                {
-                    {0,0,0},
-                    {0,1,2},
-                    {0,2,4},
-                    {0,3,6},
-                });
-
-            Assert.Throws<ArgumentException>(() => TensorOperations.Contract(left, right, new int[] { }, new[] { 1 }));
-
-            // reshape to include dimension of length 1.
-            var leftReshaped = left.Reshape(new[] { 1, (int)left.Length });
-
-            var actual = TensorOperations.Contract(leftReshaped, right, new[] { 0 }, new[] { 1 });
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(actual, expected));
-        }
-
-        [Theory]
-        [MemberData(nameof(GetSingleTensorConstructors))]
-        public void GetArrayString(TensorConstructor constructor)
-        {
-            var tensor = constructor.CreateFromArray<int>(
-                new[, ,]
-                {
-                    {
-                        {0, 1},
-                        {2, 3},
-                        {4, 5}
-                    },
-                    {
-                        {6, 7},
-                        {8, 9},
-                        {10, 11}
-                    },
-                    {
-                        {12, 13},
-                        {14, 15},
-                        {16, 17}
-                    },
-                    {
-                        {18, 19},
-                        {20, 21},
-                        {22, 23}
-                    }
-                });
-
-            var expected =
-@"{
-    {
-        {0,1},
-        {2,3},
-        {4,5}
-    },
-    {
-        {6,7},
-        {8,9},
-        {10,11}
-    },
-    {
-        {12,13},
-        {14,15},
-        {16,17}
-    },
-    {
-        {18,19},
-        {20,21},
-        {22,23}
-    }
-}";
-
-            Assert.Equal(expected, tensor.GetArrayString(), ignoreLineEndingDifferences: !LineEndingsHelper.IsNewLineConsistent);
-
-            var expectedNoSpace = expected.Replace(LineEndingsHelper.CompiledNewline, "").Replace(" ", "");
-            Assert.Equal(expectedNoSpace, tensor.GetArrayString(false));
-        }
-
-        [Theory]
-        [MemberData(nameof(GetTensorAndResultConstructor))]
-        public void ToOtherTensor(TensorConstructor sourceConstructor, TensorConstructor resultConstructor)
-        {
-            var array = new[, ,]
-            {
-                {
-                    {0, 1, 0, 0 },
-                    {0, 0, 0, 9 },
-                    {2, 0, 5, 0 }
-                },
-                {
-                    {3, 0, 0, 6 },
-                    {0, 0, 0, 0 },
-                    {0, 0, 4, 0 }
-                },
-                {
-                    {0, 2, 0, 0 },
-                    {8, 0, 0, 0 },
-                    {0, 0, 12, 0 }
-                },
-                {
-                    {5, 5, 5, 0 },
-                    {0, 0, 0, 15 },
-                    {0, 0, 42, 0 }
-                },
-                {
-                    {1, 0, 0, 4 },
-                    {0, 2, 0, 0 },
-                    {0, 0, 3, 0 }
-                }
-            };
-
-            var source = sourceConstructor.CreateFromArray<int>(array);
-
-            Tensor<int> expected = resultConstructor.CreateFromArray<int>(array);
-
-            Tensor<int> actual;
-
-            switch (resultConstructor.TensorType)
-            {
-                case TensorType.Dense:
-                    actual = source.ToDenseTensor();
-                    break;
-                case TensorType.Sparse:
-                    var actualSparse = source.ToSparseTensor();
-                    actual = actualSparse;
-                    var expectedSparse = expected as SparseTensor<int>;
-                    Assert.Equal(expectedSparse.NonZeroCount, actualSparse.NonZeroCount);
-                    break;
-                case TensorType.CompressedSparse:
-                    var actualCompressedSparse = source.ToCompressedSparseTensor();
-                    actual = actualCompressedSparse;
-                    var expectedCompressedSparse = expected as CompressedSparseTensor<int>;
-                    Assert.Equal(expectedCompressedSparse.NonZeroCount, actualCompressedSparse.NonZeroCount);
-                    if (sourceConstructor.TensorType != TensorType.Dense)
-                    {
-                        // expect packed values when going from sparse -> sparse
-                        Assert.Equal(actualCompressedSparse.NonZeroCount, actualCompressedSparse.Values.Length);
-                    }
-                    break;
-                default:
-                    throw new ArgumentException(nameof(resultConstructor.TensorType));
+                Assert.Equal(result[i], resultTensor[indices]);
+                Helpers.AdjustIndices(resultTensor.Rank - 1, 1, ref indices, resultTensor.Lengths);
             }
 
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(actual, expected));
-            Assert.True(StructuralComparisons.StructuralEqualityComparer.Equals(actual, source));
-        }
-
-        [Theory]
-        [MemberData(nameof(GetSingleTensorConstructors))]
-        public void TestICollectionMembers(TensorConstructor constructor)
-        {
-            var arr = new[,]
+            t0 = Tensor.CreateFromEnumerable<float>((Enumerable.Range(0, 12).Select(i => (float)i))).Reshape(2, 2, 3);
+            t1 = Tensor.CreateFromEnumerable<float>((Enumerable.Range(0, 12).Select(i => (float)i))).Reshape(2, 2, 3);
+            t2 = Tensor.CreateFromEnumerable<float>((Enumerable.Range(0, 8).Select(i => (float)i))).Reshape(2, 2, 2);
+            Assert.Throws<ArgumentException>(() => Tensor.Concatenate([t0, t1, t2], 0));
+            Assert.Throws<ArgumentException>(() => Tensor.Concatenate([t0, t1, t2], 1));
+            resultTensor = Tensor.Concatenate([t0, t1, t2], 2);
+            result = [0, 1, 2, 0, 1, 2, 0, 1, 3, 4, 5, 3, 4, 5, 2, 3, 6, 7, 8, 6, 7, 8, 4, 5, 9, 10, 11, 9, 10, 11, 6, 7];
+            Assert.Equal(3, resultTensor.Rank);
+            Assert.Equal(2, resultTensor.Lengths[0]);
+            Assert.Equal(2, resultTensor.Lengths[1]);
+            Assert.Equal(8, resultTensor.Lengths[2]);
+            Assert.Equal(result, resultTensor.ToArray());
+            indices = new nint[resultTensor.Rank];
+            for (int i = 0; i < result.Length; i++)
             {
-                { 1, 2, 3 },
-                { 4, 5, 6 }
-            };
-
-            var tensor = constructor.CreateFromArray<int>(arr);
-            ICollection tensorCollection = tensor;
-
-            Assert.Equal(6, tensorCollection.Count);
-
-            Assert.False(tensorCollection.IsSynchronized);
-
-            Assert.True(ReferenceEquals(tensorCollection, tensorCollection.SyncRoot));
-
-            var actual = Array.CreateInstance(typeof(int), tensor.Length);
-            tensorCollection.CopyTo(actual, 0);
-            var expected = constructor.IsReversedStride ?
-                new[] { 1, 4, 2, 5, 3, 6 } :
-                new[] { 1, 2, 3, 4, 5, 6 };
-            Assert.Equal(expected, actual);
-
-            actual = Array.CreateInstance(typeof(int), tensor.Length + 2);
-            tensorCollection.CopyTo(actual, 2);
-            expected = constructor.IsReversedStride ?
-                new[] { 0, 0, 1, 4, 2, 5, 3, 6 } :
-                new[] { 0, 0, 1, 2, 3, 4, 5, 6 };
-            Assert.Equal(expected, actual);
-
-            Assert.Throws<ArgumentNullException>(() => tensorCollection.CopyTo(null, 0));
-            Assert.Throws<ArgumentException>(() => tensorCollection.CopyTo(new int[3, 4], 0));
-            Assert.Throws<ArgumentException>(() => tensorCollection.CopyTo(new int[5], 0));
-            Assert.Throws<ArgumentException>(() => tensorCollection.CopyTo(new int[6], 1));
-        }
-
-        [Theory]
-        [MemberData(nameof(GetSingleTensorConstructors))]
-        public void TestIListMembers(TensorConstructor constructor)
-        {
-            var arr = new[,]
-            {
-                { 1, 2, 3 },
-                { 4, 5, 6 }
-            };
-
-            var tensor = constructor.CreateFromArray<int>(arr);
-            IList tensorList = tensor;
-
-            int expectedIndexValue = constructor.IsReversedStride ? 4 : 2;
-            Assert.Equal(expectedIndexValue, tensorList[1]);
-
-            tensorList[1] = 7;
-            Assert.Equal(7, tensorList[1]);
-            var expected = constructor.IsReversedStride ?
-                new[] { 1, 7, 2, 5, 3, 6 } :
-                new[] { 1, 7, 3, 4, 5, 6 };
-            Assert.Equal(expected, tensor);
-
-            Assert.True(tensorList.IsFixedSize);
-            Assert.False(tensorList.IsReadOnly);
-
-            Assert.Throws<InvalidOperationException>(() => (tensorList).Add(8));
-
-            Assert.True(tensorList.Contains(5));
-            Assert.True(tensorList.Contains(6));
-            Assert.False(tensorList.Contains(0));
-            Assert.False(tensorList.Contains(42));
-            Assert.False(tensorList.Contains("foo"));
-
-            Assert.Equal(constructor.IsReversedStride ? 3 : 4, tensorList.IndexOf(5));
-            Assert.Equal(5, tensorList.IndexOf(6));
-            Assert.Equal(-1, tensorList.IndexOf(0));
-            Assert.Equal(-1, tensorList.IndexOf(42));
-
-            Assert.Throws<InvalidOperationException>(() => (tensorList).Insert(2, 5));
-            Assert.Throws<InvalidOperationException>(() => (tensorList).Remove(1));
-            Assert.Throws<InvalidOperationException>(() => (tensorList).RemoveAt(0));
-
-            tensorList.Clear();
-            Assert.Equal(new[] { 0, 0, 0, 0, 0, 0 }, tensor);
-        }
-
-        [Theory]
-        [MemberData(nameof(GetSingleTensorConstructors))]
-        public void TestICollectionTMembers(TensorConstructor constructor)
-        {
-            var arr = new[,]
-            {
-                { 1, 2, 3 },
-                { 4, 5, 6 }
-            };
-
-            var tensor = constructor.CreateFromArray<int>(arr);
-            ICollection<int> tensorCollection = tensor;
-
-            Assert.Equal(6, tensorCollection.Count);
-            Assert.False(tensorCollection.IsReadOnly);
-
-            Assert.Throws<InvalidOperationException>(() => tensorCollection.Add(8));
-            Assert.Throws<InvalidOperationException>(() => tensorCollection.Remove(1));
-
-            Assert.True(tensorCollection.Contains(5));
-            Assert.True(tensorCollection.Contains(6));
-            Assert.False(tensorCollection.Contains(0));
-            Assert.False(tensorCollection.Contains(42));
-
-            var actual = new int[tensor.Length];
-            tensorCollection.CopyTo(actual, 0);
-            var expected = constructor.IsReversedStride ?
-                new[] { 1, 4, 2, 5, 3, 6 } :
-                new[] { 1, 2, 3, 4, 5, 6 };
-            Assert.Equal(expected, actual);
-
-            actual = new int[tensor.Length + 2];
-            tensorCollection.CopyTo(actual, 2);
-            expected = constructor.IsReversedStride ?
-                new[] { 0, 0, 1, 4, 2, 5, 3, 6 } :
-                new[] { 0, 0, 1, 2, 3, 4, 5, 6 };
-            Assert.Equal(expected, actual);
-
-            Assert.Throws<ArgumentNullException>(() => tensorCollection.CopyTo(null, 0));
-            Assert.Throws<ArgumentException>(() => tensorCollection.CopyTo(new int[5], 0));
-            Assert.Throws<ArgumentException>(() => tensorCollection.CopyTo(new int[6], 1));
-
-            tensorCollection.Clear();
-            Assert.Equal(new[] { 0, 0, 0, 0, 0, 0 }, tensor);
-        }
-
-        [Theory]
-        [MemberData(nameof(GetSingleTensorConstructors))]
-        public void TestIListTMembers(TensorConstructor constructor)
-        {
-            var arr = new[,]
-            {
-                { 1, 2, 3 },
-                { 4, 5, 6 }
-            };
-
-            var tensor = constructor.CreateFromArray<int>(arr);
-            IList<int> tensorList = tensor;
-
-            int expectedIndexValue = constructor.IsReversedStride ? 4 : 2;
-            Assert.Equal(expectedIndexValue, tensorList[1]);
-
-            tensorList[1] = 7;
-            Assert.Equal(7, tensorList[1]);
-            var expected = constructor.IsReversedStride ?
-                new[] { 1, 7, 2, 5, 3, 6 } :
-                new[] { 1, 7, 3, 4, 5, 6 };
-            Assert.Equal(expected, tensor);
-
-            Assert.Equal(constructor.IsReversedStride ? 3 : 4, tensorList.IndexOf(5));
-            Assert.Equal(5, tensorList.IndexOf(6));
-            Assert.Equal(-1, tensorList.IndexOf(0));
-            Assert.Equal(-1, tensorList.IndexOf(42));
-
-            Assert.Throws<InvalidOperationException>(() => (tensorList).Insert(2, 5));
-            Assert.Throws<InvalidOperationException>(() => (tensorList).RemoveAt(0));
-        }
-
-        [Theory]
-        [MemberData(nameof(GetSingleTensorConstructors))]
-        public void TestIReadOnlyTMembers(TensorConstructor constructor)
-        {
-            var arr = new[,]
-            {
-                { 1, 2, 3 },
-                { 4, 5, 6 }
-            };
-
-            var tensor = constructor.CreateFromArray<int>(arr);
-
-            IReadOnlyCollection<int> tensorCollection = tensor;
-            Assert.Equal(6, tensorCollection.Count);
-
-            IReadOnlyList<int> tensorList = tensor;
-            int expectedIndexValue = constructor.IsReversedStride ? 4 : 2;
-            Assert.Equal(expectedIndexValue, tensorList[1]);
-        }
-
-        [Theory]
-        [MemberData(nameof(GetConstructedTensors))]
-        public void TestGetEnumerator(Tensor<int> tensor)
-        {
-            static IEnumerable<int> GetExpected(Tensor<int> tensor)
-            {
-                for (int index = 0; index < tensor.Length; ++index)
-                    yield return tensor.GetValue(index);
+                Assert.Equal(result[i], resultTensor[indices]);
+                Helpers.AdjustIndices(resultTensor.Rank - 1, 1, ref indices, resultTensor.Lengths);
             }
 
-            Assert.Equal(GetExpected(tensor), tensor);
+            t0 = Tensor.CreateFromEnumerable<float>((Enumerable.Range(0, 12).Select(i => (float)i))).Reshape(3, 2, 2);
+            t1 = Tensor.CreateFromEnumerable<float>((Enumerable.Range(0, 12).Select(i => (float)i))).Reshape(3, 2, 2);
+            t2 = Tensor.CreateFromEnumerable<float>((Enumerable.Range(0, 8).Select(i => (float)i))).Reshape(2, 2, 2);
+            Assert.Throws<ArgumentException>(() => Tensor.Concatenate([t0, t1, t2], 1));
+            Assert.Throws<ArgumentException>(() => Tensor.Concatenate([t0, t1, t2], 2));
+            resultTensor = Tensor.Concatenate([t0, t1, t2]);
+            result = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 0, 1, 2, 3, 4, 5, 6, 7];
+            Assert.Equal(3, resultTensor.Rank);
+            Assert.Equal(8, resultTensor.Lengths[0]);
+            Assert.Equal(2, resultTensor.Lengths[1]);
+            Assert.Equal(2, resultTensor.Lengths[2]);
+            Assert.Equal(result, resultTensor.ToArray());
+            indices = new nint[resultTensor.Rank];
+            for (int i = 0; i < result.Length; i++)
+            {
+                Assert.Equal(result[i], resultTensor[indices]);
+                Helpers.AdjustIndices(resultTensor.Rank - 1, 1, ref indices, resultTensor.Lengths);
+            }
         }
 
-        [Theory]
-        [MemberData(nameof(GetConstructedTensors))]
-        public void TestEnumeratorReset(Tensor<int> tensor)
+        [Fact]
+        public static void TensorTransposeTests()
         {
-            static long AdvanceEnumerator(ref Tensor<int>.Enumerator enumerator, long maxCount)
-            {
-                long count = 0;
-                while (count < maxCount && enumerator.MoveNext())
-                    count++;
+            Tensor<float> t0 = Tensor.CreateFromEnumerable<float>((Enumerable.Range(0, 4).Select(i => (float)i))).Reshape(2, 2);
+            var t1 = Tensor.Permute(t0);
 
-                return count;
-            }
+            Assert.Equal(0, t1[0, 0]);
+            Assert.Equal(2, t1[0, 1]);
+            Assert.Equal(1, t1[1, 0]);
+            Assert.Equal(3, t1[1, 1]);
 
-            static void TestStepCountIfInRange(Tensor<int> tensor, long stepCount)
-            {
-                if (stepCount < 0 || stepCount > tensor.Length)
-                    return;
+            t0 = Tensor.CreateFromEnumerable<float>((Enumerable.Range(0, 6).Select(i => (float)i))).Reshape(2, 3);
+            t1 = Tensor.Permute(t0);
 
-                var enumerator = tensor.GetEnumerator();
-                long actualStepCount = AdvanceEnumerator(ref enumerator, stepCount);
+            Assert.Equal(3, t1.Lengths[0]);
+            Assert.Equal(2, t1.Lengths[1]);
+            Assert.Equal(0, t1[0, 0]);
+            Assert.Equal(3, t1[0, 1]);
+            Assert.Equal(1, t1[1, 0]);
+            Assert.Equal(4, t1[1, 1]);
+            Assert.Equal(2, t1[2, 0]);
+            Assert.Equal(5, t1[2, 1]);
 
-                Assert.Equal(stepCount, actualStepCount);
+            t0 = Tensor.CreateFromEnumerable<float>((Enumerable.Range(0, 6).Select(i => (float)i))).Reshape(1, 2, 3);
+            t1 = Tensor.Permute(t0);
 
-                enumerator.Reset();
+            Assert.Equal(3, t1.Lengths[0]);
+            Assert.Equal(2, t1.Lengths[1]);
+            Assert.Equal(1, t1.Lengths[2]);
+            Assert.Equal(0, t1[0, 0, 0]);
+            Assert.Equal(3, t1[0, 1, 0]);
+            Assert.Equal(1, t1[1, 0, 0]);
+            Assert.Equal(4, t1[1, 1, 0]);
+            Assert.Equal(2, t1[2, 0, 0]);
+            Assert.Equal(5, t1[2, 1, 0]);
 
-                var itemsPostReset = new List<int>();
-                while (enumerator.MoveNext())
-                    itemsPostReset.Add(enumerator.Current);
+            t0 = Tensor.CreateFromEnumerable<float>((Enumerable.Range(0, 12).Select(i => (float)i))).Reshape(2, 2, 3);
+            t1 = Tensor.Permute(t0);
 
-                Assert.Equal(tensor, itemsPostReset);
-            }
+            Assert.Equal(3, t1.Lengths[0]);
+            Assert.Equal(2, t1.Lengths[1]);
+            Assert.Equal(2, t1.Lengths[2]);
+            Assert.Equal(0, t1[0, 0, 0]);
+            Assert.Equal(6, t1[0, 0, 1]);
+            Assert.Equal(3, t1[0, 1, 0]);
+            Assert.Equal(9, t1[0, 1, 1]);
+            Assert.Equal(1, t1[1, 0, 0]);
+            Assert.Equal(7, t1[1, 0, 1]);
+            Assert.Equal(4, t1[1, 1, 0]);
+            Assert.Equal(10, t1[1, 1, 1]);
+            Assert.Equal(2, t1[2, 0, 0]);
+            Assert.Equal(8, t1[2, 0, 1]);
+            Assert.Equal(5, t1[2, 1, 0]);
+            Assert.Equal(11, t1[2, 1, 1]);
 
-            TestStepCountIfInRange(tensor, 1);
-            TestStepCountIfInRange(tensor, tensor.Length - 1);
-            TestStepCountIfInRange(tensor, tensor.Length / 4);
-            TestStepCountIfInRange(tensor, tensor.Length - tensor.Length / 4);
-            TestStepCountIfInRange(tensor, tensor.Length / 2);
-            TestStepCountIfInRange(tensor, tensor.Length);
+            t0 = Tensor.CreateFromEnumerable<float>((Enumerable.Range(0, 12).Select(i => (float)i))).Reshape(2, 2, 3);
+            t1 = Tensor.Permute(t0, 1, 2, 0);
+
+            Assert.Equal(2, t1.Lengths[0]);
+            Assert.Equal(3, t1.Lengths[1]);
+            Assert.Equal(2, t1.Lengths[2]);
+            Assert.Equal(0, t1[0, 0, 0]);
+            Assert.Equal(6, t1[0, 0, 1]);
+            Assert.Equal(1, t1[0, 1, 0]);
+            Assert.Equal(7, t1[0, 1, 1]);
+            Assert.Equal(2, t1[0, 2, 0]);
+            Assert.Equal(8, t1[0, 2, 1]);
+            Assert.Equal(3, t1[1, 0, 0]);
+            Assert.Equal(9, t1[1, 0, 1]);
+            Assert.Equal(4, t1[1, 1, 0]);
+            Assert.Equal(10, t1[1, 1, 1]);
+            Assert.Equal(5, t1[1, 2, 0]);
+            Assert.Equal(11, t1[1, 2, 1]);
         }
 
-        [Theory]
-        [MemberData(nameof(GetConstructedTensors))]
-        public void TestEnumeratorDispose_DoesNotThrow(Tensor<int> tensor)
+        [Fact]
+        public static void TensorPermuteTests()
         {
+            Tensor<float> t0 = Tensor.CreateFromEnumerable<float>((Enumerable.Range(0, 4).Select(i => (float)i))).Reshape(2, 2);
+            var t1 = Tensor.Transpose(t0);
+
+            Assert.Equal(0, t1[0, 0]);
+            Assert.Equal(2, t1[0, 1]);
+            Assert.Equal(1, t1[1, 0]);
+            Assert.Equal(3, t1[1, 1]);
+
+            t0 = Tensor.CreateFromEnumerable<float>((Enumerable.Range(0, 12).Select(i => (float)i))).Reshape(2, 2, 3);
+            t1 = Tensor.Transpose(t0);
+
+            Assert.Equal(2, t1.Lengths[0]);
+            Assert.Equal(3, t1.Lengths[1]);
+            Assert.Equal(2, t1.Lengths[2]);
+            Assert.Equal(0, t1[0, 0, 0]);
+            Assert.Equal(3, t1[0, 0, 1]);
+            Assert.Equal(1, t1[0, 1, 0]);
+            Assert.Equal(4, t1[0, 1, 1]);
+            Assert.Equal(2, t1[0, 2, 0]);
+            Assert.Equal(5, t1[0, 2, 1]);
+            Assert.Equal(6, t1[1, 0, 0]);
+            Assert.Equal(9, t1[1, 0, 1]);
+            Assert.Equal(7, t1[1, 1, 0]);
+            Assert.Equal(10, t1[1, 1, 1]);
+            Assert.Equal(8, t1[1, 2, 0]);
+            Assert.Equal(11, t1[1, 2, 1]);
+        }
+
+        [Fact]
+        public static void IntArrayAsTensor()
+        {
+            int[] a = [91, 92, -93, 94];
+            TensorSpan<int> spanInt = a.AsTensorSpan(4);
+            nint[] dims = [4];
+            var tensor = Tensor.CreateUninitialized<int>(dims.AsSpan(), false);
+            spanInt.CopyTo(tensor);
+            Assert.Equal(1, tensor.Rank);
+
+            Assert.Equal(1, tensor.Lengths.Length);
+            Assert.Equal(4, tensor.Lengths[0]);
+            Assert.Equal(1, tensor.Strides.Length);
+            Assert.Equal(1, tensor.Strides[0]);
+            Assert.Equal(91, tensor[0]);
+            Assert.Equal(92, tensor[1]);
+            Assert.Equal(-93, tensor[2]);
+            Assert.Equal(94, tensor[3]);
+            Assert.Equal(a, tensor.ToArray());
+            tensor[0] = 100;
+            tensor[1] = 101;
+            tensor[2] = -102;
+            tensor[3] = 103;
+
+            Assert.Equal(100, tensor[0]);
+            Assert.Equal(101, tensor[1]);
+            Assert.Equal(-102, tensor[2]);
+            Assert.Equal(103, tensor[3]);
+
+            a[0] = 91;
+            a[1] = 92;
+            a[2] = -93;
+            a[3] = 94;
+            spanInt = a.AsTensorSpan(2, 2);
+            dims = [2, 2];
+            tensor = Tensor.CreateUninitialized<int>(dims.AsSpan(), false);
+            spanInt.CopyTo(tensor);
+            Assert.Equal(a, tensor.ToArray());
+            Assert.Equal(2, tensor.Rank);
+            //Assert.Equal(4, spanInt.FlattenedLength);
+            Assert.Equal(2, tensor.Lengths.Length);
+            Assert.Equal(2, tensor.Lengths[0]);
+            Assert.Equal(2, tensor.Lengths[1]);
+            Assert.Equal(2, tensor.Strides.Length);
+            Assert.Equal(2, tensor.Strides[0]);
+            Assert.Equal(1, tensor.Strides[1]);
+            Assert.Equal(91, tensor[0, 0]);
+            Assert.Equal(92, tensor[0, 1]);
+            Assert.Equal(-93, tensor[1, 0]);
+            Assert.Equal(94, tensor[1, 1]);
+
+            tensor[0, 0] = 100;
+            tensor[0, 1] = 101;
+            tensor[1, 0] = -102;
+            tensor[1, 1] = 103;
+
+            Assert.Equal(100, tensor[0, 0]);
+            Assert.Equal(101, tensor[0, 1]);
+            Assert.Equal(-102, tensor[1, 0]);
+            Assert.Equal(103, tensor[1, 1]);
+        }
+
+        [Fact]
+        public static void TensorFillTest()
+        {
+            nint[] dims = [3, 3];
+            var tensor = Tensor.CreateUninitialized<int>(dims.AsSpan(), false);
+            tensor.Fill(-1);
             var enumerator = tensor.GetEnumerator();
+            while (enumerator.MoveNext())
+            {
+                Assert.Equal(-1, enumerator.Current);
+            }
 
-            enumerator.Dispose();
-            enumerator.Dispose();
+            tensor.Fill(int.MinValue);
+            enumerator = tensor.GetEnumerator();
+            while (enumerator.MoveNext())
+            {
+                Assert.Equal(int.MinValue, enumerator.Current);
+            }
+
+            tensor.Fill(int.MaxValue);
+            enumerator = tensor.GetEnumerator();
+            while (enumerator.MoveNext())
+            {
+                Assert.Equal(int.MaxValue, enumerator.Current);
+            }
+
+            dims = [9];
+            tensor = Tensor.CreateUninitialized<int>(dims.AsSpan(), false);
+            tensor.Fill(-1);
+            enumerator = tensor.GetEnumerator();
+            while (enumerator.MoveNext())
+            {
+                Assert.Equal(-1, enumerator.Current);
+            }
+
+            dims = [3, 3, 3];
+            tensor = Tensor.CreateUninitialized<int>(dims.AsSpan(), false);
+            tensor.Fill(-1);
+            enumerator = tensor.GetEnumerator();
+            while (enumerator.MoveNext())
+            {
+                Assert.Equal(-1, enumerator.Current);
+            }
+
+            dims = [3, 2, 2];
+            tensor = Tensor.CreateUninitialized<int>(dims.AsSpan(), false);
+            tensor.Fill(-1);
+            enumerator = tensor.GetEnumerator();
+            while (enumerator.MoveNext())
+            {
+                Assert.Equal(-1, enumerator.Current);
+            }
+
+            dims = [2, 2, 2, 2];
+            tensor = Tensor.CreateUninitialized<int>(dims.AsSpan(), false);
+            tensor.Fill(-1);
+            enumerator = tensor.GetEnumerator();
+            while (enumerator.MoveNext())
+            {
+                Assert.Equal(-1, enumerator.Current);
+            }
+
+            dims = [3, 2, 2, 2];
+            tensor = Tensor.CreateUninitialized<int>(dims.AsSpan(), false);
+            tensor.Fill(-1);
+            enumerator = tensor.GetEnumerator();
+            while (enumerator.MoveNext())
+            {
+                Assert.Equal(-1, enumerator.Current);
+            }
+        }
+
+        [Fact]
+        public static void TensorClearTest()
+        {
+            int[] a = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+            TensorSpan<int> spanInt = a.AsTensorSpan(3, 3);
+            var tensor = Tensor.CreateUninitialized<int>([3, 3], false);
+            spanInt.CopyTo(tensor);
+            var slice = tensor.Slice(0..2, 0..2);
+            slice.Clear();
+            Assert.Equal(0, slice[0, 0]);
+            Assert.Equal(0, slice[0, 1]);
+            Assert.Equal(0, slice[1, 0]);
+            Assert.Equal(0, slice[1, 1]);
+
+            // Since Tensor.Slice does a copy the original tensor shouldn't be modified
+            Assert.Equal(1, tensor[0, 0]);
+            Assert.Equal(2, tensor[0, 1]);
+            Assert.Equal(3, tensor[0, 2]);
+            Assert.Equal(4, tensor[1, 0]);
+            Assert.Equal(5, tensor[1, 1]);
+            Assert.Equal(6, tensor[1, 2]);
+            Assert.Equal(7, tensor[2, 0]);
+            Assert.Equal(8, tensor[2, 1]);
+            Assert.Equal(9, tensor[2, 2]);
+
+
+            tensor.Clear();
+            var enumerator = tensor.GetEnumerator();
+            while (enumerator.MoveNext())
+            {
+                Assert.Equal(0, enumerator.Current);
+            }
+
+            a = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+            spanInt = a.AsTensorSpan(9);
+            tensor = Tensor.CreateUninitialized<int>([9], false);
+            spanInt.CopyTo(tensor);
+            slice = tensor.Slice(0..1);
+            slice.Clear();
+            Assert.Equal(0, slice[0]);
+
+            // Since Tensor.Slice does a copy the original tensor shouldn't be modified
+            Assert.Equal(1, tensor[0]);
+            Assert.Equal(2, tensor[1]);
+            Assert.Equal(3, tensor[2]);
+            Assert.Equal(4, tensor[3]);
+            Assert.Equal(5, tensor[4]);
+            Assert.Equal(6, tensor[5]);
+            Assert.Equal(7, tensor[6]);
+            Assert.Equal(8, tensor[7]);
+            Assert.Equal(9, tensor[8]);
+
+
+            tensor.Clear();
+            enumerator = tensor.GetEnumerator();
+            while (enumerator.MoveNext())
+            {
+                Assert.Equal(0, enumerator.Current);
+            }
+
+            a = [.. Enumerable.Range(0, 27)];
+            spanInt = a.AsTensorSpan(3, 3, 3);
+            tensor = Tensor.CreateUninitialized<int>([3, 3, 3], false);
+            spanInt.CopyTo(tensor);
+            tensor.Clear();
+            enumerator = tensor.GetEnumerator();
+            while (enumerator.MoveNext())
+            {
+                Assert.Equal(0, enumerator.Current);
+            }
+
+            a = [.. Enumerable.Range(0, 12)];
+            spanInt = a.AsTensorSpan(3, 2, 2);
+            tensor = Tensor.CreateUninitialized<int>([3, 2, 2], false);
+            spanInt.CopyTo(tensor);
+            tensor.Clear();
+            enumerator = tensor.GetEnumerator();
+            while (enumerator.MoveNext())
+            {
+                Assert.Equal(0, enumerator.Current);
+            }
+
+            a = [.. Enumerable.Range(0, 16)];
+            spanInt = a.AsTensorSpan(2, 2, 2, 2);
+            tensor = Tensor.CreateUninitialized<int>([2, 2, 2, 2], false);
+            spanInt.CopyTo(tensor);
+            tensor.Clear();
+            enumerator = tensor.GetEnumerator();
+            while (enumerator.MoveNext())
+            {
+                Assert.Equal(0, enumerator.Current);
+            }
+
+            a = [.. Enumerable.Range(0, 24)];
+            spanInt = a.AsTensorSpan(3, 2, 2, 2);
+            tensor = Tensor.CreateUninitialized<int>([3, 2, 2, 2], false);
+            spanInt.CopyTo(tensor);
+            tensor.Clear();
+            enumerator = tensor.GetEnumerator();
+            while (enumerator.MoveNext())
+            {
+                Assert.Equal(0, enumerator.Current);
+            }
+
+            // Make sure clearing a slice of a SPan doesn't clear the whole thing.
+            a = [.. Enumerable.Range(0, 9)];
+            spanInt = a.AsTensorSpan(3, 3);
+            var spanSlice = spanInt.Slice(0..1, 0..3);
+            spanSlice.Clear();
+            var spanEnumerator = spanSlice.GetEnumerator();
+            while (spanEnumerator.MoveNext())
+            {
+                Assert.Equal(0, spanEnumerator.Current);
+            }
+
+            Assert.Equal(0, spanInt[0, 0]);
+            Assert.Equal(0, spanInt[0, 1]);
+            Assert.Equal(0, spanInt[0, 2]);
+            Assert.Equal(3, spanInt[1, 0]);
+            Assert.Equal(4, spanInt[1, 1]);
+            Assert.Equal(5, spanInt[1, 2]);
+            Assert.Equal(6, spanInt[2, 0]);
+            Assert.Equal(7, spanInt[2, 1]);
+            Assert.Equal(8, spanInt[2, 2]);
+
+            // Make sure clearing a slice from the middle of a SPan doesn't clear the whole thing.
+            a = [.. Enumerable.Range(0, 9)];
+            spanInt = a.AsTensorSpan(3, 3);
+            spanSlice = spanInt.Slice(1..2, 0..3);
+            spanSlice.Clear();
+            spanEnumerator = spanSlice.GetEnumerator();
+            while (spanEnumerator.MoveNext())
+            {
+                Assert.Equal(0, spanEnumerator.Current);
+            }
+
+            Assert.Equal(0, spanInt[0, 0]);
+            Assert.Equal(1, spanInt[0, 1]);
+            Assert.Equal(2, spanInt[0, 2]);
+            Assert.Equal(0, spanInt[1, 0]);
+            Assert.Equal(0, spanInt[1, 1]);
+            Assert.Equal(0, spanInt[1, 2]);
+            Assert.Equal(6, spanInt[2, 0]);
+            Assert.Equal(7, spanInt[2, 1]);
+            Assert.Equal(8, spanInt[2, 2]);
+
+            // Make sure clearing a slice from the end of a SPan doesn't clear the whole thing.
+            a = [.. Enumerable.Range(0, 9)];
+            spanInt = a.AsTensorSpan(3, 3);
+            spanSlice = spanInt.Slice(2..3, 0..3);
+            spanSlice.Clear();
+            spanEnumerator = spanSlice.GetEnumerator();
+            while (spanEnumerator.MoveNext())
+            {
+                Assert.Equal(0, spanEnumerator.Current);
+            }
+
+            Assert.Equal(0, spanInt[0, 0]);
+            Assert.Equal(1, spanInt[0, 1]);
+            Assert.Equal(2, spanInt[0, 2]);
+            Assert.Equal(3, spanInt[1, 0]);
+            Assert.Equal(4, spanInt[1, 1]);
+            Assert.Equal(5, spanInt[1, 2]);
+            Assert.Equal(0, spanInt[2, 0]);
+            Assert.Equal(0, spanInt[2, 1]);
+            Assert.Equal(0, spanInt[2, 2]);
+
+            // Make sure it works with reference types.
+            object[] o = [new object(), new object(), new object(), new object(), new object(), new object(), new object(), new object(), new object()];
+            TensorSpan<object> spanObj = o.AsTensorSpan(3, 3);
+            spanObj.Clear();
+
+            var oSpanEnumerator = spanObj.GetEnumerator();
+            while (oSpanEnumerator.MoveNext())
+            {
+                Assert.Null(oSpanEnumerator.Current);
+            }
+
+            // Make sure clearing a slice of a SPan with references it doesn't clear the whole thing.
+            o = [new object(), new object(), new object(), new object(), new object(), new object(), new object(), new object(), new object()];
+            spanObj = o.AsTensorSpan(3, 3);
+            var oSpanSlice = spanObj.Slice(0..1, 0..3);
+            oSpanSlice.Clear();
+            oSpanEnumerator = oSpanSlice.GetEnumerator();
+            while (oSpanEnumerator.MoveNext())
+            {
+                Assert.Null(oSpanEnumerator.Current);
+            }
+
+            Assert.Null(spanObj[0, 0]);
+            Assert.Null(spanObj[0, 1]);
+            Assert.Null(spanObj[0, 2]);
+            Assert.NotNull(spanObj[1, 0]);
+            Assert.NotNull(spanObj[1, 1]);
+            Assert.NotNull(spanObj[1, 2]);
+            Assert.NotNull(spanObj[2, 0]);
+            Assert.NotNull(spanObj[2, 1]);
+            Assert.NotNull(spanObj[2, 2]);
+
+            // Make sure clearing a slice of a SPan with references it doesn't clear the whole thing.
+            o = [new object(), new object(), new object(), new object(), new object(), new object(), new object(), new object(), new object()];
+            spanObj = o.AsTensorSpan(3, 3);
+            oSpanSlice = spanObj.Slice(1..2, 0..3);
+            oSpanSlice.Clear();
+            oSpanEnumerator = oSpanSlice.GetEnumerator();
+            while (oSpanEnumerator.MoveNext())
+            {
+                Assert.Null(oSpanEnumerator.Current);
+            }
+
+            Assert.NotNull(spanObj[0, 0]);
+            Assert.NotNull(spanObj[0, 1]);
+            Assert.NotNull(spanObj[0, 2]);
+            Assert.Null(spanObj[1, 0]);
+            Assert.Null(spanObj[1, 1]);
+            Assert.Null(spanObj[1, 2]);
+            Assert.NotNull(spanObj[2, 0]);
+            Assert.NotNull(spanObj[2, 1]);
+            Assert.NotNull(spanObj[2, 2]);
+
+            // Make sure clearing a slice of a SPan with references it doesn't clear the whole thing.
+            o = [new object(), new object(), new object(), new object(), new object(), new object(), new object(), new object(), new object()];
+            spanObj = o.AsTensorSpan(3, 3);
+            oSpanSlice = spanObj.Slice(2..3, 0..3);
+            oSpanSlice.Clear();
+            oSpanEnumerator = oSpanSlice.GetEnumerator();
+            while (oSpanEnumerator.MoveNext())
+            {
+                Assert.Null(oSpanEnumerator.Current);
+            }
+
+            Assert.NotNull(spanObj[0, 0]);
+            Assert.NotNull(spanObj[0, 1]);
+            Assert.NotNull(spanObj[0, 2]);
+            Assert.NotNull(spanObj[1, 0]);
+            Assert.NotNull(spanObj[1, 1]);
+            Assert.NotNull(spanObj[1, 2]);
+            Assert.Null(spanObj[2, 0]);
+            Assert.Null(spanObj[2, 1]);
+            Assert.Null(spanObj[2, 2]);
+        }
+
+        [Fact]
+        public static void TensorCopyTest()
+        {
+            int[] leftData = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+            int[] rightData = new int[9];
+            nint[] dims = [3, 3];
+            TensorSpan<int> leftSpan = leftData.AsTensorSpan(3, 3);
+            var tensor = Tensor.CreateUninitialized<int>(dims.AsSpan(), false);
+            TensorSpan<int> rightSpan = rightData.AsTensorSpan(3, 3);
+            leftSpan.CopyTo(tensor);
+            var leftEnum = leftSpan.GetEnumerator();
+            var tensorEnum = tensor.GetEnumerator();
+            while (leftEnum.MoveNext() && tensorEnum.MoveNext())
+            {
+                Assert.Equal(leftEnum.Current, tensorEnum.Current);
+            }
+            tensor.CopyTo(rightSpan);
+            var rightEnum = rightSpan.GetEnumerator();
+            tensorEnum = tensor.GetEnumerator();
+            while (rightEnum.MoveNext() && tensorEnum.MoveNext())
+            {
+                Assert.Equal(rightEnum.Current, tensorEnum.Current);
+            }
+
+            //Make sure its a copy
+            leftSpan[0, 0] = 100;
+            Assert.NotEqual(leftSpan[0, 0], rightSpan[0, 0]);
+            Assert.NotEqual(leftSpan[0, 0], tensor[0, 0]);
+
+            leftData = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+            dims = [15];
+            leftSpan = leftData.AsTensorSpan(9);
+            tensor = Tensor.Create<int>(dims.AsSpan(), false);
+            leftSpan.CopyTo(tensor);
+            leftEnum = leftSpan.GetEnumerator();
+            tensorEnum = tensor.GetEnumerator();
+            // Make sure the first 9 spots are equal after copy
+            while (leftEnum.MoveNext() && tensorEnum.MoveNext())
+            {
+                Assert.Equal(leftEnum.Current, tensorEnum.Current);
+            }
+            // The rest of the slots shouldn't have been touched.
+            while (tensorEnum.MoveNext())
+            {
+                Assert.Equal(0, tensorEnum.Current);
+            }
+
+            Assert.Throws<ArgumentException>(() =>
+            {
+                var l = leftData.AsTensorSpan(3, 3, 3);
+                var r = new TensorSpan<int>();
+                l.CopyTo(r);
+            });
+        }
+
+        [Fact]
+        public static void TensorTryCopyTest()
+        {
+            int[] leftData = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+            int[] rightData = new int[9];
+            TensorSpan<int> leftSpan = leftData.AsTensorSpan(3, 3);
+            nint[] dims = [3, 3];
+            var tensor = Tensor.CreateUninitialized<int>(dims.AsSpan(), false);
+            TensorSpan<int> rightSpan = rightData.AsTensorSpan(3, 3);
+            var success = leftSpan.TryCopyTo(tensor);
+            Assert.True(success);
+            success = tensor.TryCopyTo(rightSpan);
+            Assert.True(success);
+
+            var leftEnum = leftSpan.GetEnumerator();
+            var tensorEnum = tensor.GetEnumerator();
+            while (leftEnum.MoveNext() && tensorEnum.MoveNext())
+            {
+                Assert.Equal(leftEnum.Current, tensorEnum.Current);
+            }
+
+            //Make sure its a copy
+            leftSpan[0, 0] = 100;
+            Assert.NotEqual(leftSpan[0, 0], rightSpan[0, 0]);
+            Assert.NotEqual(leftSpan[0, 0], tensor[0, 0]);
+
+            leftData = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+            dims = [15];
+            leftSpan = leftData.AsTensorSpan(9);
+            tensor = Tensor.Create<int>(dims.AsSpan(), false);
+            success = leftSpan.TryCopyTo(tensor);
+            leftEnum = leftSpan.GetEnumerator();
+            tensorEnum = tensor.GetEnumerator();
+            Assert.True(success);
+            // Make sure the first 9 spots are equal after copy
+            while (leftEnum.MoveNext() && tensorEnum.MoveNext())
+            {
+                Assert.Equal(leftEnum.Current, tensorEnum.Current);
+            }
+            // The rest of the slots shouldn't have been touched.
+            while (tensorEnum.MoveNext())
+            {
+                Assert.Equal(0, tensorEnum.Current);
+            }
+
+            leftData = [.. Enumerable.Range(0, 27)];
+            var l = leftData.AsTensorSpan(3, 3, 3);
+            dims = [2, 2];
+            tensor = Tensor.Create<int>(dims.AsSpan(), false);
+            var r = new TensorSpan<int>();
+            success = l.TryCopyTo(tensor);
+            Assert.False(success);
+            success = tensor.TryCopyTo(r);
+            Assert.False(success);
+        }
+
+        [Fact]
+        public static void TensorSliceTest()
+        {
+            int[] a = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+            var tensor = Tensor.CreateUninitialized<int>([3, 3], false);
+
+            //Assert.Throws<ArgumentOutOfRangeException>(() => tensor.Slice(0..1));
+            //Assert.Throws<ArgumentOutOfRangeException>(() => tensor.Slice(1..2));
+            //Assert.Throws<ArgumentOutOfRangeException>(() => tensor.Slice(0..1, 5..6));
+            var intSpan = a.AsTensorSpan(3, 3);
+            intSpan.CopyTo(tensor.AsTensorSpan());
+
+            var sp = tensor.Slice(1..3, 1..3);
+            Assert.Equal(5, sp[0, 0]);
+            Assert.Equal(6, sp[0, 1]);
+            Assert.Equal(8, sp[1, 0]);
+            Assert.Equal(9, sp[1, 1]);
+            int[] slice = [5, 6, 8, 9];
+            Assert.Equal(slice, sp.ToArray());
+            var enumerator = sp.GetEnumerator();
+            var index = 0;
+            while (enumerator.MoveNext())
+            {
+                Assert.Equal(slice[index++], enumerator.Current);
+            }
+
+            sp = tensor.Slice(0..3, 0..3);
+            Assert.Equal(1, sp[0, 0]);
+            Assert.Equal(2, sp[0, 1]);
+            Assert.Equal(3, sp[0, 2]);
+            Assert.Equal(4, sp[1, 0]);
+            Assert.Equal(5, sp[1, 1]);
+            Assert.Equal(6, sp[1, 2]);
+            Assert.Equal(7, sp[2, 0]);
+            Assert.Equal(8, sp[2, 1]);
+            Assert.Equal(9, sp[2, 2]);
+            Assert.Equal(a, sp.ToArray());
+            enumerator = sp.GetEnumerator();
+            index = 0;
+            while (enumerator.MoveNext())
+            {
+                Assert.Equal(a[index++], enumerator.Current);
+            }
+
+            sp = tensor.Slice(0..1, 0..1);
+            Assert.Equal(1, sp[0, 0]);
+            Assert.Throws<IndexOutOfRangeException>(() => a.AsTensorSpan(3, 3).Slice(0..1, 0..1)[0, 1]);
+            slice = [1];
+            Assert.Equal(slice, sp.ToArray());
+            enumerator = sp.GetEnumerator();
+            index = 0;
+            while (enumerator.MoveNext())
+            {
+                Assert.Equal(slice[index++], enumerator.Current);
+            }
+
+            sp = tensor.Slice(0..2, 0..2);
+            Assert.Equal(1, sp[0, 0]);
+            Assert.Equal(2, sp[0, 1]);
+            Assert.Equal(4, sp[1, 0]);
+            Assert.Equal(5, sp[1, 1]);
+            slice = [1, 2, 4, 5];
+            Assert.Equal(slice, sp.ToArray());
+            enumerator = sp.GetEnumerator();
+            index = 0;
+            while (enumerator.MoveNext())
+            {
+                Assert.Equal(slice[index++], enumerator.Current);
+            }
+
+            int[] numbers = [.. Enumerable.Range(0, 27)];
+            intSpan = numbers.AsTensorSpan(3, 3, 3);
+            tensor = Tensor.CreateUninitialized<int>([3, 3, 3], false);
+            intSpan.CopyTo(tensor.AsTensorSpan());
+            sp = tensor.Slice(1..2, 1..2, 1..2);
+            Assert.Equal(13, sp[0, 0, 0]);
+            slice = [13];
+            Assert.Equal(slice, sp.ToArray());
+            enumerator = sp.GetEnumerator();
+            index = 0;
+            while (enumerator.MoveNext())
+            {
+                Assert.Equal(slice[index++], enumerator.Current);
+            }
+
+            sp = tensor.Slice(1..3, 1..3, 1..3);
+            Assert.Equal(13, sp[0, 0, 0]);
+            Assert.Equal(14, sp[0, 0, 1]);
+            Assert.Equal(16, sp[0, 1, 0]);
+            Assert.Equal(17, sp[0, 1, 1]);
+            Assert.Equal(22, sp[1, 0, 0]);
+            Assert.Equal(23, sp[1, 0, 1]);
+            Assert.Equal(25, sp[1, 1, 0]);
+            Assert.Equal(26, sp[1, 1, 1]);
+            slice = [13, 14, 16, 17, 22, 23, 25, 26];
+            Assert.Equal(slice, sp.ToArray());
+            enumerator = sp.GetEnumerator();
+            index = 0;
+            while (enumerator.MoveNext())
+            {
+                Assert.Equal(slice[index++], enumerator.Current);
+            }
+
+            numbers = [.. Enumerable.Range(0, 16)];
+            intSpan = numbers.AsTensorSpan(2, 2, 2, 2);
+            tensor = Tensor.CreateUninitialized<int>([2, 2, 2, 2], false);
+            intSpan.CopyTo(tensor.AsTensorSpan());
+            sp = tensor.Slice(1..2, 0..2, 1..2, 0..2);
+            Assert.Equal(10, sp[0, 0, 0, 0]);
+            Assert.Equal(11, sp[0, 0, 0, 1]);
+            Assert.Equal(14, sp[0, 1, 0, 0]);
+            Assert.Equal(15, sp[0, 1, 0, 1]);
+            slice = [10, 11, 14, 15];
+            Assert.Equal(slice, sp.ToArray());
+            enumerator = sp.GetEnumerator();
+            index = 0;
+            while (enumerator.MoveNext())
+            {
+                Assert.Equal(slice[index++], enumerator.Current);
+            }
+        }
+
+        [Fact]
+        public static void TensorReshapeTest()
+        {
+            int[] a = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+            nint[] dims = [9];
+            var tensor = Tensor.CreateUninitialized<int>(dims.AsSpan(), false);
+            var span = a.AsTensorSpan(dims);
+            span.CopyTo(tensor);
+
+            Assert.Equal(1, tensor.Rank);
+            Assert.Equal(9, tensor.Lengths[0]);
+            Assert.Equal(1, tensor.Strides.Length);
+            Assert.Equal(1, tensor.Strides[0]);
+            Assert.Equal(1, tensor[0]);
+            Assert.Equal(2, tensor[1]);
+            Assert.Equal(3, tensor[2]);
+            Assert.Equal(4, tensor[3]);
+            Assert.Equal(5, tensor[4]);
+            Assert.Equal(6, tensor[5]);
+            Assert.Equal(7, tensor[6]);
+            Assert.Equal(8, tensor[7]);
+            Assert.Equal(9, tensor[8]);
+
+            dims = [3, 3];
+            tensor = Tensor.Reshape(tensor, dims);
+            Assert.Equal(2, tensor.Rank);
+            Assert.Equal(3, tensor.Lengths[0]);
+            Assert.Equal(3, tensor.Lengths[1]);
+            Assert.Equal(2, tensor.Strides.Length);
+            Assert.Equal(3, tensor.Strides[0]);
+            Assert.Equal(1, tensor.Strides[1]);
+            Assert.Equal(1, tensor[0, 0]);
+            Assert.Equal(2, tensor[0, 1]);
+            Assert.Equal(3, tensor[0, 2]);
+            Assert.Equal(4, tensor[1, 0]);
+            Assert.Equal(5, tensor[1, 1]);
+            Assert.Equal(6, tensor[1, 2]);
+            Assert.Equal(7, tensor[2, 0]);
+            Assert.Equal(8, tensor[2, 1]);
+            Assert.Equal(9, tensor[2, 2]);
+
+            Assert.Throws<ArgumentException>(() => Tensor.Reshape(tensor, [1, 2, 3, 4, 5]));
+        }
+
+        [Fact]
+        public static void TensorSqueezeTest()
+        {
+            nint[] dims = [1, 2];
+            var tensor = Tensor.Create<int>(dims.AsSpan(), false);
+            Assert.Equal(2, tensor.Rank);
+            Assert.Equal(1, tensor.Lengths[0]);
+            Assert.Equal(2, tensor.Lengths[1]);
+
+            tensor = Tensor.Squeeze(tensor);
+            Assert.Equal(1, tensor.Rank);
+            Assert.Equal(2, tensor.Lengths[0]);
+
+            dims = [1, 2, 1];
+            tensor = Tensor.Create<int>(dims.AsSpan(), false);
+            Assert.Equal(3, tensor.Rank);
+            Assert.Equal(1, tensor.Lengths[0]);
+            Assert.Equal(2, tensor.Lengths[1]);
+            Assert.Equal(1, tensor.Lengths[2]);
+
+            tensor = Tensor.Squeeze(tensor);
+            Assert.Equal(1, tensor.Rank);
+            Assert.Equal(2, tensor.Lengths[0]);
+
+            dims = [1, 2, 1];
+            tensor = Tensor.Create<int>(dims.AsSpan(), false);
+            Assert.Equal(3, tensor.Rank);
+            Assert.Equal(1, tensor.Lengths[0]);
+            Assert.Equal(2, tensor.Lengths[1]);
+            Assert.Equal(1, tensor.Lengths[2]);
+
+            tensor = Tensor.Squeeze(tensor, 0);
+            Assert.Equal(2, tensor.Rank);
+            Assert.Equal(2, tensor.Lengths[0]);
+            Assert.Equal(1, tensor.Lengths[1]);
+
+            dims = [1, 2, 1];
+            tensor = Tensor.Create<int>(dims.AsSpan(), false);
+            Assert.Equal(3, tensor.Rank);
+            Assert.Equal(1, tensor.Lengths[0]);
+            Assert.Equal(2, tensor.Lengths[1]);
+            Assert.Equal(1, tensor.Lengths[2]);
+
+            tensor = Tensor.Squeeze(tensor, 2);
+            Assert.Equal(2, tensor.Rank);
+            Assert.Equal(1, tensor.Lengths[0]);
+            Assert.Equal(2, tensor.Lengths[1]);
+
+            dims = [1, 2, 1];
+            tensor = Tensor.Create<int>(dims.AsSpan(), false);
+            Assert.Equal(3, tensor.Rank);
+            Assert.Equal(1, tensor.Lengths[0]);
+            Assert.Equal(2, tensor.Lengths[1]);
+            Assert.Equal(1, tensor.Lengths[2]);
+
+            Assert.Throws<ArgumentException>(() => tensor = Tensor.Squeeze(tensor, 1));
+            Assert.Throws<ArgumentException>(() => tensor = Tensor.Squeeze(tensor, 3));
+        }
+
+        [Fact]
+        public static void TensorUnsqueezeTest()
+        {
+            var tensor = Tensor.Create<int>([2], false);
+            Assert.Equal(1, tensor.Rank);
+            Assert.Equal(2, tensor.Lengths[0]);
+
+            tensor = Tensor.Unsqueeze(tensor, 0);
+            Assert.Equal(2, tensor.Rank);
+            Assert.Equal(1, tensor.Lengths[0]);
+            Assert.Equal(2, tensor.Lengths[1]);
+
+            tensor = Tensor.Create<int>([2], false);
+            Assert.Equal(1, tensor.Rank);
+            Assert.Equal(2, tensor.Lengths[0]);
+
+            tensor = Tensor.Unsqueeze(tensor, 1);
+            Assert.Equal(2, tensor.Rank);
+            Assert.Equal(2, tensor.Lengths[0]);
+            Assert.Equal(1, tensor.Lengths[1]);
+
+            tensor = Tensor.Create<int>([2], false);
+            Assert.Equal(1, tensor.Rank);
+            Assert.Equal(2, tensor.Lengths[0]);
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => Tensor.Unsqueeze<int>(tensor, -1));
+            Assert.Throws<ArgumentException>(() => Tensor.Unsqueeze<int>(tensor, 2));
+
+            Tensor<int> t0 = Tensor.CreateFromEnumerable(Enumerable.Range(0, 2));
+            t0 = Tensor.Unsqueeze(t0, 1);
+            Assert.Equal(0, t0[0, 0]);
+            Assert.Equal(1, t0[1, 0]);
         }
     }
 }

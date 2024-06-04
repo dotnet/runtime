@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using Xunit;
 
 public abstract class T<TR>
 {
@@ -28,12 +29,11 @@ public class A { }
 
 public class B : A { }
 
-class Program
+public class Program
 {
-    static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         System.Console.WriteLine((new TB() as T<A>).GetA().GetType().FullName);
-
-        return 100;
     }
 }

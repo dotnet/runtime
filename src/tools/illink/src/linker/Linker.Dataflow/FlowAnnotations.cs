@@ -399,7 +399,7 @@ namespace ILLink.Shared.TrimAnalysis
 
 		private IReadOnlyList<ICustomAttributeProvider>? GetGeneratedTypeAttributes (TypeDefinition typeDef)
 		{
-			if (!CompilerGeneratedNames.IsGeneratedType (typeDef.Name)) {
+			if (!CompilerGeneratedNames.IsStateMachineOrDisplayClass (typeDef.Name)) {
 				return null;
 			}
 			var attrs = _context.CompilerGeneratedState.GetGeneratedTypeAttributes (typeDef);
@@ -682,11 +682,11 @@ namespace ILLink.Shared.TrimAnalysis
 		internal partial bool MethodRequiresDataFlowAnalysis (MethodProxy method)
 			=> RequiresDataFlowAnalysis (method.Method);
 
-		internal partial MethodReturnValue GetMethodReturnValue (MethodProxy method, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
-			=> new MethodReturnValue (method.Method.ReturnType.ResolveToTypeDefinition (_context), method.Method, dynamicallyAccessedMemberTypes);
+		internal partial MethodReturnValue GetMethodReturnValue (MethodProxy method, bool isNewObj, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
+			=> MethodReturnValue.Create (method.Method, isNewObj, dynamicallyAccessedMemberTypes, _context);
 
-		internal partial MethodReturnValue GetMethodReturnValue (MethodProxy method)
-			=> GetMethodReturnValue (method, GetReturnParameterAnnotation (method.Method));
+		internal partial MethodReturnValue GetMethodReturnValue (MethodProxy method, bool isNewObj)
+			=> GetMethodReturnValue (method, isNewObj, GetReturnParameterAnnotation (method.Method));
 
 		internal partial GenericParameterValue GetGenericParameterValue (GenericParameterProxy genericParameter)
 			=> new GenericParameterValue (genericParameter.GenericParameter, GetGenericParameterAnnotation (genericParameter.GenericParameter));

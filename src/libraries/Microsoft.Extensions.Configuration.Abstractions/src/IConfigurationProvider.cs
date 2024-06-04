@@ -27,9 +27,9 @@ namespace Microsoft.Extensions.Configuration
         void Set(string key, string? value);
 
         /// <summary>
-        /// Returns a change token if this provider supports change tracking, null otherwise.
+        /// Attempts to get an <see cref="IChangeToken"/> for change tracking.
         /// </summary>
-        /// <returns>The change token.</returns>
+        /// <returns>An <see cref="IChangeToken"/> token if this provider supports change tracking, <see langword="null"/> otherwise.</returns>
         IChangeToken GetReloadToken();
 
         /// <summary>

@@ -41,6 +41,7 @@
 #endif
 
 #include "ilinstrumentation.h"
+#include "codeversion.h"
 
 class Stub;
 class MethodDesc;
@@ -63,13 +64,12 @@ class SString;
 class Pending;
 class MethodTable;
 class DynamicMethodTable;
-class CodeVersionManager;
 class TieredCompilationManager;
 class JITInlineTrackingMap;
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
 class EnCEEClassData;
-#endif // EnC_SUPPORTED
+#endif // FEATURE_METADATA_UPDATER
 
 // Hash table parameter of available classes (name -> module/class) hash
 #define AVAILABLE_CLASSES_HASH_BUCKETS 1024
@@ -78,21 +78,6 @@ class EnCEEClassData;
 #define PARAMMETHODS_HASH_BUCKETS 11
 #define METHOD_STUBS_HASH_BUCKETS 11
 #define GUID_TO_TYPE_HASH_BUCKETS 16
-
-// The native symbol reader dll name
-#if defined(HOST_AMD64)
-#define NATIVE_SYMBOL_READER_DLL W("Microsoft.DiaSymReader.Native.amd64.dll")
-#elif defined(HOST_X86)
-#define NATIVE_SYMBOL_READER_DLL W("Microsoft.DiaSymReader.Native.x86.dll")
-#elif defined(HOST_ARM)
-#define NATIVE_SYMBOL_READER_DLL W("Microsoft.DiaSymReader.Native.arm.dll")
-#elif defined(HOST_ARM64)
-#define NATIVE_SYMBOL_READER_DLL W("Microsoft.DiaSymReader.Native.arm64.dll")
-#elif defined(HOST_LOONGARCH64)
-#define NATIVE_SYMBOL_READER_DLL W("Microsoft.DiaSymReader.Native.loongarch64.dll")
-#elif defined(HOST_RISCV64)
-#define NATIVE_SYMBOL_READER_DLL W("Microsoft.DiaSymReader.Native.riscv64.dll")
-#endif
 
 typedef DPTR(JITInlineTrackingMap) PTR_JITInlineTrackingMap;
 
@@ -353,7 +338,10 @@ struct VASigCookie
     unsigned        sizeOfArgs;             // size of argument list
     Volatile<PCODE> pNDirectILStub;         // will be use if target is NDirect (tag == 0)
     PTR_Module      pModule;
+    PTR_Module      pLoaderModule;
     Signature       signature;
+    Instantiation   classInst;
+    Instantiation   methodInst;
 };
 
 //
@@ -593,8 +581,7 @@ private:
 
 };
 
-// A code:Module represents a DLL or EXE file loaded from the disk. It could either be a IL module or a
-// Native code (NGEN module). A module live in a code:Assembly
+// A code:Module represents a DLL or EXE file loaded from the disk. A module live in a code:Assembly
 //
 // Some important fields are
 //    * code:Module.m_pPEAssembly - this points at a code:PEAssembly that understands the layout of a PE assembly. The most
@@ -622,7 +609,6 @@ private:
 
     enum {
         // These are the values set in m_dwTransientFlags.
-        // Note that none of these flags survive a prejit save/restore.
 
         MODULE_IS_TENURED           = 0x00000001,   // Set once we know for sure the Module will not be freed until the appdomain itself exits
         // unused                   = 0x00000002,
@@ -655,14 +641,10 @@ private:
         // Used to indicate that the module is loaded sufficiently for generic candidate instantiations to work
         MODULE_READY_FOR_TYPELOAD  = 0x00200000,
 
-        // Used during NGen only
-        TYPESPECS_TRIAGED           = 0x40000000,
-        MODULE_SAVED                = 0x80000000,
     };
 
     enum {
-        // These are the values set in m_dwPersistedFlags.  These will survive
-        // a prejit save/restore
+        // These are the values set in m_dwPersistedFlags.
         // unused                   = 0x00000001,
         COMPUTED_GLOBAL_CLASS       = 0x00000002,
 
@@ -673,8 +655,7 @@ private:
         COMPUTED_WRAP_EXCEPTIONS    = 0x00000010,
         WRAP_EXCEPTIONS             = 0x00000020,
 
-        // This flag applies to assembly, but it is stored so it can be cached in ngen image
-        COMPUTED_RELIABILITY_CONTRACT=0x00000040,
+        // unused                   = 0x00000040,
 
         // This flag applies to assembly, but is also stored here so that it can be cached in ngen image
         COLLECTIBLE_MODULE          = 0x00000080,
@@ -685,10 +666,6 @@ private:
         //If module has default dll import search paths attribute
         DEFAULT_DLL_IMPORT_SEARCH_PATHS_STATUS      = 0x00000800,
 
-        //If m_MethodDefToPropertyInfoMap has been generated
-        COMPUTED_METHODDEF_TO_PROPERTYINFO_MAP = 0x00002000,
-
-        // unused                   = 0x00004000,
 
         //If setting has been cached
         RUNTIME_MARSHALLING_ENABLED_IS_CACHED = 0x00008000,
@@ -738,12 +715,8 @@ private:
 
     #define GENERIC_PARAM_MAP_ALL_FLAGS               NO_MAP_FLAGS
 
-    #define GENERIC_TYPE_DEF_MAP_ALL_FLAGS            NO_MAP_FLAGS
-
     #define MANIFEST_MODULE_MAP_ALL_FLAGS             NO_MAP_FLAGS
         // For manifest module map, 0x1 cannot be used as a flag: reserved for FIXUP_POINTER_INDIRECTION bit
-
-    #define PROPERTY_INFO_MAP_ALL_FLAGS               NO_MAP_FLAGS
 
     // Linear mapping from TypeDef token to MethodTable *
     // For generic types, IsGenericTypeDefinition() is true i.e. instantiation at formals
@@ -753,20 +726,15 @@ private:
     // For generic methods, IsGenericTypeDefinition() is true i.e. instantiation at formals
     LookupMap<PTR_MethodDesc>       m_MethodDefToDescMap;
 
+    // Linear mapping from MethodDef token to ILCodeVersioningState *
+    // This is used for Code Versioning logic
+    LookupMap<PTR_ILCodeVersioningState>    m_ILCodeVersioningStateMap;
+
     // Linear mapping from FieldDef token to FieldDesc*
     LookupMap<PTR_FieldDesc>        m_FieldDefToDescMap;
 
     // Linear mapping from GenericParam token to TypeVarTypeDesc*
     LookupMap<PTR_TypeVarTypeDesc>  m_GenericParamToDescMap;
-
-    // Linear mapping from TypeDef token to the MethodTable * for its canonical generic instantiation
-    // If the type is not generic, the entry is guaranteed to be NULL.  This means we are paying extra
-    // space in order to use the LookupMap infrastructure, but what it buys us is IBC support and
-    // a compressed format for NGen that makes up for it.
-    LookupMap<PTR_MethodTable>      m_GenericTypeDefToCanonMethodTableMap;
-
-    // Mapping from MethodDef token to pointer-sized value encoding property information
-    LookupMap<SIZE_T>           m_MethodDefToPropertyInfoMap;
 
     // IL stub cache with fabricated MethodTable parented by this module.
     ILStubCache                *m_pILStubCache;
@@ -929,7 +897,6 @@ protected:
     OBJECTREF GetExposedObject();
 
     ClassLoader *GetClassLoader();
-    PTR_BaseDomain GetDomain();
 #ifdef FEATURE_CODE_VERSIONING
     CodeVersionManager * GetCodeVersionManager();
 #endif
@@ -950,10 +917,10 @@ protected:
         return (m_dwTransientFlags & IS_EDIT_AND_CONTINUE) != 0;
     }
 
-#ifdef EnC_SUPPORTED
+#ifdef FEATURE_METADATA_UPDATER
     // Holds a table of EnCEEClassData object for classes in this module that have been modified
     CUnorderedArray<EnCEEClassData*, 5> m_ClassList;
-#endif // EnC_SUPPORTED
+#endif // FEATURE_METADATA_UPDATER
 
 private:
     void EnableEditAndContinue()
@@ -1216,22 +1183,6 @@ public:
         return th;
     }
 
-    TypeHandle LookupFullyCanonicalInstantiation(mdTypeDef token, ClassLoadLevel *pLoadLevel = NULL)
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-
-        BAD_FORMAT_NOTHROW_ASSERT(TypeFromToken(token) == mdtTypeDef);
-
-        TypeHandle th = TypeHandle(m_GenericTypeDefToCanonMethodTableMap.GetElement(RidFromToken(token)));
-
-        if (pLoadLevel && !th.IsNull())
-        {
-            *pLoadLevel = th.GetLoadLevel();
-        }
-
-        return th;
-    }
-
 #ifndef DACCESS_COMPILE
     VOID EnsureTypeDefCanBeStored(mdTypeDef token)
     {
@@ -1267,7 +1218,7 @@ public:
     }
 #endif // !DACCESS_COMPILE
 
-    MethodDesc *LookupMethodDef(mdMethodDef token);
+    PTR_MethodDesc LookupMethodDef(mdMethodDef token);
 
 #ifndef DACCESS_COMPILE
     void EnsureMethodDefCanBeStored(mdMethodDef token)
@@ -1282,6 +1233,25 @@ public:
 
         _ASSERTE(TypeFromToken(token) == mdtMethodDef);
         m_MethodDefToDescMap.SetElement(RidFromToken(token), value);
+    }
+#endif // !DACCESS_COMPILE
+
+    PTR_ILCodeVersioningState LookupILCodeVersioningState(mdMethodDef token);
+
+#ifndef DACCESS_COMPILE
+    void EnsureILCodeVersioningStateCanBeStored(mdMethodDef token)
+    {
+        WRAPPER_NO_CONTRACT; // THROWS/GC_NOTRIGGER/INJECT_FAULT()/MODE_ANY
+        _ASSERTE(CodeVersionManager::IsLockOwnedByCurrentThread());
+        m_ILCodeVersioningStateMap.EnsureElementCanBeStored(this, RidFromToken(token));
+    }
+
+    void EnsuredStoreILCodeVersioningState(mdMethodDef token, PTR_ILCodeVersioningState value)
+    {
+        WRAPPER_NO_CONTRACT; // NOTHROW/GC_NOTRIGGER/FORBID_FAULT/MODE_ANY
+        _ASSERTE(CodeVersionManager::IsLockOwnedByCurrentThread());
+        _ASSERTE(TypeFromToken(token) == mdtMethodDef);
+        m_ILCodeVersioningStateMap.SetElement(RidFromToken(token), value);
     }
 #endif // !DACCESS_COMPILE
 
@@ -1376,8 +1346,6 @@ public:
     MethodDesc *FindMethodThrowing(mdToken pMethod);
     MethodDesc *FindMethod(mdToken pMethod);
 
-    HRESULT GetPropertyInfoForMethodDef(mdMethodDef md, mdProperty *ppd, LPCSTR *pName, ULONG *pSemantic);
-
 public:
 
     // Debugger stuff
@@ -1415,7 +1383,9 @@ public:
     void NotifyEtwLoadFinished(HRESULT hr);
 
     // Enregisters a VASig.
-    VASigCookie *GetVASigCookie(Signature vaSignature);
+    VASigCookie *GetVASigCookie(Signature vaSignature, const SigTypeContext* typeContext);
+private:
+    static VASigCookie *GetVASigCookieWorker(Module* pDefiningModule, Module* pLoaderModule, Signature vaSignature, const SigTypeContext* typeContext);
 
 public:
 #ifndef DACCESS_COMPILE
@@ -1528,8 +1498,8 @@ public:
     void   StartUnload();
 
 public:
-    void SetDynamicIL(mdToken token, TADDR blobAddress, BOOL fTemporaryOverride);
-    TADDR GetDynamicIL(mdToken token, BOOL fAllowTemporary);
+    void SetDynamicIL(mdToken token, TADDR blobAddress);
+    TADDR GetDynamicIL(mdToken token);
 
     // store and retrieve the instrumented IL offset mapping for a particular method
 #if !defined(DACCESS_COMPILE)
@@ -1569,7 +1539,7 @@ public:
         return &m_FixupCrst;
     }
 
-    void                AllocateRegularStaticHandles(AppDomain* pDomainMT);
+    void                AllocateRegularStaticHandles();
 
     void                FreeModuleIndex();
 
@@ -1723,10 +1693,6 @@ private:
                                                 // maps tokens for EnC/dynamics/reflection emit to their corresponding IL blobs
                                                 // this map *always* overrides the Metadata RVA
         PTR_DynamicILBlobTable   m_pDynamicILBlobTable;
-
-                                                // maps tokens for to their corresponding overridden IL blobs
-                                                // this map conditionally overrides the Metadata RVA and the DynamicILBlobTable
-        PTR_DynamicILBlobTable   m_pTemporaryILBlobTable;
 
         // hash table storing any profiler-provided instrumented IL offset mapping
         PTR_ILOffsetMappingTable m_pILOffsetMappingTable;

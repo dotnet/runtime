@@ -2,9 +2,9 @@
   <PropertyGroup>
     <Nullable>enable</Nullable>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
-    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <DefineConstants>$(DefineConstants);BUILDING_SOURCE_GENERATOR_TESTS;ROSLYN4_0_OR_GREATER;ROSLYN4_4_OR_GREATER</DefineConstants>
-    <!-- The SDK disables the configuration binding generator by default no matter how it was referenced, so we need to enable it here for testing. -->
+    <InterceptorsPreviewNamespaces>$(InterceptorsPreviewNamespaces);Microsoft.Extensions.Configuration.Binder.SourceGeneration</InterceptorsPreviewNamespaces>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <EnableConfigurationBindingGenerator>true</EnableConfigurationBindingGenerator>
   </PropertyGroup>
 
@@ -20,10 +20,12 @@
 
   <ItemGroup>
     <Compile Include="$(CommonPath)..\tests\SourceGenerators\RoslynTestUtils.cs" Link="SourceGenerators\RoslynTestUtils.cs" />
+    <Compile Include="..\Common\ConfigurationExtensionsTests.cs" Link="Common\ConfigurationExtensionsTests.cs" />
     <Compile Include="..\Common\FakeConfigurationProvider.cs" Link="Common\FakeConfigurationProvider.cs" />
     <Compile Include="..\Common\FakeConfigurationSource.cs" Link="Common\FakeConfigurationSource.cs" />
     <Compile Include="..\Common\FakeOptions.cs" Link="Common\FakeOptions.cs" />
-    <Compile Include="..\Common\OptionsBuilderConfigurationExtensionsTests.cs" Link="Common\OptionsBuidlerConfigurationExtensionsTests.cs" />
+    <Compile Include="..\Common\OptionsBuilderConfigurationExtensionsTests.cs" Link="Common\OptionsBuilderConfigurationExtensionsTests.cs" />
+    <Compile Include="ConfigurationExtensionsTest.Generator.cs" />
   </ItemGroup>
 
    <ItemGroup>

@@ -1,16 +1,30 @@
 cmake_minimum_required(VERSION 3.20)
 
-cmake_policy(SET CMP0091 NEW)
-
 project(mono)
 
 include(../../eng/native/configurepaths.cmake)
 include(${CLR_ENG_NATIVE_DIR}/functions.cmake)
 include(${CLR_ENG_NATIVE_DIR}/configuretools.cmake)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+
 if (MSVC)
   # Also set by configurecompiler.cmake, which isn't used by mono yet
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/source-charset:utf-8>) # Force MSVC to compile source as UTF-8.
+
+  if(EXISTS ${CLR_SOURCELINK_FILE_PATH})
+    add_link_options("/sourcelink:${CLR_SOURCELINK_FILE_PATH}")
+  endif()
+
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4100>) # W4: unreferenced formal parameter
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4702>) # W4: unreachable code
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4706>) # W4: assignment within conditional expression
+
+  # FIXME we should investigate these mismatches at some point
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4245>) # W4: signed/unsigned mismatch
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4389>) # W4: signed/unsigned mismatch
 endif(MSVC)
 
 set(CROSS_ROOTFS $ENV{ROOTFS_DIR})
@@ -70,8 +84,6 @@ if(ENABLE_MINIMAL)
   process_enable_minimal()
 endif()
 
-set(DISABLE_COM 1)
-
 # Dependencies between options
 if(ENABLE_INTERP_LIB)
   set(DISABLE_INTERPRETER 1)
@@ -82,8 +94,6 @@ endif()
 if(ENABLE_LAZY_GC_THREAD_CREATION)
   set(LAZY_GC_THREAD_CREATION 1)
 endif()
-
-set(DISABLED_FEATURES "\"\"")
 
 if((CMAKE_CXX_COMPILER_ID STREQUAL "GNU") OR(CMAKE_CXX_COMPILER_ID STREQUAL "Clang") OR(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang"))
   set(GCC 1)
@@ -98,14 +108,11 @@ if(GCC)
   set(USE_GCC_ATOMIC_OPS 1)
 endif()
 
-set(HAVE_CLASSIC_WINAPI_SUPPORT 1)
 set(HAVE_MOVING_COLLECTOR 1)
 set(HAVE_CONC_GC_AS_DEFAULT 1)
 set(MONO_INSIDE_RUNTIME 1)
 
-TEST_BIG_ENDIAN(IS_BIG_ENDIAN)
-
-if(IS_BIG_ENDIAN)
+if(CMAKE_C_BYTE_ORDER STREQUAL "BIG_ENDIAN")
   set(TARGET_BYTE_ORDER G_BIG_ENDIAN)
 else()
   set(TARGET_BYTE_ORDER G_LITTLE_ENDIAN)
@@ -117,7 +124,6 @@ endif()
 
 if(NOT AOT_TARGET_TRIPLE STREQUAL "")
   set(MONO_CROSS_COMPILE 1)
-  add_definitions(-DNO_GLOBALIZATION_SHIM)
   if(NOT AOT_OFFSETS_FILE STREQUAL "")
     set(MONO_OFFSETS_FILE "${AOT_OFFSETS_FILE}")
   endif()
@@ -197,8 +203,9 @@ elseif(CLR_CMAKE_HOST_OS STREQUAL "ios" OR CLR_CMAKE_HOST_OS STREQUAL "tvos")
   # control cross-compiling to ios
   add_definitions(-D_THREAD_SAFE)
   set(HOST_DARWIN 1)
-  set(HOST_IOS 1)
-  if(CLR_CMAKE_HOST_OS STREQUAL "tvos")
+  if(CLR_CMAKE_HOST_OS STREQUAL "ios")
+    set(HOST_IOS 1)
+  elseif(CLR_CMAKE_HOST_OS STREQUAL "tvos")
     set(HOST_TVOS 1)
   endif()
   set(PTHREAD_POINTER_ID 1)
@@ -233,19 +240,10 @@ elseif(CLR_CMAKE_HOST_OS STREQUAL "android")
   # FIXME: Rest of the flags from configure.ac
 elseif(CLR_CMAKE_HOST_OS STREQUAL "emscripten")
   set(HOST_BROWSER 1)
-  add_definitions(-DNO_GLOBALIZATION_SHIM)
   add_definitions(-D_THREAD_SAFE)
   add_compile_options(-Wno-strict-prototypes)
   add_compile_options(-Wno-unused-but-set-variable)
   add_compile_options(-Wno-single-bit-bitfield-constant-conversion)
-  # Allow using WASM simd intrinsics in the interpreter
-  add_compile_options(-msimd128)
-  # Disable autovectorization (it is automatically turned on by msimd128)
-  add_compile_options(-disable-loop-vectorization)
-  add_compile_options(-disable-vectorization)
-  add_compile_options(-fno-vectorize)
-  add_compile_options(-fno-tree-vectorize)
-  add_compile_options(-fno-slp-vectorize)
   set(DISABLE_EXECUTABLES 1)
   # FIXME: Is there a cmake option for this ?
   set(DISABLE_SHARED_LIBS 1)
@@ -255,11 +253,12 @@ elseif(CLR_CMAKE_HOST_OS STREQUAL "emscripten")
 elseif(CLR_CMAKE_HOST_OS STREQUAL "wasi")
   set(HOST_WASI 1)
   add_definitions(-D_WASI_EMULATED_PROCESS_CLOCKS -D_WASI_EMULATED_SIGNAL -D_WASI_EMULATED_MMAN -DHOST_WASI)
-  add_definitions(-DNO_GLOBALIZATION_SHIM)
   add_definitions(-D_THREAD_SAFE)
   add_definitions(-DDISABLE_SOCKET_TRANSPORT)
   add_definitions(-DDISABLE_EGD_SOCKET)
   add_definitions(-DDISABLE_EVENTPIPE)
+  add_compile_options(-Wno-strict-prototypes)
+  add_compile_options(-Wno-unused-but-set-variable)
   set(ENABLE_PERFTRACING 0)
   set(DISABLE_SHARED_LIBS 1)
   set(INTERNAL_ZLIB 1)
@@ -273,18 +272,22 @@ elseif(CLR_CMAKE_HOST_OS STREQUAL "windows")
   set(MONO_ZERO_LEN_ARRAY 1)
   set(INTERNAL_ZLIB 1)
   set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>") # statically link VC runtime library
-  add_compile_options(/W4)   # set warning level 4
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/WX>) # treat warnings as errors
-  add_compile_options(/EHsc) # set exception handling behavior
-  add_compile_options(/FC)   # use full pathnames in diagnostics
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/W4>)      # set warning level 4
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/WX>)      # treat warnings as errors
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4324>)  # 'struct_name' : structure was padded due to __declspec(align())
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/EHsc>)    # set exception handling behavior
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/FC>)      # use full pathnames in diagnostics
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/guard:cf>) # Enable control flow guard
   add_link_options(/STACK:0x800000)  # set stack size to 8MB (default is 1MB)
+  add_link_options(/guard:cf)
   if(CMAKE_BUILD_TYPE STREQUAL "Release")
-    add_compile_options(/Oi)   # enable intrinsics
-    add_compile_options(/GF)   # enable string pooling
-    add_compile_options(/Zi)   # enable debugging information
-    add_compile_options(/GL)   # whole program optimization
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Oi>) # enable intrinsics
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/GF>) # enable string pooling
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/GL>) # whole program optimization
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Zi>) # enable debugging information
     add_link_options(/LTCG)    # link-time code generation
     add_link_options(/DEBUG)   # enable debugging information
+    add_link_options(/DEBUGTYPE:CV,FIXUP)   # enable fixup debug information
     add_link_options(/OPT:REF) # optimize: remove unreferenced functions & data
     add_link_options(/OPT:ICF) # optimize: enable COMDAT folding
     # the combination of /Zi compiler flag and /DEBUG /OPT:REF /OPT:ICF
@@ -295,6 +298,10 @@ elseif(CLR_CMAKE_HOST_OS STREQUAL "sunos")
   add_definitions(-DGC_SOLARIS_THREADS -DGC_SOLARIS_PTHREADS -D_REENTRANT -D_POSIX_PTHREAD_SEMANTICS -DUSE_MMAP -DUSE_MUNMAP -DHOST_SOLARIS -D__EXTENSIONS__ -D_XPG4_2)
 elseif(CLR_CMAKE_HOST_OS STREQUAL "freebsd")
   set(HOST_FREEBSD 1)
+elseif(CLR_CMAKE_HOST_OS STREQUAL "haiku")
+  set(HOST_HAIKU 1)
+  add_definitions(-D_GNU_SOURCE -D_BSD_SOURCE -D_REENTRANT)
+  add_definitions(-D_THREAD_SAFE)
 else()
   message(FATAL_ERROR "Host '${CLR_CMAKE_HOST_OS}' not supported.")
 endif()
@@ -318,19 +325,13 @@ if(TARGET_SYSTEM_NAME STREQUAL "darwin")
 elseif(TARGET_SYSTEM_NAME STREQUAL "ios" OR TARGET_SYSTEM_NAME STREQUAL "tvos")
   set(TARGET_UNIX 1)
   set(TARGET_MACH 1)
-  set(TARGET_IOS 1)
   set(TARGET_DARWIN 1)
-  if(TARGET_SYSTEM_NAME STREQUAL "tvos")
+  set(TARGET_APPLE_MOBILE 1)
+  if(TARGET_SYSTEM_NAME STREQUAL "ios")
+    set(TARGET_IOS 1)
+  elseif(TARGET_SYSTEM_NAME STREQUAL "tvos")
     set(TARGET_TVOS 1)
   endif()
-  set(TARGET_APPLE_MOBILE 1)
-elseif(TARGET_SYSTEM_NAME STREQUAL "linux")
-  set(TARGET_UNIX 1)
-  set(TARGET_LINUX 1)
-elseif(TARGET_SYSTEM_NAME STREQUAL "alpine")
-  set(TARGET_UNIX 1)
-  set(TARGET_LINUX 1)
-  set(TARGET_LINUX_MUSL 1)
 elseif(TARGET_SYSTEM_NAME STREQUAL "android")
   set(TARGET_UNIX 1)
   set(TARGET_LINUX_BIONIC 1)
@@ -338,6 +339,13 @@ elseif(TARGET_SYSTEM_NAME STREQUAL "android")
   if (CMAKE_BUILD_TYPE STREQUAL "Release")
     add_compile_options(-O2)
   endif()
+elseif(CLR_CMAKE_TARGET_LINUX_MUSL)
+  set(TARGET_UNIX 1)
+  set(TARGET_LINUX 1)
+  set(TARGET_LINUX_MUSL 1)
+elseif(TARGET_SYSTEM_NAME STREQUAL "linux")
+  set(TARGET_UNIX 1)
+  set(TARGET_LINUX 1)
 elseif(TARGET_SYSTEM_NAME STREQUAL "emscripten")
   set(TARGET_BROWSER 1)
   if (CMAKE_BUILD_TYPE STREQUAL "Release")
@@ -358,6 +366,9 @@ elseif(TARGET_SYSTEM_NAME STREQUAL "sunos")
 elseif(TARGET_SYSTEM_NAME STREQUAL "freebsd")
   set(TARGET_UNIX 1)
   set(TARGET_FREEBSD 1)
+elseif(TARGET_SYSTEM_NAME STREQUAL "haiku")
+  set(TARGET_UNIX 1)
+  set(TARGET_HAIKU 1)
 else()
   message(FATAL_ERROR "Target '${TARGET_SYSTEM_NAME}' not supported.")
 endif()
@@ -523,13 +534,8 @@ include(configure)
 ######################################
 
 if(GCC)
-  if(HOST_WASI)
-    # WASI SDK only includes some required definitions if the C version is at least this new
-    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu11")
-  else()
-    # We require C99 with some GNU extensions, e.g. `linux` macro
-    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
-  endif()
+  # We require C11 with some GNU extensions, e.g. `linux` macro
+  set(CMAKE_C_EXTENSIONS ON)
 
   # Turn off floating point expression contraction because it is considered a value changing
   # optimization in the IEEE 754 specification and is therefore considered unsafe.
@@ -553,6 +559,12 @@ if(GCC)
   check_c_compiler_flag("-Werror=incompatible-pointer-types" WERROR_INCOMPATIBLE_POINTER_TYPES)
   if(WERROR_INCOMPATIBLE_POINTER_TYPES)
     set(WERROR_C "${WERROR_C} -Werror=incompatible-pointer-types")
+  endif()
+
+  # Check for sometimes suppressed warnings
+  check_c_compiler_flag(-Wreserved-identifier COMPILER_SUPPORTS_W_RESERVED_IDENTIFIER)
+  if(COMPILER_SUPPORTS_W_RESERVED_IDENTIFIER)
+    add_compile_definitions(COMPILER_SUPPORTS_W_RESERVED_IDENTIFIER)
   endif()
 
   if(HOST_WASI)
@@ -598,9 +610,7 @@ if(LLVM_PREFIX)
 
   # llvm-config --libs analysis core bitwriter mcjit orcjit
   set(MONO_llvm_core_libs "LLVMOrcJIT" "LLVMPasses" "LLVMCoroutines" "LLVMipo" "LLVMInstrumentation" "LLVMVectorize" "LLVMScalarOpts" "LLVMLinker" "LLVMIRReader" "LLVMAsmParser" "LLVMInstCombine" "LLVMFrontendOpenMP" "LLVMAggressiveInstCombine" "LLVMTransformUtils" "LLVMJITLink" "LLVMMCJIT" "LLVMExecutionEngine" "LLVMTarget" "LLVMRuntimeDyld" "LLVMBitWriter" "LLVMAnalysis" "LLVMProfileData" "LLVMObject" "LLVMTextAPI" "LLVMMCParser" "LLVMMC" "LLVMDebugInfoCodeView" "LLVMBitReader" "LLVMCore" "LLVMRemarks" "LLVMBitstreamReader" "LLVMBinaryFormat" "LLVMSupport" "LLVMDemangle")
-  if(${llvm_api_version} LESS 1200)
-    set(MONO_llvm_core_libs ${MONO_llvm_core_libs} "LLVMOrcError" "LLVMDebugInfoMSF")
-  elseif(${llvm_api_version} LESS 1600)
+  if(${llvm_api_version} LESS 1600)
     set(MONO_llvm_core_libs ${MONO_llvm_core_libs} "LLVMObjCARCOpts" "LLVMMCDisassembler" "LLVMOrcTargetProcess" "LLVMOrcShared" "LLVMDebugInfoDWARF")
   else()
     set(MONO_llvm_core_libs ${MONO_llvm_core_libs} "LLVMIRPrinter" "LLVMCodeGen" "LLVMObjCARCOpts" "LLVMMCDisassembler" "LLVMWindowsDriver" "LLVMOption" "LLVMOrcTargetProcess" "LLVMOrcShared"  "LLVMSymbolize" "LLVMDebugInfoPDB" "LLVMDebugInfoMSF" "LLVMDebugInfoDWARF" "LLVMTargetParser")
@@ -625,9 +635,9 @@ if(LLVM_PREFIX)
   endif()
 
   if(HOST_LINUX AND NOT HOST_WASM AND NOT HOST_WASI AND ${llvm_api_version} GREATER_EQUAL 1600)
-    set(MONO_stdlib "-stdlib=libc++")
-    set(MONO_cxx_lib "-L${LLVM_PREFIX}/lib -lc++")
-    set(MONO_cxx_include "-I${LLVM_PREFIX}/include/c++/v1")
+    set(MONO_stdlib "-nostdinc++ -nostdlib++")
+    set(MONO_cxx_lib "-L${LLVM_PREFIX}/lib -lc++ -lc++abi")
+    set(MONO_cxx_include "-isystem ${LLVM_PREFIX}/include/c++/v1")
   endif()
 
   if(${llvm_api_version} GREATER_EQUAL 1600)
@@ -646,7 +656,12 @@ if(LLVM_PREFIX)
 
   # llvm-config --cflags
   set(llvm_cflags "-I${LLVM_PREFIX}/include -D__STDC_CONSTANT_MACROS -D__STD_FORMAT_MACROS -D__STDC_LIMIT_MACROS")
-  set(llvm_cxxflags "-I${LLVM_PREFIX}/include ${MONO_cxx_include} ${MONO_cxx_std_version} ${MONO_stdlib} -fno-exceptions -fno-rtti -D__STDC_CONSTANT_MACROS -D__STD_FORMAT_MACROS -D__STDC_LIMIT_MACROS")
+
+  if (HOST_BROWSER)
+    set(llvm_cxxflags "-I${LLVM_PREFIX}/include ${MONO_cxx_include} ${MONO_cxx_std_version} ${MONO_stdlib} -fno-rtti -D__STDC_CONSTANT_MACROS -D__STD_FORMAT_MACROS -D__STDC_LIMIT_MACROS")
+  else()
+    set(llvm_cxxflags "-I${LLVM_PREFIX}/include ${MONO_cxx_include} ${MONO_cxx_std_version} ${MONO_stdlib} -fno-exceptions -fno-rtti -D__STDC_CONSTANT_MACROS -D__STD_FORMAT_MACROS -D__STDC_LIMIT_MACROS")
+  endif()
   set(llvm_includedir "${LLVM_PREFIX}/include")
 
   if(HOST_LINUX)
@@ -685,73 +700,14 @@ if(LLVM_PREFIX)
     string(REPLACE "/EHs-c-" "" llvm_cxxflags "${llvm_cxxflags}")
     # /GR- already enabled and inherited from LLVM flags. Corresponds to -fno-rtti.
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${llvm_cxxflags}")
+  elseif(HOST_BROWSER)
+    # emscripten's handling of the different exception modes is complex, so having multiple flags
+    # passed during a single compile is undesirable. we need to set them elsewhere.
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${llvm_cxxflags} -fno-rtti")
   else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${llvm_cxxflags} -fexceptions -fno-rtti")
   endif()
   add_definitions(-DLLVM_API_VERSION=${llvm_api_version})
-endif()
-
-######################################
-# ICU CHECKS
-######################################
-if(HOST_OSX OR HOST_MACCAT OR HOST_IOS OR HOST_TVOS)
-  # FIXME: Handle errors
-  execute_process(COMMAND  brew --prefix OUTPUT_VARIABLE brew_prefix OUTPUT_STRIP_TRAILING_WHITESPACE)
-
-  if((HOST_MACCAT OR HOST_IOS OR HOST_TVOS) AND "${CMAKE_SHARED_LINKER_FLAGS}" MATCHES "${brew_prefix}/opt/icu4c/lib")
-    message(FATAL_ERROR "Linker flags contain the Homebrew version of ICU which conflicts with the iOS/tvOS/MacCatalyst version: ${CMAKE_SHARED_LINKER_FLAGS}")
-  endif()
-endif()
-
-set(ICU_SHIM_PATH "${CLR_SRC_NATIVE_DIR}/libs/System.Globalization.Native")
-if(MONO_CROSS_COMPILE)
-elseif(HOST_OSX AND NOT HOST_MACCAT)
-  include(FindPkgConfig)
-  set(ENV{PKG_CONFIG_PATH} "{$PKG_CONFIG_PATH}:${brew_prefix}/lib/pkgconfig:${brew_prefix}/opt/icu4c/lib/pkgconfig")
-  # Defines ICU_INCLUDEDIR/ICU_LIBDIR
-  pkg_check_modules(ICU icu-uc)
-  set(OSX_ICU_LIBRARY_PATH /usr/lib/libicucore.dylib)
-  set(ICU_FLAGS "-DTARGET_UNIX -DU_DISABLE_RENAMING -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option -Wno-deprecated-declarations")
-  set(HAVE_SYS_ICU 1)
-elseif(HOST_WASI)
-  set(ICU_FLAGS "-DPALEXPORT=\"\" -DU_DISABLE_RENAMING -DHAVE_UDAT_STANDALONE_SHORTER_WEEKDAYS -DHAVE_SET_MAX_VARIABLE -DTARGET_UNIX -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option")
-  set(HAVE_SYS_ICU 1)
-  set(STATIC_ICU 1)
-  set(ICU_LIBS "icucore")
-elseif(HOST_BROWSER)
-  set(ICU_FLAGS "-DPALEXPORT=\"\" -DU_DISABLE_RENAMING -DHAVE_UDAT_STANDALONE_SHORTER_WEEKDAYS -DHAVE_SET_MAX_VARIABLE -DTARGET_UNIX -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option")
-  set(HAVE_SYS_ICU 1)
-  set(STATIC_ICU 1)
-  set(ICU_LIBS "icucore")
-elseif(HOST_IOS OR HOST_MACCAT)
-  set(ICU_FLAGS "-DTARGET_UNIX -DU_DISABLE_RENAMING -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option -Wno-deprecated-declarations")
-  set(HAVE_SYS_ICU 1)
-  set(STATIC_ICU 1)
-  set(ICU_LIBS icuuc icui18n icudata)
-elseif(HOST_ANDROID)
-  set(ICU_FLAGS "-DPALEXPORT=\"\" -DHAVE_UDAT_STANDALONE_SHORTER_WEEKDAYS -DHAVE_SET_MAX_VARIABLE -DTARGET_UNIX -DTARGET_ANDROID -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option")
-  set(HAVE_SYS_ICU 1)
-elseif(HOST_LINUX)
-  include(FindPkgConfig)
-  if(CROSS_ROOTFS)
-    set(ENV{PKG_CONFIG_SYSROOT_DIR} "${CROSS_ROOTFS}")
-  endif(CROSS_ROOTFS)
-  pkg_check_modules(ICU icu-uc)
-  set(ICU_FLAGS "-DTARGET_UNIX -DU_DISABLE_RENAMING -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option -Wno-deprecated-declarations")
-  set(HAVE_SYS_ICU 1)
-elseif(HOST_WIN32)
-  set(ICU_FLAGS "-DTARGET_WINDOWS -DPALEXPORT=EXTERN_C")
-  set(HAVE_SYS_ICU 1)
-elseif(HOST_SOLARIS)
-  set(ICU_FLAGS "-DPALEXPORT=\"\" -DTARGET_UNIX -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option")
-  set(HAVE_SYS_ICU 1)
-elseif(TARGET_FREEBSD)
-  set(ICU_FLAGS "-DTARGET_UNIX -Wno-deprecated-declarations")
-  set(HAVE_SYS_ICU 1)
-  set(ICU_INCLUDEDIR "${CROSS_ROOTFS}/usr/local/include")
-  set(ICU_LIBDIR "${CROSS_ROOTFS}/usr/local/lib")
-else()
-  message(FATAL_ERROR "Unknown host")
 endif()
 
 ######################################
@@ -797,7 +753,6 @@ if(HOST_WIN32)
   set(EGLIB_PATHSEP "\\\\")
   set(EGLIB_SEARCHSEP ";")
   set(EGLIB_OS "WIN32")
-  set(EGLIB_PIDTYPE "void *")
   if(HOST_AMD64 OR HOST_ARM64)
     set(EGLIB_GSIZE_FORMAT "\"Iu\"")
   else()
@@ -807,7 +762,6 @@ else()
   set(EGLIB_BREAKPOINT "G_STMT_START { raise(SIGTRAP); } G_STMT_END")
   if(GCC)
     set(EGLIB_GNUC_UNUSED "__attribute__((__unused__))")
-    set(EGLIB_GNUC_NORETURN "__attribute__((__noreturn__))")
     if(HOST_AMD64 OR HOST_X86)
       set(EGLIB_BREAKPOINT "G_STMT_START { __asm__(\"int \$03\"); } G_STMT_END")
     endif()
@@ -815,7 +769,6 @@ else()
   set(EGLIB_PATHSEP "/")
   set(EGLIB_SEARCHSEP ":")
   set(EGLIB_OS "UNIX")
-  set(EGLIB_PIDTYPE "int")
   set(EGLIB_GSIZE_FORMAT "\"zu\"")
 endif()
 
@@ -827,7 +780,7 @@ set(EGLIB_GSSIZE "ptrdiff_t")
 #
 
 ######################################
-# DEBUG BUILD CHECKS
+# CHECKED BUILD CHECKS
 ######################################
 function(process_checked_build)
   string(REPLACE "," ";" tmp1 "${CHECKED_BUILD}")
@@ -837,17 +790,15 @@ function(process_checked_build)
   endforeach(arg)
 endfunction()
 
-if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-  # if no explicit -DCHECKED_BUILD=args option, just do ENABLE_CHECKED_BUILD_PRIVATE_TYPES
-  if (CHECKED_BUILD)
-    set(ENABLE_CHECKED_BUILD 1)
-    process_checked_build()
-  else()
-    set(ENABLE_CHECKED_BUILD 1)
-    set(ENABLE_CHECKED_BUILD_PRIVATE_TYPES 1)
-  endif()
+if(CHECKED_BUILD)
+  set(ENABLE_CHECKED_BUILD 1)
+  process_checked_build()
+elseif (CMAKE_BUILD_TYPE STREQUAL "Debug")
+  # if no explicit -DCHECKED_BUILD=args option and we're building debug, just do ENABLE_CHECKED_BUILD_PRIVATE_TYPES
+  set(ENABLE_CHECKED_BUILD 1)
+  set(ENABLE_CHECKED_BUILD_PRIVATE_TYPES 1)
 endif()
-### End of debug build checks
+### End of checked build checks
 
 ######################################
 # COMPONENT BUILD CHECKS
@@ -928,20 +879,23 @@ set(FULL_VERSION ${product_version_string})
 ######################################
 # OS SPECIFIC CHECKS
 ######################################
-if(HOST_IOS OR HOST_ANDROID OR HOST_MACCAT)
-  # FIXME: the mobile products use mono_dllmap_insert so allow this
-  unset(DISABLE_DLLMAP)
-else()
-  set(DISABLE_DLLMAP 1)
-endif()
 
-if(CLR_CMAKE_HOST_ALPINE_LINUX)
-  # Setting RLIMIT_NOFILE breaks debugging of coreclr on Alpine Linux for some reason
+if(CLR_CMAKE_TARGET_LINUX_MUSL)
+  # Setting RLIMIT_NOFILE breaks debugging of coreclr on musl-libc for some reason
   add_definitions(-DDONT_SET_RLIMIT_NOFILE)
-  # On Alpine Linux, we need to ensure that the reported stack range for the primary thread is
+  # On musl-libc, we need to ensure that the reported stack range for the primary thread is
   # larger than the initial committed stack size.
   add_definitions(-DENSURE_PRIMARY_STACK_SIZE)
 endif()
+
+if(CLR_CMAKE_HOST_APPLE)
+  # TODO: this is already set by configurecompiler.cmake, remove this once mono uses that
+  check_c_compiler_flag(-fno-objc-msgsend-selector-stubs COMPILER_SUPPORTS_FNO_OBJC_MSGSEND_SELECTOR_STUBS)
+  if(COMPILER_SUPPORTS_FNO_OBJC_MSGSEND_SELECTOR_STUBS)
+    set(CLR_CMAKE_COMMON_OBJC_FLAGS "${CLR_CMAKE_COMMON_OBJC_FLAGS} -fno-objc-msgsend-selector-stubs")
+  endif()
+endif()
+
 ### End of OS specific checks
 
 include_directories("${CLR_SRC_NATIVE_DIR}")
@@ -952,7 +906,7 @@ endif()
 add_subdirectory("${CLR_SRC_NATIVE_DIR}/public" public_apis)
 
 add_subdirectory(mono)
-if (ENABLE_MSCORDBI AND NOT TARGET_ARCH STREQUAL "arm64"  AND NOT CMAKE_CROSSCOMPILING AND NOT TARGET_IOS AND NOT TARGET_ANDROID AND NOT TARGET_BROWSER AND NOT TARGET_WASI AND NOT HOST_MACCAT)
+if (ENABLE_MSCORDBI AND NOT TARGET_ARCH STREQUAL "arm64"  AND NOT CMAKE_CROSSCOMPILING AND NOT TARGET_IOS AND NOT TARGET_TVOS AND NOT TARGET_ANDROID AND NOT TARGET_BROWSER AND NOT TARGET_WASI AND NOT HOST_MACCAT)
   add_subdirectory(dlls/mscordbi)
 endif()
 

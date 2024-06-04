@@ -196,7 +196,7 @@ namespace System
                 {
                     GetValueImpl(src_handle, val_handle, source_pos + i);
 
-                    if (dst_type_vt && (srcval == null || (src_type == typeof(object) && !dst_elem_type.IsAssignableFrom (srcval.GetType()))))
+                    if (dst_type_vt && (srcval == null || (src_type == typeof(object) && !dst_elem_type.IsAssignableFrom(srcval.GetType()))))
                         throw new InvalidCastException(SR.InvalidCast_DownCastArrayElement);
 
                     try
@@ -281,13 +281,18 @@ namespace System
         private static unsafe Array InternalCreate(RuntimeType elementType, int rank, int* lengths, int* lowerBounds)
         {
             Array? array = null;
-            InternalCreate(ref array, elementType._impl.Value,  rank, lengths, lowerBounds);
+            InternalCreate(ref array, elementType._impl.Value, rank, lengths, lowerBounds);
             GC.KeepAlive(elementType);
             return array!;
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern unsafe void InternalCreate(ref Array? result, IntPtr elementType, int rank, int* lengths, int* lowerBounds);
+
+        private static unsafe Array InternalCreateFromArrayType(Type arrayType, int rank, int* pLengths, int* pLowerBounds)
+        {
+            return InternalCreate((arrayType.GetElementType() as RuntimeType)!, rank, pLengths, pLowerBounds);
+        }
 
         private unsafe nint GetFlattenedIndex(int rawIndex)
         {

@@ -584,7 +584,7 @@ namespace System.Collections.Immutable.Tests
             list = ImmutableList.Create("a");
             Assert.Equal(1, list.Count);
 
-            list = ImmutableList.Create("a", "b");
+            list = ImmutableList.Create(new[] { "a", "b" });
             Assert.Equal(2, list.Count);
 
             list = ImmutableList.Create((ReadOnlySpan<string>)new[] { "a", "b" });
@@ -793,7 +793,7 @@ namespace System.Collections.Immutable.Tests
             Assert.IsType<ArgumentNullException>(tie.InnerException);
         }
 
-#if NETCOREAPP
+#if NET
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void UsableWithCollectibleAssemblies()
         {
@@ -820,7 +820,7 @@ namespace System.Collections.Immutable.Tests
             ImmutableList<int> list = new[] { 1, 2, 3 }.ToImmutableList();
 
             ref readonly int safeRef = ref list.ItemRef(1);
-            ref int unsafeRef = ref Unsafe.AsRef(safeRef);
+            ref int unsafeRef = ref Unsafe.AsRef(in safeRef);
 
             Assert.Equal(2, list.ItemRef(1));
 

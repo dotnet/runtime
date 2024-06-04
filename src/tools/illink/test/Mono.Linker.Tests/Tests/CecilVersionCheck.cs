@@ -12,18 +12,16 @@ namespace Mono.Linker.Tests
 	public class CecilVersionCheck
 	{
 		[TestCase]
-		public void CecilPackageVersionMatchesAssemblyVersion ()
+		public void CecilPackageVersionMatchesAssemblyVersion()
 		{
-			var thisAssembly = Assembly.GetExecutingAssembly ();
-			var cecilPackageVersion = thisAssembly
-				.GetCustomAttributes<AssemblyMetadataAttribute> ()
-				.Where (ca => ca.Key == "CecilPackageVersion")
-				.Single ().Value;
+			string cecilPackageVersion = (string)AppContext.GetData("Mono.Linker.Tests.CecilPackageVersion")!;
 			// Assume that the test assembly builds against the same cecil as ILLink.
-			var cecilAssemblyVersion = thisAssembly
-				.GetReferencedAssemblies ()
-				.Where (an => an.Name == "Mono.Cecil")
-				.Single ().Version;
+			var cecilAssemblyVersion = Assembly
+				.GetExecutingAssembly()
+				.GetReferencedAssemblies()
+				.Single(an => an.Name == "Mono.Cecil")
+				.Version;
+
 			Assert.AreEqual(cecilPackageVersion.AsSpan(0,6).ToString(), cecilAssemblyVersion.ToString(3));
 		}
 	}

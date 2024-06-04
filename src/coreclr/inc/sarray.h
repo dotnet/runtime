@@ -45,8 +45,8 @@ class SArray
 
     COUNT_T GetAllocation() const;
 
-    void Preallocate(int count) const;
-    void Trim() const;
+    void Preallocate(int count);
+    void Trim();
 
     void Copy(const Iterator &to, const Iterator &from, COUNT_T size);
     void Move(const Iterator &to, const Iterator &from, COUNT_T size);
@@ -205,6 +205,8 @@ class EMPTY_BASES_DECL InlineSArray : public SArray<ELEMENT, BITWISE_COPY>
 // ================================================================================
 // StackSArray : SArray with relatively large preallocated buffer for stack use
 // ================================================================================
+
+#define STACK_ALLOC 256
 
 template <typename ELEMENT, BOOL BITWISE_COPY = TRUE>
 class EMPTY_BASES_DECL StackSArray : public InlineSArray<ELEMENT, STACK_ALLOC/sizeof(ELEMENT), BITWISE_COPY>

@@ -46,6 +46,7 @@ elseif(TARGETS_APPLE_MOBILE)
         "-framework UIKit"
         "-lz"
         "-lc++"
+        "-licucore"
         "-liconv"
     )
     add_definitions(-DHOST_APPLE_MOBILE=1)

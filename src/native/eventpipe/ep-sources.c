@@ -25,6 +25,7 @@
 #include "ep-session-provider.c"
 #include "ep-stack-contents.c"
 #include "ep-stream.c"
+#include "ep-string.c"
 #include "ep-thread.c"
 #endif
 

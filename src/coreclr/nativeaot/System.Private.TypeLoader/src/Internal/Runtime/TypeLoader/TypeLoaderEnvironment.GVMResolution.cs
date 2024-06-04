@@ -3,17 +3,16 @@
 
 
 using System;
-using System.Runtime;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime;
 using System.Runtime.InteropServices;
 using System.Threading;
 
+using Internal.NativeFormat;
 using Internal.Runtime;
 using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerServices;
-
-using Internal.NativeFormat;
 using Internal.TypeSystem;
 
 namespace Internal.Runtime.TypeLoader
@@ -29,7 +28,7 @@ namespace Internal.Runtime.TypeLoader
             {
                 result = GetTypeNameDebug(typeDefinition) + "<";
                 for (int i = 0; i < type.Instantiation.Length; i++)
-                    result += (i == 0 ? "" : ",") + GetTypeNameDebug(type.Instantiation[0]);
+                    result += (i == 0 ? "" : ",") + GetTypeNameDebug(type.Instantiation[i]);
                 return result + ">";
             }
             else if (type.IsDefType)
@@ -196,7 +195,7 @@ namespace Internal.Runtime.TypeLoader
                     targetTypeHandle = extRefs.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
                     isDefaultInterfaceMethodImplementation = RuntimeAugments.IsInterface(targetTypeHandle);
 #if GVM_RESOLUTION_TRACE
-                    Debug.WriteLine("    Searching for GVM implementation on targe type = " + RuntimeAugments.GetLastResortString(targetTypeHandle));
+                    Debug.WriteLine("    Searching for GVM implementation on targe type = " + targetTypeHandle.LowLevelToString());
 #endif
                 }
                 else
@@ -211,7 +210,7 @@ namespace Internal.Runtime.TypeLoader
                     RuntimeTypeHandle implementingTypeHandle = extRefs.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
 
 #if GVM_RESOLUTION_TRACE
-                    Debug.WriteLine("      -> Current implementing type = " + RuntimeAugments.GetLastResortString(implementingTypeHandle));
+                    Debug.WriteLine("      -> Current implementing type = " + implementingTypeHandle.LowLevelToString());
 #endif
 
                     uint numIfaceSigs = entryParser.GetUnsigned();
@@ -310,7 +309,7 @@ namespace Internal.Runtime.TypeLoader
                                     Debug.Assert(interfaceImplType != null);
                                 }
 
-                                return (InstantiatedMethod)context.ResolveGenericMethodInstantiation(false, interfaceImplType, targetMethodNameAndSignature, slotMethod.Instantiation, IntPtr.Zero, false);
+                                return (InstantiatedMethod)context.ResolveGenericMethodInstantiation(false, interfaceImplType, targetMethodNameAndSignature, slotMethod.Instantiation);
                             }
                         }
                     }
@@ -501,7 +500,7 @@ namespace Internal.Runtime.TypeLoader
                     Debug.Assert(targetMethodNameAndSignature != null);
 
                     TypeSystemContext context = slotMethod.Context;
-                    return (InstantiatedMethod)context.ResolveGenericMethodInstantiation(false, targetType, targetMethodNameAndSignature, slotMethod.Instantiation, IntPtr.Zero, false);
+                    return (InstantiatedMethod)context.ResolveGenericMethodInstantiation(false, targetType, targetMethodNameAndSignature, slotMethod.Instantiation);
                 }
             }
 

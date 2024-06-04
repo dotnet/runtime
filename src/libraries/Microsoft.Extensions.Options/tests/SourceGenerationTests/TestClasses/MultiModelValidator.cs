@@ -13,17 +13,17 @@ namespace MultiModelValidator
     {
         [Required]
         [MinLength(5)]
-        public string P1 = string.Empty;
+        public string P1 { get; set; } = string.Empty;
 
         [Microsoft.Extensions.Options.ValidateObjectMembers(typeof(MultiValidator))]
-        public SecondModel? P2;
+        public SecondModel? P2 { get; set; }
     }
 
     public class SecondModel
     {
         [Required]
         [MinLength(5)]
-        public string P3 = string.Empty;
+        public string P3 { get; set; } = string.Empty;
     }
 
     [OptionsValidator]

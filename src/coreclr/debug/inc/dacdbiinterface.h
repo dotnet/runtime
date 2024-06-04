@@ -1332,6 +1332,7 @@ public:
         kExplicitFrame,
         kNativeStackFrame,
         kNativeRuntimeUnwindableStackFrame,
+        kManagedExceptionHandlingCodeFrame,
         kAtEndOfStack,
     } FrameType;
 
@@ -2590,7 +2591,25 @@ public:
     //
     virtual
     HRESULT GetSharedReJitInfoData(VMPTR_SharedReJitInfo sharedReJitInfo, DacSharedReJitInfo* pData) = 0;
-
+    
+    // Retrieves a bool indicating whether or not a method's optimizations have been disabled
+    // defined in Debugger::IsMethodDeoptimized
+    // 
+    //
+    //
+    // Arguments:
+    //    vmModule                - The module for the method in question
+    //    methodTk                - The method token for the method in question
+    //    pOptimizationsDisabled  - [out] A bool indicating whether or not the optimizations on a function are disabled
+    //                              
+    //
+    // Returns:
+    //    S_OK if no error
+    //    error HRESULTs are possible
+    //
+    virtual
+    HRESULT AreOptimizationsDisabled(VMPTR_Module vmModule, mdMethodDef methodTk, OUT BOOL* pOptimizationsDisabled) = 0;
+    
     // Retrieves a bit field indicating which defines were in use when clr was built. This only includes
     // defines that are specified in the Debugger::_Target_Defines enumeration, which is a small subset of
     // all defines.

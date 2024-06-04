@@ -6,8 +6,8 @@ using System.Data.Common;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
-using System.Text;
 using System.Runtime.Versioning;
+using System.Text;
 
 namespace System.Data.OleDb
 {
@@ -51,7 +51,7 @@ namespace System.Data.OleDb
             internal static int _PoolSize;
 
             internal static volatile Dictionary<string, string>? _Pool;
-            internal static object _PoolLock = new object();
+            internal static readonly object _PoolLock = new object();
         }
 
         private static class VALUES

@@ -130,6 +130,7 @@ namespace System.Reflection.Metadata.Decoding.Tests
 
         // Test as much as we can with simple C# examples inline below.
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/91923", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsAppleMobile))]
         public void SimpleSignatureProviderCoverage()
         {
             using (FileStream stream = File.OpenRead(AssemblyPathHelper.GetAssemblyLocation(typeof(SignaturesToDecode<>).GetTypeInfo().Assembly)))
@@ -258,14 +259,17 @@ namespace System.Reflection.Metadata.Decoding.Tests
                 Assert.Equal("DoSomething", reader.GetString(methodDef.Name));
 
                 MethodBodyBlock body = peReader.GetMethodBody(methodDef.RelativeVirtualAddress);
-                StandaloneSignature localSignature = reader.GetStandaloneSignature(body.LocalSignature);
+                var il = body.GetILBytes();
+                // ILStrip replaces method body with the 'ret' IL opcode i.e. 0x2a
+                if (!(il?.Length == 1 && il[0] == 0x2a)) {
+                    StandaloneSignature localSignature = reader.GetStandaloneSignature(body.LocalSignature);
+                    ImmutableArray<string> localTypes = localSignature.DecodeLocalSignature(provider, genericContext: null);
 
-                ImmutableArray<string> localTypes = localSignature.DecodeLocalSignature(provider, genericContext: null);
-
-                // Compiler can generate temporaries or re-order so just check the ones we expect are there.
-                // (They could get optimized away too. If that happens in practice, change this test to use hard-coded signatures.)
-                Assert.Contains("uint8[] pinned", localTypes);
-                Assert.Contains("uint8[]", localTypes);
+                    // Compiler can generate temporaries or re-order so just check the ones we expect are there.
+                    // (They could get optimized away too. If that happens in practice, change this test to use hard-coded signatures.)
+                    Assert.Contains("uint8[] pinned", localTypes);
+                    Assert.Contains("uint8[]", localTypes);
+                }
             }
         }
 
@@ -274,10 +278,14 @@ namespace System.Reflection.Metadata.Decoding.Tests
             public static unsafe int DoSomething()
             {
                 byte[] bytes = new byte[] { 1, 2, 3 };
+                Keep(ref bytes);
                 fixed (byte* bytePtr = bytes)
                 {
                     return *bytePtr;
                 }
+
+                // Reference local variables to prevent them from being optimized out by Roslyn
+                static void Keep<T>(ref T value) { };
             }
         }
 

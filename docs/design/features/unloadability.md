@@ -11,7 +11,7 @@
 After investigating all the details, it was decided that we won't support the following scenarios in unloadable `AssemblyLoadContext` unless we get strong feedback on a need to support those.
 * Loading IJW assemblies
 * Using R2R generated code from assemblies. R2R assemblies will be loaded as plain IL ones.
-* Implementation of the FixedAddressValueTypeAttribute
+* ~~Implementation of the FixedAddressValueTypeAttribute~~ Support added in .NET 9
 ## General scenarios
 Based on various discussions and feedback on github, the following general scenarios were often mentioned as use cases for unloadability.
 * Plugin scenarios when dynamic plugin loading and unloading is required.
@@ -29,7 +29,7 @@ ASP.NET (not Core) originally used AppDomains to support dynamic compiling and r
 ASP.NET Core moved to a more static model because of the lack of ability to unload stuff. Many of their customers did the same thing too. So, there is no pressing need for unloadability there at the moment.
 
 However, they use two tool that could potentially benefit from the unloadability
-* Dotnet watch tool that watches a directory with sources and when a source file changes, it triggers recompilation and re-deployment. So, people can edit a source code used for their web page and the web server gets automatically recompiled and restarted. A need to restart the process negatively affects its performance. So, the ability to unload and reload just the modified assemblies without process restart would be very helpful here. See https://docs.microsoft.com/en-us/aspnet/core/tutorials/dotnet-watch?view=aspnetcore-2.1 for more details on the watch tool usage in ASP.NET Core.
+* Dotnet watch tool that watches a directory with sources and when a source file changes, it triggers recompilation and re-deployment. So, people can edit a source code used for their web page and the web server gets automatically recompiled and restarted. A need to restart the process negatively affects its performance. So, the ability to unload and reload just the modified assemblies without process restart would be very helpful here. See https://learn.microsoft.com/aspnet/core/tutorials/dotnet-watch?view=aspnetcore-2.1 for more details on the watch tool usage in ASP.NET Core.
 * Compilation server for Razor pages (on demand .cshtml files compilation to .dll). (https://github.com/aspnet/Razor/blob/master/src/Microsoft.AspNetCore.Razor.Tools/CompilerHost.cs)
 ### LINQPad
 LINQPad (https://www.linqpad.net) is a very popular third-party tool for designing LINQ queries against various data sources. It uses AppDomains and their unloading mechanism heavily for the following purposes:
@@ -84,11 +84,9 @@ We can reuse the `ComCallableWrapperCache` with only a very minor modifications 
 
 The After the `AssemblyLoadContext` unload is initiated and the managed `LoaderAllocator` is collected, the `ComCallableWrapperCache` is destroyed in the `LoaderAllocator::Destroy` method.
 #### FixedAddressValueTypeAttribute for fields in collectible types
-After investigating all the details, it was decided that we won't add support for the FixedAddressValueTypeAttribute unless we get strong feedback on a need to support it.
+The fields with `FixedAddressValueTypeAttribute` are always pinned, so their address in memory never changes. Historically for non-collectible types, these fields are held pinned by a pinned `GCHandle`. But we could not use that for collectible types, since the `MethodTable` whose pointer is stored in the respective boxed instance of the value type would prevent the managed `LoaderAllocator` from being collected.
 
-If we decided to add support for it, we could do it as follows. The fields with `FixedAddressValueTypeAttribute` are always pinned, so their address in memory never changes. For non-collectible types, these fields are held pinned by a pinned `GCHandle`. But we cannot use that for collectible types, since the `MethodTable` whose pointer is stored in the respective boxed instance of the value type would prevent the managed `LoaderAllocator` from being collected.
-
-For collectible types, a new handle table can be added to `LoaderAllocator`. This handle table would be scanned during GC in a special way and all the objects the handles point to will be reported as pinned. The special scanning would be done in `Module::EnumRegularStaticGCRefs`. To pin the objects, the `promote_func` needs to be passed `GC_CALL_PINNED` in the third argument.
+Since .NET 9, we always allocate these fields in the Pinned Object Heap. That way, they are pinned without being held by a handle, and are able to be collected.
 ## AssemblyLoadContext unloading process
 For better understanding of the unloading process, it is important to understand relations between several components that play role in the lifetime management. The picture below shows these components and the ways they reference each other.
 The green marked relations and blocks are the new ones that were added to enable unloadable `AssemblyLoadContext`. The black ones were already present before.

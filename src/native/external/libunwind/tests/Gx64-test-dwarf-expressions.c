@@ -3,12 +3,13 @@
 #include <stdlib.h>
 
 #include <libunwind.h>
+#include "compiler.h"
 
 static int verbose;
 static int nerrors;
 
-#define panic(args...)							  \
-	do { printf (args); ++nerrors; } while (0)
+#define panic(...)							  \
+	do { printf (__VA_ARGS__); ++nerrors; } while (0)
 
 // Assembly routine which sets up the stack for the test then calls another one
 // which clobbers the stack, and which in turn calls recover_register below
@@ -46,7 +47,7 @@ extern int64_t recover_register(int64_t regnum, int64_t height)
 }
 
 int
-main (int argc, char **argv)
+main (int argc, char **argv UNUSED)
 {
   if (argc > 1)
     verbose = 1;

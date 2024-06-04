@@ -23,7 +23,8 @@ namespace Test
         private void DoMethod() { }
 
         [Fact]
-        public static int TestEntryPoint()
+        [OuterLoop]
+        public static void TestEntryPoint()
         {
             s_stat =
                 new T(new S(new T(new S(new T(new S(new T(new S(new T(new S(
@@ -40,7 +41,6 @@ namespace Test
                 ))))))))))
                 ))))))))))
                 ;
-            return 100;
         }
     }
 }

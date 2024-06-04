@@ -1,13 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
+using Microsoft.Win32.SafeHandles;
 
 namespace System
 {
@@ -245,7 +245,7 @@ namespace System
             // character is simply accepted. Fancier handling is not required
             // because the program name must be a legal NTFS/HPFS file name.
             // Note that the double-quote characters are not copied, nor do they
-            // contribyte to character_count.
+            // contribute to character_count.
 
             bool inQuotes = false;
             stringBuilder = new ValueStringBuilder(stringBuffer);

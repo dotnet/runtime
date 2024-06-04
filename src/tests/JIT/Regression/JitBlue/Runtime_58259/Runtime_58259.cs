@@ -5,10 +5,9 @@ using Xunit;
 public unsafe class Runtime_58259
 {
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         M(out _);
-        return 100;
     }
 
     static delegate* unmanaged<out int, void> _f;

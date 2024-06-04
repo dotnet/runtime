@@ -45,11 +45,19 @@ namespace Mono.Linker
 				// may ask for attributes (suppressions) and thus we could end up in this very place again
 				// So first add a dummy record and once processed we will replace it with the real data
 				_embeddedXmlInfos.Add (assembly, new AttributeInfo ());
-				xmlInfo = EmbeddedXmlInfo.ProcessAttributes (assembly, _context);
+				xmlInfo = _context.EmbeddedXmlInfo.ProcessAttributes (assembly, _context);
 				_embeddedXmlInfos[assembly] = xmlInfo;
 			}
 
 			return xmlInfo != null;
+		}
+
+		public IEnumerable<CustomAttribute> GetCustomAttributes (ICustomAttributeProvider provider, string attributeNamespace, string attributeName)
+		{
+			foreach (var attr in GetCustomAttributes (provider)) {
+				if (attr.AttributeType.Namespace == attributeNamespace && attr.AttributeType.Name == attributeName)
+					yield return attr;
+			}
 		}
 
 		public IEnumerable<CustomAttribute> GetCustomAttributes (ICustomAttributeProvider provider)

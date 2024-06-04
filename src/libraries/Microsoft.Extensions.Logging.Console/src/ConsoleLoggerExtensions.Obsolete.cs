@@ -13,6 +13,12 @@ namespace Microsoft.Extensions.Logging
 {
     public static partial class ConsoleLoggerExtensions
     {
+        /// <summary>
+        /// This method is retained only for compatibility.
+        /// </summary>
+        /// <param name="factory">This method is retained only for compatibility.</param>
+        /// <param name="configuration">This method is retained only for compatibility.</param>
+        /// <returns>This method is retained only for compatibility.</returns>
         [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("This method is retained only for compatibility. The recommended alternative is AddConsole(this ILoggingBuilder builder).", error: true)]
         public static Logging.ILoggerFactory AddConsole(this Logging.ILoggerFactory factory, Extensions.Configuration.IConfiguration configuration)
@@ -21,6 +27,12 @@ namespace Microsoft.Extensions.Logging
             return factory.AddConsole(settings);
         }
 
+        /// <summary>
+        /// This method is retained only for compatibility.
+        /// </summary>
+        /// <param name="factory">This method is retained only for compatibility.</param>
+        /// <param name="settings">This method is retained only for compatibility.</param>
+        /// <returns>This method is retained only for compatibility.</returns>
         [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("This method is retained only for compatibility. The recommended alternative is AddConsole(this ILoggingBuilder builder).", error: true)]
         public static Logging.ILoggerFactory AddConsole(this Logging.ILoggerFactory factory, Console.IConsoleLoggerSettings settings)
@@ -29,6 +41,13 @@ namespace Microsoft.Extensions.Logging
             return factory;
         }
 
+        /// <summary>
+        /// This method is retained only for compatibility.
+        /// </summary>
+        /// <param name="factory">This method is retained only for compatibility.</param>
+        /// <param name="minLevel">This method is retained only for compatibility.</param>
+        /// <param name="includeScopes">This method is retained only for compatibility.</param>
+        /// <returns>This method is retained only for compatibility.</returns>
         [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("This method is retained only for compatibility. The recommended alternative is AddConsole(this ILoggingBuilder builder).", error: true)]
         public static Logging.ILoggerFactory AddConsole(this Logging.ILoggerFactory factory, Logging.LogLevel minLevel, bool includeScopes)
@@ -37,6 +56,12 @@ namespace Microsoft.Extensions.Logging
             return factory;
         }
 
+        /// <summary>
+        /// This method is retained only for compatibility.
+        /// </summary>
+        /// <param name="factory">This method is retained only for compatibility.</param>
+        /// <param name="minLevel">This method is retained only for compatibility.</param>
+        /// <returns>This method is retained only for compatibility.</returns>
         [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("This method is retained only for compatibility. The recommended alternative is AddConsole(this ILoggingBuilder builder).", error: true)]
         public static Logging.ILoggerFactory AddConsole(this Logging.ILoggerFactory factory, Logging.LogLevel minLevel)
@@ -45,6 +70,12 @@ namespace Microsoft.Extensions.Logging
             return factory;
         }
 
+        /// <summary>
+        /// This method is retained only for compatibility.
+        /// </summary>
+        /// <param name="factory">This method is retained only for compatibility.</param>
+        /// <param name="includeScopes">This method is retained only for compatibility.</param>
+        /// <returns>This method is retained only for compatibility.</returns>
         [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("This method is retained only for compatibility. The recommended alternative is AddConsole(this ILoggingBuilder builder).", error: true)]
         public static Logging.ILoggerFactory AddConsole(this Logging.ILoggerFactory factory, bool includeScopes)
@@ -53,6 +84,13 @@ namespace Microsoft.Extensions.Logging
             return factory;
         }
 
+        /// <summary>
+        /// This method is retained only for compatibility.
+        /// </summary>
+        /// <param name="factory">This method is retained only for compatibility.</param>
+        /// <param name="filter">This method is retained only for compatibility.</param>
+        /// <param name="includeScopes">This method is retained only for compatibility.</param>
+        /// <returns>This method is retained only for compatibility.</returns>
         [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("This method is retained only for compatibility. The recommended alternative is AddConsole(this ILoggingBuilder builder).", error: true)]
         public static Logging.ILoggerFactory AddConsole(this Logging.ILoggerFactory factory, System.Func<string, Logging.LogLevel, bool> filter, bool includeScopes)
@@ -61,6 +99,12 @@ namespace Microsoft.Extensions.Logging
             return factory;
         }
 
+        /// <summary>
+        /// This method is retained only for compatibility.
+        /// </summary>
+        /// <param name="factory">This method is retained only for compatibility.</param>
+        /// <param name="filter">This method is retained only for compatibility.</param>
+        /// <returns>This method is retained only for compatibility.</returns>
         [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("This method is retained only for compatibility. The recommended alternative is AddConsole(this ILoggingBuilder builder).", error: true)]
         public static Logging.ILoggerFactory AddConsole(this Logging.ILoggerFactory factory, System.Func<string, Logging.LogLevel, bool> filter)
@@ -69,6 +113,11 @@ namespace Microsoft.Extensions.Logging
             return factory;
         }
 
+        /// <summary>
+        /// This method is retained only for compatibility.
+        /// </summary>
+        /// <param name="factory">This method is retained only for compatibility.</param>
+        /// <returns>This method is retained only for compatibility.</returns>
         [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("This method is retained only for compatibility. The recommended alternative is AddConsole(this ILoggingBuilder builder).", error: true)]
         public static Logging.ILoggerFactory AddConsole(this Logging.ILoggerFactory factory)

@@ -20,7 +20,7 @@
     <!-- support override via commandline -->
     <TargetFrameworksToInclude Condition="'$(TargetFrameworksToInclude)' != ''" Include="$(TargetFrameworksToInclude)" />
     <SymbolsPackages Include="$(LibrariesAllConfigShippingPackagesDir)*.symbols.nupkg" />
-    
+
     <AllPackagesFilePath Include="$(LibrariesAllConfigShippingPackagesDir)*.nupkg" Exclude="@(SymbolsPackages)" Condition="Exists('$(LibrariesAllConfigShippingPackagesDir)')">
       <PackageName>$([System.String]::new($([System.Text.RegularExpressions.Regex]::Match($([System.IO.Path]::GetFileNameWithoutExtension('%(Identity)')), $(PackageNamePattern)))).TrimEnd('.'))</PackageName>
       <PackagePath>%(Identity)</PackagePath>
@@ -63,10 +63,30 @@
   </Target>
 
   <Target Name="GetSupportedPackages">
-    <!-- Adding NetCoreAppCurrent to the supported test frameworks list to avoid a test gap when
-         the repository retargets NetCoreAppCurrent to the next major version. -->
     <ItemGroup>
+      <SupportedTestFramework Include="$(NetCoreAppMinimum)" />
+      <SupportedTestFramework Include="$(NetCoreAppPrevious)" />
       <SupportedTestFramework Include="$(NetCoreAppCurrent)" />
+      <!--
+        We aren't shipping net6.0 and net7.0 assets any more.
+        TODO: Move this into the package testing targets.
+        Also, consider removing all Arcade-based configuration for supported testing frameworks and instead
+        configure it here with our target TFM properties.
+      -->
+      <SupportedTestFramework Remove="net6.0" />
+      <SupportedTestFramework Remove="net7.0" />
+    </ItemGroup>
+  
+    <ItemGroup>
+      <SupportedTestFramework Include="netstandard2.0" />
+      <SupportedTestFramework Include="netstandard2.1" />
+    </ItemGroup>
+  
+    <ItemGroup>
+      <SupportedTestFramework Include="$(NetFrameworkMinimum)" />
+      <SupportedTestFramework Include="net471" />
+      <SupportedTestFramework Include="net472" />
+      <SupportedTestFramework Include="net48" />
     </ItemGroup>
 
     <GetCompatiblePackageTargetFrameworks PackagePaths="@(TestPackagesPath)"
@@ -125,7 +145,7 @@
       <TestProject Include="$(TestDir)$(TestProjectName)" Condition="'$(PackagesToTest)' == ''" />
       <TestProject Include="%(SupportedPackage.ProjectFile)" Condition="'$(PackagesToTest)' != ''" />
     </ItemGroup>
-    
+
     <MSBuild Projects="@(TestProject)"
              Properties="MSBuildRestoreSessionId=$([System.Guid]::NewGuid())"
              Targets="Restore" />

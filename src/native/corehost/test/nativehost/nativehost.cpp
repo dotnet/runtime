@@ -525,6 +525,19 @@ int main(const int argc, const pal::char_t *argv[])
             return -1;
         }
 
+        // 2 optional arguments indicating whether we should start the runtime
+        if (argc > 5)
+        {
+            const pal::string_t hostfxr_path = argv[4];
+            const pal::char_t* config_path = argv[5];
+            pal::stringstream_t test_output;
+            if (!host_context_test::config(host_context_test::check_properties::none, hostfxr_path, config_path, 0, nullptr, test_output))
+            {
+                std::cout << "Failed to start runtime from path: " << tostr(hostfxr_path).data() << std::endl;
+                return EXIT_FAILURE;
+            }
+        }
+
         const pal::string_t ijw_library_path = argv[2];
         std::vector<char> entry_point_name = tostr(argv[3]);
 
@@ -543,8 +556,16 @@ int main(const int argc, const pal::char_t *argv[])
             std::cout << "Failed to find entry point: " << entry_point_name.data() << std::endl;
             return EXIT_FAILURE;
         }
-
-        entry_point();
+        try
+        {
+            entry_point();
+        }
+        catch (...)
+        {
+            // entry_point will throw in some tests, this is expected.
+            // We must catch this exception to ensure that the CRT does not pop a modal dialog
+            return EXIT_FAILURE;
+        }
         return EXIT_SUCCESS;
     }
 #endif

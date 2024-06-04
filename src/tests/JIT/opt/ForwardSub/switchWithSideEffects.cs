@@ -89,10 +89,9 @@ public class SwitchWithSideEffects
         }
     }
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         new SwitchWithSideEffects().Method0();
-        return 100;
     }
 }
 /*

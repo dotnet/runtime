@@ -3,6 +3,10 @@
   <PropertyGroup>
     <GeneratorProjectBaseTargetPath>analyzers/dotnet</GeneratorProjectBaseTargetPath>
     <GeneratorProjectBaseTargetPath Condition="'$(AnalyzerLanguage)' != ''">$(GeneratorProjectBaseTargetPath)/$(AnalyzerLanguage)</GeneratorProjectBaseTargetPath>
+
+    <!-- RS1041: Compiler extensions should be implemented in assemblies targeting netstandard2.0.
+         Runtime intentionally targets .NETCoreApp for nullable annotation warnings without shipping. -->
+    <NoWarn Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">$(NoWarn);RS1041</NoWarn>
   </PropertyGroup>
 
   <ItemDefinitionGroup>

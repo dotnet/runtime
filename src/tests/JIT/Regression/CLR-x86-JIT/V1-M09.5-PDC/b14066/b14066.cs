@@ -7,12 +7,10 @@ namespace DefaultNamespace
     public class Prob
     {
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             System.Console.WriteLine(System.Math.Exp(System.Double.PositiveInfinity));
             System.Console.WriteLine(System.Math.Exp(System.Double.NegativeInfinity));
-
-            return 100;
         }
     }
 }

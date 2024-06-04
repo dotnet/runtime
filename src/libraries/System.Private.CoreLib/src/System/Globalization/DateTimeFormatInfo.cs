@@ -1914,8 +1914,8 @@ namespace System.Globalization
         internal const string JapaneseLangName = "ja";
         internal const string EnglishLangName = "en";
 
-        private static volatile DateTimeFormatInfo? s_jajpDTFI;
-        private static volatile DateTimeFormatInfo? s_zhtwDTFI;
+        private static DateTimeFormatInfo? s_jajpDTFI;
+        private static DateTimeFormatInfo? s_zhtwDTFI;
 
         /// <summary>
         /// Create a Japanese DTFI which uses JapaneseCalendar.  This is used to parse
@@ -2110,8 +2110,8 @@ namespace System.Globalization
 
                 if ((FormatFlags & DateTimeFormatFlags.UseGenitiveMonth) != 0)
                 {
-                    string [] genitiveMonthNames = InternalGetGenitiveMonthNames(abbreviated: false);
-                    string [] abbreviatedGenitiveMonthNames = InternalGetGenitiveMonthNames(abbreviated: true);
+                    string[] genitiveMonthNames = InternalGetGenitiveMonthNames(abbreviated: false);
+                    string[] abbreviatedGenitiveMonthNames = InternalGetGenitiveMonthNames(abbreviated: true);
 
                     for (int i = 1; i <= 13; i++)
                     {

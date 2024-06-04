@@ -373,7 +373,7 @@ namespace Internal.Metadata.NativeFormat.Writer
 
                     // 3rd, the name, Quote the string if not already quoted
                     string asString = rec.ToString(false);
-                    bool alreadyQuoted = asString.StartsWith("\"") && asString.EndsWith("\"");
+                    bool alreadyQuoted = asString.StartsWith('\"') && asString.EndsWith('\"');
                     if (!alreadyQuoted)
                     {
                         LogWriter.Write("\"");
@@ -875,7 +875,7 @@ namespace Internal.Metadata.NativeFormat.Writer
     {
         public override string ToString()
         {
-            string str = Enum.GetName(typeof(MethodSemanticsAttributes), Attributes);
+            string str = Enum.GetName(Attributes);
             return str + " : " + Method.ToString();
         }
     }
@@ -903,7 +903,7 @@ namespace Internal.Metadata.NativeFormat.Writer
     {
         public override string ToString()
         {
-            return string.Join(" ", Enum.GetName(typeof(CallingConventions), CallingConvention),
+            return string.Join(" ", Enum.GetName(CallingConvention),
                 Type.ToString()) + "(" + ToString(Parameters) + ")";
         }
     }

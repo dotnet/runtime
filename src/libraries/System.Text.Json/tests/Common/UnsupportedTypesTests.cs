@@ -49,7 +49,7 @@ namespace System.Text.Json.Serialization.Tests
             // Verify Nullable<> semantics. NSE is not thrown because the serializer handles null.
             if (isNullableOfT)
             {
-                Assert.Null(JsonSerializer.Deserialize<T>("null"));
+                Assert.Null(await Serializer.DeserializeWrapper<T>("null"));
 
                 json = $@"{{""Prop"":null}}";
                 ClassWithType<T> obj = await Serializer.DeserializeWrapper<ClassWithType<T>>(json);

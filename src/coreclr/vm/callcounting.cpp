@@ -660,6 +660,13 @@ bool CallCountingManager::SetCodeEntryPoint(
             CallCount callCountThreshold = g_pConfig->TieredCompilation_CallCountThreshold();
             _ASSERTE(callCountThreshold != 0);
 
+            // Let's tier up all cast helpers faster than other methods. This is because we want to import them as
+            // direct calls in codegen and they need to be promoted earlier than their callers.
+            if (methodDesc->GetMethodTable() == g_pCastHelpers)
+            {
+                callCountThreshold = max<CallCount>(1, (CallCount)(callCountThreshold / 2));
+            }
+
             NewHolder<CallCountingInfo> callCountingInfoHolder = new CallCountingInfo(activeCodeVersion, callCountThreshold);
             callCountingInfoByCodeVersionHash.Add(callCountingInfoHolder);
             callCountingInfo = callCountingInfoHolder.Extract();
@@ -751,7 +758,7 @@ PCODE CallCountingManager::OnCallCountThresholdReached(TransitionBlock *transiti
     STATIC_CONTRACT_GC_TRIGGERS;
     STATIC_CONTRACT_MODE_COOPERATIVE;
 
-    PCODE codeEntryPoint = NULL;
+    PCODE codeEntryPoint = 0;
 
     BEGIN_PRESERVE_LAST_ERROR;
 
@@ -918,7 +925,7 @@ void CallCountingManager::CompleteCallCounting()
                     if (!activeCodeVersion.IsNull())
                     {
                         PCODE activeNativeCode = activeCodeVersion.GetNativeCode();
-                        if (activeNativeCode != NULL)
+                        if (activeNativeCode != 0)
                         {
                             methodDesc->SetCodeEntryPoint(activeNativeCode);
                             break;

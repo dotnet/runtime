@@ -26,9 +26,9 @@ bool Compiler::optDoEarlyPropForFunc()
 
 bool Compiler::optDoEarlyPropForBlock(BasicBlock* block)
 {
-    // TODO-MDArray: bool bbHasMDArrayRef = (block->bbFlags & BBF_HAS_MD_IDX_LEN) != 0;
-    bool bbHasArrayRef  = (block->bbFlags & BBF_HAS_IDX_LEN) != 0;
-    bool bbHasNullCheck = (block->bbFlags & BBF_HAS_NULLCHECK) != 0;
+    // TODO-MDArray: bool bbHasMDArrayRef = block->HasFlag(BBF_HAS_MID_IDX_LEN);
+    bool bbHasArrayRef  = block->HasFlag(BBF_HAS_IDX_LEN);
+    bool bbHasNullCheck = block->HasFlag(BBF_HAS_NULLCHECK);
     return bbHasArrayRef || bbHasNullCheck;
 }
 
@@ -58,7 +58,7 @@ void Compiler::optCheckFlagsAreSet(unsigned    methodFlag,
         assert(false);
     }
 
-    if ((basicBlock->bbFlags & bbFlag) == 0)
+    if (!basicBlock->HasFlag((BasicBlockFlags)bbFlag))
     {
         printf("%s is not set on " FMT_BB " but is required because of the following tree \n", bbFlagStr,
                basicBlock->bbNum);
@@ -371,21 +371,22 @@ GenTree* Compiler::optPropGetValueRec(unsigned lclNum, unsigned ssaNum, optPropK
     {
         assert(ssaDefStore->OperIsLocalStore());
 
-        GenTree* data = ssaDefStore->Data();
+        GenTree* defValue = ssaDefStore->Data();
 
-        // Recursively track the Rhs for "entire" stores.
-        if (ssaDefStore->OperIs(GT_STORE_LCL_VAR) && (ssaDefStore->GetLclNum() == lclNum) && data->OperIs(GT_LCL_VAR))
+        // Recursively track the value for "entire" stores.
+        if (ssaDefStore->OperIs(GT_STORE_LCL_VAR) && (ssaDefStore->GetLclNum() == lclNum) &&
+            defValue->OperIs(GT_LCL_VAR))
         {
-            unsigned dataLclNum = data->AsLclVarCommon()->GetLclNum();
-            unsigned dataSsaNum = data->AsLclVarCommon()->GetSsaNum();
+            unsigned defValueLclNum = defValue->AsLclVar()->GetLclNum();
+            unsigned defValueSsaNum = defValue->AsLclVar()->GetSsaNum();
 
-            value = optPropGetValueRec(dataLclNum, dataSsaNum, valueKind, walkDepth + 1);
+            value = optPropGetValueRec(defValueLclNum, defValueSsaNum, valueKind, walkDepth + 1);
         }
         else
         {
             if (valueKind == optPropKind::OPK_ARRAYLEN)
             {
-                value = getArrayLengthFromAllocation(data DEBUGARG(ssaVarDsc->GetBlock()));
+                value = getArrayLengthFromAllocation(defValue DEBUGARG(ssaVarDsc->GetBlock()));
                 if (value != nullptr)
                 {
                     if (!value->IsCnsIntOrI())
@@ -427,7 +428,7 @@ bool Compiler::optFoldNullCheck(GenTree* tree, LocalNumberToNullCheckTreeMap* nu
                             compCurBB);
     }
 #else
-    if ((compCurBB->bbFlags & BBF_HAS_NULLCHECK) == 0)
+    if (!compCurBB->HasFlag(BBF_HAS_NULLCHECK))
     {
         return false;
     }
@@ -441,8 +442,7 @@ bool Compiler::optFoldNullCheck(GenTree* tree, LocalNumberToNullCheckTreeMap* nu
     {
 #ifdef DEBUG
         // Make sure the transformation happens in debug, check, and release build.
-        assert(optDoEarlyPropForFunc() && optDoEarlyPropForBlock(compCurBB) &&
-               (compCurBB->bbFlags & BBF_HAS_NULLCHECK) != 0);
+        assert(optDoEarlyPropForFunc() && optDoEarlyPropForBlock(compCurBB) && compCurBB->HasFlag(BBF_HAS_NULLCHECK));
         if (verbose)
         {
             printf("optEarlyProp Marking a null check for removal\n");
@@ -454,7 +454,7 @@ bool Compiler::optFoldNullCheck(GenTree* tree, LocalNumberToNullCheckTreeMap* nu
         nullCheckTree->gtFlags &= ~(GTF_EXCEPT | GTF_DONT_CSE);
 
         // Set this flag to prevent reordering
-        nullCheckTree->gtFlags |= GTF_ORDER_SIDEEFF;
+        nullCheckTree->SetHasOrderingSideEffect();
         nullCheckTree->gtFlags |= GTF_IND_NONFAULTING;
 
         if (nullCheckParent != nullptr)
@@ -511,7 +511,7 @@ GenTree* Compiler::optFindNullCheckToFold(GenTree* tree, LocalNumberToNullCheckT
 {
     assert(tree->OperIsIndirOrArrMetaData());
 
-    GenTree* addr = tree->GetIndirOrArrMetaDataAddr();
+    GenTree* addr = tree->GetIndirOrArrMetaDataAddr()->gtEffectiveVal();
 
     ssize_t offsetValue = 0;
 
@@ -577,8 +577,7 @@ GenTree* Compiler::optFindNullCheckToFold(GenTree* tree, LocalNumberToNullCheckT
             return nullptr;
         }
 
-        const bool commaOnly              = true;
-        GenTree*   commaOp1EffectiveValue = defValue->gtGetOp1()->gtEffectiveVal(commaOnly);
+        GenTree* commaOp1EffectiveValue = defValue->gtGetOp1()->gtEffectiveVal();
 
         if (commaOp1EffectiveValue->OperGet() != GT_NULLCHECK)
         {
@@ -764,8 +763,7 @@ bool Compiler::optCanMoveNullCheckPastTree(GenTree* tree,
             else if (isInsideTry)
             {
                 // Inside try we allow only stores to locals not live in handlers.
-                // lvVolatileHint is set to true on variables that are line in handlers.
-                result = tree->OperIs(GT_STORE_LCL_VAR) && !lvaTable[tree->AsLclVar()->GetLclNum()].lvVolatileHint;
+                result = tree->OperIs(GT_STORE_LCL_VAR) && !lvaTable[tree->AsLclVar()->GetLclNum()].lvLiveInOutOfHndlr;
             }
             else
             {

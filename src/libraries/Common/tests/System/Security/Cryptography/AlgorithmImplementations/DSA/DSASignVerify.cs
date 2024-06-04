@@ -75,7 +75,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
     }
 
-#if NETCOREAPP
+#if NET
     [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Not supported on Browser/iOS/tvOS/MacCatalyst")]
     public sealed class DSASignVerify_Span : DSASignVerify
     {
@@ -388,6 +388,25 @@ namespace System.Security.Cryptography.Dsa.Tests
                 data[0] ^= 0xFF;
                 signature[signature.Length - 1] ^= 0xFF;
                 Assert.False(VerifyData(dsa, data, signature, HashAlgorithmName.SHA1), "Tampered signature verifies");
+            }
+        }
+
+        [Fact]
+        public void SignData_NullSignature_Fails()
+        {
+            using (DSA dsa = DSAFactory.Create())
+            {
+                dsa.ImportParameters(DSATestData.GetDSA1024Params());
+
+                bool result = dsa.TrySignData(
+                    "hello"u8,
+                    (Span<byte>)null,
+                    HashAlgorithmName.SHA1,
+                    DSASignatureFormat.IeeeP1363FixedFieldConcatenation,
+                    out int bytesWritten);
+
+                Assert.False(result);
+                Assert.Equal(0, bytesWritten);
             }
         }
 

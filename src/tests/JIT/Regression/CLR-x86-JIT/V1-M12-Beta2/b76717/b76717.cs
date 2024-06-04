@@ -8,7 +8,7 @@ using Xunit;
 public class rep
 {
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         char[] chars = new char[] { (char)0x800 };
         byte[] bytes = new byte[20];
@@ -21,7 +21,6 @@ public class rep
         if (chars2[0] != chars[0])
             throw new Exception("Char differed after being roundtripped!  got: U+" + ((short)chars2[0]).ToString("x"));
         Console.WriteLine("looks good.");
-        return 100;
     }
 }
 

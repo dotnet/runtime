@@ -32,9 +32,9 @@ namespace Internal.Runtime
         HasFinalizerFlag = 0x00100000,
 
         /// <summary>
-        /// This type contain GC pointers.
+        /// This type has optional fields present.
         /// </summary>
-        HasPointersFlag = 0x00200000,
+        OptionalFieldsFlag = 0x00200000,
 
         /// <summary>
         /// This MethodTable has sealed vtable entries
@@ -48,9 +48,9 @@ namespace Internal.Runtime
         GenericVarianceFlag = 0x00800000,
 
         /// <summary>
-        /// This type has optional fields present.
+        /// This type contain GC pointers.
         /// </summary>
-        OptionalFieldsFlag = 0x01000000,
+        HasPointersFlag = 0x01000000,
 
         /// <summary>
         /// This type is generic.

@@ -2,12 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
 using System.Diagnostics;
+using Xunit;
 
 public class SharedExceptions
 {
     public int retVal =0;
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Console.WriteLine("Test that StackTrace for OOM is proper if memory is available");
         SharedExceptions test = new SharedExceptions();
@@ -51,10 +53,18 @@ public class SharedExceptions
             {
                 oomStack = oomStack.Substring(0, oomStack.IndexOf(':') - 1);
             }
+            if (oomStack.IndexOf("+ 0x") != -1)
+            {
+                oomStack = oomStack.Substring(0, oomStack.IndexOf("+ 0x") - 1);
+            }
 
             if (expectedStack.IndexOf(':') != -1)
             {
                 expectedStack = expectedStack.Substring(0, expectedStack.IndexOf(':') - 1);
+            }
+            if (expectedStack.IndexOf("+ 0x") != -1)
+            {
+                expectedStack = expectedStack.Substring(0, expectedStack.IndexOf("+ 0x") - 1);
             }
 
             if (oomStack != expectedStack)

@@ -20,6 +20,7 @@ This is a list of additions and edits to be made in ECMA-335 specifications. It 
 - [Atomic reads and writes](#atomic-reads-and-writes)
 - [Backward branch constraints](#backward-branch-constraints)
 - [Transient pointers](#transient-pointers)
+- [Creating arrays using newobj](#creating-arrays-using-newobj)
 - [API documentation](#api-documentation)
 - [Debug Interchange Format](#debug-interchange-format)
 
@@ -379,6 +380,12 @@ The requirement to sort InterfaceImpl table using the Interface column as a seco
 The text should be deleted:
 
 > Furthermore, ~~the InterfaceImpl table is sorted using the Interface column as a secondary key, and~~ the GenericParam table is sorted using the Number column as a secondary key.
+
+In addition to the TypeDef table having a special ordering constraint, the ExportedTypes table ALSO has the same constraint.
+
+This line should be changed.
+
+> Finally, this TypeDef _and ExportedType_ ~~table has~~ _tables have_ a special ordering constraint: the definition of an enclosing class shall precede the definition of all classes it encloses.
 
 ## Module Initializer
 
@@ -1056,9 +1063,13 @@ The paragraphs mentioning "transient pointers" in section "I.12.3.2.1 The evalua
 
 Instead, note is added to sections "III.3.39 ldarga" and "III.3.44 ldloca": The arguments / local variables are stored in unmanaged memory. The address of argument / local variable can be converted to unmanaged pointer without explicit pinning.
 
+## Creating arrays using newobj
+
+Note about creating zero-based, one-dimensional arrays in section III.4.21 "newobj – create a new object" is replaced with "All zero-based, one-dimensional arrays *should* be created using newarr, not newobj". Rationale: All arrays have runtime provided constructors. It does not make sense to disallow one specific constructor just because there is more efficient alternative.
+
 ## API documentation
 
-API documentation included in partition IV: Profiles and Libraries is superseded by the actively maintained API documentation in https://github.com/dotnet/dotnet-api-docs repo. The documentation is  published at https://docs.microsoft.com/en-us/dotnet/api/.
+API documentation included in partition IV: Profiles and Libraries is superseded by the actively maintained API documentation in https://github.com/dotnet/dotnet-api-docs repo. The documentation is  published at https://learn.microsoft.com/dotnet/api/.
 
 The incorrect description of `System.Array.Initialize` API in section "II.13.2 Initializing value types" is replaced with "The Base Class Library provides the method System.Array.Initialize (see Partition IV) to initialize every element of an array of unboxed value types by calling its parameterless instance constructor."
 

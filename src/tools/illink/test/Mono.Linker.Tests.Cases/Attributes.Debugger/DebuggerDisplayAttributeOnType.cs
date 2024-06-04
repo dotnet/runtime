@@ -4,17 +4,7 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Attributes.Debugger
 {
-#if NETCOREAPP
 	[SetupLinkAttributesFile ("DebuggerAttributesRemoved.xml")]
-#else
-	[SetupLinkerTrimMode ("link")]
-	[SetupLinkerKeepDebugMembers ("false")]
-
-	// Can be removed once this bug is fixed https://bugzilla.xamarin.com/show_bug.cgi?id=58168
-	[SkipPeVerify (SkipPeVerifyForToolchian.Pedump)]
-
-	[KeptMemberInAssembly (PlatformAssemblies.CoreLib, typeof (DebuggerDisplayAttribute), ".ctor(System.String)")]
-#endif
 	public class DebuggerDisplayAttributeOnType
 	{
 		public static void Main ()
@@ -22,13 +12,12 @@ namespace Mono.Linker.Tests.Cases.Attributes.Debugger
 			var foo = new Foo ();
 			var bar = new Bar ();
 			var baz = new Baz ();
+			var fooBaz = new FooBaz ();
+			var fooBar = new FooBar ();
 		}
 
 		[Kept]
 		[KeptMember (".ctor()")]
-#if !NETCOREAPP
-		[KeptAttributeAttribute (typeof (DebuggerDisplayAttribute))]
-#endif
 		[DebuggerDisplay ("{Property}")]
 		class Foo
 		{
@@ -37,9 +26,6 @@ namespace Mono.Linker.Tests.Cases.Attributes.Debugger
 
 		[Kept]
 		[KeptMember (".ctor()")]
-#if !NETCOREAPP
-		[KeptAttributeAttribute (typeof (DebuggerDisplayAttribute))]
-#endif
 		[DebuggerDisplay ("{Method()}")]
 		class Bar
 		{
@@ -51,12 +37,25 @@ namespace Mono.Linker.Tests.Cases.Attributes.Debugger
 
 		[Kept]
 		[KeptMember (".ctor()")]
-#if !NETCOREAPP
-		[KeptAttributeAttribute (typeof (DebuggerDisplayAttribute))]
-#endif
 		[DebuggerDisplay (null)]
 		class Baz
 		{
+		}
+
+		[Kept]
+		[KeptMember (".ctor()")]
+		[DebuggerDisplay ("_", Name="{Property}")]
+		class FooBaz
+		{
+			public int Property { get; set; }
+		}
+
+		[Kept]
+		[KeptMember (".ctor()")]
+		[DebuggerDisplay ("_", Type="{Property}")]
+		class FooBar
+		{
+			public int Property { get; set; }
 		}
 	}
 }

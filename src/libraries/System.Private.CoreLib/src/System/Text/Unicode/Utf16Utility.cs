@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.CompilerServices;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 
 namespace System.Text.Unicode
@@ -278,41 +278,13 @@ namespace System.Text.Unicode
         }
 
         /// <summary>
-        /// Returns true iff the Vector128 represents 8 ASCII UTF-16 characters in machine endianness.
+        /// Returns true iff the TVector represents ASCII UTF-16 characters in machine endianness.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static bool AllCharsInVector128AreAscii(Vector128<ushort> vec)
+        internal static bool AllCharsInVectorAreAscii<TVector>(TVector vec)
+            where TVector : struct, ISimdVector<TVector, ushort>
         {
-            return (vec & Vector128.Create(unchecked((ushort)~0x007F))) == Vector128<ushort>.Zero;
-        }
-
-        /// <summary>
-        /// Given two Vector128 that represent 8 ASCII UTF-16 characters each, returns true iff
-        /// the two inputs are equal using an ordinal case-insensitive comparison.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static bool Vector128OrdinalIgnoreCaseAscii(Vector128<ushort> vec1, Vector128<ushort> vec2)
-        {
-            // ASSUMPTION: Caller has validated that input values are ASCII.
-
-            // the 0x80 bit of each word of 'lowerIndicator' will be set iff the word has value >= 'A'
-            Vector128<sbyte> lowIndicator1 = Vector128.Create((sbyte)(0x80 - 'A')) + vec1.AsSByte();
-            Vector128<sbyte> lowIndicator2 = Vector128.Create((sbyte)(0x80 - 'A')) + vec2.AsSByte();
-
-            // the 0x80 bit of each word of 'combinedIndicator' will be set iff the word has value >= 'A' and <= 'Z'
-            Vector128<sbyte> combIndicator1 =
-                Vector128.LessThan(Vector128.Create(unchecked((sbyte)(('Z' - 'A') - 0x80))), lowIndicator1);
-            Vector128<sbyte> combIndicator2 =
-                Vector128.LessThan(Vector128.Create(unchecked((sbyte)(('Z' - 'A') - 0x80))), lowIndicator2);
-
-            // Convert both vectors to lower case by adding 0x20 bit for all [A-Z][a-z] characters
-            Vector128<sbyte> lcVec1 =
-                Vector128.AndNot(Vector128.Create((sbyte)0x20), combIndicator1) + vec1.AsSByte();
-            Vector128<sbyte> lcVec2 =
-                Vector128.AndNot(Vector128.Create((sbyte)0x20), combIndicator2) + vec2.AsSByte();
-
-            // Compare two lowercased vectors
-            return (lcVec1 ^ lcVec2) == Vector128<sbyte>.Zero;
+            return (vec & TVector.Create(unchecked((ushort)~0x007F))).Equals(TVector.Zero);
         }
     }
 }

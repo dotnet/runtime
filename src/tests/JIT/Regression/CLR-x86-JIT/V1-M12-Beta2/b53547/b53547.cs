@@ -11,10 +11,9 @@ namespace Test
     public class AA
     {
         [Fact]
-        public static unsafe int TestEntryPoint()
+        public static unsafe void TestEntryPoint()
         {
             byte* p = stackalloc byte[new sbyte[] { 10 }[0]];
-            return 100;
         }
     }
 }

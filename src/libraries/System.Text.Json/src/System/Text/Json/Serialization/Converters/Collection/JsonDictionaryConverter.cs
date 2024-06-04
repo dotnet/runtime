@@ -49,20 +49,10 @@ namespace System.Text.Json.Serialization
 
             if (typeInfo.CreateObject is null)
             {
-                // The contract model was not able to produce a default constructor for two possible reasons:
-                // 1. Either the declared collection type is abstract and cannot be instantiated.
-                // 2. The collection type does not specify a default constructor.
-                if (Type.IsAbstract || Type.IsInterface)
-                {
-                    ThrowHelper.ThrowNotSupportedException_CannotPopulateCollection(Type, ref reader, ref state);
-                }
-                else
-                {
-                    ThrowHelper.ThrowNotSupportedException_DeserializeNoConstructor(Type, ref reader, ref state);
-                }
+                ThrowHelper.ThrowNotSupportedException_DeserializeNoConstructor(typeInfo, ref reader, ref state);
             }
 
-            state.Current.ReturnValue = typeInfo.CreateObject()!;
+            state.Current.ReturnValue = typeInfo.CreateObject();
             Debug.Assert(state.Current.ReturnValue is TDictionary);
         }
 
@@ -230,14 +220,14 @@ namespace System.Text.Json.Serialization
                 {
                     if (state.Current.PropertyState == StackFramePropertyState.None)
                     {
-                        state.Current.PropertyState = StackFramePropertyState.ReadName;
-
                         // Read the key name.
                         if (!reader.Read())
                         {
                             value = default;
                             return false;
                         }
+
+                        state.Current.PropertyState = StackFramePropertyState.ReadName;
                     }
 
                     // Determine the property.
@@ -256,10 +246,19 @@ namespace System.Text.Json.Serialization
 
                         if (state.Current.CanContainMetadata)
                         {
-                            ReadOnlySpan<byte> propertyName = reader.GetSpan();
+                            ReadOnlySpan<byte> propertyName = reader.GetUnescapedSpan();
                             if (JsonSerializer.IsMetadataPropertyName(propertyName, state.Current.BaseJsonTypeInfo.PolymorphicTypeResolver))
                             {
-                                ThrowHelper.ThrowUnexpectedMetadataException(propertyName, ref reader, ref state);
+                                if (options.AllowOutOfOrderMetadataProperties)
+                                {
+                                    reader.SkipWithVerify();
+                                    state.Current.EndElement();
+                                    continue;
+                                }
+                                else
+                                {
+                                    ThrowHelper.ThrowUnexpectedMetadataException(propertyName, ref reader, ref state);
+                                }
                             }
                         }
 
@@ -274,14 +273,14 @@ namespace System.Text.Json.Serialization
 
                     if (state.Current.PropertyState < StackFramePropertyState.ReadValue)
                     {
-                        state.Current.PropertyState = StackFramePropertyState.ReadValue;
-
-                        if (!SingleValueReadWithReadAhead(_valueConverter.RequiresReadAhead, ref reader, ref state))
+                        if (!reader.TryAdvanceWithOptionalReadAhead(_valueConverter.RequiresReadAhead))
                         {
                             state.Current.DictionaryKey = key;
                             value = default;
                             return false;
                         }
+
+                        state.Current.PropertyState = StackFramePropertyState.ReadValue;
                     }
 
                     if (state.Current.PropertyState < StackFramePropertyState.TryRead)

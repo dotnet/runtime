@@ -1,5 +1,7 @@
+.\" *********************************** start of \input{common.tex}
+.\" *********************************** end of \input{common.tex}
 '\" t
-.\" Manual page created with latex2man on Thu Aug 16 09:44:45 MDT 2007
+.\" Manual page created with latex2man on Tue Aug 29 12:09:49 2023
 .\" NOTE: This file is generated, DO NOT EDIT.
 .de Vb
 .ft CW
@@ -10,10 +12,10 @@
 
 .fi
 ..
-.TH "\\_U\\_DYN\\_REGISTER" "3" "16 August 2007" "Programming Library " "Programming Library "
+.TH "\\_U\\_DYN\\_REGISTER" "3libunwind" "29 August 2023" "Programming Library " "Programming Library "
 .SH NAME
 _U_dyn_register
-\-\- register unwind\-info for dynamically generated code 
+\-\- register unwind info for dynamically generated code 
 .PP
 .SH SYNOPSIS
 
@@ -29,11 +31,11 @@ _U_dyn_register(unw_dyn_info_t *di);
 
 .PP
 The _U_dyn_register()
-routine registers unwind\-info for a 
-dynamically generated procedure. The procedure\&'s unwind\-info is 
+routine registers unwind info for a 
+dynamically generated procedure. The procedure\&'s unwind info is 
 described by a structure of type unw_dyn_info_t
 (see 
-libunwind\-dynamic(3)).
+libunwind\-dynamic(3libunwind)).
 A pointer to this structure is 
 passed in argument di\&.
 .PP
@@ -47,15 +49,15 @@ or _U_dyn_cancel()).
 
 .PP
 _U_dyn_register()
-is thread\-safe but \fInot\fP
+is thread safe but \fInot\fP
 safe to use 
 from a signal handler. 
 .PP
 .SH SEE ALSO
 
 .PP
-libunwind\-dynamic(3),
-_U_dyn_cancel(3)
+libunwind\-dynamic(3libunwind),
+_U_dyn_cancel(3libunwind)
 .PP
 .SH AUTHOR
 

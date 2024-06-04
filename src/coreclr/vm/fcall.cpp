@@ -41,6 +41,13 @@ NOINLINE LPVOID __FCThrow(LPVOID __me, RuntimeExceptionKind reKind, UINT resID, 
     _ASSERTE((reKind != kExecutionEngineException) ||
              !"Don't throw kExecutionEngineException from here. Go to EEPolicy directly, or throw something better.");
 
+#ifdef FEATURE_EH_FUNCLETS
+    if (g_isNewExceptionHandlingEnabled)
+    {
+        DispatchManagedException(reKind);
+    }
+#endif // FEATURE_EH_FUNCLETS
+
     if (resID == 0)
     {
         // If we have an string to add use NonLocalized otherwise just throw the exception.
@@ -122,7 +129,7 @@ NOINLINE Object* FC_GCPoll(void* __me, Object* objToProtect)
     INCONTRACT(FCallCheck __fCallCheck(__FILE__, __LINE__));
 
     Thread  *thread = GetThread();
-    if (thread->CatchAtSafePointOpportunistic())    // Does someone want this thread stopped?
+    if (thread->CatchAtSafePoint())    // Does someone want this thread stopped?
     {
         HELPER_METHOD_FRAME_BEGIN_RET_ATTRIB_1(Frame::FRAME_ATTR_CAPTURE_DEPTH_2, objToProtect);
 
@@ -151,13 +158,13 @@ NOINLINE Object* FC_GCPoll(void* __me, Object* objToProtect)
 
 /**************************************************************************************/
 #if defined(TARGET_X86) && defined(ENABLE_PERF_COUNTERS)
-static __int64 getCycleCount() {
+static int64_t getCycleCount() {
 
     LIMITED_METHOD_CONTRACT;
     return GET_CYCLE_COUNT();
 }
 #else
-static __int64 getCycleCount() { LIMITED_METHOD_CONTRACT; return(0); }
+static int64_t getCycleCount() { LIMITED_METHOD_CONTRACT; return(0); }
 #endif
 
 /**************************************************************************************/

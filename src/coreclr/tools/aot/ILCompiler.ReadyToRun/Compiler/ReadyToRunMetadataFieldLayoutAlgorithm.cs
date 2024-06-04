@@ -121,6 +121,11 @@ namespace ILCompiler
             /// </summary>
             private const int DomainLocalModuleNormalDynamicEntryOffsetOfDataBlobLoongArch64 = 8;
 
+            /// <summary>
+            /// CoreCLR DomainLocalModule::NormalDynamicEntry::OffsetOfDataBlob for RISCV64
+            /// </summary>
+            private const int DomainLocalModuleNormalDynamicEntryOffsetOfDataBlobRISCV64 = 8;
+
             protected override bool CompareKeyToValue(EcmaModule key, ModuleFieldLayout value)
             {
                 return key == value.Module;
@@ -421,6 +426,10 @@ namespace ILCompiler
 
                         case TargetArchitecture.LoongArch64:
                             nonGcOffset = DomainLocalModuleNormalDynamicEntryOffsetOfDataBlobLoongArch64;
+                            break;
+
+                        case TargetArchitecture.RiscV64:
+                            nonGcOffset = DomainLocalModuleNormalDynamicEntryOffsetOfDataBlobRISCV64;
                             break;
 
                         default:
@@ -809,10 +818,24 @@ namespace ILCompiler
         {
             if (type.IsExplicitLayout)
             {
+                // Works around https://github.com/dotnet/runtime/issues/102868
+                if (!type.IsValueType &&
+                    (type.MetadataBaseType is MetadataType baseType && baseType.IsSequentialLayout))
+                {
+                    ThrowHelper.ThrowTypeLoadException(type);
+                }
+
                 return ComputeExplicitFieldLayout(type, numInstanceFields);
             }
             else if (type.IsSequentialLayout && !type.ContainsGCPointers)
             {
+                // Works around https://github.com/dotnet/runtime/issues/102868
+                if (!type.IsValueType &&
+                    (type.MetadataBaseType is MetadataType baseType && baseType.IsExplicitLayout))
+                {
+                    ThrowHelper.ThrowTypeLoadException(type);
+                }
+
                 return ComputeSequentialFieldLayout(type, numInstanceFields);
             }
             else

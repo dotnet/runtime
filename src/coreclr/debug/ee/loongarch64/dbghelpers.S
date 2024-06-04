@@ -26,7 +26,7 @@ NESTED_ENTRY FuncEvalHijack, _TEXT, UnhandledExceptionHandlerUnix
     bl C_FUNC(FuncEvalHijackWorker)
 
     EPILOG_STACK_FREE  32
-    EPILOG_BRANCH_REG  $v0
+    EPILOG_BRANCH_REG  $a0
 NESTED_END FuncEvalHijack
 
 // This is the general purpose hijacking stub. The DacDbi Hijack primitive will

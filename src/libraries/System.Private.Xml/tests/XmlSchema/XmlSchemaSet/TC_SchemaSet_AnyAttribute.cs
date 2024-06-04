@@ -176,7 +176,7 @@ namespace System.Xml.XmlSchemaTests
             Assert.Equal(expectedError, _errorCount);
 
             // .NET Framework does not set the namespace property for intersections and unions
-            if (!PlatformDetection.IsNetFramework && expectedNs != null)
+            if (expectedNs != null)
             {
                 XmlSchemaAnyAttribute attributeWildcard = ((XmlSchemaComplexType)xss.GlobalTypes[new XmlQualifiedName("t", attrNs)]).AttributeWildcard;
                 CompareWildcardNamespaces(expectedNs, attributeWildcard.Namespace);
@@ -211,7 +211,7 @@ namespace System.Xml.XmlSchemaTests
             Assert.Equal(expectedError, _errorCount);
 
             // .NET Framework does not set the namespace property for intersections and unions
-            if (!PlatformDetection.IsNetFramework && expectedNs != null)
+            if (expectedNs != null)
             {
                 XmlSchemaAnyAttribute attributeWildcard = ((XmlSchemaComplexType)xss.GlobalTypes[new XmlQualifiedName("t1", attrNs)]).AttributeWildcard;
                 CompareWildcardNamespaces(expectedNs, attributeWildcard.Namespace);

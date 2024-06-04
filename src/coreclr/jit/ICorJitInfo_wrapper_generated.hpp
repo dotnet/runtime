@@ -21,6 +21,15 @@ bool WrapICorJitInfo::isIntrinsic(
     return temp;
 }
 
+bool WrapICorJitInfo::notifyMethodInfoUsage(
+          CORINFO_METHOD_HANDLE ftn)
+{
+    API_ENTER(notifyMethodInfoUsage);
+    bool temp = wrapHnd->notifyMethodInfoUsage(ftn);
+    API_LEAVE(notifyMethodInfoUsage);
+    return temp;
+}
+
 uint32_t WrapICorJitInfo::getMethodAttribs(
           CORINFO_METHOD_HANDLE ftn)
 {
@@ -57,6 +66,16 @@ bool WrapICorJitInfo::getMethodInfo(
     API_ENTER(getMethodInfo);
     bool temp = wrapHnd->getMethodInfo(ftn, info, context);
     API_LEAVE(getMethodInfo);
+    return temp;
+}
+
+bool WrapICorJitInfo::haveSameMethodDefinition(
+          CORINFO_METHOD_HANDLE meth1Hnd,
+          CORINFO_METHOD_HANDLE meth2Hnd)
+{
+    API_ENTER(haveSameMethodDefinition);
+    bool temp = wrapHnd->haveSameMethodDefinition(meth1Hnd, meth2Hnd);
+    API_LEAVE(haveSameMethodDefinition);
     return temp;
 }
 
@@ -183,10 +202,11 @@ CORINFO_CLASS_HANDLE WrapICorJitInfo::getDefaultEqualityComparerClass(
 
 void WrapICorJitInfo::expandRawHandleIntrinsic(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,
+          CORINFO_METHOD_HANDLE callerHandle,
           CORINFO_GENERICHANDLE_RESULT* pResult)
 {
     API_ENTER(expandRawHandleIntrinsic);
-    wrapHnd->expandRawHandleIntrinsic(pResolvedToken, pResult);
+    wrapHnd->expandRawHandleIntrinsic(pResolvedToken, callerHandle, pResult);
     API_LEAVE(expandRawHandleIntrinsic);
 }
 
@@ -387,16 +407,6 @@ bool WrapICorJitInfo::isValueClass(
     return temp;
 }
 
-CorInfoInlineTypeCheck WrapICorJitInfo::canInlineTypeCheck(
-          CORINFO_CLASS_HANDLE cls,
-          CorInfoInlineTypeCheckSource source)
-{
-    API_ENTER(canInlineTypeCheck);
-    CorInfoInlineTypeCheck temp = wrapHnd->canInlineTypeCheck(cls, source);
-    API_LEAVE(canInlineTypeCheck);
-    return temp;
-}
-
 uint32_t WrapICorJitInfo::getClassAttribs(
           CORINFO_CLASS_HANDLE cls)
 {
@@ -572,12 +582,11 @@ bool WrapICorJitInfo::checkMethodModifier(
 }
 
 CorInfoHelpFunc WrapICorJitInfo::getNewHelper(
-          CORINFO_RESOLVED_TOKEN* pResolvedToken,
-          CORINFO_METHOD_HANDLE callerHandle,
+          CORINFO_CLASS_HANDLE classHandle,
           bool* pHasSideEffects)
 {
     API_ENTER(getNewHelper);
-    CorInfoHelpFunc temp = wrapHnd->getNewHelper(pResolvedToken, callerHandle, pHasSideEffects);
+    CorInfoHelpFunc temp = wrapHnd->getNewHelper(classHandle, pHasSideEffects);
     API_LEAVE(getNewHelper);
     return temp;
 }
@@ -679,10 +688,11 @@ bool WrapICorJitInfo::getReadyToRunHelper(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,
           CORINFO_LOOKUP_KIND* pGenericLookupKind,
           CorInfoHelpFunc id,
+          CORINFO_METHOD_HANDLE callerHandle,
           CORINFO_CONST_LOOKUP* pLookup)
 {
     API_ENTER(getReadyToRunHelper);
-    bool temp = wrapHnd->getReadyToRunHelper(pResolvedToken, pGenericLookupKind, id, pLookup);
+    bool temp = wrapHnd->getReadyToRunHelper(pResolvedToken, pGenericLookupKind, id, callerHandle, pLookup);
     API_LEAVE(getReadyToRunHelper);
     return temp;
 }
@@ -691,10 +701,11 @@ void WrapICorJitInfo::getReadyToRunDelegateCtorHelper(
           CORINFO_RESOLVED_TOKEN* pTargetMethod,
           mdToken targetConstraint,
           CORINFO_CLASS_HANDLE delegateType,
+          CORINFO_METHOD_HANDLE callerHandle,
           CORINFO_LOOKUP* pLookup)
 {
     API_ENTER(getReadyToRunDelegateCtorHelper);
-    wrapHnd->getReadyToRunDelegateCtorHelper(pTargetMethod, targetConstraint, delegateType, pLookup);
+    wrapHnd->getReadyToRunDelegateCtorHelper(pTargetMethod, targetConstraint, delegateType, callerHandle, pLookup);
     API_LEAVE(getReadyToRunDelegateCtorHelper);
 }
 
@@ -781,6 +792,24 @@ bool WrapICorJitInfo::isMoreSpecificType(
     API_ENTER(isMoreSpecificType);
     bool temp = wrapHnd->isMoreSpecificType(cls1, cls2);
     API_LEAVE(isMoreSpecificType);
+    return temp;
+}
+
+bool WrapICorJitInfo::isExactType(
+          CORINFO_CLASS_HANDLE cls)
+{
+    API_ENTER(isExactType);
+    bool temp = wrapHnd->isExactType(cls);
+    API_LEAVE(isExactType);
+    return temp;
+}
+
+TypeCompareState WrapICorJitInfo::isNullableType(
+          CORINFO_CLASS_HANDLE cls)
+{
+    API_ENTER(isNullableType);
+    TypeCompareState temp = wrapHnd->isNullableType(cls);
+    API_LEAVE(isNullableType);
     return temp;
 }
 
@@ -932,6 +961,14 @@ void WrapICorJitInfo::getThreadLocalStaticBlocksInfo(
     API_LEAVE(getThreadLocalStaticBlocksInfo);
 }
 
+void WrapICorJitInfo::getThreadLocalStaticInfo_NativeAOT(
+          CORINFO_THREAD_STATIC_INFO_NATIVEAOT* pInfo)
+{
+    API_ENTER(getThreadLocalStaticInfo_NativeAOT);
+    wrapHnd->getThreadLocalStaticInfo_NativeAOT(pInfo);
+    API_LEAVE(getThreadLocalStaticInfo_NativeAOT);
+}
+
 bool WrapICorJitInfo::isFieldStatic(
           CORINFO_FIELD_HANDLE fldHnd)
 {
@@ -1001,6 +1038,16 @@ void WrapICorJitInfo::reportRichMappings(
     API_ENTER(reportRichMappings);
     wrapHnd->reportRichMappings(inlineTreeNodes, numInlineTreeNodes, mappings, numMappings);
     API_LEAVE(reportRichMappings);
+}
+
+void WrapICorJitInfo::reportMetadata(
+          const char* key,
+          const void* value,
+          size_t length)
+{
+    API_ENTER(reportMetadata);
+    wrapHnd->reportMetadata(key, value, length);
+    API_LEAVE(reportMetadata);
 }
 
 void* WrapICorJitInfo::allocateArray(
@@ -1158,6 +1205,15 @@ bool WrapICorJitInfo::getSystemVAmd64PassStructInRegisterDescriptor(
     return temp;
 }
 
+void WrapICorJitInfo::getSwiftLowering(
+          CORINFO_CLASS_HANDLE structHnd,
+          CORINFO_SWIFT_LOWERING* pLowering)
+{
+    API_ENTER(getSwiftLowering);
+    wrapHnd->getSwiftLowering(structHnd, pLowering);
+    API_LEAVE(getSwiftLowering);
+}
+
 uint32_t WrapICorJitInfo::getLoongArch64PassStructInRegisterFlags(
           CORINFO_CLASS_HANDLE structHnd)
 {
@@ -1286,10 +1342,11 @@ CORINFO_FIELD_HANDLE WrapICorJitInfo::embedFieldHandle(
 void WrapICorJitInfo::embedGenericHandle(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,
           bool fEmbedParent,
+          CORINFO_METHOD_HANDLE callerHandle,
           CORINFO_GENERICHANDLE_RESULT* pResult)
 {
     API_ENTER(embedGenericHandle);
-    wrapHnd->embedGenericHandle(pResolvedToken, fEmbedParent, pResult);
+    wrapHnd->embedGenericHandle(pResolvedToken, fEmbedParent, callerHandle, pResult);
     API_LEAVE(embedGenericHandle);
 }
 
@@ -1609,10 +1666,11 @@ JITINTERFACE_HRESULT WrapICorJitInfo::getPgoInstrumentationResults(
           ICorJitInfo::PgoInstrumentationSchema** pSchema,
           uint32_t* pCountSchemaItems,
           uint8_t** pInstrumentationData,
-          ICorJitInfo::PgoSource* pgoSource)
+          ICorJitInfo::PgoSource* pPgoSource,
+          bool* pDynamicPgo)
 {
     API_ENTER(getPgoInstrumentationResults);
-    JITINTERFACE_HRESULT temp = wrapHnd->getPgoInstrumentationResults(ftnHnd, pSchema, pCountSchemaItems, pInstrumentationData, pgoSource);
+    JITINTERFACE_HRESULT temp = wrapHnd->getPgoInstrumentationResults(ftnHnd, pSchema, pCountSchemaItems, pInstrumentationData, pPgoSource, pDynamicPgo);
     API_LEAVE(getPgoInstrumentationResults);
     return temp;
 }

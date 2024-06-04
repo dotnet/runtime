@@ -159,14 +159,13 @@ namespace R3Contention
     public static class App
     {
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             var layoutOptions = new LayoutOptions();
 
             layoutOptions.text = "Some text.";
 
             layoutOptions.GetPreferredSizeCore(Size.Empty);
-            return 100;
         }
     }
 }

@@ -2,8 +2,6 @@
   <PropertyGroup>
     <DebugType>PdbOnly</DebugType>
     <Optimize>True</Optimize>
-    <!-- Issue: https://github.com/dotnet/runtime/issues/87879 -->
-    <DisableProjectBuild>true</DisableProjectBuild>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="RngchkStress2.cs" />

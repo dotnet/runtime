@@ -555,7 +555,7 @@ HRESULT CCompRC::LoadResourceFile(HRESOURCEDLL * pHInst, LPCWSTR lpFileName)
         dwLoadLibraryFlags = 0;
     }
 
-    if((*pHInst = WszLoadLibraryEx(lpFileName, NULL, dwLoadLibraryFlags)) == NULL)
+    if((*pHInst = WszLoadLibrary(lpFileName, NULL, dwLoadLibraryFlags)) == NULL)
     {
         return HRESULT_FROM_GetLastError();
     }
@@ -618,7 +618,7 @@ HRESULT CCompRC::LoadLibraryHelper(HRESOURCEDLL *pHInst,
 
             PathString rcPathName(rcPath);
 
-            if (!rcPathName.EndsWith(W("\\")))
+            if (!rcPathName.EndsWith(SL(W("\\"))))
             {
                 rcPathName.Append(W("\\"));
             }

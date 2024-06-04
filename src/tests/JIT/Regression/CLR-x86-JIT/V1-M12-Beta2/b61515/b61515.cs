@@ -7,14 +7,13 @@ using Xunit;
 public class testout1
 {
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         Console.WriteLine("In First func (doing 5 iters - not unrolled)");
         Test1(2);
         Console.WriteLine("In Second func (doing 4 iters - is unrolled, and very slow)");
         Test2(2);
         Console.WriteLine("Done");
-        return 100;
     }
     static int Test1(int Par)
     {

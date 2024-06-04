@@ -48,7 +48,7 @@ namespace System.Linq.Tests
         [MemberData(nameof(Int_TestData))]
         public void Int(IEnumerable<int> source, Func<int, bool> predicate, int expected)
         {
-            if (predicate == null)
+            if (predicate is null)
             {
                 Assert.Equal(expected, source.Count());
             }
@@ -61,7 +61,7 @@ namespace System.Linq.Tests
         [Theory, MemberData(nameof(Int_TestData))]
         public void IntRunOnce(IEnumerable<int> source, Func<int, bool> predicate, int expected)
         {
-            if (predicate == null)
+            if (predicate is null)
             {
                 Assert.Equal(expected, source.RunOnce().Count());
             }

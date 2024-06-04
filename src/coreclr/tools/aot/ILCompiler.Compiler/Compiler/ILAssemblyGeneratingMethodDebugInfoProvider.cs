@@ -28,7 +28,7 @@ namespace ILCompiler
         {
             _wrappedProvider = wrappedProvider;
             _fileName = fileName;
-            _tw = new StreamWriter(File.OpenWrite(fileName));
+            _tw = new StreamWriter(new FileStream(fileName, FileMode.Create, FileAccess.Write, FileShare.None));
         }
 
         public override MethodDebugInformation GetDebugInfo(MethodIL methodIL)

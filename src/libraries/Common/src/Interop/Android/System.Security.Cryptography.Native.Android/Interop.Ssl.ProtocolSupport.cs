@@ -12,7 +12,7 @@ internal static partial class Interop
         internal static partial SslProtocols SSLGetSupportedProtocols();
 
         [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_SSLSupportsApplicationProtocolsConfiguration")]
-        [return:MarshalAs(UnmanagedType.U1)]
+        [return: MarshalAs(UnmanagedType.U1)]
         internal static partial bool SSLSupportsApplicationProtocolsConfiguration();
     }
 }

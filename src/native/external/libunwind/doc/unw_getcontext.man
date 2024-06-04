@@ -1,5 +1,7 @@
+.\" *********************************** start of \input{common.tex}
+.\" *********************************** end of \input{common.tex}
 '\" t
-.\" Manual page created with latex2man on Thu Aug 16 09:44:45 MDT 2007
+.\" Manual page created with latex2man on Tue Aug 29 12:09:48 2023
 .\" NOTE: This file is generated, DO NOT EDIT.
 .de Vb
 .ft CW
@@ -10,7 +12,7 @@
 
 .fi
 ..
-.TH "UNW\\_GETCONTEXT" "3" "16 August 2007" "Programming Library " "Programming Library "
+.TH "UNW\\_GETCONTEXT" "3libunwind" "29 August 2023" "Programming Library " "Programming Library "
 .SH NAME
 unw_getcontext
 \-\- get initial machine\-state 
@@ -31,12 +33,12 @@ unw_getcontext(unw_context_t *ucp);
 The unw_getcontext()
 routine initializes the context structure 
 pointed to by ucp
-with the machine\-state of the call\-site. The 
+with the machine state of the call site. The 
 exact set of registers stored by unw_getcontext()
 is 
 platform\-specific, but, in general, at least all preserved 
 (``callee\-saved\&'') and all frame\-related registers, such as the 
-stack\-pointer, will be stored. 
+stack pointer, will be stored. 
 .PP
 This routine is normally implemented as a macro and applications 
 should not attempt to take its address. 
@@ -73,14 +75,14 @@ Otherwise, a value of \-1 is returned.
 
 .PP
 unw_getcontext()
-is thread\-safe as well as safe to use 
+is thread safe as well as safe to use 
 from a signal handler. 
 .PP
 .SH SEE ALSO
 
 .PP
-libunwind(3),
-unw_init_local(3)
+libunwind(3libunwind),
+unw_init_local(3libunwind)
 .PP
 .SH AUTHOR
 

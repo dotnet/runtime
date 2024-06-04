@@ -1,5 +1,7 @@
+.\" *********************************** start of \input{common.tex}
+.\" *********************************** end of \input{common.tex}
 '\" t
-.\" Manual page created with latex2man on Thu Aug 16 09:44:45 MDT 2007
+.\" Manual page created with latex2man on Tue Aug 29 10:53:42 2023
 .\" NOTE: This file is generated, DO NOT EDIT.
 .de Vb
 .ft CW
@@ -10,7 +12,7 @@
 
 .fi
 ..
-.TH "UNW\\_STEP" "3" "16 August 2007" "Programming Library " "Programming Library "
+.TH "UNW\\_STEP" "3libunwind" "29 August 2023" "Programming Library " "Programming Library "
 .SH NAME
 unw_step
 \-\- advance to next stack frame 
@@ -87,13 +89,13 @@ get_dyn_info_list_addr(),
 access_mem(),
 access_reg(),
 or access_fpreg()
-call\-backs (see unw_create_addr_space(3)).
+call\-backs (see unw_create_addr_space(3libunwind)).
 .PP
 .SH SEE ALSO
 
 .PP
-libunwind(3),
-unw_create_addr_space(3)
+libunwind(3libunwind),
+unw_create_addr_space(3libunwind)
 .PP
 .SH AUTHOR
 

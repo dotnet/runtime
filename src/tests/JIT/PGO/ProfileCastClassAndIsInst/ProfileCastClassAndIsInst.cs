@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using Xunit;
 
 public interface IInterface { }
 public interface IGenericInterface<T> { }
@@ -73,7 +74,8 @@ public class Program
         return EqualityComparer<T>.Default.Equals(t1, t2);
     }
 
-    public static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         var a = new ClassA();
         var b = new ClassB();
@@ -209,6 +211,76 @@ public class Program
 
             Thread.Sleep(20);
         }
-        return 100;
+
+        CastExpansionTests.RunTests();
     }
+}
+
+// More tests for cast expansion
+
+public class NonSealedClass { }
+
+internal class CastExpansionTests
+{
+    public static void RunTests()
+    {
+        var p = new CastExpansionTests();
+        for (int i = 0; i < 200; i++)
+        {
+            Assert.True(p.IsSealedClass(""));
+            Assert.False(p.IsSealedClass(null));
+            Assert.False(p.IsSealedClass(new NonSealedClass()));
+            Assert.False(p.IsNonSealedClass(""));
+            Assert.False(p.IsNonSealedClass(null));
+            Assert.True(p.IsNonSealedClass(new NonSealedClass()));
+            Assert.True(p.IsGeneric<string>(""));
+            Assert.False(p.IsGeneric<string>(null));
+            Assert.False(p.IsGeneric<string>(new NonSealedClass()));
+            Assert.True(p.IsSealedFromGeneric(""));
+            Assert.False(p.IsSealedFromGeneric((string)null));
+            Assert.False(p.IsSealedFromGeneric(new NonSealedClass()));
+            Assert.True(p.IsArray<int[]>(new int[0]));
+            Assert.True(p.IsArray<uint[]>(new uint[0]));
+            Assert.False(p.IsArray<byte[]>(new byte[0]));
+            Assert.False(p.IsArray<int[]>((int[])null));
+            Assert.False(p.IsArray(new NonSealedClass()));
+            Assert.False(p.IsGenericArray<byte[]>(new byte[0]));
+            Assert.False(p.IsGenericArray<int[]>(new int[0]));
+            Assert.False(p.IsGenericArray<uint[]>(new uint[0]));
+            Assert.False(p.IsGenericArray<string>(""));
+
+            Assert.True(p.CastSealedClass("") is string);
+            Assert.False(p.CastSealedClass(null) is string);
+            Assert.Throws<InvalidCastException>(() => p.CastSealedClass(new NonSealedClass()));
+            Assert.Throws<InvalidCastException>(() => p.CastNonSealedClass(""));
+            Assert.True(p.CastNonSealedClass(null) == null);
+            Assert.True(p.CastNonSealedClass(new NonSealedClass()).GetType() == typeof(NonSealedClass));
+            Assert.True(p.CastToGeneric<string>("").GetType() == typeof(string));
+            Assert.True(p.CastToGeneric<string>(null) == null);
+            Assert.Throws<InvalidCastException>(() => p.CastToGeneric<string>(new NonSealedClass()));
+            Assert.True(p.CastFromGeneric("").GetType() == typeof(string));
+            Assert.Throws<InvalidCastException>(() => p.CastFromGeneric(new NonSealedClass()).GetType() == typeof(NonSealedClass));
+            Assert.True(p.CastFromGeneric<string>(null) == null);
+            Assert.Throws<InvalidCastException>(() => p.CastFromGeneric(new NonSealedClass()));
+            Assert.True(p.CastToArray(new uint[0]).GetType() == typeof(uint[]));
+            Assert.True(p.CastToArray(new int[0]).GetType() == typeof(int[]));
+            Assert.Throws<InvalidCastException>(() => p.CastToArray(new byte[0]));
+            Assert.True(p.CastToArray(null) == null);
+            Assert.Throws<InvalidCastException>(() => p.CastToArray(new NonSealedClass()));
+
+            Thread.Sleep(10);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)] private bool IsSealedClass(object o) => o is string;
+    [MethodImpl(MethodImplOptions.NoInlining)] private bool IsNonSealedClass(object o) => o is NonSealedClass;
+    [MethodImpl(MethodImplOptions.NoInlining)] private bool IsGeneric<T>(object o) => o is T;
+    [MethodImpl(MethodImplOptions.NoInlining)] private bool IsSealedFromGeneric<T>(T o) => o is string;
+    [MethodImpl(MethodImplOptions.NoInlining)] private bool IsArray<T>(T o) => o is uint[];
+    [MethodImpl(MethodImplOptions.NoInlining)] private bool IsGenericArray<T>(object o) => o is T[];
+    [MethodImpl(MethodImplOptions.NoInlining)] private object CastSealedClass(object o) => (string)o;
+    [MethodImpl(MethodImplOptions.NoInlining)] private object CastNonSealedClass(object o) => (NonSealedClass)o;
+    [MethodImpl(MethodImplOptions.NoInlining)] private object CastToGeneric<T>(object o) => (T)o;
+    [MethodImpl(MethodImplOptions.NoInlining)] private object CastFromGeneric<T>(T o) => (string)(object)o;
+    [MethodImpl(MethodImplOptions.NoInlining)] private object CastToArray(object o) => (uint[])o;
 }

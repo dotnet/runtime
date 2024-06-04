@@ -22,7 +22,7 @@ public class Bar
     }
 
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         _myArray = new Foo[10];
 
@@ -33,7 +33,5 @@ public class Bar
         duh.c = 3;
 
         Bork(ref duh);
-
-        return 100;
     }
 }

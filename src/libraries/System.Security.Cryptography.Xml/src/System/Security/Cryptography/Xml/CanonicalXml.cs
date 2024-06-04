@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Xml;
 using System.IO;
 using System.Text;
+using System.Xml;
 
 namespace System.Security.Cryptography.Xml
 {
@@ -11,11 +11,6 @@ namespace System.Security.Cryptography.Xml
     {
         private readonly CanonicalXmlDocument _c14nDoc;
         private readonly C14NAncestralNamespaceContextManager _ancMgr;
-
-        // private static string defaultXPathWithoutComments = "(//. | //@* | //namespace::*)[not(self::comment())]";
-        // private static string defaultXPathWithoutComments = "(//. | //@* | //namespace::*)";
-        // private static string defaultXPathWithComments = "(//. | //@* | //namespace::*)";
-        // private static string defaultXPathWithComments = "(//. | //@* | //namespace::*)";
 
         internal CanonicalXml(Stream inputStream, bool includeComments, XmlResolver? resolver, string strBaseUri)
         {

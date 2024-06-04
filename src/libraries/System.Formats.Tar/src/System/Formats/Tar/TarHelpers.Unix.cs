@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.IO;
 using System.Diagnostics;
+using System.IO;
 
 namespace System.Formats.Tar
 {
@@ -20,7 +20,7 @@ namespace System.Formats.Tar
             const UnixFileMode OwnershipPermissions =
                 UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute |
                 UnixFileMode.GroupRead | UnixFileMode.GroupWrite | UnixFileMode.GroupExecute |
-                UnixFileMode.OtherRead | UnixFileMode.OtherWrite |  UnixFileMode.OtherExecute;
+                UnixFileMode.OtherRead | UnixFileMode.OtherWrite | UnixFileMode.OtherExecute;
 
             string filename = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
             FileStreamOptions options = new()
@@ -39,7 +39,7 @@ namespace System.Formats.Tar
 
         private sealed class ReverseStringComparer : IComparer<string>
         {
-            public int Compare (string? x, string? y)
+            public int Compare(string? x, string? y)
                 => StringComparer.Ordinal.Compare(y, x);
         }
 

@@ -1,6 +1,8 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using SourceGenerators;
+
 namespace System.Text.Json.SourceGeneration
 {
     /// <summary>
@@ -30,5 +32,6 @@ namespace System.Text.Json.SourceGeneration
         // so it always satisfies the structural equality requirement for the record.
         public required object? DefaultValue { get; init; }
         public required int ParameterIndex { get; init; }
+        public required bool IsNullable { get; init; }
     }
 }

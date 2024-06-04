@@ -15,13 +15,13 @@ namespace System.Numerics
 {
     internal static class BitOperations
     {
-        private static ReadOnlySpan<byte> Log2DeBruijn => new byte[32]
-        {
+        private static ReadOnlySpan<byte> Log2DeBruijn => // 32
+        [
             00, 09, 01, 10, 13, 21, 02, 29,
             11, 14, 16, 18, 22, 25, 03, 30,
             08, 12, 20, 28, 15, 17, 24, 07,
             19, 27, 23, 06, 26, 05, 04, 31
-        };
+        ];
 
         /// <summary>
         /// Returns the integer (floor) log of the specified value, base 2.

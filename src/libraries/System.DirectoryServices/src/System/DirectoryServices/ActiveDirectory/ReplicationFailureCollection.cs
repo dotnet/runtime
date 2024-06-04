@@ -48,11 +48,11 @@ namespace System.DirectoryServices.ActiveDirectory
             // get the count
             int count = failures.cNumEntries;
 
-            IntPtr addr = (IntPtr)0;
+            IntPtr addr = 0;
 
             for (int i = 0; i < count; i++)
             {
-                addr = IntPtr.Add(info, sizeof(int) * 2 + i * Marshal.SizeOf(typeof(DS_REPL_KCC_DSA_FAILURE)));
+                addr = IntPtr.Add(info, sizeof(int) * 2 + i * Marshal.SizeOf<DS_REPL_KCC_DSA_FAILURE>());
 
                 ReplicationFailure managedFailure = new ReplicationFailure(addr, _server, _nameTable);
 
@@ -60,7 +60,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 if (managedFailure.LastErrorCode == 0)
                 {
                     // we change the error code to some generic one
-                    managedFailure.lastResult = ExceptionHelper.ERROR_DS_UNKNOWN_ERROR;
+                    managedFailure.lastResult = Interop.Errors.ERROR_DS_UNKNOWN_ERROR;
                 }
 
                 Add(managedFailure);

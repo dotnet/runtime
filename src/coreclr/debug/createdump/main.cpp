@@ -4,6 +4,7 @@
 #include "createdump.h"
 
 extern int createdump_main(const int argc, const char* argv[]);
+extern void UninitializePAL(int exitCode);
 
 #if defined(HOST_ARM64)
 // Flag to check if atomics feature is available on
@@ -16,18 +17,9 @@ bool g_arm64_atomics_present = false;
 //
 int __cdecl main(const int argc, const char* argv[])
 {
-    int exitCode = 0;
+    int exitCode = createdump_main(argc, argv);
 #ifdef HOST_UNIX
-    exitCode = PAL_InitializeDLL();
-    if (exitCode != 0)
-    {
-        printf_error("PAL initialization FAILED %d\n", exitCode);
-        return exitCode;
-    }
-#endif
-    exitCode = createdump_main(argc, argv);
-#ifdef HOST_UNIX
-    PAL_TerminateEx(exitCode);
+    UninitializePAL(exitCode);
 #endif
     return exitCode;
 }

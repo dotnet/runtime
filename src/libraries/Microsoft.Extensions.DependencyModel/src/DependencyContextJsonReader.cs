@@ -15,7 +15,7 @@ namespace Microsoft.Extensions.DependencyModel
     public class DependencyContextJsonReader : IDependencyContextReader
     {
         private const int UnseekableStreamInitialRentSize = 4096;
-        private static ReadOnlySpan<byte> Utf8Bom => new byte[] { 0xEF, 0xBB, 0xBF };
+        private static ReadOnlySpan<byte> Utf8Bom => [0xEF, 0xBB, 0xBF];
 
         private readonly Dictionary<string, string> _stringPool = new Dictionary<string, string>();
 
@@ -741,9 +741,18 @@ namespace Microsoft.Extensions.DependencyModel
             {
                 return Enumerable.Empty<Library>();
             }
-            return libraries
-                .Select(property => CreateLibrary(property, runtime, libraryStubs))
-                .Where(library => library != null)!;
+
+            return CreateLibrariesNotNull(libraries, runtime, libraryStubs);
+
+            IEnumerable<Library> CreateLibrariesNotNull(IEnumerable<TargetLibrary> libraries, bool runtime, Dictionary<string, LibraryStub>? libraryStubs)
+            {
+                foreach (TargetLibrary library in libraries)
+                {
+                    Library? createdLibrary = CreateLibrary(library, runtime, libraryStubs);
+                    if (createdLibrary is not null)
+                        yield return createdLibrary;
+                }
+            }
         }
 
         private Library? CreateLibrary(TargetLibrary targetLibrary, bool runtime, Dictionary<string, LibraryStub>? libraryStubs)

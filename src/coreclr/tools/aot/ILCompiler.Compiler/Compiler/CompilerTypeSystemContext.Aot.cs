@@ -36,6 +36,7 @@ namespace ILCompiler
         private readonly VectorOfTFieldLayoutAlgorithm _vectorOfTFieldLayoutAlgorithm;
         private readonly VectorFieldLayoutAlgorithm _vectorFieldLayoutAlgorithm;
         private readonly Int128FieldLayoutAlgorithm _int128FieldLayoutAlgorithm;
+        private readonly TypeWithRepeatedFieldsFieldLayoutAlgorithm _typeWithRepeatedFieldsFieldLayoutAlgorithm;
 
         private TypeDesc[] _arrayOfTInterfaces;
         private ArrayOfTRuntimeInterfacesAlgorithm _arrayOfTRuntimeInterfacesAlgorithm;
@@ -52,6 +53,7 @@ namespace ILCompiler
             _vectorOfTFieldLayoutAlgorithm = new VectorOfTFieldLayoutAlgorithm(_metadataFieldLayoutAlgorithm);
             _vectorFieldLayoutAlgorithm = new VectorFieldLayoutAlgorithm(_metadataFieldLayoutAlgorithm);
             _int128FieldLayoutAlgorithm = new Int128FieldLayoutAlgorithm(_metadataFieldLayoutAlgorithm);
+            _typeWithRepeatedFieldsFieldLayoutAlgorithm = new TypeWithRepeatedFieldsFieldLayoutAlgorithm(_metadataFieldLayoutAlgorithm);
 
             _delegateInfoHashtable = new DelegateInfoHashtable(delegateFeatures);
 
@@ -78,6 +80,8 @@ namespace ILCompiler
                 return _vectorFieldLayoutAlgorithm;
             else if (Int128FieldLayoutAlgorithm.IsIntegerType(type))
                 return _int128FieldLayoutAlgorithm;
+            else if (type is TypeWithRepeatedFields)
+                return _typeWithRepeatedFieldsFieldLayoutAlgorithm;
             else
                 return _metadataFieldLayoutAlgorithm;
         }

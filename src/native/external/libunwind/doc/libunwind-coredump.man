@@ -1,0 +1,211 @@
+.\" *********************************** start of \input{common.tex}
+.\" *********************************** end of \input{common.tex}
+'\" t
+.\" Manual page created with latex2man on Tue Aug 29 10:53:41 2023
+.\" NOTE: This file is generated, DO NOT EDIT.
+.de Vb
+.ft CW
+.nf
+..
+.de Ve
+.ft R
+
+.fi
+..
+.TH "LIBUNWIND\-COREDUMP" "3libunwind" "29 August 2023" "Programming Library " "Programming Library "
+.SH NAME
+libunwind\-coredump
+\-\- coredump() support in libunwind 
+.PP
+.SH SYNOPSIS
+
+.PP
+#include <libunwind\-coredump.h>
+.br
+.PP
+unw_accessors_t
+_UCD_accessors;
+.br
+.PP
+struct UCD_info *_UCD_create(char const *);
+.br
+void _UCD_destroy(struct UCD_info *);
+.br
+.PP
+int
+_UCD_get_num_threads(struct UCD_info *);
+.br
+void
+_UCD_select_thread(struct UCD_info *,
+int);
+.br
+void
+_UCD_get_pid(struct UCD_info *);
+.br
+void
+_UCD_get_cursig(struct UCD_info *);
+.br
+.PP
+int
+_UCD_find_proc_info(unw_addr_space_t,
+unw_word_t,
+unw_proc_info_t *,
+int,
+void *);
+.br
+void
+_UCD_put_unwind_info(unw_addr_space_t,
+unw_proc_info_t *,
+void *);
+.br
+int
+_UCD_get_dyn_info_list_addr(unw_addr_space_t,
+unw_word_t *,
+void *);
+.br
+int
+_UCD_access_mem(unw_addr_space_t,
+unw_word_t,
+unw_word_t *,
+int,
+void *);
+.br
+int
+_UCD_access_reg(unw_addr_space_t,
+unw_regnum_t,
+unw_word_t *,
+int,
+void *);
+.br
+int
+_UCD_access_fpreg(unw_addr_space_t,
+unw_regnum_t,
+unw_fpreg_t *,
+int,
+void *);
+.br
+int
+_UCD_get_proc_name(unw_addr_space_t,
+unw_word_t,
+char *,
+size_t,
+unw_word_t *,
+void *);
+.br
+int
+_UCD_resume(unw_addr_space_t,
+unw_cursor_t *,
+void *);
+.br
+.PP
+.SH DESCRIPTION
+
+.PP
+It is possible to generate a snapshot of a process state at a specific moment in 
+time and save it in a specially\-formatted file called a coredump. 
+This often happens automatically when a process encounters an unrecoverable 
+error and the OS itself captures the state of the process when the error 
+occurred. 
+libunwind
+provides a library that can be used as part of a lightweight 
+tool to generate some useful information as to why the process abnormally 
+terminated (such as a stack trace of al threads of execution). 
+The routines and variables 
+implementing this facility use a prefix of _UCD,
+which 
+stands for ``unwind\-via\-coredump\&''\&. 
+.PP
+An application that wants to use the coredump remote first needs 
+to create a new libunwind
+address space that represents the 
+target process. This is done by calling 
+unw_create_addr_space().
+In many cases, the application 
+will simply want to pass the address of _UCD_accessors
+as the 
+first argument to this routine. Doing so will ensure that 
+libunwind
+will be able to properly unwind the target process. 
+However, in special circumstances, an application may prefer to use 
+only portions of the _UCD\-facility.
+For this reason, the 
+individual callback routines (_UCD_find_proc_info(),
+_UCD_put_unwind_info(),
+etc.) are also available for direct 
+use. Of course, the addresses of these routines could also be picked 
+up from _UCD_accessors,
+but doing so would prevent static 
+initialization. Also, when using _UCD_accessors,
+\fIall\fP
+the callback routines will be linked into the application, even if 
+they are never actually called. 
+.PP
+Next, the application needs to load the corefile for analysis and create an 
+(opaque) UCD_info structure by calling _UCD_create(),
+passing the name of the corefile. 
+The returned opaque pointer then needs to be 
+passed as the ``argument\&'' pointer (third argument) to 
+unw_init_remote().
+.PP
+When the application is done using libunwind
+on the corefile, 
+_UCD_destroy()
+needs to be called, 
+passing it the pointer that was returned by the corresponding call to 
+_UCD_create().
+This ensures that all memory and other resources are freed up. 
+.PP
+.TP
+_UCD_get_num_threads()
+ Gets the number of threads in the corefile. 
+.PP
+.TP
+_UCD_get_pid()
+ Gets the process ID of the process associated with the corefile. 
+.PP
+.TP
+_UCD_get_cursig()
+ Gets the current signal begin received by the process associated with the 
+corefile (if any). 
+.PP
+.TP
+_UCD_select_thread()
+ Selects the current thread for unwinding. 
+.PP
+.SH THREAD SAFETY
+
+.PP
+The coredump remote assumes that a single _UCD_info
+structure is never shared between threads. 
+Because of this, 
+no explicit locking is used. 
+As long as only one thread uses a _UCD_info
+structure at any given time, 
+this facility is thread\-safe. 
+.PP
+.SH RETURN VALUE
+
+.PP
+_UCD_create()
+may return a null pointer if it fails 
+to create the UCD_info
+for any reason. 
+.PP
+.SH FILES
+
+.PP
+.TP
+libunwind\-coredump.h
+ Header file to include when using the 
+interface defined by this library. 
+.TP
+\fB\-l\fPunwind\-coredump \fB\-l\fPunwind\-generic
+ Linker\-switches to add when building a program that uses the 
+functions defined by this library. 
+.PP
+.SH SEE ALSO
+
+.PP
+libunwind(3libunwind)
+.PP
+.\" NOTE: This file is generated, DO NOT EDIT.

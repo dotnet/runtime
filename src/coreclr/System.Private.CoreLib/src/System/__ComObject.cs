@@ -120,10 +120,6 @@ namespace System
             return CreateEventProvider(t);
         }
 
-        internal int ReleaseSelf() => Marshal.InternalReleaseComObject(this);
-
-        internal void FinalReleaseSelf() => Marshal.InternalFinalReleaseComObject(this);
-
         private object CreateEventProvider(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] RuntimeType t)
         {

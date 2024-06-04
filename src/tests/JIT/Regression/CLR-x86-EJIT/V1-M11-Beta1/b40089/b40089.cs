@@ -15,10 +15,9 @@ namespace Test
         }
 
         [Fact]
-        public static int TestEntryPoint()
+        public static void TestEntryPoint()
         {
             new BB().Method1(0.0f);
-            return 100;
         }
     }
 }

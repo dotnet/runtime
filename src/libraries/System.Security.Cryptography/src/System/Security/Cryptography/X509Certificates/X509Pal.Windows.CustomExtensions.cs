@@ -140,11 +140,11 @@ namespace System.Security.Cryptography.X509Certificates
                     CryptDecodeObjectStructType.X509_ENHANCED_KEY_USAGE,
                     static delegate (void* pvDecoded, int cbDecoded)
                     {
-                        var localUsages = new OidCollection();
 
                         Debug.Assert(cbDecoded >= sizeof(CERT_ENHKEY_USAGE));
                         CERT_ENHKEY_USAGE* pEnhKeyUsage = (CERT_ENHKEY_USAGE*)pvDecoded;
                         int count = pEnhKeyUsage->cUsageIdentifier;
+                        var localUsages = new OidCollection(count);
                         for (int i = 0; i < count; i++)
                         {
                             IntPtr oidValuePointer = pEnhKeyUsage->rgpszUsageIdentifier[i];
@@ -155,78 +155,6 @@ namespace System.Security.Cryptography.X509Certificates
 
                         return localUsages;
                     });
-            }
-        }
-
-        public byte[] EncodeX509SubjectKeyIdentifierExtension(ReadOnlySpan<byte> subjectKeyIdentifier)
-        {
-            unsafe
-            {
-                fixed (byte* pSubkectKeyIdentifier = subjectKeyIdentifier)
-                {
-                    Interop.Crypt32.DATA_BLOB blob = new Interop.Crypt32.DATA_BLOB(new IntPtr(pSubkectKeyIdentifier), (uint)subjectKeyIdentifier.Length);
-                    return Interop.crypt32.EncodeObject(Oids.SubjectKeyIdentifier, &blob);
-                }
-            }
-        }
-
-        public void DecodeX509SubjectKeyIdentifierExtension(byte[] encoded, out byte[] subjectKeyIdentifier)
-        {
-            unsafe
-            {
-                subjectKeyIdentifier = encoded.DecodeObject(
-                    Oids.SubjectKeyIdentifier,
-                    static delegate (void* pvDecoded, int cbDecoded)
-                    {
-                        Debug.Assert(cbDecoded >= sizeof(Interop.Crypt32.DATA_BLOB));
-                        Interop.Crypt32.DATA_BLOB* pBlob = (Interop.Crypt32.DATA_BLOB*)pvDecoded;
-                        return pBlob->ToByteArray();
-                    });
-            }
-        }
-
-        public byte[] ComputeCapiSha1OfPublicKey(PublicKey key)
-        {
-            unsafe
-            {
-                fixed (byte* pszOidValue = key.Oid.ValueAsAscii())
-                {
-                    byte[] encodedParameters = key.EncodedParameters.RawData;
-                    fixed (byte* pEncodedParameters = encodedParameters)
-                    {
-                        byte[] encodedKeyValue = key.EncodedKeyValue.RawData;
-                        fixed (byte* pEncodedKeyValue = encodedKeyValue)
-                        {
-                            Interop.Crypt32.CERT_PUBLIC_KEY_INFO publicKeyInfo = new Interop.Crypt32.CERT_PUBLIC_KEY_INFO()
-                            {
-                                Algorithm = new Interop.Crypt32.CRYPT_ALGORITHM_IDENTIFIER()
-                                {
-                                    pszObjId = new IntPtr(pszOidValue),
-                                    Parameters = new Interop.Crypt32.DATA_BLOB(new IntPtr(pEncodedParameters), (uint)encodedParameters.Length),
-                                },
-
-                                PublicKey = new Interop.Crypt32.CRYPT_BIT_BLOB()
-                                {
-                                    cbData = encodedKeyValue.Length,
-                                    pbData = new IntPtr(pEncodedKeyValue),
-                                    cUnusedBits = 0,
-                                },
-                            };
-
-                            int cb = 20;
-                            byte[] buffer = new byte[cb];
-                            if (!Interop.Crypt32.CryptHashPublicKeyInfo(IntPtr.Zero, AlgId.CALG_SHA1, 0, Interop.Crypt32.CertEncodingType.All, ref publicKeyInfo, buffer, ref cb))
-                                throw Marshal.GetHRForLastWin32Error().ToCryptographicException();
-                            if (cb < buffer.Length)
-                            {
-                                byte[] newBuffer = new byte[cb];
-                                Buffer.BlockCopy(buffer, 0, newBuffer, 0, cb);
-                                buffer = newBuffer;
-                            }
-                            return buffer;
-                        }
-                    }
-                }
             }
         }
     }

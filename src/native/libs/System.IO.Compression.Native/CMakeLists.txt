@@ -32,6 +32,8 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
     if (CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
         include(${CLR_SRC_NATIVE_DIR}/external/zlib.cmake)
         add_definitions(-DINTERNAL_ZLIB)
+        set_source_files_properties(${ZLIB_SOURCES} PROPERTIES COMPILE_DEFINITIONS "${ZLIB_COMPILE_DEFINITIONS}")
+        set_source_files_properties(${ZLIB_SOURCES} PROPERTIES COMPILE_OPTIONS "${ZLIB_COMPILE_OPTIONS}")
         set(NATIVECOMPRESSION_SOURCES ${ZLIB_SOURCES} ${NATIVECOMPRESSION_SOURCES})
     endif()
 
@@ -64,7 +66,7 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
             ${NATIVE_LIBS_EXTRA}
         )
 
-        if (NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID)
+        if (NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_USE_SYSTEM_BROTLI)
             set(DEF_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/System.IO.Compression.Native_unixexports.src)
             set(EXPORTS_FILE ${CMAKE_CURRENT_BINARY_DIR}/System.IO.Compression.Native.exports)
             generate_exports_file(${DEF_SOURCES} ${EXPORTS_FILE})
@@ -76,16 +78,14 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
             set_property(TARGET System.IO.Compression.Native APPEND_STRING PROPERTY LINK_FLAGS ${EXPORTS_LINKER_OPTION})
             set_property(TARGET System.IO.Compression.Native APPEND_STRING PROPERTY LINK_DEPENDS ${EXPORTS_FILE})
 
-            if (NOT CLR_CMAKE_USE_SYSTEM_BROTLI)
-                add_custom_command(TARGET System.IO.Compression.Native POST_BUILD
-                    COMMENT "Verifying System.IO.Compression.Native entry points against entrypoints.c "
-                    COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../verify-entrypoints.sh
-                        $<TARGET_FILE:System.IO.Compression.Native>
-                        ${CMAKE_CURRENT_SOURCE_DIR}/entrypoints.c
-                        ${CMAKE_NM}
-                    VERBATIM
-                )
-            endif ()
+            add_custom_command(TARGET System.IO.Compression.Native POST_BUILD
+                COMMENT "Verifying System.IO.Compression.Native entry points against entrypoints.c "
+                COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../verify-entrypoints.sh
+                    $<TARGET_FILE:System.IO.Compression.Native>
+                    ${CMAKE_CURRENT_SOURCE_DIR}/entrypoints.c
+                    ${CMAKE_NM}
+                VERBATIM
+            )
         endif ()
 
         install_with_stripped_symbols (System.IO.Compression.Native PROGRAMS .)
@@ -110,6 +110,8 @@ else ()
     endif ()
 
     add_definitions(-DINTERNAL_ZLIB)
+    set_source_files_properties(${ZLIB_SOURCES} PROPERTIES COMPILE_DEFINITIONS "${ZLIB_COMPILE_DEFINITIONS}")
+    set_source_files_properties(${ZLIB_SOURCES} PROPERTIES COMPILE_OPTIONS "${ZLIB_COMPILE_OPTIONS}")
     set(NATIVECOMPRESSION_SOURCES ${ZLIB_SOURCES} ${NATIVECOMPRESSION_SOURCES})
 
     if (GEN_SHARED_LIB)
@@ -136,14 +138,14 @@ else ()
             STATIC
             ${NATIVECOMPRESSION_SOURCES}
         )
-        target_compile_options(System.IO.Compression.Native.Aot PRIVATE /guard:cf-)
-        target_compile_options(System.IO.Compression.Native.Aot PRIVATE /GL-)
+        set_target_properties(System.IO.Compression.Native.Aot PROPERTIES CLR_CONTROL_FLOW_GUARD OFF)
+        set_target_properties(System.IO.Compression.Native.Aot PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF)
 
         add_library(System.IO.Compression.Native.Aot.GuardCF
             STATIC
             ${NATIVECOMPRESSION_SOURCES}
         )
-        target_compile_options(System.IO.Compression.Native.Aot.GuardCF PRIVATE /GL-)
+        set_target_properties(System.IO.Compression.Native.Aot.GuardCF PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF)
     endif()
 
     if (GEN_SHARED_LIB)

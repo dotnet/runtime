@@ -1,12 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.Win32.SafeHandles;
+using System.Diagnostics;
 using System.Security;
 using System.Security.Principal;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Diagnostics;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.IO.Pipes
 {
@@ -24,6 +24,7 @@ namespace System.IO.Pipes
         private readonly PipeOptions _pipeOptions;
         private readonly HandleInheritability _inheritability;
         private readonly PipeDirection _direction;
+        private readonly int _accessRights;
 
         // Creates a named pipe client using default server (same machine, or "."), and PipeDirection.InOut
         public NamedPipeClientStream(string pipeName)
@@ -84,6 +85,7 @@ namespace System.IO.Pipes
             _inheritability = inheritability;
             _impersonationLevel = impersonationLevel;
             _pipeOptions = options;
+            _accessRights = AccessRightsFromDirection(direction);
         }
 
         // Create a NamedPipeClientStream from an existing server pipe handle.

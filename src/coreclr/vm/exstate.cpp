@@ -23,7 +23,7 @@ OBJECTHANDLE ThreadExceptionState::GetThrowableAsHandle()
         return m_pCurrentTracker->m_hThrowable;
     }
 
-    return NULL;
+    return (OBJECTHANDLE)NULL;
 #else // FEATURE_EH_FUNCLETS
     return m_currentExInfo.m_hThrowable;
 #endif // FEATURE_EH_FUNCLETS
@@ -81,7 +81,7 @@ void ThreadExceptionState::FreeAllStackTraces()
     WRAPPER_NO_CONTRACT;
 
 #ifdef FEATURE_EH_FUNCLETS
-    ExceptionTracker* pNode = m_pCurrentTracker;
+    ExceptionTrackerBase* pNode = m_pCurrentTracker;
 #else // FEATURE_EH_FUNCLETS
     ExInfo*           pNode = &m_currentExInfo;
 #endif // FEATURE_EH_FUNCLETS
@@ -155,7 +155,7 @@ void ThreadExceptionState::SetThrowable(OBJECTREF throwable DEBUG_ARG(SetThrowab
         }
         else
         {
-            AppDomain* pDomain = GetMyThread()->GetDomain();
+            AppDomain* pDomain = AppDomain::GetCurrentDomain();
             PREFIX_ASSUME(pDomain != NULL);
             hNewThrowable = pDomain->CreateHandle(throwable);
         }
@@ -234,17 +234,6 @@ BOOL ThreadExceptionState::IsExceptionInProgress()
 }
 
 #if !defined(DACCESS_COMPILE)
-
-void ThreadExceptionState::GetLeafFrameInfo(StackTraceElement* pStackTraceElement)
-{
-    WRAPPER_NO_CONTRACT;
-
-#ifdef FEATURE_EH_FUNCLETS
-    m_pCurrentTracker->m_StackTraceInfo.GetLeafFrameInfo(pStackTraceElement);
-#else
-    m_currentExInfo.m_StackTraceInfo.GetLeafFrameInfo(pStackTraceElement);
-#endif
-}
 
 EXCEPTION_POINTERS* ThreadExceptionState::GetExceptionPointers()
 {
@@ -553,7 +542,7 @@ void
 ThreadExceptionState::EnumChainMemoryRegions(CLRDataEnumMemoryFlags flags)
 {
 #ifdef FEATURE_EH_FUNCLETS
-    ExceptionTracker* head = m_pCurrentTracker;
+    ExceptionTrackerBase* head = m_pCurrentTracker;
 
     if (head == NULL)
     {

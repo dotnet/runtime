@@ -23,6 +23,11 @@ namespace System.Net.Http
 
             // Indicate that we should use default buffer size by setting size to 0.
             InitializeContent(content, 0);
+
+            if (TryComputeLength(out long contentLength))
+            {
+                Headers.ContentLength = contentLength;
+            }
         }
 
         public StreamContent(Stream content, int bufferSize)
@@ -31,6 +36,11 @@ namespace System.Net.Http
             ArgumentOutOfRangeException.ThrowIfNegativeOrZero(bufferSize);
 
             InitializeContent(content, bufferSize);
+
+            if (TryComputeLength(out long contentLength))
+            {
+                Headers.ContentLength = contentLength;
+            }
         }
 
         [MemberNotNull(nameof(_content))]
@@ -97,11 +107,15 @@ namespace System.Net.Http
             base.Dispose(disposing);
         }
 
-        protected override Stream CreateContentReadStream(CancellationToken cancellationToken) =>
-            new ReadOnlyStream(_content);
+        protected override Stream CreateContentReadStream(CancellationToken cancellationToken)
+        {
+            SeekToStartIfSeekable();
+            return new ReadOnlyStream(_content);
+        }
 
         protected override Task<Stream> CreateContentReadStreamAsync()
         {
+            SeekToStartIfSeekable();
             // Wrap the stream with a read-only stream to prevent someone from writing to the stream.
             return Task.FromResult<Stream>(new ReadOnlyStream(_content));
         }
@@ -130,6 +144,14 @@ namespace System.Net.Http
             }
 
             _contentConsumed = true;
+        }
+
+        private void SeekToStartIfSeekable()
+        {
+            if (_content.CanSeek)
+            {
+                _content.Position = _start;
+            }
         }
 
         private sealed class ReadOnlyStream : DelegatingStream

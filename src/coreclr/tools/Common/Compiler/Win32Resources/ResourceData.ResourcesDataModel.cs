@@ -4,7 +4,11 @@
 using System;
 using System.Collections.Generic;
 
+#if HOST_MODEL
+namespace Microsoft.NET.HostModel.Win32Resources
+#else
 namespace ILCompiler.Win32Resources
+#endif
 {
     public unsafe partial class ResourceData
     {

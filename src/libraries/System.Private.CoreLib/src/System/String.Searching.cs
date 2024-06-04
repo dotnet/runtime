@@ -13,6 +13,12 @@ namespace System
             if (value == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
 
+            if (RuntimeHelpers.IsKnownConstant(value) && value.Length == 1)
+            {
+                // Call the char overload, e.g. Contains("X") -> Contains('X')
+                return Contains(value[0]);
+            }
+
             return SpanHelpers.IndexOf(
                 ref _firstChar,
                 Length,
@@ -32,7 +38,9 @@ namespace System
 
         public bool Contains(char value, StringComparison comparisonType)
         {
+#pragma warning disable CA2249 // Consider using 'string.Contains' instead of 'string.IndexOf'... this is the implementation of Contains!
             return IndexOf(value, comparisonType) != -1;
+#pragma warning restore CA2249
         }
 
         // Returns the index of the first occurrence of a specified character in the current instance.
@@ -76,10 +84,10 @@ namespace System
 
             if (char.IsAsciiLetter(value))
             {
-                char valueUc = (char)(value | 0x20);
-                char valueLc = (char)(value & ~0x20);
+                char valueLc = (char)(value | 0x20);
+                char valueUc = (char)(value & ~0x20);
                 return PackedSpanHelpers.PackedIndexOfIsSupported
-                    ? PackedSpanHelpers.IndexOfAny(ref _firstChar, valueLc, valueUc, Length)
+                    ? PackedSpanHelpers.IndexOfAnyIgnoreCase(ref _firstChar, valueLc, Length)
                     : SpanHelpers.IndexOfAnyChar(ref _firstChar, valueLc, valueUc, Length);
             }
 

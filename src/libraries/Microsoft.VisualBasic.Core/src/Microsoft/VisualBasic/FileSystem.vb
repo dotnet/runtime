@@ -241,11 +241,11 @@ Namespace Microsoft.VisualBasic
                 Return False
             End If
 
-            If (Path.IndexOf("*"c) <> -1) Then
+            If (Path.Contains("*"c)) Then
                 Return True
             End If
 
-            If (Path.IndexOf("?"c) <> -1) Then
+            If (Path.Contains("?"c)) Then
                 Return True
             End If
 
@@ -1315,7 +1315,7 @@ Namespace Microsoft.VisualBasic
         Friend Function VB6CheckPathname(ByVal oAssemblyData As AssemblyData, ByVal sPath As String, ByVal mode As OpenMode) As String
             Dim Result As String
             '  Error if wildcard characters in pathname
-            If (sPath.IndexOf("?"c) <> -1 OrElse sPath.IndexOf("*"c) <> -1) Then
+            If (sPath.Contains("?"c) OrElse sPath.Contains("*"c)) Then
                 Throw New ArgumentException(SR.Format(SR.Argument_InvalidPathChars1, sPath))
             End If
 
