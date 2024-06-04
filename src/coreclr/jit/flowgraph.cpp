@@ -6306,8 +6306,8 @@ FlowGraphDominatorTree* FlowGraphDominatorTree::Build(const FlowGraphDfsTree* df
     }
 #endif
 
-    // Assign preorder/postorder nums for fast "domnates" queries.
-    class NumberDomTreeVisitor : public DomTreeVisitor<NumberDomTreeVisitor>
+    // Assign preorder/postorder nums for fast "dominates" queries.
+    class NumberDomTreeVisitor : public DomTreeVisitor<NumberDomTreeVisitor, /* postDom */ false>
     {
         unsigned* m_preorderNums;
         unsigned* m_postorderNums;
@@ -6602,7 +6602,7 @@ FlowGraphPostDominatorTree* FlowGraphPostDominatorTree::Build(const FlowGraphRev
 #endif
 
     // Assign preorder/postorder nums for fast "domnates" queries.
-    class NumberDomTreeVisitor : public DomTreeVisitor<NumberDomTreeVisitor>
+    class NumberDomTreeVisitor : public DomTreeVisitor<NumberDomTreeVisitor, /* postDom */ true>
     {
         unsigned* m_preorderNums;
         unsigned* m_postorderNums;

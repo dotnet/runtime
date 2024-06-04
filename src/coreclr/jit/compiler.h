@@ -2401,7 +2401,7 @@ public:
 // Represents the dominator tree of the flow graph.
 class FlowGraphDominatorTree
 {
-    template<typename TVisitor>
+    template<typename TVisitor, bool postDom>
     friend class DomTreeVisitor;
 
     const FlowGraphDfsTree* m_dfsTree;
@@ -2438,8 +2438,8 @@ public:
 // Represents the postdominator tree of the flow graph.
 class FlowGraphPostDominatorTree
 {
-    template<typename TVisitor>
-    friend class PostdomTreeVisitor;
+    template<typename TVisitor, bool postDom>
+    friend class DomTreeVisitor;
 
     const FlowGraphReverseDfsTree* m_reverseDfsTree;
     const DomTreeNode* m_domTree;
@@ -11950,7 +11950,7 @@ public:
 };
 
 // A dominator tree visitor implemented using the curiously-recurring-template pattern, similar to GenTreeVisitor.
-template <typename TVisitor>
+template <typename TVisitor, bool postDom>
 class DomTreeVisitor
 {
     friend class FlowGraphDominatorTree;
@@ -11993,7 +11993,7 @@ private:
 
             if (next != nullptr)
             {
-                assert(next->bbIDom == block);
+                assert((!postDom && (next->bbIDom == block)) || (postDom && (next->bbIPDom == block)));
                 continue;
             }
 
@@ -12005,11 +12005,12 @@ private:
 
                 if (next != nullptr)
                 {
-                    assert(next->bbIDom == block->bbIDom);
+                    assert((!postDom && (next->bbIDom == block->bbIDom)) ||
+                           (postDom && (next->bbIPDom == block->bbIPDom)));
                     break;
                 }
 
-                block = block->bbIDom;
+                block = postDom ? block->bbIPDom : block->bbIDom;
 
             } while (block != nullptr);
         }
