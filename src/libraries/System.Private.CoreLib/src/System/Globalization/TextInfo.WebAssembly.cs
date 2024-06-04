@@ -11,15 +11,14 @@ namespace System.Globalization
         internal unsafe void JsChangeCase(char* src, int srcLen, char* dstBuffer, int dstBufferCapacity, bool toUpper)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
+            Debug.Assert(!HasEmptyCultureName);
             Debug.Assert(!GlobalizationMode.UseNls);
             Debug.Assert(GlobalizationMode.Hybrid);
 
             ReadOnlySpan<char> cultureName = _cultureName.AsSpan();
             fixed (char* pCultureName = &MemoryMarshal.GetReference(cultureName))
             {
-                nint exceptionPtr = HasEmptyCultureName ?
-                    Interop.JsGlobalization.ChangeCaseInvariant(src, srcLen, dstBuffer, dstBufferCapacity, toUpper) :
-                    Interop.JsGlobalization.ChangeCase(pCultureName, cultureName.Length, src, srcLen, dstBuffer, dstBufferCapacity, toUpper);
+                nint exceptionPtr = Interop.JsGlobalization.ChangeCase(pCultureName, cultureName.Length, src, srcLen, dstBuffer, dstBufferCapacity, toUpper);
                 Helper.MarshalAndThrowIfException(exceptionPtr);
             }
         }
