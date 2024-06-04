@@ -11,7 +11,8 @@
 #include <ctime>
 
 
-void pal::file_vprintf(FILE* f, const pal::char_t* format, va_list vl) {
+void pal::file_vprintf(FILE* f, const pal::char_t* format, va_list vl)
+{
     // String functions like vfwprintf convert wide to multi-byte characters as if wcrtomb were called - that is, using the current C locale (LC_TYPE).
     // In order to properly print UTF-8 and GB18030 characters, we need to use the version of vfwprintf that takes a locale.
     _locale_t loc = _create_locale(LC_ALL, ".utf8");
