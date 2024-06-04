@@ -14,7 +14,7 @@ public final class PalPbkdf2 {
     private static final int SUCCESS = 1;
 
     public static int pbkdf2OneShot(String algorithmName, byte[] password, byte[] salt, int iterations, byte[] destination)
-        throws ShortBufferException, InvalidKeyException {
+        throws ShortBufferException, InvalidKeyException, IllegalArgumentException {
 
         // We do not ever expect a ShortBufferException to ever get thrown since the buffer destination length is always
         // checked. Let it go through the checked exception and JNI will handle it as a generic failure.
@@ -26,12 +26,10 @@ public final class PalPbkdf2 {
         // need to support SHA-2 prior to that.
         // The second is that PBEKeySpec only supports char-based passwords, whereas .NET supports arbitrary byte keys.
 
-        assert algorithmName != null;
-        assert password != null;
-        assert salt != null;
-        assert iterations > 0;
-        assert destination != null;
-
+        if (algorithmName == null || password == null || salt == null || destination == null) {
+            // These are essentially asserts since the .NET side should have already validated these.
+            throw new IllegalArgumentException("algorithmName, password, salt, and destination must not be null.");
+        }
         // The .NET side already validates the hash algorithm name inputs.
         String javaAlgorithmName = "Hmac" + algorithmName;
         Mac mac;
@@ -40,7 +38,6 @@ public final class PalPbkdf2 {
             mac = Mac.getInstance(javaAlgorithmName);
         }
         catch (NoSuchAlgorithmException nsae) {
-            assert false : "The algorithm was checked before, so it should be available.";
             return ERROR_UNSUPPORTED_ALGORITHM;
         }
 
@@ -63,8 +60,6 @@ public final class PalPbkdf2 {
         byte[] u = new byte[block.length];
 
         while (destinationOffset < destination.length) {
-            assert blockCounter > 0; // Given the comment above, this should never overflow.
-
             writeBigEndianInt(blockCounter, blockCounterBuffer);
 
             mac.update(salt);
