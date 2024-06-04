@@ -1855,6 +1855,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 GetEmitter()->emitIns_R_R_R_I(ins, emitSize, op3Reg, op1Reg, op2Reg, 0, opt);
                 break;
 
+            case NI_Sve_TransposeEven:
+            case NI_Sve_TransposeOdd:
             case NI_Sve_UnzipEven:
             case NI_Sve_UnzipOdd:
             case NI_Sve_ZipHigh:

@@ -4776,6 +4776,27 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<uint> SubtractSaturate(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
         public static System.Numerics.Vector<ulong> SubtractSaturate(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
 
+        public static System.Numerics.Vector<byte> TransposeEven(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<double> TransposeEven(System.Numerics.Vector<double> left, System.Numerics.Vector<double> right) { throw null; }
+        public static System.Numerics.Vector<short> TransposeEven(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<int> TransposeEven(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<long> TransposeEven(System.Numerics.Vector<long> left, System.Numerics.Vector<long> right) { throw null; }
+        public static System.Numerics.Vector<sbyte> TransposeEven(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<float> TransposeEven(System.Numerics.Vector<float> left, System.Numerics.Vector<float> right) { throw null; }
+        public static System.Numerics.Vector<ushort> TransposeEven(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<uint> TransposeEven(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<ulong> TransposeEven(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
+        public static System.Numerics.Vector<byte> TransposeOdd(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<double> TransposeOdd(System.Numerics.Vector<double> left, System.Numerics.Vector<double> right) { throw null; }
+        public static System.Numerics.Vector<short> TransposeOdd(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<int> TransposeOdd(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<long> TransposeOdd(System.Numerics.Vector<long> left, System.Numerics.Vector<long> right) { throw null; }
+        public static System.Numerics.Vector<sbyte> TransposeOdd(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<float> TransposeOdd(System.Numerics.Vector<float> left, System.Numerics.Vector<float> right) { throw null; }
+        public static System.Numerics.Vector<ushort> TransposeOdd(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<uint> TransposeOdd(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<ulong> TransposeOdd(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
+
         public static System.Numerics.Vector<sbyte> UnzipEven(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
         public static System.Numerics.Vector<short> UnzipEven(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
         public static System.Numerics.Vector<int> UnzipEven(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
