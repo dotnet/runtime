@@ -853,7 +853,8 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
                 _ASSERT(size == (sizeof(M512) * 16));
                 memcpy_s(dest, sizeof(M512) * 16, &lpContext->Zmm16, sizeof(M512) * 16);
             }
-
+#ifndef TARGET_OSX
+            // TODO-xarch-apx: I suppose OSX will not support APX.
             if (FPREG_HasApxRegisters(native))
             {
                 _ASSERT((lpContext->XStateFeaturesMask & /*XSATE_MASK_APX*/(0x80000)) == /*XSATE_MASK_APX*/(0x80000));
@@ -862,6 +863,7 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
                 _ASSERT(size == (sizeof(DWORD64) * 16));
                 memcpy_s(dest, sizeof(DWORD64) * 16, &lpContext->Egpr16, sizeof(DWORD64) * 16);
             }
+#endif //  TARGET_OSX
         }
     }
 #endif //HOST_AMD64 && XSTATE_SUPPORTED
