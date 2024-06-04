@@ -11,9 +11,23 @@ namespace System.Globalization
         internal unsafe void JsChangeCase(char* src, int srcLen, char* dstBuffer, int dstBufferCapacity, bool toUpper)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
-            Debug.Assert(!HasEmptyCultureName);
             Debug.Assert(!GlobalizationMode.UseNls);
             Debug.Assert(GlobalizationMode.Hybrid);
+
+            if (HasEmptyCultureName)
+            {
+                ReadOnlySpan<char> source = new ReadOnlySpan<char>(src, srcLen);
+                Span<char> destination = new Span<char>(dstBuffer, dstBufferCapacity);
+                if (toUpper)
+                {
+                    InvariantModeCasing.ToUpper(source, destination);
+                }
+                else
+                {
+                    InvariantModeCasing.ToLower(source, destination);
+                }
+                return;
+            }
 
             ReadOnlySpan<char> cultureName = _cultureName.AsSpan();
             fixed (char* pCultureName = &MemoryMarshal.GetReference(cultureName))
