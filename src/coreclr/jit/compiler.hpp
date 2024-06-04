@@ -4962,9 +4962,9 @@ unsigned Compiler::fgRunReverseDfs(VisitPreorder visitPreorder, VisitPostorder v
     reverseDfsFrom(pseudoExit);
 
     const unsigned dfsCount = m_dfsTree->GetPostOrderCount();
-    assert(dfsCount + 1 <= postOrderIndex);
+    assert(dfsCount <= postOrderIndex);
 
-    if (dfsCount + 1 <= postOrderIndex)
+    if (dfsCount < postOrderIndex)
     {
         // If some forward reachable block is not reverse reachable,
         // we may have an infinite loop... process these now.
@@ -4980,7 +4980,7 @@ unsigned Compiler::fgRunReverseDfs(VisitPreorder visitPreorder, VisitPostorder v
     }
 
     // We've now visited all the preds of the pseudoExit,
-    // and all the blocks that were visisted by the dfs.
+    // and all the blocks that were visited by the dfs.
     //
     visitPostorder(pseudoExit, postOrderIndex++);
 

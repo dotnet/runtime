@@ -4197,7 +4197,7 @@ bool FlowGraphReverseDfsTree::IsAncestor(BasicBlock* ancestor, BasicBlock* desce
 //
 FlowGraphReverseDfsTree* Compiler::fgComputeReverseDfs()
 {
-    BasicBlock** postOrder = new (this, CMK_DepthFirstSearch) BasicBlock*[fgBBcount];
+    BasicBlock** postOrder = new (this, CMK_DepthFirstSearch) BasicBlock*[fgBBcount + 1];
     bool         hasCycle  = false;
 
     BasicBlock* pseudoExit = new (this, CMK_BasicBlock) BasicBlock();
@@ -4211,7 +4211,7 @@ FlowGraphReverseDfsTree* Compiler::fgComputeReverseDfs()
 
     auto visitPostorder = [=](BasicBlock* block, unsigned postorderNum) {
         block->bbReversePostorderNum = postorderNum;
-        assert(postorderNum < fgBBcount);
+        assert(postorderNum <= fgBBcount);
         postOrder[postorderNum] = block;
     };
 
