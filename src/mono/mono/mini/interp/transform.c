@@ -4827,6 +4827,25 @@ interp_handle_box_patterns (TransformData *td, MonoClass *box_class, const unsig
 		td->ip = next_ip + 5;
 		return TRUE;
 	}
+	if (m_class_is_byreflike (box_class)) {
+	    if (*next_ip == CEE_BRTRUE || *next_ip == CEE_BRTRUE_S || *next_ip == CEE_BRFALSE || *next_ip == CEE_BRFALSE_S) {
+		// replace
+		//  box ByRefLike
+		//  brtrue/brfalse
+		//
+		// by
+		//
+		// ldc.i4.s 1
+		// brtrue/brfalse
+		td->sp--;
+		interp_add_ins (td, MINT_LDC_I4_S);
+		td->last_ins->data[0] = (guint16) 1;
+		push_simple_type (td, STACK_TYPE_I4);
+		interp_ins_set_dreg (td->last_ins, td->sp [-1].var);
+		td->ip += 5;
+		return TRUE;
+	    }
+	}
 	return FALSE;
 }
 
