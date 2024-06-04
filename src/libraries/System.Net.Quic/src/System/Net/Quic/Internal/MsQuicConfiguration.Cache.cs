@@ -135,7 +135,7 @@ internal static partial class MsQuicConfiguration
 
         return s_configurationCache.GetOrCreate(key, static (args) =>
         {
-            (settings, flags, certificate, intermediates, alpnProtocols, allowedCipherSuites) = args;
+            var (settings, flags, certificate, intermediates, alpnProtocols, allowedCipherSuites) = args;
             return CreateInternal(settings, flags, certificate, intermediates, alpnProtocols, allowedCipherSuites);
         }, (settings, flags, certificate, intermediates, alpnProtocols, allowedCipherSuites));
     }
