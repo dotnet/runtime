@@ -45,11 +45,13 @@ public class WasiLibraryModeTests : BuildTestBase
                     <PropertyGroup>
                         <TargetFramework>net9.0</TargetFramework>
                         <RuntimeIdentifier>wasi-wasm</RuntimeIdentifier>
-                        <OutputType>Library</OutputType>
+                        <TargetOs>wasi</TargetOs>
                         <WasmBuildNative>true</WasmBuildNative>
                         <WasmNativeStrip>false</WasmNativeStrip>
-                        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+                        <IsBrowserWasmProject>false</IsBrowserWasmProject>
                         <WasmSingleFileBundle>true</WasmSingleFileBundle>
+                        <OutputType>Library</OutputType>
+                        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
                     </PropertyGroup>
                 </Project>
                 """;
@@ -63,7 +65,7 @@ public class WasiLibraryModeTests : BuildTestBase
                     new BuildProjectOptions(
                         DotnetWasmFromRuntimePack: false,
                         CreateProject: false,
-                        Publish: true,
+                        Publish: false,
                         TargetFramework: BuildTestBase.DefaultTargetFramework
                         ));
 

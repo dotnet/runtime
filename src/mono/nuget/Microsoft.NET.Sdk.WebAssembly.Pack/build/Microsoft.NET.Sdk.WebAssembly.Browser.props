@@ -14,7 +14,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     <!-- Avoid having the rid show up in output paths -->
     <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
 
-    <OutputType>exe</OutputType>
+    <!-- <OutputType>exe</OutputType> -->
 
     <IsPackable>false</IsPackable>
 
@@ -36,9 +36,6 @@ Copyright (c) .NET Foundation. All rights reserved.
     <StaticWebAssetsAdditionalPublishProperties>$(StaticWebAssetsAdditionalPublishProperties);BuildProjectReferences=false;ResolveAssemblyReferencesFindRelatedSatellites=true</StaticWebAssetsAdditionalPublishProperties>
     <StaticWebAssetsAdditionalPublishPropertiesToRemove>$(StaticWebAssetsAdditionalPublishPropertiesToRemove);NoBuild;RuntimeIdentifier</StaticWebAssetsAdditionalPublishPropertiesToRemove>
 
-    <!-- Library Mode defaults-->
-    <CopyLocalLockFileAssemblies Condition="'$(OutputType)' == 'Library'">true</CopyLocalLockFileAssemblies>
-    <GenerateRuntimeConfigurationFiles Condition="'$(OutputType)' == 'Library'">true</GenerateRuntimeConfigurationFiles>
   </PropertyGroup>
 
   <ItemGroup>
