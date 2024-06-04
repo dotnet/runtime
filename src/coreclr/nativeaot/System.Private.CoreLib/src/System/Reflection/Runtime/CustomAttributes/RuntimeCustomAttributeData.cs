@@ -62,7 +62,7 @@ namespace System.Reflection.Runtime.CustomAttributes
                     ComputeTypedArgumentString(namedArgument.TypedValue, typed));
             }
 
-            return string.Format("[{0}({1}{2})]", AttributeType.FormatTypeNameForReflection(), ctorArgs, namedArgs);
+            return string.Format("[{0}({1}{2})]", AttributeType.FormatTypeName(), ctorArgs, namedArgs);
         }
 
         protected static ConstructorInfo ResolveAttributeConstructor(

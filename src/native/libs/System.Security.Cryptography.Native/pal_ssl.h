@@ -168,6 +168,11 @@ Sets session caching. 0 is disabled.
 PALEXPORT int CryptoNative_SslCtxSetCaching(SSL_CTX* ctx, int mode, int cacheSize, int contextIdLength, uint8_t* contextId, SslCtxNewSessionCallback newSessionCb, SslCtxRemoveSessionCallback removeSessionCb);
 
 /*
+Removes a session from internal cache.
+*/
+PALEXPORT int CryptoNative_SslCtxRemoveSession(SSL_CTX* ctx, SSL_SESSION* session);
+
+/*
 Sets callback to log TLS session keys
 */
 PALEXPORT void CryptoNative_SslCtxSetKeylogCallback(SSL_CTX* ctx, SslCtxSetKeylogCallback callback);

@@ -104,7 +104,7 @@ ABIPassingInformation LoongArch64Classifier::Classify(Compiler*    comp,
                 }
                 else if ((floatFlags & STRUCT_FLOAT_FIELD_FIRST) != 0)
                 {
-                    slots                 = 1;
+                    slots                 = 2;
                     canPassArgInRegisters = (m_floatRegs.Count() > 0) && (m_intRegs.Count() > 0);
 
                     argRegTypeInStruct1 = (floatFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
@@ -112,7 +112,7 @@ ABIPassingInformation LoongArch64Classifier::Classify(Compiler*    comp,
                 }
                 else if ((floatFlags & STRUCT_FLOAT_FIELD_SECOND) != 0)
                 {
-                    slots                 = 1;
+                    slots                 = 2;
                     canPassArgInRegisters = (m_floatRegs.Count() > 0) && (m_intRegs.Count() > 0);
 
                     argRegTypeInStruct1 = (floatFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? TYP_LONG : TYP_INT;
@@ -123,7 +123,6 @@ ABIPassingInformation LoongArch64Classifier::Classify(Compiler*    comp,
 
                 if (!canPassArgInRegisters)
                 {
-                    m_floatRegs.Clear();
                     slots = (passedSize + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE;
                     // On LoongArch64, if there aren't any remaining floating-point registers to pass the argument,
                     // integer registers (if any) are used instead.
@@ -161,7 +160,7 @@ ABIPassingInformation LoongArch64Classifier::Classify(Compiler*    comp,
             canPassArgInRegisters = m_floatRegs.Count() > 0;
             if (!canPassArgInRegisters)
             {
-                m_floatRegs.Clear();
+                type                  = TYP_I_IMPL;
                 canPassArgInRegisters = m_intRegs.Count() > 0;
             }
         }

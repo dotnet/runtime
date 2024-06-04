@@ -688,29 +688,27 @@ namespace System.Reflection.Emit
         {
             if (!_typeReferences.TryGetValue(type, out var typeHandle))
             {
-                if (type.IsArray || type.IsGenericParameter || (type.IsGenericType && !type.IsGenericTypeDefinition))
+                if (type.HasElementType || type.IsGenericParameter ||
+                    (type.IsGenericType && !type.IsGenericTypeDefinition))
                 {
                     typeHandle = AddTypeSpecification(type);
                 }
                 else
                 {
-                    typeHandle = AddTypeReference(type, GetResolutionScopeHandle(type));
+                    if (type.IsNested)
+                    {
+                        typeHandle = AddTypeReference(GetTypeReferenceOrSpecificationHandle(type.DeclaringType!), null, type.Name);
+                    }
+                    else
+                    {
+                        typeHandle = AddTypeReference(GetAssemblyReference(type.Assembly), type.Namespace, type.Name);
+                    }
                 }
 
                 _typeReferences.Add(type, typeHandle);
             }
 
             return typeHandle;
-        }
-
-        private EntityHandle GetResolutionScopeHandle(Type type)
-        {
-            if (type.IsNested)
-            {
-                return GetTypeReferenceOrSpecificationHandle(type.DeclaringType!);
-            }
-
-            return GetAssemblyReference(type.Assembly);
         }
 
         private TypeSpecificationHandle AddTypeSpecification(Type type) =>
@@ -943,11 +941,11 @@ namespace System.Reflection.Emit
                 bodyOffset: offset,
                 parameterList: MetadataTokens.ParameterHandle(parameterToken));
 
-        private TypeReferenceHandle AddTypeReference(Type type, EntityHandle resolutionScope) =>
+        private TypeReferenceHandle AddTypeReference(EntityHandle resolutionScope, string? ns, string name) =>
             _metadataBuilder.AddTypeReference(
                 resolutionScope: resolutionScope,
-                @namespace: (type.Namespace == null) ? default : _metadataBuilder.GetOrAddString(type.Namespace),
-                name: _metadataBuilder.GetOrAddString(type.Name));
+                @namespace: (ns == null) ? default : _metadataBuilder.GetOrAddString(ns),
+                name: _metadataBuilder.GetOrAddString(name));
 
         private MemberReferenceHandle AddMemberReference(string memberName, EntityHandle parent, BlobBuilder signature) =>
             _metadataBuilder.AddMemberReference(
@@ -1094,8 +1092,21 @@ namespace System.Reflection.Emit
             return GetMemberReferenceHandle(member);
         }
 
-        private static bool IsConstructedFromTypeBuilder(Type type) => type.IsConstructedGenericType &&
-            (type.GetGenericTypeDefinition() is TypeBuilderImpl || ContainsTypeBuilder(type.GetGenericArguments()));
+        private static bool IsConstructedFromTypeBuilder(Type type)
+        {
+            if (type.IsConstructedGenericType)
+            {
+                return type.GetGenericTypeDefinition() is TypeBuilderImpl || ContainsTypeBuilder(type.GetGenericArguments());
+            }
+
+            Type? elementType = type.GetElementType();
+            if (elementType is not null)
+            {
+                return (elementType is TypeBuilderImpl) || IsConstructedFromTypeBuilder(elementType);
+            }
+
+            return false;
+        }
 
         internal static bool ContainsTypeBuilder(Type[] genericArguments)
         {

@@ -85,7 +85,7 @@ namespace System.ComponentModel
                     {
                         Type? typeDescriptorType = Type.GetType("System.ComponentModel.TypeDescriptor, System.ComponentModel.TypeConverter", throwOnError: false);
                         MethodInfo? mi = typeDescriptorType?.GetMethod("ConvertFromInvariantString", BindingFlags.NonPublic | BindingFlags.Static);
-                        Volatile.Write(ref s_convertFromInvariantString, mi == null ? new object() : mi.CreateDelegate<Func<Type, string, object>>());
+                        s_convertFromInvariantString = mi == null ? new object() : mi.CreateDelegate<Func<Type, string, object>>();
                     }
 
                     if (!(s_convertFromInvariantString is Func<Type, string?, object> convertFromInvariantString))

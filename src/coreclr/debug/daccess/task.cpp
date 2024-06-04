@@ -121,16 +121,8 @@ ClrDataTask::GetCurrentAppDomain(
 
     EX_TRY
     {
-        if (m_thread->GetDomain())
-        {
-            *appDomain = new (nothrow)
-                ClrDataAppDomain(m_dac, m_thread->GetDomain());
-            status = *appDomain ? S_OK : E_OUTOFMEMORY;
-        }
-        else
-        {
-            status = E_INVALIDARG;
-        }
+        *appDomain = new (nothrow) ClrDataAppDomain(m_dac, AppDomain::GetCurrentDomain());
+        status = *appDomain ? S_OK : E_OUTOFMEMORY;
     }
     EX_CATCH
     {
@@ -549,7 +541,7 @@ ClrDataTask::GetLastExceptionState(
         {
             *exception = new (nothrow)
                 ClrDataExceptionState(m_dac,
-                                      m_thread->GetDomain(),
+                                      AppDomain::GetCurrentDomain(),
                                       m_thread,
                                       CLRDATA_EXCEPTION_PARTIAL,
                                       NULL,
@@ -4962,7 +4954,7 @@ ClrDataExceptionState::NewFromThread(ClrDataAccess* dac,
 
     exIf = new (nothrow)
         ClrDataExceptionState(dac,
-                              thread->GetDomain(),
+                              AppDomain::GetCurrentDomain(),
                               thread,
                               CLRDATA_EXCEPTION_DEFAULT,
                               exState,

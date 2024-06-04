@@ -263,6 +263,7 @@ class Object
     }
 
     static DWORD ComputeHashCode();
+    static DWORD GetGlobalNewHashCode();
 
 #ifndef DACCESS_COMPILE
     INT32 GetHashCodeEx();
@@ -382,10 +383,10 @@ class Object
         return * PTR_BYTE(GetData() + dwOffset);
     }
 
-    __int64 GetOffset64(DWORD dwOffset)
+    int64_t GetOffset64(DWORD dwOffset)
     {
         WRAPPER_NO_CONTRACT;
-        return (__int64) * PTR_ULONG64(GetData() + dwOffset);
+        return (int64_t) * PTR_ULONG64(GetData() + dwOffset);
     }
 
     void *GetPtrOffset(DWORD dwOffset)
@@ -422,10 +423,10 @@ class Object
         *(BYTE *) &GetData()[dwOffset] = (BYTE) dwValue;
     }
 
-    void SetOffset64(DWORD dwOffset, __int64 qwValue)
+    void SetOffset64(DWORD dwOffset, int64_t qwValue)
     {
         WRAPPER_NO_CONTRACT;
-        *(__int64 *) &GetData()[dwOffset] = qwValue;
+        *(int64_t *) &GetData()[dwOffset] = qwValue;
     }
 
 #endif // #ifndef DACCESS_COMPILE

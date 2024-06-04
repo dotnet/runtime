@@ -48,6 +48,7 @@ MONO_CLASS_GETTER(m_class_is_interfaces_inited, gboolean, , MonoClass, interface
 MONO_CLASS_GETTER(m_class_is_simd_type, gboolean, , MonoClass, simd_type)
 MONO_CLASS_GETTER(m_class_is_has_finalize_inited, gboolean, , MonoClass, has_finalize_inited)
 MONO_CLASS_GETTER(m_class_is_fields_inited, gboolean, , MonoClass, fields_inited)
+MONO_CLASS_GETTER(m_class_is_exception_class, gboolean, , MonoClass, is_exception_class)
 MONO_CLASS_GETTER(m_class_has_failure, gboolean, , MonoClass, has_failure)
 MONO_CLASS_GETTER(m_class_has_deferred_failure, gboolean, , MonoClass, has_deferred_failure)
 MONO_CLASS_GETTER(m_class_has_weak_fields, gboolean, , MonoClass, has_weak_fields)

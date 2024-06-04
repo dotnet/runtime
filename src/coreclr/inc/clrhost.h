@@ -8,6 +8,8 @@
 #ifndef __CLRHOST_H__
 #define __CLRHOST_H__
 
+#include <new>
+
 #include "windows.h" // worth to include before mscoree.h so we are guaranteed to pick few definitions
 #ifdef CreateSemaphore
 #undef CreateSemaphore
@@ -16,7 +18,9 @@
 #include "clrinternal.h"
 #include "switches.h"
 #include "holder.h"
-#include "new.hpp"
+
+using std::nothrow;
+
 #include "staticcontract.h"
 #include "predeftlsslot.h"
 #include "safemath.h"
@@ -63,10 +67,6 @@ BOOL ClrVirtualProtect(LPVOID lpAddress, SIZE_T dwSize, DWORD flNewProtect, PDWO
 
 #ifdef HOST_WINDOWS
 HANDLE ClrGetProcessExecutableHeap();
-#endif
-
-#ifdef FAILPOINTS_ENABLED
-extern int RFS_HashStack();
 #endif
 
 // Critical section support for CLR DLLs other than the EE.

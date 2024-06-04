@@ -189,13 +189,29 @@ namespace TaskCoverage
         }
 
         [Fact]
+        public static void Task_WhenAny_NullTaskElement_Throws()
+        {
+            AssertExtensions.Throws<ArgumentException>("tasks", () => { Task.WhenAny(new Task[] { null }); });
+            AssertExtensions.Throws<ArgumentException>("tasks", () => { Task.WhenAny((ReadOnlySpan<Task>)new Task[] { null }); });
+            AssertExtensions.Throws<ArgumentException>("tasks", () => { Task.WhenAny(NullElementIterator<Task>()); });
+
+            AssertExtensions.Throws<ArgumentException>("tasks", () => { Task.WhenAny(new Task<int>[] { null }); });
+            AssertExtensions.Throws<ArgumentException>("tasks", () => { Task.WhenAny((ReadOnlySpan<Task<int>>)new Task<int>[] { null }); });
+            AssertExtensions.Throws<ArgumentException>("tasks", () => { Task.WhenAny(NullElementIterator<Task<int>>()); });
+
+            static IEnumerable<T> NullElementIterator<T>() where T : Task { yield return null; }
+        }
+
+        [Fact]
         public static void Task_WhenAny_NoTasks_Throws()
         {
             AssertExtensions.Throws<ArgumentException>("tasks", () => { Task.WhenAny(new Task[0]); });
+            AssertExtensions.Throws<ArgumentException>("tasks", () => { Task.WhenAny(ReadOnlySpan<Task>.Empty); });
             AssertExtensions.Throws<ArgumentException>("tasks", () => { Task.WhenAny(new List<Task>()); });
             AssertExtensions.Throws<ArgumentException>("tasks", () => { Task.WhenAny(EmptyIterator<Task>()); });
 
             AssertExtensions.Throws<ArgumentException>("tasks", () => { Task.WhenAny(new Task<int>[0]); });
+            AssertExtensions.Throws<ArgumentException>("tasks", () => { Task.WhenAny(ReadOnlySpan<Task<int>>.Empty); });
             AssertExtensions.Throws<ArgumentException>("tasks", () => { Task.WhenAny(new List<Task<int>>()); });
             AssertExtensions.Throws<ArgumentException>("tasks", () => { Task.WhenAny(EmptyIterator<Task<int>>()); });
 
@@ -279,7 +295,6 @@ namespace TaskCoverage
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/99500", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public static void CancellationTokenRegitration()
         {
             ManualResetEvent mre = new ManualResetEvent(false);
@@ -297,7 +312,6 @@ namespace TaskCoverage
         /// verify that the taskawaiter.UnsafeOnCompleted is invoked
         /// </summary>
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/99519", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public static void TaskAwaiter()
         {
             ManualResetEvent mre = new ManualResetEvent(false);
@@ -354,6 +368,36 @@ namespace TaskCoverage
         }
 
         [Fact]
+        public static void Task_WaitAll_NullArgument_Throws()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("tasks", () => { Task.WaitAll((Task[])null); });
+            AssertExtensions.Throws<ArgumentNullException>("tasks", () => { Task.WaitAll((Task[])null, CancellationToken.None); });
+            AssertExtensions.Throws<ArgumentNullException>("tasks", () => { Task.WaitAll((Task[])null, 30_000); });
+            AssertExtensions.Throws<ArgumentNullException>("tasks", () => { Task.WaitAll((Task[])null, TimeSpan.FromSeconds(30)); });
+            AssertExtensions.Throws<ArgumentNullException>("tasks", () => { Task.WaitAll((Task[])null, 30_000, CancellationToken.None); });
+        }
+
+        [Fact]
+        public static void Task_WaitAll_NullTaskElement_Throws()
+        {
+            Task[] nullElement = [null];
+            AssertExtensions.Throws<ArgumentException>("tasks", () => { Task.WaitAll(nullElement); });
+            AssertExtensions.Throws<ArgumentException>("tasks", () => { Task.WaitAll((ReadOnlySpan<Task>)nullElement); });
+            AssertExtensions.Throws<ArgumentException>("tasks", () => { Task.WaitAll(nullElement, CancellationToken.None); });
+            AssertExtensions.Throws<ArgumentException>("tasks", () => { Task.WaitAll(nullElement, 30_000); });
+            AssertExtensions.Throws<ArgumentException>("tasks", () => { Task.WaitAll(nullElement, TimeSpan.FromSeconds(30)); });
+            AssertExtensions.Throws<ArgumentException>("tasks", () => { Task.WaitAll(nullElement, 30_000, CancellationToken.None); });
+        }
+
+        [Fact]
+        public static void Task_WaitAll_InvalidArgument_Throws()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => Task.WaitAll([Task.Factory.StartNew(() => { })], -2));
+            Assert.Throws<ArgumentOutOfRangeException>(() => Task.WaitAll([Task.Factory.StartNew(() => { })], -2, CancellationToken.None));
+            Assert.Throws<ArgumentOutOfRangeException>(() => Task.WaitAll([Task.Factory.StartNew(() => { })], TimeSpan.FromMilliseconds(-2)));
+        }
+
+        [Fact]
         public static void Task_WhenAll_NullArgument_Throws()
         {
             AssertExtensions.Throws<ArgumentNullException>("tasks", () => { Task.WhenAll((Task[])null); });
@@ -364,13 +408,29 @@ namespace TaskCoverage
         }
 
         [Fact]
+        public static void Task_WhenAll_NullTaskElement_Throws()
+        {
+            AssertExtensions.Throws<ArgumentException>("tasks", () => { Task.WhenAll(new Task[] { null }); });
+            AssertExtensions.Throws<ArgumentException>("tasks", () => { Task.WhenAll((ReadOnlySpan<Task>)new Task[] { null }); });
+            AssertExtensions.Throws<ArgumentException>("tasks", () => { Task.WhenAll(NullElementIterator<Task>()); });
+
+            AssertExtensions.Throws<ArgumentException>("tasks", () => { Task.WhenAll(new Task<int>[] { null }); });
+            AssertExtensions.Throws<ArgumentException>("tasks", () => { Task.WhenAll((ReadOnlySpan<Task<int>>)new Task<int>[] { null }); });
+            AssertExtensions.Throws<ArgumentException>("tasks", () => { Task.WhenAll(NullElementIterator<Task<int>>()); });
+
+            static IEnumerable<T> NullElementIterator<T>() where T : Task { yield return null; }
+        }
+
+        [Fact]
         public static void Task_WhenAll_NoTasks_IsCompletedSuccessfully()
         {
             Assert.True(Task.WhenAll(new Task[0]).IsCompletedSuccessfully);
+            Assert.True(Task.WhenAll(ReadOnlySpan<Task>.Empty).IsCompletedSuccessfully);
             Assert.True(Task.WhenAll(new List<Task>()).IsCompletedSuccessfully);
             Assert.True(Task.WhenAll(EmptyIterator<Task>()).IsCompletedSuccessfully);
 
             AssertIsCompletedWithEmptyResult(Task.WhenAll(new Task<int>[0]));
+            AssertIsCompletedWithEmptyResult(Task.WhenAll(ReadOnlySpan<Task<int>>.Empty));
             AssertIsCompletedWithEmptyResult(Task.WhenAll(new List<Task<int>>()));
             AssertIsCompletedWithEmptyResult(Task.WhenAll(EmptyIterator<Task<int>>()));
 

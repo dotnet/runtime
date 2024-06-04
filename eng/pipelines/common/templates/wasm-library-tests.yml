@@ -1,7 +1,7 @@
 parameters:
   alwaysRun: false
   extraBuildArgs: ''
-  extraHelixArgs: ''
+  extraHelixArguments: ''
   isExtraPlatformsBuild: false
   isWasmOnlyBuild: false
   nameSuffix: ''
@@ -97,5 +97,5 @@ jobs:
           parameters:
             creator: dotnet-bot
             testRunNamePrefixSuffix: Mono_$(_BuildConfig)
-            extraHelixArguments: /p:BrowserHost=$(_hostedOs) $(_wasmRunSmokeTestsOnlyArg) ${{ parameters.extraHelixArgs }}
+            extraHelixArguments: /p:BrowserHost=$(_hostedOs) $(_wasmRunSmokeTestsOnlyArg) ${{ parameters.extraHelixArguments }}
             scenarios: ${{ parameters.scenarios }}

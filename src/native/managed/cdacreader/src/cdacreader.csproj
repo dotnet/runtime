@@ -9,6 +9,7 @@
     <!-- Do not produce a public package. This ships as part of the runtime -->
     <IsShippingPackage>false</IsShippingPackage>
     <InvariantGlobalization>true</InvariantGlobalization>
+    <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
   </PropertyGroup>
 
   <ItemGroup>

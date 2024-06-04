@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.InteropServices;
-#if NET7_0_OR_GREATER
+#if NET
 using System.Runtime.InteropServices.Marshalling;
 #endif
 
@@ -16,14 +16,14 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.Gdi32, SetLastError = true)]
         internal static partial int ExtEscape(
-#if NET7_0_OR_GREATER
+#if NET
             [MarshalUsing(typeof(HandleRefMarshaller))]
 #endif
             HandleRef hDC, int nEscape, int cbInput, ref int inData, int cbOutput, out int outData);
 
         [LibraryImport(Libraries.Gdi32, SetLastError = true)]
         internal static partial int ExtEscape(
-#if NET7_0_OR_GREATER
+#if NET
             [MarshalUsing(typeof(HandleRefMarshaller))]
 #endif
             HandleRef hDC, int nEscape, int cbInput, byte[] inData, int cbOutput, out int outData);

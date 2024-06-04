@@ -178,7 +178,18 @@ const EVP_MD *EVP_shake256(void);
 int EVP_DigestFinalXOF(EVP_MD_CTX *ctx, unsigned char *md, size_t len);
 #endif
 
+#if !HAVE_OPENSSL_SHA3_SQUEEZE
+#undef HAVE_OPENSSL_SHA3_SQUEEZE
+#define HAVE_OPENSSL_SHA3_SQUEEZE 1
+int EVP_DigestSqueeze(EVP_MD_CTX *ctx, unsigned char *out, size_t outlen);
+#endif
+
+
 #define API_EXISTS(fn) (fn != NULL)
+
+#if defined(FEATURE_DISTRO_AGNOSTIC_SSL) && defined(TARGET_ARM) && defined(TARGET_LINUX)
+extern bool g_libSslUses32BitTime;
+#endif
 
 // List of all functions from the libssl that are used in the System.Security.Cryptography.Native.
 // Forgetting to add a function here results in build failure with message reporting the function
@@ -369,6 +380,7 @@ int EVP_DigestFinalXOF(EVP_MD_CTX *ctx, unsigned char *md, size_t len);
     REQUIRED_FUNCTION(EVP_DigestFinal_ex) \
     LIGHTUP_FUNCTION(EVP_DigestFinalXOF) \
     REQUIRED_FUNCTION(EVP_DigestInit_ex) \
+    LIGHTUP_FUNCTION(EVP_DigestSqueeze) \
     REQUIRED_FUNCTION(EVP_DigestUpdate) \
     REQUIRED_FUNCTION(EVP_get_digestbyname) \
     LIGHTUP_FUNCTION(EVP_MAC_fetch) \
@@ -547,6 +559,7 @@ int EVP_DigestFinalXOF(EVP_MD_CTX *ctx, unsigned char *md, size_t len);
     REQUIRED_FUNCTION(SSL_CTX_new) \
     REQUIRED_FUNCTION(SSL_CTX_sess_set_new_cb) \
     REQUIRED_FUNCTION(SSL_CTX_sess_set_remove_cb) \
+    REQUIRED_FUNCTION(SSL_CTX_remove_session) \
     LIGHTUP_FUNCTION(SSL_CTX_set_alpn_protos) \
     LIGHTUP_FUNCTION(SSL_CTX_set_alpn_select_cb) \
     REQUIRED_FUNCTION(SSL_CTX_set_cipher_list) \
@@ -609,7 +622,6 @@ int EVP_DigestFinalXOF(EVP_MD_CTX *ctx, unsigned char *md, size_t len);
     REQUIRED_FUNCTION(SSL_version) \
     FALLBACK_FUNCTION(X509_check_host) \
     REQUIRED_FUNCTION(X509_check_purpose) \
-    REQUIRED_FUNCTION(X509_cmp_current_time) \
     REQUIRED_FUNCTION(X509_cmp_time) \
     REQUIRED_FUNCTION(X509_CRL_free) \
     FALLBACK_FUNCTION(X509_CRL_get0_nextUpdate) \
@@ -708,7 +720,9 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #undef LIGHTUP_FUNCTION
 #undef REQUIRED_FUNCTION_110
 #undef REQUIRED_FUNCTION
-
+#if defined(TARGET_ARM) && defined(TARGET_LINUX)
+extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
+#endif
 // Redefine all calls to OpenSSL functions as calls through pointers that are set
 // to the functions from the libssl.so selected by the shim.
 #define a2d_ASN1_OBJECT a2d_ASN1_OBJECT_ptr
@@ -895,6 +909,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define EVP_DigestFinal_ex EVP_DigestFinal_ex_ptr
 #define EVP_DigestFinalXOF EVP_DigestFinalXOF_ptr
 #define EVP_DigestInit_ex EVP_DigestInit_ex_ptr
+#define EVP_DigestSqueeze EVP_DigestSqueeze_ptr
 #define EVP_DigestUpdate EVP_DigestUpdate_ptr
 #define EVP_get_digestbyname EVP_get_digestbyname_ptr
 #define EVP_md5 EVP_md5_ptr
@@ -1008,6 +1023,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define OCSP_RESPONSE_new OCSP_RESPONSE_new_ptr
 #define OPENSSL_add_all_algorithms_conf OPENSSL_add_all_algorithms_conf_ptr
 #define OPENSSL_cleanse OPENSSL_cleanse_ptr
+#define OPENSSL_gmtime OPENSSL_gmtime_ptr
 #define OPENSSL_init_ssl OPENSSL_init_ssl_ptr
 #define OPENSSL_sk_free OPENSSL_sk_free_ptr
 #define OPENSSL_sk_new_null OPENSSL_sk_new_null_ptr
@@ -1074,6 +1090,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define SSL_CTX_new SSL_CTX_new_ptr
 #define SSL_CTX_sess_set_new_cb SSL_CTX_sess_set_new_cb_ptr
 #define SSL_CTX_sess_set_remove_cb SSL_CTX_sess_set_remove_cb_ptr
+#define SSL_CTX_remove_session SSL_CTX_remove_session_ptr
 #define SSL_CTX_set_alpn_protos SSL_CTX_set_alpn_protos_ptr
 #define SSL_CTX_set_alpn_select_cb SSL_CTX_set_alpn_select_cb_ptr
 #define SSL_CTX_set_cipher_list SSL_CTX_set_cipher_list_ptr
@@ -1138,7 +1155,6 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define TLS_method TLS_method_ptr
 #define X509_check_host X509_check_host_ptr
 #define X509_check_purpose X509_check_purpose_ptr
-#define X509_cmp_current_time X509_cmp_current_time_ptr
 #define X509_cmp_time X509_cmp_time_ptr
 #define X509_CRL_free X509_CRL_free_ptr
 #define X509_CRL_get0_nextUpdate X509_CRL_get0_nextUpdate_ptr

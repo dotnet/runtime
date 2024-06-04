@@ -95,6 +95,48 @@ dn_simdhash_meta_t DN_SIMDHASH_T_META = {
 	sizeof(DN_SIMDHASH_INSTANCE_DATA_T),
 };
 
+static DN_FORCEINLINE(uint32_t)
+find_first_matching_suffix_scalar (
+	uint8_t needle,
+	uint8_t haystack[DN_SIMDHASH_VECTOR_WIDTH]
+) {
+	uint32_t result = 32;
+	// ITERs for indices beyond our specialization's bucket capacity will be
+	//  constant-false and not check the specific bucket slot
+#define ITER(offset) \
+	{ \
+		/* Avoid MSVC C4127 by computing this separately in a temp local */ \
+		uint8_t in_bounds = (offset < DN_SIMDHASH_BUCKET_CAPACITY); \
+		if (in_bounds && (needle == haystack[offset])) \
+			result = offset; \
+	}
+
+	// It is safe to unroll this without bounds checks
+	// Looping from 0-count is slower than this in my testing, even though it's
+	//  going to check fewer suffixes most of the time - probably due to the
+	//  comparison against count for each suffix.
+	// Scanning in reverse and conditionally modifying result allows clang to
+	//  emit a chain of 'select' operations per slot on wasm, which produces
+	//  smaller code that seems to be much faster than a chain of
+	//  'if (...) return' for successful matches, and only slightly slower
+	//  for failed matches
+	ITER(13);
+	ITER(12);
+	ITER(11);
+	ITER(10);
+	ITER(9);
+	ITER(8);
+	ITER(7);
+	ITER(6);
+	ITER(5);
+	ITER(4);
+	ITER(3);
+	ITER(2);
+	ITER(1);
+	ITER(0);
+#undef ITER
+	return result;
+}
 
 static DN_FORCEINLINE(void)
 check_self (DN_SIMDHASH_T_PTR self)
@@ -152,7 +194,12 @@ DN_SIMDHASH_SCAN_BUCKET_INTERNAL (DN_SIMDHASH_T_PTR hash, bucket_t *restrict buc
 		overflow_count = dn_simdhash_extract_lane(bucket_suffixes, DN_SIMDHASH_CASCADED_SLOT);
 	// We could early-out here when count==0, but it doesn't appear to meaningfully improve
 	//  search performance to do so, and might actually worsen it
-	uint32_t index = find_first_matching_suffix(search_vector, bucket_suffixes, bucket_suffixes.values, count);
+#ifdef DN_SIMDHASH_USE_SCALAR_FALLBACK
+	uint32_t index = find_first_matching_suffix_scalar(search_vector, bucket->suffixes.values);
+#else
+	uint32_t index = find_first_matching_suffix_simd(search_vector, bucket_suffixes);
+#endif
+#undef bucket_suffixes
 	for (; index < count; index++) {
 		// FIXME: Could be profitable to manually hoist the data load outside of the loop,
 		//  if not out of SCAN_BUCKET_INTERNAL entirely. Clang appears to do LICM on it.
@@ -164,8 +211,6 @@ DN_SIMDHASH_SCAN_BUCKET_INTERNAL (DN_SIMDHASH_T_PTR hash, bucket_t *restrict buc
 			return index;
 	}
 
-#undef bucket_suffixes
-
 	if (overflow_count)
 		return DN_SIMDHASH_SCAN_BUCKET_OVERFLOWED;
 	else
@@ -173,13 +218,13 @@ DN_SIMDHASH_SCAN_BUCKET_INTERNAL (DN_SIMDHASH_T_PTR hash, bucket_t *restrict buc
 }
 
 // Helper macros so that we can optimize and change scan logic more easily
-#define BEGIN_SCAN_BUCKETS(initial_index, bucket_index, bucket_address) \
+#define BEGIN_SCAN_BUCKETS(buffers, initial_index, bucket_index, bucket_address) \
 	{ \
 		uint32_t bucket_index = initial_index, scan_buckets_length = buffers.buckets_length; \
 		bucket_t *restrict bucket_address = address_of_bucket(buffers, bucket_index); \
 		do {
 
-#define END_SCAN_BUCKETS(initial_index, bucket_index, bucket_address) \
+#define END_SCAN_BUCKETS(buffers, initial_index, bucket_index, bucket_address) \
 			bucket_index++; \
 			bucket_address++; \
 			/* Wrap around if we hit the last bucket. */ \
@@ -211,7 +256,7 @@ DN_SIMDHASH_SCAN_BUCKET_INTERNAL (DN_SIMDHASH_T_PTR hash, bucket_t *restrict buc
 static void
 adjust_cascaded_counts (dn_simdhash_buffers_t buffers, uint32_t first_bucket_index, uint32_t last_bucket_index, uint8_t increase)
 {
-	BEGIN_SCAN_BUCKETS(first_bucket_index, bucket_index, bucket_address)
+	BEGIN_SCAN_BUCKETS(buffers, first_bucket_index, bucket_index, bucket_address)
 		if (bucket_index == last_bucket_index)
 			break;
 
@@ -224,26 +269,25 @@ adjust_cascaded_counts (dn_simdhash_buffers_t buffers, uint32_t first_bucket_ind
 				dn_simdhash_bucket_set_cascaded_count(bucket_address->suffixes, cascaded_count - 1);
 			}
 		}
-	END_SCAN_BUCKETS(first_bucket_index, bucket_index, bucket_address)
+	END_SCAN_BUCKETS(buffers, first_bucket_index, bucket_index, bucket_address)
 }
 
-static DN_SIMDHASH_VALUE_T *
+static DN_FORCEINLINE(DN_SIMDHASH_VALUE_T *)
 DN_SIMDHASH_FIND_VALUE_INTERNAL (DN_SIMDHASH_T_PTR hash, DN_SIMDHASH_KEY_T key, uint32_t key_hash)
 {
-	dn_simdhash_buffers_t buffers = hash->buffers;
 	uint8_t suffix = dn_simdhash_select_suffix(key_hash);
-	uint32_t first_bucket_index = dn_simdhash_select_bucket_index(buffers, key_hash);
+	uint32_t first_bucket_index = dn_simdhash_select_bucket_index(hash->buffers, key_hash);
 	dn_simdhash_search_vector search_vector = build_search_vector(suffix);
 
-	BEGIN_SCAN_BUCKETS(first_bucket_index, bucket_index, bucket_address)
+	BEGIN_SCAN_BUCKETS(hash->buffers, first_bucket_index, bucket_index, bucket_address)
 		int index_in_bucket = DN_SIMDHASH_SCAN_BUCKET_INTERNAL(hash, bucket_address, key, search_vector);
 		if (index_in_bucket >= 0) {
 			uint32_t value_slot_index = (bucket_index * DN_SIMDHASH_BUCKET_CAPACITY) + index_in_bucket;
-			return address_of_value(buffers, value_slot_index);
+			return address_of_value(hash->buffers, value_slot_index);
 		} else if (index_in_bucket == DN_SIMDHASH_SCAN_BUCKET_NO_OVERFLOW) {
 			return NULL;
 		}
-	END_SCAN_BUCKETS(first_bucket_index, bucket_index, bucket_address)
+	END_SCAN_BUCKETS(hash->buffers, first_bucket_index, bucket_index, bucket_address)
 
 	return NULL;
 }
@@ -288,12 +332,11 @@ DN_SIMDHASH_TRY_INSERT_INTERNAL (DN_SIMDHASH_T_PTR hash, DN_SIMDHASH_KEY_T key, 
 		return DN_SIMDHASH_INSERT_NEED_TO_GROW;
 	}
 
-	dn_simdhash_buffers_t buffers = hash->buffers;
 	uint8_t suffix = dn_simdhash_select_suffix(key_hash);
 	uint32_t first_bucket_index = dn_simdhash_select_bucket_index(hash->buffers, key_hash);
 	dn_simdhash_search_vector search_vector = build_search_vector(suffix);
 
-	BEGIN_SCAN_BUCKETS(first_bucket_index, bucket_index, bucket_address)
+	BEGIN_SCAN_BUCKETS(hash->buffers, first_bucket_index, bucket_index, bucket_address)
 		// If necessary, check the current bucket for the key
 		if (mode != DN_SIMDHASH_INSERT_MODE_REHASHING) {
 			int index_in_bucket = DN_SIMDHASH_SCAN_BUCKET_INTERNAL(hash, bucket_address, key, search_vector);
@@ -325,19 +368,19 @@ DN_SIMDHASH_TRY_INSERT_INTERNAL (DN_SIMDHASH_T_PTR hash, DN_SIMDHASH_KEY_T key, 
 			*key_slot_address = key;
 			// Now store the value, it's in a different cache line
 			uint32_t value_slot_index = (bucket_index * DN_SIMDHASH_BUCKET_CAPACITY) + new_index;
-			DN_SIMDHASH_VALUE_T *restrict value_slot_address = address_of_value(buffers, value_slot_index);
+			DN_SIMDHASH_VALUE_T *restrict value_slot_address = address_of_value(hash->buffers, value_slot_index);
 			*value_slot_address = value;
 			// printf("Inserted [%zd, %zd] in bucket %d at index %d\n", key, value, bucket_index, new_index);
 			// If we cascaded out of our original target bucket, scan through our probe path
 			//  and increase the cascade counters. We have to wait until now to do that, because
 			//  during the process of getting here we may end up finding a duplicate, which would
 			//  leave the cascade counters in a corrupted state
-			adjust_cascaded_counts(buffers, first_bucket_index, bucket_index, 1);
+			adjust_cascaded_counts(hash->buffers, first_bucket_index, bucket_index, 1);
 			return DN_SIMDHASH_INSERT_OK_ADDED_NEW;
 		}
 
 		// The current bucket is full, so try the next bucket.
-	END_SCAN_BUCKETS(first_bucket_index, bucket_index, bucket_address)
+	END_SCAN_BUCKETS(hash->buffers, first_bucket_index, bucket_index, bucket_address)
 
 	return DN_SIMDHASH_INSERT_NEED_TO_GROW;
 }
@@ -362,10 +405,9 @@ DN_SIMDHASH_REHASH_INTERNAL (DN_SIMDHASH_T_PTR hash, dn_simdhash_buffers_t old_b
 static void
 DN_SIMDHASH_DESTROY_ALL (DN_SIMDHASH_T_PTR hash)
 {
-	dn_simdhash_buffers_t buffers = hash->buffers;
-	BEGIN_SCAN_PAIRS(buffers, key_address, value_address)
+	BEGIN_SCAN_PAIRS(hash->buffers, key_address, value_address)
 		DN_SIMDHASH_ON_REMOVE(DN_SIMDHASH_GET_DATA(hash), *key_address, *value_address);
-	END_SCAN_PAIRS(buffers, key_address, value_address)
+	END_SCAN_PAIRS(hash->buffers, key_address, value_address)
 }
 #endif
 
@@ -385,14 +427,6 @@ dn_simdhash_vtable_t DN_SIMDHASH_T_VTABLE = {
 DN_SIMDHASH_T_PTR
 DN_SIMDHASH_NEW (uint32_t capacity, dn_allocator_t *allocator)
 {
-	// If this isn't satisfied, the generic code will allocate incorrectly sized buffers
-	// HACK: Use static_assert because for some reason assert produces unused variable warnings only on CI
-	struct silence_nuisance_msvc_warning { bucket_t a, b; };
-	static_assert(
-		sizeof(struct silence_nuisance_msvc_warning) == (sizeof(bucket_t) * 2),
-		"Inconsistent spacing/sizing for bucket_t"
-	);
-
 	return dn_simdhash_new_internal(&DN_SIMDHASH_T_META, DN_SIMDHASH_T_VTABLE, capacity, allocator);
 }
 #endif
@@ -475,12 +509,11 @@ DN_SIMDHASH_TRY_REMOVE_WITH_HASH (DN_SIMDHASH_T_PTR hash, DN_SIMDHASH_KEY_T key,
 {
 	check_self(hash);
 
-	dn_simdhash_buffers_t buffers = hash->buffers;
 	uint8_t suffix = dn_simdhash_select_suffix(key_hash);
-	uint32_t first_bucket_index = dn_simdhash_select_bucket_index(buffers, key_hash);
+	uint32_t first_bucket_index = dn_simdhash_select_bucket_index(hash->buffers, key_hash);
 	dn_simdhash_search_vector search_vector = build_search_vector(suffix);
 
-	BEGIN_SCAN_BUCKETS(first_bucket_index, bucket_index, bucket_address)
+	BEGIN_SCAN_BUCKETS(hash->buffers, first_bucket_index, bucket_index, bucket_address)
 		int index_in_bucket = DN_SIMDHASH_SCAN_BUCKET_INTERNAL(hash, bucket_address, key, search_vector);
 		if (index_in_bucket >= 0) {
 			// We found the item. Replace it with the last item in the bucket, then erase
@@ -490,8 +523,8 @@ DN_SIMDHASH_TRY_REMOVE_WITH_HASH (DN_SIMDHASH_T_PTR hash, DN_SIMDHASH_KEY_T key,
 			uint32_t value_slot_index = (bucket_index * DN_SIMDHASH_BUCKET_CAPACITY) + index_in_bucket,
 				replacement_value_slot_index = (bucket_index * DN_SIMDHASH_BUCKET_CAPACITY) + replacement_index_in_bucket;
 
-			DN_SIMDHASH_VALUE_T *value_address = address_of_value(buffers, value_slot_index);
-			DN_SIMDHASH_VALUE_T *replacement_address = address_of_value(buffers, replacement_value_slot_index);
+			DN_SIMDHASH_VALUE_T *value_address = address_of_value(hash->buffers, value_slot_index);
+			DN_SIMDHASH_VALUE_T *replacement_address = address_of_value(hash->buffers, replacement_value_slot_index);
 			DN_SIMDHASH_KEY_T *key_address = &bucket_address->keys[index_in_bucket];
 			DN_SIMDHASH_KEY_T *replacement_key_address = &bucket_address->keys[replacement_index_in_bucket];
 
@@ -529,7 +562,7 @@ DN_SIMDHASH_TRY_REMOVE_WITH_HASH (DN_SIMDHASH_T_PTR hash, DN_SIMDHASH_KEY_T key,
 			//  to go through all the buckets we visited on the way here and reduce
 			//  their cascade counters (if possible), to maintain better scan performance.
 			if (bucket_index != first_bucket_index)
-				adjust_cascaded_counts(buffers, first_bucket_index, bucket_index, 0);
+				adjust_cascaded_counts(hash->buffers, first_bucket_index, bucket_index, 0);
 
 #if DN_SIMDHASH_HAS_REMOVE_HANDLER
 			// We've finished removing the item, so we're in a consistent state and can notify
@@ -539,7 +572,7 @@ DN_SIMDHASH_TRY_REMOVE_WITH_HASH (DN_SIMDHASH_T_PTR hash, DN_SIMDHASH_KEY_T key,
 			return 1;
 		} else if (index_in_bucket == DN_SIMDHASH_SCAN_BUCKET_NO_OVERFLOW)
 			return 0;
-	END_SCAN_BUCKETS(first_bucket_index, bucket_index, bucket_address)
+	END_SCAN_BUCKETS(hash->buffers, first_bucket_index, bucket_index, bucket_address)
 
 	return 0;
 }

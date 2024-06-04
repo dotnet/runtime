@@ -96,7 +96,11 @@ function monoWorkerMessageHandler (worker: PThreadWorker, ev: MessageEvent<any>)
             worker.info = Object.assign(worker.info!, message.info, {});
             break;
         case WorkerToMainMessageType.deputyStarted:
-            runtimeHelpers.afterMonoStarted.promise_control.resolve(message.deputyProxyGCHandle);
+            runtimeHelpers.deputyWorker = worker;
+            runtimeHelpers.afterMonoStarted.promise_control.resolve();
+            break;
+        case WorkerToMainMessageType.deputyReady:
+            runtimeHelpers.afterDeputyReady.promise_control.resolve(message.deputyProxyGCHandle);
             break;
         case WorkerToMainMessageType.ioStarted:
             runtimeHelpers.afterIOStarted.promise_control.resolve();
@@ -254,7 +258,7 @@ function getNewWorker (modulePThread: PThreadLibrary): PThreadWorker {
     if (!WasmEnableThreads) return null as any;
 
     if (modulePThread.unusedWorkers.length == 0) {
-        mono_log_debug(`Failed to find unused WebWorker, this may deadlock. Please increase the pthreadPoolInitialSize. Running threads ${modulePThread.runningWorkers.length}. Loading workers: ${modulePThread.unusedWorkers.length}`);
+        mono_log_debug(() => `Failed to find unused WebWorker, this may deadlock. Please increase the pthreadPoolInitialSize. Running threads ${modulePThread.runningWorkers.length}. Loading workers: ${modulePThread.unusedWorkers.length}`);
         const worker = allocateUnusedWorker();
         modulePThread.loadWasmModuleToWorker(worker);
         return worker;
@@ -273,7 +277,7 @@ function getNewWorker (modulePThread: PThreadLibrary): PThreadWorker {
             return worker;
         }
     }
-    mono_log_debug(`Failed to find loaded WebWorker, this may deadlock. Please increase the pthreadPoolInitialSize. Running threads ${modulePThread.runningWorkers.length}. Loading workers: ${modulePThread.unusedWorkers.length}`);
+    mono_log_debug(() => `Failed to find loaded WebWorker, this may deadlock. Please increase the pthreadPoolInitialSize. Running threads ${modulePThread.runningWorkers.length}. Loading workers: ${modulePThread.unusedWorkers.length}`);
     return modulePThread.unusedWorkers.pop()!;
 }
 

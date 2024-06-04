@@ -13,6 +13,8 @@ using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
+using Microsoft.DotNet.XUnitExtensions;
+
 namespace System.Net.Http.Functional.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
@@ -24,6 +26,7 @@ namespace System.Net.Http.Functional.Tests
         private sealed class DerivedHttpHeaders : HttpHeaders { }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/101115", typeof(PlatformDetection), nameof(PlatformDetection.IsFirefox))]
         public async Task SendAsync_RequestWithSimpleHeader_ResponseReferencesUnmodifiedRequestHeaders()
         {
             const string HeaderKey = "some-header-123", HeaderValue = "this is the expected header value";
@@ -71,6 +74,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/101115", typeof(PlatformDetection), nameof(PlatformDetection.IsFirefox))]
         public async Task SendAsync_LargeHeaders_CorrectlyWritten()
         {
             if (UseVersion == HttpVersion.Version30)
@@ -106,6 +110,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/101115", typeof(PlatformDetection), nameof(PlatformDetection.IsFirefox))]
         public async Task SendAsync_DefaultHeaders_CorrectlyWritten()
         {
             const string Version = "2017-04-17";
@@ -167,6 +172,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("Accept-CharSet", "text/plain, text/json", false)] // invalid format for header but added with TryAddWithoutValidation
         [InlineData("Content-Location", "", false)] // invalid format for header but added with TryAddWithoutValidation
         [InlineData("Max-Forwards", "NotAnInteger", false)] // invalid format for header but added with TryAddWithoutValidation
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/101115", typeof(PlatformDetection), nameof(PlatformDetection.IsFirefox))]
         public async Task SendAsync_SpecialHeaderKeyOrValue_Success(string key, string value, bool parsable)
         {
             if (PlatformDetection.IsBrowser && (key == "Content-Location" || key == "Date" || key == "Accept-CharSet"))
@@ -283,12 +289,17 @@ namespace System.Net.Http.Functional.Tests
            });
         }
 
-        [Theory]
+        [ConditionalTheory]
         [InlineData("Thu, 01 Dec 1994 16:00:00 GMT", true)]
         [InlineData("-1", false)]
         [InlineData("0", false)]
         public async Task SendAsync_Expires_Success(string value, bool isValid)
         {
+            if (UseVersion == HttpVersion30)
+            {
+                throw new SkipTestException("https://github.com/dotnet/runtime/issues/91757");
+            }
+
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
                 using (HttpClient client = CreateHttpClient())
@@ -349,6 +360,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/101115", typeof(PlatformDetection), nameof(PlatformDetection.IsFirefox))]
         public async Task SendAsync_GetWithValidHostHeader_Success(bool withPort)
         {
             if (UseVersion == HttpVersion.Version30)
