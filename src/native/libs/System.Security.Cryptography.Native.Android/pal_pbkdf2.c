@@ -14,11 +14,17 @@ int32_t AndroidCryptoNative_Pbkdf2(const char* algorithmName,
                                    int32_t destinationLength)
 {
     JNIEnv* env = GetJNIEnv();
+    jint ret = FAIL;
 
     jstring javaAlgorithmName = make_java_string(env, algorithmName);
     jbyteArray passwordBytes = make_java_byte_array(env, passwordLength);
-    jbyteArray destinationBytes = make_java_byte_array(env, destinationLength);
+    jobject destinationBuffer = (*env)->NewDirectByteBuffer(env, destination, destinationLength);
     jobject saltByteBuffer = NULL;
+
+    if (javaAlgorithmName == NULL || passwordBytes == NULL || destinationBuffer == NULL)
+    {
+        goto cleanup;
+    }
 
     if (password && passwordLength > 0)
     {
@@ -28,24 +34,26 @@ int32_t AndroidCryptoNative_Pbkdf2(const char* algorithmName,
     if (salt && saltLength > 0)
     {
         saltByteBuffer = (*env)->NewDirectByteBuffer(env, salt, saltLength);
+
+        if (saltByteBuffer == NULL)
+        {
+            goto cleanup;
+        }
     }
 
-    jint ret = (*env)->CallStaticIntMethod(env, g_PalPbkdf2, g_PalPbkdf2Pbkdf2OneShot,
-        javaAlgorithmName, passwordBytes, saltByteBuffer, iterations, destinationBytes);
+    ret = (*env)->CallStaticIntMethod(env, g_PalPbkdf2, g_PalPbkdf2Pbkdf2OneShot,
+        javaAlgorithmName, passwordBytes, saltByteBuffer, iterations, destinationBuffer);
 
     if (CheckJNIExceptions(env))
     {
         ret = FAIL;
     }
-    else if (ret == SUCCESS)
-    {
-        (*env)->GetByteArrayRegion(env, destinationBytes, 0, destinationLength, (jbyte*)destination);
-    }
 
+cleanup:
     (*env)->DeleteLocalRef(env, javaAlgorithmName);
     (*env)->DeleteLocalRef(env, passwordBytes);
     (*env)->DeleteLocalRef(env, saltByteBuffer);
-    (*env)->DeleteLocalRef(env, destinationBytes);
+    (*env)->DeleteLocalRef(env, destinationBuffer);
 
     return ret;
 }

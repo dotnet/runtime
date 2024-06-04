@@ -14,8 +14,10 @@ public final class PalPbkdf2 {
     private static final int ERROR_UNSUPPORTED_ALGORITHM = -1;
     private static final int SUCCESS = 1;
 
-    public static int pbkdf2OneShot(String algorithmName, byte[] password, ByteBuffer salt, int iterations, byte[] destination)
+    public static int pbkdf2OneShot(String algorithmName, byte[] password, ByteBuffer salt, int iterations, ByteBuffer destination)
         throws ShortBufferException, InvalidKeyException, IllegalArgumentException {
+        // salt and destination are DirectByteBuffers that point to memory created by .NET.
+        // These must not be touched after this method returns.
 
         // We do not ever expect a ShortBufferException to ever get thrown since the buffer destination length is always
         // checked. Let it go through the checked exception and JNI will handle it as a generic failure.
@@ -65,7 +67,7 @@ public final class PalPbkdf2 {
         byte[] block = new byte[mac.getMacLength()];
         byte[] u = new byte[block.length];
 
-        while (destinationOffset < destination.length) {
+        while (destinationOffset < destination.capacity()) {
             writeBigEndianInt(blockCounter, blockCounterBuffer);
 
             if (salt != null) {
@@ -88,7 +90,7 @@ public final class PalPbkdf2 {
                 }
             }
 
-            System.arraycopy(block, 0, destination, destinationOffset, Math.min(block.length, destination.length - destinationOffset));
+            destination.put(block, 0, Math.min(block.length, destination.capacity() - destinationOffset));
             destinationOffset += block.length;
             blockCounter++;
         }
