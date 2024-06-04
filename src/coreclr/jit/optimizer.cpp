@@ -2566,13 +2566,6 @@ void Compiler::optResetLoopInfo()
 
     for (BasicBlock* const block : Blocks())
     {
-        // If the block weight didn't come from profile data, reset it so it can be calculated again.
-        if (!block->hasProfileWeight())
-        {
-            block->bbWeight = BB_UNITY_WEIGHT;
-            block->RemoveFlags(BBF_RUN_RARELY);
-        }
-
         block->RemoveFlags(BBF_LOOP_HEAD);
     }
 }

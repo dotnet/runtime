@@ -5041,6 +5041,8 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
             opts.optRepeatActive = true;
         }
 
+        bool isFirstIter = true;
+
         while (++opts.optRepeatIteration <= opts.optRepeatCount)
         {
 #ifdef DEBUG
@@ -5065,7 +5067,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 fgLocalVarLiveness();
             }
 
-            if (doEarlyProp)
+            if (doEarlyProp && isFirstIter)
             {
                 // Propagate array length and rewrite getType() method call
                 //
@@ -5079,7 +5081,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 DoPhase(this, PHASE_VALUE_NUMBER, &Compiler::fgValueNumber);
             }
 
-            if (doLoopHoisting)
+            if (doLoopHoisting && isFirstIter)
             {
                 // Hoist invariant code out of loops
                 //
@@ -5106,57 +5108,67 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 fgInvalidateDfsTree();
             }
 
-            if (doCse)
+            if (isFirstIter)
             {
-                // Remove common sub-expressions
-                //
-                DoPhase(this, PHASE_OPTIMIZE_VALNUM_CSES, &Compiler::optOptimizeCSEs);
+                if (doCse)
+                {
+                    // Remove common sub-expressions
+                    //
+                    DoPhase(this, PHASE_OPTIMIZE_VALNUM_CSES, &Compiler::optOptimizeCSEs);
+                }
+
+                if (doAssertionProp)
+                {
+                    // Assertion propagation
+                    //
+                    DoPhase(this, PHASE_ASSERTION_PROP_MAIN, &Compiler::optAssertionPropMain);
+                }
+
+                if (doVNBasedIntrinExpansion)
+                {
+                    // Expand some intrinsics based on VN data
+                    //
+                    DoPhase(this, PHASE_VN_BASED_INTRINSIC_EXPAND, &Compiler::fgVNBasedIntrinsicExpansion);
+                }
+
+                if (doRangeAnalysis)
+                {
+                    // Bounds check elimination via range analysis
+                    //
+                    DoPhase(this, PHASE_OPTIMIZE_INDEX_CHECKS, &Compiler::rangeCheckPhase);
+                }
+
+                if (doOptimizeIVs)
+                {
+                    // Simplify and optimize induction variables used in natural loops
+                    //
+                    DoPhase(this, PHASE_OPTIMIZE_INDUCTION_VARIABLES, &Compiler::optInductionVariables);
+                }
+
+                if (doVNBasedDeadStoreRemoval)
+                {
+                    // Note: this invalidates SSA and value numbers on tree nodes.
+                    //
+                    DoPhase(this, PHASE_VN_BASED_DEAD_STORE_REMOVAL, &Compiler::optVNBasedDeadStoreRemoval);
+                }
+
+                // Conservatively mark all VNs as stale
+                vnStore = nullptr;
+
+                if (fgModified)
+                {
+                    // update the flowgraph if we modified it during the optimization phase
+                    //
+                    DoPhase(this, PHASE_OPT_UPDATE_FLOW_GRAPH, &Compiler::fgUpdateFlowGraphPhase);
+                }
+            }
+            else
+            {
+                // Conservatively mark all VNs as stale
+                vnStore = nullptr;
             }
 
-            if (doAssertionProp)
-            {
-                // Assertion propagation
-                //
-                DoPhase(this, PHASE_ASSERTION_PROP_MAIN, &Compiler::optAssertionPropMain);
-            }
-
-            if (doVNBasedIntrinExpansion)
-            {
-                // Expand some intrinsics based on VN data
-                //
-                DoPhase(this, PHASE_VN_BASED_INTRINSIC_EXPAND, &Compiler::fgVNBasedIntrinsicExpansion);
-            }
-
-            if (doRangeAnalysis)
-            {
-                // Bounds check elimination via range analysis
-                //
-                DoPhase(this, PHASE_OPTIMIZE_INDEX_CHECKS, &Compiler::rangeCheckPhase);
-            }
-
-            if (doOptimizeIVs)
-            {
-                // Simplify and optimize induction variables used in natural loops
-                //
-                DoPhase(this, PHASE_OPTIMIZE_INDUCTION_VARIABLES, &Compiler::optInductionVariables);
-            }
-
-            if (doVNBasedDeadStoreRemoval)
-            {
-                // Note: this invalidates SSA and value numbers on tree nodes.
-                //
-                DoPhase(this, PHASE_VN_BASED_DEAD_STORE_REMOVAL, &Compiler::optVNBasedDeadStoreRemoval);
-            }
-
-            // Conservatively mark all VNs as stale
-            vnStore = nullptr;
-
-            if (fgModified)
-            {
-                // update the flowgraph if we modified it during the optimization phase
-                //
-                DoPhase(this, PHASE_OPT_UPDATE_FLOW_GRAPH, &Compiler::fgUpdateFlowGraphPhase);
-            }
+            isFirstIter = false;
 
             // Iterate if requested, resetting annotations first.
             if (opts.optRepeatIteration == opts.optRepeatCount)
