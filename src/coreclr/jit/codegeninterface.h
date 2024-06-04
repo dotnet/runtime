@@ -75,31 +75,31 @@ public:
     }
 
 #if defined(TARGET_AMD64)
-    SingleTypeRegSet rbmAllFloat;
-    SingleTypeRegSet rbmFltCalleeTrash;
+    regMaskTP rbmAllFloat;
+    regMaskTP rbmFltCalleeTrash;
 
-    FORCEINLINE SingleTypeRegSet get_RBM_ALLFLOAT() const
+    FORCEINLINE regMaskTP get_RBM_ALLFLOAT() const
     {
         return this->rbmAllFloat;
     }
-    FORCEINLINE SingleTypeRegSet get_RBM_FLT_CALLEE_TRASH() const
+    FORCEINLINE regMaskTP get_RBM_FLT_CALLEE_TRASH() const
     {
         return this->rbmFltCalleeTrash;
     }
 #endif // TARGET_AMD64
 
 #if defined(TARGET_XARCH)
-    SingleTypeRegSet rbmAllMask;
-    SingleTypeRegSet rbmMskCalleeTrash;
+    regMaskTP rbmAllMask;
+    regMaskTP rbmMskCalleeTrash;
 
     // Call this function after the equivalent fields in Compiler have been initialized.
     void CopyRegisterInfo();
 
-    FORCEINLINE SingleTypeRegSet get_RBM_ALLMASK() const
+    FORCEINLINE regMaskTP get_RBM_ALLMASK() const
     {
         return this->rbmAllMask;
     }
-    FORCEINLINE SingleTypeRegSet get_RBM_MSK_CALLEE_TRASH() const
+    FORCEINLINE regMaskTP get_RBM_MSK_CALLEE_TRASH() const
     {
         return this->rbmMskCalleeTrash;
     }

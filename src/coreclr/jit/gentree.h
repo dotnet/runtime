@@ -559,6 +559,7 @@ enum GenTreeFlags : unsigned int
 
 #ifdef FEATURE_HW_INTRINSICS
     GTF_HW_EM_OP                  = 0x10000000, // GT_HWINTRINSIC -- node is used as an operand to an embedded mask
+    GTF_HW_USER_CALL              = 0x20000000, // GT_HWINTRINSIC -- node is implemented via a user call
 #endif // FEATURE_HW_INTRINSICS
 };
 
@@ -5951,24 +5952,30 @@ struct GenTreeIntrinsic : public GenTreeOp
     NamedIntrinsic        gtIntrinsicName;
     CORINFO_METHOD_HANDLE gtMethodHandle; // Method handle of the method which is treated as an intrinsic.
 
-#ifdef FEATURE_READYTORUN
+#if defined(FEATURE_READYTORUN)
     // Call target lookup info for method call from a Ready To Run module
     CORINFO_CONST_LOOKUP gtEntryPoint;
-#endif
+#endif // FEATURE_READYTORUN
 
-    GenTreeIntrinsic(var_types type, GenTree* op1, NamedIntrinsic intrinsicName, CORINFO_METHOD_HANDLE methodHandle)
+    GenTreeIntrinsic(var_types                          type,
+                     GenTree*                           op1,
+                     NamedIntrinsic                     intrinsicName,
+                     CORINFO_METHOD_HANDLE methodHandle R2RARG(CORINFO_CONST_LOOKUP entryPoint))
         : GenTreeOp(GT_INTRINSIC, type, op1, nullptr)
         , gtIntrinsicName(intrinsicName)
-        , gtMethodHandle(methodHandle)
+        , gtMethodHandle(methodHandle) R2RARG(gtEntryPoint(entryPoint))
     {
         assert(intrinsicName != NI_Illegal);
     }
 
-    GenTreeIntrinsic(
-        var_types type, GenTree* op1, GenTree* op2, NamedIntrinsic intrinsicName, CORINFO_METHOD_HANDLE methodHandle)
+    GenTreeIntrinsic(var_types                          type,
+                     GenTree*                           op1,
+                     GenTree*                           op2,
+                     NamedIntrinsic                     intrinsicName,
+                     CORINFO_METHOD_HANDLE methodHandle R2RARG(CORINFO_CONST_LOOKUP entryPoint))
         : GenTreeOp(GT_INTRINSIC, type, op1, op2)
         , gtIntrinsicName(intrinsicName)
-        , gtMethodHandle(methodHandle)
+        , gtMethodHandle(methodHandle) R2RARG(gtEntryPoint(entryPoint))
     {
         assert(intrinsicName != NI_Illegal);
     }
@@ -6088,6 +6095,15 @@ public:
     {
     }
 #endif
+
+    bool IsUserCall() const
+    {
+#if defined(FEATURE_HW_INTRINSICS)
+        return OperIs(GT_HWINTRINSIC) && (gtFlags & GTF_HW_USER_CALL) != 0;
+#else
+        return false;
+#endif
+    }
 
     GenTree*& Op(size_t index)
     {
@@ -6217,7 +6233,29 @@ private:
 struct GenTreeJitIntrinsic : public GenTreeMultiOp
 {
 protected:
-    GenTree*           gtInlineOperands[2];
+    union
+    {
+        // We don't have enough space to carry both the inline operands
+        // and the necessary information required to support rewriting
+        // the intrinsic back into a user call. As such, we union the
+        // data instead and use the GTF_HW_USER_CALL flag to indicate
+        // which fields are valid to access. -- Tracking the fields
+        // independently causes TREE_NODE_SZ_LARGE to increase and for
+        // GenTreeJitIntrinsic to become the largest node, which is
+        // undesirable, so this approach helps keep things pay-for-play.
+
+        GenTree* gtInlineOperands[2];
+
+        struct
+        {
+            CORINFO_METHOD_HANDLE gtMethodHandle;
+
+#if defined(FEATURE_READYTORUN)
+            // Call target lookup info for method call from a Ready To Run module
+            CORINFO_CONST_LOOKUP* gtEntryPoint;
+#endif // FEATURE_READYTORUN
+        };
+    };
     regNumberSmall     gtOtherReg;     // The second register for multi-reg intrinsics.
     MultiRegSpillFlags gtSpillFlags;   // Spill flags for multi-reg intrinsics.
     unsigned char  gtAuxiliaryJitType; // For intrinsics than need another type (e.g. Avx2.Gather* or SIMD (by element))
@@ -6226,6 +6264,22 @@ protected:
     NamedIntrinsic gtHWIntrinsicId;
 
 public:
+    CORINFO_METHOD_HANDLE GetMethodHandle() const
+    {
+        assert(IsUserCall());
+        return gtMethodHandle;
+    }
+
+    void SetMethodHandle(Compiler* comp, CORINFO_METHOD_HANDLE methodHandle R2RARG(CORINFO_CONST_LOOKUP entryPoint));
+
+#if defined(FEATURE_READYTORUN)
+    CORINFO_CONST_LOOKUP GetEntryPoint() const
+    {
+        assert(IsUserCall());
+        return *gtEntryPoint;
+    }
+#endif // FEATURE_READYTORUN
+
     //-----------------------------------------------------------
     // GetRegNumByIdx: Get regNumber of i'th position.
     //

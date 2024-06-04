@@ -27,7 +27,7 @@ namespace System.Text.Json.Serialization.Metadata
 
         // The number of parameters the deserialization constructor has. If this is not equal to ParameterCache.Count, this means
         // that not all parameters are bound to object properties, and an exception will be thrown if deserialization is attempted.
-        internal int ParameterCount { get; private set; }
+        internal int ParameterCount { get; private protected set; }
 
         // All of the serializable parameters on a POCO constructor keyed on parameter name.
         // Only parameters which bind to properties are cached.
