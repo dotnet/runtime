@@ -1939,7 +1939,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 // Switch instruction if arg1 is unsigned.
                 if (varTypeIsUnsigned(node->GetAuxiliaryType()))
                 {
-                    ins = (intrin.id == NI_Sve_SaturatingDecrementByActiveElementCount) ? INS_sve_uqdecp : INS_sve_uqincp;
+                    ins =
+                        (intrin.id == NI_Sve_SaturatingDecrementByActiveElementCount) ? INS_sve_uqdecp : INS_sve_uqincp;
                 }
 
                 // If this is the scalar variant, get the correct size.
