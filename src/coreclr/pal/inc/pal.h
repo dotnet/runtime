@@ -1647,22 +1647,22 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
 
     struct
     {
-        DWORD Egpr16;
-        DWORD Egpr17;
-        DWORD Egpr18;
-        DWORD Egpr19;
-        DWORD Egpr20;
-        DWORD Egpr21;
-        DWORD Egpr22;
-        DWORD Egpr23;
-        DWORD Egpr24;
-        DWORD Egpr25;
-        DWORD Egpr26;
-        DWORD Egpr27;
-        DWORD Egpr28;
-        DWORD Egpr29;
-        DWORD Egpr30;
-        DWORD Egpr31;
+        DWORD64 Egpr16;
+        DWORD64 Egpr17;
+        DWORD64 Egpr18;
+        DWORD64 Egpr19;
+        DWORD64 Egpr20;
+        DWORD64 Egpr21;
+        DWORD64 Egpr22;
+        DWORD64 Egpr23;
+        DWORD64 Egpr24;
+        DWORD64 Egpr25;
+        DWORD64 Egpr26;
+        DWORD64 Egpr27;
+        DWORD64 Egpr28;
+        DWORD64 Egpr29;
+        DWORD64 Egpr30;
+        DWORD64 Egpr31;
     };
     
 } CONTEXT, *PCONTEXT, *LPCONTEXT;
