@@ -4,11 +4,10 @@
 #include "pal_pbkdf2.h"
 #include "pal_utilities.h"
 
-
 int32_t AndroidCryptoNative_Pbkdf2(const char* algorithmName,
                                    const uint8_t* password,
                                    int32_t passwordLength,
-                                   const uint8_t* salt,
+                                   uint8_t* salt,
                                    int32_t saltLength,
                                    int32_t iterations,
                                    uint8_t* destination,
@@ -18,8 +17,8 @@ int32_t AndroidCryptoNative_Pbkdf2(const char* algorithmName,
 
     jstring javaAlgorithmName = make_java_string(env, algorithmName);
     jbyteArray passwordBytes = make_java_byte_array(env, passwordLength);
-    jbyteArray saltBytes = make_java_byte_array(env, saltLength);
     jbyteArray destinationBytes = make_java_byte_array(env, destinationLength);
+    jobject saltByteBuffer = NULL;
 
     if (password && passwordLength > 0)
     {
@@ -28,11 +27,11 @@ int32_t AndroidCryptoNative_Pbkdf2(const char* algorithmName,
 
     if (salt && saltLength > 0)
     {
-        (*env)->SetByteArrayRegion(env, saltBytes, 0, saltLength, (const jbyte*)salt);
+        saltByteBuffer = (*env)->NewDirectByteBuffer(env, salt, saltLength);
     }
 
     jint ret = (*env)->CallStaticIntMethod(env, g_PalPbkdf2, g_PalPbkdf2Pbkdf2OneShot,
-        javaAlgorithmName, passwordBytes, saltBytes, iterations, destinationBytes);
+        javaAlgorithmName, passwordBytes, saltByteBuffer, iterations, destinationBytes);
 
     if (CheckJNIExceptions(env))
     {
@@ -45,7 +44,7 @@ int32_t AndroidCryptoNative_Pbkdf2(const char* algorithmName,
 
     (*env)->DeleteLocalRef(env, javaAlgorithmName);
     (*env)->DeleteLocalRef(env, passwordBytes);
-    (*env)->DeleteLocalRef(env, saltBytes);
+    (*env)->DeleteLocalRef(env, saltByteBuffer);
     (*env)->DeleteLocalRef(env, destinationBytes);
 
     return ret;

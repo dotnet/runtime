@@ -3,6 +3,7 @@
 
 package net.dot.android.crypto;
 
+import java.nio.ByteBuffer;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import javax.crypto.Mac;
@@ -13,7 +14,7 @@ public final class PalPbkdf2 {
     private static final int ERROR_UNSUPPORTED_ALGORITHM = -1;
     private static final int SUCCESS = 1;
 
-    public static int pbkdf2OneShot(String algorithmName, byte[] password, byte[] salt, int iterations, byte[] destination)
+    public static int pbkdf2OneShot(String algorithmName, byte[] password, ByteBuffer salt, int iterations, byte[] destination)
         throws ShortBufferException, InvalidKeyException, IllegalArgumentException {
 
         // We do not ever expect a ShortBufferException to ever get thrown since the buffer destination length is always
@@ -26,9 +27,9 @@ public final class PalPbkdf2 {
         // need to support SHA-2 prior to that.
         // The second is that PBEKeySpec only supports char-based passwords, whereas .NET supports arbitrary byte keys.
 
-        if (algorithmName == null || password == null || salt == null || destination == null) {
+        if (algorithmName == null || password == null || destination == null) {
             // These are essentially asserts since the .NET side should have already validated these.
-            throw new IllegalArgumentException("algorithmName, password, salt, and destination must not be null.");
+            throw new IllegalArgumentException("algorithmName, password, and destination must not be null.");
         }
         // The .NET side already validates the hash algorithm name inputs.
         String javaAlgorithmName = "Hmac" + algorithmName;
@@ -47,6 +48,11 @@ public final class PalPbkdf2 {
             password = new byte[] { 0 };
         }
 
+        // Since the salt needs to be read for each block, mark its current position before entering the loop.
+        if (salt != null) {
+            salt.mark();
+        }
+
         SecretKeySpec key = new SecretKeySpec(password, javaAlgorithmName);
         mac.init(key);
 
@@ -62,7 +68,11 @@ public final class PalPbkdf2 {
         while (destinationOffset < destination.length) {
             writeBigEndianInt(blockCounter, blockCounterBuffer);
 
-            mac.update(salt);
+            if (salt != null) {
+                mac.update(salt);
+                salt.reset(); // Resets it back to the previous mark. It does not consume the mark, so we don't need to mark again.
+            }
+
             mac.update(blockCounterBuffer);
             mac.doFinal(u, 0);
 

@@ -1101,7 +1101,7 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_DotnetProxyTrustManagerCtor = GetMethod(env, false, g_DotnetProxyTrustManager, "<init>", "(J)V");
 
     g_PalPbkdf2              = GetClassGRef(env, "net/dot/android/crypto/PalPbkdf2");
-    g_PalPbkdf2Pbkdf2OneShot = GetMethod(env, true, g_PalPbkdf2, "pbkdf2OneShot", "(Ljava/lang/String;[B[BI[B)I");
+    g_PalPbkdf2Pbkdf2OneShot = GetMethod(env, true, g_PalPbkdf2, "pbkdf2OneShot", "(Ljava/lang/String;[BLjava/nio/ByteBuffer;I[B)I");
 
     return JNI_VERSION_1_6;
 }

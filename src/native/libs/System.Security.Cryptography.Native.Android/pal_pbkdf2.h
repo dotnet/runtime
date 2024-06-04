@@ -11,7 +11,7 @@
 PALEXPORT int32_t AndroidCryptoNative_Pbkdf2(const char* algorithmName,
                                              const uint8_t* password,
                                              int32_t passwordLength,
-                                             const uint8_t* salt,
+                                             uint8_t* salt,
                                              int32_t saltLength,
                                              int32_t iterations,
                                              uint8_t* destination,
