@@ -472,58 +472,6 @@ namespace System.Web.Util
                 : bytes;
         }
 
-        //  Helper to encode the non-ASCII url characters only
-        private static string UrlEncodeNonAscii(string str, Encoding e)
-        {
-            Debug.Assert(!string.IsNullOrEmpty(str));
-            Debug.Assert(e != null);
-            byte[] bytes = e.GetBytes(str);
-            byte[] encodedBytes = UrlEncodeNonAscii(bytes, 0, bytes.Length);
-            return Encoding.ASCII.GetString(encodedBytes);
-        }
-
-        private static byte[] UrlEncodeNonAscii(byte[] bytes, int offset, int count)
-        {
-            int cNonAscii = 0;
-
-            // count them first
-            for (int i = 0; i < count; i++)
-            {
-                if (IsNonAsciiByte(bytes[offset + i]))
-                {
-                    cNonAscii++;
-                }
-            }
-
-            // nothing to expand?
-            if (cNonAscii == 0)
-            {
-                return bytes;
-            }
-
-            // expand not 'safe' characters into %XX, spaces to +s
-            byte[] expandedBytes = new byte[count + cNonAscii * 2];
-            int pos = 0;
-
-            for (int i = 0; i < count; i++)
-            {
-                byte b = bytes[offset + i];
-
-                if (IsNonAsciiByte(b))
-                {
-                    expandedBytes[pos++] = (byte)'%';
-                    expandedBytes[pos++] = (byte)HexConverter.ToCharLower(b >> 4);
-                    expandedBytes[pos++] = (byte)HexConverter.ToCharLower(b);
-                }
-                else
-                {
-                    expandedBytes[pos++] = b;
-                }
-            }
-
-            return expandedBytes;
-        }
-
         [Obsolete("This method produces non-standards-compliant output and has interoperability issues. The preferred alternative is UrlEncode(*).")]
         [return: NotNullIfNotNull(nameof(value))]
         internal static string? UrlEncodeUnicode(string? value)
