@@ -14,8 +14,7 @@ enum class SupportedISA
 {
     None = 0,
     AVX2 = 1 << (int)InstructionSet::AVX2,
-    AVX512F = 1 << (int)InstructionSet::AVX512F,
-    APX  = 1 << (int)InstructionSet::APX
+    AVX512F = 1 << (int)InstructionSet::AVX512F
 };
 
 #if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
@@ -40,7 +39,6 @@ SupportedISA DetermineSupportedISA()
         AVX2     = 1<< 5,
         AVX512F  = 1<<16,
         AVX512DQ = 1<<17,
-        APX      = 1<<21,
     };
     int reg[COUNT];
 
@@ -60,16 +58,6 @@ SupportedISA DetermineSupportedISA()
     // get OS XState info
     DWORD64 FeatureMask = GetEnabledXStateFeatures();
 
-    int IsaFlags = (int)SupportedISA::None;
-
-    __cpuidex(reg, 7, 1);
-    if((reg[EDX] & APX) &&
-       (xcr0 & 0x80000) &&
-       (FeatureMask & (XSTATE_MASK_APX)) == (XSTATE_MASK_APX))
-    {
-        IsaFlags |= (int)SupportedISA::APX;
-    }
-
     // get processor extended feature flag info
     __cpuidex(reg, 7, 0);
 
@@ -78,7 +66,7 @@ SupportedISA DetermineSupportedISA()
         (xcr0 & 0xe6) == 0xe6 &&
         (FeatureMask & (XSTATE_MASK_AVX | XSTATE_MASK_AVX512)) == (XSTATE_MASK_AVX | XSTATE_MASK_AVX512))
     {
-        IsaFlags |= (int)SupportedISA::AVX512F;
+        return (SupportedISA)((int)SupportedISA::AVX2 | (int)SupportedISA::AVX512F);
     }
 
     // check if AVX2 is supported by both processor and OS
@@ -86,10 +74,10 @@ SupportedISA DetermineSupportedISA()
         (xcr0 & 0x06) == 0x06 &&
         (FeatureMask & XSTATE_MASK_AVX) == XSTATE_MASK_AVX)
     {
-        IsaFlags |= (int)SupportedISA::AVX2;
+        return SupportedISA::AVX2;
     }
 
-    return (SupportedISA)IsaFlags;
+    return SupportedISA::None;
 }
 
 #elif defined(TARGET_UNIX)
@@ -97,25 +85,17 @@ SupportedISA DetermineSupportedISA()
 SupportedISA DetermineSupportedISA()
 {
     __builtin_cpu_init();
-
-    int IsaFlags = 0;
-
-    if (__builtin_cpu_supports("apx"))
-    {
-        IsaFlags |= (int)SupportedISA::APX;
-    }
-
-    if (__builtin_cpu_supports("avx512"))
-    {
-        IsaFlags |= (int)SupportedISA::APX;
-    }
-
     if (__builtin_cpu_supports("avx2"))
     {
-        IsaFlags |= (int)SupportedISA::APX;
+        if (__builtin_cpu_supports("avx512f"))
+            return (SupportedISA)((int)SupportedISA::AVX2 | (int)SupportedISA::AVX512F);
+        else
+            return SupportedISA::AVX2;
     }
-
-    return (SupportedISA)IsaFlags;
+    else
+    {
+        return SupportedISA::None;
+    }
 }
 
 #endif // defined(TARGET_UNIX)
@@ -126,7 +106,7 @@ static SupportedISA s_supportedISA;
 bool IsSupportedInstructionSet (InstructionSet instructionSet)
 {
     assert(s_initialized);
-    assert(instructionSet == InstructionSet::AVX2 || instructionSet == InstructionSet::AVX512F || instructionSet == InstructionSet::APX);
+    assert(instructionSet == InstructionSet::AVX2 || instructionSet == InstructionSet::AVX512F);
     return ((int)s_supportedISA & (1 << (int)instructionSet)) != 0;
 }
 

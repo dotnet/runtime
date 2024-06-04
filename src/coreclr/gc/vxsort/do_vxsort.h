@@ -6,7 +6,6 @@ enum class InstructionSet
 {
     AVX2 = 0,
     AVX512F = 1,
-    APX = 2,
 };
 
 void InitSupportedInstructionSet (int32_t configSetting);
