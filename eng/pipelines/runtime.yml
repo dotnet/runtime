@@ -821,7 +821,7 @@ jobs:
     jobParameters:
       isFullMatrix: ${{ variables.isFullMatrix }}
       framework: net48
-      buildArgs: -s tools+libs+libs.tests -framework net48 -c $(_BuildConfig) -testscope innerloop /p:ArchiveTests=true
+      buildArgs: -s libs+libs.tests -framework net48 -c $(_BuildConfig) -testscope innerloop /p:ArchiveTests=true
       nameSuffix: Libraries_NET48
       timeoutInMinutes: 150
       postBuildSteps:
@@ -845,7 +845,7 @@ jobs:
     platforms:
     - windows_x64
     jobParameters:
-      buildArgs: -test -s tools+libs+libs.tests -allConfigurations -c $(_BuildConfig) /p:TestAssemblies=false /p:TestPackages=true
+      buildArgs: -test -s libs+libs.tests -allConfigurations -c $(_BuildConfig) /p:TestAssemblies=false /p:TestPackages=true
       nameSuffix: Libraries_AllConfigurations
       timeoutInMinutes: 150
       condition: >-
