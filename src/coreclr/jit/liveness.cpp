@@ -568,6 +568,162 @@ void Compiler::fgPerBlockLocalVarLiveness()
 #endif // DEBUG
 }
 
+bool Compiler::fgIsPreLive(GenTree* tree)
+{
+    if (tree->OperIs(GT_STOREIND, GT_STORE_BLK) || tree->IsCall())
+    {
+        return true;
+    }
+
+    if (tree->OperIs(GT_RETURN))
+    {
+        return true;
+    }
+
+    if (tree->OperIsLocalStore())
+    {
+        LclVarDsc* lclDsc = lvaGetDesc(tree->AsLclVarCommon());
+        if (!lclDsc->lvInSsa)
+        {
+            return true;
+        }
+
+        if (lvaGetDesc(lclDsc->lvParentLcl)->lvDoNotEnregister)
+        {
+            return true;
+        }
+
+        return false;
+    }
+
+    if (tree->OperMayThrow(this))
+    {
+        return true;
+    }
+
+    return false;
+}
+
+static NodeCounts s_nodeCounts;
+static DumpOnShutdown d("Removable node types", &s_nodeCounts);
+
+//------------------------------------------------------------------------
+// fgSsaBasedDce:
+//   
+//
+// Return Value:
+//
+PhaseStatus Compiler::fgSsaBasedDce()
+{
+    BlockReachabilitySets* reachabilitySets = BlockReachabilitySets::Build(m_dfsTree);
+    TreeSet* live = new (this, CMK_Liveness) TreeSet(getAllocator(CMK_Liveness));
+
+    struct TreeWithBlock
+    {
+        GenTree* Tree;
+        BasicBlock* Block;
+
+        TreeWithBlock(GenTree* tree, BasicBlock* block)
+            : Tree(tree), Block(block)
+        {
+        }
+    };
+
+    ArrayStack<TreeWithBlock> worklist(getAllocator(CMK_Liveness));
+
+    for (BasicBlock* block : Blocks())
+    {
+        for (Statement* stmt : block->Statements())
+        {
+            for (GenTree* tree : stmt->TreeList())
+            {
+                if (fgIsPreLive(tree))
+                {
+                    JITDUMP("Visiting [%06u] as prelive node\n", dspTreeID(tree));
+                    assert(!live->Lookup(tree));
+                    live->Set(tree, true);
+                    worklist.Emplace(tree, block);
+                }
+            }
+        }
+    }
+
+    while (!worklist.Empty())
+    {
+        TreeWithBlock treeAndBlock = worklist.Pop();
+        GenTree* node = treeAndBlock.Tree;
+        BasicBlock* block = treeAndBlock.Block;
+
+        if (node->OperIs(GT_COMMA))
+        {
+            if (!live->Set(node->gtGetOp2(), true, TreeSet::Overwrite))
+            {
+                worklist.Emplace(node->gtGetOp2(), block);
+            }
+        }
+        else
+        {
+            node->VisitOperands([=, &worklist](GenTree* op) {
+                if (!live->Set(op, true, TreeSet::Overwrite))
+                {
+                    worklist.Emplace(op, block);
+                }
+
+                return GenTree::VisitResult::Continue;
+                });
+        }
+
+        if (node->OperIsLocalRead())
+        {
+            GenTreeLclVarCommon* lcl = node->AsLclVarCommon();
+            LclVarDsc* lclDsc = lvaGetDesc(lcl);
+            if (lclDsc->lvInSsa)
+            {
+                LclSsaVarDsc* ssaDsc = lclDsc->GetPerSsaData(lcl->GetSsaNum());
+                GenTreeLclVarCommon* defNode = ssaDsc->GetDefNode();
+                if (defNode != nullptr && !live->Set(defNode, true, TreeSet::Overwrite))
+                {
+                    worklist.Emplace(defNode, ssaDsc->GetBlock());
+                }
+            }
+        }
+
+        JITDUMP("Visiting reaching preds of " FMT_BB "\n", block->bbNum);
+        reachabilitySets->VisitReachingBlocks(block, [=, &worklist](BasicBlock* pred) {
+            JITDUMP("  Visiting reaching pred " FMT_BB "\n", pred->bbNum);
+            if ((pred != block) && pred->KindIs(BBJ_COND, BBJ_SWITCH))
+            {
+                GenTree* terminator = pred->lastStmt()->GetRootNode();
+                if (!live->Set(terminator, true, TreeSet::Overwrite))
+                {
+                    worklist.Emplace(terminator, pred);
+                }
+            }
+            });
+    }
+
+    for (BasicBlock* block : Blocks())
+    {
+        for (Statement* stmt : block->Statements())
+        {
+            for (GenTree* tree : stmt->TreeList())
+            {
+                if (!live->Lookup(tree))
+                {
+                    if (!tree->OperIs(GT_NOP, GT_COMMA, GT_PHI_ARG, GT_PHI) && !tree->IsPhiDefn())
+                    {
+                        Metrics.AggressiveDceDeadNodes++;
+                        JITDUMP("We could delete [%06u]\n", dspTreeID(tree));
+                        s_nodeCounts.record(tree->gtOper);
+                    }
+                }
+            }
+        }
+    }
+
+    return PhaseStatus::MODIFIED_NOTHING;
+}
+
 // Helper functions to mark variables live over their entire scope
 
 void Compiler::fgBeginScopeLife(VARSET_TP* inScope, VarScopeDsc* var)

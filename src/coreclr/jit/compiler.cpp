@@ -5067,6 +5067,8 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 fgLocalVarLiveness();
             }
 
+            DoPhase(this, PHASE_AGGRESSIVE_SSA_DCE, &Compiler::fgSsaBasedDce);
+
             if (doEarlyProp)
             {
                 // Propagate array length and rewrite getType() method call

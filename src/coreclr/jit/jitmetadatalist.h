@@ -71,6 +71,7 @@ JITMETADATAMETRIC(ProfileInconsistentInlineeScale,       int,              0)
 JITMETADATAMETRIC(ProfileInconsistentInlinee,            int,              0)
 JITMETADATAMETRIC(ProfileInconsistentNoReturnInlinee,    int,              0)
 JITMETADATAMETRIC(ProfileInconsistentMayThrowInlinee,    int,              0)
+JITMETADATAMETRIC(AggressiveDceDeadNodes,                int,              0)
 
 #undef JITMETADATA
 #undef JITMETADATAINFO

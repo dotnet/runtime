@@ -2417,6 +2417,23 @@ public:
 
     bool CanReach(BasicBlock* from, BasicBlock* to);
 
+    template <typename TFunc>
+    void VisitReachingBlocks(BasicBlock* block, TFunc func)
+    {
+        if (!m_dfsTree->Contains(block))
+        {
+            return;
+        }
+
+        BitVecTraits traits = m_dfsTree->PostOrderTraits();
+        BitVecOps::Iter iter(&traits, m_reachabilitySets[block->bbPostorderNum]);
+        unsigned poNum;
+        while (iter.NextElem(&poNum))
+        {
+            func(m_dfsTree->GetPostOrder(poNum));
+        }
+    }
+
 #ifdef DEBUG
     void Dump();
 #endif
@@ -2519,6 +2536,8 @@ struct RelopImplicationInfo
     // Reverse the sense of the inference
     bool reverseSense = false;
 };
+
+typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, bool> TreeSet;
 
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -5503,6 +5522,9 @@ public:
 
     void fgPerNodeLocalVarLiveness(GenTree* node);
     void fgPerBlockLocalVarLiveness();
+
+    bool fgIsPreLive(GenTree* tree);
+    PhaseStatus fgSsaBasedDce();
 
 #if defined(FEATURE_HW_INTRINSICS)
     void fgPerNodeLocalVarLiveness(GenTreeHWIntrinsic* hwintrinsic);
