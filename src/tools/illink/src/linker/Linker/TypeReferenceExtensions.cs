@@ -158,25 +158,6 @@ namespace Mono.Linker
 			return typeToInflate;
 		}
 
-		public static IEnumerable<(TypeReference InflatedInterface, InterfaceImplementation OriginalImpl)> GetInflatedInterfaces (this TypeReference typeRef, ITryResolveMetadata resolver)
-		{
-			var typeDef = resolver.TryResolve (typeRef);
-
-			if (typeDef?.HasInterfaces != true)
-				yield break;
-
-			if (typeRef is GenericInstanceType genericInstance) {
-				foreach (var interfaceImpl in typeDef.Interfaces) {
-					// InflateGenericType only returns null when inflating generic parameters (and the generic instance type doesn't resolve).
-					// Here we are not inflating a generic parameter but an interface type reference.
-					yield return (InflateGenericType (genericInstance, interfaceImpl.InterfaceType, resolver), interfaceImpl)!;
-				}
-			} else {
-				foreach (var interfaceImpl in typeDef.Interfaces)
-					yield return (interfaceImpl.InterfaceType, interfaceImpl);
-			}
-		}
-
 		public static TypeReference? InflateGenericType (GenericInstanceType genericInstanceProvider, TypeReference typeToInflate, ITryResolveMetadata resolver)
 		{
 			if (typeToInflate is ArrayType arrayType) {
@@ -276,7 +257,7 @@ namespace Mono.Linker
 			return result;
 		}
 
-		public static IEnumerable<MethodReference> GetMethods (this TypeReference type, ITryResolveMetadata resolver)
+		public static IEnumerable<(MethodReference, MethodDefinition)> GetMethods (this TypeReference type, ITryResolveMetadata resolver)
 		{
 			TypeDefinition? typeDef = resolver.TryResolve (type);
 			if (typeDef?.HasMethods != true)
@@ -284,10 +265,10 @@ namespace Mono.Linker
 
 			if (type is GenericInstanceType genericInstanceType) {
 				foreach (var methodDef in typeDef.Methods)
-					yield return MakeMethodReferenceForGenericInstanceType (genericInstanceType, methodDef);
+					yield return (MakeMethodReferenceForGenericInstanceType (genericInstanceType, methodDef), methodDef);
 			} else {
 				foreach (var method in typeDef.Methods)
-					yield return method;
+					yield return (method, method);
 			}
 		}
 

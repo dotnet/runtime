@@ -31,10 +31,10 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Reflection.Metadata.Ecma335;
 using ILLink.Shared.TrimAnalysis;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
@@ -719,7 +719,7 @@ namespace Mono.Linker
 				VirtualMethodsWithAnnotationsToValidate.Add (method);
 		}
 
-		internal List<(TypeReference InterfaceType, List<InterfaceImplementation> ImplementationChain)>? GetRecursiveInterfaces (TypeDefinition type)
+		internal ImmutableArray<RuntimeInterfaceImplementation>? GetRuntimeInterfaces (TypeDefinition type)
 		{
 			return TypeMapInfo.GetRecursiveInterfaces (type);
 		}

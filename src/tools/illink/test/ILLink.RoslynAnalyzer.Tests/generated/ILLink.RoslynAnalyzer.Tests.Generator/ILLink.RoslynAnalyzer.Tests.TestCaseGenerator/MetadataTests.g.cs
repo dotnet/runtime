@@ -10,6 +10,12 @@ namespace ILLink.RoslynAnalyzer.Tests
 		protected override string TestSuiteName => "Metadata";
 
 		[Fact]
+		public Task DebuggerDisplayNamesAreKept ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
 		public Task NamesAreKept ()
 		{
 			return RunTest (allowMissingWarnings: true);
@@ -17,6 +23,30 @@ namespace ILLink.RoslynAnalyzer.Tests
 
 		[Fact]
 		public Task NamesAreRemoved ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
+		public Task RootAllAssemblyNamesAreKept ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
+		public Task RootDescriptorNamesAreKept ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
+		public Task RootLibraryAssemblyNamesAreKept ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
+		public Task RootVisibleAssemblyNamesAreKept ()
 		{
 			return RunTest (allowMissingWarnings: true);
 		}

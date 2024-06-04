@@ -1,9 +1,10 @@
 // Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
 using System.Diagnostics;
-using Mono.Cecil;
 using System.Diagnostics.CodeAnalysis;
+using Mono.Cecil;
 
 namespace Mono.Linker
 {
@@ -14,28 +15,29 @@ namespace Mono.Linker
 
 		public MethodDefinition Override { get; }
 
-		internal InterfaceImplementor? InterfaceImplementor { get; }
+		internal RuntimeInterfaceImplementation? RuntimeInterfaceImplementation { get; }
 
-		internal OverrideInformation (MethodDefinition @base, MethodDefinition @override, InterfaceImplementor? interfaceImplementor = null)
+		internal OverrideInformation (MethodDefinition @base, MethodDefinition @override, RuntimeInterfaceImplementation? runtimeInterface = null)
 		{
 			Base = @base;
 			Override = @override;
-			InterfaceImplementor = interfaceImplementor;
+			RuntimeInterfaceImplementation = runtimeInterface;
 			// Ensure we have an interface implementation if the base method is from an interface and the override method is on a class
-			Debug.Assert(@base.DeclaringType.IsInterface && interfaceImplementor != null
-						|| !@base.DeclaringType.IsInterface && interfaceImplementor == null);
+			Debug.Assert (@base.DeclaringType.IsInterface && runtimeInterface != null
+						|| !@base.DeclaringType.IsInterface && runtimeInterface == null);
 			// Ensure the interfaceImplementor is for the interface we expect
-			Debug.Assert (@base.DeclaringType.IsInterface ? interfaceImplementor!.InterfaceType == @base.DeclaringType : true);
+			Debug.Assert (@base.DeclaringType.IsInterface ? runtimeInterface!.InterfaceTypeDefinition == @base.DeclaringType : true);
 		}
 
+		[Obsolete ("Use RuntimeInterfaceImplementation instead to handle recursive interfaces")]
 		public InterfaceImplementation? MatchingInterfaceImplementation
-			=> InterfaceImplementor?.InterfaceImplementation;
+			=> RuntimeInterfaceImplementation?.InterfaceImplementation[0];
 
 		public TypeDefinition? InterfaceType
-			=> InterfaceImplementor?.InterfaceType;
+			=> RuntimeInterfaceImplementation?.InterfaceTypeDefinition;
 
-		[MemberNotNullWhen (true, nameof (InterfaceImplementor), nameof (MatchingInterfaceImplementation))]
+		[MemberNotNullWhen (true, nameof (RuntimeInterfaceImplementation))]
 		public bool IsOverrideOfInterfaceMember
-			=> InterfaceImplementor != null;
+			=> RuntimeInterfaceImplementation != null;
 	}
 }

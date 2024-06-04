@@ -22,6 +22,18 @@ namespace ILLink.RoslynAnalyzer.Tests.Inheritance.Interfaces
 		}
 
 		[Fact]
+		public Task RecursiveGenericInterfaces ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
+		public Task RecursiveGenericInterfacesStatic ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
 		public Task RecursiveInterfaceKept ()
 		{
 			return RunTest (allowMissingWarnings: true);
