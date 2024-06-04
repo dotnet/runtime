@@ -407,14 +407,14 @@ namespace System.Threading
         private object? _nextWorkItemToProcess;
 
         // The scheme works as following:
-        // From NotScheduled, the only transition is to Scheduled when new items are enqueued and a thread is requested to process them
-        // From Scheduled, the only transition is to Determining right before trying to dequeue an item
+        // From NotScheduled, the only transition is to Scheduled when new items are enqueued and a thread is requested to process them.
+        // From Scheduled, the only transition is to Determining right before trying to dequeue an item.
         // From Determining, it can go to either NotScheduled when no items are present in the queue (the previous thread processed all of them)
-        // or Scheduled if the queue is still not empty (let the current thread handle parallelization as convinient)
+        // or Scheduled if the queue is still not empty (let the current thread handle parallelization as convinient).
         //
-        // The goal is to avoid requesting more threads than necessary, while still ensuring that all items are processed
+        // The goal is to avoid requesting more threads than necessary, while still ensuring that all items are processed.
         // Another thread isn't requested hastily while the state is Determining,
-        // instead the parallelizer takes care of that. We also ensure that only one thread can be parallelizing at any time
+        // instead the parallelizer takes care of that. We also ensure that only one thread can be parallelizing at any time.
         private enum QueueProcessingStage
         {
             NotScheduled,
@@ -591,8 +591,8 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void EnsureThreadRequested()
         {
-            // Only request a thread if the stage is NotScheduled
-            // Otherwise let the current requested thread handle parallelization
+            // Only request a thread if the stage is NotScheduled.
+            // Otherwise let the current requested thread handle parallelization.
             if (Interlocked.Exchange(
                 ref _separated.queueProcessingStage,
                 (int)QueueProcessingStage.Scheduled) == (int)QueueProcessingStage.NotScheduled)
@@ -1178,14 +1178,14 @@ namespace System.Threading
         where TCallback : struct, IThreadPoolTypedWorkItemQueueCallback<T>
     {
         // The scheme works as following:
-        // From NotScheduled, the only transition is to Scheduled when new items are enqueued and a TP work item is enqueued to process them
-        // From Scheduled, the only transition is to Determining right before trying to dequeue an item
+        // From NotScheduled, the only transition is to Scheduled when new items are enqueued and a TP work item is enqueued to process them.
+        // From Scheduled, the only transition is to Determining right before trying to dequeue an item.
         // From Determining, it can go to either NotScheduled when no items are present in the queue (the previous TP work item processed all of them)
-        // or Scheduled if the queue is still not empty (let the current TP work item handle parallelization as convinient)
+        // or Scheduled if the queue is still not empty (let the current TP work item handle parallelization as convinient).
         //
-        // The goal is to avoid enqueueing more TP work items than necessary, while still ensuring that all items are processed
+        // The goal is to avoid enqueueing more TP work items than necessary, while still ensuring that all items are processed.
         // Another TP work item isn't enqueued to the thread pool hastily while the state is Determining,
-        // instead the parallelizer takes care of that. We also ensure that only one thread can be parallelizing at any time
+        // instead the parallelizer takes care of that. We also ensure that only one thread can be parallelizing at any time.
         private enum QueueProcessingStage
         {
             NotScheduled,
@@ -1207,8 +1207,8 @@ namespace System.Threading
         public void BatchEnqueue(T workItem) => _workItems.Enqueue(workItem);
         public void CompleteBatchEnqueue()
         {
-            // Only enqueue a work item if the stage is NotScheduled
-            //Otherwise there must be a work item already queued or another thread already handling parallelization
+            // Only enqueue a work item if the stage is NotScheduled.
+            //Otherwise there must be a work item already queued or another thread already handling parallelization.
             if (Interlocked.Exchange(
                 ref _queueProcessingStage,
                 (int)QueueProcessingStage.Scheduled) == (int)QueueProcessingStage.NotScheduled)
@@ -1221,7 +1221,7 @@ namespace System.Threading
         {
             if (!isQueueEmpty)
             {
-                // There are more items to process, set stage to Scheduled and enqueue a TP work item
+                // There are more items to process, set stage to Scheduled and enqueue a TP work item.
                 _queueProcessingStage = (int)QueueProcessingStage.Scheduled;
             }
             else
