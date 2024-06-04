@@ -6514,7 +6514,7 @@ FlowGraphPostDominatorTree* FlowGraphPostDominatorTree::Build(const FlowGraphRev
                 }
             };
 
-            if (block->KindIs(BBJ_RETURN, BBJ_THROW))
+            if (block->KindIs(BBJ_RETURN, BBJ_THROW, BBJ_EHFAULTRET))
             {
                 // The infinite loop edges...?
                 // We will need to track or flag those blocks

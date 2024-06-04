@@ -11989,7 +11989,7 @@ private:
         {
             static_cast<TVisitor*>(this)->PreOrderVisit(block);
 
-            next = tree[block->bbPostorderNum].firstChild;
+            next = tree[postDom ? block->bbReversePostorderNum : block->bbPostorderNum].firstChild;
 
             if (next != nullptr)
             {
@@ -12001,7 +12001,7 @@ private:
             {
                 static_cast<TVisitor*>(this)->PostOrderVisit(block);
 
-                next = tree[block->bbPostorderNum].nextSibling;
+                next = tree[postDom ? block->bbReversePostorderNum : block->bbPostorderNum].nextSibling;
 
                 if (next != nullptr)
                 {

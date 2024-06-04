@@ -4950,21 +4950,18 @@ unsigned Compiler::fgRunReverseDfs(VisitPreorder visitPreorder, VisitPostorder v
             continue;
         }
 
-        switch (block->GetKind())
+        if (block->KindIs(BBJ_RETURN, BBJ_THROW, BBJ_EHFAULTRET))
         {
-            case BBJ_RETURN:
-            case BBJ_THROW:
-                fgAddRefPred(pseudoExit, block);
-                break;
+            fgAddRefPred(pseudoExit, block);
         }
     }
 
     reverseDfsFrom(pseudoExit);
 
     const unsigned dfsCount = m_dfsTree->GetPostOrderCount();
-    assert(dfsCount <= postOrderIndex);
+    assert(dfsCount >= postOrderIndex);
 
-    if (dfsCount < postOrderIndex)
+    if (dfsCount > postOrderIndex)
     {
         // If some forward reachable block is not reverse reachable,
         // we may have an infinite loop... process these now.
