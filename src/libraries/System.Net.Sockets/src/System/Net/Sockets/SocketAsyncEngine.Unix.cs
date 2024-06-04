@@ -87,11 +87,11 @@ namespace System.Net.Sockets
         //
         private readonly ConcurrentQueue<SocketIOEvent> _eventQueue = new ConcurrentQueue<SocketIOEvent>();
 
-        // The scheme works as following:
-        // From NotScheduled, the only transition is to Scheduled when new events are enqueued and a work item is enqueued to process them.
-        // From Scheduled, the only transition is to Determining right before trying to dequeue an event.
-        // From Determining, it can go to either NotScheduled when no events are present in the queue (the previous work item processed all of them)
-        // or Scheduled if the queue is still not empty (let the current work item handle parallelization as convinient).
+        // The scheme works as follows:
+        // - From NotScheduled, the only transition is to Scheduled when new events are enqueued and a work item is enqueued to process them.
+        // - From Scheduled, the only transition is to Determining right before trying to dequeue an event.
+        // - From Determining, it can go to either NotScheduled when no events are present in the queue (the previous work item processed all of them)
+        //   or Scheduled if the queue is still not empty (let the current work item handle parallelization as convinient).
         //
         // The goal is to avoid enqueueing more work items than necessary, while still ensuring that all events are processed.
         // Another work item isn't enqueued to the thread pool hastily while the state is Determining,
@@ -229,7 +229,7 @@ namespace System.Net.Sockets
             {
                 // The stage here would be Scheduled if an enqueuer has enqueued work and changed the stage, or Determining
                 // otherwise. If the stage is Determining, there's no more work to do. If the stage is Scheduled, the enqueuer
-                // would not have scheduled a work item to process the work, so try to dequeue a work item again.
+                // would not have scheduled a work item to process the work, so schedule one now.
                 int stageBeforeUpdate =
                     Interlocked.CompareExchange(
                         ref _eventQueueProcessingStage,
