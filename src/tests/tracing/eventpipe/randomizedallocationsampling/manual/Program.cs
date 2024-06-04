@@ -39,14 +39,14 @@ namespace DynamicAllocationSampling
 
     internal class Program
     {
-        // TODO: for percentiles, we will need to keep track of all results
-        //       but which value should be used to compute the percentile? probably the count but for AllocationTick or AllocationSampled? Both?
         private static Dictionary<string, TypeInfo> _sampledTypes = new Dictionary<string, TypeInfo>();
         private static Dictionary<string, TypeInfo> _tickTypes = new Dictionary<string, TypeInfo>();
         private static List<Dictionary<string, TypeInfo>> _sampledTypesInRun = null;
         private static List<Dictionary<string, TypeInfo>> _tickTypesInRun = null;
         private static int _allocationsCount = 0;
         private static List<string> _allocatedTypes = new List<string>();
+        private static EventPipeEventSource _source;
+;
 
         static void Main(string[] args)
         {
@@ -97,6 +97,8 @@ namespace DynamicAllocationSampling
                 Task streamTask = Task.Run(() =>
                 {
                     var source = new EventPipeEventSource(session.EventStream);
+                    _source = source;
+
                     ClrTraceEventParser clrParser = new ClrTraceEventParser(source);
                     clrParser.GCAllocationTick += OnAllocationTick;
                     source.Dynamic.All += OnEvents;
@@ -166,7 +168,7 @@ namespace DynamicAllocationSampling
         {
             if (eventData.ID == (TraceEventID)303)
             {
-                AllocationSampledData payload = new AllocationSampledData(eventData, 8); // assume 64-bit pointers
+                AllocationSampledData payload = new AllocationSampledData(eventData, _source.PointerSize);
 
                 // skip unexpected types
                 if (!_allocatedTypes.Contains(payload.TypeName)) return;
@@ -396,12 +398,27 @@ namespace DynamicAllocationSampling
             Span<byte> data = _payload.EventData().AsSpan();
             AllocationKind = (GCAllocationKind)BitConverter.ToInt32(data.Slice(0, 4));
             ClrInstanceID = BitConverter.ToInt16(data.Slice(4, 2));
-            TypeID = BitConverter.ToUInt64(data.Slice(6, _pointerSize));                                                    //   \0 should not be included for GetString to work
+            if (_pointerSize == 4)
+            {
+                TypeID = BitConverter.ToUInt32(data.Slice(6, _pointerSize));
+            }
+            else
+            {
+                TypeID = BitConverter.ToUInt64(data.Slice(6, _pointerSize));
+            }
+                                                                                                                            //   \0 should not be included for GetString to work
             TypeName = Encoding.Unicode.GetString(data.Slice(offsetBeforeString, _payload.EventDataLength - offsetBeforeString - EndOfStringCharLength - 4 - _pointerSize - 8 - 8));
             HeapIndex = BitConverter.ToInt32(data.Slice(offsetBeforeString + TypeName.Length * 2 + EndOfStringCharLength, 4));
-            Address = BitConverter.ToUInt64(data.Slice(offsetBeforeString + TypeName.Length * 2 + EndOfStringCharLength + 4, _pointerSize));
-            ObjectSize = BitConverter.ToInt64(data.Slice(offsetBeforeString + TypeName.Length * 2 + EndOfStringCharLength + 4 + 8, 8));
-            SampledByteOffset = BitConverter.ToInt64(data.Slice(offsetBeforeString + TypeName.Length * 2 + EndOfStringCharLength + 4 + 8 + 8, 8));
+            if (_pointerSize == 4)
+            {
+                Address = BitConverter.ToUInt32(data.Slice(offsetBeforeString + TypeName.Length * 2 + EndOfStringCharLength + 4, _pointerSize));
+            }
+            else
+            {
+                Address = BitConverter.ToUInt64(data.Slice(offsetBeforeString + TypeName.Length * 2 + EndOfStringCharLength + 4, _pointerSize));
+            }
+            ObjectSize = BitConverter.ToInt64(data.Slice(offsetBeforeString + TypeName.Length * 2 + EndOfStringCharLength + 4 + _pointerSize, 8));
+            SampledByteOffset = BitConverter.ToInt64(data.Slice(offsetBeforeString + TypeName.Length * 2 + EndOfStringCharLength + 4 + _pointerSize + 8, 8));
         }
     }
 

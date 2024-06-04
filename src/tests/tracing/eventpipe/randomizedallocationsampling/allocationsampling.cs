@@ -149,12 +149,26 @@ namespace Tracing.Tests
             Span<byte> data = _payload.EventData().AsSpan();
             AllocationKind = (GCAllocationKind)BitConverter.ToInt32(data.Slice(0, 4));
             ClrInstanceID = BitConverter.ToInt16(data.Slice(4, 2));
-            TypeID = BitConverter.ToUInt64(data.Slice(6, _pointerSize));                                                    //   \0 should not be included for GetString to work
+            if (_pointerSize == 4)
+            {
+                TypeID = BitConverter.ToUInt32(data.Slice(6, _pointerSize));
+            }
+            else
+            {
+                TypeID = BitConverter.ToUInt64(data.Slice(6, _pointerSize));
+            }
             TypeName = Encoding.Unicode.GetString(data.Slice(offsetBeforeString, _payload.EventDataLength - offsetBeforeString - EndOfStringCharLength - 4 - _pointerSize - 8 - 8));
             HeapIndex = BitConverter.ToInt32(data.Slice(offsetBeforeString + TypeName.Length * 2 + EndOfStringCharLength, 4));
-            Address = BitConverter.ToUInt64(data.Slice(offsetBeforeString + TypeName.Length * 2 + EndOfStringCharLength + 4, _pointerSize));
-            ObjectSize = BitConverter.ToInt64(data.Slice(offsetBeforeString + TypeName.Length * 2 + EndOfStringCharLength + 4 + 8, 8));
-            SampledByteOffset = BitConverter.ToInt64(data.Slice(offsetBeforeString + TypeName.Length * 2 + EndOfStringCharLength + 4 + 8 + 8, 8));
+            if (_pointerSize == 4)
+            {
+                Address = BitConverter.ToUInt32(data.Slice(offsetBeforeString + TypeName.Length * 2 + EndOfStringCharLength + 4, _pointerSize));
+            }
+            else
+            {
+                Address = BitConverter.ToUInt64(data.Slice(offsetBeforeString + TypeName.Length * 2 + EndOfStringCharLength + 4, _pointerSize));
+            }
+            ObjectSize = BitConverter.ToInt64(data.Slice(offsetBeforeString + TypeName.Length * 2 + EndOfStringCharLength + 4 + _pointerSize, 8));
+            SampledByteOffset = BitConverter.ToInt64(data.Slice(offsetBeforeString + TypeName.Length * 2 + EndOfStringCharLength + 4 + _pointerSize + 8, 8));
         }
     }
 }
