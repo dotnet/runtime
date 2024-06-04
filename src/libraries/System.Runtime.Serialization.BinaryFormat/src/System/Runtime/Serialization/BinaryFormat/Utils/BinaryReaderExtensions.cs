@@ -94,4 +94,24 @@ internal static class BinaryReaderExtensions
 
         return Unsafe.As<long, DateTime>(ref data);
     }
+
+    internal static bool IsDataAvailable(this BinaryReader reader, long requiredBytes)
+    {
+        if (!reader.BaseStream.CanSeek)
+        {
+            return false;
+        }
+
+        long availableBytes = 0;
+        try
+        {
+            availableBytes = reader.BaseStream.Length - reader.BaseStream.Position;
+        }
+        catch
+        {
+            // seekable Stream can still throw when accessing Length and Position
+        }
+
+        return availableBytes > requiredBytes;
+    }
 }
