@@ -404,7 +404,7 @@ namespace System.Threading
         private readonly int[] _assignedWorkItemQueueThreadCounts =
             s_assignableWorkItemQueueCount > 0 ? new int[s_assignableWorkItemQueueCount] : Array.Empty<int>();
 
-        private object? _nextWorkItemToProcess;
+        private static object? _nextWorkItemToProcess;
 
         // The scheme works as following:
         // From NotScheduled, the only transition is to Scheduled when new items are enqueued and a thread is requested to process them.
