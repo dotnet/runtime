@@ -6489,26 +6489,48 @@ FlowGraphPostdominatorTree* FlowGraphPostdominatorTree::Build(const FlowGraphRev
 
             // Intersect Postdom, if computed, for all successors
             BasicBlock* bbIPDom = nullptr;
-            for (FlowEdge* pred = comp->BlockDominancePreds(block); pred; pred = pred->getNextPredEdge())
-            {
-                BasicBlock* domPred = pred->getSourceBlock();
-                if (!reverseDfsTree->Contains(domPred))
+
+            auto visitSucc = [=, &bbIPDom](BasicBlock* succ) {
+                if (!reverseDfsTree->Contains(succ))
                 {
-                    continue; // Unreachable pred
+                    // Unreachable succ...?
+                    return;
                 }
 
-                if ((numIters <= 0) && (domPred->bbPostorderNum <= poNum))
+                if ((numIters <= 0) && (succ->bbPostorderNum <= poNum))
                 {
-                    continue; // Pred not yet visited
+                    return;
                 }
 
                 if (bbIPDom == nullptr)
                 {
-                    bbIPDom = domPred;
+                    bbIPDom = succ;
                 }
                 else
                 {
-                    bbIPDom = IntersectPostdom(bbIPDom, domPred);
+                    bbIPDom = IntersectPostdom(bbIPDom, succ);
+                }
+            };
+
+            for (BasicBlock* const succ : block->Succs(comp))
+            {
+                visitSucc(succ);
+
+                // All blocks in try, or just the first?
+                // (if we knew where the exits were, maybe just those)
+                //
+                if (comp->bbIsTryBeg(succ))
+                {
+                    assert(succ->hasTryIndex());
+                    unsigned const  tryInd  = succ->getTryIndex();
+                    EHblkDsc* const succTry = comp->ehGetDsc(tryInd);
+
+                    if (succTry->HasFilter())
+                    {
+                        visitSucc(succTry->ebdFilter);
+                    }
+
+                    visitSucc(succTry->ebdHndBeg);
                 }
             }
 
