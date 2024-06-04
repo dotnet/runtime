@@ -17,7 +17,6 @@ namespace System.IO.Compression
     {
         private readonly Stream _archiveStream;
         private ZipArchiveEntry? _archiveStreamOwner;
-        private readonly BinaryReader? _archiveReader;
         private readonly ZipArchiveMode _mode;
         private readonly List<ZipArchiveEntry> _entries;
         private readonly ReadOnlyCollection<ZipArchiveEntry> _entriesCollection;
@@ -163,10 +162,6 @@ namespace System.IO.Compression
                 else
                     _archiveStream = stream;
                 _archiveStreamOwner = null;
-                if (mode == ZipArchiveMode.Create)
-                    _archiveReader = null;
-                else
-                    _archiveReader = new BinaryReader(_archiveStream, Encoding.UTF8, leaveOpen: true);
                 _entries = new List<ZipArchiveEntry>();
                 _entriesCollection = new ReadOnlyCollection<ZipArchiveEntry>(_entries);
                 _entriesDictionary = new Dictionary<string, ZipArchiveEntry>();
@@ -353,8 +348,6 @@ namespace System.IO.Compression
             return result;
         }
 
-        internal BinaryReader? ArchiveReader => _archiveReader;
-
         internal Stream ArchiveStream => _archiveStream;
 
         internal uint NumberOfThisDisk => _numberOfThisDisk;
@@ -462,7 +455,6 @@ namespace System.IO.Compression
             {
                 _archiveStream.Dispose();
                 _backingStream?.Dispose();
-                _archiveReader?.Dispose();
             }
             else
             {

@@ -365,11 +365,10 @@ namespace System.IO.Compression
             {
                 if (_storedOffsetOfCompressedData == null)
                 {
-                    Debug.Assert(_archive.ArchiveReader != null);
                     _archive.ArchiveStream.Seek(_offsetOfLocalHeader, SeekOrigin.Begin);
                     // by calling this, we are using local header _storedEntryNameBytes.Length and extraFieldLength
                     // to find start of data, but still using central directory size information
-                    if (!ZipLocalFileHeader.TrySkipBlock(_archive.ArchiveReader))
+                    if (!ZipLocalFileHeader.TrySkipBlock(_archive.ArchiveStream))
                         throw new InvalidDataException(SR.LocalFileHeaderCorrupt);
                     _storedOffsetOfCompressedData = _archive.ArchiveStream.Position;
                 }
@@ -524,7 +523,7 @@ namespace System.IO.Compression
                 extraFieldLength = (ushort)bigExtraFieldLength;
             }
 
-            writer.Write(ZipCentralDirectoryFileHeader.SignatureConstant);      // Central directory file header signature  (4 bytes)
+            writer.Write(ZipCentralDirectoryFileHeader.SignatureConstantBytes);      // Central directory file header signature  (4 bytes)
             writer.Write((byte)_versionMadeBySpecification);                    // Version made by Specification (version)  (1 byte)
             writer.Write((byte)CurrentZipPlatform);                             // Version made by Compatibility (type)     (1 byte)
             writer.Write((ushort)_versionToExtract);                            // Minimum version needed to extract        (2 bytes)
@@ -568,9 +567,7 @@ namespace System.IO.Compression
             if (_originallyInArchive)
             {
                 _archive.ArchiveStream.Seek(_offsetOfLocalHeader, SeekOrigin.Begin);
-
-                Debug.Assert(_archive.ArchiveReader != null);
-                _lhUnknownExtraFields = ZipLocalFileHeader.GetExtraFields(_archive.ArchiveReader);
+                _lhUnknownExtraFields = ZipLocalFileHeader.GetExtraFields(_archive.ArchiveStream);
             }
 
             if (!_everOpenedForWrite && _originallyInArchive)
@@ -764,9 +761,8 @@ namespace System.IO.Compression
                     message = SR.LocalFileHeaderCorrupt;
                     return false;
                 }
-                Debug.Assert(_archive.ArchiveReader != null);
                 _archive.ArchiveStream.Seek(_offsetOfLocalHeader, SeekOrigin.Begin);
-                if (!ZipLocalFileHeader.TrySkipBlock(_archive.ArchiveReader))
+                if (!ZipLocalFileHeader.TrySkipBlock(_archive.ArchiveStream))
                 {
                     message = SR.LocalFileHeaderCorrupt;
                     return false;
@@ -923,7 +919,7 @@ namespace System.IO.Compression
             }
 
             // write header
-            writer.Write(ZipLocalFileHeader.SignatureConstant);
+            writer.Write(ZipLocalFileHeader.SignatureConstantBytes);
             writer.Write((ushort)_versionToExtract);
             writer.Write((ushort)_generalPurposeBitFlag);
             writer.Write((ushort)CompressionMethod);
@@ -1086,7 +1082,7 @@ namespace System.IO.Compression
 
             BinaryWriter writer = new BinaryWriter(_archive.ArchiveStream);
 
-            writer.Write(ZipLocalFileHeader.DataDescriptorSignature);
+            writer.Write(ZipLocalFileHeader.DataDescriptorSignatureConstantBytes);
             writer.Write(_crc32);
             if (SizesTooLarge())
             {

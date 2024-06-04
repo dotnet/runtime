@@ -34,27 +34,6 @@ namespace System.IO.Compression
             stream.Write(Data);
         }
 
-        // shouldn't ever read the byte at position endExtraField
-        // assumes we are positioned at the beginning of an extra field subfield
-        public static bool TryReadBlock(BinaryReader reader, long endExtraField, out ZipGenericExtraField field)
-        {
-            field = default;
-
-            // not enough bytes to read tag + size
-            if (endExtraField - reader.BaseStream.Position < 4)
-                return false;
-
-            field._tag = reader.ReadUInt16();
-            field._size = reader.ReadUInt16();
-
-            // not enough bytes to read the data
-            if (endExtraField - reader.BaseStream.Position < field._size)
-                return false;
-
-            field._data = reader.ReadBytes(field._size);
-            return true;
-        }
-
         // assumes that bytes starts at the beginning of an extra field subfield
         public static bool TryReadBlock(ReadOnlySpan<byte> bytes, out int bytesConsumed, out ZipGenericExtraField field)
         {
@@ -93,23 +72,6 @@ namespace System.IO.Compression
             {
                 totalBytesConsumed += currBytesConsumed;
                 extraFields.Add(field);
-            }
-
-            return extraFields;
-        }
-
-        // shouldn't ever read the byte at position endExtraField
-        public static List<ZipGenericExtraField> ParseExtraField(Stream extraFieldData)
-        {
-            List<ZipGenericExtraField> extraFields = new List<ZipGenericExtraField>();
-
-            using (BinaryReader reader = new BinaryReader(extraFieldData))
-            {
-                ZipGenericExtraField field;
-                while (TryReadBlock(reader, extraFieldData.Length, out field))
-                {
-                    extraFields.Add(field);
-                }
             }
 
             return extraFields;
@@ -391,7 +353,6 @@ namespace System.IO.Compression
 
     internal struct Zip64EndOfCentralDirectoryLocator
     {
-        public const uint SignatureConstant = 0x07064B50;
         public static ReadOnlySpan<byte> SignatureConstantBytes => [0x50, 0x4B, 0x06, 0x07];
         public const int SignatureSize = sizeof(uint);
 
@@ -562,58 +523,67 @@ namespace System.IO.Compression
 
     internal readonly struct ZipLocalFileHeader
     {
-        public const uint DataDescriptorSignature = 0x08074B50;
-        public const uint SignatureConstant = 0x04034B50;
+        // The Zip File Format Specification references 0x08074B50 and 0x06054B50, these are big endian representations.
+        // ZIP files store values in little endian, so these are reversed.
+        public static ReadOnlySpan<byte> DataDescriptorSignatureConstantBytes => [0x50, 0x4B, 0x07, 0x08];
+        public static ReadOnlySpan<byte> SignatureConstantBytes => [0x50, 0x4B, 0x03, 0x04];
         public const int OffsetToCrcFromHeaderStart = 14;
         public const int OffsetToVersionFromHeaderStart = 4;
         public const int OffsetToBitFlagFromHeaderStart = 6;
         public const int SizeOfLocalHeader = 30;
 
-        public static List<ZipGenericExtraField> GetExtraFields(BinaryReader reader)
+        public static List<ZipGenericExtraField> GetExtraFields(Stream stream)
         {
             // assumes that TrySkipBlock has already been called, so we don't have to validate twice
 
             List<ZipGenericExtraField> result;
+            Span<byte> fixedHeaderBuffer = stackalloc byte[4];
 
             const int OffsetToFilenameLength = 26; // from the point before the signature
 
-            reader.BaseStream.Seek(OffsetToFilenameLength, SeekOrigin.Current);
+            stream.Seek(OffsetToFilenameLength, SeekOrigin.Current);
+            stream.ReadExactly(fixedHeaderBuffer);
 
-            ushort filenameLength = reader.ReadUInt16();
-            ushort extraFieldLength = reader.ReadUInt16();
+            ushort filenameLength = BinaryPrimitives.ReadUInt16LittleEndian(fixedHeaderBuffer);
+            ushort extraFieldLength = BinaryPrimitives.ReadUInt16LittleEndian(fixedHeaderBuffer.Slice(sizeof(ushort)));
+            Span<byte> extraFieldBuffer = extraFieldLength <= 512 ? stackalloc byte[512].Slice(0, extraFieldLength) : new byte[extraFieldLength];
 
-            reader.BaseStream.Seek(filenameLength, SeekOrigin.Current);
+            stream.Seek(filenameLength, SeekOrigin.Current);
+            stream.ReadExactly(extraFieldBuffer);
 
-
-            using (Stream str = new SubReadStream(reader.BaseStream, reader.BaseStream.Position, extraFieldLength))
-            {
-                result = ZipGenericExtraField.ParseExtraField(str);
-            }
+            result = ZipGenericExtraField.ParseExtraField(extraFieldBuffer);
             Zip64ExtraField.RemoveZip64Blocks(result);
 
             return result;
         }
 
         // will not throw end of stream exception
-        public static bool TrySkipBlock(BinaryReader reader)
+        public static bool TrySkipBlock(Stream stream)
         {
             const int OffsetToFilenameLength = 22; // from the point after the signature
 
-            if (reader.ReadUInt32() != SignatureConstant)
+            Span<byte> blockBytes = stackalloc byte[4];
+            int bytesRead = stream.Read(blockBytes);
+
+            if (bytesRead != sizeof(uint) || !blockBytes.SequenceEqual(SignatureConstantBytes))
                 return false;
 
-            if (reader.BaseStream.Length < reader.BaseStream.Position + OffsetToFilenameLength)
+            if (stream.Length < stream.Position + OffsetToFilenameLength)
                 return false;
 
-            reader.BaseStream.Seek(OffsetToFilenameLength, SeekOrigin.Current);
+            stream.Seek(OffsetToFilenameLength, SeekOrigin.Current);
 
-            ushort filenameLength = reader.ReadUInt16();
-            ushort extraFieldLength = reader.ReadUInt16();
-
-            if (reader.BaseStream.Length < reader.BaseStream.Position + filenameLength + extraFieldLength)
+            bytesRead = stream.Read(blockBytes);
+            if (bytesRead != sizeof(ushort) + sizeof(ushort))
                 return false;
 
-            reader.BaseStream.Seek(filenameLength + extraFieldLength, SeekOrigin.Current);
+            ushort filenameLength = BinaryPrimitives.ReadUInt16LittleEndian(blockBytes);
+            ushort extraFieldLength = BinaryPrimitives.ReadUInt16LittleEndian(blockBytes.Slice(sizeof(ushort)));
+
+            if (stream.Length < stream.Position + filenameLength + extraFieldLength)
+                return false;
+
+            stream.Seek(filenameLength + extraFieldLength, SeekOrigin.Current);
 
             return true;
         }
@@ -624,7 +594,6 @@ namespace System.IO.Compression
         // The Zip File Format Specification references 0x06054B50, this is a big endian representation.
         // ZIP files store values in little endian, so this is reversed.
         public static ReadOnlySpan<byte> SignatureConstantBytes => [0x50, 0x4B, 0x01, 0x02];
-        public const uint SignatureConstant = 0x02014B50;
 
         // These are the minimum possible size, assuming the zip file comments variable section is empty
         public const int BlockConstantSectionSize = 46;
@@ -725,7 +694,7 @@ namespace System.IO.Compression
             // Data needs to come from two sources, and we must thus copy data into a single address space.
             else
             {
-                Span<byte> collatedHeader = dynamicHeaderSize <= 512 ? stackalloc byte[512].Slice(dynamicHeaderSize) : new byte[dynamicHeaderSize];
+                Span<byte> collatedHeader = dynamicHeaderSize <= 512 ? stackalloc byte[512].Slice(0, dynamicHeaderSize) : new byte[dynamicHeaderSize];
 
                 buffer.Slice(bytesRead).CopyTo(collatedHeader);
                 int realBytesRead = furtherReads.Read(collatedHeader.Slice(buffer.Length - bytesRead));
