@@ -321,9 +321,7 @@ CrashInfo::InitializeDAC(DumpType dumpType)
     {
         if (m_appModel == AppModelType::SingleFile)
         {
-            printf_error("Only full dumps are supported by single file apps without the DAC module. Either copy %s to %s or change the dump type to full (DOTNET_DbgMiniDumpType=4)\n",
-                MAKEDLLNAME_A("mscordaccore"),
-                dacPath.c_str());
+            printf_error("Only full dumps are supported by single file apps. Change the dump type to full (DOTNET_DbgMiniDumpType=4)\n");
         }
         else
         {
