@@ -2436,7 +2436,7 @@ public:
 };
 
 // Represents the postdominator tree of the flow graph.
-class FlowGraphPostdominatorTree
+class FlowGraphPostDominatorTree
 {
     template<typename TVisitor>
     friend class PostdomTreeVisitor;
@@ -2446,7 +2446,7 @@ class FlowGraphPostdominatorTree
     const unsigned* m_preorderNum;
     const unsigned* m_postorderNum;
 
-    FlowGraphPostdominatorTree(const FlowGraphReverseDfsTree* reverseDfsTree, const DomTreeNode* domTree, const unsigned* preorderNum, const unsigned* postorderNum)
+    FlowGraphPostDominatorTree(const FlowGraphReverseDfsTree* reverseDfsTree, const DomTreeNode* domTree, const unsigned* preorderNum, const unsigned* postorderNum)
         : m_reverseDfsTree(reverseDfsTree)
         , m_domTree(domTree)
         , m_preorderNum(preorderNum)
@@ -2469,7 +2469,7 @@ public:
     void Dump();
 #endif
 
-    static FlowGraphPostdominatorTree* Build(const FlowGraphReverseDfsTree* dfsTree);
+    static FlowGraphPostDominatorTree* Build(const FlowGraphReverseDfsTree* dfsTree);
 };
 
 // Represents a reverse mapping from block back to its (most nested) containing loop.
@@ -5225,7 +5225,7 @@ public:
     BlockReachabilitySets* m_reachabilitySets;
 
     // Postdominator tree
-    FlowGraphPostdominatorTree* m_postdomTree;
+    FlowGraphPostDominatorTree* m_postDomTree;
 
     // Do we require loops to be in canonical form? The canonical form ensures that:
     // 1. All loops have preheaders (single entry blocks that always enter the loop)
@@ -6002,7 +6002,7 @@ protected:
     bool fgRemoveUnreachableBlocks(CanRemoveBlockBody canRemoveBlock);
 
     PhaseStatus fgComputeDominators(); // Compute dominators
-    PhaseStatus fgComputePostdominators(); // Compute postdominators
+    PhaseStatus fgComputePostDominators(); // Compute postdominators
 
     bool fgRemoveDeadBlocks(); // Identify and remove dead blocks.
 
@@ -11954,6 +11954,7 @@ template <typename TVisitor>
 class DomTreeVisitor
 {
     friend class FlowGraphDominatorTree;
+    friend class FlowGraphPostDominatorTree;
 
 protected:
     Compiler* m_compiler;

@@ -6340,7 +6340,7 @@ FlowGraphDominatorTree* FlowGraphDominatorTree::Build(const FlowGraphDfsTree* df
 }
 
 //------------------------------------------------------------------------
-// FlowGraphPostdominatorTree::IntersectPostdom:
+// FlowGraphPostDominatorTree::IntersectPostdom:
 //   Find common IPDom parent, much like least common ancestor.
 //
 // Parameters:
@@ -6360,7 +6360,7 @@ FlowGraphDominatorTree* FlowGraphDominatorTree::Build(const FlowGraphDfsTree* df
 //   See "A simple, fast dominance algorithm" by Keith D. Cooper, Timothy J.
 //   Harvey, Ken Kennedy.
 //
-BasicBlock* FlowGraphPostdominatorTree::IntersectPostdom(BasicBlock* finger1, BasicBlock* finger2)
+BasicBlock* FlowGraphPostDominatorTree::IntersectPostdom(BasicBlock* finger1, BasicBlock* finger2)
 {
     while (finger1 != finger2)
     {
@@ -6385,10 +6385,10 @@ BasicBlock* FlowGraphPostdominatorTree::IntersectPostdom(BasicBlock* finger1, Ba
 }
 
 //------------------------------------------------------------------------
-// FlowGraphPostdominatorTree::Intersect:
+// FlowGraphPostDominatorTree::Intersect:
 //   See FlowGraphPostominatorTree::IntersectPostdom
 //
-BasicBlock* FlowGraphPostdominatorTree::Intersect(BasicBlock* block1, BasicBlock* block2)
+BasicBlock* FlowGraphPostDominatorTree::Intersect(BasicBlock* block1, BasicBlock* block2)
 {
     return IntersectPostdom(block1, block2);
 }
@@ -6404,7 +6404,7 @@ BasicBlock* FlowGraphPostdominatorTree::Intersect(BasicBlock* block1, BasicBlock
 // Returns:
 //   True "postDominator" postdominates "postDominated".
 //
-bool FlowGraphPostdominatorTree::PostDominates(BasicBlock* postDominator, BasicBlock* postDominated)
+bool FlowGraphPostDominatorTree::PostDominates(BasicBlock* postDominator, BasicBlock* postDominated)
 {
     assert(m_reverseDfsTree->Contains(postDominator) && m_reverseDfsTree->Contains(postDominated));
 
@@ -6427,7 +6427,7 @@ bool FlowGraphPostdominatorTree::PostDominates(BasicBlock* postDominator, BasicB
 // FlowGraphPostominatorTree::Dump: Dump a textual representation of the postdominator
 // tree.
 //
-void FlowGraphPostdominatorTree::Dump()
+void FlowGraphPostDominatorTree::Dump()
 {
     Compiler* comp = m_reverseDfsTree->GetCompiler();
 
@@ -6450,7 +6450,7 @@ void FlowGraphPostdominatorTree::Dump()
 #endif
 
 //------------------------------------------------------------------------
-// FlowGraphPostdominatorTree::Build: Compute the dominator tree for the blocks in
+// FlowGraphPostDominatorTree::Build: Compute the dominator tree for the blocks in
 // the DFS tree.
 //
 // Parameters:
@@ -6466,7 +6466,7 @@ void FlowGraphPostdominatorTree::Dump()
 //   This might require creating a scratch root block in case the first block
 //   has backedges or is in a try region.
 //
-FlowGraphPostdominatorTree* FlowGraphPostdominatorTree::Build(const FlowGraphReverseDfsTree* reverseDfsTree)
+FlowGraphPostDominatorTree* FlowGraphPostDominatorTree::Build(const FlowGraphReverseDfsTree* reverseDfsTree)
 {
     Compiler*    comp      = reverseDfsTree->GetCompiler();
     BasicBlock** postOrder = reverseDfsTree->GetPostOrder();
@@ -6617,11 +6617,11 @@ FlowGraphPostdominatorTree* FlowGraphPostdominatorTree::Build(const FlowGraphRev
     unsigned* preorderNums  = new (comp, CMK_DominatorMemory) unsigned[count];
     unsigned* postorderNums = new (comp, CMK_DominatorMemory) unsigned[count];
 
-    //    NumberDomTreeVisitor number(comp, preorderNums, postorderNums);
-    //    number.WalkTree(domTree);
+    NumberDomTreeVisitor number(comp, preorderNums, postorderNums);
+    number.WalkTree(domTree);
 
     return new (comp, CMK_DominatorMemory)
-        FlowGraphPostdominatorTree(reverseDfsTree, domTree, preorderNums, postorderNums);
+        FlowGraphPostDominatorTree(reverseDfsTree, domTree, preorderNums, postorderNums);
 }
 
 //------------------------------------------------------------------------

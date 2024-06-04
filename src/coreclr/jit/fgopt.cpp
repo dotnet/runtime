@@ -324,19 +324,19 @@ PhaseStatus Compiler::fgComputeDominators()
 }
 
 //-------------------------------------------------------------
-// fgComputePostdominators: Compute postdominators
+// fgComputePostDominators: Compute postdominators
 //
 // Returns:
 //    Suitable phase status.
 //
-PhaseStatus Compiler::fgComputePostdominators()
+PhaseStatus Compiler::fgComputePostDominators()
 {
     assert(m_dfsTree != nullptr);
 
     m_reverseDfsTree = fgComputeReverseDfs();
-    if (m_postdomTree == nullptr)
+    if (m_postDomTree == nullptr)
     {
-        m_postdomTree = FlowGraphPostdominatorTree::Build(m_reverseDfsTree);
+        m_postDomTree = FlowGraphPostDominatorTree::Build(m_reverseDfsTree);
     }
 
     // TODO: Postdominated by exception is interesting... the

@@ -4975,6 +4975,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         // Compute dominators and exceptional entry blocks
         //
         DoPhase(this, PHASE_COMPUTE_DOMINATORS, &Compiler::fgComputeDominators);
+
+        // Compute postdominators
+        //
+        DoPhase(this, PHASE_COMPUTE_POSTDOMINATORS, &Compiler::fgComputePostDominators);
     }
 
 #ifdef DEBUG

@@ -1548,7 +1548,7 @@ public:
     union
     {
         void*       bbSparseCountInfo; // Used early on by fgIncorporateEdgeCounts
-        BasicBlock* bbIPDom;           // closest postdominatorof block
+        BasicBlock* bbIPDom;           // closest postdominator of block
     };
 
     unsigned bbPreorderNum;  // the block's  preorder number in the graph [0...postOrderCount)
