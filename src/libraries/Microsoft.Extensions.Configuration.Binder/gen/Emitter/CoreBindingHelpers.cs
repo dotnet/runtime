@@ -410,6 +410,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         member,
                         member.Name,
                         sectionPathExpr: GetSectionPathFromConfigurationExpression(configKeyName),
+                        // Since we're binding to local variables, we can always get and set
                         canSet: true,
                         canGet: true,
                         InitializationKind.None);
@@ -872,6 +873,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 {
                     case ParsableFromStringSpec stringParsableType:
                         {
+                            // Reflection binder does not support binding to set-only properties
                             if (canSet && canGet)
                             {
                                 EmitBlankLineIfRequired();
