@@ -223,7 +223,7 @@ namespace ILCompiler
                     // Vector<T> Sizes
                     InstructionSet.X64_VectorT128 => 0,
                     InstructionSet.X64_VectorT256 => Avx2,
-                    InstructionSet.X64_VectorT512 => Avx512f,
+                    InstructionSet.X64_VectorT512 => Avx512,
 
                     _ => throw new NotSupportedException(((InstructionSet_X64)instructionSet).ToString())
                 };

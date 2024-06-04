@@ -263,7 +263,6 @@ int minipal_getcpufeatures(void)
                                                 if ((cpuidInfo[CPUID_EBX] & subsetMasks) == subsetMasks)
                                                 {
                                                     result |= XArchIntrinsicConstants_Avx512;
-                                                    result |= XArchIntrinsicConstants_VectorT512;
 
                                                     if ((cpuidInfo[CPUID_ECX] & (1 << 1)) != 0)                         // AVX512VBMI
                                                     {
