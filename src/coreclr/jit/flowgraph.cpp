@@ -6470,11 +6470,12 @@ void FlowGraphPostDominatorTree::Dump()
 //
 FlowGraphPostDominatorTree* FlowGraphPostDominatorTree::Build(const FlowGraphReverseDfsTree* reverseDfsTree)
 {
-    Compiler*    comp      = reverseDfsTree->GetCompiler();
-    BasicBlock** postOrder = reverseDfsTree->GetPostOrder();
-    unsigned     count     = reverseDfsTree->GetPostOrderCount();
+    Compiler*         comp       = reverseDfsTree->GetCompiler();
+    BasicBlock**      postOrder  = reverseDfsTree->GetPostOrder();
+    unsigned          count      = reverseDfsTree->GetPostOrderCount();
+    BasicBlock* const pseudoExit = reverseDfsTree->PseudoExit();
 
-    reverseDfsTree->PseudoExit()->bbIPDom = nullptr;
+    pseudoExit->bbIPDom = nullptr;
 
     // First compute immediate postdominators.
     unsigned numIters = 0;
@@ -6514,10 +6515,13 @@ FlowGraphPostDominatorTree* FlowGraphPostDominatorTree::Build(const FlowGraphRev
                 }
             };
 
-            if (block->KindIs(BBJ_RETURN, BBJ_THROW, BBJ_EHFAULTRET))
+            // Hopefully not too costly...
+            //
+            FlowEdge* pseudoExitEdge = comp->fgGetPredForBlock(pseudoExit, block);
+
+            if (pseudoExitEdge != nullptr)
             {
-                // The infinite loop edges...?
-                // We will need to track or flag those blocks
+                // This is an actual or implicit flow graph exit
                 //
                 visitSucc(reverseDfsTree->PseudoExit());
             }
@@ -6528,7 +6532,7 @@ FlowGraphPostDominatorTree* FlowGraphPostDominatorTree::Build(const FlowGraphRev
                     visitSucc(succ);
 
                     // All blocks in try, or just the first?
-                    // (if we knew where the exits were, maybe just those)
+                    // (if we knew where the try exits were, maybe just those)
                     //
                     if (comp->bbIsTryBeg(succ))
                     {

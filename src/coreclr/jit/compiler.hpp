@@ -4952,6 +4952,7 @@ unsigned Compiler::fgRunReverseDfs(VisitPreorder visitPreorder, VisitPostorder v
 
         if (block->KindIs(BBJ_RETURN, BBJ_THROW, BBJ_EHFAULTRET))
         {
+            JITDUMP("RDFS: adding pseudo exit-edge for " FMT_BB "\n", block->bbNum);
             fgAddRefPred(pseudoExit, block);
         }
     }
@@ -4966,10 +4967,16 @@ unsigned Compiler::fgRunReverseDfs(VisitPreorder visitPreorder, VisitPostorder v
         // If some forward reachable block is not reverse reachable,
         // we may have an infinite loop... process these now.
         //
-        for (BasicBlock* block : Blocks())
+        // We work in postorder here to try and find the "lowest" blocks first
+        // so as to minimize the number of pseudo-edges.
+        //
+        for (unsigned i = 0; i < m_dfsTree->GetPostOrderCount(); i++)
         {
-            if (m_dfsTree->Contains(block) && BitVecOps::TryAddElemD(&traits, visited, block->bbNum))
+            BasicBlock* const block = m_dfsTree->GetPostOrder(i);
+
+            if (BitVecOps::TryAddElemD(&traits, visited, block->bbNum))
             {
+                JITDUMP("RDFS: adding pseudo exit-edge for infinite loop to " FMT_BB "\n", block->bbNum);
                 fgAddRefPred(pseudoExit, block);
                 reverseDfsFrom(block);
             }
