@@ -274,6 +274,7 @@
       <EmccStackSize>5MB</EmccStackSize>
     </PropertyGroup>
     <ItemGroup>
+      <_EmccLinkFlags Include="-Wno-version-check" />
       <_EmccLinkFlags Include="-s INITIAL_MEMORY=$(EmccInitialHeapSize)" />
       <_EmccLinkFlags Include="-s STACK_SIZE=$(EmccStackSize)" />
       <_EmccCommonFlags Condition="'$(WasmEnableThreads)' == 'true'" Include="-s USE_PTHREADS=1" />
