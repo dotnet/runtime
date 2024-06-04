@@ -48,7 +48,7 @@ PTR_VOID GetThreadLocalStaticBaseNoCreate(Thread* pThread, TLSIndex index)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        MODE_COOPERATIVE;
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -64,49 +64,54 @@ PTR_VOID GetThreadLocalStaticBaseNoCreate(Thread* pThread, TLSIndex index)
 #endif
 
     PTR_ThreadLocalData pThreadLocalData = pThread->GetThreadLocalDataPtr();
-    if (pThreadLocalData == NULL)
-        return NULL;
-
-    if (index.GetTLSIndexType() == TLSIndexType::NonCollectible)
+    if (pThreadLocalData != NULL)
     {
-        PTRARRAYREF tlsArray = (PTRARRAYREF)UNCHECKED_OBJECTREF_TO_OBJECTREF(pThreadLocalData->pNonCollectibleTlsArrayData);
-        if (pThreadLocalData->cNonCollectibleTlsData <= index.GetIndexOffset())
+        if (index.GetTLSIndexType() == TLSIndexType::NonCollectible)
         {
-            return NULL;
-        }
-        pTLSBaseAddress = dac_cast<TADDR>(OBJECTREFToObject(tlsArray->GetAt(index.GetIndexOffset() - NUMBER_OF_TLSOFFSETS_NOT_USED_IN_NONCOLLECTIBLE_ARRAY)));
-    }
-    else if (index.GetTLSIndexType() == TLSIndexType::DirectOnThreadLocalData)
-    {
-        return dac_cast<PTR_VOID>((dac_cast<TADDR>(pThreadLocalData)) + index.GetIndexOffset());
-    }
-    else
-    {
-        int32_t cCollectibleTlsData = pThreadLocalData->cCollectibleTlsData;
-        if (cCollectibleTlsData <= index.GetIndexOffset())
-        {
-            return NULL;
-        }
-
-        TADDR pCollectibleTlsArrayData = dac_cast<TADDR>(pThreadLocalData->pCollectibleTlsArrayData);
-        pCollectibleTlsArrayData += index.GetIndexOffset() * sizeof(TADDR);
-        OBJECTHANDLE objHandle = *dac_cast<DPTR(OBJECTHANDLE)>(pCollectibleTlsArrayData);
-        if (IsHandleNullUnchecked(objHandle))
-            return NULL;
-        pTLSBaseAddress = dac_cast<TADDR>(OBJECTREFToObject(ObjectFromHandle(objHandle)));
-    }
-    if (pTLSBaseAddress == (TADDR)NULL)
-    {
-        // Maybe it is in the InFlightData
-        PTR_InFlightTLSData pInFlightData = pThreadLocalData->pInFlightData;
-        while (pInFlightData != NULL)
-        {
-            if (pInFlightData->tlsIndex == index)
+            PTR_ArrayBase tlsArray = (PTR_ArrayBase)pThreadLocalData->pNonCollectibleTlsArrayData;
+            if (pThreadLocalData->cNonCollectibleTlsData > index.GetIndexOffset())
             {
-                pTLSBaseAddress = dac_cast<TADDR>(OBJECTREFToObject(ObjectFromHandle(pInFlightData->hTLSData)));
-                break;
+                size_t arrayIndex = index.GetIndexOffset() - NUMBER_OF_TLSOFFSETS_NOT_USED_IN_NONCOLLECTIBLE_ARRAY;
+                TADDR arrayTargetAddress = dac_cast<TADDR>(tlsArray) + offsetof(PtrArray, m_Array);
+#ifdef DACCESS_COMPILE
+                __ArrayDPtr<_UNCHECKED_OBJECTREF> targetArray = dac_cast< __ArrayDPtr<_UNCHECKED_OBJECTREF> >(arrayTargetAddress);
+#else
+                _UNCHECKED_OBJECTREF* targetArray = reinterpret_cast<_UNCHECKED_OBJECTREF*>(arrayTargetAddress);
+#endif
+                pTLSBaseAddress = dac_cast<TADDR>(targetArray[arrayIndex]);
             }
-            pInFlightData = pInFlightData->pNext;
+        }
+        else if (index.GetTLSIndexType() == TLSIndexType::DirectOnThreadLocalData)
+        {
+            pTLSBaseAddress = dac_cast<TADDR>((dac_cast<TADDR>(pThreadLocalData)) + index.GetIndexOffset());
+        }
+        else
+        {
+            int32_t cCollectibleTlsData = pThreadLocalData->cCollectibleTlsData;
+            if (cCollectibleTlsData > index.GetIndexOffset())
+            {
+                TADDR pCollectibleTlsArrayData = dac_cast<TADDR>(pThreadLocalData->pCollectibleTlsArrayData);
+                pCollectibleTlsArrayData += index.GetIndexOffset() * sizeof(TADDR);
+                OBJECTHANDLE objHandle = *dac_cast<DPTR(OBJECTHANDLE)>(pCollectibleTlsArrayData);
+                if (!IsHandleNullUnchecked(objHandle))
+                {
+                    pTLSBaseAddress = dac_cast<TADDR>(ObjectFromHandleUnchecked(objHandle));
+                }
+            }
+        }
+        if (pTLSBaseAddress == (TADDR)NULL)
+        {
+            // Maybe it is in the InFlightData
+            PTR_InFlightTLSData pInFlightData = pThreadLocalData->pInFlightData;
+            while (pInFlightData != NULL)
+            {
+                if (pInFlightData->tlsIndex == index)
+                {
+                    pTLSBaseAddress = dac_cast<TADDR>(ObjectFromHandleUnchecked(pInFlightData->hTLSData));
+                    break;
+                }
+                pInFlightData = pInFlightData->pNext;
+            }
         }
     }
 
