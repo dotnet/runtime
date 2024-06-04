@@ -7,41 +7,41 @@ using System.Collections.ObjectModel;
 namespace System.Diagnostics.Metrics
 {
     /// <summary>
-    /// Contains settings used to advise metrics consumers how to construct storage for <see cref="Histogram{T}"/> instruments.
+    /// Contains configuration settings advised to be used by metrics consumers when recording measurements for a given <see cref="Instrument{T}"/>.
     /// </summary>
-    /// <typeparam name="T">Histogram value type.</typeparam>
-    public sealed class HistogramAdvice<T> where T : struct
+    /// <typeparam name="T">Instrument value type.</typeparam>
+    public sealed class InstrumentAdvice<T> where T : struct
     {
         /// <summary>
-        /// Constructs a new instance of <see cref="HistogramAdvice{T}"/>.
+        /// Constructs a new instance of <see cref="InstrumentAdvice{T}"/>.
         /// </summary>
         /// <remarks>
         /// Notes:
         /// <list type="bullet">
-        /// <item>An empty set of bucket boundaries hints that the histogram by default should NOT contain buckets and should only track count and sum values.</item>
-        /// <item>A set of distinct increasing values for bucket boundaries hints that the histogram should use those for its default bucket configuration.</item>
+        /// <item>An empty set of bucket boundaries hints that histogram instruments by default should NOT contain buckets and should only track count and sum values.</item>
+        /// <item>A set of distinct increasing values for histogram bucket boundaries hints that histogram instruments should use those for its default bucket configuration.</item>
         /// </list>
         /// </remarks>
-        /// <param name="explicitBucketBoundaries">Explicit bucket boundaries advised to be used with the histogram.</param>
-        public HistogramAdvice(IEnumerable<T> explicitBucketBoundaries)
+        /// <param name="histogramExplicitBucketBoundaries">Explicit bucket boundaries advised to be used with histogram instruments.</param>
+        public InstrumentAdvice(IEnumerable<T> histogramExplicitBucketBoundaries)
         {
-            if (explicitBucketBoundaries is null)
+            if (histogramExplicitBucketBoundaries is null)
             {
-                throw new ArgumentNullException(nameof(explicitBucketBoundaries));
+                throw new ArgumentNullException(nameof(histogramExplicitBucketBoundaries));
             }
 
-            List<T> explicitBucketBoundariesCopy = new List<T>(explicitBucketBoundaries);
+            List<T> explicitBucketBoundariesCopy = new List<T>(histogramExplicitBucketBoundaries);
 
             if (!IsSortedAndDistinct(explicitBucketBoundariesCopy))
             {
-                throw new ArgumentException(SR.InvalidHistogramExplicitBucketBoundaries, nameof(explicitBucketBoundaries));
+                throw new ArgumentException(SR.InvalidHistogramExplicitBucketBoundaries, nameof(histogramExplicitBucketBoundaries));
             }
 
-            ExplicitBucketBoundaries = new ReadOnlyCollection<T>(explicitBucketBoundariesCopy);
+            HistogramExplicitBucketBoundaries = new ReadOnlyCollection<T>(explicitBucketBoundariesCopy);
         }
 
         /// <summary>
-        /// Gets the explicit bucket boundaries advised to be used with the histogram.
+        /// Gets the explicit bucket boundaries advised to be used with histogram instruments.
         /// </summary>
         /// <remarks>
         /// Notes:
@@ -51,7 +51,7 @@ namespace System.Diagnostics.Metrics
         /// <item>A set of distinct increasing values for bucket boundaries hints that the histogram should use those for its default bucket configuration.</item>
         /// </list>
         /// </remarks>
-        public IReadOnlyList<T>? ExplicitBucketBoundaries { get; }
+        public IReadOnlyList<T>? HistogramExplicitBucketBoundaries { get; }
 
         private static bool IsSortedAndDistinct(List<T> values)
         {

@@ -188,11 +188,11 @@ namespace System.Diagnostics.Metrics
         /// <param name="unit">Optional instrument unit of measurements.</param>
         /// <param name="description">Optional instrument description.</param>
         /// <param name="tags">Optional tags to attach to the histogram.</param>
-        /// <param name="advice">Optional <see cref="HistogramAdvice{T}"/> to attach to the histogram.</param>
+        /// <param name="advice">Optional <see cref="InstrumentAdvice{T}"/> to attach to the histogram.</param>
         /// <remarks>
         /// Example uses for Histogram: the request duration and the size of the response payload.
         /// </remarks>
-        public Histogram<T> CreateHistogram<T>(string name, string? unit = default, string? description = default, IEnumerable<KeyValuePair<string, object?>>? tags = default, HistogramAdvice<T>? advice = default) where T : struct
+        public Histogram<T> CreateHistogram<T>(string name, string? unit = default, string? description = default, IEnumerable<KeyValuePair<string, object?>>? tags = default, InstrumentAdvice<T>? advice = default) where T : struct
                 => (Histogram<T>)GetOrCreateInstrument<T>(typeof(Histogram<T>), name, unit, description, tags, () => new Histogram<T>(this, name, unit, description, tags, advice));
 
         /// <summary>
