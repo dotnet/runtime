@@ -1133,6 +1133,9 @@ public:
         char        *name,                  // [IN] Variable name.
         mdLocalVariable *locVarToken);      // [OUT] Token of the defined variable.
 
+//*****************************************************************************
+// IILAsmPortablePdbWriter methods
+//*****************************************************************************
     STDMETHODIMP ComputeSha256PdbStreamChecksum(                                        // S_OK or error.
         HRESULT (*computeSha256)(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize), // [IN]
         BYTE (&checksum)[32]);                                                          // [OUT] 256-bit Pdb checksum

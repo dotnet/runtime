@@ -1835,7 +1835,7 @@ HRESULT Sha256Hash(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize)
     {
         goto cleanup;
     }
-    memcpy(pDst, hash, min(hashLength, dstSize));
+    memcpy(pDst, hash, std::min(hashLength, dstSize));
     status = STATUS_SUCCESS;
        
 cleanup:

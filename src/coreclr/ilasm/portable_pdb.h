@@ -63,10 +63,11 @@ private:
     BOOL            _DefineLocalScope(mdMethodDef methodDefToken, Scope* currScope);
 
 private:
-    IMetaDataEmit3* m_pdbEmitter;
-    PORT_PDB_STREAM m_pdbStream;
-    DocumentList    m_documentList;
-    Document*       m_currentDocument;
+    IMetaDataEmit3*          m_pdbEmitter;
+    IILAsmPortablePdbWriter* m_ilasmPdbWriter;
+    PORT_PDB_STREAM          m_pdbStream;
+    DocumentList             m_documentList;
+    Document*                m_currentDocument;
 };
 
 #endif

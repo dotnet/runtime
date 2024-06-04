@@ -101,6 +101,14 @@ HRESULT PortablePdbWriter::Init(IMetaDataDispenserEx2* mdDispenser)
         0,
         IID_IMetaDataEmit3,
         (IUnknown**)&m_pdbEmitter);
+
+    if (FAILED(hr)) goto exit;
+
+    hr = mdDispenser->DefinePortablePdbScope(
+        CLSID_CorMetaDataRuntime,
+        0,
+        IID_IILAsmPortablePdbWriter,
+        (IUnknown**)&m_ilasmPdbWriter);
 exit:
     return hr;
 }
@@ -155,13 +163,13 @@ exit:
 
 HRESULT PortablePdbWriter::ComputeSha256PdbStreamChecksum(BYTE(&checksum)[32])
 {
-    return m_pdbEmitter->ComputeSha256PdbStreamChecksum(Sha256Hash, checksum);
+    return m_ilasmPdbWriter->ComputeSha256PdbStreamChecksum(Sha256Hash, checksum);
 }
 
 HRESULT PortablePdbWriter::ChangePdbStreamGuid(REFGUID newGuid)
 {
     m_pdbStream.id.pdbGuid = newGuid;
-    return m_pdbEmitter->ChangePdbStreamGuid(newGuid);
+    return m_ilasmPdbWriter->ChangePdbStreamGuid(newGuid);
 }
 
 HRESULT PortablePdbWriter::DefineDocument(char* name, GUID* language)
