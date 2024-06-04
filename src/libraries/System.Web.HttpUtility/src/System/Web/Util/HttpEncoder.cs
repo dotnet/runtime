@@ -140,7 +140,7 @@ namespace System.Web.Util
 
             static string EncodeCore(ReadOnlySpan<char> value, int i, bool addDoubleQuotes)
             {
-                var vsb = new ValueStringBuilder(stackalloc char[512]);
+                var vsb = new ValueStringBuilder(stackalloc char[StackallocThreshold]);
                 if (addDoubleQuotes)
                 {
                     vsb.Append('"');
