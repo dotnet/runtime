@@ -62,7 +62,6 @@ namespace HostActivation.Tests
                 .And.HaveStdOutContaining(TestContext.MicrosoftNETCoreAppVersion);
         }
 
-
         [Fact]
         public void NoDepsJson_NoRuntimeConfig()
         {

@@ -114,7 +114,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
         public static class CetCompat
         {
             // We only support CET shadow stack compatibility for Windows x64 currently
-            public static bool IsSupported => OperatingSystem.IsWindows() && RuntimeInformation.ProcessArchitecture == Architecture.X64;
+            public static bool IsSupported => OperatingSystem.IsWindows() && TestContext.BuildArchitecture == "x64";
 
             // https://learn.microsoft.com/windows/win32/debug/pe-format#debug-type
             private const int IMAGE_DEBUG_TYPE_EX_DLLCHARACTERISTICS = 20;
