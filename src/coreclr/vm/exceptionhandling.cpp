@@ -8155,6 +8155,33 @@ static BOOL CheckExceptionInterception(StackFrameIterator* pStackFrameIterator, 
     return isIntercepted;
 }
 
+void FailFastIfCorruptingStateException(ExInfo *pExInfo)
+{
+    // Failfast if exception indicates corrupted process state
+    if (IsProcessCorruptedStateException(pExInfo->m_ExceptionCode, pExInfo->GetThrowable()))
+    {
+        OBJECTREF oThrowable = NULL;
+        SString message;
+
+        GCPROTECT_BEGIN(oThrowable);
+        oThrowable = pExInfo->GetThrowable();
+        if (oThrowable != NULL)
+        {
+            EX_TRY
+            {
+                GetExceptionMessage(oThrowable, message);
+            }
+            EX_CATCH
+            {
+            }
+            EX_END_CATCH(SwallowAllExceptions);
+        }
+        GCPROTECT_END();
+
+        EEPolicy::HandleFatalError(pExInfo->m_ExceptionCode, 0, (LPCWSTR)message, dac_cast<EXCEPTION_POINTERS*>(&pExInfo->m_ptrs));
+    }
+}
+
 static void NotifyExceptionPassStarted(StackFrameIterator *pThis, Thread *pThread, ExInfo *pExInfo)
 {
     if (pExInfo->m_passNumber == 1)
@@ -8295,6 +8322,8 @@ extern "C" bool QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStackwalk
     {
         GCX_COOP();
         UpdatePerformanceMetrics(&pThis->m_crawl, false, ((uint8_t)pExInfo->m_kind & (uint8_t)ExKind::RethrowFlag) == 0);
+
+        FailFastIfCorruptingStateException(pExInfo);
     }
 
     // Walk the stack until it finds the first managed method

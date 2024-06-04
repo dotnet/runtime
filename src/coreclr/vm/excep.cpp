@@ -6527,6 +6527,8 @@ static LONG HandleManagedFaultFilter(EXCEPTION_POINTERS* ep, LPVOID pv)
     return EXCEPTION_CONTINUE_SEARCH;
 }
 
+void FirstChanceExceptionNotification();
+
 void HandleManagedFaultNew(EXCEPTION_RECORD* pExceptionRecord, CONTEXT* pContext)
 {
     WRAPPER_NO_CONTRACT;
@@ -6556,6 +6558,8 @@ void HandleManagedFaultNew(EXCEPTION_RECORD* pExceptionRecord, CONTEXT* pContext
     DECLARE_ARGHOLDER_ARRAY(args, 2);
     args[ARGNUM_0] = DWORD_TO_ARGHOLDER(exceptionCode);
     args[ARGNUM_1] = PTR_TO_ARGHOLDER(&exInfo);
+
+    FirstChanceExceptionNotification();
 
     pThread->IncPreventAbort();
 
