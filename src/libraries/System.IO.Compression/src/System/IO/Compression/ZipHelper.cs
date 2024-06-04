@@ -13,7 +13,7 @@ namespace System.IO.Compression
         internal const uint Mask32Bit = 0xFFFFFFFF;
         internal const ushort Mask16Bit = 0xFFFF;
 
-        private const int BackwardsSeekingBufferSize = 32;
+        private const int BackwardsSeekingBufferSize = 4096;
 
         internal const int ValidZipDate_YearMin = 1980;
         internal const int ValidZipDate_YearMax = 2107;
@@ -36,9 +36,9 @@ namespace System.IO.Compression
         /// <summary>
         /// Reads exactly bytesToRead out of stream, unless it is out of bytes
         /// </summary>
-        internal static void ReadBytes(Stream stream, byte[] buffer, int bytesToRead)
+        internal static void ReadBytes(Stream stream, Span<byte> buffer, int bytesToRead)
         {
-            int bytesRead = stream.ReadAtLeast(buffer.AsSpan(0, bytesToRead), bytesToRead, throwOnEndOfStream: false);
+            int bytesRead = stream.ReadAtLeast(buffer, bytesToRead, throwOnEndOfStream: false);
             if (bytesRead < bytesToRead)
             {
                 throw new IOException(SR.UnexpectedEndOfStream);
@@ -103,39 +103,36 @@ namespace System.IO.Compression
         // assumes maxBytesToRead is positive, ensures to not read beyond the provided max number of bytes,
         // if the signature is found then returns true and positions stream at first byte of signature
         // if the signature is not found, returns false
-        internal static bool SeekBackwardsToSignature(Stream stream, uint signatureToFind, int maxBytesToRead)
+        internal static bool SeekBackwardsToSignature(Stream stream, ReadOnlySpan<byte> signatureToFind, int maxBytesToRead)
         {
-            Debug.Assert(signatureToFind != 0);
+            Debug.Assert(signatureToFind.Length != 0);
             Debug.Assert(maxBytesToRead > 0);
 
             int bufferPointer = 0;
-            uint currentSignature = 0;
             byte[] buffer = new byte[BackwardsSeekingBufferSize];
 
             bool outOfBytes = false;
             bool signatureFound = false;
 
             int bytesRead = 0;
+            int duplicateBytesRead = 0;
+
             while (!signatureFound && !outOfBytes && bytesRead <= maxBytesToRead)
             {
-                outOfBytes = SeekBackwardsAndRead(stream, buffer, out bufferPointer);
+                outOfBytes = SeekBackwardsAndRead(stream, buffer, signatureToFind.Length);
 
                 Debug.Assert(bufferPointer < buffer.Length);
 
-                while (bufferPointer >= 0 && !signatureFound)
+                bufferPointer = buffer.AsSpan().LastIndexOf(signatureToFind);
+                bytesRead += (buffer.Length - duplicateBytesRead);
+
+                if (bufferPointer != -1)
                 {
-                    currentSignature = (currentSignature << 8) | ((uint)buffer[bufferPointer]);
-                    if (currentSignature == signatureToFind)
-                    {
-                        signatureFound = true;
-                    }
-                    else
-                    {
-                        bufferPointer--;
-                    }
+                    signatureFound = true;
+                    break;
                 }
 
-                bytesRead += buffer.Length;
+                duplicateBytesRead = signatureToFind.Length;
             }
 
             if (!signatureFound)
@@ -149,34 +146,16 @@ namespace System.IO.Compression
             }
         }
 
-        // Skip to a further position downstream (without relying on the stream being seekable)
-        internal static void AdvanceToPosition(this Stream stream, long position)
-        {
-            long numBytesLeft = position - stream.Position;
-            Debug.Assert(numBytesLeft >= 0);
-            if (numBytesLeft > 0)
-            {
-                byte[] buffer = new byte[64];
-                do
-                {
-                    int numBytesToSkip = (int)Math.Min(numBytesLeft, buffer.Length);
-                    int numBytesActuallySkipped = stream.Read(buffer, 0, numBytesToSkip);
-                    if (numBytesActuallySkipped == 0)
-                        throw new IOException(SR.UnexpectedEndOfStream);
-                    numBytesLeft -= numBytesActuallySkipped;
-                } while (numBytesLeft > 0);
-            }
-        }
-
         // Returns true if we are out of bytes
-        private static bool SeekBackwardsAndRead(Stream stream, byte[] buffer, out int bufferPointer)
+        // Allows successive buffers to overlap by a number of bytes (to handle cases where the
+        // value being searched for straddles buffers.)
+        private static bool SeekBackwardsAndRead(Stream stream, byte[] buffer, int overlap)
         {
             if (stream.Position >= buffer.Length)
             {
-                stream.Seek(-buffer.Length, SeekOrigin.Current);
+                stream.Seek(-(buffer.Length - overlap), SeekOrigin.Current);
                 ReadBytes(stream, buffer, buffer.Length);
                 stream.Seek(-buffer.Length, SeekOrigin.Current);
-                bufferPointer = buffer.Length - 1;
                 return false;
             }
             else
@@ -185,7 +164,6 @@ namespace System.IO.Compression
                 stream.Seek(0, SeekOrigin.Begin);
                 ReadBytes(stream, buffer, bytesToRead);
                 stream.Seek(0, SeekOrigin.Begin);
-                bufferPointer = bytesToRead - 1;
                 return true;
             }
         }

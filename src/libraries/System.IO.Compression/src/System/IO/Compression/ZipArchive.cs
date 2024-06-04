@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace System.IO.Compression
@@ -23,9 +24,10 @@ namespace System.IO.Compression
         private readonly Dictionary<string, ZipArchiveEntry> _entriesDictionary;
         private bool _readEntries;
         private readonly bool _leaveOpen;
-        private long _centralDirectoryStart; //only valid after ReadCentralDirectory
+        private long _centralDirectoryStart; // only valid after ReadCentralDirectory
+        private long _expectedCentralDirectorySize; // only valid after ReadCentralDirectory
         private bool _isDisposed;
-        private uint _numberOfThisDisk; //only valid after ReadCentralDirectory
+        private uint _numberOfThisDisk; // only valid after ReadCentralDirectory
         private long _expectedNumberOfEntries;
         private readonly Stream? _backingStream;
         private byte[] _archiveComment;
@@ -485,25 +487,71 @@ namespace System.IO.Compression
         {
             try
             {
-                // assume ReadEndOfCentralDirectory has been called and has populated _centralDirectoryStart
+                const int ReadBufferSize = 4096;
+
+                // assume ReadEndOfCentralDirectory has been called and has populated _centralDirectoryStart and _expectedCentralDirectorySize
 
                 _archiveStream.Seek(_centralDirectoryStart, SeekOrigin.Begin);
 
                 long numberOfEntries = 0;
-
-                Debug.Assert(_archiveReader != null);
-                //read the central directory
-                ZipCentralDirectoryFileHeader currentHeader;
                 bool saveExtraFieldsAndComments = Mode == ZipArchiveMode.Update;
-                while (ZipCentralDirectoryFileHeader.TryReadBlock(_archiveReader,
-                                                        saveExtraFieldsAndComments, out currentHeader))
+
+                bool continueReadingCentralDirectory = true;
+                Span<byte> fileBuffer = new byte[ReadBufferSize];
+                // total bytes read from central directory
+                int bytesRead = 0;
+                // current position in the current buffer
+                int currPosition = 0;
+                // total bytes read from all file headers starting in the current buffer
+                int bytesConsumed = 0;
+
+                _entries.Clear();
+                _entriesDictionary.Clear();
+
+                // read the central directory
+                while (continueReadingCentralDirectory)
                 {
-                    AddEntry(new ZipArchiveEntry(this, currentHeader));
-                    numberOfEntries++;
+                    int currBytesRead = _archiveStream.Read(fileBuffer);
+                    ReadOnlySpan<byte> sizedFileBuffer = fileBuffer.Slice(0, currBytesRead);
+
+                    // the buffer read must always be large enough to fit the constant section size of at least one header
+                    continueReadingCentralDirectory = continueReadingCentralDirectory
+                        && sizedFileBuffer.Length >= ZipCentralDirectoryFileHeader.BlockConstantSectionSize;
+
+                    while (continueReadingCentralDirectory
+                        && currPosition + ZipCentralDirectoryFileHeader.BlockConstantSectionSize < sizedFileBuffer.Length)
+                    {
+                        ZipCentralDirectoryFileHeader currentHeader = default;
+
+                        continueReadingCentralDirectory = continueReadingCentralDirectory &&
+                            ZipCentralDirectoryFileHeader.TryReadBlock(sizedFileBuffer.Slice(currPosition), _archiveStream,
+                            saveExtraFieldsAndComments, out bytesConsumed, out currentHeader);
+
+                        if (!continueReadingCentralDirectory)
+                        {
+                            break;
+                        }
+
+                        AddEntry(new ZipArchiveEntry(this, currentHeader));
+                        numberOfEntries++;
+                        if (numberOfEntries > _expectedNumberOfEntries)
+                        {
+                            throw new InvalidDataException(SR.NumEntriesWrong);
+                        }
+
+                        currPosition += bytesConsumed;
+                        bytesRead += bytesConsumed;
+                    }
+
+                    currPosition = 0;
                 }
 
-                if (numberOfEntries != _expectedNumberOfEntries)
+                if (numberOfEntries < _expectedNumberOfEntries)
+                {
                     throw new InvalidDataException(SR.NumEntriesWrong);
+                }
+
+                _archiveStream.Seek(_centralDirectoryStart + bytesRead, SeekOrigin.Begin);
             }
             catch (EndOfStreamException ex)
             {
@@ -526,16 +574,15 @@ namespace System.IO.Compression
                 // If the EOCD has the minimum possible size (no zip file comment), then exactly the previous 4 bytes will contain the signature
                 // But if the EOCD has max possible size, the signature should be found somewhere in the previous 64K + 4 bytes
                 if (!ZipHelper.SeekBackwardsToSignature(_archiveStream,
-                        ZipEndOfCentralDirectoryBlock.SignatureConstant,
-                        ZipEndOfCentralDirectoryBlock.ZipFileCommentMaxLength + ZipEndOfCentralDirectoryBlock.SignatureSize))
+                        ZipEndOfCentralDirectoryBlock.SignatureConstantBytes,
+                        ZipEndOfCentralDirectoryBlock.ZipFileCommentMaxLength + ZipEndOfCentralDirectoryBlock.SignatureConstantBytes.Length))
                     throw new InvalidDataException(SR.EOCDNotFound);
 
                 long eocdStart = _archiveStream.Position;
 
-                Debug.Assert(_archiveReader != null);
                 // read the EOCD
                 ZipEndOfCentralDirectoryBlock eocd;
-                bool eocdProper = ZipEndOfCentralDirectoryBlock.TryReadBlock(_archiveReader, out eocd);
+                bool eocdProper = ZipEndOfCentralDirectoryBlock.TryReadBlock(_archiveStream, out eocd);
                 Debug.Assert(eocdProper); // we just found this using the signature finder, so it should be okay
 
                 if (eocd.NumberOfThisDisk != eocd.NumberOfTheDiskWithTheStartOfTheCentralDirectory)
@@ -543,6 +590,7 @@ namespace System.IO.Compression
 
                 _numberOfThisDisk = eocd.NumberOfThisDisk;
                 _centralDirectoryStart = eocd.OffsetOfStartOfCentralDirectoryWithRespectToTheStartingDiskNumber;
+                _expectedCentralDirectorySize = eocd.SizeOfCentralDirectory;
 
                 if (eocd.NumberOfEntriesInTheCentralDirectory != eocd.NumberOfEntriesInTheCentralDirectoryOnThisDisk)
                     throw new InvalidDataException(SR.SplitSpanned);
@@ -587,14 +635,12 @@ namespace System.IO.Compression
                 // Exactly the previous 4 bytes should contain the Zip64-EOCDL signature
                 // if we don't find it, assume it doesn't exist and use data from normal EOCD
                 if (ZipHelper.SeekBackwardsToSignature(_archiveStream,
-                        Zip64EndOfCentralDirectoryLocator.SignatureConstant,
-                        Zip64EndOfCentralDirectoryLocator.SignatureSize))
+                        Zip64EndOfCentralDirectoryLocator.SignatureConstantBytes,
+                        Zip64EndOfCentralDirectoryLocator.SignatureConstantBytes.Length))
                 {
-                    Debug.Assert(_archiveReader != null);
-
                     // use locator to get to Zip64-EOCD
                     Zip64EndOfCentralDirectoryLocator locator;
-                    bool zip64eocdLocatorProper = Zip64EndOfCentralDirectoryLocator.TryReadBlock(_archiveReader, out locator);
+                    bool zip64eocdLocatorProper = Zip64EndOfCentralDirectoryLocator.TryReadBlock(_archiveStream, out locator);
                     Debug.Assert(zip64eocdLocatorProper); // we just found this using the signature finder, so it should be okay
 
                     if (locator.OffsetOfZip64EOCD > long.MaxValue)
@@ -607,7 +653,7 @@ namespace System.IO.Compression
                     // Read Zip64 End of Central Directory Record
 
                     Zip64EndOfCentralDirectoryRecord record;
-                    if (!Zip64EndOfCentralDirectoryRecord.TryReadBlock(_archiveReader, out record))
+                    if (!Zip64EndOfCentralDirectoryRecord.TryReadBlock(_archiveStream, out record))
                         throw new InvalidDataException(SR.Zip64EOCDNotWhereExpected);
 
                     _numberOfThisDisk = record.NumberOfThisDisk;
@@ -623,6 +669,7 @@ namespace System.IO.Compression
 
                     _expectedNumberOfEntries = (long)record.NumberOfEntriesTotal;
                     _centralDirectoryStart = (long)record.OffsetOfCentralDirectory;
+                    _expectedCentralDirectorySize = (long)record.SizeOfCentralDirectory;
                 }
             }
         }

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics;
 
@@ -24,10 +25,13 @@ namespace System.IO.Compression
 
         public void WriteBlock(Stream stream)
         {
-            BinaryWriter writer = new BinaryWriter(stream);
-            writer.Write(Tag);
-            writer.Write(Size);
-            writer.Write(Data);
+            Span<byte> extraFieldHeader = stackalloc byte[SizeOfHeader];
+
+            BinaryPrimitives.WriteUInt16LittleEndian(extraFieldHeader, _tag);
+            BinaryPrimitives.WriteUInt16LittleEndian(extraFieldHeader.Slice(sizeof(ushort)), _size);
+
+            stream.Write(extraFieldHeader);
+            stream.Write(Data);
         }
 
         // shouldn't ever read the byte at position endExtraField
@@ -49,6 +53,49 @@ namespace System.IO.Compression
 
             field._data = reader.ReadBytes(field._size);
             return true;
+        }
+
+        // assumes that bytes starts at the beginning of an extra field subfield
+        public static bool TryReadBlock(ReadOnlySpan<byte> bytes, out int bytesConsumed, out ZipGenericExtraField field)
+        {
+            field = default;
+            bytesConsumed = 0;
+
+            // not enough bytes to read tag + size
+            if (bytes.Length < sizeof(ushort) + sizeof(ushort))
+            {
+                return false;
+            }
+
+            field._tag = BinaryPrimitives.ReadUInt16LittleEndian(bytes);
+            bytesConsumed += sizeof(ushort);
+
+            field._size = BinaryPrimitives.ReadUInt16LittleEndian(bytes.Slice(bytesConsumed));
+            bytesConsumed += sizeof(ushort);
+
+            // not enough byte to read the data
+            if ((bytes.Length - sizeof(ushort) - sizeof(ushort)) < field._size)
+            {
+                return false;
+            }
+
+            field._data = bytes.Slice(bytesConsumed, field._size).ToArray();
+            bytesConsumed += field._size;
+            return true;
+        }
+
+        public static List<ZipGenericExtraField> ParseExtraField(ReadOnlySpan<byte> extraFieldData)
+        {
+            List<ZipGenericExtraField> extraFields = new List<ZipGenericExtraField>();
+            int totalBytesConsumed = 0;
+
+            while (TryReadBlock(extraFieldData.Slice(totalBytesConsumed), out int currBytesConsumed, out ZipGenericExtraField field))
+            {
+                totalBytesConsumed += currBytesConsumed;
+                extraFields.Add(field);
+            }
+
+            return extraFields;
         }
 
         // shouldn't ever read the byte at position endExtraField
@@ -139,21 +186,21 @@ namespace System.IO.Compression
         //
         // If there are more than one Zip64 extra fields, we take the first one that has the expected size
         //
-        public static Zip64ExtraField GetJustZip64Block(Stream extraFieldStream,
+        public static Zip64ExtraField GetJustZip64Block(ReadOnlySpan<byte> extraFieldData,
             bool readUncompressedSize, bool readCompressedSize,
             bool readLocalHeaderOffset, bool readStartDiskNumber)
         {
             Zip64ExtraField zip64Field;
-            using (BinaryReader reader = new BinaryReader(extraFieldStream))
+            int totalBytesConsumed = 0;
+
+            while (ZipGenericExtraField.TryReadBlock(extraFieldData.Slice(totalBytesConsumed), out int currBytesConsumed, out ZipGenericExtraField currentExtraField))
             {
-                ZipGenericExtraField currentExtraField;
-                while (ZipGenericExtraField.TryReadBlock(reader, extraFieldStream.Length, out currentExtraField))
+                totalBytesConsumed += currBytesConsumed;
+
+                if (TryGetZip64BlockFromGenericExtraField(currentExtraField, readUncompressedSize,
+                    readCompressedSize, readLocalHeaderOffset, readStartDiskNumber, out zip64Field))
                 {
-                    if (TryGetZip64BlockFromGenericExtraField(currentExtraField, readUncompressedSize,
-                                readCompressedSize, readLocalHeaderOffset, readStartDiskNumber, out zip64Field))
-                    {
-                        return zip64Field;
-                    }
+                    return zip64Field;
                 }
             }
 
@@ -184,78 +231,76 @@ namespace System.IO.Compression
 
             zip64Block._size = extraField.Size;
 
-            using (MemoryStream ms = new MemoryStream(extraField.Data))
-            using (BinaryReader reader = new BinaryReader(ms))
-            {
-                // The spec section 4.5.3:
-                //      The order of the fields in the zip64 extended
-                //      information record is fixed, but the fields MUST
-                //      only appear if the corresponding Local or Central
-                //      directory record field is set to 0xFFFF or 0xFFFFFFFF.
-                // However tools commonly write the fields anyway; the prevailing convention
-                // is to respect the size, but only actually use the values if their 32 bit
-                // values were all 0xFF.
+            ReadOnlySpan<byte> data = extraField.Data;
 
-                if (extraField.Size < sizeof(long))
-                    return true;
+            // The spec section 4.5.3:
+            //      The order of the fields in the zip64 extended
+            //      information record is fixed, but the fields MUST
+            //      only appear if the corresponding Local or Central
+            //      directory record field is set to 0xFFFF or 0xFFFFFFFF.
+            // However tools commonly write the fields anyway; the prevailing convention
+            // is to respect the size, but only actually use the values if their 32 bit
+            // values were all 0xFF.
 
-                // Advancing the stream (by reading from it) is possible only when:
-                // 1. There is an explicit ask to do that (valid files, corresponding boolean flag(s) set to true).
-                // 2. When the size indicates that all the information is available ("slightly invalid files").
-                bool readAllFields = extraField.Size >= sizeof(long) + sizeof(long) + sizeof(long) + sizeof(int);
-
-                if (readUncompressedSize)
-                {
-                    zip64Block._uncompressedSize = reader.ReadInt64();
-                }
-                else if (readAllFields)
-                {
-                    _ = reader.ReadInt64();
-                }
-
-                if (ms.Position > extraField.Size - sizeof(long))
-                    return true;
-
-                if (readCompressedSize)
-                {
-                    zip64Block._compressedSize = reader.ReadInt64();
-                }
-                else if (readAllFields)
-                {
-                    _ = reader.ReadInt64();
-                }
-
-                if (ms.Position > extraField.Size - sizeof(long))
-                    return true;
-
-                if (readLocalHeaderOffset)
-                {
-                    zip64Block._localHeaderOffset = reader.ReadInt64();
-                }
-                else if (readAllFields)
-                {
-                    _ = reader.ReadInt64();
-                }
-
-                if (ms.Position > extraField.Size - sizeof(int))
-                    return true;
-
-                if (readStartDiskNumber)
-                {
-                    zip64Block._startDiskNumber = reader.ReadUInt32();
-                }
-                else if (readAllFields)
-                {
-                    _ = reader.ReadInt32();
-                }
-
-                // original values are unsigned, so implies value is too big to fit in signed integer
-                if (zip64Block._uncompressedSize < 0) throw new InvalidDataException(SR.FieldTooBigUncompressedSize);
-                if (zip64Block._compressedSize < 0) throw new InvalidDataException(SR.FieldTooBigCompressedSize);
-                if (zip64Block._localHeaderOffset < 0) throw new InvalidDataException(SR.FieldTooBigLocalHeaderOffset);
-
+            if (data.Length < sizeof(long))
                 return true;
+
+            // Advancing the stream (by reading from it) is possible only when:
+            // 1. There is an explicit ask to do that (valid files, corresponding boolean flag(s) set to true).
+            // 2. When the size indicates that all the information is available ("slightly invalid files").
+            bool readAllFields = extraField.Size >= sizeof(long) + sizeof(long) + sizeof(long) + sizeof(int);
+
+            if (readUncompressedSize)
+            {
+                zip64Block._uncompressedSize = BinaryPrimitives.ReadInt64LittleEndian(data);
+                data = data.Slice(sizeof(long));
             }
+            else if (readAllFields)
+            {
+                data = data.Slice(sizeof(long));
+            }
+
+            if (data.Length < sizeof(long))
+                return true;
+
+            if (readCompressedSize)
+            {
+                zip64Block._compressedSize = BinaryPrimitives.ReadInt64LittleEndian(data);
+                data = data.Slice(sizeof(long));
+            }
+            else if (readAllFields)
+            {
+                data = data.Slice(sizeof(long));
+            }
+
+            if (data.Length < sizeof(long))
+                return true;
+
+            if (readLocalHeaderOffset)
+            {
+                zip64Block._localHeaderOffset = BinaryPrimitives.ReadInt64LittleEndian(data);
+                data = data.Slice(sizeof(long));
+            }
+            else if (readAllFields)
+            {
+                data = data.Slice(sizeof(long));
+            }
+
+            if (data.Length < sizeof(int))
+                return true;
+
+            if (readStartDiskNumber)
+            {
+                zip64Block._startDiskNumber = BinaryPrimitives.ReadUInt32LittleEndian(data);
+            }
+
+            // original values are unsigned, so implies value is too big to fit in signed integer
+            if (zip64Block._uncompressedSize < 0) throw new InvalidDataException(SR.FieldTooBigUncompressedSize);
+            if (zip64Block._compressedSize < 0) throw new InvalidDataException(SR.FieldTooBigCompressedSize);
+            if (zip64Block._localHeaderOffset < 0) throw new InvalidDataException(SR.FieldTooBigLocalHeaderOffset);
+
+            return true;
+
         }
 
         public static Zip64ExtraField GetAndRemoveZip64Block(List<ZipGenericExtraField> extraFields,
@@ -307,53 +352,111 @@ namespace System.IO.Compression
 
         public void WriteBlock(Stream stream)
         {
-            BinaryWriter writer = new BinaryWriter(stream);
-            writer.Write(TagConstant);
-            writer.Write(_size);
-            if (_uncompressedSize != null) writer.Write(_uncompressedSize.Value);
-            if (_compressedSize != null) writer.Write(_compressedSize.Value);
-            if (_localHeaderOffset != null) writer.Write(_localHeaderOffset.Value);
-            if (_startDiskNumber != null) writer.Write(_startDiskNumber.Value);
+            Span<byte> extraFieldData = stackalloc byte[TotalSize];
+            int offset = 0;
+
+            BinaryPrimitives.WriteUInt16LittleEndian(extraFieldData, TagConstant);
+            offset += sizeof(ushort);
+
+            BinaryPrimitives.WriteUInt16LittleEndian(extraFieldData.Slice(offset), _size);
+            offset += sizeof(ushort);
+
+            if (_uncompressedSize != null)
+            {
+                BinaryPrimitives.WriteInt64LittleEndian(extraFieldData.Slice(offset), _uncompressedSize.Value);
+                offset += sizeof(long);
+            }
+
+            if (_compressedSize != null)
+            {
+                BinaryPrimitives.WriteInt64LittleEndian(extraFieldData.Slice(offset), _compressedSize.Value);
+                offset += sizeof(long);
+            }
+
+            if (_localHeaderOffset != null)
+            {
+                BinaryPrimitives.WriteInt64LittleEndian(extraFieldData.Slice(offset), _localHeaderOffset.Value);
+                offset += sizeof(long);
+            }
+
+            if (_startDiskNumber != null)
+            {
+                BinaryPrimitives.WriteUInt32LittleEndian(extraFieldData.Slice(offset), _startDiskNumber.Value);
+                offset += sizeof(long);
+            }
+
+            stream.Write(extraFieldData);
         }
     }
 
     internal struct Zip64EndOfCentralDirectoryLocator
     {
         public const uint SignatureConstant = 0x07064B50;
+        public static ReadOnlySpan<byte> SignatureConstantBytes => [0x50, 0x4B, 0x06, 0x07];
         public const int SignatureSize = sizeof(uint);
 
+        public const int BlockConstantSectionSize = 20;
         public const int SizeOfBlockWithoutSignature = 16;
 
         public uint NumberOfDiskWithZip64EOCD;
         public ulong OffsetOfZip64EOCD;
         public uint TotalNumberOfDisks;
 
-        public static bool TryReadBlock(BinaryReader reader, out Zip64EndOfCentralDirectoryLocator zip64EOCDLocator)
+        public static bool TryReadBlock(Stream stream, out Zip64EndOfCentralDirectoryLocator zip64EOCDLocator)
         {
-            zip64EOCDLocator = default;
+            Span<byte> blockContents = stackalloc byte[BlockConstantSectionSize];
+            int bytesRead;
 
-            if (reader.ReadUInt32() != SignatureConstant)
+            zip64EOCDLocator = default;
+            bytesRead = stream.Read(blockContents);
+
+            if (bytesRead < BlockConstantSectionSize)
                 return false;
 
-            zip64EOCDLocator.NumberOfDiskWithZip64EOCD = reader.ReadUInt32();
-            zip64EOCDLocator.OffsetOfZip64EOCD = reader.ReadUInt64();
-            zip64EOCDLocator.TotalNumberOfDisks = reader.ReadUInt32();
+            if (!blockContents.StartsWith(SignatureConstantBytes))
+                return false;
+
+            blockContents = blockContents.Slice(SignatureConstantBytes.Length);
+
+            zip64EOCDLocator.NumberOfDiskWithZip64EOCD = BinaryPrimitives.ReadUInt32LittleEndian(blockContents);
+            blockContents = blockContents.Slice(sizeof(uint));
+
+            zip64EOCDLocator.OffsetOfZip64EOCD = BinaryPrimitives.ReadUInt64LittleEndian(blockContents);
+            blockContents = blockContents.Slice(sizeof(ulong));
+
+            zip64EOCDLocator.TotalNumberOfDisks = BinaryPrimitives.ReadUInt32LittleEndian(blockContents);
             return true;
         }
 
         public static void WriteBlock(Stream stream, long zip64EOCDRecordStart)
         {
-            BinaryWriter writer = new BinaryWriter(stream);
-            writer.Write(SignatureConstant);
-            writer.Write((uint)0); // number of disk with start of zip64 eocd
-            writer.Write(zip64EOCDRecordStart);
-            writer.Write((uint)1); // total number of disks
+            Span<byte> blockContents = stackalloc byte[BlockConstantSectionSize];
+            Span<byte> writeSegment = blockContents;
+
+            SignatureConstantBytes.CopyTo(writeSegment);
+            writeSegment = writeSegment.Slice(SignatureConstantBytes.Length);
+
+            // number of disk with start of zip64 eocd
+            BinaryPrimitives.WriteUInt32LittleEndian(writeSegment, 0);
+            writeSegment = writeSegment.Slice(sizeof(uint));
+
+            BinaryPrimitives.WriteInt64LittleEndian(writeSegment, zip64EOCDRecordStart);
+            writeSegment = writeSegment.Slice(sizeof(long));
+
+            // total number of disks
+            BinaryPrimitives.WriteUInt32LittleEndian(writeSegment, 1);
+
+            stream.Write(blockContents);
         }
     }
 
     internal struct Zip64EndOfCentralDirectoryRecord
     {
-        private const uint SignatureConstant = 0x06064B50;
+        // The Zip File Format Specification references 0x06054B50, this is a big endian representation.
+        // ZIP files store values in little endian, so this is reversed.
+        public static ReadOnlySpan<byte> SignatureConstantBytes => [0x50, 0x4B, 0x06, 0x06];
+
+        public const int BlockConstantSectionSize = 56;
         private const ulong NormalSize = 0x2C; // the size of the data excluding the size/signature fields if no extra data included
 
         public ulong SizeOfThisRecord;
@@ -366,41 +469,94 @@ namespace System.IO.Compression
         public ulong SizeOfCentralDirectory;
         public ulong OffsetOfCentralDirectory;
 
-        public static bool TryReadBlock(BinaryReader reader, out Zip64EndOfCentralDirectoryRecord zip64EOCDRecord)
+        public static bool TryReadBlock(Stream stream, out Zip64EndOfCentralDirectoryRecord zip64EOCDRecord)
         {
-            zip64EOCDRecord = default;
+            Span<byte> blockContents = stackalloc byte[BlockConstantSectionSize];
+            int bytesRead;
 
-            if (reader.ReadUInt32() != SignatureConstant)
+            zip64EOCDRecord = default;
+            bytesRead = stream.Read(blockContents);
+
+            if (bytesRead < BlockConstantSectionSize)
                 return false;
 
-            zip64EOCDRecord.SizeOfThisRecord = reader.ReadUInt64();
-            zip64EOCDRecord.VersionMadeBy = reader.ReadUInt16();
-            zip64EOCDRecord.VersionNeededToExtract = reader.ReadUInt16();
-            zip64EOCDRecord.NumberOfThisDisk = reader.ReadUInt32();
-            zip64EOCDRecord.NumberOfDiskWithStartOfCD = reader.ReadUInt32();
-            zip64EOCDRecord.NumberOfEntriesOnThisDisk = reader.ReadUInt64();
-            zip64EOCDRecord.NumberOfEntriesTotal = reader.ReadUInt64();
-            zip64EOCDRecord.SizeOfCentralDirectory = reader.ReadUInt64();
-            zip64EOCDRecord.OffsetOfCentralDirectory = reader.ReadUInt64();
+            if (!blockContents.StartsWith(SignatureConstantBytes))
+                return false;
+
+            blockContents = blockContents.Slice(SignatureConstantBytes.Length);
+
+            zip64EOCDRecord.SizeOfThisRecord = BinaryPrimitives.ReadUInt64LittleEndian(blockContents);
+            blockContents = blockContents.Slice(sizeof(ulong));
+
+            zip64EOCDRecord.VersionMadeBy = BinaryPrimitives.ReadUInt16LittleEndian(blockContents);
+            blockContents = blockContents.Slice(sizeof(ushort));
+
+            zip64EOCDRecord.VersionNeededToExtract = BinaryPrimitives.ReadUInt16LittleEndian(blockContents);
+            blockContents = blockContents.Slice(sizeof(ushort));
+
+            zip64EOCDRecord.NumberOfThisDisk = BinaryPrimitives.ReadUInt32LittleEndian(blockContents);
+            blockContents = blockContents.Slice(sizeof(uint));
+
+            zip64EOCDRecord.NumberOfDiskWithStartOfCD = BinaryPrimitives.ReadUInt32LittleEndian(blockContents);
+            blockContents = blockContents.Slice(sizeof(uint));
+
+            zip64EOCDRecord.NumberOfEntriesOnThisDisk = BinaryPrimitives.ReadUInt64LittleEndian(blockContents);
+            blockContents = blockContents.Slice(sizeof(ulong));
+
+            zip64EOCDRecord.NumberOfEntriesTotal = BinaryPrimitives.ReadUInt64LittleEndian(blockContents);
+            blockContents = blockContents.Slice(sizeof(ulong));
+
+            zip64EOCDRecord.SizeOfCentralDirectory = BinaryPrimitives.ReadUInt64LittleEndian(blockContents);
+            blockContents = blockContents.Slice(sizeof(ulong));
+
+            zip64EOCDRecord.OffsetOfCentralDirectory = BinaryPrimitives.ReadUInt64LittleEndian(blockContents);
+            blockContents = blockContents.Slice(sizeof(ulong));
 
             return true;
         }
 
         public static void WriteBlock(Stream stream, long numberOfEntries, long startOfCentralDirectory, long sizeOfCentralDirectory)
         {
-            BinaryWriter writer = new BinaryWriter(stream);
+            Span<byte> blockContents = stackalloc byte[BlockConstantSectionSize];
+            Span<byte> writeSegment = blockContents;
+
+            SignatureConstantBytes.CopyTo(blockContents);
+            writeSegment = writeSegment.Slice(SignatureConstantBytes.Length);
+
+            BinaryPrimitives.WriteUInt64LittleEndian(writeSegment, NormalSize);
+            writeSegment = writeSegment.Slice(sizeof(ulong));
+
+            // version needed is 45 for zip 64 support
+            BinaryPrimitives.WriteUInt16LittleEndian(writeSegment, (ushort)ZipVersionNeededValues.Zip64);
+            writeSegment = writeSegment.Slice(sizeof(ushort));
+
+            // version made by: high byte is 0 for MS DOS, low byte is version needed
+            BinaryPrimitives.WriteUInt16LittleEndian(writeSegment, (ushort)ZipVersionNeededValues.Zip64);
+            writeSegment = writeSegment.Slice(sizeof(ushort));
+
+            // number of this disk is 0
+            BinaryPrimitives.WriteUInt32LittleEndian(writeSegment, 0);
+            writeSegment = writeSegment.Slice(sizeof(uint));
+
+            // number of disk with start of central directory is 0
+            BinaryPrimitives.WriteUInt32LittleEndian(writeSegment, 0);
+            writeSegment = writeSegment.Slice(sizeof(uint));
+
+            // number of entries on this disk
+            BinaryPrimitives.WriteInt64LittleEndian(writeSegment, numberOfEntries);
+            writeSegment = writeSegment.Slice(sizeof(long));
+
+            // number of entries total
+            BinaryPrimitives.WriteInt64LittleEndian(writeSegment, numberOfEntries);
+            writeSegment = writeSegment.Slice(sizeof(long));
+
+            BinaryPrimitives.WriteInt64LittleEndian(writeSegment, sizeOfCentralDirectory);
+            writeSegment = writeSegment.Slice(sizeof(long));
+
+            BinaryPrimitives.WriteInt64LittleEndian(writeSegment, startOfCentralDirectory);
 
             // write Zip 64 EOCD record
-            writer.Write(SignatureConstant);
-            writer.Write(NormalSize);
-            writer.Write((ushort)ZipVersionNeededValues.Zip64); // version needed is 45 for zip 64 support
-            writer.Write((ushort)ZipVersionNeededValues.Zip64); // version made by: high byte is 0 for MS DOS, low byte is version needed
-            writer.Write((uint)0); // number of this disk is 0
-            writer.Write((uint)0); // number of disk with start of central directory is 0
-            writer.Write(numberOfEntries); // number of entries on this disk
-            writer.Write(numberOfEntries); // number of entries total
-            writer.Write(sizeOfCentralDirectory);
-            writer.Write(startOfCentralDirectory);
+            stream.Write(blockContents);
         }
     }
 
@@ -446,7 +602,6 @@ namespace System.IO.Compression
             if (reader.ReadUInt32() != SignatureConstant)
                 return false;
 
-
             if (reader.BaseStream.Length < reader.BaseStream.Position + OffsetToFilenameLength)
                 return false;
 
@@ -466,7 +621,14 @@ namespace System.IO.Compression
 
     internal struct ZipCentralDirectoryFileHeader
     {
+        // The Zip File Format Specification references 0x06054B50, this is a big endian representation.
+        // ZIP files store values in little endian, so this is reversed.
+        public static ReadOnlySpan<byte> SignatureConstantBytes => [0x50, 0x4B, 0x01, 0x02];
         public const uint SignatureConstant = 0x02014B50;
+
+        // These are the minimum possible size, assuming the zip file comments variable section is empty
+        public const int BlockConstantSectionSize = 46;
+
         public byte VersionMadeByCompatibility;
         public byte VersionMadeBySpecification;
         public ushort VersionNeededToExtract;
@@ -490,30 +652,93 @@ namespace System.IO.Compression
 
         // if saveExtraFieldsAndComments is false, FileComment and ExtraFields will be null
         // in either case, the zip64 extra field info will be incorporated into other fields
-        public static bool TryReadBlock(BinaryReader reader, bool saveExtraFieldsAndComments, out ZipCentralDirectoryFileHeader header)
+        public static bool TryReadBlock(ReadOnlySpan<byte> buffer, Stream furtherReads, bool saveExtraFieldsAndComments, out int bytesRead, out ZipCentralDirectoryFileHeader header)
         {
             header = default;
+            bytesRead = 0;
 
-            if (reader.ReadUInt32() != SignatureConstant)
+            // the buffer will always be large enough for at least the constant section to be verified
+            Debug.Assert(buffer.Length >= BlockConstantSectionSize);
+
+            bytesRead += SignatureConstantBytes.Length;
+            if (!buffer.StartsWith(SignatureConstantBytes))
+            {
                 return false;
-            header.VersionMadeBySpecification = reader.ReadByte();
-            header.VersionMadeByCompatibility = reader.ReadByte();
-            header.VersionNeededToExtract = reader.ReadUInt16();
-            header.GeneralPurposeBitFlag = reader.ReadUInt16();
-            header.CompressionMethod = reader.ReadUInt16();
-            header.LastModified = reader.ReadUInt32();
-            header.Crc32 = reader.ReadUInt32();
-            uint compressedSizeSmall = reader.ReadUInt32();
-            uint uncompressedSizeSmall = reader.ReadUInt32();
-            header.FilenameLength = reader.ReadUInt16();
-            header.ExtraFieldLength = reader.ReadUInt16();
-            header.FileCommentLength = reader.ReadUInt16();
-            ushort diskNumberStartSmall = reader.ReadUInt16();
-            header.InternalFileAttributes = reader.ReadUInt16();
-            header.ExternalFileAttributes = reader.ReadUInt32();
-            uint relativeOffsetOfLocalHeaderSmall = reader.ReadUInt32();
+            }
 
-            header.Filename = reader.ReadBytes(header.FilenameLength);
+            header.VersionMadeBySpecification = buffer[bytesRead++];
+            header.VersionMadeByCompatibility = buffer[bytesRead++];
+
+            header.VersionNeededToExtract = BinaryPrimitives.ReadUInt16LittleEndian(buffer.Slice(bytesRead));
+            bytesRead += sizeof(ushort);
+
+            header.GeneralPurposeBitFlag = BinaryPrimitives.ReadUInt16LittleEndian(buffer.Slice(bytesRead));
+            bytesRead += sizeof(ushort);
+
+            header.CompressionMethod = BinaryPrimitives.ReadUInt16LittleEndian(buffer.Slice(bytesRead));
+            bytesRead += sizeof(ushort);
+
+            header.LastModified = BinaryPrimitives.ReadUInt32LittleEndian(buffer.Slice(bytesRead));
+            bytesRead += sizeof(uint);
+
+            header.Crc32 = BinaryPrimitives.ReadUInt32LittleEndian(buffer.Slice(bytesRead));
+            bytesRead += sizeof(uint);
+
+            uint compressedSizeSmall = BinaryPrimitives.ReadUInt32LittleEndian(buffer.Slice(bytesRead));
+            bytesRead += sizeof(uint);
+
+            uint uncompressedSizeSmall = BinaryPrimitives.ReadUInt32LittleEndian(buffer.Slice(bytesRead));
+            bytesRead += sizeof(uint);
+
+            header.FilenameLength = BinaryPrimitives.ReadUInt16LittleEndian(buffer.Slice(bytesRead));
+            bytesRead += sizeof(ushort);
+
+            header.ExtraFieldLength = BinaryPrimitives.ReadUInt16LittleEndian(buffer.Slice(bytesRead));
+            bytesRead += sizeof(ushort);
+
+            header.FileCommentLength = BinaryPrimitives.ReadUInt16LittleEndian(buffer.Slice(bytesRead));
+            bytesRead += sizeof(ushort);
+
+            ushort diskNumberStartSmall = BinaryPrimitives.ReadUInt16LittleEndian(buffer.Slice(bytesRead));
+            bytesRead += sizeof(ushort);
+
+            header.InternalFileAttributes = BinaryPrimitives.ReadUInt16LittleEndian(buffer.Slice(bytesRead));
+            bytesRead += sizeof(ushort);
+
+            header.ExternalFileAttributes = BinaryPrimitives.ReadUInt32LittleEndian(buffer.Slice(bytesRead));
+            bytesRead += sizeof(uint);
+
+            uint relativeOffsetOfLocalHeaderSmall = BinaryPrimitives.ReadUInt32LittleEndian(buffer.Slice(bytesRead));
+            bytesRead += sizeof(uint);
+
+            // Assemble the dynamic header in a separate buffer. We can't guarantee that it's all in the input buffer,
+            // some additional data might need to come from the stream.
+            int dynamicHeaderSize = header.FilenameLength + header.ExtraFieldLength + header.FileCommentLength;
+            int bytesToRead = dynamicHeaderSize - (buffer.Length - bytesRead);
+            scoped ReadOnlySpan<byte> dynamicHeader;
+
+            // No need to read extra data from the stream, no need to allocate a new buffer.
+            if (bytesToRead <= 0)
+            {
+                dynamicHeader = buffer.Slice(bytesRead);
+            }
+            // Data needs to come from two sources, and we must thus copy data into a single address space.
+            else
+            {
+                Span<byte> collatedHeader = dynamicHeaderSize <= 512 ? stackalloc byte[512].Slice(dynamicHeaderSize) : new byte[dynamicHeaderSize];
+
+                buffer.Slice(bytesRead).CopyTo(collatedHeader);
+                int realBytesRead = furtherReads.Read(collatedHeader.Slice(buffer.Length - bytesRead));
+
+                bytesRead = buffer.Length + realBytesRead;
+                if (realBytesRead != bytesToRead)
+                {
+                    return false;
+                }
+                dynamicHeader = collatedHeader;
+            }
+
+            header.Filename = dynamicHeader.Slice(0, header.FilenameLength).ToArray();
 
             bool uncompressedSizeInZip64 = uncompressedSizeSmall == ZipHelper.Mask32Bit;
             bool compressedSizeInZip64 = compressedSizeSmall == ZipHelper.Mask32Bit;
@@ -521,44 +746,32 @@ namespace System.IO.Compression
             bool diskNumberStartInZip64 = diskNumberStartSmall == ZipHelper.Mask16Bit;
 
             Zip64ExtraField zip64;
+            ReadOnlySpan<byte> zipExtraFields = dynamicHeader.Slice(header.FilenameLength, header.ExtraFieldLength);
 
-            long endExtraFields = reader.BaseStream.Position + header.ExtraFieldLength;
-            using (Stream str = new SubReadStream(reader.BaseStream, reader.BaseStream.Position, header.ExtraFieldLength))
+            zip64 = default;
+            if (saveExtraFieldsAndComments)
             {
-                if (saveExtraFieldsAndComments)
-                {
-                    header.ExtraFields = ZipGenericExtraField.ParseExtraField(str);
-                    zip64 = Zip64ExtraField.GetAndRemoveZip64Block(header.ExtraFields,
+                header.ExtraFields = ZipGenericExtraField.ParseExtraField(zipExtraFields);
+                zip64 = Zip64ExtraField.GetAndRemoveZip64Block(header.ExtraFields,
                             uncompressedSizeInZip64, compressedSizeInZip64,
                             relativeOffsetInZip64, diskNumberStartInZip64);
-                }
-                else
-                {
-                    header.ExtraFields = null;
-                    zip64 = Zip64ExtraField.GetJustZip64Block(str,
+            }
+            else
+            {
+                header.ExtraFields = null;
+                zip64 = Zip64ExtraField.GetJustZip64Block(zipExtraFields,
                             uncompressedSizeInZip64, compressedSizeInZip64,
                             relativeOffsetInZip64, diskNumberStartInZip64);
-                }
             }
 
-            // There are zip files that have malformed ExtraField blocks in which GetJustZip64Block() silently bails out without reading all the way to the end
-            // of the ExtraField block. Thus we must force the stream's position to the proper place.
-            reader.BaseStream.AdvanceToPosition(endExtraFields);
+            header.FileComment = dynamicHeader.Slice(header.FilenameLength + header.ExtraFieldLength, header.FileCommentLength).ToArray();
 
-            header.FileComment = reader.ReadBytes(header.FileCommentLength);
+            bytesRead += dynamicHeaderSize;
 
-            header.UncompressedSize = zip64.UncompressedSize == null
-                                                    ? uncompressedSizeSmall
-                                                    : zip64.UncompressedSize.Value;
-            header.CompressedSize = zip64.CompressedSize == null
-                                                    ? compressedSizeSmall
-                                                    : zip64.CompressedSize.Value;
-            header.RelativeOffsetOfLocalHeader = zip64.LocalHeaderOffset == null
-                                                    ? relativeOffsetOfLocalHeaderSmall
-                                                    : zip64.LocalHeaderOffset.Value;
-            header.DiskNumberStart = zip64.StartDiskNumber == null
-                                                    ? diskNumberStartSmall
-                                                    : zip64.StartDiskNumber.Value;
+            header.UncompressedSize = zip64.UncompressedSize ?? uncompressedSizeSmall;
+            header.CompressedSize = zip64.CompressedSize ?? compressedSizeSmall;
+            header.RelativeOffsetOfLocalHeader = zip64.LocalHeaderOffset ?? relativeOffsetOfLocalHeaderSmall;
+            header.DiskNumberStart = zip64.StartDiskNumber ?? diskNumberStartSmall;
 
             return true;
         }
@@ -566,10 +779,12 @@ namespace System.IO.Compression
 
     internal struct ZipEndOfCentralDirectoryBlock
     {
-        public const uint SignatureConstant = 0x06054B50;
-        public const int SignatureSize = sizeof(uint);
+        // The Zip File Format Specification references 0x06054B50, this is a big endian representation.
+        // ZIP files store values in little endian, so this is reversed.
+        public static ReadOnlySpan<byte> SignatureConstantBytes => [0x50, 0x4B, 0x05, 0x06];
 
-        // This is the minimum possible size, assuming the zip file comments variable section is empty
+        // These are the minimum possible size, assuming the zip file comments variable section is empty
+        public const int BlockConstantSectionSize = 22;
         public const int SizeOfBlockWithoutSignature = 18;
 
         // The end of central directory can have a variable size zip file comment at the end, but its max length can be 64K
@@ -588,7 +803,8 @@ namespace System.IO.Compression
 
         public static void WriteBlock(Stream stream, long numberOfEntries, long startOfCentralDirectory, long sizeOfCentralDirectory, byte[] archiveComment)
         {
-            BinaryWriter writer = new BinaryWriter(stream);
+            Span<byte> blockContents = stackalloc byte[BlockConstantSectionSize];
+            Span<byte> writeSegment = blockContents;
 
             ushort numberOfEntriesTruncated = numberOfEntries > ushort.MaxValue ?
                                                         ZipHelper.Mask16Bit : (ushort)numberOfEntries;
@@ -597,38 +813,88 @@ namespace System.IO.Compression
             uint sizeOfCentralDirectoryTruncated = sizeOfCentralDirectory > uint.MaxValue ?
                                                         ZipHelper.Mask32Bit : (uint)sizeOfCentralDirectory;
 
-            writer.Write(SignatureConstant);
-            writer.Write((ushort)0); // number of this disk
-            writer.Write((ushort)0); // number of disk with start of CD
-            writer.Write(numberOfEntriesTruncated); // number of entries on this disk's cd
-            writer.Write(numberOfEntriesTruncated); // number of entries in entire CD
-            writer.Write(sizeOfCentralDirectoryTruncated);
-            writer.Write(startOfCentralDirectoryTruncated);
+            SignatureConstantBytes.CopyTo(blockContents);
+            writeSegment = writeSegment.Slice(SignatureConstantBytes.Length);
 
-            // Should be valid because of how we read archiveComment in TryReadBlock:
-            Debug.Assert(archiveComment.Length <= ZipFileCommentMaxLength);
+            // number of this disk
+            BinaryPrimitives.WriteUInt16LittleEndian(writeSegment, 0);
+            writeSegment = writeSegment.Slice(sizeof(ushort));
 
-            writer.Write((ushort)archiveComment.Length); // zip file comment length
+            // number of disk with start of CD
+            BinaryPrimitives.WriteUInt16LittleEndian(writeSegment, 0);
+            writeSegment = writeSegment.Slice(sizeof(ushort));
+
+            // number of entries on this disk's cd
+            BinaryPrimitives.WriteUInt16LittleEndian(writeSegment, numberOfEntriesTruncated);
+            writeSegment = writeSegment.Slice(sizeof(ushort));
+
+            // number of entries in entire cd
+            BinaryPrimitives.WriteUInt16LittleEndian(writeSegment, numberOfEntriesTruncated);
+            writeSegment = writeSegment.Slice(sizeof(ushort));
+
+            BinaryPrimitives.WriteUInt32LittleEndian(writeSegment, sizeOfCentralDirectoryTruncated);
+            writeSegment = writeSegment.Slice(sizeof(uint));
+
+            BinaryPrimitives.WriteUInt32LittleEndian(writeSegment, startOfCentralDirectoryTruncated);
+            writeSegment = writeSegment.Slice(sizeof(uint));
+
+            // zip file comment length
+            BinaryPrimitives.WriteUInt16LittleEndian(writeSegment, (ushort)archiveComment.Length);
+
+            stream.Write(blockContents);
             if (archiveComment.Length > 0)
-                writer.Write(archiveComment);
+                stream.Write(archiveComment);
         }
 
-        public static bool TryReadBlock(BinaryReader reader, out ZipEndOfCentralDirectoryBlock eocdBlock)
+        public static bool TryReadBlock(Stream stream, out ZipEndOfCentralDirectoryBlock eocdBlock)
         {
+            Span<byte> blockContents = stackalloc byte[BlockConstantSectionSize];
+            int bytesRead;
+
             eocdBlock = default;
-            if (reader.ReadUInt32() != SignatureConstant)
+            bytesRead = stream.Read(blockContents);
+
+            if (bytesRead < BlockConstantSectionSize)
                 return false;
 
-            eocdBlock.Signature = SignatureConstant;
-            eocdBlock.NumberOfThisDisk = reader.ReadUInt16();
-            eocdBlock.NumberOfTheDiskWithTheStartOfTheCentralDirectory = reader.ReadUInt16();
-            eocdBlock.NumberOfEntriesInTheCentralDirectoryOnThisDisk = reader.ReadUInt16();
-            eocdBlock.NumberOfEntriesInTheCentralDirectory = reader.ReadUInt16();
-            eocdBlock.SizeOfCentralDirectory = reader.ReadUInt32();
-            eocdBlock.OffsetOfStartOfCentralDirectoryWithRespectToTheStartingDiskNumber = reader.ReadUInt32();
+            if (!blockContents.StartsWith(SignatureConstantBytes))
+                return false;
 
-            ushort commentLength = reader.ReadUInt16();
-            eocdBlock.ArchiveComment = reader.ReadBytes(commentLength);
+            eocdBlock.Signature = BinaryPrimitives.ReadUInt32LittleEndian(blockContents);
+            blockContents = blockContents.Slice(SignatureConstantBytes.Length);
+
+            eocdBlock.NumberOfThisDisk = BinaryPrimitives.ReadUInt16LittleEndian(blockContents);
+            blockContents = blockContents.Slice(sizeof(ushort));
+
+            eocdBlock.NumberOfTheDiskWithTheStartOfTheCentralDirectory = BinaryPrimitives.ReadUInt16LittleEndian(blockContents);
+            blockContents = blockContents.Slice(sizeof(ushort));
+
+            eocdBlock.NumberOfEntriesInTheCentralDirectoryOnThisDisk = BinaryPrimitives.ReadUInt16LittleEndian(blockContents);
+            blockContents = blockContents.Slice(sizeof(ushort));
+
+            eocdBlock.NumberOfEntriesInTheCentralDirectory = BinaryPrimitives.ReadUInt16LittleEndian(blockContents);
+            blockContents = blockContents.Slice(sizeof(ushort));
+
+            eocdBlock.SizeOfCentralDirectory = BinaryPrimitives.ReadUInt32LittleEndian(blockContents);
+            blockContents = blockContents.Slice(sizeof(uint));
+
+            eocdBlock.OffsetOfStartOfCentralDirectoryWithRespectToTheStartingDiskNumber = BinaryPrimitives.ReadUInt32LittleEndian(blockContents);
+            blockContents = blockContents.Slice(sizeof(uint));
+
+            ushort commentLength = BinaryPrimitives.ReadUInt16LittleEndian(blockContents);
+
+            if (stream.Position + commentLength > stream.Length)
+                return false;
+
+            if (commentLength == 0)
+            {
+                eocdBlock.ArchiveComment = Array.Empty<byte>();
+            }
+            else
+            {
+                eocdBlock.ArchiveComment = new byte[commentLength];
+                stream.ReadExactly(eocdBlock.ArchiveComment);
+            }
 
             return true;
         }
