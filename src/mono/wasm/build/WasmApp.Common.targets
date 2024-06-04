@@ -499,6 +499,9 @@
 
       <!-- WasmOptConfigurationFlags property is set by reading from wasm-props.json -->
       <WasmOptConfigurationFlags Include="@(_DefaulWasmOptConfigurationFlags)" />
+
+      <!-- fixme: https://github.com/WebAssembly/binaryen/issues/6639 -->
+      <WasmOptConfigurationFlags Include="-O1" Condition="!$([MSBuild]::IsOSPlatform('windows'))" />
     </ItemGroup>
   </Target>
 
