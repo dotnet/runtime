@@ -223,9 +223,12 @@ public:
 #ifdef HAS_COMPACT_ENTRYPOINTS
         return GetTemporaryEntryPoint();
 #else
-        return VolatileLoadWithoutBarrier(&m_pTemporaryEntryPoint);
+        PTR_MethodDescCodeData codeData = VolatileLoadWithoutBarrier(&m_codeData);
+        if (codeData == NULL)
+            return NULL;
+        return VolatileLoadWithoutBarrier(&codeData->m_pTemporaryEntryPoint);
 #endif
-    }    
+    }
 
     void SetTemporaryEntryPoint(LoaderAllocator *pLoaderAllocator, AllocMemTracker *pamTracker);
 
@@ -1717,7 +1720,7 @@ public:
 #endif
 
 #ifndef DACCESS_COMPILE
-    HRESULT EnsureCodeDataExists();
+    HRESULT EnsureCodeDataExists(AllocMemTracker *pamTracker);
 
     HRESULT SetMethodDescVersionState(PTR_MethodDescVersioningState state);
 #endif //!DACCESS_COMPILE

@@ -209,7 +209,7 @@ LoaderAllocator * MethodDesc::GetDomainSpecificLoaderAllocator()
 
 }
 
-HRESULT MethodDesc::EnsureCodeDataExists()
+HRESULT MethodDesc::EnsureCodeDataExists(AllocMemTracker *pamTracker)
 {
     CONTRACTL
     {
@@ -224,7 +224,10 @@ HRESULT MethodDesc::EnsureCodeDataExists()
     LoaderHeap* heap = GetLoaderAllocator()->GetHighFrequencyHeap();
 
     AllocMemTracker amTracker;
-    MethodDescCodeData* alloc = (MethodDescCodeData*)amTracker.Track_NoThrow(heap->AllocMem_NoThrow(S_SIZE_T(sizeof(MethodDescCodeData))));
+    if (pamTracker == NULL)
+        pamTracker = &amTracker;
+
+    MethodDescCodeData* alloc = (MethodDescCodeData*)pamTracker->Track_NoThrow(heap->AllocMem_NoThrow(S_SIZE_T(sizeof(MethodDescCodeData))));
     if (alloc == NULL)
         return E_OUTOFMEMORY;
 
@@ -240,7 +243,7 @@ HRESULT MethodDesc::SetMethodDescVersionState(PTR_MethodDescVersioningState stat
     WRAPPER_NO_CONTRACT;
 
     HRESULT hr;
-    IfFailRet(EnsureCodeDataExists());
+    IfFailRet(EnsureCodeDataExists(NULL));
 
     _ASSERTE(m_codeData != NULL);
     if (InterlockedCompareExchangeT(&m_codeData->VersioningState, state, NULL) != NULL)
@@ -254,9 +257,10 @@ HRESULT MethodDesc::SetMethodDescVersionState(PTR_MethodDescVersioningState stat
 PTR_MethodDescVersioningState MethodDesc::GetMethodDescVersionState()
 {
     WRAPPER_NO_CONTRACT;
-    if (m_codeData == NULL)
+    PTR_MethodDescCodeData codeData = VolatileLoadWithoutBarrier(&m_codeData);
+    if (codeData == NULL)
         return NULL;
-    return m_codeData->VersioningState;
+    return VolatileLoadWithoutBarrier(&codeData->VersioningState);
 }
 
 //*******************************************************************************
@@ -3087,7 +3091,9 @@ void MethodDesc::EnsureTemporaryEntryPointCore(LoaderAllocator *pLoaderAllocator
         AllocMemTracker amt;
         Precode* pPrecode = Precode::Allocate(GetPrecodeType(), this, GetLoaderAllocator(), &amt);
 
-        if (InterlockedCompareExchangeT(&m_pTemporaryEntryPoint, pPrecode->GetEntryPoint(), (PCODE)NULL) == (PCODE)NULL)
+        IfFailThrow(EnsureCodeDataExists(pamTracker));
+
+        if (InterlockedCompareExchangeT(&m_codeData->m_pTemporaryEntryPoint, pPrecode->GetEntryPoint(), (PCODE)NULL) == (PCODE)NULL)
             amt.SuppressRelease();
 
         PCODE tempEntryPoint = GetTemporaryEntryPoint_NoAlloc();
