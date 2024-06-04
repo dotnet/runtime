@@ -70,7 +70,6 @@ public final class PalPbkdf2 {
 
             // Start at 2 since we did the first iteration above.
             for (int i = 2; i <= iterations; i++) {
-                mac.reset();
                 mac.update(u);
                 mac.doFinal(u, 0);
 
