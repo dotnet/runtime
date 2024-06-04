@@ -126,9 +126,9 @@ static_assert(offsetof(ExplicitFloatLong, s.FieldL) == 5, "");
 extern "C"
 {
 
-DLLEXPORT Empty8Float EchoEmpty8FloatRiscV(Empty8Float fa0)
+DLLEXPORT Empty8Float EchoEmpty8FloatRiscV(int a0, float fa0, Empty8Float fa1)
 {
-	return fa0;
+	return fa1;
 }
 
 DLLEXPORT EmptyFloatEmpty5Byte EchoEmptyFloatEmpty5ByteRiscV(int a0, float fa0, EmptyFloatEmpty5Byte fa1_a1)
@@ -141,56 +141,56 @@ DLLEXPORT EmptyFloatEmpty5UByte EchoEmptyFloatEmpty5UByteRiscV(int a0, float fa0
 	return fa1_a1;
 }
 
-DLLEXPORT LongEmptyDouble EchoLongEmptyDoubleRiscV(LongEmptyDouble a0_fa0)
+DLLEXPORT LongEmptyDouble EchoLongEmptyDoubleRiscV(int a0, float fa0, LongEmptyDouble a1_fa1)
 {
-	return a0_fa0;
+	return a1_fa1;
 }
 
 DLLEXPORT LongEmptyDouble EchoLongEmptyDoubleByImplicitRefRiscV(
-	float fa0, float fa1, float fa2, float fa3, float fa4, float fa5, float fa6, float fa7, LongEmptyDouble byRef)
+	int a0, float fa0, float fa1, float fa2, float fa3, float fa4, float fa5, float fa6, float fa7, LongEmptyDouble a1)
 {
-	return byRef;
+	return a1;
 }
 
-DLLEXPORT NestedEmptyFloatDouble EchoNestedEmptyFloatDoubleRiscV(NestedEmptyFloatDouble fa0_fa1)
+DLLEXPORT NestedEmptyFloatDouble EchoNestedEmptyFloatDoubleRiscV(int a0, float fa0, NestedEmptyFloatDouble fa1_fa2)
 {
-	return fa0_fa1;
+	return fa1_fa2;
 }
 
 DLLEXPORT NestedEmptyFloatDouble EchoNestedEmptyFloatDoubleInIntegerRegsRiscV(
-	float fa0, float fa1, float fa2, float fa3, float fa4, float fa5, float fa6, NestedEmptyFloatDouble a0_a1)
+	int a0, float fa0, float fa1, float fa2, float fa3, float fa4, float fa5, float fa6, NestedEmptyFloatDouble a1_a2)
 {
-	return a0_a1;
+	return a1_a2;
 }
 
-DLLEXPORT EmptyIntAndFloat EchoEmptyIntAndFloatRiscV(EmptyIntAndFloat a0_fa0)
+DLLEXPORT EmptyIntAndFloat EchoEmptyIntAndFloatRiscV(int a0, float fa0, EmptyIntAndFloat a1_fa1)
 {
-	return a0_fa0;
+	return a1_fa1;
 }
 
-DLLEXPORT LongEmptyAndFloat EchoLongEmptyAndFloatRiscV(LongEmptyAndFloat a0_fa0)
+DLLEXPORT LongEmptyAndFloat EchoLongEmptyAndFloatRiscV(int a0, float fa0, LongEmptyAndFloat a1_fa1)
 {
-	return a0_fa0;
+	return a1_fa1;
 }
 
-DLLEXPORT ArrayOfEmptiesFloatDouble EchoArrayOfEmptiesFloatDoubleRiscV(ArrayOfEmptiesFloatDouble a0_a1)
+DLLEXPORT ArrayOfEmptiesFloatDouble EchoArrayOfEmptiesFloatDoubleRiscV(int a0, float fa0, ArrayOfEmptiesFloatDouble a1_a2)
 {
-	return a0_a1;
+	return a1_a2;
 }
 
-DLLEXPORT FloatEmpty32kInt EchoFloatEmpty32kIntRiscV(FloatEmpty32kInt fa0_a0)
+DLLEXPORT FloatEmpty32kInt EchoFloatEmpty32kIntRiscV(int a0, float fa0, FloatEmpty32kInt fa1_a1)
 {
-	return fa0_a0;
+	return fa1_a1;
 }
 
-DLLEXPORT PackedEmptyFloatLong EchoPackedEmptyFloatLongRiscV(PackedEmptyFloatLong fa0_a0)
+DLLEXPORT PackedEmptyFloatLong EchoPackedEmptyFloatLongRiscV(int a0, float fa0, PackedEmptyFloatLong fa1_a1)
 {
-	return fa0_a0;
+	return fa1_a1;
 }
 
-DLLEXPORT ExplicitFloatLong EchoExplicitFloatLongRiscV(ExplicitFloatLong fa0_a0)
+DLLEXPORT ExplicitFloatLong EchoExplicitFloatLongRiscV(int a0, float fa0, ExplicitFloatLong fa1_a1)
 {
-	return fa0_a0;
+	return fa1_a1;
 }
 
 } // extern "C"

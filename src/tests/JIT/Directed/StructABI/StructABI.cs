@@ -758,7 +758,7 @@ struct NestedEmptyFloatDouble
 
 	public static NestedEmptyFloatDouble Get()
 	{
-		return new NestedEmptyFloatDouble { FieldF = 3.14159f, FieldD = 3.14159 };
+		return new NestedEmptyFloatDouble { FieldF = 3.14159f, FieldD = 3.14159d };
 	}
 
 	public bool Equals(NestedEmptyFloatDouble other)
@@ -1022,7 +1022,7 @@ public static partial class StructABI
 	static extern DoubleAndByte EnoughRegistersSysV4(double a, double b, double c, double d, double e, double f, double g, DoubleAndByte value);
 
 	[DllImport("StructABILib")]
-	static extern Empty8Float EchoEmpty8FloatRiscV(Empty8Float fa0);
+	static extern Empty8Float EchoEmpty8FloatRiscV(int a0, float fa0, Empty8Float fa1);
 
 	[DllImport("StructABILib")]
 	static extern EmptyFloatEmpty5Byte EchoEmptyFloatEmpty5ByteRiscV(int a0, float fa0, EmptyFloatEmpty5Byte fa1_a1);
@@ -1031,38 +1031,36 @@ public static partial class StructABI
 	static extern EmptyFloatEmpty5UByte EchoEmptyFloatEmpty5UByteRiscV(int a0, float fa0, EmptyFloatEmpty5UByte fa1_a1);
 
 	[DllImport("StructABILib")]
-	static extern LongEmptyDouble EchoLongEmptyDoubleRiscV(LongEmptyDouble value);
+	static extern LongEmptyDouble EchoLongEmptyDoubleRiscV(int a0, float fa0, LongEmptyDouble a1_fa1);
 
 	[DllImport("StructABILib")]
 	static extern LongEmptyDouble EchoLongEmptyDoubleByImplicitRefRiscV(
-		float fa0, float fa1, float fa2, float fa3, float fa4, float fa5, float fa6, float fa7, LongEmptyDouble byRef);
+		int a0, float fa0, float fa1, float fa2, float fa3, float fa4, float fa5, float fa6, float fa7, LongEmptyDouble a1);
 
 	[DllImport("StructABILib")]
-	static extern NestedEmptyFloatDouble EchoNestedEmptyFloatDoubleRiscV(NestedEmptyFloatDouble fa0_fa1);
+	static extern NestedEmptyFloatDouble EchoNestedEmptyFloatDoubleRiscV(int a0, float fa0, NestedEmptyFloatDouble fa1_fa2);
 
 	[DllImport("StructABILib")]
 	static extern NestedEmptyFloatDouble EchoNestedEmptyFloatDoubleInIntegerRegsRiscV(
-		float fa0, float fa1, float fa2, float fa3, float fa4, float fa5, float fa6, NestedEmptyFloatDouble a0_a1);
+		int a0, float fa0, float fa1, float fa2, float fa3, float fa4, float fa5, float fa6, NestedEmptyFloatDouble a1_a2);
 
 	[DllImport("StructABILib")]
-	static extern EmptyIntAndFloat EchoEmptyIntAndFloatRiscV(EmptyIntAndFloat a0_fa0);
+	static extern EmptyIntAndFloat EchoEmptyIntAndFloatRiscV(int a0, float fa0, EmptyIntAndFloat a1_fa1);
 
 	[DllImport("StructABILib")]
-	static extern  LongEmptyAndFloat EchoLongEmptyAndFloatRiscV(LongEmptyAndFloat a0_fa0);
+	static extern LongEmptyAndFloat EchoLongEmptyAndFloatRiscV(int a0, float fa0, LongEmptyAndFloat a1_fa1);
 
 	[DllImport("StructABILib")]
-	static extern ArrayOfEmptiesFloatDouble EchoArrayOfEmptiesFloatDoubleRiscV(
-	ArrayOfEmptiesFloatDouble a0_a1);
+	static extern ArrayOfEmptiesFloatDouble EchoArrayOfEmptiesFloatDoubleRiscV(int a0, float fa0, ArrayOfEmptiesFloatDouble a1_a2);
 
 	[DllImport("StructABILib")]
-	static extern FloatEmpty32kInt EchoFloatEmpty32kIntRiscV(
-	FloatEmpty32kInt fa0_a0);
+	static extern FloatEmpty32kInt EchoFloatEmpty32kIntRiscV(int a0, float fa0, FloatEmpty32kInt fa1_a1);
 
 	[DllImport("StructABILib")]
-	static extern PackedEmptyFloatLong EchoPackedEmptyFloatLongRiscV(PackedEmptyFloatLong fa0_a0);
+	static extern PackedEmptyFloatLong EchoPackedEmptyFloatLongRiscV(int a0, float fa0, PackedEmptyFloatLong fa1_a1);
 
 	[DllImport("StructABILib")]
-	static extern ExplicitFloatLong EchoExplicitFloatLongRiscV(ExplicitFloatLong fa0_a0);
+	static extern ExplicitFloatLong EchoExplicitFloatLongRiscV(int a0, float fa0, ExplicitFloatLong fa1_a1);
 
 	////////////////////////////////////////////////////////////////////////////
 	// Managed echo tests.
@@ -1328,9 +1326,9 @@ public static partial class StructABI
 	}
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	static Empty8Float EchoEmpty8FloatRiscVManaged(Empty8Float fa0)
+	static Empty8Float EchoEmpty8FloatRiscVManaged(int a0, float fa0, Empty8Float fa1)
 	{
-		return fa0;
+		return fa1;
 	}
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
@@ -1346,67 +1344,65 @@ public static partial class StructABI
 	}
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	static LongEmptyDouble EchoLongEmptyDoubleRiscVManaged(LongEmptyDouble a0_fa0)
+	static LongEmptyDouble EchoLongEmptyDoubleRiscVManaged(int a0, float fa0, LongEmptyDouble a1_fa1)
 	{
-		return a0_fa0;
+		return a1_fa1;
 	}
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	static LongEmptyDouble EchoLongEmptyDoubleByImplicitRefRiscVManaged(
-		float fa0, float fa1, float fa2, float fa3, float fa4, float fa5, float fa6, float fa7, LongEmptyDouble byRef)
+		int a0, float fa0, float fa1, float fa2, float fa3, float fa4, float fa5, float fa6, float fa7, LongEmptyDouble a1)
 	{
-		return byRef;
+		return a1;
 	}
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	static NestedEmptyFloatDouble EchoNestedEmptyFloatDoubleRiscVManaged(NestedEmptyFloatDouble fa0_fa1)
+	static NestedEmptyFloatDouble EchoNestedEmptyFloatDoubleRiscVManaged(int a0, float fa0, NestedEmptyFloatDouble fa1_fa2)
 	{
-		return fa0_fa1;
+		return fa1_fa2;
 	}
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	static NestedEmptyFloatDouble EchoNestedEmptyFloatDoubleInIntegerRegsRiscVManaged(
-		float fa0, float fa1, float fa2, float fa3, float fa4, float fa5, float fa6, NestedEmptyFloatDouble a0_a1)
+		int a0, float fa0, float fa1, float fa2, float fa3, float fa4, float fa5, float fa6, NestedEmptyFloatDouble a1_a2)
 	{
-		return a0_a1;
+		return a1_a2;
 	}
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	static EmptyIntAndFloat EchoEmptyIntAndFloatRiscVManaged(EmptyIntAndFloat a0_fa0)
+	static EmptyIntAndFloat EchoEmptyIntAndFloatRiscVManaged(int a0, float fa0, EmptyIntAndFloat a1_fa1)
 	{
-		return a0_fa0;
+		return a1_fa1;
 	}
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	static LongEmptyAndFloat EchoLongEmptyAndFloatRiscVManaged(LongEmptyAndFloat a0_fa0)
+	static LongEmptyAndFloat EchoLongEmptyAndFloatRiscVManaged(int a0, float fa0, LongEmptyAndFloat a1_fa1)
 	{
-		return a0_fa0;
+		return a1_fa1;
 	}
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	static ArrayOfEmptiesFloatDouble EchoArrayOfEmptiesFloatDoubleRiscVManaged(
-		ArrayOfEmptiesFloatDouble a0_a1)
+	static ArrayOfEmptiesFloatDouble EchoArrayOfEmptiesFloatDoubleRiscVManaged(int a0, float fa0, ArrayOfEmptiesFloatDouble a1_a2)
 	{
-		return a0_a1;
+		return a1_a2;
 	}
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	static FloatEmpty32kInt EchoFloatEmpty32kIntRiscVManaged(
-		FloatEmpty32kInt fa0_a0)
+	static FloatEmpty32kInt EchoFloatEmpty32kIntRiscVManaged(int a0, float fa0, FloatEmpty32kInt fa1_a1)
 	{
-		return fa0_a0;
+		return fa1_a1;
 	}
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	static PackedEmptyFloatLong EchoPackedEmptyFloatLongRiscVManaged(PackedEmptyFloatLong fa0_a0)
+	static PackedEmptyFloatLong EchoPackedEmptyFloatLongRiscVManaged(int a0, float fa0, PackedEmptyFloatLong fa1_a1)
 	{
-		return fa0_a0;
+		return fa1_a1;
 	}
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	static ExplicitFloatLong EchoExplicitFloatLongRiscVManaged(ExplicitFloatLong fa0_a0)
+	static ExplicitFloatLong EchoExplicitFloatLongRiscVManaged(int a0, float fa0, ExplicitFloatLong fa1_a1)
 	{
-		return fa0_a0;
+		return fa1_a1;
 	}
 
 	////////////////////////////////////////////////////////////////////////////
@@ -2505,8 +2501,8 @@ public static partial class StructABI
 	{
 		bool ok = true;
 		Empty8Float expected = Empty8Float.Get();
-		Empty8Float native = EchoEmpty8FloatRiscV(expected);
-		Empty8Float managed = EchoEmpty8FloatRiscVManaged(expected);
+		Empty8Float native = EchoEmpty8FloatRiscV(0, 0f, expected);
+		Empty8Float managed = EchoEmpty8FloatRiscVManaged(0, 0f, expected);
 
 		if (!expected.Equals(native))
 		{
@@ -2527,8 +2523,8 @@ public static partial class StructABI
 	{
 		bool ok = true;
 		EmptyFloatEmpty5Byte expected = EmptyFloatEmpty5Byte.Get();
-		EmptyFloatEmpty5Byte native = EchoEmptyFloatEmpty5ByteRiscV(0, 0.0f, expected);
-		EmptyFloatEmpty5Byte managed = EchoEmptyFloatEmpty5ByteRiscVManaged(0, 0.0f, expected);
+		EmptyFloatEmpty5Byte native = EchoEmptyFloatEmpty5ByteRiscV(0, 0f, expected);
+		EmptyFloatEmpty5Byte managed = EchoEmptyFloatEmpty5ByteRiscVManaged(0, 0f, expected);
 
 		if (!expected.Equals(native))
 		{
@@ -2549,8 +2545,8 @@ public static partial class StructABI
 	{
 		bool ok = true;
 		EmptyFloatEmpty5UByte expected = EmptyFloatEmpty5UByte.Get();
-		EmptyFloatEmpty5UByte native = EchoEmptyFloatEmpty5UByteRiscV(0, 0.0f, expected);
-		EmptyFloatEmpty5UByte managed = EchoEmptyFloatEmpty5UByteRiscVManaged(0, 0.0f, expected);
+		EmptyFloatEmpty5UByte native = EchoEmptyFloatEmpty5UByteRiscV(0, 0f, expected);
+		EmptyFloatEmpty5UByte managed = EchoEmptyFloatEmpty5UByteRiscVManaged(0, 0f, expected);
 
 		if (!expected.Equals(native))
 		{
@@ -2571,8 +2567,8 @@ public static partial class StructABI
 	{
 		bool ok = true;
 		LongEmptyDouble expected = LongEmptyDouble.Get();
-		LongEmptyDouble native = EchoLongEmptyDoubleRiscV(expected);
-		LongEmptyDouble managed = EchoLongEmptyDoubleRiscVManaged(expected);
+		LongEmptyDouble native = EchoLongEmptyDoubleRiscV(0, 0f, expected);
+		LongEmptyDouble managed = EchoLongEmptyDoubleRiscVManaged(0, 0f, expected);
 
 		if (!expected.Equals(native))
 		{
@@ -2593,9 +2589,8 @@ public static partial class StructABI
 	{
 		bool ok = true;
 		LongEmptyDouble expected = LongEmptyDouble.Get();
-		LongEmptyDouble native = EchoLongEmptyDoubleByImplicitRefRiscV(0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected);
-		LongEmptyDouble managed = EchoLongEmptyDoubleByImplicitRefRiscVManaged(0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected);
-
+		LongEmptyDouble native = EchoLongEmptyDoubleByImplicitRefRiscV(0, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected);
+		LongEmptyDouble managed = EchoLongEmptyDoubleByImplicitRefRiscVManaged(0, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected);
 		if (!expected.Equals(native))
 		{
 			Console.WriteLine("Native call for EchoLongEmptyDoubleByImplicitRefRiscV failed");
@@ -2615,8 +2610,8 @@ public static partial class StructABI
 	{
 		bool ok = true;
 		NestedEmptyFloatDouble expected = NestedEmptyFloatDouble.Get();
-		NestedEmptyFloatDouble native = EchoNestedEmptyFloatDoubleRiscV(expected);
-		NestedEmptyFloatDouble managed = EchoNestedEmptyFloatDoubleRiscVManaged(expected);
+		NestedEmptyFloatDouble native = EchoNestedEmptyFloatDoubleRiscV(0, 0f, expected);
+		NestedEmptyFloatDouble managed = EchoNestedEmptyFloatDoubleRiscVManaged(0, 0f, expected);
 
 		if (!expected.Equals(native))
 		{
@@ -2637,8 +2632,8 @@ public static partial class StructABI
 	{
 		bool ok = true;
 		NestedEmptyFloatDouble expected = NestedEmptyFloatDouble.Get();
-		NestedEmptyFloatDouble native = EchoNestedEmptyFloatDoubleInIntegerRegsRiscV(0f, 1f, 2f, 3f, 4f, 5f, 6f, expected);
-		NestedEmptyFloatDouble managed = EchoNestedEmptyFloatDoubleInIntegerRegsRiscVManaged(0f, 1f, 2f, 3f, 4f, 5f, 6f, expected);
+		NestedEmptyFloatDouble native = EchoNestedEmptyFloatDoubleInIntegerRegsRiscV(0, 0f, 1f, 2f, 3f, 4f, 5f, 6f, expected);
+		NestedEmptyFloatDouble managed = EchoNestedEmptyFloatDoubleInIntegerRegsRiscVManaged(0, 0f, 1f, 2f, 3f, 4f, 5f, 6f, expected);
 
 		if (!expected.Equals(native))
 		{
@@ -2659,8 +2654,8 @@ public static partial class StructABI
 	{
 		bool ok = true;
 		EmptyIntAndFloat expected = EmptyIntAndFloat.Get();
-		EmptyIntAndFloat native = EchoEmptyIntAndFloatRiscV(expected);
-		EmptyIntAndFloat managed = EchoEmptyIntAndFloatRiscVManaged(expected);
+		EmptyIntAndFloat native = EchoEmptyIntAndFloatRiscV(0, 0f, expected);
+		EmptyIntAndFloat managed = EchoEmptyIntAndFloatRiscVManaged(0, 0f, expected);
 
 		if (!expected.Equals(native))
 		{
@@ -2681,8 +2676,8 @@ public static partial class StructABI
 	{
 		bool ok = true;
 		LongEmptyAndFloat expected = LongEmptyAndFloat.Get();
-		LongEmptyAndFloat native = EchoLongEmptyAndFloatRiscV(expected);
-		LongEmptyAndFloat managed = EchoLongEmptyAndFloatRiscVManaged(expected);
+		LongEmptyAndFloat native = EchoLongEmptyAndFloatRiscV(0, 0f, expected);
+		LongEmptyAndFloat managed = EchoLongEmptyAndFloatRiscVManaged(0, 0f, expected);
 
 		if (!expected.Equals(native))
 		{
@@ -2703,8 +2698,8 @@ public static partial class StructABI
 	{
 		bool ok = true;
 		ArrayOfEmptiesFloatDouble expected = ArrayOfEmptiesFloatDouble.Get();
-		ArrayOfEmptiesFloatDouble native = EchoArrayOfEmptiesFloatDoubleRiscV(expected);
-		ArrayOfEmptiesFloatDouble managed = EchoArrayOfEmptiesFloatDoubleRiscVManaged(expected);
+		ArrayOfEmptiesFloatDouble native = EchoArrayOfEmptiesFloatDoubleRiscV(0, 0f, expected);
+		ArrayOfEmptiesFloatDouble managed = EchoArrayOfEmptiesFloatDoubleRiscVManaged(0, 0f, expected);
 
 		if (!expected.Equals(native))
 		{
@@ -2725,8 +2720,8 @@ public static partial class StructABI
 	{
 		bool ok = true;
 		FloatEmpty32kInt expected = FloatEmpty32kInt.Get();
-		FloatEmpty32kInt native = EchoFloatEmpty32kIntRiscV(expected);
-		FloatEmpty32kInt managed = EchoFloatEmpty32kIntRiscVManaged(expected);
+		FloatEmpty32kInt native = EchoFloatEmpty32kIntRiscV(0, 0f, expected);
+		FloatEmpty32kInt managed = EchoFloatEmpty32kIntRiscVManaged(0, 0f, expected);
 
 		if (!expected.Equals(native))
 		{
@@ -2747,8 +2742,8 @@ public static partial class StructABI
 	{
 		bool ok = true;
 		PackedEmptyFloatLong expected = PackedEmptyFloatLong.Get();
-		PackedEmptyFloatLong native = EchoPackedEmptyFloatLongRiscV(expected);
-		PackedEmptyFloatLong managed = EchoPackedEmptyFloatLongRiscVManaged(expected);
+		PackedEmptyFloatLong native = EchoPackedEmptyFloatLongRiscV(0, 0f, expected);
+		PackedEmptyFloatLong managed = EchoPackedEmptyFloatLongRiscVManaged(0, 0f, expected);
 
 		if (!expected.Equals(native))
 		{
@@ -2769,8 +2764,8 @@ public static partial class StructABI
 	{
 		bool ok = true;
 		ExplicitFloatLong expected = ExplicitFloatLong.Get();
-		ExplicitFloatLong native = EchoExplicitFloatLongRiscV(expected);
-		ExplicitFloatLong managed = EchoExplicitFloatLongRiscVManaged(expected);
+		ExplicitFloatLong native = EchoExplicitFloatLongRiscV(0, 0f, expected);
+		ExplicitFloatLong managed = EchoExplicitFloatLongRiscVManaged(0, 0f, expected);
 
 		if (!expected.Equals(native))
 		{
