@@ -219,37 +219,3 @@ void regMaskTP::RemoveRegsetForType(SingleTypeRegSet regsToRemove, var_types typ
     low &= ~regsToRemove;
 #endif
 }
-
-void regMaskTP::operator|=(const regNumber reg)
-{
-    SingleTypeRegSet value = genSingleTypeRegMask(reg);
-#ifdef HAS_MORE_THAN_64_REGISTERS
-    if (reg < 64)
-    {
-        low |= value;
-    }
-    else
-    {
-        high |= value;
-    }
-#else
-    low |= value;
-#endif
-}
-
-void regMaskTP::operator^=(const regNumber reg)
-{
-    SingleTypeRegSet value = genSingleTypeRegMask(reg);
-#ifdef HAS_MORE_THAN_64_REGISTERS
-    if (reg < 64)
-    {
-        low ^= value;
-    }
-    else
-    {
-        high ^= value;
-    }
-#else
-    low ^= value;
-#endif
-}

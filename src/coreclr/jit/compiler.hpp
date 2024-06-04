@@ -1065,7 +1065,7 @@ inline regNumber genFirstRegNumFromMaskAndToggle(regMaskTP& mask)
 
     regNumber regNum = (regNumber)BitScanForward(mask);
 
-    mask ^= regNum;
+    mask.RemoveRegNumFromMask(regNum);
 
     return regNum;
 }

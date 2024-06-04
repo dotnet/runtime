@@ -394,9 +394,6 @@ public:
         high &= second.getHigh();
 #endif
     }
-
-    void operator|=(const regNumber reg);
-    void operator^=(const regNumber reg);
 };
 
 static regMaskTP operator^(const regMaskTP& first, const regMaskTP& second)

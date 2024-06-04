@@ -4949,7 +4949,7 @@ void LinearScan::freeRegisters(regMaskTP regsToFree)
         if (regRecord->assignedInterval != nullptr && (regRecord->assignedInterval->registerType == TYP_DOUBLE))
         {
             assert(genIsValidDoubleReg(nextReg));
-            regsToFree ^= regNumber(nextReg + 1);
+            regsToFree.RemoveRegNumFromMask(regNumber(nextReg + 1));
         }
 #endif
         freeRegister(regRecord);
@@ -9775,7 +9775,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
     while (targetCandidates.IsNonEmpty())
     {
         regNumber targetReg = genFirstRegNumFromMask(targetCandidates);
-        targetCandidates ^= targetReg;
+        targetCandidates.RemoveRegNumFromMask(targetReg);
         if (location[targetReg] == REG_NA)
         {
 #ifdef TARGET_ARM
@@ -9788,13 +9788,13 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                 regNumber anotherHalfRegNum = REG_NEXT(targetReg);
                 if (location[anotherHalfRegNum] == REG_NA)
                 {
-                    targetRegsReady |= targetReg;
+                    targetRegsReady.AddRegNumInMask(targetReg);
                 }
             }
             else
 #endif // TARGET_ARM
             {
-                targetRegsReady |= targetReg;
+                targetRegsReady.AddRegNumInMask(targetReg);
             }
         }
     }
@@ -9805,8 +9805,8 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
         while (targetRegsReady.IsNonEmpty())
         {
             regNumber targetReg = genFirstRegNumFromMask(targetRegsReady);
-            targetRegsToDo ^= targetReg;
-            targetRegsReady ^= targetReg;
+            targetRegsToDo.RemoveRegNumFromMask(targetReg);
+            targetRegsReady.RemoveRegNumFromMask(targetReg);
             assert(location[targetReg] != targetReg);
             assert(targetReg < REG_COUNT);
             regNumber sourceReg = (regNumber)source[targetReg];
@@ -9826,7 +9826,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
             {
                 if (source[fromReg] != REG_NA && !targetRegsFromStack.IsRegNumInMask(fromReg))
                 {
-                    targetRegsReady |= fromReg;
+                    targetRegsReady.AddRegNumInMask(fromReg);
 #ifdef TARGET_ARM
                     if (genIsValidDoubleReg(fromReg))
                     {
@@ -9865,7 +9865,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                         // This must be a double interval, otherwise it would be in targetRegsReady, or already
                         // completed.
                         assert(sourceIntervals[lowerHalfSrcReg]->registerType == TYP_DOUBLE);
-                        targetRegsReady |= lowerHalfReg;
+                        targetRegsReady.AddRegNumInMask(lowerHalfReg);
                     }
 #endif // TARGET_ARM
                 }

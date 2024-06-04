@@ -2122,12 +2122,12 @@ void LinearScan::UpdateRegStateForStructArg(LclVarDsc* argDsc)
         if ((genRegMask(argDsc->GetArgReg()) & RBM_ALLFLOAT) != RBM_NONE)
         {
             assert((genRegMask(argDsc->GetArgReg()) & RBM_FLTARG_REGS) != RBM_NONE);
-            floatRegState->rsCalleeRegArgMaskLiveIn |= argDsc->GetArgReg();
+            floatRegState->rsCalleeRegArgMaskLiveIn.AddRegNumInMask(argDsc->GetArgReg());
         }
         else
         {
             assert((genRegMask(argDsc->GetArgReg()) & fullIntArgRegMask(compiler->info.compCallConv)) != RBM_NONE);
-            intRegState->rsCalleeRegArgMaskLiveIn |= argDsc->GetArgReg();
+            intRegState->rsCalleeRegArgMaskLiveIn.AddRegNumInMask(argDsc->GetArgReg());
         }
     }
 
@@ -2136,12 +2136,12 @@ void LinearScan::UpdateRegStateForStructArg(LclVarDsc* argDsc)
         if (genRegMask(argDsc->GetOtherArgReg()) & (RBM_ALLFLOAT))
         {
             assert(genRegMask(argDsc->GetOtherArgReg()) & (RBM_FLTARG_REGS));
-            floatRegState->rsCalleeRegArgMaskLiveIn |= argDsc->GetOtherArgReg();
+            floatRegState->rsCalleeRegArgMaskLiveIn.AddRegNumInMask(argDsc->GetOtherArgReg());
         }
         else
         {
             assert((genRegMask(argDsc->GetOtherArgReg()) & fullIntArgRegMask(compiler->info.compCallConv)) != RBM_NONE);
-            intRegState->rsCalleeRegArgMaskLiveIn |= argDsc->GetOtherArgReg();
+            intRegState->rsCalleeRegArgMaskLiveIn.AddRegNumInMask(argDsc->GetOtherArgReg());
         }
     }
 }
@@ -4411,7 +4411,7 @@ int LinearScan::BuildPutArgReg(GenTreeUnOp* node)
     RefPosition*     use     = BuildUse(op1, argMask);
 
     // Record that this register is occupied by a register now.
-    placedArgRegs |= argReg;
+    placedArgRegs.AddRegNumInMask(argReg);
 
     if (supportsSpecialPutArg() && isCandidateLocalRef(op1) && ((op1->gtFlags & GTF_VAR_DEATH) == 0))
     {
