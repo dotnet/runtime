@@ -51,11 +51,12 @@ mono_arch_patch_plt_entry (guint8 *code, gpointer *got, host_mgreg_t *regs, guin
 	 */
 
 	// print next 4 instructions
+	printf ("\n");
 	printf ("mono_arch_patch_plt_entry begin\n");
+	printf ("code addr: %p\n", code);
 	printf ("ins0: %08x\n", ((guint32*)code) [0]);
 	printf ("ins1: %08x\n", ((guint32*)code) [1]);
 	printf ("ins2: %08x\n", ((guint32*)code) [2]);
-	printf ("\n");
 
 	/* adrp */
 	ins = ((guint32*)code) [0];
