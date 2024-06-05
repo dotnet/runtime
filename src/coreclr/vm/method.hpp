@@ -225,7 +225,7 @@ public:
 #else
         PTR_MethodDescCodeData codeData = VolatileLoadWithoutBarrier(&m_codeData);
         if (codeData == NULL)
-            return NULL;
+            return (PCODE)NULL;
         return VolatileLoadWithoutBarrier(&codeData->m_pTemporaryEntryPoint);
 #endif
     }
