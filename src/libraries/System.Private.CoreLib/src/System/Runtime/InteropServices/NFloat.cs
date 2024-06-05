@@ -780,19 +780,7 @@ namespace System.Runtime.InteropServices
         {
             if (obj is NFloat other)
             {
-                if (_value < other._value) return -1;
-                if (_value > other._value) return 1;
-                if (_value == other._value) return 0;
-
-                // At least one of the values is NaN.
-                if (NativeType.IsNaN(_value))
-                {
-                    return NativeType.IsNaN(other._value) ? 0 : -1;
-                }
-                else
-                {
-                    return 1;
-                }
+                return CompareTo(other);
             }
             else if (obj is null)
             {

@@ -1972,6 +1972,13 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         else
         {
             SingleTypeRegSet candidates = lowVectorOperandNum == 2 ? lowVectorCandidates : RBM_NONE;
+
+            if (intrin.op2->gtType == TYP_MASK)
+            {
+                assert(lowVectorOperandNum != 2);
+                candidates = RBM_ALLMASK;
+            }
+
             if (forceOp2DelayFree)
             {
                 srcCount += BuildDelayFreeUses(intrin.op2, nullptr, candidates);

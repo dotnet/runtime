@@ -537,8 +537,6 @@ class Thread
     friend BOOL NTGetThreadContext(Thread *pThread, T_CONTEXT *pContext);
     friend BOOL NTSetThreadContext(Thread *pThread, const T_CONTEXT *pContext);
 
-    friend void CommonTripThread();
-
 #ifdef FEATURE_HIJACK
     // MapWin32FaultToCOMPlusException needs access to Thread::IsAddrOfRedirectFunc()
     friend DWORD MapWin32FaultToCOMPlusException(EXCEPTION_RECORD *pExceptionRecord);
@@ -551,8 +549,6 @@ class Thread
 #endif // FEATURE_HIJACK
 
     friend void         InitThreadManager();
-
-    friend void CallFinalizerOnThreadObject(Object *obj);
 
     // Debug and Profiler caches ThreadHandle.
     friend class Debugger;                  // void Debugger::ThreadStarted(Thread* pRuntimeThread, BOOL fAttaching);
@@ -706,11 +702,10 @@ public:
                                                       // at the beginning of wait.
         // unused                       = 0x00040000,
         // unused                       = 0x00080000,
-        TSNC_RaiseUnloadEvent           = 0x00100000, // Finalize thread is raising managed unload event which
-                                                      // may call AppDomain.Unload.
+        // unused                       = 0x00100000,
         // unused                       = 0x00200000,
         // unused                       = 0x00400000,
-        TSNC_IgnoreUnhandledExceptions  = 0x00800000, // Set for a managed thread born inside an appdomain created with the APPDOMAIN_IGNORE_UNHANDLED_EXCEPTIONS flag.
+        // unused                       = 0x00800000,
         TSNC_ProcessedUnhandledException = 0x01000000,// Set on a thread on which we have done unhandled exception processing so that
                                                       // we dont perform it again when OS invokes our UEF. Currently, applicable threads include:
                                                       // 1) entry point thread of a managed app
