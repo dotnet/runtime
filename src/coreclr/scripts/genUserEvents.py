@@ -209,7 +209,6 @@ def generateUserEventHelperFile(etwmanifest, userevent_directory, target_cpp, ru
 #include <common.h>
 #include <configuration.h>
 
-#ifdef TARGET_UNIX
 bool s_userEventsEnabled = false;
 
 void InitUserEvents()
@@ -228,20 +227,7 @@ bool IsUserEventsEnabled()
 {
     return s_userEventsEnabled;
 }
-
-#else // TARGET_UNIX
-void InitUserEvents()
-{
-
-}
-
-bool IsUserEventsEnabled()
-{
-    return false;
-}
-
-#endif // TARGET_UNIX
-                """)
+""")
 
 def getCoreCLRUserEventImplFilePrefix():
     return """#include "common.h"

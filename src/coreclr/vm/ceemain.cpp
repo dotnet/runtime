@@ -197,9 +197,9 @@
 #include "diagnosticserveradapter.h"
 #include "eventpipeadapter.h"
 
-#ifdef FEATURE_PERFTRACING
+#if defined(FEATURE_PERFTRACING) && defined(TARGET_LINUX)
 #include "user_events.h"
-#endif // FEATURE_PERFTRACING
+#endif // defined(FEATURE_PERFTRACING) && defined(TARGET_LINUX)
 
 #ifndef TARGET_UNIX
 // Included for referencing __security_cookie
@@ -665,9 +665,9 @@ void EEStartupHelper()
 #ifdef FEATURE_PERFTRACING
         // Initialize the event pipe.
         EventPipeAdapter::Initialize();
-#if defined(TARGET_UNIX)
+#if defined(TARGET_LINUX)
         InitUserEvents();
-#endif // TARGET_UNIX
+#endif // TARGET_LINUX
 #endif // FEATURE_PERFTRACING
 
 #ifdef TARGET_UNIX

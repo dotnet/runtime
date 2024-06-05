@@ -4,6 +4,7 @@
 #ifndef __USEREVENTS_H__
 #define __USEREVENTS_H__
 
+
 extern void InitUserEvents();
 extern bool IsUserEventsEnabled();
 
