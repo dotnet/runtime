@@ -86,7 +86,7 @@ namespace TestLibrary
 
                 System.IO.Directory.CreateDirectory(outputDir);
 
-                ret = wrapper.RunTest(testExecutable, outputFile, errorFile, Assembly.GetEntryAssembly()!.FullName!, testBinaryBase, outputDir);
+                ret = wrapper.RunTest(testExecutable, outputFile, errorFile, string.Empty, Assembly.GetEntryAssembly()!.FullName!, testBinaryBase, outputDir);
             }
             catch (Exception ex)
             {
