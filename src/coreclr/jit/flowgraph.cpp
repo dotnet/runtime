@@ -6567,7 +6567,6 @@ FlowGraphPostDominatorTree* FlowGraphPostDominatorTree::Build(const FlowGraphRev
             {
                 changed        = true;
                 block->bbIPDom = bbIPDom;
-                JITDUMP("Setting ipdom of " FMT_BB " to " FMT_BB "\n", block->bbNum, bbIPDom->bbNum);
             }
         }
 
@@ -6660,13 +6659,11 @@ FlowGraphPostDominatorTree* FlowGraphPostDominatorTree::Build(const FlowGraphRev
 // Notes:
 //   Assumes m_postDomTree (and hence m_reverseDfsTree) exist.
 //
-//   The post dominance frontier (PDF) of a block B is the set of blocks Bp where
-//   B postdominates some, but not all successors of Bp (where we consider a block to postdominate itself)
+//   Based on "A Simple, Fast Dominance Algorithm" by
+//   Cooper, Harvey & Kennedy
 //
 void Compiler::fgComputePostDominanceFrontiers()
 {
-    JITDUMP("Computing Post Dominance Frontier\n");
-
     CompAllocator alloc = getAllocator(CMK_DominatorMemory);
     m_postDomFrontiers  = new (alloc) BlkToBlkVectorMap(alloc);
 
