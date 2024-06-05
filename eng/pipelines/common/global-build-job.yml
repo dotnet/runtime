@@ -170,7 +170,7 @@ jobs:
     - ${{ if and(eq(parameters.isOfficialBuild, true), notin(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator')) }}:
       - template: /eng/pipelines/common/restore-internal-tools.yml
 
-    - template: /eng/pipelines/common/templates/steps/enable-internal-sources.yml
+    - template: /eng/common/templates/steps/enable-internal-sources.yml
 
     - ${{ each monoCrossAOTTargetOS in parameters.monoCrossAOTTargetOS }}:
       - task: DownloadPipelineArtifact@2

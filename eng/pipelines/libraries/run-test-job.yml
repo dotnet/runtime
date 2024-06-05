@@ -87,7 +87,7 @@ jobs:
         clean: true
         fetchDepth: $(checkoutFetchDepth)
 
-      - template: /eng/pipelines/common/templates/steps/enable-internal-sources.yml
+      - template: /eng/common/templates/steps/enable-internal-sources.yml
 
       - ${{ if in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator') }}:
         - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }}
