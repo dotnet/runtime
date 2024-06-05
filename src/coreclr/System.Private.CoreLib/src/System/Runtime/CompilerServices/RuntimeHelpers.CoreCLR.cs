@@ -224,6 +224,7 @@ namespace System.Runtime.CompilerServices
         /// <returns>true if given type is reference type or value type that contains references</returns>
         [Intrinsic]
         public static bool IsReferenceOrContainsReferences<T>()
+            // where T : allows ref struct // TODO https://github.com/dotnet/runtime/issues/102847
         {
             // The body of this function will be replaced by the EE with unsafe code!!!
             // See getILIntrinsicImplementationForRuntimeHelpers for how this happens.

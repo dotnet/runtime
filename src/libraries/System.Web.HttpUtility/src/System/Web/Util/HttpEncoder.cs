@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -13,6 +14,12 @@ namespace System.Web.Util
     internal static class HttpEncoder
     {
         private const int MaxStackAllocUrlLength = 256;
+        private const int StackallocThreshold = 512;
+
+        // Set of safe chars, from RFC 1738.4 minus '+'
+        private static readonly SearchValues<byte> s_urlSafeBytes = SearchValues.Create(
+            "!()*-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz"u8);
+
         private static void AppendCharAsUnicodeJavaScript(StringBuilder builder, char c)
         {
             builder.Append($"\\u{(int)c:x4}");
@@ -218,8 +225,6 @@ namespace System.Web.Util
 
         internal static byte[] UrlDecode(ReadOnlySpan<byte> bytes)
         {
-            const int StackallocThreshold = 512;
-
             int decodedBytesCount = 0;
             int count = bytes.Length;
             Span<byte> decodedBytes = count <= StackallocThreshold ? stackalloc byte[StackallocThreshold] : new byte[count];
@@ -401,71 +406,40 @@ namespace System.Web.Util
         }
 
         [return: NotNullIfNotNull(nameof(bytes))]
-        internal static byte[]? UrlEncode(byte[]? bytes, int offset, int count, bool alwaysCreateNewReturnValue)
-        {
-            byte[]? encoded = UrlEncode(bytes, offset, count);
-
-            return (alwaysCreateNewReturnValue && (encoded != null) && (encoded == bytes))
-                ? (byte[])encoded.Clone()
-                : encoded;
-        }
-
-        [return: NotNullIfNotNull(nameof(bytes))]
-        private static byte[]? UrlEncode(byte[]? bytes, int offset, int count)
+        internal static byte[]? UrlEncode(byte[]? bytes, int offset, int count)
         {
             if (!ValidateUrlEncodingParameters(bytes, offset, count))
             {
                 return null;
             }
 
-            int cSpaces = 0;
-            int cUnsafe = 0;
+            return UrlEncode(bytes.AsSpan(offset, count));
+        }
 
-            // count them first
-            for (int i = 0; i < count; i++)
-            {
-                char ch = (char)bytes[offset + i];
-
-                if (ch == ' ')
-                {
-                    cSpaces++;
-                }
-                else if (!HttpEncoderUtility.IsUrlSafeChar(ch))
-                {
-                    cUnsafe++;
-                }
-            }
-
+        private static byte[] UrlEncode(ReadOnlySpan<byte> bytes)
+        {
             // nothing to expand?
-            if (cSpaces == 0 && cUnsafe == 0)
+            if (!NeedsEncoding(bytes, out int cUnsafe))
             {
-                // DevDiv 912606: respect "offset" and "count"
-                if (0 == offset && bytes.Length == count)
-                {
-                    return bytes;
-                }
-                else
-                {
-                    byte[] subarray = new byte[count];
-                    Buffer.BlockCopy(bytes, offset, subarray, 0, count);
-                    return subarray;
-                }
+                return bytes.ToArray();
             }
 
+            return UrlEncode(bytes, cUnsafe);
+        }
+
+        private static byte[] UrlEncode(ReadOnlySpan<byte> bytes, int cUnsafe)
+        {
             // expand not 'safe' characters into %XX, spaces to +s
-            byte[] expandedBytes = new byte[count + cUnsafe * 2];
+            byte[] expandedBytes = new byte[bytes.Length + cUnsafe * 2];
             int pos = 0;
 
-            for (int i = 0; i < count; i++)
+            foreach (byte b in bytes)
             {
-                byte b = bytes[offset + i];
-                char ch = (char)b;
-
-                if (HttpEncoderUtility.IsUrlSafeChar(ch))
+                if (s_urlSafeBytes.Contains(b))
                 {
                     expandedBytes[pos++] = b;
                 }
-                else if (ch == ' ')
+                else if (b == ' ')
                 {
                     expandedBytes[pos++] = (byte)'+';
                 }
@@ -478,6 +452,43 @@ namespace System.Web.Util
             }
 
             return expandedBytes;
+        }
+
+        private static bool NeedsEncoding(ReadOnlySpan<byte> bytes, out int cUnsafe)
+        {
+            cUnsafe = 0;
+
+            int i = bytes.IndexOfAnyExcept(s_urlSafeBytes);
+            if (i < 0)
+            {
+                return false;
+            }
+
+            foreach (byte b in bytes.Slice(i))
+            {
+                if (!s_urlSafeBytes.Contains(b) && b != ' ')
+                {
+                    cUnsafe++;
+                }
+            }
+
+            return true;
+        }
+
+        internal static byte[] UrlEncode(string str, Encoding e)
+        {
+            if (e.GetMaxByteCount(str.Length) <= StackallocThreshold)
+            {
+                Span<byte> byteSpan = stackalloc byte[StackallocThreshold];
+                int encodedBytes = e.GetBytes(str, byteSpan);
+
+                return UrlEncode(byteSpan.Slice(0, encodedBytes));
+            }
+
+            byte[] bytes = e.GetBytes(str);
+            return NeedsEncoding(bytes, out int cUnsafe)
+                ? UrlEncode(bytes, cUnsafe)
+                : bytes;
         }
 
         //  Helper to encode the non-ASCII url characters only
@@ -550,7 +561,7 @@ namespace System.Web.Util
 
                 if ((ch & 0xff80) == 0)
                 {  // 7 bit?
-                    if (HttpEncoderUtility.IsUrlSafeChar(ch))
+                    if (s_urlSafeBytes.Contains((byte)ch))
                     {
                         sb.Append(ch);
                     }
