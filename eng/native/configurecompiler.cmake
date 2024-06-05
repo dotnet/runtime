@@ -889,10 +889,6 @@ if (MSVC)
     add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Gz>)
   endif (CLR_CMAKE_HOST_ARCH_I386)
 
-  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
-  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_DEBUG OFF)
-  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_CHECKED OFF)
-
   if (CLR_CMAKE_HOST_ARCH_AMD64)
     # The generator expression in the following command means that the /homeparams option is added only for debug builds for C and C++ source files
     add_compile_options($<$<AND:$<CONFIG:Debug>,$<COMPILE_LANGUAGE:C,CXX>>:/homeparams>) # Force parameters passed in registers to be written to the stack
@@ -941,6 +937,10 @@ if (MSVC)
   # Don't display the output header when building asm files.
   set(CMAKE_ASM_MASM_FLAGS "${CMAKE_ASM_MASM_FLAGS} /nologo")
 endif (MSVC)
+
+set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
+set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_DEBUG OFF)
+set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_CHECKED OFF)
 
 # Configure non-MSVC compiler flags that apply to all platforms (unix-like or otherwise)
 if (NOT MSVC)
