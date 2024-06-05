@@ -4,9 +4,6 @@
 ; ***********************************************************************
 ; File: JitHelpers_InlineGetThread.asm, see history in jithelp.asm
 ;
-; Notes: These routinues will be patched at runtime with the location in
-;        the TLS to find the Thread* and are the fastest implementation
-;        of their specific functionality.
 ; ***********************************************************************
 
 include AsmMacros.inc
@@ -40,16 +37,16 @@ LEAF_ENTRY JIT_TrialAllocSFastMP_InlineGetThread, _TEXT
 
         ; m_BaseSize is guaranteed to be a multiple of 8.
 
-        INLINE_GETTHREAD r11
-        mov     r10, [r11 + OFFSET__Thread__m_alloc_context__alloc_limit]
-        mov     rax, [r11 + OFFSET__Thread__m_alloc_context__alloc_ptr]
+        INLINE_GET_ALLOC_CONTEXT r11
+        mov     r10, [r11 + OFFSETOF__gc_alloc_context__alloc_limit]
+        mov     rax, [r11 + OFFSETOF__gc_alloc_context__alloc_ptr]
 
         add     rdx, rax
 
         cmp     rdx, r10
         ja      AllocFailed
 
-        mov     [r11 + OFFSET__Thread__m_alloc_context__alloc_ptr], rdx
+        mov     [r11 + OFFSETOF__gc_alloc_context__alloc_ptr], rdx
         mov     [rax], rcx
 
         ret
@@ -64,9 +61,9 @@ NESTED_ENTRY JIT_BoxFastMP_InlineGetThread, _TEXT
         ; m_BaseSize is guaranteed to be a multiple of 8.
         mov     r8d, [rcx + OFFSET__MethodTable__m_BaseSize]
 
-        INLINE_GETTHREAD r11
-        mov     r10, [r11 + OFFSET__Thread__m_alloc_context__alloc_limit]
-        mov     rax, [r11 + OFFSET__Thread__m_alloc_context__alloc_ptr]
+        INLINE_GET_ALLOC_CONTEXT r11
+        mov     r10, [r11 + OFFSETOF__gc_alloc_context__alloc_limit]
+        mov     rax, [r11 + OFFSETOF__gc_alloc_context__alloc_ptr]
 
         add     r8, rax
 
@@ -76,7 +73,7 @@ NESTED_ENTRY JIT_BoxFastMP_InlineGetThread, _TEXT
         test    rdx, rdx
         je      NullRef
 
-        mov     [r11 + OFFSET__Thread__m_alloc_context__alloc_ptr], r8
+        mov     [r11 + OFFSETOF__gc_alloc_context__alloc_ptr], r8
         mov     [rax], rcx
 
         ; Check whether the object contains pointers
@@ -135,16 +132,16 @@ LEAF_ENTRY AllocateStringFastMP_InlineGetThread, _TEXT
         lea     edx, [STRING_BASE_SIZE + ecx*2 + 7]
         and     edx, -8
 
-        INLINE_GETTHREAD r11
-        mov     r10, [r11 + OFFSET__Thread__m_alloc_context__alloc_limit]
-        mov     rax, [r11 + OFFSET__Thread__m_alloc_context__alloc_ptr]
+        INLINE_GET_ALLOC_CONTEXT r11
+        mov     r10, [r11 + OFFSETOF__gc_alloc_context__alloc_limit]
+        mov     rax, [r11 + OFFSETOF__gc_alloc_context__alloc_ptr]
 
         add     rdx, rax
 
         cmp     rdx, r10
         ja      AllocFailed
 
-        mov     [r11 + OFFSET__Thread__m_alloc_context__alloc_ptr], rdx
+        mov     [r11 + OFFSETOF__gc_alloc_context__alloc_ptr], rdx
         mov     [rax], r9
 
         mov     [rax + OFFSETOF__StringObject__m_StringLength], ecx
@@ -188,9 +185,9 @@ LEAF_ENTRY JIT_NewArr1VC_MP_InlineGetThread, _TEXT
         and     r8d, -8
 
 
-        INLINE_GETTHREAD r11
-        mov     r10, [r11 + OFFSET__Thread__m_alloc_context__alloc_limit]
-        mov     rax, [r11 + OFFSET__Thread__m_alloc_context__alloc_ptr]
+        INLINE_GET_ALLOC_CONTEXT r11
+        mov     r10, [r11 + OFFSETOF__gc_alloc_context__alloc_limit]
+        mov     rax, [r11 + OFFSETOF__gc_alloc_context__alloc_ptr]
 
         add     r8, rax
         jc      AllocFailed
@@ -198,7 +195,7 @@ LEAF_ENTRY JIT_NewArr1VC_MP_InlineGetThread, _TEXT
         cmp     r8, r10
         ja      AllocFailed
 
-        mov     [r11 + OFFSET__Thread__m_alloc_context__alloc_ptr], r8
+        mov     [r11 + OFFSETOF__gc_alloc_context__alloc_ptr], r8
         mov     [rax], rcx
 
         mov     dword ptr [rax + OFFSETOF__ArrayBase__m_NumComponents], edx
@@ -237,16 +234,16 @@ LEAF_ENTRY JIT_NewArr1OBJ_MP_InlineGetThread, _TEXT
         ; No need for rounding in this case - element size is 8, and m_BaseSize is guaranteed
         ; to be a multiple of 8.
 
-        INLINE_GETTHREAD r11
-        mov     r10, [r11 + OFFSET__Thread__m_alloc_context__alloc_limit]
-        mov     rax, [r11 + OFFSET__Thread__m_alloc_context__alloc_ptr]
+        INLINE_GET_ALLOC_CONTEXT r11
+        mov     r10, [r11 + OFFSETOF__gc_alloc_context__alloc_limit]
+        mov     rax, [r11 + OFFSETOF__gc_alloc_context__alloc_ptr]
 
         add     r8, rax
 
         cmp     r8, r10
         ja      AllocFailed
 
-        mov     [r11 + OFFSET__Thread__m_alloc_context__alloc_ptr], r8
+        mov     [r11 + OFFSETOF__gc_alloc_context__alloc_ptr], r8
         mov     [rax], rcx
 
         mov     dword ptr [rax + OFFSETOF__ArrayBase__m_NumComponents], edx

@@ -26,6 +26,10 @@ GVAL_DECL(gc_alloc_context, g_global_alloc_context);
 }
 #endif // !DACCESS_COMPILE
 
+// on MP systems, each thread has its own allocation chunk so we can avoid
+// lock prefixes and expensive MP cache snooping stuff
+extern "C" thread_local gc_alloc_context t_thread_alloc_context;
+
 extern "C" uint32_t* g_card_bundle_table;
 extern "C" uint8_t* g_ephemeral_low;
 extern "C" uint8_t* g_ephemeral_high;

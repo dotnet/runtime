@@ -2125,7 +2125,7 @@ HCIMPL1(Object*, JIT_NewS_MP_FastPortable, CORINFO_CLASS_HANDLE typeHnd_)
         SIZE_T size = methodTable->GetBaseSize();
         _ASSERTE(size % DATA_ALIGNMENT == 0);
 
-        gc_alloc_context *allocContext = thread->GetAllocContext();
+        gc_alloc_context *allocContext = &t_thread_alloc_context;
         BYTE *allocPtr = allocContext->alloc_ptr;
         _ASSERTE(allocPtr <= allocContext->alloc_limit);
         if (size > static_cast<SIZE_T>(allocContext->alloc_limit - allocPtr))
@@ -2249,7 +2249,7 @@ HCIMPL1(StringObject*, AllocateString_MP_FastPortable, DWORD stringLength)
         _ASSERTE(alignedTotalSize >= totalSize);
         totalSize = alignedTotalSize;
 
-        gc_alloc_context *allocContext = thread->GetAllocContext();
+        gc_alloc_context *allocContext = &t_thread_alloc_context;
         BYTE *allocPtr = allocContext->alloc_ptr;
         _ASSERTE(allocPtr <= allocContext->alloc_limit);
         if (totalSize > static_cast<SIZE_T>(allocContext->alloc_limit - allocPtr))
@@ -2397,7 +2397,7 @@ HCIMPL2(Object*, JIT_NewArr1VC_MP_FastPortable, CORINFO_CLASS_HANDLE arrayMT, IN
         _ASSERTE(alignedTotalSize >= totalSize);
         totalSize = alignedTotalSize;
 
-        gc_alloc_context *allocContext = thread->GetAllocContext();
+        gc_alloc_context *allocContext = &t_thread_alloc_context;
         BYTE *allocPtr = allocContext->alloc_ptr;
         _ASSERTE(allocPtr <= allocContext->alloc_limit);
         if (totalSize > static_cast<SIZE_T>(allocContext->alloc_limit - allocPtr))
@@ -2456,7 +2456,7 @@ HCIMPL2(Object*, JIT_NewArr1OBJ_MP_FastPortable, CORINFO_CLASS_HANDLE arrayMT, I
 
         _ASSERTE(ALIGN_UP(totalSize, DATA_ALIGNMENT) == totalSize);
 
-        gc_alloc_context *allocContext = thread->GetAllocContext();
+        gc_alloc_context *allocContext = &t_thread_alloc_context;
         BYTE *allocPtr = allocContext->alloc_ptr;
         _ASSERTE(allocPtr <= allocContext->alloc_limit);
         if (totalSize > static_cast<SIZE_T>(allocContext->alloc_limit - allocPtr))

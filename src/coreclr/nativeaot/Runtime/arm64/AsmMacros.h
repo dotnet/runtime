@@ -85,12 +85,6 @@ TrapThreadsFlags_TrapThreads_Bit     equ 1
 STATUS_REDHAWK_THREAD_ABORT      equ 0x43
 
 ;;
-;; Rename fields of nested structs
-;;
-OFFSETOF__Thread__m_alloc_context__alloc_ptr        equ OFFSETOF__Thread__m_rgbAllocContextBuffer + OFFSETOF__gc_alloc_context__alloc_ptr
-OFFSETOF__Thread__m_alloc_context__alloc_limit      equ OFFSETOF__Thread__m_rgbAllocContextBuffer + OFFSETOF__gc_alloc_context__alloc_limit
-
-;;
 ;; IMPORTS
 ;;
     EXTERN RhpGcAlloc
@@ -117,6 +111,8 @@ OFFSETOF__Thread__m_alloc_context__alloc_limit      equ OFFSETOF__Thread__m_rgbA
 #endif
 
     EXTERN g_cpuFeatures
+
+    EXTERN t_thread_alloc_context
 
 ;; -----------------------------------------------------------------------------
 ;; Macro used to assign an alternate name to a symbol containing characters normally disallowed in a symbol
@@ -243,6 +239,16 @@ TrashRegister32Bit SETS "w":CC:("$TrashRegister32Bit":RIGHT:((:LEN:TrashRegister
         str         xzr, [$threadReg, #OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation]
         str         xzr, [$threadReg, #OFFSETOF__Thread__m_pvHijackedReturnAddress]
 0
+    MEND
+
+;; ------------------------------------------------------------------------------
+;;
+;; Macro to get the address of the current thread's allocation context
+;;
+    MACRO
+        INLINE_GET_ALLOC_CONTEXT $destReg $trashReg
+
+        INLINE_GET_TLS_VAR $destReg $trashReg t_thread_alloc_context
     MEND
 
 ;; ---------------------------------------------------------------------------- -

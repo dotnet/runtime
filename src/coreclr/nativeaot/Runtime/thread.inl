@@ -59,11 +59,6 @@ inline void Thread::PopGCFrameRegistration(GCFrameRegistration* pRegistration)
     m_pGCFrameRegistrations = pRegistration->m_pNext;
 }
 
-inline gc_alloc_context* Thread::GetAllocContext()
-{
-    return (gc_alloc_context*)m_rgbAllocContextBuffer;
-}
-
 inline bool Thread::IsStateSet(ThreadStateFlags flags)
 {
     return ((m_ThreadStateFlags & flags) == (uint32_t)flags);

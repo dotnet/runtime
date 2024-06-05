@@ -14,8 +14,8 @@ include AsmMacros.inc
 ;;  ECX == MethodTable
 FASTCALL_FUNC   RhpNewFast, 4
 
-        ;; edx = GetThread(), TRASHES eax
-        INLINE_GETTHREAD edx, eax
+        ;; edx = GetThreadAllocContext(), TRASHES eax
+        INLINE_GET_ALLOC_CONTEXT edx, eax
 
         ;;
         ;; ecx contains MethodTable pointer
@@ -28,12 +28,12 @@ FASTCALL_FUNC   RhpNewFast, 4
         ;; edx: Thread pointer
         ;;
 
-        add         eax, [edx + OFFSETOF__Thread__m_alloc_context__alloc_ptr]
-        cmp         eax, [edx + OFFSETOF__Thread__m_alloc_context__alloc_limit]
+        add         eax, [edx + OFFSETOF__gc_alloc_context__alloc_ptr]
+        cmp         eax, [edx + OFFSETOF__gc_alloc_context__alloc_limit]
         ja          AllocFailed
 
         ;; set the new alloc pointer
-        mov         [edx + OFFSETOF__Thread__m_alloc_context__alloc_ptr], eax
+        mov         [edx + OFFSETOF__gc_alloc_context__alloc_ptr], eax
 
         ;; calc the new object pointer
         sub         eax, [ecx + OFFSETOF__MethodTable__m_uBaseSize]
@@ -156,16 +156,16 @@ FASTCALL_FUNC   RhNewString, 8
         ; EAX == allocation size
         ; EDX == scratch
 
-        INLINE_GETTHREAD    edx, ecx        ; edx = GetThread(), TRASHES ecx
+        INLINE_GET_ALLOC_CONTEXT    edx, ecx        ; edx = GetThreadAllocContext(), TRASHES ecx
 
         ; ECX == scratch
         ; EAX == allocation size
         ; EDX == thread
 
         mov         ecx, eax
-        add         eax, [edx + OFFSETOF__Thread__m_alloc_context__alloc_ptr]
+        add         eax, [edx + OFFSETOF__gc_alloc_context__alloc_ptr]
         jc          StringAllocContextOverflow
-        cmp         eax, [edx + OFFSETOF__Thread__m_alloc_context__alloc_limit]
+        cmp         eax, [edx + OFFSETOF__gc_alloc_context__alloc_limit]
         ja          StringAllocContextOverflow
 
         ; ECX == allocation size
@@ -173,7 +173,7 @@ FASTCALL_FUNC   RhNewString, 8
         ; EDX == thread
 
         ; set the new alloc pointer
-        mov         [edx + OFFSETOF__Thread__m_alloc_context__alloc_ptr], eax
+        mov         [edx + OFFSETOF__gc_alloc_context__alloc_ptr], eax
 
         ; calc the new object pointer
         sub         eax, ecx
@@ -273,16 +273,16 @@ ArrayAlignSize:
         ; EAX == array size
         ; EDX == scratch
 
-        INLINE_GETTHREAD    edx, ecx        ; edx = GetThread(), TRASHES ecx
+        INLINE_GET_ALLOC_CONTEXT    edx, ecx        ; edx = GetThreadAllocContext(), TRASHES ecx
 
         ; ECX == scratch
         ; EAX == array size
         ; EDX == thread
 
         mov         ecx, eax
-        add         eax, [edx + OFFSETOF__Thread__m_alloc_context__alloc_ptr]
+        add         eax, [edx + OFFSETOF__gc_alloc_context__alloc_ptr]
         jc          ArrayAllocContextOverflow
-        cmp         eax, [edx + OFFSETOF__Thread__m_alloc_context__alloc_limit]
+        cmp         eax, [edx + OFFSETOF__gc_alloc_context__alloc_limit]
         ja          ArrayAllocContextOverflow
 
         ; ECX == array size
@@ -290,7 +290,7 @@ ArrayAlignSize:
         ; EDX == thread
 
         ; set the new alloc pointer
-        mov         [edx + OFFSETOF__Thread__m_alloc_context__alloc_ptr], eax
+        mov         [edx + OFFSETOF__gc_alloc_context__alloc_ptr], eax
 
         ; calc the new object pointer
         sub         eax, ecx

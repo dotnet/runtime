@@ -720,8 +720,8 @@ ClrDataAccess::GetThreadAllocData(CLRDATA_ADDRESS addr, struct DacpAllocData *da
 
     Thread* thread = PTR_Thread(TO_TADDR(addr));
 
-    data->allocBytes = TO_CDADDR(thread->m_alloc_context.alloc_bytes);
-    data->allocBytesLoh = TO_CDADDR(thread->m_alloc_context.alloc_bytes_uoh);
+    data->allocBytes = TO_CDADDR(thread->GetAllocContext()->alloc_bytes);
+    data->allocBytesLoh = TO_CDADDR(thread->GetAllocContext()->alloc_bytes_uoh);
 
     SOSDacLeave();
     return hr;
@@ -816,8 +816,8 @@ HRESULT ClrDataAccess::GetThreadDataImpl(CLRDATA_ADDRESS threadAddr, struct Dacp
     threadData->osThreadId = (DWORD)thread->m_OSThreadId;
     threadData->state = thread->m_State;
     threadData->preemptiveGCDisabled = thread->m_fPreemptiveGCDisabled;
-    threadData->allocContextPtr = TO_CDADDR(thread->m_alloc_context.alloc_ptr);
-    threadData->allocContextLimit = TO_CDADDR(thread->m_alloc_context.alloc_limit);
+    threadData->allocContextPtr = TO_CDADDR(thread->GetAllocContext()->alloc_ptr);
+    threadData->allocContextLimit = TO_CDADDR(thread->GetAllocContext()->alloc_limit);
 
     threadData->fiberData = (CLRDATA_ADDRESS)NULL;
 

@@ -433,13 +433,13 @@ struct PInvokeTransitionFrame
 #define PInvokeTransitionFrame_MAX_SIZE (sizeof(PInvokeTransitionFrame) + (POINTER_SIZE * PInvokeTransitionFrame_SaveRegs_count))
 
 #ifdef TARGET_AMD64
-#define OFFSETOF__Thread__m_pTransitionFrame 0x40
+#define OFFSETOF__Thread__m_pTransitionFrame 0x08
 #elif defined(TARGET_ARM64)
-#define OFFSETOF__Thread__m_pTransitionFrame 0x40
+#define OFFSETOF__Thread__m_pTransitionFrame 0x08
 #elif defined(TARGET_X86)
-#define OFFSETOF__Thread__m_pTransitionFrame 0x2c
+#define OFFSETOF__Thread__m_pTransitionFrame 0x04
 #elif defined(TARGET_ARM)
-#define OFFSETOF__Thread__m_pTransitionFrame 0x2c
+#define OFFSETOF__Thread__m_pTransitionFrame 0x04
 #endif
 
 typedef DPTR(MethodTable) PTR_EEType;

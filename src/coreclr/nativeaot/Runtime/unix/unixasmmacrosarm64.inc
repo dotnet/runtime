@@ -298,6 +298,11 @@ C_FUNC(\Name):
 0:
 .endm
 
+// Inlined version of RhpGetThreadAllocContext
+.macro INLINE_GET_ALLOC_CONTEXT target
+    INLINE_GET_TLS_VAR \target, C_FUNC(t_thread_alloc_context)
+.endm
+
 // Note: these must match the defs in PInvokeTransitionFrameFlags
 PTFF_SAVE_SP            = 0x00000400
 PTFF_SAVE_X0            = 0x00000800

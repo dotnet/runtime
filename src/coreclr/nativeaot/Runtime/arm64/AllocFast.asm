@@ -10,8 +10,8 @@
 ;;  x0 == MethodTable
     LEAF_ENTRY RhpNewFast
 
-        ;; x1 = GetThread(), TRASHES x2
-        INLINE_GETTHREAD x1, x2
+        ;; x1 = GetThreadAllocContext(), TRASHES x2
+        INLINE_GET_ALLOC_CONTEXT x1, x2
 
         ;;
         ;; x0 contains MethodTable pointer
@@ -25,17 +25,17 @@
         ;;
 
         ;; Load potential new object address into x12.
-        ldr         x12, [x1, #OFFSETOF__Thread__m_alloc_context__alloc_ptr]
+        ldr         x12, [x1, #OFFSETOF__gc_alloc_context__alloc_ptr]
 
         ;; Determine whether the end of the object would lie outside of the current allocation context. If so,
         ;; we abandon the attempt to allocate the object directly and fall back to the slow helper.
         add         x2, x2, x12
-        ldr         x13, [x1, #OFFSETOF__Thread__m_alloc_context__alloc_limit]
+        ldr         x13, [x1, #OFFSETOF__gc_alloc_context__alloc_limit]
         cmp         x2, x13
         bhi         RhpNewFast_RarePath
 
         ;; Update the alloc pointer to account for the allocation.
-        str         x2, [x1, #OFFSETOF__Thread__m_alloc_context__alloc_ptr]
+        str         x2, [x1, #OFFSETOF__gc_alloc_context__alloc_ptr]
 
         ;; Set the new object's MethodTable pointer
         str         x0, [x12, #OFFSETOF__Object__m_pEEType]
@@ -110,23 +110,23 @@ NewOutOfMemory
         ; x1 == element count
         ; x2 == string size
 
-        INLINE_GETTHREAD x3, x5
+        INLINE_GET_ALLOC_CONTEXT x3, x5
 
         ;; Load potential new object address into x12.
-        ldr         x12, [x3, #OFFSETOF__Thread__m_alloc_context__alloc_ptr]
+        ldr         x12, [x3, #OFFSETOF__gc_alloc_context__alloc_ptr]
 
         ;; Determine whether the end of the object would lie outside of the current allocation context. If so,
         ;; we abandon the attempt to allocate the object directly and fall back to the slow helper.
         add         x2, x2, x12
-        ldr         x12, [x3, #OFFSETOF__Thread__m_alloc_context__alloc_limit]
+        ldr         x12, [x3, #OFFSETOF__gc_alloc_context__alloc_limit]
         cmp         x2, x12
         bhi         RhpNewArrayRare
 
         ;; Reload new object address into r12.
-        ldr         x12, [x3, #OFFSETOF__Thread__m_alloc_context__alloc_ptr]
+        ldr         x12, [x3, #OFFSETOF__gc_alloc_context__alloc_ptr]
 
         ;; Update the alloc pointer to account for the allocation.
-        str         x2, [x3, #OFFSETOF__Thread__m_alloc_context__alloc_ptr]
+        str         x2, [x3, #OFFSETOF__gc_alloc_context__alloc_ptr]
 
         ;; Set the new object's MethodTable pointer and element count.
         str         x0, [x12, #OFFSETOF__Object__m_pEEType]
@@ -171,23 +171,23 @@ StringSizeOverflow
         ; x1 == element count
         ; x2 == array size
 
-        INLINE_GETTHREAD x3, x5
+        INLINE_GET_ALLOC_CONTEXT x3, x5
 
         ;; Load potential new object address into x12.
-        ldr         x12, [x3, #OFFSETOF__Thread__m_alloc_context__alloc_ptr]
+        ldr         x12, [x3, #OFFSETOF__gc_alloc_context__alloc_ptr]
 
         ;; Determine whether the end of the object would lie outside of the current allocation context. If so,
         ;; we abandon the attempt to allocate the object directly and fall back to the slow helper.
         add         x2, x2, x12
-        ldr         x12, [x3, #OFFSETOF__Thread__m_alloc_context__alloc_limit]
+        ldr         x12, [x3, #OFFSETOF__gc_alloc_context__alloc_limit]
         cmp         x2, x12
         bhi         RhpNewArrayRare
 
         ;; Reload new object address into x12.
-        ldr         x12, [x3, #OFFSETOF__Thread__m_alloc_context__alloc_ptr]
+        ldr         x12, [x3, #OFFSETOF__gc_alloc_context__alloc_ptr]
 
         ;; Update the alloc pointer to account for the allocation.
-        str         x2, [x3, #OFFSETOF__Thread__m_alloc_context__alloc_ptr]
+        str         x2, [x3, #OFFSETOF__gc_alloc_context__alloc_ptr]
 
         ;; Set the new object's MethodTable pointer and element count.
         str         x0, [x12, #OFFSETOF__Object__m_pEEType]
@@ -216,7 +216,7 @@ ArraySizeOverflow
     NESTED_ENTRY RhpNewArrayRare
 
         ; Recover array size by subtracting the alloc_ptr from x2.
-        PROLOG_NOP ldr x12, [x3, #OFFSETOF__Thread__m_alloc_context__alloc_ptr]
+        PROLOG_NOP ldr x12, [x3, #OFFSETOF__gc_alloc_context__alloc_ptr]
         PROLOG_NOP sub x2, x2, x12
 
         PUSH_COOP_PINVOKE_FRAME x3

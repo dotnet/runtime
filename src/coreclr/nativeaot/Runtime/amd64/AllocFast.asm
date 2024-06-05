@@ -9,8 +9,8 @@ include asmmacros.inc
 ;;  RCX == MethodTable
 LEAF_ENTRY RhpNewFast, _TEXT
 
-        ;; rdx = GetThread(), TRASHES rax
-        INLINE_GETTHREAD rdx, rax
+        ;; rdx = GetThreadAllocContext(), TRASHES rax
+        INLINE_GET_ALLOC_CONTEXT rdx, rax
 
         ;;
         ;; rcx contains MethodTable pointer
@@ -23,13 +23,13 @@ LEAF_ENTRY RhpNewFast, _TEXT
         ;; rdx: Thread pointer
         ;;
 
-        mov         rax, [rdx + OFFSETOF__Thread__m_alloc_context__alloc_ptr]
+        mov         rax, [rdx + OFFSETOF__gc_alloc_context__alloc_ptr]
         add         r8, rax
-        cmp         r8, [rdx + OFFSETOF__Thread__m_alloc_context__alloc_limit]
+        cmp         r8, [rdx + OFFSETOF__gc_alloc_context__alloc_limit]
         ja          RhpNewFast_RarePath
 
         ;; set the new alloc pointer
-        mov         [rdx + OFFSETOF__Thread__m_alloc_context__alloc_ptr], r8
+        mov         [rdx + OFFSETOF__gc_alloc_context__alloc_ptr], r8
 
         ;; set the new object's MethodTable pointer
         mov         [rax], rcx
@@ -107,10 +107,10 @@ LEAF_ENTRY RhNewString, _TEXT
         ; rcx == MethodTable
         ; rdx == element count
 
-        INLINE_GETTHREAD r10, r8
+        INLINE_GET_ALLOC_CONTEXT r10, r8
 
         mov         r8, rax
-        add         rax, [r10 + OFFSETOF__Thread__m_alloc_context__alloc_ptr]
+        add         rax, [r10 + OFFSETOF__gc_alloc_context__alloc_ptr]
         jc          RhpNewArrayRare
 
         ; rax == new alloc ptr
@@ -118,10 +118,10 @@ LEAF_ENTRY RhNewString, _TEXT
         ; rdx == element count
         ; r8 == array size
         ; r10 == thread
-        cmp         rax, [r10 + OFFSETOF__Thread__m_alloc_context__alloc_limit]
+        cmp         rax, [r10 + OFFSETOF__gc_alloc_context__alloc_limit]
         ja          RhpNewArrayRare
 
-        mov         [r10 + OFFSETOF__Thread__m_alloc_context__alloc_ptr], rax
+        mov         [r10 + OFFSETOF__gc_alloc_context__alloc_ptr], rax
 
         ; calc the new object pointer
         sub         rax, r8
@@ -168,10 +168,10 @@ LEAF_ENTRY RhpNewArray, _TEXT
         ; rcx == MethodTable
         ; rdx == element count
 
-        INLINE_GETTHREAD r10, r8
+        INLINE_GET_ALLOC_CONTEXT r10, r8
 
         mov         r8, rax
-        add         rax, [r10 + OFFSETOF__Thread__m_alloc_context__alloc_ptr]
+        add         rax, [r10 + OFFSETOF__gc_alloc_context__alloc_ptr]
         jc          RhpNewArrayRare
 
         ; rax == new alloc ptr
@@ -179,10 +179,10 @@ LEAF_ENTRY RhpNewArray, _TEXT
         ; rdx == element count
         ; r8 == array size
         ; r10 == thread
-        cmp         rax, [r10 + OFFSETOF__Thread__m_alloc_context__alloc_limit]
+        cmp         rax, [r10 + OFFSETOF__gc_alloc_context__alloc_limit]
         ja          RhpNewArrayRare
 
-        mov         [r10 + OFFSETOF__Thread__m_alloc_context__alloc_ptr], rax
+        mov         [r10 + OFFSETOF__gc_alloc_context__alloc_ptr], rax
 
         ; calc the new object pointer
         sub         rax, r8
