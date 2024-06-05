@@ -648,8 +648,6 @@ namespace System.Threading
 
         public object? Dequeue(ThreadPoolWorkQueueThreadLocals tl, ref bool missedSteal)
         {
-            ThreadPoolWorkQueue workQueue = ThreadPool.s_workQueue;
-
             // Check for local work items
             object? workItem = tl.workStealingQueue.LocalPop();
             if (workItem != null)
@@ -657,9 +655,9 @@ namespace System.Threading
                 return workItem;
             }
 
-            if (workQueue._nextWorkItemToProcess != null)
+            if (_nextWorkItemToProcess != null)
             {
-                workItem = Interlocked.Exchange(ref workQueue._nextWorkItemToProcess, null);
+                workItem = Interlocked.Exchange(ref _nextWorkItemToProcess, null);
                 if (workItem != null)
                 {
                     return workItem;
