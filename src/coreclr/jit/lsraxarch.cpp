@@ -2474,7 +2474,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 }
 
                 GenTree* ops[]    = {op1, op2, op3};
-                GenTree* resultOp = ops[resultOpNum - 1];
+                GenTree* resultOp = resultOpNum == 0 ? nullptr : ops[resultOpNum - 1];
 
                 for (GenTree* op : ops)
                 {
