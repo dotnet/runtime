@@ -820,7 +820,7 @@ void CodeGen::genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask,
         spDelta = 0;
     }
 
-    unsigned maskRegs = (unsigned)((regsToSaveMask >> REG_FP) & 0x3); // only check FP/LR.
+    unsigned maskRegs = (unsigned)((regsToSaveMask.getLow() >> REG_FP) & 0x3); // only check FP/LR.
     assert((maskRegs == 0) || (maskRegs == 3) || (maskRegs == 2));
     if (maskRegs == 3)
     {
@@ -849,8 +849,8 @@ void CodeGen::genRestoreCalleeSavedRegisterGroup(regMaskTP regsMask, regNumber l
            (genIsValidFloatReg(lastReg) && ((regsMask & ~RBM_FLT_CALLEE_SAVED) == 0)));
 
     int regNum = lastReg;
-    assert((sizeof(regsMask) * 8 - 1) == 63);
-    int64_t maskSaveRegs = (int64_t)(regsMask << (63 - regNum));
+    assert((regNum >= 0) && (regNum <= 63));
+    int64_t maskSaveRegs = (int64_t)regsMask.getLow() << (63 - regNum);
     do
     {
         if (maskSaveRegs < 0)
@@ -953,7 +953,7 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask,
     int spDelta2 = (regsToRestoreMask & RBM_CALLEE_SAVED) != 0 ? 0 : spDelta;
     int spOffset = (genCountBits(regsToRestoreMask) * REGSIZE_BYTES) + lowestCalleeSavedOffset;
 
-    uint64_t maskSaveRegs = (regsToRestoreMask & (RBM_FP | RBM_LR)) >> REG_FP;
+    uint64_t maskSaveRegs = (regsToRestoreMask.getLow() & (RBM_FP | RBM_LR)) >> REG_FP;
     // not include FP/LR or save both FP/LR or only LR.
     assert((maskSaveRegs == 0) || (maskSaveRegs == 3) || (maskSaveRegs == 2));
     if (maskSaveRegs == 3)
@@ -967,7 +967,7 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask,
         genEpilogRestoreReg(REG_LR, spOffset, spDelta2, REG_IP0, nullptr);
     }
 
-    maskSaveRegs = (uint64_t)(regsToRestoreMask & RBM_INT_CALLEE_SAVED);
+    maskSaveRegs = (uint64_t)(regsToRestoreMask.getLow() & RBM_INT_CALLEE_SAVED);
     if (maskSaveRegs != 0)
     {
         spDelta2 = (regsToRestoreMask & RBM_FLT_CALLEE_SAVED) != 0 ? 0 : spDelta;
@@ -975,7 +975,7 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask,
         spOffset -= (int)genCountBits(maskSaveRegs) * REGSIZE_BYTES;
     }
 
-    maskSaveRegs = (uint64_t)(regsToRestoreMask & RBM_FLT_CALLEE_SAVED);
+    maskSaveRegs = (uint64_t)(regsToRestoreMask.getLow() & RBM_FLT_CALLEE_SAVED);
     if (maskSaveRegs != 0)
     {
         genRestoreCalleeSavedRegisterGroup((regMaskTP)maskSaveRegs, LAST_FLT_CALLEE_SAVED, spDelta, spOffset);

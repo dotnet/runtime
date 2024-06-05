@@ -220,9 +220,9 @@ void CodeGen::genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask,
     assert(!(regsToSaveMask & (~RBM_CALLEE_SAVED)));
     assert(lowestCalleeSavedOffset >= 0);
 
-    emitter*  emit         = GetEmitter();
-    int       regNum       = FIRST_INT_CALLEE_SAVED;
-    regMaskTP maskSaveRegs = (regsToSaveMask & RBM_INT_CALLEE_SAVED) >> FIRST_INT_CALLEE_SAVED;
+    emitter* emit         = GetEmitter();
+    int      regNum       = FIRST_INT_CALLEE_SAVED;
+    int64_t  maskSaveRegs = (int64_t)(regsToSaveMask.getLow() & RBM_INT_CALLEE_SAVED) >> FIRST_INT_CALLEE_SAVED;
     do
     {
         if (maskSaveRegs & 1)
@@ -235,7 +235,7 @@ void CodeGen::genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask,
         regNum += 1;
     } while (maskSaveRegs != 0);
 
-    maskSaveRegs = (regsToSaveMask & RBM_FLT_CALLEE_SAVED) >> FIRST_FLT_CALLEE_SAVED;
+    maskSaveRegs = (int64_t)(regsToSaveMask.getLow() & RBM_FLT_CALLEE_SAVED) >> FIRST_FLT_CALLEE_SAVED;
     regNum       = FIRST_FLT_CALLEE_SAVED;
     do
     {
@@ -288,7 +288,7 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask,
     assert(highestCalleeSavedOffset >= 16);
 
     emitter* emit         = GetEmitter();
-    int64_t  maskSaveRegs = (int64_t)(regsToRestoreMask & RBM_FLT_CALLEE_SAVED) << (63 - LAST_FLT_CALLEE_SAVED);
+    int64_t  maskSaveRegs = (int64_t)(regsToRestoreMask.getLow() & RBM_FLT_CALLEE_SAVED) << (63 - LAST_FLT_CALLEE_SAVED);
     int      regNum       = LAST_FLT_CALLEE_SAVED;
     do
     {
@@ -302,7 +302,7 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask,
         regNum -= 1;
     } while (maskSaveRegs != 0);
 
-    maskSaveRegs = (int64_t)((regsToRestoreMask & RBM_INT_CALLEE_SAVED) << (63 - LAST_INT_CALLEE_SAVED));
+    maskSaveRegs = (int64_t)((regsToRestoreMask.getLow() & RBM_INT_CALLEE_SAVED) << (63 - LAST_INT_CALLEE_SAVED));
     regNum       = LAST_INT_CALLEE_SAVED;
     do
     {
