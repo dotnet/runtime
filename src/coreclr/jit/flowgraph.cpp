@@ -6518,7 +6518,7 @@ FlowGraphPostDominatorTree* FlowGraphPostDominatorTree::Build(const FlowGraphRev
             // Look for flow graph exit points. These have the pseudo exit as successor.
             // Hopefully the set is small and the pred search is cheap.
             //
-            FlowEdge* pseudoExitEdge = comp->fgGetPredForBlock(pseudoExit, block);
+            FlowEdge* const pseudoExitEdge = comp->fgGetPredForBlock(pseudoExit, block);
 
             if (pseudoExitEdge != nullptr)
             {
@@ -6530,7 +6530,7 @@ FlowGraphPostDominatorTree* FlowGraphPostDominatorTree::Build(const FlowGraphRev
             // Now process the regular successors.
             //
             // Note "infinite loop" blocks will have both an exit
-            // sucessor and regular successors.
+            // successor and regular successors.
             //
             for (BasicBlock* const succ : block->Succs(comp))
             {
@@ -6554,9 +6554,15 @@ FlowGraphPostDominatorTree* FlowGraphPostDominatorTree::Build(const FlowGraphRev
                 }
             }
 
+            // TODO: any block that can cause an exception should arguably have
+            // the associated filter/handler (or if not in a try, the pseudo-exit)
+            // as a successor. For now we are not modelling these edges here or
+            // in the RDFS.
+            //
             assert(bbIPDom != nullptr);
 
             // Did we change the bbIPDom value?  If so, we go around the outer loop again.
+            //
             if (block->bbIPDom != bbIPDom)
             {
                 changed        = true;
@@ -6568,12 +6574,14 @@ FlowGraphPostDominatorTree* FlowGraphPostDominatorTree::Build(const FlowGraphRev
         numIters++;
     }
 
-    // Now build dominator tree.
+    // Now build the postdominator tree.
+    //
     DomTreeNode* domTree = new (comp, CMK_DominatorMemory) DomTreeNode[count]{};
 
-    // Build the child and sibling links based on the immediate dominators.
+    // Build the child and sibling links based on the immediate postdominators.
     // Running this loop in post-order means we end up with sibling links in
     // reverse post-order. Skip the root since it has no siblings.
+    //
     for (unsigned i = 0; i < count - 1; i++)
     {
         BasicBlock* block  = postOrder[i];
@@ -6644,6 +6652,89 @@ FlowGraphPostDominatorTree* FlowGraphPostDominatorTree::Build(const FlowGraphRev
 
     return new (comp, CMK_DominatorMemory)
         FlowGraphPostDominatorTree(reverseDfsTree, domTree, preorderNums, postorderNums);
+}
+
+//------------------------------------------------------------------------
+// fgComputePostDominanceFrontiers: Compute flow graph dominance frontiers
+//
+// Notes:
+//   Assumes m_postDomTree (and hence m_reverseDfsTree) exist.
+//
+//   The post dominance frontier (PDF) of a block B is the set of blocks Bp where
+//   B postdominates some, but not all successors of Bp (where we consider a block to postdominate itself)
+//
+void Compiler::fgComputePostDominanceFrontiers()
+{
+    JITDUMP("Computing Post Dominance Frontier\n");
+
+    CompAllocator alloc = getAllocator(CMK_DominatorMemory);
+    m_postDomFrontiers  = new (alloc) BlkToBlkVectorMap(alloc);
+
+    BasicBlock** postOrder = m_reverseDfsTree->GetPostOrder();
+    unsigned     count     = m_reverseDfsTree->GetPostOrderCount();
+
+    for (unsigned i = 0; i < count; ++i)
+    {
+        BasicBlock* const block   = postOrder[i];
+        unsigned const    numSucc = block->NumSucc(this);
+
+        // A block can't be in some other block's PDF unless it
+        // has multiple successors.
+        //
+        if (numSucc < 2)
+        {
+            continue;
+        }
+
+        // Process successors to figure out which ones
+        // are not post dominated by block.
+        //
+        BasicBlock* const ipDom = block->bbIPDom;
+
+        for (BasicBlock* succ : block->Succs(this))
+        {
+            assert(m_reverseDfsTree->Contains(succ));
+
+            // Walk the postdom links until we hit the postdom of block
+            //
+            while (succ != ipDom)
+            {
+                // Add block to succ's PDF
+                // It's possible to encounter the same PDF multiple times, ensure that we don't add duplicates.
+                //
+                BlkVector& succPDF = *m_postDomFrontiers->Emplace(succ, alloc);
+
+                if (succPDF.empty() || (succPDF.back() != block))
+                {
+                    succPDF.push_back(block);
+                }
+
+                succ = succ->bbIPDom;
+            }
+        }
+    }
+
+#ifdef DEBUG
+    if (verbose)
+    {
+        printf("\nComputed postdominance frontier:\n");
+        for (unsigned i = 0; i < count; ++i)
+        {
+            BasicBlock* const b = postOrder[i];
+            printf("Block " FMT_BB " := {", b->bbNum);
+            BlkVector* const blockPDF = m_postDomFrontiers->LookupPointer(b);
+            if (blockPDF != nullptr)
+            {
+                int index = 0;
+                for (BasicBlock* f : *blockPDF)
+                {
+                    printf("%s" FMT_BB, (index++ == 0) ? "" : ",", f->bbNum);
+                }
+            }
+            printf("}\n");
+        }
+    }
+#endif
 }
 
 //------------------------------------------------------------------------

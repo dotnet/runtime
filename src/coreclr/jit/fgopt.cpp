@@ -339,6 +339,8 @@ PhaseStatus Compiler::fgComputePostDominators()
     m_postDomTree = FlowGraphPostDominatorTree::Build(m_reverseDfsTree);
     JITDUMPEXEC(m_postDomTree->Dump());
 
+    fgComputePostDominanceFrontiers();
+
     // TODO: Postdominated by exception is interesting... the
     // postdominance frontier would show us a possible transition
     // from "hot" to cold" cold.

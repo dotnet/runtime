@@ -5226,6 +5226,7 @@ public:
 
     // Postdominator tree
     FlowGraphPostDominatorTree* m_postDomTree;
+    BlkToBlkVectorMap* m_postDomFrontiers;
 
     // Do we require loops to be in canonical form? The canonical form ensures that:
     // 1. All loops have preheaders (single entry blocks that always enter the loop)
@@ -6003,6 +6004,7 @@ protected:
 
     PhaseStatus fgComputeDominators(); // Compute dominators
     PhaseStatus fgComputePostDominators(); // Compute postdominators
+    void fgComputePostDominanceFrontiers();
 
     bool fgRemoveDeadBlocks(); // Identify and remove dead blocks.
 
