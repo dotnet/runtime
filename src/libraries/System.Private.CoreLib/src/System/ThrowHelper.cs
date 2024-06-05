@@ -72,6 +72,24 @@ namespace System
         }
 
         [DoesNotReturn]
+        internal static void ThrowArrayTypeMismatchException_CantAssignType()
+        {
+            throw new ArrayTypeMismatchException(SR.ArrayTypeMismatch_CantAssignType);
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowInvalidCastException_DownCastArrayElement()
+        {
+            throw new InvalidCastException(SR.InvalidCast_DownCastArrayElement);
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowInvalidCastException_StoreArrayElement()
+        {
+            throw new InvalidCastException(SR.InvalidCast_StoreArrayElement);
+        }
+
+        [DoesNotReturn]
         internal static void ThrowInvalidTypeWithPointersNotSupported(Type targetType)
         {
             throw new ArgumentException(SR.Format(SR.Argument_InvalidTypeWithPointersNotSupported, targetType));
@@ -1232,6 +1250,12 @@ namespace System
                     return SR.Format_ExpectedAsciiDigit;
                 case ExceptionResource.Argument_HasToBeArrayClass:
                     return SR.Argument_HasToBeArrayClass;
+                case ExceptionResource.Arg_PrimitiveWiden:
+                    return SR.Arg_PrimWiden;
+                case ExceptionResource.Argument_MustBePrimitiveArray:
+                    return SR.Argument_MustBePrimitiveArray;
+                case ExceptionResource.Argument_BadFieldForInitializeArray:
+                    return SR.Argument_BadFieldForInitializeArray;
                 default:
                     Debug.Fail("The enum value is not defined, please check the ExceptionResource Enum.");
                     return "";
@@ -1428,5 +1452,8 @@ namespace System
         Format_UnclosedFormatItem,
         Format_ExpectedAsciiDigit,
         Argument_HasToBeArrayClass,
+        Arg_PrimitiveWiden,
+        Argument_MustBePrimitiveArray,
+        Argument_BadFieldForInitializeArray,
     }
 }
