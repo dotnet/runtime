@@ -20,7 +20,7 @@ abstract class ArrayRecord : SerializationRecord
     private protected ArrayRecord(ArrayInfo arrayInfo)
     {
         ArrayInfo = arrayInfo;
-        ValuesToRead = arrayInfo.Length;
+        ValuesToRead = arrayInfo.TotalElementsCount;
     }
 
     /// <summary>
@@ -141,7 +141,7 @@ abstract class ArrayRecord<T> : ArrayRecord
     /// Gets the length of the array.
     /// </summary>
     /// <value>The length of the array.</value>
-    public int Length => ArrayInfo.Length;
+    public int Length => ArrayInfo.GetSZArrayLength();
 
     /// <inheritdoc/>
     public override ReadOnlySpan<int> Lengths => new int[1] { Length };

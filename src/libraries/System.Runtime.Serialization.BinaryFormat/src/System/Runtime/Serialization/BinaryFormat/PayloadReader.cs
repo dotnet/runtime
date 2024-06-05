@@ -297,7 +297,7 @@ static class PayloadReader
         };
 
         static SerializationRecord Decode<T>(ArrayInfo info, BinaryReader reader) where T : unmanaged
-            => new ArraySinglePrimitiveRecord<T>(info, ArraySinglePrimitiveRecord<T>.DecodePrimitiveTypes(reader, (int)info.Length));
+            => new ArraySinglePrimitiveRecord<T>(info, ArraySinglePrimitiveRecord<T>.DecodePrimitiveTypes(reader, info.GetSZArrayLength()));
     }
 
     /// <summary>

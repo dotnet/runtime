@@ -16,21 +16,29 @@ namespace System.Runtime.Serialization.BinaryFormat;
 [DebuggerDisplay("Length={Length}, {ArrayType}, rank={Rank}")]
 internal readonly struct ArrayInfo
 {
-    internal ArrayInfo(int objectId, int length, BinaryArrayType arrayType = BinaryArrayType.Single, int rank = 1)
+    internal const int MaxArrayLength = 2147483591; // Array.MaxLength
+
+    internal ArrayInfo(int objectId, long totalElementsCount, BinaryArrayType arrayType = BinaryArrayType.Single, int rank = 1)
     {
         ObjectId = objectId;
-        Length = length;
+        TotalElementsCount = totalElementsCount;
         ArrayType = arrayType;
         Rank = rank;
     }
 
     internal int ObjectId { get; }
 
-    internal int Length { get; }
+    internal long TotalElementsCount { get; }
 
     internal BinaryArrayType ArrayType { get; }
 
     internal int Rank { get; }
+
+    internal int GetSZArrayLength()
+    {
+        Debug.Assert(TotalElementsCount <= MaxArrayLength);
+        return (int)TotalElementsCount;
+    }
 
     internal static ArrayInfo Decode(BinaryReader reader)
         => new(reader.ReadInt32(), ParseValidArrayLength(reader));
@@ -39,7 +47,7 @@ internal readonly struct ArrayInfo
     {
         int length = reader.ReadInt32();
 
-        if (length is < 0 or > 2147483591) // Array.MaxLength
+        if (length is < 0 or > MaxArrayLength)
         {
             ThrowHelper.ThrowInvalidValue(length);
         }

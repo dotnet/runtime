@@ -43,7 +43,7 @@ internal sealed class BinaryArrayRecord : ArrayRecord
     public override TypeName ElementTypeName
         => _elementTypeName ??= MemberTypeInfo.GetElementTypeName();
 
-    private int Length => ArrayInfo.Length;
+    private int Length => ArrayInfo.GetSZArrayLength();
 
     private MemberTypeInfo MemberTypeInfo { get; }
 
@@ -169,11 +169,11 @@ internal sealed class BinaryArrayRecord : ArrayRecord
         }
 
         MemberTypeInfo memberTypeInfo = MemberTypeInfo.Decode(reader, 1, options, recordMap);
-        ArrayInfo arrayInfo = new(objectId, (int)totalElementCount, arrayType, rank);
+        ArrayInfo arrayInfo = new(objectId, totalElementCount, arrayType, rank);
 
         if (isRectangular || hasCustomOffset)
         {
-            return RectangularOrCustomOffsetArrayRecord.Create(arrayInfo, memberTypeInfo, lengths, offsets);
+            return RectangularOrCustomOffsetArrayRecord.Create(reader, arrayInfo, memberTypeInfo, lengths, offsets);
         }
 
         return memberTypeInfo.ShouldBeRepresentedAsArrayOfClassRecords()

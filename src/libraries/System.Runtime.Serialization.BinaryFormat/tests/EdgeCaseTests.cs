@@ -1,6 +1,7 @@
 ﻿using System.IO;
 using System.Runtime.Serialization.Formatters;
 using System.Runtime.Serialization.Formatters.Binary;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Runtime.Serialization.BinaryFormat.Tests;
@@ -63,19 +64,26 @@ public class EdgeCaseTests : ReadTests
     [InlineData(100)]
     [InlineData(64_001)]
     [InlineData(127_000)]
-#if OUTERLOOP // it takes a lot of time to execute (+- 4 minutes)
+#if RELEASE && NETCOREAPP // it takes a lot of time to execute
     [InlineData(2147483591)] // Array.MaxLength
 #endif
     public void CanReadArrayOfAnySize(int length)
     {
-        byte[] input = new byte[length]; 
-        new Random().NextBytes(input);
+        try
+        {
+            byte[] input = new byte[length];
+            new Random().NextBytes(input);
 
-        // MemoryStream can not handle large array payloads as it's backed by an array.
-        using FileStream stream = SerializeToFile(input);
+            // MemoryStream can not handle large array payloads as it's backed by an array.
+            using FileStream stream = SerializeToFile(input);
 
-        byte[] output = ((ArrayRecord<byte>)PayloadReader.Read(stream)).GetArray();
-        Assert.Equal(input, output);
+            byte[] output = ((ArrayRecord<byte>)PayloadReader.Read(stream)).GetArray();
+            Assert.Equal(input, output);
+        }
+        catch (OutOfMemoryException) when (length == 2147483591)
+        {
+            throw new SkipTestException("Not enough memory available to test max array size support");
+        }
     }
 
 #pragma warning disable SYSLIB0011 // Type or member is obsolete

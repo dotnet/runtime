@@ -3,25 +3,40 @@
 
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Serialization.BinaryFormat.Utils;
 
 namespace System.Runtime.Serialization.BinaryFormat;
 
 internal sealed class RectangularOrCustomOffsetArrayRecord : ArrayRecord
 {
     private readonly int[] _lengths;
+    private readonly ICollection<object> _values;
     private TypeName? _elementTypeName;
 
     private RectangularOrCustomOffsetArrayRecord(Type elementType, ArrayInfo arrayInfo,
-        MemberTypeInfo memberTypeInfo, int[] lengths, int[] offsets) : base(arrayInfo)
+        MemberTypeInfo memberTypeInfo, int[] lengths, int[] offsets, bool canPreAllocate) : base(arrayInfo)
     {
         ElementType = elementType;
         MemberTypeInfo = memberTypeInfo;
         _lengths = lengths;
         Offsets = offsets;
-        Values = new();
+
+        // A List<T> can hold as many objects as an array, so for multi-dimensional arrays
+        // with more elements than Array.MaxLength we use LinkedList.
+        // Testing that many elements takes a LOT of time, so to ensure that both code paths are tested,
+        // we always use LinkedList code path for non-Release builds.
+#if RELEASE
+        _values = arrayInfo.TotalElementsCount <= ArrayInfo.MaxArrayLength
+            ? new List<object>(canPreAllocate ? arrayInfo.GetSZArrayLength() : Math.Min(4, arrayInfo.GetSZArrayLength()))
+            : new LinkedList<object>();
+#else
+        _values = new LinkedList<object>();
+#endif
+
     }
 
     public override RecordType RecordType => RecordType.BinaryArray;
@@ -36,11 +51,6 @@ internal sealed class RectangularOrCustomOffsetArrayRecord : ArrayRecord
     private MemberTypeInfo MemberTypeInfo { get; }
 
     private int[] Offsets { get; }
-
-    // This is the only array type that may have more elements than Array.MaxLength,
-    // that is why we use Linked instead of regular List here.
-    // TODO: verify my assumptions as I doubt them myself
-    private LinkedList<object> Values { get; }
 
     internal override bool IsElementType(Type typeElement)
         => MemberTypeInfo.IsElementType(typeElement);
@@ -63,7 +73,7 @@ internal sealed class RectangularOrCustomOffsetArrayRecord : ArrayRecord
         int[] indices = new int[Offsets.Length];
         Offsets.CopyTo(indices, 0); // respect custom offsets
 
-        foreach (object value in Values)
+        foreach (object value in _values)
         {
             result.SetValue(GetActualValue(value), indices);
 
@@ -91,29 +101,29 @@ internal sealed class RectangularOrCustomOffsetArrayRecord : ArrayRecord
         // an internal flat index.
         if (ElementType.IsValueType)
         {
-            if (ElementType == typeof(bool)) CopyTo<bool>(Values, result);
-            else if (ElementType == typeof(byte)) CopyTo<byte>(Values, result);
-            else if (ElementType == typeof(sbyte)) CopyTo<sbyte>(Values, result);
-            else if (ElementType == typeof(short)) CopyTo<short>(Values, result);
-            else if (ElementType == typeof(ushort)) CopyTo<ushort>(Values, result);
-            else if (ElementType == typeof(char)) CopyTo<char>(Values, result);
-            else if (ElementType == typeof(int)) CopyTo<int>(Values, result);
-            else if (ElementType == typeof(float)) CopyTo<float>(Values, result);
-            else if (ElementType == typeof(long)) CopyTo<long>(Values, result);
-            else if (ElementType == typeof(ulong)) CopyTo<ulong>(Values, result);
-            else if (ElementType == typeof(double)) CopyTo<double>(Values, result);
-            else if (ElementType == typeof(TimeSpan)) CopyTo<TimeSpan>(Values, result);
-            else if (ElementType == typeof(DateTime)) CopyTo<DateTime>(Values, result);
-            else if (ElementType == typeof(decimal)) CopyTo<decimal>(Values, result);
+            if (ElementType == typeof(bool)) CopyTo<bool>(_values, result);
+            else if (ElementType == typeof(byte)) CopyTo<byte>(_values, result);
+            else if (ElementType == typeof(sbyte)) CopyTo<sbyte>(_values, result);
+            else if (ElementType == typeof(short)) CopyTo<short>(_values, result);
+            else if (ElementType == typeof(ushort)) CopyTo<ushort>(_values, result);
+            else if (ElementType == typeof(char)) CopyTo<char>(_values, result);
+            else if (ElementType == typeof(int)) CopyTo<int>(_values, result);
+            else if (ElementType == typeof(float)) CopyTo<float>(_values, result);
+            else if (ElementType == typeof(long)) CopyTo<long>(_values, result);
+            else if (ElementType == typeof(ulong)) CopyTo<ulong>(_values, result);
+            else if (ElementType == typeof(double)) CopyTo<double>(_values, result);
+            else if (ElementType == typeof(TimeSpan)) CopyTo<TimeSpan>(_values, result);
+            else if (ElementType == typeof(DateTime)) CopyTo<DateTime>(_values, result);
+            else if (ElementType == typeof(decimal)) CopyTo<decimal>(_values, result);
         }
         else
         {
-            CopyTo<object>(Values, result);
+            CopyTo<object>(_values, result);
         }
 
         return result;
 
-        static void CopyTo<T>(LinkedList<object> list, Array array)
+        static void CopyTo<T>(ICollection<object> list, Array array)
         {
             ref byte arrayDataRef = ref MemoryMarshal.GetArrayDataReference(array);
             ref T firstElementRef = ref Unsafe.As<byte, T>(ref arrayDataRef);
@@ -128,7 +138,7 @@ internal sealed class RectangularOrCustomOffsetArrayRecord : ArrayRecord
 #endif
     }
 
-    private protected override void AddValue(object value) => Values.AddLast(value);
+    private protected override void AddValue(object value) => _values.Add(value);
 
     internal override (AllowedRecordTypes allowed, PrimitiveType primitiveType) GetAllowedRecordType()
     {
@@ -143,10 +153,11 @@ internal sealed class RectangularOrCustomOffsetArrayRecord : ArrayRecord
         return (allowed, primitiveType);
     }
 
-    internal static RectangularOrCustomOffsetArrayRecord Create(ArrayInfo arrayInfo,
+    internal static RectangularOrCustomOffsetArrayRecord Create(BinaryReader reader, ArrayInfo arrayInfo,
         MemberTypeInfo memberTypeInfo, int[] lengths, int[] offsets)
     {
-        Type elementType = memberTypeInfo.Infos[0].BinaryType switch
+        BinaryType binaryType = memberTypeInfo.Infos[0].BinaryType;
+        Type elementType = binaryType switch
         {
             BinaryType.Primitive => MapPrimitive((PrimitiveType)memberTypeInfo.Infos[0].AdditionalInfo!),
             BinaryType.PrimitiveArray => MapPrimitiveArray((PrimitiveType)memberTypeInfo.Infos[0].AdditionalInfo!),
@@ -155,7 +166,30 @@ internal sealed class RectangularOrCustomOffsetArrayRecord : ArrayRecord
             _ => typeof(ClassRecord)
         };
 
-        return new RectangularOrCustomOffsetArrayRecord(elementType, arrayInfo, memberTypeInfo, lengths, offsets);
+        bool canPreAllocate = false;
+        if (binaryType == BinaryType.Primitive)
+        {
+            int sizeOfSingleValue = (PrimitiveType)memberTypeInfo.Infos[0].AdditionalInfo! switch
+            {
+                PrimitiveType.Boolean => sizeof(bool),
+                PrimitiveType.Byte => sizeof(byte),
+                PrimitiveType.SByte => sizeof(sbyte),
+                PrimitiveType.Char => sizeof(char),
+                PrimitiveType.Int16 => sizeof(short),
+                PrimitiveType.UInt16 => sizeof(ushort),
+                PrimitiveType.Int32 => sizeof(int),
+                PrimitiveType.UInt32 => sizeof(uint),
+                PrimitiveType.Single => sizeof(float),
+                PrimitiveType.Int64 => sizeof(long),
+                PrimitiveType.UInt64 => sizeof(ulong),
+                PrimitiveType.Double => sizeof(double),
+                _ => -1
+            };
+
+            canPreAllocate = sizeOfSingleValue != -1 && reader.IsDataAvailable(requiredBytes: arrayInfo.TotalElementsCount * sizeOfSingleValue);
+        }
+
+        return new RectangularOrCustomOffsetArrayRecord(elementType, arrayInfo, memberTypeInfo, lengths, offsets, canPreAllocate);
     }
 
     private static Type MapPrimitive(PrimitiveType primitiveType)

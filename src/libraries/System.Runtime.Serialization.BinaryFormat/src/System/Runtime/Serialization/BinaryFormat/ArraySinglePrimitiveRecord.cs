@@ -55,7 +55,7 @@ internal sealed class ArraySinglePrimitiveRecord<T> : ArrayRecord<T>
 
     private protected override void AddValue(object value)
     {
-        Debug.Fail("This should never happen");
+        Debug.Fail("AddValue should never be called on ArraySinglePrimitiveRecord");
         throw new InvalidOperationException();
     }
 
@@ -98,6 +98,10 @@ internal sealed class ArraySinglePrimitiveRecord<T> : ArrayRecord<T>
         List<T> values = [];
         for (int i = 0; i < count; i++)
         {
+            if (typeof(T) == typeof(byte))
+            {
+                values.Add((T)(object)reader.ReadByte());
+            }
             if (typeof(T) == typeof(bool))
             {
                 values.Add((T)(object)reader.ReadBoolean());
