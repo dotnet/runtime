@@ -41,6 +41,13 @@ namespace Microsoft.Extensions.Caching.Distributed
         void Set(string key, byte[] value, Microsoft.Extensions.Caching.Distributed.DistributedCacheEntryOptions options);
         System.Threading.Tasks.Task SetAsync(string key, byte[] value, Microsoft.Extensions.Caching.Distributed.DistributedCacheEntryOptions options, System.Threading.CancellationToken token = default(System.Threading.CancellationToken));
     }
+    public interface IBufferDistributedCache : IDistributedCache
+    {
+        bool TryGet(string key, System.Buffers.IBufferWriter<byte> destination);
+        System.Threading.Tasks.ValueTask<bool> TryGetAsync(string key, System.Buffers.IBufferWriter<byte> destination, System.Threading.CancellationToken token = default);
+        void Set(string key, System.Buffers.ReadOnlySequence<byte> value, DistributedCacheEntryOptions options);
+        System.Threading.Tasks.ValueTask SetAsync(string key, System.Buffers.ReadOnlySequence<byte> value, DistributedCacheEntryOptions options, System.Threading.CancellationToken token = default);
+    }
 }
 namespace Microsoft.Extensions.Caching.Memory
 {
@@ -155,4 +162,60 @@ namespace Microsoft.Extensions.Internal
         public SystemClock() { }
         public System.DateTimeOffset UtcNow { get { throw null; } }
     }
+}
+namespace Microsoft.Extensions.Caching.Hybrid
+{
+    public partial interface IHybridCacheSerializer<T>
+    {
+        T Deserialize(System.Buffers.ReadOnlySequence<byte> source);
+        void Serialize(T value, System.Buffers.IBufferWriter<byte> target);
+    }
+    public interface IHybridCacheSerializerFactory
+    {
+        bool TryCreateSerializer<T>([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out IHybridCacheSerializer<T>? serializer);
+    }
+    public sealed class HybridCacheEntryOptions
+    {
+        public System.TimeSpan? Expiration { get; init; }
+        public System.TimeSpan? LocalCacheExpiration { get; init; }
+        public HybridCacheEntryFlags? Flags { get; init; }
+    }
+    [System.Flags]
+    public enum HybridCacheEntryFlags
+    {
+        None = 0,
+        DisableLocalCacheRead = 1 << 0,
+        DisableLocalCacheWrite = 1 << 1,
+        DisableLocalCache = DisableLocalCacheRead | DisableLocalCacheWrite,
+        DisableDistributedCacheRead = 1 << 2,
+        DisableDistributedCacheWrite = 1 << 3,
+        DisableDistributedCache = DisableDistributedCacheRead | DisableDistributedCacheWrite,
+        DisableUnderlyingData = 1 << 4,
+        DisableCompression = 1 << 5,
+    }
+    public abstract class HybridCache
+    {
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("ApiDesign", "RS0026:Do not add multiple public overloads with optional parameters", Justification = "Delegate differences make this unambiguous")]
+        public abstract System.Threading.Tasks.ValueTask<T> GetOrCreateAsync<TState, T>(string key, TState state, System.Func<TState, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<T>> factory,
+            HybridCacheEntryOptions? options = null, System.Collections.Generic.IReadOnlyCollection<string>? tags = null, System.Threading.CancellationToken token = default);
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("ApiDesign", "RS0026:Do not add multiple public overloads with optional parameters", Justification = "Delegate differences make this unambiguous")]
+        public System.Threading.Tasks.ValueTask<T> GetOrCreateAsync<T>(string key, System.Func<System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<T>> factory,
+            HybridCacheEntryOptions? options = null, System.Collections.Generic.IReadOnlyCollection<string>? tags = null, System.Threading.CancellationToken token = default)
+            => throw new System.NotImplementedException();
+
+        public abstract System.Threading.Tasks.ValueTask SetAsync<T>(string key, T value, HybridCacheEntryOptions? options = null, System.Collections.Generic.IReadOnlyCollection<string>? tags = null, System.Threading.CancellationToken token = default);
+
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("ApiDesign", "RS0026:Do not add multiple public overloads with optional parameters", Justification = "Not ambiguous in context")]
+        public abstract System.Threading.Tasks.ValueTask RemoveAsync(string key, System.Threading.CancellationToken token = default);
+
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("ApiDesign", "RS0026:Do not add multiple public overloads with optional parameters", Justification = "Not ambiguous in context")]
+        public virtual System.Threading.Tasks.ValueTask RemoveAsync(System.Collections.Generic.IEnumerable<string> keys, System.Threading.CancellationToken token = default)
+            => throw new System.NotImplementedException();
+
+       [System.Diagnostics.CodeAnalysis.SuppressMessage("ApiDesign", "RS0026:Do not add multiple public overloads with optional parameters", Justification = "Not ambiguous in context")]
+        public virtual System.Threading.Tasks.ValueTask RemoveByTagAsync(System.Collections.Generic.IEnumerable<string> tags, System.Threading.CancellationToken token = default)
+            => throw new System.NotImplementedException();
+        public abstract System.Threading.Tasks.ValueTask RemoveByTagAsync(string tag, System.Threading.CancellationToken token = default);
+    }
+
 }
