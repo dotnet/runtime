@@ -2318,6 +2318,10 @@ void LinearScan::getLowVectorOperandAndCandidates(HWIntrinsic intrin, size_t* op
             *operandNum = 3;
             break;
         case NI_Sve_MultiplyBySelectedScalar:
+        case NI_Sve_PrefetchBytes:
+        case NI_Sve_PrefetchInt16:
+        case NI_Sve_PrefetchInt32:
+        case NI_Sve_PrefetchInt64:
             *operandNum = 2;
             break;
         default:
