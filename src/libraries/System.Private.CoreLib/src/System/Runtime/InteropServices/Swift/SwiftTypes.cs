@@ -55,7 +55,6 @@ namespace System.Runtime.InteropServices.Swift
     /// </code>
     /// </para>
     /// </remarks>
-    [CLSCompliant(false)]
     [Intrinsic]
     public readonly unsafe struct SwiftSelf<T> where T: unmanaged
     {
