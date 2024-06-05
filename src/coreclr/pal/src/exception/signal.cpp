@@ -35,6 +35,7 @@ SET_DEFAULT_DEBUG_CHANNEL(EXCEPT); // some headers have code with asserts, so do
 
 #include <errno.h>
 #include <signal.h>
+#include <dlfcn.h>
 
 #if !HAVE_MACH_EXCEPTIONS
 #include "pal/init.h"
@@ -243,12 +244,24 @@ BOOL SEHInitializeSignals(CorUnix::CPalThread *pthrCurrent, DWORD flags)
     if (flags & PAL_INITIALIZE_REGISTER_ACTIVATION_SIGNAL)
     {
 #ifdef __APPLE__
-        if (__builtin_available(macOS 14.4, *))
+        void *libdispatch = dlopen("/usr/lib/system/libdispatch.dylib", RTLD_LAZY);
+        if (libdispatch != NULL)
         {
-            // Allow sending the activation signal to dispatch queue threads
-            int st = dispatch_allow_send_signals(INJECT_ACTIVATION_SIGNAL);
-            g_canSendSignalToDispatchQueueThreads = (st == 0);
+            int (*dispatch_allow_send_signals_ptr)(int) = (int (*)(int))dlsym(libdispatch, "dispatch_allow_send_signals");
+            if (dispatch_allow_send_signals_ptr != NULL)
+            {
+                int st = dispatch_allow_send_signals_ptr(INJECT_ACTIVATION_SIGNAL);
+                g_canSendSignalToDispatchQueueThreads = (st == 0);
+            }
         }
+
+        // TODO: Once our CI tools can get upgraded to xcode >= 15.4, replace the code above by this:
+        // if (__builtin_available(macOS 14.4, *))
+        // {
+        //    // Allow sending the activation signal to dispatch queue threads
+        //    int st = dispatch_allow_send_signals(INJECT_ACTIVATION_SIGNAL);
+        //    g_canSendSignalToDispatchQueueThreads = (st == 0);
+        // }
 #endif // __APPLE__
 
         handle_signal(INJECT_ACTIVATION_SIGNAL, inject_activation_handler, &g_previous_activation);
