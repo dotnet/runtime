@@ -324,6 +324,31 @@ PhaseStatus Compiler::fgComputeDominators()
 }
 
 //-------------------------------------------------------------
+// fgComputePostDominators: Compute postdominators
+//
+// Returns:
+//    Suitable phase status.
+//
+PhaseStatus Compiler::fgComputePostDominators()
+{
+    assert(m_dfsTree != nullptr);
+
+    m_reverseDfsTree = fgComputeReverseDfs();
+    JITDUMPEXEC(m_reverseDfsTree->Dump());
+
+    m_postDomTree = FlowGraphPostDominatorTree::Build(m_reverseDfsTree);
+    JITDUMPEXEC(m_postDomTree->Dump());
+
+    fgComputePostDominanceFrontiers();
+
+    // TODO: Postdominated by exception is interesting... the
+    // postdominance frontier would show us a possible transition
+    // from "hot" to cold" cold.
+    //
+    return PhaseStatus::MODIFIED_NOTHING;
+}
+
+//-------------------------------------------------------------
 // fgInitBlockVarSets: Initialize the per-block variable sets (used for liveness analysis).
 //
 // Notes:
