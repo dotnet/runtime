@@ -4118,8 +4118,11 @@ template FlowGraphDfsTree* Compiler::fgComputeDfs<true>();
 void Compiler::fgInvalidateDfsTree()
 {
     m_dfsTree          = nullptr;
+    m_reverseDfsTree = nullptr;
     m_loops            = nullptr;
     m_domTree          = nullptr;
+    m_postDomTree = nullptr;
+    m_postDomFrontiers = nullptr;
     m_reachabilitySets = nullptr;
     fgSsaValid         = false;
 }

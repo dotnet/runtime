@@ -634,7 +634,7 @@ bool Compiler::fgIsPreLive(GenTree* tree)
 PhaseStatus Compiler::fgSsaBasedDce()
 {
     m_dfsTree                               = fgComputeDfs();
-    BlockReachabilitySets* reachabilitySets = BlockReachabilitySets::Build(m_dfsTree);
+    fgComputePostDominators();
     TreeSet*               live             = new (this, CMK_Liveness) TreeSet(getAllocator(CMK_Liveness));
 
     struct TreeWithBlock
@@ -713,16 +713,21 @@ PhaseStatus Compiler::fgSsaBasedDce()
             }
         }
 
-        reachabilitySets->VisitReachingBlocks(block, [=, &worklist](BasicBlock* pred) {
-            if ((pred != block) && pred->KindIs(BBJ_COND, BBJ_SWITCH))
+        BlkVector* blockPDF = m_postDomFrontiers->LookupPointer(block);
+        if (blockPDF != nullptr)
+        {
+            for (BasicBlock* pd : *blockPDF)
             {
-                GenTree* terminator = pred->lastStmt()->GetRootNode();
-                if (!live->Set(terminator, true, TreeSet::Overwrite))
+                if (pd->KindIs(BBJ_COND, BBJ_SWITCH))
                 {
-                    worklist.Emplace(terminator, pred);
+                    GenTree* terminator = pd->lastStmt()->GetRootNode();
+                    if (!live->Set(terminator, true, TreeSet::Overwrite))
+                    {
+                        worklist.Emplace(terminator, pd);
+                    }
                 }
             }
-        });
+        }
     }
 
     struct ExtractVisitor : GenTreeVisitor<ExtractVisitor>
@@ -791,7 +796,7 @@ PhaseStatus Compiler::fgSsaBasedDce()
                 for (FlowEdge* edge : block->SuccEdges())
                 {
                     if ((bestSucc == nullptr) ||
-                        (edge->getDestinationBlock()->bbPostorderNum > bestSucc->bbPostorderNum))
+                        (edge->getDestinationBlock()->bbPostorderNum < bestSucc->bbPostorderNum))
                     {
                         bestSucc = edge->getDestinationBlock();
                     }
