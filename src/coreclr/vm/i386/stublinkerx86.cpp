@@ -2450,7 +2450,7 @@ VOID StubLinkerCPU::X86EmitCurrentThreadFetch(X86Reg dstreg, unsigned preservedR
 #ifdef TARGET_UNIX
 namespace
 {
-    gc_alloc_context* STDDCALL GetAllocContextHelper()
+    gc_alloc_context* STDCALL GetAllocContextHelper()
     {
         return &t_thread_alloc_context;
     }
