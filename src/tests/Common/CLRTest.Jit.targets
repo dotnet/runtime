@@ -366,6 +366,8 @@ for inputAssemblyName in glob.glob("*.dll"):
           proc.kill()
           sys.exit(1)
 
+      # Test determinism
+
       ilasm_args = f'{os.environ["CORE_ROOT"]}/ilasm -output={inputAssemblyName} {ilasmSwitches} {disassemblyName}'
       print(ilasm_args)
       proc = subprocess.Popen(ilasm_args, shell=True)
@@ -394,7 +396,7 @@ for inputAssemblyName in glob.glob("*.dll"):
       else:
         print("ILASM determinism succeeded")
 
-      # Test portable PDB determinism
+      # Test PDB determinism
 
       if not is_managed_debug_assembly(inputAssemblyName):
         ilasmSwitches = ilasmSwitches + " -DEBUG"
