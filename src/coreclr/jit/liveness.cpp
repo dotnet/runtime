@@ -633,9 +633,9 @@ bool Compiler::fgIsPreLive(GenTree* tree)
 //
 PhaseStatus Compiler::fgSsaBasedDce()
 {
-    m_dfsTree                               = fgComputeDfs();
+    m_dfsTree = fgComputeDfs();
     fgComputePostDominators();
-    TreeSet*               live             = new (this, CMK_Liveness) TreeSet(getAllocator(CMK_Liveness));
+    TreeSet* live = new (this, CMK_Liveness) TreeSet(getAllocator(CMK_Liveness));
 
     struct TreeWithBlock
     {
