@@ -7177,14 +7177,6 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				/* already boxed, do nothing. */
 				td->ip += 5;
 			} else {
-				if (G_UNLIKELY (m_class_is_byreflike (klass)) && !td->optimized) {
-					if (td->verbose_level)
-						g_print ("Box byreflike detected. Retry compilation with full optimization.\n");
-					td->retry_compilation = TRUE;
-					td->retry_with_inlining = TRUE;
-					goto exit;
-				}
-
 				const gboolean vt = mono_mint_type (m_class_get_byval_arg (klass)) == MINT_TYPE_VT;
 
 				if (td->sp [-1].type == STACK_TYPE_R8 && m_class_get_byval_arg (klass)->type == MONO_TYPE_R4)
