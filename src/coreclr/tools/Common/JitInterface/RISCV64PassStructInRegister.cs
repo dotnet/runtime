@@ -148,17 +148,17 @@ namespace Internal.JitInterface
         {
             int nFlattenedFieldsPerElement = typeIndex - elementTypeIndex;
             if (nFlattenedFieldsPerElement == 0)
-                return true;
+                return true; // ignoring empty array element
 
             Debug.Assert(nFlattenedFieldsPerElement == 1 || nFlattenedFieldsPerElement == 2);
 
             if (nElements > 2)
-                return false;
+                return false; // array has too many elements
 
             if (nElements == 2)
             {
                 if (typeIndex + nFlattenedFieldsPerElement > 2)
-                    return false;
+                    return false; // array has too many fields per element
 
                 Debug.Assert(elementTypeIndex == 0);
                 Debug.Assert(typeIndex == 1);
@@ -184,7 +184,7 @@ namespace Internal.JitInterface
                 nFields++;
 
                 if (prevField != null && prevField.Offset.AsInt + prevField.FieldType.GetElementSize().AsInt > field.Offset.AsInt)
-                    return false; // overlapping fields
+                    return false; // fields overlap, treat as union
 
                 prevField = field;
 
@@ -198,7 +198,7 @@ namespace Internal.JitInterface
                 else if (field.FieldType.GetElementSize().AsInt <= TARGET_POINTER_SIZE)
                 {
                     if (typeIndex >= 2)
-                        return false;
+                        return false; // too many fields
 
                     SetFpStructInRegistersInfoField(ref info, typeIndex++,
                         (category is TypeFlags.Single or TypeFlags.Double),
@@ -209,7 +209,7 @@ namespace Internal.JitInterface
                 }
                 else
                 {
-                    return false;
+                    return false; // field is too big
                 }
             }
 
@@ -230,20 +230,17 @@ namespace Internal.JitInterface
             FpStructInRegistersInfo info = new FpStructInRegistersInfo{};
             int nFields = 0;
             if (!FlattenFields(td, 0, ref info, ref nFields))
-            {
                 return new FpStructInRegistersInfo{};
-            }
 
             if ((info.flags & (Float1st | Float2nd)) == 0)
-            {
-                return new FpStructInRegistersInfo{};
-            }
+                return new FpStructInRegistersInfo{}; // struct has no floating fields
+
             Debug.Assert(nFields == 1 || nFields == 2);
 
             if ((info.flags & (Float1st | Float2nd)) == (Float1st | Float2nd))
             {
                 Debug.Assert(nFields == 2);
-                info.flags ^= (Float1st | Float2nd | BothFloat); // replace (1st|2nd)Float with BothFloat
+                info.flags ^= (Float1st | Float2nd | BothFloat); // replace Float(1st|2nd) with BothFloat
             }
             else if (nFields == 1)
             {
