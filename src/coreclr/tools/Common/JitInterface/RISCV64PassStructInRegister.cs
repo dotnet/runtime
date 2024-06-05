@@ -81,6 +81,14 @@ namespace Internal.JitInterface
             {
                 Debug.Assert(nFields == 1);
                 int nElements = td.GetElementSize().AsInt / prevField.FieldType.GetElementSize().AsInt;
+
+                // Only InlineArrays can have an element type of an empty struct, fixed-size buffers take only primitives
+                if ((typeIndex - elementTypeIndex) == 0 && (td as MetadataType).IsInlineArray)
+                {
+                    Debug.Assert(nElements > 0, "InlineArray length must be > 0");
+                    return false; // struct containing an array of empty structs is passed by integer calling convention
+                }
+
                 if (!HandleInlineArrayOld(elementTypeIndex, nElements, types, ref typeIndex))
                     return false;
             }
@@ -148,7 +156,10 @@ namespace Internal.JitInterface
         {
             int nFlattenedFieldsPerElement = typeIndex - elementTypeIndex;
             if (nFlattenedFieldsPerElement == 0)
-                return true; // ignoring empty array element
+            {
+                Debug.Assert(nElements == 1, "HasImpliedRepeatedFields must have returned a false positive");
+                return true; // ignoring empty struct
+            }
 
             Debug.Assert(nFlattenedFieldsPerElement == 1 || nFlattenedFieldsPerElement == 2);
 
@@ -217,6 +228,14 @@ namespace Internal.JitInterface
             {
                 Debug.Assert(nFields == 1);
                 int nElements = td.GetElementSize().AsInt / prevField.FieldType.GetElementSize().AsInt;
+
+                // Only InlineArrays can have an element type of an empty struct, fixed-size buffers take only primitives
+                if ((typeIndex - elementTypeIndex) == 0 && (td as MetadataType).IsInlineArray)
+                {
+                    Debug.Assert(nElements > 0, "InlineArray length must be > 0");
+                    return false; // struct containing an array of empty structs is passed by integer calling convention
+                }
+
                 if (!HandleInlineArray(elementTypeIndex, nElements, ref info, ref typeIndex))
                     return false;
             }

@@ -2833,7 +2833,10 @@ static bool HandleInlineArrayOld(int elementTypeIndex, int nElements, StructFloa
 {
     int nFlattenedFieldsPerElement = typeIndex - elementTypeIndex;
     if (nFlattenedFieldsPerElement == 0)
-        return true;
+    {
+        assert(nElements == 1); // HasImpliedRepeatedFields must have returned a false positive
+        return true; // ignoring empty struct
+    }
 
     assert(nFlattenedFieldsPerElement == 1 || nFlattenedFieldsPerElement == 2);
 
@@ -2896,6 +2899,14 @@ static bool FlattenFieldTypesOld(TypeHandle th, StructFloatFieldInfoFlags types[
         {
             assert(nFields == 1);
             int nElements = pMT->GetNumInstanceFieldBytes() / fields[0].GetSize();
+
+            // Only InlineArrays can have an element type of an empty struct, fixed-size buffers take only primitives
+            if ((typeIndex - elementTypeIndex) == 0 && pMT->GetClass()->IsInlineArray())
+            {
+                assert(nElements > 0);
+                return false;
+            }
+
             if (!HandleInlineArrayOld(elementTypeIndex, nElements, types, typeIndex))
                 return false;
         }
@@ -3044,7 +3055,8 @@ static bool HandleInlineArray(int elementTypeIndex, int nElements, FpStructInReg
     int nFlattenedFieldsPerElement = typeIndex - elementTypeIndex;
     if (nFlattenedFieldsPerElement == 0)
     {
-        LOG((LF_JIT, LL_EVERYTHING, "GetRiscV64PassFpStructInRegistersInfo:%*s  * ignoring empty array element\n",
+        assert(nElements == 1); // HasImpliedRepeatedFields must have returned a false positive
+        LOG((LF_JIT, LL_EVERYTHING, "FpStructInRegistersInfo:%*s  * ignoring empty struct\n",
             nestingLevel * 4, ""));
         return true;
     }
@@ -3053,7 +3065,7 @@ static bool HandleInlineArray(int elementTypeIndex, int nElements, FpStructInReg
 
     if (nElements > 2)
     {
-        LOG((LF_JIT, LL_EVERYTHING, "GetRiscV64PassFpStructInRegistersInfo:%*s  * array has too many elements: %i\n",
+        LOG((LF_JIT, LL_EVERYTHING, "FpStructInRegistersInfo:%*s  * array has too many elements: %i\n",
             nestingLevel * 4, "", nElements));
         return false;
     }
@@ -3062,7 +3074,7 @@ static bool HandleInlineArray(int elementTypeIndex, int nElements, FpStructInReg
     {
         if (typeIndex + nFlattenedFieldsPerElement > 2)
         {
-            LOG((LF_JIT, LL_EVERYTHING, "GetRiscV64PassFpStructInRegistersInfo:%*s  * array has too many fields per element: %i, fields already found: %i\n",
+            LOG((LF_JIT, LL_EVERYTHING, "FpStructInRegistersInfo:%*s  * array has too many fields per element: %i, fields already found: %i\n",
                 nestingLevel * 4, "", nFlattenedFieldsPerElement, typeIndex));
             return false;
         }
@@ -3074,7 +3086,7 @@ static bool HandleInlineArray(int elementTypeIndex, int nElements, FpStructInReg
         static const int typeSize = FpStruct::PosFloat2nd - FpStruct::PosFloat1st;
         info.flags = FpStruct::Flags(info.flags | (info.flags << typeSize));
         info.offset2nd = info.offset1st + info.GetSize1st();
-        LOG((LF_JIT, LL_EVERYTHING, "GetRiscV64PassFpStructInRegistersInfo:%*s  * duplicated array element type\n",
+        LOG((LF_JIT, LL_EVERYTHING, "FpStructInRegistersInfo:%*s  * duplicated array element type\n",
             nestingLevel * 4, ""));
     }
     return true;
@@ -3087,7 +3099,7 @@ static bool FlattenFields(TypeHandle th, uint32_t offset, FpStructInRegistersInf
     MethodTable* pMT = isManaged ? th.AsMethodTable() : th.AsNativeValueType();
     int nFields = isManaged ? pMT->GetNumIntroducedInstanceFields() : pMT->GetNativeLayoutInfo()->GetNumFields();
 
-    LOG((LF_JIT, LL_EVERYTHING, "GetRiscV64PassFpStructInRegistersInfo:%*s flattening %s (%s, %i fields)\n",
+    LOG((LF_JIT, LL_EVERYTHING, "FpStructInRegistersInfo:%*s flattening %s (%s, %i fields)\n",
         nestingLevel * 4, "", pMT->GetDebugClassName(), (isManaged ? "managed" : "native"), nFields));
 
     // TODO: templatize isManaged and use if constexpr for differences when we migrate to C++17
@@ -3100,7 +3112,7 @@ static bool FlattenFields(TypeHandle th, uint32_t offset, FpStructInRegistersInf
         {
             if (i > 0 && fields[i-1].GetOffset() + fields[i-1].GetSize() > fields[i].GetOffset())
             {
-                LOG((LF_JIT, LL_EVERYTHING, "GetRiscV64PassFpStructInRegistersInfo:%*s "
+                LOG((LF_JIT, LL_EVERYTHING, "FpStructInRegistersInfo:%*s "
                     " * fields %s [%i..%i) and %s [%i..%i) overlap, treat as union\n",
                     nestingLevel * 4, "",
                     fields[i-1].GetDebugName(), fields[i-1].GetOffset(), fields[i-1].GetOffset() + fields[i-1].GetSize(),
@@ -3119,7 +3131,7 @@ static bool FlattenFields(TypeHandle th, uint32_t offset, FpStructInRegistersInf
             {
                 if (typeIndex >= 2)
                 {
-                    LOG((LF_JIT, LL_EVERYTHING, "GetRiscV64PassFpStructInRegistersInfo:%*s  * too many fields\n",
+                    LOG((LF_JIT, LL_EVERYTHING, "FpStructInRegistersInfo:%*s  * too many fields\n",
                         nestingLevel * 4, ""));
                     return false;
                 }
@@ -3131,13 +3143,13 @@ static bool FlattenFields(TypeHandle th, uint32_t offset, FpStructInRegistersInf
                     (gcType == TYPE_GC_BYREF),
                     CorTypeInfo::Size_NoThrow(type),
                     offset + fields[i].GetOffset());
-                LOG((LF_JIT, LL_EVERYTHING, "GetRiscV64PassFpStructInRegistersInfo:%*s  * found field %s [%i..%i), type: %s\n",
+                LOG((LF_JIT, LL_EVERYTHING, "FpStructInRegistersInfo:%*s  * found field %s [%i..%i), type: %s\n",
                     nestingLevel * 4, "", fields[i].GetDebugName(),
                     fields[i].GetOffset(), fields[i].GetOffset() + fields[i].GetSize(), CorTypeInfo::GetName(type)));
             }
             else
             {
-                LOG((LF_JIT, LL_EVERYTHING, "GetRiscV64PassFpStructInRegistersInfo:%*s "
+                LOG((LF_JIT, LL_EVERYTHING, "FpStructInRegistersInfo:%*s "
                     " * field %s, type: %s, is too big (%i bytes)\n",
                     nestingLevel * 4, "", fields[i].GetDebugName(),
                     CorTypeInfo::GetName(type), fields[i].GetSize()));
@@ -3149,6 +3161,17 @@ static bool FlattenFields(TypeHandle th, uint32_t offset, FpStructInRegistersInf
         {
             assert(nFields == 1);
             int nElements = pMT->GetNumInstanceFieldBytes() / fields[0].GetSize();
+
+            // Only InlineArrays can have an element type of an empty struct, fixed-size buffers take only primitives
+            if ((typeIndex - elementTypeIndex) == 0 && pMT->GetClass()->IsInlineArray())
+            {
+                assert(nElements > 0); // InlineArray length must be > 0
+                LOG((LF_JIT, LL_EVERYTHING, "FpStructInRegistersInfo:%*s "
+                    " * struct %s containing a %i-element array of empty structs %s is passed by integer calling convention\n",
+                    nestingLevel * 4, "", pMT->GetDebugClassName(), nElements, fields[0].GetDebugName()));
+                return false;
+            }
+
             if (!HandleInlineArray(elementTypeIndex, nElements, info, typeIndex DEBUG_ARG(nestingLevel + 1)))
                 return false;
         }
@@ -3160,7 +3183,7 @@ static bool FlattenFields(TypeHandle th, uint32_t offset, FpStructInRegistersInf
         {
             if (i > 0 && fields[i-1].GetExternalOffset() + fields[i-1].NativeSize() > fields[i].GetExternalOffset())
             {
-                LOG((LF_JIT, LL_EVERYTHING, "GetRiscV64PassFpStructInRegistersInfo:%*s "
+                LOG((LF_JIT, LL_EVERYTHING, "FpStructInRegistersInfo:%*s "
                     " * fields %s [%i..%i) and %s [%i..%i) overlap, treat as union\n",
                     nestingLevel * 4, "",
                     fields[i-1].GetFieldDesc()->GetDebugName(), fields[i-1].GetExternalOffset(), fields[i-1].GetExternalOffset() + fields[i-1].NativeSize(),
@@ -3187,7 +3210,7 @@ static bool FlattenFields(TypeHandle th, uint32_t offset, FpStructInRegistersInf
             {
                 if (typeIndex >= 2)
                 {
-                    LOG((LF_JIT, LL_EVERYTHING, "GetRiscV64PassFpStructInRegistersInfo:%*s  * too many fields\n",
+                    LOG((LF_JIT, LL_EVERYTHING, "FpStructInRegistersInfo:%*s  * too many fields\n",
                         nestingLevel * 4, ""));
                     return false;
                 }
@@ -3198,13 +3221,13 @@ static bool FlattenFields(TypeHandle th, uint32_t offset, FpStructInRegistersInf
                     false,
                     fields[i].NativeSize(),
                     offset + fields[i].GetExternalOffset());
-                LOG((LF_JIT, LL_EVERYTHING, "GetRiscV64PassFpStructInRegistersInfo:%*s  * found field %s [%i..%i), type: %s\n",
+                LOG((LF_JIT, LL_EVERYTHING, "FpStructInRegistersInfo:%*s  * found field %s [%i..%i), type: %s\n",
                     nestingLevel * 4, "", fields[i].GetFieldDesc()->GetDebugName(),
                     fields[i].GetExternalOffset(), fields[i].GetExternalOffset() + fields[i].NativeSize(), categoryNames[(int)category]));
             }
             else
             {
-                LOG((LF_JIT, LL_EVERYTHING, "GetRiscV64PassFpStructInRegistersInfo:%*s "
+                LOG((LF_JIT, LL_EVERYTHING, "FpStructInRegistersInfo:%*s "
                     " * field %s, type: %s, is too big (%i bytes)\n",
                     nestingLevel * 4, "", fields[i].GetFieldDesc()->GetDebugName(),
                     categoryNames[(int)category], fields[i].NativeSize()));
@@ -3228,7 +3251,7 @@ static FpStructInRegistersInfo GetRiscV64PassFpStructInRegistersInfoImpl(TypeHan
     using namespace FpStruct;
     if ((info.flags & (Float1st | Float2nd)) == 0)
     {
-        LOG((LF_JIT, LL_EVERYTHING, "GetRiscV64PassFpStructInRegistersInfo: struct %s (%u bytes) has no floating fields\n",
+        LOG((LF_JIT, LL_EVERYTHING, "FpStructInRegistersInfo: struct %s (%u bytes) has no floating fields\n",
             (!th.IsTypeDesc() ? th.AsMethodTable() : th.AsNativeValueType())->GetDebugClassName(), th.GetSize()));
         return FpStructInRegistersInfo{};
     }
@@ -3267,7 +3290,7 @@ static FpStructInRegistersInfo GetRiscV64PassFpStructInRegistersInfoImpl(TypeHan
         assert((info.flags & Float2nd) || (info.IsSize2nd8() && IS_ALIGNED(info.offset2nd, TARGET_POINTER_SIZE)));
     }
 
-    LOG((LF_JIT, LL_EVERYTHING, "GetRiscV64PassFpStructInRegistersInfo: "
+    LOG((LF_JIT, LL_EVERYTHING, "FpStructInRegistersInfo: "
         "struct %s (%u bytes) can be passed with floating-point calling convention, flags=%#02x, "
         "%s, sizes={%u, %u}, GcRef=%i, GcByRef=%i, offsets={%u, %u}\n",
         (!th.IsTypeDesc() ? th.AsMethodTable() : th.AsNativeValueType())->GetDebugClassName(), th.GetSize(), info.flags,
