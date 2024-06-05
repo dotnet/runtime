@@ -1179,16 +1179,18 @@ namespace
         // Parsing the signature follows details defined in ECMA-335 - II.23.2.1
         //
 
+        uint32_t callConvDecl;
+        uint32_t callConvMethod;
+        IfFailThrow(CorSigUncompressCallingConv(pSig1, cSig1, &callConvDecl));
+        IfFailThrow(CorSigUncompressCallingConv(pSig2, cSig2, &callConvMethod));
+        pSig1++;
+        pSig2++;
+
         // Validate calling convention
-        if ((*pSig1 & IMAGE_CEE_CS_CALLCONV_MASK) != (*pSig2 & IMAGE_CEE_CS_CALLCONV_MASK))
+        if ((callConvDecl & IMAGE_CEE_CS_CALLCONV_MASK) != (callConvMethod & IMAGE_CEE_CS_CALLCONV_MASK))
         {
             return false;
         }
-
-        BYTE callConvDecl = *pSig1;
-        BYTE callConvMethod = *pSig2;
-        pSig1++;
-        pSig2++;
 
         // Handle generic param count
         DWORD declGenericCount = 0;
@@ -1402,10 +1404,78 @@ namespace
         return cxt.TargetMethod != NULL;
     }
 
+    bool DoesFieldMatchUnsafeAccessorDeclaration(
+        GenerationContext& cxt,
+        FieldDesc* field,
+        MetaSig::CompareState& state)
+    {
+        STANDARD_VM_CONTRACT;
+        _ASSERTE(field != NULL);
+
+        PCCOR_SIGNATURE pSig1;
+        DWORD cSig1;
+        cxt.Declaration->GetSig(&pSig1, &cSig1);
+        PCCOR_SIGNATURE pEndSig1 = pSig1 + cSig1;
+        ModuleBase* pModule1 = cxt.Declaration->GetModule();
+        const Substitution* pSubst1 = NULL;
+
+        PCCOR_SIGNATURE pSig2;
+        DWORD cSig2;
+        field->GetSig(&pSig2, &cSig2);
+        PCCOR_SIGNATURE pEndSig2 = pSig2 + cSig2;
+        ModuleBase* pModule2 = field->GetModule();
+        const Substitution* pSubst2 = NULL;
+
+        //
+        // Parsing the signature follows details defined in ECMA-335 - II.23.2.1 (MethodDefSig) and II.23.2.4 (FieldSig)
+        // The intent here is to compare the return type in the MethodDefSig with the type in the FieldSig
+        //
+
+        // Consume calling convention
+        uint32_t callConvDecl;
+        uint32_t callConvField;
+        IfFailThrow(CorSigUncompressCallingConv(pSig1, cSig1, &callConvDecl));
+        IfFailThrow(CorSigUncompressCallingConv(pSig2, cSig2, &callConvField));
+        _ASSERTE(callConvField == IMAGE_CEE_CS_CALLCONV_FIELD);
+        pSig1++;
+        pSig2++;
+
+        // Consume parts of the method signature until we get to the return type.
+        DWORD declGenericCount = 0;
+        if (callConvDecl & IMAGE_CEE_CS_CALLCONV_GENERIC)
+            IfFailThrow(CorSigUncompressData_EndPtr(pSig1, pEndSig1, &declGenericCount));
+
+        DWORD declArgCount;
+        IfFailThrow(CorSigUncompressData_EndPtr(pSig1, pEndSig1, &declArgCount));
+
+        // UnsafeAccessors for fields require return types be byref.
+        // This was explicitly checked in TryGenerateUnsafeAccessor().
+        if (pSig1 >= pEndSig1)
+            ThrowHR(META_E_BAD_SIGNATURE);
+        CorElementType byRefType = CorSigUncompressElementType(pSig1);
+        _ASSERTE(byRefType == ELEMENT_TYPE_BYREF);
+
+        // Compare the types
+        if (FALSE == MetaSig::CompareElementType(
+            pSig1,
+            pSig2,
+            pEndSig1,
+            pEndSig2,
+            pModule1,
+            pModule2,
+            pSubst1,
+            pSubst2,
+            &state))
+        {
+            return false;
+        }
+
+        return true;
+    }
+
     bool TrySetTargetField(
         GenerationContext& cxt,
-        LPCUTF8 fieldName,
-        TypeHandle fieldType)
+        LPCUTF8 fieldName)
     {
         STANDARD_VM_CONTRACT;
         _ASSERTE(fieldName != NULL);
@@ -1417,7 +1487,6 @@ namespace
 
         MethodTable* pMT = targetType.AsMethodTable();
 
-        CorElementType elemType = fieldType.GetSignatureCorElementType();
         ApproxFieldDescIterator fdIterator(
             pMT,
             (cxt.IsTargetStatic ? ApproxFieldDescIterator::STATIC_FIELDS : ApproxFieldDescIterator::INSTANCE_FIELDS));
@@ -1428,20 +1497,11 @@ namespace
             if (strcmp(fieldName, pField->GetName()) != 0)
                 continue;
 
-            // We check if the possible field is class or valuetype
-            // since generic fields need resolution.
-            CorElementType fieldTypeMaybe = pField->GetFieldType();
-            if (fieldTypeMaybe == ELEMENT_TYPE_CLASS
-                || fieldTypeMaybe == ELEMENT_TYPE_VALUETYPE)
-            {
-                if (fieldType != pField->LookupFieldTypeHandle())
-                    continue;
-            }
-            else
-            {
-                if (elemType != fieldTypeMaybe)
-                    continue;
-            }
+            TokenPairList list { nullptr };
+            MetaSig::CompareState state{ &list };
+            state.IgnoreCustomModifiers = false;
+            if (!DoesFieldMatchUnsafeAccessorDeclaration(cxt, pField, state))
+                continue;
 
             if (cxt.Kind == UnsafeAccessorKind::StaticField && pMT->HasGenericsStaticsInfo())
             {
@@ -1769,7 +1829,7 @@ bool MethodDesc::TryGenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMET
 
         context.TargetType = ValidateTargetType(firstArgType, firstArgCorType);
         context.IsTargetStatic = kind == UnsafeAccessorKind::StaticField;
-        if (!TrySetTargetField(context, name.GetUTF8(), retType.GetTypeParam()))
+        if (!TrySetTargetField(context, name.GetUTF8()))
             MemberLoader::ThrowMissingFieldException(context.TargetType.AsMethodTable(), name.GetUTF8());
         break;
 

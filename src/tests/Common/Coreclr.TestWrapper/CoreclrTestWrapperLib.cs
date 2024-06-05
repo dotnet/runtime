@@ -305,7 +305,19 @@ namespace CoreclrTestLib
             }
             else
             {
-                createdump.Kill(true);
+                // Workaround for https://github.com/dotnet/runtime/issues/93321
+                for (int i = 0; i < 5; i++)
+                {
+                    try
+                    {
+                        createdump.Kill(entireProcessTree: true);
+                        break;
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine($"Process.Kill(entireProcessTree: true) failed with {e}. Retrying.");
+                    }
+                }
             }
 
             return fSuccess && createdump.ExitCode == 0;

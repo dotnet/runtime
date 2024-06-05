@@ -22,7 +22,7 @@ namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
     /// Computes the list of dependencies from DynamicDependencyAttribute.
-    /// https://docs.microsoft.com/en-us/dotnet/api/system.diagnostics.codeanalysis.dynamicdependencyattribute
+    /// https://learn.microsoft.com/dotnet/api/system.diagnostics.codeanalysis.dynamicdependencyattribute
     /// </summary>
     public class DynamicDependencyAttributesOnEntityNode : DependencyNodeCore<NodeFactory>
     {

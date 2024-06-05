@@ -860,7 +860,7 @@ namespace System.Diagnostics
 
         private static string GetEnvironmentVariablesBlock(DictionaryWrapper sd)
         {
-            // https://docs.microsoft.com/en-us/windows/win32/procthread/changing-environment-variables
+            // https://learn.microsoft.com/windows/win32/procthread/changing-environment-variables
             // "All strings in the environment block must be sorted alphabetically by name. The sort is
             //  case-insensitive, Unicode order, without regard to locale. Because the equal sign is a
             //  separator, it must not be used in the name of an environment variable."
