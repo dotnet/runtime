@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.Intrinsics;
 
 namespace System.Numerics
 {
@@ -17,12 +18,7 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static float GetElement(this Quaternion quaternion, int index)
         {
-            if ((uint)(index) >= (uint)(Quaternion.Count))
-            {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
-            }
-
-            return quaternion.GetElementUnsafe(index);
+            return quaternion.AsVector128().GetElement(index);
         }
 
         /// <summary>Creates a new <see cref="Quaternion" /> with the element at the specified index set to the specified value and the remaining elements set to the same value as that in the given quaternion.</summary>
@@ -34,14 +30,7 @@ namespace System.Numerics
         [Intrinsic]
         internal static Quaternion WithElement(this Quaternion quaternion, int index, float value)
         {
-            if ((uint)(index) >= (uint)(Quaternion.Count))
-            {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
-            }
-
-            Quaternion result = quaternion;
-            result.SetElementUnsafe(index, value);
-            return result;
+            return quaternion.AsVector128().WithElement(index, value).AsQuaternion();
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

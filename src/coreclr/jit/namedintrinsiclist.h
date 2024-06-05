@@ -141,6 +141,10 @@ enum NamedIntrinsic : unsigned short
     NI_System_Threading_Interlocked_MemoryBarrier,
     NI_System_Threading_Interlocked_ReadMemoryBarrier,
 
+    // These two are special marker IDs so that we still get the inlining profitability boost
+    NI_System_Numerics_Intrinsic,
+    NI_System_Runtime_Intrinsics_Intrinsic,
+
 #ifdef FEATURE_HW_INTRINSICS
     NI_HW_INTRINSIC_START,
 #if defined(TARGET_XARCH)
