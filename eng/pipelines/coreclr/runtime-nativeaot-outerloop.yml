@@ -174,7 +174,7 @@ extends:
           - name: timeoutPerTestCollectionInMinutes
             value: 180
           jobParameters:
-            timeoutInMinutes: 300 # doesn't normally take this long, but we have had Helix queues backed up for over an hour
+            timeoutInMinutes: 480
             nameSuffix: NativeAOT_Pri1
             buildArgs: -s clr.aot+libs -rc $(_BuildConfig) -lc Release /p:RunAnalyzers=false
             postBuildSteps:
