@@ -80,7 +80,8 @@
 
 ;; uint64_t GetSveLengthFromOS(void);
     LEAF_ENTRY GetSveLengthFromOS
-        rdvl    x0, 1
+        ;; TODO-SVE: Uncomment once CI machines are updated to use MASM 14.4 or later
+        ;; rdvl    x0, 1
         ret     lr
     LEAF_END
 
