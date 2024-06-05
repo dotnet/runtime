@@ -4272,6 +4272,13 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<uint> BooleanNot(System.Numerics.Vector<uint> value) { throw null; }
         public static System.Numerics.Vector<ulong> BooleanNot(System.Numerics.Vector<ulong> value) { throw null; }
 
+        public static System.Numerics.Vector<double> Compact(System.Numerics.Vector<double> mask, System.Numerics.Vector<double> value) { throw null; }
+        public static System.Numerics.Vector<int> Compact(System.Numerics.Vector<int> mask, System.Numerics.Vector<int> value) { throw null; }
+        public static System.Numerics.Vector<long> Compact(System.Numerics.Vector<long> mask, System.Numerics.Vector<long> value) { throw null; }
+        public static System.Numerics.Vector<float> Compact(System.Numerics.Vector<float> mask, System.Numerics.Vector<float> value) { throw null; }
+        public static System.Numerics.Vector<uint> Compact(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> value) { throw null; }
+        public static System.Numerics.Vector<ulong> Compact(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> value) { throw null; }
+
         public static ulong Count16BitElements([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
         public static ulong Count32BitElements([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
         public static ulong Count64BitElements([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
@@ -4600,6 +4607,29 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<ulong> PopCount(System.Numerics.Vector<double> value) { throw null; }
         public static System.Numerics.Vector<ulong> PopCount(System.Numerics.Vector<long> value) { throw null; }
         public static System.Numerics.Vector<ulong> PopCount(System.Numerics.Vector<ulong> value) { throw null; }
+
+        public static System.Numerics.Vector<byte> ReverseElement(System.Numerics.Vector<byte> value) { throw null; }
+        public static System.Numerics.Vector<double> ReverseElement(System.Numerics.Vector<double> value) { throw null; }
+        public static System.Numerics.Vector<short> ReverseElement(System.Numerics.Vector<short> value) { throw null; }
+        public static System.Numerics.Vector<int> ReverseElement(System.Numerics.Vector<int> value) { throw null; }
+        public static System.Numerics.Vector<long> ReverseElement(System.Numerics.Vector<long> value) { throw null; }
+        public static System.Numerics.Vector<sbyte> ReverseElement(System.Numerics.Vector<sbyte> value) { throw null; }
+        public static System.Numerics.Vector<float> ReverseElement(System.Numerics.Vector<float> value) { throw null; }
+        public static System.Numerics.Vector<ushort> ReverseElement(System.Numerics.Vector<ushort> value) { throw null; }
+        public static System.Numerics.Vector<uint> ReverseElement(System.Numerics.Vector<uint> value) { throw null; }
+        public static System.Numerics.Vector<ulong> ReverseElement(System.Numerics.Vector<ulong> value) { throw null; }
+        public static System.Numerics.Vector<int> ReverseElement16(System.Numerics.Vector<int> value) { throw null; }
+        public static System.Numerics.Vector<long> ReverseElement16(System.Numerics.Vector<long> value) { throw null; }
+        public static System.Numerics.Vector<uint> ReverseElement16(System.Numerics.Vector<uint> value) { throw null; }
+        public static System.Numerics.Vector<ulong> ReverseElement16(System.Numerics.Vector<ulong> value) { throw null; }
+        public static System.Numerics.Vector<long> ReverseElement32(System.Numerics.Vector<long> value) { throw null; }
+        public static System.Numerics.Vector<ulong> ReverseElement32(System.Numerics.Vector<ulong> value) { throw null; }
+        public static System.Numerics.Vector<short> ReverseElement8(System.Numerics.Vector<short> value) { throw null; }
+        public static System.Numerics.Vector<int> ReverseElement8(System.Numerics.Vector<int> value) { throw null; }
+        public static System.Numerics.Vector<long> ReverseElement8(System.Numerics.Vector<long> value) { throw null; }
+        public static System.Numerics.Vector<ushort> ReverseElement8(System.Numerics.Vector<ushort> value) { throw null; }
+        public static System.Numerics.Vector<uint> ReverseElement8(System.Numerics.Vector<uint> value) { throw null; }
+        public static System.Numerics.Vector<ulong> ReverseElement8(System.Numerics.Vector<ulong> value) { throw null; }
 
         public static int SaturatingDecrementBy16BitElementCount(int value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
         public static long SaturatingDecrementBy16BitElementCount(long value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
