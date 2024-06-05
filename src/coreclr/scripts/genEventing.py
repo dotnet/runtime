@@ -873,7 +873,6 @@ def getKeywordsMaskCombined(keywords, keywordsToMask):
 
 def updateclreventsfile(write_xplatheader, target_cpp, runtimeFlavor, eventpipe_trace_context_typedef, dotnet_trace_context_typedef_windows, tree, clrallevents, inclusion_list, generatedFileType, user_events):
     is_windows = os.name == 'nt'
-    is_linux = sys.platform.startswith('linux')
     with open_for_update(clrallevents) as Clrallevents:
         Clrallevents.write(stdprolog)
         if generatedFileType=="header-impl":
@@ -882,7 +881,7 @@ def updateclreventsfile(write_xplatheader, target_cpp, runtimeFlavor, eventpipe_
             if runtimeFlavor.coreclr or write_xplatheader:
                 Clrallevents.write('#include "clrxplatevents.h"\n')
             Clrallevents.write('#include "clreventpipewriteevents.h"\n')
-            if is_linux and runtimeFlavor.coreclr:
+            if user_events and runtimeFlavor.coreclr:
                 Clrallevents.write('#include "clrusereventswriteevents.h"\n')
         elif generatedFileType == "header":
             Clrallevents.write('#ifndef CLR_ETW_ALL_MAIN_H\n')
@@ -892,7 +891,7 @@ def updateclreventsfile(write_xplatheader, target_cpp, runtimeFlavor, eventpipe_
             Clrallevents.write('#include <PalRedhawk.h>\n')
             Clrallevents.write('#include "clretwallmain.h"\n')
             Clrallevents.write('#include "clreventpipewriteevents.h"\n')
-            if is_linux and runtimeFlavor.coreclr:
+            if user_events and runtimeFlavor.coreclr:
                 Clrallevents.write('#include "clrusereventswriteevents.h"\n')
             Clrallevents.write('#ifdef FEATURE_ETW\n')
             Clrallevents.write('#include "ClrEtwAll.h"\n')
