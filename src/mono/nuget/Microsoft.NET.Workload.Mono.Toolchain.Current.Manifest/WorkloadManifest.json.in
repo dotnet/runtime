@@ -450,7 +450,7 @@
       "kind": "framework",
       "version": "${PackageVersion}",
       "alias-to": {
-          "any": "Microsoft.NETCore.App.Runtime.Mono.iossimulator-x64"
+          "any": "Microsoft.NETCore.App.Runtime.Mono.wasi-wasm"
       }
     },
     "Microsoft.NETCore.App.Runtime.win-x64" : {
