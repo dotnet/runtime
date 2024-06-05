@@ -815,7 +815,7 @@ private:
         LSRA_TRAVERSE_LAYOUT     = 0x20,
         LSRA_TRAVERSE_PRED_FIRST = 0x40,
         LSRA_TRAVERSE_RANDOM     = 0x60, // NYI
-        LSRA_TRAVERSE_DEFAULT    = LSRA_TRAVERSE_PRED_FIRST,
+        LSRA_TRAVERSE_DEFAULT    = LSRA_TRAVERSE_LAYOUT,
         LSRA_TRAVERSE_MASK       = 0x60
     };
     LsraTraversalOrder getLsraTraversalOrder()
