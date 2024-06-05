@@ -50,6 +50,13 @@ mono_arch_patch_plt_entry (guint8 *code, gpointer *got, host_mgreg_t *regs, guin
 	 * aot-compiler.c
 	 */
 
+	// print next 4 instructions
+	printf ("mono_arch_patch_plt_entry begin\n");
+	printf ("ins0: %08x\n", ((guint32*)code) [0]);
+	printf ("ins1: %08x\n", ((guint32*)code) [1]);
+	printf ("ins2: %08x\n", ((guint32*)code) [2]);
+	prinf ("\n");
+
 	/* adrp */
 	ins = ((guint32*)code) [0];
 	printf ("ins: %08x\n", ins);
@@ -100,6 +107,8 @@ mono_arch_patch_plt_entry (guint8 *code, gpointer *got, host_mgreg_t *regs, guin
 
 	g_assert (*(guint64*)slot_addr);
 	*(gpointer*)slot_addr = addr;
+
+	printf ("mono_arch_patch_plt_entry end\n");
 }
 
 void
