@@ -180,6 +180,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
     CORINFO_InstructionSet isa         = HWIntrinsicInfo::lookupIsa(intrinsicId);
     HWIntrinsicCategory    category    = HWIntrinsicInfo::lookupCategory(intrinsicId);
     size_t                 numArgs     = node->GetOperandCount();
+    GenTree*               embMaskNode = nullptr;
     GenTree*               embMaskOp   = nullptr;
 
     // We need to validate that other phases of the compiler haven't introduced unsupported intrinsics
@@ -232,6 +233,9 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 // Update op2 to use the actual target register
                 op2->ClearContained();
                 op2->SetRegNum(targetReg);
+
+                // Track the original mask node so we can call genProduceReg
+                embMaskNode = node;
 
                 // Fixup all the already initialized variables
                 node        = op2->AsHWIntrinsic();
@@ -696,13 +700,27 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             // Handle an extra operand we need to consume so that
             // embedded masking can work without making the overall
             // logic significantly more complex.
+
+            assert(embMaskNode != nullptr);
             genConsumeReg(embMaskOp);
         }
 
         genProduceReg(node);
+
+        if (embMaskNode != nullptr)
+        {
+            // Similarly to the mask operand, we need to handle the
+            // mask node to ensure everything works correctly, particularly
+            // lifetimes and spilling if required. Doing it this way avoids
+            // needing to duplicate all our existing handling.
+
+            assert(embMaskOp != nullptr);
+            genProduceReg(embMaskNode);
+        }
         return;
     }
 
+    assert(embMaskNode == nullptr);
     assert(embMaskOp == nullptr);
 
     switch (isa)
@@ -3053,8 +3071,6 @@ void CodeGen::genFMAIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
 
     regNumber targetReg = node->GetRegNum();
 
-    genConsumeMultiOpOperands(node);
-
     regNumber op1NodeReg = op1->GetRegNum();
     regNumber op2NodeReg = op2->GetRegNum();
     regNumber op3NodeReg = op3->GetRegNum();
@@ -3142,6 +3158,21 @@ void CodeGen::genFMAIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
             ins = _213form;
         }
     }
+
+#ifdef DEBUG
+    // Use nums are assigned in LIR order but this node is special and doesn't
+    // actually use operands. Fix up the use nums here to avoid asserts.
+    unsigned useNum1  = op1->gtUseNum;
+    unsigned useNum2  = op2->gtUseNum;
+    unsigned useNum3  = op3->gtUseNum;
+    emitOp1->gtUseNum = useNum1;
+    emitOp2->gtUseNum = useNum2;
+    emitOp3->gtUseNum = useNum3;
+#endif
+
+    genConsumeRegs(emitOp1);
+    genConsumeRegs(emitOp2);
+    genConsumeRegs(emitOp3);
 
     assert(ins != INS_invalid);
     genHWIntrinsic_R_R_R_RM(ins, attr, targetReg, emitOp1->GetRegNum(), emitOp2->GetRegNum(), emitOp3, instOptions);

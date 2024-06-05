@@ -19,13 +19,13 @@ Existing diagnostic tooling only supports `NamedPipes`/`UnixDomainSockets`, so i
 
 For more details around diagnostic scenarios, see:
 
-https://docs.microsoft.com/en-us/dotnet/core/diagnostics/dotnet-counters
+https://learn.microsoft.com/dotnet/core/diagnostics/dotnet-counters
 
-https://docs.microsoft.com/en-us/dotnet/core/diagnostics/dotnet-trace
+https://learn.microsoft.com/dotnet/core/diagnostics/dotnet-trace
 
-https://docs.microsoft.com/en-us/dotnet/core/diagnostics/event-counter-perf
+https://learn.microsoft.com/dotnet/core/diagnostics/event-counter-perf
 
-https://docs.microsoft.com/en-us/dotnet/core/diagnostics/debug-highcpu
+https://learn.microsoft.com/dotnet/core/diagnostics/debug-highcpu
 
 ## Building an application including diagnostic tracing support
 
@@ -380,7 +380,7 @@ NOTE, iOS only support use of loopback interface when running DiagnosticServer i
 
 ### Application running single file based EventPipe session
 
-If application supports controlled runtime shutdown, `mono_jit_cleanup` gets called before terminating process, it is possible to run a single file based EventPipe session using environment variables as described in https://docs.microsoft.com/en-us/dotnet/core/diagnostics/eventpipe#trace-using-environment-variables. In .net6 an additional variable has been added, `DOTNET_EventPipeOutputStreaming`, making sure data is periodically flushed into the output file.
+If application supports controlled runtime shutdown, `mono_jit_cleanup` gets called before terminating process, it is possible to run a single file based EventPipe session using environment variables as described in https://learn.microsoft.com/dotnet/core/diagnostics/eventpipe#trace-using-environment-variables. In .net6 an additional variable has been added, `DOTNET_EventPipeOutputStreaming`, making sure data is periodically flushed into the output file.
 
 If application doesn't support controlled runtime shutdown, this mode won't work, since it requires rundown events, only emitted when closing session and flushing memory manager. If application doesn't call `mono_jit_cleanup` before terminating, generated nettrace file will lack rundown events needed to produce callstacks including symbols.
 
@@ -493,9 +493,9 @@ Combining different sessions including different GC information opens up ability
 
 Collected events retrieved over EventPipe sessions is stored in a nettrace file that can be analyzed using tooling like PerfView, Speedscope, Chronium or Visual Studio:
 
-https://docs.microsoft.com/en-us/dotnet/core/diagnostics/debug-highcpu?tabs=windows#trace-generation
+https://learn.microsoft.com/dotnet/core/diagnostics/debug-highcpu?tabs=windows#trace-generation
 
-https://docs.microsoft.com/en-us/dotnet/core/diagnostics/dotnet-trace#dotnet-trace-convert
+https://learn.microsoft.com/dotnet/core/diagnostics/dotnet-trace#dotnet-trace-convert
 
 https://github.com/dotnet/diagnostics/blob/main/documentation/tutorial/app_running_slow_highcpu.md
 

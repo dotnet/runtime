@@ -392,9 +392,9 @@ namespace System.Net.Sockets.Tests
         public AcceptApm(ITestOutputHelper output) : base(output) {}
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void AbortedByDispose_LeaksNoUnobservedExceptions()
+        public async Task AbortedByDispose_LeaksNoUnobservedExceptions()
         {
-            RemoteExecutor.Invoke(static async () =>
+            await RemoteExecutor.Invoke(static async () =>
             {
                 var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
                 socket.BindToAnonymousPort(IPAddress.Loopback);
@@ -431,7 +431,7 @@ namespace System.Net.Sockets.Tests
                 GC.WaitForPendingFinalizers();
 
                 Assert.False(unobservedThrown);
-            }).Dispose();   
+            }).DisposeAsync();   
         }
     }
 

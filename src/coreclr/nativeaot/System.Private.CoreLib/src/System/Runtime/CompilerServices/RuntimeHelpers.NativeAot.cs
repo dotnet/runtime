@@ -182,13 +182,6 @@ namespace System.Runtime.CompilerServices
         }
 
         [Intrinsic]
-        public static unsafe bool IsReferenceOrContainsReferences<T>()
-        {
-            MethodTable* pEEType = MethodTable.Of<T>();
-            return !pEEType->IsValueType || pEEType->ContainsGCPointers;
-        }
-
-        [Intrinsic]
         internal static unsafe bool IsReference<T>()
         {
             return !MethodTable.Of<T>()->IsValueType;

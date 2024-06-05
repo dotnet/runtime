@@ -256,7 +256,7 @@ namespace System.Text.RegularExpressions
         public System.Text.RegularExpressions.RegexOptions Options { get { throw null; } set { } }
         public string Pattern { get { throw null; } set { } }
     }
-    [System.AttributeUsageAttribute(AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Method | System.AttributeTargets.Property, AllowMultiple = false, Inherited = false)]
     public sealed partial class GeneratedRegexAttribute : System.Attribute
     {
         public GeneratedRegexAttribute([System.Diagnostics.CodeAnalysis.StringSyntax(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.Regex)] string pattern) { }

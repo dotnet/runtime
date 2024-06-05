@@ -181,7 +181,7 @@ both the JIT and VM.
 
 2.  Architecture specific relocation information (to represent generation of
     relocations for use by load, store, jmp and call instructions) See
-    <https://docs.microsoft.com/en-us/windows/win32/debug/pe-format#coff-relocations-object-only>
+    <https://learn.microsoft.com/windows/win32/debug/pe-format#coff-relocations-object-only>
     for the sort of details that need to be defined.
 
 3.  Behavior and accessibility of processor single step features from within a
