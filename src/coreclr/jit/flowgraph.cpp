@@ -6366,7 +6366,7 @@ BlockReachabilitySets* BlockReachabilitySets::Build(const FlowGraphDfsTree* dfsT
                 if (dfsTree->Contains(predBlock))
                 {
                     change |= BitVecOps::UnionDChanged(&postOrderTraits, sets[block->bbPostorderNum],
-                        sets[predBlock->bbPostorderNum]);
+                                                       sets[predBlock->bbPostorderNum]);
                 }
             }
         }

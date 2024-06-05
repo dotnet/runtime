@@ -618,9 +618,6 @@ bool Compiler::fgIsPreLive(GenTree* tree)
     return false;
 }
 
-static NodeCounts s_nodeCounts;
-//static DumpOnShutdown d("Removable node types", &s_nodeCounts);
-
 //------------------------------------------------------------------------
 // fgSsaBasedDce:
 //   Do aggressive SSA-based dead code elimination.
@@ -636,17 +633,18 @@ static NodeCounts s_nodeCounts;
 //
 PhaseStatus Compiler::fgSsaBasedDce()
 {
-    m_dfsTree = fgComputeDfs();
+    m_dfsTree                               = fgComputeDfs();
     BlockReachabilitySets* reachabilitySets = BlockReachabilitySets::Build(m_dfsTree);
-    TreeSet* live = new (this, CMK_Liveness) TreeSet(getAllocator(CMK_Liveness));
+    TreeSet*               live             = new (this, CMK_Liveness) TreeSet(getAllocator(CMK_Liveness));
 
     struct TreeWithBlock
     {
-        GenTree* Tree;
+        GenTree*    Tree;
         BasicBlock* Block;
 
         TreeWithBlock(GenTree* tree, BasicBlock* block)
-            : Tree(tree), Block(block)
+            : Tree(tree)
+            , Block(block)
         {
         }
     };
@@ -673,8 +671,8 @@ PhaseStatus Compiler::fgSsaBasedDce()
     while (!worklist.Empty())
     {
         TreeWithBlock treeAndBlock = worklist.Pop();
-        GenTree* node = treeAndBlock.Tree;
-        BasicBlock* block = treeAndBlock.Block;
+        GenTree*      node         = treeAndBlock.Tree;
+        BasicBlock*   block        = treeAndBlock.Block;
 
         if (node->OperIs(GT_COMMA))
         {
@@ -692,13 +690,13 @@ PhaseStatus Compiler::fgSsaBasedDce()
                 }
 
                 return GenTree::VisitResult::Continue;
-                });
+            });
         }
 
         if (node->OperIsLocalRead() || (node->OperIs(GT_STORE_LCL_FLD) && ((node->gtFlags & GTF_VAR_USEASG) != 0)))
         {
-            GenTreeLclVarCommon* lcl = node->AsLclVarCommon();
-            LclVarDsc* lclDsc = lvaGetDesc(lcl);
+            GenTreeLclVarCommon* lcl    = node->AsLclVarCommon();
+            LclVarDsc*           lclDsc = lvaGetDesc(lcl);
             if (lclDsc->lvInSsa)
             {
                 LclSsaVarDsc* ssaDsc = lclDsc->GetPerSsaData(lcl->GetSsaNum());
@@ -724,25 +722,28 @@ PhaseStatus Compiler::fgSsaBasedDce()
                     worklist.Emplace(terminator, pred);
                 }
             }
-            });
+        });
     }
 
     struct ExtractVisitor : GenTreeVisitor<ExtractVisitor>
     {
     private:
-        TreeSet* m_live;
+        TreeSet*    m_live;
         BasicBlock* m_block;
-        Statement* m_insertBefore;
+        Statement*  m_insertBefore;
 
     public:
         enum
         {
-            DoPreOrder       = true,
+            DoPreOrder        = true,
             UseExecutionOrder = true,
         };
 
         ExtractVisitor(Compiler* comp, TreeSet* live, BasicBlock* block, Statement* insertBefore)
-            : GenTreeVisitor(comp), m_live(live), m_block(block), m_insertBefore(insertBefore)
+            : GenTreeVisitor(comp)
+            , m_live(live)
+            , m_block(block)
+            , m_insertBefore(insertBefore)
         {
         }
 
@@ -804,7 +805,7 @@ PhaseStatus Compiler::fgSsaBasedDce()
 
             fgRemoveStmt(block, stmt);
             changed = true;
-            stmt = nextStmt;
+            stmt    = nextStmt;
         }
     }
 
