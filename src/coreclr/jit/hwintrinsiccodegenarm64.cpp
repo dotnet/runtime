@@ -23,7 +23,6 @@
 //    codeGen   -- an instance of CodeGen class.
 //    immOp     -- an immediate operand of the intrinsic.
 //    intrin    -- a hardware intrinsic tree node.
-//    immNumber -- which immediate operand to use (most intrinsics only have one).
 //
 // Note: This class is designed to be used in the following way
 //       HWIntrinsicImmOpHelper helper(this, immOp, intrin);
@@ -36,10 +35,7 @@
 //       This allows to combine logic for cases when immOp->isContainedIntOrIImmed() is either true or false in a form
 //       of a for-loop.
 //
-CodeGen::HWIntrinsicImmOpHelper::HWIntrinsicImmOpHelper(CodeGen*            codeGen,
-                                                        GenTree*            immOp,
-                                                        GenTreeHWIntrinsic* intrin,
-                                                        int                 immNumber /* = 1 */)
+CodeGen::HWIntrinsicImmOpHelper::HWIntrinsicImmOpHelper(CodeGen* codeGen, GenTree* immOp, GenTreeHWIntrinsic* intrin)
     : codeGen(codeGen)
     , endLabel(nullptr)
     , nonZeroLabel(nullptr)
@@ -79,12 +75,12 @@ CodeGen::HWIntrinsicImmOpHelper::HWIntrinsicImmOpHelper(CodeGen*            code
 
             const unsigned int indexedElementSimdSize = genTypeSize(indexedElementOpType);
             HWIntrinsicInfo::lookupImmBounds(intrin->GetHWIntrinsicId(), indexedElementSimdSize,
-                                             intrin->GetSimdBaseType(), immNumber, &immLowerBound, &immUpperBound);
+                                             intrin->GetSimdBaseType(), 1, &immLowerBound, &immUpperBound);
         }
         else
         {
             HWIntrinsicInfo::lookupImmBounds(intrin->GetHWIntrinsicId(), intrin->GetSimdSize(),
-                                             intrin->GetSimdBaseType(), immNumber, &immLowerBound, &immUpperBound);
+                                             intrin->GetSimdBaseType(), 1, &immLowerBound, &immUpperBound);
         }
 
         nonConstImmReg = immOp->GetRegNum();
@@ -107,6 +103,50 @@ CodeGen::HWIntrinsicImmOpHelper::HWIntrinsicImmOpHelper(CodeGen*            code
 
         endLabel = codeGen->genCreateTempLabel();
     }
+}
+
+// HWIntrinsicImmOpHelper: Variant constructor of the helper class instance.
+//       This is used when the immediate does not exist in a GenTree. For example, the immediate has been created
+//       during codegen from other immediate values.
+//
+// Arguments:
+//    codeGen       -- an instance of CodeGen class.
+//    immReg        -- the register containing the immediate.
+//    immLowerBound -- the lower bound of the register.
+//    immUpperBound -- the lower bound of the register.
+//    intrin        -- a hardware intrinsic tree node.
+//
+// Note: This instance is designed to be used via the same for loop as the standard constructor.
+//
+CodeGen::HWIntrinsicImmOpHelper::HWIntrinsicImmOpHelper(
+    CodeGen* codeGen, regNumber immReg, int immLowerBound, int immUpperBound, GenTreeHWIntrinsic* intrin)
+    : codeGen(codeGen)
+    , endLabel(nullptr)
+    , nonZeroLabel(nullptr)
+    , immValue(immLowerBound)
+    , immLowerBound(immLowerBound)
+    , immUpperBound(immUpperBound)
+    , nonConstImmReg(immReg)
+    , branchTargetReg(REG_NA)
+{
+    assert(codeGen != nullptr);
+
+    if (TestImmOpZeroOrOne())
+    {
+        nonZeroLabel = codeGen->genCreateTempLabel();
+    }
+    else
+    {
+        // At the moment, this helper supports only intrinsics that correspond to one machine instruction.
+        // If we ever encounter an intrinsic that is either lowered into multiple instructions or
+        // the number of instructions that correspond to each case is unknown apriori - we can extend support to
+        // these by
+        // using the same approach as in hwintrinsicxarch.cpp - adding an additional indirection level in form of a
+        // branch table.
+        branchTargetReg = codeGen->internalRegisters.GetSingle(intrin);
+    }
+
+    endLabel = codeGen->genCreateTempLabel();
 }
 
 //------------------------------------------------------------------------
@@ -474,7 +514,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                                                             opt);
                             }
                         }
-                        else if (targetReg == embMaskOp1Reg)
+                        else if (emitter::isVectorRegister(embMaskOp1Reg) && (targetReg == embMaskOp1Reg))
                         {
                             // target != falseValue, but we do not want to overwrite target with `embMaskOp1Reg`.
                             // We will first do the predicate operation and then do conditionalSelect inactive
@@ -576,8 +616,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 {
                     assert(instrIsRMW);
                     assert(HWIntrinsicInfo::IsFmaIntrinsic(intrinEmbMask.id));
-                    assert(falseReg != embMaskOp1Reg);
-                    assert(falseReg != embMaskOp2Reg);
                     assert(falseReg != embMaskOp3Reg);
 
                     // For FMA, the operation we are trying to perform is:
@@ -704,17 +742,27 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         //      fmla    target, P/m, embMaskOp2Reg, embMaskOp3Reg
                         //
                         // Note that, we just check if the targetReg/falseReg or targetReg/embMaskOp1Reg
-                        // coincides or not. Other combination like falseReg/embMaskOp*Reg cannot happen
-                        // because we marked embMaskOp*Reg as delayFree.
+                        // coincides or not.
 
                         if (targetReg != falseReg)
                         {
-                            // If falseReg value is not present in targetReg yet, move the inactive lanes
-                            // into the targetReg using `sel`. Since this is RMW, the active lanes should
-                            // have the value from embMaskOp1Reg
+                            if (falseReg == embMaskOp1Reg)
+                            {
+                                // If falseReg value and embMaskOp1Reg value are same, then just mov the value
+                                // to the target.
 
-                            GetEmitter()->emitIns_R_R_R_R(INS_sve_sel, emitSize, targetReg, maskReg, embMaskOp1Reg,
-                                                          falseReg, opt, INS_SCALABLE_OPTS_UNPREDICATED);
+                                GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, embMaskOp1Reg,
+                                                          /* canSkip */ true);
+                            }
+                            else
+                            {
+                                // If falseReg value is not present in targetReg yet, move the inactive lanes
+                                // into the targetReg using `sel`. Since this is RMW, the active lanes should
+                                // have the value from embMaskOp1Reg
+
+                                GetEmitter()->emitIns_R_R_R_R(INS_sve_sel, emitSize, targetReg, maskReg, embMaskOp1Reg,
+                                                              falseReg, opt, INS_SCALABLE_OPTS_UNPREDICATED);
+                            }
                         }
                         else if (targetReg != embMaskOp1Reg)
                         {
@@ -760,10 +808,17 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     else if (HWIntrinsicInfo::IsScalable(intrin.id))
                     {
                         assert(!node->IsEmbMaskOp());
-                        // This generates an unpredicated version
-                        // Predicated should be taken care above `intrin.op2->IsEmbMaskOp()`
-                        GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt,
-                                                    INS_SCALABLE_OPTS_UNPREDICATED);
+                        if (HWIntrinsicInfo::IsExplicitMaskedOperation(intrin.id))
+                        {
+                            GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
+                        }
+                        else
+                        {
+                            // This generates an unpredicated version
+                            // Implicitly predicated should be taken care above `intrin.op2->IsEmbMaskOp()`
+                            GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt,
+                                                        INS_SCALABLE_OPTS_UNPREDICATED);
+                        }
                     }
                     else if (isRMW)
                     {
@@ -874,6 +929,10 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
             case NI_ArmBase_Arm64_MultiplyLongSub:
                 ins = varTypeIsUnsigned(intrin.baseType) ? INS_umsubl : INS_smsubl;
+                break;
+
+            case NI_Sve_StoreNarrowing:
+                ins = HWIntrinsicInfo::lookupIns(intrin.id, node->GetAuxiliaryType());
                 break;
 
             default:
@@ -1348,6 +1407,88 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             }
             break;
 
+            case NI_Sve_Load2xVectorAndUnzip:
+            case NI_Sve_Load3xVectorAndUnzip:
+            case NI_Sve_Load4xVectorAndUnzip:
+            {
+#ifdef DEBUG
+                // Validates that consecutive registers were used properly.
+
+                assert(node->GetMultiRegCount(compiler) == (unsigned int)GetEmitter()->insGetSveReg1ListSize(ins));
+
+                regNumber argReg = targetReg;
+                for (unsigned int i = 0; i < node->GetMultiRegCount(compiler); i++)
+                {
+                    assert(argReg == node->GetRegNumByIdx(i));
+                    argReg = getNextSIMDRegWithWraparound(argReg);
+                }
+#endif // DEBUG
+                GetEmitter()->emitIns_R_R_R_I(ins, emitSize, targetReg, op1Reg, op2Reg, 0, opt);
+                break;
+            }
+
+            case NI_Sve_StoreAndZipx2:
+            case NI_Sve_StoreAndZipx3:
+            case NI_Sve_StoreAndZipx4:
+            {
+                assert(intrin.op3->OperIsFieldList());
+                GenTreeFieldList* fieldList  = intrin.op3->AsFieldList();
+                GenTree*          firstField = fieldList->Uses().GetHead()->GetNode();
+                op3Reg                       = firstField->GetRegNum();
+
+#ifdef DEBUG
+                unsigned  regCount = 0;
+                regNumber argReg   = op3Reg;
+                for (GenTreeFieldList::Use& use : fieldList->Uses())
+                {
+                    regCount++;
+
+                    GenTree* argNode = use.GetNode();
+                    assert(argReg == argNode->GetRegNum());
+                    argReg = getNextSIMDRegWithWraparound(argReg);
+                }
+
+                switch (ins)
+                {
+                    case INS_sve_st2b:
+                    case INS_sve_st2d:
+                    case INS_sve_st2h:
+                    case INS_sve_st2w:
+                    case INS_sve_st2q:
+                        assert(regCount == 2);
+                        break;
+
+                    case INS_sve_st3b:
+                    case INS_sve_st3d:
+                    case INS_sve_st3h:
+                    case INS_sve_st3w:
+                    case INS_sve_st3q:
+                        assert(regCount == 3);
+                        break;
+
+                    case INS_sve_st4b:
+                    case INS_sve_st4d:
+                    case INS_sve_st4h:
+                    case INS_sve_st4w:
+                    case INS_sve_st4q:
+                        assert(regCount == 4);
+                        break;
+
+                    default:
+                        unreached();
+                }
+#endif
+                GetEmitter()->emitIns_R_R_R_I(ins, emitSize, op3Reg, op1Reg, op2Reg, 0, opt);
+                break;
+            }
+
+            case NI_Sve_StoreAndZip:
+            case NI_Sve_StoreNonTemporal:
+            {
+                GetEmitter()->emitIns_R_R_R_I(ins, emitSize, op3Reg, op1Reg, op2Reg, 0, opt);
+                break;
+            }
+
             case NI_Vector64_ToVector128:
                 GetEmitter()->emitIns_Mov(ins, emitSize, targetReg, op1Reg, /* canSkip */ false);
                 break;
@@ -1704,6 +1845,16 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
+            case NI_Sve_ReverseElement:
+                // Use non-predicated version explicitly
+                GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg, opt, INS_SCALABLE_OPTS_UNPREDICATED);
+                break;
+
+            case NI_Sve_StoreNarrowing:
+                opt = emitter::optGetSveInsOpt(emitTypeSize(intrin.baseType));
+                GetEmitter()->emitIns_R_R_R_I(ins, emitSize, op3Reg, op1Reg, op2Reg, 0, opt);
+                break;
+
             case NI_Sve_UnzipEven:
             case NI_Sve_UnzipOdd:
             case NI_Sve_ZipHigh:
@@ -1712,6 +1863,80 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt,
                                             INS_SCALABLE_OPTS_UNPREDICATED);
                 break;
+
+            case NI_Sve_SaturatingDecrementBy16BitElementCountScalar:
+            case NI_Sve_SaturatingDecrementBy32BitElementCountScalar:
+            case NI_Sve_SaturatingDecrementBy64BitElementCountScalar:
+            case NI_Sve_SaturatingIncrementBy16BitElementCountScalar:
+            case NI_Sve_SaturatingIncrementBy32BitElementCountScalar:
+            case NI_Sve_SaturatingIncrementBy64BitElementCountScalar:
+                // Use scalar sizes.
+                emitSize = emitActualTypeSize(node->gtType);
+                opt      = INS_OPTS_NONE;
+                FALLTHROUGH;
+
+            case NI_Sve_SaturatingDecrementBy16BitElementCount:
+            case NI_Sve_SaturatingDecrementBy32BitElementCount:
+            case NI_Sve_SaturatingDecrementBy64BitElementCount:
+            case NI_Sve_SaturatingDecrementBy8BitElementCount:
+            case NI_Sve_SaturatingIncrementBy16BitElementCount:
+            case NI_Sve_SaturatingIncrementBy32BitElementCount:
+            case NI_Sve_SaturatingIncrementBy64BitElementCount:
+            case NI_Sve_SaturatingIncrementBy8BitElementCount:
+            {
+                assert(isRMW);
+                if (targetReg != op1Reg)
+                {
+                    assert(targetReg != op2Reg);
+                    assert(targetReg != op3Reg);
+                    GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op1Reg, /* canSkip */ true);
+                }
+
+                if (intrin.op2->IsCnsIntOrI() && intrin.op3->IsCnsIntOrI())
+                {
+                    // Both immediates are constant, emit the intruction.
+
+                    assert(intrin.op2->isContainedIntOrIImmed() && intrin.op3->isContainedIntOrIImmed());
+                    int           scale   = (int)intrin.op2->AsIntCon()->gtIconVal;
+                    insSvePattern pattern = (insSvePattern)intrin.op3->AsIntCon()->gtIconVal;
+                    GetEmitter()->emitIns_R_PATTERN_I(ins, emitSize, targetReg, pattern, scale, opt);
+                }
+                else
+                {
+                    // Use the helper to generate a table. The table can only use a single lookup value, therefore
+                    // the two immediates scale (1 to 16, in op2Reg) and pattern (0 to 31, in op3reg) must be
+                    // combined to a single value (0 to 511)
+
+                    assert(!intrin.op2->isContainedIntOrIImmed() && !intrin.op3->isContainedIntOrIImmed());
+
+                    emitAttr scalarSize = emitActualTypeSize(node->GetSimdBaseType());
+
+                    // Combine the two immediates into op2Reg.
+                    // Reduce scale to have a lower bound of 0.
+                    GetEmitter()->emitIns_R_R_I(INS_sub, scalarSize, op2Reg, op2Reg, 1);
+                    // Shift pattern left to be out of range of scale.
+                    GetEmitter()->emitIns_R_R_I(INS_lsl, scalarSize, op3Reg, op3Reg, 4);
+                    // Combine the two values by ORing.
+                    GetEmitter()->emitIns_R_R_R(INS_orr, scalarSize, op2Reg, op2Reg, op3Reg);
+
+                    // Generate the table using the combined immediate.
+                    HWIntrinsicImmOpHelper helper(this, op2Reg, 0, 511, node);
+                    for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
+                    {
+                        // Extract scale and pattern from the immediate
+                        const int           value   = helper.ImmValue();
+                        const int           scale   = (value & 0xF) + 1;
+                        const insSvePattern pattern = (insSvePattern)(value >> 4);
+                        GetEmitter()->emitIns_R_PATTERN_I(ins, emitSize, targetReg, pattern, scale, opt);
+                    }
+
+                    // Restore the original values in op2Reg and op3Reg.
+                    GetEmitter()->emitIns_R_R_I(INS_and, scalarSize, op2Reg, op2Reg, 0xF);
+                    GetEmitter()->emitIns_R_R_I(INS_lsr, scalarSize, op3Reg, op3Reg, 4);
+                    GetEmitter()->emitIns_R_R_I(INS_add, scalarSize, op2Reg, op2Reg, 1);
+                }
+                break;
+            }
 
             default:
                 unreached();

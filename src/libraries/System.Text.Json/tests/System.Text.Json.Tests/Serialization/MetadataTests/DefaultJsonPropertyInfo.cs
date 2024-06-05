@@ -462,15 +462,15 @@ namespace System.Text.Json.Serialization.Tests
         public class ClassWithRequiredCustomAttributes
         {
             [JsonPropertyOrder(0)]
-            public string NonRequired { get; set; }
+            public string? NonRequired { get; set; }
 
             [JsonPropertyOrder(1)]
             [JsonRequired]
-            public string RequiredA { get; set; }
+            public string? RequiredA { get; set; }
 
             [JsonPropertyOrder(2)]
             [JsonRequired]
-            public string RequiredB { get; set; }
+            public string? RequiredB { get; set; }
         }
 
         public class ClassWithRequiredCustomAttributeAndDataExtensionProperty
