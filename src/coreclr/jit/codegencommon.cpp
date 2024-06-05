@@ -584,7 +584,7 @@ void CodeGenInterface::genUpdateLife(VARSET_VALARG_TP newLife)
 // inline
 regMaskTP CodeGenInterface::genGetRegMask(const LclVarDsc* varDsc)
 {
-    regMaskTP regMask = RBM_NONE;
+    regMaskTP regMask;
 
     assert(varDsc->lvIsInReg());
 
