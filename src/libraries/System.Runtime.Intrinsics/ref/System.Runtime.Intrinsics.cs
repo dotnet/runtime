@@ -4590,6 +4590,11 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<ulong> PopCount(System.Numerics.Vector<long> value) { throw null; }
         public static System.Numerics.Vector<ulong> PopCount(System.Numerics.Vector<ulong> value) { throw null; }
 
+        public static unsafe void PrefetchBytes(System.Numerics.Vector<byte> mask, void* address, [ConstantExpected] SvePrefetchType prefetchType) { throw null; }
+        public static unsafe void PrefetchInt16(System.Numerics.Vector<ushort> mask, void* address, [ConstantExpected] SvePrefetchType prefetchType) { throw null; }
+        public static unsafe void PrefetchInt32(System.Numerics.Vector<uint> mask, void* address, [ConstantExpected] SvePrefetchType prefetchType) { throw null; }
+        public static unsafe void PrefetchInt64(System.Numerics.Vector<ulong> mask, void* address, [ConstantExpected] SvePrefetchType prefetchType) { throw null; }
+
         public static int SaturatingDecrementBy16BitElementCount(int value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
         public static long SaturatingDecrementBy16BitElementCount(long value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
         public static uint SaturatingDecrementBy16BitElementCount(uint value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
@@ -4831,6 +4836,22 @@ namespace System.Runtime.Intrinsics.Arm
         LargestMultipleOf4 = 29,  // The largest multiple of 4.
         LargestMultipleOf3 = 30,  // The largest multiple of 3.
         All  = 31                 // All available (implicitly a multiple of two).
+    };
+
+    public enum SvePrefetchType : byte
+    {
+        SV_PLDL1KEEP = 0,   // Temporal fetch the addressed location for reading, to L1 cache.
+        SV_PLDL1STRM = 1,   // Streaming fetch the addressed location for reading, to L1 cache.
+        SV_PLDL2KEEP = 2,   // Temporal fetch the addressed location for reading, to L2 cache.
+        SV_PLDL2STRM = 3,   // Streaming fetch the addressed location for reading, to L2 cache.
+        SV_PLDL3KEEP = 4,   // Temporal fetch the addressed location for reading, to L3 cache.
+        SV_PLDL3STRM = 5,   // Streaming fetch the addressed location for reading, to L3 cache.
+        SV_PSTL1KEEP = 8,   // Temporal fetch the addressed location for writing, to L1 cache.
+        SV_PSTL1STRM = 9,   // Streaming fetch the addressed location for writing, to L1 cache.
+        SV_PSTL2KEEP = 10,  // Temporal fetch the addressed location for writing, to L2 cache.
+        SV_PSTL2STRM = 11,  // Streaming fetch the addressed location for writing, to L2 cache.
+        SV_PSTL3KEEP = 12,  // Temporal fetch the addressed location for writing, to L3 cache.
+        SV_PSTL3STRM = 13   // Streaming fetch the addressed location for writing, to L3 cache.
     };
 }
 namespace System.Runtime.Intrinsics.X86

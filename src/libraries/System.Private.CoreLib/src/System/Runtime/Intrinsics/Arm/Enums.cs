@@ -92,4 +92,20 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         All  = 31                 // All available (implicitly a multiple of two).
     }
+
+    public enum SvePrefetchType : byte
+    {
+        SV_PLDL1KEEP = 0,   // Temporal fetch the addressed location for reading, to L1 cache.
+        SV_PLDL1STRM = 1,   // Streaming fetch the addressed location for reading, to L1 cache.
+        SV_PLDL2KEEP = 2,   // Temporal fetch the addressed location for reading, to L2 cache.
+        SV_PLDL2STRM = 3,   // Streaming fetch the addressed location for reading, to L2 cache.
+        SV_PLDL3KEEP = 4,   // Temporal fetch the addressed location for reading, to L3 cache.
+        SV_PLDL3STRM = 5,   // Streaming fetch the addressed location for reading, to L3 cache.
+        SV_PSTL1KEEP = 8,   // Temporal fetch the addressed location for writing, to L1 cache.
+        SV_PSTL1STRM = 9,   // Streaming fetch the addressed location for writing, to L1 cache.
+        SV_PSTL2KEEP = 10,  // Temporal fetch the addressed location for writing, to L2 cache.
+        SV_PSTL2STRM = 11,  // Streaming fetch the addressed location for writing, to L2 cache.
+        SV_PSTL3KEEP = 12,  // Temporal fetch the addressed location for writing, to L3 cache.
+        SV_PSTL3STRM = 13   // Streaming fetch the addressed location for writing, to L3 cache.
+    };
 }
