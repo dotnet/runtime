@@ -316,10 +316,6 @@
       }
     },
     "Microsoft.NETCore.App.Runtime.${NetVersion}.osx-arm64": {
-
-
-
-
       "kind": "framework",
       "version": "${PackageVersion}",
       "alias-to": {
