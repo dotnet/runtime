@@ -4803,6 +4803,15 @@ interp_emit_sfld_access (TransformData *td, MonoClassField *field, MonoClass *fi
 	}
 }
 
+static MonoClass*
+get_class_from_token (MonoGenericContext *generic_context, MonoMethod *cur_method, uint32_t token)
+{
+	if (cur_method->wrapper_type != MONO_WRAPPER_NONE)
+		return (MonoClass *)mono_method_get_wrapper_data (cur_method, token);
+	else
+		return mini_get_class (cur_method, token, generic_context);
+}
+
 static gboolean
 interp_handle_box_patterns (TransformData *td, MonoClass *box_class, const unsigned char *end, MonoImage *image, MonoGenericContext *generic_context, MonoError *error)
 {
@@ -4828,24 +4837,93 @@ interp_handle_box_patterns (TransformData *td, MonoClass *box_class, const unsig
 		return TRUE;
 	}
 	if (m_class_is_byreflike (box_class)) {
-	    if (*next_ip == CEE_BRTRUE || *next_ip == CEE_BRTRUE_S || *next_ip == CEE_BRFALSE || *next_ip == CEE_BRFALSE_S) {
-		// replace
-		//  box ByRefLike
-		//  brtrue/brfalse
-		//
-		// by
-		//
-		// ldc.i4.s 1
-		// brtrue/brfalse
-		td->sp--;
-		interp_add_ins (td, MINT_LDC_I4_S);
-		td->last_ins->data[0] = (guint16) 1;
-		push_simple_type (td, STACK_TYPE_I4);
-		interp_ins_set_dreg (td->last_ins, td->sp [-1].var);
-		td->ip += 5;
-		return TRUE;
+		if (*next_ip == CEE_BRTRUE || *next_ip == CEE_BRTRUE_S || *next_ip == CEE_BRFALSE || *next_ip == CEE_BRFALSE_S) {
+			// replace
+			//  box ByRefLike
+			//  [brtrue/brfalse]
+			//
+			// by
+			//
+			// ldc.i4.s 1
+			// [brtrue/brfalse]
+			td->sp--;
+			interp_add_ins (td, MINT_LDC_I4_S);
+			td->last_ins->data[0] = (guint16) 1;
+			push_simple_type (td, STACK_TYPE_I4);
+			interp_ins_set_dreg (td->last_ins, td->sp [-1].var);
+			td->ip += 5;
+			// skip over box, continue with the branch opcode
+			return TRUE;
+		}
+		if (*next_ip == CEE_ISINST) {
+			// box !!T
+			// isinst S
+			// [brtrue/brfalse]
+			//
+			// turns into
+			// ldc.i4.s (0 or 1)
+			// [brtrue/brfalse]
+
+			// and
+
+			// box !!T
+			// isinst S
+			// unbox.any S
+			//
+			// turns into
+			// nop
+			//   -or-
+			// ldnull
+			// cknull
+			const unsigned char *second_ip = next_ip + 5;
+			if (second_ip >= end || !interp_ip_in_cbb (td, GPTRDIFF_TO_INT (second_ip - td->il_code))) {
+				return FALSE;
+			}
+
+			uint32_t isinst_token = read32 (next_ip + 1);
+			MonoClass *isinst_klass = get_class_from_token (generic_context, method, isinst_token);
+
+			CHECK_TYPELOAD (isinst_klass);
+
+			gboolean isinst = mono_class_is_assignable_from_internal (isinst_klass, box_class);
+
+			if (*second_ip == CEE_BRTRUE || *second_ip == CEE_BRTRUE_S || *second_ip == CEE_BRFALSE || *second_ip == CEE_BRFALSE_S) {
+				td->sp--;
+				interp_add_ins (td, MINT_LDC_I4_S);
+				td->last_ins->data[0] = (guint16) (isinst ? 1 : 0);
+				push_simple_type (td, STACK_TYPE_I4);
+				interp_ins_set_dreg (td->last_ins, td->sp [-1].var);
+				td->ip = next_ip + 5;
+				// skip over the box and isinst opcodes, continue with the branch opcode
+				return TRUE;
+			}
+			if (*second_ip == CEE_UNBOX_ANY) {
+				uint32_t unbox_any_token = read32 (second_ip + 1);
+				MonoClass *unbox_klass = get_class_from_token (generic_context, method, unbox_any_token);
+				CHECK_TYPELOAD (unbox_klass);
+				if (unbox_klass == isinst_klass) {
+					if (isinst) {
+						// leave the original value unchanged on the stack
+						interp_add_ins (td, MINT_NOP);
+					} else {
+						// pop the original value, throw a NullReferenceException
+						td->sp--;
+						interp_add_ins (td, MINT_LDNULL);
+						push_simple_type (td, STACK_TYPE_O);
+						interp_ins_set_dreg (td->last_ins, td->sp [-1].var);
+						interp_add_ins (td, MINT_CKNULL);
+						interp_ins_set_sreg (td->last_ins, td->sp->var);
+						set_simple_type_and_var (td, td->sp, td->sp->type);
+						interp_ins_set_dreg (td->last_ins, td->sp->var);
+					}
+					td->ip = second_ip + 5;
+					// skip over all three opcodes, continue with the next opcode;
+					return TRUE;
+				}
+			}
 	    }
 	}
+exit:
 	return FALSE;
 }
 
