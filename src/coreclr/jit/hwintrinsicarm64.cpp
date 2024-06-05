@@ -233,52 +233,7 @@ void Compiler::getHWIntrinsicImmOps(NamedIntrinsic    intrinsic,
     int imm1Pos = -1;
     int imm2Pos = -1;
 
-    switch (intrinsic)
-    {
-        case NI_AdvSimd_Insert:
-        case NI_AdvSimd_InsertScalar:
-        case NI_AdvSimd_LoadAndInsertScalar:
-        case NI_AdvSimd_LoadAndInsertScalarVector64x2:
-        case NI_AdvSimd_LoadAndInsertScalarVector64x3:
-        case NI_AdvSimd_LoadAndInsertScalarVector64x4:
-        case NI_AdvSimd_Arm64_LoadAndInsertScalar:
-        case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x2:
-        case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x3:
-        case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x4:
-            assert(sig->numArgs == 3);
-            imm1Pos = 1;
-            break;
-
-        case NI_AdvSimd_Arm64_InsertSelectedScalar:
-            assert(sig->numArgs == 4);
-            imm1Pos = 2;
-            imm2Pos = 0;
-            break;
-
-        case NI_Sve_SaturatingDecrementBy16BitElementCount:
-        case NI_Sve_SaturatingDecrementBy32BitElementCount:
-        case NI_Sve_SaturatingDecrementBy64BitElementCount:
-        case NI_Sve_SaturatingDecrementBy8BitElementCount:
-        case NI_Sve_SaturatingIncrementBy16BitElementCount:
-        case NI_Sve_SaturatingIncrementBy32BitElementCount:
-        case NI_Sve_SaturatingIncrementBy64BitElementCount:
-        case NI_Sve_SaturatingIncrementBy8BitElementCount:
-        case NI_Sve_SaturatingDecrementBy16BitElementCountScalar:
-        case NI_Sve_SaturatingDecrementBy32BitElementCountScalar:
-        case NI_Sve_SaturatingDecrementBy64BitElementCountScalar:
-        case NI_Sve_SaturatingIncrementBy16BitElementCountScalar:
-        case NI_Sve_SaturatingIncrementBy32BitElementCountScalar:
-        case NI_Sve_SaturatingIncrementBy64BitElementCountScalar:
-            assert(sig->numArgs == 3);
-            imm1Pos = 1;
-            imm2Pos = 0;
-            break;
-
-        default:
-            assert(sig->numArgs > 0);
-            imm1Pos = 0;
-            break;
-    }
+    HWIntrinsicInfo::GetImmOpsPositions(intrinsic, sig, &imm1Pos, &imm2Pos);
 
     if (imm1Pos >= 0)
     {
@@ -588,8 +543,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector64_Add:
-        case NI_Vector128_Add:
         case NI_Vector64_op_Addition:
         case NI_Vector128_op_Addition:
         {
@@ -614,34 +567,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector64_As:
-        case NI_Vector64_AsByte:
-        case NI_Vector64_AsDouble:
-        case NI_Vector64_AsInt16:
-        case NI_Vector64_AsInt32:
-        case NI_Vector64_AsInt64:
-        case NI_Vector64_AsNInt:
-        case NI_Vector64_AsNUInt:
-        case NI_Vector64_AsSByte:
-        case NI_Vector64_AsSingle:
-        case NI_Vector64_AsUInt16:
-        case NI_Vector64_AsUInt32:
-        case NI_Vector64_AsUInt64:
-        case NI_Vector128_As:
-        case NI_Vector128_AsByte:
-        case NI_Vector128_AsDouble:
-        case NI_Vector128_AsInt16:
-        case NI_Vector128_AsInt32:
-        case NI_Vector128_AsInt64:
-        case NI_Vector128_AsNInt:
-        case NI_Vector128_AsNUInt:
-        case NI_Vector128_AsSByte:
-        case NI_Vector128_AsSingle:
-        case NI_Vector128_AsUInt16:
-        case NI_Vector128_AsUInt32:
-        case NI_Vector128_AsUInt64:
         case NI_Vector128_AsVector:
-        case NI_Vector128_AsVector4:
         {
             assert(!sig->hasThis());
             assert(numArgs == 1);
@@ -756,8 +682,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector64_BitwiseAnd:
-        case NI_Vector128_BitwiseAnd:
         case NI_Vector64_op_BitwiseAnd:
         case NI_Vector128_op_BitwiseAnd:
         {
@@ -770,8 +694,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector64_BitwiseOr:
-        case NI_Vector128_BitwiseOr:
         case NI_Vector64_op_BitwiseOr:
         case NI_Vector128_op_BitwiseOr:
         {
@@ -1140,8 +1062,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector64_Divide:
-        case NI_Vector128_Divide:
         case NI_Vector64_op_Division:
         case NI_Vector128_op_Division:
         {
@@ -1198,8 +1118,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector64_EqualsAll:
-        case NI_Vector128_EqualsAll:
         case NI_Vector64_op_Equality:
         case NI_Vector128_op_Equality:
         {
@@ -1445,14 +1363,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector64_get_Zero:
-        case NI_Vector128_get_Zero:
-        {
-            assert(sig->numArgs == 0);
-            retNode = gtNewZeroConNode(retType);
-            break;
-        }
-
         case NI_Vector64_GetElement:
         case NI_Vector128_GetElement:
         {
@@ -1638,8 +1548,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_AdvSimd_LoadVector64:
         case NI_AdvSimd_LoadVector128:
-        case NI_Vector64_Load:
-        case NI_Vector128_Load:
         case NI_Vector64_LoadUnsafe:
         case NI_Vector128_LoadUnsafe:
         {
@@ -1745,8 +1653,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector64_Multiply:
-        case NI_Vector128_Multiply:
         case NI_Vector64_op_Multiply:
         case NI_Vector128_op_Multiply:
         {
@@ -1810,8 +1716,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector64_Negate:
-        case NI_Vector128_Negate:
         case NI_Vector64_op_UnaryNegation:
         case NI_Vector128_op_UnaryNegation:
         {
@@ -1821,8 +1725,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector64_OnesComplement:
-        case NI_Vector128_OnesComplement:
         case NI_Vector64_op_OnesComplement:
         case NI_Vector128_op_OnesComplement:
         {
@@ -1845,16 +1747,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector64_op_UnaryPlus:
-        case NI_Vector128_op_UnaryPlus:
-        {
-            assert(sig->numArgs == 1);
-            retNode = impSIMDPopStack();
-            break;
-        }
-
-        case NI_Vector64_Subtract:
-        case NI_Vector128_Subtract:
         case NI_Vector64_op_Subtraction:
         case NI_Vector128_op_Subtraction:
         {
@@ -1867,8 +1759,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector64_ShiftLeft:
-        case NI_Vector128_ShiftLeft:
         case NI_Vector64_op_LeftShift:
         case NI_Vector128_op_LeftShift:
         {
@@ -1881,8 +1771,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector64_ShiftRightArithmetic:
-        case NI_Vector128_ShiftRightArithmetic:
         case NI_Vector64_op_RightShift:
         case NI_Vector128_op_RightShift:
         {
@@ -1896,8 +1784,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector64_ShiftRightLogical:
-        case NI_Vector128_ShiftRightLogical:
         case NI_Vector64_op_UnsignedRightShift:
         case NI_Vector128_op_UnsignedRightShift:
         {
@@ -1918,9 +1804,16 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             GenTree* indices = impStackTop(0).val;
 
-            if (!indices->IsVectorConst())
+            if (!indices->IsVectorConst() || !IsValidForShuffle(indices->AsVecCon(), simdSize, simdBaseType))
             {
                 assert(sig->numArgs == 2);
+
+                if (!opts.OptimizationEnabled())
+                {
+                    // Only enable late stage rewriting if optimizations are enabled
+                    // as we won't otherwise encounter a constant at the later point
+                    return nullptr;
+                }
 
                 op2 = impSIMDPopStack();
                 op1 = impSIMDPopStack();
@@ -1974,9 +1867,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector64_Store:
         case NI_Vector64_StoreUnsafe:
-        case NI_Vector128_Store:
         case NI_Vector128_StoreUnsafe:
         {
             assert(retType == TYP_VOID);
@@ -2142,6 +2033,13 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             assert(sig->numArgs == 3);
             assert(retType == TYP_VOID);
 
+            if (!mustExpand && !impStackTop(0).val->IsCnsIntOrI() && (impStackTop(1).val->TypeGet() == TYP_STRUCT))
+            {
+                // TODO-ARM64-CQ: Support rewriting nodes that involves
+                // GenTreeFieldList as user calls during rationalization
+                return nullptr;
+            }
+
             CORINFO_ARG_LIST_HANDLE arg1     = sig->args;
             CORINFO_ARG_LIST_HANDLE arg2     = info.compCompHnd->getArgNext(arg1);
             CORINFO_ARG_LIST_HANDLE arg3     = info.compCompHnd->getArgNext(arg2);
@@ -2253,9 +2151,21 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             if (!indexOp->OperIsConst())
             {
-                // TODO-ARM64-CQ: We should always import these like we do with GetElement
-                // If index is not constant use software fallback.
-                return nullptr;
+                if (!opts.OptimizationEnabled())
+                {
+                    // Only enable late stage rewriting if optimizations are enabled
+                    // as we won't otherwise encounter a constant at the later point
+                    return nullptr;
+                }
+
+                op3 = impPopStack().val;
+                op2 = impPopStack().val;
+                op1 = impSIMDPopStack();
+
+                retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, op3, intrinsic, simdBaseJitType, simdSize);
+
+                retNode->AsHWIntrinsic()->SetMethodHandle(this, method R2RARG(*entryPoint));
+                break;
             }
 
             ssize_t imm8  = indexOp->AsIntCon()->IconValue();
@@ -2295,8 +2205,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector64_Xor:
-        case NI_Vector128_Xor:
         case NI_Vector64_op_ExclusiveOr:
         case NI_Vector128_op_ExclusiveOr:
         {
@@ -2391,6 +2299,13 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x4:
         {
             assert(sig->numArgs == 3);
+
+            if (!mustExpand && !impStackTop(1).val->IsCnsIntOrI())
+            {
+                // TODO-ARM64-CQ: Support rewriting nodes that involves
+                // GenTreeFieldList as user calls during rationalization
+                return nullptr;
+            }
 
             CORINFO_ARG_LIST_HANDLE arg1     = sig->args;
             CORINFO_ARG_LIST_HANDLE arg2     = info.compCompHnd->getArgNext(arg1);
@@ -2632,8 +2547,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg1, &argClass)));
             op1     = impPopStack().val;
 
-            CorInfoType op1BaseJitType = getBaseJitTypeOfSIMDType(argClass);
-
             assert(HWIntrinsicInfo::isImmOp(intrinsic, op2));
             HWIntrinsicInfo::lookupImmBounds(intrinsic, simdSize, simdBaseType, 1, &immLowerBound, &immUpperBound);
             op2 = addRangeCheckIfNeeded(intrinsic, op2, (!op2->IsCnsIntOrI()), immLowerBound, immUpperBound);
@@ -2646,6 +2559,36 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                : gtNewSimdHWIntrinsicNode(retType, op1, op2, op3, intrinsic, simdBaseJitType, simdSize);
 
             retNode->AsHWIntrinsic()->SetSimdBaseJitType(simdBaseJitType);
+            break;
+        }
+
+        case NI_Sve_SaturatingDecrementByActiveElementCount:
+        case NI_Sve_SaturatingIncrementByActiveElementCount:
+        {
+            assert(sig->numArgs == 2);
+
+            CORINFO_ARG_LIST_HANDLE arg1     = sig->args;
+            CORINFO_ARG_LIST_HANDLE arg2     = info.compCompHnd->getArgNext(arg1);
+            var_types               argType  = TYP_UNKNOWN;
+            CORINFO_CLASS_HANDLE    argClass = NO_CLASS_HANDLE;
+
+            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
+            op2     = getArgForHWIntrinsic(argType, argClass);
+            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg1, &argClass)));
+            op1     = impPopStack().val;
+
+            CorInfoType op1BaseJitType = getBaseJitTypeOfSIMDType(argClass);
+
+            // HWInstrinsic requires a mask for op2
+            if (!varTypeIsMask(op2))
+            {
+                op2 = gtNewSimdConvertVectorToMaskNode(retType, op2, simdBaseJitType, simdSize);
+            }
+
+            retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseJitType, simdSize);
+
+            retNode->AsHWIntrinsic()->SetSimdBaseJitType(simdBaseJitType);
+            retNode->AsHWIntrinsic()->SetAuxiliaryJitType(op1BaseJitType);
             break;
         }
 

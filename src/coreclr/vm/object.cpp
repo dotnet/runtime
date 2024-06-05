@@ -1623,6 +1623,15 @@ BOOL Nullable::IsNullableForTypeHelperNoGC(MethodTable* nullableMT, MethodTable*
 }
 
 //===============================================================================
+int32_t Nullable::GetValueAddrOffset(MethodTable* nullableMT)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    _ASSERTE(IsNullableType(nullableMT));
+    _ASSERTE(strcmp(nullableMT->GetApproxFieldDescListRaw()[1].GetDebugName(), "value") == 0);
+    return nullableMT->GetApproxFieldDescListRaw()[1].GetOffset();
+}
+
 CLR_BOOL* Nullable::HasValueAddr(MethodTable* nullableMT) {
 
     LIMITED_METHOD_CONTRACT;
