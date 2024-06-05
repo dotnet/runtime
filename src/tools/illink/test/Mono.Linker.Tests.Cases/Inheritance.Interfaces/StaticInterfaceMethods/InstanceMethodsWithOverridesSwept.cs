@@ -67,14 +67,14 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.StaticInterfaceMethods
 			new InstanceMethods.TypeWithMethodCalledDirectlyAndRecursiveInterfaceUnreferenced ().GetInt ();
 			new InstanceMethods.TypeWithMethodCalledDirectlyAndTwoGenericInterfacesUnreferenced ().GetIntInt ();
 #endif
-			KeepMethodOnType ();
+			KeepTypeThroughDynamicDependency ();
 		}
 
 #if IL_ASSEMBLY_AVAILABLE
 		[DynamicDependency ("GetInt()", typeof (InstanceMethods.TypeWithMethodKeptByDynamicDependency))]
 #endif
 		[Kept]
-		public static void KeepMethodOnType ()
+		public static void KeepTypeThroughDynamicDependency ()
 		{ }
 	}
 }

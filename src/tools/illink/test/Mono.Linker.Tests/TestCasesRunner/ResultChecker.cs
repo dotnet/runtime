@@ -386,6 +386,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
 								Assert.Fail ($"Type `{expectedTypeName}` should have been kept in assembly {assemblyName}");
 							VerifyExpectedInstructionSequenceOnMemberInAssembly (checkAttrInAssembly, linkedType);
 							break;
+						case nameof (RemovedOverrideOnMethodInAssemblyAttribute):
+							VerifyRemovedOverrideOnMethodInAssembly (checkAttrInAssembly, linkedType);
+							break;
+						case nameof (KeptOverrideOnMethodInAssemblyAttribute):
+							VerifyKeptOverrideOnMethodInAssembly (checkAttrInAssembly, linkedType);
+							break;
 						default:
 							UnhandledOtherAssemblyAssertion (expectedTypeName, checkAttrInAssembly, linkedType);
 							break;
@@ -624,6 +630,26 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					continue;
 
 				Assert.Fail ($"Invalid test assertion.  No member named `{memberName}` exists on the original type `{originalType}`");
+			}
+		}
+
+		void VerifyRemovedOverrideOnMethodInAssembly (CustomAttribute attr, TypeDefinition type)
+		{
+			var methodname = (string) attr.ConstructorArguments[2].Value;
+			var method = type.Methods.FirstOrDefault (m => m.Name == methodname);
+			var overriddenMethodName = (string) attr.ConstructorArguments[3].Value;
+			if (method.Overrides.Any (m => m.FullName == overriddenMethodName)) {
+				Assert.Fail ($"Expected method {method.FullName} to not have .override for {overriddenMethodName}");
+			}
+		}
+
+		void VerifyKeptOverrideOnMethodInAssembly (CustomAttribute attr, TypeDefinition type)
+		{
+			var methodname = (string) attr.ConstructorArguments[2].Value;
+			var method = type.Methods.FirstOrDefault (m => m.Name == methodname);
+			var overriddenMethodName = (string) attr.ConstructorArguments[3].Value;
+			if (!method.Overrides.Any (m => m.FullName == overriddenMethodName)) {
+				Assert.Fail ($"Expected method {method.FullName} to have .override for {overriddenMethodName}");
 			}
 		}
 

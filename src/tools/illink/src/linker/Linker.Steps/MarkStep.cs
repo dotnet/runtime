@@ -729,30 +729,12 @@ namespace Mono.Linker.Steps
 					TypeDefinition? resolvedInterface = context.Resolve (intf.InterfaceType);
 					if (resolvedInterface == null)
 						continue;
-
-					if (context.Annotations.IsMarked (intf) && RequiresInterfaceRecursively (resolvedInterface, interfaceType, context))
-						return true;
-				}
-			}
-
-			return false;
-		}
-
-		bool RequiresInterfaceRecursively (TypeDefinition typeToExamine, TypeDefinition interfaceType)
-			=> RequiresInterfaceRecursively (typeToExamine, interfaceType, Context);
-
-		internal static bool RequiresInterfaceRecursively (TypeDefinition typeToExamine, TypeDefinition interfaceType, LinkContext context)
-		{
-			if (typeToExamine == interfaceType)
-				return true;
-
-			if (typeToExamine.HasInterfaces) {
-				foreach (var iface in typeToExamine.Interfaces) {
-					var resolved = context.TryResolve (iface.InterfaceType);
-					if (resolved == null)
+					if (!context.Annotations.IsMarked (intf))
 						continue;
 
-					if (RequiresInterfaceRecursively (resolved, interfaceType, context))
+					if (resolvedInterface == interfaceType)
+						return true;
+					if (IsInterfaceImplementationMarkedRecursively (resolvedInterface, interfaceType, context))
 						return true;
 				}
 			}

@@ -300,3 +300,4 @@
         IL_0016: ret
     } // end of method InstanceMethods::Test
 } // end of class InstanceMethods
+
