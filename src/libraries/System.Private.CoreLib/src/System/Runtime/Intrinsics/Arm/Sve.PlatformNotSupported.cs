@@ -4254,6 +4254,132 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<long> SignExtendWideningUpper(Vector<int> value) { throw new PlatformNotSupportedException(); }
 
 
+        ///  Interleave even elements from two inputs
+
+        /// <summary>
+        /// svuint8_t svtrn1[_u8](svuint8_t op1, svuint8_t op2)
+        ///   TRN1 Zresult.B, Zop1.B, Zop2.B
+        /// </summary>
+        public static unsafe Vector<byte> TransposeEven(Vector<byte> left, Vector<byte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svfloat64_t svtrn1[_f64](svfloat64_t op1, svfloat64_t op2)
+        ///   TRN1 Zresult.D, Zop1.D, Zop2.D
+        /// </summary>
+        public static unsafe Vector<double> TransposeEven(Vector<double> left, Vector<double> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint16_t svtrn1[_s16](svint16_t op1, svint16_t op2)
+        ///   TRN1 Zresult.H, Zop1.H, Zop2.H
+        /// </summary>
+        public static unsafe Vector<short> TransposeEven(Vector<short> left, Vector<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svtrn1[_s32](svint32_t op1, svint32_t op2)
+        ///   TRN1 Zresult.S, Zop1.S, Zop2.S
+        /// </summary>
+        public static unsafe Vector<int> TransposeEven(Vector<int> left, Vector<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svtrn1[_s64](svint64_t op1, svint64_t op2)
+        ///   TRN1 Zresult.D, Zop1.D, Zop2.D
+        /// </summary>
+        public static unsafe Vector<long> TransposeEven(Vector<long> left, Vector<long> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint8_t svtrn1[_s8](svint8_t op1, svint8_t op2)
+        ///   TRN1 Zresult.B, Zop1.B, Zop2.B
+        /// </summary>
+        public static unsafe Vector<sbyte> TransposeEven(Vector<sbyte> left, Vector<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svfloat32_t svtrn1[_f32](svfloat32_t op1, svfloat32_t op2)
+        ///   TRN1 Zresult.S, Zop1.S, Zop2.S
+        /// </summary>
+        public static unsafe Vector<float> TransposeEven(Vector<float> left, Vector<float> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svtrn1[_u16](svuint16_t op1, svuint16_t op2)
+        ///   TRN1 Zresult.H, Zop1.H, Zop2.H
+        /// </summary>
+        public static unsafe Vector<ushort> TransposeEven(Vector<ushort> left, Vector<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svtrn1[_u32](svuint32_t op1, svuint32_t op2)
+        ///   TRN1 Zresult.S, Zop1.S, Zop2.S
+        /// </summary>
+        public static unsafe Vector<uint> TransposeEven(Vector<uint> left, Vector<uint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svtrn1[_u64](svuint64_t op1, svuint64_t op2)
+        ///   TRN1 Zresult.D, Zop1.D, Zop2.D
+        /// </summary>
+        public static unsafe Vector<ulong> TransposeEven(Vector<ulong> left, Vector<ulong> right) { throw new PlatformNotSupportedException(); }
+
+
+        ///  Interleave odd elements from two inputs
+
+        /// <summary>
+        /// svuint8_t svtrn2[_u8](svuint8_t op1, svuint8_t op2)
+        ///   TRN2 Zresult.B, Zop1.B, Zop2.B
+        /// </summary>
+        public static unsafe Vector<byte> TransposeOdd(Vector<byte> left, Vector<byte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svfloat64_t svtrn2[_f64](svfloat64_t op1, svfloat64_t op2)
+        ///   TRN2 Zresult.D, Zop1.D, Zop2.D
+        /// </summary>
+        public static unsafe Vector<double> TransposeOdd(Vector<double> left, Vector<double> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint16_t svtrn2[_s16](svint16_t op1, svint16_t op2)
+        ///   TRN2 Zresult.H, Zop1.H, Zop2.H
+        /// </summary>
+        public static unsafe Vector<short> TransposeOdd(Vector<short> left, Vector<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svtrn2[_s32](svint32_t op1, svint32_t op2)
+        ///   TRN2 Zresult.S, Zop1.S, Zop2.S
+        /// </summary>
+        public static unsafe Vector<int> TransposeOdd(Vector<int> left, Vector<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svtrn2[_s64](svint64_t op1, svint64_t op2)
+        ///   TRN2 Zresult.D, Zop1.D, Zop2.D
+        /// </summary>
+        public static unsafe Vector<long> TransposeOdd(Vector<long> left, Vector<long> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint8_t svtrn2[_s8](svint8_t op1, svint8_t op2)
+        ///   TRN2 Zresult.B, Zop1.B, Zop2.B
+        /// </summary>
+        public static unsafe Vector<sbyte> TransposeOdd(Vector<sbyte> left, Vector<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svfloat32_t svtrn2[_f32](svfloat32_t op1, svfloat32_t op2)
+        ///   TRN2 Zresult.S, Zop1.S, Zop2.S
+        /// </summary>
+        public static unsafe Vector<float> TransposeOdd(Vector<float> left, Vector<float> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svtrn2[_u16](svuint16_t op1, svuint16_t op2)
+        ///   TRN2 Zresult.H, Zop1.H, Zop2.H
+        /// </summary>
+        public static unsafe Vector<ushort> TransposeOdd(Vector<ushort> left, Vector<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svtrn2[_u32](svuint32_t op1, svuint32_t op2)
+        ///   TRN2 Zresult.S, Zop1.S, Zop2.S
+        /// </summary>
+        public static unsafe Vector<uint> TransposeOdd(Vector<uint> left, Vector<uint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svtrn2[_u64](svuint64_t op1, svuint64_t op2)
+        ///   TRN2 Zresult.D, Zop1.D, Zop2.D
+        /// </summary>
+        public static unsafe Vector<ulong> TransposeOdd(Vector<ulong> left, Vector<ulong> right) { throw new PlatformNotSupportedException(); }
+
+
         ///  UnzipEven : Concatenate even elements from two inputs
 
         /// <summary>
