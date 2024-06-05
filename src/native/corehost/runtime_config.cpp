@@ -3,7 +3,7 @@
 
 #include "json_parser.h"
 #include "pal.h"
-#include <external/rapidjson/writer.h>
+#include <rapidjson/writer.h>
 #include "roll_fwd_on_no_candidate_fx_option.h"
 #include "runtime_config.h"
 #include "trace.h"
