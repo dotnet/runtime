@@ -470,7 +470,7 @@
           "any": "Microsoft.NETCore.App.Runtime.Mono.browser-wasm"
       }
     },
-    "Microsoft.NETCore.App.Runtime.Mono.${NetVersion}.multithread.browser-wasm" : {
+    "Microsoft.NETCore.App.Runtime.Mono.multithread.${NetVersion}.browser-wasm" : {
       "kind": "framework",
       "version": "${PackageVersion}",
       "alias-to": {
