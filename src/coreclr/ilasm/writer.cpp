@@ -10,18 +10,17 @@
 
 #include "ceefilegenwriter.h"
 
-#if !defined(_WIN32)
+#include <stdlib.h>
+#include <memory.h>
+
 #define SHA256_BLOCK_SIZE 32
 
 typedef struct {
-	unsigned char data[64];
-	unsigned int datalen;
-	unsigned long long bitlen;
-	unsigned int state[8];
+	BYTE data[64];
+	UINT datalen;
+	ULONG bitlen;
+	UINT state[8];
 } SHA256_CTX;
-
-#include <stdlib.h>
-#include <memory.h>
 
 #define ROTLEFT(a,b) (((a) << (b)) | ((a) >> (32-(b))))
 #define ROTRIGHT(a,b) (((a) >> (b)) | ((a) << (32-(b))))
@@ -51,20 +50,20 @@ void sha256_transform(SHA256_CTX *ctx, const BYTE data[])
 	for (i = 0, j = 0; i < 16; ++i, j += 4)
 		m[i] = (data[j] << 24) | (data[j + 1] << 16) | (data[j + 2] << 8) | (data[j + 3]);
 	for ( ; i < 64; ++i)
-		m[i] = SIG1(m[i - 2]) + m[i - 7] + SIG0(m[i - 15]) + m[i - 16];
+		m[i] = (WORD)SIG1((UINT)(m[i - 2])) + m[i - 7] + (WORD)SIG0((UINT)(m[i - 15])) + m[i - 16];
 
-	a = ctx->state[0];
-	b = ctx->state[1];
-	c = ctx->state[2];
-	d = ctx->state[3];
-	e = ctx->state[4];
-	f = ctx->state[5];
-	g = ctx->state[6];
-	h = ctx->state[7];
+	a = (WORD)ctx->state[0];
+	b = (WORD)ctx->state[1];
+	c = (WORD)ctx->state[2];
+	d = (WORD)ctx->state[3];
+	e = (WORD)ctx->state[4];
+	f = (WORD)ctx->state[5];
+	g = (WORD)ctx->state[6];
+	h = (WORD)ctx->state[7];
 
 	for (i = 0; i < 64; ++i) {
-		t1 = h + EP1(e) + CH(e,f,g) + k[i] + m[i];
-		t2 = EP0(a) + MAJ(a,b,c);
+		t1 = (WORD)(h + (WORD)EP1((UINT)e) + CH(e,f,g) + k[i] + m[i]);
+		t2 = (WORD)EP0((UINT)a) + MAJ(a,b,c);
 		h = g;
 		g = f;
 		f = e;
@@ -118,7 +117,7 @@ void sha256_final(SHA256_CTX *ctx, BYTE hash[])
 {
 	WORD i;
 
-	i = ctx->datalen;
+	i = (WORD)ctx->datalen;
 
 	// Pad whatever data is left in the buffer.
 	if (ctx->datalen < 56) {
@@ -136,14 +135,14 @@ void sha256_final(SHA256_CTX *ctx, BYTE hash[])
 
 	// Append to the padding the total message's length in bits and transform.
 	ctx->bitlen += ctx->datalen * 8;
-	ctx->data[63] = ctx->bitlen;
-	ctx->data[62] = ctx->bitlen >> 8;
-	ctx->data[61] = ctx->bitlen >> 16;
-	ctx->data[60] = ctx->bitlen >> 24;
-	ctx->data[59] = ctx->bitlen >> 32;
-	ctx->data[58] = ctx->bitlen >> 40;
-	ctx->data[57] = ctx->bitlen >> 48;
-	ctx->data[56] = ctx->bitlen >> 56;
+	ctx->data[63] = (unsigned char)ctx->bitlen;
+	ctx->data[62] = (unsigned char)(ctx->bitlen >> 8);
+	ctx->data[61] = (unsigned char)(ctx->bitlen >> 16);
+	ctx->data[60] = (unsigned char)(ctx->bitlen >> 24);
+	ctx->data[59] = (unsigned char)(ctx->bitlen >> 32);
+	ctx->data[58] = (unsigned char)(ctx->bitlen >> 40);
+	ctx->data[57] = (unsigned char)(ctx->bitlen >> 48);
+	ctx->data[56] = (unsigned char)(ctx->bitlen >> 56);
 	sha256_transform(ctx, ctx->data);
 
 	// Since this implementation uses little endian byte ordering and SHA uses big endian,
@@ -159,7 +158,6 @@ void sha256_final(SHA256_CTX *ctx, BYTE hash[])
 		hash[i + 28] = (ctx->state[7] >> (24 - i * 8)) & 0x000000ff;
 	}
 }
-#endif
 
 #ifndef _MSC_VER
 //cloned definition from ntimage.h that is removed for non MSVC builds
@@ -1946,9 +1944,7 @@ exit:
 
 HRESULT Sha256Hash(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize)
 {
-    BYTE hash[32]; // 256 bits
-
-#if !defined(_WIN32)
+    BYTE hash[SHA256_BLOCK_SIZE];
 	SHA256_CTX ctx;
 
 	sha256_init(&ctx);
@@ -1958,60 +1954,6 @@ HRESULT Sha256Hash(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize)
     memcpy(pDst, hash, std::min((DWORD)SHA256_BLOCK_SIZE, dstSize));
 
     return S_OK;
-#else
-    NTSTATUS status;
-    
-    BCRYPT_ALG_HANDLE   algHandle = NULL;
-    BCRYPT_HASH_HANDLE  hashHandle = NULL;
-    
-    DWORD   hashLength = 0;
-    DWORD   resultLength = 0;
-    status = BCryptOpenAlgorithmProvider(&algHandle, BCRYPT_SHA256_ALGORITHM, NULL, BCRYPT_HASH_REUSABLE_FLAG);
-    if(!NT_SUCCESS(status))
-    {
-        goto cleanup;
-    }
-    status = BCryptGetProperty(algHandle, BCRYPT_HASH_LENGTH, (PBYTE)&hashLength, sizeof(hashLength), &resultLength, 0);
-    if(!NT_SUCCESS(status))
-    {
-        goto cleanup;
-    }
-    if (hashLength != 32)
-    {
-        status = STATUS_NO_MEMORY;
-        goto cleanup;
-    }
-    status = BCryptCreateHash(algHandle, &hashHandle, NULL, 0, NULL, 0, 0);
-    if(!NT_SUCCESS(status))
-    {
-        goto cleanup;
-    }
-    
-    status = BCryptHashData(hashHandle, pSrc, srcSize, 0);
-    if(!NT_SUCCESS(status))
-    {
-        goto cleanup;
-    }
-    
-    status = BCryptFinishHash(hashHandle, hash, hashLength, 0);
-    if(!NT_SUCCESS(status))
-    {
-        goto cleanup;
-    }
-    memcpy(pDst, hash, std::min(hashLength, dstSize));
-    status = STATUS_SUCCESS;
-       
-cleanup:
-    if (NULL != hashHandle)    
-    {
-         BCryptDestroyHash(hashHandle);
-    }
-    if(NULL != algHandle)
-    {
-        BCryptCloseAlgorithmProvider(algHandle, 0);
-    }
-    return status;
-#endif
 }
 
 #ifdef _PREFAST_
