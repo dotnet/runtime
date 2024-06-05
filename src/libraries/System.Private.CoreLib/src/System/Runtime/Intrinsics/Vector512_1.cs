@@ -7,7 +7,10 @@ using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics.X86;
 using System.Text;
+
+#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
 
 namespace System.Runtime.Intrinsics
 {
@@ -41,7 +44,6 @@ namespace System.Runtime.Intrinsics
             get => Vector512.Create(Scalar<T>.AllBitsSet);
         }
 
-#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
         /// <summary>Gets the number of <typeparamref name="T" /> that are in a <see cref="Vector512{T}" />.</summary>
         /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
         public static int Count
@@ -53,7 +55,6 @@ namespace System.Runtime.Intrinsics
                 return Vector512.Size / sizeof(T);
             }
         }
-#pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
 
         /// <summary>Gets a new <see cref="Vector512{T}" /> with the elements set to their index.</summary>
         /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
@@ -136,10 +137,54 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector512<T> operator +(Vector512<T> left, Vector512<T> right)
         {
-            return Vector512.Create(
-                left._lower + right._lower,
-                left._upper + right._upper
-            );
+            if (Avx512F.IsSupported)
+            {
+                return XarchImpl(left, right);
+            }
+            return SoftwareImpl(left, right);
+
+            static Vector512<T> SoftwareImpl(Vector512<T> left, Vector512<T> right)
+            {
+                return Vector512.Create(
+                    left._lower + right._lower,
+                    left._upper + right._upper
+                );
+            }
+
+            [CompExactlyDependsOn(typeof(Avx512F))]
+            [CompExactlyDependsOn(typeof(Avx512BW))]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static Vector512<T> XarchImpl(Vector512<T> left, Vector512<T> right)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    return Avx512F.Add(left.AsSingle(), right.AsSingle()).As<float, T>();
+                }
+                else if (typeof(T) == typeof(double))
+                {
+                    return Avx512F.Add(left.AsDouble(), right.AsDouble()).As<double, T>();
+                }
+                else if (sizeof(T) == 4)
+                {
+                    return Avx512F.Add(left.AsUInt32(), right.AsUInt32()).As<uint, T>();
+                }
+                else if (sizeof(T) == 8)
+                {
+                    return Avx512F.Add(left.AsUInt64(), right.AsUInt64()).As<ulong, T>();
+                }
+                else if (Avx512BW.IsSupported)
+                {
+                    if (sizeof(T) == 1)
+                    {
+                        return Avx512BW.Add(left.AsByte(), right.AsByte()).As<byte, T>();
+                    }
+                    else if (sizeof(T) == 2)
+                    {
+                        return Avx512BW.Add(left.AsUInt16(), right.AsUInt16()).As<ushort, T>();
+                    }
+                }
+                return SoftwareImpl(left, right);
+            }
         }
 
         /// <summary>Computes the bitwise-and of two vectors.</summary>
@@ -326,10 +371,54 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector512<T> operator -(Vector512<T> left, Vector512<T> right)
         {
-            return Vector512.Create(
-                left._lower - right._lower,
-                left._upper - right._upper
-            );
+            if (Avx512F.IsSupported)
+            {
+                return XarchImpl(left, right);
+            }
+            return SoftwareImpl(left, right);
+
+            static Vector512<T> SoftwareImpl(Vector512<T> left, Vector512<T> right)
+            {
+                return Vector512.Create(
+                    left._lower - right._lower,
+                    left._upper - right._upper
+                );
+            }
+
+            [CompExactlyDependsOn(typeof(Avx512F))]
+            [CompExactlyDependsOn(typeof(Avx512BW))]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static Vector512<T> XarchImpl(Vector512<T> left, Vector512<T> right)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    return Avx512F.Subtract(left.AsSingle(), right.AsSingle()).As<float, T>();
+                }
+                else if (typeof(T) == typeof(double))
+                {
+                    return Avx512F.Subtract(left.AsDouble(), right.AsDouble()).As<double, T>();
+                }
+                else if (sizeof(T) == 4)
+                {
+                    return Avx512F.Subtract(left.AsUInt32(), right.AsUInt32()).As<uint, T>();
+                }
+                else if (sizeof(T) == 8)
+                {
+                    return Avx512F.Subtract(left.AsUInt64(), right.AsUInt64()).As<ulong, T>();
+                }
+                else if (Avx512BW.IsSupported)
+                {
+                    if (sizeof(T) == 1)
+                    {
+                        return Avx512BW.Subtract(left.AsByte(), right.AsByte()).As<byte, T>();
+                    }
+                    else if (sizeof(T) == 2)
+                    {
+                        return Avx512BW.Subtract(left.AsUInt16(), right.AsUInt16()).As<ushort, T>();
+                    }
+                }
+                return SoftwareImpl(left, right);
+            }
         }
 
         /// <summary>Computes the unary negation of a vector.</summary>
@@ -558,7 +647,6 @@ namespace System.Runtime.Intrinsics
         /// <inheritdoc cref="ISimdVector{TSelf, T}.LessThanOrEqualAny(TSelf, TSelf)" />
         static bool ISimdVector<Vector512<T>, T>.LessThanOrEqualAny(Vector512<T> left, Vector512<T> right) => Vector512.LessThanOrEqualAny(left, right);
 
-#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Load(T*)" />
         static Vector512<T> ISimdVector<Vector512<T>, T>.Load(T* source) => Vector512.Load(source);
 
@@ -567,7 +655,6 @@ namespace System.Runtime.Intrinsics
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.LoadAlignedNonTemporal(T*)" />
         static Vector512<T> ISimdVector<Vector512<T>, T>.LoadAlignedNonTemporal(T* source) => Vector512.LoadAlignedNonTemporal(source);
-#pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.LoadUnsafe(ref readonly T)" />
         static Vector512<T> ISimdVector<Vector512<T>, T>.LoadUnsafe(ref readonly T source) => Vector512.LoadUnsafe(in source);
@@ -605,7 +692,6 @@ namespace System.Runtime.Intrinsics
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Sqrt(TSelf)" />
         static Vector512<T> ISimdVector<Vector512<T>, T>.Sqrt(Vector512<T> vector) => Vector512.Sqrt(vector);
 
-#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Store(TSelf, T*)" />
         static void ISimdVector<Vector512<T>, T>.Store(Vector512<T> source, T* destination) => source.Store(destination);
 
@@ -614,7 +700,6 @@ namespace System.Runtime.Intrinsics
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.StoreAlignedNonTemporal(TSelf, T*)" />
         static void ISimdVector<Vector512<T>, T>.StoreAlignedNonTemporal(Vector512<T> source, T* destination) => source.StoreAlignedNonTemporal(destination);
-#pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.StoreUnsafe(TSelf, ref T)" />
         static void ISimdVector<Vector512<T>, T>.StoreUnsafe(Vector512<T> vector, ref T destination) => vector.StoreUnsafe(ref destination);

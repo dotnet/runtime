@@ -543,18 +543,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector64_op_Addition:
-        case NI_Vector128_op_Addition:
-        {
-            assert(sig->numArgs == 2);
-
-            op2 = impSIMDPopStack();
-            op1 = impSIMDPopStack();
-
-            retNode = gtNewSimdBinOpNode(GT_ADD, retType, op1, op2, simdBaseJitType, simdSize);
-            break;
-        }
-
         case NI_Vector64_AndNot:
         case NI_Vector128_AndNot:
         {
@@ -1744,18 +1732,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             op1 = impSIMDPopStack();
 
             retNode = gtNewSimdCmpOpAnyNode(GT_NE, retType, op1, op2, simdBaseJitType, simdSize);
-            break;
-        }
-
-        case NI_Vector64_op_Subtraction:
-        case NI_Vector128_op_Subtraction:
-        {
-            assert(sig->numArgs == 2);
-
-            op2 = impSIMDPopStack();
-            op1 = impSIMDPopStack();
-
-            retNode = gtNewSimdBinOpNode(GT_SUB, retType, op1, op2, simdBaseJitType, simdSize);
             break;
         }
 

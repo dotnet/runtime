@@ -7,7 +7,10 @@ using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics.Arm;
 using System.Text;
+
+#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
 
 namespace System.Runtime.Intrinsics
 {
@@ -41,7 +44,6 @@ namespace System.Runtime.Intrinsics
             get => Vector64.Create(Scalar<T>.AllBitsSet);
         }
 
-#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
         /// <summary>Gets the number of <typeparamref name="T" /> that are in a <see cref="Vector64{T}" />.</summary>
         /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
         public static unsafe int Count
@@ -53,7 +55,6 @@ namespace System.Runtime.Intrinsics
                 return Vector64.Size / sizeof(T);
             }
         }
-#pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
 
         /// <summary>Gets a new <see cref="Vector64{T}" /> with the elements set to their index.</summary>
         /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
@@ -136,15 +137,55 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector64<T> operator +(Vector64<T> left, Vector64<T> right)
         {
-            Unsafe.SkipInit(out Vector64<T> result);
-
-            for (int index = 0; index < Count; index++)
+            if (AdvSimd.IsSupported)
             {
-                T value = Scalar<T>.Add(left.GetElementUnsafe(index), right.GetElementUnsafe(index));
-                result.SetElementUnsafe(index, value);
+                return ArmImpl(left, right);
+            }
+            return SoftwareImpl(left, right);
+
+            [CompExactlyDependsOn(typeof(AdvSimd))]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static Vector64<T> ArmImpl(Vector64<T> left, Vector64<T> right)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    return AdvSimd.Add(left.AsSingle(), right.AsSingle()).As<float, T>();
+                }
+                else if (typeof(T) == typeof(double))
+                {
+                    return AdvSimd.AddScalar(left.AsDouble(), right.AsDouble()).As<double, T>();
+                }
+                else if (sizeof(T) == 1)
+                {
+                    return AdvSimd.Add(left.AsByte(), right.AsByte()).As<byte, T>();
+                }
+                else if (sizeof(T) == 2)
+                {
+                    return AdvSimd.Add(left.AsUInt16(), right.AsUInt16()).As<ushort, T>();
+                }
+                else if (sizeof(T) == 4)
+                {
+                    return AdvSimd.Add(left.AsUInt32(), right.AsUInt32()).As<uint, T>();
+                }
+                else if (sizeof(T) == 8)
+                {
+                    return AdvSimd.AddScalar(left.AsUInt64(), right.AsUInt64()).As<ulong, T>();
+                }
+                return SoftwareImpl(left, right);
             }
 
-            return result;
+            static Vector64<T> SoftwareImpl(Vector64<T> left, Vector64<T> right)
+            {
+                Unsafe.SkipInit(out Vector64<T> result);
+
+                for (int index = 0; index < Count; index++)
+                {
+                    T value = Scalar<T>.Add(left.GetElementUnsafe(index), right.GetElementUnsafe(index));
+                    result.SetElementUnsafe(index, value);
+                }
+
+                return result;
+            }
         }
 
         /// <summary>Computes the bitwise-and of two vectors.</summary>
@@ -375,15 +416,55 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector64<T> operator -(Vector64<T> left, Vector64<T> right)
         {
-            Unsafe.SkipInit(out Vector64<T> result);
-
-            for (int index = 0; index < Count; index++)
+            if (AdvSimd.IsSupported)
             {
-                T value = Scalar<T>.Subtract(left.GetElementUnsafe(index), right.GetElementUnsafe(index));
-                result.SetElementUnsafe(index, value);
+                return ArmImpl(left, right);
+            }
+            return SoftwareImpl(left, right);
+
+            [CompExactlyDependsOn(typeof(AdvSimd))]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static Vector64<T> ArmImpl(Vector64<T> left, Vector64<T> right)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    return AdvSimd.Subtract(left.AsSingle(), right.AsSingle()).As<float, T>();
+                }
+                else if (typeof(T) == typeof(double))
+                {
+                    return AdvSimd.SubtractScalar(left.AsDouble(), right.AsDouble()).As<double, T>();
+                }
+                else if (sizeof(T) == 1)
+                {
+                    return AdvSimd.Subtract(left.AsByte(), right.AsByte()).As<byte, T>();
+                }
+                else if (sizeof(T) == 2)
+                {
+                    return AdvSimd.Subtract(left.AsUInt16(), right.AsUInt16()).As<ushort, T>();
+                }
+                else if (sizeof(T) == 4)
+                {
+                    return AdvSimd.Subtract(left.AsUInt32(), right.AsUInt32()).As<uint, T>();
+                }
+                else if (sizeof(T) == 8)
+                {
+                    return AdvSimd.SubtractScalar(left.AsUInt64(), right.AsUInt64()).As<ulong, T>();
+                }
+                return SoftwareImpl(left, right);
             }
 
-            return result;
+            static Vector64<T> SoftwareImpl(Vector64<T> left, Vector64<T> right)
+            {
+                Unsafe.SkipInit(out Vector64<T> result);
+
+                for (int index = 0; index < Count; index++)
+                {
+                    T value = Scalar<T>.Subtract(left.GetElementUnsafe(index), right.GetElementUnsafe(index));
+                    result.SetElementUnsafe(index, value);
+                }
+
+                return result;
+            }
         }
 
         /// <summary>Computes the unary negation of a vector.</summary>
@@ -626,7 +707,6 @@ namespace System.Runtime.Intrinsics
         /// <inheritdoc cref="ISimdVector{TSelf, T}.LessThanOrEqualAny(TSelf, TSelf)" />
         static bool ISimdVector<Vector64<T>, T>.LessThanOrEqualAny(Vector64<T> left, Vector64<T> right) => Vector64.LessThanOrEqualAny(left, right);
 
-#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Load(T*)" />
         static Vector64<T> ISimdVector<Vector64<T>, T>.Load(T* source) => Vector64.Load(source);
 
@@ -635,7 +715,6 @@ namespace System.Runtime.Intrinsics
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.LoadAlignedNonTemporal(T*)" />
         static Vector64<T> ISimdVector<Vector64<T>, T>.LoadAlignedNonTemporal(T* source) => Vector64.LoadAlignedNonTemporal(source);
-#pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.LoadUnsafe(ref readonly T)" />
         static Vector64<T> ISimdVector<Vector64<T>, T>.LoadUnsafe(ref readonly T source) => Vector64.LoadUnsafe(in source);
@@ -673,7 +752,6 @@ namespace System.Runtime.Intrinsics
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Sqrt(TSelf)" />
         static Vector64<T> ISimdVector<Vector64<T>, T>.Sqrt(Vector64<T> vector) => Vector64.Sqrt(vector);
 
-#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Store(TSelf, T*)" />
         static void ISimdVector<Vector64<T>, T>.Store(Vector64<T> source, T* destination) => source.Store(destination);
 
@@ -682,7 +760,6 @@ namespace System.Runtime.Intrinsics
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.StoreAlignedNonTemporal(TSelf, T*)" />
         static void ISimdVector<Vector64<T>, T>.StoreAlignedNonTemporal(Vector64<T> source, T* destination) => source.StoreAlignedNonTemporal(destination);
-#pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.StoreUnsafe(TSelf, ref T)" />
         static void ISimdVector<Vector64<T>, T>.StoreUnsafe(Vector64<T> vector, ref T destination) => vector.StoreUnsafe(ref destination);

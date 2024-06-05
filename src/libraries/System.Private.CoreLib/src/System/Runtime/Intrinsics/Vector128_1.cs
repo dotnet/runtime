@@ -7,7 +7,12 @@ using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.Wasm;
+using System.Runtime.Intrinsics.X86;
 using System.Text;
+
+#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
 
 namespace System.Runtime.Intrinsics
 {
@@ -21,7 +26,6 @@ namespace System.Runtime.Intrinsics
     // other cases (such as the software fallback) are placed in their own method.
     // This ensures we get good codegen for the "fast-path" and allows the JIT to
     // determine inline profitability of the other paths as it would normally.
-
 
     /// <summary>Represents a 128-bit vector of a specified numeric type that is suitable for low-level optimization of parallel algorithms.</summary>
     /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -42,7 +46,6 @@ namespace System.Runtime.Intrinsics
             get => Vector128.Create(Scalar<T>.AllBitsSet);
         }
 
-#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
         /// <summary>Gets the number of <typeparamref name="T" /> that are in a <see cref="Vector128{T}" />.</summary>
         /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
         public static int Count
@@ -54,7 +57,6 @@ namespace System.Runtime.Intrinsics
                 return Vector128.Size / sizeof(T);
             }
         }
-#pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
 
         /// <summary>Gets a new <see cref="Vector128{T}" /> with the elements set to their index.</summary>
         /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
@@ -137,10 +139,128 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<T> operator +(Vector128<T> left, Vector128<T> right)
         {
-            return Vector128.Create(
-                left._lower + right._lower,
-                left._upper + right._upper
-            );
+            if (AdvSimd.IsSupported)
+            {
+                return ArmImpl(left, right);
+            }
+            else if (PackedSimd.IsSupported)
+            {
+                return WasmImpl(left, right);
+            }
+            else if (Sse.IsSupported)
+            {
+                return XarchImpl(left, right);
+            }
+            return SoftwareImpl(left, right);
+
+            [CompExactlyDependsOn(typeof(AdvSimd))]
+            [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static Vector128<T> ArmImpl(Vector128<T> left, Vector128<T> right)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    return AdvSimd.Add(left.AsSingle(), right.AsSingle()).As<float, T>();
+                }
+                else if (typeof(T) == typeof(double))
+                {
+                    if (AdvSimd.Arm64.IsSupported)
+                    {
+                        return AdvSimd.Arm64.Add(left.AsDouble(), right.AsDouble()).As<double, T>();
+                    }
+                }
+                else if (sizeof(T) == 1)
+                {
+                    return AdvSimd.Add(left.AsByte(), right.AsByte()).As<byte, T>();
+                }
+                else if (sizeof(T) == 2)
+                {
+                    return AdvSimd.Add(left.AsUInt16(), right.AsUInt16()).As<ushort, T>();
+                }
+                else if (sizeof(T) == 4)
+                {
+                    return AdvSimd.Add(left.AsUInt32(), right.AsUInt32()).As<uint, T>();
+                }
+                else if (sizeof(T) == 8)
+                {
+                    return AdvSimd.Add(left.AsUInt64(), right.AsUInt64()).As<ulong, T>();
+                }
+                return SoftwareImpl(left, right);
+            }
+
+            static Vector128<T> SoftwareImpl(Vector128<T> left, Vector128<T> right)
+            {
+                return Vector128.Create(
+                    left._lower + right._lower,
+                    left._upper + right._upper
+                );
+            }
+
+            [CompExactlyDependsOn(typeof(PackedSimd))]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static Vector128<T> WasmImpl(Vector128<T> left, Vector128<T> right)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    return PackedSimd.Add(left.AsSingle(), right.AsSingle()).As<float, T>();
+                }
+                else if (typeof(T) == typeof(double))
+                {
+                    return PackedSimd.Add(left.AsDouble(), right.AsDouble()).As<double, T>();
+                }
+                else if (sizeof(T) == 1)
+                {
+                    return PackedSimd.Add(left.AsByte(), right.AsByte()).As<byte, T>();
+                }
+                else if (sizeof(T) == 2)
+                {
+                    return PackedSimd.Add(left.AsUInt16(), right.AsUInt16()).As<ushort, T>();
+                }
+                else if (sizeof(T) == 4)
+                {
+                    return PackedSimd.Add(left.AsUInt32(), right.AsUInt32()).As<uint, T>();
+                }
+                else if (sizeof(T) == 8)
+                {
+                    return PackedSimd.Add(left.AsUInt64(), right.AsUInt64()).As<ulong, T>();
+                }
+                return SoftwareImpl(left, right);
+            }
+
+            [CompExactlyDependsOn(typeof(Sse))]
+            [CompExactlyDependsOn(typeof(Sse2))]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static Vector128<T> XarchImpl(Vector128<T> left, Vector128<T> right)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    return Sse.Add(left.AsSingle(), right.AsSingle()).As<float, T>();
+                }
+                else if (Sse2.IsSupported)
+                {
+                    if (typeof(T) == typeof(double))
+                    {
+                        return Sse2.Add(left.AsDouble(), right.AsDouble()).As<double, T>();
+                    }
+                    else if (sizeof(T) == 1)
+                    {
+                        return Sse2.Add(left.AsByte(), right.AsByte()).As<byte, T>();
+                    }
+                    else if (sizeof(T) == 2)
+                    {
+                        return Sse2.Add(left.AsUInt16(), right.AsUInt16()).As<ushort, T>();
+                    }
+                    else if (sizeof(T) == 4)
+                    {
+                        return Sse2.Add(left.AsUInt32(), right.AsUInt32()).As<uint, T>();
+                    }
+                    else if (sizeof(T) == 8)
+                    {
+                        return Sse2.Add(left.AsUInt64(), right.AsUInt64()).As<ulong, T>();
+                    }
+                }
+                return SoftwareImpl(left, right);
+            }
         }
 
         /// <summary>Computes the bitwise-and of two vectors.</summary>
@@ -328,10 +448,128 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<T> operator -(Vector128<T> left, Vector128<T> right)
         {
-            return Vector128.Create(
-                left._lower - right._lower,
-                left._upper - right._upper
-            );
+            if (AdvSimd.IsSupported)
+            {
+                return ArmImpl(left, right);
+            }
+            else if (PackedSimd.IsSupported)
+            {
+                return WasmImpl(left, right);
+            }
+            else if (Sse.IsSupported)
+            {
+                return XarchImpl(left, right);
+            }
+            return SoftwareImpl(left, right);
+
+            [CompExactlyDependsOn(typeof(AdvSimd))]
+            [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static Vector128<T> ArmImpl(Vector128<T> left, Vector128<T> right)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    return AdvSimd.Subtract(left.AsSingle(), right.AsSingle()).As<float, T>();
+                }
+                else if (typeof(T) == typeof(double))
+                {
+                    if (AdvSimd.Arm64.IsSupported)
+                    {
+                        return AdvSimd.Arm64.Subtract(left.AsDouble(), right.AsDouble()).As<double, T>();
+                    }
+                }
+                else if (sizeof(T) == 1)
+                {
+                    return AdvSimd.Subtract(left.AsByte(), right.AsByte()).As<byte, T>();
+                }
+                else if (sizeof(T) == 2)
+                {
+                    return AdvSimd.Subtract(left.AsUInt16(), right.AsUInt16()).As<ushort, T>();
+                }
+                else if (sizeof(T) == 4)
+                {
+                    return AdvSimd.Subtract(left.AsUInt32(), right.AsUInt32()).As<uint, T>();
+                }
+                else if (sizeof(T) == 8)
+                {
+                    return AdvSimd.Subtract(left.AsUInt64(), right.AsUInt64()).As<ulong, T>();
+                }
+                return SoftwareImpl(left, right);
+            }
+
+            static Vector128<T> SoftwareImpl(Vector128<T> left, Vector128<T> right)
+            {
+                return Vector128.Create(
+                    left._lower - right._lower,
+                    left._upper - right._upper
+                );
+            }
+
+            [CompExactlyDependsOn(typeof(PackedSimd))]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static Vector128<T> WasmImpl(Vector128<T> left, Vector128<T> right)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    return PackedSimd.Subtract(left.AsSingle(), right.AsSingle()).As<float, T>();
+                }
+                else if (typeof(T) == typeof(double))
+                {
+                    return PackedSimd.Subtract(left.AsDouble(), right.AsDouble()).As<double, T>();
+                }
+                else if (sizeof(T) == 1)
+                {
+                    return PackedSimd.Subtract(left.AsByte(), right.AsByte()).As<byte, T>();
+                }
+                else if (sizeof(T) == 2)
+                {
+                    return PackedSimd.Subtract(left.AsUInt16(), right.AsUInt16()).As<ushort, T>();
+                }
+                else if (sizeof(T) == 4)
+                {
+                    return PackedSimd.Subtract(left.AsUInt32(), right.AsUInt32()).As<uint, T>();
+                }
+                else if (sizeof(T) == 8)
+                {
+                    return PackedSimd.Subtract(left.AsUInt64(), right.AsUInt64()).As<ulong, T>();
+                }
+                return SoftwareImpl(left, right);
+            }
+
+            [CompExactlyDependsOn(typeof(Sse))]
+            [CompExactlyDependsOn(typeof(Sse2))]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static Vector128<T> XarchImpl(Vector128<T> left, Vector128<T> right)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    return Sse.Subtract(left.AsSingle(), right.AsSingle()).As<float, T>();
+                }
+                else if (Sse2.IsSupported)
+                {
+                    if (typeof(T) == typeof(double))
+                    {
+                        return Sse2.Subtract(left.AsDouble(), right.AsDouble()).As<double, T>();
+                    }
+                    else if (sizeof(T) == 1)
+                    {
+                        return Sse2.Subtract(left.AsByte(), right.AsByte()).As<byte, T>();
+                    }
+                    else if (sizeof(T) == 2)
+                    {
+                        return Sse2.Subtract(left.AsUInt16(), right.AsUInt16()).As<ushort, T>();
+                    }
+                    else if (sizeof(T) == 4)
+                    {
+                        return Sse2.Subtract(left.AsUInt32(), right.AsUInt32()).As<uint, T>();
+                    }
+                    else if (sizeof(T) == 8)
+                    {
+                        return Sse2.Subtract(left.AsUInt64(), right.AsUInt64()).As<ulong, T>();
+                    }
+                }
+                return SoftwareImpl(left, right);
+            }
         }
 
         /// <summary>Computes the unary negation of a vector.</summary>
@@ -569,7 +807,6 @@ namespace System.Runtime.Intrinsics
         /// <inheritdoc cref="ISimdVector{TSelf, T}.LessThanOrEqualAny(TSelf, TSelf)" />
         static bool ISimdVector<Vector128<T>, T>.LessThanOrEqualAny(Vector128<T> left, Vector128<T> right) => Vector128.LessThanOrEqualAny(left, right);
 
-#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Load(T*)" />
         static Vector128<T> ISimdVector<Vector128<T>, T>.Load(T* source) => Vector128.Load(source);
 
@@ -578,7 +815,6 @@ namespace System.Runtime.Intrinsics
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.LoadAlignedNonTemporal(T*)" />
         static Vector128<T> ISimdVector<Vector128<T>, T>.LoadAlignedNonTemporal(T* source) => Vector128.LoadAlignedNonTemporal(source);
-#pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.LoadUnsafe(ref readonly T)" />
         static Vector128<T> ISimdVector<Vector128<T>, T>.LoadUnsafe(ref readonly T source) => Vector128.LoadUnsafe(in source);
@@ -616,7 +852,6 @@ namespace System.Runtime.Intrinsics
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Sqrt(TSelf)" />
         static Vector128<T> ISimdVector<Vector128<T>, T>.Sqrt(Vector128<T> vector) => Vector128.Sqrt(vector);
 
-#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Store(TSelf, T*)" />
         static void ISimdVector<Vector128<T>, T>.Store(Vector128<T> source, T* destination) => source.Store(destination);
 
@@ -625,7 +860,6 @@ namespace System.Runtime.Intrinsics
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.StoreAlignedNonTemporal(TSelf, T*)" />
         static void ISimdVector<Vector128<T>, T>.StoreAlignedNonTemporal(Vector128<T> source, T* destination) => source.StoreAlignedNonTemporal(destination);
-#pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.StoreUnsafe(TSelf, ref T)" />
         static void ISimdVector<Vector128<T>, T>.StoreUnsafe(Vector128<T> vector, ref T destination) => vector.StoreUnsafe(ref destination);
