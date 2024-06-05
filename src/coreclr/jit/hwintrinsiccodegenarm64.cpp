@@ -784,6 +784,17 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     unreached();
             }
         }
+        else if (intrin.id == NI_Sve_DuplicateSelectedScalarToVector)
+        {
+            HWIntrinsicImmOpHelper helper(this, intrin.op2, node);
+
+            for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
+            {
+                const int elementIndex = helper.ImmValue();
+
+                GetEmitter()->emitIns_R_R_I(ins, emitSize, targetReg, op1Reg, elementIndex, opt);
+            }
+        }
         else
         {
             assert(!hasImmediateOperand);

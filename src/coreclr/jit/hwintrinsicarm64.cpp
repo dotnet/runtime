@@ -421,6 +421,10 @@ void HWIntrinsicInfo::lookupImmBounds(
                 immUpperBound = (int)SVE_PATTERN_ALL;
                 break;
 
+            case NI_Sve_DuplicateSelectedScalarToVector:
+                immUpperBound = (512 / (genTypeSize(baseType) * BITS_PER_BYTE)) - 1;
+                break;
+
             case NI_Sve_SaturatingDecrementBy16BitElementCount:
             case NI_Sve_SaturatingDecrementBy32BitElementCount:
             case NI_Sve_SaturatingDecrementBy64BitElementCount:
