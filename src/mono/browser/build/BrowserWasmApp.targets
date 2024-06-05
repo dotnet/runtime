@@ -271,6 +271,10 @@
       <WasmCompileOptimizationFlag>$(EmccCompileOptimizationFlag)</WasmCompileOptimizationFlag>
       <WasmBitcodeCompileOptimizationFlag Condition="'$(WasmBitcodeCompileOptimizationFlag)' == '' and '$(Configuration)' == 'Release'">-O2</WasmBitcodeCompileOptimizationFlag>
       <WasmBitcodeCompileOptimizationFlag Condition="'$(WasmBitcodeCompileOptimizationFlag)' == '' ">$(WasmCompileOptimizationFlag)</WasmBitcodeCompileOptimizationFlag>
+
+      <!-- fixme https://github.com/WebAssembly/binaryen/issues/6639 -->
+      <EmccLinkOptimizationFlag Condition="$([MSBuild]::IsOSPlatform('windows'))">-O1</EmccLinkOptimizationFlag>
+
       <EmccLinkOptimizationFlag    Condition="'$(EmccLinkOptimizationFlag)' == '' and '$(Configuration)' == 'Release'">-O2</EmccLinkOptimizationFlag>
       <EmccLinkOptimizationFlag    Condition="'$(EmccLinkOptimizationFlag)' == ''"   >$(WasmCompileOptimizationFlag)</EmccLinkOptimizationFlag>
       <WasmLinkOptimizationFlag>$(EmccLinkOptimizationFlag)</WasmLinkOptimizationFlag>
