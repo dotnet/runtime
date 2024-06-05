@@ -2673,5 +2673,30 @@ internal class Dummy
                 tlc.Unload();
             }
         }
+
+        [Fact]
+        public void NestedTypeTokenReferencedCorrectlyInIL()
+        {
+            using (TempFile file = TempFile.Create())
+            {
+                PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder typeBuilder);
+                typeBuilder.DefineDefaultConstructor(MethodAttributes.Public);
+                MethodBuilder writeMethod = typeBuilder.DefineMethod("Test", MethodAttributes.Public | MethodAttributes.Static);
+                ILGenerator il = writeMethod.GetILGenerator();
+                il.DeclareLocal(typeof(HashSet<int>.Enumerator));
+                il.Emit(OpCodes.Newobj, typeof(HashSet<int>).GetConstructors().First(c => c.GetParameters().Length == 0));
+                il.Emit(OpCodes.Callvirt, typeof(HashSet<int>).GetMethod("GetEnumerator")!);
+                il.Emit(OpCodes.Stloc_0);
+                il.Emit(OpCodes.Ret);
+                typeBuilder.CreateType();
+                ab.Save(file.Path);
+
+                TestAssemblyLoadContext tlc = new TestAssemblyLoadContext();
+                Type typeFromDisk = tlc.LoadFromAssemblyPath(file.Path).GetType("MyType");
+                MethodInfo method = typeFromDisk.GetMethod("Test")!;
+                method.Invoke(null, null); // just make sure token works
+                tlc.Unload();
+            }
+        }
     }
 }

@@ -9,8 +9,8 @@ namespace System.Text.RegularExpressions;
 /// <summary>Instructs the System.Text.RegularExpressions source generator to generate an implementation of the specified regular expression.</summary>
 /// <remarks>
 /// <para>
-/// The generator associated with this attribute only supports C#.  It only supplies an implementation when applied to static, partial, parameterless, non-generic methods that
-/// are typed to return <see cref="Regex"/>.
+/// The generator associated with this attribute only supports C#.  It only supplies an implementation when applied to partial, parameterless, non-generic methods
+/// or get-only properties that are typed to return <see cref="Regex"/>.
 /// </para>
 /// <para>
 /// When the <see cref="Regex"/> supports case-insensitive matches (either by passing <see cref="RegexOptions.IgnoreCase"/> or using the inline `(?i)` switch in the pattern) the regex
@@ -21,7 +21,7 @@ namespace System.Text.RegularExpressions;
 /// they will always use casing table for the current runtime.
 /// </para>
 /// </remarks>
-[AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
+[AttributeUsage(AttributeTargets.Method | AttributeTargets.Property, AllowMultiple = false, Inherited = false)]
 public sealed class GeneratedRegexAttribute : Attribute
 {
     /// <summary>Initializes a new instance of the <see cref="GeneratedRegexAttribute"/> with the specified pattern.</summary>

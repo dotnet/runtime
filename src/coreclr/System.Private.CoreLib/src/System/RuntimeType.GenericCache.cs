@@ -22,6 +22,7 @@ namespace System
             internal RuntimeTypeCache.FunctionPointerCache? _functionPointerCache;
             internal Array.ArrayInitializeCache? _arrayInitializeCache;
             internal IGenericCacheEntry? _enumInfo;
+            internal BoxCache? _boxCache;
 
             void IGenericCacheEntry.InitializeCompositeCache(CompositeCacheEntry compositeEntry) => throw new UnreachableException();
         }

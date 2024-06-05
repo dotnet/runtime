@@ -50,6 +50,7 @@ namespace System.Diagnostics
         public string? TraceStateString { get { throw null; } set { } }
         public System.Diagnostics.Activity AddBaggage(string key, string? value) { throw null; }
         public System.Diagnostics.Activity AddEvent(System.Diagnostics.ActivityEvent e) { throw null; }
+        public System.Diagnostics.Activity AddException(System.Exception exception, in System.Diagnostics.TagList tags = default, System.DateTimeOffset timestamp = default) { throw null; }
         public System.Diagnostics.Activity AddLink(System.Diagnostics.ActivityLink link) { throw null; }
         public System.Diagnostics.Activity AddTag(string key, string? value) { throw null; }
         public System.Diagnostics.Activity AddTag(string key, object? value) { throw null; }
@@ -276,11 +277,13 @@ namespace System.Diagnostics
         public string? TraceState { get { throw null; } init { throw null; } }
     }
     public delegate System.Diagnostics.ActivitySamplingResult SampleActivity<T>(ref System.Diagnostics.ActivityCreationOptions<T> options);
+    public delegate void ExceptionRecorder(System.Diagnostics.Activity activity, System.Exception exception, ref System.Diagnostics.TagList tags);
     public sealed class ActivityListener : IDisposable
     {
         public ActivityListener() { throw null; }
         public System.Action<System.Diagnostics.Activity>? ActivityStarted { get { throw null; } set { throw null; } }
         public System.Action<System.Diagnostics.Activity>? ActivityStopped { get { throw null; } set { throw null; } }
+        public System.Diagnostics.ExceptionRecorder? ExceptionRecorder { get { throw null; } set { throw null; } }
         public System.Func<System.Diagnostics.ActivitySource, bool>? ShouldListenTo { get { throw null; } set { throw null; } }
         public System.Diagnostics.SampleActivity<string>? SampleUsingParentId { get { throw null; } set { throw null; } }
         public System.Diagnostics.SampleActivity<ActivityContext>? Sample { get { throw null; } set { throw null; } }

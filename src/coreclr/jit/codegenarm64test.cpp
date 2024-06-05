@@ -5067,7 +5067,7 @@ void CodeGen::genArm64EmitterUnitTestsSve()
     theEmitter->emitIns_R_R(INS_sve_ptest, EA_SCALABLE, REG_P2, REG_P14, INS_OPTS_SCALABLE_B); // PTEST   <Pg>, <Pn>.B
 
     // IF_SVE_DK_3A
-    theEmitter->emitIns_R_R_R(INS_sve_cntp, EA_8BYTE, REG_R29, REG_P0, REG_P15,
+    theEmitter->emitIns_R_R_R(INS_sve_cntp, EA_SCALABLE, REG_R29, REG_P0, REG_P15,
                               INS_OPTS_SCALABLE_D); // CNTP    <Xd>, <Pg>, <Pn>.<T>
 
     // IF_SVE_GE_4A
@@ -6351,21 +6351,21 @@ void CodeGen::genArm64EmitterUnitTestsSve()
                               INS_OPTS_SCALABLE_B); // UQSHRNT <Zd>.<T>, <Zn>.<Tb>, #<const>
 
     // IF_SVE_DL_2A
-    theEmitter->emitIns_R_R(INS_sve_cntp, EA_8BYTE, REG_R0, REG_P0, INS_OPTS_SCALABLE_B,
+    theEmitter->emitIns_R_R(INS_sve_cntp, EA_SCALABLE, REG_R0, REG_P0, INS_OPTS_SCALABLE_B,
                             INS_SCALABLE_OPTS_VL_2X); // CNTP <Xd>, <PNn>.<T>, <vl>
-    theEmitter->emitIns_R_R(INS_sve_cntp, EA_8BYTE, REG_R1, REG_P1, INS_OPTS_SCALABLE_B,
+    theEmitter->emitIns_R_R(INS_sve_cntp, EA_SCALABLE, REG_R1, REG_P1, INS_OPTS_SCALABLE_B,
                             INS_SCALABLE_OPTS_VL_4X); // CNTP <Xd>, <PNn>.<T>, <vl>
-    theEmitter->emitIns_R_R(INS_sve_cntp, EA_8BYTE, REG_R2, REG_P2, INS_OPTS_SCALABLE_H,
+    theEmitter->emitIns_R_R(INS_sve_cntp, EA_SCALABLE, REG_R2, REG_P2, INS_OPTS_SCALABLE_H,
                             INS_SCALABLE_OPTS_VL_2X); // CNTP <Xd>, <PNn>.<T>, <vl>
-    theEmitter->emitIns_R_R(INS_sve_cntp, EA_8BYTE, REG_R3, REG_P3, INS_OPTS_SCALABLE_H,
+    theEmitter->emitIns_R_R(INS_sve_cntp, EA_SCALABLE, REG_R3, REG_P3, INS_OPTS_SCALABLE_H,
                             INS_SCALABLE_OPTS_VL_4X); // CNTP <Xd>, <PNn>.<T>, <vl>
-    theEmitter->emitIns_R_R(INS_sve_cntp, EA_8BYTE, REG_R4, REG_P4, INS_OPTS_SCALABLE_S,
+    theEmitter->emitIns_R_R(INS_sve_cntp, EA_SCALABLE, REG_R4, REG_P4, INS_OPTS_SCALABLE_S,
                             INS_SCALABLE_OPTS_VL_2X); // CNTP <Xd>, <PNn>.<T>, <vl>
-    theEmitter->emitIns_R_R(INS_sve_cntp, EA_8BYTE, REG_R5, REG_P5, INS_OPTS_SCALABLE_S,
+    theEmitter->emitIns_R_R(INS_sve_cntp, EA_SCALABLE, REG_R5, REG_P5, INS_OPTS_SCALABLE_S,
                             INS_SCALABLE_OPTS_VL_4X); // CNTP <Xd>, <PNn>.<T>, <vl>
-    theEmitter->emitIns_R_R(INS_sve_cntp, EA_8BYTE, REG_R6, REG_P6, INS_OPTS_SCALABLE_D,
+    theEmitter->emitIns_R_R(INS_sve_cntp, EA_SCALABLE, REG_R6, REG_P6, INS_OPTS_SCALABLE_D,
                             INS_SCALABLE_OPTS_VL_2X); // CNTP <Xd>, <PNn>.<T>, <vl>
-    theEmitter->emitIns_R_R(INS_sve_cntp, EA_8BYTE, REG_R7, REG_P7, INS_OPTS_SCALABLE_D,
+    theEmitter->emitIns_R_R(INS_sve_cntp, EA_SCALABLE, REG_R7, REG_P7, INS_OPTS_SCALABLE_D,
                             INS_SCALABLE_OPTS_VL_4X); // CNTP <Xd>, <PNn>.<T>, <vl>
 
     // IF_SVE_DM_2A

@@ -4272,6 +4272,13 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<uint> BooleanNot(System.Numerics.Vector<uint> value) { throw null; }
         public static System.Numerics.Vector<ulong> BooleanNot(System.Numerics.Vector<ulong> value) { throw null; }
 
+        public static System.Numerics.Vector<double> Compact(System.Numerics.Vector<double> mask, System.Numerics.Vector<double> value) { throw null; }
+        public static System.Numerics.Vector<int> Compact(System.Numerics.Vector<int> mask, System.Numerics.Vector<int> value) { throw null; }
+        public static System.Numerics.Vector<long> Compact(System.Numerics.Vector<long> mask, System.Numerics.Vector<long> value) { throw null; }
+        public static System.Numerics.Vector<float> Compact(System.Numerics.Vector<float> mask, System.Numerics.Vector<float> value) { throw null; }
+        public static System.Numerics.Vector<uint> Compact(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> value) { throw null; }
+        public static System.Numerics.Vector<ulong> Compact(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> value) { throw null; }
+
         public static ulong Count16BitElements([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
         public static ulong Count32BitElements([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
         public static ulong Count64BitElements([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
@@ -4364,6 +4371,17 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<float> FusedMultiplySubtractBySelectedScalar(System.Numerics.Vector<float> minuend, System.Numerics.Vector<float> left, System.Numerics.Vector<float> right, [ConstantExpected] byte rightIndex) { throw null; }
         public static System.Numerics.Vector<double> FusedMultiplySubtractNegated(System.Numerics.Vector<double> minuend, System.Numerics.Vector<double> left, System.Numerics.Vector<double> right) { throw null; }
         public static System.Numerics.Vector<float> FusedMultiplySubtractNegated(System.Numerics.Vector<float> minuend, System.Numerics.Vector<float> left, System.Numerics.Vector<float> right) { throw null; }
+
+        public static ulong GetActiveElementCount(System.Numerics.Vector<byte> mask, System.Numerics.Vector<byte> from) { throw null; }
+        public static ulong GetActiveElementCount(System.Numerics.Vector<double> mask, System.Numerics.Vector<double> from) { throw null; }
+        public static ulong GetActiveElementCount(System.Numerics.Vector<short> mask, System.Numerics.Vector<short> from) { throw null; }
+        public static ulong GetActiveElementCount(System.Numerics.Vector<int> mask, System.Numerics.Vector<int> from) { throw null; }
+        public static ulong GetActiveElementCount(System.Numerics.Vector<long> mask, System.Numerics.Vector<long> from) { throw null; }
+        public static ulong GetActiveElementCount(System.Numerics.Vector<sbyte> mask, System.Numerics.Vector<sbyte> from) { throw null; }
+        public static ulong GetActiveElementCount(System.Numerics.Vector<float> mask, System.Numerics.Vector<float> from) { throw null; }
+        public static ulong GetActiveElementCount(System.Numerics.Vector<ushort> mask, System.Numerics.Vector<ushort> from) { throw null; }
+        public static ulong GetActiveElementCount(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> from) { throw null; }
+        public static ulong GetActiveElementCount(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> from) { throw null; }
 
         public static System.Numerics.Vector<byte> LeadingSignCount(System.Numerics.Vector<sbyte> value) { throw null; }
         public static System.Numerics.Vector<ushort> LeadingSignCount(System.Numerics.Vector<short> value) { throw null; }
@@ -4590,6 +4608,29 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<ulong> PopCount(System.Numerics.Vector<long> value) { throw null; }
         public static System.Numerics.Vector<ulong> PopCount(System.Numerics.Vector<ulong> value) { throw null; }
 
+        public static System.Numerics.Vector<byte> ReverseElement(System.Numerics.Vector<byte> value) { throw null; }
+        public static System.Numerics.Vector<double> ReverseElement(System.Numerics.Vector<double> value) { throw null; }
+        public static System.Numerics.Vector<short> ReverseElement(System.Numerics.Vector<short> value) { throw null; }
+        public static System.Numerics.Vector<int> ReverseElement(System.Numerics.Vector<int> value) { throw null; }
+        public static System.Numerics.Vector<long> ReverseElement(System.Numerics.Vector<long> value) { throw null; }
+        public static System.Numerics.Vector<sbyte> ReverseElement(System.Numerics.Vector<sbyte> value) { throw null; }
+        public static System.Numerics.Vector<float> ReverseElement(System.Numerics.Vector<float> value) { throw null; }
+        public static System.Numerics.Vector<ushort> ReverseElement(System.Numerics.Vector<ushort> value) { throw null; }
+        public static System.Numerics.Vector<uint> ReverseElement(System.Numerics.Vector<uint> value) { throw null; }
+        public static System.Numerics.Vector<ulong> ReverseElement(System.Numerics.Vector<ulong> value) { throw null; }
+        public static System.Numerics.Vector<int> ReverseElement16(System.Numerics.Vector<int> value) { throw null; }
+        public static System.Numerics.Vector<long> ReverseElement16(System.Numerics.Vector<long> value) { throw null; }
+        public static System.Numerics.Vector<uint> ReverseElement16(System.Numerics.Vector<uint> value) { throw null; }
+        public static System.Numerics.Vector<ulong> ReverseElement16(System.Numerics.Vector<ulong> value) { throw null; }
+        public static System.Numerics.Vector<long> ReverseElement32(System.Numerics.Vector<long> value) { throw null; }
+        public static System.Numerics.Vector<ulong> ReverseElement32(System.Numerics.Vector<ulong> value) { throw null; }
+        public static System.Numerics.Vector<short> ReverseElement8(System.Numerics.Vector<short> value) { throw null; }
+        public static System.Numerics.Vector<int> ReverseElement8(System.Numerics.Vector<int> value) { throw null; }
+        public static System.Numerics.Vector<long> ReverseElement8(System.Numerics.Vector<long> value) { throw null; }
+        public static System.Numerics.Vector<ushort> ReverseElement8(System.Numerics.Vector<ushort> value) { throw null; }
+        public static System.Numerics.Vector<uint> ReverseElement8(System.Numerics.Vector<uint> value) { throw null; }
+        public static System.Numerics.Vector<ulong> ReverseElement8(System.Numerics.Vector<ulong> value) { throw null; }
+
         public static int SaturatingDecrementBy16BitElementCount(int value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
         public static long SaturatingDecrementBy16BitElementCount(long value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
         public static uint SaturatingDecrementBy16BitElementCount(uint value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
@@ -4613,6 +4654,29 @@ namespace System.Runtime.Intrinsics.Arm
         public static uint SaturatingDecrementBy8BitElementCount(uint value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
         public static ulong SaturatingDecrementBy8BitElementCount(ulong value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
 
+        public static long SaturatingDecrementByActiveElementCount(int value, System.Numerics.Vector<byte> from) { throw null; }
+        public static long SaturatingDecrementByActiveElementCount(long value, System.Numerics.Vector<byte> from) { throw null; }
+        public static ulong SaturatingDecrementByActiveElementCount(uint value, System.Numerics.Vector<byte> from) { throw null; }
+        public static ulong SaturatingDecrementByActiveElementCount(ulong value, System.Numerics.Vector<byte> from) { throw null; }
+        public static System.Numerics.Vector<short> SaturatingDecrementByActiveElementCount(System.Numerics.Vector<short> value, System.Numerics.Vector<short> from) { throw null; }
+        public static System.Numerics.Vector<int> SaturatingDecrementByActiveElementCount(System.Numerics.Vector<int> value, System.Numerics.Vector<int> from) { throw null; }
+        public static System.Numerics.Vector<long> SaturatingDecrementByActiveElementCount(System.Numerics.Vector<long> value, System.Numerics.Vector<long> from) { throw null; }
+        public static long SaturatingDecrementByActiveElementCount(int value, System.Numerics.Vector<ushort> from) { throw null; }
+        public static long SaturatingDecrementByActiveElementCount(long value, System.Numerics.Vector<ushort> from) { throw null; }
+        public static ulong SaturatingDecrementByActiveElementCount(uint value, System.Numerics.Vector<ushort> from) { throw null; }
+        public static ulong SaturatingDecrementByActiveElementCount(ulong value, System.Numerics.Vector<ushort> from) { throw null; }
+        public static System.Numerics.Vector<ushort> SaturatingDecrementByActiveElementCount(System.Numerics.Vector<ushort> value, System.Numerics.Vector<ushort> from) { throw null; }
+        public static long SaturatingDecrementByActiveElementCount(int value, System.Numerics.Vector<uint> from) { throw null; }
+        public static long SaturatingDecrementByActiveElementCount(long value, System.Numerics.Vector<uint> from) { throw null; }
+        public static ulong SaturatingDecrementByActiveElementCount(uint value, System.Numerics.Vector<uint> from) { throw null; }
+        public static ulong SaturatingDecrementByActiveElementCount(ulong value, System.Numerics.Vector<uint> from) { throw null; }
+        public static System.Numerics.Vector<uint> SaturatingDecrementByActiveElementCount(System.Numerics.Vector<uint> value, System.Numerics.Vector<uint> from) { throw null; }
+        public static long SaturatingDecrementByActiveElementCount(int value, System.Numerics.Vector<ulong> from) { throw null; }
+        public static long SaturatingDecrementByActiveElementCount(long value, System.Numerics.Vector<ulong> from) { throw null; }
+        public static ulong SaturatingDecrementByActiveElementCount(uint value, System.Numerics.Vector<ulong> from) { throw null; }
+        public static ulong SaturatingDecrementByActiveElementCount(ulong value, System.Numerics.Vector<ulong> from) { throw null; }
+        public static System.Numerics.Vector<ulong> SaturatingDecrementByActiveElementCount(System.Numerics.Vector<ulong> value, System.Numerics.Vector<ulong> from) { throw null; }
+
         public static int SaturatingIncrementBy16BitElementCount(int value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
         public static long SaturatingIncrementBy16BitElementCount(long value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
         public static uint SaturatingIncrementBy16BitElementCount(uint value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
@@ -4635,6 +4699,29 @@ namespace System.Runtime.Intrinsics.Arm
         public static long SaturatingIncrementBy8BitElementCount(long value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
         public static uint SaturatingIncrementBy8BitElementCount(uint value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
         public static ulong SaturatingIncrementBy8BitElementCount(ulong value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
+
+        public static long SaturatingIncrementByActiveElementCount(int value, System.Numerics.Vector<byte> from) { throw null; }
+        public static long SaturatingIncrementByActiveElementCount(long value, System.Numerics.Vector<byte> from) { throw null; }
+        public static ulong SaturatingIncrementByActiveElementCount(uint value, System.Numerics.Vector<byte> from) { throw null; }
+        public static ulong SaturatingIncrementByActiveElementCount(ulong value, System.Numerics.Vector<byte> from) { throw null; }
+        public static System.Numerics.Vector<short> SaturatingIncrementByActiveElementCount(System.Numerics.Vector<short> value, System.Numerics.Vector<short> from) { throw null; }
+        public static System.Numerics.Vector<int> SaturatingIncrementByActiveElementCount(System.Numerics.Vector<int> value, System.Numerics.Vector<int> from) { throw null; }
+        public static System.Numerics.Vector<long> SaturatingIncrementByActiveElementCount(System.Numerics.Vector<long> value, System.Numerics.Vector<long> from) { throw null; }
+        public static long SaturatingIncrementByActiveElementCount(int value, System.Numerics.Vector<ushort> from) { throw null; }
+        public static long SaturatingIncrementByActiveElementCount(long value, System.Numerics.Vector<ushort> from) { throw null; }
+        public static ulong SaturatingIncrementByActiveElementCount(uint value, System.Numerics.Vector<ushort> from) { throw null; }
+        public static ulong SaturatingIncrementByActiveElementCount(ulong value, System.Numerics.Vector<ushort> from) { throw null; }
+        public static System.Numerics.Vector<ushort> SaturatingIncrementByActiveElementCount(System.Numerics.Vector<ushort> value, System.Numerics.Vector<ushort> from) { throw null; }
+        public static long SaturatingIncrementByActiveElementCount(int value, System.Numerics.Vector<uint> from) { throw null; }
+        public static long SaturatingIncrementByActiveElementCount(long value, System.Numerics.Vector<uint> from) { throw null; }
+        public static ulong SaturatingIncrementByActiveElementCount(uint value, System.Numerics.Vector<uint> from) { throw null; }
+        public static ulong SaturatingIncrementByActiveElementCount(ulong value, System.Numerics.Vector<uint> from) { throw null; }
+        public static System.Numerics.Vector<uint> SaturatingIncrementByActiveElementCount(System.Numerics.Vector<uint> value, System.Numerics.Vector<uint> from) { throw null; }
+        public static long SaturatingIncrementByActiveElementCount(int value, System.Numerics.Vector<ulong> from) { throw null; }
+        public static long SaturatingIncrementByActiveElementCount(long value, System.Numerics.Vector<ulong> from) { throw null; }
+        public static ulong SaturatingIncrementByActiveElementCount(uint value, System.Numerics.Vector<ulong> from) { throw null; }
+        public static ulong SaturatingIncrementByActiveElementCount(ulong value, System.Numerics.Vector<ulong> from) { throw null; }
+        public static System.Numerics.Vector<ulong> SaturatingIncrementByActiveElementCount(System.Numerics.Vector<ulong> value, System.Numerics.Vector<ulong> from) { throw null; }
 
         public static System.Numerics.Vector<int> SignExtend16(System.Numerics.Vector<int> value) { throw null; }
         public static System.Numerics.Vector<long> SignExtend16(System.Numerics.Vector<long> value) { throw null; }
@@ -4734,6 +4821,27 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<ushort> SubtractSaturate(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
         public static System.Numerics.Vector<uint> SubtractSaturate(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
         public static System.Numerics.Vector<ulong> SubtractSaturate(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
+
+        public static System.Numerics.Vector<byte> TransposeEven(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<double> TransposeEven(System.Numerics.Vector<double> left, System.Numerics.Vector<double> right) { throw null; }
+        public static System.Numerics.Vector<short> TransposeEven(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<int> TransposeEven(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<long> TransposeEven(System.Numerics.Vector<long> left, System.Numerics.Vector<long> right) { throw null; }
+        public static System.Numerics.Vector<sbyte> TransposeEven(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<float> TransposeEven(System.Numerics.Vector<float> left, System.Numerics.Vector<float> right) { throw null; }
+        public static System.Numerics.Vector<ushort> TransposeEven(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<uint> TransposeEven(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<ulong> TransposeEven(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
+        public static System.Numerics.Vector<byte> TransposeOdd(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<double> TransposeOdd(System.Numerics.Vector<double> left, System.Numerics.Vector<double> right) { throw null; }
+        public static System.Numerics.Vector<short> TransposeOdd(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
+        public static System.Numerics.Vector<int> TransposeOdd(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
+        public static System.Numerics.Vector<long> TransposeOdd(System.Numerics.Vector<long> left, System.Numerics.Vector<long> right) { throw null; }
+        public static System.Numerics.Vector<sbyte> TransposeOdd(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
+        public static System.Numerics.Vector<float> TransposeOdd(System.Numerics.Vector<float> left, System.Numerics.Vector<float> right) { throw null; }
+        public static System.Numerics.Vector<ushort> TransposeOdd(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
+        public static System.Numerics.Vector<uint> TransposeOdd(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<ulong> TransposeOdd(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
 
         public static System.Numerics.Vector<sbyte> UnzipEven(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
         public static System.Numerics.Vector<short> UnzipEven(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
