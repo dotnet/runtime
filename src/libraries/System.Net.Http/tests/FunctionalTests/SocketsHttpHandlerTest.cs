@@ -278,16 +278,16 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(true)]
         [InlineData(false)]
-        public void AppContextSetData_SetDefaultMaxConnectionsPerServer(bool asInt)
+        public async Task AppContextSetData_SetDefaultMaxConnectionsPerServer(bool asInt)
         {
-            RemoteExecutor.Invoke(static (asInt) =>
+            await RemoteExecutor.Invoke(static (asInt) =>
             {
                 const int testValue = 123;
                 object data = asInt == Boolean.TrueString ? testValue : testValue.ToString();
                 AppContext.SetData("System.Net.SocketsHttpHandler.MaxConnectionsPerServer", data);
                 var handler = new HttpClientHandler();
                 Assert.Equal(testValue, handler.MaxConnectionsPerServer);
-            }, asInt.ToString()).Dispose();
+            }, asInt.ToString()).DisposeAsync();
         }
 
         [OuterLoop("Incurs a small delay")]
@@ -1990,9 +1990,9 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(false)]
         [InlineData(true)]
-        public void ConnectionsPooledThenDisposed_NoUnobservedTaskExceptions(bool secure)
+        public async Task ConnectionsPooledThenDisposed_NoUnobservedTaskExceptions(bool secure)
         {
-            RemoteExecutor.Invoke(async (secureString, useVersionString) =>
+            await RemoteExecutor.Invoke(async (secureString, useVersionString) =>
             {
                 var releaseServer = new TaskCompletionSource();
                 await LoopbackServer.CreateClientAndServerAsync(async uri =>
@@ -2025,7 +2025,7 @@ namespace System.Net.Http.Functional.Tests
                     await releaseServer.Task;
                 }),
                 new LoopbackServer.Options { UseSsl = bool.Parse(secureString) });
-            }, secure.ToString(), UseVersion.ToString()).Dispose();
+            }, secure.ToString(), UseVersion.ToString()).DisposeAsync();
         }
 
         [OuterLoop]
@@ -3994,6 +3994,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("foo", "\tbar\t")]
         [InlineData("foo", "\t bar \t")]
         [InlineData("foo  ", " \t bar  \r\n ")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/101115", typeof(PlatformDetection), nameof(PlatformDetection.IsFirefox))]
         public async Task ResponseHeaders_ExtraWhitespace_Trimmed(string name, string value)
         {
             await LoopbackServer.CreateClientAndServerAsync(async uri =>

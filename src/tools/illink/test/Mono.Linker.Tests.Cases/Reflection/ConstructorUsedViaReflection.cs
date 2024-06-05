@@ -16,7 +16,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			GetConstructor_BindingAttr_Binder_Types_Modifiers.TestWithBindingFlags ();
 			GetConstructor_BindingAttr_Binder_Types_Modifiers.TestWithUnknownBindingFlags (BindingFlags.Public);
 			GetConstructor_BindingAttr_Binder_CallConvention_Types_Modifiers.TestWithCallingConvention ();
-#if NETCOREAPP
+#if NET
 			GetConstructor_BindingAttr_Types.Test ();
 #endif
 			TestNullType ();
@@ -217,7 +217,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			}
 		}
 
-#if NETCOREAPP
+#if NET
 		[Kept]
 		class GetConstructor_BindingAttr_Types
 		{

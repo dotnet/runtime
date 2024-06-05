@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.InteropServices;
-#if NET7_0_OR_GREATER
+#if NET
 using System.Runtime.InteropServices.Marshalling;
 #endif
 
@@ -12,7 +12,7 @@ internal static partial class Interop
     {
         [LibraryImport(Libraries.Gdi32)]
         internal static partial uint GetPaletteEntries(
-#if NET7_0_OR_GREATER
+#if NET
             [MarshalUsing(typeof(HandleRefMarshaller))]
 #endif
             HandleRef hpal, int iStartIndex, int nEntries, byte[] lppe);

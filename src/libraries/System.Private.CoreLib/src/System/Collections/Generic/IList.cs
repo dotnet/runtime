@@ -10,10 +10,10 @@ namespace System.Collections.Generic
     // An IList is an ordered collection of objects.  The exact ordering
     // is up to the implementation of the list, ranging from a sorted
     // order to insertion order.
-    public interface IList<T> : ICollection<T>, IReadOnlyList<T>
+    public interface IList<T> : ICollection<T>
     {
         // The Item property provides methods to read and edit entries in the List.
-        new T this[int index]
+        T this[int index]
         {
 #if MONO
             [DynamicDependency(nameof(Array.InternalArray__get_Item) + "``1", typeof(Array))]
@@ -46,7 +46,5 @@ namespace System.Collections.Generic
         [DynamicDependency(nameof(Array.InternalArray__RemoveAt), typeof(Array))]
 #endif
         void RemoveAt(int index);
-
-        T IReadOnlyList<T>.this[int index] => this[index];
     }
 }

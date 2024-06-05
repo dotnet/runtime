@@ -93,8 +93,6 @@
     <_AppArgs Condition="'$(IsFunctionalTest)' != 'true' and '$(WasmMainAssemblyFileName)' != ''">--run $(WasmMainAssemblyFileName)</_AppArgs>
     <_AppArgs Condition="'$(IsFunctionalTest)' == 'true'">--run $(AssemblyName).dll</_AppArgs>
 
-    <WasmTestAppArgs Condition="'$(_XUnitBackgroundExec)' == 'true'">$(WasmTestAppArgs) -backgroundExec</WasmTestAppArgs>
-    <WasmXHarnessMonoArgs Condition="'$(_XUnitBackgroundExec)' == 'true'">$(WasmXHarnessMonoArgs) --setenv=IsWasmBackgroundExec=true</WasmXHarnessMonoArgs>
     <_AppArgs Condition="'$(WasmTestAppArgs)' != ''">$(_AppArgs) $(WasmTestAppArgs)</_AppArgs>
 
     <WasmXHarnessMonoArgs Condition="'$(XunitShowProgress)' == 'true'">$(WasmXHarnessMonoArgs) --setenv=XHARNESS_LOG_TEST_START=true</WasmXHarnessMonoArgs>
@@ -250,8 +248,17 @@
       <_NodeNpmModuleStringTrimmed Include="@(_NodeNpmModuleString->Trim(':'))" />
     </ItemGroup>
     <PropertyGroup>
+      <Scenario Condition="'$(Scenario)' == ''">WasmTestOnV8</Scenario>
       <NodeNpmModuleString>@(_NodeNpmModuleStringTrimmed, ',')</NodeNpmModuleString>
     </PropertyGroup>
+
+    <Error Condition="'$(Scenario)' != 'WasmTestOnV8' and 
+                      '$(Scenario)' != 'WasmTestOnChrome' and 
+                      '$(Scenario)' != 'WasmTestOnFirefox' and 
+                      '$(Scenario)' != 'WasmTestOnNodeJS' and 
+                      '$(Scenario)' != 'WasmDebuggerTests' and 
+                      '$(Scenario)' != 'BuildWasmApps'" 
+                      Text="Only supported scenarios are WasmTestOnV8, WasmTestOnNodeJS, WasmTestOnChrome, WasmTestOnFirefox, WasmDebuggerTests and BuildWasmApps at the moment. It was $(Scenario)." />
 
     <!-- Restore NPM packages -->
     <ItemGroup Condition="'$(OS)' != 'Windows_NT'">

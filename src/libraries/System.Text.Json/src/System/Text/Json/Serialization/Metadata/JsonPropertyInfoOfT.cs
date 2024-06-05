@@ -112,8 +112,15 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal override object? DefaultValue => default(T);
         internal override bool PropertyTypeCanBeNull => default(T) is null;
-        internal override JsonParameterInfo CreateJsonParameterInfo(JsonParameterInfoValues parameterInfoValues)
-            => new JsonParameterInfo<T>(parameterInfoValues, this);
+        internal override void AddJsonParameterInfo(JsonParameterInfoValues parameterInfoValues)
+        {
+            Debug.Assert(!IsConfigured);
+            Debug.Assert(AssociatedParameter is null);
+
+            AssociatedParameter = new JsonParameterInfo<T>(parameterInfoValues, this);
+            // Overwrite the nullability annotation of property setter with the parameter.
+            _isSetNullable = parameterInfoValues.IsNullable;
+        }
 
         internal new JsonConverter<T> EffectiveConverter
         {
@@ -160,7 +167,7 @@ namespace System.Text.Json.Serialization.Metadata
             T value = Get!(obj);
 
             if (
-#if NETCOREAPP
+#if NET
                 !typeof(T).IsValueType && // treated as a constant by recent versions of the JIT.
 #else
                 !EffectiveConverter.IsValueType &&
@@ -195,6 +202,11 @@ namespace System.Text.Json.Serialization.Metadata
             if (value is null)
             {
                 Debug.Assert(PropertyTypeCanBeNull);
+
+                if (!IsGetNullable && Options.RespectNullableAnnotations)
+                {
+                    ThrowHelper.ThrowJsonException_PropertyGetterDisallowNull(Name, state.Current.JsonTypeInfo.Type);
+                }
 
                 if (EffectiveConverter.HandleNullOnWrite)
                 {
@@ -275,6 +287,11 @@ namespace System.Text.Json.Serialization.Metadata
 
                 if (!IgnoreNullTokensOnRead)
                 {
+                    if (!IsSetNullable && Options.RespectNullableAnnotations)
+                    {
+                        ThrowHelper.ThrowJsonException_PropertySetterDisallowNull(Name, state.Current.JsonTypeInfo.Type);
+                    }
+
                     T? value = default;
                     Set!(obj, value!);
                 }
@@ -292,6 +309,12 @@ namespace System.Text.Json.Serialization.Metadata
                 {
                     // Optimize for internal converters by avoiding the extra call to TryRead.
                     T? fastValue = EffectiveConverter.Read(ref reader, PropertyType, Options);
+
+                    if (fastValue is null && !IsSetNullable && Options.RespectNullableAnnotations)
+                    {
+                        ThrowHelper.ThrowJsonException_PropertySetterDisallowNull(Name, state.Current.JsonTypeInfo.Type);
+                    }
+
                     Set!(obj, fastValue!);
                 }
 
@@ -316,6 +339,11 @@ namespace System.Text.Json.Serialization.Metadata
                             // We cannot do reader.Skip early because converter decides if populating will happen or not
                             if (CanDeserialize)
                             {
+                                if (value is null && !IsSetNullable && Options.RespectNullableAnnotations)
+                                {
+                                    ThrowHelper.ThrowJsonException_PropertySetterDisallowNull(Name, state.Current.JsonTypeInfo.Type);
+                                }
+
                                 Set!(obj, value!);
                             }
                         }

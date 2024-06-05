@@ -66,7 +66,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix);
-            sb.Append("__ReadyToRunDebugInfoTable");
+            sb.Append("__ReadyToRunDebugInfoTable"u8);
         }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)

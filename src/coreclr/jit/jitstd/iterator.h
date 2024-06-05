@@ -117,13 +117,13 @@ struct iterator_traits<unsigned int>
 };
 
 template<>
-struct iterator_traits<__int64>
+struct iterator_traits<int64_t>
 {
     typedef int_not_an_iterator_tag iterator_category;
 };
 
 template<>
-struct iterator_traits<unsigned __int64>
+struct iterator_traits<uint64_t>
 {
     typedef int_not_an_iterator_tag iterator_category;
 };

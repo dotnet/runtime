@@ -89,9 +89,11 @@ class OffsetsTool:
 
 		if "wasm" in args.abi:
 			if args.wasi_path != None:
-				self.sys_includes = [args.wasi_path + "/share/wasi-sysroot/include", args.wasi_path + "/lib/clang/17/include", args.mono_path + "/wasi/mono-include"]
+				require_sysroot (args)
+				self.sys_includes = [args.wasi_path + "/share/wasi-sysroot/include", args.wasi_path + "/lib/clang/18/include", args.mono_path + "/wasi/mono-include"]
 				self.target = Target ("TARGET_WASI", None, ["TARGET_WASM"] + WASI_DEFINES)
 				self.target_args += ["-target", args.abi]
+				self.target_args += ["--sysroot", args.sysroot]
 			else:
 				require_emscipten_path (args)
 				clang_path = os.path.dirname(args.libclang)

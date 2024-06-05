@@ -29,8 +29,8 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 		>
 		where TValue : struct, IEquatable<TValue>
 		where TContext : struct, IEquatable<TContext>
-		where TLattice : ILattice<TValue>, new()
-		where TContextLattice : ILattice<TContext>, new()
+		where TLattice : ILattice<TValue>
+		where TContextLattice : ILattice<TContext>
 		where TTransfer : LocalDataFlowVisitor<TValue, TContext, TLattice, TContextLattice, TConditionValue>
 		where TConditionValue : struct, INegate<TConditionValue>
 	{
@@ -39,18 +39,25 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 		readonly IOperation OperationBlock;
 
 		static LocalStateAndContextLattice<TValue, TContext, TLattice, TContextLattice> GetLatticeAndEntryValue(
+			TLattice lattice,
+			TContextLattice contextLattice,
 			TContext initialContext,
 			out LocalStateAndContext<TValue, TContext> entryValue)
 		{
-			LocalStateAndContextLattice<TValue, TContext, TLattice, TContextLattice> lattice = new (new (new TLattice ()), new TContextLattice ());
+			LocalStateAndContextLattice<TValue, TContext, TLattice, TContextLattice> localStateAndContextLattice = new (new (lattice), contextLattice);
 			entryValue = new LocalStateAndContext<TValue, TContext> (default (LocalState<TValue>), initialContext);
-			return lattice;
+			return localStateAndContextLattice;
 		}
 
 		// The initial value of the local dataflow is the empty local state (no tracked assignments),
 		// with an initial context that must be specified by the derived class.
-		protected LocalDataFlowAnalysis (OperationBlockAnalysisContext context, IOperation operationBlock, TContext initialContext)
-			: base (GetLatticeAndEntryValue (initialContext, out var entryValue), entryValue)
+		protected LocalDataFlowAnalysis (
+			OperationBlockAnalysisContext context,
+			IOperation operationBlock,
+			TLattice lattice,
+			TContextLattice contextLattice,
+			TContext initialContext)
+			: base (GetLatticeAndEntryValue (lattice, contextLattice, initialContext, out var entryValue), entryValue)
 		{
 			Context = context;
 			OperationBlock = operationBlock;

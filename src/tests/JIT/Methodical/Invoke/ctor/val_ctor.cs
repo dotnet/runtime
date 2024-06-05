@@ -23,6 +23,7 @@ namespace JitTest_val_ctor_cs
         }
 
         [Fact]
+        [OuterLoop]
         public static int TestEntryPoint()
         {
             try

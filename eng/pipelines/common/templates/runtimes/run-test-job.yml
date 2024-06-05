@@ -537,6 +537,7 @@ jobs:
             - jitosr_stress
             - jitpartialcompilation_pgo
             - jitoptrepeat
+            - jitrpolayout
           ${{ else }}:
             scenarios:
             - jitosr_stress
@@ -549,6 +550,7 @@ jobs:
             - jitphysicalpromotion_full
             - jitrlcse
             - jitoptrepeat
+            - jitrpolayout
         ${{ if in(parameters.testGroup, 'jit-cfg') }}:
           scenarios:
           - jitcfg

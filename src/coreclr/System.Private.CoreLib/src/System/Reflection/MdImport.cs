@@ -205,9 +205,6 @@ namespace System.Reflection
 #pragma warning restore CA1067
     {
         private readonly IntPtr m_metadataImport2;
-        private readonly object? m_keepalive;
-
-        internal static MetadataImport EmptyImport => new MetadataImport(IntPtr.Zero, null);
 
         #region Override methods from Object
         public override int GetHashCode()
@@ -273,12 +270,12 @@ namespace System.Reflection
                 : Text.Encoding.UTF8.GetString(MemoryMarshal.CreateReadOnlySpanFromNullTerminated(marshalCookieRaw));
 
             RuntimeType? safeArrayUserDefinedType = string.IsNullOrEmpty(safeArrayUserDefinedTypeName) ? null :
-                TypeNameParser.GetTypeReferencedByCustomAttribute(safeArrayUserDefinedTypeName, scope);
+                TypeNameResolver.GetTypeReferencedByCustomAttribute(safeArrayUserDefinedTypeName, scope);
             RuntimeType? marshalTypeRef = null;
 
             try
             {
-                marshalTypeRef = marshalTypeName is null ? null : TypeNameParser.GetTypeReferencedByCustomAttribute(marshalTypeName, scope);
+                marshalTypeRef = marshalTypeName is null ? null : TypeNameResolver.GetTypeReferencedByCustomAttribute(marshalTypeName, scope);
             }
             catch (TypeLoadException)
             {
@@ -304,10 +301,16 @@ namespace System.Reflection
         #endregion
 
         #region Constructor
-        internal MetadataImport(IntPtr metadataImport2, object? keepalive)
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern unsafe IntPtr GetMetadataImport(RuntimeModule module);
+
+        internal MetadataImport(RuntimeModule module)
         {
-            m_metadataImport2 = metadataImport2;
-            m_keepalive = keepalive;
+            ArgumentNullException.ThrowIfNull(module);
+
+            // The MetadataImport instance needs to be acquired in this manner
+            // since the instance can be replaced during HotReload and EnC scenarios.
+            m_metadataImport2 = GetMetadataImport(module);
         }
         #endregion
 
