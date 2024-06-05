@@ -13,9 +13,9 @@ using Wasm.Build.Tests.TestAppScenarios;
 
 namespace Wasm.Build.Tests;
 
-public class InitThenDownloadTests : AppTestBase
+public class DownloadThenInitTests : AppTestBase
 {
-    public InitThenDownloadTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
+    public DownloadThenInitTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
         : base(output, buildContext)
     {
     }
@@ -23,9 +23,9 @@ public class InitThenDownloadTests : AppTestBase
     [Theory]
     [InlineData("Debug")]
     [InlineData("Release")]
-    public async Task ResourcesNotFetchedAfterDownloadFinished(string config)
+    public async Task NoResourcesFetchedAfterDownloadFinished(string config)
     {
-        CopyTestAsset("InitThenDownload");
+        CopyTestAsset("DownloadThenInitTests");
         BuildProject(config);
 
         var result = await RunSdkStyleAppForBuild(new(Configuration: config));
