@@ -275,6 +275,11 @@ namespace System.Net.Http
                 Exception abortException = _connection.Abort(HttpProtocolException.CreateHttp3ConnectionException(code, SR.net_http_http3_connection_close));
                 throw new HttpRequestException(HttpRequestError.HttpProtocolError, SR.net_http_client_execution_error, abortException);
             }
+            catch (QuicException ex) when (ex.QuicError == QuicError.OperationAborted && cancellationToken.IsCancellationRequested)
+            {
+                var oce = new OperationCanceledException(ex.Message, ex, cancellationToken);
+                throw new HttpRequestException(HttpRequestError.Unknown, SR.net_http_client_execution_error, oce);
+            }
             catch (QuicException ex) when (ex.QuicError == QuicError.OperationAborted && _connection.AbortException != null)
             {
                 // we closed the connection already, propagate the AbortException
