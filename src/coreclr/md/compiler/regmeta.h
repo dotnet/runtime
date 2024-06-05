@@ -141,6 +141,7 @@ class RegMeta :
     , public IMetaDataEmit2
 #else
     , public IMetaDataEmit3
+    , public IILAsmPortablePdbWriter
 #endif
     , public IMetaDataAssemblyEmit
 #endif

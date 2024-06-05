@@ -104,11 +104,7 @@ HRESULT PortablePdbWriter::Init(IMetaDataDispenserEx2* mdDispenser)
 
     if (FAILED(hr)) goto exit;
 
-    hr = mdDispenser->DefinePortablePdbScope(
-        CLSID_CorMetaDataRuntime,
-        0,
-        IID_IILAsmPortablePdbWriter,
-        (IUnknown**)&m_ilasmPdbWriter);
+    hr = m_pdbEmitter->QueryInterface(IID_IILAsmPortablePdbWriter, (void**)&m_ilasmPdbWriter);
 exit:
     return hr;
 }

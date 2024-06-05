@@ -394,6 +394,41 @@ for inputAssemblyName in glob.glob("*.dll"):
       else:
         print("ILASM determinism succeeded")
 
+      # Test portable PDB determinism
+
+      if not is_managed_debug_assembly(inputAssemblyName):
+        ilasmSwitches = ilasmSwitches + " -DEBUG"
+
+      pdbName = inputAssemblyName.replace('.dll', '.pdb')
+
+      ilasm_args = f'{os.environ["CORE_ROOT"]}/ilasm -output={pdbName} {ilasmSwitches} {disassemblyName}'
+      print(ilasm_args)
+      proc = subprocess.Popen(ilasm_args, shell=True)
+
+      try:
+          proc.communicate()
+      except:
+          proc.kill()
+          sys.exit(1)
+
+      sha256_hash = sha256sum(pdbName)
+
+      ilasm_args = f'{os.environ["CORE_ROOT"]}/ilasm -output={pdbName} {ilasmSwitches} {disassemblyName}'
+      print(ilasm_args)
+      proc = subprocess.Popen(ilasm_args, shell=True)
+
+      try:
+          proc.communicate()
+      except:
+          proc.kill()
+          sys.exit(1)
+
+      if sha256_hash != sha256sum(pdbName):
+        print("ILASM PDB determinism failed")
+        sys.exit(1)
+      else:
+        print("ILASM PDB determinism succeeded")
+
       print("")
 
 print("")
