@@ -24,6 +24,7 @@ Wasm.Build.Tests.HybridGlobalizationTests
 Wasm.Build.Tests.IcuShardingTests
 Wasm.Build.Tests.IcuShardingTests2
 Wasm.Build.Tests.IcuTests
+Wasm.Build.Tests.InitThenDownloadTests
 Wasm.Build.Tests.InvariantGlobalizationTests
 Wasm.Build.Tests.InvariantTimezoneTests
 Wasm.Build.Tests.MainWithArgsTests
