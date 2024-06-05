@@ -70,7 +70,7 @@ Abstract:
 #include "eexcp.h"
 
 #if defined(TARGET_ARM64)
-extern "C" DWORD64 __stdcall GetSveLengthFromOS();
+extern "C" uint64_t GetSveLengthFromOS();
 #endif
 
 class MethodDesc;

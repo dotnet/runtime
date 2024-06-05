@@ -78,7 +78,7 @@
         ret     lr
     LEAF_END
 
-;; DWORD64 __stdcall GetSveLengthFromOS(void);
+;; uint64_t GetSveLengthFromOS(void);
     LEAF_ENTRY GetSveLengthFromOS
         rdvl    x0, 1
         ret     lr
