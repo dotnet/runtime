@@ -298,7 +298,7 @@ HRESULT Assembler::CreateDebugDirectory(BYTE(&pdbChecksum)[32])
 
         param.debugDirData = data;
 
-        DebugDirectoryEntry entry = { 0 };
+        DebugDirectoryEntry entry = {};
         entry.debugDirIDD = debugDirIDD;
         entry.debugDirDataSize = param.debugDirDataSize;
         entry.debugDirData = param.debugDirData;
@@ -343,6 +343,19 @@ HRESULT Assembler::CreateDebugDirectory(BYTE(&pdbChecksum)[32])
     memcpy_s(pdbChecksumData + pdbChecksumOffset, pdbChecksumSize, &pdbChecksum, sizeof(pdbChecksum)); // Checksum
     /* END PDB CHECKSUM */
 
+    auto finish = 
+        [&](HRESULT hr) {
+            if (codeViewData)
+            {
+                delete [] codeViewData;
+            }
+            if (pdbChecksumData)
+            {
+                delete [] pdbChecksumData;
+            }
+            return hr;
+        };
+
     // CodeView Entry
     hr =
         addEntry(
@@ -355,7 +368,7 @@ HRESULT Assembler::CreateDebugDirectory(BYTE(&pdbChecksum)[32])
             /* data */            codeViewData
         );
     if (FAILED(hr))
-        goto Exit;
+        return finish(hr);
 
     // Pdb Checksum Entry
     hr =
@@ -369,7 +382,7 @@ HRESULT Assembler::CreateDebugDirectory(BYTE(&pdbChecksum)[32])
             /* data */            pdbChecksumData
         );
     if (FAILED(hr))
-        goto Exit;
+        return finish(hr);
 
     if (m_fDeterministic)
     {
@@ -385,7 +398,7 @@ HRESULT Assembler::CreateDebugDirectory(BYTE(&pdbChecksum)[32])
                 /* data */            NULL
             );
         if (FAILED(hr))
-            goto Exit;
+            return finish(hr);
     }
 
     HCEESECTION sec = m_pILSection;
@@ -408,12 +421,12 @@ HRESULT Assembler::CreateDebugDirectory(BYTE(&pdbChecksum)[32])
                                                    totalSize,
                                                    4,
                                                    (void**) &de)))
-        goto Exit;
+        return finish(hr);
 
     // Where did we get that memory?
     if (FAILED(hr = m_pCeeFileGen->GetSectionDataLen(sec,
                                                      &deOffset)))
-        goto Exit;
+        return finish(hr);
 
     deOffset -= totalSize;
 
@@ -423,7 +436,7 @@ HRESULT Assembler::CreateDebugDirectory(BYTE(&pdbChecksum)[32])
                                                      IMAGE_DIRECTORY_ENTRY_DEBUG,
                                                      totalEntrySize,
                                                      deOffset)))
-        goto Exit;
+        return finish(hr);
 
     ULONG rawDataOffset = deOffset + totalEntrySize;
 
@@ -449,7 +462,7 @@ HRESULT Assembler::CreateDebugDirectory(BYTE(&pdbChecksum)[32])
                                                   offsetof(IMAGE_DEBUG_DIRECTORY,
                                                            PointerToRawData),
                                                   sec, srRelocFilePos)))
-                goto Exit;
+                return finish(hr);
 
             if (FAILED(hr = m_pCeeFileGen->AddSectionReloc(
                                                   sec,
@@ -457,7 +470,7 @@ HRESULT Assembler::CreateDebugDirectory(BYTE(&pdbChecksum)[32])
                                                   offsetof(IMAGE_DEBUG_DIRECTORY,
                                                            AddressOfRawData),
                                                   sec, srRelocAbsolute)))
-                goto Exit;
+                return finish(hr);
         }
 
         // Copy the debug directory into the section.
@@ -473,16 +486,7 @@ HRESULT Assembler::CreateDebugDirectory(BYTE(&pdbChecksum)[32])
         dataOffset += entry.debugDirDataSize;
     }
 
-Exit:
-    if (codeViewData)
-    {
-        delete [] codeViewData;
-    }
-    if (pdbChecksumData)
-    {
-        delete [] pdbChecksumData;
-    }
-    return hr;
+    return finish(hr);
 }
 //#ifdef EXPORT_DIR_ENABLED
 HRESULT Assembler::CreateExportDirectory()
