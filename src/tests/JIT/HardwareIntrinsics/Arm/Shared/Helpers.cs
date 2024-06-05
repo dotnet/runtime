@@ -6733,6 +6733,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 acc += (mask[i] == 1) ? 1 : 0;
             }
             return acc;
+        }
 
         public static double[] Compact(double[] op1, double[] op2)
         {
