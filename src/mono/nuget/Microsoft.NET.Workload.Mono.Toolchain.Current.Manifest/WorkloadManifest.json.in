@@ -325,14 +325,14 @@
       "kind": "framework",
       "version": "${PackageVersion}",
       "alias-to": {
-          "any": "Microsoft.NETCore.App.Runtime.Mono.android-x86"
+          "any": "Microsoft.NETCore.App.Runtime.Mono.iossimulator-arm64"
       }
     },
     "Microsoft.NETCore.App.Runtime.Mono.${NetVersion}.iossimulator-x64" : {
       "kind": "framework",
       "version": "${PackageVersion}",
       "alias-to": {
-          "any": "Microsoft.NETCore.App.Runtime.Mono.android-x86"
+          "any": "Microsoft.NETCore.App.Runtime.Mono.iossimulator-x64"
       }
     },
     "Microsoft.NETCore.App.Runtime.AOT.Cross.${NetVersion}.tvos-arm64": {
@@ -345,15 +345,24 @@
     },
     "Microsoft.NETCore.App.Runtime.Mono.${NetVersion}.tvos-arm64" : {
       "kind": "framework",
-      "version": "${PackageVersion}"
+      "version": "${PackageVersion}",
+      "alias-to": {
+          "any": "Microsoft.NETCore.App.Runtime.Mono.tvos-arm64"
+      }
     },
     "Microsoft.NETCore.App.Runtime.Mono.${NetVersion}.tvossimulator-arm64" : {
       "kind": "framework",
       "version": "${PackageVersion}",
+      "alias-to": {
+          "any": "Microsoft.NETCore.App.Runtime.Mono.tvossimulator-arm64"
+      }
     },
     "Microsoft.NETCore.App.Runtime.Mono.${NetVersion}.tvossimulator-x64" : {
       "kind": "framework",
       "version": "${PackageVersion}",
+      "alias-to": {
+          "any": "Microsoft.NETCore.App.Runtime.Mono.tvossimulator-x64"
+      }
     },
     "Microsoft.NETCore.App.Runtime.AOT.Cross.${NetVersion}.maccatalyst-arm64": {
       "kind": "Sdk",
@@ -425,15 +434,24 @@
     },
     "Microsoft.NETCore.App.Runtime.Mono.${NetVersion}.browser-wasm" : {
       "kind": "framework",
-      "version": "${PackageVersion}"
+      "version": "${PackageVersion}",
+      "alias-to": {
+          "any": "Microsoft.NETCore.App.Runtime.Mono.browser-wasm"
+      }
     },
     "Microsoft.NETCore.App.Runtime.Mono.multithread.${NetVersion}.browser-wasm" : {
       "kind": "framework",
-      "version": "${PackageVersion}"
+      "version": "${PackageVersion}",
+      "alias-to": {
+          "any": "Microsoft.NETCore.App.Runtime.Mono.multithread.browser-wasm"
+      }
     },
     "Microsoft.NETCore.App.Runtime.Mono.${NetVersion}.wasi-wasm" : {
       "kind": "framework",
-      "version": "${PackageVersion}"
+      "version": "${PackageVersion}",
+      "alias-to": {
+          "any": "Microsoft.NETCore.App.Runtime.Mono.iossimulator-x64"
+      }
     },
     "Microsoft.NETCore.App.Runtime.win-x64" : {
       "kind": "framework",
