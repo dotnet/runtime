@@ -1916,16 +1916,6 @@ public:
         return m_CPUCompileFlags;
     }
 
-#if defined(TARGET_ARM64) && !defined(_MSC_VER)
-    __attribute__((target("sve")))
-    inline UINT64 GetSveLengthFromOS()
-    {
-        UINT64 size;
-        __asm__ __volatile__("rdvl %0, #1" : "=r"(size));
-        return size;
-    }
-#endif  // TARGET_ARM64
-
 private:
     bool m_storeRichDebugInfo;
 

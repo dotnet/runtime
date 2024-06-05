@@ -23,6 +23,13 @@ LEAF_ENTRY GetDataCacheZeroIDReg, _TEXT
     ret     lr
 LEAF_END GetDataCacheZeroIDReg, _TEXT
 
+// DWORD64 __stdcall GetSveLengthFromOS(void);
+.arch_extension sve
+    LEAF_ENTRY GetSveLengthFromOS, _TEXT
+        rdvl    x0, 1
+        ret     lr
+    LEAF_END GetSveLengthFromOS, _TEXT
+
 //-----------------------------------------------------------------------------
 // This routine captures the machine state. It is used by helper method frame
 //-----------------------------------------------------------------------------
