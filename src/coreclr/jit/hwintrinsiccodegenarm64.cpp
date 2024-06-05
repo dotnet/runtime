@@ -1496,7 +1496,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             {
                 assert(intrin.op3->IsIntegralConst());
                 GetEmitter()->emitIns_PRFOP_R_R_I(ins, emitSize, (insSvePrfop)intrin.op3->AsIntConCommon()->IconValue(),
-                                                  op1Reg, op2Reg, 0, INS_OPTS_NONE);
+                                                  op1Reg, op2Reg, 0);
                 break;
             }
 
