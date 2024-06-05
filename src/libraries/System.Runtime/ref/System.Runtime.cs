@@ -13906,7 +13906,7 @@ namespace System.Runtime.InteropServices.Swift
     }
     public readonly partial struct SwiftSelf<T> where T: unmanaged
     {
-        private readonly int _dummyPrimitive;
+        private readonly T _dummyPrimitive;
         public unsafe SwiftSelf(T value) { throw null; }
         public unsafe T Value { get { throw null; } }
     }
