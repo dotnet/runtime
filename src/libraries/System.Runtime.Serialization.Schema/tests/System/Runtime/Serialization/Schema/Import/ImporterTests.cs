@@ -124,8 +124,8 @@ namespace System.Runtime.Serialization.Schema.Tests
             yield return new object[] { (XsdDataContractImporter imp) => imp.Import(SchemaUtils.PositiveSchemas, SchemaUtils.ValidTypeNames[0]), 1515 + (50 * newlineSize) }; // 50 lines
             yield return new object[] { (XsdDataContractImporter imp) => imp.Import(SchemaUtils.PositiveSchemas, SchemaUtils.ValidTypeNames[1]), 1514 + (50 * newlineSize) }; // 50 lines
             yield return new object[] { (XsdDataContractImporter imp) => imp.Import(SchemaUtils.PositiveSchemas, SchemaUtils.ValidTypeNames[2]), 2729 + (86 * newlineSize) }; // 86 lines
-            yield return new object[] { (XsdDataContractImporter imp) => imp.Import(SchemaUtils.ReferenceSchemas, SchemaUtils.ValidTypeNames[3]), 1258 + (36 * newlineSize) }; // 36 lines
-            yield return new object[] { (XsdDataContractImporter imp) => imp.Import(SchemaUtils.ReferenceSchemas, SchemaUtils.ValidTypeNames[4]), 1236 + (36 * newlineSize) }; // 36 lines
+            yield return new object[] { (XsdDataContractImporter imp) => imp.Import(SchemaUtils.ReferenceSchemas, SchemaUtils.ValidTypeNames[3]), 1260 + (35 * newlineSize) }; // 35 lines
+            yield return new object[] { (XsdDataContractImporter imp) => imp.Import(SchemaUtils.ReferenceSchemas, SchemaUtils.ValidTypeNames[4]), 1238 + (35 * newlineSize) }; // 35 lines
 
             // Import(XmlSchemaSet, XmlSchemaElement)
             // TODO
