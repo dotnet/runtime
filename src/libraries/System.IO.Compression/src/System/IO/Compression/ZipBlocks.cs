@@ -807,6 +807,9 @@ namespace System.IO.Compression
             BinaryPrimitives.WriteUInt32LittleEndian(writeSegment, startOfCentralDirectoryTruncated);
             writeSegment = writeSegment.Slice(sizeof(uint));
 
+            // Should be valid because of how we read archiveComment in TryReadBlock:
+            Debug.Assert(archiveComment.Length <= ZipFileCommentMaxLength);
+
             // zip file comment length
             BinaryPrimitives.WriteUInt16LittleEndian(writeSegment, (ushort)archiveComment.Length);
 
