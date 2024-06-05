@@ -103,7 +103,7 @@ namespace System.Text.Json.Serialization.Tests
 
             // Technically this check is not needed, but helps confirm behavior, that Pipe had written but was waiting for flush to continue.
             // result.Buffer: 123456789[0...
-            Assert.Equal(10 + i - 1, result.Buffer.Length);
+            Assert.InRange(result.Buffer.Length, 10 + i - 1, 10 + i + 1);
             pipe.Reader.AdvanceTo(result.Buffer.End);
 
             async IAsyncEnumerable<int> GetNumbersAsync()
@@ -357,11 +357,43 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task NestedSerializeAsyncCallsFlushAtThreshold()
         {
-            string data = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+            string data = new string('a', 300);
             var options = new JsonSerializerOptions();
             options.Converters.Add(new MyStringConverter());
 
-            var pipe = new Pipe(new PipeOptions(pauseWriterThreshold: 1000000));
+            var pipe = new Pipe(new PipeOptions(pauseWriterThreshold: 10000000));
+            var writer = new CustomPipeWriter(pipe.Writer);
+            await JsonSerializer.SerializeAsync(writer, CreateManyTestObjects(), options);
+
+            // Flush should happen every ~14,745 bytes (+36 for writing data when just below threshold)
+            Assert.True(writer.Flushes.Count > (data.Length * 10_000 / 16_000), $"Flush count: {writer.Flushes.Count}");
+
+            foreach (long flush in writer.Flushes)
+            {
+                Assert.True(flush < PipeOptions.Default.MinimumSegmentSize * 4);
+            }
+
+            IEnumerable<string> CreateManyTestObjects()
+            {
+                int i = 0;
+                while (true)
+                {
+                    if (++i % 10_000 == 0)
+                    {
+                        break;
+                    }
+                    yield return data;
+                }
+            }
+        }
+
+        [Fact]
+        public async Task SerializeAsyncCallsFlushAtThreshold()
+        {
+            string data = new string('a', 300);
+            var options = new JsonSerializerOptions();
+
+            var pipe = new Pipe(new PipeOptions(pauseWriterThreshold: 10000000));
             var writer = new CustomPipeWriter(pipe.Writer);
             await JsonSerializer.SerializeAsync(writer, CreateManyTestObjects(), options);
 

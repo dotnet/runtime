@@ -1015,9 +1015,10 @@ public:
 
     regMaskTP lvRegMask() const
     {
-        regMaskTP regMask = RBM_NONE;
         if (GetRegNum() != REG_STK)
         {
+            regMaskTP regMask;
+
             if (varTypeUsesFloatReg(this))
             {
                 regMask = genRegMaskFloat(GetRegNum() ARM_ARG(TypeGet()));
@@ -1032,8 +1033,12 @@ public:
 
                 regMask = genRegMask(GetRegNum());
             }
+            return regMask;
         }
-        return regMask;
+        else
+        {
+            return RBM_NONE;
+        }
     }
 
     //-----------------------------------------------------------------------------
@@ -4600,6 +4605,8 @@ protected:
                                         bool                  mustExpand);
 
 #ifdef FEATURE_HW_INTRINSICS
+    bool IsValidForShuffle(GenTreeVecCon* vecCon, unsigned simdSize, var_types simdBaseType) const;
+
     GenTree* impHWIntrinsic(NamedIntrinsic        intrinsic,
                             CORINFO_CLASS_HANDLE  clsHnd,
                             CORINFO_METHOD_HANDLE method,
@@ -6785,6 +6792,8 @@ private:
 
     PhaseStatus fgMarkAddressExposedLocals();
     void fgSequenceLocals(Statement* stmt);
+    bool fgExposeUnpropagatedLocals(bool propagatedAny, class LocalEqualsLocalAddrAssertions* assertions);
+    void fgExposeLocalsInBitVec(BitVec_ValArg_T bitVec);
 
     PhaseStatus PhysicalPromotion();
 

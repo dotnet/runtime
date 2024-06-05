@@ -183,6 +183,7 @@
     <Compile Include="System\AppContext\AppContextTests.cs" />
     <Compile Include="System\AppContext\AppContextTests.Switch.cs" />
     <Compile Include="System\AppContext\AppContextTests.Switch.Validation.cs" />
+    <Compile Include="System\Collections\Generic\IEnumerableTests.cs" />
     <Compile Include="System\Collections\Generic\KeyNotFoundExceptionTests.cs" />
     <Compile Include="System\Collections\Generic\KeyValuePairTests.cs" />
     <Compile Include="System\Collections\ObjectModel\CollectionTests.cs" />
