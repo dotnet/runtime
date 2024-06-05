@@ -110,7 +110,7 @@ namespace System.Collections.Generic
             }
 
             int IAlternateEqualityComparer<ReadOnlySpan<char>, string?>.GetHashCode(ReadOnlySpan<char> span) =>
-                string.GetNonRandomizedHashCode(ref MemoryMarshal.GetReference(span), span.Length);
+                string.GetNonRandomizedHashCode(span);
 
             bool IAlternateEqualityComparer<ReadOnlySpan<char>, string?>.Equals(ReadOnlySpan<char> span, string? target)
             {
@@ -142,7 +142,7 @@ namespace System.Collections.Generic
             }
 
             int IAlternateEqualityComparer<ReadOnlySpan<char>, string?>.GetHashCode(ReadOnlySpan<char> span) =>
-                string.GetNonRandomizedHashCodeOrdinalIgnoreCase(ref MemoryMarshal.GetReference(span), span.Length);
+                string.GetNonRandomizedHashCodeOrdinalIgnoreCase(span);
 
             bool IAlternateEqualityComparer<ReadOnlySpan<char>, string?>.Equals(ReadOnlySpan<char> span, string? target)
             {
