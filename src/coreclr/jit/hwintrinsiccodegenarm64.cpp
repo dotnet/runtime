@@ -1966,7 +1966,19 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op2Reg, opt);
                 break;
             }
+            case NI_Sve_Compute8BitAddresses:
+            case NI_Sve_Compute16BitAddresses:
+            case NI_Sve_Compute32BitAddresses:
+            case NI_Sve_Compute64BitAddresses:
+            {
+                static_assert_no_msg(AreContiguous(NI_Sve_Compute8BitAddresses, NI_Sve_Compute16BitAddresses,
+                                                   NI_Sve_Compute32BitAddresses, NI_Sve_Compute64BitAddresses));
 
+                GetEmitter()->emitInsSve_R_R_R_I(ins, EA_SCALABLE, targetReg, op1Reg, op2Reg,
+                                                 (intrin.id - NI_Sve_Compute8BitAddresses), opt,
+                                                 INS_SCALABLE_OPTS_LSL_N);
+                break;
+            }
             default:
                 unreached();
         }

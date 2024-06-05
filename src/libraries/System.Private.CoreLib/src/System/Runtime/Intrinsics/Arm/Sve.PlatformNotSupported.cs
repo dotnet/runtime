@@ -640,6 +640,112 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<ulong> BooleanNot(Vector<ulong> value) { throw new PlatformNotSupportedException(); }
 
+        ///  Compute vector addresses for 16-bit data
+
+        /// <summary>
+        /// svuint32_t svadrh[_u32base]_[s32]index(svuint32_t bases, svint32_t indices)
+        ///   ADR Zresult.S, [Zbases.S, Zindices.S, LSL #1]
+        /// </summary>
+        public static unsafe Vector<uint> Compute16BitAddresses(Vector<uint> bases, Vector<int> indices) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svadrh[_u32base]_[u32]index(svuint32_t bases, svuint32_t indices)
+        ///   ADR Zresult.S, [Zbases.S, Zindices.S, LSL #1]
+        /// </summary>
+        public static unsafe Vector<uint> Compute16BitAddresses(Vector<uint> bases, Vector<uint> indices) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svadrh[_u64base]_[s64]index(svuint64_t bases, svint64_t indices)
+        ///   ADR Zresult.D, [Zbases.D, Zindices.D, LSL #1]
+        /// </summary>
+        public static unsafe Vector<ulong> Compute16BitAddresses(Vector<ulong> bases, Vector<long> indices) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svadrh[_u64base]_[u64]index(svuint64_t bases, svuint64_t indices)
+        ///   ADR Zresult.D, [Zbases.D, Zindices.D, LSL #1]
+        /// </summary>
+        public static unsafe Vector<ulong> Compute16BitAddresses(Vector<ulong> bases, Vector<ulong> indices) { throw new PlatformNotSupportedException(); }
+
+
+        ///  Compute vector addresses for 32-bit data
+
+        /// <summary>
+        /// svuint32_t svadrw[_u32base]_[s32]index(svuint32_t bases, svint32_t indices)
+        ///   ADR Zresult.S, [Zbases.S, Zindices.S, LSL #2]
+        /// </summary>
+        public static unsafe Vector<uint> Compute32BitAddresses(Vector<uint> bases, Vector<int> indices) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svadrw[_u32base]_[u32]index(svuint32_t bases, svuint32_t indices)
+        ///   ADR Zresult.S, [Zbases.S, Zindices.S, LSL #2]
+        /// </summary>
+        public static unsafe Vector<uint> Compute32BitAddresses(Vector<uint> bases, Vector<uint> indices) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svadrw[_u64base]_[s64]index(svuint64_t bases, svint64_t indices)
+        ///   ADR Zresult.D, [Zbases.D, Zindices.D, LSL #2]
+        /// </summary>
+        public static unsafe Vector<ulong> Compute32BitAddresses(Vector<ulong> bases, Vector<long> indices) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svadrw[_u64base]_[u64]index(svuint64_t bases, svuint64_t indices)
+        ///   ADR Zresult.D, [Zbases.D, Zindices.D, LSL #2]
+        /// </summary>
+        public static unsafe Vector<ulong> Compute32BitAddresses(Vector<ulong> bases, Vector<ulong> indices) { throw new PlatformNotSupportedException(); }
+
+
+        ///  Compute vector addresses for 64-bit data
+
+        /// <summary>
+        /// svuint32_t svadrd[_u32base]_[s32]index(svuint32_t bases, svint32_t indices)
+        ///   ADR Zresult.S, [Zbases.S, Zindices.S, LSL #3]
+        /// </summary>
+        public static unsafe Vector<uint> Compute64BitAddresses(Vector<uint> bases, Vector<int> indices) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svadrd[_u32base]_[u32]index(svuint32_t bases, svuint32_t indices)
+        ///   ADR Zresult.S, [Zbases.S, Zindices.S, LSL #3]
+        /// </summary>
+        public static unsafe Vector<uint> Compute64BitAddresses(Vector<uint> bases, Vector<uint> indices) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svadrd[_u64base]_[s64]index(svuint64_t bases, svint64_t indices)
+        ///   ADR Zresult.D, [Zbases.D, Zindices.D, LSL #3]
+        /// </summary>
+        public static unsafe Vector<ulong> Compute64BitAddresses(Vector<ulong> bases, Vector<long> indices) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svadrd[_u64base]_[u64]index(svuint64_t bases, svuint64_t indices)
+        ///   ADR Zresult.D, [Zbases.D, Zindices.D, LSL #3]
+        /// </summary>
+        public static unsafe Vector<ulong> Compute64BitAddresses(Vector<ulong> bases, Vector<ulong> indices) { throw new PlatformNotSupportedException(); }
+
+
+        ///  Compute vector addresses for 8-bit data
+
+        /// <summary>
+        /// svuint32_t svadrb[_u32base]_[s32]offset(svuint32_t bases, svint32_t offsets)
+        ///   ADR Zresult.S, [Zbases.S, Zoffsets.S]
+        /// </summary>
+        public static unsafe Vector<uint> Compute8BitAddresses(Vector<uint> bases, Vector<int> indices) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svadrb[_u32base]_[u32]offset(svuint32_t bases, svuint32_t offsets)
+        ///   ADR Zresult.S, [Zbases.S, Zoffsets.S]
+        /// </summary>
+        public static unsafe Vector<uint> Compute8BitAddresses(Vector<uint> bases, Vector<uint> indices) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svadrb[_u64base]_[s64]offset(svuint64_t bases, svint64_t offsets)
+        ///   ADR Zresult.D, [Zbases.D, Zoffsets.D]
+        /// </summary>
+        public static unsafe Vector<ulong> Compute8BitAddresses(Vector<ulong> bases, Vector<long> indices) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svadrb[_u64base]_[u64]offset(svuint64_t bases, svuint64_t offsets)
+        ///   ADR Zresult.D, [Zbases.D, Zoffsets.D]
+        /// </summary>
+        public static unsafe Vector<ulong> Compute8BitAddresses(Vector<ulong> bases, Vector<ulong> indices) { throw new PlatformNotSupportedException(); }
 
         ///  Shuffle active elements of vector to the right and fill with zero
 
