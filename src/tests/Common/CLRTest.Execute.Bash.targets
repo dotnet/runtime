@@ -506,12 +506,10 @@ else
 fi
 
 $__Command $HARNESS_RUNNER apple test %5c
-  --app="${__TestBinaryBase}/${__AppFilename}/${__Category}.app" %5c
+  --app="${__TestBinaryBase}/${__Category}.app" %5c
   --output-directory="$__OutputDir" %5c
   --target maccatalyst %5c
   --timeout 01:15:00
-  --launch-timeout 01:15:00
-  -v
 CLRTestExitCode=$?
 
 # Exit code of xharness is zero when tests finished successfully
