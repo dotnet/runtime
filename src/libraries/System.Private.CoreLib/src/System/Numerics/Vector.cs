@@ -1186,7 +1186,7 @@ namespace System.Numerics
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <returns>The product of <paramref name="left" /> and <paramref name="right" />.</returns>
         [Intrinsic]
-        public static Vector<T> Multiply<T>(T left, Vector<T> right) => left * right;
+        public static Vector<T> Multiply<T>(T left, Vector<T> right) => right * left;
 
         /// <inheritdoc cref="Vector128.MultiplyAddEstimate(Vector128{double}, Vector128{double}, Vector128{double})" />
         [Intrinsic]
