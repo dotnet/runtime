@@ -670,30 +670,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector64_op_BitwiseAnd:
-        case NI_Vector128_op_BitwiseAnd:
-        {
-            assert(sig->numArgs == 2);
-
-            op2 = impSIMDPopStack();
-            op1 = impSIMDPopStack();
-
-            retNode = gtNewSimdBinOpNode(GT_AND, retType, op1, op2, simdBaseJitType, simdSize);
-            break;
-        }
-
-        case NI_Vector64_op_BitwiseOr:
-        case NI_Vector128_op_BitwiseOr:
-        {
-            assert(sig->numArgs == 2);
-
-            op2 = impSIMDPopStack();
-            op1 = impSIMDPopStack();
-
-            retNode = gtNewSimdBinOpNode(GT_OR, retType, op1, op2, simdBaseJitType, simdSize);
-            break;
-        }
-
         case NI_Vector64_Ceiling:
         case NI_Vector128_Ceiling:
         {
@@ -1713,15 +1689,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector64_op_OnesComplement:
-        case NI_Vector128_op_OnesComplement:
-        {
-            assert(sig->numArgs == 1);
-            op1     = impSIMDPopStack();
-            retNode = gtNewSimdUnOpNode(GT_NOT, retType, op1, simdBaseJitType, simdSize);
-            break;
-        }
-
         case NI_Vector64_op_Inequality:
         case NI_Vector128_op_Inequality:
         {
@@ -2178,18 +2145,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             op2     = impSIMDPopStack();
             op1     = impSIMDPopStack();
             retNode = gtNewSimdWithUpperNode(retType, op1, op2, simdBaseJitType, simdSize);
-            break;
-        }
-
-        case NI_Vector64_op_ExclusiveOr:
-        case NI_Vector128_op_ExclusiveOr:
-        {
-            assert(sig->numArgs == 2);
-
-            op2 = impSIMDPopStack();
-            op1 = impSIMDPopStack();
-
-            retNode = gtNewSimdBinOpNode(GT_XOR, retType, op1, op2, simdBaseJitType, simdSize);
             break;
         }
 

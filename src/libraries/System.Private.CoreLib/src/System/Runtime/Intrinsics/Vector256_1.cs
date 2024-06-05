@@ -7,6 +7,8 @@ using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.Wasm;
 using System.Runtime.Intrinsics.X86;
 using System.Text;
 
@@ -196,10 +198,58 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> operator &(Vector256<T> left, Vector256<T> right)
         {
-            return Vector256.Create(
-                left._lower & right._lower,
-                left._upper & right._upper
-            );
+            // While op_BitwiseAnd is technically size independent, there are
+            // some opportunistic lightup optimizations that can kick in depending
+            // on the size of T. One such example is embedded masking.
+
+            if (Avx.IsSupported)
+            {
+                return XarchImpl(left, right);
+            }
+            return SoftwareImpl(left, right);
+
+            static Vector256<T> SoftwareImpl(Vector256<T> left, Vector256<T> right)
+            {
+                return Vector256.Create(
+                    left._lower & right._lower,
+                    left._upper & right._upper
+                );
+            }
+
+            [CompExactlyDependsOn(typeof(Avx))]
+            [CompExactlyDependsOn(typeof(Avx2))]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static Vector256<T> XarchImpl(Vector256<T> left, Vector256<T> right)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    return Avx.And(left.AsSingle(), right.AsSingle()).As<float, T>();
+                }
+                else if (typeof(T) == typeof(double))
+                {
+                    return Avx.And(left.AsDouble(), right.AsDouble()).As<double, T>();
+                }
+                else if (Avx2.IsSupported)
+                {
+                    if (sizeof(T) == 1)
+                    {
+                        return Avx2.And(left.AsByte(), right.AsByte()).As<byte, T>();
+                    }
+                    else if (sizeof(T) == 2)
+                    {
+                        return Avx2.And(left.AsUInt16(), right.AsUInt16()).As<ushort, T>();
+                    }
+                    else if (sizeof(T) == 4)
+                    {
+                        return Avx2.And(left.AsUInt32(), right.AsUInt32()).As<uint, T>();
+                    }
+                    else if (sizeof(T) == 8)
+                    {
+                        return Avx2.And(left.AsUInt64(), right.AsUInt64()).As<ulong, T>();
+                    }
+                }
+                return SoftwareImpl(left, right);
+            }
         }
 
         /// <summary>Computes the bitwise-or of two vectors.</summary>
@@ -211,10 +261,58 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> operator |(Vector256<T> left, Vector256<T> right)
         {
-            return Vector256.Create(
-                left._lower | right._lower,
-                left._upper | right._upper
-            );
+            // While op_BitwiseOr is technically size independent, there are
+            // some opportunistic lightup optimizations that can kick in depending
+            // on the size of T. One such example is embedded masking.
+
+            if (Avx.IsSupported)
+            {
+                return XarchImpl(left, right);
+            }
+            return SoftwareImpl(left, right);
+
+            static Vector256<T> SoftwareImpl(Vector256<T> left, Vector256<T> right)
+            {
+                return Vector256.Create(
+                    left._lower | right._lower,
+                    left._upper | right._upper
+                );
+            }
+
+            [CompExactlyDependsOn(typeof(Avx))]
+            [CompExactlyDependsOn(typeof(Avx2))]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static Vector256<T> XarchImpl(Vector256<T> left, Vector256<T> right)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    return Avx.Or(left.AsSingle(), right.AsSingle()).As<float, T>();
+                }
+                else if (typeof(T) == typeof(double))
+                {
+                    return Avx.Or(left.AsDouble(), right.AsDouble()).As<double, T>();
+                }
+                else if (Avx2.IsSupported)
+                {
+                    if (sizeof(T) == 1)
+                    {
+                        return Avx2.Or(left.AsByte(), right.AsByte()).As<byte, T>();
+                    }
+                    else if (sizeof(T) == 2)
+                    {
+                        return Avx2.Or(left.AsUInt16(), right.AsUInt16()).As<ushort, T>();
+                    }
+                    else if (sizeof(T) == 4)
+                    {
+                        return Avx2.Or(left.AsUInt32(), right.AsUInt32()).As<uint, T>();
+                    }
+                    else if (sizeof(T) == 8)
+                    {
+                        return Avx2.Or(left.AsUInt64(), right.AsUInt64()).As<ulong, T>();
+                    }
+                }
+                return SoftwareImpl(left, right);
+            }
         }
 
         /// <summary>Divides two vectors to compute their quotient.</summary>
@@ -268,10 +366,58 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> operator ^(Vector256<T> left, Vector256<T> right)
         {
-            return Vector256.Create(
-                left._lower ^ right._lower,
-                left._upper ^ right._upper
-            );
+            // While op_ExclusiveOr is technically size independent, there are
+            // some opportunistic lightup optimizations that can kick in depending
+            // on the size of T. One such example is embedded masking.
+
+            if (Avx.IsSupported)
+            {
+                return XarchImpl(left, right);
+            }
+            return SoftwareImpl(left, right);
+
+            static Vector256<T> SoftwareImpl(Vector256<T> left, Vector256<T> right)
+            {
+                return Vector256.Create(
+                    left._lower ^ right._lower,
+                    left._upper ^ right._upper
+                );
+            }
+
+            [CompExactlyDependsOn(typeof(Avx))]
+            [CompExactlyDependsOn(typeof(Avx2))]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static Vector256<T> XarchImpl(Vector256<T> left, Vector256<T> right)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    return Avx.Xor(left.AsSingle(), right.AsSingle()).As<float, T>();
+                }
+                else if (typeof(T) == typeof(double))
+                {
+                    return Avx.Xor(left.AsDouble(), right.AsDouble()).As<double, T>();
+                }
+                else if (Avx2.IsSupported)
+                {
+                    if (sizeof(T) == 1)
+                    {
+                        return Avx2.Xor(left.AsByte(), right.AsByte()).As<byte, T>();
+                    }
+                    else if (sizeof(T) == 2)
+                    {
+                        return Avx2.Xor(left.AsUInt16(), right.AsUInt16()).As<ushort, T>();
+                    }
+                    else if (sizeof(T) == 4)
+                    {
+                        return Avx2.Xor(left.AsUInt32(), right.AsUInt32()).As<uint, T>();
+                    }
+                    else if (sizeof(T) == 8)
+                    {
+                        return Avx2.Xor(left.AsUInt64(), right.AsUInt64()).As<ulong, T>();
+                    }
+                }
+                return SoftwareImpl(left, right);
+            }
         }
 
         /// <summary>Compares two vectors to determine if any elements are not equal.</summary>
@@ -342,10 +488,58 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> operator ~(Vector256<T> vector)
         {
-            return Vector256.Create(
-                ~vector._lower,
-                ~vector._upper
-            );
+            // While op_OnesComplement is technically size independent, there are
+            // some opportunistic lightup optimizations that can kick in depending
+            // on the size of T. One such example is embedded masking.
+
+            if (Avx.IsSupported)
+            {
+                return XarchImpl(vector);
+            }
+            return SoftwareImpl(vector);
+
+            static Vector256<T> SoftwareImpl(Vector256<T> vector)
+            {
+                return Vector256.Create(
+                    ~vector._lower,
+                    ~vector._upper
+                );
+            }
+
+            [CompExactlyDependsOn(typeof(Avx))]
+            [CompExactlyDependsOn(typeof(Avx2))]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static Vector256<T> XarchImpl(Vector256<T> vector)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    return Avx.Xor(vector.AsSingle(), Vector256<float>.AllBitsSet).As<float, T>();
+                }
+                else if (typeof(T) == typeof(double))
+                {
+                    return Avx.Xor(vector.AsDouble(), Vector256<double>.AllBitsSet).As<double, T>();
+                }
+                else if (Avx2.IsSupported)
+                {
+                    if (sizeof(T) == 1)
+                    {
+                        return Avx2.Xor(vector.AsByte(), Vector256<byte>.AllBitsSet).As<byte, T>();
+                    }
+                    else if (sizeof(T) == 2)
+                    {
+                        return Avx2.Xor(vector.AsUInt16(), Vector256<ushort>.AllBitsSet).As<ushort, T>();
+                    }
+                    else if (sizeof(T) == 4)
+                    {
+                        return Avx2.Xor(vector.AsUInt32(), Vector256<uint>.AllBitsSet).As<uint, T>();
+                    }
+                    else if (sizeof(T) == 8)
+                    {
+                        return Avx2.Xor(vector.AsUInt64(), Vector256<ulong>.AllBitsSet).As<ulong, T>();
+                    }
+                }
+                return SoftwareImpl(vector);
+            }
         }
 
         /// <summary>Shifts (signed) each element of a vector right by the specified amount.</summary>

@@ -272,10 +272,112 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<T> operator &(Vector128<T> left, Vector128<T> right)
         {
-            return Vector128.Create(
-                left._lower & right._lower,
-                left._upper & right._upper
-            );
+            // While op_BitwiseAnd is technically size independent, there are
+            // some opportunistic lightup optimizations that can kick in depending
+            // on the size of T. One such example is embedded masking.
+
+            if (AdvSimd.IsSupported)
+            {
+                return ArmImpl(left, right);
+            }
+            else if (PackedSimd.IsSupported)
+            {
+                return WasmImpl(left, right);
+            }
+            else if (Sse.IsSupported)
+            {
+                return XarchImpl(left, right);
+            }
+            return SoftwareImpl(left, right);
+
+            [CompExactlyDependsOn(typeof(AdvSimd))]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static Vector128<T> ArmImpl(Vector128<T> left, Vector128<T> right)
+            {
+                if (sizeof(T) == 1)
+                {
+                    return AdvSimd.And(left.AsByte(), right.AsByte()).As<byte, T>();
+                }
+                else if (sizeof(T) == 2)
+                {
+                    return AdvSimd.And(left.AsUInt16(), right.AsUInt16()).As<ushort, T>();
+                }
+                else if (sizeof(T) == 4)
+                {
+                    return AdvSimd.And(left.AsUInt32(), right.AsUInt32()).As<uint, T>();
+                }
+                else if (sizeof(T) == 8)
+                {
+                    return AdvSimd.And(left.AsUInt64(), right.AsUInt64()).As<ulong, T>();
+                }
+                return SoftwareImpl(left, right);
+            }
+
+            static Vector128<T> SoftwareImpl(Vector128<T> left, Vector128<T> right)
+            {
+                return Vector128.Create(
+                    left._lower & right._lower,
+                    left._upper & right._upper
+                );
+            }
+
+            [CompExactlyDependsOn(typeof(PackedSimd))]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static Vector128<T> WasmImpl(Vector128<T> left, Vector128<T> right)
+            {
+                if (sizeof(T) == 1)
+                {
+                    return PackedSimd.And(left.AsByte(), right.AsByte()).As<byte, T>();
+                }
+                else if (sizeof(T) == 2)
+                {
+                    return PackedSimd.And(left.AsUInt16(), right.AsUInt16()).As<ushort, T>();
+                }
+                else if (sizeof(T) == 4)
+                {
+                    return PackedSimd.And(left.AsUInt32(), right.AsUInt32()).As<uint, T>();
+                }
+                else if (sizeof(T) == 8)
+                {
+                    return PackedSimd.And(left.AsUInt64(), right.AsUInt64()).As<ulong, T>();
+                }
+                return SoftwareImpl(left, right);
+            }
+
+            [CompExactlyDependsOn(typeof(Sse))]
+            [CompExactlyDependsOn(typeof(Sse2))]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static Vector128<T> XarchImpl(Vector128<T> left, Vector128<T> right)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    return Sse.And(left.AsSingle(), right.AsSingle()).As<float, T>();
+                }
+                else if (Sse2.IsSupported)
+                {
+                    if (typeof(T) == typeof(double))
+                    {
+                        return Sse2.And(left.AsDouble(), right.AsDouble()).As<double, T>();
+                    }
+                    else if (sizeof(T) == 1)
+                    {
+                        return Sse2.And(left.AsByte(), right.AsByte()).As<byte, T>();
+                    }
+                    else if (sizeof(T) == 2)
+                    {
+                        return Sse2.And(left.AsUInt16(), right.AsUInt16()).As<ushort, T>();
+                    }
+                    else if (sizeof(T) == 4)
+                    {
+                        return Sse2.And(left.AsUInt32(), right.AsUInt32()).As<uint, T>();
+                    }
+                    else if (sizeof(T) == 8)
+                    {
+                        return Sse2.And(left.AsUInt64(), right.AsUInt64()).As<ulong, T>();
+                    }
+                }
+                return SoftwareImpl(left, right);
+            }
         }
 
         /// <summary>Computes the bitwise-or of two vectors.</summary>
@@ -287,10 +389,112 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<T> operator |(Vector128<T> left, Vector128<T> right)
         {
-            return Vector128.Create(
-                left._lower | right._lower,
-                left._upper | right._upper
-            );
+            // While op_BitwiseOr is technically size independent, there are
+            // some opportunistic lightup optimizations that can kick in depending
+            // on the size of T. One such example is embedded masking.
+
+            if (AdvSimd.IsSupported)
+            {
+                return ArmImpl(left, right);
+            }
+            else if (PackedSimd.IsSupported)
+            {
+                return WasmImpl(left, right);
+            }
+            else if (Sse.IsSupported)
+            {
+                return XarchImpl(left, right);
+            }
+            return SoftwareImpl(left, right);
+
+            [CompExactlyDependsOn(typeof(AdvSimd))]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static Vector128<T> ArmImpl(Vector128<T> left, Vector128<T> right)
+            {
+                if (sizeof(T) == 1)
+                {
+                    return AdvSimd.Or(left.AsByte(), right.AsByte()).As<byte, T>();
+                }
+                else if (sizeof(T) == 2)
+                {
+                    return AdvSimd.Or(left.AsUInt16(), right.AsUInt16()).As<ushort, T>();
+                }
+                else if (sizeof(T) == 4)
+                {
+                    return AdvSimd.Or(left.AsUInt32(), right.AsUInt32()).As<uint, T>();
+                }
+                else if (sizeof(T) == 8)
+                {
+                    return AdvSimd.Or(left.AsUInt64(), right.AsUInt64()).As<ulong, T>();
+                }
+                return SoftwareImpl(left, right);
+            }
+
+            static Vector128<T> SoftwareImpl(Vector128<T> left, Vector128<T> right)
+            {
+                return Vector128.Create(
+                    left._lower | right._lower,
+                    left._upper | right._upper
+                );
+            }
+
+            [CompExactlyDependsOn(typeof(PackedSimd))]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static Vector128<T> WasmImpl(Vector128<T> left, Vector128<T> right)
+            {
+                if (sizeof(T) == 1)
+                {
+                    return PackedSimd.Or(left.AsByte(), right.AsByte()).As<byte, T>();
+                }
+                else if (sizeof(T) == 2)
+                {
+                    return PackedSimd.Or(left.AsUInt16(), right.AsUInt16()).As<ushort, T>();
+                }
+                else if (sizeof(T) == 4)
+                {
+                    return PackedSimd.Or(left.AsUInt32(), right.AsUInt32()).As<uint, T>();
+                }
+                else if (sizeof(T) == 8)
+                {
+                    return PackedSimd.Or(left.AsUInt64(), right.AsUInt64()).As<ulong, T>();
+                }
+                return SoftwareImpl(left, right);
+            }
+
+            [CompExactlyDependsOn(typeof(Sse))]
+            [CompExactlyDependsOn(typeof(Sse2))]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static Vector128<T> XarchImpl(Vector128<T> left, Vector128<T> right)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    return Sse.Or(left.AsSingle(), right.AsSingle()).As<float, T>();
+                }
+                else if (Sse2.IsSupported)
+                {
+                    if (typeof(T) == typeof(double))
+                    {
+                        return Sse2.Or(left.AsDouble(), right.AsDouble()).As<double, T>();
+                    }
+                    else if (sizeof(T) == 1)
+                    {
+                        return Sse2.Or(left.AsByte(), right.AsByte()).As<byte, T>();
+                    }
+                    else if (sizeof(T) == 2)
+                    {
+                        return Sse2.Or(left.AsUInt16(), right.AsUInt16()).As<ushort, T>();
+                    }
+                    else if (sizeof(T) == 4)
+                    {
+                        return Sse2.Or(left.AsUInt32(), right.AsUInt32()).As<uint, T>();
+                    }
+                    else if (sizeof(T) == 8)
+                    {
+                        return Sse2.Or(left.AsUInt64(), right.AsUInt64()).As<ulong, T>();
+                    }
+                }
+                return SoftwareImpl(left, right);
+            }
         }
 
         /// <summary>Divides two vectors to compute their quotient.</summary>
@@ -344,10 +548,112 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<T> operator ^(Vector128<T> left, Vector128<T> right)
         {
-            return Vector128.Create(
-                left._lower ^ right._lower,
-                left._upper ^ right._upper
-            );
+            // While op_ExclusiveOr is technically size independent, there are
+            // some opportunistic lightup optimizations that can kick in depending
+            // on the size of T. One such example is embedded masking.
+
+            if (AdvSimd.IsSupported)
+            {
+                return ArmImpl(left, right);
+            }
+            else if (PackedSimd.IsSupported)
+            {
+                return WasmImpl(left, right);
+            }
+            else if (Sse.IsSupported)
+            {
+                return XarchImpl(left, right);
+            }
+            return SoftwareImpl(left, right);
+
+            [CompExactlyDependsOn(typeof(AdvSimd))]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static Vector128<T> ArmImpl(Vector128<T> left, Vector128<T> right)
+            {
+                if (sizeof(T) == 1)
+                {
+                    return AdvSimd.Xor(left.AsByte(), right.AsByte()).As<byte, T>();
+                }
+                else if (sizeof(T) == 2)
+                {
+                    return AdvSimd.Xor(left.AsUInt16(), right.AsUInt16()).As<ushort, T>();
+                }
+                else if (sizeof(T) == 4)
+                {
+                    return AdvSimd.Xor(left.AsUInt32(), right.AsUInt32()).As<uint, T>();
+                }
+                else if (sizeof(T) == 8)
+                {
+                    return AdvSimd.Xor(left.AsUInt64(), right.AsUInt64()).As<ulong, T>();
+                }
+                return SoftwareImpl(left, right);
+            }
+
+            static Vector128<T> SoftwareImpl(Vector128<T> left, Vector128<T> right)
+            {
+                return Vector128.Create(
+                    left._lower ^ right._lower,
+                    left._upper ^ right._upper
+                );
+            }
+
+            [CompExactlyDependsOn(typeof(PackedSimd))]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static Vector128<T> WasmImpl(Vector128<T> left, Vector128<T> right)
+            {
+                if (sizeof(T) == 1)
+                {
+                    return PackedSimd.Xor(left.AsByte(), right.AsByte()).As<byte, T>();
+                }
+                else if (sizeof(T) == 2)
+                {
+                    return PackedSimd.Xor(left.AsUInt16(), right.AsUInt16()).As<ushort, T>();
+                }
+                else if (sizeof(T) == 4)
+                {
+                    return PackedSimd.Xor(left.AsUInt32(), right.AsUInt32()).As<uint, T>();
+                }
+                else if (sizeof(T) == 8)
+                {
+                    return PackedSimd.Xor(left.AsUInt64(), right.AsUInt64()).As<ulong, T>();
+                }
+                return SoftwareImpl(left, right);
+            }
+
+            [CompExactlyDependsOn(typeof(Sse))]
+            [CompExactlyDependsOn(typeof(Sse2))]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static Vector128<T> XarchImpl(Vector128<T> left, Vector128<T> right)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    return Sse.Xor(left.AsSingle(), right.AsSingle()).As<float, T>();
+                }
+                else if (Sse2.IsSupported)
+                {
+                    if (typeof(T) == typeof(double))
+                    {
+                        return Sse2.Xor(left.AsDouble(), right.AsDouble()).As<double, T>();
+                    }
+                    else if (sizeof(T) == 1)
+                    {
+                        return Sse2.Xor(left.AsByte(), right.AsByte()).As<byte, T>();
+                    }
+                    else if (sizeof(T) == 2)
+                    {
+                        return Sse2.Xor(left.AsUInt16(), right.AsUInt16()).As<ushort, T>();
+                    }
+                    else if (sizeof(T) == 4)
+                    {
+                        return Sse2.Xor(left.AsUInt32(), right.AsUInt32()).As<uint, T>();
+                    }
+                    else if (sizeof(T) == 8)
+                    {
+                        return Sse2.Xor(left.AsUInt64(), right.AsUInt64()).As<ulong, T>();
+                    }
+                }
+                return SoftwareImpl(left, right);
+            }
         }
 
         /// <summary>Compares two vectors to determine if any elements are not equal.</summary>
@@ -419,10 +725,112 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<T> operator ~(Vector128<T> vector)
         {
-            return Vector128.Create(
-                ~vector._lower,
-                ~vector._upper
-            );
+            // While op_OnesComplement is technically size independent, there are
+            // some opportunistic lightup optimizations that can kick in depending
+            // on the size of T. One such example is embedded masking.
+
+            if (AdvSimd.IsSupported)
+            {
+                return ArmImpl(vector);
+            }
+            else if (PackedSimd.IsSupported)
+            {
+                return WasmImpl(vector);
+            }
+            else if (Sse.IsSupported)
+            {
+                return XarchImpl(vector);
+            }
+            return SoftwareImpl(vector);
+
+            [CompExactlyDependsOn(typeof(AdvSimd))]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static Vector128<T> ArmImpl(Vector128<T> vector)
+            {
+                if (sizeof(T) == 1)
+                {
+                    return AdvSimd.Not(vector.AsByte()).As<byte, T>();
+                }
+                else if (sizeof(T) == 2)
+                {
+                    return AdvSimd.Not(vector.AsUInt16()).As<ushort, T>();
+                }
+                else if (sizeof(T) == 4)
+                {
+                    return AdvSimd.Not(vector.AsUInt32()).As<uint, T>();
+                }
+                else if (sizeof(T) == 8)
+                {
+                    return AdvSimd.Not(vector.AsUInt64()).As<ulong, T>();
+                }
+                return SoftwareImpl(vector);
+            }
+
+            static Vector128<T> SoftwareImpl(Vector128<T> vector)
+            {
+                return Vector128.Create(
+                    ~vector._lower,
+                    ~vector._upper
+                );
+            }
+
+            [CompExactlyDependsOn(typeof(PackedSimd))]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static Vector128<T> WasmImpl(Vector128<T> vector)
+            {
+                if (sizeof(T) == 1)
+                {
+                    return PackedSimd.Not(vector.AsByte()).As<byte, T>();
+                }
+                else if (sizeof(T) == 2)
+                {
+                    return PackedSimd.Not(vector.AsUInt16()).As<ushort, T>();
+                }
+                else if (sizeof(T) == 4)
+                {
+                    return PackedSimd.Not(vector.AsUInt32()).As<uint, T>();
+                }
+                else if (sizeof(T) == 8)
+                {
+                    return PackedSimd.Not(vector.AsUInt64()).As<ulong, T>();
+                }
+                return SoftwareImpl(vector);
+            }
+
+            [CompExactlyDependsOn(typeof(Sse))]
+            [CompExactlyDependsOn(typeof(Sse2))]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static Vector128<T> XarchImpl(Vector128<T> vector)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    return Sse.Xor(vector.AsSingle(), Vector128<float>.AllBitsSet).As<float, T>();
+                }
+                else if (Sse2.IsSupported)
+                {
+                    if (typeof(T) == typeof(double))
+                    {
+                        return Sse2.Xor(vector.AsDouble(), Vector128<double>.AllBitsSet).As<double, T>();
+                    }
+                    else if (sizeof(T) == 1)
+                    {
+                        return Sse2.Xor(vector.AsByte(), Vector128<byte>.AllBitsSet).As<byte, T>();
+                    }
+                    else if (sizeof(T) == 2)
+                    {
+                        return Sse2.Xor(vector.AsUInt16(), Vector128<ushort>.AllBitsSet).As<ushort, T>();
+                    }
+                    else if (sizeof(T) == 4)
+                    {
+                        return Sse2.Xor(vector.AsUInt32(), Vector128<uint>.AllBitsSet).As<uint, T>();
+                    }
+                    else if (sizeof(T) == 8)
+                    {
+                        return Sse2.Xor(vector.AsUInt64(), Vector128<ulong>.AllBitsSet).As<ulong, T>();
+                    }
+                }
+                return SoftwareImpl(vector);
+            }
         }
 
         /// <summary>Shifts (signed) each element of a vector right by the specified amount.</summary>

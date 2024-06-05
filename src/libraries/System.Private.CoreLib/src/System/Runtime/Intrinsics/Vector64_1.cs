@@ -197,12 +197,48 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector64<T> operator &(Vector64<T> left, Vector64<T> right)
         {
-            ThrowHelper.ThrowForUnsupportedIntrinsicsVector64BaseType<T>();
+            // While op_BitwiseAnd is technically size independent, there are
+            // some opportunistic lightup optimizations that can kick in depending
+            // on the size of T. One such example is embedded masking.
 
-            Unsafe.SkipInit(out Vector64<T> result);
-            Unsafe.AsRef(in result._00) = left._00 & right._00;
+            if (AdvSimd.IsSupported)
+            {
+                return ArmImpl(left, right);
+            }
+            return SoftwareImpl(left, right);
 
-            return result;
+            [CompExactlyDependsOn(typeof(AdvSimd))]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static Vector64<T> ArmImpl(Vector64<T> left, Vector64<T> right)
+            {
+                if (sizeof(T) == 1)
+                {
+                    return AdvSimd.And(left.AsByte(), right.AsByte()).As<byte, T>();
+                }
+                else if (sizeof(T) == 2)
+                {
+                    return AdvSimd.And(left.AsUInt16(), right.AsUInt16()).As<ushort, T>();
+                }
+                else if (sizeof(T) == 4)
+                {
+                    return AdvSimd.And(left.AsUInt32(), right.AsUInt32()).As<uint, T>();
+                }
+                else if (sizeof(T) == 8)
+                {
+                    return AdvSimd.And(left.AsUInt64(), right.AsUInt64()).As<ulong, T>();
+                }
+                return SoftwareImpl(left, right);
+            }
+
+            static Vector64<T> SoftwareImpl(Vector64<T> left, Vector64<T> right)
+            {
+                ThrowHelper.ThrowForUnsupportedIntrinsicsVector64BaseType<T>();
+
+                Unsafe.SkipInit(out Vector64<T> result);
+                Unsafe.AsRef(in result._00) = left._00 & right._00;
+
+                return result;
+            }
         }
 
         /// <summary>Computes the bitwise-or of two vectors.</summary>
@@ -214,12 +250,48 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector64<T> operator |(Vector64<T> left, Vector64<T> right)
         {
-            ThrowHelper.ThrowForUnsupportedIntrinsicsVector64BaseType<T>();
+            // While op_BitwiseOr is technically size independent, there are
+            // some opportunistic lightup optimizations that can kick in depending
+            // on the size of T. One such example is embedded masking.
 
-            Unsafe.SkipInit(out Vector64<T> result);
-            Unsafe.AsRef(in result._00) = left._00 | right._00;
+            if (AdvSimd.IsSupported)
+            {
+                return ArmImpl(left, right);
+            }
+            return SoftwareImpl(left, right);
 
-            return result;
+            [CompExactlyDependsOn(typeof(AdvSimd))]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static Vector64<T> ArmImpl(Vector64<T> left, Vector64<T> right)
+            {
+                if (sizeof(T) == 1)
+                {
+                    return AdvSimd.Or(left.AsByte(), right.AsByte()).As<byte, T>();
+                }
+                else if (sizeof(T) == 2)
+                {
+                    return AdvSimd.Or(left.AsUInt16(), right.AsUInt16()).As<ushort, T>();
+                }
+                else if (sizeof(T) == 4)
+                {
+                    return AdvSimd.Or(left.AsUInt32(), right.AsUInt32()).As<uint, T>();
+                }
+                else if (sizeof(T) == 8)
+                {
+                    return AdvSimd.Or(left.AsUInt64(), right.AsUInt64()).As<ulong, T>();
+                }
+                return SoftwareImpl(left, right);
+            }
+
+            static Vector64<T> SoftwareImpl(Vector64<T> left, Vector64<T> right)
+            {
+                ThrowHelper.ThrowForUnsupportedIntrinsicsVector64BaseType<T>();
+
+                Unsafe.SkipInit(out Vector64<T> result);
+                Unsafe.AsRef(in result._00) = left._00 | right._00;
+
+                return result;
+            }
         }
 
         /// <summary>Divides two vectors to compute their quotient.</summary>
@@ -289,12 +361,48 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector64<T> operator ^(Vector64<T> left, Vector64<T> right)
         {
-            ThrowHelper.ThrowForUnsupportedIntrinsicsVector64BaseType<T>();
+            // While op_ExclusiveOr is technically size independent, there are
+            // some opportunistic lightup optimizations that can kick in depending
+            // on the size of T. One such example is embedded masking.
 
-            Unsafe.SkipInit(out Vector64<T> result);
-            Unsafe.AsRef(in result._00) = left._00 ^ right._00;
+            if (AdvSimd.IsSupported)
+            {
+                return ArmImpl(left, right);
+            }
+            return SoftwareImpl(left, right);
 
-            return result;
+            [CompExactlyDependsOn(typeof(AdvSimd))]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static Vector64<T> ArmImpl(Vector64<T> left, Vector64<T> right)
+            {
+                if (sizeof(T) == 1)
+                {
+                    return AdvSimd.Xor(left.AsByte(), right.AsByte()).As<byte, T>();
+                }
+                else if (sizeof(T) == 2)
+                {
+                    return AdvSimd.Xor(left.AsUInt16(), right.AsUInt16()).As<ushort, T>();
+                }
+                else if (sizeof(T) == 4)
+                {
+                    return AdvSimd.Xor(left.AsUInt32(), right.AsUInt32()).As<uint, T>();
+                }
+                else if (sizeof(T) == 8)
+                {
+                    return AdvSimd.Xor(left.AsUInt64(), right.AsUInt64()).As<ulong, T>();
+                }
+                return SoftwareImpl(left, right);
+            }
+
+            static Vector64<T> SoftwareImpl(Vector64<T> left, Vector64<T> right)
+            {
+                ThrowHelper.ThrowForUnsupportedIntrinsicsVector64BaseType<T>();
+
+                Unsafe.SkipInit(out Vector64<T> result);
+                Unsafe.AsRef(in result._00) = left._00 ^ right._00;
+
+                return result;
+            }
         }
 
         /// <summary>Compares two vectors to determine if any elements are not equal.</summary>
@@ -380,12 +488,48 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector64<T> operator ~(Vector64<T> vector)
         {
-            ThrowHelper.ThrowForUnsupportedIntrinsicsVector64BaseType<T>();
+            // While op_OnesComplement is technically size independent, there are
+            // some opportunistic lightup optimizations that can kick in depending
+            // on the size of T. One such example is embedded masking.
 
-            Unsafe.SkipInit(out Vector64<T> result);
-            Unsafe.AsRef(in result._00) = ~vector._00;
+            if (AdvSimd.IsSupported)
+            {
+                return ArmImpl(vector);
+            }
+            return SoftwareImpl(vector);
 
-            return result;
+            [CompExactlyDependsOn(typeof(AdvSimd))]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static Vector64<T> ArmImpl(Vector64<T> vector)
+            {
+                if (sizeof(T) == 1)
+                {
+                    return AdvSimd.Not(vector.AsByte()).As<byte, T>();
+                }
+                else if (sizeof(T) == 2)
+                {
+                    return AdvSimd.Not(vector.AsUInt16()).As<ushort, T>();
+                }
+                else if (sizeof(T) == 4)
+                {
+                    return AdvSimd.Not(vector.AsUInt32()).As<uint, T>();
+                }
+                else if (sizeof(T) == 8)
+                {
+                    return AdvSimd.Not(vector.AsUInt64()).As<ulong, T>();
+                }
+                return SoftwareImpl(vector);
+            }
+
+            static Vector64<T> SoftwareImpl(Vector64<T> vector)
+            {
+                ThrowHelper.ThrowForUnsupportedIntrinsicsVector64BaseType<T>();
+
+                Unsafe.SkipInit(out Vector64<T> result);
+                Unsafe.AsRef(in result._00) = ~vector._00;
+
+                return result;
+            }
         }
 
         /// <summary>Shifts (signed) each element of a vector right by the specified amount.</summary>
