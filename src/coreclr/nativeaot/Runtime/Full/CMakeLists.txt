@@ -92,10 +92,10 @@ add_custom_target(
 )
 
 add_library(Runtime.AsmHelpers OBJECT ${RUNTIME_SOURCES_ARCH_ASM})
-add_dependencies(RuntimeAsmHelpers Runtime.AsmHelpers)
+add_dependencies(Runtime.AsmHelpers RuntimeAsmHelpers)
 
-target_link_libraries(Runtime.WorkstationGC PRIVATE RuntimeAsmHelpers Runtime.AsmHelpers)
-target_link_libraries(Runtime.ServerGC PRIVATE RuntimeAsmHelpers Runtime.AsmHelpers)
+target_link_libraries(Runtime.WorkstationGC PRIVATE Runtime.AsmHelpers)
+target_link_libraries(Runtime.ServerGC PRIVATE Runtime.AsmHelpers)
 
 install_static_library(Runtime.WorkstationGC aotsdk nativeaot)
 install_static_library(Runtime.ServerGC aotsdk nativeaot)
