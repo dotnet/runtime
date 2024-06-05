@@ -39,22 +39,7 @@ else(CLR_CMAKE_HOST_WIN32)
         # This option is necessary to ensure that the overloaded delete operator defined inside
         # of the utilcode will be used instead of the standard library delete operator.
         add_linker_flag("-Wl,-Bsymbolic")
-
-        # The following linked options can be inserted into the linker libraries list to
-        # ensure proper resolving of circular references between a subset of the libraries.
-        set(START_LIBRARY_GROUP -Wl,--start-group)
-        set(END_LIBRARY_GROUP -Wl,--end-group)
-
-        # These options are used to force every object to be included even if it's unused.
-        set(START_WHOLE_ARCHIVE -Wl,--whole-archive)
-        set(END_WHOLE_ARCHIVE -Wl,--no-whole-archive)
     endif(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD OR CLR_CMAKE_TARGET_SUNOS OR CLR_CMAKE_HOST_HAIKU)
-
-    if(CLR_CMAKE_TARGET_OSX)
-        # These options are used to force every object to be included even if it's unused.
-        set(START_WHOLE_ARCHIVE -force_load)
-        set(END_WHOLE_ARCHIVE )
-    endif(CLR_CMAKE_TARGET_OSX)
 
     set_exports_linker_option(${EXPORTS_FILE})
 
@@ -89,12 +74,8 @@ endif (CLR_CMAKE_HOST_UNIX)
 # library.
 set(CORECLR_LIBRARIES
     utilcode
-    ${START_LIBRARY_GROUP} # Start group of libraries that have circular references
-    cordbee_wks
-    debug-pal
-    ${LIB_UNWINDER}
-    v3binder
-    ${END_LIBRARY_GROUP} # End group of libraries that have circular references
+    # Libraries that have circular references
+    $<LINK_GROUP:RESCAN,cordbee_wks,debug-pal,${LIB_UNWINDER},v3binder>
     mdcompiler_wks
     mdruntime_wks
     mdruntimerw_wks
@@ -136,9 +117,7 @@ if(CLR_CMAKE_TARGET_WIN32)
     )
 else()
     list(APPEND CORECLR_LIBRARIES
-        ${START_WHOLE_ARCHIVE} # force all PAL objects to be included so all exports are available
-        coreclrpal
-        ${END_WHOLE_ARCHIVE}
+        $<LINK_LIBRARY:WHOLE_ARCHIVE,coreclrpal> # force all PAL objects to be included so all exports are available
         mscorrc
         palrt
     )
@@ -146,9 +125,7 @@ endif(CLR_CMAKE_TARGET_WIN32)
 
 if(CLR_CMAKE_TARGET_LINUX)
     list(APPEND CORECLR_LIBRARIES
-        ${START_WHOLE_ARCHIVE}
-        tracepointprovider
-        ${END_WHOLE_ARCHIVE}
+        $<LINK_LIBRARY:WHOLE_ARCHIVE,tracepointprovider>
     )
 elseif(CLR_CMAKE_TARGET_SUNOS)
     list(APPEND CORECLR_LIBRARIES

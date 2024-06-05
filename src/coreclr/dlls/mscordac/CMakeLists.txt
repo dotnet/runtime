@@ -20,10 +20,6 @@ if(CLR_CMAKE_HOST_WIN32)
 
     # Create target to add file dependency on mscordac.def
     add_custom_target(mscordaccore_def DEPENDS ${CURRENT_BINARY_DIR_FOR_CONFIG}/mscordac.def)
-
-    # No library groups for Win32
-    set(START_LIBRARY_GROUP)
-    set(END_LIBRARY_GROUP)
 else(CLR_CMAKE_HOST_WIN32)
     set(DEF_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/mscordac_unixexports.src)
     set(EXPORTS_FILE ${CMAKE_CURRENT_BINARY_DIR}/mscordac.exports)
@@ -84,15 +80,6 @@ else(CLR_CMAKE_HOST_WIN32)
         # This option is necessary to ensure that the overloaded delete operator defined inside
         # of the utilcode will be used instead of the standard library delete operator.
         set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic")
-
-        # The following linked options can be inserted into the linker libraries list to
-        # ensure proper resolving of circular references between a subset of the libraries.
-        set(START_LIBRARY_GROUP -Wl,--start-group)
-        set(END_LIBRARY_GROUP -Wl,--end-group)
-
-        # These options are used to force every object to be included even if it's unused.
-        set(START_WHOLE_ARCHIVE -Wl,--whole-archive)
-        set(END_WHOLE_ARCHIVE -Wl,--no-whole-archive)
     endif(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS OR CLR_CMAKE_HOST_HAIKU)
 
     set_exports_linker_option(${EXPORTS_FILE})
@@ -120,20 +107,9 @@ endif(CLR_CMAKE_HOST_UNIX)
 # order dependent and changing the order can result in undefined symbols in the shared
 # library.
 set(COREDAC_LIBRARIES
-    ${START_LIBRARY_GROUP} # Start group of libraries that have circular references
-    cee_dac
-    cordbee_dac
-    ${START_WHOLE_ARCHIVE} # force all exports to be available
-    corguids
-    daccess
-    ${END_WHOLE_ARCHIVE}
-    dbgutil
-    mdcompiler_dac
-    mdruntime_dac
-    mdruntimerw_dac
-    utilcode_dac
-    unwinder_dac
-    ${END_LIBRARY_GROUP} # End group of libraries that have circular references
+    # These libraries have circular dependencies and must be grouped together
+    # The libraries in the WHOLE_ARCHIVE group must have all of their symbols included in the final shared object
+    $<GENEX_EVAL$<LINK_GROUP:RESCAN,cee_dac,cordbee_dac,$<LINK_LIBRARY:WHOLE_ARCHIVE,corguids,daccess>,dbgutil,mdcompiler_dac,mdruntime_dac,mdruntimerw_dac,utilcode_dac,unwinder_dac>>
 )
 
 if(CLR_CMAKE_HOST_WIN32)
@@ -173,11 +149,8 @@ if(CLR_CMAKE_HOST_WIN32)
 else(CLR_CMAKE_HOST_WIN32)
     list(APPEND COREDAC_LIBRARIES
         mscorrc
-        ${START_WHOLE_ARCHIVE} # force all PAL objects to be included so all exports are available
-        coreclrpal
-        palrt
-        coreclrminipal
-        ${END_WHOLE_ARCHIVE}
+        # force all PAL objects to be included so all exports are available
+        $<LINK_LIBRARY:WHOLE_ARCHIVE,coreclrpal,palrt,coreclrminipal>
     )
 endif(CLR_CMAKE_HOST_WIN32)
 
