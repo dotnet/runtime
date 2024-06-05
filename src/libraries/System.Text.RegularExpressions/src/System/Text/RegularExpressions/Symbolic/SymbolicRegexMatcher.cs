@@ -503,11 +503,12 @@ namespace System.Text.RegularExpressions.Symbolic
                     pos + CharsPerTimeoutCheck :
                     input.Length;
 
+                // one-off check for input end
                 if (pos == input.Length && currentState.NfaState is null)
                 {
-                    if ((!_stateFlagsArray[currentState.DfaStateId].IsNullable() &&
-                         !_stateArray[currentState.DfaStateId]!.IsNullableFor(
-                             GetPositionKind(-1))))
+                    if (!(_stateFlagsArray[currentState.DfaStateId].IsNullable() ||
+                            _stateArray[currentState.DfaStateId]!.IsNullableFor(
+                                GetPositionKind(-1))))
                     {
                         break;
                     }
@@ -516,6 +517,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     endStateId = currentState.DfaStateId;
                     break;
                 }
+
 
                 bool done;
                 if (currentState.NfaState is not null)
@@ -544,7 +546,6 @@ namespace System.Text.RegularExpressions.Symbolic
                             TNullabilityHandler>(input, innerLoopLength, mode, ref pos, ref currentState, ref endPos,
                             ref endStateId, ref initialStatePos, ref initialStatePosCandidate);
                 }
-
                 // If the inner loop indicates that the search finished (for example due to reaching a deadend state) or
                 // there is no more input available, then the whole search is done.
                 if (done || pos >= input.Length)
@@ -626,15 +627,15 @@ namespace System.Text.RegularExpressions.Symbolic
                     // Note: the order here is important so the transition gets taken
                     if (!DfaStateHandler.TryTakeDFATransition(this, ref currStateId, positionId)|| pos >= lengthMinus1)
                     {
-                        pos++;
-                        if (pos < input.Length)
+                        if (pos + 1 < input.Length)
                         {
                             return false;
                         }
+                        pos++;
                         // one off check for the final position
                         // this is just to move it out of the hot loop
-                        if ((!_stateFlagsArray[currStateId].IsNullable() &&
-                             !_stateArray[currStateId]!.IsNullableFor(
+                        if (!(_stateFlagsArray[currStateId].IsNullable() ||
+                             _stateArray[currStateId]!.IsNullableFor(
                                  GetPositionKind(-1))))
                         {
                             return false;
@@ -710,15 +711,15 @@ namespace System.Text.RegularExpressions.Symbolic
                     // Note: the order here is important so the transition gets taken
                     if (!DfaStateHandler.TryTakeDFATransition(this, ref currStateId, mtlookup[input[pos]])|| pos >= lengthMinus1)
                     {
-                        pos++;
-                        if (pos < input.Length)
+                        if (pos + 1 < input.Length)
                         {
                             return false;
                         }
+                        pos++;
                         // one off check for the final position
                         // this is just to move it out of the hot loop
-                        if ((!_stateFlagsArray[currStateId].IsNullable() &&
-                             !_stateArray[currStateId]!.IsNullableFor(
+                        if (!(_stateFlagsArray[currStateId].IsNullable() ||
+                             _stateArray[currStateId]!.IsNullableFor(
                                  GetPositionKind(-1))))
                         {
                             return false;
@@ -1722,7 +1723,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 where TStateHandler : struct, IStateHandler
             {
                 Debug.Assert(!matcher._pattern._info.ContainsSomeAnchor);
-                return matcher.IsNullableWithContext(state.DfaStateId, positionId);
+                return flags.IsNullable();
             }
         }
 
@@ -1736,6 +1737,8 @@ namespace System.Text.RegularExpressions.Symbolic
                 where TStateHandler : struct, IStateHandler
             {
                 return flags.IsNullable() || (flags.CanBeNullable() && TStateHandler.IsNullableFor(matcher, in state, matcher.GetPositionKind(positionId)));
+                // cannot be used in NFA mode
+                // return matcher.IsNullableWithContext(state.DfaStateId, positionId);
             }
         }
     }
