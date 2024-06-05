@@ -1433,6 +1433,9 @@ public:
 
 #ifndef HAS_COMPACT_ENTRYPOINTS
     void EnsureTemporaryEntryPoint(LoaderAllocator *pLoaderAllocator);
+
+    // pamTracker must be NULL for a MethodDesc which cannot be freed by an external AllocMemTracker
+    // OR must be set to point to the same AllocMemTracker that controls allocation of the MethodDesc
     void EnsureTemporaryEntryPointCore(LoaderAllocator *pLoaderAllocator, AllocMemTracker *pamTracker);
 
 #ifndef DACCESS_COMPILE
@@ -1720,6 +1723,8 @@ public:
 #endif
 
 #ifndef DACCESS_COMPILE
+    // pamTracker must be NULL for a MethodDesc which cannot be freed by an external AllocMemTracker
+    // OR must be set to point to the same AllocMemTracker that controls allocation of the MethodDesc
     HRESULT EnsureCodeDataExists(AllocMemTracker *pamTracker);
 
     HRESULT SetMethodDescVersionState(PTR_MethodDescVersioningState state);

@@ -3069,8 +3069,7 @@ void MethodDesc::EnsureTemporaryEntryPoint(LoaderAllocator *pLoaderAllocator)
 
     if (GetTemporaryEntryPoint_NoAlloc() == (PCODE)NULL)
     {
-        AllocMemTracker amt;
-        EnsureTemporaryEntryPointCore(pLoaderAllocator, &amt);
+        EnsureTemporaryEntryPointCore(pLoaderAllocator, NULL);
     }
 }
 
@@ -3089,12 +3088,13 @@ void MethodDesc::EnsureTemporaryEntryPointCore(LoaderAllocator *pLoaderAllocator
         PTR_PCODE pSlot = GetAddrOfSlot();
 
         AllocMemTracker amt;
-        Precode* pPrecode = Precode::Allocate(GetPrecodeType(), this, GetLoaderAllocator(), &amt);
+        AllocMemTracker *pamTrackerPrecode = pamTracker != NULL ? pamTracker : &amt;
+        Precode* pPrecode = Precode::Allocate(GetPrecodeType(), this, GetLoaderAllocator(), pamTrackerPrecode);
 
         IfFailThrow(EnsureCodeDataExists(pamTracker));
 
         if (InterlockedCompareExchangeT(&m_codeData->m_pTemporaryEntryPoint, pPrecode->GetEntryPoint(), (PCODE)NULL) == (PCODE)NULL)
-            amt.SuppressRelease();
+            amt.SuppressRelease(); // We only need to suppress the release if we are working with a MethodDesc which is not newly allocated
 
         PCODE tempEntryPoint = GetTemporaryEntryPoint_NoAlloc();
         _ASSERTE(tempEntryPoint != (PCODE)NULL);
