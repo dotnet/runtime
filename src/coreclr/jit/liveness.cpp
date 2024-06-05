@@ -607,6 +607,11 @@ bool Compiler::fgIsPreLive(GenTree* tree)
             return true;
         }
 
+        if (compJmpOpUsed && lclDsc->lvIsParam)
+        {
+            return true;
+        }
+
         return false;
     }
 
