@@ -808,7 +808,7 @@ void CodeGen::genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask,
     if (maskSaveRegs != 0)
     {
         genSaveCalleeSavedRegisterGroup(maskSaveRegs, FIRST_FLT_CALLEE_SAVED, spDelta, lowestCalleeSavedOffset);
-        lowestCalleeSavedOffset += genCountBits((uint64_t)maskSaveRegs) * REGSIZE_BYTES;
+        lowestCalleeSavedOffset += (int)(genCountBits(maskSaveRegs) * REGSIZE_BYTES);
         spDelta = 0;
     }
 
@@ -816,7 +816,7 @@ void CodeGen::genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask,
     if (maskSaveRegs != 0)
     {
         genSaveCalleeSavedRegisterGroup(maskSaveRegs, FIRST_INT_CALLEE_SAVED, spDelta, lowestCalleeSavedOffset);
-        lowestCalleeSavedOffset += genCountBits((uint64_t)maskSaveRegs) * REGSIZE_BYTES;
+        lowestCalleeSavedOffset += (int)(genCountBits(maskSaveRegs) * REGSIZE_BYTES);
         spDelta = 0;
     }
 
@@ -950,7 +950,7 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask,
     // Point past the end, to start. We predecrement to find the offset to load from.
     static_assert_no_msg(REGSIZE_BYTES == FPSAVE_REGSIZE_BYTES);
     assert(lowestCalleeSavedOffset >= 0);
-    int spDelta2 = (regsToRestoreMask & RBM_CALLEE_SAVED) != 0 ? 0 : spDelta;
+    int spDelta2 = (regsToRestoreMask & (RBM_CALLEE_SAVED | RBM_FP | RBM_LR)) != 0 ? 0 : spDelta;
     int spOffset = (genCountBits(regsToRestoreMask) * REGSIZE_BYTES) + lowestCalleeSavedOffset;
 
     uint64_t maskSaveRegs = (regsToRestoreMask.getLow() & (RBM_FP | RBM_LR)) >> REG_FP;
@@ -972,7 +972,7 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask,
     {
         spDelta2 = (regsToRestoreMask & RBM_FLT_CALLEE_SAVED) != 0 ? 0 : spDelta;
         genRestoreCalleeSavedRegisterGroup((regMaskTP)maskSaveRegs, LAST_INT_CALLEE_SAVED, spDelta2, spOffset);
-        spOffset -= (int)genCountBits(maskSaveRegs) * REGSIZE_BYTES;
+        spOffset -= (int)(genCountBits((regMaskTP)maskSaveRegs) * REGSIZE_BYTES);
     }
 
     maskSaveRegs = (uint64_t)(regsToRestoreMask.getLow() & RBM_FLT_CALLEE_SAVED);
@@ -980,7 +980,7 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask,
     {
         genRestoreCalleeSavedRegisterGroup((regMaskTP)maskSaveRegs, LAST_FLT_CALLEE_SAVED, spDelta, spOffset);
     }
-    assert((spOffset - (int)genCountBits(maskSaveRegs) * REGSIZE_BYTES) == lowestCalleeSavedOffset);
+    assert((spOffset - (int)genCountBits((regMaskTP)maskSaveRegs) * REGSIZE_BYTES) == lowestCalleeSavedOffset);
 }
 
 // clang-format off

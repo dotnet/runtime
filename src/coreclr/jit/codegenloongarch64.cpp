@@ -287,9 +287,9 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask,
     assert((highestCalleeSavedOffset & 7) == 0);
     assert(highestCalleeSavedOffset >= 16);
 
-    emitter* emit         = GetEmitter();
-    int64_t  maskSaveRegs = (int64_t)(regsToRestoreMask.getLow() & RBM_FLT_CALLEE_SAVED) << (63 - LAST_FLT_CALLEE_SAVED);
-    int      regNum       = LAST_FLT_CALLEE_SAVED;
+    emitter* emit        = GetEmitter();
+    int64_t maskSaveRegs = (int64_t)(regsToRestoreMask.getLow() & RBM_FLT_CALLEE_SAVED) << (63 - LAST_FLT_CALLEE_SAVED);
+    int     regNum       = LAST_FLT_CALLEE_SAVED;
     do
     {
         if (maskSaveRegs < 0)
