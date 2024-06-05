@@ -15,6 +15,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 include(CheckCCompilerFlag)
 include(CheckCXXCompilerFlag)
 include(CheckLinkerFlag)
+include(CheckIPOSupported)
 
 # "configureoptimization.cmake" must be included after CLR_CMAKE_HOST_UNIX has been set.
 include(${CMAKE_CURRENT_LIST_DIR}/configureoptimization.cmake)
@@ -151,6 +152,15 @@ elseif (CLR_CMAKE_HOST_UNIX)
     add_compile_options(-Wno-implicit-int-float-conversion)
   endif()
 endif(MSVC)
+
+check_ipo_supported(RESULT result OUTPUT output)
+if(result)
+  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
+  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_DEBUG OFF)
+  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_CHECKED OFF)
+else()
+  message(WARNING "IPO is not supported: ${output}")
+endif()
 
 if (CLR_CMAKE_ENABLE_SANITIZERS)
   set (CLR_CMAKE_BUILD_SANITIZERS "")
@@ -937,10 +947,6 @@ if (MSVC)
   # Don't display the output header when building asm files.
   set(CMAKE_ASM_MASM_FLAGS "${CMAKE_ASM_MASM_FLAGS} /nologo")
 endif (MSVC)
-
-set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
-set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_DEBUG OFF)
-set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_CHECKED OFF)
 
 # Configure non-MSVC compiler flags that apply to all platforms (unix-like or otherwise)
 if (NOT MSVC)
