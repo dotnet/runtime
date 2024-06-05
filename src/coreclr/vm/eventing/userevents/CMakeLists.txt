@@ -16,7 +16,6 @@ endif()
 
 include(${CLR_SRC_NATIVE_DIR}/external/LinuxTracepoints.cmake)
 
-add_definitions(-DPAL_STDCPP_COMPAT=1)
 include_directories(${COREPAL_SOURCE_DIR}/inc/rt)
 
 # TODO: keep in sync with providers in ClrEtwAll.man
