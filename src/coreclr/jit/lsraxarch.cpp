@@ -2467,88 +2467,31 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 }
                 unsigned resultOpNum = intrinsicTree->GetResultOpNumForRmwIntrinsic(user, op1, op2, op3);
 
-                unsigned containedOpNum = 0;
-
-                // containedOpNum remains 0 when no operand is contained or regOptional
-                if (op1->isContained() || op1->IsRegOptional())
-                {
-                    containedOpNum = 1;
-                }
-                else if (op2->isContained() || op2->IsRegOptional())
-                {
-                    containedOpNum = 2;
-                }
-                else if (op3->isContained() || op3->IsRegOptional())
-                {
-                    containedOpNum = 3;
-                }
-
-                GenTree* emitOp1 = op1;
-                GenTree* emitOp2 = op2;
-                GenTree* emitOp3 = op3;
-
                 // Intrinsics with CopyUpperBits semantics must have op1 as target
-                assert(containedOpNum != 1 || !copiesUpperBits);
-
-                // We need to keep this in sync with hwintrinsiccodegenxarch.cpp
-                // Ideally we'd actually swap the operands here and simplify codegen
-                // but its a bit more complicated to do so for many operands as well
-                // as being complicated to tell codegen how to pick the right instruction
-
-                if (containedOpNum == 1)
+                if (copiesUpperBits)
                 {
-                    // https://github.com/dotnet/runtime/issues/62215
-                    // resultOpNum might change between lowering and lsra, comment out assertion for now.
-                    // assert(containedOpNum != resultOpNum);
-                    // resultOpNum is 3 or 0: op3/? = ([op1] * op2) + op3
-                    std::swap(emitOp1, emitOp3);
+                    resultOpNum = 1;
+                }
 
-                    if (resultOpNum == 2)
+                GenTree* ops[]    = {op1, op2, op3};
+                GenTree* resultOp = ops[resultOpNum - 1];
+
+                for (GenTree* op : ops)
+                {
+                    if (op == resultOp)
                     {
-                        // op2 = ([op1] * op2) + op3
-                        std::swap(emitOp1, emitOp2);
+                        tgtPrefUse = BuildUse(op);
+                        srcCount++;
+                    }
+                    else if (op->isContained() || op->IsRegOptional())
+                    {
+                        srcCount += op->isContained() ? BuildOperandUses(op) : BuildDelayFreeUses(op, resultOp);
+                    }
+                    else
+                    {
+                        srcCount += BuildDelayFreeUses(op, resultOp);
                     }
                 }
-                else if (containedOpNum == 3)
-                {
-                    // assert(containedOpNum != resultOpNum);
-                    if (resultOpNum == 2 && !copiesUpperBits)
-                    {
-                        // op2 = (op1 * op2) + [op3]
-                        std::swap(emitOp1, emitOp2);
-                    }
-                    // else: op1/? = (op1 * op2) + [op3]
-                }
-                else if (containedOpNum == 2)
-                {
-                    // assert(containedOpNum != resultOpNum);
-
-                    // op1/? = (op1 * [op2]) + op3
-                    std::swap(emitOp2, emitOp3);
-                    if (resultOpNum == 3 && !copiesUpperBits)
-                    {
-                        // op3 = (op1 * [op2]) + op3
-                        std::swap(emitOp1, emitOp2);
-                    }
-                }
-                else
-                {
-                    // containedOpNum == 0
-                    // no extra work when resultOpNum is 0 or 1
-                    if (resultOpNum == 2)
-                    {
-                        std::swap(emitOp1, emitOp2);
-                    }
-                    else if (resultOpNum == 3)
-                    {
-                        std::swap(emitOp1, emitOp3);
-                    }
-                }
-                tgtPrefUse = BuildUse(emitOp1);
-
-                srcCount += 1;
-                srcCount += BuildDelayFreeUses(emitOp2, emitOp1);
-                srcCount += emitOp3->isContained() ? BuildOperandUses(emitOp3) : BuildDelayFreeUses(emitOp3, emitOp1);
 
                 if (intrinsicTree->OperIsEmbRoundingEnabled() && !intrinsicTree->Op(4)->IsCnsIntOrI())
                 {
