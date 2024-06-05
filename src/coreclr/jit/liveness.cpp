@@ -568,14 +568,25 @@ void Compiler::fgPerBlockLocalVarLiveness()
 #endif // DEBUG
 }
 
+//------------------------------------------------------------------------
+// fgIsPreLive:
+//   Check if an IR node should be considered as part of the "prelive" set.
+//
+// Return Value:
+//   True if the node has a side-effect.
+//
+// Remarks:
+//   The prelive set are nodes that always need to be retained. These are the
+//   "seeds" to the aggressive DCE algorithm.
+//
 bool Compiler::fgIsPreLive(GenTree* tree)
 {
-    if (tree->OperIs(GT_STOREIND, GT_STORE_BLK) || tree->IsCall())
+    if (tree->OperIs(GT_STOREIND, GT_STORE_BLK, GT_CALL, GT_NO_OP))
     {
         return true;
     }
 
-    if (tree->OperIs(GT_RETURN))
+    if (tree->OperIs(GT_RETURN, GT_RETFILT, GT_SWIFT_ERROR_RET))
     {
         return true;
     }
@@ -588,6 +599,9 @@ bool Compiler::fgIsPreLive(GenTree* tree)
             return true;
         }
 
+        // We currently cannot go from the use of a promoted struct local to
+        // its field's definition, so we have to consider these cases
+        // conservatively.
         if (lvaGetDesc(lclDsc->lvParentLcl)->lvDoNotEnregister)
         {
             return true;
@@ -596,7 +610,7 @@ bool Compiler::fgIsPreLive(GenTree* tree)
         return false;
     }
 
-    if (tree->OperMayThrow(this))
+    if (tree->OperRequiresAsgFlag() || tree->OperMayThrow(this) || tree->OperRequiresCallFlag(this))
     {
         return true;
     }
@@ -605,16 +619,24 @@ bool Compiler::fgIsPreLive(GenTree* tree)
 }
 
 static NodeCounts s_nodeCounts;
-static DumpOnShutdown d("Removable node types", &s_nodeCounts);
+//static DumpOnShutdown d("Removable node types", &s_nodeCounts);
 
 //------------------------------------------------------------------------
 // fgSsaBasedDce:
-//   
+//   Do aggressive SSA-based dead code elimination.
 //
 // Return Value:
+//   Suitable phase status.
+//
+// Remarks:
+//   Unlike the liveness based DCE, this DCE pass is able to remove loops that
+//   do not compute anything that meaningful. The algorithm implemented appears
+//   in Cytron, Ron, et al. "Efficiently computing static single assignment
+//   form and the control dependence graph."
 //
 PhaseStatus Compiler::fgSsaBasedDce()
 {
+    m_dfsTree = fgComputeDfs();
     BlockReachabilitySets* reachabilitySets = BlockReachabilitySets::Build(m_dfsTree);
     TreeSet* live = new (this, CMK_Liveness) TreeSet(getAllocator(CMK_Liveness));
 
@@ -673,13 +695,18 @@ PhaseStatus Compiler::fgSsaBasedDce()
                 });
         }
 
-        if (node->OperIsLocalRead())
+        if (node->OperIsLocalRead() || node->OperIs(GT_STORE_LCL_FLD))
         {
             GenTreeLclVarCommon* lcl = node->AsLclVarCommon();
             LclVarDsc* lclDsc = lvaGetDesc(lcl);
             if (lclDsc->lvInSsa)
             {
                 LclSsaVarDsc* ssaDsc = lclDsc->GetPerSsaData(lcl->GetSsaNum());
+                if (node->OperIs(GT_STORE_LCL_FLD))
+                {
+                    ssaDsc = lclDsc->GetPerSsaData(ssaDsc->GetUseDefSsaNum());
+                }
+
                 GenTreeLclVarCommon* defNode = ssaDsc->GetDefNode();
                 if (defNode != nullptr && !live->Set(defNode, true, TreeSet::Overwrite))
                 {
@@ -702,26 +729,88 @@ PhaseStatus Compiler::fgSsaBasedDce()
             });
     }
 
-    for (BasicBlock* block : Blocks())
+    struct ExtractVisitor : GenTreeVisitor<ExtractVisitor>
     {
-        for (Statement* stmt : block->Statements())
+    private:
+        TreeSet* m_live;
+        BasicBlock* m_block;
+        Statement* m_insertBefore;
+
+    public:
+        enum
         {
-            for (GenTree* tree : stmt->TreeList())
+            DoPreOrder       = true,
+            UseExecutionOrder = true,
+        };
+
+        ExtractVisitor(Compiler* comp, TreeSet* live, BasicBlock* block, Statement* insertBefore)
+            : GenTreeVisitor(comp), m_live(live), m_block(block), m_insertBefore(insertBefore)
+        {
+        }
+
+        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+        {
+            GenTree* node = *use;
+            if (!m_live->Lookup(node))
             {
-                if (!live->Lookup(tree))
+                return WALK_CONTINUE;
+            }
+
+            Statement* newStmt = m_compiler->fgNewStmtFromTree(node, m_insertBefore->GetDebugInfo());
+            m_compiler->fgInsertStmtBefore(m_block, m_insertBefore, newStmt);
+            JITDUMP("Extracted [%06u]\n", Compiler::dspTreeID(node));
+            DISPSTMT(newStmt);
+            JITDUMP("\n");
+
+            return WALK_SKIP_SUBTREES;
+        }
+    };
+
+    bool changed = false;
+    for (unsigned i = m_dfsTree->GetPostOrderCount(); i != 0; i--)
+    {
+        BasicBlock* block = m_dfsTree->GetPostOrder(i - 1);
+
+        Statement* stmt = block->firstStmt();
+        while (stmt != nullptr)
+        {
+            Statement* nextStmt = stmt->GetNextStmt();
+
+            if (live->Lookup(stmt->GetRootNode()))
+            {
+                stmt = nextStmt;
+                continue;
+            }
+
+            ExtractVisitor visitor(this, live, block, stmt);
+            // Extract live children nodes in execution order.
+            visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
+
+            if (block->HasTerminator() && (stmt == block->lastStmt()))
+            {
+                assert(block->KindIs(BBJ_COND, BBJ_SWITCH));
+                FlowEdge* bestSuccEdge = nullptr;
+                for (FlowEdge* edge : block->SuccEdges())
                 {
-                    if (!tree->OperIs(GT_NOP, GT_COMMA, GT_PHI_ARG, GT_PHI) && !tree->IsPhiDefn())
+                    if ((bestSuccEdge == nullptr) ||
+                        (edge->getDestinationBlock()->bbPostorderNum > bestSuccEdge->getDestinationBlock()->bbPostorderNum))
                     {
-                        Metrics.AggressiveDceDeadNodes++;
-                        JITDUMP("We could delete [%06u]\n", dspTreeID(tree));
-                        s_nodeCounts.record(tree->gtOper);
+                        bestSuccEdge = edge;
                     }
                 }
+
+                block->SetKindAndTargetEdge(BBJ_ALWAYS, bestSuccEdge);
             }
+
+            fgRemoveStmt(block, stmt);
+            changed = true;
+            stmt = nextStmt;
         }
     }
 
-    return PhaseStatus::MODIFIED_NOTHING;
+    fgInvalidateDfsTree();
+
+    return changed ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
 // Helper functions to mark variables live over their entire scope

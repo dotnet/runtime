@@ -6351,7 +6351,6 @@ BlockReachabilitySets* BlockReachabilitySets::Build(const FlowGraphDfsTree* dfsT
         sets[i] = BitVecOps::MakeSingleton(&postOrderTraits, i);
     }
 
-    // Find the reachable blocks. Also, set BBF_GC_SAFE_POINT.
     bool     change;
     unsigned changedIterCount = 1;
     do
@@ -6364,8 +6363,11 @@ BlockReachabilitySets* BlockReachabilitySets::Build(const FlowGraphDfsTree* dfsT
 
             for (BasicBlock* const predBlock : block->PredBlocks())
             {
-                change |= BitVecOps::UnionDChanged(&postOrderTraits, sets[block->bbPostorderNum],
-                                                   sets[predBlock->bbPostorderNum]);
+                if (dfsTree->Contains(predBlock))
+                {
+                    change |= BitVecOps::UnionDChanged(&postOrderTraits, sets[block->bbPostorderNum],
+                        sets[predBlock->bbPostorderNum]);
+                }
             }
         }
 
