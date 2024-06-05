@@ -18,7 +18,7 @@
 typedef struct {
 	BYTE data[64];
 	UINT datalen;
-	ULONG bitlen;
+	unsigned long long bitlen;
 	UINT state[8];
 } SHA256_CTX;
 
@@ -135,14 +135,14 @@ void sha256_final(SHA256_CTX *ctx, BYTE hash[])
 
 	// Append to the padding the total message's length in bits and transform.
 	ctx->bitlen += ctx->datalen * 8;
-	ctx->data[63] = (unsigned char)ctx->bitlen;
-	ctx->data[62] = (unsigned char)(ctx->bitlen >> 8);
-	ctx->data[61] = (unsigned char)(ctx->bitlen >> 16);
-	ctx->data[60] = (unsigned char)(ctx->bitlen >> 24);
-	ctx->data[59] = (unsigned char)(ctx->bitlen >> 32);
-	ctx->data[58] = (unsigned char)(ctx->bitlen >> 40);
-	ctx->data[57] = (unsigned char)(ctx->bitlen >> 48);
-	ctx->data[56] = (unsigned char)(ctx->bitlen >> 56);
+	ctx->data[63] = (BYTE)ctx->bitlen;
+	ctx->data[62] = (BYTE)(ctx->bitlen >> 8);
+	ctx->data[61] = (BYTE)(ctx->bitlen >> 16);
+	ctx->data[60] = (BYTE)(ctx->bitlen >> 24);
+	ctx->data[59] = (BYTE)(ctx->bitlen >> 32);
+	ctx->data[58] = (BYTE)(ctx->bitlen >> 40);
+	ctx->data[57] = (BYTE)(ctx->bitlen >> 48);
+	ctx->data[56] = (BYTE)(ctx->bitlen >> 56);
 	sha256_transform(ctx, ctx->data);
 
 	// Since this implementation uses little endian byte ordering and SHA uses big endian,
