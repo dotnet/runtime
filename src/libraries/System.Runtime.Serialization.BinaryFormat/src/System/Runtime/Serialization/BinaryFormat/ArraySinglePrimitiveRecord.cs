@@ -102,7 +102,7 @@ internal sealed class ArraySinglePrimitiveRecord<T> : ArrayRecord<T>
             {
                 values.Add((T)(object)reader.ReadByte());
             }
-            if (typeof(T) == typeof(bool))
+            else if (typeof(T) == typeof(bool))
             {
                 values.Add((T)(object)reader.ReadBoolean());
             }
