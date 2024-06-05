@@ -45,10 +45,6 @@ public class WasiLibraryModeTests : BuildTestBase
                     <PropertyGroup>
                         <TargetFramework>net9.0</TargetFramework>
                         <RuntimeIdentifier>wasi-wasm</RuntimeIdentifier>
-                        <TargetOs>wasi</TargetOs>
-                        <WasmBuildNative>true</WasmBuildNative>
-                        <WasmNativeStrip>false</WasmNativeStrip>
-                        <IsBrowserWasmProject>false</IsBrowserWasmProject>
                         <WasmSingleFileBundle>true</WasmSingleFileBundle>
                         <OutputType>Library</OutputType>
                         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
