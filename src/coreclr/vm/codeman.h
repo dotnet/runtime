@@ -69,10 +69,6 @@ Abstract:
 #include "gcinfo.h"
 #include "eexcp.h"
 
-#if defined(TARGET_ARM64)
-extern "C" uint64_t GetSveLengthFromOS();
-#endif
-
 class MethodDesc;
 class ICorJitCompiler;
 class IJitManager;
