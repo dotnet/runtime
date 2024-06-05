@@ -586,7 +586,7 @@ bool Compiler::fgIsPreLive(GenTree* tree)
         return true;
     }
 
-    if (tree->OperIs(GT_RETURN, GT_RETFILT, GT_SWIFT_ERROR_RET))
+    if (tree->OperIs(GT_RETURN, GT_RETFILT, GT_SWIFT_ERROR_RET, GT_JMP))
     {
         return true;
     }
@@ -695,7 +695,7 @@ PhaseStatus Compiler::fgSsaBasedDce()
                 });
         }
 
-        if (node->OperIsLocalRead() || node->OperIs(GT_STORE_LCL_FLD))
+        if (node->OperIsLocalRead() || (node->OperIs(GT_STORE_LCL_FLD) && ((node->gtFlags & GTF_VAR_USEASG) != 0)))
         {
             GenTreeLclVarCommon* lcl = node->AsLclVarCommon();
             LclVarDsc* lclDsc = lvaGetDesc(lcl);
@@ -715,9 +715,7 @@ PhaseStatus Compiler::fgSsaBasedDce()
             }
         }
 
-        JITDUMP("Visiting reaching preds of " FMT_BB "\n", block->bbNum);
         reachabilitySets->VisitReachingBlocks(block, [=, &worklist](BasicBlock* pred) {
-            JITDUMP("  Visiting reaching pred " FMT_BB "\n", pred->bbNum);
             if ((pred != block) && pred->KindIs(BBJ_COND, BBJ_SWITCH))
             {
                 GenTree* terminator = pred->lastStmt()->GetRootNode();
@@ -786,20 +784,22 @@ PhaseStatus Compiler::fgSsaBasedDce()
             // Extract live children nodes in execution order.
             visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
 
-            if (block->HasTerminator() && (stmt == block->lastStmt()))
+            if (block->KindIs(BBJ_COND, BBJ_SWITCH) && (stmt == block->lastStmt()))
             {
-                assert(block->KindIs(BBJ_COND, BBJ_SWITCH));
-                FlowEdge* bestSuccEdge = nullptr;
+                BasicBlock* bestSucc = nullptr;
                 for (FlowEdge* edge : block->SuccEdges())
                 {
-                    if ((bestSuccEdge == nullptr) ||
-                        (edge->getDestinationBlock()->bbPostorderNum > bestSuccEdge->getDestinationBlock()->bbPostorderNum))
+                    if ((bestSucc == nullptr) ||
+                        (edge->getDestinationBlock()->bbPostorderNum > bestSucc->bbPostorderNum))
                     {
-                        bestSuccEdge = edge;
+                        bestSucc = edge->getDestinationBlock();
                     }
+
+                    fgRemoveRefPred(edge);
                 }
 
-                block->SetKindAndTargetEdge(BBJ_ALWAYS, bestSuccEdge);
+                FlowEdge* newEdge = fgAddRefPred(bestSucc, block);
+                block->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
             }
 
             fgRemoveStmt(block, stmt);
