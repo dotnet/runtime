@@ -158,9 +158,7 @@ namespace System.Security.Cryptography.X509Certificates
             get => _macIterationLimit;
             set
             {
-                if (value < 0)
-                    throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_NeedNonNegNum);
-
+                CheckNonNegative(value);
                 CheckReadOnly();
                 _macIterationLimit = value;
             }

@@ -1116,7 +1116,7 @@ namespace System.Security.Cryptography
             HashAlgorithmName prf,
             int outputLength)
         {
-#if NETCOREAPP
+#if NET
             return Rfc2898DeriveBytes.Pbkdf2(password, salt, iterationCount, prf, outputLength);
 #else
             using (Rfc2898DeriveBytes pbkdf2 = OpenPbkdf2(password, salt.ToArray(), iterationCount, prf))
@@ -1132,7 +1132,7 @@ namespace System.Security.Cryptography
             int iterationCount,
             HashAlgorithmName prf)
         {
-#if NETCOREAPP || NETSTANDARD2_1_OR_GREATER || NET472_OR_GREATER
+#if NET || NETSTANDARD2_1_OR_GREATER || NET472_OR_GREATER
 #pragma warning disable CA5379
             return new Rfc2898DeriveBytes(
                 password,

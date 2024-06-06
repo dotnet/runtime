@@ -7,7 +7,7 @@ namespace System.Security.Cryptography.X509Certificates
 {
     public partial class X509Certificate
     {
-        private static readonly Pkcs12LoaderLimits s_legacyLimits = MakeLegacyLimits();
+        private static Pkcs12LoaderLimits? s_legacyLimits;
 
         internal static Pkcs12LoaderLimits GetPkcs12Limits(bool fromFile, SafePasswordHandle safePasswordHandle)
         {
@@ -16,21 +16,16 @@ namespace System.Security.Cryptography.X509Certificates
                 return Pkcs12LoaderLimits.DangerousNoLimits;
             }
 
-            return s_legacyLimits;
+            return (s_legacyLimits ??= MakeLegacyLimits());
         }
 
         private static Pkcs12LoaderLimits MakeLegacyLimits()
         {
-            Pkcs12LoaderLimits limits = new Pkcs12LoaderLimits
+            // Start with "no limits", then add back the ones we had from before X509CertificateLoader.
+            Pkcs12LoaderLimits limits = new Pkcs12LoaderLimits(Pkcs12LoaderLimits.DangerousNoLimits)
             {
                 MacIterationLimit = 600_000,
                 IndividualKdfIterationLimit = 600_000,
-                MaxCertificates = null,
-                MaxKeys = null,
-                PreserveCertificateAlias = true,
-                PreserveKeyName = true,
-                PreserveStorageProvider = true,
-                PreserveUnknownAttributes = true,
             };
 
             long totalKdfLimit = LocalAppContextSwitches.Pkcs12UnspecifiedPasswordIterationLimit;

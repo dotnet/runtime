@@ -3,7 +3,7 @@
 
 namespace System.Security.Cryptography
 {
-#if !NETCOREAPP
+#if !NET
     internal enum PbeEncryptionAlgorithm
     {
         Unknown = 0,
