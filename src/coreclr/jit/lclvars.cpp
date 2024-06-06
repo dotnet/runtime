@@ -944,6 +944,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                 {
                     // On LoongArch64 and RISC-V64, if there aren't any remaining floating-point registers to pass the
                     // argument, integer registers (if any) are used instead.
+                    cSlotsToEnregister    = cSlots;
                     canPassArgInRegisters = varDscInfo->canEnreg(argType, cSlots);
                     if (cSlots == 2)
                     {
