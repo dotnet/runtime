@@ -106,8 +106,6 @@ endif()
 
 set(AOT_EVENTPIPE_SHIM_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 
-set (CONTAINER_SOURCES "")
-set (CONTAINER_HEADERS "")
 set (MINIPAL_SOURCES "")
 set (EVENTPIPE_SOURCES "")
 set (EVENTPIPE_HEADERS "")
@@ -122,7 +120,6 @@ set (SHARED_CONTAINERS_SOURCE_PATH "${CLR_SRC_NATIVE_DIR}/containers")
 set (SHARED_EVENTPIPE_SOURCE_PATH "${CLR_SRC_NATIVE_DIR}/eventpipe")
 set (SHARED_MINIPAL_SOURCE_PATH "${CLR_SRC_NATIVE_DIR}/minipal")
 include (${SHARED_EVENTPIPE_SOURCE_PATH}/eventpipe.cmake)
-include (${SHARED_CONTAINERS_SOURCE_PATH}/containers.cmake)
 
 list(APPEND MINIPAL_SOURCES
   utf8.c
@@ -164,8 +161,6 @@ list(APPEND EVENTPIPE_HEADERS
   ${SHARED_DIAGNOSTIC_SERVER_HEADERS}
 )
 
-addprefix(CONTAINER_SOURCES ${SHARED_CONTAINERS_SOURCE_PATH} "${SHARED_CONTAINER_SOURCES}")
-addprefix(CONTAINER_HEADERS ${SHARED_CONTAINERS_SOURCE_PATH} "${SHARED_CONTAINER_HEADERS}")
 addprefix(MINIPAL_SOURCES ${SHARED_MINIPAL_SOURCE_PATH} "${MINIPAL_SOURCES}")
 
 addprefix(EVENTPIPE_SOURCES ${SHARED_EVENTPIPE_SOURCE_PATH} "${EVENTPIPE_SOURCES}")
@@ -174,11 +169,9 @@ addprefix(EVENTPIPE_HEADERS ${SHARED_EVENTPIPE_SOURCE_PATH} "${EVENTPIPE_HEADERS
 set_source_files_properties(${SHARED_EVENTPIPE_SOURCE_PATH}/ep-sources.c PROPERTIES COMPILE_DEFINITIONS EP_FORCE_INCLUDE_SOURCE_FILES)
 set_source_files_properties(${SHARED_EVENTPIPE_SOURCE_PATH}/ds-sources.c PROPERTIES COMPILE_DEFINITIONS DS_FORCE_INCLUDE_SOURCE_FILES)
 
-set_source_files_properties(${CONTAINER_SOURCES} PROPERTIES LANGUAGE CXX)
 set_source_files_properties(${EVENTPIPE_SOURCES} PROPERTIES LANGUAGE CXX)
 
 if(CLR_CMAKE_HOST_UNIX)
-    set_source_files_properties(${CONTAINER_SOURCES} PROPERTIES COMPILE_OPTIONS -xc++)
     set_source_files_properties(${EVENTPIPE_SOURCES} PROPERTIES COMPILE_OPTIONS -xc++)
 endif(CLR_CMAKE_HOST_UNIX)
 
@@ -188,7 +181,7 @@ endif()
 
 list(APPEND AOT_EVENTPIPE_SHIM_SOURCES
   ${AOT_EVENTPIPE_SHIM_DIR}/ep-rt-aot.cpp
-  ${AOT_EVENTPIPE_SHIM_DIR}/ds-rt-aot.cpp  
+  ${AOT_EVENTPIPE_SHIM_DIR}/ds-rt-aot.cpp
 )
 
 list(APPEND AOT_EVENTPIPE_SHIM_HEADERS
@@ -239,8 +232,6 @@ list(APPEND EVENTPIPE_SOURCES
   ${SHARED_EVENTPIPE_CONFIG_HEADERS}
   ${GEN_EVENTPIPE_PROVIDER_SOURCES}
   ${GEN_EVENTPIPE_PLAT_AGNOSTIC_SOURCES}
-  ${CONTAINER_SOURCES}
-  ${CONTAINER_HEADERS}
   ${MINIPAL_SOURCES}
 )
 
@@ -253,6 +244,7 @@ list(APPEND AOT_EVENTPIPE_DISABLED_SOURCES
 )
 
 add_library(eventpipe-enabled STATIC ${EVENTPIPE_SOURCES})
+target_link_libraries(eventpipe-enabled PRIVATE dn-containers)
 add_dependencies(eventpipe-enabled aot_eventing_headers)
 if(CLR_CMAKE_TARGET_WIN32)
   add_dependencies(eventpipe-enabled aot_etw_headers)
@@ -265,6 +257,7 @@ if (CLR_CMAKE_TARGET_WIN32)
   add_library(eventpipe-enabled.GuardCF STATIC ${EVENTPIPE_SOURCES})
   add_dependencies(eventpipe-enabled.GuardCF aot_eventing_headers)
   add_dependencies(eventpipe-enabled.GuardCF aot_etw_headers)
+  target_link_libraries(eventpipe-enabled.GuardCF PRIVATE dn-containers)
   add_library(eventpipe-disabled.GuardCF STATIC ${AOT_EVENTPIPE_DISABLED_SOURCES})
   add_dependencies(eventpipe-disabled.GuardCF aot_eventing_headers)
   set_target_properties(eventpipe-enabled.GuardCF PROPERTIES CLR_CONTROL_FLOW_GUARD ON)

@@ -8,6 +8,8 @@
 #include <stdlib.h>
 #include <memory.h>
 
+EXTERN_C_BEGIN
+
 #define DN_ALLOCATOR_MEM_ALIGN8 8
 #define DN_ALLOCATOR_MEM_ALIGN16 16
 #define DN_ALLOCATOR_MAX_ALIGNMENT DN_ALLOCATOR_MEM_ALIGN16
@@ -103,5 +105,7 @@ dn_allocator_fixed_or_malloc_reset (dn_allocator_fixed_or_malloc_t *allocator);
 
 #define DN_DEFAULT_ALLOCATOR NULL
 #define DN_DEFAULT_LOCAL_ALLOCATOR(var_name, buffer_size) DN_ALLOCATOR_FIXED_OR_MALLOC (var_name, buffer_size)
+
+EXTERN_C_END
 
 #endif /* __DN_ALLOCATOR_H__ */

@@ -9,6 +9,8 @@ set(MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME "diagnostics_tracing")
 set(MONO_DEBUGGER_COMPONENT_NAME "debugger")
 set(MONO_MARSHAL_ILGEN_COMPONENT_NAME "marshal-ilgen")
 
+add_subdirectory(${SHARED_CONTAINERS_SOURCE_PATH} containers)
+
 # a list of every component.
 set(components "")
 # a list of components needed by the AOT compiler
@@ -70,7 +72,6 @@ include_directories(
 )
 
 set(${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}-sources
-  ${container_sources}
   ${eventpipe_sources}
   ${diagnostic_server_sources}
   ${MONO_COMPONENT_PATH}/event_pipe.c
@@ -165,6 +166,10 @@ foreach(component IN LISTS components)
   target_link_libraries("${component}-stub-objects" PRIVATE component_base)
   target_link_libraries("${component}-stub-objects" PUBLIC eglib_api)
 endforeach()
+
+if (TARGET "${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}-objects")
+    target_link_libraries("${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}-objects" PRIVATE dn-containers)
+endif()
 
 if(NOT DISABLE_COMPONENTS AND NOT STATIC_COMPONENTS)
   # define a shared library for each component
