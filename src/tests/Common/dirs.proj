@@ -16,6 +16,7 @@
       <DisabledProjects Include="$(TestRoot)TestWrappers*\**\*.csproj" />
       <DisabledProjects Include="$(TestRoot)nativeaot\**\*.csproj" Condition="'$(TestBuildMode)' != 'nativeaot'" />
       <DisabledProjects Include="$(TestRoot)readytorun\**\*.csproj" Condition="'$(TestBuildMode)' == 'nativeaot'" />
+      <DisabledProjects Include="$(TestRoot)readytorun\**\*.ilproj" Condition="'$(TestBuildMode)' == 'nativeaot'" />
     </ItemGroup>
 
     <ItemGroup>
