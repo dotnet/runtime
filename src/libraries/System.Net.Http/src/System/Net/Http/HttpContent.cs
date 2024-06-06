@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 
 namespace System.Net.Http
 {
-    public abstract class HttpContent : IDisposable
+    public abstract class HttpContent : IDisposable, IAsyncDisposable
     {
         private HttpContentHeaders? _headers;
         private MemoryStream? _bufferedContent;
@@ -677,6 +677,41 @@ namespace System.Net.Http
         public void Dispose()
         {
             Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        #endregion
+
+        #region IAsyncDisposable Members
+
+        protected virtual async ValueTask DisposeAsyncCore()
+        {
+            if (_disposed is false)
+            {
+                _disposed = true;
+
+                if (_contentReadStream is not null)
+                {
+                    Stream? s = _contentReadStream as Stream ??
+                        (_contentReadStream is Task<Stream> t && t.IsCompletedSuccessfully ? await t.ConfigureAwait(false) : null);
+
+                    if (s is not null)
+                    {
+                        await s.DisposeAsync().ConfigureAwait(false);
+                    }
+                    _contentReadStream = null;
+                }
+
+                if (IsBuffered)
+                {
+                    await _bufferedContent!.DisposeAsync().ConfigureAwait(false);
+                }
+            }
+        }
+
+        public async ValueTask DisposeAsync()
+        {
+            await DisposeAsyncCore().ConfigureAwait(false);
             GC.SuppressFinalize(this);
         }
 

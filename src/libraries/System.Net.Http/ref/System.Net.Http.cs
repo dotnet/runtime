@@ -171,7 +171,7 @@ namespace System.Net.Http
         ResponseContentRead = 0,
         ResponseHeadersRead = 1,
     }
-    public abstract partial class HttpContent : System.IDisposable
+    public abstract partial class HttpContent : System.IDisposable, System.IAsyncDisposable
     {
         protected HttpContent() { }
         public System.Net.Http.Headers.HttpContentHeaders Headers { get { throw null; } }
@@ -185,6 +185,8 @@ namespace System.Net.Http
         protected virtual System.Threading.Tasks.Task<System.IO.Stream> CreateContentReadStreamAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
+        public System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
+        protected virtual System.Threading.Tasks.ValueTask DisposeAsyncCore() { throw null; }
         public System.Threading.Tasks.Task LoadIntoBufferAsync() { throw null; }
         public System.Threading.Tasks.Task LoadIntoBufferAsync(long maxBufferSize) { throw null; }
         public System.Threading.Tasks.Task<byte[]> ReadAsByteArrayAsync() { throw null; }
@@ -333,7 +335,7 @@ namespace System.Net.Http
         public HttpRequestOptionsKey(string key) { throw null; }
         public string Key { get { throw null; } }
     }
-    public partial class HttpResponseMessage : System.IDisposable
+    public partial class HttpResponseMessage : System.IDisposable, System.IAsyncDisposable
     {
         public HttpResponseMessage() { }
         public HttpResponseMessage(System.Net.HttpStatusCode statusCode) { }
@@ -348,6 +350,8 @@ namespace System.Net.Http
         public System.Version Version { get { throw null; } set { } }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
+        public System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
+        protected virtual System.Threading.Tasks.ValueTask DisposeAsyncCore() { throw null; }
         public System.Net.Http.HttpResponseMessage EnsureSuccessStatusCode() { throw null; }
         public override string ToString() { throw null; }
     }

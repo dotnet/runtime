@@ -5,10 +5,11 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Net.Http.Headers;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace System.Net.Http
 {
-    public class HttpResponseMessage : IDisposable
+    public class HttpResponseMessage : IDisposable, IAsyncDisposable
     {
         private const HttpStatusCode DefaultStatusCode = HttpStatusCode.OK;
         private static Version DefaultResponseVersion => HttpVersion.Version11;
@@ -219,6 +220,27 @@ namespace System.Net.Http
         public void Dispose()
         {
             Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        #endregion
+
+        #region IAsyncDisposable Members
+
+        protected virtual ValueTask DisposeAsyncCore()
+        {
+            if (_disposed is false)
+            {
+                _disposed = true;
+                return _content?.DisposeAsync() ?? ValueTask.CompletedTask;
+            }
+
+            return ValueTask.CompletedTask;
+        }
+
+        public async ValueTask DisposeAsync()
+        {
+            await DisposeAsyncCore().ConfigureAwait(false);
             GC.SuppressFinalize(this);
         }
 
