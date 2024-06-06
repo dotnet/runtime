@@ -362,7 +362,6 @@ set_bp_in_method (MonoDomain *domain, MonoMethod *method, MonoSeqPointInfo *seq_
 typedef struct {
 	MonoBreakpoint *bp;
 	GPtrArray *methods;
-	GPtrArray *method_domains;
 	GPtrArray *method_seq_points;
 
 	MonoDomain *domain;
@@ -380,7 +379,6 @@ collect_domain_bp_inner (gpointer key, gpointer value, gpointer user_data)
 
 	/* Save the info locally to simplify the code inside the domain lock */
 	g_ptr_array_add (ud->methods, m);
-	g_ptr_array_add (ud->method_domains, ud->domain);
 	g_ptr_array_add (ud->method_seq_points, seq_points);
 }
 
@@ -389,11 +387,8 @@ void
 mono_jit_memory_manager_foreach_seq_point (dn_simdhash_ght_t *seq_points, dn_simdhash_ght_foreach_func func, gpointer user_data);
 
 static void
-collect_domain_bp (gpointer key, gpointer value, gpointer user_data)
+collect_domain_bp (CollectDomainData *ud)
 {
-	CollectDomainData *ud = (CollectDomainData*)user_data;
-	ud->domain = (MonoDomain*)key;
-
 	// FIXME:
 	MonoJitMemoryManager *jit_mm = get_default_jit_mm ();
 	jit_mm_lock (jit_mm);
@@ -421,7 +416,6 @@ mono_de_set_breakpoint (MonoMethod *method, long il_offset, EventRequest *req, M
 	MonoMethod *m;
 	MonoSeqPointInfo *seq_points;
 	GPtrArray *methods;
-	GPtrArray *method_domains;
 	GPtrArray *method_seq_points;
 
 	if (error)
@@ -442,7 +436,6 @@ mono_de_set_breakpoint (MonoMethod *method, long il_offset, EventRequest *req, M
 	PRINT_DEBUG_MSG  (1, "[dbg] Setting %sbreakpoint at %s:0x%x.\n", (req->event_kind == EVENT_KIND_STEP) ? "single step " : "", method ? mono_method_full_name (method, TRUE) : "<all>", (int)il_offset);
 
 	methods = g_ptr_array_new ();
-	method_domains = g_ptr_array_new ();
 	method_seq_points = g_ptr_array_new ();
 
 	mono_loader_lock ();
@@ -451,20 +444,20 @@ mono_de_set_breakpoint (MonoMethod *method, long il_offset, EventRequest *req, M
 	memset (&user_data, 0, sizeof (user_data));
 	user_data.bp = bp;
 	user_data.methods = methods;
-	user_data.method_domains = method_domains;
 	user_data.method_seq_points = method_seq_points;
-	mono_de_foreach_domain (collect_domain_bp, &user_data);
+	user_data.domain = mono_get_root_domain ();
+	collect_domain_bp (&user_data);
 
 	for (guint i = 0; i < methods->len; ++i) {
 		m = (MonoMethod *)g_ptr_array_index (methods, i);
-		domain = (MonoDomain *)g_ptr_array_index (method_domains, i);
+		domain = user_data.domain;
 		seq_points = (MonoSeqPointInfo *)g_ptr_array_index (method_seq_points, i);
 		set_bp_in_method (domain, m, seq_points, bp, error);
 	}
 
 	// trying to get the seqpoints directly from the jit info of the method
 	// the seqpoints in get_default_jit_mm may not be found for AOTed methods in arm64
-	if (methods->len == 0) 
+	if (methods->len == 0)
 	{
 		MonoJitInfo *ji;
 		(void)mono_jit_search_all_backends_for_jit_info (method, &ji);
@@ -477,7 +470,6 @@ mono_de_set_breakpoint (MonoMethod *method, long il_offset, EventRequest *req, M
 	mono_loader_unlock ();
 
 	g_ptr_array_free (methods, TRUE);
-	g_ptr_array_free (method_domains, TRUE);
 	g_ptr_array_free (method_seq_points, TRUE);
 
 	if (error && !is_ok (error)) {
