@@ -296,7 +296,7 @@ namespace System.Text.Json
             Debug.Assert(parent.PropertyCache != null);
 
             // Soft cut-off length - once message becomes longer than that we won't be adding more elements
-            const int CutOffLength = 50;
+            const int CutOffLength = 60;
 
             foreach (KeyValuePair<string, JsonPropertyInfo> kvp in parent.PropertyCache.List)
             {
@@ -313,7 +313,9 @@ namespace System.Text.Json
                     listOfMissingPropertiesBuilder.Append(' ');
                 }
 
+                listOfMissingPropertiesBuilder.Append('\'');
                 listOfMissingPropertiesBuilder.Append(property.Name);
+                listOfMissingPropertiesBuilder.Append('\'');
                 first = false;
 
                 if (listOfMissingPropertiesBuilder.Length >= CutOffLength)
