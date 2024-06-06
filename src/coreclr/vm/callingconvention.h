@@ -311,10 +311,7 @@ struct TransitionBlock
     #elif defined(TARGET_LOONGARCH64)
         if (argLocDescForStructInRegs != NULL)
         {
-            if (argLocDescForStructInRegs->m_structFields & STRUCT_FLOAT_FIELD_SECOND)
-            {
-                return argLocDescForStructInRegs->m_cFloatReg > 0;
-            }
+            return argLocDescForStructInRegs->m_cFloatReg > 0;
         }
     #endif
         return offset < 0;
