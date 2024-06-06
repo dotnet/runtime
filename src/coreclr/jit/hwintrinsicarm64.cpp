@@ -1650,43 +1650,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector64_op_LeftShift:
-        case NI_Vector128_op_LeftShift:
-        {
-            assert(sig->numArgs == 2);
-
-            op2 = impPopStack().val;
-            op1 = impSIMDPopStack();
-
-            retNode = gtNewSimdBinOpNode(GT_LSH, retType, op1, op2, simdBaseJitType, simdSize);
-            break;
-        }
-
-        case NI_Vector64_op_RightShift:
-        case NI_Vector128_op_RightShift:
-        {
-            assert(sig->numArgs == 2);
-            genTreeOps op = varTypeIsUnsigned(simdBaseType) ? GT_RSZ : GT_RSH;
-
-            op2 = impPopStack().val;
-            op1 = impSIMDPopStack();
-
-            retNode = gtNewSimdBinOpNode(op, retType, op1, op2, simdBaseJitType, simdSize);
-            break;
-        }
-
-        case NI_Vector64_op_UnsignedRightShift:
-        case NI_Vector128_op_UnsignedRightShift:
-        {
-            assert(sig->numArgs == 2);
-
-            op2 = impPopStack().val;
-            op1 = impSIMDPopStack();
-
-            retNode = gtNewSimdBinOpNode(GT_RSZ, retType, op1, op2, simdBaseJitType, simdSize);
-            break;
-        }
-
         case NI_Vector64_Shuffle:
         case NI_Vector128_Shuffle:
         {

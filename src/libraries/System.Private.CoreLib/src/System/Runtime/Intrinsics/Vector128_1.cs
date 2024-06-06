@@ -732,10 +732,98 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<T> operator <<(Vector128<T> value, int shiftCount)
         {
-            return Vector128.Create(
-                value._lower << shiftCount,
-                value._upper << shiftCount
-            );
+            if (AdvSimd.IsSupported)
+            {
+                return ArmImpl(value, shiftCount);
+            }
+            else if (PackedSimd.IsSupported)
+            {
+                return WasmImpl(value, shiftCount);
+            }
+            else if (Sse2.IsSupported)
+            {
+                return XarchImpl(value, shiftCount);
+            }
+            return SoftwareImpl(value, shiftCount);
+
+            [CompExactlyDependsOn(typeof(AdvSimd))]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static Vector128<T> ArmImpl(Vector128<T> value, int shiftCount)
+            {
+                if (sizeof(T) == 1)
+                {
+                    return AdvSimd.ShiftLogical(value.AsByte(), Vector128.Create<sbyte>((sbyte)(shiftCount & 0x7))).As<byte, T>();
+                }
+                else if (sizeof(T) == 2)
+                {
+                    return AdvSimd.ShiftLogical(value.AsUInt16(), Vector128.Create<short>((short)(shiftCount & 0xF))).As<ushort, T>();
+                }
+                else if (sizeof(T) == 4)
+                {
+                    return AdvSimd.ShiftLogical(value.AsUInt32(), Vector128.Create<int>(shiftCount & 0x1F)).As<uint, T>();
+                }
+                else if (sizeof(T) == 8)
+                {
+                    return AdvSimd.ShiftLogical(value.AsUInt64(), Vector128.Create<long>(shiftCount & 0x3F)).As<ulong, T>();
+                }
+                return SoftwareImpl(value, shiftCount);
+            }
+
+            static Vector128<T> SoftwareImpl(Vector128<T> value, int shiftCount)
+            {
+                return Vector128.Create(
+                    value._lower << shiftCount,
+                    value._upper << shiftCount
+                );
+            }
+
+            [CompExactlyDependsOn(typeof(PackedSimd))]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static Vector128<T> WasmImpl(Vector128<T> value, int shiftCount)
+            {
+                if (sizeof(T) == 1)
+                {
+                    return PackedSimd.ShiftLeft(value.AsByte(), shiftCount & 0x7).As<byte, T>();
+                }
+                else if (sizeof(T) == 2)
+                {
+                    return PackedSimd.ShiftLeft(value.AsUInt16(), shiftCount & 0xF).As<ushort, T>();
+                }
+                else if (sizeof(T) == 4)
+                {
+                    return PackedSimd.ShiftLeft(value.AsUInt32(), shiftCount & 0x1F).As<uint, T>();
+                }
+                else if (sizeof(T) == 8)
+                {
+                    return PackedSimd.ShiftLeft(value.AsUInt64(), shiftCount & 0x3F).As<ulong, T>();
+                }
+                return SoftwareImpl(value, shiftCount);
+            }
+
+            [CompExactlyDependsOn(typeof(Sse2))]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static Vector128<T> XarchImpl(Vector128<T> value, int shiftCount)
+            {
+                if (sizeof(T) == 1)
+                {
+                    byte maskedShiftCount = (byte)(shiftCount & 0x7);
+                    Vector128<ushort> tmp = Sse2.ShiftLeftLogical(value.AsUInt16(), Vector128.CreateScalar<ushort>(maskedShiftCount));
+                    return Sse2.And(tmp, Vector128.Create<ushort>((ushort)(0xFF << maskedShiftCount))).As<ushort, T>();
+                }
+                else if (sizeof(T) == 2)
+                {
+                    return Sse2.ShiftLeftLogical(value.AsUInt16(), Vector128.CreateScalar<ushort>((ushort)(shiftCount & 0xF))).As<ushort, T>();
+                }
+                else if (sizeof(T) == 4)
+                {
+                    return Sse2.ShiftLeftLogical(value.AsUInt32(), Vector128.CreateScalar<uint>((uint)(shiftCount & 0x1F))).As<uint, T>();
+                }
+                else if (sizeof(T) == 8)
+                {
+                    return Sse2.ShiftLeftLogical(value.AsUInt64(), Vector128.CreateScalar<ulong>((uint)(shiftCount & 0x3F))).As<ulong, T>();
+                }
+                return SoftwareImpl(value, shiftCount);
+            }
         }
 
         /// <summary>Multiplies two vectors to compute their element-wise product.</summary>
@@ -1075,10 +1163,112 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<T> operator >>(Vector128<T> value, int shiftCount)
         {
-            return Vector128.Create(
-                value._lower >> shiftCount,
-                value._upper >> shiftCount
-            );
+            if ((typeof(T) == typeof(byte))
+             || (typeof(T) == typeof(ushort))
+             || (typeof(T) == typeof(uint))
+             || (typeof(T) == typeof(ulong))
+             || (typeof(T) == typeof(nuint)))
+            {
+                return value >>> shiftCount;
+            }
+            else if (AdvSimd.IsSupported)
+            {
+                return ArmImpl(value, shiftCount);
+            }
+            else if (PackedSimd.IsSupported)
+            {
+                return WasmImpl(value, shiftCount);
+            }
+            else if (Sse2.IsSupported)
+            {
+                return XarchImpl(value, shiftCount);
+            }
+            return SoftwareImpl(value, shiftCount);
+
+            [CompExactlyDependsOn(typeof(AdvSimd))]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static Vector128<T> ArmImpl(Vector128<T> value, int shiftCount)
+            {
+                if (sizeof(T) == 1)
+                {
+                    return AdvSimd.ShiftArithmetic(value.AsSByte(), Vector128.Create<sbyte>((sbyte)(-shiftCount & 0x7))).As<sbyte, T>();
+                }
+                else if (sizeof(T) == 2)
+                {
+                    return AdvSimd.ShiftArithmetic(value.AsInt16(), Vector128.Create<short>((short)(-shiftCount & 0xF))).As<short, T>();
+                }
+                else if (sizeof(T) == 4)
+                {
+                    return AdvSimd.ShiftArithmetic(value.AsInt32(), Vector128.Create<int>(-shiftCount & 0x1F)).As<int, T>();
+                }
+                else if (sizeof(T) == 8)
+                {
+                    return AdvSimd.ShiftArithmetic(value.AsInt64(), Vector128.Create<long>(-shiftCount & 0x3F)).As<long, T>();
+                }
+                return SoftwareImpl(value, shiftCount);
+            }
+
+            static Vector128<T> SoftwareImpl(Vector128<T> value, int shiftCount)
+            {
+                return Vector128.Create(
+                    value._lower >> shiftCount,
+                    value._upper >> shiftCount
+                );
+            }
+
+            [CompExactlyDependsOn(typeof(PackedSimd))]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static Vector128<T> WasmImpl(Vector128<T> value, int shiftCount)
+            {
+                if (sizeof(T) == 1)
+                {
+                    return PackedSimd.ShiftRightArithmetic(value.AsSByte(), shiftCount & 0x7).As<sbyte, T>();
+                }
+                else if (sizeof(T) == 2)
+                {
+                    return PackedSimd.ShiftRightArithmetic(value.AsInt16(), shiftCount & 0xF).As<short, T>();
+                }
+                else if (sizeof(T) == 4)
+                {
+                    return PackedSimd.ShiftRightArithmetic(value.AsInt32(), shiftCount & 0x1F).As<int, T>();
+                }
+                else if (sizeof(T) == 8)
+                {
+                    return PackedSimd.ShiftRightArithmetic(value.AsInt64(), shiftCount & 0x3F).As<long, T>();
+                }
+                return SoftwareImpl(value, shiftCount);
+            }
+
+            [CompExactlyDependsOn(typeof(Sse2))]
+            [CompExactlyDependsOn(typeof(Avx512F.VL))]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static Vector128<T> XarchImpl(Vector128<T> value, int shiftCount)
+            {
+                if (sizeof(T) == 1)
+                {
+                    // TODO-XARCH-CQ: We should support sbyte arithmetic shift.
+                }
+                else if (sizeof(T) == 2)
+                {
+                    return Sse2.ShiftRightArithmetic(value.AsInt16(), Vector128.CreateScalar<short>((short)(shiftCount & 0xF))).As<short, T>();
+                }
+                else if (sizeof(T) == 4)
+                {
+                    return Sse2.ShiftRightArithmetic(value.AsInt32(), Vector128.CreateScalar<int>(shiftCount & 0x1F)).As<int, T>();
+                }
+                else if (sizeof(T) == 8)
+                {
+                    if (Avx512F.VL.IsSupported)
+                    {
+                        return Avx512F.VL.ShiftRightArithmetic(value.AsInt64(), Vector128.CreateScalar<long>(shiftCount & 0x3F)).As<long, T>();
+                    }
+                    else
+                    {
+                        // TODO-XARCH-CQ: We should support double/long arithmetic shift.
+                    }
+                }
+                return SoftwareImpl(value, shiftCount);
+            }
         }
 
         /// <summary>Subtracts two vectors to compute their difference.</summary>
@@ -1240,10 +1430,98 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<T> operator >>>(Vector128<T> value, int shiftCount)
         {
-            return Vector128.Create(
-                value._lower >>> shiftCount,
-                value._upper >>> shiftCount
-            );
+            if (AdvSimd.IsSupported)
+            {
+                return ArmImpl(value, shiftCount);
+            }
+            else if (PackedSimd.IsSupported)
+            {
+                return WasmImpl(value, shiftCount);
+            }
+            else if (Sse2.IsSupported)
+            {
+                return XarchImpl(value, shiftCount);
+            }
+            return SoftwareImpl(value, shiftCount);
+
+            [CompExactlyDependsOn(typeof(AdvSimd))]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static Vector128<T> ArmImpl(Vector128<T> value, int shiftCount)
+            {
+                if (sizeof(T) == 1)
+                {
+                    return AdvSimd.ShiftLogical(value.AsByte(), Vector128.Create<sbyte>((sbyte)(-shiftCount & 0x7))).As<byte, T>();
+                }
+                else if (sizeof(T) == 2)
+                {
+                    return AdvSimd.ShiftLogical(value.AsUInt16(), Vector128.Create<short>((short)(-shiftCount & 0xF))).As<ushort, T>();
+                }
+                else if (sizeof(T) == 4)
+                {
+                    return AdvSimd.ShiftLogical(value.AsUInt32(), Vector128.Create<int>(-shiftCount & 0x1F)).As<uint, T>();
+                }
+                else if (sizeof(T) == 8)
+                {
+                    return AdvSimd.ShiftLogical(value.AsUInt64(), Vector128.Create<long>(-shiftCount & 0x3F)).As<ulong, T>();
+                }
+                return SoftwareImpl(value, shiftCount);
+            }
+
+            static Vector128<T> SoftwareImpl(Vector128<T> value, int shiftCount)
+            {
+                return Vector128.Create(
+                    value._lower >>> shiftCount,
+                    value._upper >>> shiftCount
+                );
+            }
+
+            [CompExactlyDependsOn(typeof(PackedSimd))]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static Vector128<T> WasmImpl(Vector128<T> value, int shiftCount)
+            {
+                if (sizeof(T) == 1)
+                {
+                    return PackedSimd.ShiftRightLogical(value.AsByte(), shiftCount & 0x7).As<byte, T>();
+                }
+                else if (sizeof(T) == 2)
+                {
+                    return PackedSimd.ShiftRightLogical(value.AsUInt16(), shiftCount & 0xF).As<ushort, T>();
+                }
+                else if (sizeof(T) == 4)
+                {
+                    return PackedSimd.ShiftRightLogical(value.AsUInt32(), shiftCount & 0x1F).As<uint, T>();
+                }
+                else if (sizeof(T) == 8)
+                {
+                    return PackedSimd.ShiftRightLogical(value.AsUInt64(), shiftCount & 0x3F).As<ulong, T>();
+                }
+                return SoftwareImpl(value, shiftCount);
+            }
+
+            [CompExactlyDependsOn(typeof(Sse2))]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static Vector128<T> XarchImpl(Vector128<T> value, int shiftCount)
+            {
+                if (sizeof(T) == 1)
+                {
+                    byte maskedShiftCount = (byte)(shiftCount & 0x7);
+                    Vector128<ushort> tmp = Sse2.ShiftRightLogical(value.AsUInt16(), Vector128.CreateScalar<ushort>(maskedShiftCount));
+                    return Sse2.And(tmp, Vector128.Create<ushort>((ushort)(0xFF >>> maskedShiftCount))).As<ushort, T>();
+                }
+                else if (sizeof(T) == 2)
+                {
+                    return Sse2.ShiftRightLogical(value.AsUInt16(), Vector128.CreateScalar<ushort>((ushort)(shiftCount & 0xF))).As<ushort, T>();
+                }
+                else if (sizeof(T) == 4)
+                {
+                    return Sse2.ShiftRightLogical(value.AsUInt32(), Vector128.CreateScalar<uint>((uint)(shiftCount & 0x1F))).As<uint, T>();
+                }
+                else if (sizeof(T) == 8)
+                {
+                    return Sse2.ShiftRightLogical(value.AsUInt64(), Vector128.CreateScalar<ulong>((uint)(shiftCount & 0x3F))).As<ulong, T>();
+                }
+                return SoftwareImpl(value, shiftCount);
+            }
         }
 
         /// <summary>Determines whether the specified object is equal to the current instance.</summary>

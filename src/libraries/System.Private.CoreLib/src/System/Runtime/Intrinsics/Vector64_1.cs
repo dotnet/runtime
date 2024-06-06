@@ -437,15 +437,47 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector64<T> operator <<(Vector64<T> value, int shiftCount)
         {
-            Unsafe.SkipInit(out Vector64<T> result);
-
-            for (int index = 0; index < Count; index++)
+            if (AdvSimd.IsSupported)
             {
-                T element = Scalar<T>.ShiftLeft(value.GetElementUnsafe(index), shiftCount);
-                result.SetElementUnsafe(index, element);
+                return ArmImpl(value, shiftCount);
+            }
+            return SoftwareImpl(value, shiftCount);
+
+            [CompExactlyDependsOn(typeof(AdvSimd))]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static Vector64<T> ArmImpl(Vector64<T> value, int shiftCount)
+            {
+                if (sizeof(T) == 1)
+                {
+                    return AdvSimd.ShiftLogical(value.AsByte(), Vector64.Create<sbyte>((sbyte)(shiftCount & 0x7))).As<byte, T>();
+                }
+                else if (sizeof(T) == 2)
+                {
+                    return AdvSimd.ShiftLogical(value.AsUInt16(), Vector64.Create<short>((short)(shiftCount & 0xF))).As<ushort, T>();
+                }
+                else if (sizeof(T) == 4)
+                {
+                    return AdvSimd.ShiftLogical(value.AsUInt32(), Vector64.Create<int>(shiftCount & 0x1F)).As<uint, T>();
+                }
+                else if (sizeof(T) == 8)
+                {
+                    return AdvSimd.ShiftLogicalScalar(value.AsUInt64(), Vector64.Create<long>(shiftCount & 0x3F)).As<ulong, T>();
+                }
+                return SoftwareImpl(value, shiftCount);
             }
 
-            return result;
+            static Vector64<T> SoftwareImpl(Vector64<T> value, int shiftCount)
+            {
+                Unsafe.SkipInit(out Vector64<T> result);
+
+                for (int index = 0; index < Count; index++)
+                {
+                    T element = Scalar<T>.ShiftLeft(value.GetElementUnsafe(index), shiftCount);
+                    result.SetElementUnsafe(index, element);
+                }
+
+                return result;
+            }
         }
 
         /// <summary>Multiplies two vectors to compute their element-wise product.</summary>
@@ -585,15 +617,55 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector64<T> operator >>(Vector64<T> value, int shiftCount)
         {
-            Unsafe.SkipInit(out Vector64<T> result);
-
-            for (int index = 0; index < Count; index++)
+            if ((typeof(T) == typeof(byte))
+             || (typeof(T) == typeof(ushort))
+             || (typeof(T) == typeof(uint))
+             || (typeof(T) == typeof(ulong))
+             || (typeof(T) == typeof(nuint)))
             {
-                T element = Scalar<T>.ShiftRightArithmetic(value.GetElementUnsafe(index), shiftCount);
-                result.SetElementUnsafe(index, element);
+                return value >>> shiftCount;
+            }
+            else if (AdvSimd.IsSupported)
+            {
+                return ArmImpl(value, shiftCount);
+            }
+            return SoftwareImpl(value, shiftCount);
+
+            [CompExactlyDependsOn(typeof(AdvSimd))]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static Vector64<T> ArmImpl(Vector64<T> value, int shiftCount)
+            {
+                if (sizeof(T) == 1)
+                {
+                    return AdvSimd.ShiftArithmetic(value.AsSByte(), Vector64.Create<sbyte>((sbyte)(-shiftCount & 0x7))).As<sbyte, T>();
+                }
+                else if (sizeof(T) == 2)
+                {
+                    return AdvSimd.ShiftArithmetic(value.AsInt16(), Vector64.Create<short>((short)(-shiftCount & 0xF))).As<short, T>();
+                }
+                else if (sizeof(T) == 4)
+                {
+                    return AdvSimd.ShiftArithmetic(value.AsInt32(), Vector64.Create<int>(-shiftCount & 0x1F)).As<int, T>();
+                }
+                else if (sizeof(T) == 8)
+                {
+                    return AdvSimd.ShiftArithmeticScalar(value.AsInt64(), Vector64.Create<long>(-shiftCount & 0x3F)).As<long, T>();
+                }
+                return SoftwareImpl(value, shiftCount);
             }
 
-            return result;
+            static Vector64<T> SoftwareImpl(Vector64<T> left, int shiftCount)
+            {
+                Unsafe.SkipInit(out Vector64<T> result);
+
+                for (int index = 0; index < Count; index++)
+                {
+                    T value = Scalar<T>.ShiftRightArithmetic(left.GetElementUnsafe(index), shiftCount);
+                    result.SetElementUnsafe(index, value);
+                }
+
+                return result;
+            }
         }
 
         /// <summary>Subtracts two vectors to compute their difference.</summary>
@@ -682,15 +754,47 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector64<T> operator >>>(Vector64<T> value, int shiftCount)
         {
-            Unsafe.SkipInit(out Vector64<T> result);
-
-            for (int index = 0; index < Count; index++)
+            if (AdvSimd.IsSupported)
             {
-                T element = Scalar<T>.ShiftRightLogical(value.GetElementUnsafe(index), shiftCount);
-                result.SetElementUnsafe(index, element);
+                return ArmImpl(value, shiftCount);
+            }
+            return SoftwareImpl(value, shiftCount);
+
+            [CompExactlyDependsOn(typeof(AdvSimd))]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static Vector64<T> ArmImpl(Vector64<T> value, int shiftCount)
+            {
+                if (sizeof(T) == 1)
+                {
+                    return AdvSimd.ShiftLogical(value.AsSByte(), Vector64.Create<sbyte>((sbyte)(-shiftCount & 0x7))).As<sbyte, T>();
+                }
+                else if (sizeof(T) == 2)
+                {
+                    return AdvSimd.ShiftLogical(value.AsInt16(), Vector64.Create<short>((short)(-shiftCount & 0xF))).As<short, T>();
+                }
+                else if (sizeof(T) == 4)
+                {
+                    return AdvSimd.ShiftLogical(value.AsInt32(), Vector64.Create<int>(-shiftCount & 0x1F)).As<int, T>();
+                }
+                else if (sizeof(T) == 8)
+                {
+                    return AdvSimd.ShiftLogicalScalar(value.AsInt64(), Vector64.Create<long>(-shiftCount & 0x3F)).As<long, T>();
+                }
+                return SoftwareImpl(value, shiftCount);
             }
 
-            return result;
+            static Vector64<T> SoftwareImpl(Vector64<T> left, int shiftCount)
+            {
+                Unsafe.SkipInit(out Vector64<T> result);
+
+                for (int index = 0; index < Count; index++)
+                {
+                    T value = Scalar<T>.ShiftRightLogical(left.GetElementUnsafe(index), shiftCount);
+                    result.SetElementUnsafe(index, value);
+                }
+
+                return result;
+            }
         }
 
         /// <summary>Determines whether the specified object is equal to the current instance.</summary>

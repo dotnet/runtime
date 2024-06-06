@@ -458,10 +458,48 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector512<T> operator <<(Vector512<T> value, int shiftCount)
         {
-            return Vector512.Create(
-                value._lower << shiftCount,
-                value._upper << shiftCount
-            );
+            if (Avx512F.IsSupported)
+            {
+                return XarchImpl(value, shiftCount);
+            }
+            return SoftwareImpl(value, shiftCount);
+
+            static Vector512<T> SoftwareImpl(Vector512<T> value, int shiftCount)
+            {
+                return Vector512.Create(
+                    value._lower << shiftCount,
+                    value._upper << shiftCount
+                );
+            }
+
+            [CompExactlyDependsOn(typeof(Avx512F))]
+            [CompExactlyDependsOn(typeof(Avx512BW))]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static Vector512<T> XarchImpl(Vector512<T> value, int shiftCount)
+            {
+                if (sizeof(T) == 4)
+                {
+                    return Avx512F.ShiftLeftLogical(value.AsUInt32(), Vector128.CreateScalar<uint>((uint)(shiftCount & 0x1F))).As<uint, T>();
+                }
+                else if (sizeof(T) == 8)
+                {
+                    return Avx512F.ShiftLeftLogical(value.AsUInt64(), Vector128.CreateScalar<ulong>((uint)(shiftCount & 0x3F))).As<ulong, T>();
+                }
+                else if (Avx512BW.IsSupported)
+                {
+                    if (sizeof(T) == 1)
+                    {
+                        byte maskedShiftCount = (byte)(shiftCount & 0x7);
+                        Vector512<ushort> tmp = Avx512BW.ShiftLeftLogical(value.AsUInt16(), Vector128.CreateScalar<ushort>(maskedShiftCount));
+                        return Avx512F.And(tmp, Vector512.Create<ushort>((ushort)(0xFF << maskedShiftCount))).As<ushort, T>();
+                    }
+                    else if (sizeof(T) == 2)
+                    {
+                        return Avx512BW.ShiftLeftLogical(value.AsUInt16(), Vector128.CreateScalar<ushort>((ushort)(shiftCount & 0xF))).As<ushort, T>();
+                    }
+                }
+                return SoftwareImpl(value, shiftCount);
+            }
         }
 
         /// <summary>Multiplies two vectors to compute their element-wise product.</summary>
@@ -622,10 +660,54 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector512<T> operator >>(Vector512<T> value, int shiftCount)
         {
-            return Vector512.Create(
-                value._lower >> shiftCount,
-                value._upper >> shiftCount
-            );
+            if ((typeof(T) == typeof(byte))
+             || (typeof(T) == typeof(ushort))
+             || (typeof(T) == typeof(uint))
+             || (typeof(T) == typeof(ulong))
+             || (typeof(T) == typeof(nuint)))
+            {
+                return value >>> shiftCount;
+            }
+            else if (Avx512F.IsSupported)
+            {
+                return XarchImpl(value, shiftCount);
+            }
+            return SoftwareImpl(value, shiftCount);
+
+            static Vector512<T> SoftwareImpl(Vector512<T> value, int shiftCount)
+            {
+                return Vector512.Create(
+                    value._lower >> shiftCount,
+                    value._upper >> shiftCount
+                );
+            }
+
+            [CompExactlyDependsOn(typeof(Avx512F))]
+            [CompExactlyDependsOn(typeof(Avx512BW))]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static Vector512<T> XarchImpl(Vector512<T> value, int shiftCount)
+            {
+                if (sizeof(T) == 4)
+                {
+                    return Avx512F.ShiftRightArithmetic(value.AsInt32(), Vector128.CreateScalar<int>(shiftCount & 0x1F)).As<int, T>();
+                }
+                else if (sizeof(T) == 8)
+                {
+                    return Avx512F.ShiftRightArithmetic(value.AsInt64(), Vector128.CreateScalar<long>(shiftCount & 0x3F)).As<long, T>();
+                }
+                else if (Avx512BW.IsSupported)
+                {
+                    if (sizeof(T) == 1)
+                    {
+                        // TODO-XARCH-CQ: We should support sbyte arithmetic shift.
+                    }
+                    else if (sizeof(T) == 2)
+                    {
+                        return Avx512BW.ShiftRightArithmetic(value.AsInt16(), Vector128.CreateScalar<short>((short)(shiftCount & 0xF))).As<short, T>();
+                    }
+                }
+                return SoftwareImpl(value, shiftCount);
+            }
         }
 
         /// <summary>Subtracts two vectors to compute their difference.</summary>
@@ -713,10 +795,48 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector512<T> operator >>>(Vector512<T> value, int shiftCount)
         {
-            return Vector512.Create(
-                value._lower >>> shiftCount,
-                value._upper >>> shiftCount
-            );
+            if (Avx512F.IsSupported)
+            {
+                return XarchImpl(value, shiftCount);
+            }
+            return SoftwareImpl(value, shiftCount);
+
+            static Vector512<T> SoftwareImpl(Vector512<T> value, int shiftCount)
+            {
+                return Vector512.Create(
+                    value._lower >>> shiftCount,
+                    value._upper >>> shiftCount
+                );
+            }
+
+            [CompExactlyDependsOn(typeof(Avx512F))]
+            [CompExactlyDependsOn(typeof(Avx512BW))]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static Vector512<T> XarchImpl(Vector512<T> value, int shiftCount)
+            {
+                if (sizeof(T) == 4)
+                {
+                    return Avx512F.ShiftRightLogical(value.AsUInt32(), Vector128.CreateScalar<uint>((uint)(shiftCount & 0x1F))).As<uint, T>();
+                }
+                else if (sizeof(T) == 8)
+                {
+                    return Avx512F.ShiftRightLogical(value.AsUInt64(), Vector128.CreateScalar<ulong>((uint)(shiftCount & 0x3F))).As<ulong, T>();
+                }
+                else if (Avx512BW.IsSupported)
+                {
+                    if (sizeof(T) == 1)
+                    {
+                        byte maskedShiftCount = (byte)(shiftCount & 0x7);
+                        Vector512<ushort> tmp = Avx512BW.ShiftRightLogical(value.AsUInt16(), Vector128.CreateScalar<ushort>(maskedShiftCount));
+                        return Avx512F.And(tmp, Vector512.Create<ushort>((ushort)(0xFF >>> maskedShiftCount))).As<ushort, T>();
+                    }
+                    else if (sizeof(T) == 2)
+                    {
+                        return Avx512BW.ShiftRightLogical(value.AsUInt16(), Vector128.CreateScalar<ushort>((ushort)(shiftCount & 0xF))).As<ushort, T>();
+                    }
+                }
+                return SoftwareImpl(value, shiftCount);
+            }
         }
 
         /// <summary>Determines whether the specified object is equal to the current instance.</summary>
