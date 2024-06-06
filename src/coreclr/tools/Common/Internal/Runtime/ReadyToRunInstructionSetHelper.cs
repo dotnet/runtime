@@ -98,6 +98,8 @@ namespace Internal.ReadyToRunConstants
                             case InstructionSet.X64_MOVBE_X64: return ReadyToRunInstructionSet.Movbe;
                             case InstructionSet.X64_X86Serialize: return ReadyToRunInstructionSet.X86Serialize;
                             case InstructionSet.X64_X86Serialize_X64: return ReadyToRunInstructionSet.X86Serialize;
+                            case InstructionSet.X64_EVEX: return ReadyToRunInstructionSet.EVEX;
+                            case InstructionSet.X64_EVEX_X64: return ReadyToRunInstructionSet.EVEX;
                             case InstructionSet.X64_AVX512F: return ReadyToRunInstructionSet.Avx512F;
                             case InstructionSet.X64_AVX512F_X64: return ReadyToRunInstructionSet.Avx512F;
                             case InstructionSet.X64_AVX512F_VL: return ReadyToRunInstructionSet.Avx512F_VL;
@@ -125,8 +127,6 @@ namespace Internal.ReadyToRunConstants
                             case InstructionSet.X64_VectorT128: return ReadyToRunInstructionSet.VectorT128;
                             case InstructionSet.X64_VectorT256: return ReadyToRunInstructionSet.VectorT256;
                             case InstructionSet.X64_VectorT512: return ReadyToRunInstructionSet.VectorT512;
-                            case InstructionSet.X64_EVEX: return ReadyToRunInstructionSet.EVEX;
-                            case InstructionSet.X64_EVEX_X64: return ReadyToRunInstructionSet.EVEX;
 
                             default: throw new Exception("Unknown instruction set");
                         }
@@ -177,6 +177,8 @@ namespace Internal.ReadyToRunConstants
                             case InstructionSet.X86_MOVBE_X64: return null;
                             case InstructionSet.X86_X86Serialize: return ReadyToRunInstructionSet.X86Serialize;
                             case InstructionSet.X86_X86Serialize_X64: return null;
+                            case InstructionSet.X86_EVEX: return ReadyToRunInstructionSet.EVEX;
+                            case InstructionSet.X86_EVEX_X64: return null;
                             case InstructionSet.X86_AVX512F: return ReadyToRunInstructionSet.Avx512F;
                             case InstructionSet.X86_AVX512F_X64: return null;
                             case InstructionSet.X86_AVX512F_VL: return ReadyToRunInstructionSet.Avx512F_VL;
@@ -204,8 +206,6 @@ namespace Internal.ReadyToRunConstants
                             case InstructionSet.X86_VectorT128: return ReadyToRunInstructionSet.VectorT128;
                             case InstructionSet.X86_VectorT256: return ReadyToRunInstructionSet.VectorT256;
                             case InstructionSet.X86_VectorT512: return ReadyToRunInstructionSet.VectorT512;
-                            case InstructionSet.X86_EVEX: return ReadyToRunInstructionSet.EVEX;
-                            case InstructionSet.X86_EVEX_X64: return null;
 
                             default: throw new Exception("Unknown instruction set");
                         }

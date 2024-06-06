@@ -47,6 +47,7 @@ instructionset     ,X86   ,                     ,        ,   ,Vector512         
 instructionset     ,X86   ,AvxVnni              ,        ,25 ,AVXVNNI               ,avxvnni
 instructionset     ,X86   ,Movbe                ,        ,27 ,MOVBE                 ,movbe
 instructionset     ,X86   ,X86Serialize         ,        ,28 ,X86Serialize          ,serialize
+instructionset     ,X86   ,EVEX                 ,        ,47 ,EVEX                  ,evex
 instructionset     ,X86   ,Avx512F              ,        ,29 ,AVX512F               ,avx512f
 instructionset     ,X86   ,Avx512F_VL           ,        ,30 ,AVX512F_VL            ,avx512f_vl
 instructionset     ,X86   ,Avx512BW             ,        ,31 ,AVX512BW              ,avx512bw
@@ -62,7 +63,6 @@ instructionset     ,X86   ,Avx10v1_V512         ,        ,46 ,AVX10v1_V512      
 instructionset     ,X86   ,VectorT128           ,        ,39 ,VectorT128            ,vectort128
 instructionset     ,X86   ,VectorT256           ,        ,40 ,VectorT256            ,vectort256
 instructionset     ,X86   ,VectorT512           ,        ,41 ,VectorT512            ,vectort512
-instructionset     ,X86   ,EVEX                 ,        ,47 ,EVEX                  ,evex
 
 instructionset64bit,X86   ,X86Base
 instructionset64bit,X86   ,SSE
@@ -83,6 +83,7 @@ instructionset64bit,X86   ,POPCNT
 instructionset64bit,X86   ,AVXVNNI
 instructionset64bit,X86   ,MOVBE
 instructionset64bit,X86   ,X86Serialize
+instructionset64bit,X86   ,EVEX
 instructionset64bit,X86   ,AVX512F
 instructionset64bit,X86   ,AVX512F_VL
 instructionset64bit,X86   ,AVX512BW
@@ -95,7 +96,6 @@ instructionset64bit,X86   ,AVX512VBMI
 instructionset64bit,X86   ,AVX512VBMI_VL
 instructionset64bit,X86   ,AVX10v1
 instructionset64bit,X86   ,AVX10v1_V512
-instructionset64bit,X86   ,EVEX
 
 vectorinstructionset,X86  ,Vector128
 vectorinstructionset,X86  ,Vector256
@@ -122,8 +122,8 @@ implication        ,X86   ,Vector512            ,AVX512F
 implication        ,X86   ,AVXVNNI              ,AVX2
 implication        ,X86   ,MOVBE                ,SSE42
 implication        ,X86   ,X86Serialize         ,X86Base
-implication        ,X86   ,AVX512F              ,AVX2
-implication        ,X86   ,AVX512F              ,FMA
+implication        ,X86   ,EVEX                 ,AVX2
+implication        ,X86   ,EVEX                 ,FMA
 implication        ,X86   ,AVX512F              ,EVEX
 implication        ,X86   ,AVX512F_VL           ,AVX512F
 implication        ,X86   ,AVX512CD             ,AVX512F
@@ -138,8 +138,8 @@ implication        ,X86   ,AVX512DQ_VL          ,AVX512F_VL
 implication        ,X86   ,AVX512VBMI           ,AVX512BW
 implication        ,X86   ,AVX512VBMI_VL        ,AVX512VBMI
 implication        ,X86   ,AVX512VBMI_VL        ,AVX512BW_VL
-implication        ,X86   ,AVX10v1              ,AVX2
-implication        ,X86   ,AVX10v1              ,FMA
+implication        ,X86   ,EVEX                 ,AVX2
+implication        ,X86   ,EVEX                 ,FMA
 implication        ,X86   ,AVX10v1              ,EVEX
 implication        ,X86   ,AVX10v1_V512         ,AVX10v1
 implication        ,X86   ,AVX10v1_V512         ,AVX512F

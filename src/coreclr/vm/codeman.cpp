@@ -1424,6 +1424,11 @@ void EEJitManager::SetCpuInfo()
         CPUCompileFlags.Set(InstructionSet_X86Serialize);
     }
 
+    if (((cpuFeatures & XArchIntrinsicConstants_Evex) != 0) && (CPUCompileFlags.IsSet(InstructionSet_AVX512F) || CPUCompileFlags.IsSet(InstructionSet_AVX10v1)))
+    {
+        CPUCompileFlags.Set(InstructionSet_EVEX);
+    }
+
     // As Avx10v1_V512 could imply Avx10v1,
     // then the flag check here can be conducted for only once, and let 
     // `EnusreValidInstructionSetSupport` to handle the illegal combination.
@@ -1536,11 +1541,6 @@ void EEJitManager::SetCpuInfo()
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
 
-    // Set Evex ISA based on instruction set present
-    if (CPUCompileFlags.IsSet(InstructionSet_AVX10v1) || CPUCompileFlags.IsSet(InstructionSet_AVX512F))
-    {
-        CPUCompileFlags.Set(InstructionSet_EVEX);
-    }
     // Clean up mutually exclusive ISAs
     if (CPUCompileFlags.IsSet(InstructionSet_VectorT512))
     {
