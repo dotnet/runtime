@@ -2757,14 +2757,13 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T Sum<T>(Vector128<T> vector)
         {
-            T sum = default!;
+            // Doing this as Sum(lower) + Sum(upper) is important for floating-point determinism
+            // This is because the underlying dpps instruction on x86/x64 will do this equivalently
+            // and otherwise the software vs accelerated implementations may differ in returned result.
 
-            for (int index = 0; index < Vector128<T>.Count; index++)
-            {
-                sum = Scalar<T>.Add(sum, vector.GetElementUnsafe(index));
-            }
-
-            return sum;
+            T result = Vector64.Sum(vector._lower);
+            result = Scalar<T>.Add(result, Vector64.Sum(vector._upper));
+            return result;
         }
 
         /// <summary>Converts the given vector to a scalar containing the value of the first element.</summary>
