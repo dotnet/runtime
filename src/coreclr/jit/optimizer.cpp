@@ -5916,17 +5916,8 @@ void Compiler::optRemoveRedundantZeroInits()
             Statement* next = stmt->GetNextStmt();
             for (GenTree* const tree : stmt->TreeList())
             {
-                if (((tree->gtFlags & GTF_CALL) != 0))
-                {
-                    // if this is not a No-GC helper
-                    if (!tree->IsCall() || !emitter::emitNoGChelper(tree->AsCall()->GetHelperNum()))
-                    {
-                        // assume that we have a safe point.
-                        hasGCSafePoint = true;
-                    }
-                }
-
                 hasImplicitControlFlow |= hasEHSuccs && ((tree->gtFlags & GTF_EXCEPT) != 0);
+                hasGCSafePoint |= IsPotentialGCSafePoint(tree);
 
                 switch (tree->gtOper)
                 {

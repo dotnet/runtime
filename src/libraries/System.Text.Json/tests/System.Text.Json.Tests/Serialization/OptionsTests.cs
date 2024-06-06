@@ -960,6 +960,60 @@ namespace System.Text.Json.Serialization.Tests
             }, arg, options).Dispose();
         }
 
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void Options_NullabilityInfoFeatureSwitchDisabled_ReportsPropertiesAsNullable()
+        {
+            var options = new RemoteInvokeOptions()
+            {
+                RuntimeConfigurationOptions =
+                {
+                    ["System.Reflection.NullabilityInfoContext.IsSupported"] = false
+                }
+            };
+
+            RemoteExecutor.Invoke(static () =>
+            {
+                var value = new NullableAnnotationsTests.NotNullablePropertyClass();
+                string expectedJson = """{"Property":null}""";
+
+                Assert.Null(value.Property);
+                string json = JsonSerializer.Serialize(value);
+                Assert.Equal(expectedJson, json);
+                value = JsonSerializer.Deserialize<NullableAnnotationsTests.NotNullablePropertyClass>(json);
+                Assert.Null(value.Property);
+
+            }, options).Dispose();
+        }
+
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void Options_NullabilityInfoFeatureSwitchDisabled_RespectNullabilityAnnotationsEnabled_ThrowsInvalidOperationException()
+        {
+            var options = new RemoteInvokeOptions()
+            {
+                RuntimeConfigurationOptions =
+                {
+                    ["System.Reflection.NullabilityInfoContext.IsSupported"] = false
+                }
+            };
+
+            RemoteExecutor.Invoke(static () =>
+            {
+                var jsonOptions = new JsonSerializerOptions { RespectNullableAnnotations = true };
+                var value = new NullableAnnotationsTests.NotNullablePropertyClass();
+                string expectedJson = """{"Property":null}""";
+                InvalidOperationException ex;
+
+                ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(value, jsonOptions));
+                Assert.Contains("System.Reflection.NullabilityInfoContext.IsSupported", ex.Message);
+
+                ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<NullableAnnotationsTests.NotNullablePropertyClass>(expectedJson, jsonOptions));
+                Assert.Contains("System.Reflection.NullabilityInfoContext.IsSupported", ex.Message);
+
+            }, options).Dispose();
+        }
+
         private static void GenericObjectOrJsonElementConverterTestHelper<T>(string converterName, object objectValue, string stringValue)
         {
             var options = new JsonSerializerOptions();

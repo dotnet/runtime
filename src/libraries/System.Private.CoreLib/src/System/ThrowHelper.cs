@@ -1070,6 +1070,8 @@ namespace System
                     return "divisor";
                 case ExceptionArgument.factor:
                     return "factor";
+                case ExceptionArgument.set:
+                    return "set";
                 default:
                     Debug.Fail("The enum value is not defined, please check the ExceptionArgument Enum.");
                     return "";
@@ -1256,6 +1258,8 @@ namespace System
                     return SR.Argument_MustBePrimitiveArray;
                 case ExceptionResource.Argument_BadFieldForInitializeArray:
                     return SR.Argument_BadFieldForInitializeArray;
+                case ExceptionResource.InvalidOperation_IncompatibleComparer:
+                    return SR.InvalidOperation_IncompatibleComparer;
                 default:
                     Debug.Fail("The enum value is not defined, please check the ExceptionResource Enum.");
                     return "";
@@ -1366,6 +1370,7 @@ namespace System
         arrayType,
         divisor,
         factor,
+        set,
     }
 
     //
@@ -1455,5 +1460,6 @@ namespace System
         Arg_PrimitiveWiden,
         Argument_MustBePrimitiveArray,
         Argument_BadFieldForInitializeArray,
+        InvalidOperation_IncompatibleComparer,
     }
 }
