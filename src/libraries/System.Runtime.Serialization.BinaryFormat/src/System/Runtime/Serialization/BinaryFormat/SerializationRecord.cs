@@ -48,7 +48,7 @@ abstract class SerializationRecord
     /// <para>This method does NOT take into account member names or their types.</para>
     /// </remarks>
     /// <param name="type">The type to compare against.</param>
-    /// <returns>True if the serialized type and assembly name match provided type.</returns>
+    /// <returns><see langword="true" /> if the serialized type and assembly name match provided type; otherwise, <see langword="false" />.</returns>
     public virtual bool IsTypeNameMatching(Type type) => false;
 
     /// <summary>

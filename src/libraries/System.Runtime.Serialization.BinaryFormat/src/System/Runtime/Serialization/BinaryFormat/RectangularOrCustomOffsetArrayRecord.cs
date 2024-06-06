@@ -28,13 +28,13 @@ internal sealed class RectangularOrCustomOffsetArrayRecord : ArrayRecord
         // A List<T> can hold as many objects as an array, so for multi-dimensional arrays
         // with more elements than Array.MaxLength we use LinkedList.
         // Testing that many elements takes a LOT of time, so to ensure that both code paths are tested,
-        // we always use LinkedList code path for non-Release builds.
-#if RELEASE
+        // we always use LinkedList code path for Debug builds.
+#if DEBUG
+        _values = new LinkedList<object>();
+#else
         _values = arrayInfo.TotalElementsCount <= ArrayInfo.MaxArrayLength
             ? new List<object>(canPreAllocate ? arrayInfo.GetSZArrayLength() : Math.Min(4, arrayInfo.GetSZArrayLength()))
             : new LinkedList<object>();
-#else
-        _values = new LinkedList<object>();
 #endif
 
     }

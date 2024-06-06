@@ -22,6 +22,9 @@ internal sealed class ObjectNullMultipleRecord : NullsRecord
 
     internal static ObjectNullMultipleRecord Decode(BinaryReader reader)
     {
+        // 2.5.5 ObjectNullMultiple
+        
+        // NullCount (4 bytes): An INT32 value ... The value MUST be a positive integer.
         int count = reader.ReadInt32();
         if (count <= 0)
         {

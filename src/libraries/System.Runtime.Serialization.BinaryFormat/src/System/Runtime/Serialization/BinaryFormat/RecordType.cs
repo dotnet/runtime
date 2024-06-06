@@ -24,10 +24,12 @@ enum RecordType : byte
     /// </summary>
     SerializedStreamHeader = 0,
     /// <summary>
-    /// A class information that references another class record's metadata.
+    /// Class information that references another class record's metadata.
     /// </summary>
     ClassWithId = 1,
+    
     // SystemClassWithMembers and ClassWithMembers are not supported by design (require type loading)
+    
     /// <summary>
     /// A system class information with type info.
     /// </summary>
@@ -41,7 +43,7 @@ enum RecordType : byte
     /// </summary>
     BinaryObjectString = 6,
     /// <summary>
-    /// An array other than single dimensional array of primitive types and <see cref="object" />.
+    /// An array of any rank or element type.
     /// </summary>
     BinaryArray = 7,
     /// <summary>
@@ -53,7 +55,7 @@ enum RecordType : byte
     /// </summary>
     MemberReference = 9,
     /// <summary>
-    /// A <see langword="null" />.
+    /// A single <see langword="null" /> value.
     /// </summary>
     ObjectNull = 10,
     /// <summary>
@@ -61,11 +63,11 @@ enum RecordType : byte
     /// </summary>
     MessageEnd = 11,
     /// <summary>
-    /// A library is a named unit that contains a collection of types.
+    /// A record that associates a numeric identifier with a named library.
     /// </summary>
     BinaryLibrary = 12,
     /// <summary>
-    /// Multiple (less than 256) <see langword="null" />.
+    /// Multiple (less than 256) <see langword="null" /> values.
     /// </summary>
     ObjectNullMultiple256 = 13,
     /// <summary>
@@ -77,11 +79,11 @@ enum RecordType : byte
     /// </summary>
     ArraySinglePrimitive = 15,
     /// <summary>
-    /// A single dimensional array of <see cref="object" />.
+    /// A single-dimensional array of <see cref="object" /> values.
     /// </summary>
     ArraySingleObject = 16,
     /// <summary>
-    /// A single dimensional array of <see langword="string" />.
+    /// A single-dimensional array of <see langword="string" /> values.
     /// </summary>
     ArraySingleString = 17
 }

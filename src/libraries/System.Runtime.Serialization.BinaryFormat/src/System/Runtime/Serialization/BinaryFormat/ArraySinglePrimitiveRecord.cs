@@ -83,7 +83,7 @@ internal sealed class ArraySinglePrimitiveRecord<T> : ArrayRecord<T>
 
         // Most of the tests use MemoryStream or FileStream and they both allow for executing the fast path.
         // To ensure the slow path is tested as well, the fast path is executed only for optimized builds.
-#if NETCOREAPP
+#if NET
         if (typeof(T) != typeof(decimal) && typeof(T) != typeof(DateTime) && typeof(T) != typeof(TimeSpan) // not optimized
             && reader.IsDataAvailable(count * Unsafe.SizeOf<T>()))
         {
@@ -165,7 +165,7 @@ internal sealed class ArraySinglePrimitiveRecord<T> : ArrayRecord<T>
         return values;
     }
 
-#if NETCOREAPP
+#if NET
     private static T[] DecodePrimitiveTypesToArray(BinaryReader reader, int count)
     {
         T[] result = new T[count];

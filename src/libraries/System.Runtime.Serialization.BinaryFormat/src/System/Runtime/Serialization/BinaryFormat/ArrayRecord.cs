@@ -63,7 +63,7 @@ abstract class ArrayRecord : SerializationRecord
     ///   otherwise, <see langword="false" />.
     /// </param>
     /// <returns>An array filled with the data provided in the serialized records.</returns>
-    /// <exception cref="InvalidOperationException"><paramref name="expectedArrayType" /> does not match the data from payload.</exception>
+    /// <exception cref="InvalidOperationException"><paramref name="expectedArrayType" /> does not match the data from the payload.</exception>
     [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
     public Array GetArray(Type expectedArrayType, bool allowNulls = true)
     {
