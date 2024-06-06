@@ -509,7 +509,10 @@ $__Command $HARNESS_RUNNER apple test %5c
   --app="${__TestBinaryBase}/${__Category}.app" %5c
   --output-directory="$__OutputDir" %5c
   --target maccatalyst %5c
-  --timeout 01:15:00
+  --timeout 01:15:00 %5c
+  --launch-timeout 01:15:00 %5c
+  --xcode /Applications/Xcode131.app %5c
+  -v
 CLRTestExitCode=$?
 
 # Exit code of xharness is zero when tests finished successfully
