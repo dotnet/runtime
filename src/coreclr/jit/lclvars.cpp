@@ -1075,13 +1075,11 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                 {
                     varDsc->SetArgReg(
                         genMapRegArgNumToRegNum(firstAllocatedRegArgNum, argRegTypeInStruct1, info.compCallConv));
-                    varDsc->lvIs4Field1 = (genTypeSize(argRegTypeInStruct1) == 4) ? 1 : 0;
                     if (argRegTypeInStruct2 != TYP_UNKNOWN)
                     {
                         secondAllocatedRegArgNum = varDscInfo->allocRegArg(argRegTypeInStruct2, 1);
                         varDsc->SetOtherArgReg(
                             genMapRegArgNumToRegNum(secondAllocatedRegArgNum, argRegTypeInStruct2, info.compCallConv));
-                        varDsc->lvIs4Field2 = (genTypeSize(argRegTypeInStruct2) == 4) ? 1 : 0;
                     }
                     else if (cSlotsToEnregister > 1)
                     {
@@ -1631,9 +1629,7 @@ void Compiler::lvaInitVarDsc(LclVarDsc*              varDsc,
     varDsc->lvIsImplicitByRef = 0;
 #endif // FEATURE_IMPLICIT_BYREFS
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    varDsc->lvIs4Field1 = 0;
-    varDsc->lvIs4Field2 = 0;
-    varDsc->lvIsSplit   = 0;
+    varDsc->lvIsSplit = 0;
 #endif // TARGET_LOONGARCH64 || TARGET_RISCV64
 
     // Set the lvType (before this point it is TYP_UNDEF).
