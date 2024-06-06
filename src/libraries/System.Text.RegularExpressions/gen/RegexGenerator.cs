@@ -140,8 +140,8 @@ namespace System.Text.RegularExpressions.Generator
                 }
 
                 // At this point we'll be emitting code.  Create a writer to hold it all.
-                var sw = new StringWriter();
-                IndentedTextWriter writer = new(sw);
+                using var sw = new StringWriter();
+                using IndentedTextWriter writer = new(sw);
 
                 // Add file headers and required usings.
                 foreach (string header in s_headers)
