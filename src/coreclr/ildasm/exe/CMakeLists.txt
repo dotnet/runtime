@@ -59,8 +59,11 @@ add_executable_clr(ildasm
 )
 
 set(ILDASM_LINK_LIBRARIES
+    mdcompiler_wks
+    mdruntime_wks
+    mdruntimerw_wks
     # These libraries that have circular references
-    $<LINK_GROUP:RESCAN,utilcodestaticnohost,mdcompiler_wks,mdruntime_wks,mdruntimerw_wks,mdstaticapi>
+    $<LINK_GROUP:RESCAN,utilcodestaticnohost,mdstaticapi>
     corguids
 )
 
