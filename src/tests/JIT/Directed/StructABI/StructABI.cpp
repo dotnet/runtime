@@ -131,6 +131,27 @@ DLLEXPORT Empty8Float EchoEmpty8FloatRiscV(int a0, float fa0, Empty8Float fa1)
 	return fa1;
 }
 
+DLLEXPORT Empty8Float EchoEmpty8FloatInIntegerRegsRiscV(
+	int a0,
+	float fa0, float fa1, float fa2, float fa3, float fa4, float fa5, float fa6, float fa7, Empty8Float a1_a2)
+{
+	return a1_a2;
+}
+
+DLLEXPORT Empty8Float EchoEmpty8FloatSplitRiscV(
+	int a0, int a1, int a2, int a3, int a4, int a5, int a6,
+	float fa0, float fa1, float fa2, float fa3, float fa4, float fa5, float fa6, float fa7, Empty8Float a7_stack0)
+{
+	return a7_stack0;
+}
+
+DLLEXPORT Empty8Float EchoEmpty8FloatOnStackRiscV(
+	int a0, int a1, int a2, int a3, int a4, int a5, int a6, int a7,
+	float fa0, float fa1, float fa2, float fa3, float fa4, float fa5, float fa6, float fa7, Empty8Float stack0_stack1)
+{
+	return stack0_stack1;
+}
+
 DLLEXPORT EmptyFloatEmpty5Byte EchoEmptyFloatEmpty5ByteRiscV(int a0, float fa0, EmptyFloatEmpty5Byte fa1_a1)
 {
 	return fa1_a1;
@@ -139,6 +160,27 @@ DLLEXPORT EmptyFloatEmpty5Byte EchoEmptyFloatEmpty5ByteRiscV(int a0, float fa0, 
 DLLEXPORT EmptyFloatEmpty5UByte EchoEmptyFloatEmpty5UByteRiscV(int a0, float fa0, EmptyFloatEmpty5UByte fa1_a1)
 {
 	return fa1_a1;
+}
+
+DLLEXPORT EmptyFloatEmpty5Byte EchoEmptyFloatEmpty5ByteInIntegerRegsRiscV(
+	int a0,
+	float fa0, float fa1, float fa2, float fa3, float fa4, float fa5, float fa6, float fa7, EmptyFloatEmpty5Byte a1_a2)
+{
+	return a1_a2;
+}
+
+DLLEXPORT EmptyFloatEmpty5Byte EchoEmptyFloatEmpty5ByteSplitRiscV(
+	int a0, int a1, int a2, int a3, int a4, int a5, int a6,
+	float fa0, float fa1, float fa2, float fa3, float fa4, float fa5, float fa6, float fa7, EmptyFloatEmpty5Byte a7_stack0)
+{
+	return a7_stack0;
+}
+
+DLLEXPORT EmptyFloatEmpty5Byte EchoEmptyFloatEmpty5ByteOnStackRiscV(
+	int a0, int a1, int a2, int a3, int a4, int a5, int a6, int a7,
+	float fa0, float fa1, float fa2, float fa3, float fa4, float fa5, float fa6, float fa7, EmptyFloatEmpty5Byte stack0_stack1)
+{
+	return stack0_stack1;
 }
 
 DLLEXPORT LongEmptyDouble EchoLongEmptyDoubleRiscV(int a0, float fa0, LongEmptyDouble a1_fa1)
@@ -186,6 +228,27 @@ DLLEXPORT FloatEmpty32kInt EchoFloatEmpty32kIntRiscV(int a0, float fa0, FloatEmp
 DLLEXPORT PackedEmptyFloatLong EchoPackedEmptyFloatLongRiscV(int a0, float fa0, PackedEmptyFloatLong fa1_a1)
 {
 	return fa1_a1;
+}
+
+DLLEXPORT PackedEmptyFloatLong EchoPackedEmptyFloatLongInIntegerRegsRiscV(
+	int a0,
+	float fa0, float fa1, float fa2, float fa3, float fa4, float fa5, float fa6, float fa7, PackedEmptyFloatLong a1_a2)
+{
+	return a1_a2;
+}
+
+DLLEXPORT PackedEmptyFloatLong EchoPackedEmptyFloatLongSplitRiscV(
+	int a0, int a1, int a2, int a3, int a4, int a5, int a6,
+	float fa0, float fa1, float fa2, float fa3, float fa4, float fa5, float fa6, float fa7, PackedEmptyFloatLong a7_stack0)
+{
+	return a7_stack0;
+}
+
+DLLEXPORT PackedEmptyFloatLong EchoPackedEmptyFloatLongOnStackRiscV(
+	int a0, int a1, int a2, int a3, int a4, int a5, int a6, int a7,
+	float fa0, float fa1, float fa2, float fa3, float fa4, float fa5, float fa6, float fa7, PackedEmptyFloatLong stack0_stack1)
+{
+	return stack0_stack1;
 }
 
 DLLEXPORT ExplicitFloatLong EchoExplicitFloatLongRiscV(int a0, float fa0, ExplicitFloatLong fa1_a1)
