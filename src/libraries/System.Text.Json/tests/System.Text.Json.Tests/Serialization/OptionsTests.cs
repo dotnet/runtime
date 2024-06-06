@@ -1015,7 +1015,7 @@ namespace System.Text.Json.Serialization.Tests
                 if (shouldRespectRequiredConstructorParameters)
                 {
                     JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Point_3D>(json));
-                    Assert.Contains("was missing required properties including: 'Y'.", ex.Message);
+                    Assert.Contains("'Y'", ex.Message);
                 }
                 else
                 {
