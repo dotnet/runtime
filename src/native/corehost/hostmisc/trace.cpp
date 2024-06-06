@@ -179,7 +179,7 @@ void trace::error(const pal::char_t* format, ...)
 
         if (g_error_writer == nullptr)
         {
-            pal::err_fputs(buffer.data());
+            pal::err_print_line(buffer.data());
         }
         else
         {
@@ -200,7 +200,7 @@ void trace::println(const pal::char_t* format, ...)
     va_start(args, format);
     {
         std::lock_guard<spin_lock> lock(g_trace_lock);
-        pal::out_vprintf(format, args);
+        pal::out_vprint_line(format, args);
     }
     va_end(args);
 }

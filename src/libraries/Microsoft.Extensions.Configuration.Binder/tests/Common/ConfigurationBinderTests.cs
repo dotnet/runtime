@@ -1375,6 +1375,25 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             Assert.Equal(42, options.Length);
             Assert.Equal("Green", options.Color);
             Assert.Equal(1.23m, options.Thickness);
+            Assert.False(options.WasInitOnlyCalled);
+            Assert.False(options.WasPrivateGetInitOnlyCalled);
+        }
+
+        [Fact]
+        public void DoesNotCallSetOnly()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"SetOnly", "42"},
+                {"PrivateGetter", "42"},
+                {"InitOnly", "42"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<SetOnlyPoco>();
+            Assert.False(options.AnyCalled);
         }
 
         [Fact]
@@ -1500,6 +1519,7 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
 
             var options = config.Get<ClassWithMatchingParametersAndProperties>();
             Assert.Equal(42, options.Length);
+            Assert.Equal("Green", options.ColorFromCtor);
             Assert.Equal("the color is Green", options.Color);
         }
 
@@ -1786,18 +1806,33 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
 
             Assert.Equal(401, options.HttpStatusCode); // exists in configuration and properly sets the property
 
-            // This doesn't exist in configuration but the setter should be called which defaults the to '2' from input of '0'.
+            // This doesn't exist in configuration but the setter should be called which defaults the to '2'
             Assert.Equal(2, options.OtherCode);
+
+            // Items not in config with non-null getter values should have setter called with getter value
+            Assert.Equal(123, options.IntWithDefault);
+            Assert.True(options.WasIntWithDefaultSet);
+            Assert.Equal("default", options.OtherCodeString);
+            Assert.True(options.WasOtherCodeStringSet);
+            Assert.Equal("default", options.PocoWithDefault.Example);
+            Assert.Equal(1, options.PocoListWithDefault.Count);
+
+#if !BUILDING_SOURCE_GENERATOR_TESTS
+            // Source generator omits calls to setters for nested objects and collections
+            Assert.True(options.WasPocoWithDefaultSet);
+            Assert.True(options.WasPocoListWithDefaultSet);
+#endif
 
             // These don't exist in configuration and setters are not called since they are nullable.
             Assert.Equal(0, options.OtherCodeNullable);
-            Assert.Equal("default", options.OtherCodeString);
             Assert.Null(options.OtherCodeNull);
             Assert.Null(options.OtherCodeUri);
+            Assert.Null(options.StringWithNullDefault);
+            Assert.False(options.WasStringWithNullDefaultSet);
         }
 
         [Fact]
-        public void EnsureNotCallingSettersWhenGivenExistingInstanceNotInConfig()
+        public void EnsureNotCallingSettersWhenGivenExistingNullOnInstanceNotInConfig()
         {
             var builder = new ConfigurationBuilder();
             builder.AddInMemoryCollection(new KeyValuePair<string, string?>[] { });
@@ -1807,7 +1842,7 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
 
             // The setter for MyIntProperty throws, so this verifies that the setter is not called.
             config.GetSection("Dmy").Bind(instance);
-            Assert.Equal(42, instance.MyIntProperty);
+            Assert.Null(instance.MyIntProperty);
         }
 
         [Fact]

@@ -455,5 +455,11 @@ wasi.start(instance);
     <Exec Condition="'$(OS)' != 'Windows_NT'" Command="chmod a+x &quot;$(_WasmNodeScriptPath)&quot;" />
   </Target>
 
+  <Target Name="ProvideDefaultUserRuntimeConfig" BeforeTargets="_GenerateRuntimeConfigurationFilesInputCache" Condition="'$(GenerateRuntimeConfigurationFiles)' == 'true'">
+    <PropertyGroup Condition="!Exists('$(UserRuntimeConfig)')">
+      <UserRuntimeConfig>$(MSBuildThisFileDirectory)wasiconsole.runtimeconfig.template.json</UserRuntimeConfig>
+    </PropertyGroup>
+  </Target>
+
   <!--<Target Name="_WasmCalculateInitialHeapSize" />-->
 </Project>
