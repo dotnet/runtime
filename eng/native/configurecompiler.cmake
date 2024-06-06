@@ -110,6 +110,10 @@ if (MSVC)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /sourcelink:${CLR_SOURCELINK_FILE_PATH}")
   endif(EXISTS ${CLR_SOURCELINK_FILE_PATH})
 
+  # enable $<LINK_GROUP:RESCAN> on MSVC as a no-op
+  set(CMAKE_LINK_GROUP_USING_RESCAN "" "")
+  set(CMAKE_LINK_GROUP_USING_RESCAN_SUPPORTED ON)
+
   if (CMAKE_GENERATOR MATCHES "^Visual Studio.*$")
     # Debug build specific flags
     # The Ninja generator doesn't appear to have the default `/INCREMENTAL:ON` that

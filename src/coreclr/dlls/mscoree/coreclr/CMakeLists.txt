@@ -74,8 +74,10 @@ endif (CLR_CMAKE_HOST_UNIX)
 # library.
 set(CORECLR_LIBRARIES
     utilcode
-    # Libraries that have circular references
-    $<LINK_GROUP:RESCAN,cordbee_wks,debug-pal,${LIB_UNWINDER},v3binder>
+    cordbee_wks
+    debug-pal
+    ${LIB_UNWINDER}
+    v3binder
     mdcompiler_wks
     mdruntime_wks
     mdruntimerw_wks
@@ -125,7 +127,7 @@ endif(CLR_CMAKE_TARGET_WIN32)
 
 if(CLR_CMAKE_TARGET_LINUX)
     list(APPEND CORECLR_LIBRARIES
-        $<LINK_LIBRARY:WHOLE_ARCHIVE,tracepointprovider>
+        tracepointprovider
     )
 elseif(CLR_CMAKE_TARGET_SUNOS)
     list(APPEND CORECLR_LIBRARIES

@@ -107,9 +107,10 @@ endif(CLR_CMAKE_HOST_UNIX)
 # order dependent and changing the order can result in undefined symbols in the shared
 # library.
 set(COREDAC_LIBRARIES
+    corguids
     # These libraries have circular dependencies and must be grouped together
     # The libraries in the WHOLE_ARCHIVE group must have all of their symbols included in the final shared object
-    $<GENEX_EVAL$<LINK_GROUP:RESCAN,cee_dac,cordbee_dac,$<LINK_LIBRARY:WHOLE_ARCHIVE,corguids,daccess>,dbgutil,mdcompiler_dac,mdruntime_dac,mdruntimerw_dac,utilcode_dac,unwinder_dac>>
+    $<LINK_GROUP:RESCAN,cee_dac,cordbee_dac,$<LINK_LIBRARY:WHOLE_ARCHIVE,daccess>,dbgutil,mdcompiler_dac,mdruntime_dac,mdruntimerw_dac,utilcode_dac,unwinder_dac>
 )
 
 if(CLR_CMAKE_HOST_WIN32)
