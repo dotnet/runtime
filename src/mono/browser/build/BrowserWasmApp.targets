@@ -140,6 +140,7 @@
       AppDir="$(WasmAppDir)"
       Assemblies="@(_WasmAssembliesInternal)"
       MainAssemblyName="$(WasmMainAssemblyFileName)"
+      IsSingleFileBundle="$(WasmSingleFileBundle)"
       HostConfigs="@(HostConfig)"
       RuntimeArgsForHost="@(WasmMonoRuntimeArgs)"
       DefaultHostConfig="$(DefaultWasmHostConfig)"

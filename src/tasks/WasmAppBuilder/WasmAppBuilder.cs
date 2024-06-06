@@ -21,6 +21,7 @@ namespace Microsoft.WebAssembly.Build.Tasks;
 
 public class WasmAppBuilder : WasmAppBuilderBaseTask
 {
+    public bool IsSingleFileBundle { get; set; }
     public ITaskItem[]? RemoteSources { get; set; }
     public bool IncludeThreadsWorker { get; set; }
     public int PThreadPoolInitialSize { get; set; }
@@ -129,37 +130,41 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
         Log.LogMessage(MessageImportance.Low, $"Runtime assets output path {runtimeAssetsPath}");
 
         Directory.CreateDirectory(AppDir!);
-        Directory.CreateDirectory(runtimeAssetsPath);
-
-        if (UseWebcil)
-            Log.LogMessage(MessageImportance.Normal, "Converting assemblies to Webcil");
 
         int baseDebugLevel = helper.GetDebugLevel(false);
 
-        foreach (var assembly in _assemblies)
+        if (!IsSingleFileBundle)
         {
+            Directory.CreateDirectory(runtimeAssetsPath);
+
             if (UseWebcil)
+                Log.LogMessage(MessageImportance.Normal, "Converting assemblies to Webcil");
+
+            foreach (var assembly in _assemblies)
             {
-                using TempFileName tmpWebcil = new();
-                var webcilWriter = Microsoft.WebAssembly.Build.Tasks.WebcilConverter.FromPortableExecutable(inputPath: assembly, outputPath: tmpWebcil.Path, logger: logAdapter);
-                webcilWriter.ConvertToWebcil();
-                var finalWebcil = Path.Combine(runtimeAssetsPath, Path.ChangeExtension(Path.GetFileName(assembly), Utils.WebcilInWasmExtension));
-                if (Utils.CopyIfDifferent(tmpWebcil.Path, finalWebcil, useHash: true))
-                    Log.LogMessage(MessageImportance.Low, $"Generated {finalWebcil} .");
+                if (UseWebcil)
+                {
+                    using TempFileName tmpWebcil = new();
+                    var webcilWriter = Microsoft.WebAssembly.Build.Tasks.WebcilConverter.FromPortableExecutable(inputPath: assembly, outputPath: tmpWebcil.Path, logger: logAdapter);
+                    webcilWriter.ConvertToWebcil();
+                    var finalWebcil = Path.Combine(runtimeAssetsPath, Path.ChangeExtension(Path.GetFileName(assembly), Utils.WebcilInWasmExtension));
+                    if (Utils.CopyIfDifferent(tmpWebcil.Path, finalWebcil, useHash: true))
+                        Log.LogMessage(MessageImportance.Low, $"Generated {finalWebcil} .");
+                    else
+                        Log.LogMessage(MessageImportance.Low, $"Skipped generating {finalWebcil} as the contents are unchanged.");
+                    _fileWrites.Add(finalWebcil);
+                }
                 else
-                    Log.LogMessage(MessageImportance.Low, $"Skipped generating {finalWebcil} as the contents are unchanged.");
-                _fileWrites.Add(finalWebcil);
-            }
-            else
-            {
-                FileCopyChecked(assembly, Path.Combine(runtimeAssetsPath, Path.GetFileName(assembly)), "Assemblies");
-            }
-            if (baseDebugLevel != 0)
-            {
-                var pdb = assembly;
-                pdb = Path.ChangeExtension(pdb, ".pdb");
-                if (File.Exists(pdb))
-                    FileCopyChecked(pdb, Path.Combine(runtimeAssetsPath, Path.GetFileName(pdb)), "Assemblies");
+                {
+                    FileCopyChecked(assembly, Path.Combine(runtimeAssetsPath, Path.GetFileName(assembly)), "Assemblies");
+                }
+                if (baseDebugLevel != 0)
+                {
+                    var pdb = assembly;
+                    pdb = Path.ChangeExtension(pdb, ".pdb");
+                    if (File.Exists(pdb))
+                        FileCopyChecked(pdb, Path.Combine(runtimeAssetsPath, Path.GetFileName(pdb)), "Assemblies");
+                }
             }
         }
 
@@ -196,48 +201,51 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
             File.WriteAllText(packageJsonPath, json);
         }
 
-        foreach (var assembly in _assemblies)
+        if (!IsSingleFileBundle)
         {
-            string assemblyPath = assembly;
-            var bytes = File.ReadAllBytes(assemblyPath);
-            // for the is IL IsAssembly check we need to read the bytes from the original DLL
-            if (!Utils.IsManagedAssembly(bytes))
+            foreach (var assembly in _assemblies)
             {
-                Log.LogMessage(MessageImportance.Low, "Skipping non-assembly file: " + assemblyPath);
-            }
-            else
-            {
-                if (UseWebcil)
+                string assemblyPath = assembly;
+                var bytes = File.ReadAllBytes(assemblyPath);
+                // for the is IL IsAssembly check we need to read the bytes from the original DLL
+                if (!Utils.IsManagedAssembly(bytes))
                 {
-                    assemblyPath = Path.Combine(runtimeAssetsPath, Path.ChangeExtension(Path.GetFileName(assembly), Utils.WebcilInWasmExtension));
-                    // For the hash, read the bytes from the webcil file, not the dll file.
-                    bytes = File.ReadAllBytes(assemblyPath);
+                    Log.LogMessage(MessageImportance.Low, "Skipping non-assembly file: " + assemblyPath);
                 }
-
-                var assemblyName = Path.GetFileName(assemblyPath);
-                bool isCoreAssembly = IsAot || helper.IsCoreAssembly(assemblyName);
-
-                var assemblyList = isCoreAssembly ? bootConfig.resources.coreAssembly : bootConfig.resources.assembly;
-                assemblyList[assemblyName] = Utils.ComputeIntegrity(bytes);
-
-                if (baseDebugLevel != 0)
+                else
                 {
-                    var pdb = Path.ChangeExtension(assembly, ".pdb");
-                    if (File.Exists(pdb))
+                    if (UseWebcil)
                     {
-                        if (isCoreAssembly)
-                        {
-                            if (bootConfig.resources.corePdb == null)
-                                bootConfig.resources.corePdb = new();
-                        }
-                        else
-                        {
-                            if (bootConfig.resources.pdb == null)
-                                bootConfig.resources.pdb = new();
-                        }
+                        assemblyPath = Path.Combine(runtimeAssetsPath, Path.ChangeExtension(Path.GetFileName(assembly), Utils.WebcilInWasmExtension));
+                        // For the hash, read the bytes from the webcil file, not the dll file.
+                        bytes = File.ReadAllBytes(assemblyPath);
+                    }
 
-                        var pdbList = isCoreAssembly ? bootConfig.resources.corePdb : bootConfig.resources.pdb;
-                        pdbList[Path.GetFileName(pdb)] = Utils.ComputeIntegrity(pdb);
+                    var assemblyName = Path.GetFileName(assemblyPath);
+                    bool isCoreAssembly = IsAot || helper.IsCoreAssembly(assemblyName);
+
+                    var assemblyList = isCoreAssembly ? bootConfig.resources.coreAssembly : bootConfig.resources.assembly;
+                    assemblyList[assemblyName] = Utils.ComputeIntegrity(bytes);
+
+                    if (baseDebugLevel != 0)
+                    {
+                        var pdb = Path.ChangeExtension(assembly, ".pdb");
+                        if (File.Exists(pdb))
+                        {
+                            if (isCoreAssembly)
+                            {
+                                if (bootConfig.resources.corePdb == null)
+                                    bootConfig.resources.corePdb = new();
+                            }
+                            else
+                            {
+                                if (bootConfig.resources.pdb == null)
+                                    bootConfig.resources.pdb = new();
+                            }
+
+                            var pdbList = isCoreAssembly ? bootConfig.resources.corePdb : bootConfig.resources.pdb;
+                            pdbList[Path.GetFileName(pdb)] = Utils.ComputeIntegrity(pdb);
+                        }
                     }
                 }
             }
