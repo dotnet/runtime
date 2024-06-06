@@ -220,18 +220,6 @@ int main(void)
 check_cxx_source_runs("
 #include <stdio.h>
 #include <stdlib.h>
-
-int main(void) {
-  char buf[256] = { 0 };
-  snprintf(buf, 0x7fffffff, \"%#x\", 0x12345678);
-  if (buf[0] == 0x0) {
-    exit(1);
-  }
-  exit(0);
-}" HAVE_LARGE_SNPRINTF_SUPPORT)
-check_cxx_source_runs("
-#include <stdio.h>
-#include <stdlib.h>
 #include <fcntl.h>
 #include <string.h>
 #include <sys/stat.h>
