@@ -63,39 +63,30 @@ internal sealed class ArraySinglePrimitiveRecord<T> : ArrayRecord<T>
     {
         if (typeof(T) == typeof(byte) && reader.IsDataAvailable(count))
         {
-            T[] result = (T[])(object)reader.ReadBytes(count);
-            // This might be less than the number of bytes requested if the end of the stream is reached.
-            if (result.Length != count)
-            {
-                ThrowHelper.ThrowEndOfStreamException();
-            }
-            return result;
+            return (T[])(object)reader.ReadBytes(count);
         }
+        // the input is UTF8, so the check does not include sizeof(char)
         else if (typeof(T) == typeof(char) && reader.IsDataAvailable(count))
         {
-            T[] result = (T[])(object)reader.ReadChars(count);
-            if (result.Length != count)
-            {
-                ThrowHelper.ThrowEndOfStreamException();
-            }
-            return result;
+            return (T[])(object)reader.ReadChars(count);
         }
 
+        // For decimals, the input is provided as strings, so we can't compute the required size up-front.
+        bool canPreAllocate = typeof(T) != typeof(decimal) && reader.IsDataAvailable(count * Unsafe.SizeOf<T>());
         // Most of the tests use MemoryStream or FileStream and they both allow for executing the fast path.
         // To ensure the slow path is tested as well, the fast path is executed only for optimized builds.
-#if NET
-        if (typeof(T) != typeof(decimal) && typeof(T) != typeof(DateTime) && typeof(T) != typeof(TimeSpan) // not optimized
-            && reader.IsDataAvailable(count * Unsafe.SizeOf<T>()))
+#if NET && RELEASE
+        if (canPreAllocate)
         {
             return DecodePrimitiveTypesToArray(reader, count);
         }
 #endif
-        return DecodePrimitiveTypesToList(reader, count);
+        return DecodePrimitiveTypesToList(reader, count, canPreAllocate);
     }
 
-    private static List<T> DecodePrimitiveTypesToList(BinaryReader reader, int count)
+    private static List<T> DecodePrimitiveTypesToList(BinaryReader reader, int count, bool canPreAllocate)
     {
-        List<T> values = [];
+        List<T> values = new List<T>(canPreAllocate ? count : Math.Min(count, 4));
         for (int i = 0; i < count; i++)
         {
             if (typeof(T) == typeof(byte))
@@ -174,35 +165,37 @@ internal sealed class ArraySinglePrimitiveRecord<T> : ArrayRecord<T>
 
         if (!BitConverter.IsLittleEndian)
         {
-            if (typeof(T) == typeof(short))
+            if (typeof(T) == typeof(short) || typeof(T) == typeof(ushort))
             {
                 Span<short> span = MemoryMarshal.Cast<T, short>(result);
                 BinaryPrimitives.ReverseEndianness(span, span);
             }
-            else if (typeof(T) == typeof(ushort))
-            {
-                Span<ushort> span = MemoryMarshal.Cast<T, ushort>(result);
-                BinaryPrimitives.ReverseEndianness(span, span);
-            }
-            else if (typeof(T) == typeof(int) || typeof(T) == typeof(float))
+            else if (typeof(T) == typeof(int) || typeof(T) == typeof(uint) || typeof(T) == typeof(float))
             {
                 Span<int> span = MemoryMarshal.Cast<T, int>(result);
                 BinaryPrimitives.ReverseEndianness(span, span);
             }
-            else if (typeof(T) == typeof(uint))
-            {
-                Span<uint> span = MemoryMarshal.Cast<T, uint>(result);
-                BinaryPrimitives.ReverseEndianness(span, span);
-            }
-            else if (typeof(T) == typeof(long) || typeof(T) == typeof(double))
+            else if (typeof(T) == typeof(long) || typeof(T) == typeof(ulong) || typeof(T) == typeof(double)
+                  || typeof(T) == typeof(DateTime) || typeof(T) == typeof(TimeSpan))
             {
                 Span<long> span = MemoryMarshal.Cast<T, long>(result);
                 BinaryPrimitives.ReverseEndianness(span, span);
             }
-            else if (typeof(T) == typeof(ulong))
+        }
+
+        if (typeof(T) == typeof(DateTime) || typeof(T) == typeof(TimeSpan))
+        {
+            Span<long> longs = MemoryMarshal.Cast<T, long>(result);
+            for (int i = 0; i < longs.Length; i++)
             {
-                Span<ulong> span = MemoryMarshal.Cast<T, ulong>(result);
-                BinaryPrimitives.ReverseEndianness(span, span);
+                if (typeof(T) == typeof(DateTime))
+                {
+                    result[i] = (T)(object)Utils.BinaryReaderExtensions.CreateDateTimeFromData(longs[i]);
+                }
+                else
+                {
+                    result[i] = (T)(object)new TimeSpan(longs[i]);
+                }
             }
         }
 

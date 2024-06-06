@@ -27,9 +27,9 @@ enum RecordType : byte
     /// Class information that references another class record's metadata.
     /// </summary>
     ClassWithId = 1,
-    
+
     // SystemClassWithMembers and ClassWithMembers are not supported by design (require type loading)
-    
+
     /// <summary>
     /// A system class information with type info.
     /// </summary>

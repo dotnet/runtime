@@ -11,7 +11,7 @@ public class EdgeCaseTests : ReadTests
     [Fact]
     public void SurrogatesGetNoSpecialHandling()
     {
-#if NETCOREAPP
+#if NET
         // Type is [Serializable] only on Full .NET Framework.
         // So here we use a Base64 representation of serialized typeof(object)
         const string serializedWithFullFramework = "AAEAAAD/////AQAAAAAAAAAEAQAAAB9TeXN0ZW0uVW5pdHlTZXJpYWxpemF0aW9uSG9sZGVyAwAAAAREYXRhCVVuaXR5VHlwZQxBc3NlbWJseU5hbWUBAAEIBgIAAAANU3lzdGVtLk9iamVjdAQAAAAGAwAAAEttc2NvcmxpYiwgVmVyc2lvbj00LjAuMC4wLCBDdWx0dXJlPW5ldXRyYWwsIFB1YmxpY0tleVRva2VuPWI3N2E1YzU2MTkzNGUwODkL";
@@ -60,11 +60,11 @@ public class EdgeCaseTests : ReadTests
         }
     }
 
-    [Theory]
+    [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
     [InlineData(100)]
     [InlineData(64_001)]
     [InlineData(127_000)]
-#if RELEASE && NETCOREAPP // it takes a lot of time to execute
+#if RELEASE && NET // it takes a lot of time to execute
     [InlineData(2147483591)] // Array.MaxLength
 #endif
     public void CanReadArrayOfAnySize(int length)

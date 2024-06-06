@@ -12,7 +12,7 @@ namespace System.Runtime.Serialization.BinaryFormat;
 /// <remarks>
 /// <para>
 /// The NRBF specification considers the following types to be primitive:
-/// <see cref="String"/>, <see cref="bool"/>, <see cref="byte"/>, <see cref="sbyte"/>
+/// <see cref="string"/>, <see cref="bool"/>, <see cref="byte"/>, <see cref="sbyte"/>
 /// <see cref="char"/>, <see cref="short"/>, <see cref="ushort"/>,
 /// <see cref="int"/>, <see cref="uint"/>, <see cref="long"/>, <see cref="ulong"/>,
 /// <see cref="float"/>, <see cref="double"/>, <see cref="decimal"/>,

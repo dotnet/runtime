@@ -44,7 +44,7 @@ internal sealed class RecordMap : IReadOnlyDictionary<int, SerializationRecord>
             }
             else
             {
-#if NETCOREAPP
+#if NET
                 if (_map.TryAdd(record.ObjectId, record))
                 {
                     return;
@@ -84,7 +84,7 @@ internal sealed class RecordMap : IReadOnlyDictionary<int, SerializationRecord>
 
         public int GetHashCode(int obj)
         {
-#if NETCOREAPP
+#if NET
             Span<int> integers = new(ref obj);
 #else
             Span<int> integers = stackalloc int[1] { obj };

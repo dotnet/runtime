@@ -26,7 +26,7 @@ static class PayloadReader
     /// <returns><see langword="true" /> if it starts with NRBF payload header; otherwise, <see langword="false" />.</returns>
     public static bool StartsWithPayloadHeader(byte[] bytes)
     {
-#if NETCOREAPP
+#if NET
         ArgumentNullException.ThrowIfNull(bytes);
 #else
         if (bytes is null)
@@ -37,7 +37,7 @@ static class PayloadReader
 
         return bytes.Length >= SerializedStreamHeaderRecord.Size
             && bytes[0] == (byte)RecordType.SerializedStreamHeader
-#if NETCOREAPP
+#if NET
             && BinaryPrimitives.ReadInt32LittleEndian(bytes.AsSpan(9)) == SerializedStreamHeaderRecord.MajorVersion
             && BinaryPrimitives.ReadInt32LittleEndian(bytes.AsSpan(13)) == SerializedStreamHeaderRecord.MinorVersion;
 #else
@@ -58,7 +58,7 @@ static class PayloadReader
     /// <remarks><para>When this method returns, <paramref name="stream" /> will be restored to its original position.</para></remarks>
     public static bool StartsWithPayloadHeader(Stream stream)
     {
-#if NETCOREAPP
+#if NET
         ArgumentNullException.ThrowIfNull(stream);
 #else
         if (stream is null)
@@ -81,7 +81,7 @@ static class PayloadReader
 
         try
         {
-#if NETCOREAPP
+#if NET
             stream.ReadExactly(buffer, 0, buffer.Length);
 #else
             int offset = 0;
@@ -134,7 +134,7 @@ static class PayloadReader
     /// <inheritdoc cref="Read(Stream, PayloadOptions?, bool)"/>
     public static SerializationRecord Read(Stream payload, out IReadOnlyDictionary<int, SerializationRecord> recordMap, PayloadOptions? options = default, bool leaveOpen = false)
     {
-#if NETCOREAPP
+#if NET
         ArgumentNullException.ThrowIfNull(payload);
 #else
         if (payload is null)

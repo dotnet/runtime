@@ -121,7 +121,10 @@ internal sealed class BinaryArrayRecord : ArrayRecord
 
         bool isRectangular = arrayType is BinaryArrayType.Rectangular or BinaryArrayType.RectangularOffset;
 
-        if (rank < 1 || rank > 32
+        // It is an arbitrary limit in the current CoreCLR type loader.
+        const int MaxSupportedArrayRank = 32;
+
+        if (rank < 1 || rank > MaxSupportedArrayRank
             || (rank != 1 && !isRectangular)
             || (rank == 1 && isRectangular))
         {

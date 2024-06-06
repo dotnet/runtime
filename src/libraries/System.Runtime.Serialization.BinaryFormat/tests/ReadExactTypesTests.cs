@@ -406,7 +406,7 @@ public class ReadExactTypesTests : ReadTests
         Verify(decimal.MaxValue);
         Verify(TimeSpan.MaxValue);
         Verify(DateTime.Now);
-#if NETCOREAPP
+#if NET
         Verify(nint.MaxValue);
         Verify(nuint.MaxValue);
 #endif

@@ -57,7 +57,7 @@ internal sealed class ClassInfo
             // however it's impossible to get such output with BinaryFormatter,
             // so we prohibit that on purpose.
             string memberName = reader.ReadString();
-#if NETCOREAPP
+#if NET
             if (memberNames.TryAdd(memberName, i))
             {
                 continue;

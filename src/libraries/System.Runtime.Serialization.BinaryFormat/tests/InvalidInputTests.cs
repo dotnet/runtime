@@ -69,6 +69,37 @@ public class InvalidInputTests : ReadTests
         Assert.Throws<SerializationException>(() => PayloadReader.Read(stream));
     }
 
+    [Theory]
+    [InlineData(0, RecordType.ObjectNullMultiple256)]
+    [InlineData(0, RecordType.ObjectNullMultiple)] 
+    [InlineData(-1, RecordType.ObjectNullMultiple)]
+    public void ThrowsWhenNumberOfNullsIsInvalid(int nullCount, RecordType recordType)
+    {
+        using MemoryStream stream = new();
+        BinaryWriter writer = new(stream, Encoding.UTF8);
+
+        WriteSerializedStreamHeader(writer);
+
+        writer.Write((byte)RecordType.ArraySingleString);
+        writer.Write(1); // object ID
+        writer.Write(1); // length
+        writer.Write((byte)recordType);
+
+        if (recordType == RecordType.ObjectNullMultiple256)
+        {
+            writer.Write((byte)nullCount); // null count
+        }
+        else
+        {
+            writer.Write(nullCount); // null count
+        }
+
+        writer.Write((byte)RecordType.MessageEnd);
+
+        stream.Position = 0;
+        Assert.Throws<SerializationException>(() => PayloadReader.Read(stream));
+    }
+
     [Fact]
     public void ThrowWhenArrayOfStringsContainsReferenceToNonString()
     {

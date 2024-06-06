@@ -67,7 +67,7 @@ abstract class ArrayRecord : SerializationRecord
     [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
     public Array GetArray(Type expectedArrayType, bool allowNulls = true)
     {
-#if NETCOREAPP
+#if NET
         ArgumentNullException.ThrowIfNull(expectedArrayType);
 #else
         if (expectedArrayType is null)
@@ -153,6 +153,7 @@ abstract class ArrayRecord<T> : ArrayRecord
     ///   <see langword="true" /> to permit <see langword="null" /> values within the array;
     ///   otherwise, <see langword="false" />.
     /// </param>
+    /// <returns>An array filled with the data provided in the serialized records.</returns>
     public abstract T?[] GetArray(bool allowNulls = true);
 
 #pragma warning disable IL3051 // RequiresDynamicCode is not required in this particualar case

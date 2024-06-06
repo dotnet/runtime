@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Runtime.Serialization.BinaryFormat.Utils;
 
 namespace System.Runtime.Serialization.BinaryFormat;
 
@@ -20,5 +21,14 @@ internal sealed class ObjectNullMultiple256Record : NullsRecord
     internal override int NullCount { get; }
 
     internal static ObjectNullMultiple256Record Decode(BinaryReader reader)
-        => new(reader.ReadByte());
+    {
+        // The NRBF spec for 2.5.6 ObjectNullMultiple allows for 0, but we don't.
+        byte count = reader.ReadByte();
+        if (count == 0)
+        {
+            ThrowHelper.ThrowInvalidValue(count);
+        }
+
+        return new ObjectNullMultiple256Record(count);
+    }
 }
