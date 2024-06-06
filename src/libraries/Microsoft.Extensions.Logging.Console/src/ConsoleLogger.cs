@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.Versioning;
@@ -13,7 +14,7 @@ namespace Microsoft.Extensions.Logging.Console
     /// A logger that writes messages in the console.
     /// </summary>
     [UnsupportedOSPlatform("browser")]
-    internal sealed class ConsoleLogger : ILogger
+    internal sealed class ConsoleLogger : ILogger, IBufferedLogger
     {
         private readonly string _name;
         private readonly ConsoleLoggerProcessor _queueProcessor;
@@ -67,6 +68,33 @@ namespace Microsoft.Extensions.Logging.Console
                 sb.Capacity = 1024;
             }
             _queueProcessor.EnqueueMessage(new LogMessageEntry(computedAnsiString, logAsError: logLevel >= Options.LogToStandardErrorThreshold));
+        }
+
+        /// <inheritdoc />
+        public void LogRecords(IReadOnlyList<BufferedLogRecord> records)
+        {
+            ThrowHelper.ThrowIfNull(records);
+
+            t_stringWriter ??= new StringWriter();
+
+            foreach (var rec in records)
+            {
+                var logEntry = new LogEntry<BufferedLogRecord>(rec.LogLevel, _name, rec.EventId, rec, null, (s, e) => s.FormattedMessage ?? string.Empty);
+                Formatter.Write(in logEntry, null, t_stringWriter);
+
+                var sb = t_stringWriter.GetStringBuilder();
+                if (sb.Length == 0)
+                {
+                    continue;
+                }
+                string computedAnsiString = sb.ToString();
+                sb.Clear();
+                if (sb.Capacity > 1024)
+                {
+                    sb.Capacity = 1024;
+                }
+                _queueProcessor.EnqueueMessage(new LogMessageEntry(computedAnsiString, logAsError: rec.LogLevel >= Options.LogToStandardErrorThreshold));
+            }
         }
 
         /// <inheritdoc />

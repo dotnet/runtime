@@ -46,19 +46,32 @@ namespace Microsoft.Extensions.Logging.Console
 
         public override void Write<TState>(in LogEntry<TState> logEntry, IExternalScopeProvider? scopeProvider, TextWriter textWriter)
         {
-            string message = logEntry.Formatter(logEntry.State, logEntry.Exception);
-            if (logEntry.Exception == null && message == null)
+            if (logEntry.State is BufferedLogRecord bufferedRecord)
             {
-                return;
-            }
+                string message = bufferedRecord.FormattedMessage ?? string.Empty;
+                if (bufferedRecord.Exception == null && message == null)
+                {
+                    return;
+                }
 
-            // We extract most of the work into a non-generic method to save code size. If this was left in the generic
-            // method, we'd get generic specialization for all TState parameters, but that's unnecessary.
-            WriteInternal(scopeProvider, textWriter, message, logEntry.LogLevel, logEntry.EventId.Id, logEntry.Exception, logEntry.Category);
+                WriteInternal(scopeProvider, textWriter, message, bufferedRecord.LogLevel, bufferedRecord.EventId.Id, bufferedRecord.Exception, logEntry.Category, bufferedRecord.Timestamp);
+            }
+            else
+            {
+                string message = logEntry.Formatter(logEntry.State, logEntry.Exception);
+                if (logEntry.Exception == null && message == null)
+                {
+                    return;
+                }
+
+                // We extract most of the work into a non-generic method to save code size. If this was left in the generic
+                // method, we'd get generic specialization for all TState parameters, but that's unnecessary.
+                WriteInternal(scopeProvider, textWriter, message, logEntry.LogLevel, logEntry.EventId.Id, logEntry.Exception?.ToString(), logEntry.Category, GetCurrentDateTime());
+            }
         }
 
         private void WriteInternal(IExternalScopeProvider? scopeProvider, TextWriter textWriter, string message, LogLevel logLevel,
-            int eventId, Exception? exception, string category)
+            int eventId, string? exception, string category, DateTimeOffset stamp)
         {
             ConsoleColors logLevelColors = GetLogLevelConsoleColors(logLevel);
             string logLevelString = GetLogLevelString(logLevel);
@@ -67,8 +80,7 @@ namespace Microsoft.Extensions.Logging.Console
             string? timestampFormat = FormatterOptions.TimestampFormat;
             if (timestampFormat != null)
             {
-                DateTimeOffset dateTimeOffset = GetCurrentDateTime();
-                timestamp = dateTimeOffset.ToString(timestampFormat);
+                timestamp = stamp.ToString(timestampFormat);
             }
             if (timestamp != null)
             {
@@ -114,7 +126,7 @@ namespace Microsoft.Extensions.Logging.Console
             if (exception != null)
             {
                 // exception message
-                WriteMessage(textWriter, exception.ToString(), singleLine);
+                WriteMessage(textWriter, exception, singleLine);
             }
             if (singleLine)
             {

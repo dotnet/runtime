@@ -155,6 +155,23 @@ namespace Microsoft.Extensions.Logging
         Critical = 5,
         None = 6,
     }
+    public abstract class BufferedLogRecord
+    {
+        public abstract System.DateTimeOffset Timestamp { get; }
+        public abstract Microsoft.Extensions.Logging.LogLevel LogLevel { get; }
+        public abstract Microsoft.Extensions.Logging.EventId EventId { get; }
+        public abstract string? Exception { get; }
+        public abstract System.Diagnostics.ActivitySpanId? ActivitySpanId { get; }
+        public abstract System.Diagnostics.ActivityTraceId? ActivityTraceId { get; }
+        public abstract int? ManagedThreadId { get; }
+        public abstract string? FormattedMessage { get; }
+        public abstract string? MessageTemplate { get; }
+        public abstract System.Collections.Generic.IReadOnlyList<System.Collections.Generic.KeyValuePair<string, object?>> Attributes { get; }
+    }
+    public interface IBufferedLogger
+    {
+        void LogRecords(System.Collections.Generic.IReadOnlyList<Microsoft.Extensions.Logging.BufferedLogRecord> records);
+    }
 }
 namespace Microsoft.Extensions.Logging.Abstractions
 {
