@@ -330,8 +330,16 @@ namespace System.Net.Sockets.Tests
                 else
                 {
                     RemoteInvokeHandle hServerProc = RemoteExecutor.Invoke(HandlerServerCode, _ipcPipeName);
-                    await RunCommonHostLogic(hServerProc.Process.Id);
-                    await hServerProc.DisposeAsync();
+
+                    // Since RunCommonHostLogic can throw, we need to make sure the server process is disposed
+                    try
+                    {
+                        await RunCommonHostLogic(hServerProc.Process.Id);
+                    }
+                    finally
+                    {
+                        await hServerProc.DisposeAsync();
+                    }
                 }
 
                 async Task RunCommonHostLogic(int processId)
