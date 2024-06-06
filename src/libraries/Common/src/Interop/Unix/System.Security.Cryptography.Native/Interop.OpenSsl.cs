@@ -157,7 +157,7 @@ internal static partial class Interop
                 return AllocateSslContext(sslAuthenticationOptions, protocols, allowCached);
             }
 
-            if (!sslAuthenticationOptions.IsServer)
+            if (sslAuthenticationOptions.IsClient)
             {
                 var key = new SslContextCacheKey(protocols, sslAuthenticationOptions.CertificateContext?.TargetCertificate.GetCertHash(HashAlgorithmName.SHA256));
 
