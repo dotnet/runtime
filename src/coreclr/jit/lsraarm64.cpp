@@ -1447,6 +1447,10 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                     case NI_AdvSimd_Arm64_StoreSelectedScalarVector128x2:
                     case NI_AdvSimd_Arm64_StoreSelectedScalarVector128x3:
                     case NI_AdvSimd_Arm64_StoreSelectedScalarVector128x4:
+                    case NI_Sve_PrefetchBytes:
+                    case NI_Sve_PrefetchInt16:
+                    case NI_Sve_PrefetchInt32:
+                    case NI_Sve_PrefetchInt64:
                         needBranchTargetReg = !intrin.op3->isContainedIntOrIImmed();
                         break;
 
@@ -2325,10 +2329,6 @@ void LinearScan::getLowVectorOperandAndCandidates(HWIntrinsic intrin, size_t* op
             *operandNum = 3;
             break;
         case NI_Sve_MultiplyBySelectedScalar:
-        case NI_Sve_PrefetchBytes:
-        case NI_Sve_PrefetchInt16:
-        case NI_Sve_PrefetchInt32:
-        case NI_Sve_PrefetchInt64:
             *operandNum = 2;
             break;
         default:

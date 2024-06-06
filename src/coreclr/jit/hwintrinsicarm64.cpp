@@ -448,6 +448,14 @@ void HWIntrinsicInfo::lookupImmBounds(
                 }
                 break;
 
+            case NI_Sve_PrefetchBytes:
+            case NI_Sve_PrefetchInt16:
+            case NI_Sve_PrefetchInt32:
+            case NI_Sve_PrefetchInt64:
+                immLowerBound = (int)SVE_PRFOP_PLDL1KEEP;
+                immUpperBound = (int)SVE_PRFOP_CONST15;
+                break;
+
             default:
                 unreached();
         }

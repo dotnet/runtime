@@ -1494,9 +1494,25 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_Sve_PrefetchInt32:
             case NI_Sve_PrefetchInt64:
             {
-                assert(intrin.op3->IsIntegralConst());
-                GetEmitter()->emitIns_PRFOP_R_R_I(ins, emitSize, (insSvePrfop)intrin.op3->AsIntConCommon()->IconValue(),
-                                                  op1Reg, op2Reg, 0);
+                assert(hasImmediateOperand);
+                assert(HWIntrinsicInfo::HasEnumOperand(intrin.id));
+                if (intrin.op3->IsCnsIntOrI())
+                {
+                    GetEmitter()->emitIns_PRFOP_R_R_I(ins, emitSize,
+                                                      (insSvePrfop)intrin.op3->AsIntConCommon()->IconValue(), op1Reg,
+                                                      op2Reg, 0);
+                }
+                else
+                {
+                    assert(!intrin.op3->isContainedIntOrIImmed());
+
+                    HWIntrinsicImmOpHelper helper(this, intrin.op3, node);
+                    for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
+                    {
+                        const insSvePrfop prfop = (insSvePrfop)helper.ImmValue();
+                        GetEmitter()->emitIns_PRFOP_R_R_I(ins, emitSize, prfop, op1Reg, op2Reg, 0);
+                    }
+                }
                 break;
             }
 
