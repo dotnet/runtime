@@ -12,6 +12,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Fuzzers\TextEncoding.NetFramework\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="SharpFuzz" Version="2.1.1" />
   </ItemGroup>
 
