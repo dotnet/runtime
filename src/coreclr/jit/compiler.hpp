@@ -101,6 +101,11 @@ inline bool genExactlyOneBit(T value)
 
 inline regMaskTP genFindLowestBit(regMaskTP value)
 {
+#ifdef HAS_MORE_THAN_64_REGISTERS
+    // If we ever need to use this method for predicate
+    // registers, then handle it.
+    assert(value.getHigh() == RBM_NONE);
+#endif
     return regMaskTP(genFindLowestBit(value.getLow()));
 }
 
@@ -111,17 +116,12 @@ inline regMaskTP genFindLowestBit(regMaskTP value)
 
 inline bool genMaxOneBit(regMaskTP value)
 {
+#ifdef HAS_MORE_THAN_64_REGISTERS
+    // If we ever need to use this method for predicate
+    // registers, then handle it.
+    assert(value.getHigh() == RBM_NONE);
+#endif
     return genMaxOneBit(value.getLow());
-}
-
-/*****************************************************************************
- *
- *  Return true if the given value has exactly one bit set.
- */
-
-inline bool genExactlyOneBit(regMaskTP value)
-{
-    return genExactlyOneBit(value.getLow());
 }
 
 /*****************************************************************************
@@ -169,7 +169,7 @@ inline unsigned uhi32(uint64_t value)
 
 inline unsigned genCountBits(regMaskTP mask)
 {
-    return BitOperations::PopCount(mask.getLow());
+    return PopCount(mask);
 }
 
 /*****************************************************************************
@@ -933,8 +933,40 @@ inline unsigned Compiler::funGetFuncIdx(BasicBlock* block)
 // Assumptions:
 //    The mask contains one and only one register.
 
-inline regNumber genRegNumFromMask(regMaskTP mask)
+inline regNumber genRegNumFromMask(const SingleTypeRegSet& mask)
 {
+    assert(mask != RBM_NONE); // Must have one bit set, so can't have a mask of zero
+
+    /* Convert the mask to a register number */
+
+    regNumber regNum = (regNumber)genLog2(mask);
+
+    /* Make sure we got it right */
+    assert(genSingleTypeRegMask(regNum) == mask);
+
+    return regNum;
+}
+
+//------------------------------------------------------------------------------
+// genRegNumFromMask : Maps a single register mask having gpr/float to a register number.
+//          If the mask can contain predicate register, use genRegNumFromMask(reg, type)
+//
+// Arguments:
+//    mask - the register mask
+//
+// Return Value:
+//    The number of the register contained in the mask.
+//
+// Assumptions:
+//    The mask contains one and only one register.
+
+inline regNumber genRegNumFromMask(const regMaskTP& mask)
+{
+#ifdef HAS_MORE_THAN_64_REGISTERS
+    // This method is only used for gpr/float
+    assert(mask.getHigh() == RBM_NONE);
+#endif
+
     assert(mask.IsNonEmpty()); // Must have one bit set, so can't have a mask of zero
 
     /* Convert the mask to a register number */
@@ -942,7 +974,74 @@ inline regNumber genRegNumFromMask(regMaskTP mask)
     regNumber regNum = (regNumber)genLog2(mask.getLow());
 
     /* Make sure we got it right */
-    assert(genRegMask(regNum) == mask.getLow());
+    assert(genRegMask(regNum).getLow() == mask.getLow());
+
+    return regNum;
+}
+
+//------------------------------------------------------------------------------
+// genRegNumFromMask : Maps a single register mask to a register number.
+//
+// Arguments:
+//    mask - the register mask
+//    type - The
+//
+// Return Value:
+//    The number of the register contained in the mask.
+//
+// Assumptions:
+//    The mask contains one and only one register.
+
+inline regNumber genRegNumFromMask(SingleTypeRegSet mask, var_types type)
+{
+    regNumber regNum = genRegNumFromMask(mask);
+
+#ifdef HAS_MORE_THAN_64_REGISTERS
+    if (varTypeIsMask(type))
+    {
+        regNum = (regNumber)(64 + regNum);
+    }
+#endif
+    return regNum;
+}
+
+//------------------------------------------------------------------------------
+// genFirstRegNumFromMask : Maps first bit set in the register mask to a register number.
+//
+// Arguments:
+//    mask               - the register mask
+//
+// Return Value:
+//    The number of the first register contained in the mask.
+//
+// TODO: check if const regMaskTP& matter or should we pass by value
+inline regNumber genFirstRegNumFromMask(const regMaskTP& mask)
+{
+    assert(mask.IsNonEmpty()); // Must have one bit set, so can't have a mask of zero
+
+    /* Convert the mask to a register number */
+
+    regNumber regNum = (regNumber)BitScanForward(mask);
+
+    return regNum;
+}
+
+//------------------------------------------------------------------------------
+// genFirstRegNumFromMask : Maps first bit set in the register mask to a register number.
+//
+// Arguments:
+//    mask               - the register mask
+//
+// Return Value:
+//    The number of the first register contained in the mask.
+//
+inline regNumber genFirstRegNumFromMask(SingleTypeRegSet mask)
+{
+    assert(mask != RBM_NONE); // Must have one bit set, so can't have a mask of zero
+
+    /* Convert the mask to a register number */
+
+    regNumber regNum = (regNumber)BitOperations::BitScanForward(mask);
 
     return regNum;
 }
@@ -966,28 +1065,31 @@ inline regNumber genFirstRegNumFromMaskAndToggle(regMaskTP& mask)
 
     regNumber regNum = (regNumber)BitScanForward(mask);
 
-    mask ^= genRegMask(regNum);
+    mask.RemoveRegNumFromMask(regNum);
 
     return regNum;
 }
 
 //------------------------------------------------------------------------------
-// genFirstRegNumFromMask : Maps first bit set in the register mask to a register number.
-//
+// genFirstRegNumFromMaskAndToggle : Maps first bit set in the register mask to a
+//          register number and also toggle the bit in the `mask`.
 // Arguments:
 //    mask               - the register mask
 //
 // Return Value:
-//    The number of the first register contained in the mask.
+//    The number of the first register contained in the mask and updates the `mask` to toggle
+//    the bit.
 //
 
-inline regNumber genFirstRegNumFromMask(regMaskTP mask)
+inline regNumber genFirstRegNumFromMaskAndToggle(SingleTypeRegSet& mask)
 {
-    assert(mask.IsNonEmpty()); // Must have one bit set, so can't have a mask of zero
+    assert(mask != RBM_NONE); // Must have one bit set, so can't have a mask of zero
 
     /* Convert the mask to a register number */
 
-    regNumber regNum = (regNumber)BitScanForward(mask);
+    regNumber regNum = (regNumber)BitOperations::BitScanForward(mask);
+
+    mask ^= genSingleTypeRegMask(regNum);
 
     return regNum;
 }
@@ -3188,6 +3290,41 @@ inline bool Compiler::fgIsBigOffset(size_t offset)
 inline bool Compiler::IsValidLclAddr(unsigned lclNum, unsigned offset)
 {
     return (offset < UINT16_MAX) && (offset < lvaLclExactSize(lclNum));
+}
+
+//------------------------------------------------------------------------
+// IsPotentialGCSafePoint: Can the given tree be effectively a gc safe point?
+//
+// Arguments:
+//    tree - the tree to check
+//
+// Return Value:
+//    True if the tree can be a gc safe point
+//
+inline bool Compiler::IsPotentialGCSafePoint(GenTree* tree) const
+{
+    if (((tree->gtFlags & GTF_CALL) != 0))
+    {
+        // if this is not a No-GC helper
+        if (!tree->IsCall() || !emitter::emitNoGChelper(tree->AsCall()->GetHelperNum()))
+        {
+            // assume that we have a safe point.
+            return true;
+        }
+    }
+
+    // TYP_STRUCT-typed stores might be converted into calls (with gc safe points) in Lower.
+    // This is quite a conservative fix as it's hard to prove Lower won't do it at this point.
+    if (tree->OperIsLocalStore())
+    {
+        return tree->TypeIs(TYP_STRUCT);
+    }
+    if (tree->OperIs(GT_STORE_BLK))
+    {
+        return true;
+    }
+
+    return false;
 }
 
 /*

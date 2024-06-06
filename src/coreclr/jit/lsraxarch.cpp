@@ -1259,7 +1259,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
         if (argNode->OperIsPutArgReg())
         {
             srcCount++;
-            BuildUse(argNode, genRegMask(argNode->GetRegNum()));
+            BuildUse(argNode, genSingleTypeRegMask(argNode->GetRegNum()));
         }
 #ifdef UNIX_AMD64_ABI
         else if (argNode->OperGet() == GT_FIELD_LIST)
@@ -1268,7 +1268,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
             {
                 assert(use.GetNode()->OperIsPutArgReg());
                 srcCount++;
-                BuildUse(use.GetNode(), genRegMask(use.GetNode()->GetRegNum()));
+                BuildUse(use.GetNode(), genSingleTypeRegMask(use.GetNode()->GetRegNum()));
             }
         }
 #endif // UNIX_AMD64_ABI

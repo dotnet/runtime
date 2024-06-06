@@ -81,12 +81,9 @@ namespace ILCompiler
             public const int Avx512Vbmi = 0x800000;
             public const int Avx512Vbmi_vl = 0x1000000;
             public const int Serialize = 0x2000000;
-            public const int VectorT128 = 0x4000000;
-            public const int VectorT256 = 0x8000000;
-            public const int VectorT512 = 0x10000000;
-            public const int Avx10v1 = 0x20000000;
-            public const int Avx10v1_v256 = 0x40000000;
-            public const int Avx10v1_v512 = unchecked((int)0x80000000);
+            public const int Avx10v1 = 0x4000000;
+            public const int Avx10v1_v256 = 0x8000000;
+            public const int Avx10v1_v512 = 0x10000000;
 
             public static void AddToBuilder(InstructionSetSupportBuilder builder, int flags)
             {
@@ -228,9 +225,9 @@ namespace ILCompiler
                     InstructionSet.X64_X86Base_X64 => 0,
 
                     // Vector<T> Sizes
-                    InstructionSet.X64_VectorT128 => VectorT128,
-                    InstructionSet.X64_VectorT256 => VectorT256,
-                    InstructionSet.X64_VectorT512 => VectorT512,
+                    InstructionSet.X64_VectorT128 => 0,
+                    InstructionSet.X64_VectorT256 => Avx2,
+                    InstructionSet.X64_VectorT512 => Avx512f,
 
                     _ => throw new NotSupportedException(((InstructionSet_X64)instructionSet).ToString())
                 };
@@ -249,9 +246,8 @@ namespace ILCompiler
             public const int Sha256 = 0x0040;
             public const int Atomics = 0x0080;
             public const int Rcpc = 0x0100;
-            public const int VectorT128 = 0x0200;
-            public const int Rcpc2 = 0x0400;
-            public const int Sve = 0x0800;
+            public const int Rcpc2 = 0x0200;
+            public const int Sve = 0x0400;
 
             public static void AddToBuilder(InstructionSetSupportBuilder builder, int flags)
             {
@@ -310,7 +306,7 @@ namespace ILCompiler
                     InstructionSet.ARM64_Sve_Arm64 => Sve,
 
                     // Vector<T> Sizes
-                    InstructionSet.ARM64_VectorT128 => VectorT128,
+                    InstructionSet.ARM64_VectorT128 => AdvSimd,
 
                     _ => throw new NotSupportedException(((InstructionSet_ARM64)instructionSet).ToString())
                 };
