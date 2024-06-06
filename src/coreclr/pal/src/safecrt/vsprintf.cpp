@@ -95,7 +95,7 @@ DLLEXPORT int __cdecl _vsnprintf_s (
         retvalue = vsnprintf(string, sizeInBytes, format, ap);
         string[sizeInBytes - 1] = '\0';
         /* we allow truncation if count == _TRUNCATE */
-        if (retvalue > (int)sizeInBytes && count == _TRUNCATE)
+        if (retvalue >= (int)sizeInBytes && count == _TRUNCATE)
         {
             if (errno == ERANGE)
             {
