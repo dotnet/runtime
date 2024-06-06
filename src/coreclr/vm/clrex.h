@@ -27,6 +27,9 @@ enum StackTraceElementFlags
 
     // Set if the "ip" field has already been adjusted (decremented)
     STEF_IP_ADJUSTED = 0x0002,
+
+    // Set if the element references a method that needs a keep alive object
+    STEF_KEEPALIVE = 0x0004,
 };
 
 // This struct is used by SOS in the diagnostic repo.
@@ -53,13 +56,14 @@ struct StackTraceElement
 
 class StackTraceInfo
 {
-    int m_keepaliveItemsCount = -1; // -1 indicates the count is not initialized yet
+    int m_keepaliveItemsCount;
 
     static OBJECTREF GetKeepaliveObject(MethodDesc* pMethod);
     static int GetKeepaliveItemsCount(StackTraceArray *pStackTrace);
     static void EnsureStackTraceArray(StackTraceArray *pStackTrace, size_t neededSize);
     static void EnsureKeepaliveArray(PTRARRAYREF *ppKeepaliveArray, size_t neededSize);
 public:
+    void Init();
     BOOL AppendElement(OBJECTHANDLE hThrowable, UINT_PTR currentIP, UINT_PTR currentSP, MethodDesc* pFunc, CrawlFrame* pCf);
 };
 

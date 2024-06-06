@@ -1972,8 +1972,7 @@ bool ExceptionObject::GetStackTraceParts(OBJECTREF stackTraceObj, StackTraceArra
         size_t count = stackTrace.Size();
         for (size_t i = 0; i < count; i++)
         {
-            MethodDesc *pMethod = stackTrace[i].pFunc;
-            if (pMethod->IsLCGMethod() || pMethod->GetMethodTable()->Collectible())
+            if (stackTrace[i].flags & STEF_KEEPALIVE)
             {
                 OBJECTREF keepaliveObject = NULL;
                 if ((j + 1) < keepaliveArrayCapacity)

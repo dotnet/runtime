@@ -2856,7 +2856,20 @@ void COMPlusCooperativeTransitionHandler(Frame* pFrame)
     GCX_PREEMP_NO_DTOR();
 }
 
+void StackTraceInfo::Init()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        FORBID_FAULT;
+    }
+    CONTRACTL_END;
 
+    LOG((LF_EH, LL_INFO10000, "StackTraceInfo::Init (%p)\n", this));
+    m_keepaliveItemsCount = -1; // -1 indicates the count is not initialized yet
+}
 
 #ifndef TARGET_UNIX // Watson is supported on Windows only
 void SetupWatsonBucket(UINT_PTR currentIP, CrawlFrame* pCf)
@@ -2906,6 +2919,10 @@ void StackTraceInfo::EnsureStackTraceArray(StackTraceArray *pStackTrace, size_t 
         if (newCapacity.IsOverflow() || (neededSize > newCapacity.Value()))
         {
             newCapacity = S_SIZE_T(neededSize);
+            if (newCapacity.IsOverflow())
+            {
+                EX_THROW(EEMessageException, (kOverflowException, IDS_EE_ARRAY_DIMENSIONS_EXCEEDED));
+            }
         }
 
         stackTraceCapacity = newCapacity.Value();
@@ -2914,15 +2931,9 @@ void StackTraceInfo::EnsureStackTraceArray(StackTraceArray *pStackTrace, size_t 
         newStackTrace.Allocate(stackTraceCapacity);
         if (pStackTrace->Get() != NULL)
         {
-            STRESS_LOG3(LF_EH, LL_INFO1000, "EnsureStackTraceArray copying from stackTrace=%p to stackTrace=%p, owner thread was %04x\n", OBJECTREFToObject(pStackTrace->Get()), OBJECTREFToObject(newStackTrace.Get()), pStackTrace->GetObjectThread()->GetOSThreadId());
             // Copy the original array to the new one
             newStackTrace.CopyDataFrom(*pStackTrace);
-            // TODO: cleanup this - make the method have delta as the parameter instead
-            newStackTrace.SetSize(neededSize - 1);
-        }
-        else
-        {
-            STRESS_LOG1(LF_EH, LL_INFO1000, "EnsureStackTraceArray created a new clean array %p\n", OBJECTREFToObject(newStackTrace.Get()));
+            _ASSERTE(newStackTrace.Size() == (neededSize - 1));
         }
         // Update the stack trace array
         pStackTrace->Set(newStackTrace.Get());
@@ -2951,6 +2962,10 @@ void StackTraceInfo::EnsureKeepaliveArray(PTRARRAYREF *ppKeepaliveArray, size_t 
         if (newCapacity.IsOverflow() || (neededSize > newCapacity.Value()))
         {
             newCapacity = S_SIZE_T(neededSize);
+            if (newCapacity.IsOverflow())
+            {
+                EX_THROW(EEMessageException, (kOverflowException, IDS_EE_ARRAY_DIMENSIONS_EXCEEDED));
+            }
         }
 
         keepaliveArrayCapacity = newCapacity.Value();
@@ -3014,8 +3029,7 @@ int StackTraceInfo::GetKeepaliveItemsCount(StackTraceArray *pStackTrace)
     int count = 0;
     for (size_t i = 0; i < pStackTrace->Size(); i++)
     {
-        MethodDesc *pMethod = (*pStackTrace)[i].pFunc;
-        if (pMethod->IsLCGMethod() || pMethod->GetMethodTable()->Collectible())
+        if ((*pStackTrace)[i].flags & STEF_KEEPALIVE)
         {
             count++;
         }
@@ -3135,6 +3149,7 @@ BOOL StackTraceInfo::AppendElement(OBJECTHANDLE hThrowable, UINT_PTR currentIP, 
         {
             // The new frame to be added is a method that can be collected, so we need to update the keepalive items count.
             m_keepaliveItemsCount++;
+            stackTraceElem.flags |= STEF_KEEPALIVE;
         }
 
         if (m_keepaliveItemsCount != 0)
