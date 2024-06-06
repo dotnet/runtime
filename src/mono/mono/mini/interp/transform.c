@@ -355,6 +355,8 @@ enum_type:
 int
 interp_make_var_renamable (TransformData *td, int var)
 {
+	g_assert (td->optimized);
+
 	// Check if already allocated
 	if (td->vars [var].ext_index != -1)
 		return td->vars [var].ext_index;
@@ -382,6 +384,8 @@ interp_make_var_renamable (TransformData *td, int var)
 int
 interp_create_renamed_fixed_var (TransformData *td, int var_index, int renamable_var_index)
 {
+	g_assert (td->optimized);
+
 	g_assert (td->vars [renamable_var_index].ext_index != -1);
 	g_assert (td->vars [var_index].ext_index == -1);
 	g_assert (td->vars [var_index].renamed_ssa_fixed);
@@ -4454,9 +4458,14 @@ interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMet
 	td->vars_size = num_locals;
 	td->vars_capacity = target_vars_capacity;
 
-	td->renamable_vars = (InterpRenamableVar*)g_malloc (target_vars_capacity * sizeof (InterpRenamableVar));
+	if (td->optimized) {
+		td->renamable_vars = (InterpRenamableVar*)g_malloc (num_locals * sizeof (InterpRenamableVar));
+		td->renamable_vars_capacity = num_locals;
+	} else {
+		td->renamable_vars = NULL;
+		td->renamable_vars_capacity = 0;
+	}
 	td->renamable_vars_size = 0;
-	td->renamable_vars_capacity = target_vars_capacity;
 	offset = 0;
 
 #ifdef MONO_ARCH_HAVE_SWIFTCALL
