@@ -4905,20 +4905,17 @@ interp_handle_box_patterns (TransformData *td, MonoClass *box_class, const unsig
 					if (isinst) {
 						// leave the original value unchanged on the stack
 						interp_add_ins (td, MINT_NOP);
+						td->ip = second_ip + 5;
+						// skip over all three opcodes, continue with the next opcode;
+						return TRUE;
 					} else {
-						// pop the original value, throw a NullReferenceException
-						td->sp--;
-						interp_add_ins (td, MINT_LDNULL);
-						push_simple_type (td, STACK_TYPE_O);
-						interp_ins_set_dreg (td->last_ins, td->sp [-1].var);
-						interp_add_ins (td, MINT_CKNULL);
-						interp_ins_set_sreg (td->last_ins, td->sp->var);
-						set_simple_type_and_var (td, td->sp, td->sp->type);
-						interp_ins_set_dreg (td->last_ins, td->sp->var);
+						// box !T ; isinst S ; unbox.any S should always be
+						// under a box !T ; isinst S ; brtrue/brfalse branch
+						// where the types match.  So if they don't, that's
+						// an invalid program.  In that case compile the
+						// code sequence as is, and allow "box ByRefLike" to
+						// throw InvalidProgramException at execution-time
 					}
-					td->ip = second_ip + 5;
-					// skip over all three opcodes, continue with the next opcode;
-					return TRUE;
 				}
 			}
 	    }
