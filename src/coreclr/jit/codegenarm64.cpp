@@ -922,7 +922,7 @@ void CodeGen::genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowe
     assert((spDelta % 16) == 0);
 
     // We also can save FP and LR, even though they are not in RBM_CALLEE_SAVED.
-    assert(regsToSaveCount <= genCountBits(RBM_CALLEE_SAVED | RBM_FP | RBM_LR));
+    assert(regsToSaveCount <= genCountBits(regMaskTP(RBM_CALLEE_SAVED | RBM_FP | RBM_LR)));
 
     // Save integer registers at higher addresses than floating-point registers.
 
@@ -1035,7 +1035,7 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, in
     assert((spDelta % 16) == 0);
 
     // We also can restore FP and LR, even though they are not in RBM_CALLEE_SAVED.
-    assert(regsToRestoreCount <= genCountBits(RBM_CALLEE_SAVED | RBM_FP | RBM_LR));
+    assert(regsToRestoreCount <= genCountBits(regMaskTP(RBM_CALLEE_SAVED | RBM_FP | RBM_LR)));
 
     // Point past the end, to start. We predecrement to find the offset to load from.
     static_assert_no_msg(REGSIZE_BYTES == FPSAVE_REGSIZE_BYTES);
@@ -2395,73 +2395,57 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
             {
 #if defined(FEATURE_SIMD)
                 case TYP_SIMD8:
-                {
-                    if (vecCon->IsAllBitsSet())
-                    {
-                        emit->emitIns_R_I(INS_mvni, attr, targetReg, 0, INS_OPTS_2S);
-                    }
-                    else if (vecCon->IsZero())
-                    {
-                        emit->emitIns_R_I(INS_movi, attr, targetReg, 0, INS_OPTS_2S);
-                    }
-                    else
-                    {
-                        // Get a temp integer register to compute long address.
-                        regNumber addrReg = internalRegisters.GetSingle(tree);
-
-                        simd8_t constValue;
-                        memcpy(&constValue, &vecCon->gtSimdVal, sizeof(simd8_t));
-
-                        CORINFO_FIELD_HANDLE hnd = emit->emitSimd8Const(constValue);
-                        emit->emitIns_R_C(INS_ldr, attr, targetReg, addrReg, hnd, 0);
-                    }
-                    break;
-                }
-
                 case TYP_SIMD12:
-                {
-                    if (vecCon->IsAllBitsSet())
-                    {
-                        emit->emitIns_R_I(INS_mvni, attr, targetReg, 0, INS_OPTS_4S);
-                    }
-                    else if (vecCon->IsZero())
-                    {
-                        emit->emitIns_R_I(INS_movi, attr, targetReg, 0, INS_OPTS_4S);
-                    }
-                    else
-                    {
-                        // Get a temp integer register to compute long address.
-                        regNumber addrReg = internalRegisters.GetSingle(tree);
-
-                        simd16_t constValue = {};
-                        memcpy(&constValue, &vecCon->gtSimdVal, sizeof(simd12_t));
-
-                        CORINFO_FIELD_HANDLE hnd = emit->emitSimd16Const(constValue);
-                        emit->emitIns_R_C(INS_ldr, attr, targetReg, addrReg, hnd, 0);
-                    }
-                    break;
-                }
-
                 case TYP_SIMD16:
                 {
+                    // We ignore any differences between SIMD12 and SIMD16 here if we can broadcast the value
+                    // via mvni/movi.
+                    const bool is8 = tree->TypeIs(TYP_SIMD8);
                     if (vecCon->IsAllBitsSet())
                     {
-                        emit->emitIns_R_I(INS_mvni, attr, targetReg, 0, INS_OPTS_4S);
+                        emit->emitIns_R_I(INS_mvni, attr, targetReg, 0, is8 ? INS_OPTS_2S : INS_OPTS_4S);
                     }
                     else if (vecCon->IsZero())
                     {
-                        emit->emitIns_R_I(INS_movi, attr, targetReg, 0, INS_OPTS_4S);
+                        emit->emitIns_R_I(INS_movi, attr, targetReg, 0, is8 ? INS_OPTS_2S : INS_OPTS_4S);
                     }
                     else
                     {
-                        // Get a temp integer register to compute long address.
-                        regNumber addrReg = internalRegisters.GetSingle(tree);
-
-                        simd16_t constValue;
-                        memcpy(&constValue, &vecCon->gtSimdVal, sizeof(simd16_t));
-
-                        CORINFO_FIELD_HANDLE hnd = emit->emitSimd16Const(constValue);
-                        emit->emitIns_R_C(INS_ldr, attr, targetReg, addrReg, hnd, 0);
+                        simd16_t val = vecCon->gtSimd16Val;
+                        if (ElementsAreSame(val.i32, is8 ? 2 : 4) &&
+                            emitter::emitIns_valid_imm_for_movi(val.i32[0], EA_4BYTE))
+                        {
+                            emit->emitIns_R_I(INS_movi, attr, targetReg, val.i32[0], is8 ? INS_OPTS_2S : INS_OPTS_4S);
+                        }
+                        else if (ElementsAreSame(val.i16, is8 ? 4 : 8) &&
+                                 emitter::emitIns_valid_imm_for_movi(val.i16[0], EA_2BYTE))
+                        {
+                            emit->emitIns_R_I(INS_movi, attr, targetReg, val.i16[0], is8 ? INS_OPTS_4H : INS_OPTS_8H);
+                        }
+                        else if (ElementsAreSame(val.i8, is8 ? 8 : 16) &&
+                                 emitter::emitIns_valid_imm_for_movi(val.i8[0], EA_1BYTE))
+                        {
+                            emit->emitIns_R_I(INS_movi, attr, targetReg, val.i8[0], is8 ? INS_OPTS_8B : INS_OPTS_16B);
+                        }
+                        else
+                        {
+                            // Get a temp integer register to compute long address.
+                            regNumber            addrReg = internalRegisters.GetSingle(tree);
+                            CORINFO_FIELD_HANDLE hnd;
+                            if (is8)
+                            {
+                                simd8_t constValue;
+                                memcpy(&constValue, &vecCon->gtSimdVal, sizeof(simd8_t));
+                                hnd = emit->emitSimd8Const(constValue);
+                            }
+                            else
+                            {
+                                simd16_t constValue;
+                                memcpy(&constValue, &vecCon->gtSimdVal, sizeof(simd16_t));
+                                hnd = emit->emitSimd16Const(constValue);
+                            }
+                            emit->emitIns_R_C(INS_ldr, attr, targetReg, addrReg, hnd, 0);
+                        }
                     }
                     break;
                 }
@@ -3648,7 +3632,8 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
         sourceIsLocal = true;
     }
 
-    bool dstOnStack = dstAddr->gtSkipReloadOrCopy()->OperIs(GT_LCL_ADDR);
+    bool dstOnStack =
+        dstAddr->gtSkipReloadOrCopy()->OperIs(GT_LCL_ADDR) || cpObjNode->GetLayout()->IsStackOnly(compiler);
 
 #ifdef DEBUG
     assert(!dstAddr->isContained());

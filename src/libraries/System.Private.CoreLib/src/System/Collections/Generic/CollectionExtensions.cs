@@ -82,7 +82,7 @@ namespace System.Collections.Generic
         /// <param name="list">The list to which the elements should be added.</param>
         /// <param name="source">The span whose elements should be added to the end of the <see cref="List{T}"/>.</param>
         /// <exception cref="ArgumentNullException">The <paramref name="list"/> is null.</exception>
-        public static void AddRange<T>(this List<T> list, /*params*/ ReadOnlySpan<T> source)
+        public static void AddRange<T>(this List<T> list, params ReadOnlySpan<T> source)
         {
             if (list is null)
             {
@@ -109,7 +109,7 @@ namespace System.Collections.Generic
         /// <param name="source">The span whose elements should be added to the <see cref="List{T}"/>.</param>
         /// <exception cref="ArgumentNullException">The <paramref name="list"/> is null.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="index"/> is less than 0 or greater than <paramref name="list"/>'s <see cref="List{T}.Count"/>.</exception>
-        public static void InsertRange<T>(this List<T> list, int index, /*params*/ ReadOnlySpan<T> source)
+        public static void InsertRange<T>(this List<T> list, int index, params ReadOnlySpan<T> source)
         {
             if (list is null)
             {
@@ -159,6 +159,128 @@ namespace System.Collections.Generic
             }
 
             new ReadOnlySpan<T>(list._items, 0, list._size).CopyTo(destination);
+        }
+
+        /// <summary>
+        /// Gets an instance of a type that may be used to perform operations on a <see cref="Dictionary{TKey, TValue}"/>
+        /// using a <typeparamref name="TAlternateKey"/> as a key instead of a <typeparamref name="TKey"/>.
+        /// </summary>
+        /// <typeparam name="TKey">The type of the keys used by the dictionary instance.</typeparam>
+        /// <typeparam name="TValue">The type of the values used by the dictionary instance.</typeparam>
+        /// <typeparam name="TAlternateKey">The alternate type of a key for performing lookups.</typeparam>
+        /// <param name="dictionary">The dictionary instance.</param>
+        /// <returns>The created lookup instance.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="dictionary"/> is null.</exception>
+        /// <exception cref="InvalidOperationException"><paramref name="dictionary"/>'s comparer is not compatible with <typeparamref name="TAlternateKey"/>.</exception>
+        /// <remarks>
+        /// The supplied <paramref name="dictionary"/> must be using a comparer that implements <see cref="IAlternateEqualityComparer{TAlternateKey, TKey}"/> with
+        /// <typeparamref name="TAlternateKey"/> and <typeparamref name="TKey"/>. If it doesn't, an exception will be thrown.
+        /// </remarks>
+        public static Dictionary<TKey, TValue>.AlternateLookup<TAlternateKey> GetAlternateLookup<TKey, TValue, TAlternateKey>(
+            this Dictionary<TKey, TValue> dictionary)
+            where TKey : notnull
+            where TAlternateKey : notnull, allows ref struct
+        {
+            ArgumentNullException.ThrowIfNull(dictionary);
+
+            if (!Dictionary<TKey, TValue>.AlternateLookup<TAlternateKey>.IsCompatibleKey(dictionary))
+            {
+                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_IncompatibleComparer);
+            }
+
+            return new Dictionary<TKey, TValue>.AlternateLookup<TAlternateKey>(dictionary);
+        }
+
+        /// <summary>
+        /// Gets an instance of a type that may be used to perform operations on a <see cref="Dictionary{TKey, TValue}"/>
+        /// using a <typeparamref name="TAlternateKey"/> as a key instead of a <typeparamref name="TKey"/>.
+        /// </summary>
+        /// <typeparam name="TKey">The type of the keys used by the dictionary instance.</typeparam>
+        /// <typeparam name="TValue">The type of the values used by the dictionary instance.</typeparam>
+        /// <typeparam name="TAlternateKey">The alternate type of a key for performing lookups.</typeparam>
+        /// <param name="dictionary">The dictionary instance.</param>
+        /// <param name="lookup">The created lookup instance when the method returns true, or a default instance that should not be used if the method returns false.</param>
+        /// <returns>true if a lookup could be created; otherwise, false.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="dictionary"/> is null.</exception>
+        /// <remarks>
+        /// The supplied <paramref name="dictionary"/> must be using a comparer that implements <see cref="IAlternateEqualityComparer{TAlternateKey, TKey}"/> with
+        /// <typeparamref name="TAlternateKey"/> and <typeparamref name="TKey"/>. If it doesn't, the method will return false.
+        /// </remarks>
+        public static bool TryGetAlternateLookup<TKey, TValue, TAlternateKey>(
+            this Dictionary<TKey, TValue> dictionary,
+            out Dictionary<TKey, TValue>.AlternateLookup<TAlternateKey> lookup)
+            where TKey : notnull
+            where TAlternateKey : notnull, allows ref struct
+        {
+            ArgumentNullException.ThrowIfNull(dictionary);
+
+            if (Dictionary<TKey, TValue>.AlternateLookup<TAlternateKey>.IsCompatibleKey(dictionary))
+            {
+                lookup = new Dictionary<TKey, TValue>.AlternateLookup<TAlternateKey>(dictionary);
+                return true;
+            }
+
+            lookup = default;
+            return false;
+        }
+
+        /// <summary>
+        /// Gets an instance of a type that may be used to perform operations on a <see cref="HashSet{T}"/>
+        /// using a <typeparamref name="TAlternate"/> instead of a <typeparamref name="T"/>.
+        /// </summary>
+        /// <typeparam name="T">The type of the items used by the set instance.</typeparam>
+        /// <typeparam name="TAlternate">The alternate type of instance for performing lookups.</typeparam>
+        /// <param name="set">The set instance.</param>
+        /// <returns>The created lookup instance.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="set"/> is null.</exception>
+        /// <exception cref="InvalidOperationException"><paramref name="set"/>'s comparer is not compatible with <typeparamref name="TAlternate"/>.</exception>
+        /// <remarks>
+        /// The supplied <paramref name="set"/> must be using a comparer that implements <see cref="IAlternateEqualityComparer{TAlternate, T}"/> with
+        /// <typeparamref name="TAlternate"/> and <typeparamref name="T"/>. If it doesn't, an exception will be thrown.
+        /// </remarks>
+        public static HashSet<T>.AlternateLookup<TAlternate> GetAlternateLookup<T, TAlternate>(
+            this HashSet<T> set)
+            where TAlternate : allows ref struct
+        {
+            ArgumentNullException.ThrowIfNull(set);
+
+            if (!HashSet<T>.AlternateLookup<TAlternate>.IsCompatibleItem(set))
+            {
+                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_IncompatibleComparer);
+            }
+
+            return new HashSet<T>.AlternateLookup<TAlternate>(set);
+        }
+
+        /// <summary>
+        /// Gets an instance of a type that may be used to perform operations on a <see cref="HashSet{T}"/>
+        /// using a <typeparamref name="TAlternate"/> instead of a <typeparamref name="T"/>.
+        /// </summary>
+        /// <typeparam name="T">The type of the items used by the set instance.</typeparam>
+        /// <typeparam name="TAlternate">The alternate type of instance for performing lookups.</typeparam>
+        /// <param name="set">The set instance.</param>
+        /// <param name="lookup">The created lookup instance when the method returns true, or a default instance that should not be used if the method returns false.</param>
+        /// <returns>true if a lookup could be created; otherwise, false.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="set"/> is null.</exception>
+        /// <remarks>
+        /// The supplied <paramref name="set"/> must be using a comparer that implements <see cref="IAlternateEqualityComparer{TAlternate, T}"/> with
+        /// <typeparamref name="TAlternate"/> and <typeparamref name="T"/>. If it doesn't, the method returns false.
+        /// </remarks>
+        public static bool TryGetAlternateLookup<T, TAlternate>(
+            this HashSet<T> set,
+            out HashSet<T>.AlternateLookup<TAlternate> lookup)
+            where TAlternate : allows ref struct
+        {
+            ArgumentNullException.ThrowIfNull(set);
+
+            if (HashSet<T>.AlternateLookup<TAlternate>.IsCompatibleItem(set))
+            {
+                lookup = new HashSet<T>.AlternateLookup<TAlternate>(set);
+                return true;
+            }
+
+            lookup = default;
+            return false;
         }
     }
 }

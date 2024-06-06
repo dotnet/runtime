@@ -258,14 +258,17 @@ namespace System.Diagnostics.Metrics
                 s_allStartedListeners.Remove(this);
 
                 DiagNode<Instrument>? current = _enabledMeasurementInstruments.First;
-                if (current is not null && measurementsCompleted is not null)
+                if (current is not null)
                 {
-                    callbacksArguments = new Dictionary<Instrument, object?>();
+                    if (measurementsCompleted is not null)
+                    {
+                        callbacksArguments = new Dictionary<Instrument, object?>();
+                    }
 
                     do
                     {
                         object? state = current.Value.DisableMeasurements(this);
-                        callbacksArguments.Add(current.Value, state);
+                        callbacksArguments?.Add(current.Value, state);
                         current = current.Next;
                     } while (current is not null);
 

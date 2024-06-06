@@ -58,6 +58,8 @@
 
 #endif
 
+#include "configure.h"
+
 // When running on a platform that is not supported in RID fallback graph (because it was unknown
 // at the time the SharedFX in question was built), we need to use a reasonable fallback RID to allow
 // consuming the native assets.
@@ -346,8 +348,6 @@ namespace pal
     bool is_emulating_x64();
 
     bool are_paths_equal_with_normalized_casing(const string_t& path1, const string_t& path2);
-
-    void initialize_createdump();
 }
 
 #endif // PAL_H

@@ -445,8 +445,8 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
         if (doCpObj && (size <= copyBlockUnrollLimit))
         {
             // No write barriers are needed on the stack.
-            // If the layout contains a byref, then we know it must live on the stack.
-            if (dstAddr->OperIs(GT_LCL_ADDR) || layout->HasGCByRef())
+            // If the layout is byref-like, then we know it must live on the stack.
+            if (dstAddr->OperIs(GT_LCL_ADDR) || layout->IsStackOnly(comp))
             {
                 // If the size is small enough to unroll then we need to mark the block as non-interruptible
                 // to actually allow unrolling. The generated code does not report GC references loaded in the
@@ -473,7 +473,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             // the entire operation takes 20 cycles and encodes in 5 bytes (loading RCX and REP MOVSD/Q).
             unsigned nonGCSlots = 0;
 
-            if (dstAddr->OperIs(GT_LCL_ADDR))
+            if (dstAddr->OperIs(GT_LCL_ADDR) || layout->IsStackOnly(comp))
             {
                 // If the destination is on the stack then no write barriers are needed.
                 nonGCSlots = layout->GetSlotCount();
@@ -3551,23 +3551,33 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                 }
             }
 
-            if (simdSize == 32)
+            if (simdSize > 16)
             {
-                // We're creating a Vector256 scalar so we need to treat the original op as Vector128,
-                // we need to unsafely extend up to Vector256 (which is actually safe since the 128-bit
-                // op will zero extend up to 256-bits), and then we need to replace the original use
-                // with the new TYP_SIMD32 node.
+                assert((simdSize == 32) || (simdSize == 64));
+
+                // We're creating a Vector256/512 scalar so we need to treat the original op as Vector128,
+                // we need to unsafely extend up to Vector256/512 (which is actually safe since the 128-bit
+                // op will zero extend up to 256/512-bits), and then we need to replace the original use
+                // with the new TYP_SIMD32/64 node.
 
                 node->ChangeType(TYP_SIMD16);
                 node->SetSimdSize(16);
                 LowerNode(node);
 
-                tmp2 = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD32, node, NI_Vector128_ToVector256Unsafe, simdBaseJitType,
-                                                      16);
-
                 LIR::Use use;
                 bool     foundUse = BlockRange().TryGetUse(node, &use);
+
+                tmp2 = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD32, node, NI_Vector128_ToVector256Unsafe, simdBaseJitType,
+                                                      16);
                 BlockRange().InsertAfter(node, tmp2);
+
+                if (simdSize == 64)
+                {
+                    tmp3 = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD64, tmp2, NI_Vector256_ToVector512Unsafe,
+                                                          simdBaseJitType, 32);
+                    BlockRange().InsertAfter(tmp2, tmp3);
+                    tmp2 = tmp3;
+                }
 
                 if (foundUse)
                 {

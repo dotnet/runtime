@@ -55,22 +55,174 @@ namespace System
         public AccessViolationException(string? message, System.Exception? innerException) { }
     }
     public delegate void Action();
-    public delegate void Action<in T>(T obj);
-    public delegate void Action<in T1, in T2, in T3, in T4, in T5, in T6, in T7, in T8, in T9, in T10>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10);
-    public delegate void Action<in T1, in T2, in T3, in T4, in T5, in T6, in T7, in T8, in T9, in T10, in T11>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11);
-    public delegate void Action<in T1, in T2, in T3, in T4, in T5, in T6, in T7, in T8, in T9, in T10, in T11, in T12>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12);
-    public delegate void Action<in T1, in T2, in T3, in T4, in T5, in T6, in T7, in T8, in T9, in T10, in T11, in T12, in T13>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, T13 arg13);
-    public delegate void Action<in T1, in T2, in T3, in T4, in T5, in T6, in T7, in T8, in T9, in T10, in T11, in T12, in T13, in T14>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, T13 arg13, T14 arg14);
-    public delegate void Action<in T1, in T2, in T3, in T4, in T5, in T6, in T7, in T8, in T9, in T10, in T11, in T12, in T13, in T14, in T15>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, T13 arg13, T14 arg14, T15 arg15);
-    public delegate void Action<in T1, in T2, in T3, in T4, in T5, in T6, in T7, in T8, in T9, in T10, in T11, in T12, in T13, in T14, in T15, in T16>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, T13 arg13, T14 arg14, T15 arg15, T16 arg16);
-    public delegate void Action<in T1, in T2>(T1 arg1, T2 arg2);
-    public delegate void Action<in T1, in T2, in T3>(T1 arg1, T2 arg2, T3 arg3);
-    public delegate void Action<in T1, in T2, in T3, in T4>(T1 arg1, T2 arg2, T3 arg3, T4 arg4);
-    public delegate void Action<in T1, in T2, in T3, in T4, in T5>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5);
-    public delegate void Action<in T1, in T2, in T3, in T4, in T5, in T6>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6);
-    public delegate void Action<in T1, in T2, in T3, in T4, in T5, in T6, in T7>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7);
-    public delegate void Action<in T1, in T2, in T3, in T4, in T5, in T6, in T7, in T8>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8);
-    public delegate void Action<in T1, in T2, in T3, in T4, in T5, in T6, in T7, in T8, in T9>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9);
+    public delegate void Action<in T>(T obj)
+        where T : allows ref struct;
+
+    public delegate void Action<in T1, in T2>(T1 arg1, T2 arg2)
+        where T1 : allows ref struct
+        where T2 : allows ref struct;
+
+    public delegate void Action<in T1, in T2, in T3>(T1 arg1, T2 arg2, T3 arg3)
+        where T1 : allows ref struct
+        where T2 : allows ref struct
+        where T3 : allows ref struct;
+
+    public delegate void Action<in T1, in T2, in T3, in T4>(T1 arg1, T2 arg2, T3 arg3, T4 arg4)
+        where T1 : allows ref struct
+        where T2 : allows ref struct
+        where T3 : allows ref struct
+        where T4 : allows ref struct;
+
+    public delegate void Action<in T1, in T2, in T3, in T4, in T5>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5)
+        where T1 : allows ref struct
+        where T2 : allows ref struct
+        where T3 : allows ref struct
+        where T4 : allows ref struct
+        where T5 : allows ref struct;
+
+    public delegate void Action<in T1, in T2, in T3, in T4, in T5, in T6>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6)
+        where T1 : allows ref struct
+        where T2 : allows ref struct
+        where T3 : allows ref struct
+        where T4 : allows ref struct
+        where T5 : allows ref struct
+        where T6 : allows ref struct;
+
+    public delegate void Action<in T1, in T2, in T3, in T4, in T5, in T6, in T7>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7)
+        where T1 : allows ref struct
+        where T2 : allows ref struct
+        where T3 : allows ref struct
+        where T4 : allows ref struct
+        where T5 : allows ref struct
+        where T6 : allows ref struct
+        where T7 : allows ref struct;
+
+    public delegate void Action<in T1, in T2, in T3, in T4, in T5, in T6, in T7, in T8>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8)
+        where T1 : allows ref struct
+        where T2 : allows ref struct
+        where T3 : allows ref struct
+        where T4 : allows ref struct
+        where T5 : allows ref struct
+        where T6 : allows ref struct
+        where T7 : allows ref struct
+        where T8 : allows ref struct;
+
+    public delegate void Action<in T1, in T2, in T3, in T4, in T5, in T6, in T7, in T8, in T9>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9)
+        where T1 : allows ref struct
+        where T2 : allows ref struct
+        where T3 : allows ref struct
+        where T4 : allows ref struct
+        where T5 : allows ref struct
+        where T6 : allows ref struct
+        where T7 : allows ref struct
+        where T8 : allows ref struct
+        where T9 : allows ref struct;
+
+    public delegate void Action<in T1, in T2, in T3, in T4, in T5, in T6, in T7, in T8, in T9, in T10>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10)
+        where T1 : allows ref struct
+        where T2 : allows ref struct
+        where T3 : allows ref struct
+        where T4 : allows ref struct
+        where T5 : allows ref struct
+        where T6 : allows ref struct
+        where T7 : allows ref struct
+        where T8 : allows ref struct
+        where T9 : allows ref struct
+        where T10 : allows ref struct;
+
+    public delegate void Action<in T1, in T2, in T3, in T4, in T5, in T6, in T7, in T8, in T9, in T10, in T11>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11)
+        where T1 : allows ref struct
+        where T2 : allows ref struct
+        where T3 : allows ref struct
+        where T4 : allows ref struct
+        where T5 : allows ref struct
+        where T6 : allows ref struct
+        where T7 : allows ref struct
+        where T8 : allows ref struct
+        where T9 : allows ref struct
+        where T10 : allows ref struct
+        where T11 : allows ref struct;
+
+    public delegate void Action<in T1, in T2, in T3, in T4, in T5, in T6, in T7, in T8, in T9, in T10, in T11, in T12>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12)
+        where T1 : allows ref struct
+        where T2 : allows ref struct
+        where T3 : allows ref struct
+        where T4 : allows ref struct
+        where T5 : allows ref struct
+        where T6 : allows ref struct
+        where T7 : allows ref struct
+        where T8 : allows ref struct
+        where T9 : allows ref struct
+        where T10 : allows ref struct
+        where T11 : allows ref struct
+        where T12 : allows ref struct;
+
+    public delegate void Action<in T1, in T2, in T3, in T4, in T5, in T6, in T7, in T8, in T9, in T10, in T11, in T12, in T13>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, T13 arg13)
+        where T1 : allows ref struct
+        where T2 : allows ref struct
+        where T3 : allows ref struct
+        where T4 : allows ref struct
+        where T5 : allows ref struct
+        where T6 : allows ref struct
+        where T7 : allows ref struct
+        where T8 : allows ref struct
+        where T9 : allows ref struct
+        where T10 : allows ref struct
+        where T11 : allows ref struct
+        where T12 : allows ref struct
+        where T13 : allows ref struct;
+
+    public delegate void Action<in T1, in T2, in T3, in T4, in T5, in T6, in T7, in T8, in T9, in T10, in T11, in T12, in T13, in T14>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, T13 arg13, T14 arg14)
+        where T1 : allows ref struct
+        where T2 : allows ref struct
+        where T3 : allows ref struct
+        where T4 : allows ref struct
+        where T5 : allows ref struct
+        where T6 : allows ref struct
+        where T7 : allows ref struct
+        where T8 : allows ref struct
+        where T9 : allows ref struct
+        where T10 : allows ref struct
+        where T11 : allows ref struct
+        where T12 : allows ref struct
+        where T13 : allows ref struct
+        where T14 : allows ref struct;
+
+    public delegate void Action<in T1, in T2, in T3, in T4, in T5, in T6, in T7, in T8, in T9, in T10, in T11, in T12, in T13, in T14, in T15>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, T13 arg13, T14 arg14, T15 arg15)
+        where T1 : allows ref struct
+        where T2 : allows ref struct
+        where T3 : allows ref struct
+        where T4 : allows ref struct
+        where T5 : allows ref struct
+        where T6 : allows ref struct
+        where T7 : allows ref struct
+        where T8 : allows ref struct
+        where T9 : allows ref struct
+        where T10 : allows ref struct
+        where T11 : allows ref struct
+        where T12 : allows ref struct
+        where T13 : allows ref struct
+        where T14 : allows ref struct
+        where T15 : allows ref struct;
+
+    public delegate void Action<in T1, in T2, in T3, in T4, in T5, in T6, in T7, in T8, in T9, in T10, in T11, in T12, in T13, in T14, in T15, in T16>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, T13 arg13, T14 arg14, T15 arg15, T16 arg16)
+        where T1 : allows ref struct
+        where T2 : allows ref struct
+        where T3 : allows ref struct
+        where T4 : allows ref struct
+        where T5 : allows ref struct
+        where T6 : allows ref struct
+        where T7 : allows ref struct
+        where T8 : allows ref struct
+        where T9 : allows ref struct
+        where T10 : allows ref struct
+        where T11 : allows ref struct
+        where T12 : allows ref struct
+        where T13 : allows ref struct
+        where T14 : allows ref struct
+        where T15 : allows ref struct
+        where T16 : allows ref struct;
+
     public static partial class Activator
     {
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Type and its constructor could be removed")]
@@ -91,7 +243,7 @@ namespace System
         public static System.Runtime.Remoting.ObjectHandle? CreateInstanceFrom(string assemblyFile, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object?[]? args, System.Globalization.CultureInfo? culture, object?[]? activationAttributes) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Type and its constructor could be removed")]
         public static System.Runtime.Remoting.ObjectHandle? CreateInstanceFrom(string assemblyFile, string typeName, object?[]? activationAttributes) { throw null; }
-        public static T CreateInstance<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]T>() { throw null; }
+        public static T CreateInstance<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]T>() where T : allows ref struct { throw null; }
     }
     public partial class AggregateException : System.Exception
     {
@@ -1110,7 +1262,7 @@ namespace System
         public CLSCompliantAttribute(bool isCompliant) { }
         public bool IsCompliant { get { throw null; } }
     }
-    public delegate int Comparison<in T>(T x, T y);
+    public delegate int Comparison<in T>(T x, T y) where T : allows ref struct;
     public abstract partial class ContextBoundObject : System.MarshalByRefObject
     {
         protected ContextBoundObject() { }
@@ -1589,7 +1741,7 @@ namespace System
         public static bool TryToHexString(System.ReadOnlySpan<byte> source, System.Span<char> destination, out int charsWritten) { throw null; }
         public static bool TryToHexStringLower(System.ReadOnlySpan<byte> source, System.Span<char> destination, out int charsWritten) { throw null; }
     }
-    public delegate TOutput Converter<in TInput, out TOutput>(TInput input);
+    public delegate TOutput Converter<in TInput, out TOutput>(TInput input) where TInput : allows ref struct where TOutput : allows ref struct;
     public readonly partial struct DateOnly : System.IComparable, System.IComparable<System.DateOnly>, System.IEquatable<System.DateOnly>, System.IFormattable, System.IParsable<System.DateOnly>, System.ISpanFormattable, System.ISpanParsable<System.DateOnly>, System.IUtf8SpanFormattable
     {
         private readonly int _dummyPrimitive;
@@ -2170,7 +2322,7 @@ namespace System
         [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("b")]
         public static System.Delegate? Combine(System.Delegate? a, System.Delegate? b) { throw null; }
         public static System.Delegate? Combine(params System.Delegate?[]? delegates) { throw null; }
-        public static System.Delegate? Combine(System.ReadOnlySpan<System.Delegate?> delegates) { throw null; }
+        public static System.Delegate? Combine(params System.ReadOnlySpan<System.Delegate?> delegates) { throw null; }
         protected virtual System.Delegate CombineImpl(System.Delegate? d) { throw null; }
         public static System.Delegate CreateDelegate(System.Type type, object? firstArgument, System.Reflection.MethodInfo method) { throw null; }
         public static System.Delegate? CreateDelegate(System.Type type, object? firstArgument, System.Reflection.MethodInfo method, bool throwOnBindFailure) { throw null; }
@@ -2694,23 +2846,193 @@ namespace System
         public override string ToString() { throw null; }
         public abstract string ToString(System.IFormatProvider? formatProvider);
     }
-    public delegate TResult Func<out TResult>();
-    public delegate TResult Func<in T1, in T2, in T3, in T4, in T5, in T6, in T7, in T8, in T9, out TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9);
-    public delegate TResult Func<in T1, in T2, in T3, in T4, in T5, in T6, in T7, in T8, in T9, in T10, out TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10);
-    public delegate TResult Func<in T1, in T2, in T3, in T4, in T5, in T6, in T7, in T8, in T9, in T10, in T11, out TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11);
-    public delegate TResult Func<in T1, in T2, in T3, in T4, in T5, in T6, in T7, in T8, in T9, in T10, in T11, in T12, out TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12);
-    public delegate TResult Func<in T1, in T2, in T3, in T4, in T5, in T6, in T7, in T8, in T9, in T10, in T11, in T12, in T13, out TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, T13 arg13);
-    public delegate TResult Func<in T1, in T2, in T3, in T4, in T5, in T6, in T7, in T8, in T9, in T10, in T11, in T12, in T13, in T14, out TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, T13 arg13, T14 arg14);
-    public delegate TResult Func<in T1, in T2, in T3, in T4, in T5, in T6, in T7, in T8, in T9, in T10, in T11, in T12, in T13, in T14, in T15, out TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, T13 arg13, T14 arg14, T15 arg15);
-    public delegate TResult Func<in T1, in T2, in T3, in T4, in T5, in T6, in T7, in T8, in T9, in T10, in T11, in T12, in T13, in T14, in T15, in T16, out TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, T13 arg13, T14 arg14, T15 arg15, T16 arg16);
-    public delegate TResult Func<in T, out TResult>(T arg);
-    public delegate TResult Func<in T1, in T2, out TResult>(T1 arg1, T2 arg2);
-    public delegate TResult Func<in T1, in T2, in T3, out TResult>(T1 arg1, T2 arg2, T3 arg3);
-    public delegate TResult Func<in T1, in T2, in T3, in T4, out TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4);
-    public delegate TResult Func<in T1, in T2, in T3, in T4, in T5, out TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5);
-    public delegate TResult Func<in T1, in T2, in T3, in T4, in T5, in T6, out TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6);
-    public delegate TResult Func<in T1, in T2, in T3, in T4, in T5, in T6, in T7, out TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7);
-    public delegate TResult Func<in T1, in T2, in T3, in T4, in T5, in T6, in T7, in T8, out TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8);
+    public delegate TResult Func<out TResult>()
+        where TResult : allows ref struct;
+
+    public delegate TResult Func<in T, out TResult>(T arg)
+        where T : allows ref struct
+        where TResult : allows ref struct;
+
+    public delegate TResult Func<in T1, in T2, out TResult>(T1 arg1, T2 arg2)
+        where T1 : allows ref struct
+        where T2 : allows ref struct
+        where TResult : allows ref struct;
+
+    public delegate TResult Func<in T1, in T2, in T3, out TResult>(T1 arg1, T2 arg2, T3 arg3)
+        where T1 : allows ref struct
+        where T2 : allows ref struct
+        where T3 : allows ref struct
+        where TResult : allows ref struct;
+
+    public delegate TResult Func<in T1, in T2, in T3, in T4, out TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4)
+        where T1 : allows ref struct
+        where T2 : allows ref struct
+        where T3 : allows ref struct
+        where T4 : allows ref struct
+        where TResult : allows ref struct;
+
+    public delegate TResult Func<in T1, in T2, in T3, in T4, in T5, out TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5)
+        where T1 : allows ref struct
+        where T2 : allows ref struct
+        where T3 : allows ref struct
+        where T4 : allows ref struct
+        where T5 : allows ref struct
+        where TResult : allows ref struct;
+
+    public delegate TResult Func<in T1, in T2, in T3, in T4, in T5, in T6, out TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6)
+        where T1 : allows ref struct
+        where T2 : allows ref struct
+        where T3 : allows ref struct
+        where T4 : allows ref struct
+        where T5 : allows ref struct
+        where T6 : allows ref struct
+        where TResult : allows ref struct;
+
+    public delegate TResult Func<in T1, in T2, in T3, in T4, in T5, in T6, in T7, out TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7)
+        where T1 : allows ref struct
+        where T2 : allows ref struct
+        where T3 : allows ref struct
+        where T4 : allows ref struct
+        where T5 : allows ref struct
+        where T6 : allows ref struct
+        where T7 : allows ref struct
+        where TResult : allows ref struct;
+
+    public delegate TResult Func<in T1, in T2, in T3, in T4, in T5, in T6, in T7, in T8, out TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8)
+        where T1 : allows ref struct
+        where T2 : allows ref struct
+        where T3 : allows ref struct
+        where T4 : allows ref struct
+        where T5 : allows ref struct
+        where T6 : allows ref struct
+        where T7 : allows ref struct
+        where T8 : allows ref struct
+        where TResult : allows ref struct;
+
+    public delegate TResult Func<in T1, in T2, in T3, in T4, in T5, in T6, in T7, in T8, in T9, out TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9)
+        where T1 : allows ref struct
+        where T2 : allows ref struct
+        where T3 : allows ref struct
+        where T4 : allows ref struct
+        where T5 : allows ref struct
+        where T6 : allows ref struct
+        where T7 : allows ref struct
+        where T8 : allows ref struct
+        where T9 : allows ref struct
+        where TResult : allows ref struct;
+
+    public delegate TResult Func<in T1, in T2, in T3, in T4, in T5, in T6, in T7, in T8, in T9, in T10, out TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10)
+        where T1 : allows ref struct
+        where T2 : allows ref struct
+        where T3 : allows ref struct
+        where T4 : allows ref struct
+        where T5 : allows ref struct
+        where T6 : allows ref struct
+        where T7 : allows ref struct
+        where T8 : allows ref struct
+        where T9 : allows ref struct
+        where T10 : allows ref struct
+        where TResult : allows ref struct;
+
+    public delegate TResult Func<in T1, in T2, in T3, in T4, in T5, in T6, in T7, in T8, in T9, in T10, in T11, out TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11)
+        where T1 : allows ref struct
+        where T2 : allows ref struct
+        where T3 : allows ref struct
+        where T4 : allows ref struct
+        where T5 : allows ref struct
+        where T6 : allows ref struct
+        where T7 : allows ref struct
+        where T8 : allows ref struct
+        where T9 : allows ref struct
+        where T10 : allows ref struct
+        where T11 : allows ref struct
+        where TResult : allows ref struct;
+
+    public delegate TResult Func<in T1, in T2, in T3, in T4, in T5, in T6, in T7, in T8, in T9, in T10, in T11, in T12, out TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12)
+        where T1 : allows ref struct
+        where T2 : allows ref struct
+        where T3 : allows ref struct
+        where T4 : allows ref struct
+        where T5 : allows ref struct
+        where T6 : allows ref struct
+        where T7 : allows ref struct
+        where T8 : allows ref struct
+        where T9 : allows ref struct
+        where T10 : allows ref struct
+        where T11 : allows ref struct
+        where T12 : allows ref struct
+        where TResult : allows ref struct;
+
+    public delegate TResult Func<in T1, in T2, in T3, in T4, in T5, in T6, in T7, in T8, in T9, in T10, in T11, in T12, in T13, out TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, T13 arg13)
+        where T1 : allows ref struct
+        where T2 : allows ref struct
+        where T3 : allows ref struct
+        where T4 : allows ref struct
+        where T5 : allows ref struct
+        where T6 : allows ref struct
+        where T7 : allows ref struct
+        where T8 : allows ref struct
+        where T9 : allows ref struct
+        where T10 : allows ref struct
+        where T11 : allows ref struct
+        where T12 : allows ref struct
+        where T13 : allows ref struct
+        where TResult : allows ref struct;
+
+    public delegate TResult Func<in T1, in T2, in T3, in T4, in T5, in T6, in T7, in T8, in T9, in T10, in T11, in T12, in T13, in T14, out TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, T13 arg13, T14 arg14)
+        where T1 : allows ref struct
+        where T2 : allows ref struct
+        where T3 : allows ref struct
+        where T4 : allows ref struct
+        where T5 : allows ref struct
+        where T6 : allows ref struct
+        where T7 : allows ref struct
+        where T8 : allows ref struct
+        where T9 : allows ref struct
+        where T10 : allows ref struct
+        where T11 : allows ref struct
+        where T12 : allows ref struct
+        where T13 : allows ref struct
+        where T14 : allows ref struct
+        where TResult : allows ref struct;
+
+    public delegate TResult Func<in T1, in T2, in T3, in T4, in T5, in T6, in T7, in T8, in T9, in T10, in T11, in T12, in T13, in T14, in T15, out TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, T13 arg13, T14 arg14, T15 arg15)
+        where T1 : allows ref struct
+        where T2 : allows ref struct
+        where T3 : allows ref struct
+        where T4 : allows ref struct
+        where T5 : allows ref struct
+        where T6 : allows ref struct
+        where T7 : allows ref struct
+        where T8 : allows ref struct
+        where T9 : allows ref struct
+        where T10 : allows ref struct
+        where T11 : allows ref struct
+        where T12 : allows ref struct
+        where T13 : allows ref struct
+        where T14 : allows ref struct
+        where T15 : allows ref struct
+        where TResult : allows ref struct;
+
+    public delegate TResult Func<in T1, in T2, in T3, in T4, in T5, in T6, in T7, in T8, in T9, in T10, in T11, in T12, in T13, in T14, in T15, in T16, out TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10, T11 arg11, T12 arg12, T13 arg13, T14 arg14, T15 arg15, T16 arg16)
+        where T1 : allows ref struct
+        where T2 : allows ref struct
+        where T3 : allows ref struct
+        where T4 : allows ref struct
+        where T5 : allows ref struct
+        where T6 : allows ref struct
+        where T7 : allows ref struct
+        where T8 : allows ref struct
+        where T9 : allows ref struct
+        where T10 : allows ref struct
+        where T11 : allows ref struct
+        where T12 : allows ref struct
+        where T13 : allows ref struct
+        where T14 : allows ref struct
+        where T15 : allows ref struct
+        where T16 : allows ref struct
+        where TResult : allows ref struct;
+
     public static partial class GC
     {
         public static int MaxGeneration { get { throw null; } }
@@ -4635,7 +4957,7 @@ namespace System
         public PlatformNotSupportedException(string? message) { }
         public PlatformNotSupportedException(string? message, System.Exception? inner) { }
     }
-    public delegate bool Predicate<in T>(T obj);
+    public delegate bool Predicate<in T>(T obj) where T : allows ref struct;
     public partial class Progress<T> : System.IProgress<T>
     {
         public Progress() { }
@@ -5265,7 +5587,7 @@ namespace System
         public static string Concat(object? arg0, object? arg1) { throw null; }
         public static string Concat(object? arg0, object? arg1, object? arg2) { throw null; }
         public static string Concat(params object?[] args) { throw null; }
-        public static string Concat(System.ReadOnlySpan<object?> args) { throw null; }
+        public static string Concat(params System.ReadOnlySpan<object?> args) { throw null; }
         public static string Concat(System.ReadOnlySpan<char> str0, System.ReadOnlySpan<char> str1) { throw null; }
         public static string Concat(System.ReadOnlySpan<char> str0, System.ReadOnlySpan<char> str1, System.ReadOnlySpan<char> str2) { throw null; }
         public static string Concat(System.ReadOnlySpan<char> str0, System.ReadOnlySpan<char> str1, System.ReadOnlySpan<char> str2, System.ReadOnlySpan<char> str3) { throw null; }
@@ -5273,7 +5595,7 @@ namespace System
         public static string Concat(string? str0, string? str1, string? str2) { throw null; }
         public static string Concat(string? str0, string? str1, string? str2, string? str3) { throw null; }
         public static string Concat(params string?[] values) { throw null; }
-        public static string Concat(System.ReadOnlySpan<string?> values) { throw null; }
+        public static string Concat(params System.ReadOnlySpan<string?> values) { throw null; }
         public static string Concat<T>(System.Collections.Generic.IEnumerable<T> values) { throw null; }
         public bool Contains(char value) { throw null; }
         public bool Contains(char value, System.StringComparison comparisonType) { throw null; }
@@ -5286,7 +5608,7 @@ namespace System
         public void CopyTo(System.Span<char> destination) { }
         public static string Create(System.IFormatProvider? provider, [System.Runtime.CompilerServices.InterpolatedStringHandlerArgumentAttribute("provider")] ref System.Runtime.CompilerServices.DefaultInterpolatedStringHandler handler) { throw null; }
         public static string Create(System.IFormatProvider? provider, System.Span<char> initialBuffer, [System.Runtime.CompilerServices.InterpolatedStringHandlerArgumentAttribute(new string[]{ "provider", "initialBuffer"})] ref System.Runtime.CompilerServices.DefaultInterpolatedStringHandler handler) { throw null; }
-        public static string Create<TState>(int length, TState state, System.Buffers.SpanAction<char, TState> action) { throw null; }
+        public static string Create<TState>(int length, TState state, System.Buffers.SpanAction<char, TState> action) where TState : allows ref struct { throw null; }
         public bool EndsWith(char value) { throw null; }
         public bool EndsWith(string value) { throw null; }
         public bool EndsWith(string value, bool ignoreCase, System.Globalization.CultureInfo? culture) { throw null; }
@@ -5301,14 +5623,14 @@ namespace System
         public static string Format(System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1) { throw null; }
         public static string Format(System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1, object? arg2) { throw null; }
         public static string Format(System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params object?[] args) { throw null; }
-        public static string Format(System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, System.ReadOnlySpan<object?> args) { throw null; }
+        public static string Format(System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params System.ReadOnlySpan<object?> args) { throw null; }
         public static string Format(System.IFormatProvider? provider, System.Text.CompositeFormat format, params object?[] args) { throw null; }
-        public static string Format(System.IFormatProvider? provider, System.Text.CompositeFormat format, System.ReadOnlySpan<object?> args) { throw null; }
+        public static string Format(System.IFormatProvider? provider, System.Text.CompositeFormat format, params System.ReadOnlySpan<object?> args) { throw null; }
         public static string Format([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0) { throw null; }
         public static string Format([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1) { throw null; }
         public static string Format([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1, object? arg2) { throw null; }
         public static string Format([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params object?[] args) { throw null; }
-        public static string Format([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, System.ReadOnlySpan<object?> args) { throw null; }
+        public static string Format([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params System.ReadOnlySpan<object?> args) { throw null; }
         public static string Format<TArg0>(System.IFormatProvider? provider, System.Text.CompositeFormat format, TArg0 arg0) { throw null; }
         public static string Format<TArg0, TArg1>(System.IFormatProvider? provider, System.Text.CompositeFormat format, TArg0 arg0, TArg1 arg1) { throw null; }
         public static string Format<TArg0, TArg1, TArg2>(System.IFormatProvider? provider, System.Text.CompositeFormat format, TArg0 arg0, TArg1 arg1, TArg2 arg2) { throw null; }
@@ -5341,15 +5663,15 @@ namespace System
         public static bool IsNullOrEmpty([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(false)] string? value) { throw null; }
         public static bool IsNullOrWhiteSpace([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(false)] string? value) { throw null; }
         public static string Join(char separator, params object?[] values) { throw null; }
-        public static string Join(char separator, System.ReadOnlySpan<object?> values) { throw null; }
+        public static string Join(char separator, params System.ReadOnlySpan<object?> values) { throw null; }
         public static string Join(char separator, params string?[] value) { throw null; }
-        public static string Join(char separator, System.ReadOnlySpan<string?> value) { throw null; }
+        public static string Join(char separator, params System.ReadOnlySpan<string?> value) { throw null; }
         public static string Join(char separator, string?[] value, int startIndex, int count) { throw null; }
         public static string Join(string? separator, System.Collections.Generic.IEnumerable<string?> values) { throw null; }
         public static string Join(string? separator, params object?[] values) { throw null; }
-        public static string Join(string? separator, System.ReadOnlySpan<object?> values) { throw null; }
+        public static string Join(string? separator, params System.ReadOnlySpan<object?> values) { throw null; }
         public static string Join(string? separator, params string?[] value) { throw null; }
-        public static string Join(string? separator, System.ReadOnlySpan<string?> value) { throw null; }
+        public static string Join(string? separator, params System.ReadOnlySpan<string?> value) { throw null; }
         public static string Join(string? separator, string?[] value, int startIndex, int count) { throw null; }
         public static string Join<T>(char separator, System.Collections.Generic.IEnumerable<T> values) { throw null; }
         public static string Join<T>(string? separator, System.Collections.Generic.IEnumerable<T> values) { throw null; }
@@ -5385,7 +5707,7 @@ namespace System
         public string[] Split(char separator, int count, System.StringSplitOptions options = System.StringSplitOptions.None) { throw null; }
         public string[] Split(char separator, System.StringSplitOptions options = System.StringSplitOptions.None) { throw null; }
         public string[] Split(params char[]? separator) { throw null; }
-        public string[] Split(System.ReadOnlySpan<char> separator) { throw null; }
+        public string[] Split(params System.ReadOnlySpan<char> separator) { throw null; }
         public string[] Split(char[]? separator, int count) { throw null; }
         public string[] Split(char[]? separator, int count, System.StringSplitOptions options) { throw null; }
         public string[] Split(char[]? separator, System.StringSplitOptions options) { throw null; }
@@ -5433,15 +5755,15 @@ namespace System
         public string Trim() { throw null; }
         public string Trim(char trimChar) { throw null; }
         public string Trim(params char[]? trimChars) { throw null; }
-        public string Trim(System.ReadOnlySpan<char> trimChars) { throw null; }
+        public string Trim(params System.ReadOnlySpan<char> trimChars) { throw null; }
         public string TrimEnd() { throw null; }
         public string TrimEnd(char trimChar) { throw null; }
         public string TrimEnd(params char[]? trimChars) { throw null; }
-        public string TrimEnd(System.ReadOnlySpan<char> trimChars) { throw null; }
+        public string TrimEnd(params System.ReadOnlySpan<char> trimChars) { throw null; }
         public string TrimStart() { throw null; }
         public string TrimStart(char trimChar) { throw null; }
         public string TrimStart(params char[]? trimChars) { throw null; }
-        public string TrimStart(System.ReadOnlySpan<char> trimChars) { throw null; }
+        public string TrimStart(params System.ReadOnlySpan<char> trimChars) { throw null; }
         public bool TryCopyTo(System.Span<char> destination) { throw null; }
     }
     public abstract partial class StringComparer : System.Collections.Generic.IComparer<string?>, System.Collections.Generic.IEqualityComparer<string?>, System.Collections.IComparer, System.Collections.IEqualityComparer
@@ -7498,11 +7820,11 @@ namespace System.Buffers
         NeedMoreData = 2,
         InvalidData = 3,
     }
-    public delegate void ReadOnlySpanAction<T, in TArg>(System.ReadOnlySpan<T> span, TArg arg);
+    public delegate void ReadOnlySpanAction<T, in TArg>(System.ReadOnlySpan<T> span, TArg arg) where TArg : allows ref struct;
     public static partial class SearchValues
     {
-        public static System.Buffers.SearchValues<byte> Create(System.ReadOnlySpan<byte> values) { throw null; }
-        public static System.Buffers.SearchValues<char> Create(System.ReadOnlySpan<char> values) { throw null; }
+        public static System.Buffers.SearchValues<byte> Create(params System.ReadOnlySpan<byte> values) { throw null; }
+        public static System.Buffers.SearchValues<char> Create(params System.ReadOnlySpan<char> values) { throw null; }
         public static System.Buffers.SearchValues<string> Create(System.ReadOnlySpan<string> values, System.StringComparison comparisonType) { throw null; }
     }
     public partial class SearchValues<T> where T : System.IEquatable<T>?
@@ -7510,7 +7832,7 @@ namespace System.Buffers
         internal SearchValues() { }
         public bool Contains(T value) { throw null; }
     }
-    public delegate void SpanAction<T, in TArg>(System.Span<T> span, TArg arg);
+    public delegate void SpanAction<T, in TArg>(System.Span<T> span, TArg arg) where TArg : allows ref struct;
 }
 namespace System.Buffers.Text
 {
@@ -7567,7 +7889,7 @@ namespace System.CodeDom.Compiler
         public override void Write([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0) { }
         public override void Write([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1) { }
         public override void Write([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params object?[] arg) { }
-        public override void Write([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, System.ReadOnlySpan<object?> arg) { }
+        public override void Write([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params System.ReadOnlySpan<object?> arg) { }
         public override System.Threading.Tasks.Task WriteAsync(char value) { throw null; }
         public override System.Threading.Tasks.Task WriteAsync(char[] buffer, int index, int count) { throw null; }
         public override System.Threading.Tasks.Task WriteAsync(System.ReadOnlyMemory<char> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
@@ -7587,7 +7909,7 @@ namespace System.CodeDom.Compiler
         public override void WriteLine([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0) { }
         public override void WriteLine([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1) { }
         public override void WriteLine([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params object?[] arg) { }
-        public override void WriteLine([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, System.ReadOnlySpan<object?> arg) { }
+        public override void WriteLine([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params System.ReadOnlySpan<object?> arg) { }
         [System.CLSCompliantAttribute(false)]
         public override void WriteLine(uint value) { }
         public override System.Threading.Tasks.Task WriteLineAsync() { throw null; }
@@ -7811,11 +8133,17 @@ namespace System.Collections
 }
 namespace System.Collections.Generic
 {
-    public partial interface IAsyncEnumerable<out T>
+    public interface IAlternateEqualityComparer<in TAlternate, T> where TAlternate : allows ref struct
+    {
+        bool Equals(TAlternate alternate, T other);
+        int GetHashCode(TAlternate alternate);
+        T Create(TAlternate alternate);
+    }
+    public partial interface IAsyncEnumerable<out T> where T : allows ref struct
     {
         System.Collections.Generic.IAsyncEnumerator<T> GetAsyncEnumerator(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
     }
-    public partial interface IAsyncEnumerator<out T> : System.IAsyncDisposable
+    public partial interface IAsyncEnumerator<out T> : System.IAsyncDisposable where T : allows ref struct
     {
         T Current { get; }
         System.Threading.Tasks.ValueTask<bool> MoveNextAsync();
@@ -7844,11 +8172,11 @@ namespace System.Collections.Generic
         bool Remove(TKey key);
         bool TryGetValue(TKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TValue value);
     }
-    public partial interface IEnumerable<out T> : System.Collections.IEnumerable
+    public partial interface IEnumerable<out T> : System.Collections.IEnumerable where T : allows ref struct
     {
         new System.Collections.Generic.IEnumerator<T> GetEnumerator();
     }
-    public partial interface IEnumerator<out T> : System.Collections.IEnumerator, System.IDisposable
+    public partial interface IEnumerator<out T> : System.Collections.IEnumerator, System.IDisposable where T : allows ref struct
     {
         new T Current { get; }
     }
@@ -10154,7 +10482,7 @@ namespace System.IO
         public static string Combine(string path1, string path2, string path3) { throw null; }
         public static string Combine(string path1, string path2, string path3, string path4) { throw null; }
         public static string Combine(params string[] paths) { throw null; }
-        public static string Combine(System.ReadOnlySpan<string> paths) { throw null; }
+        public static string Combine(params System.ReadOnlySpan<string> paths) { throw null; }
         public static bool EndsInDirectorySeparator(System.ReadOnlySpan<char> path) { throw null; }
         public static bool EndsInDirectorySeparator([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? path) { throw null; }
         public static bool Exists([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? path) { throw null; }
@@ -10192,7 +10520,7 @@ namespace System.IO
         public static string Join(string? path1, string? path2, string? path3) { throw null; }
         public static string Join(string? path1, string? path2, string? path3, string? path4) { throw null; }
         public static string Join(params string?[] paths) { throw null; }
-        public static string Join(System.ReadOnlySpan<string?> paths) { throw null; }
+        public static string Join(params System.ReadOnlySpan<string?> paths) { throw null; }
         public static System.ReadOnlySpan<char> TrimEndingDirectorySeparator(System.ReadOnlySpan<char> path) { throw null; }
         public static string TrimEndingDirectorySeparator(string path) { throw null; }
         public static bool TryJoin(System.ReadOnlySpan<char> path1, System.ReadOnlySpan<char> path2, System.ReadOnlySpan<char> path3, System.Span<char> destination, out int charsWritten) { throw null; }
@@ -10359,7 +10687,7 @@ namespace System.IO
         public override void Write([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1) { }
         public override void Write([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1, object? arg2) { }
         public override void Write([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params object?[] arg) { }
-        public override void Write([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, System.ReadOnlySpan<object?> arg) { }
+        public override void Write([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params System.ReadOnlySpan<object?> arg) { }
         public override System.Threading.Tasks.Task WriteAsync(char value) { throw null; }
         public override System.Threading.Tasks.Task WriteAsync(char[] buffer, int index, int count) { throw null; }
         public override System.Threading.Tasks.Task WriteAsync(System.ReadOnlyMemory<char> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
@@ -10370,7 +10698,7 @@ namespace System.IO
         public override void WriteLine([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1) { }
         public override void WriteLine([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1, object? arg2) { }
         public override void WriteLine([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params object?[] arg) { }
-        public override void WriteLine([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, System.ReadOnlySpan<object?> arg) { }
+        public override void WriteLine([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params System.ReadOnlySpan<object?> arg) { }
         public override System.Threading.Tasks.Task WriteLineAsync() { throw null; }
         public override System.Threading.Tasks.Task WriteLineAsync(char value) { throw null; }
         public override System.Threading.Tasks.Task WriteLineAsync(char[] buffer, int index, int count) { throw null; }
@@ -10488,7 +10816,7 @@ namespace System.IO
         public virtual void Write([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1) { }
         public virtual void Write([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1, object? arg2) { }
         public virtual void Write([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params object?[] arg) { }
-        public virtual void Write([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, System.ReadOnlySpan<object?> arg) { }
+        public virtual void Write([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params System.ReadOnlySpan<object?> arg) { }
         public virtual void Write(System.Text.StringBuilder? value) { }
         [System.CLSCompliantAttribute(false)]
         public virtual void Write(uint value) { }
@@ -10517,7 +10845,7 @@ namespace System.IO
         public virtual void WriteLine([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1) { }
         public virtual void WriteLine([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1, object? arg2) { }
         public virtual void WriteLine([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params object?[] arg) { }
-        public virtual void WriteLine([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, System.ReadOnlySpan<object?> arg) { }
+        public virtual void WriteLine([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params System.ReadOnlySpan<object?> arg) { }
         public virtual void WriteLine(System.Text.StringBuilder? value) { }
         [System.CLSCompliantAttribute(false)]
         public virtual void WriteLine(uint value) { }
@@ -11157,6 +11485,7 @@ namespace System.Reflection
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types and members the loaded assembly depends on might be removed")]
         public static System.Reflection.Assembly LoadFrom(string assemblyFile) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types and members the loaded assembly depends on might be removed")]
+        [System.ObsoleteAttribute("LoadFrom with a custom AssemblyHashAlgorithm is obsolete. Use overloads without an AssemblyHashAlgorithm.", DiagnosticId = "SYSLIB0056", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static System.Reflection.Assembly LoadFrom(string assemblyFile, byte[]? hashValue, System.Configuration.Assemblies.AssemblyHashAlgorithm hashAlgorithm) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types and members the loaded module depends on might be removed")]
         public System.Reflection.Module LoadModule(string moduleName, byte[]? rawModule) { throw null; }
@@ -11175,6 +11504,7 @@ namespace System.Reflection
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types and members the loaded assembly depends on might be removed")]
         [System.ObsoleteAttribute("ReflectionOnly loading is not supported and throws PlatformNotSupportedException.", DiagnosticId="SYSLIB0018", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public static System.Reflection.Assembly ReflectionOnlyLoadFrom(string assemblyFile) { throw null; }
+        public static void SetEntryAssembly(System.Reflection.Assembly? assembly) { throw null; }
         public override string ToString() { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Types and members the loaded assembly depends on might be removed")]
         public static System.Reflection.Assembly UnsafeLoadFrom(string assemblyFile) { throw null; }
@@ -13217,7 +13547,7 @@ namespace System.Runtime.CompilerServices
         public static T[] GetSubArray<T>(T[] array, System.Range range) { throw null; }
         public static object GetUninitializedObject([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type type) { throw null; }
         public static void InitializeArray(System.Array array, System.RuntimeFieldHandle fldHandle) { }
-        public static bool IsReferenceOrContainsReferences<T>() { throw null; }
+        public static bool IsReferenceOrContainsReferences<T>() where T: allows ref struct { throw null; }
         [System.ObsoleteAttribute("The Constrained Execution Region (CER) feature is not supported.", DiagnosticId="SYSLIB0004", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public static void PrepareConstrainedRegions() { }
         [System.ObsoleteAttribute("The Constrained Execution Region (CER) feature is not supported.", DiagnosticId="SYSLIB0004", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
@@ -13338,26 +13668,26 @@ namespace System.Runtime.CompilerServices
     }
     public static partial class Unsafe
     {
-        public static ref T AddByteOffset<T>(ref T source, System.IntPtr byteOffset) { throw null; }
+        public static ref T AddByteOffset<T>(ref T source, System.IntPtr byteOffset) where T : allows ref struct { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static ref T AddByteOffset<T>(ref T source, nuint byteOffset) { throw null; }
+        public static ref T AddByteOffset<T>(ref T source, nuint byteOffset) where T : allows ref struct { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public unsafe static void* Add<T>(void* source, int elementOffset) { throw null; }
-        public static ref T Add<T>(ref T source, int elementOffset) { throw null; }
-        public static ref T Add<T>(ref T source, System.IntPtr elementOffset) { throw null; }
+        public unsafe static void* Add<T>(void* source, int elementOffset) where T : allows ref struct { throw null; }
+        public static ref T Add<T>(ref T source, int elementOffset) where T : allows ref struct { throw null; }
+        public static ref T Add<T>(ref T source, System.IntPtr elementOffset) where T : allows ref struct { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static ref T Add<T>(ref T source, nuint elementOffset) { throw null; }
-        public static bool AreSame<T>([System.Diagnostics.CodeAnalysis.AllowNull] ref readonly T left, [System.Diagnostics.CodeAnalysis.AllowNull] ref readonly T right) { throw null; }
+        public static ref T Add<T>(ref T source, nuint elementOffset) where T : allows ref struct { throw null; }
+        public static bool AreSame<T>([System.Diagnostics.CodeAnalysis.AllowNull] ref readonly T left, [System.Diagnostics.CodeAnalysis.AllowNull] ref readonly T right) where T : allows ref struct { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public unsafe static void* AsPointer<T>(ref T value) { throw null; }
+        public unsafe static void* AsPointer<T>(ref T value) where T : allows ref struct { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public unsafe static ref T AsRef<T>(void* source) { throw null; }
-        public static ref T AsRef<T>(scoped ref readonly T source) { throw null; }
+        public unsafe static ref T AsRef<T>(void* source) where T : allows ref struct { throw null; }
+        public static ref T AsRef<T>(scoped ref readonly T source) where T : allows ref struct { throw null; }
         [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("o")]
         public static T? As<T>(object? o) where T : class? { throw null; }
-        public static ref TTo As<TFrom, TTo>(ref TFrom source) { throw null; }
-        public static TTo BitCast<TFrom, TTo>(TFrom source) { throw null; }
-        public static System.IntPtr ByteOffset<T>([System.Diagnostics.CodeAnalysis.AllowNull] ref readonly T origin, [System.Diagnostics.CodeAnalysis.AllowNull] ref readonly T target) { throw null; }
+        public static ref TTo As<TFrom, TTo>(ref TFrom source) where TFrom : allows ref struct where TTo : allows ref struct { throw null; }
+        public static TTo BitCast<TFrom, TTo>(TFrom source) where TFrom : allows ref struct where TTo : allows ref struct { throw null; }
+        public static System.IntPtr ByteOffset<T>([System.Diagnostics.CodeAnalysis.AllowNull] ref readonly T origin, [System.Diagnostics.CodeAnalysis.AllowNull] ref readonly T target) where T : allows ref struct { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static void CopyBlock(ref byte destination, ref readonly byte source, uint byteCount) { }
         [System.CLSCompliantAttribute(false)]
@@ -13367,9 +13697,9 @@ namespace System.Runtime.CompilerServices
         [System.CLSCompliantAttribute(false)]
         public unsafe static void CopyBlockUnaligned(void* destination, void* source, uint byteCount) { }
         [System.CLSCompliantAttribute(false)]
-        public unsafe static void Copy<T>(void* destination, ref readonly T source) { }
+        public unsafe static void Copy<T>(void* destination, ref readonly T source) where T : allows ref struct { }
         [System.CLSCompliantAttribute(false)]
-        public unsafe static void Copy<T>(ref T destination, void* source) { }
+        public unsafe static void Copy<T>(ref T destination, void* source) where T : allows ref struct { }
         [System.CLSCompliantAttribute(false)]
         public static void InitBlock(ref byte startAddress, byte value, uint byteCount) { }
         [System.CLSCompliantAttribute(false)]
@@ -13378,32 +13708,32 @@ namespace System.Runtime.CompilerServices
         public static void InitBlockUnaligned(ref byte startAddress, byte value, uint byteCount) { }
         [System.CLSCompliantAttribute(false)]
         public unsafe static void InitBlockUnaligned(void* startAddress, byte value, uint byteCount) { }
-        public static bool IsAddressGreaterThan<T>([System.Diagnostics.CodeAnalysis.AllowNull] ref readonly T left, [System.Diagnostics.CodeAnalysis.AllowNull] ref readonly T right) { throw null; }
-        public static bool IsAddressLessThan<T>([System.Diagnostics.CodeAnalysis.AllowNull] ref readonly T left, [System.Diagnostics.CodeAnalysis.AllowNull] ref readonly T right) { throw null; }
-        public static bool IsNullRef<T>(ref readonly T source) { throw null; }
-        public static ref T NullRef<T>() { throw null; }
-        public static T ReadUnaligned<T>(ref readonly byte source) { throw null; }
+        public static bool IsAddressGreaterThan<T>([System.Diagnostics.CodeAnalysis.AllowNull] ref readonly T left, [System.Diagnostics.CodeAnalysis.AllowNull] ref readonly T right) where T : allows ref struct { throw null; }
+        public static bool IsAddressLessThan<T>([System.Diagnostics.CodeAnalysis.AllowNull] ref readonly T left, [System.Diagnostics.CodeAnalysis.AllowNull] ref readonly T right) where T : allows ref struct { throw null; }
+        public static bool IsNullRef<T>(ref readonly T source) where T : allows ref struct { throw null; }
+        public static ref T NullRef<T>() where T : allows ref struct { throw null; }
+        public static T ReadUnaligned<T>(scoped ref readonly byte source) where T : allows ref struct { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public unsafe static T ReadUnaligned<T>(void* source) { throw null; }
+        public unsafe static T ReadUnaligned<T>(void* source) where T : allows ref struct { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public unsafe static T Read<T>(void* source) { throw null; }
-        public static int SizeOf<T>() { throw null; }
-        public static void SkipInit<T>(out T value) { throw null; }
-        public static ref T SubtractByteOffset<T>(ref T source, System.IntPtr byteOffset) { throw null; }
+        public unsafe static T Read<T>(void* source) where T : allows ref struct { throw null; }
+        public static int SizeOf<T>() where T : allows ref struct { throw null; }
+        public static void SkipInit<T>(out T value) where T : allows ref struct { throw null; }
+        public static ref T SubtractByteOffset<T>(ref T source, System.IntPtr byteOffset) where T : allows ref struct { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static ref T SubtractByteOffset<T>(ref T source, nuint byteOffset) { throw null; }
+        public static ref T SubtractByteOffset<T>(ref T source, nuint byteOffset) where T : allows ref struct { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public unsafe static void* Subtract<T>(void* source, int elementOffset) { throw null; }
-        public static ref T Subtract<T>(ref T source, int elementOffset) { throw null; }
-        public static ref T Subtract<T>(ref T source, System.IntPtr elementOffset) { throw null; }
+        public unsafe static void* Subtract<T>(void* source, int elementOffset) where T : allows ref struct { throw null; }
+        public static ref T Subtract<T>(ref T source, int elementOffset) where T : allows ref struct { throw null; }
+        public static ref T Subtract<T>(ref T source, System.IntPtr elementOffset) where T : allows ref struct { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static ref T Subtract<T>(ref T source, nuint elementOffset) { throw null; }
+        public static ref T Subtract<T>(ref T source, nuint elementOffset) where T : allows ref struct { throw null; }
         public static ref T Unbox<T>(object box) where T : struct { throw null; }
-        public static void WriteUnaligned<T>(ref byte destination, T value) { }
+        public static void WriteUnaligned<T>(ref byte destination, T value) where T : allows ref struct { }
         [System.CLSCompliantAttribute(false)]
-        public unsafe static void WriteUnaligned<T>(void* destination, T value) { }
+        public unsafe static void WriteUnaligned<T>(void* destination, T value) where T : allows ref struct { }
         [System.CLSCompliantAttribute(false)]
-        public unsafe static void Write<T>(void* destination, T value) { }
+        public unsafe static void Write<T>(void* destination, T value) where T : allows ref struct { }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Method, AllowMultiple=false, Inherited=false)]
     public sealed partial class UnsafeAccessorAttribute : System.Attribute
@@ -14972,25 +15302,25 @@ namespace System.Text
         public System.Text.StringBuilder AppendFormat(System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1) { throw null; }
         public System.Text.StringBuilder AppendFormat(System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1, object? arg2) { throw null; }
         public System.Text.StringBuilder AppendFormat(System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params object?[] args) { throw null; }
-        public System.Text.StringBuilder AppendFormat(System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, System.ReadOnlySpan<object?> args) { throw null; }
+        public System.Text.StringBuilder AppendFormat(System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params System.ReadOnlySpan<object?> args) { throw null; }
         public System.Text.StringBuilder AppendFormat(System.IFormatProvider? provider, System.Text.CompositeFormat format, params object?[] args) { throw null; }
-        public System.Text.StringBuilder AppendFormat(System.IFormatProvider? provider, System.Text.CompositeFormat format, System.ReadOnlySpan<object?> args) { throw null; }
+        public System.Text.StringBuilder AppendFormat(System.IFormatProvider? provider, System.Text.CompositeFormat format, params System.ReadOnlySpan<object?> args) { throw null; }
         public System.Text.StringBuilder AppendFormat([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0) { throw null; }
         public System.Text.StringBuilder AppendFormat([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1) { throw null; }
         public System.Text.StringBuilder AppendFormat([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, object? arg0, object? arg1, object? arg2) { throw null; }
         public System.Text.StringBuilder AppendFormat([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params object?[] args) { throw null; }
-        public System.Text.StringBuilder AppendFormat([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, System.ReadOnlySpan<object?> args) { throw null; }
+        public System.Text.StringBuilder AppendFormat([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, params System.ReadOnlySpan<object?> args) { throw null; }
         public System.Text.StringBuilder AppendFormat<TArg0>(System.IFormatProvider? provider, System.Text.CompositeFormat format, TArg0 arg0) { throw null; }
         public System.Text.StringBuilder AppendFormat<TArg0, TArg1>(System.IFormatProvider? provider, System.Text.CompositeFormat format, TArg0 arg0, TArg1 arg1) { throw null; }
         public System.Text.StringBuilder AppendFormat<TArg0, TArg1, TArg2>(System.IFormatProvider? provider, System.Text.CompositeFormat format, TArg0 arg0, TArg1 arg1, TArg2 arg2) { throw null; }
         public System.Text.StringBuilder AppendJoin(char separator, params object?[] values) { throw null; }
         public System.Text.StringBuilder AppendJoin(char separator, params string?[] values) { throw null; }
-        public System.Text.StringBuilder AppendJoin(char separator, System.ReadOnlySpan<object?> values) { throw null; }
-        public System.Text.StringBuilder AppendJoin(char separator, System.ReadOnlySpan<string?> values) { throw null; }
+        public System.Text.StringBuilder AppendJoin(char separator, params System.ReadOnlySpan<object?> values) { throw null; }
+        public System.Text.StringBuilder AppendJoin(char separator, params System.ReadOnlySpan<string?> values) { throw null; }
         public System.Text.StringBuilder AppendJoin(string? separator, params object?[] values) { throw null; }
         public System.Text.StringBuilder AppendJoin(string? separator, params string?[] values) { throw null; }
-        public System.Text.StringBuilder AppendJoin(string? separator, System.ReadOnlySpan<object?> values) { throw null; }
-        public System.Text.StringBuilder AppendJoin(string? separator, System.ReadOnlySpan<string?> values) { throw null; }
+        public System.Text.StringBuilder AppendJoin(string? separator, params System.ReadOnlySpan<object?> values) { throw null; }
+        public System.Text.StringBuilder AppendJoin(string? separator, params System.ReadOnlySpan<string?> values) { throw null; }
         public System.Text.StringBuilder AppendJoin<T>(char separator, System.Collections.Generic.IEnumerable<T> values) { throw null; }
         public System.Text.StringBuilder AppendJoin<T>(string? separator, System.Collections.Generic.IEnumerable<T> values) { throw null; }
         public System.Text.StringBuilder AppendLine() { throw null; }
@@ -15166,7 +15496,7 @@ namespace System.Threading
         public System.Threading.Tasks.Task CancelAsync() { throw null; }
         public static System.Threading.CancellationTokenSource CreateLinkedTokenSource(System.Threading.CancellationToken token) { throw null; }
         public static System.Threading.CancellationTokenSource CreateLinkedTokenSource(System.Threading.CancellationToken token1, System.Threading.CancellationToken token2) { throw null; }
-        public static System.Threading.CancellationTokenSource CreateLinkedTokenSource(System.ReadOnlySpan<System.Threading.CancellationToken> tokens) { throw null; }
+        public static System.Threading.CancellationTokenSource CreateLinkedTokenSource(params System.ReadOnlySpan<System.Threading.CancellationToken> tokens) { throw null; }
         public static System.Threading.CancellationTokenSource CreateLinkedTokenSource(params System.Threading.CancellationToken[] tokens) { throw null; }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
@@ -15372,7 +15702,7 @@ namespace System.Threading.Tasks
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static void WaitAll(System.Collections.Generic.IEnumerable<Task> tasks, System.Threading.CancellationToken cancellationToken = default) { }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
-        public static void WaitAll(System.ReadOnlySpan<System.Threading.Tasks.Task> tasks) { }
+        public static void WaitAll(params System.ReadOnlySpan<System.Threading.Tasks.Task> tasks) { }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static void WaitAll(params System.Threading.Tasks.Task[] tasks) { }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
@@ -15394,18 +15724,18 @@ namespace System.Threading.Tasks
         public System.Threading.Tasks.Task WaitAsync(System.TimeSpan timeout, System.TimeProvider timeProvider) { throw null; }
         public System.Threading.Tasks.Task WaitAsync(System.TimeSpan timeout, System.TimeProvider timeProvider, System.Threading.CancellationToken cancellationToken) { throw null; }
         public static System.Threading.Tasks.Task WhenAll(System.Collections.Generic.IEnumerable<System.Threading.Tasks.Task> tasks) { throw null; }
-        public static System.Threading.Tasks.Task WhenAll(System.ReadOnlySpan<System.Threading.Tasks.Task> tasks) { throw null; }
+        public static System.Threading.Tasks.Task WhenAll(params System.ReadOnlySpan<System.Threading.Tasks.Task> tasks) { throw null; }
         public static System.Threading.Tasks.Task WhenAll(params System.Threading.Tasks.Task[] tasks) { throw null; }
         public static System.Threading.Tasks.Task<TResult[]> WhenAll<TResult>(System.Collections.Generic.IEnumerable<System.Threading.Tasks.Task<TResult>> tasks) { throw null; }
-        public static System.Threading.Tasks.Task<TResult[]> WhenAll<TResult>(System.ReadOnlySpan<System.Threading.Tasks.Task<TResult>> tasks) { throw null; }
+        public static System.Threading.Tasks.Task<TResult[]> WhenAll<TResult>(params System.ReadOnlySpan<System.Threading.Tasks.Task<TResult>> tasks) { throw null; }
         public static System.Threading.Tasks.Task<TResult[]> WhenAll<TResult>(params System.Threading.Tasks.Task<TResult>[] tasks) { throw null; }
         public static System.Threading.Tasks.Task<System.Threading.Tasks.Task> WhenAny(System.Collections.Generic.IEnumerable<System.Threading.Tasks.Task> tasks) { throw null; }
         public static System.Threading.Tasks.Task<System.Threading.Tasks.Task> WhenAny(System.Threading.Tasks.Task task1, System.Threading.Tasks.Task task2) { throw null; }
-        public static System.Threading.Tasks.Task<System.Threading.Tasks.Task> WhenAny(System.ReadOnlySpan<System.Threading.Tasks.Task> tasks) { throw null; }
+        public static System.Threading.Tasks.Task<System.Threading.Tasks.Task> WhenAny(params System.ReadOnlySpan<System.Threading.Tasks.Task> tasks) { throw null; }
         public static System.Threading.Tasks.Task<System.Threading.Tasks.Task> WhenAny(params System.Threading.Tasks.Task[] tasks) { throw null; }
         public static System.Threading.Tasks.Task<System.Threading.Tasks.Task<TResult>> WhenAny<TResult>(System.Collections.Generic.IEnumerable<System.Threading.Tasks.Task<TResult>> tasks) { throw null; }
         public static System.Threading.Tasks.Task<System.Threading.Tasks.Task<TResult>> WhenAny<TResult>(System.Threading.Tasks.Task<TResult> task1, System.Threading.Tasks.Task<TResult> task2) { throw null; }
-        public static System.Threading.Tasks.Task<System.Threading.Tasks.Task<TResult>> WhenAny<TResult>(System.ReadOnlySpan<System.Threading.Tasks.Task<TResult>> tasks) { throw null; }
+        public static System.Threading.Tasks.Task<System.Threading.Tasks.Task<TResult>> WhenAny<TResult>(params System.ReadOnlySpan<System.Threading.Tasks.Task<TResult>> tasks) { throw null; }
         public static System.Threading.Tasks.Task<System.Threading.Tasks.Task<TResult>> WhenAny<TResult>(params System.Threading.Tasks.Task<TResult>[] tasks) { throw null; }
         public static System.Collections.Generic.IAsyncEnumerable<System.Threading.Tasks.Task> WhenEach(System.Collections.Generic.IEnumerable<System.Threading.Tasks.Task> tasks) { throw null; }
         public static System.Collections.Generic.IAsyncEnumerable<System.Threading.Tasks.Task> WhenEach(params System.Threading.Tasks.Task[] tasks) { throw null; }

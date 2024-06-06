@@ -2046,7 +2046,7 @@ void* Compiler::compGetHelperFtn(CorInfoHelpFunc ftnNum, /* IN  */
     else
     {
         // If we don't have a matched VM, we won't get valid results when asking for a helper function.
-        addr = UlongToPtr(0xCA11CA11); // "callcall"
+        addr = (void*)(uintptr_t)(0xCA11CA11); // "callcall"
     }
 
     return addr;

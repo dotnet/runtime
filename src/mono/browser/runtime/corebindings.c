@@ -101,7 +101,9 @@ void bindings_initialize_internals (void)
 	mono_add_internal_call ("Interop/Runtime::AssemblyGetEntryPoint", mono_wasm_assembly_get_entry_point);
 	mono_add_internal_call ("Interop/Runtime::BindAssemblyExports", mono_wasm_bind_assembly_exports);
 	mono_add_internal_call ("Interop/Runtime::GetAssemblyExport", mono_wasm_get_assembly_export);
+	mono_add_internal_call ("System.ConsolePal::Clear", mono_wasm_console_clear);
 
+	// HybridGlobalization
 	mono_add_internal_call ("Interop/JsGlobalization::ChangeCaseInvariant", mono_wasm_change_case_invariant);
 	mono_add_internal_call ("Interop/JsGlobalization::ChangeCase", mono_wasm_change_case);
 	mono_add_internal_call ("Interop/JsGlobalization::CompareString", mono_wasm_compare_string);
@@ -113,7 +115,6 @@ void bindings_initialize_internals (void)
 	mono_add_internal_call ("Interop/JsGlobalization::GetCultureInfo", mono_wasm_get_culture_info);
 	mono_add_internal_call ("Interop/JsGlobalization::GetFirstDayOfWeek", mono_wasm_get_first_day_of_week);
 	mono_add_internal_call ("Interop/JsGlobalization::GetFirstWeekOfYear", mono_wasm_get_first_week_of_year);
-	mono_add_internal_call ("System.ConsolePal::Clear", mono_wasm_console_clear);
 }
 
 static MonoAssembly* _mono_wasm_assembly_load (char *assembly_name)

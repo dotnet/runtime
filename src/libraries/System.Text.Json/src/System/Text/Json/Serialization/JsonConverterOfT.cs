@@ -57,10 +57,6 @@ namespace System.Text.Json.Serialization
             return new JsonTypeInfo<T>(this, options);
         }
 
-        internal override Type? KeyType => null;
-
-        internal override Type? ElementType => null;
-
         /// <summary>
         /// Indicates whether <see langword="null"/> should be passed to the converter on serialization,
         /// and whether <see cref="JsonTokenType.Null"/> should be passed on deserialization.

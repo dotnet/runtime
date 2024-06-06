@@ -2,7 +2,6 @@
 
   <PropertyGroup>
     <GeneratePackage>true</GeneratePackage>
-    <IncludeSymbolsInPackage>true</IncludeSymbolsInPackage>
     <PackageDescription>Provides a native AOT compiler and runtime for .NET</PackageDescription>
   </PropertyGroup>
 
@@ -16,6 +15,7 @@
       <File Include="$(CoreCLRAotSdkDir)*" TargetPath="sdk" />
       <File Include="$(MibcOptimizationDataDir)/$(TargetOS)/$(TargetArchitecture)/**/*.mibc" TargetPath="mibc" />
     </ItemGroup>
+
     <ItemGroup Condition="'$(PackageTargetRuntime)' != '' and '$(TargetOS)' == 'linux'">
       <File Include="$(SharedNativeRoot)libs\System.Globalization.Native\*" TargetPath="native/src/libs/System.Globalization.Native"/>
       <File Include="$(SharedNativeRoot)libs\System.Security.Cryptography.Native\*" TargetPath="native/src/libs/System.Security.Cryptography.Native"/>
@@ -28,6 +28,18 @@
       <File Include="$(CoreCLRBuildIntegrationDir)*" TargetPath="build" />
       <File Include="$(CoreCLRILCompilerDir)netstandard\*" TargetPath="tools/netstandard" />
     </ItemGroup>
+
+    <!-- exclude native symbols from ilc package (they are included in symbols package) -->
+    <ItemGroup>
+       <!-- on windows, remove the pdbs only from tools directory (both managed and native) -->
+      <LibPackageExcludes Include="tools\%2A%2A\%2A.pdb"/>
+
+      <LibPackageExcludes Include="%2A%2A\%2A.dbg"/>
+      <LibPackageExcludes Include="%2A%2A\%2A.debug"/>
+      <LibPackageExcludes Include="%2A%2A\%2A.dSYM"/>
+      <LibPackageExcludes Include="%2A%2A\%2A.dwarf"/>
+    </ItemGroup>
+
   </Target>
 
 </Project>

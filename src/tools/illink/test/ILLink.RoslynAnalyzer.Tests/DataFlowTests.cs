@@ -119,6 +119,12 @@ namespace ILLink.RoslynAnalyzer.Tests
 		}
 
 		[Fact]
+		public Task DataflowInLocalMethodGroupArgument ()
+		{
+			return RunTest ();
+		}
+
+		[Fact]
 		public Task DynamicDependencyDataflow ()
 		{
 			return RunTest (nameof (DynamicDependencyDataflow));
