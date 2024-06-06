@@ -20,7 +20,6 @@ Wasm.Build.Tests.Blazor.IcuShardingTests
 Wasm.Build.Tests.Blazor.SignalRClientTests
 Wasm.Build.Tests.BuildPublishTests
 Wasm.Build.Tests.ConfigSrcTests
-Wasm.Build.Tests.DownloadThenInitTests
 Wasm.Build.Tests.HybridGlobalizationTests
 Wasm.Build.Tests.IcuShardingTests
 Wasm.Build.Tests.IcuShardingTests2
@@ -35,6 +34,7 @@ Wasm.Build.Tests.PInvokeTableGeneratorTests
 Wasm.Build.Tests.RebuildTests
 Wasm.Build.Tests.SatelliteAssembliesTests
 Wasm.Build.Tests.TestAppScenarios.AppSettingsTests
+Wasm.Build.Tests.TestAppScenarios.DownloadThenInitTests
 Wasm.Build.Tests.TestAppScenarios.LazyLoadingTests
 Wasm.Build.Tests.TestAppScenarios.LibraryInitializerTests
 Wasm.Build.Tests.TestAppScenarios.SatelliteLoadingTests

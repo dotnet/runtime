@@ -7,11 +7,10 @@ using System.Linq;
 using System.Threading.Tasks;
 using Xunit.Abstractions;
 using Xunit;
-using Wasm.Build.Tests.TestAppScenarios;
 
 #nullable enable
 
-namespace Wasm.Build.Tests;
+namespace Wasm.Build.Tests.TestAppScenarios;
 
 public class DownloadThenInitTests : AppTestBase
 {
@@ -25,10 +24,10 @@ public class DownloadThenInitTests : AppTestBase
     [InlineData("Release")]
     public async Task NoResourcesFetchedAfterDownloadFinished(string config)
     {
-        CopyTestAsset("DownloadThenInitTests");
+        CopyTestAsset("WasmBasicTestApp", "DownloadThenInitTests", "App");
         BuildProject(config);
 
-        var result = await RunSdkStyleAppForBuild(new(Configuration: config));
+        var result = await RunSdkStyleAppForBuild(new(Configuration: config, TestScenario: "DownloadThenInit"));
         var resultTestOutput = result.TestOutput.ToList();
         int index = resultTestOutput.FindIndex(s => s == "download finished");
         Assert.True(index > 0); // number of fetched resources cannot be 0
