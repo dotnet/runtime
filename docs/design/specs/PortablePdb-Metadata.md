@@ -609,7 +609,7 @@ Stores document information for type definitions that would otherwise not have d
 
 The blob has the following structure:
 
-    Blob ::= (document)*
+    Blob ::= (document-ordinal)*
 
 | terminal         | encoding                    | description                            |
 |:-----------------|:----------------------------|:---------------------------------------|
