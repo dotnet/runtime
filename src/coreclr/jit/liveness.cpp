@@ -615,7 +615,8 @@ bool Compiler::fgIsPreLive(GenTree* tree)
         return false;
     }
 
-    if (tree->OperRequiresAsgFlag() || tree->OperMayThrow(this) || tree->OperRequiresCallFlag(this))
+    GenTreeFlags flags = tree->OperEffects(this);
+    if ((flags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) != 0)
     {
         return true;
     }
