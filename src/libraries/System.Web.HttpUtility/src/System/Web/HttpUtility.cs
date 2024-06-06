@@ -237,12 +237,8 @@ namespace System.Web
         [return: NotNullIfNotNull(nameof(bytes))]
         public static byte[]? UrlDecodeToBytes(byte[]? bytes, int offset, int count) => HttpEncoder.UrlDecode(bytes, offset, count);
 
-        public static string JavaScriptStringEncode(string? value) => HttpEncoder.JavaScriptStringEncode(value);
+        public static string JavaScriptStringEncode(string? value) => HttpEncoder.JavaScriptStringEncode(value, false);
 
-        public static string JavaScriptStringEncode(string? value, bool addDoubleQuotes)
-        {
-            string encoded = HttpEncoder.JavaScriptStringEncode(value);
-            return addDoubleQuotes ? "\"" + encoded + "\"" : encoded;
-        }
+        public static string JavaScriptStringEncode(string? value, bool addDoubleQuotes) => HttpEncoder.JavaScriptStringEncode(value, addDoubleQuotes);
     }
 }

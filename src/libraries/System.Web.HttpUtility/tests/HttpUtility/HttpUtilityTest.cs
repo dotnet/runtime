@@ -310,6 +310,7 @@ namespace System.Web.Tests
                 yield return new object[] { "", "" };
                 yield return new object[] {"No escaping needed.", "No escaping needed."};
                 yield return new object[] {"The \t and \n will need to be escaped.", "The \\t and \\n will need to be escaped."};
+                yield return new object[] {"The \t and \n will need to be escaped.>", "The \\t and \\n will need to be escaped.\\u003e" };
                 for (char c = char.MinValue; c < TestMaxChar; c++)
                 {
                     if (c >= 0 && c <= 7 || c == 11 || c >= 14 && c <= 31 || c == 38 || c == 39 || c == 60 || c == 62 || c == 133 || c == 8232 || c == 8233)
