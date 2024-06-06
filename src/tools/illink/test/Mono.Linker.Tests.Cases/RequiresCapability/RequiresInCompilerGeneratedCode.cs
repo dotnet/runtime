@@ -919,7 +919,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 			class DynamicallyAccessedLocalFunctionUnusedShouldWarn
 			{
-				[ExpectedWarning ("IL2118", [nameof (TestCallMethodWithRequiresInDynamicallyAccessedLocalFunction), "LocalFunction"], Tool.Trimmer, "")]
+				[UnexpectedWarning ("IL2118", [nameof (TestCallMethodWithRequiresInDynamicallyAccessedLocalFunction), "LocalFunction"], Tool.Trimmer, "https://github.com/dotnet/runtime/issues/85042")]
 				public static void TestCallMethodWithRequiresInDynamicallyAccessedLocalFunction ()
 				{
 					typeof (DynamicallyAccessedLocalFunctionUnusedShouldWarn).RequiresNonPublicMethods ();
@@ -1870,8 +1870,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			[ExpectedWarning ("IL2026", "--TestAsyncOnlyReferencedViaReflectionWhichShouldSuppress--")]
 			[ExpectedWarning ("IL3002", "--TestAsyncOnlyReferencedViaReflectionWhichShouldSuppress--", Tool.NativeAot, "")]
 			[ExpectedWarning ("IL3050", "--TestAsyncOnlyReferencedViaReflectionWhichShouldSuppress--", Tool.NativeAot, "")]
-			[ExpectedWarning ("IL2118", [nameof (StateMachinesOnlyReferencedViaReflection), "<" + nameof (TestAsyncOnlyReferencedViaReflectionWhichShouldWarn) + ">", "MoveNext()"], Tool.Trimmer, "")]
-			[ExpectedWarning ("IL2118", [nameof (StateMachinesOnlyReferencedViaReflection), "<" + nameof (TestIteratorOnlyReferencedViaReflectionWhichShouldWarn) + ">", "MoveNext()"], Tool.Trimmer, "")]
+			[UnexpectedWarning ("IL2118", [nameof (StateMachinesOnlyReferencedViaReflection), "<" + nameof (TestAsyncOnlyReferencedViaReflectionWhichShouldWarn) + ">", "MoveNext()"], Tool.Trimmer, "https://github.com/dotnet/runtime/issues/85042")]
+			[UnexpectedWarning ("IL2118", [nameof (StateMachinesOnlyReferencedViaReflection), "<" + nameof (TestIteratorOnlyReferencedViaReflectionWhichShouldWarn) + ">", "MoveNext()"], Tool.Trimmer, "https://github.com/dotnet/runtime/issues/85042")]
 			static void TestAll ()
 			{
 				typeof (StateMachinesOnlyReferencedViaReflection).RequiresAll ();
@@ -1980,7 +1980,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			[ExpectedWarning ("IL2026", "--TestLocalFunctionInMethodWithRequiresOnlyAccessedViaReflection--")]
 			[ExpectedWarning ("IL3002", "--TestLocalFunctionInMethodWithRequiresOnlyAccessedViaReflection--", Tool.NativeAot, "")]
 			[ExpectedWarning ("IL3050", "--TestLocalFunctionInMethodWithRequiresOnlyAccessedViaReflection--", Tool.NativeAot, "")]
-			[ExpectedWarning ("IL2118", nameof (LocalFunctionsReferencedViaReflection), nameof (TestLocalFunctionInMethodWithRequiresOnlyAccessedViaReflection), Tool.Trimmer, "")]
+			[UnexpectedWarning ("IL2118", nameof (LocalFunctionsReferencedViaReflection), nameof (TestLocalFunctionInMethodWithRequiresOnlyAccessedViaReflection), Tool.Trimmer, "https://github.com/dotnet/runtime/issues/85042")]
 			static void TestAll ()
 			{
 				typeof (LocalFunctionsReferencedViaReflection).RequiresAll ();
@@ -1996,7 +1996,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			[ExpectedWarning ("IL2026", "--TestLocalFunctionInMethodWithRequiresOnlyAccessedViaReflection--")]
 			[ExpectedWarning ("IL3002", "--TestLocalFunctionInMethodWithRequiresOnlyAccessedViaReflection--", Tool.NativeAot, "")]
 			[ExpectedWarning ("IL3050", "--TestLocalFunctionInMethodWithRequiresOnlyAccessedViaReflection--", Tool.NativeAot, "")]
-			[ExpectedWarning ("IL2118", nameof (LocalFunctionsReferencedViaReflection), "<" + nameof (TestLocalFunctionInMethodWithRequiresOnlyAccessedViaReflection) + ">", Tool.Trimmer, "")]
+			[UnexpectedWarning ("IL2118", nameof (LocalFunctionsReferencedViaReflection), "<" + nameof (TestLocalFunctionInMethodWithRequiresOnlyAccessedViaReflection) + ">", Tool.Trimmer, "https://github.com/dotnet/runtime/issues/85042")]
 			static void TestNonPublicMethods ()
 			{
 				typeof (LocalFunctionsReferencedViaReflection).RequiresNonPublicMethods ();

@@ -1011,11 +1011,11 @@ PTR_VOID GetUnwindDataBlob(TADDR moduleBase, PTR_RUNTIME_FUNCTION pRuntimeFuncti
     int size = 4;
 
 #if defined(TARGET_ARM)
-    // See https://docs.microsoft.com/en-us/cpp/build/arm-exception-handling
+    // See https://learn.microsoft.com/cpp/build/arm-exception-handling
     int unwindWords = xdata[0] >> 28;
     int epilogScopes = (xdata[0] >> 23) & 0x1f;
 #else
-    // See https://docs.microsoft.com/en-us/cpp/build/arm64-exception-handling
+    // See https://learn.microsoft.com/cpp/build/arm64-exception-handling
     int unwindWords = xdata[0] >> 27;
     int epilogScopes = (xdata[0] >> 22) & 0x1f;
 #endif
@@ -1258,29 +1258,18 @@ void EEJitManager::SetCpuInfo()
     int cpuFeatures = minipal_getcpufeatures();
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
-
-#if defined(TARGET_X86) && !defined(TARGET_WINDOWS)
-    // Linux may still support no SSE/SSE2 for 32-bit
-    if ((cpuFeatures & XArchIntrinsicConstants_VectorT128) == 0)
-    {
-        EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("SSE and SSE2 processor support required."));
-    }
-#else
-    _ASSERTE((cpuFeatures & XArchIntrinsicConstants_VectorT128) != 0);
-#endif
-
     CPUCompileFlags.Set(InstructionSet_VectorT128);
 
     // Get the maximum bitwidth of Vector<T>, rounding down to the nearest multiple of 128-bits
     uint32_t maxVectorTBitWidth = (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_MaxVectorTBitWidth) / 128) * 128;
 
-    if (((cpuFeatures & XArchIntrinsicConstants_VectorT256) != 0) && ((maxVectorTBitWidth == 0) || (maxVectorTBitWidth >= 256)))
+    if (((cpuFeatures & XArchIntrinsicConstants_Avx2) != 0) && ((maxVectorTBitWidth == 0) || (maxVectorTBitWidth >= 256)))
     {
         // We allow 256-bit Vector<T> by default
         CPUCompileFlags.Set(InstructionSet_VectorT256);
     }
 
-    if (((cpuFeatures & XArchIntrinsicConstants_VectorT512) != 0) && (maxVectorTBitWidth >= 512))
+    if (((cpuFeatures & XArchIntrinsicConstants_Avx512f) != 0) && (maxVectorTBitWidth >= 512))
     {
         // We require 512-bit Vector<T> to be opt-in
         CPUCompileFlags.Set(InstructionSet_VectorT512);
@@ -1458,12 +1447,12 @@ void EEJitManager::SetCpuInfo()
 
 #if !defined(TARGET_WINDOWS)
     // Linux may still support no AdvSimd
-    if ((cpuFeatures & ARM64IntrinsicConstants_VectorT128) == 0)
+    if ((cpuFeatures & ARM64IntrinsicConstants_AdvSimd) == 0)
     {
         EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("AdvSimd processor support required."));
     }
 #else
-    _ASSERTE((cpuFeatures & ARM64IntrinsicConstants_VectorT128) != 0);
+    _ASSERTE((cpuFeatures & ARM64IntrinsicConstants_AdvSimd) != 0);
 #endif
 
     CPUCompileFlags.Set(InstructionSet_VectorT128);
@@ -1669,45 +1658,6 @@ struct JIT_LOAD_DATA
 // Here's the global data for JIT load and initialization state.
 JIT_LOAD_DATA g_JitLoadData;
 
-//  Validate that the name used to load the JIT is just a simple file name
-//  and does not contain something that could be used in a non-qualified path.
-//  For example, using the string "..\..\..\myjit.dll" we might attempt to
-//  load a JIT from the root of the drive.
-//
-//  The minimal set of characters that we must check for and exclude are:
-//  On all platforms:
-//     '/'  - (forward slash)
-//  On Windows:
-//     '\\' - (backslash)
-//     ':'  - (colon)
-//
-//  Returns false if we find any of these characters in 'pwzJitName'
-//  Returns true if we reach the null terminator without encountering
-//  any of these characters.
-//
-static bool ValidateJitName(LPCWSTR pwzJitName)
-{
-    LPCWSTR pCurChar = pwzJitName;
-    wchar_t curChar;
-    do {
-        curChar = *pCurChar;
-        if (curChar == '/'
-#ifdef TARGET_WINDOWS
-            || (curChar == '\\') || (curChar == ':')
-#endif
-        )
-        {
-            //  Return false if we find any of these character in 'pwzJitName'
-            return false;
-        }
-        pCurChar++;
-    } while (curChar != 0);
-
-    //  Return true; we have reached the null terminator
-    //
-    return true;
-}
-
 CORINFO_OS getClrVmOs();
 
 #define LogJITInitializationError(...) \
@@ -1770,7 +1720,7 @@ static void LoadAndInitializeJIT(LPCWSTR pwzJitName DEBUGARG(LPCWSTR pwzJitPath)
             return;
         }
 
-        if (ValidateJitName(pwzJitName))
+        if (ValidateModuleName(pwzJitName))
         {
             // Load JIT from next to CoreCLR binary
             PathString CoreClrFolderHolder;

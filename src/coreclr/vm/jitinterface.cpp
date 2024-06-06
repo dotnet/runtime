@@ -7381,34 +7381,6 @@ bool getILIntrinsicImplementationForRuntimeHelpers(MethodDesc * ftn,
 
     mdMethodDef tk = ftn->GetMemberDef();
 
-    if (tk == CoreLibBinder::GetMethod(METHOD__RUNTIME_HELPERS__IS_REFERENCE_OR_CONTAINS_REFERENCES)->GetMemberDef())
-    {
-        _ASSERTE(ftn->HasMethodInstantiation());
-        Instantiation inst = ftn->GetMethodInstantiation();
-
-        _ASSERTE(ftn->GetNumGenericMethodArgs() == 1);
-        TypeHandle typeHandle = inst[0];
-        MethodTable * methodTable = typeHandle.GetMethodTable();
-
-        static const BYTE returnTrue[] = { CEE_LDC_I4_1, CEE_RET };
-        static const BYTE returnFalse[] = { CEE_LDC_I4_0, CEE_RET };
-
-        if (!methodTable->IsValueType() || methodTable->ContainsPointers())
-        {
-            methInfo->ILCode = const_cast<BYTE*>(returnTrue);
-        }
-        else
-        {
-            methInfo->ILCode = const_cast<BYTE*>(returnFalse);
-        }
-
-        methInfo->ILCodeSize = sizeof(returnTrue);
-        methInfo->maxStack = 1;
-        methInfo->EHcount = 0;
-        methInfo->options = (CorInfoOptions)0;
-        return true;
-    }
-
     if (tk == CoreLibBinder::GetMethod(METHOD__RUNTIME_HELPERS__IS_BITWISE_EQUATABLE)->GetMemberDef())
     {
         _ASSERTE(ftn->HasMethodInstantiation());
@@ -9505,7 +9477,7 @@ CORINFO_ARG_LIST_HANDLE CEEInfo::getArgNext(CORINFO_ARG_LIST_HANDLE args)
 
     JIT_TO_EE_TRANSITION();
 
-    SigPointer ptr((unsigned __int8*) args);
+    SigPointer ptr((uint8_t*) args);
     IfFailThrow(ptr.SkipExactlyOne());
 
     result = (CORINFO_ARG_LIST_HANDLE) ptr.GetPtr();
@@ -9538,7 +9510,7 @@ CorInfoTypeWithMod CEEInfo::getArgType (
    _ASSERTE((BYTE*) sig->args <= (BYTE*) args);
     INDEBUG(*vcTypeRet = CORINFO_CLASS_HANDLE((size_t)INVALID_POINTER_CC));
 
-    SigPointer ptr((unsigned __int8*) args);
+    SigPointer ptr((uint8_t*) args);
     CorElementType eType;
     IfFailThrow(ptr.PeekElemType(&eType));
     while (eType == ELEMENT_TYPE_PINNED)
@@ -9632,7 +9604,7 @@ uint32_t CEEInfo::getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE c
     uint32_t size = STRUCT_NO_FLOAT_FIELD;
 
 #if defined(TARGET_LOONGARCH64)
-    size = (uint32_t)MethodTable::GetLoongArch64PassStructInRegisterFlags(cls);
+    size = (uint32_t)MethodTable::GetLoongArch64PassStructInRegisterFlags(TypeHandle(cls));
 #endif
 
     EE_TO_JIT_TRANSITION_LEAF();
@@ -9708,7 +9680,7 @@ CORINFO_CLASS_HANDLE CEEInfo::getArgClass (
 
     Module* pModule = GetModule(sig->scope);
 
-    SigPointer ptr((unsigned __int8*) args);
+    SigPointer ptr((uint8_t*) args);
 
     CorElementType eType;
     IfFailThrow(ptr.PeekElemType(&eType));
@@ -10078,6 +10050,7 @@ void InlinedCallFrame::GetEEInfo(CORINFO_EE_INFO::InlinedCallFrameInfo *pInfo)
     LIMITED_METHOD_CONTRACT;
 
     pInfo->size                          = sizeof(GSCookie) + sizeof(InlinedCallFrame);
+    pInfo->sizeWithSecretStubArg         = sizeof(GSCookie) + sizeof(InlinedCallFrame) + sizeof(PTR_VOID);
 
     pInfo->offsetOfGSCookie              = 0;
     pInfo->offsetOfFrameVptr             = sizeof(GSCookie);
@@ -10086,6 +10059,7 @@ void InlinedCallFrame::GetEEInfo(CORINFO_EE_INFO::InlinedCallFrameInfo *pInfo)
     pInfo->offsetOfCalleeSavedFP         = sizeof(GSCookie) + offsetof(InlinedCallFrame, m_pCalleeSavedFP);
     pInfo->offsetOfCallTarget            = sizeof(GSCookie) + offsetof(InlinedCallFrame, m_Datum);
     pInfo->offsetOfReturnAddress         = sizeof(GSCookie) + offsetof(InlinedCallFrame, m_pCallerReturnAddress);
+    pInfo->offsetOfSecretStubArg         = sizeof(GSCookie) + sizeof(InlinedCallFrame);
 #ifdef TARGET_ARM
     pInfo->offsetOfSPAfterProlog         = sizeof(GSCookie) + offsetof(InlinedCallFrame, m_pSPAfterProlog);
 #endif // TARGET_ARM
@@ -10724,7 +10698,14 @@ void* CEEJitInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,         /* IN  */
             dynamicFtnNum == DYNAMIC_CORINFO_HELP_LDELEMA_REF ||
             dynamicFtnNum == DYNAMIC_CORINFO_HELP_MEMSET ||
             dynamicFtnNum == DYNAMIC_CORINFO_HELP_MEMZERO ||
-            dynamicFtnNum == DYNAMIC_CORINFO_HELP_MEMCPY)
+            dynamicFtnNum == DYNAMIC_CORINFO_HELP_MEMCPY ||
+            dynamicFtnNum == DYNAMIC_CORINFO_HELP_BULK_WRITEBARRIER ||
+            IN_TARGET_32BIT(dynamicFtnNum == DYNAMIC_CORINFO_HELP_LMUL_OVF ||)
+            IN_TARGET_32BIT(dynamicFtnNum == DYNAMIC_CORINFO_HELP_ULMUL_OVF ||)
+            dynamicFtnNum == DYNAMIC_CORINFO_HELP_DBL2INT_OVF ||
+            dynamicFtnNum == DYNAMIC_CORINFO_HELP_DBL2LNG_OVF ||
+            dynamicFtnNum == DYNAMIC_CORINFO_HELP_DBL2UINT_OVF ||
+            dynamicFtnNum == DYNAMIC_CORINFO_HELP_DBL2ULNG_OVF)
         {
             Precode* pPrecode = Precode::GetPrecodeFromEntryPoint((PCODE)hlpDynamicFuncTable[dynamicFtnNum].pfnHelper);
             _ASSERTE(pPrecode->GetType() == PRECODE_FIXUP);
@@ -14402,7 +14383,7 @@ HRESULT CEEInfo::getPgoInstrumentationResults(
             PgoInstrumentationSchema **pSchema,                    // pointer to the schema table which describes the instrumentation results (pointer will not remain valid after jit completes)
             uint32_t *                 pCountSchemaItems,          // pointer to the count schema items
             uint8_t **                 pInstrumentationData,       // pointer to the actual instrumentation data (pointer will not remain valid after jit completes)
-            PgoSource *                pPgoSource,   
+            PgoSource *                pPgoSource,
             bool *                     pDynamicPgo
             )
 {

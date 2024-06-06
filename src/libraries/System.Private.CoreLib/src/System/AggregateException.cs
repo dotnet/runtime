@@ -392,7 +392,7 @@ namespace System
         /// because DebuggerDisplay should be a single property access or parameterless method call, so that the debugger
         /// can use a fast path without using the expression evaluator.
         ///
-        /// See https://docs.microsoft.com/en-us/visualstudio/debugger/using-the-debuggerdisplay-attribute
+        /// See https://learn.microsoft.com/visualstudio/debugger/using-the-debuggerdisplay-attribute
         /// </summary>
         internal int InnerExceptionCount => _innerExceptions.Length;
 

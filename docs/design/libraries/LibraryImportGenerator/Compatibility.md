@@ -51,15 +51,15 @@ In the event a marshaller would generate code that has a specific target framewo
 
 ### Semantic changes compared to `DllImportAttribute`
 
-[`CharSet`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.dllimportattribute.charset) has been replaced with a new `StringMarshalling` enumeration. `Ansi` and `Auto` are no longer supported as first-class options and `Utf8` has been added.
+[`CharSet`](https://learn.microsoft.com/dotnet/api/system.runtime.interopservices.dllimportattribute.charset) has been replaced with a new `StringMarshalling` enumeration. `Ansi` and `Auto` are no longer supported as first-class options and `Utf8` has been added.
 
-With `DllImportAttribute`, the default value of [`CharSet`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.dllimportattribute.charset) is runtime/language-defined. In the built-in system, the default value of the `CharSet` property is `CharSet.Ansi`. The P/Invoke source generator makes no assumptions about `StringMarshalling` if it is not explicitly set on `LibraryImportAttribute`. Marshalling of `char` or `string` requires explicitly specifying marshalling information.
+With `DllImportAttribute`, the default value of [`CharSet`](https://learn.microsoft.com/dotnet/api/system.runtime.interopservices.dllimportattribute.charset) is runtime/language-defined. In the built-in system, the default value of the `CharSet` property is `CharSet.Ansi`. The P/Invoke source generator makes no assumptions about `StringMarshalling` if it is not explicitly set on `LibraryImportAttribute`. Marshalling of `char` or `string` requires explicitly specifying marshalling information.
 
-[`BestFitMapping`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.dllimportattribute.bestfitmapping) and [`ThrowOnUnmappableChar`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.dllimportattribute.throwonunmappablechar) will not be supported for `LibraryImportAttribute`. These values only have meaning on Windows when marshalling string data (`char`, `string`, `StringBuilder`) as [ANSI](https://docs.microsoft.com/windows/win32/intl/code-pages). As the general recommendation - including from Windows - is to move away from ANSI, the P/Invoke source generator will not support these fields.
+[`BestFitMapping`](https://learn.microsoft.com/dotnet/api/system.runtime.interopservices.dllimportattribute.bestfitmapping) and [`ThrowOnUnmappableChar`](https://learn.microsoft.com/dotnet/api/system.runtime.interopservices.dllimportattribute.throwonunmappablechar) will not be supported for `LibraryImportAttribute`. These values only have meaning on Windows when marshalling string data (`char`, `string`, `StringBuilder`) as [ANSI](https://learn.microsoft.com/windows/win32/intl/code-pages). As the general recommendation - including from Windows - is to move away from ANSI, the P/Invoke source generator will not support these fields.
 
-[`CallingConvention`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.dllimportattribute.callingconvention) will not be supported for `LibraryImportAttribute`. Users will be required to use the new `UnmanagedCallConvAttribute` attribute instead. This attribute provides support for extensible calling conventions and provides parity with the `UnmanagedCallersOnlyAttribute` attribute and C# function pointer syntax. We will enable our conversion code-fix to automatically convert explicit and known calling convention usage to use the `UnmanagedCallConvAttribute`.
+[`CallingConvention`](https://learn.microsoft.com/dotnet/api/system.runtime.interopservices.dllimportattribute.callingconvention) will not be supported for `LibraryImportAttribute`. Users will be required to use the new `UnmanagedCallConvAttribute` attribute instead. This attribute provides support for extensible calling conventions and provides parity with the `UnmanagedCallersOnlyAttribute` attribute and C# function pointer syntax. We will enable our conversion code-fix to automatically convert explicit and known calling convention usage to use the `UnmanagedCallConvAttribute`.
 
-[`ExactSpelling`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.dllimportattribute.exactspelling) will not be supported for `LibraryImportAttribute`. If `ExactSpelling` is used on an existing `DllImport`, the offered code-fix will provide users with additional options for using `A` or `W` suffixed variants depending on the provided `CharSet` so they can explicitly choose which spelling is correct for their scenario.
+[`ExactSpelling`](https://learn.microsoft.com/dotnet/api/system.runtime.interopservices.dllimportattribute.exactspelling) will not be supported for `LibraryImportAttribute`. If `ExactSpelling` is used on an existing `DllImport`, the offered code-fix will provide users with additional options for using `A` or `W` suffixed variants depending on the provided `CharSet` so they can explicitly choose which spelling is correct for their scenario.
 
 ### Required references
 
@@ -68,30 +68,30 @@ The following framework references are required:
 - `System.Runtime`
 - `System.Runtime.InteropServices`
 
-These are all part of `NetCoreApp` and will be referenced by default unless [implicit framework references are disabled](https://docs.microsoft.com/dotnet/core/project-sdk/msbuild-props#disableimplicitframeworkreferences).
+These are all part of `NetCoreApp` and will be referenced by default unless [implicit framework references are disabled](https://learn.microsoft.com/dotnet/core/project-sdk/msbuild-props#disableimplicitframeworkreferences).
 
 ### `char` marshalling
 
 Marshalling of `char` will only be supported with `StringMarshalling.Utf16` or as `UnmanagedType.U2` or `UnmanagedType.I2`. It will not be supported when configured with any of the following:
-  - [`UnmanagedType.U1` or `UnmanagedType.I1`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.unmanagedtype)
+  - [`UnmanagedType.U1` or `UnmanagedType.I1`](https://learn.microsoft.com/dotnet/api/system.runtime.interopservices.unmanagedtype)
   - `StringMarshalling.Utf8` will not be supported.
-  - No explicit marshalling information - either `LibraryImportAttribute.StringMarshalling` or [`MarshalAsAttribute`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.marshalasattribute)
+  - No explicit marshalling information - either `LibraryImportAttribute.StringMarshalling` or [`MarshalAsAttribute`](https://learn.microsoft.com/dotnet/api/system.runtime.interopservices.marshalasattribute)
 
-In the built-in system, marshalling with `CharSet.Ansi` and `CharSet.None` used the [system default Windows ANSI code page](https://docs.microsoft.com/windows/win32/api/stringapiset/nf-stringapiset-widechartomultibyte) when on Windows and took the first byte of the UTF-8 encoding on non-Windows platforms. The above reasoning also applies to marshalling of a `char` as `UnmanagedType.U1` and `UnmanagedType.I1`. All approaches are fundamentally flawed and therefore not supported. If a single-byte character is expected to be marshalled it is left to the caller to convert a .NET `char` into a single `byte` prior to calling the native function.
+In the built-in system, marshalling with `CharSet.Ansi` and `CharSet.None` used the [system default Windows ANSI code page](https://learn.microsoft.com/windows/win32/api/stringapiset/nf-stringapiset-widechartomultibyte) when on Windows and took the first byte of the UTF-8 encoding on non-Windows platforms. The above reasoning also applies to marshalling of a `char` as `UnmanagedType.U1` and `UnmanagedType.I1`. All approaches are fundamentally flawed and therefore not supported. If a single-byte character is expected to be marshalled it is left to the caller to convert a .NET `char` into a single `byte` prior to calling the native function.
 
 For `CharSet.Auto`, the built-in system relied upon detection at runtime of the platform when determining the targeted encoding. Performing this check in generated code violates the "pay-for-play" principle. Given that there are no scenarios for this feature in `NetCoreApp` it will not be supported.
 
 ### `string` marshalling
 
 Marshalling of `string` will not be supported when configured with any of the following:
-  - [`UnmanagedType.VBByRefStr`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.unmanagedtype)
-  - No explicit marshalling information - either `LibraryImportAttribute.StringMarshalling` or [`MarshalAsAttribute`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.marshalasattribute)
+  - [`UnmanagedType.VBByRefStr`](https://learn.microsoft.com/dotnet/api/system.runtime.interopservices.unmanagedtype)
+  - No explicit marshalling information - either `LibraryImportAttribute.StringMarshalling` or [`MarshalAsAttribute`](https://learn.microsoft.com/dotnet/api/system.runtime.interopservices.marshalasattribute)
 
-When converting from native to managed, the built-in system would throw a [`MarshalDirectiveException`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.marshaldirectiveexception) if the string's length is over 0x7ffffff0. The generated marshalling code will no longer perform this check.
+When converting from native to managed, the built-in system would throw a [`MarshalDirectiveException`](https://learn.microsoft.com/dotnet/api/system.runtime.interopservices.marshaldirectiveexception) if the string's length is over 0x7ffffff0. The generated marshalling code will no longer perform this check.
 
-In the built-in system, marshalling a `string` contains an optimization for parameters passed by value to allocate on the stack (instead of through [`AllocCoTaskMem`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.marshal.alloccotaskmem)) if the string is below a certain length (MAX_PATH). For UTF-16, this optimization was also applied for parameters passed by read-only reference. The generated marshalling code will include this optimization for read-only reference parameters for non-UTF-16 as well.
+In the built-in system, marshalling a `string` contains an optimization for parameters passed by value to allocate on the stack (instead of through [`AllocCoTaskMem`](https://learn.microsoft.com/dotnet/api/system.runtime.interopservices.marshal.alloccotaskmem)) if the string is below a certain length (MAX_PATH). For UTF-16, this optimization was also applied for parameters passed by read-only reference. The generated marshalling code will include this optimization for read-only reference parameters for non-UTF-16 as well.
 
-When marshalling as [ANSI](https://docs.microsoft.com/windows/win32/intl/code-pages) on Windows (using `UnmanagedType.LPStr`):
+When marshalling as [ANSI](https://learn.microsoft.com/windows/win32/intl/code-pages) on Windows (using `UnmanagedType.LPStr`):
   - Best-fit mapping will be disabled and no exception will be thrown for unmappable characters. In the built-in system, this behaviour was configured through [`DllImportAttribute.BestFitMapping`] and [`DllImportAttribute.ThrowOnUnmappableChar`]. The generated marshalling code will have the equivalent behaviour of `BestFitMapping=false` and `ThrowOnUnmappableChar=false`.
 
 The p/invoke source generator does not provide an equivalent to using `CharSet.Auto` in the built-in system. If platform-dependent behaviour is desired, it is left to the user to define different p/invokes with different marshalling configurations.
@@ -104,27 +104,27 @@ To aid in conversion from `DllImport` to source-generated marshalling, the code-
 
 ### Custom marshaller support
 
-Using a custom marshaller (i.e. [`ICustomMarshaler`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.icustommarshaler)) with the `UnmanagedType.CustomMarshaler` value on `MarshalAsAttribute` is not supported. This also implies `MarshalAsAttribute` fields: [`MarshalTypeRef`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.marshalasattribute.marshaltyperef), [`MarshalType`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.marshalasattribute.marshaltype), and [`MarshalCookie`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.marshalasattribute.marshalcookie) are unsupported.
+Using a custom marshaller (i.e. [`ICustomMarshaler`](https://learn.microsoft.com/dotnet/api/system.runtime.interopservices.icustommarshaler)) with the `UnmanagedType.CustomMarshaler` value on `MarshalAsAttribute` is not supported. This also implies `MarshalAsAttribute` fields: [`MarshalTypeRef`](https://learn.microsoft.com/dotnet/api/system.runtime.interopservices.marshalasattribute.marshaltyperef), [`MarshalType`](https://learn.microsoft.com/dotnet/api/system.runtime.interopservices.marshalasattribute.marshaltype), and [`MarshalCookie`](https://learn.microsoft.com/dotnet/api/system.runtime.interopservices.marshalasattribute.marshalcookie) are unsupported.
 
 ### Array marshalling
 
-Marshalling of arrays will not be supported when using [`UnmanagedType.SafeArray`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.unmanagedtype). This implies that the following `MarshalAsAttribute` fields are unsupported: [`SafeArraySubType`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.marshalasattribute.safearraysubtype) and [`SafeArrayUserDefinedSubType`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.marshalasattribute.safearrayuserdefinedsubtype)
+Marshalling of arrays will not be supported when using [`UnmanagedType.SafeArray`](https://learn.microsoft.com/dotnet/api/system.runtime.interopservices.unmanagedtype). This implies that the following `MarshalAsAttribute` fields are unsupported: [`SafeArraySubType`](https://learn.microsoft.com/dotnet/api/system.runtime.interopservices.marshalasattribute.safearraysubtype) and [`SafeArrayUserDefinedSubType`](https://learn.microsoft.com/dotnet/api/system.runtime.interopservices.marshalasattribute.safearrayuserdefinedsubtype)
 
-Specifying array-specific marshalling members on the `MarshalAsAttribute` such as [`SizeConst`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.marshalasattribute.sizeconst), [`ArraySubType`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.marshalasattribute.arraysubtype), and [`SizeParamIndex`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.marshalasattribute.sizeparamindex) with non-array `UnmanagedType` types is unsupported.
+Specifying array-specific marshalling members on the `MarshalAsAttribute` such as [`SizeConst`](https://learn.microsoft.com/dotnet/api/system.runtime.interopservices.marshalasattribute.sizeconst), [`ArraySubType`](https://learn.microsoft.com/dotnet/api/system.runtime.interopservices.marshalasattribute.arraysubtype), and [`SizeParamIndex`](https://learn.microsoft.com/dotnet/api/system.runtime.interopservices.marshalasattribute.sizeparamindex) with non-array `UnmanagedType` types is unsupported.
 
 Only single-dimensional arrays are supported for source generated marshalling.
 
-In the source-generated marshalling, arrays will be allocated on the stack (instead of through [`AllocCoTaskMem`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.marshal.alloccotaskmem)) if they are passed by value or by read-only reference if they contain at most 256 bytes of data. The built-in system does not support this optimization for arrays.
+In the source-generated marshalling, arrays will be allocated on the stack (instead of through [`AllocCoTaskMem`](https://learn.microsoft.com/dotnet/api/system.runtime.interopservices.marshal.alloccotaskmem)) if they are passed by value or by read-only reference if they contain at most 256 bytes of data. The built-in system does not support this optimization for arrays.
 
 In the built-in system, marshalling a `char` array by value with `CharSet.Unicode` would default to also marshalling data out. In the source-generated marshalling, the `char` array must be marked with the `[Out]` attribute for data to be marshalled out by value.
 
 ### `in` keyword
 
-For some types - blittable or Unicode `char` - passed by read-only reference via the [`in` keyword](https://docs.microsoft.com/dotnet/csharp/language-reference/keywords/in-parameter-modifier), the built-in system simply pins the parameter. The generated marshalling code does the same, such that there is no behavioural difference. A consequence of this behaviour is that any modifications made by the invoked function will be reflected in the caller. It is left to the user to avoid the situation in which `in` is used for a parameter that will actually be modified by the invoked function.
+For some types - blittable or Unicode `char` - passed by read-only reference via the [`in` keyword](https://learn.microsoft.com/dotnet/csharp/language-reference/keywords/in-parameter-modifier), the built-in system simply pins the parameter. The generated marshalling code does the same, such that there is no behavioural difference. A consequence of this behaviour is that any modifications made by the invoked function will be reflected in the caller. It is left to the user to avoid the situation in which `in` is used for a parameter that will actually be modified by the invoked function.
 
 ### `LCIDConversion` support
 
-[`LCIDConversionAttribute`](`https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.lcidconversionattribute`) will not be supported for methods marked with `LibraryImportAttribute`.
+[`LCIDConversionAttribute`](`https://learn.microsoft.com/dotnet/api/system.runtime.interopservices.lcidconversionattribute`) will not be supported for methods marked with `LibraryImportAttribute`.
 
 ### `[In, Out]` Attributes
 
@@ -137,11 +137,11 @@ Support for struct marshalling in the source-generated marshalling is described 
 ### Unsupported types
 
 Unlike the built-in system, the source generator does not support marshalling for the following types:
-- [`CriticalHandle`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.criticalhandle)
-- [`HandleRef`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.handleref)
-- [`StringBuilder`](https://docs.microsoft.com/dotnet/api/system.text.stringbuilder)
+- [`CriticalHandle`](https://learn.microsoft.com/dotnet/api/system.runtime.interopservices.criticalhandle)
+- [`HandleRef`](https://learn.microsoft.com/dotnet/api/system.runtime.interopservices.handleref)
+- [`StringBuilder`](https://learn.microsoft.com/dotnet/api/system.text.stringbuilder)
 
-The source generator also does not support marshalling objects using the following [`UnmanagedType`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.unmanagedtype) values:
+The source generator also does not support marshalling objects using the following [`UnmanagedType`](https://learn.microsoft.com/dotnet/api/system.runtime.interopservices.unmanagedtype) values:
 - `UnmanagedType.Interface`
 - `UnmanagedType.IDispatch`
 - `UnmanagedType.IInspectable`

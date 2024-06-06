@@ -12,14 +12,14 @@ If you are only looking to get fixes for an individual NuGet package, and don't 
 dotnet new nugetconfig
 ```
 
-Next, add the package source to NuGet.Config with the [dotnet nuget add source](https://docs.microsoft.com/en-us/dotnet/core/tools/dotnet-nuget-add-source) command:
+Next, add the package source to NuGet.Config with the [dotnet nuget add source](https://learn.microsoft.com/dotnet/core/tools/dotnet-nuget-add-source) command:
 ```
 dotnet nuget add source -n dotnet8 https://dnceng.pkgs.visualstudio.com/public/_packaging/dotnet8/nuget/v3/index.json
 ```
 
 Then, you will be able to add the latest prerelease version of the desired package to your project.
 
-**Example:** To add version 8.0-preview.5.22226.4 of the System.Data.OleDb package, use the [dotnet add package](https://docs.microsoft.com/en-us/dotnet/core/tools/dotnet-add-package) command:
+**Example:** To add version 8.0-preview.5.22226.4 of the System.Data.OleDb package, use the [dotnet add package](https://learn.microsoft.com/dotnet/core/tools/dotnet-add-package) command:
 ```
 dotnet add package System.Data.OleDb -v 8.0-preview.5.22226.4
 ```
@@ -36,7 +36,7 @@ azure-feed://dnceng/public/dotnet8@Local
 
 ## Install prerequisites
 
-1. Acquire the latest development .NET SDK by downloading and extracting a zip/tarball or using an installer from the [installers and binaries table in dotnet/installer](https://github.com/dotnet/installer#installers-and-binaries) (for example, https://aka.ms/dotnet/8.0/daily/dotnet-sdk-win-x64.zip).
+1. Acquire the latest development .NET SDK by downloading and extracting a zip/tarball or using an installer from the [latest builds table in dotnet/sdk](https://github.com/dotnet/sdk#installing-the-sdk) (for example, https://aka.ms/dotnet/8.0/daily/dotnet-sdk-win-x64.zip).
 
 2. If you are using a local copy of the dotnet CLI, take care that when you type `dotnet` you do not inadvertently pick up a different copy that you may have in your path. On Windows, for example, if you use a Command Prompt, a global copy may be in the path, so use the fully qualified path to your local `dotnet` (e.g. `C:\dotnet\dotnet.exe`). If you receive an error "error NETSDK1045:  The current .NET SDK does not support targeting .NET 8.0." then you may be executing an older `dotnet`.
 
@@ -83,7 +83,7 @@ Learn about .NET Runtimes and SDKs:
     ...
 </packageSources>
 ```
-(Documentation for configuring feeds is [here](https://docs.microsoft.com/en-us/nuget/consume-packages/configuring-nuget-behavior).)
+(Documentation for configuring feeds is [here](https://learn.microsoft.com/nuget/consume-packages/configuring-nuget-behavior).)
 
 ## Setup the project
 

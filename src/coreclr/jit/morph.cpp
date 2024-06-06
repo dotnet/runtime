@@ -765,8 +765,6 @@ const char* getWellKnownArgName(WellKnownArg arg)
             return "RetBuffer";
         case WellKnownArg::PInvokeFrame:
             return "PInvokeFrame";
-        case WellKnownArg::SecretStubParam:
-            return "SecretStubParam";
         case WellKnownArg::WrapperDelegateCell:
             return "WrapperDelegateCell";
         case WellKnownArg::ShiftLow:
@@ -9428,7 +9426,8 @@ DONE_MORPHING_CHILDREN:
             }
 
             /* Any constant cases should have been folded earlier */
-            noway_assert(!op1->OperIsConst() || opts.OptimizationDisabled() || optValnumCSE_phase);
+            noway_assert(!op1->OperIsConst() || op1->IsIconHandle() || opts.OptimizationDisabled() ||
+                         optValnumCSE_phase);
             break;
 
         case GT_CKFINITE:
@@ -10711,16 +10710,15 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
             GenTree* op1 = node->Op(1);
             GenTree* op2 = node->Op(2);
 
-            if (!op1->OperIsHWIntrinsic(NI_Sve_CreateTrueMaskAll) &&
+            if (!op1->OperIsHWIntrinsic(NI_Sve_CreateTrueMaskAll) ||
                 !op2->OperIsHWIntrinsic(NI_Sve_ConvertMaskToVector))
             {
                 break;
             }
 
-            unsigned            simdBaseTypeSize = genTypeSize(node->GetSimdBaseType());
-            GenTreeHWIntrinsic* cvtOp2           = op2->AsHWIntrinsic();
+            unsigned simdBaseTypeSize = genTypeSize(node->GetSimdBaseType());
 
-            if ((genTypeSize(cvtOp2->GetSimdBaseType()) != simdBaseTypeSize))
+            if (!op2->OperIsHWIntrinsic() || (genTypeSize(op2->AsHWIntrinsic()->GetSimdBaseType()) != simdBaseTypeSize))
             {
                 // We need the operand to be the same kind of mask; otherwise
                 // the bitwise operation can differ in how it performs
@@ -15248,7 +15246,9 @@ PhaseStatus Compiler::fgRetypeImplicitByRefArgs()
                 if (!undoPromotion)
                 {
                     // Insert IR that initializes the temp from the parameter.
-                    fgEnsureFirstBBisScratch();
+                    // The first BB should already be a valid insertion point,
+                    // which is a precondition for this phase when optimizing.
+                    assert(fgFirstBB->bbPreds == nullptr);
                     GenTree* addr  = gtNewLclvNode(lclNum, TYP_BYREF);
                     GenTree* data  = (varDsc->TypeGet() == TYP_STRUCT) ? gtNewBlkIndir(varDsc->GetLayout(), addr)
                                                                        : gtNewIndir(varDsc->TypeGet(), addr);

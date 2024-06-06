@@ -261,6 +261,14 @@ DEFINE_CLASS(UINT128,              System,                 UInt128)
 
 DEFINE_CLASS(MATH,                  System,                 Math)
 DEFINE_METHOD(MATH,                 ROUND,                  Round,                      SM_Dbl_RetDbl)
+#ifndef TARGET_64BIT
+DEFINE_METHOD(MATH,                 MULTIPLY_CHECKED_INT64, MultiplyChecked,            SM_Long_Long_RetLong)
+DEFINE_METHOD(MATH,                 MULTIPLY_CHECKED_UINT64, MultiplyChecked,           SM_ULong_ULong_RetULong)
+#endif
+DEFINE_METHOD(MATH,                 CONVERT_TO_INT32_CHECKED, ConvertToInt32Checked,    NoSig)
+DEFINE_METHOD(MATH,                 CONVERT_TO_UINT32_CHECKED, ConvertToUInt32Checked,  NoSig)
+DEFINE_METHOD(MATH,                 CONVERT_TO_INT64_CHECKED, ConvertToInt64Checked,    NoSig)
+DEFINE_METHOD(MATH,                 CONVERT_TO_UINT64_CHECKED, ConvertToUInt64Checked,  NoSig)
 
 DEFINE_CLASS(MATHF,                 System,                 MathF)
 DEFINE_METHOD(MATHF,                ROUND,                  Round,                      SM_Flt_RetFlt)
@@ -624,7 +632,6 @@ DEFINE_CLASS(RTFIELD,               Reflection,             RtFieldInfo)
 DEFINE_METHOD(RTFIELD,              GET_FIELDHANDLE,        GetFieldHandle,            IM_RetIntPtr)
 
 DEFINE_CLASS(RUNTIME_HELPERS,       CompilerServices,       RuntimeHelpers)
-DEFINE_METHOD(RUNTIME_HELPERS,      IS_REFERENCE_OR_CONTAINS_REFERENCES, IsReferenceOrContainsReferences, NoSig)
 DEFINE_METHOD(RUNTIME_HELPERS,      IS_BITWISE_EQUATABLE,    IsBitwiseEquatable, NoSig)
 DEFINE_METHOD(RUNTIME_HELPERS,      GET_METHOD_TABLE,        GetMethodTable,     NoSig)
 DEFINE_METHOD(RUNTIME_HELPERS,      GET_RAW_DATA,            GetRawData,         NoSig)

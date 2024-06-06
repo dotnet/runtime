@@ -395,8 +395,6 @@
     <!-- Issue: https://github.com/dotnet/runtime/issues/95795 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Globalization.Tests\Hybrid\System.Globalization.Hybrid.WASM.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Globalization.Calendars.Tests\Hybrid\System.Globalization.Calendars.Hybrid.WASM.Tests.csproj" />
-    <!-- Issue: https://github.com/dotnet/runtime/issues/100932 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Reflection.Tests\System.Reflection.Tests.csproj" />
   </ItemGroup>
 
   <!-- Aggressive Trimming related failures -->
@@ -467,6 +465,7 @@
     <!-- Source generators tests. Not testing customer scenarios. Low priority -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Logging.Abstractions\tests\Microsoft.Extensions.Logging.Generators.Tests\Microsoft.Extensions.Logging.Generators.Roslyn3.11.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Logging.Abstractions\tests\Microsoft.Extensions.Logging.Generators.Tests\Microsoft.Extensions.Logging.Generators.Roslyn4.0.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Logging.Abstractions\tests\Microsoft.Extensions.Logging.Generators.Tests\Microsoft.Extensions.Logging.Generators.Roslyn4.8.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices\tests\LibraryImportGenerator.UnitTests\LibraryImportGenerator.Unit.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices\tests\ComInterfaceGenerator.Unit.Tests\ComInterfaceGenerator.Unit.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.SourceGeneration.Unit.Tests\System.Text.Json.SourceGeneration.Roslyn3.11.Unit.Tests.csproj" />

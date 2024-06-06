@@ -375,6 +375,7 @@ gchar       *g_strchug        (gchar *str);
 gchar       *g_strchomp       (gchar *str);
 gchar       *g_strnfill       (gsize length, gchar fill_char);
 gsize        g_strnlen        (const char*, gsize);
+const gchar *g_memrchr        (const char *s, char c, size_t n);
 
 void	     g_strdelimit     (char *string, char delimiter, char new_delimiter);
 

@@ -85,7 +85,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		// This warning should not be generated, the value of typeWithMethods should have PublicMethods
 		// after the call with out parameter.
-		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions.RequiresPublicMethods), Tool.Analyzer, "https://github.com/dotnet/linker/issues/2632")]
+		[UnexpectedWarning ("IL2072", nameof (DataFlowTypeExtensions.RequiresPublicMethods), Tool.Analyzer, "https://github.com/dotnet/linker/issues/2632")]
 		static void TestInitializedReadFromOutParameter_MismatchOnInput ()
 		{
 			Type typeWithMethods = GetTypeWithFields ();

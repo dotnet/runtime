@@ -846,7 +846,8 @@ namespace System.Text
                 if (length == 0)
                 {
                     ExpandByABlock(count);
-                    length = Math.Min(m_ChunkChars.Length - m_ChunkLength, count);
+                    Debug.Assert(m_ChunkLength == 0 && m_ChunkChars.Length >= count);
+                    length = count;
                 }
                 value.CopyTo(startIndex, new Span<char>(m_ChunkChars, m_ChunkLength, length), length);
 
@@ -1140,7 +1141,7 @@ namespace System.Text
         /// <param name="separator">The string to use as a separator. <paramref name="separator"/> is included in the joined strings only if <paramref name="values"/> has more than one element.</param>
         /// <param name="values">A span that contains the strings to concatenate and append to the current instance of the string builder.</param>
         /// <returns>A reference to this instance after the append operation has completed.</returns>
-        public StringBuilder AppendJoin(string? separator, /*params*/ ReadOnlySpan<object?> values)
+        public StringBuilder AppendJoin(string? separator, params ReadOnlySpan<object?> values)
         {
             separator ??= string.Empty;
             return AppendJoinCore(ref separator.GetRawStringData(), separator.Length, values);
@@ -1175,7 +1176,7 @@ namespace System.Text
         /// <param name="separator">The string to use as a separator. <paramref name="separator"/> is included in the joined strings only if <paramref name="values"/> has more than one element.</param>
         /// <param name="values">A span that contains the strings to concatenate and append to the current instance of the string builder.</param>
         /// <returns>A reference to this instance after the append operation has completed.</returns>
-        public StringBuilder AppendJoin(string? separator, /*params*/ ReadOnlySpan<string?> values)
+        public StringBuilder AppendJoin(string? separator, params ReadOnlySpan<string?> values)
         {
             separator ??= string.Empty;
             return AppendJoinCore(ref separator.GetRawStringData(), separator.Length, values);
@@ -1198,7 +1199,7 @@ namespace System.Text
         /// <param name="separator">The character to use as a separator. <paramref name="separator"/> is included in the joined strings only if <paramref name="values"/> has more than one element.</param>
         /// <param name="values">A span that contains the strings to concatenate and append to the current instance of the string builder.</param>
         /// <returns>A reference to this instance after the append operation has completed.</returns>
-        public StringBuilder AppendJoin(char separator, /*params*/ ReadOnlySpan<object?> values) =>
+        public StringBuilder AppendJoin(char separator, params ReadOnlySpan<object?> values) =>
             AppendJoinCore(ref separator, 1, values);
 
         public StringBuilder AppendJoin<T>(char separator, IEnumerable<T> values)
@@ -1228,7 +1229,7 @@ namespace System.Text
         /// <param name="separator">The character to use as a separator. <paramref name="separator"/> is included in the joined strings only if <paramref name="values"/> has more than one element.</param>
         /// <param name="values">A span that contains the strings to concatenate and append to the current instance of the string builder.</param>
         /// <returns>A reference to this instance after the append operation has completed.</returns>
-        public StringBuilder AppendJoin(char separator, /*params*/ ReadOnlySpan<string?> values) =>
+        public StringBuilder AppendJoin(char separator, params ReadOnlySpan<string?> values) =>
             AppendJoinCore(ref separator, 1, values);
 
         private StringBuilder AppendJoinCore<T>(ref char separator, int separatorLength, IEnumerable<T> values)
@@ -1466,7 +1467,7 @@ namespace System.Text
         /// -or-
         /// The index of a format item is less than 0 (zero), or greater than or equal to the length of the <paramref name="args"/> span.
         /// </exception>
-        public StringBuilder AppendFormat([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, /*params*/ ReadOnlySpan<object?> args)
+        public StringBuilder AppendFormat([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params ReadOnlySpan<object?> args)
         {
             return AppendFormat(null, format, args);
         }
@@ -1515,7 +1516,7 @@ namespace System.Text
         /// -or-
         /// The index of a format item is less than 0 (zero), or greater than or equal to the length of the <paramref name="args"/> span.
         /// </exception>
-        public StringBuilder AppendFormat(IFormatProvider? provider, [StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, /*params*/ ReadOnlySpan<object?> args)
+        public StringBuilder AppendFormat(IFormatProvider? provider, [StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params ReadOnlySpan<object?> args)
         {
             ArgumentNullException.ThrowIfNull(format);
 
@@ -1875,7 +1876,7 @@ namespace System.Text
         /// <returns>A reference to this instance after the append operation has completed.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="format"/> is null.</exception>
         /// <exception cref="FormatException">The index of a format item is greater than or equal to the number of supplied arguments.</exception>
-        public StringBuilder AppendFormat(IFormatProvider? provider, CompositeFormat format, /*params*/ ReadOnlySpan<object?> args)
+        public StringBuilder AppendFormat(IFormatProvider? provider, CompositeFormat format, params ReadOnlySpan<object?> args)
         {
             ArgumentNullException.ThrowIfNull(format);
             format.ValidateNumberOfArgs(args.Length);
