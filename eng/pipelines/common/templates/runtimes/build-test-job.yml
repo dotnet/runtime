@@ -44,7 +44,7 @@ jobs:
       displayName: '${{ parameters.runtimeFlavor }} Common Pri1 Test Build AnyOS AnyCPU ${{ parameters.buildConfig }}'
 
     # Since the condition is being altered, merge the default with the additional conditions.
-    # See https://docs.microsoft.com/azure/devops/pipelines/process/conditions
+    # See https://learn.microsoft.com/azure/devops/pipelines/process/conditions
     condition: and(succeeded(), ${{ parameters.condition }})
 
     ${{ if ne(parameters.dependsOn[0], '') }}:
@@ -55,6 +55,11 @@ jobs:
 
     ${{ if notIn(parameters.testGroup, 'innerloop', 'clrinterpreter') }}:
       timeoutInMinutes: 160
+
+    artifacts:
+      publish:
+        logs:
+          name: '${{ parameters.runtimeFlavor }}_Common_Runtime_TestBuildLogs_Attempt$(System.JobAttempt)_AnyOS_AnyCPU_$(buildConfig)_${{ parameters.testGroup }}'
 
     variables:
       - ${{ each variable in parameters.variables }}:
@@ -137,14 +142,3 @@ jobs:
         archiveExtension: '.tar.gz'
         artifactName: $(microsoftNetSdkIlArtifactName)
         displayName: 'Microsoft.NET.Sdk.IL package'
-
-    # Publish Logs
-    - template: /eng/pipelines/common/templates/publish-pipeline-artifacts.yml
-      parameters:
-        displayName: Publish Logs
-        isOfficialBuild: ${{ parameters.isOfficialBuild }}
-        inputs:
-          targetPath: $(Build.SourcesDirectory)/artifacts/log
-          ArtifactName: '${{ parameters.runtimeFlavor }}_Common_Runtime_TestBuildLogs_Attempt$(System.JobAttempt)_AnyOS_AnyCPU_$(buildConfig)_${{ parameters.testGroup }}'
-          continueOnError: true
-          condition: always()

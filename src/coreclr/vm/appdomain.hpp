@@ -1038,6 +1038,12 @@ public:
         return ::CreatePinningHandle(m_handleStore, object);
     }
 
+    OBJECTHANDLE CreateWeakInteriorHandle(OBJECTREF object, void* pInteriorPointerLocation)
+    {
+        WRAPPER_NO_CONTRACT;
+        return ::CreateWeakInteriorHandle(m_handleStore, object, pInteriorPointerLocation);
+    }
+
     OBJECTHANDLE CreateSizedRefHandle(OBJECTREF object)
     {
         WRAPPER_NO_CONTRACT;
@@ -1534,7 +1540,7 @@ public:
     virtual PTR_AppDomain AsAppDomain() { LIMITED_METHOD_CONTRACT; return dac_cast<PTR_AppDomain>(this); }
 
     OBJECTREF GetRawExposedObject() { LIMITED_METHOD_CONTRACT; return NULL; }
-    OBJECTHANDLE GetRawExposedObjectHandleForDebugger() { LIMITED_METHOD_DAC_CONTRACT; return NULL; }
+    OBJECTHANDLE GetRawExposedObjectHandleForDebugger() { LIMITED_METHOD_DAC_CONTRACT; return (OBJECTHANDLE)NULL; }
 
 #ifndef DACCESS_COMPILE
     PTR_NativeImage GetNativeImage(LPCUTF8 compositeFileName);

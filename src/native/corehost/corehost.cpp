@@ -99,7 +99,10 @@ void need_newer_framework_error(const pal::string_t& dotnet_root, const pal::str
 
 int exe_start(const int argc, const pal::char_t* argv[])
 {
-    pal::initialize_createdump();
+#if defined(FEATURE_STATIC_HOST) && (defined(TARGET_OSX) || defined(TARGET_LINUX)) && !defined(TARGET_X86)
+    extern void initialize_static_createdump();
+    initialize_static_createdump();
+#endif
 
     // Use realpath to find the path of the host, resolving any symlinks.
     // hostfxr (for dotnet) and the app dll (for apphost) are found relative to the host.

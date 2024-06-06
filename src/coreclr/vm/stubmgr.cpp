@@ -428,7 +428,7 @@ BOOL StubManager::CheckIsStub_Worker(PCODE stubStartAddress)
     // @todo - consider having a single check for null right up front.
     // Though this may cover bugs where stub-managers don't handle bad addresses.
     // And someone could just as easily pass (0x01) as NULL.
-    if (stubStartAddress == NULL)
+    if (stubStartAddress == (PCODE)NULL)
     {
         return FALSE;
     }
@@ -1037,7 +1037,7 @@ BOOL PrecodeStubManager::DoTraceStub(PCODE stubStartAddress,
 #ifndef DACCESS_COMPILE
             trace->InitForUnmanaged(GetEEFuncEntryPoint(NDirectImportThunk));
 #else
-            trace->InitForOther(NULL);
+            trace->InitForOther((PCODE)NULL);
 #endif
             LOG_TRACE_DESTINATION(trace, stubStartAddress, "PrecodeStubManager::DoTraceStub - NDirect import");
             return TRUE;
@@ -1330,8 +1330,8 @@ static PCODE GetStubTarget(PTR_MethodDesc pTargetMD)
     targetCode = NativeCodeVersion(pTargetMD);
 #endif
 
-    if (targetCode.IsNull() || targetCode.GetNativeCode() == NULL)
-        return NULL;
+    if (targetCode.IsNull() || targetCode.GetNativeCode() == (PCODE)NULL)
+        return (PCODE)NULL;
 
     return targetCode.GetNativeCode();
 }
@@ -1460,7 +1460,7 @@ BOOL StubLinkStubManager::TraceManager(Thread *thread,
         _ASSERTE(pMD != NULL);
 
         PCODE target = GetStubTarget(pMD);
-        if (target == NULL)
+        if (target == (PCODE)NULL)
         {
             LOG((LF_CORDB,LL_INFO10000, "SLSM:TM Unable to determine stub target, pMD %p\n", pMD));
             trace->InitForUnjittedMethod(pMD);
@@ -1808,7 +1808,7 @@ BOOL ILStubManager::DoTraceStub(PCODE stubStartAddress,
 
 #ifndef DACCESS_COMPILE
 
-    PCODE traceDestination = NULL;
+    PCODE traceDestination = (PCODE)NULL;
 
 #ifdef FEATURE_MULTICASTSTUB_AS_IL
     MethodDesc* pStubMD = ExecutionManager::GetCodeMethodDesc(stubStartAddress);
@@ -1829,7 +1829,7 @@ BOOL ILStubManager::DoTraceStub(PCODE stubStartAddress,
     return TRUE;
 
 #else // !DACCESS_COMPILE
-    trace->InitForOther(NULL);
+    trace->InitForOther((PCODE)NULL);
     return FALSE;
 
 #endif // !DACCESS_COMPILE
@@ -1887,7 +1887,7 @@ BOOL ILStubManager::TraceManager(Thread *thread,
         pStubMD, arg, pThis));
 
     // See code:ILStubCache.CreateNewMethodDesc for the code that sets flags on stub MDs
-    PCODE target = NULL;
+    PCODE target = (PCODE)NULL;
 
 #ifdef FEATURE_MULTICASTSTUB_AS_IL
     if (pStubMD->IsMulticastStub())
@@ -1965,7 +1965,7 @@ BOOL ILStubManager::TraceManager(Thread *thread,
 
         LOG((LF_CORDB, LL_INFO1000, "ILSM::TraceManager: Step through to target - 0x%p\n", pTargetMD));
         target = GetStubTarget(pTargetMD);
-        if (target == NULL)
+        if (target == (PCODE)NULL)
             return FALSE;
 
         trace->InitForManaged(target);
@@ -2094,7 +2094,7 @@ BOOL InteropDispatchStubManager::DoTraceStub(PCODE stubStartAddress, TraceDestin
     return TRUE;
 
 #else // !DACCESS_COMPILE
-    trace->InitForOther(NULL);
+    trace->InitForOther((PCODE)NULL);
     return FALSE;
 
 #endif // !DACCESS_COMPILE

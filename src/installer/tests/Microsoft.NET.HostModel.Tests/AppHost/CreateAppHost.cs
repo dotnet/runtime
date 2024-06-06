@@ -5,6 +5,8 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -26,10 +28,10 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
         [Fact]
         public void EmbedAppBinaryPath()
         {
-            using (TestDirectory testDirectory = TestDirectory.Create())
+            using (TestArtifact artifact = CreateTestDirectory())
             {
-                string sourceAppHostMock = PrepareAppHostMockFile(testDirectory);
-                string destinationFilePath = Path.Combine(testDirectory.Path, "DestinationAppHost.exe.mock");
+                string sourceAppHostMock = PrepareAppHostMockFile(artifact.Location);
+                string destinationFilePath = Path.Combine(artifact.Location, "DestinationAppHost.exe.mock");
                 string appBinaryFilePath = "Test/App/Binary/Path.dll";
 
                 HostWriter.CreateAppHost(
@@ -55,14 +57,14 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
         [Fact]
         public void PlaceholderHashNotFound_Fails()
         {
-            using (TestDirectory testDirectory = TestDirectory.Create())
+            using (TestArtifact artifact = CreateTestDirectory())
             {
-                string sourceAppHostMock = PrepareAppHostMockFile(testDirectory, content =>
+                string sourceAppHostMock = PrepareAppHostMockFile(artifact.Location, content =>
                 {
                     // Corrupt the hash value
                     content[WindowsFileHeader.Length + 1]++;
                 });
-                string destinationFilePath = Path.Combine(testDirectory.Path, "DestinationAppHost.exe.mock");
+                string destinationFilePath = Path.Combine(artifact.Location, "DestinationAppHost.exe.mock");
                 string appBinaryFilePath = "Test/App/Binary/Path.dll";
 
                 Assert.Throws<PlaceHolderNotFoundInAppHostException>(() =>
@@ -78,10 +80,10 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
         [Fact]
         public void AppBinaryPathTooLong_Fails()
         {
-            using (TestDirectory testDirectory = TestDirectory.Create())
+            using (TestArtifact artifact = CreateTestDirectory())
             {
-                string sourceAppHostMock = PrepareAppHostMockFile(testDirectory);
-                string destinationFilePath = Path.Combine(testDirectory.Path, "DestinationAppHost.exe.mock");
+                string sourceAppHostMock = PrepareAppHostMockFile(artifact.Location);
+                string destinationFilePath = Path.Combine(artifact.Location, "DestinationAppHost.exe.mock");
                 string appBinaryFilePath = new string('a', 1024 + 5);
 
                 Assert.Throws<AppNameTooLongException>(() =>
@@ -97,10 +99,10 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
         [Fact]
         public void GUISubsystem_WindowsPEFile()
         {
-            using (TestDirectory testDirectory = TestDirectory.Create())
+            using (TestArtifact artifact = CreateTestDirectory())
             {
-                string sourceAppHostMock = PrepareAppHostMockFile(testDirectory);
-                string destinationFilePath = Path.Combine(testDirectory.Path, "DestinationAppHost.exe.mock");
+                string sourceAppHostMock = PrepareAppHostMockFile(artifact.Location);
+                string destinationFilePath = Path.Combine(artifact.Location, "DestinationAppHost.exe.mock");
                 string appBinaryFilePath = "Test/App/Binary/Path.dll";
 
                 HostWriter.CreateAppHost(
@@ -110,9 +112,9 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
                     windowsGraphicalUserInterface: true);
 
                 BitConverter
-                    .ToUInt16(File.ReadAllBytes(destinationFilePath), SubsystemOffset)
-                    .Should()
-                    .Be((ushort)Subsystem.WindowsGui);
+                   .ToUInt16(File.ReadAllBytes(destinationFilePath), SubsystemOffset)
+                   .Should()
+                   .Be((ushort)Subsystem.WindowsGui);
 
                 Assert.Equal((ushort)Subsystem.WindowsGui, PEUtils.GetWindowsGraphicalUserInterfaceBit(destinationFilePath));
             }
@@ -121,15 +123,15 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
         [Fact]
         public void GUISubsystem_NonWindowsPEFile_Fails()
         {
-            using (TestDirectory testDirectory = TestDirectory.Create())
+            using (TestArtifact artifact = CreateTestDirectory())
             {
-                string sourceAppHostMock = PrepareAppHostMockFile(testDirectory, content =>
+                string sourceAppHostMock = PrepareAppHostMockFile(artifact.Location, content =>
                 {
                     // Windows PE files must start with 0x5A4D, so write some other value here.
                     content[0] = 1;
                     content[1] = 2;
                 });
-                string destinationFilePath = Path.Combine(testDirectory.Path, "DestinationAppHost.exe.mock");
+                string destinationFilePath = Path.Combine(artifact.Location, "DestinationAppHost.exe.mock");
                 string appBinaryFilePath = "Test/App/Binary/Path.dll";
 
                 Assert.Throws<AppHostNotPEFileException>(() =>
@@ -146,14 +148,14 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
         [Fact]
         public void GUISubsystem_WrongDefault_Fails()
         {
-            using (TestDirectory testDirectory = TestDirectory.Create())
+            using (TestArtifact artifact = CreateTestDirectory())
             {
-                string sourceAppHostMock = PrepareAppHostMockFile(testDirectory, content =>
+                string sourceAppHostMock = PrepareAppHostMockFile(artifact.Location, content =>
                 {
                     // Corrupt the value of the subsystem (the default should be 3)
                     content[SubsystemOffset] = 42;
                 });
-                string destinationFilePath = Path.Combine(testDirectory.Path, "DestinationAppHost.exe.mock");
+                string destinationFilePath = Path.Combine(artifact.Location, "DestinationAppHost.exe.mock");
                 string appBinaryFilePath = "Test/App/Binary/Path.dll";
 
                 Assert.Equal(42, PEUtils.GetWindowsGraphicalUserInterfaceBit(sourceAppHostMock));
@@ -172,9 +174,9 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         public void ExecutableImage()
         {
-            using TestDirectory testDirectory = TestDirectory.Create();
-            string sourceAppHostMock = PrepareAppHostMockFile(testDirectory);
-            string destinationFilePath = Path.Combine(testDirectory.Path, "DestinationAppHost.exe.mock");
+            using TestArtifact artifact = CreateTestDirectory();
+            string sourceAppHostMock = PrepareAppHostMockFile(artifact.Location);
+            string destinationFilePath = Path.Combine(artifact.Location, "DestinationAppHost.exe.mock");
             string appBinaryFilePath = "Test/App/Binary/Path.dll";
 
             // strip executable permissions from this AppHost template binary
@@ -204,11 +206,13 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
         [InlineData("dir with spaces")]
         public void CodeSignAppHostOnMacOS(string subdir)
         {
-            using (TestDirectory testDirectory = TestDirectory.Create(subdir))
+            using (TestArtifact artifact = CreateTestDirectory())
             {
+                string testDirectory = Path.Combine(artifact.Location, subdir);
+                Directory.CreateDirectory(testDirectory);
                 string sourceAppHostMock = PrepareAppHostMockFile(testDirectory);
                 File.SetAttributes(sourceAppHostMock, FileAttributes.ReadOnly);
-                string destinationFilePath = Path.Combine(testDirectory.Path, "DestinationAppHost.exe.mock");
+                string destinationFilePath = Path.Combine(testDirectory, "DestinationAppHost.exe.mock");
                 string appBinaryFilePath = "Test/App/Binary/Path.dll";
                 HostWriter.CreateAppHost(
                    sourceAppHostMock,
@@ -229,7 +233,7 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
                 {
                     p.Start();
                     p.StandardError.ReadToEnd()
-                        .Should().Contain($"Executable=/private{Path.GetFullPath(destinationFilePath)}");
+                        .Should().Contain($"Executable={Path.GetFullPath(destinationFilePath)}");
                     p.WaitForExit();
                     // Successfully signed the apphost.
                     Assert.True(p.ExitCode == 0, $"Expected exit code was '0' but '{codesign}' returned '{p.ExitCode}' instead.");
@@ -241,11 +245,11 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
         [PlatformSpecific(TestPlatforms.OSX)]
         public void DoesNotCodeSignAppHostByDefault()
         {
-            using (TestDirectory testDirectory = TestDirectory.Create())
+            using (TestArtifact artifact = CreateTestDirectory())
             {
-                string sourceAppHostMock = PrepareAppHostMockFile(testDirectory);
+                string sourceAppHostMock = PrepareAppHostMockFile(artifact.Location);
                 File.SetAttributes(sourceAppHostMock, FileAttributes.ReadOnly);
-                string destinationFilePath = Path.Combine(testDirectory.Path, "DestinationAppHost.exe.mock");
+                string destinationFilePath = Path.Combine(artifact.Location, "DestinationAppHost.exe.mock");
                 string appBinaryFilePath = "Test/App/Binary/Path.dll";
                 HostWriter.CreateAppHost(
                    sourceAppHostMock,
@@ -275,11 +279,11 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
         [PlatformSpecific(TestPlatforms.OSX)]
         public void CodeSigningFailuresThrow()
         {
-            using (TestDirectory testDirectory = TestDirectory.Create())
+            using (TestArtifact artifact = CreateTestDirectory())
             {
-                string sourceAppHostMock = PrepareAppHostMockFile(testDirectory);
+                string sourceAppHostMock = PrepareAppHostMockFile(artifact.Location);
                 File.SetAttributes(sourceAppHostMock, FileAttributes.ReadOnly);
-                string destinationFilePath = Path.Combine(testDirectory.Path, "DestinationAppHost.exe.mock");
+                string destinationFilePath = Path.Combine(artifact.Location, "DestinationAppHost.exe.mock");
                 string appBinaryFilePath = "Test/App/Binary/Path.dll";
                 HostWriter.CreateAppHost(
                    sourceAppHostMock,
@@ -302,6 +306,83 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
             }
         }
 
+        [Theory]
+        [InlineData(true)]  // Bit is set in extended DLL characteristics
+        [InlineData(false)] // Bit is not set in extended DLL characteristics
+        [InlineData(null)]  // No extended DLL characteristics
+        public void CetCompat(bool? cetCompatSet)
+        {
+            using (TestArtifact artifact = CreateTestDirectory())
+            {
+                // Create a PE image with with CET compatability enabled/disabled
+                BlobBuilder peBlob = Binaries.CetCompat.CreatePEImage(cetCompatSet);
+
+                // Add the placeholder - it just needs to exist somewhere in the image, as HostWriter.CreateAppHost requires it
+                peBlob.WriteBytes(AppBinaryPathPlaceholderSearchValue);
+
+                string source = Path.Combine(artifact.Location, "source.exe");
+                using (FileStream stream = new FileStream(source, FileMode.Create))
+                {
+                    peBlob.WriteContentTo(stream);
+                }
+
+                bool originallyEnabled = cetCompatSet.HasValue ? cetCompatSet.Value : false;
+                Assert.Equal(originallyEnabled, Binaries.CetCompat.IsMarkedCompatible(source));
+
+                // Validate compatibility is disabled
+                string cetDisabled = Path.Combine(artifact.Location, "cetDisabled.exe");
+                HostWriter.CreateAppHost(
+                   source,
+                   cetDisabled,
+                   "app",
+                   disableCetCompat: true);
+                Assert.False(Binaries.CetCompat.IsMarkedCompatible(cetDisabled));
+
+                // Validate compatibility is not changed
+                string cetEnabled = Path.Combine(artifact.Location, "cetUnchanged.exe");
+                HostWriter.CreateAppHost(
+                   source,
+                   cetEnabled,
+                   "app",
+                   disableCetCompat: false);
+                Assert.Equal(originallyEnabled, Binaries.CetCompat.IsMarkedCompatible(cetEnabled));
+            }
+        }
+
+        [ConditionalFact(typeof(Binaries.CetCompat), nameof(Binaries.CetCompat.IsSupported))]
+        public void CetCompat_ProductHosts()
+        {
+            using (TestArtifact artifact = CreateTestDirectory())
+            {
+                string[] hosts = [Binaries.AppHost.FilePath, Binaries.SingleFileHost.FilePath];
+                foreach (string host in hosts)
+                {
+                    // Hosts should be compatible with CET shadow stack by default
+                    Assert.True(Binaries.CetCompat.IsMarkedCompatible(host));
+                    string source = Path.Combine(artifact.Location, Path.GetFileName(host));
+                    File.Copy(host, source);
+
+                    // Validate compatibility is disabled
+                    string cetDisabled = Path.Combine(artifact.Location, $"{Path.GetFileName(host)}_cetDisabled.exe");
+                    HostWriter.CreateAppHost(
+                       source,
+                       cetDisabled,
+                       "app",
+                       disableCetCompat: true);
+                    Assert.False(Binaries.CetCompat.IsMarkedCompatible(cetDisabled));
+
+                    // Validate compatibility is not changed (remains enabled)
+                    string cetEnabled = Path.Combine(artifact.Location, $"{Path.GetFileName(host)}_cetEnabled.exe");
+                    HostWriter.CreateAppHost(
+                       source,
+                       cetEnabled,
+                       "app",
+                       disableCetCompat: false);
+                    Assert.True(Binaries.CetCompat.IsMarkedCompatible(cetEnabled));
+                }
+            }
+        }
+
         [Fact]
         private void ResourceWithUnknownLanguage()
         {
@@ -312,7 +393,7 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
             }
         }
 
-        private string PrepareAppHostMockFile(TestDirectory testDirectory, Action<byte[]> customize = null)
+        private string PrepareAppHostMockFile(string directory, Action<byte[]> customize = null)
         {
             // For now we're testing the AppHost on Windows PE files only.
             // The only customization which we do on non-Windows files is the embedding
@@ -325,7 +406,7 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
 
             customize?.Invoke(content);
 
-            string filePath = Path.Combine(testDirectory.Path, "SourceAppHost.exe.mock");
+            string filePath = Path.Combine(directory, "SourceAppHost.exe.mock");
             File.WriteAllBytes(filePath, content);
             return filePath;
         }
@@ -358,32 +439,7 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
             0, 112, 2, 0, 0, 4, 0, 0, 0, 0, 0, 0, 3, 0, 96, 193, 0, 0, 24,
             0, 0, 0, 0, 0, 0, 16, 0, 0, 0, 0 };
 
-        private class TestDirectory : IDisposable
-        {
-            public string Path { get; private set; }
-
-            private TestDirectory(string path)
-            {
-                Path = path;
-                Directory.CreateDirectory(path);
-            }
-
-            public static TestDirectory Create([CallerMemberName] string callingMethod = "", string subDir = "")
-            {
-                string path = System.IO.Path.Combine(
-                    System.IO.Path.GetTempPath(),
-                    "dotNetSdkUnitTest_" + callingMethod + (Guid.NewGuid().ToString().Substring(0, 8)),
-                    subDir);
-                return new TestDirectory(path);
-            }
-
-            public void Dispose()
-            {
-                if (Directory.Exists(Path))
-                {
-                    Directory.Delete(Path, true);
-                }
-            }
-        }
+        private TestArtifact CreateTestDirectory([CallerMemberName] string callingMethod = "")
+            => TestArtifact.Create(callingMethod);
     }
 }

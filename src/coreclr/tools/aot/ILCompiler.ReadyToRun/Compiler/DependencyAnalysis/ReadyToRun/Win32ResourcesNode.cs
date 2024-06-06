@@ -33,7 +33,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append("____Win32Resources");
+            sb.Append("____Win32Resources"u8);
         }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)

@@ -164,6 +164,9 @@ namespace ILLink.Shared.DataFlow
 		public virtual void TraceVisitBlock (TBlock block) { }
 
 		[Conditional ("DEBUG")]
+		public virtual void TraceEdgeInput (IControlFlowGraph<TBlock, TRegion>.ControlFlowBranch branch, TValue state) { }
+
+		[Conditional ("DEBUG")]
 		public virtual void TraceBlockInput (TValue normalState, TValue? exceptionState, TValue? exceptionFinallyState) { }
 
 		[Conditional ("DEBUG")]
@@ -280,7 +283,7 @@ namespace ILLink.Shared.DataFlow
 						TValue predecessorState = cfgState.Get (predecessor).Current;
 
 						FlowStateThroughExitedFinallys (predecessor, ref predecessorState);
-
+						TraceEdgeInput (predecessor, predecessorState);
 						currentState = lattice.Meet (currentState, predecessorState);
 					}
 					// State at start of a catch also includes the exceptional state from

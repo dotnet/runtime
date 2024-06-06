@@ -195,7 +195,7 @@ namespace System.Diagnostics
         /// <summary>
         /// When a DiagnosticListener is created it is given a name.   Return this.
         /// </summary>
-        public string Name { get; private set; }
+        public string Name { get; }
 
         /// <summary>
         /// Return the name for the ToString() to aid in debugging.

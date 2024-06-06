@@ -39,7 +39,6 @@ namespace System.Runtime.Intrinsics
         public static Vector128<T> AllBitsSet
         {
             [Intrinsic]
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
                 Vector64<T> vector = Vector64<T>.AllBitsSet;
@@ -52,11 +51,7 @@ namespace System.Runtime.Intrinsics
         public static int Count
         {
             [Intrinsic]
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                return Vector64<T>.Count * 2;
-            }
+            get => Vector64<T>.Count * 2;
         }
 
         /// <summary>Gets a new <see cref="Vector128{T}" /> with the elements set to their index.</summary>
@@ -107,7 +102,6 @@ namespace System.Runtime.Intrinsics
         public static Vector128<T> One
         {
             [Intrinsic]
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
                 Vector64<T> vector = Vector64<T>.One;
@@ -120,7 +114,6 @@ namespace System.Runtime.Intrinsics
         public static Vector128<T> Zero
         {
             [Intrinsic]
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
                 ThrowHelper.ThrowForUnsupportedIntrinsicsVector128BaseType<T>();
@@ -128,27 +121,14 @@ namespace System.Runtime.Intrinsics
             }
         }
 
-        internal string DisplayString
-        {
-            get
-            {
-                return IsSupported ? ToString() : SR.NotSupported_Type;
-            }
-        }
+        internal string DisplayString => IsSupported ? ToString() : SR.NotSupported_Type;
 
         /// <summary>Gets the element at the specified index.</summary>
         /// <param name="index">The index of the element to get.</param>
         /// <returns>The value of the element at <paramref name="index" />.</returns>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="index" /> was less than zero or greater than the number of elements.</exception>
         /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
-        public T this[int index]
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                return this.GetElement(index);
-            }
-        }
+        public T this[int index] => this.GetElement(index);
 
         /// <summary>Adds two vectors to compute their sum.</summary>
         /// <param name="left">The vector to add with <paramref name="right" />.</param>
@@ -258,12 +238,7 @@ namespace System.Runtime.Intrinsics
         /// <returns><c>true</c> if any elements in <paramref name="left" /> was not equal to the corresponding element in <paramref name="right" />.</returns>
         /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool operator !=(Vector128<T> left, Vector128<T> right)
-        {
-            return (left._lower != right._lower)
-                || (left._upper != right._upper);
-        }
+        public static bool operator !=(Vector128<T> left, Vector128<T> right) => !(left == right);
 
         /// <summary>Shifts each element of a vector left by the specified amount.</summary>
         /// <param name="value">The vector whose elements are to be shifted.</param>
@@ -380,7 +355,6 @@ namespace System.Runtime.Intrinsics
         /// <returns><paramref name="value" /></returns>
         /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<T> operator +(Vector128<T> value)
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector128BaseType<T>();
@@ -405,14 +379,13 @@ namespace System.Runtime.Intrinsics
         /// <param name="obj">The object to compare with the current instance.</param>
         /// <returns><c>true</c> if <paramref name="obj" /> is a <see cref="Vector128{T}" /> and is equal to the current instance; otherwise, <c>false</c>.</returns>
         /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override bool Equals([NotNullWhen(true)] object? obj) => (obj is Vector128<T> other) && Equals(other);
 
         // Account for floating-point equality around NaN
         // This is in a separate method so it can be optimized by the mono interpreter/jiterpreter
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static bool EqualsFloatingPoint (Vector128<T> lhs, Vector128<T> rhs)
+        internal static bool EqualsFloatingPoint(Vector128<T> lhs, Vector128<T> rhs)
         {
             Vector128<T> result = Vector128.Equals(lhs, rhs) | ~(Vector128.Equals(lhs, lhs) | Vector128.Equals(rhs, rhs));
             return result.AsInt32() == Vector128<int>.AllBitsSet;
@@ -464,7 +437,6 @@ namespace System.Runtime.Intrinsics
         /// <summary>Converts the current instance to an equivalent string representation.</summary>
         /// <returns>An equivalent string representation of the current instance.</returns>
         /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override string ToString() => ToString("G", CultureInfo.InvariantCulture);
 
         private string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? formatProvider)
@@ -691,6 +663,10 @@ namespace System.Runtime.Intrinsics
         //
         // New Surface Area
         //
+
+        static bool ISimdVector<Vector128<T>, T>.AnyWhereAllBitsSet(Vector128<T> vector) => Vector128.EqualsAny(vector, AllBitsSet);
+
+        static bool ISimdVector<Vector128<T>, T>.Any(Vector128<T> vector, T value) => Vector128.EqualsAny(vector, Vector128.Create(value));
 
         static int ISimdVector<Vector128<T>, T>.IndexOfLastMatch(Vector128<T> vector)
         {

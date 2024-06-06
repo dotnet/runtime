@@ -32,6 +32,45 @@ bool g_arm64_atomics_present = false;
 
 #endif //!DACCESS_COMPILE
 
+//  Validate that the name used to load the JIT/GC is just a simple file name
+//  and does not contain something that could be used in a non-qualified path.
+//  For example, using the string "..\..\..\myjit.dll" we might attempt to
+//  load a JIT from the root of the drive.
+//
+//  The minimal set of characters that we must check for and exclude are:
+//  On all platforms:
+//     '/'  - (forward slash)
+//  On Windows:
+//     '\\' - (backslash)
+//     ':'  - (colon)
+//
+//  Returns false if we find any of these characters in 'pwzModuleName'
+//  Returns true if we reach the null terminator without encountering
+//  any of these characters.
+//
+bool ValidateModuleName(LPCWSTR pwzModuleName)
+{
+    LPCWSTR pCurChar = pwzModuleName;
+    wchar_t curChar;
+    do {
+        curChar = *pCurChar;
+        if (curChar == '/'
+#ifdef TARGET_WINDOWS
+            || (curChar == '\\') || (curChar == ':')
+#endif
+        )
+        {
+            //  Return false if we find any of these character in 'pwzJitName'
+            return false;
+        }
+        pCurChar++;
+    } while (curChar != 0);
+
+    //  Return true; we have reached the null terminator
+    //
+    return true;
+}
+
 //*****************************************************************************
 // Convert a string of hex digits into a hex value of the specified # of bytes.
 //*****************************************************************************
@@ -816,7 +855,7 @@ DWORD LCM(DWORD u, DWORD v)
         DWORD currentProcsInGroup = 0;
         for (WORD i = 0; i < m_nGroups; i++)
         {
-            currentProcsInGroup = max(currentProcsInGroup, m_CPUGroupInfoArray[i].nr_active);
+            currentProcsInGroup = max(currentProcsInGroup, (DWORD)m_CPUGroupInfoArray[i].nr_active);
         }
         *max_procs_per_group = currentProcsInGroup;
         return true;
@@ -2346,7 +2385,7 @@ namespace Util
 {
 #ifdef HOST_WINDOWS
     // Struct used to scope suspension of client impersonation for the current thread.
-    // https://docs.microsoft.com/en-us/windows/desktop/secauthz/client-impersonation
+    // https://learn.microsoft.com/windows/desktop/secauthz/client-impersonation
     class SuspendImpersonation
     {
     public:

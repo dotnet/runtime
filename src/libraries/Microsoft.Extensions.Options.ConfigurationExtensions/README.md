@@ -2,7 +2,7 @@
 
 `Microsoft.Extensions.Options.ConfigurationExtensions` provides additional configuration-specific functionality related to Options.
 
-Documentation can be found at https://learn.microsoft.com/en-us/dotnet/core/extensions/options.
+Documentation can be found at https://learn.microsoft.com/dotnet/core/extensions/options.
 
 ## Contribution Bar
 - [x] [We consider new features, new APIs, bug fixes, and performance changes](../../libraries/README.md#primary-bar)

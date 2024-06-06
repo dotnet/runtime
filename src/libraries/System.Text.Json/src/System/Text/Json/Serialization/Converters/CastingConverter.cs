@@ -15,6 +15,7 @@ namespace System.Text.Json.Serialization.Converters
         private readonly JsonConverter _sourceConverter;
         internal override Type? KeyType => _sourceConverter.KeyType;
         internal override Type? ElementType => _sourceConverter.ElementType;
+        internal override JsonConverter? NullableElementConverter => _sourceConverter.NullableElementConverter;
 
         public override bool HandleNull { get; }
         internal override bool SupportsCreateObjectDelegate => _sourceConverter.SupportsCreateObjectDelegate;

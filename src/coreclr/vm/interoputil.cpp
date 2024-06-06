@@ -2509,7 +2509,7 @@ HRESULT GetTypeLibVersionForAssembly(
     // Check to see if the TypeLibVersionAttribute is set.
     IfFailRet(pAssembly->GetMDImport()->GetCustomAttributeByName(TokenFromRid(1, mdtAssembly), INTEROP_TYPELIBVERSION_TYPE, (const void**)&pbData, &cbData));
 
-    // For attribute contents, see https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.typelibversionattribute
+    // For attribute contents, see https://learn.microsoft.com/dotnet/api/system.runtime.interopservices.typelibversionattribute
     if (cbData >= (2 + 2 * sizeof(UINT32)))
     {
         CustomAttributeParser cap(pbData, cbData);
@@ -3026,11 +3026,11 @@ FORCEINLINE void DispParamHolderRelease(VARIANT* value)
     }
 }
 
-class DispParamHolder : public Wrapper<VARIANT*, DispParamHolderDoNothing, DispParamHolderRelease, NULL>
+class DispParamHolder : public Wrapper<VARIANT*, DispParamHolderDoNothing, DispParamHolderRelease, 0>
 {
 public:
     DispParamHolder(VARIANT* p = NULL)
-        : Wrapper<VARIANT*, DispParamHolderDoNothing, DispParamHolderRelease, NULL>(p)
+        : Wrapper<VARIANT*, DispParamHolderDoNothing, DispParamHolderRelease, 0>(p)
     {
         WRAPPER_NO_CONTRACT;
     }
@@ -3038,7 +3038,7 @@ public:
     FORCEINLINE void operator=(VARIANT* p)
     {
         WRAPPER_NO_CONTRACT;
-        Wrapper<VARIANT*, DispParamHolderDoNothing, DispParamHolderRelease, NULL>::operator=(p);
+        Wrapper<VARIANT*, DispParamHolderDoNothing, DispParamHolderRelease, 0>::operator=(p);
     }
 };
 

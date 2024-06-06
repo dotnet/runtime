@@ -1985,8 +1985,8 @@ InternalSetFilePointerForUnixFd(
 {
     PAL_ERROR palError = NO_ERROR;
     int     seek_whence = 0;
-    __int64 seek_offset = 0LL;
-    __int64 seek_res = 0LL;
+    int64_t seek_offset = 0LL;
+    int64_t seek_res = 0LL;
     off_t old_offset;
 
     switch( dwMoveMethod )
@@ -2015,7 +2015,7 @@ InternalSetFilePointerForUnixFd(
     if ( lpDistanceToMoveHigh )
     {
         /* set the high 32 bits of the offset */
-        seek_offset = ((__int64)*lpDistanceToMoveHigh << 32);
+        seek_offset = ((int64_t)*lpDistanceToMoveHigh << 32);
 
         /* set the low 32 bits */
         /* cast to unsigned long to avoid sign extension */
@@ -2072,7 +2072,7 @@ InternalSetFilePointerForUnixFd(
         }
     }
 
-    seek_res = (__int64)lseek( iUnixFd,
+    seek_res = (int64_t)lseek( iUnixFd,
                                seek_offset,
                                seek_whence );
     if ( seek_res < 0 )
@@ -2881,7 +2881,7 @@ GetTempFileNameW(
         prefix_stringPS.CloseBuffer(prefix_size - 1);
     }
 
-    tempfile_name = (char*)InternalMalloc(MAX_LONGPATH);
+    tempfile_name = (char*)malloc(MAX_LONGPATH);
     if (tempfile_name == NULL)
     {
         pThread->SetLastError(ERROR_NOT_ENOUGH_MEMORY);

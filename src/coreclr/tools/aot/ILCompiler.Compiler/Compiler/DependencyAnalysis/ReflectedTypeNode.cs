@@ -34,10 +34,17 @@ namespace ILCompiler.DependencyAnalysis
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
-            return new DependencyListEntry[]
-                {
-                    new DependencyListEntry(factory.MaximallyConstructableType(_type), "Reflection target"),
-                };
+            var result = new DependencyList
+            {
+                new DependencyListEntry(factory.MaximallyConstructableType(_type), "Reflection target"),
+            };
+
+            if (_type.IsCanonicalSubtype(CanonicalFormKind.Any))
+            {
+                GenericTypesTemplateMap.GetTemplateTypeDependencies(ref result, factory, _type);
+            }
+
+            return result;
         }
         protected override string GetName(NodeFactory factory)
         {

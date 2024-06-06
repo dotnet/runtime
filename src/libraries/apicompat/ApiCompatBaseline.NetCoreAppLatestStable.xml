@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<!-- https://learn.microsoft.com/en-us/dotnet/fundamentals/package-validation/diagnostic-ids -->
+<!-- https://learn.microsoft.com/dotnet/fundamentals/package-validation/diagnostic-ids -->
 <Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <Suppression>
     <DiagnosticId>CP0014</DiagnosticId>
@@ -87,6 +87,12 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.ComponentModel.EnumConverter.#ctor(System.Type)$0:[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
+    <Left>net8.0/netstandard.dll</Left>
+    <Right>net9.0/netstandard.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
     <Target>P:System.ComponentModel.DesignerAttribute.DesignerBaseTypeName:[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
     <Left>net8.0/netstandard.dll</Left>
     <Right>net9.0/netstandard.dll</Right>
@@ -106,6 +112,12 @@
   <Suppression>
     <DiagnosticId>CP0014</DiagnosticId>
     <Target>P:System.ComponentModel.EditorAttribute.EditorTypeName:[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
+    <Left>net8.0/netstandard.dll</Left>
+    <Right>net9.0/netstandard.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>P:System.ComponentModel.EnumConverter.EnumType:[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
     <Left>net8.0/netstandard.dll</Left>
     <Right>net9.0/netstandard.dll</Right>
   </Suppression>
@@ -303,6 +315,12 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.ComponentModel.EnumConverter.#ctor(System.Type)$0:[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
+    <Left>net8.0/System.ComponentModel.TypeConverter.dll</Left>
+    <Right>net9.0/System.ComponentModel.TypeConverter.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
     <Target>P:System.ComponentModel.DesignerAttribute.DesignerBaseTypeName:[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
     <Left>net8.0/System.ComponentModel.TypeConverter.dll</Left>
     <Right>net9.0/System.ComponentModel.TypeConverter.dll</Right>
@@ -322,6 +340,12 @@
   <Suppression>
     <DiagnosticId>CP0014</DiagnosticId>
     <Target>P:System.ComponentModel.EditorAttribute.EditorTypeName:[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
+    <Left>net8.0/System.ComponentModel.TypeConverter.dll</Left>
+    <Right>net9.0/System.ComponentModel.TypeConverter.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>P:System.ComponentModel.EnumConverter.EnumType:[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
     <Left>net8.0/System.ComponentModel.TypeConverter.dll</Left>
     <Right>net9.0/System.ComponentModel.TypeConverter.dll</Right>
   </Suppression>
@@ -411,6 +435,12 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.ComponentModel.EnumConverter.#ctor(System.Type)$0:[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
+    <Left>net8.0/System.dll</Left>
+    <Right>net9.0/System.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
     <Target>P:System.ComponentModel.DesignerAttribute.DesignerBaseTypeName:[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
     <Left>net8.0/System.dll</Left>
     <Right>net9.0/System.dll</Right>
@@ -432,5 +462,77 @@
     <Target>P:System.ComponentModel.EditorAttribute.EditorTypeName:[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
     <Left>net8.0/System.dll</Left>
     <Right>net9.0/System.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>P:System.ComponentModel.EnumConverter.EnumType:[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
+    <Left>net8.0/System.dll</Left>
+    <Right>net9.0/System.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>T:System.Text.RegularExpressions.GeneratedRegexAttribute:[T:System.AttributeUsageAttribute]</Target>
+    <Left>net8.0/System.Text.RegularExpressions.dll</Left>
+    <Right>net9.0/System.Text.RegularExpressions.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0021</DiagnosticId>
+    <Target>T:System.Diagnostics.Metrics.MeasurementCallback`1``0:struct</Target>
+    <Left>net8.0/System.Diagnostics.DiagnosticSource.dll</Left>
+    <Right>net9.0/System.Diagnostics.DiagnosticSource.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0021</DiagnosticId>
+    <Target>T:System.Runtime.InteropServices.Marshalling.ExceptionAsDefaultMarshaller`1``0:struct</Target>
+    <Left>net8.0/System.Runtime.InteropServices.dll</Left>
+    <Right>net9.0/System.Runtime.InteropServices.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0021</DiagnosticId>
+    <Target>T:System.Runtime.InteropServices.Marshalling.ExceptionAsDefaultMarshaller`1``0:unmanaged</Target>
+    <Left>net8.0/System.Runtime.InteropServices.dll</Left>
+    <Right>net9.0/System.Runtime.InteropServices.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0021</DiagnosticId>
+    <Target>T:System.Runtime.InteropServices.Marshalling.ExceptionAsHResultMarshaller`1``0:struct</Target>
+    <Left>net8.0/System.Runtime.InteropServices.dll</Left>
+    <Right>net9.0/System.Runtime.InteropServices.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0021</DiagnosticId>
+    <Target>T:System.Runtime.InteropServices.Marshalling.ExceptionAsHResultMarshaller`1``0:T:System.Numerics.INumber{`0}</Target>
+    <Left>net8.0/System.Runtime.InteropServices.dll</Left>
+    <Right>net9.0/System.Runtime.InteropServices.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0021</DiagnosticId>
+    <Target>T:System.Runtime.InteropServices.Marshalling.ExceptionAsHResultMarshaller`1``0:unmanaged</Target>
+    <Left>net8.0/System.Runtime.InteropServices.dll</Left>
+    <Right>net9.0/System.Runtime.InteropServices.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0021</DiagnosticId>
+    <Target>T:System.Runtime.InteropServices.Marshalling.ExceptionAsNaNMarshaller`1``0:struct</Target>
+    <Left>net8.0/System.Runtime.InteropServices.dll</Left>
+    <Right>net9.0/System.Runtime.InteropServices.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0021</DiagnosticId>
+    <Target>T:System.Runtime.InteropServices.Marshalling.ExceptionAsNaNMarshaller`1``0:T:System.Numerics.IFloatingPointIeee754{`0}</Target>
+    <Left>net8.0/System.Runtime.InteropServices.dll</Left>
+    <Right>net9.0/System.Runtime.InteropServices.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0021</DiagnosticId>
+    <Target>T:System.Runtime.InteropServices.Marshalling.ExceptionAsNaNMarshaller`1``0:unmanaged</Target>
+    <Left>net8.0/System.Runtime.InteropServices.dll</Left>
+    <Right>net9.0/System.Runtime.InteropServices.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0021</DiagnosticId>
+    <Target>T:System.Text.Json.Serialization.JsonNumberEnumConverter`1``0:T:System.Enum</Target>
+    <Left>net8.0/System.Text.Json.dll</Left>
+    <Right>net9.0/System.Text.Json.dll</Right>
   </Suppression>
 </Suppressions>

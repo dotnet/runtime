@@ -77,13 +77,13 @@ namespace Microsoft.DotNet.CoreSetup.Test
             builder.Build(this);
         }
 
-        public void CreateAppHost(bool isWindowsGui = false, bool copyResources = true)
-            => CreateAppHost(Binaries.AppHost.FilePath, isWindowsGui, copyResources);
+        public void CreateAppHost(bool isWindowsGui = false, bool copyResources = true, bool disableCetCompat = false)
+            => CreateAppHost(Binaries.AppHost.FilePath, isWindowsGui, copyResources, disableCetCompat);
 
-        public void CreateSingleFileHost(bool isWindowsGui = false, bool copyResources = true)
-            => CreateAppHost(Binaries.SingleFileHost.FilePath, isWindowsGui, copyResources);
+        public void CreateSingleFileHost(bool isWindowsGui = false, bool copyResources = true, bool disableCetCompat = false)
+            => CreateAppHost(Binaries.SingleFileHost.FilePath, isWindowsGui, copyResources, disableCetCompat);
 
-        private void CreateAppHost(string hostSourcePath, bool isWindowsGui = false, bool copyResources = true)
+        private void CreateAppHost(string hostSourcePath, bool isWindowsGui, bool copyResources, bool disableCetCompat)
         {
             // Use the live-built apphost and HostModel to create the apphost to run
             HostWriter.CreateAppHost(
@@ -91,7 +91,8 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 AppExe,
                 Path.GetFileName(AppDll),
                 windowsGraphicalUserInterface: isWindowsGui,
-                assemblyToCopyResourcesFrom: copyResources ? AppDll : null);
+                assemblyToCopyResourcesFrom: copyResources ? AppDll : null,
+                disableCetCompat: disableCetCompat);
         }
 
         public enum MockedComponent

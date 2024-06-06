@@ -41,7 +41,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
  *    This should only be needed if some basic block are deleted/out of order,
  *    etc.
  *  Also,
- *  o At every assignment to a variable, siCheckVarScope() adds an open scope
+ *  o At every store to a variable, siCheckVarScope() adds an open scope
  *    for the variable being assigned to.
  *  o UpdateLifeVar() calls siUpdate() which closes scopes for variables which
  *    are not live anymore.
@@ -790,11 +790,9 @@ void CodeGenInterface::VariableLiveKeeper::VariableLiveDescriptor::startLiveRang
     else
     {
         JITDUMP("Debug: New V%02u debug range: %s\n", m_varNum,
-                m_VariableLiveRanges->empty()
-                    ? "first"
-                    : siVarLoc::Equals(&varLocation, &(m_VariableLiveRanges->back().m_VarLocation))
-                          ? "new var or location"
-                          : "not adjacent");
+                m_VariableLiveRanges->empty()                                                   ? "first"
+                : siVarLoc::Equals(&varLocation, &(m_VariableLiveRanges->back().m_VarLocation)) ? "new var or location"
+                                                                                                : "not adjacent");
         // Creates new live range with invalid end
         m_VariableLiveRanges->emplace_back(varLocation, emitLocation(), emitLocation());
         m_VariableLiveRanges->back().m_StartEmitLocation.CaptureLocation(emit);
@@ -1451,12 +1449,10 @@ void CodeGen::siInit()
 
     assert(compiler->opts.compScopeInfo);
 
-#if defined(FEATURE_EH_FUNCLETS)
     if (compiler->info.compVarScopesCount > 0)
     {
         siInFuncletRegion = false;
     }
-#endif // FEATURE_EH_FUNCLETS
 
     siLastEndOffs = 0;
 
@@ -1484,7 +1480,6 @@ void CodeGen::siBeginBlock(BasicBlock* block)
         return;
     }
 
-#if defined(FEATURE_EH_FUNCLETS)
     if (siInFuncletRegion)
     {
         return;
@@ -1500,7 +1495,6 @@ void CodeGen::siBeginBlock(BasicBlock* block)
 
         return;
     }
-#endif // FEATURE_EH_FUNCLETS
 
 #ifdef DEBUG
     if (verbose)
@@ -1559,44 +1553,43 @@ void CodeGen::siOpenScopesForNonTrackedVars(const BasicBlock* block, unsigned in
         // Check if there are any scopes on the current block's start boundary.
         VarScopeDsc* varScope = nullptr;
 
-#if defined(FEATURE_EH_FUNCLETS)
-
-        // If we find a spot where the code offset isn't what we expect, because
-        // there is a gap, it might be because we've moved the funclets out of
-        // line. Catch up with the enter and exit scopes of the current block.
-        // Ignore the enter/exit scope changes of the missing scopes, which for
-        // funclets must be matched.
-        if (lastBlockILEndOffset != beginOffs)
+        if (compiler->UsesFunclets())
         {
-            assert(beginOffs > 0);
-            assert(lastBlockILEndOffset < beginOffs);
-
-            JITDUMP("Scope info: found offset hole. lastOffs=%u, currOffs=%u\n", lastBlockILEndOffset, beginOffs);
-
-            // Skip enter scopes
-            while ((varScope = compiler->compGetNextEnterScope(beginOffs - 1, true)) != nullptr)
+            // If we find a spot where the code offset isn't what we expect, because
+            // there is a gap, it might be because we've moved the funclets out of
+            // line. Catch up with the enter and exit scopes of the current block.
+            // Ignore the enter/exit scope changes of the missing scopes, which for
+            // funclets must be matched.
+            if (lastBlockILEndOffset != beginOffs)
             {
-                /* do nothing */
-                JITDUMP("Scope info: skipping enter scope, LVnum=%u\n", varScope->vsdLVnum);
-            }
+                assert(beginOffs > 0);
+                assert(lastBlockILEndOffset < beginOffs);
 
-            // Skip exit scopes
-            while ((varScope = compiler->compGetNextExitScope(beginOffs - 1, true)) != nullptr)
-            {
-                /* do nothing */
-                JITDUMP("Scope info: skipping exit scope, LVnum=%u\n", varScope->vsdLVnum);
+                JITDUMP("Scope info: found offset hole. lastOffs=%u, currOffs=%u\n", lastBlockILEndOffset, beginOffs);
+
+                // Skip enter scopes
+                while ((varScope = compiler->compGetNextEnterScope(beginOffs - 1, true)) != nullptr)
+                {
+                    /* do nothing */
+                    JITDUMP("Scope info: skipping enter scope, LVnum=%u\n", varScope->vsdLVnum);
+                }
+
+                // Skip exit scopes
+                while ((varScope = compiler->compGetNextExitScope(beginOffs - 1, true)) != nullptr)
+                {
+                    /* do nothing */
+                    JITDUMP("Scope info: skipping exit scope, LVnum=%u\n", varScope->vsdLVnum);
+                }
             }
         }
-
-#else // !FEATURE_EH_FUNCLETS
-
-        if (lastBlockILEndOffset != beginOffs)
+        else
         {
-            assert(lastBlockILEndOffset < beginOffs);
-            return;
+            if (lastBlockILEndOffset != beginOffs)
+            {
+                assert(lastBlockILEndOffset < beginOffs);
+                return;
+            }
         }
-
-#endif // !FEATURE_EH_FUNCLETS
 
         while ((varScope = compiler->compGetNextEnterScope(beginOffs)) != nullptr)
         {
@@ -1634,12 +1627,10 @@ void CodeGen::siEndBlock(BasicBlock* block)
 {
     assert(compiler->opts.compScopeInfo && (compiler->info.compVarScopesCount > 0));
 
-#if defined(FEATURE_EH_FUNCLETS)
     if (siInFuncletRegion)
     {
         return;
     }
-#endif // FEATURE_EH_FUNCLETS
 
     unsigned endOffs = block->bbCodeOffsEnd;
 
@@ -1685,9 +1676,9 @@ NATIVE_OFFSET CodeGen::psiGetVarStackOffset(const LclVarDsc* lclVarDsc) const
 }
 
 /*============================================================================
-*           INTERFACE (public) Functions for PrologScopeInfo
-*============================================================================
-*/
+ *           INTERFACE (public) Functions for PrologScopeInfo
+ *============================================================================
+ */
 
 //------------------------------------------------------------------------
 // psiBegProlog: Initializes the PrologScopeInfo creating open psiScopes or

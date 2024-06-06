@@ -149,10 +149,6 @@ export type MonoConfig = {
      */
     pthreadPoolUnusedSize?: number,
     /**
-     * Delay in milliseconds before starting the finalizer thread
-     */
-    finalizerThreadStartDelayMs?: number,
-    /**
      * If true, a list of the methods optimized by the interpreter will be saved and used for faster startup
      *  on future runs of the application
      */
@@ -203,11 +199,14 @@ export type ResourceExtensions = { [extensionName: string]: ResourceList };
 
 export interface ResourceGroups {
     hash?: string;
+    coreAssembly?: ResourceList; // nullable only temporarily
     assembly?: ResourceList; // nullable only temporarily
     lazyAssembly?: ResourceList; // nullable only temporarily
+    corePdb?: ResourceList;
     pdb?: ResourceList;
 
     jsModuleWorker?: ResourceList;
+    jsModuleGlobalization?: ResourceList;
     jsModuleNative: ResourceList;
     jsModuleRuntime: ResourceList;
     wasmSymbols?: ResourceList;
@@ -220,6 +219,7 @@ export interface ResourceGroups {
     modulesAfterRuntimeReady?: ResourceList
 
     extensions?: ResourceExtensions
+    coreVfs?: { [virtualPath: string]: ResourceList };
     vfs?: { [virtualPath: string]: ResourceList };
 }
 
@@ -321,6 +321,10 @@ export type SingleAssetBehaviors =
      * The javascript module for emscripten.
      */
     | "js-module-native"
+    /**
+     * The javascript module for hybrid globalization.
+     */
+    | "js-module-globalization"
     /**
      * Typically blazor.boot.json
      */

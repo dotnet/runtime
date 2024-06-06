@@ -295,11 +295,11 @@ INT_PTR NativeLibrary::GetNativeLibraryExport(NATIVE_LIBRARY_HANDLE handle, LPCW
 
 #ifndef TARGET_UNIX
     INT_PTR address = reinterpret_cast<INT_PTR>(GetProcAddress((HMODULE)handle, lpstr));
-    if ((address == NULL) && throwOnError)
+    if ((address == 0) && throwOnError)
         COMPlusThrow(kEntryPointNotFoundException, IDS_EE_NDIRECT_GETPROCADDR_WIN_DLL, symbolName);
 #else // !TARGET_UNIX
     INT_PTR address = reinterpret_cast<INT_PTR>(PAL_GetProcAddressDirect(handle, lpstr));
-    if ((address == NULL) && throwOnError)
+    if ((address == 0) && throwOnError)
         COMPlusThrow(kEntryPointNotFoundException, IDS_EE_NDIRECT_GETPROCADDR_UNIX_SO, symbolName);
 #endif // !TARGET_UNIX
 
@@ -386,7 +386,7 @@ namespace
         STANDARD_VM_CONTRACT;
 
         INT_PTR ptrManagedAssemblyLoadContext = GetManagedAssemblyLoadContext(pAssembly);
-        if (ptrManagedAssemblyLoadContext == NULL)
+        if (ptrManagedAssemblyLoadContext == 0)
         {
             return NULL;
         }
@@ -597,7 +597,7 @@ namespace
 
         int varCount = 0;
 
-        // Follow LoadLibrary rules in MSDN doc: https://docs.microsoft.com/windows/win32/api/libloaderapi/nf-libloaderapi-loadlibrarya
+        // Follow LoadLibrary rules in MSDN doc: https://learn.microsoft.com/windows/win32/api/libloaderapi/nf-libloaderapi-loadlibrarya
         // To prevent the function from appending ".DLL" to the module name, include a trailing point character (.) in the module name string
         // or provide an absolute path.
         libNameVariations[varCount++] = NameFmt;

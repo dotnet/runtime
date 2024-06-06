@@ -527,7 +527,7 @@ def decode_clrjit_build_string(clrjit_path):
     with open(clrjit_path, "rb") as fh:
         contents = fh.read()
 
-    match = re.search(b'RyuJIT built by ([^\0]+?) targeting ([^\0]+?)-([^\0]+?)(| \(with native PGO\)| \(without native PGO\)|)\0', contents)
+    match = re.search(b'RyuJIT built by ([^\0]+?) targeting ([^\0]+?)-([^\0]+?)(| \\(with native PGO\\)| \\(without native PGO\\)|)\0', contents)
     if match is None:
         return None
 
@@ -1530,7 +1530,7 @@ def save_repro_mc_files(temp_location, coreclr_args, artifacts_base_name, repro_
 
 
 def parse_replay_asserts(mch_file, replay_output):
-    """ Parse output from failed replay, looking for asserts and correlating them to provide the best
+    r""" Parse output from failed replay, looking for asserts and correlating them to provide the best
         repro scenarios.
 
         Look for lines like:
@@ -3677,7 +3677,7 @@ def process_local_mch_files(coreclr_args, mch_files, mch_cache_dir):
 
 
 def process_mch_files_arg(coreclr_args):
-    """ Process the -mch_files argument. If the argument is not specified, then download files
+    r""" Process the -mch_files argument. If the argument is not specified, then download files
         from Azure Storage and any specified private MCH stores.
 
         Any files on UNC (i.e., "\\server\share" paths on Windows) or Azure Storage stores,

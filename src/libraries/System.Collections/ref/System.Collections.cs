@@ -416,13 +416,17 @@ namespace System.Collections.Generic
 {
     public static partial class CollectionExtensions
     {
-        public static void AddRange<T>(this System.Collections.Generic.List<T> list, System.ReadOnlySpan<T> source) { }
+        public static void AddRange<T>(this System.Collections.Generic.List<T> list, params System.ReadOnlySpan<T> source) { }
+        public static System.Collections.Generic.Dictionary<TKey, TValue>.AlternateLookup<TAlternateKey> GetAlternateLookup<TKey, TValue, TAlternateKey>(this System.Collections.Generic.Dictionary<TKey, TValue> dictionary) where TKey : notnull where TAlternateKey : notnull, allows ref struct { throw null; }
+        public static System.Collections.Generic.HashSet<T>.AlternateLookup<TAlternate> GetAlternateLookup<T, TAlternate>(this System.Collections.Generic.HashSet<T> set) where TAlternate : allows ref struct { throw null; }
         public static void CopyTo<T>(this System.Collections.Generic.List<T> list, System.Span<T> destination) { }
         public static TValue? GetValueOrDefault<TKey, TValue>(this System.Collections.Generic.IReadOnlyDictionary<TKey, TValue> dictionary, TKey key) { throw null; }
         public static TValue GetValueOrDefault<TKey, TValue>(this System.Collections.Generic.IReadOnlyDictionary<TKey, TValue> dictionary, TKey key, TValue defaultValue) { throw null; }
-        public static void InsertRange<T>(this System.Collections.Generic.List<T> list, int index, System.ReadOnlySpan<T> source) { }
+        public static void InsertRange<T>(this System.Collections.Generic.List<T> list, int index, params System.ReadOnlySpan<T> source) { }
         public static bool Remove<TKey, TValue>(this System.Collections.Generic.IDictionary<TKey, TValue> dictionary, TKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TValue value) { throw null; }
         public static bool TryAdd<TKey, TValue>(this System.Collections.Generic.IDictionary<TKey, TValue> dictionary, TKey key, TValue value) { throw null; }
+        public static bool TryGetAlternateLookup<TKey, TValue, TAlternateKey>(this System.Collections.Generic.Dictionary<TKey, TValue> dictionary, out System.Collections.Generic.Dictionary<TKey, TValue>.AlternateLookup<TAlternateKey> lookup) where TKey : notnull where TAlternateKey : notnull, allows ref struct { throw null; }
+        public static bool TryGetAlternateLookup<T, TAlternate>(this System.Collections.Generic.HashSet<T> set, out System.Collections.Generic.HashSet<T>.AlternateLookup<TAlternate> lookup) where TAlternate : allows ref struct { throw null; }
         public static System.Collections.ObjectModel.ReadOnlyCollection<T> AsReadOnly<T>(this IList<T> list) { throw null; }
         public static System.Collections.ObjectModel.ReadOnlyDictionary<TKey, TValue> AsReadOnly<TKey, TValue>(this IDictionary<TKey, TValue> dictionary) where TKey : notnull { throw null; }
     }
@@ -492,6 +496,17 @@ namespace System.Collections.Generic
         public void TrimExcess(int capacity) { }
         public bool TryAdd(TKey key, TValue value) { throw null; }
         public bool TryGetValue(TKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TValue value) { throw null; }
+        public readonly partial struct AlternateLookup<TAlternateKey> where TAlternateKey : notnull, allows ref struct
+        {
+            public System.Collections.Generic.Dictionary<TKey, TValue> Dictionary { get { throw null; } }
+            public TValue this[TAlternateKey key] { get { throw null; } set { } }
+            public bool ContainsKey(TAlternateKey key) { throw null; }
+            public bool TryAdd(TAlternateKey key, TValue value) { throw null; }
+            public bool TryGetValue(TAlternateKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TValue value) { throw null; }
+            public bool TryGetValue(TAlternateKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TKey actualKey, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TValue value) { throw null; }
+            public bool Remove(TAlternateKey key) { throw null; }
+            public bool Remove(TAlternateKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TKey actualKey, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TValue value) { throw null; }
+        }
         public partial struct Enumerator : System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.IDictionaryEnumerator, System.Collections.IEnumerator, System.IDisposable
         {
             private object _dummy;
@@ -618,6 +633,14 @@ namespace System.Collections.Generic
         public void TrimExcess(int capacity) { }
         public bool TryGetValue(T equalValue, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out T actualValue) { throw null; }
         public void UnionWith(System.Collections.Generic.IEnumerable<T> other) { }
+        public readonly partial struct AlternateLookup<TAlternate> where TAlternate : allows ref struct
+        {
+            public System.Collections.Generic.HashSet<T> Set { get { throw null; } }
+            public bool Add(TAlternate item) { throw null; }
+            public bool Contains(TAlternate item) { throw null; }
+            public bool Remove(TAlternate item) { throw null; }
+            public bool TryGetValue(TAlternate equalValue, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out T actualValue) { throw null; }
+        }
         public partial struct Enumerator : System.Collections.Generic.IEnumerator<T>, System.Collections.IEnumerator, System.IDisposable
         {
             private T _current;

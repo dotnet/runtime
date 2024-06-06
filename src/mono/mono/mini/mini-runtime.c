@@ -2820,7 +2820,7 @@ lookup_start:
 
 		if (mono_aot_only) {
 			char *fullname = mono_method_get_full_name (method);
-			mono_error_set_execution_engine (error, "Attempting to JIT compile method '%s' while running in aot-only mode. See https://docs.microsoft.com/xamarin/ios/internals/limitations for more information.\n", fullname);
+			mono_error_set_execution_engine (error, "Attempting to JIT compile method '%s' while running in aot-only mode. See https://learn.microsoft.com/xamarin/ios/internals/limitations for more information.\n", fullname);
 			g_free (fullname);
 
 			return NULL;
@@ -4452,7 +4452,6 @@ free_jit_mem_manager (MonoMemoryManager *mem_manager)
 		g_hash_table_destroy (info->dyn_delegate_info_hash);
 	g_hash_table_destroy (info->static_rgctx_trampoline_hash);
 	g_hash_table_destroy (info->mrgctx_hash);
-	g_hash_table_destroy (info->interp_method_pointer_hash);
 	mono_conc_hashtable_destroy (info->runtime_invoke_hash);
 	g_hash_table_destroy (info->seq_points);
 	g_hash_table_destroy (info->arch_seq_points);

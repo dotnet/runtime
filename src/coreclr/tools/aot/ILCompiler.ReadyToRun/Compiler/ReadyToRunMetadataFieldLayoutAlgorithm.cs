@@ -818,10 +818,24 @@ namespace ILCompiler
         {
             if (type.IsExplicitLayout)
             {
+                // Works around https://github.com/dotnet/runtime/issues/102868
+                if (!type.IsValueType &&
+                    (type.MetadataBaseType is MetadataType baseType && baseType.IsSequentialLayout))
+                {
+                    ThrowHelper.ThrowTypeLoadException(type);
+                }
+
                 return ComputeExplicitFieldLayout(type, numInstanceFields);
             }
             else if (type.IsSequentialLayout && !type.ContainsGCPointers)
             {
+                // Works around https://github.com/dotnet/runtime/issues/102868
+                if (!type.IsValueType &&
+                    (type.MetadataBaseType is MetadataType baseType && baseType.IsExplicitLayout))
+                {
+                    ThrowHelper.ThrowTypeLoadException(type);
+                }
+
                 return ComputeSequentialFieldLayout(type, numInstanceFields);
             }
             else
