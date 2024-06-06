@@ -303,15 +303,43 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector64<T> operator /(Vector64<T> left, Vector64<T> right)
         {
-            Unsafe.SkipInit(out Vector64<T> result);
-
-            for (int index = 0; index < Count; index++)
+            if (AdvSimd.IsSupported)
             {
-                T value = Scalar<T>.Divide(left.GetElementUnsafe(index), right.GetElementUnsafe(index));
-                result.SetElementUnsafe(index, value);
+                return ArmImpl(left, right);
+            }
+            return SoftwareImpl(left, right);
+
+            [CompExactlyDependsOn(typeof(AdvSimd))]
+            [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static Vector64<T> ArmImpl(Vector64<T> left, Vector64<T> right)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    if (AdvSimd.Arm64.IsSupported)
+                    {
+                        return AdvSimd.Arm64.Divide(left.AsSingle(), right.AsSingle()).As<float, T>();
+                    }
+                }
+                else if (typeof(T) == typeof(double))
+                {
+                    return AdvSimd.DivideScalar(left.AsDouble(), right.AsDouble()).As<double, T>();
+                }
+                return SoftwareImpl(left, right);
             }
 
-            return result;
+            static Vector64<T> SoftwareImpl(Vector64<T> left, Vector64<T> right)
+            {
+                Unsafe.SkipInit(out Vector64<T> result);
+
+                for (int index = 0; index < Count; index++)
+                {
+                    T value = Scalar<T>.Divide(left.GetElementUnsafe(index), right.GetElementUnsafe(index));
+                    result.SetElementUnsafe(index, value);
+                }
+
+                return result;
+            }
         }
 
         /// <summary>Divides a vector by a scalar to compute the per-element quotient.</summary>
@@ -319,19 +347,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="right">The scalar that will divide <paramref name="left" />.</param>
         /// <returns>The quotient of <paramref name="left" /> divided by <paramref name="right" />.</returns>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector64<T> operator /(Vector64<T> left, T right)
-        {
-            Unsafe.SkipInit(out Vector64<T> result);
-
-            for (int index = 0; index < Count; index++)
-            {
-                T value = Scalar<T>.Divide(left.GetElementUnsafe(index), right);
-                result.SetElementUnsafe(index, value);
-            }
-
-            return result;
-        }
+        public static Vector64<T> operator /(Vector64<T> left, T right) => left / Vector64.Create(right);
 
         /// <summary>Compares two vectors to determine if all elements are equal.</summary>
         /// <param name="left">The vector to compare with <paramref name="right" />.</param>
@@ -441,15 +457,55 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector64<T> operator *(Vector64<T> left, Vector64<T> right)
         {
-            Unsafe.SkipInit(out Vector64<T> result);
-
-            for (int index = 0; index < Count; index++)
+            if (AdvSimd.IsSupported)
             {
-                T value = Scalar<T>.Multiply(left.GetElementUnsafe(index), right.GetElementUnsafe(index));
-                result.SetElementUnsafe(index, value);
+                return ArmImpl(left, right);
+            }
+            return SoftwareImpl(left, right);
+
+            [CompExactlyDependsOn(typeof(AdvSimd))]
+            [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
+            static Vector64<T> ArmImpl(Vector64<T> left, Vector64<T> right)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    return AdvSimd.Multiply(left.AsSingle(), right.AsSingle()).As<float, T>();
+                }
+                else if (typeof(T) == typeof(double))
+                {
+                    return AdvSimd.MultiplyScalar(left.AsDouble(), right.AsDouble()).As<double, T>();
+                }
+                else if (sizeof(T) == 1)
+                {
+                    return AdvSimd.Multiply(left.AsByte(), right.AsByte()).As<byte, T>();
+                }
+                else if (sizeof(T) == 2)
+                {
+                    return AdvSimd.Multiply(left.AsUInt16(), right.AsUInt16()).As<ushort, T>();
+                }
+                else if (sizeof(T) == 4)
+                {
+                    return AdvSimd.Multiply(left.AsUInt32(), right.AsUInt32()).As<uint, T>();
+                }
+                else if (sizeof(T) == 8)
+                {
+                    // TODO-ARM64-CQ: We should support long/ulong multiplication.
+                }
+                return SoftwareImpl(left, right);
             }
 
-            return result;
+            static Vector64<T> SoftwareImpl(Vector64<T> left, Vector64<T> right)
+            {
+                Unsafe.SkipInit(out Vector64<T> result);
+
+                for (int index = 0; index < Count; index++)
+                {
+                    T value = Scalar<T>.Multiply(left.GetElementUnsafe(index), right.GetElementUnsafe(index));
+                    result.SetElementUnsafe(index, value);
+                }
+
+                return result;
+            }
         }
 
         /// <summary>Multiplies a vector by a scalar to compute their product.</summary>
@@ -459,18 +515,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector64<T> operator *(Vector64<T> left, T right)
-        {
-            Unsafe.SkipInit(out Vector64<T> result);
-
-            for (int index = 0; index < Count; index++)
-            {
-                T value = Scalar<T>.Multiply(left.GetElementUnsafe(index), right);
-                result.SetElementUnsafe(index, value);
-            }
-
-            return result;
-        }
+        public static Vector64<T> operator *(Vector64<T> left, T right) => left * Vector64.Create(right);
 
         /// <summary>Multiplies a vector by a scalar to compute their product.</summary>
         /// <param name="left">The scalar to multiply with <paramref name="right" />.</param>
@@ -478,7 +523,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>The product of <paramref name="left" /> and <paramref name="right" />.</returns>
         /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
-        public static Vector64<T> operator *(T left, Vector64<T> right) => right * left;
+        public static Vector64<T> operator *(T left, Vector64<T> right) => Vector64.Create(left) * right;
 
         /// <summary>Computes the ones-complement of a vector.</summary>
         /// <param name="vector">The vector whose ones-complement is to be computed.</param>

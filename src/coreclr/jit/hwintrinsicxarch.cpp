@@ -1799,33 +1799,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector128_op_Division:
-        case NI_Vector256_op_Division:
-        case NI_Vector512_op_Division:
-        {
-            assert(sig->numArgs == 2);
-
-            if (!varTypeIsFloating(simdBaseType))
-            {
-                // We can't trivially handle division for integral types using SIMD
-                break;
-            }
-
-            CORINFO_ARG_LIST_HANDLE arg1     = sig->args;
-            CORINFO_ARG_LIST_HANDLE arg2     = info.compCompHnd->getArgNext(arg1);
-            var_types               argType  = TYP_UNKNOWN;
-            CORINFO_CLASS_HANDLE    argClass = NO_CLASS_HANDLE;
-
-            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
-            op2     = getArgForHWIntrinsic(argType, argClass);
-
-            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg1, &argClass)));
-            op1     = getArgForHWIntrinsic(argType, argClass);
-
-            retNode = gtNewSimdBinOpNode(GT_DIV, retType, op1, op2, simdBaseJitType, simdSize);
-            break;
-        }
-
         case NI_Vector128_Dot:
         case NI_Vector256_Dot:
         {
@@ -2494,51 +2467,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
                 retNode = gtNewSimdMinNode(retType, op1, op2, simdBaseJitType, simdSize);
             }
-            break;
-        }
-
-        case NI_Vector128_op_Multiply:
-        case NI_Vector256_op_Multiply:
-        case NI_Vector512_op_Multiply:
-        {
-            assert(sig->numArgs == 2);
-
-            if ((simdSize == 32) && !varTypeIsFloating(simdBaseType) &&
-                !compOpportunisticallyDependsOn(InstructionSet_AVX2))
-            {
-                // We can't deal with TYP_SIMD32 for integral types if the compiler doesn't support AVX2
-                break;
-            }
-
-            assert(simdSize != 64 || IsBaselineVector512IsaSupportedDebugOnly());
-
-            if (varTypeIsLong(simdBaseType))
-            {
-                if (simdSize != 64 && !compOpportunisticallyDependsOn(InstructionSet_AVX512DQ_VL))
-                {
-                    // TODO-XARCH-CQ: We should support long/ulong multiplication
-                    break;
-                }
-                // else if simdSize == 64 then above assert would check if baseline isa supported
-
-#if defined(TARGET_X86)
-                // TODO-XARCH-CQ: We need to support 64-bit CreateBroadcast
-                break;
-#endif // TARGET_X86
-            }
-
-            CORINFO_ARG_LIST_HANDLE arg1     = sig->args;
-            CORINFO_ARG_LIST_HANDLE arg2     = info.compCompHnd->getArgNext(arg1);
-            var_types               argType  = TYP_UNKNOWN;
-            CORINFO_CLASS_HANDLE    argClass = NO_CLASS_HANDLE;
-
-            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
-            op2     = getArgForHWIntrinsic(argType, argClass);
-
-            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg1, &argClass)));
-            op1     = getArgForHWIntrinsic(argType, argClass);
-
-            retNode = gtNewSimdBinOpNode(GT_MUL, retType, op1, op2, simdBaseJitType, simdSize);
             break;
         }
 

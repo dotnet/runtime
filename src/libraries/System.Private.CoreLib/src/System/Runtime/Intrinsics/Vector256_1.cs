@@ -324,10 +324,34 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> operator /(Vector256<T> left, Vector256<T> right)
         {
-            return Vector256.Create(
-                left._lower / right._lower,
-                left._upper / right._upper
-            );
+            if (Avx.IsSupported)
+            {
+                return XarchImpl(left, right);
+            }
+            return SoftwareImpl(left, right);
+
+            static Vector256<T> SoftwareImpl(Vector256<T> left, Vector256<T> right)
+            {
+                return Vector256.Create(
+                    left._lower / right._lower,
+                    left._upper / right._upper
+                );
+            }
+
+            [CompExactlyDependsOn(typeof(Avx))]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static Vector256<T> XarchImpl(Vector256<T> left, Vector256<T> right)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    return Avx.Divide(left.AsSingle(), right.AsSingle()).As<float, T>();
+                }
+                else if (typeof(T) == typeof(double))
+                {
+                    return Avx.Divide(left.AsDouble(), right.AsDouble()).As<double, T>();
+                }
+                return SoftwareImpl(left, right);
+            }
         }
 
         /// <summary>Divides a vector by a scalar to compute the per-element quotient.</summary>
@@ -336,13 +360,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>The quotient of <paramref name="left" /> divided by <paramref name="right" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<T> operator /(Vector256<T> left, T right)
-        {
-            return Vector256.Create(
-                left._lower / right,
-                left._upper / right
-            );
-        }
+        public static Vector256<T> operator /(Vector256<T> left, T right) => left / Vector256.Create(right);
 
         /// <summary>Compares two vectors to determine if all elements are equal.</summary>
         /// <param name="left">The vector to compare with <paramref name="right" />.</param>
@@ -451,10 +469,81 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> operator *(Vector256<T> left, Vector256<T> right)
         {
-            return Vector256.Create(
-                left._lower * right._lower,
-                left._upper * right._upper
-            );
+            if (Avx.IsSupported)
+            {
+                return XarchImpl(left, right);
+            }
+            return SoftwareImpl(left, right);
+
+            static Vector256<T> SoftwareImpl(Vector256<T> left, Vector256<T> right)
+            {
+                return Vector256.Create(
+                    left._lower * right._lower,
+                    left._upper * right._upper
+                );
+            }
+
+            [CompExactlyDependsOn(typeof(Avx))]
+            [CompExactlyDependsOn(typeof(Avx2))]
+            [CompExactlyDependsOn(typeof(Avx512BW.VL))]
+            [CompExactlyDependsOn(typeof(Avx512DQ.VL))]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static Vector256<T> XarchImpl(Vector256<T> left, Vector256<T> right)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    return Avx.Multiply(left.AsSingle(), right.AsSingle()).As<float, T>();
+                }
+                else if (typeof(T) == typeof(double))
+                {
+                    return Avx.Multiply(left.AsDouble(), right.AsDouble()).As<double, T>();
+                }
+                else if (Avx2.IsSupported)
+                {
+                    if (sizeof(T) == 1)
+                    {
+                        if (Avx512BW.VL.IsSupported)
+                        {
+                            Vector512<ushort> a = Avx512BW.ConvertToVector512UInt16(left.AsByte());
+                            Vector512<ushort> b = Avx512BW.ConvertToVector512UInt16(right.AsByte());
+
+                            Vector512<ushort> r = Avx512BW.MultiplyLow(a, b);
+
+                            return Avx512BW.ConvertToVector256Byte(r).As<byte, T>();
+                        }
+                        else
+                        {
+                            (Vector256<ushort> al, Vector256<ushort> ah) = Vector256.Widen(left.AsByte());
+                            (Vector256<ushort> bl, Vector256<ushort> bh) = Vector256.Widen(right.AsByte());
+
+                            Vector256<ushort> rl = Avx2.MultiplyLow(al, bl);
+                            Vector256<ushort> rh = Avx2.MultiplyLow(ah, bh);
+
+                            return Vector256.Narrow(rl, rh).As<byte, T>();
+                        }
+                    }
+                    else if (sizeof(T) == 2)
+                    {
+                        return Avx2.MultiplyLow(left.AsUInt16(), right.AsUInt16()).As<ushort, T>();
+                    }
+                    else if (sizeof(T) == 4)
+                    {
+                        return Avx2.MultiplyLow(left.AsUInt32(), right.AsUInt32()).As<uint, T>();
+                    }
+                    else if (sizeof(T) == 8)
+                    {
+                        if (Avx512DQ.VL.IsSupported)
+                        {
+                            return Avx512DQ.VL.MultiplyLow(left.AsUInt64(), right.AsUInt64()).As<ulong, T>();
+                        }
+                        else
+                        {
+                            // TODO-XARCH-CQ: We should support long/ulong multiplication.
+                        }
+                    }
+                }
+                return SoftwareImpl(left, right);
+            }
         }
 
         /// <summary>Multiplies a vector by a scalar to compute their product.</summary>
@@ -464,13 +553,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<T> operator *(Vector256<T> left, T right)
-        {
-            return Vector256.Create(
-                left._lower * right,
-                left._upper * right
-            );
-        }
+        public static Vector256<T> operator *(Vector256<T> left, T right) => left * Vector256.Create(right);
 
         /// <summary>Multiplies a vector by a scalar to compute their product.</summary>
         /// <param name="left">The scalar to multiply with <paramref name="right" />.</param>
@@ -478,7 +561,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>The product of <paramref name="left" /> and <paramref name="right" />.</returns>
         /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
-        public static Vector256<T> operator *(T left, Vector256<T> right) => right * left;
+        public static Vector256<T> operator *(T left, Vector256<T> right) => Vector256.Create(left) * right;
 
         /// <summary>Computes the ones-complement of a vector.</summary>
         /// <param name="vector">The vector whose ones-complement is to be computed.</param>

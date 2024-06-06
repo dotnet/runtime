@@ -506,10 +506,76 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<T> operator /(Vector128<T> left, Vector128<T> right)
         {
-            return Vector128.Create(
-                left._lower / right._lower,
-                left._upper / right._upper
-            );
+            if (AdvSimd.Arm64.IsSupported)
+            {
+                return ArmImpl(left, right);
+            }
+            else if (PackedSimd.IsSupported)
+            {
+                return WasmImpl(left, right);
+            }
+            else if (Sse.IsSupported)
+            {
+                return XarchImpl(left, right);
+            }
+            return SoftwareImpl(left, right);
+
+            [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static Vector128<T> ArmImpl(Vector128<T> left, Vector128<T> right)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    return AdvSimd.Arm64.Divide(left.AsSingle(), right.AsSingle()).As<float, T>();
+                }
+                else if (typeof(T) == typeof(double))
+                {
+                    return AdvSimd.Arm64.Divide(left.AsDouble(), right.AsDouble()).As<double, T>();
+                }
+                return SoftwareImpl(left, right);
+            }
+
+            static Vector128<T> SoftwareImpl(Vector128<T> left, Vector128<T> right)
+            {
+                return Vector128.Create(
+                    left._lower / right._lower,
+                    left._upper / right._upper
+                );
+            }
+
+            [CompExactlyDependsOn(typeof(PackedSimd))]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static Vector128<T> WasmImpl(Vector128<T> left, Vector128<T> right)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    return PackedSimd.Divide(left.AsSingle(), right.AsSingle()).As<float, T>();
+                }
+                else if (typeof(T) == typeof(double))
+                {
+                    return PackedSimd.Divide(left.AsDouble(), right.AsDouble()).As<double, T>();
+                }
+                return SoftwareImpl(left, right);
+            }
+
+            [CompExactlyDependsOn(typeof(Sse))]
+            [CompExactlyDependsOn(typeof(Sse2))]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static Vector128<T> XarchImpl(Vector128<T> left, Vector128<T> right)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    return Sse.Divide(left.AsSingle(), right.AsSingle()).As<float, T>();
+                }
+                else if (Sse2.IsSupported)
+                {
+                    if (typeof(T) == typeof(double))
+                    {
+                        return Sse2.Divide(left.AsDouble(), right.AsDouble()).As<double, T>();
+                    }
+                }
+                return SoftwareImpl(left, right);
+            }
         }
 
         /// <summary>Divides a vector by a scalar to compute the per-element quotient.</summary>
@@ -518,13 +584,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>The quotient of <paramref name="left" /> divided by <paramref name="right" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector128<T> operator /(Vector128<T> left, T right)
-        {
-            return Vector128.Create(
-                left._lower / right,
-                left._upper / right
-            );
-        }
+        public static Vector128<T> operator /(Vector128<T> left, T right) => left / Vector128.Create(right);
 
         /// <summary>Compares two vectors to determine if all elements are equal.</summary>
         /// <param name="left">The vector to compare with <paramref name="right" />.</param>
@@ -687,10 +747,190 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<T> operator *(Vector128<T> left, Vector128<T> right)
         {
-            return Vector128.Create(
-                left._lower * right._lower,
-                left._upper * right._upper
-            );
+            if (AdvSimd.IsSupported)
+            {
+                return ArmImpl(left, right);
+            }
+            else if (PackedSimd.IsSupported)
+            {
+                return WasmImpl(left, right);
+            }
+            else if (Sse.IsSupported)
+            {
+                return XarchImpl(left, right);
+            }
+            return SoftwareImpl(left, right);
+
+            [CompExactlyDependsOn(typeof(AdvSimd))]
+            [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static Vector128<T> ArmImpl(Vector128<T> left, Vector128<T> right)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    return AdvSimd.Multiply(left.AsSingle(), right.AsSingle()).As<float, T>();
+                }
+                else if (typeof(T) == typeof(double))
+                {
+                    if (AdvSimd.Arm64.IsSupported)
+                    {
+                        return AdvSimd.Arm64.Multiply(left.AsDouble(), right.AsDouble()).As<double, T>();
+                    }
+                }
+                else if (sizeof(T) == 1)
+                {
+                    return AdvSimd.Multiply(left.AsByte(), right.AsByte()).As<byte, T>();
+                }
+                else if (sizeof(T) == 2)
+                {
+                    return AdvSimd.Multiply(left.AsUInt16(), right.AsUInt16()).As<ushort, T>();
+                }
+                else if (sizeof(T) == 4)
+                {
+                    return AdvSimd.Multiply(left.AsUInt32(), right.AsUInt32()).As<uint, T>();
+                }
+                else if (sizeof(T) == 8)
+                {
+                    // TODO-ARM64-CQ: We should support long/ulong multiplication.
+                }
+                return SoftwareImpl(left, right);
+            }
+
+            static Vector128<T> SoftwareImpl(Vector128<T> left, Vector128<T> right)
+            {
+                return Vector128.Create(
+                    left._lower * right._lower,
+                    left._upper * right._upper
+                );
+            }
+
+            [CompExactlyDependsOn(typeof(PackedSimd))]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static Vector128<T> WasmImpl(Vector128<T> left, Vector128<T> right)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    return PackedSimd.Multiply(left.AsSingle(), right.AsSingle()).As<float, T>();
+                }
+                else if (typeof(T) == typeof(double))
+                {
+                    return PackedSimd.Multiply(left.AsDouble(), right.AsDouble()).As<double, T>();
+                }
+                else if (sizeof(T) == 1)
+                {
+                    (Vector128<ushort> al, Vector128<ushort> ah) = Vector128.Widen(left.AsByte());
+                    (Vector128<ushort> bl, Vector128<ushort> bh) = Vector128.Widen(right.AsByte());
+
+                    Vector128<ushort> rl = PackedSimd.Multiply(al, bl);
+                    Vector128<ushort> rh = PackedSimd.Multiply(ah, bh);
+
+                    return Vector128.Narrow(rl, rh).As<byte, T>();
+                }
+                else if (sizeof(T) == 2)
+                {
+                    return PackedSimd.Multiply(left.AsUInt16(), right.AsUInt16()).As<ushort, T>();
+                }
+                else if (sizeof(T) == 4)
+                {
+                    return PackedSimd.Multiply(left.AsUInt32(), right.AsUInt32()).As<uint, T>();
+                }
+                else if (sizeof(T) == 8)
+                {
+                    return PackedSimd.Multiply(left.AsUInt64(), right.AsUInt64()).As<ulong, T>();
+                }
+                return SoftwareImpl(left, right);
+            }
+
+            [CompExactlyDependsOn(typeof(Sse))]
+            [CompExactlyDependsOn(typeof(Sse2))]
+            [CompExactlyDependsOn(typeof(Sse41))]
+            [CompExactlyDependsOn(typeof(Avx2))]
+            [CompExactlyDependsOn(typeof(Avx512BW.VL))]
+            [CompExactlyDependsOn(typeof(Avx512DQ.VL))]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static Vector128<T> XarchImpl(Vector128<T> left, Vector128<T> right)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    return Sse.Multiply(left.AsSingle(), right.AsSingle()).As<float, T>();
+                }
+                else if (Sse2.IsSupported)
+                {
+                    if (typeof(T) == typeof(double))
+                    {
+                        return Sse2.Multiply(left.AsDouble(), right.AsDouble()).As<double, T>();
+                    }
+                    else if (sizeof(T) == 1)
+                    {
+                        if (Avx2.IsSupported)
+                        {
+                            Vector256<short> a = Avx2.ConvertToVector256Int16(left.AsByte());
+                            Vector256<short> b = Avx2.ConvertToVector256Int16(right.AsByte());
+
+                            Vector256<short> r = Avx2.MultiplyLow(a, b);
+
+                            if (Avx512BW.VL.IsSupported)
+                            {
+                                return Avx512BW.VL.ConvertToVector128Byte(r).As<byte, T>();
+                            }
+                            else
+                            {
+                                r = Avx2.And(r, Vector256.Create<short>(0x00FF));
+                                return Avx2.Permute4x64(Avx2.PackUnsignedSaturate(r, r).AsUInt64(), 0b11_01_10_00).GetLower().As<ulong, T>();
+                            }
+                        }
+                        else
+                        {
+                            (Vector128<ushort> al, Vector128<ushort> ah) = Vector128.Widen(left.AsByte());
+                            (Vector128<ushort> bl, Vector128<ushort> bh) = Vector128.Widen(right.AsByte());
+
+                            Vector128<ushort> rl = Sse2.MultiplyLow(al, bl);
+                            Vector128<ushort> rh = Sse2.MultiplyLow(ah, bh);
+
+                            return Vector128.Narrow(rl, rh).As<byte, T>();
+                        }
+                    }
+                    else if (sizeof(T) == 2)
+                    {
+                        return Sse2.MultiplyLow(left.AsUInt16(), right.AsUInt16()).As<ushort, T>();
+                    }
+                    else if (sizeof(T) == 4)
+                    {
+                        if (Sse41.IsSupported)
+                        {
+                            return Sse41.MultiplyLow(left.AsUInt32(), right.AsUInt32()).As<uint, T>();
+                        }
+                        else
+                        {
+                            Vector128<uint> al = left.AsUInt32();
+                            Vector128<uint> bl = right.AsUInt32();
+
+                            Vector128<uint> rl = Sse2.Multiply(al, bl).AsUInt32();
+                            rl = Sse2.Shuffle(rl, 0b00_00_10_00);
+
+                            Vector128<uint> ah = Sse2.ShiftRightLogical128BitLane(al, 4);
+                            Vector128<uint> bh = Sse2.ShiftRightLogical128BitLane(bl, 4);
+
+                            Vector128<uint> rh = Sse2.Multiply(ah, bh).AsUInt32();
+                            rh = Sse2.Shuffle(rh, 0b00_00_10_00);
+
+                            return Sse2.UnpackLow(rl, rh).As<uint, T>();
+                        }
+                    }
+                    else if (sizeof(T) == 8)
+                    {
+                        if (Avx512DQ.VL.IsSupported)
+                        {
+                            return Avx512DQ.VL.MultiplyLow(left.AsUInt64(), right.AsUInt64()).As<ulong, T>();
+                        }
+                        else
+                        {
+                            // TODO-XARCH-CQ: We should support long/ulong multiplication.
+                        }
+                    }
+                }
+                return SoftwareImpl(left, right);
+            }
         }
 
         /// <summary>Multiplies a vector by a scalar to compute their product.</summary>
@@ -700,13 +940,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector128<T> operator *(Vector128<T> left, T right)
-        {
-            return Vector128.Create(
-                left._lower * right,
-                left._upper * right
-            );
-        }
+        public static Vector128<T> operator *(Vector128<T> left, T right) => left * Vector128.Create(right);
 
         /// <summary>Multiplies a vector by a scalar to compute their product.</summary>
         /// <param name="left">The scalar to multiply with <paramref name="right" />.</param>
@@ -715,7 +949,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector128<T> operator *(T left, Vector128<T> right) => right * left;
+        public static Vector128<T> operator *(T left, Vector128<T> right) => Vector128.Create(left) * right;
 
         /// <summary>Computes the ones-complement of a vector.</summary>
         /// <param name="vector">The vector whose ones-complement is to be computed.</param>

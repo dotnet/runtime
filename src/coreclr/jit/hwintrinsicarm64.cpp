@@ -1026,32 +1026,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector64_op_Division:
-        case NI_Vector128_op_Division:
-        {
-            assert(sig->numArgs == 2);
-
-            if (!varTypeIsFloating(simdBaseType))
-            {
-                // We can't trivially handle division for integral types using SIMD
-                break;
-            }
-
-            CORINFO_ARG_LIST_HANDLE arg1     = sig->args;
-            CORINFO_ARG_LIST_HANDLE arg2     = info.compCompHnd->getArgNext(arg1);
-            var_types               argType  = TYP_UNKNOWN;
-            CORINFO_CLASS_HANDLE    argClass = NO_CLASS_HANDLE;
-
-            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
-            op2     = getArgForHWIntrinsic(argType, argClass);
-
-            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg1, &argClass)));
-            op1     = getArgForHWIntrinsic(argType, argClass);
-
-            retNode = gtNewSimdBinOpNode(GT_DIV, retType, op1, op2, simdBaseJitType, simdSize);
-            break;
-        }
-
         case NI_Vector64_Dot:
         case NI_Vector128_Dot:
         {
@@ -1614,32 +1588,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             op1 = impSIMDPopStack();
 
             retNode = gtNewSimdMinNode(retType, op1, op2, simdBaseJitType, simdSize);
-            break;
-        }
-
-        case NI_Vector64_op_Multiply:
-        case NI_Vector128_op_Multiply:
-        {
-            assert(sig->numArgs == 2);
-
-            if (varTypeIsLong(simdBaseType))
-            {
-                // TODO-ARM64-CQ: We should support long/ulong multiplication.
-                break;
-            }
-
-            CORINFO_ARG_LIST_HANDLE arg1     = sig->args;
-            CORINFO_ARG_LIST_HANDLE arg2     = info.compCompHnd->getArgNext(arg1);
-            var_types               argType  = TYP_UNKNOWN;
-            CORINFO_CLASS_HANDLE    argClass = NO_CLASS_HANDLE;
-
-            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
-            op2     = getArgForHWIntrinsic(argType, argClass);
-
-            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg1, &argClass)));
-            op1     = getArgForHWIntrinsic(argType, argClass);
-
-            retNode = gtNewSimdBinOpNode(GT_MUL, retType, op1, op2, simdBaseJitType, simdSize);
             break;
         }
 

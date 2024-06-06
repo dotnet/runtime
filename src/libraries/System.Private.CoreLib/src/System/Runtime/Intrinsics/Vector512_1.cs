@@ -326,10 +326,34 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector512<T> operator /(Vector512<T> left, Vector512<T> right)
         {
-            return Vector512.Create(
-                left._lower / right._lower,
-                left._upper / right._upper
-            );
+            if (Avx512F.IsSupported)
+            {
+                return XarchImpl(left, right);
+            }
+            return SoftwareImpl(left, right);
+
+            static Vector512<T> SoftwareImpl(Vector512<T> left, Vector512<T> right)
+            {
+                return Vector512.Create(
+                    left._lower / right._lower,
+                    left._upper / right._upper
+                );
+            }
+
+            [CompExactlyDependsOn(typeof(Avx512F))]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static Vector512<T> XarchImpl(Vector512<T> left, Vector512<T> right)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    return Avx512F.Divide(left.AsSingle(), right.AsSingle()).As<float, T>();
+                }
+                else if (typeof(T) == typeof(double))
+                {
+                    return Avx512F.Divide(left.AsDouble(), right.AsDouble()).As<double, T>();
+                }
+                return SoftwareImpl(left, right);
+            }
         }
 
         /// <summary>Divides a vector by a scalar to compute the per-element quotient.</summary>
@@ -338,13 +362,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>The quotient of <paramref name="left" /> divided by <paramref name="right" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector512<T> operator /(Vector512<T> left, T right)
-        {
-            return Vector512.Create(
-                left._lower / right,
-                left._upper / right
-            );
-        }
+        public static Vector512<T> operator /(Vector512<T> left, T right) => left / Vector512.Create(right);
 
         /// <summary>Compares two vectors to determine if all elements are equal.</summary>
         /// <param name="left">The vector to compare with <paramref name="right" />.</param>
@@ -455,10 +473,64 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector512<T> operator *(Vector512<T> left, Vector512<T> right)
         {
-            return Vector512.Create(
-                left._lower * right._lower,
-                left._upper * right._upper
-            );
+            if (Avx512F.IsSupported)
+            {
+                return XarchImpl(left, right);
+            }
+            return SoftwareImpl(left, right);
+
+            static Vector512<T> SoftwareImpl(Vector512<T> left, Vector512<T> right)
+            {
+                return Vector512.Create(
+                    left._lower * right._lower,
+                    left._upper * right._upper
+                );
+            }
+
+            [CompExactlyDependsOn(typeof(Avx512F))]
+            [CompExactlyDependsOn(typeof(Avx512BW))]
+            [CompExactlyDependsOn(typeof(Avx512DQ))]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static Vector512<T> XarchImpl(Vector512<T> left, Vector512<T> right)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    return Avx512F.Multiply(left.AsSingle(), right.AsSingle()).As<float, T>();
+                }
+                else if (typeof(T) == typeof(double))
+                {
+                    return Avx512F.Multiply(left.AsDouble(), right.AsDouble()).As<double, T>();
+                }
+                else if (sizeof(T) == 4)
+                {
+                    return Avx512F.MultiplyLow(left.AsUInt32(), right.AsUInt32()).As<uint, T>();
+                }
+                else if (sizeof(T) == 8)
+                {
+                    if (Avx512DQ.IsSupported)
+                    {
+                        return Avx512DQ.MultiplyLow(left.AsUInt64(), right.AsUInt64()).As<ulong, T>();
+                    }
+                }
+                else if (Avx512BW.IsSupported)
+                {
+                    if (sizeof(T) == 1)
+                    {
+                        (Vector512<ushort> al, Vector512<ushort> ah) = Vector512.Widen(left.AsByte());
+                        (Vector512<ushort> bl, Vector512<ushort> bh) = Vector512.Widen(right.AsByte());
+
+                        Vector512<ushort> rl = Avx512BW.MultiplyLow(al, bl);
+                        Vector512<ushort> rh = Avx512BW.MultiplyLow(ah, bh);
+
+                        return Vector512.Narrow(rl, rh).As<byte, T>();
+                    }
+                    else if (sizeof(T) == 2)
+                    {
+                        return Avx512BW.MultiplyLow(left.AsUInt16(), right.AsUInt16()).As<ushort, T>();
+                    }
+                }
+                return SoftwareImpl(left, right);
+            }
         }
 
         /// <summary>Multiplies a vector by a scalar to compute their product.</summary>
@@ -468,13 +540,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector512<T> operator *(Vector512<T> left, T right)
-        {
-            return Vector512.Create(
-                left._lower * right,
-                left._upper * right
-            );
-        }
+        public static Vector512<T> operator *(Vector512<T> left, T right) => left * Vector512.Create(right);
 
         /// <summary>Multiplies a vector by a scalar to compute their product.</summary>
         /// <param name="left">The scalar to multiply with <paramref name="right" />.</param>
@@ -482,7 +548,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>The product of <paramref name="left" /> and <paramref name="right" />.</returns>
         /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
-        public static Vector512<T> operator *(T left, Vector512<T> right) => right * left;
+        public static Vector512<T> operator *(T left, Vector512<T> right) => Vector512.Create(left) * right;
 
         /// <summary>Computes the ones-complement of a vector.</summary>
         /// <param name="vector">The vector whose ones-complement is to be computed.</param>
