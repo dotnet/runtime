@@ -13,7 +13,14 @@
 #ifndef _ARRAYNATIVE_H_
 #define _ARRAYNATIVE_H_
 
-#include "qcall.h"
+#include "fcall.h"
+
+class ArrayNative
+{
+public:
+    // This set of methods will set a value in an array
+    static FCDECL3(void, SetValue, ArrayBase* refThisUNSAFE, Object* objUNSAFE, INT_PTR flattenedIndex);
+};
 
 extern "C" void QCALLTYPE Array_CreateInstance(QCall::TypeHandle pTypeHnd, INT32 rank, INT32* pLengths, INT32* pBounds, BOOL createFromArrayType, QCall::ObjectHandleOnStack retArray);
 extern "C" PCODE QCALLTYPE Array_GetElementConstructorEntrypoint(QCall::TypeHandle pArrayTypeHnd);
