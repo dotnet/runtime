@@ -324,7 +324,7 @@ namespace System.Net.Sockets.Tests
                 if (sameProcess)
                 {
                     Task handlerCode = Task.Run(() => HandlerServerCode(_ipcPipeName));
-                    await RunCommonHostLogic(Environment.ProcessId);
+                    RunCommonHostLogic(Environment.ProcessId);
                     await handlerCode;
                 }
                 else
@@ -334,7 +334,7 @@ namespace System.Net.Sockets.Tests
                     // Since RunCommonHostLogic can throw, we need to make sure the server process is disposed
                     try
                     {
-                        await RunCommonHostLogic(hServerProc.Process.Id);
+                        RunCommonHostLogic(hServerProc.Process.Id);
                     }
                     finally
                     {
@@ -342,10 +342,8 @@ namespace System.Net.Sockets.Tests
                     }
                 }
 
-                async Task RunCommonHostLogic(int processId)
+                void RunCommonHostLogic(int processId)
                 {
-                    await Task.CompletedTask.ConfigureAwait(ConfigureAwaitOptions.ForceYielding);
-                    
                     pipeServerStream.WaitForConnection();
 
                     // Duplicate the socket:
