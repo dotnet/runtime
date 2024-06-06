@@ -46,6 +46,12 @@ char *mono_method_get_full_name (MonoMethod *method);
 #ifndef INVARIANT_TIMEZONE
 extern void mono_register_timezones_bundle (void);
 #endif /* INVARIANT_TIMEZONE */
+#ifdef WASM_SINGLE_FILE
+extern void mono_register_assemblies_bundle (void);
+#ifndef INVARIANT_GLOBALIZATION
+extern void mono_register_icu_bundle (void);
+#endif /* INVARIANT_GLOBALIZATION */
+#endif /* WASM_SINGLE_FILE */
 extern void mono_wasm_set_entrypoint_breakpoint (const char* assembly_name, int method_token);
 
 extern void mono_bundled_resources_add_assembly_resource (const char *id, const char *name, const uint8_t *data, uint32_t size, void (*free_func)(void *, void*), void *free_data);
@@ -221,6 +227,9 @@ mono_wasm_load_runtime (int debug_level)
 #ifndef INVARIANT_TIMEZONE
 	mono_register_timezones_bundle ();
 #endif /* INVARIANT_TIMEZONE */
+#ifdef WASM_SINGLE_FILE
+	mono_register_assemblies_bundle ();
+#endif
 
 	root_domain = mono_wasm_load_runtime_common (debug_level, wasm_trace_logger, interp_opts);
 

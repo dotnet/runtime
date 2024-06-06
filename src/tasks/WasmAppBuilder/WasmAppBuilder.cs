@@ -130,12 +130,12 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
         Log.LogMessage(MessageImportance.Low, $"Runtime assets output path {runtimeAssetsPath}");
 
         Directory.CreateDirectory(AppDir!);
+        Directory.CreateDirectory(runtimeAssetsPath);
 
         int baseDebugLevel = helper.GetDebugLevel(false);
 
         if (!IsSingleFileBundle)
         {
-            Directory.CreateDirectory(runtimeAssetsPath);
 
             if (UseWebcil)
                 Log.LogMessage(MessageImportance.Normal, "Converting assemblies to Webcil");
