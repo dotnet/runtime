@@ -307,8 +307,10 @@ namespace Mono.Linker
 			Debug.Assert (preserve != TypePreserve.Nothing);
 			if (!preserved_types.TryGetValue (type, out (TypePreserve preserve, bool applied) existing)) {
 				preserved_types.Add (type, (preserve, false));
-				var addedPending = pending_preserve.Add (type);
-				Debug.Assert (addedPending);
+				if (IsProcessed (type)) {
+					var addedPending = pending_preserve.Add (type);
+					Debug.Assert (addedPending);
+				}
 				return;
 			}
 			Debug.Assert (existing.preserve != TypePreserve.Nothing);
