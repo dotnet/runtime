@@ -1,12 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Reflection;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
+using System.Linq;
 using Xunit;
 using Microsoft.DotNet.XUnitExtensions;
+
+using System.Net.Test.Common;
 
 #if DEBUG
 namespace System.Net.Security.Tests
@@ -130,8 +134,7 @@ namespace System.Net.Security.Tests
         }
 
         [Theory]
-        [InlineData(SslProtocols.Tls12)]
-        [InlineData(SslProtocols.Tls13)]
+        [MemberData(nameof(SslProtocolsData))]
         public Task NoClientCert_DefaultValue_ResumeSucceeds(SslProtocols sslProtocol)
         {
             SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions
@@ -151,6 +154,25 @@ namespace System.Net.Security.Tests
             return ResumeSucceedsInternal(serverOptions, clientOptions);
         }
 
+        public static TheoryData<SslProtocols> SslProtocolsData()
+        {
+            var data = new TheoryData<SslProtocols>();
+
+            data.Add(SslProtocols.None);
+
+            if (PlatformDetection.SupportsTls12)
+            {
+                data.Add(SslProtocols.Tls12);
+            }
+
+            if (PlatformDetection.SupportsTls13)
+            {
+                data.Add(SslProtocols.Tls13);
+            }
+
+            return data;
+        }
+
         public enum ClientCertSource
         {
             ClientCertificate,
@@ -162,7 +184,7 @@ namespace System.Net.Security.Tests
         {
             var data = new TheoryData<SslProtocols, bool, ClientCertSource>();
 
-            foreach (SslProtocols protocol in new [] { SslProtocols.Tls12, SslProtocols.Tls13 })
+            foreach (SslProtocols protocol in SslProtocolsData().Select(x => x[0]))
             foreach (bool certRequired in new[] { true, false })
             foreach (ClientCertSource source in Enum.GetValues(typeof(ClientCertSource)))
             {
@@ -246,8 +268,7 @@ namespace System.Net.Security.Tests
         }
 
         [Theory]
-        [InlineData(SslProtocols.Tls12)]
-        [InlineData(SslProtocols.Tls13)]
+        [MemberData(nameof(SslProtocolsData))]
         public Task ClientChangeCert_NoResume(SslProtocols sslProtocol)
         {
             SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions
@@ -273,8 +294,7 @@ namespace System.Net.Security.Tests
         }
 
         [Theory]
-        [InlineData(SslProtocols.Tls12)]
-        [InlineData(SslProtocols.Tls13)]
+        [MemberData(nameof(SslProtocolsData))]
         public Task DifferentHost_NoResume(SslProtocols sslProtocol)
         {
             SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions
@@ -291,7 +311,7 @@ namespace System.Net.Security.Tests
                     RemoteCertificateValidationCallback = (sender, cert, chain, errors) => true,
                     ClientCertificateContext = SslStreamCertificateContext.Create(Configuration.Certificates.GetClientCertificate(), null, false)
                 };
-            
+
             return TestNoResumeAfterChange(serverOptions, clientOptions,
                 (clientOps, _) => clientOps.TargetHost = Guid.NewGuid().ToString("N"));
         }
@@ -311,7 +331,7 @@ namespace System.Net.Security.Tests
                     CertificateRevocationCheckMode = X509RevocationMode.NoCheck,
                     RemoteCertificateValidationCallback = (sender, cert, chain, errors) => true,
                 };
-            
+
             return TestNoResumeAfterChange(serverOptions, clientOptions,
                 (clientOps, _) => clientOps.EnabledSslProtocols = SslProtocols.None);
         }
@@ -330,7 +350,7 @@ namespace System.Net.Security.Tests
                     TargetHost = Guid.NewGuid().ToString("N"),
                     RemoteCertificateValidationCallback = (sender, cert, chain, errors) => true,
                 };
-            
+
             return TestNoResumeAfterChange(serverOptions, clientOptions,
                 (clientOps, _) => clientOps.CertificateRevocationCheckMode = X509RevocationMode.NoCheck);
         }
@@ -350,10 +370,10 @@ namespace System.Net.Security.Tests
                     CertificateRevocationCheckMode = X509RevocationMode.NoCheck,
                     RemoteCertificateValidationCallback = (sender, cert, chain, errors) => true,
                 };
-#pragma warning disable SYSLIB0040 // 'AllowNoEncryption' is obsolete 
+#pragma warning disable SYSLIB0040 // 'AllowNoEncryption' is obsolete
             return TestNoResumeAfterChange(serverOptions, clientOptions,
                 (clientOps, _) => clientOps.EncryptionPolicy = EncryptionPolicy.AllowNoEncryption);
-#pragma warning restore SYSLIB0040 // 'AllowNoEncryption' is obsolete 
+#pragma warning restore SYSLIB0040 // 'AllowNoEncryption' is obsolete
         }
 
         [Fact]
@@ -371,7 +391,7 @@ namespace System.Net.Security.Tests
                     CertificateRevocationCheckMode = X509RevocationMode.NoCheck,
                     RemoteCertificateValidationCallback = (sender, cert, chain, errors) => true,
                 };
-            
+
             return TestNoResumeAfterChange(serverOptions, clientOptions,
                 (clientOps, _) => clientOps.CipherSuitesPolicy = new CipherSuitesPolicy(new[] { TlsCipherSuite.TLS_AES_128_GCM_SHA256 }));
         }
