@@ -376,7 +376,7 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [MemberData(nameof(WriteTimeStamps_TheoryData))]
+        [MemberData(nameof(WriteTimeStamp_Pax_TheoryData))]
         public void WriteTimestampsInPax(DateTimeOffset timestamp)
         {
             string strTimestamp = GetTimestampStringFromDateTimeOffset(timestamp);

@@ -84,7 +84,7 @@ namespace System.Formats.Tar.Tests
             }
         }
 
-        public static IEnumerable<object[]> WriteTimeStamps_TheoryData()
+        public static IEnumerable<object[]> WriteTimeStamp_Pax_TheoryData()
         {
             foreach (DateTimeOffset timestamp in GetWriteTimeStamps(TarEntryFormat.Pax))
             {
