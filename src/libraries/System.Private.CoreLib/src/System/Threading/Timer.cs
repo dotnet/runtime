@@ -171,7 +171,7 @@ namespace System.Threading
         // need to look at the long list because the current time will be <= _currentAbsoluteThreshold.
         private const int ShortTimersThresholdMilliseconds = 333;
 
-        // Lock shared by the TimerQueue instances
+        // Lock shared by the TimerQueue and associated TimerQueueTimer instances
         internal Lock SharedLock { get; } = new Lock();
 
         // Fire any timers that have expired, and update the native timer to schedule the rest of them.
