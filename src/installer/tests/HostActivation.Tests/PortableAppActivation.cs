@@ -4,7 +4,6 @@
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.Runtime.InteropServices;
 
 using Microsoft.DotNet.Cli.Build.Framework;
 using Xunit;
