@@ -333,16 +333,17 @@ SingleTypeRegSet LinearScan::filterConsecutiveCandidatesForSpill(SingleTypeRegSe
     SingleTypeRegSet consecutiveResultForBusy = RBM_NONE;
     SingleTypeRegSet unprocessedRegs          = consecutiveCandidates;
     unsigned         regAvailableStartIndex = 0, regAvailableEndIndex = 0;
-    int              maxSpillRegs        = registersNeeded;
-    SingleTypeRegSet registersNeededMask = (1ULL << registersNeeded) - 1;
+    int              maxSpillRegs         = registersNeeded;
+    SingleTypeRegSet registersNeededMask  = (1ULL << registersNeeded) - 1;
+    SingleTypeRegSet availableFloatRegSet = m_AvailableRegs.GetFloatRegSet();
     do
     {
         // From LSB, find the first available register (bit `1`)
         regAvailableStartIndex = BitScanForward(unprocessedRegs);
 
         // For the current range, find how many registers are free vs. busy
-        regMaskTP maskForCurRange        = RBM_NONE;
-        bool      shouldCheckForRounding = false;
+        SingleTypeRegSet maskForCurRange        = RBM_NONE;
+        bool             shouldCheckForRounding = false;
         switch (registersNeeded)
         {
             case 2:
@@ -366,7 +367,7 @@ SingleTypeRegSet LinearScan::filterConsecutiveCandidatesForSpill(SingleTypeRegSe
         }
 
         maskForCurRange |= (registersNeededMask << regAvailableStartIndex);
-        maskForCurRange &= m_AvailableRegs;
+        maskForCurRange &= availableFloatRegSet;
 
         if (maskForCurRange != RBM_NONE)
         {
@@ -422,9 +423,7 @@ SingleTypeRegSet LinearScan::getConsecutiveCandidates(SingleTypeRegSet  allCandi
 {
     assert(compiler->info.compNeedsConsecutiveRegisters);
     assert(refPosition->isFirstRefPositionOfConsecutiveRegisters());
-    regMaskTP freeCandidates = allCandidates & m_AvailableRegs;
-    assert((freeCandidates.IsEmpty()) || (freeCandidates.getLow() & availableFloatRegs));
-    SingleTypeRegSet floatFreeCandidates = freeCandidates.getLow();
+    SingleTypeRegSet floatFreeCandidates = allCandidates & m_AvailableRegs.GetFloatRegSet();
 
 #ifdef DEBUG
     if (getStressLimitRegs() != LSRA_LIMIT_NONE)
@@ -489,7 +488,8 @@ SingleTypeRegSet LinearScan::getConsecutiveCandidates(SingleTypeRegSet  allCandi
             if (foundCount != 0)
             {
                 assert(firstRegNum != REG_NA);
-                regMaskTP remainingRegsMask = ((1ULL << (registersNeeded - foundCount)) - 1) << (firstRegNum - 1);
+                SingleTypeRegSet remainingRegsMask = ((1ULL << (registersNeeded - foundCount)) - 1)
+                                                     << (firstRegNum - 1);
 
                 if ((overallResult & remainingRegsMask) != RBM_NONE)
                 {
@@ -536,7 +536,7 @@ SingleTypeRegSet LinearScan::getConsecutiveCandidates(SingleTypeRegSet  allCandi
     *busyCandidates = consecutiveResultForBusy;
 
     // Check if we can further check better registers amoung consecutiveResultForBusy.
-    if ((m_AvailableRegs & overallResultForBusy) != RBM_NONE)
+    if ((m_AvailableRegs.GetFloatRegSet() & overallResultForBusy) != RBM_NONE)
     {
         // `overallResultForBusy` contains the mask of entire series that can be the consecutive candidates.
         // If there is an overlap of that with free registers, then try to find a series that will need least
@@ -549,13 +549,13 @@ SingleTypeRegSet LinearScan::getConsecutiveCandidates(SingleTypeRegSet  allCandi
         {
             *busyCandidates = optimalConsecutiveResultForBusy;
         }
-        else if ((m_AvailableRegs & consecutiveResultForBusy) != RBM_NONE)
+        else if ((m_AvailableRegs.GetFloatRegSet() & consecutiveResultForBusy) != RBM_NONE)
         {
             // We did not find free consecutive candidates, however we found some registers among the
             // `allCandidates` that are mix of free and busy. Since `busyCandidates` just has bit set for first
             // register of such series, return the mask that starts with free register, if possible. The busy
             // registers will be spilled during assignment of subsequent RefPosition.
-            *busyCandidates = (m_AvailableRegs.GetRegSetForType(TYP_FLOAT) & consecutiveResultForBusy);
+            *busyCandidates = (m_AvailableRegs.GetFloatRegSet() & consecutiveResultForBusy);
         }
     }
 

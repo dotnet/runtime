@@ -532,7 +532,7 @@ namespace System.Diagnostics
         /// <para>- Any registered <see cref="ActivityListener"/> with the <see cref="ActivityListener.ExceptionRecorder"/> callback that adds "exception.message", "exception.stacktrace", or "exception.type" tags
         /// will not have these tags overwritten, except by any subsequent <see cref="ActivityListener"/> that explicitly overwrites them.</para>
         /// </remarks>
-        public Activity AddException(Exception exception, TagList tags = default, DateTimeOffset timestamp = default)
+        public Activity AddException(Exception exception, in TagList tags = default, DateTimeOffset timestamp = default)
         {
             if (exception == null)
             {

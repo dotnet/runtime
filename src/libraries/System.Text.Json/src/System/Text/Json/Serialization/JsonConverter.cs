@@ -173,14 +173,14 @@ namespace System.Text.Json.Serialization
         /// </summary>
         internal bool IsInternalConverterForNumberType { get; init; }
 
-        internal static bool ShouldFlush(ref WriteStack state)
+        internal static bool ShouldFlush(ref WriteStack state, Utf8JsonWriter writer)
         {
             Debug.Assert(state.FlushThreshold == 0 || (state.PipeWriter is { CanGetUnflushedBytes: true }),
                 "ShouldFlush should only be called by resumable serializers, all of which use the PipeWriter abstraction with CanGetUnflushedBytes == true.");
             // If surpassed flush threshold then return true which will flush stream.
             if (state.PipeWriter is { } pipeWriter)
             {
-                return state.FlushThreshold > 0 && pipeWriter.UnflushedBytes > state.FlushThreshold;
+                return state.FlushThreshold > 0 && pipeWriter.UnflushedBytes > state.FlushThreshold - writer.BytesPending;
             }
 
             return false;

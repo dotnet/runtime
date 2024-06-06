@@ -7679,6 +7679,28 @@ UINT_PTR GetEstablisherFrame(REGDISPLAY* pvRegDisplay, ExInfo* exInfo)
 #endif
 }
 
+size_t GetSSPForFrameOnCurrentStack(CONTEXT *pContext)
+{
+    size_t *targetSSP = 0;
+
+#if defined(HOST_AMD64) && defined(HOST_WINDOWS)
+    targetSSP = (size_t *)_rdsspq();
+    // Find the shadow stack pointer for the frame we are going to restore to.
+    // The SSP we search is pointing to the return address of the frame represented
+    // by the passed in context. So we search for the instruction pointer from 
+    // the context and return one slot up from there.
+    if (targetSSP != NULL)
+    {
+        size_t ip = GetIP(pContext);
+        while (*targetSSP++ != ip)
+        {
+        }
+    }
+#endif // HOST_AMD64 && HOST_WINDOWS
+
+    return (size_t)targetSSP;
+}
+
 extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptionObj, BYTE* pHandlerIP, REGDISPLAY* pvRegDisplay, ExInfo* exInfo)
 {
     QCALL_CONTRACT;
@@ -7695,6 +7717,7 @@ extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptio
     exInfo->m_ScannedStackRange.ExtendUpperBound(exInfo->m_frameIter.m_crawl.GetRegisterSet()->SP);
     DWORD_PTR dwResumePC = 0;
     UINT_PTR callerTargetSp = 0;
+    size_t targetSSP = GetSSPForFrameOnCurrentStack(pvRegDisplay->pCurrentContext);
 
     if (pHandlerIP != NULL)
     {
@@ -7815,13 +7838,13 @@ extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptio
             SetIP(pvRegDisplay->pCurrentContext, uAbortAddr);
         }
 
-        ClrRestoreNonvolatileContext(pvRegDisplay->pCurrentContext);
+        ClrRestoreNonvolatileContext(pvRegDisplay->pCurrentContext, targetSSP);
     }
     else
     {
         if (fIntercepted)
         {
-            ClrRestoreNonvolatileContext(pvRegDisplay->pCurrentContext);
+            ClrRestoreNonvolatileContext(pvRegDisplay->pCurrentContext, targetSSP);
         }
 #ifdef HOST_UNIX
         if (propagateExceptionCallback)
@@ -7831,13 +7854,20 @@ extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptio
 
             UpdateContextForPropagationCallback(propagateExceptionCallback, propagateExceptionContext, pvRegDisplay->pCurrentContext);
             GCX_PREEMP_NO_DTOR();
-            ClrRestoreNonvolatileContext(pvRegDisplay->pCurrentContext);
+            ClrRestoreNonvolatileContext(pvRegDisplay->pCurrentContext, targetSSP);
         }
 #endif // HOST_UNIX
         // Throw exception from the caller context
 #if defined(HOST_AMD64)
         ULONG64* returnAddress = (ULONG64*)targetSp;
         *returnAddress = pvRegDisplay->pCurrentContext->Rip;
+#ifdef HOST_WINDOWS
+        if (targetSSP != 0)
+        {
+            targetSSP -= sizeof(size_t);
+            _wrssq(pvRegDisplay->pCurrentContext->Rip, (void*)targetSSP);
+        }
+#endif // HOST_WINDOWS
 #elif defined(HOST_X86)
         ULONG32* returnAddress = (ULONG32*)targetSp;
         *returnAddress = pvRegDisplay->pCurrentContext->Eip;
@@ -7872,7 +7902,7 @@ extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptio
 
         pvRegDisplay->pCurrentContext->FIRST_ARG_REG = (size_t)OBJECTREFToObject(exceptionObj.Get());
 #undef FIRST_ARG_REG
-        ClrRestoreNonvolatileContext(pvRegDisplay->pCurrentContext);
+        ClrRestoreNonvolatileContext(pvRegDisplay->pCurrentContext, targetSSP);
     }
     END_QCALL;
     return NULL;
@@ -7918,8 +7948,10 @@ extern "C" void QCALLTYPE ResumeAtInterceptionLocation(REGDISPLAY* pvRegDisplay)
     _ASSERTE(FitsIn<DWORD>(ulRelOffset));
     uResumePC = codeInfo.GetJitManager()->GetCodeAddressForRelOffset(codeInfo.GetMethodToken(), static_cast<DWORD>(ulRelOffset));
 
+    size_t targetSSP = GetSSPForFrameOnCurrentStack(pvRegDisplay->pCurrentContext);
+
     SetIP(pvRegDisplay->pCurrentContext, uResumePC);
-    ClrRestoreNonvolatileContext(pvRegDisplay->pCurrentContext);
+    ClrRestoreNonvolatileContext(pvRegDisplay->pCurrentContext, targetSSP);
 }
 
 extern "C" void QCALLTYPE CallFinallyFunclet(BYTE* pHandlerIP, REGDISPLAY* pvRegDisplay, ExInfo* exInfo)

@@ -1551,11 +1551,10 @@ public:
 
     inline WORD GetNumIntroducedInstanceFields();
 
-    // Note: This flag MUST be available even from an unrestored MethodTable - see GcScanRoots in siginfo.cpp.
-    DWORD           ContainsPointers()
+    BOOL           ContainsPointers()
     {
         LIMITED_METHOD_CONTRACT;
-        return GetFlag(enum_flag_ContainsPointers);
+        return !!GetFlag(enum_flag_ContainsPointers);
     }
 
     BOOL            Collectible()
@@ -3375,32 +3374,24 @@ private:
 
         enum_flag_Category_ElementTypeMask  = 0x000E0000, // bits that matter for element type mask
 
-
-        // GC depends on this bit
-        enum_flag_HasFinalizer                = 0x00100000, // instances require finalization
-
-        enum_flag_IDynamicInterfaceCastable   = 0x10000000, // class implements IDynamicInterfaceCastable interface
-
+        enum_flag_HasFinalizer                = 0x00100000, // instances require finalization. GC depends on this bit.
+        enum_flag_Collectible                 = 0x00200000, // GC depends on this bit.
         enum_flag_ICastable                   = 0x00400000, // class implements ICastable interface
 
 #ifdef FEATURE_64BIT_ALIGNMENT
         enum_flag_RequiresAlign8              = 0x00800000, // Type requires 8-byte alignment (only set on platforms that require this and don't get it implicitly)
 #endif
 
-        enum_flag_ContainsPointers            = 0x01000000,
-
+        enum_flag_ContainsPointers            = 0x01000000, // Contains object references
         enum_flag_HasTypeEquivalence          = 0x02000000, // can be equivalent to another type
+        enum_flag_IsTrackedReferenceWithFinalizer = 0x04000000,
+        // unused                             = 0x08000000,
 
-        enum_flag_IsTrackedReferenceWithFinalizer   = 0x04000000,
-
-        // GC depends on this bit
-        enum_flag_Collectible                 = 0x00200000,
-        enum_flag_ContainsGenericVariables    = 0x20000000,   // we cache this flag to help detect these efficiently and
-                                                              // to detect this condition when restoring
-
+        enum_flag_IDynamicInterfaceCastable   = 0x10000000, // class implements IDynamicInterfaceCastable interface
+        enum_flag_ContainsGenericVariables    = 0x20000000, // we cache this flag to help detect these efficiently and
+                                                            // to detect this condition when restoring
         enum_flag_ComObject                   = 0x40000000, // class is a com object
-
-        enum_flag_HasComponentSize            = 0x80000000,   // This is set if component size is used for flags.
+        enum_flag_HasComponentSize            = 0x80000000, // This is set if component size is used for flags.
 
         // Types that require non-trivial interface cast have this bit set in the category
         enum_flag_NonTrivialInterfaceCast   =  enum_flag_Category_Array
