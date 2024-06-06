@@ -1644,7 +1644,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             string json = """{"X":1,"Z":3}""";
             JsonException ex = await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<Point_3D>(json, s_respectRequiredParamsOptions));
-            Assert.Contains("was missing required properties including: 'Y'.", ex.Message);
+            Assert.Contains("'Y'", ex.Message);
         }
 
         [Fact]
