@@ -941,7 +941,3 @@ void pal::mutex_t::unlock()
 {
     ::LeaveCriticalSection(&_impl);
 }
-
-void pal::initialize_createdump()
-{
-}

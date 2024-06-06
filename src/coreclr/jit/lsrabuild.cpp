@@ -600,7 +600,7 @@ RefPosition* LinearScan::newRefPosition(Interval*        theInterval,
 
     if (insertFixedRef)
     {
-        regNumber    physicalReg = genRegNumFromMask(mask);
+        regNumber    physicalReg = genRegNumFromMask(mask, theInterval->registerType);
         RefPosition* pos         = newRefPosition(physicalReg, theLocation, RefTypeFixedReg, nullptr, mask);
         assert(theInterval != nullptr);
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
@@ -851,15 +851,23 @@ regMaskTP LinearScan::getKillSetForCall(GenTreeCall* call)
     if (!compiler->compFloatingPointUsed)
     {
 #if defined(TARGET_XARCH)
-        killMask &= ~(RBM_FLT_CALLEE_TRASH | RBM_MSK_CALLEE_TRASH);
+
+#ifdef TARGET_AMD64
+        killMask.RemoveRegsetForType(RBM_FLT_CALLEE_TRASH.getLow(), FloatRegisterType);
+        killMask.RemoveRegsetForType(RBM_MSK_CALLEE_TRASH.getLow(), MaskRegisterType);
 #else
-        killMask &= ~RBM_FLT_CALLEE_TRASH;
+        killMask.RemoveRegsetForType(RBM_FLT_CALLEE_TRASH, FloatRegisterType);
+        killMask &= ~RBM_MSK_CALLEE_TRASH;
+#endif // TARGET_AMD64
+
+#else
+        killMask.RemoveRegsetForType(RBM_FLT_CALLEE_TRASH, FloatRegisterType);
 #endif // TARGET_XARCH
     }
 #ifdef TARGET_ARM
     if (call->IsVirtualStub())
     {
-        killMask |= compiler->virtualStubParamInfo->GetRegMask();
+        killMask.AddGprRegs(compiler->virtualStubParamInfo->GetRegMask());
     }
 #else  // !TARGET_ARM
     // Verify that the special virtual stub call registers are in the kill mask.
@@ -875,7 +883,7 @@ regMaskTP LinearScan::getKillSetForCall(GenTreeCall* call)
     // so don't use the register post-call until it is consumed by SwiftError.
     if (call->HasSwiftErrorHandling())
     {
-        killMask |= RBM_SWIFT_ERROR;
+        killMask.AddGprRegs(RBM_SWIFT_ERROR);
     }
 #endif // SWIFT_SUPPORT
 
@@ -911,7 +919,7 @@ regMaskTP LinearScan::getKillSetForBlockStore(GenTreeBlk* blkNode)
             if (isCopyBlk)
             {
                 // rep movs kills RCX, RDI and RSI
-                killMask = RBM_RCX | RBM_RDI | RBM_RSI;
+                killMask.AddGprRegs(RBM_RCX | RBM_RDI | RBM_RSI);
             }
             else
             {
@@ -919,7 +927,7 @@ regMaskTP LinearScan::getKillSetForBlockStore(GenTreeBlk* blkNode)
                 // (Note that the Data() node, if not constant, will be assigned to
                 // RCX, but it's find that this kills it, as the value is not available
                 // after this node in any case.)
-                killMask = RBM_RDI | RBM_RCX;
+                killMask.AddGprRegs(RBM_RDI | RBM_RCX);
             }
             break;
 #endif
@@ -1113,7 +1121,7 @@ bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLo
 {
     bool insertedKills = false;
 
-    if (killMask != RBM_NONE)
+    if (killMask.IsNonEmpty())
     {
         addKillForRegs(killMask, currentLoc);
 
@@ -1847,10 +1855,7 @@ void LinearScan::buildRefPositionsForNode(GenTree* tree, LsraLocation currentLoc
                 // {eax,edx} are getting killed before the def of GT_DIV.  For this reason, minRegCount for
                 // the use position of v02 also needs to take into account the kill set of its consuming node.
                 regMaskTP killMask = getKillSetForNode(tree);
-                if (killMask != RBM_NONE)
-                {
-                    minRegCountForRef += genCountBits(killMask);
-                }
+                minRegCountForRef += genCountBits(killMask);
             }
             else if ((newRefPosition->refType) == RefTypeDef && (newRefPosition->getInterval()->isSpecialPutArg))
             {
@@ -2117,12 +2122,12 @@ void LinearScan::UpdateRegStateForStructArg(LclVarDsc* argDsc)
         if ((genRegMask(argDsc->GetArgReg()) & RBM_ALLFLOAT) != RBM_NONE)
         {
             assert((genRegMask(argDsc->GetArgReg()) & RBM_FLTARG_REGS) != RBM_NONE);
-            floatRegState->rsCalleeRegArgMaskLiveIn |= genRegMask(argDsc->GetArgReg());
+            floatRegState->rsCalleeRegArgMaskLiveIn.AddRegNumInMask(argDsc->GetArgReg());
         }
         else
         {
             assert((genRegMask(argDsc->GetArgReg()) & fullIntArgRegMask(compiler->info.compCallConv)) != RBM_NONE);
-            intRegState->rsCalleeRegArgMaskLiveIn |= genRegMask(argDsc->GetArgReg());
+            intRegState->rsCalleeRegArgMaskLiveIn.AddRegNumInMask(argDsc->GetArgReg());
         }
     }
 
@@ -2131,12 +2136,12 @@ void LinearScan::UpdateRegStateForStructArg(LclVarDsc* argDsc)
         if (genRegMask(argDsc->GetOtherArgReg()) & (RBM_ALLFLOAT))
         {
             assert(genRegMask(argDsc->GetOtherArgReg()) & (RBM_FLTARG_REGS));
-            floatRegState->rsCalleeRegArgMaskLiveIn |= genRegMask(argDsc->GetOtherArgReg());
+            floatRegState->rsCalleeRegArgMaskLiveIn.AddRegNumInMask(argDsc->GetOtherArgReg());
         }
         else
         {
             assert((genRegMask(argDsc->GetOtherArgReg()) & fullIntArgRegMask(compiler->info.compCallConv)) != RBM_NONE);
-            intRegState->rsCalleeRegArgMaskLiveIn |= genRegMask(argDsc->GetOtherArgReg());
+            intRegState->rsCalleeRegArgMaskLiveIn.AddRegNumInMask(argDsc->GetOtherArgReg());
         }
     }
 }
@@ -2388,7 +2393,7 @@ void LinearScan::buildIntervals()
     // If there is a secret stub param, it is also live in
     if (compiler->info.compPublishStubParam)
     {
-        intRegState->rsCalleeRegArgMaskLiveIn |= RBM_SECRET_STUB_PARAM;
+        intRegState->rsCalleeRegArgMaskLiveIn.AddGprRegs(RBM_SECRET_STUB_PARAM);
 
         LclVarDsc* stubParamDsc = compiler->lvaGetDesc(compiler->lvaStubArgumentVar);
         if (isCandidateVar(stubParamDsc))
@@ -2543,7 +2548,8 @@ void LinearScan::buildIntervals()
             killed = RBM_EDI | RBM_ECX | RBM_EAX;
 #else
             // Poisoning uses REG_SCRATCH for small vars and memset helper for big vars.
-            killed = genRegMask(REG_SCRATCH) | compiler->compHelperCallKillSet(CORINFO_HELP_NATIVE_MEMSET);
+            killed = compiler->compHelperCallKillSet(CORINFO_HELP_NATIVE_MEMSET);
+            killed.AddRegNumInMask(REG_SCRATCH);
 #endif
             addKillForRegs(killed, currentLoc + 1);
             currentLoc += 2;
@@ -2825,14 +2831,29 @@ void LinearScan::buildIntervals()
         availableRegCount = REG_INT_COUNT;
     }
 
-    if (availableRegCount < (sizeof(regMaskTP) * 8))
+#ifdef HAS_MORE_THAN_64_REGISTERS
+    static_assert((sizeof(regMaskTP) == 2 * sizeof(regMaskSmall)), "check the size of regMaskTP");
+#else
+    static_assert((sizeof(regMaskTP) == sizeof(regMaskSmall)), "check the size of regMaskTP");
+#endif
+
+    if (availableRegCount < (sizeof(regMaskSmall) * 8))
     {
-        // Mask out the bits that are between 64 ~ availableRegCount
-        actualRegistersMask = (1ULL << availableRegCount) - 1;
+        // Mask out the bits that are between (8 * regMaskSmall) ~ availableRegCount
+        actualRegistersMask = regMaskTP((1ULL << availableRegCount) - 1);
     }
+#ifdef HAS_MORE_THAN_64_REGISTERS
+    else if (availableRegCount < (sizeof(regMaskTP) * 8))
+    {
+        // Mask out the bits that are between (8 * regMaskTP) ~ availableRegCount
+        // Subtract one extra for stack.
+        unsigned topRegCount = availableRegCount - sizeof(regMaskSmall) * 8 - 1;
+        actualRegistersMask  = regMaskTP(~RBM_NONE, (1ULL << topRegCount) - 1);
+    }
+#endif
     else
     {
-        actualRegistersMask = ~RBM_NONE;
+        actualRegistersMask = regMaskTP(~RBM_NONE, ~0);
     }
 
 #ifdef DEBUG
@@ -2872,7 +2893,7 @@ void LinearScan::buildInitialParamDef(const LclVarDsc* varDsc, regNumber paramRe
         assert(paramReg < REG_COUNT);
         mask = genSingleTypeRegMask(paramReg);
         assignPhysReg(paramReg, interval);
-        INDEBUG(registersToDump |= getRegMask(paramReg, interval->registerType));
+        INDEBUG(registersToDump.AddRegNum(paramReg, interval->registerType));
     }
     RefPosition* pos = newRefPosition(interval, MinLocation, RefTypeParamDef, nullptr, mask);
     pos->setRegOptional(true);
@@ -3061,7 +3082,8 @@ RefPosition* LinearScan::BuildDef(GenTree* tree, SingleTypeRegSet dstCandidates,
 
     if (dstCandidates != RBM_NONE)
     {
-        assert((tree->GetRegNum() == REG_NA) || (dstCandidates == genRegMask(tree->GetRegByIndex(multiRegIdx))));
+        assert((tree->GetRegNum() == REG_NA) ||
+               (dstCandidates == genSingleTypeRegMask(tree->GetRegByIndex(multiRegIdx))));
     }
 
     RegisterType type;
@@ -3084,7 +3106,7 @@ RefPosition* LinearScan::BuildDef(GenTree* tree, SingleTypeRegSet dstCandidates,
     {
         if (!tree->IsMultiRegNode() || (multiRegIdx == 0))
         {
-            assert((dstCandidates == RBM_NONE) || (dstCandidates == genRegMask(tree->GetRegNum())));
+            assert((dstCandidates == RBM_NONE) || (dstCandidates == genSingleTypeRegMask(tree->GetRegNum())));
             dstCandidates = genSingleTypeRegMask(tree->GetRegNum());
         }
         else
@@ -3219,7 +3241,7 @@ void LinearScan::BuildKills(GenTree* tree, regMaskTP killMask)
     // Call this even when killMask is RBM_NONE, as we have to check for some special cases
     buildKillPositionsForNode(tree, currentLoc + 1, killMask);
 
-    if (killMask != RBM_NONE)
+    if (killMask.IsNonEmpty())
     {
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
         // Build RefPositions to account for the fact that, even in a callee-save register, the upper half of any large
@@ -3323,7 +3345,7 @@ void LinearScan::BuildDefWithKills(GenTree* tree, int dstCount, SingleTypeRegSet
 void LinearScan::BuildCallDefsWithKills(GenTree* tree, int dstCount, regMaskTP dstCandidates, regMaskTP killMask)
 {
     assert(dstCount > 0);
-    assert(dstCandidates != RBM_NONE);
+    assert(dstCandidates.IsNonEmpty());
 
     // Build the kill RefPositions
     BuildKills(tree, killMask);
@@ -3353,7 +3375,7 @@ void LinearScan::UpdatePreferencesOfDyingLocal(Interval* interval)
     // _after_ the call, then we are going to prefer callee-saved registers for
     // such local anyway, so there is no need to look at such local uses.
     //
-    if (placedArgRegs == RBM_NONE)
+    if (placedArgRegs.IsEmpty())
     {
         return;
     }
@@ -4389,7 +4411,7 @@ int LinearScan::BuildPutArgReg(GenTreeUnOp* node)
     RefPosition*     use     = BuildUse(op1, argMask);
 
     // Record that this register is occupied by a register now.
-    placedArgRegs |= argMask;
+    placedArgRegs.AddRegNumInMask(argReg);
 
     if (supportsSpecialPutArg() && isCandidateLocalRef(op1) && ((op1->gtFlags & GTF_VAR_DEATH) == 0))
     {

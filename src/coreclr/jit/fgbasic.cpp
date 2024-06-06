@@ -1400,10 +1400,6 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             case NI_Vector3_Create:
                             case NI_Vector3_CreateBroadcast:
                             case NI_Vector3_CreateFromVector2:
-                            case NI_Vector4_Create:
-                            case NI_Vector4_CreateBroadcast:
-                            case NI_Vector4_CreateFromVector2:
-                            case NI_Vector4_CreateFromVector3:
                             case NI_Vector128_Create:
                             case NI_Vector128_CreateScalar:
                             case NI_Vector128_CreateScalarUnsafe:
@@ -1630,82 +1626,6 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                                 break;
                             }
 
-#if defined(FEATURE_HW_INTRINSICS)
-#if defined(TARGET_ARM64)
-                            case NI_Vector64_As:
-                            case NI_Vector64_AsByte:
-                            case NI_Vector64_AsDouble:
-                            case NI_Vector64_AsInt16:
-                            case NI_Vector64_AsInt32:
-                            case NI_Vector64_AsInt64:
-                            case NI_Vector64_AsNInt:
-                            case NI_Vector64_AsNUInt:
-                            case NI_Vector64_AsSByte:
-                            case NI_Vector64_AsSingle:
-                            case NI_Vector64_AsUInt16:
-                            case NI_Vector64_AsUInt32:
-                            case NI_Vector64_AsUInt64:
-                            case NI_Vector64_op_UnaryPlus:
-#endif // TARGET_XARCH
-                            case NI_Vector128_As:
-                            case NI_Vector128_AsByte:
-                            case NI_Vector128_AsDouble:
-                            case NI_Vector128_AsInt16:
-                            case NI_Vector128_AsInt32:
-                            case NI_Vector128_AsInt64:
-                            case NI_Vector128_AsNInt:
-                            case NI_Vector128_AsNUInt:
-                            case NI_Vector128_AsSByte:
-                            case NI_Vector128_AsSingle:
-                            case NI_Vector128_AsUInt16:
-                            case NI_Vector128_AsUInt32:
-                            case NI_Vector128_AsUInt64:
-                            case NI_Vector128_AsVector4:
-                            case NI_Vector128_op_UnaryPlus:
-                            case NI_VectorT_As:
-                            case NI_VectorT_AsVectorByte:
-                            case NI_VectorT_AsVectorDouble:
-                            case NI_VectorT_AsVectorInt16:
-                            case NI_VectorT_AsVectorInt32:
-                            case NI_VectorT_AsVectorInt64:
-                            case NI_VectorT_AsVectorNInt:
-                            case NI_VectorT_AsVectorNUInt:
-                            case NI_VectorT_AsVectorSByte:
-                            case NI_VectorT_AsVectorSingle:
-                            case NI_VectorT_AsVectorUInt16:
-                            case NI_VectorT_AsVectorUInt32:
-                            case NI_VectorT_AsVectorUInt64:
-                            case NI_VectorT_op_UnaryPlus:
-#if defined(TARGET_XARCH)
-                            case NI_Vector256_As:
-                            case NI_Vector256_AsByte:
-                            case NI_Vector256_AsDouble:
-                            case NI_Vector256_AsInt16:
-                            case NI_Vector256_AsInt32:
-                            case NI_Vector256_AsInt64:
-                            case NI_Vector256_AsNInt:
-                            case NI_Vector256_AsNUInt:
-                            case NI_Vector256_AsSByte:
-                            case NI_Vector256_AsSingle:
-                            case NI_Vector256_AsUInt16:
-                            case NI_Vector256_AsUInt32:
-                            case NI_Vector256_AsUInt64:
-                            case NI_Vector256_op_UnaryPlus:
-                            case NI_Vector512_As:
-                            case NI_Vector512_AsByte:
-                            case NI_Vector512_AsDouble:
-                            case NI_Vector512_AsInt16:
-                            case NI_Vector512_AsInt32:
-                            case NI_Vector512_AsInt64:
-                            case NI_Vector512_AsNInt:
-                            case NI_Vector512_AsNUInt:
-                            case NI_Vector512_AsSByte:
-                            case NI_Vector512_AsSingle:
-                            case NI_Vector512_AsUInt16:
-                            case NI_Vector512_AsUInt32:
-                            case NI_Vector512_AsUInt64:
-#endif // TARGET_XARCH
-#endif // FEATURE_HW_INTRINSICS
                             case NI_SRCS_UNSAFE_As:
                             case NI_SRCS_UNSAFE_AsRef:
                             case NI_SRCS_UNSAFE_BitCast:
@@ -1724,27 +1644,16 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
 #if defined(TARGET_ARM64)
                             case NI_Vector64_get_AllBitsSet:
                             case NI_Vector64_get_One:
-                            case NI_Vector64_get_Zero:
 #endif // TARGET_ARM64
-                            case NI_Vector2_get_One:
-                            case NI_Vector2_get_Zero:
-                            case NI_Vector3_get_One:
-                            case NI_Vector3_get_Zero:
-                            case NI_Vector4_get_One:
-                            case NI_Vector4_get_Zero:
                             case NI_Vector128_get_AllBitsSet:
                             case NI_Vector128_get_One:
-                            case NI_Vector128_get_Zero:
                             case NI_VectorT_get_AllBitsSet:
                             case NI_VectorT_get_One:
-                            case NI_VectorT_get_Zero:
 #if defined(TARGET_XARCH)
                             case NI_Vector256_get_AllBitsSet:
                             case NI_Vector256_get_One:
-                            case NI_Vector256_get_Zero:
                             case NI_Vector512_get_AllBitsSet:
                             case NI_Vector512_get_One:
-                            case NI_Vector512_get_Zero:
 #endif // TARGET_XARCH
 #endif // FEATURE_HW_INTRINSICS
                             {

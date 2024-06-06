@@ -687,7 +687,7 @@ public:
         // unused                       = 0x00000010,
         TSNC_BlockedForShutdown         = 0x00000020, // Thread is blocked in WaitForEndOfShutdown.  We should not hit WaitForEndOfShutdown again.
         // unused                       = 0x00000040,
-        TSNC_CLRCreatedThread           = 0x00000080, // The thread was created through Thread::CreateNewThread
+        // unused                       = 0x00000080,
         TSNC_ExistInThreadStore         = 0x00000100, // For dtor to know if it needs to be removed from ThreadStore
         // unused                       = 0x00000200,
         TSNC_OwnsSpinLock               = 0x00000400, // The thread owns a spinlock.
@@ -717,7 +717,7 @@ public:
                                                       // effort.
                                                       //
                                                       // Once we are completely independent of the OS UEF, we could remove this.
-        TSNC_InsideSyncContextWait      = 0x02000000, // Whether we are inside DoSyncContextWait
+        // unused                       = 0x02000000,
         TSNC_DebuggerSleepWaitJoin      = 0x04000000, // Indicates to the debugger that this thread is in a sleep wait or join state
                                                       // This almost mirrors the TS_Interruptible state however that flag can change
                                                       // during GC-preemptive mode whereas this one cannot.
@@ -5771,7 +5771,7 @@ private:
 #if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
 EXTERN_C void STDCALL ClrRestoreNonvolatileContextWorker(PCONTEXT ContextRecord, DWORD64 ssp);
 #endif
-void ClrRestoreNonvolatileContext(PCONTEXT ContextRecord);
+void ClrRestoreNonvolatileContext(PCONTEXT ContextRecord, size_t targetSSP = 0);
 #endif // DACCESS_COMPILE
 
 #endif //__threads_h__
