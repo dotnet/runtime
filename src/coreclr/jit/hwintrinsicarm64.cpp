@@ -534,27 +534,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
     switch (intrinsic)
     {
-        case NI_Vector64_Abs:
-        case NI_Vector128_Abs:
-        {
-            assert(sig->numArgs == 1);
-            op1     = impSIMDPopStack();
-            retNode = gtNewSimdAbsNode(retType, op1, simdBaseJitType, simdSize);
-            break;
-        }
-
-        case NI_Vector64_AndNot:
-        case NI_Vector128_AndNot:
-        {
-            assert(sig->numArgs == 2);
-
-            op2 = impSIMDPopStack();
-            op1 = impSIMDPopStack();
-
-            retNode = gtNewSimdBinOpNode(GT_AND_NOT, retType, op1, op2, simdBaseJitType, simdSize);
-            break;
-        }
-
         case NI_Vector128_AsVector:
         {
             assert(!sig->hasThis());

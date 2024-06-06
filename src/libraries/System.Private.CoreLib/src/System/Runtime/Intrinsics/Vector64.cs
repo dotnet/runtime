@@ -9,10 +9,12 @@ using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
 using System.Text;
 
+#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
+
 namespace System.Runtime.Intrinsics
 {
     /// <summary>Provides a collection of static methods for creating, manipulating, and otherwise operating on 64-bit vectors.</summary>
-    public static class Vector64
+    public static unsafe class Vector64
     {
         internal const int Size = 8;
 
@@ -44,7 +46,48 @@ namespace System.Runtime.Intrinsics
             {
                 return vector;
             }
-            else
+            else if (AdvSimd.IsSupported)
+            {
+                return ArmImpl(vector);
+            }
+            return SoftwareImpl(vector);
+
+            [CompExactlyDependsOn(typeof(AdvSimd))]
+            [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static Vector64<T> ArmImpl(Vector64<T> vector)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    return AdvSimd.Abs(vector.AsSingle()).As<float, T>();
+                }
+                else if (typeof(T) == typeof(double))
+                {
+                    return AdvSimd.AbsScalar(vector.AsDouble()).As<double, T>();
+                }
+                else if (sizeof(T) == 1)
+                {
+                    return AdvSimd.Abs(vector.AsSByte()).As<byte, T>();
+                }
+                else if (sizeof(T) == 2)
+                {
+                    return AdvSimd.Abs(vector.AsInt16()).As<ushort, T>();
+                }
+                else if (sizeof(T) == 4)
+                {
+                    return AdvSimd.Abs(vector.AsInt32()).As<uint, T>();
+                }
+                else if (sizeof(T) == 8)
+                {
+                    if (AdvSimd.Arm64.IsSupported)
+                    {
+                        return AdvSimd.Arm64.AbsScalar(vector.AsInt64()).As<ulong, T>();
+                    }
+                }
+                return SoftwareImpl(vector);
+            }
+
+            static Vector64<T> SoftwareImpl(Vector64<T> vector)
             {
                 Unsafe.SkipInit(out Vector64<T> result);
 
@@ -279,7 +322,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>The converted vector.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector64<double> ConvertToDouble(Vector64<long> vector)
+        public static Vector64<double> ConvertToDouble(Vector64<long> vector)
         {
             Unsafe.SkipInit(out Vector64<double> result);
 
@@ -298,7 +341,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector64<double> ConvertToDouble(Vector64<ulong> vector)
+        public static Vector64<double> ConvertToDouble(Vector64<ulong> vector)
         {
             Unsafe.SkipInit(out Vector64<double> result);
 
@@ -316,7 +359,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>The converted vector.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector64<int> ConvertToInt32(Vector64<float> vector)
+        public static Vector64<int> ConvertToInt32(Vector64<float> vector)
         {
             Unsafe.SkipInit(out Vector64<int> result);
 
@@ -334,7 +377,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>The converted vector.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector64<int> ConvertToInt32Native(Vector64<float> vector)
+        public static Vector64<int> ConvertToInt32Native(Vector64<float> vector)
         {
             Unsafe.SkipInit(out Vector64<int> result);
 
@@ -352,7 +395,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>The converted vector.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector64<long> ConvertToInt64(Vector64<double> vector)
+        public static Vector64<long> ConvertToInt64(Vector64<double> vector)
         {
             Unsafe.SkipInit(out Vector64<long> result);
 
@@ -370,7 +413,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>The converted vector.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector64<long> ConvertToInt64Native(Vector64<double> vector)
+        public static Vector64<long> ConvertToInt64Native(Vector64<double> vector)
         {
             Unsafe.SkipInit(out Vector64<long> result);
 
@@ -388,7 +431,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>The converted vector.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector64<float> ConvertToSingle(Vector64<int> vector)
+        public static Vector64<float> ConvertToSingle(Vector64<int> vector)
         {
             Unsafe.SkipInit(out Vector64<float> result);
 
@@ -407,7 +450,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector64<float> ConvertToSingle(Vector64<uint> vector)
+        public static Vector64<float> ConvertToSingle(Vector64<uint> vector)
         {
             Unsafe.SkipInit(out Vector64<float> result);
 
@@ -426,7 +469,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector64<uint> ConvertToUInt32(Vector64<float> vector)
+        public static Vector64<uint> ConvertToUInt32(Vector64<float> vector)
         {
             Unsafe.SkipInit(out Vector64<uint> result);
 
@@ -445,7 +488,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector64<uint> ConvertToUInt32Native(Vector64<float> vector)
+        public static Vector64<uint> ConvertToUInt32Native(Vector64<float> vector)
         {
             Unsafe.SkipInit(out Vector64<uint> result);
 
@@ -464,7 +507,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector64<ulong> ConvertToUInt64(Vector64<double> vector)
+        public static Vector64<ulong> ConvertToUInt64(Vector64<double> vector)
         {
             Unsafe.SkipInit(out Vector64<ulong> result);
 
@@ -483,7 +526,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector64<ulong> ConvertToUInt64Native(Vector64<double> vector)
+        public static Vector64<ulong> ConvertToUInt64Native(Vector64<double> vector)
         {
             Unsafe.SkipInit(out Vector64<ulong> result);
 
@@ -526,7 +569,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> and <paramref name="destination" /> (<typeparamref name="T" />) is not supported.</exception>
         /// <exception cref="NullReferenceException"><paramref name="destination" /> is <c>null</c>.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe void CopyTo<T>(this Vector64<T> vector, T[] destination, int startIndex)
+        public static void CopyTo<T>(this Vector64<T> vector, T[] destination, int startIndex)
         {
             // We explicitly don't check for `null` because historically this has thrown `NullReferenceException` for perf reasons
 
@@ -566,7 +609,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A new <see cref="Vector64{T}" /> with all elements initialized to <paramref name="value" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector64<T> Create<T>(T value)
+        public static Vector64<T> Create<T>(T value)
         {
             Unsafe.SkipInit(out Vector64<T> result);
 
@@ -583,46 +626,46 @@ namespace System.Runtime.Intrinsics
         /// <remarks>On x86, this method corresponds to __m64 _mm_set1_pi8</remarks>
         /// <returns>A new <see cref="Vector64{Byte}" /> with all elements initialized to <paramref name="value" />.</returns>
         [Intrinsic]
-        public static unsafe Vector64<byte> Create(byte value) => Create<byte>(value);
+        public static Vector64<byte> Create(byte value) => Create<byte>(value);
 
         /// <summary>Creates a new <see cref="Vector64{Double}" /> instance with all elements initialized to the specified value.</summary>
         /// <param name="value">The value that all elements will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{Double}" /> with all elements initialized to <paramref name="value" />.</returns>
         [Intrinsic]
-        public static unsafe Vector64<double> Create(double value) => Create<double>(value);
+        public static Vector64<double> Create(double value) => Create<double>(value);
 
         /// <summary>Creates a new <see cref="Vector64{Int16}" /> instance with all elements initialized to the specified value.</summary>
         /// <param name="value">The value that all elements will be initialized to.</param>
         /// <remarks>On x86, this method corresponds to __m64 _mm_set1_pi16</remarks>
         /// <returns>A new <see cref="Vector64{Int16}" /> with all elements initialized to <paramref name="value" />.</returns>
         [Intrinsic]
-        public static unsafe Vector64<short> Create(short value) => Create<short>(value);
+        public static Vector64<short> Create(short value) => Create<short>(value);
 
         /// <summary>Creates a new <see cref="Vector64{Int32}" /> instance with all elements initialized to the specified value.</summary>
         /// <param name="value">The value that all elements will be initialized to.</param>
         /// <remarks>On x86, this method corresponds to __m64 _mm_set1_pi32</remarks>
         /// <returns>A new <see cref="Vector64{Int32}" /> with all elements initialized to <paramref name="value" />.</returns>
         [Intrinsic]
-        public static unsafe Vector64<int> Create(int value) => Create<int>(value);
+        public static Vector64<int> Create(int value) => Create<int>(value);
 
         /// <summary>Creates a new <see cref="Vector64{Int64}" /> instance with all elements initialized to the specified value.</summary>
         /// <param name="value">The value that all elements will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{Int64}" /> with all elements initialized to <paramref name="value" />.</returns>
         [Intrinsic]
-        public static unsafe Vector64<long> Create(long value) => Create<long>(value);
+        public static Vector64<long> Create(long value) => Create<long>(value);
 
         /// <summary>Creates a new <see cref="Vector64{IntPtr}" /> instance with all elements initialized to the specified value.</summary>
         /// <param name="value">The value that all elements will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{IntPtr}" /> with all elements initialized to <paramref name="value" />.</returns>
         [Intrinsic]
-        public static unsafe Vector64<nint> Create(nint value) => Create<nint>(value);
+        public static Vector64<nint> Create(nint value) => Create<nint>(value);
 
         /// <summary>Creates a new <see cref="Vector64{UIntPtr}" /> instance with all elements initialized to the specified value.</summary>
         /// <param name="value">The value that all elements will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{UIntPtr}" /> with all elements initialized to <paramref name="value" />.</returns>
         [Intrinsic]
         [CLSCompliant(false)]
-        public static unsafe Vector64<nuint> Create(nuint value) => Create<nuint>(value);
+        public static Vector64<nuint> Create(nuint value) => Create<nuint>(value);
 
         /// <summary>Creates a new <see cref="Vector64{SByte}" /> instance with all elements initialized to the specified value.</summary>
         /// <param name="value">The value that all elements will be initialized to.</param>
@@ -630,13 +673,13 @@ namespace System.Runtime.Intrinsics
         /// <returns>A new <see cref="Vector64{SByte}" /> with all elements initialized to <paramref name="value" />.</returns>
         [Intrinsic]
         [CLSCompliant(false)]
-        public static unsafe Vector64<sbyte> Create(sbyte value) => Create<sbyte>(value);
+        public static Vector64<sbyte> Create(sbyte value) => Create<sbyte>(value);
 
         /// <summary>Creates a new <see cref="Vector64{Single}" /> instance with all elements initialized to the specified value.</summary>
         /// <param name="value">The value that all elements will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{Single}" /> with all elements initialized to <paramref name="value" />.</returns>
         [Intrinsic]
-        public static unsafe Vector64<float> Create(float value) => Create<float>(value);
+        public static Vector64<float> Create(float value) => Create<float>(value);
 
         /// <summary>Creates a new <see cref="Vector64{UInt16}" /> instance with all elements initialized to the specified value.</summary>
         /// <param name="value">The value that all elements will be initialized to.</param>
@@ -644,7 +687,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A new <see cref="Vector64{UInt16}" /> with all elements initialized to <paramref name="value" />.</returns>
         [Intrinsic]
         [CLSCompliant(false)]
-        public static unsafe Vector64<ushort> Create(ushort value) => Create<ushort>(value);
+        public static Vector64<ushort> Create(ushort value) => Create<ushort>(value);
 
         /// <summary>Creates a new <see cref="Vector64{UInt32}" /> instance with all elements initialized to the specified value.</summary>
         /// <param name="value">The value that all elements will be initialized to.</param>
@@ -652,14 +695,14 @@ namespace System.Runtime.Intrinsics
         /// <returns>A new <see cref="Vector64{UInt32}" /> with all elements initialized to <paramref name="value" />.</returns>
         [Intrinsic]
         [CLSCompliant(false)]
-        public static unsafe Vector64<uint> Create(uint value) => Create<uint>(value);
+        public static Vector64<uint> Create(uint value) => Create<uint>(value);
 
         /// <summary>Creates a new <see cref="Vector64{UInt64}" /> instance with all elements initialized to the specified value.</summary>
         /// <param name="value">The value that all elements will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{UInt64}" /> with all elements initialized to <paramref name="value" />.</returns>
         [Intrinsic]
         [CLSCompliant(false)]
-        public static unsafe Vector64<ulong> Create(ulong value) => Create<ulong>(value);
+        public static Vector64<ulong> Create(ulong value) => Create<ulong>(value);
 
         /// <summary>Creates a new <see cref="Vector64{T}" /> from a given array.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -732,7 +775,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A new <see cref="Vector64{Byte}" /> with each element initialized to corresponding specified value.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector64<byte> Create(byte e0, byte e1, byte e2, byte e3, byte e4, byte e5, byte e6, byte e7)
+        public static Vector64<byte> Create(byte e0, byte e1, byte e2, byte e3, byte e4, byte e5, byte e6, byte e7)
         {
             Unsafe.SkipInit(out Vector64<byte> result);
             result.SetElementUnsafe(0, e0);
@@ -755,7 +798,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A new <see cref="Vector64{Int16}" /> with each element initialized to corresponding specified value.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector64<short> Create(short e0, short e1, short e2, short e3)
+        public static Vector64<short> Create(short e0, short e1, short e2, short e3)
         {
             Unsafe.SkipInit(out Vector64<short> result);
             result.SetElementUnsafe(0, e0);
@@ -772,7 +815,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A new <see cref="Vector64{Int32}" /> with each element initialized to corresponding specified value.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector64<int> Create(int e0, int e1)
+        public static Vector64<int> Create(int e0, int e1)
         {
             Unsafe.SkipInit(out Vector64<int> result);
             result.SetElementUnsafe(0, e0);
@@ -794,7 +837,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector64<sbyte> Create(sbyte e0, sbyte e1, sbyte e2, sbyte e3, sbyte e4, sbyte e5, sbyte e6, sbyte e7)
+        public static Vector64<sbyte> Create(sbyte e0, sbyte e1, sbyte e2, sbyte e3, sbyte e4, sbyte e5, sbyte e6, sbyte e7)
         {
             Unsafe.SkipInit(out Vector64<sbyte> result);
             result.SetElementUnsafe(0, e0);
@@ -814,7 +857,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A new <see cref="Vector64{Single}" /> with each element initialized to corresponding specified value.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector64<float> Create(float e0, float e1)
+        public static Vector64<float> Create(float e0, float e1)
         {
             Unsafe.SkipInit(out Vector64<float> result);
             result.SetElementUnsafe(0, e0);
@@ -832,7 +875,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector64<ushort> Create(ushort e0, ushort e1, ushort e2, ushort e3)
+        public static Vector64<ushort> Create(ushort e0, ushort e1, ushort e2, ushort e3)
         {
             Unsafe.SkipInit(out Vector64<ushort> result);
             result.SetElementUnsafe(0, e0);
@@ -850,7 +893,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector64<uint> Create(uint e0, uint e1)
+        public static Vector64<uint> Create(uint e0, uint e1)
         {
             Unsafe.SkipInit(out Vector64<uint> result);
             result.SetElementUnsafe(0, e0);
@@ -865,7 +908,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector64<T> CreateScalar<T>(T value)
+        public static Vector64<T> CreateScalar<T>(T value)
         {
             Vector64<T> result = Vector64<T>.Zero;
             result.SetElementUnsafe(0, value);
@@ -876,78 +919,78 @@ namespace System.Runtime.Intrinsics
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{Byte}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements initialized to zero.</returns>
         [Intrinsic]
-        public static unsafe Vector64<byte> CreateScalar(byte value) => CreateScalar<byte>(value);
+        public static Vector64<byte> CreateScalar(byte value) => CreateScalar<byte>(value);
 
         /// <summary>Creates a new <see cref="Vector64{Double}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{Double}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements initialized to zero.</returns>
         [Intrinsic]
-        public static unsafe Vector64<double> CreateScalar(double value) => CreateScalar<double>(value);
+        public static Vector64<double> CreateScalar(double value) => CreateScalar<double>(value);
 
         /// <summary>Creates a new <see cref="Vector64{Int16}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{Int16}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements initialized to zero.</returns>
         [Intrinsic]
-        public static unsafe Vector64<short> CreateScalar(short value) => CreateScalar<short>(value);
+        public static Vector64<short> CreateScalar(short value) => CreateScalar<short>(value);
 
         /// <summary>Creates a new <see cref="Vector64{Int32}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{Int32}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements initialized to zero.</returns>
         [Intrinsic]
-        public static unsafe Vector64<int> CreateScalar(int value) => CreateScalar<int>(value);
+        public static Vector64<int> CreateScalar(int value) => CreateScalar<int>(value);
 
         /// <summary>Creates a new <see cref="Vector64{Int64}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{Int64}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements initialized to zero.</returns>
         [Intrinsic]
-        public static unsafe Vector64<long> CreateScalar(long value) => CreateScalar<long>(value);
+        public static Vector64<long> CreateScalar(long value) => CreateScalar<long>(value);
 
         /// <summary>Creates a new <see cref="Vector64{IntPtr}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{IntPtr}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements initialized to zero.</returns>
         [Intrinsic]
-        public static unsafe Vector64<nint> CreateScalar(nint value) => CreateScalar<nint>(value);
+        public static Vector64<nint> CreateScalar(nint value) => CreateScalar<nint>(value);
 
         /// <summary>Creates a new <see cref="Vector64{UIntPtr}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{UIntPtr}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements initialized to zero.</returns>
         [Intrinsic]
         [CLSCompliant(false)]
-        public static unsafe Vector64<nuint> CreateScalar(nuint value) => CreateScalar<nuint>(value);
+        public static Vector64<nuint> CreateScalar(nuint value) => CreateScalar<nuint>(value);
 
         /// <summary>Creates a new <see cref="Vector64{SByte}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{SByte}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements initialized to zero.</returns>
         [Intrinsic]
         [CLSCompliant(false)]
-        public static unsafe Vector64<sbyte> CreateScalar(sbyte value) => CreateScalar<sbyte>(value);
+        public static Vector64<sbyte> CreateScalar(sbyte value) => CreateScalar<sbyte>(value);
 
         /// <summary>Creates a new <see cref="Vector64{Single}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{Single}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements initialized to zero.</returns>
         [Intrinsic]
-        public static unsafe Vector64<float> CreateScalar(float value) => CreateScalar<float>(value);
+        public static Vector64<float> CreateScalar(float value) => CreateScalar<float>(value);
 
         /// <summary>Creates a new <see cref="Vector64{UInt16}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{UInt16}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements initialized to zero.</returns>
         [Intrinsic]
         [CLSCompliant(false)]
-        public static unsafe Vector64<ushort> CreateScalar(ushort value) => CreateScalar<ushort>(value);
+        public static Vector64<ushort> CreateScalar(ushort value) => CreateScalar<ushort>(value);
 
         /// <summary>Creates a new <see cref="Vector64{UInt32}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{UInt32}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements initialized to zero.</returns>
         [Intrinsic]
         [CLSCompliant(false)]
-        public static unsafe Vector64<uint> CreateScalar(uint value) => CreateScalar<uint>(value);
+        public static Vector64<uint> CreateScalar(uint value) => CreateScalar<uint>(value);
 
         /// <summary>Creates a new <see cref="Vector64{UInt64}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{UInt64}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements initialized to zero.</returns>
         [Intrinsic]
         [CLSCompliant(false)]
-        public static unsafe Vector64<ulong> CreateScalar(ulong value) => CreateScalar<ulong>(value);
+        public static Vector64<ulong> CreateScalar(ulong value) => CreateScalar<ulong>(value);
 
         /// <summary>Creates a new <see cref="Vector64{T}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -972,78 +1015,78 @@ namespace System.Runtime.Intrinsics
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{Byte}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements left uninitialized.</returns>
         [Intrinsic]
-        public static unsafe Vector64<byte> CreateScalarUnsafe(byte value) => CreateScalarUnsafe<byte>(value);
+        public static Vector64<byte> CreateScalarUnsafe(byte value) => CreateScalarUnsafe<byte>(value);
 
         /// <summary>Creates a new <see cref="Vector64{Double}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{Double}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements left uninitialized.</returns>
         [Intrinsic]
-        public static unsafe Vector64<double> CreateScalarUnsafe(double value) => CreateScalarUnsafe<double>(value);
+        public static Vector64<double> CreateScalarUnsafe(double value) => CreateScalarUnsafe<double>(value);
 
         /// <summary>Creates a new <see cref="Vector64{Int16}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{Int16}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements left uninitialized.</returns>
         [Intrinsic]
-        public static unsafe Vector64<short> CreateScalarUnsafe(short value) => CreateScalarUnsafe<short>(value);
+        public static Vector64<short> CreateScalarUnsafe(short value) => CreateScalarUnsafe<short>(value);
 
         /// <summary>Creates a new <see cref="Vector64{Int32}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{Int32}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements left uninitialized.</returns>
         [Intrinsic]
-        public static unsafe Vector64<int> CreateScalarUnsafe(int value) => CreateScalarUnsafe<int>(value);
+        public static Vector64<int> CreateScalarUnsafe(int value) => CreateScalarUnsafe<int>(value);
 
         /// <summary>Creates a new <see cref="Vector64{Int64}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{Int64}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements left uninitialized.</returns>
         [Intrinsic]
-        public static unsafe Vector64<long> CreateScalarUnsafe(long value) => CreateScalarUnsafe<long>(value);
+        public static Vector64<long> CreateScalarUnsafe(long value) => CreateScalarUnsafe<long>(value);
 
         /// <summary>Creates a new <see cref="Vector64{IntPtr}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{IntPtr}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements left uninitialized.</returns>
         [Intrinsic]
-        public static unsafe Vector64<nint> CreateScalarUnsafe(nint value) => CreateScalarUnsafe<nint>(value);
+        public static Vector64<nint> CreateScalarUnsafe(nint value) => CreateScalarUnsafe<nint>(value);
 
         /// <summary>Creates a new <see cref="Vector64{UIntPtr}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{UIntPtr}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements left uninitialized.</returns>
         [Intrinsic]
         [CLSCompliant(false)]
-        public static unsafe Vector64<nuint> CreateScalarUnsafe(nuint value) => CreateScalarUnsafe<nuint>(value);
+        public static Vector64<nuint> CreateScalarUnsafe(nuint value) => CreateScalarUnsafe<nuint>(value);
 
         /// <summary>Creates a new <see cref="Vector64{SByte}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{SByte}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements left uninitialized.</returns>
         [Intrinsic]
         [CLSCompliant(false)]
-        public static unsafe Vector64<sbyte> CreateScalarUnsafe(sbyte value) => CreateScalarUnsafe<sbyte>(value);
+        public static Vector64<sbyte> CreateScalarUnsafe(sbyte value) => CreateScalarUnsafe<sbyte>(value);
 
         /// <summary>Creates a new <see cref="Vector64{Single}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{Single}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements left uninitialized.</returns>
         [Intrinsic]
-        public static unsafe Vector64<float> CreateScalarUnsafe(float value) => CreateScalarUnsafe<float>(value);
+        public static Vector64<float> CreateScalarUnsafe(float value) => CreateScalarUnsafe<float>(value);
 
         /// <summary>Creates a new <see cref="Vector64{UInt16}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{UInt16}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements left uninitialized.</returns>
         [Intrinsic]
         [CLSCompliant(false)]
-        public static unsafe Vector64<ushort> CreateScalarUnsafe(ushort value) => CreateScalarUnsafe<ushort>(value);
+        public static Vector64<ushort> CreateScalarUnsafe(ushort value) => CreateScalarUnsafe<ushort>(value);
 
         /// <summary>Creates a new <see cref="Vector64{UInt32}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{UInt32}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements left uninitialized.</returns>
         [Intrinsic]
         [CLSCompliant(false)]
-        public static unsafe Vector64<uint> CreateScalarUnsafe(uint value) => CreateScalarUnsafe<uint>(value);
+        public static Vector64<uint> CreateScalarUnsafe(uint value) => CreateScalarUnsafe<uint>(value);
 
         /// <summary>Creates a new <see cref="Vector64{UInt64}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{UInt64}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements left uninitialized.</returns>
         [Intrinsic]
         [CLSCompliant(false)]
-        public static unsafe Vector64<ulong> CreateScalarUnsafe(ulong value) => CreateScalarUnsafe<ulong>(value);
+        public static Vector64<ulong> CreateScalarUnsafe(ulong value) => CreateScalarUnsafe<ulong>(value);
 
         /// <summary>Creates a new <see cref="Vector64{T}" /> instance where the elements begin at a specified value and which are spaced apart according to another specified value.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -1565,7 +1608,6 @@ namespace System.Runtime.Intrinsics
             return false;
         }
 
-#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
         /// <summary>Loads a vector from the given source.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="source">The source from which the vector will be loaded.</param>
@@ -1573,7 +1615,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="source" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
-        public static unsafe Vector64<T> Load<T>(T* source) => LoadUnsafe(ref *source);
+        public static Vector64<T> Load<T>(T* source) => LoadUnsafe(ref *source);
 
         /// <summary>Loads a vector from the given aligned source.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -1583,7 +1625,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector64<T> LoadAligned<T>(T* source)
+        public static Vector64<T> LoadAligned<T>(T* source)
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector64BaseType<T>();
 
@@ -1603,8 +1645,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="source" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
-        public static unsafe Vector64<T> LoadAlignedNonTemporal<T>(T* source) => LoadAligned(source);
-#pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
+        public static Vector64<T> LoadAlignedNonTemporal<T>(T* source) => LoadAligned(source);
 
         /// <summary>Loads a vector from the given source.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -1851,7 +1892,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A <see cref="Vector64{Single}"/> containing elements narrowed from <paramref name="lower" /> and <paramref name="upper" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector64<float> Narrow(Vector64<double> lower, Vector64<double> upper)
+        public static Vector64<float> Narrow(Vector64<double> lower, Vector64<double> upper)
         {
             Unsafe.SkipInit(out Vector64<float> result);
 
@@ -1877,7 +1918,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector64<sbyte> Narrow(Vector64<short> lower, Vector64<short> upper)
+        public static Vector64<sbyte> Narrow(Vector64<short> lower, Vector64<short> upper)
         {
             Unsafe.SkipInit(out Vector64<sbyte> result);
 
@@ -1902,7 +1943,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A <see cref="Vector64{Int16}"/> containing elements narrowed from <paramref name="lower" /> and <paramref name="upper" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector64<short> Narrow(Vector64<int> lower, Vector64<int> upper)
+        public static Vector64<short> Narrow(Vector64<int> lower, Vector64<int> upper)
         {
             Unsafe.SkipInit(out Vector64<short> result);
 
@@ -1927,7 +1968,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A <see cref="Vector64{Int32}"/> containing elements narrowed from <paramref name="lower" /> and <paramref name="upper" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector64<int> Narrow(Vector64<long> lower, Vector64<long> upper)
+        public static Vector64<int> Narrow(Vector64<long> lower, Vector64<long> upper)
         {
             Unsafe.SkipInit(out Vector64<int> result);
 
@@ -1953,7 +1994,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector64<byte> Narrow(Vector64<ushort> lower, Vector64<ushort> upper)
+        public static Vector64<byte> Narrow(Vector64<ushort> lower, Vector64<ushort> upper)
         {
             Unsafe.SkipInit(out Vector64<byte> result);
 
@@ -1979,7 +2020,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector64<ushort> Narrow(Vector64<uint> lower, Vector64<uint> upper)
+        public static Vector64<ushort> Narrow(Vector64<uint> lower, Vector64<uint> upper)
         {
             Unsafe.SkipInit(out Vector64<ushort> result);
 
@@ -2005,7 +2046,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector64<uint> Narrow(Vector64<ulong> lower, Vector64<ulong> upper)
+        public static Vector64<uint> Narrow(Vector64<ulong> lower, Vector64<ulong> upper)
         {
             Unsafe.SkipInit(out Vector64<uint> result);
 
@@ -2438,7 +2479,6 @@ namespace System.Runtime.Intrinsics
             return result;
         }
 
-#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
         /// <summary>Stores a vector at the given destination.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="source">The vector that will be stored.</param>
@@ -2446,7 +2486,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="source" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
-        public static unsafe void Store<T>(this Vector64<T> source, T* destination) => source.StoreUnsafe(ref *destination);
+        public static void Store<T>(this Vector64<T> source, T* destination) => source.StoreUnsafe(ref *destination);
 
         /// <summary>Stores a vector at the given aligned destination.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -2456,7 +2496,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe void StoreAligned<T>(this Vector64<T> source, T* destination)
+        public static void StoreAligned<T>(this Vector64<T> source, T* destination)
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector64BaseType<T>();
 
@@ -2476,8 +2516,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="source" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
-        public static unsafe void StoreAlignedNonTemporal<T>(this Vector64<T> source, T* destination) => source.StoreAligned(destination);
-#pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
+        public static void StoreAlignedNonTemporal<T>(this Vector64<T> source, T* destination) => source.StoreAligned(destination);
 
         /// <summary>Stores a vector at the given destination.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -2572,7 +2611,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector128<T> ToVector128Unsafe<T>(this Vector64<T> vector)
+        public static Vector128<T> ToVector128Unsafe<T>(this Vector64<T> vector)
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector64BaseType<T>();
 
@@ -2607,46 +2646,46 @@ namespace System.Runtime.Intrinsics
         /// <returns>A pair of vectors that contain the widened lower and upper halves of <paramref name="source" />.</returns>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe (Vector64<ushort> Lower, Vector64<ushort> Upper) Widen(Vector64<byte> source) => (WidenLower(source), WidenUpper(source));
+        public static (Vector64<ushort> Lower, Vector64<ushort> Upper) Widen(Vector64<byte> source) => (WidenLower(source), WidenUpper(source));
 
         /// <summary>Widens a <see cref="Vector64{Int16}" /> into two <see cref="Vector64{Int32} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A pair of vectors that contain the widened lower and upper halves of <paramref name="source" />.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe (Vector64<int> Lower, Vector64<int> Upper) Widen(Vector64<short> source) => (WidenLower(source), WidenUpper(source));
+        public static (Vector64<int> Lower, Vector64<int> Upper) Widen(Vector64<short> source) => (WidenLower(source), WidenUpper(source));
 
         /// <summary>Widens a <see cref="Vector64{Int32}" /> into two <see cref="Vector64{Int64} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A pair of vectors that contain the widened lower and upper halves of <paramref name="source" />.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe (Vector64<long> Lower, Vector64<long> Upper) Widen(Vector64<int> source) => (WidenLower(source), WidenUpper(source));
+        public static (Vector64<long> Lower, Vector64<long> Upper) Widen(Vector64<int> source) => (WidenLower(source), WidenUpper(source));
 
         /// <summary>Widens a <see cref="Vector64{SByte}" /> into two <see cref="Vector64{Int16} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A pair of vectors that contain the widened lower and upper halves of <paramref name="source" />.</returns>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe (Vector64<short> Lower, Vector64<short> Upper) Widen(Vector64<sbyte> source) => (WidenLower(source), WidenUpper(source));
+        public static (Vector64<short> Lower, Vector64<short> Upper) Widen(Vector64<sbyte> source) => (WidenLower(source), WidenUpper(source));
 
         /// <summary>Widens a <see cref="Vector64{Single}" /> into two <see cref="Vector64{Double} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A pair of vectors that contain the widened lower and upper halves of <paramref name="source" />.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe (Vector64<double> Lower, Vector64<double> Upper) Widen(Vector64<float> source) => (WidenLower(source), WidenUpper(source));
+        public static (Vector64<double> Lower, Vector64<double> Upper) Widen(Vector64<float> source) => (WidenLower(source), WidenUpper(source));
 
         /// <summary>Widens a <see cref="Vector64{UInt16}" /> into two <see cref="Vector64{UInt32} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A pair of vectors that contain the widened lower and upper halves of <paramref name="source" />.</returns>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe (Vector64<uint> Lower, Vector64<uint> Upper) Widen(Vector64<ushort> source) => (WidenLower(source), WidenUpper(source));
+        public static (Vector64<uint> Lower, Vector64<uint> Upper) Widen(Vector64<ushort> source) => (WidenLower(source), WidenUpper(source));
 
         /// <summary>Widens a <see cref="Vector64{UInt32}" /> into two <see cref="Vector64{UInt64} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
         /// <returns>A pair of vectors that contain the widened lower and upper halves of <paramref name="source" />.</returns>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe (Vector64<ulong> Lower, Vector64<ulong> Upper) Widen(Vector64<uint> source) => (WidenLower(source), WidenUpper(source));
+        public static (Vector64<ulong> Lower, Vector64<ulong> Upper) Widen(Vector64<uint> source) => (WidenLower(source), WidenUpper(source));
 
         /// <summary>Widens the lower half of a <see cref="Vector64{Byte}" /> into a <see cref="Vector64{UInt16} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>
@@ -2672,7 +2711,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A vector that contain the widened lower half of <paramref name="source" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector64<int> WidenLower(Vector64<short> source)
+        public static Vector64<int> WidenLower(Vector64<short> source)
         {
             Unsafe.SkipInit(out Vector64<int> lower);
 
@@ -2690,7 +2729,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A vector that contain the widened lower half of <paramref name="source" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector64<long> WidenLower(Vector64<int> source)
+        public static Vector64<long> WidenLower(Vector64<int> source)
         {
             Unsafe.SkipInit(out Vector64<long> lower);
 
@@ -2709,7 +2748,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector64<short> WidenLower(Vector64<sbyte> source)
+        public static Vector64<short> WidenLower(Vector64<sbyte> source)
         {
             Unsafe.SkipInit(out Vector64<short> lower);
 
@@ -2727,7 +2766,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A vector that contain the widened lower half of <paramref name="source" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector64<double> WidenLower(Vector64<float> source)
+        public static Vector64<double> WidenLower(Vector64<float> source)
         {
             Unsafe.SkipInit(out Vector64<double> lower);
 
@@ -2746,7 +2785,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector64<uint> WidenLower(Vector64<ushort> source)
+        public static Vector64<uint> WidenLower(Vector64<ushort> source)
         {
             Unsafe.SkipInit(out Vector64<uint> lower);
 
@@ -2765,7 +2804,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector64<ulong> WidenLower(Vector64<uint> source)
+        public static Vector64<ulong> WidenLower(Vector64<uint> source)
         {
             Unsafe.SkipInit(out Vector64<ulong> lower);
 
@@ -2802,7 +2841,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A vector that contain the widened upper half of <paramref name="source" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector64<int> WidenUpper(Vector64<short> source)
+        public static Vector64<int> WidenUpper(Vector64<short> source)
         {
             Unsafe.SkipInit(out Vector64<int> upper);
 
@@ -2820,7 +2859,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A vector that contain the widened upper half of <paramref name="source" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector64<long> WidenUpper(Vector64<int> source)
+        public static Vector64<long> WidenUpper(Vector64<int> source)
         {
             Unsafe.SkipInit(out Vector64<long> upper);
 
@@ -2839,7 +2878,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector64<short> WidenUpper(Vector64<sbyte> source)
+        public static Vector64<short> WidenUpper(Vector64<sbyte> source)
         {
             Unsafe.SkipInit(out Vector64<short> upper);
 
@@ -2857,7 +2896,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A vector that contain the widened upper half of <paramref name="source" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector64<double> WidenUpper(Vector64<float> source)
+        public static Vector64<double> WidenUpper(Vector64<float> source)
         {
             Unsafe.SkipInit(out Vector64<double> upper);
 
@@ -2876,7 +2915,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector64<uint> WidenUpper(Vector64<ushort> source)
+        public static Vector64<uint> WidenUpper(Vector64<ushort> source)
         {
             Unsafe.SkipInit(out Vector64<uint> upper);
 
@@ -2895,7 +2934,7 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe Vector64<ulong> WidenUpper(Vector64<uint> source)
+        public static Vector64<ulong> WidenUpper(Vector64<uint> source)
         {
             Unsafe.SkipInit(out Vector64<ulong> upper);
 

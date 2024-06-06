@@ -6,7 +6,10 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.Wasm;
 using System.Runtime.Intrinsics.X86;
+
+#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
 
 namespace System.Runtime.Intrinsics
 {
@@ -70,7 +73,56 @@ namespace System.Runtime.Intrinsics
             {
                 return vector;
             }
-            else
+            else if (Avx.IsSupported)
+            {
+                return XarchImpl(vector);
+            }
+            return SoftwareImpl(vector);
+
+            [CompExactlyDependsOn(typeof(Avx))]
+            [CompExactlyDependsOn(typeof(Avx2))]
+            [CompExactlyDependsOn(typeof(Avx512F.VL))]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static Vector256<T> XarchImpl(Vector256<T> vector)
+            {
+                if (sizeof(T) == sizeof(float))
+                {
+                    return Avx.AndNot(Vector256.Create(-0.0f), vector.AsSingle()).As<float, T>();
+                }
+                else if (sizeof(T) == sizeof(double))
+                {
+                    return Avx.AndNot(Vector256.Create(-0.0), vector.AsDouble()).As<double, T>();
+                }
+                else if (Avx2.IsSupported)
+                {
+                    if (sizeof(T) == 1)
+                    {
+                        return Avx2.Abs(vector.AsSByte()).As<byte, T>();
+                    }
+                    else if (sizeof(T) == 2)
+                    {
+                        return Avx2.Abs(vector.AsInt16()).As<ushort, T>();
+                    }
+                    else if (sizeof(T) == 4)
+                    {
+                        return Avx2.Abs(vector.AsInt32()).As<uint, T>();
+                    }
+                    else if (sizeof(T) == 8)
+                    {
+                        if (Avx512F.VL.IsSupported)
+                        {
+                            return Avx512F.VL.Abs(vector.AsInt64()).As<ulong, T>();
+                        }
+                        else
+                        {
+                            return ConditionalSelect(LessThan(vector, Vector256<T>.Zero), Vector256<T>.Zero - vector, vector);
+                        }
+                    }
+                }
+                return SoftwareImpl(vector);
+            }
+
+            static Vector256<T> SoftwareImpl(Vector256<T> vector)
             {
                 return Create(
                     Vector128.Abs(vector._lower),
@@ -1742,7 +1794,6 @@ namespace System.Runtime.Intrinsics
                 || Vector128.LessThanOrEqualAny(left._upper, right._upper);
         }
 
-#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
         /// <summary>Loads a vector from the given source.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="source">The source from which the vector will be loaded.</param>
@@ -1781,7 +1832,6 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         public static Vector256<T> LoadAlignedNonTemporal<T>(T* source) => LoadAligned(source);
-#pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
 
         /// <summary>Loads a vector from the given source.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -2557,7 +2607,6 @@ namespace System.Runtime.Intrinsics
             );
         }
 
-#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
         /// <summary>Stores a vector at the given destination.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="source">The vector that will be stored.</param>
@@ -2596,7 +2645,6 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         public static void StoreAlignedNonTemporal<T>(this Vector256<T> source, T* destination) => source.StoreAligned(destination);
-#pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
 
         /// <summary>Stores a vector at the given destination.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -2688,7 +2736,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A new <see cref="Vector512{T}" /> with the lower 256-bits set to the value of <paramref name="vector" /> and the upper 256-bits left uninitialized.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
-        public static unsafe Vector512<T> ToVector512Unsafe<T>(this Vector256<T> vector)
+        public static Vector512<T> ToVector512Unsafe<T>(this Vector256<T> vector)
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
 

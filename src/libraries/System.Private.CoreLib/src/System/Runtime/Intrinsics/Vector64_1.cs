@@ -46,7 +46,7 @@ namespace System.Runtime.Intrinsics
 
         /// <summary>Gets the number of <typeparamref name="T" /> that are in a <see cref="Vector64{T}" />.</summary>
         /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
-        public static unsafe int Count
+        public static int Count
         {
             [Intrinsic]
             get

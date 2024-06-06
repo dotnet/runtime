@@ -996,37 +996,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
     switch (intrinsic)
     {
-        case NI_Vector128_Abs:
-        case NI_Vector256_Abs:
-        case NI_Vector512_Abs:
-        {
-            assert(sig->numArgs == 1);
-
-            if ((simdSize != 32) || varTypeIsFloating(simdBaseType) || varTypeIsUnsigned(simdBaseType) ||
-                compOpportunisticallyDependsOn(InstructionSet_AVX2))
-            {
-                op1     = impSIMDPopStack();
-                retNode = gtNewSimdAbsNode(retType, op1, simdBaseJitType, simdSize);
-            }
-            break;
-        }
-
-        case NI_Vector128_AndNot:
-        case NI_Vector256_AndNot:
-        case NI_Vector512_AndNot:
-        {
-            assert(sig->numArgs == 2);
-
-            impSpillSideEffect(true,
-                               verCurrentState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
-
-            op2 = impSIMDPopStack();
-            op1 = impSIMDPopStack();
-
-            retNode = gtNewSimdBinOpNode(GT_AND_NOT, retType, op1, op2, simdBaseJitType, simdSize);
-            break;
-        }
-
         case NI_Vector128_AsVector:
         {
             assert(sig->numArgs == 1);
