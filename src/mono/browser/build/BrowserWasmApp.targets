@@ -289,6 +289,7 @@
       <WasmAllowUndefinedSymbols Condition="'$(WasmAllowUndefinedSymbols)' == ''">false</WasmAllowUndefinedSymbols>
 
       <WasmClang>$(EmscriptenUpstreamEmscriptenPath)emcc</WasmClang>
+      <WasmClang Condition="$([MSBuild]::IsOSPlatform('Windows'))">$(WasmClang).bat</WasmClang>
     </PropertyGroup>
 
     <ItemGroup>
