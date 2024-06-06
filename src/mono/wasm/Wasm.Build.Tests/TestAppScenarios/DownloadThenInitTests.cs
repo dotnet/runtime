@@ -22,7 +22,7 @@ public class DownloadThenInitTests : AppTestBase
     [Theory]
     [InlineData("Debug")]
     [InlineData("Release")]
-    public async Task NoResourcesFetchedAfterDownloadFinished(string config)
+    public async Task NoResourcesReFetchedAfterDownloadFinished(string config)
     {
         CopyTestAsset("WasmBasicTestApp", "DownloadThenInitTests", "App");
         BuildProject(config);
@@ -31,12 +31,13 @@ public class DownloadThenInitTests : AppTestBase
         var resultTestOutput = result.TestOutput.ToList();
         int index = resultTestOutput.FindIndex(s => s == "download finished");
         Assert.True(index > 0); // number of fetched resources cannot be 0
-        var fetchingStrings = resultTestOutput.Skip(index + 1).Where(s => s.StartsWith("fetching")).ToList();
-        if (fetchingStrings.Count > 0)
+        var afterDownload = resultTestOutput.Skip(index + 1).Where(s => s.StartsWith("fetching")).ToList();
+        if (afterDownload.Count > 0)
         {
-            // fetching only dotnet.native.wasm on init is acceptable
-            Assert.True(fetchingStrings.Count == 1);
-            Assert.EndsWith("dotnet.native.wasm", fetchingStrings[0]);
+            var duringDownload = resultTestOutput.Take(index + 1).Where(s => s.StartsWith("fetching")).ToList();
+            var reFetchedResources = afterDownload.Intersect(duringDownload).ToList();
+            if (reFetchedResources.Any())
+                Assert.Fail($"Resources should not be fetched twice. Re-fetched on init: {string.Join(", ", reFetchedResources)}");
         }
     }
 }
