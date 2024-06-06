@@ -1969,28 +1969,39 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                                                (argNum == lowVectorOperandNum) ? lowVectorCandidates : RBM_NONE);
             }
         }
-        else if (intrin.id == NI_Sve_StoreAndZip)
-        {
-            srcCount += BuildAddrUses(intrin.op2);
-        }
         else
         {
-            SingleTypeRegSet candidates = lowVectorOperandNum == 2 ? lowVectorCandidates : RBM_NONE;
+            switch (intrin.id)
+            {
+                case NI_Sve_StoreAndZip:
+                case NI_Sve_PrefetchBytes:
+                case NI_Sve_PrefetchInt16:
+                case NI_Sve_PrefetchInt32:
+                case NI_Sve_PrefetchInt64:
+                    srcCount += BuildAddrUses(intrin.op2);
+                    break;
 
-            if (intrin.op2->gtType == TYP_MASK)
-            {
-                assert(lowVectorOperandNum != 2);
-                candidates = RBM_ALLMASK;
-            }
+                default:
+                {
+                    SingleTypeRegSet candidates = lowVectorOperandNum == 2 ? lowVectorCandidates : RBM_NONE;
 
-            if (forceOp2DelayFree)
-            {
-                srcCount += BuildDelayFreeUses(intrin.op2, nullptr, candidates);
-            }
-            else
-            {
-                srcCount += isRMW ? BuildDelayFreeUses(intrin.op2, intrin.op1, candidates)
-                                  : BuildOperandUses(intrin.op2, candidates);
+                    if (intrin.op2->gtType == TYP_MASK)
+                    {
+                        assert(lowVectorOperandNum != 2);
+                        candidates = RBM_ALLMASK;
+                    }
+
+                    if (forceOp2DelayFree)
+                    {
+                        srcCount += BuildDelayFreeUses(intrin.op2, nullptr, candidates);
+                    }
+                    else
+                    {
+                        srcCount += isRMW ? BuildDelayFreeUses(intrin.op2, intrin.op1, candidates)
+                                          : BuildOperandUses(intrin.op2, candidates);
+                    }
+                }
+                break;
             }
         }
 
