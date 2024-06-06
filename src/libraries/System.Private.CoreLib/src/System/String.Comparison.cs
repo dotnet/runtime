@@ -884,9 +884,11 @@ namespace System
                     case 3:
                         hash1 = BitOperations.RotateLeft(hash1, 5) + hash1 ^ Unsafe.ReadUnaligned<uint>(ptr);
                         uint p1 = *(char*)(ptr + 1);
-#if BIGENDIAN
-                        p1 <<= 16;
-#endif
+                        if (!BitConverter.IsLittleEndian)
+                        {
+                            p1 <<= 16;
+                        }
+
                         hash2 = BitOperations.RotateLeft(hash2, 5) + hash2 ^ p1;
                         break;
 
@@ -896,9 +898,11 @@ namespace System
 
                     case 1:
                         uint p0 = *(char*)ptr;
-#if BIGENDIAN
-                        p0 <<= 16;
-#endif
+                        if (!BitConverter.IsLittleEndian)
+                        {
+                            p0 <<= 16;
+                        }
+
                         hash2 = BitOperations.RotateLeft(hash2, 5) + hash2 ^ p0;
                         break;
 
@@ -998,9 +1002,11 @@ namespace System
                     case 3:
                         p0 = Unsafe.ReadUnaligned<uint>(ptr);
                         p1 = *(char*)(ptr + 1);
-#if BIGENDIAN
-                        p1 <<= 16;
-#endif
+                        if (!BitConverter.IsLittleEndian)
+                        {
+                            p1 <<= 16;
+                        }
+
                         if (!Utf16Utility.AllCharsInUInt32AreAscii(p0 | p1))
                         {
                             goto NotAscii;
@@ -1022,9 +1028,11 @@ namespace System
 
                     case 1:
                         p0 = *(char*)ptr;
-#if BIGENDIAN
-                        p0 <<= 16;
-#endif
+                        if (!BitConverter.IsLittleEndian)
+                        {
+                            p0 <<= 16;
+                        }
+
                         if (p0 > 0x7f)
                         {
                             goto NotAscii;
