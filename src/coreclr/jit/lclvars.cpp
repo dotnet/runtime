@@ -944,8 +944,8 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                 {
                     // On LoongArch64 and RISC-V64, if there aren't any remaining floating-point registers to pass the
                     // argument, integer registers (if any) are used instead.
-                    canPassArgInRegisters = varDscInfo->canEnreg(argType, cSlotsToEnregister);
-                    if (cSlotsToEnregister == 2)
+                    canPassArgInRegisters = varDscInfo->canEnreg(argType, cSlots);
+                    if (cSlots == 2)
                     {
                         if (!canPassArgInRegisters && varDscInfo->canEnreg(TYP_I_IMPL, 1))
                         {
@@ -961,13 +961,13 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
         else
 #endif // defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         {
-            canPassArgInRegisters = varDscInfo->canEnreg(argType, cSlotsToEnregister);
+            canPassArgInRegisters = varDscInfo->canEnreg(argType, cSlots);
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
             // On LoongArch64 and RISCV64, if there aren't any remaining floating-point registers to pass the
             // argument, integer registers (if any) are used instead.
             if (!canPassArgInRegisters && varTypeIsFloating(argType))
             {
-                canPassArgInRegisters = varDscInfo->canEnreg(TYP_I_IMPL, cSlotsToEnregister);
+                canPassArgInRegisters = varDscInfo->canEnreg(TYP_I_IMPL, cSlots);
                 argType               = canPassArgInRegisters ? TYP_I_IMPL : argType;
             }
             if (!canPassArgInRegisters && (cSlots > 1))
