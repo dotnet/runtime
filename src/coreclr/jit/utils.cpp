@@ -1665,6 +1665,7 @@ void HelperCallProperties::init()
 
                 // These throw for a failing cast
                 // But if given a null input arg will return null
+                // if they throw they cause the object to escape
                 isPure = true;
                 break;
 

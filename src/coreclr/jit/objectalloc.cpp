@@ -751,6 +751,7 @@ void ObjectAllocator::UpdateAncestorTypes(GenTree* tree, ArrayStack<GenTree*>* p
                 break;
 
             case GT_IND:
+            case GT_CALL:
                 break;
 
             default:
