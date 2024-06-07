@@ -418,7 +418,7 @@ bool ObjectAllocator::MorphAllocObjNodes()
                     // Some new helpers directly cause escape (eg add to finalizer queue)
                     //
 
-                    GenTreeCall* const helper        = MorphAllocObjNodeIntoHelperCall(asAllocObj);
+                    GenTreeCall* const helper    = MorphAllocObjNodeIntoHelperCall(asAllocObj);
                     data                         = helper;
                     stmtExpr->AsLclVar()->Data() = data;
                     stmtExpr->AddAllEffectsFlags(data);

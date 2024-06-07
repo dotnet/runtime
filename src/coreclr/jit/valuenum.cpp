@@ -12766,11 +12766,11 @@ void Compiler::fgValueNumberCall(GenTreeCall* call)
 
         if (modHeap)
         {
-            if ((call->gtCallMoreFlags & GTF_CALL_M_NO_ESCAPE) != 0)
-            {
-                // zero obj??
-            }
-            else
+            // if ((call->gtCallMoreFlags & GTF_CALL_M_NO_ESCAPE) != 0)
+            //{
+            //     // zero obj??
+            // }
+            //  else
             {
                 // For now, arbitrary side effect on GcHeap/ByrefExposed.
                 fgMutateGcHeap(call DEBUGARG("HELPER - modifies heap"));
