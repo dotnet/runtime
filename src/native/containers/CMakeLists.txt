@@ -13,6 +13,7 @@ target_sources(dn-containers PRIVATE
     dn-simdhash-ptr-ptr.c
     dn-simdhash-ght-compatible.c
     dn-simdhash-ptrpair-ptr.c
+    dn-simdhash-utils.c
 )
 
 configure_file(dn-config.h.in ${CMAKE_CURRENT_BINARY_DIR}/dn-config.h)
