@@ -147,6 +147,7 @@ ValueNumFuncDef(ReadyToRunGenericHandle, 2, false, true, false, false)
 ValueNumFuncDef(GetStaticAddrTLS, 1, false, true, false, false)
 
 ValueNumFuncDef(JitNew, 2, false, true, false, false)
+ValueNumFuncDef(JitNewNoEscape, 2, false, true, false, false)
 ValueNumFuncDef(JitNewArr, 3, false, true, false, false)
 ValueNumFuncDef(JitNewMdArr, 4, false, true, false, false)
 ValueNumFuncDef(JitReadyToRunNew, 2, false, true, false, false)

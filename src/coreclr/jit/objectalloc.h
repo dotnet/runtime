@@ -25,6 +25,7 @@ class ObjectAllocator final : public Phase
 
     //===============================================================================
     // Data members
+    bool         m_IsObjectStackAllocationAnalysisEnabled;
     bool         m_IsObjectStackAllocationEnabled;
     bool         m_AnalysisDone;
     BitVecTraits m_bitVecTraits;
@@ -41,7 +42,9 @@ class ObjectAllocator final : public Phase
 public:
     ObjectAllocator(Compiler* comp);
     bool IsObjectStackAllocationEnabled() const;
+    bool IsObjectStackAllocationAnalysisEnabled() const;
     void EnableObjectStackAllocation();
+    void EnableObjectStackAllocationAnalysis();
 
 protected:
     virtual PhaseStatus DoPhase() override;
@@ -61,7 +64,7 @@ private:
     void         ComputeStackObjectPointers(BitVecTraits* bitVecTraits);
     bool         MorphAllocObjNodes();
     void         RewriteUses();
-    GenTree*     MorphAllocObjNodeIntoHelperCall(GenTreeAllocObj* allocObj);
+    GenTreeCall* MorphAllocObjNodeIntoHelperCall(GenTreeAllocObj* allocObj);
     unsigned int MorphAllocObjNodeIntoStackAlloc(GenTreeAllocObj* allocObj, BasicBlock* block, Statement* stmt);
     struct BuildConnGraphVisitorCallbackData;
     bool CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parentStack, unsigned int lclNum);
@@ -74,6 +77,7 @@ private:
 
 inline ObjectAllocator::ObjectAllocator(Compiler* comp)
     : Phase(comp, PHASE_ALLOCATE_OBJECTS)
+    , m_IsObjectStackAllocationAnalysisEnabled(false)
     , m_IsObjectStackAllocationEnabled(false)
     , m_AnalysisDone(false)
     , m_bitVecTraits(comp->lvaCount, comp)
@@ -97,11 +101,31 @@ inline bool ObjectAllocator::IsObjectStackAllocationEnabled() const
 }
 
 //------------------------------------------------------------------------
+// IsObjectStackAllocationAnalysisEnabled: Returns true iff object stack allocation analysis is enabled
+//
+// Return Value:
+//    Returns true iff object stack allocation analysis is enabled
+
+inline bool ObjectAllocator::IsObjectStackAllocationAnalysisEnabled() const
+{
+    return m_IsObjectStackAllocationAnalysisEnabled;
+}
+
+//------------------------------------------------------------------------
+// EnableObjectStackAllocationAnalysis:       Enable object stack allocation analysis.
+
+inline void ObjectAllocator::EnableObjectStackAllocationAnalysis()
+{
+    m_IsObjectStackAllocationAnalysisEnabled = true;
+}
+
+//------------------------------------------------------------------------
 // EnableObjectStackAllocation:       Enable object stack allocation.
 
 inline void ObjectAllocator::EnableObjectStackAllocation()
 {
-    m_IsObjectStackAllocationEnabled = true;
+    m_IsObjectStackAllocationEnabled         = true;
+    m_IsObjectStackAllocationAnalysisEnabled = true;
 }
 
 //------------------------------------------------------------------------

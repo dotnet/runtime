@@ -36,7 +36,9 @@ PhaseStatus ObjectAllocator::DoPhase()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
-    if (IsObjectStackAllocationEnabled())
+    const bool analyze = IsObjectStackAllocationAnalysisEnabled();
+
+    if (analyze)
     {
         JITDUMP("enabled, analyzing...\n");
         DoAnalysis();
@@ -117,7 +119,7 @@ void ObjectAllocator::AddConnGraphEdge(unsigned int sourceLclNum, unsigned int t
 
 void ObjectAllocator::DoAnalysis()
 {
-    assert(m_IsObjectStackAllocationEnabled);
+    assert(m_IsObjectStackAllocationAnalysisEnabled);
     assert(!m_AnalysisDone);
 
     if (comp->lvaCount > 0)
@@ -413,9 +415,20 @@ bool ObjectAllocator::MorphAllocObjNodes()
                         JITDUMP("Allocating local variable V%02u on the heap\n", lclNum);
                     }
 
-                    data                         = MorphAllocObjNodeIntoHelperCall(asAllocObj);
+                    // Some new helpers directly cause escape (eg add to finalizer queue)
+                    //
+                    const bool         doesNotEscape = !CanLclVarEscape(lclNum) && !asAllocObj->gtHelperHasSideEffects;
+                    GenTreeCall* const helper        = MorphAllocObjNodeIntoHelperCall(asAllocObj);
+
+                    data                         = helper;
                     stmtExpr->AsLclVar()->Data() = data;
                     stmtExpr->AddAllEffectsFlags(data);
+
+                    if (doesNotEscape)
+                    {
+                        JITDUMP("ALLOCOBJ at [%06u] does not escape\n", comp->dspTreeID(asAllocObj));
+                        helper->gtCallMoreFlags |= GTF_CALL_M_NO_ESCAPE;
+                    }
                 }
             }
 #ifdef DEBUG
@@ -444,7 +457,7 @@ bool ObjectAllocator::MorphAllocObjNodes()
 // Notes:
 //    Must update parents flags after this.
 
-GenTree* ObjectAllocator::MorphAllocObjNodeIntoHelperCall(GenTreeAllocObj* allocObj)
+GenTreeCall* ObjectAllocator::MorphAllocObjNodeIntoHelperCall(GenTreeAllocObj* allocObj)
 {
     assert(allocObj != nullptr);
 
@@ -460,11 +473,11 @@ GenTree* ObjectAllocator::MorphAllocObjNodeIntoHelperCall(GenTreeAllocObj* alloc
     }
 #endif
 
-    const bool morphArgs  = false;
-    GenTree*   helperCall = comp->fgMorphIntoHelperCall(allocObj, allocObj->gtNewHelper, morphArgs, arg);
+    const bool         morphArgs  = false;
+    GenTreeCall* const helperCall = comp->fgMorphIntoHelperCall(allocObj, allocObj->gtNewHelper, morphArgs, arg);
     if (helperHasSideEffects)
     {
-        helperCall->AsCall()->gtCallMoreFlags |= GTF_CALL_M_ALLOC_SIDE_EFFECTS;
+        helperCall->gtCallMoreFlags |= GTF_CALL_M_ALLOC_SIDE_EFFECTS;
     }
 
 #ifdef FEATURE_READYTORUN
@@ -616,6 +629,7 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
             case GT_QMARK:
             case GT_ADD:
             case GT_FIELD_ADDR:
+            case GT_BOX:
                 // Check whether the local escapes via its grandparent.
                 ++parentIndex;
                 keepChecking = true;
@@ -642,9 +656,10 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
                     // TODO-ObjectStackAllocation: Special-case helpers here that
                     // 1. Don't make objects escape.
                     // 2. Protect objects as interior (GCPROTECT_BEGININTERIOR() instead of GCPROTECT_BEGIN()).
-                    // 3. Don't check that the object is in the heap in ValidateInner.
-
-                    canLclVarEscapeViaParentStack = true;
+                    // 3. Don't check that the object is in the heap in ValidateInner
+                    //
+                    canLclVarEscapeViaParentStack =
+                        !Compiler::s_helperCallProperties.IsNoEscape(comp->eeGetHelperNum(asCall->gtCallMethHnd));
                 }
                 break;
             }

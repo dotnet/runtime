@@ -4717,9 +4717,17 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // local variable allocation on the stack.
     ObjectAllocator objectAllocator(this); // PHASE_ALLOCATE_OBJECTS
 
-    if (compObjectStackAllocation() && opts.OptimizationEnabled())
+    if (opts.OptimizationEnabled())
     {
-        objectAllocator.EnableObjectStackAllocation();
+        if (JitConfig.JitObjectStackAllocationAnalysis() > 0)
+        {
+            objectAllocator.EnableObjectStackAllocationAnalysis();
+        }
+
+        if (compObjectStackAllocation())
+        {
+            objectAllocator.EnableObjectStackAllocation();
+        }
     }
 
     objectAllocator.Run();

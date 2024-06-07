@@ -5909,7 +5909,20 @@ void Compiler::fgValueNumberFieldLoad(GenTree* loadTree, GenTree* baseAddr, Fiel
     ValueNum  loadValueVN = vnStore->VNForLoad(VNK_Liberal, fieldValueVN, fieldSize, loadType, offset, loadSize);
 
     loadTree->gtVNPair.SetLiberal(loadValueVN);
-    loadTree->gtVNPair.SetConservative(vnStore->VNForExpr(compCurBB, loadType));
+
+    // If the object we're writing the field of has not escaped, it is thread private.
+    // So we can set the conservative VN more aggressively.
+    //
+    VNFuncApp funcApp;
+    if ((baseAddr != nullptr) && vnStore->GetVNFunc(fieldValueSelectorVN, &funcApp) &&
+        (funcApp.m_func == VNF_JitNewNoEscape))
+    {
+        loadTree->gtVNPair.SetConservative(loadValueVN);
+    }
+    else
+    {
+        loadTree->gtVNPair.SetConservative(vnStore->VNForExpr(compCurBB, loadType));
+    }
 }
 
 //------------------------------------------------------------------------
@@ -11440,7 +11453,9 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                         // Then, let's see if we can find JitNew at least
                         VNFuncApp  funcApp;
                         const bool addrIsVNFunc = vnStore->GetVNFunc(addrNvnp.GetLiberal(), &funcApp);
-                        if (addrIsVNFunc && (funcApp.m_func == VNF_JitNew) && addrNvnp.BothEqual())
+                        if (addrIsVNFunc &&
+                            ((funcApp.m_func == VNF_JitNew) || (funcApp.m_func == VNF_JitNewNoEscape)) &&
+                            addrNvnp.BothEqual())
                         {
                             tree->gtVNPair =
                                 vnStore->VNPWithExc(ValueNumPair(funcApp.m_args[0], funcApp.m_args[0]), addrXvnp);
@@ -12481,6 +12496,7 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
     switch (vnf)
     {
         case VNF_JitNew:
+        case VNF_JitNewNoEscape:
         {
             generateUniqueVN = true;
             vnpExc           = ValueNumStore::VNPForEmptyExcSet();
@@ -12750,8 +12766,15 @@ void Compiler::fgValueNumberCall(GenTreeCall* call)
 
         if (modHeap)
         {
-            // For now, arbitrary side effect on GcHeap/ByrefExposed.
-            fgMutateGcHeap(call DEBUGARG("HELPER - modifies heap"));
+            if ((call->gtCallMoreFlags & GTF_CALL_M_NO_ESCAPE) != 0)
+            {
+                // zero obj??
+            }
+            else
+            {
+                // For now, arbitrary side effect on GcHeap/ByrefExposed.
+                fgMutateGcHeap(call DEBUGARG("HELPER - modifies heap"));
+            }
         }
     }
     else
@@ -13321,6 +13344,11 @@ bool Compiler::fgValueNumberHelperCall(GenTreeCall* call)
                 {
                     modHeap = true;
                 }
+            }
+
+            if ((vnf == VNF_JitNew) && ((call->gtCallMoreFlags & GTF_CALL_M_NO_ESCAPE) != 0))
+            {
+                vnf = VNF_JitNewNoEscape;
             }
 
             fgValueNumberHelperCallFunc(call, vnf, vnpExc);
@@ -14144,15 +14172,15 @@ CORINFO_CLASS_HANDLE ValueNumStore::GetObjectType(ValueNum vn, bool* pIsExact, b
 
     // CastClass/IsInstanceOf/JitNew all have the class handle as the first argument
     const VNFunc func = funcApp.m_func;
-    if ((func == VNF_CastClass) || (func == VNF_IsInstanceOf) || (func == VNF_JitNew))
+    if ((func == VNF_CastClass) || (func == VNF_IsInstanceOf) || (func == VNF_JitNew) || (func == VNF_JitNewNoEscape))
     {
         ssize_t  clsHandle;
         ValueNum clsVN = funcApp.m_args[0];
         if (IsVNTypeHandle(clsVN) && EmbeddedHandleMapLookup(ConstantValue<ssize_t>(clsVN), &clsHandle))
         {
             // JitNew returns an exact and non-null obj, castclass and isinst do not have this guarantee.
-            *pIsNonNull = func == VNF_JitNew;
-            *pIsExact   = func == VNF_JitNew;
+            *pIsNonNull = (func == VNF_JitNew) || (func == VNF_JitNewNoEscape);
+            *pIsExact   = (func == VNF_JitNew) || (func == VNF_JitNewNoEscape);
             return (CORINFO_CLASS_HANDLE)clsHandle;
         }
     }
