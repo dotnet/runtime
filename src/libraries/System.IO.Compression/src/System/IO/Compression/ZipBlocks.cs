@@ -546,15 +546,26 @@ namespace System.IO.Compression
 
             ushort filenameLength = BinaryPrimitives.ReadUInt16LittleEndian(fixedHeaderBuffer);
             ushort extraFieldLength = BinaryPrimitives.ReadUInt16LittleEndian(fixedHeaderBuffer.Slice(sizeof(ushort)));
-            Span<byte> extraFieldBuffer = extraFieldLength <= 512 ? stackalloc byte[512].Slice(0, extraFieldLength) : new byte[extraFieldLength];
+            byte[]? arrayPoolBuffer = extraFieldLength > 512 ? System.Buffers.ArrayPool<byte>.Shared.Rent(extraFieldLength) : null;
+            Span<byte> extraFieldBuffer = extraFieldLength <= 512 ? stackalloc byte[512].Slice(0, extraFieldLength) : arrayPoolBuffer.AsSpan(0, extraFieldLength);
 
-            stream.Seek(filenameLength, SeekOrigin.Current);
-            stream.ReadExactly(extraFieldBuffer);
+            try
+            {
+                stream.Seek(filenameLength, SeekOrigin.Current);
+                stream.ReadExactly(extraFieldBuffer);
 
-            result = ZipGenericExtraField.ParseExtraField(extraFieldBuffer);
-            Zip64ExtraField.RemoveZip64Blocks(result);
+                result = ZipGenericExtraField.ParseExtraField(extraFieldBuffer);
+                Zip64ExtraField.RemoveZip64Blocks(result);
 
-            return result;
+                return result;
+            }
+            finally
+            {
+                if (arrayPoolBuffer != null)
+                {
+                    System.Buffers.ArrayPool<byte>.Shared.Return(arrayPoolBuffer);
+                }
+            }
         }
 
         // will not throw end of stream exception
@@ -685,55 +696,72 @@ namespace System.IO.Compression
             int dynamicHeaderSize = header.FilenameLength + header.ExtraFieldLength + header.FileCommentLength;
             int bytesToRead = dynamicHeaderSize - (buffer.Length - bytesRead);
             scoped ReadOnlySpan<byte> dynamicHeader;
-
-            // No need to read extra data from the stream, no need to allocate a new buffer.
-            if (bytesToRead <= 0)
-            {
-                dynamicHeader = buffer.Slice(bytesRead);
-            }
-            // Data needs to come from two sources, and we must thus copy data into a single address space.
-            else
-            {
-                Span<byte> collatedHeader = dynamicHeaderSize <= 512 ? stackalloc byte[512].Slice(0, dynamicHeaderSize) : new byte[dynamicHeaderSize];
-
-                buffer.Slice(bytesRead).CopyTo(collatedHeader);
-                int realBytesRead = furtherReads.Read(collatedHeader.Slice(buffer.Length - bytesRead));
-
-                bytesRead = buffer.Length + realBytesRead;
-                if (realBytesRead != bytesToRead)
-                {
-                    return false;
-                }
-                dynamicHeader = collatedHeader;
-            }
-
-            header.Filename = dynamicHeader.Slice(0, header.FilenameLength).ToArray();
-
-            bool uncompressedSizeInZip64 = uncompressedSizeSmall == ZipHelper.Mask32Bit;
-            bool compressedSizeInZip64 = compressedSizeSmall == ZipHelper.Mask32Bit;
-            bool relativeOffsetInZip64 = relativeOffsetOfLocalHeaderSmall == ZipHelper.Mask32Bit;
-            bool diskNumberStartInZip64 = diskNumberStartSmall == ZipHelper.Mask16Bit;
+            byte[]? arrayPoolBuffer = null;
 
             Zip64ExtraField zip64;
-            ReadOnlySpan<byte> zipExtraFields = dynamicHeader.Slice(header.FilenameLength, header.ExtraFieldLength);
 
-            zip64 = default;
-            if (saveExtraFieldsAndComments)
+            try
             {
-                header.ExtraFields = ZipGenericExtraField.ParseExtraField(zipExtraFields);
-                zip64 = Zip64ExtraField.GetAndRemoveZip64Block(header.ExtraFields,
-                            uncompressedSizeInZip64, compressedSizeInZip64,
-                            relativeOffsetInZip64, diskNumberStartInZip64);
-            }
-            else
-            {
-                header.ExtraFields = null;
-                zip64 = Zip64ExtraField.GetJustZip64Block(zipExtraFields,
-                            uncompressedSizeInZip64, compressedSizeInZip64,
-                            relativeOffsetInZip64, diskNumberStartInZip64);
-            }
+                // No need to read extra data from the stream, no need to allocate a new buffer.
+                if (bytesToRead <= 0)
+                {
+                    dynamicHeader = buffer.Slice(bytesRead);
+                }
+                // Data needs to come from two sources, and we must thus copy data into a single address space.
+                else
+                {
+                    if (dynamicHeaderSize > 512)
+                    {
+                        arrayPoolBuffer = System.Buffers.ArrayPool<byte>.Shared.Rent(dynamicHeaderSize);
+                    }
 
-            header.FileComment = dynamicHeader.Slice(header.FilenameLength + header.ExtraFieldLength, header.FileCommentLength).ToArray();
+                    Span<byte> collatedHeader = dynamicHeaderSize <= 512 ? stackalloc byte[512].Slice(0, dynamicHeaderSize) : arrayPoolBuffer.AsSpan(0, dynamicHeaderSize);
+
+                    buffer.Slice(bytesRead).CopyTo(collatedHeader);
+                    int realBytesRead = furtherReads.Read(collatedHeader.Slice(buffer.Length - bytesRead));
+
+                    bytesRead = buffer.Length + realBytesRead;
+                    if (realBytesRead != bytesToRead)
+                    {
+                        return false;
+                    }
+                    dynamicHeader = collatedHeader;
+                }
+
+                header.Filename = dynamicHeader.Slice(0, header.FilenameLength).ToArray();
+
+                bool uncompressedSizeInZip64 = uncompressedSizeSmall == ZipHelper.Mask32Bit;
+                bool compressedSizeInZip64 = compressedSizeSmall == ZipHelper.Mask32Bit;
+                bool relativeOffsetInZip64 = relativeOffsetOfLocalHeaderSmall == ZipHelper.Mask32Bit;
+                bool diskNumberStartInZip64 = diskNumberStartSmall == ZipHelper.Mask16Bit;
+
+                ReadOnlySpan<byte> zipExtraFields = dynamicHeader.Slice(header.FilenameLength, header.ExtraFieldLength);
+
+                zip64 = default;
+                if (saveExtraFieldsAndComments)
+                {
+                    header.ExtraFields = ZipGenericExtraField.ParseExtraField(zipExtraFields);
+                    zip64 = Zip64ExtraField.GetAndRemoveZip64Block(header.ExtraFields,
+                                uncompressedSizeInZip64, compressedSizeInZip64,
+                                relativeOffsetInZip64, diskNumberStartInZip64);
+                }
+                else
+                {
+                    header.ExtraFields = null;
+                    zip64 = Zip64ExtraField.GetJustZip64Block(zipExtraFields,
+                                uncompressedSizeInZip64, compressedSizeInZip64,
+                                relativeOffsetInZip64, diskNumberStartInZip64);
+                }
+
+                header.FileComment = dynamicHeader.Slice(header.FilenameLength + header.ExtraFieldLength, header.FileCommentLength).ToArray();
+            }
+            finally
+            {
+                if (arrayPoolBuffer != null)
+                {
+                    System.Buffers.ArrayPool<byte>.Shared.Return(arrayPoolBuffer);
+                }
+            }
 
             bytesRead += dynamicHeaderSize;
 

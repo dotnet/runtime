@@ -3,7 +3,6 @@
 
 using System.Buffers;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace System.IO.Compression
@@ -109,47 +108,55 @@ namespace System.IO.Compression
             Debug.Assert(maxBytesToRead > 0);
 
             int bufferPointer = 0;
-            byte[] buffer = new byte[BackwardsSeekingBufferSize];
+            byte[] buffer = ArrayPool<byte>.Shared.Rent(BackwardsSeekingBufferSize);
+            Span<byte> bufferSpan = buffer.AsSpan(0, BackwardsSeekingBufferSize);
 
-            bool outOfBytes = false;
-            bool signatureFound = false;
-
-            int bytesRead = 0;
-            int duplicateBytesRead = 0;
-
-            while (!signatureFound && !outOfBytes && bytesRead <= maxBytesToRead)
+            try
             {
-                outOfBytes = SeekBackwardsAndRead(stream, buffer, signatureToFind.Length);
+                bool outOfBytes = false;
+                bool signatureFound = false;
 
-                Debug.Assert(bufferPointer < buffer.Length);
+                int bytesRead = 0;
+                int duplicateBytesRead = 0;
 
-                bufferPointer = buffer.AsSpan().LastIndexOf(signatureToFind);
-                bytesRead += (buffer.Length - duplicateBytesRead);
-
-                if (bufferPointer != -1)
+                while (!signatureFound && !outOfBytes && bytesRead <= maxBytesToRead)
                 {
-                    signatureFound = true;
-                    break;
+                    outOfBytes = SeekBackwardsAndRead(stream, bufferSpan, signatureToFind.Length);
+
+                    Debug.Assert(bufferPointer < bufferSpan.Length);
+
+                    bufferPointer = bufferSpan.LastIndexOf(signatureToFind);
+                    bytesRead += (bufferSpan.Length - duplicateBytesRead);
+
+                    if (bufferPointer != -1)
+                    {
+                        signatureFound = true;
+                        break;
+                    }
+
+                    duplicateBytesRead = signatureToFind.Length;
                 }
 
-                duplicateBytesRead = signatureToFind.Length;
+                if (!signatureFound)
+                {
+                    return false;
+                }
+                else
+                {
+                    stream.Seek(bufferPointer, SeekOrigin.Current);
+                    return true;
+                }
             }
-
-            if (!signatureFound)
+            finally
             {
-                return false;
-            }
-            else
-            {
-                stream.Seek(bufferPointer, SeekOrigin.Current);
-                return true;
+                ArrayPool<byte>.Shared.Return(buffer);
             }
         }
 
         // Returns true if we are out of bytes
         // Allows successive buffers to overlap by a number of bytes (to handle cases where the
         // value being searched for straddles buffers.)
-        private static bool SeekBackwardsAndRead(Stream stream, byte[] buffer, int overlap)
+        private static bool SeekBackwardsAndRead(Stream stream, Span<byte> buffer, int overlap)
         {
             if (stream.Position >= buffer.Length)
             {

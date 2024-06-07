@@ -477,10 +477,13 @@ namespace System.IO.Compression
 
         private void ReadCentralDirectory()
         {
+            const int ReadBufferSize = 4096;
+
+            byte[] fileBuffer = System.Buffers.ArrayPool<byte>.Shared.Rent(ReadBufferSize);
+            Span<byte> fileBufferSpan = fileBuffer.AsSpan(0, ReadBufferSize);
+
             try
             {
-                const int ReadBufferSize = 4096;
-
                 // assume ReadEndOfCentralDirectory has been called and has populated _centralDirectoryStart and _expectedCentralDirectorySize
 
                 _archiveStream.Seek(_centralDirectoryStart, SeekOrigin.Begin);
@@ -489,7 +492,6 @@ namespace System.IO.Compression
                 bool saveExtraFieldsAndComments = Mode == ZipArchiveMode.Update;
 
                 bool continueReadingCentralDirectory = true;
-                Span<byte> fileBuffer = new byte[ReadBufferSize];
                 // total bytes read from central directory
                 int bytesRead = 0;
                 // current position in the current buffer
@@ -503,8 +505,8 @@ namespace System.IO.Compression
                 // read the central directory
                 while (continueReadingCentralDirectory)
                 {
-                    int currBytesRead = _archiveStream.Read(fileBuffer);
-                    ReadOnlySpan<byte> sizedFileBuffer = fileBuffer.Slice(0, currBytesRead);
+                    int currBytesRead = _archiveStream.Read(fileBufferSpan);
+                    ReadOnlySpan<byte> sizedFileBuffer = fileBufferSpan.Slice(0, currBytesRead);
 
                     // the buffer read must always be large enough to fit the constant section size of at least one header
                     continueReadingCentralDirectory = continueReadingCentralDirectory
@@ -548,6 +550,10 @@ namespace System.IO.Compression
             catch (EndOfStreamException ex)
             {
                 throw new InvalidDataException(SR.Format(SR.CentralDirectoryInvalid, ex));
+            }
+            finally
+            {
+                System.Buffers.ArrayPool<byte>.Shared.Return(fileBuffer);
             }
         }
 
