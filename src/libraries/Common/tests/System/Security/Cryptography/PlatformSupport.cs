@@ -77,13 +77,18 @@ namespace Test.Cryptography
 
             try
             {
+                const CngKeyCreationOptions RequireVbs = (CngKeyCreationOptions)0x00020000;
+#if !NETFRAMEWORK
+                Assert.Equal(CngKeyCreationOptions.RequireVbs, RequireVbs);
+#endif
+
                 key = CngKey.Create(
                         CngAlgorithm.ECDsaP256,
                         $"{nameof(CheckIfVbsAvailable)}{CngAlgorithm.ECDsaP256.Algorithm}Key",
                     new CngKeyCreationParameters
                     {
                         Provider = new CngProvider("Microsoft Software Key Storage Provider"),
-                        KeyCreationOptions = CngKeyCreationOptions.RequireVbs | CngKeyCreationOptions.OverwriteExistingKey,
+                        KeyCreationOptions = RequireVbs | CngKeyCreationOptions.OverwriteExistingKey,
                     });
 
                 return true;
