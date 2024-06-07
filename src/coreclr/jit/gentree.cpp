@@ -25510,20 +25510,48 @@ GenTree* Compiler::gtNewSimdSumNode(var_types type, GenTree* op1, CorInfoType si
     {
         assert(IsBaselineVector512IsaSupportedDebugOnly());
         GenTree* op1Dup = fgMakeMultiUse(&op1);
-        op1             = gtNewSimdGetUpperNode(TYP_SIMD32, op1, simdBaseJitType, simdSize);
-        op1Dup          = gtNewSimdGetLowerNode(TYP_SIMD32, op1Dup, simdBaseJitType, simdSize);
-        simdSize        = simdSize / 2;
-        op1             = gtNewSimdBinOpNode(GT_ADD, TYP_SIMD32, op1, op1Dup, simdBaseJitType, simdSize);
+
+        op1    = gtNewSimdGetLowerNode(TYP_SIMD32, op1, simdBaseJitType, simdSize);
+        op1Dup = gtNewSimdGetUpperNode(TYP_SIMD32, op1Dup, simdBaseJitType, simdSize);
+
+        if (varTypeIsFloating(simdBaseType))
+        {
+            // We need to ensure deterministic results which requires
+            // consistently adding values together. Since many operations
+            // end up operating on 128-bit lanes, we break sum the same way.
+
+            op1    = gtNewSimdSumNode(type, op1, simdBaseJitType, 32);
+            op1Dup = gtNewSimdSumNode(type, op1Dup, simdBaseJitType, 32);
+
+            return gtNewOperNode(GT_ADD, type, op1, op1Dup);
+        }
+
+        simdSize = 32;
+        op1      = gtNewSimdBinOpNode(GT_ADD, TYP_SIMD32, op1, op1Dup, simdBaseJitType, 32);
     }
 
     if (simdSize == 32)
     {
         assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
         GenTree* op1Dup = fgMakeMultiUse(&op1);
-        op1             = gtNewSimdGetUpperNode(TYP_SIMD16, op1, simdBaseJitType, simdSize);
-        op1Dup          = gtNewSimdGetLowerNode(TYP_SIMD16, op1Dup, simdBaseJitType, simdSize);
-        simdSize        = simdSize / 2;
-        op1             = gtNewSimdBinOpNode(GT_ADD, TYP_SIMD16, op1, op1Dup, simdBaseJitType, simdSize);
+
+        op1    = gtNewSimdGetLowerNode(TYP_SIMD16, op1, simdBaseJitType, simdSize);
+        op1Dup = gtNewSimdGetUpperNode(TYP_SIMD16, op1Dup, simdBaseJitType, simdSize);
+
+        if (varTypeIsFloating(simdBaseType))
+        {
+            // We need to ensure deterministic results which requires
+            // consistently adding values together. Since many operations
+            // end up operating on 128-bit lanes, we break sum the same way.
+
+            op1    = gtNewSimdSumNode(type, op1, simdBaseJitType, 16);
+            op1Dup = gtNewSimdSumNode(type, op1Dup, simdBaseJitType, 16);
+
+            return gtNewOperNode(GT_ADD, type, op1, op1Dup);
+        }
+
+        simdSize = 16;
+        op1      = gtNewSimdBinOpNode(GT_ADD, TYP_SIMD16, op1, op1Dup, simdBaseJitType, 16);
     }
 
     assert(simdSize == 16);
@@ -25534,6 +25562,7 @@ GenTree* Compiler::gtNewSimdSumNode(var_types type, GenTree* op1, CorInfoType si
         {
             assert(compIsaSupportedDebugOnly(InstructionSet_SSE2));
             GenTree* op1Shuffled = fgMakeMultiUse(&op1);
+
             if (compOpportunisticallyDependsOn(InstructionSet_AVX))
             {
                 assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
@@ -25571,6 +25600,7 @@ GenTree* Compiler::gtNewSimdSumNode(var_types type, GenTree* op1, CorInfoType si
         {
             assert(compIsaSupportedDebugOnly(InstructionSet_SSE2));
             GenTree* op1Shuffled = fgMakeMultiUse(&op1);
+
             if (compOpportunisticallyDependsOn(InstructionSet_AVX))
             {
                 assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
