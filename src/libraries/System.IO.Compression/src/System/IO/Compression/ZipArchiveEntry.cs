@@ -534,7 +534,7 @@ namespace System.IO.Compression
             cdStaticHeader[cdPosition++] = (byte)_versionMadeBySpecification;
 
             // Version made by Compatibility (type)     (1 byte)
-            cdStaticHeader[cdPosition++] = (byte)CurrentZipPlatform;                        // Version made by Compatibility (type)     (1 byte)
+            cdStaticHeader[cdPosition++] = (byte)CurrentZipPlatform;
 
             // Minimum version needed to extract        (2 bytes)
             BinaryPrimitives.WriteUInt16LittleEndian(cdStaticHeader.Slice(cdPosition), (ushort)_versionToExtract);
