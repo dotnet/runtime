@@ -350,7 +350,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
                 bootConfig.resources.coreVfs = coreVfs;
         }
 
-        if (!InvariantGlobalization)
+        if (!InvariantGlobalization && !IsSingleFileBundle)
         {
             bool loadRemote = RemoteSources?.Length > 0;
             foreach (var idfn in IcuDataFileNames)

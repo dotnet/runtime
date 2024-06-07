@@ -48,8 +48,11 @@ extern void mono_register_timezones_bundle (void);
 #endif /* INVARIANT_TIMEZONE */
 #ifdef WASM_SINGLE_FILE
 extern void mono_register_assemblies_bundle (void);
+extern void mono_register_runtimeconfig_bin (void);
+extern mono_bool mono_bundled_resources_get_data_resource_values (const char *id, const uint8_t **data_out, uint32_t *size_out);
 #ifndef INVARIANT_GLOBALIZATION
 extern void mono_register_icu_bundle (void);
+extern int32_t mono_wasm_load_icu_data(const void* pData);
 #endif /* INVARIANT_GLOBALIZATION */
 #endif /* WASM_SINGLE_FILE */
 extern void mono_wasm_set_entrypoint_breakpoint (const char* assembly_name, int method_token);
@@ -186,14 +189,32 @@ cleanup_runtime_config (MonovmRuntimeConfigArguments *args, void *user_data)
 	free (user_data);
 }
 
+void
+load_icu ()
+{
+#ifndef INVARIANT_GLOBALIZATION
+#ifdef WASM_SINGLE_FILE
+	mono_register_icu_bundle ();
+
+	const uint8_t *buffer = NULL;
+	uint32_t data_len = 0;
+	if (!mono_bundled_resources_get_data_resource_values ("icudt.dat", &buffer, &data_len)) {
+		printf("Could not load icudt.dat from the bundle");
+		assert(buffer);
+	}
+	assert(mono_wasm_load_icu_data(buffer));
+#else
+	mono_wasm_link_icu_shim ();
+#endif
+#endif
+}
+
 EMSCRIPTEN_KEEPALIVE void
 mono_wasm_load_runtime (int debug_level)
 {
 	const char *interp_opts = "";
 
-#ifndef INVARIANT_GLOBALIZATION
-	mono_wasm_link_icu_shim ();
-#endif
+	load_icu();
 
 	// When the list of app context properties changes, please update RuntimeConfigReservedProperties for
 	// target _WasmGenerateRuntimeConfig in BrowserWasmApp.targets file
@@ -205,6 +226,22 @@ mono_wasm_load_runtime (int debug_level)
 	appctx_values [0] = "/";
 	appctx_values [1] = "browser-wasm";
 
+#ifdef WASM_SINGLE_FILE
+	mono_register_runtimeconfig_bin ();
+
+	const uint8_t *buffer = NULL;
+	uint32_t data_len = 0;
+	if (!mono_bundled_resources_get_data_resource_values (RUNTIMECONFIG_BIN_FILE, &buffer, &data_len)) {
+		printf("Could not load " RUNTIMECONFIG_BIN_FILE " from the bundle\n");
+		assert(buffer);
+	}
+
+	MonovmRuntimeConfigArguments *arg = (MonovmRuntimeConfigArguments *)malloc (sizeof (MonovmRuntimeConfigArguments));
+	arg->kind = 1; // kind: image pointer
+	arg->runtimeconfig.data.data = buffer;
+	arg->runtimeconfig.data.data_len = data_len;
+	monovm_runtimeconfig_initialize (arg, cleanup_runtime_config, NULL);
+#else
 	char *file_name = RUNTIMECONFIG_BIN_FILE;
 	int str_len = strlen (file_name) + 1; // +1 is for the "/"
 	char *file_path = (char *)malloc (sizeof (char) * (str_len +1)); // +1 is for the terminating null character
@@ -221,6 +258,7 @@ mono_wasm_load_runtime (int debug_level)
 	} else {
 		free (file_path);
 	}
+#endif
 
 	monovm_initialize (2, appctx_keys, appctx_values);
 
