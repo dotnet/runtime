@@ -28,41 +28,6 @@ add_custom_command(OUTPUT ${GEN_EVENTPIPE_SOURCES}
   COMMAND ${GENERATE_COMMAND}
   DEPENDS ${GENERATE_SCRIPT} ${EVENT_MANIFEST} ${EVENT_EXCLUSIONS})
 
-set (EVENTPIPE_SOURCES "")
-set (EVENTPIPE_HEADERS "")
-set (CORECLR_EVENTPIPE_SHIM_SOURCES "")
-set (CORECLR_EVENTPIPE_SHIM_HEADERS "")
-
-set (SHARED_CONTAINERS_SOURCE_PATH "${CLR_SRC_NATIVE_DIR}/containers")
-set (SHARED_EVENTPIPE_SOURCE_PATH "${CLR_SRC_NATIVE_DIR}/eventpipe")
-set (CORECLR_EVENTPIPE_SHIM_SOURCE_PATH "${CORECLR_EVENTPIPE_SHIM_DIR}")
-
-include (${SHARED_EVENTPIPE_SOURCE_PATH}/eventpipe.cmake)
-
-list(APPEND EVENTPIPE_SOURCES
-  ${SHARED_EVENTPIPE_SOURCES}
-  ${SHARED_DIAGNOSTIC_SERVER_SOURCES}
-)
-
-list(APPEND EVENTPIPE_HEADERS
-  ${SHARED_EVENTPIPE_HEADERS}
-  ${SHARED_DIAGNOSTIC_SERVER_HEADERS}
-)
-
-addprefix(EVENTPIPE_SOURCES ${SHARED_EVENTPIPE_SOURCE_PATH} "${EVENTPIPE_SOURCES}")
-addprefix(EVENTPIPE_HEADERS ${SHARED_EVENTPIPE_SOURCE_PATH} "${EVENTPIPE_HEADERS}")
-
-set_source_files_properties(${SHARED_EVENTPIPE_SOURCE_PATH}/ep-sources.c PROPERTIES COMPILE_DEFINITIONS EP_FORCE_INCLUDE_SOURCE_FILES)
-set_source_files_properties(${SHARED_EVENTPIPE_SOURCE_PATH}/ds-sources.c PROPERTIES COMPILE_DEFINITIONS DS_FORCE_INCLUDE_SOURCE_FILES)
-
-set_source_files_properties(${CONTAINER_SOURCES} PROPERTIES LANGUAGE CXX)
-set_source_files_properties(${EVENTPIPE_SOURCES} PROPERTIES LANGUAGE CXX)
-
-if(CLR_CMAKE_HOST_UNIX)
-    set_source_files_properties(${CONTAINER_SOURCES} PROPERTIES COMPILE_OPTIONS -xc++)
-    set_source_files_properties(${EVENTPIPE_SOURCES} PROPERTIES COMPILE_OPTIONS -xc++)
-endif(CLR_CMAKE_HOST_UNIX)
-
 list(APPEND CORECLR_EVENTPIPE_SHIM_SOURCES
   ep-rt-coreclr.cpp
 )
@@ -75,27 +40,22 @@ list(APPEND CORECLR_EVENTPIPE_SHIM_HEADERS
   ep-rt-types-coreclr.h
 )
 
-addprefix(CORECLR_EVENTPIPE_SHIM_SOURCES ${CORECLR_EVENTPIPE_SHIM_SOURCE_PATH} "${CORECLR_EVENTPIPE_SHIM_SOURCES}")
-addprefix(CORECLR_EVENTPIPE_SHIM_HEADERS ${CORECLR_EVENTPIPE_SHIM_SOURCE_PATH} "${CORECLR_EVENTPIPE_SHIM_HEADERS}")
-
-
-list(APPEND EVENTPIPE_SOURCES
-  ${CORECLR_EVENTPIPE_SHIM_SOURCES}
-  ${CORECLR_EVENTPIPE_SHIM_HEADERS}
-  ${EVENTPIPE_HEADERS}
-  ${SHARED_EVENTPIPE_CONFIG_HEADERS}
-)
-
 add_library_clr(eventpipe_gen_objs OBJECT ${GEN_EVENTPIPE_SOURCES})
 target_precompile_headers(eventpipe_gen_objs PRIVATE [["common.h"]])
 set_target_properties(eventpipe_gen_objs PROPERTIES LINKER_LANGUAGE CXX)
 add_dependencies(eventpipe_gen_objs eventing_headers)
 
-add_library_clr(eventpipe_objs OBJECT ${EVENTPIPE_SOURCES})
+add_library_clr(eventpipe_objs OBJECT ${CORECLR_EVENTPIPE_SHIM_SOURCES} ${CORECLR_EVENTPIPE_SHIM_HEADERS})
 target_precompile_headers(eventpipe_objs PRIVATE [["common.h"]])
 set_target_properties(eventpipe_objs PROPERTIES LINKER_LANGUAGE CXX)
 add_dependencies(eventpipe_objs eventing_headers)
-target_link_libraries(eventpipe_objs INTERFACE dn-containers)
+target_link_libraries(eventpipe_objs PRIVATE dn-diagnosticserver dn-eventpipe)
+
+# The CoreCLR EventPipe runtime is C++, but the EventPipe and DiagnosticServer sources are C.
+# Forcibly override them to build as C++.
+get_property(diagnosticserver_sources TARGET dn-diagnosticserver PROPERTY INTERFACE_SOURCES)
+get_property(eventpipe_sources TARGET dn-eventpipe PROPERTY INTERFACE_SOURCES)
+set_source_files_properties(${diagnosticserver_sources} ${eventpipe_sources} PROPERTIES LANGUAGE CXX)
 
 add_library(eventpipe INTERFACE)
 target_sources(eventpipe INTERFACE $<TARGET_OBJECTS:eventpipe_gen_objs> $<TARGET_OBJECTS:eventpipe_objs> $<TARGET_OBJECTS:dn-containers>)
