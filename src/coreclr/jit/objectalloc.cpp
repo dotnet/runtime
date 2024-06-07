@@ -381,7 +381,6 @@ bool ObjectAllocator::MorphAllocObjNodes()
             {
                 assert(basicBlockHasNewObj);
 
-                comp->Metrics.NewHelperCalls++;
                 //------------------------------------------------------------------------
                 // We expect the following expression tree at this point
                 //  STMTx (IL 0x... ???)
@@ -393,6 +392,18 @@ bool ObjectAllocator::MorphAllocObjNodes()
                 GenTreeAllocObj*     asAllocObj = data->AsAllocObj();
                 unsigned int         lclNum     = stmtExpr->AsLclVar()->GetLclNum();
                 CORINFO_CLASS_HANDLE clsHnd     = data->AsAllocObj()->gtAllocObjClsHnd;
+
+                DWORD      classAttribs = comp->info.compCompHnd->getClassAttribs(clsHnd);
+                const bool isValueClass = (classAttribs & CORINFO_FLG_VALUECLASS) != 0;
+
+                if (isValueClass)
+                {
+                    comp->Metrics.NewBoxedValueClassHelperCalls++;
+                }
+                else
+                {
+                    comp->Metrics.NewRefClassHelperCalls++;
+                }
 
                 // Don't attempt to do stack allocations inside basic blocks that may be in a loop.
                 if (IsObjectStackAllocationEnabled() && !basicBlockHasBackwardJump &&
@@ -419,7 +430,6 @@ bool ObjectAllocator::MorphAllocObjNodes()
 
                     // Some new helpers directly cause escape (eg add to finalizer queue)
                     //
-
                     GenTreeCall* const helper    = MorphAllocObjNodeIntoHelperCall(asAllocObj);
                     data                         = helper;
                     stmtExpr->AsLclVar()->Data() = data;
@@ -432,7 +442,19 @@ bool ObjectAllocator::MorphAllocObjNodes()
                         {
                             JITDUMP("ALLOCOBJ at [%06u] does not escape\n", comp->dspTreeID(asAllocObj));
                             helper->gtCallMoreFlags |= GTF_CALL_M_NO_ESCAPE;
-                            comp->Metrics.NonEscapingNewHelperCalls++;
+
+                            if (isValueClass)
+                            {
+                                comp->Metrics.NonEscapingNewBoxedValueClassHelperCalls++;
+                            }
+                            else
+                            {
+                                comp->Metrics.NonEscapingNewRefClassHelperCalls++;
+                            }
+                        }
+                        else
+                        {
+                            JITDUMP("ALLOCOBJ at [%06u] escapes\n", comp->dspTreeID(asAllocObj));
                         }
                     }
                 }
@@ -620,13 +642,16 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
 
             case GT_EQ:
             case GT_NE:
+            case GT_NULLCHECK:
                 canLclVarEscapeViaParentStack = false;
                 break;
 
             case GT_COMMA:
+            case GT_STORE_BLK:
                 if (parent->AsOp()->gtGetOp1() == parentStack->Top(parentIndex - 1))
                 {
-                    // Left child of GT_COMMA, it will be discarded
+                    // Left child of GT_COMMA will be discarded
+                    // Left childof GT_STORE_BLK is an address to write to
                     canLclVarEscapeViaParentStack = false;
                     break;
                 }
@@ -635,6 +660,7 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
             case GT_QMARK:
             case GT_ADD:
             case GT_FIELD_ADDR:
+            case GT_LCL_ADDR:
             case GT_BOX:
                 // Check whether the local escapes via its grandparent.
                 ++parentIndex;
@@ -730,6 +756,7 @@ void ObjectAllocator::UpdateAncestorTypes(GenTree* tree, ArrayStack<GenTree*>* p
             case GT_QMARK:
             case GT_ADD:
             case GT_FIELD_ADDR:
+            case GT_LCL_ADDR:
                 if (parent->TypeGet() == TYP_REF)
                 {
                     parent->ChangeType(newType);
