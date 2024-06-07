@@ -403,9 +403,10 @@ namespace Internal.StackTraceMetadata
         /// <summary>
         /// Emit function pointer type.
         /// </summary>
-        private void EmitFunctionPointerTypeName()
+        private static void EmitFunctionPointerTypeName()
         {
-            _outputBuilder.Append("IntPtr");
+            // Function pointer types have no textual representation and we have tests making sure
+            // they show up as empty strings in stack traces, so deliberately do nothing.
         }
 
         /// <summary>
