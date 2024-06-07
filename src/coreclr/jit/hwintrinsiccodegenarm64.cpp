@@ -1851,6 +1851,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 {
                     // GatherVector(Vector<T> mask, T* address, Vector<T2> indices)
 
+                    assert(intrin.numOperands == 3);
+
                     var_types auxType = node->GetAuxiliaryType();
                     emitAttr  auxSize = emitActualTypeSize(auxType);
 
@@ -1870,6 +1872,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 else
                 {
                     // GatherVector(Vector<T> mask, Vector<T2> addresses)
+
+                    assert(intrin.numOperands == 2);
 
                     GetEmitter()->emitIns_R_R_R_I(ins, emitSize, targetReg, op1Reg, op2Reg, 0, opt);
                 }
