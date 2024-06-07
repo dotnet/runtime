@@ -26,6 +26,7 @@ function(generate_module_index Target ModuleIndexFile)
     )
 
     add_dependencies(runtimeinfo ${Target})
+    target_compile_options(runtimeinfo CMAKE_INTERPROCEDURAL_OPTIMIZATION OFF)
     target_sources(runtimeinfo PRIVATE ${ModuleIndexFile})
 endfunction(generate_module_index)
 
