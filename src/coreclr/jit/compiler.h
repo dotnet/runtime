@@ -6081,7 +6081,7 @@ public:
 
     bool fgRenumberBlocks();
 
-    bool fgExpandRarelyRunBlocks();
+    bool fgExpandRarelyRunBlocks(bool& hasRarelyRunBlocks);
 
     bool fgEhAllowsMoveBlock(BasicBlock* bBefore, BasicBlock* bAfter);
 

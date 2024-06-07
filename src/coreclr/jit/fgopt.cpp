@@ -3038,10 +3038,13 @@ bool Compiler::fgOptimizeSwitchJumps()
 // fgExpandRunRarelyBlocks: given the current set of run rarely blocks,
 //   see if we can deduce that some other blocks are run rarely.
 //
+// Parameters:
+//    hasRarelyRunBlocks - Out parameter indicating if any rarely-run blocks were found
+//
 // Returns:
 //    True if new block was marked as run rarely.
 //
-bool Compiler::fgExpandRarelyRunBlocks()
+bool Compiler::fgExpandRarelyRunBlocks(bool& hasRarelyRunBlocks)
 {
     bool result = false;
 
@@ -3233,11 +3236,14 @@ bool Compiler::fgExpandRarelyRunBlocks()
     //
     for (bPrev = fgFirstBB, block = bPrev->Next(); block != nullptr; bPrev = block, block = block->Next())
     {
-        // If block is not run rarely, then check to make sure that it has
-        // at least one non-rarely run block.
-
-        if (!block->isRunRarely())
+        if (block->isRunRarely())
         {
+            hasRarelyRunBlocks = true;
+        }
+        else
+        {
+            // If block is not run rarely, then check to make sure that it has
+            // at least one non-rarely run block.
             bool rare = true;
 
             /* Make sure that block has at least one normal predecessor */
@@ -3386,13 +3392,14 @@ bool Compiler::fgReorderBlocks(bool useProfile)
         return false;
     }
 
-    bool newRarelyRun      = false;
-    bool movedBlocks       = false;
-    bool optimizedSwitches = false;
-    bool optimizedBranches = false;
+    bool newRarelyRun       = false;
+    bool movedBlocks        = false;
+    bool optimizedSwitches  = false;
+    bool optimizedBranches  = false;
+    bool hasRarelyRunBlocks = false;
 
     // First let us expand the set of run rarely blocks
-    newRarelyRun |= fgExpandRarelyRunBlocks();
+    newRarelyRun |= fgExpandRarelyRunBlocks(/* OUT */ hasRarelyRunBlocks);
 
 #if defined(FEATURE_EH_WINDOWS_X86)
     if (!UsesFunclets())
@@ -3419,7 +3426,11 @@ bool Compiler::fgReorderBlocks(bool useProfile)
         if (JitConfig.JitDoReversePostOrderLayout())
         {
             fgDoReversePostOrderLayout();
-            fgMoveColdBlocks();
+
+            if (hasRarelyRunBlocks)
+            {
+                fgMoveColdBlocks();
+            }
 
             // Renumber blocks to facilitate LSRA's order of block visitation
             // TODO: Consider removing this, and using traversal order in lSRA
