@@ -658,7 +658,7 @@ namespace System
                 {
                     ref byte offsetDataRef = ref Unsafe.Add(ref arrayDataRef, flattenedIndex * pMethodTable->ComponentSize);
                     if (pElementMethodTable->ContainsGCPointers)
-                        SpanHelpers.ClearWithReferences(ref Unsafe.As<byte, nint>(ref offsetDataRef), pElementMethodTable->GetNumInstanceFieldBytes());
+                        SpanHelpers.ClearWithReferences(ref Unsafe.As<byte, nint>(ref offsetDataRef), pElementMethodTable->GetNumInstanceFieldBytes() / (nuint)sizeof(IntPtr));
                     else
                         SpanHelpers.ClearWithoutReferences(ref offsetDataRef, pElementMethodTable->GetNumInstanceFieldBytes());
                 }
