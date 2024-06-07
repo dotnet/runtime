@@ -493,6 +493,8 @@ namespace System.Security.Cryptography.Tests
             Assert.Throws<ObjectDisposedException>(() => incrementalHash.GetCurrentHash());
             Assert.Throws<ObjectDisposedException>(() => incrementalHash.GetCurrentHash(tmpDest));
             Assert.Throws<ObjectDisposedException>(() => incrementalHash.TryGetCurrentHash(tmpDest, out int _));
+
+            Assert.Throws<ObjectDisposedException>(() => incrementalHash.Clone());
         }
 
         [Theory]
@@ -516,6 +518,8 @@ namespace System.Security.Cryptography.Tests
             Assert.Throws<ObjectDisposedException>(() => incrementalHash.GetCurrentHash());
             Assert.Throws<ObjectDisposedException>(() => incrementalHash.GetCurrentHash(tmpDest));
             Assert.Throws<ObjectDisposedException>(() => incrementalHash.TryGetCurrentHash(tmpDest, out int _));
+
+            Assert.Throws<ObjectDisposedException>(() => incrementalHash.Clone());
         }
 
         [Theory]

@@ -119,6 +119,8 @@ namespace System.Security.Cryptography
             }
         }
 
+        public override HashProvider Clone() => throw new System.NotImplementedException("TODO");
+
         public sealed override void Dispose(bool disposing)
         {
             if (disposing)

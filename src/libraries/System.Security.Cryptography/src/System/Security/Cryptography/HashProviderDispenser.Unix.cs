@@ -94,6 +94,8 @@ namespace System.Security.Cryptography
                 _liteHash = LiteHashProvider.CreateHash(hashAlgorithmId);
             }
 
+            public override HashProvider Clone() => throw new System.NotImplementedException("TODO");
+
             public override void AppendHashData(ReadOnlySpan<byte> data)
             {
                 using (ConcurrencyBlock.Enter(ref _block))
@@ -155,6 +157,8 @@ namespace System.Security.Cryptography
             {
                 _liteHmac = LiteHashProvider.CreateHmac(hashAlgorithmId, key);
             }
+
+            public override HashProvider Clone() => throw new System.NotImplementedException("TODO");
 
             public override void AppendHashData(ReadOnlySpan<byte> data)
             {

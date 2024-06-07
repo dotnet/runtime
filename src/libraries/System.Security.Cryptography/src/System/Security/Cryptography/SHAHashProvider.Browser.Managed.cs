@@ -39,6 +39,8 @@ namespace System.Security.Cryptography
             }
         }
 
+        public override HashProvider Clone() => throw new System.NotImplementedException("TODO");
+
         public override void AppendHashData(ReadOnlySpan<byte> data)
         {
             buffer ??= new MemoryStream(1000);

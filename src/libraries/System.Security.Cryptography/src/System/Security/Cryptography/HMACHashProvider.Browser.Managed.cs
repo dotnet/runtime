@@ -34,6 +34,8 @@ namespace System.Security.Cryptography
             _key = InitializeKey(key);
         }
 
+        public override HashProvider Clone() => throw new System.NotImplementedException("TODO");
+
         private byte[] InitializeKey(ReadOnlySpan<byte> key)
         {
             if (key.Length > _blockSizeValue)
