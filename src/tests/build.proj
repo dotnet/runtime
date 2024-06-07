@@ -469,6 +469,7 @@
     <MakeDir Directories="$(FinalPath)" />
     <!-- FIXME: Use RecursiveDir metadata -->
     <Copy Condition="'$(TargetOS)' == 'maccatalyst'" SourceFiles="@(RecursiveCopyHack)" DestinationFolder="$(FinalPath)/Contents/%(RecursiveDir)" />
+    <Copy Condition="'$(TargetOS)' == 'maccatalyst'" SourceFiles="@(RecursiveCopyHack)" DestinationFolder="$(FinalPath)/Contents/MacOS/%(RecursiveDir)" />
     <Copy Condition="'$(TargetOS)' != 'maccatalyst'" SourceFiles="@(RecursiveCopyHack)" DestinationFolder="$(FinalPath)/%(RecursiveDir)" />
     <RemoveDir Directories="$(AppBundlePath)" />
     <Message Importance="High" Text="Final app: $(FinalPath)" />
