@@ -238,7 +238,7 @@ SingleTypeRegSet LinearScan::filterConsecutiveCandidates(SingleTypeRegSet  float
         currAvailableRegs &= ~endMask;
     } while (currAvailableRegs != RBM_NONE);
 
-    SingleTypeRegSet v0_v31_mask = (RBM_V0 | RBM_V31).GetFloatRegSet();
+    SingleTypeRegSet v0_v31_mask = SRBM_V0 | SRBM_V31;
     if ((floatCandidates & v0_v31_mask) == v0_v31_mask)
     {
         // Finally, check for round robin case where sequence of last register
@@ -255,56 +255,48 @@ SingleTypeRegSet LinearScan::filterConsecutiveCandidates(SingleTypeRegSet  float
             {
                 if ((floatCandidates & v0_v31_mask) != RBM_NONE)
                 {
-                    consecutiveResult |= RBM_V31.GetFloatRegSet();
+                    consecutiveResult |= SRBM_V31;
                     overallResult |= v0_v31_mask;
                 }
                 break;
             }
             case 3:
             {
-                SingleTypeRegSet v0_v30_v31_mask =
-                    (RBM_V0 | RBM_V30 | RBM_V31).GetFloatRegSet();
+                SingleTypeRegSet v0_v30_v31_mask = SRBM_V0 | SRBM_V30 | SRBM_V31;
                 if ((floatCandidates & v0_v30_v31_mask) != RBM_NONE)
                 {
-                    consecutiveResult |= RBM_V30.GetFloatRegSet();
+                    consecutiveResult |= SRBM_V30;
                     overallResult |= v0_v30_v31_mask;
                 }
 
-                SingleTypeRegSet v0_v1_v31_mask =
-                    (RBM_V0 | RBM_V1 | RBM_V31).GetFloatRegSet();
+                SingleTypeRegSet v0_v1_v31_mask = SRBM_V0 | SRBM_V1 | SRBM_V31;
                 if ((floatCandidates & v0_v1_v31_mask) != RBM_NONE)
                 {
-                    consecutiveResult |= RBM_V31.GetFloatRegSet();
+                    consecutiveResult |= SRBM_V31;
                     overallResult |= v0_v1_v31_mask;
                 }
                 break;
             }
             case 4:
             {
-                SingleTypeRegSet v0_v29_v30_v31_mask =
-                    (RBM_V0 | RBM_V29 | RBM_V30 | RBM_V31)
-                        .GetFloatRegSet();
+                SingleTypeRegSet v0_v29_v30_v31_mask = SRBM_V0 | SRBM_V29 | SRBM_V30 | SRBM_V31;
                 if ((floatCandidates & v0_v29_v30_v31_mask) != RBM_NONE)
                 {
-                    consecutiveResult |= RBM_V29.GetFloatRegSet();
+                    consecutiveResult |= SRBM_V29;
                     overallResult |= v0_v29_v30_v31_mask;
                 }
 
-                SingleTypeRegSet v0_v1_v30_v31_mask =
-                    (RBM_V0 | RBM_V29 | RBM_V30 | RBM_V31)
-                        .GetFloatRegSet();
+                SingleTypeRegSet v0_v1_v30_v31_mask = SRBM_V0 | SRBM_V29 | SRBM_V30 | SRBM_V31;
                 if ((floatCandidates & v0_v1_v30_v31_mask) != RBM_NONE)
                 {
-                    consecutiveResult |= RBM_V30.GetFloatRegSet();
+                    consecutiveResult |= SRBM_V30;
                     overallResult |= v0_v1_v30_v31_mask;
                 }
 
-                SingleTypeRegSet v0_v1_v2_v31_mask =
-                    (RBM_V0 | RBM_V29 | RBM_V30 | RBM_V31)
-                        .GetFloatRegSet();
+                SingleTypeRegSet v0_v1_v2_v31_mask = SRBM_V0 | SRBM_V29 | SRBM_V30 | SRBM_V31;
                 if ((floatCandidates & v0_v1_v2_v31_mask) != RBM_NONE)
                 {
-                    consecutiveResult |= RBM_V31.GetFloatRegSet();
+                    consecutiveResult |= SRBM_V31;
                     overallResult |= v0_v1_v2_v31_mask;
                 }
                 break;
@@ -437,9 +429,8 @@ SingleTypeRegSet LinearScan::getConsecutiveCandidates(SingleTypeRegSet  allCandi
     if (getStressLimitRegs() != LSRA_LIMIT_NONE)
     {
         // For stress, make only alternate registers available so we can stress the selection of free/busy registers.
-        floatFreeCandidates &= (RBM_V0 | RBM_V2 | RBM_V4 | RBM_V6 | RBM_V8 | RBM_V10 | RBM_V12 | RBM_V14 | RBM_V16 |
-                                RBM_V18 | RBM_V20 | RBM_V22 | RBM_V24 | RBM_V26 | RBM_V28 | RBM_V30)
-                                   .GetFloatRegSet();
+        floatFreeCandidates &= SRBM_V0 | SRBM_V2 | SRBM_V4 | SRBM_V6 | SRBM_V8 | SRBM_V10 | SRBM_V12 | SRBM_V14 | SRBM_V16 |
+                                SRBM_V18 | SRBM_V20 | SRBM_V22 | SRBM_V24 | SRBM_V26 | SRBM_V28 | SRBM_V30;
     }
 #endif
 

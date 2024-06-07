@@ -265,7 +265,7 @@ SingleTypeRegSet LinearScan::allSIMDRegs()
 SingleTypeRegSet LinearScan::lowSIMDRegs()
 {
 #if defined(TARGET_AMD64)
-    return (availableFloatRegs & RBM_LOWFLOAT);
+    return (availableFloatRegs & RBM_LOWFLOAT.GetFloatRegSet());
 #else
     return availableFloatRegs;
 #endif
@@ -619,7 +619,8 @@ SingleTypeRegSet LinearScan::stressLimitRegs(RefPosition* refPosition, RegisterT
             case LSRA_LIMIT_UPPER_SIMD_SET:
                 if ((mask & LsraLimitUpperSimdSet) != RBM_NONE)
                 {
-                    mask = getConstrainedRegMask(refPosition, regType, mask, LsraLimitUpperSimdSet, minRegCount);
+                    mask = getConstrainedRegMask(refPosition, regType, mask,
+                                                 LsraLimitUpperSimdSet.GetRegSetForType(regType), minRegCount);
                 }
                 break;
 #endif
@@ -842,9 +843,9 @@ LinearScan::LinearScan(Compiler* theCompiler)
     //       Once that is addressed, we may consider allowing LR in availableIntRegs.
     availableIntRegs = (RBM_ALLINT & ~(RBM_PR | RBM_FP | RBM_LR) & ~compiler->codeGen->regSet.rsMaskResvd).GetIntRegSet();
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    availableIntRegs = (RBM_ALLINT & ~(RBM_FP | RBM_RA) & ~compiler->codeGen->regSet.rsMaskResvd).getIntRegSet();
+    availableIntRegs = (RBM_ALLINT & ~(RBM_FP | RBM_RA) & ~compiler->codeGen->regSet.rsMaskResvd).GetIntRegSet();
 #else
-    availableIntRegs = (RBM_ALLINT & ~compiler->codeGen->regSet.rsMaskResvd).getIntRegSet();
+    availableIntRegs = (RBM_ALLINT & ~compiler->codeGen->regSet.rsMaskResvd).GetIntRegSet();
 #endif
 
 #if ETW_EBP_FRAMED
@@ -852,8 +853,8 @@ LinearScan::LinearScan(Compiler* theCompiler)
 #endif // ETW_EBP_FRAMED
 
 #ifdef TARGET_AMD64
-    availableFloatRegs  = RBM_ALLFLOAT;
-    availableDoubleRegs = RBM_ALLDOUBLE;
+    availableFloatRegs  = RBM_ALLFLOAT.GetFloatRegSet();
+    availableDoubleRegs = RBM_ALLDOUBLE.GetFloatRegSet();
 #else
     availableFloatRegs  = RBM_ALLFLOAT.GetFloatRegSet();
     availableDoubleRegs = RBM_ALLDOUBLE.GetFloatRegSet();
@@ -880,8 +881,8 @@ LinearScan::LinearScan(Compiler* theCompiler)
 #if defined(TARGET_AMD64)
     if (compiler->canUseEvexEncoding())
     {
-        availableFloatRegs |= RBM_HIGHFLOAT;
-        availableDoubleRegs |= RBM_HIGHFLOAT;
+        availableFloatRegs |= RBM_HIGHFLOAT.GetFloatRegSet();
+        availableDoubleRegs |= RBM_HIGHFLOAT.GetFloatRegSet();
     }
 #endif
 

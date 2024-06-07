@@ -919,7 +919,7 @@ regMaskTP LinearScan::getKillSetForBlockStore(GenTreeBlk* blkNode)
             if (isCopyBlk)
             {
                 // rep movs kills RCX, RDI and RSI
-                killMask.AddGprRegs(RBM_RCX | RBM_RDI | RBM_RSI);
+                killMask.AddGprRegs(SRBM_RCX | SRBM_RDI | SRBM_RSI);
             }
             else
             {
@@ -927,7 +927,7 @@ regMaskTP LinearScan::getKillSetForBlockStore(GenTreeBlk* blkNode)
                 // (Note that the Data() node, if not constant, will be assigned to
                 // RCX, but it's find that this kills it, as the value is not available
                 // after this node in any case.)
-                killMask.AddGprRegs(RBM_RDI | RBM_RCX);
+                killMask.AddGprRegs(SRBM_RDI | SRBM_RCX);
             }
             break;
 #endif

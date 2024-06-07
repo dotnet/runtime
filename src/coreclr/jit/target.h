@@ -121,8 +121,8 @@ enum _regNumber_enum : unsigned
 enum _regMask_enum : uint64_t
 {
     RBM_NONE = 0,
-#define REGDEF(name, rnum, mask, sname) RBM_##name = mask,
-#define REGALIAS(alias, realname)       RBM_##alias = RBM_##realname,
+#define REGDEF(name, rnum, mask, sname) SRBM_##name = mask,
+#define REGALIAS(alias, realname)       SRBM_##alias = SRBM_##realname,
 #include "register.h"
 };
 
@@ -139,26 +139,13 @@ enum _regNumber_enum : unsigned
     ACTUAL_REG_COUNT = REG_COUNT - 1 // everything but REG_STK (only real regs)
 };
 
-typedef uint64_t _regMask_enum;
-typedef _regNumber_enum regNumber;
-typedef unsigned char   regNumberSmall;
-typedef uint64_t        regMaskSmall;
 
-
-//enum _regMask_enum : uint64_t{
-//    RBM_NONE = 0,
-//#define REGDEF(name, rnum, mask, xname, wname) RBM_##name = mask,
-//#define REGALIAS(alias, realname)              RBM_##alias = RBM_##realname,
-//#include "register.h"
-//};
-
-//struct regMaskTP;
-//
-//#define REGDEF(name, index, value, x_name, w_name)  \
-//    static constexpr regMaskTP RBM_##name = regMaskTP::CreateFromRegNum(static_cast<regNumber>(index), static_cast<regMaskSmall>(value));
-//
-// #include "register.h"
-static constexpr uint64_t RBM_NONE = 0ULL;
+enum _regMask_enum : uint64_t{
+    RBM_NONE = 0,
+#define REGDEF(name, rnum, mask, xname, wname) SRBM_##name = mask,
+#define REGALIAS(alias, realname)              SRBM_##alias = SRBM_##realname,
+#include "register.h"
+};
 
 
 #elif defined(TARGET_AMD64)
@@ -178,8 +165,8 @@ enum _regMask_enum : uint64_t
 {
     RBM_NONE = 0,
 
-#define REGDEF(name, rnum, mask, sname) RBM_##name = mask,
-#define REGALIAS(alias, realname)       RBM_##alias = RBM_##realname,
+#define REGDEF(name, rnum, mask, sname) SRBM_##name = mask,
+#define REGALIAS(alias, realname)       SRBM_##alias = SRBM_##realname,
 #include "register.h"
 };
 
@@ -200,14 +187,17 @@ enum _regMask_enum : unsigned
 {
     RBM_NONE = 0,
 
-#define REGDEF(name, rnum, mask, sname) RBM_##name = mask,
-#define REGALIAS(alias, realname)       RBM_##alias = RBM_##realname,
+#define REGDEF(name, rnum, mask, sname) SRBM_##name = mask,
+#define REGALIAS(alias, realname)       SRBM_##alias = SRBM_##realname,
 #include "register.h"
 };
 
 #else
 #error Unsupported target architecture
 #endif
+
+typedef _regNumber_enum regNumber;
+typedef unsigned char   regNumberSmall;
 
 #define AVAILABLE_REG_COUNT get_AVAILABLE_REG_COUNT()
 
@@ -221,9 +211,6 @@ enum _regMask_enum : unsigned
 // is false, then we should coalesce these two types into one (the Small width, probably).
 // In any case, we believe that is OK to freely cast between these types; no information will
 // be lost.
-
-typedef _regNumber_enum regNumber;
-
 
 
 #if REGMASK_BITS == 8
@@ -442,13 +429,44 @@ public:
     }
 };
 
-#ifdef TARGET_ARM64
+#if defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
 static constexpr regMaskTP RegMaskTP_NONE = regMaskTP(RBM_NONE, RBM_NONE);
-#define REGDEF(name, index, value, x_name, w_name)  \
-    static constexpr regMaskTP RBM_##name = regMaskTP::CreateFromRegNum(static_cast<regNumber>(index), static_cast<regMaskSmall>(value));
+#define REGDEF(name, rnum, mask, sname)  \
+    static constexpr regMaskTP RBM_##name =                                                                            \
+        regMaskTP::CreateFromRegNum(static_cast<regNumber>(rnum), static_cast<regMaskSmall>(mask));
 #define REGALIAS(alias, realname) static constexpr regMaskTP RBM_##alias = RBM_##realname;
  #include "register.h"
+
+#elif defined(TARGET_ARM64)
+
+static constexpr regMaskTP RegMaskTP_NONE = regMaskTP(RBM_NONE, RBM_NONE);
+#define REGDEF(name, rnum, mask, xname, wname)  \
+    static constexpr regMaskTP RBM_##name =                                                                            \
+        regMaskTP::CreateFromRegNum(static_cast<regNumber>(rnum), static_cast<regMaskSmall>(mask));
+#define REGALIAS(alias, realname) static constexpr regMaskTP RBM_##alias = RBM_##realname;
+ #include "register.h"
+
+#elif defined(TARGET_AMD64)
+
+static constexpr regMaskTP RegMaskTP_NONE = regMaskTP(RBM_NONE, RBM_NONE);
+#define REGDEF(name, rnum, mask, sname)  \
+    static constexpr regMaskTP RBM_##name =                                                                            \
+        regMaskTP::CreateFromRegNum(static_cast<regNumber>(rnum), static_cast<regMaskSmall>(mask));
+#define REGALIAS(alias, realname) static constexpr regMaskTP RBM_##alias = RBM_##realname;
+ #include "register.h"
+
+#elif defined(TARGET_X86)
+
+static constexpr regMaskTP RegMaskTP_NONE = regMaskTP(RBM_NONE, RBM_NONE);
+#define REGDEF(name, rnum, mask, sname)  \
+    static constexpr regMaskTP RBM_##name =                                                                            \
+        regMaskTP::CreateFromRegNum(static_cast<regNumber>(rnum), static_cast<regMaskSmall>(mask));
+#define REGALIAS(alias, realname) static constexpr regMaskTP RBM_##alias = RBM_##realname;
+ #include "register.h"
+
+#else
+#error Unsupported target architecture
 #endif
 
 
