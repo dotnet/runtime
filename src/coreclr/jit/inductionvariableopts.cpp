@@ -884,7 +884,7 @@ bool Compiler::optMakeLoopDownwardsCounted(ScalarEvolutionContext& scevContext,
     {
         BasicBlock* exiting = loop->ExitEdge(0)->getSourceBlock();
         BasicBlock* latch   = loop->BackEdge(0)->getSourceBlock();
-        if (exiting == latch)
+        if ((exiting == latch) && exiting->KindIs(BBJ_COND))
         {
             JITDUMP("  Considering exiting block " FMT_BB "\n", exiting->bbNum);
             return optMakeExitTestDownwardsCounted(scevContext, loop, exiting, loopLocals);
