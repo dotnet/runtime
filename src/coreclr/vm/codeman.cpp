@@ -1243,6 +1243,7 @@ EEJitManager::EEJitManager()
 
 #ifdef TARGET_ARM64
 extern "C" DWORD64 __stdcall GetDataCacheZeroIDReg();
+extern "C" uint64_t GetSveLengthFromOS();
 #endif
 
 void EEJitManager::SetCpuInfo()
@@ -1257,11 +1258,11 @@ void EEJitManager::SetCpuInfo()
 
     int cpuFeatures = minipal_getcpufeatures();
 
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
-    CPUCompileFlags.Set(InstructionSet_VectorT128);
-
     // Get the maximum bitwidth of Vector<T>, rounding down to the nearest multiple of 128-bits
     uint32_t maxVectorTBitWidth = (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_MaxVectorTBitWidth) / 128) * 128;
+
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+    CPUCompileFlags.Set(InstructionSet_VectorT128);
 
     if (((cpuFeatures & XArchIntrinsicConstants_Avx2) != 0) && ((maxVectorTBitWidth == 0) || (maxVectorTBitWidth >= 256)))
     {
@@ -1514,7 +1515,14 @@ void EEJitManager::SetCpuInfo()
 
     if (((cpuFeatures & ARM64IntrinsicConstants_Sve) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableArm64Sve))
     {
-        CPUCompileFlags.Set(InstructionSet_Sve);
+        uint32_t maxVectorTLength = (maxVectorTBitWidth / 8);
+        uint64_t sveLengthFromOS = GetSveLengthFromOS();
+
+        // Do not enable SVE when the user specified vector length is smaller than the one offered by underlying OS.
+        if ((maxVectorTLength >= sveLengthFromOS) || (maxVectorTBitWidth == 0))
+        {
+            CPUCompileFlags.Set(InstructionSet_Sve);
+        }
     }
 
     // DCZID_EL0<4> (DZP) indicates whether use of DC ZVA instructions is permitted (0) or prohibited (1).

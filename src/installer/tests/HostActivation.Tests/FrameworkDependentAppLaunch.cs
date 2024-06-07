@@ -10,11 +10,11 @@ using Xunit;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 {
-    public class PortableAppActivation : IClassFixture<PortableAppActivation.SharedTestState>
+    public class FrameworkDependentAppLaunch : IClassFixture<FrameworkDependentAppLaunch.SharedTestState>
     {
         private readonly SharedTestState sharedTestState;
 
-        public PortableAppActivation(SharedTestState fixture)
+        public FrameworkDependentAppLaunch(SharedTestState fixture)
         {
             sharedTestState = fixture;
         }
@@ -90,9 +90,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         }
 
         [Fact]
-        public void AppHost_FrameworkDependent_Succeeds()
+        public void AppHost()
         {
             string appExe = sharedTestState.App.AppExe;
+            if (Binaries.CetCompat.IsSupported)
+                Assert.True(Binaries.CetCompat.IsMarkedCompatible(appExe));
 
             // Get the framework location that was built
             string builtDotnet = TestContext.BuiltDotNet.BinPath;
@@ -125,7 +127,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public void AppHost_FrameworkDependent_GlobalLocation_Succeeds(bool useRegisteredLocation)
+        public void AppHost_GlobalLocation(bool useRegisteredLocation)
         {
             string appExe = sharedTestState.App.AppExe;
 
@@ -169,6 +171,24 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                     .And.HaveStdOutContaining(TestContext.MicrosoftNETCoreAppVersion)
                     .And.NotHaveStdErr();
             }
+        }
+
+        [ConditionalFact(typeof(Binaries.CetCompat), nameof(Binaries.CetCompat.IsSupported))]
+        public void AppHost_DisableCetCompat()
+        {
+            TestApp app = sharedTestState.App.Copy();
+            app.CreateAppHost(disableCetCompat: true);
+            Assert.False(Binaries.CetCompat.IsMarkedCompatible(app.AppExe));
+
+            Command.Create(app.AppExe)
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .DotNetRoot(TestContext.BuiltDotNet.BinPath, TestContext.BuildArchitecture)
+                .MultilevelLookup(false)
+                .Execute()
+                .Should().Pass()
+                .And.HaveStdOutContaining("Hello World")
+                .And.HaveStdOutContaining(TestContext.MicrosoftNETCoreAppVersion);
         }
 
         [Fact]
@@ -264,7 +284,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public void AppHost_CLI_FrameworkDependent_MissingRuntimeFramework_ErrorReportedInStdErr(bool missingHostfxr)
+        public void AppHost_CLI_MissingRuntimeFramework_ErrorReportedInStdErr(bool missingHostfxr)
         {
             using (var invalidDotNet = TestArtifact.Create("cliErrors"))
             {
@@ -306,7 +326,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)] // GUI app host is only supported on Windows.
-        public void AppHost_GUI_FrameworkDependent_MissingRuntimeFramework_ErrorReportedInDialog()
+        public void AppHost_GUI_MissingRuntimeFramework_ErrorReportedInDialog()
         {
             TestApp app = sharedTestState.App.Copy();
             app.CreateAppHost(isWindowsGui: true);
@@ -407,7 +427,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)] // GUI app host is only supported on Windows.
-        public void AppHost_GUI_FrameworkDependent_DisabledGUIErrors_DialogNotShown()
+        public void AppHost_GUI_DisabledGUIErrors_DialogNotShown()
         {
             TestApp app = sharedTestState.App.Copy();
             app.CreateAppHost(isWindowsGui: true);
