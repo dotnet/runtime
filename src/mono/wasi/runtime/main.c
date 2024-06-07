@@ -24,6 +24,14 @@ __attribute__((weak)) void _initialize()
 {
 }
 
+// Guard the "_initialize" call so that well-behaving hosts do not get affected by this workaround.
+static bool g_CalledInitialize = false;
+
+__attribute__((constructor))
+void WasiInitializationFlag() {
+   *(volatile bool*)&g_CalledInitialize = true;
+}
+
 static bool runtime_initialized = false;
 
 #endif
@@ -33,7 +41,8 @@ int initialize_runtime()
 #if defined(WASM_LIBRARY_MODE)
     if (runtime_initialized)
 		return 0;
-    _initialize();
+	if (!g_CalledInitialize)
+		_initialize();
 	runtime_initialized = true;
 #endif
 
