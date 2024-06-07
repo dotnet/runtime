@@ -505,12 +505,11 @@ else
 	HARNESS_RUNNER="xharness"
 fi
 
-$__Command $HARNESS_RUNNER apple test %5c
+$__Command $HARNESS_RUNNER apple run %5c
   --app="${__TestBinaryBase}/${__Category}.app" %5c
   --output-directory="$__OutputDir" %5c
-  --target maccatalyst %5c
-  --timeout 01:15:00 %5c
-  --launch-timeout 01:15:00 %5c
+  --expected-exit-code=100 %5c
+  --targets maccatalyst %5c
   -v
 CLRTestExitCode=$?
 
