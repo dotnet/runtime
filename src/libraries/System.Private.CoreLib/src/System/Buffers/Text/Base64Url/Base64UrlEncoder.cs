@@ -15,22 +15,15 @@ namespace System.Buffers.Text
     public static partial class Base64Url
     {
         /// <summary>
-        /// Encode the span of binary data into UTF-8 encoded text represented as Base64Url.
+        /// Encodes the span of binary data into UTF-8 encoded text represented as Base64Url.
         /// </summary>
         /// <param name="source">The input span which contains binary data that needs to be encoded.</param>
         /// <param name="destination">The output span which contains the result of the operation, i.e. the UTF-8 encoded text in Base64Url.</param>
-        /// <param name="bytesConsumed">The number of input bytes consumed during the operation. This can be used to slice the input for subsequent calls, if necessary.</param>
-        /// <param name="bytesWritten">The number of bytes written into the output span. This can be used to slice the output for subsequent calls, if necessary.</param>
-        /// <param name="isFinalBlock"><see langword="true"/> (default) when the input span contains the entire data to encode.
-        /// Set to <see langword="true"/> when the source buffer contains the entirety of the data to encode.
-        /// Set to <see langword="false"/> if this method is being called in a loop and if more input data may follow.
-        /// At the end of the loop, call this (potentially with an empty source buffer) passing <see langword="true"/>.</param>
-        /// <returns>It returns the <see cref="OperationStatus"/> enum values:
-        /// - Done - on successful processing of the entire input span
-        /// - DestinationTooSmall - if there is not enough space in the output span to fit the encoded input
-        /// - NeedMoreData - only if <paramref name="isFinalBlock"/> is <see langword="false"/>
-        /// It does not return InvalidData since that is not possible for base64 encoding.
-        /// </returns>
+        /// <param name="bytesConsumed">When this method returns, contains the number of input bytes consumed during the operation. This can be used to slice the input for subsequent calls, if necessary. This parameter is treated as uninitialized.</param>
+        /// <param name="bytesWritten">When this method returns, contains the number of bytes written into the output span. This can be used to slice the output for subsequent calls, if necessary. This parameter is treated as uninitialized.</param>
+        /// <param name="isFinalBlock"><see langword="true"/> when the input span contains the entirety of data to encode; <see langword="false"/> when more data may follow,
+        /// such as when calling in a loop, subsequent calls with <see langword="false"/> should end with <see langword="true"/> call. The default is <see langword="true" />.</param>
+        /// <returns>One of the enumeration values that indicates the success or failure of the operation.</returns>
         /// <remarks>The output will not be padded even if the input is not a multiple of 3.</remarks>
         public static unsafe OperationStatus EncodeToUtf8(ReadOnlySpan<byte> source,
             Span<byte> destination, out int bytesConsumed, out int bytesWritten, bool isFinalBlock = true) =>
@@ -52,12 +45,12 @@ namespace System.Buffers.Text
         }
 
         /// <summary>
-        /// Encode the span of binary data into UTF-8 encoded text represented as Base64Url.
+        /// Encodes the span of binary data into UTF-8 encoded text represented as Base64Url.
         /// </summary>
         /// <param name="source">The input span which contains binary data that needs to be encoded.</param>
         /// <param name="destination">The output span which contains the result of the operation, i.e. the UTF-8 encoded text in Base64Url.</param>
         /// <returns>The number of bytes written into the destination span. This can be used to slice the output for subsequent calls, if necessary.</returns>
-        /// <exception cref="ArgumentException">Thrown when the encoded output cannot fit in the <paramref name="destination"/> provided.</exception>
+        /// <exception cref="ArgumentException">The buffer in <paramref name="destination"/> is too small to hold the encoded output.</exception>
         /// <remarks>The output will not be padded even if the input is not a multiple of 3.</remarks>
         public static int EncodeToUtf8(ReadOnlySpan<byte> source, Span<byte> destination)
         {
@@ -73,7 +66,7 @@ namespace System.Buffers.Text
         }
 
         /// <summary>
-        /// Encode the span of binary data into UTF-8 encoded text represented as Base64Url.
+        /// Encodes the span of binary data into UTF-8 encoded text represented as Base64Url.
         /// </summary>
         /// <param name="source">The input span which contains binary data that needs to be encoded.</param>
         /// <returns>The output byte array which contains the result of the operation, i.e. the UTF-8 encoded text in Base64Url.</returns>
@@ -88,34 +81,27 @@ namespace System.Buffers.Text
         }
 
         /// <summary>
-        /// Encode the span of binary data into unicode ASCII chars represented as Base64Url.
+        /// Encodes the span of binary data into unicode ASCII chars represented as Base64Url.
         /// </summary>
         /// <param name="source">The input span which contains binary data that needs to be encoded.</param>
         /// <param name="destination">The output span which contains the result of the operation, i.e. the ASCII chars in Base64Url.</param>
-        /// <param name="bytesConsumed">The number of input bytes consumed during the operation. This can be used to slice the input for subsequent calls, if necessary.</param>
-        /// <param name="charsWritten">The number of chars written into the output span. This can be used to slice the output for subsequent calls, if necessary.</param>
-        /// <param name="isFinalBlock"><see langword="true"/> (default) when the input span contains the entire data to encode.
-        /// Set to <see langword="true"/> when the source buffer contains the entirety of the data to encode.
-        /// Set to <see langword="false"/> if this method is being called in a loop and if more input data may follow.
-        /// At the end of the loop, call this (potentially with an empty source buffer) passing <see langword="true"/>.</param>
-        /// <returns>It returns the OperationStatus enum values:
-        /// - Done - on successful processing of the entire input span
-        /// - DestinationTooSmall - if there is not enough space in the output span to fit the encoded input
-        /// - NeedMoreData - only if <paramref name="isFinalBlock"/> is <see langword="false"/>
-        /// It does not return InvalidData since that is not possible for base64 encoding.
-        /// </returns>
+        /// <param name="bytesConsumed">>When this method returns, contains the number of input bytes consumed during the operation. This can be used to slice the input for subsequent calls, if necessary. This parameter is treated as uninitialized.</param>
+        /// <param name="charsWritten">>When this method returns, contains the number of chars written into the output span. This can be used to slice the output for subsequent calls, if necessary. This parameter is treated as uninitialized.</param>
+        /// <param name="isFinalBlock"><see langword="true"/> when the input span contains the entirety of data to encode; <see langword="false"/> when more data may follow,
+        /// such as when calling in a loop, subsequent calls with <see langword="false"/> should end with <see langword="true"/> call. The default is <see langword="true" />.</param>
+        /// <returns>One of the enumeration values that indicates the success or failure of the operation.</returns>
         /// <remarks>The output will not be padded even if the input is not a multiple of 3.</remarks>
         public static OperationStatus EncodeToChars(ReadOnlySpan<byte> source, Span<char> destination,
             out int bytesConsumed, out int charsWritten, bool isFinalBlock = true) =>
             EncodeTo<Base64UrlEncoderChar, ushort>(source, MemoryMarshal.Cast<char, ushort>(destination), out bytesConsumed, out charsWritten, isFinalBlock);
 
         /// <summary>
-        /// Encode the span of binary data into unicode ASCII chars represented as Base64Url.
+        /// Encodes the span of binary data into unicode ASCII chars represented as Base64Url.
         /// </summary>
         /// <param name="source">The input span which contains binary data that needs to be encoded.</param>
         /// <param name="destination">The output span which contains the result of the operation, i.e. the ASCII chars in Base64Url.</param>
         /// <returns>The number of bytes written into the destination span. This can be used to slice the output for subsequent calls, if necessary.</returns>
-        /// <exception cref="ArgumentException">Thrown when the encoded output cannot fit in the <paramref name="destination"/> provided.</exception>
+        /// <exception cref="ArgumentException">The buffer in <paramref name="destination"/> is too small to hold the encoded output.</exception>
         /// <remarks>The output will not be padded even if the input is not a multiple of 3.</remarks>
         public static int EncodeToChars(ReadOnlySpan<byte> source, Span<char> destination)
         {
@@ -131,7 +117,7 @@ namespace System.Buffers.Text
         }
 
         /// <summary>
-        /// Encode the span of binary data into unicode ASCII chars represented as Base64Url.
+        /// Encodes the span of binary data into unicode ASCII chars represented as Base64Url.
         /// </summary>
         /// <param name="source">The input span which contains binary data that needs to be encoded.</param>
         /// <returns>A char array which contains the result of the operation, i.e. the ASCII chars in Base64Url.</returns>
@@ -146,7 +132,7 @@ namespace System.Buffers.Text
         }
 
         /// <summary>
-        /// Encode the span of binary data into unicode string represented as Base64Url ASCII chars.
+        /// Encodes the span of binary data into unicode string represented as Base64Url ASCII chars.
         /// </summary>
         /// <param name="source">The input span which contains binary data that needs to be encoded.</param>
         /// <returns>A string which contains the result of the operation, i.e. the ASCII string in Base64Url.</returns>
@@ -166,11 +152,11 @@ namespace System.Buffers.Text
         }
 
         /// <summary>
-        /// Encode the span of binary data into unicode ASCII chars represented as Base64Url.
+        /// Encodes the span of binary data into unicode ASCII chars represented as Base64Url.
         /// </summary>
         /// <param name="source">The input span which contains binary data that needs to be encoded.</param>
         /// <param name="destination">The output span which contains the result of the operation, i.e. the ASCII chars in Base64Url.</param>
-        /// <param name="charsWritten">The number of chars written into the output span. This can be used to slice the output for subsequent calls, if necessary.</param>
+        /// <param name="charsWritten">When this method returns, contains the number of chars written into the output span. This can be used to slice the output for subsequent calls, if necessary. This parameter is treated as uninitialized.</param>
         /// <returns><see langword="true"/> if chars encoded successfully, otherwise <see langword="false"/>.</returns>
         /// <remarks>The output will not be padded even if the input is not a multiple of 3.</remarks>
         public static bool TryEncodeToChars(ReadOnlySpan<byte> source, Span<char> destination, out int charsWritten)
@@ -181,11 +167,11 @@ namespace System.Buffers.Text
         }
 
         /// <summary>
-        /// Encode the span of binary data into UTF-8 encoded chars represented as Base64Url.
+        /// Encodes the span of binary data into UTF-8 encoded chars represented as Base64Url.
         /// </summary>
         /// <param name="source">The input span which contains binary data that needs to be encoded.</param>
         /// <param name="destination">The output span which contains the result of the operation, i.e. the UTF-8 encoded text in Base64Url.</param>
-        /// <param name="bytesWritten">The number of chars written into the output span. This can be used to slice the output for subsequent calls, if necessary.</param>
+        /// <param name="bytesWritten">When this method returns, contains the number of chars written into the output span. This can be used to slice the output for subsequent calls, if necessary. This parameter is treated as uninitialized.</param>
         /// <returns><see langword="true"/> if bytes encoded successfully, otherwise <see langword="false"/>.</returns>
         /// <remarks>The output will not be padded even if the input is not a multiple of 3.</remarks>
         public static bool TryEncodeToUtf8(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
@@ -196,14 +182,14 @@ namespace System.Buffers.Text
         }
 
         /// <summary>
-        /// Encode the span of binary data (in-place) into UTF-8 encoded text represented as base 64.
+        /// Encodes the span of binary data (in-place) into UTF-8 encoded text represented as base 64.
         /// The encoded text output is larger than the binary data contained in the input (the operation inflates the data).
         /// </summary>
         /// <param name="buffer">The input span which contains binary data that needs to be encoded.
         /// It needs to be large enough to fit the result of the operation.</param>
         /// <param name="dataLength">The amount of binary data contained within the buffer that needs to be encoded
         /// (and needs to be smaller than the buffer length).</param>
-        /// <param name="bytesWritten">The number of bytes written into the buffer.</param>
+        /// <param name="bytesWritten">When this method returns, contains the number of bytes written into the buffer. This parameter is treated as uninitialized.</param>
         /// <returns><see langword="true"/> if bytes encoded successfully, otherwise <see langword="false"/>.</returns>
         /// <remarks>The output will not be padded even if the input is not a multiple of 3.</remarks>
         public static unsafe bool TryEncodeToUtf8InPlace(Span<byte> buffer, int dataLength, out int bytesWritten)

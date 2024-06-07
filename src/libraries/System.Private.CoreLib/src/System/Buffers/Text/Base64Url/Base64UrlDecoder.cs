@@ -22,8 +22,7 @@ namespace System.Buffers.Text
         /// <summary>
         /// Returns the maximum length (in bytes) of the result if you were to decode base 64 encoded text within a byte span of size <paramref name="base64Length"/>.
         /// </summary>
-        /// <exception cref="ArgumentOutOfRangeException">
-        /// Thrown when the specified <paramref name="base64Length"/> is less than 0.
+        /// <exception cref="ArgumentOutOfRangeException">The specified <paramref name="base64Length"/> is less than 0.
         /// </exception>
         public static int GetMaxDecodedLength(int base64Length)
         {
@@ -41,14 +40,15 @@ namespace System.Buffers.Text
         /// <param name="destination">The output span which contains the result of the operation, i.e. the decoded binary data.</param>
         /// <param name="bytesConsumed">When this method returns, contains the number of input bytes consumed during the operation. This can be used to slice the input for subsequent calls, if necessary. This parameter is treated as uninitialized.</param>
         /// <param name="bytesWritten">When this method returns, contains the number of bytes written into the output span. This can be used to slice the output for subsequent calls, if necessary. This parameter is treated as uninitialized.</param>
-        /// <param name="isFinalBlock"><see langword="true"/> when the input span contains the entirety of data to encode; <see langword="false"/> when more data may follow, such as when calling in a loop. The default is <see langword="true" />.</param>
+        /// <param name="isFinalBlock"><see langword="true"/> when the input span contains the entirety of data to encode; <see langword="false"/> when more data may follow,
+        /// such as when calling in a loop, subsequent calls with <see langword="false"/> should end with <see langword="true"/> call. The default is <see langword="true" />.</param>
         /// <returns>One of the enumeration values that indicates the success or failure of the operation.</returns>
         /// <remarks>
         /// As padding is optional for Base64Url the <paramref name="source"/> length not required to be a multiple of 4 even if <paramref name="isFinalBlock"/> is <see langword="true"/>.
         /// If the <paramref name="source"/> length is not a multiple of 4 and <paramref name="isFinalBlock"/> is <see langword="true"/> the remainders decoded accordingly:
-        /// Remainder of 3 bytes - decoded into 2 bytes data, decoding succeeds.
-        /// Remainder of 2 bytes - decoded into 1 byte data. decoding succeeds.
-        /// Remainder of 1 byte - will cause OperationStatus.InvalidData result.
+        /// - Remainder of 3 bytes - decoded into 2 bytes data, decoding succeeds.
+        /// - Remainder of 2 bytes - decoded into 1 byte data. decoding succeeds.
+        /// - Remainder of 1 byte - will cause OperationStatus.InvalidData result.
         /// </remarks>
         public static OperationStatus DecodeFromUtf8(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesConsumed, out int bytesWritten, bool isFinalBlock = true) =>
             DecodeFrom<Base64UrlDecoderByte, byte>(source, destination, out bytesConsumed, out bytesWritten, isFinalBlock, ignoreWhiteSpace: true);
@@ -60,13 +60,13 @@ namespace System.Buffers.Text
         /// <param name="buffer">The input span which contains the base 64 text data that needs to be decoded.</param>
         /// <returns>The number of bytes written into <paramref name="buffer"/>. This can be used to slice the output for subsequent calls, if necessary.</returns>
         /// <exception cref="FormatException"><paramref name="buffer"/> contains an invalid Base64Url character,
-        /// more than two padding characters, or a non-white space-character among the padding characters.</exception>
+        /// more than two padding characters, or a non white space character among the padding characters.</exception>
         /// <remarks>
-        /// As padding is optional the input length not required to be a multiple of 4.
-        /// If the input length is not a multiple of 4 the remainders decoded accordingly:
-        /// Remainder of 3 bytes - decoded into 2 bytes data, decoding succeeds.
-        /// Remainder of 2 bytes - decoded into 1 byte data. decoding succeeds.
-        /// Remainder of 1 byte - is invalid input, causes FormatException.
+        /// As padding is optional for Base64Url the <paramref name="buffer"/> length not required to be a multiple of 4.
+        /// If the <paramref name="buffer"/> length is not a multiple of 4 the remainders decoded accordingly:
+        /// - Remainder of 3 bytes - decoded into 2 bytes data, decoding succeeds.
+        /// - Remainder of 2 bytes - decoded into 1 byte data. decoding succeeds.
+        /// - Remainder of 1 byte - is invalid input, causes FormatException.
         /// </remarks>
         public static int DecodeFromUtf8InPlace(Span<byte> buffer)
         {
@@ -90,13 +90,13 @@ namespace System.Buffers.Text
         /// <returns>The number of bytes written into <paramref name="destination"/>. This can be used to slice the output for subsequent calls, if necessary.</returns>
         /// <exception cref="ArgumentException">The buffer in <paramref name="destination"/> is too small to hold the encoded output.</exception>
         /// <exception cref="FormatException"><paramref name="source"/> contains an invalid Base64Url character,
-        /// more than two padding characters, or a non-white space-character among the padding characters.</exception>
+        /// more than two padding characters, or a non white space character among the padding characters.</exception>
         /// <remarks>
-        /// As padding is optional the input length not required to be a multiple of 4.
-        /// If the input length is not a multiple of 4 the remainders decoded accordingly:
-        /// Remainder of 3 bytes - decoded into 2 bytes data, decoding succeeds.
-        /// Remainder of 2 bytes - decoded into 1 byte data. decoding succeeds.
-        /// Remainder of 1 byte - is invalid input, causes FormatException.
+        /// As padding is optional the <paramref name="source"/> length not required to be a multiple of 4.
+        /// If the <paramref name="source"/> length is not a multiple of 4 the remainders decoded accordingly:
+        /// - Remainder of 3 bytes - decoded into 2 bytes data, decoding succeeds.
+        /// - Remainder of 2 bytes - decoded into 1 byte data. decoding succeeds.
+        /// - Remainder of 1 byte - is invalid input, causes FormatException.
         /// </remarks>
         public static int DecodeFromUtf8(ReadOnlySpan<byte> source, Span<byte> destination)
         {
@@ -116,14 +116,14 @@ namespace System.Buffers.Text
         }
 
         /// <summary>
-        /// Decode the span of UTF-8 encoded text represented as Base64Url into binary data.
+        /// Decodes the span of UTF-8 encoded text represented as Base64Url into binary data.
         /// </summary>
         /// <param name="source">The input span which contains UTF-8 encoded text in Base64Url that needs to be decoded.</param>
         /// <param name="destination">The output span which contains the result of the operation, i.e. the decoded binary data.</param>
-        /// <param name="bytesWritten">The number of bytes written into the output span. This can be used to slice the output for subsequent calls, if necessary.</param>
+        /// <param name="bytesWritten">When this method returns, contains the number of bytes written into the output span. This can be used to slice the output for subsequent calls, if necessary. This parameter is treated as uninitialized.</param>
         /// <returns><see langword="true"/> if bytes decoded successfully, otherwise <see langword="false"/>.</returns>
         /// <exception cref="FormatException"><paramref name="source"/> contains an invalid Base64Url character,
-        /// more than two padding characters, or a non-white space-character among the padding characters.</exception>
+        /// more than two padding characters, or a non white space character among the padding characters.</exception>
         public static bool TryDecodeFromUtf8(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
         {
             OperationStatus status = DecodeFromUtf8(source, destination, out _, out bytesWritten);
@@ -137,12 +137,12 @@ namespace System.Buffers.Text
         }
 
         /// <summary>
-        /// Decode the span of UTF-8 encoded text represented as Base64Url into binary data.
+        /// Decodes the span of UTF-8 encoded text represented as Base64Url into binary data.
         /// </summary>
         /// <param name="source">The input span which contains UTF-8 encoded text in Base64Url that needs to be decoded.</param>
         /// <returns>>A byte array which contains the result of the decoding operation.</returns>
         /// <exception cref="FormatException"><paramref name="source"/> contains an invalid Base64Url character,
-        /// more than two padding characters, or a non-white space-character among the padding characters.</exception>
+        /// more than two padding characters, or a non white space character among the padding characters.</exception>
         public static byte[] DecodeFromUtf8(ReadOnlySpan<byte> source)
         {
             int upperBound = GetMaxDecodedLength(source.Length);
@@ -164,29 +164,21 @@ namespace System.Buffers.Text
         }
 
         /// <summary>
-        /// Decode the span of unicode ASCII chars represented as Base64Url into binary data.
+        /// Decodes the span of unicode ASCII chars represented as Base64Url into binary data.
         /// </summary>
         /// <param name="source">The input span which contains unicode ASCII chars in Base64Url that needs to be decoded.</param>
         /// <param name="destination">The output span which contains the result of the operation, i.e. the decoded binary data.</param>
-        /// <param name="charsConsumed">The number of input chars consumed during the operation. This can be used to slice the input for subsequent calls, if necessary.</param>
-        /// <param name="bytesWritten">The number of bytes written into the output span. This can be used to slice the output for subsequent calls, if necessary.</param>
-        /// <param name="isFinalBlock"><see langword="true"/> (default) when the input span contains the entire data to encode.
-        /// Set to <see langword="true"/> when the source buffer contains the entirety of the data to encode.
-        /// Set to <see langword="false"/> if this method is being called in a loop and if more input data may follow.
-        /// At the end of the loop, call this (potentially with an empty source buffer) passing <see langword="true"/>.</param>
-        /// <returns>It returns the OperationStatus enum values:
-        /// - Done - on successful processing of the entire input span
-        /// - DestinationTooSmall - if there is not enough space in the output span to fit the decoded input
-        /// - NeedMoreData - only if <paramref name="isFinalBlock"/> is false and the input is not a multiple of 4
-        /// - InvalidData - if the input contains bytes outside of the expected Base64Url range, or if it contains invalid/more than two padding characters
-        /// or if the input is incomplete (i.e. the remainder of <paramref name="source"/> % 4 is 1) and <paramref name="isFinalBlock"/> is <see langword="true"/>.
-        /// </returns>
+        /// <param name="charsConsumed">When this method returns, contains the number of input chars consumed during the operation. This can be used to slice the input for subsequent calls, if necessary. This parameter is treated as uninitialized.</param>
+        /// <param name="bytesWritten">When this method returns, contains the number of bytes written into the output span. This can be used to slice the output for subsequent calls, if necessary. This parameter is treated as uninitialized.</param>
+        /// <param name="isFinalBlock"><see langword="true"/> when the input span contains the entirety of data to encode; <see langword="false"/> when more data may follow,
+        /// such as when calling in a loop, subsequent calls with <see langword="false"/> should end with <see langword="true"/> call. The default is <see langword="true" />.</param>
+        /// <returns>One of the enumeration values that indicates the success or failure of the operation.</returns>
         /// <remarks>
         /// As padding is optional the <paramref name="source"/> length not required to be a multiple of 4 even if <paramref name="isFinalBlock"/> is <see langword="true"/>.
         /// If the <paramref name="source"/> length is not a multiple of 4 and <paramref name="isFinalBlock"/> is <see langword="true"/> the remainders decoded accordingly:
-        /// Remainder of 3 chars - decoded into 2 bytes data, decoding succeeds.
-        /// Remainder of 2 chars - decoded into 1 byte data. decoding succeeds.
-        /// Remainder of 1 char - will cause OperationStatus.InvalidData result.
+        /// - Remainder of 3 chars - decoded into 2 bytes data, decoding succeeds.
+        /// - Remainder of 2 chars - decoded into 1 byte data. decoding succeeds.
+        /// - Remainder of 1 char - will cause OperationStatus.InvalidData result.
         /// </remarks>
         public static OperationStatus DecodeFromChars(ReadOnlySpan<char> source, Span<byte> destination,
             out int charsConsumed, out int bytesWritten, bool isFinalBlock = true) =>
@@ -293,14 +285,14 @@ namespace System.Buffers.Text
         }
 
         /// <summary>
-        /// Decode the span of unicode ASCII chars represented as Base64Url into binary data.
+        /// Decodes the span of unicode ASCII chars represented as Base64Url into binary data.
         /// </summary>
         /// <param name="source">The input span which contains ASCII chars in Base64Url that needs to be decoded.</param>
         /// <param name="destination">The output span which contains the result of the operation, i.e. the decoded binary data.</param>
         /// <returns>The number of bytes written into the output span. This can be used to slice the output for subsequent calls, if necessary.</returns>
-        /// <exception cref="ArgumentException">Thrown when the encoded output cannot fit in the <paramref name="destination"/> provided.</exception>
+        /// <exception cref="ArgumentException">The buffer in <paramref name="destination"/> is too small to hold the encoded output.</exception>
         /// <exception cref="FormatException"><paramref name="source"/> contains a invalid Base64Url character,
-        /// more than two padding characters, or a non-white space-character among the padding characters.</exception>
+        /// more than two padding characters, or a non white space character among the padding characters.</exception>
         public static int DecodeFromChars(ReadOnlySpan<char> source, Span<byte> destination)
         {
             OperationStatus status = DecodeFromChars(source, destination, out _, out int bytesWritten);
@@ -320,14 +312,14 @@ namespace System.Buffers.Text
         }
 
         /// <summary>
-        /// Decode the span of unicode ASCII chars represented as Base64Url into binary data.
+        /// Decodes the span of unicode ASCII chars represented as Base64Url into binary data.
         /// </summary>
         /// <param name="source">The input span which contains ASCII chars in Base64Url that needs to be decoded.</param>
         /// <param name="destination">The output span which contains the result of the operation, i.e. the decoded binary data.</param>
-        /// <param name="bytesWritten">The number of bytes written into the output span. This can be used to slice the output for subsequent calls, if necessary.</param>
+        /// <param name="bytesWritten">When this method returns, contains the number of bytes written into the output span. This can be used to slice the output for subsequent calls, if necessary. This parameter is treated as uninitialized.</param>
         /// <returns><see langword="true"/> if bytes decoded successfully, otherwise <see langword="false"/>.</returns>
         /// <exception cref="FormatException"><paramref name="source"/> contains an invalid Base64Url character,
-        /// more than two padding characters, or a non-white space-character among the padding characters.</exception>
+        /// more than two padding characters, or a non white space character among the padding characters.</exception>
         public static bool TryDecodeFromChars(ReadOnlySpan<char> source, Span<byte> destination, out int bytesWritten)
         {
             OperationStatus status = DecodeFromChars(source, destination, out _, out bytesWritten);
@@ -341,12 +333,12 @@ namespace System.Buffers.Text
         }
 
         /// <summary>
-        /// Decode the span of unicode ASCII chars represented as Base64Url into binary data.
+        /// Decodes the span of unicode ASCII chars represented as Base64Url into binary data.
         /// </summary>
         /// <param name="source">The input span which contains ASCII chars in Base64Url that needs to be decoded.</param>
         /// <returns>A byte array which contains the result of the decoding operation.</returns>
         /// <exception cref="FormatException"><paramref name="source"/> contains a invalid Base64Url character,
-        /// more than two padding characters, or a non-white space-character among the padding characters.</exception>
+        /// more than two padding characters, or a non white space character among the padding characters.</exception>
         public static byte[] DecodeFromChars(ReadOnlySpan<char> source)
         {
             int upperBound = GetMaxDecodedLength(source.Length);
