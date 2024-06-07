@@ -5,13 +5,13 @@ check_symbol_exists(
     sys/socket.h
     HAVE_ACCEPT4)
 
-if (NOT DEFINED EP_GENERATED_HEADER_PATH)
-    message(FATAL_ERROR "Required configuration EP_GENERATED_HEADER_PATH not set.")
-endif (NOT DEFINED EP_GENERATED_HEADER_PATH)
+# Use TCP for EventPipe on mobile platforms
+if (CLR_CMAKE_HOST_IOS OR CLR_CMAKE_HOST_TVOS OR CLR_CMAKE_HOST_ANDROID)
+  set(FEATURE_PERFTRACING_PAL_TCP 1)
+  set(FEATURE_PERFTRACING_DISABLE_DEFAULT_LISTEN_PORT 1)
+endif()
 
 configure_file(${CLR_SRC_NATIVE_DIR}/eventpipe/ep-shared-config.h.in ${CMAKE_CURRENT_BINARY_DIR}/ep-shared-config.h)
-
-set (SHARED_EVENTPIPE_CONFIG_HEADERS "${EP_GENERATED_HEADER_PATH}/ep-shared-config.h")
 
 add_library(dn-diagnosticserver INTERFACE)
 
@@ -70,7 +70,3 @@ target_sources(dn-eventpipe INTERFACE
     ep-thread.c)
 
 target_include_directories(dn-eventpipe INTERFACE ${CMAKE_CURRENT_BINARY_DIR})
-
-# Build EventPipe and DiagnosticServer as unity-builds.
-set_source_files_properties(ep-sources.c PROPERTIES COMPILE_DEFINITIONS EP_FORCE_INCLUDE_SOURCE_FILES)
-set_source_files_properties(ds-sources.c PROPERTIES COMPILE_DEFINITIONS DS_FORCE_INCLUDE_SOURCE_FILES)

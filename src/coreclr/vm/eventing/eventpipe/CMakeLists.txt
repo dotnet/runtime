@@ -57,5 +57,10 @@ get_property(diagnosticserver_sources TARGET dn-diagnosticserver PROPERTY INTERF
 get_property(eventpipe_sources TARGET dn-eventpipe PROPERTY INTERFACE_SOURCES)
 set_source_files_properties(${diagnosticserver_sources} ${eventpipe_sources} PROPERTIES LANGUAGE CXX)
 
+# Build EventPipe and DiagnosticServer as unity-builds.
+set (SHARED_EVENTPIPE_SOURCE_PATH "${CLR_SRC_NATIVE_DIR}/eventpipe")
+set_source_files_properties(${SHARED_EVENTPIPE_SOURCE_PATH}/ep-sources.c PROPERTIES COMPILE_DEFINITIONS EP_FORCE_INCLUDE_SOURCE_FILES)
+set_source_files_properties(${SHARED_EVENTPIPE_SOURCE_PATH}/ds-sources.c PROPERTIES COMPILE_DEFINITIONS DS_FORCE_INCLUDE_SOURCE_FILES)
+
 add_library(eventpipe INTERFACE)
 target_sources(eventpipe INTERFACE $<TARGET_OBJECTS:eventpipe_gen_objs> $<TARGET_OBJECTS:eventpipe_objs> $<TARGET_OBJECTS:dn-containers>)
