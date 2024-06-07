@@ -211,15 +211,6 @@ int main(void) {
 check_cxx_source_runs("
 #include <stdio.h>
 #include <stdlib.h>
-int main(void)
-{
-  long long n = 0;
-  sscanf(\"5000000000\", \"%qu\", &n);
-  exit (n != 5000000000);
-  }" SSCANF_SUPPORT_ll)
-check_cxx_source_runs("
-#include <stdio.h>
-#include <stdlib.h>
 #include <fcntl.h>
 #include <string.h>
 #include <sys/stat.h>
