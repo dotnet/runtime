@@ -55,7 +55,7 @@ namespace System.Buffers
 }
 namespace System.Numerics.Tensors
 {
-        public partial interface IReadOnlyTensor<TSelf, T> : System.Collections.Generic.IEnumerable<T>, System.Collections.IEnumerable where TSelf : System.Numerics.Tensors.IReadOnlyTensor<TSelf, T>
+    public partial interface IReadOnlyTensor<TSelf, T> : System.Collections.Generic.IEnumerable<T>, System.Collections.IEnumerable where TSelf : System.Numerics.Tensors.IReadOnlyTensor<TSelf, T>
     {
         static abstract TSelf? Empty { get; }
         nint FlattenedLength { get; }
@@ -707,7 +707,7 @@ namespace System.Numerics.Tensors
         public void CopyTo(scoped System.Numerics.Tensors.TensorSpan<T> destination) { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("Equals() on TensorSpan will always throw an exception. Use the equality operator instead.")]
-        #pragma warning disable CS0809 // Obsolete member overrides non-obsolete member
+#pragma warning disable CS0809 // Obsolete member overrides non-obsolete member
         public override bool Equals(object? obj) { throw null; }
 #pragma warning restore CS0809 // Obsolete member overrides non-obsolete member
         public void Fill(T value) { }

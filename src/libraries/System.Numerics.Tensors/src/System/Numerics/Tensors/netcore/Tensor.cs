@@ -75,7 +75,7 @@ namespace System.Numerics.Tensors
             }
             else
             {
-                if (((uint)maxElements > (uint)(values.Length)) && values.Length != 0)
+                if (((uint)maxElements >= (uint)(values.Length)) && values.Length != 0)
                     ThrowHelper.ThrowArgument_InvalidStridesAndLengths();
             }
 

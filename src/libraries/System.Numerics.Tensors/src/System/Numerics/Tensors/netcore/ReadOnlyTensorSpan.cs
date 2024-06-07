@@ -105,7 +105,7 @@ namespace System.Numerics.Tensors
             }
             else
             {
-                if (((uint)start > (uint)array.Length || (uint)maxElements > (uint)(array.Length - start)) && array.Length != 0)
+                if (((uint)start > (uint)array.Length || (uint)maxElements >= (uint)(array.Length - start)) && array.Length != 0)
                     ThrowHelper.ThrowArgument_InvalidStridesAndLengths();
             }
 
@@ -196,7 +196,7 @@ namespace System.Numerics.Tensors
             }
             else
             {
-                if (((uint)startOffset > (uint)array.Length || (uint)maxElements > (uint)(array.Length - startOffset)) && array.Length != 0)
+                if (((uint)startOffset > (uint)array.Length || (uint)maxElements >= (uint)(array.Length - startOffset)) && array.Length != 0)
                     ThrowHelper.ThrowArgumentOutOfRangeException();
             }
 
@@ -245,7 +245,7 @@ namespace System.Numerics.Tensors
             }
             else
             {
-                if ((uint)startOffset > (uint)array.Length || (uint)maxElements > (uint)(array.Length - startOffset))
+                if ((uint)startOffset > (uint)array.Length || (uint)maxElements >= (uint)(array.Length - startOffset))
                     ThrowHelper.ThrowArgumentOutOfRangeException();
             }
 
