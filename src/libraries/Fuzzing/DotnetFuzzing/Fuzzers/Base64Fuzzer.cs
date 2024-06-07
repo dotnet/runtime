@@ -20,36 +20,34 @@ namespace DotnetFuzzing.Fuzzers
             int maxEncodedLength = Base64.GetMaxEncodedToUtf8Length(bytes.Length);
             using PooledBoundedMemory<byte> destPoisoned = PooledBoundedMemory<byte>.Rent(maxEncodedLength, PoisonPagePlacement.After);
             Span<byte> encoderDest = destPoisoned.Span;
-
+            using PooledBoundedMemory<byte> decoderDestPoisoned = PooledBoundedMemory<byte>.Rent(Base64.GetMaxDecodedFromUtf8Length(maxEncodedLength), PoisonPagePlacement.After);
+            Span<byte> decoderDest = decoderDestPoisoned.Span;
             { // IsFinalBlock = true
                 OperationStatus status = Base64.EncodeToUtf8(input, encoderDest, out int bytesConsumed, out int bytesEncoded);
 
                 Assert.Equal(OperationStatus.Done, status);
                 Assert.Equal(bytes.Length, bytesConsumed);
                 Assert.Equal(true, maxEncodedLength >= bytesEncoded && maxEncodedLength - 2 <= bytesEncoded);       
-
-                using PooledBoundedMemory<byte> decoderDestPoisoned = PooledBoundedMemory<byte>.Rent(Base64.GetMaxDecodedFromUtf8Length(bytesEncoded), PoisonPagePlacement.After);
-                status = Base64.DecodeFromUtf8(encoderDest.Slice(0, bytesEncoded), decoderDestPoisoned.Span, out int bytesRead, out int bytesDecoded);
+                
+                status = Base64.DecodeFromUtf8(encoderDest.Slice(0, bytesEncoded), decoderDest, out int bytesRead, out int bytesDecoded);
 
                 Assert.Equal(OperationStatus.Done, status);
                 Assert.Equal(bytes.Length, bytesDecoded);
                 Assert.Equal(bytesEncoded, bytesRead);
-                Assert.SequenceEqual(bytes, decoderDestPoisoned.Span.Slice(0, bytesDecoded));
+                Assert.SequenceEqual(bytes, decoderDest.Slice(0, bytesDecoded));
             }
 
             { // IsFinalBlock = false
                 encoderDest.Clear();
+                decoderDest.Clear();
                 OperationStatus status = Base64.EncodeToUtf8(input, encoderDest, out int bytesConsumed, out int bytesEncoded, isFinalBlock: false);
                 Span<byte> decodeInput = encoderDest.Slice(0, bytesEncoded);
-                using PooledBoundedMemory<byte> decoderDestPoisoned = PooledBoundedMemory<byte>.Rent(Base64.GetMaxDecodedFromUtf8Length(bytesEncoded), PoisonPagePlacement.After);
-                Span<byte> decoderDest = decoderDestPoisoned.Span;
 
                 if (bytes.Length % 3 == 0)
                 {
                     Assert.Equal(OperationStatus.Done, status);
                     Assert.Equal(bytes.Length, bytesConsumed);
                     Assert.Equal(true, maxEncodedLength == bytesEncoded);
-
 
                     status = Base64.DecodeFromUtf8(decodeInput, decoderDest, out int bytesRead, out int bytesDecoded, isFinalBlock: false);
 
@@ -95,11 +93,27 @@ namespace DotnetFuzzing.Fuzzers
                 Assert.SequenceEqual(bytes, encoderDest.Slice(0, bytesDecoded));
             }
 
-            { // Run IsValid, Decode overloads with the random input values 
-                encoderDest.Clear();
-                Base64.IsValid(input);
-                Base64.DecodeFromUtf8(input, encoderDest, out _, out _);
-                Base64.DecodeFromUtf8InPlace(input, out _);
+            { // Decode the random input directly, Assert IsValid result matches with decoded result
+                decoderDest.Clear();
+                if (Base64.IsValid(input, out int decodedLength))
+                {
+                    int maxDecodedLength = Base64.GetMaxDecodedFromUtf8Length(input.Length);
+                    OperationStatus status = Base64.DecodeFromUtf8(input, decoderDest, out int bytesRead, out int bytesDecoded);
+                    Assert.Equal(OperationStatus.Done, status);
+                    Assert.Equal(input.Length, bytesRead);
+                    Assert.Equal(decodedLength, bytesDecoded);
+                    Assert.Equal(true, maxDecodedLength >= bytesDecoded);
+
+                    status = Base64.DecodeFromUtf8InPlace(input, out int inPlaceDecoded);
+                    Assert.Equal(OperationStatus.Done, status);
+                    Assert.Equal(bytesDecoded, inPlaceDecoded);
+                    Assert.SequenceEqual<byte>(input.Slice(0, inPlaceDecoded), decoderDest.Slice(0, bytesDecoded));
+                }
+                else
+                {
+                    Assert.Equal(OperationStatus.InvalidData, Base64.DecodeFromUtf8(input, decoderDest, out int _, out int bytesDecoded));
+                    Assert.Equal(OperationStatus.InvalidData, Base64.DecodeFromUtf8InPlace(input, out int inPlaceDecoded));
+                }
             }
         }
     }
