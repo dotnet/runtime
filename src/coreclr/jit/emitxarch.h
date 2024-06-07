@@ -374,6 +374,8 @@ code_t AddEvexPrefix(const instrDesc* id, code_t code, emitAttr attr);
 // TODO-XARCH-AVX512 come back and check whether we can id `id` directly (no need)
 // to pass emitAttr size
 code_t AddSimdPrefixIfNeeded(const instrDesc* id, code_t code, emitAttr size)
+// TODO-xarch-apx:
+// try to come up with things like AddX86PrefixIfNeeded
 {
     if (TakesEvexPrefix(id))
     {

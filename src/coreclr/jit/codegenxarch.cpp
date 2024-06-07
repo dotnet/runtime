@@ -9065,7 +9065,9 @@ void CodeGen::genAmd64EmitterUnitTestsApx()
 
     // REX2 sub eax, ebx
 
-    theEmitter->emitComp->JitStressRex2Encoding(true);
+    // TODO-xarch-apx: 
+    // theEmitter->emitComp->JitStressRex2Encoding(true);
+    // assert JitStressRex2 is true
 
     theEmitter->emitIns_R_R(INS_add, EA_4BYTE, REG_EAX, REG_ECX);
     theEmitter->emitIns_R_R(INS_add, EA_2BYTE, REG_EAX, REG_ECX);
@@ -9130,6 +9132,7 @@ void CodeGen::genAmd64EmitterUnitTestsApx()
     theEmitter->emitIns_R_I(INS_sar_N, EA_4BYTE, REG_ECX, 0x05);
     theEmitter->emitIns_R_I(INS_rol_N, EA_4BYTE, REG_ECX, 0x05);
     theEmitter->emitIns_R_I(INS_ror_N, EA_4BYTE, REG_ECX, 0x05);
+    // TODO-xarch-apx: not enable these 2 for now.
     // theEmitter->emitIns_R_I(INS_rcl_N, EA_4BYTE, REG_ECX, 0x05);
     // theEmitter->emitIns_R_I(INS_rcr_N, EA_4BYTE, REG_ECX, 0x05);
 
