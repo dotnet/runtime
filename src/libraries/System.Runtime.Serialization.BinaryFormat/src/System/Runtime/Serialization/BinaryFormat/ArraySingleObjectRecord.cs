@@ -33,6 +33,9 @@ internal sealed class ArraySingleObjectRecord : ArrayRecord<object?>
 
     /// <inheritdoc/>
     public override object?[] GetArray(bool allowNulls = true)
+        => (object?[])(allowNulls ? _arrayNullsAllowed ??= ToArray(true) : _arrayNullsNotAllowed ??= ToArray(false));
+
+    private object?[] ToArray(bool allowNulls)
     {
         object?[] values = new object?[Length];
 

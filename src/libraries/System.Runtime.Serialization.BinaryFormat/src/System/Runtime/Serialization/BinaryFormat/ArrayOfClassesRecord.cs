@@ -28,6 +28,9 @@ internal sealed class ArrayOfClassesRecord : ArrayRecord<ClassRecord>
 
     /// <inheritdoc/>
     public override ClassRecord?[] GetArray(bool allowNulls = true)
+        => (ClassRecord?[])(allowNulls ? _arrayNullsAllowed ??= ToArray(true) : _arrayNullsNotAllowed ??= ToArray(false));
+
+    private ClassRecord?[] ToArray(bool allowNulls)
     {
         ClassRecord?[] result = new ClassRecord?[Length];
 

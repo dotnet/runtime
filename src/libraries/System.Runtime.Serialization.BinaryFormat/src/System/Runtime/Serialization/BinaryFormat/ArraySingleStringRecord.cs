@@ -47,6 +47,9 @@ internal sealed class ArraySingleStringRecord : ArrayRecord<string?>
 
     /// <inheritdoc/>
     public override string?[] GetArray(bool allowNulls = true)
+        => (string?[])(allowNulls ? _arrayNullsAllowed ??= ToArray(true) : _arrayNullsNotAllowed ??= ToArray(false));
+
+    private string?[] ToArray(bool allowNulls)
     {
         string?[] values = new string?[Length];
 

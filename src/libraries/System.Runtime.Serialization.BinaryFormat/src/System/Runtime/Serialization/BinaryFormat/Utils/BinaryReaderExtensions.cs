@@ -95,23 +95,23 @@ internal static class BinaryReaderExtensions
         return Unsafe.As<long, DateTime>(ref data);
     }
 
-    internal static bool IsDataAvailable(this BinaryReader reader, long requiredBytes)
+    internal static bool? IsDataAvailable(this BinaryReader reader, long requiredBytes)
     {
         if (!reader.BaseStream.CanSeek)
         {
-            return false;
+            return null;
         }
 
-        long availableBytes = 0;
         try
         {
-            availableBytes = reader.BaseStream.Length - reader.BaseStream.Position;
+            // If the values are equal, it's still not enough, as every NRBF payload
+            // needs to end with EndMessageByte and requiredBytes does not take it into account.
+            return (reader.BaseStream.Length - reader.BaseStream.Position) > requiredBytes;
         }
         catch
         {
             // seekable Stream can still throw when accessing Length and Position
+            return null;
         }
-
-        return availableBytes > requiredBytes;
     }
 }

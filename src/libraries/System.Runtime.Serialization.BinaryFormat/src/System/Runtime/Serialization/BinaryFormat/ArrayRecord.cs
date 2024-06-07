@@ -17,6 +17,9 @@ internal
 #endif
 abstract class ArrayRecord : SerializationRecord
 {
+    private protected Array? _arrayNullsAllowed;
+    private protected Array? _arrayNullsNotAllowed;
+
     private protected ArrayRecord(ArrayInfo arrayInfo)
     {
         ArrayInfo = arrayInfo;
@@ -80,7 +83,9 @@ abstract class ArrayRecord : SerializationRecord
             throw new InvalidOperationException(SR.Format(SR.Serialization_TypeMismatch, expectedArrayType.AssemblyQualifiedName, ElementTypeName.AssemblyQualifiedName));
         }
 
-        return Deserialize(expectedArrayType, allowNulls);
+        return allowNulls
+            ? _arrayNullsAllowed ??= Deserialize(expectedArrayType, true)
+            : _arrayNullsNotAllowed ??= Deserialize(expectedArrayType, false);
     }
 
     [RequiresDynamicCode("May call Array.CreateInstance() and Type.MakeArrayType().")]

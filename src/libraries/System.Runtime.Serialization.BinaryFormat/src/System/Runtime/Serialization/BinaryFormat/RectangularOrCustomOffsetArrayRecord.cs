@@ -174,7 +174,7 @@ internal sealed class RectangularOrCustomOffsetArrayRecord : ArrayRecord
                 PrimitiveType.Boolean => sizeof(bool),
                 PrimitiveType.Byte => sizeof(byte),
                 PrimitiveType.SByte => sizeof(sbyte),
-                PrimitiveType.Char => sizeof(char),
+                PrimitiveType.Char => sizeof(byte), // it's UTF8
                 PrimitiveType.Int16 => sizeof(short),
                 PrimitiveType.UInt16 => sizeof(ushort),
                 PrimitiveType.Int32 => sizeof(int),
@@ -186,7 +186,20 @@ internal sealed class RectangularOrCustomOffsetArrayRecord : ArrayRecord
                 _ => -1
             };
 
-            canPreAllocate = sizeOfSingleValue != -1 && reader.IsDataAvailable(requiredBytes: arrayInfo.TotalElementsCount * sizeOfSingleValue);
+            if (sizeOfSingleValue > 0)
+            {
+                long size = arrayInfo.TotalElementsCount * sizeOfSingleValue;
+                bool? isDataAvailable = reader.IsDataAvailable(size);
+                if (isDataAvailable.HasValue)
+                {
+                    if (!isDataAvailable.Value)
+                    {
+                        ThrowHelper.ThrowEndOfStreamException();
+                    }
+
+                    canPreAllocate = true;
+                }
+            }
         }
 
         return new RectangularOrCustomOffsetArrayRecord(elementType, arrayInfo, memberTypeInfo, lengths, offsets, canPreAllocate);
