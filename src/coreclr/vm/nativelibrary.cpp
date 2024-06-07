@@ -597,7 +597,7 @@ namespace
 
         int varCount = 0;
 
-        // Follow LoadLibrary rules in MSDN doc: https://docs.microsoft.com/windows/win32/api/libloaderapi/nf-libloaderapi-loadlibrarya
+        // Follow LoadLibrary rules in MSDN doc: https://learn.microsoft.com/windows/win32/api/libloaderapi/nf-libloaderapi-loadlibrarya
         // To prevent the function from appending ".DLL" to the module name, include a trailing point character (.) in the module name string
         // or provide an absolute path.
         libNameVariations[varCount++] = NameFmt;

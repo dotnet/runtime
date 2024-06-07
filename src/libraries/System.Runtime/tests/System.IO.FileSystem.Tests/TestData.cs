@@ -7,7 +7,7 @@ using Xunit;
 
 internal static class TestData
 {
-    // see: https://docs.microsoft.com/en-us/windows/desktop/FileIO/naming-a-file
+    // see: https://learn.microsoft.com/windows/desktop/FileIO/naming-a-file
     private static readonly char[] s_invalidFileNameChars = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ?
         new char[]
         {

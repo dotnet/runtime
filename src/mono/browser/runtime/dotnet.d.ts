@@ -118,6 +118,10 @@ interface DotnetHostBuilder {
      */
     withResourceLoader(loadBootResource?: LoadBootResourceCallback): DotnetHostBuilder;
     /**
+     * Downloads all the assets but doesn't create the runtime instance.
+     */
+    download(): Promise<void>;
+    /**
      * Starts the runtime and returns promise of the API object.
      */
     create(): Promise<RuntimeAPI>;
@@ -249,6 +253,7 @@ interface ResourceGroups {
     corePdb?: ResourceList;
     pdb?: ResourceList;
     jsModuleWorker?: ResourceList;
+    jsModuleGlobalization?: ResourceList;
     jsModuleNative: ResourceList;
     jsModuleRuntime: ResourceList;
     wasmSymbols?: ResourceList;
@@ -360,6 +365,10 @@ type SingleAssetBehaviors =
  * The javascript module for emscripten.
  */
  | "js-module-native"
+/**
+ * The javascript module for hybrid globalization.
+ */
+ | "js-module-globalization"
 /**
  * Typically blazor.boot.json
  */

@@ -4,7 +4,7 @@
 import WasmEnableThreads from "consts:wasmEnableThreads";
 
 import { PThreadPtrNull, type AssetEntryInternal, type PThreadWorker, type PromiseAndController } from "../types/internal";
-import type { AssetBehaviors, AssetEntry, LoadingResource, ResourceList, SingleAssetBehaviors as SingleAssetBehaviors, WebAssemblyBootResourceType } from "../types";
+import { GlobalizationMode, type AssetBehaviors, type AssetEntry, type LoadingResource, type ResourceList, type SingleAssetBehaviors as SingleAssetBehaviors, type WebAssemblyBootResourceType } from "../types";
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_WEB, ENVIRONMENT_IS_WORKER, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
 import { createPromiseController } from "./promise-controller";
 import { mono_log_debug, mono_log_warn } from "./logging";
@@ -29,6 +29,7 @@ const jsRuntimeModulesAssetTypes: {
     [k: string]: boolean
 } = {
     "js-module-threads": true,
+    "js-module-globalization": true,
     "js-module-runtime": true,
     "js-module-dotnet": true,
     "js-module-native": true,
@@ -150,7 +151,12 @@ export function resolve_single_asset_path (behavior: SingleAssetBehaviors): Asse
     return asset;
 }
 
+let downloadAssetsStarted = false;
 export async function mono_download_assets (): Promise<void> {
+    if (downloadAssetsStarted) {
+        return;
+    }
+    downloadAssetsStarted = true;
     mono_log_debug("mono_download_assets");
     try {
         const promises_of_assets_core: Promise<AssetEntryInternal>[] = [];
@@ -175,6 +181,14 @@ export async function mono_download_assets (): Promise<void> {
         }
 
         loaderHelpers.allDownloadsQueued.promise_control.resolve();
+
+        Promise.all([...promises_of_assets_core, ...promises_of_assets_remaining]).then(() => {
+            loaderHelpers.allDownloadsFinished.promise_control.resolve();
+        }).catch(err => {
+            loaderHelpers.err("Error in mono_download_assets: " + err);
+            mono_exit(1, err);
+            throw err;
+        });
 
         // continue after the dotnet.runtime.js was loaded
         await loaderHelpers.runtimeModuleLoaded.promise;
@@ -261,7 +275,12 @@ export async function mono_download_assets (): Promise<void> {
     }
 }
 
+let assetsPrepared = false;
 export function prepareAssets () {
+    if (assetsPrepared) {
+        return;
+    }
+    assetsPrepared = true;
     const config = loaderHelpers.config;
     const modulesAssets: AssetEntryInternal[] = [];
 
@@ -293,6 +312,9 @@ export function prepareAssets () {
         convert_single_asset(modulesAssets, resources.jsModuleRuntime, "js-module-runtime");
         if (WasmEnableThreads) {
             convert_single_asset(modulesAssets, resources.jsModuleWorker, "js-module-threads");
+        }
+        if (config.globalizationMode == GlobalizationMode.Hybrid) {
+            convert_single_asset(modulesAssets, resources.jsModuleGlobalization, "js-module-globalization");
         }
 
         const addAsset = (asset: AssetEntryInternal, isCore: boolean) => {

@@ -955,6 +955,7 @@ GenTree* Compiler::impNonConstFallback(NamedIntrinsic intrinsic, var_types simdT
 //    clsHnd          -- class handle containing the intrinsic function.
 //    method          -- method handle of the intrinsic function.
 //    sig             -- signature of the intrinsic call.
+//    entryPoint      -- The entry point information required for R2R scenarios
 //    simdBaseJitType -- generic argument of the intrinsic.
 //    retType         -- return type of the intrinsic.
 //    mustExpand      -- true if the intrinsic must return a GenTree*; otherwise, false
@@ -965,7 +966,7 @@ GenTree* Compiler::impNonConstFallback(NamedIntrinsic intrinsic, var_types simdT
 GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                        CORINFO_CLASS_HANDLE  clsHnd,
                                        CORINFO_METHOD_HANDLE method,
-                                       CORINFO_SIG_INFO*     sig,
+                                       CORINFO_SIG_INFO* sig R2RARG(CORINFO_CONST_LOOKUP* entryPoint),
                                        CorInfoType           simdBaseJitType,
                                        var_types             retType,
                                        unsigned              simdSize,
@@ -986,6 +987,13 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         assert(varTypeIsArithmetic(simdBaseType));
     }
 
+#if defined(FEATURE_READYTORUN)
+    CORINFO_CONST_LOOKUP emptyEntryPoint;
+
+    emptyEntryPoint.addr       = nullptr;
+    emptyEntryPoint.accessType = IAT_VALUE;
+#endif // FEATURE_READYTORUN
+
     switch (intrinsic)
     {
         case NI_Vector128_Abs:
@@ -1003,9 +1011,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector128_Add:
-        case NI_Vector256_Add:
-        case NI_Vector512_Add:
         case NI_Vector128_op_Addition:
         case NI_Vector256_op_Addition:
         case NI_Vector512_op_Addition:
@@ -1039,59 +1044,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector128_As:
-        case NI_Vector128_AsByte:
-        case NI_Vector128_AsDouble:
-        case NI_Vector128_AsInt16:
-        case NI_Vector128_AsInt32:
-        case NI_Vector128_AsInt64:
-        case NI_Vector128_AsNInt:
-        case NI_Vector128_AsNUInt:
-        case NI_Vector128_AsSByte:
-        case NI_Vector128_AsSingle:
-        case NI_Vector128_AsUInt16:
-        case NI_Vector128_AsUInt32:
-        case NI_Vector128_AsUInt64:
-        case NI_Vector128_AsVector4:
-        case NI_Vector256_As:
-        case NI_Vector256_AsByte:
-        case NI_Vector256_AsDouble:
-        case NI_Vector256_AsInt16:
-        case NI_Vector256_AsInt32:
-        case NI_Vector256_AsInt64:
-        case NI_Vector256_AsNInt:
-        case NI_Vector256_AsNUInt:
-        case NI_Vector256_AsSByte:
-        case NI_Vector256_AsSingle:
-        case NI_Vector256_AsUInt16:
-        case NI_Vector256_AsUInt32:
-        case NI_Vector256_AsUInt64:
-        case NI_Vector512_As:
-        case NI_Vector512_AsByte:
-        case NI_Vector512_AsDouble:
-        case NI_Vector512_AsInt16:
-        case NI_Vector512_AsInt32:
-        case NI_Vector512_AsInt64:
-        case NI_Vector512_AsNInt:
-        case NI_Vector512_AsNUInt:
-        case NI_Vector512_AsSByte:
-        case NI_Vector512_AsSingle:
-        case NI_Vector512_AsUInt16:
-        case NI_Vector512_AsUInt32:
-        case NI_Vector512_AsUInt64:
-        {
-            // We fold away the cast here, as it only exists to satisfy
-            // the type system. It is safe to do this here since the retNode type
-            // and the signature return type are both the same TYP_SIMD.
-
-            assert(sig->numArgs == 1);
-
-            retNode = impSIMDPopStack();
-            SetOpLclRelatedToSIMDIntrinsic(retNode);
-            assert(retNode->gtType == getSIMDTypeForSize(getSIMDTypeSizeInBytes(sig->retTypeSigClass)));
-            break;
-        }
-
         case NI_Vector128_AsVector:
         {
             assert(sig->numArgs == 1);
@@ -1100,8 +1052,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             if (vectorTByteLength == YMM_REGSIZE_BYTES)
             {
                 // Vector<T> is TYP_SIMD32, so we should treat this as a call to Vector128.ToVector256
-                return impSpecialIntrinsic(NI_Vector128_ToVector256, clsHnd, method, sig, simdBaseJitType, retType,
-                                           simdSize, mustExpand);
+                return impSpecialIntrinsic(NI_Vector128_ToVector256, clsHnd, method, sig R2RARG(&emptyEntryPoint),
+                                           simdBaseJitType, retType, simdSize, mustExpand);
             }
             else if (vectorTByteLength == XMM_REGSIZE_BYTES)
             {
@@ -1210,8 +1162,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 case TYP_SIMD32:
                 {
                     // Vector<T> is TYP_SIMD32, so we should treat this as a call to Vector256.GetLower
-                    return impSpecialIntrinsic(NI_Vector256_GetLower, clsHnd, method, sig, simdBaseJitType, retType,
-                                               simdSize, mustExpand);
+                    return impSpecialIntrinsic(NI_Vector256_GetLower, clsHnd, method, sig R2RARG(&emptyEntryPoint),
+                                               simdBaseJitType, retType, simdSize, mustExpand);
                 }
 
                 default:
@@ -1250,14 +1202,15 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
                     if (intrinsic == NI_Vector256_AsVector)
                     {
-                        return impSpecialIntrinsic(NI_Vector256_GetLower, clsHnd, method, sig, simdBaseJitType, retType,
-                                                   simdSize, mustExpand);
+                        return impSpecialIntrinsic(NI_Vector256_GetLower, clsHnd, method, sig R2RARG(&emptyEntryPoint),
+                                                   simdBaseJitType, retType, simdSize, mustExpand);
                     }
                     else
                     {
                         assert(intrinsic == NI_Vector256_AsVector256);
-                        return impSpecialIntrinsic(NI_Vector128_ToVector256, clsHnd, method, sig, simdBaseJitType,
-                                                   retType, 16, mustExpand);
+                        return impSpecialIntrinsic(NI_Vector128_ToVector256, clsHnd, method,
+                                                   sig R2RARG(&emptyEntryPoint), simdBaseJitType, retType, 16,
+                                                   mustExpand);
                     }
                 }
             }
@@ -1283,14 +1236,14 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
                 if (intrinsic == NI_Vector512_AsVector)
                 {
-                    return impSpecialIntrinsic(NI_Vector512_GetLower, clsHnd, method, sig, simdBaseJitType, retType,
-                                               simdSize, mustExpand);
+                    return impSpecialIntrinsic(NI_Vector512_GetLower, clsHnd, method, sig R2RARG(&emptyEntryPoint),
+                                               simdBaseJitType, retType, simdSize, mustExpand);
                 }
                 else
                 {
                     assert(intrinsic == NI_Vector512_AsVector512);
-                    return impSpecialIntrinsic(NI_Vector256_ToVector512, clsHnd, method, sig, simdBaseJitType, retType,
-                                               32, mustExpand);
+                    return impSpecialIntrinsic(NI_Vector256_ToVector512, clsHnd, method, sig R2RARG(&emptyEntryPoint),
+                                               simdBaseJitType, retType, 32, mustExpand);
                 }
                 break;
             }
@@ -1303,14 +1256,16 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
                     if (intrinsic == NI_Vector512_AsVector)
                     {
-                        return impSpecialIntrinsic(NI_Vector512_GetLower128, clsHnd, method, sig, simdBaseJitType,
-                                                   retType, simdSize, mustExpand);
+                        return impSpecialIntrinsic(NI_Vector512_GetLower128, clsHnd, method,
+                                                   sig R2RARG(&emptyEntryPoint), simdBaseJitType, retType, simdSize,
+                                                   mustExpand);
                     }
                     else
                     {
                         assert(intrinsic == NI_Vector512_AsVector512);
-                        return impSpecialIntrinsic(NI_Vector128_ToVector512, clsHnd, method, sig, simdBaseJitType,
-                                                   retType, 16, mustExpand);
+                        return impSpecialIntrinsic(NI_Vector128_ToVector512, clsHnd, method,
+                                                   sig R2RARG(&emptyEntryPoint), simdBaseJitType, retType, 16,
+                                                   mustExpand);
                     }
                 }
             }
@@ -1321,9 +1276,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector128_BitwiseAnd:
-        case NI_Vector256_BitwiseAnd:
-        case NI_Vector512_BitwiseAnd:
         case NI_Vector128_op_BitwiseAnd:
         case NI_Vector256_op_BitwiseAnd:
         case NI_Vector512_op_BitwiseAnd:
@@ -1337,9 +1289,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector128_BitwiseOr:
-        case NI_Vector256_BitwiseOr:
-        case NI_Vector512_BitwiseOr:
         case NI_Vector128_op_BitwiseOr:
         case NI_Vector256_op_BitwiseOr:
         case NI_Vector512_op_BitwiseOr:
@@ -1893,9 +1842,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector128_Divide:
-        case NI_Vector256_Divide:
-        case NI_Vector512_Divide:
         case NI_Vector128_op_Division:
         case NI_Vector256_op_Division:
         case NI_Vector512_op_Division:
@@ -1979,9 +1925,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector128_EqualsAll:
-        case NI_Vector256_EqualsAll:
-        case NI_Vector512_EqualsAll:
         case NI_Vector128_op_Equality:
         case NI_Vector256_op_Equality:
         case NI_Vector512_op_Equality:
@@ -2222,15 +2165,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 0);
             retNode = gtNewOneConNode(retType, simdBaseType);
-            break;
-        }
-
-        case NI_Vector128_get_Zero:
-        case NI_Vector256_get_Zero:
-        case NI_Vector512_get_Zero:
-        {
-            assert(sig->numArgs == 0);
-            retNode = gtNewZeroConNode(retType);
             break;
         }
 
@@ -2504,9 +2438,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_AVX_LoadVector256:
         case NI_AVX512F_LoadVector512:
         case NI_AVX512BW_LoadVector512:
-        case NI_Vector128_Load:
-        case NI_Vector256_Load:
-        case NI_Vector512_Load:
         case NI_Vector128_LoadUnsafe:
         case NI_Vector256_LoadUnsafe:
         case NI_Vector512_LoadUnsafe:
@@ -2609,9 +2540,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector128_Multiply:
-        case NI_Vector256_Multiply:
-        case NI_Vector512_Multiply:
         case NI_Vector128_op_Multiply:
         case NI_Vector256_op_Multiply:
         case NI_Vector512_op_Multiply:
@@ -2704,9 +2632,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector128_Negate:
-        case NI_Vector256_Negate:
-        case NI_Vector512_Negate:
         case NI_Vector128_op_UnaryNegation:
         case NI_Vector256_op_UnaryNegation:
         case NI_Vector512_op_UnaryNegation:
@@ -2722,9 +2647,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector128_OnesComplement:
-        case NI_Vector256_OnesComplement:
-        case NI_Vector512_OnesComplement:
         case NI_Vector128_op_OnesComplement:
         case NI_Vector256_op_OnesComplement:
         case NI_Vector512_op_OnesComplement:
@@ -2770,18 +2692,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector128_op_UnaryPlus:
-        case NI_Vector256_op_UnaryPlus:
-        case NI_Vector512_op_UnaryPlus:
-        {
-            assert(sig->numArgs == 1);
-            retNode = impSIMDPopStack();
-            break;
-        }
-
-        case NI_Vector128_Subtract:
-        case NI_Vector256_Subtract:
-        case NI_Vector512_Subtract:
         case NI_Vector128_op_Subtraction:
         case NI_Vector256_op_Subtraction:
         case NI_Vector512_op_Subtraction:
@@ -2799,9 +2709,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector128_ShiftLeft:
-        case NI_Vector256_ShiftLeft:
-        case NI_Vector512_ShiftLeft:
         case NI_Vector128_op_LeftShift:
         case NI_Vector256_op_LeftShift:
         case NI_Vector512_op_LeftShift:
@@ -2824,9 +2731,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector128_ShiftRightArithmetic:
-        case NI_Vector256_ShiftRightArithmetic:
-        case NI_Vector512_ShiftRightArithmetic:
         case NI_Vector128_op_RightShift:
         case NI_Vector256_op_RightShift:
         case NI_Vector512_op_RightShift:
@@ -2860,9 +2764,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector128_ShiftRightLogical:
-        case NI_Vector256_ShiftRightLogical:
-        case NI_Vector512_ShiftRightLogical:
         case NI_Vector128_op_UnsignedRightShift:
         case NI_Vector256_op_UnsignedRightShift:
         case NI_Vector512_op_UnsignedRightShift:
@@ -2888,77 +2789,24 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             GenTree* indices = impStackTop(0).val;
 
-            if (!indices->IsVectorConst())
+            if (!indices->IsVectorConst() || !IsValidForShuffle(indices->AsVecCon(), simdSize, simdBaseType))
             {
-                // TODO-XARCH-CQ: Handling non-constant indices is a bit more complex
+                assert(sig->numArgs == 2);
+
+                if (!opts.OptimizationEnabled())
+                {
+                    // Only enable late stage rewriting if optimizations are enabled
+                    // as we won't otherwise encounter a constant at the later point
+                    return nullptr;
+                }
+
+                op2 = impSIMDPopStack();
+                op1 = impSIMDPopStack();
+
+                retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseJitType, simdSize);
+
+                retNode->AsHWIntrinsic()->SetMethodHandle(this, method R2RARG(*entryPoint));
                 break;
-            }
-
-            size_t elementSize  = genTypeSize(simdBaseType);
-            size_t elementCount = simdSize / elementSize;
-
-            if (simdSize == 32)
-            {
-                if (!compOpportunisticallyDependsOn(InstructionSet_AVX2))
-                {
-                    // While we could accelerate some functions on hardware with only AVX support
-                    // it's likely not worth it overall given that IsHardwareAccelerated reports false
-                    break;
-                }
-                else if ((varTypeIsByte(simdBaseType) &&
-                          !compOpportunisticallyDependsOn(InstructionSet_AVX512VBMI_VL)) ||
-                         (varTypeIsShort(simdBaseType) && !compOpportunisticallyDependsOn(InstructionSet_AVX512BW_VL)))
-                {
-                    bool crossLane = false;
-
-                    for (size_t index = 0; index < elementCount; index++)
-                    {
-                        uint64_t value = indices->GetIntegralVectorConstElement(index, simdBaseType);
-
-                        if (value >= elementCount)
-                        {
-                            continue;
-                        }
-
-                        if (index < (elementCount / 2))
-                        {
-                            if (value >= (elementCount / 2))
-                            {
-                                crossLane = true;
-                                break;
-                            }
-                        }
-                        else if (value < (elementCount / 2))
-                        {
-                            crossLane = true;
-                            break;
-                        }
-                    }
-
-                    if (crossLane)
-                    {
-                        // TODO-XARCH-CQ: We should emulate cross-lane shuffling for byte/sbyte and short/ushort
-                        break;
-                    }
-                }
-            }
-            else if (simdSize == 64)
-            {
-                if (varTypeIsByte(simdBaseType) && !compOpportunisticallyDependsOn(InstructionSet_AVX512VBMI))
-                {
-                    // TYP_BYTE, TYP_UBYTE need AVX512VBMI.
-                    break;
-                }
-            }
-            else
-            {
-                assert(simdSize == 16);
-
-                if (varTypeIsSmall(simdBaseType) && !compOpportunisticallyDependsOn(InstructionSet_SSSE3))
-                {
-                    // TYP_BYTE, TYP_UBYTE, TYP_SHORT, and TYP_USHORT need SSSE3 to be able to shuffle any operation
-                    break;
-                }
             }
 
             if (sig->numArgs == 2)
@@ -3009,9 +2857,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector128_Store:
-        case NI_Vector256_Store:
-        case NI_Vector512_Store:
         case NI_Vector128_StoreUnsafe:
         case NI_Vector256_StoreUnsafe:
         case NI_Vector512_StoreUnsafe:
@@ -3264,9 +3109,21 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             if (!indexOp->OperIsConst())
             {
-                // TODO-XARCH-CQ: We should always import these like we do with GetElement
-                // Index is not a constant, use the software fallback
-                return nullptr;
+                if (!opts.OptimizationEnabled())
+                {
+                    // Only enable late stage rewriting if optimizations are enabled
+                    // as we won't otherwise encounter a constant at the later point
+                    return nullptr;
+                }
+
+                op3 = impPopStack().val;
+                op2 = impPopStack().val;
+                op1 = impSIMDPopStack();
+
+                retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, op3, intrinsic, simdBaseJitType, simdSize);
+
+                retNode->AsHWIntrinsic()->SetMethodHandle(this, method R2RARG(*entryPoint));
+                break;
             }
 
             ssize_t imm8  = indexOp->AsIntCon()->IconValue();
@@ -3362,9 +3219,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector128_Xor:
-        case NI_Vector256_Xor:
-        case NI_Vector512_Xor:
         case NI_Vector128_op_ExclusiveOr:
         case NI_Vector256_op_ExclusiveOr:
         case NI_Vector512_op_ExclusiveOr:

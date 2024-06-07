@@ -168,6 +168,9 @@ Copyright (c) .NET Foundation. All rights reserved.
       <!-- if ICU comes from runtime pack then it is already included in ReferenceCopyLocalPaths -->
       <ReferenceCopyLocalPaths Include="$(_BlazorIcuDataFileName)" />
     </ItemGroup>
+    <ItemGroup Condition="'$(_IsHybridGlobalization)' == 'true' AND Exists('$(_RuntimePackNativeDir)dotnet.globalization.js')">
+      <WasmNativeAsset Include="$(_RuntimePackNativeDir)dotnet.globalization.js"/>
+    </ItemGroup>
     <Error Condition="'$(_LoadCustomIcuData)' == 'true' AND !Exists('$(_BlazorIcuDataFileName)')" Text="Could not find %24(BlazorIcuDataFileName)=$(BlazorIcuDataFileName), or when used as a path relative to the runtime pack (='$(_RuntimePackNativeDir)')."/>
   </Target>
 
@@ -405,6 +408,12 @@ Copyright (c) .NET Foundation. All rights reserved.
       <Output TaskParameter="Endpoints" ItemName="WasmStaticWebAssetEndpoint" />
     </DefineStaticWebAssetEndpoints>
 
+  </Target>
+
+  <Target Name="ProvideDefaultUserRuntimeConfig" BeforeTargets="_GenerateRuntimeConfigurationFilesInputCache" Condition="'$(GenerateRuntimeConfigurationFiles)' == 'true'">
+    <PropertyGroup Condition="!Exists('$(UserRuntimeConfig)')">
+      <UserRuntimeConfig>$(MSBuildThisFileDirectory)browser.runtimeconfig.template.json</UserRuntimeConfig>
+    </PropertyGroup>
   </Target>
 
   <!-- Publish starts here -->

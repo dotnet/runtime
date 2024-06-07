@@ -237,9 +237,22 @@ namespace Mono.Linker
 
 						continue;
 
-					case "--dump-dependencies":
-						dumpDependencies = true;
-						continue;
+					case "--dump-dependencies": {
+							dumpDependencies = true;
+
+							string? assemblyName = GetNextStringValue ();
+							if (assemblyName != null) {
+								if (!IsValidAssemblyName (assemblyName)) {
+									context.LogError (null, DiagnosticId.InvalidAssemblyName, assemblyName);
+									return -1;
+								}
+
+								context.TraceAssembly ??= new HashSet<string> ();
+								context.TraceAssembly.Add (assemblyName);
+							}
+
+							continue;
+						}
 
 					case "--dependencies-file-format":
 						if (!GetStringParam (token, out var dependenciesFileFormat))

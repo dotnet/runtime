@@ -72,6 +72,13 @@ extern "C" void QCALLTYPE ReflectionInvocation_PrepareMethod(MethodDesc* pMD, Ty
 
 extern "C" void QCALLTYPE ReflectionSerialization_GetCreateUninitializedObjectInfo(QCall::TypeHandle pType, PCODE* ppfnAllocator, void** pvAllocatorFirstArg);
 
+extern "C" void QCALLTYPE ReflectionInvocation_GetBoxInfo(
+    QCall::TypeHandle pType,
+    PCODE* ppfnAllocator,
+    void** pvAllocatorFirstArg,
+    int32_t* pValueOffset,
+    uint32_t* pValueSize);
+
 class ReflectionEnum {
 public:
     static FCDECL1(INT32, InternalGetCorElementType, MethodTable* pMT);

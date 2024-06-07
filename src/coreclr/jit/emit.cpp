@@ -8787,7 +8787,7 @@ void emitter::emitRecordGCcall(BYTE* codePos, unsigned char callInstrSize)
     callDsc* call;
 
 #ifdef JIT32_GCENCODER
-    unsigned regs = (emitThisGCrefRegs | emitThisByrefRegs) & ~RBM_INTRET;
+    unsigned regs = (unsigned)(emitThisGCrefRegs | emitThisByrefRegs) & ~RBM_INTRET;
 
     // The JIT32 GCInfo encoder allows us to (as the comment previously here said):
     // "Bail if this is a totally boring call", but the GCInfoEncoder/Decoder interface
@@ -10062,7 +10062,7 @@ void emitter::emitStackPopLargeStk(BYTE* addr, bool isCall, unsigned char callIn
     // of callee-saved registers only).
     for (unsigned calleeSavedRegIdx = 0; calleeSavedRegIdx < CNT_CALL_GC_REGS; calleeSavedRegIdx++)
     {
-        regMaskTP calleeSavedRbm = raRbmCalleeSaveOrder[calleeSavedRegIdx];
+        regMaskSmall calleeSavedRbm = raRbmCalleeSaveOrder[calleeSavedRegIdx];
         if (emitThisGCrefRegs & calleeSavedRbm)
         {
             gcrefRegs |= (1 << calleeSavedRegIdx);

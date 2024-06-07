@@ -232,10 +232,14 @@ enum HWIntrinsicFlag : unsigned int
     // The intrinsic has an enum operand. Using this implies HW_Flag_HasImmediateOperand.
     HW_Flag_HasEnumOperand = 0x1000000,
 
+    // The intrinsic comes in both vector and scalar variants. During the import stage if the basetype is scalar,
+    // then the intrinsic should be switched to a scalar only version.
+    HW_Flag_HasScalarInputVariant = 0x2000000,
+
 #endif // TARGET_XARCH
 
     // The intrinsic is a FusedMultiplyAdd intrinsic
-    HW_Flag_FmaIntrinsic = 0x20000000,
+    HW_Flag_FmaIntrinsic = 0x40000000,
 
 #if defined(TARGET_ARM64)
     // The intrinsic uses a mask in arg1 to select elements present in the result, and must use a low vector register.
@@ -831,6 +835,7 @@ struct HWIntrinsicInfo
             case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x2:
             case NI_AdvSimd_LoadAndReplicateToVector64x2:
             case NI_AdvSimd_Arm64_LoadAndReplicateToVector128x2:
+            case NI_Sve_Load2xVectorAndUnzip:
                 return 2;
 
             case NI_AdvSimd_LoadVector64x3AndUnzip:
@@ -841,6 +846,7 @@ struct HWIntrinsicInfo
             case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x3:
             case NI_AdvSimd_LoadAndReplicateToVector64x3:
             case NI_AdvSimd_Arm64_LoadAndReplicateToVector128x3:
+            case NI_Sve_Load3xVectorAndUnzip:
                 return 3;
 
             case NI_AdvSimd_LoadVector64x4AndUnzip:
@@ -851,6 +857,7 @@ struct HWIntrinsicInfo
             case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x4:
             case NI_AdvSimd_LoadAndReplicateToVector64x4:
             case NI_AdvSimd_Arm64_LoadAndReplicateToVector128x4:
+            case NI_Sve_Load4xVectorAndUnzip:
                 return 4;
 #endif
 
@@ -926,6 +933,41 @@ struct HWIntrinsicInfo
         return (flags & HW_Flag_HasEnumOperand) != 0;
     }
 
+    static bool HasScalarInputVariant(NamedIntrinsic id)
+    {
+        const HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_HasScalarInputVariant) != 0;
+    }
+
+    static NamedIntrinsic GetScalarInputVariant(NamedIntrinsic id)
+    {
+        assert(HasScalarInputVariant(id));
+
+        switch (id)
+        {
+            case NI_Sve_SaturatingDecrementBy16BitElementCount:
+                return NI_Sve_SaturatingDecrementBy16BitElementCountScalar;
+
+            case NI_Sve_SaturatingDecrementBy32BitElementCount:
+                return NI_Sve_SaturatingDecrementBy32BitElementCountScalar;
+
+            case NI_Sve_SaturatingDecrementBy64BitElementCount:
+                return NI_Sve_SaturatingDecrementBy64BitElementCountScalar;
+
+            case NI_Sve_SaturatingIncrementBy16BitElementCount:
+                return NI_Sve_SaturatingIncrementBy16BitElementCountScalar;
+
+            case NI_Sve_SaturatingIncrementBy32BitElementCount:
+                return NI_Sve_SaturatingIncrementBy32BitElementCountScalar;
+
+            case NI_Sve_SaturatingIncrementBy64BitElementCount:
+                return NI_Sve_SaturatingIncrementBy64BitElementCountScalar;
+
+            default:
+                unreached();
+        }
+    }
+
 #endif // TARGET_ARM64
 
     static bool HasSpecialSideEffect(NamedIntrinsic id)
@@ -965,6 +1007,66 @@ struct HWIntrinsicInfo
         return (flags & HW_Flag_PermuteVar2x) != 0;
     }
 #endif // TARGET_XARCH
+
+#if defined(TARGET_ARM64)
+    static void GetImmOpsPositions(NamedIntrinsic id, CORINFO_SIG_INFO* sig, int* imm1Pos, int* imm2Pos)
+    {
+        switch (id)
+        {
+            case NI_AdvSimd_Insert:
+            case NI_AdvSimd_InsertScalar:
+            case NI_AdvSimd_LoadAndInsertScalar:
+            case NI_AdvSimd_LoadAndInsertScalarVector64x2:
+            case NI_AdvSimd_LoadAndInsertScalarVector64x3:
+            case NI_AdvSimd_LoadAndInsertScalarVector64x4:
+            case NI_AdvSimd_Arm64_LoadAndInsertScalar:
+            case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x2:
+            case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x3:
+            case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x4:
+            {
+                assert(sig->numArgs == 3);
+                *imm1Pos = 1;
+                break;
+            }
+
+            case NI_AdvSimd_Arm64_InsertSelectedScalar:
+            {
+                assert(sig->numArgs == 4);
+                *imm1Pos = 2;
+                *imm2Pos = 0;
+                break;
+            }
+
+            case NI_Sve_SaturatingDecrementBy16BitElementCount:
+            case NI_Sve_SaturatingDecrementBy32BitElementCount:
+            case NI_Sve_SaturatingDecrementBy64BitElementCount:
+            case NI_Sve_SaturatingDecrementBy8BitElementCount:
+            case NI_Sve_SaturatingIncrementBy16BitElementCount:
+            case NI_Sve_SaturatingIncrementBy32BitElementCount:
+            case NI_Sve_SaturatingIncrementBy64BitElementCount:
+            case NI_Sve_SaturatingIncrementBy8BitElementCount:
+            case NI_Sve_SaturatingDecrementBy16BitElementCountScalar:
+            case NI_Sve_SaturatingDecrementBy32BitElementCountScalar:
+            case NI_Sve_SaturatingDecrementBy64BitElementCountScalar:
+            case NI_Sve_SaturatingIncrementBy16BitElementCountScalar:
+            case NI_Sve_SaturatingIncrementBy32BitElementCountScalar:
+            case NI_Sve_SaturatingIncrementBy64BitElementCountScalar:
+            {
+                assert(sig->numArgs == 3);
+                *imm1Pos = 1;
+                *imm2Pos = 0;
+                break;
+            }
+
+            default:
+            {
+                assert(sig->numArgs > 0);
+                *imm1Pos = 0;
+                break;
+            }
+        }
+    }
+#endif // TARGET_ARM64
 };
 
 #ifdef TARGET_ARM64
