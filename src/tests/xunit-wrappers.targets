@@ -131,7 +131,6 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
             internal static string reportBase%3B
             internal static string testBinaryBase%3B
             internal static string coreRoot%3B
-            internal static string appFilename%3B
             internal static string category%3B
             internal static string helixUploadRoot%3B
 
@@ -140,7 +139,6 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
                 reportBase = Environment.GetEnvironmentVariable(%22XunitTestReportDirBase%22)%3B
                 testBinaryBase = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)%3B
                 coreRoot = Environment.GetEnvironmentVariable(%22CORE_ROOT%22)%3B
-                appFilename = "$(Category)"%3B
                 category = "$([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").Replace("-","_"))"%3B
                 helixUploadRoot = Environment.GetEnvironmentVariable(%22HELIX_WORKITEM_UPLOAD_ROOT%22)%3B
                 if (!String.IsNullOrEmpty(helixUploadRoot)) {
@@ -187,7 +185,6 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
             public string reportBase%3B
             public string testBinaryBase%3B
             public string coreRoot%3B
-            public string appFilename%3B
             public string category%3B
             public string helixUploadRoot%3B
             public MobileAppHandler handler = new MobileAppHandler()%3B
@@ -197,7 +194,6 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
                 reportBase = Environment.GetEnvironmentVariable(%22XunitTestReportDirBase%22)%3B
                 testBinaryBase = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)%3B
                 coreRoot = Environment.GetEnvironmentVariable(%22CORE_ROOT%22)%3B
-                appFilename = "$(Category)"%3B
                 category = "$([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").Replace("-","_"))"%3B
                 helixUploadRoot = Environment.GetEnvironmentVariable(%22HELIX_WORKITEM_UPLOAD_ROOT%22)%3B
                 int retCode = -100%3B
@@ -320,7 +316,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
 
                   System.IO.Directory.CreateDirectory(_Global.reportBase + testSubfolder)%3B
 
-                  ret = wrapper.RunTest(testExecutable, outputFile, errorFile, _Global.appFilename, _Global.category, _Global.testBinaryBase, outputDir)%3B
+                  ret = wrapper.RunTest(testExecutable, outputFile, errorFile, _Global.category, _Global.testBinaryBase, outputDir)%3B
                 }
                 catch (Exception ex)
                 {
@@ -427,7 +423,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
 
                   System.IO.Directory.CreateDirectory(globalVar.reportBase + testSubfolder)%3B
 
-                  ret = wrapper.RunTest(testExecutable, outputFile, errorFile, globalVar.appFilename, globalVar.category, globalVar.testBinaryBase, outputDir)%3B
+                  ret = wrapper.RunTest(testExecutable, outputFile, errorFile, globalVar.category, globalVar.testBinaryBase, outputDir)%3B
                 }
                 catch (Exception ex)
                 {
