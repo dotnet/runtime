@@ -567,7 +567,34 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector64_As:
+        case NI_Vector64_AsByte:
+        case NI_Vector64_AsDouble:
+        case NI_Vector64_AsInt16:
+        case NI_Vector64_AsInt32:
+        case NI_Vector64_AsInt64:
+        case NI_Vector64_AsNInt:
+        case NI_Vector64_AsNUInt:
+        case NI_Vector64_AsSByte:
+        case NI_Vector64_AsSingle:
+        case NI_Vector64_AsUInt16:
+        case NI_Vector64_AsUInt32:
+        case NI_Vector64_AsUInt64:
+        case NI_Vector128_As:
+        case NI_Vector128_AsByte:
+        case NI_Vector128_AsDouble:
+        case NI_Vector128_AsInt16:
+        case NI_Vector128_AsInt32:
+        case NI_Vector128_AsInt64:
+        case NI_Vector128_AsNInt:
+        case NI_Vector128_AsNUInt:
+        case NI_Vector128_AsSByte:
+        case NI_Vector128_AsSingle:
+        case NI_Vector128_AsUInt16:
+        case NI_Vector128_AsUInt32:
+        case NI_Vector128_AsUInt64:
         case NI_Vector128_AsVector:
+        case NI_Vector128_AsVector4:
         {
             assert(!sig->hasThis());
             assert(numArgs == 1);
@@ -1363,6 +1390,14 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector64_get_Zero:
+        case NI_Vector128_get_Zero:
+        {
+            assert(sig->numArgs == 0);
+            retNode = gtNewZeroConNode(retType);
+            break;
+        }
+
         case NI_Vector64_GetElement:
         case NI_Vector128_GetElement:
         {
@@ -1744,6 +1779,14 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             op1 = impSIMDPopStack();
 
             retNode = gtNewSimdCmpOpAnyNode(GT_NE, retType, op1, op2, simdBaseJitType, simdSize);
+            break;
+        }
+
+        case NI_Vector64_op_UnaryPlus:
+        case NI_Vector128_op_UnaryPlus:
+        {
+            assert(sig->numArgs == 1);
+            retNode = impSIMDPopStack();
             break;
         }
 
