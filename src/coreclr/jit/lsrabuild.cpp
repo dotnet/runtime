@@ -853,10 +853,10 @@ regMaskTP LinearScan::getKillSetForCall(GenTreeCall* call)
 #if defined(TARGET_XARCH)
 
 #ifdef TARGET_AMD64
-        killMask.RemoveRegsetForType(RBM_FLT_CALLEE_TRASH.getLow(), FloatRegisterType);
-        killMask.RemoveRegsetForType(RBM_MSK_CALLEE_TRASH.getLow(), MaskRegisterType);
+        killMask.RemoveRegsetForType(RBM_FLT_CALLEE_TRASH.GetFloatRegSet(), FloatRegisterType);
+        killMask.RemoveRegsetForType(RBM_MSK_CALLEE_TRASH.GetPredicateRegSet(), MaskRegisterType);
 #else
-        killMask.RemoveRegsetForType(RBM_FLT_CALLEE_TRASH, FloatRegisterType);
+        killMask.RemoveRegsetForType(RBM_FLT_CALLEE_TRASH.GetFloatRegSet(), FloatRegisterType);
         killMask &= ~RBM_MSK_CALLEE_TRASH;
 #endif // TARGET_AMD64
 
@@ -3121,7 +3121,7 @@ RefPosition* LinearScan::BuildDef(GenTree* tree, SingleTypeRegSet dstCandidates,
         {
             dstCandidates = availableIntRegs;
         }
-        dstCandidates &= ~RBM_NON_BYTE_REGS;
+        dstCandidates &= ~RBM_NON_BYTE_REGS.GetIntRegSet();
         assert(dstCandidates != RBM_NONE);
     }
 #endif // TARGET_X86
@@ -4516,8 +4516,8 @@ int LinearScan::BuildGCWriteBarrier(GenTree* tree)
         // Special write barrier:
         // op1 (addr) goes into REG_OPTIMIZED_WRITE_BARRIER_DST (rdx) and
         // op2 (src) goes into any int register.
-        addrCandidates = RBM_OPTIMIZED_WRITE_BARRIER_DST;
-        srcCandidates  = RBM_OPTIMIZED_WRITE_BARRIER_SRC;
+        addrCandidates = RBM_OPTIMIZED_WRITE_BARRIER_DST.GetIntRegSet();
+        srcCandidates  = RBM_OPTIMIZED_WRITE_BARRIER_SRC.GetIntRegSet();
     }
 
 #endif // defined(TARGET_X86) && NOGC_WRITE_BARRIERS

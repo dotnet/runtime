@@ -195,7 +195,7 @@ int LinearScan::BuildNode(GenTree* tree)
 
 #ifdef SWIFT_SUPPORT
         case GT_SWIFT_ERROR_RET:
-            BuildUse(tree->gtGetOp1(), RBM_SWIFT_ERROR);
+            BuildUse(tree->gtGetOp1(), RBM_SWIFT_ERROR.GetIntRegSet());
             // Plus one for error register
             srcCount = BuildReturn(tree) + 1;
             killMask = getKillSetForReturn();
@@ -577,7 +577,7 @@ int LinearScan::BuildNode(GenTree* tree)
             if (varTypeIsByte(tree))
             {
                 // on X86 we have to use byte-able regs for byte-wide loads
-                BuildUse(tree->gtGetOp1(), RBM_BYTE_REGS);
+                BuildUse(tree->gtGetOp1(), RBM_BYTE_REGS.GetIntRegSet());
                 srcCount = 1;
                 break;
             }
@@ -652,7 +652,7 @@ int LinearScan::BuildNode(GenTree* tree)
             // and we know REG_SWIFT_ERROR should be busy up to this point, anyway.
             // By forcing LSRA to use REG_SWIFT_ERROR as both the source and destination register,
             // we can ensure the redundant move is elided.
-            BuildDef(tree, RBM_SWIFT_ERROR);
+            BuildDef(tree, RBM_SWIFT_ERROR.GetIntRegSet());
             break;
 #endif // SWIFT_SUPPORT
 
@@ -1185,7 +1185,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
         // The x86 CORINFO_HELP_INIT_PINVOKE_FRAME helper uses a custom calling convention that returns with
         // TCB in REG_PINVOKE_TCB. AMD64/ARM64 use the standard calling convention. fgMorphCall() sets the
         // correct argument registers.
-        singleDstCandidates = RBM_PINVOKE_TCB;
+        singleDstCandidates = RBM_PINVOKE_TCB.GetIntRegSet();
     }
     else
 #endif // TARGET_X86
@@ -1342,7 +1342,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
             // Where EAX is also used as an argument to the stub dispatch helper. Make
             // sure that the call target address is computed into EAX in this case.
             assert(ctrlExpr->isIndir() && ctrlExpr->isContained());
-            ctrlExprCandidates = RBM_VIRTUAL_STUB_TARGET;
+            ctrlExprCandidates = RBM_VIRTUAL_STUB_TARGET.GetIntRegSet();
         }
 #endif // TARGET_X86
 
@@ -1676,7 +1676,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
     if (internalIsByte && (useCount >= BYTE_REG_COUNT))
     {
         noway_assert(internalIntDef != nullptr);
-        internalIntDef->registerAssignment = RBM_RAX;
+        internalIntDef->registerAssignment = SRBM_RAX;
     }
 #endif
 
@@ -1834,9 +1834,9 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* putArgStk)
 #ifndef TARGET_X86
         case GenTreePutArgStk::Kind::PartialRepInstr:
 #endif
-            buildInternalIntRegisterDefForNode(putArgStk, RBM_RDI);
-            buildInternalIntRegisterDefForNode(putArgStk, RBM_RCX);
-            buildInternalIntRegisterDefForNode(putArgStk, RBM_RSI);
+            buildInternalIntRegisterDefForNode(putArgStk, SRBM_RDI);
+            buildInternalIntRegisterDefForNode(putArgStk, SRBM_RCX);
+            buildInternalIntRegisterDefForNode(putArgStk, SRBM_RSI);
             break;
 
 #ifdef TARGET_X86
@@ -1956,8 +1956,8 @@ int LinearScan::BuildModDiv(GenTree* tree)
         // This situation also requires an internal register.
         buildInternalIntRegisterDefForNode(tree);
 
-        BuildUse(loVal, RBM_EAX);
-        BuildUse(hiVal, RBM_EDX);
+        BuildUse(loVal, SRBM_EAX);
+        BuildUse(hiVal, SRBM_EDX);
         srcCount = 2;
     }
     else
@@ -2963,7 +2963,7 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
                 }
                 if ((nonMemSource != nullptr) && !nonMemSource->isContained() && varTypeIsByte(indirTree))
                 {
-                    srcCandidates = RBM_BYTE_REGS;
+                    srcCandidates = RBM_BYTE_REGS.GetIntRegSet();
                 }
                 if (otherIndir != nullptr)
                 {
@@ -3085,7 +3085,7 @@ int LinearScan::BuildMul(GenTree* tree)
     else if (tree->OperGet() == GT_MUL_LONG)
     {
         // have to use the encoding:RDX:RAX = RAX * rm
-        dstCandidates = RBM_RAX | RBM_RDX;
+        dstCandidates = SRBM_RAX | SRBM_RDX;
         dstCount      = 2;
     }
 #endif

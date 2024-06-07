@@ -289,7 +289,7 @@
   #define RBM_LNGRET_HI            RBM_EDX
 
   #define REG_FLOATRET             REG_NA
-  #define RBM_FLOATRET             RBM_NONE
+  #define RBM_FLOATRET             RegMaskTP_NONE
   #define RBM_DOUBLERET            RBM_NONE
 
   // The registers trashed by the CORINFO_HELP_STOP_FOR_GC helper

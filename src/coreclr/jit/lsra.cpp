@@ -243,7 +243,7 @@ SingleTypeRegSet LinearScan::allRegs(RegisterType rt)
 SingleTypeRegSet LinearScan::allByteRegs()
 {
 #ifdef TARGET_X86
-    return availableIntRegs & RBM_BYTE_REGS;
+    return availableIntRegs & RBM_BYTE_REGS.GetIntRegSet();
 #else
     return availableIntRegs;
 #endif
@@ -870,7 +870,7 @@ LinearScan::LinearScan(Compiler* theCompiler)
         // When the EnC option is set we have an exact set of registers that we always save
         // that are also available in future versions.
         availableIntRegs &= ~(RBM_INT_CALLEE_SAVED | RBM_ENC_CALLEE_SAVED).GetIntRegSet();
-        availableFloatRegs &= ~(RBM_FLT_CALLEE_SAVED).GetFloatRegSet();
+        availableFloatRegs &= ~RBM_FLT_CALLEE_SAVED.GetFloatRegSet();
         availableDoubleRegs &= ~RBM_FLT_CALLEE_SAVED.GetFloatRegSet();
 #if defined(TARGET_XARCH)
         availableMaskRegs &= ~RBM_MSK_CALLEE_SAVED;
