@@ -380,6 +380,8 @@ bool ObjectAllocator::MorphAllocObjNodes()
             if (canonicalAllocObjFound)
             {
                 assert(basicBlockHasNewObj);
+
+                comp->Metrics.NewHelperCalls++;
                 //------------------------------------------------------------------------
                 // We expect the following expression tree at this point
                 //  STMTx (IL 0x... ???)
@@ -430,6 +432,7 @@ bool ObjectAllocator::MorphAllocObjNodes()
                         {
                             JITDUMP("ALLOCOBJ at [%06u] does not escape\n", comp->dspTreeID(asAllocObj));
                             helper->gtCallMoreFlags |= GTF_CALL_M_NO_ESCAPE;
+                            comp->Metrics.NonEscapingNewHelperCalls++;
                         }
                     }
                 }

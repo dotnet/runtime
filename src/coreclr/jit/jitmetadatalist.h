@@ -71,6 +71,8 @@ JITMETADATAMETRIC(ProfileInconsistentInlineeScale,       int,              0)
 JITMETADATAMETRIC(ProfileInconsistentInlinee,            int,              0)
 JITMETADATAMETRIC(ProfileInconsistentNoReturnInlinee,    int,              0)
 JITMETADATAMETRIC(ProfileInconsistentMayThrowInlinee,    int,              0)
+JITMETADATAMETRIC(NewHelperCalls,                        int,              0)
+JITMETADATAMETRIC(NonEscapingNewHelperCalls,             int,              0)
 
 #undef JITMETADATA
 #undef JITMETADATAINFO
