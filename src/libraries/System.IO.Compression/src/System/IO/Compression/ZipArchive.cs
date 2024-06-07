@@ -537,6 +537,12 @@ namespace System.IO.Compression
                         bytesRead += bytesConsumed;
                     }
 
+                    // We've run out of possible space in the entry - seek backwards by the number of bytes remaining in
+                    // this buffer (so that the next buffer overlaps with this one) and retry.
+                    if (currPosition < sizedFileBuffer.Length)
+                    {
+                        _archiveStream.Seek(-(sizedFileBuffer.Length - currPosition), SeekOrigin.Current);
+                    }
                     currPosition = 0;
                 }
 
