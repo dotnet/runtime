@@ -85,11 +85,11 @@ namespace System.Runtime.Intrinsics
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static Vector256<T> XarchImpl(Vector256<T> vector)
             {
-                if (sizeof(T) == sizeof(float))
+                if (typeof(T) == typeof(float))
                 {
                     return Avx.AndNot(Vector256.Create(-0.0f), vector.AsSingle()).As<float, T>();
                 }
-                else if (sizeof(T) == sizeof(double))
+                else if (typeof(T) == typeof(double))
                 {
                     return Avx.AndNot(Vector256.Create(-0.0), vector.AsDouble()).As<double, T>();
                 }

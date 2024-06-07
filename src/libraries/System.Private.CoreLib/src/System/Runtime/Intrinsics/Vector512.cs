@@ -84,14 +84,14 @@ namespace System.Runtime.Intrinsics
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static Vector512<T> XarchImpl(Vector512<T> vector)
             {
-                if (sizeof(T) == sizeof(float))
+                if (typeof(T) == typeof(float))
                 {
                     if (Avx512DQ.IsSupported)
                     {
                         return Avx512DQ.AndNot(Vector512.Create(-0.0f), vector.AsSingle()).As<float, T>();
                     }
                 }
-                else if (sizeof(T) == sizeof(double))
+                else if (typeof(T) == typeof(double))
                 {
                     if (Avx512DQ.IsSupported)
                     {

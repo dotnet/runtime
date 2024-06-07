@@ -87,7 +87,7 @@ namespace System.Runtime.Intrinsics
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static Vector128<T> ArmImpl(Vector128<T> vector)
             {
-                if (sizeof(T) == sizeof(float))
+                if (typeof(T) == typeof(float))
                 {
                     return AdvSimd.Abs(vector.AsSingle()).As<float, T>();
                 }
@@ -105,7 +105,7 @@ namespace System.Runtime.Intrinsics
                 }
                 else if (AdvSimd.Arm64.IsSupported)
                 {
-                    if (sizeof(T) == sizeof(double))
+                    if (typeof(T) == typeof(double))
                     {
                         return AdvSimd.Arm64.Abs(vector.AsDouble()).As<double, T>();
                     }
@@ -121,11 +121,11 @@ namespace System.Runtime.Intrinsics
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static Vector128<T> WasmImpl(Vector128<T> vector)
             {
-                if (sizeof(T) == sizeof(float))
+                if (typeof(T) == typeof(float))
                 {
                     return PackedSimd.Abs(vector.AsSingle()).As<float, T>();
                 }
-                else if (sizeof(T) == sizeof(double))
+                else if (typeof(T) == typeof(double))
                 {
                     return PackedSimd.Abs(vector.AsDouble()).As<double, T>();
                 }
@@ -155,13 +155,13 @@ namespace System.Runtime.Intrinsics
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static Vector128<T> XarchImpl(Vector128<T> vector)
             {
-                if (sizeof(T) == sizeof(float))
+                if (typeof(T) == typeof(float))
                 {
                     return Sse.AndNot(Vector128.Create(-0.0f), vector.AsSingle()).As<float, T>();
                 }
                 else if (Sse2.IsSupported)
                 {
-                    if (sizeof(T) == sizeof(double))
+                    if (typeof(T) == typeof(double))
                     {
                         return Sse2.AndNot(Vector128.Create(-0.0), vector.AsDouble()).As<double, T>();
                     }
