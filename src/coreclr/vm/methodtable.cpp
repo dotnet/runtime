@@ -8666,6 +8666,7 @@ PTR_MethodTable MethodTable::InterfaceMapIterator::GetInterface(MethodTable* pMT
 
 void MethodTable::GetStaticsOffsets(StaticsOffsetType offsetType, bool fGenericStatics, uint32_t *dwGCOffset, uint32_t *dwNonGCOffset)
 {
+    LIMITED_METHOD_CONTRACT;
     if (offsetType == StaticsOffsetType::Normal)
     {
         *dwNonGCOffset = 0;

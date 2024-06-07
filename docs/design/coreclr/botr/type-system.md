@@ -199,7 +199,7 @@ Static variables in CoreCLR are handled by a combination of getting the "static 
 We define the statics base as either non-gc or gc for each field.
 Currently non-gc statics are any statics which are represented by primitive types (byte, sbyte, char, int, uint, long, ulong, float, double, pointers of various forms), and enums.
 GC statics are any statics which are represented by classes or by non-primitive valuetypes.
-For struct statics, the static variable is actually a pointer to a boxed instance of the structure.
+For valuetype statics which are GC statics, the static variable is actually a pointer to a boxed instance of the valuetype.
 
 ### Per type static variable information
 As of .NET 9, the static variable bases are now all associated with their particular type.
