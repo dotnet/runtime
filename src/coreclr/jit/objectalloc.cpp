@@ -417,17 +417,20 @@ bool ObjectAllocator::MorphAllocObjNodes()
 
                     // Some new helpers directly cause escape (eg add to finalizer queue)
                     //
-                    const bool         doesNotEscape = !CanLclVarEscape(lclNum) && !asAllocObj->gtHelperHasSideEffects;
-                    GenTreeCall* const helper        = MorphAllocObjNodeIntoHelperCall(asAllocObj);
 
+                    GenTreeCall* const helper        = MorphAllocObjNodeIntoHelperCall(asAllocObj);
                     data                         = helper;
                     stmtExpr->AsLclVar()->Data() = data;
                     stmtExpr->AddAllEffectsFlags(data);
 
-                    if (doesNotEscape)
+                    if (IsObjectStackAllocationAnalysisEnabled())
                     {
-                        JITDUMP("ALLOCOBJ at [%06u] does not escape\n", comp->dspTreeID(asAllocObj));
-                        helper->gtCallMoreFlags |= GTF_CALL_M_NO_ESCAPE;
+                        const bool doesNotEscape = !CanLclVarEscape(lclNum) && !asAllocObj->gtHelperHasSideEffects;
+                        if (doesNotEscape)
+                        {
+                            JITDUMP("ALLOCOBJ at [%06u] does not escape\n", comp->dspTreeID(asAllocObj));
+                            helper->gtCallMoreFlags |= GTF_CALL_M_NO_ESCAPE;
+                        }
                     }
                 }
             }
