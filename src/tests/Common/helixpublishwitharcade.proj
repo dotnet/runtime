@@ -449,7 +449,7 @@
       <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' != 'true'" Include="set_return %24result_exit_code" />
     </ItemGroup>
 
-    <Copy SourceFiles="@(ReducedMergedPayloadFilesFinal)" DestinationFiles="@(ReducedMergedPayloadFilesFinal->'$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\%(FileRelativeToPayloadsRootDirectory)')" Condition="'@(ReducedMergedPayloadFilesFinal)' != ''" />
+    <Copy UseHardlinksIfPossible="true" SourceFiles="@(ReducedMergedPayloadFilesFinal)" DestinationFiles="@(ReducedMergedPayloadFilesFinal->'$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\%(FileRelativeToPayloadsRootDirectory)')" Condition="'@(ReducedMergedPayloadFilesFinal)' != ''" />
     <WriteLinesToFile File="$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\HelixCommand.txt" Lines="@(HelixCommandLines)" />
   </Target>
 
