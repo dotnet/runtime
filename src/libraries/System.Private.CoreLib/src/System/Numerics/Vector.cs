@@ -4,8 +4,8 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
-using System.Runtime.Intrinsics.X86;
-using static Interop;
+
+#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
 
 namespace System.Numerics
 {
@@ -32,25 +32,18 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> Abs<T>(Vector<T> value)
         {
-            if ((typeof(T) == typeof(byte))
-             || (typeof(T) == typeof(ushort))
-             || (typeof(T) == typeof(uint))
-             || (typeof(T) == typeof(ulong))
-             || (typeof(T) == typeof(nuint)))
+            if (sizeof(Vector<T>) == 64)
             {
-                return value;
+                return Vector512.Abs(value.AsVector512()).AsVector();
+            }
+            else if (sizeof(Vector<T>) == 32)
+            {
+                return Vector256.Abs(value.AsVector256()).AsVector();
             }
             else
             {
-                Unsafe.SkipInit(out Vector<T> result);
-
-                for (int index = 0; index < Vector<T>.Count; index++)
-                {
-                    T element = Scalar<T>.Abs(value.GetElementUnsafe(index));
-                    result.SetElementUnsafe(index, element);
-                }
-
-                return result;
+                Debug.Assert(sizeof(Vector<T>) == 16);
+                return Vector128.Abs(value.AsVector128()).AsVector();
             }
         }
 
@@ -68,7 +61,23 @@ namespace System.Numerics
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <returns>The bitwise-and of <paramref name="left" /> and the ones-complement of <paramref name="right" />.</returns>
         [Intrinsic]
-        public static Vector<T> AndNot<T>(Vector<T> left, Vector<T> right) => left & ~right;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<T> AndNot<T>(Vector<T> left, Vector<T> right)
+        {
+            if (sizeof(Vector<T>) == 64)
+            {
+                return Vector512.AndNot(left.AsVector512(), right.AsVector512()).AsVector();
+            }
+            else if (sizeof(Vector<T>) == 32)
+            {
+                return Vector256.AndNot(left.AsVector256(), right.AsVector256()).AsVector();
+            }
+            else
+            {
+                Debug.Assert(sizeof(Vector<T>) == 16);
+                return Vector128.AndNot(left.AsVector128(), right.AsVector128()).AsVector();
+            }
+        }
 
         /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{U}" />.</summary>
         /// <typeparam name="TFrom">The type of the input vector.</typeparam>
@@ -215,15 +224,19 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<double> Ceiling(Vector<double> value)
         {
-            Unsafe.SkipInit(out Vector<double> result);
-
-            for (int index = 0; index < Vector<double>.Count; index++)
+            if (sizeof(Vector<double>) == 64)
             {
-                double element = Scalar<double>.Ceiling(value.GetElementUnsafe(index));
-                result.SetElementUnsafe(index, element);
+                return Vector512.Ceiling(value.AsVector512()).AsVector();
             }
-
-            return result;
+            else if (sizeof(Vector<double>) == 32)
+            {
+                return Vector256.Ceiling(value.AsVector256()).AsVector();
+            }
+            else
+            {
+                Debug.Assert(sizeof(Vector<double>) == 16);
+                return Vector128.Ceiling(value.AsVector128()).AsVector();
+            }
         }
 
         /// <summary>Computes the ceiling of each element in a vector.</summary>
@@ -234,15 +247,19 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<float> Ceiling(Vector<float> value)
         {
-            Unsafe.SkipInit(out Vector<float> result);
-
-            for (int index = 0; index < Vector<float>.Count; index++)
+            if (sizeof(Vector<float>) == 64)
             {
-                float element = Scalar<float>.Ceiling(value.GetElementUnsafe(index));
-                result.SetElementUnsafe(index, element);
+                return Vector512.Ceiling(value.AsVector512()).AsVector();
             }
-
-            return result;
+            else if (sizeof(Vector<float>) == 32)
+            {
+                return Vector256.Ceiling(value.AsVector256()).AsVector();
+            }
+            else
+            {
+                Debug.Assert(sizeof(Vector<float>) == 16);
+                return Vector128.Ceiling(value.AsVector128()).AsVector();
+            }
         }
 
         /// <summary>Conditionally selects a value from two vectors on a bitwise basis.</summary>
@@ -253,7 +270,22 @@ namespace System.Numerics
         /// <returns>A vector whose bits come from <paramref name="left" /> or <paramref name="right" /> based on the value of <paramref name="condition" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector<T> ConditionalSelect<T>(Vector<T> condition, Vector<T> left, Vector<T> right) => (left & condition) | AndNot(right, condition);
+        public static Vector<T> ConditionalSelect<T>(Vector<T> condition, Vector<T> left, Vector<T> right)
+        {
+            if (sizeof(Vector<T>) == 64)
+            {
+                return Vector512.ConditionalSelect(condition.AsVector512(), left.AsVector512(), right.AsVector512()).AsVector();
+            }
+            else if (sizeof(Vector<T>) == 32)
+            {
+                return Vector256.ConditionalSelect(condition.AsVector256(), left.AsVector256(), right.AsVector256()).AsVector();
+            }
+            else
+            {
+                Debug.Assert(sizeof(Vector<T>) == 16);
+                return Vector128.ConditionalSelect(condition.AsVector128(), left.AsVector128(), right.AsVector128()).AsVector();
+            }
+        }
 
         /// <summary>Conditionally selects a value from two vectors on a bitwise basis.</summary>
         /// <param name="condition">The mask that is used to select a value from <paramref name="left" /> or <paramref name="right" />.</param>
@@ -278,14 +310,17 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<double> ConvertToDouble(Vector<long> value)
         {
-            if (Avx2.IsSupported)
+            if (sizeof(Vector<double>) == 64)
             {
-                Debug.Assert(Vector<double>.Count == Vector256<double>.Count);
+                return Vector512.ConvertToDouble(value.AsVector512()).AsVector();
+            }
+            else if (sizeof(Vector<double>) == 32)
+            {
                 return Vector256.ConvertToDouble(value.AsVector256()).AsVector();
             }
             else
             {
-                Debug.Assert(Vector<double>.Count == Vector128<double>.Count);
+                Debug.Assert(sizeof(Vector<double>) == 16);
                 return Vector128.ConvertToDouble(value.AsVector128()).AsVector();
             }
         }
@@ -298,14 +333,17 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<double> ConvertToDouble(Vector<ulong> value)
         {
-            if (Avx2.IsSupported)
+            if (sizeof(Vector<double>) == 64)
             {
-                Debug.Assert(Vector<double>.Count == Vector256<double>.Count);
+                return Vector512.ConvertToDouble(value.AsVector512()).AsVector();
+            }
+            else if (sizeof(Vector<double>) == 32)
+            {
                 return Vector256.ConvertToDouble(value.AsVector256()).AsVector();
             }
             else
             {
-                Debug.Assert(Vector<double>.Count == Vector128<double>.Count);
+                Debug.Assert(sizeof(Vector<double>) == 16);
                 return Vector128.ConvertToDouble(value.AsVector128()).AsVector();
             }
         }
@@ -314,85 +352,110 @@ namespace System.Numerics
         /// <param name="value">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<int> ConvertToInt32(Vector<float> value)
         {
-            Unsafe.SkipInit(out Vector<int> result);
-
-            for (int i = 0; i < Vector<int>.Count; i++)
+            if (sizeof(Vector<int>) == 64)
             {
-                int element = float.ConvertToInteger<int>(value.GetElementUnsafe(i));
-                result.SetElementUnsafe(i, element);
+                return Vector512.ConvertToInt32(value.AsVector512()).AsVector();
             }
-
-            return result;
+            else if (sizeof(Vector<int>) == 32)
+            {
+                return Vector256.ConvertToInt32(value.AsVector256()).AsVector();
+            }
+            else
+            {
+                Debug.Assert(sizeof(Vector<int>) == 16);
+                return Vector128.ConvertToInt32(value.AsVector128()).AsVector();
+            }
         }
 
         /// <summary>Converts a <see cref="Vector{Single}" /> to a <see cref="Vector{Int32}" /> using platform specific behavior on overflow.</summary>
         /// <param name="value">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<int> ConvertToInt32Native(Vector<float> value)
         {
-            Unsafe.SkipInit(out Vector<int> result);
-
-            for (int i = 0; i < Vector<int>.Count; i++)
+            if (sizeof(Vector<int>) == 64)
             {
-                int element = float.ConvertToIntegerNative<int>(value.GetElementUnsafe(i));
-                result.SetElementUnsafe(i, element);
+                return Vector512.ConvertToInt32Native(value.AsVector512()).AsVector();
             }
-
-            return result;
+            else if (sizeof(Vector<int>) == 32)
+            {
+                return Vector256.ConvertToInt32Native(value.AsVector256()).AsVector();
+            }
+            else
+            {
+                Debug.Assert(sizeof(Vector<int>) == 16);
+                return Vector128.ConvertToInt32Native(value.AsVector128()).AsVector();
+            }
         }
 
         /// <summary>Converts a <see cref="Vector{Double}" /> to a <see cref="Vector{Int64}" /> using saturation on overflow.</summary>
         /// <param name="value">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<long> ConvertToInt64(Vector<double> value)
         {
-            Unsafe.SkipInit(out Vector<long> result);
-
-            for (int i = 0; i < Vector<long>.Count; i++)
+            if (sizeof(Vector<long>) == 64)
             {
-                long element = double.ConvertToInteger<long>(value.GetElementUnsafe(i));
-                result.SetElementUnsafe(i, element);
+                return Vector512.ConvertToInt64(value.AsVector512()).AsVector();
             }
-
-            return result;
+            else if (sizeof(Vector<long>) == 32)
+            {
+                return Vector256.ConvertToInt64(value.AsVector256()).AsVector();
+            }
+            else
+            {
+                Debug.Assert(sizeof(Vector<long>) == 16);
+                return Vector128.ConvertToInt64(value.AsVector128()).AsVector();
+            }
         }
 
         /// <summary>Converts a <see cref="Vector{Double}" /> to a <see cref="Vector{Int64}" /> using platform specific behavior on overflow.</summary>
         /// <param name="value">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<long> ConvertToInt64Native(Vector<double> value)
         {
-            Unsafe.SkipInit(out Vector<long> result);
-
-            for (int i = 0; i < Vector<long>.Count; i++)
+            if (sizeof(Vector<long>) == 64)
             {
-                long element = double.ConvertToIntegerNative<long>(value.GetElementUnsafe(i));
-                result.SetElementUnsafe(i, element);
+                return Vector512.ConvertToInt64Native(value.AsVector512()).AsVector();
             }
-
-            return result;
+            else if (sizeof(Vector<long>) == 32)
+            {
+                return Vector256.ConvertToInt64Native(value.AsVector256()).AsVector();
+            }
+            else
+            {
+                Debug.Assert(sizeof(Vector<long>) == 16);
+                return Vector128.ConvertToInt64Native(value.AsVector128()).AsVector();
+            }
         }
 
         /// <summary>Converts a <see cref="Vector{Int32}" /> to a <see cref="Vector{Single}" />.</summary>
         /// <param name="value">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<float> ConvertToSingle(Vector<int> value)
         {
-            Unsafe.SkipInit(out Vector<float> result);
-
-            for (int i = 0; i < Vector<float>.Count; i++)
+            if (sizeof(Vector<float>) == 64)
             {
-                float element = value.GetElementUnsafe(i);
-                result.SetElementUnsafe(i, element);
+                return Vector512.ConvertToSingle(value.AsVector512()).AsVector();
             }
-
-            return result;
+            else if (sizeof(Vector<float>) == 32)
+            {
+                return Vector256.ConvertToSingle(value.AsVector256()).AsVector();
+            }
+            else
+            {
+                Debug.Assert(sizeof(Vector<float>) == 16);
+                return Vector128.ConvertToSingle(value.AsVector128()).AsVector();
+            }
         }
 
         /// <summary>Converts a <see cref="Vector{UInt32}" /> to a <see cref="Vector{Single}" />.</summary>
@@ -403,14 +466,17 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<float> ConvertToSingle(Vector<uint> value)
         {
-            if (Avx2.IsSupported)
+            if (sizeof(Vector<float>) == 64)
             {
-                Debug.Assert(Vector<float>.Count == Vector256<float>.Count);
+                return Vector512.ConvertToSingle(value.AsVector512()).AsVector();
+            }
+            else if (sizeof(Vector<float>) == 32)
+            {
                 return Vector256.ConvertToSingle(value.AsVector256()).AsVector();
             }
             else
             {
-                Debug.Assert(Vector<float>.Count == Vector128<float>.Count);
+                Debug.Assert(sizeof(Vector<float>) == 16);
                 return Vector128.ConvertToSingle(value.AsVector128()).AsVector();
             }
         }
@@ -420,17 +486,22 @@ namespace System.Numerics
         /// <returns>The converted vector.</returns>
         [Intrinsic]
         [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<uint> ConvertToUInt32(Vector<float> value)
         {
-            Unsafe.SkipInit(out Vector<uint> result);
-
-            for (int i = 0; i < Vector<uint>.Count; i++)
+            if (sizeof(Vector<uint>) == 64)
             {
-                uint element = float.ConvertToInteger<uint>(value.GetElementUnsafe(i));
-                result.SetElementUnsafe(i, element);
+                return Vector512.ConvertToUInt32(value.AsVector512()).AsVector();
             }
-
-            return result;
+            else if (sizeof(Vector<uint>) == 32)
+            {
+                return Vector256.ConvertToUInt32(value.AsVector256()).AsVector();
+            }
+            else
+            {
+                Debug.Assert(sizeof(Vector<uint>) == 16);
+                return Vector128.ConvertToUInt32(value.AsVector128()).AsVector();
+            }
         }
 
         /// <summary>Converts a <see cref="Vector{Single}" /> to a <see cref="Vector{UInt32}" /> using platform specific behavior on overflow.</summary>
@@ -438,17 +509,22 @@ namespace System.Numerics
         /// <returns>The converted vector.</returns>
         [Intrinsic]
         [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<uint> ConvertToUInt32Native(Vector<float> value)
         {
-            Unsafe.SkipInit(out Vector<uint> result);
-
-            for (int i = 0; i < Vector<uint>.Count; i++)
+            if (sizeof(Vector<uint>) == 64)
             {
-                uint element = float.ConvertToIntegerNative<uint>(value.GetElementUnsafe(i));
-                result.SetElementUnsafe(i, element);
+                return Vector512.ConvertToUInt32Native(value.AsVector512()).AsVector();
             }
-
-            return result;
+            else if (sizeof(Vector<uint>) == 32)
+            {
+                return Vector256.ConvertToUInt32Native(value.AsVector256()).AsVector();
+            }
+            else
+            {
+                Debug.Assert(sizeof(Vector<uint>) == 16);
+                return Vector128.ConvertToUInt32Native(value.AsVector128()).AsVector();
+            }
         }
 
         /// <summary>Converts a <see cref="Vector{Double}" /> to a <see cref="Vector{UInt64}" /> using saturation on overflow.</summary>
@@ -456,17 +532,22 @@ namespace System.Numerics
         /// <returns>The converted vector.</returns>
         [Intrinsic]
         [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<ulong> ConvertToUInt64(Vector<double> value)
         {
-            Unsafe.SkipInit(out Vector<ulong> result);
-
-            for (int i = 0; i < Vector<ulong>.Count; i++)
+            if (sizeof(Vector<ulong>) == 64)
             {
-                ulong element = double.ConvertToInteger<ulong>(value.GetElementUnsafe(i));
-                result.SetElementUnsafe(i, element);
+                return Vector512.ConvertToUInt64(value.AsVector512()).AsVector();
             }
-
-            return result;
+            else if (sizeof(Vector<ulong>) == 32)
+            {
+                return Vector256.ConvertToUInt64(value.AsVector256()).AsVector();
+            }
+            else
+            {
+                Debug.Assert(sizeof(Vector<ulong>) == 16);
+                return Vector128.ConvertToUInt64(value.AsVector128()).AsVector();
+            }
         }
 
         /// <summary>Converts a <see cref="Vector{Double}" /> to a <see cref="Vector{UInt64}" /> using platform specific behavior on overflow.</summary>
@@ -474,17 +555,22 @@ namespace System.Numerics
         /// <returns>The converted vector.</returns>
         [Intrinsic]
         [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<ulong> ConvertToUInt64Native(Vector<double> value)
         {
-            Unsafe.SkipInit(out Vector<ulong> result);
-
-            for (int i = 0; i < Vector<ulong>.Count; i++)
+            if (sizeof(Vector<ulong>) == 64)
             {
-                ulong element = double.ConvertToIntegerNative<ulong>(value.GetElementUnsafe(i));
-                result.SetElementUnsafe(i, element);
+                return Vector512.ConvertToUInt64Native(value.AsVector512()).AsVector();
             }
-
-            return result;
+            else if (sizeof(Vector<ulong>) == 32)
+            {
+                return Vector256.ConvertToUInt64Native(value.AsVector256()).AsVector();
+            }
+            else
+            {
+                Debug.Assert(sizeof(Vector<ulong>) == 16);
+                return Vector128.ConvertToUInt64Native(value.AsVector128()).AsVector();
+            }
         }
 
         /// <summary>Creates a new <see cref="Vector{T}" /> instance where the elements begin at a specified value and which are spaced apart according to another specified value.</summary>
@@ -494,7 +580,22 @@ namespace System.Numerics
         /// <returns>A new <see cref="Vector{T}" /> instance with the first element initialized to <paramref name="start" /> and each subsequent element initialized to the the value of the previous element plus <paramref name="step" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector<T> CreateSequence<T>(T start, T step) => (Vector<T>.Indices * step) + new Vector<T>(start);
+        public static Vector<T> CreateSequence<T>(T start, T step)
+        {
+            if (sizeof(Vector<T>) == 64)
+            {
+                return Vector512.CreateSequence<T>(start, step).AsVector();
+            }
+            else if (sizeof(Vector<T>) == 32)
+            {
+                return Vector256.CreateSequence<T>(start, step).AsVector();
+            }
+            else
+            {
+                Debug.Assert(sizeof(Vector<T>) == 16);
+                return Vector128.CreateSequence<T>(start, step).AsVector();
+            }
+        }
 
         /// <summary>Divides two vectors to compute their quotient.</summary>
         /// <param name="left">The vector that will be divided by <paramref name="right" />.</param>
@@ -518,7 +619,23 @@ namespace System.Numerics
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <returns>The dot product of <paramref name="left" /> and <paramref name="right" />.</returns>
         [Intrinsic]
-        public static T Dot<T>(Vector<T> left, Vector<T> right) => Sum(left * right);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static T Dot<T>(Vector<T> left, Vector<T> right)
+        {
+            if (sizeof(Vector<T>) == 64)
+            {
+                return Vector512.Dot(left.AsVector512(), right.AsVector512());
+            }
+            else if (sizeof(Vector<T>) == 32)
+            {
+                return Vector256.Dot(left.AsVector256(), right.AsVector256());
+            }
+            else
+            {
+                Debug.Assert(sizeof(Vector<T>) == 16);
+                return Vector128.Dot(left.AsVector128(), right.AsVector128());
+            }
+        }
 
         /// <summary>Compares two vectors to determine if they are equal on a per-element basis.</summary>
         /// <param name="left">The vector to compare with <paramref name="right" />.</param>
@@ -529,15 +646,19 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> Equals<T>(Vector<T> left, Vector<T> right)
         {
-            Unsafe.SkipInit(out Vector<T> result);
-
-            for (int index = 0; index < Vector<T>.Count; index++)
+            if (sizeof(Vector<T>) == 64)
             {
-                T value = Scalar<T>.Equals(left.GetElementUnsafe(index), right.GetElementUnsafe(index)) ? Scalar<T>.AllBitsSet : default!;
-                result.SetElementUnsafe(index, value);
+                return Vector512.Equals(left.AsVector512(), right.AsVector512()).AsVector();
             }
-
-            return result;
+            else if (sizeof(Vector<T>) == 32)
+            {
+                return Vector256.Equals(left.AsVector256(), right.AsVector256()).AsVector();
+            }
+            else
+            {
+                Debug.Assert(sizeof(Vector<T>) == 16);
+                return Vector128.Equals(left.AsVector128(), right.AsVector128()).AsVector();
+            }
         }
 
         /// <summary>Compares two vectors to determine if they are equal on a per-element basis.</summary>
@@ -585,15 +706,19 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool EqualsAny<T>(Vector<T> left, Vector<T> right)
         {
-            for (int index = 0; index < Vector<T>.Count; index++)
+            if (sizeof(Vector<T>) == 64)
             {
-                if (Scalar<T>.Equals(left.GetElementUnsafe(index), right.GetElementUnsafe(index)))
-                {
-                    return true;
-                }
+                return Vector512.EqualsAny(left.AsVector512(), right.AsVector512());
             }
-
-            return false;
+            else if (sizeof(Vector<T>) == 32)
+            {
+                return Vector256.EqualsAny(left.AsVector256(), right.AsVector256());
+            }
+            else
+            {
+                Debug.Assert(sizeof(Vector<T>) == 16);
+                return Vector128.EqualsAny(left.AsVector128(), right.AsVector128());
+            }
         }
 
         /// <summary>Computes the floor of each element in a vector.</summary>
@@ -604,15 +729,19 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<double> Floor(Vector<double> value)
         {
-            Unsafe.SkipInit(out Vector<double> result);
-
-            for (int index = 0; index < Vector<double>.Count; index++)
+            if (sizeof(Vector<double>) == 64)
             {
-                double element = Scalar<double>.Floor(value.GetElementUnsafe(index));
-                result.SetElementUnsafe(index, element);
+                return Vector512.Floor(value.AsVector512()).AsVector();
             }
-
-            return result;
+            else if (sizeof(Vector<double>) == 32)
+            {
+                return Vector256.Floor(value.AsVector256()).AsVector();
+            }
+            else
+            {
+                Debug.Assert(sizeof(Vector<double>) == 16);
+                return Vector128.Floor(value.AsVector128()).AsVector();
+            }
         }
 
         /// <summary>Computes the floor of each element in a vector.</summary>
@@ -623,15 +752,19 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<float> Floor(Vector<float> value)
         {
-            Unsafe.SkipInit(out Vector<float> result);
-
-            for (int index = 0; index < Vector<float>.Count; index++)
+            if (sizeof(Vector<float>) == 64)
             {
-                float element = Scalar<float>.Floor(value.GetElementUnsafe(index));
-                result.SetElementUnsafe(index, element);
+                return Vector512.Floor(value.AsVector512()).AsVector();
             }
-
-            return result;
+            else if (sizeof(Vector<float>) == 32)
+            {
+                return Vector256.Floor(value.AsVector256()).AsVector();
+            }
+            else
+            {
+                Debug.Assert(sizeof(Vector<float>) == 16);
+                return Vector128.Floor(value.AsVector128()).AsVector();
+            }
         }
 
         /// <summary>Computes (<paramref name="left"/> * <paramref name="right"/>) + <paramref name="addend"/>, rounded as one ternary operation.</summary>
@@ -647,15 +780,19 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<double> FusedMultiplyAdd(Vector<double> left, Vector<double> right, Vector<double> addend)
         {
-            Unsafe.SkipInit(out Vector<double> result);
-
-            for (int index = 0; index < Vector<double>.Count; index++)
+            if (sizeof(Vector<double>) == 64)
             {
-                double value = double.FusedMultiplyAdd(left.GetElementUnsafe(index), right.GetElementUnsafe(index), addend.GetElementUnsafe(index));
-                result.SetElementUnsafe(index, value);
+                return Vector512.FusedMultiplyAdd(left.AsVector512(), right.AsVector512(), addend.AsVector512()).AsVector();
             }
-
-            return result;
+            else if (sizeof(Vector<double>) == 32)
+            {
+                return Vector256.FusedMultiplyAdd(left.AsVector256(), right.AsVector256(), addend.AsVector256()).AsVector();
+            }
+            else
+            {
+                Debug.Assert(sizeof(Vector<double>) == 16);
+                return Vector128.FusedMultiplyAdd(left.AsVector128(), right.AsVector128(), addend.AsVector128()).AsVector();
+            }
         }
 
         /// <summary>Computes (<paramref name="left"/> * <paramref name="right"/>) + <paramref name="addend"/>, rounded as one ternary operation.</summary>
@@ -671,15 +808,19 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<float> FusedMultiplyAdd(Vector<float> left, Vector<float> right, Vector<float> addend)
         {
-            Unsafe.SkipInit(out Vector<float> result);
-
-            for (int index = 0; index < Vector<float>.Count; index++)
+            if (sizeof(Vector<float>) == 64)
             {
-                float value = float.FusedMultiplyAdd(left.GetElementUnsafe(index), right.GetElementUnsafe(index), addend.GetElementUnsafe(index));
-                result.SetElementUnsafe(index, value);
+                return Vector512.FusedMultiplyAdd(left.AsVector512(), right.AsVector512(), addend.AsVector512()).AsVector();
             }
-
-            return result;
+            else if (sizeof(Vector<float>) == 32)
+            {
+                return Vector256.FusedMultiplyAdd(left.AsVector256(), right.AsVector256(), addend.AsVector256()).AsVector();
+            }
+            else
+            {
+                Debug.Assert(sizeof(Vector<float>) == 16);
+                return Vector128.FusedMultiplyAdd(left.AsVector128(), right.AsVector128(), addend.AsVector128()).AsVector();
+            }
         }
 
         /// <summary>Gets the element at the specified index.</summary>
@@ -693,12 +834,19 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T GetElement<T>(this Vector<T> vector, int index)
         {
-            if ((uint)(index) >= (uint)(Vector<T>.Count))
+            if (sizeof(Vector<T>) == 64)
             {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
+                return vector.AsVector512().GetElement(index);
             }
-
-            return vector.GetElementUnsafe(index);
+            else if (sizeof(Vector<T>) == 32)
+            {
+                return vector.AsVector256().GetElement(index);
+            }
+            else
+            {
+                Debug.Assert(sizeof(Vector<double>) == 16);
+                return vector.AsVector128().GetElement(index);
+            }
         }
 
         /// <summary>Compares two vectors to determine which is greater on a per-element basis.</summary>
@@ -710,15 +858,19 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> GreaterThan<T>(Vector<T> left, Vector<T> right)
         {
-            Unsafe.SkipInit(out Vector<T> result);
-
-            for (int index = 0; index < Vector<T>.Count; index++)
+            if (sizeof(Vector<T>) == 64)
             {
-                T value = Scalar<T>.GreaterThan(left.GetElementUnsafe(index), right.GetElementUnsafe(index)) ? Scalar<T>.AllBitsSet : default!;
-                result.SetElementUnsafe(index, value);
+                return Vector512.GreaterThan(left.AsVector512(), right.AsVector512()).AsVector();
             }
-
-            return result;
+            else if (sizeof(Vector<T>) == 32)
+            {
+                return Vector256.GreaterThan(left.AsVector256(), right.AsVector256()).AsVector();
+            }
+            else
+            {
+                Debug.Assert(sizeof(Vector<T>) == 16);
+                return Vector128.GreaterThan(left.AsVector128(), right.AsVector128()).AsVector();
+            }
         }
 
         /// <summary>Compares two vectors to determine which is greater on a per-element basis.</summary>
@@ -758,15 +910,19 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool GreaterThanAll<T>(Vector<T> left, Vector<T> right)
         {
-            for (int index = 0; index < Vector<T>.Count; index++)
+            if (sizeof(Vector<T>) == 64)
             {
-                if (!Scalar<T>.GreaterThan(left.GetElementUnsafe(index), right.GetElementUnsafe(index)))
-                {
-                    return false;
-                }
+                return Vector512.GreaterThanAll(left.AsVector512(), right.AsVector512());
             }
-
-            return true;
+            else if (sizeof(Vector<T>) == 32)
+            {
+                return Vector256.GreaterThanAll(left.AsVector256(), right.AsVector256());
+            }
+            else
+            {
+                Debug.Assert(sizeof(Vector<T>) == 16);
+                return Vector128.GreaterThanAll(left.AsVector128(), right.AsVector128());
+            }
         }
 
         /// <summary>Compares two vectors to determine if any elements are greater.</summary>
@@ -778,15 +934,19 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool GreaterThanAny<T>(Vector<T> left, Vector<T> right)
         {
-            for (int index = 0; index < Vector<T>.Count; index++)
+            if (sizeof(Vector<T>) == 64)
             {
-                if (Scalar<T>.GreaterThan(left.GetElementUnsafe(index), right.GetElementUnsafe(index)))
-                {
-                    return true;
-                }
+                return Vector512.GreaterThanAny(left.AsVector512(), right.AsVector512());
             }
-
-            return false;
+            else if (sizeof(Vector<T>) == 32)
+            {
+                return Vector256.GreaterThanAny(left.AsVector256(), right.AsVector256());
+            }
+            else
+            {
+                Debug.Assert(sizeof(Vector<T>) == 16);
+                return Vector128.GreaterThanAny(left.AsVector128(), right.AsVector128());
+            }
         }
 
         /// <summary>Compares two vectors to determine which is greater or equal on a per-element basis.</summary>
@@ -798,15 +958,19 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> GreaterThanOrEqual<T>(Vector<T> left, Vector<T> right)
         {
-            Unsafe.SkipInit(out Vector<T> result);
-
-            for (int index = 0; index < Vector<T>.Count; index++)
+            if (sizeof(Vector<T>) == 64)
             {
-                T value = Scalar<T>.GreaterThanOrEqual(left.GetElementUnsafe(index), right.GetElementUnsafe(index)) ? Scalar<T>.AllBitsSet : default!;
-                result.SetElementUnsafe(index, value);
+                return Vector512.GreaterThanOrEqual(left.AsVector512(), right.AsVector512()).AsVector();
             }
-
-            return result;
+            else if (sizeof(Vector<T>) == 32)
+            {
+                return Vector256.GreaterThanOrEqual(left.AsVector256(), right.AsVector256()).AsVector();
+            }
+            else
+            {
+                Debug.Assert(sizeof(Vector<T>) == 16);
+                return Vector128.GreaterThanOrEqual(left.AsVector128(), right.AsVector128()).AsVector();
+            }
         }
 
         /// <summary>Compares two vectors to determine which is greater or equal on a per-element basis.</summary>
@@ -846,15 +1010,19 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool GreaterThanOrEqualAll<T>(Vector<T> left, Vector<T> right)
         {
-            for (int index = 0; index < Vector<T>.Count; index++)
+            if (sizeof(Vector<T>) == 64)
             {
-                if (!Scalar<T>.GreaterThanOrEqual(left.GetElementUnsafe(index), right.GetElementUnsafe(index)))
-                {
-                    return false;
-                }
+                return Vector512.GreaterThanOrEqualAll(left.AsVector512(), right.AsVector512());
             }
-
-            return true;
+            else if (sizeof(Vector<T>) == 32)
+            {
+                return Vector256.GreaterThanOrEqualAll(left.AsVector256(), right.AsVector256());
+            }
+            else
+            {
+                Debug.Assert(sizeof(Vector<T>) == 16);
+                return Vector128.GreaterThanOrEqualAll(left.AsVector128(), right.AsVector128());
+            }
         }
 
         /// <summary>Compares two vectors to determine if any elements are greater or equal.</summary>
@@ -866,15 +1034,19 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool GreaterThanOrEqualAny<T>(Vector<T> left, Vector<T> right)
         {
-            for (int index = 0; index < Vector<T>.Count; index++)
+            if (sizeof(Vector<T>) == 64)
             {
-                if (Scalar<T>.GreaterThanOrEqual(left.GetElementUnsafe(index), right.GetElementUnsafe(index)))
-                {
-                    return true;
-                }
+                return Vector512.GreaterThanOrEqualAny(left.AsVector512(), right.AsVector512());
             }
-
-            return false;
+            else if (sizeof(Vector<T>) == 32)
+            {
+                return Vector256.GreaterThanOrEqualAny(left.AsVector256(), right.AsVector256());
+            }
+            else
+            {
+                Debug.Assert(sizeof(Vector<T>) == 16);
+                return Vector128.GreaterThanOrEqualAny(left.AsVector128(), right.AsVector128());
+            }
         }
 
         /// <summary>Compares two vectors to determine which is less on a per-element basis.</summary>
@@ -886,15 +1058,19 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> LessThan<T>(Vector<T> left, Vector<T> right)
         {
-            Unsafe.SkipInit(out Vector<T> result);
-
-            for (int index = 0; index < Vector<T>.Count; index++)
+            if (sizeof(Vector<T>) == 64)
             {
-                T value = Scalar<T>.LessThan(left.GetElementUnsafe(index), right.GetElementUnsafe(index)) ? Scalar<T>.AllBitsSet : default!;
-                result.SetElementUnsafe(index, value);
+                return Vector512.LessThan(left.AsVector512(), right.AsVector512()).AsVector();
             }
-
-            return result;
+            else if (sizeof(Vector<T>) == 32)
+            {
+                return Vector256.LessThan(left.AsVector256(), right.AsVector256()).AsVector();
+            }
+            else
+            {
+                Debug.Assert(sizeof(Vector<T>) == 16);
+                return Vector128.LessThan(left.AsVector128(), right.AsVector128()).AsVector();
+            }
         }
 
         /// <summary>Compares two vectors to determine which is less on a per-element basis.</summary>
@@ -934,15 +1110,19 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool LessThanAll<T>(Vector<T> left, Vector<T> right)
         {
-            for (int index = 0; index < Vector<T>.Count; index++)
+            if (sizeof(Vector<T>) == 64)
             {
-                if (!Scalar<T>.LessThan(left.GetElementUnsafe(index), right.GetElementUnsafe(index)))
-                {
-                    return false;
-                }
+                return Vector512.LessThanAll(left.AsVector512(), right.AsVector512());
             }
-
-            return true;
+            else if (sizeof(Vector<T>) == 32)
+            {
+                return Vector256.LessThanAll(left.AsVector256(), right.AsVector256());
+            }
+            else
+            {
+                Debug.Assert(sizeof(Vector<T>) == 16);
+                return Vector128.LessThanAll(left.AsVector128(), right.AsVector128());
+            }
         }
 
         /// <summary>Compares two vectors to determine if any elements are less.</summary>
@@ -954,15 +1134,19 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool LessThanAny<T>(Vector<T> left, Vector<T> right)
         {
-            for (int index = 0; index < Vector<T>.Count; index++)
+            if (sizeof(Vector<T>) == 64)
             {
-                if (Scalar<T>.LessThan(left.GetElementUnsafe(index), right.GetElementUnsafe(index)))
-                {
-                    return true;
-                }
+                return Vector512.LessThanAny(left.AsVector512(), right.AsVector512());
             }
-
-            return false;
+            else if (sizeof(Vector<T>) == 32)
+            {
+                return Vector256.LessThanAny(left.AsVector256(), right.AsVector256());
+            }
+            else
+            {
+                Debug.Assert(sizeof(Vector<T>) == 16);
+                return Vector128.LessThanAny(left.AsVector128(), right.AsVector128());
+            }
         }
 
         /// <summary>Compares two vectors to determine which is less or equal on a per-element basis.</summary>
@@ -974,15 +1158,19 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> LessThanOrEqual<T>(Vector<T> left, Vector<T> right)
         {
-            Unsafe.SkipInit(out Vector<T> result);
-
-            for (int index = 0; index < Vector<T>.Count; index++)
+            if (sizeof(Vector<T>) == 64)
             {
-                T value = Scalar<T>.LessThanOrEqual(left.GetElementUnsafe(index), right.GetElementUnsafe(index)) ? Scalar<T>.AllBitsSet : default!;
-                result.SetElementUnsafe(index, value);
+                return Vector512.LessThanOrEqual(left.AsVector512(), right.AsVector512()).AsVector();
             }
-
-            return result;
+            else if (sizeof(Vector<T>) == 32)
+            {
+                return Vector256.LessThanOrEqual(left.AsVector256(), right.AsVector256()).AsVector();
+            }
+            else
+            {
+                Debug.Assert(sizeof(Vector<T>) == 16);
+                return Vector128.LessThanOrEqual(left.AsVector128(), right.AsVector128()).AsVector();
+            }
         }
 
         /// <summary>Compares two vectors to determine which is less or equal on a per-element basis.</summary>
@@ -1022,15 +1210,19 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool LessThanOrEqualAll<T>(Vector<T> left, Vector<T> right)
         {
-            for (int index = 0; index < Vector<T>.Count; index++)
+            if (sizeof(Vector<T>) == 64)
             {
-                if (!Scalar<T>.LessThanOrEqual(left.GetElementUnsafe(index), right.GetElementUnsafe(index)))
-                {
-                    return false;
-                }
+                return Vector512.LessThanOrEqualAll(left.AsVector512(), right.AsVector512());
             }
-
-            return true;
+            else if (sizeof(Vector<T>) == 32)
+            {
+                return Vector256.LessThanOrEqualAll(left.AsVector256(), right.AsVector256());
+            }
+            else
+            {
+                Debug.Assert(sizeof(Vector<T>) == 16);
+                return Vector128.LessThanOrEqualAll(left.AsVector128(), right.AsVector128());
+            }
         }
 
         /// <summary>Compares two vectors to determine if any elements are less or equal.</summary>
@@ -1042,18 +1234,21 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool LessThanOrEqualAny<T>(Vector<T> left, Vector<T> right)
         {
-            for (int index = 0; index < Vector<T>.Count; index++)
+            if (sizeof(Vector<T>) == 64)
             {
-                if (Scalar<T>.LessThanOrEqual(left.GetElementUnsafe(index), right.GetElementUnsafe(index)))
-                {
-                    return true;
-                }
+                return Vector512.LessThanOrEqualAny(left.AsVector512(), right.AsVector512());
             }
-
-            return false;
+            else if (sizeof(Vector<T>) == 32)
+            {
+                return Vector256.LessThanOrEqualAny(left.AsVector256(), right.AsVector256());
+            }
+            else
+            {
+                Debug.Assert(sizeof(Vector<T>) == 16);
+                return Vector128.LessThanOrEqualAny(left.AsVector128(), right.AsVector128());
+            }
         }
 
-#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
         /// <summary>Loads a vector from the given source.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="source">The source from which the vector will be loaded.</param>
@@ -1061,7 +1256,7 @@ namespace System.Numerics
         /// <exception cref="NotSupportedException">The type of <paramref name="source" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
-        public static Vector<T> Load<T>(T* source) => LoadUnsafe(ref *source);
+        public static Vector<T> Load<T>(T* source) => LoadUnsafe(in *source);
 
         /// <summary>Loads a vector from the given aligned source.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -1073,14 +1268,19 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> LoadAligned<T>(T* source)
         {
-            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
-
-            if (((nuint)(source) % Alignment) != 0)
+            if (sizeof(Vector<double>) == 64)
             {
-                ThrowHelper.ThrowAccessViolationException();
+                return Vector512.LoadAligned(source).AsVector();
             }
-
-            return *(Vector<T>*)source;
+            else if (sizeof(Vector<double>) == 32)
+            {
+                return Vector256.LoadAligned(source).AsVector();
+            }
+            else
+            {
+                Debug.Assert(sizeof(Vector<double>) == 16);
+                return Vector128.LoadAligned(source).AsVector();
+            }
         }
 
         /// <summary>Loads a vector from the given aligned source.</summary>
@@ -1091,8 +1291,22 @@ namespace System.Numerics
         /// <exception cref="NotSupportedException">The type of <paramref name="source" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
-        public static Vector<T> LoadAlignedNonTemporal<T>(T* source) => LoadAligned(source);
-#pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
+        public static Vector<T> LoadAlignedNonTemporal<T>(T* source)
+        {
+            if (sizeof(Vector<double>) == 64)
+            {
+                return Vector512.LoadAlignedNonTemporal(source).AsVector();
+            }
+            else if (sizeof(Vector<double>) == 32)
+            {
+                return Vector256.LoadAlignedNonTemporal(source).AsVector();
+            }
+            else
+            {
+                Debug.Assert(sizeof(Vector<double>) == 16);
+                return Vector128.LoadAlignedNonTemporal(source).AsVector();
+            }
+        }
 
         /// <summary>Loads a vector from the given source.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -1103,9 +1317,19 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> LoadUnsafe<T>(ref readonly T source)
         {
-            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
-            ref readonly byte address = ref Unsafe.As<T, byte>(ref Unsafe.AsRef(in source));
-            return Unsafe.ReadUnaligned<Vector<T>>(in address);
+            if (sizeof(Vector<double>) == 64)
+            {
+                return Vector512.LoadUnsafe(in source).AsVector();
+            }
+            else if (sizeof(Vector<double>) == 32)
+            {
+                return Vector256.LoadUnsafe(in source).AsVector();
+            }
+            else
+            {
+                Debug.Assert(sizeof(Vector<double>) == 16);
+                return Vector128.LoadUnsafe(in source).AsVector();
+            }
         }
 
         /// <summary>Loads a vector from the given source and element offset.</summary>
@@ -1119,9 +1343,19 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> LoadUnsafe<T>(ref readonly T source, nuint elementOffset)
         {
-            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
-            ref readonly byte address = ref Unsafe.As<T, byte>(ref Unsafe.Add(ref Unsafe.AsRef(in source), (nint)elementOffset));
-            return Unsafe.ReadUnaligned<Vector<T>>(in address);
+            if (sizeof(Vector<double>) == 64)
+            {
+                return Vector512.LoadUnsafe(in source, elementOffset).AsVector();
+            }
+            else if (sizeof(Vector<double>) == 32)
+            {
+                return Vector256.LoadUnsafe(in source, elementOffset).AsVector();
+            }
+            else
+            {
+                Debug.Assert(sizeof(Vector<double>) == 16);
+                return Vector128.LoadUnsafe(in source, elementOffset).AsVector();
+            }
         }
 
         /// <summary>Computes the maximum of two vectors on a per-element basis.</summary>
@@ -1133,15 +1367,19 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> Max<T>(Vector<T> left, Vector<T> right)
         {
-            Unsafe.SkipInit(out Vector<T> result);
-
-            for (int index = 0; index < Vector<T>.Count; index++)
+            if (sizeof(Vector<T>) == 64)
             {
-                T value = Scalar<T>.GreaterThan(left.GetElementUnsafe(index), right.GetElementUnsafe(index)) ? left.GetElementUnsafe(index) : right.GetElementUnsafe(index);
-                result.SetElementUnsafe(index, value);
+                return Vector512.Max(left.AsVector512(), right.AsVector512()).AsVector();
             }
-
-            return result;
+            else if (sizeof(Vector<T>) == 32)
+            {
+                return Vector256.Max(left.AsVector256(), right.AsVector256()).AsVector();
+            }
+            else
+            {
+                Debug.Assert(sizeof(Vector<T>) == 16);
+                return Vector128.Max(left.AsVector128(), right.AsVector128()).AsVector();
+            }
         }
 
         /// <summary>Computes the minimum of two vectors on a per-element basis.</summary>
@@ -1153,15 +1391,19 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> Min<T>(Vector<T> left, Vector<T> right)
         {
-            Unsafe.SkipInit(out Vector<T> result);
-
-            for (int index = 0; index < Vector<T>.Count; index++)
+            if (sizeof(Vector<T>) == 64)
             {
-                T value = Scalar<T>.LessThan(left.GetElementUnsafe(index), right.GetElementUnsafe(index)) ? left.GetElementUnsafe(index) : right.GetElementUnsafe(index);
-                result.SetElementUnsafe(index, value);
+                return Vector512.Min(left.AsVector512(), right.AsVector512()).AsVector();
             }
-
-            return result;
+            else if (sizeof(Vector<T>) == 32)
+            {
+                return Vector256.Min(left.AsVector256(), right.AsVector256()).AsVector();
+            }
+            else
+            {
+                Debug.Assert(sizeof(Vector<T>) == 16);
+                return Vector128.Min(left.AsVector128(), right.AsVector128()).AsVector();
+            }
         }
 
         /// <summary>Multiplies two vectors to compute their element-wise product.</summary>
@@ -1193,15 +1435,19 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<double> MultiplyAddEstimate(Vector<double> left, Vector<double> right, Vector<double> addend)
         {
-            Unsafe.SkipInit(out Vector<double> result);
-
-            for (int index = 0; index < Vector<double>.Count; index++)
+            if (sizeof(Vector<double>) == 64)
             {
-                double element = double.MultiplyAddEstimate(left.GetElementUnsafe(index), right.GetElementUnsafe(index), addend.GetElementUnsafe(index));
-                result.SetElementUnsafe(index, element);
+                return Vector512.MultiplyAddEstimate(left.AsVector512(), right.AsVector512(), addend.AsVector512()).AsVector();
             }
-
-            return result;
+            else if (sizeof(Vector<double>) == 32)
+            {
+                return Vector256.MultiplyAddEstimate(left.AsVector256(), right.AsVector256(), addend.AsVector256()).AsVector();
+            }
+            else
+            {
+                Debug.Assert(sizeof(Vector<double>) == 16);
+                return Vector128.MultiplyAddEstimate(left.AsVector128(), right.AsVector128(), addend.AsVector128()).AsVector();
+            }
         }
 
         /// <inheritdoc cref="Vector128.MultiplyAddEstimate(Vector128{float}, Vector128{float}, Vector128{float})" />
@@ -1209,15 +1455,19 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<float> MultiplyAddEstimate(Vector<float> left, Vector<float> right, Vector<float> addend)
         {
-            Unsafe.SkipInit(out Vector<float> result);
-
-            for (int index = 0; index < Vector<float>.Count; index++)
+            if (sizeof(Vector<float>) == 64)
             {
-                float element = float.MultiplyAddEstimate(left.GetElementUnsafe(index), right.GetElementUnsafe(index), addend.GetElementUnsafe(index));
-                result.SetElementUnsafe(index, element);
+                return Vector512.MultiplyAddEstimate(left.AsVector512(), right.AsVector512(), addend.AsVector512()).AsVector();
             }
-
-            return result;
+            else if (sizeof(Vector<float>) == 32)
+            {
+                return Vector256.MultiplyAddEstimate(left.AsVector256(), right.AsVector256(), addend.AsVector256()).AsVector();
+            }
+            else
+            {
+                Debug.Assert(sizeof(Vector<float>) == 16);
+                return Vector128.MultiplyAddEstimate(left.AsVector128(), right.AsVector128(), addend.AsVector128()).AsVector();
+            }
         }
 
         /// <summary>Narrows two <see cref="Vector{Double}"/> instances into one <see cref="Vector{Single}" />.</summary>
@@ -1228,21 +1478,19 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<float> Narrow(Vector<double> low, Vector<double> high)
         {
-            Unsafe.SkipInit(out Vector<float> result);
-
-            for (int i = 0; i < Vector<double>.Count; i++)
+            if (sizeof(Vector<float>) == 64)
             {
-                float value = (float)low.GetElementUnsafe(i);
-                result.SetElementUnsafe(i, value);
+                return Vector512.Narrow(low.AsVector512(), high.AsVector512()).AsVector();
             }
-
-            for (int i = Vector<double>.Count; i < Vector<float>.Count; i++)
+            else if (sizeof(Vector<float>) == 32)
             {
-                float value = (float)high.GetElementUnsafe(i - Vector<double>.Count);
-                result.SetElementUnsafe(i, value);
+                return Vector256.Narrow(low.AsVector256(), high.AsVector256()).AsVector();
             }
-
-            return result;
+            else
+            {
+                Debug.Assert(sizeof(Vector<float>) == 16);
+                return Vector128.Narrow(low.AsVector128(), high.AsVector128()).AsVector();
+            }
         }
 
         /// <summary>Narrows two <see cref="Vector{Int16}"/> instances into one <see cref="Vector{SByte}" />.</summary>
@@ -1254,21 +1502,19 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<sbyte> Narrow(Vector<short> low, Vector<short> high)
         {
-            Unsafe.SkipInit(out Vector<sbyte> result);
-
-            for (int i = 0; i < Vector<short>.Count; i++)
+            if (sizeof(Vector<sbyte>) == 64)
             {
-                sbyte value = (sbyte)low.GetElementUnsafe(i);
-                result.SetElementUnsafe(i, value);
+                return Vector512.Narrow(low.AsVector512(), high.AsVector512()).AsVector();
             }
-
-            for (int i = Vector<short>.Count; i < Vector<sbyte>.Count; i++)
+            else if (sizeof(Vector<sbyte>) == 32)
             {
-                sbyte value = (sbyte)high.GetElementUnsafe(i - Vector<short>.Count);
-                result.SetElementUnsafe(i, value);
+                return Vector256.Narrow(low.AsVector256(), high.AsVector256()).AsVector();
             }
-
-            return result;
+            else
+            {
+                Debug.Assert(sizeof(Vector<sbyte>) == 16);
+                return Vector128.Narrow(low.AsVector128(), high.AsVector128()).AsVector();
+            }
         }
 
         /// <summary>Narrows two <see cref="Vector{Int32}"/> instances into one <see cref="Vector{Int16}" />.</summary>
@@ -1279,21 +1525,19 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<short> Narrow(Vector<int> low, Vector<int> high)
         {
-            Unsafe.SkipInit(out Vector<short> result);
-
-            for (int i = 0; i < Vector<int>.Count; i++)
+            if (sizeof(Vector<short>) == 64)
             {
-                short value = (short)low.GetElementUnsafe(i);
-                result.SetElementUnsafe(i, value);
+                return Vector512.Narrow(low.AsVector512(), high.AsVector512()).AsVector();
             }
-
-            for (int i = Vector<int>.Count; i < Vector<short>.Count; i++)
+            else if (sizeof(Vector<short>) == 32)
             {
-                short value = (short)high.GetElementUnsafe(i - Vector<int>.Count);
-                result.SetElementUnsafe(i, value);
+                return Vector256.Narrow(low.AsVector256(), high.AsVector256()).AsVector();
             }
-
-            return result;
+            else
+            {
+                Debug.Assert(sizeof(Vector<short>) == 16);
+                return Vector128.Narrow(low.AsVector128(), high.AsVector128()).AsVector();
+            }
         }
 
         /// <summary>Narrows two <see cref="Vector{Int64}"/> instances into one <see cref="Vector{Int32}" />.</summary>
@@ -1304,21 +1548,19 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<int> Narrow(Vector<long> low, Vector<long> high)
         {
-            Unsafe.SkipInit(out Vector<int> result);
-
-            for (int i = 0; i < Vector<long>.Count; i++)
+            if (sizeof(Vector<int>) == 64)
             {
-                int value = (int)low.GetElementUnsafe(i);
-                result.SetElementUnsafe(i, value);
+                return Vector512.Narrow(low.AsVector512(), high.AsVector512()).AsVector();
             }
-
-            for (int i = Vector<long>.Count; i < Vector<int>.Count; i++)
+            else if (sizeof(Vector<int>) == 32)
             {
-                int value = (int)high.GetElementUnsafe(i - Vector<long>.Count);
-                result.SetElementUnsafe(i, value);
+                return Vector256.Narrow(low.AsVector256(), high.AsVector256()).AsVector();
             }
-
-            return result;
+            else
+            {
+                Debug.Assert(sizeof(Vector<int>) == 16);
+                return Vector128.Narrow(low.AsVector128(), high.AsVector128()).AsVector();
+            }
         }
 
         /// <summary>Narrows two <see cref="Vector{UInt16}"/> instances into one <see cref="Vector{Byte}" />.</summary>
@@ -1330,21 +1572,19 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<byte> Narrow(Vector<ushort> low, Vector<ushort> high)
         {
-            Unsafe.SkipInit(out Vector<byte> result);
-
-            for (int i = 0; i < Vector<ushort>.Count; i++)
+            if (sizeof(Vector<byte>) == 64)
             {
-                byte value = (byte)low.GetElementUnsafe(i);
-                result.SetElementUnsafe(i, value);
+                return Vector512.Narrow(low.AsVector512(), high.AsVector512()).AsVector();
             }
-
-            for (int i = Vector<ushort>.Count; i < Vector<byte>.Count; i++)
+            else if (sizeof(Vector<byte>) == 32)
             {
-                byte value = (byte)high.GetElementUnsafe(i - Vector<ushort>.Count);
-                result.SetElementUnsafe(i, value);
+                return Vector256.Narrow(low.AsVector256(), high.AsVector256()).AsVector();
             }
-
-            return result;
+            else
+            {
+                Debug.Assert(sizeof(Vector<byte>) == 16);
+                return Vector128.Narrow(low.AsVector128(), high.AsVector128()).AsVector();
+            }
         }
 
         /// <summary>Narrows two <see cref="Vector{UInt32}"/> instances into one <see cref="Vector{UInt16}" />.</summary>
@@ -1356,21 +1596,19 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<ushort> Narrow(Vector<uint> low, Vector<uint> high)
         {
-            Unsafe.SkipInit(out Vector<ushort> result);
-
-            for (int i = 0; i < Vector<uint>.Count; i++)
+            if (sizeof(Vector<ushort>) == 64)
             {
-                ushort value = (ushort)low.GetElementUnsafe(i);
-                result.SetElementUnsafe(i, value);
+                return Vector512.Narrow(low.AsVector512(), high.AsVector512()).AsVector();
             }
-
-            for (int i = Vector<uint>.Count; i < Vector<ushort>.Count; i++)
+            else if (sizeof(Vector<ushort>) == 32)
             {
-                ushort value = (ushort)high.GetElementUnsafe(i - Vector<uint>.Count);
-                result.SetElementUnsafe(i, value);
+                return Vector256.Narrow(low.AsVector256(), high.AsVector256()).AsVector();
             }
-
-            return result;
+            else
+            {
+                Debug.Assert(sizeof(Vector<ushort>) == 16);
+                return Vector128.Narrow(low.AsVector128(), high.AsVector128()).AsVector();
+            }
         }
 
         /// <summary>Narrows two <see cref="Vector{UInt64}"/> instances into one <see cref="Vector{UInt32}" />.</summary>
@@ -1382,21 +1620,19 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<uint> Narrow(Vector<ulong> low, Vector<ulong> high)
         {
-            Unsafe.SkipInit(out Vector<uint> result);
-
-            for (int i = 0; i < Vector<ulong>.Count; i++)
+            if (sizeof(Vector<uint>) == 64)
             {
-                uint value = (uint)low.GetElementUnsafe(i);
-                result.SetElementUnsafe(i, value);
+                return Vector512.Narrow(low.AsVector512(), high.AsVector512()).AsVector();
             }
-
-            for (int i = Vector<ulong>.Count; i < Vector<uint>.Count; i++)
+            else if (sizeof(Vector<uint>) == 32)
             {
-                uint value = (uint)high.GetElementUnsafe(i - Vector<ulong>.Count);
-                result.SetElementUnsafe(i, value);
+                return Vector256.Narrow(low.AsVector256(), high.AsVector256()).AsVector();
             }
-
-            return result;
+            else
+            {
+                Debug.Assert(sizeof(Vector<uint>) == 16);
+                return Vector128.Narrow(low.AsVector128(), high.AsVector128()).AsVector();
+            }
         }
 
         /// <summary>Computes the unary negation of a vector.</summary>
@@ -1607,18 +1843,21 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> SquareRoot<T>(Vector<T> value)
         {
-            Unsafe.SkipInit(out Vector<T> result);
-
-            for (int index = 0; index < Vector<T>.Count; index++)
+            if (sizeof(Vector<float>) == 64)
             {
-                T element = Scalar<T>.Sqrt(value.GetElementUnsafe(index));
-                result.SetElementUnsafe(index, element);
+                return Vector512.Sqrt(value.AsVector512()).AsVector();
             }
-
-            return result;
+            else if (sizeof(Vector<float>) == 32)
+            {
+                return Vector256.Sqrt(value.AsVector256()).AsVector();
+            }
+            else
+            {
+                Debug.Assert(sizeof(Vector<T>) == 16);
+                return Vector128.Sqrt(value.AsVector128()).AsVector();
+            }
         }
 
-#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
         /// <summary>Stores a vector at the given destination.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="source">The vector that will be stored.</param>
@@ -1638,14 +1877,19 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void StoreAligned<T>(this Vector<T> source, T* destination)
         {
-            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
-
-            if (((nuint)destination % Alignment) != 0)
+            if (sizeof(Vector<float>) == 64)
             {
-                ThrowHelper.ThrowAccessViolationException();
+                source.AsVector512().StoreAligned(destination);
             }
-
-            *(Vector<T>*)destination = source;
+            else if (sizeof(Vector<float>) == 32)
+            {
+                source.AsVector256().StoreAligned(destination);
+            }
+            else
+            {
+                Debug.Assert(sizeof(Vector<T>) == 16);
+                source.AsVector128().StoreAligned(destination);
+            }
         }
 
         /// <summary>Stores a vector at the given aligned destination.</summary>
@@ -1656,8 +1900,22 @@ namespace System.Numerics
         /// <exception cref="NotSupportedException">The type of <paramref name="source" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
-        public static void StoreAlignedNonTemporal<T>(this Vector<T> source, T* destination) => source.StoreAligned(destination);
-#pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
+        public static void StoreAlignedNonTemporal<T>(this Vector<T> source, T* destination)
+        {
+            if (sizeof(Vector<float>) == 64)
+            {
+                source.AsVector512().StoreAlignedNonTemporal(destination);
+            }
+            else if (sizeof(Vector<float>) == 32)
+            {
+                source.AsVector256().StoreAlignedNonTemporal(destination);
+            }
+            else
+            {
+                Debug.Assert(sizeof(Vector<T>) == 16);
+                source.AsVector128().StoreAlignedNonTemporal(destination);
+            }
+        }
 
         /// <summary>Stores a vector at the given destination.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -1668,9 +1926,19 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void StoreUnsafe<T>(this Vector<T> source, ref T destination)
         {
-            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
-            ref byte address = ref Unsafe.As<T, byte>(ref destination);
-            Unsafe.WriteUnaligned(ref address, source);
+            if (sizeof(Vector<float>) == 64)
+            {
+                source.AsVector512().StoreUnsafe(ref destination);
+            }
+            else if (sizeof(Vector<float>) == 32)
+            {
+                source.AsVector256().StoreUnsafe(ref destination);
+            }
+            else
+            {
+                Debug.Assert(sizeof(Vector<T>) == 16);
+                source.AsVector128().StoreUnsafe(ref destination);
+            }
         }
 
         /// <summary>Stores a vector at the given destination.</summary>
@@ -1684,9 +1952,19 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void StoreUnsafe<T>(this Vector<T> source, ref T destination, nuint elementOffset)
         {
-            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
-            destination = ref Unsafe.Add(ref destination, (nint)elementOffset);
-            Unsafe.WriteUnaligned(ref Unsafe.As<T, byte>(ref destination), source);
+            if (sizeof(Vector<float>) == 64)
+            {
+                source.AsVector512().StoreUnsafe(ref destination, elementOffset);
+            }
+            else if (sizeof(Vector<float>) == 32)
+            {
+                source.AsVector256().StoreUnsafe(ref destination, elementOffset);
+            }
+            else
+            {
+                Debug.Assert(sizeof(Vector<T>) == 16);
+                source.AsVector128().StoreUnsafe(ref destination, elementOffset);
+            }
         }
 
         /// <summary>Subtracts two vectors to compute their difference.</summary>
@@ -1704,14 +1982,19 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T Sum<T>(Vector<T> value)
         {
-            T sum = default!;
-
-            for (int index = 0; index < Vector<T>.Count; index++)
+            if (sizeof(Vector<float>) == 64)
             {
-                sum = Scalar<T>.Add(sum, value.GetElementUnsafe(index));
+                return Vector512.Sum(value.AsVector512());
             }
-
-            return sum;
+            else if (sizeof(Vector<float>) == 32)
+            {
+                return Vector256.Sum(value.AsVector256());
+            }
+            else
+            {
+                Debug.Assert(sizeof(Vector<T>) == 16);
+                return Vector128.Sum(value.AsVector128());
+            }
         }
 
         /// <summary>Converts the given vector to a scalar containing the value of the first element.</summary>
@@ -1720,10 +2003,22 @@ namespace System.Numerics
         /// <returns>A scalar <typeparamref name="T" /> containing the value of the first element.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T ToScalar<T>(this Vector<T> vector)
         {
-            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
-            return vector.GetElementUnsafe(0);
+            if (sizeof(Vector<float>) == 64)
+            {
+                return vector.AsVector512().ToScalar();
+            }
+            else if (sizeof(Vector<float>) == 32)
+            {
+                return vector.AsVector256().ToScalar();
+            }
+            else
+            {
+                Debug.Assert(sizeof(Vector<T>) == 16);
+                return vector.AsVector128().ToScalar();
+            }
         }
 
         /// <summary>Widens a <see cref="Vector{Byte}" /> into two <see cref="Vector{UInt16} " />.</summary>
@@ -1815,15 +2110,19 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<ushort> WidenLower(Vector<byte> source)
         {
-            Unsafe.SkipInit(out Vector<ushort> lower);
-
-            for (int i = 0; i < Vector<ushort>.Count; i++)
+            if (sizeof(Vector<ushort>) == 64)
             {
-                ushort value = source.GetElementUnsafe(i);
-                lower.SetElementUnsafe(i, value);
+                return Vector512.WidenLower(source.AsVector512()).AsVector();
             }
-
-            return lower;
+            else if (sizeof(Vector<ushort>) == 32)
+            {
+                return Vector256.WidenLower(source.AsVector256()).AsVector();
+            }
+            else
+            {
+                Debug.Assert(sizeof(Vector<ushort>) == 16);
+                return Vector128.WidenLower(source.AsVector128()).AsVector();
+            }
         }
 
         /// <summary>Widens the lower half of a <see cref="Vector{Int16}" /> into a <see cref="Vector{Int32} " />.</summary>
@@ -1833,15 +2132,19 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<int> WidenLower(Vector<short> source)
         {
-            Unsafe.SkipInit(out Vector<int> lower);
-
-            for (int i = 0; i < Vector<int>.Count; i++)
+            if (sizeof(Vector<int>) == 64)
             {
-                int value = source.GetElementUnsafe(i);
-                lower.SetElementUnsafe(i, value);
+                return Vector512.WidenLower(source.AsVector512()).AsVector();
             }
-
-            return lower;
+            else if (sizeof(Vector<int>) == 32)
+            {
+                return Vector256.WidenLower(source.AsVector256()).AsVector();
+            }
+            else
+            {
+                Debug.Assert(sizeof(Vector<int>) == 16);
+                return Vector128.WidenLower(source.AsVector128()).AsVector();
+            }
         }
 
         /// <summary>Widens the lower half of a <see cref="Vector{Int32}" /> into a <see cref="Vector{Int64} " />.</summary>
@@ -1851,15 +2154,19 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<long> WidenLower(Vector<int> source)
         {
-            Unsafe.SkipInit(out Vector<long> lower);
-
-            for (int i = 0; i < Vector<long>.Count; i++)
+            if (sizeof(Vector<long>) == 64)
             {
-                long value = source.GetElementUnsafe(i);
-                lower.SetElementUnsafe(i, value);
+                return Vector512.WidenLower(source.AsVector512()).AsVector();
             }
-
-            return lower;
+            else if (sizeof(Vector<long>) == 32)
+            {
+                return Vector256.WidenLower(source.AsVector256()).AsVector();
+            }
+            else
+            {
+                Debug.Assert(sizeof(Vector<long>) == 16);
+                return Vector128.WidenLower(source.AsVector128()).AsVector();
+            }
         }
 
         /// <summary>Widens the lower half of a <see cref="Vector{SByte}" /> into a <see cref="Vector{Int16} " />.</summary>
@@ -1870,15 +2177,19 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<short> WidenLower(Vector<sbyte> source)
         {
-            Unsafe.SkipInit(out Vector<short> lower);
-
-            for (int i = 0; i < Vector<short>.Count; i++)
+            if (sizeof(Vector<short>) == 64)
             {
-                short value = source.GetElementUnsafe(i);
-                lower.SetElementUnsafe(i, value);
+                return Vector512.WidenLower(source.AsVector512()).AsVector();
             }
-
-            return lower;
+            else if (sizeof(Vector<short>) == 32)
+            {
+                return Vector256.WidenLower(source.AsVector256()).AsVector();
+            }
+            else
+            {
+                Debug.Assert(sizeof(Vector<short>) == 16);
+                return Vector128.WidenLower(source.AsVector128()).AsVector();
+            }
         }
 
         /// <summary>Widens the lower half of a <see cref="Vector{Single}" /> into a <see cref="Vector{Double} " />.</summary>
@@ -1888,15 +2199,19 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<double> WidenLower(Vector<float> source)
         {
-            Unsafe.SkipInit(out Vector<double> lower);
-
-            for (int i = 0; i < Vector<double>.Count; i++)
+            if (sizeof(Vector<double>) == 64)
             {
-                double value = source.GetElementUnsafe(i);
-                lower.SetElementUnsafe(i, value);
+                return Vector512.WidenLower(source.AsVector512()).AsVector();
             }
-
-            return lower;
+            else if (sizeof(Vector<double>) == 32)
+            {
+                return Vector256.WidenLower(source.AsVector256()).AsVector();
+            }
+            else
+            {
+                Debug.Assert(sizeof(Vector<double>) == 16);
+                return Vector128.WidenLower(source.AsVector128()).AsVector();
+            }
         }
 
         /// <summary>Widens the lower half of a <see cref="Vector{UInt16}" /> into a <see cref="Vector{UInt32} " />.</summary>
@@ -1907,15 +2222,19 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<uint> WidenLower(Vector<ushort> source)
         {
-            Unsafe.SkipInit(out Vector<uint> lower);
-
-            for (int i = 0; i < Vector<uint>.Count; i++)
+            if (sizeof(Vector<uint>) == 64)
             {
-                uint value = source.GetElementUnsafe(i);
-                lower.SetElementUnsafe(i, value);
+                return Vector512.WidenLower(source.AsVector512()).AsVector();
             }
-
-            return lower;
+            else if (sizeof(Vector<uint>) == 32)
+            {
+                return Vector256.WidenLower(source.AsVector256()).AsVector();
+            }
+            else
+            {
+                Debug.Assert(sizeof(Vector<uint>) == 16);
+                return Vector128.WidenLower(source.AsVector128()).AsVector();
+            }
         }
 
         /// <summary>Widens the lower half of a <see cref="Vector{UInt32}" /> into a <see cref="Vector{UInt64} " />.</summary>
@@ -1926,15 +2245,19 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<ulong> WidenLower(Vector<uint> source)
         {
-            Unsafe.SkipInit(out Vector<ulong> lower);
-
-            for (int i = 0; i < Vector<ulong>.Count; i++)
+            if (sizeof(Vector<ulong>) == 64)
             {
-                ulong value = source.GetElementUnsafe(i);
-                lower.SetElementUnsafe(i, value);
+                return Vector512.WidenLower(source.AsVector512()).AsVector();
             }
-
-            return lower;
+            else if (sizeof(Vector<ulong>) == 32)
+            {
+                return Vector256.WidenLower(source.AsVector256()).AsVector();
+            }
+            else
+            {
+                Debug.Assert(sizeof(Vector<ulong>) == 16);
+                return Vector128.WidenLower(source.AsVector128()).AsVector();
+            }
         }
 
         /// <summary>Widens the upper half of a <see cref="Vector{Byte}" /> into a <see cref="Vector{UInt16} " />.</summary>
@@ -1945,15 +2268,19 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<ushort> WidenUpper(Vector<byte> source)
         {
-            Unsafe.SkipInit(out Vector<ushort> upper);
-
-            for (int i = Vector<ushort>.Count; i < Vector<byte>.Count; i++)
+            if (sizeof(Vector<ushort>) == 64)
             {
-                ushort value = source.GetElementUnsafe(i);
-                upper.SetElementUnsafe(i - Vector<ushort>.Count, value);
+                return Vector512.WidenUpper(source.AsVector512()).AsVector();
             }
-
-            return upper;
+            else if (sizeof(Vector<ushort>) == 32)
+            {
+                return Vector256.WidenUpper(source.AsVector256()).AsVector();
+            }
+            else
+            {
+                Debug.Assert(sizeof(Vector<ushort>) == 16);
+                return Vector128.WidenUpper(source.AsVector128()).AsVector();
+            }
         }
 
         /// <summary>Widens the upper half of a <see cref="Vector{Int16}" /> into a <see cref="Vector{Int32} " />.</summary>
@@ -1963,15 +2290,19 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<int> WidenUpper(Vector<short> source)
         {
-            Unsafe.SkipInit(out Vector<int> upper);
-
-            for (int i = Vector<int>.Count; i < Vector<short>.Count; i++)
+            if (sizeof(Vector<int>) == 64)
             {
-                int value = source.GetElementUnsafe(i);
-                upper.SetElementUnsafe(i - Vector<int>.Count, value);
+                return Vector512.WidenUpper(source.AsVector512()).AsVector();
             }
-
-            return upper;
+            else if (sizeof(Vector<int>) == 32)
+            {
+                return Vector256.WidenUpper(source.AsVector256()).AsVector();
+            }
+            else
+            {
+                Debug.Assert(sizeof(Vector<int>) == 16);
+                return Vector128.WidenUpper(source.AsVector128()).AsVector();
+            }
         }
 
         /// <summary>Widens the upper half of a <see cref="Vector{Int32}" /> into a <see cref="Vector{Int64} " />.</summary>
@@ -1981,15 +2312,19 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<long> WidenUpper(Vector<int> source)
         {
-            Unsafe.SkipInit(out Vector<long> upper);
-
-            for (int i = Vector<long>.Count; i < Vector<int>.Count; i++)
+            if (sizeof(Vector<long>) == 64)
             {
-                long value = source.GetElementUnsafe(i);
-                upper.SetElementUnsafe(i - Vector<long>.Count, value);
+                return Vector512.WidenUpper(source.AsVector512()).AsVector();
             }
-
-            return upper;
+            else if (sizeof(Vector<long>) == 32)
+            {
+                return Vector256.WidenUpper(source.AsVector256()).AsVector();
+            }
+            else
+            {
+                Debug.Assert(sizeof(Vector<long>) == 16);
+                return Vector128.WidenUpper(source.AsVector128()).AsVector();
+            }
         }
 
         /// <summary>Widens the upper half of a <see cref="Vector{SByte}" /> into a <see cref="Vector{Int16} " />.</summary>
@@ -2000,15 +2335,19 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<short> WidenUpper(Vector<sbyte> source)
         {
-            Unsafe.SkipInit(out Vector<short> upper);
-
-            for (int i = Vector<short>.Count; i < Vector<sbyte>.Count; i++)
+            if (sizeof(Vector<short>) == 64)
             {
-                short value = source.GetElementUnsafe(i);
-                upper.SetElementUnsafe(i - Vector<short>.Count, value);
+                return Vector512.WidenUpper(source.AsVector512()).AsVector();
             }
-
-            return upper;
+            else if (sizeof(Vector<short>) == 32)
+            {
+                return Vector256.WidenUpper(source.AsVector256()).AsVector();
+            }
+            else
+            {
+                Debug.Assert(sizeof(Vector<short>) == 16);
+                return Vector128.WidenUpper(source.AsVector128()).AsVector();
+            }
         }
 
         /// <summary>Widens the upper half of a <see cref="Vector{Single}" /> into a <see cref="Vector{Double} " />.</summary>
@@ -2018,15 +2357,19 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<double> WidenUpper(Vector<float> source)
         {
-            Unsafe.SkipInit(out Vector<double> upper);
-
-            for (int i = Vector<double>.Count; i < Vector<float>.Count; i++)
+            if (sizeof(Vector<double>) == 64)
             {
-                double value = source.GetElementUnsafe(i);
-                upper.SetElementUnsafe(i - Vector<double>.Count, value);
+                return Vector512.WidenUpper(source.AsVector512()).AsVector();
             }
-
-            return upper;
+            else if (sizeof(Vector<double>) == 32)
+            {
+                return Vector256.WidenUpper(source.AsVector256()).AsVector();
+            }
+            else
+            {
+                Debug.Assert(sizeof(Vector<double>) == 16);
+                return Vector128.WidenUpper(source.AsVector128()).AsVector();
+            }
         }
 
         /// <summary>Widens the upper half of a <see cref="Vector{UInt16}" /> into a <see cref="Vector{UInt32} " />.</summary>
@@ -2037,15 +2380,19 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<uint> WidenUpper(Vector<ushort> source)
         {
-            Unsafe.SkipInit(out Vector<uint> upper);
-
-            for (int i = Vector<uint>.Count; i < Vector<ushort>.Count; i++)
+            if (sizeof(Vector<uint>) == 64)
             {
-                uint value = source.GetElementUnsafe(i);
-                upper.SetElementUnsafe(i - Vector<uint>.Count, value);
+                return Vector512.WidenUpper(source.AsVector512()).AsVector();
             }
-
-            return upper;
+            else if (sizeof(Vector<uint>) == 32)
+            {
+                return Vector256.WidenUpper(source.AsVector256()).AsVector();
+            }
+            else
+            {
+                Debug.Assert(sizeof(Vector<uint>) == 16);
+                return Vector128.WidenUpper(source.AsVector128()).AsVector();
+            }
         }
 
         /// <summary>Widens the upper half of a <see cref="Vector{UInt32}" /> into a <see cref="Vector{UInt64} " />.</summary>
@@ -2056,15 +2403,19 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<ulong> WidenUpper(Vector<uint> source)
         {
-            Unsafe.SkipInit(out Vector<ulong> upper);
-
-            for (int i = Vector<ulong>.Count; i < Vector<uint>.Count; i++)
+            if (sizeof(Vector<ulong>) == 64)
             {
-                ulong value = source.GetElementUnsafe(i);
-                upper.SetElementUnsafe(i - Vector<ulong>.Count, value);
+                return Vector512.WidenUpper(source.AsVector512()).AsVector();
             }
-
-            return upper;
+            else if (sizeof(Vector<ulong>) == 32)
+            {
+                return Vector256.WidenUpper(source.AsVector256()).AsVector();
+            }
+            else
+            {
+                Debug.Assert(sizeof(Vector<ulong>) == 16);
+                return Vector128.WidenUpper(source.AsVector128()).AsVector();
+            }
         }
 
         /// <summary>Creates a new <see cref="Vector{T}" /> with the element at the specified index set to the specified value and the remaining elements set to the same value as that in the given vector.</summary>
@@ -2078,14 +2429,19 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> WithElement<T>(this Vector<T> vector, int index, T value)
         {
-            if ((uint)(index) >= (uint)(Vector<T>.Count))
+            if (sizeof(Vector<T>) == 64)
             {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
+                return vector.AsVector512().WithElement(index, value).AsVector();
             }
-
-            Vector<T> result = vector;
-            result.SetElementUnsafe(index, value);
-            return result;
+            else if (sizeof(Vector<T>) == 32)
+            {
+                return vector.AsVector256().WithElement(index, value).AsVector();
+            }
+            else
+            {
+                Debug.Assert(sizeof(Vector<T>) == 16);
+                return vector.AsVector128().WithElement(index, value).AsVector();
+            }
         }
 
         /// <summary>Computes the exclusive-or of two vectors.</summary>
@@ -2095,21 +2451,5 @@ namespace System.Numerics
         /// <returns>The exclusive-or of <paramref name="left" /> and <paramref name="right" />.</returns>
         [Intrinsic]
         public static Vector<T> Xor<T>(Vector<T> left, Vector<T> right) => left ^ right;
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static T GetElementUnsafe<T>(in this Vector<T> vector, int index)
-        {
-            Debug.Assert((index >= 0) && (index < Vector<T>.Count));
-            ref T address = ref Unsafe.As<Vector<T>, T>(ref Unsafe.AsRef(in vector));
-            return Unsafe.Add(ref address, index);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static void SetElementUnsafe<T>(in this Vector<T> vector, int index, T value)
-        {
-            Debug.Assert((index >= 0) && (index < Vector<T>.Count));
-            ref T address = ref Unsafe.As<Vector<T>, T>(ref Unsafe.AsRef(in vector));
-            Unsafe.Add(ref address, index) = value;
-        }
     }
 }
