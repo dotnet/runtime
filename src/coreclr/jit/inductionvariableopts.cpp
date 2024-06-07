@@ -879,20 +879,74 @@ bool Compiler::optMakeLoopDownwardsCounted(ScalarEvolutionContext& scevContext,
 {
     JITDUMP("Checking if we should make " FMT_LP " downwards counted\n", loop->GetIndex());
 
-    if (loop->ExitEdges().size() != 1)
+    // Common case where the backedge and exit edge is the same
+    if ((loop->ExitEdges().size() == 1) && (loop->BackEdges().size() == 1))
     {
-        // With multiple exits we generally can only compute an upper bound on
-        // the backedge count.
-        JITDUMP("  No; has multiple exits\n");
-        return false;
+        BasicBlock* exiting = loop->ExitEdge(0)->getSourceBlock();
+        BasicBlock* latch   = loop->BackEdge(0)->getSourceBlock();
+        if (exiting == latch)
+        {
+            JITDUMP("  Considering exiting block " FMT_BB "\n", exiting->bbNum);
+            return optMakeExitTestDownwardsCounted(scevContext, loop, exiting, loopLocals);
+        }
     }
 
-    BasicBlock* exiting = loop->ExitEdge(0)->getSourceBlock();
-    if (!exiting->KindIs(BBJ_COND))
+    if (m_domTree == nullptr)
     {
-        JITDUMP("  No; exit is not BBJ_COND\n");
-        return false;
+        m_domTree = FlowGraphDominatorTree::Build(m_dfsTree);
     }
+
+    BasicBlock* dominates = nullptr;
+
+    for (FlowEdge* backEdge : loop->BackEdges())
+    {
+        if (dominates == nullptr)
+        {
+            dominates = backEdge->getSourceBlock();
+        }
+        else
+        {
+            dominates = m_domTree->Intersect(dominates, backEdge->getSourceBlock());
+        }
+    }
+
+    bool changed = false;
+    while ((dominates != nullptr) && loop->ContainsBlock(dominates))
+    {
+        if (dominates->KindIs(BBJ_COND) &&
+            (!loop->ContainsBlock(dominates->GetTrueTarget()) || !loop->ContainsBlock(dominates->GetFalseTarget())))
+        {
+            JITDUMP("  Considering exiting block " FMT_BB "\n", dominates->bbNum);
+            // 'dominates' is an exiting block that dominates all backedges.
+            changed |= optMakeExitTestDownwardsCounted(scevContext, loop, dominates, loopLocals);
+        }
+
+        dominates = dominates->bbIDom;
+    }
+
+    return changed;
+}
+
+//------------------------------------------------------------------------
+// optMakeExitTestDownwardsCounted:
+//   Try to modify the condition of a specific BBJ_COND exiting block to be on
+//   a downwards counted IV if profitable.
+//
+// Parameters:
+//   scevContext - SCEV context
+//   loop        - The specific loop
+//   exiting     - Exiting block
+//   loopLocals  - Data structure tracking local uses
+//
+// Returns:
+//   True if any modification was made.
+//
+bool Compiler::optMakeExitTestDownwardsCounted(ScalarEvolutionContext& scevContext,
+                                               FlowGraphNaturalLoop*   loop,
+                                               BasicBlock*             exiting,
+                                               LoopLocalOccurrences*   loopLocals)
+{
+    assert(exiting->KindIs(BBJ_COND));
 
     Statement* jtrueStmt = exiting->lastStmt();
     GenTree*   jtrue     = jtrueStmt->GetRootNode();
