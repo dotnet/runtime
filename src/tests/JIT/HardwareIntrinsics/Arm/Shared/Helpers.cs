@@ -8,6 +8,10 @@
 
 using System;
 using System.Linq;
+using System.Numerics;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics.Arm;
 
 namespace JIT.HardwareIntrinsics.Arm
 {
@@ -26,6 +30,11 @@ namespace JIT.HardwareIntrinsics.Arm
         public static int CountLeadingSignBits(int op1)
         {
             return (int)(CountLeadingZeroBits((int)((ulong)op1 ^ ((ulong)op1 >> 1))) - 1);
+        }
+
+        public static long CountLeadingSignBits(long op1)
+        {
+            return (long)(CountLeadingZeroBits((long)((ulong)op1 ^ ((ulong)op1 >> 1))) - 1);
         }
 
         public static sbyte CountLeadingZeroBits(sbyte op1)
@@ -136,6 +145,42 @@ namespace JIT.HardwareIntrinsics.Arm
             return -1;
         }
 
+        public static long CountLeadingZeroBits(long op1)
+        {
+            return (long)(8 * sizeof(long) - (HighestSetBit(op1) + 1));
+        }
+
+        private static int HighestSetBit(long op1)
+        {
+            for (int i = 8 * sizeof(long) - 1; i >= 0; i--)
+            {
+                if (((ulong)op1 & (1UL << i)) != 0)
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
+        public static ulong CountLeadingZeroBits(ulong op1)
+        {
+            return (ulong)(8 * sizeof(ulong) - (HighestSetBit(op1) + 1));
+        }
+
+        private static int HighestSetBit(ulong op1)
+        {
+            for (int i = 8 * sizeof(ulong) - 1; i >= 0; i--)
+            {
+                if (((ulong)op1 & (1UL << i)) != 0)
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
         public static sbyte BitCount(sbyte op1)
         {
             int result = 0;
@@ -165,6 +210,100 @@ namespace JIT.HardwareIntrinsics.Arm
 
             return (byte)result;
         }
+
+        public static short BitCount(short op1)
+        {
+            int result = 0;
+
+            for (int i = 0; i < 8 * sizeof(short); i++)
+            {
+                if (((ulong)op1 & (1UL << i)) != 0)
+                {
+                    result = result + 1;
+                }
+            }
+
+            return (short)result;
+        }
+
+        public static ushort BitCount(ushort op1)
+        {
+            int result = 0;
+
+            for (int i = 0; i < 8 * sizeof(ushort); i++)
+            {
+                if (((ulong)op1 & (1UL << i)) != 0)
+                {
+                    result = result + 1;
+                }
+            }
+
+            return (ushort)result;
+        }
+
+        public static int BitCount(int op1)
+        {
+            int result = 0;
+
+            for (int i = 0; i < 8 * sizeof(int); i++)
+            {
+                if (((ulong)op1 & (1UL << i)) != 0)
+                {
+                    result = result + 1;
+                }
+            }
+
+            return (int)result;
+        }
+
+        public static uint BitCount(uint op1)
+        {
+            int result = 0;
+
+            for (int i = 0; i < 8 * sizeof(uint); i++)
+            {
+                if (((ulong)op1 & (1UL << i)) != 0)
+                {
+                    result = result + 1;
+                }
+            }
+
+            return (uint)result;
+        }
+
+        public static long BitCount(long op1)
+        {
+            int result = 0;
+
+            for (int i = 0; i < 8 * sizeof(long); i++)
+            {
+                if (((ulong)op1 & (1UL << i)) != 0)
+                {
+                    result = result + 1;
+                }
+            }
+
+            return (long)result;
+        }
+
+        public static ulong BitCount(ulong op1)
+        {
+            int result = 0;
+
+            for (int i = 0; i < 8 * sizeof(ulong); i++)
+            {
+                if (((ulong)op1 & (1UL << i)) != 0)
+                {
+                    result = result + 1;
+                }
+            }
+
+            return (ulong)result;
+        }
+
+        public static int BitCount(float op1) => BitCount(BitConverter.SingleToInt32Bits(op1));
+
+        public static long BitCount(double op1) => BitCount(BitConverter.DoubleToInt64Bits(op1));
 
         public static byte ReverseElementBits(byte op1)
         {
@@ -6294,5 +6433,409 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             return (ulong)((op1 <= op2) ? 1 : 0);
         }
+
+        public static ulong MaskBothSet(byte[] op1, byte[] op2)
+        {
+            ulong acc = 0;
+            for (var i = 0; i < op1.Length; i++)
+            {
+                acc += (ulong)((op1[i]==1 && op2[i]==1) ? 1 : 0);
+            }
+            return acc;
+        }
+
+        public static ulong MaskBothSet(sbyte[] op1, sbyte[] op2)
+        {
+            ulong acc = 0;
+            for (var i = 0; i < op1.Length; i++)
+            {
+                acc += (ulong)((op1[i]==1 && op2[i]==1) ? 1 : 0);
+            }
+            return acc;
+        }
+
+        public static ulong MaskBothSet(short[] op1, short[] op2)
+        {
+            ulong acc = 0;
+            for (var i = 0; i < op1.Length; i++)
+            {
+                acc += (ulong)((op1[i]==1 && op2[i]==1) ? 1 : 0);
+            }
+            return acc;
+        }
+
+        public static ulong MaskBothSet(ushort[] op1, ushort[] op2)
+        {
+            ulong acc = 0;
+            for (var i = 0; i < op1.Length; i++)
+            {
+                acc += (ulong)((op1[i]==1 && op2[i]==1) ? 1 : 0);
+            }
+            return acc;
+        }
+
+        public static ulong MaskBothSet(int[] op1, int[] op2)
+        {
+            ulong acc = 0;
+            for (var i = 0; i < op1.Length; i++)
+            {
+                acc += (ulong)((op1[i]==1 && op2[i]==1) ? 1 : 0);
+            }
+            return acc;
+        }
+
+        public static ulong MaskBothSet(uint[] op1, uint[] op2)
+        {
+            ulong acc = 0;
+            for (var i = 0; i < op1.Length; i++)
+            {
+                acc += (ulong)((op1[i]==1 && op2[i]==1) ? 1 : 0);
+            }
+            return acc;
+        }
+
+        public static ulong MaskBothSet(long[] op1, long[] op2)
+        {
+            ulong acc = 0;
+            for (var i = 0; i < op1.Length; i++)
+            {
+                acc += (ulong)((op1[i]==1 && op2[i]==1) ? 1 : 0);
+            }
+            return acc;
+        }
+
+        public static ulong MaskBothSet(ulong[] op1, ulong[] op2)
+        {
+            ulong acc = 0;
+            for (var i = 0; i < op1.Length; i++)
+            {
+                acc += (ulong)((op1[i]==1 && op2[i]==1) ? 1 : 0);
+            }
+            return acc;
+        }
+
+        public static ulong MaskBothSet(float[] op1, float[] op2)
+        {
+            ulong acc = 0;
+            for (var i = 0; i < op1.Length; i++)
+            {
+                acc += (ulong)((BitConverter.SingleToInt32Bits(op1[i]) == 1 && BitConverter.SingleToInt32Bits(op2[i]) == 1) ? 1 : 0);
+            }
+            return acc;
+        }
+
+        public static ulong MaskBothSet(double[] op1, double[] op2)
+        {
+            ulong acc = 0;
+            for (var i = 0; i < op1.Length; i++)
+            {
+                acc += (ulong)((BitConverter.DoubleToInt64Bits(op1[i]) == 1 && BitConverter.DoubleToInt64Bits(op2[i]) == 1) ? 1 : 0);
+            }
+            return acc;
+        }
+
+        public static byte getMaskByte()
+        {
+            return (byte)(TestLibrary.Generator.GetByte()%(byte)2);
+        }
+
+        public static sbyte getMaskSByte()
+        {
+            return (sbyte)(TestLibrary.Generator.GetSByte()%(sbyte)2);
+        }
+
+        public static short getMaskInt16()
+        {
+            return (short)(TestLibrary.Generator.GetInt16()%(short)2);
+        }
+
+        public static ushort getMaskUInt16()
+        {
+            return (ushort)(TestLibrary.Generator.GetUInt16()%(ushort)2);
+        }
+
+        public static int getMaskInt32()
+        {
+            return (int)(TestLibrary.Generator.GetInt32()%(int)2);
+        }
+
+        public static uint getMaskUInt32()
+        {
+            return (uint)(TestLibrary.Generator.GetUInt32()%(uint)2);
+        }
+
+        public static long getMaskInt64()
+        {
+            return (long)(TestLibrary.Generator.GetInt64()%(long)2);
+        }
+
+        public static ulong getMaskUInt64()
+        {
+            return (ulong)(TestLibrary.Generator.GetUInt64()%(ulong)2);
+        }
+
+        public static float getMaskSingle()
+        {
+            return (float)(BitConverter.Int32BitsToSingle(TestLibrary.Generator.GetInt32()%(int)2));
+        }
+
+        public static float getMaskDouble()
+        {
+            return (float)(BitConverter.Int64BitsToDouble(TestLibrary.Generator.GetInt64()%(long)2));
+        }
+
+        public static int MaskNumberOfElementsVector(int elems, SveMaskPattern pattern)
+        {
+
+            switch(pattern)
+            {
+                // Returns elems, as this is always a power of 2.
+                case SveMaskPattern.LargestPowerOf2:
+                    return elems;
+
+                // Returns N if N elements can fit in the vector. Otherwise 0.
+                case SveMaskPattern.VectorCount1:
+                    return elems >= 1 ? 1 : 0;
+                case SveMaskPattern.VectorCount2:
+                    return elems >= 2 ? 2 : 0;
+                case SveMaskPattern.VectorCount3:
+                    return elems >= 3 ? 3 : 0;
+                case SveMaskPattern.VectorCount4:
+                    return elems >= 4 ? 4 : 0;
+                case SveMaskPattern.VectorCount5:
+                    return elems >= 5 ? 5 : 0;
+                case SveMaskPattern.VectorCount6:
+                    return elems >= 6 ? 6 : 0;
+                case SveMaskPattern.VectorCount7:
+                    return elems >= 7 ? 7 : 0;
+                case SveMaskPattern.VectorCount8:
+                    return elems >= 8 ? 8 : 0;
+                case SveMaskPattern.VectorCount16:
+                    return elems >= 16 ? 16 : 0;
+                case SveMaskPattern.VectorCount32:
+                    return elems >= 32 ? 32 : 0;
+                case SveMaskPattern.VectorCount64:
+                    return elems >= 64 ? 64 : 0;
+                case SveMaskPattern.VectorCount128:
+                    return elems >= 128 ? 128 : 0;
+                case SveMaskPattern.VectorCount256:
+                    return elems >= 256 ? 256 : 0;
+
+                // Number of elems rounded down to nearest multiple of 4
+                case SveMaskPattern.LargestMultipleOf4:
+                    return elems - (elems % 4);
+
+                // Number of elems rounded down to nearest multiple of 3
+                case SveMaskPattern.LargestMultipleOf3:
+                    return elems - (elems % 3);
+
+                case SveMaskPattern.All:
+                default:
+                    return elems;
+            }
+        }
+
+        public static int NumberOfElementsInVectorInt8(SveMaskPattern pattern)
+        {
+            return MaskNumberOfElementsVector(Unsafe.SizeOf<Vector<byte>>() / sizeof(byte), pattern);
+        }
+        
+        public static int NumberOfElementsInVectorInt16(SveMaskPattern pattern)
+        {
+            return MaskNumberOfElementsVector(Unsafe.SizeOf<Vector<short>>() / sizeof(short), pattern);
+        }
+
+        public static int NumberOfElementsInVectorInt32(SveMaskPattern pattern)
+        {
+            return MaskNumberOfElementsVector(Unsafe.SizeOf<Vector<int>>() / sizeof(int), pattern);
+        }
+
+        public static int NumberOfElementsInVectorInt64(SveMaskPattern pattern)
+        {
+            return MaskNumberOfElementsVector(Unsafe.SizeOf<Vector<long>>() / sizeof(long), pattern);
+        }
+
+        public static int NumberOfActiveElementsInMask(sbyte[] mask)
+        {
+            int acc = 0;
+            for (var i = 0; i < mask.Length; i++)
+            {
+                acc += (mask[i] == 1) ? 1 : 0;
+            }
+            return acc;
+        }
+
+        public static int NumberOfActiveElementsInMask(short[] mask)
+        {
+            int acc = 0;
+            for (var i = 0; i < mask.Length; i++)
+            {
+                acc += (mask[i] == 1) ? 1 : 0;
+            }
+            return acc;
+        }
+
+        public static int NumberOfActiveElementsInMask(int[] mask)
+        {
+            int acc = 0;
+            for (var i = 0; i < mask.Length; i++)
+            {
+                acc += (mask[i] == 1) ? 1 : 0;
+            }
+            return acc;
+        }
+
+        public static int NumberOfActiveElementsInMask(long[] mask)
+        {
+            int acc = 0;
+            for (var i = 0; i < mask.Length; i++)
+            {
+                acc += (mask[i] == 1) ? 1 : 0;
+            }
+            return acc;
+        }
+
+        public static int NumberOfActiveElementsInMask(byte[] mask)
+        {
+            int acc = 0;
+            for (var i = 0; i < mask.Length; i++)
+            {
+                acc += (mask[i] == 1) ? 1 : 0;
+            }
+            return acc;
+        }
+
+        public static int NumberOfActiveElementsInMask(ushort[] mask)
+        {
+            int acc = 0;
+            for (var i = 0; i < mask.Length; i++)
+            {
+                acc += (mask[i] == 1) ? 1 : 0;
+            }
+            return acc;
+        }
+
+        public static int NumberOfActiveElementsInMask(uint[] mask)
+        {
+            int acc = 0;
+            for (var i = 0; i < mask.Length; i++)
+            {
+                acc += (mask[i] == 1) ? 1 : 0;
+            }
+            return acc;
+        }
+
+        public static int NumberOfActiveElementsInMask(ulong[] mask)
+        {
+            int acc = 0;
+            for (var i = 0; i < mask.Length; i++)
+            {
+                acc += (mask[i] == 1) ? 1 : 0;
+            }
+            return acc;
+        }
+
+        public static double[] Compact(double[] op1, double[] op2)
+        {
+            double[] result = new double[op1.Length];
+            Array.Fill<double>(result, 0, 0, op1.Length);
+
+            int i = 0;
+            for (int j = 0; j < op1.Length; j++)
+            {
+                if (op1[j] != 0)
+                {
+                    result[i++] = op2[j];
+                }
+            }
+
+            return result;
+        }
+
+        public static int[] Compact(int[] op1, int[] op2)
+        {
+            int[] result = new int[op1.Length];
+            Array.Fill<int>(result, 0, 0, op1.Length);
+
+            int i = 0;
+            for (int j = 0; j < op1.Length; j++)
+            {
+                if (op1[j] != 0)
+                {
+                    result[i++] = op2[j];
+                }
+            }
+
+            return result;
+        }
+
+        public static long[] Compact(long[] op1, long[] op2)
+        {
+            long[] result = new long[op1.Length];
+            Array.Fill<long>(result, 0, 0, op1.Length);
+
+            long i = 0;
+            for (int j = 0; j < op1.Length; j++)
+            {
+                if (op1[j] != 0)
+                {
+                    result[i++] = op2[j];
+                }
+            }
+
+            return result;
+        }
+
+        public static float[] Compact(float[] op1, float[] op2)
+        {
+            float[] result = new float[op1.Length];
+            Array.Fill<float>(result, 0, 0, op1.Length);
+
+            int i = 0;
+            for (int j = 0; j < op1.Length; j++)
+            {
+                if (op1[j] != 0)
+                {
+                    result[i++] = op2[j];
+                }
+            }
+
+            return result;
+        }
+
+        public static uint[] Compact(uint[] op1, uint[] op2)
+        {
+            uint[] result = new uint[op1.Length];
+            Array.Fill<uint>(result, 0, 0, op1.Length);
+
+            int i = 0;
+            for (int j = 0; j < op1.Length; j++)
+            {
+                if (op1[j] != 0)
+                {
+                    result[i++] = op2[j];
+                }
+            }
+
+            return result;
+        }
+
+        public static ulong[] Compact(ulong[] op1, ulong[] op2)
+        {
+            ulong[] result = new ulong[op1.Length];
+            Array.Fill<ulong>(result, 0, 0, op1.Length);
+
+            ulong i = 0;
+            for (int j = 0; j < op1.Length; j++)
+            {
+                if (op1[j] != 0)
+                {
+                    result[i++] = op2[j];
+                }
+            }
+
+            return result;
+        }
+
     }
 }

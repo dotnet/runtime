@@ -640,9 +640,8 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_opt_ void* p
     // so simple conditional assignment is ok.
     if (g_pfnQueueUserAPC2Proc == QUEUE_USER_APC2_UNINITIALIZED)
     {
-#ifdef HOST_AMD64
         HMODULE hKernel32 = LoadKernel32dll();
-
+#ifdef HOST_AMD64
         typedef BOOL (WINAPI *IsWow64Process2Proc)(HANDLE hProcess, USHORT *pProcessMachine, USHORT *pNativeMachine);
 
         IsWow64Process2Proc pfnIsWow64Process2Proc = (IsWow64Process2Proc)GetProcAddress(hKernel32, "IsWow64Process2");

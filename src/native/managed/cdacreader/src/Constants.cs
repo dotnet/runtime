@@ -9,6 +9,9 @@ internal static class Constants
     {
         // See src/coreclr/debug/runtimeinfo/datadescriptor.h
         internal const string ThreadStore = nameof(ThreadStore);
+        internal const string FinalizerThread = nameof(FinalizerThread);
+        internal const string GCThread = nameof(GCThread);
+
         internal const string SOSBreakingChangeVersion = nameof(SOSBreakingChangeVersion);
     }
 }

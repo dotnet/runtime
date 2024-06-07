@@ -883,6 +883,7 @@ namespace Internal.JitInterface
                 ThrowHelper.ThrowBadImageFormatException();
 
             if (!signature.IsStatic) sig->callConv |= CorInfoCallConv.CORINFO_CALLCONV_HASTHIS;
+            if (signature.IsExplicitThis) sig->callConv |= CorInfoCallConv.CORINFO_CALLCONV_EXPLICITTHIS;
 
             TypeDesc returnType = signature.ReturnType;
 

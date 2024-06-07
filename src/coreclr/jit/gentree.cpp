@@ -4128,6 +4128,8 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
         // first tree to be evaluated, and "lvl2" - the second.
         if (multiOp->IsReverseOp())
         {
+            assert(!multiOp->AsHWIntrinsic()->IsUserCall());
+
             level = gtSetEvalOrder(multiOp->Op(2));
             lvl2  = gtSetEvalOrder(multiOp->Op(1));
         }
@@ -4140,11 +4142,18 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
         // We want the more complex tree to be evaluated first.
         if (level < lvl2)
         {
-            bool canSwap = multiOp->IsReverseOp() ? gtCanSwapOrder(multiOp->Op(2), multiOp->Op(1))
-                                                  : gtCanSwapOrder(multiOp->Op(1), multiOp->Op(2));
+            bool canSwap = false;
+
+            if (!multiOp->AsHWIntrinsic()->IsUserCall())
+            {
+                canSwap = multiOp->IsReverseOp() ? gtCanSwapOrder(multiOp->Op(2), multiOp->Op(1))
+                                                 : gtCanSwapOrder(multiOp->Op(1), multiOp->Op(2));
+            }
 
             if (canSwap)
             {
+                assert(!multiOp->AsHWIntrinsic()->IsUserCall());
+
                 if (multiOp->IsReverseOp())
                 {
                     multiOp->ClearReverseOp();
@@ -6563,7 +6572,7 @@ bool GenTree::OperSupportsReverseOpEvalOrder(Compiler* comp) const
 #if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
     if (OperIsMultiOp())
     {
-        return AsMultiOp()->GetOperandCount() == 2;
+        return (AsMultiOp()->GetOperandCount() == 2) && !AsMultiOp()->IsUserCall();
     }
 #endif // FEATURE_SIMD || FEATURE_HW_INTRINSICS
     return false;
@@ -7227,8 +7236,6 @@ ExceptionSetFlags GenTree::OperExceptions(Compiler* comp)
 
             if (hwIntrinsicNode->OperIsMemoryLoadOrStore())
             {
-                assert((gtFlags & GTF_IND_NONFAULTING) == 0);
-
                 // TODO-CQ: We should use comp->fgAddrCouldBeNull on the address operand
                 // to determine if this can actually produce an NRE or not
 
@@ -9626,10 +9633,8 @@ GenTree* Compiler::gtCloneExpr(GenTree* tree)
             case GT_INTRINSIC:
                 copy = new (this, GT_INTRINSIC)
                     GenTreeIntrinsic(tree->TypeGet(), tree->AsOp()->gtOp1, tree->AsOp()->gtOp2,
-                                     tree->AsIntrinsic()->gtIntrinsicName, tree->AsIntrinsic()->gtMethodHandle);
-#ifdef FEATURE_READYTORUN
-                copy->AsIntrinsic()->gtEntryPoint = tree->AsIntrinsic()->gtEntryPoint;
-#endif
+                                     tree->AsIntrinsic()->gtIntrinsicName,
+                                     tree->AsIntrinsic()->gtMethodHandle R2RARG(tree->AsIntrinsic()->gtEntryPoint));
                 break;
 
             case GT_BOUNDS_CHECK:
@@ -9711,6 +9716,12 @@ GenTree* Compiler::gtCloneExpr(GenTree* tree)
                                    tree->AsHWIntrinsic()->GetHWIntrinsicId(),
                                    tree->AsHWIntrinsic()->GetSimdBaseJitType(), tree->AsHWIntrinsic()->GetSimdSize());
             copy->AsHWIntrinsic()->SetAuxiliaryJitType(tree->AsHWIntrinsic()->GetAuxiliaryJitType());
+
+            if (tree->AsHWIntrinsic()->IsUserCall())
+            {
+                copy->AsHWIntrinsic()->SetMethodHandle(this, tree->AsHWIntrinsic()->GetMethodHandle()
+                                                                 R2RARG(tree->AsHWIntrinsic()->GetEntryPoint()));
+            }
             goto CLONE_MULTIOP_OPERANDS;
 #endif
 #if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
@@ -18269,6 +18280,79 @@ unsigned GenTreeVecCon::ElementCount(unsigned simdSize, var_types simdBaseType)
 {
     return simdSize / genTypeSize(simdBaseType);
 }
+
+bool Compiler::IsValidForShuffle(GenTreeVecCon* vecCon, unsigned simdSize, var_types simdBaseType) const
+{
+#if defined(TARGET_XARCH)
+    size_t elementSize  = genTypeSize(simdBaseType);
+    size_t elementCount = simdSize / elementSize;
+
+    if (simdSize == 32)
+    {
+        if (!compOpportunisticallyDependsOn(InstructionSet_AVX2))
+        {
+            // While we could accelerate some functions on hardware with only AVX support
+            // it's likely not worth it overall given that IsHardwareAccelerated reports false
+            return false;
+        }
+        else if ((varTypeIsByte(simdBaseType) && !compOpportunisticallyDependsOn(InstructionSet_AVX512VBMI_VL)) ||
+                 (varTypeIsShort(simdBaseType) && !compOpportunisticallyDependsOn(InstructionSet_AVX512BW_VL)))
+        {
+            bool crossLane = false;
+
+            for (size_t index = 0; index < elementCount; index++)
+            {
+                uint64_t value = vecCon->GetIntegralVectorConstElement(index, simdBaseType);
+
+                if (value >= elementCount)
+                {
+                    continue;
+                }
+
+                if (index < (elementCount / 2))
+                {
+                    if (value >= (elementCount / 2))
+                    {
+                        crossLane = true;
+                        break;
+                    }
+                }
+                else if (value < (elementCount / 2))
+                {
+                    crossLane = true;
+                    break;
+                }
+            }
+
+            if (crossLane)
+            {
+                // TODO-XARCH-CQ: We should emulate cross-lane shuffling for byte/sbyte and short/ushort
+                return false;
+            }
+        }
+    }
+    else if (simdSize == 64)
+    {
+        if (varTypeIsByte(simdBaseType) && !compOpportunisticallyDependsOn(InstructionSet_AVX512VBMI))
+        {
+            // TYP_BYTE, TYP_UBYTE need AVX512VBMI.
+            return false;
+        }
+    }
+    else
+    {
+        assert(simdSize == 16);
+
+        if (varTypeIsSmall(simdBaseType) && !compOpportunisticallyDependsOn(InstructionSet_SSSE3))
+        {
+            // TYP_BYTE, TYP_UBYTE, TYP_SHORT, and TYP_USHORT need SSSE3 to be able to shuffle any operation
+            return false;
+        }
+    }
+#endif // TARGET_XARCH
+
+    return true;
+}
 #endif // FEATURE_HW_INTRINSICS*/
 
 //------------------------------------------------------------------------
@@ -19568,6 +19652,49 @@ void GenTreeMultiOp::InitializeOperands(GenTree** operands, size_t operandCount)
     }
 
     SetOperandCount(operandCount);
+}
+
+//------------------------------------------------------------------------
+// GenTreeJitIntrinsic::SetMethodHandle: Sets the method handle for an intrinsic
+//  so that it can be rewritten back to a user call in a later phase
+//
+// Arguments:
+//  comp         - The compiler instance
+//  methodHandle - The method handle representing the fallback handling for the intrinsic
+//  entryPoint   - The entry point information required for R2R scenarios
+//
+// Notes:
+//  We need to ensure that the operands are not tracked inline so that we can track the
+//  underlying method handle. See the comment in GenTreeJitIntrinsic around why the union
+//  of fields exists.
+//
+void GenTreeJitIntrinsic::SetMethodHandle(Compiler*                          comp,
+                                          CORINFO_METHOD_HANDLE methodHandle R2RARG(CORINFO_CONST_LOOKUP entryPoint))
+{
+    assert(OperIsHWIntrinsic() && !IsUserCall());
+    gtFlags |= GTF_HW_USER_CALL;
+
+    size_t operandCount = GetOperandCount();
+
+    if ((operandCount != 0) && (operandCount <= ArrLen(gtInlineOperands)))
+    {
+        GenTree** oldOperands = GetOperandArray();
+        GenTree** newOperands = comp->getAllocator(CMK_ASTNode).allocate<GenTree*>(operandCount);
+
+        ResetOperandArray(operandCount, comp, newOperands, operandCount);
+        assert(GetOperandArray() == newOperands);
+
+        for (size_t i = 0; i < operandCount; i++)
+        {
+            newOperands[i] = oldOperands[i];
+        }
+    }
+
+    gtMethodHandle = methodHandle;
+
+#if defined(FEATURE_READYTORUN)
+    gtEntryPoint = new (comp, CMK_ASTNode) CORINFO_CONST_LOOKUP(entryPoint);
+#endif // FEATURE_READYTORUN
 }
 
 var_types GenTreeJitIntrinsic::GetAuxiliaryType() const
@@ -26361,7 +26488,7 @@ GenTreeFieldList* Compiler::gtConvertTableOpToFieldList(GenTree* op, unsigned fi
     LclVarDsc* opVarDsc  = lvaGetDesc(op->AsLclVar());
     unsigned   lclNum    = lvaGetLclNum(opVarDsc);
     unsigned   fieldSize = opVarDsc->lvSize() / fieldCount;
-    var_types  fieldType = TYP_SIMD16;
+    var_types  fieldType = Compiler::getSIMDTypeForSize(fieldSize);
 
     GenTreeFieldList* fieldList = new (this, GT_FIELD_LIST) GenTreeFieldList();
     int               offset    = 0;
@@ -26594,6 +26721,9 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad(GenTree** pAddr) const
             case NI_Sve_LoadVectorUInt16ZeroExtendToUInt64:
             case NI_Sve_LoadVectorUInt32ZeroExtendToInt64:
             case NI_Sve_LoadVectorUInt32ZeroExtendToUInt64:
+            case NI_Sve_Load2xVectorAndUnzip:
+            case NI_Sve_Load3xVectorAndUnzip:
+            case NI_Sve_Load4xVectorAndUnzip:
                 addr = Op(2);
                 break;
 #endif // TARGET_ARM64
@@ -26706,7 +26836,17 @@ bool GenTreeHWIntrinsic::OperIsMemoryStore(GenTree** pAddr) const
             case NI_SSE2_MaskMove:
                 addr = Op(3);
                 break;
-#endif // TARGET_XARCH
+#elif defined(TARGET_ARM64)
+            case NI_Sve_StoreAndZip:
+            case NI_Sve_StoreAndZipx2:
+            case NI_Sve_StoreAndZipx3:
+            case NI_Sve_StoreAndZipx4:
+            case NI_Sve_StoreNarrowing:
+            case NI_Sve_StoreNonTemporal:
+                addr = Op(2);
+                break;
+
+#endif // TARGET_ARM64
 
             default:
                 addr = Op(1);
@@ -27029,7 +27169,7 @@ bool GenTreeHWIntrinsic::OperRequiresCallFlag() const
         }
     }
 
-    return false;
+    return IsUserCall();
 }
 
 //------------------------------------------------------------------------------
@@ -27107,6 +27247,13 @@ ClassLayout* GenTreeHWIntrinsic::GetLayout(Compiler* compiler) const
         case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x4:
         case NI_AdvSimd_Arm64_LoadAndReplicateToVector128x4:
             return compiler->typGetBlkLayout(64);
+
+        case NI_Sve_Load2xVectorAndUnzip:
+            return compiler->typGetBlkLayout(compiler->getVectorTByteLength() * 2);
+        case NI_Sve_Load3xVectorAndUnzip:
+            return compiler->typGetBlkLayout(compiler->getVectorTByteLength() * 3);
+        case NI_Sve_Load4xVectorAndUnzip:
+            return compiler->typGetBlkLayout(compiler->getVectorTByteLength() * 4);
 
 #endif // TARGET_ARM64
 

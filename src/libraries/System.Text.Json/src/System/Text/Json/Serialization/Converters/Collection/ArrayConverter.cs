@@ -56,7 +56,7 @@ namespace System.Text.Json.Serialization.Converters
 
                     state.Current.EndCollectionElement();
 
-                    if (ShouldFlush(writer, ref state))
+                    if (ShouldFlush(ref state, writer))
                     {
                         state.Current.EnumeratorIndex = ++index;
                         return false;
