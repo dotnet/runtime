@@ -10,6 +10,7 @@ set(MONO_DEBUGGER_COMPONENT_NAME "debugger")
 set(MONO_MARSHAL_ILGEN_COMPONENT_NAME "marshal-ilgen")
 
 add_subdirectory(${SHARED_CONTAINERS_SOURCE_PATH} containers)
+add_subdirectory(${SHARED_EVENTPIPE_SOURCE_PATH} eventpipe)
 
 # a list of every component.
 set(components "")
@@ -140,6 +141,16 @@ function(define_component_libs)
   endif()
 endfunction()
 
+function(component_link_libraries component)
+    # Link the provided libraries to each target for the component that is defined
+    if (TARGET ${component}-objects)
+        target_link_libraries(${component}-objects ${ARGN})
+    endif()
+    if (TARGET mono-component-${component})
+        target_link_libraries(mono-component-${component} ${ARGN})
+    endif()
+endfunction()
+
 # a generic component interface that all components implement
 add_library(component_base INTERFACE)
 target_sources(component_base INTERFACE
@@ -166,10 +177,6 @@ foreach(component IN LISTS components)
   target_link_libraries("${component}-stub-objects" PRIVATE component_base)
   target_link_libraries("${component}-stub-objects" PUBLIC eglib_api)
 endforeach()
-
-if (TARGET "${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}-objects")
-    target_link_libraries("${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}-objects" PRIVATE dn-containers)
-endif()
 
 if(NOT DISABLE_COMPONENTS AND NOT STATIC_COMPONENTS)
   # define a shared library for each component
@@ -216,6 +223,10 @@ elseif(AOT_COMPONENTS OR (NOT DISABLE_COMPONENTS AND STATIC_COMPONENTS))
     list(APPEND mono-components-objects $<TARGET_OBJECTS:${component}-objects>)
   endforeach()
 
+endif()
+
+if (ENABLE_PERFTRACING)
+    component_link_libraries(${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME} PRIVATE dn-containers dn-eventpipe dn-diagnosticserver dn-diagnosticserver-pal)
 endif()
 
 # define a list of mono-components-stubs objects that will be linked into
