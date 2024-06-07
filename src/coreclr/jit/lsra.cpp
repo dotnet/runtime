@@ -8803,7 +8803,7 @@ regNumber LinearScan::getTempRegForResolution(BasicBlock*      fromBlock,
     {
         // Exclude any doubles for which the odd half isn't in freeRegs,
         // and restrict down to just the even part of the even/odd pair.
-        freeRegs &= (freeRegs & RBM_ALLDOUBLE_HIGH) >> 1;
+        freeRegs &= (freeRegs & RBM_ALLDOUBLE_HIGH.GetFloatRegSet()) >> 1;
     }
 #endif
 
@@ -13583,7 +13583,7 @@ SingleTypeRegSet LinearScan::RegisterSelection::select(Interval*                
         // clause below creates a mask to do this.
         if (currentInterval->registerType == TYP_DOUBLE)
         {
-            candidates &= ~((busyRegs & RBM_ALLDOUBLE_HIGH) >> 1);
+            candidates &= ~((busyRegs & RBM_ALLDOUBLE_HIGH.GetFloatRegSet()) >> 1);
         }
 #endif // TARGET_ARM
 
@@ -13906,7 +13906,7 @@ SingleTypeRegSet LinearScan::RegisterSelection::selectMinimal(
     // clause below creates a mask to do this.
     if (currentInterval->registerType == TYP_DOUBLE)
     {
-        candidates &= ~((busyRegs & RBM_ALLDOUBLE_HIGH) >> 1);
+        candidates &= ~((busyRegs & RBM_ALLDOUBLE_HIGH.GetFloatRegSet()) >> 1);
     }
 #endif // TARGET_ARM
 
