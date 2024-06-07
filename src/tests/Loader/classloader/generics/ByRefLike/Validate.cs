@@ -91,7 +91,6 @@ public class Validate
 
         // Test that explicitly tries to box a ByRefLike type.
         Assert.Throws<InvalidProgramException>(() => { Exec.BoxAsObject(); });
-
     }
 
     [Fact]
