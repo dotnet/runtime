@@ -626,7 +626,7 @@ RefPosition* LinearScan::newRefPosition(Interval*        theInterval,
     if (theInterval != nullptr && theInterval->isLocalVar && compiler->compMethodRequiresPInvokeFrame() &&
         theInterval->varNum == compiler->genReturnLocal)
     {
-        mask &= ~(RBM_PINVOKE_TCB | RBM_PINVOKE_FRAME);
+        mask &= ~(RBM_PINVOKE_TCB | RBM_PINVOKE_FRAME).GetRegSetForType(theInterval->registerType);
         noway_assert(mask != RBM_NONE);
     }
 #endif // !TARGET_AMD64
@@ -861,7 +861,7 @@ regMaskTP LinearScan::getKillSetForCall(GenTreeCall* call)
 #endif // TARGET_AMD64
 
 #else
-        killMask.RemoveRegsetForType(RBM_FLT_CALLEE_TRASH, FloatRegisterType);
+        killMask.RemoveRegsetForType(RBM_FLT_CALLEE_TRASH.GetFloatRegSet(), FloatRegisterType);
 #endif // TARGET_XARCH
     }
 #ifdef TARGET_ARM
@@ -883,7 +883,7 @@ regMaskTP LinearScan::getKillSetForCall(GenTreeCall* call)
     // so don't use the register post-call until it is consumed by SwiftError.
     if (call->HasSwiftErrorHandling())
     {
-        killMask.AddGprRegs(RBM_SWIFT_ERROR);
+        killMask.AddGprRegs(RBM_SWIFT_ERROR.GetIntRegSet());
     }
 #endif // SWIFT_SUPPORT
 
@@ -1200,7 +1200,7 @@ bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLo
     if (compiler->killGCRefs(tree))
     {
         RefPosition* pos =
-            newRefPosition((Interval*)nullptr, currentLoc, RefTypeKillGCRefs, tree, (availableIntRegs & ~RBM_ARG_REGS));
+            newRefPosition((Interval*)nullptr, currentLoc, RefTypeKillGCRefs, tree, (availableIntRegs & ~RBM_ARG_REGS.GetIntRegSet()));
         insertedKills = true;
     }
 
@@ -1518,7 +1518,7 @@ void LinearScan::buildUpperVectorSaveRefPositions(GenTree*                tree,
             {
                 Interval*    upperVectorInterval = getUpperVectorInterval(varIndex);
                 RefPosition* pos =
-                    newRefPosition(upperVectorInterval, currentLoc, RefTypeUpperVectorSave, tree, RBM_FLT_CALLEE_SAVED);
+                    newRefPosition(upperVectorInterval, currentLoc, RefTypeUpperVectorSave, tree, RBM_FLT_CALLEE_SAVED.GetFloatRegSet());
                 varInterval->isPartiallySpilled = true;
                 pos->skipSaveRestore            = blockAlwaysReturn;
                 pos->liveVarUpperSave           = VarSetOps::IsMember(compiler, liveLargeVectors, varIndex);
@@ -1575,7 +1575,7 @@ void LinearScan::buildUpperVectorSaveRefPositions(GenTree*                tree,
             if (listNode->ref->getInterval()->recentRefPosition->refType != RefTypeUpperVectorSave)
             {
                 RefPosition* pos = newRefPosition(listNode->ref->getInterval(), currentLoc, RefTypeUpperVectorSave,
-                                                  tree, RBM_FLT_CALLEE_SAVED);
+                                                  tree, RBM_FLT_CALLEE_SAVED.GetFloatRegSet());
             }
         }
     }
@@ -2393,7 +2393,7 @@ void LinearScan::buildIntervals()
     // If there is a secret stub param, it is also live in
     if (compiler->info.compPublishStubParam)
     {
-        intRegState->rsCalleeRegArgMaskLiveIn.AddGprRegs(RBM_SECRET_STUB_PARAM);
+        intRegState->rsCalleeRegArgMaskLiveIn.AddGprRegs(RBM_SECRET_STUB_PARAM.GetIntRegSet());
 
         LclVarDsc* stubParamDsc = compiler->lvaGetDesc(compiler->lvaStubArgumentVar);
         if (isCandidateVar(stubParamDsc))
@@ -4214,7 +4214,7 @@ int LinearScan::BuildReturn(GenTree* tree)
 #ifdef TARGET_ARM64
             if (varTypeIsSIMD(tree) && !op1->IsMultiRegLclVar())
             {
-                BuildUse(op1, RBM_DOUBLERET);
+                BuildUse(op1, RBM_DOUBLERET.GetFloatRegSet());
                 return 1;
             }
 #endif // TARGET_ARM64
@@ -4300,21 +4300,22 @@ int LinearScan::BuildReturn(GenTree* tree)
                         useCandidates = RBM_NONE;
                         break;
                     case TYP_FLOAT:
-                        useCandidates = RBM_FLOATRET;
+                        useCandidates = RBM_FLOATRET.GetFloatRegSet();
                         break;
                     case TYP_DOUBLE:
                         // We ONLY want the valid double register in the RBM_DOUBLERET mask.
 #ifdef TARGET_AMD64
                         useCandidates = (RBM_DOUBLERET & RBM_ALLDOUBLE).GetFloatRegSet();
 #else
-                    useCandidates = (RBM_DOUBLERET & RBM_ALLDOUBLE);
+                        useCandidates = (RBM_DOUBLERET & RBM_ALLDOUBLE)
+                                            .GetFloatRegSet();
 #endif // TARGET_AMD64
                         break;
                     case TYP_LONG:
-                        useCandidates = RBM_LNGRET;
+                        useCandidates = RBM_LNGRET.GetIntRegSet();
                         break;
                     default:
-                        useCandidates = RBM_INTRET;
+                        useCandidates = RBM_INTRET.GetIntRegSet();
                         break;
                 }
                 BuildUse(op1, useCandidates);
@@ -4504,8 +4505,8 @@ int LinearScan::BuildGCWriteBarrier(GenTree* tree)
     // is an indir through an lea, we need to actually instantiate the
     // lea in a register
     assert(!addr->isContained() && !src->isContained());
-    SingleTypeRegSet addrCandidates = RBM_WRITE_BARRIER_DST;
-    SingleTypeRegSet srcCandidates  = RBM_WRITE_BARRIER_SRC;
+    SingleTypeRegSet addrCandidates = RBM_WRITE_BARRIER_DST.GetIntRegSet();
+    SingleTypeRegSet srcCandidates  = RBM_WRITE_BARRIER_SRC.GetIntRegSet();
 
 #if defined(TARGET_X86) && NOGC_WRITE_BARRIERS
 
