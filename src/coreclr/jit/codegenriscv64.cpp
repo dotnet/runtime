@@ -198,11 +198,8 @@ void CodeGen::genStackPointerAdjustment(ssize_t spDelta, regNumber tmpReg, bool*
 // Notes:
 //    The save set can not contain FP/RA in which case FP/RA is saved along with the other callee-saved registers.
 //
-void CodeGen::genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask,
-                                              int       lowestCalleeSavedOffset,
-                                              int       spDelta /* =0 */)
+void CodeGen::genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowestCalleeSavedOffset)
 {
-    assert(spDelta == 0);
     if (regsToSaveMask == 0)
     {
         return;
@@ -265,11 +262,8 @@ void CodeGen::genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask,
 // Return Value:
 //    None.
 
-void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask,
-                                                 int       lowestCalleeSavedOffset,
-                                                 int       spDelta /* =0 */)
+void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, int lowestCalleeSavedOffset)
 {
-    assert(spDelta == 0);
     // The FP and RA are not in RBM_CALLEE_SAVED.
     assert(!(regsToRestoreMask & (~RBM_CALLEE_SAVED)));
     if (regsToRestoreMask == 0)
