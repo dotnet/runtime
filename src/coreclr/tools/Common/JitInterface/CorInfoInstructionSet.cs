@@ -76,6 +76,7 @@ namespace Internal.JitInterface
         X64_AVX10v1 = InstructionSet_X64.AVX10v1,
         X64_AVX10v1_V256 = InstructionSet_X64.AVX10v1_V256,
         X64_AVX10v1_V512 = InstructionSet_X64.AVX10v1_V512,
+        X64_APX = InstructionSet_X64.APX,
         X64_VectorT128 = InstructionSet_X64.VectorT128,
         X64_VectorT256 = InstructionSet_X64.VectorT256,
         X64_VectorT512 = InstructionSet_X64.VectorT512,
@@ -111,6 +112,7 @@ namespace Internal.JitInterface
         X64_AVX10v1_X64 = InstructionSet_X64.AVX10v1_X64,
         X64_AVX10v1_V256_X64 = InstructionSet_X64.AVX10v1_V256_X64,
         X64_AVX10v1_V512_X64 = InstructionSet_X64.AVX10v1_V512_X64,
+        X64_APX_X64 = InstructionSet_X64.APX_X64,
         X86_X86Base = InstructionSet_X86.X86Base,
         X86_SSE = InstructionSet_X86.SSE,
         X86_SSE2 = InstructionSet_X86.SSE2,
@@ -146,6 +148,7 @@ namespace Internal.JitInterface
         X86_AVX10v1 = InstructionSet_X86.AVX10v1,
         X86_AVX10v1_V256 = InstructionSet_X86.AVX10v1_V256,
         X86_AVX10v1_V512 = InstructionSet_X86.AVX10v1_V512,
+        X86_APX = InstructionSet_X86.APX,
         X86_VectorT128 = InstructionSet_X86.VectorT128,
         X86_VectorT256 = InstructionSet_X86.VectorT256,
         X86_VectorT512 = InstructionSet_X86.VectorT512,
@@ -181,6 +184,7 @@ namespace Internal.JitInterface
         X86_AVX10v1_X64 = InstructionSet_X86.AVX10v1_X64,
         X86_AVX10v1_V256_X64 = InstructionSet_X86.AVX10v1_V256_X64,
         X86_AVX10v1_V512_X64 = InstructionSet_X86.AVX10v1_V512_X64,
+        X86_APX_X64 = InstructionSet_X86.APX_X64,
     }
     public enum InstructionSet_ARM64
     {
@@ -252,41 +256,43 @@ namespace Internal.JitInterface
         AVX10v1 = 33,
         AVX10v1_V256 = 34,
         AVX10v1_V512 = 35,
-        VectorT128 = 36,
-        VectorT256 = 37,
-        VectorT512 = 38,
-        X86Base_X64 = 39,
-        SSE_X64 = 40,
-        SSE2_X64 = 41,
-        SSE3_X64 = 42,
-        SSSE3_X64 = 43,
-        SSE41_X64 = 44,
-        SSE42_X64 = 45,
-        AVX_X64 = 46,
-        AVX2_X64 = 47,
-        AES_X64 = 48,
-        BMI1_X64 = 49,
-        BMI2_X64 = 50,
-        FMA_X64 = 51,
-        LZCNT_X64 = 52,
-        PCLMULQDQ_X64 = 53,
-        POPCNT_X64 = 54,
-        AVXVNNI_X64 = 55,
-        MOVBE_X64 = 56,
-        X86Serialize_X64 = 57,
-        AVX512F_X64 = 58,
-        AVX512F_VL_X64 = 59,
-        AVX512BW_X64 = 60,
-        AVX512BW_VL_X64 = 61,
-        AVX512CD_X64 = 62,
-        AVX512CD_VL_X64 = 63,
-        AVX512DQ_X64 = 64,
-        AVX512DQ_VL_X64 = 65,
-        AVX512VBMI_X64 = 66,
-        AVX512VBMI_VL_X64 = 67,
-        AVX10v1_X64 = 68,
-        AVX10v1_V256_X64 = 69,
-        AVX10v1_V512_X64 = 70,
+        APX = 36,
+        VectorT128 = 37,
+        VectorT256 = 38,
+        VectorT512 = 39,
+        X86Base_X64 = 40,
+        SSE_X64 = 41,
+        SSE2_X64 = 42,
+        SSE3_X64 = 43,
+        SSSE3_X64 = 44,
+        SSE41_X64 = 45,
+        SSE42_X64 = 46,
+        AVX_X64 = 47,
+        AVX2_X64 = 48,
+        AES_X64 = 49,
+        BMI1_X64 = 50,
+        BMI2_X64 = 51,
+        FMA_X64 = 52,
+        LZCNT_X64 = 53,
+        PCLMULQDQ_X64 = 54,
+        POPCNT_X64 = 55,
+        AVXVNNI_X64 = 56,
+        MOVBE_X64 = 57,
+        X86Serialize_X64 = 58,
+        AVX512F_X64 = 59,
+        AVX512F_VL_X64 = 60,
+        AVX512BW_X64 = 61,
+        AVX512BW_VL_X64 = 62,
+        AVX512CD_X64 = 63,
+        AVX512CD_VL_X64 = 64,
+        AVX512DQ_X64 = 65,
+        AVX512DQ_VL_X64 = 66,
+        AVX512VBMI_X64 = 67,
+        AVX512VBMI_VL_X64 = 68,
+        AVX10v1_X64 = 69,
+        AVX10v1_V256_X64 = 70,
+        AVX10v1_V512_X64 = 71,
+        APX_X64 = 72,
     }
 
     public enum InstructionSet_X86
@@ -328,41 +334,43 @@ namespace Internal.JitInterface
         AVX10v1 = 33,
         AVX10v1_V256 = 34,
         AVX10v1_V512 = 35,
-        VectorT128 = 36,
-        VectorT256 = 37,
-        VectorT512 = 38,
-        X86Base_X64 = 39,
-        SSE_X64 = 40,
-        SSE2_X64 = 41,
-        SSE3_X64 = 42,
-        SSSE3_X64 = 43,
-        SSE41_X64 = 44,
-        SSE42_X64 = 45,
-        AVX_X64 = 46,
-        AVX2_X64 = 47,
-        AES_X64 = 48,
-        BMI1_X64 = 49,
-        BMI2_X64 = 50,
-        FMA_X64 = 51,
-        LZCNT_X64 = 52,
-        PCLMULQDQ_X64 = 53,
-        POPCNT_X64 = 54,
-        AVXVNNI_X64 = 55,
-        MOVBE_X64 = 56,
-        X86Serialize_X64 = 57,
-        AVX512F_X64 = 58,
-        AVX512F_VL_X64 = 59,
-        AVX512BW_X64 = 60,
-        AVX512BW_VL_X64 = 61,
-        AVX512CD_X64 = 62,
-        AVX512CD_VL_X64 = 63,
-        AVX512DQ_X64 = 64,
-        AVX512DQ_VL_X64 = 65,
-        AVX512VBMI_X64 = 66,
-        AVX512VBMI_VL_X64 = 67,
-        AVX10v1_X64 = 68,
-        AVX10v1_V256_X64 = 69,
-        AVX10v1_V512_X64 = 70,
+        APX = 36,
+        VectorT128 = 37,
+        VectorT256 = 38,
+        VectorT512 = 39,
+        X86Base_X64 = 40,
+        SSE_X64 = 41,
+        SSE2_X64 = 42,
+        SSE3_X64 = 43,
+        SSSE3_X64 = 44,
+        SSE41_X64 = 45,
+        SSE42_X64 = 46,
+        AVX_X64 = 47,
+        AVX2_X64 = 48,
+        AES_X64 = 49,
+        BMI1_X64 = 50,
+        BMI2_X64 = 51,
+        FMA_X64 = 52,
+        LZCNT_X64 = 53,
+        PCLMULQDQ_X64 = 54,
+        POPCNT_X64 = 55,
+        AVXVNNI_X64 = 56,
+        MOVBE_X64 = 57,
+        X86Serialize_X64 = 58,
+        AVX512F_X64 = 59,
+        AVX512F_VL_X64 = 60,
+        AVX512BW_X64 = 61,
+        AVX512BW_VL_X64 = 62,
+        AVX512CD_X64 = 63,
+        AVX512CD_VL_X64 = 64,
+        AVX512DQ_X64 = 65,
+        AVX512DQ_VL_X64 = 66,
+        AVX512VBMI_X64 = 67,
+        AVX512VBMI_VL_X64 = 68,
+        AVX10v1_X64 = 69,
+        AVX10v1_V256_X64 = 70,
+        AVX10v1_V512_X64 = 71,
+        APX_X64 = 72,
     }
 
     public unsafe struct InstructionSetFlags : IEnumerable<InstructionSet>
@@ -710,6 +718,10 @@ namespace Internal.JitInterface
                         resultflags.AddInstructionSet(InstructionSet.X64_AVX10v1_V512_X64);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_AVX10v1_V512_X64))
                         resultflags.AddInstructionSet(InstructionSet.X64_AVX10v1_V512);
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_APX))
+                        resultflags.AddInstructionSet(InstructionSet.X64_APX_X64);
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_APX_X64))
+                        resultflags.AddInstructionSet(InstructionSet.X64_APX);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_SSE))
                         resultflags.AddInstructionSet(InstructionSet.X64_X86Base);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_SSE2))
@@ -1067,6 +1079,8 @@ namespace Internal.JitInterface
                         resultflags.AddInstructionSet(InstructionSet.X64_AVX10v1_V256);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_AVX10v1_V512_X64))
                         resultflags.AddInstructionSet(InstructionSet.X64_AVX10v1_V512);
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_APX_X64))
+                        resultflags.AddInstructionSet(InstructionSet.X64_APX);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_X86Base))
                         resultflags.AddInstructionSet(InstructionSet.X64_SSE);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_SSE))
@@ -1405,6 +1419,7 @@ namespace Internal.JitInterface
                     yield return new InstructionSetInfo("avx10v1", "Avx10v1", InstructionSet.X64_AVX10v1, true);
                     yield return new InstructionSetInfo("avx10v1_v256", "Avx10v1_V256", InstructionSet.X64_AVX10v1_V256, true);
                     yield return new InstructionSetInfo("avx10v1_v512", "Avx10v1_V512", InstructionSet.X64_AVX10v1_V512, true);
+                    yield return new InstructionSetInfo("apx", "Apx", InstructionSet.X64_APX, true);
                     yield return new InstructionSetInfo("vectort128", "VectorT128", InstructionSet.X64_VectorT128, true);
                     yield return new InstructionSetInfo("vectort256", "VectorT256", InstructionSet.X64_VectorT256, true);
                     yield return new InstructionSetInfo("vectort512", "VectorT512", InstructionSet.X64_VectorT512, true);
@@ -1446,6 +1461,7 @@ namespace Internal.JitInterface
                     yield return new InstructionSetInfo("avx10v1", "Avx10v1", InstructionSet.X86_AVX10v1, true);
                     yield return new InstructionSetInfo("avx10v1_v256", "Avx10v1_V256", InstructionSet.X86_AVX10v1_V256, true);
                     yield return new InstructionSetInfo("avx10v1_v512", "Avx10v1_V512", InstructionSet.X86_AVX10v1_V512, true);
+                    yield return new InstructionSetInfo("apx", "Apx", InstructionSet.X86_APX, true);
                     yield return new InstructionSetInfo("vectort128", "VectorT128", InstructionSet.X86_VectorT128, true);
                     yield return new InstructionSetInfo("vectort256", "VectorT256", InstructionSet.X86_VectorT256, true);
                     yield return new InstructionSetInfo("vectort512", "VectorT512", InstructionSet.X86_VectorT512, true);
@@ -1544,6 +1560,8 @@ namespace Internal.JitInterface
                         AddInstructionSet(InstructionSet.X64_AVX10v1_V256_X64);
                     if (HasInstructionSet(InstructionSet.X64_AVX10v1_V512))
                         AddInstructionSet(InstructionSet.X64_AVX10v1_V512_X64);
+                    if (HasInstructionSet(InstructionSet.X64_APX))
+                        AddInstructionSet(InstructionSet.X64_APX_X64);
                     break;
 
                 case TargetArchitecture.X86:
@@ -1601,6 +1619,7 @@ namespace Internal.JitInterface
                     AddInstructionSet(InstructionSet.X64_AVX10v1_X64);
                     AddInstructionSet(InstructionSet.X64_AVX10v1_V256_X64);
                     AddInstructionSet(InstructionSet.X64_AVX10v1_V512_X64);
+                    AddInstructionSet(InstructionSet.X64_APX_X64);
                     break;
 
                 case TargetArchitecture.X86:
@@ -1636,6 +1655,7 @@ namespace Internal.JitInterface
                     AddInstructionSet(InstructionSet.X86_AVX10v1_X64);
                     AddInstructionSet(InstructionSet.X86_AVX10v1_V256_X64);
                     AddInstructionSet(InstructionSet.X86_AVX10v1_V512_X64);
+                    AddInstructionSet(InstructionSet.X86_APX_X64);
                     break;
             }
         }
@@ -1931,6 +1951,12 @@ namespace Internal.JitInterface
                         else
                         { return InstructionSet.X64_AVX10v1_V512; }
 
+                    case "Apx":
+                        if (nestedTypeName == "X64")
+                        { return InstructionSet.X64_APX_X64; }
+                        else
+                        { return InstructionSet.X64_APX; }
+
                     case "VectorT128":
                         { return InstructionSet.X64_VectorT128; }
 
@@ -2042,6 +2068,9 @@ namespace Internal.JitInterface
 
                     case "Avx10v1_V512":
                         { return InstructionSet.X86_AVX10v1_V512; }
+
+                    case "Apx":
+                        { return InstructionSet.X86_APX; }
 
                     case "VectorT128":
                         { return InstructionSet.X86_VectorT128; }

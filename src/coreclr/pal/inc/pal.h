@@ -1405,6 +1405,10 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
                             (UI64(1) << (XSTATE_AVX512_ZMM_H)) | \
                             (UI64(1) << (XSTATE_AVX512_ZMM)))
 
+// TODO-xarch-apx: the definition of XSTATE mask value for APX is now missing on the OS level, 
+//                 we are currently using bare value to hack it through the build process, and test the implementation through CI.
+//                 those changes will be removed when we have the OS support for APX.
+
 typedef struct DECLSPEC_ALIGN(16) _M128A {
     ULONGLONG Low;
     LONGLONG High;
@@ -1640,6 +1644,27 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
         M512 Zmm30;
         M512 Zmm31;
     };
+
+    struct
+    {
+        DWORD64 Egpr16;
+        DWORD64 Egpr17;
+        DWORD64 Egpr18;
+        DWORD64 Egpr19;
+        DWORD64 Egpr20;
+        DWORD64 Egpr21;
+        DWORD64 Egpr22;
+        DWORD64 Egpr23;
+        DWORD64 Egpr24;
+        DWORD64 Egpr25;
+        DWORD64 Egpr26;
+        DWORD64 Egpr27;
+        DWORD64 Egpr28;
+        DWORD64 Egpr29;
+        DWORD64 Egpr30;
+        DWORD64 Egpr31;
+    };
+    
 } CONTEXT, *PCONTEXT, *LPCONTEXT;
 
 //

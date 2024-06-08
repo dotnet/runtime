@@ -124,6 +124,8 @@ namespace Internal.ReadyToRunConstants
                             case InstructionSet.X64_AVX10v1_V256_X64: return ReadyToRunInstructionSet.Avx10v1_V256;
                             case InstructionSet.X64_AVX10v1_V512: return ReadyToRunInstructionSet.Avx10v1_V512;
                             case InstructionSet.X64_AVX10v1_V512_X64: return ReadyToRunInstructionSet.Avx10v1_V512;
+                            case InstructionSet.X64_APX: return ReadyToRunInstructionSet.Apx;
+                            case InstructionSet.X64_APX_X64: return ReadyToRunInstructionSet.Apx;
                             case InstructionSet.X64_VectorT128: return ReadyToRunInstructionSet.VectorT128;
                             case InstructionSet.X64_VectorT256: return ReadyToRunInstructionSet.VectorT256;
                             case InstructionSet.X64_VectorT512: return ReadyToRunInstructionSet.VectorT512;
@@ -203,6 +205,8 @@ namespace Internal.ReadyToRunConstants
                             case InstructionSet.X86_AVX10v1_V256_X64: return null;
                             case InstructionSet.X86_AVX10v1_V512: return ReadyToRunInstructionSet.Avx10v1_V512;
                             case InstructionSet.X86_AVX10v1_V512_X64: return null;
+                            case InstructionSet.X86_APX: return ReadyToRunInstructionSet.Apx;
+                            case InstructionSet.X86_APX_X64: return null;
                             case InstructionSet.X86_VectorT128: return ReadyToRunInstructionSet.VectorT128;
                             case InstructionSet.X86_VectorT256: return ReadyToRunInstructionSet.VectorT256;
                             case InstructionSet.X86_VectorT512: return ReadyToRunInstructionSet.VectorT512;

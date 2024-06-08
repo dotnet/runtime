@@ -15,6 +15,10 @@
                             (1 << (XSTATE_AVX512_ZMM_H)) | \
                             (1 << (XSTATE_AVX512_ZMM)))
 
+// TODO-xarch-apx: the definition of XSTATE mask value for APX is now missing on the OS level, 
+//                 we are currently using bare value to hack it through the build process, and test the implementation through CI.
+//                 those changes will be removed when we have the OS support for APX.
+
 // The arch bit is normally set in the flag constants below. Since this is already arch-specific code and the arch bit is not
 // relevant, the arch bit is excluded from the flag constants below for simpler tests.
 #define CONTEXT_AMD64   0x100000
@@ -91,7 +95,8 @@
 #define CONTEXT_KMask0 CONTEXT_Ymm0H+(16*16)
 #define CONTEXT_Zmm0H CONTEXT_KMask0+(8*8)
 #define CONTEXT_Zmm16 CONTEXT_Zmm0H+(32*16)
-#define CONTEXT_Size CONTEXT_Zmm16+(64*16)
+#define CONTEXT_Egpr  CONTEXT_Zmm16+(16*8)
+#define CONTEXT_Size CONTEXT_Egpr+(8*16)
 
 #else // HOST_64BIT
 
