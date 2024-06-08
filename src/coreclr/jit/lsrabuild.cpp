@@ -710,6 +710,10 @@ void LinearScan::addKillForRegs(regMaskTP mask, LsraLocation currentLoc)
 
     RefPosition* pos = newRefPosition((Interval*)nullptr, currentLoc, RefTypeKill, nullptr, mask.getLow());
 
+#ifdef HAS_MORE_THAN_64_REGISTERS
+    pos->killRegisterAssignment = mask;
+#endif
+
     *killTail = pos;
     killTail  = &pos->nextRefPosition;
 }

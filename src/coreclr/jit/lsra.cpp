@@ -278,7 +278,11 @@ void LinearScan::updateNextFixedRef(RegRecord* regRecord, RefPosition* nextRefPo
     RefPosition* kill = nextKill;
     while ((kill != nullptr) && (kill->nodeLocation < nextLocation))
     {
+#ifdef HAS_MORE_THAN_64_REGISTERS
+        if (kill->killRegisterAssignment.IsRegNumInMask(regRecord->regNum))
+#else
         if ((kill->registerAssignment & genSingleTypeRegMask(regRecord->regNum)) != RBM_NONE)
+#endif
         {
             nextLocation = kill->nodeLocation;
             break;
@@ -4037,7 +4041,7 @@ void LinearScan::processKills(RefPosition* killRefPosition)
 {
     RefPosition* nextKill = killRefPosition->nextRefPosition;
 
-    regMaskTP killedRegs = killRefPosition->registerAssignment;
+    regMaskTP killedRegs = killRefPosition->getKillRegisterAssignment();
     while (killedRegs.IsNonEmpty())
     {
         regNumber  killedReg        = genFirstRegNumFromMaskAndToggle(killedRegs);
@@ -4057,9 +4061,9 @@ void LinearScan::processKills(RefPosition* killRefPosition)
         updateNextFixedRef(regRecord, regNextRefPos, nextKill);
     }
 
-    regsBusyUntilKill &= ~killRefPosition->registerAssignment;
+    regsBusyUntilKill &= ~killRefPosition->getKillRegisterAssignment();
     INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_KILL_REGS, nullptr, REG_NA, nullptr, NONE,
-                                    killRefPosition->registerAssignment));
+                                    killRefPosition->getKillRegisterAssignment()));
 }
 
 //------------------------------------------------------------------------
