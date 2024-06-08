@@ -224,7 +224,7 @@ if (ENABLE_PERFTRACING)
         UNITY_BUILD ON
         UNITY_BUILD_BATCH_SIZE 0
     )
-    target_link_libraries(eventpipe-mono-objects PRIVATE component_base eglib_api dn-containers dn-eventpipe dn-diagnosticserver dn-diagnosticserver-pal)
+    target_link_libraries(eventpipe-mono-objects PRIVATE component_base eglib_api dn-eventpipe dn-diagnosticserver dn-diagnosticserver-pal)
     # Link the diagnostics_tracing component to the EventPipe and DiagnosticServer libraries.
     if (TARGET ${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}-objects)
         target_sources(${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}-objects PRIVATE $<TARGET_OBJECTS:eventpipe-mono-objects>)

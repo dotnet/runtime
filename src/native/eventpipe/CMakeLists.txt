@@ -26,9 +26,11 @@ target_sources(dn-diagnosticserver INTERFACE
     ds-server.c)
 
 target_include_directories(dn-diagnosticserver INTERFACE ${CMAKE_CURRENT_BINARY_DIR})
+target_link_libraries(dn-diagnosticserver INTERFACE dn-containers)
 
 add_library(dn-diagnosticserver-pal INTERFACE)
 target_include_directories(dn-diagnosticserver-pal INTERFACE ${CMAKE_CURRENT_BINARY_DIR})
+target_link_libraries(dn-diagnosticserver-pal INTERFACE dn-containers)
 
 if (FEATURE_PERFTRACING_PAL_TCP)
     target_sources(dn-diagnosticserver-pal INTERFACE
@@ -69,3 +71,4 @@ target_sources(dn-eventpipe INTERFACE
     ep-thread.c)
 
 target_include_directories(dn-eventpipe INTERFACE ${CMAKE_CURRENT_BINARY_DIR})
+target_link_libraries(dn-eventpipe INTERFACE dn-containers)
