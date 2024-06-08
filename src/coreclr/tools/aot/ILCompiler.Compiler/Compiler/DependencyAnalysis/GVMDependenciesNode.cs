@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Diagnostics;
 using System.Collections.Generic;
 
@@ -69,14 +70,26 @@ namespace ILCompiler.DependencyAnalysis
             bool methodIsShared = _method.IsSharedByGenericInstantiations;
 
             TypeSystemContext context = _method.Context;
+            Type uninterestingType = typeof(ScannedMethodNode);
 
             for (int i = firstNode; i < markedNodes.Count; i++)
             {
                 DependencyNodeCore<NodeFactory> entry = markedNodes[i];
-                EETypeNode entryAsEETypeNode = entry as EETypeNode;
 
-                if (entryAsEETypeNode == null)
+                // This method is often called with a long list of ScannedMethodNode
+                // or MethodCodeNode nodes. We are not interested in those and they
+                // would be rejected by the `entry is EETypeNode` check below. However,
+                // that check has to walk the whole class hierarchy and can get rather
+                // expensive, so take a shortcut here as micro optimization.
+                if (entry.GetType() == uninterestingType)
                     continue;
+
+                EETypeNode entryAsEETypeNode = entry as EETypeNode;
+                if (entryAsEETypeNode == null)
+                {
+                    uninterestingType = entry.GetType();
+                    continue;
+                }
 
                 TypeDesc potentialOverrideType = entryAsEETypeNode.Type;
                 if (!potentialOverrideType.IsDefType || potentialOverrideType.IsInterface)
