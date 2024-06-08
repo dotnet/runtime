@@ -1,3 +1,55 @@
+#
+## Licensed to the .NET Foundation under one or more agreements.
+## The .NET Foundation licenses this file to you under the MIT license.
+#
+# This file generates support for the .net runtime to emit events via the 
+# EventHeader format specified at https://github.com/microsoft/LinuxTracepoints/blob/main/libeventheader-tracepoint/include/eventheader/eventheader.h
+# 
+# It uses the LinuxTracepoints library included in this repo at src/native/External/LinuxTracepoints.
+# 
+# The support is accomplished with the following:
+# 
+#   In clretwall.h all methods have user_events specific code added like the following.
+#       inline BOOL EventEnabledGCStart(void) {return EventPipeEventEnabledGCStart() || UserEventsEventEnabledGCStart() || (XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabledGCStart());}
+# 
+#       inline ULONG FireEtwGCStart(
+#           const unsigned int  Count,
+#           const unsigned int  Reason,
+#           LPCGUID ActivityId = nullptr,
+#           LPCGUID RelatedActivityId = nullptr
+#       )
+#       {
+#           ULONG status = EventPipeWriteEventGCStart(Count,Reason,ActivityId,RelatedActivityId);
+#           status &= UserEventsWriteEventGCStart(Count,Reason,ActivityId,RelatedActivityId);
+#           status &= FireEtXplatGCStart(Count,Reason);
+#           return status;
+#       }
+# 
+#   The clretwall.h file is generate in the genEventing.py script.
+# 
+#   This script outputs one file for each provider, with each event on the provider having a method for
+#   checking if the event is enabled and a method for firing the event.
+#       BOOL UserEventsEventEnabledGCStart(void)
+#       {
+#           return IsUserEventsEnabled() && TraceLoggingProviderEnabled(UserEventGCStart, 4, 1);
+#       }
+# 
+#       extern "C" ULONG UserEventsWriteEventGCStart(
+#           const unsigned int Count,
+#           const unsigned int Reason,
+#           LPCGUID ActivityId,
+#           LPCGUID RelatedActivityId)
+#       {
+#           if (!UserEventsEventEnabledGCStart())
+#               return ERROR_SUCCESS;
+#           TraceLoggingWriteActivity(DotNETRuntime, "GCStart", ActivityId, RelatedActivityId, TraceLoggingLevel(4), TraceLoggingKeyword(1),
+#           TraceLoggingUInt32(Count),
+#           TraceLoggingUInt32(Reason)
+#           );
+#           return ERROR_SUCCESS;
+#       }
+# 
+
 from __future__ import print_function
 from genEventing import *
 import os
