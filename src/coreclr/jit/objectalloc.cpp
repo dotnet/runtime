@@ -393,7 +393,8 @@ bool ObjectAllocator::MorphAllocObjNodes()
                 unsigned int         lclNum     = stmtExpr->AsLclVar()->GetLclNum();
                 CORINFO_CLASS_HANDLE clsHnd     = data->AsAllocObj()->gtAllocObjClsHnd;
 
-                DWORD      classAttribs = comp->info.compCompHnd->getClassAttribs(clsHnd);
+                DWORD classAttribs = 0;
+                // comp->info.compCompHnd->getClassAttribs(clsHnd);
                 const bool isValueClass = (classAttribs & CORINFO_FLG_VALUECLASS) != 0;
 
                 if (isValueClass)
