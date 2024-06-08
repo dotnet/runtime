@@ -20,7 +20,6 @@ include_directories(${COREPAL_SOURCE_DIR}/inc/rt)
 
 # TODO: keep in sync with providers in ClrEtwAll.man
 set (USEREVENTS_PROVIDER_SOURCES
-     userevents/usereventshelpers.cpp
      userevents/dotnetruntime.cpp
      userevents/dotnetruntimeprivate.cpp
      userevents/dotnetruntimerundown.cpp

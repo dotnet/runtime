@@ -1189,16 +1189,6 @@ def generateEventPipeImplFiles(
         etwmanifest, eventpipe_directory, extern, target_cpp, runtimeFlavor, inclusionList, exclusionList, dryRun):
     tree = DOM.parse(etwmanifest)
 
-    # Find the src directory starting with the assumption that
-    # A) It is named 'src'
-    # B) This script lives in it
-    src_dirname = os.path.dirname(__file__)
-    while os.path.basename(src_dirname) != "src":
-        src_dirname = os.path.dirname(src_dirname)
-
-        if os.path.basename(src_dirname) == "":
-            raise IOError("Could not find the Core CLR 'src' directory")
-
     for providerNode in tree.getElementsByTagName('provider'):
         providerName = providerNode.getAttribute('name')
         if not includeProvider(providerName, runtimeFlavor):

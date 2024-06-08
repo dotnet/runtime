@@ -182,53 +182,6 @@ def generateEventKeywords(eventKeywords):
 
     return mask
 
-def getCoreCLRUserEventHelperFileImplPrefix():
-    return """
-#include "common.h"
-#include <stdlib.h>
-#include <string.h>
-
-#ifndef TARGET_UNIX
-#include <windef.h>
-#include <crtdbg.h>
-#else
-#include "pal.h"
-#endif //TARGET_UNIX
-
-"""
-
-def generateUserEventHelperFile(etwmanifest, userevent_directory, target_cpp, runtimeFlavor, extern, dryRun):
-    usereventhelpersPath = os.path.join(userevent_directory, "usereventshelpers" + (".cpp" if target_cpp else ".c"))
-    if dryRun:
-        print(usereventhelpersPath)
-    else:
-        with open_for_update(usereventhelpersPath) as helper:
-            helper.write(stdprolog_cpp)
-            helper.write("""
-#include <user_events.h>
-#include <common.h>
-#include <configuration.h>
-
-bool s_userEventsEnabled = false;
-
-void InitUserEvents()
-{
-    // TODO: What to call this runtimeconfig.json switch? S.D.T implies it supports EventSource
-    bool isEnabled = Configuration::GetKnobBooleanValue(W("System.Diagnostics.Tracing.UserEvents"), false); 
-    if (!isEnabled)
-    {
-        isEnabled = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_EnableUserEvents) != 0;
-    }
-
-    s_userEventsEnabled = isEnabled;
-}
-
-bool IsUserEventsEnabled()
-{
-    return s_userEventsEnabled;
-}
-""")
-
 def getCoreCLRUserEventImplFilePrefix():
     return """#include "common.h"
 #include <stdint.h>
@@ -254,16 +207,6 @@ def getAotUserEventImplFileSuffix():
 def generateUserEventImplFiles(
         etwmanifest, userevent_directory, extern, target_cpp, runtimeFlavor, inclusionList, exclusionList, dryRun):
     tree = DOM.parse(etwmanifest)
-
-    # Find the src directory starting with the assumption that
-    # A) It is named 'src'
-    # B) This script lives in it
-    src_dirname = os.path.dirname(__file__)
-    while os.path.basename(src_dirname) != "src":
-        src_dirname = os.path.dirname(src_dirname)
-
-        if os.path.basename(src_dirname) == "":
-            raise IOError("Could not find the Core CLR 'src' directory")
 
     for providerNode in tree.getElementsByTagName('provider'):
         providerName = providerNode.getAttribute('name')
@@ -333,9 +276,6 @@ def generateUserEventFiles(
 
     if not os.path.exists(userevent_directory):
         os.makedirs(userevent_directory)
-
-    # generate helper file
-    generateUserEventHelperFile(etwmanifest, userevent_directory, target_cpp, runtimeFlavor, extern, dryRun)
 
     # generate all keywords
     for keywordNode in tree.getElementsByTagName('keyword'):
