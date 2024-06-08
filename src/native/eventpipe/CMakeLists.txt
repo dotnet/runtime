@@ -13,6 +13,12 @@ endif()
 
 configure_file(${CLR_SRC_NATIVE_DIR}/eventpipe/ep-shared-config.h.in ${CMAKE_CURRENT_BINARY_DIR}/ep-shared-config.h)
 
+# Define the DiagnosticsServer and EventPipe as interface libraries.
+# We must define them as interface libraries as each runtime builds the same set of files slightly differently.
+# Defining it as an interface library allows us to specify common sources, include directories, dependencies, etc.
+# in one place, but also allow each runtime to add any settings that are specific to that runtime.
+# This includes, but is not limited to each runtime's implementation of the ds-rt.h and ep-rt.h contracts.
+
 add_library(dn-diagnosticserver INTERFACE)
 
 target_sources(dn-diagnosticserver INTERFACE
