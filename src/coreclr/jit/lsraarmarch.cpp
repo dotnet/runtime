@@ -171,7 +171,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
         {
             // Fast tail call - make sure that call target is always computed in volatile registers
             // that will not be overridden by epilog sequence.
-            ctrlExprCandidates = allRegs(TYP_INT) & RBM_INT_CALLEE_TRASH.GetIntRegSet() & ~RBM_LR.GetIntRegSet();
+            ctrlExprCandidates = allRegs(TYP_INT) & RBM_INT_CALLEE_TRASH.GetIntRegSet() & ~SRBM_LR;
             if (compiler->getNeedsGSSecurityCookie())
             {
                 ctrlExprCandidates &=

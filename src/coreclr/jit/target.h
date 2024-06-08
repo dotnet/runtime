@@ -195,9 +195,6 @@ enum _regMask_enum : unsigned
 #error Unsupported target architecture
 #endif
 
-typedef _regNumber_enum regNumber;
-typedef unsigned char   regNumberSmall;
-
 #define AVAILABLE_REG_COUNT get_AVAILABLE_REG_COUNT()
 
 /*****************************************************************************/
@@ -210,6 +207,9 @@ typedef unsigned char   regNumberSmall;
 // is false, then we should coalesce these two types into one (the Small width, probably).
 // In any case, we believe that is OK to freely cast between these types; no information will
 // be lost.
+
+typedef _regNumber_enum regNumber;
+typedef unsigned char   regNumberSmall;
 
 #if REGMASK_BITS == 8
 typedef unsigned char regMaskSmall;
@@ -283,22 +283,6 @@ public:
         }
 #else
         return regMaskTP(mask, RBM_NONE);
-#endif
-    }
-
-    static regMaskTP CreateFromRegSet(SingleTypeRegSet regSet, var_types type)
-    {
-#ifdef HAS_MORE_THAN_64_REGISTERS
-        if (!varTypeIsMask(type))
-        {
-            return regMaskTP(regSet, RBM_NONE);
-        }
-        else
-        {
-            return regMaskTP(RBM_NONE, regSet);
-        }
-#else
-        return regMaskTP(regSet, RBM_NONE);
 #endif
     }
 
@@ -462,13 +446,6 @@ public:
 #else
 #error Unsupported target architecture
 #endif
-
-// enum _regMask_enum : uint64_t{
-//     RBM_NONE = 0,
-// #define REGDEF(name, rnum, mask, xname, wname) RBM_##name = mask,
-// #define REGALIAS(alias, realname)              RBM_##alias = RBM_##realname,
-// #include "register.h"
-// };
 
 static regMaskTP operator^(const regMaskTP& first, const regMaskTP& second)
 {

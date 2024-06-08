@@ -442,11 +442,11 @@ int LinearScan::BuildNode(GenTree* tree)
             // Comparand is preferenced to RAX.
             // The remaining two operands can be in any reg other than RAX.
 
-            SingleTypeRegSet nonRaxCandidates = availableIntRegs & ~RBM_RAX.GetIntRegSet();
+            SingleTypeRegSet nonRaxCandidates = availableIntRegs & ~SRBM_RAX;
             BuildUse(addr, nonRaxCandidates);
             BuildUse(data, varTypeIsByte(tree) ? (nonRaxCandidates & RBM_BYTE_REGS.GetIntRegSet()) : nonRaxCandidates);
-            BuildUse(comparand, RBM_RAX.GetIntRegSet());
-            BuildDef(tree, RBM_RAX.GetIntRegSet());
+            BuildUse(comparand, SRBM_RAX);
+            BuildDef(tree, SRBM_RAX);
         }
         break;
 
@@ -461,10 +461,10 @@ int LinearScan::BuildNode(GenTree* tree)
                 assert(!varTypeIsByte(data));
 
                 // if tree's value is used, we'll emit a cmpxchg-loop idiom (requires RAX)
-                buildInternalIntRegisterDefForNode(tree, availableIntRegs & ~RBM_RAX.GetIntRegSet());
-                BuildUse(addr, availableIntRegs & ~RBM_RAX.GetIntRegSet());
-                BuildUse(data, availableIntRegs & ~RBM_RAX.GetIntRegSet());
-                BuildDef(tree, RBM_RAX.GetIntRegSet());
+                buildInternalIntRegisterDefForNode(tree, availableIntRegs & ~SRBM_RAX);
+                BuildUse(addr, availableIntRegs & ~SRBM_RAX);
+                BuildUse(data, availableIntRegs & ~SRBM_RAX);
+                BuildDef(tree, SRBM_RAX);
                 buildInternalRegisterUses();
                 srcCount = 2;
                 assert(dstCount == 1);
