@@ -192,7 +192,7 @@ parse_optimizations (guint32 opt, const char* p, gboolean cpu_opts)
 
 		g_free (arg);
 	}
-	g_free (parts);
+	g_strfreev (parts);
 
 	return opt;
 }
@@ -2214,6 +2214,7 @@ mono_main (int argc, char* argv[])
 			for (ptr = split; ptr && *ptr; ptr++) {
 				mono_aot_paths = g_list_append (mono_aot_paths, g_strdup (*ptr));
 			}
+			g_strfreev (split);
 		} else if (strncmp (argv [i], "--path=", 7) == 0) {
 			paths = g_list_append (paths, argv [i] + 7);
 		} else if (strncmp (argv [i], "--compile-all=", 14) == 0) {
