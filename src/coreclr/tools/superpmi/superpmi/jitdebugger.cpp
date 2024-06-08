@@ -37,13 +37,7 @@ int DbgBreakCheck(const char* szFile, int iLine, const char* szExpr)
 #else // FEATURE_JIT_DEBUGGING
 
 // Some definitions to make this code look more like the CLR utilcode versions it was stolen from.
-#define CreateEvent CreateEventW
 #define WszGetModuleFileName GetModuleFileNameW
-
-#ifdef RegOpenKeyEx
-#undef RegOpenKeyEx
-#define RegOpenKeyEx RegOpenKeyExW
-#endif
 
 #ifndef _WIN64
 //------------------------------------------------------------------------------
