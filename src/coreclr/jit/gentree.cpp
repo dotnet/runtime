@@ -12336,7 +12336,14 @@ void Compiler::gtDispFieldSeq(FieldSeq* fieldSeq, ssize_t offset)
     }
 
     char buffer[128];
-    printf(" Fseq[%s", eeGetFieldName(fieldSeq->GetFieldHandle(), false, buffer, sizeof(buffer)));
+    if (fieldSeq->IsBoxedValue())
+    {
+        printf(" Fseq[Boxed %s", eeGetClassName(fieldSeq->GetClassHandle(), buffer, sizeof(buffer)));
+    }
+    else
+    {
+        printf(" Fseq[%s", eeGetFieldName(fieldSeq->GetFieldHandle(), false, buffer, sizeof(buffer)));
+    }
     if (offset != 0)
     {
         printf(", %zd", offset);
@@ -18447,7 +18454,14 @@ bool GenTree::IsFieldAddr(Compiler* comp, GenTree** pBaseAddr, FieldSeq** pFldSe
 
     if (baseAddr->TypeIs(TYP_REF))
     {
-        assert(!comp->eeIsValueClass(comp->info.compCompHnd->getFieldClass(fldSeq->GetFieldHandle())));
+        if (fldSeq->IsBoxedValue())
+        {
+            assert(comp->eeIsValueClass(fldSeq->GetClassHandle()));
+        }
+        else
+        {
+            assert(!comp->eeIsValueClass(comp->info.compCompHnd->getFieldClass(fldSeq->GetFieldHandle())));
+        }
 
         *pBaseAddr = baseAddr;
         *pFldSeq   = fldSeq;
@@ -19501,6 +19515,27 @@ FieldSeq* FieldSeqStore::Create(CORINFO_FIELD_HANDLE fieldHnd, ssize_t offset, F
 }
 
 //------------------------------------------------------------------------
+// Create: Create or retrieve a field sequence for the given class handle.
+//
+// This is a pseudo-field representing a boxed value class payload.
+//
+// Arguments:
+//    classHnd  - The (value) class handle
+//
+// Return Value:
+//    The canonical field sequence for the box payload
+//
+FieldSeq* FieldSeqStore::Create(CORINFO_CLASS_HANDLE classHnd)
+{
+    FieldSeq* fieldSeq = m_map.Emplace(classHnd, classHnd);
+
+    assert(fieldSeq->GetOffset() == TARGET_POINTER_SIZE);
+    assert(fieldSeq->GetKind() == FieldSeq::FieldKind::BoxedValue);
+
+    return fieldSeq;
+}
+
+//------------------------------------------------------------------------
 // Append: "Merge" two field sequences together.
 //
 // A field sequence only explicitly represents its "head", i. e. the static
@@ -19546,13 +19581,10 @@ FieldSeq* FieldSeqStore::Append(FieldSeq* a, FieldSeq* b)
 
 FieldSeq::FieldSeq(CORINFO_FIELD_HANDLE fieldHnd, ssize_t offset, FieldKind fieldKind)
     : m_offset(offset)
+    , m_kind(fieldKind)
 {
     assert(fieldHnd != NO_FIELD_HANDLE);
-
-    uintptr_t handleValue = reinterpret_cast<uintptr_t>(fieldHnd);
-
-    assert((handleValue & FIELD_KIND_MASK) == 0);
-    m_fieldHandleAndKind = handleValue | static_cast<uintptr_t>(fieldKind);
+    m_handle = reinterpret_cast<uintptr_t>(fieldHnd);
 
     assert(JitTls::GetCompiler()->eeIsFieldStatic(fieldHnd) == IsStaticField());
     if (fieldKind == FieldKind::Instance)
@@ -19561,6 +19593,14 @@ FieldSeq::FieldSeq(CORINFO_FIELD_HANDLE fieldHnd, ssize_t offset, FieldKind fiel
         // would return for fields with an offset unknown at compile time was incorrect (not zero).
         // assert(static_cast<ssize_t>(JitTls::GetCompiler()->info.compCompHnd->getFieldOffset(fieldHnd)) == offset);
     }
+}
+
+FieldSeq::FieldSeq(CORINFO_CLASS_HANDLE classHnd)
+    : m_offset(TARGET_POINTER_SIZE)
+    , m_kind(FieldKind::BoxedValue)
+{
+    assert(classHnd != NO_CLASS_HANDLE);
+    m_handle = reinterpret_cast<uintptr_t>(classHnd);
 }
 
 #ifdef FEATURE_SIMD

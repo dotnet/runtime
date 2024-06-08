@@ -3325,9 +3325,9 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
 
         // Create a pointer to the box payload in op1.
         //
-        op1 = gtNewLclvNode(impBoxTemp, TYP_REF);
-        op2 = gtNewIconNode(TARGET_POINTER_SIZE, TYP_I_IMPL);
-        op1 = gtNewOperNode(GT_ADD, TYP_BYREF, op1, op2);
+        op1                      = gtNewLclvNode(impBoxTemp, TYP_REF);
+        FieldSeq* const fieldSeq = GetFieldSeqStore()->Create(pResolvedToken->hClass);
+        op1                      = gtNewOperNode(GT_ADD, TYP_BYREF, op1, gtNewIconNode(TARGET_POINTER_SIZE, fieldSeq));
 
         // Copy from the exprToBox to the box payload.
         //
@@ -9788,6 +9788,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 if (canExpandInline && shouldExpandInline)
                 {
+                    FieldSeq* const fieldSeq    = GetFieldSeqStore()->Create(resolvedToken.hClass);
+                    GenTree* const  fieldOffset = gtNewIconNode(TARGET_POINTER_SIZE, fieldSeq);
+
                     // See if we know anything about the type of op1, the object being unboxed.
                     bool                 isExact   = false;
                     bool                 isNonNull = false;
@@ -9812,9 +9815,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                 op1 = impCloneExpr(op1, &cloneOperand, CHECK_SPILL_ALL,
                                                    nullptr DEBUGARG("optimized unbox clone"));
 
-                                GenTree* boxPayloadOffset = gtNewIconNode(TARGET_POINTER_SIZE, TYP_I_IMPL);
                                 GenTree* boxPayloadAddress =
-                                    gtNewOperNode(GT_ADD, TYP_BYREF, cloneOperand, boxPayloadOffset);
+                                    gtNewOperNode(GT_ADD, TYP_BYREF, cloneOperand, fieldOffset);
                                 GenTree* nullcheck = gtNewNullCheck(op1, block);
                                 // Add an ordering dependency between the null
                                 // check and forming the byref; the JIT assumes
@@ -9831,8 +9833,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                             // For UNBOX.ANY load the struct from the box payload byref (the load will nullcheck)
                             assert(opcode == CEE_UNBOX_ANY);
-                            GenTree* boxPayloadOffset  = gtNewIconNode(TARGET_POINTER_SIZE, TYP_I_IMPL);
-                            GenTree* boxPayloadAddress = gtNewOperNode(GT_ADD, TYP_BYREF, op1, boxPayloadOffset);
+                            GenTree* boxPayloadAddress = gtNewOperNode(GT_ADD, TYP_BYREF, op1, fieldOffset);
                             impPushOnStack(boxPayloadAddress, tiRetVal);
                             goto OBJ;
                         }
@@ -9884,8 +9885,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     // to the beginning of the value-type. Today this means adjusting
                     // past the base of the objects vtable field which is pointer sized.
 
-                    op2 = gtNewIconNode(TARGET_POINTER_SIZE, TYP_I_IMPL);
-                    op1 = gtNewOperNode(GT_ADD, TYP_BYREF, cloneOperand, op2);
+                    op1 = gtNewOperNode(GT_ADD, TYP_BYREF, cloneOperand, fieldOffset);
                 }
                 else
                 {

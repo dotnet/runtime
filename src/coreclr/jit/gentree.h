@@ -255,33 +255,43 @@ public:
 class FieldSeq
 {
 public:
-    enum class FieldKind : uintptr_t
+    enum class FieldKind
     {
         Instance                 = 0, // An instance field.
         SimpleStatic             = 1, // Simple static field - the handle represents a unique location.
         SimpleStaticKnownAddress = 2, // Simple static field - the handle represents a known location.
         SharedStatic             = 3, // Static field on a shared generic type: "Class<__Canon>.StaticField".
+        BoxedValue               = 4, // Boxed value class; field handle is actually a class handle
     };
 
 private:
-    static const uintptr_t FIELD_KIND_MASK = 0b11;
 
     static_assert_no_msg(sizeof(CORINFO_FIELD_HANDLE) == sizeof(uintptr_t));
+    static_assert_no_msg(sizeof(CORINFO_CLASS_HANDLE) == sizeof(uintptr_t));
 
-    uintptr_t m_fieldHandleAndKind;
+    uintptr_t m_handle;
     ssize_t   m_offset;
+    FieldKind m_kind;
 
 public:
     FieldSeq(CORINFO_FIELD_HANDLE fieldHnd, ssize_t offset, FieldKind fieldKind);
+    FieldSeq(CORINFO_CLASS_HANDLE classHnd);
 
     FieldKind GetKind() const
     {
-        return static_cast<FieldKind>(m_fieldHandleAndKind & FIELD_KIND_MASK);
+        return m_kind;
     }
 
     CORINFO_FIELD_HANDLE GetFieldHandle() const
     {
-        return CORINFO_FIELD_HANDLE(m_fieldHandleAndKind & ~FIELD_KIND_MASK);
+        assert(m_kind != FieldKind::BoxedValue);
+        return CORINFO_FIELD_HANDLE(m_handle);
+    }
+
+    CORINFO_CLASS_HANDLE GetClassHandle() const
+    {
+        assert(m_kind == FieldKind::BoxedValue);
+        return CORINFO_CLASS_HANDLE(m_handle);
     }
 
     //------------------------------------------------------------------------
@@ -306,6 +316,11 @@ public:
     {
         return GetKind() == FieldKind::SharedStatic;
     }
+
+    bool IsBoxedValue() const
+    {
+        return GetKind() == FieldKind::BoxedValue;
+    }
 };
 
 // This class canonicalizes field sequences.
@@ -314,7 +329,7 @@ class FieldSeqStore
 {
     // Maps field handles to field sequence instances.
     //
-    JitHashTable<CORINFO_FIELD_HANDLE, JitPtrKeyFuncs<CORINFO_FIELD_STRUCT_>, FieldSeq> m_map;
+    JitHashTable<void*, JitPtrKeyFuncs<void>, FieldSeq> m_map;
 
 public:
     FieldSeqStore(CompAllocator alloc)
@@ -323,7 +338,7 @@ public:
     }
 
     FieldSeq* Create(CORINFO_FIELD_HANDLE fieldHnd, ssize_t offset, FieldSeq::FieldKind fieldKind);
-
+    FieldSeq* Create(CORINFO_CLASS_HANDLE classHnd);
     FieldSeq* Append(FieldSeq* a, FieldSeq* b);
 };
 

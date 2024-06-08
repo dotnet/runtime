@@ -722,6 +722,7 @@ public:
     unsigned DecodePhysicalSelector(ValueNum selector, unsigned* pSize);
 
     ValueNum VNForFieldSelector(CORINFO_FIELD_HANDLE fieldHnd, var_types* pFieldType, unsigned* pSize);
+    ValueNum VNForBoxedValueSelector(CORINFO_CLASS_HANDLE classHnd, var_types* pFieldType, unsigned* pSize);
 
     // These functions parallel the ones above, except that they take liberal/conservative VN pairs
     // as arguments, and return such a pair (the pair of the function applied to the liberal args, and

@@ -2442,7 +2442,7 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN)
                 if (IsVNHandle(fieldSeqVN, GTF_ICON_FIELD_SEQ))
                 {
                     FieldSeq* fieldSeq = FieldSeqVNToFieldSeq(fieldSeqVN);
-                    if (fieldSeq != nullptr)
+                    if ((fieldSeq != nullptr) && !fieldSeq->IsBoxedValue())
                     {
                         CORINFO_FIELD_HANDLE field = fieldSeq->GetFieldHandle();
                         if (field != NULL)
@@ -3577,6 +3577,48 @@ ValueNum ValueNumStore::VNForFieldSelector(CORINFO_FIELD_HANDLE fieldHnd, var_ty
         const char* fldName = m_pComp->eeGetFieldName(fieldHnd, false, buffer, sizeof(buffer));
 
         printf("    VNForHandle(%s) is " FMT_VN ", fieldType is %s", fldName, fldHndVN, varTypeName(fieldType));
+
+        if (size != 0)
+        {
+            printf(", size = %u", size);
+        }
+        printf("\n");
+    }
+#endif
+
+    *pFieldType = fieldType;
+    *pSize      = size;
+
+    return fldHndVN;
+}
+
+//------------------------------------------------------------------------
+// VNForBoxedValueSelector: A specialized version (with logging) of VNForHandle
+//                     that is used for boxed value handle selectors.
+//
+// Arguments:
+//    classHnd   - handle of the (value class) in question
+//    pFieldType - [out] parameter for the field's type
+//    pSize      - optional [out] parameter for the size of the field
+//
+// Return Value:
+//    Value number corresponding to the given field handle.
+//
+ValueNum ValueNumStore::VNForBoxedValueSelector(CORINFO_CLASS_HANDLE classHnd, var_types* pFieldType, unsigned* pSize)
+{
+    CORINFO_CLASS_HANDLE structHnd = classHnd;
+    ValueNum             fldHndVN  = VNForHandle(ssize_t(classHnd), GTF_ICON_FIELD_HDL);
+    var_types            fieldType = TYP_STRUCT;
+    unsigned             size      = m_pComp->info.compCompHnd->getClassSize(structHnd) + TARGET_POINTER_SIZE;
+
+#ifdef DEBUG
+    if (m_pComp->verbose)
+    {
+        char        buffer[128];
+        const char* className = m_pComp->eeGetClassName(classHnd, buffer, sizeof(buffer));
+
+        printf("    VNForHandle(%s)[boxed value] is " FMT_VN ", fieldType is %s", className, fldHndVN,
+               varTypeName(fieldType));
 
         if (size != 0)
         {
@@ -5886,7 +5928,16 @@ void Compiler::fgValueNumberFieldLoad(GenTree* loadTree, GenTree* baseAddr, Fiel
     //
     var_types fieldType;
     unsigned  fieldSize;
-    ValueNum  fieldSelectorVN = vnStore->VNForFieldSelector(fieldSeq->GetFieldHandle(), &fieldType, &fieldSize);
+    ValueNum  fieldSelectorVN;
+
+    if (fieldSeq->IsBoxedValue())
+    {
+        fieldSelectorVN = vnStore->VNForBoxedValueSelector(fieldSeq->GetClassHandle(), &fieldType, &fieldSize);
+    }
+    else
+    {
+        fieldSelectorVN = vnStore->VNForFieldSelector(fieldSeq->GetFieldHandle(), &fieldType, &fieldSize);
+    }
 
     ValueNum fieldMapVN           = ValueNumStore::NoVN;
     ValueNum fieldValueSelectorVN = ValueNumStore::NoVN;
@@ -5935,7 +5986,15 @@ void Compiler::fgValueNumberFieldStore(
     //
     unsigned  fieldSize;
     var_types fieldType;
-    ValueNum  fieldSelectorVN = vnStore->VNForFieldSelector(fieldSeq->GetFieldHandle(), &fieldType, &fieldSize);
+    ValueNum  fieldSelectorVN;
+    if (fieldSeq->IsBoxedValue())
+    {
+        fieldSelectorVN = vnStore->VNForBoxedValueSelector(fieldSeq->GetClassHandle(), &fieldType, &fieldSize);
+    }
+    else
+    {
+        fieldSelectorVN = vnStore->VNForFieldSelector(fieldSeq->GetFieldHandle(), &fieldType, &fieldSize);
+    }
 
     ValueNum fieldMapVN           = ValueNumStore::NoVN;
     ValueNum fieldValueSelectorVN = ValueNumStore::NoVN;
@@ -11125,7 +11184,7 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
     if (!tree->TypeIs(TYP_BYREF, TYP_STRUCT) &&
         fgGetStaticFieldSeqAndAddress(vnStore, tree->gtGetOp1(), &byteOffset, &fieldSeq))
     {
-        CORINFO_FIELD_HANDLE fieldHandle = fieldSeq->GetFieldHandle();
+        CORINFO_FIELD_HANDLE fieldHandle = fieldSeq->IsBoxedValue() ? nullptr : fieldSeq->GetFieldHandle();
         if ((fieldHandle != nullptr) && (size > 0) && (size <= maxElementSize) && ((size_t)byteOffset < INT_MAX))
         {
             uint8_t buffer[maxElementSize] = {0};
