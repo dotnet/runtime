@@ -2208,14 +2208,11 @@ mono_main (int argc, char* argv[])
 		} else if (strncmp (argv [i], "--apply-bindings=", 17) == 0) {
 			extra_bindings_config_file = &argv[i][17];
 		} else if (strncmp (argv [i], "--aot-path=", 11) == 0) {
-			char **split;
+			char **split, **ptr;
 
 			split = g_strsplit (argv [i] + 11, G_SEARCHPATH_SEPARATOR_S, 1000);
-			while (*split) {
-				char *tmp = *split;
-				mono_aot_paths = g_list_append (mono_aot_paths, g_strdup (tmp));
-				g_free (tmp);
-				split++;
+			for (ptr = split; ptr && *ptr; ptr++) {
+				mono_aot_paths = g_list_append (mono_aot_paths, g_strdup (*ptr));
 			}
 		} else if (strncmp (argv [i], "--path=", 7) == 0) {
 			paths = g_list_append (paths, argv [i] + 7);
