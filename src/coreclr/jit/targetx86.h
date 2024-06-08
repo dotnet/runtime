@@ -360,4 +360,4 @@
   #define RBM_STACK_PROBE_HELPER_ARG   RBM_EAX
 
   #define RBM_STACK_PROBE_HELPER_TRASH RBM_NONE
-  // clang-format on
+// clang-format on
