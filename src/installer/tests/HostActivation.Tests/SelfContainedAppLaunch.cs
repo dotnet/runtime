@@ -12,11 +12,11 @@ using Xunit;
 
 namespace HostActivation.Tests
 {
-    public class StandaloneAppActivation : IClassFixture<StandaloneAppActivation.SharedTestState>
+    public class SelfContainedAppLaunch : IClassFixture<SelfContainedAppLaunch.SharedTestState>
     {
         private SharedTestState sharedTestState;
 
-        public StandaloneAppActivation(StandaloneAppActivation.SharedTestState fixture)
+        public SelfContainedAppLaunch(SelfContainedAppLaunch.SharedTestState fixture)
         {
             sharedTestState = fixture;
         }
@@ -25,6 +25,9 @@ namespace HostActivation.Tests
         public void Default()
         {
             string appExe = sharedTestState.App.AppExe;
+            if (Binaries.CetCompat.IsSupported)
+                Assert.True(Binaries.CetCompat.IsMarkedCompatible(appExe));
+
             Command.Create(appExe)
                 .CaptureStdErr()
                 .CaptureStdOut()
@@ -41,6 +44,22 @@ namespace HostActivation.Tests
                     : TestContext.MicrosoftNETCoreAppVersion;
                 Assert.Equal(expectedVersion, System.Diagnostics.FileVersionInfo.GetVersionInfo(appExe).FileVersion);
             }
+        }
+
+        [ConditionalFact(typeof(Binaries.CetCompat), nameof(Binaries.CetCompat.IsSupported))]
+        public void AppHost_DisableCetCompat()
+        {
+            TestApp app = sharedTestState.App.Copy();
+            app.CreateAppHost(disableCetCompat: true);
+            Assert.False(Binaries.CetCompat.IsMarkedCompatible(app.AppExe));
+
+            Command.Create(app.AppExe)
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .Execute()
+                .Should().Pass()
+                .And.HaveStdOutContaining("Hello World")
+                .And.HaveStdOutContaining(TestContext.MicrosoftNETCoreAppVersion);
         }
 
         [Fact]

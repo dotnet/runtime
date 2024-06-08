@@ -3049,15 +3049,15 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 #if defined(TARGET_XARCH)
                 // We can't guarantee that all overloads for the xplat intrinsics can be
                 // handled by the AltJit, so limit only the platform specific intrinsics
-                assert((NI_Vector512_Xor + 1) == NI_X86Base_BitScanForward);
+                assert((NI_Vector512_WithUpper + 1) == NI_X86Base_BitScanForward);
 
-                if (ni < NI_Vector512_Xor)
+                if (ni < NI_Vector512_WithUpper)
 #elif defined(TARGET_ARM64)
                 // We can't guarantee that all overloads for the xplat intrinsics can be
                 // handled by the AltJit, so limit only the platform specific intrinsics
-                assert((NI_Vector128_Xor + 1) == NI_AdvSimd_Abs);
+                assert((NI_Vector128_WithUpper + 1) == NI_AdvSimd_Abs);
 
-                if (ni < NI_Vector128_Xor)
+                if (ni < NI_Vector128_WithUpper)
 #else
 #error Unsupported platform
 #endif
@@ -3088,6 +3088,13 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
         }
     }
 #endif // FEATURE_HW_INTRINSICS
+
+    if ((ni == NI_System_Numerics_Intrinsic) || (ni == NI_System_Runtime_Intrinsics_Intrinsic))
+    {
+        // These are special markers used just to ensure we still get the inlining profitability
+        // boost. We actually have the implementation in managed, however, to keep the JIT simpler.
+        return nullptr;
+    }
 
     if (!isIntrinsic)
     {
@@ -10093,6 +10100,12 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
 
                                 result = NI_Throw_PlatformNotSupportedException;
                             }
+                            else
+                            {
+                                // Otherwise mark this as a general intrinsic in the namespace
+                                // so we can still get the inlining profitability boost.
+                                result = NI_System_Runtime_Intrinsics_Intrinsic;
+                            }
                         }
                     }
                 }
@@ -10321,6 +10334,12 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                                 // IsSupported check so the throw PNSE will be valid or dropped.
 
                                 result = NI_Throw_PlatformNotSupportedException;
+                            }
+                            else
+                            {
+                                // Otherwise mark this as a general intrinsic in the namespace
+                                // so we can still get the inlining profitability boost.
+                                result = NI_System_Numerics_Intrinsic;
                             }
                         }
                     }

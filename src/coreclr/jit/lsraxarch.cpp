@@ -2544,11 +2544,24 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                         std::swap(emitOp1, emitOp3);
                     }
                 }
-                tgtPrefUse = BuildUse(emitOp1);
 
-                srcCount += 1;
-                srcCount += BuildDelayFreeUses(emitOp2, emitOp1);
-                srcCount += emitOp3->isContained() ? BuildOperandUses(emitOp3) : BuildDelayFreeUses(emitOp3, emitOp1);
+                GenTree* ops[] = {op1, op2, op3};
+                for (GenTree* op : ops)
+                {
+                    if (op == emitOp1)
+                    {
+                        tgtPrefUse = BuildUse(op);
+                        srcCount++;
+                    }
+                    else if (op == emitOp2)
+                    {
+                        srcCount += BuildDelayFreeUses(op, emitOp1);
+                    }
+                    else if (op == emitOp3)
+                    {
+                        srcCount += op->isContained() ? BuildOperandUses(op) : BuildDelayFreeUses(op, emitOp1);
+                    }
+                }
 
                 if (intrinsicTree->OperIsEmbRoundingEnabled() && !intrinsicTree->Op(4)->IsCnsIntOrI())
                 {
@@ -2643,11 +2656,23 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                     std::swap(emitOp1, emitOp2);
                 }
 
-                tgtPrefUse = BuildUse(emitOp1);
-
-                srcCount += 1;
-                srcCount += BuildDelayFreeUses(emitOp2, emitOp1);
-                srcCount += op3->isContained() ? BuildOperandUses(emitOp3) : BuildDelayFreeUses(emitOp3, emitOp1);
+                GenTree* ops[] = {op1, op2, op3};
+                for (GenTree* op : ops)
+                {
+                    if (op == emitOp1)
+                    {
+                        tgtPrefUse = BuildUse(op);
+                        srcCount++;
+                    }
+                    else if (op == emitOp2)
+                    {
+                        srcCount += BuildDelayFreeUses(op, emitOp1);
+                    }
+                    else if (op == emitOp3)
+                    {
+                        srcCount += op->isContained() ? BuildOperandUses(op) : BuildDelayFreeUses(op, emitOp1);
+                    }
+                }
 
                 buildUses = false;
                 break;

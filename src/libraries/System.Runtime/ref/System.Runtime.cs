@@ -8133,6 +8133,12 @@ namespace System.Collections
 }
 namespace System.Collections.Generic
 {
+    public interface IAlternateEqualityComparer<in TAlternate, T> where TAlternate : allows ref struct
+    {
+        bool Equals(TAlternate alternate, T other);
+        int GetHashCode(TAlternate alternate);
+        T Create(TAlternate alternate);
+    }
     public partial interface IAsyncEnumerable<out T> where T : allows ref struct
     {
         System.Collections.Generic.IAsyncEnumerator<T> GetAsyncEnumerator(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
@@ -14224,6 +14230,19 @@ namespace System.Runtime.InteropServices.Swift
     {
         private readonly int _dummyPrimitive;
         public unsafe SwiftSelf(void* value) { throw null; }
+        public unsafe void* Value { get { throw null; } }
+    }
+    public readonly partial struct SwiftSelf<T> where T: unmanaged
+    {
+        private readonly T _dummyPrimitive;
+        public unsafe SwiftSelf(T value) { throw null; }
+        public unsafe T Value { get { throw null; } }
+    }
+    [System.CLSCompliantAttribute(false)]
+    public readonly partial struct SwiftIndirectResult
+    {
+        private readonly int _dummyPrimitive;
+        public unsafe SwiftIndirectResult(void* value) { throw null; }
         public unsafe void* Value { get { throw null; } }
     }
 }
