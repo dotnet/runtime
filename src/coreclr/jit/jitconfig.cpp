@@ -26,8 +26,7 @@ void JitConfigValues::MethodSet::initialize(const WCHAR* list, ICorJitHost* host
         // char* m_list;
         //
         m_list = static_cast<char*>(host->allocateMemory(utf8ListLen));
-        if (WideCharToMultiByte(CP_UTF8, 0, list, -1, static_cast<LPSTR>(m_list), utf8ListLen, nullptr, nullptr) ==
-            0)
+        if (WideCharToMultiByte(CP_UTF8, 0, list, -1, static_cast<LPSTR>(m_list), utf8ListLen, nullptr, nullptr) == 0)
         {
             // Failed to convert the list. Free the memory and ignore the list.
             host->freeMemory(static_cast<void*>(m_list));

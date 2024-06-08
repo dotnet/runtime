@@ -54,7 +54,11 @@
 #define WszSearchPath          SearchPathWrapper
 #define WszGetModuleFileName   GetModuleFileNameWrapper
 
+#ifdef HOST_WINDOWS
 DWORD GetMaxDBCSCharByteSize();
+#else
+#define GetMaxDBCSCharByteSize() 3 // UTF8
+#endif
 
 BOOL
 WszCreateProcess(
