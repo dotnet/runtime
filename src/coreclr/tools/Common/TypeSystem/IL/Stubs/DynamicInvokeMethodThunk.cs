@@ -112,6 +112,11 @@ namespace Internal.IL.Stubs
             }
         }
 
+        protected override int ComputeHashCode()
+        {
+            return base.ComputeHashCode() ^ _targetSignature.GetHashCode();
+        }
+
         public override string Name => "DynamicInvoke";
 
         public override string DiagnosticName => "DynamicInvoke";
