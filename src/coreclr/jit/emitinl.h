@@ -404,7 +404,7 @@ inline ssize_t emitter::emitGetInsAmdAny(const instrDesc* id) const
 /*static*/ inline unsigned emitter::emitDecodeCallGCregs(instrDesc* id)
 {
     regMaskTP regmask = RBM_NONE;
-    unsigned encodeMask;
+    unsigned  encodeMask;
 
 #ifdef TARGET_X86
     assert(REGNUM_BITS >= 3);

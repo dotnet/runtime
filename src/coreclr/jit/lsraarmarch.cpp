@@ -171,8 +171,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
         {
             // Fast tail call - make sure that call target is always computed in volatile registers
             // that will not be overridden by epilog sequence.
-            ctrlExprCandidates = allRegs(TYP_INT) & RBM_INT_CALLEE_TRASH.GetIntRegSet() &
-                                 ~RBM_LR.GetIntRegSet();
+            ctrlExprCandidates = allRegs(TYP_INT) & RBM_INT_CALLEE_TRASH.GetIntRegSet() & ~RBM_LR.GetIntRegSet();
             if (compiler->getNeedsGSSecurityCookie())
             {
                 ctrlExprCandidates &=
@@ -699,8 +698,8 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                 // a temporary register to perform the sequence of loads and stores.
                 // We can't use the special Write Barrier registers, so exclude them from the mask
                 SingleTypeRegSet internalIntCandidates =
-                    allRegs(TYP_INT) & ~(RBM_WRITE_BARRIER_DST_BYREF | RBM_WRITE_BARRIER_SRC_BYREF)
-                                            .GetRegSetForType(IntRegisterType);
+                    allRegs(TYP_INT) &
+                    ~(RBM_WRITE_BARRIER_DST_BYREF | RBM_WRITE_BARRIER_SRC_BYREF).GetRegSetForType(IntRegisterType);
                 buildInternalIntRegisterDefForNode(blkNode, internalIntCandidates);
 
                 if (size >= 2 * REGSIZE_BYTES)
@@ -718,8 +717,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                 }
 
                 // If we have a dest address we want it in RBM_WRITE_BARRIER_DST_BYREF.
-                dstAddrRegMask =
-                    RBM_WRITE_BARRIER_DST_BYREF.GetIntRegSet();
+                dstAddrRegMask = RBM_WRITE_BARRIER_DST_BYREF.GetIntRegSet();
 
                 // If we have a source address we want it in REG_WRITE_BARRIER_SRC_BYREF.
                 // Otherwise, if it is a local, codegen will put its address in REG_WRITE_BARRIER_SRC_BYREF,

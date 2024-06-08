@@ -522,12 +522,10 @@ SingleTypeRegSet LinearScan::getConstrainedRegMask(RefPosition*     refPosition,
 #if defined(TARGET_AMD64)
 #ifdef UNIX_AMD64_ABI
 // On System V the RDI and RSI are not callee saved. Use R12 ans R13 as callee saved registers.
-static const regMaskTP LsraLimitSmallIntSet =
-    (RBM_EAX | RBM_ECX | RBM_EBX | RBM_ETW_FRAMED_EBP | RBM_R12 | RBM_R13);
+static const regMaskTP LsraLimitSmallIntSet = (RBM_EAX | RBM_ECX | RBM_EBX | RBM_ETW_FRAMED_EBP | RBM_R12 | RBM_R13);
 #else  // !UNIX_AMD64_ABI
 // On Windows Amd64 use the RDI and RSI as callee saved registers.
-static const regMaskTP LsraLimitSmallIntSet =
-    (RBM_EAX | RBM_ECX | RBM_EBX | RBM_ETW_FRAMED_EBP | RBM_ESI | RBM_EDI);
+static const regMaskTP LsraLimitSmallIntSet = (RBM_EAX | RBM_ECX | RBM_EBX | RBM_ETW_FRAMED_EBP | RBM_ESI | RBM_EDI);
 #endif // !UNIX_AMD64_ABI
 static const regMaskTP LsraLimitSmallFPSet = (RBM_XMM0 | RBM_XMM1 | RBM_XMM2 | RBM_XMM6 | RBM_XMM7);
 static const regMaskTP LsraLimitUpperSimdSet =
@@ -592,7 +590,8 @@ SingleTypeRegSet LinearScan::stressLimitRegs(RefPosition* refPosition, RegisterT
             case LSRA_LIMIT_CALLEE:
                 if (!compiler->opts.compDbgEnC)
                 {
-                    mask = getConstrainedRegMask(refPosition, regType, mask, RBM_CALLEE_SAVED.GetRegSetForType(regType), minRegCount);
+                    mask = getConstrainedRegMask(refPosition, regType, mask, RBM_CALLEE_SAVED.GetRegSetForType(regType),
+                                                 minRegCount);
                 }
                 break;
 
@@ -606,7 +605,8 @@ SingleTypeRegSet LinearScan::stressLimitRegs(RefPosition* refPosition, RegisterT
             case LSRA_LIMIT_SMALL_SET:
                 if ((mask & LsraLimitSmallIntSet) != RBM_NONE)
                 {
-                    mask = getConstrainedRegMask(refPosition, regType, mask, LsraLimitSmallIntSet.GetRegSetForType(regType), minRegCount);
+                    mask = getConstrainedRegMask(refPosition, regType, mask,
+                                                 LsraLimitSmallIntSet.GetRegSetForType(regType), minRegCount);
                 }
                 else if ((mask & LsraLimitSmallFPSet) != RBM_NONE)
                 {
@@ -841,7 +841,8 @@ LinearScan::LinearScan(Compiler* theCompiler)
     // Note: one known reason why we exclude LR is because NativeAOT has dependency on not
     //       using LR as a GPR. See: https://github.com/dotnet/runtime/issues/101932
     //       Once that is addressed, we may consider allowing LR in availableIntRegs.
-    availableIntRegs = (RBM_ALLINT & ~(RBM_PR | RBM_FP | RBM_LR) & ~compiler->codeGen->regSet.rsMaskResvd).GetIntRegSet();
+    availableIntRegs =
+        (RBM_ALLINT & ~(RBM_PR | RBM_FP | RBM_LR) & ~compiler->codeGen->regSet.rsMaskResvd).GetIntRegSet();
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     availableIntRegs = (RBM_ALLINT & ~(RBM_FP | RBM_RA) & ~compiler->codeGen->regSet.rsMaskResvd).GetIntRegSet();
 #else

@@ -139,14 +139,13 @@ enum _regNumber_enum : unsigned
     ACTUAL_REG_COUNT = REG_COUNT - 1 // everything but REG_STK (only real regs)
 };
 
-
-enum _regMask_enum : uint64_t{
+enum _regMask_enum : uint64_t
+{
     RBM_NONE = 0,
 #define REGDEF(name, rnum, mask, xname, wname) SRBM_##name = mask,
 #define REGALIAS(alias, realname)              SRBM_##alias = SRBM_##realname,
 #include "register.h"
 };
-
 
 #elif defined(TARGET_AMD64)
 
@@ -212,7 +211,6 @@ typedef unsigned char   regNumberSmall;
 // In any case, we believe that is OK to freely cast between these types; no information will
 // be lost.
 
-
 #if REGMASK_BITS == 8
 typedef unsigned char regMaskSmall;
 #define REG_MASK_INT_FMT "%02X"
@@ -262,17 +260,17 @@ public:
     void RemoveRegNumFromMask(regNumber reg, var_types type);
     bool IsRegNumInMask(regNumber reg, var_types type) const;
 #endif
-    void             AddGprRegs(SingleTypeRegSet gprRegs);
-    void             AddRegNum(regNumber reg, var_types type);
-    void             AddRegNumInMask(regNumber reg);
-    void             AddRegsetForType(SingleTypeRegSet regsToAdd, var_types type);
-    SingleTypeRegSet GetRegSetForType(var_types type) const;
-    bool             IsRegNumInMask(regNumber reg) const;
-    bool             IsRegNumPresent(regNumber reg, var_types type) const;
-    void             RemoveRegNum(regNumber reg, var_types type);
-    void             RemoveRegNumFromMask(regNumber reg);
-    void             RemoveRegsetForType(SingleTypeRegSet regsToRemove, var_types type);
-    static constexpr regMaskTP        CreateFromRegNum(regNumber reg, regMaskSmall mask)
+    void                       AddGprRegs(SingleTypeRegSet gprRegs);
+    void                       AddRegNum(regNumber reg, var_types type);
+    void                       AddRegNumInMask(regNumber reg);
+    void                       AddRegsetForType(SingleTypeRegSet regsToAdd, var_types type);
+    SingleTypeRegSet           GetRegSetForType(var_types type) const;
+    bool                       IsRegNumInMask(regNumber reg) const;
+    bool                       IsRegNumPresent(regNumber reg, var_types type) const;
+    void                       RemoveRegNum(regNumber reg, var_types type);
+    void                       RemoveRegNumFromMask(regNumber reg);
+    void                       RemoveRegsetForType(SingleTypeRegSet regsToRemove, var_types type);
+    static constexpr regMaskTP CreateFromRegNum(regNumber reg, regMaskSmall mask)
     {
 #ifdef HAS_MORE_THAN_64_REGISTERS
         if (reg < 64)
@@ -432,43 +430,42 @@ public:
 #if defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
 static constexpr regMaskTP RegMaskTP_NONE = regMaskTP(RBM_NONE, RBM_NONE);
-#define REGDEF(name, rnum, mask, sname)  \
+#define REGDEF(name, rnum, mask, sname)                                                                                \
     static constexpr regMaskTP RBM_##name =                                                                            \
         regMaskTP::CreateFromRegNum(static_cast<regNumber>(rnum), static_cast<regMaskSmall>(mask));
 #define REGALIAS(alias, realname) static constexpr regMaskTP RBM_##alias = RBM_##realname;
- #include "register.h"
+#include "register.h"
 
 #elif defined(TARGET_ARM64)
 
 static constexpr regMaskTP RegMaskTP_NONE = regMaskTP(RBM_NONE, RBM_NONE);
-#define REGDEF(name, rnum, mask, xname, wname)  \
+#define REGDEF(name, rnum, mask, xname, wname)                                                                         \
     static constexpr regMaskTP RBM_##name =                                                                            \
         regMaskTP::CreateFromRegNum(static_cast<regNumber>(rnum), static_cast<regMaskSmall>(mask));
 #define REGALIAS(alias, realname) static constexpr regMaskTP RBM_##alias = RBM_##realname;
- #include "register.h"
+#include "register.h"
 
 #elif defined(TARGET_AMD64)
 
 static constexpr regMaskTP RegMaskTP_NONE = regMaskTP(RBM_NONE, RBM_NONE);
-#define REGDEF(name, rnum, mask, sname)  \
+#define REGDEF(name, rnum, mask, sname)                                                                                \
     static constexpr regMaskTP RBM_##name =                                                                            \
         regMaskTP::CreateFromRegNum(static_cast<regNumber>(rnum), static_cast<regMaskSmall>(mask));
 #define REGALIAS(alias, realname) static constexpr regMaskTP RBM_##alias = RBM_##realname;
- #include "register.h"
+#include "register.h"
 
 #elif defined(TARGET_X86)
 
 static constexpr regMaskTP RegMaskTP_NONE = regMaskTP(RBM_NONE, RBM_NONE);
-#define REGDEF(name, rnum, mask, sname)  \
+#define REGDEF(name, rnum, mask, sname)                                                                                \
     static constexpr regMaskTP RBM_##name =                                                                            \
         regMaskTP::CreateFromRegNum(static_cast<regNumber>(rnum), static_cast<regMaskSmall>(mask));
 #define REGALIAS(alias, realname) static constexpr regMaskTP RBM_##alias = RBM_##realname;
- #include "register.h"
+#include "register.h"
 
 #else
 #error Unsupported target architecture
 #endif
-
 
 // enum _regMask_enum : uint64_t{
 //     RBM_NONE = 0,
@@ -476,7 +473,6 @@ static constexpr regMaskTP RegMaskTP_NONE = regMaskTP(RBM_NONE, RBM_NONE);
 // #define REGALIAS(alias, realname)              RBM_##alias = RBM_##realname,
 // #include "register.h"
 // };
-
 
 static regMaskTP operator^(const regMaskTP& first, const regMaskTP& second)
 {

@@ -1197,7 +1197,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
                 // The return value will be on the X87 stack, and we will need to move it.
                 singleDstCandidates = allRegs(registerType);
 #else  // !TARGET_X86
-                singleDstCandidates = RBM_FLOATRET.GetFloatRegSet();
+            singleDstCandidates = RBM_FLOATRET.GetFloatRegSet();
 #endif // !TARGET_X86
             }
             else

@@ -1199,9 +1199,9 @@ bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLo
 
     if (compiler->killGCRefs(tree))
     {
-        RefPosition* pos =
-            newRefPosition((Interval*)nullptr, currentLoc, RefTypeKillGCRefs, tree, (availableIntRegs & ~RBM_ARG_REGS.GetIntRegSet()));
-        insertedKills = true;
+        RefPosition* pos = newRefPosition((Interval*)nullptr, currentLoc, RefTypeKillGCRefs, tree,
+                                          (availableIntRegs & ~RBM_ARG_REGS.GetIntRegSet()));
+        insertedKills    = true;
     }
 
     return insertedKills;
@@ -1517,8 +1517,8 @@ void LinearScan::buildUpperVectorSaveRefPositions(GenTree*                tree,
             if (!varInterval->isPartiallySpilled)
             {
                 Interval*    upperVectorInterval = getUpperVectorInterval(varIndex);
-                RefPosition* pos =
-                    newRefPosition(upperVectorInterval, currentLoc, RefTypeUpperVectorSave, tree, RBM_FLT_CALLEE_SAVED.GetFloatRegSet());
+                RefPosition* pos = newRefPosition(upperVectorInterval, currentLoc, RefTypeUpperVectorSave, tree,
+                                                  RBM_FLT_CALLEE_SAVED.GetFloatRegSet());
                 varInterval->isPartiallySpilled = true;
                 pos->skipSaveRestore            = blockAlwaysReturn;
                 pos->liveVarUpperSave           = VarSetOps::IsMember(compiler, liveLargeVectors, varIndex);
@@ -4307,8 +4307,7 @@ int LinearScan::BuildReturn(GenTree* tree)
 #ifdef TARGET_AMD64
                         useCandidates = (RBM_DOUBLERET & RBM_ALLDOUBLE).GetFloatRegSet();
 #else
-                        useCandidates = (RBM_DOUBLERET & RBM_ALLDOUBLE)
-                                            .GetFloatRegSet();
+                    useCandidates = (RBM_DOUBLERET & RBM_ALLDOUBLE).GetFloatRegSet();
 #endif // TARGET_AMD64
                         break;
                     case TYP_LONG:
