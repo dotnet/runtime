@@ -9852,7 +9852,7 @@ public:
             // passed in is preserved by the validator and take care to get the
             // target from the register for the call (even in debug mode).
             static_assert_no_msg((RBM_VALIDATE_INDIRECT_CALL_TRASH &
-                                  regMaskTP(1 << REG_VALIDATE_INDIRECT_CALL_ADDR, RBM_NONE)) == RegMaskTP_NONE);
+                                  regMaskTP(1 << REG_VALIDATE_INDIRECT_CALL_ADDR)) == RegMaskTP_NONE);
             if (JitConfig.JitForceControlFlowGuard())
                 return true;
 
