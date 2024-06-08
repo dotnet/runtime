@@ -312,7 +312,7 @@ public:
     {
     }
 
-    regMaskTP(regMaskSmall regMask)
+    constexpr regMaskTP(regMaskSmall regMask)
         : low(regMask)
 #ifdef HAS_MORE_THAN_64_REGISTERS
         , high(RBM_NONE)
@@ -490,7 +490,7 @@ static constexpr regMaskTP operator&(const regMaskTP& first, const regMaskTP& se
     return result;
 }
 
-static regMaskTP operator|(const regMaskTP& first, const regMaskTP& second)
+static constexpr regMaskTP operator|(const regMaskTP& first, const regMaskTP& second)
 {
     regMaskTP result(first.getLow() | second.getLow() MORE_THAN_64_REGISTERS_ARG(first.getHigh() | second.getHigh()));
     return result;
@@ -535,7 +535,7 @@ static regMaskTP& operator<<=(regMaskTP& first, const int b)
 }
 #endif
 
-static regMaskTP operator>>(regMaskTP first, const int b)
+static constexpr regMaskTP operator>>(regMaskTP first, const int b)
 {
     regMaskTP result(first.getLow() >> b);
     return result;
@@ -547,7 +547,7 @@ static regMaskTP& operator>>=(regMaskTP& first, const int b)
     return first;
 }
 
-static regMaskTP operator~(const regMaskTP& first)
+static constexpr regMaskTP operator~(const regMaskTP& first)
 {
     regMaskTP result(~first.getLow() MORE_THAN_64_REGISTERS_ARG(~first.getHigh()));
     return result;
@@ -1177,13 +1177,13 @@ inline bool isFloatRegType(var_types type)
 /*****************************************************************************/
 // Some sanity checks on some of the register masks
 // Stack pointer is never part of RBM_ALLINT
-//C_ASSERT((RBM_ALLINT & RBM_SPBASE) == RegMaskTP_NONE);
-//C_ASSERT((RBM_INT_CALLEE_SAVED & RBM_SPBASE) == RegMaskTP_NONE);
+C_ASSERT((RBM_ALLINT & RBM_SPBASE) == RegMaskTP_NONE);
+C_ASSERT((RBM_INT_CALLEE_SAVED & RBM_SPBASE) == RegMaskTP_NONE);
 
 #if ETW_EBP_FRAMED
 // Frame pointer isn't either if we're supporting ETW frame chaining
-//C_ASSERT((RBM_ALLINT & RBM_FPBASE) == RegMaskTP_NONE);
-//C_ASSERT((RBM_INT_CALLEE_SAVED & RBM_FPBASE) == RegMaskTP_NONE);
+C_ASSERT((RBM_ALLINT & RBM_FPBASE) == RegMaskTP_NONE);
+C_ASSERT((RBM_INT_CALLEE_SAVED & RBM_FPBASE) == RegMaskTP_NONE);
 #endif
 /*****************************************************************************/
 
