@@ -47,7 +47,11 @@ add_dependencies(eventpipe_gen_objs eventing_headers)
 
 add_library_clr(eventpipe_objs OBJECT ${CORECLR_EVENTPIPE_SHIM_SOURCES} ${CORECLR_EVENTPIPE_SHIM_HEADERS})
 target_precompile_headers(eventpipe_objs PRIVATE [["common.h"]])
-set_target_properties(eventpipe_objs PROPERTIES LINKER_LANGUAGE CXX)
+set_target_properties(eventpipe_objs PROPERTIES
+    LINKER_LANGUAGE CXX
+    UNITY_BUILD ON
+    UNITY_BUILD_BATCH_SIZE 0
+)
 add_dependencies(eventpipe_objs eventing_headers)
 target_link_libraries(eventpipe_objs PRIVATE dn-diagnosticserver dn-eventpipe)
 
@@ -59,8 +63,6 @@ set_source_files_properties(${diagnosticserver_sources} ${eventpipe_sources} PRO
 
 # Build EventPipe and DiagnosticServer as unity-builds.
 set (SHARED_EVENTPIPE_SOURCE_PATH "${CLR_SRC_NATIVE_DIR}/eventpipe")
-set_source_files_properties(${SHARED_EVENTPIPE_SOURCE_PATH}/ep-sources.c PROPERTIES COMPILE_DEFINITIONS EP_FORCE_INCLUDE_SOURCE_FILES)
-set_source_files_properties(${SHARED_EVENTPIPE_SOURCE_PATH}/ds-sources.c PROPERTIES COMPILE_DEFINITIONS DS_FORCE_INCLUDE_SOURCE_FILES)
 
 add_library(eventpipe INTERFACE)
 target_sources(eventpipe INTERFACE $<TARGET_OBJECTS:eventpipe_gen_objs> $<TARGET_OBJECTS:eventpipe_objs> $<TARGET_OBJECTS:dn-containers>)

@@ -175,18 +175,34 @@ get_property(diagnosticserver_pal_sources TARGET dn-diagnosticserver-pal PROPERT
 get_property(eventpipe_sources TARGET dn-eventpipe PROPERTY INTERFACE_SOURCES)
 set_source_files_properties(${diagnosticserver_sources} ${diagnosticserver_pal_sources} ${eventpipe_sources} PROPERTIES LANGUAGE CXX)
 
+add_library(eventpipe-shared-objects OBJECT)
+target_link_libraries(eventpipe-shared-objects PRIVATE dn-containers dn-diagnosticserver dn-eventpipe)
+# Build EventPipe and DiagnosticServer as unity-builds for better inlining.
+set_target_properties(eventpipe-shared-objects PROPERTIES
+  UNITY_BUILD ON
+  UNITY_BUILD_BATCH_SIZE 0
+)
 if (CLR_CMAKE_TARGET_WIN32)
-    set_source_files_properties(${diagnosticserver_sources} ${diagnosticserver_pal_sources} ${eventpipe_sources}
-        PROPERTIES COMPILE_FLAGS "/FI\"${RUNTIME_DIR}/eventpipe/NativeaotEventPipeSupport.h\"")
-endif()
+    add_library(eventpipe-shared-objects.GuardCF OBJECT)
+    target_link_libraries(eventpipe-shared-objects.GuardCF PRIVATE dn-containers dn-diagnosticserver dn-eventpipe)
 
+    target_compile_options(eventpipe-shared-objects PRIVATE
+        "/FI${RUNTIME_DIR}/eventpipe/NativeaotEventPipeSupport.h")
+
+    target_compile_options(eventpipe-shared-objects.GuardCF PRIVATE
+        "/FI${RUNTIME_DIR}/eventpipe/NativeaotEventPipeSupport.h")
+
+    # Build EventPipe and DiagnosticServer as unity-builds for better inlining.
+    set_target_properties(eventpipe-shared-objects.GuardCF PROPERTIES
+        UNITY_BUILD ON
+        UNITY_BUILD_BATCH_SIZE 0
+        CLR_CONTROL_FLOW_GUARD ON)
+endif()
 
 list(APPEND EVENTPIPE_SOURCES
   ${AOT_EVENTPIPE_SHIM_SOURCES}
-  ${AOT_EVENTPIPE_SHIM_HEADERS}
   ${AOT_EVENTPIPE_MANAGED_TO_NATIVE_SOURCES}
   ${AOT_EVENTTRACE_SOURCES}
-  ${SHARED_EVENTPIPE_CONFIG_HEADERS}
   ${GEN_EVENTPIPE_PROVIDER_SOURCES}
   ${GEN_EVENTPIPE_PLAT_AGNOSTIC_SOURCES}
   ${MINIPAL_SOURCES}
@@ -200,14 +216,9 @@ list(APPEND AOT_EVENTPIPE_DISABLED_SOURCES
   ${GEN_EVENTPIPE_PLAT_AGNOSTIC_DISABLED_SOURCES}
 )
 
-# Build EventPipe and DiagnosticServer as unity-builds.
-set (SHARED_EVENTPIPE_SOURCE_PATH "${CLR_SRC_NATIVE_DIR}/eventpipe")
-set_source_files_properties(${SHARED_EVENTPIPE_SOURCE_PATH}/ep-sources.c PROPERTIES COMPILE_DEFINITIONS EP_FORCE_INCLUDE_SOURCE_FILES)
-set_source_files_properties(${SHARED_EVENTPIPE_SOURCE_PATH}/ds-sources.c PROPERTIES COMPILE_DEFINITIONS DS_FORCE_INCLUDE_SOURCE_FILES)
-
-
 add_library(eventpipe-enabled STATIC ${EVENTPIPE_SOURCES})
-target_link_libraries(eventpipe-enabled PRIVATE dn-containers dn-diagnosticserver dn-eventpipe)
+
+target_link_libraries(eventpipe-enabled PRIVATE eventpipe-shared-objects)
 add_dependencies(eventpipe-enabled aot_eventing_headers)
 if(CLR_CMAKE_TARGET_WIN32)
   add_dependencies(eventpipe-enabled aot_etw_headers)
@@ -218,10 +229,15 @@ add_dependencies(eventpipe-disabled aot_eventing_headers)
 
 if (CLR_CMAKE_TARGET_WIN32)
   add_library(eventpipe-enabled.GuardCF STATIC ${EVENTPIPE_SOURCES})
-  target_link_libraries(eventpipe-enabled.GuardCF PRIVATE dn-containers dn-diagnosticserver dn-eventpipe)
+
+  set_target_properties(eventpipe-enabled.GuardCF PROPERTIES
+    UNITY_BUILD ON
+    UNITY_BUILD_BATCH_SIZE 0
+  )
+
+  target_link_libraries(eventpipe-enabled.GuardCF PRIVATE eventpipe-shared-objects.GuardCF)
   add_dependencies(eventpipe-enabled.GuardCF aot_eventing_headers)
   add_dependencies(eventpipe-enabled.GuardCF aot_etw_headers)
-  target_link_libraries(eventpipe-enabled.GuardCF PRIVATE dn-containers)
   add_library(eventpipe-disabled.GuardCF STATIC ${AOT_EVENTPIPE_DISABLED_SOURCES})
   add_dependencies(eventpipe-disabled.GuardCF aot_eventing_headers)
   set_target_properties(eventpipe-enabled.GuardCF PROPERTIES CLR_CONTROL_FLOW_GUARD ON)

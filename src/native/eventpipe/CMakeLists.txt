@@ -16,10 +16,10 @@ configure_file(${CLR_SRC_NATIVE_DIR}/eventpipe/ep-shared-config.h.in ${CMAKE_CUR
 add_library(dn-diagnosticserver INTERFACE)
 
 target_sources(dn-diagnosticserver INTERFACE
-    ds-sources.c
     ds-dump-protocol.c
     ds-eventpipe-protocol.c
     ds-ipc.c
+    ds-portable-rid.c
     ds-process-protocol.c
     ds-profiler-protocol.c
     ds-protocol.c
@@ -47,7 +47,6 @@ endif (FEATURE_PERFTRACING_PAL_TCP)
 
 add_library(dn-eventpipe INTERFACE)
 target_sources(dn-eventpipe INTERFACE
-    ep-sources.c
     ep.c
     ep-block.c
     ep-buffer.c

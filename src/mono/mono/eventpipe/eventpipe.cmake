@@ -49,9 +49,4 @@ if(ENABLE_PERFTRACING)
     set(eventpipe_sources ${mono_eventpipe_shim_sources_base} ${MONO_EVENTPIPE_GEN_HEADERS} ${MONO_EVENTPIPE_GEN_SOURCES})
     set(diagnostic_server_sources ${mono_diagnostic_server_shim_sources_base})
 
-    # Build EventPipe and DiagnosticServer as unity-builds.
-    set (SHARED_EVENTPIPE_SOURCE_PATH "${CLR_SRC_NATIVE_DIR}/eventpipe")
-    set_source_files_properties(${SHARED_EVENTPIPE_SOURCE_PATH}/ep-sources.c PROPERTIES COMPILE_DEFINITIONS EP_FORCE_INCLUDE_SOURCE_FILES)
-    set_source_files_properties(${SHARED_EVENTPIPE_SOURCE_PATH}/ds-sources.c PROPERTIES COMPILE_DEFINITIONS DS_FORCE_INCLUDE_SOURCE_FILES)
-
 endif(ENABLE_PERFTRACING)
