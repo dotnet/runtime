@@ -8,6 +8,9 @@
     <!-- Tracing tests routinely time out with jitstress and gcstress -->
     <GCStressIncompatible>true</GCStressIncompatible>
     <JitOptimizationSensitive>true</JitOptimizationSensitive>
+
+    <!-- Not AllocationSampled with Mono runtime -->
+    <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'mono'">true</DisableProjectBuild>
   </PropertyGroup>
 
   <!-- Test coverage for EventPipe CFG library, eventpipe-enabled.GuardCF.lib -->

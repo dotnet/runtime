@@ -39,6 +39,23 @@ DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Con
 
 volatile LONGLONG ETW::GCLog::s_l64LastClientSequenceNumber = 0;
 
+bool IsRuntimeProviderEnabled(uint8_t level, uint64_t keyword)
+{
+    // EventPipe is always taken into account
+    bool isEnabled = DotNETRuntimeProvider_IsEnabled(level, keyword);
+
+#ifdef FEATURE_ETW
+    // ETW is also taken into account on Windows
+    isEnabled |= (
+        ETW_TRACING_INITIALIZED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context.RegistrationHandle) &&
+        ETW_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context, level, keyword)
+        );
+#endif // FEATURE_ETW
+
+    return isEnabled;
+}
+
+
 //---------------------------------------------------------------------------------------
 //
 // Helper to fire the GCStart event.  Figures out which version of GCStart to fire, and

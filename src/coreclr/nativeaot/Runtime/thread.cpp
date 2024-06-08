@@ -28,6 +28,9 @@
 #include "RhConfig.h"
 #include "GcEnum.h"
 
+#include "eventtracebase.h"
+#include "eventtrace.h"
+
 #ifndef DACCESS_COMPILE
 
 static int (*g_RuntimeInitializationCallback)();
@@ -1326,18 +1329,7 @@ FCIMPLEND
 
 bool Thread::IsRandomizedSamplingEnabled()
 {
-#ifdef FEATURE_EVENT_TRACE
-    // TODO: fix the same compilation error
-    // look at eventtrace_gcheap.cpp - RUNTIME_PROVIDER_CATEGORY_ENABLED
-    //return ETW_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context,
-    //    TRACE_LEVEL_INFORMATION,
-    //    CLR_ALLOCATIONSAMPLING_KEYWORD);
-    //return RUNTIME_PROVIDER_CATEGORY_ENABLED(TRACE_LEVEL_INFORMATION, CLR_ALLOCATIONSAMPLING_KEYWORD);
-
-    return false;
-#else
-    return false;
-#endif // FEATURE_EVENT_TRACE
+    return IsRuntimeProviderEnabled(TRACE_LEVEL_INFORMATION, CLR_ALLOCATIONSAMPLING_KEYWORD);
 }
 
 int Thread::ComputeGeometricRandom()
