@@ -70,7 +70,7 @@ namespace ILCompiler.DependencyAnalysis
             bool methodIsShared = _method.IsSharedByGenericInstantiations;
 
             TypeSystemContext context = _method.Context;
-            Type uninterestingType = typeof(ScannedMethodNode);
+            object lastUninterestingObject = null;
 
             for (int i = firstNode; i < markedNodes.Count; i++)
             {
@@ -81,13 +81,13 @@ namespace ILCompiler.DependencyAnalysis
                 // would be rejected by the `entry is EETypeNode` check below. However,
                 // that check has to walk the whole class hierarchy and can get rather
                 // expensive, so take a shortcut here as micro optimization.
-                if (entry.GetType() == uninterestingType)
+                if (lastUninterestingObject is not null && entry.GetType() == lastUninterestingObject.GetType())
                     continue;
 
                 EETypeNode entryAsEETypeNode = entry as EETypeNode;
                 if (entryAsEETypeNode == null)
                 {
-                    uninterestingType = entry.GetType();
+                    lastUninterestingObject = entry;
                     continue;
                 }
 
