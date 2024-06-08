@@ -189,8 +189,6 @@ parse_optimizations (guint32 opt, const char* p, gboolean cpu_opts)
 				exit (1);
 			}
 		}
-
-		g_free (arg);
 	}
 	g_strfreev (parts);
 
