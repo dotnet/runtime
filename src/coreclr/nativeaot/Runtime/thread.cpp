@@ -196,10 +196,11 @@ void * Thread::GetCurrentThreadPInvokeReturnAddress()
 }
 #endif // !DACCESS_COMPILE
 
-#if defined(FEATURE_GC_STRESS) & !defined(DACCESS_COMPILE)
 void Thread::SetRandomSeed(uint32_t seed)
 {
+#ifndef FEATURE_GC_STRESS
     ASSERT(!IsStateSet(TSF_IsRandSeedSet));
+#endif
     m_uRand = seed;
     SetState(TSF_IsRandSeedSet);
 }
@@ -246,7 +247,6 @@ bool Thread::IsRandInited()
 {
     return IsStateSet(TSF_IsRandSeedSet);
 }
-#endif // FEATURE_GC_STRESS & !DACCESS_COMPILE
 
 PTR_ExInfo Thread::GetCurExInfo()
 {
@@ -309,6 +309,13 @@ void Thread::Construct()
     ASSERT(m_redirectionContextBuffer == NULL);
 #endif //FEATURE_SUSPEND_REDIRECTION
     ASSERT(m_interruptedContext == NULL);
+
+    if (!IsStateSet(TSF_IsRandSeedSet))
+    {
+        // Initialize the random number generator seed
+        uint32_t seed = (uint32_t)PalGetTickCount64();
+        SetRandomSeed(seed);
+    }
 }
 
 bool Thread::IsInitialized()
@@ -1334,34 +1341,35 @@ bool Thread::IsRandomizedSamplingEnabled()
 
 int Thread::ComputeGeometricRandom()
 {
-    // TODO: Implement a proper random number generator
-    // compute a random sample from the Geometric distribution
-    //double probability = GetRandomizer()->NextDouble();
-    //int threshold = (int)(-log(1 - probability) * SamplingDistributionMean);
-    //return threshold;
+    const uint32_t maxValue = 2 ^ 32;
 
-    // ensure to never end up inside the allocation context to avoid sampling
-    return SamplingDistributionMean;
+    // compute a random sample from the Geometric distribution
+    double probability = (maxValue - NextRand()) / maxValue;
+    int threshold = (int)(-log(1 - probability) * SamplingDistributionMean);
+    return threshold;
+
+    //// ensure to never end up inside the allocation context to avoid sampling
+    //return SamplingDistributionMean;
 }
 
 inline void Thread::UpdateCombinedLimit(bool samplingEnabled)
 {
     // TODO: no op implementation
-    m_combined_limit = GetAllocContext()->alloc_limit;
+    //m_combined_limit = GetAllocContext()->alloc_limit;
 
-    //gc_alloc_context* alloc_context = GetAllocContext();
-    //if (!samplingEnabled)
-    //{
-    //    m_combined_limit = alloc_context->alloc_limit;
-    //}
-    //else
-    //{
-    //    // compute the next sampling limit based on a geometric distribution
-    //    uint8_t* sampling_limit = alloc_context->alloc_ptr + ComputeGeometricRandom();
+    gc_alloc_context* alloc_context = GetAllocContext();
+    if (!samplingEnabled)
+    {
+        m_combined_limit = alloc_context->alloc_limit;
+    }
+    else
+    {
+        // compute the next sampling limit based on a geometric distribution
+        uint8_t* sampling_limit = alloc_context->alloc_ptr + ComputeGeometricRandom();
 
-    //    // if the sampling limit is larger than the allocation context, no sampling will occur in this AC
-    //    m_combined_limit = (sampling_limit < alloc_context->alloc_limit) ? sampling_limit : alloc_context->alloc_limit;
-    //}
+        // if the sampling limit is larger than the allocation context, no sampling will occur in this AC
+        m_combined_limit = (sampling_limit < alloc_context->alloc_limit) ? sampling_limit : alloc_context->alloc_limit;
+    }
 }
 
 

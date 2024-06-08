@@ -142,9 +142,7 @@ struct ThreadBuffer
     uint8_t*                m_redirectionContextBuffer;             // storage for redirection context, allocated on demand
 #endif //FEATURE_SUSPEND_REDIRECTION
 
-#ifdef FEATURE_GC_STRESS
     uint32_t                m_uRand;                                // current per-thread random number
-#endif // FEATURE_GC_STRESS
 };
 
 struct ReversePInvokeFrame
@@ -171,9 +169,7 @@ public:
         TSF_DoNotTriggerGc      = 0x00000010,       // Do not allow hijacking of this thread, also intended to
                                                     // ...be checked during allocations in debug builds.
         TSF_IsGcSpecialThread   = 0x00000020,       // Set to indicate a GC worker thread used for background GC
-#ifdef FEATURE_GC_STRESS
-        TSF_IsRandSeedSet       = 0x00000040,       // set to indicate the random number generator for GCStress was inited
-#endif // FEATURE_GC_STRESS
+        TSF_IsRandSeedSet       = 0x00000040,       // set to indicate the random number generator was inited (used by GCSTRESS and AllocationSampled)
 
 #ifdef FEATURE_SUSPEND_REDIRECTION
         TSF_Redirected          = 0x00000080,       // Set to indicate the thread is redirected and will inevitably
@@ -295,11 +291,9 @@ public:
 #ifndef DACCESS_COMPILE
     void                SetThreadStressLog(void * ptsl);
 #endif // DACCESS_COMPILE
-#ifdef FEATURE_GC_STRESS
     void                SetRandomSeed(uint32_t seed);
     uint32_t            NextRand();
     bool                IsRandInited();
-#endif // FEATURE_GC_STRESS
     PTR_ExInfo          GetCurExInfo();
 
     bool                IsCurrentThreadInCooperativeMode();
