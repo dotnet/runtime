@@ -429,7 +429,6 @@ public:
 
 #if defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
-static constexpr regMaskTP RegMaskTP_NONE = regMaskTP(RBM_NONE, RBM_NONE);
 #define REGDEF(name, rnum, mask, sname)                                                                                \
     static constexpr regMaskTP RBM_##name =                                                                            \
         regMaskTP::CreateFromRegNum(static_cast<regNumber>(rnum), static_cast<regMaskSmall>(mask));
@@ -438,7 +437,6 @@ static constexpr regMaskTP RegMaskTP_NONE = regMaskTP(RBM_NONE, RBM_NONE);
 
 #elif defined(TARGET_ARM64)
 
-static constexpr regMaskTP RegMaskTP_NONE = regMaskTP(RBM_NONE, RBM_NONE);
 #define REGDEF(name, rnum, mask, xname, wname)                                                                         \
     static constexpr regMaskTP RBM_##name =                                                                            \
         regMaskTP::CreateFromRegNum(static_cast<regNumber>(rnum), static_cast<regMaskSmall>(mask));
@@ -447,7 +445,6 @@ static constexpr regMaskTP RegMaskTP_NONE = regMaskTP(RBM_NONE, RBM_NONE);
 
 #elif defined(TARGET_AMD64)
 
-static constexpr regMaskTP RegMaskTP_NONE = regMaskTP(RBM_NONE, RBM_NONE);
 #define REGDEF(name, rnum, mask, sname)                                                                                \
     static constexpr regMaskTP RBM_##name =                                                                            \
         regMaskTP::CreateFromRegNum(static_cast<regNumber>(rnum), static_cast<regMaskSmall>(mask));
@@ -456,7 +453,6 @@ static constexpr regMaskTP RegMaskTP_NONE = regMaskTP(RBM_NONE, RBM_NONE);
 
 #elif defined(TARGET_X86)
 
-static constexpr regMaskTP RegMaskTP_NONE = regMaskTP(RBM_NONE, RBM_NONE);
 #define REGDEF(name, rnum, mask, sname)                                                                                \
     static constexpr regMaskTP RBM_##name =                                                                            \
         regMaskTP::CreateFromRegNum(static_cast<regNumber>(rnum), static_cast<regMaskSmall>(mask));
@@ -1173,13 +1169,13 @@ inline bool isFloatRegType(var_types type)
 /*****************************************************************************/
 // Some sanity checks on some of the register masks
 // Stack pointer is never part of RBM_ALLINT
-C_ASSERT((RBM_ALLINT & RBM_SPBASE) == RegMaskTP_NONE);
-C_ASSERT((RBM_INT_CALLEE_SAVED & RBM_SPBASE) == RegMaskTP_NONE);
+C_ASSERT((RBM_ALLINT & RBM_SPBASE) == RBM_NONE);
+C_ASSERT((RBM_INT_CALLEE_SAVED & RBM_SPBASE) == RBM_NONE);
 
 #if ETW_EBP_FRAMED
 // Frame pointer isn't either if we're supporting ETW frame chaining
-C_ASSERT((RBM_ALLINT & RBM_FPBASE) == RegMaskTP_NONE);
-C_ASSERT((RBM_INT_CALLEE_SAVED & RBM_FPBASE) == RegMaskTP_NONE);
+C_ASSERT((RBM_ALLINT & RBM_FPBASE) == RBM_NONE);
+C_ASSERT((RBM_INT_CALLEE_SAVED & RBM_FPBASE) == RBM_NONE);
 #endif
 /*****************************************************************************/
 
