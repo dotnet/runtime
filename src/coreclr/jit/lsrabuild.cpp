@@ -4300,7 +4300,11 @@ int LinearScan::BuildReturn(GenTree* tree)
                         useCandidates = RBM_NONE;
                         break;
                     case TYP_FLOAT:
+#ifdef TARGET_X86
+                        useCandidates = RBM_FLOATRET;
+#else
                         useCandidates = RBM_FLOATRET.GetFloatRegSet();
+#endif
                         break;
                     case TYP_DOUBLE:
                         // We ONLY want the valid double register in the RBM_DOUBLERET mask.
