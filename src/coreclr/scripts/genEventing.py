@@ -741,7 +741,7 @@ def generateClrUserEventsWriteEvents(eventNodes, allTemplates, extern, target_cp
 
         templateName = eventNode.getAttribute('template')
 
-        #generate EventPipeEventEnabled and EventPipeWriteEvent functions
+        #generate UserEventsEventEnabled and UserEventsWriteEvent functions
         eventenabled = []
         writeevent   = []
         fnptypeline  = []
