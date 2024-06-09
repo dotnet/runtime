@@ -1277,7 +1277,7 @@ namespace System.Reflection
 
             while (type != (RuntimeType)typeof(object) && type != null)
             {
-                if (type.IsGenericParameter)
+                if (type.IsGenericMethodParameter)
                 {
                     AddCustomAttributes(ref result, type.GetRuntimeModule(), type.MetadataToken, caType, type.DeclaringType?.GetGenericArguments(), type.DeclaringMethod?.GetGenericArguments(), mustBeInheritable, result);
                 }
