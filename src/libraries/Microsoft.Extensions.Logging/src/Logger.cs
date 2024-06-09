@@ -219,6 +219,11 @@ namespace Microsoft.Extensions.Logging
                     return null;
                 }
 
+                if (!logger.Value.MinLevel.HasValue)
+                {
+                    return LogLevel.None;
+                }
+
                 ReadOnlySpan<LogLevel> logLevels = stackalloc LogLevel[]
                 {
                     LogLevel.Critical,
