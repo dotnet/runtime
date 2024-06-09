@@ -178,12 +178,22 @@ void lsraAssignRegToTree(GenTree* tree, regNumber reg, unsigned regIdx)
 //
 // Returns:
 //    Weight of ref position.
-weight_t LinearScan::getWeight(RefPosition* refPos)
+weight_t LinearScan::getWeight(RefPosition* refPos DEBUG_ARG(bool forDump))
 {
     weight_t weight;
     GenTree* treeNode = refPos->treeNode;
 
-    if (treeNode != nullptr)
+#ifdef HAS_MORE_THAN_64_REGISTERS
+    // If refType is `RefTypeKill`, we are using the killRegisterAssignment
+    // and treeNode field is garbage.
+    assert(forDump || refPos->refType != RefTypeKill);
+#endif
+
+    if (treeNode != nullptr
+#ifdef DEBUG
+        && (refPos->refType != RefTypeKill)
+#endif
+    )
     {
         if (isCandidateLocalRef(treeNode))
         {
@@ -230,6 +240,21 @@ weight_t LinearScan::getWeight(RefPosition* refPos)
 
     return weight;
 }
+
+#ifdef DEBUG
+//-------------------------------------------------------------
+// getWeightForDump: Returns the weight of the RefPosition, for dump
+//
+// Arguments:
+//    refPos   -   ref position
+//
+// Returns:
+//    Weight of ref position.
+weight_t LinearScan::getWeightForDump(RefPosition* refPos)
+{
+    return getWeight(refPos, true);
+}
+#endif
 
 // allRegs represents a set of registers that can
 // be used to allocate the specified type in any point
@@ -10395,7 +10420,7 @@ void RefPosition::dump(LinearScan* linearScan)
     {
         this->getInterval()->tinyDump();
     }
-    if (this->treeNode)
+    if ((refType != RefTypeKill) && this->treeNode)
     {
         printf("%s", treeNode->OpName(treeNode->OperGet()));
         if (this->treeNode->IsMultiRegNode())
@@ -10407,17 +10432,26 @@ void RefPosition::dump(LinearScan* linearScan)
     printf(FMT_BB " ", this->bbNum);
 
     printf("regmask=");
-    var_types type = TYP_UNKNOWN;
-    if ((refType == RefTypeBB) || (refType == RefTypeKillGCRefs))
+#ifdef HAS_MORE_THAN_64_REGISTERS
+    if (refType == RefTypeKill)
     {
-        // These refTypes do not have intervals
-        type = TYP_INT;
+        linearScan->compiler->dumpRegMask(getKillRegisterAssignment());
     }
     else
+#endif // HAS_MORE_THAN_64_REGISTERS
     {
-        type = getRegisterType();
+        var_types type = TYP_UNKNOWN;
+        if ((refType == RefTypeBB) || (refType == RefTypeKillGCRefs))
+        {
+            // These refTypes do not have intervals
+            type = TYP_INT;
+        }
+        else
+        {
+            type = getRegisterType();
+        }
+        linearScan->compiler->dumpRegMask(registerAssignment, type);
     }
-    linearScan->compiler->dumpRegMask(registerAssignment, type);
 
     printf(" minReg=%d", minRegCandidateCount);
 
@@ -10471,7 +10505,7 @@ void RefPosition::dump(LinearScan* linearScan)
         printf(" regOptional");
     }
 
-    printf(" wt=%.2f", linearScan->getWeight(this));
+    printf(" wt=%.2f", linearScan->getWeightForDump(this));
     printf(">\n");
 }
 
@@ -11074,7 +11108,11 @@ void LinearScan::TupleStyleDump(LsraTupleDumpMode mode)
                                 printf("\n        Kill: ");
                                 killPrinted = true;
                             }
+#ifdef HAS_MORE_THAN_64_REGISTERS
+                            compiler->dumpRegMask(currentRefPosition->getKillRegisterAssignment());
+#else
                             compiler->dumpRegMask(currentRefPosition->registerAssignment, currentRefPosition->getRegisterType());
+#endif
                             printf(" ");
                             break;
                         case RefTypeFixedReg:
