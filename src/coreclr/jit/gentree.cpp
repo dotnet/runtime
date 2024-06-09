@@ -13786,7 +13786,7 @@ GenTree* Compiler::gtFoldExprCompare(GenTree* tree)
 
     /* Filter out cases that cannot be folded here */
 
-    /* Do not fold floats or doubles (e.g. NaN != Nan) */
+    /* Do not fold floats or doubles (e.g. NaN != NaN) */
 
     if (varTypeIsFloating(op1->TypeGet()))
     {
@@ -14277,6 +14277,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetHelperArgClassHandle(GenTree* tree)
 //
 GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
 {
+    var_types  type = tree->TypeGet();
     GenTree*   op1  = tree->AsOp()->gtOp1;
     GenTree*   op2  = tree->AsOp()->gtOp2;
     genTreeOps oper = tree->OperGet();
@@ -14296,8 +14297,12 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
     /* We only consider TYP_INT for folding
      * Do not fold pointer arithmetic (e.g. addressing modes!) */
 
-    if (oper != GT_QMARK && !varTypeIsIntOrI(tree->gtType))
+    if (oper != GT_QMARK && !varTypeIsIntOrI(type))
     {
+        if (varTypeIsFloating(type))
+        {
+            return gtFoldExprSpecialFloating(tree);
+        }
         return tree;
     }
 
@@ -14614,6 +14619,256 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
 
         default:
             break;
+    }
+
+    /* The node is not foldable */
+
+    return tree;
+
+DONE_FOLD:
+
+    JITDUMP("\nFolding binary operator with a constant operand:\n");
+    DISPTREE(tree);
+    JITDUMP("Transformed into:\n");
+    DISPTREE(op);
+
+    return op;
+}
+
+//------------------------------------------------------------------------
+// gtFoldExprSpecialFloating -- optimize floating-point binary ops with one constant operand
+//
+// Arguments:
+//   tree - tree to optimize
+//
+// Return value:
+//   Tree (possibly modified at root or below), or a new tree
+//   Any new tree is fully morphed, if necessary.
+//
+GenTree* Compiler::gtFoldExprSpecialFloating(GenTree* tree)
+{
+    assert(varTypeIsFloating(tree->TypeGet()));
+    assert(tree->OperKind() & GTK_BINOP);
+
+    GenTree*   op1  = tree->AsOp()->gtOp1;
+    GenTree*   op2  = tree->AsOp()->gtOp2;
+    genTreeOps oper = tree->OperGet();
+
+    GenTree* op;
+    GenTree* cons;
+    double   val;
+
+    /* Filter out operators that cannot be folded here */
+    if (oper == GT_CAST)
+    {
+        return tree;
+    }
+
+    /* Find out which is the constant node */
+    if (op1->IsCnsFltOrDbl())
+    {
+        op   = op2;
+        cons = op1;
+    }
+    else if (op2->IsCnsFltOrDbl())
+    {
+        op   = op1;
+        cons = op2;
+    }
+    else
+    {
+        return tree;
+    }
+
+    /* Get the constant value */
+    val = cons->AsDblCon()->DconValue();
+
+    // Transforms that would drop op cannot be performed if op has side effects
+    bool opHasSideEffects = (op->gtFlags & GTF_SIDE_EFFECT) != 0;
+
+    // Helper function that creates a new IntCon node and morphs it, if required
+    auto NewMorphedIntConNode = [&](int value) -> GenTreeIntCon* {
+        GenTreeIntCon* icon = gtNewIconNode(value);
+        if (fgGlobalMorph)
+        {
+            fgMorphTreeDone(icon);
+        }
+        return icon;
+    };
+
+    // Here `op` is the non-constant operand, `cons` is the constant operand
+    // and `val` is the constant value.
+
+    switch (oper)
+    {
+        case GT_ADD:
+        {
+            // Handle `x + NaN == NaN` and `NaN + x == NaN`
+            // This is safe for all floats since we do not fault for sNaN
+
+            if (FloatingPointUtils::isNaN(val))
+            {
+                if (opHasSideEffects)
+                {
+                    break;
+                }
+                goto DONE_FOLD;
+            }
+
+            // Handle `x + -0 == x` and `-0 + x == x`
+
+            if (FloatingPointUtils::isNegativeZero(val))
+            {
+                goto DONE_FOLD;
+            }
+
+            // We cannot handle `x + 0 == x` or `0 + x == x` since `-0 + 0 == 0`
+            break;
+        }
+
+        case GT_DIV:
+        {
+            // Handle `x / NaN == NaN` and `NaN / x == NaN`
+            // This is safe for all floats since we do not fault for sNaN
+
+            if (FloatingPointUtils::isNaN(val))
+            {
+                if (opHasSideEffects)
+                {
+                    break;
+                }
+                goto DONE_FOLD;
+            }
+
+            // Handle `x / 1 == x`.
+            // This is safe for all floats since we do not fault for sNaN
+
+            if ((op2 == cons) && (val == 1.0))
+            {
+                goto DONE_FOLD;
+            }
+            break;
+        }
+
+        case GT_EQ:
+        {
+            assert((tree->gtFlags & GTF_RELOP_NAN_UN) == 0);
+
+            if (FloatingPointUtils::isNaN(val))
+            {
+                if (opHasSideEffects)
+                {
+                    break;
+                }
+
+                // Comparison with NaN is always false
+                op = NewMorphedIntConNode(0);
+                goto DONE_FOLD;
+            }
+            break;
+        }
+
+        case GT_GE:
+        case GT_GT:
+        case GT_LE:
+        case GT_LT:
+        {
+            if (FloatingPointUtils::isNaN(val))
+            {
+                if (opHasSideEffects)
+                {
+                    break;
+                }
+
+                if ((tree->gtFlags & GTF_RELOP_NAN_UN) != 0)
+                {
+                    // Unordered comparison with NaN is always true
+                    op = NewMorphedIntConNode(1);
+                }
+                else
+                {
+                    // Comparison with NaN is always false
+                    op = NewMorphedIntConNode(0);
+                }
+                goto DONE_FOLD;
+            }
+            break;
+        }
+
+        case GT_MUL:
+        {
+            // Handle `x * NaN == NaN` and `NaN * x == NaN`
+            // This is safe for all floats since we do not fault for sNaN
+
+            if (FloatingPointUtils::isNaN(val))
+            {
+                if (opHasSideEffects)
+                {
+                    break;
+                }
+                goto DONE_FOLD;
+            }
+
+            // Handle `x * 1 == x` and `1 * x == x`
+            // This is safe for all floats since we do not fault for sNaN
+
+            if (val == 1.0)
+            {
+                goto DONE_FOLD;
+            }
+
+            // We cannot handle `x *  0 ==  0` or ` 0 * x ==  0` since `-0 *  0 == -0`
+            // We cannot handle `x * -0 == -0` or `-0 * x == -0` since `-0 * -0 ==  0`
+            break;
+        }
+
+        case GT_NE:
+        {
+            assert((tree->gtFlags & GTF_RELOP_NAN_UN) == 0);
+
+            if (FloatingPointUtils::isNaN(val))
+            {
+                if (opHasSideEffects)
+                {
+                    break;
+                }
+
+                // Comparison with NaN is always true
+                op = NewMorphedIntConNode(1);
+                goto DONE_FOLD;
+            }
+            break;
+        }
+
+        case GT_SUB:
+        {
+            // Handle `x - NaN == NaN` and `NaN - x == NaN`
+            // This is safe for all floats since we do not fault for sNaN
+
+            if (FloatingPointUtils::isNaN(val))
+            {
+                if (opHasSideEffects)
+                {
+                    break;
+                }
+                goto DONE_FOLD;
+            }
+
+            // Handle `x - 0 == x`
+
+            if ((cons == op2) && FloatingPointUtils::isPositiveZero(val))
+            {
+                goto DONE_FOLD;
+            }
+
+            // We cannot handle `x - -0 == x` since `-0 - -0 == 0`
+            break;
+        }
+
+        default:
+        {
+            break;
+        }
     }
 
     /* The node is not foldable */
