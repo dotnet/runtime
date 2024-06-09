@@ -594,6 +594,10 @@ static LPVOID ReserveVirtualMemory(
     }
 #endif
 
+#ifdef __HAIKU__
+        mmapFlags |= MAP_NORESERVE;
+#endif
+
     LPVOID pRetVal = mmap((LPVOID) StartBoundary,
                           MemSize,
                           PROT_NONE,

@@ -32,9 +32,12 @@ SET_DEFAULT_DEBUG_CHANNEL(FILE); // some headers have code with asserts, so do t
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/param.h>
-#include <sys/mount.h>
 #include <errno.h>
 #include <limits.h>
+
+#if HAVE_SYS_MOUNT_H
+#include <sys/mount.h>
+#endif
 
 using namespace CorUnix;
 

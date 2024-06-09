@@ -19,11 +19,14 @@
 // it is not possible to create file with FILE_FLAG_NO_BUFFERING.
 // So we explicitly use the /var/tmp that cannot be on tmpfs, since it it persistent over reboots.
 
-#ifndef __ANDROID__
-#define TEMP_DIRECTORY_PATH "/var/tmp/"
-#else
+#ifdef __ANDROID__
 // On Android, "/var/tmp/" doesn't exist; temporary files should go to /data/local/tmp/
 #define TEMP_DIRECTORY_PATH "/data/local/tmp/"
+#elif defined(__HAIKU__)
+// "/var/tmp/" also doesn't exist on Haiku.
+#define TEMP_DIRECTORY_PATH "/boot/system/cache/"
+#else
+#define TEMP_DIRECTORY_PATH "/var/tmp/"
 #endif
 
 PALTEST(filemapping_memmgt_MapViewOfFile_test1_paltest_mapviewoffile_test1, "filemapping_memmgt/MapViewOfFile/test1/paltest_mapviewoffile_test1")

@@ -1410,6 +1410,7 @@ CorUnix::GetThreadTimesInternal(
 
     pTargetThread->Lock(pThread);
 
+#if HAVE_PTHREAD_GETCPUCLOCKID || HAVE_CLOCK_THREAD_CPUTIME
 #if HAVE_PTHREAD_GETCPUCLOCKID
     if (pthread_getcpuclockid(pTargetThread->GetPThreadSelf(), &cid) != 0)
     {
@@ -1418,6 +1419,9 @@ CorUnix::GetThreadTimesInternal(
         pTargetThread->Unlock(pThread);
         goto SetTimesToZero;
     }
+#else // HAVE_PTHREAD_GETCPUCLOCKID
+    cid = CLOCK_THREAD_CPUTIME_ID;
+#endif // HAVE_PTHREAD_GETCPUCLOCKID
 
     struct timespec ts;
     if (clock_gettime(cid, &ts) != 0)
@@ -1451,9 +1455,9 @@ CorUnix::GetThreadTimesInternal(
     close(fd);
 
     ts = status.pr_utime;
-#else // HAVE_PTHREAD_GETCPUCLOCKID
+#else // HAVE_PTHREAD_GETCPUCLOCKID || HAVE_CLOCK_THREAD_CPUTIME
 #error "Don't know how to obtain user cpu time on this platform."
-#endif // HAVE_PTHREAD_GETCPUCLOCKID
+#endif // HAVE_PTHREAD_GETCPUCLOCKID || HAVE_CLOCK_THREAD_CPUTIME
 
     pTargetThread->Unlock(pThread);
 
