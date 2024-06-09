@@ -1277,7 +1277,14 @@ namespace System.Reflection
 
             while (type != (RuntimeType)typeof(object) && type != null)
             {
-                AddCustomAttributes(ref result, type.GetRuntimeModule(), type.MetadataToken, caType, type.GetGenericArguments(), null, mustBeInheritable, result);
+                if (type.IsGenericParameter)
+                {
+                    AddCustomAttributes(ref result, type.GetRuntimeModule(), type.MetadataToken, caType, type.DeclaringType?.GetGenericArguments(), type.DeclaringMethod?.GetGenericArguments(), mustBeInheritable, result);
+                }
+                else
+                {
+                    AddCustomAttributes(ref result, type.GetRuntimeModule(), type.MetadataToken, caType, type.GetGenericArguments(), null, mustBeInheritable, result);
+                }
                 mustBeInheritable = true;
                 type = (type.BaseType as RuntimeType)!;
             }
