@@ -1047,5 +1047,88 @@ namespace System.Numerics.Tests
                 }
             }
         }
+
+        public static IEnumerable<object[]> ToStringRoundtrip_TestData()
+        {
+            yield return new object[] { BFloat16.NegativeInfinity };
+            yield return new object[] { BFloat16.MinValue };
+            yield return new object[] { -MathF.PI };
+            yield return new object[] { -MathF.E };
+            yield return new object[] { -0.845512408f };
+            yield return new object[] { -0.0f };
+            yield return new object[] { BFloat16.NaN };
+            yield return new object[] { 0.0f };
+            yield return new object[] { 0.845512408f };
+            yield return new object[] { BFloat16.Epsilon };
+            yield return new object[] { MathF.E };
+            yield return new object[] { MathF.PI };
+            yield return new object[] { BFloat16.MaxValue };
+            yield return new object[] { BFloat16.PositiveInfinity };
+
+            yield return new object[] { (UInt16BitsToBFloat16(0b0_00000001_0000000)) }; // smallest normal
+            yield return new object[] { (UInt16BitsToBFloat16(0b0_00000000_1111111)) }; // largest subnormal
+            yield return new object[] { (UInt16BitsToBFloat16(0b0_00000000_1000000)) }; // middle subnormal
+            yield return new object[] { (UInt16BitsToBFloat16(0b0_00000000_0111111)) }; // just below middle subnormal
+            yield return new object[] { (UInt16BitsToBFloat16(0b0_00000000_0000000)) }; // smallest subnormal
+            yield return new object[] { (UInt16BitsToBFloat16(0b1_00000000_0000000)) }; // highest negative subnormal
+            yield return new object[] { (UInt16BitsToBFloat16(0b1_00000000_0111111)) }; // just above negative middle subnormal
+            yield return new object[] { (UInt16BitsToBFloat16(0b1_00000000_1000000)) }; // negative middle subnormal
+            yield return new object[] { (UInt16BitsToBFloat16(0b1_00000000_1111111)) }; // lowest negative subnormal
+            yield return new object[] { (UInt16BitsToBFloat16(0b1_00000001_0000000)) }; // highest negative normal
+        }
+
+        [Theory]
+        [MemberData(nameof(ToStringRoundtrip_TestData))]
+        public static void ToStringRoundtrip(object o_value)
+        {
+            float value = o_value is float floatValue ? floatValue : (float)(BFloat16)o_value;
+            BFloat16 result = BFloat16.Parse(value.ToString());
+            AssertExtensions.Equal(BFloat16ToUInt16Bits((BFloat16)value), BFloat16ToUInt16Bits(result));
+        }
+
+        [Theory]
+        [MemberData(nameof(ToStringRoundtrip_TestData))]
+        public static void ToStringRoundtrip_R(object o_value)
+        {
+            float value = o_value is float floatValue ? floatValue : (float)(BFloat16)o_value;
+            BFloat16 result = BFloat16.Parse(value.ToString("R"));
+            AssertExtensions.Equal(BFloat16ToUInt16Bits((BFloat16)value), BFloat16ToUInt16Bits(result));
+        }
+
+        public static IEnumerable<object[]> RoundTripFloat_CornerCases()
+        {
+            // Magnitude smaller than 2^-133 maps to 0
+            yield return new object[] { (BFloat16)(4.6e-41f), 0 };
+            yield return new object[] { (BFloat16)(-4.6e-41f), 0 };
+            // Magnitude smaller than 2^(map to subnormals
+            yield return new object[] { (BFloat16)(0.567e-39f), 0.567e-39f };
+            yield return new object[] { (BFloat16)(-0.567e-39f), -0.567e-39f };
+            // Normal numbers
+            yield return new object[] { (BFloat16)(55.77f), 55.75f };
+            yield return new object[] { (BFloat16)(-55.77f), -55.75f };
+            // Magnitude smaller than 2^(map to infinity
+            yield return new object[] { (BFloat16)(float.BitDecrement(float.PositiveInfinity)), float.PositiveInfinity };
+            yield return new object[] { (BFloat16)(float.BitIncrement(float.NegativeInfinity)), float.NegativeInfinity };
+            // Infinity and NaN map to infinity and Nan
+            yield return new object[] { BFloat16.PositiveInfinity, float.PositiveInfinity };
+            yield return new object[] { BFloat16.NegativeInfinity, float.NegativeInfinity };
+            yield return new object[] { BFloat16.NaN, float.NaN };
+        }
+
+        [Theory]
+        [MemberData(nameof(RoundTripFloat_CornerCases))]
+        public static void ToSingle(BFloat16 BFloat16, float verify)
+        {
+            float f = (float)BFloat16;
+            Assert.Equal(f, verify, precision: 1);
+        }
+
+        [Fact]
+        public static void EqualityMethodAndOperator()
+        {
+            Assert.True(BFloat16.NaN.Equals(BFloat16.NaN));
+            Assert.False(BFloat16.NaN == BFloat16.NaN);
+            Assert.Equal(BFloat16.NaN, BFloat16.NaN);
+        }
     }
 }
