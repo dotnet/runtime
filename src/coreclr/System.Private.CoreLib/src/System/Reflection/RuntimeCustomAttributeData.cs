@@ -1302,9 +1302,6 @@ namespace System.Reflection
             Debug.Assert(method is not null);
             Debug.Assert(caType is not null);
 
-            if (method.IsGenericMethod && !method.IsGenericMethodDefinition)
-                method = (method.GetGenericMethodDefinition() as RuntimeMethodInfo)!;
-
             RuntimeType.ListBuilder<Attribute> pcas = default;
             PseudoCustomAttribute.GetCustomAttributes(method, caType, ref pcas);
 
