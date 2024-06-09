@@ -1093,7 +1093,7 @@ extern "C" void QCALLTYPE GCInterface_ReRegisterForFinalize(QCall::ObjectHandleO
     _ASSERTE(pObj.Get() != NULL);
     _ASSERTE(pObj.Get()->GetMethodTable()->HasFinalizer());
 
-    if (!GCHeapUtilities::GetGCHeap()->RegisterForFinalization(-1, pObj.Get()))
+    if (!GCHeapUtilities::GetGCHeap()->RegisterForFinalization(-1, OBJECTREFToObject(pObj.Get())))
     {
         ThrowOutOfMemory();
     }
