@@ -1765,6 +1765,7 @@ public:
     inline bool IsVectorZero() const;
     inline bool IsVectorCreate() const;
     inline bool IsVectorAllBitsSet() const;
+    inline bool IsVectorBroadcast(var_types simdType, var_types simdBaseType) const;
     inline bool IsMaskAllBitsSet() const;
     inline bool IsVectorConst();
 
@@ -6632,7 +6633,7 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
 
     static bool Equals(GenTreeHWIntrinsic* op1, GenTreeHWIntrinsic* op2);
 
-    genTreeOps HWOperGet() const;
+    genTreeOps HWOperGet(bool* isScalar) const;
 
 private:
     void SetHWIntrinsicId(NamedIntrinsic intrinsicId);
@@ -6876,6 +6877,179 @@ struct GenTreeVecCon : public GenTree
 
 #endif // FEATURE_HW_INTRINSICS
 
+    void EvaluateUnaryInPlace(genTreeOps oper, bool scalar, var_types simdType, var_types baseType);
+    void EvaluateBinaryInPlace(
+        genTreeOps oper, bool scalar, var_types simdType, var_types baseType, GenTreeVecCon* other);
+
+    template <typename TBase>
+    void EvaluateBroadcastInPlace(var_types simdType, TBase scalar)
+    {
+        switch (simdType)
+        {
+#if defined(FEATURE_SIMD)
+            case TYP_SIMD8:
+            {
+                simd8_t result = {};
+                BroadcastConstantToSimd<simd8_t, TBase>(&result, scalar);
+                gtSimd8Val = result;
+                break;
+            }
+
+            case TYP_SIMD12:
+            {
+                simd12_t result = {};
+                BroadcastConstantToSimd<simd12_t, TBase>(&result, scalar);
+                gtSimd12Val = result;
+                break;
+            }
+
+            case TYP_SIMD16:
+            {
+                simd16_t result = {};
+                BroadcastConstantToSimd<simd16_t, TBase>(&result, scalar);
+                gtSimd16Val = result;
+                break;
+            }
+
+#if defined(TARGET_XARCH)
+            case TYP_SIMD32:
+            {
+                simd32_t result = {};
+                BroadcastConstantToSimd<simd32_t, TBase>(&result, scalar);
+                gtSimd32Val = result;
+                break;
+            }
+
+            case TYP_SIMD64:
+            {
+                simd64_t result = {};
+                BroadcastConstantToSimd<simd64_t, TBase>(&result, scalar);
+                gtSimd64Val = result;
+                break;
+            }
+#endif // TARGET_XARCH
+#endif // FEATURE_SIMD
+
+            default:
+            {
+                unreached();
+            }
+        }
+    }
+
+    void EvaluateBroadcastInPlace(var_types simdType, var_types baseType, double scalar);
+    void EvaluateBroadcastInPlace(var_types simdType, var_types baseType, int64_t scalar);
+
+    void SetElementFloating(var_types simdType, var_types simdBaseType, int32_t index, double value)
+    {
+        switch (simdType)
+        {
+#if defined(FEATURE_SIMD)
+            case TYP_SIMD8:
+            {
+                simd8_t result = {};
+                EvaluateWithElementFloating<simd8_t>(simdBaseType, &result, gtSimd8Val, index, value);
+                gtSimd8Val = result;
+                break;
+            }
+
+            case TYP_SIMD12:
+            {
+                simd12_t result = {};
+                EvaluateWithElementFloating<simd12_t>(simdBaseType, &result, gtSimd12Val, index, value);
+                gtSimd12Val = result;
+                break;
+            }
+
+            case TYP_SIMD16:
+            {
+                simd16_t result = {};
+                EvaluateWithElementFloating<simd16_t>(simdBaseType, &result, gtSimd16Val, index, value);
+                gtSimd16Val = result;
+                break;
+            }
+
+#if defined(TARGET_XARCH)
+            case TYP_SIMD32:
+            {
+                simd32_t result = {};
+                EvaluateWithElementFloating<simd32_t>(simdBaseType, &result, gtSimd32Val, index, value);
+                gtSimd32Val = result;
+                break;
+            }
+
+            case TYP_SIMD64:
+            {
+                simd64_t result = {};
+                EvaluateWithElementFloating<simd64_t>(simdBaseType, &result, gtSimd64Val, index, value);
+                gtSimd64Val = result;
+                break;
+            }
+#endif // TARGET_XARCH
+#endif // FEATURE_SIMD
+
+            default:
+            {
+                unreached();
+            }
+        }
+    }
+
+    void SetElementIntegral(var_types simdType, var_types simdBaseType, int32_t index, int64_t value)
+    {
+        switch (simdType)
+        {
+#if defined(FEATURE_SIMD)
+            case TYP_SIMD8:
+            {
+                simd8_t result = {};
+                EvaluateWithElementIntegral<simd8_t>(simdBaseType, &result, gtSimd8Val, index, value);
+                gtSimd8Val = result;
+                break;
+            }
+
+            case TYP_SIMD12:
+            {
+                simd12_t result = {};
+                EvaluateWithElementIntegral<simd12_t>(simdBaseType, &result, gtSimd12Val, index, value);
+                gtSimd12Val = result;
+                break;
+            }
+
+            case TYP_SIMD16:
+            {
+                simd16_t result = {};
+                EvaluateWithElementIntegral<simd16_t>(simdBaseType, &result, gtSimd16Val, index, value);
+                gtSimd16Val = result;
+                break;
+            }
+
+#if defined(TARGET_XARCH)
+            case TYP_SIMD32:
+            {
+                simd32_t result = {};
+                EvaluateWithElementIntegral<simd32_t>(simdBaseType, &result, gtSimd32Val, index, value);
+                gtSimd32Val = result;
+                break;
+            }
+
+            case TYP_SIMD64:
+            {
+                simd64_t result = {};
+                EvaluateWithElementIntegral<simd64_t>(simdBaseType, &result, gtSimd64Val, index, value);
+                gtSimd64Val = result;
+                break;
+            }
+#endif // TARGET_XARCH
+#endif // FEATURE_SIMD
+
+            default:
+            {
+                unreached();
+            }
+        }
+    }
+
     bool IsAllBitsSet() const
     {
         switch (gtType)
@@ -6920,6 +7094,8 @@ struct GenTreeVecCon : public GenTree
             }
         }
     }
+
+    bool IsBroadcast(var_types simdType, var_types simdBaseType) const;
 
     static bool Equals(const GenTreeVecCon* left, const GenTreeVecCon* right)
     {
@@ -7016,6 +7192,144 @@ struct GenTreeVecCon : public GenTree
                 unreached();
             }
         }
+    }
+
+    double GetElementFloating(var_types simdType, var_types simdBaseType, int32_t index) const
+    {
+        switch (simdType)
+        {
+#if defined(FEATURE_SIMD)
+            case TYP_SIMD8:
+            {
+                return EvaluateGetElementFloating<simd8_t>(simdBaseType, gtSimd8Val, index);
+            }
+
+            case TYP_SIMD12:
+            {
+                return EvaluateGetElementFloating<simd12_t>(simdBaseType, gtSimd12Val, index);
+            }
+
+            case TYP_SIMD16:
+            {
+                return EvaluateGetElementFloating<simd16_t>(simdBaseType, gtSimd16Val, index);
+            }
+
+#if defined(TARGET_XARCH)
+            case TYP_SIMD32:
+            {
+                return EvaluateGetElementFloating<simd32_t>(simdBaseType, gtSimd32Val, index);
+            }
+
+            case TYP_SIMD64:
+            {
+                return EvaluateGetElementFloating<simd64_t>(simdBaseType, gtSimd64Val, index);
+            }
+#endif // TARGET_XARCH
+#endif // FEATURE_SIMD
+
+            default:
+            {
+                unreached();
+            }
+        }
+    }
+
+    int64_t GetElementIntegral(var_types simdType, var_types simdBaseType, int32_t index) const
+    {
+        switch (simdType)
+        {
+#if defined(FEATURE_SIMD)
+            case TYP_SIMD8:
+            {
+                return EvaluateGetElementIntegral<simd8_t>(simdBaseType, gtSimd8Val, index);
+            }
+
+            case TYP_SIMD12:
+            {
+                return EvaluateGetElementIntegral<simd12_t>(simdBaseType, gtSimd12Val, index);
+            }
+
+            case TYP_SIMD16:
+            {
+                return EvaluateGetElementIntegral<simd16_t>(simdBaseType, gtSimd16Val, index);
+            }
+
+#if defined(TARGET_XARCH)
+            case TYP_SIMD32:
+            {
+                return EvaluateGetElementIntegral<simd32_t>(simdBaseType, gtSimd32Val, index);
+            }
+
+            case TYP_SIMD64:
+            {
+                return EvaluateGetElementIntegral<simd64_t>(simdBaseType, gtSimd64Val, index);
+            }
+#endif // TARGET_XARCH
+#endif // FEATURE_SIMD
+
+            default:
+            {
+                unreached();
+            }
+        }
+    }
+
+    double ToScalarFloating(var_types simdType, var_types simdBaseType) const
+    {
+        return GetElementFloating(simdType, simdBaseType, 0);
+    }
+
+    int64_t ToScalarIntegral(var_types simdType, var_types simdBaseType) const
+    {
+        return GetElementIntegral(simdType, simdBaseType, 0);
+    }
+
+    bool IsElementZero(var_types simdType, var_types simdBaseType, int32_t index) const
+    {
+        switch (simdBaseType)
+        {
+            case TYP_FLOAT:
+            {
+                return GetElementIntegral(simdType, TYP_INT, index) == 0;
+            }
+
+            case TYP_DOUBLE:
+            {
+                return GetElementIntegral(simdType, TYP_LONG, index) == 0;
+            }
+
+            default:
+            {
+                return GetElementIntegral(simdType, simdBaseType, index) == 0;
+            }
+        }
+    }
+
+    bool IsElementOne(var_types simdType, var_types simdBaseType, int32_t index) const
+    {
+        switch (simdBaseType)
+        {
+            case TYP_FLOAT:
+            case TYP_DOUBLE:
+            {
+                return GetElementFloating(simdType, simdBaseType, index) == 1;
+            }
+
+            default:
+            {
+                return GetElementIntegral(simdType, simdBaseType, index) == 1;
+            }
+        }
+    }
+
+    bool IsScalarZero(var_types simdType, var_types simdBaseType) const
+    {
+        return IsElementZero(simdType, simdBaseType, 0);
+    }
+
+    bool IsScalarOne(var_types simdType, var_types simdBaseType) const
+    {
+        return IsElementOne(simdType, simdBaseType, 0);
     }
 
     GenTreeVecCon(var_types type)
@@ -9280,6 +9594,24 @@ inline bool GenTree::IsVectorAllBitsSet() const
     if (IsCnsVec())
     {
         return AsVecCon()->IsAllBitsSet();
+    }
+#endif // FEATURE_SIMD
+
+    return false;
+}
+
+//-------------------------------------------------------------------
+// IsVectorBroadcast: returns true if this node is a vector constant with the same value in all elements.
+//
+// Returns:
+//     True if this node is a vector constant with the same value in all elements.
+//
+inline bool GenTree::IsVectorBroadcast(var_types simdType, var_types simdBaseType) const
+{
+#ifdef FEATURE_SIMD
+    if (IsCnsVec())
+    {
+        return AsVecCon()->IsBroadcast(simdType, simdBaseType);
     }
 #endif // FEATURE_SIMD
 

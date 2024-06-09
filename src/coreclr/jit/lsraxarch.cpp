@@ -2272,6 +2272,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 break;
             }
 
+            case NI_Vector128_AsVector128Unsafe:
             case NI_Vector128_AsVector2:
             case NI_Vector128_AsVector3:
             case NI_Vector128_ToVector256:

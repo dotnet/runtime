@@ -1211,32 +1211,25 @@ public:
                             EvalMathFuncBinary(typ, mthFunc, arg0VNP.GetConservative(), arg1VNP.GetConservative()));
     }
 
-    ValueNum EvalHWIntrinsicFunUnary(var_types      type,
-                                     var_types      baseType,
-                                     NamedIntrinsic ni,
-                                     VNFunc         func,
-                                     ValueNum       arg0VN,
-                                     bool           encodeResultType,
-                                     ValueNum       resultTypeVN);
+#if defined(FEATURE_HW_INTRINSICS)
+    ValueNum EvalHWIntrinsicFunUnary(
+        GenTreeHWIntrinsic* tree, VNFunc func, ValueNum arg0VN, bool encodeResultType, ValueNum resultTypeVN);
 
-    ValueNum EvalHWIntrinsicFunBinary(var_types      type,
-                                      var_types      baseType,
-                                      NamedIntrinsic ni,
-                                      VNFunc         func,
-                                      ValueNum       arg0VN,
-                                      ValueNum       arg1VN,
-                                      bool           encodeResultType,
-                                      ValueNum       resultTypeVN);
+    ValueNum EvalHWIntrinsicFunBinary(GenTreeHWIntrinsic* tree,
+                                      VNFunc              func,
+                                      ValueNum            arg0VN,
+                                      ValueNum            arg1VN,
+                                      bool                encodeResultType,
+                                      ValueNum            resultTypeVN);
 
-    ValueNum EvalHWIntrinsicFunTernary(var_types      type,
-                                       var_types      baseType,
-                                       NamedIntrinsic ni,
-                                       VNFunc         func,
-                                       ValueNum       arg0VN,
-                                       ValueNum       arg1VN,
-                                       ValueNum       arg2VN,
-                                       bool           encodeResultType,
-                                       ValueNum       resultTypeVN);
+    ValueNum EvalHWIntrinsicFunTernary(GenTreeHWIntrinsic* tree,
+                                       VNFunc              func,
+                                       ValueNum            arg0VN,
+                                       ValueNum            arg1VN,
+                                       ValueNum            arg2VN,
+                                       bool                encodeResultType,
+                                       ValueNum            resultTypeVN);
+#endif // FEATURE_HW_INTRINSICS
 
     // Returns "true" iff "vn" represents a function application.
     bool IsVNFunc(ValueNum vn);
