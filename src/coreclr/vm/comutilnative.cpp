@@ -1081,7 +1081,7 @@ FCIMPLEND
 **Arguments: Object of interest
 **Exceptions: None
 ==============================================================================*/
-extern "C" void QCALLTYPE GCInterface_ReRegisterForFinalize(QCall::ObjectHandleOnStack *pObj)
+extern "C" void QCALLTYPE GCInterface_ReRegisterForFinalize(QCall::ObjectHandleOnStack pObj)
 {
     QCALL_CONTRACT;
 
@@ -1090,10 +1090,10 @@ extern "C" void QCALLTYPE GCInterface_ReRegisterForFinalize(QCall::ObjectHandleO
     GCX_COOP();
 
     // Checked by the caller
-    _ASSERTE(pObj->Get() != NULL);
-    _ASSERTE(pObj->Get()->GetMethodTable()->HasFinalizer());
+    _ASSERTE(pObj.Get() != NULL);
+    _ASSERTE(pObj.Get()->GetMethodTable()->HasFinalizer());
 
-    if (!GCHeapUtilities::GetGCHeap()->RegisterForFinalization(-1, OBJECTREFToObject(pObj->Get())))
+    if (!GCHeapUtilities::GetGCHeap()->RegisterForFinalization(-1, pObj.Get()))
     {
         ThrowOutOfMemory();
     }
