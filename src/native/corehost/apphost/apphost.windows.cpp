@@ -19,7 +19,7 @@ namespace
         // Add to buffer for later use.
         g_buffered_errors.append(message).append(_X("\n"));
         // Also write to stderr immediately
-        pal::err_fputs(message);
+        pal::err_print_line(message);
     }
 
     // Determines if the current module (apphost executable) is marked as a Windows GUI application

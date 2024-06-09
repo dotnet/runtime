@@ -235,6 +235,9 @@
   <data name="Arg_BogusIComparer" xml:space="preserve">
     <value>Unable to sort because the IComparer.Compare() method returns inconsistent results. Either a value does not compare equal to itself, or one value repeatedly compared to another value yields different results. IComparer: '{0}'.</value>
   </data>
+  <data name="InvalidOperation_IncompatibleComparer" xml:space="preserve">
+    <value>The collection's comparer does not support the requested operation.</value>
+  </data>
   <data name="Arg_BufferTooSmall" xml:space="preserve">
     <value>Not enough space available in the buffer.</value>
   </data>

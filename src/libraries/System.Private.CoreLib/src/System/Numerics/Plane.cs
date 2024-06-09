@@ -30,8 +30,7 @@ namespace System.Numerics
         [Intrinsic]
         public Plane(float x, float y, float z, float d)
         {
-            Normal = new Vector3(x, y, z);
-            D = d;
+            this = Vector128.Create(x, y, z, d).AsPlane();
         }
 
         /// <summary>Creates a <see cref="Plane" /> object from a specified normal and the distance along the normal from the origin.</summary>
@@ -40,8 +39,7 @@ namespace System.Numerics
         [Intrinsic]
         public Plane(Vector3 normal, float d)
         {
-            Normal = normal;
-            D = d;
+            this = new Vector4(normal, d).AsPlane();
         }
 
         /// <summary>Creates a <see cref="Plane" /> object from a specified four-dimensional vector.</summary>
@@ -49,8 +47,7 @@ namespace System.Numerics
         [Intrinsic]
         public Plane(Vector4 value)
         {
-            Normal = new Vector3(value.X, value.Y, value.Z);
-            D = value.W;
+            this = value.AsPlane();
         }
 
         /// <summary>Creates a <see cref="Plane" /> object that contains three specified points.</summary>
@@ -111,52 +108,19 @@ namespace System.Numerics
         /// <returns>The dot product.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float Dot(Plane plane, Vector4 value)
-        {
-            return (plane.Normal.X * value.X)
-                 + (plane.Normal.Y * value.Y)
-                 + (plane.Normal.Z * value.Z)
-                 + (plane.D * value.W);
-        }
+        public static float Dot(Plane plane, Vector4 value) => Vector128.Dot(plane.AsVector128(), value.AsVector128());
 
         /// <summary>Returns the dot product of a specified three-dimensional vector and the normal vector of this plane plus the distance (<see cref="D" />) value of the plane.</summary>
         /// <param name="plane">The plane.</param>
         /// <param name="value">The 3-dimensional vector.</param>
         /// <returns>The dot product.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float DotCoordinate(Plane plane, Vector3 value)
-        {
-            if (Vector128.IsHardwareAccelerated)
-            {
-                return Vector3.Dot(plane.Normal, value) + plane.D;
-            }
-            else
-            {
-                return plane.Normal.X * value.X +
-                       plane.Normal.Y * value.Y +
-                       plane.Normal.Z * value.Z +
-                       plane.D;
-            }
-        }
+        public static float DotCoordinate(Plane plane, Vector3 value) => Vector3.Dot(plane.Normal, value) + plane.D;
 
         /// <summary>Returns the dot product of a specified three-dimensional vector and the <see cref="Normal" /> vector of this plane.</summary>
         /// <param name="plane">The plane.</param>
         /// <param name="value">The three-dimensional vector.</param>
         /// <returns>The dot product.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float DotNormal(Plane plane, Vector3 value)
-        {
-            if (Vector128.IsHardwareAccelerated)
-            {
-                return Vector3.Dot(plane.Normal, value);
-            }
-            else
-            {
-                return plane.Normal.X * value.X +
-                       plane.Normal.Y * value.Y +
-                       plane.Normal.Z * value.Z;
-            }
-        }
+        public static float DotNormal(Plane plane, Vector3 value) => Vector3.Dot(plane.Normal, value);
 
         /// <summary>Creates a new <see cref="Plane" /> object whose normal vector is the source plane's normal vector normalized.</summary>
         /// <param name="value">The source plane.</param>
@@ -164,36 +128,15 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Plane Normalize(Plane value)
         {
-            if (Vector128.IsHardwareAccelerated)
+            float normalLengthSquared = value.Normal.LengthSquared();
+
+            if (MathF.Abs(normalLengthSquared - 1.0f) < NormalizeEpsilon)
             {
-                float normalLengthSquared = value.Normal.LengthSquared();
-                if (MathF.Abs(normalLengthSquared - 1.0f) < NormalizeEpsilon)
-                {
-                    // It already normalized, so we don't need to farther process.
-                    return value;
-                }
-                float normalLength = MathF.Sqrt(normalLengthSquared);
-                return new Plane(
-                    value.Normal / normalLength,
-                    value.D / normalLength);
+                // It already normalized, so we don't need to farther process.
+                return value;
             }
-            else
-            {
-                float f = value.Normal.X * value.Normal.X + value.Normal.Y * value.Normal.Y + value.Normal.Z * value.Normal.Z;
 
-                if (MathF.Abs(f - 1.0f) < NormalizeEpsilon)
-                {
-                    return value; // It already normalized, so we don't need to further process.
-                }
-
-                float fInv = 1.0f / MathF.Sqrt(f);
-
-                return new Plane(
-                    value.Normal.X * fInv,
-                    value.Normal.Y * fInv,
-                    value.Normal.Z * fInv,
-                    value.D * fInv);
-            }
+            return (value.AsVector128() / MathF.Sqrt(normalLengthSquared)).AsPlane();
         }
 
         /// <summary>Transforms a normalized plane by a 4x4 matrix.</summary>
@@ -267,11 +210,7 @@ namespace System.Numerics
         /// The <see cref="op_Equality" /> method defines the operation of the equality operator for <see cref="Plane" /> objects.</remarks>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool operator ==(Plane value1, Plane value2)
-        {
-            return (value1.Normal == value2.Normal)
-                && (value1.D == value2.D);
-        }
+        public static bool operator ==(Plane value1, Plane value2) => value1.AsVector128() == value2.AsVector128();
 
         /// <summary>Returns a value that indicates whether two planes are not equal.</summary>
         /// <param name="value1">The first plane to compare.</param>
@@ -279,52 +218,24 @@ namespace System.Numerics
         /// <returns><see langword="true" /> if <paramref name="value1" /> and <paramref name="value2" /> are not equal; otherwise, <see langword="false" />.</returns>
         /// <remarks>The <see cref="op_Inequality" /> method defines the operation of the inequality operator for <see cref="Plane" /> objects.</remarks>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool operator !=(Plane value1, Plane value2)
-        {
-            return !(value1 == value2);
-        }
+        public static bool operator !=(Plane value1, Plane value2) => !(value1 == value2);
 
         /// <summary>Returns a value that indicates whether this instance and a specified object are equal.</summary>
         /// <param name="obj">The object to compare with the current instance.</param>
         /// <returns><see langword="true" /> if the current instance and <paramref name="obj" /> are equal; otherwise, <see langword="false" />. If <paramref name="obj" /> is <see langword="null" />, the method returns <see langword="false" />.</returns>
         /// <remarks>The current instance and <paramref name="obj" /> are equal if <paramref name="obj" /> is a <see cref="Plane" /> object and their <see cref="Normal" /> and <see cref="D" /> fields are equal.</remarks>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public override readonly bool Equals([NotNullWhen(true)] object? obj)
-        {
-            return (obj is Plane other) && Equals(other);
-        }
+        public override readonly bool Equals([NotNullWhen(true)] object? obj) => (obj is Plane other) && Equals(other);
 
         /// <summary>Returns a value that indicates whether this instance and another plane object are equal.</summary>
         /// <param name="other">The other plane.</param>
         /// <returns><see langword="true" /> if the two planes are equal; otherwise, <see langword="false" />.</returns>
         /// <remarks>Two <see cref="Plane" /> objects are equal if their <see cref="Normal" /> and <see cref="D" /> fields are equal.</remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public readonly bool Equals(Plane other)
-        {
-            // This function needs to account for floating-point equality around NaN
-            // and so must behave equivalently to the underlying float/double.Equals
-
-            if (Vector128.IsHardwareAccelerated)
-            {
-                return this.AsVector128().Equals(other.AsVector128());
-            }
-
-            return SoftwareFallback(in this, other);
-
-            static bool SoftwareFallback(in Plane self, Plane other)
-            {
-                return self.Normal.Equals(other.Normal)
-                    && self.D.Equals(other.D);
-            }
-        }
+        public readonly bool Equals(Plane other) => this.AsVector128().Equals(other.AsVector128());
 
         /// <summary>Returns the hash code for this instance.</summary>
         /// <returns>The hash code.</returns>
-        public override readonly int GetHashCode()
-        {
-            return HashCode.Combine(Normal, D);
-        }
+        public override readonly int GetHashCode() => HashCode.Combine(Normal, D);
 
         /// <summary>Returns the string representation of this plane object.</summary>
         /// <returns>A string that represents this <see cref="Plane" /> object.</returns>

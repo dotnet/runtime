@@ -442,11 +442,59 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public void SerializeCallsFlushAtThreshold()
+        {
+            var data = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+            var options = new JsonSerializerOptions { DefaultBufferSize = 512 };
+
+            using var stream = new TestStream(1);
+            JsonSerializer.Serialize(stream, CreateManyTestObjects(), options);
+
+            // Flush should happen every ~460 bytes (+36 for writing data when just below threshold)
+            // Assuming a "perfect" array pool implementation, the number of write calls should be closer to (data.Length * 10_000 / (512 * .9))
+            // But because the array pool may give a larger buffer than 512, we need to be a little more permissive when checking how many writes occur
+            Assert.InRange(stream.TestWriteCount, data.Length * 10_000 / 5000, data.Length * 10_000 / 200);
+
+            IEnumerable<string> CreateManyTestObjects()
+            {
+                int i = 0;
+                while (++i < 10_000)
+                {
+                    yield return data;
+                }
+            }
+        }
+
+        [Fact]
         public async Task NestedSerializeAsyncCallsFlushAtThreshold()
         {
             var data = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
             var options = new JsonSerializerOptions { DefaultBufferSize = 512 };
             options.Converters.Add(new MyStringConverter());
+
+            using var stream = new TestStream(1);
+            await JsonSerializer.SerializeAsync(stream, CreateManyTestObjects(), options);
+
+            // Flush should happen every ~460 bytes (+36 for writing data when just below threshold)
+            // Assuming a "perfect" array pool implementation, the number of write calls should be closer to (data.Length * 10_000 / (512 * .9))
+            // But because the array pool may give a larger buffer than 512, we need to be a little more permissive when checking how many writes occur
+            Assert.InRange(stream.TestAsyncWriteCount, data.Length * 10_000 / 5000, data.Length * 10_000 / 200);
+
+            IEnumerable<string> CreateManyTestObjects()
+            {
+                int i = 0;
+                while (++i < 10_000)
+                {
+                    yield return data;
+                }
+            }
+        }
+
+        [Fact]
+        public async Task SerializeAsyncCallsFlushAtThreshold()
+        {
+            var data = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+            var options = new JsonSerializerOptions { DefaultBufferSize = 512 };
 
             using var stream = new TestStream(1);
             await JsonSerializer.SerializeAsync(stream, CreateManyTestObjects(), options);

@@ -1,0 +1,23 @@
+#ifndef PAL_HOST_CONFIGURE_H_INCLUDED
+#define PAL_HOST_CONFIGURE_H_INCLUDED
+
+#cmakedefine01 CLR_SINGLE_FILE_HOST_ONLY
+
+#ifdef CLR_SINGLE_FILE_HOST_ONLY
+// When hosting components are all statically linked,
+// the versioning information is irrelevant and may only come up in tracing.
+// so we will use "static"
+#define HOST_POLICY_PKG_NAME "static"
+#define HOST_POLICY_PKG_REL_DIR "static"
+#define REPO_COMMIT_HASH "static"
+#else
+#define HOST_POLICY_PKG_NAME "runtime.@CLI_CMAKE_PKG_RID@.Microsoft.NETCore.DotNetHostPolicy"
+#define HOST_POLICY_PKG_REL_DIR "runtime.@CLI_CMAKE_PKG_RID@/native"
+#define REPO_COMMIT_HASH "@CLI_CMAKE_COMMIT_HASH@"
+#endif
+
+#define FALLBACK_HOST_OS "@CLI_CMAKE_FALLBACK_OS@"
+#define CURRENT_OS_NAME "@CLR_CMAKE_TARGET_OS@"
+#define CURRENT_ARCH_NAME "@CLR_CMAKE_TARGET_ARCH@"
+
+#endif // PAL_HOST_CONFIGURE_H_INCLUDED

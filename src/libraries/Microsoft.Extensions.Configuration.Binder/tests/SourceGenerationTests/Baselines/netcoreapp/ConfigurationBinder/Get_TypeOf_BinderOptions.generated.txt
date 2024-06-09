@@ -73,7 +73,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             else if (defaultValueIfNotFound)
             {
-                instance.MyInt = default;
+                instance.MyInt = instance.MyInt;
             }
         }
 
