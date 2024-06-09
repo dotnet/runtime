@@ -347,6 +347,7 @@ namespace System.Net.Sockets.Tests
                 void RunCommonHostLogic(int processId)
                 {
                     using Socket ipcServer = ipcServerListener.Accept();
+                    ipcServer.NoDelay = true;
 
                     // Duplicate the socket:
                     SocketInformation socketInfo = handlerOriginal.DuplicateAndClose(processId);
@@ -362,6 +363,7 @@ namespace System.Net.Sockets.Tests
                 {
                     int ipcPort = int.Parse(ipcPortString, CultureInfo.InvariantCulture);
                     using Socket ipcClient = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                    ipcClient.NoDelay = true;
                     await ipcClient.ConnectAsync(IPAddress.Loopback, ipcPort);
 
                     await using var ipcStream = new NetworkStream(ipcClient, true);
