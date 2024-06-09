@@ -874,7 +874,7 @@ LinearScan::LinearScan(Compiler* theCompiler)
     {
         // When the EnC option is set we have an exact set of registers that we always save
         // that are also available in future versions.
-        availableIntRegs &= ~(RBM_INT_CALLEE_SAVED | RBM_ENC_CALLEE_SAVED).GetIntRegSet();
+        availableIntRegs &= (~RBM_INT_CALLEE_SAVED | RBM_ENC_CALLEE_SAVED).GetIntRegSet();
 #if defined(UNIX_AMD64_ABI)
         availableFloatRegs &= ~RBM_FLT_CALLEE_SAVED;
         availableDoubleRegs &= ~RBM_FLT_CALLEE_SAVED;
