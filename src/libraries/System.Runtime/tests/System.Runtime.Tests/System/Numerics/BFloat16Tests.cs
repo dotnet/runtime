@@ -525,7 +525,7 @@ namespace System.Numerics.Tests
                 (BitConverter.UInt32BitsToSingle(0b1_00000000_10000111000000000000001),
                                   UInt16BitsToBFloat16(0b1_00000000_1000100)), // neg subnormal - ULP rounds lower,
                 (BitConverter.UInt32BitsToSingle(0b0_00000000_00000000110000000000000),
-                                  UInt16BitsToBFloat16(0b0_00000_000000000)), // (BFloat16-precision minimum subnormal / 2) should underflow to zero
+                                  UInt16BitsToBFloat16(0b0_00000_000000000)), // (BFloat16 minimum subnormal / 2) should underflow to zero
             };
 
             foreach ((float original, BFloat16 expected) in data)
@@ -539,6 +539,90 @@ namespace System.Numerics.Tests
         public static void ExplicitConversion_FromSingle(float f, BFloat16 expected) // Check the underlying bits for verifying NaNs
         {
             BFloat16 b16 = (BFloat16)f;
+            AssertExtensions.Equal(BFloat16ToUInt16Bits(expected), BFloat16ToUInt16Bits(b16));
+        }
+
+        public static IEnumerable<object[]> ExplicitConversion_FromDouble_TestData()
+        {
+            (double, BFloat16)[] data =
+            {
+                (Math.PI, UInt16BitsToBFloat16(0b0_10000000_1001001)), // 3.140625
+                (Math.E, UInt16BitsToBFloat16(0b0_10000000_0101110)), // 2.71875
+                (-Math.PI, UInt16BitsToBFloat16(0b1_10000000_1001001)), // -3.140625
+                (-Math.E, UInt16BitsToBFloat16(0b1_10000000_0101110)), // -2.71875
+                (double.MaxValue, BFloat16.PositiveInfinity), // Overflow
+                (double.MinValue, BFloat16.NegativeInfinity), // Overflow
+                (double.PositiveInfinity, BFloat16.PositiveInfinity), // Overflow
+                (double.NegativeInfinity, BFloat16.NegativeInfinity), // Overflow
+                (double.NaN, BFloat16.NaN), // Quiet Negative NaN
+                (BitConverter.UInt64BitsToDouble(0x7FF80000_00000000), UInt16BitsToBFloat16(0b0_11111111_1000000)), // Quiet Positive NaN
+                (BitConverter.UInt64BitsToDouble(0xFFFAAAAA_AAAAAAAA), UInt16BitsToBFloat16(0b1_11111111_1010101)), // Signalling Negative NaN
+                (BitConverter.UInt64BitsToDouble(0x7FFAAAAA_AAAAAAAA), UInt16BitsToBFloat16(0b0_11111111_1010101)), // Signalling Positive NaN
+                (double.Epsilon, UInt16BitsToBFloat16(0)), // Underflow
+                (-double.Epsilon, UInt16BitsToBFloat16(0b1_00000000_0000000)), // Underflow                (1f, UInt16BitsToBFloat16(0b0_01111111_0000000)), // 1
+                (-1d, UInt16BitsToBFloat16(0b1_01111111_0000000)), // -1
+                (0d, UInt16BitsToBFloat16(0)), // 0
+                (-0d, UInt16BitsToBFloat16(0b1_00000000_0000000)), // -0
+                (42d, UInt16BitsToBFloat16(0b0_10000100_0101000)), // 42
+                (-42d, UInt16BitsToBFloat16(0b1_10000100_0101000)), // -42
+                (0.1d, UInt16BitsToBFloat16(0b0_01111011_1001101)), // 0.10009765625
+                (-0.1d, UInt16BitsToBFloat16(0b1_01111011_1001101)), // -0.10009765625
+                (1.5d, UInt16BitsToBFloat16(0b0_01111111_1000000)), // 1.5
+                (-1.5d, UInt16BitsToBFloat16(0b1_01111111_1000000)), // -1.5
+                (1.5078125d, UInt16BitsToBFloat16(0b0_01111111_1000001)), // 1.5078125
+                (-1.5078125d, UInt16BitsToBFloat16(0b1_01111111_1000001)), // -1.5078125
+                (BitConverter.UInt64BitsToDouble(0x3810000000000000), UInt16BitsToBFloat16(0b0_00000001_0000000)), // smallest normal
+                (BitConverter.UInt64BitsToDouble(0x380FC00000000000), UInt16BitsToBFloat16(0b0_00000000_1111111)), // largest subnormal
+                (BitConverter.UInt64BitsToDouble(0x3800000000000000), UInt16BitsToBFloat16(0b0_00000000_1000000)), // middle subnormal
+                (BitConverter.UInt64BitsToDouble(0x37FF800000000000), UInt16BitsToBFloat16(0b0_00000000_0111111)), // just below middle subnormal
+                (BitConverter.UInt64BitsToDouble(0x37A0000000000000), UInt16BitsToBFloat16(0b0_00000000_0000001)), // smallest subnormal
+                (BitConverter.UInt64BitsToDouble(0xB7A0000000000000), UInt16BitsToBFloat16(0b1_00000000_0000001)), // highest negative subnormal
+                (BitConverter.UInt64BitsToDouble(0xB7FF800000000000), UInt16BitsToBFloat16(0b1_00000000_0111111)), // just above negative middle subnormal
+                (BitConverter.UInt64BitsToDouble(0xB800000000000000), UInt16BitsToBFloat16(0b1_00000000_1000000)), // negative middle subnormal
+                (BitConverter.UInt64BitsToDouble(0xB80FC00000000000), UInt16BitsToBFloat16(0b1_00000000_1111111)), // lowest negative subnormal
+                (BitConverter.UInt64BitsToDouble(0xB810000000000000), UInt16BitsToBFloat16(0b1_00000001_0000000)), // highest negative normal
+                (BitConverter.UInt64BitsToDouble(0x4090700000000001),
+                    UInt16BitsToBFloat16(0b0_10001001_0000100)), // 1052+ULP rounds up
+                (BitConverter.UInt64BitsToDouble(0x4090700000000000),
+                    UInt16BitsToBFloat16(0b0_10001001_0000100)), // 1052 rounds to even
+                (BitConverter.UInt64BitsToDouble(0x40906FFFFFFFFFFF),
+                    UInt16BitsToBFloat16(0b0_10001001_0000011)), // 1052-ULP rounds down
+                (BitConverter.UInt64BitsToDouble(0x4090500000000000),
+                    UInt16BitsToBFloat16(0b0_10001001_0000010)), // 1044 rounds to even
+                (BitConverter.UInt64BitsToDouble(0xC0906FFFFFFFFFFF),
+                    UInt16BitsToBFloat16(0b1_10001001_0000011)), // -1052+ULP rounds towards zero
+                (BitConverter.UInt64BitsToDouble(0xC090700000000000),
+                    UInt16BitsToBFloat16(0b1_10001001_0000100)), // -1052 rounds to even
+                (BitConverter.UInt64BitsToDouble(0xC090700000000001),
+                    UInt16BitsToBFloat16(0b1_10001001_0000100)), // -1052-ULP rounds away from zero
+                (BitConverter.UInt64BitsToDouble(0xC090500000000000),
+                    UInt16BitsToBFloat16(0b1_10001001_0000010)), // -1044 rounds to even
+                (BitConverter.UInt64BitsToDouble(0x3800E00000000001),
+                    UInt16BitsToBFloat16(0b0_00000000_1000100)), // subnormal + ULP rounds up
+                (BitConverter.UInt64BitsToDouble(0x3800E00000000000),
+                    UInt16BitsToBFloat16(0b0_00000000_1000100)), // subnormal rounds to even
+                (BitConverter.UInt64BitsToDouble(0x3800DFFFFFFFFFFF),
+                    UInt16BitsToBFloat16(0b0_00000000_1000011)), // subnormal - ULP rounds down
+                (BitConverter.UInt64BitsToDouble(0xB800DFFFFFFFFFFF),
+                    UInt16BitsToBFloat16(0b1_00000000_1000011)), // neg subnormal + ULP rounds higher
+                (BitConverter.UInt64BitsToDouble(0xB800E00000000000),
+                    UInt16BitsToBFloat16(0b1_00000000_1000100)), // neg subnormal rounds to even
+                (BitConverter.UInt64BitsToDouble(0xB800E00000000001),
+                    UInt16BitsToBFloat16(0b1_00000000_1000100)), // neg subnormal - ULP rounds lower
+                (BitConverter.UInt64BitsToDouble(0x3788000000000000), UInt16BitsToBFloat16(0b0_00000_000000000)), // (BFloat16 minimum subnormal / 2) should underflow to zero
+            };
+
+            foreach ((double original, BFloat16 expected) in data)
+            {
+                yield return new object[] { original, expected };
+            }
+        }
+
+        [MemberData(nameof(ExplicitConversion_FromDouble_TestData))]
+        [Theory]
+        public static void ExplicitConversion_FromDouble(double d, BFloat16 expected) // Check the underlying bits for verifying NaNs
+        {
+            BFloat16 b16 = (BFloat16)d;
             AssertExtensions.Equal(BFloat16ToUInt16Bits(expected), BFloat16ToUInt16Bits(b16));
         }
     }
