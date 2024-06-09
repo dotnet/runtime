@@ -405,8 +405,8 @@ namespace System.Numerics.Tests
         {
             (BFloat16 Original, double Expected)[] data =
             {
-                (UInt16BitsToBFloat16(0b0_01111_0000000000), 1d), // 1
-                (UInt16BitsToBFloat16(0b1_01111_0000000000), -1d), // -1
+                (UInt16BitsToBFloat16(0b0_01111111_0000000), 1d), // 1
+                (UInt16BitsToBFloat16(0b1_01111111_0000000), -1d), // -1
                 (BFloat16.MaxValue, BitConverter.UInt64BitsToDouble(0x47EFE000_00000000)), // 3.3895314E+38
                 (BFloat16.MinValue, BitConverter.UInt64BitsToDouble(0xC7EFE000_00000000)), // -3.3895314E+38
                 (UInt16BitsToBFloat16(0b0_01111011_1001101), 0.10009765625d), // 0.1ish
