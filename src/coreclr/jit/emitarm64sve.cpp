@@ -3786,9 +3786,7 @@ void emitter::emitInsSve_R_R_R(instruction     ins,
                 // MOV is an alias for CPY, and is always the preferred disassembly.
                 ins = INS_sve_mov;
             }
-            // TODO-SVE: Change the below check to INS_SCALABLE_OPTS_PREDICATE_MERGE
-            // once predicate registers are present.
-            else if (sopt == INS_SCALABLE_OPTS_PREDICATE_MERGE_MOV)
+            else if (sopt == INS_SCALABLE_OPTS_PREDICATE_MERGE)
             {
                 assert(isVectorRegister(reg1));
                 assert(isPredicateRegister(reg2));
@@ -5900,7 +5898,7 @@ void emitter::emitInsSve_R_R_R_R(instruction     ins,
                 {
                     // mov is a preferred alias for sel
                     return emitInsSve_R_R_R(INS_sve_mov, attr, reg1, reg2, reg3, opt,
-                                            INS_SCALABLE_OPTS_PREDICATE_MERGE_MOV);
+                                            INS_SCALABLE_OPTS_PREDICATE_MERGE);
                 }
 
                 assert(insOptsScalableStandard(opt));
