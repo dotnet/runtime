@@ -10409,7 +10409,17 @@ void RefPosition::dump(LinearScan* linearScan)
     printf(FMT_BB " ", this->bbNum);
 
     printf("regmask=");
-    linearScan->compiler->dumpRegMask(registerAssignment);
+    var_types type = TYP_UNKNOWN;
+    if ((refType == RefTypeBB) || (refType == RefTypeKillGCRefs))
+    {
+        // These refTypes do not have intervals
+        type = TYP_INT;
+    }
+    else
+    {
+        type = getRegisterType();
+    }
+    linearScan->compiler->dumpRegMask(registerAssignment, type);
 
     printf(" minReg=%d", minRegCandidateCount);
 
