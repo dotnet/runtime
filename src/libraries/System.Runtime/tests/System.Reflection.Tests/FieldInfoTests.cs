@@ -124,7 +124,6 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/103207")]
         public void GetValueFromRvaField()
         {
             byte[] valueArray = new byte[] { 1, 2, 3, 4, 5 };
