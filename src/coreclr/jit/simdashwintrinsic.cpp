@@ -556,7 +556,8 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 #if defined(TARGET_XARCH)
         case NI_VectorT_ConvertToDouble:
         {
-            if (IsBaselineVector512IsaSupportedOpportunistically())
+            if (IsBaselineVector512IsaSupportedOpportunistically() ||
+                ((simdSize != 64) && compOpportunisticallyDependsOn(InstructionSet_AVX10v1)))
             {
                 break;
             }
@@ -576,7 +577,8 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
         case NI_VectorT_ConvertToUInt32:
         case NI_VectorT_ConvertToUInt64:
         {
-            if (IsBaselineVector512IsaSupportedOpportunistically())
+            if (IsBaselineVector512IsaSupportedOpportunistically() ||
+                (simdSize != 64 && compOpportunisticallyDependsOn(InstructionSet_AVX10v1)))
             {
                 break;
             }
@@ -586,7 +588,9 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
         case NI_VectorT_ConvertToSingle:
         {
             if ((simdBaseType == TYP_INT) ||
-                (simdBaseType == TYP_UINT && IsBaselineVector512IsaSupportedOpportunistically()))
+                (simdBaseType == TYP_UINT &&
+                 (IsBaselineVector512IsaSupportedOpportunistically() ||
+                  (simdSize != 64 && compOpportunisticallyDependsOn(InstructionSet_AVX10v1)))))
             {
                 break;
             }
@@ -613,7 +617,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
             if (varTypeIsLong(simdBaseType) && !impStackTop(0).val->OperIsConst())
             {
 #if defined(TARGET_XARCH)
-                if (!compOpportunisticallyDependsOn(InstructionSet_AVX512DQ_VL))
+                if (!canUseEvexEncoding())
                 {
                     // TODO-XARCH-CQ: We should support long/ulong multiplication
                     return nullptr;
@@ -839,7 +843,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
         {
             if (varTypeIsLong(simdBaseType))
             {
-                if (!compOpportunisticallyDependsOn(InstructionSet_AVX512DQ_VL))
+                if (!canUseEvexEncoding())
                 {
                     // TODO-XARCH-CQ: We should support long/ulong multiplication
                     return nullptr;
@@ -859,7 +863,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
         {
             if (varTypeIsLong(simdBaseType) || (simdBaseType == TYP_DOUBLE))
             {
-                if (!compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
+                if (!canUseEvexEncoding())
                 {
                     // TODO-XARCH-CQ: We should support long/ulong arithmetic shift
                     return nullptr;
@@ -1026,18 +1030,33 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     assert(sig->numArgs == 1);
                     assert(varTypeIsLong(simdBaseType));
                     NamedIntrinsic intrinsic = NI_Illegal;
-                    if (simdSize == 64)
+                    if (compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
                     {
-                        intrinsic = NI_AVX512DQ_ConvertToVector512Double;
-                    }
-                    else if (simdSize == 32)
-                    {
-                        intrinsic = NI_AVX512DQ_VL_ConvertToVector256Double;
+                        if (simdSize == 32)
+                        {
+                            intrinsic = NI_AVX10v1_ConvertToVector256Double;
+                        }
+                        else
+                        {
+                            assert(simdSize == 16);
+                            intrinsic = NI_AVX10v1_ConvertToVector128Double;
+                        }
                     }
                     else
                     {
-                        assert(simdSize == 16);
-                        intrinsic = NI_AVX512DQ_VL_ConvertToVector128Double;
+                        if (simdSize == 64)
+                        {
+                            intrinsic = NI_AVX512DQ_ConvertToVector512Double;
+                        }
+                        else if (simdSize == 32)
+                        {
+                            intrinsic = NI_AVX512DQ_VL_ConvertToVector256Double;
+                        }
+                        else
+                        {
+                            assert(simdSize == 16);
+                            intrinsic = NI_AVX512DQ_VL_ConvertToVector128Double;
+                        }
                     }
                     return gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize);
                 }
@@ -1058,6 +1077,21 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                                 break;
                             case 64:
                                 intrinsic = NI_AVX512F_ConvertToVector512Single;
+                                break;
+                            default:
+                                unreached();
+                        }
+                    }
+                    else if (simdBaseType == TYP_UINT && simdSize != 64 &&
+                             compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+                    {
+                        switch (simdSize)
+                        {
+                            case 16:
+                                intrinsic = NI_AVX10v1_ConvertToVector128Single;
+                                break;
+                            case 32:
+                                intrinsic = NI_AVX10v1_ConvertToVector256Single;
                                 break;
                             default:
                                 unreached();

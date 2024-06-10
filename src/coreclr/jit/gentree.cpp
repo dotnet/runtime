@@ -19795,6 +19795,8 @@ bool GenTree::isContainableHWIntrinsic() const
         case NI_AVX512F_ConvertToVector256UInt32:
         case NI_AVX512F_VL_ConvertToVector128UInt32:
         case NI_AVX512F_VL_ConvertToVector128UInt32WithSaturation:
+        case NI_AVX10v1_ConvertToVector128UInt32:
+        case NI_AVX10v1_ConvertToVector128UInt32WithSaturation:
         {
             if (varTypeIsFloating(AsHWIntrinsic()->GetSimdBaseType()))
             {
@@ -19854,6 +19856,18 @@ bool GenTree::isContainableHWIntrinsic() const
         case NI_AVX512BW_VL_ConvertToVector128SByteWithSaturation:
         case NI_AVX512DQ_ExtractVector128:
         case NI_AVX512DQ_ExtractVector256:
+        case NI_AVX10v1_ConvertToVector128Byte:
+        case NI_AVX10v1_ConvertToVector128ByteWithSaturation:
+        case NI_AVX10v1_ConvertToVector128Int16:
+        case NI_AVX10v1_ConvertToVector128Int16WithSaturation:
+        case NI_AVX10v1_ConvertToVector128Int32:
+        case NI_AVX10v1_ConvertToVector128Int32WithSaturation:
+        case NI_AVX10v1_ConvertToVector128SByte:
+        case NI_AVX10v1_ConvertToVector128SByteWithSaturation:
+        case NI_AVX10v1_ConvertToVector128UInt16:
+        case NI_AVX10v1_ConvertToVector128UInt16WithSaturation:
+        case NI_AVX10v1_V512_ExtractVector128:
+        case NI_AVX10v1_V512_ExtractVector256:
         {
             // These HWIntrinsic operations are contained as part of a store
             return true;
@@ -19910,7 +19924,7 @@ bool GenTree::isRMWHWIntrinsic(Compiler* comp)
 
     switch (intrinsicId)
     {
-        case NI_AVX512F_BlendVariableMask:
+        case NI_EVEX_BlendVariableMask:
         {
             GenTree* op2 = hwintrinsic->Op(2);
 
@@ -19935,6 +19949,8 @@ bool GenTree::isRMWHWIntrinsic(Compiler* comp)
         case NI_AVX512F_Fixup:
         case NI_AVX512F_FixupScalar:
         case NI_AVX512F_VL_Fixup:
+        case NI_AVX10v1_Fixup:
+        case NI_AVX10v1_FixupScalar:
         {
             // We are actually only RMW in the case where the lookup table
             // has any value that could result in `op1` being picked. So
@@ -19962,7 +19978,7 @@ bool GenTree::isRMWHWIntrinsic(Compiler* comp)
             uint32_t  count        = simdSize / sizeof(uint32_t);
             uint32_t  incSize      = (simdBaseType == TYP_FLOAT) ? 1 : 2;
 
-            if (intrinsicId == NI_AVX512F_FixupScalar)
+            if (intrinsicId == NI_AVX512F_FixupScalar || intrinsicId == NI_AVX10v1_FixupScalar)
             {
                 // Upper elements come from op2
                 count = 1;
@@ -19985,6 +20001,7 @@ bool GenTree::isRMWHWIntrinsic(Compiler* comp)
 
         case NI_AVX512F_TernaryLogic:
         case NI_AVX512F_VL_TernaryLogic:
+        case NI_AVX10v1_TernaryLogic:
         {
             // We may not be RMW depending on the control byte as there
             // are many operations that do not use all three inputs.
@@ -20049,6 +20066,7 @@ bool GenTree::isEmbeddedMaskingCompatibleHWIntrinsic() const
             case NI_AVX512F_ConvertToVector512Int32:
             case NI_AVX512F_ConvertToVector512UInt32:
             case NI_AVX512F_VL_ConvertToVector128UInt32:
+            case NI_AVX10v1_ConvertToVector128UInt32:
             {
                 return varTypeIsFloating(simdBaseType);
             }
@@ -20205,6 +20223,10 @@ GenTree* Compiler::gtNewSimdAbsNode(var_types type, GenTree* op1, CorInfoType si
         {
             assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F));
             intrinsic = NI_AVX512F_Abs;
+        }
+        else if (compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+        {
+            intrinsic = NI_AVX10v1_Abs;
         }
         else if (compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
         {
@@ -20557,8 +20579,15 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                     if (varTypeIsLong(simdBaseType) || (simdBaseType == TYP_DOUBLE))
                     {
                         assert(varTypeIsSigned(simdBaseType));
-                        assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F_VL));
-                        intrinsic = NI_AVX512F_VL_ShiftRightArithmetic;
+                        if (compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+                        {
+                            intrinsic = NI_AVX10v1_ShiftRightArithmetic;
+                        }
+                        else
+                        {
+                            assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F_VL));
+                            intrinsic = NI_AVX512F_VL_ShiftRightArithmetic;
+                        }
                     }
                     else
                     {
@@ -20619,8 +20648,15 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                 if (varTypeIsLong(simdBaseType) || (simdBaseType == TYP_DOUBLE))
                 {
                     assert(varTypeIsSigned(simdBaseType));
-                    assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F_VL));
-                    intrinsic = NI_AVX512F_VL_ShiftRightArithmetic;
+                    if (compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+                    {
+                        intrinsic = NI_AVX10v1_ShiftRightArithmetic;
+                    }
+                    else
+                    {
+                        assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F_VL));
+                        intrinsic = NI_AVX512F_VL_ShiftRightArithmetic;
+                    }
                 }
                 else
                 {
@@ -20693,6 +20729,7 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                     NamedIntrinsic narrowIntrinsic;
                     var_types      widenedType;
                     unsigned       widenedSimdSize;
+                    bool           isV512Supported = false;
 
                     if (simdSize == 32 && IsBaselineVector512IsaSupportedOpportunistically())
                     {
@@ -20734,7 +20771,7 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                     }
                     else if (simdSize == 16 && compOpportunisticallyDependsOn(InstructionSet_AVX2))
                     {
-                        if (IsBaselineVector512IsaSupportedOpportunistically())
+                        if (compIsEvexOpportunisticallySupported(isV512Supported))
                         {
                             // Input is SIMD16 [U]Byte and AVX512BW_VL is supported:
                             // - Widen inputs as SIMD32 [U]Short
@@ -20745,12 +20782,14 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                             if (simdBaseType == TYP_BYTE)
                             {
                                 widenedSimdBaseJitType = CORINFO_TYPE_SHORT;
-                                narrowIntrinsic        = NI_AVX512BW_VL_ConvertToVector128SByte;
+                                narrowIntrinsic        = !isV512Supported ? NI_AVX10v1_ConvertToVector128SByte
+                                                                          : NI_AVX512BW_VL_ConvertToVector128SByte;
                             }
                             else
                             {
                                 widenedSimdBaseJitType = CORINFO_TYPE_USHORT;
-                                narrowIntrinsic        = NI_AVX512BW_VL_ConvertToVector128Byte;
+                                narrowIntrinsic        = !isV512Supported ? NI_AVX10v1_ConvertToVector128Byte
+                                                                          : NI_AVX512BW_VL_ConvertToVector128Byte;
                             }
 
                             widenedType     = TYP_SIMD32;
@@ -20808,7 +20847,7 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                             }
 
                             // Validate we can't use AVX512F_VL_TernaryLogic here
-                            assert(!compIsaSupportedDebugOnly(InstructionSet_AVX512F_VL));
+                            assert(!canUseEvexEncodingDebugOnly());
 
                             // Vector256<short> maskedProduct = Avx2.And(widenedProduct, vecCon1).AsInt16()
                             GenTree* maskedProduct    = gtNewSimdBinOpNode(GT_AND, widenedType, widenedProduct, vecCon1,
@@ -20954,15 +20993,20 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                 case TYP_ULONG:
                 {
                     assert((simdSize == 16) || (simdSize == 32) || (simdSize == 64));
-                    assert(compIsaSupportedDebugOnly(InstructionSet_AVX512DQ_VL));
 
-                    if (simdSize != 64)
+                    if (simdSize == 64)
                     {
-                        intrinsic = NI_AVX512DQ_VL_MultiplyLow;
+                        assert(compIsaSupportedDebugOnly(InstructionSet_AVX512DQ));
+                        intrinsic = NI_AVX512DQ_MultiplyLow;
+                    }
+                    else if (compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+                    {
+                        intrinsic = NI_AVX10v1_MultiplyLow;
                     }
                     else
                     {
-                        intrinsic = NI_AVX512DQ_MultiplyLow;
+                        assert(compIsaSupportedDebugOnly(InstructionSet_AVX512DQ_VL));
+                        intrinsic = NI_AVX512DQ_VL_MultiplyLow;
                     }
 
                     break;
@@ -21506,12 +21550,14 @@ GenTree* Compiler::gtNewSimdCvtNode(var_types   type,
 
 #if defined(TARGET_XARCH)
     assert(IsBaselineVector512IsaSupportedDebugOnly() ||
+           (simdSize != 64 && compIsaSupportedDebugOnly(InstructionSet_AVX10v1)) ||
            ((simdTargetBaseType == TYP_INT) && ((simdSize == 16 && compIsaSupportedDebugOnly(InstructionSet_SSE41)) ||
                                                 (simdSize == 32 && compIsaSupportedDebugOnly(InstructionSet_AVX)))));
 
     GenTree* fixupVal;
+    bool     isV512Supported = false;
 
-    if (IsBaselineVector512IsaSupportedOpportunistically())
+    if (compIsEvexOpportunisticallySupported(isV512Supported))
     {
         /*Generate the control table for VFIXUPIMMSD/SS
         - For conversion to unsigned
@@ -21537,10 +21583,19 @@ GenTree* Compiler::gtNewSimdCvtNode(var_types   type,
         GenTree* tblCon  = gtNewSimdCreateBroadcastNode(type, gtNewIconNode(iconVal), simdTargetBaseJitType, simdSize);
 
         // We need op1Clone to run fixup
-        GenTree* op1Clone = fgMakeMultiUse(&op1);
+        GenTree*       op1Clone = fgMakeMultiUse(&op1);
+        NamedIntrinsic fixupHwIntrinsicID;
 
+        if (simdSize == 64)
+        {
+            fixupHwIntrinsicID = NI_AVX512F_Fixup;
+        }
+        else
+        {
+            fixupHwIntrinsicID = !isV512Supported ? NI_AVX10v1_Fixup : NI_AVX512F_VL_Fixup;
+        }
         // run vfixupimmsd base on table and no flags reporting
-        fixupVal = gtNewSimdHWIntrinsicNode(type, op1, op1Clone, tblCon, gtNewIconNode(0), NI_AVX512F_Fixup,
+        fixupVal = gtNewSimdHWIntrinsicNode(type, op1, op1Clone, tblCon, gtNewIconNode(0), fixupHwIntrinsicID,
                                             simdSourceBaseJitType, simdSize);
     }
     else
@@ -21622,6 +21677,7 @@ GenTree* Compiler::gtNewSimdCvtNativeNode(var_types   type,
 
 #if defined(TARGET_XARCH)
     assert(IsBaselineVector512IsaSupportedDebugOnly() ||
+           (simdSize != 64 && compIsaSupportedDebugOnly(InstructionSet_AVX10v1)) ||
            ((simdTargetBaseType == TYP_INT) &&
             ((simdSize == 16) || (simdSize == 32 && compIsaSupportedDebugOnly(InstructionSet_AVX)))));
 
@@ -21671,13 +21727,17 @@ GenTree* Compiler::gtNewSimdCvtNativeNode(var_types   type,
 
                         case 32:
                         {
-                            hwIntrinsicID = NI_AVX512F_VL_ConvertToVector256UInt32WithTruncation;
+                            hwIntrinsicID = compOpportunisticallyDependsOn(InstructionSet_AVX10v1)
+                                                ? NI_AVX10v1_ConvertToVector256UInt32WithTruncation
+                                                : NI_AVX512F_VL_ConvertToVector256UInt32WithTruncation;
                             break;
                         }
 
                         case 16:
                         {
-                            hwIntrinsicID = NI_AVX512F_VL_ConvertToVector128UInt32WithTruncation;
+                            hwIntrinsicID = compOpportunisticallyDependsOn(InstructionSet_AVX10v1)
+                                                ? NI_AVX10v1_ConvertToVector128UInt32WithTruncation
+                                                : NI_AVX512F_VL_ConvertToVector128UInt32WithTruncation;
                             break;
                         }
 
@@ -21709,13 +21769,17 @@ GenTree* Compiler::gtNewSimdCvtNativeNode(var_types   type,
 
                         case 32:
                         {
-                            hwIntrinsicID = NI_AVX512DQ_VL_ConvertToVector256Int64WithTruncation;
+                            hwIntrinsicID = compOpportunisticallyDependsOn(InstructionSet_AVX10v1)
+                                                ? NI_AVX10v1_ConvertToVector256Int64WithTruncation
+                                                : NI_AVX512DQ_VL_ConvertToVector256Int64WithTruncation;
                             break;
                         }
 
                         case 16:
                         {
-                            hwIntrinsicID = NI_AVX512DQ_VL_ConvertToVector128Int64WithTruncation;
+                            hwIntrinsicID = compOpportunisticallyDependsOn(InstructionSet_AVX10v1)
+                                                ? NI_AVX10v1_ConvertToVector128Int64WithTruncation
+                                                : NI_AVX512DQ_VL_ConvertToVector128Int64WithTruncation;
                             break;
                         }
 
@@ -21737,13 +21801,17 @@ GenTree* Compiler::gtNewSimdCvtNativeNode(var_types   type,
 
                         case 32:
                         {
-                            hwIntrinsicID = NI_AVX512DQ_VL_ConvertToVector256UInt64WithTruncation;
+                            hwIntrinsicID = compOpportunisticallyDependsOn(InstructionSet_AVX10v1)
+                                                ? NI_AVX10v1_ConvertToVector256UInt64WithTruncation
+                                                : NI_AVX512DQ_VL_ConvertToVector256UInt64WithTruncation;
                             break;
                         }
 
                         case 16:
                         {
-                            hwIntrinsicID = NI_AVX512DQ_VL_ConvertToVector128UInt64WithTruncation;
+                            hwIntrinsicID = compOpportunisticallyDependsOn(InstructionSet_AVX10v1)
+                                                ? NI_AVX10v1_ConvertToVector128UInt64WithTruncation
+                                                : NI_AVX512DQ_VL_ConvertToVector128UInt64WithTruncation;
                             break;
                         }
 
@@ -21851,8 +21919,8 @@ GenTree* Compiler::gtNewSimdCmpOpNode(
         {
             if (simdSize == 64)
             {
-                assert(IsBaselineVector512IsaSupportedDebugOnly());
-                intrinsic                = NI_AVX512F_CompareEqualMask;
+                assert(canUseEvexEncodingDebugOnly());
+                intrinsic                = NI_EVEX_CompareEqualMask;
                 needsConvertMaskToVector = true;
             }
             else if (simdSize == 32)
@@ -21914,11 +21982,11 @@ GenTree* Compiler::gtNewSimdCmpOpNode(
 
         case GT_GE:
         {
-            if (IsBaselineVector512IsaSupportedOpportunistically())
+            if (canUseEvexEncoding())
             {
                 if ((simdSize == 64) || !varTypeIsFloating(simdBaseType))
                 {
-                    intrinsic                = NI_AVX512F_CompareGreaterThanOrEqualMask;
+                    intrinsic                = NI_EVEX_CompareGreaterThanOrEqualMask;
                     needsConvertMaskToVector = true;
                     break;
                 }
@@ -21988,11 +22056,11 @@ GenTree* Compiler::gtNewSimdCmpOpNode(
 
         case GT_GT:
         {
-            if (IsBaselineVector512IsaSupportedOpportunistically())
+            if (canUseEvexEncoding())
             {
                 if ((simdSize == 64) || varTypeIsUnsigned(simdBaseType))
                 {
-                    intrinsic                = NI_AVX512F_CompareGreaterThanMask;
+                    intrinsic                = NI_EVEX_CompareGreaterThanMask;
                     needsConvertMaskToVector = true;
                     break;
                 }
@@ -22153,7 +22221,7 @@ GenTree* Compiler::gtNewSimdCmpOpNode(
                                                    CORINFO_TYPE_INT, simdSize);
 
                     // Validate we can't use AVX512F_VL_TernaryLogic here
-                    assert(!compIsaSupportedDebugOnly(InstructionSet_AVX512F_VL));
+                    assert(!canUseEvexEncodingDebugOnly());
 
                     op2 = gtNewSimdBinOpNode(GT_AND, type, u, v, simdBaseJitType, simdSize);
                     return gtNewSimdBinOpNode(GT_OR, type, op1, op2, simdBaseJitType, simdSize);
@@ -22169,11 +22237,11 @@ GenTree* Compiler::gtNewSimdCmpOpNode(
 
         case GT_LE:
         {
-            if (IsBaselineVector512IsaSupportedOpportunistically())
+            if (canUseEvexEncoding())
             {
                 if ((simdSize == 64) || !varTypeIsFloating(simdBaseType))
                 {
-                    intrinsic                = NI_AVX512F_CompareLessThanOrEqualMask;
+                    intrinsic                = NI_EVEX_CompareLessThanOrEqualMask;
                     needsConvertMaskToVector = true;
                     break;
                 }
@@ -22243,11 +22311,11 @@ GenTree* Compiler::gtNewSimdCmpOpNode(
 
         case GT_LT:
         {
-            if (IsBaselineVector512IsaSupportedOpportunistically())
+            if (canUseEvexEncoding())
             {
                 if ((simdSize == 64) || varTypeIsUnsigned(simdBaseType))
                 {
-                    intrinsic                = NI_AVX512F_CompareLessThanMask;
+                    intrinsic                = NI_EVEX_CompareLessThanMask;
                     needsConvertMaskToVector = true;
                     break;
                 }
@@ -22408,7 +22476,7 @@ GenTree* Compiler::gtNewSimdCmpOpNode(
                                                    CORINFO_TYPE_INT, simdSize);
 
                     // Validate we can't use AVX512F_VL_TernaryLogic here
-                    assert(!compIsaSupportedDebugOnly(InstructionSet_AVX512F_VL));
+                    assert(!canUseEvexEncodingDebugOnly());
 
                     op2 = gtNewSimdBinOpNode(GT_AND, type, u, v, simdBaseJitType, simdSize);
                     return gtNewSimdBinOpNode(GT_OR, type, op1, op2, simdBaseJitType, simdSize);
@@ -22505,7 +22573,7 @@ GenTree* Compiler::gtNewSimdCmpOpNode(
     if (needsConvertMaskToVector)
     {
         GenTree* retNode = gtNewSimdHWIntrinsicNode(TYP_MASK, op1, op2, intrinsic, simdBaseJitType, simdSize);
-        return gtNewSimdHWIntrinsicNode(type, retNode, NI_AVX512F_ConvertMaskToVector, simdBaseJitType, simdSize);
+        return gtNewSimdHWIntrinsicNode(type, retNode, NI_EVEX_ConvertMaskToVector, simdBaseJitType, simdSize);
     }
     else
     {
@@ -22815,7 +22883,7 @@ GenTree* Compiler::gtNewSimdCndSelNode(
 #if defined(TARGET_XARCH)
     assert((simdSize != 32) || compIsaSupportedDebugOnly(InstructionSet_AVX));
 
-    if (compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
+    if (canUseEvexEncoding())
     {
         GenTree* control = gtNewIconNode(0xCA); // (B & A) | (C & ~A)
         return gtNewSimdTernaryLogicNode(type, op1, op2, op3, control, simdBaseJitType, simdSize);
@@ -24032,6 +24100,10 @@ GenTree* Compiler::gtNewSimdMaxNode(
             {
                 intrinsic = NI_AVX2_Max;
             }
+            else if (compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+            {
+                intrinsic = NI_AVX10v1_Max;
+            }
             else if (compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
             {
                 intrinsic = NI_AVX512F_VL_Max;
@@ -24145,7 +24217,11 @@ GenTree* Compiler::gtNewSimdMaxNode(
             case TYP_LONG:
             case TYP_ULONG:
             {
-                if (compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
+                if (compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+                {
+                    intrinsic = NI_AVX10v1_Max;
+                }
+                else if (compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
                 {
                     intrinsic = NI_AVX512F_VL_Max;
                 }
@@ -24238,6 +24314,10 @@ GenTree* Compiler::gtNewSimdMinNode(
             if (!varTypeIsLong(simdBaseType))
             {
                 intrinsic = NI_AVX2_Min;
+            }
+            else if (compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+            {
+                intrinsic = NI_AVX10v1_Min;
             }
             else if (compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
             {
@@ -24348,7 +24428,11 @@ GenTree* Compiler::gtNewSimdMinNode(
             case TYP_LONG:
             case TYP_ULONG:
             {
-                if (compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
+                if (compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+                {
+                    intrinsic = NI_AVX10v1_Min;
+                }
+                else if (compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
                 {
                     intrinsic = NI_AVX512F_VL_Min;
                 }
@@ -24426,11 +24510,12 @@ GenTree* Compiler::gtNewSimdNarrowNode(
     GenTree* tmp1;
     GenTree* tmp2;
 
+    bool isV512Supported = false;
+
 #if defined(TARGET_XARCH)
     GenTree* tmp3;
     GenTree* tmp4;
-
-    if (IsBaselineVector512IsaSupportedOpportunistically())
+    if (compIsEvexOpportunisticallySupported(isV512Supported))
     {
         // This is the same in principle to the other comments below, however due to
         // code formatting, its too long to reasonably display here.
@@ -24451,7 +24536,8 @@ GenTree* Compiler::gtNewSimdNarrowNode(
                 }
                 else
                 {
-                    intrinsicId = NI_AVX512BW_VL_ConvertToVector128SByte;
+                    intrinsicId =
+                        !isV512Supported ? NI_AVX10v1_ConvertToVector128SByte : NI_AVX512BW_VL_ConvertToVector128SByte;
                 }
 
                 opBaseJitType = CORINFO_TYPE_SHORT;
@@ -24466,7 +24552,8 @@ GenTree* Compiler::gtNewSimdNarrowNode(
                 }
                 else
                 {
-                    intrinsicId = NI_AVX512BW_VL_ConvertToVector128Byte;
+                    intrinsicId =
+                        !isV512Supported ? NI_AVX10v1_ConvertToVector128Byte : NI_AVX512BW_VL_ConvertToVector128Byte;
                 }
 
                 opBaseJitType = CORINFO_TYPE_USHORT;
@@ -24481,7 +24568,8 @@ GenTree* Compiler::gtNewSimdNarrowNode(
                 }
                 else
                 {
-                    intrinsicId = NI_AVX512F_VL_ConvertToVector128Int16;
+                    intrinsicId =
+                        !isV512Supported ? NI_AVX10v1_ConvertToVector128Int16 : NI_AVX512F_VL_ConvertToVector128Int16;
                 }
 
                 opBaseJitType = CORINFO_TYPE_INT;
@@ -24496,7 +24584,8 @@ GenTree* Compiler::gtNewSimdNarrowNode(
                 }
                 else
                 {
-                    intrinsicId = NI_AVX512F_VL_ConvertToVector128UInt16;
+                    intrinsicId =
+                        !isV512Supported ? NI_AVX10v1_ConvertToVector128UInt16 : NI_AVX512F_VL_ConvertToVector128UInt16;
                 }
 
                 opBaseJitType = CORINFO_TYPE_UINT;
@@ -24511,7 +24600,8 @@ GenTree* Compiler::gtNewSimdNarrowNode(
                 }
                 else
                 {
-                    intrinsicId = NI_AVX512F_VL_ConvertToVector128Int32;
+                    intrinsicId =
+                        !isV512Supported ? NI_AVX10v1_ConvertToVector128Int32 : NI_AVX512F_VL_ConvertToVector128Int32;
                 }
 
                 opBaseJitType = CORINFO_TYPE_LONG;
@@ -24526,7 +24616,8 @@ GenTree* Compiler::gtNewSimdNarrowNode(
                 }
                 else
                 {
-                    intrinsicId = NI_AVX512F_VL_ConvertToVector128UInt32;
+                    intrinsicId =
+                        !isV512Supported ? NI_AVX10v1_ConvertToVector128UInt32 : NI_AVX512F_VL_ConvertToVector128UInt32;
                 }
 
                 opBaseJitType = CORINFO_TYPE_ULONG;
@@ -24594,7 +24685,7 @@ GenTree* Compiler::gtNewSimdNarrowNode(
                 GenTree* vecCon2 = gtCloneExpr(vecCon1);
 
                 // Validate we can't use AVX512F_VL_TernaryLogic here
-                assert(!compIsaSupportedDebugOnly(InstructionSet_AVX512F_VL));
+                assert(!canUseEvexEncodingDebugOnly());
 
                 tmp1 = gtNewSimdBinOpNode(GT_AND, type, op1, vecCon1, simdBaseJitType, simdSize);
                 tmp2 = gtNewSimdBinOpNode(GT_AND, type, op2, vecCon2, simdBaseJitType, simdSize);
@@ -24635,7 +24726,7 @@ GenTree* Compiler::gtNewSimdNarrowNode(
                 GenTree* vecCon2 = gtCloneExpr(vecCon1);
 
                 // Validate we can't use AVX512F_VL_TernaryLogic here
-                assert(!compIsaSupportedDebugOnly(InstructionSet_AVX512F_VL));
+                assert(!canUseEvexEncodingDebugOnly());
 
                 tmp1 = gtNewSimdBinOpNode(GT_AND, type, op1, vecCon1, simdBaseJitType, simdSize);
                 tmp2 = gtNewSimdBinOpNode(GT_AND, type, op2, vecCon2, simdBaseJitType, simdSize);
@@ -24739,7 +24830,7 @@ GenTree* Compiler::gtNewSimdNarrowNode(
                 GenTree* vecCon2 = gtCloneExpr(vecCon1);
 
                 // Validate we can't use AVX512F_VL_TernaryLogic here
-                assert(!compIsaSupportedDebugOnly(InstructionSet_AVX512F_VL));
+                assert(!canUseEvexEncodingDebugOnly());
 
                 tmp1 = gtNewSimdBinOpNode(GT_AND, type, op1, vecCon1, simdBaseJitType, simdSize);
                 tmp2 = gtNewSimdBinOpNode(GT_AND, type, op2, vecCon2, simdBaseJitType, simdSize);
@@ -24778,7 +24869,7 @@ GenTree* Compiler::gtNewSimdNarrowNode(
                     GenTree* vecCon2 = gtCloneExpr(vecCon1);
 
                     // Validate we can't use AVX512F_VL_TernaryLogic here
-                    assert(!compIsaSupportedDebugOnly(InstructionSet_AVX512F_VL));
+                    assert(!canUseEvexEncodingDebugOnly());
 
                     tmp1 = gtNewSimdBinOpNode(GT_AND, type, op1, vecCon1, simdBaseJitType, simdSize);
                     tmp2 = gtNewSimdBinOpNode(GT_AND, type, op2, vecCon2, simdBaseJitType, simdSize);
@@ -25036,9 +25127,11 @@ GenTree* Compiler::gtNewSimdShuffleNode(
     if (simdSize == 32)
     {
         assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
-
-        if ((varTypeIsByte(simdBaseType) && !compOpportunisticallyDependsOn(InstructionSet_AVX512VBMI_VL)) ||
-            (varTypeIsShort(simdBaseType) && !compOpportunisticallyDependsOn(InstructionSet_AVX512BW_VL)))
+        bool isV512Supported = false;
+        if ((varTypeIsByte(simdBaseType) &&
+             !compIsEvexOpportunisticallySupported(isV512Supported, InstructionSet_AVX512VBMI_VL)) ||
+            (varTypeIsShort(simdBaseType) &&
+             !compIsEvexOpportunisticallySupported(isV512Supported, InstructionSet_AVX512BW_VL)))
         {
             if (crossLane)
             {
@@ -25093,7 +25186,7 @@ GenTree* Compiler::gtNewSimdShuffleNode(
         }
         else if (elementSize == 2)
         {
-            assert(compIsaSupportedDebugOnly(InstructionSet_AVX512BW_VL));
+            assert(canUseEvexEncodingDebugOnly());
             for (uint32_t i = 0; i < elementCount; i++)
             {
                 vecCns.u16[i] = (uint8_t)(vecCns.u8[i * elementSize] / elementSize);
@@ -25103,18 +25196,22 @@ GenTree* Compiler::gtNewSimdShuffleNode(
             op2->AsVecCon()->gtSimdVal = vecCns;
 
             // swap the operands to match the encoding requirements
-            retNode =
-                gtNewSimdHWIntrinsicNode(type, op2, op1, NI_AVX512BW_VL_PermuteVar16x16, simdBaseJitType, simdSize);
+            retNode = !isV512Supported ? gtNewSimdHWIntrinsicNode(type, op2, op1, NI_AVX10v1_PermuteVar16x16,
+                                                                  simdBaseJitType, simdSize)
+                                       : gtNewSimdHWIntrinsicNode(type, op2, op1, NI_AVX512BW_VL_PermuteVar16x16,
+                                                                  simdBaseJitType, simdSize);
         }
         else if (elementSize == 1)
         {
-            assert(compIsaSupportedDebugOnly(InstructionSet_AVX512VBMI_VL));
+            assert(IsAvx10OrIsaSupportedDebugOnly(InstructionSet_AVX512VBMI_VL));
             op2                        = gtNewVconNode(type);
             op2->AsVecCon()->gtSimdVal = vecCns;
 
             // swap the operands to match the encoding requirements
-            retNode =
-                gtNewSimdHWIntrinsicNode(type, op2, op1, NI_AVX512VBMI_VL_PermuteVar32x8, simdBaseJitType, simdSize);
+            retNode = !isV512Supported ? gtNewSimdHWIntrinsicNode(type, op2, op1, NI_AVX10v1_PermuteVar32x8,
+                                                                  simdBaseJitType, simdSize)
+                                       : gtNewSimdHWIntrinsicNode(type, op2, op1, NI_AVX512VBMI_VL_PermuteVar32x8,
+                                                                  simdBaseJitType, simdSize);
         }
         else
         {
@@ -25510,20 +25607,48 @@ GenTree* Compiler::gtNewSimdSumNode(var_types type, GenTree* op1, CorInfoType si
     {
         assert(IsBaselineVector512IsaSupportedDebugOnly());
         GenTree* op1Dup = fgMakeMultiUse(&op1);
-        op1             = gtNewSimdGetUpperNode(TYP_SIMD32, op1, simdBaseJitType, simdSize);
-        op1Dup          = gtNewSimdGetLowerNode(TYP_SIMD32, op1Dup, simdBaseJitType, simdSize);
-        simdSize        = simdSize / 2;
-        op1             = gtNewSimdBinOpNode(GT_ADD, TYP_SIMD32, op1, op1Dup, simdBaseJitType, simdSize);
+
+        op1    = gtNewSimdGetLowerNode(TYP_SIMD32, op1, simdBaseJitType, simdSize);
+        op1Dup = gtNewSimdGetUpperNode(TYP_SIMD32, op1Dup, simdBaseJitType, simdSize);
+
+        if (varTypeIsFloating(simdBaseType))
+        {
+            // We need to ensure deterministic results which requires
+            // consistently adding values together. Since many operations
+            // end up operating on 128-bit lanes, we break sum the same way.
+
+            op1    = gtNewSimdSumNode(type, op1, simdBaseJitType, 32);
+            op1Dup = gtNewSimdSumNode(type, op1Dup, simdBaseJitType, 32);
+
+            return gtNewOperNode(GT_ADD, type, op1, op1Dup);
+        }
+
+        simdSize = 32;
+        op1      = gtNewSimdBinOpNode(GT_ADD, TYP_SIMD32, op1, op1Dup, simdBaseJitType, 32);
     }
 
     if (simdSize == 32)
     {
         assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
         GenTree* op1Dup = fgMakeMultiUse(&op1);
-        op1             = gtNewSimdGetUpperNode(TYP_SIMD16, op1, simdBaseJitType, simdSize);
-        op1Dup          = gtNewSimdGetLowerNode(TYP_SIMD16, op1Dup, simdBaseJitType, simdSize);
-        simdSize        = simdSize / 2;
-        op1             = gtNewSimdBinOpNode(GT_ADD, TYP_SIMD16, op1, op1Dup, simdBaseJitType, simdSize);
+
+        op1    = gtNewSimdGetLowerNode(TYP_SIMD16, op1, simdBaseJitType, simdSize);
+        op1Dup = gtNewSimdGetUpperNode(TYP_SIMD16, op1Dup, simdBaseJitType, simdSize);
+
+        if (varTypeIsFloating(simdBaseType))
+        {
+            // We need to ensure deterministic results which requires
+            // consistently adding values together. Since many operations
+            // end up operating on 128-bit lanes, we break sum the same way.
+
+            op1    = gtNewSimdSumNode(type, op1, simdBaseJitType, 16);
+            op1Dup = gtNewSimdSumNode(type, op1Dup, simdBaseJitType, 16);
+
+            return gtNewOperNode(GT_ADD, type, op1, op1Dup);
+        }
+
+        simdSize = 16;
+        op1      = gtNewSimdBinOpNode(GT_ADD, TYP_SIMD16, op1, op1Dup, simdBaseJitType, 16);
     }
 
     assert(simdSize == 16);
@@ -25534,6 +25659,7 @@ GenTree* Compiler::gtNewSimdSumNode(var_types type, GenTree* op1, CorInfoType si
         {
             assert(compIsaSupportedDebugOnly(InstructionSet_SSE2));
             GenTree* op1Shuffled = fgMakeMultiUse(&op1);
+
             if (compOpportunisticallyDependsOn(InstructionSet_AVX))
             {
                 assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
@@ -25571,6 +25697,7 @@ GenTree* Compiler::gtNewSimdSumNode(var_types type, GenTree* op1, CorInfoType si
         {
             assert(compIsaSupportedDebugOnly(InstructionSet_SSE2));
             GenTree* op1Shuffled = fgMakeMultiUse(&op1);
+
             if (compOpportunisticallyDependsOn(InstructionSet_AVX))
             {
                 assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
@@ -25706,7 +25833,8 @@ GenTree* Compiler::gtNewSimdTernaryLogicNode(var_types   type,
                                              CorInfoType simdBaseJitType,
                                              unsigned    simdSize)
 {
-    assert(IsBaselineVector512IsaSupportedDebugOnly());
+    assert(IsBaselineVector512IsaSupportedDebugOnly() ||
+           ((simdSize != 64) && compIsaSupportedDebugOnly(InstructionSet_AVX10v1)));
 
     assert(varTypeIsSIMD(type));
     assert(getSIMDTypeForSize(simdSize) == type);
@@ -25731,6 +25859,11 @@ GenTree* Compiler::gtNewSimdTernaryLogicNode(var_types   type,
     if (simdSize == 64)
     {
         intrinsic = NI_AVX512F_TernaryLogic;
+    }
+    else if (compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+    {
+        assert((simdSize == 16) || (simdSize == 32));
+        intrinsic = NI_AVX10v1_TernaryLogic;
     }
     else
     {
@@ -25878,8 +26011,11 @@ GenTree* Compiler::gtNewSimdUnOpNode(
                 {
                     assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
                 }
-
-                if ((genTypeSize(simdBaseType) >= 4) && compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
+                if ((genTypeSize(simdBaseType) >= 4) && compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+                {
+                    intrinsic = NI_AVX10v1_TernaryLogic;
+                }
+                else if ((genTypeSize(simdBaseType) >= 4) && compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
                 {
                     intrinsic = NI_AVX512F_VL_TernaryLogic;
                 }
@@ -25888,7 +26024,7 @@ GenTree* Compiler::gtNewSimdUnOpNode(
             if (intrinsic != NI_Illegal)
             {
                 // AVX512 allows performing `not` without requiring a memory access
-                assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F_VL));
+                assert(canUseEvexEncodingDebugOnly());
 
                 op2 = gtNewZeroConNode(type);
                 op3 = gtNewZeroConNode(type);
@@ -26948,6 +27084,7 @@ bool GenTreeHWIntrinsic::OperIsEmbBroadcastCompatible() const
         case NI_AVX512F_ConvertToVector256Int32:
         case NI_AVX512F_ConvertToVector256UInt32:
         case NI_AVX512F_VL_ConvertToVector128UInt32:
+        case NI_AVX10v1_ConvertToVector128UInt32:
         {
             return varTypeIsFloating(simdBaseType);
         }
@@ -27057,6 +27194,11 @@ bool GenTreeHWIntrinsic::OperIsEmbRoundingEnabled() const
         case NI_AVX512F_MultiplyScalar:
         case NI_AVX512F_SubtractScalar:
         case NI_AVX512F_SqrtScalar:
+        case NI_AVX10v1_AddScalar:
+        case NI_AVX10v1_DivideScalar:
+        case NI_AVX10v1_MultiplyScalar:
+        case NI_AVX10v1_SubtractScalar:
+        case NI_AVX10v1_SqrtScalar:
         {
             return true;
         }
@@ -27071,6 +27213,10 @@ bool GenTreeHWIntrinsic::OperIsEmbRoundingEnabled() const
         case NI_AVX512F_FusedMultiplySubtractNegated:
         case NI_AVX512F_FusedMultiplySubtractNegatedScalar:
         case NI_AVX512F_FusedMultiplySubtractScalar:
+        case NI_AVX10v1_FusedMultiplyAddScalar:
+        case NI_AVX10v1_FusedMultiplyAddNegatedScalar:
+        case NI_AVX10v1_FusedMultiplySubtractScalar:
+        case NI_AVX10v1_FusedMultiplySubtractNegatedScalar:
         {
             return numArgs == 4;
         }
@@ -27082,12 +27228,16 @@ bool GenTreeHWIntrinsic::OperIsEmbRoundingEnabled() const
 
         case NI_AVX512F_Scale:
         case NI_AVX512F_ScaleScalar:
+        case NI_AVX10v1_ScaleScalar:
 
         case NI_AVX512F_ConvertScalarToVector128Single:
 #if defined(TARGET_AMD64)
         case NI_AVX512F_X64_ConvertScalarToVector128Double:
         case NI_AVX512F_X64_ConvertScalarToVector128Single:
+        case NI_AVX10v1_X64_ConvertScalarToVector128Double:
+        case NI_AVX10v1_X64_ConvertScalarToVector128Single:
 #endif // TARGET_AMD64
+        case NI_AVX10v1_ConvertScalarToVector128Single:
         {
             return numArgs == 3;
         }
@@ -27104,11 +27254,19 @@ bool GenTreeHWIntrinsic::OperIsEmbRoundingEnabled() const
 #if defined(TARGET_AMD64)
         case NI_AVX512F_X64_ConvertToInt64:
         case NI_AVX512F_X64_ConvertToUInt64:
+        case NI_AVX10v1_X64_ConvertToInt64:
+        case NI_AVX10v1_X64_ConvertToUInt64:
 #endif // TARGET_AMD64
         case NI_AVX512DQ_ConvertToVector256Single:
         case NI_AVX512DQ_ConvertToVector512Double:
         case NI_AVX512DQ_ConvertToVector512Int64:
         case NI_AVX512DQ_ConvertToVector512UInt64:
+        case NI_AVX10v1_ConvertToInt32:
+        case NI_AVX10v1_ConvertToUInt32:
+        case NI_AVX10v1_V512_ConvertToVector256Single:
+        case NI_AVX10v1_V512_ConvertToVector512Double:
+        case NI_AVX10v1_V512_ConvertToVector512Int64:
+        case NI_AVX10v1_V512_ConvertToVector512UInt64:
         {
             return numArgs == 2;
         }
@@ -27369,6 +27527,7 @@ genTreeOps GenTreeHWIntrinsic::HWOperGet() const
         case NI_AVX2_And:
         case NI_AVX512F_And:
         case NI_AVX512DQ_And:
+        case NI_AVX10v1_V512_And:
 #elif defined(TARGET_ARM64)
         case NI_AdvSimd_And:
 #endif
@@ -27390,6 +27549,7 @@ genTreeOps GenTreeHWIntrinsic::HWOperGet() const
         case NI_AVX2_Xor:
         case NI_AVX512F_Xor:
         case NI_AVX512DQ_Xor:
+        case NI_AVX10v1_V512_Xor:
 #elif defined(TARGET_ARM64)
         case NI_AdvSimd_Xor:
 #endif
@@ -27404,6 +27564,7 @@ genTreeOps GenTreeHWIntrinsic::HWOperGet() const
         case NI_AVX2_Or:
         case NI_AVX512F_Or:
         case NI_AVX512DQ_Or:
+        case NI_AVX10v1_V512_Or:
 #elif defined(TARGET_ARM64)
         case NI_AdvSimd_Or:
 #endif
@@ -27418,6 +27579,7 @@ genTreeOps GenTreeHWIntrinsic::HWOperGet() const
         case NI_AVX2_AndNot:
         case NI_AVX512F_AndNot:
         case NI_AVX512DQ_AndNot:
+        case NI_AVX10v1_V512_AndNot:
         {
             return GT_AND_NOT;
         }

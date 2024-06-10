@@ -621,7 +621,7 @@ namespace System
 
             if (typeof(TChar) == typeof(char))
             {
-                if (source.TryCopyTo(MemoryMarshal.Cast<TChar, char>(destination)))
+                if (source.TryCopyTo(Unsafe.BitCast<Span<TChar>, Span<char>>(destination)))
                 {
                     charsWritten = source.Length;
                     return true;
@@ -632,7 +632,7 @@ namespace System
             }
             else
             {
-                return Encoding.UTF8.TryGetBytes(source, MemoryMarshal.Cast<TChar, byte>(destination), out charsWritten);
+                return Encoding.UTF8.TryGetBytes(source, Unsafe.BitCast<Span<TChar>, Span<byte>>(destination), out charsWritten);
             }
         }
 
