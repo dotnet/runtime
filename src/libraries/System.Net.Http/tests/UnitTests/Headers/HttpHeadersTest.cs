@@ -441,23 +441,20 @@ namespace System.Net.Http.Tests
             Assert.Throws<ArgumentNullException>(() => { headers.TryAddWithoutValidation(headers.Descriptor, values); });
         }
 
-        [Theory]
-        [InlineData(null)]
-        public void Add_SingleUseNullHeaderName_Throw(string headerName)
+        [Fact]
+        public void Add_SingleUseNullHeaderName_Throw()
         {
             MockHeaders headers = new MockHeaders();
 
-            AssertExtensions.Throws<ArgumentNullException>("name", () => { headers.Add(headerName, "value"); });
+            AssertExtensions.Throws<ArgumentNullException>("name", () => { headers.Add(null, "value"); });
         }
 
-        [Theory]
-        [InlineData("")]
-        [InlineData(" \t\r\n ")]
-        public void Add_SingleUseWhiteSpaceHeaderName_Throw(string headerName)
+        [Fact]
+        public void Add_SingleUseWhiteSpaceHeaderName_Throw()
         {
             MockHeaders headers = new MockHeaders();
 
-            AssertExtensions.Throws<ArgumentException>("name", () => { headers.Add(headerName, "value"); });
+            AssertExtensions.Throws<ArgumentException>("name", () => { headers.Add("", "value"); });
         }
 
         [Theory]
@@ -1071,23 +1068,20 @@ namespace System.Net.Http.Tests
             Assert.Equal(2, headers.Parser.TryParseValueCallCount);
         }
 
-        [Theory]
-        [InlineData(null)]
-        public void Remove_UseNullHeaderName_Throw(string headerName)
+        [Fact]
+        public void Remove_UseNullHeaderName_Throw()
         {
             MockHeaders headers = new MockHeaders();
 
-            AssertExtensions.Throws<ArgumentNullException>("name", () => { headers.Remove(headerName); });
+            AssertExtensions.Throws<ArgumentNullException>("name", () => { headers.Remove(null); });
         }
 
-        [Theory]
-        [InlineData("")]
-        [InlineData(" \t\r\n ")]
-        public void Remove_UseWhiteSpaceHeaderName_Throw(string headerName)
+        [Fact]
+        public void Remove_UseEmptyHeaderName_Throw()
         {
             MockHeaders headers = new MockHeaders();
 
-            AssertExtensions.Throws<ArgumentException>("name", () => { headers.Remove(headerName); });
+            AssertExtensions.Throws<ArgumentException>("name", () => { headers.Remove(""); });
         }
 
         [Theory]
@@ -1227,23 +1221,20 @@ namespace System.Net.Http.Tests
             Assert.Equal(parsedPrefix + "2", values.ElementAt(1));
         }
 
-        [Theory]
-        [InlineData(null)]
-        public void GetValues_UseNullHeaderName_Throw(string headerName)
+        [Fact]
+        public void GetValues_UseNullHeaderName_Throw()
         {
             MockHeaders headers = new MockHeaders();
 
-            AssertExtensions.Throws<ArgumentNullException>("name", () => { headers.GetValues(headerName); });
+            AssertExtensions.Throws<ArgumentNullException>("name", () => { headers.GetValues(null); });
         }
 
-        [Theory]
-        [InlineData("")]
-        [InlineData(" \t\r\n ")]
-        public void GetValues_UseWhiteSpaceHeaderName_Throw(string headerName)
+        [Fact]
+        public void GetValues_UseEmptyHeaderName_Throw()
         {
             MockHeaders headers = new MockHeaders();
 
-            AssertExtensions.Throws<ArgumentException>("name", () => { headers.GetValues(headerName); });
+            AssertExtensions.Throws<ArgumentException>("name", () => { headers.GetValues(""); });
         }
 
         [Theory]
@@ -1601,23 +1592,20 @@ namespace System.Net.Http.Tests
             }
         }
 
-        [Theory]
-        [InlineData(null)]
-        public void Contains_UseNullHeaderName_Throw(string headerName)
+        [Fact]
+        public void Contains_UseNullHeaderName_Throw()
         {
             MockHeaders headers = new MockHeaders();
 
-            AssertExtensions.Throws<ArgumentNullException>("name", () => { headers.Contains(headerName); });
+            AssertExtensions.Throws<ArgumentNullException>("name", () => { headers.Contains(null); });
         }
 
-        [Theory]
-        [InlineData("")]
-        [InlineData(" \t\r\n ")]
-        public void Contains_UseEmptyHeaderName_Throw(string headerName)
+        [Fact]
+        public void Contains_UseEmptyHeaderName_Throw()
         {
             MockHeaders headers = new MockHeaders();
 
-            AssertExtensions.Throws<ArgumentException>("name", () => { headers.Contains(headerName); });
+            AssertExtensions.Throws<ArgumentException>("name", () => { headers.Contains(""); });
         }
 
         [Theory]
@@ -2578,6 +2566,7 @@ namespace System.Net.Http.Tests
             yield return new object[] { "invalid=header" };
             yield return new object[] { "invalid{header" };
             yield return new object[] { "invalid}header" };
+            yield return new object[] { " \t\r\n " };
         }
 
         public static IEnumerable<object[]> HeaderValuesWithNewLines()
