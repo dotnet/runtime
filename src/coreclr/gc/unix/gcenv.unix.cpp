@@ -1121,14 +1121,13 @@ size_t GCToOSInterface::GetVirtualMemoryLimit()
 // Remarks:
 //  If a process runs with a restricted memory limit, it returns the limit. If there's no limit
 //  specified, it returns amount of actual physical memory.
-uint64_t GCToOSInterface::GetPhysicalMemoryLimit(bool* is_restricted)
+uint64_t GCToOSInterface::GetPhysicalMemoryLimit(bool* is_restricted, bool refresh)
 {
     size_t restricted_limit;
     if (is_restricted)
         *is_restricted = false;
 
-    // The limit was not cached
-    if (g_RestrictedPhysicalMemoryLimit == 0)
+    if (g_RestrictedPhysicalMemoryLimit == 0 || refresh)
     {
         restricted_limit = GetRestrictedPhysicalMemoryLimit();
         VolatileStore(&g_RestrictedPhysicalMemoryLimit, restricted_limit);
