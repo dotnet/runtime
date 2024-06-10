@@ -5539,11 +5539,18 @@ void Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk, FlowGraphNatura
                         {
                             assert(fldSeq != nullptr);
 
-                            FieldKindForVN fieldKind =
-                                (baseAddr != nullptr) ? FieldKindForVN::WithBaseAddr : FieldKindForVN::SimpleStatic;
-                            AddModifiedFieldAllContainingLoops(mostNestedLoop, fldSeq->GetFieldHandle(), fieldKind);
-                            // Conservatively assume byrefs may alias this object.
-                            memoryHavoc |= memoryKindSet(ByrefExposed);
+                            if (fldSeq->IsBoxedValue())
+                            {
+                                memoryHavoc |= memoryKindSet(GcHeap, ByrefExposed);
+                            }
+                            else
+                            {
+                                FieldKindForVN fieldKind =
+                                    (baseAddr != nullptr) ? FieldKindForVN::WithBaseAddr : FieldKindForVN::SimpleStatic;
+                                AddModifiedFieldAllContainingLoops(mostNestedLoop, fldSeq->GetFieldHandle(), fieldKind);
+                                // Conservatively assume byrefs may alias this object.
+                                memoryHavoc |= memoryKindSet(ByrefExposed);
+                            }
                         }
                         else
                         {
