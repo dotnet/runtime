@@ -1363,18 +1363,14 @@ void EEJitManager::SetCpuInfo()
 
     // x86-64-v4
 
-    if ((cpuFeatures & XArchIntrinsicConstants_Evex) != 0)
-    {
-        CPUCompileFlags.Set(InstructionSet_EVEX);
-    }
-
-    if (((cpuFeatures & XArchIntrinsicConstants_Avx512f) != 0) &&
-        ((cpuFeatures & XArchIntrinsicConstants_Avx512f_vl) != 0)
-        ((cpuFeatures & XArchIntrinsicConstants_Avx512bw) != 0)
-        ((cpuFeatures & XArchIntrinsicConstants_Avx512bw_vl) != 0)
-        ((cpuFeatures & XArchIntrinsicConstants_Avx512cd) != 0)
-        ((cpuFeatures & XArchIntrinsicConstants_Avx512cd_vl) != 0)
-        ((cpuFeatures & XArchIntrinsicConstants_Avx512dq) != 0)
+    if (((cpuFeatures & XArchIntrinsicConstants_Evex) != 0) &&
+        ((cpuFeatures & XArchIntrinsicConstants_Avx512f) != 0) &&
+        ((cpuFeatures & XArchIntrinsicConstants_Avx512f_vl) != 0) &&
+        ((cpuFeatures & XArchIntrinsicConstants_Avx512bw) != 0) &&
+        ((cpuFeatures & XArchIntrinsicConstants_Avx512bw_vl) != 0) &&
+        ((cpuFeatures & XArchIntrinsicConstants_Avx512cd) != 0) &&
+        ((cpuFeatures & XArchIntrinsicConstants_Avx512cd_vl) != 0) &&
+        ((cpuFeatures & XArchIntrinsicConstants_Avx512dq) != 0) &&
         ((cpuFeatures & XArchIntrinsicConstants_Avx512dq_vl) != 0))
     {
         // While the AVX-512 ISAs can be individually lit-up, they really
@@ -1393,6 +1389,7 @@ void EEJitManager::SetCpuInfo()
             CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512DQ) &&
             CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512DQ_VL))
         {
+            CPUCompileFlags.Set(InstructionSet_EVEX);
             CPUCompileFlags.Set(InstructionSet_AVX512F);
             CPUCompileFlags.Set(InstructionSet_AVX512F_VL);
             CPUCompileFlags.Set(InstructionSet_AVX512BW);
@@ -1436,9 +1433,14 @@ void EEJitManager::SetCpuInfo()
         CPUCompileFlags.Set(InstructionSet_X86Serialize);
     }
 
-    if (((cpuFeatures & XArchIntrinsicConstants_Avx10v1) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX10v1))
+    if (((cpuFeatures & XArchIntrinsicConstants_Evex) != 0) &&
+        ((cpuFeatures & XArchIntrinsicConstants_Avx10v1) != 0))
     {
-        CPUCompileFlags.Set(InstructionSet_AVX10v1);
+        if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX10v1))
+        {
+            CPUCompileFlags.Set(InstructionSet_EVEX);
+            CPUCompileFlags.Set(InstructionSet_AVX10v1);
+        }
     }
 
     if ((cpuFeatures & XArchIntrinsicConstants_Avx10v1_V512) != 0)
