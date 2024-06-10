@@ -80,6 +80,11 @@ namespace System.Data
         /// <summary>
         /// Initializes a new instance of the <see cref='System.Data.DataSet'/> class.
         /// </summary>
+        [DynamicDependency(nameof(ShouldSerializeLocale))]
+        [DynamicDependency(nameof(ShouldSerializeRelations))]
+        [DynamicDependency(nameof(ShouldSerializeTables))]
+        [DynamicDependency(nameof(ResetRelations))]
+        [DynamicDependency(nameof(ResetTables))]
         public DataSet()
         {
             GC.SuppressFinalize(this);

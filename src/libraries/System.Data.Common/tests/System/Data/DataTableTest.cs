@@ -33,6 +33,7 @@ using System.Data.SqlTypes;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Reflection;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Runtime.Serialization.Formatters.Tests;
 using System.Tests;
@@ -1819,7 +1820,30 @@ Assert.Fail();
         }
 
         [Fact]
-        public void MethodsCalledByReflectionAreNotTrimmed()
+        public void MethodsCalledByReflectionSerializersAreNotTrimmed()
+        {
+            Assert.True(ShouldSerializeExists(nameof(DataTable.CaseSensitive)));
+            Assert.False(ShouldSerializeExists("Columns"));
+            Assert.False(ShouldSerializeExists("Constraints"));
+            Assert.False(ShouldSerializeExists("Indexes"));
+            Assert.True(ShouldSerializeExists(nameof(DataTable.Locale)));
+            Assert.True(ShouldSerializeExists(nameof(DataTable.Namespace)));
+            Assert.True(ShouldSerializeExists(nameof(DataTable.PrimaryKey)));
+
+            Assert.True(ResetExists(nameof(DataTable.CaseSensitive)));
+            Assert.True(ResetExists("Columns"));
+            Assert.True(ResetExists("Constraints"));
+            Assert.True(ResetExists("Indexes"));
+            Assert.False(ResetExists(nameof(DataTable.Locale)));
+            Assert.True(ResetExists(nameof(DataTable.Namespace)));
+            Assert.True(ResetExists(nameof(DataTable.PrimaryKey)));
+
+            bool ShouldSerializeExists(string name) => typeof(DataTable).GetMethod("ShouldSerialize" + name, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public) != null;
+            bool ResetExists(string name) => typeof(DataTable).GetMethod("Reset" + name, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public) != null;
+        }
+
+        [Fact]
+        public void MethodsCalledByReflectionSerializersAreNotTrimmedUsingTypeDescriptor()
         {
             DataTable dt = new DataTable();
             dt.CaseSensitive = true;
@@ -1830,12 +1854,12 @@ Assert.Fail();
             PropertyDescriptorCollection properties = TypeDescriptor.GetProperties(dt);
 
             Assert.True(properties[nameof(DataTable.PrimaryKey)].ShouldSerializeValue(dt));
-            properties[nameof(DataTable.PrimaryKey)].ResetValue(dt); // Reset method is available
+            properties[nameof(DataTable.PrimaryKey)].ResetValue(dt);
             Assert.False(properties[nameof(DataTable.PrimaryKey)].ShouldSerializeValue(dt));
             Assert.Equal(0, dt.PrimaryKey.Length);
 
             Assert.True(properties[nameof(DataTable.CaseSensitive)].ShouldSerializeValue(dt));
-            properties[nameof(DataTable.CaseSensitive)].ResetValue(dt); // Reset method is available
+            properties[nameof(DataTable.CaseSensitive)].ResetValue(dt);
             Assert.False(properties[nameof(DataTable.CaseSensitive)].ShouldSerializeValue(dt));
             Assert.False(dt.CaseSensitive);
 
@@ -1844,7 +1868,7 @@ Assert.Fail();
             Assert.True(properties[nameof(DataTable.Locale)].ShouldSerializeValue(dt)); // Reset method is not available
 
             Assert.True(properties[nameof(DataTable.Namespace)].ShouldSerializeValue(dt));
-            properties[nameof(DataTable.Namespace)].ResetValue(dt); // Reset method is available
+            properties[nameof(DataTable.Namespace)].ResetValue(dt);
             Assert.False(properties[nameof(DataTable.Namespace)].ShouldSerializeValue(dt));
             Assert.Equal("", dt.Namespace);
         }

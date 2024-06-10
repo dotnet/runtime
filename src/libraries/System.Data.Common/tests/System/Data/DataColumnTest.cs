@@ -33,7 +33,7 @@
 
 using System.ComponentModel;
 using System.Data.SqlTypes;
-
+using System.Reflection;
 using Xunit;
 
 namespace System.Data.Tests
@@ -794,7 +794,22 @@ namespace System.Data.Tests
         }
 
         [Fact]
-        public void MethodsCalledByReflectionAreNotTrimmed()
+        public void MethodsCalledByReflectionSerializersAreNotTrimmed()
+        {
+            Assert.True(ShouldSerializeExists(nameof(DataColumn.Caption)));
+            Assert.True(ShouldSerializeExists(nameof(DataColumn.DefaultValue)));
+            Assert.True(ShouldSerializeExists(nameof(DataColumn.Namespace)));
+
+            Assert.True(ResetExists(nameof(DataColumn.Caption)));
+            Assert.False(ResetExists(nameof(DataColumn.DefaultValue)));
+            Assert.True(ResetExists(nameof(DataColumn.Namespace)));
+
+            bool ShouldSerializeExists(string name) => typeof(DataColumn).GetMethod("ShouldSerialize" + name, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public) != null;
+            bool ResetExists(string name) => typeof(DataColumn).GetMethod("Reset" + name, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public) != null;
+        }
+
+        [Fact]
+        public void MethodsCalledByReflectionSerializersAreNotTrimmedUsingTypeDescriptor()
         {
             DataColumn dc = new DataColumn
             {
