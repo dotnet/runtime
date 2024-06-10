@@ -1062,7 +1062,7 @@ void Debugger::InitDebugEventCounting()
     {
         LPSTR   strValue;
         int     cbReq;
-        cbReq = WszWideCharToMultiByte(CP_UTF8, 0, wstrValue,-1, 0,0, 0,0);
+        cbReq = WideCharToMultiByte(CP_UTF8, 0, wstrValue,-1, 0,0, 0,0);
 
         strValue = new (nothrow) char[cbReq+1];
         // This is a debug only thingy, if it fails, not worth taking
@@ -1072,7 +1072,7 @@ void Debugger::InitDebugEventCounting()
 
 
         // now translate the unicode to ansi string
-        WszWideCharToMultiByte(CP_UTF8, 0, wstrValue, -1, strValue, cbReq+1, 0,0);
+        WideCharToMultiByte(CP_UTF8, 0, wstrValue, -1, strValue, cbReq+1, 0,0);
         char *szEnd = (char *)strchr(strValue, ';');
         char *szStart = strValue;
         while (szEnd != NULL)
@@ -1422,7 +1422,7 @@ DWORD WINAPI DbgInteropStressProc(void * lpParameter)
         else
         {
             // Generate the occasional oob-event.
-            WszOutputDebugString(W("Ping from DbgInteropStressProc"));
+            OutputDebugString(W("Ping from DbgInteropStressProc"));
         }
 
         // This helps parallelize if we have a lot of threads, and keeps us from
@@ -1472,7 +1472,7 @@ DWORD WINAPI DbgInteropOOBStressProc(void * lpParameter)
         else
         {
             // Generate the occasional oob-event.
-            WszOutputDebugString(W("OOB ping from "));
+            OutputDebugString(W("OOB ping from "));
         }
 
         ClrSleepEx(3000, FALSE);
@@ -1749,7 +1749,7 @@ HANDLE OpenStartupNotificationEvent()
 
     DWORD debuggeePID = GetCurrentProcessId();
     FormatInteger(eventName + ARRAY_SIZE(prefix) - 1, ARRAY_SIZE(eventName) - ARRAY_SIZE(prefix), "%08x", debuggeePID);
-    return WszOpenEvent(MAXIMUM_ALLOWED | SYNCHRONIZE | EVENT_MODIFY_STATE, FALSE, eventName);
+    return OpenEvent(MAXIMUM_ALLOWED | SYNCHRONIZE | EVENT_MODIFY_STATE, FALSE, eventName);
 }
 
 void NotifyDebuggerOfStartup()
@@ -1759,7 +1759,7 @@ void NotifyDebuggerOfStartup()
     // the instant we signal the startup notification event.
 
     CONSISTENCY_CHECK(INVALID_HANDLE_VALUE == g_hContinueStartupEvent);
-    g_hContinueStartupEvent = WszCreateEvent(NULL, TRUE, FALSE, NULL);
+    g_hContinueStartupEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
     CONSISTENCY_CHECK(INVALID_HANDLE_VALUE != g_hContinueStartupEvent); // we reserve this value for error conditions in EnumerateCLRs
 
     HANDLE startupEvent = OpenStartupNotificationEvent();
@@ -2063,7 +2063,7 @@ HRESULT Debugger::StartupPhase2(Thread * pThread)
         {
             // Remove the env var from our process so that the debugger we spin up won't inherit it.
             // Else, if the debugger is managed, we'll have an infinite recursion.
-            BOOL fOk = WszSetEnvironmentVariable(DBG_ATTACH_ON_STARTUP_ENV_VAR, NULL);
+            BOOL fOk = SetEnvironmentVariable(DBG_ATTACH_ON_STARTUP_ENV_VAR, NULL);
 
             if (fOk)
             {
@@ -14933,7 +14933,7 @@ HRESULT Debugger::InitAppDomainIPC(void)
     // Create a mutex to allow the Left and Right Sides to properly
     // synchronize. The Right Side will spin until m_hMutex is valid,
     // then it will acquire it before accessing the data.
-    HandleHolder hMutex(WszCreateMutex(NULL, TRUE/*hold*/, NULL));
+    HandleHolder hMutex(CreateMutex(NULL, TRUE/*hold*/, NULL));
     if (hMutex == NULL)
     {
         ThrowLastError();
