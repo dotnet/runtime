@@ -32,16 +32,6 @@
         <target state="translated">記錄方法參數名稱的開頭不能為 _</target>
         <note />
       </trans-unit>
-      <trans-unit id="InvalidLoggingMethodParameterOutMessage">
-        <source>Argument '{0}' is using the unsupported out parameter modifier</source>
-        <target state="translated">引數 '{0}' 使用不支援的 out 參數修飾元</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="InvalidLoggingMethodParameterOutTitle">
-        <source>Argument is using the unsupported out parameter modifier</source>
-        <target state="translated">引數使用不支援的 out 參數修飾元</target>
-        <note />
-      </trans-unit>
       <trans-unit id="LoggingMethodHasBodyMessage">
         <source>Logging methods cannot have a body</source>
         <target state="translated">記錄方法不能有主體</target>
@@ -67,24 +57,9 @@
         <target state="translated">記錄方法必須是靜態</target>
         <note />
       </trans-unit>
-      <trans-unit id="LoggingUnsupportedLanguageVersionMessageFormat">
-        <source>The Logging source generator is not available in C# {0}. Please use language version {1} or greater.</source>
-        <target state="translated">記錄來源產生器在 C# {0} 中不可用。請使用語言版本 {1} 或更新版本。</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="LoggingUnsupportedLanguageVersionTitle">
-        <source>C# language version not supported by the source generator.</source>
-        <target state="translated">來源產生器不支援 C# 語言版本。</target>
-        <note />
-      </trans-unit>
       <trans-unit id="MalformedFormatStringsMessage">
-        <source>Logging method '{0}' contains malformed format strings</source>
-        <target state="translated">記錄方法 '{0}' 包含格式錯誤的格式字串</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="MalformedFormatStringsTitle">
-        <source>Logging method contains malformed format strings</source>
-        <target state="translated">記錄方法包含格式錯誤的格式字串</target>
+        <source>Can't have malformed format strings (like dangling {, etc)</source>
+        <target state="new">Can't have malformed format strings (like dangling {, etc)</target>
         <note />
       </trans-unit>
       <trans-unit id="MissingLogLevelMessage">
@@ -170,16 +145,6 @@
       <trans-unit id="ShouldntReuseEventIdsTitle">
         <source>Multiple logging methods cannot use the same event id within a class</source>
         <target state="translated">多個記錄方法不能在類別內使用相同的事件識別碼</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="ShouldntReuseEventNamesMessage">
-        <source>Multiple logging methods are using event name {0} in class {1}</source>
-        <target state="translated">多個記錄方法是使用類別 {0} 中的事件名稱 {1}</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="ShouldntReuseEventNamesTitle">
-        <source>Multiple logging methods should not use the same event name within a class</source>
-        <target state="translated">多個記錄方法不應在類別內使用相同的事件名稱</target>
         <note />
       </trans-unit>
       <trans-unit id="TemplateHasNoCorrespondingArgumentMessage">
