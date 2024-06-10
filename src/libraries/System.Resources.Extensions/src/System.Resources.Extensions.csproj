@@ -44,7 +44,6 @@ System.Resources.Extensions.PreserializedResourceWriter</PackageDescription>
     <Compile Include="System\Resources\Extensions\BinaryFormat\BinaryFormattedObject.Options.cs" />
     <Compile Include="System\Resources\Extensions\BinaryFormat\BinaryFormattedObject.ParseState.cs" />
     <Compile Include="System\Resources\Extensions\BinaryFormat\BinaryFormattedObject.TypeResolver.cs" />
-    <Compile Include="System\Resources\Extensions\BinaryFormat\BinaryFormattedObjectExtensions.cs" />
     <Compile Include="System\Resources\Extensions\BinaryFormat\Id.cs" />
     <Compile Include="System\Resources\Extensions\BinaryFormat\SerializationEvents.cs" />
     <Compile Include="System\Resources\Extensions\BinaryFormat\SerializationExtensions.cs" />

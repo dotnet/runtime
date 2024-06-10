@@ -6,8 +6,9 @@ using System.Diagnostics;
 namespace System.Formats.Nrbf;
 
 /// <summary>
-/// Represents a record that itself represents a primitive value.
+/// Represents a record that itself represents the primitive value of <typeparamref name="T"/> type.
 /// </summary>
+/// <typeparam name="T">The type of the primitive value.</typeparam>
 /// <remarks>
 /// <para>
 /// The NRBF specification considers the following types to be primitive:
@@ -20,11 +21,17 @@ namespace System.Formats.Nrbf;
 /// <para>Other serialization records are represented with <see cref="ClassRecord"/> or <see cref="ArrayRecord"/>.</para>
 /// </remarks>
 [DebuggerDisplay("{Value}")]
-public abstract class PrimitiveTypeRecord : SerializationRecord
+public abstract class PrimitiveTypeRecord<T> : PrimitiveTypeRecord
 {
+    private protected PrimitiveTypeRecord(T value) => Value = value;
+
     /// <summary>
     /// Gets the serialized primitive value.
     /// </summary>
     /// <value>The primitive value.</value>
-    public object Value => GetValue()!;
+    public new T Value { get; }
+
+    public override bool IsTypeNameMatching(Type type) => type == typeof(T);
+
+    internal override object? GetValue() => Value;
 }

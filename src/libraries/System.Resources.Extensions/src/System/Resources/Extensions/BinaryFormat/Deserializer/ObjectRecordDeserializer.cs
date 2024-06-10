@@ -56,7 +56,7 @@ internal abstract partial class ObjectRecordDeserializer
         }
         else if (serializationRecord.RecordType is RecordType.MemberPrimitiveTyped)
         {
-            return (serializationRecord.GetMemberPrimitiveTypedValue(), Id.Null);
+            return (((PrimitiveTypeRecord)serializationRecord).Value, Id.Null);
         }
         else
         {
