@@ -7,7 +7,7 @@
 #include "dn-utils.h"
 #include "dn-allocator.h"
 
-EXTERN_C_BEGIN
+EXTERN_C_BEGIN()
 
 typedef int32_t (DN_CALLBACK_CALLTYPE *dn_list_compare_func_t) (const void *a, const void *b);
 typedef bool (DN_CALLBACK_CALLTYPE *dn_list_equal_func_t) (const void *a, const void *b);
@@ -373,6 +373,6 @@ dn_list_find (
 	return dn_list_custom_find (list, data, NULL);
 }
 
-EXTERN_C_END
+EXTERN_C_END()
 
 #endif /* __DN_LIST_H__ */
