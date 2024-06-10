@@ -98,7 +98,6 @@ void ExInfo::Init()
     CONTRACTL_END;
 
     m_ExceptionFlags.Init();
-    m_StackTraceInfo.Init();
     m_DebuggerExState.Init();
 
     m_pSearchBoundary = NULL;

@@ -56,15 +56,13 @@ struct StackTraceElement
 
 class StackTraceInfo
 {
-    int m_keepaliveItemsCount;
+    int m_dummy; // remove this
 
     static OBJECTREF GetKeepaliveObject(MethodDesc* pMethod);
-    static int GetKeepaliveItemsCount(StackTraceArray *pStackTrace);
     static void EnsureStackTraceArray(StackTraceArray *pStackTrace, size_t neededSize);
     static void EnsureKeepaliveArray(PTRARRAYREF *ppKeepaliveArray, size_t neededSize);
 public:
-    void Init();
-    BOOL AppendElement(OBJECTHANDLE hThrowable, UINT_PTR currentIP, UINT_PTR currentSP, MethodDesc* pFunc, CrawlFrame* pCf);
+    static BOOL AppendElement(OBJECTHANDLE hThrowable, UINT_PTR currentIP, UINT_PTR currentSP, MethodDesc* pFunc, CrawlFrame* pCf);
 };
 
 

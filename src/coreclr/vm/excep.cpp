@@ -2856,21 +2856,6 @@ void COMPlusCooperativeTransitionHandler(Frame* pFrame)
     GCX_PREEMP_NO_DTOR();
 }
 
-void StackTraceInfo::Init()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        FORBID_FAULT;
-    }
-    CONTRACTL_END;
-
-    LOG((LF_EH, LL_INFO10000, "StackTraceInfo::Init (%p)\n", this));
-    m_keepaliveItemsCount = -1; // -1 indicates the count is not initialized yet
-}
-
 #ifndef TARGET_UNIX // Watson is supported on Windows only
 void SetupWatsonBucket(UINT_PTR currentIP, CrawlFrame* pCf)
 {
@@ -2898,7 +2883,7 @@ void SetupWatsonBucket(UINT_PTR currentIP, CrawlFrame* pCf)
 }
 #endif // !TARGET_UNIX
 
-// Ensure that there is space for one more element in the stack trace array.
+// Ensure that there is space for neededSize elements in the stack trace array.
 void StackTraceInfo::EnsureStackTraceArray(StackTraceArray *pStackTrace, size_t neededSize)
 {
     CONTRACTL
@@ -3020,9 +3005,10 @@ OBJECTREF StackTraceInfo::GetKeepaliveObject(MethodDesc* pMethod)
     return NULL;
 }
 
+#ifdef _DEBUG
 // Get number of methods in the stack trace that can be collected. We need to store keepalive
 // objects (Resolver / LoaderAllocator) for these methods.
-int StackTraceInfo::GetKeepaliveItemsCount(StackTraceArray *pStackTrace)
+int GetKeepaliveItemsCount(StackTraceArray *pStackTrace)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -3037,6 +3023,7 @@ int StackTraceInfo::GetKeepaliveItemsCount(StackTraceArray *pStackTrace)
 
     return count;
 }
+#endif // _DEBUG
 
 //
 // Append stack frame to an exception stack trace.
@@ -3064,7 +3051,7 @@ BOOL StackTraceInfo::AppendElement(OBJECTHANDLE hThrowable, UINT_PTR currentIP, 
     BOOL fRaisingForeignException = pCurTES->IsRaisingForeignException();
     pCurTES->ResetRaisingForeignException();
 
-    LOG((LF_EH, LL_INFO10000, "StackTraceInfo::AppendElement (%p), IP = %p, SP = %p, %s::%s\n", this, currentIP, currentSP, pFunc ? pFunc->m_pszDebugClassName : "", pFunc ? pFunc->m_pszDebugMethodName : "" ));
+    LOG((LF_EH, LL_INFO10000, "StackTraceInfo::AppendElement IP = %p, SP = %p, %s::%s\n", currentIP, currentSP, pFunc ? pFunc->m_pszDebugClassName : "", pFunc ? pFunc->m_pszDebugMethodName : "" ));
 
     if (pFunc != NULL && pFunc->IsILStub())
         return FALSE;
@@ -3129,37 +3116,40 @@ BOOL StackTraceInfo::AppendElement(OBJECTHANDLE hThrowable, UINT_PTR currentIP, 
 
         EnsureStackTraceArray(&gc.stackTrace, gc.stackTrace.Size() + 1);
 
-        if (wasCreatedByForeignThread)
+        if (fRaisingForeignException)
         {
-            // If the stack trace was created by a foreign thread, we need to update the cached keepalive items count.
-            m_keepaliveItemsCount = GetKeepaliveItemsCount(&gc.stackTrace);
-        }
-        else
-        {
-            if (m_keepaliveItemsCount == -1)
+            // Just before we append to the stack trace, mark the last recorded frame to be from
+            // the foreign thread so that we can insert an annotation indicating so when building
+            // the stack trace string.
+            size_t numCurrentFrames = gc.stackTrace.Size();
+            if (numCurrentFrames > 0)
             {
-                // The m_keepaliveItemsCount was not initialized yet, so we need to calculate it.
-                m_keepaliveItemsCount = GetKeepaliveItemsCount(&gc.stackTrace);
+                // "numCurrentFrames" can be zero if the user created an EDI using
+                // an unthrown exception.
+                StackTraceElement & refLastElementFromForeignStackTrace = gc.stackTrace[numCurrentFrames - 1];
+                refLastElementFromForeignStackTrace.flags |= STEF_LAST_FRAME_FROM_FOREIGN_STACK_TRACE;
             }
-            _ASSERTE(m_keepaliveItemsCount == GetKeepaliveItemsCount(&gc.stackTrace));
         }
+
+        size_t keepaliveItemsCount = gc.stackTrace.GetKeepAliveItemsCount();
+        _ASSERTE(keepaliveItemsCount == GetKeepaliveItemsCount(&gc.stackTrace));
 
         gc.keepaliveObject = GetKeepaliveObject(pFunc);
         if (gc.keepaliveObject != NULL)
         {
             // The new frame to be added is a method that can be collected, so we need to update the keepalive items count.
-            m_keepaliveItemsCount++;
+            keepaliveItemsCount++;
             stackTraceElem.flags |= STEF_KEEPALIVE;
         }
 
-        if (m_keepaliveItemsCount != 0)
+        if (keepaliveItemsCount != 0)
         {
             // One extra slot is added for the stack trace array
-            EnsureKeepaliveArray(&gc.pKeepaliveArray, m_keepaliveItemsCount + 1);
+            EnsureKeepaliveArray(&gc.pKeepaliveArray, keepaliveItemsCount + 1);
             if (gc.keepaliveObject != NULL)
             {
                 // Add the method to the keepalive array
-                gc.pKeepaliveArray->SetAt(m_keepaliveItemsCount, gc.keepaliveObject);
+                gc.pKeepaliveArray->SetAt(keepaliveItemsCount, gc.keepaliveObject);
             }
         }
         else
@@ -3168,17 +3158,20 @@ BOOL StackTraceInfo::AppendElement(OBJECTHANDLE hThrowable, UINT_PTR currentIP, 
             gc.pKeepaliveArray = NULL;
         }
 
+        gc.stackTrace.SetKeepAliveItemsCount(keepaliveItemsCount);
+
         gc.stackTrace.Append(&stackTraceElem);
+       _ASSERTE(GetKeepaliveItemsCount(&gc.stackTrace) == keepaliveItemsCount);
 
         if (gc.pKeepaliveArray != NULL)
         {
-            _ASSERTE(m_keepaliveItemsCount > 0);
+            _ASSERTE(keepaliveItemsCount > 0);
             gc.pKeepaliveArray->SetAt(0, gc.stackTrace.Get());
             ((EXCEPTIONREF)ObjectFromHandle(hThrowable))->SetStackTrace(dac_cast<OBJECTREF>(gc.pKeepaliveArray));
         }
         else
         {
-            _ASSERTE(m_keepaliveItemsCount == 0);
+            _ASSERTE(keepaliveItemsCount == 0);
             ((EXCEPTIONREF)ObjectFromHandle(hThrowable))->SetStackTrace(dac_cast<OBJECTREF>(gc.stackTrace.Get()));
         }
 

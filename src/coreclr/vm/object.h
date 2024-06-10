@@ -1914,6 +1914,7 @@ class StackTraceArray
     struct ArrayHeader
     {
         size_t m_size;
+        size_t m_keepAliveItemsCount;
         Thread * m_thread;
     };
 
@@ -1984,6 +1985,31 @@ public:
         GetHeader()->m_size = size;
     }
 
+    void SetKeepAliveItemsCount(size_t count)
+    {
+        WRAPPER_NO_CONTRACT;
+        GetHeader()->m_keepAliveItemsCount = count;
+    }
+
+    size_t GetKeepAliveItemsCount() const
+    {
+        WRAPPER_NO_CONTRACT;
+        return GetHeader()->m_keepAliveItemsCount;
+    }
+
+    void MarkAsFrozen()
+    {
+        if (m_array != NULL)
+        {
+            GetHeader()->m_thread = (Thread *)(size_t)1;
+        }
+    }
+
+    bool IsFrozen() const
+    {
+        return GetHeader()->m_thread == (Thread *)(size_t)1;
+    }
+
 private:
     StackTraceArray(StackTraceArray const & rhs) = delete;
 
@@ -2020,7 +2046,7 @@ private:
     CLR_I1 const * GetRaw() const
     {
         WRAPPER_NO_CONTRACT;
-        assert(!!m_array);
+        _ASSERTE(!!m_array);
 
         return const_cast<I1ARRAYREF &>(m_array)->GetDirectPointerToNonObjectElements();
     }
@@ -2029,7 +2055,7 @@ private:
     {
         WRAPPER_NO_CONTRACT;
         SUPPORTS_DAC;
-        assert(!!m_array);
+        _ASSERTE(!!m_array);
 
         return dac_cast<PTR_INT8>(m_array->GetDirectPointerToNonObjectElements());
     }
@@ -2178,7 +2204,7 @@ public:
 
     bool GetStackTrace(StackTraceArray & stackTrace, PTRARRAYREF * outKeepaliveArray = NULL) const;
 
-    static bool GetStackTraceParts(OBJECTREF stackTraceObj, StackTraceArray & stackTrace, PTRARRAYREF * outKeepaliveArray);
+    static void GetStackTraceParts(OBJECTREF stackTraceObj, StackTraceArray & stackTrace, PTRARRAYREF * outKeepaliveArray);
 
     OBJECTREF GetStackTraceArrayObject() const
     {
