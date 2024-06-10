@@ -738,8 +738,8 @@ namespace System
             const uint SingleBiasedExponentMask = float.BiasedExponentMask;
             // Exponent displacement #2
             const uint Exponent13 = 0x0680_0000u;
-            // Maximum value that is not Infinity in Half
-            const float MaxHalfValueBelowInfinity = 65520.0f;
+            // The value above Half.MaxValue
+            const float HalfAboveMaxValue = 65520.0f;
             // Mask for exponent bits in Half
             const uint ExponentMask = BiasedExponentMask;
             uint bitValue = BitConverter.SingleToUInt32Bits(value);
@@ -750,7 +750,7 @@ namespace System
             // Clear sign bit
             value = float.Abs(value);
             // Rectify values that are Infinity in Half. (float.Min now emits vminps instruction if one of two arguments is a constant)
-            value = float.Min(MaxHalfValueBelowInfinity, value);
+            value = float.Min(HalfAboveMaxValue, value);
             // Rectify lower exponent
             uint exponentOffset0 = BitConverter.SingleToUInt32Bits(float.Max(value, BitConverter.UInt32BitsToSingle(MinExp)));
             // Extract exponent

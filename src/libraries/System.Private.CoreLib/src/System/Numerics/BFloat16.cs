@@ -455,7 +455,59 @@ namespace System.Numerics
         /// <summary>Explicitly converts a <see cref="double" /> value to its nearest representable <see cref="BFloat16"/> value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to its nearest representable <see cref="BFloat16"/> value.</returns>
-        public static explicit operator BFloat16(double value) => (BFloat16)(float)value;
+        public static explicit operator BFloat16(double value)
+        {
+            // See explaination of the algorithm at Half.operator Half(float)
+
+            // Minimum exponent for rounding
+            const ulong MinExp = 0x3810_0000_0000_0000u;
+            // Exponent displacement #1
+            const ulong Exponent942 = 0x3ae0_0000_0000_0000u;
+            // Exponent mask
+            const ulong SingleBiasedExponentMask = double.BiasedExponentMask;
+            // Exponent displacement #2
+            const ulong Exponent45 = 0x02D0_0000_0000_0000u;
+            // The value above BFloat16.MaxValue
+            const double BFloat16AboveMaxValue = 3.39617752923046E+38;
+            // Mask for exponent bits in BFloat16
+            const ulong ExponentMask = BiasedExponentMask;
+            ulong bitValue = BitConverter.DoubleToUInt64Bits(value);
+            // Extract sign bit
+            ulong sign = (bitValue & double.SignMask) >> 48;
+            // Detecting NaN (~0u if a is not NaN)
+            ulong realMask = (ulong)(Unsafe.BitCast<bool, sbyte>(double.IsNaN(value)) - 1);
+            // Clear sign bit
+            value = double.Abs(value);
+            // Rectify values that are Infinity in BFloat16. (float.Min now emits vminps instruction if one of two arguments is a constant)
+            value = double.Min(BFloat16AboveMaxValue, value);
+            // Rectify lower exponent
+            ulong exponentOffset0 = BitConverter.DoubleToUInt64Bits(double.Max(value, BitConverter.UInt64BitsToDouble(MinExp)));
+            // Extract exponent
+            exponentOffset0 &= SingleBiasedExponentMask;
+            // Add exponent by 45
+            exponentOffset0 += Exponent45;
+            // Round Single into BFloat16's precision (NaN also gets modified here, just setting the MSB of fraction)
+            value += BitConverter.UInt64BitsToDouble(exponentOffset0);
+            bitValue = BitConverter.DoubleToUInt64Bits(value);
+            // Only exponent bits will be modified if NaN
+            ulong maskedBFloat16ExponentForNaN = ~realMask & ExponentMask;
+            // Subtract exponent by 942
+            bitValue -= Exponent942;
+            // Shift bitValue right by 45 bits to match the boundary of exponent part and fraction part.
+            ulong newExponent = bitValue >> 45;
+            // Clear the fraction parts if the value was NaN.
+            bitValue &= realMask;
+            // Merge the exponent part with fraction part, and add the exponent part and fraction part's overflow.
+            bitValue += newExponent;
+            // Clear exponents if value is NaN
+            bitValue &= ~maskedBFloat16ExponentForNaN;
+            // Merge sign bit with possible NaN exponent
+            ulong signAndMaskedExponent = maskedBFloat16ExponentForNaN | sign;
+            // Merge sign bit and possible NaN exponent
+            bitValue |= signAndMaskedExponent;
+            // The final result
+            return new BFloat16((ushort)bitValue);
+        }
 
         /// <summary>Explicitly converts a <see cref="short" /> value to its nearest representable <see cref="BFloat16"/> value.</summary>
         /// <param name="value">The value to convert.</param>
