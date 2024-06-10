@@ -1440,8 +1440,8 @@ void StackTraceArray::Append(StackTraceElement const * elem)
     // Only the thread that has created the array can append to it
     assert(GetObjectThread() == GetThreadNULLOk());
 
-    size_t newsize = Size() + 1;
-    assert(newsize <= Capacity());
+    uint32_t newsize = Size() + 1;
+    _ASSERTE(newsize <= Capacity());
     memcpyNoGCRefs(GetData() + Size(), elem, sizeof(StackTraceElement));
     MemoryBarrier();  // prevent the newsize from being reordered with the array copy
     SetSize(newsize);
@@ -1464,13 +1464,13 @@ void StackTraceArray::CheckState() const
     if (!m_array)
         return;
 
-    assert(GetObjectThread() == GetThreadNULLOk());
+    _ASSERTE(GetObjectThread() == GetThreadNULLOk());
 
-    size_t size = Size();
+    uint32_t size = Size();
     StackTraceElement const * p;
     p = GetData();
-    for (size_t i = 0; i < size; ++i)
-        assert(p[i].pFunc != NULL);
+    for (uint32_t i = 0; i < size; ++i)
+        _ASSERTE(p[i].pFunc != NULL);
 }
 
 void StackTraceArray::Allocate(size_t size)
@@ -1527,8 +1527,23 @@ void StackTraceArray::CopyFrom(StackTraceArray const & src)
     CopyDataFrom(src);
 }
 
-int GetKeepAliveItemsCount(StackTraceArray *pStackTrace);
+// Compute the number of methods in the stack trace that can be collected. We need to store keepAlive
+// objects (Resolver / LoaderAllocator) for these methods.
+uint32_t StackTraceArray::ComputeKeepAliveItemsCount()
+{
+    LIMITED_METHOD_CONTRACT;
 
+    uint32_t count = 0;
+    for (uint32_t i = 0; i < Size(); i++)
+    {
+        if ((*this)[i].flags & STEF_KEEPALIVE)
+        {
+            count++;
+        }
+    }
+
+    return count;
+}
 
 void StackTraceArray::CopyDataFrom(StackTraceArray const & src)
 {
@@ -1543,11 +1558,11 @@ void StackTraceArray::CopyDataFrom(StackTraceArray const & src)
     }
     CONTRACTL_END;
 
-    Volatile<size_t> size = src.Size();
+    Volatile<uint32_t> size = src.Size();
     memcpyNoGCRefs(GetRaw(), src.GetRaw(), size * sizeof(StackTraceElement) + sizeof(ArrayHeader));
     SetSize(size);  // set size to the exact value which was used when we copied the data
                     // another thread might have changed it at the time of copying
-    SetKeepAliveItemsCount(::GetKeepAliveItemsCount(this));
+    SetKeepAliveItemsCount(ComputeKeepAliveItemsCount());
     SetObjectThread();  // affinitize the newly created array with the current thread
 }
 
@@ -1942,11 +1957,11 @@ bool ExceptionObject::GetStackTrace(StackTraceArray & stackTrace, PTRARRAYREF * 
         gc.newStackTrace.CopyDataFrom(stackTrace);
         stackTrace.Set(gc.newStackTrace.Get());
 
-        int keepAliveArrayCapacity = ((*outKeepAliveArray) == NULL) ? 0 : (*outKeepAliveArray)->GetNumComponents();
+        uint32_t keepAliveArrayCapacity = ((*outKeepAliveArray) == NULL) ? 0 : (*outKeepAliveArray)->GetNumComponents();
 
-        int j = 0;
-        size_t count = stackTrace.Size();
-        for (size_t i = 0; i < count; i++)
+        uint32_t j = 0;
+        uint32_t count = stackTrace.Size();
+        for (uint32_t i = 0; i < count; i++)
         {
             if (stackTrace[i].flags & STEF_KEEPALIVE)
             {
@@ -1960,7 +1975,7 @@ bool ExceptionObject::GetStackTrace(StackTraceArray & stackTrace, PTRARRAYREF * 
                     // Trim the stack trace at a point where a dynamic or collectible method is found without a corresponding keepAlive object.
                     stackTrace.SetSize(i);
                     stackTrace.SetKeepAliveItemsCount(j);
-                    _ASSERTE(GetKeepAliveItemsCount(&stackTrace) == j);
+                    _ASSERTE(stackTrace.ComputeKeepAliveItemsCount() == j);
                     break;
                 }
                 j++;

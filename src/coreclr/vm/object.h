@@ -1913,8 +1913,8 @@ class StackTraceArray
 {
     struct ArrayHeader
     {
-        size_t m_size;
-        size_t m_keepAliveItemsCount;
+        uint32_t m_size;
+        uint32_t m_keepAliveItemsCount;
         Thread * m_thread;
     };
 
@@ -1946,7 +1946,7 @@ public:
         m_array = array;
     }
 
-    size_t Size() const
+    uint32_t Size() const
     {
         WRAPPER_NO_CONTRACT;
         if (!m_array)
@@ -1979,23 +1979,27 @@ public:
         return GetHeader()->m_thread;
     }
 
-    void SetSize(size_t size)
+    void SetSize(uint32_t size)
     {
         WRAPPER_NO_CONTRACT;
         GetHeader()->m_size = size;
     }
 
-    void SetKeepAliveItemsCount(size_t count)
+    void SetKeepAliveItemsCount(uint32_t count)
     {
         WRAPPER_NO_CONTRACT;
         GetHeader()->m_keepAliveItemsCount = count;
     }
 
-    size_t GetKeepAliveItemsCount() const
+    uint32_t GetKeepAliveItemsCount() const
     {
         WRAPPER_NO_CONTRACT;
         return GetHeader()->m_keepAliveItemsCount;
     }
+
+    // Compute the number of methods in the stack trace that can be collected. We need to store keepAlive
+    // objects (Resolver / LoaderAllocator) for these methods.
+    uint32_t ComputeKeepAliveItemsCount();
 
     void MarkAsFrozen()
     {
@@ -2017,7 +2021,7 @@ private:
 
     void CheckState() const;
 
-    size_t GetSize() const
+    uint32_t GetSize() const
     {
         WRAPPER_NO_CONTRACT;
         return GetHeader()->m_size;

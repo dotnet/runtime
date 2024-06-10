@@ -3005,26 +3005,6 @@ OBJECTREF StackTraceInfo::GetKeepAliveObject(MethodDesc* pMethod)
     return NULL;
 }
 
-#ifdef _DEBUG
-// Get number of methods in the stack trace that can be collected. We need to store keepAlive
-// objects (Resolver / LoaderAllocator) for these methods.
-int GetKeepAliveItemsCount(StackTraceArray *pStackTrace)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    int count = 0;
-    for (size_t i = 0; i < pStackTrace->Size(); i++)
-    {
-        if ((*pStackTrace)[i].flags & STEF_KEEPALIVE)
-        {
-            count++;
-        }
-    }
-
-    return count;
-}
-#endif // _DEBUG
-
 //
 // Append stack frame to an exception stack trace.
 // Returns true if it appended the element, false otherwise.
@@ -3131,8 +3111,8 @@ BOOL StackTraceInfo::AppendElement(OBJECTHANDLE hThrowable, UINT_PTR currentIP, 
             }
         }
 
-        size_t keepAliveItemsCount = gc.stackTrace.GetKeepAliveItemsCount();
-        _ASSERTE(keepAliveItemsCount == GetKeepAliveItemsCount(&gc.stackTrace));
+        uint32_t keepAliveItemsCount = gc.stackTrace.GetKeepAliveItemsCount();
+        _ASSERTE(keepAliveItemsCount == gc.stackTrace.ComputeKeepAliveItemsCount());
 
         gc.keepAliveObject = GetKeepAliveObject(pFunc);
         if (gc.keepAliveObject != NULL)
@@ -3161,7 +3141,7 @@ BOOL StackTraceInfo::AppendElement(OBJECTHANDLE hThrowable, UINT_PTR currentIP, 
         gc.stackTrace.SetKeepAliveItemsCount(keepAliveItemsCount);
 
         gc.stackTrace.Append(&stackTraceElem);
-       _ASSERTE(GetKeepAliveItemsCount(&gc.stackTrace) == keepAliveItemsCount);
+       _ASSERTE(gc.stackTrace.ComputeKeepAliveItemsCount() == keepAliveItemsCount);
 
         if (gc.pKeepAliveArray != NULL)
         {
