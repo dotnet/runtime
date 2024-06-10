@@ -41,8 +41,6 @@ namespace System.Data.Odbc
 
         private ConnectionState _cmdState;
 
-        [DynamicDependency(nameof(ResetCommandTimeout))]
-        [DynamicDependency(nameof(ShouldSerializeCommandTimeout))]
         public OdbcCommand() : base()
         {
             GC.SuppressFinalize(this);
