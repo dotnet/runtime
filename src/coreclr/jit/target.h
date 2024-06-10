@@ -534,11 +534,11 @@ static uint32_t PopCount(SingleTypeRegSet value)
 
 static uint32_t PopCount(const regMaskTP& value)
 {
-    return BitOperations::PopCount(value.getLow())
+    uint32_t result = BitOperations::PopCount(value.getLow());
 #ifdef HAS_MORE_THAN_64_REGISTERS
-           + BitOperations::PopCount(value.getHigh())
+    result += BitOperations::PopCount(value.getHigh());
 #endif
-        ;
+    return result;
 }
 
 static uint32_t BitScanForward(SingleTypeRegSet value)
