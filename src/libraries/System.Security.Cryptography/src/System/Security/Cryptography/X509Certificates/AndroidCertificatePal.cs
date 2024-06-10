@@ -17,6 +17,7 @@ namespace System.Security.Cryptography.X509Certificates
     {
         private SafeX509Handle _cert;
         private SafeKeyHandle? _privateKey;
+        private Interop.JObjectLifetime.SafeJObjectHandle? _keyStorePrivateKeyEntry;
 
         private CertificateData _certData;
 
@@ -24,6 +25,13 @@ namespace System.Security.Cryptography.X509Certificates
         {
             if (handle == IntPtr.Zero)
                 throw new ArgumentException(SR.Arg_InvalidHandle, nameof(handle));
+
+            if (Interop.AndroidCrypto.IsKeyStorePrivateKeyEntry(handle))
+            {
+                var newPrivateKeyEntryHandle = new Interop.JObjectLifetime.SafeJObjectHandle();
+                Marshal.InitHandle(newPrivateKeyEntryHandle, Interop.JObjectLifetime.NewGlobalReference(handle));
+                return new AndroidCertificatePal(newPrivateKeyEntryHandle);
+            }
 
             var newHandle = new SafeX509Handle();
             Marshal.InitHandle(newHandle, Interop.JObjectLifetime.NewGlobalReference(handle));
@@ -35,6 +43,13 @@ namespace System.Security.Cryptography.X509Certificates
             Debug.Assert(cert.Pal != null);
 
             AndroidCertificatePal certPal = (AndroidCertificatePal)cert.Pal;
+
+            if (certPal._keyStorePrivateKeyEntry is not null)
+            {
+                var jobjectHandle = new Interop.JObjectLifetime.SafeJObjectHandle();
+                Marshal.InitHandle(jobjectHandle, Interop.JObjectLifetime.NewGlobalReference(certPal.Handle));
+                return new AndroidCertificatePal(jobjectHandle);
+            }
 
             // Ensure private key is copied
             if (certPal.PrivateKeyHandle != null)
@@ -134,6 +149,12 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
+        internal AndroidCertificatePal(Interop.JObjectLifetime.SafeJObjectHandle handle)
+        {
+            _cert = Interop.AndroidCrypto.GetPrivateKeyEntryCertificate(handle);
+            _keyStorePrivateKeyEntry = handle;
+        }
+
         internal AndroidCertificatePal(SafeX509Handle handle)
         {
             _cert = handle;
@@ -145,9 +166,14 @@ namespace System.Security.Cryptography.X509Certificates
             _privateKey = privateKey;
         }
 
-        public bool HasPrivateKey => _privateKey != null;
+        public bool HasPrivateKey => _privateKey is not null || _keyStorePrivateKeyEntry is not null;
 
-        public IntPtr Handle => _cert == null ? IntPtr.Zero : _cert.DangerousGetHandle();
+        public IntPtr Handle => (_keyStorePrivateKeyEntry, _cert) switch
+        {
+            ({} privateKeyEntry, _) => privateKeyEntry.DangerousGetHandle(),
+            (null, {} cert) => cert.DangerousGetHandle(),
+            _ => IntPtr.Zero,
+        };
 
         internal SafeX509Handle SafeHandle => _cert;
 
