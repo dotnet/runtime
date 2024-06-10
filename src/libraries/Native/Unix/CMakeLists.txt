@@ -60,6 +60,9 @@ if(CMAKE_C_COMPILER_ID STREQUAL Clang)
     add_compile_options(-Wno-single-bit-bitfield-constant-conversion)
     add_compile_options(-Wno-cast-function-type-strict)
     add_compile_options(-Wno-incompatible-function-pointer-types-strict)
+
+    # clang 18.1 supressions
+    add_compile_options(-Wno-switch-default)
 elseif(CMAKE_C_COMPILER_ID STREQUAL GNU)
     add_compile_options(-Wno-stringop-truncation)
 endif()
