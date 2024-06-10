@@ -17,7 +17,8 @@ public class SystemDrawingTests : Common.SystemDrawingTests<FormattedObjectSeria
 
         ClassRecord classInfo = (ClassRecord)format.RootRecord;
         classInfo.RecordType.Should().Be(RecordType.ClassWithMembersAndTypes);
-        classInfo.ObjectId.Should().Be(1);
+        classInfo.Id.Should().NotBe(default);
+        format[format.RootRecord.Id].Should().Be(classInfo);
         classInfo.TypeName.FullName.Should().Be("System.Drawing.PointF");
         classInfo.TypeName.AssemblyName!.FullName.Should().Be("System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a");
         classInfo.MemberNames.Should().BeEquivalentTo(["x", "y"]);
@@ -33,7 +34,8 @@ public class SystemDrawingTests : Common.SystemDrawingTests<FormattedObjectSeria
 
         ClassRecord classInfo = (ClassRecord)format.RootRecord;
         classInfo.RecordType.Should().Be(RecordType.ClassWithMembersAndTypes);
-        classInfo.ObjectId.Should().Be(1);
+        classInfo.Id.Should().NotBe(default);
+        format[format.RootRecord.Id].Should().Be(classInfo);
         classInfo.TypeName.FullName.Should().Be("System.Drawing.RectangleF");
         classInfo.MemberNames.Should().BeEquivalentTo(["x", "y", "width", "height"]);
         classInfo.GetSingle("x").Should().Be(input.X);

@@ -48,14 +48,14 @@ internal sealed class ArrayRecordDeserializer : ObjectRecordDeserializer
         _canIterate = _arrayOfT.Length > 0;
     }
 
-    internal override Id Continue()
+    internal override SerializationRecordId Continue()
     {
         int[] indices = _indices;
         int[] lengths = _lengths;
 
         while (_canIterate)
         {
-            (object? memberValue, Id reference) = UnwrapMemberValue(_arrayOfClassRecords.GetValue(indices));
+            (object? memberValue, SerializationRecordId reference) = UnwrapMemberValue(_arrayOfClassRecords.GetValue(indices));
 
             if (s_missingValueSentinel == memberValue)
             {
@@ -67,7 +67,7 @@ internal sealed class ArrayRecordDeserializer : ObjectRecordDeserializer
             {
                 // Need to track a fixup for this index.
                 _hasFixups = true;
-                Deserializer.PendValueUpdater(new ArrayUpdater(_arrayRecord.ObjectId, reference, indices.ToArray()));
+                Deserializer.PendValueUpdater(new ArrayUpdater(_arrayRecord.Id, reference, indices.ToArray()));
             }
 
             _arrayOfT.SetValue(memberValue, indices);
@@ -95,10 +95,10 @@ internal sealed class ArrayRecordDeserializer : ObjectRecordDeserializer
 
         if (!_hasFixups)
         {
-            Deserializer.CompleteObject(_arrayRecord.ObjectId);
+            Deserializer.CompleteObject(_arrayRecord.Id);
         }
 
-        return Id.Null;
+        return default(SerializationRecordId);
     }
 
     internal static Array GetArraySinglePrimitive(SerializationRecord record) => record switch

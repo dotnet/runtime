@@ -13,7 +13,7 @@ namespace System.Formats.Nrbf;
 /// </remarks>
 internal sealed class MemberReferenceRecord : SerializationRecord
 {
-    private MemberReferenceRecord(int reference, RecordMap recordMap)
+    private MemberReferenceRecord(SerializationRecordId reference, RecordMap recordMap)
     {
         Reference = reference;
         RecordMap = recordMap;
@@ -21,20 +21,20 @@ internal sealed class MemberReferenceRecord : SerializationRecord
 
     public override RecordType RecordType => RecordType.MemberReference;
 
-    internal int Reference { get; }
+    internal SerializationRecordId Reference { get; }
 
     private RecordMap RecordMap { get; }
 
     // MemberReferenceRecord has no Id, which makes it impossible to create a cycle
     // by creating a reference to the reference itself.
-    public override int ObjectId => NoId;
+    public override SerializationRecordId Id => SerializationRecordId.NoId;
 
     internal override object? GetValue() => GetReferencedRecord().GetValue();
 
     public override bool IsTypeNameMatching(Type type) => GetReferencedRecord().IsTypeNameMatching(type);
 
     internal static MemberReferenceRecord Decode(BinaryReader reader, RecordMap recordMap)
-        => new(reader.ReadInt32(), recordMap);
+        => new(SerializationRecordId.Decode(reader), recordMap);
 
     internal SerializationRecord GetReferencedRecord() => RecordMap[Reference];
 }

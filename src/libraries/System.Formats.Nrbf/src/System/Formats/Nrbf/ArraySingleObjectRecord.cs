@@ -46,7 +46,7 @@ internal sealed class ArraySingleObjectRecord : SZArrayRecord<object?>
             int nullCount = record is NullsRecord nullsRecord ? nullsRecord.NullCount : 0;
             if (nullCount == 0)
             {
-                values[valueIndex++] = record is MemberReferenceRecord referenceRecord && referenceRecord.Reference == ObjectId
+                values[valueIndex++] = record is MemberReferenceRecord referenceRecord && referenceRecord.Reference.Equals(Id)
                     ? values // a reference to self, and a way to get StackOverflow exception ;)
                     : record.GetValue();
                 continue;

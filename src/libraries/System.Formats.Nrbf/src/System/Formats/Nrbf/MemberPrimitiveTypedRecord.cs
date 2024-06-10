@@ -12,10 +12,12 @@ namespace System.Formats.Nrbf;
 internal sealed class MemberPrimitiveTypedRecord<T> : PrimitiveTypeRecord<T>
     where T : unmanaged
 {
-    internal MemberPrimitiveTypedRecord(T value, int objectId = 0) : base(value) => ObjectId = objectId;
+    internal MemberPrimitiveTypedRecord(T value) : base(value) => Id = default;
+
+    internal MemberPrimitiveTypedRecord(T value, SerializationRecordId id) : base(value) => Id = id;
 
     public override RecordType RecordType => RecordType.MemberPrimitiveTyped;
 
     /// <inheritdoc />
-    public override int ObjectId { get; }
+    public override SerializationRecordId Id { get; }
 }

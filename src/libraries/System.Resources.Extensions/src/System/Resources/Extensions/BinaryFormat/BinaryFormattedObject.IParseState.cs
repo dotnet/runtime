@@ -15,7 +15,7 @@ internal sealed partial class BinaryFormattedObject
     internal interface IParseState
     {
         BinaryReader Reader { get; }
-        IReadOnlyDictionary<int, SerializationRecord> RecordMap { get; }
+        IReadOnlyDictionary<SerializationRecordId, SerializationRecord> RecordMap { get; }
         Options Options { get; }
         ITypeResolver TypeResolver { get; }
     }

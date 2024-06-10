@@ -24,7 +24,7 @@ internal sealed class ClassTypeInfo
     internal static ClassTypeInfo Decode(BinaryReader reader, PayloadOptions options, RecordMap recordMap)
     {
         string rawName = reader.ReadString();
-        int libraryId = reader.ReadInt32();
+        SerializationRecordId libraryId = SerializationRecordId.Decode(reader);
 
         BinaryLibraryRecord library = (BinaryLibraryRecord)recordMap[libraryId];
 

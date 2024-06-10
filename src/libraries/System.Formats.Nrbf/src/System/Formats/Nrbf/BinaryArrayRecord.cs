@@ -115,7 +115,7 @@ internal sealed class BinaryArrayRecord : ArrayRecord
 
     internal static ArrayRecord Decode(BinaryReader reader, RecordMap recordMap, PayloadOptions options)
     {
-        int objectId = reader.ReadInt32();
+        SerializationRecordId objectId = SerializationRecordId.Decode(reader);
         BinaryArrayType arrayType = reader.ReadArrayType();
         int rank = reader.ReadInt32();
 

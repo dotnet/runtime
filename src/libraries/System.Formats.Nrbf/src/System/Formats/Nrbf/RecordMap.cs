@@ -4,29 +4,28 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.IO.Hashing;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 
 namespace System.Formats.Nrbf;
 
-internal sealed class RecordMap : IReadOnlyDictionary<int, SerializationRecord>
+internal sealed class RecordMap : IReadOnlyDictionary<SerializationRecordId, SerializationRecord>
 {
-    private readonly Dictionary<int, SerializationRecord> _map = new(CollisionResistantInt32Comparer.Instance);
+    private readonly Dictionary<SerializationRecordId, SerializationRecord> _map = new();
 
-    public IEnumerable<int> Keys => _map.Keys;
+    public IEnumerable<SerializationRecordId> Keys => _map.Keys;
 
     public IEnumerable<SerializationRecord> Values => _map.Values;
 
     public int Count => _map.Count;
 
-    public SerializationRecord this[int objectId] => _map[objectId];
+    public SerializationRecord this[SerializationRecordId objectId] => _map[objectId];
 
-    public bool ContainsKey(int key) => _map.ContainsKey(key);
+    public bool ContainsKey(SerializationRecordId key) => _map.ContainsKey(key);
 
-    public bool TryGetValue(int key, [MaybeNullWhen(false)] out SerializationRecord value) => _map.TryGetValue(key, out value);
+    public bool TryGetValue(SerializationRecordId key, [MaybeNullWhen(false)] out SerializationRecord value) => _map.TryGetValue(key, out value);
 
-    public IEnumerator<KeyValuePair<int, SerializationRecord>> GetEnumerator() => _map.GetEnumerator();
+    public IEnumerator<KeyValuePair<SerializationRecordId, SerializationRecord>> GetEnumerator() => _map.GetEnumerator();
 
     IEnumerator IEnumerable.GetEnumerator() => _map.GetEnumerator();
 
@@ -35,29 +34,29 @@ internal sealed class RecordMap : IReadOnlyDictionary<int, SerializationRecord>
         // From https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-nrbf/0a192be0-58a1-41d0-8a54-9c91db0ab7bf:
         // "If the ObjectId is not referenced by any MemberReference in the serialization stream,
         // then the ObjectId SHOULD be positive, but MAY be negative."
-        if (record.ObjectId != SerializationRecord.NoId)
+        if (!record.Id.Equals(SerializationRecordId.NoId))
         {
-            if (record.ObjectId < 0)
+            if (record.Id._id < 0)
             {
                 // Negative record Ids should never be referenced. Duplicate negative ids can be
                 // exported by the writer. The root object Id can be negative.
-                _map[record.ObjectId] = record;
+                _map[record.Id] = record;
             }
             else
             {
 #if NET
-                if (_map.TryAdd(record.ObjectId, record))
+                if (_map.TryAdd(record.Id, record))
                 {
                     return;
                 }
 #else
-                if (!_map.ContainsKey(record.ObjectId))
+                if (!_map.ContainsKey(record.Id))
                 {
-                    _map.Add(record.ObjectId, record);
+                    _map.Add(record.Id, record);
                     return;
                 }
 #endif
-                throw new SerializationException(SR.Format(SR.Serialization_DuplicateSerializationRecordId, record.ObjectId));
+                throw new SerializationException(SR.Format(SR.Serialization_DuplicateSerializationRecordId, record.Id));
             }
         }
     }
@@ -72,25 +71,5 @@ internal sealed class RecordMap : IReadOnlyDictionary<int, SerializationRecord>
         }
 
         return rootRecord;
-    }
-
-    // keys (32-bit integer ids) are payload-provided so we need a collision-resistant comparer
-    private sealed class CollisionResistantInt32Comparer : IEqualityComparer<int>
-    {
-        internal static CollisionResistantInt32Comparer Instance { get; } = new();
-
-        private CollisionResistantInt32Comparer() { }
-
-        public bool Equals(int x, int y) => x == y;
-
-        public int GetHashCode(int obj)
-        {
-#if NET
-            Span<int> integers = new(ref obj);
-#else
-            Span<int> integers = stackalloc int[1] { obj };
-#endif
-            return (int)XxHash32.HashToUInt32(MemoryMarshal.AsBytes(integers));
-        }
     }
 }

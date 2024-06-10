@@ -31,7 +31,7 @@ internal abstract class ClassRecordDeserializer : ObjectRecordDeserializer
     internal static ObjectRecordDeserializer Create(ClassRecord classRecord, IDeserializer deserializer)
     {
         Type type = deserializer.TypeResolver.GetType(classRecord.TypeName);
-        Id id = classRecord.ObjectId;
+        SerializationRecordId id = classRecord.Id;
 
         ISerializationSurrogate? surrogate = deserializer.GetSurrogate(type);
 

@@ -29,7 +29,7 @@ internal sealed class ClassWithMembersAndTypesRecord : ClassRecord
     {
         ClassInfo classInfo = ClassInfo.Decode(reader);
         MemberTypeInfo memberTypeInfo = MemberTypeInfo.Decode(reader, classInfo.MemberNames.Count, options, recordMap);
-        int libraryId = reader.ReadInt32();
+        SerializationRecordId libraryId = SerializationRecordId.Decode(reader);
 
         BinaryLibraryRecord library = (BinaryLibraryRecord)recordMap[libraryId];
         classInfo.LoadTypeName(library, options);

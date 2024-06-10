@@ -119,7 +119,7 @@ public static class NrbfDecoder
 
     /// <param name="payload">The NRBF payload.</param>
     /// <param name="recordMap">
-    ///   When this method returns, contains a mapping of <see cref="SerializationRecord.ObjectId" /> to the associated serialization record.
+    ///   When this method returns, contains a mapping of <see cref="SerializationRecordId" /> to the associated serialization record.
     ///   This parameter is treated as uninitialized.
     /// </param>
     /// <param name="options">An object that describes optional <see cref="PayloadOptions"/> parameters to use.</param>
@@ -128,7 +128,7 @@ public static class NrbfDecoder
     ///   after the reading is finished; otherwise, <see langword="false" />.
     /// </param>
     /// <inheritdoc cref="Decode(Stream, PayloadOptions?, bool)"/>
-    public static SerializationRecord Decode(Stream payload, out IReadOnlyDictionary<int, SerializationRecord> recordMap, PayloadOptions? options = default, bool leaveOpen = false)
+    public static SerializationRecord Decode(Stream payload, out IReadOnlyDictionary<SerializationRecordId, SerializationRecord> recordMap, PayloadOptions? options = default, bool leaveOpen = false)
     {
 #if NET
         ArgumentNullException.ThrowIfNull(payload);
@@ -151,10 +151,10 @@ public static class NrbfDecoder
     public static ClassRecord DecodeClassRecord(Stream payload, PayloadOptions? options = default, bool leaveOpen = false)
         => (ClassRecord)Decode(payload, options, leaveOpen);
 
-    private static SerializationRecord Decode(BinaryReader reader, PayloadOptions options, out IReadOnlyDictionary<int, SerializationRecord> readOnlyRecordMap)
+    private static SerializationRecord Decode(BinaryReader reader, PayloadOptions options, out IReadOnlyDictionary<SerializationRecordId, SerializationRecord> readOnlyRecordMap)
     {
         Stack<NextInfo> readStack = new();
-        var recordMap = new RecordMap();
+        RecordMap recordMap = new();
 
         // Everything has to start with a header
         var header = (SerializedStreamHeaderRecord)DecodeNext(reader, recordMap, AllowedRecordTypes.SerializedStreamHeader, options, out _);

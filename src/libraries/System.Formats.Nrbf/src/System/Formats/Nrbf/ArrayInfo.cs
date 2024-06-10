@@ -18,15 +18,15 @@ internal readonly struct ArrayInfo
 {
     internal const int MaxArrayLength = 2147483591; // Array.MaxLength
 
-    internal ArrayInfo(int objectId, long totalElementsCount, BinaryArrayType arrayType = BinaryArrayType.Single, int rank = 1)
+    internal ArrayInfo(SerializationRecordId id, long totalElementsCount, BinaryArrayType arrayType = BinaryArrayType.Single, int rank = 1)
     {
-        ObjectId = objectId;
+        Id = id;
         TotalElementsCount = totalElementsCount;
         ArrayType = arrayType;
         Rank = rank;
     }
 
-    internal int ObjectId { get; }
+    internal SerializationRecordId Id { get; }
 
     internal long TotalElementsCount { get; }
 
@@ -41,7 +41,7 @@ internal readonly struct ArrayInfo
     }
 
     internal static ArrayInfo Decode(BinaryReader reader)
-        => new(reader.ReadInt32(), ParseValidArrayLength(reader));
+        => new(SerializationRecordId.Decode(reader), ParseValidArrayLength(reader));
 
     internal static int ParseValidArrayLength(BinaryReader reader)
     {

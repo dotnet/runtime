@@ -12,19 +12,19 @@ namespace System.Formats.Nrbf;
 /// <remarks>
 /// BinaryObjectString records are described in <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/eb503ca5-e1f6-4271-a7ee-c4ca38d07996">[MS-NRBF] 2.5.7</see>.
 /// </remarks>
-[DebuggerDisplay("{Value}, {ObjectId}")]
+[DebuggerDisplay("{Value}, {Id}")]
 internal sealed class BinaryObjectStringRecord : PrimitiveTypeRecord<string>
 {
-    private BinaryObjectStringRecord(int objectId, string value) : base(value)
+    private BinaryObjectStringRecord(SerializationRecordId id, string value) : base(value)
     {
-        ObjectId = objectId;
+        Id = id;
     }
 
     public override RecordType RecordType => RecordType.BinaryObjectString;
 
     /// <inheritdoc />
-    public override int ObjectId { get; }
+    public override SerializationRecordId Id { get; }
 
     internal static BinaryObjectStringRecord Decode(BinaryReader reader)
-        => new(reader.ReadInt32(), reader.ReadString());
+        => new(SerializationRecordId.Decode(reader), reader.ReadString());
 }

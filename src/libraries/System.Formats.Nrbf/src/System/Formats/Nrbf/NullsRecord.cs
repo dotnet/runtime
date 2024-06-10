@@ -7,5 +7,5 @@ internal abstract class NullsRecord : SerializationRecord
 {
     internal abstract int NullCount { get; }
 
-    public override int ObjectId => NoId;
+    public override SerializationRecordId Id => SerializationRecordId.NoId;
 }

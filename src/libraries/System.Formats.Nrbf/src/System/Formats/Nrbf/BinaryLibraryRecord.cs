@@ -13,9 +13,9 @@ namespace System.Formats.Nrbf;
 /// </remarks>
 internal sealed class BinaryLibraryRecord : SerializationRecord
 {
-    private BinaryLibraryRecord(int libraryId, string libraryName)
+    private BinaryLibraryRecord(SerializationRecordId libraryId, string libraryName)
     {
-        ObjectId = libraryId;
+        Id = libraryId;
         LibraryName = libraryName;
     }
 
@@ -24,8 +24,8 @@ internal sealed class BinaryLibraryRecord : SerializationRecord
     internal string LibraryName { get; }
 
     /// <inheritdoc />
-    public override int ObjectId { get; }
+    public override SerializationRecordId Id { get; }
 
     internal static BinaryLibraryRecord Decode(BinaryReader reader)
-        => new(reader.ReadInt32(), reader.ReadString());
+        => new(SerializationRecordId.Decode(reader), reader.ReadString());
 }

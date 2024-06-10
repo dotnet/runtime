@@ -14,11 +14,9 @@ namespace System.Formats.Nrbf;
 ///   a <see cref="ClassRecord"/> or an <see cref="ArrayRecord"/>.
 ///  </para>
 /// </remarks>
-[DebuggerDisplay("{RecordType}, {ObjectId}")]
+[DebuggerDisplay("{RecordType}, {Id}")]
 public abstract class SerializationRecord
 {
-    internal const int NoId = 0;
-
     internal SerializationRecord() // others can't derive from this type
     {
     }
@@ -33,7 +31,7 @@ public abstract class SerializationRecord
     /// Gets the ID of the record.
     /// </summary>
     /// <value>The ID of the record.</value>
-    public abstract int ObjectId { get; }
+    public abstract SerializationRecordId Id { get; }
 
     /// <summary>
     /// Compares the type and assembly name read from the payload against the specified type.

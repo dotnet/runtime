@@ -105,6 +105,6 @@ internal sealed class SystemClassWithMembersAndTypesRecord : ClassRecord
         return this;
 
         SerializationRecord Create<T>(T value) where T : unmanaged
-            => new MemberPrimitiveTypedRecord<T>(value, ObjectId);
+            => new MemberPrimitiveTypedRecord<T>(value, Id);
     }
 }

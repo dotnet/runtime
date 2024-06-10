@@ -70,7 +70,7 @@ public class PrimitiveTypeTests : SerializationTest<FormattedObjectSerializer>
     public void PrimitiveTypeMemberName(object value)
     {
         BinaryFormattedObject format = new(Serialize(value));
-        VerifyNonGeneric(value, format[1]);
+        VerifyNonGeneric(value, format[format.RootRecord.Id]);
     }
 
     [Theory]

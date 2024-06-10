@@ -25,7 +25,7 @@ public abstract class ClassRecord : SerializationRecord
     public IEnumerable<string> MemberNames => ClassInfo.MemberNames.Keys;
 
     /// <inheritdoc />
-    public override int ObjectId => ClassInfo.ObjectId;
+    public override SerializationRecordId Id => ClassInfo.Id;
 
     internal ClassInfo ClassInfo { get; }
 

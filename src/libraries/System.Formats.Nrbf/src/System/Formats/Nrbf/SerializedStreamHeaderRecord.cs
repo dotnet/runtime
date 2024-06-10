@@ -18,17 +18,17 @@ internal sealed class SerializedStreamHeaderRecord : SerializationRecord
     internal const int MajorVersion = 1;
     internal const int MinorVersion = 0;
 
-    internal SerializedStreamHeaderRecord(int rootId) => RootId = rootId;
+    internal SerializedStreamHeaderRecord(SerializationRecordId rootId) => RootId = rootId;
 
     public override RecordType RecordType => RecordType.SerializedStreamHeader;
 
-    internal int RootId { get; }
+    internal SerializationRecordId RootId { get; }
 
-    public override int ObjectId => NoId;
+    public override SerializationRecordId Id => SerializationRecordId.NoId;
 
     internal static SerializedStreamHeaderRecord Decode(BinaryReader reader)
     {
-        int rootId = reader.ReadInt32();
+        SerializationRecordId rootId = SerializationRecordId.Decode(reader);
         _ = reader.ReadInt32(); // HeaderId
         int majorVersion = reader.ReadInt32();
         int minorVersion = reader.ReadInt32();

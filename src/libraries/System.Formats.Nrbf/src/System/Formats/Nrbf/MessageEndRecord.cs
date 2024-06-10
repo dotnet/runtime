@@ -19,5 +19,5 @@ internal sealed class MessageEndRecord : SerializationRecord
 
     public override RecordType RecordType => RecordType.MessageEnd;
 
-    public override int ObjectId => NoId;
+    public override SerializationRecordId Id => SerializationRecordId.NoId;
 }

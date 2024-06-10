@@ -14,16 +14,16 @@ namespace System.Formats.Nrbf;
 /// </remarks>
 internal sealed class ClassWithIdRecord : ClassRecord
 {
-    private ClassWithIdRecord(int objectId, ClassRecord metadataClass) : base(metadataClass.ClassInfo, metadataClass.MemberTypeInfo)
+    private ClassWithIdRecord(SerializationRecordId id, ClassRecord metadataClass) : base(metadataClass.ClassInfo, metadataClass.MemberTypeInfo)
     {
-        ObjectId = objectId;
+        Id = id;
         MetadataClass = metadataClass;
     }
 
     public override RecordType RecordType => RecordType.ClassWithId;
 
     /// <inheritdoc />
-    public override int ObjectId { get; }
+    public override SerializationRecordId Id { get; }
 
     internal ClassRecord MetadataClass { get; }
 
@@ -31,15 +31,15 @@ internal sealed class ClassWithIdRecord : ClassRecord
         BinaryReader reader,
         RecordMap recordMap)
     {
-        int objectId = reader.ReadInt32();
-        int metadataId = reader.ReadInt32();
+        SerializationRecordId id = SerializationRecordId.Decode(reader);
+        SerializationRecordId metadataId = SerializationRecordId.Decode(reader);
 
         if (recordMap[metadataId] is not ClassRecord referencedRecord)
         {
             throw new SerializationException(SR.Serialization_InvalidReference);
         }
 
-        return new ClassWithIdRecord(objectId, referencedRecord);
+        return new ClassWithIdRecord(id, referencedRecord);
     }
 
     internal override (AllowedRecordTypes allowed, PrimitiveType primitiveType) GetNextAllowedRecordType()

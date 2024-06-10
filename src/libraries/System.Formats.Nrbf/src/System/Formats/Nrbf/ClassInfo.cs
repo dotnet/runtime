@@ -22,14 +22,14 @@ internal sealed class ClassInfo
     private readonly string _rawName;
     private TypeName? _typeName;
 
-    private ClassInfo(int objectId, string rawName, Dictionary<string, int> memberNames)
+    private ClassInfo(SerializationRecordId id, string rawName, Dictionary<string, int> memberNames)
     {
-        ObjectId = objectId;
+        Id = id;
         _rawName = rawName;
         MemberNames = memberNames;
     }
 
-    internal int ObjectId { get; }
+    internal SerializationRecordId Id { get; }
 
     internal TypeName TypeName
     {
@@ -44,7 +44,7 @@ internal sealed class ClassInfo
 
     internal static ClassInfo Decode(BinaryReader reader)
     {
-        int objectId = reader.ReadInt32();
+        SerializationRecordId id = SerializationRecordId.Decode(reader);
         string typeName = reader.ReadString();
         int memberCount = reader.ReadInt32();
 
@@ -73,7 +73,7 @@ internal sealed class ClassInfo
             throw new SerializationException(SR.Format(SR.Serialization_DuplicateMemberName, memberName));
         }
 
-        return new ClassInfo(objectId, typeName, memberNames);
+        return new ClassInfo(id, typeName, memberNames);
     }
 
     internal void LoadTypeName(BinaryLibraryRecord libraryRecord, PayloadOptions payloadOptions)
