@@ -2664,6 +2664,7 @@ public:
 
     regMaskTP getKillRegisterAssignment()
     {
+        assert(refType == RefTypeKill);
 #ifdef HAS_MORE_THAN_64_REGISTERS
         return killRegisterAssignment;
 #else
