@@ -341,7 +341,7 @@ namespace System
                 ReRegisterForFinalize(ObjectHandleOnStack.Create(ref obj));
             }
 
-            KeepAlive(obj);
+            // GC.KeepAlive(obj) not required. pMT kept alive via ObjectHandleOnStack
         }
 
         // Returns the total number of bytes currently in use by live objects in
