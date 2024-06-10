@@ -32,6 +32,16 @@
         <target state="translated">Günlüğe kaydetme yöntemi parametre adları _ ile başlayamaz</target>
         <note />
       </trans-unit>
+      <trans-unit id="InvalidLoggingMethodParameterOutMessage">
+        <source>Argument '{0}' is using the unsupported out parameter modifier</source>
+        <target state="translated">'{0}' bağımsız değişkeni, desteklenmeyen dış parametre değiştiriciyi kullanıyor</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidLoggingMethodParameterOutTitle">
+        <source>Argument is using the unsupported out parameter modifier</source>
+        <target state="translated">Bağımsız değişken, desteklenmeyen dış parametre değiştiriciyi kullanıyor</target>
+        <note />
+      </trans-unit>
       <trans-unit id="LoggingMethodHasBodyMessage">
         <source>Logging methods cannot have a body</source>
         <target state="translated">Günlüğe kaydetme yöntemleri gövde içeremez</target>
@@ -57,9 +67,24 @@
         <target state="translated">Günlüğe kaydetme yöntemleri statik olmalıdır</target>
         <note />
       </trans-unit>
+      <trans-unit id="LoggingUnsupportedLanguageVersionMessageFormat">
+        <source>The Logging source generator is not available in C# {0}. Please use language version {1} or greater.</source>
+        <target state="translated">Günlüğe kaydetme kaynak oluşturucusu C# {0} sürümünde kullanılamıyor. Lütfen dil sürümü {1} veya üstü bir sürümü kullanın.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LoggingUnsupportedLanguageVersionTitle">
+        <source>C# language version not supported by the source generator.</source>
+        <target state="translated">C# dil sürümü kaynak oluşturucu tarafından desteklenmiyor.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="MalformedFormatStringsMessage">
-        <source>Can't have malformed format strings (like dangling {, etc)</source>
-        <target state="new">Can't have malformed format strings (like dangling {, etc)</target>
+        <source>Logging method '{0}' contains malformed format strings</source>
+        <target state="translated">'{0}' günlüğe kaydetme yöntemi hatalı biçimlendirilmiş biçim dizeleri içeriyor</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MalformedFormatStringsTitle">
+        <source>Logging method contains malformed format strings</source>
+        <target state="translated">Günlüğe kaydetme yöntemi hatalı biçimlendirilmiş biçim dizeleri içeriyor</target>
         <note />
       </trans-unit>
       <trans-unit id="MissingLogLevelMessage">
@@ -145,6 +170,16 @@
       <trans-unit id="ShouldntReuseEventIdsTitle">
         <source>Multiple logging methods cannot use the same event id within a class</source>
         <target state="translated">Birden çok günlüğe kaydetme yöntemi bir sınıf içinde aynı olay kimliğini kullanamaz</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ShouldntReuseEventNamesMessage">
+        <source>Multiple logging methods are using event name {0} in class {1}</source>
+        <target state="translated">Birden çok günlüğe kaydetme yöntemi {1} sınıfında {0} olay adını kullanıyor</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ShouldntReuseEventNamesTitle">
+        <source>Multiple logging methods should not use the same event name within a class</source>
+        <target state="translated">Birden çok günlüğe kaydetme yöntemi bir sınıf içinde aynı olay adını kullanmamalıdır</target>
         <note />
       </trans-unit>
       <trans-unit id="TemplateHasNoCorrespondingArgumentMessage">
