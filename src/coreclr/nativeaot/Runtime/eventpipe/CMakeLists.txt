@@ -229,12 +229,6 @@ add_dependencies(eventpipe-disabled aot_eventing_headers)
 
 if (CLR_CMAKE_TARGET_WIN32)
   add_library(eventpipe-enabled.GuardCF STATIC ${EVENTPIPE_SOURCES})
-
-  set_target_properties(eventpipe-enabled.GuardCF PROPERTIES
-    UNITY_BUILD ON
-    UNITY_BUILD_BATCH_SIZE 0
-  )
-
   target_link_libraries(eventpipe-enabled.GuardCF PRIVATE eventpipe-shared-objects.GuardCF)
   add_dependencies(eventpipe-enabled.GuardCF aot_eventing_headers)
   add_dependencies(eventpipe-enabled.GuardCF aot_etw_headers)
