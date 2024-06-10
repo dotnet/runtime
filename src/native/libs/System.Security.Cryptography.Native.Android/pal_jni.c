@@ -689,7 +689,7 @@ int GetEnumAsInt(JNIEnv *env, jobject enumObj)
     return value;
 }
 
-jint init_library_on_load (JavaVM *vm, void *reserved)
+jint AndroidCryptoNative_InitLibraryOnLoad (JavaVM *vm, void *reserved)
 {
     (void)reserved;
     LOG_INFO("JNI_OnLoad in pal_jni.c");

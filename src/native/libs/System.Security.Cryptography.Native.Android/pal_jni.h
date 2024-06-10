@@ -604,7 +604,7 @@ jmethodID GetOptionalMethod(JNIEnv *env, bool isStatic, jclass klass, const char
 jfieldID GetField(JNIEnv *env, bool isStatic, jclass klass, const char* name, const char* sig) ARGS_NON_NULL_ALL;
 jfieldID GetOptionalField(JNIEnv *env, bool isStatic, jclass klass, const char* name, const char* sig) ARGS_NON_NULL_ALL;
 JNIEnv* GetJNIEnv(void);
-jint init_library_on_load (JavaVM *vm, void *reserved);
+jint AndroidCryptoNative_InitLibraryOnLoad (JavaVM *vm, void *reserved);
 
 int GetEnumAsInt(JNIEnv *env, jobject enumObj) ARGS_NON_NULL_ALL;
 
