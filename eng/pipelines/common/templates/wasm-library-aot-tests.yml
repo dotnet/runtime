@@ -31,6 +31,9 @@ jobs:
       shouldRunSmokeOnly: ${{ parameters.shouldRunSmokeOnly }}
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       scenarios:
+      - ${{ if not(empty(parameters.scenarios)) }}:
+        - ${{ parameters.scenarios }}
+      - ${{ if empty(parameters.scenarios) }}:
         - ${{ if eq(platform, 'browser_wasm') }}:
           - WasmTestOnV8
         - ${{ if eq(platform, 'browser_wasm_win') }}:
