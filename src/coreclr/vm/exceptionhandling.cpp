@@ -2475,7 +2475,7 @@ CLRUnwindStatus ExceptionTracker::ProcessExplicitFrame(
                 //
                 if (!bSkipLastElement)
                 {
-                    m_StackTraceInfo.AppendElement(m_hThrowable, 0, sf.SP, pMD, pcfThisFrame);
+                    StackTraceInfo::AppendElement(m_hThrowable, 0, sf.SP, pMD, pcfThisFrame);
                 }
 
                 //
@@ -2759,7 +2759,7 @@ CLRUnwindStatus ExceptionTracker::ProcessManagedCallFrame(
 
                 if (!bSkipLastElement)
                 {
-                    m_StackTraceInfo.AppendElement(m_hThrowable, uControlPC, sf.SP, pMD, pcfThisFrame);
+                    StackTraceInfo::AppendElement(m_hThrowable, uControlPC, sf.SP, pMD, pcfThisFrame);
                 }
             }
 
@@ -7630,7 +7630,7 @@ extern "C" void QCALLTYPE AppendExceptionStackFrame(QCall::ObjectHandleOnStack e
             _ASSERTE(pMD == codeInfo.GetMethodDesc());
 #endif // _DEBUG
 
-            pExInfo->m_StackTraceInfo.AppendElement(pExInfo->m_hThrowable, ip, sp, pMD, &pExInfo->m_frameIter.m_crawl);
+            StackTraceInfo::AppendElement(pExInfo->m_hThrowable, ip, sp, pMD, &pExInfo->m_frameIter.m_crawl);
         }
     }
 
@@ -8304,7 +8304,7 @@ extern "C" bool QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStackwalk
                 if (pMD != NULL)
                 {
                     GCX_COOP();
-                    pExInfo->m_StackTraceInfo.AppendElement(pExInfo->m_hThrowable, 0, GetRegdisplaySP(pExInfo->m_frameIter.m_crawl.GetRegisterSet()), pMD, &pExInfo->m_frameIter.m_crawl);
+                    StackTraceInfo::AppendElement(pExInfo->m_hThrowable, 0, GetRegdisplaySP(pExInfo->m_frameIter.m_crawl.GetRegisterSet()), pMD, &pExInfo->m_frameIter.m_crawl);
 
 #if defined(DEBUGGING_SUPPORTED)
                     if (NotifyDebuggerOfStub(pThread, pFrame))
@@ -8570,7 +8570,7 @@ extern "C" bool QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollideCla
                 if (pMD != NULL)
                 {
                     GCX_COOP();
-                    pTopExInfo->m_StackTraceInfo.AppendElement(pTopExInfo->m_hThrowable, 0, GetRegdisplaySP(pTopExInfo->m_frameIter.m_crawl.GetRegisterSet()), pMD, &pTopExInfo->m_frameIter.m_crawl);
+                    StackTraceInfo::AppendElement(pTopExInfo->m_hThrowable, 0, GetRegdisplaySP(pTopExInfo->m_frameIter.m_crawl.GetRegisterSet()), pMD, &pTopExInfo->m_frameIter.m_crawl);
 
 #if defined(DEBUGGING_SUPPORTED)
                     if (NotifyDebuggerOfStub(pThread, pFrame))

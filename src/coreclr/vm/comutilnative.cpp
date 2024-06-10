@@ -76,46 +76,6 @@ FCIMPL0(VOID, ExceptionNative::PrepareForForeignExceptionRaise)
 }
 FCIMPLEND
 
-void DeepCopyStackTrace(StackTraceArray &stackTrace, StackTraceArray &stackTraceCopy, PTRARRAYREF *pKeepAliveArray, PTRARRAYREF *pKeepAliveArrayCopy)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(IsProtectedByGCFrame((OBJECTREF*)&stackTrace));
-        PRECONDITION(IsProtectedByGCFrame((OBJECTREF*)&stackTraceCopy));
-        PRECONDITION(IsProtectedByGCFrame((OBJECTREF*)pKeepAliveArray));
-        PRECONDITION(IsProtectedByGCFrame((OBJECTREF*)pKeepAliveArrayCopy));
-    }
-    CONTRACTL_END;
-
-    if (stackTrace.Get() != NULL)
-    {
-        stackTraceCopy.CopyFrom(stackTrace);
-    }
-    else
-    {
-        stackTraceCopy.Set(NULL);
-    }
-
-    if (*pKeepAliveArray != NULL)
-    {
-        // The stack trace object is the keepAlive array with its first slot set to the stack trace I1Array.
-        // Get the number of elements in the dynamic methods array
-        unsigned cOrigKeepAlive = (*pKeepAliveArray)->GetNumComponents();
-
-        // ..and allocate a new array. This can trigger GC or throw under OOM.
-        *pKeepAliveArrayCopy = (PTRARRAYREF)AllocateObjectArray(cOrigKeepAlive, g_pObjectClass);
-
-        // Deepcopy references to the new array we just allocated
-        memmoveGCRefs((*pKeepAliveArrayCopy)->GetDataPtr(), (*pKeepAliveArray)->GetDataPtr(),
-                      cOrigKeepAlive * sizeof(Object *));
-
-        (*pKeepAliveArrayCopy)->SetAt(0, (PTRARRAYREF)stackTraceCopy.Get());
-    }
-}
-
 // Given an exception object, this method will mark its stack trace as frozen and return it to the caller.
 // Frozen stack traces are immutable, when a thread attempts to add a frame to it, the stack trace is cloned first.
 FCIMPL1(Object *, ExceptionNative::GetFrozenStackTrace, Object* pExceptionObjectUnsafe);

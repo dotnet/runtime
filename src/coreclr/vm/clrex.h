@@ -56,8 +56,6 @@ struct StackTraceElement
 
 class StackTraceInfo
 {
-    int m_dummy; // remove this
-
     static OBJECTREF GetKeepAliveObject(MethodDesc* pMethod);
     static void EnsureStackTraceArray(StackTraceArray *pStackTrace, size_t neededSize);
     static void EnsureKeepAliveArray(PTRARRAYREF *ppKeepAliveArray, size_t neededSize);

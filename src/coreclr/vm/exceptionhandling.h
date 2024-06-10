@@ -101,8 +101,6 @@ struct ExceptionTrackerBase
     OBJECTHANDLE    m_hThrowable;
     // EXCEPTION_RECORD and CONTEXT_RECORD describing the exception and its location
     DAC_EXCEPTION_POINTERS m_ptrs;
-    // Stack trace of the current exception
-    StackTraceInfo m_StackTraceInfo;
     // Information for the funclet we are calling
     EHClauseInfo   m_EHClauseInfo;
     // Flags representing exception handling state (exception is rethrown, unwind has started, various debugger notifications sent etc)

@@ -2198,7 +2198,7 @@ StackWalkAction COMPlusThrowCallback(       // SWA value
         if (!pData->bSkipLastElement)
         {
             // Append the current frame to the stack trace and save the save trace to the managed Exception object.
-            pExInfo->m_StackTraceInfo.AppendElement(pThread->GetThrowableAsHandle(), currentIP, currentSP, pFunc, pCf);
+            StackTraceInfo::AppendElement(pThread->GetThrowableAsHandle(), currentIP, currentSP, pFunc, pCf);
         }
     }
     else

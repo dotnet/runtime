@@ -138,10 +138,6 @@ public:
         ResetThreadExceptionFlag(TEF_ForeignExceptionRaise);
     }
 
-#if defined(_DEBUG)
-    void AssertStackTraceInfo(StackTraceInfo *pSTI);
-#endif // _debug
-
 private:
     Thread* GetMyThread();
 

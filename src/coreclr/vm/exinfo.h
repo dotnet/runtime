@@ -57,8 +57,6 @@ public:
 
     LPVOID              m_dEsp;             // Esp when  fault occurred, OR esp to restore on endcatch
 
-    StackTraceInfo      m_StackTraceInfo;
-
     PTR_ExInfo          m_pPrevNestedInfo;  // pointer to nested info if are handling nested exception
 
     size_t*             m_pShadowSP;        // Zero this after endcatch
