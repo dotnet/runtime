@@ -3,7 +3,7 @@
 
 using System.Buffers;
 using System.Runtime.Serialization;
-using System.Runtime.Serialization.BinaryFormat;
+using System.Formats.Nrbf;
 using System.Runtime.Serialization.Formatters;
 
 namespace System.Resources.Extensions.Tests.Common;

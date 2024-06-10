@@ -3,7 +3,7 @@
 
 using System.Drawing;
 using System.Resources.Extensions.BinaryFormat;
-using System.Runtime.Serialization.BinaryFormat;
+using System.Formats.Nrbf;
 
 namespace System.Resources.Extensions.Tests.FormattedObject;
 

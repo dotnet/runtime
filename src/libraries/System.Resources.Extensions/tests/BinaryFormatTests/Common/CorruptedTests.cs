@@ -4,7 +4,7 @@
 using System.Resources.Extensions.Tests.Common.TestTypes;
 using System.Resources.Extensions.Tests.FormattedObject;
 using System.Runtime.Serialization;
-using System.Runtime.Serialization.BinaryFormat;
+using System.Formats.Nrbf;
 using System.Text;
 
 namespace System.Resources.Extensions.Tests.Common;

@@ -4,7 +4,7 @@
 using System.Collections;
 using System.Linq;
 using System.Resources.Extensions.BinaryFormat;
-using System.Runtime.Serialization.BinaryFormat;
+using System.Formats.Nrbf;
 using System.Resources.Extensions.Tests.Common;
 
 namespace System.Resources.Extensions.Tests.FormattedObject;

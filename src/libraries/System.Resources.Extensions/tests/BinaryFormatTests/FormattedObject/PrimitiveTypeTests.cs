@@ -1,11 +1,11 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.Serialization.BinaryFormat;
+using System.Formats.Nrbf;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Resources.Extensions.BinaryFormat;
 using System.Resources.Extensions.Tests.Common;
-using PrimitiveType = System.Runtime.Serialization.BinaryFormat.PrimitiveType;
+using PrimitiveType = System.Formats.Nrbf.PrimitiveType;
 
 namespace System.Resources.Extensions.Tests.FormattedObject;
 

@@ -5,7 +5,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.Serialization;
-using System.Runtime.Serialization.BinaryFormat;
+using System.Formats.Nrbf;
 using System.Runtime.Serialization.Formatters;
 
 namespace System.Resources.Extensions.BinaryFormat.Deserializer;
@@ -17,14 +17,14 @@ namespace System.Resources.Extensions.BinaryFormat.Deserializer;
 /// </summary>
 internal sealed class ClassRecordFieldInfoDeserializer : ClassRecordDeserializer
 {
-    private readonly Runtime.Serialization.BinaryFormat.ClassRecord _classRecord;
+    private readonly ClassRecord _classRecord;
     private readonly MemberInfo[] _fieldInfo;
     private int _currentFieldIndex;
     private readonly bool _isValueType;
     private bool _hasFixups;
 
     internal ClassRecordFieldInfoDeserializer(
-        Runtime.Serialization.BinaryFormat.ClassRecord classRecord,
+        ClassRecord classRecord,
         object @object,
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         Type type,
