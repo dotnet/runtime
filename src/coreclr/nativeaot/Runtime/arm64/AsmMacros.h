@@ -246,9 +246,9 @@ TrashRegister32Bit SETS "w":CC:("$TrashRegister32Bit":RIGHT:((:LEN:TrashRegister
 ;; Macro to get the address of the current thread's allocation context
 ;;
     MACRO
-        INLINE_GET_ALLOC_CONTEXT $destReg $trashReg
+        INLINE_GET_ALLOC_CONTEXT $destReg, $trashReg
 
-        INLINE_GET_TLS_VAR $destReg $trashReg t_thread_alloc_context
+        INLINE_GET_TLS_VAR $destReg, $trashReg, t_thread_alloc_context
     MEND
 
 ;; ---------------------------------------------------------------------------- -
