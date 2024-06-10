@@ -62,10 +62,7 @@ namespace System
             if ((uint)(destinationIndex + length) > destinationArray.NativeLength)
                 throw new ArgumentException(SR.Arg_LongerThanDestArray, nameof(destinationArray));
 
-            ArrayAssignType assignType = ArrayAssignType.WrongType;
-
-            if (sourceArray.GetType() == destinationArray.GetType()
-                || (assignType = CanAssignArrayType(sourceArray, destinationArray)) == ArrayAssignType.SimpleCopy)
+            if (sourceArray.GetType() == destinationArray.GetType() || IsSimpleCopy(sourceArray, destinationArray))
             {
                 MethodTable* pMT = RuntimeHelpers.GetMethodTable(sourceArray);
 
@@ -89,57 +86,44 @@ namespace System
                 throw new ArrayTypeMismatchException(SR.ArrayTypeMismatch_ConstrainedCopy);
 
             // Rare
-            CopySlow(sourceArray, sourceIndex, destinationArray, destinationIndex, length, assignType);
+            CopySlow(sourceArray, sourceIndex, destinationArray, destinationIndex, length);
         }
 
-        private static CorElementType GetNormalizedIntegralArrayElementType(CorElementType elementType)
-        {
-            Debug.Assert(elementType.IsPrimitiveType());
-
-            // Array Primitive types such as E_T_I4 and E_T_U4 are interchangeable
-            // Enums with interchangeable underlying types are interchangeable
-            // BOOL is NOT interchangeable with I1/U1, neither CHAR -- with I2/U2
-            switch (elementType)
-            {
-                case CorElementType.ELEMENT_TYPE_U1:
-                case CorElementType.ELEMENT_TYPE_U2:
-                case CorElementType.ELEMENT_TYPE_U4:
-                case CorElementType.ELEMENT_TYPE_U8:
-                case CorElementType.ELEMENT_TYPE_U:
-                    return elementType - 1; // normalize to signed type
-                default:
-                    return elementType;
-            }
-        }
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern bool IsSimpleCopy(Array sourceArray, Array destinationArray);
 
         // Reliability-wise, this method will either possibly corrupt your
         // instance & might fail when called from within a CER, or if the
         // reliable flag is true, it will either always succeed or always
         // throw an exception with no side effects.
-        private static unsafe void CopySlow(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length, ArrayAssignType assignType)
+        private static unsafe void CopySlow(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
         {
             Debug.Assert(sourceArray.Rank == destinationArray.Rank);
 
-            if (assignType == ArrayAssignType.WrongType)
+            void* srcTH = RuntimeHelpers.GetMethodTable(sourceArray)->ElementType;
+            void* destTH = RuntimeHelpers.GetMethodTable(destinationArray)->ElementType;
+            AssignArrayEnum r = CanAssignArrayType(srcTH, destTH);
+
+            if (r == AssignArrayEnum.AssignWrongType)
                 throw new ArrayTypeMismatchException(SR.ArrayTypeMismatch_CantAssignType);
 
             if (length > 0)
             {
-                switch (assignType)
+                switch (r)
                 {
-                    case ArrayAssignType.UnboxValueClass:
+                    case AssignArrayEnum.AssignUnboxValueClass:
                         CopyImplUnBoxEachElement(sourceArray, sourceIndex, destinationArray, destinationIndex, length);
                         break;
 
-                    case ArrayAssignType.BoxValueClassOrPrimitive:
+                    case AssignArrayEnum.AssignBoxValueClassOrPrimitive:
                         CopyImplBoxEachElement(sourceArray, sourceIndex, destinationArray, destinationIndex, length);
                         break;
 
-                    case ArrayAssignType.MustCast:
+                    case AssignArrayEnum.AssignMustCast:
                         CopyImplCastCheckEachElement(sourceArray, sourceIndex, destinationArray, destinationIndex, length);
                         break;
 
-                    case ArrayAssignType.PrimitiveWiden:
+                    case AssignArrayEnum.AssignPrimitiveWiden:
                         CopyImplPrimitiveWiden(sourceArray, sourceIndex, destinationArray, destinationIndex, length);
                         break;
 
@@ -150,76 +134,18 @@ namespace System
             }
         }
 
-        private enum ArrayAssignType
+        // Must match the definition in arraynative.cpp
+        private enum AssignArrayEnum
         {
-            SimpleCopy,
-            WrongType,
-            MustCast,
-            BoxValueClassOrPrimitive,
-            UnboxValueClass,
-            PrimitiveWiden,
+            AssignWrongType,
+            AssignMustCast,
+            AssignBoxValueClassOrPrimitive,
+            AssignUnboxValueClass,
+            AssignPrimitiveWiden,
         }
 
-        private static unsafe ArrayAssignType CanAssignArrayType(Array sourceArray, Array destinationArray)
-        {
-            TypeHandle srcTH = RuntimeHelpers.GetMethodTable(sourceArray)->GetArrayElementTypeHandle();
-            TypeHandle destTH = RuntimeHelpers.GetMethodTable(destinationArray)->GetArrayElementTypeHandle();
-
-            if (TypeHandle.AreSameType(srcTH, destTH)) // This check kicks for different array kind or dimensions
-                return ArrayAssignType.SimpleCopy;
-
-            // Value class boxing
-            if (srcTH.IsValueType && !destTH.IsValueType)
-            {
-                if (srcTH.CanCastTo(destTH))
-                    return ArrayAssignType.BoxValueClassOrPrimitive;
-                else
-                    return ArrayAssignType.WrongType;
-            }
-
-            // Value class unboxing.
-            if (!srcTH.IsValueType && destTH.IsValueType)
-            {
-                if (srcTH.CanCastTo(destTH))
-                    return ArrayAssignType.UnboxValueClass;
-                else if (destTH.CanCastTo(srcTH))   // V extends IV. Copying from IV to V, or Object to V.
-                    return ArrayAssignType.UnboxValueClass;
-                else
-                    return ArrayAssignType.WrongType;
-            }
-
-            CorElementType srcElType = srcTH.GetVerifierCorElementType();
-            CorElementType destElType = destTH.GetVerifierCorElementType();
-
-            // Copying primitives from one type to another
-            if (srcElType.IsPrimitiveType() && destElType.IsPrimitiveType())
-            {
-                if (GetNormalizedIntegralArrayElementType(srcElType) == GetNormalizedIntegralArrayElementType(destElType))
-                    return ArrayAssignType.SimpleCopy;
-                else if (RuntimeHelpers.CanPrimitiveWiden(srcElType, destElType))
-                    return ArrayAssignType.PrimitiveWiden;
-                else
-                    return ArrayAssignType.WrongType;
-            }
-
-            // src Object extends dest
-            if (srcTH.CanCastTo(destTH))
-                return ArrayAssignType.SimpleCopy;
-
-            // dest Object extends src
-            if (destTH.CanCastTo(srcTH))
-                return ArrayAssignType.MustCast;
-
-            // class X extends/implements src and implements dest.
-            if (destTH.IsInterface && srcElType != CorElementType.ELEMENT_TYPE_VALUETYPE)
-                return ArrayAssignType.MustCast;
-
-            // class X implements src and extends/implements dest
-            if (srcTH.IsInterface && srcElType != CorElementType.ELEMENT_TYPE_VALUETYPE)
-                return ArrayAssignType.MustCast;
-
-            return ArrayAssignType.WrongType;
-        }
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Array_CanAssignArrayType")]
+        private static unsafe partial AssignArrayEnum CanAssignArrayType(void* srcTH, void* dstTH);
 
         // Unboxes from an Object[] into a value class or primitive array.
         private static unsafe void CopyImplUnBoxEachElement(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
