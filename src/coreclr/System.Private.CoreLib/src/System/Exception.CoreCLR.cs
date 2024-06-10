@@ -128,10 +128,7 @@ namespace System
         private static extern void PrepareForForeignExceptionRaise();
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void GetStackTracesDeepCopy(Exception exception, out object? currentStackTrace);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void SaveStackTracesFromDeepCopy(Exception exception, object? currentStackTrace);
+        private static extern object? GetFrozenStackTrace(Exception exception);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern uint GetExceptionCount();
@@ -153,9 +150,7 @@ namespace System
                 _watsonBuckets = dispatchState.WatsonBuckets;
                 _ipForWatsonBuckets = dispatchState.IpForWatsonBuckets;
                 _remoteStackTraceString = dispatchState.RemoteStackTrace;
-
-                SaveStackTracesFromDeepCopy(this, dispatchState.StackTrace);
-
+                _stackTrace = dispatchState.StackTrace;
                 _stackTraceString = null;
 
                 // Marks the TES state to indicate we have restored foreign exception
@@ -243,7 +238,7 @@ namespace System
 
         internal DispatchState CaptureDispatchState()
         {
-            GetStackTracesDeepCopy(this, out object? stackTrace);
+            object? stackTrace = GetFrozenStackTrace(this);
 
             return new DispatchState(stackTrace,
                 _remoteStackTraceString, _ipForWatsonBuckets, _watsonBuckets);

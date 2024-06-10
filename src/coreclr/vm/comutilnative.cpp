@@ -116,8 +116,9 @@ void DeepCopyStackTrace(StackTraceArray &stackTrace, StackTraceArray &stackTrace
     }
 }
 
-// Given an exception object, this method will extract the stacktrace and dynamic method array and set them up for return to the caller.
-FCIMPL2(VOID, ExceptionNative::GetStackTracesDeepCopy, Object* pExceptionObjectUnsafe, Object **pStackTraceUnsafe);
+// Given an exception object, this method will mark its stack trace as frozen and return it to the caller.
+// Frozen stack traces are immutable, when a thread attempts to add a frame to it, the stack trace is cloned first.
+FCIMPL1(Object *, ExceptionNative::GetFrozenStackTrace, Object* pExceptionObjectUnsafe);
 {
     CONTRACTL
     {
@@ -126,17 +127,17 @@ FCIMPL2(VOID, ExceptionNative::GetStackTracesDeepCopy, Object* pExceptionObjectU
     CONTRACTL_END;
 
     ASSERT(pExceptionObjectUnsafe != NULL);
-    ASSERT(pStackTraceUnsafe != NULL);
 
     struct
     {
         StackTraceArray stackTrace;
         EXCEPTIONREF refException = NULL;
-        PTRARRAYREF keepAliveArray = NULL; // Object array of Managed Resolvers
+        PTRARRAYREF keepAliveArray = NULL; // Object array of Managed Resolvers / AssemblyLoadContexts
+        OBJECTREF result = NULL;
     } gc;
 
     // GC protect the array reference
-    HELPER_METHOD_FRAME_BEGIN_PROTECT(gc);
+    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
 
     // Get the exception object reference
     gc.refException = (EXCEPTIONREF)(ObjectToOBJECTREF(pExceptionObjectUnsafe));
@@ -147,63 +148,22 @@ FCIMPL2(VOID, ExceptionNative::GetStackTracesDeepCopy, Object* pExceptionObjectU
 
     if (gc.keepAliveArray != NULL)
     {
-        *pStackTraceUnsafe = OBJECTREFToObject(gc.keepAliveArray);
+        gc.result = gc.keepAliveArray;
     }
     else if (gc.stackTrace.Get() != NULL)
     {
-        *pStackTraceUnsafe = OBJECTREFToObject(gc.stackTrace.Get());
+        gc.result = gc.stackTrace.Get();
     }
     else
     {
-        *pStackTraceUnsafe = NULL;
+        gc.result = NULL;
     }
-    HELPER_METHOD_FRAME_END();
-}
-FCIMPLEND
-
-// Given an exception object and deep copied instances of a stacktrace and/or dynamic method array, this method will set the latter in the exception object instance.
-FCIMPL2(VOID, ExceptionNative::SaveStackTracesFromDeepCopy, Object* pExceptionObjectUnsafe, Object *pStackTraceUnsafe);
-{
-    CONTRACTL
-    {
-        FCALL_CHECK;
-    }
-    CONTRACTL_END;
     
-    ASSERT(pExceptionObjectUnsafe != NULL);
-
-    struct
-    {
-        StackTraceArray stackTrace;
-        OBJECTREF refStackTrace = NULL;
-        PTRARRAYREF refKeepAliveArray = NULL;
-        EXCEPTIONREF refException = NULL;
-    } gc;
-
-    // GC protect the array reference
-    HELPER_METHOD_FRAME_BEGIN_PROTECT(gc);
-
-    // Get the exception object reference
-    gc.refException = (EXCEPTIONREF)(ObjectToOBJECTREF(pExceptionObjectUnsafe));
-    gc.refStackTrace = (OBJECTREF)(ObjectToOBJECTREF(pStackTraceUnsafe));
-
-    ExceptionObject::GetStackTraceParts(gc.refStackTrace, gc.stackTrace, &gc.refKeepAliveArray);
-    _ASSERTE((gc.stackTrace.Get() == NULL) || gc.stackTrace.IsFrozen());
-
-    if (gc.refKeepAliveArray != NULL)
-    {
-        // The stack trace object is the keepAlive array with its first slot set to the stack trace I1Array.
-        // Save the stacktrace details in the exception
-        gc.refException->SetStackTrace(gc.refKeepAliveArray);
-    }
-    else
-    {
-        // The stack trace object is the stack trace I1Array.
-        // Save the stacktrace details in the exception
-        gc.refException->SetStackTrace(gc.stackTrace.Get());
-    }
+    // There can be no GC after setting the frozenStackTrace until the Object is returned.
 
     HELPER_METHOD_FRAME_END();
+
+    return OBJECTREFToObject(gc.result);
 }
 FCIMPLEND
 
