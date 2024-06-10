@@ -36,7 +36,6 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection.Runtime.TypeParsing;
-using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using ILLink.Shared;
 using ILLink.Shared.TrimAnalysis;
@@ -779,33 +778,25 @@ namespace Mono.Linker.Steps
 		/// or if any marked interface implementations on <paramref name="type"/> are interfaces that implement <paramref name="interfaceType"/> and that interface implementation is marked
 		/// </summary>
 		bool IsInterfaceImplementationMarkedRecursively (TypeDefinition type, TypeDefinition interfaceType)
+			=> IsInterfaceImplementationMarkedRecursively (type, interfaceType, Context);
+
+		/// <summary>
+		/// Returns true if <paramref name="type"/> implements <paramref name="interfaceType"/> and the interface implementation is marked,
+		/// or if any marked interface implementations on <paramref name="type"/> are interfaces that implement <paramref name="interfaceType"/> and that interface implementation is marked
+		/// </summary>
+		internal static bool IsInterfaceImplementationMarkedRecursively (TypeDefinition type, TypeDefinition interfaceType, LinkContext context)
 		{
 			if (type.HasInterfaces) {
 				foreach (var intf in type.Interfaces) {
-					TypeDefinition? resolvedInterface = Context.Resolve (intf.InterfaceType);
+					TypeDefinition? resolvedInterface = context.Resolve (intf.InterfaceType);
 					if (resolvedInterface == null)
 						continue;
-
-					if (Annotations.IsMarked (intf) && RequiresInterfaceRecursively (resolvedInterface, interfaceType))
-						return true;
-				}
-			}
-
-			return false;
-		}
-
-		bool RequiresInterfaceRecursively (TypeDefinition typeToExamine, TypeDefinition interfaceType)
-		{
-			if (typeToExamine == interfaceType)
-				return true;
-
-			if (typeToExamine.HasInterfaces) {
-				foreach (var iface in typeToExamine.Interfaces) {
-					var resolved = Context.TryResolve (iface.InterfaceType);
-					if (resolved == null)
+					if (!context.Annotations.IsMarked (intf))
 						continue;
 
-					if (RequiresInterfaceRecursively (resolved, interfaceType))
+					if (resolvedInterface == interfaceType)
+						return true;
+					if (IsInterfaceImplementationMarkedRecursively (resolvedInterface, interfaceType, context))
 						return true;
 				}
 			}
@@ -3239,8 +3230,8 @@ namespace Mono.Linker.Steps
 						Context.Resolve (@base) is MethodDefinition baseDefinition
 						&& new OverrideInformation.OverridePair (baseDefinition, method).IsStaticInterfaceMethodPair ())
 						continue;
-					MarkMethod (@base, new DependencyInfo (DependencyKind.MethodImplOverride, method), ScopeStack.CurrentScope.Origin);
-					MarkExplicitInterfaceImplementation (method, @base);
+					MarkMethod (@base, new DependencyInfo (DependencyKind.MethodImplOverride, method), methodOrigin);
+					MarkRuntimeInterfaceImplementation (method, @base);
 				}
 			}
 
@@ -3355,22 +3346,21 @@ namespace Mono.Linker.Steps
 			DoAdditionalInstantiatedTypeProcessing (type);
 		}
 
-		void MarkExplicitInterfaceImplementation (MethodDefinition method, MethodReference ov)
+		void MarkRuntimeInterfaceImplementation (MethodDefinition method, MethodReference ov)
 		{
 			if (Context.Resolve (ov) is not MethodDefinition resolvedOverride)
 				return;
+			if (!resolvedOverride.DeclaringType.IsInterface)
+				return;
+			var interfaceToBeImplemented = ov.DeclaringType;
 
-			if (resolvedOverride.DeclaringType.IsInterface) {
-				foreach (var ifaceImpl in method.DeclaringType.Interfaces) {
-					var resolvedInterfaceType = Context.Resolve (ifaceImpl.InterfaceType);
-					if (resolvedInterfaceType == null) {
-						continue;
-					}
-
-					if (resolvedInterfaceType == resolvedOverride.DeclaringType) {
-						MarkInterfaceImplementation (ifaceImpl, new MessageOrigin (method.DeclaringType));
-						return;
-					}
+			var ifaces = Annotations.GetRecursiveInterfaces (method.DeclaringType);
+			if (ifaces is null)
+				return;
+			foreach (var iface in ifaces) {
+				if (TypeReferenceEqualityComparer.AreEqual (iface.InterfaceType, interfaceToBeImplemented, Context)) {
+					MarkInterfaceImplementationList (iface.ImplementationChain, new MessageOrigin (method.DeclaringType));
+					return;
 				}
 			}
 		}
