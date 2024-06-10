@@ -46,7 +46,6 @@ set_target_properties(eventpipe_gen_objs PROPERTIES LINKER_LANGUAGE CXX)
 add_dependencies(eventpipe_gen_objs eventing_headers)
 
 add_library_clr(eventpipe_objs OBJECT ${CORECLR_EVENTPIPE_SHIM_SOURCES} ${CORECLR_EVENTPIPE_SHIM_HEADERS})
-target_precompile_headers(eventpipe_objs PRIVATE [["common.h"]])
 set_target_properties(eventpipe_objs PROPERTIES
     LINKER_LANGUAGE CXX
     UNITY_BUILD ON
