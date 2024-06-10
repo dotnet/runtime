@@ -151,6 +151,9 @@ extern MINIDUMP_TYPE GetMiniDumpType(DumpType dumpType);
 
 #ifdef HOST_WINDOWS
 extern std::string GetLastErrorString();
+extern DWORD GetTempPathWrapper(IN DWORD nBufferLength, OUT LPSTR lpBuffer);
+#else
+#define GetTempPathWrapper GetTempPathA
 #endif
 extern void printf_status(const char* format, ...);
 extern void printf_error(const char* format, ...);

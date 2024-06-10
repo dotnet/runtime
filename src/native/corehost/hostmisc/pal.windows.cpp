@@ -10,6 +10,38 @@
 #include <ShlObj.h>
 #include <ctime>
 
+namespace
+{
+    typedef DWORD(WINAPI *get_temp_path_func_ptr)(DWORD buffer_len, LPWSTR buffer);
+    static volatile get_temp_path_func_ptr s_get_temp_path_func = nullptr;
+
+    DWORD get_temp_path(DWORD buffer_len, LPWSTR buffer)
+    {
+        if (s_get_temp_path_func == nullptr)
+        {
+            HMODULE kernel32 = ::LoadLibraryExW(L"kernel32.dll", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
+
+            get_temp_path_func_ptr get_temp_path_func_local = NULL;
+            if (kernel32 != NULL)
+            {
+                // store to thread local variable to prevent data race
+                get_temp_path_func_local = (get_temp_path_func_ptr)::GetProcAddress(kernel32, "GetTempPath2W");
+            }
+
+            if (get_temp_path_func_local == NULL) // method is only available with Windows 10 Creators Update or later
+            {
+                s_get_temp_path_func = &GetTempPathW;
+            }
+            else
+            {
+                s_get_temp_path_func = get_temp_path_func_local;
+            }
+        }
+
+        return s_get_temp_path_func(buffer_len, buffer);
+    }
+}
+
 bool GetModuleFileNameWrapper(HMODULE hModule, pal::string_t* recv)
 {
     pal::string_t path;
@@ -639,7 +671,7 @@ bool get_extraction_base_parent_directory(pal::string_t& directory)
     const size_t max_len = MAX_PATH + 1;
     pal::char_t temp_path[max_len];
 
-    size_t len = GetTempPathW(max_len, temp_path);
+    size_t len = get_temp_path(max_len, temp_path);
     if (len == 0)
     {
         return false;
