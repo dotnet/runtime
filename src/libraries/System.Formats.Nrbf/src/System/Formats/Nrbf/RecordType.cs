@@ -9,15 +9,10 @@ namespace System.Formats.Nrbf;
 /// <remarks>
 ///  <para>
 ///   The enumeration does not contain all values supported by the <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/954a0657-b901-4813-9398-4ec732fe8b32">
-///   [MS-NRBF] 2.1.2.1</see>, but only those supported by the <see cref="PayloadReader"/>.
+///   [MS-NRBF] 2.1.2.1</see>, but only those supported by the <see cref="NrbfDecoder"/>.
 ///  </para>
 /// </remarks>
-#if SYSTEM_RUNTIME_SERIALIZATION_BINARYFORMAT
-public
-#else
-internal
-#endif
-enum RecordType : byte
+public enum RecordType : byte
 {
     /// <summary>
     /// The NRBF header (the first record in NRBF payload).

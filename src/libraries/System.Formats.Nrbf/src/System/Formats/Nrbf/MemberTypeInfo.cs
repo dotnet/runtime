@@ -173,22 +173,22 @@ internal readonly struct MemberTypeInfo
     internal bool ShouldBeRepresentedAsArrayOfClassRecords()
     {
         // This library tries to minimize the number of concepts the users need to learn to use it.
-        // Since SZArrays are most common, it provides an ArrayRecord<T> abstraction.
-        // Every other array (jagged, multi-dimensional etc) is represented using ArrayRecord.
-        // The goal of this method is to determine whether given array can be represented as ArrayRecord<ClassRecord>.
+        // Since SZArrays are most common, it provides an SZArrayRecord<T> abstraction.
+        // Every other array (jagged, multi-dimensional etc) is represented using SZArrayRecord.
+        // The goal of this method is to determine whether given array can be represented as SZArrayRecord<ClassRecord>.
 
         (BinaryType binaryType, object? additionalInfo) = Infos[0];
 
         if (binaryType == BinaryType.Class)
         {
-            // An array of arrays can not be represented as ArrayRecord<ClassRecord>.
+            // An array of arrays can not be represented as SZArrayRecord<ClassRecord>.
             return !((ClassTypeInfo)additionalInfo!).TypeName.IsArray;
         }
         else if (binaryType == BinaryType.SystemClass)
         {
             TypeName typeName = (TypeName)additionalInfo!;
 
-            // An array of arrays can not be represented as ArrayRecord<ClassRecord>.
+            // An array of arrays can not be represented as SZArrayRecord<ClassRecord>.
             if (typeName.IsArray)
             {
                 return false;
@@ -199,7 +199,7 @@ internal readonly struct MemberTypeInfo
                 return true;
             }
 
-            // Can't use ArrayRecord<ClassRecord> for Nullable<T>[]
+            // Can't use SZArrayRecord<ClassRecord> for Nullable<T>[]
             // as it consists of MemberPrimitiveTypedRecord and NullsRecord
             return typeName.GetGenericTypeDefinition().FullName != typeof(Nullable<>).FullName;
         }

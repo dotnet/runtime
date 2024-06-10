@@ -15,12 +15,7 @@ namespace System.Formats.Nrbf;
 ///  </para>
 /// </remarks>
 [DebuggerDisplay("{RecordType}, {ObjectId}")]
-#if SYSTEM_RUNTIME_SERIALIZATION_BINARYFORMAT
-public
-#else
-internal
-#endif
-abstract class SerializationRecord
+public abstract class SerializationRecord
 {
     internal const int NoId = 0;
 

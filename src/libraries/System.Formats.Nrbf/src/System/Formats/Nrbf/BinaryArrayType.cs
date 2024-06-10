@@ -9,12 +9,7 @@ namespace System.Formats.Nrbf;
 /// <remarks>
 /// BinaryArrayType enumeration is described in <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/4dbbf3a8-6bc4-4dfc-aa7e-36a35be6ff58">[MS-NRBF] 2.4.1.1</see>.
 /// </remarks>
-#if SYSTEM_RUNTIME_SERIALIZATION_BINARYFORMAT
-public
-#else
-internal
-#endif
-enum BinaryArrayType : byte
+public enum BinaryArrayType : byte
 {
     /// <summary>
     ///  A single-dimensional array.

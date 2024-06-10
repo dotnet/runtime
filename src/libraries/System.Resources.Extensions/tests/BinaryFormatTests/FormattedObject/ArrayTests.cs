@@ -21,7 +21,7 @@ public class ArrayTests : Common.ArrayTests<FormattedObjectSerializer>
     public void StringArray_Parse(string?[] strings)
     {
         BinaryFormattedObject format = new(Serialize(strings));
-        var arrayRecord = (ArrayRecord<string>)format.RootRecord;
+        var arrayRecord = (SZArrayRecord<string>)format.RootRecord;
         arrayRecord.GetArray().Should().BeEquivalentTo(strings);
     }
 

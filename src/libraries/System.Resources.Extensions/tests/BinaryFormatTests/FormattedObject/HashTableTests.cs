@@ -72,8 +72,8 @@ public class HashtableTests : SerializationTest<FormattedObjectSerializer>
         systemClass.TypeName.FullName.Should().Be("System.Collections.Hashtable");
         systemClass.GetSerializationRecord("Comparer")!.Should().BeAssignableTo<ClassRecord>().Which.TypeName.FullName.Should().Be("System.OrdinalComparer");
         systemClass.GetSerializationRecord("HashCodeProvider")!.Should().BeAssignableTo<ClassRecord>().Which.TypeName.FullName.Should().Be("System.Resources.Extensions.Tests.FormattedObject.HashtableTests+CustomHashCodeProvider");
-        systemClass.GetSerializationRecord("Keys")!.Should().BeAssignableTo<ArrayRecord<object>>();
-        systemClass.GetSerializationRecord("Values")!.Should().BeAssignableTo<ArrayRecord<object>>();
+        systemClass.GetSerializationRecord("Keys")!.Should().BeAssignableTo<SZArrayRecord<object>>();
+        systemClass.GetSerializationRecord("Values")!.Should().BeAssignableTo<SZArrayRecord<object>>();
     }
 
     [Serializable]

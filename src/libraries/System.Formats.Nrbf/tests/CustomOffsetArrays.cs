@@ -14,7 +14,7 @@ public class CustomOffsetArrays : ReadTests
             input.SetValue(value: i, index: i); 
         }
 
-        ArrayRecord arrayRecord = (ArrayRecord)PayloadReader.Read(Serialize(input));
+        ArrayRecord arrayRecord = (ArrayRecord)NrbfDecoder.Decode(Serialize(input));
 
         Assert.Equal(input, arrayRecord.GetArray(input.GetType()));
     }
@@ -32,7 +32,7 @@ public class CustomOffsetArrays : ReadTests
             }
         }
 
-        ArrayRecord arrayRecord = (ArrayRecord)PayloadReader.Read(Serialize(input));
+        ArrayRecord arrayRecord = (ArrayRecord)NrbfDecoder.Decode(Serialize(input));
 
         Assert.Equal(input, arrayRecord.GetArray(input.GetType()));
     }
@@ -63,7 +63,7 @@ public class CustomOffsetArrays : ReadTests
             }
         }
 
-        ArrayRecord arrayRecord = (ArrayRecord)PayloadReader.Read(Serialize(input));
+        ArrayRecord arrayRecord = (ArrayRecord)NrbfDecoder.Decode(Serialize(input));
 
         RectangularArraysTests.VerifyLength(input, arrayRecord);
         Array output = arrayRecord.GetArray(input.GetType());
@@ -91,7 +91,7 @@ public class CustomOffsetArrays : ReadTests
     {
         Array input = Array.CreateInstance(typeof(uint[]), [5], [1]);
 
-        ArrayRecord arrayRecord = (ArrayRecord)PayloadReader.Read(Serialize(input));
+        ArrayRecord arrayRecord = (ArrayRecord)NrbfDecoder.Decode(Serialize(input));
 
         Array output = arrayRecord.GetArray(expectedArrayType: input.GetType());
 

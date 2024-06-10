@@ -91,7 +91,7 @@ public class ArraySinglePrimitiveRecordTests : ReadTests
 
         MemoryStream stream = Serialize(input);
         stream = canSeek ? stream : new NonSeekableStream(stream.ToArray());
-        ArrayRecord<T> arrayRecord = (ArrayRecord<T>)PayloadReader.Read(stream);
+        SZArrayRecord<T> arrayRecord = (SZArrayRecord<T>)NrbfDecoder.Decode(stream);
 
         Assert.Equal(size, arrayRecord.Length);
         T?[] output = arrayRecord.GetArray();

@@ -11,12 +11,7 @@ using System.Runtime.Serialization;
 
 namespace System.Formats.Nrbf;
 
-#if SYSTEM_RUNTIME_SERIALIZATION_BINARYFORMAT
-public
-#else
-internal
-#endif
-static class PayloadReader
+public static class NrbfDecoder
 {
     private static UTF8Encoding ThrowOnInvalidUtf8Encoding { get; } = new(false, throwOnInvalidBytes: true);
 
@@ -103,7 +98,7 @@ static class PayloadReader
     }
 
     /// <summary>
-    /// Reads the provided NRBF payload.
+    /// Decodes the provided NRBF payload.
     /// </summary>
     /// <param name="payload">The NRBF payload.</param>
     /// <param name="options">Options to control behavior during parsing.</param>
@@ -119,8 +114,8 @@ static class PayloadReader
     /// <exception cref="SerializationException">Reading from <paramref name="payload"/> encounters invalid NRBF data.</exception>
     /// <exception cref="DecoderFallbackException">Reading from <paramref name="payload"/>
     /// encounters an invalid UTF8 sequence.</exception>
-    public static SerializationRecord Read(Stream payload, PayloadOptions? options = default, bool leaveOpen = false)
-        => Read(payload, out _, options, leaveOpen);
+    public static SerializationRecord Decode(Stream payload, PayloadOptions? options = default, bool leaveOpen = false)
+        => Decode(payload, out _, options, leaveOpen);
 
     /// <param name="payload">The NRBF payload.</param>
     /// <param name="recordMap">
@@ -132,8 +127,8 @@ static class PayloadReader
     ///   <see langword="true" /> to leave <paramref name="payload"/> payload open
     ///   after the reading is finished; otherwise, <see langword="false" />.
     /// </param>
-    /// <inheritdoc cref="Read(Stream, PayloadOptions?, bool)"/>
-    public static SerializationRecord Read(Stream payload, out IReadOnlyDictionary<int, SerializationRecord> recordMap, PayloadOptions? options = default, bool leaveOpen = false)
+    /// <inheritdoc cref="Decode(Stream, PayloadOptions?, bool)"/>
+    public static SerializationRecord Decode(Stream payload, out IReadOnlyDictionary<int, SerializationRecord> recordMap, PayloadOptions? options = default, bool leaveOpen = false)
     {
 #if NET
         ArgumentNullException.ThrowIfNull(payload);
@@ -145,24 +140,24 @@ static class PayloadReader
 #endif
 
         using BinaryReader reader = new(payload, ThrowOnInvalidUtf8Encoding, leaveOpen: leaveOpen);
-        return Read(reader, options ?? new(), out recordMap);
+        return Decode(reader, options ?? new(), out recordMap);
     }
 
     /// <summary>
-    /// Reads the provided NRBF payload that is expected to contain an instance of any class (or struct) that is not an <see cref="Array"/> or a primitive type.
+    /// Decodes the provided NRBF payload that is expected to contain an instance of any class (or struct) that is not an <see cref="Array"/> or a primitive type.
     /// </summary>
     /// <returns>A <see cref="ClassRecord"/> that represents the root object.</returns>
-    /// <inheritdoc cref="Read(Stream, PayloadOptions?, bool)"/>
-    public static ClassRecord ReadClassRecord(Stream payload, PayloadOptions? options = default, bool leaveOpen = false)
-        => (ClassRecord)Read(payload, options, leaveOpen);
+    /// <inheritdoc cref="Decode(Stream, PayloadOptions?, bool)"/>
+    public static ClassRecord DecodeClassRecord(Stream payload, PayloadOptions? options = default, bool leaveOpen = false)
+        => (ClassRecord)Decode(payload, options, leaveOpen);
 
-    private static SerializationRecord Read(BinaryReader reader, PayloadOptions options, out IReadOnlyDictionary<int, SerializationRecord> readOnlyRecordMap)
+    private static SerializationRecord Decode(BinaryReader reader, PayloadOptions options, out IReadOnlyDictionary<int, SerializationRecord> readOnlyRecordMap)
     {
         Stack<NextInfo> readStack = new();
         var recordMap = new RecordMap();
 
         // Everything has to start with a header
-        var header = (SerializedStreamHeaderRecord)ReadNext(reader, recordMap, AllowedRecordTypes.SerializedStreamHeader, options, out _);
+        var header = (SerializedStreamHeaderRecord)DecodeNext(reader, recordMap, AllowedRecordTypes.SerializedStreamHeader, options, out _);
         // and can be followed by any Object, BinaryLibrary and a MessageEnd.
         const AllowedRecordTypes Allowed = AllowedRecordTypes.AnyObject
             | AllowedRecordTypes.BinaryLibrary | AllowedRecordTypes.MessageEnd;
@@ -177,10 +172,10 @@ static class PayloadReader
 
                 if (nextInfo.Allowed != AllowedRecordTypes.None)
                 {
-                    // Read the next Record
+                    // Decode the next Record
                     do
                     {
-                        nextRecord = ReadNext(reader, recordMap, nextInfo.Allowed, options, out _);
+                        nextRecord = DecodeNext(reader, recordMap, nextInfo.Allowed, options, out _);
                         // BinaryLibrary often precedes class records.
                         // It has been already added to the RecordMap and it must not be added
                         // to the array record, so simply read next record.
@@ -204,7 +199,7 @@ static class PayloadReader
                 }
             }
 
-            nextRecord = ReadNext(reader, recordMap, Allowed, options, out recordType);
+            nextRecord = DecodeNext(reader, recordMap, Allowed, options, out recordType);
             PushFirstNestedRecordInfo(nextRecord, readStack);
         }
         while (recordType != RecordType.MessageEnd);
@@ -213,7 +208,7 @@ static class PayloadReader
         return recordMap.GetRootRecord(header);
     }
 
-    private static SerializationRecord ReadNext(BinaryReader reader, RecordMap recordMap,
+    private static SerializationRecord DecodeNext(BinaryReader reader, RecordMap recordMap,
         AllowedRecordTypes allowed, PayloadOptions options, out RecordType recordType)
     {
         byte nextByte = reader.ReadByte();

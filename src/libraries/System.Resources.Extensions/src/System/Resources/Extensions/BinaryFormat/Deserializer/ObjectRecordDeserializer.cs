@@ -41,7 +41,7 @@ internal abstract partial class ObjectRecordDeserializer
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private protected (object? value, Id id) UnwrapMemberValue(object? memberValue)
     {
-        if (memberValue is null) // PayloadReader does not return NullRecord, just null
+        if (memberValue is null) // NrbfDecoder does not return NullRecord, just null
         {
             return (null, Id.Null);
         }

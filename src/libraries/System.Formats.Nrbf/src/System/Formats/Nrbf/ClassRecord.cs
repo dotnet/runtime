@@ -10,12 +10,7 @@ namespace System.Formats.Nrbf;
 /// <summary>
 /// Defines the core behavior for NRBF class records and provides a base for derived classes.
 /// </summary>
-#if SYSTEM_RUNTIME_SERIALIZATION_BINARYFORMAT
-public
-#else
-internal
-#endif
-abstract class ClassRecord : SerializationRecord
+public abstract class ClassRecord : SerializationRecord
 {
     private protected ClassRecord(ClassInfo classInfo, MemberTypeInfo memberTypeInfo)
     {
@@ -99,7 +94,7 @@ abstract class ClassRecord : SerializationRecord
     /// <para>For primitive types like <see cref="int"/>, <see langword="string"/> or <see cref="DateTime"/> returns their value.</para>
     /// <para>For nulls, returns a null.</para>
     /// <para>For other types that are not arrays, returns an instance of <see cref="ClassRecord"/>.</para>
-    /// <para>For single-dimensional arrays returns <see cref="ArrayRecord{T}"/> where the generic type is the primitive type or <see cref="ClassRecord"/>.</para>
+    /// <para>For single-dimensional arrays returns <see cref="SZArrayRecord{T}"/> where the generic type is the primitive type or <see cref="ClassRecord"/>.</para>
     /// <para>For jagged and multi-dimensional arrays, returns an instance of <see cref="ArrayRecord"/>.</para>
     /// </returns>
     /// <inheritdoc cref="GetClassRecord(string)"/>
@@ -114,7 +109,7 @@ abstract class ClassRecord : SerializationRecord
     /// <exception cref="KeyNotFoundException"><paramref name="memberName" /> does not refer to a known member. You can use <see cref="HasMember(string)"/> to check if given member exists.</exception>
     /// <exception cref="InvalidOperationException">The specified member is not an array, or is an array with an element type other than <typeparamref name="T" />.</exception>
     public T?[]? GetArrayOfPrimitiveType<T>(string memberName, bool allowNulls = true)
-        => GetMember<ArrayRecord<T>>(memberName)?.GetArray(allowNulls);
+        => GetMember<SZArrayRecord<T>>(memberName)?.GetArray(allowNulls);
 
     /// <summary>
     /// Retrieves the <see cref="SerializationRecord" /> of the provided <paramref name="memberName"/>.

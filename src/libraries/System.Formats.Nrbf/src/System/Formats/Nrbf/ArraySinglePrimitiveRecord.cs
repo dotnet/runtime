@@ -21,7 +21,7 @@ namespace System.Formats.Nrbf;
 /// <remarks>
 /// ArraySinglePrimitive records are described in <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/3a50a305-5f32-48a1-a42a-c34054db310b">[MS-NRBF] 2.4.3.3</see>.
 /// </remarks>
-internal sealed class ArraySinglePrimitiveRecord<T> : ArrayRecord<T>
+internal sealed class ArraySinglePrimitiveRecord<T> : SZArrayRecord<T>
     where T : unmanaged
 {
     private static TypeName? s_elementTypeName;

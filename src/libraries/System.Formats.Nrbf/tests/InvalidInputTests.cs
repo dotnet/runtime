@@ -30,7 +30,7 @@ public class InvalidInputTests : ReadTests
         writer.Write((byte)RecordType.MessageEnd);
 
         stream.Position = 0;
-        Assert.Throws<DecoderFallbackException>(() => PayloadReader.Read(stream));
+        Assert.Throws<DecoderFallbackException>(() => NrbfDecoder.Decode(stream));
     }
 
     [Theory]
@@ -44,7 +44,7 @@ public class InvalidInputTests : ReadTests
         WriteSerializedStreamHeader(writer, major, minor);
 
         stream.Position = 0;
-        Assert.Throws<SerializationException>(() => PayloadReader.Read(stream));
+        Assert.Throws<SerializationException>(() => NrbfDecoder.Decode(stream));
     }
 
     [Theory]
@@ -67,7 +67,7 @@ public class InvalidInputTests : ReadTests
         writer.Write((byte)RecordType.MessageEnd);
 
         stream.Position = 0;
-        Assert.Throws<SerializationException>(() => PayloadReader.Read(stream));
+        Assert.Throws<SerializationException>(() => NrbfDecoder.Decode(stream));
     }
 
     [Theory]
@@ -98,7 +98,7 @@ public class InvalidInputTests : ReadTests
         writer.Write((byte)RecordType.MessageEnd);
 
         stream.Position = 0;
-        Assert.Throws<SerializationException>(() => PayloadReader.Read(stream));
+        Assert.Throws<SerializationException>(() => NrbfDecoder.Decode(stream));
     }
 
     [Fact]
@@ -120,7 +120,7 @@ public class InvalidInputTests : ReadTests
         writer.Write((byte)RecordType.MessageEnd);
 
         stream.Position = 0;
-        Assert.Throws<SerializationException>(() => ((ArrayRecord<string>)PayloadReader.Read(stream)).GetArray());
+        Assert.Throws<SerializationException>(() => ((SZArrayRecord<string>)NrbfDecoder.Decode(stream)).GetArray());
     }
 
     [Theory]
@@ -143,7 +143,7 @@ public class InvalidInputTests : ReadTests
 
         stream.Position = 0;
         PayloadOptions options = new() { UndoTruncatedTypeNames = mangling };
-        Assert.Throws<SerializationException>(() => PayloadReader.Read(stream, options));
+        Assert.Throws<SerializationException>(() => NrbfDecoder.Decode(stream, options));
     }
 
     [Theory]
@@ -170,7 +170,7 @@ public class InvalidInputTests : ReadTests
 
         stream.Position = 0;
         PayloadOptions options = new() { UndoTruncatedTypeNames = mangling };
-        Assert.Throws<SerializationException>(() => PayloadReader.Read(stream, options));
+        Assert.Throws<SerializationException>(() => NrbfDecoder.Decode(stream, options));
     }
 
     [Theory]
@@ -198,7 +198,7 @@ public class InvalidInputTests : ReadTests
 
         stream.Position = 0;
         PayloadOptions options = new() { UndoTruncatedTypeNames = mangling };
-        Assert.Throws<SerializationException>(() => PayloadReader.Read(stream, options));
+        Assert.Throws<SerializationException>(() => NrbfDecoder.Decode(stream, options));
     }
 
     [Theory]
@@ -225,7 +225,7 @@ public class InvalidInputTests : ReadTests
 
         stream.Position = 0;
         PayloadOptions options = new() { UndoTruncatedTypeNames = mangling };
-        Assert.Throws<SerializationException>(() => PayloadReader.Read(stream, options));
+        Assert.Throws<SerializationException>(() => NrbfDecoder.Decode(stream, options));
     }
 
     [Theory]
@@ -258,12 +258,12 @@ public class InvalidInputTests : ReadTests
 
         if (mangling)
         {
-            ClassRecord classRecord = (ClassRecord)PayloadReader.Read(stream, options);
+            ClassRecord classRecord = (ClassRecord)NrbfDecoder.Decode(stream, options);
             Assert.Equal($"{TypeName}, {LibraryName}", classRecord.TypeName.FullName);
         }
         else
         {
-            Assert.Throws<SerializationException>(() => PayloadReader.Read(stream, options));
+            Assert.Throws<SerializationException>(() => NrbfDecoder.Decode(stream, options));
         }
     }
 
@@ -284,7 +284,7 @@ public class InvalidInputTests : ReadTests
         writer.Write((byte)RecordType.MessageEnd);
 
         stream.Position = 0;
-        Assert.Throws<SerializationException>(() => PayloadReader.Read(stream));
+        Assert.Throws<SerializationException>(() => NrbfDecoder.Decode(stream));
     }
 
     [Theory]
@@ -306,7 +306,7 @@ public class InvalidInputTests : ReadTests
         writer.Write((byte)RecordType.MessageEnd);
 
         stream.Position = 0;
-        Assert.Throws<SerializationException>(() => PayloadReader.Read(stream));
+        Assert.Throws<SerializationException>(() => NrbfDecoder.Decode(stream));
     }
 
     [Theory]
@@ -331,7 +331,7 @@ public class InvalidInputTests : ReadTests
         writer.Write((byte)RecordType.MessageEnd);
 
         stream.Position = 0;
-        Assert.Throws<SerializationException>(() => PayloadReader.Read(stream));
+        Assert.Throws<SerializationException>(() => NrbfDecoder.Decode(stream));
     }
 
     [Theory]
@@ -352,7 +352,7 @@ public class InvalidInputTests : ReadTests
         writer.Write((byte)RecordType.MessageEnd);
 
         stream.Position = 0;
-        Assert.Throws<SerializationException>(() => PayloadReader.Read(stream));
+        Assert.Throws<SerializationException>(() => NrbfDecoder.Decode(stream));
     }
 
     [Theory]
@@ -382,7 +382,7 @@ public class InvalidInputTests : ReadTests
         writer.Write((byte)RecordType.MessageEnd);
 
         stream.Position = 0;
-        Assert.Throws<SerializationException>(() => PayloadReader.Read(stream));
+        Assert.Throws<SerializationException>(() => NrbfDecoder.Decode(stream));
     }
 
     [Theory]
@@ -417,7 +417,7 @@ public class InvalidInputTests : ReadTests
         writer.Write((byte)RecordType.MessageEnd);
 
         stream.Position = 0;
-        Assert.Throws<SerializationException>(() => PayloadReader.Read(stream));
+        Assert.Throws<SerializationException>(() => NrbfDecoder.Decode(stream));
     }
 
     public static IEnumerable<object[]> ThrowsForInvalidPrimitiveType_Arguments()
@@ -459,7 +459,7 @@ public class InvalidInputTests : ReadTests
         writer.Write((byte)RecordType.MessageEnd);
 
         stream.Position = 0;
-        Assert.Throws<SerializationException>(() => PayloadReader.Read(stream));
+        Assert.Throws<SerializationException>(() => NrbfDecoder.Decode(stream));
     }
 
     [Fact]
@@ -476,6 +476,6 @@ public class InvalidInputTests : ReadTests
         writer.Write((byte)RecordType.MessageEnd);
 
         stream.Position = 0;
-        Assert.Throws<SerializationException>(() => PayloadReader.Read(stream));
+        Assert.Throws<SerializationException>(() => NrbfDecoder.Decode(stream));
     }
 }

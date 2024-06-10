@@ -21,7 +21,7 @@ public class EdgeCaseTests : ReadTests
         using MemoryStream stream = Serialize(typeof(object));
 #endif
 
-        ClassRecord classRecord = (ClassRecord)PayloadReader.Read(stream);
+        ClassRecord classRecord = (ClassRecord)NrbfDecoder.Decode(stream);
 
         // It's a surrogate, so there is no type match.
         Assert.False(classRecord.IsTypeNameMatching(typeof(Type)));
@@ -46,7 +46,7 @@ public class EdgeCaseTests : ReadTests
         binaryFormatter.Serialize(stream, input);
         stream.Position = 0;
 
-        string?[] ouput = ((ArrayRecord<string>)PayloadReader.Read(stream)).GetArray();
+        string?[] ouput = ((SZArrayRecord<string>)NrbfDecoder.Decode(stream)).GetArray();
 
         Assert.Equal(input, ouput);
         
@@ -77,7 +77,7 @@ public class EdgeCaseTests : ReadTests
             // MemoryStream can not handle large array payloads as it's backed by an array.
             using FileStream stream = SerializeToFile(input);
 
-            byte[] output = ((ArrayRecord<byte>)PayloadReader.Read(stream)).GetArray();
+            byte[] output = ((SZArrayRecord<byte>)NrbfDecoder.Decode(stream)).GetArray();
             Assert.Equal(input, output);
         }
         catch (OutOfMemoryException) when (length == 2147483591)
@@ -101,6 +101,6 @@ public class EdgeCaseTests : ReadTests
         binaryFormatter.Serialize(ms, true);
         ms.Position = 0;
 
-        Assert.Throws<NotSupportedException>(() => PayloadReader.Read(ms));
+        Assert.Throws<NotSupportedException>(() => NrbfDecoder.Decode(ms));
     }
 }

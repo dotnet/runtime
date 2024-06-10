@@ -45,7 +45,7 @@ internal sealed partial class BinaryFormattedObject
 
         try
         {
-            RootRecord = PayloadReader.Read(stream, out var readonlyRecordMap, options: s_payloadOptions, leaveOpen: true);
+            RootRecord = NrbfDecoder.Decode(stream, out var readonlyRecordMap, options: s_payloadOptions, leaveOpen: true);
             RecordMap = readonlyRecordMap;
         }
         catch (Exception ex) when (ex is ArgumentException or InvalidCastException or ArithmeticException or IOException)

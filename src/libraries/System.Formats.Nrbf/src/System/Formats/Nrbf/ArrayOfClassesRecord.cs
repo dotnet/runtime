@@ -7,7 +7,7 @@ using System.Formats.Nrbf.Utils;
 
 namespace System.Formats.Nrbf;
 
-internal sealed class ArrayOfClassesRecord : ArrayRecord<ClassRecord>
+internal sealed class ArrayOfClassesRecord : SZArrayRecord<ClassRecord>
 {
     private TypeName? _elementTypeName;
 

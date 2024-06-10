@@ -14,7 +14,7 @@ public class JaggedArraysTests : ReadTests
             input[i] = [i, i, i];
         }
 
-        var arrayRecord = (ArrayRecord)PayloadReader.Read(Serialize(input));
+        var arrayRecord = (ArrayRecord)NrbfDecoder.Decode(Serialize(input));
 
         VerifyLength(input, arrayRecord);
         Assert.Equal(BinaryArrayType.Jagged, arrayRecord.ArrayType);
@@ -31,7 +31,7 @@ public class JaggedArraysTests : ReadTests
             input[i][0] = [i, i, i];
         }
 
-        var arrayRecord = (ArrayRecord)PayloadReader.Read(Serialize(input));
+        var arrayRecord = (ArrayRecord)NrbfDecoder.Decode(Serialize(input));
 
         VerifyLength(input, arrayRecord);
         Assert.Equal(BinaryArrayType.Jagged, arrayRecord.ArrayType);
@@ -56,7 +56,7 @@ public class JaggedArraysTests : ReadTests
             }
         }
 
-        var arrayRecord = (ArrayRecord)PayloadReader.Read(Serialize(input));
+        var arrayRecord = (ArrayRecord)NrbfDecoder.Decode(Serialize(input));
 
         VerifyLength(input, arrayRecord);
         Assert.Equal(BinaryArrayType.Jagged, arrayRecord.ArrayType);
@@ -73,7 +73,7 @@ public class JaggedArraysTests : ReadTests
             input[i] = ["a", "b", "c"];
         }
 
-        var arrayRecord = (ArrayRecord)PayloadReader.Read(Serialize(input));
+        var arrayRecord = (ArrayRecord)NrbfDecoder.Decode(Serialize(input));
 
         VerifyLength(input, arrayRecord);
         Assert.Equal(BinaryArrayType.Jagged, arrayRecord.ArrayType);
@@ -89,7 +89,7 @@ public class JaggedArraysTests : ReadTests
             input[i] = ["a", 1, DateTime.MaxValue];
         }
 
-        var arrayRecord = (ArrayRecord)PayloadReader.Read(Serialize(input));
+        var arrayRecord = (ArrayRecord)NrbfDecoder.Decode(Serialize(input));
 
         VerifyLength(input, arrayRecord);
         Assert.Equal(BinaryArrayType.Jagged, arrayRecord.ArrayType);
@@ -111,7 +111,7 @@ public class JaggedArraysTests : ReadTests
             input[i] = Enumerable.Range(0, i + 1).Select(j => new ComplexType { SomeField = j }).ToArray();
         }
 
-        var arrayRecord = (ArrayRecord)PayloadReader.Read(Serialize(input));
+        var arrayRecord = (ArrayRecord)NrbfDecoder.Decode(Serialize(input));
 
         VerifyLength(input, arrayRecord);
         Assert.Equal(BinaryArrayType.Jagged, arrayRecord.ArrayType);

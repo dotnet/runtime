@@ -21,12 +21,7 @@ namespace System.Formats.Nrbf;
 /// <para>Other serialization records are represented with <see cref="ClassRecord"/> or <see cref="ArrayRecord"/>.</para>
 /// </remarks>
 [DebuggerDisplay("{Value}")]
-#if SYSTEM_RUNTIME_SERIALIZATION_BINARYFORMAT
-public
-#else
-internal
-#endif
-abstract class PrimitiveTypeRecord<T> : SerializationRecord
+public abstract class PrimitiveTypeRecord<T> : SerializationRecord
 {
     private protected PrimitiveTypeRecord(T value) => Value = value;
 

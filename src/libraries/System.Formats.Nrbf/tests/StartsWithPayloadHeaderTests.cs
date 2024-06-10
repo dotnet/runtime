@@ -36,9 +36,9 @@ public class StartsWithPayloadHeaderTests
     [MemberData(nameof(GetArguments))]
     public void StartsWithPayloadHeader_ReturnsExpectedResult(byte[] bytes, bool expected)
     {
-        Assert.Equal(expected, PayloadReader.StartsWithPayloadHeader(bytes));
+        Assert.Equal(expected, NrbfDecoder.StartsWithPayloadHeader(bytes));
 
         using MemoryStream stream = new MemoryStream(bytes);
-        Assert.Equal(expected, PayloadReader.StartsWithPayloadHeader(stream));
+        Assert.Equal(expected, NrbfDecoder.StartsWithPayloadHeader(stream));
     }
 }

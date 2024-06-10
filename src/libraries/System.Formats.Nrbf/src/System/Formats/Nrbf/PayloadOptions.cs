@@ -5,12 +5,7 @@ using System.Reflection.Metadata;
 
 namespace System.Formats.Nrbf;
 
-#if SYSTEM_RUNTIME_SERIALIZATION_BINARYFORMAT
-public
-#else
-internal
-#endif
-sealed class PayloadOptions
+public sealed class PayloadOptions
 {
     public PayloadOptions() { }
 

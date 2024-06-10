@@ -22,7 +22,7 @@ namespace System.Formats.Nrbf.Tests
 
             using MemoryStream stream = Serialize(input);
 
-            SerializationRecord topLevel = PayloadReader.Read(stream);
+            SerializationRecord topLevel = NrbfDecoder.Decode(stream);
 
             Assert.IsAssignableFrom<ClassRecord>(topLevel);
             ClassRecord dictionaryRecord = (ClassRecord)topLevel;
@@ -32,7 +32,7 @@ namespace System.Formats.Nrbf.Tests
             ClassRecord comparerRecord = dictionaryRecord.GetClassRecord(nameof(input.Comparer))!;
             Assert.True(comparerRecord.IsTypeNameMatching(input.Comparer.GetType()));
 
-            ArrayRecord<ClassRecord> arrayRecord = (ArrayRecord<ClassRecord>)dictionaryRecord.GetSerializationRecord("KeyValuePairs")!;
+            SZArrayRecord<ClassRecord> arrayRecord = (SZArrayRecord<ClassRecord>)dictionaryRecord.GetSerializationRecord("KeyValuePairs")!;
             ClassRecord[] keyValuePairs = arrayRecord.GetArray()!;
             Assert.True(keyValuePairs[0].IsTypeNameMatching(typeof(KeyValuePair<string, object>)));
 
@@ -119,7 +119,7 @@ namespace System.Formats.Nrbf.Tests
         [MemberData(nameof(GetAllInputTypes))]
         public void UserCanReadEveryPossibleSerializationRecord(object input)
         {
-            SerializationRecord root = PayloadReader.Read(Serialize(input));
+            SerializationRecord root = NrbfDecoder.Decode(Serialize(input));
 
             switch(root)
             {
@@ -173,59 +173,59 @@ namespace System.Formats.Nrbf.Tests
                     Assert.Equal(input, record.Value);
                     break;
                 // arrays of primitive types
-                case ArrayRecord<string> record:
+                case SZArrayRecord<string> record:
                     Assert.Equal(input, record.GetArray());
                     break;
-                case ArrayRecord<bool> record:
+                case SZArrayRecord<bool> record:
                     Assert.Equal(input, record.GetArray());
                     break;
-                case ArrayRecord<byte> record:
+                case SZArrayRecord<byte> record:
                     Assert.Equal(input, record.GetArray());
                     break;
-                case ArrayRecord<sbyte> record:
+                case SZArrayRecord<sbyte> record:
                     Assert.Equal(input, record.GetArray());
                     break;
-                case ArrayRecord<char> record:
+                case SZArrayRecord<char> record:
                     Assert.Equal(input, record.GetArray());
                     break;
-                case ArrayRecord<short> record:
+                case SZArrayRecord<short> record:
                     Assert.Equal(input, record.GetArray());
                     break;
-                case ArrayRecord<ushort> record:
+                case SZArrayRecord<ushort> record:
                     Assert.Equal(input, record.GetArray());
                     break;
-                case ArrayRecord<int> record:
+                case SZArrayRecord<int> record:
                     Assert.Equal(input, record.GetArray());
                     break;
-                case ArrayRecord<uint> record:
+                case SZArrayRecord<uint> record:
                     Assert.Equal(input, record.GetArray());
                     break;
-                case ArrayRecord<long> record:
+                case SZArrayRecord<long> record:
                     Assert.Equal(input, record.GetArray());
                     break;
-                case ArrayRecord<ulong> record:
+                case SZArrayRecord<ulong> record:
                     Assert.Equal(input, record.GetArray());
                     break;
-                case ArrayRecord<float> record:
+                case SZArrayRecord<float> record:
                     Assert.Equal(input, record.GetArray());
                     break;
-                case ArrayRecord<double> record:
+                case SZArrayRecord<double> record:
                     Assert.Equal(input, record.GetArray());
                     break;
-                case ArrayRecord<decimal> record:
+                case SZArrayRecord<decimal> record:
                     Assert.Equal(input, record.GetArray());
                     break;
-                case ArrayRecord<DateTime> record:
+                case SZArrayRecord<DateTime> record:
                     Assert.Equal(input, record.GetArray());
                     break;
-                case ArrayRecord<TimeSpan> record:
+                case SZArrayRecord<TimeSpan> record:
                     Assert.Equal(input, record.GetArray());
                     break;
                 // class records
                 case ClassRecord record when record.IsTypeNameMatching(typeof(Exception)):
                     Assert.Equal(((Exception)input).Message, record.GetString("Message"));
                     break;
-                case ArrayRecord<ClassRecord> record when record.IsTypeNameMatching(typeof(Exception[])):
+                case SZArrayRecord<ClassRecord> record when record.IsTypeNameMatching(typeof(Exception[])):
                     Assert.Equal(((Exception[])input)[0].Message, record.GetArray()[0]!.GetString("Message"));
                     break;
                 case ClassRecord record when record.IsTypeNameMatching(typeof(JsonException)):
@@ -262,7 +262,7 @@ namespace System.Formats.Nrbf.Tests
 
             static void VerifyDictionary<TKey, TValue>(ClassRecord record)
             {
-                ArrayRecord<ClassRecord> arrayRecord = (ArrayRecord<ClassRecord>)record.GetSerializationRecord("KeyValuePairs")!;
+                SZArrayRecord<ClassRecord> arrayRecord = (SZArrayRecord<ClassRecord>)record.GetSerializationRecord("KeyValuePairs")!;
                 ClassRecord[] keyValuePairs = arrayRecord.GetArray()!;
                 Assert.True(keyValuePairs[0].IsTypeNameMatching(typeof(KeyValuePair<TKey, TValue>)));
             }

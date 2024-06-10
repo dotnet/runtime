@@ -358,7 +358,7 @@ public class TypeMatchTests : ReadTests
 
     private static void Verify<T>(T input) where T : notnull
     {
-        SerializationRecord one = PayloadReader.Read(Serialize(input));
+        SerializationRecord one = NrbfDecoder.Decode(Serialize(input));
 
         Assert.True(one.IsTypeNameMatching(typeof(T)));
 
@@ -372,18 +372,18 @@ public class TypeMatchTests : ReadTests
     {
         T[] array = [input];
 
-        ArrayRecord arrayRecord = (ArrayRecord)PayloadReader.Read(Serialize(array));
+        ArrayRecord arrayRecord = (ArrayRecord)NrbfDecoder.Decode(Serialize(array));
 
         Assert.Equal(typeof(T).GetTypeFullNameIncludingTypeForwards(), arrayRecord.ElementTypeName.FullName);
         Assert.Equal(typeof(T).GetAssemblyNameIncludingTypeForwards(), arrayRecord.ElementTypeName.AssemblyName!.FullName);
 
         if (PrimitiveTypes.Contains(typeof(T)))
         {
-            Assert.True(arrayRecord is ArrayRecord<T>, userMessage: typeof(T).Name);
+            Assert.True(arrayRecord is SZArrayRecord<T>, userMessage: typeof(T).Name);
         }
         else
         {
-            Assert.True(arrayRecord is ArrayRecord<ClassRecord>, userMessage: typeof(T).Name);
+            Assert.True(arrayRecord is SZArrayRecord<ClassRecord>, userMessage: typeof(T).Name);
             Assert.True(arrayRecord.IsTypeNameMatching(typeof(T[])));
             Assert.Equal(arrayRecord.ElementTypeName.AssemblyName.FullName, typeof(T).GetAssemblyNameIncludingTypeForwards());
         }
@@ -404,7 +404,7 @@ public class TypeMatchTests : ReadTests
     {
         T[][] jaggedArray = [[input]];
 
-        ArrayRecord arrayRecord = (ArrayRecord)PayloadReader.Read(Serialize(jaggedArray));
+        ArrayRecord arrayRecord = (ArrayRecord)NrbfDecoder.Decode(Serialize(jaggedArray));
 
         Assert.Equal(typeof(T[]).GetTypeFullNameIncludingTypeForwards(), arrayRecord.ElementTypeName.FullName);
 
@@ -440,10 +440,10 @@ public class TypeMatchTests : ReadTests
     private static void VerifyRectangularArray<T>(Array array)
     {
         int arrayRank = array.GetType().GetArrayRank();
-        ArrayRecord arrayRecord = (ArrayRecord)PayloadReader.Read(Serialize(array));
+        ArrayRecord arrayRecord = (ArrayRecord)NrbfDecoder.Decode(Serialize(array));
 
         Assert.Equal(typeof(T).GetTypeFullNameIncludingTypeForwards(), arrayRecord.ElementTypeName.FullName);
-        Assert.False(arrayRecord is ArrayRecord<T>, userMessage: typeof(T).Name);
+        Assert.False(arrayRecord is SZArrayRecord<T>, userMessage: typeof(T).Name);
         Assert.True(arrayRecord.ArrayType is BinaryArrayType.Rectangular);
 
         foreach (Type type in PrimitiveTypes.Concat([typeof(T)]))
@@ -467,10 +467,10 @@ public class TypeMatchTests : ReadTests
         }
         array.SetValue(input, offsets);
 
-        ArrayRecord arrayRecord = (ArrayRecord)PayloadReader.Read(Serialize(array));
+        ArrayRecord arrayRecord = (ArrayRecord)NrbfDecoder.Decode(Serialize(array));
 
         Assert.Equal(typeof(T).GetTypeFullNameIncludingTypeForwards(), arrayRecord.ElementTypeName.FullName);
-        Assert.False(arrayRecord is ArrayRecord<T>, userMessage: typeof(T).Name);
+        Assert.False(arrayRecord is SZArrayRecord<T>, userMessage: typeof(T).Name);
 
         foreach (Type type in PrimitiveTypes.Concat([typeof(T)]))
         {

@@ -25,7 +25,7 @@ public class AttackTests : ReadTests
 
         using MemoryStream stream = Serialize(input);
 
-        ClassRecord classRecord = PayloadReader.ReadClassRecord(stream);
+        ClassRecord classRecord = NrbfDecoder.DecodeClassRecord(stream);
 
         Assert.Same(classRecord, classRecord.GetClassRecord(nameof(WithCyclicReference.ReferenceToSelf)));
         Assert.Equal(input.Name, classRecord.GetString(nameof(WithCyclicReference.Name)));
@@ -43,7 +43,7 @@ public class AttackTests : ReadTests
 
         using MemoryStream stream = Serialize(input);
 
-        ClassRecord classRecord = PayloadReader.ReadClassRecord(stream);
+        ClassRecord classRecord = NrbfDecoder.DecodeClassRecord(stream);
 
         Assert.Same(classRecord, classRecord.GetClassRecord(nameof(Exception.InnerException)));
         Assert.Equal(input.Message, classRecord.GetString(nameof(Exception.Message)));
@@ -56,8 +56,8 @@ public class AttackTests : ReadTests
         input[0] = "not an array";
         input[1] = input;
 
-        ArrayRecord arrayRecord = (ArrayRecord)PayloadReader.Read(Serialize(input));
-        object?[] output = ((ArrayRecord<object>)arrayRecord).GetArray();
+        ArrayRecord arrayRecord = (ArrayRecord)NrbfDecoder.Decode(Serialize(input));
+        object?[] output = ((SZArrayRecord<object>)arrayRecord).GetArray();
 
         Assert.Equal(input[0], output[0]);
         Assert.Same(input, input[1]);
@@ -78,10 +78,10 @@ public class AttackTests : ReadTests
         input.Name = "hello";
         input.ArrayWithReferenceToSelf = [input];
 
-        ClassRecord classRecord = PayloadReader.ReadClassRecord(Serialize(input));
+        ClassRecord classRecord = NrbfDecoder.DecodeClassRecord(Serialize(input));
 
         Assert.Equal(input.Name, classRecord.GetString(nameof(WithCyclicReferenceInArrayOfObjects.Name)));
-        ArrayRecord<object> arrayRecord = (ArrayRecord<object>)classRecord.GetSerializationRecord(nameof(WithCyclicReferenceInArrayOfObjects.ArrayWithReferenceToSelf))!;
+        SZArrayRecord<object> arrayRecord = (SZArrayRecord<object>)classRecord.GetSerializationRecord(nameof(WithCyclicReferenceInArrayOfObjects.ArrayWithReferenceToSelf))!;
         object?[] array = arrayRecord.GetArray();
         Assert.Same(classRecord, array.Single());
     }
@@ -100,10 +100,10 @@ public class AttackTests : ReadTests
         input.Name = "hello";
         input.ArrayWithReferenceToSelf = [input];
 
-        ClassRecord classRecord = PayloadReader.ReadClassRecord(Serialize(input));
+        ClassRecord classRecord = NrbfDecoder.DecodeClassRecord(Serialize(input));
 
         Assert.Equal(input.Name, classRecord.GetString(nameof(WithCyclicReferenceInArrayOfT.Name)));
-        ArrayRecord<ClassRecord> classRecords = (ArrayRecord<ClassRecord>)classRecord.GetSerializationRecord(nameof(WithCyclicReferenceInArrayOfT.ArrayWithReferenceToSelf))!;
+        SZArrayRecord<ClassRecord> classRecords = (SZArrayRecord<ClassRecord>)classRecord.GetSerializationRecord(nameof(WithCyclicReferenceInArrayOfT.ArrayWithReferenceToSelf))!;
         Assert.Same(classRecord, classRecords.GetArray().Single());
     }
 
@@ -131,7 +131,7 @@ public class AttackTests : ReadTests
 
         long before = GetAllocatedByteCount();
 
-        SerializationRecord serializationRecord = PayloadReader.Read(stream);
+        SerializationRecord serializationRecord = NrbfDecoder.Decode(stream);
 
         long after = GetAllocatedByteCount();
 
@@ -157,7 +157,7 @@ public class AttackTests : ReadTests
 
         long before = GetAllocatedByteCount();
 
-        Assert.Throws<EndOfStreamException>(() => PayloadReader.Read(stream));
+        Assert.Throws<EndOfStreamException>(() => NrbfDecoder.Decode(stream));
 
         long after = GetAllocatedByteCount();
 
@@ -192,7 +192,7 @@ public class AttackTests : ReadTests
 
         using MemoryStream stream = Serialize(previous);
 
-        SerializationRecord serializationRecord = PayloadReader.Read(stream);
+        SerializationRecord serializationRecord = NrbfDecoder.Decode(stream);
 
         static Exception CreateNewExceptionTypeAndInstantiateIt(Type[] ctorTypes, ConstructorInfo baseCtor,
             ModuleBuilder module, Exception previous, int i)
@@ -273,7 +273,7 @@ public class AttackTests : ReadTests
 
         stream.Position = 0;
 
-        SerializationRecord serializationRecord = PayloadReader.Read(stream);
+        SerializationRecord serializationRecord = NrbfDecoder.Decode(stream);
     }
 
     [Fact]

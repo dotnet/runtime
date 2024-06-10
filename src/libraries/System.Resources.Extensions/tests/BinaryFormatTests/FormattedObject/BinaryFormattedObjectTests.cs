@@ -38,10 +38,10 @@ public class BinaryFormattedObjectTests : SerializationTest<FormattedObjectSeria
         ClassRecord systemClass = (ClassRecord)format[1];
         VerifyHashTable(systemClass, expectedVersion: 0, expectedHashSize: 3);
 
-        ArrayRecord<object> keys = (ArrayRecord<object>)systemClass.GetSerializationRecord("Keys")!;
+        SZArrayRecord<object> keys = (SZArrayRecord<object>)systemClass.GetSerializationRecord("Keys")!;
         keys.ObjectId.Should().Be(2);
         keys.Length.Should().Be(0);
-        ArrayRecord<object> values = (ArrayRecord<object>)systemClass.GetSerializationRecord("Values")!;
+        SZArrayRecord<object> values = (SZArrayRecord<object>)systemClass.GetSerializationRecord("Values")!;
         values.ObjectId.Should().Be(3);
         values.Length.Should().Be(0);
     }
@@ -80,11 +80,11 @@ public class BinaryFormattedObjectTests : SerializationTest<FormattedObjectSeria
         ClassRecord systemClass = (ClassRecord)format[1];
         VerifyHashTable(systemClass, expectedVersion: 1, expectedHashSize: 3);
 
-        ArrayRecord<object> keys = (ArrayRecord<object>)format[2];
+        SZArrayRecord<object> keys = (SZArrayRecord<object>)format[2];
         keys.ObjectId.Should().Be(2);
         keys.Length.Should().Be(1);
         keys.GetArray().Single().Should().Be("This");
-        ArrayRecord<object> values = (ArrayRecord<object>)format[3];
+        SZArrayRecord<object> values = (SZArrayRecord<object>)format[3];
         values.ObjectId.Should().Be(3);
         values.Length.Should().Be(1);
         values.GetArray().Single().Should().Be("That");
@@ -105,7 +105,7 @@ public class BinaryFormattedObjectTests : SerializationTest<FormattedObjectSeria
 
         // The collections themselves get ids first before the strings do.
         // Everything in the second keys is a string reference.
-        ArrayRecord<object> array = (ArrayRecord<object>)systemClass.GetSerializationRecord("Keys")!;
+        SZArrayRecord<object> array = (SZArrayRecord<object>)systemClass.GetSerializationRecord("Keys")!;
         array.ObjectId.Should().Be(2);
         array.GetArray().Should().BeEquivalentTo(["This", "TheOther", "That"]);
     }
@@ -125,11 +125,11 @@ public class BinaryFormattedObjectTests : SerializationTest<FormattedObjectSeria
 
         // The collections themselves get ids first before the strings do.
         // Everything in the second keys is a string reference.
-        ArrayRecord<object> keys = (ArrayRecord<object>)systemClass.GetSerializationRecord("Keys")!;
+        SZArrayRecord<object> keys = (SZArrayRecord<object>)systemClass.GetSerializationRecord("Keys")!;
         keys.ObjectId.Should().Be(2);
         keys.GetArray().Should().BeEquivalentTo(new object[] { "Yowza", "Youza", "Meeza" });
 
-        ArrayRecord<object?> values = (ArrayRecord<object?>)systemClass.GetSerializationRecord("Values")!;
+        SZArrayRecord<object?> values = (SZArrayRecord<object?>)systemClass.GetSerializationRecord("Values")!;
         values.ObjectId.Should().Be(3);
         values.GetArray().Should().BeEquivalentTo(new object?[] { null, null, null });
     }
@@ -211,7 +211,7 @@ public class BinaryFormattedObjectTests : SerializationTest<FormattedObjectSeria
 
         BinaryFormattedObject format = new(Serialize(input));
 
-        ArrayRecord<int> array = (ArrayRecord<int>)format[1];
+        SZArrayRecord<int> array = (SZArrayRecord<int>)format[1];
         array.Length.Should().Be(4);
         array.GetArray().Should().BeEquivalentTo(input);
     }
@@ -223,7 +223,7 @@ public class BinaryFormattedObjectTests : SerializationTest<FormattedObjectSeria
 
         BinaryFormattedObject format = new(Serialize(input));
 
-        ArrayRecord<string> array = (ArrayRecord<string>)format[1];
+        SZArrayRecord<string> array = (SZArrayRecord<string>)format[1];
         array.ObjectId.Should().Be(1);
         array.Length.Should().Be(3);
         array.GetArray().Should().BeEquivalentTo(input);
@@ -237,7 +237,7 @@ public class BinaryFormattedObjectTests : SerializationTest<FormattedObjectSeria
 
         BinaryFormattedObject format = new(Serialize(input));
 
-        ArrayRecord<string?> array = (ArrayRecord<string?>)format[1];
+        SZArrayRecord<string?> array = (SZArrayRecord<string?>)format[1];
         array.ObjectId.Should().Be(1);
         array.Length.Should().Be(6);
         array.GetArray().Should().BeEquivalentTo(input);
@@ -250,7 +250,7 @@ public class BinaryFormattedObjectTests : SerializationTest<FormattedObjectSeria
 
         BinaryFormattedObject format = new(Serialize(input));
 
-        ArrayRecord<string> array = (ArrayRecord<string>)format[1];
+        SZArrayRecord<string> array = (SZArrayRecord<string>)format[1];
         array.ObjectId.Should().Be(1);
         array.Length.Should().Be(3);
         array.GetArray().Should().BeEquivalentTo(input);
