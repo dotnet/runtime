@@ -1484,14 +1484,14 @@ void StackTraceArray::Allocate(size_t size)
     }
     CONTRACTL_END;
 
-    size_t raw_size = size * sizeof(StackTraceElement) + sizeof(ArrayHeader);
+    S_SIZE_T raw_size = S_SIZE_T(size) * S_SIZE_T(sizeof(StackTraceElement)) + S_SIZE_T(sizeof(ArrayHeader));
 
-    if (!FitsIn<DWORD>(raw_size))
+    if (raw_size.IsOverflow() || !FitsIn<DWORD>(raw_size.Value())
     {
         EX_THROW(EEMessageException, (kOverflowException, IDS_EE_ARRAY_DIMENSIONS_EXCEEDED));
     }
    
-    SetArray(I1ARRAYREF(AllocatePrimitiveArray(ELEMENT_TYPE_I1, static_cast<DWORD>(raw_size))));
+    SetArray(I1ARRAYREF(AllocatePrimitiveArray(ELEMENT_TYPE_I1, static_cast<DWORD>(raw_size.Value()))));
     SetSize(0);
     SetKeepAliveItemsCount(0);
     SetObjectThread();
