@@ -126,7 +126,7 @@
     <optimizationlinuxx64MIBCRuntimeVersion>1.0.0-prerelease.21416.5</optimizationlinuxx64MIBCRuntimeVersion>
     <optimizationPGOCoreCLRVersion>1.0.0-prerelease.21416.5</optimizationPGOCoreCLRVersion>
     <!-- Not auto-updated. -->
-    <MicrosoftDiaSymReaderNativeVersion>16.11.29-beta1.23404.4</MicrosoftDiaSymReaderNativeVersion>
+    <MicrosoftDiaSymReaderNativeVersion>17.10.0-beta1.24272.1</MicrosoftDiaSymReaderNativeVersion>
     <SystemCommandLineVersion>2.0.0-beta1.20253.1</SystemCommandLineVersion>
     <TraceEventVersion>2.0.65</TraceEventVersion>
     <CommandLineParserVersion>2.2.0</CommandLineParserVersion>
@@ -143,8 +143,8 @@
     <!-- Testing -->
     <MicrosoftNETCoreCoreDisToolsVersion>1.0.1-prerelease-00006</MicrosoftNETCoreCoreDisToolsVersion>
     <MicrosoftNETTestSdkVersion>17.4.0-preview-20220707-01</MicrosoftNETTestSdkVersion>
-    <MicrosoftDotNetXHarnessTestRunnersXunitVersion>6.0.0-prerelease.24208.3</MicrosoftDotNetXHarnessTestRunnersXunitVersion>
-    <MicrosoftDotNetXHarnessCLIVersion>6.0.0-prerelease.24208.3</MicrosoftDotNetXHarnessCLIVersion>
+    <MicrosoftDotNetXHarnessTestRunnersXunitVersion>6.0.0-prerelease.24224.2</MicrosoftDotNetXHarnessTestRunnersXunitVersion>
+    <MicrosoftDotNetXHarnessCLIVersion>6.0.0-prerelease.24224.2</MicrosoftDotNetXHarnessCLIVersion>
     <MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>6.0.0-alpha.0.23367.3</MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>
     <XUnitVersion>2.4.2-pre.9</XUnitVersion>
     <XUnitRunnerVisualStudioVersion>2.4.2</XUnitRunnerVisualStudioVersion>
@@ -162,7 +162,7 @@
     <MicrosoftNETILLinkTasksVersion>6.0.100-1.21459.1</MicrosoftNETILLinkTasksVersion>
     <MicrosoftNETILLinkAnalyzerPackageVersion>$(MicrosoftNETILLinkTasksVersion)</MicrosoftNETILLinkAnalyzerPackageVersion>
     <!-- ICU -->
-    <MicrosoftNETCoreRuntimeICUTransportVersion>6.0.0-rtm.24211.1</MicrosoftNETCoreRuntimeICUTransportVersion>
+    <MicrosoftNETCoreRuntimeICUTransportVersion>6.0.0-rtm.24269.3</MicrosoftNETCoreRuntimeICUTransportVersion>
     <!-- MsQuic -->
     <SystemNetMsQuicTransportVersion>6.0.0-servicing.22205.1</SystemNetMsQuicTransportVersion>
     <!-- Mono LLVM -->

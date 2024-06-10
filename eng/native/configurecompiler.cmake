@@ -376,6 +376,9 @@ if (CLR_CMAKE_HOST_UNIX)
     add_compile_options(-Wno-single-bit-bitfield-constant-conversion)
     add_compile_options(-Wno-cast-function-type-strict)
     add_compile_options(-Wno-incompatible-function-pointer-types-strict)
+
+    # clang 18.1 supressions
+    add_compile_options(-Wno-switch-default)
   else()
     add_compile_options(-Wno-unknown-pragmas)
     add_compile_options(-Wno-uninitialized)
