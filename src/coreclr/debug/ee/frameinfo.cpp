@@ -107,7 +107,6 @@ struct DebuggerFrameData
         this->info.fIsFilter  = false;
 #endif // FEATURE_EH_FUNCLETS
 
-        // Look strange?  Go to definition of this field.  I dare you.
         this->info.fIgnoreThisFrameIfSuppressingUMChainFromCLRToCOMMethodFrameGeneric = false;
 
 #if defined(_DEBUG)

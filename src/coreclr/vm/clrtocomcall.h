@@ -9,8 +9,8 @@
 //
 
 
-#ifndef __CLRToCOMCall_H__
-#define __CLRToCOMCall_H__
+#ifndef __CLRTOCOMCALL_H__
+#define __CLRTOCOMCALL_H__
 
 #ifndef FEATURE_COMINTEROP
 #error FEATURE_COMINTEROP is required for this file
@@ -68,4 +68,4 @@ class CLRToCOMCall
 #endif // TARGET_X86
 };
 
-#endif // __CLRToCOMCall_H__
+#endif // __CLRTOCOMCALL_H__

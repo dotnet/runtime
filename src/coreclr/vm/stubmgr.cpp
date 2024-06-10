@@ -2032,7 +2032,7 @@ void InteropDispatchStubManager::Init()
 
 #endif // #ifndef DACCESS_COMPILE
 
-PCODE TheGenericCLRToCOMCallStub(); // clrtocom.cpp
+PCODE TheGenericCLRToCOMCallStub(); // clrtocomcall.cpp
 
 #ifndef DACCESS_COMPILE
 static BOOL IsVarargPInvokeStub(PCODE stubStartAddress)
