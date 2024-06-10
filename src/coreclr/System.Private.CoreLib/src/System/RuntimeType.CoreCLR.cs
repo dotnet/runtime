@@ -54,7 +54,7 @@ namespace System
         }
 
         // Helper to build lists of MemberInfos. Special cased to avoid allocations for lists of one element.
-        internal struct ListBuilder<T> where T : class
+        internal struct ListBuilder<T>
         {
             private T[]? _items;
             private T _item;
@@ -64,7 +64,7 @@ namespace System
             public ListBuilder(int capacity)
             {
                 _items = null;
-                _item = null!;
+                _item = default!;
                 _count = 0;
                 _capacity = capacity;
             }
@@ -90,7 +90,7 @@ namespace System
                 return _items!;
             }
 
-            public void CopyTo(object[] array, int index)
+            public void CopyTo(object?[] array, int index)
             {
                 if (_count == 0)
                     return;
@@ -1779,9 +1779,9 @@ namespace System
 
         #region Internal
         [RequiresUnreferencedCode("Trimming changes metadata tokens")]
-        internal static MethodBase? GetMethodBase(RuntimeModule scope, int typeMetadataToken)
+        internal static MethodBase? GetMethodBase(RuntimeModule scope, int typeMetadataToken, RuntimeTypeHandle[]? genericTypeArguments, RuntimeTypeHandle[]? genericMethodArguments)
         {
-            return GetMethodBase(new ModuleHandle(scope).ResolveMethodHandle(typeMetadataToken).GetMethodInfo());
+            return GetMethodBase(new ModuleHandle(scope).ResolveMethodHandle(typeMetadataToken, genericTypeArguments, genericMethodArguments).GetMethodInfo());
         }
 
         internal static MethodBase? GetMethodBase(IRuntimeMethodInfo methodHandle)
