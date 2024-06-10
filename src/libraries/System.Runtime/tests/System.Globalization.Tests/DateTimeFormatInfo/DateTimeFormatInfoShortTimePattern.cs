@@ -255,7 +255,7 @@ namespace System.Globalization.Tests
             Assert.Throws<InvalidOperationException>(() => DateTimeFormatInfo.InvariantInfo.ShortTimePattern = "HH:mm");
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
         public void ShortTimePattern_CheckTimeFormatWithSpaces()
         {
             var date = DateTime.Today + TimeSpan.FromHours(15) + TimeSpan.FromMinutes(15);

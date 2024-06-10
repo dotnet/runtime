@@ -284,7 +284,7 @@ namespace System.Globalization.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
         public void LongTimePattern_CheckTimeFormatWithSpaces()
         {
             var date = DateTime.Today + TimeSpan.FromHours(15) + TimeSpan.FromMinutes(15);
