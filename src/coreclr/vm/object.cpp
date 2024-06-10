@@ -1486,7 +1486,7 @@ void StackTraceArray::Allocate(size_t size)
 
     S_SIZE_T raw_size = S_SIZE_T(size) * S_SIZE_T(sizeof(StackTraceElement)) + S_SIZE_T(sizeof(ArrayHeader));
 
-    if (raw_size.IsOverflow() || !FitsIn<DWORD>(raw_size.Value())
+    if (raw_size.IsOverflow() || !FitsIn<DWORD>(raw_size.Value()))
     {
         EX_THROW(EEMessageException, (kOverflowException, IDS_EE_ARRAY_DIMENSIONS_EXCEEDED));
     }
