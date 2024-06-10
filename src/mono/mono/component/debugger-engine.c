@@ -83,7 +83,7 @@ domains_cleanup (void)
 void
 mono_de_foreach_domain (GHFunc func, gpointer user_data)
 {
-	MonoDomain *domain = mono_domain_get ();
+	MonoDomain *domain = mono_get_root_domain ();
 	func (domain, domain, user_data);
 }
 
@@ -93,7 +93,7 @@ mono_de_foreach_domain (GHFunc func, gpointer user_data)
 void
 mono_de_domain_add (MonoDomain *domain)
 {
-	g_assert (domain == mono_domain_get ());
+	g_assert (domain == mono_get_root_domain ());
 }
 
 /*
