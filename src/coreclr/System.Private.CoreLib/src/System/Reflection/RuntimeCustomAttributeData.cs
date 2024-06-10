@@ -282,9 +282,7 @@ namespace System.Reflection
 
             if (m_ctor!.DeclaringType!.IsGenericType)
             {
-                MetadataImport metadataScope = m_scope.MetadataImport;
-                Type attributeType = m_scope.ResolveType(metadataScope.GetParentToken(caCtorToken), genericTypeArguments, genericMethodArguments)!;
-                m_ctor = (RuntimeConstructorInfo)m_scope.ResolveMethod(caCtorToken, attributeType.GenericTypeArguments, null)!.MethodHandle.GetMethodInfo();
+                m_ctor = (RuntimeConstructorInfo)m_scope.ResolveMethod(caCtorToken, genericTypeArguments, genericMethodArguments)!.MethodHandle.GetMethodInfo();
             }
 
             ReadOnlySpan<ParameterInfo> parameters = m_ctor.GetParametersAsSpan();
