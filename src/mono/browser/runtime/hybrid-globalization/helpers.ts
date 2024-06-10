@@ -27,11 +27,11 @@ export function normalizeLocale (locale: string | null) {
 }
 
 export function normalizeSpaces (pattern: string) {
-    if (!pattern.includes("\u202F"))
+    if (!pattern.includes("\u202F") && !pattern.includes("\u00A0"))
         return pattern;
 
-    // if U+202F present, replace them with spaces
-    return pattern.replace("\u202F", "\u0020");
+    // Replace both \u202F and \u00A0 with a regular space \u0020
+    return pattern.replace(/[\u202F\u00A0]/g, "\u0020");
 }
 
 
