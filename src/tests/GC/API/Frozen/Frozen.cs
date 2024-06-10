@@ -180,7 +180,7 @@ namespace HelloFrozenSegment
             GC.Collect();
             Console.WriteLine(root.next.next != null);
             frozenSegment.Release();
-            return 100;
+            throw new Exception("Intentional failure");
         }
     }
 }
