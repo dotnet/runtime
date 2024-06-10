@@ -7,11 +7,14 @@ using System.Runtime.CompilerServices;
 using System.Tests;
 using System.Text;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Numerics.Tests
 {
     public class BFloat16Tests
     {
+        private static BFloat16 CrossPlatformMachineEpsilon => (BFloat16)3.90625e-03f;
+
         private static ushort BFloat16ToUInt16Bits(BFloat16 value) => Unsafe.BitCast<BFloat16, ushort>(value);
 
         private static BFloat16 UInt16BitsToBFloat16(ushort value) => Unsafe.BitCast<ushort, BFloat16>(value);
@@ -542,7 +545,7 @@ namespace System.Numerics.Tests
         public static void ExplicitConversion_FromSingle(float f, BFloat16 expected) // Check the underlying bits for verifying NaNs
         {
             BFloat16 b16 = (BFloat16)f;
-            AssertExtensions.Equal(BFloat16ToUInt16Bits(expected), BFloat16ToUInt16Bits(b16));
+            AssertEqual(expected, b16);
         }
 
         public static IEnumerable<object[]> ExplicitConversion_FromDouble_TestData()
@@ -626,7 +629,7 @@ namespace System.Numerics.Tests
         public static void ExplicitConversion_FromDouble(double d, BFloat16 expected) // Check the underlying bits for verifying NaNs
         {
             BFloat16 b16 = (BFloat16)d;
-            AssertExtensions.Equal(BFloat16ToUInt16Bits(expected), BFloat16ToUInt16Bits(b16));
+            AssertEqual(expected, b16);
         }
 
         public static IEnumerable<object[]> Parse_Valid_TestData()
@@ -1083,7 +1086,7 @@ namespace System.Numerics.Tests
         {
             float value = o_value is float floatValue ? floatValue : (float)(BFloat16)o_value;
             BFloat16 result = BFloat16.Parse(value.ToString());
-            AssertExtensions.Equal(BFloat16ToUInt16Bits((BFloat16)value), BFloat16ToUInt16Bits(result));
+            AssertEqual((BFloat16)value, result);
         }
 
         [Theory]
@@ -1092,7 +1095,7 @@ namespace System.Numerics.Tests
         {
             float value = o_value is float floatValue ? floatValue : (float)(BFloat16)o_value;
             BFloat16 result = BFloat16.Parse(value.ToString("R"));
-            AssertExtensions.Equal(BFloat16ToUInt16Bits((BFloat16)value), BFloat16ToUInt16Bits(result));
+            AssertEqual((BFloat16)value, result);
         }
 
         public static IEnumerable<object[]> RoundTripFloat_CornerCases()
@@ -1130,5 +1133,1253 @@ namespace System.Numerics.Tests
             Assert.False(BFloat16.NaN == BFloat16.NaN);
             Assert.Equal(BFloat16.NaN, BFloat16.NaN);
         }
+
+
+        public static IEnumerable<object[]> MaxMagnitudeNumber_TestData()
+        {
+            yield return new object[] { BFloat16.NegativeInfinity, BFloat16.PositiveInfinity, BFloat16.PositiveInfinity };
+            yield return new object[] { BFloat16.PositiveInfinity, BFloat16.NegativeInfinity, BFloat16.PositiveInfinity };
+            yield return new object[] { BFloat16.MinValue, BFloat16.MaxValue, BFloat16.MaxValue };
+            yield return new object[] { BFloat16.MaxValue, BFloat16.MinValue, BFloat16.MaxValue };
+            yield return new object[] { BFloat16.NaN, BFloat16.NaN, BFloat16.NaN };
+            yield return new object[] { BFloat16.NaN, (BFloat16)BFloat16.One, (BFloat16)BFloat16.One };
+            yield return new object[] { (BFloat16)BFloat16.One, BFloat16.NaN, (BFloat16)BFloat16.One };
+            yield return new object[] { BFloat16.PositiveInfinity, BFloat16.NaN, BFloat16.PositiveInfinity };
+            yield return new object[] { BFloat16.NegativeInfinity, BFloat16.NaN, BFloat16.NegativeInfinity };
+            yield return new object[] { BFloat16.NaN, BFloat16.PositiveInfinity, BFloat16.PositiveInfinity };
+            yield return new object[] { BFloat16.NaN, BFloat16.NegativeInfinity, BFloat16.NegativeInfinity };
+            yield return new object[] { (BFloat16)(-0.0f), (BFloat16)0.0f, (BFloat16)0.0f };
+            yield return new object[] { (BFloat16)0.0f, (BFloat16)(-0.0f), (BFloat16)0.0f };
+            yield return new object[] { (BFloat16)2.0f, (BFloat16)(-3.0f), (BFloat16)(-3.0f) };
+            yield return new object[] { (BFloat16)(-3.0f), (BFloat16)2.0f, (BFloat16)(-3.0f) };
+            yield return new object[] { (BFloat16)3.0f, (BFloat16)(-2.0f), (BFloat16)3.0f };
+            yield return new object[] { (BFloat16)(-2.0f), (BFloat16)3.0f, (BFloat16)3.0f };
+        }
+
+        [Theory]
+        [MemberData(nameof(MaxMagnitudeNumber_TestData))]
+        public static void MaxMagnitudeNumberTest(BFloat16 x, BFloat16 y, BFloat16 expectedResult)
+        {
+            AssertEqual(expectedResult, BFloat16.MaxMagnitudeNumber(x, y), (BFloat16)0.0f);
+        }
+
+        public static IEnumerable<object[]> MaxNumber_TestData()
+        {
+            yield return new object[] { BFloat16.NegativeInfinity, BFloat16.PositiveInfinity, BFloat16.PositiveInfinity };
+            yield return new object[] { BFloat16.PositiveInfinity, BFloat16.NegativeInfinity, BFloat16.PositiveInfinity };
+            yield return new object[] { BFloat16.MinValue, BFloat16.MaxValue, BFloat16.MaxValue };
+            yield return new object[] { BFloat16.MaxValue, BFloat16.MinValue, BFloat16.MaxValue };
+            yield return new object[] { BFloat16.NaN, BFloat16.NaN, BFloat16.NaN };
+            yield return new object[] { BFloat16.NaN, (BFloat16)BFloat16.One, (BFloat16)BFloat16.One };
+            yield return new object[] { (BFloat16)BFloat16.One, BFloat16.NaN, (BFloat16)BFloat16.One };
+            yield return new object[] { BFloat16.PositiveInfinity, BFloat16.NaN, BFloat16.PositiveInfinity };
+            yield return new object[] { BFloat16.NegativeInfinity, BFloat16.NaN, BFloat16.NegativeInfinity };
+            yield return new object[] { BFloat16.NaN, BFloat16.PositiveInfinity, BFloat16.PositiveInfinity };
+            yield return new object[] { BFloat16.NaN, BFloat16.NegativeInfinity, BFloat16.NegativeInfinity };
+            yield return new object[] { (BFloat16)(-0.0f), (BFloat16)0.0f, (BFloat16)0.0f };
+            yield return new object[] { (BFloat16)0.0f, (BFloat16)(-0.0f), (BFloat16)0.0f };
+            yield return new object[] { (BFloat16)2.0f, (BFloat16)(-3.0f), (BFloat16)2.0f };
+            yield return new object[] { (BFloat16)(-3.0f), (BFloat16)2.0f, (BFloat16)2.0f };
+            yield return new object[] { (BFloat16)3.0f, (BFloat16)(-2.0f), (BFloat16)3.0f };
+            yield return new object[] { (BFloat16)(-2.0f), (BFloat16)3.0f, (BFloat16)3.0f };
+        }
+
+        [Theory]
+        [MemberData(nameof(MaxNumber_TestData))]
+        public static void MaxNumberTest(BFloat16 x, BFloat16 y, BFloat16 expectedResult)
+        {
+            AssertEqual(expectedResult, BFloat16.MaxNumber(x, y), (BFloat16)0.0f);
+        }
+
+        public static IEnumerable<object[]> MinMagnitudeNumber_TestData()
+        {
+            yield return new object[] { BFloat16.NegativeInfinity, BFloat16.PositiveInfinity, BFloat16.NegativeInfinity };
+            yield return new object[] { BFloat16.PositiveInfinity, BFloat16.NegativeInfinity, BFloat16.NegativeInfinity };
+            yield return new object[] { BFloat16.MinValue, BFloat16.MaxValue, BFloat16.MinValue };
+            yield return new object[] { BFloat16.MaxValue, BFloat16.MinValue, BFloat16.MinValue };
+            yield return new object[] { BFloat16.NaN, BFloat16.NaN, BFloat16.NaN };
+            yield return new object[] { BFloat16.NaN, (BFloat16)BFloat16.One, (BFloat16)BFloat16.One };
+            yield return new object[] { (BFloat16)BFloat16.One, BFloat16.NaN, (BFloat16)BFloat16.One };
+            yield return new object[] { BFloat16.PositiveInfinity, BFloat16.NaN, BFloat16.PositiveInfinity };
+            yield return new object[] { BFloat16.NegativeInfinity, BFloat16.NaN, BFloat16.NegativeInfinity };
+            yield return new object[] { BFloat16.NaN, BFloat16.PositiveInfinity, BFloat16.PositiveInfinity };
+            yield return new object[] { BFloat16.NaN, BFloat16.NegativeInfinity, BFloat16.NegativeInfinity };
+            yield return new object[] { (BFloat16)(-0.0f), (BFloat16)0.0f, (BFloat16)(-0.0f) };
+            yield return new object[] { (BFloat16)0.0f, (BFloat16)(-0.0f), (BFloat16)(-0.0f) };
+            yield return new object[] { (BFloat16)2.0f, (BFloat16)(-3.0f), (BFloat16)2.0f };
+            yield return new object[] { (BFloat16)(-3.0f), (BFloat16)2.0f, (BFloat16)2.0f };
+            yield return new object[] { (BFloat16)3.0f, (BFloat16)(-2.0f), (BFloat16)(-2.0f) };
+            yield return new object[] { (BFloat16)(-2.0f), (BFloat16)3.0f, (BFloat16)(-2.0f) };
+        }
+
+        [Theory]
+        [MemberData(nameof(MinMagnitudeNumber_TestData))]
+        public static void MinMagnitudeNumberTest(BFloat16 x, BFloat16 y, BFloat16 expectedResult)
+        {
+            AssertEqual(expectedResult, BFloat16.MinMagnitudeNumber(x, y), (BFloat16)0.0f);
+        }
+
+        public static IEnumerable<object[]> MinNumber_TestData()
+        {
+            yield return new object[] { BFloat16.NegativeInfinity, BFloat16.PositiveInfinity, BFloat16.NegativeInfinity };
+            yield return new object[] { BFloat16.PositiveInfinity, BFloat16.NegativeInfinity, BFloat16.NegativeInfinity };
+            yield return new object[] { BFloat16.MinValue, BFloat16.MaxValue, BFloat16.MinValue };
+            yield return new object[] { BFloat16.MaxValue, BFloat16.MinValue, BFloat16.MinValue };
+            yield return new object[] { BFloat16.NaN, BFloat16.NaN, BFloat16.NaN };
+            yield return new object[] { BFloat16.NaN, (BFloat16)BFloat16.One, (BFloat16)BFloat16.One };
+            yield return new object[] { (BFloat16)BFloat16.One, BFloat16.NaN, (BFloat16)BFloat16.One };
+            yield return new object[] { BFloat16.PositiveInfinity, BFloat16.NaN, BFloat16.PositiveInfinity };
+            yield return new object[] { BFloat16.NegativeInfinity, BFloat16.NaN, BFloat16.NegativeInfinity };
+            yield return new object[] { BFloat16.NaN, BFloat16.PositiveInfinity, BFloat16.PositiveInfinity };
+            yield return new object[] { BFloat16.NaN, BFloat16.NegativeInfinity, BFloat16.NegativeInfinity };
+            yield return new object[] { (BFloat16)(-0.0f), (BFloat16)0.0f, (BFloat16)(-0.0f) };
+            yield return new object[] { (BFloat16)0.0f, (BFloat16)(-0.0f), (BFloat16)(-0.0f) };
+            yield return new object[] { (BFloat16)2.0f, (BFloat16)(-3.0f), (BFloat16)(-3.0f) };
+            yield return new object[] { (BFloat16)(-3.0f), (BFloat16)2.0f, (BFloat16)(-3.0f) };
+            yield return new object[] { (BFloat16)3.0f, (BFloat16)(-2.0f), (BFloat16)(-2.0f) };
+            yield return new object[] { (BFloat16)(-2.0f), (BFloat16)3.0f, (BFloat16)(-2.0f) };
+        }
+
+        [Theory]
+        [MemberData(nameof(MinNumber_TestData))]
+        public static void MinNumberTest(BFloat16 x, BFloat16 y, BFloat16 expectedResult)
+        {
+            AssertEqual(expectedResult, BFloat16.MinNumber(x, y), (BFloat16)0.0f);
+        }
+
+        public static IEnumerable<object[]> ExpM1_TestData()
+        {
+            yield return new object[] { BFloat16.NegativeInfinity, (BFloat16)(-BFloat16.One), CrossPlatformMachineEpsilon * (BFloat16)10 };
+            yield return new object[] { (BFloat16)(-3.14159265f), (BFloat16)(-0.956786082f), CrossPlatformMachineEpsilon };             // value: -(pi)
+            yield return new object[] { (BFloat16)(-2.71828183f), (BFloat16)(-0.934011964f), CrossPlatformMachineEpsilon };             // value: -(e)
+            yield return new object[] { (BFloat16)(-2.30258509f), (BFloat16)(-0.9f), CrossPlatformMachineEpsilon };             // value: -(ln(10))
+            yield return new object[] { (BFloat16)(-1.57079633f), (BFloat16)(-0.792120424f), CrossPlatformMachineEpsilon };             // value: -(pi / 2)
+            yield return new object[] { (BFloat16)(-1.44269504f), (BFloat16)(-0.763709912f), CrossPlatformMachineEpsilon };             // value: -(log2(e))
+            yield return new object[] { (BFloat16)(-1.41421356f), (BFloat16)(-0.756883266f), CrossPlatformMachineEpsilon };             // value: -(sqrt(2))
+            yield return new object[] { (BFloat16)(-1.12837917f), (BFloat16)(-0.676442736f), CrossPlatformMachineEpsilon };             // value: -(2 / sqrt(pi))
+            yield return new object[] { (BFloat16)(-BFloat16.One), (BFloat16)(-0.632120559f), CrossPlatformMachineEpsilon };
+            yield return new object[] { (BFloat16)(-0.785398163f), (BFloat16)(-0.544061872f), CrossPlatformMachineEpsilon };             // value: -(pi / 4)
+            yield return new object[] { (BFloat16)(-0.707106781f), (BFloat16)(-0.506931309f), CrossPlatformMachineEpsilon };             // value: -(1 / sqrt(2))
+            yield return new object[] { (BFloat16)(-0.693147181f), (BFloat16)(-0.5f), CrossPlatformMachineEpsilon };             // value: -(ln(2))
+            yield return new object[] { (BFloat16)(-0.636619772f), (BFloat16)(-0.470922192f), CrossPlatformMachineEpsilon };             // value: -(2 / pi)
+            yield return new object[] { (BFloat16)(-0.434294482f), (BFloat16)(-0.352278515f), CrossPlatformMachineEpsilon };             // value: -(log10(e))
+            yield return new object[] { (BFloat16)(-0.318309886f), (BFloat16)(-0.272622651f), CrossPlatformMachineEpsilon };             // value: -(1 / pi)
+            yield return new object[] { (BFloat16)(-0.0f), (BFloat16)(0.0f), (BFloat16)0.0f };
+            yield return new object[] { BFloat16.NaN, BFloat16.NaN, (BFloat16)0.0f };
+            yield return new object[] { (BFloat16)(0.0f), (BFloat16)(0.0f), (BFloat16)0.0f };
+            yield return new object[] { (BFloat16)(0.318309886f), (BFloat16)(0.374802227f), CrossPlatformMachineEpsilon };             // value:  (1 / pi)
+            yield return new object[] { (BFloat16)(0.434294482f), (BFloat16)(0.543873444f), CrossPlatformMachineEpsilon };             // value:  (log10(e))
+            yield return new object[] { (BFloat16)(0.636619772f), (BFloat16)(0.890081165f), CrossPlatformMachineEpsilon };             // value:  (2 / pi)
+            yield return new object[] { (BFloat16)(0.693147181f), (BFloat16)(BFloat16.One), CrossPlatformMachineEpsilon * (BFloat16)10 };  // value:  (ln(2))
+            yield return new object[] { (BFloat16)(0.707106781f), (BFloat16)(1.02811498f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // value:  (1 / sqrt(2))
+            yield return new object[] { (BFloat16)(0.785398163f), (BFloat16)(1.19328005f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // value:  (pi / 4)
+            yield return new object[] { (BFloat16)(BFloat16.One), (BFloat16)(1.71828183f), CrossPlatformMachineEpsilon * (BFloat16)10 };
+            yield return new object[] { (BFloat16)(1.12837917f), (BFloat16)(2.09064302f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // value:  (2 / sqrt(pi))
+            yield return new object[] { (BFloat16)(1.41421356f), (BFloat16)(3.11325038f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // value:  (sqrt(2))
+            yield return new object[] { (BFloat16)(1.44269504f), (BFloat16)(3.23208611f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // value:  (log2(e))
+            yield return new object[] { (BFloat16)(1.57079633f), (BFloat16)(3.81047738f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // value:  (pi / 2)
+            yield return new object[] { (BFloat16)(2.30258509f), (BFloat16)(9.0f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // value:  (ln(10))
+            yield return new object[] { (BFloat16)(2.71828183f), (BFloat16)(14.1542622f), CrossPlatformMachineEpsilon * (BFloat16)100 }; // value:  (e)
+            yield return new object[] { (BFloat16)(3.14159265f), (BFloat16)(22.1406926f), CrossPlatformMachineEpsilon * (BFloat16)100 }; // value:  (pi)
+            yield return new object[] { BFloat16.PositiveInfinity, BFloat16.PositiveInfinity, 0.0 };
+        }
+
+        [Theory]
+        [MemberData(nameof(ExpM1_TestData))]
+        public static void ExpM1Test(BFloat16 value, BFloat16 expectedResult, BFloat16 allowedVariance)
+        {
+            AssertEqual(expectedResult, BFloat16.ExpM1(value), allowedVariance);
+        }
+
+        public static IEnumerable<object[]> Exp2_TestData()
+        {
+            yield return new object[] { BFloat16.NegativeInfinity, (BFloat16)(0.0f), (BFloat16)0.0f };
+            yield return new object[] { (BFloat16)(-3.14159265f), (BFloat16)(0.113314732f), CrossPlatformMachineEpsilon };        // value: -(pi)
+            yield return new object[] { (BFloat16)(-2.71828183f), (BFloat16)(0.151955223f), CrossPlatformMachineEpsilon };        // value: -(e)
+            yield return new object[] { (BFloat16)(-2.30258509f), (BFloat16)(0.202699566f), CrossPlatformMachineEpsilon };        // value: -(ln(10))
+            yield return new object[] { (BFloat16)(-1.57079633f), (BFloat16)(0.336622537f), CrossPlatformMachineEpsilon };        // value: -(pi / 2)
+            yield return new object[] { (BFloat16)(-1.44269504f), (BFloat16)(0.367879441f), CrossPlatformMachineEpsilon };        // value: -(log2(e))
+            yield return new object[] { (BFloat16)(-1.41421356f), (BFloat16)(0.375214227f), CrossPlatformMachineEpsilon };        // value: -(sqrt(2))
+            yield return new object[] { (BFloat16)(-1.12837917f), (BFloat16)(0.457429347f), CrossPlatformMachineEpsilon };        // value: -(2 / sqrt(pi))
+            yield return new object[] { (BFloat16)(-BFloat16.One), (BFloat16)(0.5f), CrossPlatformMachineEpsilon };
+            yield return new object[] { (BFloat16)(-0.785398163f), (BFloat16)(0.580191810f), CrossPlatformMachineEpsilon };        // value: -(pi / 4)
+            yield return new object[] { (BFloat16)(-0.707106781f), (BFloat16)(0.612547327f), CrossPlatformMachineEpsilon };        // value: -(1 / sqrt(2))
+            yield return new object[] { (BFloat16)(-0.693147181f), (BFloat16)(0.618503138f), CrossPlatformMachineEpsilon };        // value: -(ln(2))
+            yield return new object[] { (BFloat16)(-0.636619772f), (BFloat16)(0.643218242f), CrossPlatformMachineEpsilon };        // value: -(2 / pi)
+            yield return new object[] { (BFloat16)(-0.434294482f), (BFloat16)(0.740055574f), CrossPlatformMachineEpsilon };        // value: -(log10(e))
+            yield return new object[] { (BFloat16)(-0.318309886f), (BFloat16)(0.802008879f), CrossPlatformMachineEpsilon };        // value: -(1 / pi)
+            yield return new object[] { (BFloat16)(-0.0f), (BFloat16)(BFloat16.One), (BFloat16)0.0f };
+            yield return new object[] { BFloat16.NaN, BFloat16.NaN, (BFloat16)0.0f };
+            yield return new object[] { (BFloat16)(0.0f), (BFloat16)(BFloat16.One), (BFloat16)0.0f };
+            yield return new object[] { (BFloat16)(0.318309886f), (BFloat16)(1.24686899f), CrossPlatformMachineEpsilon * (BFloat16)10 };   // value:  (1 / pi)
+            yield return new object[] { (BFloat16)(0.434294482f), (BFloat16)(1.35124987f), CrossPlatformMachineEpsilon * (BFloat16)10 };   // value:  (log10(e))
+            yield return new object[] { (BFloat16)(0.636619772f), (BFloat16)(1.55468228f), CrossPlatformMachineEpsilon * (BFloat16)10 };   // value:  (2 / pi)
+            yield return new object[] { (BFloat16)(0.693147181f), (BFloat16)(1.61680667f), CrossPlatformMachineEpsilon * (BFloat16)10 };   // value:  (ln(2))
+            yield return new object[] { (BFloat16)(0.707106781f), (BFloat16)(1.63252692f), CrossPlatformMachineEpsilon * (BFloat16)10 };   // value:  (1 / sqrt(2))
+            yield return new object[] { (BFloat16)(0.785398163f), (BFloat16)(1.72356793f), CrossPlatformMachineEpsilon * (BFloat16)10 };   // value:  (pi / 4)
+            yield return new object[] { (BFloat16)(BFloat16.One), (BFloat16)(2.0f), CrossPlatformMachineEpsilon * (BFloat16)10 };
+            yield return new object[] { (BFloat16)(1.12837917f), (BFloat16)(2.18612996f), CrossPlatformMachineEpsilon * (BFloat16)10 };   // value:  (2 / sqrt(pi))
+            yield return new object[] { (BFloat16)(1.41421356f), (BFloat16)(2.66514414f), CrossPlatformMachineEpsilon * (BFloat16)10 };   // value:  (sqrt(2))
+            yield return new object[] { (BFloat16)(1.44269504f), (BFloat16)(2.71828183f), CrossPlatformMachineEpsilon * (BFloat16)10 };   // value:  (log2(e))
+            yield return new object[] { (BFloat16)(1.57079633f), (BFloat16)(2.97068642f), CrossPlatformMachineEpsilon * (BFloat16)10 };   // value:  (pi / 2)
+            yield return new object[] { (BFloat16)(2.30258509f), (BFloat16)(4.93340967f), CrossPlatformMachineEpsilon * (BFloat16)10 };   // value:  (ln(10))
+            yield return new object[] { (BFloat16)(2.71828183f), (BFloat16)(6.58088599f), CrossPlatformMachineEpsilon * (BFloat16)10 };   // value:  (e)
+            yield return new object[] { (BFloat16)(3.14159265f), (BFloat16)(8.82497783f), CrossPlatformMachineEpsilon * (BFloat16)10 };   // value:  (pi)
+            yield return new object[] { BFloat16.PositiveInfinity, BFloat16.PositiveInfinity, 0.0f };
+        }
+
+        [Theory]
+        [MemberData(nameof(Exp2_TestData))]
+        public static void Exp2Test(BFloat16 value, BFloat16 expectedResult, BFloat16 allowedVariance)
+        {
+            AssertEqual(expectedResult, BFloat16.Exp2(value), allowedVariance);
+        }
+
+        public static IEnumerable<object[]> Exp2M1_TestData()
+        {
+            yield return new object[] { BFloat16.NegativeInfinity, (BFloat16)(-BFloat16.One), (BFloat16)0.0f };
+            yield return new object[] { (BFloat16)(-3.14159265f), (BFloat16)(-0.886685268f), CrossPlatformMachineEpsilon };            // value: -(pi)
+            yield return new object[] { (BFloat16)(-2.71828183f), (BFloat16)(-0.848044777f), CrossPlatformMachineEpsilon };            // value: -(e)
+            yield return new object[] { (BFloat16)(-2.30258509f), (BFloat16)(-0.797300434f), CrossPlatformMachineEpsilon };            // value: -(ln(10))
+            yield return new object[] { (BFloat16)(-1.57079633f), (BFloat16)(-0.663377463f), CrossPlatformMachineEpsilon };            // value: -(pi / 2)
+            yield return new object[] { (BFloat16)(-1.44269504f), (BFloat16)(-0.632120559f), CrossPlatformMachineEpsilon };            // value: -(log2(e))
+            yield return new object[] { (BFloat16)(-1.41421356f), (BFloat16)(-0.624785773f), CrossPlatformMachineEpsilon };            // value: -(sqrt(2))
+            yield return new object[] { (BFloat16)(-1.12837917f), (BFloat16)(-0.542570653f), CrossPlatformMachineEpsilon };            // value: -(2 / sqrt(pi))
+            yield return new object[] { (BFloat16)(-BFloat16.One), (BFloat16)(-0.5f), CrossPlatformMachineEpsilon };
+            yield return new object[] { (BFloat16)(-0.785398163f), (BFloat16)(-0.419808190f), CrossPlatformMachineEpsilon };            // value: -(pi / 4)
+            yield return new object[] { (BFloat16)(-0.707106781f), (BFloat16)(-0.387452673f), CrossPlatformMachineEpsilon };            // value: -(1 / sqrt(2))
+            yield return new object[] { (BFloat16)(-0.693147181f), (BFloat16)(-0.381496862f), CrossPlatformMachineEpsilon };            // value: -(ln(2))
+            yield return new object[] { (BFloat16)(-0.636619772f), (BFloat16)(-0.356781758f), CrossPlatformMachineEpsilon };            // value: -(2 / pi)
+            yield return new object[] { (BFloat16)(-0.434294482f), (BFloat16)(-0.259944426f), CrossPlatformMachineEpsilon };            // value: -(log10(e))
+            yield return new object[] { (BFloat16)(-0.318309886f), (BFloat16)(-0.197991121f), CrossPlatformMachineEpsilon };            // value: -(1 / pi)
+            yield return new object[] { (BFloat16)(-0.0f), (BFloat16)(0.0f), (BFloat16)0.0f };
+            yield return new object[] { BFloat16.NaN, BFloat16.NaN, (BFloat16)0.0f };
+            yield return new object[] { (BFloat16)(0.0f), (BFloat16)(0.0f), (BFloat16)0.0f };
+            yield return new object[] { (BFloat16)(0.318309886f), (BFloat16)(0.246868989f), CrossPlatformMachineEpsilon };            // value:  (1 / pi)
+            yield return new object[] { (BFloat16)(0.434294482f), (BFloat16)(0.351249873f), CrossPlatformMachineEpsilon };            // value:  (log10(e))
+            yield return new object[] { (BFloat16)(0.636619772f), (BFloat16)(0.554682275f), CrossPlatformMachineEpsilon };            // value:  (2 / pi)
+            yield return new object[] { (BFloat16)(0.693147181f), (BFloat16)(0.616806672f), CrossPlatformMachineEpsilon };            // value:  (ln(2))
+            yield return new object[] { (BFloat16)(0.707106781f), (BFloat16)(0.632526919f), CrossPlatformMachineEpsilon };            // value:  (1 / sqrt(2))
+            yield return new object[] { (BFloat16)(0.785398163f), (BFloat16)(0.723567934f), CrossPlatformMachineEpsilon };            // value:  (pi / 4)
+            yield return new object[] { (BFloat16)(BFloat16.One), (BFloat16)(BFloat16.One), CrossPlatformMachineEpsilon * (BFloat16)10 };
+            yield return new object[] { (BFloat16)(1.12837917f), (BFloat16)(1.18612996f), CrossPlatformMachineEpsilon * (BFloat16)10 }; // value:  (2 / sqrt(pi))
+            yield return new object[] { (BFloat16)(1.41421356f), (BFloat16)(1.66514414f), CrossPlatformMachineEpsilon * (BFloat16)10 }; // value:  (sqrt(2))
+            yield return new object[] { (BFloat16)(1.44269504f), (BFloat16)(1.71828183f), CrossPlatformMachineEpsilon * (BFloat16)10 }; // value:  (log2(e))
+            yield return new object[] { (BFloat16)(1.57079633f), (BFloat16)(1.97068642f), CrossPlatformMachineEpsilon * (BFloat16)10 }; // value:  (pi / 2)
+            yield return new object[] { (BFloat16)(2.30258509f), (BFloat16)(3.93340967f), CrossPlatformMachineEpsilon * (BFloat16)10 }; // value:  (ln(10))
+            yield return new object[] { (BFloat16)(2.71828183f), (BFloat16)(5.58088599f), CrossPlatformMachineEpsilon * (BFloat16)10 }; // value:  (e)
+            yield return new object[] { (BFloat16)(3.14159265f), (BFloat16)(7.82497783f), CrossPlatformMachineEpsilon * (BFloat16)10 }; // value:  (pi)
+            yield return new object[] { BFloat16.PositiveInfinity, BFloat16.PositiveInfinity, (BFloat16)0.0f };
+        }
+
+        [Theory]
+        [MemberData(nameof(Exp2M1_TestData))]
+        public static void Exp2M1Test(BFloat16 value, BFloat16 expectedResult, BFloat16 allowedVariance)
+        {
+            AssertEqual(expectedResult, BFloat16.Exp2M1(value), allowedVariance);
+        }
+
+        public static IEnumerable<object[]> Exp10_TestData()
+        {
+            yield return new object[] { BFloat16.NegativeInfinity, (BFloat16)0.0f, (BFloat16)0.0f };
+            yield return new object[] { (BFloat16)(-3.14159265f), (BFloat16)0.000721784159f, CrossPlatformMachineEpsilon / (BFloat16)1000 };  // value: -(pi)
+            yield return new object[] { (BFloat16)(-2.71828183f), (BFloat16)0.00191301410f, CrossPlatformMachineEpsilon / (BFloat16)100 };   // value: -(e)
+            yield return new object[] { (BFloat16)(-2.30258509f), (BFloat16)0.00498212830f, CrossPlatformMachineEpsilon / (BFloat16)100 };   // value: -(ln(10))
+            yield return new object[] { (BFloat16)(-1.57079633f), (BFloat16)0.0268660410f, CrossPlatformMachineEpsilon / (BFloat16)10 };    // value: -(pi / 2)
+            yield return new object[] { (BFloat16)(-1.44269504f), (BFloat16)0.0360831928f, CrossPlatformMachineEpsilon / (BFloat16)10 };    // value: -(log2(e))
+            yield return new object[] { (BFloat16)(-1.41421356f), (BFloat16)0.0385288847f, CrossPlatformMachineEpsilon / (BFloat16)10 };    // value: -(sqrt(2))
+            yield return new object[] { (BFloat16)(-1.12837917f), (BFloat16)0.0744082059f, CrossPlatformMachineEpsilon / (BFloat16)10 };    // value: -(2 / sqrt(pi))
+            yield return new object[] { (BFloat16)(-BFloat16.One), (BFloat16)0.1f, CrossPlatformMachineEpsilon };
+            yield return new object[] { (BFloat16)(-0.785398163f), (BFloat16)0.163908636f, CrossPlatformMachineEpsilon };         // value: -(pi / 4)
+            yield return new object[] { (BFloat16)(-0.707106781f), (BFloat16)0.196287760f, CrossPlatformMachineEpsilon };         // value: -(1 / sqrt(2))
+            yield return new object[] { (BFloat16)(-0.693147181f), (BFloat16)0.202699566f, CrossPlatformMachineEpsilon };         // value: -(ln(2))
+            yield return new object[] { (BFloat16)(-0.636619772f), (BFloat16)0.230876765f, CrossPlatformMachineEpsilon };         // value: -(2 / pi)
+            yield return new object[] { (BFloat16)(-0.434294482f), (BFloat16)0.367879441f, CrossPlatformMachineEpsilon };         // value: -(log10(e))
+            yield return new object[] { (BFloat16)(-0.318309886f), (BFloat16)0.480496373f, CrossPlatformMachineEpsilon };         // value: -(1 / pi)
+            yield return new object[] { (BFloat16)(-0.0f), (BFloat16)BFloat16.One, (BFloat16)0.0f };
+            yield return new object[] { BFloat16.NaN, BFloat16.NaN, (BFloat16)0.0f };
+            yield return new object[] { (BFloat16)(0.0f), (BFloat16)BFloat16.One, (BFloat16)0.0f };
+            yield return new object[] { (BFloat16)(0.318309886f), (BFloat16)2.08118116f, CrossPlatformMachineEpsilon * (BFloat16)10 };    // value:  (1 / pi)
+            yield return new object[] { (BFloat16)(0.434294482f), (BFloat16)2.71828183f, CrossPlatformMachineEpsilon * (BFloat16)10 };    // value:  (log10(e))
+            yield return new object[] { (BFloat16)(0.636619772f), (BFloat16)4.33131503f, CrossPlatformMachineEpsilon * (BFloat16)10 };    // value:  (2 / pi)
+            yield return new object[] { (BFloat16)(0.693147181f), (BFloat16)4.93340967f, CrossPlatformMachineEpsilon * (BFloat16)10 };    // value:  (ln(2))
+            yield return new object[] { (BFloat16)(0.707106781f), (BFloat16)5.09456117f, CrossPlatformMachineEpsilon * (BFloat16)10 };    // value:  (1 / sqrt(2))
+            yield return new object[] { (BFloat16)(0.785398163f), (BFloat16)6.10095980f, CrossPlatformMachineEpsilon * (BFloat16)10 };    // value:  (pi / 4)
+            yield return new object[] { (BFloat16)(BFloat16.One), (BFloat16)10.0f, CrossPlatformMachineEpsilon * (BFloat16)100 };
+            yield return new object[] { (BFloat16)(1.12837917f), (BFloat16)13.4393779f, CrossPlatformMachineEpsilon * (BFloat16)100 };   // value:  (2 / sqrt(pi))
+            yield return new object[] { (BFloat16)(1.41421356f), (BFloat16)25.9545535f, CrossPlatformMachineEpsilon * (BFloat16)100 };   // value:  (sqrt(2))
+            yield return new object[] { (BFloat16)(1.44269504f), (BFloat16)27.7137338f, CrossPlatformMachineEpsilon * (BFloat16)100 };   // value:  (log2(e))
+            yield return new object[] { (BFloat16)(1.57079633f), (BFloat16)37.2217105f, CrossPlatformMachineEpsilon * (BFloat16)100 };   // value:  (pi / 2)
+            yield return new object[] { (BFloat16)(2.30258509f), (BFloat16)200.717432f, CrossPlatformMachineEpsilon * (BFloat16)1000 };  // value:  (ln(10))
+            yield return new object[] { (BFloat16)(2.71828183f), (BFloat16)522.735300f, CrossPlatformMachineEpsilon * (BFloat16)1000 };  // value:  (e)
+            yield return new object[] { (BFloat16)(3.14159265f), (BFloat16)1385.45573f, CrossPlatformMachineEpsilon * (BFloat16)10000 }; // value:  (pi)
+            yield return new object[] { BFloat16.PositiveInfinity, BFloat16.PositiveInfinity, (BFloat16)0.0f };
+        }
+
+        [Theory]
+        [MemberData(nameof(Exp10_TestData))]
+        public static void Exp10Test(BFloat16 value, BFloat16 expectedResult, BFloat16 allowedVariance)
+        {
+            AssertEqual(expectedResult, BFloat16.Exp10(value), allowedVariance);
+        }
+
+        public static IEnumerable<object[]> Exp10M1_TestData()
+        {
+            yield return new object[] { BFloat16.NegativeInfinity, (BFloat16)(-BFloat16.One), (BFloat16)0.0f };
+            yield return new object[] { (BFloat16)(-3.14159265f), (BFloat16)(-0.999278216f), CrossPlatformMachineEpsilon };               // value: -(pi)
+            yield return new object[] { (BFloat16)(-2.71828183f), (BFloat16)(-0.998086986f), CrossPlatformMachineEpsilon };               // value: -(e)
+            yield return new object[] { (BFloat16)(-2.30258509f), (BFloat16)(-0.995017872f), CrossPlatformMachineEpsilon };               // value: -(ln(10))
+            yield return new object[] { (BFloat16)(-1.57079633f), (BFloat16)(-0.973133959f), CrossPlatformMachineEpsilon };               // value: -(pi / 2)
+            yield return new object[] { (BFloat16)(-1.44269504f), (BFloat16)(-0.963916807f), CrossPlatformMachineEpsilon };               // value: -(log2(e))
+            yield return new object[] { (BFloat16)(-1.41421356f), (BFloat16)(-0.961471115f), CrossPlatformMachineEpsilon };               // value: -(sqrt(2))
+            yield return new object[] { (BFloat16)(-1.12837917f), (BFloat16)(-0.925591794f), CrossPlatformMachineEpsilon };               // value: -(2 / sqrt(pi))
+            yield return new object[] { (BFloat16)(-BFloat16.One), (BFloat16)(-0.9f), CrossPlatformMachineEpsilon };
+            yield return new object[] { (BFloat16)(-0.785398163f), (BFloat16)(-0.836091364f), CrossPlatformMachineEpsilon };               // value: -(pi / 4)
+            yield return new object[] { (BFloat16)(-0.707106781f), (BFloat16)(-0.803712240f), CrossPlatformMachineEpsilon };               // value: -(1 / sqrt(2))
+            yield return new object[] { (BFloat16)(-0.693147181f), (BFloat16)(-0.797300434f), CrossPlatformMachineEpsilon };               // value: -(ln(2))
+            yield return new object[] { (BFloat16)(-0.636619772f), (BFloat16)(-0.769123235f), CrossPlatformMachineEpsilon };               // value: -(2 / pi)
+            yield return new object[] { (BFloat16)(-0.434294482f), (BFloat16)(-0.632120559f), CrossPlatformMachineEpsilon };               // value: -(log10(e))
+            yield return new object[] { (BFloat16)(-0.318309886f), (BFloat16)(-0.519503627f), CrossPlatformMachineEpsilon };               // value: -(1 / pi)
+            yield return new object[] { (BFloat16)(-0.0f), (BFloat16)(0.0f), (BFloat16)0.0f };
+            yield return new object[] { BFloat16.NaN, BFloat16.NaN, (BFloat16)0.0f };
+            yield return new object[] { (BFloat16)(0.0f), (BFloat16)(0.0f), (BFloat16)0.0f };
+            yield return new object[] { (BFloat16)(0.318309886f), (BFloat16)(1.08118116f), CrossPlatformMachineEpsilon * (BFloat16)10 };    // value:  (1 / pi)
+            yield return new object[] { (BFloat16)(0.434294482f), (BFloat16)(1.71828183f), CrossPlatformMachineEpsilon * (BFloat16)10 };    // value:  (log10(e))
+            yield return new object[] { (BFloat16)(0.636619772f), (BFloat16)(3.33131503f), CrossPlatformMachineEpsilon * (BFloat16)10 };    // value:  (2 / pi)
+            yield return new object[] { (BFloat16)(0.693147181f), (BFloat16)(3.93340967f), CrossPlatformMachineEpsilon * (BFloat16)10 };    // value:  (ln(2))
+            yield return new object[] { (BFloat16)(0.707106781f), (BFloat16)(4.09456117f), CrossPlatformMachineEpsilon * (BFloat16)10 };    // value:  (1 / sqrt(2))
+            yield return new object[] { (BFloat16)(0.785398163f), (BFloat16)(5.10095980f), CrossPlatformMachineEpsilon * (BFloat16)10 };    // value:  (pi / 4)
+            yield return new object[] { (BFloat16)(BFloat16.One), (BFloat16)(9.0f), CrossPlatformMachineEpsilon * (BFloat16)10 };
+            yield return new object[] { (BFloat16)(1.12837917f), (BFloat16)(12.4393779f), CrossPlatformMachineEpsilon * (BFloat16)100 };   // value:  (2 / sqrt(pi))
+            yield return new object[] { (BFloat16)(1.41421356f), (BFloat16)(24.9545535f), CrossPlatformMachineEpsilon * (BFloat16)100 };   // value:  (sqrt(2))
+            yield return new object[] { (BFloat16)(1.44269504f), (BFloat16)(26.7137338f), CrossPlatformMachineEpsilon * (BFloat16)100 };   // value:  (log2(e))
+            yield return new object[] { (BFloat16)(1.57079633f), (BFloat16)(36.2217105f), CrossPlatformMachineEpsilon * (BFloat16)100 };   // value:  (pi / 2)
+            yield return new object[] { (BFloat16)(2.30258509f), (BFloat16)(199.717432f), CrossPlatformMachineEpsilon * (BFloat16)1000 };  // value:  (ln(10))
+            yield return new object[] { (BFloat16)(2.71828183f), (BFloat16)(521.735300f), CrossPlatformMachineEpsilon * (BFloat16)1000 };  // value:  (e)
+            yield return new object[] { (BFloat16)(3.14159265f), (BFloat16)(1384.45573f), CrossPlatformMachineEpsilon * (BFloat16)10000 }; // value:  (pi)
+            yield return new object[] { BFloat16.PositiveInfinity, BFloat16.PositiveInfinity, (BFloat16)0.0f };
+        }
+
+        [Theory]
+        [MemberData(nameof(Exp10M1_TestData))]
+        public static void Exp10M1Test(BFloat16 value, BFloat16 expectedResult, BFloat16 allowedVariance)
+        {
+            AssertEqual(expectedResult, BFloat16.Exp10M1(value), allowedVariance);
+        }
+
+        public static IEnumerable<object[]> LogP1_TestData()
+        {
+            yield return new object[] { BFloat16.NegativeInfinity, BFloat16.NaN, (BFloat16)0.0f };
+            yield return new object[] { (BFloat16)(-3.14159265f), BFloat16.NaN, (BFloat16)0.0f };                              //                              value: -(pi)
+            yield return new object[] { (BFloat16)(-2.71828183f), BFloat16.NaN, (BFloat16)0.0f };                              //                              value: -(e)
+            yield return new object[] { (BFloat16)(-1.41421356f), BFloat16.NaN, (BFloat16)0.0f };                              //                              value: -(sqrt(2))
+            yield return new object[] { BFloat16.NaN, BFloat16.NaN, (BFloat16)0.0f };
+            yield return new object[] { (BFloat16)(-BFloat16.One), BFloat16.NegativeInfinity, (BFloat16)0.0f };
+            yield return new object[] { (BFloat16)(-0.956786082f), (BFloat16)(-3.14159265f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected: -(pi)
+            yield return new object[] { (BFloat16)(-0.934011964f), (BFloat16)(-2.71828183f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected: -(e)
+            yield return new object[] { (BFloat16)(-0.9f), (BFloat16)(-2.30258509f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected: -(ln(10))
+            yield return new object[] { (BFloat16)(-0.792120424f), (BFloat16)(-1.57079633f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected: -(pi / 2)
+            yield return new object[] { (BFloat16)(-0.763709912f), (BFloat16)(-1.44269504f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected: -(log2(e))
+            yield return new object[] { (BFloat16)(-0.756883266f), (BFloat16)(-1.41421356f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected: -(sqrt(2))
+            yield return new object[] { (BFloat16)(-0.676442736f), (BFloat16)(-1.12837917f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected: -(2 / sqrt(pi))
+            yield return new object[] { (BFloat16)(-0.632120559f), (BFloat16)(-BFloat16.One), CrossPlatformMachineEpsilon * (BFloat16)10 };
+            yield return new object[] { (BFloat16)(-0.544061872f), (BFloat16)(-0.785398163f), CrossPlatformMachineEpsilon };             // expected: -(pi / 4)
+            yield return new object[] { (BFloat16)(-0.506931309f), (BFloat16)(-0.707106781f), CrossPlatformMachineEpsilon };             // expected: -(1 / sqrt(2))
+            yield return new object[] { (BFloat16)(-0.5f), (BFloat16)(-0.693147181f), CrossPlatformMachineEpsilon };             // expected: -(ln(2))
+            yield return new object[] { (BFloat16)(-0.470922192f), (BFloat16)(-0.636619772f), CrossPlatformMachineEpsilon };             // expected: -(2 / pi)
+            yield return new object[] { (BFloat16)(-0.0f), (BFloat16)(0.0f), 0.0f };
+            yield return new object[] { (BFloat16)(0.0f), (BFloat16)(0.0f), 0.0f };
+            yield return new object[] { (BFloat16)(0.374802227f), (BFloat16)(0.318309886f), CrossPlatformMachineEpsilon };             // expected:  (1 / pi)
+            yield return new object[] { (BFloat16)(0.543873444f), (BFloat16)(0.434294482f), CrossPlatformMachineEpsilon };             // expected:  (log10(e))
+            yield return new object[] { (BFloat16)(0.890081165f), (BFloat16)(0.636619772f), CrossPlatformMachineEpsilon };             // expected:  (2 / pi)
+            yield return new object[] { (BFloat16)(BFloat16.One), (BFloat16)(0.693147181f), CrossPlatformMachineEpsilon };             // expected:  (ln(2))
+            yield return new object[] { (BFloat16)(1.02811498f), (BFloat16)(0.707106781f), CrossPlatformMachineEpsilon };             // expected:  (1 / sqrt(2))
+            yield return new object[] { (BFloat16)(1.19328005f), (BFloat16)(0.785398163f), CrossPlatformMachineEpsilon };             // expected:  (pi / 4)
+            yield return new object[] { (BFloat16)(1.71828183f), (BFloat16)(BFloat16.One), CrossPlatformMachineEpsilon * (BFloat16)10 };
+            yield return new object[] { (BFloat16)(2.09064302f), (BFloat16)(1.12837917f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected:  (2 / sqrt(pi))
+            yield return new object[] { (BFloat16)(3.11325038f), (BFloat16)(1.41421356f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected:  (sqrt(2))
+            yield return new object[] { (BFloat16)(3.23208611f), (BFloat16)(1.44269504f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected:  (log2(e))
+            yield return new object[] { (BFloat16)(3.81047738f), (BFloat16)(1.57079633f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected:  (pi / 2)
+            yield return new object[] { (BFloat16)(9.0f), (BFloat16)(2.30258509f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected:  (ln(10))
+            yield return new object[] { (BFloat16)(14.1542622f), (BFloat16)(2.71828183f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected:  (e)
+            yield return new object[] { (BFloat16)(22.1406926f), (BFloat16)(3.14159265f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected:  (pi)
+            yield return new object[] { BFloat16.PositiveInfinity, BFloat16.PositiveInfinity, (BFloat16)0.0f };
+        }
+
+        [Theory]
+        [MemberData(nameof(LogP1_TestData))]
+        public static void LogP1Test(BFloat16 value, BFloat16 expectedResult, BFloat16 allowedVariance)
+        {
+            AssertEqual(expectedResult, BFloat16.LogP1(value), allowedVariance);
+        }
+
+        public static IEnumerable<object[]> Log2P1_TestData()
+        {
+            yield return new object[] { BFloat16.NegativeInfinity, BFloat16.NaN, (BFloat16)0.0f };
+            yield return new object[] { BFloat16.NaN, BFloat16.NaN, (BFloat16)0.0f };
+            yield return new object[] { (BFloat16)(-BFloat16.One), BFloat16.NegativeInfinity, (BFloat16)0.0f };
+            yield return new object[] { (BFloat16)(-0.886685268f), (BFloat16)(-3.14159265f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected: -(pi)
+            yield return new object[] { (BFloat16)(-0.848044777f), (BFloat16)(-2.71828183f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected: -(e)
+            yield return new object[] { (BFloat16)(-0.797300434f), (BFloat16)(-2.30258509f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected: -(ln(10))
+            yield return new object[] { (BFloat16)(-0.663377463f), (BFloat16)(-1.57079633f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected: -(pi / 2)
+            yield return new object[] { (BFloat16)(-0.632120559f), (BFloat16)(-1.44269504f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected: -(log2(e))
+            yield return new object[] { (BFloat16)(-0.624785773f), (BFloat16)(-1.41421356f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected: -(sqrt(2))
+            yield return new object[] { (BFloat16)(-0.542570653f), (BFloat16)(-1.12837917f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected: -(2 / sqrt(pi))
+            yield return new object[] { (BFloat16)(-0.5f), (BFloat16)(-BFloat16.One), CrossPlatformMachineEpsilon * (BFloat16)10 };
+            yield return new object[] { (BFloat16)(-0.419808190f), (BFloat16)(-0.785398163f), CrossPlatformMachineEpsilon };             // expected: -(pi / 4)
+            yield return new object[] { (BFloat16)(-0.387452673f), (BFloat16)(-0.707106781f), CrossPlatformMachineEpsilon };             // expected: -(1 / sqrt(2))
+            yield return new object[] { (BFloat16)(-0.381496862f), (BFloat16)(-0.693147181f), CrossPlatformMachineEpsilon };             // expected: -(ln(2))
+            yield return new object[] { (BFloat16)(-0.356781758f), (BFloat16)(-0.636619772f), CrossPlatformMachineEpsilon };             // expected: -(2 / pi)
+            yield return new object[] { (BFloat16)(-0.259944426f), (BFloat16)(-0.434294482f), CrossPlatformMachineEpsilon };             // expected: -(log10(e))
+            yield return new object[] { (BFloat16)(-0.197991121f), (BFloat16)(-0.318309886f), CrossPlatformMachineEpsilon };             // expected: -(1 / pi)
+            yield return new object[] { (BFloat16)(-0.0f), (BFloat16)(0.0f), (BFloat16)0.0f };
+            yield return new object[] { (BFloat16)(0.0f), (BFloat16)(0.0f), (BFloat16)0.0f };
+            yield return new object[] { (BFloat16)(0.246868989f), (BFloat16)(0.318309886f), CrossPlatformMachineEpsilon };             // expected:  (1 / pi)
+            yield return new object[] { (BFloat16)(0.351249873f), (BFloat16)(0.434294482f), CrossPlatformMachineEpsilon };             // expected:  (log10(e))
+            yield return new object[] { (BFloat16)(0.554682275f), (BFloat16)(0.636619772f), CrossPlatformMachineEpsilon };             // expected:  (2 / pi)
+            yield return new object[] { (BFloat16)(0.616806672f), (BFloat16)(0.693147181f), CrossPlatformMachineEpsilon };             // expected:  (ln(2))
+            yield return new object[] { (BFloat16)(0.632526919f), (BFloat16)(0.707106781f), CrossPlatformMachineEpsilon };             // expected:  (1 / sqrt(2))
+            yield return new object[] { (BFloat16)(0.723567934f), (BFloat16)(0.785398163f), CrossPlatformMachineEpsilon };             // expected:  (pi / 4)
+            yield return new object[] { (BFloat16)(BFloat16.One), (BFloat16)(BFloat16.One), CrossPlatformMachineEpsilon * (BFloat16)10 };
+            yield return new object[] { (BFloat16)(1.18612996f), (BFloat16)(1.12837917f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected:  (2 / sqrt(pi))
+            yield return new object[] { (BFloat16)(1.66514414f), (BFloat16)(1.41421356f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected:  (sqrt(2))
+            yield return new object[] { (BFloat16)(1.71828183f), (BFloat16)(1.44269504f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected:  (log2(e))
+            yield return new object[] { (BFloat16)(1.97068642f), (BFloat16)(1.57079633f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected:  (pi / 2)
+            yield return new object[] { (BFloat16)(3.93340967f), (BFloat16)(2.30258509f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected:  (ln(10))
+            yield return new object[] { (BFloat16)(5.58088599f), (BFloat16)(2.71828183f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected:  (e)
+            yield return new object[] { (BFloat16)(7.82497783f), (BFloat16)(3.14159265f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected:  (pi)
+            yield return new object[] { BFloat16.PositiveInfinity, BFloat16.PositiveInfinity, (BFloat16)0.0f };
+        }
+
+        [Theory]
+        [MemberData(nameof(Log2P1_TestData))]
+        public static void Log2P1Test(BFloat16 value, BFloat16 expectedResult, BFloat16 allowedVariance)
+        {
+            AssertEqual(expectedResult, BFloat16.Log2P1(value), allowedVariance);
+        }
+
+        public static IEnumerable<object[]> Log10P1_TestData()
+        {
+            yield return new object[] { BFloat16.NegativeInfinity, BFloat16.NaN, (BFloat16)0.0f };
+            yield return new object[] { (BFloat16)(-3.14159265f), BFloat16.NaN, (BFloat16)0.0f };                              //                              value: -(pi)
+            yield return new object[] { (BFloat16)(-2.71828183f), BFloat16.NaN, (BFloat16)0.0f };                              //                              value: -(e)
+            yield return new object[] { (BFloat16)(-1.41421356f), BFloat16.NaN, (BFloat16)0.0f };                              //                              value: -(sqrt(2))
+            yield return new object[] { BFloat16.NaN, BFloat16.NaN, (BFloat16)0.0f };
+            yield return new object[] { (BFloat16)(-BFloat16.One), BFloat16.NegativeInfinity, (BFloat16)0.0f };
+            yield return new object[] { (BFloat16)(-0.998086986f), (BFloat16)(-2.71828183f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected: -(e)
+            yield return new object[] { (BFloat16)(-0.995017872f), (BFloat16)(-2.30258509f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected: -(ln(10))
+            yield return new object[] { (BFloat16)(-0.973133959f), (BFloat16)(-1.57079633f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected: -(pi / 2)
+            yield return new object[] { (BFloat16)(-0.963916807f), (BFloat16)(-1.44269504f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected: -(log2(e))
+            yield return new object[] { (BFloat16)(-0.961471115f), (BFloat16)(-1.41421356f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected: -(sqrt(2))
+            yield return new object[] { (BFloat16)(-0.925591794f), (BFloat16)(-1.12837917f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected: -(2 / sqrt(pi))
+            yield return new object[] { (BFloat16)(-0.9f), (BFloat16)(-1.0f), CrossPlatformMachineEpsilon * (BFloat16)10 };
+            yield return new object[] { (BFloat16)(-0.836091364f), (BFloat16)(-0.785398163f), CrossPlatformMachineEpsilon };             // expected: -(pi / 4)
+            yield return new object[] { (BFloat16)(-0.803712240f), (BFloat16)(-0.707106781f), CrossPlatformMachineEpsilon };             // expected: -(1 / sqrt(2))
+            yield return new object[] { (BFloat16)(-0.797300434f), (BFloat16)(-0.693147181f), CrossPlatformMachineEpsilon };             // expected: -(ln(2))
+            yield return new object[] { (BFloat16)(-0.769123235f), (BFloat16)(-0.636619772f), CrossPlatformMachineEpsilon };             // expected: -(2 / pi)
+            yield return new object[] { (BFloat16)(-0.632120559f), (BFloat16)(-0.434294482f), CrossPlatformMachineEpsilon };             // expected: -(log10(e))
+            yield return new object[] { (BFloat16)(-0.519503627f), (BFloat16)(-0.318309886f), CrossPlatformMachineEpsilon };             // expected: -(1 / pi)
+            yield return new object[] { (BFloat16)(-0.0f), (BFloat16)(0.0f), (BFloat16)0.0f };
+            yield return new object[] { (BFloat16)(0.0f), (BFloat16)(0.0f), (BFloat16)0.0f };
+            yield return new object[] { (BFloat16)(1.08118116f), (BFloat16)(0.318309886f), CrossPlatformMachineEpsilon };             // expected:  (1 / pi)
+            yield return new object[] { (BFloat16)(1.71828183f), (BFloat16)(0.434294482f), CrossPlatformMachineEpsilon };             // expected:  (log10(e))        value: (e)
+            yield return new object[] { (BFloat16)(3.33131503f), (BFloat16)(0.636619772f), CrossPlatformMachineEpsilon };             // expected:  (2 / pi)
+            yield return new object[] { (BFloat16)(3.93340967f), (BFloat16)(0.693147181f), CrossPlatformMachineEpsilon };             // expected:  (ln(2))
+            yield return new object[] { (BFloat16)(4.09456117f), (BFloat16)(0.707106781f), CrossPlatformMachineEpsilon };             // expected:  (1 / sqrt(2))
+            yield return new object[] { (BFloat16)(5.10095980f), (BFloat16)(0.785398163f), CrossPlatformMachineEpsilon };             // expected:  (pi / 4)
+            yield return new object[] { (BFloat16)(9.0f), (BFloat16)(BFloat16.One), CrossPlatformMachineEpsilon * (BFloat16)10 };
+            yield return new object[] { (BFloat16)(12.4393779f), (BFloat16)(1.12837917f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected:  (2 / sqrt(pi))
+            yield return new object[] { (BFloat16)(24.9545535f), (BFloat16)(1.41421356f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected:  (sqrt(2))
+            yield return new object[] { (BFloat16)(26.7137338f), (BFloat16)(1.44269504f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected:  (log2(e))
+            yield return new object[] { (BFloat16)(36.2217105f), (BFloat16)(1.57079633f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected:  (pi / 2)
+            yield return new object[] { (BFloat16)(199.717432f), (BFloat16)(2.30258509f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected:  (ln(10))
+            yield return new object[] { (BFloat16)(521.735300f), (BFloat16)(2.71828183f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected:  (e)
+            yield return new object[] { (BFloat16)(1384.45573f), (BFloat16)(3.14159265f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected:  (pi)
+            yield return new object[] { BFloat16.PositiveInfinity, BFloat16.PositiveInfinity, (BFloat16)0.0f };
+        }
+
+        [Theory]
+        [MemberData(nameof(Log10P1_TestData))]
+        public static void Log10P1Test(BFloat16 value, BFloat16 expectedResult, BFloat16 allowedVariance)
+        {
+            AssertEqual(expectedResult, BFloat16.Log10P1(value), allowedVariance);
+        }
+
+        public static IEnumerable<object[]> Hypot_TestData()
+        {
+            yield return new object[] { BFloat16.NaN, BFloat16.NaN, BFloat16.NaN, BFloat16.Zero };
+            yield return new object[] { BFloat16.NaN, BFloat16.Zero, BFloat16.NaN, BFloat16.Zero };
+            yield return new object[] { BFloat16.NaN, BFloat16.One, BFloat16.NaN, BFloat16.Zero };
+            yield return new object[] { BFloat16.NaN, BFloat16.E, BFloat16.NaN, BFloat16.Zero };
+            yield return new object[] { BFloat16.NaN, (BFloat16)10.0f, BFloat16.NaN, BFloat16.Zero };
+            yield return new object[] { BFloat16.Zero, BFloat16.Zero, BFloat16.Zero, BFloat16.Zero };
+            yield return new object[] { BFloat16.Zero, BFloat16.One, BFloat16.One, BFloat16.Zero };
+            yield return new object[] { BFloat16.Zero, (BFloat16)1.57079633f, (BFloat16)1.57079633f, BFloat16.Zero };
+            yield return new object[] { BFloat16.Zero, (BFloat16)2.0f, (BFloat16)2.0f, BFloat16.Zero };
+            yield return new object[] { BFloat16.Zero, BFloat16.E, BFloat16.E, BFloat16.Zero };
+            yield return new object[] { BFloat16.Zero, (BFloat16)3.0f, (BFloat16)3.0f, BFloat16.Zero };
+            yield return new object[] { BFloat16.Zero, (BFloat16)10.0f, (BFloat16)10.0f, BFloat16.Zero };
+            yield return new object[] { BFloat16.One, BFloat16.One, (BFloat16)1.41421356f, CrossPlatformMachineEpsilon * (BFloat16)10 };
+            yield return new object[] { BFloat16.E, (BFloat16)0.318309886f, (BFloat16)2.73685536f, CrossPlatformMachineEpsilon * (BFloat16)10 };   // x: (e)   y: (1 / pi)
+            yield return new object[] { BFloat16.E, (BFloat16)0.434294482f, (BFloat16)2.75275640f, CrossPlatformMachineEpsilon * (BFloat16)10 };   // x: (e)   y: (log10(e))
+            yield return new object[] { BFloat16.E, (BFloat16)0.636619772f, (BFloat16)2.79183467f, CrossPlatformMachineEpsilon * (BFloat16)10 };   // x: (e)   y: (2 / pi)
+            yield return new object[] { BFloat16.E, (BFloat16)0.693147181f, (BFloat16)2.80526454f, CrossPlatformMachineEpsilon * (BFloat16)10 };   // x: (e)   y: (ln(2))
+            yield return new object[] { BFloat16.E, (BFloat16)0.707106781f, (BFloat16)2.80874636f, CrossPlatformMachineEpsilon * (BFloat16)10 };   // x: (e)   y: (1 / sqrt(2))
+            yield return new object[] { BFloat16.E, (BFloat16)0.785398163f, (BFloat16)2.82947104f, CrossPlatformMachineEpsilon * (BFloat16)10 };   // x: (e)   y: (pi / 4)
+            yield return new object[] { BFloat16.E, BFloat16.One, (BFloat16)2.89638673f, CrossPlatformMachineEpsilon * (BFloat16)10 };   // x: (e)
+            yield return new object[] { BFloat16.E, (BFloat16)1.12837917f, (BFloat16)2.94317781f, CrossPlatformMachineEpsilon * (BFloat16)10 };   // x: (e)   y: (2 / sqrt(pi))
+            yield return new object[] { BFloat16.E, (BFloat16)1.41421356f, (BFloat16)3.06415667f, CrossPlatformMachineEpsilon * (BFloat16)10 };   // x: (e)   y: (sqrt(2))
+            yield return new object[] { BFloat16.E, (BFloat16)1.44269504f, (BFloat16)3.07740558f, CrossPlatformMachineEpsilon * (BFloat16)10 };   // x: (e)   y: (log2(e))
+            yield return new object[] { BFloat16.E, (BFloat16)1.57079633f, (BFloat16)3.13949951f, CrossPlatformMachineEpsilon * (BFloat16)10 };   // x: (e)   y: (pi / 2)
+            yield return new object[] { BFloat16.E, (BFloat16)2.30258509f, (BFloat16)3.56243656f, CrossPlatformMachineEpsilon * (BFloat16)10 };   // x: (e)   y: (ln(10))
+            yield return new object[] { BFloat16.E, BFloat16.E, (BFloat16)3.84423103f, CrossPlatformMachineEpsilon * (BFloat16)10 };   // x: (e)   y: (e)
+            yield return new object[] { BFloat16.E, (BFloat16)3.14159265f, (BFloat16)4.15435440f, CrossPlatformMachineEpsilon * (BFloat16)10 };   // x: (e)   y: (pi)
+            yield return new object[] { (BFloat16)10.0f, (BFloat16)0.318309886f, (BFloat16)10.0050648f, CrossPlatformMachineEpsilon * (BFloat16)100 };  //          y: (1 / pi)
+            yield return new object[] { (BFloat16)10.0f, (BFloat16)0.434294482f, (BFloat16)10.0094261f, CrossPlatformMachineEpsilon * (BFloat16)100 };  //          y: (log10(e))
+            yield return new object[] { (BFloat16)10.0f, (BFloat16)0.636619772f, (BFloat16)10.0202437f, CrossPlatformMachineEpsilon * (BFloat16)100 };  //          y: (2 / pi)
+            yield return new object[] { (BFloat16)10.0f, (BFloat16)0.693147181f, (BFloat16)10.0239939f, CrossPlatformMachineEpsilon * (BFloat16)100 };  //          y: (ln(2))
+            yield return new object[] { (BFloat16)10.0f, (BFloat16)0.707106781f, (BFloat16)10.0249688f, CrossPlatformMachineEpsilon * (BFloat16)100 };  //          y: (1 / sqrt(2))
+            yield return new object[] { (BFloat16)10.0f, (BFloat16)0.785398163f, (BFloat16)10.0307951f, CrossPlatformMachineEpsilon * (BFloat16)100 };  //          y: (pi / 4)
+            yield return new object[] { (BFloat16)10.0f, BFloat16.One, (BFloat16)10.0498756f, CrossPlatformMachineEpsilon * (BFloat16)100 };  //
+            yield return new object[] { (BFloat16)10.0f, (BFloat16)1.12837917f, (BFloat16)10.0634606f, CrossPlatformMachineEpsilon * (BFloat16)100 };  //          y: (2 / sqrt(pi))
+            yield return new object[] { (BFloat16)10.0f, (BFloat16)1.41421356f, (BFloat16)10.0995049f, CrossPlatformMachineEpsilon * (BFloat16)100 };  //          y: (sqrt(2))
+            yield return new object[] { (BFloat16)10.0f, (BFloat16)1.44269504f, (BFloat16)10.1035325f, CrossPlatformMachineEpsilon * (BFloat16)100 };  //          y: (log2(e))
+            yield return new object[] { (BFloat16)10.0f, (BFloat16)1.57079633f, (BFloat16)10.1226183f, CrossPlatformMachineEpsilon * (BFloat16)100 };  //          y: (pi / 2)
+            yield return new object[] { (BFloat16)10.0f, (BFloat16)2.30258509f, (BFloat16)10.2616713f, CrossPlatformMachineEpsilon * (BFloat16)100 };  //          y: (ln(10))
+            yield return new object[] { (BFloat16)10.0f, BFloat16.E, (BFloat16)10.3628691f, CrossPlatformMachineEpsilon * (BFloat16)100 };  //          y: (e)
+            yield return new object[] { (BFloat16)10.0f, (BFloat16)3.14159265f, (BFloat16)10.4818703f, CrossPlatformMachineEpsilon * (BFloat16)100 };  //          y: (pi)
+            yield return new object[] { BFloat16.PositiveInfinity, BFloat16.NaN, BFloat16.PositiveInfinity, BFloat16.Zero };
+            yield return new object[] { BFloat16.PositiveInfinity, BFloat16.Zero, BFloat16.PositiveInfinity, BFloat16.Zero };
+            yield return new object[] { BFloat16.PositiveInfinity, BFloat16.One, BFloat16.PositiveInfinity, BFloat16.Zero };
+            yield return new object[] { BFloat16.PositiveInfinity, BFloat16.E, BFloat16.PositiveInfinity, BFloat16.Zero };
+            yield return new object[] { BFloat16.PositiveInfinity, 10.0f, BFloat16.PositiveInfinity, BFloat16.Zero };
+            yield return new object[] { BFloat16.PositiveInfinity, BFloat16.PositiveInfinity, BFloat16.PositiveInfinity, BFloat16.Zero };
+        }
+
+        [Theory]
+        [MemberData(nameof(Hypot_TestData))]
+        public static void Hypot(BFloat16 x, BFloat16 y, BFloat16 expectedResult, BFloat16 allowedVariance)
+        {
+            AssertEqual(expectedResult, BFloat16.Hypot(-x, -y), allowedVariance);
+            AssertEqual(expectedResult, BFloat16.Hypot(-x, +y), allowedVariance);
+            AssertEqual(expectedResult, BFloat16.Hypot(+x, -y), allowedVariance);
+            AssertEqual(expectedResult, BFloat16.Hypot(+x, +y), allowedVariance);
+
+            AssertEqual(expectedResult, BFloat16.Hypot(-y, -x), allowedVariance);
+            AssertEqual(expectedResult, BFloat16.Hypot(-y, +x), allowedVariance);
+            AssertEqual(expectedResult, BFloat16.Hypot(+y, -x), allowedVariance);
+            AssertEqual(expectedResult, BFloat16.Hypot(+y, +x), allowedVariance);
+        }
+
+        public static IEnumerable<object[]> RootN_TestData()
+        {
+            yield return new object[] { BFloat16.NegativeInfinity, -5, -BFloat16.Zero, BFloat16.Zero };
+            yield return new object[] { BFloat16.NegativeInfinity, -4, BFloat16.NaN, BFloat16.Zero };
+            yield return new object[] { BFloat16.NegativeInfinity, -3, -BFloat16.Zero, BFloat16.Zero };
+            yield return new object[] { BFloat16.NegativeInfinity, -2, BFloat16.NaN, BFloat16.Zero };
+            yield return new object[] { BFloat16.NegativeInfinity, -1, -BFloat16.Zero, BFloat16.Zero };
+            yield return new object[] { BFloat16.NegativeInfinity, 0, BFloat16.NaN, BFloat16.Zero };
+            yield return new object[] { BFloat16.NegativeInfinity, 1, BFloat16.NegativeInfinity, BFloat16.Zero };
+            yield return new object[] { BFloat16.NegativeInfinity, 2, BFloat16.NaN, BFloat16.Zero };
+            yield return new object[] { BFloat16.NegativeInfinity, 3, BFloat16.NegativeInfinity, BFloat16.Zero };
+            yield return new object[] { BFloat16.NegativeInfinity, 4, BFloat16.NaN, BFloat16.Zero };
+            yield return new object[] { BFloat16.NegativeInfinity, 5, BFloat16.NegativeInfinity, BFloat16.Zero };
+            yield return new object[] { -BFloat16.E, -5, -(BFloat16)0.81873075f, CrossPlatformMachineEpsilon * (BFloat16)10 };
+            yield return new object[] { -BFloat16.E, -4, BFloat16.NaN, BFloat16.Zero };
+            yield return new object[] { -BFloat16.E, -3, -(BFloat16)0.71653131f, CrossPlatformMachineEpsilon * (BFloat16)10 };
+            yield return new object[] { -BFloat16.E, -2, BFloat16.NaN, BFloat16.Zero };
+            yield return new object[] { -BFloat16.E, -1, -(BFloat16)0.36787944f, CrossPlatformMachineEpsilon * (BFloat16)10 };
+            yield return new object[] { -BFloat16.E, 0, BFloat16.NaN, BFloat16.Zero };
+            yield return new object[] { -BFloat16.E, 1, -BFloat16.E, CrossPlatformMachineEpsilon * (BFloat16)10 };
+            yield return new object[] { -BFloat16.E, 2, BFloat16.NaN, BFloat16.Zero };
+            yield return new object[] { -BFloat16.E, 3, -(BFloat16)1.39561243f, CrossPlatformMachineEpsilon * (BFloat16)10 };
+            yield return new object[] { -BFloat16.E, 4, BFloat16.NaN, BFloat16.Zero };
+            yield return new object[] { -BFloat16.E, 5, -(BFloat16)1.22140276f, CrossPlatformMachineEpsilon * (BFloat16)10 };
+            yield return new object[] { -BFloat16.One, -5, -BFloat16.One, BFloat16.Zero };
+            yield return new object[] { -BFloat16.One, -4, BFloat16.NaN, BFloat16.Zero };
+            yield return new object[] { -BFloat16.One, -3, -BFloat16.One, BFloat16.Zero };
+            yield return new object[] { -BFloat16.One, -2, BFloat16.NaN, BFloat16.Zero };
+            yield return new object[] { -BFloat16.One, -1, -BFloat16.One, BFloat16.Zero };
+            yield return new object[] { -BFloat16.One, 0, BFloat16.NaN, BFloat16.Zero };
+            yield return new object[] { -BFloat16.One, 1, -BFloat16.One, BFloat16.Zero };
+            yield return new object[] { -BFloat16.One, 2, BFloat16.NaN, BFloat16.Zero };
+            yield return new object[] { -BFloat16.One, 3, -BFloat16.One, BFloat16.Zero };
+            yield return new object[] { -BFloat16.One, 4, BFloat16.NaN, BFloat16.Zero };
+            yield return new object[] { -BFloat16.One, 5, -BFloat16.One, BFloat16.Zero };
+            yield return new object[] { -BFloat16.Zero, -5, BFloat16.NegativeInfinity, BFloat16.Zero };
+            yield return new object[] { -BFloat16.Zero, -4, BFloat16.PositiveInfinity, BFloat16.Zero };
+            yield return new object[] { -BFloat16.Zero, -3, BFloat16.NegativeInfinity, BFloat16.Zero };
+            yield return new object[] { -BFloat16.Zero, -2, BFloat16.PositiveInfinity, BFloat16.Zero };
+            yield return new object[] { -BFloat16.Zero, -1, BFloat16.NegativeInfinity, BFloat16.Zero };
+            yield return new object[] { -BFloat16.Zero, 0, BFloat16.NaN, BFloat16.Zero };
+            yield return new object[] { -BFloat16.Zero, 1, -BFloat16.Zero, BFloat16.Zero };
+            yield return new object[] { -BFloat16.Zero, 2, BFloat16.Zero, BFloat16.Zero };
+            yield return new object[] { -BFloat16.Zero, 3, -BFloat16.Zero, BFloat16.Zero };
+            yield return new object[] { -BFloat16.Zero, 4, BFloat16.Zero, BFloat16.Zero };
+            yield return new object[] { -BFloat16.Zero, 5, -BFloat16.Zero, BFloat16.Zero };
+            yield return new object[] { BFloat16.NaN, -5, BFloat16.NaN, BFloat16.Zero };
+            yield return new object[] { BFloat16.NaN, -4, BFloat16.NaN, BFloat16.Zero };
+            yield return new object[] { BFloat16.NaN, -3, BFloat16.NaN, BFloat16.Zero };
+            yield return new object[] { BFloat16.NaN, -2, BFloat16.NaN, BFloat16.Zero };
+            yield return new object[] { BFloat16.NaN, -1, BFloat16.NaN, BFloat16.Zero };
+            yield return new object[] { BFloat16.NaN, 0, BFloat16.NaN, BFloat16.Zero };
+            yield return new object[] { BFloat16.NaN, 1, BFloat16.NaN, BFloat16.Zero };
+            yield return new object[] { BFloat16.NaN, 2, BFloat16.NaN, BFloat16.Zero };
+            yield return new object[] { BFloat16.NaN, 3, BFloat16.NaN, BFloat16.Zero };
+            yield return new object[] { BFloat16.NaN, 4, BFloat16.NaN, BFloat16.Zero };
+            yield return new object[] { BFloat16.NaN, 5, BFloat16.NaN, BFloat16.Zero };
+            yield return new object[] { BFloat16.Zero, -5, BFloat16.PositiveInfinity, BFloat16.Zero };
+            yield return new object[] { BFloat16.Zero, -4, BFloat16.PositiveInfinity, BFloat16.Zero };
+            yield return new object[] { BFloat16.Zero, -3, BFloat16.PositiveInfinity, BFloat16.Zero };
+            yield return new object[] { BFloat16.Zero, -2, BFloat16.PositiveInfinity, BFloat16.Zero };
+            yield return new object[] { BFloat16.Zero, -1, BFloat16.PositiveInfinity, BFloat16.Zero };
+            yield return new object[] { BFloat16.Zero, 0, BFloat16.NaN, BFloat16.Zero };
+            yield return new object[] { BFloat16.Zero, 1, BFloat16.Zero, BFloat16.Zero };
+            yield return new object[] { BFloat16.Zero, 2, BFloat16.Zero, BFloat16.Zero };
+            yield return new object[] { BFloat16.Zero, 3, BFloat16.Zero, BFloat16.Zero };
+            yield return new object[] { BFloat16.Zero, 4, BFloat16.Zero, BFloat16.Zero };
+            yield return new object[] { BFloat16.Zero, 5, BFloat16.Zero, BFloat16.Zero };
+            yield return new object[] { BFloat16.One, -5, BFloat16.One, BFloat16.Zero };
+            yield return new object[] { BFloat16.One, -4, BFloat16.One, BFloat16.Zero };
+            yield return new object[] { BFloat16.One, -3, BFloat16.One, BFloat16.Zero };
+            yield return new object[] { BFloat16.One, -2, BFloat16.One, BFloat16.Zero };
+            yield return new object[] { BFloat16.One, -1, BFloat16.One, BFloat16.Zero };
+            yield return new object[] { BFloat16.One, 0, BFloat16.NaN, BFloat16.Zero };
+            yield return new object[] { BFloat16.One, 1, BFloat16.One, BFloat16.Zero };
+            yield return new object[] { BFloat16.One, 2, BFloat16.One, BFloat16.Zero };
+            yield return new object[] { BFloat16.One, 3, BFloat16.One, BFloat16.Zero };
+            yield return new object[] { BFloat16.One, 4, BFloat16.One, BFloat16.Zero };
+            yield return new object[] { BFloat16.One, 5, BFloat16.One, BFloat16.Zero };
+            yield return new object[] { BFloat16.E, -5, (BFloat16)0.81873075f, CrossPlatformMachineEpsilon * (BFloat16)10 };
+            yield return new object[] { BFloat16.E, -4, (BFloat16)0.77880078f, CrossPlatformMachineEpsilon * (BFloat16)10 };
+            yield return new object[] { BFloat16.E, -3, (BFloat16)0.71653131f, CrossPlatformMachineEpsilon * (BFloat16)10 };
+            yield return new object[] { BFloat16.E, -2, (BFloat16)0.60653066f, CrossPlatformMachineEpsilon * (BFloat16)10 };
+            yield return new object[] { BFloat16.E, -1, (BFloat16)0.36787944f, CrossPlatformMachineEpsilon * (BFloat16)10 };
+            yield return new object[] { BFloat16.E, 0, BFloat16.NaN, BFloat16.Zero };
+            yield return new object[] { BFloat16.E, 1, BFloat16.E, BFloat16.Zero };
+            yield return new object[] { BFloat16.E, 2, (BFloat16)1.64872127f, CrossPlatformMachineEpsilon * (BFloat16)10 };
+            yield return new object[] { BFloat16.E, 3, (BFloat16)1.39561243f, CrossPlatformMachineEpsilon * (BFloat16)10 };
+            yield return new object[] { BFloat16.E, 4, (BFloat16)1.28402542f, CrossPlatformMachineEpsilon * (BFloat16)10 };
+            yield return new object[] { BFloat16.E, 5, (BFloat16)1.22140276f, CrossPlatformMachineEpsilon * (BFloat16)10 };
+            yield return new object[] { BFloat16.PositiveInfinity, -5, BFloat16.Zero, BFloat16.Zero };
+            yield return new object[] { BFloat16.PositiveInfinity, -4, BFloat16.Zero, BFloat16.Zero };
+            yield return new object[] { BFloat16.PositiveInfinity, -3, BFloat16.Zero, BFloat16.Zero };
+            yield return new object[] { BFloat16.PositiveInfinity, -2, BFloat16.Zero, BFloat16.Zero };
+            yield return new object[] { BFloat16.PositiveInfinity, -1, BFloat16.Zero, BFloat16.Zero };
+            yield return new object[] { BFloat16.PositiveInfinity, 0, BFloat16.NaN, BFloat16.Zero };
+            yield return new object[] { BFloat16.PositiveInfinity, 1, BFloat16.PositiveInfinity, BFloat16.Zero };
+            yield return new object[] { BFloat16.PositiveInfinity, 2, BFloat16.PositiveInfinity, BFloat16.Zero };
+            yield return new object[] { BFloat16.PositiveInfinity, 3, BFloat16.PositiveInfinity, BFloat16.Zero };
+            yield return new object[] { BFloat16.PositiveInfinity, 4, BFloat16.PositiveInfinity, BFloat16.Zero };
+            yield return new object[] { BFloat16.PositiveInfinity, 5, BFloat16.PositiveInfinity, BFloat16.Zero };
+        }
+
+        [Theory]
+        [MemberData(nameof(RootN_TestData))]
+        public static void RootN(BFloat16 x, int n, BFloat16 expectedResult, BFloat16 allowedVariance)
+        {
+            AssertEqual(expectedResult, BFloat16.RootN(x, n), allowedVariance);
+        }
+
+        public static IEnumerable<object[]> AcosPi_TestData()
+        {
+            yield return new object[] { BFloat16.NaN, BFloat16.NaN, BFloat16.Zero };
+            yield return new object[] { BFloat16.One, BFloat16.Zero, BFloat16.Zero };
+            yield return new object[] { (BFloat16)0.540302306f, (BFloat16)0.318309886f, CrossPlatformMachineEpsilon };
+            yield return new object[] { (BFloat16)0.204957194f, (BFloat16)0.434294482f, CrossPlatformMachineEpsilon };
+            yield return new object[] { BFloat16.Zero, (BFloat16)0.5f, BFloat16.Zero };
+            yield return new object[] { -(BFloat16)0.416146837f, (BFloat16)0.636619772f, CrossPlatformMachineEpsilon };
+            yield return new object[] { -(BFloat16)0.570233249f, (BFloat16)0.693147181f, CrossPlatformMachineEpsilon };
+            yield return new object[] { -(BFloat16)0.605699867f, (BFloat16)0.707106781f, CrossPlatformMachineEpsilon };
+            yield return new object[] { -(BFloat16)0.781211892f, (BFloat16)0.785398163f, CrossPlatformMachineEpsilon };
+            yield return new object[] { -(BFloat16)1.0f, BFloat16.One, BFloat16.Zero };
+            yield return new object[] { -(BFloat16)0.919764995f, (BFloat16)0.871620833f, CrossPlatformMachineEpsilon };
+            yield return new object[] { -(BFloat16)0.266255342f, (BFloat16)0.585786438f, CrossPlatformMachineEpsilon };
+            yield return new object[] { -(BFloat16)0.179057946f, (BFloat16)0.557304959f, CrossPlatformMachineEpsilon };
+            yield return new object[] { (BFloat16)0.220584041f, (BFloat16)0.429203673f, CrossPlatformMachineEpsilon };
+            yield return new object[] { (BFloat16)0.581195664f, (BFloat16)0.302585093f, CrossPlatformMachineEpsilon };
+            yield return new object[] { -(BFloat16)0.633255651f, (BFloat16)0.718281828f, CrossPlatformMachineEpsilon };
+            yield return new object[] { -(BFloat16)0.902685362f, (BFloat16)0.858407346f, CrossPlatformMachineEpsilon };
+        }
+
+        [Theory]
+        [MemberData(nameof(AcosPi_TestData))]
+        public static void AcosPiTest(BFloat16 value, BFloat16 expectedResult, BFloat16 allowedVariance)
+        {
+            AssertEqual(expectedResult, BFloat16.AcosPi(value), allowedVariance);
+        }
+
+        public static IEnumerable<object[]> AsinPi_TestData()
+        {
+            yield return new object[] { BFloat16.NaN, BFloat16.NaN, BFloat16.Zero };
+            yield return new object[] { BFloat16.Zero, BFloat16.Zero, BFloat16.Zero };
+            yield return new object[] { (BFloat16)0.841470985f, (BFloat16)0.318309886f, CrossPlatformMachineEpsilon };
+            yield return new object[] { (BFloat16)0.978770938f, (BFloat16)0.434294482f, CrossPlatformMachineEpsilon };
+            yield return new object[] { BFloat16.One, (BFloat16)0.5f, BFloat16.Zero };
+            yield return new object[] { (BFloat16)0.909297427f, (BFloat16)0.363380228f, CrossPlatformMachineEpsilon };
+            yield return new object[] { (BFloat16)0.821482831f, (BFloat16)0.306852819f, CrossPlatformMachineEpsilon };
+            yield return new object[] { (BFloat16)0.795693202f, (BFloat16)0.292893219f, CrossPlatformMachineEpsilon };
+            yield return new object[] { (BFloat16)0.624265953f, (BFloat16)0.214601837f, CrossPlatformMachineEpsilon };
+            yield return new object[] { -(BFloat16)0.392469559f, -(BFloat16)0.128379167f, CrossPlatformMachineEpsilon };
+            yield return new object[] { -(BFloat16)0.963902533f, -(BFloat16)0.414213562f, CrossPlatformMachineEpsilon };
+            yield return new object[] { -(BFloat16)0.983838529f, -(BFloat16)0.442695041f, CrossPlatformMachineEpsilon };
+            yield return new object[] { -(BFloat16)0.975367972f, -(BFloat16)0.429203673f, CrossPlatformMachineEpsilon };
+            yield return new object[] { (BFloat16)0.813763848f, (BFloat16)0.302585093f, CrossPlatformMachineEpsilon };
+            yield return new object[] { (BFloat16)0.773942685f, (BFloat16)0.281718172f, CrossPlatformMachineEpsilon };
+            yield return new object[] { -(BFloat16)0.430301217f, -(BFloat16)0.141592654f, CrossPlatformMachineEpsilon };
+        }
+
+        [Theory]
+        [MemberData(nameof(AsinPi_TestData))]
+        public static void AsinPiTest(BFloat16 value, BFloat16 expectedResult, BFloat16 allowedVariance)
+        {
+            AssertEqual(-expectedResult, BFloat16.AsinPi(-value), allowedVariance);
+            AssertEqual(+expectedResult, BFloat16.AsinPi(+value), allowedVariance);
+        }
+
+        public static IEnumerable<object[]> Atan2Pi_TestData()
+        {
+            yield return new object[] { BFloat16.NaN, BFloat16.NaN, BFloat16.NaN, BFloat16.Zero };
+            yield return new object[] { BFloat16.Zero, -BFloat16.One, BFloat16.One, BFloat16.Zero };                   // y: sinpi(0)              x:  cospi(1)
+            yield return new object[] { BFloat16.Zero, -BFloat16.Zero, BFloat16.One, BFloat16.Zero };                   // y: sinpi(0)              x: -cospi(0.5)
+            yield return new object[] { BFloat16.Zero, BFloat16.Zero, BFloat16.Zero, BFloat16.Zero };                   // y: sinpi(0)              x:  cospi(0.5)
+            yield return new object[] { BFloat16.Zero, BFloat16.One, BFloat16.Zero, BFloat16.Zero };                   // y: sinpi(0)              x:  cospi(0)
+            yield return new object[] { (BFloat16)0.841470985f, (BFloat16)0.540302306f, (BFloat16)0.318309886f, CrossPlatformMachineEpsilon }; // y: sinpi(1 / pi)         x:  cospi(1 / pi)
+            yield return new object[] { (BFloat16)0.978770938f, (BFloat16)0.204957194f, (BFloat16)0.434294482f, CrossPlatformMachineEpsilon }; // y: sinpi(log10(e))       x:  cospi(log10(e))
+            yield return new object[] { BFloat16.One, -BFloat16.Zero, (BFloat16)0.5f, BFloat16.Zero };                   // y: sinpi(0.5)            x: -cospi(0.5)
+            yield return new object[] { BFloat16.One, BFloat16.Zero, (BFloat16)0.5f, BFloat16.Zero };                   // y: sinpi(0.5)            x:  cospi(0.5)
+            yield return new object[] { (BFloat16)0.909297427f, -(BFloat16)0.416146837f, (BFloat16)0.636619772f, CrossPlatformMachineEpsilon }; // y: sinpi(2 / pi)         x:  cospi(2 / pi)
+            yield return new object[] { (BFloat16)0.821482831f, -(BFloat16)0.570233249f, (BFloat16)0.693147181f, CrossPlatformMachineEpsilon }; // y: sinpi(ln(2))          x:  cospi(ln(2))
+            yield return new object[] { (BFloat16)0.795693202f, -(BFloat16)0.605699867f, (BFloat16)0.707106781f, CrossPlatformMachineEpsilon }; // y: sinpi(1 / sqrt(2))    x:  cospi(1 / sqrt(2))
+            yield return new object[] { (BFloat16)0.624265953f, -(BFloat16)0.781211892f, (BFloat16)0.785398163f, CrossPlatformMachineEpsilon }; // y: sinpi(pi / 4)         x:  cospi(pi / 4)
+            yield return new object[] { -(BFloat16)0.392469559f, -(BFloat16)0.919764995f, -(BFloat16)0.871620833f, CrossPlatformMachineEpsilon }; // y: sinpi(2 / sqrt(pi))   x:  cospi(2 / sqrt(pi))
+            yield return new object[] { -(BFloat16)0.963902533f, -(BFloat16)0.266255342f, -(BFloat16)0.585786438f, CrossPlatformMachineEpsilon }; // y: sinpi(sqrt(2))        x:  cospi(sqrt(2))
+            yield return new object[] { -(BFloat16)0.983838529f, -(BFloat16)0.179057946f, -(BFloat16)0.557304959f, CrossPlatformMachineEpsilon }; // y: sinpi(log2(e))        x:  cospi(log2(e))
+            yield return new object[] { -(BFloat16)0.975367972f, (BFloat16)0.220584041f, -(BFloat16)0.429203673f, CrossPlatformMachineEpsilon }; // y: sinpi(pi / 2)         x:  cospi(pi / 2)
+            yield return new object[] { (BFloat16)0.813763848f, (BFloat16)0.581195664f, (BFloat16)0.302585093f, CrossPlatformMachineEpsilon }; // y: sinpi(ln(10))         x:  cospi(ln(10))
+            yield return new object[] { (BFloat16)0.773942685f, -(BFloat16)0.633255651f, (BFloat16)0.718281828f, CrossPlatformMachineEpsilon }; // y: sinpi(e)              x:  cospi(e)
+            yield return new object[] { -(BFloat16)0.430301217f, -(BFloat16)0.902685362f, -(BFloat16)0.858407346f, CrossPlatformMachineEpsilon }; // y: sinpi(pi)             x:  cospi(pi)
+            yield return new object[] { BFloat16.One, BFloat16.NegativeInfinity, BFloat16.One, BFloat16.Zero };                   // y: sinpi(0.5)
+            yield return new object[] { BFloat16.One, BFloat16.PositiveInfinity, BFloat16.Zero, BFloat16.Zero };                   // y: sinpi(0.5)
+            yield return new object[] { BFloat16.PositiveInfinity, -BFloat16.One, (BFloat16)0.5f, BFloat16.Zero };                   //                          x:  cospi(1)
+            yield return new object[] { BFloat16.PositiveInfinity, BFloat16.One, (BFloat16)0.5f, BFloat16.Zero };                   //                          x:  cospi(0)
+            yield return new object[] { BFloat16.PositiveInfinity, BFloat16.NegativeInfinity, (BFloat16)0.75f, BFloat16.Zero };
+            yield return new object[] { BFloat16.PositiveInfinity, BFloat16.PositiveInfinity, (BFloat16)0.25f, BFloat16.Zero };
+        }
+
+        [Theory]
+        [MemberData(nameof(Atan2Pi_TestData))]
+        public static void Atan2PiTest(BFloat16 y, BFloat16 x, BFloat16 expectedResult, BFloat16 allowedVariance)
+        {
+            AssertEqual(-expectedResult, BFloat16.Atan2Pi(-y, +x), allowedVariance);
+            AssertEqual(+expectedResult, BFloat16.Atan2Pi(+y, +x), allowedVariance);
+        }
+
+        public static IEnumerable<object[]> AtanPi_TestData()
+        {
+            yield return new object[] { BFloat16.NaN, BFloat16.NaN, BFloat16.Zero };
+            yield return new object[] { BFloat16.Zero, BFloat16.Zero, BFloat16.Zero };
+            yield return new object[] { (BFloat16)1.55740773f, (BFloat16)0.318309886f, CrossPlatformMachineEpsilon };
+            yield return new object[] { (BFloat16)4.77548954f, (BFloat16)0.434294482f, CrossPlatformMachineEpsilon };
+            yield return new object[] { BFloat16.PositiveInfinity, (BFloat16)0.5f, BFloat16.Zero };
+            yield return new object[] { -(BFloat16)2.18503986f, -(BFloat16)0.363380228f, CrossPlatformMachineEpsilon };
+            yield return new object[] { -(BFloat16)1.44060844f, -(BFloat16)0.306852819f, CrossPlatformMachineEpsilon };
+            yield return new object[] { -(BFloat16)1.31367571f, -(BFloat16)0.292893219f, CrossPlatformMachineEpsilon };
+            yield return new object[] { -(BFloat16)0.79909940f, -(BFloat16)0.214601837f, CrossPlatformMachineEpsilon };
+            yield return new object[] { (BFloat16)0.42670634f, (BFloat16)0.128379167f, CrossPlatformMachineEpsilon };
+            yield return new object[] { (BFloat16)3.62021857f, (BFloat16)0.414213562f, CrossPlatformMachineEpsilon };
+            yield return new object[] { (BFloat16)5.49452594f, (BFloat16)0.442695041f, CrossPlatformMachineEpsilon };
+            yield return new object[] { -(BFloat16)4.42175222f, -(BFloat16)0.429203673f, CrossPlatformMachineEpsilon };
+            yield return new object[] { (BFloat16)1.40015471f, (BFloat16)0.302585093f, CrossPlatformMachineEpsilon };
+            yield return new object[] { -(BFloat16)1.22216467f, -(BFloat16)0.281718172f, CrossPlatformMachineEpsilon };
+            yield return new object[] { (BFloat16)0.476690146f, (BFloat16)0.141592654f, CrossPlatformMachineEpsilon };
+        }
+
+        [Theory]
+        [MemberData(nameof(AtanPi_TestData))]
+        public static void AtanPiTest(BFloat16 value, BFloat16 expectedResult, BFloat16 allowedVariance)
+        {
+            AssertEqual(-expectedResult, BFloat16.AtanPi(-value), allowedVariance);
+            AssertEqual(+expectedResult, BFloat16.AtanPi(+value), allowedVariance);
+        }
+
+        public static IEnumerable<object[]> CosPi_TestData()
+        {
+            yield return new object[] { BFloat16.NaN, BFloat16.NaN, BFloat16.Zero };
+            yield return new object[] { BFloat16.Zero, BFloat16.One, BFloat16.Zero };
+            yield return new object[] { (BFloat16)0.318309886f, (BFloat16)0.540302306f, CrossPlatformMachineEpsilon };       // value:  (1 / pi)
+            yield return new object[] { (BFloat16)0.434294482f, (BFloat16)0.204957194f, CrossPlatformMachineEpsilon };       // value:  (log10(e))
+            yield return new object[] { (BFloat16)0.5f, BFloat16.Zero, BFloat16.Zero };
+            yield return new object[] { (BFloat16)0.636619772f, -(BFloat16)0.416146837f, CrossPlatformMachineEpsilon };       // value:  (2 / pi)
+            yield return new object[] { (BFloat16)0.693147181f, -(BFloat16)0.570233249f, CrossPlatformMachineEpsilon };       // value:  (ln(2))
+            yield return new object[] { (BFloat16)0.707106781f, -(BFloat16)0.605699867f, CrossPlatformMachineEpsilon };       // value:  (1 / sqrt(2))
+            yield return new object[] { (BFloat16)0.785398163f, -(BFloat16)0.781211892f, CrossPlatformMachineEpsilon };       // value:  (pi / 4)
+            yield return new object[] { BFloat16.One, -(BFloat16)1.0f, BFloat16.Zero };
+            yield return new object[] { (BFloat16)1.12837917f, -(BFloat16)0.919764995f, CrossPlatformMachineEpsilon };       // value:  (2 / sqrt(pi))
+            yield return new object[] { (BFloat16)1.41421356f, -(BFloat16)0.266255342f, CrossPlatformMachineEpsilon };       // value:  (sqrt(2))
+            yield return new object[] { (BFloat16)1.44269504f, -(BFloat16)0.179057946f, CrossPlatformMachineEpsilon };       // value:  (log2(e))
+            yield return new object[] { (BFloat16)1.5f, BFloat16.Zero, BFloat16.Zero };
+            yield return new object[] { (BFloat16)1.57079633f, (BFloat16)0.220584041f, CrossPlatformMachineEpsilon };       // value:  (pi / 2)
+            yield return new object[] { (BFloat16)2.0f, (BFloat16)1.0, BFloat16.Zero };
+            yield return new object[] { (BFloat16)2.30258509f, (BFloat16)0.581195664f, CrossPlatformMachineEpsilon };       // value:  (ln(10))
+            yield return new object[] { (BFloat16)2.5f, BFloat16.Zero, BFloat16.Zero };
+            yield return new object[] { (BFloat16)2.71828183f, -(BFloat16)0.633255651f, CrossPlatformMachineEpsilon };       // value:  (e)
+            yield return new object[] { (BFloat16)3.0f, -(BFloat16)1.0, BFloat16.Zero };
+            yield return new object[] { (BFloat16)3.14159265f, -(BFloat16)0.902685362f, CrossPlatformMachineEpsilon };       // value:  (pi)
+            yield return new object[] { (BFloat16)3.5f, BFloat16.Zero, BFloat16.Zero };
+            yield return new object[] { BFloat16.PositiveInfinity, BFloat16.NaN, BFloat16.Zero };
+        }
+
+        [Theory]
+        [MemberData(nameof(CosPi_TestData))]
+        public static void CosPiTest(BFloat16 value, BFloat16 expectedResult, BFloat16 allowedVariance)
+        {
+            AssertEqual(+expectedResult, BFloat16.CosPi(-value), allowedVariance);
+            AssertEqual(+expectedResult, BFloat16.CosPi(+value), allowedVariance);
+        }
+
+        public static IEnumerable<object[]> SinPi_TestData()
+        {
+            yield return new object[] { BFloat16.NaN, BFloat16.NaN, BFloat16.Zero };
+            yield return new object[] { BFloat16.Zero, BFloat16.Zero, BFloat16.Zero };
+            yield return new object[] { (BFloat16)0.318309886f, (BFloat16)0.841470985f, CrossPlatformMachineEpsilon };       // value:  (1 / pi)
+            yield return new object[] { (BFloat16)0.434294482f, (BFloat16)0.978770938f, CrossPlatformMachineEpsilon };       // value:  (log10(e))
+            yield return new object[] { (BFloat16)0.5f, BFloat16.One, BFloat16.Zero };
+            yield return new object[] { (BFloat16)0.636619772f, (BFloat16)0.909297427f, CrossPlatformMachineEpsilon };       // value:  (2 / pi)
+            yield return new object[] { (BFloat16)0.693147181f, (BFloat16)0.821482831f, CrossPlatformMachineEpsilon };       // value:  (ln(2))
+            yield return new object[] { (BFloat16)0.707106781f, (BFloat16)0.795693202f, CrossPlatformMachineEpsilon };       // value:  (1 / sqrt(2))
+            yield return new object[] { (BFloat16)0.785398163f, (BFloat16)0.624265953f, CrossPlatformMachineEpsilon };       // value:  (pi / 4)
+            yield return new object[] { BFloat16.One, BFloat16.Zero, BFloat16.Zero };
+            yield return new object[] { (BFloat16)1.12837917f, -(BFloat16)0.392469559f, CrossPlatformMachineEpsilon };       // value:  (2 / sqrt(pi))
+            yield return new object[] { (BFloat16)1.41421356f, -(BFloat16)0.963902533f, CrossPlatformMachineEpsilon };       // value:  (sqrt(2))
+            yield return new object[] { (BFloat16)1.44269504f, -(BFloat16)0.983838529f, CrossPlatformMachineEpsilon };       // value:  (log2(e))
+            yield return new object[] { (BFloat16)1.5f, -(BFloat16)1.0f, BFloat16.Zero };
+            yield return new object[] { (BFloat16)1.57079633f, -(BFloat16)0.975367972f, CrossPlatformMachineEpsilon };       // value:  (pi / 2)
+            yield return new object[] { (BFloat16)2.0f, BFloat16.Zero, BFloat16.Zero };
+            yield return new object[] { (BFloat16)2.30258509f, (BFloat16)0.813763848f, CrossPlatformMachineEpsilon };       // value:  (ln(10))
+            yield return new object[] { (BFloat16)2.5f, BFloat16.One, BFloat16.Zero };
+            yield return new object[] { (BFloat16)2.71828183f, (BFloat16)0.773942685f, CrossPlatformMachineEpsilon };       // value:  (e)
+            yield return new object[] { (BFloat16)3.0f, BFloat16.Zero, BFloat16.Zero };
+            yield return new object[] { (BFloat16)3.14159265f, -(BFloat16)0.430301217f, CrossPlatformMachineEpsilon };       // value:  (pi)
+            yield return new object[] { (BFloat16)3.5f, -(BFloat16)1.0f, BFloat16.Zero };
+            yield return new object[] { BFloat16.PositiveInfinity, BFloat16.NaN, BFloat16.Zero };
+        }
+
+        [Theory]
+        [MemberData(nameof(SinPi_TestData))]
+        public static void SinPiTest(BFloat16 value, BFloat16 expectedResult, BFloat16 allowedVariance)
+        {
+            AssertEqual(-expectedResult, BFloat16.SinPi(-value), allowedVariance);
+            AssertEqual(+expectedResult, BFloat16.SinPi(+value), allowedVariance);
+        }
+
+        public static IEnumerable<object[]> TanPi_TestData()
+        {
+            yield return new object[] { BFloat16.NaN, BFloat16.NaN, BFloat16.Zero };
+            yield return new object[] { BFloat16.Zero, BFloat16.Zero, BFloat16.Zero };
+            yield return new object[] { (BFloat16)0.318309886f, (BFloat16)1.55740772f, CrossPlatformMachineEpsilon * (BFloat16)10 };  // value:  (1 / pi)
+            yield return new object[] { (BFloat16)0.434294482f, (BFloat16)4.77548954f, CrossPlatformMachineEpsilon * (BFloat16)10 };  // value:  (log10(e))
+            yield return new object[] { (BFloat16)0.5f, BFloat16.PositiveInfinity, BFloat16.Zero };
+            yield return new object[] { (BFloat16)0.636619772f, -(BFloat16)2.18503986f, CrossPlatformMachineEpsilon * (BFloat16)10 };  // value:  (2 / pi)
+            yield return new object[] { (BFloat16)0.693147181f, -(BFloat16)1.44060844f, CrossPlatformMachineEpsilon * (BFloat16)10 };  // value:  (ln(2))
+            yield return new object[] { (BFloat16)0.707106781f, -(BFloat16)1.31367571f, CrossPlatformMachineEpsilon * (BFloat16)10 };  // value:  (1 / sqrt(2))
+            yield return new object[] { (BFloat16)0.785398163f, -(BFloat16)0.799099398f, CrossPlatformMachineEpsilon };             // value:  (pi / 4)
+            yield return new object[] { BFloat16.One, -BFloat16.Zero, BFloat16.Zero };
+            yield return new object[] { (BFloat16)1.12837917f, (BFloat16)0.426706344f, CrossPlatformMachineEpsilon };             // value:  (2 / sqrt(pi))
+            yield return new object[] { (BFloat16)1.41421356f, (BFloat16)3.62021857f, CrossPlatformMachineEpsilon * (BFloat16)10 };  // value:  (sqrt(2))
+            yield return new object[] { (BFloat16)1.44269504f, (BFloat16)5.49452594f, CrossPlatformMachineEpsilon * (BFloat16)10 };  // value:  (log2(e))
+            yield return new object[] { (BFloat16)1.5f, BFloat16.NegativeInfinity, BFloat16.Zero };
+            yield return new object[] { (BFloat16)1.57079633f, -(BFloat16)4.42175222f, CrossPlatformMachineEpsilon * (BFloat16)10 };  // value:  (pi / 2)
+            yield return new object[] { (BFloat16)2.0f, BFloat16.Zero, BFloat16.Zero };
+            yield return new object[] { (BFloat16)2.30258509f, (BFloat16)1.40015471f, CrossPlatformMachineEpsilon * (BFloat16)10 };  // value:  (ln(10))
+            yield return new object[] { (BFloat16)2.5f, BFloat16.PositiveInfinity, BFloat16.Zero };
+            yield return new object[] { (BFloat16)2.71828183f, -(BFloat16)1.22216467f, CrossPlatformMachineEpsilon * (BFloat16)10 };  // value:  (e)
+            yield return new object[] { (BFloat16)3.0f, -BFloat16.Zero, BFloat16.Zero };
+            yield return new object[] { (BFloat16)3.14159265f, (BFloat16)0.476690146f, CrossPlatformMachineEpsilon };             // value:  (pi)
+            yield return new object[] { (BFloat16)3.5f, BFloat16.NegativeInfinity, BFloat16.Zero };
+            yield return new object[] { BFloat16.PositiveInfinity, BFloat16.NaN, BFloat16.Zero };
+        }
+
+        [Theory]
+        [MemberData(nameof(TanPi_TestData))]
+        public static void TanPiTest(BFloat16 value, BFloat16 expectedResult, BFloat16 allowedVariance)
+        {
+            AssertEqual(-expectedResult, BFloat16.TanPi(-value), allowedVariance);
+            AssertEqual(+expectedResult, BFloat16.TanPi(+value), allowedVariance);
+        }
+
+        public static IEnumerable<object[]> BitDecrement_TestData()
+        {
+            yield return new object[] { BFloat16.NegativeInfinity, BFloat16.NegativeInfinity };
+            yield return new object[] { UInt16BitsToBFloat16(0xC049), UInt16BitsToBFloat16(0xC04A) };    // value: -(pi)
+            yield return new object[] { UInt16BitsToBFloat16(0xC02E), UInt16BitsToBFloat16(0xC02F) };    // value: -(e)
+            yield return new object[] { UInt16BitsToBFloat16(0xC013), UInt16BitsToBFloat16(0xC014) };    // value: -(ln(10))
+            yield return new object[] { UInt16BitsToBFloat16(0xBFC9), UInt16BitsToBFloat16(0xBFCA) };    // value: -(pi / 2)
+            yield return new object[] { UInt16BitsToBFloat16(0xBFB9), UInt16BitsToBFloat16(0xBFBA) };    // value: -(log2(e))
+            yield return new object[] { UInt16BitsToBFloat16(0xBFB5), UInt16BitsToBFloat16(0xBFB6) };    // value: -(sqrt(2))
+            yield return new object[] { UInt16BitsToBFloat16(0xBF90), UInt16BitsToBFloat16(0xBF91) };    // value: -(2 / sqrt(pi))
+            yield return new object[] { UInt16BitsToBFloat16(0xBF80), UInt16BitsToBFloat16(0xBF81) };
+            yield return new object[] { UInt16BitsToBFloat16(0xBF49), UInt16BitsToBFloat16(0xBF4A) };    // value: -(pi / 4)
+            yield return new object[] { UInt16BitsToBFloat16(0xBF35), UInt16BitsToBFloat16(0xBF36) };    // value: -(1 / sqrt(2))
+            yield return new object[] { UInt16BitsToBFloat16(0xBF31), UInt16BitsToBFloat16(0xBF32) };    // value: -(ln(2))
+            yield return new object[] { UInt16BitsToBFloat16(0xBF23), UInt16BitsToBFloat16(0xBF24) };    // value: -(2 / pi)
+            yield return new object[] { UInt16BitsToBFloat16(0xBEDE), UInt16BitsToBFloat16(0xBEDF) };    // value: -(log10(e))
+            yield return new object[] { UInt16BitsToBFloat16(0xBEA3), UInt16BitsToBFloat16(0xBEA4) };    // value: -(1 / pi)
+            yield return new object[] { UInt16BitsToBFloat16(0x8000), -BFloat16.Epsilon };
+            yield return new object[] { BFloat16.NaN, BFloat16.NaN };
+            yield return new object[] { UInt16BitsToBFloat16(0x0000), -BFloat16.Epsilon };
+            yield return new object[] { UInt16BitsToBFloat16(0x3EA3), UInt16BitsToBFloat16(0x3EA2) };    // value:  (1 / pi)
+            yield return new object[] { UInt16BitsToBFloat16(0x3EDE), UInt16BitsToBFloat16(0x3EDD) };    // value:  (log10(e))
+            yield return new object[] { UInt16BitsToBFloat16(0x3F23), UInt16BitsToBFloat16(0x3F22) };    // value:  (2 / pi)
+            yield return new object[] { UInt16BitsToBFloat16(0x3F31), UInt16BitsToBFloat16(0x3F30) };    // value:  (ln(2))
+            yield return new object[] { UInt16BitsToBFloat16(0x3F35), UInt16BitsToBFloat16(0x3F34) };    // value:  (1 / sqrt(2))
+            yield return new object[] { UInt16BitsToBFloat16(0x3F49), UInt16BitsToBFloat16(0x3F48) };    // value:  (pi / 4)
+            yield return new object[] { UInt16BitsToBFloat16(0x3F80), UInt16BitsToBFloat16(0x3F7F) };
+            yield return new object[] { UInt16BitsToBFloat16(0x3F90), UInt16BitsToBFloat16(0x3F8F) };    // value:  (2 / sqrt(pi))
+            yield return new object[] { UInt16BitsToBFloat16(0x3FB5), UInt16BitsToBFloat16(0x3FB4) };    // value:  (sqrt(2))
+            yield return new object[] { UInt16BitsToBFloat16(0x3FB9), UInt16BitsToBFloat16(0x3FB8) };    // value:  (log2(e))
+            yield return new object[] { UInt16BitsToBFloat16(0x3FC9), UInt16BitsToBFloat16(0x3FC8) };    // value:  (pi / 2)
+            yield return new object[] { UInt16BitsToBFloat16(0x4013), UInt16BitsToBFloat16(0x4012) };    // value:  (ln(10))
+            yield return new object[] { UInt16BitsToBFloat16(0x402E), UInt16BitsToBFloat16(0x402D) };    // value:  (e)
+            yield return new object[] { UInt16BitsToBFloat16(0x4049), UInt16BitsToBFloat16(0x4048) };    // value:  (pi)
+            yield return new object[] { BFloat16.PositiveInfinity, BFloat16.MaxValue };
+        }
+
+        [Theory]
+        [MemberData(nameof(BitDecrement_TestData))]
+        public static void BitDecrement(BFloat16 value, BFloat16 expectedResult)
+        {
+            AssertEqual(expectedResult, BFloat16.BitDecrement(value), BFloat16.Zero);
+        }
+
+        public static IEnumerable<object[]> BitIncrement_TestData()
+        {
+            yield return new object[] { BFloat16.NegativeInfinity, BFloat16.MinValue };
+            yield return new object[] { UInt16BitsToBFloat16(0xC049), UInt16BitsToBFloat16(0xC048) };    // value: -(pi)
+            yield return new object[] { UInt16BitsToBFloat16(0xC02E), UInt16BitsToBFloat16(0xC02D) };    // value: -(e)
+            yield return new object[] { UInt16BitsToBFloat16(0xC013), UInt16BitsToBFloat16(0xC012) };    // value: -(ln(10))
+            yield return new object[] { UInt16BitsToBFloat16(0xBFC9), UInt16BitsToBFloat16(0xBFC8) };    // value: -(pi / 2)
+            yield return new object[] { UInt16BitsToBFloat16(0xBFB9), UInt16BitsToBFloat16(0xBFB8) };    // value: -(log2(e))
+            yield return new object[] { UInt16BitsToBFloat16(0xBFB5), UInt16BitsToBFloat16(0xBFB4) };    // value: -(sqrt(2))
+            yield return new object[] { UInt16BitsToBFloat16(0xBF90), UInt16BitsToBFloat16(0xBF8F) };    // value: -(2 / sqrt(pi))
+            yield return new object[] { UInt16BitsToBFloat16(0xBF80), UInt16BitsToBFloat16(0xBF7F) };
+            yield return new object[] { UInt16BitsToBFloat16(0xBF49), UInt16BitsToBFloat16(0xBF48) };    // value: -(pi / 4)
+            yield return new object[] { UInt16BitsToBFloat16(0xBF35), UInt16BitsToBFloat16(0xBF34) };    // value: -(1 / sqrt(2))
+            yield return new object[] { UInt16BitsToBFloat16(0xBF31), UInt16BitsToBFloat16(0xBF30) };    // value: -(ln(2))
+            yield return new object[] { UInt16BitsToBFloat16(0xBF23), UInt16BitsToBFloat16(0xBF22) };    // value: -(2 / pi)
+            yield return new object[] { UInt16BitsToBFloat16(0xBEDE), UInt16BitsToBFloat16(0xBEDD) };    // value: -(log10(e))
+            yield return new object[] { UInt16BitsToBFloat16(0xBEA3), UInt16BitsToBFloat16(0xBEA2) };    // value: -(1 / pi)
+            yield return new object[] { UInt16BitsToBFloat16(0x8000), BFloat16.Epsilon };
+            yield return new object[] { BFloat16.NaN, BFloat16.NaN };
+            yield return new object[] { UInt16BitsToBFloat16(0x0000), BFloat16.Epsilon };
+            yield return new object[] { UInt16BitsToBFloat16(0x3EA3), UInt16BitsToBFloat16(0x3EA4) };    // value:  (1 / pi)
+            yield return new object[] { UInt16BitsToBFloat16(0x3EDE), UInt16BitsToBFloat16(0x3EDF) };    // value:  (log10(e))
+            yield return new object[] { UInt16BitsToBFloat16(0x3F23), UInt16BitsToBFloat16(0x3F24) };    // value:  (2 / pi)
+            yield return new object[] { UInt16BitsToBFloat16(0x3F31), UInt16BitsToBFloat16(0x3F32) };    // value:  (ln(2))
+            yield return new object[] { UInt16BitsToBFloat16(0x3F35), UInt16BitsToBFloat16(0x3F36) };    // value:  (1 / sqrt(2))
+            yield return new object[] { UInt16BitsToBFloat16(0x3F49), UInt16BitsToBFloat16(0x3F4A) };    // value:  (pi / 4)
+            yield return new object[] { UInt16BitsToBFloat16(0x3F80), UInt16BitsToBFloat16(0x3F81) };
+            yield return new object[] { UInt16BitsToBFloat16(0x3F90), UInt16BitsToBFloat16(0x3F91) };    // value:  (2 / sqrt(pi))
+            yield return new object[] { UInt16BitsToBFloat16(0x3FB5), UInt16BitsToBFloat16(0x3FB6) };    // value:  (sqrt(2))
+            yield return new object[] { UInt16BitsToBFloat16(0x3FB9), UInt16BitsToBFloat16(0x3FBA) };    // value:  (log2(e))
+            yield return new object[] { UInt16BitsToBFloat16(0x3FC9), UInt16BitsToBFloat16(0x3FCA) };    // value:  (pi / 2)
+            yield return new object[] { UInt16BitsToBFloat16(0x4013), UInt16BitsToBFloat16(0x4014) };    // value:  (ln(10))
+            yield return new object[] { UInt16BitsToBFloat16(0x402E), UInt16BitsToBFloat16(0x402F) };    // value:  (e)
+            yield return new object[] { UInt16BitsToBFloat16(0x4049), UInt16BitsToBFloat16(0x404A) };    // value:  (pi)
+            yield return new object[] { BFloat16.PositiveInfinity, BFloat16.PositiveInfinity };
+        }
+
+        [Theory]
+        [MemberData(nameof(BitIncrement_TestData))]
+        public static void BitIncrement(BFloat16 value, BFloat16 expectedResult)
+        {
+            AssertEqual(expectedResult, BFloat16.BitIncrement(value), BFloat16.Zero);
+        }
+
+        public static IEnumerable<object[]> Lerp_TestData()
+        {
+            yield return new object[] { BFloat16.NegativeInfinity, BFloat16.NegativeInfinity, (BFloat16)(0.5f), BFloat16.NegativeInfinity };
+            yield return new object[] { BFloat16.NegativeInfinity, BFloat16.NaN, (BFloat16)(0.5f), BFloat16.NaN };
+            yield return new object[] { BFloat16.NegativeInfinity, BFloat16.PositiveInfinity, (BFloat16)(0.5f), BFloat16.NaN };
+            yield return new object[] { BFloat16.NegativeInfinity, (BFloat16)(0.0f), (BFloat16)(0.5f), BFloat16.NegativeInfinity };
+            yield return new object[] { BFloat16.NegativeInfinity, (BFloat16)(1.0f), (BFloat16)(0.5f), BFloat16.NegativeInfinity };
+            yield return new object[] { BFloat16.NaN, BFloat16.NegativeInfinity, (BFloat16)(0.5f), BFloat16.NaN };
+            yield return new object[] { BFloat16.NaN, BFloat16.NaN, (BFloat16)(0.5f), BFloat16.NaN };
+            yield return new object[] { BFloat16.NaN, BFloat16.PositiveInfinity, (BFloat16)(0.5f), BFloat16.NaN };
+            yield return new object[] { BFloat16.NaN, (BFloat16)(0.0f), (BFloat16)(0.5f), BFloat16.NaN };
+            yield return new object[] { BFloat16.NaN, (BFloat16)(1.0f), (BFloat16)(0.5f), BFloat16.NaN };
+            yield return new object[] { BFloat16.PositiveInfinity, BFloat16.NegativeInfinity, (BFloat16)(0.5f), BFloat16.NaN };
+            yield return new object[] { BFloat16.PositiveInfinity, BFloat16.NaN, (BFloat16)(0.5f), BFloat16.NaN };
+            yield return new object[] { BFloat16.PositiveInfinity, BFloat16.PositiveInfinity, (BFloat16)(0.5f), BFloat16.PositiveInfinity };
+            yield return new object[] { BFloat16.PositiveInfinity, (BFloat16)(0.0f), (BFloat16)(0.5f), BFloat16.PositiveInfinity };
+            yield return new object[] { BFloat16.PositiveInfinity, (BFloat16)(1.0f), (BFloat16)(0.5f), BFloat16.PositiveInfinity };
+            yield return new object[] { (BFloat16)(1.0f), (BFloat16)(3.0f), (BFloat16)(0.0f), (BFloat16)(1.0f) };
+            yield return new object[] { (BFloat16)(1.0f), (BFloat16)(3.0f), (BFloat16)(0.5f), (BFloat16)(2.0f) };
+            yield return new object[] { (BFloat16)(1.0f), (BFloat16)(3.0f), (BFloat16)(1.0f), (BFloat16)(3.0f) };
+            yield return new object[] { (BFloat16)(1.0f), (BFloat16)(3.0f), (BFloat16)(2.0f), (BFloat16)(5.0f) };
+            yield return new object[] { (BFloat16)(2.0f), (BFloat16)(4.0f), (BFloat16)(0.0f), (BFloat16)(2.0f) };
+            yield return new object[] { (BFloat16)(2.0f), (BFloat16)(4.0f), (BFloat16)(0.5f), (BFloat16)(3.0f) };
+            yield return new object[] { (BFloat16)(2.0f), (BFloat16)(4.0f), (BFloat16)(1.0f), (BFloat16)(4.0f) };
+            yield return new object[] { (BFloat16)(2.0f), (BFloat16)(4.0f), (BFloat16)(2.0f), (BFloat16)(6.0f) };
+            yield return new object[] { (BFloat16)(3.0f), (BFloat16)(1.0f), (BFloat16)(0.0f), (BFloat16)(3.0f) };
+            yield return new object[] { (BFloat16)(3.0f), (BFloat16)(1.0f), (BFloat16)(0.5f), (BFloat16)(2.0f) };
+            yield return new object[] { (BFloat16)(3.0f), (BFloat16)(1.0f), (BFloat16)(1.0f), (BFloat16)(1.0f) };
+            yield return new object[] { (BFloat16)(3.0f), (BFloat16)(1.0f), (BFloat16)(2.0f), -(BFloat16)(1.0f) };
+            yield return new object[] { (BFloat16)(4.0f), (BFloat16)(2.0f), (BFloat16)(0.0f), (BFloat16)(4.0f) };
+            yield return new object[] { (BFloat16)(4.0f), (BFloat16)(2.0f), (BFloat16)(0.5f), (BFloat16)(3.0f) };
+            yield return new object[] { (BFloat16)(4.0f), (BFloat16)(2.0f), (BFloat16)(1.0f), (BFloat16)(2.0f) };
+            yield return new object[] { (BFloat16)(4.0f), (BFloat16)(2.0f), (BFloat16)(2.0f), (BFloat16)(0.0f) };
+        }
+
+        [Theory]
+        [MemberData(nameof(Lerp_TestData))]
+        public static void LerpTest(BFloat16 value1, BFloat16 value2, BFloat16 amount, BFloat16 expectedResult)
+        {
+            AssertEqual(+expectedResult, BFloat16.Lerp(+value1, +value2, amount), BFloat16.Zero);
+            AssertEqual((expectedResult == BFloat16.Zero) ? expectedResult : -expectedResult, BFloat16.Lerp(-value1, -value2, amount), BFloat16.Zero);
+        }
+
+        public static IEnumerable<object[]> DegreesToRadians_TestData()
+        {
+            yield return new object[] { BFloat16.NaN, BFloat16.NaN, BFloat16.Zero };
+            yield return new object[] { BFloat16.Zero, BFloat16.Zero, BFloat16.Zero };
+            yield return new object[] { (BFloat16)(0.3184f), (BFloat16)(0.005554f), CrossPlatformMachineEpsilon };       // value:  (1 / pi)
+            yield return new object[] { (BFloat16)(0.4343f), (BFloat16)(0.00758f), CrossPlatformMachineEpsilon };       // value:  (log10(e))
+            yield return new object[] { (BFloat16)(0.5f), (BFloat16)(0.00872f), CrossPlatformMachineEpsilon };
+            yield return new object[] { (BFloat16)(0.6367f), (BFloat16)(0.01111f), CrossPlatformMachineEpsilon };       // value:  (2 / pi)
+            yield return new object[] { (BFloat16)(0.6934f), (BFloat16)(0.0121f), CrossPlatformMachineEpsilon };       // value:  (ln(2))
+            yield return new object[] { (BFloat16)(0.707f), (BFloat16)(0.01234f), CrossPlatformMachineEpsilon };       // value:  (1 / sqrt(2))
+            yield return new object[] { (BFloat16)(0.785f), (BFloat16)(0.0137f), CrossPlatformMachineEpsilon };       // value:  (pi / 4)
+            yield return new object[] { (BFloat16)(1.0f), (BFloat16)(0.01744f), CrossPlatformMachineEpsilon };
+            yield return new object[] { (BFloat16)(1.128f), (BFloat16)(0.01968f), CrossPlatformMachineEpsilon };       // value:  (2 / sqrt(pi))
+            yield return new object[] { (BFloat16)(1.414f), (BFloat16)(0.02467f), CrossPlatformMachineEpsilon };       // value:  (sqrt(2))
+            yield return new object[] { (BFloat16)(1.442f), (BFloat16)(0.02518f), CrossPlatformMachineEpsilon };       // value:  (log2(e))
+            yield return new object[] { (BFloat16)(1.5f), (BFloat16)(0.02617f), CrossPlatformMachineEpsilon };
+            yield return new object[] { (BFloat16)(1.57f), (BFloat16)(0.0274f), CrossPlatformMachineEpsilon };       // value:  (pi / 2)
+            yield return new object[] { (BFloat16)(2.0f), (BFloat16)(0.03488f), CrossPlatformMachineEpsilon };
+            yield return new object[] { (BFloat16)(2.303f), (BFloat16)(0.04016f), CrossPlatformMachineEpsilon };       // value:  (ln(10))
+            yield return new object[] { (BFloat16)(2.5f), (BFloat16)(0.0436f), CrossPlatformMachineEpsilon };
+            yield return new object[] { (BFloat16)(2.719f), (BFloat16)(0.04742f), CrossPlatformMachineEpsilon };       // value:  (e)
+            yield return new object[] { (BFloat16)(3.0f), (BFloat16)(0.05234f), CrossPlatformMachineEpsilon };
+            yield return new object[] { (BFloat16)(3.14f), (BFloat16)(0.0548f), CrossPlatformMachineEpsilon };       // value:  (pi)
+            yield return new object[] { (BFloat16)(3.5f), (BFloat16)(0.06107f), CrossPlatformMachineEpsilon };
+            yield return new object[] { BFloat16.PositiveInfinity, BFloat16.PositiveInfinity, BFloat16.Zero };
+        }
+
+        [Theory]
+        [MemberData(nameof(DegreesToRadians_TestData))]
+        public static void DegreesToRadiansTest(BFloat16 value, BFloat16 expectedResult, BFloat16 allowedVariance)
+        {
+            AssertEqual(-expectedResult, BFloat16.DegreesToRadians(-value), allowedVariance);
+            AssertEqual(+expectedResult, BFloat16.DegreesToRadians(+value), allowedVariance);
+        }
+
+        public static IEnumerable<object[]> RadiansToDegrees_TestData()
+        {
+            yield return new object[] { BFloat16.NaN, BFloat16.NaN, BFloat16.Zero };
+            yield return new object[] { BFloat16.Zero, BFloat16.Zero, BFloat16.Zero };
+            yield return new object[] { (BFloat16)(0.005554f), (BFloat16)(0.3184f), CrossPlatformMachineEpsilon };       // value:  (1 / pi)
+            yield return new object[] { (BFloat16)(0.00758f), (BFloat16)(0.4343f), CrossPlatformMachineEpsilon };       // value:  (log10(e))
+            yield return new object[] { (BFloat16)(0.00872f), (BFloat16)(0.5f), CrossPlatformMachineEpsilon };
+            yield return new object[] { (BFloat16)(0.01111f), (BFloat16)(0.6367f), CrossPlatformMachineEpsilon };       // value:  (2 / pi)
+            yield return new object[] { (BFloat16)(0.0121f), (BFloat16)(0.6934f), CrossPlatformMachineEpsilon };       // value:  (ln(2))
+            yield return new object[] { (BFloat16)(0.01234f), (BFloat16)(0.707f), CrossPlatformMachineEpsilon };       // value:  (1 / sqrt(2))
+            yield return new object[] { (BFloat16)(0.0137f), (BFloat16)(0.785f), CrossPlatformMachineEpsilon };       // value:  (pi / 4)
+            yield return new object[] { (BFloat16)(0.01744f), (BFloat16)(1.0f), CrossPlatformMachineEpsilon };
+            yield return new object[] { (BFloat16)(0.01968f), (BFloat16)(1.128f), CrossPlatformMachineEpsilon };       // value:  (2 / sqrt(pi))
+            yield return new object[] { (BFloat16)(0.02467f), (BFloat16)(1.414f), CrossPlatformMachineEpsilon };       // value:  (sqrt(2))
+            yield return new object[] { (BFloat16)(0.02518f), (BFloat16)(1.442f), CrossPlatformMachineEpsilon };       // value:  (log2(e))
+            yield return new object[] { (BFloat16)(0.02617f), (BFloat16)(1.5f), CrossPlatformMachineEpsilon };
+            yield return new object[] { (BFloat16)(0.0274f), (BFloat16)(1.57f), CrossPlatformMachineEpsilon };       // value:  (pi / 2)
+            yield return new object[] { (BFloat16)(0.03488f), (BFloat16)(2.0f), CrossPlatformMachineEpsilon };
+            yield return new object[] { (BFloat16)(0.04016f), (BFloat16)(2.303f), CrossPlatformMachineEpsilon };       // value:  (ln(10))
+            yield return new object[] { (BFloat16)(0.0436f), (BFloat16)(2.5f), CrossPlatformMachineEpsilon };
+            yield return new object[] { (BFloat16)(0.04742f), (BFloat16)(2.719f), CrossPlatformMachineEpsilon };       // value:  (e)
+            yield return new object[] { (BFloat16)(0.05234f), (BFloat16)(3.0f), CrossPlatformMachineEpsilon };
+            yield return new object[] { (BFloat16)(0.0548f), (BFloat16)(3.14f), CrossPlatformMachineEpsilon };       // value:  (pi)
+            yield return new object[] { (BFloat16)(0.06107f), (BFloat16)(3.5f), CrossPlatformMachineEpsilon };
+            yield return new object[] { BFloat16.PositiveInfinity, BFloat16.PositiveInfinity, BFloat16.Zero };
+        }
+
+        [Theory]
+        [MemberData(nameof(RadiansToDegrees_TestData))]
+        public static void RadiansToDegreesTest(BFloat16 value, BFloat16 expectedResult, BFloat16 allowedVariance)
+        {
+            AssertEqual(-expectedResult, BFloat16.RadiansToDegrees(-value), allowedVariance);
+            AssertEqual(+expectedResult, BFloat16.RadiansToDegrees(+value), allowedVariance);
+        }
+
+        #region AssertExtentions
+        static bool IsNegativeZero(BFloat16 value)
+        {
+            return BFloat16ToUInt16Bits(value) == 0x8000;
+        }
+
+        static bool IsPositiveZero(BFloat16 value)
+        {
+            return BFloat16ToUInt16Bits(value) == 0;
+        }
+
+        static string ToStringPadded(BFloat16 value)
+        {
+            if (BFloat16.IsNaN(value))
+            {
+                return "NaN".PadLeft(5);
+            }
+            else if (BFloat16.IsPositiveInfinity(value))
+            {
+                return "+\u221E".PadLeft(5);
+            }
+            else if (BFloat16.IsNegativeInfinity(value))
+            {
+                return "-\u221E".PadLeft(5);
+            }
+            else if (IsNegativeZero(value))
+            {
+                return "-0.0".PadLeft(5);
+            }
+            else if (IsPositiveZero(value))
+            {
+                return "+0.0".PadLeft(5);
+            }
+            else
+            {
+                return $"{value,5:G5}";
+            }
+        }
+
+        /// <summary>Verifies that two <see cref="BFloat16"/> values's binary representations are identical.</summary>
+        /// <param name="expected">The expected value</param>
+        /// <param name="actual">The value to be compared against</param>
+        /// <exception cref="EqualException">Thrown when the representations are not identical</exception>
+        private static void AssertEqual(BFloat16 expected, BFloat16 actual)
+        {
+            if (BFloat16ToUInt16Bits(expected) == BFloat16ToUInt16Bits(actual))
+            {
+                return;
+            }
+
+            if (PlatformDetection.IsRiscV64Process && BFloat16.IsNaN(expected) && BFloat16.IsNaN(actual))
+            {
+                // RISC-V does not preserve payload
+                return;
+            }
+
+            throw EqualException.ForMismatchedValues(ToStringPadded(expected), ToStringPadded(actual));
+        }
+
+        /// <summary>Verifies that two <see cref="BFloat16"/> values are equal, within the <paramref name="variance"/>.</summary>
+        /// <param name="expected">The expected value</param>
+        /// <param name="actual">The value to be compared against</param>
+        /// <param name="variance">The total variance allowed between the expected and actual results.</param>
+        /// <exception cref="EqualException">Thrown when the values are not equal</exception>
+        private static void AssertEqual(BFloat16 expected, BFloat16 actual, BFloat16 variance)
+        {
+            if (BFloat16.IsNaN(expected))
+            {
+                if (BFloat16.IsNaN(actual))
+                {
+                    return;
+                }
+
+                throw EqualException.ForMismatchedValues(ToStringPadded(expected), ToStringPadded(actual));
+            }
+            else if (BFloat16.IsNaN(actual))
+            {
+                throw EqualException.ForMismatchedValues(ToStringPadded(expected), ToStringPadded(actual));
+            }
+
+            if (BFloat16.IsNegativeInfinity(expected))
+            {
+                if (BFloat16.IsNegativeInfinity(actual))
+                {
+                    return;
+                }
+
+                throw EqualException.ForMismatchedValues(ToStringPadded(expected), ToStringPadded(actual));
+            }
+            else if (BFloat16.IsNegativeInfinity(actual))
+            {
+                throw EqualException.ForMismatchedValues(ToStringPadded(expected), ToStringPadded(actual));
+            }
+
+            if (BFloat16.IsPositiveInfinity(expected))
+            {
+                if (BFloat16.IsPositiveInfinity(actual))
+                {
+                    return;
+                }
+
+                throw EqualException.ForMismatchedValues(ToStringPadded(expected), ToStringPadded(actual));
+            }
+            else if (BFloat16.IsPositiveInfinity(actual))
+            {
+                throw EqualException.ForMismatchedValues(ToStringPadded(expected), ToStringPadded(actual));
+            }
+
+            if (IsNegativeZero(expected))
+            {
+                if (IsNegativeZero(actual))
+                {
+                    return;
+                }
+
+                if (IsPositiveZero(variance) || IsNegativeZero(variance))
+                {
+                    throw EqualException.ForMismatchedValues(ToStringPadded(expected), ToStringPadded(actual));
+                }
+
+                // When the variance is not +-0.0, then we are handling a case where
+                // the actual result is expected to not be exactly -0.0 on some platforms
+                // and we should fallback to checking if it is within the allowed variance instead.
+            }
+            else if (IsNegativeZero(actual))
+            {
+                if (IsPositiveZero(variance) || IsNegativeZero(variance))
+                {
+                    throw EqualException.ForMismatchedValues(ToStringPadded(expected), ToStringPadded(actual));
+                }
+
+                // When the variance is not +-0.0, then we are handling a case where
+                // the actual result is expected to not be exactly -0.0 on some platforms
+                // and we should fallback to checking if it is within the allowed variance instead.
+            }
+
+            if (IsPositiveZero(expected))
+            {
+                if (IsPositiveZero(actual))
+                {
+                    return;
+                }
+
+                if (IsPositiveZero(variance) || IsNegativeZero(variance))
+                {
+                    throw EqualException.ForMismatchedValues(ToStringPadded(expected), ToStringPadded(actual));
+                }
+
+                // When the variance is not +-0.0, then we are handling a case where
+                // the actual result is expected to not be exactly +0.0 on some platforms
+                // and we should fallback to checking if it is within the allowed variance instead.
+            }
+            else if (IsPositiveZero(actual))
+            {
+                if (IsPositiveZero(variance) || IsNegativeZero(variance))
+                {
+                    throw EqualException.ForMismatchedValues(ToStringPadded(expected), ToStringPadded(actual));
+                }
+
+                // When the variance is not +-0.0, then we are handling a case where
+                // the actual result is expected to not be exactly +0.0 on some platforms
+                // and we should fallback to checking if it is within the allowed variance instead.
+            }
+
+            BFloat16 delta = (BFloat16)Math.Abs((float)actual - (float)expected);
+
+            if (delta > variance)
+            {
+                throw EqualException.ForMismatchedValues(ToStringPadded(expected), ToStringPadded(actual));
+            }
+        }
+        #endregion
     }
 }
