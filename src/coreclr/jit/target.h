@@ -233,12 +233,6 @@ typedef uint64_t regMaskSmall;
 // #define HAS_MORE_THAN_64_REGISTERS 1
 #endif // TARGET_ARM64
 
-#ifdef HAS_MORE_THAN_64_REGISTERS
-#define MORE_THAN_64_REGISTERS_ARG(x) , x
-#else
-#define MORE_THAN_64_REGISTERS_ARG(x)
-#endif
-
 // TODO: Rename regMaskSmall as RegSet64 (at least for 64-bit)
 typedef regMaskSmall    SingleTypeRegSet;
 inline SingleTypeRegSet genSingleTypeRegMask(regNumber reg);
@@ -449,20 +443,29 @@ public:
 
 static regMaskTP operator^(const regMaskTP& first, const regMaskTP& second)
 {
-    regMaskTP result(first.getLow() ^ second.getLow() MORE_THAN_64_REGISTERS_ARG(first.getHigh() ^ second.getHigh()));
-    return result;
+#ifdef HAS_MORE_THAN_64_REGISTERS
+    return regMaskTP(first.getLow() ^ second.getLow(), first.getHigh() ^ second.getHigh());
+#else
+    return regMaskTP(first.getLow() ^ second.getLow());
+#endif
 }
 
 static constexpr regMaskTP operator&(const regMaskTP& first, const regMaskTP& second)
 {
-    regMaskTP result(first.getLow() & second.getLow() MORE_THAN_64_REGISTERS_ARG(first.getHigh() & second.getHigh()));
-    return result;
+#ifdef HAS_MORE_THAN_64_REGISTERS
+    return regMaskTP(first.getLow() & second.getLow(), first.getHigh() & second.getHigh());
+#else
+    return regMaskTP(first.getLow() & second.getLow());
+#endif
 }
 
 static constexpr regMaskTP operator|(const regMaskTP& first, const regMaskTP& second)
 {
-    regMaskTP result(first.getLow() | second.getLow() MORE_THAN_64_REGISTERS_ARG(first.getHigh() | second.getHigh()));
-    return result;
+#ifdef HAS_MORE_THAN_64_REGISTERS
+    return regMaskTP(first.getLow() | second.getLow(), first.getHigh() | second.getHigh());
+#else
+    return regMaskTP(first.getLow() | second.getLow());
+#endif
 }
 
 static constexpr bool operator==(const regMaskTP& first, const regMaskTP& second)
@@ -506,8 +509,7 @@ static regMaskTP& operator<<=(regMaskTP& first, const int b)
 
 static constexpr regMaskTP operator>>(regMaskTP first, const int b)
 {
-    regMaskTP result(first.getLow() >> b);
-    return result;
+    return regMaskTP(first.getLow() >> b);
 }
 
 static regMaskTP& operator>>=(regMaskTP& first, const int b)
@@ -516,10 +518,13 @@ static regMaskTP& operator>>=(regMaskTP& first, const int b)
     return first;
 }
 
-static constexpr regMaskTP operator~(const regMaskTP& first)
+static constexpr regMaskTP operator~(const regMaskTP first)
 {
-    regMaskTP result(~first.getLow() MORE_THAN_64_REGISTERS_ARG(~first.getHigh()));
-    return result;
+#ifdef HAS_MORE_THAN_64_REGISTERS
+    return regMaskTP(~first.getLow(), ~first.getHigh());
+#else
+    return regMaskTP(~first.getLow());
+#endif
 }
 
 static uint32_t PopCount(SingleTypeRegSet value)
