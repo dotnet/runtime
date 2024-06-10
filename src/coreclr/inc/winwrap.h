@@ -220,7 +220,6 @@
 //Long Files will not work on these till redstone
 #define WszGetCurrentDirectory GetCurrentDirectoryWrapper
 #define WszGetTempFileName     GetTempFileNameWrapper
-#define WszGetTempPath         GetTempPathWrapper
 
 //APIS which have a buffer as an out parameter
 #define WszGetEnvironmentVariable GetEnvironmentVariableWrapper

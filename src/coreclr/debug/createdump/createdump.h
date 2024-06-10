@@ -132,5 +132,10 @@ typedef struct
 extern bool CreateDump(const CreateDumpOptions& options);
 extern bool FormatDumpName(std::string& name, const char* pattern, const char* exename, int pid);
 
+#ifdef HOST_WINDOWS
+extern DWORD GetTempPathWrapper(IN DWORD nBufferLength, OUT LPSTR lpBuffer);
+#else
+#define GetTempPathWrapper GetTempPathA
+#endif
 extern void printf_status(const char* format, ...);
 extern void printf_error(const char* format, ...);
