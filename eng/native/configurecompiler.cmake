@@ -154,7 +154,7 @@ elseif (CLR_CMAKE_HOST_UNIX)
 endif(MSVC)
 
 if(CLR_CMAKE_TARGET_APPLE)
-  add_link_options($<$<BOOL:$<TARGET_PROPERTY:INTERPROCEDURAL_OPTIMIZATION>>:LINKER:object_path_lto,lto.o>)
+  add_link_options($<$<BOOL:$<TARGET_PROPERTY:INTERPROCEDURAL_OPTIMIZATION>>:-Wl,object_path_lto,lto.o>)
 endif()
 
 check_ipo_supported(RESULT result OUTPUT output)
