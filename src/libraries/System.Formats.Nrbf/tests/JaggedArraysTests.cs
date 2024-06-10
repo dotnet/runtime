@@ -17,7 +17,7 @@ public class JaggedArraysTests : ReadTests
         var arrayRecord = (ArrayRecord)NrbfDecoder.Decode(Serialize(input));
 
         VerifyLength(input, arrayRecord);
-        Assert.Equal(BinaryArrayType.Jagged, arrayRecord.ArrayType);
+        Assert.True(arrayRecord.ElementTypeName.IsArray);
         Assert.Equal(input, arrayRecord.GetArray(input.GetType()));
     }
 
@@ -34,7 +34,7 @@ public class JaggedArraysTests : ReadTests
         var arrayRecord = (ArrayRecord)NrbfDecoder.Decode(Serialize(input));
 
         VerifyLength(input, arrayRecord);
-        Assert.Equal(BinaryArrayType.Jagged, arrayRecord.ArrayType);
+        Assert.True(arrayRecord.ElementTypeName.IsArray);
         Assert.Equal(input, arrayRecord.GetArray(input.GetType()));
         Assert.Equal(1, arrayRecord.Rank);
     }
@@ -59,7 +59,7 @@ public class JaggedArraysTests : ReadTests
         var arrayRecord = (ArrayRecord)NrbfDecoder.Decode(Serialize(input));
 
         VerifyLength(input, arrayRecord);
-        Assert.Equal(BinaryArrayType.Jagged, arrayRecord.ArrayType);
+        Assert.True(arrayRecord.ElementTypeName.IsArray);
         Assert.Equal(input, arrayRecord.GetArray(input.GetType()));
         Assert.Equal(1, arrayRecord.Rank);
     }
@@ -76,7 +76,7 @@ public class JaggedArraysTests : ReadTests
         var arrayRecord = (ArrayRecord)NrbfDecoder.Decode(Serialize(input));
 
         VerifyLength(input, arrayRecord);
-        Assert.Equal(BinaryArrayType.Jagged, arrayRecord.ArrayType);
+        Assert.True(arrayRecord.ElementTypeName.IsArray);
         Assert.Equal(input, arrayRecord.GetArray(input.GetType()));
     }
 
@@ -92,7 +92,7 @@ public class JaggedArraysTests : ReadTests
         var arrayRecord = (ArrayRecord)NrbfDecoder.Decode(Serialize(input));
 
         VerifyLength(input, arrayRecord);
-        Assert.Equal(BinaryArrayType.Jagged, arrayRecord.ArrayType);
+        Assert.True(arrayRecord.ElementTypeName.IsArray);
         Assert.Equal(input, arrayRecord.GetArray(input.GetType()));
     }
 
@@ -114,7 +114,7 @@ public class JaggedArraysTests : ReadTests
         var arrayRecord = (ArrayRecord)NrbfDecoder.Decode(Serialize(input));
 
         VerifyLength(input, arrayRecord);
-        Assert.Equal(BinaryArrayType.Jagged, arrayRecord.ArrayType);
+        Assert.True(arrayRecord.ElementTypeName.IsArray);
         var output = (ClassRecord?[][])arrayRecord.GetArray(input.GetType());
         for (int i = 0; i < input.Length; i++)
         {

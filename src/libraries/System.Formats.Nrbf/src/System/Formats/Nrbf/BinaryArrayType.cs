@@ -9,7 +9,7 @@ namespace System.Formats.Nrbf;
 /// <remarks>
 /// BinaryArrayType enumeration is described in <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/4dbbf3a8-6bc4-4dfc-aa7e-36a35be6ff58">[MS-NRBF] 2.4.1.1</see>.
 /// </remarks>
-public enum BinaryArrayType : byte
+internal enum BinaryArrayType : byte
 {
     /// <summary>
     ///  A single-dimensional array.
@@ -24,20 +24,5 @@ public enum BinaryArrayType : byte
     /// <summary>
     ///  A multi-dimensional rectangular array.
     /// </summary>
-    Rectangular = 2,
-
-    /// <summary>
-    ///  A single-dimensional array where the lower bound index is greater than 0.
-    /// </summary>
-    SingleOffset = 3,
-
-    /// <summary>
-    ///  A jagged array where the lower bound index is greater than 0.
-    /// </summary>
-    JaggedOffset = 4,
-
-    /// <summary>
-    ///  Multi-dimensional arrays where the lower bound index of at least one of the dimensions is greater than 0.
-    /// </summary>
-    RectangularOffset = 5,
+    Rectangular = 2
 }

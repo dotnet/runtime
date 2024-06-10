@@ -284,78 +284,6 @@ public class TypeMatchTests : ReadTests
         VerifyRectangularArray_5D(new GenericNonSystemClass<GenericNonSystemClass<NonSystemClass>>());
     }
 
-    [Theory]
-    [InlineData(1)] // BinaryArrayType.SingleOffset
-    [InlineData(2)] // BinaryArrayType.JaggedOffset
-    [InlineData(3)] // BinaryArrayType.RectangularOffset
-    [InlineData(32)] // max rank
-    public void CanRecognizeArraysOfAllSupportedPrimitiveTypesWithCustomOffsets(int arrayRank)
-    {
-        VerifyCustomOffsetArray(true, arrayRank);
-        VerifyCustomOffsetArray('c', arrayRank);
-        VerifyCustomOffsetArray(byte.MaxValue, arrayRank);
-        VerifyCustomOffsetArray(sbyte.MaxValue, arrayRank);
-        VerifyCustomOffsetArray(short.MaxValue, arrayRank);
-        VerifyCustomOffsetArray(ushort.MaxValue, arrayRank);
-        VerifyCustomOffsetArray(int.MaxValue, arrayRank);
-        VerifyCustomOffsetArray(uint.MaxValue, arrayRank);
-#if !NETFRAMEWORK
-        VerifyCustomOffsetArray(nint.MaxValue, arrayRank);
-        VerifyCustomOffsetArray(nuint.MaxValue, arrayRank);
-#endif
-        VerifyCustomOffsetArray(long.MaxValue, arrayRank);
-        VerifyCustomOffsetArray(ulong.MaxValue, arrayRank);
-        VerifyCustomOffsetArray(float.MaxValue, arrayRank);
-        VerifyCustomOffsetArray(double.MaxValue, arrayRank);
-        VerifyCustomOffsetArray(decimal.MaxValue, arrayRank);
-        VerifyCustomOffsetArray(TimeSpan.MaxValue, arrayRank);
-        VerifyCustomOffsetArray(DateTime.Now, arrayRank);
-    }
-
-    [Theory]
-    // [InlineData(1)] // BinaryArrayType.SingleOffset bug in BinaryFormatter!!
-    [InlineData(2)] // BinaryArrayType.JaggedOffset
-    [InlineData(3)] // BinaryArrayType.RectangularOffset
-    [InlineData(32)] // max rank
-    public void CanRecognizeArraysOfSystemTypesWithCustomOffsets(int arrayRank)
-    {
-        VerifyCustomOffsetArray(new NotSupportedException(), arrayRank);
-    }
-
-    [Theory]
-    // [InlineData(1)] // BinaryArrayType.SingleOffset bug in BinaryFormatter!!
-    [InlineData(2)] // BinaryArrayType.JaggedOffset
-    [InlineData(3)] // BinaryArrayType.RectangularOffset
-    [InlineData(32)] // max rank
-    public void CanRecognizeArraysOfNonSystemTypesWithCustomOffsets(int arrayRank)
-    {
-        VerifyCustomOffsetArray(new NonSystemClass(), arrayRank);
-    }
-
-    [Theory]
-    // [InlineData(1)] // BinaryArrayType.SingleOffset bug in BinaryFormatter!!
-    [InlineData(2)] // BinaryArrayType.JaggedOffset
-    [InlineData(3)] // BinaryArrayType.RectangularOffset
-    [InlineData(32)] // max rank
-    public void CanRecognizeArraysOfGenericSystemTypesWithCustomOffsets(int arrayRank)
-    {
-        VerifyCustomOffsetArray(new List<bool>(), arrayRank);
-        VerifyCustomOffsetArray(new List<List<int>>(), arrayRank);
-        VerifyCustomOffsetArray(new Dictionary<string, bool>(), arrayRank);
-        VerifyCustomOffsetArray(new Dictionary<string, List<ValueTuple<int, short>>>(), arrayRank);
-    }
-
-    [Theory]
-    // [InlineData(1)] // BinaryArrayType.SingleOffset bug in BinaryFormatter!!
-    [InlineData(2)] // BinaryArrayType.JaggedOffset
-    [InlineData(3)] // BinaryArrayType.RectangularOffset
-    [InlineData(32)] // max rank
-    public void CanRecognizeArraysOfGenericNonSystemTypesWithCustomOffsets(int arrayRank)
-    {
-        VerifyCustomOffsetArray(new GenericNonSystemClass<NonSystemClass>(), arrayRank);
-        VerifyCustomOffsetArray(new GenericNonSystemClass<GenericNonSystemClass<NonSystemClass>>(), arrayRank);
-    }
-
     private static void Verify<T>(T input) where T : notnull
     {
         SerializationRecord one = NrbfDecoder.Decode(Serialize(input));
@@ -443,8 +371,9 @@ public class TypeMatchTests : ReadTests
         ArrayRecord arrayRecord = (ArrayRecord)NrbfDecoder.Decode(Serialize(array));
 
         Assert.Equal(typeof(T).GetTypeFullNameIncludingTypeForwards(), arrayRecord.ElementTypeName.FullName);
+
         Assert.False(arrayRecord is SZArrayRecord<T>, userMessage: typeof(T).Name);
-        Assert.True(arrayRecord.ArrayType is BinaryArrayType.Rectangular);
+        Assert.True(arrayRecord.Rank > 1);
 
         foreach (Type type in PrimitiveTypes.Concat([typeof(T)]))
         {
@@ -452,38 +381,6 @@ public class TypeMatchTests : ReadTests
             Assert.False(arrayRecord.IsTypeNameMatching(type.MakeArrayType(arrayRank - 1)));
             Assert.Equal(typeof(T) == type, arrayRecord.IsTypeNameMatching(type.MakeArrayType(arrayRank)));
             Assert.False(arrayRecord.IsTypeNameMatching(type.MakeArrayType(arrayRank + 1)));
-        }
-    }
-
-    private static void VerifyCustomOffsetArray<T>(T input, int arrayRank) where T : notnull
-    {
-        int[] lengths = Enumerable.Repeat(1  /* length */, arrayRank).ToArray();
-        int[] offsets = Enumerable.Repeat(10 /* offset */, arrayRank).ToArray();
-
-        Array array = Array.CreateInstance(typeof(T), lengths, offsets);
-        for (int dimension = 0; dimension < lengths.Length; dimension++)
-        {
-            Assert.Equal(offsets[dimension], array.GetLowerBound(dimension));
-        }
-        array.SetValue(input, offsets);
-
-        ArrayRecord arrayRecord = (ArrayRecord)NrbfDecoder.Decode(Serialize(array));
-
-        Assert.Equal(typeof(T).GetTypeFullNameIncludingTypeForwards(), arrayRecord.ElementTypeName.FullName);
-        Assert.False(arrayRecord is SZArrayRecord<T>, userMessage: typeof(T).Name);
-
-        foreach (Type type in PrimitiveTypes.Concat([typeof(T)]))
-        {
-            Assert.False(arrayRecord.IsTypeNameMatching(type));
-            if (arrayRank > 1)
-            {
-                Assert.False(arrayRecord.IsTypeNameMatching(type.MakeArrayType(arrayRank - 1)));
-            }
-            Assert.Equal(typeof(T) == type, arrayRecord.IsTypeNameMatching(type.MakeArrayType(arrayRank)));
-            if (arrayRank <= 31) // 32 is max
-            {
-                Assert.False(arrayRecord.IsTypeNameMatching(type.MakeArrayType(arrayRank + 1)));
-            }
         }
     }
 }

@@ -119,7 +119,7 @@ internal sealed class BinaryArrayRecord : ArrayRecord
         BinaryArrayType arrayType = reader.ReadArrayType();
         int rank = reader.ReadInt32();
 
-        bool isRectangular = arrayType is BinaryArrayType.Rectangular or BinaryArrayType.RectangularOffset;
+        bool isRectangular = arrayType is BinaryArrayType.Rectangular;
 
         // It is an arbitrary limit in the current CoreCLR type loader.
         const int MaxSupportedArrayRank = 32;
@@ -144,39 +144,12 @@ internal sealed class BinaryArrayRecord : ArrayRecord
             }
         }
 
-        int[] offsets = new int[rank]; // zero-init; adversary-controlled, but acceptable since upper limit of 32
-        bool hasCustomOffset = false;
-        if (arrayType is BinaryArrayType.SingleOffset or BinaryArrayType.JaggedOffset or BinaryArrayType.RectangularOffset)
-        {
-            for (int i = 0; i < offsets.Length; i++)
-            {
-                int offset = reader.ReadInt32();
-
-                if (offset < 0)
-                {
-                    ThrowHelper.ThrowInvalidValue(offset);
-                }
-                else if (offset > 0)
-                {
-                    hasCustomOffset = true;
-
-                    long maxIndex = lengths[i] + offset;
-                    if (maxIndex > int.MaxValue)
-                    {
-                        ThrowHelper.ThrowInvalidValue(maxIndex);
-                    }
-                }
-
-                offsets[i] = offset;
-            }
-        }
-
         MemberTypeInfo memberTypeInfo = MemberTypeInfo.Decode(reader, 1, options, recordMap);
         ArrayInfo arrayInfo = new(objectId, totalElementCount, arrayType, rank);
 
-        if (isRectangular || hasCustomOffset)
+        if (isRectangular)
         {
-            return RectangularOrCustomOffsetArrayRecord.Create(reader, arrayInfo, memberTypeInfo, lengths, offsets);
+            return RectangularArrayRecord.Create(reader, arrayInfo, memberTypeInfo, lengths);
         }
 
         return memberTypeInfo.ShouldBeRepresentedAsArrayOfClassRecords()

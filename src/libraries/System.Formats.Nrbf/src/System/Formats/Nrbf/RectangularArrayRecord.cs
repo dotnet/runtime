@@ -11,19 +11,18 @@ using System.Formats.Nrbf.Utils;
 
 namespace System.Formats.Nrbf;
 
-internal sealed class RectangularOrCustomOffsetArrayRecord : ArrayRecord
+internal sealed class RectangularArrayRecord : ArrayRecord
 {
     private readonly int[] _lengths;
     private readonly ICollection<object> _values;
     private TypeName? _elementTypeName;
 
-    private RectangularOrCustomOffsetArrayRecord(Type elementType, ArrayInfo arrayInfo,
-        MemberTypeInfo memberTypeInfo, int[] lengths, int[] offsets, bool canPreAllocate) : base(arrayInfo)
+    private RectangularArrayRecord(Type elementType, ArrayInfo arrayInfo,
+        MemberTypeInfo memberTypeInfo, int[] lengths, bool canPreAllocate) : base(arrayInfo)
     {
         ElementType = elementType;
         MemberTypeInfo = memberTypeInfo;
         _lengths = lengths;
-        Offsets = offsets;
 
         // A List<T> can hold as many objects as an array, so for multi-dimensional arrays
         // with more elements than Array.MaxLength we use LinkedList.
@@ -50,8 +49,6 @@ internal sealed class RectangularOrCustomOffsetArrayRecord : ArrayRecord
 
     private MemberTypeInfo MemberTypeInfo { get; }
 
-    private int[] Offsets { get; }
-
     internal override bool IsElementType(Type typeElement)
         => MemberTypeInfo.IsElementType(typeElement);
 
@@ -63,15 +60,14 @@ internal sealed class RectangularOrCustomOffsetArrayRecord : ArrayRecord
         Array result =
 #if NET9_0_OR_GREATER
             ElementType == typeof(ClassRecord)
-                ? Array.CreateInstance(ElementType, _lengths, Offsets)
-                : Array.CreateInstanceFromArrayType(arrayType, _lengths, Offsets);
+                ? Array.CreateInstance(ElementType, _lengths)
+                : Array.CreateInstanceFromArrayType(arrayType, _lengths);
 #else
-            Array.CreateInstance(ElementType, _lengths, Offsets);
+            Array.CreateInstance(ElementType, _lengths);
 #endif
 
 #if !NET8_0_OR_GREATER
-        int[] indices = new int[Offsets.Length];
-        Offsets.CopyTo(indices, 0); // respect custom offsets
+        int[] indices = new int[_lengths.Length];
 
         foreach (object value in _values)
         {
@@ -81,11 +77,11 @@ internal sealed class RectangularOrCustomOffsetArrayRecord : ArrayRecord
             while (dimension >= 0)
             {
                 indices[dimension]++;
-                if (indices[dimension] < Offsets[dimension] + Lengths[dimension])
+                if (indices[dimension] < Lengths[dimension])
                 {
                     break;
                 }
-                indices[dimension] = Offsets[dimension];
+                indices[dimension] = 0;
                 dimension--;
             }
 
@@ -153,8 +149,8 @@ internal sealed class RectangularOrCustomOffsetArrayRecord : ArrayRecord
         return (allowed, primitiveType);
     }
 
-    internal static RectangularOrCustomOffsetArrayRecord Create(BinaryReader reader, ArrayInfo arrayInfo,
-        MemberTypeInfo memberTypeInfo, int[] lengths, int[] offsets)
+    internal static RectangularArrayRecord Create(BinaryReader reader, ArrayInfo arrayInfo,
+        MemberTypeInfo memberTypeInfo, int[] lengths)
     {
         BinaryType binaryType = memberTypeInfo.Infos[0].BinaryType;
         Type elementType = binaryType switch
@@ -202,7 +198,7 @@ internal sealed class RectangularOrCustomOffsetArrayRecord : ArrayRecord
             }
         }
 
-        return new RectangularOrCustomOffsetArrayRecord(elementType, arrayInfo, memberTypeInfo, lengths, offsets, canPreAllocate);
+        return new RectangularArrayRecord(elementType, arrayInfo, memberTypeInfo, lengths, canPreAllocate);
     }
 
     private static Type MapPrimitive(PrimitiveType primitiveType)

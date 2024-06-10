@@ -14,9 +14,15 @@ internal static class BinaryReaderExtensions
     internal static BinaryArrayType ReadArrayType(this BinaryReader reader)
     {
         byte arrayType = reader.ReadByte();
-        // RectangularOffset is the last defined value.
-        if (arrayType > (byte)BinaryArrayType.RectangularOffset)
+        // Rectangular is the last defined value.
+        if (arrayType > (byte)BinaryArrayType.Rectangular)
         {
+            // Custom offset arrays
+            if (arrayType >= 3 && arrayType <= 5)
+            {
+                throw new NotSupportedException(SR.NotSupported_NonZeroOffsets);
+            }
+
             ThrowHelper.ThrowInvalidValue(arrayType);
         }
 

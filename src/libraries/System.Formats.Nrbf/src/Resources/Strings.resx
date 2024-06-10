@@ -156,4 +156,7 @@
   <data name="Serialization_MemberTypeMismatchException" xml:space="preserve">
     <value>Specified member '{0}' was not of the expected type.</value>
   </data>
+  <data name="NotSupported_NonZeroOffsets" xml:space="preserve">
+    <value>Only arrays with zero offsets are supported.</value>
+  </data>
 </root>

@@ -288,10 +288,10 @@ public class InvalidInputTests : ReadTests
     }
 
     [Theory]
-    [InlineData(BinaryArrayType.Single)]
-    [InlineData(BinaryArrayType.Jagged)]
-    [InlineData(BinaryArrayType.Rectangular)]
-    public void ThrowsForNegativeArrayLength(BinaryArrayType arrayType)
+    [InlineData((byte)BinaryArrayType.Single)]
+    [InlineData((byte)BinaryArrayType.Jagged)]
+    [InlineData((byte)BinaryArrayType.Rectangular)]
+    public void ThrowsForNegativeArrayLength(byte arrayType)
     {
         using MemoryStream stream = new();
         BinaryWriter writer = new(stream, Encoding.UTF8);
@@ -300,7 +300,7 @@ public class InvalidInputTests : ReadTests
 
         writer.Write((byte)RecordType.BinaryArray);
         writer.Write(1); // object Id
-        writer.Write((byte)arrayType);
+        writer.Write(arrayType);
         writer.Write(1); // rank
         writer.Write(-1); // length!
         writer.Write((byte)RecordType.MessageEnd);
@@ -310,13 +310,13 @@ public class InvalidInputTests : ReadTests
     }
 
     [Theory]
-    [InlineData(-1, BinaryArrayType.Single)]
-    [InlineData(0, BinaryArrayType.Single)]
-    [InlineData(-1, BinaryArrayType.Jagged)]
-    [InlineData(0, BinaryArrayType.Jagged)]
-    [InlineData(-1, BinaryArrayType.Rectangular)]
-    [InlineData(0, BinaryArrayType.Rectangular)]
-    public void ThrowsForInvalidArrayRank(int rank, BinaryArrayType arrayType)
+    [InlineData(-1, (byte)BinaryArrayType.Single)]
+    [InlineData(0, (byte)BinaryArrayType.Single)]
+    [InlineData(-1, (byte)BinaryArrayType.Jagged)]
+    [InlineData(0, (byte)BinaryArrayType.Jagged)]
+    [InlineData(-1, (byte)BinaryArrayType.Rectangular)]
+    [InlineData(0, (byte)BinaryArrayType.Rectangular)]
+    public void ThrowsForInvalidArrayRank(int rank, byte arrayType)
     {
         using MemoryStream stream = new();
         BinaryWriter writer = new(stream, Encoding.UTF8);
@@ -325,7 +325,7 @@ public class InvalidInputTests : ReadTests
 
         writer.Write((byte)RecordType.BinaryArray);
         writer.Write(1); // object Id
-        writer.Write((byte)arrayType);
+        writer.Write(arrayType);
         writer.Write(rank); // rank!
         writer.Write(1); // length
         writer.Write((byte)RecordType.MessageEnd);
@@ -335,9 +335,9 @@ public class InvalidInputTests : ReadTests
     }
 
     [Theory]
-    [InlineData(2, BinaryArrayType.Single)]
-    [InlineData(2, BinaryArrayType.Jagged)]
-    public void ThrowsForInvalidPositiveArrayRank(int rank, BinaryArrayType arrayType)
+    [InlineData(2, (byte)BinaryArrayType.Single)]
+    [InlineData(2, (byte)BinaryArrayType.Jagged)]
+    public void ThrowsForInvalidPositiveArrayRank(int rank, byte arrayType)
     {
         using MemoryStream stream = new();
         BinaryWriter writer = new(stream, Encoding.UTF8);
@@ -346,7 +346,7 @@ public class InvalidInputTests : ReadTests
 
         writer.Write((byte)RecordType.BinaryArray);
         writer.Write(1); // object Id
-        writer.Write((byte)arrayType);
+        writer.Write(arrayType);
         writer.Write(rank); // rank!
         writer.Write(1); // length
         writer.Write((byte)RecordType.MessageEnd);

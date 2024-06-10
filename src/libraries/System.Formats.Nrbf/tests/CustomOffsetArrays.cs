@@ -1,11 +1,12 @@
-﻿using Xunit;
+﻿using System.IO;
+using Xunit;
 
 namespace System.Formats.Nrbf.Tests;
 
 public class CustomOffsetArrays : ReadTests
 {
     [Fact]
-    public void CanReadSingleDimensionalArrayOfIntegersWithCustomOffset()
+    public void SingleDimensionalArrayOfIntegersWithCustomOffset_ThrowsNSE()
     {
         const int lowerBound = 1;
         Array input = Array.CreateInstance(typeof(int), lengths: [3], lowerBounds: [lowerBound]);
@@ -14,13 +15,13 @@ public class CustomOffsetArrays : ReadTests
             input.SetValue(value: i, index: i); 
         }
 
-        ArrayRecord arrayRecord = (ArrayRecord)NrbfDecoder.Decode(Serialize(input));
+        using MemoryStream stream = Serialize(input);
 
-        Assert.Equal(input, arrayRecord.GetArray(input.GetType()));
+        Assert.Throws<NotSupportedException>(() => NrbfDecoder.Decode(stream));
     }
 
     [Fact]
-    public void CanReadRectangularArrayOfStringsWithCustomOffsets()
+    public void RectangularArrayOfStringsWithCustomOffsets_ThrowsNSE()
     {
         const int lowerBound = 10;
         Array input = Array.CreateInstance(typeof(string), lengths: [7, 5], lowerBounds: [lowerBound, lowerBound]);
@@ -32,9 +33,9 @@ public class CustomOffsetArrays : ReadTests
             }
         }
 
-        ArrayRecord arrayRecord = (ArrayRecord)NrbfDecoder.Decode(Serialize(input));
+        using MemoryStream stream = Serialize(input);
 
-        Assert.Equal(input, arrayRecord.GetArray(input.GetType()));
+        Assert.Throws<NotSupportedException>(() => NrbfDecoder.Decode(stream));
     }
 
     [Serializable]
@@ -44,7 +45,7 @@ public class CustomOffsetArrays : ReadTests
     }
 
     [Fact]
-    public void CanReadRectangularArraysOfComplexTypes_3D()
+    public void RectangularArraysOfComplexTypes_ThrowsNSE()
     {
         const int lowerBoundI = 1, lowerBoundJ = 2, lowerBoundK = 2;
         Array input = Array.CreateInstance(typeof(ComplexType3D), 
@@ -63,38 +64,19 @@ public class CustomOffsetArrays : ReadTests
             }
         }
 
-        ArrayRecord arrayRecord = (ArrayRecord)NrbfDecoder.Decode(Serialize(input));
+        using MemoryStream stream = Serialize(input);
 
-        RectangularArraysTests.VerifyLength(input, arrayRecord);
-        Array output = arrayRecord.GetArray(input.GetType());
-
-        for (int i = 0; i < input.GetLength(0); i++)
-        {
-            for (int j = 0; j < input.GetLength(1); j++)
-            {
-                for (int k = 0; k < input.GetLength(2); k++)
-                {
-                    ComplexType3D expected = (ComplexType3D)input.GetValue(i + lowerBoundI, j + lowerBoundJ, k + lowerBoundK)!;
-                    ClassRecord got = (ClassRecord)output.GetValue(i + lowerBoundI, j + lowerBoundJ, k + lowerBoundK)!;
-
-                    Assert.Equal(expected.I, got.GetInt32(nameof(ComplexType3D.I)));
-                    Assert.Equal(expected.J, got.GetInt32(nameof(ComplexType3D.J)));
-                    Assert.Equal(expected.K, got.GetInt32(nameof(ComplexType3D.K)));
-                }
-            }
-        }
+        Assert.Throws<NotSupportedException>(() => NrbfDecoder.Decode(stream));
     }
 
     [Fact]
-    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Not supported, custom offsets will be soon removed.")]
-    public void JaggedCustomOffset()
+    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "BinaryFormatter fails to serialize the input.")]
+    public void JaggedCustomOffset_ThrowsNSE()
     {
         Array input = Array.CreateInstance(typeof(uint[]), [5], [1]);
 
-        ArrayRecord arrayRecord = (ArrayRecord)NrbfDecoder.Decode(Serialize(input));
+        using MemoryStream stream = Serialize(input);
 
-        Array output = arrayRecord.GetArray(expectedArrayType: input.GetType());
-
-        Assert.Equal(input, output);
+        Assert.Throws<NotSupportedException>(() => NrbfDecoder.Decode(stream));
     }
 }
