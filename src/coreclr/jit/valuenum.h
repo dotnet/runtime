@@ -447,13 +447,13 @@ public:
     ValueNum VNForByrefCon(target_size_t byrefVal);
 
 #if defined(FEATURE_SIMD)
-    ValueNum VNForSimd8Con(simd8_t cnsVal);
-    ValueNum VNForSimd12Con(simd12_t cnsVal);
-    ValueNum VNForSimd16Con(simd16_t cnsVal);
+    ValueNum VNForSimd8Con(const simd8_t& cnsVal);
+    ValueNum VNForSimd12Con(const simd12_t& cnsVal);
+    ValueNum VNForSimd16Con(const simd16_t& cnsVal);
 #if defined(TARGET_XARCH)
-    ValueNum VNForSimd32Con(simd32_t cnsVal);
-    ValueNum VNForSimd64Con(simd64_t cnsVal);
-    ValueNum VNForSimdMaskCon(simdmask_t cnsVal);
+    ValueNum VNForSimd32Con(const simd32_t& cnsVal);
+    ValueNum VNForSimd64Con(const simd64_t& cnsVal);
+    ValueNum VNForSimdMaskCon(const simdmask_t& cnsVal);
 #endif // TARGET_XARCH
 #endif // FEATURE_SIMD
     ValueNum VNForGenericCon(var_types typ, uint8_t* cnsVal);
@@ -1604,12 +1604,12 @@ private:
 #if defined(FEATURE_SIMD)
     struct Simd8PrimitiveKeyFuncs : public JitKeyFuncsDefEquals<simd8_t>
     {
-        static bool Equals(simd8_t x, simd8_t y)
+        static bool Equals(const simd8_t& x, const simd8_t& y)
         {
             return x == y;
         }
 
-        static unsigned GetHashCode(const simd8_t val)
+        static unsigned GetHashCode(const simd8_t& val)
         {
             unsigned hash = 0;
 
@@ -1633,12 +1633,12 @@ private:
 
     struct Simd12PrimitiveKeyFuncs : public JitKeyFuncsDefEquals<simd12_t>
     {
-        static bool Equals(simd12_t x, simd12_t y)
+        static bool Equals(const simd12_t& x, const simd12_t& y)
         {
             return x == y;
         }
 
-        static unsigned GetHashCode(const simd12_t val)
+        static unsigned GetHashCode(const simd12_t& val)
         {
             unsigned hash = 0;
 
@@ -1663,12 +1663,12 @@ private:
 
     struct Simd16PrimitiveKeyFuncs : public JitKeyFuncsDefEquals<simd16_t>
     {
-        static bool Equals(simd16_t x, simd16_t y)
+        static bool Equals(const simd16_t& x, const simd16_t& y)
         {
             return x == y;
         }
 
-        static unsigned GetHashCode(const simd16_t val)
+        static unsigned GetHashCode(const simd16_t& val)
         {
             unsigned hash = 0;
 
@@ -1695,12 +1695,12 @@ private:
 #if defined(TARGET_XARCH)
     struct Simd32PrimitiveKeyFuncs : public JitKeyFuncsDefEquals<simd32_t>
     {
-        static bool Equals(simd32_t x, simd32_t y)
+        static bool Equals(const simd32_t& x, const simd32_t& y)
         {
             return x == y;
         }
 
-        static unsigned GetHashCode(const simd32_t val)
+        static unsigned GetHashCode(const simd32_t& val)
         {
             unsigned hash = 0;
 
@@ -1730,12 +1730,12 @@ private:
 
     struct Simd64PrimitiveKeyFuncs : public JitKeyFuncsDefEquals<simd64_t>
     {
-        static bool Equals(simd64_t x, simd64_t y)
+        static bool Equals(const simd64_t& x, const simd64_t& y)
         {
             return x == y;
         }
 
-        static unsigned GetHashCode(const simd64_t val)
+        static unsigned GetHashCode(const simd64_t& val)
         {
             unsigned hash = 0;
 
@@ -1773,12 +1773,12 @@ private:
 
     struct SimdMaskPrimitiveKeyFuncs : public JitKeyFuncsDefEquals<simdmask_t>
     {
-        static bool Equals(simdmask_t x, simdmask_t y)
+        static bool Equals(const simdmask_t& x, const simdmask_t& y)
         {
             return x == y;
         }
 
-        static unsigned GetHashCode(const simdmask_t val)
+        static unsigned GetHashCode(const simdmask_t& val)
         {
             unsigned hash = 0;
 

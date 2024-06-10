@@ -415,7 +415,7 @@ TBase EvaluateUnaryScalar(genTreeOps oper, TBase arg0)
 }
 
 template <typename TSimd, typename TBase>
-void EvaluateUnarySimd(genTreeOps oper, bool scalar, TSimd* result, TSimd arg0)
+void EvaluateUnarySimd(genTreeOps oper, bool scalar, TSimd* result, const TSimd& arg0)
 {
     uint32_t count = sizeof(TSimd) / sizeof(TBase);
 
@@ -445,7 +445,7 @@ void EvaluateUnarySimd(genTreeOps oper, bool scalar, TSimd* result, TSimd arg0)
 }
 
 template <typename TSimd>
-void EvaluateUnarySimd(genTreeOps oper, bool scalar, var_types baseType, TSimd* result, TSimd arg0)
+void EvaluateUnarySimd(genTreeOps oper, bool scalar, var_types baseType, TSimd* result, const TSimd& arg0)
 {
     switch (baseType)
     {
@@ -725,7 +725,7 @@ TBase EvaluateBinaryScalar(genTreeOps oper, TBase arg0, TBase arg1)
 }
 
 template <typename TSimd, typename TBase>
-void EvaluateBinarySimd(genTreeOps oper, bool scalar, TSimd* result, TSimd arg0, TSimd arg1)
+void EvaluateBinarySimd(genTreeOps oper, bool scalar, TSimd* result, const TSimd& arg0, const TSimd& arg1)
 {
     uint32_t count = sizeof(TSimd) / sizeof(TBase);
 
@@ -758,7 +758,8 @@ void EvaluateBinarySimd(genTreeOps oper, bool scalar, TSimd* result, TSimd arg0,
 }
 
 template <typename TSimd>
-void EvaluateBinarySimd(genTreeOps oper, bool scalar, var_types baseType, TSimd* result, TSimd arg0, TSimd arg1)
+void EvaluateBinarySimd(
+    genTreeOps oper, bool scalar, var_types baseType, TSimd* result, const TSimd& arg0, const TSimd& arg1)
 {
     switch (baseType)
     {
@@ -830,7 +831,7 @@ void EvaluateBinarySimd(genTreeOps oper, bool scalar, var_types baseType, TSimd*
 }
 
 template <typename TSimd>
-double EvaluateGetElementFloating(var_types simdBaseType, TSimd arg0, int32_t arg1)
+double EvaluateGetElementFloating(var_types simdBaseType, const TSimd& arg0, int32_t arg1)
 {
     switch (simdBaseType)
     {
@@ -852,7 +853,7 @@ double EvaluateGetElementFloating(var_types simdBaseType, TSimd arg0, int32_t ar
 }
 
 template <typename TSimd>
-int64_t EvaluateGetElementIntegral(var_types simdBaseType, TSimd arg0, int32_t arg1)
+int64_t EvaluateGetElementIntegral(var_types simdBaseType, const TSimd& arg0, int32_t arg1)
 {
     switch (simdBaseType)
     {
@@ -904,7 +905,7 @@ int64_t EvaluateGetElementIntegral(var_types simdBaseType, TSimd arg0, int32_t a
 }
 
 template <typename TSimd>
-void EvaluateWithElementFloating(var_types simdBaseType, TSimd* result, TSimd arg0, int32_t arg1, double arg2)
+void EvaluateWithElementFloating(var_types simdBaseType, TSimd* result, const TSimd& arg0, int32_t arg1, double arg2)
 {
     *result = arg0;
 
@@ -930,7 +931,7 @@ void EvaluateWithElementFloating(var_types simdBaseType, TSimd* result, TSimd ar
 }
 
 template <typename TSimd>
-void EvaluateWithElementIntegral(var_types simdBaseType, TSimd* result, TSimd arg0, int32_t arg1, int64_t arg2)
+void EvaluateWithElementIntegral(var_types simdBaseType, TSimd* result, const TSimd& arg0, int32_t arg1, int64_t arg2)
 {
     *result = arg0;
 
