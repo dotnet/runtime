@@ -32,6 +32,16 @@
         <target state="translated">Имена параметров метода ведения журнала не могут начинаться с символа "_"</target>
         <note />
       </trans-unit>
+      <trans-unit id="InvalidLoggingMethodParameterOutMessage">
+        <source>Argument '{0}' is using the unsupported out parameter modifier</source>
+        <target state="translated">Аргумент "{0}" использует неподдерживаемый модификатор выходного параметра</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidLoggingMethodParameterOutTitle">
+        <source>Argument is using the unsupported out parameter modifier</source>
+        <target state="translated">Аргумент использует неподдерживаемый модификатор выходного параметра</target>
+        <note />
+      </trans-unit>
       <trans-unit id="LoggingMethodHasBodyMessage">
         <source>Logging methods cannot have a body</source>
         <target state="translated">У методов ведения журнала не может быть текста</target>
@@ -57,9 +67,24 @@
         <target state="translated">Методы ведения журнала должны быть статическими</target>
         <note />
       </trans-unit>
+      <trans-unit id="LoggingUnsupportedLanguageVersionMessageFormat">
+        <source>The Logging source generator is not available in C# {0}. Please use language version {1} or greater.</source>
+        <target state="translated">Генератор исходного кода ведения журнала недоступен в C# {0}. Используйте языковую версию {1} или более позднюю.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LoggingUnsupportedLanguageVersionTitle">
+        <source>C# language version not supported by the source generator.</source>
+        <target state="translated">Версия языка C# не поддерживается генератором исходного кода.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="MalformedFormatStringsMessage">
-        <source>Can't have malformed format strings (like dangling {, etc)</source>
-        <target state="new">Can't have malformed format strings (like dangling {, etc)</target>
+        <source>Logging method '{0}' contains malformed format strings</source>
+        <target state="translated">Метод ведения журнала событий "{0}" содержит строки неправильного формата</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MalformedFormatStringsTitle">
+        <source>Logging method contains malformed format strings</source>
+        <target state="translated">Метод ведения журнала событий содержит строки неправильного формата</target>
         <note />
       </trans-unit>
       <trans-unit id="MissingLogLevelMessage">
@@ -145,6 +170,16 @@
       <trans-unit id="ShouldntReuseEventIdsTitle">
         <source>Multiple logging methods cannot use the same event id within a class</source>
         <target state="translated">Несколько методов ведения журнала не могут использовать одинаковый ИД события в пределах класса</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ShouldntReuseEventNamesMessage">
+        <source>Multiple logging methods are using event name {0} in class {1}</source>
+        <target state="translated">Несколько методов ведения журнала используют имя события {0} в классе {1}</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ShouldntReuseEventNamesTitle">
+        <source>Multiple logging methods should not use the same event name within a class</source>
+        <target state="translated">Несколько методов ведения журнала не могут использовать одинаковое имя события в пределах класса</target>
         <note />
       </trans-unit>
       <trans-unit id="TemplateHasNoCorrespondingArgumentMessage">
