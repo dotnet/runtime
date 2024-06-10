@@ -387,14 +387,17 @@ namespace Internal.IL
                     return;
                 }
 
-                if (IsRuntimeHelpersIsReferenceOrContainsReferences(method))
+                if (opcode != ILOpcode.ldftn)
                 {
-                    return;
-                }
+                    if (IsRuntimeHelpersIsReferenceOrContainsReferences(method))
+                    {
+                        return;
+                    }
 
-                if (IsMemoryMarshalGetArrayDataReference(method))
-                {
-                    return;
+                    if (IsMemoryMarshalGetArrayDataReference(method))
+                    {
+                        return;
+                    }
                 }
             }
 

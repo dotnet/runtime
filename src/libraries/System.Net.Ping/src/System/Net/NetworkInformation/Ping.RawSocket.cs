@@ -98,15 +98,24 @@ namespace System.Net.NetworkInformation
 #pragma warning disable 618
             // Disable warning about obsolete property. We could use GetAddressBytes but that allocates.
             // IPv4 multicast address starts with 1110 bits so mask rest and test if we get correct value e.g. 0xe0.
-            if (NeedsConnect && !ep.Address.IsIPv6Multicast && !(addrFamily == AddressFamily.InterNetwork && (ep.Address.Address & 0xf0) == 0xe0))
+            bool ipv4 = addrFamily == AddressFamily.InterNetwork;
+            if (NeedsConnect && !ep.Address.IsIPv6Multicast && !(ipv4 && (ep.Address.Address & 0xf0) == 0xe0))
             {
                 // If it is not multicast, use Connect to scope responses only to the target address.
                 socket.Connect(socketConfig.EndPoint);
                 unsafe
                 {
                     int opt = 1;
-                    // setsockopt(fd, IPPROTO_IP, IP_RECVERR, &value, sizeof(int))
-                    socket.SetRawSocketOption(0, 11, new ReadOnlySpan<byte>(&opt, sizeof(int)));
+                    if (ipv4)
+                    {
+                        // setsockopt(fd, IPPROTO_IP, IP_RECVERR, &value, sizeof(int))
+                        socket.SetRawSocketOption(0, 11, new ReadOnlySpan<byte>(&opt, sizeof(int)));
+                    }
+                    else
+                    {
+                        // setsockopt(fd, IPPROTO_IPV6, IPV6_RECVERR, &value, sizeof(int))
+                        socket.SetRawSocketOption(41, 25, new ReadOnlySpan<byte>(&opt, sizeof(int)));
+                    }
                 }
             }
 #pragma warning restore 618

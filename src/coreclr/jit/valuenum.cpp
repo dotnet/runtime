@@ -7325,6 +7325,8 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(var_types      type,
 #if defined(TARGET_XARCH)
             case NI_AVX512CD_LeadingZeroCount:
             case NI_AVX512CD_VL_LeadingZeroCount:
+            case NI_AVX10v1_V512_LeadingZeroCount:
+            case NI_AVX10v1_LeadingZeroCount:
             {
                 return EvaluateUnarySimd(this, GT_LZCNT, /* scalar */ false, type, baseType, arg0VN);
             }
@@ -7524,6 +7526,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_AVX2_And:
             case NI_AVX512F_And:
             case NI_AVX512DQ_And:
+            case NI_AVX10v1_V512_And:
 #endif
             {
                 return EvaluateBinarySimd(this, GT_AND, /* scalar */ false, type, baseType, arg0VN, arg1VN);
@@ -7541,6 +7544,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_AVX2_AndNot:
             case NI_AVX512F_AndNot:
             case NI_AVX512DQ_AndNot:
+            case NI_AVX10v1_V512_AndNot:
             {
                 // xarch does: ~arg0VN & arg1VN
                 return EvaluateBinarySimd(this, GT_AND_NOT, /* scalar */ false, type, baseType, arg1VN, arg0VN);
@@ -7619,6 +7623,8 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_AVX512BW_MultiplyLow:
             case NI_AVX512DQ_MultiplyLow:
             case NI_AVX512DQ_VL_MultiplyLow:
+            case NI_AVX10v1_MultiplyLow:
+            case NI_AVX10v1_V512_MultiplyLow:
 #endif
             {
                 return EvaluateBinarySimd(this, GT_MUL, /* scalar */ false, type, baseType, arg0VN, arg1VN);
@@ -7643,6 +7649,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_AVX2_Or:
             case NI_AVX512F_Or:
             case NI_AVX512DQ_Or:
+            case NI_AVX10v1_V512_Or:
 #endif
             {
                 return EvaluateBinarySimd(this, GT_OR, /* scalar */ false, type, baseType, arg0VN, arg1VN);
@@ -7651,12 +7658,14 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
 #ifdef TARGET_XARCH
             case NI_AVX512F_RotateLeft:
             case NI_AVX512F_VL_RotateLeft:
+            case NI_AVX10v1_RotateLeft:
             {
                 return EvaluateBinarySimd(this, GT_ROL, /* scalar */ false, type, baseType, arg0VN, arg1VN);
             }
 
             case NI_AVX512F_RotateRight:
             case NI_AVX512F_VL_RotateRight:
+            case NI_AVX10v1_RotateRight:
             {
                 return EvaluateBinarySimd(this, GT_ROR, /* scalar */ false, type, baseType, arg0VN, arg1VN);
             }
@@ -7707,6 +7716,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_AVX512F_ShiftRightArithmetic:
             case NI_AVX512F_VL_ShiftRightArithmetic:
             case NI_AVX512BW_ShiftRightArithmetic:
+            case NI_AVX10v1_ShiftRightArithmetic:
 #endif
             {
 #ifdef TARGET_XARCH
@@ -7825,6 +7835,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_AVX2_Xor:
             case NI_AVX512F_Xor:
             case NI_AVX512DQ_Xor:
+            case NI_AVX10v1_V512_Xor:
 #endif
             {
                 return EvaluateBinarySimd(this, GT_XOR, /* scalar */ false, type, baseType, arg0VN, arg1VN);
@@ -7875,6 +7886,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_AVX2_And:
             case NI_AVX512F_And:
             case NI_AVX512DQ_And:
+            case NI_AVX10v1_V512_And:
 #endif
             {
                 // Handle `x & 0 == 0` and `0 & x == 0`
@@ -7904,6 +7916,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_AVX2_AndNot:
             case NI_AVX512F_AndNot:
             case NI_AVX512DQ_AndNot:
+            case NI_AVX10v1_V512_AndNot:
             {
 #ifdef TARGET_ARM64
                 if (cnsVN == arg0VN)
@@ -8023,6 +8036,8 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_AVX512BW_MultiplyLow:
             case NI_AVX512DQ_MultiplyLow:
             case NI_AVX512DQ_VL_MultiplyLow:
+            case NI_AVX10v1_MultiplyLow:
+            case NI_AVX10v1_V512_MultiplyLow:
 #endif
             {
                 if (!varTypeIsFloating(baseType))
@@ -8066,6 +8081,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_AVX2_Or:
             case NI_AVX512F_Or:
             case NI_AVX512DQ_Or:
+            case NI_AVX10v1_V512_Or:
 #endif
             {
                 // Handle `x | 0 == x` and `0 | x == x`
@@ -8104,6 +8120,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_AVX512BW_ShiftLeftLogical:
             case NI_AVX512BW_ShiftRightArithmetic:
             case NI_AVX512BW_ShiftRightLogical:
+            case NI_AVX10v1_ShiftRightArithmetic:
 #endif
             {
                 // Handle `x <<  0 == x` and `0 <<  x == 0`
@@ -8155,6 +8172,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_AVX2_Xor:
             case NI_AVX512F_Xor:
             case NI_AVX512DQ_Xor:
+            case NI_AVX10v1_V512_Xor:
 #endif
             {
                 // Handle `x | 0 == x` and `0 | x == x`
@@ -8184,6 +8202,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_AVX2_And:
             case NI_AVX512F_And:
             case NI_AVX512DQ_And:
+            case NI_AVX10v1_V512_And:
 #endif
             {
                 // Handle `x & x == x`
@@ -8199,6 +8218,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_AVX2_AndNot:
             case NI_AVX512F_AndNot:
             case NI_AVX512DQ_AndNot:
+            case NI_AVX10v1_V512_AndNot:
             {
                 // Handle `x & ~x == 0`
                 return VNZeroForType(type);
@@ -8214,6 +8234,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_AVX2_Or:
             case NI_AVX512F_Or:
             case NI_AVX512DQ_Or:
+            case NI_AVX10v1_V512_Or:
 #endif
             {
                 // Handle `x | x == x`
@@ -8251,6 +8272,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_AVX2_Xor:
             case NI_AVX512F_Xor:
             case NI_AVX512DQ_Xor:
+            case NI_AVX10v1_V512_Xor:
 #endif
             {
                 // Handle `x ^ x == 0`
@@ -12168,7 +12190,7 @@ void Compiler::fgValueNumberHWIntrinsic(GenTreeHWIntrinsic* tree)
 #if defined(TARGET_XARCH)
     switch (intrinsicId)
     {
-        case NI_AVX512F_ConvertMaskToVector:
+        case NI_EVEX_ConvertMaskToVector:
         {
             // We want to ensure that we get a TYP_MASK local to
             // ensure the relevant optimizations can kick in

@@ -693,7 +693,7 @@
     <value>JsonPropertyInfo '{0}' defined in type '{1}' is marked both as required and as an extension data property. This combination is not supported.</value>
   </data>
   <data name="JsonRequiredPropertiesMissing" xml:space="preserve">
-    <value>JSON deserialization for type '{0}' was missing required properties, including the following: {1}</value>
+    <value>JSON deserialization for type '{0}' was missing required properties including: {1}.</value>
   </data>
   <data name="ObjectCreationHandlingPopulateNotSupportedByConverter" xml:space="preserve">
     <value>Property '{0}' on type '{1}' is marked with JsonObjectCreationHandling.Populate but it doesn't support populating. This can be either because the property type is immutable or it could use a custom converter.</value>
