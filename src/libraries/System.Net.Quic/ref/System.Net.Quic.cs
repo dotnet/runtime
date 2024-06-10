@@ -23,6 +23,9 @@ namespace System.Net.Quic
     public sealed partial class QuicConnection : System.IAsyncDisposable
     {
         internal QuicConnection() { }
+        [Runtime.Versioning.SupportedOSPlatformGuard("windows")]
+        [Runtime.Versioning.SupportedOSPlatformGuard("linux")]
+        [Runtime.Versioning.SupportedOSPlatformGuard("osx")]
         public static bool IsSupported { get { throw null; } }
         public System.Net.IPEndPoint LocalEndPoint { get { throw null; } }
         public System.Net.Security.SslApplicationProtocol NegotiatedApplicationProtocol { get { throw null; } }
@@ -73,6 +76,9 @@ namespace System.Net.Quic
     public sealed partial class QuicListener : System.IAsyncDisposable
     {
         internal QuicListener() { }
+        [Runtime.Versioning.SupportedOSPlatformGuard("windows")]
+        [Runtime.Versioning.SupportedOSPlatformGuard("linux")]
+        [Runtime.Versioning.SupportedOSPlatformGuard("osx")]
         public static bool IsSupported { get { throw null; } }
         public System.Net.IPEndPoint LocalEndPoint { get { throw null; } }
         public System.Threading.Tasks.ValueTask<System.Net.Quic.QuicConnection> AcceptConnectionAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
