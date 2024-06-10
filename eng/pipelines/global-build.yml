@@ -30,6 +30,7 @@ variables:
 extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
   parameters:
+    isOfficialBuild: false
     stages:
     - stage: Build
       jobs:
@@ -177,3 +178,97 @@ extends:
             timeoutInMinutes: 95
             condition:
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true)
+
+      #
+      # Build CoreCLR as a non-portable build
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+          buildConfig: checked
+          runtimeFlavor: coreclr
+          platforms:
+          - tizen_armel
+          jobParameters:
+            testScope: innerloop
+            nameSuffix: CoreCLR_NonPortable
+            buildArgs: -s clr.native+clr.tools+clr.corelib+clr.nativecorelib+clr.aot+clr.packages -c $(_BuildConfig) /p:PortableBuild=false
+            timeoutInMinutes: 120
+            condition: >-
+              or(
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+                eq(variables['isRollingBuild'], true))
+
+      #
+      # Build CoreCLR with no R2R
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+          buildConfig: checked
+          runtimeFlavor: coreclr
+          platforms:
+          - linux_x86
+          jobParameters:
+            testScope: innerloop
+            nameSuffix: CoreCLR_NoR2R
+            buildArgs: -s clr.runtime+clr.jit+clr.iltools+clr.spmi+clr.corelib -c $(_BuildConfig)
+            timeoutInMinutes: 120
+            condition: >-
+              or(
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+                eq(variables['isRollingBuild'], true))
+
+      #
+      # Build CoreCLR release
+      # Always as they are needed by Installer and we always build and test the Installer.
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
+          buildConfig: release
+          platforms:
+          - freebsd_x64
+          jobParameters:
+            testGroup: innerloop
+            # Mono/runtimetests also need this, but skip for wasm
+            condition:
+              or(
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+                eq(variables['isRollingBuild'], true))
+
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/libraries/build-job.yml
+          buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+          platforms:
+          - freebsd_x64
+          jobParameters:
+            testScope: innerloop
+            condition:
+              or(
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
+                eq(variables['isRollingBuild'], true))
+
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/installer/jobs/build-job.yml
+          buildConfig: Release
+          platforms:
+            - freebsd_x64
+          jobParameters:
+            liveRuntimeBuildConfig: release
+            liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+            runOnlyIfDependenciesSucceeded: true
+            condition:
+              or(
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
+                eq(variables['isRollingBuild'], true))
