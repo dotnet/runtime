@@ -110,26 +110,14 @@ namespace System.Diagnostics
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
         private void BuildStackFrame(int frameIndex, bool needFileInfo)
         {
-            IntPtr ipAddress;
-
             const int SystemDiagnosticsStackDepth = 2;
 
-            // Unreasonably high or negative frameIndex could lead to overflows or failures to allocate
-            // the frameArray below so spot check it's sane.
-            RuntimeImports.RhGetCurrentThreadStackBounds(out IntPtr stackLow, out IntPtr stackHigh);
-            if (frameIndex >= -SystemDiagnosticsStackDepth && frameIndex < ((stackHigh - stackLow) / IntPtr.Size))
-            {
-                frameIndex += SystemDiagnosticsStackDepth;
-                IntPtr[] frameArray = new IntPtr[frameIndex + 1];
-                int returnedFrameCount = RuntimeImports.RhGetCurrentThreadStackTrace(frameArray);
-                int realFrameCount = (returnedFrameCount >= 0 ? returnedFrameCount : frameArray.Length);
+            frameIndex += SystemDiagnosticsStackDepth;
+            IntPtr[] frameArray = new IntPtr[frameIndex + 1];
+            int returnedFrameCount = RuntimeImports.RhGetCurrentThreadStackTrace(frameArray);
+            int realFrameCount = (returnedFrameCount >= 0 ? returnedFrameCount : frameArray.Length);
 
-                ipAddress = (frameIndex < realFrameCount) ? frameArray[frameIndex] : IntPtr.Zero;
-            }
-            else
-            {
-                ipAddress = IntPtr.Zero;
-            }
+            IntPtr ipAddress = (frameIndex < realFrameCount) ? frameArray[frameIndex] : IntPtr.Zero;
             InitializeForIpAddress(ipAddress, needFileInfo);
         }
 

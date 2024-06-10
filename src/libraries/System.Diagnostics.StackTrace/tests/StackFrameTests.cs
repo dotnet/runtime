@@ -75,6 +75,7 @@ namespace System.Diagnostics.Tests
         [Theory]
         [InlineData(int.MinValue)]
         [InlineData(int.MaxValue)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/103218", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void SkipFrames_ManyFrames_HasNoMethod(int skipFrames)
         {
             var stackFrame = new StackFrame(skipFrames);

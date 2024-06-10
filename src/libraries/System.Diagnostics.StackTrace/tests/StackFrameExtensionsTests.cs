@@ -59,6 +59,7 @@ namespace System.Diagnostics.Tests
 
         [Theory]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/103218", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         [MemberData(nameof(HasMethod_TestData))]
         public void HasMethod_Invoke_ReturnsExpected(StackFrame stackFrame, bool expected)
         {
@@ -79,6 +80,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/103218", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         [MemberData(nameof(HasSource_TestData))]
         public void HasSource_Invoke_ReturnsExpected(StackFrame stackFrame, bool expected)
         {
