@@ -21,6 +21,9 @@ namespace System.Diagnostics.Tests
 
         public static IEnumerable<object[]> Create_OpenDelegate_TestData()
         {
+            // Tracked at https://github.com/dotnet/runtime/issues/100748
+            bool hasGvmOpenDelegateBug = !PlatformDetection.IsMonoRuntime && !PlatformDetection.IsNativeAot;
+
             const string TestNamespace = nameof(System) + "." + nameof(System.Diagnostics) + "." + nameof(System.Diagnostics.Tests) + ".";
 
             yield return new object[] {
@@ -29,11 +32,14 @@ namespace System.Diagnostics.Tests
                 TestNamespace + nameof(IInterfaceForDiagnosticMethodInfoTests)
             };
 
-            yield return new object[] {
+            if (!hasGvmOpenDelegateBug)
+            {
+                yield return new object[] {
                 typeof(IInterfaceForDiagnosticMethodInfoTests).GetMethod(nameof(IInterfaceForDiagnosticMethodInfoTests.GenericMethod)).MakeGenericMethod(typeof(object)).CreateDelegate<Action<IInterfaceForDiagnosticMethodInfoTests>>(),
                 nameof(IInterfaceForDiagnosticMethodInfoTests.GenericMethod),
                 TestNamespace + nameof(IInterfaceForDiagnosticMethodInfoTests)
-            };
+                };
+            }
 
             yield return new object[] {
                 typeof(IGenericInterfaceForDiagnosticMethodInfoTests<object>).GetMethod(nameof(IGenericInterfaceForDiagnosticMethodInfoTests<object>.NonGenericMethod)).CreateDelegate<Action<IGenericInterfaceForDiagnosticMethodInfoTests<object>>>(),
@@ -41,11 +47,14 @@ namespace System.Diagnostics.Tests
                 TestNamespace + nameof(IGenericInterfaceForDiagnosticMethodInfoTests<object>) + "`1"
             };
 
-            yield return new object[] {
+            if (!hasGvmOpenDelegateBug)
+            {
+                yield return new object[] {
                 typeof(IGenericInterfaceForDiagnosticMethodInfoTests<object>).GetMethod(nameof(IGenericInterfaceForDiagnosticMethodInfoTests<object>.GenericMethod)).MakeGenericMethod(typeof(object)).CreateDelegate<Action<IGenericInterfaceForDiagnosticMethodInfoTests<object>>>(),
                 nameof(IGenericInterfaceForDiagnosticMethodInfoTests<object>.GenericMethod),
                 TestNamespace + nameof(IGenericInterfaceForDiagnosticMethodInfoTests<object>) + "`1"
-            };
+                };
+            }
 
             yield return new object[] {
                 typeof(StructForDiagnosticMethodInfoTests).GetMethod(nameof(StructForDiagnosticMethodInfoTests.NonGenericMethod)).CreateDelegate<RefAction<StructForDiagnosticMethodInfoTests>>(),
