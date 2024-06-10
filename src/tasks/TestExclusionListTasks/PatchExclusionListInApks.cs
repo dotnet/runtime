@@ -44,9 +44,11 @@ public class PatchExclusionListInApks : Task
             using (ZipArchive apkArchive = ZipFile.Open(apkPath, ZipArchiveMode.Update))
             {
                 ZipArchiveEntry assetsZipEntry = apkArchive.GetEntry("assets/assets.zip")!;
-                using ZipArchive assetsArchive = new ZipArchive(assetsZipEntry.Open(), ZipArchiveMode.Update);
+                using Stream zipArchiveEntryStream = assetsZipEntry.Open();
+                using ZipArchive assetsArchive = new ZipArchive(zipArchiveEntryStream, ZipArchiveMode.Update);
                 ZipArchiveEntry testExclusionListEntry = assetsArchive.GetEntry("TestExclusionList.txt")!;
-                using StreamWriter textExclusionListWriter = new StreamWriter(testExclusionListEntry.Open());
+                using Stream testExclusionListEntryStream = testExclusionListEntry.Open();
+                using StreamWriter textExclusionListWriter = new StreamWriter(testEclusionListEntryStream);
                 textExclusionListWriter.WriteLine(testExclusionList);
             }
             apkBuilder.ZipAndSignApk(apkPath);
