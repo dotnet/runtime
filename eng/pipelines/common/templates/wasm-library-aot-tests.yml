@@ -10,6 +10,7 @@ parameters:
   runAOT: false
   shouldRunSmokeOnly: false
   shouldContinueOnError: false
+  scenarios: ''
 
 jobs:
 
@@ -33,7 +34,7 @@ jobs:
       scenarios:
       - ${{ if not(empty(parameters.scenarios)) }}:
         - ${{ parameters.scenarios }}
-      - ${{ if empty(parameters.scenarios) }}:
+      - ${{ else }}:
         - ${{ if eq(platform, 'browser_wasm') }}:
           - WasmTestOnV8
         - ${{ if eq(platform, 'browser_wasm_win') }}:
