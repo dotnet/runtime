@@ -14,7 +14,7 @@ GC_ALLOC_FINALIZE               = 1
 
         // x1 = GetThreadAllocContext()
 #ifdef FEATURE_EMULATED_TLS
-        GETTHREAD_ETLS_1
+        GETALLOCCONTEXT_ETLS_1
 #else
         INLINE_GET_ALLOC_CONTEXT x1
 #endif
@@ -26,7 +26,7 @@ GC_ALLOC_FINALIZE               = 1
 
         //
         // x0: MethodTable pointer
-        // x1: Thread pointer
+        // x1: gc_alloc_context pointer
         // x2: base size
         //
 
@@ -120,7 +120,7 @@ LOCAL_LABEL(NewOutOfMemory):
         // x2 == string size
 
 #ifdef FEATURE_EMULATED_TLS
-        GETTHREAD_ETLS_3
+        GETALLOCCONTEXT_ETLS_3
 #else
         INLINE_GET_ALLOC_CONTEXT x3
 #endif
@@ -188,7 +188,7 @@ LOCAL_LABEL(RhNewString_Rare):
         // x2 == array size
 
 #ifdef FEATURE_EMULATED_TLS
-        GETTHREAD_ETLS_3
+        GETALLOCCONTEXT_ETLS_3
 #else
         INLINE_GET_ALLOC_CONTEXT x3
 #endif

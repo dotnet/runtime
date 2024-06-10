@@ -220,7 +220,8 @@ INLINE_GET_ALLOC_CONTEXT macro Reg
         mov     rax, gs:[OFFSET__TEB__ThreadLocalStoragePointer]
         mov     rax, [rax + r11 * 8]
         mov     r11d, SECTIONREL t_thread_alloc_context
-        mov     Reg, [rax + r11]
+        add     rax, r11
+        mov     Reg, rax
 
         endm
 

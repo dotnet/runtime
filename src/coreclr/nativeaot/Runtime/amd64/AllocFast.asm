@@ -20,7 +20,7 @@ LEAF_ENTRY RhpNewFast, _TEXT
         ;;
         ;; eax: base size
         ;; rcx: MethodTable pointer
-        ;; rdx: Thread pointer
+        ;; rdx: gc_alloc_context pointer
         ;;
 
         mov         rax, [rdx + OFFSETOF__gc_alloc_context__alloc_ptr]

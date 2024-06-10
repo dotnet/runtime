@@ -20,7 +20,7 @@ LEAF_ENTRY RhpNewFast, _TEXT
         // r4 contains MethodTable pointer
         ldr         r2, [r4, #OFFSETOF__MethodTable__m_uBaseSize]
 
-        // r0: Thread pointer
+        // r0: gc_alloc_context pointer
         // r4: MethodTable pointer
         // r2: base size
 
@@ -122,7 +122,7 @@ LEAF_ENTRY RhNewString, _TEXT
         // r4 == MethodTable
         // r5 == element count
         // r6 == string size
-        // r0 == Thread*
+        // r0 == gc_alloc_context*
 
         // Load potential new object address into r12.
         ldr         r12, [r0, #OFFSETOF__gc_alloc_context__alloc_ptr]
@@ -203,7 +203,7 @@ LOCAL_LABEL(ArrayAlignSize):
         // r4 == MethodTable
         // r5 == element count
         // r6 == array size
-        // r0 == Thread*
+        // r0 == gc_alloc_context*
 
         // Load potential new object address into r12.
         ldr         r12, [r0, #OFFSETOF__gc_alloc_context__alloc_ptr]
@@ -334,7 +334,7 @@ LEAF_ENTRY RhpNewFastAlign8, _TEXT
         ldr         r2, [r4, #OFFSETOF__MethodTable__m_uBaseSize]
 
         // r4: MethodTable pointer
-        // r0: Thread pointer
+        // r0: gc_alloc_context pointer
         // r2: base size
 
         // Load potential new object address into r3. Cache this result in r12 as well for the common case
@@ -396,7 +396,7 @@ LEAF_ENTRY RhpNewFastMisalign, _TEXT
         ldr         r2, [r4, #OFFSETOF__MethodTable__m_uBaseSize]
 
         // r4: MethodTable pointer
-        // r0: Thread pointer
+        // r0: gc_alloc_context pointer
         // r2: base size
 
         // Load potential new object address into r3. Cache this result in r12 as well for the common case

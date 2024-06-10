@@ -21,7 +21,7 @@ NESTED_ENTRY RhpNewFast, _TEXT, NoHandler
         mov         edx, [rbx + OFFSETOF__MethodTable__m_uBaseSize]
 
         //
-        // rax: Thread pointer
+        // rax: gc_alloc_context pointer
         // rbx: MethodTable pointer
         // rdx: base size
         //
@@ -123,7 +123,7 @@ NESTED_ENTRY RhNewString, _TEXT, NoHandler
         // rax = GetThreadAllocContext()
         INLINE_GET_ALLOC_CONTEXT
 
-        mov         rcx, rax    // rcx = Thread*
+        mov         rcx, rax    // rcx = gc_alloc_context*
 
         // Compute overall allocation size (align(base size + (element size * elements), 8)).
         lea         rax, [r12 * STRING_COMPONENT_SIZE + STRING_BASE_SIZE + 7]
@@ -202,7 +202,7 @@ NESTED_ENTRY RhpNewArray, _TEXT, NoHandler
         // rax = GetThreadAllocContext()
         INLINE_GET_ALLOC_CONTEXT
 
-        mov         rcx, rax    // rcx = Thread*
+        mov         rcx, rax    // rcx = gc_alloc_context*
 
         // Compute overall allocation size (align(base size + (element size * elements), 8)).
         movzx       eax, word ptr [rbx + OFFSETOF__MethodTable__m_usComponentSize]

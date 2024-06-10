@@ -45,7 +45,9 @@ GVAL_IMPL_INIT(gc_alloc_context, g_global_alloc_context, {});
 
 // on MP systems, each thread has its own allocation chunk so we can avoid
 // lock prefixes and expensive MP cache snooping stuff
-thread_local gc_alloc_context t_thread_alloc_context;
+#ifndef _MSC_VER
+__thread gc_alloc_context t_thread_alloc_context;
+#endif
 
 enum GC_LOAD_STATUS {
     GC_LOAD_STATUS_BEFORE_START,

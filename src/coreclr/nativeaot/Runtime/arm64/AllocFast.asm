@@ -20,7 +20,7 @@
 
         ;;
         ;; x0: MethodTable pointer
-        ;; x1: Thread pointer
+        ;; x1: gc_alloc_context pointer
         ;; x2: base size
         ;;
 

@@ -25,7 +25,7 @@ FASTCALL_FUNC   RhpNewFast, 4
         ;;
         ;; eax: base size
         ;; ecx: MethodTable pointer
-        ;; edx: Thread pointer
+        ;; edx: gc_alloc_context pointer
         ;;
 
         add         eax, [edx + OFFSETOF__gc_alloc_context__alloc_ptr]
@@ -160,7 +160,7 @@ FASTCALL_FUNC   RhNewString, 8
 
         ; ECX == scratch
         ; EAX == allocation size
-        ; EDX == thread
+        ; EDX == gc_alloc_context
 
         mov         ecx, eax
         add         eax, [edx + OFFSETOF__gc_alloc_context__alloc_ptr]
@@ -170,7 +170,7 @@ FASTCALL_FUNC   RhNewString, 8
 
         ; ECX == allocation size
         ; EAX == new alloc ptr
-        ; EDX == thread
+        ; EDX == gc_alloc_context
 
         ; set the new alloc pointer
         mov         [edx + OFFSETOF__gc_alloc_context__alloc_ptr], eax
@@ -277,7 +277,7 @@ ArrayAlignSize:
 
         ; ECX == scratch
         ; EAX == array size
-        ; EDX == thread
+        ; EDX == gc_alloc_context
 
         mov         ecx, eax
         add         eax, [edx + OFFSETOF__gc_alloc_context__alloc_ptr]
@@ -287,7 +287,7 @@ ArrayAlignSize:
 
         ; ECX == array size
         ; EAX == new alloc ptr
-        ; EDX == thread
+        ; EDX == gc_alloc_context
 
         ; set the new alloc pointer
         mov         [edx + OFFSETOF__gc_alloc_context__alloc_ptr], eax
