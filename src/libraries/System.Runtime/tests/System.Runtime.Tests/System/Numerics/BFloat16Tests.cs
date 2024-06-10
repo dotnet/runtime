@@ -1250,37 +1250,37 @@ namespace System.Numerics.Tests
         public static IEnumerable<object[]> ExpM1_TestData()
         {
             yield return new object[] { BFloat16.NegativeInfinity, (BFloat16)(-BFloat16.One), CrossPlatformMachineEpsilon * (BFloat16)10 };
-            yield return new object[] { (BFloat16)(-3.14159265f), (BFloat16)(-0.956786082f), CrossPlatformMachineEpsilon };             // value: -(pi)
-            yield return new object[] { (BFloat16)(-2.71828183f), (BFloat16)(-0.934011964f), CrossPlatformMachineEpsilon };             // value: -(e)
-            yield return new object[] { (BFloat16)(-2.30258509f), (BFloat16)(-0.9f), CrossPlatformMachineEpsilon };             // value: -(ln(10))
-            yield return new object[] { (BFloat16)(-1.57079633f), (BFloat16)(-0.792120424f), CrossPlatformMachineEpsilon };             // value: -(pi / 2)
-            yield return new object[] { (BFloat16)(-1.44269504f), (BFloat16)(-0.763709912f), CrossPlatformMachineEpsilon };             // value: -(log2(e))
-            yield return new object[] { (BFloat16)(-1.41421356f), (BFloat16)(-0.756883266f), CrossPlatformMachineEpsilon };             // value: -(sqrt(2))
-            yield return new object[] { (BFloat16)(-1.12837917f), (BFloat16)(-0.676442736f), CrossPlatformMachineEpsilon };             // value: -(2 / sqrt(pi))
-            yield return new object[] { (BFloat16)(-BFloat16.One), (BFloat16)(-0.632120559f), CrossPlatformMachineEpsilon };
-            yield return new object[] { (BFloat16)(-0.785398163f), (BFloat16)(-0.544061872f), CrossPlatformMachineEpsilon };             // value: -(pi / 4)
-            yield return new object[] { (BFloat16)(-0.707106781f), (BFloat16)(-0.506931309f), CrossPlatformMachineEpsilon };             // value: -(1 / sqrt(2))
-            yield return new object[] { (BFloat16)(-0.693147181f), (BFloat16)(-0.5f), CrossPlatformMachineEpsilon };             // value: -(ln(2))
-            yield return new object[] { (BFloat16)(-0.636619772f), (BFloat16)(-0.470922192f), CrossPlatformMachineEpsilon };             // value: -(2 / pi)
-            yield return new object[] { (BFloat16)(-0.434294482f), (BFloat16)(-0.352278515f), CrossPlatformMachineEpsilon };             // value: -(log10(e))
-            yield return new object[] { (BFloat16)(-0.318309886f), (BFloat16)(-0.272622651f), CrossPlatformMachineEpsilon };             // value: -(1 / pi)
+            yield return new object[] { (BFloat16)(-3.141f), (BFloat16)(-0.957f), CrossPlatformMachineEpsilon };             // value: -(pi)
+            yield return new object[] { (BFloat16)(-2.719f), (BFloat16)(-0.9336f), CrossPlatformMachineEpsilon };             // value: -(e)
+            yield return new object[] { (BFloat16)(-2.297f), (BFloat16)(-0.8984f), CrossPlatformMachineEpsilon };             // value: -(ln(10))
+            yield return new object[] { (BFloat16)(-1.57f), (BFloat16)(-0.793f), CrossPlatformMachineEpsilon };             // value: -(pi / 2)
+            yield return new object[] { (BFloat16)(-1.445f), (BFloat16)(-0.7656f), CrossPlatformMachineEpsilon };             // value: -(log2(e))
+            yield return new object[] { (BFloat16)(-1.414f), (BFloat16)(-0.7578f), CrossPlatformMachineEpsilon };             // value: -(sqrt(2))
+            yield return new object[] { (BFloat16)(-1.125f), (BFloat16)(-0.6758f), CrossPlatformMachineEpsilon };             // value: -(2 / sqrt(pi))
+            yield return new object[] { (BFloat16)(-BFloat16.One), (BFloat16)(-0.6328f), CrossPlatformMachineEpsilon };
+            yield return new object[] { (BFloat16)(-0.7852f), (BFloat16)(-0.543f), CrossPlatformMachineEpsilon };             // value: -(pi / 4)
+            yield return new object[] { (BFloat16)(-0.707f), (BFloat16)(-0.5078f), CrossPlatformMachineEpsilon };             // value: -(1 / sqrt(2))
+            yield return new object[] { (BFloat16)(-0.6914f), (BFloat16)(-0.5f), CrossPlatformMachineEpsilon };             // value: -(ln(2))
+            yield return new object[] { (BFloat16)(-0.6367f), (BFloat16)(-0.4707f), CrossPlatformMachineEpsilon };             // value: -(2 / pi)
+            yield return new object[] { (BFloat16)(-0.4336f), (BFloat16)(-0.3516f), CrossPlatformMachineEpsilon };             // value: -(log10(e))
+            yield return new object[] { (BFloat16)(-0.3184f), (BFloat16)(-0.2734f), CrossPlatformMachineEpsilon };             // value: -(1 / pi)
             yield return new object[] { (BFloat16)(-0.0f), (BFloat16)(0.0f), (BFloat16)0.0f };
             yield return new object[] { BFloat16.NaN, BFloat16.NaN, (BFloat16)0.0f };
             yield return new object[] { (BFloat16)(0.0f), (BFloat16)(0.0f), (BFloat16)0.0f };
-            yield return new object[] { (BFloat16)(0.318309886f), (BFloat16)(0.374802227f), CrossPlatformMachineEpsilon };             // value:  (1 / pi)
-            yield return new object[] { (BFloat16)(0.434294482f), (BFloat16)(0.543873444f), CrossPlatformMachineEpsilon };             // value:  (log10(e))
-            yield return new object[] { (BFloat16)(0.636619772f), (BFloat16)(0.890081165f), CrossPlatformMachineEpsilon };             // value:  (2 / pi)
-            yield return new object[] { (BFloat16)(0.693147181f), (BFloat16)(BFloat16.One), CrossPlatformMachineEpsilon * (BFloat16)10 };  // value:  (ln(2))
-            yield return new object[] { (BFloat16)(0.707106781f), (BFloat16)(1.02811498f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // value:  (1 / sqrt(2))
-            yield return new object[] { (BFloat16)(0.785398163f), (BFloat16)(1.19328005f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // value:  (pi / 4)
-            yield return new object[] { (BFloat16)(BFloat16.One), (BFloat16)(1.71828183f), CrossPlatformMachineEpsilon * (BFloat16)10 };
-            yield return new object[] { (BFloat16)(1.12837917f), (BFloat16)(2.09064302f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // value:  (2 / sqrt(pi))
-            yield return new object[] { (BFloat16)(1.41421356f), (BFloat16)(3.11325038f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // value:  (sqrt(2))
-            yield return new object[] { (BFloat16)(1.44269504f), (BFloat16)(3.23208611f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // value:  (log2(e))
-            yield return new object[] { (BFloat16)(1.57079633f), (BFloat16)(3.81047738f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // value:  (pi / 2)
-            yield return new object[] { (BFloat16)(2.30258509f), (BFloat16)(9.0f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // value:  (ln(10))
-            yield return new object[] { (BFloat16)(2.71828183f), (BFloat16)(14.1542622f), CrossPlatformMachineEpsilon * (BFloat16)100 }; // value:  (e)
-            yield return new object[] { (BFloat16)(3.14159265f), (BFloat16)(22.1406926f), CrossPlatformMachineEpsilon * (BFloat16)100 }; // value:  (pi)
+            yield return new object[] { (BFloat16)(0.3184f), (BFloat16)(0.375f), CrossPlatformMachineEpsilon };             // value:  (1 / pi)
+            yield return new object[] { (BFloat16)(0.4336f), (BFloat16)(0.543f), CrossPlatformMachineEpsilon };             // value:  (log10(e))
+            yield return new object[] { (BFloat16)(0.6367f), (BFloat16)(0.8906f), CrossPlatformMachineEpsilon };             // value:  (2 / pi)
+            yield return new object[] { (BFloat16)(0.6914f), (BFloat16)(BFloat16.One), CrossPlatformMachineEpsilon * (BFloat16)10 };  // value:  (ln(2))
+            yield return new object[] { (BFloat16)(0.707f), (BFloat16)(1.031f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // value:  (1 / sqrt(2))
+            yield return new object[] { (BFloat16)(0.7852f), (BFloat16)(1.195f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // value:  (pi / 4)
+            yield return new object[] { (BFloat16)(BFloat16.One), (BFloat16)(1.719f), CrossPlatformMachineEpsilon * (BFloat16)10 };
+            yield return new object[] { (BFloat16)(1.125f), (BFloat16)(2.078f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // value:  (2 / sqrt(pi))
+            yield return new object[] { (BFloat16)(1.414f), (BFloat16)(3.109f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // value:  (sqrt(2))
+            yield return new object[] { (BFloat16)(1.445f), (BFloat16)(3.25f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // value:  (log2(e))
+            yield return new object[] { (BFloat16)(1.57f), (BFloat16)(3.812f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // value:  (pi / 2)
+            yield return new object[] { (BFloat16)(2.297f), (BFloat16)(8.938f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // value:  (ln(10))
+            yield return new object[] { (BFloat16)(2.719f), (BFloat16)(14.19f), CrossPlatformMachineEpsilon * (BFloat16)100 }; // value:  (e)
+            yield return new object[] { (BFloat16)(3.141f), (BFloat16)(22.12f), CrossPlatformMachineEpsilon * (BFloat16)100 }; // value:  (pi)
             yield return new object[] { BFloat16.PositiveInfinity, BFloat16.PositiveInfinity, 0.0 };
         }
 
@@ -1294,37 +1294,37 @@ namespace System.Numerics.Tests
         public static IEnumerable<object[]> Exp2_TestData()
         {
             yield return new object[] { BFloat16.NegativeInfinity, (BFloat16)(0.0f), (BFloat16)0.0f };
-            yield return new object[] { (BFloat16)(-3.14159265f), (BFloat16)(0.113314732f), CrossPlatformMachineEpsilon };        // value: -(pi)
-            yield return new object[] { (BFloat16)(-2.71828183f), (BFloat16)(0.151955223f), CrossPlatformMachineEpsilon };        // value: -(e)
-            yield return new object[] { (BFloat16)(-2.30258509f), (BFloat16)(0.202699566f), CrossPlatformMachineEpsilon };        // value: -(ln(10))
-            yield return new object[] { (BFloat16)(-1.57079633f), (BFloat16)(0.336622537f), CrossPlatformMachineEpsilon };        // value: -(pi / 2)
-            yield return new object[] { (BFloat16)(-1.44269504f), (BFloat16)(0.367879441f), CrossPlatformMachineEpsilon };        // value: -(log2(e))
-            yield return new object[] { (BFloat16)(-1.41421356f), (BFloat16)(0.375214227f), CrossPlatformMachineEpsilon };        // value: -(sqrt(2))
-            yield return new object[] { (BFloat16)(-1.12837917f), (BFloat16)(0.457429347f), CrossPlatformMachineEpsilon };        // value: -(2 / sqrt(pi))
+            yield return new object[] { (BFloat16)(-3.141f), (BFloat16)(0.1133f), CrossPlatformMachineEpsilon };        // value: -(pi)
+            yield return new object[] { (BFloat16)(-2.719f), (BFloat16)(0.1523f), CrossPlatformMachineEpsilon };        // value: -(e)
+            yield return new object[] { (BFloat16)(-2.297f), (BFloat16)(0.2031f), CrossPlatformMachineEpsilon };        // value: -(ln(10))
+            yield return new object[] { (BFloat16)(-1.57f), (BFloat16)(0.3359f), CrossPlatformMachineEpsilon };        // value: -(pi / 2)
+            yield return new object[] { (BFloat16)(-1.445f), (BFloat16)(0.3672f), CrossPlatformMachineEpsilon };        // value: -(log2(e))
+            yield return new object[] { (BFloat16)(-1.414f), (BFloat16)(0.375f), CrossPlatformMachineEpsilon };        // value: -(sqrt(2))
+            yield return new object[] { (BFloat16)(-1.125f), (BFloat16)(0.459f), CrossPlatformMachineEpsilon };        // value: -(2 / sqrt(pi))
             yield return new object[] { (BFloat16)(-BFloat16.One), (BFloat16)(0.5f), CrossPlatformMachineEpsilon };
-            yield return new object[] { (BFloat16)(-0.785398163f), (BFloat16)(0.580191810f), CrossPlatformMachineEpsilon };        // value: -(pi / 4)
-            yield return new object[] { (BFloat16)(-0.707106781f), (BFloat16)(0.612547327f), CrossPlatformMachineEpsilon };        // value: -(1 / sqrt(2))
-            yield return new object[] { (BFloat16)(-0.693147181f), (BFloat16)(0.618503138f), CrossPlatformMachineEpsilon };        // value: -(ln(2))
-            yield return new object[] { (BFloat16)(-0.636619772f), (BFloat16)(0.643218242f), CrossPlatformMachineEpsilon };        // value: -(2 / pi)
-            yield return new object[] { (BFloat16)(-0.434294482f), (BFloat16)(0.740055574f), CrossPlatformMachineEpsilon };        // value: -(log10(e))
-            yield return new object[] { (BFloat16)(-0.318309886f), (BFloat16)(0.802008879f), CrossPlatformMachineEpsilon };        // value: -(1 / pi)
+            yield return new object[] { (BFloat16)(-0.7852f), (BFloat16)(0.582f), CrossPlatformMachineEpsilon };        // value: -(pi / 4)
+            yield return new object[] { (BFloat16)(-0.707f), (BFloat16)(0.6133f), CrossPlatformMachineEpsilon };        // value: -(1 / sqrt(2))
+            yield return new object[] { (BFloat16)(-0.6914f), (BFloat16)(0.6211f), CrossPlatformMachineEpsilon };        // value: -(ln(2))
+            yield return new object[] { (BFloat16)(-0.6367f), (BFloat16)(0.6445f), CrossPlatformMachineEpsilon };        // value: -(2 / pi)
+            yield return new object[] { (BFloat16)(-0.4336f), (BFloat16)(0.7422f), CrossPlatformMachineEpsilon };        // value: -(log10(e))
+            yield return new object[] { (BFloat16)(-0.3184f), (BFloat16)(0.8008f), CrossPlatformMachineEpsilon };        // value: -(1 / pi)
             yield return new object[] { (BFloat16)(-0.0f), (BFloat16)(BFloat16.One), (BFloat16)0.0f };
             yield return new object[] { BFloat16.NaN, BFloat16.NaN, (BFloat16)0.0f };
             yield return new object[] { (BFloat16)(0.0f), (BFloat16)(BFloat16.One), (BFloat16)0.0f };
-            yield return new object[] { (BFloat16)(0.318309886f), (BFloat16)(1.24686899f), CrossPlatformMachineEpsilon * (BFloat16)10 };   // value:  (1 / pi)
-            yield return new object[] { (BFloat16)(0.434294482f), (BFloat16)(1.35124987f), CrossPlatformMachineEpsilon * (BFloat16)10 };   // value:  (log10(e))
-            yield return new object[] { (BFloat16)(0.636619772f), (BFloat16)(1.55468228f), CrossPlatformMachineEpsilon * (BFloat16)10 };   // value:  (2 / pi)
-            yield return new object[] { (BFloat16)(0.693147181f), (BFloat16)(1.61680667f), CrossPlatformMachineEpsilon * (BFloat16)10 };   // value:  (ln(2))
-            yield return new object[] { (BFloat16)(0.707106781f), (BFloat16)(1.63252692f), CrossPlatformMachineEpsilon * (BFloat16)10 };   // value:  (1 / sqrt(2))
-            yield return new object[] { (BFloat16)(0.785398163f), (BFloat16)(1.72356793f), CrossPlatformMachineEpsilon * (BFloat16)10 };   // value:  (pi / 4)
+            yield return new object[] { (BFloat16)(0.3184f), (BFloat16)(1.25f), CrossPlatformMachineEpsilon * (BFloat16)10 };   // value:  (1 / pi)
+            yield return new object[] { (BFloat16)(0.4336f), (BFloat16)(1.352f), CrossPlatformMachineEpsilon * (BFloat16)10 };   // value:  (log10(e))
+            yield return new object[] { (BFloat16)(0.6367f), (BFloat16)(1.555f), CrossPlatformMachineEpsilon * (BFloat16)10 };   // value:  (2 / pi)
+            yield return new object[] { (BFloat16)(0.6914f), (BFloat16)(1.617f), CrossPlatformMachineEpsilon * (BFloat16)10 };   // value:  (ln(2))
+            yield return new object[] { (BFloat16)(0.707f), (BFloat16)(1.633f), CrossPlatformMachineEpsilon * (BFloat16)10 };   // value:  (1 / sqrt(2))
+            yield return new object[] { (BFloat16)(0.7852f), (BFloat16)(1.727f), CrossPlatformMachineEpsilon * (BFloat16)10 };   // value:  (pi / 4)
             yield return new object[] { (BFloat16)(BFloat16.One), (BFloat16)(2.0f), CrossPlatformMachineEpsilon * (BFloat16)10 };
-            yield return new object[] { (BFloat16)(1.12837917f), (BFloat16)(2.18612996f), CrossPlatformMachineEpsilon * (BFloat16)10 };   // value:  (2 / sqrt(pi))
-            yield return new object[] { (BFloat16)(1.41421356f), (BFloat16)(2.66514414f), CrossPlatformMachineEpsilon * (BFloat16)10 };   // value:  (sqrt(2))
-            yield return new object[] { (BFloat16)(1.44269504f), (BFloat16)(2.71828183f), CrossPlatformMachineEpsilon * (BFloat16)10 };   // value:  (log2(e))
-            yield return new object[] { (BFloat16)(1.57079633f), (BFloat16)(2.97068642f), CrossPlatformMachineEpsilon * (BFloat16)10 };   // value:  (pi / 2)
-            yield return new object[] { (BFloat16)(2.30258509f), (BFloat16)(4.93340967f), CrossPlatformMachineEpsilon * (BFloat16)10 };   // value:  (ln(10))
-            yield return new object[] { (BFloat16)(2.71828183f), (BFloat16)(6.58088599f), CrossPlatformMachineEpsilon * (BFloat16)10 };   // value:  (e)
-            yield return new object[] { (BFloat16)(3.14159265f), (BFloat16)(8.82497783f), CrossPlatformMachineEpsilon * (BFloat16)10 };   // value:  (pi)
+            yield return new object[] { (BFloat16)(1.125f), (BFloat16)(2.188f), CrossPlatformMachineEpsilon * (BFloat16)10 };   // value:  (2 / sqrt(pi))
+            yield return new object[] { (BFloat16)(1.414f), (BFloat16)(2.672f), CrossPlatformMachineEpsilon * (BFloat16)10 };   // value:  (sqrt(2))
+            yield return new object[] { (BFloat16)(1.445f), (BFloat16)(2.719f), CrossPlatformMachineEpsilon * (BFloat16)10 };   // value:  (log2(e))
+            yield return new object[] { (BFloat16)(1.57f), (BFloat16)(2.969f), CrossPlatformMachineEpsilon * (BFloat16)10 };   // value:  (pi / 2)
+            yield return new object[] { (BFloat16)(2.297f), (BFloat16)(4.906f), CrossPlatformMachineEpsilon * (BFloat16)10 };   // value:  (ln(10))
+            yield return new object[] { (BFloat16)(2.719f), (BFloat16)(6.594f), CrossPlatformMachineEpsilon * (BFloat16)10 };   // value:  (e)
+            yield return new object[] { (BFloat16)(3.141f), (BFloat16)(8.812f), CrossPlatformMachineEpsilon * (BFloat16)10 };   // value:  (pi)
             yield return new object[] { BFloat16.PositiveInfinity, BFloat16.PositiveInfinity, 0.0f };
         }
 
@@ -1338,37 +1338,37 @@ namespace System.Numerics.Tests
         public static IEnumerable<object[]> Exp2M1_TestData()
         {
             yield return new object[] { BFloat16.NegativeInfinity, (BFloat16)(-BFloat16.One), (BFloat16)0.0f };
-            yield return new object[] { (BFloat16)(-3.14159265f), (BFloat16)(-0.886685268f), CrossPlatformMachineEpsilon };            // value: -(pi)
-            yield return new object[] { (BFloat16)(-2.71828183f), (BFloat16)(-0.848044777f), CrossPlatformMachineEpsilon };            // value: -(e)
-            yield return new object[] { (BFloat16)(-2.30258509f), (BFloat16)(-0.797300434f), CrossPlatformMachineEpsilon };            // value: -(ln(10))
-            yield return new object[] { (BFloat16)(-1.57079633f), (BFloat16)(-0.663377463f), CrossPlatformMachineEpsilon };            // value: -(pi / 2)
-            yield return new object[] { (BFloat16)(-1.44269504f), (BFloat16)(-0.632120559f), CrossPlatformMachineEpsilon };            // value: -(log2(e))
-            yield return new object[] { (BFloat16)(-1.41421356f), (BFloat16)(-0.624785773f), CrossPlatformMachineEpsilon };            // value: -(sqrt(2))
-            yield return new object[] { (BFloat16)(-1.12837917f), (BFloat16)(-0.542570653f), CrossPlatformMachineEpsilon };            // value: -(2 / sqrt(pi))
+            yield return new object[] { (BFloat16)(-3.141f), (BFloat16)(-0.8867f), CrossPlatformMachineEpsilon };            // value: -(pi)
+            yield return new object[] { (BFloat16)(-2.719f), (BFloat16)(-0.8477f), CrossPlatformMachineEpsilon };            // value: -(e)
+            yield return new object[] { (BFloat16)(-2.297f), (BFloat16)(-0.7969f), CrossPlatformMachineEpsilon };            // value: -(ln(10))
+            yield return new object[] { (BFloat16)(-1.57f), (BFloat16)(-0.6641f), CrossPlatformMachineEpsilon };            // value: -(pi / 2)
+            yield return new object[] { (BFloat16)(-1.445f), (BFloat16)(-0.6328f), CrossPlatformMachineEpsilon };            // value: -(log2(e))
+            yield return new object[] { (BFloat16)(-1.414f), (BFloat16)(-0.625f), CrossPlatformMachineEpsilon };            // value: -(sqrt(2))
+            yield return new object[] { (BFloat16)(-1.125f), (BFloat16)(-0.543f), CrossPlatformMachineEpsilon };            // value: -(2 / sqrt(pi))
             yield return new object[] { (BFloat16)(-BFloat16.One), (BFloat16)(-0.5f), CrossPlatformMachineEpsilon };
-            yield return new object[] { (BFloat16)(-0.785398163f), (BFloat16)(-0.419808190f), CrossPlatformMachineEpsilon };            // value: -(pi / 4)
-            yield return new object[] { (BFloat16)(-0.707106781f), (BFloat16)(-0.387452673f), CrossPlatformMachineEpsilon };            // value: -(1 / sqrt(2))
-            yield return new object[] { (BFloat16)(-0.693147181f), (BFloat16)(-0.381496862f), CrossPlatformMachineEpsilon };            // value: -(ln(2))
-            yield return new object[] { (BFloat16)(-0.636619772f), (BFloat16)(-0.356781758f), CrossPlatformMachineEpsilon };            // value: -(2 / pi)
-            yield return new object[] { (BFloat16)(-0.434294482f), (BFloat16)(-0.259944426f), CrossPlatformMachineEpsilon };            // value: -(log10(e))
-            yield return new object[] { (BFloat16)(-0.318309886f), (BFloat16)(-0.197991121f), CrossPlatformMachineEpsilon };            // value: -(1 / pi)
-            yield return new object[] { (BFloat16)(-0.0f), (BFloat16)(0.0f), (BFloat16)0.0f };
+            yield return new object[] { (BFloat16)(-0.7852f), (BFloat16)(-0.4199f), CrossPlatformMachineEpsilon };            // value: -(pi / 4)
+            yield return new object[] { (BFloat16)(-0.707f), (BFloat16)(-0.3867f), CrossPlatformMachineEpsilon };            // value: -(1 / sqrt(2))
+            yield return new object[] { (BFloat16)(-0.6914f), (BFloat16)(-0.3809f), CrossPlatformMachineEpsilon };            // value: -(ln(2))
+            yield return new object[] { (BFloat16)(-0.6367f), (BFloat16)(-0.3574f), CrossPlatformMachineEpsilon };            // value: -(2 / pi)
+            yield return new object[] { (BFloat16)(-0.4336f), (BFloat16)(-0.2598f), CrossPlatformMachineEpsilon };            // value: -(log10(e))
+            yield return new object[] { (BFloat16)(-0.3184f), (BFloat16)(-0.1982f), CrossPlatformMachineEpsilon };            // value: -(1 / pi)
+            yield return new object[] { (BFloat16)(-0f), (BFloat16)(0f), (BFloat16)0.0f };
             yield return new object[] { BFloat16.NaN, BFloat16.NaN, (BFloat16)0.0f };
-            yield return new object[] { (BFloat16)(0.0f), (BFloat16)(0.0f), (BFloat16)0.0f };
-            yield return new object[] { (BFloat16)(0.318309886f), (BFloat16)(0.246868989f), CrossPlatformMachineEpsilon };            // value:  (1 / pi)
-            yield return new object[] { (BFloat16)(0.434294482f), (BFloat16)(0.351249873f), CrossPlatformMachineEpsilon };            // value:  (log10(e))
-            yield return new object[] { (BFloat16)(0.636619772f), (BFloat16)(0.554682275f), CrossPlatformMachineEpsilon };            // value:  (2 / pi)
-            yield return new object[] { (BFloat16)(0.693147181f), (BFloat16)(0.616806672f), CrossPlatformMachineEpsilon };            // value:  (ln(2))
-            yield return new object[] { (BFloat16)(0.707106781f), (BFloat16)(0.632526919f), CrossPlatformMachineEpsilon };            // value:  (1 / sqrt(2))
-            yield return new object[] { (BFloat16)(0.785398163f), (BFloat16)(0.723567934f), CrossPlatformMachineEpsilon };            // value:  (pi / 4)
+            yield return new object[] { (BFloat16)(0f), (BFloat16)(0f), (BFloat16)0.0f };
+            yield return new object[] { (BFloat16)(0.3184f), (BFloat16)(0.2471f), CrossPlatformMachineEpsilon };            // value:  (1 / pi)
+            yield return new object[] { (BFloat16)(0.4336f), (BFloat16)(0.3516f), CrossPlatformMachineEpsilon };            // value:  (log10(e))
+            yield return new object[] { (BFloat16)(0.6367f), (BFloat16)(0.5547f), CrossPlatformMachineEpsilon };            // value:  (2 / pi)
+            yield return new object[] { (BFloat16)(0.6914f), (BFloat16)(0.6133f), CrossPlatformMachineEpsilon };            // value:  (ln(2))
+            yield return new object[] { (BFloat16)(0.707f), (BFloat16)(0.6328f), CrossPlatformMachineEpsilon };            // value:  (1 / sqrt(2))
+            yield return new object[] { (BFloat16)(0.7852f), (BFloat16)(0.7227f), CrossPlatformMachineEpsilon };            // value:  (pi / 4)
             yield return new object[] { (BFloat16)(BFloat16.One), (BFloat16)(BFloat16.One), CrossPlatformMachineEpsilon * (BFloat16)10 };
-            yield return new object[] { (BFloat16)(1.12837917f), (BFloat16)(1.18612996f), CrossPlatformMachineEpsilon * (BFloat16)10 }; // value:  (2 / sqrt(pi))
-            yield return new object[] { (BFloat16)(1.41421356f), (BFloat16)(1.66514414f), CrossPlatformMachineEpsilon * (BFloat16)10 }; // value:  (sqrt(2))
-            yield return new object[] { (BFloat16)(1.44269504f), (BFloat16)(1.71828183f), CrossPlatformMachineEpsilon * (BFloat16)10 }; // value:  (log2(e))
-            yield return new object[] { (BFloat16)(1.57079633f), (BFloat16)(1.97068642f), CrossPlatformMachineEpsilon * (BFloat16)10 }; // value:  (pi / 2)
-            yield return new object[] { (BFloat16)(2.30258509f), (BFloat16)(3.93340967f), CrossPlatformMachineEpsilon * (BFloat16)10 }; // value:  (ln(10))
-            yield return new object[] { (BFloat16)(2.71828183f), (BFloat16)(5.58088599f), CrossPlatformMachineEpsilon * (BFloat16)10 }; // value:  (e)
-            yield return new object[] { (BFloat16)(3.14159265f), (BFloat16)(7.82497783f), CrossPlatformMachineEpsilon * (BFloat16)10 }; // value:  (pi)
+            yield return new object[] { (BFloat16)(1.125f), (BFloat16)(1.18f), CrossPlatformMachineEpsilon * (BFloat16)10 }; // value:  (2 / sqrt(pi))
+            yield return new object[] { (BFloat16)(1.414f), (BFloat16)(1.664f), CrossPlatformMachineEpsilon * (BFloat16)10 }; // value:  (sqrt(2))
+            yield return new object[] { (BFloat16)(1.445f), (BFloat16)(1.727f), CrossPlatformMachineEpsilon * (BFloat16)10 }; // value:  (log2(e))
+            yield return new object[] { (BFloat16)(1.57f), (BFloat16)(1.969f), CrossPlatformMachineEpsilon * (BFloat16)10 }; // value:  (pi / 2)
+            yield return new object[] { (BFloat16)(2.297f), (BFloat16)(3.906f), CrossPlatformMachineEpsilon * (BFloat16)10 }; // value:  (ln(10))
+            yield return new object[] { (BFloat16)(2.719f), (BFloat16)(5.594f), CrossPlatformMachineEpsilon * (BFloat16)10 }; // value:  (e)
+            yield return new object[] { (BFloat16)(3.141f), (BFloat16)(7.812f), CrossPlatformMachineEpsilon * (BFloat16)10 }; // value:  (pi)
             yield return new object[] { BFloat16.PositiveInfinity, BFloat16.PositiveInfinity, (BFloat16)0.0f };
         }
 
@@ -1382,37 +1382,37 @@ namespace System.Numerics.Tests
         public static IEnumerable<object[]> Exp10_TestData()
         {
             yield return new object[] { BFloat16.NegativeInfinity, (BFloat16)0.0f, (BFloat16)0.0f };
-            yield return new object[] { (BFloat16)(-3.14159265f), (BFloat16)0.000721784159f, CrossPlatformMachineEpsilon / (BFloat16)1000 };  // value: -(pi)
-            yield return new object[] { (BFloat16)(-2.71828183f), (BFloat16)0.00191301410f, CrossPlatformMachineEpsilon / (BFloat16)100 };   // value: -(e)
-            yield return new object[] { (BFloat16)(-2.30258509f), (BFloat16)0.00498212830f, CrossPlatformMachineEpsilon / (BFloat16)100 };   // value: -(ln(10))
-            yield return new object[] { (BFloat16)(-1.57079633f), (BFloat16)0.0268660410f, CrossPlatformMachineEpsilon / (BFloat16)10 };    // value: -(pi / 2)
-            yield return new object[] { (BFloat16)(-1.44269504f), (BFloat16)0.0360831928f, CrossPlatformMachineEpsilon / (BFloat16)10 };    // value: -(log2(e))
-            yield return new object[] { (BFloat16)(-1.41421356f), (BFloat16)0.0385288847f, CrossPlatformMachineEpsilon / (BFloat16)10 };    // value: -(sqrt(2))
-            yield return new object[] { (BFloat16)(-1.12837917f), (BFloat16)0.0744082059f, CrossPlatformMachineEpsilon / (BFloat16)10 };    // value: -(2 / sqrt(pi))
+            yield return new object[] { (BFloat16)(-3.141f), (BFloat16)0.0007248f, CrossPlatformMachineEpsilon / (BFloat16)1000 };  // value: -(pi)
+            yield return new object[] { (BFloat16)(-2.719f), (BFloat16)0.001907f, CrossPlatformMachineEpsilon / (BFloat16)100 };   // value: -(e)
+            yield return new object[] { (BFloat16)(-2.297f), (BFloat16)0.005035f, CrossPlatformMachineEpsilon / (BFloat16)100 };   // value: -(ln(10))
+            yield return new object[] { (BFloat16)(-1.57f), (BFloat16)0.02686f, CrossPlatformMachineEpsilon / (BFloat16)10 };    // value: -(pi / 2)
+            yield return new object[] { (BFloat16)(-1.445f), (BFloat16)0.03589f, CrossPlatformMachineEpsilon / (BFloat16)10 };    // value: -(log2(e))
+            yield return new object[] { (BFloat16)(-1.414f), (BFloat16)0.03857f, CrossPlatformMachineEpsilon / (BFloat16)10 };    // value: -(sqrt(2))
+            yield return new object[] { (BFloat16)(-1.125f), (BFloat16)0.0752f, CrossPlatformMachineEpsilon / (BFloat16)10 };    // value: -(2 / sqrt(pi))
             yield return new object[] { (BFloat16)(-BFloat16.One), (BFloat16)0.1f, CrossPlatformMachineEpsilon };
-            yield return new object[] { (BFloat16)(-0.785398163f), (BFloat16)0.163908636f, CrossPlatformMachineEpsilon };         // value: -(pi / 4)
-            yield return new object[] { (BFloat16)(-0.707106781f), (BFloat16)0.196287760f, CrossPlatformMachineEpsilon };         // value: -(1 / sqrt(2))
-            yield return new object[] { (BFloat16)(-0.693147181f), (BFloat16)0.202699566f, CrossPlatformMachineEpsilon };         // value: -(ln(2))
-            yield return new object[] { (BFloat16)(-0.636619772f), (BFloat16)0.230876765f, CrossPlatformMachineEpsilon };         // value: -(2 / pi)
-            yield return new object[] { (BFloat16)(-0.434294482f), (BFloat16)0.367879441f, CrossPlatformMachineEpsilon };         // value: -(log10(e))
-            yield return new object[] { (BFloat16)(-0.318309886f), (BFloat16)0.480496373f, CrossPlatformMachineEpsilon };         // value: -(1 / pi)
+            yield return new object[] { (BFloat16)(-0.7852f), (BFloat16)0.1641f, CrossPlatformMachineEpsilon };         // value: -(pi / 4)
+            yield return new object[] { (BFloat16)(-0.707f), (BFloat16)0.1963f, CrossPlatformMachineEpsilon };         // value: -(1 / sqrt(2))
+            yield return new object[] { (BFloat16)(-0.6914f), (BFloat16)0.2031f, CrossPlatformMachineEpsilon };         // value: -(ln(2))
+            yield return new object[] { (BFloat16)(-0.6367f), (BFloat16)0.2305f, CrossPlatformMachineEpsilon };         // value: -(2 / pi)
+            yield return new object[] { (BFloat16)(-0.4336f), (BFloat16)0.3691f, CrossPlatformMachineEpsilon };         // value: -(log10(e))
+            yield return new object[] { (BFloat16)(-0.3184f), (BFloat16)0.4805f, CrossPlatformMachineEpsilon };         // value: -(1 / pi)
             yield return new object[] { (BFloat16)(-0.0f), (BFloat16)BFloat16.One, (BFloat16)0.0f };
             yield return new object[] { BFloat16.NaN, BFloat16.NaN, (BFloat16)0.0f };
             yield return new object[] { (BFloat16)(0.0f), (BFloat16)BFloat16.One, (BFloat16)0.0f };
-            yield return new object[] { (BFloat16)(0.318309886f), (BFloat16)2.08118116f, CrossPlatformMachineEpsilon * (BFloat16)10 };    // value:  (1 / pi)
-            yield return new object[] { (BFloat16)(0.434294482f), (BFloat16)2.71828183f, CrossPlatformMachineEpsilon * (BFloat16)10 };    // value:  (log10(e))
-            yield return new object[] { (BFloat16)(0.636619772f), (BFloat16)4.33131503f, CrossPlatformMachineEpsilon * (BFloat16)10 };    // value:  (2 / pi)
-            yield return new object[] { (BFloat16)(0.693147181f), (BFloat16)4.93340967f, CrossPlatformMachineEpsilon * (BFloat16)10 };    // value:  (ln(2))
-            yield return new object[] { (BFloat16)(0.707106781f), (BFloat16)5.09456117f, CrossPlatformMachineEpsilon * (BFloat16)10 };    // value:  (1 / sqrt(2))
-            yield return new object[] { (BFloat16)(0.785398163f), (BFloat16)6.10095980f, CrossPlatformMachineEpsilon * (BFloat16)10 };    // value:  (pi / 4)
+            yield return new object[] { (BFloat16)(0.3184f), (BFloat16)2.078f, CrossPlatformMachineEpsilon * (BFloat16)10 };    // value:  (1 / pi)
+            yield return new object[] { (BFloat16)(0.4336f), (BFloat16)2.719f, CrossPlatformMachineEpsilon * (BFloat16)10 };    // value:  (log10(e))
+            yield return new object[] { (BFloat16)(0.6367f), (BFloat16)4.344f, CrossPlatformMachineEpsilon * (BFloat16)10 };    // value:  (2 / pi)
+            yield return new object[] { (BFloat16)(0.6914f), (BFloat16)4.906f, CrossPlatformMachineEpsilon * (BFloat16)10 };    // value:  (ln(2))
+            yield return new object[] { (BFloat16)(0.707f), (BFloat16)5.094f, CrossPlatformMachineEpsilon * (BFloat16)10 };    // value:  (1 / sqrt(2))
+            yield return new object[] { (BFloat16)(0.7852f), (BFloat16)6.094f, CrossPlatformMachineEpsilon * (BFloat16)10 };    // value:  (pi / 4)
             yield return new object[] { (BFloat16)(BFloat16.One), (BFloat16)10.0f, CrossPlatformMachineEpsilon * (BFloat16)100 };
-            yield return new object[] { (BFloat16)(1.12837917f), (BFloat16)13.4393779f, CrossPlatformMachineEpsilon * (BFloat16)100 };   // value:  (2 / sqrt(pi))
-            yield return new object[] { (BFloat16)(1.41421356f), (BFloat16)25.9545535f, CrossPlatformMachineEpsilon * (BFloat16)100 };   // value:  (sqrt(2))
-            yield return new object[] { (BFloat16)(1.44269504f), (BFloat16)27.7137338f, CrossPlatformMachineEpsilon * (BFloat16)100 };   // value:  (log2(e))
-            yield return new object[] { (BFloat16)(1.57079633f), (BFloat16)37.2217105f, CrossPlatformMachineEpsilon * (BFloat16)100 };   // value:  (pi / 2)
-            yield return new object[] { (BFloat16)(2.30258509f), (BFloat16)200.717432f, CrossPlatformMachineEpsilon * (BFloat16)1000 };  // value:  (ln(10))
-            yield return new object[] { (BFloat16)(2.71828183f), (BFloat16)522.735300f, CrossPlatformMachineEpsilon * (BFloat16)1000 };  // value:  (e)
-            yield return new object[] { (BFloat16)(3.14159265f), (BFloat16)1385.45573f, CrossPlatformMachineEpsilon * (BFloat16)10000 }; // value:  (pi)
+            yield return new object[] { (BFloat16)(1.125f), (BFloat16)13.31f, CrossPlatformMachineEpsilon * (BFloat16)100 };   // value:  (2 / sqrt(pi))
+            yield return new object[] { (BFloat16)(1.414f), (BFloat16)26f, CrossPlatformMachineEpsilon * (BFloat16)100 };   // value:  (sqrt(2))
+            yield return new object[] { (BFloat16)(1.445f), (BFloat16)27.88f, CrossPlatformMachineEpsilon * (BFloat16)100 };   // value:  (log2(e))
+            yield return new object[] { (BFloat16)(1.57f), (BFloat16)37.25f, CrossPlatformMachineEpsilon * (BFloat16)100 };   // value:  (pi / 2)
+            yield return new object[] { (BFloat16)(2.297f), (BFloat16)198f, CrossPlatformMachineEpsilon * (BFloat16)1000 };  // value:  (ln(10))
+            yield return new object[] { (BFloat16)(2.719f), (BFloat16)524f, CrossPlatformMachineEpsilon * (BFloat16)1000 };  // value:  (e)
+            yield return new object[] { (BFloat16)(3.141f), (BFloat16)1384f, CrossPlatformMachineEpsilon * (BFloat16)10000 }; // value:  (pi)
             yield return new object[] { BFloat16.PositiveInfinity, BFloat16.PositiveInfinity, (BFloat16)0.0f };
         }
 
@@ -1426,37 +1426,37 @@ namespace System.Numerics.Tests
         public static IEnumerable<object[]> Exp10M1_TestData()
         {
             yield return new object[] { BFloat16.NegativeInfinity, (BFloat16)(-BFloat16.One), (BFloat16)0.0f };
-            yield return new object[] { (BFloat16)(-3.14159265f), (BFloat16)(-0.999278216f), CrossPlatformMachineEpsilon };               // value: -(pi)
-            yield return new object[] { (BFloat16)(-2.71828183f), (BFloat16)(-0.998086986f), CrossPlatformMachineEpsilon };               // value: -(e)
-            yield return new object[] { (BFloat16)(-2.30258509f), (BFloat16)(-0.995017872f), CrossPlatformMachineEpsilon };               // value: -(ln(10))
-            yield return new object[] { (BFloat16)(-1.57079633f), (BFloat16)(-0.973133959f), CrossPlatformMachineEpsilon };               // value: -(pi / 2)
-            yield return new object[] { (BFloat16)(-1.44269504f), (BFloat16)(-0.963916807f), CrossPlatformMachineEpsilon };               // value: -(log2(e))
-            yield return new object[] { (BFloat16)(-1.41421356f), (BFloat16)(-0.961471115f), CrossPlatformMachineEpsilon };               // value: -(sqrt(2))
-            yield return new object[] { (BFloat16)(-1.12837917f), (BFloat16)(-0.925591794f), CrossPlatformMachineEpsilon };               // value: -(2 / sqrt(pi))
+            yield return new object[] { (BFloat16)(-3.141f), (BFloat16)(-1f), CrossPlatformMachineEpsilon };               // value: -(pi)
+            yield return new object[] { (BFloat16)(-2.719f), (BFloat16)(-1f), CrossPlatformMachineEpsilon };               // value: -(e)
+            yield return new object[] { (BFloat16)(-2.297f), (BFloat16)(-0.9961f), CrossPlatformMachineEpsilon };               // value: -(ln(10))
+            yield return new object[] { (BFloat16)(-1.57f), (BFloat16)(-0.9727f), CrossPlatformMachineEpsilon };               // value: -(pi / 2)
+            yield return new object[] { (BFloat16)(-1.445f), (BFloat16)(-0.9648f), CrossPlatformMachineEpsilon };               // value: -(log2(e))
+            yield return new object[] { (BFloat16)(-1.414f), (BFloat16)(-0.9609f), CrossPlatformMachineEpsilon };               // value: -(sqrt(2))
+            yield return new object[] { (BFloat16)(-1.125f), (BFloat16)(-0.9258f), CrossPlatformMachineEpsilon };               // value: -(2 / sqrt(pi))
             yield return new object[] { (BFloat16)(-BFloat16.One), (BFloat16)(-0.9f), CrossPlatformMachineEpsilon };
-            yield return new object[] { (BFloat16)(-0.785398163f), (BFloat16)(-0.836091364f), CrossPlatformMachineEpsilon };               // value: -(pi / 4)
-            yield return new object[] { (BFloat16)(-0.707106781f), (BFloat16)(-0.803712240f), CrossPlatformMachineEpsilon };               // value: -(1 / sqrt(2))
-            yield return new object[] { (BFloat16)(-0.693147181f), (BFloat16)(-0.797300434f), CrossPlatformMachineEpsilon };               // value: -(ln(2))
-            yield return new object[] { (BFloat16)(-0.636619772f), (BFloat16)(-0.769123235f), CrossPlatformMachineEpsilon };               // value: -(2 / pi)
-            yield return new object[] { (BFloat16)(-0.434294482f), (BFloat16)(-0.632120559f), CrossPlatformMachineEpsilon };               // value: -(log10(e))
-            yield return new object[] { (BFloat16)(-0.318309886f), (BFloat16)(-0.519503627f), CrossPlatformMachineEpsilon };               // value: -(1 / pi)
-            yield return new object[] { (BFloat16)(-0.0f), (BFloat16)(0.0f), (BFloat16)0.0f };
+            yield return new object[] { (BFloat16)(-0.7852f), (BFloat16)(-0.8359f), CrossPlatformMachineEpsilon };               // value: -(pi / 4)
+            yield return new object[] { (BFloat16)(-0.707f), (BFloat16)(-0.8047f), CrossPlatformMachineEpsilon };               // value: -(1 / sqrt(2))
+            yield return new object[] { (BFloat16)(-0.6914f), (BFloat16)(-0.7969f), CrossPlatformMachineEpsilon };               // value: -(ln(2))
+            yield return new object[] { (BFloat16)(-0.6367f), (BFloat16)(-0.7695f), CrossPlatformMachineEpsilon };               // value: -(2 / pi)
+            yield return new object[] { (BFloat16)(-0.4336f), (BFloat16)(-0.6328f), CrossPlatformMachineEpsilon };               // value: -(log10(e))
+            yield return new object[] { (BFloat16)(-0.3184f), (BFloat16)(-0.5195f), CrossPlatformMachineEpsilon };               // value: -(1 / pi)
+            yield return new object[] { (BFloat16)(-0f), (BFloat16)(0f), (BFloat16)0.0f };
             yield return new object[] { BFloat16.NaN, BFloat16.NaN, (BFloat16)0.0f };
-            yield return new object[] { (BFloat16)(0.0f), (BFloat16)(0.0f), (BFloat16)0.0f };
-            yield return new object[] { (BFloat16)(0.318309886f), (BFloat16)(1.08118116f), CrossPlatformMachineEpsilon * (BFloat16)10 };    // value:  (1 / pi)
-            yield return new object[] { (BFloat16)(0.434294482f), (BFloat16)(1.71828183f), CrossPlatformMachineEpsilon * (BFloat16)10 };    // value:  (log10(e))
-            yield return new object[] { (BFloat16)(0.636619772f), (BFloat16)(3.33131503f), CrossPlatformMachineEpsilon * (BFloat16)10 };    // value:  (2 / pi)
-            yield return new object[] { (BFloat16)(0.693147181f), (BFloat16)(3.93340967f), CrossPlatformMachineEpsilon * (BFloat16)10 };    // value:  (ln(2))
-            yield return new object[] { (BFloat16)(0.707106781f), (BFloat16)(4.09456117f), CrossPlatformMachineEpsilon * (BFloat16)10 };    // value:  (1 / sqrt(2))
-            yield return new object[] { (BFloat16)(0.785398163f), (BFloat16)(5.10095980f), CrossPlatformMachineEpsilon * (BFloat16)10 };    // value:  (pi / 4)
+            yield return new object[] { (BFloat16)(0f), (BFloat16)(0f), (BFloat16)0.0f };
+            yield return new object[] { (BFloat16)(0.3184f), (BFloat16)(1.078f), CrossPlatformMachineEpsilon * (BFloat16)10 };    // value:  (1 / pi)
+            yield return new object[] { (BFloat16)(0.4336f), (BFloat16)(1.711f), CrossPlatformMachineEpsilon * (BFloat16)10 };    // value:  (log10(e))
+            yield return new object[] { (BFloat16)(0.6367f), (BFloat16)(3.328f), CrossPlatformMachineEpsilon * (BFloat16)10 };    // value:  (2 / pi)
+            yield return new object[] { (BFloat16)(0.6914f), (BFloat16)(3.906f), CrossPlatformMachineEpsilon * (BFloat16)10 };    // value:  (ln(2))
+            yield return new object[] { (BFloat16)(0.707f), (BFloat16)(4.094f), CrossPlatformMachineEpsilon * (BFloat16)10 };    // value:  (1 / sqrt(2))
+            yield return new object[] { (BFloat16)(0.7852f), (BFloat16)(5.094f), CrossPlatformMachineEpsilon * (BFloat16)10 };    // value:  (pi / 4)
             yield return new object[] { (BFloat16)(BFloat16.One), (BFloat16)(9.0f), CrossPlatformMachineEpsilon * (BFloat16)10 };
-            yield return new object[] { (BFloat16)(1.12837917f), (BFloat16)(12.4393779f), CrossPlatformMachineEpsilon * (BFloat16)100 };   // value:  (2 / sqrt(pi))
-            yield return new object[] { (BFloat16)(1.41421356f), (BFloat16)(24.9545535f), CrossPlatformMachineEpsilon * (BFloat16)100 };   // value:  (sqrt(2))
-            yield return new object[] { (BFloat16)(1.44269504f), (BFloat16)(26.7137338f), CrossPlatformMachineEpsilon * (BFloat16)100 };   // value:  (log2(e))
-            yield return new object[] { (BFloat16)(1.57079633f), (BFloat16)(36.2217105f), CrossPlatformMachineEpsilon * (BFloat16)100 };   // value:  (pi / 2)
-            yield return new object[] { (BFloat16)(2.30258509f), (BFloat16)(199.717432f), CrossPlatformMachineEpsilon * (BFloat16)1000 };  // value:  (ln(10))
-            yield return new object[] { (BFloat16)(2.71828183f), (BFloat16)(521.735300f), CrossPlatformMachineEpsilon * (BFloat16)1000 };  // value:  (e)
-            yield return new object[] { (BFloat16)(3.14159265f), (BFloat16)(1384.45573f), CrossPlatformMachineEpsilon * (BFloat16)10000 }; // value:  (pi)
+            yield return new object[] { (BFloat16)(1.125f), (BFloat16)(12.31f), CrossPlatformMachineEpsilon * (BFloat16)100 };   // value:  (2 / sqrt(pi))
+            yield return new object[] { (BFloat16)(1.414f), (BFloat16)(25f), CrossPlatformMachineEpsilon * (BFloat16)100 };   // value:  (sqrt(2))
+            yield return new object[] { (BFloat16)(1.445f), (BFloat16)(26.88f), CrossPlatformMachineEpsilon * (BFloat16)100 };   // value:  (log2(e))
+            yield return new object[] { (BFloat16)(1.57f), (BFloat16)(36.25f), CrossPlatformMachineEpsilon * (BFloat16)100 };   // value:  (pi / 2)
+            yield return new object[] { (BFloat16)(2.297f), (BFloat16)(197f), CrossPlatformMachineEpsilon * (BFloat16)1000 };  // value:  (ln(10))
+            yield return new object[] { (BFloat16)(2.719f), (BFloat16)(524f), CrossPlatformMachineEpsilon * (BFloat16)1000 };  // value:  (e)
+            yield return new object[] { (BFloat16)(3.141f), (BFloat16)(1384f), CrossPlatformMachineEpsilon * (BFloat16)10000 }; // value:  (pi)
             yield return new object[] { BFloat16.PositiveInfinity, BFloat16.PositiveInfinity, (BFloat16)0.0f };
         }
 
@@ -1470,39 +1470,39 @@ namespace System.Numerics.Tests
         public static IEnumerable<object[]> LogP1_TestData()
         {
             yield return new object[] { BFloat16.NegativeInfinity, BFloat16.NaN, (BFloat16)0.0f };
-            yield return new object[] { (BFloat16)(-3.14159265f), BFloat16.NaN, (BFloat16)0.0f };                              //                              value: -(pi)
-            yield return new object[] { (BFloat16)(-2.71828183f), BFloat16.NaN, (BFloat16)0.0f };                              //                              value: -(e)
-            yield return new object[] { (BFloat16)(-1.41421356f), BFloat16.NaN, (BFloat16)0.0f };                              //                              value: -(sqrt(2))
+            yield return new object[] { (BFloat16)(-3.141f), BFloat16.NaN, (BFloat16)0.0f };                              //                              value: -(pi)
+            yield return new object[] { (BFloat16)(-2.719f), BFloat16.NaN, (BFloat16)0.0f };                              //                              value: -(e)
+            yield return new object[] { (BFloat16)(-1.414f), BFloat16.NaN, (BFloat16)0.0f };                              //                              value: -(sqrt(2))
             yield return new object[] { BFloat16.NaN, BFloat16.NaN, (BFloat16)0.0f };
             yield return new object[] { (BFloat16)(-BFloat16.One), BFloat16.NegativeInfinity, (BFloat16)0.0f };
-            yield return new object[] { (BFloat16)(-0.956786082f), (BFloat16)(-3.14159265f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected: -(pi)
-            yield return new object[] { (BFloat16)(-0.934011964f), (BFloat16)(-2.71828183f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected: -(e)
-            yield return new object[] { (BFloat16)(-0.9f), (BFloat16)(-2.30258509f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected: -(ln(10))
-            yield return new object[] { (BFloat16)(-0.792120424f), (BFloat16)(-1.57079633f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected: -(pi / 2)
-            yield return new object[] { (BFloat16)(-0.763709912f), (BFloat16)(-1.44269504f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected: -(log2(e))
-            yield return new object[] { (BFloat16)(-0.756883266f), (BFloat16)(-1.41421356f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected: -(sqrt(2))
-            yield return new object[] { (BFloat16)(-0.676442736f), (BFloat16)(-1.12837917f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected: -(2 / sqrt(pi))
-            yield return new object[] { (BFloat16)(-0.632120559f), (BFloat16)(-BFloat16.One), CrossPlatformMachineEpsilon * (BFloat16)10 };
-            yield return new object[] { (BFloat16)(-0.544061872f), (BFloat16)(-0.785398163f), CrossPlatformMachineEpsilon };             // expected: -(pi / 4)
-            yield return new object[] { (BFloat16)(-0.506931309f), (BFloat16)(-0.707106781f), CrossPlatformMachineEpsilon };             // expected: -(1 / sqrt(2))
-            yield return new object[] { (BFloat16)(-0.5f), (BFloat16)(-0.693147181f), CrossPlatformMachineEpsilon };             // expected: -(ln(2))
-            yield return new object[] { (BFloat16)(-0.470922192f), (BFloat16)(-0.636619772f), CrossPlatformMachineEpsilon };             // expected: -(2 / pi)
-            yield return new object[] { (BFloat16)(-0.0f), (BFloat16)(0.0f), 0.0f };
-            yield return new object[] { (BFloat16)(0.0f), (BFloat16)(0.0f), 0.0f };
-            yield return new object[] { (BFloat16)(0.374802227f), (BFloat16)(0.318309886f), CrossPlatformMachineEpsilon };             // expected:  (1 / pi)
-            yield return new object[] { (BFloat16)(0.543873444f), (BFloat16)(0.434294482f), CrossPlatformMachineEpsilon };             // expected:  (log10(e))
-            yield return new object[] { (BFloat16)(0.890081165f), (BFloat16)(0.636619772f), CrossPlatformMachineEpsilon };             // expected:  (2 / pi)
-            yield return new object[] { (BFloat16)(BFloat16.One), (BFloat16)(0.693147181f), CrossPlatformMachineEpsilon };             // expected:  (ln(2))
-            yield return new object[] { (BFloat16)(1.02811498f), (BFloat16)(0.707106781f), CrossPlatformMachineEpsilon };             // expected:  (1 / sqrt(2))
-            yield return new object[] { (BFloat16)(1.19328005f), (BFloat16)(0.785398163f), CrossPlatformMachineEpsilon };             // expected:  (pi / 4)
-            yield return new object[] { (BFloat16)(1.71828183f), (BFloat16)(BFloat16.One), CrossPlatformMachineEpsilon * (BFloat16)10 };
-            yield return new object[] { (BFloat16)(2.09064302f), (BFloat16)(1.12837917f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected:  (2 / sqrt(pi))
-            yield return new object[] { (BFloat16)(3.11325038f), (BFloat16)(1.41421356f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected:  (sqrt(2))
-            yield return new object[] { (BFloat16)(3.23208611f), (BFloat16)(1.44269504f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected:  (log2(e))
-            yield return new object[] { (BFloat16)(3.81047738f), (BFloat16)(1.57079633f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected:  (pi / 2)
-            yield return new object[] { (BFloat16)(9.0f), (BFloat16)(2.30258509f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected:  (ln(10))
-            yield return new object[] { (BFloat16)(14.1542622f), (BFloat16)(2.71828183f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected:  (e)
-            yield return new object[] { (BFloat16)(22.1406926f), (BFloat16)(3.14159265f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected:  (pi)
+            yield return new object[] { (BFloat16)(-0.957f), (BFloat16)(-3.141f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected: -(pi)
+            yield return new object[] { (BFloat16)(-0.9336f), (BFloat16)(-2.719f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected: -(e)
+            yield return new object[] { (BFloat16)(-0.8984f), (BFloat16)(-2.281f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected: -(ln(10))
+            yield return new object[] { (BFloat16)(-0.793f), (BFloat16)(-1.578f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected: -(pi / 2)
+            yield return new object[] { (BFloat16)(-0.7656f), (BFloat16)(-1.453f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected: -(log2(e))
+            yield return new object[] { (BFloat16)(-0.7578f), (BFloat16)(-1.422f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected: -(sqrt(2))
+            yield return new object[] { (BFloat16)(-0.6758f), (BFloat16)(-1.125f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected: -(2 / sqrt(pi))
+            yield return new object[] { (BFloat16)(-0.6321f), (BFloat16)(-BFloat16.One), CrossPlatformMachineEpsilon * (BFloat16)10 };
+            yield return new object[] { (BFloat16)(-0.543f), (BFloat16)(-0.7812f), CrossPlatformMachineEpsilon };             // expected: -(pi / 4)
+            yield return new object[] { (BFloat16)(-0.5078f), (BFloat16)(-0.707f), CrossPlatformMachineEpsilon };             // expected: -(1 / sqrt(2))
+            yield return new object[] { (BFloat16)(-0.5f), (BFloat16)(-0.6914f), CrossPlatformMachineEpsilon };             // expected: -(ln(2))
+            yield return new object[] { (BFloat16)(-0.4707f), (BFloat16)(-0.6367f), CrossPlatformMachineEpsilon };             // expected: -(2 / pi)
+            yield return new object[] { (BFloat16)(-0f), (BFloat16)(0f), 0.0f };
+            yield return new object[] { (BFloat16)(0f), (BFloat16)(0f), 0.0f };
+            yield return new object[] { (BFloat16)(0.375f), (BFloat16)(0.3184f), CrossPlatformMachineEpsilon };             // expected:  (1 / pi)
+            yield return new object[] { (BFloat16)(0.543f), (BFloat16)(0.4336f), CrossPlatformMachineEpsilon };             // expected:  (log10(e))
+            yield return new object[] { (BFloat16)(0.8906f), (BFloat16)(0.6367f), CrossPlatformMachineEpsilon };             // expected:  (2 / pi)
+            yield return new object[] { (BFloat16)(BFloat16.One), (BFloat16)(0.6931f), CrossPlatformMachineEpsilon };             // expected:  (ln(2))
+            yield return new object[] { (BFloat16)(1.031f), (BFloat16)(0.707f), CrossPlatformMachineEpsilon };             // expected:  (1 / sqrt(2))
+            yield return new object[] { (BFloat16)(1.195f), (BFloat16)(0.7852f), CrossPlatformMachineEpsilon };             // expected:  (pi / 4)
+            yield return new object[] { (BFloat16)(1.719f), (BFloat16)(BFloat16.One), CrossPlatformMachineEpsilon * (BFloat16)10 };
+            yield return new object[] { (BFloat16)(2.094f), (BFloat16)(1.133f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected:  (2 / sqrt(pi))
+            yield return new object[] { (BFloat16)(3.109f), (BFloat16)(1.414f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected:  (sqrt(2))
+            yield return new object[] { (BFloat16)(3.234f), (BFloat16)(1.445f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected:  (log2(e))
+            yield return new object[] { (BFloat16)(3.812f), (BFloat16)(1.57f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected:  (pi / 2)
+            yield return new object[] { (BFloat16)(9f), (BFloat16)(2.297f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected:  (ln(10))
+            yield return new object[] { (BFloat16)(14.12f), (BFloat16)(2.719f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected:  (e)
+            yield return new object[] { (BFloat16)(22.12f), (BFloat16)(3.141f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected:  (pi)
             yield return new object[] { BFloat16.PositiveInfinity, BFloat16.PositiveInfinity, (BFloat16)0.0f };
         }
 
@@ -1518,36 +1518,36 @@ namespace System.Numerics.Tests
             yield return new object[] { BFloat16.NegativeInfinity, BFloat16.NaN, (BFloat16)0.0f };
             yield return new object[] { BFloat16.NaN, BFloat16.NaN, (BFloat16)0.0f };
             yield return new object[] { (BFloat16)(-BFloat16.One), BFloat16.NegativeInfinity, (BFloat16)0.0f };
-            yield return new object[] { (BFloat16)(-0.886685268f), (BFloat16)(-3.14159265f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected: -(pi)
-            yield return new object[] { (BFloat16)(-0.848044777f), (BFloat16)(-2.71828183f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected: -(e)
-            yield return new object[] { (BFloat16)(-0.797300434f), (BFloat16)(-2.30258509f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected: -(ln(10))
-            yield return new object[] { (BFloat16)(-0.663377463f), (BFloat16)(-1.57079633f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected: -(pi / 2)
-            yield return new object[] { (BFloat16)(-0.632120559f), (BFloat16)(-1.44269504f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected: -(log2(e))
-            yield return new object[] { (BFloat16)(-0.624785773f), (BFloat16)(-1.41421356f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected: -(sqrt(2))
-            yield return new object[] { (BFloat16)(-0.542570653f), (BFloat16)(-1.12837917f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected: -(2 / sqrt(pi))
+            yield return new object[] { (BFloat16)(-0.8867f), (BFloat16)(-3.141f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected: -(pi)
+            yield return new object[] { (BFloat16)(-0.8477f), (BFloat16)(-2.719f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected: -(e)
+            yield return new object[] { (BFloat16)(-0.7969f), (BFloat16)(-2.297f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected: -(ln(10))
+            yield return new object[] { (BFloat16)(-0.6641f), (BFloat16)(-1.57f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected: -(pi / 2)
+            yield return new object[] { (BFloat16)(-0.6328f), (BFloat16)(-1.445f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected: -(log2(e))
+            yield return new object[] { (BFloat16)(-0.625f), (BFloat16)(-1.414f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected: -(sqrt(2))
+            yield return new object[] { (BFloat16)(-0.543f), (BFloat16)(-1.133f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected: -(2 / sqrt(pi))
             yield return new object[] { (BFloat16)(-0.5f), (BFloat16)(-BFloat16.One), CrossPlatformMachineEpsilon * (BFloat16)10 };
-            yield return new object[] { (BFloat16)(-0.419808190f), (BFloat16)(-0.785398163f), CrossPlatformMachineEpsilon };             // expected: -(pi / 4)
-            yield return new object[] { (BFloat16)(-0.387452673f), (BFloat16)(-0.707106781f), CrossPlatformMachineEpsilon };             // expected: -(1 / sqrt(2))
-            yield return new object[] { (BFloat16)(-0.381496862f), (BFloat16)(-0.693147181f), CrossPlatformMachineEpsilon };             // expected: -(ln(2))
-            yield return new object[] { (BFloat16)(-0.356781758f), (BFloat16)(-0.636619772f), CrossPlatformMachineEpsilon };             // expected: -(2 / pi)
-            yield return new object[] { (BFloat16)(-0.259944426f), (BFloat16)(-0.434294482f), CrossPlatformMachineEpsilon };             // expected: -(log10(e))
-            yield return new object[] { (BFloat16)(-0.197991121f), (BFloat16)(-0.318309886f), CrossPlatformMachineEpsilon };             // expected: -(1 / pi)
-            yield return new object[] { (BFloat16)(-0.0f), (BFloat16)(0.0f), (BFloat16)0.0f };
-            yield return new object[] { (BFloat16)(0.0f), (BFloat16)(0.0f), (BFloat16)0.0f };
-            yield return new object[] { (BFloat16)(0.246868989f), (BFloat16)(0.318309886f), CrossPlatformMachineEpsilon };             // expected:  (1 / pi)
-            yield return new object[] { (BFloat16)(0.351249873f), (BFloat16)(0.434294482f), CrossPlatformMachineEpsilon };             // expected:  (log10(e))
-            yield return new object[] { (BFloat16)(0.554682275f), (BFloat16)(0.636619772f), CrossPlatformMachineEpsilon };             // expected:  (2 / pi)
-            yield return new object[] { (BFloat16)(0.616806672f), (BFloat16)(0.693147181f), CrossPlatformMachineEpsilon };             // expected:  (ln(2))
-            yield return new object[] { (BFloat16)(0.632526919f), (BFloat16)(0.707106781f), CrossPlatformMachineEpsilon };             // expected:  (1 / sqrt(2))
-            yield return new object[] { (BFloat16)(0.723567934f), (BFloat16)(0.785398163f), CrossPlatformMachineEpsilon };             // expected:  (pi / 4)
+            yield return new object[] { (BFloat16)(-0.4199f), (BFloat16)(-0.7852f), CrossPlatformMachineEpsilon };             // expected: -(pi / 4)
+            yield return new object[] { (BFloat16)(-0.3867f), (BFloat16)(-0.707f), CrossPlatformMachineEpsilon };             // expected: -(1 / sqrt(2))
+            yield return new object[] { (BFloat16)(-0.3809f), (BFloat16)(-0.6914f), CrossPlatformMachineEpsilon };             // expected: -(ln(2))
+            yield return new object[] { (BFloat16)(-0.3574f), (BFloat16)(-0.6367f), CrossPlatformMachineEpsilon };             // expected: -(2 / pi)
+            yield return new object[] { (BFloat16)(-0.2598f), (BFloat16)(-0.4336f), CrossPlatformMachineEpsilon };             // expected: -(log10(e))
+            yield return new object[] { (BFloat16)(-0.1982f), (BFloat16)(-0.3184f), CrossPlatformMachineEpsilon };             // expected: -(1 / pi)
+            yield return new object[] { (BFloat16)(-0f), (BFloat16)(0f), (BFloat16)0.0f };
+            yield return new object[] { (BFloat16)(0f), (BFloat16)(0f), (BFloat16)0.0f };
+            yield return new object[] { (BFloat16)(0.2471f), (BFloat16)(0.3184f), CrossPlatformMachineEpsilon };             // expected:  (1 / pi)
+            yield return new object[] { (BFloat16)(0.3516f), (BFloat16)(0.4355f), CrossPlatformMachineEpsilon };             // expected:  (log10(e))
+            yield return new object[] { (BFloat16)(0.5547f), (BFloat16)(0.6367f), CrossPlatformMachineEpsilon };             // expected:  (2 / pi)
+            yield return new object[] { (BFloat16)(0.6172f), (BFloat16)(0.6953f), CrossPlatformMachineEpsilon };             // expected:  (ln(2))
+            yield return new object[] { (BFloat16)(0.6328f), (BFloat16)(0.707f), CrossPlatformMachineEpsilon };             // expected:  (1 / sqrt(2))
+            yield return new object[] { (BFloat16)(0.7227f), (BFloat16)(0.7852f), CrossPlatformMachineEpsilon };             // expected:  (pi / 4)
             yield return new object[] { (BFloat16)(BFloat16.One), (BFloat16)(BFloat16.One), CrossPlatformMachineEpsilon * (BFloat16)10 };
-            yield return new object[] { (BFloat16)(1.18612996f), (BFloat16)(1.12837917f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected:  (2 / sqrt(pi))
-            yield return new object[] { (BFloat16)(1.66514414f), (BFloat16)(1.41421356f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected:  (sqrt(2))
-            yield return new object[] { (BFloat16)(1.71828183f), (BFloat16)(1.44269504f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected:  (log2(e))
-            yield return new object[] { (BFloat16)(1.97068642f), (BFloat16)(1.57079633f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected:  (pi / 2)
-            yield return new object[] { (BFloat16)(3.93340967f), (BFloat16)(2.30258509f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected:  (ln(10))
-            yield return new object[] { (BFloat16)(5.58088599f), (BFloat16)(2.71828183f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected:  (e)
-            yield return new object[] { (BFloat16)(7.82497783f), (BFloat16)(3.14159265f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected:  (pi)
+            yield return new object[] { (BFloat16)(1.188f), (BFloat16)(1.133f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected:  (2 / sqrt(pi))
+            yield return new object[] { (BFloat16)(1.664f), (BFloat16)(1.414f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected:  (sqrt(2))
+            yield return new object[] { (BFloat16)(1.719f), (BFloat16)(1.445f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected:  (log2(e))
+            yield return new object[] { (BFloat16)(1.969f), (BFloat16)(1.57f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected:  (pi / 2)
+            yield return new object[] { (BFloat16)(3.938f), (BFloat16)(2.297f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected:  (ln(10))
+            yield return new object[] { (BFloat16)(5.594f), (BFloat16)(2.719f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected:  (e)
+            yield return new object[] { (BFloat16)(7.812f), (BFloat16)(3.141f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected:  (pi)
             yield return new object[] { BFloat16.PositiveInfinity, BFloat16.PositiveInfinity, (BFloat16)0.0f };
         }
 
@@ -1561,40 +1561,39 @@ namespace System.Numerics.Tests
         public static IEnumerable<object[]> Log10P1_TestData()
         {
             yield return new object[] { BFloat16.NegativeInfinity, BFloat16.NaN, (BFloat16)0.0f };
-            yield return new object[] { (BFloat16)(-3.14159265f), BFloat16.NaN, (BFloat16)0.0f };                              //                              value: -(pi)
-            yield return new object[] { (BFloat16)(-2.71828183f), BFloat16.NaN, (BFloat16)0.0f };                              //                              value: -(e)
-            yield return new object[] { (BFloat16)(-1.41421356f), BFloat16.NaN, (BFloat16)0.0f };                              //                              value: -(sqrt(2))
+            yield return new object[] { (BFloat16)(-3.141f), BFloat16.NaN, (BFloat16)0.0f };                              //                              value: -(pi)
+            yield return new object[] { (BFloat16)(-2.719f), BFloat16.NaN, (BFloat16)0.0f };                              //                              value: -(e)
+            yield return new object[] { (BFloat16)(-1.414f), BFloat16.NaN, (BFloat16)0.0f };                              //                              value: -(sqrt(2))
             yield return new object[] { BFloat16.NaN, BFloat16.NaN, (BFloat16)0.0f };
             yield return new object[] { (BFloat16)(-BFloat16.One), BFloat16.NegativeInfinity, (BFloat16)0.0f };
-            yield return new object[] { (BFloat16)(-0.998086986f), (BFloat16)(-2.71828183f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected: -(e)
-            yield return new object[] { (BFloat16)(-0.995017872f), (BFloat16)(-2.30258509f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected: -(ln(10))
-            yield return new object[] { (BFloat16)(-0.973133959f), (BFloat16)(-1.57079633f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected: -(pi / 2)
-            yield return new object[] { (BFloat16)(-0.963916807f), (BFloat16)(-1.44269504f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected: -(log2(e))
-            yield return new object[] { (BFloat16)(-0.961471115f), (BFloat16)(-1.41421356f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected: -(sqrt(2))
-            yield return new object[] { (BFloat16)(-0.925591794f), (BFloat16)(-1.12837917f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected: -(2 / sqrt(pi))
-            yield return new object[] { (BFloat16)(-0.9f), (BFloat16)(-1.0f), CrossPlatformMachineEpsilon * (BFloat16)10 };
-            yield return new object[] { (BFloat16)(-0.836091364f), (BFloat16)(-0.785398163f), CrossPlatformMachineEpsilon };             // expected: -(pi / 4)
-            yield return new object[] { (BFloat16)(-0.803712240f), (BFloat16)(-0.707106781f), CrossPlatformMachineEpsilon };             // expected: -(1 / sqrt(2))
-            yield return new object[] { (BFloat16)(-0.797300434f), (BFloat16)(-0.693147181f), CrossPlatformMachineEpsilon };             // expected: -(ln(2))
-            yield return new object[] { (BFloat16)(-0.769123235f), (BFloat16)(-0.636619772f), CrossPlatformMachineEpsilon };             // expected: -(2 / pi)
-            yield return new object[] { (BFloat16)(-0.632120559f), (BFloat16)(-0.434294482f), CrossPlatformMachineEpsilon };             // expected: -(log10(e))
-            yield return new object[] { (BFloat16)(-0.519503627f), (BFloat16)(-0.318309886f), CrossPlatformMachineEpsilon };             // expected: -(1 / pi)
-            yield return new object[] { (BFloat16)(-0.0f), (BFloat16)(0.0f), (BFloat16)0.0f };
-            yield return new object[] { (BFloat16)(0.0f), (BFloat16)(0.0f), (BFloat16)0.0f };
-            yield return new object[] { (BFloat16)(1.08118116f), (BFloat16)(0.318309886f), CrossPlatformMachineEpsilon };             // expected:  (1 / pi)
-            yield return new object[] { (BFloat16)(1.71828183f), (BFloat16)(0.434294482f), CrossPlatformMachineEpsilon };             // expected:  (log10(e))        value: (e)
-            yield return new object[] { (BFloat16)(3.33131503f), (BFloat16)(0.636619772f), CrossPlatformMachineEpsilon };             // expected:  (2 / pi)
-            yield return new object[] { (BFloat16)(3.93340967f), (BFloat16)(0.693147181f), CrossPlatformMachineEpsilon };             // expected:  (ln(2))
-            yield return new object[] { (BFloat16)(4.09456117f), (BFloat16)(0.707106781f), CrossPlatformMachineEpsilon };             // expected:  (1 / sqrt(2))
-            yield return new object[] { (BFloat16)(5.10095980f), (BFloat16)(0.785398163f), CrossPlatformMachineEpsilon };             // expected:  (pi / 4)
+            yield return new object[] { (BFloat16)(-0.9961f), (BFloat16)(-2.406f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected: -(ln(10))
+            yield return new object[] { (BFloat16)(-0.9727f), (BFloat16)(-1.562f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected: -(pi / 2)
+            yield return new object[] { (BFloat16)(-0.9648f), (BFloat16)(-1.453f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected: -(log2(e))
+            yield return new object[] { (BFloat16)(-0.9609f), (BFloat16)(-1.406f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected: -(sqrt(2))
+            yield return new object[] { (BFloat16)(-0.9258f), (BFloat16)(-1.133f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected: -(2 / sqrt(pi))
+            yield return new object[] { (BFloat16)(-0.8984f), (BFloat16)(-0.9922f), CrossPlatformMachineEpsilon * (BFloat16)10 };
+            yield return new object[] { (BFloat16)(-0.8359f), (BFloat16)(-0.7852f), CrossPlatformMachineEpsilon };             // expected: -(pi / 4)
+            yield return new object[] { (BFloat16)(-0.8047f), (BFloat16)(-0.7109f), CrossPlatformMachineEpsilon };             // expected: -(1 / sqrt(2))
+            yield return new object[] { (BFloat16)(-0.7969f), (BFloat16)(-0.6914f), CrossPlatformMachineEpsilon };             // expected: -(ln(2))
+            yield return new object[] { (BFloat16)(-0.7695f), (BFloat16)(-0.6367f), CrossPlatformMachineEpsilon };             // expected: -(2 / pi)
+            yield return new object[] { (BFloat16)(-0.6328f), (BFloat16)(-0.4355f), CrossPlatformMachineEpsilon };             // expected: -(log10(e))
+            yield return new object[] { (BFloat16)(-0.5195f), (BFloat16)(-0.3184f), CrossPlatformMachineEpsilon };             // expected: -(1 / pi)
+            yield return new object[] { (BFloat16)(-0f), (BFloat16)(0f), (BFloat16)0.0f };
+            yield return new object[] { (BFloat16)(0f), (BFloat16)(0f), (BFloat16)0.0f };
+            yield return new object[] { (BFloat16)(1.078f), (BFloat16)(0.3184f), CrossPlatformMachineEpsilon };             // expected:  (1 / pi)
+            yield return new object[] { (BFloat16)(1.719f), (BFloat16)(0.4336f), CrossPlatformMachineEpsilon };             // expected:  (log10(e))        value: (e)
+            yield return new object[] { (BFloat16)(3.328f), (BFloat16)(0.6367f), CrossPlatformMachineEpsilon };             // expected:  (2 / pi)
+            yield return new object[] { (BFloat16)(3.938f), (BFloat16)(0.6953f), CrossPlatformMachineEpsilon };             // expected:  (ln(2))
+            yield return new object[] { (BFloat16)(4.094f), (BFloat16)(0.707f), CrossPlatformMachineEpsilon };             // expected:  (1 / sqrt(2))
+            yield return new object[] { (BFloat16)(5.094f), (BFloat16)(0.7852f), CrossPlatformMachineEpsilon };             // expected:  (pi / 4)
             yield return new object[] { (BFloat16)(9.0f), (BFloat16)(BFloat16.One), CrossPlatformMachineEpsilon * (BFloat16)10 };
-            yield return new object[] { (BFloat16)(12.4393779f), (BFloat16)(1.12837917f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected:  (2 / sqrt(pi))
-            yield return new object[] { (BFloat16)(24.9545535f), (BFloat16)(1.41421356f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected:  (sqrt(2))
-            yield return new object[] { (BFloat16)(26.7137338f), (BFloat16)(1.44269504f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected:  (log2(e))
-            yield return new object[] { (BFloat16)(36.2217105f), (BFloat16)(1.57079633f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected:  (pi / 2)
-            yield return new object[] { (BFloat16)(199.717432f), (BFloat16)(2.30258509f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected:  (ln(10))
-            yield return new object[] { (BFloat16)(521.735300f), (BFloat16)(2.71828183f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected:  (e)
-            yield return new object[] { (BFloat16)(1384.45573f), (BFloat16)(3.14159265f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected:  (pi)
+            yield return new object[] { (BFloat16)(12.44f), (BFloat16)(1.125f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected:  (2 / sqrt(pi))
+            yield return new object[] { (BFloat16)(25f), (BFloat16)(1.414f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected:  (sqrt(2))
+            yield return new object[] { (BFloat16)(26.75f), (BFloat16)(1.445f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected:  (log2(e))
+            yield return new object[] { (BFloat16)(36.25f), (BFloat16)(1.57f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected:  (pi / 2)
+            yield return new object[] { (BFloat16)(200f), (BFloat16)(2.297f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected:  (ln(10))
+            yield return new object[] { (BFloat16)(520f), (BFloat16)(2.719f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected:  (e)
+            yield return new object[] { (BFloat16)(1384f), (BFloat16)(3.141f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // expected:  (pi)
             yield return new object[] { BFloat16.PositiveInfinity, BFloat16.PositiveInfinity, (BFloat16)0.0f };
         }
 
@@ -1614,40 +1613,40 @@ namespace System.Numerics.Tests
             yield return new object[] { BFloat16.NaN, (BFloat16)10.0f, BFloat16.NaN, BFloat16.Zero };
             yield return new object[] { BFloat16.Zero, BFloat16.Zero, BFloat16.Zero, BFloat16.Zero };
             yield return new object[] { BFloat16.Zero, BFloat16.One, BFloat16.One, BFloat16.Zero };
-            yield return new object[] { BFloat16.Zero, (BFloat16)1.57079633f, (BFloat16)1.57079633f, BFloat16.Zero };
+            yield return new object[] { BFloat16.Zero, (BFloat16)1.57f, (BFloat16)1.57f, BFloat16.Zero };
             yield return new object[] { BFloat16.Zero, (BFloat16)2.0f, (BFloat16)2.0f, BFloat16.Zero };
             yield return new object[] { BFloat16.Zero, BFloat16.E, BFloat16.E, BFloat16.Zero };
             yield return new object[] { BFloat16.Zero, (BFloat16)3.0f, (BFloat16)3.0f, BFloat16.Zero };
             yield return new object[] { BFloat16.Zero, (BFloat16)10.0f, (BFloat16)10.0f, BFloat16.Zero };
             yield return new object[] { BFloat16.One, BFloat16.One, (BFloat16)1.41421356f, CrossPlatformMachineEpsilon * (BFloat16)10 };
-            yield return new object[] { BFloat16.E, (BFloat16)0.318309886f, (BFloat16)2.73685536f, CrossPlatformMachineEpsilon * (BFloat16)10 };   // x: (e)   y: (1 / pi)
-            yield return new object[] { BFloat16.E, (BFloat16)0.434294482f, (BFloat16)2.75275640f, CrossPlatformMachineEpsilon * (BFloat16)10 };   // x: (e)   y: (log10(e))
-            yield return new object[] { BFloat16.E, (BFloat16)0.636619772f, (BFloat16)2.79183467f, CrossPlatformMachineEpsilon * (BFloat16)10 };   // x: (e)   y: (2 / pi)
-            yield return new object[] { BFloat16.E, (BFloat16)0.693147181f, (BFloat16)2.80526454f, CrossPlatformMachineEpsilon * (BFloat16)10 };   // x: (e)   y: (ln(2))
-            yield return new object[] { BFloat16.E, (BFloat16)0.707106781f, (BFloat16)2.80874636f, CrossPlatformMachineEpsilon * (BFloat16)10 };   // x: (e)   y: (1 / sqrt(2))
-            yield return new object[] { BFloat16.E, (BFloat16)0.785398163f, (BFloat16)2.82947104f, CrossPlatformMachineEpsilon * (BFloat16)10 };   // x: (e)   y: (pi / 4)
-            yield return new object[] { BFloat16.E, BFloat16.One, (BFloat16)2.89638673f, CrossPlatformMachineEpsilon * (BFloat16)10 };   // x: (e)
-            yield return new object[] { BFloat16.E, (BFloat16)1.12837917f, (BFloat16)2.94317781f, CrossPlatformMachineEpsilon * (BFloat16)10 };   // x: (e)   y: (2 / sqrt(pi))
-            yield return new object[] { BFloat16.E, (BFloat16)1.41421356f, (BFloat16)3.06415667f, CrossPlatformMachineEpsilon * (BFloat16)10 };   // x: (e)   y: (sqrt(2))
-            yield return new object[] { BFloat16.E, (BFloat16)1.44269504f, (BFloat16)3.07740558f, CrossPlatformMachineEpsilon * (BFloat16)10 };   // x: (e)   y: (log2(e))
-            yield return new object[] { BFloat16.E, (BFloat16)1.57079633f, (BFloat16)3.13949951f, CrossPlatformMachineEpsilon * (BFloat16)10 };   // x: (e)   y: (pi / 2)
-            yield return new object[] { BFloat16.E, (BFloat16)2.30258509f, (BFloat16)3.56243656f, CrossPlatformMachineEpsilon * (BFloat16)10 };   // x: (e)   y: (ln(10))
-            yield return new object[] { BFloat16.E, BFloat16.E, (BFloat16)3.84423103f, CrossPlatformMachineEpsilon * (BFloat16)10 };   // x: (e)   y: (e)
-            yield return new object[] { BFloat16.E, (BFloat16)3.14159265f, (BFloat16)4.15435440f, CrossPlatformMachineEpsilon * (BFloat16)10 };   // x: (e)   y: (pi)
-            yield return new object[] { (BFloat16)10.0f, (BFloat16)0.318309886f, (BFloat16)10.0050648f, CrossPlatformMachineEpsilon * (BFloat16)100 };  //          y: (1 / pi)
-            yield return new object[] { (BFloat16)10.0f, (BFloat16)0.434294482f, (BFloat16)10.0094261f, CrossPlatformMachineEpsilon * (BFloat16)100 };  //          y: (log10(e))
-            yield return new object[] { (BFloat16)10.0f, (BFloat16)0.636619772f, (BFloat16)10.0202437f, CrossPlatformMachineEpsilon * (BFloat16)100 };  //          y: (2 / pi)
-            yield return new object[] { (BFloat16)10.0f, (BFloat16)0.693147181f, (BFloat16)10.0239939f, CrossPlatformMachineEpsilon * (BFloat16)100 };  //          y: (ln(2))
-            yield return new object[] { (BFloat16)10.0f, (BFloat16)0.707106781f, (BFloat16)10.0249688f, CrossPlatformMachineEpsilon * (BFloat16)100 };  //          y: (1 / sqrt(2))
-            yield return new object[] { (BFloat16)10.0f, (BFloat16)0.785398163f, (BFloat16)10.0307951f, CrossPlatformMachineEpsilon * (BFloat16)100 };  //          y: (pi / 4)
-            yield return new object[] { (BFloat16)10.0f, BFloat16.One, (BFloat16)10.0498756f, CrossPlatformMachineEpsilon * (BFloat16)100 };  //
-            yield return new object[] { (BFloat16)10.0f, (BFloat16)1.12837917f, (BFloat16)10.0634606f, CrossPlatformMachineEpsilon * (BFloat16)100 };  //          y: (2 / sqrt(pi))
-            yield return new object[] { (BFloat16)10.0f, (BFloat16)1.41421356f, (BFloat16)10.0995049f, CrossPlatformMachineEpsilon * (BFloat16)100 };  //          y: (sqrt(2))
-            yield return new object[] { (BFloat16)10.0f, (BFloat16)1.44269504f, (BFloat16)10.1035325f, CrossPlatformMachineEpsilon * (BFloat16)100 };  //          y: (log2(e))
-            yield return new object[] { (BFloat16)10.0f, (BFloat16)1.57079633f, (BFloat16)10.1226183f, CrossPlatformMachineEpsilon * (BFloat16)100 };  //          y: (pi / 2)
-            yield return new object[] { (BFloat16)10.0f, (BFloat16)2.30258509f, (BFloat16)10.2616713f, CrossPlatformMachineEpsilon * (BFloat16)100 };  //          y: (ln(10))
-            yield return new object[] { (BFloat16)10.0f, BFloat16.E, (BFloat16)10.3628691f, CrossPlatformMachineEpsilon * (BFloat16)100 };  //          y: (e)
-            yield return new object[] { (BFloat16)10.0f, (BFloat16)3.14159265f, (BFloat16)10.4818703f, CrossPlatformMachineEpsilon * (BFloat16)100 };  //          y: (pi)
+            yield return new object[] { BFloat16.E, (BFloat16)0.3184f, (BFloat16)2.734f, CrossPlatformMachineEpsilon * (BFloat16)10 };   // x: (e)   y: (1 / pi)
+            yield return new object[] { BFloat16.E, (BFloat16)0.4336f, (BFloat16)2.75f, CrossPlatformMachineEpsilon * (BFloat16)10 };   // x: (e)   y: (log10(e))
+            yield return new object[] { BFloat16.E, (BFloat16)0.6367f, (BFloat16)2.797f, CrossPlatformMachineEpsilon * (BFloat16)10 };   // x: (e)   y: (2 / pi)
+            yield return new object[] { BFloat16.E, (BFloat16)0.6914f, (BFloat16)2.812f, CrossPlatformMachineEpsilon * (BFloat16)10 };   // x: (e)   y: (ln(2))
+            yield return new object[] { BFloat16.E, (BFloat16)0.707f, (BFloat16)2.812f, CrossPlatformMachineEpsilon * (BFloat16)10 };   // x: (e)   y: (1 / sqrt(2))
+            yield return new object[] { BFloat16.E, (BFloat16)0.7852f, (BFloat16)2.828f, CrossPlatformMachineEpsilon * (BFloat16)10 };   // x: (e)   y: (pi / 4)
+            yield return new object[] { BFloat16.E, BFloat16.One, (BFloat16)2.896f, CrossPlatformMachineEpsilon * (BFloat16)10 };   // x: (e)
+            yield return new object[] { BFloat16.E, (BFloat16)1.125f, (BFloat16)2.938f, CrossPlatformMachineEpsilon * (BFloat16)10 };   // x: (e)   y: (2 / sqrt(pi))
+            yield return new object[] { BFloat16.E, (BFloat16)1.414f, (BFloat16)3.062f, CrossPlatformMachineEpsilon * (BFloat16)10 };   // x: (e)   y: (sqrt(2))
+            yield return new object[] { BFloat16.E, (BFloat16)1.445f, (BFloat16)3.078f, CrossPlatformMachineEpsilon * (BFloat16)10 };   // x: (e)   y: (log2(e))
+            yield return new object[] { BFloat16.E, (BFloat16)1.57f, (BFloat16)3.141f, CrossPlatformMachineEpsilon * (BFloat16)10 };   // x: (e)   y: (pi / 2)
+            yield return new object[] { BFloat16.E, (BFloat16)2.297f, (BFloat16)3.562f, CrossPlatformMachineEpsilon * (BFloat16)10 };   // x: (e)   y: (ln(10))
+            yield return new object[] { BFloat16.E, BFloat16.E, (BFloat16)3.844f, CrossPlatformMachineEpsilon * (BFloat16)10 };   // x: (e)   y: (e)
+            yield return new object[] { BFloat16.E, (BFloat16)3.141f, (BFloat16)4.156f, CrossPlatformMachineEpsilon * (BFloat16)10 };   // x: (e)   y: (pi)
+            yield return new object[] { (BFloat16)10.0f, (BFloat16)0.3184f, (BFloat16)10.0f, CrossPlatformMachineEpsilon * (BFloat16)100 };  //          y: (1 / pi)
+            yield return new object[] { (BFloat16)10.0f, (BFloat16)0.4336f, (BFloat16)10.0f, CrossPlatformMachineEpsilon * (BFloat16)100 };  //          y: (log10(e))
+            yield return new object[] { (BFloat16)10.0f, (BFloat16)0.6367f, (BFloat16)10.0f, CrossPlatformMachineEpsilon * (BFloat16)100 };  //          y: (2 / pi)
+            yield return new object[] { (BFloat16)10.0f, (BFloat16)0.6914f, (BFloat16)10.0f, CrossPlatformMachineEpsilon * (BFloat16)100 };  //          y: (ln(2))
+            yield return new object[] { (BFloat16)10.0f, (BFloat16)0.707f, (BFloat16)10.0f, CrossPlatformMachineEpsilon * (BFloat16)100 };  //          y: (1 / sqrt(2))
+            yield return new object[] { (BFloat16)10.0f, (BFloat16)0.7852f, (BFloat16)10.0f, CrossPlatformMachineEpsilon * (BFloat16)100 };  //          y: (pi / 4)
+            yield return new object[] { (BFloat16)10.0f, BFloat16.One, (BFloat16)10.05f, CrossPlatformMachineEpsilon * (BFloat16)100 };  //
+            yield return new object[] { (BFloat16)10.0f, (BFloat16)1.125f, (BFloat16)10.06f, CrossPlatformMachineEpsilon * (BFloat16)100 };  //          y: (2 / sqrt(pi))
+            yield return new object[] { (BFloat16)10.0f, (BFloat16)1.414f, (BFloat16)10.12f, CrossPlatformMachineEpsilon * (BFloat16)100 };  //          y: (sqrt(2))
+            yield return new object[] { (BFloat16)10.0f, (BFloat16)1.445f, (BFloat16)10.12f, CrossPlatformMachineEpsilon * (BFloat16)100 };  //          y: (log2(e))
+            yield return new object[] { (BFloat16)10.0f, (BFloat16)1.57f, (BFloat16)10.12f, CrossPlatformMachineEpsilon * (BFloat16)100 };  //          y: (pi / 2)
+            yield return new object[] { (BFloat16)10.0f, (BFloat16)2.297f, (BFloat16)10.25f, CrossPlatformMachineEpsilon * (BFloat16)100 };  //          y: (ln(10))
+            yield return new object[] { (BFloat16)10.0f, BFloat16.E, (BFloat16)10.36f, CrossPlatformMachineEpsilon * (BFloat16)100 };  //          y: (e)
+            yield return new object[] { (BFloat16)10.0f, (BFloat16)3.141f, (BFloat16)10.5f, CrossPlatformMachineEpsilon * (BFloat16)100 };  //          y: (pi)
             yield return new object[] { BFloat16.PositiveInfinity, BFloat16.NaN, BFloat16.PositiveInfinity, BFloat16.Zero };
             yield return new object[] { BFloat16.PositiveInfinity, BFloat16.Zero, BFloat16.PositiveInfinity, BFloat16.Zero };
             yield return new object[] { BFloat16.PositiveInfinity, BFloat16.One, BFloat16.PositiveInfinity, BFloat16.Zero };
@@ -1750,17 +1749,17 @@ namespace System.Numerics.Tests
             yield return new object[] { BFloat16.One, 3, BFloat16.One, BFloat16.Zero };
             yield return new object[] { BFloat16.One, 4, BFloat16.One, BFloat16.Zero };
             yield return new object[] { BFloat16.One, 5, BFloat16.One, BFloat16.Zero };
-            yield return new object[] { BFloat16.E, -5, (BFloat16)0.81873075f, CrossPlatformMachineEpsilon * (BFloat16)10 };
-            yield return new object[] { BFloat16.E, -4, (BFloat16)0.77880078f, CrossPlatformMachineEpsilon * (BFloat16)10 };
-            yield return new object[] { BFloat16.E, -3, (BFloat16)0.71653131f, CrossPlatformMachineEpsilon * (BFloat16)10 };
-            yield return new object[] { BFloat16.E, -2, (BFloat16)0.60653066f, CrossPlatformMachineEpsilon * (BFloat16)10 };
-            yield return new object[] { BFloat16.E, -1, (BFloat16)0.36787944f, CrossPlatformMachineEpsilon * (BFloat16)10 };
+            yield return new object[] { BFloat16.E, -5, (BFloat16)0.8187f, CrossPlatformMachineEpsilon * (BFloat16)10 };
+            yield return new object[] { BFloat16.E, -4, (BFloat16)0.7788f, CrossPlatformMachineEpsilon * (BFloat16)10 };
+            yield return new object[] { BFloat16.E, -3, (BFloat16)0.7165f, CrossPlatformMachineEpsilon * (BFloat16)10 };
+            yield return new object[] { BFloat16.E, -2, (BFloat16)0.6065f, CrossPlatformMachineEpsilon * (BFloat16)10 };
+            yield return new object[] { BFloat16.E, -1, (BFloat16)0.3679f, CrossPlatformMachineEpsilon * (BFloat16)10 };
             yield return new object[] { BFloat16.E, 0, BFloat16.NaN, BFloat16.Zero };
             yield return new object[] { BFloat16.E, 1, BFloat16.E, BFloat16.Zero };
-            yield return new object[] { BFloat16.E, 2, (BFloat16)1.64872127f, CrossPlatformMachineEpsilon * (BFloat16)10 };
-            yield return new object[] { BFloat16.E, 3, (BFloat16)1.39561243f, CrossPlatformMachineEpsilon * (BFloat16)10 };
-            yield return new object[] { BFloat16.E, 4, (BFloat16)1.28402542f, CrossPlatformMachineEpsilon * (BFloat16)10 };
-            yield return new object[] { BFloat16.E, 5, (BFloat16)1.22140276f, CrossPlatformMachineEpsilon * (BFloat16)10 };
+            yield return new object[] { BFloat16.E, 2, (BFloat16)1.6487f, CrossPlatformMachineEpsilon * (BFloat16)10 };
+            yield return new object[] { BFloat16.E, 3, (BFloat16)1.3956f, CrossPlatformMachineEpsilon * (BFloat16)10 };
+            yield return new object[] { BFloat16.E, 4, (BFloat16)1.2840f, CrossPlatformMachineEpsilon * (BFloat16)10 };
+            yield return new object[] { BFloat16.E, 5, (BFloat16)1.2214f, CrossPlatformMachineEpsilon * (BFloat16)10 };
             yield return new object[] { BFloat16.PositiveInfinity, -5, BFloat16.Zero, BFloat16.Zero };
             yield return new object[] { BFloat16.PositiveInfinity, -4, BFloat16.Zero, BFloat16.Zero };
             yield return new object[] { BFloat16.PositiveInfinity, -3, BFloat16.Zero, BFloat16.Zero };
@@ -1785,21 +1784,21 @@ namespace System.Numerics.Tests
         {
             yield return new object[] { BFloat16.NaN, BFloat16.NaN, BFloat16.Zero };
             yield return new object[] { BFloat16.One, BFloat16.Zero, BFloat16.Zero };
-            yield return new object[] { (BFloat16)0.540302306f, (BFloat16)0.318309886f, CrossPlatformMachineEpsilon };
-            yield return new object[] { (BFloat16)0.204957194f, (BFloat16)0.434294482f, CrossPlatformMachineEpsilon };
+            yield return new object[] { (BFloat16)0.5391f, (BFloat16)0.3184f, CrossPlatformMachineEpsilon };
+            yield return new object[] { (BFloat16)0.2051f, (BFloat16)0.4336f, CrossPlatformMachineEpsilon };
             yield return new object[] { BFloat16.Zero, (BFloat16)0.5f, BFloat16.Zero };
-            yield return new object[] { -(BFloat16)0.416146837f, (BFloat16)0.636619772f, CrossPlatformMachineEpsilon };
-            yield return new object[] { -(BFloat16)0.570233249f, (BFloat16)0.693147181f, CrossPlatformMachineEpsilon };
-            yield return new object[] { -(BFloat16)0.605699867f, (BFloat16)0.707106781f, CrossPlatformMachineEpsilon };
-            yield return new object[] { -(BFloat16)0.781211892f, (BFloat16)0.785398163f, CrossPlatformMachineEpsilon };
+            yield return new object[] { -(BFloat16)0.416f, (BFloat16)0.6367f, CrossPlatformMachineEpsilon };
+            yield return new object[] { -(BFloat16)0.5703f, (BFloat16)0.6914f, CrossPlatformMachineEpsilon };
+            yield return new object[] { -(BFloat16)0.6055f, (BFloat16)0.707f, CrossPlatformMachineEpsilon };
+            yield return new object[] { -(BFloat16)0.7812f, (BFloat16)0.7852f, CrossPlatformMachineEpsilon };
             yield return new object[] { -(BFloat16)1.0f, BFloat16.One, BFloat16.Zero };
-            yield return new object[] { -(BFloat16)0.919764995f, (BFloat16)0.871620833f, CrossPlatformMachineEpsilon };
-            yield return new object[] { -(BFloat16)0.266255342f, (BFloat16)0.585786438f, CrossPlatformMachineEpsilon };
-            yield return new object[] { -(BFloat16)0.179057946f, (BFloat16)0.557304959f, CrossPlatformMachineEpsilon };
-            yield return new object[] { (BFloat16)0.220584041f, (BFloat16)0.429203673f, CrossPlatformMachineEpsilon };
-            yield return new object[] { (BFloat16)0.581195664f, (BFloat16)0.302585093f, CrossPlatformMachineEpsilon };
-            yield return new object[] { -(BFloat16)0.633255651f, (BFloat16)0.718281828f, CrossPlatformMachineEpsilon };
-            yield return new object[] { -(BFloat16)0.902685362f, (BFloat16)0.858407346f, CrossPlatformMachineEpsilon };
+            yield return new object[] { -(BFloat16)0.918f, (BFloat16)0.8711f, CrossPlatformMachineEpsilon };
+            yield return new object[] { -(BFloat16)0.2656f, (BFloat16)0.5859f, CrossPlatformMachineEpsilon };
+            yield return new object[] { -(BFloat16)0.1787f, (BFloat16)0.5586f, CrossPlatformMachineEpsilon };
+            yield return new object[] { (BFloat16)0.2207f, (BFloat16)0.4297f, CrossPlatformMachineEpsilon };
+            yield return new object[] { (BFloat16)0.582f, (BFloat16)0.3027f, CrossPlatformMachineEpsilon };
+            yield return new object[] { -(BFloat16)0.6328f, (BFloat16)0.7188f, CrossPlatformMachineEpsilon };
+            yield return new object[] { -(BFloat16)0.9023f, (BFloat16)0.8594f, CrossPlatformMachineEpsilon };
         }
 
         [Theory]
@@ -1813,20 +1812,20 @@ namespace System.Numerics.Tests
         {
             yield return new object[] { BFloat16.NaN, BFloat16.NaN, BFloat16.Zero };
             yield return new object[] { BFloat16.Zero, BFloat16.Zero, BFloat16.Zero };
-            yield return new object[] { (BFloat16)0.841470985f, (BFloat16)0.318309886f, CrossPlatformMachineEpsilon };
-            yield return new object[] { (BFloat16)0.978770938f, (BFloat16)0.434294482f, CrossPlatformMachineEpsilon };
+            yield return new object[] { (BFloat16)0.8398f, (BFloat16)0.3164f, CrossPlatformMachineEpsilon };
+            yield return new object[] { (BFloat16)0.9805f, (BFloat16)0.4375f, CrossPlatformMachineEpsilon };
             yield return new object[] { BFloat16.One, (BFloat16)0.5f, BFloat16.Zero };
-            yield return new object[] { (BFloat16)0.909297427f, (BFloat16)0.363380228f, CrossPlatformMachineEpsilon };
-            yield return new object[] { (BFloat16)0.821482831f, (BFloat16)0.306852819f, CrossPlatformMachineEpsilon };
-            yield return new object[] { (BFloat16)0.795693202f, (BFloat16)0.292893219f, CrossPlatformMachineEpsilon };
-            yield return new object[] { (BFloat16)0.624265953f, (BFloat16)0.214601837f, CrossPlatformMachineEpsilon };
-            yield return new object[] { -(BFloat16)0.392469559f, -(BFloat16)0.128379167f, CrossPlatformMachineEpsilon };
-            yield return new object[] { -(BFloat16)0.963902533f, -(BFloat16)0.414213562f, CrossPlatformMachineEpsilon };
-            yield return new object[] { -(BFloat16)0.983838529f, -(BFloat16)0.442695041f, CrossPlatformMachineEpsilon };
-            yield return new object[] { -(BFloat16)0.975367972f, -(BFloat16)0.429203673f, CrossPlatformMachineEpsilon };
-            yield return new object[] { (BFloat16)0.813763848f, (BFloat16)0.302585093f, CrossPlatformMachineEpsilon };
-            yield return new object[] { (BFloat16)0.773942685f, (BFloat16)0.281718172f, CrossPlatformMachineEpsilon };
-            yield return new object[] { -(BFloat16)0.430301217f, -(BFloat16)0.141592654f, CrossPlatformMachineEpsilon };
+            yield return new object[] { (BFloat16)0.9102f, (BFloat16)0.3633f, CrossPlatformMachineEpsilon };
+            yield return new object[] { (BFloat16)0.8203f, (BFloat16)0.3066f, CrossPlatformMachineEpsilon };
+            yield return new object[] { (BFloat16)0.7969f, (BFloat16)0.293f, CrossPlatformMachineEpsilon };
+            yield return new object[] { (BFloat16)0.625f, (BFloat16)0.2148f, CrossPlatformMachineEpsilon };
+            yield return new object[] { -(BFloat16)0.3926f, -(BFloat16)0.1279f, CrossPlatformMachineEpsilon };
+            yield return new object[] { -(BFloat16)0.9648f, -(BFloat16)0.416f, CrossPlatformMachineEpsilon };
+            yield return new object[] { -(BFloat16)0.9844f, -(BFloat16)0.4434f, CrossPlatformMachineEpsilon };
+            yield return new object[] { -(BFloat16)0.9766f, -(BFloat16)0.4316f, CrossPlatformMachineEpsilon };
+            yield return new object[] { (BFloat16)0.8125f, (BFloat16)0.3027f, CrossPlatformMachineEpsilon };
+            yield return new object[] { (BFloat16)0.7734f, (BFloat16)0.2812f, CrossPlatformMachineEpsilon };
+            yield return new object[] { -(BFloat16)0.4297f, -(BFloat16)0.1416f, CrossPlatformMachineEpsilon };
         }
 
         [Theory]
@@ -1844,21 +1843,21 @@ namespace System.Numerics.Tests
             yield return new object[] { BFloat16.Zero, -BFloat16.Zero, BFloat16.One, BFloat16.Zero };                   // y: sinpi(0)              x: -cospi(0.5)
             yield return new object[] { BFloat16.Zero, BFloat16.Zero, BFloat16.Zero, BFloat16.Zero };                   // y: sinpi(0)              x:  cospi(0.5)
             yield return new object[] { BFloat16.Zero, BFloat16.One, BFloat16.Zero, BFloat16.Zero };                   // y: sinpi(0)              x:  cospi(0)
-            yield return new object[] { (BFloat16)0.841470985f, (BFloat16)0.540302306f, (BFloat16)0.318309886f, CrossPlatformMachineEpsilon }; // y: sinpi(1 / pi)         x:  cospi(1 / pi)
-            yield return new object[] { (BFloat16)0.978770938f, (BFloat16)0.204957194f, (BFloat16)0.434294482f, CrossPlatformMachineEpsilon }; // y: sinpi(log10(e))       x:  cospi(log10(e))
+            yield return new object[] { (BFloat16)0.8398f, (BFloat16)0.5391f, (BFloat16)0.3184f, CrossPlatformMachineEpsilon }; // y: sinpi(1 / pi)         x:  cospi(1 / pi)
+            yield return new object[] { (BFloat16)0.9805f, (BFloat16)0.2051f, (BFloat16)0.4336f, CrossPlatformMachineEpsilon }; // y: sinpi(log10(e))       x:  cospi(log10(e))
             yield return new object[] { BFloat16.One, -BFloat16.Zero, (BFloat16)0.5f, BFloat16.Zero };                   // y: sinpi(0.5)            x: -cospi(0.5)
             yield return new object[] { BFloat16.One, BFloat16.Zero, (BFloat16)0.5f, BFloat16.Zero };                   // y: sinpi(0.5)            x:  cospi(0.5)
-            yield return new object[] { (BFloat16)0.909297427f, -(BFloat16)0.416146837f, (BFloat16)0.636619772f, CrossPlatformMachineEpsilon }; // y: sinpi(2 / pi)         x:  cospi(2 / pi)
-            yield return new object[] { (BFloat16)0.821482831f, -(BFloat16)0.570233249f, (BFloat16)0.693147181f, CrossPlatformMachineEpsilon }; // y: sinpi(ln(2))          x:  cospi(ln(2))
-            yield return new object[] { (BFloat16)0.795693202f, -(BFloat16)0.605699867f, (BFloat16)0.707106781f, CrossPlatformMachineEpsilon }; // y: sinpi(1 / sqrt(2))    x:  cospi(1 / sqrt(2))
-            yield return new object[] { (BFloat16)0.624265953f, -(BFloat16)0.781211892f, (BFloat16)0.785398163f, CrossPlatformMachineEpsilon }; // y: sinpi(pi / 4)         x:  cospi(pi / 4)
-            yield return new object[] { -(BFloat16)0.392469559f, -(BFloat16)0.919764995f, -(BFloat16)0.871620833f, CrossPlatformMachineEpsilon }; // y: sinpi(2 / sqrt(pi))   x:  cospi(2 / sqrt(pi))
-            yield return new object[] { -(BFloat16)0.963902533f, -(BFloat16)0.266255342f, -(BFloat16)0.585786438f, CrossPlatformMachineEpsilon }; // y: sinpi(sqrt(2))        x:  cospi(sqrt(2))
-            yield return new object[] { -(BFloat16)0.983838529f, -(BFloat16)0.179057946f, -(BFloat16)0.557304959f, CrossPlatformMachineEpsilon }; // y: sinpi(log2(e))        x:  cospi(log2(e))
-            yield return new object[] { -(BFloat16)0.975367972f, (BFloat16)0.220584041f, -(BFloat16)0.429203673f, CrossPlatformMachineEpsilon }; // y: sinpi(pi / 2)         x:  cospi(pi / 2)
-            yield return new object[] { (BFloat16)0.813763848f, (BFloat16)0.581195664f, (BFloat16)0.302585093f, CrossPlatformMachineEpsilon }; // y: sinpi(ln(10))         x:  cospi(ln(10))
-            yield return new object[] { (BFloat16)0.773942685f, -(BFloat16)0.633255651f, (BFloat16)0.718281828f, CrossPlatformMachineEpsilon }; // y: sinpi(e)              x:  cospi(e)
-            yield return new object[] { -(BFloat16)0.430301217f, -(BFloat16)0.902685362f, -(BFloat16)0.858407346f, CrossPlatformMachineEpsilon }; // y: sinpi(pi)             x:  cospi(pi)
+            yield return new object[] { (BFloat16)0.9102f, -(BFloat16)0.416f, (BFloat16)0.6367f, CrossPlatformMachineEpsilon }; // y: sinpi(2 / pi)         x:  cospi(2 / pi)
+            yield return new object[] { (BFloat16)0.8203f, -(BFloat16)0.5703f, (BFloat16)0.6953f, CrossPlatformMachineEpsilon }; // y: sinpi(ln(2))          x:  cospi(ln(2))
+            yield return new object[] { (BFloat16)0.7969f, -(BFloat16)0.6055f, (BFloat16)0.707f, CrossPlatformMachineEpsilon }; // y: sinpi(1 / sqrt(2))    x:  cospi(1 / sqrt(2))
+            yield return new object[] { (BFloat16)0.625f, -(BFloat16)0.7812f, (BFloat16)0.7852f, CrossPlatformMachineEpsilon }; // y: sinpi(pi / 4)         x:  cospi(pi / 4)
+            yield return new object[] { -(BFloat16)0.3926f, -(BFloat16)0.918f, -(BFloat16)0.8711f, CrossPlatformMachineEpsilon }; // y: sinpi(2 / sqrt(pi))   x:  cospi(2 / sqrt(pi))
+            yield return new object[] { -(BFloat16)0.9648f, -(BFloat16)0.2656f, -(BFloat16)0.5859f, CrossPlatformMachineEpsilon }; // y: sinpi(sqrt(2))        x:  cospi(sqrt(2))
+            yield return new object[] { -(BFloat16)0.9844f, -(BFloat16)0.1787f, -(BFloat16)0.5586f, CrossPlatformMachineEpsilon }; // y: sinpi(log2(e))        x:  cospi(log2(e))
+            yield return new object[] { -(BFloat16)0.9766f, (BFloat16)0.2207f, -(BFloat16)0.4297f, CrossPlatformMachineEpsilon }; // y: sinpi(pi / 2)         x:  cospi(pi / 2)
+            yield return new object[] { (BFloat16)0.8125f, (BFloat16)0.582f, (BFloat16)0.3027f, CrossPlatformMachineEpsilon }; // y: sinpi(ln(10))         x:  cospi(ln(10))
+            yield return new object[] { (BFloat16)0.7734f, -(BFloat16)0.6328f, (BFloat16)0.7188f, CrossPlatformMachineEpsilon }; // y: sinpi(e)              x:  cospi(e)
+            yield return new object[] { -(BFloat16)0.4297f, -(BFloat16)0.9023f, -(BFloat16)0.8594f, CrossPlatformMachineEpsilon }; // y: sinpi(pi)             x:  cospi(pi)
             yield return new object[] { BFloat16.One, BFloat16.NegativeInfinity, BFloat16.One, BFloat16.Zero };                   // y: sinpi(0.5)
             yield return new object[] { BFloat16.One, BFloat16.PositiveInfinity, BFloat16.Zero, BFloat16.Zero };                   // y: sinpi(0.5)
             yield return new object[] { BFloat16.PositiveInfinity, -BFloat16.One, (BFloat16)0.5f, BFloat16.Zero };                   //                          x:  cospi(1)
@@ -1879,20 +1878,20 @@ namespace System.Numerics.Tests
         {
             yield return new object[] { BFloat16.NaN, BFloat16.NaN, BFloat16.Zero };
             yield return new object[] { BFloat16.Zero, BFloat16.Zero, BFloat16.Zero };
-            yield return new object[] { (BFloat16)1.55740773f, (BFloat16)0.318309886f, CrossPlatformMachineEpsilon };
-            yield return new object[] { (BFloat16)4.77548954f, (BFloat16)0.434294482f, CrossPlatformMachineEpsilon };
+            yield return new object[] { (BFloat16)1.555f, (BFloat16)0.3184f, CrossPlatformMachineEpsilon };
+            yield return new object[] { (BFloat16)4.781f, (BFloat16)0.4336f, CrossPlatformMachineEpsilon };
             yield return new object[] { BFloat16.PositiveInfinity, (BFloat16)0.5f, BFloat16.Zero };
-            yield return new object[] { -(BFloat16)2.18503986f, -(BFloat16)0.363380228f, CrossPlatformMachineEpsilon };
-            yield return new object[] { -(BFloat16)1.44060844f, -(BFloat16)0.306852819f, CrossPlatformMachineEpsilon };
-            yield return new object[] { -(BFloat16)1.31367571f, -(BFloat16)0.292893219f, CrossPlatformMachineEpsilon };
-            yield return new object[] { -(BFloat16)0.79909940f, -(BFloat16)0.214601837f, CrossPlatformMachineEpsilon };
-            yield return new object[] { (BFloat16)0.42670634f, (BFloat16)0.128379167f, CrossPlatformMachineEpsilon };
-            yield return new object[] { (BFloat16)3.62021857f, (BFloat16)0.414213562f, CrossPlatformMachineEpsilon };
-            yield return new object[] { (BFloat16)5.49452594f, (BFloat16)0.442695041f, CrossPlatformMachineEpsilon };
-            yield return new object[] { -(BFloat16)4.42175222f, -(BFloat16)0.429203673f, CrossPlatformMachineEpsilon };
-            yield return new object[] { (BFloat16)1.40015471f, (BFloat16)0.302585093f, CrossPlatformMachineEpsilon };
-            yield return new object[] { -(BFloat16)1.22216467f, -(BFloat16)0.281718172f, CrossPlatformMachineEpsilon };
-            yield return new object[] { (BFloat16)0.476690146f, (BFloat16)0.141592654f, CrossPlatformMachineEpsilon };
+            yield return new object[] { -(BFloat16)2.188f, -(BFloat16)0.3633f, CrossPlatformMachineEpsilon };
+            yield return new object[] { -(BFloat16)1.438f, -(BFloat16)0.3066f, CrossPlatformMachineEpsilon };
+            yield return new object[] { -(BFloat16)1.312f, -(BFloat16)0.293f, CrossPlatformMachineEpsilon };
+            yield return new object[] { -(BFloat16)0.8008f, -(BFloat16)0.2148f, CrossPlatformMachineEpsilon };
+            yield return new object[] { (BFloat16)0.4258f, (BFloat16)0.1279f, CrossPlatformMachineEpsilon };
+            yield return new object[] { (BFloat16)3.625f, (BFloat16)0.4141f, CrossPlatformMachineEpsilon };
+            yield return new object[] { (BFloat16)5.5f, (BFloat16)0.4434f, CrossPlatformMachineEpsilon };
+            yield return new object[] { -(BFloat16)4.406f, -(BFloat16)0.4297f, CrossPlatformMachineEpsilon };
+            yield return new object[] { (BFloat16)1.398f, (BFloat16)0.3027f, CrossPlatformMachineEpsilon };
+            yield return new object[] { -(BFloat16)1.219f, -(BFloat16)0.2812f, CrossPlatformMachineEpsilon };
+            yield return new object[] { (BFloat16)0.4766f, (BFloat16)0.1416f, CrossPlatformMachineEpsilon };
         }
 
         [Theory]
@@ -1907,25 +1906,25 @@ namespace System.Numerics.Tests
         {
             yield return new object[] { BFloat16.NaN, BFloat16.NaN, BFloat16.Zero };
             yield return new object[] { BFloat16.Zero, BFloat16.One, BFloat16.Zero };
-            yield return new object[] { (BFloat16)0.318309886f, (BFloat16)0.540302306f, CrossPlatformMachineEpsilon };       // value:  (1 / pi)
-            yield return new object[] { (BFloat16)0.434294482f, (BFloat16)0.204957194f, CrossPlatformMachineEpsilon };       // value:  (log10(e))
+            yield return new object[] { (BFloat16)0.3184f, (BFloat16)0.5391f, CrossPlatformMachineEpsilon };       // value:  (1 / pi)
+            yield return new object[] { (BFloat16)0.4336f, (BFloat16)0.207f, CrossPlatformMachineEpsilon };       // value:  (log10(e))
             yield return new object[] { (BFloat16)0.5f, BFloat16.Zero, BFloat16.Zero };
-            yield return new object[] { (BFloat16)0.636619772f, -(BFloat16)0.416146837f, CrossPlatformMachineEpsilon };       // value:  (2 / pi)
-            yield return new object[] { (BFloat16)0.693147181f, -(BFloat16)0.570233249f, CrossPlatformMachineEpsilon };       // value:  (ln(2))
-            yield return new object[] { (BFloat16)0.707106781f, -(BFloat16)0.605699867f, CrossPlatformMachineEpsilon };       // value:  (1 / sqrt(2))
-            yield return new object[] { (BFloat16)0.785398163f, -(BFloat16)0.781211892f, CrossPlatformMachineEpsilon };       // value:  (pi / 4)
+            yield return new object[] { (BFloat16)0.6367f, -(BFloat16)0.416f, CrossPlatformMachineEpsilon };       // value:  (2 / pi)
+            yield return new object[] { (BFloat16)0.6914f, -(BFloat16)0.5664f, CrossPlatformMachineEpsilon };       // value:  (ln(2))
+            yield return new object[] { (BFloat16)0.707f, -(BFloat16)0.6055f, CrossPlatformMachineEpsilon };       // value:  (1 / sqrt(2))
+            yield return new object[] { (BFloat16)0.7852f, -(BFloat16)0.7812f, CrossPlatformMachineEpsilon };       // value:  (pi / 4)
             yield return new object[] { BFloat16.One, -(BFloat16)1.0f, BFloat16.Zero };
-            yield return new object[] { (BFloat16)1.12837917f, -(BFloat16)0.919764995f, CrossPlatformMachineEpsilon };       // value:  (2 / sqrt(pi))
-            yield return new object[] { (BFloat16)1.41421356f, -(BFloat16)0.266255342f, CrossPlatformMachineEpsilon };       // value:  (sqrt(2))
-            yield return new object[] { (BFloat16)1.44269504f, -(BFloat16)0.179057946f, CrossPlatformMachineEpsilon };       // value:  (log2(e))
+            yield return new object[] { (BFloat16)1.125f, -(BFloat16)0.9258f, CrossPlatformMachineEpsilon };       // value:  (2 / sqrt(pi))
+            yield return new object[] { (BFloat16)1.414f, -(BFloat16)0.2676f, CrossPlatformMachineEpsilon };       // value:  (sqrt(2))
+            yield return new object[] { (BFloat16)1.445f, -(BFloat16)0.1709f, CrossPlatformMachineEpsilon };       // value:  (log2(e))
             yield return new object[] { (BFloat16)1.5f, BFloat16.Zero, BFloat16.Zero };
-            yield return new object[] { (BFloat16)1.57079633f, (BFloat16)0.220584041f, CrossPlatformMachineEpsilon };       // value:  (pi / 2)
+            yield return new object[] { (BFloat16)1.57f, (BFloat16)0.2188f, CrossPlatformMachineEpsilon };       // value:  (pi / 2)
             yield return new object[] { (BFloat16)2.0f, (BFloat16)1.0, BFloat16.Zero };
-            yield return new object[] { (BFloat16)2.30258509f, (BFloat16)0.581195664f, CrossPlatformMachineEpsilon };       // value:  (ln(10))
+            yield return new object[] { (BFloat16)2.297f, (BFloat16)0.5938f, CrossPlatformMachineEpsilon };       // value:  (ln(10))
             yield return new object[] { (BFloat16)2.5f, BFloat16.Zero, BFloat16.Zero };
-            yield return new object[] { (BFloat16)2.71828183f, -(BFloat16)0.633255651f, CrossPlatformMachineEpsilon };       // value:  (e)
+            yield return new object[] { (BFloat16)2.719f, -(BFloat16)0.6328f, CrossPlatformMachineEpsilon };       // value:  (e)
             yield return new object[] { (BFloat16)3.0f, -(BFloat16)1.0, BFloat16.Zero };
-            yield return new object[] { (BFloat16)3.14159265f, -(BFloat16)0.902685362f, CrossPlatformMachineEpsilon };       // value:  (pi)
+            yield return new object[] { (BFloat16)3.141f, -(BFloat16)0.9023f, CrossPlatformMachineEpsilon };       // value:  (pi)
             yield return new object[] { (BFloat16)3.5f, BFloat16.Zero, BFloat16.Zero };
             yield return new object[] { BFloat16.PositiveInfinity, BFloat16.NaN, BFloat16.Zero };
         }
@@ -1942,26 +1941,26 @@ namespace System.Numerics.Tests
         {
             yield return new object[] { BFloat16.NaN, BFloat16.NaN, BFloat16.Zero };
             yield return new object[] { BFloat16.Zero, BFloat16.Zero, BFloat16.Zero };
-            yield return new object[] { (BFloat16)0.318309886f, (BFloat16)0.841470985f, CrossPlatformMachineEpsilon };       // value:  (1 / pi)
-            yield return new object[] { (BFloat16)0.434294482f, (BFloat16)0.978770938f, CrossPlatformMachineEpsilon };       // value:  (log10(e))
+            yield return new object[] { (BFloat16)0.3184f, (BFloat16)0.8398f, CrossPlatformMachineEpsilon };       // value:  (1 / pi)
+            yield return new object[] { (BFloat16)0.4336f, (BFloat16)0.9766f, CrossPlatformMachineEpsilon };       // value:  (log10(e))
             yield return new object[] { (BFloat16)0.5f, BFloat16.One, BFloat16.Zero };
-            yield return new object[] { (BFloat16)0.636619772f, (BFloat16)0.909297427f, CrossPlatformMachineEpsilon };       // value:  (2 / pi)
-            yield return new object[] { (BFloat16)0.693147181f, (BFloat16)0.821482831f, CrossPlatformMachineEpsilon };       // value:  (ln(2))
-            yield return new object[] { (BFloat16)0.707106781f, (BFloat16)0.795693202f, CrossPlatformMachineEpsilon };       // value:  (1 / sqrt(2))
-            yield return new object[] { (BFloat16)0.785398163f, (BFloat16)0.624265953f, CrossPlatformMachineEpsilon };       // value:  (pi / 4)
+            yield return new object[] { (BFloat16)0.6367f, (BFloat16)0.9102f, CrossPlatformMachineEpsilon };       // value:  (2 / pi)
+            yield return new object[] { (BFloat16)0.6914f, (BFloat16)0.8242f, CrossPlatformMachineEpsilon };       // value:  (ln(2))
+            yield return new object[] { (BFloat16)0.707f, (BFloat16)0.7969f, CrossPlatformMachineEpsilon };       // value:  (1 / sqrt(2))
+            yield return new object[] { (BFloat16)0.7852f, (BFloat16)0.625f, CrossPlatformMachineEpsilon };       // value:  (pi / 4)
             yield return new object[] { BFloat16.One, BFloat16.Zero, BFloat16.Zero };
-            yield return new object[] { (BFloat16)1.12837917f, -(BFloat16)0.392469559f, CrossPlatformMachineEpsilon };       // value:  (2 / sqrt(pi))
-            yield return new object[] { (BFloat16)1.41421356f, -(BFloat16)0.963902533f, CrossPlatformMachineEpsilon };       // value:  (sqrt(2))
-            yield return new object[] { (BFloat16)1.44269504f, -(BFloat16)0.983838529f, CrossPlatformMachineEpsilon };       // value:  (log2(e))
-            yield return new object[] { (BFloat16)1.5f, -(BFloat16)1.0f, BFloat16.Zero };
-            yield return new object[] { (BFloat16)1.57079633f, -(BFloat16)0.975367972f, CrossPlatformMachineEpsilon };       // value:  (pi / 2)
+            yield return new object[] { (BFloat16)1.125f, -(BFloat16)0.3828f, CrossPlatformMachineEpsilon };       // value:  (2 / sqrt(pi))
+            yield return new object[] { (BFloat16)1.414f, -(BFloat16)0.9648f, CrossPlatformMachineEpsilon };       // value:  (sqrt(2))
+            yield return new object[] { (BFloat16)1.445f, -(BFloat16)0.9844f, CrossPlatformMachineEpsilon };       // value:  (log2(e))
+            yield return new object[] { (BFloat16)1.5f, -(BFloat16)1f, BFloat16.Zero };
+            yield return new object[] { (BFloat16)1.57f, -(BFloat16)0.9766f, CrossPlatformMachineEpsilon };       // value:  (pi / 2)
             yield return new object[] { (BFloat16)2.0f, BFloat16.Zero, BFloat16.Zero };
-            yield return new object[] { (BFloat16)2.30258509f, (BFloat16)0.813763848f, CrossPlatformMachineEpsilon };       // value:  (ln(10))
+            yield return new object[] { (BFloat16)2.297f, (BFloat16)0.8047f, CrossPlatformMachineEpsilon };       // value:  (ln(10))
             yield return new object[] { (BFloat16)2.5f, BFloat16.One, BFloat16.Zero };
-            yield return new object[] { (BFloat16)2.71828183f, (BFloat16)0.773942685f, CrossPlatformMachineEpsilon };       // value:  (e)
+            yield return new object[] { (BFloat16)2.719f, (BFloat16)0.7734f, CrossPlatformMachineEpsilon };       // value:  (e)
             yield return new object[] { (BFloat16)3.0f, BFloat16.Zero, BFloat16.Zero };
-            yield return new object[] { (BFloat16)3.14159265f, -(BFloat16)0.430301217f, CrossPlatformMachineEpsilon };       // value:  (pi)
-            yield return new object[] { (BFloat16)3.5f, -(BFloat16)1.0f, BFloat16.Zero };
+            yield return new object[] { (BFloat16)3.141f, -(BFloat16)0.4277f, CrossPlatformMachineEpsilon };       // value:  (pi)
+            yield return new object[] { (BFloat16)3.5f, -(BFloat16)1f, BFloat16.Zero };
             yield return new object[] { BFloat16.PositiveInfinity, BFloat16.NaN, BFloat16.Zero };
         }
 
@@ -1977,25 +1976,25 @@ namespace System.Numerics.Tests
         {
             yield return new object[] { BFloat16.NaN, BFloat16.NaN, BFloat16.Zero };
             yield return new object[] { BFloat16.Zero, BFloat16.Zero, BFloat16.Zero };
-            yield return new object[] { (BFloat16)0.318309886f, (BFloat16)1.55740772f, CrossPlatformMachineEpsilon * (BFloat16)10 };  // value:  (1 / pi)
-            yield return new object[] { (BFloat16)0.434294482f, (BFloat16)4.77548954f, CrossPlatformMachineEpsilon * (BFloat16)10 };  // value:  (log10(e))
+            yield return new object[] { (BFloat16)0.3184f, (BFloat16)1.555f, CrossPlatformMachineEpsilon * (BFloat16)10 };  // value:  (1 / pi)
+            yield return new object[] { (BFloat16)0.4336f, (BFloat16)4.719f, CrossPlatformMachineEpsilon * (BFloat16)10 };  // value:  (log10(e))
             yield return new object[] { (BFloat16)0.5f, BFloat16.PositiveInfinity, BFloat16.Zero };
-            yield return new object[] { (BFloat16)0.636619772f, -(BFloat16)2.18503986f, CrossPlatformMachineEpsilon * (BFloat16)10 };  // value:  (2 / pi)
-            yield return new object[] { (BFloat16)0.693147181f, -(BFloat16)1.44060844f, CrossPlatformMachineEpsilon * (BFloat16)10 };  // value:  (ln(2))
-            yield return new object[] { (BFloat16)0.707106781f, -(BFloat16)1.31367571f, CrossPlatformMachineEpsilon * (BFloat16)10 };  // value:  (1 / sqrt(2))
-            yield return new object[] { (BFloat16)0.785398163f, -(BFloat16)0.799099398f, CrossPlatformMachineEpsilon };             // value:  (pi / 4)
+            yield return new object[] { (BFloat16)0.6367f, -(BFloat16)2.188f, CrossPlatformMachineEpsilon * (BFloat16)10 };  // value:  (2 / pi)
+            yield return new object[] { (BFloat16)0.6914f, -(BFloat16)1.461f, CrossPlatformMachineEpsilon * (BFloat16)10 };  // value:  (ln(2))
+            yield return new object[] { (BFloat16)0.707f, -(BFloat16)1.312f, CrossPlatformMachineEpsilon * (BFloat16)10 };  // value:  (1 / sqrt(2))
+            yield return new object[] { (BFloat16)0.7852f, -(BFloat16)0.8008f, CrossPlatformMachineEpsilon };             // value:  (pi / 4)
             yield return new object[] { BFloat16.One, -BFloat16.Zero, BFloat16.Zero };
-            yield return new object[] { (BFloat16)1.12837917f, (BFloat16)0.426706344f, CrossPlatformMachineEpsilon };             // value:  (2 / sqrt(pi))
-            yield return new object[] { (BFloat16)1.41421356f, (BFloat16)3.62021857f, CrossPlatformMachineEpsilon * (BFloat16)10 };  // value:  (sqrt(2))
-            yield return new object[] { (BFloat16)1.44269504f, (BFloat16)5.49452594f, CrossPlatformMachineEpsilon * (BFloat16)10 };  // value:  (log2(e))
+            yield return new object[] { (BFloat16)1.125f, (BFloat16)0.4141f, CrossPlatformMachineEpsilon };             // value:  (2 / sqrt(pi))
+            yield return new object[] { (BFloat16)1.414f, (BFloat16)3.609f, CrossPlatformMachineEpsilon * (BFloat16)10 };  // value:  (sqrt(2))
+            yield return new object[] { (BFloat16)1.445f, (BFloat16)5.75f, CrossPlatformMachineEpsilon * (BFloat16)10 };  // value:  (log2(e))
             yield return new object[] { (BFloat16)1.5f, BFloat16.NegativeInfinity, BFloat16.Zero };
-            yield return new object[] { (BFloat16)1.57079633f, -(BFloat16)4.42175222f, CrossPlatformMachineEpsilon * (BFloat16)10 };  // value:  (pi / 2)
+            yield return new object[] { (BFloat16)1.57f, -(BFloat16)4.469f, CrossPlatformMachineEpsilon * (BFloat16)10 };  // value:  (pi / 2)
             yield return new object[] { (BFloat16)2.0f, BFloat16.Zero, BFloat16.Zero };
-            yield return new object[] { (BFloat16)2.30258509f, (BFloat16)1.40015471f, CrossPlatformMachineEpsilon * (BFloat16)10 };  // value:  (ln(10))
+            yield return new object[] { (BFloat16)2.297f, (BFloat16)1.352f, CrossPlatformMachineEpsilon * (BFloat16)10 };  // value:  (ln(10))
             yield return new object[] { (BFloat16)2.5f, BFloat16.PositiveInfinity, BFloat16.Zero };
-            yield return new object[] { (BFloat16)2.71828183f, -(BFloat16)1.22216467f, CrossPlatformMachineEpsilon * (BFloat16)10 };  // value:  (e)
+            yield return new object[] { (BFloat16)2.719f, -(BFloat16)1.219f, CrossPlatformMachineEpsilon * (BFloat16)10 };  // value:  (e)
             yield return new object[] { (BFloat16)3.0f, -BFloat16.Zero, BFloat16.Zero };
-            yield return new object[] { (BFloat16)3.14159265f, (BFloat16)0.476690146f, CrossPlatformMachineEpsilon };             // value:  (pi)
+            yield return new object[] { (BFloat16)3.141f, (BFloat16)0.4727f, CrossPlatformMachineEpsilon };             // value:  (pi)
             yield return new object[] { (BFloat16)3.5f, BFloat16.NegativeInfinity, BFloat16.Zero };
             yield return new object[] { BFloat16.PositiveInfinity, BFloat16.NaN, BFloat16.Zero };
         }
@@ -2144,25 +2143,25 @@ namespace System.Numerics.Tests
             yield return new object[] { BFloat16.NaN, BFloat16.NaN, BFloat16.Zero };
             yield return new object[] { BFloat16.Zero, BFloat16.Zero, BFloat16.Zero };
             yield return new object[] { (BFloat16)(0.3184f), (BFloat16)(0.005554f), CrossPlatformMachineEpsilon };       // value:  (1 / pi)
-            yield return new object[] { (BFloat16)(0.4343f), (BFloat16)(0.00758f), CrossPlatformMachineEpsilon };       // value:  (log10(e))
-            yield return new object[] { (BFloat16)(0.5f), (BFloat16)(0.00872f), CrossPlatformMachineEpsilon };
+            yield return new object[] { (BFloat16)(0.4336f), (BFloat16)(0.007568f), CrossPlatformMachineEpsilon };       // value:  (log10(e))
+            yield return new object[] { (BFloat16)(0.5f), (BFloat16)(0.008728f), CrossPlatformMachineEpsilon };
             yield return new object[] { (BFloat16)(0.6367f), (BFloat16)(0.01111f), CrossPlatformMachineEpsilon };       // value:  (2 / pi)
-            yield return new object[] { (BFloat16)(0.6934f), (BFloat16)(0.0121f), CrossPlatformMachineEpsilon };       // value:  (ln(2))
-            yield return new object[] { (BFloat16)(0.707f), (BFloat16)(0.01234f), CrossPlatformMachineEpsilon };       // value:  (1 / sqrt(2))
-            yield return new object[] { (BFloat16)(0.785f), (BFloat16)(0.0137f), CrossPlatformMachineEpsilon };       // value:  (pi / 4)
-            yield return new object[] { (BFloat16)(1.0f), (BFloat16)(0.01744f), CrossPlatformMachineEpsilon };
-            yield return new object[] { (BFloat16)(1.128f), (BFloat16)(0.01968f), CrossPlatformMachineEpsilon };       // value:  (2 / sqrt(pi))
-            yield return new object[] { (BFloat16)(1.414f), (BFloat16)(0.02467f), CrossPlatformMachineEpsilon };       // value:  (sqrt(2))
-            yield return new object[] { (BFloat16)(1.442f), (BFloat16)(0.02518f), CrossPlatformMachineEpsilon };       // value:  (log2(e))
-            yield return new object[] { (BFloat16)(1.5f), (BFloat16)(0.02617f), CrossPlatformMachineEpsilon };
-            yield return new object[] { (BFloat16)(1.57f), (BFloat16)(0.0274f), CrossPlatformMachineEpsilon };       // value:  (pi / 2)
-            yield return new object[] { (BFloat16)(2.0f), (BFloat16)(0.03488f), CrossPlatformMachineEpsilon };
-            yield return new object[] { (BFloat16)(2.303f), (BFloat16)(0.04016f), CrossPlatformMachineEpsilon };       // value:  (ln(10))
-            yield return new object[] { (BFloat16)(2.5f), (BFloat16)(0.0436f), CrossPlatformMachineEpsilon };
-            yield return new object[] { (BFloat16)(2.719f), (BFloat16)(0.04742f), CrossPlatformMachineEpsilon };       // value:  (e)
-            yield return new object[] { (BFloat16)(3.0f), (BFloat16)(0.05234f), CrossPlatformMachineEpsilon };
-            yield return new object[] { (BFloat16)(3.14f), (BFloat16)(0.0548f), CrossPlatformMachineEpsilon };       // value:  (pi)
-            yield return new object[] { (BFloat16)(3.5f), (BFloat16)(0.06107f), CrossPlatformMachineEpsilon };
+            yield return new object[] { (BFloat16)(0.6953f), (BFloat16)(0.01215f), CrossPlatformMachineEpsilon };       // value:  (ln(2))
+            yield return new object[] { (BFloat16)(0.707f), (BFloat16)(0.01233f), CrossPlatformMachineEpsilon };       // value:  (1 / sqrt(2))
+            yield return new object[] { (BFloat16)(0.7852f), (BFloat16)(0.01373f), CrossPlatformMachineEpsilon };       // value:  (pi / 4)
+            yield return new object[] { (BFloat16)(1.0f), (BFloat16)(0.01746f), CrossPlatformMachineEpsilon };
+            yield return new object[] { (BFloat16)(1.125f), (BFloat16)(0.01965f), CrossPlatformMachineEpsilon };       // value:  (2 / sqrt(pi))
+            yield return new object[] { (BFloat16)(1.414f), (BFloat16)(0.02466f), CrossPlatformMachineEpsilon };       // value:  (sqrt(2))
+            yield return new object[] { (BFloat16)(1.445f), (BFloat16)(0.02527f), CrossPlatformMachineEpsilon };       // value:  (log2(e))
+            yield return new object[] { (BFloat16)(1.5f), (BFloat16)(0.02612f), CrossPlatformMachineEpsilon };
+            yield return new object[] { (BFloat16)(1.57f), (BFloat16)(0.02747f), CrossPlatformMachineEpsilon };       // value:  (pi / 2)
+            yield return new object[] { (BFloat16)(2.0f), (BFloat16)(0.03491f), CrossPlatformMachineEpsilon };
+            yield return new object[] { (BFloat16)(2.297f), (BFloat16)(0.04004f), CrossPlatformMachineEpsilon };       // value:  (ln(10))
+            yield return new object[] { (BFloat16)(2.5f), (BFloat16)(0.0437f), CrossPlatformMachineEpsilon };
+            yield return new object[] { (BFloat16)(2.719f), (BFloat16)(0.04736f), CrossPlatformMachineEpsilon };       // value:  (e)
+            yield return new object[] { (BFloat16)(3.0f), (BFloat16)(0.05225f), CrossPlatformMachineEpsilon };
+            yield return new object[] { (BFloat16)(3.141f), (BFloat16)(0.05493f), CrossPlatformMachineEpsilon };       // value:  (pi)
+            yield return new object[] { (BFloat16)(3.5f), (BFloat16)(0.06104f), CrossPlatformMachineEpsilon };
             yield return new object[] { BFloat16.PositiveInfinity, BFloat16.PositiveInfinity, BFloat16.Zero };
         }
 
@@ -2179,25 +2178,25 @@ namespace System.Numerics.Tests
             yield return new object[] { BFloat16.NaN, BFloat16.NaN, BFloat16.Zero };
             yield return new object[] { BFloat16.Zero, BFloat16.Zero, BFloat16.Zero };
             yield return new object[] { (BFloat16)(0.005554f), (BFloat16)(0.3184f), CrossPlatformMachineEpsilon };       // value:  (1 / pi)
-            yield return new object[] { (BFloat16)(0.00758f), (BFloat16)(0.4343f), CrossPlatformMachineEpsilon };       // value:  (log10(e))
-            yield return new object[] { (BFloat16)(0.00872f), (BFloat16)(0.5f), CrossPlatformMachineEpsilon };
+            yield return new object[] { (BFloat16)(0.007568f), (BFloat16)(0.4336f), CrossPlatformMachineEpsilon };       // value:  (log10(e))
+            yield return new object[] { (BFloat16)(0.008728f), (BFloat16)(0.5f), CrossPlatformMachineEpsilon };
             yield return new object[] { (BFloat16)(0.01111f), (BFloat16)(0.6367f), CrossPlatformMachineEpsilon };       // value:  (2 / pi)
-            yield return new object[] { (BFloat16)(0.0121f), (BFloat16)(0.6934f), CrossPlatformMachineEpsilon };       // value:  (ln(2))
-            yield return new object[] { (BFloat16)(0.01234f), (BFloat16)(0.707f), CrossPlatformMachineEpsilon };       // value:  (1 / sqrt(2))
-            yield return new object[] { (BFloat16)(0.0137f), (BFloat16)(0.785f), CrossPlatformMachineEpsilon };       // value:  (pi / 4)
-            yield return new object[] { (BFloat16)(0.01744f), (BFloat16)(1.0f), CrossPlatformMachineEpsilon };
-            yield return new object[] { (BFloat16)(0.01968f), (BFloat16)(1.128f), CrossPlatformMachineEpsilon };       // value:  (2 / sqrt(pi))
-            yield return new object[] { (BFloat16)(0.02467f), (BFloat16)(1.414f), CrossPlatformMachineEpsilon };       // value:  (sqrt(2))
-            yield return new object[] { (BFloat16)(0.02518f), (BFloat16)(1.442f), CrossPlatformMachineEpsilon };       // value:  (log2(e))
-            yield return new object[] { (BFloat16)(0.02617f), (BFloat16)(1.5f), CrossPlatformMachineEpsilon };
-            yield return new object[] { (BFloat16)(0.0274f), (BFloat16)(1.57f), CrossPlatformMachineEpsilon };       // value:  (pi / 2)
-            yield return new object[] { (BFloat16)(0.03488f), (BFloat16)(2.0f), CrossPlatformMachineEpsilon };
-            yield return new object[] { (BFloat16)(0.04016f), (BFloat16)(2.303f), CrossPlatformMachineEpsilon };       // value:  (ln(10))
-            yield return new object[] { (BFloat16)(0.0436f), (BFloat16)(2.5f), CrossPlatformMachineEpsilon };
-            yield return new object[] { (BFloat16)(0.04742f), (BFloat16)(2.719f), CrossPlatformMachineEpsilon };       // value:  (e)
-            yield return new object[] { (BFloat16)(0.05234f), (BFloat16)(3.0f), CrossPlatformMachineEpsilon };
-            yield return new object[] { (BFloat16)(0.0548f), (BFloat16)(3.14f), CrossPlatformMachineEpsilon };       // value:  (pi)
-            yield return new object[] { (BFloat16)(0.06107f), (BFloat16)(3.5f), CrossPlatformMachineEpsilon };
+            yield return new object[] { (BFloat16)(0.01208f), (BFloat16)(0.6914f), CrossPlatformMachineEpsilon };       // value:  (ln(2))
+            yield return new object[] { (BFloat16)(0.01233f), (BFloat16)(0.707f), CrossPlatformMachineEpsilon };       // value:  (1 / sqrt(2))
+            yield return new object[] { (BFloat16)(0.01367f), (BFloat16)(0.7852f), CrossPlatformMachineEpsilon };       // value:  (pi / 4)
+            yield return new object[] { (BFloat16)(0.01746f), (BFloat16)(1f), CrossPlatformMachineEpsilon };
+            yield return new object[] { (BFloat16)(0.01965f), (BFloat16)(1.125f), CrossPlatformMachineEpsilon };       // value:  (2 / sqrt(pi))
+            yield return new object[] { (BFloat16)(0.02466f), (BFloat16)(1.414f), CrossPlatformMachineEpsilon };       // value:  (sqrt(2))
+            yield return new object[] { (BFloat16)(0.02515f), (BFloat16)(1.438f), CrossPlatformMachineEpsilon };       // value:  (log2(e))
+            yield return new object[] { (BFloat16)(0.02612f), (BFloat16)(1.5f), CrossPlatformMachineEpsilon };
+            yield return new object[] { (BFloat16)(0.02734f), (BFloat16)(1.57f), CrossPlatformMachineEpsilon };       // value:  (pi / 2)
+            yield return new object[] { (BFloat16)(0.03491f), (BFloat16)(2f), CrossPlatformMachineEpsilon };
+            yield return new object[] { (BFloat16)(0.04004f), (BFloat16)(2.297f), CrossPlatformMachineEpsilon };       // value:  (ln(10))
+            yield return new object[] { (BFloat16)(0.0437f), (BFloat16)(2.5f), CrossPlatformMachineEpsilon };
+            yield return new object[] { (BFloat16)(0.04736f), (BFloat16)(2.719f), CrossPlatformMachineEpsilon };       // value:  (e)
+            yield return new object[] { (BFloat16)(0.05225f), (BFloat16)(3f), CrossPlatformMachineEpsilon };
+            yield return new object[] { (BFloat16)(0.05469f), (BFloat16)(3.141f), CrossPlatformMachineEpsilon };       // value:  (pi)
+            yield return new object[] { (BFloat16)(0.06104f), (BFloat16)(3.5f), CrossPlatformMachineEpsilon };
             yield return new object[] { BFloat16.PositiveInfinity, BFloat16.PositiveInfinity, BFloat16.Zero };
         }
 
