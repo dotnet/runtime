@@ -71,14 +71,54 @@ namespace System.Formats.Asn1
                 throw new AsnContentException();
             }
 
+            // Set semanticBits to a value such that on the first
+            // iteration of the loop it becomes the correct value.
+            // So each entry here is [real semantic bits for this value] - 7.
+            int semanticBits = source[0] switch
+            {
+                >= 0b1100_0000 => 0,
+                >= 0b1010_0000 => -1,
+                >= 0b1001_0000 => -2,
+                >= 0b1000_1000 => -3,
+                >= 0b1000_0100 => -4,
+                >= 0b1000_0010 => -5,
+                >= 0b1000_0001 => -6,
+                _ => 0,
+            };
+
             // First, see how long the segment is
             int end = -1;
             int idx;
+
+            // None of T-REC-X.660-201107, T-REC-X.680-201508, or T-REC-X.690-201508
+            // have any recommendations for a minimum (or maximum) size of a
+            // sub-identifier.
+            //
+            // T-REC-X.667-201210 (and earlier versions) discuss the no-registration-
+            // required UUID space at 2.25.{UUID}, where UUIDs are defined as 128-bit
+            // values. This gives us a minimum lower bound of 128-bit.
+            //
+            // Windows Crypt32 has historically only supported 64-bit values, and
+            // the "size limitations" FAQ on oid-info.com says that the largest arc
+            // value is a 39-digit value that corresponds to a 2.25.UUID value.
+            //
+            // So, until something argues for a bigger number, our bit-limit is 128.
+            const int MaxAllowedBits = 128;
 
             for (idx = 0; idx < source.Length; idx++)
             {
                 // If the high bit isn't set this marks the end of the sub-identifier.
                 bool endOfIdentifier = (source[idx] & 0x80) == 0;
+
+                if (!LocalAppContextSwitches.AllowAnySizeOid)
+                {
+                    semanticBits += 7;
+
+                    if (semanticBits > MaxAllowedBits)
+                    {
+                        throw new AsnContentException(SR.ContentException_OidTooBig);
+                    }
+                }
 
                 if (endOfIdentifier)
                 {
@@ -258,8 +298,21 @@ namespace System.Formats.Asn1
 
             contents = contents.Slice(bytesRead);
 
+            const int MaxArcs = 64;
+            int remainingArcs = MaxArcs - 2;
+
             while (!contents.IsEmpty)
             {
+                if (!LocalAppContextSwitches.AllowAnySizeOid)
+                {
+                    if (remainingArcs <= 0)
+                    {
+                        throw new AsnContentException(SR.ContentException_OidTooBig);
+                    }
+
+                    remainingArcs--;
+                }
+
                 ReadSubIdentifier(contents, out bytesRead, out smallValue, out largeValue);
                 // Exactly one should be non-null.
                 Debug.Assert((smallValue == null) != (largeValue == null));
