@@ -2926,24 +2926,24 @@ void StackTraceInfo::EnsureStackTraceArray(StackTraceArray *pStackTrace, size_t 
     GCPROTECT_END();
 }
 
-// Ensure that there is space for the neededSize elements in the keepalive array.
-void StackTraceInfo::EnsureKeepaliveArray(PTRARRAYREF *ppKeepaliveArray, size_t neededSize)
+// Ensure that there is space for the neededSize elements in the keepAlive array.
+void StackTraceInfo::EnsureKeepAliveArray(PTRARRAYREF *ppKeepAliveArray, size_t neededSize)
 {
     CONTRACTL
     {
         GC_TRIGGERS;
         THROWS;
-        PRECONDITION(CheckPointer(ppKeepaliveArray));
+        PRECONDITION(CheckPointer(ppKeepAliveArray));
     }
     CONTRACTL_END;
 
-    PTRARRAYREF pNewKeepaliveArray = NULL;
-    GCPROTECT_BEGIN(pNewKeepaliveArray);
+    PTRARRAYREF pNewKeepAliveArray = NULL;
+    GCPROTECT_BEGIN(pNewKeepAliveArray);
 
-    size_t keepaliveArrayCapacity = (*ppKeepaliveArray != NULL) ? (*ppKeepaliveArray)->GetNumComponents() : 0;
-    if (neededSize > keepaliveArrayCapacity)
+    size_t keepAliveArrayCapacity = (*ppKeepAliveArray != NULL) ? (*ppKeepAliveArray)->GetNumComponents() : 0;
+    if (neededSize > keepAliveArrayCapacity)
     {
-        S_SIZE_T newCapacity = S_SIZE_T(keepaliveArrayCapacity) * S_SIZE_T(2);
+        S_SIZE_T newCapacity = S_SIZE_T(keepAliveArrayCapacity) * S_SIZE_T(2);
         if (newCapacity.IsOverflow() || (neededSize > newCapacity.Value()))
         {
             newCapacity = S_SIZE_T(neededSize);
@@ -2953,33 +2953,33 @@ void StackTraceInfo::EnsureKeepaliveArray(PTRARRAYREF *ppKeepaliveArray, size_t 
             }
         }
 
-        keepaliveArrayCapacity = newCapacity.Value();
+        keepAliveArrayCapacity = newCapacity.Value();
 
-        if (!FitsIn<DWORD>(keepaliveArrayCapacity))
+        if (!FitsIn<DWORD>(keepAliveArrayCapacity))
         {
             EX_THROW(EEMessageException, (kOverflowException, IDS_EE_ARRAY_DIMENSIONS_EXCEEDED));
         }
 
         // Allocate a new array with the needed size
-        pNewKeepaliveArray = (PTRARRAYREF)AllocateObjectArray(static_cast<DWORD>(keepaliveArrayCapacity), g_pObjectClass);
-        if ((*ppKeepaliveArray) != NULL)
+        pNewKeepAliveArray = (PTRARRAYREF)AllocateObjectArray(static_cast<DWORD>(keepAliveArrayCapacity), g_pObjectClass);
+        if ((*ppKeepAliveArray) != NULL)
         {
-            memmoveGCRefs(pNewKeepaliveArray->GetDataPtr(),
-                          (*ppKeepaliveArray)->GetDataPtr(),
+            memmoveGCRefs(pNewKeepAliveArray->GetDataPtr(),
+                          (*ppKeepAliveArray)->GetDataPtr(),
                           neededSize * sizeof(Object *));        
         }
-        // Update the keepalive array
-        *ppKeepaliveArray = pNewKeepaliveArray;
+        // Update the keepAlive array
+        *ppKeepAliveArray = pNewKeepAliveArray;
     }
 
     GCPROTECT_END();
 }
 
-// Get a keepalive object for the given method. The keepalive object is either a
+// Get a keepAlive object for the given method. The keepAlive object is either a
 // Resolver object for DynamicMethodDesc or a LoaderAllocator object for methods in
 // collectible assemblies.
 // Returns NULL if the method code cannot be destroyed.
-OBJECTREF StackTraceInfo::GetKeepaliveObject(MethodDesc* pMethod)
+OBJECTREF StackTraceInfo::GetKeepAliveObject(MethodDesc* pMethod)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -3006,9 +3006,9 @@ OBJECTREF StackTraceInfo::GetKeepaliveObject(MethodDesc* pMethod)
 }
 
 #ifdef _DEBUG
-// Get number of methods in the stack trace that can be collected. We need to store keepalive
+// Get number of methods in the stack trace that can be collected. We need to store keepAlive
 // objects (Resolver / LoaderAllocator) for these methods.
-int GetKeepaliveItemsCount(StackTraceArray *pStackTrace)
+int GetKeepAliveItemsCount(StackTraceArray *pStackTrace)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -3101,15 +3101,15 @@ BOOL StackTraceInfo::AppendElement(OBJECTHANDLE hThrowable, UINT_PTR currentIP, 
         struct
         {
             StackTraceArray stackTrace;
-            PTRARRAYREF pKeepaliveArray = NULL; // Object array of Managed Resolvers / Loader Allocators of methods that can be collected
-            OBJECTREF keepaliveObject = NULL;
+            PTRARRAYREF pKeepAliveArray = NULL; // Object array of Managed Resolvers / Loader Allocators of methods that can be collected
+            OBJECTREF keepAliveObject = NULL;
         } gc;
 
         GCPROTECT_BEGIN_THREAD(pThread, gc);
 
-        // Fetch the stacktrace and the keepalive array from the exception object. It returns clones of those arrays in case the
+        // Fetch the stacktrace and the keepAlive array from the exception object. It returns clones of those arrays in case the
         // stack trace was created by a different thread.
-        bool wasCreatedByForeignThread = ((EXCEPTIONREF)ObjectFromHandle(hThrowable))->GetStackTrace(gc.stackTrace, &gc.pKeepaliveArray);
+        bool wasCreatedByForeignThread = ((EXCEPTIONREF)ObjectFromHandle(hThrowable))->GetStackTrace(gc.stackTrace, &gc.pKeepAliveArray);
 
         // The stack trace returned by the GetStackTrace has to be created by the current thread or be NULL.
         _ASSERTE((gc.stackTrace.Get() == NULL) || (gc.stackTrace.GetObjectThread() == pThread));
@@ -3131,47 +3131,47 @@ BOOL StackTraceInfo::AppendElement(OBJECTHANDLE hThrowable, UINT_PTR currentIP, 
             }
         }
 
-        size_t keepaliveItemsCount = gc.stackTrace.GetKeepAliveItemsCount();
-        _ASSERTE(keepaliveItemsCount == GetKeepaliveItemsCount(&gc.stackTrace));
+        size_t keepAliveItemsCount = gc.stackTrace.GetKeepAliveItemsCount();
+        _ASSERTE(keepAliveItemsCount == GetKeepAliveItemsCount(&gc.stackTrace));
 
-        gc.keepaliveObject = GetKeepaliveObject(pFunc);
-        if (gc.keepaliveObject != NULL)
+        gc.keepAliveObject = GetKeepAliveObject(pFunc);
+        if (gc.keepAliveObject != NULL)
         {
-            // The new frame to be added is a method that can be collected, so we need to update the keepalive items count.
-            keepaliveItemsCount++;
+            // The new frame to be added is a method that can be collected, so we need to update the keepAlive items count.
+            keepAliveItemsCount++;
             stackTraceElem.flags |= STEF_KEEPALIVE;
         }
 
-        if (keepaliveItemsCount != 0)
+        if (keepAliveItemsCount != 0)
         {
             // One extra slot is added for the stack trace array
-            EnsureKeepaliveArray(&gc.pKeepaliveArray, keepaliveItemsCount + 1);
-            if (gc.keepaliveObject != NULL)
+            EnsureKeepAliveArray(&gc.pKeepAliveArray, keepAliveItemsCount + 1);
+            if (gc.keepAliveObject != NULL)
             {
-                // Add the method to the keepalive array
-                gc.pKeepaliveArray->SetAt(keepaliveItemsCount, gc.keepaliveObject);
+                // Add the method to the keepAlive array
+                gc.pKeepAliveArray->SetAt(keepAliveItemsCount, gc.keepAliveObject);
             }
         }
         else
         {
-            // There are no methods that can be collected, so we don't need the keepalive array
-            gc.pKeepaliveArray = NULL;
+            // There are no methods that can be collected, so we don't need the keepAlive array
+            gc.pKeepAliveArray = NULL;
         }
 
-        gc.stackTrace.SetKeepAliveItemsCount(keepaliveItemsCount);
+        gc.stackTrace.SetKeepAliveItemsCount(keepAliveItemsCount);
 
         gc.stackTrace.Append(&stackTraceElem);
-       _ASSERTE(GetKeepaliveItemsCount(&gc.stackTrace) == keepaliveItemsCount);
+       _ASSERTE(GetKeepAliveItemsCount(&gc.stackTrace) == keepAliveItemsCount);
 
-        if (gc.pKeepaliveArray != NULL)
+        if (gc.pKeepAliveArray != NULL)
         {
-            _ASSERTE(keepaliveItemsCount > 0);
-            gc.pKeepaliveArray->SetAt(0, gc.stackTrace.Get());
-            ((EXCEPTIONREF)ObjectFromHandle(hThrowable))->SetStackTrace(dac_cast<OBJECTREF>(gc.pKeepaliveArray));
+            _ASSERTE(keepAliveItemsCount > 0);
+            gc.pKeepAliveArray->SetAt(0, gc.stackTrace.Get());
+            ((EXCEPTIONREF)ObjectFromHandle(hThrowable))->SetStackTrace(dac_cast<OBJECTREF>(gc.pKeepAliveArray));
         }
         else
         {
-            _ASSERTE(keepaliveItemsCount == 0);
+            _ASSERTE(keepAliveItemsCount == 0);
             ((EXCEPTIONREF)ObjectFromHandle(hThrowable))->SetStackTrace(dac_cast<OBJECTREF>(gc.stackTrace.Get()));
         }
 

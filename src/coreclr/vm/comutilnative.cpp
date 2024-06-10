@@ -76,7 +76,7 @@ FCIMPL0(VOID, ExceptionNative::PrepareForForeignExceptionRaise)
 }
 FCIMPLEND
 
-void DeepCopyStackTrace(StackTraceArray &stackTrace, StackTraceArray &stackTraceCopy, PTRARRAYREF *pKeepaliveArray, PTRARRAYREF *pKeepaliveArrayCopy)
+void DeepCopyStackTrace(StackTraceArray &stackTrace, StackTraceArray &stackTraceCopy, PTRARRAYREF *pKeepAliveArray, PTRARRAYREF *pKeepAliveArrayCopy)
 {
     CONTRACTL
     {
@@ -85,8 +85,8 @@ void DeepCopyStackTrace(StackTraceArray &stackTrace, StackTraceArray &stackTrace
         MODE_COOPERATIVE;
         PRECONDITION(IsProtectedByGCFrame((OBJECTREF*)&stackTrace));
         PRECONDITION(IsProtectedByGCFrame((OBJECTREF*)&stackTraceCopy));
-        PRECONDITION(IsProtectedByGCFrame((OBJECTREF*)pKeepaliveArray));
-        PRECONDITION(IsProtectedByGCFrame((OBJECTREF*)pKeepaliveArrayCopy));
+        PRECONDITION(IsProtectedByGCFrame((OBJECTREF*)pKeepAliveArray));
+        PRECONDITION(IsProtectedByGCFrame((OBJECTREF*)pKeepAliveArrayCopy));
     }
     CONTRACTL_END;
 
@@ -99,20 +99,20 @@ void DeepCopyStackTrace(StackTraceArray &stackTrace, StackTraceArray &stackTrace
         stackTraceCopy.Set(NULL);
     }
 
-    if (*pKeepaliveArray != NULL)
+    if (*pKeepAliveArray != NULL)
     {
-        // The stack trace object is the keepalive array with its first slot set to the stack trace I1Array.
+        // The stack trace object is the keepAlive array with its first slot set to the stack trace I1Array.
         // Get the number of elements in the dynamic methods array
-        unsigned cOrigKeepalive = (*pKeepaliveArray)->GetNumComponents();
+        unsigned cOrigKeepAlive = (*pKeepAliveArray)->GetNumComponents();
 
         // ..and allocate a new array. This can trigger GC or throw under OOM.
-        *pKeepaliveArrayCopy = (PTRARRAYREF)AllocateObjectArray(cOrigKeepalive, g_pObjectClass);
+        *pKeepAliveArrayCopy = (PTRARRAYREF)AllocateObjectArray(cOrigKeepAlive, g_pObjectClass);
 
         // Deepcopy references to the new array we just allocated
-        memmoveGCRefs((*pKeepaliveArrayCopy)->GetDataPtr(), (*pKeepaliveArray)->GetDataPtr(),
-                      cOrigKeepalive * sizeof(Object *));
+        memmoveGCRefs((*pKeepAliveArrayCopy)->GetDataPtr(), (*pKeepAliveArray)->GetDataPtr(),
+                      cOrigKeepAlive * sizeof(Object *));
 
-        (*pKeepaliveArrayCopy)->SetAt(0, (PTRARRAYREF)stackTraceCopy.Get());
+        (*pKeepAliveArrayCopy)->SetAt(0, (PTRARRAYREF)stackTraceCopy.Get());
     }
 }
 
@@ -132,7 +132,7 @@ FCIMPL2(VOID, ExceptionNative::GetStackTracesDeepCopy, Object* pExceptionObjectU
     {
         StackTraceArray stackTrace;
         EXCEPTIONREF refException = NULL;
-        PTRARRAYREF keepaliveArray = NULL; // Object array of Managed Resolvers
+        PTRARRAYREF keepAliveArray = NULL; // Object array of Managed Resolvers
     } gc;
 
     // GC protect the array reference
@@ -141,13 +141,13 @@ FCIMPL2(VOID, ExceptionNative::GetStackTracesDeepCopy, Object* pExceptionObjectU
     // Get the exception object reference
     gc.refException = (EXCEPTIONREF)(ObjectToOBJECTREF(pExceptionObjectUnsafe));
 
-    gc.refException->GetStackTrace(gc.stackTrace, &gc.keepaliveArray);
+    gc.refException->GetStackTrace(gc.stackTrace, &gc.keepAliveArray);
 
     gc.stackTrace.MarkAsFrozen();
 
-    if (gc.keepaliveArray != NULL)
+    if (gc.keepAliveArray != NULL)
     {
-        *pStackTraceUnsafe = OBJECTREFToObject(gc.keepaliveArray);
+        *pStackTraceUnsafe = OBJECTREFToObject(gc.keepAliveArray);
     }
     else if (gc.stackTrace.Get() != NULL)
     {
@@ -176,7 +176,7 @@ FCIMPL2(VOID, ExceptionNative::SaveStackTracesFromDeepCopy, Object* pExceptionOb
     {
         StackTraceArray stackTrace;
         OBJECTREF refStackTrace = NULL;
-        PTRARRAYREF refKeepaliveArray = NULL;
+        PTRARRAYREF refKeepAliveArray = NULL;
         EXCEPTIONREF refException = NULL;
     } gc;
 
@@ -187,14 +187,14 @@ FCIMPL2(VOID, ExceptionNative::SaveStackTracesFromDeepCopy, Object* pExceptionOb
     gc.refException = (EXCEPTIONREF)(ObjectToOBJECTREF(pExceptionObjectUnsafe));
     gc.refStackTrace = (OBJECTREF)(ObjectToOBJECTREF(pStackTraceUnsafe));
 
-    ExceptionObject::GetStackTraceParts(gc.refStackTrace, gc.stackTrace, &gc.refKeepaliveArray);
+    ExceptionObject::GetStackTraceParts(gc.refStackTrace, gc.stackTrace, &gc.refKeepAliveArray);
     _ASSERTE((gc.stackTrace.Get() == NULL) || gc.stackTrace.IsFrozen());
 
-    if (gc.refKeepaliveArray != NULL)
+    if (gc.refKeepAliveArray != NULL)
     {
-        // The stack trace object is the keepalive array with its first slot set to the stack trace I1Array.
+        // The stack trace object is the keepAlive array with its first slot set to the stack trace I1Array.
         // Save the stacktrace details in the exception
-        gc.refException->SetStackTrace(gc.refKeepaliveArray);
+        gc.refException->SetStackTrace(gc.refKeepAliveArray);
     }
     else
     {

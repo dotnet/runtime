@@ -58,9 +58,9 @@ class StackTraceInfo
 {
     int m_dummy; // remove this
 
-    static OBJECTREF GetKeepaliveObject(MethodDesc* pMethod);
+    static OBJECTREF GetKeepAliveObject(MethodDesc* pMethod);
     static void EnsureStackTraceArray(StackTraceArray *pStackTrace, size_t neededSize);
-    static void EnsureKeepaliveArray(PTRARRAYREF *ppKeepaliveArray, size_t neededSize);
+    static void EnsureKeepAliveArray(PTRARRAYREF *ppKeepAliveArray, size_t neededSize);
 public:
     static BOOL AppendElement(OBJECTHANDLE hThrowable, UINT_PTR currentIP, UINT_PTR currentSP, MethodDesc* pFunc, CrawlFrame* pCf);
 };
