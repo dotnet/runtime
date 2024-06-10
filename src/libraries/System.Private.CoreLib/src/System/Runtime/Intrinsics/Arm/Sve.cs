@@ -669,6 +669,112 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<ulong> BooleanNot(Vector<ulong> value) => BooleanNot(value);
 
+        ///  Compute vector addresses for 16-bit data
+
+        /// <summary>
+        /// svuint32_t svadrh[_u32base]_[s32]index(svuint32_t bases, svint32_t indices)
+        ///   ADR Zresult.S, [Zbases.S, Zindices.S, LSL #1]
+        /// </summary>
+        public static unsafe Vector<uint> Compute16BitAddresses(Vector<uint> bases, Vector<int> indices) => Compute16BitAddresses(bases, indices);
+
+        /// <summary>
+        /// svuint32_t svadrh[_u32base]_[u32]index(svuint32_t bases, svuint32_t indices)
+        ///   ADR Zresult.S, [Zbases.S, Zindices.S, LSL #1]
+        /// </summary>
+        public static unsafe Vector<uint> Compute16BitAddresses(Vector<uint> bases, Vector<uint> indices) => Compute16BitAddresses(bases, indices);
+
+        /// <summary>
+        /// svuint64_t svadrh[_u64base]_[s64]index(svuint64_t bases, svint64_t indices)
+        ///   ADR Zresult.D, [Zbases.D, Zindices.D, LSL #1]
+        /// </summary>
+        public static unsafe Vector<ulong> Compute16BitAddresses(Vector<ulong> bases, Vector<long> indices) => Compute16BitAddresses(bases, indices);
+
+        /// <summary>
+        /// svuint64_t svadrh[_u64base]_[u64]index(svuint64_t bases, svuint64_t indices)
+        ///   ADR Zresult.D, [Zbases.D, Zindices.D, LSL #1]
+        /// </summary>
+        public static unsafe Vector<ulong> Compute16BitAddresses(Vector<ulong> bases, Vector<ulong> indices) => Compute16BitAddresses(bases, indices);
+
+
+        ///  Compute vector addresses for 32-bit data
+
+        /// <summary>
+        /// svuint32_t svadrw[_u32base]_[s32]index(svuint32_t bases, svint32_t indices)
+        ///   ADR Zresult.S, [Zbases.S, Zindices.S, LSL #2]
+        /// </summary>
+        public static unsafe Vector<uint> Compute32BitAddresses(Vector<uint> bases, Vector<int> indices) => Compute32BitAddresses(bases, indices);
+
+        /// <summary>
+        /// svuint32_t svadrw[_u32base]_[u32]index(svuint32_t bases, svuint32_t indices)
+        ///   ADR Zresult.S, [Zbases.S, Zindices.S, LSL #2]
+        /// </summary>
+        public static unsafe Vector<uint> Compute32BitAddresses(Vector<uint> bases, Vector<uint> indices) => Compute32BitAddresses(bases, indices);
+
+        /// <summary>
+        /// svuint64_t svadrw[_u64base]_[s64]index(svuint64_t bases, svint64_t indices)
+        ///   ADR Zresult.D, [Zbases.D, Zindices.D, LSL #2]
+        /// </summary>
+        public static unsafe Vector<ulong> Compute32BitAddresses(Vector<ulong> bases, Vector<long> indices) => Compute32BitAddresses(bases, indices);
+
+        /// <summary>
+        /// svuint64_t svadrw[_u64base]_[u64]index(svuint64_t bases, svuint64_t indices)
+        ///   ADR Zresult.D, [Zbases.D, Zindices.D, LSL #2]
+        /// </summary>
+        public static unsafe Vector<ulong> Compute32BitAddresses(Vector<ulong> bases, Vector<ulong> indices) => Compute32BitAddresses(bases, indices);
+
+
+        ///  Compute vector addresses for 64-bit data
+
+        /// <summary>
+        /// svuint32_t svadrd[_u32base]_[s32]index(svuint32_t bases, svint32_t indices)
+        ///   ADR Zresult.S, [Zbases.S, Zindices.S, LSL #3]
+        /// </summary>
+        public static unsafe Vector<uint> Compute64BitAddresses(Vector<uint> bases, Vector<int> indices) => Compute64BitAddresses(bases, indices);
+
+        /// <summary>
+        /// svuint32_t svadrd[_u32base]_[u32]index(svuint32_t bases, svuint32_t indices)
+        ///   ADR Zresult.S, [Zbases.S, Zindices.S, LSL #3]
+        /// </summary>
+        public static unsafe Vector<uint> Compute64BitAddresses(Vector<uint> bases, Vector<uint> indices) => Compute64BitAddresses(bases, indices);
+
+        /// <summary>
+        /// svuint64_t svadrd[_u64base]_[s64]index(svuint64_t bases, svint64_t indices)
+        ///   ADR Zresult.D, [Zbases.D, Zindices.D, LSL #3]
+        /// </summary>
+        public static unsafe Vector<ulong> Compute64BitAddresses(Vector<ulong> bases, Vector<long> indices) => Compute64BitAddresses(bases, indices);
+
+        /// <summary>
+        /// svuint64_t svadrd[_u64base]_[u64]index(svuint64_t bases, svuint64_t indices)
+        ///   ADR Zresult.D, [Zbases.D, Zindices.D, LSL #3]
+        /// </summary>
+        public static unsafe Vector<ulong> Compute64BitAddresses(Vector<ulong> bases, Vector<ulong> indices) => Compute64BitAddresses(bases, indices);
+
+
+        ///  Compute vector addresses for 8-bit data
+
+        /// <summary>
+        /// svuint32_t svadrb[_u32base]_[s32]offset(svuint32_t bases, svint32_t offsets)
+        ///   ADR Zresult.S, [Zbases.S, Zoffsets.S]
+        /// </summary>
+        public static unsafe Vector<uint> Compute8BitAddresses(Vector<uint> bases, Vector<int> indices) => Compute8BitAddresses(bases, indices);
+
+        /// <summary>
+        /// svuint32_t svadrb[_u32base]_[u32]offset(svuint32_t bases, svuint32_t offsets)
+        ///   ADR Zresult.S, [Zbases.S, Zoffsets.S]
+        /// </summary>
+        public static unsafe Vector<uint> Compute8BitAddresses(Vector<uint> bases, Vector<uint> indices) => Compute8BitAddresses(bases, indices);
+
+        /// <summary>
+        /// svuint64_t svadrb[_u64base]_[s64]offset(svuint64_t bases, svint64_t offsets)
+        ///   ADR Zresult.D, [Zbases.D, Zoffsets.D]
+        /// </summary>
+        public static unsafe Vector<ulong> Compute8BitAddresses(Vector<ulong> bases, Vector<long> indices) => Compute8BitAddresses(bases, indices);
+
+        /// <summary>
+        /// svuint64_t svadrb[_u64base]_[u64]offset(svuint64_t bases, svuint64_t offsets)
+        ///   ADR Zresult.D, [Zbases.D, Zoffsets.D]
+        /// </summary>
+        public static unsafe Vector<ulong> Compute8BitAddresses(Vector<ulong> bases, Vector<ulong> indices) => Compute8BitAddresses(bases, indices);
 
         ///  Shuffle active elements of vector to the right and fill with zero
 
@@ -3477,6 +3583,141 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe ulong SaturatingDecrementBy8BitElementCount(ulong value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingDecrementBy8BitElementCount(value, scale, pattern);
 
 
+        ///  Saturating decrement by active element count
+
+        /// <summary>
+        /// int32_t svqdecp[_n_s32]_b8(int32_t op, svbool_t pg)
+        ///   SQDECP Xtied, Pg.B, Wtied
+        /// </summary>
+        public static unsafe long SaturatingDecrementByActiveElementCount(int value, Vector<byte> from) => SaturatingDecrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// int64_t svqdecp[_n_s64]_b8(int64_t op, svbool_t pg)
+        ///   SQDECP Xtied, Pg.B
+        /// </summary>
+        public static unsafe long SaturatingDecrementByActiveElementCount(long value, Vector<byte> from) => SaturatingDecrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// uint32_t svqdecp[_n_u32]_b8(uint32_t op, svbool_t pg)
+        ///   UQDECP Wtied, Pg.B
+        /// </summary>
+        public static unsafe ulong SaturatingDecrementByActiveElementCount(uint value, Vector<byte> from) => SaturatingDecrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// uint64_t svqdecp[_n_u64]_b8(uint64_t op, svbool_t pg)
+        ///   UQDECP Xtied, Pg.B
+        /// </summary>
+        public static unsafe ulong SaturatingDecrementByActiveElementCount(ulong value, Vector<byte> from) => SaturatingDecrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// svint16_t svqdecp[_s16](svint16_t op, svbool_t pg)
+        ///   SQDECP Ztied.H, Pg
+        /// </summary>
+        public static unsafe Vector<short> SaturatingDecrementByActiveElementCount(Vector<short> value, Vector<short> from) => SaturatingDecrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// svint32_t svqdecp[_s32](svint32_t op, svbool_t pg)
+        ///   SQDECP Ztied.S, Pg
+        /// </summary>
+        public static unsafe Vector<int> SaturatingDecrementByActiveElementCount(Vector<int> value, Vector<int> from) => SaturatingDecrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// svint64_t svqdecp[_s64](svint64_t op, svbool_t pg)
+        ///   SQDECP Ztied.D, Pg
+        /// </summary>
+        public static unsafe Vector<long> SaturatingDecrementByActiveElementCount(Vector<long> value, Vector<long> from) => SaturatingDecrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// int32_t svqdecp[_n_s32]_b16(int32_t op, svbool_t pg)
+        ///   SQDECP Xtied, Pg.H, Wtied
+        /// </summary>
+        public static unsafe long SaturatingDecrementByActiveElementCount(int value, Vector<ushort> from) => SaturatingDecrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// int64_t svqdecp[_n_s64]_b16(int64_t op, svbool_t pg)
+        ///   SQDECP Xtied, Pg.H
+        /// </summary>
+        public static unsafe long SaturatingDecrementByActiveElementCount(long value, Vector<ushort> from) => SaturatingDecrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// uint32_t svqdecp[_n_u32]_b16(uint32_t op, svbool_t pg)
+        ///   UQDECP Wtied, Pg.H
+        /// </summary>
+        public static unsafe ulong SaturatingDecrementByActiveElementCount(uint value, Vector<ushort> from) => SaturatingDecrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// uint64_t svqdecp[_n_u64]_b16(uint64_t op, svbool_t pg)
+        ///   UQDECP Xtied, Pg.H
+        /// </summary>
+        public static unsafe ulong SaturatingDecrementByActiveElementCount(ulong value, Vector<ushort> from) => SaturatingDecrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// svuint16_t svqdecp[_u16](svuint16_t op, svbool_t pg)
+        ///   UQDECP Ztied.H, Pg
+        /// </summary>
+        public static unsafe Vector<ushort> SaturatingDecrementByActiveElementCount(Vector<ushort> value, Vector<ushort> from) => SaturatingDecrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// int32_t svqdecp[_n_s32]_b32(int32_t op, svbool_t pg)
+        ///   SQDECP Xtied, Pg.S, Wtied
+        /// </summary>
+        public static unsafe long SaturatingDecrementByActiveElementCount(int value, Vector<uint> from) => SaturatingDecrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// int64_t svqdecp[_n_s64]_b32(int64_t op, svbool_t pg)
+        ///   SQDECP Xtied, Pg.S
+        /// </summary>
+        public static unsafe long SaturatingDecrementByActiveElementCount(long value, Vector<uint> from) => SaturatingDecrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// uint32_t svqdecp[_n_u32]_b32(uint32_t op, svbool_t pg)
+        ///   UQDECP Wtied, Pg.S
+        /// </summary>
+        public static unsafe ulong SaturatingDecrementByActiveElementCount(uint value, Vector<uint> from) => SaturatingDecrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// uint64_t svqdecp[_n_u64]_b32(uint64_t op, svbool_t pg)
+        ///   UQDECP Xtied, Pg.S
+        /// </summary>
+        public static unsafe ulong SaturatingDecrementByActiveElementCount(ulong value, Vector<uint> from) => SaturatingDecrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// svuint32_t svqdecp[_u32](svuint32_t op, svbool_t pg)
+        ///   UQDECP Ztied.S, Pg
+        /// </summary>
+        public static unsafe Vector<uint> SaturatingDecrementByActiveElementCount(Vector<uint> value, Vector<uint> from) => SaturatingDecrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// int32_t svqdecp[_n_s32]_b64(int32_t op, svbool_t pg)
+        ///   SQDECP Xtied, Pg.D, Wtied
+        /// </summary>
+        public static unsafe long SaturatingDecrementByActiveElementCount(int value, Vector<ulong> from) => SaturatingDecrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// int64_t svqdecp[_n_s64]_b64(int64_t op, svbool_t pg)
+        ///   SQDECP Xtied, Pg.D
+        /// </summary>
+        public static unsafe long SaturatingDecrementByActiveElementCount(long value, Vector<ulong> from) => SaturatingDecrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// uint32_t svqdecp[_n_u32]_b64(uint32_t op, svbool_t pg)
+        ///   UQDECP Wtied, Pg.D
+        /// </summary>
+        public static unsafe ulong SaturatingDecrementByActiveElementCount(uint value, Vector<ulong> from) => SaturatingDecrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// uint64_t svqdecp[_n_u64]_b64(uint64_t op, svbool_t pg)
+        ///   UQDECP Xtied, Pg.D
+        /// </summary>
+        public static unsafe ulong SaturatingDecrementByActiveElementCount(ulong value, Vector<ulong> from) => SaturatingDecrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// svuint64_t svqdecp[_u64](svuint64_t op, svbool_t pg)
+        ///   UQDECP Ztied.D, Pg
+        /// </summary>
+        public static unsafe Vector<ulong> SaturatingDecrementByActiveElementCount(Vector<ulong> value, Vector<ulong> from) => SaturatingDecrementByActiveElementCount(value, from);
+
+
         ///  Saturating increment by number of halfword elements
 
         /// <summary>
@@ -3619,6 +3860,141 @@ namespace System.Runtime.Intrinsics.Arm
         ///   UQINCB Xtied, pattern, MUL #imm_factor
         /// </summary>
         public static unsafe ulong SaturatingIncrementBy8BitElementCount(ulong value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingIncrementBy8BitElementCount(value, scale, pattern);
+
+
+        ///  Saturating increment by active element count
+
+        /// <summary>
+        /// int32_t svqincp[_n_s32]_b8(int32_t op, svbool_t pg)
+        ///   SQINCP Xtied, Pg.B, Wtied
+        /// </summary>
+        public static unsafe long SaturatingIncrementByActiveElementCount(int value, Vector<byte> from) => SaturatingIncrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// int64_t svqincp[_n_s64]_b8(int64_t op, svbool_t pg)
+        ///   SQINCP Xtied, Pg.B
+        /// </summary>
+        public static unsafe long SaturatingIncrementByActiveElementCount(long value, Vector<byte> from) => SaturatingIncrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// uint32_t svqincp[_n_u32]_b8(uint32_t op, svbool_t pg)
+        ///   UQINCP Wtied, Pg.B
+        /// </summary>
+        public static unsafe ulong SaturatingIncrementByActiveElementCount(uint value, Vector<byte> from) => SaturatingIncrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// uint64_t svqincp[_n_u64]_b8(uint64_t op, svbool_t pg)
+        ///   UQINCP Xtied, Pg.B
+        /// </summary>
+        public static unsafe ulong SaturatingIncrementByActiveElementCount(ulong value, Vector<byte> from) => SaturatingIncrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// svint16_t svqincp[_s16](svint16_t op, svbool_t pg)
+        ///   SQINCP Ztied.H, Pg
+        /// </summary>
+        public static unsafe Vector<short> SaturatingIncrementByActiveElementCount(Vector<short> value, Vector<short> from) => SaturatingIncrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// svint32_t svqincp[_s32](svint32_t op, svbool_t pg)
+        ///   SQINCP Ztied.S, Pg
+        /// </summary>
+        public static unsafe Vector<int> SaturatingIncrementByActiveElementCount(Vector<int> value, Vector<int> from) => SaturatingIncrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// svint64_t svqincp[_s64](svint64_t op, svbool_t pg)
+        ///   SQINCP Ztied.D, Pg
+        /// </summary>
+        public static unsafe Vector<long> SaturatingIncrementByActiveElementCount(Vector<long> value, Vector<long> from) => SaturatingIncrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// int32_t svqincp[_n_s32]_b16(int32_t op, svbool_t pg)
+        ///   SQINCP Xtied, Pg.H, Wtied
+        /// </summary>
+        public static unsafe long SaturatingIncrementByActiveElementCount(int value, Vector<ushort> from) => SaturatingIncrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// int64_t svqincp[_n_s64]_b16(int64_t op, svbool_t pg)
+        ///   SQINCP Xtied, Pg.H
+        /// </summary>
+        public static unsafe long SaturatingIncrementByActiveElementCount(long value, Vector<ushort> from) => SaturatingIncrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// uint32_t svqincp[_n_u32]_b16(uint32_t op, svbool_t pg)
+        ///   UQINCP Wtied, Pg.H
+        /// </summary>
+        public static unsafe ulong SaturatingIncrementByActiveElementCount(uint value, Vector<ushort> from) => SaturatingIncrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// uint64_t svqincp[_n_u64]_b16(uint64_t op, svbool_t pg)
+        ///   UQINCP Xtied, Pg.H
+        /// </summary>
+        public static unsafe ulong SaturatingIncrementByActiveElementCount(ulong value, Vector<ushort> from) => SaturatingIncrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// svuint16_t svqincp[_u16](svuint16_t op, svbool_t pg)
+        ///   UQINCP Ztied.H, Pg
+        /// </summary>
+        public static unsafe Vector<ushort> SaturatingIncrementByActiveElementCount(Vector<ushort> value, Vector<ushort> from) => SaturatingIncrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// int32_t svqincp[_n_s32]_b32(int32_t op, svbool_t pg)
+        ///   SQINCP Xtied, Pg.S, Wtied
+        /// </summary>
+        public static unsafe long SaturatingIncrementByActiveElementCount(int value, Vector<uint> from) => SaturatingIncrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// int64_t svqincp[_n_s64]_b32(int64_t op, svbool_t pg)
+        ///   SQINCP Xtied, Pg.S
+        /// </summary>
+        public static unsafe long SaturatingIncrementByActiveElementCount(long value, Vector<uint> from) => SaturatingIncrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// uint32_t svqincp[_n_u32]_b32(uint32_t op, svbool_t pg)
+        ///   UQINCP Wtied, Pg.S
+        /// </summary>
+        public static unsafe ulong SaturatingIncrementByActiveElementCount(uint value, Vector<uint> from) => SaturatingIncrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// uint64_t svqincp[_n_u64]_b32(uint64_t op, svbool_t pg)
+        ///   UQINCP Xtied, Pg.S
+        /// </summary>
+        public static unsafe ulong SaturatingIncrementByActiveElementCount(ulong value, Vector<uint> from) => SaturatingIncrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// svuint32_t svqincp[_u32](svuint32_t op, svbool_t pg)
+        ///   UQINCP Ztied.S, Pg
+        /// </summary>
+        public static unsafe Vector<uint> SaturatingIncrementByActiveElementCount(Vector<uint> value, Vector<uint> from) => SaturatingIncrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// int32_t svqincp[_n_s32]_b64(int32_t op, svbool_t pg)
+        ///   SQINCP Xtied, Pg.D, Wtied
+        /// </summary>
+        public static unsafe long SaturatingIncrementByActiveElementCount(int value, Vector<ulong> from) => SaturatingIncrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// int64_t svqincp[_n_s64]_b64(int64_t op, svbool_t pg)
+        ///   SQINCP Xtied, Pg.D
+        /// </summary>
+        public static unsafe long SaturatingIncrementByActiveElementCount(long value, Vector<ulong> from) => SaturatingIncrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// uint32_t svqincp[_n_u32]_b64(uint32_t op, svbool_t pg)
+        ///   UQINCP Wtied, Pg.D
+        /// </summary>
+        public static unsafe ulong SaturatingIncrementByActiveElementCount(uint value, Vector<ulong> from) => SaturatingIncrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// uint64_t svqincp[_n_u64]_b64(uint64_t op, svbool_t pg)
+        ///   UQINCP Xtied, Pg.D
+        /// </summary>
+        public static unsafe ulong SaturatingIncrementByActiveElementCount(ulong value, Vector<ulong> from) => SaturatingIncrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// svuint64_t svqincp[_u64](svuint64_t op, svbool_t pg)
+        ///   UQINCP Ztied.D, Pg
+        /// </summary>
+        public static unsafe Vector<ulong> SaturatingIncrementByActiveElementCount(Vector<ulong> value, Vector<ulong> from) => SaturatingIncrementByActiveElementCount(value, from);
 
 
         ///  SignExtend16 : Sign-extend the low 16 bits

@@ -271,6 +271,39 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(expectedKeyType, typeInfo.ElementType);
         }
 
+        [Theory]
+        [InlineData(typeof(ClassWithParameterizedCtor))]
+        [InlineData(typeof(StructWithParameterizedCtor))]
+        [InlineData(typeof(ClassWithRequiredAndOptionalConstructorParameters))]
+        public void RespectRequiredConstructorParameters_false_ReportsCorrespondingPropertiesAsNotRequired(Type type)
+        {
+            var options = new JsonSerializerOptions { RespectRequiredConstructorParameters = false };
+            JsonTypeInfo typeInfo = Serializer.GetTypeInfo(type, options);
+
+            Assert.NotEmpty(typeInfo.Properties);
+            Assert.All(typeInfo.Properties, property =>
+            {
+                Assert.False(property.IsRequired);
+            });
+        }
+
+        [Theory]
+        [InlineData(typeof(ClassWithParameterizedCtor))]
+        [InlineData(typeof(StructWithParameterizedCtor))]
+        [InlineData(typeof(ClassWithRequiredAndOptionalConstructorParameters))]
+        public void RespectRequiredConstructorParameters_true_ReportsCorrespondingPropertiesAsRequired(Type type)
+        {
+            var options = new JsonSerializerOptions { RespectRequiredConstructorParameters = true };
+            JsonTypeInfo typeInfo = Serializer.GetTypeInfo(type, options);
+
+            Assert.NotEmpty(typeInfo.Properties);
+            Assert.All(typeInfo.Properties, property =>
+            {
+                bool isRequiredParam = property.AssociatedParameter is { HasDefaultValue: false, IsMemberInitializer: false };
+                Assert.Equal(isRequiredParam, property.IsRequired);
+            });
+        }
+
         private static object? GetDefaultValue(ParameterInfo parameterInfo)
         {
             Type parameterType = parameterInfo.ParameterType;
@@ -505,6 +538,18 @@ namespace System.Text.Json.Serialization.Tests
                 public override DerivedDictionaryWithCustomConverter? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => throw new NotImplementedException();
                 public override void Write(Utf8JsonWriter writer, DerivedDictionaryWithCustomConverter value, JsonSerializerOptions options) => throw new NotImplementedException();
             }
+        }
+
+        internal class ClassWithRequiredAndOptionalConstructorParameters
+        {
+            [JsonConstructor]
+            public ClassWithRequiredAndOptionalConstructorParameters(string? x, string? y = null)
+            {
+                X = x;
+                Y = y;
+            }
+            public string? X { get; }
+            public string? Y { get; }
         }
     }
 

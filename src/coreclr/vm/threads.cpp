@@ -8166,12 +8166,15 @@ void Thread::InitializeSpecialUserModeApc()
 EXTERN_C void STDCALL ClrRestoreNonvolatileContextWorker(PCONTEXT ContextRecord, DWORD64 ssp);
 #endif
 
-void ClrRestoreNonvolatileContext(PCONTEXT ContextRecord)
+void ClrRestoreNonvolatileContext(PCONTEXT ContextRecord, size_t targetSSP)
 {
 #if defined(TARGET_AMD64)
-    DWORD64 ssp = GetSSP(ContextRecord);
+    if (targetSSP == 0)
+    {
+        targetSSP = GetSSP(ContextRecord);
+    }
     __asan_handle_no_return();
-    ClrRestoreNonvolatileContextWorker(ContextRecord, ssp);
+    ClrRestoreNonvolatileContextWorker(ContextRecord, targetSSP);
 #else
     __asan_handle_no_return();
     // Falling back to RtlRestoreContext() for now, though it should be possible to have simpler variants for these cases
