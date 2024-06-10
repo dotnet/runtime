@@ -18750,15 +18750,24 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
                     FieldSeq* fieldSeq = op2->AsIntCon()->gtFieldSeq;
                     if ((fieldSeq != nullptr) && (fieldSeq->GetOffset() == op2->AsIntCon()->IconValue()))
                     {
-                        // No benefit to calling gtGetFieldClassHandle here, as
-                        // the exact field being accessed can vary.
-                        CORINFO_FIELD_HANDLE fieldHnd   = fieldSeq->GetFieldHandle();
-                        CORINFO_CLASS_HANDLE fieldClass = NO_CLASS_HANDLE;
-                        var_types            fieldType  = eeGetFieldType(fieldHnd, &fieldClass);
-
-                        if (fieldType == TYP_REF)
+                        if (fieldSeq->IsBoxedValue())
                         {
-                            objClass = fieldClass;
+                            objClass    = fieldSeq->GetClassHandle();
+                            *pIsExact   = true;
+                            *pIsNonNull = true;
+                        }
+                        else
+                        {
+                            // No benefit to calling gtGetFieldClassHandle here, as
+                            // the exact field being accessed can vary.
+                            CORINFO_FIELD_HANDLE fieldHnd   = fieldSeq->GetFieldHandle();
+                            CORINFO_CLASS_HANDLE fieldClass = NO_CLASS_HANDLE;
+                            var_types            fieldType  = eeGetFieldType(fieldHnd, &fieldClass);
+
+                            if (fieldType == TYP_REF)
+                            {
+                                objClass = fieldClass;
+                            }
                         }
                     }
                 }
