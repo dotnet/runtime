@@ -689,8 +689,7 @@ int GetEnumAsInt(JNIEnv *env, jobject enumObj)
     return value;
 }
 
-JNIEXPORT jint JNICALL
-JNI_OnLoad(JavaVM *vm, void *reserved)
+jint init_library_on_load (JavaVM *vm, void *reserved)
 {
     (void)reserved;
     LOG_INFO("JNI_OnLoad in pal_jni.c");
