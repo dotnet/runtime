@@ -182,7 +182,7 @@ public class ReadExactTypesTests : ReadTests
 
         ClassRecord classRecord = NrbfDecoder.DecodeClassRecord(Serialize(input));
 
-        Assert.Equal(input.Texts, classRecord.GetArrayOfPrimitiveType<string>(nameof(CustomTypeWithStringArrayField.Texts)));
+        Assert.Equal(input.Texts, ((SZArrayRecord<string>)classRecord.GetArrayRecord(nameof(CustomTypeWithStringArrayField.Texts))).GetArray());
     }
 
     [Theory]
@@ -197,7 +197,7 @@ public class ReadExactTypesTests : ReadTests
 
         ClassRecord classRecord = NrbfDecoder.DecodeClassRecord(Serialize(input));
 
-        Assert.Equal(input.Texts, classRecord.GetArrayOfPrimitiveType<string>(nameof(CustomTypeWithStringArrayField.Texts)));
+        Assert.Equal(input.Texts, ((SZArrayRecord<string>)classRecord.GetArrayRecord(nameof(CustomTypeWithStringArrayField.Texts))).GetArray());
     }
 
     [Fact]

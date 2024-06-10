@@ -51,7 +51,7 @@ namespace System.Formats.Nrbf.Tests
             ClassRecord genericValue = genericPair.GetClassRecord("value")!;
             Assert.True(genericValue.IsTypeNameMatching(typeof(List<int>)));
             Assert.Equal(4, genericValue.GetInt32("_size"));
-            Assert.Equal(new int[] { 1, 2, 3, 4 }, genericValue.GetArrayOfPrimitiveType<int>("_items"));
+            Assert.Equal(new int[] { 1, 2, 3, 4 }, ((SZArrayRecord<int>)genericValue.GetArrayRecord("_items")).GetArray());
 
             static ClassRecord Find(ClassRecord[] keyValuePairs, string key)
                 => keyValuePairs.Where(pair => pair.GetString("key") == key).Single();
