@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
+using System.Data;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.Globalization;
@@ -212,6 +213,12 @@ public partial class BinaryFormatterTests
             || name == "System.Net.CookieCollection"
             || name == "System.Net.CookieContainer")
         {
+            return;
+        }
+
+        if (obj is DataSet or DataTable)
+        {
+            // The blobs may not be identical (the output is not deterministic), but still valid.
             return;
         }
 
