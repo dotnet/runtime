@@ -339,7 +339,7 @@ HRESULT Assembler::CreateExportDirectory()
     Ldllname = (unsigned)u16_strlen(m_wzOutputFileName)*3+3;
     NewArrayHolder<char>    szOutputFileName(new char[Ldllname]);
     memset(szOutputFileName,0,u16_strlen(m_wzOutputFileName)*3+3);
-    WszWideCharToMultiByte(CP_ACP,0,m_wzOutputFileName,-1,szOutputFileName,Ldllname,NULL,NULL);
+    WideCharToMultiByte(CP_ACP,0,m_wzOutputFileName,-1,szOutputFileName,Ldllname,NULL,NULL);
     pszDllName = strrchr(szOutputFileName,DIRECTORY_SEPARATOR_CHAR_A);
 #ifdef TARGET_WINDOWS
     if(pszDllName == NULL) pszDllName = strrchr(szOutputFileName,':');
@@ -770,7 +770,7 @@ HRESULT Assembler::ResolveLocalMemberRefs()
                         }
                         if(tkMemberDef && ((*pMRD_pSig & IMAGE_CEE_CS_CALLCONV_MASK)==IMAGE_CEE_CS_CALLCONV_VARARG))
                         {
-                            WszMultiByteToWideChar(g_uCodePage,0,pMRD_szName,-1,wzUniBuf,dwUniBuf);
+                            MultiByteToWideChar(g_uCodePage,0,pMRD_szName,-1,wzUniBuf,dwUniBuf);
 
                             if(IsMdPrivateScope(pListMD->m_Attr))
                             {
@@ -813,7 +813,7 @@ HRESULT Assembler::ResolveLocalMemberRefs()
 
                         if(RidFromToken(tkRef))
                         {
-                            WszMultiByteToWideChar(g_uCodePage,0,pMRD_szName,-1,wzUniBuf,dwUniBuf);
+                            MultiByteToWideChar(g_uCodePage,0,pMRD_szName,-1,wzUniBuf,dwUniBuf);
 
                             m_pEmitter->DefineMemberRef(tkRef, wzUniBuf, pMRD_pSig,
                                 pMRD_dwCSig, &tkMemberDef);
@@ -1103,7 +1103,7 @@ HRESULT Assembler::CreatePEFile(_In_ __nullterminated WCHAR *pwzOutputFilename)
     wzScopeName=&wzUniBuf[0];
     if(m_szScopeName[0]) // default: scope name = output file name
     {
-        WszMultiByteToWideChar(g_uCodePage,0,m_szScopeName,-1,wzScopeName,MAX_SCOPE_LENGTH);
+        MultiByteToWideChar(g_uCodePage,0,m_szScopeName,-1,wzScopeName,MAX_SCOPE_LENGTH);
     }
     else
     {
@@ -1561,7 +1561,7 @@ HRESULT Assembler::CreatePEFile(_In_ __nullterminated WCHAR *pwzOutputFilename)
         {
             m_pManifest->m_fMResNew[i] = FALSE;
             memset(sz,0,2048);
-            WszWideCharToMultiByte(CP_ACP,0,m_pManifest->m_wzMResName[i],-1,sz,2047,NULL,NULL);
+            WideCharToMultiByte(CP_ACP,0,m_pManifest->m_wzMResName[i],-1,sz,2047,NULL,NULL);
             L = m_pManifest->m_dwMResSize[i];
             sizeread = 0;
             memcpy(ptr,&L,sizeof(DWORD));

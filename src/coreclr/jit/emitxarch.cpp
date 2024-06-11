@@ -20069,6 +20069,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_serialize:
         {
             result.insThroughput = PERFSCORE_THROUGHPUT_50C;
+            result.insLatency    = PERFSCORE_LATENCY_105C;
             break;
         }
 

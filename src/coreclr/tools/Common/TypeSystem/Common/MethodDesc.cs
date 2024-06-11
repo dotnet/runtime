@@ -22,6 +22,7 @@ namespace Internal.TypeSystem
         UnmanagedCallingConvention           = 0x0009,
 
         Static = 0x0010,
+        ExplicitThis = 0x0020,
     }
 
     public enum EmbeddedSignatureDataKind
@@ -126,6 +127,14 @@ namespace Internal.TypeSystem
             get
             {
                 return (_flags & MethodSignatureFlags.Static) != 0;
+            }
+        }
+
+        public bool IsExplicitThis
+        {
+            get
+            {
+                return (_flags & MethodSignatureFlags.ExplicitThis) != 0;
             }
         }
 
