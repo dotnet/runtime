@@ -51,7 +51,8 @@ namespace System.Diagnostics
         {
             ArgumentNullException.ThrowIfNull(@delegate);
 
-            // TODO: feature switch
+            if (!StackTrace.IsSupported)
+                return null;
 
             return new DiagnosticMethodInfo(@delegate.Method);
 
@@ -69,7 +70,8 @@ namespace System.Diagnostics
         {
             ArgumentNullException.ThrowIfNull(frame);
 
-            // TODO: feature switch
+            if (!StackTrace.IsSupported)
+                return null;
 
             MethodBase? method = frame.GetMethod();
             if (method != null)

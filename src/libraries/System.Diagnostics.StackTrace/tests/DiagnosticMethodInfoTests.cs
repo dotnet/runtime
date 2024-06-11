@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Diagnostics.Tests
@@ -211,6 +212,46 @@ namespace System.Diagnostics.Tests
                 Assert.Equal(expectedName, dmi.Name);
                 Assert.Equal(expectedDeclaringName, dmi.DeclaringTypeName);
             }
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void Create_Delegate_StackTraceSupportDisabled()
+        {
+            var options = new RemoteInvokeOptions()
+            {
+                RuntimeConfigurationOptions =
+                {
+                    ["System.Diagnostics.StackTrace.IsSupported"] = false
+                }
+            };
+
+            RemoteExecutor.Invoke(static () =>
+            {
+                var c = new ClassForDiagnosticMethodInfoTests();
+                Action a = c.Method1;
+
+                DiagnosticMethodInfo dmi = DiagnosticMethodInfo.Create(a);
+                Assert.Null(dmi);
+            }, options).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void Create_Frame_StackTraceSupportDisabled()
+        {
+            var options = new RemoteInvokeOptions()
+            {
+                RuntimeConfigurationOptions =
+                {
+                    ["System.Diagnostics.StackTrace.IsSupported"] = false
+                }
+            };
+
+            RemoteExecutor.Invoke(static () =>
+            {
+                StackFrame f = new StackFrame();
+                DiagnosticMethodInfo dmi = DiagnosticMethodInfo.Create(f);
+                Assert.Null(dmi);
+            }, options).Dispose();
         }
     }
 
