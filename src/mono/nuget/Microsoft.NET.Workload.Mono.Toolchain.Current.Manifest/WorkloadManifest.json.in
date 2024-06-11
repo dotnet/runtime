@@ -38,7 +38,7 @@
     "mobile-librarybuilder": {
       "description": "Mobile SDK for building a self-contained .NET native library in ${NetVersion}.0",
       "packs": [
-        "Microsoft.NET.Runtime.LibraryBuilder.Sdk"
+        "Microsoft.NET.Runtime.LibraryBuilder.Sdk.${NetVersion}"
       ],
       "extends": [ "microsoft-net-runtime-android-aot", "microsoft-net-runtime-ios", "microsoft-net-runtime-maccatalyst", "microsoft-net-runtime-tvos" ],
       "platforms": [ "win-x64", "win-arm64", "osx-x64", "osx-arm64" ]
