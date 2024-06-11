@@ -27,7 +27,8 @@
   <ItemGroup>
     <HostFxrFile Include="$(DotNetHostBinDir)$(LibPrefix)hostfxr$(LibSuffix)" />
     <HostPolicyFile Include="$(DotNetHostBinDir)$(LibPrefix)hostpolicy$(LibSuffix)" />
-    <_HostSymbols Condition="'$(TargetOS)' != 'windows'" Include="$(DotNetHostBinDir)$(LibPrefix)*$(LibSuffix)$(SymbolsSuffix)" />
+    <_HostSymbols Include="$(DotNetHostBinDir)$(LibPrefix)hostfxr$(LibSuffix)$(SymbolsSuffix)" />
+    <_HostSymbols Include="$(DotNetHostBinDir)$(LibPrefix)hostpolicy$(LibSuffix)$(SymbolsSuffix)" />
     <DotnetExe Include="$(DotNetHostBinDir)dotnet$(ExeSuffix)" />
   </ItemGroup>
 
