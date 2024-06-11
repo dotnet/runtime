@@ -9297,6 +9297,12 @@ inline bool GenTree::IsMaskAllBitsSet() const
                                        NI_Sve_CreateTrueMaskSingle, NI_Sve_CreateTrueMaskUInt16,
                                        NI_Sve_CreateTrueMaskUInt32, NI_Sve_CreateTrueMaskUInt64));
 
+    static_assert_no_msg(AreContiguous(NI_Sve_CreateTrueMaskByte_Mask, NI_Sve_CreateTrueMaskDouble_Mask,
+                                       NI_Sve_CreateTrueMaskInt16_Mask, NI_Sve_CreateTrueMaskInt32_Mask,
+                                       NI_Sve_CreateTrueMaskInt64_Mask, NI_Sve_CreateTrueMaskSByte_Mask,
+                                       NI_Sve_CreateTrueMaskSingle_Mask, NI_Sve_CreateTrueMaskUInt16_Mask,
+                                       NI_Sve_CreateTrueMaskUInt32_Mask, NI_Sve_CreateTrueMaskUInt64_Mask));
+
     if (OperIsHWIntrinsic())
     {
         NamedIntrinsic id = AsHWIntrinsic()->GetHWIntrinsicId();
@@ -9307,7 +9313,8 @@ inline bool GenTree::IsMaskAllBitsSet() const
             id = op1->AsHWIntrinsic()->GetHWIntrinsicId();
         }
         return ((id == NI_Sve_CreateTrueMaskAll) ||
-                ((id >= NI_Sve_CreateTrueMaskByte) && (id <= NI_Sve_CreateTrueMaskUInt64)));
+                ((id >= NI_Sve_CreateTrueMaskByte) && (id <= NI_Sve_CreateTrueMaskUInt64)) ||
+                ((id >= NI_Sve_CreateTrueMaskByte_Mask) && (id <= NI_Sve_CreateTrueMaskUInt64_Mask)));
     }
 
 #endif

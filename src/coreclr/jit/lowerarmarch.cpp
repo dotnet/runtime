@@ -3319,6 +3319,16 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_Sve_CreateTrueMaskUInt16:
             case NI_Sve_CreateTrueMaskUInt32:
             case NI_Sve_CreateTrueMaskUInt64:
+            case NI_Sve_CreateTrueMaskByte_Mask:
+            case NI_Sve_CreateTrueMaskDouble_Mask:
+            case NI_Sve_CreateTrueMaskInt16_Mask:
+            case NI_Sve_CreateTrueMaskInt32_Mask:
+            case NI_Sve_CreateTrueMaskInt64_Mask:
+            case NI_Sve_CreateTrueMaskSByte_Mask:
+            case NI_Sve_CreateTrueMaskSingle_Mask:
+            case NI_Sve_CreateTrueMaskUInt16_Mask:
+            case NI_Sve_CreateTrueMaskUInt32_Mask:
+            case NI_Sve_CreateTrueMaskUInt64_Mask:
             case NI_Sve_Count16BitElements:
             case NI_Sve_Count32BitElements:
             case NI_Sve_Count64BitElements:

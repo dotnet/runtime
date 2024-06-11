@@ -413,6 +413,16 @@ void HWIntrinsicInfo::lookupImmBounds(
             case NI_Sve_CreateTrueMaskUInt16:
             case NI_Sve_CreateTrueMaskUInt32:
             case NI_Sve_CreateTrueMaskUInt64:
+            case NI_Sve_CreateTrueMaskByte_Mask:
+            case NI_Sve_CreateTrueMaskDouble_Mask:
+            case NI_Sve_CreateTrueMaskInt16_Mask:
+            case NI_Sve_CreateTrueMaskInt32_Mask:
+            case NI_Sve_CreateTrueMaskInt64_Mask:
+            case NI_Sve_CreateTrueMaskSByte_Mask:
+            case NI_Sve_CreateTrueMaskSingle_Mask:
+            case NI_Sve_CreateTrueMaskUInt16_Mask:
+            case NI_Sve_CreateTrueMaskUInt32_Mask:
+            case NI_Sve_CreateTrueMaskUInt64_Mask:
             case NI_Sve_Count16BitElements:
             case NI_Sve_Count32BitElements:
             case NI_Sve_Count64BitElements:
@@ -2632,6 +2642,52 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             retNode->AsHWIntrinsic()->SetSimdBaseJitType(simdBaseJitType);
             retNode->AsHWIntrinsic()->SetAuxiliaryJitType(op1BaseJitType);
+            break;
+        }
+        case NI_Sve_CreateTrueMaskByte:
+        case NI_Sve_CreateTrueMaskDouble:
+        case NI_Sve_CreateTrueMaskInt16:
+        case NI_Sve_CreateTrueMaskInt32:
+        case NI_Sve_CreateTrueMaskInt64:
+        case NI_Sve_CreateTrueMaskSByte:
+        case NI_Sve_CreateTrueMaskSingle:
+        case NI_Sve_CreateTrueMaskUInt16:
+        case NI_Sve_CreateTrueMaskUInt32:
+        case NI_Sve_CreateTrueMaskUInt64:
+        {
+            assert(sig->numArgs == 1);
+
+            GenTree*  immOp1          = nullptr;
+            GenTree*  immOp2          = nullptr;
+            int       immLowerBound   = 0;
+            int       immUpperBound   = 0;
+            bool      hasFullRangeImm = false;
+            bool      useFallback     = false;
+            unsigned  immSimdSize     = simdSize;
+            var_types immSimdBaseType = simdBaseType;
+            //getHWIntrinsicImmOps(intrinsic, sig, &immOp1, &immOp2);
+            CORINFO_ARG_LIST_HANDLE arg1 = sig->args;
+            var_types               argType = TYP_UNKNOWN;
+            CORINFO_CLASS_HANDLE    argClass = NO_CLASS_HANDLE;
+
+            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg1, &argClass)));
+            immOp1  = getArgForHWIntrinsic(argType, argClass);
+
+            HWIntrinsicInfo::lookupImmBounds(intrinsic, immSimdSize, immSimdBaseType, 1, &immLowerBound,
+                                             &immUpperBound);
+            if (CheckHWIntrinsicImmRange(intrinsic, simdBaseJitType, immOp1, mustExpand, immLowerBound, immUpperBound,
+                                     hasFullRangeImm, &useFallback))
+            {
+                // Convert to *Mask equivalent
+                NamedIntrinsic maskedIntrinsic =
+                    (NamedIntrinsic)(NI_Sve_CreateTrueMaskByte_Mask + (intrinsic - NI_Sve_CreateTrueMaskByte));
+                retNode = gtNewSimdHWIntrinsicNode(TYP_MASK, immOp1, maskedIntrinsic, simdBaseJitType, simdSize);
+                retNode = gtNewSimdConvertMaskToVectorNode(retNode->AsHWIntrinsic(), retType);
+            }
+            else
+            {
+                retNode = gtNewSimdHWIntrinsicNode(retType, immOp1, intrinsic, simdBaseJitType, simdSize);
+            }
             break;
         }
 
