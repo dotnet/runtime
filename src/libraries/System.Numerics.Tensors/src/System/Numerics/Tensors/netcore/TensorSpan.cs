@@ -505,7 +505,7 @@ namespace System.Numerics.Tensors
         {
             scoped Span<nint> curIndexes;
             nint[]? curIndexesArray;
-            if (Rank > 5)
+            if (Rank > TensorSpan.MaxRankForStackAlloc)
             {
                 curIndexesArray = ArrayPool<nint>.Shared.Rent(Rank);
                 curIndexes = curIndexesArray;
@@ -570,7 +570,7 @@ namespace System.Numerics.Tensors
 
             scoped Span<nint> curIndexes;
             nint[]? curIndexesArray;
-            if (Rank > 5)
+            if (Rank > TensorSpan.MaxRankForStackAlloc)
             {
                 curIndexesArray = ArrayPool<nint>.Shared.Rent(Rank);
                 curIndexes = curIndexesArray;
@@ -613,7 +613,7 @@ namespace System.Numerics.Tensors
             {
                 scoped Span<nint> curIndexes;
                 nint[]? curIndexesArray;
-                if (Rank > 5)
+                if (Rank > TensorSpan.MaxRankForStackAlloc)
                 {
                     curIndexesArray = ArrayPool<nint>.Shared.Rent(Rank);
                     curIndexes = curIndexesArray;
@@ -703,7 +703,7 @@ namespace System.Numerics.Tensors
 
             scoped Span<nint> lengths;
             scoped Span<nint> offsets;
-            if (Rank > 5)
+            if (Rank > TensorSpan.MaxRankForStackAlloc)
             {
                 lengths = stackalloc nint[Rank];
                 offsets = stackalloc nint[Rank];
@@ -745,7 +745,7 @@ namespace System.Numerics.Tensors
             {
                 scoped Span<nint> curIndexes;
                 nint[]? curIndexesArray;
-                if (Rank > 5)
+                if (Rank > TensorSpan.MaxRankForStackAlloc)
                 {
                     curIndexesArray = ArrayPool<nint>.Shared.Rent(Rank);
                     curIndexes = curIndexesArray;
@@ -786,7 +786,7 @@ namespace System.Numerics.Tensors
 
             scoped Span<nint> curIndexes;
             nint[]? curIndexesArray;
-            if (Rank > 5)
+            if (Rank > TensorSpan.MaxRankForStackAlloc)
             {
                 curIndexesArray = ArrayPool<nint>.Shared.Rent(Rank);
                 curIndexes = curIndexesArray;
