@@ -110,17 +110,11 @@ FCIMPL1(Object *, ExceptionNative::GetFrozenStackTrace, Object* pExceptionObject
     {
         gc.result = gc.keepAliveArray;
     }
-    else if (gc.stackTrace.Get() != NULL)
+    else
     {
         gc.result = gc.stackTrace.Get();
     }
-    else
-    {
-        gc.result = NULL;
-    }
     
-    // There can be no GC after setting the frozenStackTrace until the Object is returned.
-
     HELPER_METHOD_FRAME_END();
 
     return OBJECTREFToObject(gc.result);

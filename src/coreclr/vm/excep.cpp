@@ -3007,9 +3007,8 @@ OBJECTREF StackTraceInfo::GetKeepAliveObject(MethodDesc* pMethod)
 
 //
 // Append stack frame to an exception stack trace.
-// Returns true if it appended the element, false otherwise.
 //
-BOOL StackTraceInfo::AppendElement(OBJECTHANDLE hThrowable, UINT_PTR currentIP, UINT_PTR currentSP, MethodDesc* pFunc, CrawlFrame* pCf)
+void StackTraceInfo::AppendElement(OBJECTHANDLE hThrowable, UINT_PTR currentIP, UINT_PTR currentSP, MethodDesc* pFunc, CrawlFrame* pCf)
 {
     CONTRACTL
     {
@@ -3019,7 +3018,6 @@ BOOL StackTraceInfo::AppendElement(OBJECTHANDLE hThrowable, UINT_PTR currentIP, 
     }
     CONTRACTL_END
 
-    BOOL bRetVal = FALSE;
     Thread *pThread = GetThread();
     MethodTable* pMT = ObjectFromHandle(hThrowable)->GetMethodTable();
     _ASSERTE(IsException(pMT));
@@ -3034,7 +3032,7 @@ BOOL StackTraceInfo::AppendElement(OBJECTHANDLE hThrowable, UINT_PTR currentIP, 
     LOG((LF_EH, LL_INFO10000, "StackTraceInfo::AppendElement IP = %p, SP = %p, %s::%s\n", currentIP, currentSP, pFunc ? pFunc->m_pszDebugClassName : "", pFunc ? pFunc->m_pszDebugMethodName : "" ));
 
     if (pFunc != NULL && pFunc->IsILStub())
-        return FALSE;
+        return;
 
     // Do not save stacktrace to preallocated exception.  These are shared.
     if (CLRException::IsPreallocatedExceptionHandle(hThrowable))
@@ -3044,7 +3042,7 @@ BOOL StackTraceInfo::AppendElement(OBJECTHANDLE hThrowable, UINT_PTR currentIP, 
         // exception like a RudeThreadAbort, which will replace the exception
         // containing the restored stack trace.
 
-        return FALSE;
+        return;
     }
 
     StackTraceElement stackTraceElem;
@@ -3089,7 +3087,7 @@ BOOL StackTraceInfo::AppendElement(OBJECTHANDLE hThrowable, UINT_PTR currentIP, 
 
         // Fetch the stacktrace and the keepAlive array from the exception object. It returns clones of those arrays in case the
         // stack trace was created by a different thread.
-        bool wasCreatedByForeignThread = ((EXCEPTIONREF)ObjectFromHandle(hThrowable))->GetStackTrace(gc.stackTrace, &gc.pKeepAliveArray);
+        ((EXCEPTIONREF)ObjectFromHandle(hThrowable))->GetStackTrace(gc.stackTrace, &gc.pKeepAliveArray);
 
         // The stack trace returned by the GetStackTrace has to be created by the current thread or be NULL.
         _ASSERTE((gc.stackTrace.Get() == NULL) || (gc.stackTrace.GetObjectThread() == pThread));
@@ -3164,8 +3162,6 @@ BOOL StackTraceInfo::AppendElement(OBJECTHANDLE hThrowable, UINT_PTR currentIP, 
     {
     }
     EX_END_CATCH(SwallowAllExceptions)
-
-    return TRUE;
 }
 
 void UnwindFrameChain(Thread* pThread, LPVOID pvLimitSP)
