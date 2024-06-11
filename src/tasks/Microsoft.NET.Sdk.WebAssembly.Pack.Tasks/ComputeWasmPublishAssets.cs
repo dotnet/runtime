@@ -172,10 +172,9 @@ public class ComputeWasmPublishAssets : Task
             var key = kvp.Key;
             var asset = kvp.Value;
             var isDotNetJs = IsAnyDotNetJs(key);
-            var isDotNetMJs = IsAnyDotNetMJs(key);
             var isDotNetWasm = IsDotNetWasm(key);
 
-            if (!isDotNetJs && !isDotNetMJs && !isDotNetWasm)
+            if (!isDotNetJs && !isDotNetWasm)
             {
                 if (resolvedNativeAssetToPublish.TryGetValue(Path.GetFileName(asset.GetMetadata("OriginalItemSpec")), out var existing))
                 {
@@ -204,7 +203,7 @@ public class ComputeWasmPublishAssets : Task
                 continue;
             }
 
-            if (isDotNetJs || isDotNetMJs)
+            if (isDotNetJs)
             {
                 var extension = ".js";
                 var baseName = Path.GetFileNameWithoutExtension(key);
@@ -296,13 +295,7 @@ public class ComputeWasmPublishAssets : Task
         static bool IsAnyDotNetJs(string key)
         {
             var fileName = Path.GetFileName(key);
-            return fileName.StartsWith("dotnet.", StringComparison.Ordinal) && fileName.EndsWith(".js", StringComparison.Ordinal);
-        }
-
-        static bool IsAnyDotNetMJs(string key)
-        {
-            var fileName = Path.GetFileName(key);
-            return fileName.StartsWith("dotnet.", StringComparison.Ordinal) && fileName.EndsWith(".mjs", StringComparison.Ordinal);
+            return fileName.StartsWith("dotnet.", StringComparison.Ordinal) && (fileName.EndsWith(".js", StringComparison.Ordinal) || fileName.EndsWith(".mjs", StringComparison.Ordinal));
         }
 
         static bool IsDotNetWasm(string key)
