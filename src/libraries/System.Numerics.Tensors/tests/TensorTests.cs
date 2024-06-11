@@ -263,7 +263,7 @@ namespace System.Numerics.Tensors.Tests
 
             a = [91, 92, -93, 94, 95, -96, -91, -92, 93, -94, -95, 96];
             results = new int[12];
-            tensor = a.AsTensorSpan(1, 2, 2, 1, 1, 3);
+            tensor = Tensor.Create<int>(a, [1, 2, 2, 1, 1, 3]);
             Assert.Equal(6, tensor.Lengths.Length);
             Assert.Equal(1, tensor.Lengths[0]);
             Assert.Equal(2, tensor.Lengths[1]);
