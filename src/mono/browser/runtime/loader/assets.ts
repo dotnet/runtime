@@ -151,7 +151,12 @@ export function resolve_single_asset_path (behavior: SingleAssetBehaviors): Asse
     return asset;
 }
 
+let downloadAssetsStarted = false;
 export async function mono_download_assets (): Promise<void> {
+    if (downloadAssetsStarted) {
+        return;
+    }
+    downloadAssetsStarted = true;
     mono_log_debug("mono_download_assets");
     try {
         const promises_of_assets_core: Promise<AssetEntryInternal>[] = [];
@@ -176,6 +181,14 @@ export async function mono_download_assets (): Promise<void> {
         }
 
         loaderHelpers.allDownloadsQueued.promise_control.resolve();
+
+        Promise.all([...promises_of_assets_core, ...promises_of_assets_remaining]).then(() => {
+            loaderHelpers.allDownloadsFinished.promise_control.resolve();
+        }).catch(err => {
+            loaderHelpers.err("Error in mono_download_assets: " + err);
+            mono_exit(1, err);
+            throw err;
+        });
 
         // continue after the dotnet.runtime.js was loaded
         await loaderHelpers.runtimeModuleLoaded.promise;
@@ -262,7 +275,12 @@ export async function mono_download_assets (): Promise<void> {
     }
 }
 
+let assetsPrepared = false;
 export function prepareAssets () {
+    if (assetsPrepared) {
+        return;
+    }
+    assetsPrepared = true;
     const config = loaderHelpers.config;
     const modulesAssets: AssetEntryInternal[] = [];
 

@@ -280,7 +280,7 @@ namespace System.Net.ServerSentEvents
             // there's no newline in the data that's there). Otherwise, if the whole
             // buffer is full, grow the buffer to accommodate more data, since, again,
             // what's there doesn't contain a newline and thus a line is longer than
-            // the current buffer accomodates.
+            // the current buffer accommodates.
             if (_lineOffset + _lineLength == _lineBuffer.Length)
             {
                 if (_lineOffset != 0)

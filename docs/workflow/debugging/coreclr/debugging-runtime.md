@@ -227,7 +227,7 @@ Starting with Visual Studio 2022 version 17.5, Visual Studio will validate that 
 
 > Unable to attach to CoreCLR. Signature validation failed for a .NET Runtime Debugger library because the file is unsigned.
 >
-> This error is expected if you are working with non-official releases of .NET (example: daily builds from https://github.com/dotnet/installer). See https://aka.ms/vs/unsigned-dotnet-debugger-lib for more information.
+> This error is expected if you are working with non-official releases of .NET (example: daily builds from https://github.com/dotnet/sdk). See https://aka.ms/vs/unsigned-dotnet-debugger-lib for more information.
 
 If the target process is using a .NET Runtime that is either from a daily build, or one that you built on your own computer, this error will show up. **NOTE**: This error should never happen for official builds of the .NET Runtime from Microsoft. So don’t disable the validation if you expect to be using a .NET Runtime supported by Microsoft.
 

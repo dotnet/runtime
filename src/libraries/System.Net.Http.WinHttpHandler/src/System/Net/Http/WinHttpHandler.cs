@@ -39,6 +39,7 @@ namespace System.Net.Http
         // However, these are not part of 'netstandard'. WinHttpHandler currently builds against
         // 'netstandard' so we need to add these definitions here.
         internal static readonly Version HttpVersion20 = new Version(2, 0);
+        internal static readonly Version HttpVersion30 = new Version(3, 0);
         internal static readonly Version HttpVersionUnknown = new Version(0, 0);
         private static readonly TimeSpan s_maxTimeout = TimeSpan.FromMilliseconds(int.MaxValue);
 
@@ -874,6 +875,13 @@ namespace System.Net.Http
             {
                 state.Tcs.TrySetCanceled(state.CancellationToken);
                 state.ClearSendRequestState();
+                return;
+            }
+
+            if (state.RequestMessage.Version != HttpVersion.Version10 && state.RequestMessage.Version != HttpVersion.Version11
+                && state.RequestMessage.Version != HttpVersion20 && state.RequestMessage.Version != HttpVersion30)
+            {
+                state.Tcs.TrySetException(new NotSupportedException(SR.net_http_unsupported_version));
                 return;
             }
 

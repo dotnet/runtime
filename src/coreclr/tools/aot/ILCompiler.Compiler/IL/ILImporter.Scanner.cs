@@ -386,6 +386,19 @@ namespace Internal.IL
                     }
                     return;
                 }
+
+                if (opcode != ILOpcode.ldftn)
+                {
+                    if (IsRuntimeHelpersIsReferenceOrContainsReferences(method))
+                    {
+                        return;
+                    }
+
+                    if (IsMemoryMarshalGetArrayDataReference(method))
+                    {
+                        return;
+                    }
+                }
             }
 
             TypeDesc exactType = method.OwningType;
@@ -1385,6 +1398,34 @@ namespace Internal.IL
                 if (owningType != null)
                 {
                     return owningType.Name == "MethodTable" && owningType.Namespace == "Internal.Runtime";
+                }
+            }
+
+            return false;
+        }
+
+        private static bool IsRuntimeHelpersIsReferenceOrContainsReferences(MethodDesc method)
+        {
+            if (method.IsIntrinsic && method.Name == "IsReferenceOrContainsReferences" && method.Instantiation.Length == 1)
+            {
+                MetadataType owningType = method.OwningType as MetadataType;
+                if (owningType != null)
+                {
+                    return owningType.Name == "RuntimeHelpers" && owningType.Namespace == "System.Runtime.CompilerServices";
+                }
+            }
+
+            return false;
+        }
+
+        private static bool IsMemoryMarshalGetArrayDataReference(MethodDesc method)
+        {
+            if (method.IsIntrinsic && method.Name == "GetArrayDataReference" && method.Instantiation.Length == 1)
+            {
+                MetadataType owningType = method.OwningType as MetadataType;
+                if (owningType != null)
+                {
+                    return owningType.Name == "MemoryMarshal" && owningType.Namespace == "System.Runtime.InteropServices";
                 }
             }
 
