@@ -16018,6 +16018,7 @@ BYTE* emitter::emitOutputRI(BYTE* dst, instrDesc* id)
         // This is INS_mov and will not take VEX prefix
         assert(!TakesVexPrefix(ins));
 
+        // TODO-xarch-apx: May consider using AddX86PrefixIfNeeded?
         if(TakesRex2Prefix(id))
         {
             code = AddRex2Prefix(ins, code);
@@ -16131,14 +16132,7 @@ BYTE* emitter::emitOutputRI(BYTE* dst, instrDesc* id)
         else
         {
             code = insCodeMI(ins);
-            if(TakesRex2Prefix(id))
-            {
-                code = AddRex2Prefix(ins, code);
-            }
-            else
-            {
-                code = AddSimdPrefixIfNeeded(id, code, size);
-            }
+            code = AddX86PrefixIfNeeded(id, code, size);
             code = insEncodeMIreg(id, reg, size, code);
         }
     }

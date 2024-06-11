@@ -393,6 +393,42 @@ code_t AddSimdPrefixIfNeeded(const instrDesc* id, code_t code, emitAttr size)
 }
 
 //------------------------------------------------------------------------
+// AddX86PrefixIfNeeded: Add the correct instruction prefix if required.
+//
+// Arguments:
+//    ins - the instruction being encoded.
+//    code - opcode + prefixes bits at some stage of encoding.
+//    size - operand size
+//
+code_t AddX86PrefixIfNeeded(const instrDesc* id, code_t code, emitAttr size)
+{
+    // TODO-xarch-apx:
+    // consider refactor this part with AddSimdPrefixIfNeeded as a lot of functionality
+    // of these functions are overlapping.
+
+    if (TakesEvexPrefix(id))
+    {
+        return AddEvexPrefix(id, code, size);
+    }
+
+    instruction ins = id->idIns();
+
+    if (TakesVexPrefix(ins))
+    {
+        return AddVexPrefix(ins, code, size);
+    }
+
+    // Based on how we labeled REX2 enabled instructions, we can confirm there will not be
+    // overlapping part between REX2 and VEX/EVEX, so order of the checks does not matter.
+    if (TakesRex2Prefix(id))
+    {
+        return AddRex2Prefix(ins, code);
+    }
+
+    return code;
+}
+
+//------------------------------------------------------------------------
 // SetEvexBroadcastIfNeeded: set embedded broadcast if needed.
 //
 // Arguments:

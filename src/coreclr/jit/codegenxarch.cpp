@@ -9063,11 +9063,8 @@ void CodeGen::genAmd64EmitterUnitTestsApx()
 
     genDefineTempLabel(genCreateTempLabel());
 
-    // REX2 sub eax, ebx
-
-    // TODO-xarch-apx: 
-    // theEmitter->emitComp->JitStressRex2Encoding(true);
-    // assert JitStressRex2 is true
+    // This test suite needs REX2 enabled.
+    assert(theEmitter->emitComp->DoJitStressRex2Encoding());
 
     theEmitter->emitIns_R_R(INS_add, EA_4BYTE, REG_EAX, REG_ECX);
     theEmitter->emitIns_R_R(INS_add, EA_2BYTE, REG_EAX, REG_ECX);
