@@ -37,23 +37,23 @@ namespace System.Buffers.Text
         public static unsafe OperationStatus EncodeToUtf8(ReadOnlySpan<byte> bytes, Span<byte> utf8, out int bytesConsumed, out int bytesWritten, bool isFinalBlock = true) =>
             EncodeTo<Base64EncoderByte, byte>(bytes, utf8, out bytesConsumed, out bytesWritten, isFinalBlock);
 
-        internal static unsafe OperationStatus EncodeTo<TBase64Encoder, T>(ReadOnlySpan<byte> bytes,
-            Span<T> utf8, out int bytesConsumed, out int bytesWritten, bool isFinalBlock = true)
+        internal static unsafe OperationStatus EncodeTo<TBase64Encoder, T>(ReadOnlySpan<byte> source,
+            Span<T> destination, out int bytesConsumed, out int bytesWritten, bool isFinalBlock = true)
             where TBase64Encoder : IBase64Encoder<T>
             where T : unmanaged
         {
-            if (bytes.IsEmpty)
+            if (source.IsEmpty)
             {
                 bytesConsumed = 0;
                 bytesWritten = 0;
                 return OperationStatus.Done;
             }
 
-            fixed (byte* srcBytes = &MemoryMarshal.GetReference(bytes))
-            fixed (T* destBytes = &MemoryMarshal.GetReference(utf8))
+            fixed (byte* srcBytes = &MemoryMarshal.GetReference(source))
+            fixed (T* destBytes = &MemoryMarshal.GetReference(destination))
             {
-                int srcLength = bytes.Length;
-                int destLength = utf8.Length;
+                int srcLength = source.Length;
+                int destLength = destination.Length;
                 int maxSrcLength = TBase64Encoder.GetMaxSrcLength(srcLength, destLength);
 
                 byte* src = srcBytes;

@@ -101,8 +101,8 @@ namespace System.Buffers.Text
             static abstract ReadOnlySpan<uint> Vector128LutShift { get; }
             static abstract ReadOnlySpan<uint> AdvSimdLutOne3 { get; }
             static abstract uint AdvSimdLutTwo3Uint1 { get; }
-            static abstract int SrcLength(bool isFinalBlock, int utf8Length);
-            static abstract int GetMaxDecodedLength(int utf8Length);
+            static abstract int SrcLength(bool isFinalBlock, int sourceLength);
+            static abstract int GetMaxDecodedLength(int sourceLength);
             static abstract bool IsInvalidLength(int bufferLength);
             static abstract bool IsValidPadding(uint padChar);
             static abstract bool TryDecode128Core(
@@ -127,7 +127,7 @@ namespace System.Buffers.Text
             static abstract unsafe int Decode(T* encodedBytes, ref sbyte decodingMap);
             static abstract unsafe int DecodeRemaining(T* srcEnd, ref sbyte decodingMap, long remaining, out uint t2, out uint t3);
             static abstract int IndexOfAnyExceptWhiteSpace(ReadOnlySpan<T> span);
-            static abstract OperationStatus DecodeWithWhiteSpaceBlockwiseWrapper<TTBase64Decoder>(ReadOnlySpan<T> utf8,
+            static abstract OperationStatus DecodeWithWhiteSpaceBlockwiseWrapper<TTBase64Decoder>(ReadOnlySpan<T> source,
                 Span<byte> bytes, ref int bytesConsumed, ref int bytesWritten, bool isFinalBlock = true)
                 where TTBase64Decoder : IBase64Decoder<T>;
             static abstract unsafe bool TryLoadVector512(T* src, T* srcStart, int sourceLength, out Vector512<sbyte> str);

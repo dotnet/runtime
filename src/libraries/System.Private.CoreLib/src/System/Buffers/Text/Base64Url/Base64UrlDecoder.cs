@@ -186,33 +186,33 @@ namespace System.Buffers.Text
             out int charsConsumed, out int bytesWritten, bool isFinalBlock = true) =>
             DecodeFrom<Base64UrlDecoderChar, ushort>(MemoryMarshal.Cast<char, ushort>(source), destination, out charsConsumed, out bytesWritten, isFinalBlock, ignoreWhiteSpace: true);
 
-        private static OperationStatus DecodeWithWhiteSpaceBlockwise<TBase64Decoder>(ReadOnlySpan<ushort> utf8, Span<byte> bytes, ref int bytesConsumed, ref int bytesWritten, bool isFinalBlock = true)
+        private static OperationStatus DecodeWithWhiteSpaceBlockwise<TBase64Decoder>(ReadOnlySpan<ushort> source, Span<byte> bytes, ref int bytesConsumed, ref int bytesWritten, bool isFinalBlock = true)
             where TBase64Decoder : IBase64Decoder<ushort>
         {
             const int BlockSize = 4;
             Span<ushort> buffer = stackalloc ushort[BlockSize];
             OperationStatus status = OperationStatus.Done;
 
-            while (!utf8.IsEmpty)
+            while (!source.IsEmpty)
             {
                 int encodedIdx = 0;
                 int bufferIdx = 0;
                 int skipped = 0;
 
-                for (; encodedIdx < utf8.Length && (uint)bufferIdx < (uint)buffer.Length; ++encodedIdx)
+                for (; encodedIdx < source.Length && (uint)bufferIdx < (uint)buffer.Length; ++encodedIdx)
                 {
-                    if (IsWhiteSpace(utf8[encodedIdx]))
+                    if (IsWhiteSpace(source[encodedIdx]))
                     {
                         skipped++;
                     }
                     else
                     {
-                        buffer[bufferIdx] = utf8[encodedIdx];
+                        buffer[bufferIdx] = source[encodedIdx];
                         bufferIdx++;
                     }
                 }
 
-                utf8 = utf8.Slice(encodedIdx);
+                source = source.Slice(encodedIdx);
                 bytesConsumed += skipped;
 
                 if (bufferIdx == 0)
@@ -220,7 +220,7 @@ namespace System.Buffers.Text
                     continue;
                 }
 
-                bool hasAnotherBlock = utf8.Length >= BlockSize && bufferIdx == BlockSize;
+                bool hasAnotherBlock = source.Length >= BlockSize && bufferIdx == BlockSize;
                 bool localIsFinalBlock = !hasAnotherBlock;
 
                 // If this block contains padding and there's another block, then only whitespace may follow for being valid.
@@ -251,9 +251,9 @@ namespace System.Buffers.Text
                 // The remaining data must all be whitespace in order to be valid.
                 if (!hasAnotherBlock)
                 {
-                    for (int i = 0; i < utf8.Length; ++i)
+                    for (int i = 0; i < source.Length; ++i)
                     {
-                        if (!IsWhiteSpace(utf8[i]))
+                        if (!IsWhiteSpace(source[i]))
                         {
                             // Revert previous dest increment, since an invalid state followed.
                             bytesConsumed -= localConsumed;
@@ -454,13 +454,13 @@ namespace System.Buffers.Text
 
             public static uint AdvSimdLutTwo3Uint1 => 0x1B1AFF3F;
 
-            public static int GetMaxDecodedLength(int utf8Length) => Base64Url.GetMaxDecodedLength(utf8Length);
+            public static int GetMaxDecodedLength(int sourceLength) => Base64Url.GetMaxDecodedLength(sourceLength);
 
             public static bool IsInvalidLength(int bufferLength) => (bufferLength & 3) == 1; // One byte cannot be decoded completely
 
             public static bool IsValidPadding(uint padChar) => padChar == EncodingPad || padChar == UrlEncodingPad;
 
-            public static int SrcLength(bool isFinalBlock, int utf8Length) => isFinalBlock ? utf8Length : utf8Length & ~0x3;
+            public static int SrcLength(bool isFinalBlock, int sourceLength) => isFinalBlock ? sourceLength : sourceLength & ~0x3;
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
@@ -596,13 +596,13 @@ namespace System.Buffers.Text
 
             public static uint AdvSimdLutTwo3Uint1 => Base64UrlDecoderByte.AdvSimdLutTwo3Uint1;
 
-            public static int GetMaxDecodedLength(int utf8Length) => Base64UrlDecoderByte.GetMaxDecodedLength(utf8Length);
+            public static int GetMaxDecodedLength(int sourceLength) => Base64UrlDecoderByte.GetMaxDecodedLength(sourceLength);
 
             public static bool IsInvalidLength(int bufferLength) => Base64DecoderByte.IsInvalidLength(bufferLength);
 
             public static bool IsValidPadding(uint padChar) => Base64UrlDecoderByte.IsValidPadding(padChar);
 
-            public static int SrcLength(bool isFinalBlock, int utf8Length) => Base64UrlDecoderByte.SrcLength(isFinalBlock, utf8Length);
+            public static int SrcLength(bool isFinalBlock, int sourceLength) => Base64UrlDecoderByte.SrcLength(isFinalBlock, sourceLength);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
@@ -704,9 +704,9 @@ namespace System.Buffers.Text
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static OperationStatus DecodeWithWhiteSpaceBlockwiseWrapper<TBase64Decoder>(ReadOnlySpan<ushort> utf8, Span<byte> bytes,
+            public static OperationStatus DecodeWithWhiteSpaceBlockwiseWrapper<TBase64Decoder>(ReadOnlySpan<ushort> source, Span<byte> bytes,
                 ref int bytesConsumed, ref int bytesWritten, bool isFinalBlock = true) where TBase64Decoder : IBase64Decoder<ushort> =>
-                DecodeWithWhiteSpaceBlockwise<TBase64Decoder>(utf8, bytes, ref bytesConsumed, ref bytesWritten, isFinalBlock);
+                DecodeWithWhiteSpaceBlockwise<TBase64Decoder>(source, bytes, ref bytesConsumed, ref bytesWritten, isFinalBlock);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static unsafe bool TryLoadVector512(ushort* src, ushort* srcStart, int sourceLength, out Vector512<sbyte> str)

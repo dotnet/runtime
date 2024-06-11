@@ -37,22 +37,22 @@ namespace System.Buffers.Text
         public static OperationStatus DecodeFromUtf8(ReadOnlySpan<byte> utf8, Span<byte> bytes, out int bytesConsumed, out int bytesWritten, bool isFinalBlock = true) =>
             DecodeFrom<Base64DecoderByte, byte>(utf8, bytes, out bytesConsumed, out bytesWritten, isFinalBlock, ignoreWhiteSpace: true);
 
-        internal static unsafe OperationStatus DecodeFrom<TBase64Decoder, T>(ReadOnlySpan<T> utf8, Span<byte> bytes,
+        internal static unsafe OperationStatus DecodeFrom<TBase64Decoder, T>(ReadOnlySpan<T> source, Span<byte> bytes,
             out int bytesConsumed, out int bytesWritten, bool isFinalBlock, bool ignoreWhiteSpace)
             where TBase64Decoder : IBase64Decoder<T>
             where T : unmanaged
         {
-            if (utf8.IsEmpty)
+            if (source.IsEmpty)
             {
                 bytesConsumed = 0;
                 bytesWritten = 0;
                 return OperationStatus.Done;
             }
 
-            fixed (T* srcBytes = &MemoryMarshal.GetReference(utf8))
+            fixed (T* srcBytes = &MemoryMarshal.GetReference(source))
             fixed (byte* destBytes = &MemoryMarshal.GetReference(bytes))
             {
-                int srcLength = TBase64Decoder.SrcLength(isFinalBlock, utf8.Length);
+                int srcLength = TBase64Decoder.SrcLength(isFinalBlock, source.Length);
                 int destLength = bytes.Length;
                 int maxSrcLength = srcLength;
                 int decodedLength = TBase64Decoder.GetMaxDecodedLength(srcLength);
@@ -166,7 +166,7 @@ namespace System.Buffers.Text
                         goto InvalidDataExit;
                     }
 
-                    if (src == srcBytes + utf8.Length)
+                    if (src == srcBytes + source.Length)
                     {
                         goto DoneExit;
                     }
@@ -244,7 +244,7 @@ namespace System.Buffers.Text
                     src += remaining;
                 }
 
-                if (srcLength != utf8.Length)
+                if (srcLength != source.Length)
                 {
                     goto InvalidDataExit;
                 }
@@ -255,7 +255,7 @@ namespace System.Buffers.Text
                 return OperationStatus.Done;
 
             DestinationTooSmallExit:
-                if (srcLength != utf8.Length && isFinalBlock)
+                if (srcLength != source.Length && isFinalBlock)
                 {
                     goto InvalidDataExit; // if input is not a multiple of 4, and there is no more data, return invalid data instead
                 }
@@ -273,7 +273,7 @@ namespace System.Buffers.Text
                 bytesConsumed = (int)(src - srcBytes);
                 bytesWritten = (int)(dest - destBytes);
                 return ignoreWhiteSpace ?
-                    InvalidDataFallback(utf8, bytes, ref bytesConsumed, ref bytesWritten, isFinalBlock) :
+                    InvalidDataFallback(source, bytes, ref bytesConsumed, ref bytesWritten, isFinalBlock) :
                     OperationStatus.InvalidData;
             }
 
@@ -492,33 +492,33 @@ namespace System.Buffers.Text
             }
         }
 
-        internal static OperationStatus DecodeWithWhiteSpaceBlockwise<TBase64Decoder>(ReadOnlySpan<byte> utf8, Span<byte> bytes, ref int bytesConsumed, ref int bytesWritten, bool isFinalBlock = true)
+        internal static OperationStatus DecodeWithWhiteSpaceBlockwise<TBase64Decoder>(ReadOnlySpan<byte> source, Span<byte> bytes, ref int bytesConsumed, ref int bytesWritten, bool isFinalBlock = true)
             where TBase64Decoder : IBase64Decoder<byte>
         {
             const int BlockSize = 4;
             Span<byte> buffer = stackalloc byte[BlockSize];
             OperationStatus status = OperationStatus.Done;
 
-            while (!utf8.IsEmpty)
+            while (!source.IsEmpty)
             {
                 int encodedIdx = 0;
                 int bufferIdx = 0;
                 int skipped = 0;
 
-                for (; encodedIdx < utf8.Length && (uint)bufferIdx < (uint)buffer.Length; ++encodedIdx)
+                for (; encodedIdx < source.Length && (uint)bufferIdx < (uint)buffer.Length; ++encodedIdx)
                 {
-                    if (IsWhiteSpace(utf8[encodedIdx]))
+                    if (IsWhiteSpace(source[encodedIdx]))
                     {
                         skipped++;
                     }
                     else
                     {
-                        buffer[bufferIdx] = utf8[encodedIdx];
+                        buffer[bufferIdx] = source[encodedIdx];
                         bufferIdx++;
                     }
                 }
 
-                utf8 = utf8.Slice(encodedIdx);
+                source = source.Slice(encodedIdx);
                 bytesConsumed += skipped;
 
                 if (bufferIdx == 0)
@@ -530,11 +530,11 @@ namespace System.Buffers.Text
 
                 if (typeof(TBase64Decoder) == typeof(Base64DecoderByte) || bufferIdx == 1)
                 {
-                    hasAnotherBlock = utf8.Length >= BlockSize && bufferIdx == BlockSize;
+                    hasAnotherBlock = source.Length >= BlockSize && bufferIdx == BlockSize;
                 }
                 else
                 {
-                    hasAnotherBlock = utf8.Length > 1;
+                    hasAnotherBlock = source.Length > 1;
                 }
 
                 bool localIsFinalBlock = !hasAnotherBlock;
@@ -567,9 +567,9 @@ namespace System.Buffers.Text
                 // The remaining data must all be whitespace in order to be valid.
                 if (!hasAnotherBlock)
                 {
-                    for (int i = 0; i < utf8.Length; ++i)
+                    for (int i = 0; i < source.Length; ++i)
                     {
-                        if (!IsWhiteSpace(utf8[i]))
+                        if (!IsWhiteSpace(source[i]))
                         {
                             // Revert previous dest increment, since an invalid state followed.
                             bytesConsumed -= localConsumed;
@@ -596,16 +596,23 @@ namespace System.Buffers.Text
         {
             int padding = 0;
 
-            if (TBase64Decoder.IsValidPadding(ptrToLastElement)) padding++;
-            if (TBase64Decoder.IsValidPadding(Unsafe.Subtract(ref ptrToLastElement, 1))) padding++;
+            if (TBase64Decoder.IsValidPadding(ptrToLastElement))
+            {
+                padding++;
+            }
+
+            if (TBase64Decoder.IsValidPadding(Unsafe.Subtract(ref ptrToLastElement, 1)))
+            {
+                padding++;
+            }
 
             return padding;
         }
 
-        private static OperationStatus DecodeWithWhiteSpaceFromUtf8InPlace<TBase64Decoder>(Span<byte> utf8, ref int destIndex, uint sourceIndex)
+        private static OperationStatus DecodeWithWhiteSpaceFromUtf8InPlace<TBase64Decoder>(Span<byte> source, ref int destIndex, uint sourceIndex)
             where TBase64Decoder : IBase64Decoder<byte>
         {
-            int BlockSize = Math.Min(utf8.Length - (int)sourceIndex, 4);
+            int BlockSize = Math.Min(source.Length - (int)sourceIndex, 4);
             Span<byte> buffer = stackalloc byte[BlockSize];
 
             OperationStatus status = OperationStatus.Done;
@@ -613,15 +620,15 @@ namespace System.Buffers.Text
             bool hasPaddingBeenProcessed = false;
             int localBytesWritten = 0;
 
-            while (sourceIndex < (uint)utf8.Length)
+            while (sourceIndex < (uint)source.Length)
             {
                 int bufferIdx = 0;
 
-                while (bufferIdx < BlockSize && sourceIndex < (uint)utf8.Length)
+                while (bufferIdx < BlockSize && sourceIndex < (uint)source.Length)
                 {
-                    if (!IsWhiteSpace(utf8[(int)sourceIndex]))
+                    if (!IsWhiteSpace(source[(int)sourceIndex]))
                     {
-                        buffer[bufferIdx] = utf8[(int)sourceIndex];
+                        buffer[bufferIdx] = source[(int)sourceIndex];
                         bufferIdx++;
                     }
 
@@ -645,7 +652,7 @@ namespace System.Buffers.Text
                     {
                         while (bufferIdx < BlockSize)  // Can happen only for last block
                         {
-                            Debug.Assert(utf8.Length == sourceIndex);
+                            Debug.Assert(source.Length == sourceIndex);
                             buffer[bufferIdx++] = (byte)EncodingPad;
                         }
                     }
@@ -672,7 +679,7 @@ namespace System.Buffers.Text
                 // Write result to source span in place.
                 for (int i = 0; i < localBytesWritten; i++)
                 {
-                    utf8[localDestIndex - localBytesWritten + i] = buffer[i];
+                    source[localDestIndex - localBytesWritten + i] = buffer[i];
                 }
             }
 
