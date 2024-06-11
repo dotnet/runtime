@@ -349,6 +349,7 @@ namespace System.Net.Security.Tests
                 {
                     TargetHost = Guid.NewGuid().ToString("N"),
                     RemoteCertificateValidationCallback = (sender, cert, chain, errors) => true,
+                    CertificateRevocationCheckMode = X509RevocationMode.Offline,
                 };
 
             return TestNoResumeAfterChange(serverOptions, clientOptions,
