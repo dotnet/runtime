@@ -403,8 +403,8 @@ inline ssize_t emitter::emitGetInsAmdAny(const instrDesc* id) const
 
 /*static*/ inline unsigned emitter::emitDecodeCallGCregs(instrDesc* id)
 {
-    unsigned regmask = 0;
-    unsigned encodeMask;
+    regMaskTP regmask = RBM_NONE;
+    unsigned  encodeMask;
 
 #ifdef TARGET_X86
     assert(REGNUM_BITS >= 3);
@@ -568,7 +568,7 @@ inline ssize_t emitter::emitGetInsAmdAny(const instrDesc* id) const
     NYI("unknown target");
 #endif
 
-    return regmask;
+    return (unsigned int)regmask.getLow();
 }
 
 #ifdef TARGET_XARCH
