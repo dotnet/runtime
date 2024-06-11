@@ -1099,7 +1099,12 @@ namespace System
                     ThrowHelper.ThrowDivideByZeroException();
                 }
 
-                if (X86Base.X64.IsSupported)
+                if (left._upper == 0)
+                {
+                    // left and right are both uint64
+                    return left._lower / right._lower;
+                }
+                else if (X86Base.X64.IsSupported)
                 {
                     ulong highRes = 0ul;
                     ulong remainder = left._upper;
@@ -1112,11 +1117,6 @@ namespace System
 
                     return new UInt128(highRes, X86Base.X64.DivRem(left._lower, remainder, right._lower).Quotient);
 #pragma warning restore CA2252 // This API requires opting into preview features
-                }
-                else if (left._upper == 0)
-                {
-                    // left and right are both uint64
-                    return left._lower / right._lower;
                 }
             }
 
