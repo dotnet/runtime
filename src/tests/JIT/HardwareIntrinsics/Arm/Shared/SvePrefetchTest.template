@@ -28,7 +28,10 @@ namespace JIT.HardwareIntrinsics.Arm
             {
                 // Validates basic functionality works
                 test.RunBasicScenario();
+                test.RunBasicScenario_Invalid();
                 test.RunBasicScenario_FalseMask();
+                test.RunBasicScenario_GenValid();
+                test.RunBasicScenario_GenInvalid();
 
                 // Validates calling via reflection works
                 test.RunReflectionScenario();
@@ -43,6 +46,23 @@ namespace JIT.HardwareIntrinsics.Arm
             {
                 throw new Exception("One or more scenarios did not complete as expected.");
             }
+        }
+    }
+
+    public static class SvePrefetchTypeGenerator{TestName}
+    {
+        static Random m_rand = new Random();
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static SvePrefetchType GetValid()
+        {
+            return (SvePrefetchType)m_rand.Next(0, 15);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static SvePrefetchType GetInvalid()
+        {
+            return (SvePrefetchType)m_rand.Next(16, 100);
         }
     }
 
@@ -124,69 +144,27 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public bool Succeeded { get; set; }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        void PrefetchWrapper(SvePrefetchType prefetchType)
-        {
-            {Op1VectorType}<{Op1BaseType}> loadMask = Sve.CreateTrueMask{Op1BaseType}(SveMaskPattern.All);
-
-            {Isa}.{Method}(loadMask, ({Op1BaseType}*)(_dataTable.inArrayPtr), prefetchType);
-        }
-
         public void RunBasicScenario()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario));
 
             {Op1VectorType}<{Op1BaseType}> loadMask = Sve.CreateTrueMask{Op1BaseType}(SveMaskPattern.All);
 
-            {Isa}.{Method}(loadMask, ({Op1BaseType}*)(_dataTable.inArrayPtr), SvePrefetchType.LoadL1Temporal);
-            {Isa}.{Method}(loadMask, ({Op1BaseType}*)(_dataTable.inArrayPtr), SvePrefetchType.LoadL1NonTemporal);
-            {Isa}.{Method}(loadMask, ({Op1BaseType}*)(_dataTable.inArrayPtr), SvePrefetchType.LoadL2Temporal);
-            {Isa}.{Method}(loadMask, ({Op1BaseType}*)(_dataTable.inArrayPtr), SvePrefetchType.LoadL2NonTemporal);
-            {Isa}.{Method}(loadMask, ({Op1BaseType}*)(_dataTable.inArrayPtr), SvePrefetchType.LoadL3Temporal);
-            {Isa}.{Method}(loadMask, ({Op1BaseType}*)(_dataTable.inArrayPtr), SvePrefetchType.LoadL3NonTemporal);
-            {Isa}.{Method}(loadMask, ({Op1BaseType}*)(_dataTable.inArrayPtr), SvePrefetchType.StoreL1Temporal);
-            {Isa}.{Method}(loadMask, ({Op1BaseType}*)(_dataTable.inArrayPtr), SvePrefetchType.StoreL1NonTemporal);
-            {Isa}.{Method}(loadMask, ({Op1BaseType}*)(_dataTable.inArrayPtr), SvePrefetchType.StoreL2Temporal);
-            {Isa}.{Method}(loadMask, ({Op1BaseType}*)(_dataTable.inArrayPtr), SvePrefetchType.StoreL2NonTemporal);
-            {Isa}.{Method}(loadMask, ({Op1BaseType}*)(_dataTable.inArrayPtr), SvePrefetchType.StoreL3Temporal);
-            {Isa}.{Method}(loadMask, ({Op1BaseType}*)(_dataTable.inArrayPtr), SvePrefetchType.StoreL3NonTemporal);
-            {Isa}.{Method}(loadMask, ({Op1BaseType}*)(_dataTable.inArrayPtr), (SvePrefetchType)6);
-            {Isa}.{Method}(loadMask, ({Op1BaseType}*)(_dataTable.inArrayPtr), (SvePrefetchType)7);
-            {Isa}.{Method}(loadMask, ({Op1BaseType}*)(_dataTable.inArrayPtr), (SvePrefetchType)14);
-            {Isa}.{Method}(loadMask, ({Op1BaseType}*)(_dataTable.inArrayPtr), (SvePrefetchType)15);
+            {Isa}.{Method}(loadMask, ({Op1BaseType}*)(_dataTable.inArrayPtr), {ValidPrefetch});
+        }
+
+        public void RunBasicScenario_Invalid()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_Invalid));
+
+            {Op1VectorType}<{Op1BaseType}> loadMask = Sve.CreateTrueMask{Op1BaseType}(SveMaskPattern.All);
 
             try
             {
-                {Isa}.{Method}(loadMask, ({Op1BaseType}*)(_dataTable.inArrayPtr), (SvePrefetchType)123);
+                {Isa}.{Method}(loadMask, ({Op1BaseType}*)(_dataTable.inArrayPtr), {InvalidPrefetch});
                 Succeeded = false;
             }
-            catch (ArgumentException)
-            {
-            }
-
-            PrefetchWrapper(SvePrefetchType.SvePrefetchType.LoadL1Temporal);
-            PrefetchWrapper(SvePrefetchType.SvePrefetchType.LoadL1NonTemporal);
-            PrefetchWrapper(SvePrefetchType.SvePrefetchType.LoadL2Temporal);
-            PrefetchWrapper(SvePrefetchType.SvePrefetchType.LoadL2NonTemporal);
-            PrefetchWrapper(SvePrefetchType.SvePrefetchType.LoadL3Temporal);
-            PrefetchWrapper(SvePrefetchType.SvePrefetchType.LoadL3NonTemporal);
-            PrefetchWrapper(SvePrefetchType.SvePrefetchType.StoreL1Temporal);
-            PrefetchWrapper(SvePrefetchType.SvePrefetchType.StoreL1NonTemporal);
-            PrefetchWrapper(SvePrefetchType.SvePrefetchType.StoreL2Temporal);
-            PrefetchWrapper(SvePrefetchType.SvePrefetchType.StoreL2NonTemporal);
-            PrefetchWrapper(SvePrefetchType.SvePrefetchType.StoreL3Temporal);
-            PrefetchWrapper(SvePrefetchType.SvePrefetchType.StoreL3NonTemporal);
-            PrefetchWrapper((SvePrefetchType)6);
-            PrefetchWrapper((SvePrefetchType)7);
-            PrefetchWrapper((SvePrefetchType)14);
-            PrefetchWrapper((SvePrefetchType)15);
-
-            try
-            {
-                PrefetchWrapper((SvePrefetchType)123);
-                Succeeded = false;
-            }
-            catch (ArgumentException)
+            catch (ArgumentOutOfRangeException)
             {
             }
         }
@@ -197,7 +175,32 @@ namespace JIT.HardwareIntrinsics.Arm
 
             {Op1VectorType}<{Op1BaseType}> loadMask = Sve.CreateFalseMask{Op1BaseType}();
 
-            {Isa}.{Method}(loadMask, ({Op1BaseType}*)(_dataTable.inArrayPtr), SvePrefetchType.LoadL1Temporal);
+            {Isa}.{Method}(loadMask, ({Op1BaseType}*)(_dataTable.inArrayPtr), {ValidPrefetch});
+        }
+
+        public void RunBasicScenario_GenValid()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_GenValid));
+
+            {Op1VectorType}<{Op1BaseType}> loadMask = Sve.CreateTrueMask{Op1BaseType}(SveMaskPattern.All);
+
+            {Isa}.{Method}(loadMask, ({Op1BaseType}*)(_dataTable.inArrayPtr), SvePrefetchTypeGenerator{TestName}.GetValid());
+        }
+
+        public void RunBasicScenario_GenInvalid()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_GenInvalid));
+
+            {Op1VectorType}<{Op1BaseType}> loadMask = Sve.CreateTrueMask{Op1BaseType}(SveMaskPattern.All);
+
+            try
+            {
+                {Isa}.{Method}(loadMask, ({Op1BaseType}*)(_dataTable.inArrayPtr), SvePrefetchTypeGenerator{TestName}.GetInvalid());
+                Succeeded = false;
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+            }
         }
 
         public void RunReflectionScenario()
@@ -210,7 +213,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 .Invoke(null, new object[] {
                 loadMask,
                 Pointer.Box(_dataTable.inArrayPtr, typeof({Op1BaseType}*)),
-                SvePrefetchType.LoadL1Temporal
+                {ValidPrefetch}
                 });
         }
 
