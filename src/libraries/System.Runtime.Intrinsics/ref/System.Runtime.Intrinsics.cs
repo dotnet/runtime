@@ -4395,16 +4395,16 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<double> GatherVector(System.Numerics.Vector<double> mask, System.Numerics.Vector<ulong> addresses) { throw null; }
         public static unsafe System.Numerics.Vector<double> GatherVector(System.Numerics.Vector<double> mask, double* address, System.Numerics.Vector<ulong> indices) { throw null; }
         public static unsafe System.Numerics.Vector<int> GatherVector(System.Numerics.Vector<int> mask, int* address, System.Numerics.Vector<int> indices) { throw null; }
-        public static System.Numerics.Vector<int> GatherVector(System.Numerics.Vector<int> mask, System.Numerics.Vector<uint> addresses) { throw null; }
+        // public static System.Numerics.Vector<int> GatherVector(System.Numerics.Vector<int> mask, System.Numerics.Vector<uint> addresses) { throw null; }
         public static unsafe System.Numerics.Vector<int> GatherVector(System.Numerics.Vector<int> mask, int* address, System.Numerics.Vector<uint> indices) { throw null; }
         public static unsafe System.Numerics.Vector<long> GatherVector(System.Numerics.Vector<long> mask, long* address, System.Numerics.Vector<long> indices) { throw null; }
         public static System.Numerics.Vector<long> GatherVector(System.Numerics.Vector<long> mask, System.Numerics.Vector<ulong> addresses) { throw null; }
         public static unsafe System.Numerics.Vector<long> GatherVector(System.Numerics.Vector<long> mask, long* address, System.Numerics.Vector<ulong> indices) { throw null; }
         public static unsafe System.Numerics.Vector<float> GatherVector(System.Numerics.Vector<float> mask, float* address, System.Numerics.Vector<int> indices) { throw null; }
-        public static System.Numerics.Vector<float> GatherVector(System.Numerics.Vector<float> mask, System.Numerics.Vector<uint> addresses) { throw null; }
+        // public static System.Numerics.Vector<float> GatherVector(System.Numerics.Vector<float> mask, System.Numerics.Vector<uint> addresses) { throw null; }
         public static unsafe System.Numerics.Vector<float> GatherVector(System.Numerics.Vector<float> mask, float* address, System.Numerics.Vector<uint> indices) { throw null; }
         public static unsafe System.Numerics.Vector<uint> GatherVector(System.Numerics.Vector<uint> mask, uint* address, System.Numerics.Vector<int> indices) { throw null; }
-        public static System.Numerics.Vector<uint> GatherVector(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> addresses) { throw null; }
+        // public static System.Numerics.Vector<uint> GatherVector(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> addresses) { throw null; }
         public static unsafe System.Numerics.Vector<uint> GatherVector(System.Numerics.Vector<uint> mask, uint* address, System.Numerics.Vector<uint> indices) { throw null; }
         public static unsafe System.Numerics.Vector<ulong> GatherVector(System.Numerics.Vector<ulong> mask, ulong* address, System.Numerics.Vector<long> indices) { throw null; }
         public static System.Numerics.Vector<ulong> GatherVector(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> addresses) { throw null; }
