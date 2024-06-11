@@ -808,10 +808,17 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     else if (HWIntrinsicInfo::IsScalable(intrin.id))
                     {
                         assert(!node->IsEmbMaskOp());
-                        // This generates an unpredicated version
-                        // Predicated should be taken care above `intrin.op2->IsEmbMaskOp()`
-                        GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt,
-                                                    INS_SCALABLE_OPTS_UNPREDICATED);
+                        if (HWIntrinsicInfo::IsExplicitMaskedOperation(intrin.id))
+                        {
+                            GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
+                        }
+                        else
+                        {
+                            // This generates an unpredicated version
+                            // Implicitly predicated should be taken care above `intrin.op2->IsEmbMaskOp()`
+                            GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt,
+                                                        INS_SCALABLE_OPTS_UNPREDICATED);
+                        }
                     }
                     else if (isRMW)
                     {
@@ -1838,11 +1845,18 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
+            case NI_Sve_ReverseElement:
+                // Use non-predicated version explicitly
+                GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg, opt, INS_SCALABLE_OPTS_UNPREDICATED);
+                break;
+
             case NI_Sve_StoreNarrowing:
                 opt = emitter::optGetSveInsOpt(emitTypeSize(intrin.baseType));
                 GetEmitter()->emitIns_R_R_R_I(ins, emitSize, op3Reg, op1Reg, op2Reg, 0, opt);
                 break;
 
+            case NI_Sve_TransposeEven:
+            case NI_Sve_TransposeOdd:
             case NI_Sve_UnzipEven:
             case NI_Sve_UnzipOdd:
             case NI_Sve_ZipHigh:
@@ -1926,6 +1940,45 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
+            case NI_Sve_SaturatingDecrementByActiveElementCount:
+            case NI_Sve_SaturatingIncrementByActiveElementCount:
+            {
+                // RMW semantics
+                if (targetReg != op1Reg)
+                {
+                    assert(targetReg != op2Reg);
+                    GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op1Reg, /* canSkip */ true);
+                }
+
+                // Switch instruction if arg1 is unsigned.
+                if (varTypeIsUnsigned(node->GetAuxiliaryType()))
+                {
+                    ins =
+                        (intrin.id == NI_Sve_SaturatingDecrementByActiveElementCount) ? INS_sve_uqdecp : INS_sve_uqincp;
+                }
+
+                // If this is the scalar variant, get the correct size.
+                if (!varTypeIsSIMD(node->gtType))
+                {
+                    emitSize = emitActualTypeSize(intrin.op1);
+                }
+
+                GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op2Reg, opt);
+                break;
+            }
+            case NI_Sve_Compute8BitAddresses:
+            case NI_Sve_Compute16BitAddresses:
+            case NI_Sve_Compute32BitAddresses:
+            case NI_Sve_Compute64BitAddresses:
+            {
+                static_assert_no_msg(AreContiguous(NI_Sve_Compute8BitAddresses, NI_Sve_Compute16BitAddresses,
+                                                   NI_Sve_Compute32BitAddresses, NI_Sve_Compute64BitAddresses));
+
+                GetEmitter()->emitInsSve_R_R_R_I(ins, EA_SCALABLE, targetReg, op1Reg, op2Reg,
+                                                 (intrin.id - NI_Sve_Compute8BitAddresses), opt,
+                                                 INS_SCALABLE_OPTS_LSL_N);
+                break;
+            }
             default:
                 unreached();
         }

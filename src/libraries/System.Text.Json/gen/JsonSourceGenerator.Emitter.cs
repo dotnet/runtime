@@ -1207,6 +1207,9 @@ namespace System.Text.Json.SourceGeneration
                 if (optionsSpec.RespectNullableAnnotations is bool respectNullableAnnotations)
                     writer.WriteLine($"RespectNullableAnnotations = {FormatBoolLiteral(respectNullableAnnotations)},");
 
+                if (optionsSpec.RespectRequiredConstructorParameters is bool respectRequiredConstructorParameters)
+                    writer.WriteLine($"RespectRequiredConstructorParameters = {FormatBoolLiteral(respectRequiredConstructorParameters)},");
+
                 if (optionsSpec.IgnoreReadOnlyFields is bool ignoreReadOnlyFields)
                     writer.WriteLine($"IgnoreReadOnlyFields = {FormatBoolLiteral(ignoreReadOnlyFields)},");
 

@@ -5610,7 +5610,7 @@ struct GenTreeCall final : public GenTree
             return WellKnownArg::VirtualStubCell;
         }
 
-#if defined(TARGET_ARMARCH) || defined(TARGET_RISCV64)
+#if defined(TARGET_ARMARCH) || defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
         // For ARM architectures, we always use an indirection cell for R2R calls.
         if (IsR2RRelativeIndir() && !IsDelegateInvoke())
         {
@@ -6518,7 +6518,7 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     bool OperIsConvertMaskToVector() const
     {
 #if defined(TARGET_XARCH)
-        return GetHWIntrinsicId() == NI_AVX512F_ConvertMaskToVector;
+        return GetHWIntrinsicId() == NI_EVEX_ConvertMaskToVector;
 #elif defined(TARGET_ARM64)
         return GetHWIntrinsicId() == NI_Sve_ConvertMaskToVector;
 #else
@@ -6529,7 +6529,7 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     bool OperIsConvertVectorToMask() const
     {
 #if defined(TARGET_XARCH)
-        return GetHWIntrinsicId() == NI_AVX512F_ConvertVectorToMask;
+        return GetHWIntrinsicId() == NI_EVEX_ConvertVectorToMask;
 #elif defined(TARGET_ARM64)
         return GetHWIntrinsicId() == NI_Sve_ConvertVectorToMask;
 #else

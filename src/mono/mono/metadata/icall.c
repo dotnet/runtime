@@ -1213,8 +1213,8 @@ ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_PrepareMethod (MonoMeth
 	// FIXME: Implement
 }
 
-void
-ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_InternalBox (MonoQCallTypeHandle type_handle, char* data, MonoObjectHandleOnStack obj, MonoError *error)
+MonoObjectHandle
+ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_InternalBox (MonoQCallTypeHandle type_handle, char* data, MonoError *error)
 {
 	MonoType *type = type_handle.type;
 	MonoClass *klass = mono_class_from_mono_type_internal (type);
@@ -1222,15 +1222,9 @@ ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_InternalBox (MonoQCallT
 	g_assert (m_class_is_valuetype (klass));
 
 	mono_class_init_checked (klass, error);
-	goto_if_nok (error, error_ret);
+	return_val_if_nok (error, NULL_HANDLE);
 
-	MonoObject* raw_obj = mono_value_box_checked (klass, data, error);
-	goto_if_nok (error, error_ret);
-
-	HANDLE_ON_STACK_SET(obj, raw_obj);
-	return;
-error_ret:
-	HANDLE_ON_STACK_SET (obj, NULL);
+	return mono_value_box_handle (klass, data, error);
 }
 
 gint32
