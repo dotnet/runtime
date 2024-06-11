@@ -5643,7 +5643,7 @@ namespace System.Runtime.Intrinsics.X86
     {
         internal Avx10v1() { }
         public static new bool IsSupported { get { throw null; } }
-       public static System.Runtime.Intrinsics.Vector128<ulong> Abs(System.Runtime.Intrinsics.Vector128<long> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<ulong> Abs(System.Runtime.Intrinsics.Vector128<long> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<ulong> Abs(System.Runtime.Intrinsics.Vector256<long> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<float> AddScalar(System.Runtime.Intrinsics.Vector128<float> left, System.Runtime.Intrinsics.Vector128<float> right, [System.Diagnostics.CodeAnalysis.ConstantExpected(Max = System.Runtime.Intrinsics.X86.FloatRoundingMode.ToZero)] System.Runtime.Intrinsics.X86.FloatRoundingMode mode) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<double> AddScalar(System.Runtime.Intrinsics.Vector128<double> left, System.Runtime.Intrinsics.Vector128<double> right, [System.Diagnostics.CodeAnalysis.ConstantExpected(Max = System.Runtime.Intrinsics.X86.FloatRoundingMode.ToZero)] System.Runtime.Intrinsics.X86.FloatRoundingMode mode) { throw null; }
@@ -5946,7 +5946,12 @@ namespace System.Runtime.Intrinsics.X86
         public static System.Runtime.Intrinsics.Vector128<double> MultiplySubtractNegatedScalar(System.Runtime.Intrinsics.Vector128<double> a, System.Runtime.Intrinsics.Vector128<double> b, System.Runtime.Intrinsics.Vector128<double> c) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<float> MultiplySubtractNegatedScalar(System.Runtime.Intrinsics.Vector128<float> a, System.Runtime.Intrinsics.Vector128<float> b, System.Runtime.Intrinsics.Vector128<float> c) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<double> MultiplySubtractScalar(System.Runtime.Intrinsics.Vector128<double> a, System.Runtime.Intrinsics.Vector128<double> b, System.Runtime.Intrinsics.Vector128<double> c) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<float> MultiplySubtractScalar(System.Runtime.Intrinsics.Vector128<float> a, System.Runtime.Intrinsics.Vector128<float> b, System.Runtime.Intrinsics.Vector128<float> c) { throw null; }public static System.Runtime.Intrinsics.Vector256<short> PermuteVar16x16(System.Runtime.Intrinsics.Vector256<short> left, System.Runtime.Intrinsics.Vector256<short> control) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<float> MultiplySubtractScalar(System.Runtime.Intrinsics.Vector128<float> a, System.Runtime.Intrinsics.Vector128<float> b, System.Runtime.Intrinsics.Vector128<float> c) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<byte> MultiShift(System.Runtime.Intrinsics.Vector128<byte> control, System.Runtime.Intrinsics.Vector128<ulong> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<sbyte> MultiShift(System.Runtime.Intrinsics.Vector128<sbyte> control, System.Runtime.Intrinsics.Vector128<long> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<byte> MultiShift(System.Runtime.Intrinsics.Vector256<byte> control, System.Runtime.Intrinsics.Vector256<ulong> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<sbyte> MultiShift(System.Runtime.Intrinsics.Vector256<sbyte> control, System.Runtime.Intrinsics.Vector256<long> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<short> PermuteVar16x16(System.Runtime.Intrinsics.Vector256<short> left, System.Runtime.Intrinsics.Vector256<short> control) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<ushort> PermuteVar16x16(System.Runtime.Intrinsics.Vector256<ushort> left, System.Runtime.Intrinsics.Vector256<ushort> control) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<short> PermuteVar16x16x2(System.Runtime.Intrinsics.Vector256<short> lower, System.Runtime.Intrinsics.Vector256<short> indices, System.Runtime.Intrinsics.Vector256<short> upper) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<ushort> PermuteVar16x16x2(System.Runtime.Intrinsics.Vector256<ushort> lower, System.Runtime.Intrinsics.Vector256<ushort> indices, System.Runtime.Intrinsics.Vector256<ushort> upper) { throw null; }
@@ -6103,7 +6108,6 @@ namespace System.Runtime.Intrinsics.X86
         public static System.Runtime.Intrinsics.Vector256<ulong> TernaryLogic(System.Runtime.Intrinsics.Vector256<ulong> a, System.Runtime.Intrinsics.Vector256<ulong> b, System.Runtime.Intrinsics.Vector256<ulong> c, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute] byte control) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<float> TernaryLogic(System.Runtime.Intrinsics.Vector256<float> a, System.Runtime.Intrinsics.Vector256<float> b, System.Runtime.Intrinsics.Vector256<float> c, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute] byte control) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<double> TernaryLogic(System.Runtime.Intrinsics.Vector256<double> a, System.Runtime.Intrinsics.Vector256<double> b, System.Runtime.Intrinsics.Vector256<double> c, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute] byte control) { throw null; }
-
         public new abstract partial class X64 : System.Runtime.Intrinsics.X86.Avx2.X64
         {
             internal X64() { }
@@ -6183,6 +6187,8 @@ namespace System.Runtime.Intrinsics.X86
             public static new System.Runtime.Intrinsics.Vector512<float> InsertVector256(System.Runtime.Intrinsics.Vector512<float> value, System.Runtime.Intrinsics.Vector256<float> data, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute] byte index) { throw null; }
             public static System.Runtime.Intrinsics.Vector512<long> MultiplyLow(System.Runtime.Intrinsics.Vector512<long> left, System.Runtime.Intrinsics.Vector512<long> right) { throw null; }
             public static System.Runtime.Intrinsics.Vector512<ulong> MultiplyLow(System.Runtime.Intrinsics.Vector512<ulong> left, System.Runtime.Intrinsics.Vector512<ulong> right) { throw null; }
+            public static System.Runtime.Intrinsics.Vector512<byte> MultiShift(System.Runtime.Intrinsics.Vector512<byte> control, System.Runtime.Intrinsics.Vector512<ulong> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector512<sbyte> MultiShift(System.Runtime.Intrinsics.Vector512<sbyte> control, System.Runtime.Intrinsics.Vector512<long> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector512<float> Or(System.Runtime.Intrinsics.Vector512<float> left, System.Runtime.Intrinsics.Vector512<float> right) { throw null; }
             public static System.Runtime.Intrinsics.Vector512<double> Or(System.Runtime.Intrinsics.Vector512<double> left, System.Runtime.Intrinsics.Vector512<double> right) { throw null; }
             public static System.Runtime.Intrinsics.Vector512<float> Range(System.Runtime.Intrinsics.Vector512<float> left, System.Runtime.Intrinsics.Vector512<float> right, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Max = (byte)(0x0F))] byte control) { throw null; }
@@ -7360,6 +7366,8 @@ namespace System.Runtime.Intrinsics.X86
     {
         internal Avx512Vbmi() { }
         public static new bool IsSupported { get { throw null; } }
+        public static System.Runtime.Intrinsics.Vector512<byte> MultiShift(System.Runtime.Intrinsics.Vector512<byte> control, System.Runtime.Intrinsics.Vector512<ulong> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<sbyte> MultiShift(System.Runtime.Intrinsics.Vector512<sbyte> control, System.Runtime.Intrinsics.Vector512<long> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<byte> PermuteVar64x8(System.Runtime.Intrinsics.Vector512<byte> left, System.Runtime.Intrinsics.Vector512<byte> control) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<sbyte> PermuteVar64x8(System.Runtime.Intrinsics.Vector512<sbyte> left, System.Runtime.Intrinsics.Vector512<sbyte> control) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<byte> PermuteVar64x8x2(System.Runtime.Intrinsics.Vector512<byte> lower, System.Runtime.Intrinsics.Vector512<byte> indices, System.Runtime.Intrinsics.Vector512<byte> upper) { throw null; }
@@ -7368,6 +7376,10 @@ namespace System.Runtime.Intrinsics.X86
         {
             internal VL() { }
             public static new bool IsSupported { get { throw null; } }
+            public static System.Runtime.Intrinsics.Vector128<byte> MultiShift(System.Runtime.Intrinsics.Vector128<byte> control, System.Runtime.Intrinsics.Vector128<ulong> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<sbyte> MultiShift(System.Runtime.Intrinsics.Vector128<sbyte> control, System.Runtime.Intrinsics.Vector128<long> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<byte> MultiShift(System.Runtime.Intrinsics.Vector256<byte> control, System.Runtime.Intrinsics.Vector256<ulong> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<sbyte> MultiShift(System.Runtime.Intrinsics.Vector256<sbyte> control, System.Runtime.Intrinsics.Vector256<long> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<byte> PermuteVar16x8(System.Runtime.Intrinsics.Vector128<byte> left, System.Runtime.Intrinsics.Vector128<byte> control) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<sbyte> PermuteVar16x8(System.Runtime.Intrinsics.Vector128<sbyte> left, System.Runtime.Intrinsics.Vector128<sbyte> control) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<byte> PermuteVar16x8x2(System.Runtime.Intrinsics.Vector128<byte> lower, System.Runtime.Intrinsics.Vector128<byte> indices, System.Runtime.Intrinsics.Vector128<byte> upper) { throw null; }
