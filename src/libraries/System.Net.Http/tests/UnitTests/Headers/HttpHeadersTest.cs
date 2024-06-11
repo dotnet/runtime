@@ -2503,6 +2503,22 @@ namespace System.Net.Http.Tests
         }
 
         [Fact]
+        public async Task ConcurrentReads_ReturnTheSameParsedValues()
+        {
+            for (int i = 0; i < 1_000; i++)
+            {
+                var headers = new ByteArrayContent([]).Headers;
+                headers.TryAddWithoutValidation("Content-Type", "application/json; charset=utf-8");
+
+                Task<MediaTypeHeaderValue> task = Task.Run(() => headers.ContentType);
+                MediaTypeHeaderValue contentType1 = headers.ContentType;
+                MediaTypeHeaderValue contentType2 = await task;
+
+                Assert.Same(contentType1, contentType2);
+            }
+        }
+
+        [Fact]
         public void TryAddInvalidHeader_ShouldThrowFormatException()
         {
             MockHeaders headers = new MockHeaders();
