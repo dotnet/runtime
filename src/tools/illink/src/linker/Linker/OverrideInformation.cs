@@ -29,7 +29,6 @@ namespace Mono.Linker
 			Debug.Assert (@base.DeclaringType.IsInterface ? runtimeInterface!.InterfaceTypeDefinition == @base.DeclaringType : true);
 		}
 
-		[Obsolete ("Use RuntimeInterfaceImplementation instead to handle recursive interfaces")]
 		public InterfaceImplementation? MatchingInterfaceImplementation
 			=> RuntimeInterfaceImplementation?.InterfaceImplementation[0];
 
