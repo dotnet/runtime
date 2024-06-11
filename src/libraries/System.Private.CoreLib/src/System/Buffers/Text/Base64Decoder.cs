@@ -526,7 +526,17 @@ namespace System.Buffers.Text
                     continue;
                 }
 
-                bool hasAnotherBlock = utf8.Length >= BlockSize && bufferIdx == BlockSize;
+                bool hasAnotherBlock;
+
+                if (typeof(TBase64Decoder) == typeof(Base64DecoderByte) || bufferIdx == 1)
+                {
+                    hasAnotherBlock = utf8.Length >= BlockSize && bufferIdx == BlockSize;
+                }
+                else
+                {
+                    hasAnotherBlock = utf8.Length > 1;
+                }
+
                 bool localIsFinalBlock = !hasAnotherBlock;
 
                 // If this block contains padding and there's another block, then only whitespace may follow for being valid.
@@ -595,7 +605,7 @@ namespace System.Buffers.Text
         private static OperationStatus DecodeWithWhiteSpaceFromUtf8InPlace<TBase64Decoder>(Span<byte> utf8, ref int destIndex, uint sourceIndex)
             where TBase64Decoder : IBase64Decoder<byte>
         {
-            const int BlockSize = 4;
+            int BlockSize = Math.Min(utf8.Length - (int)sourceIndex, 4);
             Span<byte> buffer = stackalloc byte[BlockSize];
 
             OperationStatus status = OperationStatus.Done;
@@ -607,13 +617,8 @@ namespace System.Buffers.Text
             {
                 int bufferIdx = 0;
 
-                while (bufferIdx < BlockSize)
+                while (bufferIdx < BlockSize && sourceIndex < (uint)utf8.Length)
                 {
-                    if (sourceIndex >= (uint)utf8.Length) // TODO https://github.com/dotnet/runtime/issues/83349: move into the while condition once fixed
-                    {
-                        break;
-                    }
-
                     if (!IsWhiteSpace(utf8[(int)sourceIndex]))
                     {
                         buffer[bufferIdx] = utf8[(int)sourceIndex];
@@ -630,8 +635,20 @@ namespace System.Buffers.Text
 
                 if (bufferIdx != 4)
                 {
-                    status = OperationStatus.InvalidData;
-                    break;
+                    // Base64 require 4 bytes, for Base64Url it can be less than 4 bytes but not 1 byte.
+                    if (typeof(TBase64Decoder) == typeof(Base64DecoderByte) || bufferIdx == 1)
+                    {
+                        status = OperationStatus.InvalidData;
+                        break;
+                    }
+                    else // For Base64Url fill empty slots in last block with padding
+                    {
+                        while (bufferIdx < BlockSize)  // Can happen only for last block
+                        {
+                            Debug.Assert(utf8.Length == sourceIndex);
+                            buffer[bufferIdx++] = (byte)EncodingPad;
+                        }
+                    }
                 }
 
                 if (hasPaddingBeenProcessed)

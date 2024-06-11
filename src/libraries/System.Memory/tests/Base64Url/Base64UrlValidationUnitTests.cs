@@ -9,6 +9,22 @@ namespace System.Buffers.Text.Tests
 {
     public class Base64UrlValidationUnitTests : Base64TestBase
     {
+        [Theory]
+        [InlineData("==")]
+        [InlineData("-%")]
+        [InlineData("A=")]
+        [InlineData("A==")]
+        [InlineData("4%%")]
+        [InlineData(" A==")]
+        [InlineData("AAAAA ==")]
+        [InlineData("\tLLLL\t=\r")]
+        [InlineData("6066=")]
+        public void BasicValidationEdgeCaseScenario(string base64UrlText)
+        {
+            Assert.False(Base64Url.IsValid(base64UrlText, out int decodedLength));
+            Assert.Equal(0, decodedLength);
+        }
+
         [Fact]
         public void BasicValidationBytes()
         {
