@@ -31,7 +31,7 @@
 #   checking if the event is enabled and a method for firing the event.
 #       BOOL UserEventsEventEnabledGCStart(void)
 #       {
-#           return IsUserEventsEnabled() && TraceLoggingProviderEnabled(UserEventGCStart, 4, 1);
+#           return IsUserEventsEnabled() && TraceLoggingProviderEnabled(DotNETRuntime, 4, 1);
 #       }
 # 
 #       extern "C" ULONG UserEventsWriteEventGCStart(
@@ -136,11 +136,50 @@ def formatGuid(providerGuid):
     guidParts[0] = "0x" + guidParts[0]
     return ", 0x".join(guidParts)
 
-def generateClrUserEventWriteEventsImpl(providerNode, providerPrettyName, providerName, eventNodes, allTemplates, extern, target_cpp, runtimeFlavor, inclusionList, exclusionList):
+def generateClrUserEventWriteEventsImpl(providerNode, providerPrettyName, providerName, eventNodes, allTemplates, extern, target_cpp, runtimeFlavor, thisProviderKeywords, inclusionList, exclusionList):
     WriteEventImpl = []
     # User Event Provider Declaration
     providerGuid = formatGuid(providerNode.getAttribute('guid'))
     WriteEventImpl.append("TRACELOGGING_DEFINE_PROVIDER(%s, \"%s\", (%s));\n\n" % (providerPrettyName, providerName, providerGuid))
+    WriteEventImpl.append("""void Init%s()
+{
+    int err = TraceLoggingRegister(%s);
+    _ASSERTE(err == 0);
+}\n\n""" % (providerPrettyName, providerPrettyName))
+    WriteEventImpl.append("""bool %sEnabledByKeyword(uint8_t level, uint64_t keyword)
+{
+    if (!IsUserEventsEnabled())
+    {
+        return false;
+    }
+
+    switch (level)
+    {\n""" % (providerPrettyName))
+
+    for level in range(6):
+        # first case, 0 keyword
+        WriteEventImpl.append("        case (%s):\n" % (level))
+        WriteEventImpl.append("            if (keyword == 0)\n")
+        WriteEventImpl.append("            {\n")
+        WriteEventImpl.append("                if (TraceLoggingProviderEnabled(%s, %s, 0)) return true;\n" % (providerPrettyName, level))
+        WriteEventImpl.append("            }\n")
+
+        # rest of keywords, only generate ones we know about via keywordMap in order to not define
+        # bogus events. (TraceLoggingProviderEnable registers the event to check if it is set or not)
+        for keyword in thisProviderKeywords:
+            WriteEventImpl.append("            if (keyword == 0x%x)\n" % (keyword))
+            WriteEventImpl.append("            {\n")
+            WriteEventImpl.append("                if (TraceLoggingProviderEnabled(%s, %s, 0x%x)) return true;\n" % (providerPrettyName, level, keyword))
+            WriteEventImpl.append("            }\n")
+
+        WriteEventImpl.append("            break;\n")
+
+    WriteEventImpl.append("""
+    }
+    return false;
+}\n\n""")
+     #&& TraceLoggingProviderEnabled(%s, level, keyword);
+
     for eventNode in eventNodes:
         eventName = eventNode.getAttribute('symbol')
         templateName = eventNode.getAttribute('template')
@@ -157,10 +196,10 @@ def generateClrUserEventWriteEventsImpl(providerNode, providerPrettyName, provid
         # generate UserEventEnabled function
         eventEnabledImpl = generateMethodSignatureEnabled(eventName, runtimeFlavor, providerName, eventLevel, eventKeywords) + """
 {
-    return IsUserEventsEnabled() && %s(UserEvent%s, %s, %s);
+    return IsUserEventsEnabled() && %s(%s, %s, %s);
 }
 
-""" % (eventIsEnabledFunc, eventName, getUserEventLogLevelMapping(runtimeFlavor)[eventLevel], eventKeywordsMask)
+""" % (eventIsEnabledFunc, providerPrettyName, getUserEventLogLevelMapping(runtimeFlavor)[eventLevel], eventKeywordsMask)
         WriteEventImpl.append(eventEnabledImpl)
 
             # generate UserEventWriteEvent function
@@ -280,6 +319,11 @@ def generateUserEventImplFiles(
 
         providerPrettyName = providerPrettyName.replace('-', '_')
 
+        thisProviderKeywords = []
+        for keywordNode in providerNode.getElementsByTagName('keyword'):
+            mask = int(keywordNode.getAttribute('mask'), 0)
+            thisProviderKeywords.append(mask)
+
         if dryRun:
             print(usereventfile)
         else:
@@ -308,6 +352,7 @@ def generateUserEventImplFiles(
                         extern,
                         target_cpp,
                         runtimeFlavor,
+                        thisProviderKeywords,
                         inclusionList,
                         exclusionList) + "\n")
 

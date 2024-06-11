@@ -18,6 +18,9 @@ include(${CLR_SRC_NATIVE_DIR}/external/LinuxTracepoints.cmake)
 
 include_directories(${COREPAL_SOURCE_DIR}/inc/rt)
 
+set (USEREVENTS_HELPER_SOURCES
+     user_events.cpp)
+
 # TODO: keep in sync with providers in ClrEtwAll.man
 set (USEREVENTS_PROVIDER_SOURCES
      userevents/dotnetruntime.cpp
@@ -43,6 +46,7 @@ add_custom_target(
 
 add_library_clr(usereventsprovider
   OBJECT
+  ${USEREVENTS_HELPER_SOURCES}
   ${USEREVENTS_PROVIDER_SOURCES}
   ${LinuxTracepoints_sources}
 )

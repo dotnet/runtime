@@ -593,6 +593,7 @@ def generateClrallEvents(eventNodes, allTemplates, target_cpp, runtimeFlavor, wr
             fnbody.append("ActivityId,RelatedActivityId);\n")
 
             if user_events and runtimeFlavor.coreclr:
+                fnbody.append(lindent)
                 fnbody.append("status &= UserEventsWriteEvent" + eventName + "(" + ''.join(line))
                 if len(line) > 0:
                     fnbody.append(",")
