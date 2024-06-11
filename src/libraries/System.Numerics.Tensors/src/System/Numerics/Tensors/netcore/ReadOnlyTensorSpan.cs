@@ -522,10 +522,11 @@ namespace System.Numerics.Tensors
             {
                 scoped Span<nint> curIndexes;
                 nint[]? curIndexesArray;
-                if (Rank > 6)
+                if (Rank > 5)
                 {
                     curIndexesArray = ArrayPool<nint>.Shared.Rent(Rank);
                     curIndexes = curIndexesArray;
+                    curIndexes = curIndexes.Slice(0, Rank);
                 }
                 else
                 {
@@ -568,10 +569,11 @@ namespace System.Numerics.Tensors
             {
                 scoped Span<nint> curIndexes;
                 nint[]? curIndexesArray;
-                if (Rank > 6)
+                if (Rank > 5)
                 {
                     curIndexesArray = ArrayPool<nint>.Shared.Rent(Rank);
                     curIndexes = curIndexesArray;
+                    curIndexes = curIndexes.Slice(0, Rank);
                 }
                 else
                 {
@@ -649,22 +651,22 @@ namespace System.Numerics.Tensors
             if (ranges.Length != Lengths.Length)
                 throw new ArgumentOutOfRangeException(nameof(ranges), "Number of dimensions to slice does not equal the number of dimensions in the span");
 
-            scoped Span<nint> shape;
+            scoped Span<nint> lengths;
             scoped Span<nint> offsets;
-            if (Rank > 6)
+            if (Rank > 5)
             {
-                shape = stackalloc nint[Rank];
+                lengths = stackalloc nint[Rank];
                 offsets = stackalloc nint[Rank];
             }
             else
             {
-                shape = new nint[Rank];
+                lengths = new nint[Rank];
                 offsets = new nint[Rank];
             }
 
             for (int i = 0; i < ranges.Length; i++)
             {
-                (offsets[i], shape[i]) = ranges[i].GetOffsetAndLength(Lengths[i]);
+                (offsets[i], lengths[i]) = ranges[i].GetOffsetAndLength(Lengths[i]);
             }
 
             nint index = 0;
@@ -676,7 +678,7 @@ namespace System.Numerics.Tensors
             if (index >= _shape._memoryLength || index < 0)
                 ThrowHelper.ThrowIndexOutOfRangeException();
 
-            return new ReadOnlyTensorSpan<T>(ref Unsafe.Add(ref _reference, index), shape, _shape.Strides, _shape._memoryLength - index);
+            return new ReadOnlyTensorSpan<T>(ref Unsafe.Add(ref _reference, index), lengths, _shape.Strides, _shape._memoryLength - index);
         }
 
         /// <summary>
@@ -690,10 +692,11 @@ namespace System.Numerics.Tensors
             {
                 scoped Span<nint> curIndexes;
                 nint[]? curIndexesArray;
-                if (Rank > 6)
+                if (Rank > 5)
                 {
                     curIndexesArray = ArrayPool<nint>.Shared.Rent(Rank);
                     curIndexes = curIndexesArray;
+                    curIndexes = curIndexes.Slice(0, Rank);
                 }
                 else
                 {
@@ -730,10 +733,11 @@ namespace System.Numerics.Tensors
 
             scoped Span<nint> curIndexes;
             nint[]? curIndexesArray;
-            if (Rank > 6)
+            if (Rank > 5)
             {
                 curIndexesArray = ArrayPool<nint>.Shared.Rent(Rank);
                 curIndexes = curIndexesArray;
+                curIndexes = curIndexes.Slice(0, Rank);
             }
             else
             {
