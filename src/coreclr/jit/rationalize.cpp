@@ -176,7 +176,7 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
             CorInfoType simdBaseJitType = comp->getBaseJitTypeAndSizeOfSIMDType(call->gtRetClsHnd, &simdSize);
             assert(simdSize != 0);
 
-            GenTree* cvtNode = comp->gtNewSimdCvtVectorToMaskNode(simdType, result, simdBaseJitType, simdSize);
+            GenTree* cvtNode = comp->gtNewSimdCvtVectorToMaskNode(TYP_MASK, result, simdBaseJitType, simdSize);
             BlockRange().InsertAfter(insertionPoint, LIR::Range(comp->fgSetTreeSeq(cvtNode), cvtNode));
             result = cvtNode;
 
