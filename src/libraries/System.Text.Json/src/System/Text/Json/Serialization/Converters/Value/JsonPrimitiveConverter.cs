@@ -1,7 +1,10 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Text.Json.Nodes;
+using System.Text.Json.Schema;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -28,6 +31,32 @@ namespace System.Text.Json.Serialization.Converters
             }
 
             return ReadAsPropertyNameCore(ref reader, typeToConvert, options);
+        }
+
+        private protected static JsonSchema GetSchemaForNumericType(JsonSchemaType schemaType, JsonNumberHandling numberHandling, bool isFloatingPoint = false)
+        {
+            Debug.Assert(schemaType is JsonSchemaType.Integer or JsonSchemaType.Number);
+            Debug.Assert(!isFloatingPoint || schemaType is JsonSchemaType.Number);
+#if NETCOREAPP
+            Debug.Assert(isFloatingPoint == (typeof(T) == typeof(double) || typeof(T) == typeof(float) || typeof(T) == typeof(Half)));
+#endif
+            if ((numberHandling & (JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.WriteAsString)) != 0)
+            {
+                schemaType |= JsonSchemaType.String;
+            }
+            else if (isFloatingPoint && numberHandling is JsonNumberHandling.AllowNamedFloatingPointLiterals)
+            {
+                return new JsonSchema
+                {
+                    AnyOf =
+                    [
+                        new JsonSchema { Type = schemaType },
+                        new JsonSchema { Enum = [(JsonNode)"NaN", (JsonNode)"Infinity", (JsonNode)"-Infinity"] },
+                    ]
+                };
+            }
+
+            return new JsonSchema { Type = schemaType };
         }
     }
 }
