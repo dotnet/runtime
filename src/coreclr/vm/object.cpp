@@ -1443,7 +1443,6 @@ void StackTraceArray::Append(StackTraceElement const * elem)
     uint32_t newsize = Size() + 1;
     _ASSERTE(newsize <= Capacity());
     memcpyNoGCRefs(GetData() + Size(), elem, sizeof(StackTraceElement));
-    MemoryBarrier();  // prevent the newsize from being reordered with the array copy
     SetSize(newsize);
 
 #if defined(_DEBUG)
@@ -1949,7 +1948,6 @@ void ExceptionObject::GetStackTrace(StackTraceArray & stackTrace, PTRARRAYREF * 
         uint32_t keepAliveArrayCapacity = ((*outKeepAliveArray) == NULL) ? 0 : (*outKeepAliveArray)->GetNumComponents();
 
         uint32_t keepAliveItemsCount = 0;
-        uint32_t count = stackTrace.Size();
         for (uint32_t i = 0; i < numCopiedFrames; i++)
         {
             if (stackTrace[i].flags & STEF_KEEPALIVE)

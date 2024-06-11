@@ -1979,19 +1979,19 @@ public:
     void SetSize(uint32_t size)
     {
         WRAPPER_NO_CONTRACT;
-        GetHeader()->m_size = size;
+        VolatileStore(&GetHeader()->m_size, size);
     }
 
     void SetKeepAliveItemsCount(uint32_t count)
     {
         WRAPPER_NO_CONTRACT;
-        GetHeader()->m_keepAliveItemsCount = count;
+        VolatileStore(&GetHeader()->m_keepAliveItemsCount, count);
     }
 
     uint32_t GetKeepAliveItemsCount() const
     {
         WRAPPER_NO_CONTRACT;
-        return GetHeader()->m_keepAliveItemsCount;
+        return VolatileLoad(&GetHeader()->m_keepAliveItemsCount);
     }
 
     // Compute the number of methods in the stack trace that can be collected. We need to store keepAlive
@@ -2021,7 +2021,7 @@ private:
     uint32_t GetSize() const
     {
         WRAPPER_NO_CONTRACT;
-        return GetHeader()->m_size;
+        return VolatileLoad(&GetHeader()->m_size);
     }
 
     void SetObjectThread()
