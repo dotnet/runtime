@@ -1,7 +1,9 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.IO;
+using System.Reflection.Metadata;
 
 namespace System.Formats.Nrbf;
 
@@ -29,9 +31,9 @@ internal sealed class MemberReferenceRecord : SerializationRecord
     // by creating a reference to the reference itself.
     public override SerializationRecordId Id => SerializationRecordId.NoId;
 
-    internal override object? GetValue() => GetReferencedRecord().GetValue();
+    public override TypeName TypeName => GetReferencedRecord().TypeName;
 
-    public override bool IsTypeNameMatching(Type type) => GetReferencedRecord().IsTypeNameMatching(type);
+    internal override object? GetValue() => GetReferencedRecord().GetValue();
 
     internal static MemberReferenceRecord Decode(BinaryReader reader, RecordMap recordMap)
         => new(SerializationRecordId.Decode(reader), recordMap);

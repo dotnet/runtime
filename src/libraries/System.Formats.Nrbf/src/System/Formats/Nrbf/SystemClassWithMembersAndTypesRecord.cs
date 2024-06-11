@@ -21,10 +21,6 @@ internal sealed class SystemClassWithMembersAndTypesRecord : ClassRecord
 
     public override RecordType RecordType => RecordType.SystemClassWithMembersAndTypes;
 
-    public override bool IsTypeNameMatching(Type type)
-        => type.Assembly == typeof(object).Assembly
-        && type.GetTypeFullNameIncludingTypeForwards() == ClassInfo.TypeName.FullName;
-
     internal static SystemClassWithMembersAndTypesRecord Decode(BinaryReader reader, RecordMap recordMap, PayloadOptions options)
     {
         ClassInfo classInfo = ClassInfo.Decode(reader);
@@ -82,14 +78,14 @@ internal sealed class SystemClassWithMembersAndTypesRecord : ClassRecord
         else if (MemberValues.Count == 2
             && HasMember("ticks") && HasMember("dateData")
             && MemberValues[0] is long value && MemberValues[1] is ulong
-            && IsTypeNameMatching(typeof(DateTime)))
+            && TypeNameMatches(typeof(DateTime)))
         {
             return Create(Utils.BinaryReaderExtensions.CreateDateTimeFromData(value));
         }
         else if(MemberValues.Count == 4
             && HasMember("lo") && HasMember("mid") && HasMember("hi") && HasMember("flags")
             && MemberValues[0] is int && MemberValues[1] is int && MemberValues[2] is int && MemberValues[3] is int
-            && IsTypeNameMatching(typeof(decimal)))
+            && TypeNameMatches(typeof(decimal)))
         {
             int[] bits =
             [

@@ -15,7 +15,7 @@ internal sealed class RectangularArrayRecord : ArrayRecord
 {
     private readonly int[] _lengths;
     private readonly ICollection<object> _values;
-    private TypeName? _elementTypeName;
+    private TypeName? _typeName;
 
     private RectangularArrayRecord(Type elementType, ArrayInfo arrayInfo,
         MemberTypeInfo memberTypeInfo, int[] lengths, bool canPreAllocate) : base(arrayInfo)
@@ -42,15 +42,12 @@ internal sealed class RectangularArrayRecord : ArrayRecord
 
     public override ReadOnlySpan<int> Lengths => _lengths.AsSpan();
 
-    public override TypeName ElementTypeName
-        => _elementTypeName ??= MemberTypeInfo.GetElementTypeName();
+    public override TypeName TypeName
+        => _typeName ??= MemberTypeInfo.GetArrayTypeName(ArrayInfo);
 
     private Type ElementType { get; }
 
     private MemberTypeInfo MemberTypeInfo { get; }
-
-    internal override bool IsElementType(Type typeElement)
-        => MemberTypeInfo.IsElementType(typeElement);
 
     [RequiresDynamicCode("May call Array.CreateInstance() and Type.MakeArrayType().")]
     private protected override Array Deserialize(Type arrayType, bool allowNulls)

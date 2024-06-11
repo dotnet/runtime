@@ -16,20 +16,17 @@ namespace System.Formats.Nrbf;
 /// </remarks>
 internal sealed class ArraySingleStringRecord : SZArrayRecord<string?>
 {
-    private static TypeName? s_elementTypeName;
+    private static TypeName? s_typeName;
 
     private ArraySingleStringRecord(ArrayInfo arrayInfo) : base(arrayInfo) => Records = [];
 
     public override RecordType RecordType => RecordType.ArraySingleString;
 
-    public override TypeName ElementTypeName
-        => s_elementTypeName ??= TypeName.Parse(typeof(string).FullName.AsSpan()).WithCoreLibAssemblyName();
+    /// <inheritdoc />
+    public override TypeName TypeName
+        => s_typeName ??= TypeName.Parse("System.String[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089".AsSpan());
 
     private List<SerializationRecord> Records { get; }
-
-    public override bool IsTypeNameMatching(Type type) => type == typeof(string[]);
-
-    internal override bool IsElementType(Type typeElement) => typeElement == typeof(string);
 
     internal static ArraySingleStringRecord Decode(BinaryReader reader)
         => new(ArrayInfo.Decode(reader));

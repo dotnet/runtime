@@ -21,10 +21,6 @@ internal sealed class ClassWithMembersAndTypesRecord : ClassRecord
 
     public override RecordType RecordType => RecordType.ClassWithMembersAndTypes;
 
-    public override bool IsTypeNameMatching(Type type)
-        => type.GetTypeFullNameIncludingTypeForwards() == ClassInfo.TypeName.FullName
-        && type.GetAssemblyNameIncludingTypeForwards() == ClassInfo.TypeName.AssemblyName!.FullName;
-
     internal static ClassWithMembersAndTypesRecord Decode(BinaryReader reader, RecordMap recordMap, PayloadOptions options)
     {
         ClassInfo classInfo = ClassInfo.Decode(reader);

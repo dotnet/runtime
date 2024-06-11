@@ -9,7 +9,7 @@ namespace System.Formats.Nrbf;
 
 internal sealed class ArrayOfClassesRecord : SZArrayRecord<ClassRecord>
 {
-    private TypeName? _elementTypeName;
+    private TypeName? _typeName;
 
     internal ArrayOfClassesRecord(ArrayInfo arrayInfo, MemberTypeInfo memberTypeInfo)
         : base(arrayInfo)
@@ -24,7 +24,8 @@ internal sealed class ArrayOfClassesRecord : SZArrayRecord<ClassRecord>
 
     private MemberTypeInfo MemberTypeInfo { get; }
 
-    public override TypeName ElementTypeName => _elementTypeName ??= MemberTypeInfo.GetElementTypeName();
+    public override TypeName TypeName
+        => _typeName ??= MemberTypeInfo.GetArrayTypeName(ArrayInfo);
 
     /// <inheritdoc/>
     public override ClassRecord?[] GetArray(bool allowNulls = true)
@@ -79,7 +80,4 @@ internal sealed class ArrayOfClassesRecord : SZArrayRecord<ClassRecord>
 
         return (allowed, primitiveType);
     }
-
-    internal override bool IsElementType(Type typeElement)
-        => MemberTypeInfo.IsElementType(typeElement);
 }

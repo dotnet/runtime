@@ -19,7 +19,8 @@ public abstract class ClassRecord : SerializationRecord
         MemberValues = [];
     }
 
-    public TypeName TypeName => ClassInfo.TypeName;
+    /// <inheritdoc />
+    public override TypeName TypeName => ClassInfo.TypeName;
 
     // Currently we don't expose raw values, so we are not preserving the order here.
     public IEnumerable<string> MemberNames => ClassInfo.MemberNames.Keys;

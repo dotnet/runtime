@@ -39,12 +39,6 @@ public abstract class ArrayRecord : SerializationRecord
     /// <value>The type of the array.</value>
     internal BinaryArrayType ArrayType => ArrayInfo.ArrayType;
 
-    /// <summary>
-    /// Gets the name of the array element type.
-    /// </summary>
-    /// <value>The name of the array element type.</value>
-    public abstract TypeName ElementTypeName { get; }
-
     /// <inheritdoc />
     public override SerializationRecordId Id => ArrayInfo.Id;
 
@@ -73,9 +67,9 @@ public abstract class ArrayRecord : SerializationRecord
             throw new ArgumentNullException(nameof(expectedArrayType));
         }
 #endif
-        if (!IsTypeNameMatching(expectedArrayType))
+        if (!TypeNameMatches(expectedArrayType))
         {
-            throw new InvalidOperationException(SR.Format(SR.Serialization_TypeMismatch, expectedArrayType.AssemblyQualifiedName, ElementTypeName.AssemblyQualifiedName));
+            throw new InvalidOperationException(SR.Format(SR.Serialization_TypeMismatch, expectedArrayType.AssemblyQualifiedName, TypeName.AssemblyQualifiedName));
         }
 
         return allowNulls
@@ -86,11 +80,6 @@ public abstract class ArrayRecord : SerializationRecord
     [RequiresDynamicCode("May call Array.CreateInstance() and Type.MakeArrayType().")]
     private protected abstract Array Deserialize(Type arrayType, bool allowNulls);
 
-    public override bool IsTypeNameMatching(Type type)
-        => type.IsArray
-        && type.GetArrayRank() == ArrayInfo.Rank
-        && IsElementType(type.GetElementType()!);
-
     internal sealed override void HandleNextValue(object value, NextInfo info)
         => HandleNext(value, info, size: 1);
 
@@ -98,8 +87,6 @@ public abstract class ArrayRecord : SerializationRecord
         => HandleNext(nextRecord, info, size: nextRecord is NullsRecord nullsRecord ? nullsRecord.NullCount : 1);
 
     private protected abstract void AddValue(object value);
-
-    internal abstract bool IsElementType(Type typeElement);
 
     private void HandleNext(object value, NextInfo info, int size)
     {

@@ -24,7 +24,7 @@ namespace System.Formats.Nrbf;
 internal sealed class ArraySinglePrimitiveRecord<T> : SZArrayRecord<T>
     where T : unmanaged
 {
-    private static TypeName? s_elementTypeName;
+    private static TypeName? s_typeName;
 
     internal ArraySinglePrimitiveRecord(ArrayInfo arrayInfo, IReadOnlyList<T> values) : base(arrayInfo)
     {
@@ -34,14 +34,32 @@ internal sealed class ArraySinglePrimitiveRecord<T> : SZArrayRecord<T>
 
     public override RecordType RecordType => RecordType.ArraySinglePrimitive;
 
-    public override TypeName ElementTypeName
-        => s_elementTypeName ??= TypeName.Parse(typeof(T).FullName.AsSpan()).WithAssemblyName(typeof(T).GetAssemblyNameIncludingTypeForwards());
+    /// <inheritdoc />
+    public override TypeName TypeName
+    {
+        get
+        {
+            TypeName? typeName = s_typeName;
+            if (typeName is null)
+            {
+                if (typeof(T) == typeof(TimeSpan))
+                {
+                    // TimeSpan is the only NRBF primitive type with no [TypeForwardedFrom("mscorlib")] annotation.
+                    typeName = TypeName.Parse(typeof(TimeSpan[]).AssemblyQualifiedName.AsSpan());
+                }
+                else
+                {
+                    typeName = TypeName.Parse(typeof(T[]).FullName.AsSpan()).WithCoreLibAssemblyName();
+                }
+
+                s_typeName = typeName;
+            }
+
+            return typeName;
+        }
+    }
 
     internal IReadOnlyList<T> Values { get; }
-
-    public override bool IsTypeNameMatching(Type type) => typeof(T[]) == type;
-
-    internal override bool IsElementType(Type typeElement) => typeElement == typeof(T);
 
     /// <inheritdoc/>
     public override T[] GetArray(bool allowNulls = true)

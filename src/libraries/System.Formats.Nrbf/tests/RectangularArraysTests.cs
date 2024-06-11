@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System.Formats.Nrbf.Utils;
+using System.IO;
 using Xunit;
 
 namespace System.Formats.Nrbf.Tests;
@@ -22,9 +23,9 @@ public class RectangularArraysTests : ReadTests
 
         ArrayRecord arrayRecord = (ArrayRecord)NrbfDecoder.Decode(stream);
 
-        VerifyLength(array, arrayRecord);
-        Assert.True(arrayRecord.IsTypeNameMatching(typeof(byte[,])));
-        Assert.False(arrayRecord.IsTypeNameMatching(typeof(string[,])));
+        Verify(array, arrayRecord);
+        Assert.True(arrayRecord.TypeNameMatches(typeof(byte[,])));
+        Assert.False(arrayRecord.TypeNameMatches(typeof(string[,])));
         Assert.Equal(array, arrayRecord.GetArray(typeof(byte[,])));
         Assert.Equal(2, arrayRecord.Rank);
     }
@@ -44,9 +45,9 @@ public class RectangularArraysTests : ReadTests
 
         ArrayRecord arrayRecord = (ArrayRecord)NrbfDecoder.Decode(stream);
 
-        VerifyLength(array, arrayRecord);
-        Assert.True(arrayRecord.IsTypeNameMatching(typeof(string[,])));
-        Assert.False(arrayRecord.IsTypeNameMatching(typeof(int[,])));
+        Verify(array, arrayRecord);
+        Assert.True(arrayRecord.TypeNameMatches(typeof(string[,])));
+        Assert.False(arrayRecord.TypeNameMatches(typeof(int[,])));
         Assert.Equal(array, arrayRecord.GetArray(typeof(string[,])));
     }
 
@@ -64,9 +65,9 @@ public class RectangularArraysTests : ReadTests
 
         ArrayRecord arrayRecord = (ArrayRecord)NrbfDecoder.Decode(stream);
 
-        VerifyLength(array, arrayRecord);
-        Assert.True(arrayRecord.IsTypeNameMatching(typeof(object[,])));
-        Assert.False(arrayRecord.IsTypeNameMatching(typeof(int[,])));
+        Verify(array, arrayRecord);
+        Assert.True(arrayRecord.TypeNameMatches(typeof(object[,])));
+        Assert.False(arrayRecord.TypeNameMatches(typeof(int[,])));
         Assert.Equal(array, arrayRecord.GetArray(typeof(object[,])));
     }
 
@@ -91,9 +92,9 @@ public class RectangularArraysTests : ReadTests
 
         ArrayRecord arrayRecord = (ArrayRecord)NrbfDecoder.Decode(stream);
 
-        VerifyLength(array, arrayRecord);
-        Assert.True(arrayRecord.IsTypeNameMatching(typeof(ComplexType2D[,])));
-        Assert.False(arrayRecord.IsTypeNameMatching(typeof(int[,])));
+        Verify(array, arrayRecord);
+        Assert.True(arrayRecord.TypeNameMatches(typeof(ComplexType2D[,])));
+        Assert.False(arrayRecord.TypeNameMatches(typeof(int[,])));
 
         var inputEnumerator = array.GetEnumerator();
         foreach(ClassRecord classRecord in arrayRecord.GetArray(typeof(ComplexType2D[,])))
@@ -124,10 +125,10 @@ public class RectangularArraysTests : ReadTests
 
         ArrayRecord arrayRecord = (ArrayRecord)NrbfDecoder.Decode(stream);
 
-        VerifyLength(array, arrayRecord);
-        Assert.True(arrayRecord.IsTypeNameMatching(typeof(int[,,])));
-        Assert.False(arrayRecord.IsTypeNameMatching(typeof(int[,])));
-        Assert.False(arrayRecord.IsTypeNameMatching(typeof(string[,,])));
+        Verify(array, arrayRecord);
+        Assert.True(arrayRecord.TypeNameMatches(typeof(int[,,])));
+        Assert.False(arrayRecord.TypeNameMatches(typeof(int[,])));
+        Assert.False(arrayRecord.TypeNameMatches(typeof(string[,,])));
         Assert.Equal(array, arrayRecord.GetArray(typeof(int[,,])));
         Assert.Equal(3, arrayRecord.Rank);
     }
@@ -150,10 +151,10 @@ public class RectangularArraysTests : ReadTests
 
         ArrayRecord arrayRecord = (ArrayRecord)NrbfDecoder.Decode(stream);
 
-        VerifyLength(array, arrayRecord);
-        Assert.True(arrayRecord.IsTypeNameMatching(typeof(string[,,])));
-        Assert.False(arrayRecord.IsTypeNameMatching(typeof(string[,])));
-        Assert.False(arrayRecord.IsTypeNameMatching(typeof(int[,,])));
+        Verify(array, arrayRecord);
+        Assert.True(arrayRecord.TypeNameMatches(typeof(string[,,])));
+        Assert.False(arrayRecord.TypeNameMatches(typeof(string[,])));
+        Assert.False(arrayRecord.TypeNameMatches(typeof(int[,,])));
         Assert.Equal(array, arrayRecord.GetArray(typeof(string[,,])));
     }
 
@@ -171,10 +172,10 @@ public class RectangularArraysTests : ReadTests
 
         ArrayRecord arrayRecord = (ArrayRecord)NrbfDecoder.Decode(stream);
 
-        VerifyLength(array, arrayRecord);
-        Assert.True(arrayRecord.IsTypeNameMatching(typeof(object[,,])));
-        Assert.False(arrayRecord.IsTypeNameMatching(typeof(object[,])));
-        Assert.False(arrayRecord.IsTypeNameMatching(typeof(int[,,])));
+        Verify(array, arrayRecord);
+        Assert.True(arrayRecord.TypeNameMatches(typeof(object[,,])));
+        Assert.False(arrayRecord.TypeNameMatches(typeof(object[,])));
+        Assert.False(arrayRecord.TypeNameMatches(typeof(int[,,])));
         Assert.Equal(array, arrayRecord.GetArray(typeof(object[,,])));
     }
 
@@ -202,10 +203,10 @@ public class RectangularArraysTests : ReadTests
 
         ArrayRecord arrayRecord = (ArrayRecord)NrbfDecoder.Decode(stream);
 
-        VerifyLength(array, arrayRecord);
-        Assert.True(arrayRecord.IsTypeNameMatching(typeof(ComplexType3D[,,])));
-        Assert.False(arrayRecord.IsTypeNameMatching(typeof(ComplexType3D[,])));
-        Assert.False(arrayRecord.IsTypeNameMatching(typeof(int[,,])));
+        Verify(array, arrayRecord);
+        Assert.True(arrayRecord.TypeNameMatches(typeof(ComplexType3D[,,])));
+        Assert.False(arrayRecord.TypeNameMatches(typeof(ComplexType3D[,])));
+        Assert.False(arrayRecord.TypeNameMatches(typeof(int[,,])));
 
         var inputEnumerator = array.GetEnumerator();
         foreach (ClassRecord classRecord in arrayRecord.GetArray(typeof(ComplexType3D[,,])))
@@ -219,12 +220,14 @@ public class RectangularArraysTests : ReadTests
         }
     }
 
-    internal static void VerifyLength(Array input, ArrayRecord arrayRecord)
+    internal static void Verify(Array input, ArrayRecord arrayRecord)
     {
         Assert.Equal(input.Rank, arrayRecord.Lengths.Length);
         for (int i = 0; i < input.Rank; i++)
         {
             Assert.Equal(input.GetLength(i), arrayRecord.Lengths[i]);
         }
+        Assert.Equal(input.GetType().FullName, arrayRecord.TypeName.FullName);
+        Assert.Equal(input.GetType().GetAssemblyNameIncludingTypeForwards(), arrayRecord.TypeName.AssemblyName!.FullName);
     }
 }

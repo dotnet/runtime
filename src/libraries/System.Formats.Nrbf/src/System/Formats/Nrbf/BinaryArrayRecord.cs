@@ -26,7 +26,7 @@ internal sealed class BinaryArrayRecord : ArrayRecord
         typeof(TimeSpan), typeof(string), typeof(object)
     ];
 
-    private TypeName? _elementTypeName;
+    private TypeName? _typeName;
 
     private BinaryArrayRecord(ArrayInfo arrayInfo, MemberTypeInfo memberTypeInfo)
         : base(arrayInfo)
@@ -40,8 +40,8 @@ internal sealed class BinaryArrayRecord : ArrayRecord
     /// <inheritdoc/>
     public override ReadOnlySpan<int> Lengths => new int[1] { Length };
 
-    public override TypeName ElementTypeName
-        => _elementTypeName ??= MemberTypeInfo.GetElementTypeName();
+    public override TypeName TypeName
+        => _typeName ??= MemberTypeInfo.GetArrayTypeName(ArrayInfo);
 
     private int Length => ArrayInfo.GetSZArrayLength();
 
@@ -171,9 +171,6 @@ internal sealed class BinaryArrayRecord : ArrayRecord
 
         return (allowed, primitiveType);
     }
-
-    internal override bool IsElementType(Type typeElement)
-        => MemberTypeInfo.IsElementType(typeElement);
 
     /// <summary>
     /// Complex types must not be instantiated, but represented as ClassRecord.

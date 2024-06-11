@@ -101,75 +101,6 @@ internal readonly struct MemberTypeInfo
         };
     }
 
-    internal bool IsElementType(Type typeElement)
-    {
-        (BinaryType binaryType, object? additionalInfo) = Infos[0];
-
-        switch (binaryType)
-        {
-            case BinaryType.String:
-                return typeElement == typeof(string);
-            case BinaryType.StringArray:
-                return typeElement == typeof(string[]);
-            case BinaryType.Object:
-                return typeElement == typeof(object);
-            case BinaryType.ObjectArray:
-                return typeElement == typeof(object[]);
-            case BinaryType.Primitive:
-            case BinaryType.PrimitiveArray:
-                if (binaryType is BinaryType.PrimitiveArray)
-                {
-                    if (!typeElement.IsArray)
-                    {
-                        return false;
-                    }
-
-                    typeElement = typeElement.GetElementType()!;
-                }
-
-                return ((PrimitiveType)additionalInfo!) switch
-                {
-                    PrimitiveType.Boolean => typeElement == typeof(bool),
-                    PrimitiveType.Byte => typeElement == typeof(byte),
-                    PrimitiveType.Char => typeElement == typeof(char),
-                    PrimitiveType.Decimal => typeElement == typeof(decimal),
-                    PrimitiveType.Double => typeElement == typeof(double),
-                    PrimitiveType.Int16 => typeElement == typeof(short),
-                    PrimitiveType.Int32 => typeElement == typeof(int),
-                    PrimitiveType.Int64 => typeElement == typeof(long),
-                    PrimitiveType.SByte => typeElement == typeof(sbyte),
-                    PrimitiveType.Single => typeElement == typeof(float),
-                    PrimitiveType.TimeSpan => typeElement == typeof(TimeSpan),
-                    PrimitiveType.DateTime => typeElement == typeof(DateTime),
-                    PrimitiveType.UInt16 => typeElement == typeof(ushort),
-                    PrimitiveType.UInt32 => typeElement == typeof(uint),
-                    PrimitiveType.UInt64 => typeElement == typeof(ulong),
-                    _ => false
-                };
-            case BinaryType.SystemClass:
-                if (typeElement.Assembly != typeof(object).Assembly)
-                {
-                    return false;
-                }
-
-                TypeName typeName = (TypeName)additionalInfo!;
-                string fullSystemClassName = typeElement.GetTypeFullNameIncludingTypeForwards();
-                return typeName.FullName == fullSystemClassName;
-            default:
-                Debug.Assert(binaryType is BinaryType.Class, "The parsers should reject other inputs");
-
-                ClassTypeInfo typeInfo = (ClassTypeInfo)additionalInfo!;
-                string fullClassName = typeElement.GetTypeFullNameIncludingTypeForwards();
-                if (typeInfo.TypeName.FullName != fullClassName)
-                {
-                    return false;
-                }
-
-                string assemblyName = typeElement.GetAssemblyNameIncludingTypeForwards();
-                return assemblyName == typeInfo.TypeName.AssemblyName!.FullName;
-        }
-    }
-
     internal bool ShouldBeRepresentedAsArrayOfClassRecords()
     {
         // This library tries to minimize the number of concepts the users need to learn to use it.
@@ -207,50 +138,67 @@ internal readonly struct MemberTypeInfo
         return false;
     }
 
-    internal TypeName GetElementTypeName()
+    internal TypeName GetArrayTypeName(ArrayInfo arrayInfo)
     {
         (BinaryType binaryType, object? additionalInfo) = Infos[0];
 
         switch (binaryType)
         {
             case BinaryType.String:
-                return TypeName.Parse(typeof(string).FullName.AsSpan()).WithCoreLibAssemblyName();
+                return typeof(string).BuildCoreLibArrayTypeName(arrayInfo.Rank);
             case BinaryType.StringArray:
-                return TypeName.Parse(typeof(string[]).FullName.AsSpan()).WithCoreLibAssemblyName();
+                return typeof(string[]).BuildCoreLibArrayTypeName(arrayInfo.Rank);
             case BinaryType.Object:
-                return TypeName.Parse(typeof(object).FullName.AsSpan()).WithCoreLibAssemblyName();
+                return typeof(object).BuildCoreLibArrayTypeName(arrayInfo.Rank);
             case BinaryType.ObjectArray:
-                return TypeName.Parse(typeof(object[]).FullName.AsSpan()).WithCoreLibAssemblyName();
+                return typeof(object[]).BuildCoreLibArrayTypeName(arrayInfo.Rank);
             case BinaryType.Primitive:
-            case BinaryType.PrimitiveArray:
-                string? name = ((PrimitiveType)additionalInfo!) switch
+                Type primitiveType = ((PrimitiveType)additionalInfo!) switch
                 {
-                    PrimitiveType.Boolean => typeof(bool).FullName,
-                    PrimitiveType.Byte => typeof(byte).FullName,
-                    PrimitiveType.Char => typeof(char).FullName,
-                    PrimitiveType.Decimal => typeof(decimal).FullName,
-                    PrimitiveType.Double => typeof(double).FullName,
-                    PrimitiveType.Int16 => typeof(short).FullName,
-                    PrimitiveType.Int32 => typeof(int).FullName,
-                    PrimitiveType.Int64 => typeof(long).FullName,
-                    PrimitiveType.SByte => typeof(sbyte).FullName,
-                    PrimitiveType.Single => typeof(float).FullName,
-                    PrimitiveType.TimeSpan => typeof(TimeSpan).FullName,
-                    PrimitiveType.DateTime => typeof(DateTime).FullName,
-                    PrimitiveType.UInt16 => typeof(ushort).FullName,
-                    PrimitiveType.UInt32 => typeof(uint).FullName,
-                    _ => typeof(ulong).FullName,
+                    PrimitiveType.Boolean => typeof(bool),
+                    PrimitiveType.Byte => typeof(byte),
+                    PrimitiveType.Char => typeof(char),
+                    PrimitiveType.Decimal => typeof(decimal),
+                    PrimitiveType.Double => typeof(double),
+                    PrimitiveType.Int16 => typeof(short),
+                    PrimitiveType.Int32 => typeof(int),
+                    PrimitiveType.Int64 => typeof(long),
+                    PrimitiveType.SByte => typeof(sbyte),
+                    PrimitiveType.Single => typeof(float),
+                    PrimitiveType.TimeSpan => typeof(TimeSpan),
+                    PrimitiveType.DateTime => typeof(DateTime),
+                    PrimitiveType.UInt16 => typeof(ushort),
+                    PrimitiveType.UInt32 => typeof(uint),
+                    _ => typeof(ulong),
                 };
 
-                return binaryType is BinaryType.PrimitiveArray
-                    ? TypeName.Parse($"{name}[], {TypeNameExtensions.CoreLibAssemblyName}".AsSpan())
-                    : TypeName.Parse(name.AsSpan()).WithCoreLibAssemblyName();
+                return primitiveType.BuildCoreLibArrayTypeName(arrayInfo.Rank);
+            case BinaryType.PrimitiveArray:
+                Type primitiveArrayType = ((PrimitiveType)additionalInfo!) switch
+                {
+                    PrimitiveType.Boolean => typeof(bool[]),
+                    PrimitiveType.Byte => typeof(byte[]),
+                    PrimitiveType.Char => typeof(char[]),
+                    PrimitiveType.Decimal => typeof(decimal[]),
+                    PrimitiveType.Double => typeof(double[]),
+                    PrimitiveType.Int16 => typeof(short[]),
+                    PrimitiveType.Int32 => typeof(int[]),
+                    PrimitiveType.Int64 => typeof(long[]),
+                    PrimitiveType.SByte => typeof(sbyte[]),
+                    PrimitiveType.Single => typeof(float[]),
+                    PrimitiveType.TimeSpan => typeof(TimeSpan[]),
+                    PrimitiveType.DateTime => typeof(DateTime[]),
+                    PrimitiveType.UInt16 => typeof(ushort[]),
+                    PrimitiveType.UInt32 => typeof(uint[]),
+                    _ => typeof(ulong[]),
+                };
 
+                return primitiveArrayType.BuildCoreLibArrayTypeName(arrayInfo.Rank);
             case BinaryType.SystemClass:
-                return (TypeName)additionalInfo!;
+                return ((TypeName)additionalInfo!).BuildArrayTypeName(arrayInfo.Rank);
             default:
                 Debug.Assert(binaryType is BinaryType.Class, "The parsers should reject other inputs");
-                return ((ClassTypeInfo)additionalInfo!).TypeName;
+                return (((ClassTypeInfo)additionalInfo!).TypeName).BuildArrayTypeName(arrayInfo.Rank);
         }
     }
 }

@@ -288,11 +288,11 @@ public class TypeMatchTests : ReadTests
     {
         SerializationRecord one = NrbfDecoder.Decode(Serialize(input));
 
-        Assert.True(one.IsTypeNameMatching(typeof(T)));
+        Assert.True(one.TypeNameMatches(typeof(T)));
 
         foreach (Type type in PrimitiveTypes)
         {
-            Assert.Equal(typeof(T) == type, one.IsTypeNameMatching(type));
+            Assert.Equal(typeof(T) == type, one.TypeNameMatches(type));
         }
     }
 
@@ -302,8 +302,8 @@ public class TypeMatchTests : ReadTests
 
         ArrayRecord arrayRecord = (ArrayRecord)NrbfDecoder.Decode(Serialize(array));
 
-        Assert.Equal(typeof(T).GetTypeFullNameIncludingTypeForwards(), arrayRecord.ElementTypeName.FullName);
-        Assert.Equal(typeof(T).GetAssemblyNameIncludingTypeForwards(), arrayRecord.ElementTypeName.AssemblyName!.FullName);
+        Assert.Equal(typeof(T[]).GetTypeFullNameIncludingTypeForwards(), arrayRecord.TypeName.FullName);
+        Assert.Equal(typeof(T).GetAssemblyNameIncludingTypeForwards(), arrayRecord.TypeName.GetElementType().AssemblyName!.FullName);
 
         if (PrimitiveTypes.Contains(typeof(T)))
         {
@@ -312,14 +312,14 @@ public class TypeMatchTests : ReadTests
         else
         {
             Assert.True(arrayRecord is SZArrayRecord<ClassRecord>, userMessage: typeof(T).Name);
-            Assert.True(arrayRecord.IsTypeNameMatching(typeof(T[])));
-            Assert.Equal(arrayRecord.ElementTypeName.AssemblyName.FullName, typeof(T).GetAssemblyNameIncludingTypeForwards());
+            Assert.True(arrayRecord.TypeNameMatches(typeof(T[])));
+            Assert.Equal(arrayRecord.TypeName.GetElementType().AssemblyName.FullName, typeof(T).GetAssemblyNameIncludingTypeForwards());
         }
 
         foreach (Type type in PrimitiveTypes)
         {
-            Assert.False(arrayRecord.IsTypeNameMatching(type));
-            Assert.Equal(typeof(T) == type, arrayRecord.IsTypeNameMatching(type.MakeArrayType()));
+            Assert.False(arrayRecord.TypeNameMatches(type));
+            Assert.Equal(typeof(T) == type, arrayRecord.TypeNameMatches(type.MakeArrayType()));
         }
 
         if (PrimitiveTypes.Contains(typeof(T)))
@@ -334,18 +334,18 @@ public class TypeMatchTests : ReadTests
 
         ArrayRecord arrayRecord = (ArrayRecord)NrbfDecoder.Decode(Serialize(jaggedArray));
 
-        Assert.Equal(typeof(T[]).GetTypeFullNameIncludingTypeForwards(), arrayRecord.ElementTypeName.FullName);
+        Assert.Equal(typeof(T[]).GetTypeFullNameIncludingTypeForwards(), arrayRecord.TypeName.GetElementType().FullName);
 
-        Assert.False(arrayRecord.IsTypeNameMatching(typeof(T[])));
-        Assert.True(arrayRecord.IsTypeNameMatching(typeof(T[][])));
-        Assert.False(arrayRecord.IsTypeNameMatching(typeof(T[][][])));
+        Assert.False(arrayRecord.TypeNameMatches(typeof(T[])));
+        Assert.True(arrayRecord.TypeNameMatches(typeof(T[][])));
+        Assert.False(arrayRecord.TypeNameMatches(typeof(T[][][])));
 
         foreach (Type type in PrimitiveTypes)
         {
-            Assert.False(arrayRecord.IsTypeNameMatching(type));
-            Assert.False(arrayRecord.IsTypeNameMatching(type.MakeArrayType()));
-            Assert.Equal(typeof(T) == type, arrayRecord.IsTypeNameMatching(type.MakeArrayType().MakeArrayType()));
-            Assert.False(arrayRecord.IsTypeNameMatching(type.MakeArrayType().MakeArrayType().MakeArrayType()));
+            Assert.False(arrayRecord.TypeNameMatches(type));
+            Assert.False(arrayRecord.TypeNameMatches(type.MakeArrayType()));
+            Assert.Equal(typeof(T) == type, arrayRecord.TypeNameMatches(type.MakeArrayType().MakeArrayType()));
+            Assert.False(arrayRecord.TypeNameMatches(type.MakeArrayType().MakeArrayType().MakeArrayType()));
         }
     }
 
@@ -370,17 +370,17 @@ public class TypeMatchTests : ReadTests
         int arrayRank = array.GetType().GetArrayRank();
         ArrayRecord arrayRecord = (ArrayRecord)NrbfDecoder.Decode(Serialize(array));
 
-        Assert.Equal(typeof(T).GetTypeFullNameIncludingTypeForwards(), arrayRecord.ElementTypeName.FullName);
+        Assert.Equal(typeof(T).GetTypeFullNameIncludingTypeForwards(), arrayRecord.TypeName.GetElementType().FullName);
 
         Assert.False(arrayRecord is SZArrayRecord<T>, userMessage: typeof(T).Name);
         Assert.True(arrayRecord.Rank > 1);
 
         foreach (Type type in PrimitiveTypes.Concat([typeof(T)]))
         {
-            Assert.False(arrayRecord.IsTypeNameMatching(type));
-            Assert.False(arrayRecord.IsTypeNameMatching(type.MakeArrayType(arrayRank - 1)));
-            Assert.Equal(typeof(T) == type, arrayRecord.IsTypeNameMatching(type.MakeArrayType(arrayRank)));
-            Assert.False(arrayRecord.IsTypeNameMatching(type.MakeArrayType(arrayRank + 1)));
+            Assert.False(arrayRecord.TypeNameMatches(type));
+            Assert.False(arrayRecord.TypeNameMatches(type.MakeArrayType(arrayRank - 1)));
+            Assert.Equal(typeof(T) == type, arrayRecord.TypeNameMatches(type.MakeArrayType(arrayRank)));
+            Assert.False(arrayRecord.TypeNameMatches(type.MakeArrayType(arrayRank + 1)));
         }
     }
 }

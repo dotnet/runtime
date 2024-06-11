@@ -69,14 +69,43 @@ internal static class TypeNameExtensions
         return result;
     }
 
-    private static ArraySegment<char> GetAssemblyQualifiedName(string typeName, string libraryName)
+    internal static TypeName BuildCoreLibArrayTypeName(this Type type, int arrayRank)
     {
-        int length = typeName.Length + 1 + libraryName.Length;
+        ArraySegment<char> assemblyQualifiedName = GetAssemblyQualifiedName(type.FullName!, CoreLibAssemblyName, arrayRank);
+        TypeName result = TypeName.Parse(assemblyQualifiedName.AsSpan());
+        ArrayPool<char>.Shared.Return(assemblyQualifiedName.Array!);
+
+        return result;
+    }
+
+    internal static TypeName BuildArrayTypeName(this TypeName typeName, int arrayRank)
+    {
+        ArraySegment<char> assemblyQualifiedName = GetAssemblyQualifiedName(typeName.FullName, typeName.AssemblyName!.FullName, arrayRank);
+        TypeName result = TypeName.Parse(assemblyQualifiedName.AsSpan());
+        ArrayPool<char>.Shared.Return(assemblyQualifiedName.Array!);
+
+        return result;
+    }
+
+    private static ArraySegment<char> GetAssemblyQualifiedName(string typeName, string libraryName, int arrayRank = 0)
+    {
+        int arrayLength = arrayRank != 0 ? 2 + arrayRank - 1 : 0;
+        int length = typeName.Length + arrayLength + 1 + libraryName.Length;
+
         char[] rented = ArrayPool<char>.Shared.Rent(length);
 
         typeName.AsSpan().CopyTo(rented);
-        rented[typeName.Length] = ',';
-        libraryName.AsSpan().CopyTo(rented.AsSpan(typeName.Length + 1));
+        if (arrayRank != 0)
+        {
+            rented[typeName.Length] = '[';
+            for (int i = 1; i < arrayRank; i++)
+            {
+                rented[typeName.Length + i] = ',';
+            }
+            rented[typeName.Length + arrayLength - 1] = ']';
+        }
+        rented[typeName.Length + arrayLength] = ',';
+        libraryName.AsSpan().CopyTo(rented.AsSpan(typeName.Length + arrayLength + 1));
 
         return new ArraySegment<char>(rented, 0, length);
     }

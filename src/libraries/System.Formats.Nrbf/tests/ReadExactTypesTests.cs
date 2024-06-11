@@ -265,8 +265,8 @@ public class ReadExactTypesTests : ReadTests
 
         SZArrayRecord<ClassRecord> arrayRecord = ((SZArrayRecord<ClassRecord>)NrbfDecoder.Decode(Serialize(input)));
 
-        Assert.Equal(typeof(CustomTypeWithPrimitiveFields).FullName, arrayRecord.ElementTypeName.FullName);
-        Assert.Equal(typeof(CustomTypeWithPrimitiveFields).Assembly.FullName, arrayRecord.ElementTypeName.AssemblyName!.FullName);
+        Assert.Equal(typeof(CustomTypeWithPrimitiveFields[]).FullName, arrayRecord.TypeName.FullName);
+        Assert.Equal(typeof(CustomTypeWithPrimitiveFields).Assembly.FullName, arrayRecord.TypeName.GetElementType().AssemblyName!.FullName);
         ClassRecord?[] classRecords = arrayRecord.GetArray();
         for (int i = 0; i < input.Length; i++)
         {
@@ -335,8 +335,8 @@ public class ReadExactTypesTests : ReadTests
 
         ArrayRecord arrayRecord = (ArrayRecord)NrbfDecoder.Decode(Serialize(input));
 
-        Assert.Equal(typeof(object).FullName, arrayRecord.ElementTypeName.FullName);
-        Assert.Equal("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089", arrayRecord.ElementTypeName.AssemblyName!.FullName);
+        Assert.Equal(typeof(object[]).FullName, arrayRecord.TypeName.FullName);
+        Assert.Equal("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089", arrayRecord.TypeName.GetElementType().AssemblyName!.FullName);
         Assert.Equal(input, ((SZArrayRecord<object>)arrayRecord).GetArray());
     }
 

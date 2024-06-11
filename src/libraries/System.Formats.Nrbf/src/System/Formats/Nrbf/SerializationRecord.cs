@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Reflection.Metadata;
+using System.Collections.Immutable;
 
 namespace System.Formats.Nrbf;
 
@@ -34,15 +36,64 @@ public abstract class SerializationRecord
     public abstract SerializationRecordId Id { get; }
 
     /// <summary>
-    /// Compares the type and assembly name read from the payload against the specified type.
+    /// Gets the name of the serialized type.
+    /// </summary>
+    /// <value>The name of the serialized type.</value>
+    public abstract TypeName TypeName { get; }
+
+    /// <summary>
+    /// Compares the type name read from the payload against the specified type.
     /// </summary>
     /// <remarks>
-    /// <para>This method takes type forwarding into account.</para>
-    /// <para>This method does NOT take into account member names or their types.</para>
+    /// <para>This method ignores assembly names.</para>
+    /// <para>This method does NOT take into account member names or their genericTypes.</para>
     /// </remarks>
     /// <param name="type">The type to compare against.</param>
-    /// <returns><see langword="true" /> if the serialized type and assembly name match provided type; otherwise, <see langword="false" />.</returns>
-    public virtual bool IsTypeNameMatching(Type type) => false;
+    /// <returns><see langword="true" /> if the serialized type name match provided type; otherwise, <see langword="false" />.</returns>
+    public bool TypeNameMatches(Type type) => Matches(type, TypeName);
+
+    private static bool Matches(Type type, TypeName typeName)
+    {
+        // At first, check the non-allocating properties for mismatch.
+        if (type.IsArray != typeName.IsArray || type.IsConstructedGenericType != typeName.IsConstructedGenericType
+            || type.IsPointer != typeName.IsPointer || type.IsByRef != typeName.IsByRef
+            || type.IsNested != typeName.IsNested
+            || (type.IsArray && type.GetArrayRank() != typeName.GetArrayRank()))
+        {
+            return false;
+        }
+
+        if (type.FullName == typeName.FullName)
+        {
+            return true; // The happy path with no type forwarding
+        }
+        else if (typeName.IsArray)
+        {
+            return Matches(type.GetElementType()!, typeName.GetElementType());
+        }
+        else if (type.IsConstructedGenericType)
+        {
+            ImmutableArray<TypeName> genericNames = typeName.GetGenericArguments();
+            Type[] genericTypes = type.GetGenericArguments();
+
+            if (genericNames.Length != genericTypes.Length)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < genericTypes.Length; i++)
+            {
+                if (!Matches(genericTypes[i], genericNames[i]))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        return false;
+    }
 
     /// <summary>
     /// Gets the primitive, string or null record value.

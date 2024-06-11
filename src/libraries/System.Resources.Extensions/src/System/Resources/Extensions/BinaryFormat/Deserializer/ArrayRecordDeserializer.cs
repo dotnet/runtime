@@ -25,7 +25,7 @@ internal sealed class ArrayRecordDeserializer : ObjectRecordDeserializer
         Debug.Assert(arrayRecord.RecordType is not (RecordType.ArraySingleString or RecordType.ArraySinglePrimitive));
 
         _arrayRecord = arrayRecord;
-        _elementType = deserializer.TypeResolver.GetType(arrayRecord.ElementTypeName);
+        _elementType = deserializer.TypeResolver.GetType(arrayRecord.TypeName.GetElementType());
         Type expectedArrayType = arrayRecord.Rank switch
         {
             1 => _elementType.MakeArrayType(),
@@ -123,7 +123,7 @@ internal sealed class ArrayRecordDeserializer : ObjectRecordDeserializer
     [RequiresUnreferencedCode("Calls System.Windows.Forms.BinaryFormat.BinaryFormattedObject.TypeResolver.GetType(TypeName)")]
     internal static Array? GetSimpleBinaryArray(ArrayRecord arrayRecord, BinaryFormattedObject.ITypeResolver typeResolver)
     {
-        Type arrayRecordElementType = typeResolver.GetType(arrayRecord.ElementTypeName);
+        Type arrayRecordElementType = typeResolver.GetType(arrayRecord.TypeName.GetElementType());
         Type elementType = arrayRecordElementType;
         while (elementType.IsArray)
         {

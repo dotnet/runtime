@@ -24,7 +24,7 @@ public class EdgeCaseTests : ReadTests
         ClassRecord classRecord = (ClassRecord)NrbfDecoder.Decode(stream);
 
         // It's a surrogate, so there is no type match.
-        Assert.False(classRecord.IsTypeNameMatching(typeof(Type)));
+        Assert.False(classRecord.TypeNameMatches(typeof(Type)));
         Assert.Equal("System.UnitySerializationHolder", classRecord.TypeName.FullName);
         Assert.Equal("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089", classRecord.GetString("AssemblyName"));
     }

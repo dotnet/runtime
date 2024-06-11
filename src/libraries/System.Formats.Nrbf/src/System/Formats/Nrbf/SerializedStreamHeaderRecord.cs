@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Diagnostics;
 using System.Formats.Nrbf.Utils;
+using System.Reflection.Metadata;
 
 namespace System.Formats.Nrbf;
 
@@ -22,9 +24,17 @@ internal sealed class SerializedStreamHeaderRecord : SerializationRecord
 
     public override RecordType RecordType => RecordType.SerializedStreamHeader;
 
-    internal SerializationRecordId RootId { get; }
-
+    public override TypeName TypeName
+    {
+        get
+        {
+            Debug.Fail("TypeName should never be called on SerializedStreamHeaderRecord");
+            return TypeName.Parse(nameof(SerializedStreamHeaderRecord).AsSpan());
+        }
+    }
     public override SerializationRecordId Id => SerializationRecordId.NoId;
+
+    internal SerializationRecordId RootId { get; }
 
     internal static SerializedStreamHeaderRecord Decode(BinaryReader reader)
     {

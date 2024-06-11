@@ -27,29 +27,29 @@ namespace System.Formats.Nrbf.Tests
             Assert.IsAssignableFrom<ClassRecord>(topLevel);
             ClassRecord dictionaryRecord = (ClassRecord)topLevel;
             // this innocent line tests type forwards support ;)
-            Assert.True(dictionaryRecord.IsTypeNameMatching(typeof(Dictionary<string, object>)));
+            Assert.True(dictionaryRecord.TypeNameMatches(typeof(Dictionary<string, object>)));
 
             ClassRecord comparerRecord = dictionaryRecord.GetClassRecord(nameof(input.Comparer))!;
-            Assert.True(comparerRecord.IsTypeNameMatching(input.Comparer.GetType()));
+            Assert.True(comparerRecord.TypeNameMatches(input.Comparer.GetType()));
 
             SZArrayRecord<ClassRecord> arrayRecord = (SZArrayRecord<ClassRecord>)dictionaryRecord.GetSerializationRecord("KeyValuePairs")!;
             ClassRecord[] keyValuePairs = arrayRecord.GetArray()!;
-            Assert.True(keyValuePairs[0].IsTypeNameMatching(typeof(KeyValuePair<string, object>)));
+            Assert.True(keyValuePairs[0].TypeNameMatches(typeof(KeyValuePair<string, object>)));
 
             ClassRecord exceptionPair = Find(keyValuePairs, "exception");
             ClassRecord exceptionValue = exceptionPair.GetClassRecord("value")!;
-            Assert.True(exceptionValue.IsTypeNameMatching(typeof(Exception)));
+            Assert.True(exceptionValue.TypeNameMatches(typeof(Exception)));
             Assert.Equal("test", exceptionValue.GetString(nameof(Exception.Message)));
 
             ClassRecord structPair = Find(keyValuePairs, "struct");
             ClassRecord structValue = structPair.GetClassRecord("value")!;
-            Assert.True(structValue.IsTypeNameMatching(typeof(ValueTuple<bool, int>)));
+            Assert.True(structValue.TypeNameMatches(typeof(ValueTuple<bool, int>)));
             Assert.True(structValue.GetBoolean("Item1"));
             Assert.Equal(123, structValue.GetInt32("Item2"));
 
             ClassRecord genericPair = Find(keyValuePairs, "generic");
             ClassRecord genericValue = genericPair.GetClassRecord("value")!;
-            Assert.True(genericValue.IsTypeNameMatching(typeof(List<int>)));
+            Assert.True(genericValue.TypeNameMatches(typeof(List<int>)));
             Assert.Equal(4, genericValue.GetInt32("_size"));
             Assert.Equal(new int[] { 1, 2, 3, 4 }, ((SZArrayRecord<int>)genericValue.GetArrayRecord("_items")).GetArray());
 
@@ -222,37 +222,37 @@ namespace System.Formats.Nrbf.Tests
                     Assert.Equal(input, record.GetArray());
                     break;
                 // class records
-                case ClassRecord record when record.IsTypeNameMatching(typeof(Exception)):
+                case ClassRecord record when record.TypeNameMatches(typeof(Exception)):
                     Assert.Equal(((Exception)input).Message, record.GetString("Message"));
                     break;
-                case SZArrayRecord<ClassRecord> record when record.IsTypeNameMatching(typeof(Exception[])):
+                case SZArrayRecord<ClassRecord> record when record.TypeNameMatches(typeof(Exception[])):
                     Assert.Equal(((Exception[])input)[0].Message, record.GetArray()[0]!.GetString("Message"));
                     break;
-                case ClassRecord record when record.IsTypeNameMatching(typeof(JsonException)):
+                case ClassRecord record when record.TypeNameMatches(typeof(JsonException)):
                     Assert.Equal(((JsonException)input).Message, record.GetString("Message"));
                     break;
-                case ClassRecord record when record.IsTypeNameMatching(typeof(Dictionary<int, NonSystemPoint>)):
+                case ClassRecord record when record.TypeNameMatches(typeof(Dictionary<int, NonSystemPoint>)):
                     VerifyDictionary<int, NonSystemPoint>(record);
                     break;
-                case ClassRecord record when record.IsTypeNameMatching(typeof(Dictionary<NonSystemPoint, JsonException>)):
+                case ClassRecord record when record.TypeNameMatches(typeof(Dictionary<NonSystemPoint, JsonException>)):
                     VerifyDictionary<NonSystemPoint, JsonException>(record);
                     break;
-                case ClassRecord record when record.IsTypeNameMatching(typeof(EmptyClass)):
+                case ClassRecord record when record.TypeNameMatches(typeof(EmptyClass)):
                     Assert.Empty(record.MemberNames);
                     break;
-                case ArrayRecord arrayRecord when arrayRecord.IsTypeNameMatching(typeof(int?[])):
+                case ArrayRecord arrayRecord when arrayRecord.TypeNameMatches(typeof(int?[])):
                     Assert.Equal(input, arrayRecord.GetArray(typeof(int?[])));
                     break;
-                case ArrayRecord arrayRecord when arrayRecord.IsTypeNameMatching(typeof(EmptyClass[])):
+                case ArrayRecord arrayRecord when arrayRecord.TypeNameMatches(typeof(EmptyClass[])):
                     Assert.Equal(0, arrayRecord.Lengths.ToArray().Single());
                     break;
-                case ArrayRecord arrayRecord when arrayRecord.IsTypeNameMatching(typeof(EmptyClass[,])):
+                case ArrayRecord arrayRecord when arrayRecord.TypeNameMatches(typeof(EmptyClass[,])):
                     Assert.Equal(new int[2] { 0, 0 }, arrayRecord.Lengths.ToArray());
                     break;
-                case ArrayRecord arrayRecord when arrayRecord.IsTypeNameMatching(typeof(EmptyClass[][])):
+                case ArrayRecord arrayRecord when arrayRecord.TypeNameMatches(typeof(EmptyClass[][])):
                     Assert.Equal(0, arrayRecord.Lengths.ToArray().Single());
                     break;
-                case ArrayRecord arrayRecord when arrayRecord.IsTypeNameMatching(typeof(EmptyClass[][,])):
+                case ArrayRecord arrayRecord when arrayRecord.TypeNameMatches(typeof(EmptyClass[][,])):
                     Assert.Equal(0, arrayRecord.Lengths.ToArray().Single());
                     break;
                 default:
@@ -264,7 +264,7 @@ namespace System.Formats.Nrbf.Tests
             {
                 SZArrayRecord<ClassRecord> arrayRecord = (SZArrayRecord<ClassRecord>)record.GetSerializationRecord("KeyValuePairs")!;
                 ClassRecord[] keyValuePairs = arrayRecord.GetArray()!;
-                Assert.True(keyValuePairs[0].IsTypeNameMatching(typeof(KeyValuePair<TKey, TValue>)));
+                Assert.True(keyValuePairs[0].TypeNameMatches(typeof(KeyValuePair<TKey, TValue>)));
             }
         }
     }
