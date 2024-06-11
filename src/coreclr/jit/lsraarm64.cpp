@@ -1984,6 +1984,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
                 default:
                 {
+                    SingleTypeRegSet candidates = lowVectorOperandNum == 2 ? lowVectorCandidates : RBM_NONE;
+
                     if (intrin.op2->gtType == TYP_MASK)
                     {
                         assert(lowVectorOperandNum != 2);
