@@ -6938,7 +6938,7 @@ HRESULT ProfToEEInterfaceImpl::GetEnvironmentVariable(
 
     if ((pcchValue != nullptr) || (szValue != nullptr))
     {
-        DWORD trueLen = GetEnvironmentVariableW(szName, szValue, cchValue);
+        DWORD trueLen = ::GetEnvironmentVariable(szName, szValue, cchValue);
         if (trueLen == 0)
         {
             hr = HRESULT_FROM_WIN32(GetLastError());
@@ -6982,7 +6982,7 @@ HRESULT ProfToEEInterfaceImpl::SetEnvironmentVariable(const WCHAR *szName, const
         return E_INVALIDARG;
     }
 
-    return SetEnvironmentVariableW(szName, szValue) ? S_OK : HRESULT_FROM_WIN32(GetLastError());
+    return ::SetEnvironmentVariable(szName, szValue) ? S_OK : HRESULT_FROM_WIN32(GetLastError());
 }
 
 HRESULT ProfToEEInterfaceImpl::EventPipeStartSession(

@@ -101,7 +101,7 @@ namespace System.Globalization.Tests
             yield return new object[] { "en-NL", "dd/MM/yyyy" };
             yield return new object[] { "en-NR", "dd/MM/yyyy" };
             yield return new object[] { "en-NU", "dd/MM/yyyy" };
-            yield return new object[] { "en-NZ", PlatformDetection.IsFirefox ? "d/MM/yyyy" : "dd/MM/yyyy" }; // "d/MM/yyyy"
+            yield return new object[] { "en-NZ", PlatformDetection.IsFirefox || PlatformDetection.IsNodeJS ? "d/MM/yyyy" : "dd/MM/yyyy" }; // "d/MM/yyyy"
             yield return new object[] { "en-PG", "dd/MM/yyyy" };
             yield return new object[] { "en-PH", "M/d/yyyy" }; // "dd/MM/yyyy"
             yield return new object[] { "en-PK", "dd/MM/yyyy" };
@@ -179,7 +179,7 @@ namespace System.Globalization.Tests
             yield return new object[] { "ro-RO", "dd.MM.yyyy" };
             yield return new object[] { "ru-RU", "dd.MM.yyyy" };
             yield return new object[] { "sk-SK", "d. M. yyyy" };
-            yield return new object[] { "sl-SI", PlatformDetection.IsFirefox ? "d. MM. yyyy" : "d. M. yyyy" }; // "d. MM. yyyy"
+            yield return new object[] { "sl-SI", PlatformDetection.IsFirefox || PlatformDetection.IsNodeJS ? "d. MM. yyyy" : "d. M. yyyy" }; // "d. MM. yyyy"
             yield return new object[] { "sr-Cyrl-RS", "d.M.yyyy." };
             yield return new object[] { "sr-Latn-RS", "d.M.yyyy." };
             yield return new object[] { "sv-AX", "yyyy-MM-dd" };
@@ -197,7 +197,7 @@ namespace System.Globalization.Tests
             yield return new object[] { "tr-CY", "d.MM.yyyy" };
             yield return new object[] { "tr-TR", "d.MM.yyyy" };
             yield return new object[] { "uk-UA", "dd.MM.yyyy" };
-            yield return new object[] { "vi-VN", PlatformDetection.IsFirefox ? "dd/MM/yyyy" : "d/M/yyyy" }; // "dd/MM/yyyy"
+            yield return new object[] { "vi-VN", PlatformDetection.IsFirefox || PlatformDetection.IsNodeJS ? "dd/MM/yyyy" : "d/M/yyyy" }; // "dd/MM/yyyy"
             yield return new object[] { "zh-CN", "yyyy/M/d" };
             yield return new object[] { "zh-Hans-HK", "d/M/yyyy" };
             yield return new object[] { "zh-SG", "dd/MM/yyyy" };

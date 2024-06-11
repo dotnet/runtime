@@ -5660,8 +5660,7 @@ void* virtual_alloc (size_t size, bool use_large_pages_p, uint16_t numa_node)
 
     if ((gc_heap::reserved_memory_limit - gc_heap::reserved_memory) < requested_size)
     {
-        gc_heap::reserved_memory_limit =
-            GCScan::AskForMoreReservedMemory (gc_heap::reserved_memory_limit, requested_size);
+        gc_heap::reserved_memory_limit = gc_heap::reserved_memory_limit + requested_size;
         if ((gc_heap::reserved_memory_limit - gc_heap::reserved_memory) < requested_size)
         {
             return 0;
@@ -7275,23 +7274,16 @@ void gc_heap::gc_thread_function ()
 
 bool gc_heap::virtual_alloc_commit_for_heap (void* addr, size_t size, int h_number)
 {
-#if defined(MULTIPLE_HEAPS) && !defined(FEATURE_NATIVEAOT)
-    // Currently there is no way for us to specific the numa node to allocate on via hosting interfaces to
-    // a host. This will need to be added later.
-#if !defined(FEATURE_CORECLR) && !defined(BUILD_AS_STANDALONE)
-    if (!CLRMemoryHosted())
-#endif
+#ifdef MULTIPLE_HEAPS
+    if (GCToOSInterface::CanEnableGCNumaAware())
     {
-        if (GCToOSInterface::CanEnableGCNumaAware())
-        {
-            uint16_t numa_node = heap_select::find_numa_node_from_heap_no(h_number);
-            if (GCToOSInterface::VirtualCommit (addr, size, numa_node))
-                return true;
-        }
+        uint16_t numa_node = heap_select::find_numa_node_from_heap_no(h_number);
+        if (GCToOSInterface::VirtualCommit (addr, size, numa_node))
+            return true;
     }
-#else //MULTIPLE_HEAPS && !FEATURE_NATIVEAOT
+#else //MULTIPLE_HEAPS
     UNREFERENCED_PARAMETER(h_number);
-#endif //MULTIPLE_HEAPS && !FEATURE_NATIVEAOT
+#endif //MULTIPLE_HEAPS
 
     //numa aware not enabled, or call failed --> fallback to VirtualCommit()
     return GCToOSInterface::VirtualCommit(addr, size);
@@ -43942,11 +43934,7 @@ void gc_heap::decommit_ephemeral_segment_pages()
 #ifdef HOST_64BIT
                 max(min(min(soh_segment_size/32, dd_max_size (dd0)), (generation_size (max_generation) / 10)), (size_t)desired_allocation);
 #else
-#ifdef FEATURE_CORECLR
                 desired_allocation;
-#else
-                dd_max_size (dd0);
-#endif //FEATURE_CORECLR
 #endif // HOST_64BIT
 
     uint8_t *decommit_target = heap_segment_allocated (ephemeral_heap_segment) + slack_space;
