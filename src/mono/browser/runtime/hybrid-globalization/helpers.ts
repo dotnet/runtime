@@ -26,15 +26,6 @@ export function normalizeLocale (locale: string | null) {
     }
 }
 
-export function normalizeSpaces (pattern: string) {
-    if (!pattern.includes("\u202F") && !pattern.includes("\u00A0"))
-        return pattern;
-
-    // Replace both \u202F and \u00A0 with a regular space \u0020
-    return pattern.replace(/[\u202F\u00A0]/g, "\u0020");
-}
-
-
 export function isSurrogate (str: string, startIdx: number): boolean {
     return SURROGATE_HIGHER_START <= str[startIdx] &&
         str[startIdx] <= SURROGATE_HIGHER_END &&

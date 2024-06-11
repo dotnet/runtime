@@ -379,22 +379,10 @@ namespace System.Globalization
                     case 'h':
                     case 'm':
                     case 's':
-                        result[resultPos++] = current;
-                        break;
                     case ' ':
                     case '\u00A0': // no-break space
                     case '\u202F': // narrow no-break space
-#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
-                        if (GlobalizationMode.Hybrid)
-                        {
-                            // Convert nonbreaking and narrow no-break spaces into regular spaces
-                            result[resultPos++] = ' ';
-                        }
-                        else
-#endif
-                        {
-                             result[resultPos++] = current;
-                        }
+                        result[resultPos++] = current;
                         break;
                     case 'a': // AM/PM
                         if (!amPmAdded)
