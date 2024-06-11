@@ -14,7 +14,8 @@ This is a list of additions and edits to be made in ECMA-335 specifications. It 
 - [Covariant Return Types](#covariant-return-types)
 - [Function Pointer Type Identity](#function-pointer-type-identity)
 - [Unsigned data conversion with overflow detection](#unsigned-data-conversion-with-overflow-detection)
-- [Ref field support](#ref-fields)
+- [Ref fields support](#ref-fields)
+- [ByRefLike types in generics](#byreflike-generics)
 - [Rules for IL rewriters](#rules-for-il-rewriters)
 - [Checked user-defined operators](#checked-user-defined-operators)
 - [Atomic reads and writes](#atomic-reads-and-writes)
@@ -1025,6 +1026,27 @@ Changes to signatures:
 - Remove the sentence "Managed pointers cannot be null."
 - Add a bullet point
   - Managed pointers which point at null, the address just past the end of an object, or the address where an element just past the end of an array would be stored, are permitted but not dereferenceable.
+
+## <a name="byreflike-generics"></a> ByRefLike types in generics
+
+ByRefLike types, defined in C# with the `ref struct` syntax, represent types that cannot escape to the managed heap and must remain on the stack. It is possible for these types to be used as generic parameters, but in order to improve utility certain affordances are required.
+
+### II.10.1.7
+An additional IL keyword, `byreflike`, is introduced to indicate use of ByRefLike types is permitted. This expands the set of permissible types used by this parameters, but limits the potential instructions that can be used on instances of this generic parameter type.
+
+### III.4
+New sub-section should be added after III.4.33 that describes sequences of IL instructions that can be used on ByRefLike types when using within a generic context.
+
+#### III.4.X
+The following are IL sequences involving the `box` instruction. They are used for on ByRefLike types and shall be valid in cases where the result can be computed at run-time and elided safely, through JIT compilation or interpretation. These sequences must now be elided when the target type is ByRefLike. The conditions where each sequence is elided are described below.
+
+`box` ; `unbox.any` &ndash; The box target type is equal to the unboxed target type.
+
+`box` ; `br_true/false` &ndash; The box target type is non-`Nullable<T>`.
+
+`box` ; `isinst` ; `unbox.any` &ndash; The box, `isinst`, and unbox target types are all equal.
+
+`box` ; `isinst` ; `br_true/false` &ndash; The box target type is equal to the unboxed target type or the box target type is `Nullable<T>` and target type equalities can be computed.
 
 ## Rules for IL Rewriters
 

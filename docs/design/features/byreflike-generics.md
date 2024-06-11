@@ -15,7 +15,7 @@ Supporting ByRefLike type as Generic parameters will impact the following IL ins
     - `newobj` &ndash; For multi-dimensional array construction.
 - `constrained.callvirt` &ndash; If this IL sequence resolves to a method implemented on `object` or default interface method, an error will occur during the attempt to box the instance.
 
-If any of the above instructions are attempted to be used with a ByRefLike type, the runtime will throw an `InvalidProgramException`. Sequences involving some of the above instructions are considered optimizations and represent cases that will remain valid regardless of a `T` being ByRefLike. See "Special IL Sequences" section below for details.
+If any of the above instructions are attempted to be used with a ByRefLike type, the runtime will throw an `InvalidProgramException`
 
 The following instructions are already set up to support this feature since their behavior will fail as currently defined due to the inability to box a ByRefLike type.
 
@@ -23,6 +23,8 @@ The following instructions are already set up to support this feature since thei
 - `unbox` / `unbox.any` &ndash; Requires an object reference to be on stack, which can never be a ByRefLike type.
 - `isinst` &ndash; Will always place `null` on stack.
 - `castclass` &ndash; Will always throw `InvalidCastException`.
+
+**NOTE** There are sequences involving some of the above instructions that are considered optimizations. These sequences represent cases that will remain valid regardless of a `T` being ByRefLike&mdash;see ["Special IL Sequences" section](#special_il_sequences) below for details.
 
 The expansion of ByRefLike types as Generic parameters does not relax restrictions on where ByRefLike types can be used. When `T` is ByRefLike, the use of `T` as a field will require the enclosing type to be ByRefLike.
 
@@ -112,7 +114,7 @@ Adding `gpAcceptByRefLike` to the metadata of a Generic parameter will be consid
 
 Enumerating of constructors/methods on `Span<T>` and `ReadOnlySpan<T>` may throw `TypeLoadException` if `T` is a ByRefLike type. See "Troublesome APIs" above for the list of APIs that cause this condition.
 
-## Special IL Sequences
+## <a name="special_il_sequences"></a> Special IL Sequences
 
 The following are IL sequences involving the `box` instruction. They are used for common C# language constructs and shall continue to be valid, even with ByRefLike types, in cases where the result can be computed at JIT time and elided safely. These sequences must now be elided when the target type is ByRefLike. The conditions where each sequence is elided are described below and each condition will be added to the ECMA-335 addendum.
 
@@ -120,7 +122,7 @@ The following are IL sequences involving the `box` instruction. They are used fo
 
 `box` ; `br_true/false` &ndash; The box target type is non-`Nullable<T>`.
 
-`box` ; `isinst` ; `unbox.any` &ndash; The box, `isint`, and unbox target types are all equal.
+`box` ; `isinst` ; `unbox.any` &ndash; The box, `isinst`, and unbox target types are all equal.
 
 `box` ; `isinst` ; `br_true/false` &ndash; The box target type is equal to the unboxed target type or the box target type is `Nullable<T>` and target type equalities can be computed.
 
