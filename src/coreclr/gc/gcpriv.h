@@ -1393,7 +1393,7 @@ public:
     void reset();
     void add_region_front (heap_segment* region);
     void add_region_in_descending_order (heap_segment* region_to_add);
-    void transfer_regions (region_free_list* from);
+    void transfer_regions_from (region_free_list* from);
     heap_segment* unlink_region_front();
     heap_segment* unlink_smallest_region (size_t size);
     size_t get_num_free_regions();
