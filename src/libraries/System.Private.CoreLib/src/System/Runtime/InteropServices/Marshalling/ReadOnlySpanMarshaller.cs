@@ -199,7 +199,7 @@ namespace System.Runtime.InteropServices.Marshalling
             /// <returns>A span over unmanaged values of the array.</returns>
             public ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(int numElements)
             {
-                return new ReadOnlySpan<TUnmanagedElement> ( _unmanagedArray, numElements);
+                return new ReadOnlySpan<TUnmanagedElement>(_unmanagedArray, numElements);
             }
 
             /// <summary>
@@ -217,7 +217,7 @@ namespace System.Runtime.InteropServices.Marshalling
             /// </summary>
             public void Free()
             {
-                NativeMemory.Free(_unmanagedArray);
+                Marshal.FreeCoTaskMem((IntPtr)_unmanagedArray);
             }
         }
     }
