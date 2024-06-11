@@ -865,6 +865,46 @@ namespace System.Runtime.CompilerServices
         {
             return new TypeHandle((void*)RuntimeTypeHandle.ToIntPtr(typeof(T).TypeHandle));
         }
+
+        public static bool AreSameType(TypeHandle left, TypeHandle right) => left.m_asTAddr == right.m_asTAddr;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool CanCastTo(TypeHandle destTH)
+        {
+            CastResult result = CastCache.TryGet(CastHelpers.s_table!, (nuint)m_asTAddr, (nuint)destTH.m_asTAddr);
+
+            if (result != CastResult.MaybeCast)
+                return result == CastResult.CanCast;
+
+            return CanCastTo_NoCacheLookup(m_asTAddr, destTH.m_asTAddr);
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeHandle_CanCastTo")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static partial bool CanCastTo_NoCacheLookup(void* fromTypeHnd, void* toTypeHnd);
+
+        public bool IsValueType
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                return IsTypeDesc
+                    ? AsTypeDesc()->GetInternalCorElementType() == CorElementType.ELEMENT_TYPE_VALUETYPE
+                    : AsMethodTable()->IsValueType;
+            }
+        }
+
+        public bool IsInterface => !IsTypeDesc && AsMethodTable()->IsInterface;
+    }
+
+    internal unsafe struct TypeDesc
+    {
+        private readonly int m_typeAndFlags;
+
+        // This is the ELEMENT_TYPE* that would be used in the type sig for this type
+        // For enums this is the underlying type
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public CorElementType GetInternalCorElementType() => (CorElementType)(m_typeAndFlags & 0xFF);
     }
 
     // Helper structs used for tail calls via helper.
