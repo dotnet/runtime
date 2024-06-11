@@ -15,7 +15,7 @@ resources:
         ROOTFS_DIR: /crossrootfs/armv6
 
     - container: Linux_arm64
-      image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-cross-arm64-20220907130538-70ed2e8
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-cross-arm64-20210719121212-8a8d3be
       env:
         ROOTFS_DIR: /crossrootfs/arm64
 
@@ -28,7 +28,7 @@ resources:
         ROOTFS_DIR: /crossrootfs/arm
 
     - container: Linux_musl_arm64
-      image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04-cross-arm64-alpine-20220915142421-44c622d
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-cross-arm64-alpine-20210719121212-b2c2436
       env:
         ROOTFS_DIR: /crossrootfs/arm64
     # This container contains all required toolsets to build for Android and for Linux with bionic libc.
