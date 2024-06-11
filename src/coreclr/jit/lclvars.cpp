@@ -3383,7 +3383,7 @@ void Compiler::lvaSetStruct(unsigned varNum, ClassLayout* layout, bool unsafeVal
     {
         varDsc->SetLayout(layout);
 
-        if (layout->IsValueClass() && !layout->IsBoxedValueClass())
+        if (layout->IsValueClass())
         {
             varDsc->lvType = layout->GetType();
 

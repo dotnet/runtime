@@ -20,25 +20,23 @@ class ClassLayoutTable
 
     typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, unsigned>               BlkLayoutIndexMap;
     typedef JitHashTable<CORINFO_CLASS_HANDLE, JitPtrKeyFuncs<CORINFO_CLASS_STRUCT_>, unsigned> ObjLayoutIndexMap;
-    typedef JitHashTable<CORINFO_CLASS_HANDLE, JitPtrKeyFuncs<CORINFO_CLASS_STRUCT_>, unsigned> BoxLayoutIndexMap;
 
     union
     {
-        // Up to 4 layouts can be stored "inline" and finding a layout by handle/size can be done using linear search.
+        // Up to 3 layouts can be stored "inline" and finding a layout by handle/size can be done using linear search.
         // Most methods need no more than 2 layouts.
-        ClassLayout* m_layoutArray[4];
+        ClassLayout* m_layoutArray[3];
         // Otherwise a dynamic array is allocated and hashtables are used to map from handle/size to layout array index.
         struct
         {
             ClassLayout**      m_layoutLargeArray;
             BlkLayoutIndexMap* m_blkLayoutMap;
             ObjLayoutIndexMap* m_objLayoutMap;
-            BoxLayoutIndexMap* m_boxLayoutMap;
         };
     };
     // The number of layout objects stored in this table.
     unsigned m_layoutCount;
-    // The capacity of m_layoutLargeArray (when more than 4 layouts are stored).
+    // The capacity of m_layoutLargeArray (when more than 3 layouts are stored).
     unsigned m_layoutLargeCapacity;
     // We furthermore fast-path the 0-sized block layout which is used for
     // block locals that may grow (e.g. the outgoing arg area in every non-x86
@@ -100,15 +98,15 @@ public:
     }
 
     // Get the layout for the specified class handle.
-    ClassLayout* GetObjLayout(Compiler* compiler, CORINFO_CLASS_HANDLE classHandle, bool isBoxedValueClass)
+    ClassLayout* GetObjLayout(Compiler* compiler, CORINFO_CLASS_HANDLE classHandle)
     {
-        return GetLayoutByIndex(GetObjLayoutIndex(compiler, classHandle, isBoxedValueClass));
+        return GetLayoutByIndex(GetObjLayoutIndex(compiler, classHandle));
     }
 
     // Get a number that uniquely identifies a layout for the specified class handle.
-    unsigned GetObjLayoutNum(Compiler* compiler, CORINFO_CLASS_HANDLE classHandle, bool isBoxedValueClass)
+    unsigned GetObjLayoutNum(Compiler* compiler, CORINFO_CLASS_HANDLE classHandle)
     {
-        return GetObjLayoutIndex(compiler, classHandle, isBoxedValueClass) + FirstLayoutNum;
+        return GetObjLayoutIndex(compiler, classHandle) + FirstLayoutNum;
     }
 
 private:
@@ -149,9 +147,7 @@ private:
         else
         {
             unsigned index = 0;
-
             if ((layout->IsBlockLayout() && m_blkLayoutMap->Lookup(layout->GetSize(), &index)) ||
-                (layout->IsBoxedValueClass() && m_boxLayoutMap->Lookup(layout->GetClassHandle(), &index)) ||
                 m_objLayoutMap->Lookup(layout->GetClassHandle(), &index))
             {
                 return index;
@@ -206,7 +202,7 @@ private:
         return index;
     }
 
-    unsigned GetObjLayoutIndex(Compiler* compiler, CORINFO_CLASS_HANDLE classHandle, bool isBoxedValueClass)
+    unsigned GetObjLayoutIndex(Compiler* compiler, CORINFO_CLASS_HANDLE classHandle)
     {
         assert(classHandle != NO_CLASS_HANDLE);
 
@@ -214,19 +210,10 @@ private:
         {
             for (unsigned i = 0; i < m_layoutCount; i++)
             {
-                if ((m_layoutArray[i]->GetClassHandle() == classHandle) &&
-                    (isBoxedValueClass == m_layoutArray[i]->IsBoxedValueClass()))
+                if (m_layoutArray[i]->GetClassHandle() == classHandle)
                 {
                     return i;
                 }
-            }
-        }
-        else if (isBoxedValueClass)
-        {
-            unsigned index;
-            if (m_boxLayoutMap->Lookup(classHandle, &index))
-            {
-                return index;
             }
         }
         else
@@ -238,12 +225,12 @@ private:
             }
         }
 
-        return AddObjLayout(compiler, CreateObjLayout(compiler, classHandle, isBoxedValueClass));
+        return AddObjLayout(compiler, CreateObjLayout(compiler, classHandle));
     }
 
-    ClassLayout* CreateObjLayout(Compiler* compiler, CORINFO_CLASS_HANDLE classHandle, bool isBoxedValueClass)
+    ClassLayout* CreateObjLayout(Compiler* compiler, CORINFO_CLASS_HANDLE classHandle)
     {
-        return ClassLayout::Create(compiler, classHandle, isBoxedValueClass);
+        return ClassLayout::Create(compiler, classHandle);
     }
 
     unsigned AddObjLayout(Compiler* compiler, ClassLayout* layout)
@@ -255,15 +242,7 @@ private:
         }
 
         unsigned index = AddLayoutLarge(compiler, layout);
-
-        if (layout->IsBoxedValueClass())
-        {
-            m_boxLayoutMap->Set(layout->GetClassHandle(), index);
-        }
-        else
-        {
-            m_objLayoutMap->Set(layout->GetClassHandle(), index);
-        }
+        m_objLayoutMap->Set(layout->GetClassHandle(), index);
         return index;
     }
 
@@ -279,7 +258,6 @@ private:
             {
                 BlkLayoutIndexMap* blkLayoutMap = new (alloc) BlkLayoutIndexMap(alloc);
                 ObjLayoutIndexMap* objLayoutMap = new (alloc) ObjLayoutIndexMap(alloc);
-                BoxLayoutIndexMap* boxLayoutMap = new (alloc) BoxLayoutIndexMap(alloc);
 
                 for (unsigned i = 0; i < m_layoutCount; i++)
                 {
@@ -290,10 +268,6 @@ private:
                     {
                         blkLayoutMap->Set(l->GetSize(), i);
                     }
-                    else if (l->IsBoxedValueClass())
-                    {
-                        boxLayoutMap->Set(l->GetClassHandle(), i);
-                    }
                     else
                     {
                         objLayoutMap->Set(l->GetClassHandle(), i);
@@ -302,7 +276,6 @@ private:
 
                 m_blkLayoutMap = blkLayoutMap;
                 m_objLayoutMap = objLayoutMap;
-                m_boxLayoutMap = boxLayoutMap;
             }
             else
             {
@@ -371,52 +344,39 @@ ClassLayout* Compiler::typGetBlkLayout(unsigned blockSize)
     return typGetClassLayoutTable()->GetBlkLayout(this, blockSize);
 }
 
-unsigned Compiler::typGetObjLayoutNum(CORINFO_CLASS_HANDLE classHandle, bool isBoxedValueClass)
+unsigned Compiler::typGetObjLayoutNum(CORINFO_CLASS_HANDLE classHandle)
 {
-    return typGetClassLayoutTable()->GetObjLayoutNum(this, classHandle, isBoxedValueClass);
+    return typGetClassLayoutTable()->GetObjLayoutNum(this, classHandle);
 }
 
-ClassLayout* Compiler::typGetObjLayout(CORINFO_CLASS_HANDLE classHandle, bool isBoxedValueClass)
+ClassLayout* Compiler::typGetObjLayout(CORINFO_CLASS_HANDLE classHandle)
 {
-    ClassLayout* const result = typGetClassLayoutTable()->GetObjLayout(this, classHandle, isBoxedValueClass);
-    assert(result->IsBoxedValueClass() == isBoxedValueClass);
-    return result;
+    return typGetClassLayoutTable()->GetObjLayout(this, classHandle);
 }
 
-ClassLayout* ClassLayout::Create(Compiler* compiler, CORINFO_CLASS_HANDLE classHandle, bool isBoxedValueClass)
+ClassLayout* ClassLayout::Create(Compiler* compiler, CORINFO_CLASS_HANDLE classHandle)
 {
-    bool      isValueClass = compiler->info.compCompHnd->isValueClass(classHandle);
-    unsigned  size;
-    var_types type;
+    bool     isValueClass = compiler->eeIsValueClass(classHandle);
+    unsigned size;
 
     if (isValueClass)
     {
         size = compiler->info.compCompHnd->getClassSize(classHandle);
-
-        if (isBoxedValueClass)
-        {
-            size += TARGET_POINTER_SIZE;
-            type = TYP_REF;
-        }
-        else
-        {
-            type = compiler->impNormStructType(classHandle);
-        }
     }
     else
     {
-        assert(!isBoxedValueClass);
         size = compiler->info.compCompHnd->getHeapClassSize(classHandle);
-        type = TYP_REF;
     }
+
+    var_types type = compiler->impNormStructType(classHandle);
 
     INDEBUG(const char* className = compiler->eeGetClassName(classHandle);)
     INDEBUG(const char* shortClassName = compiler->eeGetShortClassName(classHandle);)
 
-    ClassLayout* layout =
-        new (compiler, CMK_ClassLayout) ClassLayout(classHandle, isValueClass, isBoxedValueClass, size,
-                                                    type DEBUGARG(className) DEBUGARG(shortClassName));
+    ClassLayout* layout = new (compiler, CMK_ClassLayout)
+        ClassLayout(classHandle, isValueClass, size, type DEBUGARG(className) DEBUGARG(shortClassName));
     layout->InitializeGCPtrs(compiler);
+
     return layout;
 }
 
@@ -542,11 +502,6 @@ bool ClassLayout::AreCompatible(const ClassLayout* layout1, const ClassLayout* l
     if ((clsHnd1 != NO_CLASS_HANDLE) && (clsHnd1 == clsHnd2))
     {
         return true;
-    }
-
-    if (layout1->IsBoxedValueClass() != layout2->IsBoxedValueClass())
-    {
-        return false;
     }
 
     if (layout1->GetSize() != layout2->GetSize())

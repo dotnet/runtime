@@ -531,11 +531,11 @@ unsigned int ObjectAllocator::MorphAllocObjNodeIntoStackAlloc(GenTreeAllocObj* a
     if (isValueClass)
     {
         clsHnd = comp->info.compCompHnd->getTypeForBoxOnStack(clsHnd);
-        // must pre-check for this 
+        // must pre-check for this
         assert(clsHnd != NO_CLASS_HANDLE);
     }
 
-    ClassLayout* const layout = comp->typGetObjLayout(clsHnd)
+    ClassLayout* const layout = comp->typGetObjLayout(clsHnd);
     comp->lvaSetStruct(lclNum, layout, /* unsafeValueClsCheck */ false);
 
     // Initialize the object memory if necessary.
@@ -801,9 +801,9 @@ void ObjectAllocator::RewriteUses()
     public:
         enum
         {
-            DoPreOrder    = true,
-            DoPostOrder   = true,
-            ComputeStack  = true,
+            DoPreOrder   = true,
+            DoPostOrder  = true,
+            ComputeStack = true,
         };
 
         RewriteUsesVisitor(ObjectAllocator* allocator)

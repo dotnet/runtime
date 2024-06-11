@@ -141,6 +141,12 @@ inline bool ObjectAllocator::CanAllocateLclVarOnStack(unsigned int         lclNu
             return false;
         }
 
+        if (comp->info.compCompHnd->getTypeForBoxOnStack(clsHnd) == NO_CLASS_HANDLE)
+        {
+            *reason = "[no boxed type available]";
+            return false;
+        }
+
         classSize = comp->info.compCompHnd->getClassSize(clsHnd);
     }
     else
