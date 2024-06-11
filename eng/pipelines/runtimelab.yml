@@ -50,7 +50,7 @@ variables:
       value: dotnet-core
 
 extends:
-  template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
+  template: /eng/pipelines/common/templates/pipeline-with-resources.yml
   parameters:
     stages:
     - stage: Build
