@@ -527,8 +527,15 @@ unsigned int ObjectAllocator::MorphAllocObjNodeIntoStackAlloc(GenTreeAllocObj* a
     const bool           shortLifetime = false;
     const unsigned int   lclNum        = comp->lvaGrabTemp(shortLifetime DEBUGARG(
         isValueClass ? "stack allocated boxed value class temp" : "stack allocated ref class temp"));
-    ClassLayout* const   layout        = comp->typGetObjLayout(clsHnd, isValueClass);
 
+    if (isValueClass)
+    {
+        clsHnd = comp->info.compCompHnd->getTypeForBoxOnStack(clsHnd);
+        // must pre-check for this 
+        assert(clsHnd != NO_CLASS_HANDLE);
+    }
+
+    ClassLayout* const layout = comp->typGetObjLayout(clsHnd)
     comp->lvaSetStruct(lclNum, layout, /* unsafeValueClsCheck */ false);
 
     // Initialize the object memory if necessary.
@@ -649,6 +656,8 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
                 break;
 
             case GT_STOREIND:
+            case GT_STORE_BLK:
+            case GT_BLK:
                 if (tree != parent->AsIndir()->Addr())
                 {
                     // TODO-ObjectStackAllocation: track stores to fields.
@@ -715,6 +724,7 @@ void ObjectAllocator::UpdateAncestorTypes(GenTree* tree, ArrayStack<GenTree*>* p
         switch (parent->OperGet())
         {
             case GT_STORE_LCL_VAR:
+            case GT_BOX:
                 if (parent->TypeGet() == TYP_REF)
                 {
                     parent->ChangeType(newType);
@@ -724,7 +734,6 @@ void ObjectAllocator::UpdateAncestorTypes(GenTree* tree, ArrayStack<GenTree*>* p
             case GT_EQ:
             case GT_NE:
             case GT_NULLCHECK:
-            case GT_BOX:
                 break;
 
             case GT_COMMA:
@@ -747,6 +756,8 @@ void ObjectAllocator::UpdateAncestorTypes(GenTree* tree, ArrayStack<GenTree*>* p
                 break;
 
             case GT_STOREIND:
+            case GT_STORE_BLK:
+            case GT_BLK:
                 assert(tree == parent->AsIndir()->Addr());
 
                 // The new target could be *not* on the heap.
@@ -791,7 +802,7 @@ void ObjectAllocator::RewriteUses()
         enum
         {
             DoPreOrder    = true,
-            DoLclVarsOnly = true,
+            DoPostOrder   = true,
             ComputeStack  = true,
         };
 
@@ -804,7 +815,11 @@ void ObjectAllocator::RewriteUses()
         Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
         {
             GenTree* tree = *use;
-            assert(tree->OperIsAnyLocal());
+
+            if (!tree->OperIsAnyLocal())
+            {
+                return Compiler::fgWalkResult::WALK_CONTINUE;
+            }
 
             const unsigned int lclNum    = tree->AsLclVarCommon()->GetLclNum();
             unsigned int       newLclNum = BAD_VAR_NUM;
@@ -840,6 +855,26 @@ void ObjectAllocator::RewriteUses()
                     lclVarDsc->lvType = newType;
                 }
                 m_allocator->UpdateAncestorTypes(tree, &m_ancestors, newType);
+            }
+
+            return Compiler::fgWalkResult::WALK_CONTINUE;
+        }
+
+        Compiler::fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
+        {
+            GenTree* const tree = *use;
+
+            // Remove GT_BOX, if stack allocated
+            //
+            if (tree->OperIs(GT_BOX))
+            {
+                GenTree* const boxLcl = tree->AsOp()->gtGetOp1();
+                assert(boxLcl->OperIs(GT_LCL_VAR, GT_LCL_ADDR));
+                if (boxLcl->OperIs(GT_LCL_ADDR))
+                {
+                    JITDUMP("Removing BOX wrapper [%06u]\n", m_compiler->dspTreeID(tree));
+                    *use = boxLcl;
+                }
             }
 
             return Compiler::fgWalkResult::WALK_CONTINUE;

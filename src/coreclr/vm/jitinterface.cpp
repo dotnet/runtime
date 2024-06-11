@@ -6363,6 +6363,49 @@ CORINFO_CLASS_HANDLE  CEEInfo::getTypeForBox(CORINFO_CLASS_HANDLE  cls)
 }
 
 /***********************************************************************/
+// Get a representation for a stack-allocated boxed value type
+//
+CORINFO_CLASS_HANDLE  CEEInfo::getTypeForBoxOnStack(CORINFO_CLASS_HANDLE cls)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    CORINFO_CLASS_HANDLE result = NULL;
+
+    JIT_TO_EE_TRANSITION();
+
+    TypeHandle VMClsHnd(cls);
+    if (Nullable::IsNullableType(VMClsHnd)) 
+    {
+        VMClsHnd = VMClsHnd.AsMethodTable()->GetInstantiation()[0];
+    }
+
+#ifdef FEATURE_64BIT_ALIGNMENT
+    if (VMClsHnd.RequiresAlign8())
+    {
+        // TODO: Maybe handle 32 bit platforms with 8 byte alignments
+        result = NULL;
+    }
+    else
+#endif
+    {
+        TypeHandle mt(CoreLibBinder::GetElementType(ELEMENT_TYPE_I));
+        TypeHandle boxedFields[2] = {mt, VMClsHnd};
+        Instantiation boxedFieldsInst((TypeHandle*)&boxedFields, 2);
+        TypeHandle genericKvp = CoreLibBinder::GetClass(CLASS__KEYVALUEPAIRGENERIC);
+        TypeHandle boxedKvp = genericKvp.Instantiate(boxedFieldsInst);
+        result = static_cast<CORINFO_CLASS_HANDLE>(boxedKvp.AsPtr());
+    }
+
+    EE_TO_JIT_TRANSITION();
+
+    return result;
+}
+
+/***********************************************************************/
 // see code:Nullable#NullableVerification
 CorInfoHelpFunc CEEInfo::getBoxHelper(CORINFO_CLASS_HANDLE clsHnd)
 {

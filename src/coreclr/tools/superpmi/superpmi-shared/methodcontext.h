@@ -248,6 +248,10 @@ public:
     void dmpGetTypeForBox(DWORDLONG key, DWORDLONG value);
     CORINFO_CLASS_HANDLE repGetTypeForBox(CORINFO_CLASS_HANDLE cls);
 
+    void recGetTypeForBoxOnStack(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE result);
+    void dmpGetTypeForBoxOnStack(DWORDLONG key, DWORDLONG value);
+    CORINFO_CLASS_HANDLE repGetTypeForBoxOnStack(CORINFO_CLASS_HANDLE cls);
+
     void recGetBoxHelper(CORINFO_CLASS_HANDLE cls, CorInfoHelpFunc result);
     void dmpGetBoxHelper(DWORDLONG key, DWORD value);
     CorInfoHelpFunc repGetBoxHelper(CORINFO_CLASS_HANDLE cls);
@@ -1040,7 +1044,7 @@ enum mcPackets
     Packet_GetRelocTypeHint = 84,
     //Packet_GetSecurityPrologHelper = 85,
     Packet_GetSharedCCtorHelper = 86,
-    //Packet_GetTailCallCopyArgsThunk = 87,
+    Packet_GetTypeForBoxOnStack = 87,
     Packet_GetThreadTLSIndex = 88,
     Packet_GetTokenTypeAsHandle = 89,
     Packet_GetTypeForBox = 90,

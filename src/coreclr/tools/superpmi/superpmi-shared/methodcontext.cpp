@@ -1941,6 +1941,30 @@ CORINFO_CLASS_HANDLE MethodContext::repGetTypeForBox(CORINFO_CLASS_HANDLE cls)
     return result;
 }
 
+void MethodContext::recGetTypeForBoxOnStack(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE result)
+{
+    if (GetTypeForBoxOnStack == nullptr)
+        GetTypeForBoxOnStack = new LightWeightMap<DWORDLONG, DWORDLONG>();
+
+    DWORDLONG key = CastHandle(cls);
+    DWORDLONG value = CastHandle(result);
+    GetTypeForBoxOnStack->Add(key, value);
+    DEBUG_REC(dmpGetTypeForBoxOnStack(key, value));
+}
+void MethodContext::dmpGetTypeForBoxOnStack(DWORDLONG key, DWORDLONG value)
+{
+    printf("GetTypeForBoxOnStack key cls-%016" PRIX64 ", value res-%016" PRIX64 "", key, value);
+}
+
+CORINFO_CLASS_HANDLE MethodContext::repGetTypeForBoxOnStack(CORINFO_CLASS_HANDLE cls)
+{
+    DWORDLONG key = CastHandle(cls);
+    DWORDLONG value = LookupByKeyOrMiss(GetTypeForBoxOnStack, key, ": key %016" PRIX64 "", key);
+    DEBUG_REP(dmpGetTypeForBoxOnStack(key, value));
+    CORINFO_CLASS_HANDLE result = (CORINFO_CLASS_HANDLE)value;
+    return result;
+}
+
 void MethodContext::recGetBoxHelper(CORINFO_CLASS_HANDLE cls, CorInfoHelpFunc result)
 {
     if (GetBoxHelper == nullptr)

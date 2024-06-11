@@ -802,7 +802,6 @@ public:
         }
 
         PushValue(use);
-
         return Compiler::WALK_CONTINUE;
     }
 

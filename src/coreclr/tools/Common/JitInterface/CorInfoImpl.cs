@@ -2607,6 +2607,13 @@ namespace Internal.JitInterface
             return ObjectToHandle(typeForBox);
         }
 
+        private CORINFO_CLASS_STRUCT_* getTypeForBoxOnStack(CORINFO_CLASS_STRUCT_* cls)
+        {
+            // Todo: implement...
+            _ = HandleToObject(cls);
+            return null;
+        }
+
         private CorInfoHelpFunc getBoxHelper(CORINFO_CLASS_STRUCT_* cls)
         {
             var type = HandleToObject(cls);
