@@ -306,6 +306,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
     }
     else if (intrin.category == HW_Category_Special)
     {
+        assert(intrin.id == NI_ArmBase_Yield);
+
         emitSize = EA_UNKNOWN;
         opt      = INS_OPTS_NONE;
     }

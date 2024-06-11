@@ -2330,7 +2330,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
 
         bool      isBackFilled     = false;
         unsigned  nextFltArgRegNum = fltArgRegNum; // This is the next floating-point argument register number to use
-        bool      isStructArg      = varTypeIsStruct(argSigType) && !varTypeIsMask(argx->gtEffectiveVal());
+        bool      isStructArg      = varTypeIsStruct(argSigType);
         var_types structBaseType   = TYP_STRUCT;
         unsigned  structSize       = 0;
         bool      passStructByRef  = false;
@@ -3178,7 +3178,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
             argx->gtType = TYP_I_IMPL;
         }
 
-        bool     isStructArg    = varTypeIsStruct(arg.GetSignatureType()) && !varTypeIsMask(arg.GetSignatureType());
+        bool     isStructArg    = varTypeIsStruct(arg.GetSignatureType());
         GenTree* argObj         = argx->gtEffectiveVal();
         bool     makeOutArgCopy = false;
 

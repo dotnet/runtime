@@ -100,11 +100,7 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
             assert(!operand->OperIsFieldList());
 
             sigTyp = comp->impNormStructType(clsHnd);
-            if (varTypeIsMask(operand) && varTypeIsSIMD(sigTyp))
-            {
-                sigTyp = TYP_MASK;
-            }
-            arg = NewCallArg::Struct(operand, sigTyp, clsHnd);
+            arg    = NewCallArg::Struct(operand, sigTyp, clsHnd);
         }
         else
         {
