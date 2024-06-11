@@ -252,6 +252,9 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(CRYPTO_malloc) \
     LEGACY_FUNCTION(CRYPTO_num_locks) \
     LEGACY_FUNCTION(CRYPTO_set_locking_callback) \
+    LIGHTUP_FUNCTION(CRYPTO_THREAD_lock_new) \
+    LIGHTUP_FUNCTION(CRYPTO_atomic_add) \
+    RENAMED_FUNCTION(CRYPTO_set_mem_functions11, CRYPTO_set_mem_functions) \
     REQUIRED_FUNCTION(d2i_ASN1_BIT_STRING) \
     REQUIRED_FUNCTION(d2i_BASIC_CONSTRAINTS) \
     REQUIRED_FUNCTION(d2i_EXTENDED_KEY_USAGE) \
@@ -781,6 +784,9 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define CRYPTO_malloc CRYPTO_malloc_ptr
 #define CRYPTO_num_locks CRYPTO_num_locks_ptr
 #define CRYPTO_set_locking_callback CRYPTO_set_locking_callback_ptr
+#define CRYPTO_THREAD_lock_new CRYPTO_THREAD_lock_new_ptr
+#define CRYPTO_atomic_add CRYPTO_atomic_add_ptr
+#define CRYPTO_set_mem_functions11 CRYPTO_set_mem_functions11_ptr
 #define d2i_ASN1_BIT_STRING d2i_ASN1_BIT_STRING_ptr
 #define d2i_BASIC_CONSTRAINTS d2i_BASIC_CONSTRAINTS_ptr
 #define d2i_EXTENDED_KEY_USAGE d2i_EXTENDED_KEY_USAGE_ptr
