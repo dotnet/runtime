@@ -3459,6 +3459,10 @@ void Compiler::fgDebugCheckFlags(GenTree* tree, BasicBlock* block)
 
 #if defined(TARGET_ARM64)
                     case NI_ArmBase_Yield:
+                    case NI_Sve_PrefetchBytes:
+                    case NI_Sve_PrefetchInt16:
+                    case NI_Sve_PrefetchInt32:
+                    case NI_Sve_PrefetchInt64:
                     {
                         assert(tree->OperRequiresCallFlag(this));
                         expectedFlags |= GTF_GLOB_REF;

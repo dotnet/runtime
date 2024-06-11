@@ -154,7 +154,15 @@ namespace JIT.HardwareIntrinsics.Arm
             {Isa}.{Method}(loadMask, ({Op1BaseType}*)(_dataTable.inArrayPtr), (SvePrefetchType)7);
             {Isa}.{Method}(loadMask, ({Op1BaseType}*)(_dataTable.inArrayPtr), (SvePrefetchType)14);
             {Isa}.{Method}(loadMask, ({Op1BaseType}*)(_dataTable.inArrayPtr), (SvePrefetchType)15);
-            {Isa}.{Method}(loadMask, ({Op1BaseType}*)(_dataTable.inArrayPtr), (SvePrefetchType)123);
+
+            try
+            {
+                {Isa}.{Method}(loadMask, ({Op1BaseType}*)(_dataTable.inArrayPtr), (SvePrefetchType)123);
+                Succeeded = false;
+            }
+            catch (ArgumentException)
+            {
+            }
 
             PrefetchWrapper(SvePrefetchType.SV_PLDL1KEEP);
             PrefetchWrapper(SvePrefetchType.SV_PLDL1STRM);
@@ -172,7 +180,15 @@ namespace JIT.HardwareIntrinsics.Arm
             PrefetchWrapper((SvePrefetchType)7);
             PrefetchWrapper((SvePrefetchType)14);
             PrefetchWrapper((SvePrefetchType)15);
-            PrefetchWrapper((SvePrefetchType)123);
+
+            try
+            {
+                PrefetchWrapper((SvePrefetchType)123);
+                Succeeded = false;
+            }
+            catch (ArgumentException)
+            {
+            }
         }
 
         public void RunBasicScenario_FalseMask()
