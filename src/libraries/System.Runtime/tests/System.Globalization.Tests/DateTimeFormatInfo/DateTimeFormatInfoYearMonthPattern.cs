@@ -17,7 +17,7 @@ namespace System.Globalization.Tests
                 // see the comments on the right to check the non-Hybrid result, if it differs
                 yield return new object[] { new CultureInfo("ar-SA").DateTimeFormat, "MMMM yyyy" }; // "MMMM yyyy g"
                 yield return new object[] { new CultureInfo("bg-BG").DateTimeFormat, "MMMM yyyy \u0433." }; // ICU: "MMMM yyyy '\u0433'."
-                yield return new object[] { new CultureInfo("ca-AD").DateTimeFormat, PlatformDetection.IsFirefox ? "MMMM de yyyy" : "MMMM del yyyy" }; // ICU:  "MMMM 'de' yyyy"
+                yield return new object[] { new CultureInfo("ca-AD").DateTimeFormat, PlatformDetection.IsFirefox || PlatformDetection.IsNodeJS ? "MMMM de yyyy" : "MMMM del yyyy" }; // ICU:  "MMMM 'de' yyyy"
                 yield return new object[] { new CultureInfo("es-419").DateTimeFormat, "MMMM de yyyy" }; // ICU:  "MMMM 'de' yyyy"
                 yield return new object[] { new CultureInfo("es-ES").DateTimeFormat, "MMMM de yyyy" }; // ICU:  "MMMM 'de' yyyy"
                 yield return new object[] { new CultureInfo("es-MX").DateTimeFormat, "MMMM de yyyy" }; // ICU:  "MMMM 'de' yyyy"
