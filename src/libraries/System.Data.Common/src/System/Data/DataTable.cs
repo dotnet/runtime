@@ -161,16 +161,6 @@ namespace System.Data
         /// <summary>
         /// Initializes a new instance of the <see cref='System.Data.DataTable'/> class with no arguments.
         /// </summary>
-        [DynamicDependency(nameof(ShouldSerializeCaseSensitive))]
-        [DynamicDependency(nameof(ShouldSerializeLocale))]
-        [DynamicDependency(nameof(ShouldSerializeNamespace))]
-        [DynamicDependency(nameof(ShouldSerializePrimaryKey))]
-        [DynamicDependency(nameof(ResetCaseSensitive))]
-        [DynamicDependency(nameof(ResetColumns))]
-        [DynamicDependency(nameof(ResetConstraints))]
-        [DynamicDependency(nameof(ResetIndexes))]
-        [DynamicDependency(nameof(ResetNamespace))]
-        [DynamicDependency(nameof(ResetPrimaryKey))]
         public DataTable()
         {
             GC.SuppressFinalize(this);

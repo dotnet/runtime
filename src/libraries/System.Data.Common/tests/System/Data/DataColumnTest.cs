@@ -822,21 +822,21 @@ namespace System.Data.Tests
             Assert.False(properties[nameof(DataColumn.DefaultValue)].ShouldSerializeValue(dc));
             dc.DefaultValue = DateTime.MinValue;
             Assert.True(properties[nameof(DataColumn.DefaultValue)].ShouldSerializeValue(dc));
-            properties[nameof(DataColumn.DefaultValue)].ResetValue(dc); // Reset method is not available
+            properties[nameof(DataColumn.DefaultValue)].ResetValue(dc);
             Assert.Equal(DateTime.MinValue, dc.DefaultValue);
             Assert.True(properties[nameof(DataColumn.DefaultValue)].ShouldSerializeValue(dc));
 
             Assert.False(properties[nameof(DataColumn.Caption)].ShouldSerializeValue(dc));
             dc.Caption = "Caption";
             Assert.True(properties[nameof(DataColumn.Caption)].ShouldSerializeValue(dc));
-            properties[nameof(DataColumn.Caption)].ResetValue(dc); // Reset method is available
+            properties[nameof(DataColumn.Caption)].ResetValue(dc);
             Assert.False(properties[nameof(DataColumn.Caption)].ShouldSerializeValue(dc));
             Assert.Equal("dataColumn", dc.Caption);
 
             Assert.False(properties[nameof(DataColumn.Namespace)].ShouldSerializeValue(dc));
             dc.Namespace = "Namespace";
             Assert.True(properties[nameof(DataColumn.Namespace)].ShouldSerializeValue(dc));
-            properties[nameof(DataColumn.Namespace)].ResetValue(dc); // Reset method is available
+            properties[nameof(DataColumn.Namespace)].ResetValue(dc);
             Assert.False(properties[nameof(DataColumn.Namespace)].ShouldSerializeValue(dc));
             Assert.Equal("", dc.Namespace);
         }
