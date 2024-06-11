@@ -11111,7 +11111,8 @@ void LinearScan::TupleStyleDump(LsraTupleDumpMode mode)
 #ifdef HAS_MORE_THAN_64_REGISTERS
                             compiler->dumpRegMask(currentRefPosition->getKillRegisterAssignment());
 #else
-                            compiler->dumpRegMask(currentRefPosition->registerAssignment, currentRefPosition->getRegisterType());
+                            compiler->dumpRegMask(currentRefPosition->registerAssignment,
+                                                  currentRefPosition->getRegisterType());
 #endif
                             printf(" ");
                             break;
