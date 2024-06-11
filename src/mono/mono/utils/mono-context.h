@@ -972,6 +972,108 @@ typedef struct {
 
 #define MONO_ARCH_HAS_MONO_CONTEXT (1)
 
+#elif (defined(__loongarch64) && !defined(MONO_CROSS_COMPILE)) || (defined(TARGET_LOONGARCH64))
+
+#include <mono/arch/loongarch64/loongarch64-codegen.h>
+
+typedef struct {
+	host_mgreg_t regs [32];
+	/* FIXME not fully saved in trampolines */
+	double fregs [32];
+	host_mgreg_t pc;
+	/*
+	 * fregs might not be initialized if this context was created from a
+	 * ucontext.
+	 */
+	host_mgreg_t has_fregs;
+} MonoContext;
+
+#define MONO_CONTEXT_SET_IP(ctx,ip) do { (ctx)->pc = (host_mgreg_t)(gsize)ip; } while (0)
+#define MONO_CONTEXT_SET_BP(ctx,bp) do { (ctx)->regs [22] = (host_mgreg_t)(gsize)bp; } while (0);
+#define MONO_CONTEXT_SET_SP(ctx,bp) do { (ctx)->regs [3] = (host_mgreg_t)(gsize)bp; } while (0);
+
+#define MONO_CONTEXT_GET_IP(ctx) (gpointer)(gsize)((ctx)->pc)
+#define MONO_CONTEXT_GET_BP(ctx) (gpointer)(gsize)((ctx)->regs [22])
+#define MONO_CONTEXT_GET_SP(ctx) (gpointer)(gsize)((ctx)->regs [3])
+
+#define MONO_CONTEXT_GET_CURRENT(ctx)	do { 	\
+	g_assert (((void*)ctx.fregs - (void*)ctx.regs) == 256);	\
+	g_assert (((void*)&ctx.pc - (void*)ctx.regs) == 512);	    \
+	__asm__ __volatile__(		\
+		"st.d $r0, %0, 0  \n"	\
+		"st.d $r1, %0, 8  \n"	\
+		"st.d $r2, %0, 16 \n"	\
+		"st.d $r3, %0, 24 \n"	\
+		"st.d $r4, %0, 32 \n"	\
+		"st.d $r5, %0, 40 \n"	\
+		"st.d $r6, %0, 48 \n"	\
+		"st.d $r7, %0, 56 \n"	\
+		"st.d $r8, %0, 64 \n"	\
+		"st.d $r9, %0, 72 \n"	\
+		"st.d $r10, %0, 80 \n"	\
+		"st.d $r11, %0, 88 \n"	\
+		"st.d $r12, %0, 96 \n"	\
+		"st.d $r13, %0, 104 \n"	\
+		"st.d $r14, %0, 112 \n"	\
+		"st.d $r15, %0, 120 \n"	\
+		"st.d $r16, %0, 128 \n"	\
+		"st.d $r17, %0, 136 \n"	\
+		"st.d $r18, %0, 144 \n"	\
+		"st.d $r19, %0, 152 \n"	\
+		"st.d $r20, %0, 160 \n"	\
+		"st.d $r21, %0, 168 \n"	\
+		"st.d $r22, %0, 176 \n"	\
+		"st.d $r23, %0, 184 \n"	\
+		"st.d $r24, %0, 192 \n"	\
+		"st.d $r25, %0, 200 \n"	\
+		"st.d $r26, %0, 208 \n"	\
+		"st.d $r27, %0, 216 \n"	\
+		"st.d $r28, %0, 224 \n"	\
+		"st.d $r29, %0, 232 \n"	\
+		"st.d $r30, %0, 240 \n"	\
+		"st.d $r31, %0, 248 \n"	\
+		"fst.d $f0, %0, 256 \n"	\
+		"fst.d $f1, %0, 264 \n"	\
+		"fst.d $f2, %0, 272 \n"	\
+		"fst.d $f3, %0, 280 \n"	\
+		"fst.d $f4, %0, 288 \n"	\
+		"fst.d $f5, %0, 296 \n"	\
+		"fst.d $f6, %0, 304 \n"	\
+		"fst.d $f7, %0, 312 \n"	\
+		"fst.d $f8, %0, 320 \n"	\
+		"fst.d $f9, %0, 328 \n"	\
+		"fst.d $f10, %0, 336  \n"	\
+		"fst.d $f11, %0, 344  \n"	\
+		"fst.d $f12, %0, 352  \n"	\
+		"fst.d $f13, %0, 360  \n"	\
+		"fst.d $f14, %0, 368  \n"	\
+		"fst.d $f15, %0, 376  \n"	\
+		"fst.d $f16, %0, 384  \n"	\
+		"fst.d $f17, %0, 392  \n"	\
+		"fst.d $f18, %0, 400  \n"	\
+		"fst.d $f19, %0, 408  \n"	\
+		"fst.d $f20, %0, 416  \n"	\
+		"fst.d $f21, %0, 424  \n"	\
+		"fst.d $f22, %0, 432  \n"	\
+		"fst.d $f23, %0, 440  \n"	\
+		"fst.d $f24, %0, 448  \n"	\
+		"fst.d $f25, %0, 456  \n"	\
+		"fst.d $f26, %0, 464  \n"	\
+		"fst.d $f27, %0, 472  \n"	\
+		"fst.d $f28, %0, 480  \n"	\
+		"fst.d $f29, %0, 488  \n"	\
+		"fst.d $f30, %0, 496 \n"	\
+		"fst.d $f31, %0, 504 \n"	\
+		"pcaddi $r21, 0 \n"	        \
+		"st.d $r21, %0,  512 \n"	\
+		:				\
+		: "r" (&ctx.regs)		\
+		: "$r21", "memory"		\
+	);					\
+} while (0)
+
+#define MONO_ARCH_HAS_MONO_CONTEXT 1
+
 #else
 
 #error "Implement mono-context for the current arch"
