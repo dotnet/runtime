@@ -15,7 +15,7 @@ Supporting ByRefLike type as Generic parameters will impact the following IL ins
     - `newobj` &ndash; For multi-dimensional array construction.
 - `constrained.callvirt` &ndash; If this IL sequence resolves to a method implemented on `object` or default interface method, an error will occur during the attempt to box the instance.
 
-If any of the above instructions are attempted to be used with a ByRefLike type, the runtime will throw an `InvalidProgramException`
+If any of the above instructions are attempted to be used with a ByRefLike type, the runtime will throw an `InvalidProgramException`.
 
 The following instructions are already set up to support this feature since their behavior will fail as currently defined due to the inability to box a ByRefLike type.
 
@@ -24,7 +24,7 @@ The following instructions are already set up to support this feature since thei
 - `isinst` &ndash; Will always place `null` on stack.
 - `castclass` &ndash; Will always throw `InvalidCastException`.
 
-**NOTE** There are sequences involving some of the above instructions that are considered optimizations. These sequences represent cases that will remain valid regardless of a `T` being ByRefLike&mdash;see ["Special IL Sequences" section](#special_il_sequences) below for details.
+**NOTE** There are sequences involving some of the above instructions that will remain valid regardless of a `T` being ByRefLike&mdash;see ["Special IL Sequences" section](#special_il_sequences) below for details.
 
 The expansion of ByRefLike types as Generic parameters does not relax restrictions on where ByRefLike types can be used. When `T` is ByRefLike, the use of `T` as a field will require the enclosing type to be ByRefLike.
 
