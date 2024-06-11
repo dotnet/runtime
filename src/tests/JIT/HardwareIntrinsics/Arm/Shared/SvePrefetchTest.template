@@ -197,7 +197,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
             {Op1VectorType}<{Op1BaseType}> loadMask = Sve.CreateFalseMask{Op1BaseType}();
 
-            {Isa}.{Method}(loadMask, ({Op1BaseType}*)(_dataTable.inArrayPtr), SvePrefetchType.SV_PLDL1KEEP);
+            {Isa}.{Method}(loadMask, ({Op1BaseType}*)(_dataTable.inArrayPtr), SvePrefetchType.LoadL1Temporal);
         }
 
         public void RunReflectionScenario()
@@ -210,7 +210,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 .Invoke(null, new object[] {
                 loadMask,
                 Pointer.Box(_dataTable.inArrayPtr, typeof({Op1BaseType}*)),
-                SvePrefetchType.SV_PLDL1KEEP
+                SvePrefetchType.LoadL1Temporal
                 });
         }
 
