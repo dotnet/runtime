@@ -79,6 +79,9 @@
 #elif defined(__aarch64__) || defined(TARGET_ARM64)
 #define CONFIG_CPU "armv8"
 #define CONFIG_WORDSIZE "64"
+#elif defined(__loongarch64) || defined(TARGET_LOONGARCH64)
+#define CONFIG_CPU "loongarch64"
+#define CONFIG_WORDSIZE "64"
 #elif defined (TARGET_RISCV32)
 #define CONFIG_CPU "riscv32"
 #define CONFIG_WORDSIZE "32"

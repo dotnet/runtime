@@ -589,6 +589,9 @@
 #cmakedefine TARGET_ARM64 1
 
 /* ... */
+#cmakedefine TARGET_LOONGARCH64 1
+
+/* ... */
 #cmakedefine TARGET_POWERPC 1
 
 /* ... */
@@ -617,6 +620,9 @@
 
 /* ... */
 #cmakedefine HOST_ARM64 1
+
+/* ... */
+#cmakedefine HOST_LOONGARCH64 1
 
 /* ... */
 #cmakedefine HOST_POWERPC 1

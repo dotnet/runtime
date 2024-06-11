@@ -1150,7 +1150,7 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 		desc_to_fixed_reg_inited = TRUE;
 
 		/* Validate the cpu description against the info in mini-ops.h */
-#if defined(TARGET_AMD64) || defined(TARGET_X86) || defined(TARGET_ARM) || defined(TARGET_ARM64) || defined (TARGET_RISCV)
+#if defined(TARGET_AMD64) || defined(TARGET_X86) || defined(TARGET_ARM) || defined(TARGET_ARM64) || defined (TARGET_RISCV) || defined (TARGET_LOONGARCH64)
 		/* Check that the table size is correct */
 		g_assert (MONO_ARCH_CPU_SPEC_IDX(MONO_ARCH_CPU_SPEC)[OP_LAST - OP_LOAD] == 0xffff);
 		for (i = OP_LOAD; i < OP_LAST; ++i) {
