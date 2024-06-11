@@ -13,6 +13,20 @@ namespace System.Numerics.Tensors
 {
     public static partial class TensorPrimitives
     {
+        /// <summary>Computes the population count of all elements in the specified tensor.</summary>
+        /// <param name="x">The tensor, represented as a span.</param>
+        /// <returns>The sum of the number of bits set in each element in <paramref name="x"/>.</returns>
+        public static long PopCount<T>(ReadOnlySpan<T> x) where T : IBinaryInteger<T>
+        {
+            long count = 0;
+            for (int i = 0; i < x.Length; i++)
+            {
+                count += long.CreateTruncating(T.PopCount(x[i]));
+            }
+
+            return count;
+        }
+
         /// <summary>Computes the element-wise population count of numbers in the specified tensor.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
         /// <param name="destination">The destination tensor, represented as a span.</param>
