@@ -108,7 +108,7 @@ namespace Mono.Linker
 
 		public bool LinkSymbols { get; set; }
 
-		internal bool PreserveSymbolPaths { get; set; }
+		public bool PreserveSymbolPaths { get; set; }
 
 		public bool KeepComInterfaces { get; set; }
 
