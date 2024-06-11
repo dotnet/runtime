@@ -38,7 +38,6 @@ using Mono.Cecil;
 
 namespace Mono.Linker
 {
-
 	public class TypeMapInfo
 	{
 		readonly HashSet<AssemblyDefinition> assemblies = new HashSet<AssemblyDefinition> ();
@@ -100,17 +99,17 @@ namespace Mono.Linker
 			return ret;
 		}
 
-		public void AddBaseMethod (MethodDefinition method, MethodDefinition @base, RuntimeInterfaceImplementation? runtimeInterface)
+		internal void AddBaseMethod (MethodDefinition method, MethodDefinition @base, RuntimeInterfaceImplementation? runtimeInterface)
 		{
 			base_methods.AddToList (method, new OverrideInformation (@base, method, runtimeInterface));
 		}
 
-		public void AddOverride (MethodDefinition @base, MethodDefinition @override, RuntimeInterfaceImplementation? runtimeInterface = null)
+		internal void AddOverride (MethodDefinition @base, MethodDefinition @override, RuntimeInterfaceImplementation? runtimeInterface = null)
 		{
 			override_methods.AddToList (@base, new OverrideInformation (@base, @override, runtimeInterface));
 		}
 
-		public void AddDefaultInterfaceImplementation (MethodDefinition @base, RuntimeInterfaceImplementation runtimeInterface, MethodDefinition defaultImplementationMethod)
+		internal void AddDefaultInterfaceImplementation (MethodDefinition @base, RuntimeInterfaceImplementation runtimeInterface, MethodDefinition defaultImplementationMethod)
 		{
 			Debug.Assert (@base.DeclaringType.IsInterface);
 			default_interface_implementations.AddToList (@base, new OverrideInformation (@base, defaultImplementationMethod, runtimeInterface));

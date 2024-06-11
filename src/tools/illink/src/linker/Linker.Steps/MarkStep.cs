@@ -32,6 +32,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
@@ -2410,8 +2411,7 @@ namespace Mono.Linker.Steps
 			}
 		}
 
-
-		protected virtual bool ShouldMarkRuntimeInterfaceImplementation (RuntimeInterfaceImplementation runtimeInterfaceImplementation)
+		internal bool ShouldMarkRuntimeInterfaceImplementation (RuntimeInterfaceImplementation runtimeInterfaceImplementation)
 		{
 			var type = runtimeInterfaceImplementation.Implementor;
 			var ifaces = runtimeInterfaceImplementation.InterfaceImplementation;

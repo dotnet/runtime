@@ -19,7 +19,7 @@ namespace Mono.Linker
 	/// This type represents the most direct way an interface may be implemented, but it may be implemented in a less direct way that is not represented here.
 	/// You should check all possible implementation 'paths' to determine if an interface is implemented, for example <see cref="MarkStep.IsInterfaceImplementationMarkedRecursively"/>.
 	/// </remarks>
-	internal class RuntimeInterfaceImplementation
+	internal sealed class RuntimeInterfaceImplementation
 	{
 		/// <summary>
 		/// The type that implements <see cref="RuntimeInterfaceImplementation.InflatedInterfaceType"/>.
