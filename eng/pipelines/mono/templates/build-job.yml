@@ -12,7 +12,6 @@ parameters:
   runtimeVariant: ''
   isOfficialBuild: false
   crossBuild: false
-  crossrootfsDir: ''
   dependsOn: []
   monoCrossAOTTargetOS: []
   dependOnEvaluatePaths: false
@@ -31,7 +30,6 @@ jobs:
     runtimeVariant: ${{ parameters.runtimeVariant }}
     crossBuild: ${{ parameters.crossBuild }}
     monoCrossAOTTargetOS: ${{ parameters.monoCrossAOTTargetOS }}
-    crossrootfsDir: ${{ parameters.crossroofsDir }}
     condition: ${{ parameters.condition }}
     dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
 

@@ -5,7 +5,6 @@ parameters:
   osSubgroup: ''
   container: ''
   testGroup: ''
-  crossrootfsDir: ''
   liveLibrariesBuildConfig: ''
   helixQueues: ''
   stagedBuild: false
@@ -23,8 +22,8 @@ parameters:
   enableMicrobuild: ''
   gatherAssetManifests: false
   shouldContinueOnError: false
-  
-  
+
+
 steps:
   - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) /p:LibrariesConfiguration=${{ parameters.buildConfig }} -ci -excludemonofailures os ${{ parameters.osGroup }} ${{ parameters.archType }} /p:RuntimeVariant=${{ parameters.runtimeVariant }} $(buildConfigUpper)
     displayName: Build Tests
@@ -68,4 +67,4 @@ steps:
 
         helixProjectArguments: '$(Build.SourcesDirectory)/src/tests/Common/helixpublishwitharcade.proj'
 
-        scenarios: normal 
+        scenarios: normal

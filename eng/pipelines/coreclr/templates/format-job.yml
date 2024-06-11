@@ -5,7 +5,6 @@ parameters:
   osSubgroup: ''
   container: ''
   crossBuild: false
-  crossrootfsDir: ''
   dependOnEvaluatePaths: false
   timeoutInMinutes: ''
   stagedBuild: false
@@ -23,7 +22,6 @@ jobs:
     osSubgroup: ${{ parameters.osSubgroup }}
     container: ${{ parameters.container }}
     crossBuild: ${{ parameters.crossBuild }}
-    crossrootfsDir: ${{ parameters.crossrootfsDir }}
     dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
     stagedBuild: ${{ parameters.stagedBuild }}
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}

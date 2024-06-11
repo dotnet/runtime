@@ -6,7 +6,6 @@ parameters:
   container: ''
   testGroup: ''
   crossBuild: false
-  crossrootfsDir: ''
   readyToRun: false
   liveLibrariesBuildConfig: ''
   crossgen2: false

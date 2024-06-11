@@ -37,442 +37,445 @@ variables:
 - name: PostBuildSign
   value: true
 
-stages:
-- stage: Build
-  jobs:
+extends:
+  template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
+  parameters:
+    stages:
+    - stage: Build
+      jobs:
 
-  #
-  # Localization build
-  #
-  - ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/main') }}:
-    - template: /eng/common/templates/job/onelocbuild.yml
-      parameters:
-        MirrorRepo: runtime
-        LclSource: lclFilesfromPackage
-        LclPackageId: 'LCL-JUNO-PROD-RUNTIME'
-
-  #
-  # Source Index Build
-  #
-  - ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/main') }}:
-    - template: /eng/common/templates/job/source-index-stage1.yml
-      parameters:
-        sourceIndexBuildCommand: build.cmd -subset libs.ref+libs.src -binarylog -os Linux -ci
-
-  #
-  # Build CoreCLR runtime packs
-  # Windows x64/x86/arm64/arm
-  # Sign diagnostic files after native build
-  #
-  - template: /eng/pipelines/common/platform-matrix.yml
-    parameters:
-      jobTemplate: /eng/pipelines/common/global-build-job.yml
-      buildConfig: release
-      platforms:
-      - windows_x64
-      - windows_x86
-      - windows_arm64
-      - windows_arm
-      jobParameters:
-        buildArgs: -s clr.runtime+clr.alljits -c $(_BuildConfig) /bl:$(Build.SourcesDirectory)/artifacts/logs/$(_BuildConfig)/CoreClrNativeBuild.binlog
-        nameSuffix: CoreCLR
-        isOfficialBuild: ${{ variables.isOfficialBuild }}
-        timeoutInMinutes: 120
-        postBuildSteps:
-        - template: /eng/pipelines/coreclr/templates/sign-diagnostic-files.yml
+      #
+      # Localization build
+      #
+      - ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/main') }}:
+        - template: /eng/common/templates/job/onelocbuild.yml
           parameters:
-            basePath: $(Build.SourcesDirectory)/artifacts/bin/coreclr
+            MirrorRepo: runtime
+            LclSource: lclFilesfromPackage
+            LclPackageId: 'LCL-JUNO-PROD-RUNTIME'
+
+      #
+      # Source Index Build
+      #
+      - ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/main') }}:
+        - template: /eng/common/templates/job/source-index-stage1.yml
+          parameters:
+            sourceIndexBuildCommand: build.cmd -subset libs.ref+libs.src -binarylog -os Linux -ci
+
+      #
+      # Build CoreCLR runtime packs
+      # Windows x64/x86/arm64/arm
+      # Sign diagnostic files after native build
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: release
+          platforms:
+          - windows_x64
+          - windows_x86
+          - windows_arm64
+          - windows_arm
+          jobParameters:
+            buildArgs: -s clr.runtime+clr.alljits -c $(_BuildConfig) /bl:$(Build.SourcesDirectory)/artifacts/logs/$(_BuildConfig)/CoreClrNativeBuild.binlog
+            nameSuffix: CoreCLR
             isOfficialBuild: ${{ variables.isOfficialBuild }}
-            timeoutInMinutes: 30
-        # Now that we've signed the diagnostic files, do the rest of the build.
-        - template: /eng/pipelines/common/templates/global-build-step.yml
-          parameters:
-            buildArgs: -s clr.corelib+clr.nativecorelib+clr.tools+clr.packages+clr.paltestlist+libs+host+packs -c $(_BuildConfig)
-            displayName: Build managed CoreCLR components, all libraries, hosts, and packs
-
-        # Upload the results.
-        - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
-          parameters:
-            name: $(osGroup)$(osSubgroup)_$(archType)
-
-  #
-  # Build CoreCLR runtime packs
-  # Mac x64/arm64
-  # Sign and entitle createdump and corerun after native build.
-  #
-  - template: /eng/pipelines/common/platform-matrix.yml
-    parameters:
-      jobTemplate: /eng/pipelines/common/global-build-job.yml
-      buildConfig: release
-      platforms:
-      - osx_arm64
-      - osx_x64
-      jobParameters:
-        buildArgs: -s clr.runtime+clr.alljits+host.native -c $(_BuildConfig) /bl:$(Build.SourcesDirectory)/artifacts/logs/$(_BuildConfig)/CoreClrNativeBuild.binlog
-        nameSuffix: CoreCLR
-        isOfficialBuild: ${{ variables.isOfficialBuild }}
-        timeoutInMinutes: 120
-        postBuildSteps:
-          - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
-            - template: /eng/pipelines/common/macos-sign-with-entitlements.yml
+            timeoutInMinutes: 120
+            postBuildSteps:
+            - template: /eng/pipelines/coreclr/templates/sign-diagnostic-files.yml
               parameters:
-                filesToSign:
-                - name: createdump
-                  path: $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(_BuildConfig)
-                  entitlementsFile: $(Build.SourcesDirectory)/eng/pipelines/common/createdump-entitlements.plist
-                - name: corerun
-                  path: $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(_BuildConfig)
-                  entitlementsFile: $(Build.SourcesDirectory)/eng/pipelines/common/entitlements.plist
-                - name: dotnet
-                  path: $(Build.SourcesDirectory)/artifacts/bin/$(osGroup)-$(archType).$(_BuildConfig)/corehost
-                  entitlementsFile: $(Build.SourcesDirectory)/eng/pipelines/common/entitlements.plist
-                - name: apphost
-                  path: $(Build.SourcesDirectory)/artifacts/bin/$(osGroup)-$(archType).$(_BuildConfig)/corehost
-                  entitlementsFile: $(Build.SourcesDirectory)/eng/pipelines/common/entitlements.plist
+                basePath: $(Build.SourcesDirectory)/artifacts/bin/coreclr
+                isOfficialBuild: ${{ variables.isOfficialBuild }}
+                timeoutInMinutes: 30
+            # Now that we've signed the diagnostic files, do the rest of the build.
+            - template: /eng/pipelines/common/templates/global-build-step.yml
+              parameters:
+                buildArgs: -s clr.corelib+clr.nativecorelib+clr.tools+clr.packages+clr.paltestlist+libs+host+packs -c $(_BuildConfig)
+                displayName: Build managed CoreCLR components, all libraries, hosts, and packs
 
-          - task: CopyFiles@2
-            displayName: 'Copy signed createdump to sharedFramework'
-            inputs:
-              contents: createdump
-              sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(_BuildConfig)
-              targetFolder: $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(_BuildConfig)/sharedFramework
-              overWrite: true
-
-          # Now that we've entitled and signed createdump, we can build the rest.
-          - template: /eng/pipelines/common/templates/global-build-step.yml
-            parameters:
-              buildArgs: -s clr.corelib+clr.nativecorelib+clr.tools+clr.packages+libs+host.tools+host.pkg+packs -c $(_BuildConfig)
-              displayName: Build managed CoreCLR and host components, all libraries, and packs
-
-          # Upload the results.
-          - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
-            parameters:
-              name: $(osGroup)$(osSubgroup)_$(archType)
-
-  #
-  # Build CoreCLR runtime packs
-  # Linux and Linux_musl
-  # CoreCLR runtime for CrossDac packaging
-  # Create Linux installers
-  #
-  - template: /eng/pipelines/common/platform-matrix.yml
-    parameters:
-      jobTemplate: /eng/pipelines/common/global-build-job.yml
-      buildConfig: release
-      platforms:
-      - linux_x64
-      - linux_arm
-      - linux_arm64
-      - linux_musl_x64
-      - linux_musl_arm
-      - linux_musl_arm64
-      jobParameters:
-        buildArgs: -s clr.runtime+clr.alljits+clr.corelib+clr.nativecorelib+clr.tools+clr.packages+libs+host+packs -c $(_BuildConfig)
-        nameSuffix: CoreCLR
-        isOfficialBuild: ${{ variables.isOfficialBuild }}
-        timeoutInMinutes: 120
-        postBuildSteps:
-          # Upload libcoreclr.so for CrossDac packaging
-          - task: CopyFiles@2
-            displayName: Gather runtime for CrossDac
-            inputs:
-              SourceFolder: $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(_BuildConfig)
-              Contents: libcoreclr.so
-              TargetFolder: $(Build.SourcesDirectory)/artifacts/CoreCLRCrossDacArtifacts/$(osGroup)$(osSubgroup).$(archType).$(_BuildConfig)/$(crossDacHostArch)
-          - task: PublishBuildArtifacts@1
-            displayName: Publish runtime for CrossDac
-            inputs:
-              pathToPublish: $(Build.SourcesDirectory)/artifacts/CoreCLRCrossDacArtifacts
-              PublishLocation: Container
-              artifactName: CoreCLRCrossDacArtifacts
-
-          # Upload the results.
-          - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
-            parameters:
-              name: $(osGroup)$(osSubgroup)_$(archType)
-        extraVariablesTemplates:
-          - template: /eng/pipelines/coreclr/templates/crossdac-hostarch.yml
-
-  #
-  # Build Mono runtime packs
-  #
-  - template: /eng/pipelines/common/platform-matrix.yml
-    parameters:
-      jobTemplate: /eng/pipelines/common/global-build-job.yml
-      buildConfig: release
-      runtimeFlavor: mono
-      platforms:
-      - Android_x64
-      - Android_x86
-      - Android_arm
-      - Android_arm64
-      - MacCatalyst_x64
-      - MacCatalyst_arm64
-      - tvOSSimulator_x64
-      - tvOSSimulator_arm64
-      - tvOS_arm64
-      - iOSSimulator_x64
-      - iOSSimulator_x86
-      - iOSSimulator_arm64
-      - iOS_arm
-      - iOS_arm64
-      - OSX_x64
-      - OSX_arm64
-      - Linux_x64
-      - Linux_arm
-      - Linux_arm64
-      - Linux_musl_x64
-      - Browser_wasm
-      # - Linux_musl_arm
-      # - Linux_musl_arm64
-      - windows_x64
-      - windows_x86
-      # - windows_arm
-      # - windows_arm64
-      jobParameters:
-        buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
-        nameSuffix: Mono
-        isOfficialBuild: ${{ variables.isOfficialBuild }}
-        postBuildSteps:
-          - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
-            parameters:
-              name: MonoRuntimePacks
-
-  # Build Mono AOT offset headers once, for consumption elsewhere
-  #
-  - template: /eng/pipelines/common/platform-matrix.yml
-    parameters:
-      jobTemplate: /eng/pipelines/mono/templates/generate-offsets.yml
-      buildConfig: release
-      platforms:
-      - Android_x64
-      - Browser_wasm
-      - tvOS_arm64
-      - iOS_arm64
-      - MacCatalyst_x64
-      jobParameters:
-        isOfficialBuild: ${{ variables.isOfficialBuild }}
-
-  #
-  # Build Mono release AOT cross-compilers
-  #
-  - template: /eng/pipelines/common/platform-matrix.yml
-    parameters:
-      jobTemplate: /eng/pipelines/common/global-build-job.yml
-      runtimeFlavor: mono
-      buildConfig: release
-      platforms:
-      - Linux_x64
-      jobParameters:
-        buildArgs: -s mono+packs -c $(_BuildConfig)
-                   /p:MonoCrossAOTTargetOS=Android+Browser /p:SkipMonoCrossJitConfigure=true /p:BuildMonoAOTCrossCompilerOnly=true
-        nameSuffix: CrossAOT_Mono
-        runtimeVariant: crossaot
-        dependsOn:
-        - mono_android_offsets
-        - mono_browser_offsets
-        monoCrossAOTTargetOS:
-        - Android
-        - Browser
-        isOfficialBuild: ${{ variables.isOfficialBuild }}
-        postBuildSteps:
-          - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
-            parameters:
-              name: MonoRuntimePacks
-
-  - template: /eng/pipelines/common/platform-matrix.yml
-    parameters:
-      jobTemplate: /eng/pipelines/common/global-build-job.yml
-      runtimeFlavor: mono
-      buildConfig: release
-      platforms:
-      - Windows_x64
-      jobParameters:
-        buildArgs: -s mono+packs -c $(_BuildConfig)
-                   /p:MonoCrossAOTTargetOS=Android+Browser /p:SkipMonoCrossJitConfigure=true /p:BuildMonoAOTCrossCompilerOnly=true
-        nameSuffix: CrossAOT_Mono
-        runtimeVariant: crossaot
-        dependsOn:
-        - mono_android_offsets
-        - mono_browser_offsets
-        monoCrossAOTTargetOS:
-        - Android
-        - Browser
-        isOfficialBuild: ${{ variables.isOfficialBuild }}
-        postBuildSteps:
-          - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
-            parameters:
-              name: MonoRuntimePacks
-
-  - template: /eng/pipelines/common/platform-matrix.yml
-    parameters:
-      jobTemplate: /eng/pipelines/common/global-build-job.yml
-      runtimeFlavor: mono
-      buildConfig: release
-      platforms:
-      - OSX_x64
-      jobParameters:
-        buildArgs: -s mono+packs -c $(_BuildConfig)
-                   /p:MonoCrossAOTTargetOS=Android+Browser+tvOS+iOS+MacCatalyst /p:SkipMonoCrossJitConfigure=true /p:BuildMonoAOTCrossCompilerOnly=true
-        nameSuffix: CrossAOT_Mono
-        runtimeVariant: crossaot
-        dependsOn:
-        - mono_android_offsets
-        - mono_browser_offsets
-        - mono_tvos_offsets
-        - mono_ios_offsets
-        - mono_maccatalyst_offsets
-        monoCrossAOTTargetOS:
-        - Android
-        - Browser
-        - tvOS
-        - iOS
-        - MacCatalyst
-        isOfficialBuild: ${{ variables.isOfficialBuild }}
-        postBuildSteps:
-          - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
-            parameters:
-              name: MonoRuntimePacks
-
-  #
-  # Build Mono LLVM runtime packs
-  #
-  - template: /eng/pipelines/common/platform-matrix-multijob.yml
-    parameters:
-      platforms:
-      - OSX_x64
-      - Linux_x64
-      # - Linux_arm
-      - Linux_arm64
-      # - Linux_musl_x64
-      # - Linux_musl_arm64
-      # - windows_x64
-      # - windows_x86
-      # - windows_arm
-      # - windows_arm64
-      jobTemplates:
-      # LLVMJIT
-      - jobTemplate: /eng/pipelines/common/global-build-job.yml
-        buildConfig: release
-        runtimeFlavor: mono
-        jobParameters:
-          buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
-                     /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=false
-          nameSuffix: Mono_LLVMJIT
-          runtimeVariant: LLVMJIT
-          isOfficialBuild: ${{ variables.isOfficialBuild }}
-          postBuildSteps:
+            # Upload the results.
             - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
               parameters:
-                name: MonoRuntimePacks
-      #LLVMAOT
-      - jobTemplate: /eng/pipelines/common/global-build-job.yml
-        buildConfig: release
-        runtimeFlavor: mono
-        jobParameters:
-          buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
-                      /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
-          nameSuffix: Mono_LLVMAOT
-          runtimeVariant: LLVMAOT
+                name: $(osGroup)$(osSubgroup)_$(archType)
+
+      #
+      # Build CoreCLR runtime packs
+      # Mac x64/arm64
+      # Sign and entitle createdump and corerun after native build.
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: release
+          platforms:
+          - osx_arm64
+          - osx_x64
+          jobParameters:
+            buildArgs: -s clr.runtime+clr.alljits+host.native -c $(_BuildConfig) /bl:$(Build.SourcesDirectory)/artifacts/logs/$(_BuildConfig)/CoreClrNativeBuild.binlog
+            nameSuffix: CoreCLR
+            isOfficialBuild: ${{ variables.isOfficialBuild }}
+            timeoutInMinutes: 120
+            postBuildSteps:
+              - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
+                - template: /eng/pipelines/common/macos-sign-with-entitlements.yml
+                  parameters:
+                    filesToSign:
+                    - name: createdump
+                      path: $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(_BuildConfig)
+                      entitlementsFile: $(Build.SourcesDirectory)/eng/pipelines/common/createdump-entitlements.plist
+                    - name: corerun
+                      path: $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(_BuildConfig)
+                      entitlementsFile: $(Build.SourcesDirectory)/eng/pipelines/common/entitlements.plist
+                    - name: dotnet
+                      path: $(Build.SourcesDirectory)/artifacts/bin/$(osGroup)-$(archType).$(_BuildConfig)/corehost
+                      entitlementsFile: $(Build.SourcesDirectory)/eng/pipelines/common/entitlements.plist
+                    - name: apphost
+                      path: $(Build.SourcesDirectory)/artifacts/bin/$(osGroup)-$(archType).$(_BuildConfig)/corehost
+                      entitlementsFile: $(Build.SourcesDirectory)/eng/pipelines/common/entitlements.plist
+
+              - task: CopyFiles@2
+                displayName: 'Copy signed createdump to sharedFramework'
+                inputs:
+                  contents: createdump
+                  sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(_BuildConfig)
+                  targetFolder: $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(_BuildConfig)/sharedFramework
+                  overWrite: true
+
+              # Now that we've entitled and signed createdump, we can build the rest.
+              - template: /eng/pipelines/common/templates/global-build-step.yml
+                parameters:
+                  buildArgs: -s clr.corelib+clr.nativecorelib+clr.tools+clr.packages+libs+host.tools+host.pkg+packs -c $(_BuildConfig)
+                  displayName: Build managed CoreCLR and host components, all libraries, and packs
+
+              # Upload the results.
+              - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
+                parameters:
+                  name: $(osGroup)$(osSubgroup)_$(archType)
+
+      #
+      # Build CoreCLR runtime packs
+      # Linux and Linux_musl
+      # CoreCLR runtime for CrossDac packaging
+      # Create Linux installers
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: release
+          platforms:
+          - linux_x64
+          - linux_arm
+          - linux_arm64
+          - linux_musl_x64
+          - linux_musl_arm
+          - linux_musl_arm64
+          jobParameters:
+            buildArgs: -s clr.runtime+clr.alljits+clr.corelib+clr.nativecorelib+clr.tools+clr.packages+libs+host+packs -c $(_BuildConfig)
+            nameSuffix: CoreCLR
+            isOfficialBuild: ${{ variables.isOfficialBuild }}
+            timeoutInMinutes: 120
+            postBuildSteps:
+              # Upload libcoreclr.so for CrossDac packaging
+              - task: CopyFiles@2
+                displayName: Gather runtime for CrossDac
+                inputs:
+                  SourceFolder: $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(_BuildConfig)
+                  Contents: libcoreclr.so
+                  TargetFolder: $(Build.SourcesDirectory)/artifacts/CoreCLRCrossDacArtifacts/$(osGroup)$(osSubgroup).$(archType).$(_BuildConfig)/$(crossDacHostArch)
+              - task: PublishBuildArtifacts@1
+                displayName: Publish runtime for CrossDac
+                inputs:
+                  pathToPublish: $(Build.SourcesDirectory)/artifacts/CoreCLRCrossDacArtifacts
+                  PublishLocation: Container
+                  artifactName: CoreCLRCrossDacArtifacts
+
+              # Upload the results.
+              - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
+                parameters:
+                  name: $(osGroup)$(osSubgroup)_$(archType)
+            extraVariablesTemplates:
+              - template: /eng/pipelines/coreclr/templates/crossdac-hostarch.yml
+
+      #
+      # Build Mono runtime packs
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: release
+          runtimeFlavor: mono
+          platforms:
+          - Android_x64
+          - Android_x86
+          - Android_arm
+          - Android_arm64
+          - MacCatalyst_x64
+          - MacCatalyst_arm64
+          - tvOSSimulator_x64
+          - tvOSSimulator_arm64
+          - tvOS_arm64
+          - iOSSimulator_x64
+          - iOSSimulator_x86
+          - iOSSimulator_arm64
+          - iOS_arm
+          - iOS_arm64
+          - OSX_x64
+          - OSX_arm64
+          - Linux_x64
+          - Linux_arm
+          - Linux_arm64
+          - Linux_musl_x64
+          - Browser_wasm
+          # - Linux_musl_arm
+          # - Linux_musl_arm64
+          - windows_x64
+          - windows_x86
+          # - windows_arm
+          # - windows_arm64
+          jobParameters:
+            buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
+            nameSuffix: Mono
+            isOfficialBuild: ${{ variables.isOfficialBuild }}
+            postBuildSteps:
+              - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
+                parameters:
+                  name: MonoRuntimePacks
+
+      # Build Mono AOT offset headers once, for consumption elsewhere
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/mono/templates/generate-offsets.yml
+          buildConfig: release
+          platforms:
+          - Android_x64
+          - Browser_wasm
+          - tvOS_arm64
+          - iOS_arm64
+          - MacCatalyst_x64
+          jobParameters:
+            isOfficialBuild: ${{ variables.isOfficialBuild }}
+
+      #
+      # Build Mono release AOT cross-compilers
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          runtimeFlavor: mono
+          buildConfig: release
+          platforms:
+          - Linux_x64
+          jobParameters:
+            buildArgs: -s mono+packs -c $(_BuildConfig)
+                       /p:MonoCrossAOTTargetOS=Android+Browser /p:SkipMonoCrossJitConfigure=true /p:BuildMonoAOTCrossCompilerOnly=true
+            nameSuffix: CrossAOT_Mono
+            runtimeVariant: crossaot
+            dependsOn:
+            - mono_android_offsets
+            - mono_browser_offsets
+            monoCrossAOTTargetOS:
+            - Android
+            - Browser
+            isOfficialBuild: ${{ variables.isOfficialBuild }}
+            postBuildSteps:
+              - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
+                parameters:
+                  name: MonoRuntimePacks
+
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          runtimeFlavor: mono
+          buildConfig: release
+          platforms:
+          - Windows_x64
+          jobParameters:
+            buildArgs: -s mono+packs -c $(_BuildConfig)
+                       /p:MonoCrossAOTTargetOS=Android+Browser /p:SkipMonoCrossJitConfigure=true /p:BuildMonoAOTCrossCompilerOnly=true
+            nameSuffix: CrossAOT_Mono
+            runtimeVariant: crossaot
+            dependsOn:
+            - mono_android_offsets
+            - mono_browser_offsets
+            monoCrossAOTTargetOS:
+            - Android
+            - Browser
+            isOfficialBuild: ${{ variables.isOfficialBuild }}
+            postBuildSteps:
+              - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
+                parameters:
+                  name: MonoRuntimePacks
+
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          runtimeFlavor: mono
+          buildConfig: release
+          platforms:
+          - OSX_x64
+          jobParameters:
+            buildArgs: -s mono+packs -c $(_BuildConfig)
+                       /p:MonoCrossAOTTargetOS=Android+Browser+tvOS+iOS+MacCatalyst /p:SkipMonoCrossJitConfigure=true /p:BuildMonoAOTCrossCompilerOnly=true
+            nameSuffix: CrossAOT_Mono
+            runtimeVariant: crossaot
+            dependsOn:
+            - mono_android_offsets
+            - mono_browser_offsets
+            - mono_tvos_offsets
+            - mono_ios_offsets
+            - mono_maccatalyst_offsets
+            monoCrossAOTTargetOS:
+            - Android
+            - Browser
+            - tvOS
+            - iOS
+            - MacCatalyst
+            isOfficialBuild: ${{ variables.isOfficialBuild }}
+            postBuildSteps:
+              - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
+                parameters:
+                  name: MonoRuntimePacks
+
+      #
+      # Build Mono LLVM runtime packs
+      #
+      - template: /eng/pipelines/common/platform-matrix-multijob.yml
+        parameters:
+          platforms:
+          - OSX_x64
+          - Linux_x64
+          # - Linux_arm
+          - Linux_arm64
+          # - Linux_musl_x64
+          # - Linux_musl_arm64
+          # - windows_x64
+          # - windows_x86
+          # - windows_arm
+          # - windows_arm64
+          jobTemplates:
+          # LLVMJIT
+          - jobTemplate: /eng/pipelines/common/global-build-job.yml
+            buildConfig: release
+            runtimeFlavor: mono
+            jobParameters:
+              buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
+                         /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=false
+              nameSuffix: Mono_LLVMJIT
+              runtimeVariant: LLVMJIT
+              isOfficialBuild: ${{ variables.isOfficialBuild }}
+              postBuildSteps:
+                - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
+                  parameters:
+                    name: MonoRuntimePacks
+          #LLVMAOT
+          - jobTemplate: /eng/pipelines/common/global-build-job.yml
+            buildConfig: release
+            runtimeFlavor: mono
+            jobParameters:
+              buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
+                          /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
+              nameSuffix: Mono_LLVMAOT
+              runtimeVariant: LLVMAOT
+              isOfficialBuild: ${{ variables.isOfficialBuild }}
+              postBuildSteps:
+                - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
+                  parameters:
+                    name: MonoRuntimePacks
+
+      #
+      # Build libraries AllConfigurations for packages
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: Release
+          platforms:
+          - windows_x64
+          jobParameters:
+            buildArgs: -s libs -allConfigurations -c $(_BuildConfig) /p:TestAssemblies=false /p:TestPackages=true
+            nameSuffix: Libraries_AllConfigurations
+            postBuildSteps:
+              - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
+                parameters:
+                  name: Libraries_AllConfigurations
+            timeoutInMinutes: 95
+
+      #
+      # Build SourceBuild leg
+      #
+      # - template: /eng/pipelines/common/platform-matrix.yml
+      #   parameters:
+      #     jobTemplate: /eng/pipelines/common/global-build-job.yml
+      #     buildConfig: Release
+      #     helixQueueGroup: ci
+      #     platforms:
+      #     - SourceBuild_Linux_x64
+      #     jobParameters:
+      #       nameSuffix: PortableSourceBuild
+      #       postBuildSteps:
+      #         - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
+      #           parameters:
+      #             name: SourceBuildPackages
+      #       timeoutInMinutes: 95
+
+      #
+      # Build PGO Instrumented CoreCLR Release
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: release
+          helixQueueGroup: ci
+          platforms:
+          - windows_x64
+          - windows_x86
+          - Linux_x64
+          jobParameters:
+            buildArgs: -s clr.native+clr.corelib+clr.tools+clr.nativecorelib+libs+host+packs -c $(_BuildConfig) -pgoinstrument
+            isOfficialBuild: ${{ variables.isOfficialBuild }}
+            nameSuffix: PGO
+            postBuildSteps:
+              - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
+                parameters:
+                  name: PGO
+            timeoutInMinutes: 95
+
+      #
+      # Build Workloads
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/mono/templates/workloads-build.yml
+          buildConfig: release
+          platforms:
+          - windows_x64
+          jobParameters:
+            isOfficialBuild: ${{ variables.isOfficialBuild }}
+            timeoutInMinutes: 120
+            dependsOn:
+            - Build_Android_arm_release_Mono
+            - Build_Android_arm64_release_Mono
+            - Build_Android_x86_release_Mono
+            - Build_Android_x64_release_Mono
+            - Build_Browser_wasm_release_Mono
+            - Build_iOS_arm_release_Mono
+            - Build_iOS_arm64_release_Mono
+            - Build_iOSSimulator_x64_release_Mono
+            - Build_iOSSimulator_x86_release_Mono
+            - Build_iOSSimulator_arm64_release_Mono
+            - Build_MacCatalyst_arm64_release_Mono
+            - Build_MacCatalyst_x64_release_Mono
+            - Build_tvOS_arm64_release_Mono
+            - Build_tvOSSimulator_arm64_release_Mono
+            - Build_tvOSSimulator_x64_release_Mono
+            - Build_Windows_x64_release_CrossAOT_Mono
+            - Build_windows_x64_release_CoreCLR
+            - Build_windows_x86_release_CoreCLR
+            - Build_windows_arm_release_CoreCLR
+            - Build_windows_arm64_release_CoreCLR
+
+    - ${{ if eq(variables.isOfficialBuild, true) }}:
+      - template: /eng/pipelines/official/stages/publish.yml
+        parameters:
           isOfficialBuild: ${{ variables.isOfficialBuild }}
-          postBuildSteps:
-            - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
-              parameters:
-                name: MonoRuntimePacks
-
-  #
-  # Build libraries AllConfigurations for packages
-  #
-  - template: /eng/pipelines/common/platform-matrix.yml
-    parameters:
-      jobTemplate: /eng/pipelines/common/global-build-job.yml
-      buildConfig: Release
-      platforms:
-      - windows_x64
-      jobParameters:
-        buildArgs: -s libs -allConfigurations -c $(_BuildConfig) /p:TestAssemblies=false /p:TestPackages=true
-        nameSuffix: Libraries_AllConfigurations
-        postBuildSteps:
-          - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
-            parameters:
-              name: Libraries_AllConfigurations
-        timeoutInMinutes: 95
-
-  #
-  # Build SourceBuild leg
-  #
-  # - template: /eng/pipelines/common/platform-matrix.yml
-  #   parameters:
-  #     jobTemplate: /eng/pipelines/common/global-build-job.yml
-  #     buildConfig: Release
-  #     helixQueueGroup: ci
-  #     platforms:
-  #     - SourceBuild_Linux_x64
-  #     jobParameters:
-  #       nameSuffix: PortableSourceBuild
-  #       postBuildSteps:
-  #         - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
-  #           parameters:
-  #             name: SourceBuildPackages
-  #       timeoutInMinutes: 95
-
-  #
-  # Build PGO Instrumented CoreCLR Release
-  #
-  - template: /eng/pipelines/common/platform-matrix.yml
-    parameters:
-      jobTemplate: /eng/pipelines/common/global-build-job.yml
-      buildConfig: release
-      helixQueueGroup: ci
-      platforms:
-      - windows_x64
-      - windows_x86
-      - Linux_x64
-      jobParameters:
-        buildArgs: -s clr.native+clr.corelib+clr.tools+clr.nativecorelib+libs+host+packs -c $(_BuildConfig) -pgoinstrument
-        isOfficialBuild: ${{ variables.isOfficialBuild }}
-        nameSuffix: PGO
-        postBuildSteps:
-          - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
-            parameters:
-              name: PGO
-        timeoutInMinutes: 95
-
-  #
-  # Build Workloads
-  #
-  - template: /eng/pipelines/common/platform-matrix.yml
-    parameters:
-      jobTemplate: /eng/pipelines/mono/templates/workloads-build.yml
-      buildConfig: release
-      platforms:
-      - windows_x64
-      jobParameters:
-        isOfficialBuild: ${{ variables.isOfficialBuild }}
-        timeoutInMinutes: 120
-        dependsOn:
-        - Build_Android_arm_release_Mono
-        - Build_Android_arm64_release_Mono
-        - Build_Android_x86_release_Mono
-        - Build_Android_x64_release_Mono
-        - Build_Browser_wasm_release_Mono
-        - Build_iOS_arm_release_Mono
-        - Build_iOS_arm64_release_Mono
-        - Build_iOSSimulator_x64_release_Mono
-        - Build_iOSSimulator_x86_release_Mono
-        - Build_iOSSimulator_arm64_release_Mono
-        - Build_MacCatalyst_arm64_release_Mono
-        - Build_MacCatalyst_x64_release_Mono
-        - Build_tvOS_arm64_release_Mono
-        - Build_tvOSSimulator_arm64_release_Mono
-        - Build_tvOSSimulator_x64_release_Mono
-        - Build_Windows_x64_release_CrossAOT_Mono
-        - Build_windows_x64_release_CoreCLR
-        - Build_windows_x86_release_CoreCLR
-        - Build_windows_arm_release_CoreCLR
-        - Build_windows_arm64_release_CoreCLR
-
-- ${{ if eq(variables.isOfficialBuild, true) }}:
-  - template: /eng/pipelines/official/stages/publish.yml
-    parameters:
-      isOfficialBuild: ${{ variables.isOfficialBuild }}

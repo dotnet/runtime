@@ -7,7 +7,6 @@ parameters:
   osSubgroup: ''
   container: ''
   crossBuild: false
-  crossrootfsDir: ''
   variables: []
   targetRid: ''
   timeoutInMinutes: ''

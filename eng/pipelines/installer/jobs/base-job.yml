@@ -5,7 +5,6 @@ parameters:
   osSubgroup: ''
   platform: ''
   crossBuild: false
-  crossrootfsDir: ''
   timeoutInMinutes: 120
   condition: true
   shouldContinueOnError: false
@@ -176,7 +175,6 @@ jobs:
           -v "$(Build.SourcesDirectory):/root/runtime"
           -w="/root/runtime"
           $(PreserveNuGetAuthDockerArgs)
-          -e ROOTFS_DIR=${{ parameters.crossrootfsDir }}
           ${{ parameters.container }}
 
     - name: BuildScript
