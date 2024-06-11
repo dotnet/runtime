@@ -560,6 +560,7 @@ namespace System.Runtime.CompilerServices
         private const uint enum_flag_ContainsGenericVariables = 0x20000000;
         private const uint enum_flag_HasComponentSize = 0x80000000;
         private const uint enum_flag_HasTypeEquivalence = 0x02000000;
+        private const uint enum_flag_HasFinalizer = 0x00100000;
         private const uint enum_flag_Category_Mask = 0x000F0000;
         private const uint enum_flag_Category_ValueType = 0x00040000;
         private const uint enum_flag_Category_Nullable = 0x00050000;
@@ -613,6 +614,8 @@ namespace System.Runtime.CompilerServices
         public bool NonTrivialInterfaceCast => (Flags & enum_flag_NonTrivialInterfaceCast) != 0;
 
         public bool HasTypeEquivalence => (Flags & enum_flag_HasTypeEquivalence) != 0;
+
+        public bool HasFinalizer => (Flags & enum_flag_HasFinalizer) != 0;
 
         internal static bool AreSameType(MethodTable* mt1, MethodTable* mt2) => mt1 == mt2;
 

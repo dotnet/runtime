@@ -12422,7 +12422,7 @@ static CorJitResult CompileMethodWithEtwWrapper(EEJitManager *jitMgr,
                                                       struct CORINFO_METHOD_INFO *info,
                                                       unsigned flags,
                                                       BYTE **nativeEntry,
-                                                      ULONG *nativeSizeOfCode)
+                                                      uint32_t *nativeSizeOfCode)
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;

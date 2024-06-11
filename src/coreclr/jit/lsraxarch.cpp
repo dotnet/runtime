@@ -2451,6 +2451,20 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             case NI_AVX512F_FusedMultiplySubtractAdd:
             case NI_AVX512F_FusedMultiplySubtractNegated:
             case NI_AVX512F_FusedMultiplySubtractNegatedScalar:
+            case NI_AVX10v1_FusedMultiplyAddNegatedScalar:
+            case NI_AVX10v1_FusedMultiplyAddScalar:
+            case NI_AVX10v1_FusedMultiplySubtractNegatedScalar:
+            case NI_AVX10v1_FusedMultiplySubtractScalar:
+            case NI_AVX10v1_MultiplyAdd:
+            case NI_AVX10v1_MultiplyAddNegated:
+            case NI_AVX10v1_MultiplyAddNegatedScalar:
+            case NI_AVX10v1_MultiplyAddScalar:
+            case NI_AVX10v1_MultiplyAddSubtract:
+            case NI_AVX10v1_MultiplySubtract:
+            case NI_AVX10v1_MultiplySubtractAdd:
+            case NI_AVX10v1_MultiplySubtractNegated:
+            case NI_AVX10v1_MultiplySubtractNegatedScalar:
+            case NI_AVX10v1_MultiplySubtractScalar:
             {
                 assert((numArgs == 3) || (intrinsicTree->OperIsEmbRoundingEnabled()));
                 assert(isRMW);
@@ -2544,11 +2558,24 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                         std::swap(emitOp1, emitOp3);
                     }
                 }
-                tgtPrefUse = BuildUse(emitOp1);
 
-                srcCount += 1;
-                srcCount += BuildDelayFreeUses(emitOp2, emitOp1);
-                srcCount += emitOp3->isContained() ? BuildOperandUses(emitOp3) : BuildDelayFreeUses(emitOp3, emitOp1);
+                GenTree* ops[] = {op1, op2, op3};
+                for (GenTree* op : ops)
+                {
+                    if (op == emitOp1)
+                    {
+                        tgtPrefUse = BuildUse(op);
+                        srcCount++;
+                    }
+                    else if (op == emitOp2)
+                    {
+                        srcCount += BuildDelayFreeUses(op, emitOp1);
+                    }
+                    else if (op == emitOp3)
+                    {
+                        srcCount += op->isContained() ? BuildOperandUses(op) : BuildDelayFreeUses(op, emitOp1);
+                    }
+                }
 
                 if (intrinsicTree->OperIsEmbRoundingEnabled() && !intrinsicTree->Op(4)->IsCnsIntOrI())
                 {
@@ -2559,7 +2586,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 break;
             }
 
-            case NI_AVX512F_BlendVariableMask:
+            case NI_EVEX_BlendVariableMask:
             {
                 assert(numArgs == 3);
 
@@ -2617,6 +2644,15 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             case NI_AVX512VBMI_PermuteVar64x8x2:
             case NI_AVX512VBMI_VL_PermuteVar16x8x2:
             case NI_AVX512VBMI_VL_PermuteVar32x8x2:
+            case NI_AVX10v1_PermuteVar16x8x2:
+            case NI_AVX10v1_PermuteVar2x64x2:
+            case NI_AVX10v1_PermuteVar4x32x2:
+            case NI_AVX10v1_PermuteVar8x16x2:
+            case NI_AVX10v1_PermuteVar32x8x2:
+            case NI_AVX10v1_PermuteVar4x64x2:
+            case NI_AVX10v1_PermuteVar8x32x2:
+            case NI_AVX10v1_PermuteVar16x16x2:
+            case NI_AVX10v1_V512_PermuteVar64x8x2:
             {
                 assert(numArgs == 3);
                 assert(isRMW);
@@ -2643,11 +2679,23 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                     std::swap(emitOp1, emitOp2);
                 }
 
-                tgtPrefUse = BuildUse(emitOp1);
-
-                srcCount += 1;
-                srcCount += BuildDelayFreeUses(emitOp2, emitOp1);
-                srcCount += op3->isContained() ? BuildOperandUses(emitOp3) : BuildDelayFreeUses(emitOp3, emitOp1);
+                GenTree* ops[] = {op1, op2, op3};
+                for (GenTree* op : ops)
+                {
+                    if (op == emitOp1)
+                    {
+                        tgtPrefUse = BuildUse(op);
+                        srcCount++;
+                    }
+                    else if (op == emitOp2)
+                    {
+                        srcCount += BuildDelayFreeUses(op, emitOp1);
+                    }
+                    else if (op == emitOp3)
+                    {
+                        srcCount += op->isContained() ? BuildOperandUses(op) : BuildDelayFreeUses(op, emitOp1);
+                    }
+                }
 
                 buildUses = false;
                 break;

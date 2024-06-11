@@ -240,7 +240,7 @@ memory_manager_delete (MonoMemoryManager *memory_manager, gboolean debug_unload)
 		mono_conc_hashtable_destroy (mm->gclass_cache);
 	free_simdhash (&mm->ginst_cache);
 	free_simdhash (&mm->gmethod_cache);
-	free_hash (&mm->gsignature_cache);
+	free_simdhash (&mm->gsignature_cache);
 	free_hash (&mm->szarray_cache);
 	free_hash (&mm->array_cache);
 	free_hash (&mm->ptr_cache);

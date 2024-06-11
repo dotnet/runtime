@@ -62,10 +62,21 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> Abs<T>(Vector256<T> vector)
         {
-            return Create(
-                Vector128.Abs(vector._lower),
-                Vector128.Abs(vector._upper)
-            );
+            if ((typeof(T) == typeof(byte))
+             || (typeof(T) == typeof(ushort))
+             || (typeof(T) == typeof(uint))
+             || (typeof(T) == typeof(ulong))
+             || (typeof(T) == typeof(nuint)))
+            {
+                return vector;
+            }
+            else
+            {
+                return Create(
+                    Vector128.Abs(vector._lower),
+                    Vector128.Abs(vector._upper)
+                );
+            }
         }
 
         /// <summary>Adds two vectors to compute their sum.</summary>
@@ -85,13 +96,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="left" /> and <paramref name="right" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<T> AndNot<T>(Vector256<T> left, Vector256<T> right)
-        {
-            return Create(
-                Vector128.AndNot(left._lower, right._lower),
-                Vector128.AndNot(left._upper, right._upper)
-            );
-        }
+        public static Vector256<T> AndNot<T>(Vector256<T> left, Vector256<T> right) => left & ~right;
 
         /// <summary>Reinterprets a <see cref="Vector256{TFrom}" /> as a new <see cref="Vector256{TTo}" />.</summary>
         /// <typeparam name="TFrom">The type of the elements in the input vector.</typeparam>
@@ -272,10 +277,26 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static Vector256<T> Ceiling<T>(Vector256<T> vector)
         {
-            return Create(
-                Vector128.Ceiling(vector._lower),
-                Vector128.Ceiling(vector._upper)
-            );
+            if ((typeof(T) == typeof(byte))
+             || (typeof(T) == typeof(short))
+             || (typeof(T) == typeof(int))
+             || (typeof(T) == typeof(long))
+             || (typeof(T) == typeof(nint))
+             || (typeof(T) == typeof(nuint))
+             || (typeof(T) == typeof(sbyte))
+             || (typeof(T) == typeof(ushort))
+             || (typeof(T) == typeof(uint))
+             || (typeof(T) == typeof(ulong)))
+            {
+                return vector;
+            }
+            else
+            {
+                return Create(
+                    Vector128.Ceiling(vector._lower),
+                    Vector128.Ceiling(vector._upper)
+                );
+            }
         }
 
         /// <summary>Computes the ceiling of each element in a vector.</summary>
@@ -301,13 +322,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="condition" />, <paramref name="left" />, and <paramref name="right" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<T> ConditionalSelect<T>(Vector256<T> condition, Vector256<T> left, Vector256<T> right)
-        {
-            return Create(
-                Vector128.ConditionalSelect(condition._lower, left._lower, right._lower),
-                Vector128.ConditionalSelect(condition._upper, left._upper, right._upper)
-            );
-        }
+        public static Vector256<T> ConditionalSelect<T>(Vector256<T> condition, Vector256<T> left, Vector256<T> right) => (left & condition) | AndNot(right, condition);
 
         /// <summary>Converts a <see cref="Vector256{Int64}" /> to a <see cref="Vector256{Double}" />.</summary>
         /// <param name="vector">The vector to convert.</param>
@@ -1353,16 +1368,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="left" /> and <paramref name="right" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static T Dot<T>(Vector256<T> left, Vector256<T> right)
-        {
-            // Doing this as Dot(lower) + Dot(upper) is important for floating-point determinism
-            // This is because the underlying dpps instruction on x86/x64 will do this equivalently
-            // and otherwise the software vs accelerated implementations may differ in returned result.
-
-            T result = Vector128.Dot(left._lower, right._lower);
-            result = Scalar<T>.Add(result, Vector128.Dot(left._upper, right._upper));
-            return result;
-        }
+        public static T Dot<T>(Vector256<T> left, Vector256<T> right) => Sum(left * right);
 
         /// <summary>Compares two vectors to determine if they are equal on a per-element basis.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -1459,10 +1465,26 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static Vector256<T> Floor<T>(Vector256<T> vector)
         {
-            return Create(
-                Vector128.Floor(vector._lower),
-                Vector128.Floor(vector._upper)
-            );
+            if ((typeof(T) == typeof(byte))
+                 || (typeof(T) == typeof(short))
+                 || (typeof(T) == typeof(int))
+                 || (typeof(T) == typeof(long))
+                 || (typeof(T) == typeof(nint))
+                 || (typeof(T) == typeof(nuint))
+                 || (typeof(T) == typeof(sbyte))
+                 || (typeof(T) == typeof(ushort))
+                 || (typeof(T) == typeof(uint))
+                 || (typeof(T) == typeof(ulong)))
+            {
+                return vector;
+            }
+            else
+            {
+                return Create(
+                    Vector128.Floor(vector._lower),
+                    Vector128.Floor(vector._upper)
+                );
+            }
         }
 
         /// <summary>Computes the floor of each element in a vector.</summary>
@@ -1927,7 +1949,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>The product of <paramref name="left" /> and <paramref name="right" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="left" /> and <paramref name="right" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
-        public static Vector256<T> Multiply<T>(T left, Vector256<T> right) => left * right;
+        public static Vector256<T> Multiply<T>(T left, Vector256<T> right) => right * left;
 
         /// <inheritdoc cref="Vector128.MultiplyAddEstimate(Vector128{double}, Vector128{double}, Vector128{double})" />
         [Intrinsic]
@@ -2067,13 +2089,7 @@ namespace System.Runtime.Intrinsics
         /// <returns>A vector whose elements are the ones-complement of the corresponding elements in <paramref name="vector" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
-        public static Vector256<T> OnesComplement<T>(Vector256<T> vector)
-        {
-            return Create(
-                Vector128.OnesComplement(vector._lower),
-                Vector128.OnesComplement(vector._upper)
-            );
-        }
+        public static Vector256<T> OnesComplement<T>(Vector256<T> vector) => ~vector;
 
         /// <summary>Shifts each element of a vector left by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>

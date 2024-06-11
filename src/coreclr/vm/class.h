@@ -1894,7 +1894,7 @@ public:
 class UMThunkMarshInfo;
 
 #ifdef FEATURE_COMINTEROP
-struct ComPlusCallInfo;
+struct CLRToCOMCallInfo;
 #endif // FEATURE_COMINTEROP
 
 class DelegateEEClass : public EEClass
@@ -1912,7 +1912,7 @@ public:
     Volatile<PCODE>                  m_pMarshalStub;
 
 #ifdef FEATURE_COMINTEROP
-    ComPlusCallInfo *m_pComPlusCallInfo;
+    CLRToCOMCallInfo *m_pCLRToCOMCallInfo;
 #endif // FEATURE_COMINTEROP
 
     PTR_MethodDesc GetInvokeMethod()
