@@ -99,6 +99,8 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
             // for intrinsics that get rewritten back to user calls
             assert(!operand->OperIsFieldList());
 
+            sigTyp = comp->impNormStructType(clsHnd);
+
             if (varTypeIsMask(operand->TypeGet()))
             {
 #if defined(FEATURE_HW_INTRINSICS)
@@ -115,9 +117,7 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
                 unreached();
 #endif // FEATURE_HW_INTRINSICS
             }
-
-            sigTyp = comp->impNormStructType(clsHnd);
-            arg    = NewCallArg::Struct(operand, sigTyp, clsHnd);
+            arg = NewCallArg::Struct(operand, sigTyp, clsHnd);
         }
         else
         {
