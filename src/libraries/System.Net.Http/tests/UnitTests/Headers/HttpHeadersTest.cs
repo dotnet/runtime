@@ -3,6 +3,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Net.Http.Headers;
@@ -2502,19 +2503,48 @@ namespace System.Net.Http.Tests
             }
         }
 
-        [Fact]
-        public async Task ConcurrentReads_ReturnTheSameParsedValues()
+        [Theory]
+        [InlineData(true, true)]
+        [InlineData(true, false)]
+        [InlineData(false, true)]
+        [InlineData(false, false)]
+        public async Task ConcurrentReads_ReturnTheSameParsedValues(bool useDictionary, bool useTypedProperty)
         {
-            for (int i = 0; i < 1_000; i++)
+            HttpContentHeaders dummyValues = new ByteArrayContent([]).Headers;
+            if (useDictionary)
             {
-                var headers = new ByteArrayContent([]).Headers;
-                headers.TryAddWithoutValidation("Content-Type", "application/json; charset=utf-8");
+                for (int i = 0; i < HttpHeaders.ArrayThreshold; i++)
+                {
+                    Assert.True(dummyValues.TryAddWithoutValidation($"foo-{i}", "Foo"));
+                }
+            }
 
-                Task<MediaTypeHeaderValue> task = Task.Run(() => headers.ContentType);
-                MediaTypeHeaderValue contentType1 = headers.ContentType;
-                MediaTypeHeaderValue contentType2 = await task;
+            Stopwatch s = Stopwatch.StartNew();
 
-                Assert.Same(contentType1, contentType2);
+            while (s.ElapsedMilliseconds < 100)
+            {
+                HttpContentHeaders headers = new ByteArrayContent([]).Headers;
+
+                headers.AddHeaders(dummyValues);
+
+                Assert.True(headers.TryAddWithoutValidation("Content-Type", "application/json; charset=utf-8"));
+
+                if (useTypedProperty)
+                {
+                    Task<MediaTypeHeaderValue> task = Task.Run(() => headers.ContentType);
+                    MediaTypeHeaderValue contentType1 = headers.ContentType;
+                    MediaTypeHeaderValue contentType2 = await task;
+
+                    Assert.Same(contentType1, contentType2);
+                }
+                else
+                {
+                    Task task = Task.Run(() => headers.Count()); // Force enumeration
+                    MediaTypeHeaderValue contentType1 = headers.ContentType;
+                    await task;
+
+                    Assert.Same(contentType1, headers.ContentType);
+                }
             }
         }
 
