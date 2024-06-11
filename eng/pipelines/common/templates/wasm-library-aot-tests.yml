@@ -32,7 +32,7 @@ jobs:
       shouldRunSmokeOnly: ${{ parameters.shouldRunSmokeOnly }}
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       scenarios:
-        - ${{ if (parameters.scenarios != '') }}:
+        - ${{ if eq(parameters.scenarios, '') }}:
           - ${{ parameters.scenarios }}
         - ${{ else }}:
           - ${{ if eq(platform, 'browser_wasm') }}:
