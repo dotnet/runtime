@@ -32,16 +32,6 @@
         <target state="translated">로깅 메서드 매개 변수 이름은 _로 시작할 수 없음</target>
         <note />
       </trans-unit>
-      <trans-unit id="InvalidLoggingMethodParameterOutMessage">
-        <source>Argument '{0}' is using the unsupported out parameter modifier</source>
-        <target state="translated">인수 '{0}'이(가) 지원되지 않는 out 매개 변수 한정자를 사용하고 있습니다.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="InvalidLoggingMethodParameterOutTitle">
-        <source>Argument is using the unsupported out parameter modifier</source>
-        <target state="translated">인수가 지원되지 않는 out 매개 변수 한정자를 사용하고 있습니다.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="LoggingMethodHasBodyMessage">
         <source>Logging methods cannot have a body</source>
         <target state="translated">로깅 메서드에는 본문을 사용할 수 없음</target>
@@ -67,24 +57,9 @@
         <target state="translated">로깅 메서드는 정적이어야 함</target>
         <note />
       </trans-unit>
-      <trans-unit id="LoggingUnsupportedLanguageVersionMessageFormat">
-        <source>The Logging source generator is not available in C# {0}. Please use language version {1} or greater.</source>
-        <target state="translated">로깅 원본 생성기는 C# {0}에서 사용할 수 없습니다. {1} 이상의 언어 버전을 사용하세요.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="LoggingUnsupportedLanguageVersionTitle">
-        <source>C# language version not supported by the source generator.</source>
-        <target state="translated">원본 생성기에서 지원되지 않는 C# 언어 버전입니다.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="MalformedFormatStringsMessage">
-        <source>Logging method '{0}' contains malformed format strings</source>
-        <target state="translated">로깅 메서드 '{0}'에 잘못된 형식의 문자열이 포함되어 있습니다.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="MalformedFormatStringsTitle">
-        <source>Logging method contains malformed format strings</source>
-        <target state="translated">로깅 메서드에 잘못된 형식의 문자열이 포함되어 있습니다.</target>
+        <source>Can't have malformed format strings (like dangling {, etc)</source>
+        <target state="new">Can't have malformed format strings (like dangling {, etc)</target>
         <note />
       </trans-unit>
       <trans-unit id="MissingLogLevelMessage">
@@ -170,16 +145,6 @@
       <trans-unit id="ShouldntReuseEventIdsTitle">
         <source>Multiple logging methods cannot use the same event id within a class</source>
         <target state="translated">여러 로깅 메서드가 한 클래스 내에서 동일한 이벤트 ID를 사용할 수는 없음</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="ShouldntReuseEventNamesMessage">
-        <source>Multiple logging methods are using event name {0} in class {1}</source>
-        <target state="translated">{0} 클래스에서 여러 로깅 메서드가 이벤트 이름 {1}을(를) 사용함</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="ShouldntReuseEventNamesTitle">
-        <source>Multiple logging methods should not use the same event name within a class</source>
-        <target state="translated">여러 로깅 메서드가 한 클래스 내에서 동일한 이벤트 이름을 사용하지 않아야 합니다</target>
         <note />
       </trans-unit>
       <trans-unit id="TemplateHasNoCorrespondingArgumentMessage">
