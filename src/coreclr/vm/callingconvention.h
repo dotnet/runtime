@@ -42,7 +42,7 @@ struct ArgLocDesc
     int     m_byteStackIndex;     // Stack offset in bytes (or -1)
     int     m_byteStackSize;      // Stack size in bytes
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    int     m_structFields;       // Struct field info when using Float-register except two-doubles case.
+    FpStructInRegistersInfo m_structFields; // Struct field info when using floating-point register(s)
 #endif
 
 #if defined(UNIX_AMD64_ABI)
@@ -97,7 +97,7 @@ struct ArgLocDesc
         m_hfaFieldSize = 0;
 #endif // defined(TARGET_ARM64)
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-        m_structFields = STRUCT_NO_FLOAT_FIELD;
+        m_structFields = {};
 #endif
 #if defined(UNIX_AMD64_ABI)
         m_eeClass = NULL;
@@ -1844,7 +1844,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
                 m_argLocDescForStructInRegs.m_idxGenReg = m_idxGenReg;
                 m_argLocDescForStructInRegs.m_cGenReg = 1;
 
-                m_argLocDescForStructInRegs.m_structFields = info.ToOldFlags();
+                m_argLocDescForStructInRegs.m_structFields = info;
                 m_hasArgLocDescForStructInRegs = true;
 
                 int regOffset = (info.flags & FpStruct::Float2nd)
@@ -1858,18 +1858,16 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
         else if (cFPRegs + m_idxFPReg <= NUM_ARGUMENT_REGISTERS)
         {
             int regOffset = TransitionBlock::GetOffsetOfFloatArgumentRegisters() + m_idxFPReg * FLOAT_REGISTER_SIZE;
-            if (info.flags == (FpStruct::BothFloat | (2 << FpStruct::PosSizeShift1st) | (2 << FpStruct::PosSizeShift2nd)))
+
+            if ((info.flags & (FpStruct::BothFloat | FpStruct::OnlyOne))
+                && (info.offset1st != 0 || info.offset2nd != FLOAT_REGISTER_SIZE))
             {
-                // Struct with two single-float fields
-                assert(info.GetSize1st() == sizeof(float));
-                assert(info.GetSize2nd() == sizeof(float));
+                // Struct with one or two floating-point fields laid out differently than in TransitionBlock::FloatArgumentRegisters
                 m_argLocDescForStructInRegs.Init();
                 m_argLocDescForStructInRegs.m_idxFloatReg = m_idxFPReg;
-                m_argLocDescForStructInRegs.m_cFloatReg = 2;
-                assert(cFPRegs == 2);
-                assert(argSize == 2 * sizeof(float));
+                m_argLocDescForStructInRegs.m_cFloatReg = cFPRegs;
 
-                m_argLocDescForStructInRegs.m_structFields = info.ToOldFlags();
+                m_argLocDescForStructInRegs.m_structFields = info;
                 m_hasArgLocDescForStructInRegs = true;
             }
             m_idxFPReg += cFPRegs;

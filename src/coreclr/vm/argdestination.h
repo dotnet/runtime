@@ -106,71 +106,45 @@ public:
         #endif // TARGET_RISCV64
 
         _ASSERTE(IsStructPassedInRegs());
-        _ASSERTE(fieldBytes <= 16);
+        _ASSERTE(destOffset == 0);
+        LOONGARCH64_ONLY(_ASSERTE(fieldBytes <= 16);)
 
-        int argOfs = TransitionBlock::GetOffsetOfFloatArgumentRegisters() + m_argLocDescForStructInRegs->m_idxFloatReg * 8;
+        using namespace FpStruct;
+        FpStructInRegistersInfo info = m_argLocDescForStructInRegs->m_structFields;
+        _ASSERTE(m_argLocDescForStructInRegs->m_cFloatReg == ((info.flags & BothFloat) ? 2 : 1));
+        _ASSERTE(m_argLocDescForStructInRegs->m_cGenReg == ((info.flags & (Float1st | Float2nd)) ? 1 : 0));
 
-        if (m_argLocDescForStructInRegs->m_structFields == STRUCT_FLOAT_FIELD_ONLY_TWO)
-        { // struct with two floats.
-            _ASSERTE(m_argLocDescForStructInRegs->m_cFloatReg == 2);
-            _ASSERTE(m_argLocDescForStructInRegs->m_cGenReg == 0);
-            *(INT64*)((char*)m_base + argOfs) = NanBox | *(INT32*)src;
-            *(INT64*)((char*)m_base + argOfs + 8) = NanBox | *((INT32*)src + 1);
-        }
-        else if ((m_argLocDescForStructInRegs->m_structFields & STRUCT_FLOAT_FIELD_FIRST) != 0)
-        { // the first field is float or double.
-            _ASSERTE(m_argLocDescForStructInRegs->m_cFloatReg == 1);
-            _ASSERTE(m_argLocDescForStructInRegs->m_cGenReg == 1);
-            _ASSERTE((m_argLocDescForStructInRegs->m_structFields & STRUCT_FLOAT_FIELD_SECOND) == 0);//the second field is integer.
+        int floatRegOffset = TransitionBlock::GetOffsetOfFloatArgumentRegisters() +
+            m_argLocDescForStructInRegs->m_idxFloatReg * FLOAT_REGISTER_SIZE;
+        INT64* floatReg = (INT64*)((char*)m_base + floatRegOffset);
 
-            if ((m_argLocDescForStructInRegs->m_structFields & STRUCT_FIRST_FIELD_SIZE_IS8) == 0)
-            {
-                *(INT64*)((char*)m_base + argOfs) = NanBox | *(INT32*)src; // the first field is float
-            }
-            else
-            {
-                *(UINT64*)((char*)m_base + argOfs) = *(UINT64*)src; // the first field is double.
-            }
-
-            argOfs = TransitionBlock::GetOffsetOfArgumentRegisters() + m_argLocDescForStructInRegs->m_idxGenReg * 8;
-            if ((m_argLocDescForStructInRegs->m_structFields & STRUCT_HAS_8BYTES_FIELDS_MASK) != 0)
-            {
-                *(UINT64*)((char*)m_base + argOfs) = *((UINT64*)src + 1);
-            }
-            else
-            {
-                *(INT64*)((char*)m_base + argOfs) = *((INT32*)src + 1); // the second field is int32.
-            }
-        }
-        else if ((m_argLocDescForStructInRegs->m_structFields & STRUCT_FLOAT_FIELD_SECOND) != 0)
-        { // the second field is float or double.
-            _ASSERTE(m_argLocDescForStructInRegs->m_cFloatReg == 1);
-            _ASSERTE(m_argLocDescForStructInRegs->m_cGenReg == 1);
-            _ASSERTE((m_argLocDescForStructInRegs->m_structFields & STRUCT_FLOAT_FIELD_FIRST) == 0);//the first field is integer.
-
-            // destOffset - nonzero when copying values into Nullable<T>, it is the offset of the T value inside of the Nullable<T>.
-            // here the first field maybe Nullable.
-            if ((m_argLocDescForStructInRegs->m_structFields & STRUCT_HAS_8BYTES_FIELDS_MASK) == 0)
-            {
-                // the second field is float.
-                *(INT64*)((char*)m_base + argOfs) = NanBox | (destOffset == 0 ? *((INT32*)src + 1) : *(INT32*)src);
-            }
-            else
-            {
-                // the second field is double.
-                *(UINT64*)((char*)m_base + argOfs) = destOffset == 0 ? *((UINT64*)src + 1) : *(UINT64*)src;
-            }
-
-            if (0 == destOffset)
-            {
-                // NOTE: here ignoring the first size.
-                argOfs = TransitionBlock::GetOffsetOfArgumentRegisters() + m_argLocDescForStructInRegs->m_idxGenReg * 8;
-                *(UINT64*)((char*)m_base + argOfs) = *(UINT64*)src;
-            }
-        }
-        else
+        if (info.flags & (OnlyOne | BothFloat | Float1st)) // copy first floating field
         {
-            _ASSERTE(!"---------UNReachable-------LoongArch64/RISC-V64!!!");
+            void* field = (char*)src + info.offset1st;
+            *floatReg++ = info.IsSize1st8() ? *(INT64*)field : NanBox | *(INT32*)field;
+        }
+
+        if (info.flags & (BothFloat | Float2nd)) // copy second floating field
+        {
+            void* field = (char*)src + info.offset2nd;
+            *floatReg = info.IsSize2nd8() ? *(INT64*)field : NanBox | *(INT32*)field;
+        }
+
+        if (info.flags & (Float1st | Float2nd)) // copy integer field
+        {
+            int intRegOffset = TransitionBlock::GetOffsetOfArgumentRegisters() +
+                m_argLocDescForStructInRegs->m_idxGenReg * TARGET_POINTER_SIZE;
+            INT64* intReg = (INT64*)((char*)m_base + intRegOffset);
+
+            void* field = (char*)src + ((info.flags & Float2nd) ? info.offset1st : info.offset2nd);
+            switch ((info.flags & Float2nd) ? info.GetSizeShift1st() : info.GetSizeShift2nd())
+            {
+                case 0: *intReg = *(INT8* )field; break;
+                case 1: *intReg = *(INT16*)field; break;
+                case 2: *intReg = *(INT32*)field; break;
+                case 3: *intReg = *(INT64*)field; break;
+                default: _ASSERTE(false);
+            }
         }
     }
 #endif // !DACCESS_COMPILE
