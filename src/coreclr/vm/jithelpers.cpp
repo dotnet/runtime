@@ -2113,11 +2113,6 @@ HCIMPL1(Object*, JIT_NewS_MP_FastPortable, CORINFO_CLASS_HANDLE typeHnd_)
     {
         _ASSERTE(GCHeapUtilities::UseThreadAllocationContexts());
 
-        // This is typically the only call in the fast path. Making the call early seems to be better, as it allows the compiler
-        // to use volatile registers for intermediate values. This reduces the number of push/pop instructions and eliminates
-        // some reshuffling of intermediate values into nonvolatile registers around the call.
-        Thread *thread = GetThread();
-
         TypeHandle typeHandle(typeHnd_);
         _ASSERTE(!typeHandle.IsTypeDesc()); // heap objects must have method tables
         MethodTable *methodTable = typeHandle.AsMethodTable();
