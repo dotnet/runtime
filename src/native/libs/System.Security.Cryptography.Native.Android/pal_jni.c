@@ -692,7 +692,7 @@ int GetEnumAsInt(JNIEnv *env, jobject enumObj)
 jint AndroidCryptoNative_InitLibraryOnLoad (JavaVM *vm, void *reserved)
 {
     (void)reserved;
-    LOG_DEBUG(__PRETTY_FUNCTION__);
+    LOG_DEBUG("%s in %s", __PRETTY_FUNCTION__, __FILE__);
     gJvm = vm;
 
     JNIEnv* env = GetJNIEnv();
