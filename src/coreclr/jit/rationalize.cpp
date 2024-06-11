@@ -105,7 +105,7 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
                 // No managed call takes TYP_MASK, so convert it back to a TYP_SIMD
 
                 unsigned    simdSize;
-                CorInfoType simdBaseJitType = comp->getBaseJitTypeAndSizeOfSIMDType(call->gtRetClsHnd, &simdSize);
+                CorInfoType simdBaseJitType = comp->getBaseJitTypeAndSizeOfSIMDType(clsHnd, &simdSize);
                 assert(simdSize != 0);
 
                 GenTree* cvtNode = comp->gtNewSimdCvtMaskToVectorNode(sigTyp, operand, simdBaseJitType, simdSize);
