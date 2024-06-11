@@ -1495,7 +1495,16 @@ bool Lowering::TryLowerSwitchToBitTest(FlowEdge*   jumpTable[],
     return true;
 }
 
-void Lowering::ReplaceArgWithPutArgOrBitcast(GenTree** argSlot, GenTree* putArgOrBitcast)
+//------------------------------------------------------------------------
+// ReplaceArgWithPutArgOrBitcast: Insert a PUTARG_* node in the right location
+// and replace the call operand with that node.
+//
+// Arguments:
+//    call            - the call whose arg is being rewritten.
+//    argSlot         - slot in call of argument
+//    putArgOrBitcast - the node that is being inserted
+//
+void Lowering::ReplaceArgWithPutArgOrBitcast(GenTreeCall* call, GenTree** argSlot, GenTree* putArgOrBitcast)
 {
     assert(argSlot != nullptr);
     assert(*argSlot != nullptr);
@@ -1508,7 +1517,24 @@ void Lowering::ReplaceArgWithPutArgOrBitcast(GenTree** argSlot, GenTree* putArgO
     putArgOrBitcast->AsOp()->gtOp1 = arg;
 
     // Insert the putarg/copy into the block
-    BlockRange().InsertAfter(arg, putArgOrBitcast);
+    bool interferingCall = false;
+    for (GenTree* cur = arg->gtNext; cur != call; cur = cur->gtNext)
+    {
+        if (cur->IsCall())
+        {
+            interferingCall = true;
+            break;
+        }
+    }
+
+    if (interferingCall)
+    {
+        BlockRange().InsertBefore(call, putArgOrBitcast);
+    }
+    else
+    {
+        BlockRange().InsertAfter(arg, putArgOrBitcast);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -1622,7 +1648,7 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, CallArg* callArg, 
                     GenTree* newOper = comp->gtNewPutArgReg(curTyp, curOp, argReg);
 
                     // Splice in the new GT_PUTARG_REG node in the GT_FIELD_LIST
-                    ReplaceArgWithPutArgOrBitcast(&use.NodeRef(), newOper);
+                    ReplaceArgWithPutArgOrBitcast(call, &use.NodeRef(), newOper);
                     regIndex++;
                 }
 
@@ -1839,7 +1865,7 @@ void Lowering::LowerArg(GenTreeCall* call, CallArg* callArg, bool late)
         // If an extra node is returned, splice it in the right place in the tree.
         if (arg != putArg)
         {
-            ReplaceArgWithPutArgOrBitcast(ppArg, putArg);
+            ReplaceArgWithPutArgOrBitcast(call, ppArg, putArg);
         }
     }
 
@@ -1890,7 +1916,7 @@ GenTree* Lowering::LowerFloatArg(GenTree** pArg, CallArg* callArg)
                     GenTree* intNode = LowerFloatArgReg(node, currRegNumber);
                     assert(intNode != nullptr);
 
-                    ReplaceArgWithPutArgOrBitcast(&use.NodeRef(), intNode);
+                    ReplaceArgWithPutArgOrBitcast(call, &use.NodeRef(), intNode);
                 }
 
                 if (node->TypeGet() == TYP_DOUBLE)
@@ -1911,7 +1937,7 @@ GenTree* Lowering::LowerFloatArg(GenTree** pArg, CallArg* callArg)
         {
             GenTree* intNode = LowerFloatArgReg(arg, callArg->AbiInfo.GetRegNum());
             assert(intNode != nullptr);
-            ReplaceArgWithPutArgOrBitcast(pArg, intNode);
+            ReplaceArgWithPutArgOrBitcast(call, pArg, intNode);
             return *pArg;
         }
     }
