@@ -185,6 +185,7 @@ namespace Microsoft.Extensions.Logging
 
                     return providers;
 
+                    // Find message logger or return null if there is no match. FirstOrDefault isn't used because MessageLogger is a struct.
                     static MessageLogger? FirstOrNull(MessageLogger[]? messageLoggers, ILogger logger)
                     {
                         if (messageLoggers is null || messageLoggers.Length == 0)
