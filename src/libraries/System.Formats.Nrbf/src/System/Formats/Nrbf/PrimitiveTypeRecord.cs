@@ -22,6 +22,10 @@ namespace System.Formats.Nrbf;
 [DebuggerDisplay("{Value}")]
 public abstract class PrimitiveTypeRecord : SerializationRecord
 {
+    private protected PrimitiveTypeRecord()
+    {
+    }
+
     /// <summary>
     /// Gets the serialized primitive value.
     /// </summary>
