@@ -176,7 +176,7 @@ get_property(eventpipe_sources TARGET dn-eventpipe PROPERTY INTERFACE_SOURCES)
 set_source_files_properties(${diagnosticserver_sources} ${diagnosticserver_pal_sources} ${eventpipe_sources} PROPERTIES LANGUAGE CXX)
 
 add_library(eventpipe-shared-objects OBJECT)
-target_link_libraries(eventpipe-shared-objects PRIVATE dn-diagnosticserver dn-eventpipe)
+target_link_libraries(eventpipe-shared-objects PRIVATE dn-diagnosticserver dn-eventpipe dn-diagnosticserver-pal)
 # Build EventPipe and DiagnosticServer as unity-builds for better inlining.
 set_target_properties(eventpipe-shared-objects PROPERTIES
   UNITY_BUILD ON
@@ -184,7 +184,7 @@ set_target_properties(eventpipe-shared-objects PROPERTIES
 )
 if (CLR_CMAKE_TARGET_WIN32)
     add_library(eventpipe-shared-objects.GuardCF OBJECT)
-    target_link_libraries(eventpipe-shared-objects.GuardCF PRIVATE dn-diagnosticserver dn-eventpipe)
+    target_link_libraries(eventpipe-shared-objects.GuardCF PRIVATE dn-diagnosticserver dn-eventpipe dn-diagnosticserver-pal)
 
     target_compile_options(eventpipe-shared-objects PRIVATE
         "/FI${RUNTIME_DIR}/eventpipe/NativeaotEventPipeSupport.h")
