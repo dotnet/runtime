@@ -63,7 +63,7 @@ namespace Mono.Linker
 			this.context = context;
 		}
 
-		public IEnumerable<(InterfaceImplementation, TypeDefinition)>? GetReferencedInterfaces (MethodIL methodIL)
+		public IEnumerable<(RuntimeInterfaceImplementation, TypeDefinition)>? GetReferencedInterfaces (MethodIL methodIL)
 		{
 			var possibleStackTypes = AllPossibleStackTypes (methodIL);
 			if (possibleStackTypes.Count == 0)
@@ -73,7 +73,7 @@ namespace Mono.Linker
 			if (interfaceTypes.Length == 0)
 				return null;
 
-			var interfaceImplementations = new HashSet<(InterfaceImplementation, TypeDefinition)> ();
+			var interfaceImplementations = new HashSet<(RuntimeInterfaceImplementation, TypeDefinition)> ();
 
 			// If a type could be on the stack in the body and an interface it implements could be on the stack on the body
 			// then we need to mark that interface implementation.  When this occurs it is not safe to remove the interface implementation from the type
@@ -139,31 +139,16 @@ namespace Mono.Linker
 			return types;
 		}
 
-		void AddMatchingInterfaces (HashSet<(InterfaceImplementation, TypeDefinition)> results, TypeDefinition type, TypeDefinition[] interfaceTypes)
+		void AddMatchingInterfaces (HashSet<(RuntimeInterfaceImplementation, TypeDefinition)> results, TypeDefinition type, TypeDefinition[] interfaceTypes)
 		{
-			if (!type.HasInterfaces)
+			var runtimeInterfaces = context.Annotations.GetRuntimeInterfaces (type);
+			if (runtimeInterfaces is null)
 				return;
-
-			foreach (var interfaceType in interfaceTypes) {
-				if (HasInterface (type, interfaceType, out InterfaceImplementation? implementation))
-					results.Add ((implementation, type));
-			}
-		}
-
-		bool HasInterface (TypeDefinition type, TypeDefinition interfaceType, [NotNullWhen (true)] out InterfaceImplementation? implementation)
-		{
-			implementation = null;
-			if (!type.HasInterfaces)
-				return false;
-
-			foreach (var iface in type.Interfaces) {
-				if (context.TryResolve (iface.InterfaceType) == interfaceType) {
-					implementation = iface;
-					return true;
+			foreach (var iface in runtimeInterfaces) {
+				if (interfaceTypes.Contains (iface.InterfaceTypeDefinition)) {
+					results.Add ((iface, type));
 				}
 			}
-
-			return false;
 		}
 
 		void AddFromGenericInstance (HashSet<TypeDefinition> set, IGenericInstance instance)

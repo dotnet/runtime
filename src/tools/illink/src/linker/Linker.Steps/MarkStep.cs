@@ -2600,31 +2600,18 @@ namespace Mono.Linker.Steps
 
 		void MarkICustomMarshalerMethods (TypeDefinition inputType, in DependencyInfo reason, MessageOrigin origin)
 		{
-			TypeDefinition? type = inputType;
-			do {
-				if (!type.HasInterfaces)
+			var runtimeInterfaces = Annotations.GetRuntimeInterfaces (inputType);
+			if (runtimeInterfaces is null)
+				return;
+			foreach (var runtimeInterface in runtimeInterfaces) {
+
+				var iface_type = runtimeInterface.InterfaceTypeDefinition;
+				if (false == iface_type?.IsTypeOf ("System.Runtime.InteropServices", "ICustomMarshaler"))
 					continue;
+				MarkMethodsIf (iface_type!.Methods, m => !m.IsStatic, reason, origin);
 
-				foreach (var iface in type.Interfaces) {
-					var iface_type = iface.InterfaceType;
-					if (!iface_type.IsTypeOf ("System.Runtime.InteropServices", "ICustomMarshaler"))
-						continue;
-
-					//
-					// Instead of trying to guess where to find the interface declaration ILLink walks
-					// the list of implemented interfaces and resolve the declaration from there
-					//
-					var tdef = Context.Resolve (iface_type);
-					if (tdef == null) {
-						return;
-					}
-
-					MarkMethodsIf (tdef.Methods, m => !m.IsStatic, reason, origin);
-
-					MarkInterfaceImplementation (iface, new MessageOrigin (type));
-					return;
-				}
-			} while ((type = Context.TryResolve (type.BaseType)) != null);
+				MarkRuntimeInterfaceImplementation (runtimeInterface, new MessageOrigin (Context.Resolve (runtimeInterface.TypeWithInterfaceImplementation)));
+			}
 		}
 
 		bool IsNonEmptyStaticConstructor (MethodDefinition method)
@@ -3310,6 +3297,7 @@ namespace Mono.Linker.Steps
 
 			DoAdditionalInstantiatedTypeProcessing (type);
 		}
+
 		void MarkRuntimeInterfaceImplementation (MethodDefinition method, MethodReference ov)
 		{
 			if (Context.Resolve (ov) is not MethodDefinition resolvedOverride)
@@ -3647,7 +3635,7 @@ namespace Mono.Linker.Steps
 				return;
 
 			foreach (var (implementation, type) in implementations)
-				MarkInterfaceImplementation (implementation, new MessageOrigin (type));
+				MarkRuntimeInterfaceImplementation (implementation, new MessageOrigin (type));
 		}
 
 		bool InstructionRequiresReflectionMethodBodyScannerForFieldAccess (Instruction instruction)
