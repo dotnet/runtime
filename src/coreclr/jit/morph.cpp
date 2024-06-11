@@ -314,7 +314,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
             // Check if we are going from ulong->double->float
             if ((innerSrcType == TYP_ULONG) && (innerDstType == TYP_DOUBLE) && (dstType == TYP_FLOAT))
             {
-                if (compOpportunisticallyDependsOn(InstructionSet_AVX512F))
+                if (canUseEvexEncoding())
                 {
                     // One optimized (combined) cast here
                     tree = gtNewCastNode(TYP_FLOAT, innerOper, true, TYP_FLOAT);
@@ -341,8 +341,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
             // For pre-SSE41, the all src is converted to TYP_DOUBLE
             // and goes through helpers.
             && (tree->gtOverflow() || (dstType == TYP_LONG) ||
-                !(compOpportunisticallyDependsOn(InstructionSet_AVX512F) ||
-                  (dstType == TYP_INT && compOpportunisticallyDependsOn(InstructionSet_SSE41))))
+                !(canUseEvexEncoding() || (dstType == TYP_INT && compOpportunisticallyDependsOn(InstructionSet_SSE41))))
 #elif defined(TARGET_ARM)
             // Arm: src = float, dst = int64/uint64 or overflow conversion.
             && (tree->gtOverflow() || varTypeIsLong(dstType))
@@ -381,7 +380,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
                 //     float  -> int for SSE41
                 //     double -> int/uint/long for SSE41
                 // For all other conversions, we use helper functions.
-                if (compOpportunisticallyDependsOn(InstructionSet_AVX512F) ||
+                if (canUseEvexEncoding() ||
                     ((dstType != TYP_ULONG) && compOpportunisticallyDependsOn(InstructionSet_SSE41)))
                 {
                     if (tree->CastOp() != oper)
@@ -501,7 +500,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
     {
         srcType = varTypeToUnsigned(srcType);
 
-        if (srcType == TYP_ULONG && !compOpportunisticallyDependsOn(InstructionSet_AVX512F))
+        if (srcType == TYP_ULONG && !canUseEvexEncoding())
         {
             if (dstType == TYP_FLOAT)
             {
@@ -765,8 +764,6 @@ const char* getWellKnownArgName(WellKnownArg arg)
             return "RetBuffer";
         case WellKnownArg::PInvokeFrame:
             return "PInvokeFrame";
-        case WellKnownArg::SecretStubParam:
-            return "SecretStubParam";
         case WellKnownArg::WrapperDelegateCell:
             return "WrapperDelegateCell";
         case WellKnownArg::ShiftLow:
@@ -9428,7 +9425,8 @@ DONE_MORPHING_CHILDREN:
             }
 
             /* Any constant cases should have been folded earlier */
-            noway_assert(!op1->OperIsConst() || opts.OptimizationDisabled() || optValnumCSE_phase);
+            noway_assert(!op1->OperIsConst() || op1->IsIconHandle() || opts.OptimizationDisabled() ||
+                         optValnumCSE_phase);
             break;
 
         case GT_CKFINITE:
@@ -10678,6 +10676,62 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
             INDEBUG(node->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
             return node;
         }
+#if defined(TARGET_ARM64)
+        case NI_Sve_ConvertMaskToVector:
+        {
+            GenTree* op1 = node->Op(1);
+
+            if (!op1->OperIsHWIntrinsic(NI_Sve_ConvertVectorToMask))
+            {
+                break;
+            }
+
+            unsigned            simdBaseTypeSize = genTypeSize(node->GetSimdBaseType());
+            GenTreeHWIntrinsic* cvtOp1           = op1->AsHWIntrinsic();
+
+            if ((genTypeSize(cvtOp1->GetSimdBaseType()) != simdBaseTypeSize))
+            {
+                // We need the operand to be the same kind of mask; otherwise
+                // the bitwise operation can differ in how it performs
+                break;
+            }
+
+            GenTree* vectorNode = op1->AsHWIntrinsic()->Op(1);
+
+            DEBUG_DESTROY_NODE(op1, node);
+            INDEBUG(vectorNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+
+            return vectorNode;
+        }
+
+        case NI_Sve_ConvertVectorToMask:
+        {
+            GenTree* op1 = node->Op(1);
+            GenTree* op2 = node->Op(2);
+
+            if (!op1->OperIsHWIntrinsic(NI_Sve_CreateTrueMaskAll) ||
+                !op2->OperIsHWIntrinsic(NI_Sve_ConvertMaskToVector))
+            {
+                break;
+            }
+
+            unsigned simdBaseTypeSize = genTypeSize(node->GetSimdBaseType());
+
+            if (!op2->OperIsHWIntrinsic() || (genTypeSize(op2->AsHWIntrinsic()->GetSimdBaseType()) != simdBaseTypeSize))
+            {
+                // We need the operand to be the same kind of mask; otherwise
+                // the bitwise operation can differ in how it performs
+                break;
+            }
+
+            GenTree* maskNode = op2->AsHWIntrinsic()->Op(1);
+
+            DEBUG_DESTROY_NODE(op2, node);
+            INDEBUG(maskNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+
+            return maskNode;
+        }
+#endif
 #if defined(TARGET_XARCH)
         case NI_AVX512F_And:
         case NI_AVX512DQ_And:
@@ -10687,12 +10741,16 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
         case NI_AVX512DQ_Or:
         case NI_AVX512F_Xor:
         case NI_AVX512DQ_Xor:
+        case NI_AVX10v1_V512_And:
+        case NI_AVX10v1_V512_AndNot:
+        case NI_AVX10v1_V512_Or:
+        case NI_AVX10v1_V512_Xor:
         {
             GenTree* op1 = node->Op(1);
             GenTree* op2 = node->Op(2);
 
-            if (!op1->OperIsHWIntrinsic(NI_AVX512F_ConvertMaskToVector) ||
-                !op2->OperIsHWIntrinsic(NI_AVX512F_ConvertMaskToVector))
+            if (!op1->OperIsHWIntrinsic(NI_EVEX_ConvertMaskToVector) ||
+                !op2->OperIsHWIntrinsic(NI_EVEX_ConvertMaskToVector))
             {
                 // We need both operands to be ConvertMaskToVector in
                 // order to optimize this to a direct mask operation
@@ -10722,29 +10780,33 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
             {
                 case NI_AVX512F_And:
                 case NI_AVX512DQ_And:
+                case NI_AVX10v1_V512_And:
                 {
-                    maskIntrinsicId = NI_AVX512F_AndMask;
+                    maskIntrinsicId = NI_EVEX_AndMask;
                     break;
                 }
 
                 case NI_AVX512F_AndNot:
                 case NI_AVX512DQ_AndNot:
+                case NI_AVX10v1_V512_AndNot:
                 {
-                    maskIntrinsicId = NI_AVX512F_AndNotMask;
+                    maskIntrinsicId = NI_EVEX_AndNotMask;
                     break;
                 }
 
                 case NI_AVX512F_Or:
                 case NI_AVX512DQ_Or:
+                case NI_AVX10v1_V512_Or:
                 {
-                    maskIntrinsicId = NI_AVX512F_OrMask;
+                    maskIntrinsicId = NI_EVEX_OrMask;
                     break;
                 }
 
                 case NI_AVX512F_Xor:
                 case NI_AVX512DQ_Xor:
+                case NI_AVX10v1_V512_Xor:
                 {
-                    maskIntrinsicId = NI_AVX512F_XorMask;
+                    maskIntrinsicId = NI_EVEX_XorMask;
                     break;
                 }
 
@@ -10765,17 +10827,17 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
             node->Op(2) = cvtOp2->Op(1);
             DEBUG_DESTROY_NODE(op2);
 
-            node = gtNewSimdHWIntrinsicNode(simdType, node, NI_AVX512F_ConvertMaskToVector, simdBaseJitType, simdSize);
+            node = gtNewSimdHWIntrinsicNode(simdType, node, NI_EVEX_ConvertMaskToVector, simdBaseJitType, simdSize);
 
             INDEBUG(node->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
             break;
         }
 
-        case NI_AVX512F_ConvertMaskToVector:
+        case NI_EVEX_ConvertMaskToVector:
         {
             GenTree* op1 = node->Op(1);
 
-            if (!op1->OperIsHWIntrinsic(NI_AVX512F_ConvertVectorToMask))
+            if (!op1->OperIsHWIntrinsic(NI_EVEX_ConvertVectorToMask))
             {
                 break;
             }
@@ -10798,11 +10860,11 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
             return vectorNode;
         }
 
-        case NI_AVX512F_ConvertVectorToMask:
+        case NI_EVEX_ConvertVectorToMask:
         {
             GenTree* op1 = node->Op(1);
 
-            if (!op1->OperIsHWIntrinsic(NI_AVX512F_ConvertMaskToVector))
+            if (!op1->OperIsHWIntrinsic(NI_EVEX_ConvertMaskToVector))
             {
                 break;
             }
@@ -13213,80 +13275,28 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
                 block->SetKindAndTargetEdge(BBJ_ALWAYS, block->GetFalseEdge());
             }
 
-            if (fgHaveValidEdgeWeights)
+            // We examine the taken edge (block -> bTaken)
+            // if block has valid profile weight and bTaken does not we try to adjust bTaken's weight
+            // else if bTaken has valid profile weight and block does not we try to adjust block's weight
+            // We can only adjust the block weights when (the edge block -> bTaken) is the only edge into bTaken
+            //
+            if (block->hasProfileWeight())
             {
-                // We are removing an edge from block to bNotTaken
-                // and we have already computed the edge weights, so
-                // we will try to adjust some of the weights
-                //
-                BasicBlock* bUpdated = nullptr; // non-NULL if we updated the weight of an internal block
-
-                // We examine the taken edge (block -> bTaken)
-                // if block has valid profile weight and bTaken does not we try to adjust bTaken's weight
-                // else if bTaken has valid profile weight and block does not we try to adjust block's weight
-                // We can only adjust the block weights when (the edge block -> bTaken) is the only edge into bTaken
-                //
-                if (block->hasProfileWeight())
+                if (!bTaken->hasProfileWeight())
                 {
-                    // The edge weights for (block -> bTaken) are 100% of block's weight
-
-                    edgeTaken->setEdgeWeights(block->bbWeight, block->bbWeight, bTaken);
-
-                    if (!bTaken->hasProfileWeight())
+                    if ((bTaken->countOfInEdges() == 1) || (bTaken->bbWeight < block->bbWeight))
                     {
-                        if ((bTaken->countOfInEdges() == 1) || (bTaken->bbWeight < block->bbWeight))
-                        {
-                            // Update the weight of bTaken
-                            bTaken->inheritWeight(block);
-                            bUpdated = bTaken;
-                        }
+                        // Update the weight of bTaken
+                        bTaken->inheritWeight(block);
                     }
                 }
-                else if (bTaken->hasProfileWeight())
+            }
+            else if (bTaken->hasProfileWeight())
+            {
+                if (bTaken->countOfInEdges() == 1)
                 {
-                    if (bTaken->countOfInEdges() == 1)
-                    {
-                        // There is only one in edge to bTaken
-                        edgeTaken->setEdgeWeights(bTaken->bbWeight, bTaken->bbWeight, bTaken);
-
-                        // Update the weight of block
-                        block->inheritWeight(bTaken);
-                        bUpdated = block;
-                    }
-                }
-
-                if (bUpdated != nullptr)
-                {
-                    weight_t newMinWeight;
-                    weight_t newMaxWeight;
-
-                    FlowEdge* edge;
-                    // Now fix the weights of the edges out of 'bUpdated'
-                    switch (bUpdated->GetKind())
-                    {
-                        case BBJ_COND:
-                            edge         = bUpdated->GetFalseEdge();
-                            newMaxWeight = bUpdated->bbWeight;
-                            newMinWeight = min(edge->edgeWeightMin(), newMaxWeight);
-                            edge->setEdgeWeights(newMinWeight, newMaxWeight, bUpdated->GetFalseTarget());
-
-                            edge         = bUpdated->GetTrueEdge();
-                            newMaxWeight = bUpdated->bbWeight;
-                            newMinWeight = min(edge->edgeWeightMin(), newMaxWeight);
-                            edge->setEdgeWeights(newMinWeight, newMaxWeight, bUpdated->GetFalseTarget());
-                            break;
-
-                        case BBJ_ALWAYS:
-                            edge         = bUpdated->GetTargetEdge();
-                            newMaxWeight = bUpdated->bbWeight;
-                            newMinWeight = min(edge->edgeWeightMin(), newMaxWeight);
-                            edge->setEdgeWeights(newMinWeight, newMaxWeight, bUpdated->Next());
-                            break;
-
-                        default:
-                            // We don't handle BBJ_SWITCH
-                            break;
-                    }
+                    // Update the weight of block
+                    block->inheritWeight(bTaken);
                 }
             }
 
@@ -15243,7 +15253,9 @@ PhaseStatus Compiler::fgRetypeImplicitByRefArgs()
                 if (!undoPromotion)
                 {
                     // Insert IR that initializes the temp from the parameter.
-                    fgEnsureFirstBBisScratch();
+                    // The first BB should already be a valid insertion point,
+                    // which is a precondition for this phase when optimizing.
+                    assert(fgFirstBB->bbPreds == nullptr);
                     GenTree* addr  = gtNewLclvNode(lclNum, TYP_BYREF);
                     GenTree* data  = (varDsc->TypeGet() == TYP_STRUCT) ? gtNewBlkIndir(varDsc->GetLayout(), addr)
                                                                        : gtNewIndir(varDsc->TypeGet(), addr);

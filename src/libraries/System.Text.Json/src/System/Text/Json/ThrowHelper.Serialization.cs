@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.IO.Pipelines;
 using System.Reflection;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
@@ -61,6 +62,24 @@ namespace System.Text.Json
         public static void ThrowInvalidOperationException_DeserializeUnableToAssignNull(Type declaredType)
         {
             throw new InvalidOperationException(SR.Format(SR.DeserializeUnableToAssignNull, declaredType));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowJsonException_PropertyGetterDisallowNull(string propertyName, Type declaringType)
+        {
+            throw new JsonException(SR.Format(SR.PropertyGetterDisallowNull, propertyName, declaringType)) { AppendPathInformation = true };
+        }
+
+        [DoesNotReturn]
+        public static void ThrowJsonException_PropertySetterDisallowNull(string propertyName, Type declaringType)
+        {
+            throw new JsonException(SR.Format(SR.PropertySetterDisallowNull, propertyName, declaringType)) { AppendPathInformation = true };
+        }
+
+        [DoesNotReturn]
+        public static void ThrowJsonException_ConstructorParameterDisallowNull(string parameterName, Type declaringType)
+        {
+            throw new JsonException(SR.Format(SR.ConstructorParameterDisallowNull, parameterName, declaringType)) { AppendPathInformation = true };
         }
 
         [DoesNotReturn]
@@ -277,7 +296,7 @@ namespace System.Text.Json
             Debug.Assert(parent.PropertyCache != null);
 
             // Soft cut-off length - once message becomes longer than that we won't be adding more elements
-            const int CutOffLength = 50;
+            const int CutOffLength = 60;
 
             foreach (KeyValuePair<string, JsonPropertyInfo> kvp in parent.PropertyCache.List)
             {
@@ -294,7 +313,9 @@ namespace System.Text.Json
                     listOfMissingPropertiesBuilder.Append(' ');
                 }
 
+                listOfMissingPropertiesBuilder.Append('\'');
                 listOfMissingPropertiesBuilder.Append(property.Name);
+                listOfMissingPropertiesBuilder.Append('\'');
                 first = false;
 
                 if (listOfMissingPropertiesBuilder.Length >= CutOffLength)
@@ -412,7 +433,7 @@ namespace System.Text.Json
             string message = ex.Message;
 
             // Insert the "Path" portion before "LineNumber" and "BytePositionInLine".
-#if NETCOREAPP
+#if NET
             int iPos = message.AsSpan().LastIndexOf(" LineNumber: ");
 #else
             int iPos = message.LastIndexOf(" LineNumber: ", StringComparison.Ordinal);
@@ -526,6 +547,12 @@ namespace System.Text.Json
         public static void ThrowInvalidOperationException_SerializationDataExtensionPropertyInvalid(JsonPropertyInfo jsonPropertyInfo)
         {
             throw new InvalidOperationException(SR.Format(SR.SerializationDataExtensionPropertyInvalid, jsonPropertyInfo.PropertyType, jsonPropertyInfo.MemberName));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowInvalidOperationException_PropertyTypeNotNullable(JsonPropertyInfo jsonPropertyInfo)
+        {
+            throw new InvalidOperationException(SR.Format(SR.PropertyTypeNotNullable, jsonPropertyInfo.PropertyType));
         }
 
         [DoesNotReturn]
@@ -758,8 +785,8 @@ namespace System.Text.Json
         [DoesNotReturn]
         public static void ThrowInvalidOperationException_JsonPropertyInfoIsBoundToDifferentJsonTypeInfo(JsonPropertyInfo propertyInfo)
         {
-            Debug.Assert(propertyInfo.ParentTypeInfo != null, "We should not throw this exception when ParentTypeInfo is null");
-            throw new InvalidOperationException(SR.Format(SR.JsonPropertyInfoBoundToDifferentParent, propertyInfo.Name, propertyInfo.ParentTypeInfo.Type.FullName));
+            Debug.Assert(propertyInfo.DeclaringTypeInfo != null, "We should not throw this exception when ParentTypeInfo is null");
+            throw new InvalidOperationException(SR.Format(SR.JsonPropertyInfoBoundToDifferentParent, propertyInfo.Name, propertyInfo.DeclaringTypeInfo.Type.FullName));
         }
 
         [DoesNotReturn]
@@ -896,6 +923,18 @@ namespace System.Text.Json
         public static void ThrowArgumentException_JsonPolymorphismOptionsAssociatedWithDifferentJsonTypeInfo(string parameterName)
         {
             throw new ArgumentException(SR.JsonPolymorphismOptionsAssociatedWithDifferentJsonTypeInfo, paramName: parameterName);
+        }
+
+        [DoesNotReturn]
+        public static void ThrowOperationCanceledException_PipeWriteCanceled()
+        {
+            throw new OperationCanceledException(SR.PipeWriterCanceled);
+        }
+
+        [DoesNotReturn]
+        public static void ThrowInvalidOperationException_PipeWriterDoesNotImplementUnflushedBytes(PipeWriter pipeWriter)
+        {
+            throw new InvalidOperationException(SR.Format(SR.PipeWriter_DoesNotImplementUnflushedBytes, pipeWriter.GetType().Name));
         }
     }
 }

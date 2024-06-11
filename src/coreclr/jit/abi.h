@@ -48,8 +48,17 @@ struct ABIPassingInformation
     // multiple register segments and a struct segment.
     // - On Windows x64, all parameters always fit into one stack slot or
     // register, and thus always have NumSegments == 1
-    unsigned           NumSegments = 0;
-    ABIPassingSegment* Segments    = nullptr;
+    // - On loongarch64/riscv64, structs can be passed in two registers or
+    // can be split out over register and stack, giving
+    // multiple register segments and a struct segment.
+    unsigned           NumSegments;
+    ABIPassingSegment* Segments;
+
+    ABIPassingInformation(unsigned numSegments = 0, ABIPassingSegment* segments = nullptr)
+        : NumSegments(numSegments)
+        , Segments(segments)
+    {
+    }
 
     bool HasAnyRegisterSegment() const;
     bool HasAnyStackSegment() const;
@@ -58,6 +67,10 @@ struct ABIPassingInformation
     bool IsSplitAcrossRegistersAndStack() const;
 
     static ABIPassingInformation FromSegment(Compiler* comp, const ABIPassingSegment& segment);
+
+#ifdef WINDOWS_AMD64_ABI
+    static bool GetShadowSpaceCallerOffsetForReg(regNumber reg, int* offset);
+#endif
 
 #ifdef DEBUG
     void Dump() const;
@@ -77,7 +90,7 @@ public:
     {
     }
 
-    unsigned Count()
+    unsigned Count() const
     {
         return m_numRegs - m_index;
     }
@@ -97,11 +110,17 @@ struct ClassifierInfo
 
 class X86Classifier
 {
-    RegisterQueue m_regs;
-    unsigned      m_stackArgSize = 0;
+    const ClassifierInfo& m_info;
+    RegisterQueue         m_regs;
+    unsigned              m_stackArgSize = 0;
 
 public:
     X86Classifier(const ClassifierInfo& info);
+
+    unsigned StackSize()
+    {
+        return m_stackArgSize;
+    }
 
     ABIPassingInformation Classify(Compiler*    comp,
                                    var_types    type,
@@ -113,10 +132,15 @@ class WinX64Classifier
 {
     RegisterQueue m_intRegs;
     RegisterQueue m_floatRegs;
-    unsigned      m_stackArgSize = 0;
+    unsigned      m_stackArgSize = 32;
 
 public:
     WinX64Classifier(const ClassifierInfo& info);
+
+    unsigned StackSize()
+    {
+        return m_stackArgSize;
+    }
 
     ABIPassingInformation Classify(Compiler*    comp,
                                    var_types    type,
@@ -133,6 +157,11 @@ class SysVX64Classifier
 public:
     SysVX64Classifier(const ClassifierInfo& info);
 
+    unsigned StackSize()
+    {
+        return m_stackArgSize;
+    }
+
     ABIPassingInformation Classify(Compiler*    comp,
                                    var_types    type,
                                    ClassLayout* structLayout,
@@ -148,6 +177,11 @@ class Arm64Classifier
 
 public:
     Arm64Classifier(const ClassifierInfo& info);
+
+    unsigned StackSize()
+    {
+        return roundUp(m_stackArgSize, TARGET_POINTER_SIZE);
+    }
 
     ABIPassingInformation Classify(Compiler*    comp,
                                    var_types    type,
@@ -173,6 +207,53 @@ class Arm32Classifier
 public:
     Arm32Classifier(const ClassifierInfo& info);
 
+    unsigned StackSize()
+    {
+        return m_stackArgSize;
+    }
+
+    ABIPassingInformation Classify(Compiler*    comp,
+                                   var_types    type,
+                                   ClassLayout* structLayout,
+                                   WellKnownArg wellKnownParam);
+};
+
+class RiscV64Classifier
+{
+    const ClassifierInfo& m_info;
+    RegisterQueue         m_intRegs;
+    RegisterQueue         m_floatRegs;
+    unsigned              m_stackArgSize = 0;
+
+public:
+    RiscV64Classifier(const ClassifierInfo& info);
+
+    unsigned StackSize()
+    {
+        return m_stackArgSize;
+    }
+
+    ABIPassingInformation Classify(Compiler*    comp,
+                                   var_types    type,
+                                   ClassLayout* structLayout,
+                                   WellKnownArg wellKnownParam);
+};
+
+class LoongArch64Classifier
+{
+    const ClassifierInfo& m_info;
+    RegisterQueue         m_intRegs;
+    RegisterQueue         m_floatRegs;
+    unsigned              m_stackArgSize = 0;
+
+public:
+    LoongArch64Classifier(const ClassifierInfo& info);
+
+    unsigned StackSize()
+    {
+        return m_stackArgSize;
+    }
+
     ABIPassingInformation Classify(Compiler*    comp,
                                    var_types    type,
                                    ClassLayout* structLayout,
@@ -189,6 +270,10 @@ typedef SysVX64Classifier PlatformClassifier;
 typedef Arm64Classifier PlatformClassifier;
 #elif defined(TARGET_ARM)
 typedef Arm32Classifier PlatformClassifier;
+#elif defined(TARGET_RISCV64)
+typedef RiscV64Classifier PlatformClassifier;
+#elif defined(TARGET_LOONGARCH64)
+typedef LoongArch64Classifier PlatformClassifier;
 #endif
 
 #ifdef SWIFT_SUPPORT
@@ -200,6 +285,11 @@ public:
     SwiftABIClassifier(const ClassifierInfo& info)
         : m_classifier(info)
     {
+    }
+
+    unsigned StackSize()
+    {
+        return m_classifier.StackSize();
     }
 
     ABIPassingInformation Classify(Compiler*    comp,

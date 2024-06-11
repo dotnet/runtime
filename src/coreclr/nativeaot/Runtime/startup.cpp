@@ -33,7 +33,7 @@
 #ifndef DACCESS_COMPILE
 
 #ifdef PROFILE_STARTUP
-unsigned __int64 g_startupTimelineEvents[NUM_STARTUP_TIMELINE_EVENTS] = { 0 };
+uint64_t g_startupTimelineEvents[NUM_STARTUP_TIMELINE_EVENTS] = { 0 };
 #endif // PROFILE_STARTUP
 
 #ifdef TARGET_UNIX

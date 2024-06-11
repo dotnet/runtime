@@ -55,8 +55,8 @@
 #ifndef FEATURE_EH_FUNCLETS
 #include "excep.h"
 #endif
-
 #include "exinfo.h"
+#include "arraynative.inl"
 
 using std::isfinite;
 using std::isnan;
@@ -109,20 +109,6 @@ using std::isnan;
 //
 #define Is32BitSigned(a)    (Hi32Bits(a) == Hi32Bits((INT64)(INT32)(a)))
 
-//
-// helper function to shift the result by 32-bits
-//
-inline UINT64 ShiftToHi32Bits(UINT32 x)
-{
-    // The shift compiles into slow multiplication by 2^32! VSWhidbey 360736
-    // return ((UINT64)x) << 32;
-
-    ULARGE_INTEGER ret;
-    ret.u.HighPart = x;
-    ret.u.LowPart = 0;
-    return ret.QuadPart;
-}
-
 #if !defined(TARGET_X86) || defined(TARGET_UNIX)
 /*********************************************************************/
 HCIMPL2_VV(INT64, JIT_LMul, INT64 val1, INT64 val2)
@@ -139,117 +125,6 @@ HCIMPL2_VV(INT64, JIT_LMul, INT64 val1, INT64 val2)
 }
 HCIMPLEND
 #endif // !TARGET_X86 || TARGET_UNIX
-
-/*********************************************************************/
-HCIMPL2_VV(INT64, JIT_LMulOvf, INT64 val1, INT64 val2)
-{
-    FCALL_CONTRACT;
-
-    // This short-cut does not actually help since the multiplication
-    // of two 32-bit signed ints compiles into the call to a slow helper
-    // if (Is32BitSigned(val1) && Is32BitSigned(val2))
-    //     return (INT64)(INT32)val1 * (INT64)(INT32)val2;
-
-    INDEBUG(INT64 expected = val1 * val2;)
-    INT64 ret;
-
-        // Remember the sign of the result
-    INT32 sign = Hi32Bits(val1) ^ Hi32Bits(val2);
-
-        // Convert to unsigned multiplication
-    if (val1 < 0) val1 = -val1;
-    if (val2 < 0) val2 = -val2;
-
-        // Get the upper 32 bits of the numbers
-    UINT32 val1High = Hi32Bits(val1);
-    UINT32 val2High = Hi32Bits(val2);
-
-    UINT64 valMid;
-
-    if (val1High == 0) {
-        // Compute the 'middle' bits of the long multiplication
-        valMid = Mul32x32To64(val2High, val1);
-    }
-    else {
-        if (val2High != 0)
-            goto ThrowExcep;
-        // Compute the 'middle' bits of the long multiplication
-        valMid = Mul32x32To64(val1High, val2);
-    }
-
-        // See if any bits after bit 32 are set
-    if (Hi32Bits(valMid) != 0)
-        goto ThrowExcep;
-
-    ret = Mul32x32To64(val1, val2) + ShiftToHi32Bits((UINT32)(valMid));
-
-    // check for overflow
-    if (Hi32Bits(ret) < (UINT32)valMid)
-        goto ThrowExcep;
-
-    if (sign >= 0) {
-        // have we spilled into the sign bit?
-        if (ret < 0)
-            goto ThrowExcep;
-    }
-    else {
-        ret = -ret;
-        // have we spilled into the sign bit?
-        if (ret > 0)
-            goto ThrowExcep;
-    }
-    _ASSERTE(ret == expected);
-    return ret;
-
-ThrowExcep:
-    FCThrow(kOverflowException);
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL2_VV(UINT64, JIT_ULMulOvf, UINT64 val1, UINT64 val2)
-{
-    FCALL_CONTRACT;
-
-    INDEBUG(UINT64 expected = val1 * val2;)
-    UINT64 ret;
-
-        // Get the upper 32 bits of the numbers
-    UINT32 val1High = Hi32Bits(val1);
-    UINT32 val2High = Hi32Bits(val2);
-
-    UINT64 valMid;
-
-    if (val1High == 0) {
-        if (val2High == 0)
-            return Mul32x32To64(val1, val2);
-        // Compute the 'middle' bits of the long multiplication
-        valMid = Mul32x32To64(val2High, val1);
-    }
-    else {
-        if (val2High != 0)
-            goto ThrowExcep;
-        // Compute the 'middle' bits of the long multiplication
-        valMid = Mul32x32To64(val1High, val2);
-    }
-
-        // See if any bits after bit 32 are set
-    if (Hi32Bits(valMid) != 0)
-        goto ThrowExcep;
-
-    ret = Mul32x32To64(val1, val2) + ShiftToHi32Bits((UINT32)(valMid));
-
-    // check for overflow
-    if (Hi32Bits(ret) < (UINT32)valMid)
-        goto ThrowExcep;
-
-    _ASSERTE(ret == expected);
-    return ret;
-
-ThrowExcep:
-        FCThrow(kOverflowException);
-    }
-HCIMPLEND
 
 /*********************************************************************/
 HCIMPL2(INT32, JIT_Div, INT32 dividend, INT32 divisor)
@@ -522,62 +397,6 @@ HCIMPL1_V(int64_t, JIT_Dbl2Lng, double val)
 HCIMPLEND
 
 /*********************************************************************/
-HCIMPL1_V(uint32_t, JIT_Dbl2UIntOvf, double val)
-{
-    FCALL_CONTRACT;
-
-    // Note that this expression also works properly for val = NaN case
-    if (val > -1.0 && val < 4294967296.0)
-        return (uint32_t)val;
-
-    FCThrow(kOverflowException);
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL1_V(int, JIT_Dbl2IntOvf, double val)
-{
-    FCALL_CONTRACT;
-
-    const double two31 = 2147483648.0;
-    // Note that this expression also works properly for val = NaN case
-    if (val > -two31 - 1 && val < two31)
-        return (int32_t)val;
-
-    FCThrow(kOverflowException);
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL1_V(int64_t, JIT_Dbl2LngOvf, double val)
-{
-    FCALL_CONTRACT;
-
-    const double two63  = 2147483648.0 * 4294967296.0;
-
-    // Note that this expression also works properly for val = NaN case
-    // We need to compare with the very next double to two63. 0x402 is epsilon to get us there.
-    if (val > -two63 - 0x402 && val < two63)
-        return (int64_t)val;
-
-    FCThrow(kOverflowException);
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL1_V(uint64_t, JIT_Dbl2ULngOvf, double val)
-{
-    FCALL_CONTRACT;
-
-    const double two64  = 4294967296.0 * 4294967296.0;
-    // Note that this expression also works properly for val = NaN case
-    if (val > -1.0 && val < two64)
-        return (uint64_t)val;
-
-    FCThrow(kOverflowException);
-}
-HCIMPLEND
-
 HCIMPL1_V(uint32_t, JIT_Dbl2UInt, double val)
 {
     FCALL_CONTRACT;
@@ -2935,7 +2754,7 @@ HCIMPL2(LPVOID, Unbox_Helper, CORINFO_CLASS_HANDLE type, Object* obj)
     if (pMT1->GetInternalCorElementType() == pMT2->GetInternalCorElementType() &&
             (pMT1->IsEnum() || pMT1->IsTruePrimitive()) &&
             (pMT2->IsEnum() || pMT2->IsTruePrimitive()) &&
-            g_TrapReturningThreads.LoadWithoutBarrier() == 0)
+            g_TrapReturningThreads == 0)
     {
         return obj->GetData();
     }
@@ -3518,7 +3337,7 @@ NOINLINE HCIMPL1(Object*, JIT_GetRuntimeType_Framed, CORINFO_CLASS_HANDLE type)
     TypeHandle typeHandle(type);
 
     // Array/other type handle case.
-    OBJECTREF refType = typeHandle.GetManagedClassObjectFast();
+    OBJECTREF refType = typeHandle.GetManagedClassObjectIfExists();
     if (refType == NULL)
     {
         HELPER_METHOD_FRAME_BEGIN_RET_1(refType);
@@ -3651,7 +3470,7 @@ NOINLINE static void JIT_MonEnter_Helper(Object* obj, BYTE* pbLockTaken, LPVOID 
 
     GCPROTECT_BEGININTERIOR(pbLockTaken);
 
-    if (GET_THREAD()->CatchAtSafePointOpportunistic())
+    if (GET_THREAD()->CatchAtSafePoint())
     {
         GET_THREAD()->PulseGCMode();
     }
@@ -3730,7 +3549,7 @@ NOINLINE static void JIT_MonTryEnter_Helper(Object* obj, INT32 timeOut, BYTE* pb
 
     GCPROTECT_BEGININTERIOR(pbLockTaken);
 
-    if (GET_THREAD()->CatchAtSafePointOpportunistic())
+    if (GET_THREAD()->CatchAtSafePoint())
     {
         GET_THREAD()->PulseGCMode();
     }
@@ -3764,7 +3583,7 @@ HCIMPL3(void, JIT_MonTryEnter_Portable, Object* obj, INT32 timeOut, BYTE* pbLock
 
     pCurThread = GetThread();
 
-    if (pCurThread->CatchAtSafePointOpportunistic())
+    if (pCurThread->CatchAtSafePoint())
     {
         goto FramedLockHelper;
     }
@@ -3936,7 +3755,7 @@ HCIMPL_MONHELPER(JIT_MonEnterStatic_Portable, AwareLock *lock)
     MONHELPER_STATE(_ASSERTE(pbLockTaken != NULL && *pbLockTaken == 0));
 
     Thread *pCurThread = GetThread();
-    if (pCurThread->CatchAtSafePointOpportunistic())
+    if (pCurThread->CatchAtSafePoint())
     {
         goto FramedLockHelper;
     }
@@ -4780,21 +4599,6 @@ HCIMPLEND
 //========================================================================
 
 /*************************************************************/
-HCIMPL3(VOID, JIT_StructWriteBarrier, void *dest, void* src, CORINFO_CLASS_HANDLE typeHnd_)
-{
-    FCALL_CONTRACT;
-
-    TypeHandle typeHnd(typeHnd_);
-    MethodTable *pMT = typeHnd.AsMethodTable();
-
-    HELPER_METHOD_FRAME_BEGIN_NOPOLL();    // Set up a frame
-    CopyValueClass(dest, src, pMT);
-    HELPER_METHOD_FRAME_END_POLL();
-
-}
-HCIMPLEND
-
-/*************************************************************/
 // Slow helper to tailcall from the fast one
 NOINLINE HCIMPL0(void, JIT_PollGC_Framed)
 {
@@ -4826,11 +4630,11 @@ HCIMPL0(VOID, JIT_PollGC)
     FCALL_CONTRACT;
 
     // As long as we can have GCPOLL_CALL polls, it would not hurt to check the trap flag.
-    if (!g_TrapReturningThreads.LoadWithoutBarrier())
+    if (!g_TrapReturningThreads)
         return;
 
     // Does someone want this thread stopped?
-    if (!GetThread()->CatchAtSafePointOpportunistic())
+    if (!GetThread()->CatchAtSafePoint())
         return;
 
     // Tailcall to the slow helper
@@ -5144,7 +4948,7 @@ void JIT_Patchpoint(int* counter, int ilOffset)
     const int counterBump = g_pConfig->OSR_CounterBump();
     *counter = counterBump;
 
-#if _DEBUG
+#ifdef _DEBUG
     const int ppId = ppInfo->m_patchpointId;
 #endif
 
@@ -5297,7 +5101,7 @@ void JIT_Patchpoint(int* counter, int ilOffset)
         DWORD contextSize = 0;
         ULONG64 xStateCompactionMask = 0;
         DWORD contextFlags = CONTEXT_FULL;
-        if (Thread::AreCetShadowStacksEnabled())
+        if (Thread::AreShadowStacksEnabled())
         {
             xStateCompactionMask = XSTATE_MASK_CET_U;
             contextFlags |= CONTEXT_XSTATE;
@@ -5325,7 +5129,7 @@ void JIT_Patchpoint(int* counter, int ilOffset)
         RtlCaptureContext(pFrameContext);
 
 #if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
-        if (Thread::AreCetShadowStacksEnabled())
+        if (Thread::AreShadowStacksEnabled())
         {
             pFrameContext->ContextFlags |= CONTEXT_XSTATE;
             SetXStateFeaturesMask(pFrameContext, xStateCompactionMask);
@@ -5389,6 +5193,12 @@ void JIT_Patchpoint(int* counter, int ilOffset)
         // Install new entry point as IP
         SetIP(pFrameContext, osrMethodCode);
 
+#ifdef _DEBUG
+        // Keep this context around to aid in debugging OSR transition problems
+        static CONTEXT s_lastOSRTransitionContext;
+        s_lastOSRTransitionContext = *pFrameContext;
+#endif
+
         // Restore last error (since call below does not return)
         // END_PRESERVE_LAST_ERROR;
         ::SetLastError(dwLastError);
@@ -5425,7 +5235,7 @@ HCIMPL1(VOID, JIT_PartialCompilationPatchpoint, int ilOffset)
     // Patchpoint identity is the helper return address
     PCODE ip = (PCODE)_ReturnAddress();
 
-#if _DEBUG
+#ifdef _DEBUG
     // Friendly ID number
     int ppId = 0;
 #endif
@@ -5439,7 +5249,7 @@ HCIMPL1(VOID, JIT_PartialCompilationPatchpoint, int ilOffset)
     OnStackReplacementManager* manager = allocator->GetOnStackReplacementManager();
     ppInfo = manager->GetPerPatchpointInfo(ip);
 
-#if _DEBUG
+#ifdef _DEBUG
     ppId = ppInfo->m_patchpointId;
 #endif
 
@@ -6049,7 +5859,7 @@ HCIMPLEND
 /* Fills out portions of an InlinedCallFrame for JIT64    */
 /* The idea here is to allocate and initialize the frame to only once, */
 /* regardless of how many PInvokes there are in the method            */
-Thread * __stdcall JIT_InitPInvokeFrame(InlinedCallFrame *pFrame, PTR_VOID StubSecretArg)
+Thread * JIT_InitPInvokeFrame(InlinedCallFrame *pFrame)
 {
     CONTRACTL
     {
@@ -6063,7 +5873,6 @@ Thread * __stdcall JIT_InitPInvokeFrame(InlinedCallFrame *pFrame, PTR_VOID StubS
     _ASSERTE(pFrame != pThread->GetFrame());
 
     pFrame->Init();
-    pFrame->m_StubSecretArg = StubSecretArg;
     pFrame->m_Next = pThread->GetFrame();
 
     return pThread;
@@ -6165,7 +5974,7 @@ HCIMPL3_RAW(void, JIT_ReversePInvokeEnterTrackTransitions, ReversePInvokeFrame* 
 
         // Manually inline the fast path in Thread::DisablePreemptiveGC().
         thread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(1);
-        if (g_TrapReturningThreads.LoadWithoutBarrier() != 0)
+        if (g_TrapReturningThreads != 0)
         {
             // If we're in an IL stub, we want to trace the address of the target method,
             // not the next instruction in the stub.
@@ -6202,7 +6011,7 @@ HCIMPL1_RAW(void, JIT_ReversePInvokeEnter, ReversePInvokeFrame* frame)
 
         // Manually inline the fast path in Thread::DisablePreemptiveGC().
         thread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(1);
-        if (g_TrapReturningThreads.LoadWithoutBarrier() != 0)
+        if (g_TrapReturningThreads != 0)
         {
             JIT_ReversePInvokeEnterRare2(frame, _ReturnAddress());
         }

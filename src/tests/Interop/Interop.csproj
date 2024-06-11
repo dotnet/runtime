@@ -6,6 +6,7 @@
     <Configurations>Debug;Release;Checked</Configurations>
     <!-- Tracking issue: https://github.com/dotnet/runtime/issues/90427 -->
     <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'mono' and '$(RuntimeVariant)' == 'minifullaot'">true</CLRTestTargetUnsupported>
+    <HasMergedInTests>true</HasMergedInTests>
   </PropertyGroup>
   <ItemGroup>
     <SupportProject Include="$(TestLibraryProjectPath)" />

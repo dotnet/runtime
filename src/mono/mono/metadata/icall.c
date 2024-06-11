@@ -957,6 +957,9 @@ ves_icall_System_Runtime_RuntimeImports_Memmove (guint8 *destination, guint8 *so
 void
 ves_icall_System_Buffer_BulkMoveWithWriteBarrier (guint8 *destination, guint8 *source, size_t len, MonoType *type)
 {
+	if (len == 0 || destination == source)
+		return;
+
 	if (MONO_TYPE_IS_REFERENCE (type))
 		mono_gc_wbarrier_arrayref_copy_internal (destination, source, (guint)len);
 	else
@@ -1210,8 +1213,8 @@ ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_PrepareMethod (MonoMeth
 	// FIXME: Implement
 }
 
-void
-ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_InternalBox (MonoQCallTypeHandle type_handle, char* data, MonoObjectHandleOnStack obj, MonoError *error)
+MonoObjectHandle
+ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_InternalBox (MonoQCallTypeHandle type_handle, char* data, MonoError *error)
 {
 	MonoType *type = type_handle.type;
 	MonoClass *klass = mono_class_from_mono_type_internal (type);
@@ -1219,15 +1222,9 @@ ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_InternalBox (MonoQCallT
 	g_assert (m_class_is_valuetype (klass));
 
 	mono_class_init_checked (klass, error);
-	goto_if_nok (error, error_ret);
+	return_val_if_nok (error, NULL_HANDLE);
 
-	MonoObject* raw_obj = mono_value_box_checked (klass, data, error);
-	goto_if_nok (error, error_ret);
-
-	HANDLE_ON_STACK_SET(obj, raw_obj);
-	return;
-error_ret:
-	HANDLE_ON_STACK_SET (obj, NULL);
+	return mono_value_box_handle (klass, data, error);
 }
 
 gint32
@@ -6164,16 +6161,16 @@ void
 ves_icall_System_Environment_FailFast (MonoStringHandle message, MonoExceptionHandle exception, MonoStringHandle errorSource, MonoError *error)
 {
 	if (MONO_HANDLE_IS_NULL (errorSource)) {
-		g_warning ("Process terminated.");
+		g_warning_dont_trim ("Process terminated.");
 	} else {
 		char *errorSourceMsg = mono_string_handle_to_utf8 (errorSource, error);
-		g_warning ("Process terminated. %s", errorSourceMsg);
+		g_warning_dont_trim ("Process terminated. %s", errorSourceMsg);
 		g_free (errorSourceMsg);
 	}
 
 	if (!MONO_HANDLE_IS_NULL (message)) {
 		char *msg = mono_string_handle_to_utf8 (message, error);
-		g_warning (msg);
+		g_warning_dont_trim (msg);
 		g_free (msg);
 	}
 

@@ -396,9 +396,8 @@
     <Compile Include="Compiler\Dataflow\TrimAnalysisMethodCallPattern.cs" />
     <Compile Include="Compiler\Dataflow\TrimAnalysisPatternStore.cs" />
     <Compile Include="Compiler\Dataflow\TrimAnalysisTokenAccessPattern.cs" />
-    <Compile Include="Compiler\Dataflow\TypeNameParser.Dataflow.cs" />
-    <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Reflection\TypeNameParser.cs">
-      <Link>Compiler\Dataflow\TypeNameParser.cs</Link>
+    <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Reflection\Metadata\TypeNameHelpers.cs">
+      <Link>Utilities\TypeNameHelpers.cs</Link>
     </Compile>
     <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Text\ValueStringBuilder.cs">
       <Link>Utilities\ValueStringBuilder.cs</Link>
@@ -729,9 +728,6 @@
     </Compile>
     <Compile Include="..\..\Common\JitInterface\CorInfoTypes.VarInfo.cs">
       <Link>JitInterface\CorInfoTypes.VarInfo.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\JitInterface\MemoryHelper.cs">
-      <Link>JitInterface\MemoryHelper.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\TypesDebugInfoWriter\TypesDebugInfoWriter.cs">
       <Link>TypeSystem\TypesDebugInfoWriter\TypesDebugInfoWriter.cs</Link>

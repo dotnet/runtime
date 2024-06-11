@@ -79,6 +79,7 @@ public class r8NaNadd
         public double d_vt_test3_op2;
     }
     [Fact]
+    [OuterLoop]
     public static int TestEntryPoint()
     {
         bool passed = true;

@@ -39,7 +39,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
 
         [Theory, MemberData(nameof(GetTargetThreads2x))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/100931")]
         public async Task WebSocketClient_ResponseCloseInDifferentThread(Executor executor1, Executor executor2)
         {
             using var cts = CreateTestCaseTimeoutSource();

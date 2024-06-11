@@ -21,6 +21,7 @@ internal static partial class MsQuicConfiguration
     private const string DisableCacheCtxSwitch = "System.Net.Quic.DisableConfigurationCache";
 
     internal static bool ConfigurationCacheEnabled { get; } = GetConfigurationCacheEnabled();
+
     private static bool GetConfigurationCacheEnabled()
     {
         // AppContext switch takes precedence
@@ -28,15 +29,15 @@ internal static partial class MsQuicConfiguration
         {
             return !value;
         }
-        else
+        // check environment variable second
+        else if (Environment.GetEnvironmentVariable(DisableCacheEnvironmentVariable) is string envVar)
         {
-            // check environment variable
-            return
-                Environment.GetEnvironmentVariable(DisableCacheEnvironmentVariable) is string envVar &&
-                !(envVar == "1" || envVar.Equals("true", StringComparison.OrdinalIgnoreCase));
+            return !(envVar == "1" || envVar.Equals("true", StringComparison.OrdinalIgnoreCase));
         }
-    }
 
+        // enabled by default
+        return true;
+    }
     private static readonly ConcurrentDictionary<CacheKey, MsQuicConfigurationSafeHandle> s_configurationCache = new();
 
     private readonly struct CacheKey : IEquatable<CacheKey>

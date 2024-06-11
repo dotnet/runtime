@@ -997,10 +997,10 @@ mono_metadata_table_bounds_check_slow (MonoImage *image, int table_index, int to
 	if (G_LIKELY (GINT_TO_UINT32(token_index) <= table_info_get_rows (&image->tables [table_index])))
 		return FALSE;
 
-        if (G_LIKELY (!image->has_updates))
-                return TRUE;
+	if (G_LIKELY (!image->has_updates))
+		return TRUE;
 
-        return mono_metadata_update_table_bounds_check (image, table_index, token_index);
+	return mono_metadata_update_table_bounds_check (image, table_index, token_index);
 }
 
 void
@@ -1094,7 +1094,7 @@ get_blob_heap (MonoImage *image)
 static gboolean
 mono_delta_heap_lookup (MonoImage *base_image, MetadataHeapGetterFunc get_heap, guint32 orig_index, MonoImage **image_out, guint32 *index_out)
 {
-        return mono_metadata_update_delta_heap_lookup (base_image, get_heap, orig_index, image_out, index_out);
+	return mono_metadata_update_delta_heap_lookup (base_image, get_heap, orig_index, image_out, index_out);
 }
 
 /**
@@ -2435,15 +2435,7 @@ mono_metadata_signature_dup_internal (MonoImage *image, MonoMemPool *mp, MonoMem
 	if (sig->ret)
 		sigsize += mono_sizeof_type (sig->ret);
 
-	if (image) {
-		ret = (MonoMethodSignature *)mono_image_alloc (image, (guint)sigsize);
-	} else if (mp) {
-		ret = (MonoMethodSignature *)mono_mempool_alloc (mp, (unsigned int)sigsize);
-	} else if (mem_manager) {
-		ret = (MonoMethodSignature *)mono_mem_manager_alloc (mem_manager, (guint)sigsize);
-	} else {
-		ret = (MonoMethodSignature *)g_malloc (sigsize);
-	}
+	ret = mono_metadata_signature_allocate_internal (image, mp, mem_manager, sigsize);
 
 	memcpy (ret, sig, sig_header_size - padding);
 
@@ -2456,6 +2448,29 @@ mono_metadata_signature_dup_internal (MonoImage *image, MonoMemPool *mp, MonoMem
 	}
 
 	return ret;
+}
+
+/**
+ * Allocates memory for a MonoMethodSignature based on the provided parameters.
+ *
+ * @param image MonoImage for allocation.
+ * @param mp MonoMemPool for allocation.
+ * @param mem_manager MonoMemoryManager for allocation.
+ * @param sig_size Size of the signature to allocate.
+ * @return Pointer to the allocated MonoMethodSignature.
+ */
+MonoMethodSignature*
+mono_metadata_signature_allocate_internal (MonoImage *image, MonoMemPool *mp, MonoMemoryManager *mem_manager, size_t sig_size)
+{
+    if (image) {
+        return (MonoMethodSignature *)mono_image_alloc (image, (guint)sig_size);
+    } else if (mp) {
+        return (MonoMethodSignature *)mono_mempool_alloc (mp, (unsigned int)sig_size);
+    } else if (mem_manager) {
+        return (MonoMethodSignature *)mono_mem_manager_alloc (mem_manager, (guint)sig_size);
+    } else {
+        return (MonoMethodSignature *)g_malloc (sig_size);
+    }
 }
 
 /*
@@ -2542,6 +2557,38 @@ mono_metadata_signature_dup_delegate_invoke_to_target (MonoMethodSignature *sig)
 		res->params [i] = sig->params [i + 1];
 	}
 	res->param_count --;
+
+	return res;
+}
+
+/**
+ * mono_metadata_signature_dup_new_params:
+ * @param mp The mempool to allocate the new signature from.
+ * @param mem_manager The memory manager to allocate the new signature from.
+ * @param sig The original method signature.
+ * @param num_params The number parameters in the new signature.
+ * @param new_params An array of MonoType pointers representing the new parameters.
+ *
+ * Duplicate an existing \c MonoMethodSignature but with a new set of parameters.
+ * This is a Mono runtime internal function.
+ *
+ * @return the new \c MonoMethodSignature structure.
+ */
+MonoMethodSignature*
+mono_metadata_signature_dup_new_params (MonoMemPool *mp, MonoMemoryManager *mem_manager, MonoMethodSignature *sig, uint32_t num_params, MonoType **new_params)
+{
+	size_t new_sig_size = MONO_SIZEOF_METHOD_SIGNATURE + num_params * sizeof (MonoType*);
+	if (sig->ret)
+		new_sig_size += mono_sizeof_type (sig->ret);
+
+	MonoMethodSignature *res = mono_metadata_signature_allocate_internal (NULL, mp, mem_manager, new_sig_size);
+	memcpy (res, sig, MONO_SIZEOF_METHOD_SIGNATURE);
+	res->param_count = GUINT32_TO_UINT16 (num_params);
+
+	for (uint16_t i = 0; i < res->param_count; i++) {
+		res->params [i] = new_params [i];
+	}
+	res->ret = sig->ret;
 
 	return res;
 }
@@ -3292,7 +3339,7 @@ MonoMethodSignature *
 mono_metadata_get_inflated_signature (MonoMethodSignature *sig, MonoGenericContext *context)
 {
 	MonoInflatedMethodSignature helper;
-	MonoInflatedMethodSignature *res;
+	MonoInflatedMethodSignature *res = NULL;
 	CollectData data;
 
 	helper.sig = sig;
@@ -3307,16 +3354,19 @@ mono_metadata_get_inflated_signature (MonoMethodSignature *sig, MonoGenericConte
 	mono_mem_manager_lock (mm);
 
 	if (!mm->gsignature_cache)
-		mm->gsignature_cache = g_hash_table_new_full (inflated_signature_hash, inflated_signature_equal, NULL, (GDestroyNotify)free_inflated_signature);
+		// FIXME: Pick a better pre-reserved size
+		mm->gsignature_cache = dn_simdhash_ght_new_full (inflated_signature_hash, inflated_signature_equal, NULL, (GDestroyNotify)free_inflated_signature, 256, NULL);
+
 	// FIXME: The lookup is done on the newly allocated sig so it always fails
-	res = (MonoInflatedMethodSignature *)g_hash_table_lookup (mm->gsignature_cache, &helper);
+	dn_simdhash_ght_try_get_value (mm->gsignature_cache, &helper, (gpointer *)&res);
 	if (!res) {
 		res = mono_mem_manager_alloc0 (mm, sizeof (MonoInflatedMethodSignature));
 		// FIXME: sig is an inflated signature not owned by the mem manager
 		res->sig = sig;
 		res->context.class_inst = context->class_inst;
 		res->context.method_inst = context->method_inst;
-		g_hash_table_insert (mm->gsignature_cache, res, res);
+		// FIXME: We're wasting memory and cpu by storing key and value redundantly for this table
+		dn_simdhash_ght_insert (mm->gsignature_cache, res, res);
 	}
 
 	mono_mem_manager_unlock (mm);
@@ -3449,9 +3499,10 @@ mono_metadata_get_canonical_generic_inst (MonoGenericInst *candidate)
 	mono_loader_lock ();
 
 	if (!mm->ginst_cache)
-		mm->ginst_cache = g_hash_table_new_full (mono_metadata_generic_inst_hash, mono_metadata_generic_inst_equal, NULL, (GDestroyNotify)free_generic_inst);
+		mm->ginst_cache = dn_simdhash_ght_new_full (mono_metadata_generic_inst_hash, mono_metadata_generic_inst_equal, NULL, (GDestroyNotify)free_generic_inst, 0, NULL);
 
-	MonoGenericInst *ginst = (MonoGenericInst *)g_hash_table_lookup (mm->ginst_cache, candidate);
+	MonoGenericInst *ginst = NULL;
+	dn_simdhash_ght_try_get_value (mm->ginst_cache, candidate, (void **)&ginst);
 	if (!ginst) {
 		int size = MONO_SIZEOF_GENERIC_INST + type_argc * sizeof (MonoType *);
 		ginst = (MonoGenericInst *)mono_mem_manager_alloc0 (mm, size);
@@ -3465,7 +3516,7 @@ mono_metadata_get_canonical_generic_inst (MonoGenericInst *candidate)
 		for (int i = 0; i < type_argc; ++i)
 			ginst->type_argv [i] = mono_metadata_type_dup (NULL, candidate->type_argv [i]);
 
-		g_hash_table_insert (mm->ginst_cache, ginst, ginst);
+		dn_simdhash_ght_insert (mm->ginst_cache, ginst, ginst);
 	}
 
 	mono_loader_unlock ();
@@ -6451,12 +6502,12 @@ mono_metadata_events_from_typedef (MonoImage *meta, guint32 index, guint *end_id
 	}
 
 	start = mono_metadata_decode_row_col (tdef, loc.result, MONO_EVENT_MAP_EVENTLIST);
-        /*
-         * metadata-update: note this next line needs block needs to look at the number of rows in
-         * EventMap and Event of the base image.  Updates will add rows for new properties,
-         * but they won't be contiguous.  if we set end to the number of rows in the updated
-         * Property table, the range will include properties from some other class
-         */
+	/*
+	 * metadata-update: note this next line needs block needs to look at the number of rows in
+	 * EventMap and Event of the base image.  Updates will add rows for new properties,
+	 * but they won't be contiguous.  if we set end to the number of rows in the updated
+	 * Property table, the range will include properties from some other class
+	 */
 	if (loc.result + 1 < table_info_get_rows (tdef)) {
 		end = mono_metadata_decode_row_col (tdef, loc.result + 1, MONO_EVENT_MAP_EVENTLIST) - 1;
 	} else {
@@ -6569,12 +6620,12 @@ mono_metadata_properties_from_typedef (MonoImage *meta, guint32 index, guint *en
 	}
 
 	start = mono_metadata_decode_row_col (tdef, loc.result, MONO_PROPERTY_MAP_PROPERTY_LIST);
-        /*
-         * metadata-update: note this next line needs block needs to look at the number of rows in
-         * PropertyMap and Property of the base image.  Updates will add rows for new properties,
-         * but they won't be contiguous.  if we set end to the number of rows in the updated
-         * Property table, the range will include properties from some other class
-         */
+	/*
+	 * metadata-update: note this next line needs block needs to look at the number of rows in
+	 * PropertyMap and Property of the base image.  Updates will add rows for new properties,
+	 * but they won't be contiguous.  if we set end to the number of rows in the updated
+	 * Property table, the range will include properties from some other class
+	 */
 	if (loc.result + 1 < table_info_get_rows (&meta->tables [MONO_TABLE_PROPERTYMAP])) {
 		end = mono_metadata_decode_row_col (tdef, loc.result + 1, MONO_PROPERTY_MAP_PROPERTY_LIST) - 1;
 	} else {
@@ -7088,10 +7139,10 @@ mono_metadata_get_marshal_info (MonoImage *meta, guint32 idx, gboolean is_field)
 
 	gboolean found = tdef->base && mono_binary_search (&loc, tdef->base, table_info_get_rows (tdef), tdef->row_size, table_locator);
 
-        if (G_UNLIKELY (meta->has_updates)) {
-                if (!found && !mono_metadata_update_metadata_linear_search (meta, tdef, &loc, table_locator))
-                        return NULL;
-        }
+	if (G_UNLIKELY (meta->has_updates)) {
+		if (!found && !mono_metadata_update_metadata_linear_search (meta, tdef, &loc, table_locator))
+			return NULL;
+	}
 
 	return mono_metadata_blob_heap (meta, mono_metadata_decode_row_col (tdef, loc.result, MONO_FIELD_MARSHAL_NATIVE_TYPE));
 }
@@ -8054,4 +8105,13 @@ mono_metadata_get_method_params (MonoImage *image, uint32_t method_idx, uint32_t
 		*last_param_out = lastp;
 
 	return param_index;
+}
+
+// Required by dn_simdhash
+void
+dn_simdhash_assert_fail (const char *file, int line, const char *condition);
+
+void
+dn_simdhash_assert_fail (const char *file, int line, const char *condition) {
+	mono_assertion_message (file, line, condition);
 }

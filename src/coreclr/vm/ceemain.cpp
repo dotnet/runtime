@@ -1248,6 +1248,8 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
         // This will check a flag and do nothing if not enabled.
         Interpreter::PrintPostMortemData();
 #endif // FEATURE_INTERPRETER
+        VirtualCallStubManager::LogFinalStats();
+        WriteJitHelperCountToSTRESSLOG();
 
 #ifdef PROFILING_SUPPORTED
         // If profiling is enabled, then notify of shutdown first so that the
@@ -1349,11 +1351,6 @@ part2:
                 TerminateDebugger();
 #endif // DEBUGGING_SUPPORTED
 
-                //@TODO: find the right place for this
-                VirtualCallStubManager::UninitStatic();
-
-                WriteJitHelperCountToSTRESSLOG();
-
                 STRESS_LOG0(LF_STARTUP, LL_INFO10, "EEShutdown shutting down logging");
 
 #if 0       // Dont clean up the stress log, so that even at process exit we have a log (after all the process is going away
@@ -1396,7 +1393,7 @@ BOOL IsThreadInSTA()
     CONTRACTL_END;
 
     // If ole32.dll is not loaded
-    if (WszGetModuleHandle(W("ole32.dll")) == NULL)
+    if (GetModuleHandle(W("ole32.dll")) == NULL)
     {
         return FALSE;
     }

@@ -32,6 +32,7 @@ declare interface EmscriptenModule {
     UTF8ToString(ptr: CharPtr, maxBytesToRead?: number): string;
     UTF8ArrayToString(u8Array: Uint8Array, idx?: number, maxBytesToRead?: number): string;
     stringToUTF8Array(str: string, heap: Uint8Array, outIdx: number, maxBytesToWrite: number): void;
+    lengthBytesUTF8(str: string): number;
     FS_createPath(parent: string, path: string, canRead?: boolean, canWrite?: boolean): string;
     FS_createDataFile(parent: string, name: string, data: TypedArray, canRead: boolean, canWrite: boolean, canOwn?: boolean): string;
     addFunction(fn: Function, signature: string): number;
@@ -116,6 +117,10 @@ interface DotnetHostBuilder {
      * from a custom source, such as an external CDN.
      */
     withResourceLoader(loadBootResource?: LoadBootResourceCallback): DotnetHostBuilder;
+    /**
+     * Downloads all the assets but doesn't create the runtime instance.
+     */
+    download(): Promise<void>;
     /**
      * Starts the runtime and returns promise of the API object.
      */
@@ -242,10 +247,13 @@ type ResourceExtensions = {
 };
 interface ResourceGroups {
     hash?: string;
+    coreAssembly?: ResourceList;
     assembly?: ResourceList;
     lazyAssembly?: ResourceList;
+    corePdb?: ResourceList;
     pdb?: ResourceList;
     jsModuleWorker?: ResourceList;
+    jsModuleGlobalization?: ResourceList;
     jsModuleNative: ResourceList;
     jsModuleRuntime: ResourceList;
     wasmSymbols?: ResourceList;
@@ -257,6 +265,9 @@ interface ResourceGroups {
     modulesAfterConfigLoaded?: ResourceList;
     modulesAfterRuntimeReady?: ResourceList;
     extensions?: ResourceExtensions;
+    coreVfs?: {
+        [virtualPath: string]: ResourceList;
+    };
     vfs?: {
         [virtualPath: string]: ResourceList;
     };
@@ -354,6 +365,10 @@ type SingleAssetBehaviors =
  * The javascript module for emscripten.
  */
  | "js-module-native"
+/**
+ * The javascript module for hybrid globalization.
+ */
+ | "js-module-globalization"
 /**
  * Typically blazor.boot.json
  */

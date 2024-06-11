@@ -88,7 +88,7 @@ bool Compiler::impILConsumesAddr(const BYTE* codeAddr)
             // out if we need to do so.
 
             CORINFO_RESOLVED_TOKEN resolvedToken;
-            impResolveToken(codeAddr + sizeof(__int8), &resolvedToken, CORINFO_TOKENKIND_Field);
+            impResolveToken(codeAddr + sizeof(int8_t), &resolvedToken, CORINFO_TOKENKIND_Field);
 
             var_types lclTyp = JITtype2varType(info.compCompHnd->getFieldType(resolvedToken.hField));
 
@@ -5136,9 +5136,14 @@ void Compiler::impResetLeaveBlock(BasicBlock* block, unsigned jmpAddr)
         // We are unlikely to be able to repair the profile.
         // For now we don't even try.
         //
-        JITDUMP("\nimpResetLeaveBlock: Profile data could not be locally repaired. Data %s inconsisent.\n",
+        JITDUMP("\nimpResetLeaveBlock: Profile data could not be locally repaired. Data %s inconsistent.\n",
                 fgPgoConsistent ? "is now" : "was already");
-        fgPgoConsistent = false;
+
+        if (fgPgoConsistent)
+        {
+            Metrics.ProfileInconsistentResetLeave++;
+            fgPgoConsistent = false;
+        }
     }
 }
 
@@ -5151,7 +5156,7 @@ OPCODE Compiler::impGetNonPrefixOpcode(const BYTE* codeAddr, const BYTE* codeEnd
     while (codeAddr < codeEndp)
     {
         OPCODE opcode = (OPCODE)getU1LittleEndian(codeAddr);
-        codeAddr += sizeof(__int8);
+        codeAddr += sizeof(int8_t);
 
         if (opcode == CEE_PREFIX1)
         {
@@ -5160,7 +5165,7 @@ OPCODE Compiler::impGetNonPrefixOpcode(const BYTE* codeAddr, const BYTE* codeEnd
                 break;
             }
             opcode = (OPCODE)(getU1LittleEndian(codeAddr) + 256);
-            codeAddr += sizeof(__int8);
+            codeAddr += sizeof(int8_t);
         }
 
         switch (opcode)
@@ -6131,7 +6136,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
         /* Get the next opcode and the size of its parameters */
 
         OPCODE opcode = (OPCODE)getU1LittleEndian(codeAddr);
-        codeAddr += sizeof(__int8);
+        codeAddr += sizeof(int8_t);
 
 #ifdef DEBUG
         impCurOpcOffs = (IL_OFFSET)(codeAddr - info.compCode - 1);
@@ -6192,14 +6197,14 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             {
                 int     intVal;
                 float   fltVal;
-                __int64 lngVal;
+                int64_t lngVal;
                 double  dblVal;
             } cval;
 
             case CEE_PREFIX1:
                 opcode     = (OPCODE)(getU1LittleEndian(codeAddr) + 256);
                 opcodeOffs = (IL_OFFSET)(codeAddr - info.compCode);
-                codeAddr += sizeof(__int8);
+                codeAddr += sizeof(int8_t);
                 goto DECODE_OPCODE;
 
             SPILL_APPEND:
@@ -7176,12 +7181,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             case CEE_LEAVE:
 
                 val     = getI4LittleEndian(codeAddr); // jump distance
-                jmpAddr = (IL_OFFSET)((codeAddr - info.compCode + sizeof(__int32)) + val);
+                jmpAddr = (IL_OFFSET)((codeAddr - info.compCode + sizeof(int32_t)) + val);
                 goto LEAVE;
 
             case CEE_LEAVE_S:
                 val     = getI1LittleEndian(codeAddr); // jump distance
-                jmpAddr = (IL_OFFSET)((codeAddr - info.compCode + sizeof(__int8)) + val);
+                jmpAddr = (IL_OFFSET)((codeAddr - info.compCode + sizeof(int8_t)) + val);
 
             LEAVE:
 
@@ -7319,6 +7324,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                         fgRemoveRefPred(removedEdge);
                         block->SetKindAndTargetEdge(BBJ_ALWAYS, retainedEdge);
+                        Metrics.ImporterBranchFold++;
 
                         // If we removed an edge carrying profile, try to do a local repair.
                         //
@@ -7369,7 +7375,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             {
                                 JITDUMP("Profile data could not be locally repaired. Data %s inconsistent.\n",
                                         fgPgoConsistent ? "is now" : "was already");
-                                fgPgoConsistent = false;
+
+                                if (fgPgoConsistent)
+                                {
+                                    Metrics.ProfileInconsistentImporterBranchFold++;
+                                    fgPgoConsistent = false;
+                                }
                             }
                         }
                     }
@@ -7615,6 +7626,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     unsigned   jumpCnt   = block->GetSwitchTargets()->bbsCount;
                     FlowEdge** jumpTab   = block->GetSwitchTargets()->bbsDstTab;
                     bool       foundVal  = false;
+                    Metrics.ImporterSwitchFold++;
 
                     for (unsigned val = 0; val < jumpCnt; val++, jumpTab++)
                     {
@@ -7653,9 +7665,14 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         // We are unlikely to be able to repair the profile.
                         // For now we don't even try.
                         //
-                        JITDUMP("Profile data could not be locally repaired. Data %s inconsisent.\n",
+                        JITDUMP("Profile data could not be locally repaired. Data %s inconsistent.\n",
                                 fgPgoConsistent ? "is now" : "was already");
-                        fgPgoConsistent = false;
+
+                        if (fgPgoConsistent)
+                        {
+                            Metrics.ProfileInconsistentImporterSwitchFold++;
+                            fgPgoConsistent = false;
+                        }
                     }
 
                     // Create a NOP node
@@ -7999,6 +8016,14 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     /* Append the value to the tree list */
                     goto SPILL_APPEND;
                 }
+                else
+                {
+                    if (op1->IsBoxedValue())
+                    {
+                        JITDUMP("\n CEE_POP box...\n");
+                        gtTryRemoveBoxUpstreamEffects(op1);
+                    }
+                }
 
                 /* No side effects - just throw the <BEEP> thing away */
             }
@@ -8209,7 +8234,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             PREFIX:
                 opcode     = (OPCODE)getU1LittleEndian(codeAddr);
                 opcodeOffs = (IL_OFFSET)(codeAddr - info.compCode);
-                codeAddr += sizeof(__int8);
+                codeAddr += sizeof(int8_t);
                 goto DECODE_OPCODE;
 
             case CEE_VOLATILE:

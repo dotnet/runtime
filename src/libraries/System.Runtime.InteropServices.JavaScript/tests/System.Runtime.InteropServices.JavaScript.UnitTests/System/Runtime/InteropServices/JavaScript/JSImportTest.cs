@@ -127,10 +127,30 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Contains("Overflow: value 9007199254740991 is out of -2147483648 2147483647 range", ex.Message);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWasmBackgroundExecOrSingleThread))]
+        [Fact]
+        public async Task RejectString()
+        {
+            var ex = await Assert.ThrowsAsync<JSException>(() => JavaScriptTestHelper.Reject("noodles"));
+            Assert.Contains("noodles", ex.Message);
+        }
+
+        [Fact]
+        public async Task RejectException()
+        {
+            var expected = new Exception("noodles");
+            var actual = await Assert.ThrowsAsync<Exception>(() => JavaScriptTestHelper.Reject(expected));
+            Assert.Equal(expected, actual);
+        }
+
+        [Fact]
+        public async Task RejectNull()
+        {
+            var ex = await Assert.ThrowsAsync<JSException>(() => JavaScriptTestHelper.Reject(null));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
         public unsafe void OptimizedPaths()
         {
-            JavaScriptTestHelper.AssertWasmBackgroundExec();
             JavaScriptTestHelper.optimizedReached = 0;
             JavaScriptTestHelper.invoke0V();
             Assert.Equal(1, JavaScriptTestHelper.optimizedReached);
@@ -1335,6 +1355,23 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             }, 42, 43);
             Assert.Equal(42, calledA);
             Assert.Equal(43, calledB);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
+        public void JsImportCallback_ActionIntLongDouble()
+        {
+            int calledA = -1;
+            long calledB = -1;
+            double calledC = -1;
+            JavaScriptTestHelper.back4_ActionIntLongDouble((a, b, c) =>
+            {
+                calledA = a;
+                calledB = b;
+                calledC = c;
+            }, 42, 43, 44.5);
+            Assert.Equal(42, calledA);
+            Assert.Equal(43, calledB);
+            Assert.Equal(44.5, calledC);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]

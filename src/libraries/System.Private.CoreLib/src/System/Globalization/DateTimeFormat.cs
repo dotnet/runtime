@@ -484,11 +484,11 @@ namespace System
                         tokenLen = ParseRepeatPattern(format, i, ch);
                         if (tokenLen <= MaxSecondsFractionDigits)
                         {
-                            long fraction = (dateTime.Ticks % Calendar.TicksPerSecond);
-                            fraction /= (long)Math.Pow(10, 7 - tokenLen);
+                            int fraction = (int)(dateTime.Ticks % Calendar.TicksPerSecond);
+                            fraction /= TimeSpanParse.Pow10UpToMaxFractionDigits(MaxSecondsFractionDigits - tokenLen);
                             if (ch == 'f')
                             {
-                                FormatFraction(ref result, (int)fraction, fixedNumberFormats[tokenLen - 1]);
+                                FormatFraction(ref result, fraction, fixedNumberFormats[tokenLen - 1]);
                             }
                             else
                             {
@@ -507,7 +507,7 @@ namespace System
                                 }
                                 if (effectiveDigits > 0)
                                 {
-                                    FormatFraction(ref result, (int)fraction, fixedNumberFormats[effectiveDigits - 1]);
+                                    FormatFraction(ref result, fraction, fixedNumberFormats[effectiveDigits - 1]);
                                 }
                                 else
                                 {
@@ -763,12 +763,12 @@ namespace System
         {
             if (typeof(TChar) == typeof(char))
             {
-                result.Append(MemoryMarshal.Cast<char, TChar>(s));
+                result.Append(Unsafe.BitCast<ReadOnlySpan<char>, ReadOnlySpan<TChar>>(s));
             }
             else
             {
                 Debug.Assert(typeof(TChar) == typeof(byte));
-                Encoding.UTF8.GetBytes(s, MemoryMarshal.Cast<TChar, byte>(result.AppendSpan(Encoding.UTF8.GetByteCount(s))));
+                Encoding.UTF8.GetBytes(s, Unsafe.BitCast<Span<TChar>, Span<byte>>(result.AppendSpan(Encoding.UTF8.GetByteCount(s))));
             }
         }
 
@@ -777,8 +777,8 @@ namespace System
             Span<TChar> chars = stackalloc TChar[11];
             int charCount;
             bool formatted = typeof(TChar) == typeof(char) ?
-                fraction.TryFormat(MemoryMarshal.Cast<TChar, char>(chars), out charCount, fractionFormat, CultureInfo.InvariantCulture) :
-                fraction.TryFormat(MemoryMarshal.Cast<TChar, byte>(chars), out charCount, fractionFormat, CultureInfo.InvariantCulture);
+                fraction.TryFormat(Unsafe.BitCast<Span<TChar>, Span<char>>(chars), out charCount, fractionFormat, CultureInfo.InvariantCulture) :
+                fraction.TryFormat(Unsafe.BitCast<Span<TChar>, Span<byte>>(chars), out charCount, fractionFormat, CultureInfo.InvariantCulture);
             Debug.Assert(charCount != 0);
             result.Append(chars.Slice(0, charCount));
         }

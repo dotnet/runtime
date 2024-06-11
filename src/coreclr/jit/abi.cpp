@@ -71,14 +71,15 @@ regMaskTP ABIPassingSegment::GetRegisterMask() const
 //   Offset relative to the first stack argument.
 //
 // Remarks:
-//   On x86, where arguments are pushed in order and thus come in reverse order
-//   in the callee, this is the offset to subtract from the top of the stack to
-//   get the argument's address. By top of the stack is meant esp on entry + 4
-//   for the return address + total size of stack arguments. In varargs methods
-//   the varargs cookie contains the information required to allow the
-//   computation of the total size of stack arguments.
+//   On x86, for the managed ABI where arguments are pushed in order and thus
+//   come in reverse order in the callee, this is the offset to subtract from
+//   the top of the stack to get the argument's address. By top of the stack is
+//   meant esp on entry + 4 for the return address + total size of stack
+//   arguments. In varargs methods the varargs cookie contains the information
+//   required to allow the computation of the total size of stack arguments.
 //
-//   Outside x86 this is the offset to add to the first argument's address.
+//   Outside the managed x86 ABI this is the offset to add to the first
+//   argument's address.
 //
 unsigned ABIPassingSegment::GetStackOffset() const
 {
@@ -258,14 +259,20 @@ bool ABIPassingInformation::HasExactlyOneStackSegment() const
 //
 bool ABIPassingInformation::IsSplitAcrossRegistersAndStack() const
 {
-    bool anyReg   = false;
-    bool anyStack = false;
-    for (unsigned i = 0; i < NumSegments; i++)
+    if (NumSegments < 2)
     {
-        anyReg |= Segments[i].IsPassedInRegister();
-        anyStack |= Segments[i].IsPassedOnStack();
+        return false;
     }
-    return anyReg && anyStack;
+
+    bool isFirstInReg = Segments[0].IsPassedInRegister();
+    for (unsigned i = 1; i < NumSegments; i++)
+    {
+        if (isFirstInReg != Segments[i].IsPassedInRegister())
+        {
+            return true;
+        }
+    }
+    return false;
 }
 
 //-----------------------------------------------------------------------------
@@ -281,10 +288,7 @@ bool ABIPassingInformation::IsSplitAcrossRegistersAndStack() const
 //
 ABIPassingInformation ABIPassingInformation::FromSegment(Compiler* comp, const ABIPassingSegment& segment)
 {
-    ABIPassingInformation info;
-    info.NumSegments = 1;
-    info.Segments    = new (comp, CMK_ABI) ABIPassingSegment(segment);
-    return info;
+    return {1, new (comp, CMK_ABI) ABIPassingSegment(segment)};
 }
 
 #ifdef DEBUG
@@ -418,6 +422,9 @@ ABIPassingInformation SwiftABIClassifier::Classify(Compiler*    comp,
             {
                 ABIPassingSegment newSegment = elemInfo.Segments[j];
                 newSegment.Offset += lowering->offsets[i];
+                // Adjust the tail size if necessary; the lowered sequence can
+                // pass the tail as a larger type than the tail size.
+                newSegment.Size = min(newSegment.Size, structLayout->GetSize() - newSegment.Offset);
                 segments.Push(newSegment);
             }
         }

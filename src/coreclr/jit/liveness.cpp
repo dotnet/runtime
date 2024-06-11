@@ -1762,8 +1762,8 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
                             operand->SetUnusedValue();
                         }
 
-                        // Special-case PUTARG_STK: since this operator is not considered a value, DCE will not remove
-                        // these nodes.
+                        // Special-case PUTARG_STK: since this operator is not considered a value, DCE will not
+                        // remove these nodes.
                         if (operand->OperIs(GT_PUTARG_STK))
                         {
                             operand->AsPutArgStk()->gtOp1->SetUnusedValue();

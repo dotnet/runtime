@@ -68,6 +68,7 @@ namespace JitTest_s_addsub_signed_cs
         }
 
         [Fact]
+        [OuterLoop]
         public static int TestEntryPoint()
         {
             try

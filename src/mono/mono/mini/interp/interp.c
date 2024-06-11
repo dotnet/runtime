@@ -2824,10 +2824,13 @@ do_jit_call (ThreadContext *context, stackval *ret_sp, stackval *sp, InterpFrame
 	}
 
 	JitCallCbData cb_data;
-	memset (&cb_data, 0, sizeof (cb_data));
 	cb_data.pindex = pindex;
 	cb_data.args = args;
+	cb_data.ftndesc.interp_method = NULL;
+	cb_data.ftndesc.method = NULL;
 	if (cinfo->no_wrapper) {
+		cb_data.ftndesc.addr = NULL;
+		cb_data.ftndesc.arg = NULL;
 		cb_data.jit_wrapper = cinfo->addr;
 		cb_data.extra_arg = cinfo->extra_arg;
 	} else {
@@ -3173,6 +3176,21 @@ interp_entry_from_trampoline (gpointer ccontext_untyped, gpointer rmethod_untype
 	/* Copy the args saved in the trampoline to the frame stack */
 	gpointer retp = mono_arch_get_native_call_context_args (ccontext, &frame, sig, call_info);
 
+#ifdef MONO_ARCH_HAVE_SWIFTCALL
+	int swift_error_arg_index = -1;
+	gpointer swift_error_data;
+	gpointer* swift_error_pointer;
+	if (mono_method_signature_has_ext_callconv (sig, MONO_EXT_CALLCONV_SWIFTCALL)) {
+		swift_error_data = mono_arch_get_swift_error (ccontext, sig, &swift_error_arg_index);
+
+		int swift_error_offset = frame.imethod->swift_error_offset;
+		if (swift_error_offset >= 0) {
+			swift_error_pointer = (gpointer*)((guchar*)frame.stack + swift_error_offset);
+			*swift_error_pointer = *(gpointer*)swift_error_data;
+		}
+	}
+#endif
+
 	/* Allocate storage for value types */
 	stackval *newsp = sp;
 	/* FIXME we should reuse computation on imethod for this */
@@ -3192,6 +3210,10 @@ interp_entry_from_trampoline (gpointer ccontext_untyped, gpointer rmethod_untype
 		} else {
 			size = MINT_STACK_SLOT_SIZE;
 		}
+#ifdef MONO_ARCH_HAVE_SWIFTCALL
+		if (swift_error_arg_index >= 0 && swift_error_arg_index == i)
+			newsp->data.p = swift_error_pointer;
+#endif
 		newsp = STACK_ADD_BYTES (newsp, size);
 	}
 	newsp = (stackval*)ALIGN_TO (newsp, MINT_STACK_ALIGNMENT);
@@ -3201,6 +3223,11 @@ interp_entry_from_trampoline (gpointer ccontext_untyped, gpointer rmethod_untype
 	MONO_ENTER_GC_UNSAFE;
 	mono_interp_exec_method (&frame, context, NULL);
 	MONO_EXIT_GC_UNSAFE;
+
+#ifdef MONO_ARCH_HAVE_SWIFTCALL
+	if (swift_error_arg_index >= 0)
+		*(gpointer*)swift_error_data = *(gpointer*)swift_error_pointer;
+#endif
 
 	context->stack_pointer = (guchar*)sp;
 	g_assert (!context->has_resume_state);
@@ -3341,13 +3368,11 @@ interp_create_method_pointer_llvmonly (MonoMethod *method, gboolean unbox, MonoE
 	) {
 		jiterp_preserve_module();
 
-		const char *name = mono_method_full_name (method, FALSE);
 		gpointer wasm_entry_func = mono_interp_jit_wasm_entry_trampoline (
 			imethod, method, sig->param_count, (MonoType *)sig->params,
 			unbox, sig->hasthis, sig->ret->type != MONO_TYPE_VOID,
-			name, entry_func
+			entry_func
 		);
-		g_free((void *)name);
 
 		// Compiling a trampoline can fail for various reasons, so in that case we will fall back to the pre-existing ones below
 		if (wasm_entry_func)
@@ -3466,9 +3491,16 @@ interp_create_method_pointer (MonoMethod *method, gboolean compile, MonoError *e
 	 * separate temp register. We should update the wrappers for this
 	 * if we really care about those architectures (arm).
 	 */
-	MonoMethod *wrapper = mini_get_interp_in_wrapper (sig);
 
-	entry_wrapper = mono_jit_compile_method_jit_only (wrapper, error);
+	MonoMethod *wrapper = NULL;
+#ifdef MONO_ARCH_HAVE_SWIFTCALL
+	/* Methods with Swift cconv should go to trampoline */
+	if (!mono_method_signature_has_ext_callconv (sig, MONO_EXT_CALLCONV_SWIFTCALL))
+#endif
+	{
+		wrapper = mini_get_interp_in_wrapper (sig);
+		entry_wrapper = mono_jit_compile_method_jit_only (wrapper, error);
+	}
 #endif
 	if (!entry_wrapper) {
 #ifndef MONO_ARCH_HAVE_INTERP_ENTRY_TRAMPOLINE
@@ -4098,6 +4130,8 @@ main_loop:
 					// Not created from interpreted code
 					g_assert (del->method);
 					del_imethod = mono_interp_get_imethod (del->method);
+					if (del->target && m_method_is_virtual (del->method))
+						del_imethod = get_virtual_method (del_imethod, del->target->vtable);
 					del->interp_method = del_imethod;
 					del->interp_invoke_impl = del_imethod;
 				} else {
@@ -6626,6 +6660,14 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_STELEM_I8) STELEM(gint64, gint64); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_STELEM_R4) STELEM(float, float); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_STELEM_R8) STELEM(double, double); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_STELEM_REF_UNCHECKED) {
+			MonoArray *o;
+			guint32 aindex;
+			STELEM_PROLOG(o, aindex);
+			mono_array_setref_fast ((MonoArray *) o, aindex, LOCAL_VAR (ip [3], MonoObject*));
+			ip += 4;
+			MINT_IN_BREAK;
+		}
 		MINT_IN_CASE(MINT_STELEM_REF) {
 			MonoArray *o;
 			guint32 aindex;
@@ -6642,7 +6684,6 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			ip += 4;
 			MINT_IN_BREAK;
 		}
-
 		MINT_IN_CASE(MINT_STELEM_VT) {
 			MonoArray *o = LOCAL_VAR (ip [1], MonoArray*);
 			NULL_CHECK (o);
@@ -7993,6 +8034,7 @@ interp_parse_options (const char *options)
 			}
 		}
 	}
+	g_strfreev (args);
 }
 
 /*

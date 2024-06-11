@@ -169,27 +169,58 @@ namespace System.Net.Http.Headers
         {
             ArgumentNullException.ThrowIfNull(values);
 
-            using IEnumerator<string?> enumerator = values.GetEnumerator();
-            if (enumerator.MoveNext())
+            if (values is IList<string?> valuesList)
             {
-                TryAddWithoutValidation(descriptor, enumerator.Current);
-                if (enumerator.MoveNext())
+                int count = valuesList.Count;
+
+                if (count > 0)
                 {
+                    // The store value is either a string (a single unparsed value) or a HeaderStoreItemInfo.
+                    // The RawValue on HeaderStoreItemInfo can likewise be either a single string or a List<string>.
+
                     ref object? storeValueRef = ref GetValueRefOrAddDefault(descriptor);
-                    Debug.Assert(storeValueRef is not null);
+                    object? storeValue = storeValueRef;
 
-                    object value = storeValueRef;
-                    if (value is not HeaderStoreItemInfo info)
+                    // If the storeValue was already set or we're adding more than 1 value,
+                    // we'll have to store the values in a List<string> on HeaderStoreItemInfo.
+                    if (storeValue is not null || count > 1)
                     {
-                        Debug.Assert(value is string);
-                        storeValueRef = info = new HeaderStoreItemInfo { RawValue = value };
-                    }
+                        if (storeValue is not HeaderStoreItemInfo info)
+                        {
+                            storeValueRef = info = new HeaderStoreItemInfo { RawValue = storeValue };
+                        }
 
-                    do
-                    {
-                        AddRawValue(info, enumerator.Current ?? string.Empty);
+                        object? rawValue = info.RawValue;
+                        if (rawValue is not List<string> rawValues)
+                        {
+                            info.RawValue = rawValues = new List<string>();
+
+                            if (rawValue != null)
+                            {
+                                rawValues.EnsureCapacity(count + 1);
+                                rawValues.Add((string)rawValue);
+                            }
+                        }
+
+                        rawValues.EnsureCapacity(rawValues.Count + count);
+
+                        for (int i = 0; i < count; i++)
+                        {
+                            rawValues.Add(valuesList[i] ?? string.Empty);
+                        }
                     }
-                    while (enumerator.MoveNext());
+                    else
+                    {
+                        // We're adding a single value to a new header entry. We can store the unparsed value as-is.
+                        storeValueRef = valuesList[0] ?? string.Empty;
+                    }
+                }
+            }
+            else
+            {
+                foreach (string? value in values)
+                {
+                    TryAddWithoutValidation(descriptor, value ?? string.Empty);
                 }
             }
 
@@ -1026,7 +1057,7 @@ namespace System.Net.Http.Headers
 
         private HeaderDescriptor GetHeaderDescriptor(string name)
         {
-            ArgumentException.ThrowIfNullOrWhiteSpace(name);
+            ArgumentException.ThrowIfNullOrEmpty(name);
 
             if (!HeaderDescriptor.TryGet(name, out HeaderDescriptor descriptor))
             {

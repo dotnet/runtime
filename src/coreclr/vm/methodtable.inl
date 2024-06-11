@@ -1331,15 +1331,7 @@ FORCEINLINE OBJECTREF MethodTable::GetManagedClassObjectIfExists()
     LIMITED_METHOD_CONTRACT;
 
     const RUNTIMETYPEHANDLE handle = GetAuxiliaryData()->m_hExposedClassObject;
-
-    OBJECTREF retVal;
-    if (!TypeHandle::GetManagedClassObjectFromHandleFast(handle, &retVal) &&
-        !GetLoaderAllocator()->GetHandleValueFastPhase2(handle, &retVal))
-    {
-        return NULL;
-    }
-
-    COMPILER_ASSUME(retVal != NULL);
+    OBJECTREF retVal = ObjectToOBJECTREF(handle);
     return retVal;
 }
 #endif

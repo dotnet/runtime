@@ -735,6 +735,17 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 		}
 	}
 
+	// compute is_exception_class, used by interp to avoid inlining exception handling code
+	if (
+		klass->parent && !m_class_is_valuetype (klass) &&
+		!m_class_is_interface (klass)
+	) {
+		if (m_class_is_exception_class (klass->parent))
+			klass->is_exception_class = 1;
+		else if (!strcmp (klass->name, "Exception") && !strcmp(klass->name_space, "System"))
+			klass->is_exception_class = 1;
+	}
+
 	mono_loader_unlock ();
 
 	MONO_PROFILER_RAISE (class_loaded, (klass));
@@ -926,6 +937,7 @@ mono_class_create_generic_inst (MonoGenericClass *gclass)
 	klass->this_arg.byref__ = TRUE;
 	klass->is_inlinearray = gklass->is_inlinearray;
 	klass->inlinearray_value = gklass->inlinearray_value;
+	klass->is_exception_class = gklass->is_exception_class;
 	klass->enumtype = gklass->enumtype;
 	klass->valuetype = gklass->valuetype;
 
@@ -2319,7 +2331,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 
 			instance_size = MAX (real_size, instance_size);
 
-			if (instance_size & (min_align - 1)) {
+			if (instance_size & (min_align - 1) && !explicit_size) {
 				instance_size += min_align - 1;
 				instance_size &= ~(min_align - 1);
 			}

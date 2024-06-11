@@ -280,6 +280,7 @@ namespace JitTest_format_cs
         }
 
         [Fact]
+        [OuterLoop]
         public static void TestEntryPoint()
         {
             TestLocals();

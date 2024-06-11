@@ -12,7 +12,16 @@ namespace System.Globalization.Tests
         {
             // see the comments on the right to check the non-Hybrid result, if it differs
             yield return new object[] { "ar-SA", new string[] { "محرم", "صفر", "ربيع الأول", "ربيع الآخر", "جمادى الأولى", "جمادى الآخرة", "رجب", "شعبان", "رمضان", "شوال", "ذو القعدة", "ذو الحجة", "" } };
-            yield return new object[] { "am-ET", new string[] { "ጃንዩ", "ፌብሩ", "ማርች", "ኤፕሪ", "ሜይ", "ጁን", "ጁላይ", "ኦገስ", "ሴፕቴ", "ኦክቶ", "ኖቬም", "ዲሴም", "" } };
+            if (PlatformDetection.IsFirefox || PlatformDetection.IsNodeJS)
+            {
+                yield return new object[] { "am-ET", new string[] { "ጃንዩ", "ፌብሩ", "ማርች", "ኤፕሪ", "ሜይ", "ጁን", "ጁላይ", "ኦገስ", "ሴፕቴ", "ኦክቶ", "ኖቬም", "ዲሴም", "" } };
+                yield return new object[] { "es-MX", new string[] { "ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sept", "oct", "nov", "dic", "" } }; //  "ene.", "feb.", "mar.", "abr.", "may.", "jun.", "jul.", "ago.", "sep.", "oct.", "nov.", "dic.", ""
+            }
+            else
+            {
+                yield return new object[] { "am-ET", new string[] { "ጃን", "ፌብ", "ማርች", "ኤፕሪ", "ሜይ", "ጁን", "ጁላይ", "ኦገስ", "ሴፕቴ", "ኦክቶ", "ኖቬም", "ዲሴም", "" } }; // "ጃንዩ", "ፌብሩ", "ማርች", "ኤፕሪ", "ሜይ", "ጁን", "ጁላይ", "ኦገስ", "ሴፕቴ", "ኦክቶ", "ኖቬም", "ዲሴም", ""
+                yield return new object[] { "es-MX", new string[] { "ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic", "" } }; //  "ene.", "feb.", "mar.", "abr.", "may.", "jun.", "jul.", "ago.", "sep.", "oct.", "nov.", "dic.", ""
+            }
             yield return new object[] { "bg-BG", new string[] { "01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12", "" } }; //"яну", "фев", "март", "апр", "май", "юни", "юли", "авг", "сеп", "окт", "ное", "дек", ""
             yield return new object[] { "bn-BD", new string[] { "জানু", "ফেব", "মার্চ", "এপ্রি", "মে", "জুন", "জুল", "আগ", "সেপ", "অক্টো", "নভে", "ডিসে", "" } }; //  "জানু", "ফেব", "মার্চ", "এপ্রিল", "মে", "জুন", "জুলাই", "আগস্ট", "সেপ্টেম্বর", "অক্টোবর", "নভেম্বর", "ডিসেম্বর", ""
             yield return new object[] { "bn-IN", new string[] { "জানু", "ফেব", "মার্চ", "এপ্রি", "মে", "জুন", "জুল", "আগ", "সেপ্টেঃ", "অক্টোঃ", "নভেঃ", "ডিসেঃ", "" } }; //  "জানু", "ফেব", "মার্চ", "এপ্রিল", "মে", "জুন", "জুলাই", "আগস্ট", "সেপ্টেম্বর", "অক্টোবর", "নভেম্বর", "ডিসেম্বর", ""
@@ -133,7 +142,6 @@ namespace System.Globalization.Tests
             yield return new object[] { "en-ZW", new string[] { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sept", "Oct", "Nov", "Dec", "" } }; // "Sep"
             yield return new object[] { "es-419", new string[] { "ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sept", "oct", "nov", "dic", "" } }; //  "ene.", "feb.", "mar.", "abr.", "may.", "jun.", "jul.", "ago.", "sep.", "oct.", "nov.", "dic.", ""
             yield return new object[] { "es-ES", new string[] { "ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sept", "oct", "nov", "dic", "" } }; //  "ene.", "feb.", "mar.", "abr.", "may.", "jun.", "jul.", "ago.", "sep.", "oct.", "nov.", "dic.", ""
-            yield return new object[] { "es-MX", new string[] { "ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sept", "oct", "nov", "dic", "" } }; //  "ene.", "feb.", "mar.", "abr.", "may.", "jun.", "jul.", "ago.", "sep.", "oct.", "nov.", "dic.", ""
             yield return new object[] { "et-EE", new string[] { "jaan", "veebr", "märts", "apr", "mai", "juuni", "juuli", "aug", "sept", "okt", "nov", "dets", "" } };
             yield return new object[] { "fa-IR", new string[] { "فروردین", "اردیبهشت", "خرداد", "تیر", "مرداد", "شهریور", "مهر", "آبان", "آذر", "دی", "بهمن", "اسفند", "" } };
             yield return new object[] { "fi-FI", new string[] { "tammik.", "helmik.", "maalisk.", "huhtik.", "toukok.", "kesäk.", "heinäk.", "elok.", "syysk.", "lokak.", "marrask.", "jouluk.", "" } };
@@ -192,7 +200,8 @@ namespace System.Globalization.Tests
             yield return new object[] { "tr-CY", new string[] { "Oca", "Şub", "Mar", "Nis", "May", "Haz", "Tem", "Ağu", "Eyl", "Eki", "Kas", "Ara", "" } };
             yield return new object[] { "tr-TR", new string[] { "Oca", "Şub", "Mar", "Nis", "May", "Haz", "Tem", "Ağu", "Eyl", "Eki", "Kas", "Ara", "" } };
             yield return new object[] { "uk-UA", new string[] { "січ.", "лют.", "бер.", "квіт.", "трав.", "черв.", "лип.", "серп.", "вер.", "жовт.", "лист.", "груд.", "" } };
-            yield return new object[] { "vi-VN", new string[] { "Thg 1", "Thg 2", "Thg 3", "Thg 4", "Thg 5", "Thg 6", "Thg 7", "Thg 8", "Thg 9", "Thg 10", "Thg 11", "Thg 12", "" } }; // thg
+            string vietnameseAbbrMonth = PlatformDetection.IsFirefox || PlatformDetection.IsNodeJS ? "Thg" : "Tháng"; // thg
+            yield return new object[] { "vi-VN", new string[] { $"{vietnameseAbbrMonth} 1", $"{vietnameseAbbrMonth} 2", $"{vietnameseAbbrMonth} 3", $"{vietnameseAbbrMonth} 4", $"{vietnameseAbbrMonth} 5", $"{vietnameseAbbrMonth} 6", $"{vietnameseAbbrMonth} 7", $"{vietnameseAbbrMonth} 8", $"{vietnameseAbbrMonth} 9", $"{vietnameseAbbrMonth} 10", $"{vietnameseAbbrMonth} 11", $"{vietnameseAbbrMonth} 12", "" } };
             yield return new object[] { "zh-CN", new string[] { "1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月", "" } };
             yield return new object[] { "zh-Hans-HK", new string[] { "1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月", "" } };
             yield return new object[] { "zh-SG", new string[] { "1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月", "" } };

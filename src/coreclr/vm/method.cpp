@@ -48,9 +48,9 @@ bool FixupSignatureContainingInternalTypes(
     DWORD           cSig,
     bool checkOnly = false);
 
-// Alias ComPlusCallMethodDesc to regular MethodDesc to simplify definition of the size table
+// Alias CLRToCOMCallMethodDesc to regular MethodDesc to simplify definition of the size table
 #ifndef FEATURE_COMINTEROP
-#define ComPlusCallMethodDesc MethodDesc
+#define CLRToCOMCallMethodDesc MethodDesc
 #endif
 
 // Verify that the structure sizes of our MethodDescs support proper
@@ -62,7 +62,7 @@ static_assert_no_msg((sizeof(FCallMethodDesc)       & MethodDesc::ALIGNMENT_MASK
 static_assert_no_msg((sizeof(NDirectMethodDesc)     & MethodDesc::ALIGNMENT_MASK) == 0);
 static_assert_no_msg((sizeof(EEImplMethodDesc)      & MethodDesc::ALIGNMENT_MASK) == 0);
 static_assert_no_msg((sizeof(ArrayMethodDesc)       & MethodDesc::ALIGNMENT_MASK) == 0);
-static_assert_no_msg((sizeof(ComPlusCallMethodDesc) & MethodDesc::ALIGNMENT_MASK) == 0);
+static_assert_no_msg((sizeof(CLRToCOMCallMethodDesc) & MethodDesc::ALIGNMENT_MASK) == 0);
 static_assert_no_msg((sizeof(DynamicMethodDesc)     & MethodDesc::ALIGNMENT_MASK) == 0);
 
 #define METHOD_DESC_SIZES(adjustment)                                       \
@@ -72,7 +72,7 @@ static_assert_no_msg((sizeof(DynamicMethodDesc)     & MethodDesc::ALIGNMENT_MASK
     adjustment + sizeof(EEImplMethodDesc),           /* mcEEImpl        */  \
     adjustment + sizeof(ArrayMethodDesc),            /* mcArray         */  \
     adjustment + sizeof(InstantiatedMethodDesc),     /* mcInstantiated  */  \
-    adjustment + sizeof(ComPlusCallMethodDesc),      /* mcComInterOp    */  \
+    adjustment + sizeof(CLRToCOMCallMethodDesc),      /* mcComInterOp    */  \
     adjustment + sizeof(DynamicMethodDesc)           /* mcDynamic       */
 
 const BYTE MethodDesc::s_ClassificationSizeTable[] = {
@@ -92,7 +92,7 @@ const BYTE MethodDesc::s_ClassificationSizeTable[] = {
 };
 
 #ifndef FEATURE_COMINTEROP
-#undef ComPlusCallMethodDesc
+#undef CLRToCOMCallMethodDesc
 #endif
 
 class ArgIteratorBaseForPInvoke : public ArgIteratorBase
@@ -120,10 +120,10 @@ SIZE_T MethodDesc::SizeOf()
     LIMITED_METHOD_DAC_CONTRACT;
 
     SIZE_T size = s_ClassificationSizeTable[m_wFlags &
-        (mdcClassification
-        | mdcHasNonVtableSlot
-        | mdcMethodImpl
-        | mdcHasNativeCodeSlot)];
+        (mdfClassification
+        | mdfHasNonVtableSlot
+        | mdfMethodImpl
+        | mdfHasNativeCodeSlot)];
 
     return size;
 }
@@ -209,8 +209,55 @@ LoaderAllocator * MethodDesc::GetDomainSpecificLoaderAllocator()
 
 }
 
+HRESULT MethodDesc::EnsureCodeDataExists()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+    if (m_codeData != NULL)
+        return S_OK;
+
+    LoaderHeap* heap = GetLoaderAllocator()->GetHighFrequencyHeap();
+
+    AllocMemTracker amTracker;
+    MethodDescCodeData* alloc = (MethodDescCodeData*)amTracker.Track_NoThrow(heap->AllocMem_NoThrow(S_SIZE_T(sizeof(MethodDescCodeData))));
+    if (alloc == NULL)
+        return E_OUTOFMEMORY;
+
+    // Try to set the field. Suppress clean-up if we win the race.
+    if (InterlockedCompareExchangeT(&m_codeData, (MethodDescCodeData*)alloc, NULL) == NULL)
+        amTracker.SuppressRelease();
+
+    return S_OK;
+}
+
+HRESULT MethodDesc::SetMethodDescVersionState(PTR_MethodDescVersioningState state)
+{
+    WRAPPER_NO_CONTRACT;
+
+    HRESULT hr;
+    IfFailRet(EnsureCodeDataExists());
+
+    _ASSERTE(m_codeData != NULL);
+    if (InterlockedCompareExchangeT(&m_codeData->VersioningState, state, NULL) != NULL)
+        return S_FALSE;
+
+    return S_OK;
+}
+
 #endif //!DACCESS_COMPILE
 
+PTR_MethodDescVersioningState MethodDesc::GetMethodDescVersionState()
+{
+    WRAPPER_NO_CONTRACT;
+    if (m_codeData == NULL)
+        return NULL;
+    return m_codeData->VersioningState;
+}
 
 //*******************************************************************************
 LPCUTF8 MethodDesc::GetNameThrowing()
@@ -946,7 +993,7 @@ PTR_PCODE MethodDesc::GetAddrOfNativeCodeSlot()
 
     _ASSERTE(HasNativeCodeSlot());
 
-    SIZE_T size = s_ClassificationSizeTable[m_wFlags & (mdcClassification | mdcHasNonVtableSlot |  mdcMethodImpl)];
+    SIZE_T size = s_ClassificationSizeTable[m_wFlags & (mdfClassification | mdfHasNonVtableSlot |  mdfMethodImpl)];
 
     return (PTR_PCODE)(dac_cast<TADDR>(this) + size);
 }
@@ -2252,7 +2299,7 @@ MethodImpl *MethodDesc::GetMethodImpl()
     }
     CONTRACTL_END
 
-    SIZE_T size = s_ClassificationSizeTable[m_wFlags & (mdcClassification | mdcHasNonVtableSlot)];
+    SIZE_T size = s_ClassificationSizeTable[m_wFlags & (mdfClassification | mdfHasNonVtableSlot)];
 
     return PTR_MethodImpl(dac_cast<TADDR>(this) + size);
 }
@@ -2265,7 +2312,7 @@ BOOL MethodDesc::RequiresMethodDescCallingConvention(BOOL fEstimateForChunk /*=F
     LIMITED_METHOD_CONTRACT;
 
     // Interop marshaling is implemented using shared stubs
-    if (IsNDirect() || IsComPlusCall())
+    if (IsNDirect() || IsCLRToCOMCall())
         return TRUE;
 
 
@@ -2302,7 +2349,7 @@ BOOL MethodDesc::RequiresStableEntryPoint(BOOL fEstimateForChunk /*=FALSE*/)
             return TRUE;
 
         // TODO: Can we avoid early allocation of precodes for interfaces and cominterop?
-        if ((IsInterface() && !IsStatic() && IsVirtual()) || IsComPlusCall())
+        if ((IsInterface() && !IsStatic() && IsVirtual()) || IsCLRToCOMCall())
             return TRUE;
     }
 
@@ -3650,7 +3697,7 @@ BOOL MethodDesc::ShouldSuppressGCTransition()
 
 #ifdef FEATURE_COMINTEROP
 //*******************************************************************************
-void ComPlusCallMethodDesc::InitComEventCallInfo()
+void CLRToCOMCallMethodDesc::InitComEventCallInfo()
 {
     CONTRACTL
     {
@@ -3667,16 +3714,16 @@ void ComPlusCallMethodDesc::InitComEventCallInfo()
 
     // Retrieve the event provider class.
     WORD cbExtraSlots = ComMethodTable::GetNumExtraSlots(pItfMT->GetComInterfaceType());
-    WORD itfSlotNum = (WORD) m_pComPlusCallInfo->m_cachedComSlot - cbExtraSlots;
+    WORD itfSlotNum = (WORD) m_pCLRToCOMCallInfo->m_cachedComSlot - cbExtraSlots;
     pItfMT->GetEventInterfaceInfo(&pSrcItfClass, &pEvProvClass);
-    m_pComPlusCallInfo->m_pEventProviderMD = MemberLoader::FindMethodForInterfaceSlot(pEvProvClass, pItfMT, itfSlotNum);
+    m_pCLRToCOMCallInfo->m_pEventProviderMD = MemberLoader::FindMethodForInterfaceSlot(pEvProvClass, pItfMT, itfSlotNum);
 
     // If we could not find the method, then the event provider does not support
     // this event. This is a fatal error.
-    if (!m_pComPlusCallInfo->m_pEventProviderMD)
+    if (!m_pCLRToCOMCallInfo->m_pEventProviderMD)
     {
         // Init the interface MD for error reporting.
-        pItfMD = (ComPlusCallMethodDesc*)pItfMT->GetMethodDescForSlot(itfSlotNum);
+        pItfMD = (CLRToCOMCallMethodDesc*)pItfMT->GetMethodDescForSlot(itfSlotNum);
 
         // Retrieve the event provider class name.
         StackSString ssEvProvClassName;
@@ -4000,19 +4047,19 @@ PrecodeType MethodDesc::GetPrecodeType()
 
 #ifdef FEATURE_COMINTEROP
 #ifndef DACCESS_COMPILE
-void ComPlusCallMethodDesc::InitRetThunk()
+void CLRToCOMCallMethodDesc::InitRetThunk()
 {
     WRAPPER_NO_CONTRACT;
 
 #ifdef TARGET_X86
-    if (m_pComPlusCallInfo->m_pRetThunk != NULL)
+    if (m_pCLRToCOMCallInfo->m_pRetThunk != NULL)
         return;
 
     UINT numStackBytes = CbStackPop();
 
-    LPVOID pRetThunk = ComPlusCall::GetRetThunk(numStackBytes);
+    LPVOID pRetThunk = CLRToCOMCall::GetRetThunk(numStackBytes);
 
-    InterlockedCompareExchangeT<void *>(&m_pComPlusCallInfo->m_pRetThunk, pRetThunk, NULL);
+    InterlockedCompareExchangeT<void *>(&m_pCLRToCOMCallInfo->m_pRetThunk, pRetThunk, NULL);
 #endif // TARGET_X86
 }
 #endif //!DACCESS_COMPILE

@@ -27,7 +27,9 @@
     CALLEE_SAVED_REGISTER(X23) \
     CALLEE_SAVED_REGISTER(X24) \
     CALLEE_SAVED_REGISTER(X25) \
-    CALLEE_SAVED_REGISTER(X26)
+    CALLEE_SAVED_REGISTER(X26) \
+    CALLEE_SAVED_REGISTER(X27) \
+    CALLEE_SAVED_REGISTER(X28)
 
 #define ENUM_FP_CALLEE_SAVED_REGISTERS() \
     CALLEE_SAVED_REGISTER(V[8].Low) \
@@ -302,7 +304,7 @@ inline TADDR GetMem(PCODE address, SIZE_T size, bool signExtend)
     }
     EX_CATCH
     {
-        mem = NULL;
+        mem = 0;
         _ASSERTE(!"Memory read within jitted Code Failed, this should not happen!!!!");
     }
     EX_END_CATCH(SwallowAllExceptions);
