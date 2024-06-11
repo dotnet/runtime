@@ -1968,10 +1968,7 @@ public:
         return m_array;
     }
 
-    // Deep copies the array
-    void CopyFrom(StackTraceArray const & src);
-
-    void CopyDataFrom(StackTraceArray const & src);
+    uint32_t CopyDataFrom(StackTraceArray const & src);
 
     Thread * GetObjectThread() const
     {
