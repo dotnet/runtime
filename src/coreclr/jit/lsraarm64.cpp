@@ -1979,6 +1979,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 case NI_Sve_PrefetchInt16:
                 case NI_Sve_PrefetchInt32:
                 case NI_Sve_PrefetchInt64:
+                    assert(intrinsicTree->OperIsMemoryLoadOrStore());
                     srcCount += BuildAddrUses(intrin.op2);
                     break;
 
