@@ -32,6 +32,16 @@
         <target state="translated">Názvy parametrů metody protokolování nemůžou začínat podtržítkem (_).</target>
         <note />
       </trans-unit>
+      <trans-unit id="InvalidLoggingMethodParameterOutMessage">
+        <source>Argument '{0}' is using the unsupported out parameter modifier</source>
+        <target state="translated">Argument {0} používá nepodporovaný modifikátor výstupních parametrů.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidLoggingMethodParameterOutTitle">
+        <source>Argument is using the unsupported out parameter modifier</source>
+        <target state="translated">Argument používá nepodporovaný modifikátor výstupních parametrů</target>
+        <note />
+      </trans-unit>
       <trans-unit id="LoggingMethodHasBodyMessage">
         <source>Logging methods cannot have a body</source>
         <target state="translated">Metody protokolování nemůžou obsahovat tělo.</target>
@@ -57,9 +67,24 @@
         <target state="translated">Metody protokolování musí být statické.</target>
         <note />
       </trans-unit>
+      <trans-unit id="LoggingUnsupportedLanguageVersionMessageFormat">
+        <source>The Logging source generator is not available in C# {0}. Please use language version {1} or greater.</source>
+        <target state="translated">Zdrojový generátor protokolování není k dispozici v jazyce C# {0}. Použijte prosím jazykovou verzi {1} nebo vyšší.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LoggingUnsupportedLanguageVersionTitle">
+        <source>C# language version not supported by the source generator.</source>
+        <target state="translated">Zdrojový generátor nepodporuje jazykovou verzi jazyka C#.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="MalformedFormatStringsMessage">
-        <source>Can't have malformed format strings (like dangling {, etc)</source>
-        <target state="new">Can't have malformed format strings (like dangling {, etc)</target>
+        <source>Logging method '{0}' contains malformed format strings</source>
+        <target state="translated">Metoda protokolování {0} obsahuje řetězce s poškozeným formátem.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MalformedFormatStringsTitle">
+        <source>Logging method contains malformed format strings</source>
+        <target state="translated">Metoda protokolování obsahuje řetězce s poškozeným formátem</target>
         <note />
       </trans-unit>
       <trans-unit id="MissingLogLevelMessage">
@@ -107,6 +132,16 @@
         <target state="translated">Našlo se několik polí typu Microsoft.Extensions.Logging.ILogger</target>
         <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
       </trans-unit>
+      <trans-unit id="PrimaryConstructorParameterLoggerHiddenMessage">
+        <source>Class '{0}' has a primary constructor parameter of type Microsoft.Extensions.Logging.ILogger that is hidden by a field in the class or a base class, preventing its use</source>
+        <target state="new">Class '{0}' has a primary constructor parameter of type Microsoft.Extensions.Logging.ILogger that is hidden by a field in the class or a base class, preventing its use</target>
+        <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
+      </trans-unit>
+      <trans-unit id="PrimaryConstructorParameterLoggerHiddenTitle">
+        <source>Primary constructor parameter of type Microsoft.Extensions.Logging.ILogger is hidden by a field</source>
+        <target state="new">Primary constructor parameter of type Microsoft.Extensions.Logging.ILogger is hidden by a field</target>
+        <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
+      </trans-unit>
       <trans-unit id="RedundantQualifierInMessageMessage">
         <source>Remove redundant qualifier (Info:, Warning:, Error:, etc) from the logging message since it is implicit in the specified log level.</source>
         <target state="translated">Odeberte redundantní kvalifikátor (Informace:, Upozornění:, Chyba: atd.) ze zprávy o protokolování, protože je na zadané úrovni protokolu implicitní.</target>
@@ -145,6 +180,16 @@
       <trans-unit id="ShouldntReuseEventIdsTitle">
         <source>Multiple logging methods cannot use the same event id within a class</source>
         <target state="translated">Více než jedna metoda protokolování nemůže v rámci třídy používat stejné ID události.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ShouldntReuseEventNamesMessage">
+        <source>Multiple logging methods are using event name {0} in class {1}</source>
+        <target state="translated">Více než jedna metoda protokolování používá název události {0} ve třídě {1}</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ShouldntReuseEventNamesTitle">
+        <source>Multiple logging methods should not use the same event name within a class</source>
+        <target state="translated">Více než jedna metoda protokolování by nemělo používat stejný název události v rámci třídy</target>
         <note />
       </trans-unit>
       <trans-unit id="TemplateHasNoCorrespondingArgumentMessage">
