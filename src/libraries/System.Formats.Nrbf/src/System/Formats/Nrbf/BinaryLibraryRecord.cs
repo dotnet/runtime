@@ -21,7 +21,7 @@ internal sealed class BinaryLibraryRecord : SerializationRecord
         LibraryName = libraryName;
     }
 
-    public override RecordType RecordType => RecordType.BinaryLibrary;
+    public override SerializationRecordType RecordType => SerializationRecordType.BinaryLibrary;
 
     public override TypeName TypeName
     {

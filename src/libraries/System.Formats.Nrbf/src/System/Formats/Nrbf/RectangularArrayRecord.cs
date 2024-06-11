@@ -38,7 +38,7 @@ internal sealed class RectangularArrayRecord : ArrayRecord
 
     }
 
-    public override RecordType RecordType => RecordType.BinaryArray;
+    public override SerializationRecordType RecordType => SerializationRecordType.BinaryArray;
 
     public override ReadOnlySpan<int> Lengths => _lengths.AsSpan();
 

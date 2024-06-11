@@ -121,12 +121,12 @@ public class AttackTests : ReadTests
 
         WriteSerializedStreamHeader(writer);
 
-        writer.Write((byte)RecordType.ArraySingleString);
+        writer.Write((byte)SerializationRecordType.ArraySingleString);
         writer.Write(1); // object ID
         writer.Write(Array.MaxLength); // length
-        writer.Write((byte)RecordType.ObjectNullMultiple);
+        writer.Write((byte)SerializationRecordType.ObjectNullMultiple);
         writer.Write(Array.MaxLength); // null count
-        writer.Write((byte)RecordType.MessageEnd);
+        writer.Write((byte)SerializationRecordType.MessageEnd);
 
         stream.Position = 0;
 
@@ -137,7 +137,7 @@ public class AttackTests : ReadTests
         long after = GetAllocatedByteCount();
 
         Assert.InRange(after, before, before + 1024);
-        Assert.Equal(RecordType.ArraySingleString, serializationRecord.RecordType);
+        Assert.Equal(SerializationRecordType.ArraySingleString, serializationRecord.RecordType);
     }
 
     [Fact]
@@ -148,11 +148,11 @@ public class AttackTests : ReadTests
 
         WriteSerializedStreamHeader(writer);
 
-        writer.Write((byte)RecordType.ArraySinglePrimitive);
+        writer.Write((byte)SerializationRecordType.ArraySinglePrimitive);
         writer.Write(1); // object ID
         writer.Write(Array.MaxLength); // length
         writer.Write((byte)2); // PrimitiveType.Byte
-        writer.Write((byte)RecordType.MessageEnd);
+        writer.Write((byte)SerializationRecordType.MessageEnd);
 
         stream.Position = 0;
 
@@ -222,9 +222,9 @@ public class AttackTests : ReadTests
     }
 
     [Theory]
-    [InlineData(RecordType.ClassWithMembersAndTypes)]
-    [InlineData(RecordType.SystemClassWithMembersAndTypes)]
-    public void UnboundedRecursion_NestedClasses_FakeButValidInput(RecordType recordType)
+    [InlineData(SerializationRecordType.ClassWithMembersAndTypes)]
+    [InlineData(SerializationRecordType.SystemClassWithMembersAndTypes)]
+    public void UnboundedRecursion_NestedClasses_FakeButValidInput(SerializationRecordType recordType)
     {
         const int ClassesCount = 10_000;
         const int LibraryId = ClassesCount + 1;
@@ -248,29 +248,29 @@ public class AttackTests : ReadTests
             {
                 writer.Write("memberName");
                 // MemberTypeInfo (if needed)
-                if (recordType is RecordType.ClassWithMembersAndTypes or RecordType.SystemClassWithMembersAndTypes)
+                if (recordType is SerializationRecordType.ClassWithMembersAndTypes or SerializationRecordType.SystemClassWithMembersAndTypes)
                 {
-                    byte memberType = recordType is RecordType.SystemClassWithMembersAndTypes
+                    byte memberType = recordType is SerializationRecordType.SystemClassWithMembersAndTypes
                         ? (byte)3  // BinaryType.SystemClass
                         : (byte)4; // BinaryType.Class;
 
                     writer.Write(memberType);
                     writer.Write($"Class{i}"); // member type name
 
-                    if (recordType is RecordType.ClassWithMembersAndTypes)
+                    if (recordType is SerializationRecordType.ClassWithMembersAndTypes)
                     {
                         writer.Write(LibraryId);
                     }
                 }
             }
             // LibraryId (if needed)
-            if (recordType is RecordType.ClassWithMembersAndTypes)
+            if (recordType is SerializationRecordType.ClassWithMembersAndTypes)
             {
                 writer.Write(LibraryId);
             }
         }
 
-        writer.Write((byte)RecordType.MessageEnd);
+        writer.Write((byte)SerializationRecordType.MessageEnd);
 
         stream.Position = 0;
 

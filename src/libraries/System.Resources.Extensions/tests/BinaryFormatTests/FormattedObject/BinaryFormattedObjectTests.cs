@@ -46,7 +46,7 @@ public class BinaryFormattedObjectTests : SerializationTest<FormattedObjectSeria
 
     private static void VerifyHashTable(ClassRecord systemClass, int expectedVersion, int expectedHashSize)
     {
-        systemClass.RecordType.Should().Be(RecordType.SystemClassWithMembersAndTypes);
+        systemClass.RecordType.Should().Be(SerializationRecordType.SystemClassWithMembersAndTypes);
         systemClass.TypeName.FullName.Should().Be("System.Collections.Hashtable");
         systemClass.MemberNames.Should().BeEquivalentTo(
         [
@@ -130,7 +130,7 @@ public class BinaryFormattedObjectTests : SerializationTest<FormattedObjectSeria
     public void ReadObject()
     {
         BinaryFormattedObject format = new(Serialize(new object()));
-        format[format.RootRecord.Id].RecordType.Should().Be(RecordType.SystemClassWithMembersAndTypes);
+        format[format.RootRecord.Id].RecordType.Should().Be(SerializationRecordType.SystemClassWithMembersAndTypes);
     }
 
     [Fact]
@@ -138,7 +138,7 @@ public class BinaryFormattedObjectTests : SerializationTest<FormattedObjectSeria
     {
         ValueTuple<int> tuple = new(355);
         BinaryFormattedObject format = new(Serialize(tuple));
-        format[format.RootRecord.Id].RecordType.Should().Be(RecordType.SystemClassWithMembersAndTypes);
+        format[format.RootRecord.Id].RecordType.Should().Be(SerializationRecordType.SystemClassWithMembersAndTypes);
     }
 
     [Fact]
@@ -147,7 +147,7 @@ public class BinaryFormattedObjectTests : SerializationTest<FormattedObjectSeria
         BinaryFormattedObject format = new(Serialize(new SimpleSerializableObject()));
 
         ClassRecord @class = (ClassRecord)format.RootRecord;
-        @class.RecordType.Should().Be(RecordType.ClassWithMembersAndTypes);
+        @class.RecordType.Should().Be(SerializationRecordType.ClassWithMembersAndTypes);
         @class.TypeName.FullName.Should().Be(typeof(SimpleSerializableObject).FullName);
         @class.TypeName.AssemblyName!.FullName.Should().Be(typeof(SimpleSerializableObject).Assembly.FullName);
         @class.MemberNames.Should().BeEmpty();
@@ -159,7 +159,7 @@ public class BinaryFormattedObjectTests : SerializationTest<FormattedObjectSeria
         BinaryFormattedObject format = new(Serialize(new NestedSerializableObject()));
 
         ClassRecord @class = (ClassRecord)format.RootRecord;
-        @class.RecordType.Should().Be(RecordType.ClassWithMembersAndTypes);
+        @class.RecordType.Should().Be(SerializationRecordType.ClassWithMembersAndTypes);
         @class.TypeName.FullName.Should().Be(typeof(NestedSerializableObject).FullName);
         @class.TypeName.AssemblyName!.FullName.Should().Be(typeof(NestedSerializableObject).Assembly.FullName);
         @class.MemberNames.Should().BeEquivalentTo(["_object", "_meaning"]);
@@ -173,7 +173,7 @@ public class BinaryFormattedObjectTests : SerializationTest<FormattedObjectSeria
         BinaryFormattedObject format = new(Serialize(new TwoIntSerializableObject()));
 
         ClassRecord @class = (ClassRecord)format.RootRecord;
-        @class.RecordType.Should().Be(RecordType.ClassWithMembersAndTypes);
+        @class.RecordType.Should().Be(SerializationRecordType.ClassWithMembersAndTypes);
         @class.TypeName.FullName.Should().Be(typeof(TwoIntSerializableObject).FullName);
         @class.TypeName.AssemblyName!.FullName.Should().Be(typeof(TwoIntSerializableObject).Assembly.FullName);
         @class.MemberNames.Should().BeEquivalentTo(["_value", "_meaning"]);
@@ -187,9 +187,9 @@ public class BinaryFormattedObjectTests : SerializationTest<FormattedObjectSeria
         BinaryFormattedObject format = new(Serialize(new RepeatedNestedSerializableObject()));
         ClassRecord classRecord = (ClassRecord)format.RootRecord;
         ClassRecord firstClass = classRecord.GetClassRecord("_first");
-        firstClass.RecordType.Should().Be(RecordType.ClassWithMembersAndTypes);
+        firstClass.RecordType.Should().Be(SerializationRecordType.ClassWithMembersAndTypes);
         ClassRecord classWithId = classRecord.GetClassRecord("_second");
-        classWithId.RecordType.Should().Be(RecordType.ClassWithId);
+        classWithId.RecordType.Should().Be(SerializationRecordType.ClassWithId);
         classWithId.GetRawValue("_value").Should().Be(1970);
         classWithId.GetInt32("_meaning").Should().Be(42);
     }
@@ -249,7 +249,7 @@ public class BinaryFormattedObjectTests : SerializationTest<FormattedObjectSeria
     {
         BinaryFormattedObject format = new(Serialize(new ObjectWithNullableObjects()));
         ClassRecord classRecord = (ClassRecord)format.RootRecord;
-        classRecord.RecordType.Should().Be(RecordType.ClassWithMembersAndTypes);
+        classRecord.RecordType.Should().Be(SerializationRecordType.ClassWithMembersAndTypes);
         classRecord.TypeName.AssemblyName!.FullName.Should().Be(typeof(ObjectWithNullableObjects).Assembly.FullName);
     }
 
@@ -258,7 +258,7 @@ public class BinaryFormattedObjectTests : SerializationTest<FormattedObjectSeria
     {
         BinaryFormattedObject format = new(Serialize(new NestedObjectWithNullableObjects()));
         ClassRecord classRecord = (ClassRecord)format.RootRecord;
-        classRecord.RecordType.Should().Be(RecordType.ClassWithMembersAndTypes);
+        classRecord.RecordType.Should().Be(SerializationRecordType.ClassWithMembersAndTypes);
         classRecord.TypeName.AssemblyName!.FullName.Should().Be(typeof(NestedObjectWithNullableObjects).Assembly.FullName);
     }
 

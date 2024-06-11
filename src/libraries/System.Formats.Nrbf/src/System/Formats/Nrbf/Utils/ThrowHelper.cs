@@ -34,14 +34,14 @@ internal static class ThrowHelper
 #pragma warning disable IDE0066 // Convert switch statement to expression
         switch (recordType)
         {
-            case 2: // SystemClassWithMembers (generated without FormatterTypeStyle.TypesAlways)
-            case 3: // ClassWithMembers (generated without FormatterTypeStyle.TypesAlways)
+            case (byte)SerializationRecordType.SystemClassWithMembers: // generated without FormatterTypeStyle.TypesAlways
+            case (byte)SerializationRecordType.ClassWithMembers: // generated without FormatterTypeStyle.TypesAlways
             // 18~20 are from the reference source but aren't in the OpenSpecs doc
             case 18: // CrossAppDomainMap
             case 19: // CrossAppDomainString
             case 20: // CrossAppDomainAssembly
-            case 21: // MethodCall
-            case 22: // MethodReturn
+            case (byte)SerializationRecordType.MethodCall:
+            case (byte)SerializationRecordType.MethodReturn:
                 throw new NotSupportedException(SR.Format(SR.NotSupported_RecordType, recordType));
             default:
                 ThrowInvalidValue(recordType);

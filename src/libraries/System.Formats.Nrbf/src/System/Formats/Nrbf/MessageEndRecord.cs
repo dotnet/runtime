@@ -20,7 +20,7 @@ internal sealed class MessageEndRecord : SerializationRecord
     {
     }
 
-    public override RecordType RecordType => RecordType.MessageEnd;
+    public override SerializationRecordType RecordType => SerializationRecordType.MessageEnd;
 
     public override SerializationRecordId Id => SerializationRecordId.NoId;
 

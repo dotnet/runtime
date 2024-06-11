@@ -35,7 +35,7 @@ internal sealed class BinaryArrayRecord : ArrayRecord
         Values = [];
     }
 
-    public override RecordType RecordType => RecordType.BinaryArray;
+    public override SerializationRecordType RecordType => SerializationRecordType.BinaryArray;
 
     /// <inheritdoc/>
     public override ReadOnlySpan<int> Lengths => new int[1] { Length };
@@ -80,17 +80,17 @@ internal sealed class BinaryArrayRecord : ArrayRecord
 
             switch (record.RecordType)
             {
-                case RecordType.BinaryArray:
-                case RecordType.ArraySinglePrimitive:
-                case RecordType.ArraySingleObject:
-                case RecordType.ArraySingleString:
+                case SerializationRecordType.BinaryArray:
+                case SerializationRecordType.ArraySinglePrimitive:
+                case SerializationRecordType.ArraySingleObject:
+                case SerializationRecordType.ArraySingleString:
                     ArrayRecord nestedArrayRecord = (ArrayRecord)record;
                     Array nestedArray = nestedArrayRecord.GetArray(actualElementType, allowNulls);
                     array.SetValue(nestedArray, resultIndex++);
                     break;
-                case RecordType.ObjectNull:
-                case RecordType.ObjectNullMultiple256:
-                case RecordType.ObjectNullMultiple:
+                case SerializationRecordType.ObjectNull:
+                case SerializationRecordType.ObjectNullMultiple256:
+                case SerializationRecordType.ObjectNullMultiple:
                     if (!allowNulls)
                     {
                         ThrowHelper.ThrowArrayContainedNulls();

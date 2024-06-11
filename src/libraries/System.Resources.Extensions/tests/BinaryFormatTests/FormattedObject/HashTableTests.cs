@@ -68,7 +68,7 @@ public class HashtableTests : SerializationTest<FormattedObjectSerializer>
 
         BinaryFormattedObject format = new(Serialize(hashtable));
         ClassRecord systemClass = (ClassRecord)format.RootRecord;
-        systemClass.RecordType.Should().Be(RecordType.SystemClassWithMembersAndTypes);
+        systemClass.RecordType.Should().Be(SerializationRecordType.SystemClassWithMembersAndTypes);
         systemClass.TypeName.FullName.Should().Be("System.Collections.Hashtable");
         systemClass.GetSerializationRecord("Comparer")!.Should().BeAssignableTo<ClassRecord>().Which.TypeName.FullName.Should().Be("System.OrdinalComparer");
         systemClass.GetSerializationRecord("HashCodeProvider")!.Should().BeAssignableTo<ClassRecord>().Which.TypeName.FullName.Should().Be("System.Resources.Extensions.Tests.FormattedObject.HashtableTests+CustomHashCodeProvider");

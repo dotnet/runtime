@@ -16,7 +16,7 @@ internal sealed class MemberPrimitiveTypedRecord<T> : PrimitiveTypeRecord<T>
 
     internal MemberPrimitiveTypedRecord(T value, SerializationRecordId id) : base(value) => Id = id;
 
-    public override RecordType RecordType => RecordType.MemberPrimitiveTyped;
+    public override SerializationRecordType RecordType => SerializationRecordType.MemberPrimitiveTyped;
 
     /// <inheritdoc />
     public override SerializationRecordId Id { get; }

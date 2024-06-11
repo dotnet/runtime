@@ -49,12 +49,12 @@ internal abstract partial class ObjectRecordDeserializer
         {
             return (memberValue, default(SerializationRecordId));
         }
-        else if (serializationRecord.RecordType is RecordType.BinaryObjectString)
+        else if (serializationRecord.RecordType is SerializationRecordType.BinaryObjectString)
         {
             PrimitiveTypeRecord<string> stringRecord = (PrimitiveTypeRecord<string>)serializationRecord;
             return (stringRecord.Value, stringRecord.Id);
         }
-        else if (serializationRecord.RecordType is RecordType.MemberPrimitiveTyped)
+        else if (serializationRecord.RecordType is SerializationRecordType.MemberPrimitiveTyped)
         {
             return (((PrimitiveTypeRecord)serializationRecord).Value, default(SerializationRecordId));
         }

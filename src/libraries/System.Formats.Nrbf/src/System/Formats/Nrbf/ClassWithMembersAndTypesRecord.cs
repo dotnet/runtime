@@ -19,7 +19,7 @@ internal sealed class ClassWithMembersAndTypesRecord : ClassRecord
     {
     }
 
-    public override RecordType RecordType => RecordType.ClassWithMembersAndTypes;
+    public override SerializationRecordType RecordType => SerializationRecordType.ClassWithMembersAndTypes;
 
     internal static ClassWithMembersAndTypesRecord Decode(BinaryReader reader, RecordMap recordMap, PayloadOptions options)
     {

@@ -24,7 +24,7 @@ public class ListTests : SerializationTest<FormattedObjectSerializer>
 
     private static void VerifyArrayList(ClassRecord systemClass)
     {
-        systemClass.RecordType.Should().Be(RecordType.SystemClassWithMembersAndTypes);
+        systemClass.RecordType.Should().Be(SerializationRecordType.SystemClassWithMembersAndTypes);
 
         systemClass.TypeName.FullName.Should().Be(typeof(ArrayList).FullName);
         systemClass.MemberNames.Should().BeEquivalentTo(["_items", "_size", "_version"]);
@@ -126,7 +126,7 @@ public class ListTests : SerializationTest<FormattedObjectSerializer>
     {
         BinaryFormattedObject format = new(Serialize(new List<int>()));
         ClassRecord classInfo = (ClassRecord)format[format.RootRecord.Id];
-        classInfo.RecordType.Should().Be(RecordType.SystemClassWithMembersAndTypes);
+        classInfo.RecordType.Should().Be(SerializationRecordType.SystemClassWithMembersAndTypes);
 
         // Note that T types are serialized as the mscorlib type.
         classInfo.TypeName.FullName.Should().Be(
@@ -157,7 +157,7 @@ public class ListTests : SerializationTest<FormattedObjectSerializer>
         BinaryFormattedObject format = new(Serialize(new List<string>()));
 
         ClassRecord classInfo = (ClassRecord)format[format.RootRecord.Id];
-        classInfo.RecordType.Should().Be(RecordType.SystemClassWithMembersAndTypes);
+        classInfo.RecordType.Should().Be(SerializationRecordType.SystemClassWithMembersAndTypes);
         classInfo.TypeName.FullName.Should().StartWith("System.Collections.Generic.List`1[[System.String,");
         classInfo.GetSerializationRecord("_items").Should().BeAssignableTo<SZArrayRecord<string>>();
 

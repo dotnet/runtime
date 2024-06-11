@@ -16,7 +16,7 @@ public class SystemDrawingTests : Common.SystemDrawingTests<FormattedObjectSeria
         BinaryFormattedObject format = new(Serialize(input));
 
         ClassRecord classInfo = (ClassRecord)format.RootRecord;
-        classInfo.RecordType.Should().Be(RecordType.ClassWithMembersAndTypes);
+        classInfo.RecordType.Should().Be(SerializationRecordType.ClassWithMembersAndTypes);
         classInfo.Id.Should().NotBe(default);
         format[format.RootRecord.Id].Should().Be(classInfo);
         classInfo.TypeName.FullName.Should().Be("System.Drawing.PointF");
@@ -33,7 +33,7 @@ public class SystemDrawingTests : Common.SystemDrawingTests<FormattedObjectSeria
         BinaryFormattedObject format = new(Serialize(input));
 
         ClassRecord classInfo = (ClassRecord)format.RootRecord;
-        classInfo.RecordType.Should().Be(RecordType.ClassWithMembersAndTypes);
+        classInfo.RecordType.Should().Be(SerializationRecordType.ClassWithMembersAndTypes);
         classInfo.Id.Should().NotBe(default);
         format[format.RootRecord.Id].Should().Be(classInfo);
         classInfo.TypeName.FullName.Should().Be("System.Drawing.RectangleF");

@@ -16,7 +16,7 @@ internal sealed class ObjectNullMultiple256Record : NullsRecord
 {
     private ObjectNullMultiple256Record(byte count) => NullCount = count;
 
-    public override RecordType RecordType => RecordType.ObjectNullMultiple256;
+    public override SerializationRecordType RecordType => SerializationRecordType.ObjectNullMultiple256;
 
     internal override int NullCount { get; }
 

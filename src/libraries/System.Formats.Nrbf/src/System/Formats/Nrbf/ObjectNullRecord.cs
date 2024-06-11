@@ -13,7 +13,7 @@ internal sealed class ObjectNullRecord : NullsRecord
 {
     internal static ObjectNullRecord Instance { get; } = new();
 
-    public override RecordType RecordType => RecordType.ObjectNull;
+    public override SerializationRecordType RecordType => SerializationRecordType.ObjectNull;
 
     internal override int NullCount => 1;
 

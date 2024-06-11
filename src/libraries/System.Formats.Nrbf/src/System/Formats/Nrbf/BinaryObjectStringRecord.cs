@@ -20,7 +20,7 @@ internal sealed class BinaryObjectStringRecord : PrimitiveTypeRecord<string>
         Id = id;
     }
 
-    public override RecordType RecordType => RecordType.BinaryObjectString;
+    public override SerializationRecordType RecordType => SerializationRecordType.BinaryObjectString;
 
     /// <inheritdoc />
     public override SerializationRecordId Id { get; }

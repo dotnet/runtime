@@ -16,13 +16,13 @@ namespace System.Formats.Nrbf;
 /// </remarks>
 internal sealed class SerializedStreamHeaderRecord : SerializationRecord
 {
-    internal const int Size = sizeof(RecordType) + sizeof(int) * 4;
+    internal const int Size = sizeof(byte) + sizeof(int) * 4;
     internal const int MajorVersion = 1;
     internal const int MinorVersion = 0;
 
     internal SerializedStreamHeaderRecord(SerializationRecordId rootId) => RootId = rootId;
 
-    public override RecordType RecordType => RecordType.SerializedStreamHeader;
+    public override SerializationRecordType RecordType => SerializationRecordType.SerializedStreamHeader;
 
     public override TypeName TypeName
     {

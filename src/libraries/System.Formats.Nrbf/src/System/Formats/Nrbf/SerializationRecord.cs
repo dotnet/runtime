@@ -27,7 +27,7 @@ public abstract class SerializationRecord
     /// Gets the type of the record.
     /// </summary>
     /// <value>The type of the record.</value>
-    public abstract RecordType RecordType { get; }
+    public abstract SerializationRecordType RecordType { get; }
 
     /// <summary>
     /// Gets the ID of the record.

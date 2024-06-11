@@ -12,73 +12,90 @@ namespace System.Formats.Nrbf;
 ///   [MS-NRBF] 2.1.2.1</see>, but only those supported by the <see cref="NrbfDecoder"/>.
 ///  </para>
 /// </remarks>
-public enum RecordType : byte
+public enum SerializationRecordType
 {
     /// <summary>
     /// The NRBF header (the first record in NRBF payload).
     /// </summary>
-    SerializedStreamHeader = 0,
+    SerializedStreamHeader,
     /// <summary>
     /// Class information that references another class record's metadata.
     /// </summary>
-    ClassWithId = 1,
-
-    // SystemClassWithMembers and ClassWithMembers are not supported by design (require type loading)
-
+    ClassWithId,
+    /// <summary>
+    /// A system class information without type info.
+    /// </summary>
+    /// <remarks>Not supported by design.</remarks>
+    SystemClassWithMembers,
+    /// <summary>
+    /// A class information with source library, but without type info.
+    /// </summary>
+    /// <remarks>Not supported by design.</remarks>
+    ClassWithMembers,
     /// <summary>
     /// A system class information with type info.
     /// </summary>
-    SystemClassWithMembersAndTypes = 4,
+    SystemClassWithMembersAndTypes,
     /// <summary>
     /// A class information with type info and the source library.
     /// </summary>
-    ClassWithMembersAndTypes = 5,
+    ClassWithMembersAndTypes,
     /// <summary>
     /// A <see langword="string" />.
     /// </summary>
-    BinaryObjectString = 6,
+    BinaryObjectString,
     /// <summary>
     /// An array of any rank or element type.
     /// </summary>
-    BinaryArray = 7,
+    BinaryArray,
     /// <summary>
     /// A primitive value other than <see langword="string"/>.
     /// </summary>
-    MemberPrimitiveTyped = 8,
+    MemberPrimitiveTyped,
     /// <summary>
     /// A record that contains a reference to another record that contains the actual value.
     /// </summary>
-    MemberReference = 9,
+    MemberReference,
     /// <summary>
     /// A single <see langword="null" /> value.
     /// </summary>
-    ObjectNull = 10,
+    ObjectNull,
     /// <summary>
     /// The record that marks the end of the binary format stream.
     /// </summary>
-    MessageEnd = 11,
+    MessageEnd,
     /// <summary>
     /// A record that associates a numeric identifier with a named library.
     /// </summary>
-    BinaryLibrary = 12,
+    BinaryLibrary,
     /// <summary>
     /// Multiple (less than 256) <see langword="null" /> values.
     /// </summary>
-    ObjectNullMultiple256 = 13,
+    ObjectNullMultiple256,
     /// <summary>
     /// Multiple <see langword="null" />.
     /// </summary>
-    ObjectNullMultiple = 14,
+    ObjectNullMultiple,
     /// <summary>
     /// A single-dimensional array of a primitive type.
     /// </summary>
-    ArraySinglePrimitive = 15,
+    ArraySinglePrimitive,
     /// <summary>
     /// A single-dimensional array of <see cref="object" /> values.
     /// </summary>
-    ArraySingleObject = 16,
+    ArraySingleObject,
     /// <summary>
     /// A single-dimensional array of <see langword="string" /> values.
     /// </summary>
-    ArraySingleString = 17
+    ArraySingleString,
+    /// <summary>
+    /// A remote method call.
+    /// </summary>
+    /// <remarks>Not supported by design.</remarks>
+    MethodCall = 21,
+    /// <summary>
+    /// An information returned by a remote method.
+    /// </summary>
+    /// <remarks>Not supported by design.</remarks>
+    MethodReturn
 }

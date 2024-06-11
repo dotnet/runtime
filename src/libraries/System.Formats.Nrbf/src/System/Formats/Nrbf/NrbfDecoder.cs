@@ -32,7 +32,7 @@ public static class NrbfDecoder
 #endif
 
         return bytes.Length >= SerializedStreamHeaderRecord.Size
-            && bytes[0] == (byte)RecordType.SerializedStreamHeader
+            && bytes[0] == (byte)SerializationRecordType.SerializedStreamHeader
 #if NET
             && BinaryPrimitives.ReadInt32LittleEndian(bytes.AsSpan(9)) == SerializedStreamHeaderRecord.MajorVersion
             && BinaryPrimitives.ReadInt32LittleEndian(bytes.AsSpan(13)) == SerializedStreamHeaderRecord.MinorVersion;
@@ -162,7 +162,7 @@ public static class NrbfDecoder
         const AllowedRecordTypes Allowed = AllowedRecordTypes.AnyObject
             | AllowedRecordTypes.BinaryLibrary | AllowedRecordTypes.MessageEnd;
 
-        RecordType recordType;
+        SerializationRecordType recordType;
         SerializationRecord nextRecord;
         do
         {
@@ -202,39 +202,39 @@ public static class NrbfDecoder
             nextRecord = DecodeNext(reader, recordMap, Allowed, options, out recordType);
             PushFirstNestedRecordInfo(nextRecord, readStack);
         }
-        while (recordType != RecordType.MessageEnd);
+        while (recordType != SerializationRecordType.MessageEnd);
 
         readOnlyRecordMap = recordMap;
         return recordMap.GetRootRecord(header);
     }
 
     private static SerializationRecord DecodeNext(BinaryReader reader, RecordMap recordMap,
-        AllowedRecordTypes allowed, PayloadOptions options, out RecordType recordType)
+        AllowedRecordTypes allowed, PayloadOptions options, out SerializationRecordType recordType)
     {
         byte nextByte = reader.ReadByte();
         if (((uint)allowed & (1u << nextByte)) == 0)
         {
             ThrowHelper.ThrowForUnexpectedRecordType(nextByte);
         }
-        recordType = (RecordType)nextByte;
+        recordType = (SerializationRecordType)nextByte;
 
         SerializationRecord record = recordType switch
         {
-            RecordType.ArraySingleObject => ArraySingleObjectRecord.Decode(reader),
-            RecordType.ArraySinglePrimitive => DecodeArraySinglePrimitiveRecord(reader),
-            RecordType.ArraySingleString => ArraySingleStringRecord.Decode(reader),
-            RecordType.BinaryArray => BinaryArrayRecord.Decode(reader, recordMap, options),
-            RecordType.BinaryLibrary => BinaryLibraryRecord.Decode(reader),
-            RecordType.BinaryObjectString => BinaryObjectStringRecord.Decode(reader),
-            RecordType.ClassWithId => ClassWithIdRecord.Decode(reader, recordMap),
-            RecordType.ClassWithMembersAndTypes => ClassWithMembersAndTypesRecord.Decode(reader, recordMap, options),
-            RecordType.MemberPrimitiveTyped => DecodeMemberPrimitiveTypedRecord(reader),
-            RecordType.MemberReference => MemberReferenceRecord.Decode(reader, recordMap),
-            RecordType.MessageEnd => MessageEndRecord.Singleton,
-            RecordType.ObjectNull => ObjectNullRecord.Instance,
-            RecordType.ObjectNullMultiple => ObjectNullMultipleRecord.Decode(reader),
-            RecordType.ObjectNullMultiple256 => ObjectNullMultiple256Record.Decode(reader),
-            RecordType.SerializedStreamHeader => SerializedStreamHeaderRecord.Decode(reader),
+            SerializationRecordType.ArraySingleObject => ArraySingleObjectRecord.Decode(reader),
+            SerializationRecordType.ArraySinglePrimitive => DecodeArraySinglePrimitiveRecord(reader),
+            SerializationRecordType.ArraySingleString => ArraySingleStringRecord.Decode(reader),
+            SerializationRecordType.BinaryArray => BinaryArrayRecord.Decode(reader, recordMap, options),
+            SerializationRecordType.BinaryLibrary => BinaryLibraryRecord.Decode(reader),
+            SerializationRecordType.BinaryObjectString => BinaryObjectStringRecord.Decode(reader),
+            SerializationRecordType.ClassWithId => ClassWithIdRecord.Decode(reader, recordMap),
+            SerializationRecordType.ClassWithMembersAndTypes => ClassWithMembersAndTypesRecord.Decode(reader, recordMap, options),
+            SerializationRecordType.MemberPrimitiveTyped => DecodeMemberPrimitiveTypedRecord(reader),
+            SerializationRecordType.MemberReference => MemberReferenceRecord.Decode(reader, recordMap),
+            SerializationRecordType.MessageEnd => MessageEndRecord.Singleton,
+            SerializationRecordType.ObjectNull => ObjectNullRecord.Instance,
+            SerializationRecordType.ObjectNullMultiple => ObjectNullMultipleRecord.Decode(reader),
+            SerializationRecordType.ObjectNullMultiple256 => ObjectNullMultiple256Record.Decode(reader),
+            SerializationRecordType.SerializedStreamHeader => SerializedStreamHeaderRecord.Decode(reader),
             _ => SystemClassWithMembersAndTypesRecord.Decode(reader, recordMap, options),
         };
 

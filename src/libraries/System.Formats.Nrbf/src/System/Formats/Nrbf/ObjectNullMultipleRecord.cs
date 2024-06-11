@@ -16,7 +16,7 @@ internal sealed class ObjectNullMultipleRecord : NullsRecord
 {
     private ObjectNullMultipleRecord(int count) => NullCount = count;
 
-    public override RecordType RecordType => RecordType.ObjectNullMultiple;
+    public override SerializationRecordType RecordType => SerializationRecordType.ObjectNullMultiple;
 
     internal override int NullCount { get; }
 

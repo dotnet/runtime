@@ -20,7 +20,7 @@ internal sealed class ArraySingleStringRecord : SZArrayRecord<string?>
 
     private ArraySingleStringRecord(ArrayInfo arrayInfo) : base(arrayInfo) => Records = [];
 
-    public override RecordType RecordType => RecordType.ArraySingleString;
+    public override SerializationRecordType RecordType => SerializationRecordType.ArraySingleString;
 
     /// <inheritdoc />
     public override TypeName TypeName

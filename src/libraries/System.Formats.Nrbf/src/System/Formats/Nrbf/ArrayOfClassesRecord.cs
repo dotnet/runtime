@@ -18,7 +18,7 @@ internal sealed class ArrayOfClassesRecord : SZArrayRecord<ClassRecord>
         Records = [];
     }
 
-    public override RecordType RecordType => RecordType.BinaryArray;
+    public override SerializationRecordType RecordType => SerializationRecordType.BinaryArray;
 
     internal List<SerializationRecord> Records { get; }
 

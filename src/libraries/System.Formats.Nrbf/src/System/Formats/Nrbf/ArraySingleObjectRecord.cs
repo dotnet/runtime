@@ -20,7 +20,7 @@ internal sealed class ArraySingleObjectRecord : SZArrayRecord<object?>
 
     private ArraySingleObjectRecord(ArrayInfo arrayInfo) : base(arrayInfo) => Records = [];
 
-    public override RecordType RecordType => RecordType.ArraySingleObject;
+    public override SerializationRecordType RecordType => SerializationRecordType.ArraySingleObject;
 
     public override TypeName TypeName
         => s_typeName ??= TypeName.Parse("System.Object[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089".AsSpan());

@@ -47,7 +47,7 @@ public abstract class ReadTests
 
     protected static void WriteSerializedStreamHeader(BinaryWriter writer, int major = 1, int minor = 0)
     {
-        writer.Write((byte)RecordType.SerializedStreamHeader);
+        writer.Write((byte)SerializationRecordType.SerializedStreamHeader);
         writer.Write(1); // root ID
         writer.Write(1); // header ID
         writer.Write(major); // major version
@@ -56,7 +56,7 @@ public abstract class ReadTests
 
     protected static void WriteBinaryLibrary(BinaryWriter writer, int objectId, string libraryName)
     {
-        writer.Write((byte)RecordType.BinaryLibrary);
+        writer.Write((byte)SerializationRecordType.BinaryLibrary);
         writer.Write(objectId);
         writer.Write(libraryName);
     }

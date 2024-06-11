@@ -22,7 +22,7 @@ internal sealed class ArrayRecordDeserializer : ObjectRecordDeserializer
         : base(arrayRecord, deserializer)
     {
         // Other array types are handled directly (ArraySinglePrimitive and ArraySingleString).
-        Debug.Assert(arrayRecord.RecordType is not (RecordType.ArraySingleString or RecordType.ArraySinglePrimitive));
+        Debug.Assert(arrayRecord.RecordType is not (SerializationRecordType.ArraySingleString or SerializationRecordType.ArraySinglePrimitive));
 
         _arrayRecord = arrayRecord;
         _elementType = deserializer.TypeResolver.GetType(arrayRecord.TypeName.GetElementType());

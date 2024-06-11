@@ -32,7 +32,7 @@ internal sealed class ArraySinglePrimitiveRecord<T> : SZArrayRecord<T>
         ValuesToRead = 0; // there is nothing to read anymore
     }
 
-    public override RecordType RecordType => RecordType.ArraySinglePrimitive;
+    public override SerializationRecordType RecordType => SerializationRecordType.ArraySinglePrimitive;
 
     /// <inheritdoc />
     public override TypeName TypeName

@@ -238,11 +238,11 @@ internal sealed partial class Deserializer : IDeserializer
 
             object? value = record.RecordType switch
             {
-                RecordType.BinaryObjectString => ((PrimitiveTypeRecord<string>)record).Value,
-                RecordType.MemberPrimitiveTyped => ((PrimitiveTypeRecord)record).Value,
-                RecordType.ArraySingleString => ((SZArrayRecord<string>)record).GetArray(),
-                RecordType.ArraySinglePrimitive => ArrayRecordDeserializer.GetArraySinglePrimitive(record),
-                RecordType.BinaryArray => ArrayRecordDeserializer.GetSimpleBinaryArray((ArrayRecord)record, _typeResolver),
+                SerializationRecordType.BinaryObjectString => ((PrimitiveTypeRecord<string>)record).Value,
+                SerializationRecordType.MemberPrimitiveTyped => ((PrimitiveTypeRecord)record).Value,
+                SerializationRecordType.ArraySingleString => ((SZArrayRecord<string>)record).GetArray(),
+                SerializationRecordType.ArraySinglePrimitive => ArrayRecordDeserializer.GetArraySinglePrimitive(record),
+                SerializationRecordType.BinaryArray => ArrayRecordDeserializer.GetSimpleBinaryArray((ArrayRecord)record, _typeResolver),
                 _ => null
             };
 

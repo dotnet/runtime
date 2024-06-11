@@ -114,7 +114,7 @@ public class CorruptedTests : SerializationTest<FormattedObjectSerializer>
         WriteMemberReference(writer, NextClassId);
         WriteMemberReference(writer, NextClassId);
         // ClassWithId
-        writer.Write((byte)RecordType.ClassWithId);
+        writer.Write((byte)SerializationRecordType.ClassWithId);
         writer.Write(NextClassId); // id
         writer.Write(ClassId); // id of the class that provides metadata
         WriteMemberReference(writer, ClassId);

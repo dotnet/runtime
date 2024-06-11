@@ -20,7 +20,7 @@ internal sealed class ClassWithIdRecord : ClassRecord
         MetadataClass = metadataClass;
     }
 
-    public override RecordType RecordType => RecordType.ClassWithId;
+    public override SerializationRecordType RecordType => SerializationRecordType.ClassWithId;
 
     /// <inheritdoc />
     public override SerializationRecordId Id { get; }

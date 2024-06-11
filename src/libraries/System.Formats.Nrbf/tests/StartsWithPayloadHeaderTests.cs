@@ -13,18 +13,18 @@ public class StartsWithPayloadHeaderTests
        // too few bytes
        yield return new object[]
        {
-            new byte[] { (byte)RecordType.SerializedStreamHeader, (byte)RecordType.MessageEnd },
+            new byte[] { (byte)SerializationRecordType.SerializedStreamHeader, (byte)SerializationRecordType.MessageEnd },
             false
        };
 
         using MemoryStream memoryStream = new MemoryStream();
         BinaryWriter writer = new BinaryWriter(memoryStream, Encoding.UTF8);
-        writer.Write((byte)RecordType.SerializedStreamHeader);
+        writer.Write((byte)SerializationRecordType.SerializedStreamHeader);
         writer.Write(1); // root id
         writer.Write(2); // header id
         writer.Write(1); // major version
         writer.Write(0); // minor version
-        writer.Write((byte)RecordType.MessageEnd);
+        writer.Write((byte)SerializationRecordType.MessageEnd);
         byte[] smallestValid = memoryStream.ToArray();
 
         yield return new object[] { smallestValid, true };
