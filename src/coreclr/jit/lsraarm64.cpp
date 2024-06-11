@@ -1593,7 +1593,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         }
         else if (HWIntrinsicInfo::IsMaskedOperation(intrin.id))
         {
-            if (!varTypeIsMask(intrin.op1->TypeGet()))
+            if (!varTypeIsMask(intrin.op1->TypeGet()) && !HWIntrinsicInfo::IsExplicitMaskedOperation(intrin.id))
             {
                 srcCount += BuildOperandUses(intrin.op1);
             }
