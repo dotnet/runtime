@@ -29,9 +29,13 @@ namespace System.Net
                     return new IPAddress(numbers, scope);
                 }
             }
-            else if (TryParseIpv4(ipSpan, out long address))
+            else 
             {
-                return new IPAddress(address);
+                ipSpan = RemoveLeadingZerosFromIPv4(ipSpan);
+                if (TryParseIpv4(ipSpan, out long address))
+                {
+                    return new IPAddress(address);
+                }
             }
 
             if (tryParse)
@@ -105,6 +109,36 @@ namespace System.Net
 
             scope = 0;
             return false;
+        }
+
+        private static ReadOnlySpan<char> RemoveLeadingZerosFromIPv4(ReadOnlySpan<char> ipSpan)
+        {
+            Span<char> cleanedIp = stackalloc char[ipSpan.Length];
+            int index = 0;
+            int segmentStart = 0;
+        
+            for (int i = 0; i <= ipSpan.Length; i++)
+            {
+                if (i == ipSpan.Length || ipSpan[i] == '.')
+                {
+                    int segmentLength = i - segmentStart;
+                    while (segmentLength > 1 && ipSpan[segmentStart] == '0')
+                    {
+                        segmentStart++;
+                        segmentLength--;
+                    }
+                    ipSpan.Slice(segmentStart, segmentLength).CopyTo(cleanedIp.Slice(index));
+                    index += segmentLength;
+        
+                    if (i != ipSpan.Length)
+                    {
+                        cleanedIp[index] = '.';
+                        index++;
+                    }
+                    segmentStart = i + 1;
+                }
+            }
+            return cleanedIp.Slice(0, index);
         }
 
         internal static int FormatIPv4Address<TChar>(uint address, Span<TChar> addressString) where TChar : unmanaged, IBinaryInteger<TChar>
