@@ -175,8 +175,7 @@ namespace Mono.Linker.Steps
 		WriterParameters SaveSymbols (AssemblyDefinition assembly)
 		{
 			var parameters = new WriterParameters {
-				DeterministicMvid = Context.DeterministicOutput,
-				SymbolWriterProvider = new CustomSymbolWriterProvider (Context.PreserveSymbolPaths)
+				DeterministicMvid = Context.DeterministicOutput
 			};
 
 			if (!Context.LinkSymbols)
@@ -190,6 +189,7 @@ namespace Mono.Linker.Steps
 				return parameters;
 
 			parameters.WriteSymbols = true;
+			parameters.SymbolWriterProvider = new CustomSymbolWriterProvider (Context.PreserveSymbolPaths);
 			return parameters;
 		}
 
