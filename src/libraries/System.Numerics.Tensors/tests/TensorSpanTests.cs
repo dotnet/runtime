@@ -992,7 +992,7 @@ namespace System.Numerics.Tensors.Tests
         {
             int[] a = { 91, 92, -93, 94, 95, -96 };
             int[] results = new int[6];
-            ReadOnlyTensorSpan<int> spanInt = a.AsTensorSpan(1, 1, 1, 1, 1, 6);
+            TensorSpan<int> spanInt = a.AsTensorSpan(1, 1, 1, 1, 1, 6);
             Assert.Equal(6, spanInt.Rank);
 
             Assert.Equal(6, spanInt.Lengths.Length);
