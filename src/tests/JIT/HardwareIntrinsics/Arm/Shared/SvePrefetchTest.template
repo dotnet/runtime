@@ -138,18 +138,18 @@ namespace JIT.HardwareIntrinsics.Arm
 
             {Op1VectorType}<{Op1BaseType}> loadMask = Sve.CreateTrueMask{Op1BaseType}(SveMaskPattern.All);
 
-            {Isa}.{Method}(loadMask, ({Op1BaseType}*)(_dataTable.inArrayPtr), SvePrefetchType.SV_PLDL1KEEP);
-            {Isa}.{Method}(loadMask, ({Op1BaseType}*)(_dataTable.inArrayPtr), SvePrefetchType.SV_PLDL1STRM);
-            {Isa}.{Method}(loadMask, ({Op1BaseType}*)(_dataTable.inArrayPtr), SvePrefetchType.SV_PLDL2KEEP);
-            {Isa}.{Method}(loadMask, ({Op1BaseType}*)(_dataTable.inArrayPtr), SvePrefetchType.SV_PLDL2STRM);
-            {Isa}.{Method}(loadMask, ({Op1BaseType}*)(_dataTable.inArrayPtr), SvePrefetchType.SV_PLDL3KEEP);
-            {Isa}.{Method}(loadMask, ({Op1BaseType}*)(_dataTable.inArrayPtr), SvePrefetchType.SV_PLDL3STRM);
-            {Isa}.{Method}(loadMask, ({Op1BaseType}*)(_dataTable.inArrayPtr), SvePrefetchType.SV_PSTL1KEEP);
-            {Isa}.{Method}(loadMask, ({Op1BaseType}*)(_dataTable.inArrayPtr), SvePrefetchType.SV_PSTL1STRM);
-            {Isa}.{Method}(loadMask, ({Op1BaseType}*)(_dataTable.inArrayPtr), SvePrefetchType.SV_PSTL2KEEP);
-            {Isa}.{Method}(loadMask, ({Op1BaseType}*)(_dataTable.inArrayPtr), SvePrefetchType.SV_PSTL2STRM);
-            {Isa}.{Method}(loadMask, ({Op1BaseType}*)(_dataTable.inArrayPtr), SvePrefetchType.SV_PSTL3KEEP);
-            {Isa}.{Method}(loadMask, ({Op1BaseType}*)(_dataTable.inArrayPtr), SvePrefetchType.SV_PSTL3STRM);
+            {Isa}.{Method}(loadMask, ({Op1BaseType}*)(_dataTable.inArrayPtr), SvePrefetchType.LoadL1Temporal);
+            {Isa}.{Method}(loadMask, ({Op1BaseType}*)(_dataTable.inArrayPtr), SvePrefetchType.LoadL1NonTemporal);
+            {Isa}.{Method}(loadMask, ({Op1BaseType}*)(_dataTable.inArrayPtr), SvePrefetchType.LoadL2Temporal);
+            {Isa}.{Method}(loadMask, ({Op1BaseType}*)(_dataTable.inArrayPtr), SvePrefetchType.LoadL2NonTemporal);
+            {Isa}.{Method}(loadMask, ({Op1BaseType}*)(_dataTable.inArrayPtr), SvePrefetchType.LoadL3Temporal);
+            {Isa}.{Method}(loadMask, ({Op1BaseType}*)(_dataTable.inArrayPtr), SvePrefetchType.LoadL3NonTemporal);
+            {Isa}.{Method}(loadMask, ({Op1BaseType}*)(_dataTable.inArrayPtr), SvePrefetchType.StoreL1Temporal);
+            {Isa}.{Method}(loadMask, ({Op1BaseType}*)(_dataTable.inArrayPtr), SvePrefetchType.StoreL1NonTemporal);
+            {Isa}.{Method}(loadMask, ({Op1BaseType}*)(_dataTable.inArrayPtr), SvePrefetchType.StoreL2Temporal);
+            {Isa}.{Method}(loadMask, ({Op1BaseType}*)(_dataTable.inArrayPtr), SvePrefetchType.StoreL2NonTemporal);
+            {Isa}.{Method}(loadMask, ({Op1BaseType}*)(_dataTable.inArrayPtr), SvePrefetchType.StoreL3Temporal);
+            {Isa}.{Method}(loadMask, ({Op1BaseType}*)(_dataTable.inArrayPtr), SvePrefetchType.StoreL3NonTemporal);
             {Isa}.{Method}(loadMask, ({Op1BaseType}*)(_dataTable.inArrayPtr), (SvePrefetchType)6);
             {Isa}.{Method}(loadMask, ({Op1BaseType}*)(_dataTable.inArrayPtr), (SvePrefetchType)7);
             {Isa}.{Method}(loadMask, ({Op1BaseType}*)(_dataTable.inArrayPtr), (SvePrefetchType)14);
@@ -164,18 +164,18 @@ namespace JIT.HardwareIntrinsics.Arm
             {
             }
 
-            PrefetchWrapper(SvePrefetchType.SV_PLDL1KEEP);
-            PrefetchWrapper(SvePrefetchType.SV_PLDL1STRM);
-            PrefetchWrapper(SvePrefetchType.SV_PLDL2KEEP);
-            PrefetchWrapper(SvePrefetchType.SV_PLDL2STRM);
-            PrefetchWrapper(SvePrefetchType.SV_PLDL3KEEP);
-            PrefetchWrapper(SvePrefetchType.SV_PLDL3STRM);
-            PrefetchWrapper(SvePrefetchType.SV_PSTL1KEEP);
-            PrefetchWrapper(SvePrefetchType.SV_PSTL1STRM);
-            PrefetchWrapper(SvePrefetchType.SV_PSTL2KEEP);
-            PrefetchWrapper(SvePrefetchType.SV_PSTL2STRM);
-            PrefetchWrapper(SvePrefetchType.SV_PSTL3KEEP);
-            PrefetchWrapper(SvePrefetchType.SV_PSTL3STRM);
+            PrefetchWrapper(SvePrefetchType.SvePrefetchType.LoadL1Temporal);
+            PrefetchWrapper(SvePrefetchType.SvePrefetchType.LoadL1NonTemporal);
+            PrefetchWrapper(SvePrefetchType.SvePrefetchType.LoadL2Temporal);
+            PrefetchWrapper(SvePrefetchType.SvePrefetchType.LoadL2NonTemporal);
+            PrefetchWrapper(SvePrefetchType.SvePrefetchType.LoadL3Temporal);
+            PrefetchWrapper(SvePrefetchType.SvePrefetchType.LoadL3NonTemporal);
+            PrefetchWrapper(SvePrefetchType.SvePrefetchType.StoreL1Temporal);
+            PrefetchWrapper(SvePrefetchType.SvePrefetchType.StoreL1NonTemporal);
+            PrefetchWrapper(SvePrefetchType.SvePrefetchType.StoreL2Temporal);
+            PrefetchWrapper(SvePrefetchType.SvePrefetchType.StoreL2NonTemporal);
+            PrefetchWrapper(SvePrefetchType.SvePrefetchType.StoreL3Temporal);
+            PrefetchWrapper(SvePrefetchType.SvePrefetchType.StoreL3NonTemporal);
             PrefetchWrapper((SvePrefetchType)6);
             PrefetchWrapper((SvePrefetchType)7);
             PrefetchWrapper((SvePrefetchType)14);

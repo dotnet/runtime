@@ -95,17 +95,64 @@ namespace System.Runtime.Intrinsics.Arm
 
     public enum SvePrefetchType : byte
     {
-        SV_PLDL1KEEP = 0,   // Temporal fetch the addressed location for reading, to L1 cache.
-        SV_PLDL1STRM = 1,   // Streaming fetch the addressed location for reading, to L1 cache.
-        SV_PLDL2KEEP = 2,   // Temporal fetch the addressed location for reading, to L2 cache.
-        SV_PLDL2STRM = 3,   // Streaming fetch the addressed location for reading, to L2 cache.
-        SV_PLDL3KEEP = 4,   // Temporal fetch the addressed location for reading, to L3 cache.
-        SV_PLDL3STRM = 5,   // Streaming fetch the addressed location for reading, to L3 cache.
-        SV_PSTL1KEEP = 8,   // Temporal fetch the addressed location for writing, to L1 cache.
-        SV_PSTL1STRM = 9,   // Streaming fetch the addressed location for writing, to L1 cache.
-        SV_PSTL2KEEP = 10,  // Temporal fetch the addressed location for writing, to L2 cache.
-        SV_PSTL2STRM = 11,  // Streaming fetch the addressed location for writing, to L2 cache.
-        SV_PSTL3KEEP = 12,  // Temporal fetch the addressed location for writing, to L3 cache.
-        SV_PSTL3STRM = 13   // Streaming fetch the addressed location for writing, to L3 cache.
+        /// <summary>
+        /// PLDL1KEEP
+        /// </summary>
+        LoadL1Temporal = 0,
+
+        /// <summary>
+        /// PLDL1STRM
+        /// </summary>
+        LoadL1NonTemporal = 1,
+
+        /// <summary>
+        /// PLDL2KEEP
+        /// </summary>
+        LoadL2Temporal = 2,
+
+        /// <summary>
+        /// PLDL2STRM
+        /// </summary>
+        LoadL2NonTemporal = 3,
+
+        /// <summary>
+        /// PLDL3KEEP
+        /// </summary>
+        LoadL3Temporal = 4,
+
+        /// <summary>
+        /// PLDL3STRM
+        /// </summary>
+        LoadL3NonTemporal = 5,
+
+        /// <summary>
+        /// PSTL1KEEP
+        /// </summary>
+        StoreL1Temporal = 8,
+
+        /// <summary>
+        /// PSTL1STRM
+        /// </summary>
+        StoreL1NonTemporal = 9,
+
+        /// <summary>
+        /// PSTL2KEEP
+        /// </summary>
+        StoreL2Temporal = 10,
+
+        /// <summary>
+        /// PSTL2STRM
+        /// </summary>
+        StoreL2NonTemporal = 11,
+
+        /// <summary>
+        /// PSTL3KEEP
+        /// </summary>
+        StoreL3Temporal = 12,
+
+        /// <summary>
+        /// PSTL3STRM
+        /// </summary>
+        StoreL3NonTemporal = 13
     };
 }
