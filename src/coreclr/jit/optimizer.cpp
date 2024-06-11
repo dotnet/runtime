@@ -2477,8 +2477,20 @@ PhaseStatus Compiler::optOptimizePostLayout()
         // Reverse conditions to enable fallthrough flow into BBJ_COND's false target
         if (block->KindIs(BBJ_COND) && block->CanRemoveJumpToTarget(block->GetTrueTarget(), this))
         {
-            GenTree* const test = block->lastNode();
+            GenTree* test = block->lastNode();
             assert(test->OperIsConditionalJump());
+
+            if (test->OperIs(GT_JTRUE))
+            {
+                // If we didn't lower a GT_JTRUE node to some conditional IR,
+                // search for the correct node to flip the condition on
+                do
+                {
+                    test = test->gtPrev;
+                    assert(test != nullptr);
+                } while (!test->OperIsCompare() && !test->OperIs(GT_SETCC));
+            }
+
             GenTree* const cond = gtReverseCond(test);
             assert(cond == test); // Ensure `gtReverseCond` did not create a new node
 
