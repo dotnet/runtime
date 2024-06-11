@@ -1,0 +1,9 @@
+parameters:
+  archType: ''
+
+variables:
+  - name: crossDacHostArch
+    value: x64
+  - ${{ if eq(parameters.archType, 'arm') }}:
+    - name: crossDacHostArch
+      value: x86

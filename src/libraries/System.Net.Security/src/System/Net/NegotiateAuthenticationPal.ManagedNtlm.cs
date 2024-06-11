@@ -262,8 +262,14 @@ namespace System.Net
                 {
                     Debug.Assert(incomingBlob.IsEmpty);
 
+                    Flags requiredFlags = s_requiredFlags;
+                    if (_protectionLevel == ProtectionLevel.EncryptAndSign)
+                    {
+                        requiredFlags |= Flags.NegotiateSeal;
+                    }
+
                     _negotiateMessage = new byte[sizeof(NegotiateMessage)];
-                    CreateNtlmNegotiateMessage(_negotiateMessage);
+                    CreateNtlmNegotiateMessage(_negotiateMessage, requiredFlags);
 
                     outgoingBlob = _negotiateMessage;
                     statusCode = NegotiateAuthenticationStatusCode.ContinueNeeded;
@@ -278,7 +284,7 @@ namespace System.Net
                 return outgoingBlob;
             }
 
-            private static unsafe void CreateNtlmNegotiateMessage(Span<byte> asBytes)
+            private static unsafe void CreateNtlmNegotiateMessage(Span<byte> asBytes, Flags requiredFlags)
             {
                 Debug.Assert(HeaderLength == NtlmHeader.Length);
                 Debug.Assert(asBytes.Length == sizeof(NegotiateMessage));
@@ -288,7 +294,7 @@ namespace System.Net
                 asBytes.Clear();
                 NtlmHeader.CopyTo(asBytes);
                 message.Header.MessageType = MessageType.Negotiate;
-                message.Flags = s_requiredFlags;
+                message.Flags = requiredFlags;
                 message.Version = s_version;
             }
 
@@ -416,10 +422,23 @@ namespace System.Net
             {
                 if (_channelBinding != null)
                 {
-                    IntPtr cbtData = _channelBinding.DangerousGetHandle();
-                    int cbtDataSize = _channelBinding.Size;
-                    int written = MD5.HashData(new Span<byte>((void*)cbtData, cbtDataSize), hashBuffer);
-                    Debug.Assert(written == MD5.HashSizeInBytes);
+                    int appDataOffset = sizeof(SecChannelBindings);
+                    IntPtr cbtData = (nint)_channelBinding.DangerousGetHandle() + appDataOffset;
+                    int cbtDataSize = _channelBinding.Size - appDataOffset;
+
+                    // Channel bindings are calculated according to RFC 4121, section 4.1.1.2,
+                    // so we need to include zeroed initiator fields and length prefix for the
+                    // application data.
+                    Span<byte> prefix = stackalloc byte[sizeof(uint) * 5];
+                    prefix.Clear();
+                    BinaryPrimitives.WriteInt32LittleEndian(prefix.Slice(sizeof(uint) * 4), cbtDataSize);
+                    using (var md5 = IncrementalHash.CreateHash(HashAlgorithmName.MD5))
+                    {
+                        md5.AppendData(prefix);
+                        md5.AppendData(new Span<byte>((void*)cbtData, cbtDataSize));
+                        int written = md5.GetHashAndReset(hashBuffer);
+                        Debug.Assert(written == MD5.HashSizeInBytes);
+                    }
                 }
                 else
                 {
@@ -560,6 +579,13 @@ namespace System.Net
                     return null;
                 }
 
+                // We already negotiate signing, so we only need to check sealing/encryption.
+                if ((flags & Flags.NegotiateSeal) == 0 && _protectionLevel == ProtectionLevel.EncryptAndSign)
+                {
+                    statusCode = NegotiateAuthenticationStatusCode.QopNotSupported;
+                    return null;
+                }
+
                 ReadOnlySpan<byte> targetInfo = GetField(challengeMessage.TargetInfo, blob);
                 byte[] targetInfoBuffer = ProcessTargetInfo(targetInfo, out DateTime time, out bool hasNbNames);
 
@@ -594,7 +620,7 @@ namespace System.Net
                 NtlmHeader.CopyTo(responseAsSpan);
 
                 response.Header.MessageType = MessageType.Authenticate;
-                response.Flags = s_requiredFlags;
+                response.Flags = s_requiredFlags | (flags & Flags.NegotiateSeal);
                 response.Version = s_version;
 
                 // Calculate hash for hmac - same for lm2 and ntlm2
