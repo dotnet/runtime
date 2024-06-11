@@ -39,18 +39,27 @@ namespace System.IO.Compression.Tests
             // Emoji not supported by latin1
             Create_Comment_EntryName_Encoding_Internal(Utf8AndLatin1FileName, originalComment, expectedComment, Encoding.Latin1);
 
+        [Theory]
+        [MemberData(nameof(Utf8Comment_Data))]
+        public static void Create_Comment_Utf8EntryName_Varying_Encodings(string originalComment, string expectedComment)
+            // UTF8 encoding bit is set in the general-purpose bit flags. Latin1 shouldn't be used
+            => Create_Comment_EntryName_Encoding_Internal(Utf8FileName, originalComment, expectedComment, Encoding.UTF8, Encoding.Latin1);
+
         private static void Create_Comment_EntryName_Encoding_Internal(string entryName, string originalComment, string expectedComment, Encoding encoding)
+            => Create_Comment_EntryName_Encoding_Internal(entryName, originalComment, expectedComment, encoding, encoding);
+
+        private static void Create_Comment_EntryName_Encoding_Internal(string entryName, string originalComment, string expectedComment, Encoding creationEncoding, Encoding verificationEencoding)
         {
             using var ms = new MemoryStream();
 
-            using (var zip = new ZipArchive(ms, ZipArchiveMode.Create, leaveOpen: true, encoding))
+            using (var zip = new ZipArchive(ms, ZipArchiveMode.Create, leaveOpen: true, creationEncoding))
             {
                 ZipArchiveEntry entry = zip.CreateEntry(entryName, CompressionLevel.NoCompression);
                 entry.Comment = originalComment;
                 Assert.Equal(expectedComment, entry.Comment);
             }
 
-            using (var zip = new ZipArchive(ms, ZipArchiveMode.Read, leaveOpen: false, encoding))
+            using (var zip = new ZipArchive(ms, ZipArchiveMode.Read, leaveOpen: false, verificationEencoding))
             {
                 foreach (ZipArchiveEntry entry in zip.Entries)
                 {
