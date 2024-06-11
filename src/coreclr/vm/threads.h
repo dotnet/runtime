@@ -5771,7 +5771,7 @@ private:
 #if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
 EXTERN_C void STDCALL ClrRestoreNonvolatileContextWorker(PCONTEXT ContextRecord, DWORD64 ssp);
 #endif
-void ClrRestoreNonvolatileContext(PCONTEXT ContextRecord);
+void ClrRestoreNonvolatileContext(PCONTEXT ContextRecord, size_t targetSSP = 0);
 #endif // DACCESS_COMPILE
 
 #endif //__threads_h__

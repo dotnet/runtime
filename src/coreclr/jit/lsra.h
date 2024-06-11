@@ -1725,13 +1725,15 @@ private:
 #endif
     PhasedVar<SingleTypeRegSet>* availableRegs[TYP_COUNT];
 
-#if defined(TARGET_XARCH)
-#define allAvailableRegs regMaskTP(availableIntRegs | availableFloatRegs | availableMaskRegs)
-#elif defined(TARGET_ARM64)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+#ifdef HAS_MORE_THAN_64_REGISTERS
 #define allAvailableRegs regMaskTP(availableIntRegs | availableFloatRegs, availableMaskRegs)
 #else
+#define allAvailableRegs regMaskTP(availableIntRegs | availableFloatRegs | availableMaskRegs)
+#endif // HAS_MORE_THAN_64_REGISTERS
+#else
 #define allAvailableRegs regMaskTP(availableIntRegs | availableFloatRegs)
-#endif
+#endif // defined(TARGET_XARCH) || defined(TARGET_ARM64)
 
     // Register mask of argument registers currently occupied because we saw a
     // PUTARG_REG node. Tracked between the PUTARG_REG and its corresponding

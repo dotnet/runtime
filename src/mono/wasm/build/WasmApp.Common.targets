@@ -162,8 +162,9 @@
     </WasmLinkDotNetDependsOn>
 
     <WasmDedup Condition="'$(WasmDedup)' == ''">true</WasmDedup>
-    <IsWasiProject Condition="'$(IsWasiProject)' == '' and '$(RuntimeIdentifier)' == 'wasi-wasm' and '$(OutputType)' != 'Library'">true</IsWasiProject>
-    <IsBrowserWasmProject Condition="'$(IsBrowserWasmProject)' == '' and '$(RuntimeIdentifier)' == 'browser-wasm' and '$(OutputType)' != 'Library'">true</IsBrowserWasmProject>
+    <_IsLibraryMode Condition="'$(OutputType)' == 'Library' and '$(UsingMicrosoftNETSdkWebAssembly)' == 'true'">true</_IsLibraryMode>
+    <IsWasiProject Condition="'$(IsWasiProject)' == '' and '$(RuntimeIdentifier)' == 'wasi-wasm' and ('$(OutputType)' != 'Library' or '$(_IsLibraryMode)' == 'true')">true</IsWasiProject>
+    <IsBrowserWasmProject Condition="'$(IsBrowserWasmProject)' == '' and '$(RuntimeIdentifier)' == 'browser-wasm' and ('$(OutputType)' != 'Library' or '$(_IsLibraryMode)' == 'true')">true</IsBrowserWasmProject>
     <IsWasmProject Condition="'$(IsWasmProject)' == '' and ('$(IsWasiProject)' == 'true' or '$(IsBrowserWasmProject)' == 'true')">true</IsWasmProject>
     <WasmBuildAppAfterThisTarget Condition="'$(WasmBuildAppAfterThisTarget)' == '' and '$(DisableAutoWasmBuildApp)' != 'true'">Build</WasmBuildAppAfterThisTarget>
 
@@ -173,7 +174,7 @@
     <EnableDefaultWasmAssembliesToBundle Condition="'$(EnableDefaultWasmAssembliesToBundle)' == ''">true</EnableDefaultWasmAssembliesToBundle>
     <!-- VS uses DeployOnBuild, and sdk sets _IsPublishing -->
     <WasmBuildOnlyAfterPublish Condition="'$(WasmBuildOnlyAfterPublish)' == '' and ('$(DeployOnBuild)' == 'true' or '$(_IsPublishing)' == 'true')">true</WasmBuildOnlyAfterPublish>
-    <WasmGenerateAppBundle Condition="'$(WasmGenerateAppBundle)' == '' and '$(OutputType)' != 'Library'">true</WasmGenerateAppBundle>
+    <WasmGenerateAppBundle Condition="'$(WasmGenerateAppBundle)' == '' and ('$(OutputType)' != 'Library' or '$(_IsLibraryMode)' == 'true')">true</WasmGenerateAppBundle>
     <WasmGenerateAppBundle Condition="'$(WasmGenerateAppBundle)' == ''">false</WasmGenerateAppBundle>
 
     <!-- FIXME: can't set to true because
@@ -346,7 +347,7 @@
 
   <Target Name="_WasmGetRuntimeConfigPath">
     <PropertyGroup>
-      <_MainAssemblyPath Condition="'%(WasmAssembliesToBundle.FileName)' == $(AssemblyName) and '%(WasmAssembliesToBundle.Extension)' == '.dll' and $(WasmGenerateAppBundle) == 'true'">%(WasmAssembliesToBundle.Identity)</_MainAssemblyPath>
+      <_MainAssemblyPath Condition="'%(WasmAssembliesToBundle.FileName)' == '$(AssemblyName)' and '%(WasmAssembliesToBundle.Extension)' == '.dll' and $(WasmGenerateAppBundle) == 'true'">%(WasmAssembliesToBundle.Identity)</_MainAssemblyPath>
       <_WasmRuntimeConfigFilePath Condition="'$(_WasmRuntimeConfigFilePath)' == '' and $(_MainAssemblyPath) != ''">$([System.IO.Path]::ChangeExtension($(_MainAssemblyPath), '.runtimeconfig.json'))</_WasmRuntimeConfigFilePath>
       <_ParsedRuntimeConfigFilePath Condition="'$(_WasmRuntimeConfigFilePath)' != ''">$([System.IO.Path]::GetDirectoryName($(_WasmRuntimeConfigFilePath)))\runtimeconfig.bin</_ParsedRuntimeConfigFilePath>
     </PropertyGroup>
@@ -799,7 +800,8 @@
       PInvokeModules="@(_WasmPInvokeModules)"
       PInvokeOutputPath="$(_WasmPInvokeTablePath)"
       InterpToNativeOutputPath="$(_WasmInterpToNativeTablePath)"
-      CacheFilePath="$(_WasmM2NCachePath)">
+      CacheFilePath="$(_WasmM2NCachePath)"
+      IsLibraryMode="$(_IsLibraryMode)">
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
     </ManagedToNativeGenerator>
   </Target>
