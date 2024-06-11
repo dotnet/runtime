@@ -15,6 +15,14 @@ namespace System.Diagnostics.Metrics
         private readonly ReadOnlyCollection<T>? _HistogramBucketBoundaries;
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="InstrumentAdvice{T}"/> class.
+        /// </summary>
+        public InstrumentAdvice()
+        {
+            Instrument.ValidateTypeParameter<T>();
+        }
+
+        /// <summary>
         /// Gets the explicit bucket boundaries advised to be used with histogram instruments.
         /// </summary>
         /// <remarks>
