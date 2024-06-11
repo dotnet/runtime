@@ -5660,8 +5660,7 @@ void* virtual_alloc (size_t size, bool use_large_pages_p, uint16_t numa_node)
 
     if ((gc_heap::reserved_memory_limit - gc_heap::reserved_memory) < requested_size)
     {
-        gc_heap::reserved_memory_limit =
-            GCScan::AskForMoreReservedMemory (gc_heap::reserved_memory_limit, requested_size);
+        gc_heap::reserved_memory_limit = gc_heap::reserved_memory_limit + requested_size;
         if ((gc_heap::reserved_memory_limit - gc_heap::reserved_memory) < requested_size)
         {
             return 0;
@@ -7275,23 +7274,16 @@ void gc_heap::gc_thread_function ()
 
 bool gc_heap::virtual_alloc_commit_for_heap (void* addr, size_t size, int h_number)
 {
-#if defined(MULTIPLE_HEAPS) && !defined(FEATURE_NATIVEAOT)
-    // Currently there is no way for us to specific the numa node to allocate on via hosting interfaces to
-    // a host. This will need to be added later.
-#if !defined(FEATURE_CORECLR) && !defined(BUILD_AS_STANDALONE)
-    if (!CLRMemoryHosted())
-#endif
+#ifdef MULTIPLE_HEAPS
+    if (GCToOSInterface::CanEnableGCNumaAware())
     {
-        if (GCToOSInterface::CanEnableGCNumaAware())
-        {
-            uint16_t numa_node = heap_select::find_numa_node_from_heap_no(h_number);
-            if (GCToOSInterface::VirtualCommit (addr, size, numa_node))
-                return true;
-        }
+        uint16_t numa_node = heap_select::find_numa_node_from_heap_no(h_number);
+        if (GCToOSInterface::VirtualCommit (addr, size, numa_node))
+            return true;
     }
-#else //MULTIPLE_HEAPS && !FEATURE_NATIVEAOT
+#else //MULTIPLE_HEAPS
     UNREFERENCED_PARAMETER(h_number);
-#endif //MULTIPLE_HEAPS && !FEATURE_NATIVEAOT
+#endif //MULTIPLE_HEAPS
 
     //numa aware not enabled, or call failed --> fallback to VirtualCommit()
     return GCToOSInterface::VirtualCommit(addr, size);
@@ -7318,10 +7310,14 @@ bool gc_heap::virtual_commit (void* address, size_t size, int bucket, int h_numb
 #endif //USE_REGIONS
 
     dprintf(3, ("commit-accounting:  commit in %d [%p, %p) for heap %d", bucket, address, ((uint8_t*)address + size), h_number));
-
-#ifndef USE_REGIONS
-    if (bucket != recorded_committed_ignored_bucket)
+    bool should_count =
+#ifdef USE_REGIONS
+        true;
+#else
+        (bucket != recorded_committed_ignored_bucket);
 #endif //USE_REGIONS
+
+    if (should_count)
     {
         check_commit_cs.Enter();
         bool exceeded_p = false;
@@ -7381,7 +7377,7 @@ bool gc_heap::virtual_commit (void* address, size_t size, int bucket, int h_numb
                               virtual_alloc_commit_for_heap (address, size, h_number)) :
                               GCToOSInterface::VirtualCommit(address, size));
 
-    if (!commit_succeeded_p && heap_hard_limit)
+    if (!commit_succeeded_p && should_count)
     {
         check_commit_cs.Enter();
         committed_by_oh[bucket] -= size;
@@ -18480,6 +18476,7 @@ bool gc_heap::should_retry_other_heap (int gen_number, size_t size)
     }
 }
 
+#ifdef BACKGROUND_GC
 void gc_heap::bgc_record_uoh_allocation(int gen_number, size_t size)
 {
     assert((gen_number >= uoh_start_generation) && (gen_number < total_generation_count));
@@ -18502,6 +18499,7 @@ void gc_heap::bgc_record_uoh_allocation(int gen_number, size_t size)
         uoh_a_no_bgc[gen_number - uoh_start_generation] += size;
     }
 }
+#endif //BACKGROUND_GC
 
 allocation_state gc_heap::allocate_uoh (int gen_number,
                                           size_t size,
@@ -43936,11 +43934,7 @@ void gc_heap::decommit_ephemeral_segment_pages()
 #ifdef HOST_64BIT
                 max(min(min(soh_segment_size/32, dd_max_size (dd0)), (generation_size (max_generation) / 10)), (size_t)desired_allocation);
 #else
-#ifdef FEATURE_CORECLR
                 desired_allocation;
-#else
-                dd_max_size (dd0);
-#endif //FEATURE_CORECLR
 #endif // HOST_64BIT
 
     uint8_t *decommit_target = heap_segment_allocated (ephemeral_heap_segment) + slack_space;
@@ -50043,6 +50037,7 @@ void gc_heap::check_and_adjust_bgc_tuning (int gen_number, size_t physical_size,
 }
 #endif //BGC_SERVO_TUNING
 
+#ifdef BACKGROUND_GC
 void gc_heap::get_and_reset_uoh_alloc_info()
 {
     total_uoh_a_last_bgc = 0;
@@ -50084,6 +50079,7 @@ void gc_heap::get_and_reset_uoh_alloc_info()
 
     total_uoh_a_last_bgc = total_uoh_a_no_bgc + total_uoh_a_bgc_marking + total_uoh_a_bgc_planning;
 }
+#endif //BACKGROUND_GC
 
 bool gc_heap::is_pm_ratio_exceeded()
 {
@@ -52832,7 +52828,7 @@ int gc_heap::refresh_memory_limit()
     size_t old_heap_hard_limit_poh = heap_hard_limit_oh[poh];
     bool old_hard_limit_config_p = hard_limit_config_p;
 
-    total_physical_mem = GCToOSInterface::GetPhysicalMemoryLimit (&is_restricted_physical_mem);
+    total_physical_mem = GCToOSInterface::GetPhysicalMemoryLimit (&is_restricted_physical_mem, true);
 
     bool succeed = true;
 

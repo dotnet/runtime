@@ -20,6 +20,7 @@ namespace System.Text.Json.SourceGeneration
             private const string CreateValueInfoMethodName = "CreateValueInfo";
             private const string CtorParamInitMethodNameSuffix = "CtorParamInit";
             private const string DefaultOptionsStaticVarName = "s_defaultOptions";
+            private const string InstanceMemberBindingFlagsVariableName = "InstanceMemberBindingFlags";
             private const string OriginatingResolverPropertyName = "OriginatingResolver";
             private const string InfoVarName = "info";
             private const string NumberHandlingPropName = "NumberHandling";
@@ -500,6 +501,7 @@ namespace System.Text.Json.SourceGeneration
 
                 string? propInitMethodName = null;
                 string? propInitAdapterFunc = null;
+                string? constructorInfoFactoryFunc = null;
                 string? ctorParamMetadataInitMethodName = null;
                 string? serializeMethodName = null;
 
@@ -508,9 +510,19 @@ namespace System.Text.Json.SourceGeneration
                     propInitMethodName = $"{typeFriendlyName}{PropInitMethodNameSuffix}";
                     propInitAdapterFunc = $"_ => {propInitMethodName}({OptionsLocalVariableName})";
 
-                    if (constructionStrategy == ObjectConstructionStrategy.ParameterizedConstructor)
+                    if (constructionStrategy is ObjectConstructionStrategy.ParameterizedConstructor)
                     {
                         ctorParamMetadataInitMethodName = $"{typeFriendlyName}{CtorParamInitMethodNameSuffix}";
+                    }
+
+                    if (constructionStrategy is ObjectConstructionStrategy.ParameterlessConstructor
+                                             or ObjectConstructionStrategy.ParameterizedConstructor)
+                    {
+                        string argTypes = typeMetadata.CtorParamGenSpecs.Count == 0
+                            ? "global::System.Array.Empty<global::System.Type>()"
+                            : $$"""new[] {{{string.Join(", ", typeMetadata.CtorParamGenSpecs.Select(p => $"typeof({p.ParameterType.FullyQualifiedName})"))}}}""";
+
+                        constructorInfoFactoryFunc = $"static () => typeof({typeMetadata.TypeRef.FullyQualifiedName}).GetConstructor({InstanceMemberBindingFlagsVariableName}, binder: null, {argTypes}, modifiers: null)";
                     }
                 }
 
@@ -531,7 +543,8 @@ namespace System.Text.Json.SourceGeneration
                         ObjectWithParameterizedConstructorCreator = {{parameterizedCreatorInvocation}},
                         PropertyMetadataInitializer = {{propInitAdapterFunc ?? "null"}},
                         ConstructorParameterMetadataInitializer = {{ctorParamMetadataInitMethodName ?? "null"}},
-                        {{SerializeHandlerPropName}} = {{serializeMethodName ?? "null"}}
+                        ConstructorAttributeProviderFactory = {{constructorInfoFactoryFunc ?? "null"}},
+                        {{SerializeHandlerPropName}} = {{serializeMethodName ?? "null"}},
                     };
 
                     {{JsonTypeInfoLocalVariableName}} = {{JsonMetadataServicesTypeRef}}.CreateObjectInfo<{{typeMetadata.TypeRef.FullyQualifiedName}}>({{OptionsLocalVariableName}}, {{ObjectInfoVarName}});
@@ -651,7 +664,8 @@ namespace System.Text.Json.SourceGeneration
                             IsExtensionData = {{FormatBoolLiteral(property.IsExtensionData)}},
                             NumberHandling = {{FormatNumberHandling(property.NumberHandling)}},
                             PropertyName = {{FormatStringLiteral(property.MemberName)}},
-                            JsonPropertyName = {{FormatStringLiteral(property.JsonPropertyName)}}
+                            JsonPropertyName = {{FormatStringLiteral(property.JsonPropertyName)}},
+                            AttributeProviderFactory = static () => typeof({{property.DeclaringType.FullyQualifiedName}}).GetMember({{FormatStringLiteral(property.MemberName)}}, {{InstanceMemberBindingFlagsVariableName}}) is { Length: > 0 } results ? results[0] : null,
                         };
 
                         properties[{{i}}] = {{JsonMetadataServicesTypeRef}}.CreatePropertyInfo<{{propertyTypeFQN}}>({{OptionsLocalVariableName}}, {{InfoVarName}}{{i}});
@@ -711,7 +725,7 @@ namespace System.Text.Json.SourceGeneration
                             ParameterType = typeof({{spec.ParameterType.FullyQualifiedName}}),
                             Position = {{spec.ParameterIndex}},
                             HasDefaultValue = {{FormatBoolLiteral(spec.HasDefaultValue)}},
-                            DefaultValue = {{CSharpSyntaxUtilities.FormatLiteral(spec.DefaultValue, spec.ParameterType)}},
+                            DefaultValue = {{(spec.HasDefaultValue ? CSharpSyntaxUtilities.FormatLiteral(spec.DefaultValue, spec.ParameterType) : "null")}},
                             IsNullable = {{FormatBoolLiteral(spec.IsNullable)}},
                         },
                         """);
@@ -735,6 +749,7 @@ namespace System.Text.Json.SourceGeneration
                             Name = {{FormatStringLiteral(spec.Name)}},
                             ParameterType = typeof({{spec.ParameterType.FullyQualifiedName}}),
                             Position = {{spec.ParameterIndex}},
+                            IsMemberInitializer = true,
                         },
                         """);
 
@@ -1099,7 +1114,14 @@ namespace System.Text.Json.SourceGeneration
 
                 GetLogicForDefaultSerializerOptionsInit(contextSpec.GeneratedOptionsSpec, writer);
 
-                writer.WriteLine();
+                writer.WriteLine($"""
+
+                    private const global::System.Reflection.BindingFlags {InstanceMemberBindingFlagsVariableName} =
+                        global::System.Reflection.BindingFlags.Instance |
+                        global::System.Reflection.BindingFlags.Public |
+                        global::System.Reflection.BindingFlags.NonPublic;
+
+                    """);
 
                 writer.WriteLine($$"""
                     /// <summary>
@@ -1184,6 +1206,9 @@ namespace System.Text.Json.SourceGeneration
 
                 if (optionsSpec.RespectNullableAnnotations is bool respectNullableAnnotations)
                     writer.WriteLine($"RespectNullableAnnotations = {FormatBoolLiteral(respectNullableAnnotations)},");
+
+                if (optionsSpec.RespectRequiredConstructorParameters is bool respectRequiredConstructorParameters)
+                    writer.WriteLine($"RespectRequiredConstructorParameters = {FormatBoolLiteral(respectRequiredConstructorParameters)},");
 
                 if (optionsSpec.IgnoreReadOnlyFields is bool ignoreReadOnlyFields)
                     writer.WriteLine($"IgnoreReadOnlyFields = {FormatBoolLiteral(ignoreReadOnlyFields)},");

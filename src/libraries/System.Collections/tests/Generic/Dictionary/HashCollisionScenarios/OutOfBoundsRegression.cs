@@ -12,6 +12,12 @@ namespace System.Collections.Tests
 {
     public class InternalHashCodeTests
     {
+        private static Type nonRandomizedDefaultComparerType = typeof(object).Assembly.GetType("System.Collections.Generic.NonRandomizedStringEqualityComparer+DefaultComparer", throwOnError: true);
+        private static Type nonRandomizedOrdinalComparerType = typeof(object).Assembly.GetType("System.Collections.Generic.NonRandomizedStringEqualityComparer+OrdinalComparer", throwOnError: true);
+        private static Type nonRandomizedOrdinalIgnoreCaseComparerType = typeof(object).Assembly.GetType("System.Collections.Generic.NonRandomizedStringEqualityComparer+OrdinalIgnoreCaseComparer", throwOnError: true);
+        private static Type randomizedOrdinalComparerType = typeof(object).Assembly.GetType("System.Collections.Generic.RandomizedStringEqualityComparer+OrdinalComparer", throwOnError: true);
+        private static Type randomizedOrdinalIgnoreCaseComparerType = typeof(object).Assembly.GetType("System.Collections.Generic.RandomizedStringEqualityComparer+OrdinalIgnoreCaseComparer", throwOnError: true);
+
         /// <summary>
         /// Given a byte array, copies it to the string, without messing with any encoding.  This issue was hit on a x64 machine
         /// </summary>
@@ -45,16 +51,11 @@ namespace System.Collections.Tests
         [Fact]
         public static void ComparerImplementations_Dictionary_WithWellKnownStringComparers()
         {
-            Type nonRandomizedOrdinalComparerType = typeof(object).Assembly.GetType("System.Collections.Generic.NonRandomizedStringEqualityComparer+OrdinalComparer", throwOnError: true);
-            Type nonRandomizedOrdinalIgnoreCaseComparerType = typeof(object).Assembly.GetType("System.Collections.Generic.NonRandomizedStringEqualityComparer+OrdinalIgnoreCaseComparer", throwOnError: true);
-            Type randomizedOrdinalComparerType = typeof(object).Assembly.GetType("System.Collections.Generic.RandomizedStringEqualityComparer+OrdinalComparer", throwOnError: true);
-            Type randomizedOrdinalIgnoreCaseComparerType = typeof(object).Assembly.GetType("System.Collections.Generic.RandomizedStringEqualityComparer+OrdinalIgnoreCaseComparer", throwOnError: true);
-
             // null comparer
 
             RunDictionaryTest(
                 equalityComparer: null,
-                expectedInternalComparerTypeBeforeCollisionThreshold: nonRandomizedOrdinalComparerType,
+                expectedInternalComparerTypeBeforeCollisionThreshold: nonRandomizedDefaultComparerType,
                 expectedPublicComparerBeforeCollisionThreshold: EqualityComparer<string>.Default,
                 expectedInternalComparerTypeAfterCollisionThreshold: randomizedOrdinalComparerType);
 
@@ -62,7 +63,7 @@ namespace System.Collections.Tests
 
             RunDictionaryTest(
                 equalityComparer: EqualityComparer<string>.Default,
-                expectedInternalComparerTypeBeforeCollisionThreshold: nonRandomizedOrdinalComparerType,
+                expectedInternalComparerTypeBeforeCollisionThreshold: nonRandomizedDefaultComparerType,
                 expectedPublicComparerBeforeCollisionThreshold: EqualityComparer<string>.Default,
                 expectedInternalComparerTypeAfterCollisionThreshold: randomizedOrdinalComparerType);
 
@@ -121,16 +122,11 @@ namespace System.Collections.Tests
         [Fact]
         public static void ComparerImplementations_HashSet_WithWellKnownStringComparers()
         {
-            Type nonRandomizedOrdinalComparerType = typeof(object).Assembly.GetType("System.Collections.Generic.NonRandomizedStringEqualityComparer+OrdinalComparer", throwOnError: true);
-            Type nonRandomizedOrdinalIgnoreCaseComparerType = typeof(object).Assembly.GetType("System.Collections.Generic.NonRandomizedStringEqualityComparer+OrdinalIgnoreCaseComparer", throwOnError: true);
-            Type randomizedOrdinalComparerType = typeof(object).Assembly.GetType("System.Collections.Generic.RandomizedStringEqualityComparer+OrdinalComparer", throwOnError: true);
-            Type randomizedOrdinalIgnoreCaseComparerType = typeof(object).Assembly.GetType("System.Collections.Generic.RandomizedStringEqualityComparer+OrdinalIgnoreCaseComparer", throwOnError: true);
-
             // null comparer
 
             RunHashSetTest(
                 equalityComparer: null,
-                expectedInternalComparerTypeBeforeCollisionThreshold: nonRandomizedOrdinalComparerType,
+                expectedInternalComparerTypeBeforeCollisionThreshold: nonRandomizedDefaultComparerType,
                 expectedPublicComparerBeforeCollisionThreshold: EqualityComparer<string>.Default,
                 expectedInternalComparerTypeAfterCollisionThreshold: randomizedOrdinalComparerType);
 
@@ -138,7 +134,7 @@ namespace System.Collections.Tests
 
             RunHashSetTest(
                 equalityComparer: EqualityComparer<string>.Default,
-                expectedInternalComparerTypeBeforeCollisionThreshold: nonRandomizedOrdinalComparerType,
+                expectedInternalComparerTypeBeforeCollisionThreshold: nonRandomizedDefaultComparerType,
                 expectedPublicComparerBeforeCollisionThreshold: EqualityComparer<string>.Default,
                 expectedInternalComparerTypeAfterCollisionThreshold: randomizedOrdinalComparerType);
 

@@ -1393,7 +1393,7 @@ BOOL IsThreadInSTA()
     CONTRACTL_END;
 
     // If ole32.dll is not loaded
-    if (WszGetModuleHandle(W("ole32.dll")) == NULL)
+    if (GetModuleHandle(W("ole32.dll")) == NULL)
     {
         return FALSE;
     }

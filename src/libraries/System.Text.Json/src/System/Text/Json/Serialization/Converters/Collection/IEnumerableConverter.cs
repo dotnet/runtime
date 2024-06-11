@@ -59,7 +59,7 @@ namespace System.Text.Json.Serialization.Converters
             JsonConverter<object?> converter = GetElementConverter(ref state);
             do
             {
-                if (ShouldFlush(writer, ref state))
+                if (ShouldFlush(ref state, writer))
                 {
                     state.Current.CollectionEnumerator = enumerator;
                     return false;

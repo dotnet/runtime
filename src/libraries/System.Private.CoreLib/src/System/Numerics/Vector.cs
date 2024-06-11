@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
+using static Interop;
 
 namespace System.Numerics
 {
@@ -59,7 +60,6 @@ namespace System.Numerics
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <returns>The sum of <paramref name="left" /> and <paramref name="right" />.</returns>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> Add<T>(Vector<T> left, Vector<T> right) => left + right;
 
         /// <summary>Computes the bitwise-and of a given vector and the ones complement of another vector.</summary>
@@ -68,7 +68,6 @@ namespace System.Numerics
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <returns>The bitwise-and of <paramref name="left" /> and the ones-complement of <paramref name="right" />.</returns>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> AndNot<T>(Vector<T> left, Vector<T> right) => left & ~right;
 
         /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{U}" />.</summary>
@@ -84,7 +83,11 @@ namespace System.Numerics
             ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<TFrom>();
             ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<TTo>();
 
+#if MONO
             return Unsafe.As<Vector<TFrom>, Vector<TTo>>(ref vector);
+#else
+            return Unsafe.BitCast<Vector<TFrom>, Vector<TTo>>(vector);
+#endif
         }
 
         /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{Byte}" />.</summary>
@@ -93,7 +96,6 @@ namespace System.Numerics
         /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{Byte}" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<byte> AsVectorByte<T>(Vector<T> value) => value.As<T, byte>();
 
         /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{Double}" />.</summary>
@@ -102,7 +104,6 @@ namespace System.Numerics
         /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{Double}" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<double> AsVectorDouble<T>(Vector<T> value) => value.As<T, double>();
 
         /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{Int16}" />.</summary>
@@ -111,7 +112,6 @@ namespace System.Numerics
         /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{Int16}" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<short> AsVectorInt16<T>(Vector<T> value) => value.As<T, short>();
 
         /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{Int32}" />.</summary>
@@ -120,7 +120,6 @@ namespace System.Numerics
         /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{Int32}" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<int> AsVectorInt32<T>(Vector<T> value) => value.As<T, int>();
 
         /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{Int64}" />.</summary>
@@ -129,7 +128,6 @@ namespace System.Numerics
         /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{Int64}" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<long> AsVectorInt64<T>(Vector<T> value) => value.As<T, long>();
 
         /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{IntPtr}" />.</summary>
@@ -138,7 +136,6 @@ namespace System.Numerics
         /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{IntPtr}" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<nint> AsVectorNInt<T>(Vector<T> value) => value.As<T, nint>();
 
         /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{UIntPtr}" />.</summary>
@@ -148,7 +145,6 @@ namespace System.Numerics
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<nuint> AsVectorNUInt<T>(Vector<T> value) => value.As<T, nuint>();
 
         /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{SByte}" />.</summary>
@@ -158,7 +154,6 @@ namespace System.Numerics
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<sbyte> AsVectorSByte<T>(Vector<T> value) => value.As<T, sbyte>();
 
         /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{Single}" />.</summary>
@@ -167,7 +162,6 @@ namespace System.Numerics
         /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{Single}" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<float> AsVectorSingle<T>(Vector<T> value) => value.As<T, float>();
 
         /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{UInt16}" />.</summary>
@@ -177,7 +171,6 @@ namespace System.Numerics
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<ushort> AsVectorUInt16<T>(Vector<T> value) => value.As<T, ushort>();
 
         /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{UInt32}" />.</summary>
@@ -187,7 +180,6 @@ namespace System.Numerics
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<uint> AsVectorUInt32<T>(Vector<T> value) => value.As<T, uint>();
 
         /// <summary>Reinterprets a <see cref="Vector{T}" /> as a new <see cref="Vector{UInt64}" />.</summary>
@@ -197,7 +189,6 @@ namespace System.Numerics
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<ulong> AsVectorUInt64<T>(Vector<T> value) => value.As<T, ulong>();
 
         /// <summary>Computes the bitwise-and of two vectors.</summary>
@@ -206,7 +197,6 @@ namespace System.Numerics
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <returns>The bitwise-and of <paramref name="left" /> and <paramref name="right"/>.</returns>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> BitwiseAnd<T>(Vector<T> left, Vector<T> right) => left & right;
 
         /// <summary>Computes the bitwise-or of two vectors.</summary>
@@ -215,7 +205,6 @@ namespace System.Numerics
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <returns>The bitwise-or of <paramref name="left" /> and <paramref name="right"/>.</returns>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> BitwiseOr<T>(Vector<T> left, Vector<T> right) => left | right;
 
         /// <summary>Computes the ceiling of each element in a vector.</summary>
@@ -264,7 +253,7 @@ namespace System.Numerics
         /// <returns>A vector whose bits come from <paramref name="left" /> or <paramref name="right" /> based on the value of <paramref name="condition" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector<T> ConditionalSelect<T>(Vector<T> condition, Vector<T> left, Vector<T> right) => (left & condition) | (right & ~condition);
+        public static Vector<T> ConditionalSelect<T>(Vector<T> condition, Vector<T> left, Vector<T> right) => (left & condition) | AndNot(right, condition);
 
         /// <summary>Conditionally selects a value from two vectors on a bitwise basis.</summary>
         /// <param name="condition">The mask that is used to select a value from <paramref name="left" /> or <paramref name="right" />.</param>
@@ -272,9 +261,7 @@ namespace System.Numerics
         /// <param name="right">The vector that is selected when the corresponding bit in <paramref name="condition" /> is zero.</param>
         /// <returns>A vector whose bits come from <paramref name="left" /> or <paramref name="right" /> based on the value of <paramref name="condition" />.</returns>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector<float> ConditionalSelect(Vector<int> condition, Vector<float> left, Vector<float> right)
-            => ConditionalSelect(condition.As<int, float>(), left, right);
+        public static Vector<float> ConditionalSelect(Vector<int> condition, Vector<float> left, Vector<float> right) => ConditionalSelect(condition.As<int, float>(), left, right);
 
         /// <summary>Conditionally selects a value from two vectors on a bitwise basis.</summary>
         /// <param name="condition">The mask that is used to select a value from <paramref name="left" /> or <paramref name="right" />.</param>
@@ -282,9 +269,7 @@ namespace System.Numerics
         /// <param name="right">The vector that is selected when the corresponding bit in <paramref name="condition" /> is zero.</param>
         /// <returns>A vector whose bits come from <paramref name="left" /> or <paramref name="right" /> based on the value of <paramref name="condition" />.</returns>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector<double> ConditionalSelect(Vector<long> condition, Vector<double> left, Vector<double> right)
-            => ConditionalSelect(condition.As<long, double>(), left, right);
+        public static Vector<double> ConditionalSelect(Vector<long> condition, Vector<double> left, Vector<double> right) => ConditionalSelect(condition.As<long, double>(), left, right);
 
         /// <summary>Converts a <see cref="Vector{Int64}" /> to a <see cref="Vector{Double}" />.</summary>
         /// <param name="value">The vector to convert.</param>
@@ -517,7 +502,6 @@ namespace System.Numerics
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <returns>The quotient of <paramref name="left" /> divided by <paramref name="right" />.</returns>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> Divide<T>(Vector<T> left, Vector<T> right) => left / right;
 
         /// <summary>Divides a vector by a scalar to compute the per-element quotient.</summary>
@@ -526,7 +510,6 @@ namespace System.Numerics
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <returns>The quotient of <paramref name="left" /> divided by <paramref name="right" />.</returns>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> Divide<T>(Vector<T> left, T right) => left / right;
 
         /// <summary>Computes the dot product of two vectors.</summary>
@@ -535,19 +518,7 @@ namespace System.Numerics
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <returns>The dot product of <paramref name="left" /> and <paramref name="right" />.</returns>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static T Dot<T>(Vector<T> left, Vector<T> right)
-        {
-            T result = default!;
-
-            for (int index = 0; index < Vector<T>.Count; index++)
-            {
-                T value = Scalar<T>.Multiply(left.GetElementUnsafe(index), right.GetElementUnsafe(index));
-                result = Scalar<T>.Add(result, value);
-            }
-
-            return result;
-        }
+        public static T Dot<T>(Vector<T> left, Vector<T> right) => Sum(left * right);
 
         /// <summary>Compares two vectors to determine if they are equal on a per-element basis.</summary>
         /// <param name="left">The vector to compare with <paramref name="right" />.</param>
@@ -574,7 +545,6 @@ namespace System.Numerics
         /// <param name="right">The vector to compare with <paramref name="left" />.</param>
         /// <returns>A vector whose elements are all-bits-set or zero, depending on if the corresponding elements in <paramref name="left" /> and <paramref name="right" /> were equal.</returns>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<long> Equals(Vector<double> left, Vector<double> right) => Equals<double>(left, right).As<double, long>();
 
         /// <summary>Compares two vectors to determine if they are equal on a per-element basis.</summary>
@@ -582,7 +552,6 @@ namespace System.Numerics
         /// <param name="right">The vector to compare with <paramref name="left" />.</param>
         /// <returns>A vector whose elements are all-bits-set or zero, depending on if the corresponding elements in <paramref name="left" /> and <paramref name="right" /> were equal.</returns>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<int> Equals(Vector<int> left, Vector<int> right) => Equals<int>(left, right);
 
         /// <summary>Compares two vectors to determine if they are equal on a per-element basis.</summary>
@@ -590,7 +559,6 @@ namespace System.Numerics
         /// <param name="right">The vector to compare with <paramref name="left" />.</param>
         /// <returns>A vector whose elements are all-bits-set or zero, depending on if the corresponding elements in <paramref name="left" /> and <paramref name="right" /> were equal.</returns>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<long> Equals(Vector<long> left, Vector<long> right) => Equals<long>(left, right);
 
         /// <summary>Compares two vectors to determine if they are equal on a per-element basis.</summary>
@@ -598,7 +566,6 @@ namespace System.Numerics
         /// <param name="right">The vector to compare with <paramref name="left" />.</param>
         /// <returns>A vector whose elements are all-bits-set or zero, depending on if the corresponding elements in <paramref name="left" /> and <paramref name="right" /> were equal.</returns>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<int> Equals(Vector<float> left, Vector<float> right) => Equals<float>(left, right).As<float, int>();
 
         /// <summary>Compares two vectors to determine if all elements are equal.</summary>
@@ -607,7 +574,6 @@ namespace System.Numerics
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <returns><c>true</c> if all elements in <paramref name="left" /> were equal to the corresponding element in <paramref name="right" />.</returns>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool EqualsAll<T>(Vector<T> left, Vector<T> right) => left == right;
 
         /// <summary>Compares two vectors to determine if any elements are equal.</summary>
@@ -760,7 +726,6 @@ namespace System.Numerics
         /// <param name="right">The vector to compare with <paramref name="right" />.</param>
         /// <returns>A vector whose elements are all-bits-set or zero, depending on if which of the corresponding elements in <paramref name="left" /> and <paramref name="right" /> were greater.</returns>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<long> GreaterThan(Vector<double> left, Vector<double> right) => GreaterThan<double>(left, right).As<double, long>();
 
         /// <summary>Compares two vectors to determine which is greater on a per-element basis.</summary>
@@ -768,14 +733,13 @@ namespace System.Numerics
         /// <param name="right">The vector to compare with <paramref name="right" />.</param>
         /// <returns>A vector whose elements are all-bits-set or zero, depending on if which of the corresponding elements in <paramref name="left" /> and <paramref name="right" /> were greater.</returns>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<int> GreaterThan(Vector<int> left, Vector<int> right) => GreaterThan<int>(left, right);
 
         /// <summary>Compares two vectors to determine which is greater on a per-element basis.</summary>
         /// <param name="left">The vector to compare with <paramref name="left" />.</param>
         /// <param name="right">The vector to compare with <paramref name="right" />.</param>
         /// <returns>A vector whose elements are all-bits-set or zero, depending on if which of the corresponding elements in <paramref name="left" /> and <paramref name="right" /> were greater.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Intrinsic]
         public static Vector<long> GreaterThan(Vector<long> left, Vector<long> right) => GreaterThan<long>(left, right);
 
         /// <summary>Compares two vectors to determine which is greater on a per-element basis.</summary>
@@ -783,7 +747,6 @@ namespace System.Numerics
         /// <param name="right">The vector to compare with <paramref name="right" />.</param>
         /// <returns>A vector whose elements are all-bits-set or zero, depending on if which of the corresponding elements in <paramref name="left" /> and <paramref name="right" /> were greater.</returns>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<int> GreaterThan(Vector<float> left, Vector<float> right) => GreaterThan<float>(left, right).As<float, int>();
 
         /// <summary>Compares two vectors to determine if all elements are greater.</summary>
@@ -851,7 +814,6 @@ namespace System.Numerics
         /// <param name="right">The vector to compare with <paramref name="right" />.</param>
         /// <returns>A vector whose elements are all-bits-set or zero, depending on if which of the corresponding elements in <paramref name="left" /> and <paramref name="right" /> were greater or equal.</returns>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<long> GreaterThanOrEqual(Vector<double> left, Vector<double> right) => GreaterThanOrEqual<double>(left, right).As<double, long>();
 
         /// <summary>Compares two vectors to determine which is greater or equal on a per-element basis.</summary>
@@ -859,7 +821,6 @@ namespace System.Numerics
         /// <param name="right">The vector to compare with <paramref name="right" />.</param>
         /// <returns>A vector whose elements are all-bits-set or zero, depending on if which of the corresponding elements in <paramref name="left" /> and <paramref name="right" /> were greater or equal.</returns>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<int> GreaterThanOrEqual(Vector<int> left, Vector<int> right) => GreaterThanOrEqual<int>(left, right);
 
         /// <summary>Compares two vectors to determine which is greater or equal on a per-element basis.</summary>
@@ -867,7 +828,6 @@ namespace System.Numerics
         /// <param name="right">The vector to compare with <paramref name="right" />.</param>
         /// <returns>A vector whose elements are all-bits-set or zero, depending on if which of the corresponding elements in <paramref name="left" /> and <paramref name="right" /> were greater or equal.</returns>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<long> GreaterThanOrEqual(Vector<long> left, Vector<long> right) => GreaterThanOrEqual<long>(left, right);
 
         /// <summary>Compares two vectors to determine which is greater or equal on a per-element basis.</summary>
@@ -875,7 +835,6 @@ namespace System.Numerics
         /// <param name="right">The vector to compare with <paramref name="right" />.</param>
         /// <returns>A vector whose elements are all-bits-set or zero, depending on if which of the corresponding elements in <paramref name="left" /> and <paramref name="right" /> were greater or equal.</returns>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<int> GreaterThanOrEqual(Vector<float> left, Vector<float> right) => GreaterThanOrEqual<float>(left, right).As<float, int>();
 
         /// <summary>Compares two vectors to determine if all elements are greater or equal.</summary>
@@ -943,7 +902,6 @@ namespace System.Numerics
         /// <param name="right">The vector to compare with <paramref name="right" />.</param>
         /// <returns>A vector whose elements are all-bits-set or zero, depending on if which of the corresponding elements in <paramref name="left" /> and <paramref name="right" /> were less.</returns>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<long> LessThan(Vector<double> left, Vector<double> right) => LessThan<double>(left, right).As<double, long>();
 
         /// <summary>Compares two vectors to determine which is less on a per-element basis.</summary>
@@ -951,7 +909,6 @@ namespace System.Numerics
         /// <param name="right">The vector to compare with <paramref name="right" />.</param>
         /// <returns>A vector whose elements are all-bits-set or zero, depending on if which of the corresponding elements in <paramref name="left" /> and <paramref name="right" /> were less.</returns>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<int> LessThan(Vector<int> left, Vector<int> right) => LessThan<int>(left, right);
 
         /// <summary>Compares two vectors to determine which is less on a per-element basis.</summary>
@@ -959,7 +916,6 @@ namespace System.Numerics
         /// <param name="right">The vector to compare with <paramref name="right" />.</param>
         /// <returns>A vector whose elements are all-bits-set or zero, depending on if which of the corresponding elements in <paramref name="left" /> and <paramref name="right" /> were less.</returns>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<long> LessThan(Vector<long> left, Vector<long> right) => LessThan<long>(left, right);
 
         /// <summary>Compares two vectors to determine which is less on a per-element basis.</summary>
@@ -967,7 +923,6 @@ namespace System.Numerics
         /// <param name="right">The vector to compare with <paramref name="right" />.</param>
         /// <returns>A vector whose elements are all-bits-set or zero, depending on if which of the corresponding elements in <paramref name="left" /> and <paramref name="right" /> were less.</returns>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<int> LessThan(Vector<float> left, Vector<float> right) => LessThan<float>(left, right).As<float, int>();
 
         /// <summary>Compares two vectors to determine if all elements are less.</summary>
@@ -1035,7 +990,6 @@ namespace System.Numerics
         /// <param name="right">The vector to compare with <paramref name="right" />.</param>
         /// <returns>A vector whose elements are all-bits-set or zero, depending on if which of the corresponding elements in <paramref name="left" /> and <paramref name="right" /> were less or equal.</returns>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<long> LessThanOrEqual(Vector<double> left, Vector<double> right) => LessThanOrEqual<double>(left, right).As<double, long>();
 
         /// <summary>Compares two vectors to determine which is less or equal on a per-element basis.</summary>
@@ -1043,7 +997,6 @@ namespace System.Numerics
         /// <param name="right">The vector to compare with <paramref name="right" />.</param>
         /// <returns>A vector whose elements are all-bits-set or zero, depending on if which of the corresponding elements in <paramref name="left" /> and <paramref name="right" /> were less or equal.</returns>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<int> LessThanOrEqual(Vector<int> left, Vector<int> right) => LessThanOrEqual<int>(left, right);
 
         /// <summary>Compares two vectors to determine which is less or equal on a per-element basis.</summary>
@@ -1051,7 +1004,6 @@ namespace System.Numerics
         /// <param name="right">The vector to compare with <paramref name="right" />.</param>
         /// <returns>A vector whose elements are all-bits-set or zero, depending on if which of the corresponding elements in <paramref name="left" /> and <paramref name="right" /> were less or equal.</returns>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<long> LessThanOrEqual(Vector<long> left, Vector<long> right) => LessThanOrEqual<long>(left, right);
 
         /// <summary>Compares two vectors to determine which is less or equal on a per-element basis.</summary>
@@ -1059,7 +1011,6 @@ namespace System.Numerics
         /// <param name="right">The vector to compare with <paramref name="right" />.</param>
         /// <returns>A vector whose elements are all-bits-set or zero, depending on if which of the corresponding elements in <paramref name="left" /> and <paramref name="right" /> were less or equal.</returns>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<int> LessThanOrEqual(Vector<float> left, Vector<float> right) => LessThanOrEqual<float>(left, right).As<float, int>();
 
         /// <summary>Compares two vectors to determine if all elements are less or equal.</summary>
@@ -1110,7 +1061,6 @@ namespace System.Numerics
         /// <exception cref="NotSupportedException">The type of <paramref name="source" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> Load<T>(T* source) => LoadUnsafe(ref *source);
 
         /// <summary>Loads a vector from the given aligned source.</summary>
@@ -1141,7 +1091,6 @@ namespace System.Numerics
         /// <exception cref="NotSupportedException">The type of <paramref name="source" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> LoadAlignedNonTemporal<T>(T* source) => LoadAligned(source);
 #pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
 
@@ -1221,7 +1170,6 @@ namespace System.Numerics
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <returns>The element-wise product of <paramref name="left" /> and <paramref name="right" />.</returns>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> Multiply<T>(Vector<T> left, Vector<T> right) => left * right;
 
         /// <summary>Multiplies a vector by a scalar to compute their product.</summary>
@@ -1230,7 +1178,6 @@ namespace System.Numerics
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <returns>The product of <paramref name="left" /> and <paramref name="right" />.</returns>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> Multiply<T>(Vector<T> left, T right) => left * right;
 
         /// <summary>Multiplies a vector by a scalar to compute their product.</summary>
@@ -1239,8 +1186,7 @@ namespace System.Numerics
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <returns>The product of <paramref name="left" /> and <paramref name="right" />.</returns>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector<T> Multiply<T>(T left, Vector<T> right) => left * right;
+        public static Vector<T> Multiply<T>(T left, Vector<T> right) => right * left;
 
         /// <inheritdoc cref="Vector128.MultiplyAddEstimate(Vector128{double}, Vector128{double}, Vector128{double})" />
         [Intrinsic]
@@ -1458,7 +1404,6 @@ namespace System.Numerics
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <returns>A vector whose elements are the unary negation of the corresponding elements in <paramref name="value" />.</returns>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> Negate<T>(Vector<T> value) => -value;
 
         /// <summary>Computes the ones-complement of a vector.</summary>
@@ -1466,7 +1411,6 @@ namespace System.Numerics
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <returns>A vector whose elements are the ones-complement of the corresponding elements in <paramref name="value" />.</returns>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> OnesComplement<T>(Vector<T> value) => ~value;
 
         /// <summary>Shifts each element of a vector left by the specified amount.</summary>
@@ -1474,7 +1418,6 @@ namespace System.Numerics
         /// <param name="shiftCount">The number of bits by which to shift each element.</param>
         /// <returns>A vector whose elements where shifted left by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<byte> ShiftLeft(Vector<byte> value, int shiftCount) => value << shiftCount;
 
         /// <summary>Shifts each element of a vector left by the specified amount.</summary>
@@ -1482,7 +1425,6 @@ namespace System.Numerics
         /// <param name="shiftCount">The number of bits by which to shift each element.</param>
         /// <returns>A vector whose elements where shifted left by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<short> ShiftLeft(Vector<short> value, int shiftCount) => value << shiftCount;
 
         /// <summary>Shifts each element of a vector left by the specified amount.</summary>
@@ -1490,7 +1432,6 @@ namespace System.Numerics
         /// <param name="shiftCount">The number of bits by which to shift each element.</param>
         /// <returns>A vector whose elements where shifted left by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<int> ShiftLeft(Vector<int> value, int shiftCount) => value << shiftCount;
 
         /// <summary>Shifts each element of a vector left by the specified amount.</summary>
@@ -1498,7 +1439,6 @@ namespace System.Numerics
         /// <param name="shiftCount">The number of bits by which to shift each element.</param>
         /// <returns>A vector whose elements where shifted left by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<long> ShiftLeft(Vector<long> value, int shiftCount) => value << shiftCount;
 
         /// <summary>Shifts each element of a vector left by the specified amount.</summary>
@@ -1506,7 +1446,6 @@ namespace System.Numerics
         /// <param name="shiftCount">The number of bits by which to shift each element.</param>
         /// <returns>A vector whose elements where shifted left by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<nint> ShiftLeft(Vector<nint> value, int shiftCount) => value << shiftCount;
 
         /// <summary>Shifts each element of a vector left by the specified amount.</summary>
@@ -1515,7 +1454,6 @@ namespace System.Numerics
         /// <returns>A vector whose elements where shifted left by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
         [CLSCompliant(false)]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<nuint> ShiftLeft(Vector<nuint> value, int shiftCount) => value << shiftCount;
 
         /// <summary>Shifts each element of a vector left by the specified amount.</summary>
@@ -1524,7 +1462,6 @@ namespace System.Numerics
         /// <returns>A vector whose elements where shifted left by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
         [CLSCompliant(false)]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<sbyte> ShiftLeft(Vector<sbyte> value, int shiftCount) => value << shiftCount;
 
         /// <summary>Shifts each element of a vector left by the specified amount.</summary>
@@ -1533,7 +1470,6 @@ namespace System.Numerics
         /// <returns>A vector whose elements where shifted left by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
         [CLSCompliant(false)]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<ushort> ShiftLeft(Vector<ushort> value, int shiftCount) => value << shiftCount;
 
         /// <summary>Shifts each element of a vector left by the specified amount.</summary>
@@ -1542,7 +1478,6 @@ namespace System.Numerics
         /// <returns>A vector whose elements where shifted left by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
         [CLSCompliant(false)]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<uint> ShiftLeft(Vector<uint> value, int shiftCount) => value << shiftCount;
 
         /// <summary>Shifts each element of a vector left by the specified amount.</summary>
@@ -1551,7 +1486,6 @@ namespace System.Numerics
         /// <returns>A vector whose elements where shifted left by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
         [CLSCompliant(false)]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<ulong> ShiftLeft(Vector<ulong> value, int shiftCount) => value << shiftCount;
 
         /// <summary>Shifts (signed) each element of a vector right by the specified amount.</summary>
@@ -1559,7 +1493,6 @@ namespace System.Numerics
         /// <param name="shiftCount">The number of bits by which to shift each element.</param>
         /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<short> ShiftRightArithmetic(Vector<short> value, int shiftCount) => value >> shiftCount;
 
         /// <summary>Shifts (signed) each element of a vector right by the specified amount.</summary>
@@ -1567,7 +1500,6 @@ namespace System.Numerics
         /// <param name="shiftCount">The number of bits by which to shift each element.</param>
         /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<int> ShiftRightArithmetic(Vector<int> value, int shiftCount) => value >> shiftCount;
 
         /// <summary>Shifts (signed) each element of a vector right by the specified amount.</summary>
@@ -1575,7 +1507,6 @@ namespace System.Numerics
         /// <param name="shiftCount">The number of bits by which to shift each element.</param>
         /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<long> ShiftRightArithmetic(Vector<long> value, int shiftCount) => value >> shiftCount;
 
         /// <summary>Shifts (signed) each element of a vector right by the specified amount.</summary>
@@ -1583,7 +1514,6 @@ namespace System.Numerics
         /// <param name="shiftCount">The number of bits by which to shift each element.</param>
         /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<nint> ShiftRightArithmetic(Vector<nint> value, int shiftCount) => value >> shiftCount;
 
         /// <summary>Shifts (signed) each element of a vector right by the specified amount.</summary>
@@ -1592,7 +1522,6 @@ namespace System.Numerics
         /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
         [CLSCompliant(false)]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<sbyte> ShiftRightArithmetic(Vector<sbyte> value, int shiftCount) => value >> shiftCount;
 
         /// <summary>Shifts (unsigned) each element of a vector right by the specified amount.</summary>
@@ -1600,7 +1529,6 @@ namespace System.Numerics
         /// <param name="shiftCount">The number of bits by which to shift each element.</param>
         /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<byte> ShiftRightLogical(Vector<byte> value, int shiftCount) => value >>> shiftCount;
 
         /// <summary>Shifts (unsigned) each element of a vector right by the specified amount.</summary>
@@ -1608,7 +1536,6 @@ namespace System.Numerics
         /// <param name="shiftCount">The number of bits by which to shift each element.</param>
         /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<short> ShiftRightLogical(Vector<short> value, int shiftCount) => value >>> shiftCount;
 
         /// <summary>Shifts (unsigned) each element of a vector right by the specified amount.</summary>
@@ -1616,7 +1543,6 @@ namespace System.Numerics
         /// <param name="shiftCount">The number of bits by which to shift each element.</param>
         /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<int> ShiftRightLogical(Vector<int> value, int shiftCount) => value >>> shiftCount;
 
         /// <summary>Shifts (unsigned) each element of a vector right by the specified amount.</summary>
@@ -1624,7 +1550,6 @@ namespace System.Numerics
         /// <param name="shiftCount">The number of bits by which to shift each element.</param>
         /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<long> ShiftRightLogical(Vector<long> value, int shiftCount) => value >>> shiftCount;
 
         /// <summary>Shifts (unsigned) each element of a vector right by the specified amount.</summary>
@@ -1632,7 +1557,6 @@ namespace System.Numerics
         /// <param name="shiftCount">The number of bits by which to shift each element.</param>
         /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<nint> ShiftRightLogical(Vector<nint> value, int shiftCount) => value >>> shiftCount;
 
         /// <summary>Shifts (unsigned) each element of a vector right by the specified amount.</summary>
@@ -1641,7 +1565,6 @@ namespace System.Numerics
         /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
         [CLSCompliant(false)]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<nuint> ShiftRightLogical(Vector<nuint> value, int shiftCount) => value >>> shiftCount;
 
         /// <summary>Shifts (unsigned) each element of a vector right by the specified amount.</summary>
@@ -1650,7 +1573,6 @@ namespace System.Numerics
         /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
         [CLSCompliant(false)]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<sbyte> ShiftRightLogical(Vector<sbyte> value, int shiftCount) => value >>> shiftCount;
 
         /// <summary>Shifts (unsigned) each element of a vector right by the specified amount.</summary>
@@ -1659,7 +1581,6 @@ namespace System.Numerics
         /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
         [CLSCompliant(false)]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<ushort> ShiftRightLogical(Vector<ushort> value, int shiftCount) => value >>> shiftCount;
 
         /// <summary>Shifts (unsigned) each element of a vector right by the specified amount.</summary>
@@ -1668,7 +1589,6 @@ namespace System.Numerics
         /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
         [CLSCompliant(false)]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<uint> ShiftRightLogical(Vector<uint> value, int shiftCount) => value >>> shiftCount;
 
         /// <summary>Shifts (unsigned) each element of a vector right by the specified amount.</summary>
@@ -1677,7 +1597,6 @@ namespace System.Numerics
         /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
         [CLSCompliant(false)]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<ulong> ShiftRightLogical(Vector<ulong> value, int shiftCount) => value >>> shiftCount;
 
         /// <summary>Computes the square root of a vector on a per-element basis.</summary>
@@ -1707,7 +1626,6 @@ namespace System.Numerics
         /// <exception cref="NotSupportedException">The type of <paramref name="source" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Store<T>(this Vector<T> source, T* destination) => source.StoreUnsafe(ref *destination);
 
         /// <summary>Stores a vector at the given aligned destination.</summary>
@@ -1738,7 +1656,6 @@ namespace System.Numerics
         /// <exception cref="NotSupportedException">The type of <paramref name="source" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void StoreAlignedNonTemporal<T>(this Vector<T> source, T* destination) => source.StoreAligned(destination);
 #pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
 
@@ -1778,7 +1695,6 @@ namespace System.Numerics
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <returns>The difference of <paramref name="left" /> and <paramref name="right" />.</returns>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> Subtract<T>(Vector<T> left, Vector<T> right) => left - right;
 
         /// <summary>
@@ -1804,7 +1720,6 @@ namespace System.Numerics
         /// <returns>A scalar <typeparamref name="T" /> containing the value of the first element.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T ToScalar<T>(this Vector<T> vector)
         {
             ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
@@ -2179,7 +2094,6 @@ namespace System.Numerics
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <returns>The exclusive-or of <paramref name="left" /> and <paramref name="right" />.</returns>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> Xor<T>(Vector<T> left, Vector<T> right) => left ^ right;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

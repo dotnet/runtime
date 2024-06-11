@@ -16,12 +16,12 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
-    <Compile Include="System\Numerics\Tensors\netcore\Common\IReadOnlyTensor.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorHelpers.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorExtensions.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\Tensor.Factory.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\Tensor.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\ITensor.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\IReadOnlyTensor.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorSpanDebugView.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorSpanExtensions.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\ReadOnlyTensorSpan.cs" />

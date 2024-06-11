@@ -2203,11 +2203,6 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount)
     emitCounts_INS_OPTS_J++;
     id->idAddr()->iiaBBlabel = dst;
 
-    if (emitComp->opts.compReloc)
-    {
-        id->idSetIsDspReloc();
-    }
-
     id->idjShort = false;
 
     // TODO-LoongArch64: maybe deleted this.

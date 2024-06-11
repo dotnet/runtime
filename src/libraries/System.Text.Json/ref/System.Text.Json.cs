@@ -402,6 +402,7 @@ namespace System.Text.Json
         public System.Text.Json.JsonCommentHandling ReadCommentHandling { get { throw null; } set { } }
         public System.Text.Json.Serialization.ReferenceHandler? ReferenceHandler { get { throw null; } set { } }
         public bool RespectNullableAnnotations { get { throw null; } set { } }
+        public bool RespectRequiredConstructorParameters { get { throw null; } set { } }
         public System.Text.Json.Serialization.Metadata.IJsonTypeInfoResolver? TypeInfoResolver { get { throw null; } set { } }
         public System.Collections.Generic.IList<System.Text.Json.Serialization.Metadata.IJsonTypeInfoResolver> TypeInfoResolverChain { get { throw null; } }
         public System.Text.Json.Serialization.JsonUnknownTypeHandling UnknownTypeHandling { get { throw null; } set { } }
@@ -1093,6 +1094,7 @@ namespace System.Text.Json.Serialization
         public System.Text.Json.Serialization.JsonKnownNamingPolicy PropertyNamingPolicy { get { throw null; } set { } }
         public System.Text.Json.JsonCommentHandling ReadCommentHandling { get { throw null; } set { } }
         public bool RespectNullableAnnotations { get { throw null; } set { } }
+        public bool RespectRequiredConstructorParameters { get { throw null; } set { } }
         public System.Text.Json.Serialization.JsonUnknownTypeHandling UnknownTypeHandling { get { throw null; } set { } }
         public System.Text.Json.Serialization.JsonUnmappedMemberHandling UnmappedMemberHandling { get { throw null; } set { } }
         public bool UseStringEnumConverter { get { throw null; } set { } }
@@ -1263,6 +1265,7 @@ namespace System.Text.Json.Serialization.Metadata
     public sealed partial class JsonObjectInfoValues<T>
     {
         public JsonObjectInfoValues() { }
+        public System.Func<System.Reflection.ICustomAttributeProvider>? ConstructorAttributeProviderFactory { get { throw null; } init { } }
         public System.Func<System.Text.Json.Serialization.Metadata.JsonParameterInfoValues[]>? ConstructorParameterMetadataInitializer { get { throw null; } init { } }
         public System.Text.Json.Serialization.JsonNumberHandling NumberHandling { get { throw null; } init { } }
         public System.Func<T>? ObjectCreator { get { throw null; } init { } }
@@ -1270,12 +1273,26 @@ namespace System.Text.Json.Serialization.Metadata
         public System.Func<System.Text.Json.Serialization.JsonSerializerContext, System.Text.Json.Serialization.Metadata.JsonPropertyInfo[]>? PropertyMetadataInitializer { get { throw null; } init { } }
         public System.Action<System.Text.Json.Utf8JsonWriter, T>? SerializeHandler { get { throw null; } init { } }
     }
+    public abstract partial class JsonParameterInfo
+    {
+        internal JsonParameterInfo() { }
+        public System.Type DeclaringType { get { throw null; } }
+        public System.Reflection.ICustomAttributeProvider? AttributeProvider { get { throw null; } }
+        public object? DefaultValue { get { throw null; } }
+        public bool HasDefaultValue { get { throw null; } }
+        public bool IsNullable { get { throw null; } }
+        public bool IsMemberInitializer { get { throw null; } }
+        public string Name { get { throw null; } }
+        public System.Type ParameterType { get { throw null; } }
+        public int Position { get { throw null; } }
+    }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class JsonParameterInfoValues
     {
         public JsonParameterInfoValues() { }
         public object? DefaultValue { get { throw null; } init { } }
         public bool HasDefaultValue { get { throw null; } init { } }
+        public bool IsMemberInitializer { get { throw null; } init { } }
         public bool IsNullable { get { throw null; } init { } }
         public string Name { get { throw null; } init { } }
         public System.Type ParameterType { get { throw null; } init { } }
@@ -1293,8 +1310,10 @@ namespace System.Text.Json.Serialization.Metadata
     public abstract partial class JsonPropertyInfo
     {
         internal JsonPropertyInfo() { }
+        public System.Text.Json.Serialization.Metadata.JsonParameterInfo? AssociatedParameter { get { throw null; } }
         public System.Reflection.ICustomAttributeProvider? AttributeProvider { get { throw null; } set { } }
         public System.Text.Json.Serialization.JsonConverter? CustomConverter { get { throw null; } set { } }
+        public System.Type DeclaringType { get { throw null; } }
         public System.Func<object, object?>? Get { get { throw null; } set { } }
         public bool IsExtensionData { get { throw null; } set { } }
         public bool IsGetNullable { get { throw null; } set { } }
@@ -1313,6 +1332,7 @@ namespace System.Text.Json.Serialization.Metadata
     public sealed partial class JsonPropertyInfoValues<T>
     {
         public JsonPropertyInfoValues() { }
+        public System.Func<System.Reflection.ICustomAttributeProvider>? AttributeProviderFactory { get; init; }
         public System.Text.Json.Serialization.JsonConverter<T>? Converter { get { throw null; } init { } }
         public System.Type DeclaringType { get { throw null; } init { } }
         public System.Func<object, T?>? Getter { get { throw null; } init { } }
@@ -1333,7 +1353,10 @@ namespace System.Text.Json.Serialization.Metadata
         internal JsonTypeInfo() { }
         public System.Text.Json.Serialization.JsonConverter Converter { get { throw null; } }
         public System.Func<object>? CreateObject { get { throw null; } set { } }
+        public System.Reflection.ICustomAttributeProvider? ConstructorAttributeProvider { get { throw null; } }
+        public System.Type? ElementType { get { throw null; } }
         public bool IsReadOnly { get { throw null; } }
+        public System.Type? KeyType { get { throw null; } }
         public System.Text.Json.Serialization.Metadata.JsonTypeInfoKind Kind { get { throw null; } }
         public System.Text.Json.Serialization.JsonNumberHandling? NumberHandling { get { throw null; } set { } }
         public System.Action<object>? OnDeserialized { get { throw null; } set { } }

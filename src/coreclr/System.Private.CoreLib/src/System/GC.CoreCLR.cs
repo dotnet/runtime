@@ -328,14 +328,20 @@ namespace System
         // for which SuppressFinalize has already been called. The other situation
         // where calling ReRegisterForFinalize is useful is inside a finalizer that
         // needs to resurrect itself or an object that it references.
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void _ReRegisterForFinalize(object o);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_ReRegisterForFinalize")]
+        private static partial void ReRegisterForFinalize(ObjectHandleOnStack o);
 
-        public static void ReRegisterForFinalize(object obj)
+        public static unsafe void ReRegisterForFinalize(object obj)
         {
             ArgumentNullException.ThrowIfNull(obj);
 
-            _ReRegisterForFinalize(obj);
+            MethodTable* pMT = RuntimeHelpers.GetMethodTable(obj);
+            if (pMT->HasFinalizer)
+            {
+                ReRegisterForFinalize(ObjectHandleOnStack.Create(ref obj));
+            }
+
+            // GC.KeepAlive(obj) not required. pMT kept alive via ObjectHandleOnStack
         }
 
         // Returns the total number of bytes currently in use by live objects in
