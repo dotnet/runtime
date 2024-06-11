@@ -24,7 +24,7 @@ namespace System.Buffers.Text
         /// <param name="isFinalBlock"><see langword="true"/> when the input span contains the entirety of data to encode; <see langword="false"/> when more data may follow,
         /// such as when calling in a loop, subsequent calls with <see langword="false"/> should end with <see langword="true"/> call. The default is <see langword="true" />.</param>
         /// <returns>One of the enumeration values that indicates the success or failure of the operation.</returns>
-        /// <remarks>The output will not be padded even if the input is not a multiple of 3.</remarks>
+        /// <remarks>This implementation of the base64url encoding omits the optional padding characters.</remarks>
         public static unsafe OperationStatus EncodeToUtf8(ReadOnlySpan<byte> source,
             Span<byte> destination, out int bytesConsumed, out int bytesWritten, bool isFinalBlock = true) =>
             EncodeTo<Base64UrlEncoderByte, byte>(source, destination, out bytesConsumed, out bytesWritten, isFinalBlock);
@@ -33,7 +33,7 @@ namespace System.Buffers.Text
         /// Returns the length (in bytes) of the result if you were to encode binary data within a byte span of size <paramref name="bytesLength"/>.
         /// </summary>
         /// <exception cref="ArgumentOutOfRangeException">
-        /// Thrown when the specified <paramref name="bytesLength"/> is less than 0 or larger than 1610612733 (since encode inflates the data by 4/3).
+        /// <paramref name="bytesLength"/> is less than 0 or greater than 1610612733.
         /// </exception>
         public static int GetEncodedLength(int bytesLength)
         {

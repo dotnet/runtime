@@ -20,7 +20,7 @@ namespace System.Buffers.Text
         private const int MaxStackallocThreshold = 256;
 
         /// <summary>
-        /// Returns the maximum length (in bytes) of the result if you were to decode base 64 encoded text within a byte span of size <paramref name="base64Length"/>.
+        /// Returns the maximum length (in bytes) of the result if you were to decode base 64 encoded text from a span of size <paramref name="base64Length"/>.
         /// </summary>
         /// <exception cref="ArgumentOutOfRangeException">The specified <paramref name="base64Length"/> is less than 0.
         /// </exception>
@@ -133,6 +133,7 @@ namespace System.Buffers.Text
                 throw new FormatException(SR.Format_BadBase64Char);
             }
 
+            Debug.Assert(status is OperationStatus.Done or OperationStatus.DestinationTooSmall);
             return status == OperationStatus.Done;
         }
 
@@ -153,6 +154,7 @@ namespace System.Buffers.Text
                 : (rented = ArrayPool<byte>.Shared.Rent(upperBound));
 
             OperationStatus status = DecodeFromUtf8(source, destination, out _, out int bytesWritten);
+            Debug.Assert(status is OperationStatus.Done or OperationStatus.InvalidData);
             byte[] ret = destination.Slice(0, bytesWritten).ToArray();
 
             if (rented is not null)
@@ -171,7 +173,7 @@ namespace System.Buffers.Text
         /// <param name="charsConsumed">When this method returns, contains the number of input chars consumed during the operation. This can be used to slice the input for subsequent calls, if necessary. This parameter is treated as uninitialized.</param>
         /// <param name="bytesWritten">When this method returns, contains the number of bytes written into the output span. This can be used to slice the output for subsequent calls, if necessary. This parameter is treated as uninitialized.</param>
         /// <param name="isFinalBlock"><see langword="true"/> when the input span contains the entirety of data to encode; <see langword="false"/> when more data may follow,
-        /// such as when calling in a loop, subsequent calls with <see langword="false"/> should end with <see langword="true"/> call. The default is <see langword="true" />.</param>
+        /// such as when calling in a loop. Calls with <see langword="false"/> should be followed up with another call where this parameter is <see langword="true"/> call. The default is <see langword="true" />.</param>
         /// <returns>One of the enumeration values that indicates the success or failure of the operation.</returns>
         /// <remarks>
         /// As padding is optional the <paramref name="source"/> length not required to be a multiple of 4 even if <paramref name="isFinalBlock"/> is <see langword="true"/>.
@@ -278,8 +280,15 @@ namespace System.Buffers.Text
         {
             int padding = 0;
 
-            if (TBase64Decoder.IsValidPadding(ptrToLastElement)) padding++;
-            if (TBase64Decoder.IsValidPadding(Unsafe.Subtract(ref ptrToLastElement, 1))) padding++;
+            if (TBase64Decoder.IsValidPadding(ptrToLastElement))
+            {
+                padding++;
+            }
+
+            if (TBase64Decoder.IsValidPadding(Unsafe.Subtract(ref ptrToLastElement, 1)))
+            {
+                padding++;
+            }
 
             return padding;
         }
@@ -447,7 +456,7 @@ namespace System.Buffers.Text
 
             public static int GetMaxDecodedLength(int utf8Length) => Base64Url.GetMaxDecodedLength(utf8Length);
 
-            public static bool IsInvalidLength(int bufferLength) => bufferLength % 4 == 1; // One byte cannot be decoded completely
+            public static bool IsInvalidLength(int bufferLength) => (bufferLength & 3) == 1; // One byte cannot be decoded completely
 
             public static bool IsValidPadding(uint padChar) => padChar == EncodingPad || padChar == UrlEncodingPad;
 
