@@ -9,7 +9,7 @@ using Mono.Cecil.Cil;
 
 namespace Mono.Linker
 {
-	public sealed class CustomSymbolWriterProvider : ISymbolWriterProvider
+	internal sealed class CustomSymbolWriterProvider : ISymbolWriterProvider
 	{
 		readonly DefaultSymbolWriterProvider _defaultProvider = new DefaultSymbolWriterProvider ();
 		readonly bool _preserveSymbolPaths;
@@ -23,7 +23,7 @@ namespace Mono.Linker
 			=> new CustomSymbolWriter (_defaultProvider.GetSymbolWriter (module, symbolStream), module, _preserveSymbolPaths);
 	}
 
-	public sealed class CustomSymbolWriter : ISymbolWriter
+	internal sealed class CustomSymbolWriter : ISymbolWriter
 	{
 		readonly ISymbolWriter _symbolWriter;
 		readonly ModuleDefinition _module;
