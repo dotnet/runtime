@@ -1038,7 +1038,7 @@ An additional IL keyword, `byreflike`, is introduced to indicate use of ByRefLik
 New sub-section should be added after III.4.33 that describes sequences of IL instructions that can be used on ByRefLike types when using within a generic context.
 
 #### III.4.X
-The following are IL sequences involving the `box` instruction. They are used for on ByRefLike types and shall be valid in cases where the result can be computed at run-time and elided safely, through JIT compilation or interpretation. These sequences must now be elided when the target type is ByRefLike. The conditions where each sequence is elided are described below.
+The following are IL sequences involving the `box` instruction. They can be used on ByRefLike types and shall be valid in cases where the result can be computed at run-time and elided safely&mdash;through JIT compilation or interpretation. These sequences must now be elided when the target type is ByRefLike. The conditions where each sequence is elided are described below.
 
 `box` ; `unbox.any` &ndash; The box target type is equal to the unboxed target type.
 
