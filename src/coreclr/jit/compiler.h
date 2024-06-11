@@ -11112,6 +11112,7 @@ public:
     bool compJitHaltMethod();
 
     void dumpRegMask(regMaskTP regs) const;
+    void dumpRegMask(SingleTypeRegSet regs, var_types type) const;
 
 #endif
 
