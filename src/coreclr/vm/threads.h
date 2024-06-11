@@ -4039,9 +4039,22 @@ struct cdac_offsets<Thread>
 {
     static constexpr size_t Id = offsetof(Thread, m_ThreadId);
     static constexpr size_t OSId = offsetof(Thread, m_OSThreadId);
+    static constexpr size_t State = offsetof(Thread, m_State);
+    static constexpr size_t PreemptiveGCDisabled = offsetof(Thread, m_fPreemptiveGCDisabled);
+    static constexpr size_t AllocContextPointer = offsetof(Thread, m_alloc_context) + offsetof(gc_alloc_context, alloc_ptr);
+    static constexpr size_t AllocContextLimit = offsetof(Thread, m_alloc_context) + offsetof(gc_alloc_context, alloc_limit);
+    static constexpr size_t Frame = offsetof(Thread, m_pFrame);
     static constexpr size_t ExposedObject = offsetof(Thread, m_ExposedObject);
     static constexpr size_t LastThrownObject = offsetof(Thread, m_LastThrownObjectHandle);
     static constexpr size_t Link = offsetof(Thread, m_Link);
+    #ifdef FEATURE_EH_FUNCLETS
+    static constexpr size_t ExceptionTracker = offsetof(Thread, m_ExceptionState) + offsetof(ThreadExceptionState, m_pCurrentTracker);
+    #else
+    static constexpr size_t ExceptionTracker = offsetof(Thread, m_ExceptionState) + offsetof(ThreadExceptionState, m_currentExInfo);
+    #endif
+    #ifndef TARGET_UNIX
+    static constexpr size_t TEB = offsetof(Thread, m_pTEB);
+    #endif
 };
 
 // End of class Thread

@@ -22,6 +22,15 @@ public struct TargetPointer
     public static implicit operator TargetPointer(ulong v) => new TargetPointer(v);
 }
 
+public struct TargetNUInt
+{
+    public ulong Value;
+    public TargetNUInt(ulong value) => Value = value;
+
+    public static implicit operator ulong(TargetNUInt p) => p.Value;
+    public static implicit operator TargetNUInt(ulong v) => new TargetNUInt(v);
+}
+
 /// <summary>
 /// Representation of the target under inspection
 /// </summary>
@@ -266,24 +275,37 @@ public sealed unsafe class Target
         return pointer;
     }
 
+    public TargetNUInt ReadNUInt(ulong address)
+    {
+        if (!TryReadNUInt(address, _config, _reader, out ulong value))
+            throw new InvalidOperationException($"Failed to read nuint at 0x{address:x8}.");
+
+        return new TargetNUInt(value);
+    }
+
     private static bool TryReadPointer(ulong address, Configuration config, Reader reader, out TargetPointer pointer)
     {
         pointer = TargetPointer.Null;
-
-        Span<byte> buffer = stackalloc byte[config.PointerSize];
-        if (reader.ReadFromTarget(address, buffer) < 0)
+        if (!TryReadNUInt(address, config, reader, out ulong value))
             return false;
 
+        pointer = new TargetPointer(value);
+        return true;
+    }
+
+    private static bool TryReadNUInt(ulong address, Configuration config, Reader reader, out ulong value)
+    {
+        value = 0;
         if (config.PointerSize == sizeof(uint)
             && TryRead(address, config.IsLittleEndian, reader, out uint value32))
         {
-            pointer = new TargetPointer(value32);
+            value = value32;
             return true;
         }
         else if (config.PointerSize == sizeof(ulong)
             && TryRead(address, config.IsLittleEndian, reader, out ulong value64))
         {
-            pointer = new TargetPointer(value64);
+            value = value64;
             return true;
         }
 

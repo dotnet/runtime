@@ -107,9 +107,18 @@ CDAC_TYPE_BEGIN(Thread)
 CDAC_TYPE_INDETERMINATE(Thread)
 CDAC_TYPE_FIELD(Thread, /*uint32*/, Id, cdac_offsets<Thread>::Id)
 CDAC_TYPE_FIELD(Thread, /*nuint*/, OSId, cdac_offsets<Thread>::OSId)
+CDAC_TYPE_FIELD(Thread, /*uint32*/, State, cdac_offsets<Thread>::State)
+CDAC_TYPE_FIELD(Thread, /*uint32*/, PreemptiveGCDisabled, cdac_offsets<Thread>::PreemptiveGCDisabled)
+CDAC_TYPE_FIELD(Thread, /*pointer*/, AllocContextPointer, cdac_offsets<Thread>::AllocContextPointer)
+CDAC_TYPE_FIELD(Thread, /*pointer*/, AllocContextLimit, cdac_offsets<Thread>::AllocContextLimit)
+CDAC_TYPE_FIELD(Thread, /*pointer*/, Frame, cdac_offsets<Thread>::Frame)
+CDAC_TYPE_FIELD(Thread, /*pointer*/, ExceptionTracker, cdac_offsets<Thread>::ExceptionTracker)
 CDAC_TYPE_FIELD(Thread, GCHandle, GCHandle, cdac_offsets<Thread>::ExposedObject)
 CDAC_TYPE_FIELD(Thread, GCHandle, LastThrownObject, cdac_offsets<Thread>::LastThrownObject)
 CDAC_TYPE_FIELD(Thread, pointer, LinkNext, cdac_offsets<Thread>::Link)
+#ifndef TARGET_UNIX
+CDAC_TYPE_FIELD(Thread, /*pointer*/, TEB, cdac_offsets<Thread>::TEB)
+#endif
 CDAC_TYPE_END(Thread)
 
 CDAC_TYPE_BEGIN(ThreadStore)
@@ -122,6 +131,15 @@ CDAC_TYPE_FIELD(ThreadStore, /*int32*/, PendingCount, cdac_offsets<ThreadStore>:
 CDAC_TYPE_FIELD(ThreadStore, /*int32*/, DeadCount, cdac_offsets<ThreadStore>::DeadCount)
 CDAC_TYPE_END(ThreadStore)
 
+CDAC_TYPE_BEGIN(ExceptionInfo)
+CDAC_TYPE_INDETERMINATE(ExceptionInfo)
+#if FEATURE_EH_FUNCLETS
+CDAC_TYPE_FIELD(PreviousNestedInfo, /*pointer*/, PreviousNestedInfo, offsetof(ExceptionTrackerBase, m_pPrevNestedInfo))
+#else
+CDAC_TYPE_FIELD(PreviousNestedInfo, /*pointer*/, PreviousNestedInfo, offsetof(ExInfo, m_pPrevNestedInfo))
+#endif
+CDAC_TYPE_END(ExceptionInfo)
+
 CDAC_TYPE_BEGIN(GCHandle)
 CDAC_TYPE_SIZE(sizeof(OBJECTHANDLE))
 CDAC_TYPE_END(GCHandle)
@@ -129,6 +147,7 @@ CDAC_TYPE_END(GCHandle)
 CDAC_TYPES_END()
 
 CDAC_GLOBALS_BEGIN()
+CDAC_GLOBAL_POINTER(AppDomain, &AppDomain::m_pTheAppDomain)
 CDAC_GLOBAL_POINTER(ThreadStore, &ThreadStore::s_pThreadStore)
 CDAC_GLOBAL_POINTER(FinalizerThread, &::g_pFinalizerThread)
 CDAC_GLOBAL_POINTER(GCThread, &::g_pSuspensionThread)

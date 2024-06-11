@@ -2160,10 +2160,10 @@ public:
     }
 #endif
 
-private:
     // The one and only AppDomain
     SPTR_DECL(AppDomain, m_pTheAppDomain);
 
+private:
     SString         m_friendlyName;
     PTR_Assembly    m_pRootAssembly;
 
