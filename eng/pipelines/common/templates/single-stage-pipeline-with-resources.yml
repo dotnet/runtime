@@ -1,0 +1,10 @@
+parameters:
+  - name: jobs
+    type: jobList
+
+extends:
+  template: pipeline-with-resources.yml
+  parameters:
+    stages:
+      - stage: Build
+        jobs: ${{ parameters.jobs }}

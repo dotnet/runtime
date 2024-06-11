@@ -37,9 +37,7 @@ jobs:
       archType: arm
       targetRid: linux-arm
       platform: Linux_arm
-      container:
-        image: ubuntu-16.04-cross-20210719121212-8a8d3be
-        registry: mcr
+      container: Linux_arm
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         stagedBuild: ${{ parameters.stagedBuild }}
@@ -48,7 +46,6 @@ jobs:
           platforms: ${{ parameters.platforms }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         crossBuild: true
-        crossrootfsDir: '/crossrootfs/arm'
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # Linux arm64
@@ -63,9 +60,7 @@ jobs:
       archType: arm64
       targetRid: linux-arm64
       platform: Linux_arm64
-      container:
-        image: ubuntu-16.04-cross-arm64-20210719121212-8a8d3be
-        registry: mcr
+      container: Linux_arm64
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         stagedBuild: ${{ parameters.stagedBuild }}
@@ -74,7 +69,6 @@ jobs:
           platforms: ${{ parameters.platforms }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         crossBuild: true
-        crossrootfsDir: '/crossrootfs/arm64'
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # Linux musl x64
@@ -90,9 +84,7 @@ jobs:
       archType: x64
       targetRid: linux-musl-x64
       platform: Linux_musl_x64
-      container:
-        image: alpine-3.13-WithNode-20210910135845-c401c85
-        registry: mcr
+      container: Linux_musl_x64
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         stagedBuild: ${{ parameters.stagedBuild }}
@@ -115,9 +107,7 @@ jobs:
       archType: arm
       targetRid: linux-musl-arm
       platform: Linux_musl_arm
-      container:
-        image: ubuntu-16.04-cross-arm-alpine-20210719121212-044d5b9
-        registry: mcr
+      container: Linux_musl_arm
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         stagedBuild: ${{ parameters.stagedBuild }}
@@ -126,7 +116,6 @@ jobs:
           platforms: ${{ parameters.platforms }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         crossBuild: true
-        crossrootfsDir: '/crossrootfs/arm'
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # Linux musl arm64
@@ -142,9 +131,7 @@ jobs:
       archType: arm64
       targetRid: linux-musl-arm64
       platform: Linux_musl_arm64
-      container:
-        image: ubuntu-16.04-cross-arm64-alpine-20210719121212-b2c2436
-        registry: mcr
+      container: Linux_musl_arm64
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         stagedBuild: ${{ parameters.stagedBuild }}
@@ -153,7 +140,6 @@ jobs:
           platforms: ${{ parameters.platforms }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         crossBuild: true
-        crossrootfsDir: '/crossrootfs/arm64'
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # Linux x64
@@ -168,9 +154,7 @@ jobs:
       archType: x64
       targetRid: linux-x64
       platform: Linux_x64
-      container:
-        image: centos-7-20210714125435-9b5bbc2
-        registry: mcr
+      container: Linux_x64
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         stagedBuild: ${{ parameters.stagedBuild }}
@@ -192,9 +176,7 @@ jobs:
       archType: x64
       targetRid: linux-x64
       platform: Linux_x64
-      container:
-        image: centos-7-source-build-20210714125450-5d87b80
-        registry: mcr
+      container: SourceBuild_Linux_x64
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         stagedBuild: ${{ parameters.stagedBuild }}
@@ -217,9 +199,7 @@ jobs:
       archType: s390x
       targetRid: linux-s390x
       platform: Linux_s390x
-      container:
-        image: ubuntu-18.04-cross-s390x-20201102145728-d6e0352
-        registry: mcr
+      container: Linux_s390x
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         stagedBuild: ${{ parameters.stagedBuild }}
@@ -228,7 +208,6 @@ jobs:
           platforms: ${{ parameters.platforms }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         crossBuild: true
-        crossrootfsDir: '/crossrootfs/s390x'
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # WebAssembly
@@ -244,9 +223,7 @@ jobs:
       archType: wasm
       targetRid: browser-wasm
       platform: Browser_wasm
-      container:
-        image: ubuntu-18.04-webassembly-20210531091624-f5c7a43
-        registry: mcr
+      container: Browser_wasm
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         stagedBuild: ${{ parameters.stagedBuild }}
@@ -287,15 +264,12 @@ jobs:
       archType: x64
       targetRid: freebsd-x64
       platform: FreeBSD_x64
-      container:
-        image: ubuntu-18.04-cross-freebsd-11-20200407092345-a84b0d2
-        registry: mcr
+      container: FreeBSD_x64
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         crossBuild: true
-        crossrootfsDir: '/crossrootfs/x64'
         ${{ if eq(parameters.passPlatforms, true) }}:
           platforms: ${{ parameters.platforms }}
         ${{ insert }}: ${{ parameters.jobParameters }}
@@ -312,9 +286,7 @@ jobs:
       archType: x64
       targetRid: android-x64
       platform: Android_x64
-      container:
-        image: ubuntu-18.04-android-20200422191843-e2c3f83
-        registry: mcr
+      container: Linux_bionic
       jobParameters:
         runtimeFlavor: mono
         stagedBuild: ${{ parameters.stagedBuild }}
@@ -336,9 +308,7 @@ jobs:
       archType: x86
       targetRid: android-x86
       platform: Android_x86
-      container:
-        image: ubuntu-18.04-android-20200422191843-e2c3f83
-        registry: mcr
+      container: Linux_bionic
       jobParameters:
         runtimeFlavor: mono
         stagedBuild: ${{ parameters.stagedBuild }}
@@ -360,9 +330,7 @@ jobs:
       archType: arm
       targetRid: android-arm
       platform: Android_arm
-      container:
-        image: ubuntu-18.04-android-20200422191843-e2c3f83
-        registry: mcr
+      container: Linux_bionic
       jobParameters:
         runtimeFlavor: mono
         stagedBuild: ${{ parameters.stagedBuild }}
@@ -384,9 +352,7 @@ jobs:
       archType: arm64
       targetRid: android-arm64
       platform: Android_arm64
-      container:
-        image: ubuntu-18.04-android-20200422191843-e2c3f83
-        registry: mcr
+      container: Linux_bionic
       jobParameters:
         runtimeFlavor: mono
         stagedBuild: ${{ parameters.stagedBuild }}
