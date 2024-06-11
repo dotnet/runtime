@@ -106,9 +106,9 @@ public:
     }
 
     // Get a number that uniquely identifies a layout for the specified class handle.
-    unsigned GetObjLayoutNum(Compiler* compiler, CORINFO_CLASS_HANDLE classHandle)
+    unsigned GetObjLayoutNum(Compiler* compiler, CORINFO_CLASS_HANDLE classHandle, bool isBoxedValueClass)
     {
-        return GetObjLayoutIndex(compiler, classHandle) + FirstLayoutNum;
+        return GetObjLayoutIndex(compiler, classHandle, isBoxedValueClass) + FirstLayoutNum;
     }
 
 private:
@@ -385,8 +385,9 @@ ClassLayout* Compiler::typGetObjLayout(CORINFO_CLASS_HANDLE classHandle, bool is
 
 ClassLayout* ClassLayout::Create(Compiler* compiler, CORINFO_CLASS_HANDLE classHandle, bool isBoxedValueClass)
 {
-    bool     isValueClass = compiler->info.compCompHnd->isValueClass(classHandle);
-    unsigned size;
+    bool      isValueClass = compiler->info.compCompHnd->isValueClass(classHandle);
+    unsigned  size;
+    var_types type;
 
     if (isValueClass)
     {
@@ -395,21 +396,26 @@ ClassLayout* ClassLayout::Create(Compiler* compiler, CORINFO_CLASS_HANDLE classH
         if (isBoxedValueClass)
         {
             size += TARGET_POINTER_SIZE;
+            type = TYP_REF;
+        }
+        else
+        {
+            type = compiler->impNormStructType(classHandle);
         }
     }
     else
     {
         assert(!isBoxedValueClass);
         size = compiler->info.compCompHnd->getHeapClassSize(classHandle);
+        type = TYP_REF;
     }
-
-    var_types type = compiler->impNormStructType(classHandle);
 
     INDEBUG(const char* className = compiler->eeGetClassName(classHandle);)
     INDEBUG(const char* shortClassName = compiler->eeGetShortClassName(classHandle);)
 
-    ClassLayout* layout = new (compiler, CMK_ClassLayout)
-        ClassLayout(classHandle, isValueClass, isBoxedValueClass, size DEBUGARG(className));
+    ClassLayout* layout =
+        new (compiler, CMK_ClassLayout) ClassLayout(classHandle, isValueClass, isBoxedValueClass, size,
+                                                    type DEBUGARG(className) DEBUGARG(shortClassName));
     layout->InitializeGCPtrs(compiler);
     return layout;
 }

@@ -21,7 +21,7 @@ class ClassLayout
     // for cpblk/initblk.
     const unsigned m_size;
 
-    const unsigned m_isValueClass : 1;
+    const unsigned m_isValueClass      : 1;
     const unsigned m_isBoxedValueClass : 1;
 
     INDEBUG(unsigned m_gcPtrsInitialized : 1;)
@@ -72,11 +72,9 @@ class ClassLayout
 
     ClassLayout(CORINFO_CLASS_HANDLE classHandle,
                 bool                 isValueClass,
-                unsigned             size,
-    ClassLayout(CORINFO_CLASS_HANDLE classHandle, bool isValueClass, unsigned size DEBUGARG(const char* className))
-                bool                 isValueClass,
                 bool                 isBoxedValueClass,
-                unsigned size DEBUGARG(const char* className))
+                unsigned             size,
+                var_types type       DEBUGARG(const char* className) DEBUGARG(const char* shortClassName))
         : m_classHandle(classHandle)
         , m_size(size)
         , m_isValueClass(isValueClass)

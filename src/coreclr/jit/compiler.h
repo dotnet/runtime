@@ -10679,9 +10679,9 @@ public:
     // Get the number of a layout having the specified size but no class handle.
     unsigned typGetBlkLayoutNum(unsigned blockSize);
     // Get the layout for the specified class handle.
-    ClassLayout* typGetObjLayout(CORINFO_CLASS_HANDLE classHandle);
+    ClassLayout* typGetObjLayout(CORINFO_CLASS_HANDLE classHandle, bool isBoxedValueClass = false);
     // Get the number of a layout for the specified class handle.
-    unsigned typGetObjLayoutNum(CORINFO_CLASS_HANDLE classHandle);
+    unsigned typGetObjLayoutNum(CORINFO_CLASS_HANDLE classHandle, bool isBoxedValueClass = false);
 
     var_types TypeHandleToVarType(CORINFO_CLASS_HANDLE handle, ClassLayout** pLayout = nullptr);
     var_types TypeHandleToVarType(CorInfoType jitType, CORINFO_CLASS_HANDLE handle, ClassLayout** pLayout = nullptr);

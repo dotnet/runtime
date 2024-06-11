@@ -386,9 +386,9 @@ bool ObjectAllocator::MorphAllocObjNodes()
                 //       \--*  CNS_INT(h) long
                 //------------------------------------------------------------------------
 
-                GenTreeAllocObj*     asAllocObj = data->AsAllocObj();
-                unsigned int         lclNum     = stmtExpr->AsLclVar()->GetLclNum();
-                CORINFO_CLASS_HANDLE clsHnd     = data->AsAllocObj()->gtAllocObjClsHnd;
+                GenTreeAllocObj*     asAllocObj   = data->AsAllocObj();
+                unsigned int         lclNum       = stmtExpr->AsLclVar()->GetLclNum();
+                CORINFO_CLASS_HANDLE clsHnd       = data->AsAllocObj()->gtAllocObjClsHnd;
                 const char*          onHeapReason = nullptr;
                 bool                 canStack     = false;
 
@@ -522,12 +522,14 @@ unsigned int ObjectAllocator::MorphAllocObjNodeIntoStackAlloc(GenTreeAllocObj* a
     assert(allocObj != nullptr);
     assert(m_AnalysisDone);
 
-    const bool isValueClass  = comp->info.compCompHnd->isValueClass(allocObj->gtAllocObjClsHnd);
-    const bool shortLifetime = false;
-
-    const unsigned int lclNum = comp->lvaGrabTemp(shortLifetime DEBUGARG(
+    CORINFO_CLASS_HANDLE clsHnd        = allocObj->gtAllocObjClsHnd;
+    const bool           isValueClass  = comp->info.compCompHnd->isValueClass(clsHnd);
+    const bool           shortLifetime = false;
+    const unsigned int   lclNum        = comp->lvaGrabTemp(shortLifetime DEBUGARG(
         isValueClass ? "stack allocated boxed value class temp" : "stack allocated ref class temp"));
-    comp->lvaSetStruct(lclNum, allocObj->gtAllocObjClsHnd, true, false, isValueClass);
+    ClassLayout* const   layout        = comp->typGetObjLayout(clsHnd, isValueClass);
+
+    comp->lvaSetStruct(lclNum, layout, /* unsafeValueClsCheck */ false);
 
     // Initialize the object memory if necessary.
     bool             bbInALoop  = block->HasFlag(BBF_BACKWARD_JUMP);

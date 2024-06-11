@@ -47,7 +47,7 @@ protected:
     virtual PhaseStatus DoPhase() override;
 
 private:
-    bool CanAllocateLclVarOnStack(unsigned int lclNum, CORINFO_CLASS_HANDLE clsHnd, const char** reason);
+    bool         CanAllocateLclVarOnStack(unsigned int lclNum, CORINFO_CLASS_HANDLE clsHnd, const char** reason);
     bool         CanLclVarEscape(unsigned int lclNum);
     void         MarkLclVarAsPossiblyStackPointing(unsigned int lclNum);
     void         MarkLclVarAsDefinitelyStackPointing(unsigned int lclNum);
@@ -123,12 +123,12 @@ inline bool ObjectAllocator::CanAllocateLclVarOnStack(unsigned int         lclNu
     assert(m_AnalysisDone);
 
     bool enableBoxedValueClasses = true;
-    bool enableRefClasses = true;
-    *reason = "[ok]";
+    bool enableRefClasses        = true;
+    *reason                      = "[ok]";
 
 #ifdef DEBUG
     enableBoxedValueClasses = (JitConfig.JitObjectStackAllocationBoxedValueClass() != 0);
-    enableRefClasses = (JitConfig.JitObjectStackAllocationRefClass() != 0);
+    enableRefClasses        = (JitConfig.JitObjectStackAllocationRefClass() != 0);
 #endif
 
     unsigned int classSize = 0;

@@ -3379,21 +3379,11 @@ void Compiler::lvaSetStruct(unsigned varNum, ClassLayout* layout, bool unsafeVal
     {
         varDsc->lvType = TYP_STRUCT;
     }
-
     if (varDsc->GetLayout() == nullptr)
     {
-        ClassLayout* layout = typGetObjLayout(typeHnd);
-
-        if (isBoxedValueClass)
-        {
-            assert(layout->GetSize() > TARGET_POINTER_SIZE);
-        }
-
         varDsc->SetLayout(layout);
 
-        // Boxed value classes are always passed explicitly by ref, and are never simd/hfa.
-        //
-        if (layout->IsValueClass() && !isBoxedValueClass)
+        if (layout->IsValueClass() && !layout->IsBoxedValueClass())
         {
             varDsc->lvType = layout->GetType();
 
@@ -3434,7 +3424,6 @@ void Compiler::lvaSetStruct(unsigned varNum, ClassLayout* layout, bool unsafeVal
     }
     else
     {
-        assert(!isBoxedValueClass);
         assert(ClassLayout::AreCompatible(varDsc->GetLayout(), layout));
         // Inlining could replace a canon struct type with an exact one.
         varDsc->SetLayout(layout);
