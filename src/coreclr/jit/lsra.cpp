@@ -243,7 +243,7 @@ SingleTypeRegSet LinearScan::allRegs(RegisterType rt)
 SingleTypeRegSet LinearScan::allByteRegs()
 {
 #ifdef TARGET_X86
-    return availableIntRegs & RBM_BYTE_REGS;
+    return availableIntRegs & RBM_BYTE_REGS.GetIntRegSet();
 #else
     return availableIntRegs;
 #endif
@@ -265,7 +265,7 @@ SingleTypeRegSet LinearScan::allSIMDRegs()
 SingleTypeRegSet LinearScan::lowSIMDRegs()
 {
 #if defined(TARGET_AMD64)
-    return (availableFloatRegs & RBM_LOWFLOAT);
+    return (availableFloatRegs & RBM_LOWFLOAT.GetFloatRegSet());
 #else
     return availableFloatRegs;
 #endif
@@ -278,7 +278,11 @@ void LinearScan::updateNextFixedRef(RegRecord* regRecord, RefPosition* nextRefPo
     RefPosition* kill = nextKill;
     while ((kill != nullptr) && (kill->nodeLocation < nextLocation))
     {
+#ifdef HAS_MORE_THAN_64_REGISTERS
+        if (kill->killRegisterAssignment.IsRegNumInMask(regRecord->regNum))
+#else
         if ((kill->registerAssignment & genSingleTypeRegMask(regRecord->regNum)) != RBM_NONE)
+#endif
         {
             nextLocation = kill->nodeLocation;
             break;
@@ -449,11 +453,7 @@ SingleTypeRegSet LinearScan::internalFloatRegCandidates()
     }
     else
     {
-#ifdef TARGET_AMD64
         return RBM_FLT_CALLEE_TRASH.GetFloatRegSet();
-#else
-        return RBM_FLT_CALLEE_TRASH;
-#endif // TARGET_AMD64
     }
 }
 
@@ -526,34 +526,32 @@ SingleTypeRegSet LinearScan::getConstrainedRegMask(RefPosition*     refPosition,
 #if defined(TARGET_AMD64)
 #ifdef UNIX_AMD64_ABI
 // On System V the RDI and RSI are not callee saved. Use R12 ans R13 as callee saved registers.
-static const SingleTypeRegSet LsraLimitSmallIntSet =
-    (RBM_EAX | RBM_ECX | RBM_EBX | RBM_ETW_FRAMED_EBP | RBM_R12 | RBM_R13);
+static const regMaskTP LsraLimitSmallIntSet = (RBM_EAX | RBM_ECX | RBM_EBX | RBM_ETW_FRAMED_EBP | RBM_R12 | RBM_R13);
 #else  // !UNIX_AMD64_ABI
 // On Windows Amd64 use the RDI and RSI as callee saved registers.
-static const SingleTypeRegSet LsraLimitSmallIntSet =
-    (RBM_EAX | RBM_ECX | RBM_EBX | RBM_ETW_FRAMED_EBP | RBM_ESI | RBM_EDI);
+static const regMaskTP LsraLimitSmallIntSet = (RBM_EAX | RBM_ECX | RBM_EBX | RBM_ETW_FRAMED_EBP | RBM_ESI | RBM_EDI);
 #endif // !UNIX_AMD64_ABI
-static const SingleTypeRegSet LsraLimitSmallFPSet = (RBM_XMM0 | RBM_XMM1 | RBM_XMM2 | RBM_XMM6 | RBM_XMM7);
-static const SingleTypeRegSet LsraLimitUpperSimdSet =
+static const regMaskTP LsraLimitSmallFPSet = (RBM_XMM0 | RBM_XMM1 | RBM_XMM2 | RBM_XMM6 | RBM_XMM7);
+static const regMaskTP LsraLimitUpperSimdSet =
     (RBM_XMM16 | RBM_XMM17 | RBM_XMM18 | RBM_XMM19 | RBM_XMM20 | RBM_XMM21 | RBM_XMM22 | RBM_XMM23 | RBM_XMM24 |
      RBM_XMM25 | RBM_XMM26 | RBM_XMM27 | RBM_XMM28 | RBM_XMM29 | RBM_XMM30 | RBM_XMM31);
 #elif defined(TARGET_ARM)
 // On ARM, we may need two registers to set up the target register for a virtual call, so we need
 // to have at least the maximum number of arg registers, plus 2.
-static const SingleTypeRegSet LsraLimitSmallIntSet = (RBM_R0 | RBM_R1 | RBM_R2 | RBM_R3 | RBM_R4 | RBM_R5);
-static const SingleTypeRegSet LsraLimitSmallFPSet  = (RBM_F0 | RBM_F1 | RBM_F2 | RBM_F16 | RBM_F17);
+static const regMaskTP LsraLimitSmallIntSet = (RBM_R0 | RBM_R1 | RBM_R2 | RBM_R3 | RBM_R4 | RBM_R5);
+static const regMaskTP LsraLimitSmallFPSet  = (RBM_F0 | RBM_F1 | RBM_F2 | RBM_F16 | RBM_F17);
 #elif defined(TARGET_ARM64)
-static const SingleTypeRegSet LsraLimitSmallIntSet = (RBM_R0 | RBM_R1 | RBM_R2 | RBM_R19 | RBM_R20);
-static const SingleTypeRegSet LsraLimitSmallFPSet  = (RBM_V0 | RBM_V1 | RBM_V2 | RBM_V8 | RBM_V9);
+static const regMaskTP LsraLimitSmallIntSet = (RBM_R0 | RBM_R1 | RBM_R2 | RBM_R19 | RBM_R20);
+static const regMaskTP LsraLimitSmallFPSet  = (RBM_V0 | RBM_V1 | RBM_V2 | RBM_V8 | RBM_V9);
 #elif defined(TARGET_X86)
-static const SingleTypeRegSet LsraLimitSmallIntSet = (RBM_EAX | RBM_ECX | RBM_EDI);
-static const SingleTypeRegSet LsraLimitSmallFPSet  = (RBM_XMM0 | RBM_XMM1 | RBM_XMM2 | RBM_XMM6 | RBM_XMM7);
+static const regMaskTP LsraLimitSmallIntSet = (RBM_EAX | RBM_ECX | RBM_EDI);
+static const regMaskTP LsraLimitSmallFPSet  = (RBM_XMM0 | RBM_XMM1 | RBM_XMM2 | RBM_XMM6 | RBM_XMM7);
 #elif defined(TARGET_LOONGARCH64)
-static const SingleTypeRegSet LsraLimitSmallIntSet = (RBM_T1 | RBM_T3 | RBM_A0 | RBM_A1 | RBM_T0);
-static const SingleTypeRegSet LsraLimitSmallFPSet  = (RBM_F0 | RBM_F1 | RBM_F2 | RBM_F8 | RBM_F9);
+static const regMaskTP LsraLimitSmallIntSet = (RBM_T1 | RBM_T3 | RBM_A0 | RBM_A1 | RBM_T0);
+static const regMaskTP LsraLimitSmallFPSet  = (RBM_F0 | RBM_F1 | RBM_F2 | RBM_F8 | RBM_F9);
 #elif defined(TARGET_RISCV64)
-static const SingleTypeRegSet LsraLimitSmallIntSet = (RBM_T1 | RBM_T3 | RBM_A0 | RBM_A1 | RBM_T0);
-static const SingleTypeRegSet LsraLimitSmallFPSet  = (RBM_F0 | RBM_F1 | RBM_F2 | RBM_F8 | RBM_F9);
+static const regMaskTP LsraLimitSmallIntSet = (RBM_T1 | RBM_T3 | RBM_A0 | RBM_A1 | RBM_T0);
+static const regMaskTP LsraLimitSmallFPSet  = (RBM_F0 | RBM_F1 | RBM_F2 | RBM_F8 | RBM_F9);
 #else
 #error Unsupported or unset target architecture
 #endif // target
@@ -596,29 +594,28 @@ SingleTypeRegSet LinearScan::stressLimitRegs(RefPosition* refPosition, RegisterT
             case LSRA_LIMIT_CALLEE:
                 if (!compiler->opts.compDbgEnC)
                 {
-                    mask = getConstrainedRegMask(refPosition, regType, mask, RBM_CALLEE_SAVED, minRegCount);
+                    mask = getConstrainedRegMask(refPosition, regType, mask, RBM_CALLEE_SAVED.GetRegSetForType(regType),
+                                                 minRegCount);
                 }
                 break;
 
             case LSRA_LIMIT_CALLER:
             {
-#ifdef TARGET_XARCH
                 mask = getConstrainedRegMask(refPosition, regType, mask, RBM_CALLEE_TRASH.GetRegSetForType(regType),
                                              minRegCount);
-#else
-                mask = getConstrainedRegMask(refPosition, regType, mask, RBM_CALLEE_TRASH, minRegCount);
-#endif // TARGET_AMD64
             }
             break;
 
             case LSRA_LIMIT_SMALL_SET:
                 if ((mask & LsraLimitSmallIntSet) != RBM_NONE)
                 {
-                    mask = getConstrainedRegMask(refPosition, regType, mask, LsraLimitSmallIntSet, minRegCount);
+                    mask = getConstrainedRegMask(refPosition, regType, mask,
+                                                 LsraLimitSmallIntSet.GetRegSetForType(regType), minRegCount);
                 }
                 else if ((mask & LsraLimitSmallFPSet) != RBM_NONE)
                 {
-                    mask = getConstrainedRegMask(refPosition, regType, mask, LsraLimitSmallFPSet, minRegCount);
+                    mask = getConstrainedRegMask(refPosition, regType, mask,
+                                                 LsraLimitSmallFPSet.GetRegSetForType(regType), minRegCount);
                 }
                 break;
 
@@ -626,7 +623,8 @@ SingleTypeRegSet LinearScan::stressLimitRegs(RefPosition* refPosition, RegisterT
             case LSRA_LIMIT_UPPER_SIMD_SET:
                 if ((mask & LsraLimitUpperSimdSet) != RBM_NONE)
                 {
-                    mask = getConstrainedRegMask(refPosition, regType, mask, LsraLimitUpperSimdSet, minRegCount);
+                    mask = getConstrainedRegMask(refPosition, regType, mask,
+                                                 LsraLimitUpperSimdSet.GetRegSetForType(regType), minRegCount);
                 }
                 break;
 #endif
@@ -847,29 +845,28 @@ LinearScan::LinearScan(Compiler* theCompiler)
     // Note: one known reason why we exclude LR is because NativeAOT has dependency on not
     //       using LR as a GPR. See: https://github.com/dotnet/runtime/issues/101932
     //       Once that is addressed, we may consider allowing LR in availableIntRegs.
-    availableIntRegs = ((RBM_ALLINT & ~(RBM_PR | RBM_FP | RBM_LR) & ~compiler->codeGen->regSet.rsMaskResvd.getLow()));
+    availableIntRegs =
+        (RBM_ALLINT & ~(RBM_PR | RBM_FP | RBM_LR) & ~compiler->codeGen->regSet.rsMaskResvd).GetIntRegSet();
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    availableIntRegs = (RBM_ALLINT & ~(RBM_FP | RBM_RA) & ~compiler->codeGen->regSet.rsMaskResvd.getLow());
+    availableIntRegs = (RBM_ALLINT & ~(RBM_FP | RBM_RA) & ~compiler->codeGen->regSet.rsMaskResvd).GetIntRegSet();
 #else
-    availableIntRegs = (RBM_ALLINT & ~compiler->codeGen->regSet.rsMaskResvd.getLow());
+    availableIntRegs = (RBM_ALLINT & ~compiler->codeGen->regSet.rsMaskResvd).GetIntRegSet();
 #endif
 
 #if ETW_EBP_FRAMED
-    availableIntRegs &= ~RBM_FPBASE;
+    availableIntRegs &= ~RBM_FPBASE.GetIntRegSet();
 #endif // ETW_EBP_FRAMED
 
 #ifdef TARGET_AMD64
     availableFloatRegs  = RBM_ALLFLOAT.GetFloatRegSet();
     availableDoubleRegs = RBM_ALLDOUBLE.GetFloatRegSet();
 #else
-    availableFloatRegs  = RBM_ALLFLOAT;
-    availableDoubleRegs = RBM_ALLDOUBLE;
+    availableFloatRegs  = RBM_ALLFLOAT.GetFloatRegSet();
+    availableDoubleRegs = RBM_ALLDOUBLE.GetFloatRegSet();
 #endif
 
-#if defined(TARGET_XARCH)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
     availableMaskRegs = RBM_ALLMASK.GetPredicateRegSet();
-#elif defined(TARGET_ARM64)
-    availableMaskRegs = RBM_ALLMASK;
 #endif
 
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64)
@@ -877,9 +874,14 @@ LinearScan::LinearScan(Compiler* theCompiler)
     {
         // When the EnC option is set we have an exact set of registers that we always save
         // that are also available in future versions.
-        availableIntRegs &= ~RBM_INT_CALLEE_SAVED | RBM_ENC_CALLEE_SAVED;
+        availableIntRegs &= (~RBM_INT_CALLEE_SAVED | RBM_ENC_CALLEE_SAVED).GetIntRegSet();
+#if defined(UNIX_AMD64_ABI)
         availableFloatRegs &= ~RBM_FLT_CALLEE_SAVED;
         availableDoubleRegs &= ~RBM_FLT_CALLEE_SAVED;
+#else
+        availableFloatRegs &= ~RBM_FLT_CALLEE_SAVED.GetFloatRegSet();
+        availableDoubleRegs &= ~RBM_FLT_CALLEE_SAVED.GetFloatRegSet();
+#endif // UNIX_AMD64_ABI
 #if defined(TARGET_XARCH)
         availableMaskRegs &= ~RBM_MSK_CALLEE_SAVED;
 #endif // TARGET_XARCH
@@ -889,8 +891,8 @@ LinearScan::LinearScan(Compiler* theCompiler)
 #if defined(TARGET_AMD64)
     if (compiler->canUseEvexEncoding())
     {
-        availableFloatRegs |= RBM_HIGHFLOAT;
-        availableDoubleRegs |= RBM_HIGHFLOAT;
+        availableFloatRegs |= RBM_HIGHFLOAT.GetFloatRegSet();
+        availableDoubleRegs |= RBM_HIGHFLOAT.GetFloatRegSet();
     }
 #endif
 
@@ -2813,7 +2815,7 @@ void LinearScan::setFrameType()
     SingleTypeRegSet removeMask = RBM_NONE;
     if (frameType == FT_EBP_FRAME)
     {
-        removeMask |= RBM_FPBASE;
+        removeMask |= RBM_FPBASE.GetIntRegSet();
     }
 
     compiler->rpFrameType = frameType;
@@ -2826,7 +2828,7 @@ void LinearScan::setFrameType()
         compiler->codeGen->regSet.rsMaskResvd |= RBM_OPT_RSVD;
         assert(REG_OPT_RSVD != REG_FP);
         JITDUMP("  Reserved REG_OPT_RSVD (%s) due to large frame\n", getRegName(REG_OPT_RSVD));
-        removeMask |= RBM_OPT_RSVD;
+        removeMask |= RBM_OPT_RSVD.GetIntRegSet();
     }
 #endif // TARGET_ARMARCH || TARGET_RISCV64
 
@@ -4039,7 +4041,7 @@ void LinearScan::processKills(RefPosition* killRefPosition)
 {
     RefPosition* nextKill = killRefPosition->nextRefPosition;
 
-    regMaskTP killedRegs = killRefPosition->registerAssignment;
+    regMaskTP killedRegs = killRefPosition->getKillRegisterAssignment();
     while (killedRegs.IsNonEmpty())
     {
         regNumber  killedReg        = genFirstRegNumFromMaskAndToggle(killedRegs);
@@ -4059,9 +4061,9 @@ void LinearScan::processKills(RefPosition* killRefPosition)
         updateNextFixedRef(regRecord, regNextRefPos, nextKill);
     }
 
-    regsBusyUntilKill &= ~killRefPosition->registerAssignment;
+    regsBusyUntilKill &= ~killRefPosition->getKillRegisterAssignment();
     INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_KILL_REGS, nullptr, REG_NA, nullptr, NONE,
-                                    killRefPosition->registerAssignment));
+                                    killRefPosition->getKillRegisterAssignment()));
 }
 
 //------------------------------------------------------------------------
@@ -8811,7 +8813,7 @@ regNumber LinearScan::getTempRegForResolution(BasicBlock*      fromBlock,
     {
         // Exclude any doubles for which the odd half isn't in freeRegs,
         // and restrict down to just the even part of the even/odd pair.
-        freeRegs &= (freeRegs & RBM_ALLDOUBLE_HIGH) >> 1;
+        freeRegs &= (freeRegs & RBM_ALLDOUBLE_HIGH.GetFloatRegSet()) >> 1;
     }
 #endif
 
@@ -8822,13 +8824,9 @@ regNumber LinearScan::getTempRegForResolution(BasicBlock*      fromBlock,
     else
     {
         // Prefer a callee-trashed register if possible to prevent new prolog/epilog saves/restores.
-        if ((freeRegs & RBM_CALLEE_TRASH) != 0)
+        if ((freeRegs & RBM_CALLEE_TRASH.GetRegSetForType(type)) != 0)
         {
-#ifdef TARGET_XARCH
             freeRegs &= RBM_CALLEE_TRASH.GetRegSetForType(type);
-#else
-            freeRegs &= RBM_CALLEE_TRASH;
-#endif
         }
 
         regNumber tempReg = genRegNumFromMask(genFindLowestBit(freeRegs), type);
@@ -13595,7 +13593,7 @@ SingleTypeRegSet LinearScan::RegisterSelection::select(Interval*                
         // clause below creates a mask to do this.
         if (currentInterval->registerType == TYP_DOUBLE)
         {
-            candidates &= ~((busyRegs & RBM_ALLDOUBLE_HIGH) >> 1);
+            candidates &= ~((busyRegs & RBM_ALLDOUBLE_HIGH.GetFloatRegSet()) >> 1);
         }
 #endif // TARGET_ARM
 
@@ -13918,7 +13916,7 @@ SingleTypeRegSet LinearScan::RegisterSelection::selectMinimal(
     // clause below creates a mask to do this.
     if (currentInterval->registerType == TYP_DOUBLE)
     {
-        candidates &= ~((busyRegs & RBM_ALLDOUBLE_HIGH) >> 1);
+        candidates &= ~((busyRegs & RBM_ALLDOUBLE_HIGH.GetFloatRegSet()) >> 1);
     }
 #endif // TARGET_ARM
 

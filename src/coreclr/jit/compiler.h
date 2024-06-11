@@ -8317,14 +8317,14 @@ public:
             return reg;
         }
 
-        _regMask_enum GetRegMask() const
+        regMaskTP GetRegMask() const
         {
             return regMask;
         }
 
     private:
-        regNumber     reg;
-        _regMask_enum regMask;
+        regNumber reg;
+        regMaskTP regMask;
     };
 
     VirtualStubParamInfo* virtualStubParamInfo;
@@ -9943,7 +9943,8 @@ public:
             // On these platforms we assume the register that the target is
             // passed in is preserved by the validator and take care to get the
             // target from the register for the call (even in debug mode).
-            static_assert_no_msg((RBM_VALIDATE_INDIRECT_CALL_TRASH & (1 << REG_VALIDATE_INDIRECT_CALL_ADDR)) == 0);
+            static_assert_no_msg((RBM_VALIDATE_INDIRECT_CALL_TRASH & regMaskTP(1 << REG_VALIDATE_INDIRECT_CALL_ADDR)) ==
+                                 RBM_NONE);
             if (JitConfig.JitForceControlFlowGuard())
                 return true;
 
