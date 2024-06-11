@@ -138,7 +138,7 @@ namespace System.Globalization.Tests
             yield return new object[] { new CultureInfo("en-ZM").DateTimeFormat, "h:mm tt" };
             yield return new object[] { new CultureInfo("en-ZW").DateTimeFormat, "HH:mm" };
             yield return new object[] { new CultureInfo("en-US").DateTimeFormat, "h:mm tt" };
-            string latinAmericanSpanishPattern = PlatformDetection.IsFirefox ? "HH:mm" : "h:mm tt"; // "HH:mm"
+            string latinAmericanSpanishPattern = PlatformDetection.IsFirefox || PlatformDetection.IsNodeJS ? "HH:mm" : "h:mm tt"; // "HH:mm"
             yield return new object[] { new CultureInfo("es-419").DateTimeFormat, latinAmericanSpanishPattern };
             yield return new object[] { new CultureInfo("es-ES").DateTimeFormat, "H:mm" };
             yield return new object[] { new CultureInfo("es-MX").DateTimeFormat, latinAmericanSpanishPattern };

@@ -96,7 +96,7 @@ public:
         if(sz)
         {
             wzUniBuf[0] = 0;
-            WszMultiByteToWideChar(g_uCodePage,0,sz,-1,wzUniBuf,dwUniBuf);
+            MultiByteToWideChar(g_uCodePage,0,sz,-1,wzUniBuf,dwUniBuf);
             return FindTyPar(wzUniBuf);
         }
         else return -1;

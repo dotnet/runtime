@@ -7865,7 +7865,6 @@ extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptio
         if (targetSSP != 0)
         {
             targetSSP -= sizeof(size_t);
-            _wrssq(pvRegDisplay->pCurrentContext->Rip, (void*)targetSSP);
         }
 #endif // HOST_WINDOWS
 #elif defined(HOST_X86)

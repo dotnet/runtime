@@ -2611,6 +2611,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx.PlatformNotSupported.cs" Condition="'$(FeatureMono)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx2.cs" Condition="'$(FeatureMono)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx2.PlatformNotSupported.cs" Condition="'$(FeatureMono)' == 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx10v1.cs" Condition="'$(FeatureMono)' != 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx10v1.PlatformNotSupported.cs" Condition="'$(FeatureMono)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx512BW.cs" Condition="'$(FeatureMono)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx512BW.PlatformNotSupported.cs" Condition="'$(FeatureMono)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx512CD.cs" Condition="'$(FeatureMono)' != 'true'" />
@@ -2648,6 +2650,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx512CD.PlatformNotSupported.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx512DQ.PlatformNotSupported.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx512F.PlatformNotSupported.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx10v1.PlatformNotSupported.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx512Vbmi.PlatformNotSupported.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\AvxVnni.PlatformNotSupported.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Bmi1.PlatformNotSupported.cs" />

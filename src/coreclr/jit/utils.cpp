@@ -1858,11 +1858,11 @@ AssemblyNamesList2::AssemblyNamesList2(const WCHAR* list, HostAllocator alloc)
 
                 // How much space do we need?
                 int convertedNameLenBytes =
-                    WszWideCharToMultiByte(CP_UTF8, 0, nameStart, -1, nullptr, 0, nullptr, nullptr);
+                    WideCharToMultiByte(CP_UTF8, 0, nameStart, -1, nullptr, 0, nullptr, nullptr);
                 newName->m_assemblyName = new (m_alloc) char[convertedNameLenBytes]; // convertedNameLenBytes includes
                                                                                      // the trailing null character
-                if (WszWideCharToMultiByte(CP_UTF8, 0, nameStart, -1, newName->m_assemblyName, convertedNameLenBytes,
-                                           nullptr, nullptr) != 0)
+                if (WideCharToMultiByte(CP_UTF8, 0, nameStart, -1, newName->m_assemblyName, convertedNameLenBytes,
+                                        nullptr, nullptr) != 0)
                 {
                     *ppPrevLink = newName;
                     ppPrevLink  = &newName->m_next;

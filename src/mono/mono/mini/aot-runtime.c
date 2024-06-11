@@ -3417,8 +3417,8 @@ decode_exception_debug_info (MonoAotModule *amodule,
 			jit_mm_lock (jit_mm);
 			/* This could be set already since this function can be called more than once for the same method */
 			MonoSeqPointInfo *existing_seq_points = NULL;
-			if (!g_hash_table_lookup_extended (jit_mm->seq_points, method, NULL, (gpointer *)&existing_seq_points)) {
-				g_hash_table_insert (jit_mm->seq_points, method, seq_points);
+			if (!dn_simdhash_ght_try_get_value (jit_mm->seq_points, method, (void **)&existing_seq_points)) {
+				dn_simdhash_ght_insert (jit_mm->seq_points, method, seq_points);
 			} else {
 				mono_seq_point_info_free (seq_points);
 				seq_points = existing_seq_points;

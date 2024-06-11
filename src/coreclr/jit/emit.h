@@ -1921,6 +1921,7 @@ protected:
 #define PERFSCORE_LATENCY_26C  26.0f
 #define PERFSCORE_LATENCY_62C  62.0f
 #define PERFSCORE_LATENCY_69C  69.0f
+#define PERFSCORE_LATENCY_105C 105.0f
 #define PERFSCORE_LATENCY_140C 140.0f
 #define PERFSCORE_LATENCY_400C 400.0f // Intel microcode issue with these instructions
 
