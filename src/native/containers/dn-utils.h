@@ -7,13 +7,13 @@
 #ifdef __cplusplus
 #ifndef __STDC_LIMIT_MACROS
 #define __STDC_LIMIT_MACROS
-#define EXTERN_C_BEGIN() extern "C" {
-#define EXTERN_C_END() }
+#define DN_UTILS_EXTERN_C_BEGIN() extern "C" {
+#define DN_UTILS_EXTERN_C_END() }
 #endif
 #else
 #include <stdbool.h>
-#define EXTERN_C_BEGIN()
-#define EXTERN_C_END()
+#define DN_UTILS_EXTERN_C_BEGIN()
+#define DN_UTILS_EXTERN_C_END()
 #endif
 
 #include <stddef.h>
