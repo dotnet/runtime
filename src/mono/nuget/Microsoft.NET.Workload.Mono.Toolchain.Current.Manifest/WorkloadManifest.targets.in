@@ -104,7 +104,7 @@
 
   <ImportGroup Condition="'$(TargetsCurrent)' == 'true' and '$(TargetPlatformIdentifier)' == 'macOS'">
     <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk.${NetVersion}" />
-    <Import Project="Sdk.targets" Sdk="Microsoft.NET.Runtime.MonoTargets..${NetVersion}" />
+    <Import Project="Sdk.targets" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk.${NetVersion}" />
   </ImportGroup>
 
   <ImportGroup Condition="'$(TargetsCurrent)' == 'true' and ('$(TargetPlatformIdentifier)' == 'ios' or '$(_IsiOSLibraryMode)' == 'true')">

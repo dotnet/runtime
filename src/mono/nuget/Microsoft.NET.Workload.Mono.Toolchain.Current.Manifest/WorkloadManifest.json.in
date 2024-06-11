@@ -84,7 +84,7 @@
       "packs": [
         "Microsoft.NETCore.App.Runtime.Mono.${NetVersion}.ios-arm64",
         "Microsoft.NETCore.App.Runtime.Mono.${NetVersion}.iossimulator-arm64",
-        "Microsoft.NETCore.App.Runtime..${NetVersion}.iossimulator-x64"
+        "Microsoft.NETCore.App.Runtime.Mono.${NetVersion}.iossimulator-x64"
       ],
       "extends": [ "microsoft-net-runtime-mono-tooling" ],
       "platforms": [ "win-x64", "win-arm64", "osx-arm64", "osx-x64" ]
@@ -239,7 +239,7 @@
           "any": "Microsoft.NETCore.App.Runtime.Mono.android-x86"
       }
     },
-    "Microsoft.NETCore.App.Runtime.AOT.${NetVersion}.Cross.android-x86": {
+    "Microsoft.NETCore.App.Runtime.AOT.Cross.${NetVersion}.android-x86": {
       "kind": "Sdk",
       "version": "${PackageVersion}",
       "alias-to": {
