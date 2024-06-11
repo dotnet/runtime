@@ -1018,9 +1018,11 @@ public:
 
     // We store a pointer to this thread's alloc context here for easier introspection
     // from other threads and diagnostic tools
-    gc_alloc_context* const        m_alloc_context = &t_thread_alloc_context;
+    gc_alloc_context*        m_alloc_context;
 
 public:
+    inline void InitAllocContext() { LIMITED_METHOD_CONTRACT; m_alloc_context = &t_thread_alloc_context; }
+
     inline gc_alloc_context *GetAllocContext() { LIMITED_METHOD_CONTRACT; return m_alloc_context; }
 
     // This is the type handle of the first object in the alloc context at the time

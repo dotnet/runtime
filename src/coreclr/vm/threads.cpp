@@ -371,6 +371,7 @@ void SetThread(Thread* t)
     if (t != NULL)
     {
         EnsureTlsDestructionMonitor();
+        t->InitAllocContext();
     }
 
     // Clear or set the app domain to the one domain based on if the thread is being nulled out or set
@@ -1411,6 +1412,7 @@ Thread::Thread()
 
     m_pBlockingLock = NULL;
 
+    m_alloc_context = nullptr;
     m_thAllocContextObj = 0;
 
     m_UserInterrupt = 0;
@@ -2875,9 +2877,9 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
             GCX_COOP();
             // GetTotalAllocatedBytes reads dead_threads_non_alloc_bytes, but will suspend EE, being in COOP mode we cannot race with that
             // however, there could be other threads terminating and doing the same Add.
-            InterlockedExchangeAdd64((LONG64*)&dead_threads_non_alloc_bytes, t_thread_alloc_context.alloc_limit - t_thread_alloc_context.alloc_ptr);
-            GCHeapUtilities::GetGCHeap()->FixAllocContext(&t_thread_alloc_context, NULL, NULL);
-            t_thread_alloc_context = { 0 }; // re-zero-initialize the context.
+            InterlockedExchangeAdd64((LONG64*)&dead_threads_non_alloc_bytes, GetAllocContext()->alloc_limit - GetAllocContext()->alloc_ptr);
+            GCHeapUtilities::GetGCHeap()->FixAllocContext(GetAllocContext(), NULL, NULL);
+            *GetAllocContext() = { }; // re-zero-initialize the context.
         }
     }
 
@@ -2933,9 +2935,9 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
         {
             // We must be holding the ThreadStore lock in order to clean up alloc context.
             // We should never call FixAllocContext during GC.
-            dead_threads_non_alloc_bytes += t_thread_alloc_context.alloc_limit - t_thread_alloc_context.alloc_ptr;
-            GCHeapUtilities::GetGCHeap()->FixAllocContext(&t_thread_alloc_context, NULL, NULL);
-            t_thread_alloc_context = { 0 }; // re-zero-initialize the context.
+            dead_threads_non_alloc_bytes += GetAllocContext()->alloc_limit - GetAllocContext()->alloc_ptr;
+            GCHeapUtilities::GetGCHeap()->FixAllocContext(GetAllocContext(), NULL, NULL);
+            *GetAllocContext() = { }; // re-zero-initialize the context.
         }
 
         SetThreadState(TS_Dead);

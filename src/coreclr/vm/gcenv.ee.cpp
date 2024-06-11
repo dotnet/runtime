@@ -292,7 +292,7 @@ void GCToEEInterface::GcScanRoots(promote_func* fn, int condemned, int max_gen, 
     while ((pThread = ThreadStore::GetThreadList(pThread)) != NULL)
     {
         if (GCHeapUtilities::GetGCHeap()->IsThreadUsingAllocationContextHeap(
-            &t_thread_alloc_context, sc->thread_number))
+            pThread->GetAllocContext(), sc->thread_number))
         {
             STRESS_LOG2(LF_GC | LF_GCROOTS, LL_INFO100, "{ Starting scan of Thread %p ID = %x\n", pThread, pThread->GetThreadId());
 
