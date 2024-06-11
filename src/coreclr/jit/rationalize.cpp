@@ -38,7 +38,7 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
     BlockRange().Remove(treeFirstNode, tree);
 
     // Create the call node
-    GenTreeCall* call = comp->gtNewCallNode(CT_USER_FUNC, callHnd, tree->gtType);
+    GenTreeCall* call = comp->gtNewCallNode(CT_USER_FUNC, callHnd, tree->TypeGet());
 
     assert(sig != nullptr);
     var_types retType = JITtype2varType(sig->retType);
@@ -99,6 +99,23 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
             // for intrinsics that get rewritten back to user calls
             assert(!operand->OperIsFieldList());
 
+            if (varTypeIsMask(operand->TypeGet()))
+            {
+#if defined(FEATURE_HW_INTRINSICS)
+                // No managed call takes TYP_MASK, so convert it back to a TYP_SIMD
+
+                unsigned    simdSize;
+                CorInfoType simdBaseJitType = comp->getBaseJitTypeAndSizeOfSIMDType(call->gtRetClsHnd, &simdSize);
+                assert(simdSize != 0);
+
+                GenTree* cvtNode = comp->gtNewSimdCvtMaskToVectorNode(sigTyp, operand, simdBaseJitType, simdSize);
+                BlockRange().InsertAfter(operand, LIR::Range(comp->fgSetTreeSeq(cvtNode), cvtNode));
+                operand = cvtNode;
+#else
+                unreached();
+#endif // FEATURE_HW_INTRINSICS
+            }
+
             sigTyp = comp->impNormStructType(clsHnd);
             arg    = NewCallArg::Struct(operand, sigTyp, clsHnd);
         }
@@ -140,9 +157,33 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
     // Replace "tree" with "call"
     if (parents.Height() > 1)
     {
+        GenTree* tmpInsertionPoint = insertionPoint;
+
         if (tmpNum != BAD_VAR_NUM)
         {
             result = comp->gtNewLclvNode(tmpNum, retType);
+        }
+
+        if (varTypeIsMask(tree->TypeGet()))
+        {
+#if defined(FEATURE_HW_INTRINSICS)
+            // No managed call returns TYP_MASK, so convert it from a TYP_SIMD
+
+            var_types simdType = tree->TypeGet();
+            assert(varTypeIsSIMD(simdType));
+
+            unsigned    simdSize;
+            CorInfoType simdBaseJitType = comp->getBaseJitTypeAndSizeOfSIMDType(call->gtRetClsHnd, &simdSize);
+            assert(simdSize != 0);
+
+            GenTree* cvtNode = comp->gtNewSimdCvtVectorToMaskNode(simdType, result, simdBaseJitType, simdSize);
+            BlockRange().InsertAfter(insertionPoint, LIR::Range(comp->fgSetTreeSeq(cvtNode), cvtNode));
+            result = cvtNode;
+
+            tmpInsertionPoint = result;
+#else
+            unreached();
+#endif // FEATURE_HW_INTRINSICS
         }
 
         parents.Top(1)->ReplaceOperand(use, result);
@@ -150,7 +191,7 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
         if (tmpNum != BAD_VAR_NUM)
         {
             comp->gtSetEvalOrder(result);
-            BlockRange().InsertAfter(insertionPoint, LIR::Range(comp->fgSetTreeSeq(result), result));
+            BlockRange().InsertAfter(tmpInsertionPoint, LIR::Range(comp->fgSetTreeSeq(result), result));
         }
     }
     else

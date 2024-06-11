@@ -1657,15 +1657,14 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
             // HWInstrinsic requires a mask for op2
             if (!varTypeIsMask(op2))
             {
-                retNode->AsHWIntrinsic()->Op(2) =
-                    gtNewSimdConvertVectorToMaskNode(retType, op2, simdBaseJitType, simdSize);
+                retNode->AsHWIntrinsic()->Op(2) = gtNewSimdCvtVectorToMaskNode(retType, op2, simdBaseJitType, simdSize);
             }
         }
 
         if (!varTypeIsMask(op1))
         {
             // Op1 input is a vector. HWInstrinsic requires a mask.
-            retNode->AsHWIntrinsic()->Op(1) = gtNewSimdConvertVectorToMaskNode(retType, op1, simdBaseJitType, simdSize);
+            retNode->AsHWIntrinsic()->Op(1) = gtNewSimdCvtVectorToMaskNode(retType, op1, simdBaseJitType, simdSize);
         }
 
         if (HWIntrinsicInfo::IsMultiReg(intrinsic))
@@ -1682,7 +1681,13 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         // HWInstrinsic returns a mask, but all returns must be vectors, so convert mask to vector.
         assert(HWIntrinsicInfo::ReturnsPerElementMask(intrinsic));
         assert(nodeRetType == TYP_MASK);
-        retNode = gtNewSimdConvertMaskToVectorNode(retNode->AsHWIntrinsic(), retType);
+
+        GenTreeHWIntrinsic* op = retNode->AsHWIntrinsic();
+
+        CorInfoType simdBaseJitType = op->GetSimdBaseJitType();
+        unsigned    simdSize        = op->GetSimdSize();
+
+        retNode = gtNewSimdCvtMaskToVectorNode(retType, op, simdBaseJitType, simdSize);
     }
 #endif // defined(TARGET_ARM64)
 
