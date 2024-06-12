@@ -339,6 +339,7 @@ public:
     //
     void OnExposed(unsigned lclNum)
     {
+        JITDUMP("On exposed: V%02u\n", lclNum);
         BitVecTraits localsTraits(m_comp->lvaCount, m_comp);
         BitVecOps::AddElemD(&localsTraits, m_localsToExpose, lclNum);
     }
@@ -1057,6 +1058,22 @@ public:
                     PopValue();
                 }
 
+                break;
+            }
+
+            case GT_NULLCHECK:
+            {
+                assert(TopValue(1).Node() == node);
+                assert(TopValue(0).Node() == node->AsOp()->gtOp1);
+                Value& op = TopValue(0);
+                if (op.IsAddress())
+                {
+                    JITDUMP("Bashing nullcheck of local [%06u] to NOP\n", m_compiler->dspTreeID(node));
+                    node->gtBashToNOP();
+                    m_stmtModified = true;
+                }
+                INDEBUG(TopValue(0).Consume());
+                PopValue();
                 break;
             }
 
