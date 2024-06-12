@@ -125,6 +125,7 @@ namespace System.Security.Cryptography.Tests
 
         [Theory]
         [MemberData(nameof(GetHMACs))]
+        [SkipOnPlatform(TestPlatforms.Android, "Android doesn't support cloning the current state for HMAC, so it doesn't support Clone.")]
         public static void Verify_Clone_HMAC(HMAC referenceAlgorithm, HashAlgorithmName hashAlgorithmName)
         {
             referenceAlgorithm.Key = s_hmacKey;

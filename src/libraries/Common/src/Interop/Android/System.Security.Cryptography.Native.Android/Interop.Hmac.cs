@@ -31,7 +31,7 @@ internal static partial class Interop
         [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "CryptoNative_HmacOneShot")]
         private static unsafe partial int HmacOneShot(IntPtr type, byte* key, int keySize, byte* source, int sourceSize, byte* md, ref int mdSize);
 
-        internal static SafeHmacCtxHandle HmacCopy(SafeHmacCtxHandle ctx) => throw new NotImplementedException("TODO");
+        internal static SafeHmacCtxHandle HmacCopy(SafeHmacCtxHandle ctx) => throw new PlatformNotSupportedException();
 
         internal static unsafe int HmacOneShot(IntPtr type, ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, Span<byte> destination)
         {
