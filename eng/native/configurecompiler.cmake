@@ -155,6 +155,8 @@ endif(MSVC)
 
 check_ipo_supported(RESULT result OUTPUT output)
 if(result AND NOT CLR_CMAKE_TARGET_APPLE)
+  # Apple does not properly support IPO and need more involved
+  # way on how to support this. For now, disable it for Apple.
   set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
   set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_DEBUG OFF)
   set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_CHECKED OFF)
