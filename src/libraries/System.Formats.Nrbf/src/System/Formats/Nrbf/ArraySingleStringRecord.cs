@@ -24,7 +24,7 @@ internal sealed class ArraySingleStringRecord : SZArrayRecord<string?>
 
     /// <inheritdoc />
     public override TypeName TypeName
-        => s_typeName ??= TypeName.Parse("System.String[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089".AsSpan());
+        => s_typeName ??= TypeName.Parse(("System.String[], " + TypeNameExtensions.CoreLibAssemblyName).AsSpan());
 
     private List<SerializationRecord> Records { get; }
 
