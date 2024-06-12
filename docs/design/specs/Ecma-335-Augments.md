@@ -1034,6 +1034,15 @@ ByRefLike types, defined in C# with the `ref struct` syntax, represent types tha
 ### II.10.1.7
 An additional IL keyword, `byreflike`, is introduced to indicate use of ByRefLike types is permitted. This expands the set of permissible types used by this parameters, but limits the potential instructions that can be used on instances of this generic parameter type.
 
+### II.23.1.7
+Update the `SpecialConstraintMask` flag value and description, and add a new flag, `AllowByRefLike`.
+
+| Flag | Value | Description |
+| ---  | ----- | ----------- |
+| `SpecialConstraintMask` | `0x3C` | These 4 bits contain one of the following values: |
+| ... | ... | ... |
+| `AllowByRefLike`        | `0x20` | The generic parameter is allowed to be ByRefLike |
+
 ### III.4
 New sub-section should be added after III.4.33 that describes sequences of IL instructions that can be used on ByRefLike types when using within a generic context.
 
