@@ -22,7 +22,6 @@ namespace System.Net.Http
         private  MultiProxy _secureProxy;       // URI of the https system proxy if set
         private FailedProxyCache _failedProxies = new FailedProxyCache();
         private List<string>? _bypass;          // list of domains not to proxy
-        //private bool _bypassLocal;              // we should bypass domain considered local
         private List<IPAddress>? _localIp;
         private ICredentials? _credentials;
         private WinInetProxyHelper _proxyHelper;
@@ -197,6 +196,7 @@ namespace System.Net.Http
                 }
 
                 _registeredWaitHandle?.Unregister(null);
+                _internetSettingsRegistry?.Dispose();
             }
         }
 
