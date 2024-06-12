@@ -3838,7 +3838,7 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
 
         FieldDesc * pFD;
         DWORD       dwLog2FieldSize = 0;
-        BOOL        bCurrentFieldIsGCPointer = FALSE;
+        BOOL        bCurrentFieldIsObjectRef = FALSE;
         mdToken     dwByValueClassToken = 0;
         MethodTable * pByValueClass = NULL;
         BOOL        fIsByValue = FALSE;
@@ -4010,7 +4010,7 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
         case ELEMENT_TYPE_OBJECT:
             {
                 dwLog2FieldSize = LOG2_PTRSIZE;
-                bCurrentFieldIsGCPointer = TRUE;
+                bCurrentFieldIsObjectRef = TRUE;
                 FieldDescElementType = ELEMENT_TYPE_CLASS;
 
                 if (!fIsStatic)
@@ -4355,7 +4355,7 @@ IS_VALUETYPE:
                 IfFailThrow(pFD->SetOffset(pLayoutFieldInfo->m_placement.m_offset));
             else if (IsManagedSequential() && !fIsStatic)
                 IfFailThrow(pFD->SetOffset(pLayoutFieldInfo->m_placement.m_offset));
-            else if (bCurrentFieldIsGCPointer)
+            else if (bCurrentFieldIsObjectRef)
                 pFD->SetOffset(FIELD_OFFSET_UNPLACED_GC_PTR);
             else
                 pFD->SetOffset(FIELD_OFFSET_UNPLACED);
@@ -4371,7 +4371,7 @@ IS_VALUETYPE:
 
             dwCurrentDeclaredField++;
 
-            if (bCurrentFieldIsGCPointer)
+            if (bCurrentFieldIsObjectRef)
             {
                 bmtFP->NumInstanceGCPointerFields++;
             }
@@ -4449,7 +4449,7 @@ IS_VALUETYPE:
             {
                 bmtFP->NumThreadStaticFieldsOfSize[dwLog2FieldSize]++;
 
-                if (bCurrentFieldIsGCPointer)
+                if (bCurrentFieldIsObjectRef)
                     bmtFP->NumThreadStaticGCPointerFields++;
 
                 if (fIsByValue)
@@ -4459,7 +4459,7 @@ IS_VALUETYPE:
             {
                 bmtFP->NumRegularStaticFieldsOfSize[dwLog2FieldSize]++;
 
-                if (bCurrentFieldIsGCPointer)
+                if (bCurrentFieldIsObjectRef)
                     bmtFP->NumRegularStaticGCPointerFields++;
 
                 if (fIsByValue)

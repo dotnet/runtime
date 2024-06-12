@@ -2473,6 +2473,8 @@ public:
         return nullable->ValueAddr(nullableMT);
     }
 
+    static int32_t GetValueAddrOffset(MethodTable* nullableMT);
+
 private:
     static BOOL IsNullableForTypeHelper(MethodTable* nullableMT, MethodTable* paramMT);
     static BOOL IsNullableForTypeHelperNoGC(MethodTable* nullableMT, MethodTable* paramMT);

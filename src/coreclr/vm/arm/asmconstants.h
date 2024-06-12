@@ -125,7 +125,7 @@ ASMCONSTANTS_C_ASSERT(SIZEOF__ComMethodFrame == sizeof(ComMethodFrame))
 #define UnmanagedToManagedFrame__m_pvDatum 0x08
 ASMCONSTANTS_C_ASSERT(UnmanagedToManagedFrame__m_pvDatum == offsetof(UnmanagedToManagedFrame, m_pvDatum))
 
-// In ComCallPreStub and GenericComPlusCallStub, we setup R12 to contain address of ComCallMethodDesc after doing the following:
+// In ComCallPreStub and GenericCLRToCOMCallStub, we setup R12 to contain address of ComCallMethodDesc after doing the following:
 //
 // mov r12, pc
 //

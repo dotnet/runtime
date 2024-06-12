@@ -121,6 +121,11 @@ namespace System.Text.Json.Serialization
         public bool RespectNullableAnnotations { get; set; }
 
         /// <summary>
+        /// Specifies the default value of <see cref="JsonSerializerOptions.RespectRequiredConstructorParameters"/> when set.
+        /// </summary>
+        public bool RespectRequiredConstructorParameters { get; set; }
+
+        /// <summary>
         /// Specifies the default value of <see cref="JsonSerializerOptions.UnknownTypeHandling"/> when set.
         /// </summary>
         public JsonUnknownTypeHandling UnknownTypeHandling { get; set; }

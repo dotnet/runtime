@@ -6078,11 +6078,11 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static float RoundToZero(float op1) => MathF.Round(op1, MidpointRounding.ToZero);
 
-        private static int ConvertToInt32(float op1) => (int)Math.Clamp(op1, int.MinValue, int.MaxValue);
+        public static int ConvertToInt32(float op1) => (int)Math.Clamp(op1, int.MinValue, int.MaxValue);
 
         private static long ConvertToInt64(double op1) => (long)Math.Clamp(op1, long.MinValue, long.MaxValue);
 
-        private static uint ConvertToUInt32(float op1) => (uint)Math.Clamp(op1, uint.MinValue, uint.MaxValue);
+        public static uint ConvertToUInt32(float op1) => (uint)Math.Clamp(op1, uint.MinValue, uint.MaxValue);
 
         private static ulong ConvertToUInt64(double op1) => (ulong)Math.Clamp(op1, ulong.MinValue, ulong.MaxValue);
 
@@ -6653,6 +6653,188 @@ namespace JIT.HardwareIntrinsics.Arm
         public static int NumberOfElementsInVectorInt64(SveMaskPattern pattern)
         {
             return MaskNumberOfElementsVector(Unsafe.SizeOf<Vector<long>>() / sizeof(long), pattern);
+        }
+
+        public static int NumberOfActiveElementsInMask(sbyte[] mask)
+        {
+            int acc = 0;
+            for (var i = 0; i < mask.Length; i++)
+            {
+                acc += (mask[i] == 1) ? 1 : 0;
+            }
+            return acc;
+        }
+
+        public static int NumberOfActiveElementsInMask(short[] mask)
+        {
+            int acc = 0;
+            for (var i = 0; i < mask.Length; i++)
+            {
+                acc += (mask[i] == 1) ? 1 : 0;
+            }
+            return acc;
+        }
+
+        public static int NumberOfActiveElementsInMask(int[] mask)
+        {
+            int acc = 0;
+            for (var i = 0; i < mask.Length; i++)
+            {
+                acc += (mask[i] == 1) ? 1 : 0;
+            }
+            return acc;
+        }
+
+        public static int NumberOfActiveElementsInMask(long[] mask)
+        {
+            int acc = 0;
+            for (var i = 0; i < mask.Length; i++)
+            {
+                acc += (mask[i] == 1) ? 1 : 0;
+            }
+            return acc;
+        }
+
+        public static int NumberOfActiveElementsInMask(byte[] mask)
+        {
+            int acc = 0;
+            for (var i = 0; i < mask.Length; i++)
+            {
+                acc += (mask[i] == 1) ? 1 : 0;
+            }
+            return acc;
+        }
+
+        public static int NumberOfActiveElementsInMask(ushort[] mask)
+        {
+            int acc = 0;
+            for (var i = 0; i < mask.Length; i++)
+            {
+                acc += (mask[i] == 1) ? 1 : 0;
+            }
+            return acc;
+        }
+
+        public static int NumberOfActiveElementsInMask(uint[] mask)
+        {
+            int acc = 0;
+            for (var i = 0; i < mask.Length; i++)
+            {
+                acc += (mask[i] == 1) ? 1 : 0;
+            }
+            return acc;
+        }
+
+        public static int NumberOfActiveElementsInMask(ulong[] mask)
+        {
+            int acc = 0;
+            for (var i = 0; i < mask.Length; i++)
+            {
+                acc += (mask[i] == 1) ? 1 : 0;
+            }
+            return acc;
+        }
+
+        public static double[] Compact(double[] op1, double[] op2)
+        {
+            double[] result = new double[op1.Length];
+            Array.Fill<double>(result, 0, 0, op1.Length);
+
+            int i = 0;
+            for (int j = 0; j < op1.Length; j++)
+            {
+                if (op1[j] != 0)
+                {
+                    result[i++] = op2[j];
+                }
+            }
+
+            return result;
+        }
+
+        public static int[] Compact(int[] op1, int[] op2)
+        {
+            int[] result = new int[op1.Length];
+            Array.Fill<int>(result, 0, 0, op1.Length);
+
+            int i = 0;
+            for (int j = 0; j < op1.Length; j++)
+            {
+                if (op1[j] != 0)
+                {
+                    result[i++] = op2[j];
+                }
+            }
+
+            return result;
+        }
+
+        public static long[] Compact(long[] op1, long[] op2)
+        {
+            long[] result = new long[op1.Length];
+            Array.Fill<long>(result, 0, 0, op1.Length);
+
+            long i = 0;
+            for (int j = 0; j < op1.Length; j++)
+            {
+                if (op1[j] != 0)
+                {
+                    result[i++] = op2[j];
+                }
+            }
+
+            return result;
+        }
+
+        public static float[] Compact(float[] op1, float[] op2)
+        {
+            float[] result = new float[op1.Length];
+            Array.Fill<float>(result, 0, 0, op1.Length);
+
+            int i = 0;
+            for (int j = 0; j < op1.Length; j++)
+            {
+                if (op1[j] != 0)
+                {
+                    result[i++] = op2[j];
+                }
+            }
+
+            return result;
+        }
+
+        public static uint[] Compact(uint[] op1, uint[] op2)
+        {
+            uint[] result = new uint[op1.Length];
+            Array.Fill<uint>(result, 0, 0, op1.Length);
+
+            int i = 0;
+            for (int j = 0; j < op1.Length; j++)
+            {
+                if (op1[j] != 0)
+                {
+                    result[i++] = op2[j];
+                }
+            }
+
+            return result;
+        }
+
+        public static ulong[] Compact(ulong[] op1, ulong[] op2)
+        {
+            ulong[] result = new ulong[op1.Length];
+            Array.Fill<ulong>(result, 0, 0, op1.Length);
+
+            ulong i = 0;
+            for (int j = 0; j < op1.Length; j++)
+            {
+                if (op1[j] != 0)
+                {
+                    result[i++] = op2[j];
+                }
+            }
+
+            return result;
         }
 
     }

@@ -601,14 +601,14 @@ public:
     BOOL ShouldSuppressGCTransition();
 
 #ifdef FEATURE_COMINTEROP
-    inline DWORD IsComPlusCall()
+    inline DWORD IsCLRToCOMCall()
     {
         WRAPPER_NO_CONTRACT;
         return mcComInterop == GetClassification();
     }
 #else // !FEATURE_COMINTEROP
      // hardcoded to return FALSE to improve code readability
-    inline DWORD IsComPlusCall()
+    inline DWORD IsCLRToCOMCall()
     {
         LIMITED_METHOD_CONTRACT;
         return FALSE;
@@ -1515,7 +1515,7 @@ public:
     // This method is used to restore ReturnKind using the class handle, it is fully supported only on x64 Ubuntu,
     // other platforms do not support multi-reg return case with pointers.
     // Use this method only when you can't hit this case
-    // (like ComPlusMethodFrame::GcScanRoots) or when you can tolerate RT_Illegal return.
+    // (like CLRToCOMMethodFrame::GcScanRoots) or when you can tolerate RT_Illegal return.
     // Also, on the other platforms for a single field struct return case
     // the function can't distinguish RT_Object and RT_ByRef.
     ReturnKind GetReturnKind(INDEBUG(bool supportStringConstructors = false));
@@ -3015,13 +3015,13 @@ class EEImplMethodDesc : public StoredSigMethodDesc
 #ifdef FEATURE_COMINTEROP
 
 // This is the extra information needed to be associated with a method in order to use it for
-// CLR->COM calls. It is currently used by code:ComPlusCallMethodDesc (ordinary CLR->COM calls).
-typedef DPTR(struct ComPlusCallInfo) PTR_ComPlusCallInfo;
-struct ComPlusCallInfo
+// CLR->COM calls. It is currently used by code:CLRToCOMCallMethodDesc (ordinary CLR->COM calls).
+typedef DPTR(struct CLRToCOMCallInfo) PTR_CLRToCOMCallInfo;
+struct CLRToCOMCallInfo
 {
-    // Returns ComPlusCallInfo associated with a method. pMD must be a ComPlusCallMethodDesc or
+    // Returns CLRToCOMCallInfo associated with a method. pMD must be a CLRToCOMCallMethodDesc or
     // EEImplMethodDesc that has already been initialized for COM interop.
-    inline static ComPlusCallInfo *FromMethodDesc(MethodDesc *pMD);
+    inline static CLRToCOMCallInfo *FromMethodDesc(MethodDesc *pMD);
 
     union
     {
@@ -3102,14 +3102,14 @@ struct ComPlusCallInfo
 
 
 //-----------------------------------------------------------------------
-// Operations specific to ComPlusCall methods. We use a derived class to get
+// Operations specific to CLRToCOMCall methods. We use a derived class to get
 // the compiler involved in enforcing proper method type usage.
 // DO NOT ADD FIELDS TO THIS CLASS.
 //-----------------------------------------------------------------------
-class ComPlusCallMethodDesc : public MethodDesc
+class CLRToCOMCallMethodDesc : public MethodDesc
 {
 public:
-    ComPlusCallInfo *m_pComPlusCallInfo; // initialized in code:ComPlusCall.PopulateComPlusCallMethodDesc
+    CLRToCOMCallInfo *m_pCLRToCOMCallInfo; // initialized in code:CLRToCOMCall.PopulateCLRToCOMCallMethodDesc
 
     void InitRetThunk();
     void InitComEventCallInfo();
@@ -3117,21 +3117,21 @@ public:
     PCODE * GetAddrOfILStubField()
     {
         LIMITED_METHOD_CONTRACT;
-        return m_pComPlusCallInfo->GetAddrOfILStubField();
+        return m_pCLRToCOMCallInfo->GetAddrOfILStubField();
     }
 
     MethodTable* GetInterfaceMethodTable()
     {
         LIMITED_METHOD_CONTRACT;
-        _ASSERTE(m_pComPlusCallInfo->m_pInterfaceMT != NULL);
-        return m_pComPlusCallInfo->m_pInterfaceMT;
+        _ASSERTE(m_pCLRToCOMCallInfo->m_pInterfaceMT != NULL);
+        return m_pCLRToCOMCallInfo->m_pInterfaceMT;
     }
 
     MethodDesc* GetEventProviderMD()
     {
         LIMITED_METHOD_CONTRACT;
 
-        return m_pComPlusCallInfo->m_pEventProviderMD;
+        return m_pCLRToCOMCallInfo->m_pEventProviderMD;
     }
 
 
@@ -3139,27 +3139,27 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
 
-        return (m_pComPlusCallInfo->m_flags & ComPlusCallInfo::kRequiresArgumentWrapping) != 0;
+        return (m_pCLRToCOMCallInfo->m_flags & CLRToCOMCallInfo::kRequiresArgumentWrapping) != 0;
     }
 
     void SetLateBoundFlags(BYTE newFlags)
     {
         LIMITED_METHOD_CONTRACT;
 
-        InterlockedOr((LONG*)&m_pComPlusCallInfo->m_flags, newFlags);
+        InterlockedOr((LONG*)&m_pCLRToCOMCallInfo->m_flags, newFlags);
     }
 
 #ifdef TARGET_X86
     WORD GetStackArgumentSize()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return m_pComPlusCallInfo->GetStackArgumentSize();
+        return m_pCLRToCOMCallInfo->GetStackArgumentSize();
     }
 
     void SetStackArgumentSize(WORD cbDstBuffer)
     {
         LIMITED_METHOD_CONTRACT;
-        m_pComPlusCallInfo->SetStackArgumentSize(cbDstBuffer);
+        m_pCLRToCOMCallInfo->SetStackArgumentSize(cbDstBuffer);
     }
 #else // TARGET_X86
     void SetStackArgumentSize(WORD cbDstBuffer)

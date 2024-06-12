@@ -78,6 +78,14 @@
         ret     lr
     LEAF_END
 
+;; uint64_t GetSveLengthFromOS(void);
+    LEAF_ENTRY GetSveLengthFromOS
+        ;; TODO-SVE: Remove the hardcoded value 128 and uncomment once CI machines are updated to use MASM 14.4 or later
+        ;; rdvl    x0, 1
+        mov     x0, #128
+        ret     lr
+    LEAF_END
+
 ;;-----------------------------------------------------------------------------
 ;; This routine captures the machine state. It is used by helper method frame
 ;;-----------------------------------------------------------------------------
@@ -387,7 +395,7 @@ NoFloatingPointRetVal
     LEAF_END
 
 ; ------------------------------------------------------------------
-; GenericComPlusCallStub that erects a ComPlusMethodFrame and calls into the runtime
+; GenericCLRToCOMCallStub that erects a CLRToCOMMethodFrame and calls into the runtime
 ; (CLRToCOMWorker) to dispatch rare cases of the interface call.
 ;
 ; On entry:
@@ -398,14 +406,14 @@ NoFloatingPointRetVal
 ; On exit:
 ;   x0/x1/s0-s3/d0-d3 set to return value of the call as appropriate
 ;
-    NESTED_ENTRY GenericComPlusCallStub
+    NESTED_ENTRY GenericCLRToCOMCallStub
 
         PROLOG_WITH_TRANSITION_BLOCK ASM_ENREGISTERED_RETURNTYPE_MAXSIZE
 
         add         x0, sp, #__PWTB_TransitionBlock ; pTransitionBlock
         mov         x1, x12                         ; pMethodDesc
 
-        ; Call CLRToCOMWorker(TransitionBlock *, ComPlusCallMethodDesc *).
+        ; Call CLRToCOMWorker(TransitionBlock *, CLRToCOMCallMethodDesc *).
         ; This call will set up the rest of the frame (including the vfptr, the GS cookie and
         ; linking to the thread), make the client call and return with correct registers set
         ; (x0/x1/s0-s3/d0-d3 as appropriate).

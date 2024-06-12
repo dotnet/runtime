@@ -465,6 +465,7 @@
     <!-- Source generators tests. Not testing customer scenarios. Low priority -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Logging.Abstractions\tests\Microsoft.Extensions.Logging.Generators.Tests\Microsoft.Extensions.Logging.Generators.Roslyn3.11.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Logging.Abstractions\tests\Microsoft.Extensions.Logging.Generators.Tests\Microsoft.Extensions.Logging.Generators.Roslyn4.0.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Logging.Abstractions\tests\Microsoft.Extensions.Logging.Generators.Tests\Microsoft.Extensions.Logging.Generators.Roslyn4.8.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices\tests\LibraryImportGenerator.UnitTests\LibraryImportGenerator.Unit.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices\tests\ComInterfaceGenerator.Unit.Tests\ComInterfaceGenerator.Unit.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.SourceGeneration.Unit.Tests\System.Text.Json.SourceGeneration.Roslyn3.11.Unit.Tests.csproj" />
@@ -505,6 +506,8 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Mail\tests\Functional\System.Net.Mail.Functional.Tests.csproj"
                       Condition="'$(TargetOS)' == 'windows'"/>
 
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Resources.Extensions\tests\CompatTests\System.Resources.Extensions.Compat.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Resources.Extensions\tests\BinaryFormatTests\System.Resources.Extensions.BinaryFormat.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.VisualBasic.Core\tests\Microsoft.VisualBasic.Core.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.CodeDom\tests\System.CodeDom.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.ComponentModel.Annotations\tests\System.ComponentModel.Annotations.Tests.csproj" />
@@ -517,7 +520,6 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Data.Common\tests\System.Data.Common.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.DiagnosticSource\tests\TestWithConfigSwitches\System.Diagnostics.DiagnosticSource.Switches.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.PerformanceCounter\tests\System.Diagnostics.PerformanceCounter.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.StackTrace\tests\System.Diagnostics.StackTrace.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.TraceSource\tests\System.Diagnostics.TraceSource.Config.Tests\System.Diagnostics.TraceSource.Config.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.Tracing\tests\System.Diagnostics.Tracing.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Formats.Cbor\tests\System.Formats.Cbor.Tests.csproj" />
@@ -536,6 +538,7 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Runtime.Tests\NlsTests\System.Runtime.Nls.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.Xml\tests\System.Security.Cryptography.Xml.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.Tests\System.Text.Json.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Numerics.Tensors\tests\System.Numerics.Tensors.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup>
