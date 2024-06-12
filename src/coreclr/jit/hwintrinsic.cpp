@@ -1677,10 +1677,11 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         }
     }
 
-    if (HWIntrinsicInfo::ReturnsPerElementMask(intrinsic))
+    if (retType != nodeRetType)
     {
         // HWIntrinsic returns a mask, but all returns must be vectors, so convert mask to vector.
-        assert(retType != TYP_MASK);
+        assert(HWIntrinsicInfo::ReturnsPerElementMask(intrinsic));
+        assert(nodeRetType == TYP_MASK);
 
         GenTreeHWIntrinsic* op = retNode->AsHWIntrinsic();
 

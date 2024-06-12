@@ -2665,7 +2665,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             bool      useFallback     = false;
             unsigned  immSimdSize     = simdSize;
             var_types immSimdBaseType = simdBaseType;
-            //getHWIntrinsicImmOps(intrinsic, sig, &immOp1, &immOp2);
             CORINFO_ARG_LIST_HANDLE arg1 = sig->args;
             var_types               argType = TYP_UNKNOWN;
             CORINFO_CLASS_HANDLE    argClass = NO_CLASS_HANDLE;
@@ -2682,7 +2681,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 NamedIntrinsic maskedIntrinsic =
                     (NamedIntrinsic)(NI_Sve_CreateTrueMaskByte_Mask + (intrinsic - NI_Sve_CreateTrueMaskByte));
                 retNode = gtNewSimdHWIntrinsicNode(TYP_MASK, immOp1, maskedIntrinsic, simdBaseJitType, simdSize);
-                retNode = gtNewSimdConvertMaskToVectorNode(retNode->AsHWIntrinsic(), retType);
+                retNode = gtNewSimdCvtMaskToVectorNode(retType, retNode->AsHWIntrinsic(), simdBaseJitType, simdSize);
             }
             else
             {
