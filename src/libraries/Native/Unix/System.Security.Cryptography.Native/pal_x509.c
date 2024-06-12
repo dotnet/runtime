@@ -875,7 +875,8 @@ static X509VerifyStatusCode CheckOcsp(OCSP_REQUEST* req,
         int nonceCheck = req == NULL ? 1 : OCSP_check_nonce(req, basicResp);
 
         // Treat "response has no nonce" as success, since not all responders set the nonce.
-        if (nonceCheck == -1)
+        // Treat "neither has a nonce" as success, since we do not send nonces in our requests.
+        if (nonceCheck == -1 || nonceCheck == 2)
         {
             nonceCheck = 1;
         }
