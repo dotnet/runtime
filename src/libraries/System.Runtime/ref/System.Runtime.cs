@@ -14152,9 +14152,9 @@ namespace System.Runtime.InteropServices.Marshalling
             private object _dummy;
             private int _dummyPrimitive;
             public void FromUnmanaged(TUnmanagedElement* unmanaged) { throw null; }
-            public ReadOnlySpan<T> ToManaged() { throw null; }
-            public ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(int numElements) { throw null; }
-            public Span<T> GetManagedValuesDestination(int numElements) { throw null; }
+            public System.ReadOnlySpan<T> ToManaged() { throw null; }
+            public System.ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(int numElements) { throw null; }
+            public System.Span<T> GetManagedValuesDestination(int numElements) { throw null; }
             public void Free() { throw null; }
         }
         public static partial class UnmanagedToManagedOut

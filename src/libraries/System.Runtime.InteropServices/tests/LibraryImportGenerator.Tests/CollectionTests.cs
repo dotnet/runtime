@@ -253,18 +253,19 @@ namespace LibraryImportGenerator.IntegrationTests
             Assert.Equal(expected, NativeExportsNE.Collections.Stateful.CreateRange(start, end, out _));
             Assert.Equal(expected, NativeExportsNE.Collections.Stateful.CreateRangeReadOnlySpan(start, end, out _));
 
+            List<int> res;
+            ReadOnlySpan<int> resSpan;
             {
-                List<int> res;
                 NativeExportsNE.Collections.Stateless.CreateRange_Out(start, end, out _, out res);
                 Assert.Equal(expected, res);
             }
             {
-                List<int> res;
                 NativeExportsNE.Collections.Stateful.CreateRange_Out(start, end, out _, out res);
                 Assert.Equal(expected, res);
-                ReadOnlySpan<int> res2;
-                NativeExportsNE.Collections.Stateful.CreateRange_Out_ReadOnlySpan(start, end, out _, out res2);
-                Assert.Equal(expected, res2);
+            }
+            {
+                NativeExportsNE.Collections.Stateful.CreateRange_Out_ReadOnlySpan(start, end, out _, out resSpan);
+                Assert.Equal(expected, resSpan);
             }
         }
 
@@ -274,18 +275,19 @@ namespace LibraryImportGenerator.IntegrationTests
             Assert.Null(NativeExportsNE.Collections.Stateless.CreateRange(1, 0, out _));
             Assert.Null(NativeExportsNE.Collections.Stateful.CreateRange(1, 0, out _));
 
+            List<int> res;
+            ReadOnlySpan<int> resSpan;
             {
-                List<int> res;
                 NativeExportsNE.Collections.Stateless.CreateRange_Out(1, 0, out _, out res);
                 Assert.Null(res);
             }
             {
-                List<int> res;
                 NativeExportsNE.Collections.Stateful.CreateRange_Out(1, 0, out _, out res);
                 Assert.Null(res);
-                ReadOnlySpan<int> res2;
-                NativeExportsNE.Collections.Stateful.CreateRange_Out_ReadOnlySpan(1, 0, out _, out res2);
-                Assert.True(res2.IsEmpty);
+            }
+            {
+                NativeExportsNE.Collections.Stateful.CreateRange_Out_ReadOnlySpan(1, 0, out _, out resSpan);
+                Assert.True(resSpan.IsEmpty);
             }
         }
 
