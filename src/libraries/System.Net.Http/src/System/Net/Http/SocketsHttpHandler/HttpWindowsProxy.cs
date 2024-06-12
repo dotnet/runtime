@@ -202,7 +202,7 @@ namespace System.Net.Http
         /// </summary>
         public Uri? GetProxy(Uri uri)
         {
-            if (!_proxyHelper.AutoSettingsUsed && !_proxyHelper.AutoSettingsUsed)
+            if (!_proxyHelper.AutoSettingsUsed && !_proxyHelper.ManualSettingsOnly)
             {
                 return null;
             }

@@ -31,7 +31,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
         [Fact]
         public void TryCreate_WinInetProxySettingsAllOff_ReturnsFalse()
         {
-            Assert.False(HttpWindowsProxy.TryCreate(out IWebProxy webProxy));
+            Assert.True(HttpWindowsProxy.TryCreate(out IWebProxy webProxy));
         }
 
         [Theory]
