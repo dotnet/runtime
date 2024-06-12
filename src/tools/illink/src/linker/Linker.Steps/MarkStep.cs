@@ -3205,7 +3205,7 @@ namespace Mono.Linker.Steps
 			} else if (method.TryGetProperty (out PropertyDefinition? property))
 				MarkProperty (property, new DependencyInfo (PropagateDependencyKindToAccessors (reason.Kind, DependencyKind.PropertyOfPropertyMethod), method));
 			else if (method.TryGetEvent (out EventDefinition? @event)) {
-				MarkEvent (@event, new DependencyInfo (PropagateDependencyKindToAccessors(reason.Kind, DependencyKind.EventOfEventMethod), method));
+				MarkEvent (@event, new DependencyInfo (PropagateDependencyKindToAccessors (reason.Kind, DependencyKind.EventOfEventMethod), method));
 			}
 
 			if (method.HasMetadataParameters ()) {
@@ -3289,7 +3289,7 @@ namespace Mono.Linker.Steps
 		{
 		}
 
-		static DependencyKind PropagateDependencyKindToAccessors(DependencyKind parentDependencyKind, DependencyKind kind)
+		static DependencyKind PropagateDependencyKindToAccessors (DependencyKind parentDependencyKind, DependencyKind kind)
 		{
 			switch (parentDependencyKind) {
 			// If the member is marked due to descriptor or similar, propagate the original reason to suppress some warnings correctly
@@ -3309,11 +3309,11 @@ namespace Mono.Linker.Steps
 				return;
 
 			// keep fields for types with explicit layout, for enums and for InlineArray types
-			if (!type.IsAutoLayout || type.IsEnum || TypeIsInlineArrayType(type))
+			if (!type.IsAutoLayout || type.IsEnum || TypeIsInlineArrayType (type))
 				MarkFields (type, includeStatic: type.IsEnum, reason: new DependencyInfo (DependencyKind.MemberOfType, type));
 		}
 
-		static bool TypeIsInlineArrayType(TypeDefinition type)
+		static bool TypeIsInlineArrayType (TypeDefinition type)
 		{
 			if (!type.IsValueType)
 				return false;
@@ -3359,6 +3359,7 @@ namespace Mono.Linker.Steps
 
 					if (resolvedInterfaceType == resolvedOverride.DeclaringType) {
 						MarkInterfaceImplementation (ifaceImpl, new MessageOrigin (method.DeclaringType));
+						return;
 					}
 				}
 			}
@@ -3556,7 +3557,7 @@ namespace Mono.Linker.Steps
 
 			MarkCustomAttributes (evt, new DependencyInfo (DependencyKind.CustomAttribute, evt));
 
-			DependencyKind dependencyKind = PropagateDependencyKindToAccessors(reason.Kind, DependencyKind.EventMethod);
+			DependencyKind dependencyKind = PropagateDependencyKindToAccessors (reason.Kind, DependencyKind.EventMethod);
 			MarkMethodIfNotNull (evt.AddMethod, new DependencyInfo (dependencyKind, evt), ScopeStack.CurrentScope.Origin);
 			MarkMethodIfNotNull (evt.InvokeMethod, new DependencyInfo (dependencyKind, evt), ScopeStack.CurrentScope.Origin);
 			MarkMethodIfNotNull (evt.RemoveMethod, new DependencyInfo (dependencyKind, evt), ScopeStack.CurrentScope.Origin);
@@ -3734,8 +3735,7 @@ namespace Mono.Linker.Steps
 					ScopeStack.UpdateCurrentScopeInstructionOffset (instruction.Offset);
 					if (markForReflectionAccess) {
 						MarkMethodVisibleToReflection (methodReference, new DependencyInfo (dependencyKind, method), ScopeStack.CurrentScope.Origin);
-					}
-					else {
+					} else {
 						MarkMethod (methodReference, new DependencyInfo (dependencyKind, method), ScopeStack.CurrentScope.Origin);
 					}
 					break;

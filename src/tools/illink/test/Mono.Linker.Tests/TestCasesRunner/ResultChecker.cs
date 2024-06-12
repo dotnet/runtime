@@ -15,6 +15,7 @@ using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 using Mono.Linker.Tests.Extensions;
 using NUnit.Framework;
+using WellKnownType = ILLink.Shared.TypeSystemProxy.WellKnownType;
 
 namespace Mono.Linker.Tests.TestCasesRunner
 {
@@ -75,12 +76,13 @@ namespace Mono.Linker.Tests.TestCasesRunner
 						throw new NotImplementedException ($"Unexpected scope type '{exportedType.Scope.GetType ()}' for exported type '{exportedType.FullName}'");
 					}
 					continue;
-				case AssemblyNameReference: {
-						// There should be an AssemblyRef row for this assembly
-						var assemblyRef = linked.MainModule.AssemblyReferences.Single (ar => ar.Name == typeRef.Scope.Name);
-						Assert.IsNotNull (assemblyRef, $"Type reference '{typeRef.FullName}' has a reference to assembly '{typeRef.Scope.Name}' which is not a reference of '{linked.FullName}'");
-						continue;
-					}
+				case AssemblyNameReference:
+				{
+					// There should be an AssemblyRef row for this assembly
+					var assemblyRef = linked.MainModule.AssemblyReferences.Single (ar => ar.Name == typeRef.Scope.Name);
+					Assert.IsNotNull (assemblyRef, $"Type reference '{typeRef.FullName}' has a reference to assembly '{typeRef.Scope.Name}' which is not a reference of '{linked.FullName}'");
+					continue;
+				}
 				default:
 					throw new NotImplementedException ($"Unexpected scope type '{typeRef.Scope.GetType ()}' for type reference '{typeRef.FullName}'");
 				}
@@ -93,7 +95,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				return false;
 
 			var caaIsUnsafeFlag = (CustomAttributeArgument caa) =>
-				caa.Type.IsTypeOf ("System.String")
+				caa.Type.IsTypeOf (WellKnownType.System_String)
 				&& (string) caa.Value == "/unsafe";
 			var customAttributeHasUnsafeFlag = (CustomAttribute ca) => ca.ConstructorArguments.Any (caaIsUnsafeFlag);
 			if (GetCustomAttributes (inputAssembly, nameof (SetupCompileArgumentAttribute))
@@ -127,7 +129,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					PerformOutputAssemblyChecks (original, linkResult.OutputAssemblyPath.Parent);
 					PerformOutputSymbolChecks (original, linkResult.OutputAssemblyPath.Parent);
 
-					if (!HasActiveSkipKeptItemsValidationAttribute (linkResult.TestCase.FindTypeDefinition (original))) {
+					if (!HasActiveSkipKeptItemsValidationAttribute(linkResult.TestCase.FindTypeDefinition (original))) {
 						CreateAssemblyChecker (original, linked, linkResult).Verify ();
 					}
 				}
@@ -244,12 +246,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		void VerifyExitCode (LinkedTestCaseResult linkResult, AssemblyDefinition original)
 		{
-			if (TryGetCustomAttribute (original, nameof (ExpectNonZeroExitCodeAttribute), out var attr)) {
+			if (TryGetCustomAttribute (original, nameof(ExpectNonZeroExitCodeAttribute), out var attr)) {
 				var expectedExitCode = (int) attr.ConstructorArguments[0].Value;
-				Assert.AreEqual (expectedExitCode, linkResult.ExitCode, $"Expected exit code {expectedExitCode} but got {linkResult.ExitCode}.  Output was:\n{FormatLinkerOutput ()}");
+				Assert.AreEqual (expectedExitCode, linkResult.ExitCode, $"Expected exit code {expectedExitCode} but got {linkResult.ExitCode}.  Output was:\n{FormatLinkerOutput()}");
 			} else {
 				if (linkResult.ExitCode != 0) {
-					Assert.Fail ($"Linker exited with an unexpected non-zero exit code of {linkResult.ExitCode} and output:\n{FormatLinkerOutput ()}");
+					Assert.Fail($"Linker exited with an unexpected non-zero exit code of {linkResult.ExitCode} and output:\n{FormatLinkerOutput()}");
 				}
 			}
 
@@ -411,12 +413,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
 								Assert.Fail ($"Type `{expectedTypeName}` should have been kept in assembly {assemblyName}");
 							VerifyExpectedInstructionSequenceOnMemberInAssembly (checkAttrInAssembly, linkedType);
 							break;
-						case nameof (RemovedOverrideOnMethodInAssemblyAttribute):
-							VerifyRemovedOverrideOnMethodInAssembly (checkAttrInAssembly, linkedType);
-							break;
-						case nameof (KeptOverrideOnMethodInAssemblyAttribute):
-							VerifyKeptOverrideOnMethodInAssembly (checkAttrInAssembly, linkedType);
-							break;
 						default:
 							UnhandledOtherAssemblyAssertion (expectedTypeName, checkAttrInAssembly, linkedType);
 							break;
@@ -559,18 +555,18 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 			var interfaceAssemblyName = inAssemblyAttribute.ConstructorArguments[2].Value.ToString ();
 			var interfaceType = inAssemblyAttribute.ConstructorArguments[3].Value;
-			string originalInterfaceName = interfaceType as string ?? GetOriginalTypeFromInAssemblyAttribute (interfaceAssemblyName, interfaceType).FullName;
 
+			var originalInterface = GetOriginalTypeFromInAssemblyAttribute (interfaceAssemblyName, interfaceType);
 			if (!originalType.HasInterfaces)
 				Assert.Fail ("Invalid assertion.  Original type does not have any interfaces");
 
-			var originalInterfaceImpl = GetMatchingInterfaceImplementationOnType (originalType, originalInterfaceName);
+			var originalInterfaceImpl = GetMatchingInterfaceImplementationOnType (originalType, originalInterface.FullName);
 			if (originalInterfaceImpl == null)
-				Assert.Fail ($"Invalid assertion.  Original type never had an interface of type `{interfaceType}`");
+				Assert.Fail ($"Invalid assertion.  Original type never had an interface of type `{originalInterface}`");
 
-			var linkedInterfaceImpl = GetMatchingInterfaceImplementationOnType (linkedType, originalInterfaceName);
+			var linkedInterfaceImpl = GetMatchingInterfaceImplementationOnType (linkedType, originalInterface.FullName);
 			if (linkedInterfaceImpl == null)
-				Assert.Fail ($"Expected `{linkedType}` to have interface of type {originalInterfaceName}");
+				Assert.Fail ($"Expected `{linkedType}` to have interface of type {originalInterface.FullName}");
 		}
 
 		void VerifyKeptBaseOnTypeInAssembly (CustomAttribute inAssemblyAttribute, TypeDefinition linkedType)
@@ -591,7 +587,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		protected static InterfaceImplementation GetMatchingInterfaceImplementationOnType (TypeDefinition type, string expectedInterfaceTypeName)
 		{
 			return type.Interfaces.FirstOrDefault (impl => {
-				return impl.InterfaceType.FullName == expectedInterfaceTypeName;
+				var resolvedImpl = impl.InterfaceType.Resolve ();
+
+				if (resolvedImpl == null)
+					Assert.Fail ($"Failed to resolve interface : `{impl.InterfaceType}` on `{type}`");
+
+				return resolvedImpl.FullName == expectedInterfaceTypeName;
 			});
 		}
 
@@ -655,26 +656,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					continue;
 
 				Assert.Fail ($"Invalid test assertion.  No member named `{memberName}` exists on the original type `{originalType}`");
-			}
-		}
-
-		void VerifyRemovedOverrideOnMethodInAssembly (CustomAttribute attr, TypeDefinition type)
-		{
-			var methodname = (string) attr.ConstructorArguments[2].Value;
-			var method = type.Methods.FirstOrDefault (m => m.Name == methodname);
-			var overriddenMethodName = (string) attr.ConstructorArguments[3].Value;
-			if (method.Overrides.Any (m => m.FullName == overriddenMethodName)) {
-				Assert.Fail ($"Expected method {method.FullName} to not have .override for {overriddenMethodName}");
-			}
-		}
-
-		void VerifyKeptOverrideOnMethodInAssembly (CustomAttribute attr, TypeDefinition type)
-		{
-			var methodname = (string) attr.ConstructorArguments[2].Value;
-			var method = type.Methods.FirstOrDefault (m => m.Name == methodname);
-			var overriddenMethodName = (string) attr.ConstructorArguments[3].Value;
-			if (!method.Overrides.Any (m => m.FullName == overriddenMethodName)) {
-				Assert.Fail ($"Expected method {method.FullName} to have .override for {overriddenMethodName}");
 			}
 		}
 

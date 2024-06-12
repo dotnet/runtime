@@ -8,12 +8,6 @@ namespace ILLink.RoslynAnalyzer.Tests
 	{
 
 		[Fact]
-		public Task DataflowInLocalMethodGroupArgument ()
-		{
-			return RunTest (allowMissingWarnings: true);
-		}
-
-		[Fact]
 		public Task ExponentialDataFlow ()
 		{
 			return RunTest (allowMissingWarnings: true);

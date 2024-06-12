@@ -8,12 +8,6 @@ namespace ILLink.RoslynAnalyzer.Tests.Inheritance.Interfaces
 	{
 
 		[Fact]
-		public Task InstanceMethodsWithOverridesSwept ()
-		{
-			return RunTest (allowMissingWarnings: true);
-		}
-
-		[Fact]
 		public Task OverrideInCopyAssembly ()
 		{
 			return RunTest (allowMissingWarnings: true);

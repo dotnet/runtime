@@ -7,6 +7,8 @@ using System.Linq;
 using System.Text;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
+using Mono.Linker.Dataflow;
+using Mono.Linker.Tests.Cases.CppCLI;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Extensions;
 using NUnit.Framework;
@@ -94,7 +96,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			// the compiler, don't consider the method to be compiler-generated
 			// for the purpose of Kept validation, because they are attributable
 			// in source like any other method.
-			if (member is MethodDefinition method && method.Name.Contains("<Main>$"))
+			if (member is MethodDefinition method && method.Name.Contains ("<Main>$"))
 				return false;
 
 			if (IsCompilerGeneratedMemberName (member.Name))
@@ -324,38 +326,36 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					}
 				}
 
-				Assert.IsEmpty (expectedInterfaces, $"Expected interfaces were not found on {src}. Expected to find: \n{string.Join (Environment.NewLine, expectedInterfaces)}\n");
+				Assert.IsEmpty (expectedInterfaces, $"Expected interfaces were not found on {src}");
 			}
 		}
 
-		IEnumerable<string> VerifyOverrides (MethodDefinition original, MethodDefinition linked)
+		void VerifyOverrides (MethodDefinition original, MethodDefinition linked)
 		{
 			if (linked is null)
-				yield break;
+				return;
 			var expectedBaseTypesOverridden = new HashSet<string> (original.CustomAttributes
 				.Where (ca => ca.AttributeType.Name == nameof (KeptOverrideAttribute))
-				.Select (ca => (ca.ConstructorArguments[0].Value as TypeReference)?.FullName ?? (string) ca.ConstructorArguments[0].Value));
+				.Select (ca => (ca.ConstructorArguments[0].Value as TypeReference).FullName ?? (string) ca.ConstructorArguments[0].Value));
 			var originalBaseTypesOverridden = new HashSet<string> (original.Overrides.Select (ov => ov.DeclaringType.FullName));
 			var linkedBaseTypesOverridden = new HashSet<string> (linked.Overrides.Select (ov => ov.DeclaringType.FullName));
 			foreach (var expectedBaseType in expectedBaseTypesOverridden) {
-				if (!originalBaseTypesOverridden.Contains (expectedBaseType)) {
-					yield return $"Method {linked.FullName} was expected to keep override {expectedBaseType}::{linked.Name}, " +
-						 "but it wasn't in the unlinked assembly" + string.Join (Environment.NewLine, originalBaseTypesOverridden);
-				} else if (!linkedBaseTypesOverridden.Contains (expectedBaseType)) {
-					yield return $"Method {linked.FullName} was expected to override {expectedBaseType}::{linked.Name}";
-				}
+				Assert.IsTrue (originalBaseTypesOverridden.Contains (expectedBaseType),
+					$"Method {linked.FullName} was expected to keep override {expectedBaseType}::{linked.Name}, " +
+					 "but it wasn't in the unlinked assembly");
+				Assert.IsTrue (linkedBaseTypesOverridden.Contains (expectedBaseType),
+					$"Method {linked.FullName} was expected to override {expectedBaseType}::{linked.Name}");
 			}
 
 			var expectedBaseTypesNotOverridden = new HashSet<string> (original.CustomAttributes
 				.Where (ca => ca.AttributeType.Name == nameof (RemovedOverrideAttribute))
-				.Select (ca => (ca.ConstructorArguments[0].Value as TypeReference)?.FullName ?? (string) ca.ConstructorArguments[0].Value));
+				.Select (ca => (ca.ConstructorArguments[0].Value as TypeReference).FullName ?? (string) ca.ConstructorArguments[0].Value));
 			foreach (var expectedRemovedBaseType in expectedBaseTypesNotOverridden) {
-				if (!originalBaseTypesOverridden.Contains (expectedRemovedBaseType)) {
-					yield return $"Method {linked.FullName} was expected to remove override {expectedRemovedBaseType}::{linked.Name}, " +
-						$"but it wasn't in the unlinked assembly";
-				} else if (linkedBaseTypesOverridden.Contains (expectedRemovedBaseType)) {
-					yield return $"Method {linked.FullName} was expected to not override {expectedRemovedBaseType}::{linked.Name}";
-				}
+				Assert.IsTrue (originalBaseTypesOverridden.Contains (expectedRemovedBaseType),
+					$"Method {linked.FullName} was expected to remove override {expectedRemovedBaseType}::{linked.Name}, " +
+					$"but it wasn't in the unlinked assembly");
+				Assert.IsFalse (linkedBaseTypesOverridden.Contains (expectedRemovedBaseType),
+					$"Method {linked.FullName} was expected to not override {expectedRemovedBaseType}::{linked.Name}");
 			}
 		}
 
@@ -492,8 +492,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 
 			VerifyMethodKept (src, linked, compilerGenerated);
-			foreach (var err in VerifyOverrides (src, linked))
-				Assert.Fail(err);
+			VerifyOverrides (src, linked);
 		}
 
 		void VerifyMemberBackingField (IMemberDefinition src, TypeDefinition linkedType)
@@ -1120,7 +1119,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		private static IEnumerable<CustomAttribute> GetActiveKeptAttributes (ICustomAttributeProvider provider, string attributeName)
 		{
-			return provider.CustomAttributes.Where(ca => {
+			return provider.CustomAttributes.Where (ca => {
 				if (ca.AttributeType.Name != attributeName) {
 					return false;
 				}
@@ -1128,7 +1127,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				object keptBy = ca.GetPropertyValue (nameof (KeptAttribute.By));
 				return keptBy is null ? true : ((Tool) keptBy).HasFlag (Tool.Trimmer);
 			});
- 		}
+		}
 
 		private static bool HasActiveKeptAttribute (ICustomAttributeProvider provider)
 		{

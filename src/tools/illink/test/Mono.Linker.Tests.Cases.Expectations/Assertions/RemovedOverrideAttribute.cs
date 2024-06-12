@@ -20,7 +20,7 @@ namespace Mono.Linker.Tests.Cases.Expectations.Assertions
 				throw new ArgumentException ("Value cannot be null or empty.", nameof (typeWithOverriddenMethod));
 		}
 
-		public RemovedOverrideAttribute (string nameOfOverriddenMethod)
+		public RemovedOverrideAttribute (string typeWithOverriddenMethod)
 		{
 		}
 	}

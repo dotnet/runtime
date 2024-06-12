@@ -19,6 +19,7 @@ namespace Mono.Linker.Tests.Cases.Expectations.Assertions
 		{
 			ArgumentNullException.ThrowIfNull (typeWithOverriddenMethod);
 		}
+
 		public KeptOverrideAttribute (string typeWithOverriddenMethod)
 		{
 		}
