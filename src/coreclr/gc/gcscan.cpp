@@ -233,28 +233,6 @@ void GCScan::GcPromotionsGranted (int condemned, int max_gen, ScanContext* sc)
         GCToEEInterface::SyncBlockCachePromotionsGranted(max_gen);
 }
 
-
-size_t GCScan::AskForMoreReservedMemory (size_t old_size, size_t need_size)
-{
-    LIMITED_METHOD_CONTRACT;
-
-#if !defined(FEATURE_CORECLR) && !defined(FEATURE_NATIVEAOT)
-    // call the host....
-
-    IGCHostControl *pGCHostControl = CorHost::GetGCHostControl();
-
-    if (pGCHostControl)
-    {
-        size_t new_max_limit_size = need_size;
-        pGCHostControl->RequestVirtualMemLimit (old_size,
-                                                (SIZE_T*)&new_max_limit_size);
-        return new_max_limit_size;
-    }
-#endif
-
-    return old_size + need_size;
-}
-
 void GCScan::VerifyHandleTable(int condemned, int max_gen, ScanContext* sc)
 {
     LIMITED_METHOD_CONTRACT;
