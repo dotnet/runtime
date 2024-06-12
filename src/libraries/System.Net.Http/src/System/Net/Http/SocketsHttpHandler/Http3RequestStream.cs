@@ -1283,7 +1283,7 @@ namespace System.Net.Http
                     throw new HttpRequestException(httpRequestError, SR.net_http_client_execution_error, _connection.AbortException);
 
                 case QuicException e when (e.QuicError == QuicError.OperationAborted && cancellationToken.IsCancellationRequested):
-                    OperationCanceledException wrapperOce = new OperationCanceledException(ex.Message, ex, cancellationToken);
+                    OperationCanceledException wrapperOce = new OperationCanceledException(e.Message, e, cancellationToken);
                     throw new HttpRequestException(HttpRequestError.Unknown, SR.net_http_client_execution_error, wrapperOce);
 
                 case HttpIOException:
