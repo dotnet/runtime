@@ -1023,6 +1023,47 @@ public:
                 SequenceCall(node->AsCall());
                 break;
 
+            case GT_EQ:
+            case GT_NE:
+            {
+                // If we see &lcl EQ/NE null, rewrite to 0/1 comparison
+                // to reduce overall address exposure.
+                //
+                assert(TopValue(2).Node() == node);
+                assert(TopValue(1).Node() == node->AsOp()->gtOp1);
+                assert(TopValue(0).Node() == node->AsOp()->gtOp2);
+
+                GenTree* op1 = node->AsOp()->gtOp1;
+                GenTree* op2 = node->AsOp()->gtOp2;
+                bool rewrite = false;
+
+                if (op1->OperIs(GT_LCL_ADDR) && op2->IsIntegralConst(0))
+                {
+                    op1 = m_compiler->gtNewIconNode(1);
+                    op2->ChangeType(TYP_INT);
+                    rewrite = true;
+                }
+                else if (op2->OperIs(GT_LCL_ADDR) && op1->IsIntegralConst(0))
+                {
+                    op2 = m_compiler->gtNewIconNode(1);
+                    op1->ChangeType(TYP_INT);
+                    rewrite = true;
+                }
+
+                if (rewrite)
+                {
+                    JITDUMP("Rewriting known address-of comparison [%06u]\n", m_compiler->dspTreeID(node));
+                    node->AsOp()->gtOp1 = op1;
+                    node->AsOp()->gtOp2 = op2;
+                }
+
+                INDEBUG(TopValue(0).Consume());
+                INDEBUG(TopValue(1).Consume());
+                PopValue();
+                PopValue();
+                break;
+            }
+
             default:
                 while (TopValue(0).Node() != node)
                 {

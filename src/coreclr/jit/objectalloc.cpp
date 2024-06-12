@@ -535,13 +535,13 @@ unsigned int ObjectAllocator::MorphAllocObjNodeIntoStackAlloc(GenTreeAllocObj* a
         assert(clsHnd != NO_CLASS_HANDLE);
     }
 
-    ClassLayout* const layout = comp->typGetObjLayout(clsHnd);
-    comp->lvaSetStruct(lclNum, layout, /* unsafeValueClsCheck */ false);
+    comp->lvaSetStruct(lclNum, clsHnd, /* unsafeValueClsCheck */ false);
 
     // Initialize the object memory if necessary.
     bool             bbInALoop  = block->HasFlag(BBF_BACKWARD_JUMP);
     bool             bbIsReturn = block->KindIs(BBJ_RETURN);
     LclVarDsc* const lclDsc     = comp->lvaGetDesc(lclNum);
+    lclDsc->lvStackAllocatedBox = isValueClass;
     if (comp->fgVarNeedsExplicitZeroInit(lclNum, bbInALoop, bbIsReturn))
     {
         //------------------------------------------------------------------------
@@ -876,6 +876,41 @@ void ObjectAllocator::RewriteUses()
                     *use = boxLcl;
                 }
             }
+
+#if 0
+            // Translate accesses to box payloads to have field seqs
+            //
+            if (tree->OperIs(GT_ADD))
+            {
+                GenTree* op1 = tree->AsOp()->gtGetOp1();
+                GenTree* op2 = tree->AsOp()->gtGetOp2();
+                bool tryToTransform = false;
+
+                if (op1->OperIs(GT_LCL_ADDR) && op2->IsIntegralConst())
+                {
+                    tryToTransform = true;
+                }
+                else if (op2->OperIs(GT_LCL_ADDR) && op1->IsIntegralConst())
+                {
+                    std::swap(op1, op2);
+                    tryToTransform = true;
+                }
+
+                if (tryToTransform)
+                {
+                    LclVarDsc* const varDsc = m_compiler->lvaGetDesc(op1->AsLclVarCommon());
+                    if (varDsc->lvStackAllocatedBox && (op2->AsIntConCommon()->IntegralValue() == TARGET_POINTER_SIZE))
+                    {
+                        JITDUMP("Rewriting box payload ADD [%06u]\n", m_compiler->dspTreeID(tree));
+                        CORINFO_FIELD_HANDLE fieldHnd = m_compiler->info.compCompHnd->getFieldInClass(varDsc->lvClassHnd, 1);
+                        FieldSeq* const fieldSeq = m_compiler->GetFieldSeqStore()->Create(fieldHnd, TARGET_POINTER_SIZE, FieldSeq::FieldKind::Instance);
+                        op2 = m_compiler->gtNewIconNode(TARGET_POINTER_SIZE, fieldSeq);
+                        tree->AsOp()->gtOp1 = op1;
+                        tree->AsOp()->gtOp2 = op2;
+                    }
+                }
+            }
+#endif
 
             return Compiler::fgWalkResult::WALK_CONTINUE;
         }

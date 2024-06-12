@@ -692,6 +692,7 @@ public:
 #endif
 
     unsigned char lvAllDefsAreNoGc : 1; // For pinned locals: true if all defs of this local are no-gc
+    unsigned char lvStackAllocatedBox : 1; // Local is a stack allocated box
 
 #if FEATURE_MULTIREG_ARGS
     regNumber lvRegNumForSlot(unsigned slotNum)
