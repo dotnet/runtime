@@ -4649,6 +4649,11 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<ulong> PopCount(System.Numerics.Vector<long> value) { throw null; }
         public static System.Numerics.Vector<ulong> PopCount(System.Numerics.Vector<ulong> value) { throw null; }
 
+        public static unsafe void PrefetchBytes(System.Numerics.Vector<byte> mask, void* address, [ConstantExpected] SvePrefetchType prefetchType) { throw null; }
+        public static unsafe void PrefetchInt16(System.Numerics.Vector<ushort> mask, void* address, [ConstantExpected] SvePrefetchType prefetchType) { throw null; }
+        public static unsafe void PrefetchInt32(System.Numerics.Vector<uint> mask, void* address, [ConstantExpected] SvePrefetchType prefetchType) { throw null; }
+        public static unsafe void PrefetchInt64(System.Numerics.Vector<ulong> mask, void* address, [ConstantExpected] SvePrefetchType prefetchType) { throw null; }
+
         public static System.Numerics.Vector<byte> ReverseElement(System.Numerics.Vector<byte> value) { throw null; }
         public static System.Numerics.Vector<double> ReverseElement(System.Numerics.Vector<double> value) { throw null; }
         public static System.Numerics.Vector<short> ReverseElement(System.Numerics.Vector<short> value) { throw null; }
@@ -4980,6 +4985,22 @@ namespace System.Runtime.Intrinsics.Arm
         LargestMultipleOf4 = 29,  // The largest multiple of 4.
         LargestMultipleOf3 = 30,  // The largest multiple of 3.
         All  = 31                 // All available (implicitly a multiple of two).
+    };
+
+    public enum SvePrefetchType : byte
+    {
+        LoadL1Temporal = 0,
+        LoadL1NonTemporal = 1,
+        LoadL2Temporal = 2,
+        LoadL2NonTemporal = 3,
+        LoadL3Temporal = 4,
+        LoadL3NonTemporal = 5,
+        StoreL1Temporal = 8,
+        StoreL1NonTemporal = 9,
+        StoreL2Temporal = 10,
+        StoreL2NonTemporal = 11,
+        StoreL3Temporal = 12,
+        StoreL3NonTemporal = 13
     };
 }
 namespace System.Runtime.Intrinsics.X86
