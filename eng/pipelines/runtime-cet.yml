@@ -9,6 +9,11 @@ schedules:
     - main
   always: true
 
+pr:
+  branches:
+    include:
+    - '*'
+
 variables:
   - template: /eng/pipelines/common/variables.yml
 
