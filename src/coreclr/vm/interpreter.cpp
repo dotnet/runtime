@@ -148,7 +148,7 @@ InterpreterMethodInfo::InterpreterMethodInfo(CEEInfo* comp, CORINFO_METHOD_INFO*
     // Now look at each local.
     CORINFO_ARG_LIST_HANDLE localsPtr = methInfo->locals.args;
     CORINFO_CLASS_HANDLE vcTypeRet;
-    unsigned curLargeStructOffset = 0;
+    size_t curLargeStructOffset = 0;
     for (unsigned k = 0; k < methInfo->locals.numArgs; k++)
     {
         // TODO: if this optimization succeeds, the switch below on localType
@@ -171,12 +171,12 @@ InterpreterMethodInfo::InterpreterMethodInfo(CEEInfo* comp, CORINFO_METHOD_INFO*
         case CORINFO_TYPE_REFANY: // Just a special case: vcTypeRet is handle for TypedReference in this case...
             {
                 InterpreterType tp = InterpreterType(comp, vcTypeRet);
-                unsigned size = static_cast<unsigned>(tp.Size(comp));
+                size_t size = tp.Size(comp);
                 size = max(size, sizeof(void*));
                 m_localDescs[k].m_type = tp;
                 if (tp.IsLargeStruct(comp))
                 {
-                    m_localDescs[k].m_offset = curLargeStructOffset;
+                    m_localDescs[k].m_offset = (unsigned)curLargeStructOffset;
                     curLargeStructOffset += size;
                 }
             }
@@ -193,7 +193,7 @@ InterpreterMethodInfo::InterpreterMethodInfo(CEEInfo* comp, CORINFO_METHOD_INFO*
         m_localDescs[k].m_typeStackNormal = m_localDescs[k].m_type.StackNormalize();
         localsPtr = comp->getArgNext(localsPtr);
     }
-    m_largeStructLocalSize = curLargeStructOffset;
+    m_largeStructLocalSize = (unsigned)curLargeStructOffset;
 }
 
 void InterpreterMethodInfo::InitArgInfo(CEEInfo* comp, CORINFO_METHOD_INFO* methInfo, short* argOffsets_)
@@ -724,7 +724,7 @@ void Interpreter::ArgState::AddFPArg(unsigned canonIndex, unsigned short numSlot
 CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
                                                   CORINFO_METHOD_INFO* info,
                                                   /*OUT*/ BYTE **nativeEntry,
-                                                  /*OUT*/ ULONG *nativeSizeOfCode,
+                                                  /*OUT*/ uint32_t *nativeSizeOfCode,
                                                   InterpreterMethodInfo** ppInterpMethodInfo,
                                                   bool jmpCall)
 {
@@ -1179,7 +1179,7 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
                 case CORINFO_TYPE_REFANY:
                     {
                         unsigned sz = getClassSize(vcTypeRet);
-                        unsigned szSlots = max(1, sz / sizeof(void*));
+                        unsigned szSlots = max((unsigned)1, (unsigned)(sz / sizeof(void*)));
 #if defined(HOST_X86)
                         argState.AddArg(k, static_cast<short>(szSlots), /*noReg*/true);
 #elif defined(HOST_AMD64)
@@ -8138,7 +8138,7 @@ void Interpreter::LdElemWithType()
                 _ASSERTE(std::is_integral<T>::value);
 
                 // Widen narrow types.
-                int ires;
+                int ires = 0;
                 switch (sizeof(T))
                 {
                 case 1:
@@ -9419,7 +9419,7 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
         if ((sigInfo.callConv & CORINFO_CALLCONV_MASK) == CORINFO_CALLCONV_VARARG)
         {
             Module* module = GetModule(sig.scope);
-            vaSigCookie = CORINFO_VARARGS_HANDLE(module->GetVASigCookie(Signature(sig.pSig, sig.cbSig)));
+            vaSigCookie = CORINFO_VARARGS_HANDLE(module->GetVASigCookie(Signature(sig.pSig, sig.cbSig), NULL));
         }
         doNotCache = true;
     }
@@ -9818,7 +9818,7 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
                 // It will then copy *all* of this into the return buffer area we allocate.  So make sure
                 // we allocate at least that much.
 #ifdef ENREGISTERED_RETURNTYPE_MAXSIZE
-                retBuffSize = max(retTypeSz, ENREGISTERED_RETURNTYPE_MAXSIZE);
+                retBuffSize = max(retTypeSz, (size_t)ENREGISTERED_RETURNTYPE_MAXSIZE);
 #endif // ENREGISTERED_RETURNTYPE_MAXSIZE
                 pLargeStructRetVal = (BYTE*)_alloca(retBuffSize);
                 // Clear this in case a GC happens.
@@ -10391,7 +10391,7 @@ void Interpreter::CallI()
                 // It will then copy *all* of this into the return buffer area we allocate.  So make sure
                 // we allocate at least that much.
 #ifdef ENREGISTERED_RETURNTYPE_MAXSIZE
-                retBuffSize = max(retTypeSz, ENREGISTERED_RETURNTYPE_MAXSIZE);
+                retBuffSize = max(retTypeSz, (size_t)ENREGISTERED_RETURNTYPE_MAXSIZE);
 #endif // ENREGISTERED_RETURNTYPE_MAXSIZE
                 pLargeStructRetVal = (BYTE*)_alloca(retBuffSize);
 
@@ -10427,7 +10427,7 @@ void Interpreter::CallI()
     if ((sigInfo.callConv & CORINFO_CALLCONV_MASK) == CORINFO_CALLCONV_VARARG)
     {
         Module* module = GetModule(sigInfo.scope);
-        CORINFO_VARARGS_HANDLE handle = CORINFO_VARARGS_HANDLE(module->GetVASigCookie(Signature(sigInfo.pSig, sigInfo.cbSig)));
+        CORINFO_VARARGS_HANDLE handle = CORINFO_VARARGS_HANDLE(module->GetVASigCookie(Signature(sigInfo.pSig, sigInfo.cbSig), &sigTypeCtxt));
         args[curArgSlot] = PtrToArgSlot(handle);
         argTypes[curArgSlot] = InterpreterType(CORINFO_TYPE_NATIVEINT);
         curArgSlot++;
@@ -11579,7 +11579,7 @@ void InterpreterCache<Key,Val>::EnsureCanInsert()
     }
     else
     {
-        unsigned short newSize = min(m_allocSize * 2, USHRT_MAX);
+        unsigned short newSize = (unsigned short)min(m_allocSize * 2, USHRT_MAX);
 
         KeyValPair* newPairs = new KeyValPair[newSize];
         memcpy(newPairs, m_pairs, m_count * sizeof(KeyValPair));

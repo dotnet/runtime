@@ -24,5 +24,6 @@ namespace Wasm.Build.Tests
         internal static readonly bool UseWebcil                    = Environment.GetEnvironmentVariable("USE_WEBCIL_FOR_TESTS") is "true";
         internal static readonly string? SdkDirName                = Environment.GetEnvironmentVariable("SDK_DIR_NAME");
         internal static readonly string? WasiSdkPath               = Environment.GetEnvironmentVariable("WASI_SDK_PATH");
+        internal static readonly bool WorkloadsTestPreviousVersions = Environment.GetEnvironmentVariable("WORKLOADS_TEST_PREVIOUS_VERSIONS") is "true";
     }
 }

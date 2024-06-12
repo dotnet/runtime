@@ -1150,7 +1150,8 @@ init_last_ins_call (TransformData *td)
 static guint32
 get_data_item_wide_index (TransformData *td, void *ptr, gboolean *new_slot)
 {
-	gpointer p = g_hash_table_lookup (td->data_hash, ptr);
+	gpointer p = NULL;
+	guint8 found = dn_simdhash_ptr_ptr_try_get_value (td->data_hash, ptr, (void **)&p);
 	guint32 index;
 	if (p != NULL) {
 		if (new_slot)
@@ -1164,7 +1165,10 @@ get_data_item_wide_index (TransformData *td, void *ptr, gboolean *new_slot)
 	index = td->n_data_items;
 	td->data_items [index] = ptr;
 	++td->n_data_items;
-	g_hash_table_insert (td->data_hash, ptr, GUINT_TO_POINTER (index + 1));
+	if (found)
+		dn_simdhash_ptr_ptr_try_replace_value (td->data_hash, ptr, GUINT_TO_POINTER (index + 1));
+	else
+		dn_simdhash_ptr_ptr_try_add (td->data_hash, ptr, GUINT_TO_POINTER (index + 1));
 	if (new_slot)
 		*new_slot = TRUE;
 	return index;
@@ -3002,7 +3006,7 @@ interp_inline_method (TransformData *td, MonoMethod *target_method, MonoMethodHe
 
 		/* Remove any newly added items */
 		for (i = prev_n_data_items; i < td->n_data_items; i++) {
-			g_hash_table_remove (td->data_hash, td->data_items [i]);
+			dn_simdhash_ptr_ptr_try_remove (td->data_hash, td->data_items [i]);
 		}
 		td->n_data_items = prev_n_data_items;
 		/* Also remove any added indexes from the imethod list */
@@ -3973,7 +3977,8 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 			if (MINT_IS_PATCHABLE_CALL (td->last_ins->opcode)) {
 				g_assert (!calli && !is_virtual);
 				td->last_ins->flags |= INTERP_INST_FLAG_RECORD_CALL_PATCH;
-				g_hash_table_insert (td->patchsite_hash, td->last_ins, target_method);
+				if (!dn_simdhash_ptr_ptr_try_add (td->patchsite_hash, td->last_ins, target_method))
+					dn_simdhash_ptr_ptr_try_replace (td->patchsite_hash, td->last_ins, target_method);
 			}
 #endif
 		}
@@ -4812,6 +4817,15 @@ interp_emit_sfld_access (TransformData *td, MonoClassField *field, MonoClass *fi
 	}
 }
 
+static MonoClass*
+get_class_from_token (MonoGenericContext *generic_context, MonoMethod *cur_method, uint32_t token)
+{
+	if (cur_method->wrapper_type != MONO_WRAPPER_NONE)
+		return (MonoClass *)mono_method_get_wrapper_data (cur_method, token);
+	else
+		return mini_get_class (cur_method, token, generic_context);
+}
+
 static gboolean
 interp_handle_box_patterns (TransformData *td, MonoClass *box_class, const unsigned char *end, MonoImage *image, MonoGenericContext *generic_context, MonoError *error)
 {
@@ -4836,6 +4850,91 @@ interp_handle_box_patterns (TransformData *td, MonoClass *box_class, const unsig
 		td->ip = next_ip + 5;
 		return TRUE;
 	}
+	if (m_class_is_byreflike (box_class)) {
+		if (*next_ip == CEE_BRTRUE || *next_ip == CEE_BRTRUE_S || *next_ip == CEE_BRFALSE || *next_ip == CEE_BRFALSE_S) {
+			// replace
+			//  box ByRefLike
+			//  [brtrue/brfalse]
+			//
+			// by
+			//
+			// ldc.i4.s 1
+			// [brtrue/brfalse]
+			td->sp--;
+			interp_add_ins (td, MINT_LDC_I4_S);
+			td->last_ins->data[0] = (guint16) 1;
+			push_simple_type (td, STACK_TYPE_I4);
+			interp_ins_set_dreg (td->last_ins, td->sp [-1].var);
+			td->ip += 5;
+			// skip over box, continue with the branch opcode
+			return TRUE;
+		}
+		if (*next_ip == CEE_ISINST) {
+			// box !!T
+			// isinst S
+			// [brtrue/brfalse]
+			//
+			// turns into
+			// ldc.i4.s (0 or 1)
+			// [brtrue/brfalse]
+
+			// and
+
+			// box !!T
+			// isinst S
+			// unbox.any S
+			//
+			// turns into
+			// nop
+			//   -or-
+			// ldnull
+			// cknull
+			const unsigned char *second_ip = next_ip + 5;
+			if (second_ip >= end || !interp_ip_in_cbb (td, GPTRDIFF_TO_INT (second_ip - td->il_code))) {
+				return FALSE;
+			}
+
+			uint32_t isinst_token = read32 (next_ip + 1);
+			MonoClass *isinst_klass = get_class_from_token (generic_context, method, isinst_token);
+
+			CHECK_TYPELOAD (isinst_klass);
+
+			gboolean isinst = mono_class_is_assignable_from_internal (isinst_klass, box_class);
+
+			if (*second_ip == CEE_BRTRUE || *second_ip == CEE_BRTRUE_S || *second_ip == CEE_BRFALSE || *second_ip == CEE_BRFALSE_S) {
+				td->sp--;
+				interp_add_ins (td, MINT_LDC_I4_S);
+				td->last_ins->data[0] = (guint16) (isinst ? 1 : 0);
+				push_simple_type (td, STACK_TYPE_I4);
+				interp_ins_set_dreg (td->last_ins, td->sp [-1].var);
+				td->ip = next_ip + 5;
+				// skip over the box and isinst opcodes, continue with the branch opcode
+				return TRUE;
+			}
+			if (*second_ip == CEE_UNBOX_ANY) {
+				uint32_t unbox_any_token = read32 (second_ip + 1);
+				MonoClass *unbox_klass = get_class_from_token (generic_context, method, unbox_any_token);
+				CHECK_TYPELOAD (unbox_klass);
+				if (unbox_klass == isinst_klass) {
+					if (isinst) {
+						// leave the original value unchanged on the stack
+						interp_add_ins (td, MINT_NOP);
+						td->ip = second_ip + 5;
+						// skip over all three opcodes, continue with the next opcode;
+						return TRUE;
+					} else {
+						// box !T ; isinst S ; unbox.any S should always be
+						// under a box !T ; isinst S ; brtrue/brfalse branch
+						// where the types match.  So if they don't, that's
+						// an invalid program.  In that case compile the
+						// code sequence as is, and allow "box ByRefLike" to
+						// throw InvalidProgramException at execution-time
+					}
+				}
+			}
+	    }
+	}
+exit:
 	return FALSE;
 }
 
@@ -7167,14 +7266,6 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				/* already boxed, do nothing. */
 				td->ip += 5;
 			} else {
-				if (G_UNLIKELY (m_class_is_byreflike (klass)) && !td->optimized) {
-					if (td->verbose_level)
-						g_print ("Box byreflike detected. Retry compilation with full optimization.\n");
-					td->retry_compilation = TRUE;
-					td->retry_with_inlining = TRUE;
-					goto exit;
-				}
-
 				const gboolean vt = mono_mint_type (m_class_get_byval_arg (klass)) == MINT_TYPE_VT;
 
 				if (td->sp [-1].type == STACK_TYPE_R8 && m_class_get_byval_arg (klass)->type == MONO_TYPE_R4)
@@ -8992,9 +9083,10 @@ emit_compacted_instruction (TransformData *td, guint16* start_ip, InterpInst *in
 		g_assert (MINT_IS_PATCHABLE_CALL (opcode));
 
 		/* TODO: could `ins` be removed by any interp optimization? */
-		MonoMethod *target_method = (MonoMethod *) g_hash_table_lookup (td->patchsite_hash, ins);
+		MonoMethod *target_method = NULL;
+		dn_simdhash_ptr_ptr_try_get_value (td->patchsite_hash, ins, (void **)&target_method);
 		g_assert (target_method);
-		g_hash_table_remove (td->patchsite_hash, ins);
+		dn_simdhash_ptr_ptr_try_remove (td->patchsite_hash, ins);
 
 		mini_tiered_record_callsite (start_ip, target_method, TIERED_PATCH_KIND_INTERP);
 
@@ -9284,9 +9376,9 @@ retry:
 	td->dummy_var = -1;
 	td->ref_handle_var = -1;
 	td->data_items = NULL;
-	td->data_hash = g_hash_table_new (NULL, NULL);
+	td->data_hash = dn_simdhash_ptr_ptr_new (0, NULL);
 #ifdef ENABLE_EXPERIMENT_TIERED
-	td->patchsite_hash = g_hash_table_new (NULL, NULL);
+	td->patchsite_hash = dn_simdhash_ptr_ptr_new (0, NULL);
 #endif
 	td->gen_seq_points = !mini_debug_options.no_seq_points_compact_data || mini_debug_options.gen_sdb_seq_points;
 	td->gen_sdb_seq_points = mini_debug_options.gen_sdb_seq_points;
@@ -9507,9 +9599,9 @@ exit:
 	g_free (td->renamable_vars);
 	g_free (td->renamed_fixed_vars);
 	g_free (td->local_ref_count);
-	g_hash_table_destroy (td->data_hash);
+	dn_simdhash_free (td->data_hash);
 #ifdef ENABLE_EXPERIMENT_TIERED
-	g_hash_table_destroy (td->patchsite_hash);
+	dn_simdhash_free (td->patchsite_hash);
 #endif
 	g_ptr_array_free (td->seq_points, TRUE);
 	if (td->line_numbers)
@@ -9690,9 +9782,10 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 
 		// FIXME Publishing of seq points seems to be racy with tiereing. We can have both tiered and untiered method
 		// running at the same time. We could therefore get the optimized imethod seq points for the unoptimized method.
-		gpointer seq_points = g_hash_table_lookup (jit_mm->seq_points, imethod->method);
+		gpointer seq_points = NULL;
+		dn_simdhash_ght_try_get_value (jit_mm->seq_points, imethod->method, (void **)&seq_points);
 		if (!seq_points || seq_points != imethod->jinfo->seq_points)
-			g_hash_table_replace (jit_mm->seq_points, imethod->method, imethod->jinfo->seq_points);
+			dn_simdhash_ght_replace (jit_mm->seq_points, imethod->method, imethod->jinfo->seq_points);
 	}
 	jit_mm_unlock (jit_mm);
 
