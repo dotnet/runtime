@@ -1017,7 +1017,7 @@
     <Compile Include="System\Security\Cryptography\OpenSslCipher.cs" />
     <Compile Include="System\Security\Cryptography\OpenSslCipherLite.cs" />
     <Compile Include="System\Security\Cryptography\PasswordDeriveBytes.NotSupported.cs" />
-    <Compile Include="System\Security\Cryptography\Pbkdf2Implementation.Managed.cs" />
+    <Compile Include="System\Security\Cryptography\Pbkdf2Implementation.Android.cs" />
     <Compile Include="System\Security\Cryptography\PinAndClear.cs" />
     <Compile Include="System\Security\Cryptography\RandomNumberGeneratorImplementation.OpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\RC2CryptoServiceProvider.Unix.cs" />

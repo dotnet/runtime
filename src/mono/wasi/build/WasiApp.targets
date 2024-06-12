@@ -201,6 +201,7 @@
       <_WasmCommonCFlags Condition="'$(InvariantGlobalization)' == 'true'" Include="-DINVARIANT_GLOBALIZATION=1" />
       <_WasmCommonCFlags Condition="'$(InvariantTimezone)' == 'true'"      Include="-DINVARIANT_TIMEZONE=1" />
       <_WasmCommonCFlags Condition="'$(WasmLinkIcalls)' == 'true'"         Include="-DLINK_ICALLS=1" />
+      <_WasmCommonCFlags Condition="'$(_IsLibraryMode)' == 'true'"          Include="-DWASM_LIBRARY_MODE=1" />
       <_WasiClangCFlags Include="@(_WasmCommonCFlags)" />
 
       <_WasiClangCFlags Include="&quot;-I%(_WasmCommonIncludePaths.Identity)&quot;" />
