@@ -22,6 +22,8 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.StaticInterfaceMethods
 			GenericInterfaceGenericType.Test ();
 			PrivateExplicitImplementationReflectedOver.Test ();
 			InheritedInterfaces.Test ();
+			DimWithOverride.Test ();
+			Generics.Test ();
 		}
 
 		[Kept]
@@ -272,6 +274,100 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.StaticInterfaceMethods
 				[Kept]
 				[RemovedOverride (typeof (IBase))]
 				public static void M () { }
+			}
+		}
+
+		[Kept]
+		public class DimWithOverride
+		{
+			[Kept]
+			public static void Test ()
+			{
+				CallM<MyDerivedClass> ();
+				CallMAsIDerived<MyDerivedClass> ();
+			}
+
+			[Kept]
+			static void CallM<T> () where T : IBase
+			{
+				T.M ();
+			}
+
+			[Kept]
+			static void CallMAsIDerived<T> () where T : IDerived
+			{
+				T.M ();
+			}
+
+			[Kept]
+			interface IBase
+			{
+				[Kept]
+				static abstract void M ();
+			}
+
+			[KeptInterface (typeof (IBase))]
+			[Kept]
+			interface IDerived : IBase
+			{
+				[Kept]
+				[KeptOverride (typeof (IBase))]
+				static void IBase.M () { }
+			}
+
+			[Kept]
+			[KeptInterface (typeof (IDerived))]
+			[KeptInterface (typeof (IBase))]
+			class MyClass : IDerived
+			{
+			}
+
+			[Kept]
+			[KeptBaseType (typeof (MyClass))]
+			[KeptInterface (typeof (IBase))]
+			class MyDerivedClass : MyClass, IBase
+			{
+			}
+		}
+
+		public class Generics
+		{
+			[Kept]
+			public static void Test ()
+			{
+				UseIGeneric<MyType> ();
+			}
+
+			[Kept]
+			static void UseIGeneric<T> () where T : IGeneric<int>
+			{
+				T.GetT ();
+			}
+
+			[Kept]
+			interface IGeneric<T>
+			{
+				[Kept]
+				static abstract T GetT ();
+			}
+
+			[Kept]
+			[KeptInterface (typeof (IGeneric<int>))]
+			[KeptInterface (typeof (IGeneric<float>))]
+			[KeptInterface (typeof (IGeneric<string>))]
+			class MyType : IGeneric<int>, IGeneric<float>, IGeneric<string>
+			{
+				[Kept]
+				[KeptOverride (typeof (IGeneric<int>))]
+				static int IGeneric<int>.GetT () => 0;
+
+				[Kept]
+				[KeptOverride (typeof (IGeneric<float>))]
+				static float IGeneric<float>.GetT () => 0;
+
+				[Kept]
+				[KeptOverride (typeof (IGeneric<string>))]
+				static string IGeneric<string>.GetT () => "";
 			}
 		}
 	}
