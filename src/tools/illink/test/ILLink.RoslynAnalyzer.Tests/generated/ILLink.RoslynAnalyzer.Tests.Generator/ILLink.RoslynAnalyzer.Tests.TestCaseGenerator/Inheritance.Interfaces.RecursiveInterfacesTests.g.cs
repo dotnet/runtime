@@ -4,29 +4,25 @@ using Xunit;
 
 namespace ILLink.RoslynAnalyzer.Tests.Inheritance.Interfaces
 {
-	public sealed partial class StaticInterfaceMethodsTests : LinkerTestBase
+	public sealed partial class RecursiveInterfacesTests : LinkerTestBase
 	{
 
+		protected override string TestSuiteName => "Inheritance.Interfaces.RecursiveInterfaces";
+
 		[Fact]
-		public Task InstanceMethodsWithOverridesSwept ()
+		public Task GenericInterfaceImplementedRecursively ()
 		{
 			return RunTest (allowMissingWarnings: true);
 		}
 
 		[Fact]
-		public Task OverrideInCopyAssembly ()
+		public Task InterfaceImplementedRecursively ()
 		{
 			return RunTest (allowMissingWarnings: true);
 		}
 
 		[Fact]
-		public Task OverrideInSaveAssembly ()
-		{
-			return RunTest (allowMissingWarnings: true);
-		}
-
-		[Fact]
-		public Task VarianceBasic ()
+		public Task OverrideOfRecursiveInterfaceIsRemoved ()
 		{
 			return RunTest (allowMissingWarnings: true);
 		}

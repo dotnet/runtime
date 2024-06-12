@@ -14,7 +14,6 @@ using Mono.Cecil.Cil;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 using Mono.Linker.Tests.Extensions;
-using Mono.Linker.Tests.TestCasesRunner.ILVerification;
 using NUnit.Framework;
 
 namespace Mono.Linker.Tests.TestCasesRunner
@@ -94,7 +93,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				return false;
 
 			var caaIsUnsafeFlag = (CustomAttributeArgument caa) =>
-				caa.Type.IsTypeOf (WellKnownType.System_String)
+				caa.Type.IsTypeOf ("System.String")
 				&& (string) caa.Value == "/unsafe";
 			var customAttributeHasUnsafeFlag = (CustomAttribute ca) => ca.ConstructorArguments.Any (caaIsUnsafeFlag);
 			if (GetCustomAttributes (inputAssembly, nameof (SetupCompileArgumentAttribute))

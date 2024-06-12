@@ -3230,8 +3230,8 @@ namespace Mono.Linker.Steps
 						Context.Resolve (@base) is MethodDefinition baseDefinition
 						&& new OverrideInformation.OverridePair (baseDefinition, method).IsStaticInterfaceMethodPair ())
 						continue;
-					MarkMethod (@base, new DependencyInfo (DependencyKind.MethodImplOverride, method), methodOrigin);
-					MarkRuntimeInterfaceImplementation (method, @base);
+					MarkMethod (@base, new DependencyInfo (DependencyKind.MethodImplOverride, method), ScopeStack.CurrentScope.Origin);
+					MarkExplicitInterfaceImplementation (method, @base);
 				}
 			}
 
@@ -3346,21 +3346,20 @@ namespace Mono.Linker.Steps
 			DoAdditionalInstantiatedTypeProcessing (type);
 		}
 
-		void MarkRuntimeInterfaceImplementation (MethodDefinition method, MethodReference ov)
+		void MarkExplicitInterfaceImplementation (MethodDefinition method, MethodReference ov)
 		{
 			if (Context.Resolve (ov) is not MethodDefinition resolvedOverride)
 				return;
-			if (!resolvedOverride.DeclaringType.IsInterface)
-				return;
-			var interfaceToBeImplemented = ov.DeclaringType;
+			if (resolvedOverride.DeclaringType.IsInterface) {
+				foreach (var ifaceImpl in method.DeclaringType.Interfaces) {
+					var resolvedInterfaceType = Context.Resolve (ifaceImpl.InterfaceType);
+					if (resolvedInterfaceType == null) {
+						continue;
+					}
 
-			var ifaces = Annotations.GetRecursiveInterfaces (method.DeclaringType);
-			if (ifaces is null)
-				return;
-			foreach (var iface in ifaces) {
-				if (TypeReferenceEqualityComparer.AreEqual (iface.InterfaceType, interfaceToBeImplemented, Context)) {
-					MarkInterfaceImplementationList (iface.ImplementationChain, new MessageOrigin (method.DeclaringType));
-					return;
+					if (resolvedInterfaceType == resolvedOverride.DeclaringType) {
+						MarkInterfaceImplementation (ifaceImpl, new MessageOrigin (method.DeclaringType));
+					}
 				}
 			}
 		}
