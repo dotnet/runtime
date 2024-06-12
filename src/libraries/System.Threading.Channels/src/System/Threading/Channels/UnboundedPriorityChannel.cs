@@ -127,8 +127,14 @@ namespace System.Threading.Channels
                 }
             }
 
-            public override bool TryPeek([MaybeNullWhen(false)] out T item) =>
-                _parent._items.TryPeek(out _, out item);
+            public override bool TryPeek([MaybeNullWhen(false)] out T item)
+            {
+                UnboundedPrioritizedChannel<T> parent = _parent;
+                lock (parent.SyncObj)
+                {
+                    return parent._items.TryPeek(out _, out item);
+                }
+            }
 
             private static void CompleteIfDone(UnboundedPrioritizedChannel<T> parent)
             {
@@ -194,6 +200,7 @@ namespace System.Threading.Channels
         private sealed class UnboundedPrioritizedChannelWriter : ChannelWriter<T>, IDebugEnumerable<T>
         {
             internal readonly UnboundedPrioritizedChannel<T> _parent;
+
             internal UnboundedPrioritizedChannelWriter(UnboundedPrioritizedChannel<T> parent) => _parent = parent;
 
             public override bool TryComplete(Exception? error)
