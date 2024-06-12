@@ -69,6 +69,21 @@ namespace System.Collections.ObjectModel.Tests
         }
 
         [Fact]
+        public void ChangesToUnderlyingSetReflected()
+        {
+            var set = new HashSet<int> { 1, 2, 3 };
+            var readOnlySet = new ReadOnlySet<int>(set);
+
+            set.Add(4);
+            Assert.Equal(4, readOnlySet.Count);
+            Assert.True(readOnlySet.Contains(4));
+
+            set.Remove(2);
+            Assert.Equal(3, readOnlySet.Count);
+            Assert.False(readOnlySet.Contains(2));
+        }
+
+        [Fact]
         public void IsReadOnly_True()
         {
             var set = new ReadOnlySet<int>(new HashSet<int> { 1, 2, 3 });
