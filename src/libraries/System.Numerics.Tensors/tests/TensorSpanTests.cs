@@ -35,104 +35,108 @@ namespace System.Numerics.Tensors.Tests
         }
 
         public delegate void TensorPrimitivesSpanInSpanOut<T>(ReadOnlySpan<T> input, Span<T> output);
-        public delegate TensorSpan<T> TensorSpanInSpanOut<T>(TensorSpan<T> input);
+        public delegate TensorSpan<T> TensorSpanInSpanOut<T>(scoped in ReadOnlyTensorSpan<T> input);
+        public delegate TensorSpan<T> TensorSpanInSpanOutInPlace<T>(in TensorSpan<T> input);
 
         public static IEnumerable<object[]> SpanInSpanOutData()
         {
             yield return Create<float>(TensorPrimitives.Abs<float>, TensorSpan.Abs);
-            yield return Create<float>(TensorPrimitives.Abs, TensorSpan.AbsInPlace);
+            yield return CreateInPlace<float>(TensorPrimitives.Abs, TensorSpan.AbsInPlace);
             yield return Create<float>(TensorPrimitives.Acos, TensorSpan.Acos);
-            yield return Create<float>(TensorPrimitives.Acos, TensorSpan.AcosInPlace);
+            yield return CreateInPlace<float>(TensorPrimitives.Acos, TensorSpan.AcosInPlace);
             yield return Create<float>(TensorPrimitives.Acosh, TensorSpan.Acosh);
-            yield return Create<float>(TensorPrimitives.Acosh, TensorSpan.AcoshInPlace);
+            yield return CreateInPlace<float>(TensorPrimitives.Acosh, TensorSpan.AcoshInPlace);
             yield return Create<float>(TensorPrimitives.AcosPi, TensorSpan.AcosPi);
-            yield return Create<float>(TensorPrimitives.AcosPi, TensorSpan.AcosPiInPlace);
+            yield return CreateInPlace<float>(TensorPrimitives.AcosPi, TensorSpan.AcosPiInPlace);
             yield return Create<float>(TensorPrimitives.Asin, TensorSpan.Asin);
-            yield return Create<float>(TensorPrimitives.Asin, TensorSpan.AsinInPlace);
+            yield return CreateInPlace<float>(TensorPrimitives.Asin, TensorSpan.AsinInPlace);
             yield return Create<float>(TensorPrimitives.Asinh, TensorSpan.Asinh);
-            yield return Create<float>(TensorPrimitives.Asinh, TensorSpan.AsinhInPlace);
+            yield return CreateInPlace<float>(TensorPrimitives.Asinh, TensorSpan.AsinhInPlace);
             yield return Create<float>(TensorPrimitives.AsinPi, TensorSpan.AsinPi);
-            yield return Create<float>(TensorPrimitives.AsinPi, TensorSpan.AsinPiInPlace);
+            yield return CreateInPlace<float>(TensorPrimitives.AsinPi, TensorSpan.AsinPiInPlace);
             yield return Create<float>(TensorPrimitives.Atan, TensorSpan.Atan);
-            yield return Create<float>(TensorPrimitives.Atan, TensorSpan.AtanInPlace);
+            yield return CreateInPlace<float>(TensorPrimitives.Atan, TensorSpan.AtanInPlace);
             yield return Create<float>(TensorPrimitives.Atanh, TensorSpan.Atanh);
-            yield return Create<float>(TensorPrimitives.Atanh, TensorSpan.AtanhInPlace);
+            yield return CreateInPlace<float>(TensorPrimitives.Atanh, TensorSpan.AtanhInPlace);
             yield return Create<float>(TensorPrimitives.AtanPi, TensorSpan.AtanPi);
-            yield return Create<float>(TensorPrimitives.AtanPi, TensorSpan.AtanPiInPlace);
+            yield return CreateInPlace<float>(TensorPrimitives.AtanPi, TensorSpan.AtanPiInPlace);
             yield return Create<float>(TensorPrimitives.Cbrt, TensorSpan.CubeRoot);
-            yield return Create<float>(TensorPrimitives.Cbrt, TensorSpan.CubeRootInPlace);
+            yield return CreateInPlace<float>(TensorPrimitives.Cbrt, TensorSpan.CubeRootInPlace);
             yield return Create<float>(TensorPrimitives.Ceiling, TensorSpan.Ceiling);
-            yield return Create<float>(TensorPrimitives.Ceiling, TensorSpan.CeilingInPlace);
+            yield return CreateInPlace<float>(TensorPrimitives.Ceiling, TensorSpan.CeilingInPlace);
             yield return Create<float>(TensorPrimitives.Cos, TensorSpan.Cos);
-            yield return Create<float>(TensorPrimitives.Cos, TensorSpan.CosInPlace);
+            yield return CreateInPlace<float>(TensorPrimitives.Cos, TensorSpan.CosInPlace);
             yield return Create<float>(TensorPrimitives.Cosh, TensorSpan.Cosh);
-            yield return Create<float>(TensorPrimitives.Cosh, TensorSpan.CoshInPlace);
+            yield return CreateInPlace<float>(TensorPrimitives.Cosh, TensorSpan.CoshInPlace);
             yield return Create<float>(TensorPrimitives.CosPi, TensorSpan.CosPi);
-            yield return Create<float>(TensorPrimitives.CosPi, TensorSpan.CosPiInPlace);
+            yield return CreateInPlace<float>(TensorPrimitives.CosPi, TensorSpan.CosPiInPlace);
             yield return Create<float>(TensorPrimitives.DegreesToRadians, TensorSpan.DegreesToRadians);
-            yield return Create<float>(TensorPrimitives.DegreesToRadians, TensorSpan.DegreesToRadiansInPlace);
+            yield return CreateInPlace<float>(TensorPrimitives.DegreesToRadians, TensorSpan.DegreesToRadiansInPlace);
             yield return Create<float>(TensorPrimitives.Exp, TensorSpan.Exp);
-            yield return Create<float>(TensorPrimitives.Exp, TensorSpan.ExpInPlace);
+            yield return CreateInPlace<float>(TensorPrimitives.Exp, TensorSpan.ExpInPlace);
             yield return Create<float>(TensorPrimitives.Exp10, TensorSpan.Exp10);
-            yield return Create<float>(TensorPrimitives.Exp10, TensorSpan.Exp10InPlace);
+            yield return CreateInPlace<float>(TensorPrimitives.Exp10, TensorSpan.Exp10InPlace);
             yield return Create<float>(TensorPrimitives.Exp10M1, TensorSpan.Exp10M1);
-            yield return Create<float>(TensorPrimitives.Exp10M1, TensorSpan.Exp10M1InPlace);
+            yield return CreateInPlace<float>(TensorPrimitives.Exp10M1, TensorSpan.Exp10M1InPlace);
             yield return Create<float>(TensorPrimitives.Exp2, TensorSpan.Exp2);
-            yield return Create<float>(TensorPrimitives.Exp2, TensorSpan.Exp2InPlace);
+            yield return CreateInPlace<float>(TensorPrimitives.Exp2, TensorSpan.Exp2InPlace);
             yield return Create<float>(TensorPrimitives.Exp2M1, TensorSpan.Exp2M1);
-            yield return Create<float>(TensorPrimitives.Exp2M1, TensorSpan.Exp2M1InPlace);
+            yield return CreateInPlace<float>(TensorPrimitives.Exp2M1, TensorSpan.Exp2M1InPlace);
             yield return Create<float>(TensorPrimitives.ExpM1, TensorSpan.ExpM1);
-            yield return Create<float>(TensorPrimitives.ExpM1, TensorSpan.ExpM1InPlace);
+            yield return CreateInPlace<float>(TensorPrimitives.ExpM1, TensorSpan.ExpM1InPlace);
             yield return Create<float>(TensorPrimitives.Floor, TensorSpan.Floor);
-            yield return Create<float>(TensorPrimitives.Floor, TensorSpan.FloorInPlace);
+            yield return CreateInPlace<float>(TensorPrimitives.Floor, TensorSpan.FloorInPlace);
             yield return Create<int>(TensorPrimitives.LeadingZeroCount, TensorSpan.LeadingZeroCount);
-            yield return Create<int>(TensorPrimitives.LeadingZeroCount, TensorSpan.LeadingZeroCount);
+            yield return CreateInPlace<int>(TensorPrimitives.LeadingZeroCount, TensorSpan.LeadingZeroCountInPlace);
             yield return Create<float>(TensorPrimitives.Log, TensorSpan.Log);
-            yield return Create<float>(TensorPrimitives.Log, TensorSpan.LogInPlace);
+            yield return CreateInPlace<float>(TensorPrimitives.Log, TensorSpan.LogInPlace);
             yield return Create<float>(TensorPrimitives.Log10, TensorSpan.Log10);
-            yield return Create<float>(TensorPrimitives.Log10, TensorSpan.Log10InPlace);
+            yield return CreateInPlace<float>(TensorPrimitives.Log10, TensorSpan.Log10InPlace);
             yield return Create<float>(TensorPrimitives.Log10P1, TensorSpan.Log10P1);
-            yield return Create<float>(TensorPrimitives.Log10P1, TensorSpan.Log10P1InPlace);
+            yield return CreateInPlace<float>(TensorPrimitives.Log10P1, TensorSpan.Log10P1InPlace);
             yield return Create<float>(TensorPrimitives.Log2, TensorSpan.Log2);
-            yield return Create<float>(TensorPrimitives.Log2, TensorSpan.Log2InPlace);
+            yield return CreateInPlace<float>(TensorPrimitives.Log2, TensorSpan.Log2InPlace);
             yield return Create<float>(TensorPrimitives.Log2P1, TensorSpan.Log2P1);
-            yield return Create<float>(TensorPrimitives.Log2P1, TensorSpan.Log2P1InPlace);
+            yield return CreateInPlace<float>(TensorPrimitives.Log2P1, TensorSpan.Log2P1InPlace);
             yield return Create<float>(TensorPrimitives.LogP1, TensorSpan.LogP1);
-            yield return Create<float>(TensorPrimitives.LogP1, TensorSpan.LogP1InPlace);
+            yield return CreateInPlace<float>(TensorPrimitives.LogP1, TensorSpan.LogP1InPlace);
             yield return Create<float>(TensorPrimitives.Negate, TensorSpan.Negate);
-            yield return Create<float>(TensorPrimitives.Negate, TensorSpan.NegateInPlace);
+            yield return CreateInPlace<float>(TensorPrimitives.Negate, TensorSpan.NegateInPlace);
             yield return Create<float>(TensorPrimitives.OnesComplement, TensorSpan.OnesComplement);
-            yield return Create<float>(TensorPrimitives.OnesComplement, TensorSpan.OnesComplementInPlace);
+            yield return CreateInPlace<float>(TensorPrimitives.OnesComplement, TensorSpan.OnesComplementInPlace);
             yield return Create<int>(TensorPrimitives.PopCount, TensorSpan.PopCount);
-            yield return Create<int>(TensorPrimitives.PopCount, TensorSpan.PopCountInPlace);
+            yield return CreateInPlace<int>(TensorPrimitives.PopCount, TensorSpan.PopCountInPlace);
             yield return Create<float>(TensorPrimitives.RadiansToDegrees, TensorSpan.RadiansToDegrees);
-            yield return Create<float>(TensorPrimitives.RadiansToDegrees, TensorSpan.RadiansToDegreesInPlace);
+            yield return CreateInPlace<float>(TensorPrimitives.RadiansToDegrees, TensorSpan.RadiansToDegreesInPlace);
             yield return Create<float>(TensorPrimitives.Reciprocal, TensorSpan.Reciprocal);
-            yield return Create<float>(TensorPrimitives.Reciprocal, TensorSpan.ReciprocalInPlace);
+            yield return CreateInPlace<float>(TensorPrimitives.Reciprocal, TensorSpan.ReciprocalInPlace);
             yield return Create<float>(TensorPrimitives.Round, TensorSpan.Round);
-            yield return Create<float>(TensorPrimitives.Round, TensorSpan.RoundInPlace);
+            yield return CreateInPlace<float>(TensorPrimitives.Round, TensorSpan.RoundInPlace);
             yield return Create<float>(TensorPrimitives.Sigmoid, TensorSpan.Sigmoid);
-            yield return Create<float>(TensorPrimitives.Sigmoid, TensorSpan.SigmoidInPlace);
+            yield return CreateInPlace<float>(TensorPrimitives.Sigmoid, TensorSpan.SigmoidInPlace);
             yield return Create<float>(TensorPrimitives.Sin, TensorSpan.Sin);
-            yield return Create<float>(TensorPrimitives.Sin, TensorSpan.SinInPlace);
+            yield return CreateInPlace<float>(TensorPrimitives.Sin, TensorSpan.SinInPlace);
             yield return Create<float>(TensorPrimitives.Sinh, TensorSpan.Sinh);
-            yield return Create<float>(TensorPrimitives.Sinh, TensorSpan.SinhInPlace);
+            yield return CreateInPlace<float>(TensorPrimitives.Sinh, TensorSpan.SinhInPlace);
             yield return Create<float>(TensorPrimitives.SinPi, TensorSpan.SinPi);
-            yield return Create<float>(TensorPrimitives.SinPi, TensorSpan.SinPiInPlace);
+            yield return CreateInPlace<float>(TensorPrimitives.SinPi, TensorSpan.SinPiInPlace);
             yield return Create<float>(TensorPrimitives.SoftMax, TensorSpan.SoftMax);
-            yield return Create<float>(TensorPrimitives.SoftMax, TensorSpan.SoftMaxInPlace);
+            yield return CreateInPlace<float>(TensorPrimitives.SoftMax, TensorSpan.SoftMaxInPlace);
             yield return Create<float>(TensorPrimitives.Sqrt, TensorSpan.Sqrt);
-            yield return Create<float>(TensorPrimitives.Sqrt, TensorSpan.SqrtInPlace);
+            yield return CreateInPlace<float>(TensorPrimitives.Sqrt, TensorSpan.SqrtInPlace);
             yield return Create<float>(TensorPrimitives.Tan, TensorSpan.Tan);
-            yield return Create<float>(TensorPrimitives.Tan, TensorSpan.TanInPlace);
+            yield return CreateInPlace<float>(TensorPrimitives.Tan, TensorSpan.TanInPlace);
             yield return Create<float>(TensorPrimitives.Tanh, TensorSpan.Tanh);
-            yield return Create<float>(TensorPrimitives.Tanh, TensorSpan.TanhInPlace);
+            yield return CreateInPlace<float>(TensorPrimitives.Tanh, TensorSpan.TanhInPlace);
             yield return Create<float>(TensorPrimitives.TanPi, TensorSpan.TanPi);
-            yield return Create<float>(TensorPrimitives.TanPi, TensorSpan.TanPiInPlace);
+            yield return CreateInPlace<float>(TensorPrimitives.TanPi, TensorSpan.TanPiInPlace);
             yield return Create<float>(TensorPrimitives.Truncate, TensorSpan.Truncate);
-            yield return Create<float>(TensorPrimitives.Truncate, TensorSpan.TruncateInPlace);
+            yield return CreateInPlace<float>(TensorPrimitives.Truncate, TensorSpan.TruncateInPlace);
 
             static object[] Create<T>(TensorPrimitivesSpanInSpanOut<T> tensorPrimitivesMethod, TensorSpanInSpanOut<T> tensorOperation)
+                => new object[] { tensorPrimitivesMethod, tensorOperation };
+
+            static object[] CreateInPlace<T>(TensorPrimitivesSpanInSpanOut<T> tensorPrimitivesMethod, TensorSpanInSpanOutInPlace<T> tensorOperation)
                 => new object[] { tensorPrimitivesMethod, tensorOperation };
         }
 
@@ -163,7 +167,7 @@ namespace System.Numerics.Tensors.Tests
         }
 
         public delegate T TensorPrimitivesSpanInTOut<T>(ReadOnlySpan<T> input);
-        public delegate T TensorSpanInTOut<T>(TensorSpan<T> input);
+        public delegate T TensorSpanInTOut<T>(scoped in ReadOnlyTensorSpan<T> input);
         public static IEnumerable<object[]> SpanInFloatOutData()
         {
             yield return Create<float>(TensorPrimitives.Max, TensorSpan.Max);
@@ -199,31 +203,35 @@ namespace System.Numerics.Tensors.Tests
         }
 
         public delegate void TensorPrimitivesTwoSpanInSpanOut<T>(ReadOnlySpan<T> input, ReadOnlySpan<T> inputTwo, Span<T> output);
-        public delegate TensorSpan<T> TensorTwoSpanInSpanOut<T>(TensorSpan<T> input, TensorSpan<T> inputTwo);
+        public delegate TensorSpan<T> TensorTwoSpanInSpanOut<T>(scoped in ReadOnlyTensorSpan<T> input, scoped in ReadOnlyTensorSpan<T> inputTwo);
+        public delegate TensorSpan<T> TensorTwoSpanInSpanOutInPlace<T>(in TensorSpan<T> input, scoped in ReadOnlyTensorSpan<T> inputTwo);
         public static IEnumerable<object[]> TwoSpanInSpanOutData()
         {
             yield return Create<float>(TensorPrimitives.Add, TensorSpan.Add);
-            yield return Create<float>(TensorPrimitives.Add, TensorSpan.AddInPlace);
+            yield return CreateInPlace<float>(TensorPrimitives.Add, TensorSpan.AddInPlace);
             yield return Create<float>(TensorPrimitives.Atan2, TensorSpan.Atan2);
-            yield return Create<float>(TensorPrimitives.Atan2, TensorSpan.Atan2InPlace);
+            yield return CreateInPlace<float>(TensorPrimitives.Atan2, TensorSpan.Atan2InPlace);
             yield return Create<float>(TensorPrimitives.Atan2Pi, TensorSpan.Atan2Pi);
-            yield return Create<float>(TensorPrimitives.Atan2Pi, TensorSpan.Atan2PiInPlace);
+            yield return CreateInPlace<float>(TensorPrimitives.Atan2Pi, TensorSpan.Atan2PiInPlace);
             yield return Create<float>(TensorPrimitives.CopySign, TensorSpan.CopySign);
-            yield return Create<float>(TensorPrimitives.CopySign, TensorSpan.CopySignInPlace);
+            yield return CreateInPlace<float>(TensorPrimitives.CopySign, TensorSpan.CopySignInPlace);
             yield return Create<float>(TensorPrimitives.Divide, TensorSpan.Divide);
-            yield return Create<float>(TensorPrimitives.Divide, TensorSpan.DivideInPlace);
+            yield return CreateInPlace<float>(TensorPrimitives.Divide, TensorSpan.DivideInPlace);
             yield return Create<float>(TensorPrimitives.Hypot, TensorSpan.Hypotenuse);
-            yield return Create<float>(TensorPrimitives.Hypot, TensorSpan.HypotenuseInPlace);
+            yield return CreateInPlace<float>(TensorPrimitives.Hypot, TensorSpan.HypotenuseInPlace);
             yield return Create<float>(TensorPrimitives.Ieee754Remainder, TensorSpan.Ieee754Remainder);
-            yield return Create<float>(TensorPrimitives.Ieee754Remainder, TensorSpan.Ieee754RemainderInPlace);
+            yield return CreateInPlace<float>(TensorPrimitives.Ieee754Remainder, TensorSpan.Ieee754RemainderInPlace);
             yield return Create<float>(TensorPrimitives.Multiply, TensorSpan.Multiply);
-            yield return Create<float>(TensorPrimitives.Multiply, TensorSpan.MultiplyInPlace);
+            yield return CreateInPlace<float>(TensorPrimitives.Multiply, TensorSpan.MultiplyInPlace);
             yield return Create<float>(TensorPrimitives.Pow, TensorSpan.Pow);
-            yield return Create<float>(TensorPrimitives.Pow, TensorSpan.PowInPlace);
+            yield return CreateInPlace<float>(TensorPrimitives.Pow, TensorSpan.PowInPlace);
             yield return Create<float>(TensorPrimitives.Subtract, TensorSpan.Subtract);
-            yield return Create<float>(TensorPrimitives.Subtract, TensorSpan.SubtractInPlace);
+            yield return CreateInPlace<float>(TensorPrimitives.Subtract, TensorSpan.SubtractInPlace);
 
             static object[] Create<T>(TensorPrimitivesTwoSpanInSpanOut<T> tensorPrimitivesMethod, TensorTwoSpanInSpanOut<T> tensorOperation)
+                => new object[] { tensorPrimitivesMethod, tensorOperation };
+
+            static object[] CreateInPlace<T>(TensorPrimitivesTwoSpanInSpanOut<T> tensorPrimitivesMethod, TensorTwoSpanInSpanOutInPlace<T> tensorOperation)
                 => new object[] { tensorPrimitivesMethod, tensorOperation };
         }
 
@@ -257,7 +265,7 @@ namespace System.Numerics.Tensors.Tests
         }
 
         public delegate T TensorPrimitivesTwoSpanInTOut<T>(ReadOnlySpan<T> input, ReadOnlySpan<T> inputTwo);
-        public delegate T TensorTwoSpanInTOut<T>(TensorSpan<T> input, TensorSpan<T> inputTwo);
+        public delegate T TensorTwoSpanInTOut<T>(scoped in ReadOnlyTensorSpan<T> input, scoped in ReadOnlyTensorSpan<T> inputTwo);
         public static IEnumerable<object[]> TwoSpanInFloatOutData()
         {
             yield return Create<float>(TensorPrimitives.Distance, TensorSpan.Distance);

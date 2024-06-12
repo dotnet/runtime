@@ -46,6 +46,46 @@ namespace System.Numerics.Tensors
         #region Broadcast
         /// <summary>
         /// Broadcast the data from <paramref name="left"/> to the smallest broadcastable shape compatible with <paramref name="right"/>. Creates a new <see cref="Tensor{T}"/> and allocates new memory.
+        /// If the shapes are not compatible, <see cref="bool"/> is returned.
+        /// </summary>
+        /// <param name="left">Input <see cref="Tensor{T}"/>.</param>
+        /// <param name="right">Other <see cref="Tensor{T}"/> to make shapes broadcastable.</param>
+        /// <param name="destination">Destination <see cref="Tensor{T}"/>.</param>
+        /// <returns></returns>
+        public static bool TryBroadcastTo<T>(Tensor<T> left, Tensor<T> right, out Tensor<T> destination)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>
+        {
+            try
+            {
+                nint[] newSize = TensorHelpers.GetSmallestBroadcastableSize(left.Lengths, right.Lengths);
+
+                Tensor<T> intermediate = BroadcastTo(left, newSize);
+                destination = Tensor.Create(intermediate.ToArray(), intermediate.Lengths);
+                return true;
+            }
+            catch
+            {
+                destination = Tensor<T>.Empty;
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Broadcast the data from <paramref name="input"/> to the new shape <paramref name="shape"/>. Creates a new <see cref="Tensor{T}"/> and allocates new memory.
+        /// If the shape of the <paramref name="input"/> is not compatible with the new shape, an exception is thrown.
+        /// </summary>
+        /// <param name="input">Input <see cref="Tensor{T}"/>.</param>
+        /// <param name="shape"><see cref="ReadOnlySpan{T}"/> of the desired new shape.</param>
+        /// <exception cref="ArgumentException">Thrown when the shapes are not broadcast compatible.</exception>
+        public static Tensor<T> TryBroadcastTo<T>(Tensor<T> input, ReadOnlySpan<nint> shape)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>
+        {
+            Tensor<T> intermediate = BroadcastTo(input, shape);
+            return Tensor.Create(intermediate.ToArray(), intermediate.Lengths);
+        }
+
+        /// <summary>
+        /// Broadcast the data from <paramref name="left"/> to the smallest broadcastable shape compatible with <paramref name="right"/>. Creates a new <see cref="Tensor{T}"/> and allocates new memory.
         /// </summary>
         /// <param name="left">Input <see cref="Tensor{T}"/>.</param>
         /// <param name="right">Other <see cref="Tensor{T}"/> to make shapes broadcastable.</param>
@@ -87,7 +127,7 @@ namespace System.Numerics.Tensors
             if (input.Lengths.SequenceEqual(shape))
                 return new Tensor<T>(input._values, shape, false);
 
-            if (!TensorHelpers.AreShapesBroadcastCompatible(input.Lengths, shape))
+            if (!TensorHelpers.IsBroadcastableTo(input.Lengths, shape))
                 ThrowHelper.ThrowArgument_ShapesNotBroadcastCompatible();
 
             nint newSize = TensorSpanHelpers.CalculateTotalLength(shape);

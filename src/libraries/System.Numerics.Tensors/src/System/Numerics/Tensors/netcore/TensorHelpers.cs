@@ -28,31 +28,31 @@ namespace System.Numerics.Tensors
             return count;
         }
 
-        internal static bool AreShapesBroadcastCompatible<T>(Tensor<T> tensor1, Tensor<T> tensor2)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool> => AreShapesBroadcastCompatible(tensor1.Lengths, tensor2.Lengths);
+        internal static bool IsBroadcastableTo<T>(Tensor<T> tensor1, Tensor<T> tensor2)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool> => IsBroadcastableTo(tensor1.Lengths, tensor2.Lengths);
 
-        internal static bool AreShapesBroadcastCompatible(ReadOnlySpan<nint> shape1, ReadOnlySpan<nint> shape2)
+        internal static bool IsBroadcastableTo(ReadOnlySpan<nint> lengths1, ReadOnlySpan<nint> lengths2)
         {
-            int shape1Index = shape1.Length - 1;
-            int shape2Index = shape2.Length - 1;
+            int lengths1Index = lengths1.Length - 1;
+            int lengths2Index = lengths2.Length - 1;
 
             bool areCompatible = true;
 
             nint s1;
             nint s2;
 
-            while (shape1Index >= 0 || shape2Index >= 0)
+            while (lengths1Index >= 0 || lengths2Index >= 0)
             {
                 // if a dimension is missing in one of the shapes, it is considered to be 1
-                if (shape1Index < 0)
+                if (lengths1Index < 0)
                     s1 = 1;
                 else
-                    s1 = shape1[shape1Index--];
+                    s1 = lengths1[lengths1Index--];
 
-                if (shape2Index < 0)
+                if (lengths2Index < 0)
                     s2 = 1;
                 else
-                    s2 = shape2[shape2Index--];
+                    s2 = lengths2[lengths2Index--];
 
                 if (s1 == s2 || (s1 == 1 && s2 != 1) || (s2 == 1 && s1 != 1)) { }
                 else
@@ -67,7 +67,7 @@ namespace System.Numerics.Tensors
 
         internal static nint[] GetSmallestBroadcastableSize(ReadOnlySpan<nint> shape1, ReadOnlySpan<nint> shape2)
         {
-            if (!AreShapesBroadcastCompatible(shape1, shape2))
+            if (!IsBroadcastableTo(shape1, shape2))
                 throw new Exception("Shapes are not broadcast compatible");
 
             nint[] intermediateShape = GetIntermediateShape(shape1, shape2.Length);
