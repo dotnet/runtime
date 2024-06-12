@@ -1548,7 +1548,7 @@ assembly_name_to_aname (MonoAssemblyName *assembly, char *p)
 	}
 	assembly->name = p;
 	s = p;
-	while (*p && (isalnum (*p) || *p == '.' || *p == '-' || *p == '_' || *p == '$' || *p == '@' || g_ascii_isspace (*p)))
+	while (*p && (*p != ','))
 		p++;
 	if (quoted) {
 		if (*p != '"')
@@ -1648,7 +1648,7 @@ assembly_name_to_aname (MonoAssemblyName *assembly, char *p)
 			found_sep = 1;
 			continue;
 		}
-		/* failed */
+		/* Done processing */
 		if (!found_sep)
 			return 1;
 	}
