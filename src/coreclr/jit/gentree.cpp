@@ -14327,15 +14327,12 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
 
     val = cons->AsIntConCommon()->IconValue();
 
-    // Transforms that would drop op cannot be performed if op has side effects
-    bool opHasSideEffects = (op->gtFlags & GTF_SIDE_EFFECT) != 0;
-
     // Helper function that creates a new IntCon node and morphs it, if required
     auto NewMorphedIntConNode = [&](int value) -> GenTreeIntCon* {
         GenTreeIntCon* icon = gtNewIconNode(value);
         if (fgGlobalMorph)
         {
-            fgMorphTreeDone(icon);
+            INDEBUG(icon->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
         }
         return icon;
     };
@@ -14370,43 +14367,52 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
     switch (oper)
     {
         case GT_LE:
-            if (tree->IsUnsigned() && (val == 0) && (op1 == cons) && !opHasSideEffects)
+        {
+            if (tree->IsUnsigned() && (val == 0) && (op1 == cons))
             {
                 // unsigned (0 <= x) is always true
-                op = NewMorphedIntConNode(1);
+                op = gtWrapWithSideEffects(NewMorphedIntConNode(1), op, GTF_ALL_EFFECT);
                 goto DONE_FOLD;
             }
             break;
+        }
 
         case GT_GE:
-            if (tree->IsUnsigned() && (val == 0) && (op2 == cons) && !opHasSideEffects)
+        {
+            if (tree->IsUnsigned() && (val == 0) && (op2 == cons))
             {
                 // unsigned (x >= 0) is always true
-                op = NewMorphedIntConNode(1);
+                op = gtWrapWithSideEffects(NewMorphedIntConNode(1), op, GTF_ALL_EFFECT);
                 goto DONE_FOLD;
             }
             break;
+        }
 
         case GT_LT:
-            if (tree->IsUnsigned() && (val == 0) && (op2 == cons) && !opHasSideEffects)
+        {
+            if (tree->IsUnsigned() && (val == 0) && (op2 == cons))
             {
                 // unsigned (x < 0) is always false
-                op = NewMorphedIntConNode(0);
+                op = gtWrapWithSideEffects(NewMorphedIntConNode(0), op, GTF_ALL_EFFECT);
                 goto DONE_FOLD;
             }
             break;
+        }
 
         case GT_GT:
-            if (tree->IsUnsigned() && (val == 0) && (op1 == cons) && !opHasSideEffects)
+        {
+            if (tree->IsUnsigned() && (val == 0) && (op1 == cons))
             {
                 // unsigned (0 > x) is always false
-                op = NewMorphedIntConNode(0);
+                op = gtWrapWithSideEffects(NewMorphedIntConNode(0), op, GTF_ALL_EFFECT);
                 goto DONE_FOLD;
             }
+        }
             FALLTHROUGH;
+
         case GT_EQ:
         case GT_NE:
-
+        {
             // Optimize boxed value classes; these are always false.  This IL is
             // generated when a generic value is tested against null:
             //     <T> ... foo(T x) { ... if ((object)x == null) ...
@@ -14468,57 +14474,59 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
             {
                 return gtFoldBoxNullable(tree);
             }
-
             break;
+        }
 
         case GT_ADD:
+        {
             if (val == 0)
             {
                 goto DONE_FOLD;
             }
             break;
+        }
 
         case GT_MUL:
+        {
             if (val == 1)
             {
                 goto DONE_FOLD;
             }
             else if (val == 0)
             {
-                /* Multiply by zero - return the 'zero' node, but not if side effects */
-                if (!opHasSideEffects)
-                {
-                    op = cons;
-                    goto DONE_FOLD;
-                }
+                // Multiply by zero - return the 'zero' node
+                op = gtWrapWithSideEffects(cons, op, GTF_ALL_EFFECT);
+                goto DONE_FOLD;
             }
             break;
+        }
 
         case GT_DIV:
         case GT_UDIV:
+        {
             if ((op2 == cons) && (val == 1) && !op1->OperIsConst())
             {
                 goto DONE_FOLD;
             }
             break;
+        }
 
         case GT_SUB:
+        {
             if ((op2 == cons) && (val == 0) && !op1->OperIsConst())
             {
                 goto DONE_FOLD;
             }
             break;
+        }
 
         case GT_AND:
+        {
             if (val == 0)
             {
-                /* AND with zero - return the 'zero' node, but not if side effects */
-
-                if (!opHasSideEffects)
-                {
-                    op = cons;
-                    goto DONE_FOLD;
-                }
+                // AND with zero - return the 'zero' node
+                op = gtWrapWithSideEffects(cons, op, GTF_ALL_EFFECT);
+                goto DONE_FOLD;
             }
             else if (val == 0xFF)
             {
@@ -14551,8 +14559,10 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
                 }
             }
             break;
+        }
 
         case GT_OR:
+        {
             if (val == 0)
             {
                 goto DONE_FOLD;
@@ -14563,34 +14573,33 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
 
                 assert(val == 1);
 
-                /* OR with one - return the 'one' node, but not if side effects */
-
-                if (!opHasSideEffects)
-                {
-                    op = cons;
-                    goto DONE_FOLD;
-                }
+                // OR with one - return the 'one' node
+                op = gtWrapWithSideEffects(cons, op, GTF_ALL_EFFECT);
+                goto DONE_FOLD;
             }
             break;
+        }
 
         case GT_LSH:
         case GT_RSH:
         case GT_RSZ:
         case GT_ROL:
         case GT_ROR:
+        {
             if (val == 0)
             {
                 if (op2 == cons)
                 {
                     goto DONE_FOLD;
                 }
-                else if (!opHasSideEffects)
+                else
                 {
-                    op = cons;
+                    op = gtWrapWithSideEffects(cons, op, GTF_ALL_EFFECT);
                     goto DONE_FOLD;
                 }
             }
             break;
+        }
 
         case GT_QMARK:
         {
@@ -14613,9 +14622,8 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
             {
                 fgWalkTreePre(&op, gtClearColonCond);
             }
-        }
-
             goto DONE_FOLD;
+        }
 
         default:
             break;
@@ -14632,6 +14640,13 @@ DONE_FOLD:
     JITDUMP("Transformed into:\n");
     DISPTREE(op);
 
+    if (fgGlobalMorph)
+    {
+        // We can sometimes produce a comma over the constant if the original op
+        // had a side effect, so just ensure we set the flag (which will be already
+        // set for the operands otherwise).
+        INDEBUG(op->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+    }
     return op;
 }
 
