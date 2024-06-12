@@ -1341,15 +1341,12 @@ bool Thread::IsRandomizedSamplingEnabled()
 
 int Thread::ComputeGeometricRandom()
 {
-    const uint32_t maxValue = 2 ^ 32;
+    const uint32_t maxValue = 0xFFFFFFFF;
 
     // compute a random sample from the Geometric distribution
     double probability = (maxValue - NextRand()) / maxValue;
     int threshold = (int)(-log(1 - probability) * SamplingDistributionMean);
     return threshold;
-
-    //// ensure to never end up inside the allocation context to avoid sampling
-    //return SamplingDistributionMean;
 }
 
 inline void Thread::UpdateCombinedLimit(bool samplingEnabled)
