@@ -76,11 +76,11 @@ namespace System
         // Number of days in a non-leap year
         private const int DaysPerYear = 365;
         // Number of days in 4 years
-        private const int DaysPer4Years = DaysPerYear * 4 + 1;       // 1461
+        internal const int DaysPer4Years = DaysPerYear * 4 + 1;       // 1461
         // Number of days in 100 years
         private const int DaysPer100Years = DaysPer4Years * 25 - 1;  // 36524
         // Number of days in 400 years
-        private const int DaysPer400Years = DaysPer100Years * 4 + 1; // 146097
+        internal const int DaysPer400Years = DaysPer100Years * 4 + 1; // 146097
 
         // Number of days from 1/1/0001 to 12/31/1600
         private const int DaysTo1601 = DaysPer400Years * 4;          // 584388
@@ -89,7 +89,7 @@ namespace System
         // Number of days from 1/1/0001 to 12/31/1969
         internal const int DaysTo1970 = DaysPer400Years * 4 + DaysPer100Years * 3 + DaysPer4Years * 17 + DaysPerYear; // 719,162
         // Number of days from 1/1/0001 to 12/31/9999
-        private const int DaysTo10000 = DaysPer400Years * 25 - 366;  // 3652059
+        internal const int DaysTo10000 = DaysPer400Years * 25 - 366;  // 3652059
 
         internal const long MinTicks = 0;
         internal const long MaxTicks = DaysTo10000 * TicksPerDay - 1;
@@ -116,11 +116,11 @@ namespace System
         // Constants used for fast calculation of following subexpressions
         //      x / DaysPer4Years
         //      x % DaysPer4Years / 4
-        private const uint EafMultiplier = (uint)(((1UL << 32) + DaysPer4Years - 1) / DaysPer4Years);   // 2,939,745
-        private const uint EafDivider = EafMultiplier * 4;                                              // 11,758,980
+        internal const uint EafMultiplier = (uint)(((1UL << 32) + DaysPer4Years - 1) / DaysPer4Years);   // 2,939,745
+        internal const uint EafDivider = EafMultiplier * 4;                                              // 11,758,980
 
         private const ulong TicksPer6Hours = TicksPerHour * 6;
-        private const int March1BasedDayOfNewYear = 306;              // Days between March 1 and January 1
+        internal const int March1BasedDayOfNewYear = 306;              // Days between March 1 and January 1
 
         internal static ReadOnlySpan<uint> DaysToMonth365 => [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365];
         internal static ReadOnlySpan<uint> DaysToMonth366 => [0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335, 366];

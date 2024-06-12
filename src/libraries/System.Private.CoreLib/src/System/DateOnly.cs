@@ -26,8 +26,8 @@ namespace System
         // Maps to Jan 1st year 1
         private const int MinDayNumber = 0;
 
-        // Maps to December 31 year 9999. The value calculated from "new DateTime(9999, 12, 31).Ticks / TimeSpan.TicksPerDay"
-        private const int MaxDayNumber = 3_652_058;
+        // Maps to December 31 year 9999.
+        private const int MaxDayNumber = DateTime.DaysTo10000 - 1;
 
         private static int DayNumberFromDateTime(DateTime dt) => (int)((ulong)dt.Ticks / TimeSpan.TicksPerDay);
 
@@ -83,17 +83,49 @@ namespace System
         /// <summary>
         /// Gets the year component of the date represented by this instance.
         /// </summary>
-        public int Year => GetEquivalentDateTime().Year;
+        public int Year
+        {
+            get
+            {
+                // y100 = number of whole 100-year periods since 1/1/0001
+                // r1 = (day number within 100-year period) * 4
+                (uint y100, uint r1) = Math.DivRem((((uint)_dayNumber << 2) | 3U), DateTime.DaysPer400Years);
+                return 1 + (int)(100 * y100 + (r1 | 3) / DateTime.DaysPer4Years);
+            }
+        }
 
         /// <summary>
         /// Gets the month component of the date represented by this instance.
         /// </summary>
-        public int Month => GetEquivalentDateTime().Month;
+        public int Month
+        {
+            get
+            {
+                // r1 = (day number within 100-year period) * 4
+                uint r1 = ((((uint)_dayNumber << 2) | 3U) + 1224) % DateTime.DaysPer400Years;
+                ulong u2 = Math.BigMul(DateTime.EafMultiplier, r1 | 3U);
+                ushort daySinceMarch1 = (ushort)((uint)u2 / DateTime.EafDivider);
+                int n3 = 2141 * daySinceMarch1 + 197913;
+                return (ushort)(n3 >> 16) - (daySinceMarch1 >= DateTime.March1BasedDayOfNewYear ? 12 : 0);
+            }
+        }
 
         /// <summary>
         /// Gets the day component of the date represented by this instance.
         /// </summary>
-        public int Day => GetEquivalentDateTime().Day;
+        public int Day
+        {
+            get
+            {
+                // r1 = (day number within 100-year period) * 4
+                uint r1 = ((((uint)_dayNumber << 2) | 3U) + 1224) % DateTime.DaysPer400Years;
+                ulong u2 = Math.BigMul(DateTime.EafMultiplier, r1 | 3U);
+                ushort daySinceMarch1 = (ushort)((uint)u2 / DateTime.EafDivider);
+                int n3 = 2141 * daySinceMarch1 + 197913;
+                // Return 1-based day-of-month
+                return (ushort)n3 / 2141 + 1;
+            }
+        }
 
         /// <summary>
         /// Gets the day of the week represented by this instance.
@@ -103,7 +135,8 @@ namespace System
         /// <summary>
         /// Gets the day of the year represented by this instance.
         /// </summary>
-        public int DayOfYear => GetEquivalentDateTime().DayOfYear;
+        public int DayOfYear
+            => 1 + (int)((((((uint)_dayNumber << 2) | 3U) % (uint)DateTime.DaysPer400Years) | 3U) * DateTime.EafMultiplier / DateTime.EafDivider);
 
         /// <summary>
         /// Gets the number of days since January 1, 0001 in the Proleptic Gregorian calendar represented by this instance.
@@ -207,7 +240,28 @@ namespace System
         /// </param>
         [EditorBrowsable(EditorBrowsableState.Never)]
         public void Deconstruct(out int year, out int month, out int day)
-            => GetEquivalentDateTime().GetDate(out year, out month, out day);
+        {
+            // Implementation based on article https://arxiv.org/pdf/2102.06959.pdf
+            //   Cassio Neri, Lorenz Schneider - Euclidean Affine Functions and Applications to Calendar Algorithms - 2021
+
+            // y100 = number of whole 100-year periods since 3/1/0000
+            // r1 = (day number within 100-year period) * 4
+            (uint y100, uint r1) = Math.DivRem((((uint)_dayNumber << 2) | 3U) + 1224, DateTime.DaysPer400Years);
+            ulong u2 = Math.BigMul(DateTime.EafMultiplier, r1 | 3U);
+            ushort daySinceMarch1 = (ushort)((uint)u2 / DateTime.EafDivider);
+            int n3 = 2141 * daySinceMarch1 + 197913;
+            year = (int)(100 * y100 + (uint)(u2 >> 32));
+            // compute month and day
+            month = (ushort)(n3 >> 16);
+            day = (ushort)n3 / 2141 + 1;
+
+            // rollover December 31
+            if (daySinceMarch1 >= DateTime.March1BasedDayOfNewYear)
+            {
+                ++year;
+                month -= 12;
+            }
+        }
 
         /// <summary>
         /// Returns a DateTime that is set to the date of this DateOnly instance and the time of specified input time.
