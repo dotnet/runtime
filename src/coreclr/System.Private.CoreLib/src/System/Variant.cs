@@ -350,13 +350,10 @@ namespace System
                         break;
 
                     case VarEnum.VT_RECORD:
-                        if (pValue is ValueType)
-                        {
-                            MarshalHelperConvertObjectToVariant(pValue, out v);
-                            if (v.VarType == VarEnum.VT_RECORD)
-                                break;
-                        }
-                        throw new InvalidCastException(SR.InvalidCast_CannotCoerceByRefVariant);
+                        MarshalHelperConvertObjectToVariant(pValue, out v);
+                        if (v.VarType != VarEnum.VT_RECORD)
+                            throw new InvalidCastException(SR.InvalidCast_CannotCoerceByRefVariant);
+                        break;
 
                     case VarEnum.VT_BSTR: /*VT_BSTR*/
                         if (pValue == null)
