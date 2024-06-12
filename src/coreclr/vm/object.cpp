@@ -1947,22 +1947,41 @@ void ExceptionObject::GetStackTrace(StackTraceArray & stackTrace, PTRARRAYREF * 
 
         uint32_t keepAliveArrayCapacity = ((*outKeepAliveArray) == NULL) ? 0 : (*outKeepAliveArray)->GetNumComponents();
 
+        // It is possible that another thread was modifying the stack trace array and keep alive array while we were making the copies. 
+        // The following sequence of events could have happened:
+        // Case 1:
+        // * The current thread gets the stack trace array and the keep alive array references using the ExceptionObject::GetStackTraceParts above
+        // * The current thread reads the size of the stack trace array
+        // * Another thread adds a new stack frame to the stack trace array and a corresponding keep alive object to the keep alive array
+        // * The current thread creates a copy of the stack trace using the size it read before
+        // * The keep alive count stored in the stack trace array doesn't match the elements in the copy of the stack trace array
+        // In this case, we need to recompute the keep alive count based on the copied stack trace array.
+        //
+        // Case 2:
+        // * The current thread gets the stack trace array and the keep alive array references using the ExceptionObject::GetStackTraceParts above
+        // * Another thread adds a stack frame with a keep alive item and that exceeds the keep alive array capacity. So it allocates a new keep alive array
+        //   and adds the new keep alive item to it.
+        // * Thus the keep alive array this thread has read doesn't have the keep alive item, but the stack trace array contains the element the other thread has added.
+        // In this case, we need to trim the stack trace array at the first element that doesn't have a corresponding keep alive object in the keep alive array.
+        // We cannot fetch the keep alive object for that stack trace entry, because in the meanwhile, the keep alive array that the other thread created
+        // may have been collected and the method related to the stack trace entry may have been collected as well.
+        //
         uint32_t keepAliveItemsCount = 0;
         for (uint32_t i = 0; i < numCopiedFrames; i++)
         {
             if (stackTrace[i].flags & STEF_KEEPALIVE)
             {
-                OBJECTREF keepAliveObject = NULL;
-                if ((keepAliveItemsCount + 1) < keepAliveArrayCapacity)
-                {
-                    keepAliveObject = (*outKeepAliveArray)->GetAt(keepAliveItemsCount + 1);
-                }
-                if (keepAliveObject == NULL)
+                if ((keepAliveItemsCount + 1) >= keepAliveArrayCapacity)
                 {
                     // Trim the stack trace at a point where a dynamic or collectible method is found without a corresponding keepAlive object.
                     stackTrace.SetSize(i);
                     break;
                 }
+                else
+                {
+                    _ASSERTE((*outKeepAliveArray)->GetAt(keepAliveItemsCount + 1) != NULL);
+                }
+
                 keepAliveItemsCount++;
             }
         }
