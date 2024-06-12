@@ -4282,6 +4282,57 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe void PrefetchInt64(Vector<ulong> mask, void* address, [ConstantExpected] SvePrefetchType prefetchType) { throw new PlatformNotSupportedException(); }
 
 
+        ///  Reverse bits
+
+        /// <summary>
+        /// svuint8_t svrbit[_u8]_m(svuint8_t inactive, svbool_t pg, svuint8_t op)
+        ///   RBIT Ztied.B, Pg/M, Zop.B
+        /// </summary>
+        public static unsafe Vector<byte> ReverseBits(Vector<byte> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint16_t svrbit[_s16]_m(svint16_t inactive, svbool_t pg, svint16_t op)
+        ///   RBIT Ztied.H, Pg/M, Zop.H
+        /// </summary>
+        public static unsafe Vector<short> ReverseBits(Vector<short> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svrbit[_s32]_m(svint32_t inactive, svbool_t pg, svint32_t op)
+        ///   RBIT Ztied.S, Pg/M, Zop.S
+        /// </summary>
+        public static unsafe Vector<int> ReverseBits(Vector<int> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svrbit[_s64]_m(svint64_t inactive, svbool_t pg, svint64_t op)
+        ///   RBIT Ztied.D, Pg/M, Zop.D
+        /// </summary>
+        public static unsafe Vector<long> ReverseBits(Vector<long> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint8_t svrbit[_s8]_m(svint8_t inactive, svbool_t pg, svint8_t op)
+        ///   RBIT Ztied.B, Pg/M, Zop.B
+        /// </summary>
+        public static unsafe Vector<sbyte> ReverseBits(Vector<sbyte> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svrbit[_u16]_m(svuint16_t inactive, svbool_t pg, svuint16_t op)
+        ///   RBIT Ztied.H, Pg/M, Zop.H
+        /// </summary>
+        public static unsafe Vector<ushort> ReverseBits(Vector<ushort> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svrbit[_u32]_m(svuint32_t inactive, svbool_t pg, svuint32_t op)
+        ///   RBIT Ztied.S, Pg/M, Zop.S
+        /// </summary>
+        public static unsafe Vector<uint> ReverseBits(Vector<uint> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svrbit[_u64]_m(svuint64_t inactive, svbool_t pg, svuint64_t op)
+        ///   RBIT Ztied.D, Pg/M, Zop.D
+        /// </summary>
+        public static unsafe Vector<ulong> ReverseBits(Vector<ulong> value) { throw new PlatformNotSupportedException(); }
+
+
         ///  Reverse all elements
 
         /// <summary>
