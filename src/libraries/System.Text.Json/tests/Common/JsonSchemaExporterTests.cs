@@ -51,7 +51,7 @@ namespace System.Text.Json.Schema.Tests
         public void UnsupportedType_ReturnsExpectedSchema(Type type)
         {
             JsonNode schema = Serializer.DefaultOptions.GetJsonSchemaAsNode(type);
-            Assert.Equal("false", schema.ToJsonString());
+            Assert.Equal(""""{"$comment":"Unsupported .NET type","not":true}"""", schema.ToJsonString());
         }
 
         [Fact]

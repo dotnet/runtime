@@ -61,6 +61,7 @@ namespace System.Text.Json.Serialization.Converters
                 );
         }
 
-        internal override JsonSchema? GetSchema(JsonNumberHandling _) => new() { Type = JsonSchemaType.String };
+        internal override JsonSchema? GetSchema(JsonNumberHandling _) =>
+            new() { Type = JsonSchemaType.String, MinLength = 1, MaxLength = 1 };
     }
 }

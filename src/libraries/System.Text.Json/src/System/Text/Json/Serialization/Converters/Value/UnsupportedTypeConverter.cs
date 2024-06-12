@@ -20,6 +20,7 @@ namespace System.Text.Json.Serialization.Converters
         public override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options) =>
             throw new NotSupportedException(ErrorMessage);
 
-        internal override JsonSchema? GetSchema(JsonNumberHandling _) => JsonSchema.CreateFalseSchemaAsObject();
+        internal override JsonSchema? GetSchema(JsonNumberHandling _) =>
+            new JsonSchema { Comment = "Unsupported .NET type", Not = JsonSchema.True };
     }
 }

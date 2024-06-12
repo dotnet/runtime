@@ -53,7 +53,7 @@ namespace System.Text.Json.Schema.Tests
             yield return new TestData<Half>((Half)3.141, ExpectedJsonSchema: """{"type":"number"}""");
 #endif
             yield return new TestData<string>("I am a string", ExpectedJsonSchema: """{"type":["string","null"]}""");
-            yield return new TestData<char>('c', ExpectedJsonSchema: """{"type":"string"}""");
+            yield return new TestData<char>('c', ExpectedJsonSchema: """{"type":"string", "minLength":1, "maxLength":1 }""");
             yield return new TestData<byte[]>(
                 Value: [1, 2, 3],
                 AdditionalValues: [[]],
@@ -682,12 +682,7 @@ namespace System.Text.Json.Schema.Tests
             yield return new TestData<NonAbstractClassWithSingleDerivedType>(
                 Value: new NonAbstractClassWithSingleDerivedType(),
                 AdditionalValues: [new NonAbstractClassWithSingleDerivedType.Derived()],
-                ExpectedJsonSchema: """
-                {
-                    "type": ["object","null"],
-                    "anyOf": [true, true]
-                }
-                """);
+                ExpectedJsonSchema: """{"type":["object","null"]}""");
 
             yield return new TestData<DiscriminatedUnion>(
                 Value: new DiscriminatedUnion.Left("value"),
@@ -884,12 +879,12 @@ namespace System.Text.Json.Schema.Tests
             yield return new TestData<List<bool>>([false, true, false], ExpectedJsonSchema: """{"type":["array","null"],"items":{"type":"boolean"}}""");
             yield return new TestData<HashSet<string>>(["one", "two", "three"], ExpectedJsonSchema: """{"type":["array","null"],"items":{"type":["string","null"]}}""");
             yield return new TestData<Queue<double>>(new([1.1, 2.2, 3.3]), ExpectedJsonSchema: """{"type":["array","null"],"items":{"type":"number"}}""");
-            yield return new TestData<Stack<char>>(new(['x', '2', '+']), ExpectedJsonSchema: """{"type":["array","null"],"items":{"type":"string"}}""");
+            yield return new TestData<Stack<char>>(new(['x', '2', '+']), ExpectedJsonSchema: """{"type":["array","null"],"items":{"type":"string","minLength":1,"maxLength":1}}""");
             yield return new TestData<ImmutableArray<int>>([1, 2, 3], ExpectedJsonSchema: """{"type":"array","items":{"type":"integer"}}""");
             yield return new TestData<ImmutableList<string>>(["one", "two", "three"], ExpectedJsonSchema: """{"type":["array","null"],"items":{"type":["string","null"]}}""");
             yield return new TestData<ImmutableQueue<bool>>([false, false, true], ExpectedJsonSchema: """{"type":["array","null"],"items":{"type":"boolean"}}""");
-            yield return new TestData<object[]>([1, "two", 3.14], ExpectedJsonSchema: """{"type":["array","null"],"items":true}""");
-            yield return new TestData<System.Collections.ArrayList>([1, "two", 3.14], ExpectedJsonSchema: """{"type":["array","null"],"items":true}""");
+            yield return new TestData<object[]>([1, "two", 3.14], ExpectedJsonSchema: """{"type":["array","null"]}""");
+            yield return new TestData<System.Collections.ArrayList>([1, "two", 3.14], ExpectedJsonSchema: """{"type":["array","null"]}""");
 
             // Dictionary types
             yield return new TestData<Dictionary<string, int>>(
@@ -929,11 +924,11 @@ namespace System.Text.Json.Schema.Tests
 
             yield return new TestData<Dictionary<string, object>>(
                 Value: new() { ["one"] = 1, ["two"] = "two", ["three"] = 3.14 },
-                ExpectedJsonSchema: """{"type":["object","null"],"additionalProperties":true}""");
+                ExpectedJsonSchema: """{"type":["object","null"]}""");
 
             yield return new TestData<Hashtable>(
                 Value: new() { ["one"] = 1, ["two"] = "two", ["three"] = 3.14 },
-                ExpectedJsonSchema: """{"type":["object","null"],"additionalProperties":true}""");
+                ExpectedJsonSchema: """{"type":["object","null"]}""");
         }
 
         public enum IntEnum { A, B, C };
