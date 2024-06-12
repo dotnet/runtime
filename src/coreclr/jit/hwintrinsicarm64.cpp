@@ -2677,7 +2677,11 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             if (CheckHWIntrinsicImmRange(intrinsic, simdBaseJitType, immOp1, mustExpand, immLowerBound, immUpperBound,
                                          hasFullRangeImm, &useFallback))
             {
-                // Convert to *Mask equivalent
+                // The difference between `CreateTrue*` and `CreateTrue*_Mask` is the return type. `CreateTrue*` returns
+                // SIMD16, while `CreateTrue*_Mask` returns TYP_MASK.
+                // If the immediates are in range, we convert to `CreateTrue*_Mask` intrinsics. Otherwise, we will
+                // retain the original intrinsic, because that gets rewritten as a user function call which should
+                // always return SIMD16.
                 NamedIntrinsic maskedIntrinsic =
                     (NamedIntrinsic)(NI_Sve_CreateTrueMaskByte_Mask + (intrinsic - NI_Sve_CreateTrueMaskByte));
                 retNode = gtNewSimdHWIntrinsicNode(TYP_MASK, immOp1, maskedIntrinsic, simdBaseJitType, simdSize);
