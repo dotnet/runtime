@@ -2096,8 +2096,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
                 if (!varTypeIsMask(op1))
                 {
-                    op1 =
-                        gtNewSimdHWIntrinsicNode(TYP_MASK, op1, NI_EVEX_ConvertVectorToMask, simdBaseJitType, simdSize);
+                    op1 = gtNewSimdCvtVectorToMaskNode(TYP_MASK, op1, simdBaseJitType, simdSize);
                 }
                 retNode = gtNewSimdHWIntrinsicNode(retType, op1, NI_EVEX_MoveMask, simdBaseJitType, simdSize);
             }
@@ -4212,7 +4211,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             if (!varTypeIsMask(op3))
             {
-                op3 = gtNewSimdHWIntrinsicNode(TYP_MASK, op3, NI_EVEX_ConvertVectorToMask, simdBaseJitType, simdSize);
+                op3 = gtNewSimdCvtVectorToMaskNode(TYP_MASK, op3, simdBaseJitType, simdSize);
             }
             retNode =
                 gtNewSimdHWIntrinsicNode(retType, op1, op2, op3, NI_EVEX_BlendVariableMask, simdBaseJitType, simdSize);
@@ -4228,8 +4227,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             op1 = impSIMDPopStack();
 
             retNode = gtNewSimdHWIntrinsicNode(TYP_MASK, op1, op2, op3, NI_EVEX_CompareMask, simdBaseJitType, simdSize);
-            retNode =
-                gtNewSimdHWIntrinsicNode(retType, retNode, NI_EVEX_ConvertMaskToVector, simdBaseJitType, simdSize);
+            retNode = gtNewSimdCvtMaskToVectorNode(retType, retNode, simdBaseJitType, simdSize);
 
             break;
         }
@@ -4243,9 +4241,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             op1 = impSIMDPopStack();
 
             retNode = gtNewSimdHWIntrinsicNode(TYP_MASK, op1, op2, NI_EVEX_CompareEqualMask, simdBaseJitType, simdSize);
-            retNode =
-                gtNewSimdHWIntrinsicNode(retType, retNode, NI_EVEX_ConvertMaskToVector, simdBaseJitType, simdSize);
-
+            retNode = gtNewSimdCvtMaskToVectorNode(retType, retNode, simdBaseJitType, simdSize);
             break;
         }
 
@@ -4262,9 +4258,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             retNode =
                 gtNewSimdHWIntrinsicNode(TYP_MASK, op1, op2, NI_EVEX_CompareGreaterThanMask, simdBaseJitType, simdSize);
-            retNode =
-                gtNewSimdHWIntrinsicNode(retType, retNode, NI_EVEX_ConvertMaskToVector, simdBaseJitType, simdSize);
-
+            retNode = gtNewSimdCvtMaskToVectorNode(retType, retNode, simdBaseJitType, simdSize);
             break;
         }
 
@@ -4281,9 +4275,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             retNode = gtNewSimdHWIntrinsicNode(TYP_MASK, op1, op2, NI_EVEX_CompareGreaterThanOrEqualMask,
                                                simdBaseJitType, simdSize);
-            retNode =
-                gtNewSimdHWIntrinsicNode(retType, retNode, NI_EVEX_ConvertMaskToVector, simdBaseJitType, simdSize);
-
+            retNode = gtNewSimdCvtMaskToVectorNode(retType, retNode, simdBaseJitType, simdSize);
             break;
         }
 
@@ -4300,9 +4292,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             retNode =
                 gtNewSimdHWIntrinsicNode(TYP_MASK, op1, op2, NI_EVEX_CompareLessThanMask, simdBaseJitType, simdSize);
-            retNode =
-                gtNewSimdHWIntrinsicNode(retType, retNode, NI_EVEX_ConvertMaskToVector, simdBaseJitType, simdSize);
-
+            retNode = gtNewSimdCvtMaskToVectorNode(retType, retNode, simdBaseJitType, simdSize);
             break;
         }
 
@@ -4319,9 +4309,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             retNode = gtNewSimdHWIntrinsicNode(TYP_MASK, op1, op2, NI_EVEX_CompareLessThanOrEqualMask, simdBaseJitType,
                                                simdSize);
-            retNode =
-                gtNewSimdHWIntrinsicNode(retType, retNode, NI_EVEX_ConvertMaskToVector, simdBaseJitType, simdSize);
-
+            retNode = gtNewSimdCvtMaskToVectorNode(retType, retNode, simdBaseJitType, simdSize);
             break;
         }
 
@@ -4338,9 +4326,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             retNode =
                 gtNewSimdHWIntrinsicNode(TYP_MASK, op1, op2, NI_EVEX_CompareNotEqualMask, simdBaseJitType, simdSize);
-            retNode =
-                gtNewSimdHWIntrinsicNode(retType, retNode, NI_EVEX_ConvertMaskToVector, simdBaseJitType, simdSize);
-
+            retNode = gtNewSimdCvtMaskToVectorNode(retType, retNode, simdBaseJitType, simdSize);
             break;
         }
 
@@ -4353,9 +4339,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             retNode = gtNewSimdHWIntrinsicNode(TYP_MASK, op1, op2, NI_EVEX_CompareNotGreaterThanMask, simdBaseJitType,
                                                simdSize);
-            retNode =
-                gtNewSimdHWIntrinsicNode(retType, retNode, NI_EVEX_ConvertMaskToVector, simdBaseJitType, simdSize);
-
+            retNode = gtNewSimdCvtMaskToVectorNode(retType, retNode, simdBaseJitType, simdSize);
             break;
         }
 
@@ -4368,9 +4352,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             retNode = gtNewSimdHWIntrinsicNode(TYP_MASK, op1, op2, NI_EVEX_CompareNotGreaterThanOrEqualMask,
                                                simdBaseJitType, simdSize);
-            retNode =
-                gtNewSimdHWIntrinsicNode(retType, retNode, NI_EVEX_ConvertMaskToVector, simdBaseJitType, simdSize);
-
+            retNode = gtNewSimdCvtMaskToVectorNode(retType, retNode, simdBaseJitType, simdSize);
             break;
         }
 
@@ -4383,9 +4365,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             retNode =
                 gtNewSimdHWIntrinsicNode(TYP_MASK, op1, op2, NI_EVEX_CompareNotLessThanMask, simdBaseJitType, simdSize);
-            retNode =
-                gtNewSimdHWIntrinsicNode(retType, retNode, NI_EVEX_ConvertMaskToVector, simdBaseJitType, simdSize);
-
+            retNode = gtNewSimdCvtMaskToVectorNode(retType, retNode, simdBaseJitType, simdSize);
             break;
         }
 
@@ -4398,9 +4378,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             retNode = gtNewSimdHWIntrinsicNode(TYP_MASK, op1, op2, NI_EVEX_CompareNotLessThanOrEqualMask,
                                                simdBaseJitType, simdSize);
-            retNode =
-                gtNewSimdHWIntrinsicNode(retType, retNode, NI_EVEX_ConvertMaskToVector, simdBaseJitType, simdSize);
-
+            retNode = gtNewSimdCvtMaskToVectorNode(retType, retNode, simdBaseJitType, simdSize);
             break;
         }
 
@@ -4413,9 +4391,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             retNode =
                 gtNewSimdHWIntrinsicNode(TYP_MASK, op1, op2, NI_EVEX_CompareOrderedMask, simdBaseJitType, simdSize);
-            retNode =
-                gtNewSimdHWIntrinsicNode(retType, retNode, NI_EVEX_ConvertMaskToVector, simdBaseJitType, simdSize);
-
+            retNode = gtNewSimdCvtMaskToVectorNode(retType, retNode, simdBaseJitType, simdSize);
             break;
         }
 
@@ -4428,9 +4404,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             retNode =
                 gtNewSimdHWIntrinsicNode(TYP_MASK, op1, op2, NI_EVEX_CompareUnorderedMask, simdBaseJitType, simdSize);
-            retNode =
-                gtNewSimdHWIntrinsicNode(retType, retNode, NI_EVEX_ConvertMaskToVector, simdBaseJitType, simdSize);
-
+            retNode = gtNewSimdCvtMaskToVectorNode(retType, retNode, simdBaseJitType, simdSize);
             break;
         }
 

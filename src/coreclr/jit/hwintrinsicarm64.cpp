@@ -2625,7 +2625,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             // HWInstrinsic requires a mask for op2
             if (!varTypeIsMask(op2))
             {
-                op2 = gtNewSimdConvertVectorToMaskNode(retType, op2, simdBaseJitType, simdSize);
+                op2 = gtNewSimdCvtVectorToMaskNode(TYP_MASK, op2, simdBaseJitType, simdSize);
             }
 
             retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseJitType, simdSize);
@@ -2644,48 +2644,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
     assert(!isScalar || isValidScalarIntrinsic);
 
     return retNode;
-}
-
-//------------------------------------------------------------------------
-// gtNewSimdConvertMaskToVectorNode: Convert a HW instrinsic vector node to a mask
-//
-// Arguments:
-//    node            -- The node to convert
-//    simdBaseJitType -- the base jit type of the converted node
-//    simdSize        -- the simd size of the converted node
-//
-// Return Value:
-//    The node converted to the a mask type
-//
-GenTree* Compiler::gtNewSimdConvertVectorToMaskNode(var_types   type,
-                                                    GenTree*    node,
-                                                    CorInfoType simdBaseJitType,
-                                                    unsigned    simdSize)
-{
-    assert(varTypeIsSIMD(node));
-
-    // ConvertVectorToMask uses cmpne which requires an embedded mask.
-    GenTree* trueMask = gtNewSimdAllTrueMaskNode(simdBaseJitType, simdSize);
-    return gtNewSimdHWIntrinsicNode(TYP_MASK, trueMask, node, NI_Sve_ConvertVectorToMask, simdBaseJitType, simdSize);
-}
-
-//------------------------------------------------------------------------
-// gtNewSimdConvertMaskToVectorNode: Convert a HW instrinsic mask node to a vector
-//
-// Arguments:
-//    node          -- The node to convert
-//    type          -- The type of the node to convert to
-//
-// Return Value:
-//    The node converted to the given type
-//
-GenTree* Compiler::gtNewSimdConvertMaskToVectorNode(GenTreeHWIntrinsic* node, var_types type)
-{
-    assert(varTypeIsMask(node));
-    assert(varTypeIsSIMD(type));
-
-    return gtNewSimdHWIntrinsicNode(type, node, NI_Sve_ConvertMaskToVector, node->GetSimdBaseJitType(),
-                                    node->GetSimdSize());
 }
 
 //------------------------------------------------------------------------
