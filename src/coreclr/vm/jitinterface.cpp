@@ -1590,6 +1590,11 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
                 optimizeThreadStaticAccess = GetTlsIndexObjectAddress() != nullptr;
 #endif // !TARGET_OSX && TARGET_UNIX && TARGET_AMD64
 
+#if defined(FEATURE_INTERPRETER)
+                // Not yet supported by the interpreter
+                optimizeThreadStaticAccess = false;
+#endif
+
                 if (optimizeThreadStaticAccess)
                 {
                     // For windows x64/x86/arm64, linux x64/arm64/loongarch64/riscv64:
