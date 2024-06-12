@@ -21,7 +21,8 @@ namespace System.Text.RegularExpressions
         /// </para>
         /// <para>
         /// Each match won't actually happen until <see cref="ValueSplitEnumerator.MoveNext"/> is invoked on the enumerator, with one match being performed per <see cref="ValueSplitEnumerator.MoveNext"/> call.
-        /// Since the evaluation of the match happens lazily, any changes to the passed in input in between calls to <see cref="ValueSplitEnumerator.MoveNext"/> will affect the match results.
+        /// Since the evaluation of the match happens lazily, any changes to the passed in input in between calls to <see cref="ValueSplitEnumerator.MoveNext"/> may affect the match results;
+        /// such changes should be avoided and are not supported.
         /// </para>
         /// </remarks>
         /// <param name="input">The span to search for a match.</param>
@@ -45,7 +46,8 @@ namespace System.Text.RegularExpressions
         /// </para>
         /// <para>
         /// Each match won't actually happen until <see cref="ValueSplitEnumerator.MoveNext"/> is invoked on the enumerator, with one match being performed per <see cref="ValueSplitEnumerator.MoveNext"/> call.
-        /// Since the evaluation of the match happens lazily, any changes to the passed in input in between calls to <see cref="ValueSplitEnumerator.MoveNext"/> will affect the match results.
+        /// Since the evaluation of the match happens lazily, any changes to the passed in input in between calls to <see cref="ValueSplitEnumerator.MoveNext"/> may affect the match results;
+        /// such changes should be avoided and are not supported.
         /// </para>
         /// </remarks>
         /// <param name="input">The span to search for a match.</param>
@@ -71,7 +73,8 @@ namespace System.Text.RegularExpressions
         /// </para>
         /// <para>
         /// Each match won't actually happen until <see cref="ValueSplitEnumerator.MoveNext"/> is invoked on the enumerator, with one match being performed per <see cref="ValueSplitEnumerator.MoveNext"/> call.
-        /// Since the evaluation of the match happens lazily, any changes to the passed in input in between calls to <see cref="ValueSplitEnumerator.MoveNext"/> will affect the match results.
+        /// Since the evaluation of the match happens lazily, any changes to the passed in input in between calls to <see cref="ValueSplitEnumerator.MoveNext"/> may affect the match results;
+        /// such changes should be avoided and are not supported.
         /// </para>
         /// </remarks>
         /// <param name="input">The span to search for a match.</param>
@@ -98,7 +101,8 @@ namespace System.Text.RegularExpressions
         /// </para>
         /// <para>
         /// Each match won't actually happen until <see cref="ValueSplitEnumerator.MoveNext"/> is invoked on the enumerator, with one match being performed per <see cref="ValueSplitEnumerator.MoveNext"/> call.
-        /// Since the evaluation of the match happens lazily, any changes to the passed in input in between calls to <see cref="ValueSplitEnumerator.MoveNext"/> will affect the match results.
+        /// Since the evaluation of the match happens lazily, any changes to the passed in input in between calls to <see cref="ValueSplitEnumerator.MoveNext"/> may affect the match results;
+        /// such changes should be avoided and are not supported.
         /// </para>
         /// </remarks>
         /// <param name="input">The span to search for a match.</param>
@@ -119,7 +123,8 @@ namespace System.Text.RegularExpressions
         /// </para>
         /// <para>
         /// Each match won't actually happen until <see cref="ValueSplitEnumerator.MoveNext"/> is invoked on the enumerator, with one match being performed per <see cref="ValueSplitEnumerator.MoveNext"/> call.
-        /// Since the evaluation of the match happens lazily, any changes to the passed in input in between calls to <see cref="ValueSplitEnumerator.MoveNext"/> will affect the match results.
+        /// Since the evaluation of the match happens lazily, any changes to the passed in input in between calls to <see cref="ValueSplitEnumerator.MoveNext"/> may affect the match results;
+        /// such changes should be avoided and are not supported.
         /// </para>
         /// </remarks>
         /// <param name="input">The span to search for a match.</param>
@@ -141,7 +146,8 @@ namespace System.Text.RegularExpressions
         /// </para>
         /// <para>
         /// Each match won't actually happen until <see cref="ValueSplitEnumerator.MoveNext"/> is invoked on the enumerator, with one match being performed per <see cref="ValueSplitEnumerator.MoveNext"/> call.
-        /// Since the evaluation of the match happens lazily, any changes to the passed in input in between calls to <see cref="ValueSplitEnumerator.MoveNext"/> will affect the match results.
+        /// Since the evaluation of the match happens lazily, any changes to the passed in input in between calls to <see cref="ValueSplitEnumerator.MoveNext"/> may affect the match results;
+        /// such changes should be avoided and are not supported.
         /// </para>
         /// </remarks>
         /// <param name="input">The span to search for a match.</param>
