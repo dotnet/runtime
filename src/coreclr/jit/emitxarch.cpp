@@ -2085,9 +2085,11 @@ emitter::code_t emitter::AddRexRPrefix(const instrDesc* id, code_t code)
             return code & 0xFF7FFFFFFFFFFFULL;
         }
     }
-    else if (TakesRex2Prefix(id) && IsRex2EncodableInstruction(ins))
+    else if (TakesRex2Prefix(id))
     {
-        // TODO-apx: there is no overlapping between REX2 and VEX/EVEX instructions so it should be fine to have the paths in this way.
+        assert(IsRex2EncodableInstruction(ins));
+
+        // TODO-xarch-apx: there is no overlapping between REX2 and VEX/EVEX instructions so it should be fine to have the paths in this way.
         assert(hasRex2Prefix(code));
         return code |= 0x000400000000ULL; // REX2.B3
     }
@@ -17796,7 +17798,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             }
             else
             {
-                code    = AddSimdPrefixIfNeeded(id, code, size);
+                code    = AddX86PrefixIfNeeded(id, code, size);
                 regcode = (insEncodeReg345(id, id->idReg1(), size, &code) << 8);
                 dst     = emitOutputAM(dst, id, code | regcode);
             }
@@ -17873,7 +17875,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             }
             else
             {
-                code    = AddSimdPrefixIfNeeded(id, code, size);
+                code    = AddX86PrefixIfNeeded(id, code, size);
                 regcode = (insEncodeReg345(id, id->idReg1(), size, &code) << 8);
                 dst     = emitOutputAM(dst, id, code | regcode);
             }
@@ -18035,7 +18037,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             }
             else
             {
-                code = AddSimdPrefixIfNeeded(id, code, size);
+                code = AddX86PrefixIfNeeded(id, code, size);
 
                 if (IsDstDstSrcAVXInstruction(ins))
                 {
