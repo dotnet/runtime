@@ -64,7 +64,6 @@ namespace System.Collections.Tests
         protected override ICollection NonGenericICollectionFactory() => new OrderedDictionary<string, string>().Keys;
         protected override bool SupportsSerialization => false;
         protected override Type ICollection_NonGeneric_CopyTo_ArrayOfEnumType_ThrowType => typeof(ArgumentException);
-        protected override Type ICollection_NonGeneric_CopyTo_NonZeroLowerBound_ThrowType => typeof(ArgumentOutOfRangeException);
 
         protected override ICollection NonGenericICollectionFactory(int count)
         {

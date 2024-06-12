@@ -178,7 +178,7 @@ namespace System.Collections.Tests
         public void CantAcceptDuplicateKeysFromSourceDictionary()
         {
             Dictionary<string, int> source = new Dictionary<string, int> { { "a", 1 }, { "A", 1 } };
-            AssertExtensions.Throws<ArgumentException>(null, () => new OrderedDictionary<string, int>(source, StringComparer.OrdinalIgnoreCase));
+            AssertExtensions.Throws<ArgumentException>("key", () => new OrderedDictionary<string, int>(source, StringComparer.OrdinalIgnoreCase));
         }
 
         [Theory]

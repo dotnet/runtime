@@ -116,6 +116,7 @@ namespace System.Collections.Generic
         public OrderedDictionary(System.Collections.Generic.IEqualityComparer<TKey>? comparer) { }
         public OrderedDictionary(int capacity) { }
         public OrderedDictionary(int capacity, System.Collections.Generic.IEqualityComparer<TKey>? comparer) { }
+        public int Capacity { get { throw null; } }
         public System.Collections.Generic.IEqualityComparer<TKey> Comparer { get { throw null; } }
         public int Count { get { throw null; } }
         public TValue this[TKey key] { get { throw null; } set { } }
@@ -142,6 +143,7 @@ namespace System.Collections.Generic
         public void Clear() { }
         public bool ContainsKey(TKey key) { throw null; }
         public bool ContainsValue(TValue value) { throw null; }
+        public int EnsureCapacity(int capacity) { throw null; }
         public System.Collections.Generic.KeyValuePair<TKey, TValue> GetAt(int index) { throw null; }
         public System.Collections.Generic.OrderedDictionary<TKey, TValue>.Enumerator GetEnumerator() { throw null; }
         public int IndexOf(TKey key) { throw null; }
@@ -170,6 +172,8 @@ namespace System.Collections.Generic
         void System.Collections.IList.Insert(int index, object? value) { }
         void System.Collections.IList.Remove(object? value) { }
         public void TrimExcess() { }
+        public void TrimExcess(int capacity) { }
+        public bool TryAdd(TKey key, TValue value) { throw null; }
         public bool TryGetValue(TKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TValue value) { throw null; }
         public partial struct Enumerator : System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.IDictionaryEnumerator, System.Collections.IEnumerator, System.IDisposable
         {

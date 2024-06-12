@@ -26,6 +26,7 @@ namespace System.Collections.Tests
     public class OrderedDictionary_Generic_Tests_int_int : OrderedDictionary_Generic_Tests<int, int>
     {
         protected override bool DefaultValueAllowed { get { return true; } }
+
         protected override KeyValuePair<int, int> CreateT(int seed)
         {
             Random rand = new Random(seed);

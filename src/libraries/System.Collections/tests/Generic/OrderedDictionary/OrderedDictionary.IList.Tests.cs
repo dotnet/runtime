@@ -108,7 +108,6 @@ namespace System.Collections.Tests
         protected override bool SupportsSerialization => false;
         protected override Type ICollection_NonGeneric_CopyTo_ArrayOfEnumType_ThrowType => typeof(ArgumentException);
         protected override IEnumerable<ModifyEnumerable> GetModifyEnumerables(ModifyOperation operations) => Enumerable.Empty<ModifyEnumerable>();
-        protected override Type ICollection_NonGeneric_CopyTo_NonZeroLowerBound_ThrowType => typeof(ArgumentOutOfRangeException);
         protected override bool IsReadOnly => true;
 
         protected override object CreateT(int seed) =>

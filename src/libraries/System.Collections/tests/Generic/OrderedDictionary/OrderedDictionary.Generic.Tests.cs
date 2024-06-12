@@ -36,24 +36,28 @@ namespace System.Collections.Tests
             Assert.Empty(instance.Keys);
             Assert.Empty(instance.Values);
             Assert.Same(EqualityComparer<TKey>.Default, instance.Comparer);
+            Assert.Equal(0, instance.Capacity);
 
             instance = new OrderedDictionary<TKey, TValue>(42);
             Assert.Empty(instance);
             Assert.Empty(instance.Keys);
             Assert.Empty(instance.Values);
             Assert.Same(EqualityComparer<TKey>.Default, instance.Comparer);
+            Assert.InRange(instance.Capacity, 42, int.MaxValue);
 
             instance = new OrderedDictionary<TKey, TValue>(comparer);
             Assert.Empty(instance);
             Assert.Empty(instance.Keys);
             Assert.Empty(instance.Values);
             Assert.Same(comparer, instance.Comparer);
+            Assert.Equal(0, instance.Capacity);
 
             instance = new OrderedDictionary<TKey, TValue>(42, comparer);
             Assert.Empty(instance);
             Assert.Empty(instance.Keys);
             Assert.Empty(instance.Values);
             Assert.Same(comparer, instance.Comparer);
+            Assert.InRange(instance.Capacity, 42, int.MaxValue);
         }
 
         [Theory]
@@ -87,10 +91,12 @@ namespace System.Collections.Tests
                 copied = new OrderedDictionary<TKey, TValue>(source);
                 Assert.Equal(source, copied);
                 Assert.Same(comparer, EqualityComparer<TKey>.Default);
+                Assert.InRange(copied.Capacity, copied.Count, int.MaxValue);
 
                 copied = new OrderedDictionary<TKey, TValue>(source, comparer);
                 Assert.Equal(source, copied);
                 Assert.Same(comparer, copied.Comparer);
+                Assert.InRange(copied.Capacity, copied.Count, int.MaxValue);
             }
         }
 
@@ -106,6 +112,73 @@ namespace System.Collections.Tests
             AssertExtensions.Throws<ArgumentNullException>("collection", () => new OrderedDictionary<TKey, TValue>((IEnumerable<KeyValuePair<TKey, TValue>>)null, EqualityComparer<TKey>.Default));
         }
 
+        [Fact]
+        public void OrderedDictionary_Generic_Constructor_AllKeysEqualComparer()
+        {
+            var dictionary = new OrderedDictionary<TKey, TValue>(EqualityComparer<TKey>.Create((x, y) => true, x => 1));
+            Assert.Equal(0, dictionary.Count);
+
+            Assert.True(dictionary.TryAdd(CreateTKey(0), CreateTValue(0)));
+            Assert.Equal(1, dictionary.Count);
+
+            Assert.False(dictionary.TryAdd(CreateTKey(1), CreateTValue(0)));
+            Assert.Equal(1, dictionary.Count);
+
+            dictionary.Remove(CreateTKey(2));
+            Assert.Equal(0, dictionary.Count);
+        }
+
+        #endregion
+
+        #region TryAdd
+        [Fact]
+        public void TryAdd_NullKeyThrows()
+        {
+            if (default(TKey) is not null)
+            {
+                return;
+            }
+
+            var dictionary = new OrderedDictionary<TKey, TValue>();
+            AssertExtensions.Throws<ArgumentNullException>("key", () => dictionary.TryAdd(default(TKey), CreateTValue(0)));
+            Assert.True(dictionary.TryAdd(CreateTKey(0), default));
+            Assert.Equal(1, dictionary.Count);
+        }
+
+        [Fact]
+        public void TryAdd_AppendsItemToEndOfDictionary()
+        {
+            var dictionary = new OrderedDictionary<TKey, TValue>();
+            AddToCollection(dictionary, 10);
+            foreach (var entry in dictionary)
+            {
+                Assert.False(dictionary.TryAdd(entry.Key, entry.Value));
+            }
+
+            TKey newKey;
+            int i = 0;
+            do
+            {
+                newKey = CreateTKey(i);
+            }
+            while (dictionary.ContainsKey(newKey));
+
+            Assert.True(dictionary.TryAdd(newKey, CreateTValue(42)));
+            Assert.Equal(dictionary.Count - 1, dictionary.IndexOf(newKey));
+        }
+
+        [Fact]
+        public void TryAdd_ItemAlreadyExists_DoesNotInvalidateEnumerator()
+        {
+            TKey key1 = CreateTKey(1);
+
+            var dictionary = new OrderedDictionary<TKey, TValue>() { [key1] = CreateTValue(2) };
+
+            IEnumerator valuesEnum = dictionary.GetEnumerator();
+            Assert.False(dictionary.TryAdd(key1, CreateTValue(3)));
+
+            Assert.True(valuesEnum.MoveNext());
+        }
         #endregion
 
         #region ContainsValue
@@ -198,6 +271,10 @@ namespace System.Collections.Tests
             dictionary.Add(CreateTKey(1), CreateTValue(1));
 
             TKey firstKey = dictionary.GetAt(0).Key;
+            dictionary.SetAt(0, firstKey, CreateTValue(0));
+            dictionary.SetAt(0, CreateTKey(2), CreateTValue(0));
+            dictionary.SetAt(0, firstKey, CreateTValue(0));
+
             AssertExtensions.Throws<ArgumentException>("key", () => dictionary.SetAt(1, firstKey, CreateTValue(0)));
         }
 
@@ -257,6 +334,51 @@ namespace System.Collections.Tests
             int dictCount = dictionary.Count;
             dictionary.TrimExcess();
             Assert.Equal(dictCount, dictionary.Count);
+            Assert.InRange(dictionary.Capacity, dictCount, int.MaxValue);
+
+            if (count > 0)
+            {
+                int oldCapacity = dictionary.Capacity;
+                int newCapacity = dictionary.EnsureCapacity(count * 10);
+                Assert.Equal(newCapacity, dictionary.Capacity);
+                Assert.InRange(newCapacity, oldCapacity + 1, int.MaxValue);
+                dictionary.TrimExcess(dictCount);
+                Assert.Equal(oldCapacity, dictionary.Capacity);
+            }
+        }
+
+        #endregion
+
+        #region EnsureCapacity
+
+        [Fact]
+        public void OrderedDictionary_Generic_EnsureCapacity()
+        {
+            OrderedDictionary<TKey, TValue> dictionary = (OrderedDictionary<TKey, TValue>)GenericIDictionaryFactory();
+
+            Assert.Equal(0, dictionary.Capacity);
+            for (int i = 0; i < 10; i++)
+            {
+                dictionary.TryAdd(CreateTKey(i), CreateTValue(i));
+            }
+            int count = dictionary.Count;
+            Assert.InRange(count, 1, 10);
+            Assert.InRange(dictionary.Capacity, dictionary.Count, int.MaxValue);
+            Assert.Equal(dictionary.Capacity, dictionary.EnsureCapacity(dictionary.Capacity));
+            Assert.Equal(dictionary.Capacity, dictionary.EnsureCapacity(dictionary.Capacity - 1));
+            Assert.Equal(dictionary.Capacity, dictionary.EnsureCapacity(0));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => dictionary.EnsureCapacity(-1));
+
+            int oldCapacity = dictionary.Capacity;
+            int newCapacity = dictionary.EnsureCapacity(oldCapacity * 2);
+            Assert.Equal(newCapacity, dictionary.Capacity);
+            Assert.InRange(newCapacity, oldCapacity * 2, int.MaxValue);
+
+            for (int i = 0; i < 10; i++)
+            {
+                Assert.True(dictionary.ContainsKey(CreateTKey(i)));
+            }
+            Assert.Equal(count, dictionary.Count);
         }
 
         #endregion
