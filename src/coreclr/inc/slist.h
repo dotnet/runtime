@@ -26,6 +26,8 @@
 #ifndef _H_SLIST_
 #define _H_SLIST_
 
+#include "cdacoffsets.h"
+
 //------------------------------------------------------------------
 // struct SLink, to use a singly linked list
 // have a data member m_Link of type SLink in your class
@@ -117,6 +119,8 @@ protected:
     SLink  m_link; // slink.m_pNext == Null
     PTR_SLink m_pHead;
     PTR_SLink m_pTail;
+
+    template<typename U> friend struct ::cdac_offsets;
 
     // get the list node within the object
     static SLink* GetLink (T* pLink)

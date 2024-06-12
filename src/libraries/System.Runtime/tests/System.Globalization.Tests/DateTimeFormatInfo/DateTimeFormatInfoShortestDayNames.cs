@@ -34,7 +34,7 @@ namespace System.Globalization.Tests
             yield return new object[] { new CultureInfo("am-ET").DateTimeFormat, new string[] { "እ", "ሰ", "ማ", "ረ", "ሐ", "ዓ", "ቅ" } };
             yield return new object[] { new CultureInfo("bg-BG").DateTimeFormat, new string[] { "н", "п", "в", "с", "ч", "п", "с" } };
             yield return new object[] { new CultureInfo("bn-IN").DateTimeFormat, new string[] { "র", "সো", "ম", "বু", "বৃ", "শু", "শ" } };
-            if (PlatformDetection.IsFirefox)
+            if (PlatformDetection.IsFirefox || PlatformDetection.IsNodeJS)
             {
                 yield return new object[] { new CultureInfo("ca-ES").DateTimeFormat, new string[] { "dg", "dl", "dt", "dc", "dj", "dv", "ds" } };
                 yield return new object[] { new CultureInfo("en-AU").DateTimeFormat, new string[] { "Su.", "M.", "Tu.", "W.", "Th.", "F.", "Sa." } };

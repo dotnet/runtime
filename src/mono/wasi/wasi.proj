@@ -60,7 +60,8 @@
       Assemblies="@(WasmPInvokeAssembly)"
       PInvokeModules="@(WasmPInvokeModule)"
       PInvokeOutputPath="$(WasmPInvokeTablePath)"
-      InterpToNativeOutputPath="$(WasmInterpToNativeTablePath)">
+      InterpToNativeOutputPath="$(WasmInterpToNativeTablePath)"
+      IsLibraryMode="$(_IsLibraryMode)">
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
     </ManagedToNativeGenerator>
   </Target>

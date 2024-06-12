@@ -115,7 +115,7 @@ bool InitUnwindFtns()
 #ifndef TARGET_UNIX
     if (!RtlUnwindFtnsInited)
     {
-        HINSTANCE hNtdll = WszGetModuleHandle(W("ntdll.dll"));
+        HINSTANCE hNtdll = GetModuleHandle(W("ntdll.dll"));
         if (hNtdll != NULL)
         {
             void* growFunctionTable = GetProcAddress(hNtdll, "RtlGrowFunctionTable");
@@ -1011,11 +1011,11 @@ PTR_VOID GetUnwindDataBlob(TADDR moduleBase, PTR_RUNTIME_FUNCTION pRuntimeFuncti
     int size = 4;
 
 #if defined(TARGET_ARM)
-    // See https://docs.microsoft.com/en-us/cpp/build/arm-exception-handling
+    // See https://learn.microsoft.com/cpp/build/arm-exception-handling
     int unwindWords = xdata[0] >> 28;
     int epilogScopes = (xdata[0] >> 23) & 0x1f;
 #else
-    // See https://docs.microsoft.com/en-us/cpp/build/arm64-exception-handling
+    // See https://learn.microsoft.com/cpp/build/arm64-exception-handling
     int unwindWords = xdata[0] >> 27;
     int epilogScopes = (xdata[0] >> 22) & 0x1f;
 #endif
@@ -1243,6 +1243,7 @@ EEJitManager::EEJitManager()
 
 #ifdef TARGET_ARM64
 extern "C" DWORD64 __stdcall GetDataCacheZeroIDReg();
+extern "C" uint64_t GetSveLengthFromOS();
 #endif
 
 void EEJitManager::SetCpuInfo()
@@ -1257,30 +1258,19 @@ void EEJitManager::SetCpuInfo()
 
     int cpuFeatures = minipal_getcpufeatures();
 
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
-
-#if defined(TARGET_X86) && !defined(TARGET_WINDOWS)
-    // Linux may still support no SSE/SSE2 for 32-bit
-    if ((cpuFeatures & XArchIntrinsicConstants_VectorT128) == 0)
-    {
-        EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("SSE and SSE2 processor support required."));
-    }
-#else
-    _ASSERTE((cpuFeatures & XArchIntrinsicConstants_VectorT128) != 0);
-#endif
-
-    CPUCompileFlags.Set(InstructionSet_VectorT128);
-
     // Get the maximum bitwidth of Vector<T>, rounding down to the nearest multiple of 128-bits
     uint32_t maxVectorTBitWidth = (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_MaxVectorTBitWidth) / 128) * 128;
 
-    if (((cpuFeatures & XArchIntrinsicConstants_VectorT256) != 0) && ((maxVectorTBitWidth == 0) || (maxVectorTBitWidth >= 256)))
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+    CPUCompileFlags.Set(InstructionSet_VectorT128);
+
+    if (((cpuFeatures & XArchIntrinsicConstants_Avx2) != 0) && ((maxVectorTBitWidth == 0) || (maxVectorTBitWidth >= 256)))
     {
         // We allow 256-bit Vector<T> by default
         CPUCompileFlags.Set(InstructionSet_VectorT256);
     }
 
-    if (((cpuFeatures & XArchIntrinsicConstants_VectorT512) != 0) && (maxVectorTBitWidth >= 512))
+    if (((cpuFeatures & XArchIntrinsicConstants_Avx512f) != 0) && (maxVectorTBitWidth >= 512))
     {
         // We require 512-bit Vector<T> to be opt-in
         CPUCompileFlags.Set(InstructionSet_VectorT512);
@@ -1435,7 +1425,12 @@ void EEJitManager::SetCpuInfo()
         CPUCompileFlags.Set(InstructionSet_X86Serialize);
     }
 
-    // As Avx10v1_V512 could imply Avx10v1_V256 and Avx10v1, and Avx10v1_V256 could imply Avx10v1
+    if (((cpuFeatures & XArchIntrinsicConstants_Evex) != 0) && (CPUCompileFlags.IsSet(InstructionSet_AVX512F) || CPUCompileFlags.IsSet(InstructionSet_AVX10v1)))
+    {
+        CPUCompileFlags.Set(InstructionSet_EVEX);
+    }
+
+    // As Avx10v1_V512 could imply Avx10v1,
     // then the flag check here can be conducted for only once, and let 
     // `EnusreValidInstructionSetSupport` to handle the illegal combination.
     // To ensure `EnusreValidInstructionSetSupport` handle the dependency correctly, the implication
@@ -1443,11 +1438,6 @@ void EEJitManager::SetCpuInfo()
     if (((cpuFeatures & XArchIntrinsicConstants_Avx10v1) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX10v1))
     {
         CPUCompileFlags.Set(InstructionSet_AVX10v1);
-    }
-
-    if (((cpuFeatures & XArchIntrinsicConstants_Avx10v1_V256) != 0))
-    {
-        CPUCompileFlags.Set(InstructionSet_AVX10v1_V256);
     }
 
     if (((cpuFeatures & XArchIntrinsicConstants_Avx10v1_V512) != 0))
@@ -1458,12 +1448,12 @@ void EEJitManager::SetCpuInfo()
 
 #if !defined(TARGET_WINDOWS)
     // Linux may still support no AdvSimd
-    if ((cpuFeatures & ARM64IntrinsicConstants_VectorT128) == 0)
+    if ((cpuFeatures & ARM64IntrinsicConstants_AdvSimd) == 0)
     {
         EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("AdvSimd processor support required."));
     }
 #else
-    _ASSERTE((cpuFeatures & ARM64IntrinsicConstants_VectorT128) != 0);
+    _ASSERTE((cpuFeatures & ARM64IntrinsicConstants_AdvSimd) != 0);
 #endif
 
     CPUCompileFlags.Set(InstructionSet_VectorT128);
@@ -1525,7 +1515,14 @@ void EEJitManager::SetCpuInfo()
 
     if (((cpuFeatures & ARM64IntrinsicConstants_Sve) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableArm64Sve))
     {
-        CPUCompileFlags.Set(InstructionSet_Sve);
+        uint32_t maxVectorTLength = (maxVectorTBitWidth / 8);
+        uint64_t sveLengthFromOS = GetSveLengthFromOS();
+
+        // Do not enable SVE when the user specified vector length is smaller than the one offered by underlying OS.
+        if ((maxVectorTLength >= sveLengthFromOS) || (maxVectorTBitWidth == 0))
+        {
+            CPUCompileFlags.Set(InstructionSet_Sve);
+        }
     }
 
     // DCZID_EL0<4> (DZP) indicates whether use of DC ZVA instructions is permitted (0) or prohibited (1).

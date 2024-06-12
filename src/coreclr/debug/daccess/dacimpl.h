@@ -1229,6 +1229,7 @@ public:
 
     HRESULT Initialize(void);
 
+    HRESULT GetThreadDataImpl(CLRDATA_ADDRESS threadAddr, struct DacpThreadData *threadData);
     HRESULT GetThreadStoreDataImpl(struct DacpThreadStoreData *data);
 
     BOOL IsExceptionFromManagedCode(EXCEPTION_RECORD * pExceptionRecord);

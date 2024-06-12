@@ -1242,7 +1242,27 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
             unsigned int sizeBytes;
 
             simdBaseJitType = getBaseJitTypeAndSizeOfSIMDType(clsHnd, &sizeBytes);
-            assert((category == HW_Category_Special) || (category == HW_Category_Helper) || (sizeBytes != 0));
+
+#if defined(TARGET_ARM64)
+            if (simdBaseJitType == CORINFO_TYPE_UNDEF && HWIntrinsicInfo::HasScalarInputVariant(intrinsic))
+            {
+                // Did not find a valid vector type. The intrinsic has alternate scalar version. Switch to that.
+
+                assert(sizeBytes == 0);
+                intrinsic = HWIntrinsicInfo::GetScalarInputVariant(intrinsic);
+                category  = HWIntrinsicInfo::lookupCategory(intrinsic);
+                isa       = HWIntrinsicInfo::lookupIsa(intrinsic);
+
+                simdBaseJitType = sig->retType;
+                assert(simdBaseJitType != CORINFO_TYPE_VOID);
+                assert(simdBaseJitType != CORINFO_TYPE_UNDEF);
+                assert(simdBaseJitType != CORINFO_TYPE_VALUECLASS);
+            }
+            else
+#endif
+            {
+                assert((category == HW_Category_Special) || (category == HW_Category_Helper) || (sizeBytes != 0));
+            }
         }
     }
 
@@ -1271,6 +1291,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     int      immUpperBound   = 0;
     bool     hasFullRangeImm = false;
     bool     useFallback     = false;
+    bool     setMethodHandle = false;
 
     getHWIntrinsicImmOps(intrinsic, sig, &immOp1, &immOp2);
 
@@ -1287,7 +1308,20 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         if (!CheckHWIntrinsicImmRange(intrinsic, simdBaseJitType, immOp2, mustExpand, immLowerBound, immUpperBound,
                                       false, &useFallback))
         {
-            return useFallback ? impNonConstFallback(intrinsic, retType, simdBaseJitType) : nullptr;
+            if (useFallback)
+            {
+                return impNonConstFallback(intrinsic, retType, simdBaseJitType);
+            }
+            else if (!opts.OptimizationEnabled())
+            {
+                // Only enable late stage rewriting if optimizations are enabled
+                // as we won't otherwise encounter a constant at the later point
+                return nullptr;
+            }
+            else
+            {
+                setMethodHandle = true;
+            }
         }
     }
 #else
@@ -1311,7 +1345,20 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         if (!CheckHWIntrinsicImmRange(intrinsic, simdBaseJitType, immOp1, mustExpand, immLowerBound, immUpperBound,
                                       hasFullRangeImm, &useFallback))
         {
-            return useFallback ? impNonConstFallback(intrinsic, retType, simdBaseJitType) : nullptr;
+            if (useFallback)
+            {
+                return impNonConstFallback(intrinsic, retType, simdBaseJitType);
+            }
+            else if (!opts.OptimizationEnabled())
+            {
+                // Only enable late stage rewriting if optimizations are enabled
+                // as we won't otherwise encounter a constant at the later point
+                return nullptr;
+            }
+            else
+            {
+                setMethodHandle = true;
+            }
         }
     }
 
@@ -1560,6 +1607,12 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                     assert(varTypeIsSIMD(op2->TypeGet()));
                     retNode->AsHWIntrinsic()->SetAuxiliaryJitType(getBaseJitTypeOfSIMDType(sigReader.op2ClsHnd));
                 }
+#elif defined(TARGET_ARM64)
+                if (intrinsic == NI_Sve_GatherVector)
+                {
+                    assert(varTypeIsSIMD(op3->TypeGet()));
+                    retNode->AsHWIntrinsic()->SetAuxiliaryJitType(getBaseJitTypeOfSIMDType(sigReader.op3ClsHnd));
+                }
 #endif
                 break;
             }
@@ -1582,6 +1635,11 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                                       simdSize, mustExpand);
     }
 
+    if (setMethodHandle && (retNode != nullptr))
+    {
+        retNode->AsHWIntrinsic()->SetMethodHandle(this, method R2RARG(*entryPoint));
+    }
+
 #if defined(TARGET_ARM64)
     if (HWIntrinsicInfo::IsExplicitMaskedOperation(intrinsic))
     {
@@ -1598,11 +1656,22 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                 return retNode->AsHWIntrinsic()->Op(3);
             }
         }
+        else if (intrinsic == NI_Sve_GetActiveElementCount)
+        {
+            GenTree* op2 = retNode->AsHWIntrinsic()->Op(2);
+
+            // HWInstrinsic requires a mask for op2
+            if (!varTypeIsMask(op2))
+            {
+                retNode->AsHWIntrinsic()->Op(2) =
+                    gtNewSimdCvtVectorToMaskNode(TYP_MASK, op2, simdBaseJitType, simdSize);
+            }
+        }
 
         if (!varTypeIsMask(op1))
         {
             // Op1 input is a vector. HWInstrinsic requires a mask.
-            retNode->AsHWIntrinsic()->Op(1) = gtNewSimdConvertVectorToMaskNode(retType, op1, simdBaseJitType, simdSize);
+            retNode->AsHWIntrinsic()->Op(1) = gtNewSimdCvtVectorToMaskNode(TYP_MASK, op1, simdBaseJitType, simdSize);
         }
 
         if (HWIntrinsicInfo::IsMultiReg(intrinsic))
@@ -1619,7 +1688,13 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         // HWInstrinsic returns a mask, but all returns must be vectors, so convert mask to vector.
         assert(HWIntrinsicInfo::ReturnsPerElementMask(intrinsic));
         assert(nodeRetType == TYP_MASK);
-        retNode = gtNewSimdConvertMaskToVectorNode(retNode->AsHWIntrinsic(), retType);
+
+        GenTreeHWIntrinsic* op = retNode->AsHWIntrinsic();
+
+        CorInfoType simdBaseJitType = op->GetSimdBaseJitType();
+        unsigned    simdSize        = op->GetSimdSize();
+
+        retNode = gtNewSimdCvtMaskToVectorNode(retType, op, simdBaseJitType, simdSize);
     }
 #endif // defined(TARGET_ARM64)
 

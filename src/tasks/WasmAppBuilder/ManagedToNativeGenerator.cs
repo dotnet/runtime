@@ -33,6 +33,8 @@ public class ManagedToNativeGenerator : Task
     public string? InterpToNativeOutputPath { get; set; }
     public string? CacheFilePath { get; set; }
 
+    public bool IsLibraryMode { get; set; }
+
     [Output]
     public string[]? FileWrites { get; private set; }
 
@@ -69,7 +71,7 @@ public class ManagedToNativeGenerator : Task
         List<string> managedAssemblies = FilterOutUnmanagedBinaries(Assemblies);
         if (ShouldRun(managedAssemblies))
         {
-            var pinvoke = new PInvokeTableGenerator(FixupSymbolName, log);
+            var pinvoke = new PInvokeTableGenerator(FixupSymbolName, log, IsLibraryMode);
             var icall = new IcallTableGenerator(RuntimeIcallTableFile, FixupSymbolName, log);
 
             var resolver = new PathAssemblyResolver(managedAssemblies);

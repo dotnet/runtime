@@ -314,7 +314,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
             // Check if we are going from ulong->double->float
             if ((innerSrcType == TYP_ULONG) && (innerDstType == TYP_DOUBLE) && (dstType == TYP_FLOAT))
             {
-                if (compOpportunisticallyDependsOn(InstructionSet_AVX512F))
+                if (canUseEvexEncoding())
                 {
                     // One optimized (combined) cast here
                     tree = gtNewCastNode(TYP_FLOAT, innerOper, true, TYP_FLOAT);
@@ -341,8 +341,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
             // For pre-SSE41, the all src is converted to TYP_DOUBLE
             // and goes through helpers.
             && (tree->gtOverflow() || (dstType == TYP_LONG) ||
-                !(compOpportunisticallyDependsOn(InstructionSet_AVX512F) ||
-                  (dstType == TYP_INT && compOpportunisticallyDependsOn(InstructionSet_SSE41))))
+                !(canUseEvexEncoding() || (dstType == TYP_INT && compOpportunisticallyDependsOn(InstructionSet_SSE41))))
 #elif defined(TARGET_ARM)
             // Arm: src = float, dst = int64/uint64 or overflow conversion.
             && (tree->gtOverflow() || varTypeIsLong(dstType))
@@ -381,7 +380,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
                 //     float  -> int for SSE41
                 //     double -> int/uint/long for SSE41
                 // For all other conversions, we use helper functions.
-                if (compOpportunisticallyDependsOn(InstructionSet_AVX512F) ||
+                if (canUseEvexEncoding() ||
                     ((dstType != TYP_ULONG) && compOpportunisticallyDependsOn(InstructionSet_SSE41)))
                 {
                     if (tree->CastOp() != oper)
@@ -501,7 +500,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
     {
         srcType = varTypeToUnsigned(srcType);
 
-        if (srcType == TYP_ULONG && !compOpportunisticallyDependsOn(InstructionSet_AVX512F))
+        if (srcType == TYP_ULONG && !canUseEvexEncoding())
         {
             if (dstType == TYP_FLOAT)
             {
@@ -9426,7 +9425,8 @@ DONE_MORPHING_CHILDREN:
             }
 
             /* Any constant cases should have been folded earlier */
-            noway_assert(!op1->OperIsConst() || opts.OptimizationDisabled() || optValnumCSE_phase);
+            noway_assert(!op1->OperIsConst() || op1->IsIconHandle() || opts.OptimizationDisabled() ||
+                         optValnumCSE_phase);
             break;
 
         case GT_CKFINITE:
@@ -10676,212 +10676,187 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
             INDEBUG(node->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
             return node;
         }
-#if defined(TARGET_ARM64)
-        case NI_Sve_ConvertMaskToVector:
-        {
-            GenTree* op1 = node->Op(1);
-
-            if (!op1->OperIsHWIntrinsic(NI_Sve_ConvertVectorToMask))
-            {
-                break;
-            }
-
-            unsigned            simdBaseTypeSize = genTypeSize(node->GetSimdBaseType());
-            GenTreeHWIntrinsic* cvtOp1           = op1->AsHWIntrinsic();
-
-            if ((genTypeSize(cvtOp1->GetSimdBaseType()) != simdBaseTypeSize))
-            {
-                // We need the operand to be the same kind of mask; otherwise
-                // the bitwise operation can differ in how it performs
-                break;
-            }
-
-            GenTree* vectorNode = op1->AsHWIntrinsic()->Op(1);
-
-            DEBUG_DESTROY_NODE(op1, node);
-            INDEBUG(vectorNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
-
-            return vectorNode;
-        }
-
-        case NI_Sve_ConvertVectorToMask:
-        {
-            GenTree* op1 = node->Op(1);
-            GenTree* op2 = node->Op(2);
-
-            if (!op1->OperIsHWIntrinsic(NI_Sve_CreateTrueMaskAll) &&
-                !op2->OperIsHWIntrinsic(NI_Sve_ConvertMaskToVector))
-            {
-                break;
-            }
-
-            unsigned simdBaseTypeSize = genTypeSize(node->GetSimdBaseType());
-
-            if (!op2->OperIsHWIntrinsic() || (genTypeSize(op2->AsHWIntrinsic()->GetSimdBaseType()) != simdBaseTypeSize))
-            {
-                // We need the operand to be the same kind of mask; otherwise
-                // the bitwise operation can differ in how it performs
-                break;
-            }
-
-            GenTree* maskNode = op2->AsHWIntrinsic()->Op(1);
-
-            DEBUG_DESTROY_NODE(op2, node);
-            INDEBUG(maskNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
-
-            return maskNode;
-        }
-#endif
-#if defined(TARGET_XARCH)
-        case NI_AVX512F_And:
-        case NI_AVX512DQ_And:
-        case NI_AVX512F_AndNot:
-        case NI_AVX512DQ_AndNot:
-        case NI_AVX512F_Or:
-        case NI_AVX512DQ_Or:
-        case NI_AVX512F_Xor:
-        case NI_AVX512DQ_Xor:
-        {
-            GenTree* op1 = node->Op(1);
-            GenTree* op2 = node->Op(2);
-
-            if (!op1->OperIsHWIntrinsic(NI_AVX512F_ConvertMaskToVector) ||
-                !op2->OperIsHWIntrinsic(NI_AVX512F_ConvertMaskToVector))
-            {
-                // We need both operands to be ConvertMaskToVector in
-                // order to optimize this to a direct mask operation
-                break;
-            }
-
-            unsigned simdBaseTypeSize = genTypeSize(node->GetSimdBaseType());
-
-            GenTreeHWIntrinsic* cvtOp1 = op1->AsHWIntrinsic();
-            GenTreeHWIntrinsic* cvtOp2 = op2->AsHWIntrinsic();
-
-            if ((genTypeSize(cvtOp1->GetSimdBaseType()) != simdBaseTypeSize) ||
-                (genTypeSize(cvtOp2->GetSimdBaseType()) != simdBaseTypeSize))
-            {
-                // We need both operands to be the same kind of mask; otherwise
-                // the bitwise operation can differ in how it performs
-                break;
-            }
-
-            var_types   simdType        = node->TypeGet();
-            CorInfoType simdBaseJitType = node->GetSimdBaseJitType();
-            unsigned    simdSize        = node->GetSimdSize();
-
-            NamedIntrinsic maskIntrinsicId = NI_Illegal;
-
-            switch (intrinsicId)
-            {
-                case NI_AVX512F_And:
-                case NI_AVX512DQ_And:
-                {
-                    maskIntrinsicId = NI_AVX512F_AndMask;
-                    break;
-                }
-
-                case NI_AVX512F_AndNot:
-                case NI_AVX512DQ_AndNot:
-                {
-                    maskIntrinsicId = NI_AVX512F_AndNotMask;
-                    break;
-                }
-
-                case NI_AVX512F_Or:
-                case NI_AVX512DQ_Or:
-                {
-                    maskIntrinsicId = NI_AVX512F_OrMask;
-                    break;
-                }
-
-                case NI_AVX512F_Xor:
-                case NI_AVX512DQ_Xor:
-                {
-                    maskIntrinsicId = NI_AVX512F_XorMask;
-                    break;
-                }
-
-                default:
-                {
-                    unreached();
-                }
-            }
-
-            assert(maskIntrinsicId != NI_Illegal);
-
-            node->ChangeHWIntrinsicId(maskIntrinsicId);
-            node->gtType = TYP_MASK;
-
-            node->Op(1) = cvtOp1->Op(1);
-            DEBUG_DESTROY_NODE(op1);
-
-            node->Op(2) = cvtOp2->Op(1);
-            DEBUG_DESTROY_NODE(op2);
-
-            node = gtNewSimdHWIntrinsicNode(simdType, node, NI_AVX512F_ConvertMaskToVector, simdBaseJitType, simdSize);
-
-            INDEBUG(node->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
-            break;
-        }
-
-        case NI_AVX512F_ConvertMaskToVector:
-        {
-            GenTree* op1 = node->Op(1);
-
-            if (!op1->OperIsHWIntrinsic(NI_AVX512F_ConvertVectorToMask))
-            {
-                break;
-            }
-
-            unsigned            simdBaseTypeSize = genTypeSize(node->GetSimdBaseType());
-            GenTreeHWIntrinsic* cvtOp1           = op1->AsHWIntrinsic();
-
-            if ((genTypeSize(cvtOp1->GetSimdBaseType()) != simdBaseTypeSize))
-            {
-                // We need the operand to be the same kind of mask; otherwise
-                // the bitwise operation can differ in how it performs
-                break;
-            }
-
-            GenTree* vectorNode = op1->AsHWIntrinsic()->Op(1);
-
-            DEBUG_DESTROY_NODE(op1, node);
-            INDEBUG(vectorNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
-
-            return vectorNode;
-        }
-
-        case NI_AVX512F_ConvertVectorToMask:
-        {
-            GenTree* op1 = node->Op(1);
-
-            if (!op1->OperIsHWIntrinsic(NI_AVX512F_ConvertMaskToVector))
-            {
-                break;
-            }
-
-            unsigned            simdBaseTypeSize = genTypeSize(node->GetSimdBaseType());
-            GenTreeHWIntrinsic* cvtOp1           = op1->AsHWIntrinsic();
-
-            if ((genTypeSize(cvtOp1->GetSimdBaseType()) != simdBaseTypeSize))
-            {
-                // We need the operand to be the same kind of mask; otherwise
-                // the bitwise operation can differ in how it performs
-                break;
-            }
-
-            GenTree* maskNode = op1->AsHWIntrinsic()->Op(1);
-
-            DEBUG_DESTROY_NODE(op1, node);
-            INDEBUG(maskNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
-
-            return maskNode;
-        }
-#endif // TARGET_XARCH
 
         default:
         {
+            genTreeOps oper = node->HWOperGet();
+
+            if (GenTreeHWIntrinsic::OperIsBitwiseHWIntrinsic(oper))
+            {
+                GenTree* op1 = node->Op(1);
+                GenTree* op2 = node->Op(2);
+
+                if (!op1->OperIsHWIntrinsic() || !op2->OperIsHWIntrinsic())
+                {
+                    // We need both operands to be ConvertMaskToVector in
+                    // order to optimize this to a direct mask operation
+                    break;
+                }
+
+                GenTreeHWIntrinsic* cvtOp1 = op1->AsHWIntrinsic();
+                GenTreeHWIntrinsic* cvtOp2 = op2->AsHWIntrinsic();
+
+                if (!cvtOp1->OperIsConvertMaskToVector() || !cvtOp2->OperIsConvertMaskToVector())
+                {
+                    break;
+                }
+
+                unsigned simdBaseTypeSize = genTypeSize(node->GetSimdBaseType());
+
+                if ((genTypeSize(cvtOp1->GetSimdBaseType()) != simdBaseTypeSize) ||
+                    (genTypeSize(cvtOp2->GetSimdBaseType()) != simdBaseTypeSize))
+                {
+                    // We need both operands to be the same kind of mask; otherwise
+                    // the bitwise operation can differ in how it performs
+                    break;
+                }
+
+                var_types   simdType        = node->TypeGet();
+                CorInfoType simdBaseJitType = node->GetSimdBaseJitType();
+                unsigned    simdSize        = node->GetSimdSize();
+
+                NamedIntrinsic maskIntrinsicId = NI_Illegal;
+
+#if defined(TARGET_XARCH)
+                switch (oper)
+                {
+                    case GT_AND:
+                    {
+                        maskIntrinsicId = NI_EVEX_AndMask;
+                        break;
+                    }
+
+                    case GT_AND_NOT:
+                    {
+                        maskIntrinsicId = NI_EVEX_AndNotMask;
+                        break;
+                    }
+
+                    case GT_OR:
+                    {
+                        maskIntrinsicId = NI_EVEX_OrMask;
+                        break;
+                    }
+
+                    case GT_XOR:
+                    {
+                        maskIntrinsicId = NI_EVEX_XorMask;
+                        break;
+                    }
+
+                    default:
+                    {
+                        unreached();
+                    }
+                }
+#elif defined(TARGET_ARM64)
+                // TODO-ARM64-CQ: Support transforming bitwise operations on masks
+                break;
+#else
+#error Unsupported platform
+#endif // !TARGET_XARCH && !TARGET_ARM64
+
+                if (maskIntrinsicId == NI_Illegal)
+                {
+                    break;
+                }
+
+                node->ChangeHWIntrinsicId(maskIntrinsicId);
+                node->gtType = TYP_MASK;
+
+                node->Op(1) = cvtOp1->Op(1);
+                DEBUG_DESTROY_NODE(op1);
+
+                node->Op(2) = cvtOp2->Op(1);
+                DEBUG_DESTROY_NODE(op2);
+
+                node = gtNewSimdCvtMaskToVectorNode(simdType, node, simdBaseJitType, simdSize)->AsHWIntrinsic();
+
+                INDEBUG(node->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+                return node;
+            }
+
+            if (node->OperIsConvertMaskToVector())
+            {
+                GenTree* op = node->Op(1);
+
+                if (!op->OperIsHWIntrinsic())
+                {
+                    break;
+                }
+
+                unsigned            simdBaseTypeSize = genTypeSize(node->GetSimdBaseType());
+                GenTreeHWIntrinsic* cvtOp            = op->AsHWIntrinsic();
+
+                if (!cvtOp->OperIsConvertVectorToMask())
+                {
+                    break;
+                }
+
+                if ((genTypeSize(cvtOp->GetSimdBaseType()) != simdBaseTypeSize))
+                {
+                    // We need the operand to be the same kind of mask; otherwise
+                    // the bitwise operation can differ in how it performs
+                    break;
+                }
+
+#if defined(TARGET_XARCH)
+                GenTree* vectorNode = cvtOp->Op(1);
+#elif defined(TARGET_ARM64)
+                GenTree* vectorNode = cvtOp->Op(2);
+#else
+#error Unsupported platform
+#endif // !TARGET_XARCH && !TARGET_ARM64
+
+                DEBUG_DESTROY_NODE(op, node);
+                INDEBUG(vectorNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+
+                return vectorNode;
+            }
+
+            if (node->OperIsConvertVectorToMask())
+            {
+                GenTree* op = node->Op(1);
+
+#if defined(TARGET_ARM64)
+                if (!op->OperIsHWIntrinsic(NI_Sve_CreateTrueMaskAll))
+                {
+                    break;
+                }
+                op = node->Op(2);
+#endif // TARGET_ARM64
+
+                if (!op->OperIsHWIntrinsic())
+                {
+                    break;
+                }
+
+                unsigned            simdBaseTypeSize = genTypeSize(node->GetSimdBaseType());
+                GenTreeHWIntrinsic* cvtOp            = op->AsHWIntrinsic();
+
+                if (!cvtOp->OperIsConvertMaskToVector())
+                {
+                    break;
+                }
+
+                if ((genTypeSize(cvtOp->GetSimdBaseType()) != simdBaseTypeSize))
+                {
+                    // We need the operand to be the same kind of mask; otherwise
+                    // the bitwise operation can differ in how it performs
+                    break;
+                }
+
+                GenTree* maskNode = cvtOp->Op(1);
+
+#if defined(TARGET_ARM64)
+                DEBUG_DESTROY_NODE(node->Op(1));
+#endif // TARGET_ARM64
+
+                DEBUG_DESTROY_NODE(op, node);
+                INDEBUG(maskNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+
+                return maskNode;
+            }
             break;
         }
     }
@@ -10981,6 +10956,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
 
             return andnNode;
         }
+
         default:
         {
             break;

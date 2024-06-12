@@ -223,6 +223,50 @@ namespace System.Collections.Concurrent
             _budget = buckets.Length / locks.Length;
         }
 
+        /// <summary>
+        /// Gets an instance of a type that may be used to perform operations on a <see cref="ConcurrentDictionary{TKey, TValue}"/>
+        /// using a <typeparamref name="TAlternateKey"/> as a key instead of a <typeparamref name="TKey"/>.
+        /// </summary>
+        /// <typeparam name="TAlternateKey">The alternate type of a key for performing lookups.</typeparam>
+        /// <returns>The created lookup instance.</returns>
+        /// <exception cref="InvalidOperationException">This instance's comparer is not compatible with <typeparamref name="TAlternateKey"/>.</exception>
+        /// <remarks>
+        /// This instance must be using a comparer that implements <see cref="IAlternateEqualityComparer{TAlternateKey, TKey}"/> with
+        /// <typeparamref name="TAlternateKey"/> and <typeparamref name="TKey"/>. If it doesn't, an exception will be thrown.
+        /// </remarks>
+        public AlternateLookup<TAlternateKey> GetAlternateLookup<TAlternateKey>() where TAlternateKey : notnull, allows ref struct
+        {
+            if (!IsCompatibleKey<TAlternateKey>(_tables))
+            {
+                ThrowHelper.ThrowIncompatibleComparer();
+            }
+
+            return new AlternateLookup<TAlternateKey>(this);
+        }
+
+        /// <summary>
+        /// Gets an instance of a type that may be used to perform operations on a <see cref="ConcurrentDictionary{TKey, TValue}"/>
+        /// using a <typeparamref name="TAlternateKey"/> as a key instead of a <typeparamref name="TKey"/>.
+        /// </summary>
+        /// <typeparam name="TAlternateKey">The alternate type of a key for performing lookups.</typeparam>
+        /// <param name="lookup">The created lookup instance when the method returns true, or a default instance that should not be used if the method returns false.</param>
+        /// <returns>true if a lookup could be created; otherwise, false.</returns>
+        /// <remarks>
+        /// This instance must be using a comparer that implements <see cref="IAlternateEqualityComparer{TAlternateKey, TKey}"/> with
+        /// <typeparamref name="TAlternateKey"/> and <typeparamref name="TKey"/>. If it doesn't, the method will return false.
+        /// </remarks>
+        public bool TryGetAlternateLookup<TAlternateKey>(out AlternateLookup<TAlternateKey> lookup) where TAlternateKey : notnull, allows ref struct
+        {
+            if (IsCompatibleKey<TAlternateKey>(_tables))
+            {
+                lookup = new AlternateLookup<TAlternateKey>(this);
+                return true;
+            }
+
+            lookup = default;
+            return false;
+        }
+
         /// <summary>Computes an initial capacity to use based on an initial seed collection.</summary>
         /// <param name="collection">The collection with which to initially populate this dictionary.</param>
         /// <returns>The capacity to use.</returns>
@@ -1201,6 +1245,7 @@ namespace System.Collections.Concurrent
         /// key is already in the dictionary, or the new value for the key as returned by valueFactory
         /// if the key was not in the dictionary.</returns>
         public TValue GetOrAdd<TArg>(TKey key, Func<TKey, TArg, TValue> valueFactory, TArg factoryArgument)
+            where TArg : allows ref struct
         {
             if (key is null)
             {
@@ -1279,6 +1324,7 @@ namespace System.Collections.Concurrent
         /// absent) or the result of updateValueFactory (if the key was present).</returns>
         public TValue AddOrUpdate<TArg>(
             TKey key, Func<TKey, TArg, TValue> addValueFactory, Func<TKey, TValue, TArg, TValue> updateValueFactory, TArg factoryArgument)
+            where TArg : allows ref struct
         {
             if (key is null)
             {
@@ -2287,6 +2333,347 @@ namespace System.Collections.Concurrent
             public bool MoveNext() => _enumerator.MoveNext();
 
             public void Reset() => _enumerator.Reset();
+        }
+
+        /// <summary>Checks whether the dictionary has a comparer compatible with <typeparamref name="TAlternateKey"/>.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool IsCompatibleKey<TAlternateKey>(ConcurrentDictionary<TKey, TValue>.Tables tables)
+            where TAlternateKey : notnull, allows ref struct
+        {
+            Debug.Assert(tables is not null);
+            return tables._comparer is IAlternateEqualityComparer<TAlternateKey, TKey>;
+        }
+
+        /// <summary>Gets the dictionary's alternate comparer. The dictionary must have already been verified as compatible.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static IAlternateEqualityComparer<TAlternateKey, TKey> GetAlternateComparer<TAlternateKey>(ConcurrentDictionary<TKey, TValue>.Tables tables)
+             where TAlternateKey : notnull, allows ref struct
+        {
+            Debug.Assert(IsCompatibleKey<TAlternateKey>(tables));
+            return Unsafe.As<IAlternateEqualityComparer<TAlternateKey, TKey>>(tables._comparer!);
+        }
+
+        /// <summary>
+        /// Provides a type that may be used to perform operations on a <see cref="ConcurrentDictionary{TKey, TValue}"/>
+        /// using a <typeparamref name="TAlternateKey"/> as a key instead of a <typeparamref name="TKey"/>.
+        /// </summary>
+        /// <typeparam name="TAlternateKey">The alternate type of a key for performing lookups.</typeparam>
+        public readonly struct AlternateLookup<TAlternateKey> where TAlternateKey : notnull, allows ref struct
+        {
+            /// <summary>Initialize the instance. The dictionary must have already been verified to have a compatible comparer.</summary>
+            internal AlternateLookup(ConcurrentDictionary<TKey, TValue> dictionary)
+            {
+                Debug.Assert(dictionary is not null);
+                Debug.Assert(IsCompatibleKey<TAlternateKey>(dictionary._tables));
+                Dictionary = dictionary;
+            }
+
+            /// <summary>Gets the <see cref="ConcurrentDictionary{TKey, TValue}"/> against which this instance performs operations.</summary>
+            public ConcurrentDictionary<TKey, TValue> Dictionary { get; }
+
+            /// <summary>Gets or sets the value associated with the specified alternate key.</summary>
+            /// <param name="key">The alternate key of the value to get or set.</param>
+            /// <value>
+            /// The value associated with the specified alternate key. If the specified alternate key is not found, a get operation throws
+            /// a <see cref="KeyNotFoundException"/>, and a set operation creates a new element with the specified key.
+            /// </value>
+            /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
+            /// <exception cref="KeyNotFoundException">The property is retrieved and alternate key does not exist in the collection.</exception>
+            public TValue this[TAlternateKey key]
+            {
+                get => TryGetValue(key, out TValue? value) ? value : throw new KeyNotFoundException();
+                set => TryAdd(key, value, updateIfExists: true, out _);
+            }
+
+            /// <summary>Determines whether the <see cref="ConcurrentDictionary{TKey, TValue}"/> contains the specified alternate key.</summary>
+            /// <param name="key">The alternate key to check.</param>
+            /// <returns><see langword="true"/> if the key is in the dictionary; otherwise, <see langword="false"/>.</returns>
+            /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
+            public bool ContainsKey(TAlternateKey key) =>
+                TryGetValue(key, out _);
+
+            /// <summary>Attempts to add the specified key and value to the dictionary.</summary>
+            /// <param name="key">The alternate key of the element to add.</param>
+            /// <param name="value">The value of the element to add.</param>
+            /// <returns>true if the key/value pair was added to the dictionary successfully; otherwise, false.</returns>
+            /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
+            public bool TryAdd(TAlternateKey key, TValue value) =>
+                TryAdd(key, value, updateIfExists: false, out _);
+
+            /// <summary>Attempts to add the specified key and value to the dictionary.</summary>
+            /// <param name="key">The alternate key of the element to add.</param>
+            /// <param name="value">The value of the element to add.</param>
+            /// <param name="updateIfExists">true to overwrite the value of an existing key; false to throw for an existing key.</param>
+            /// <param name="resultingValue">The value associated with the key when the operation completes.</param>
+            private bool TryAdd(TAlternateKey key, TValue value, bool updateIfExists, out TValue resultingValue)
+            {
+                if (key is null)
+                {
+                    ThrowHelper.ThrowKeyNullException();
+                }
+
+                Tables tables = Dictionary._tables;
+                IAlternateEqualityComparer<TAlternateKey, TKey> comparer = GetAlternateComparer<TAlternateKey>(tables);
+
+                int hashcode = comparer.GetHashCode(key);
+
+                while (true)
+                {
+                    object[] locks = tables._locks;
+                    ref Node? bucket = ref GetBucketAndLock(tables, hashcode, out uint lockNo);
+
+                    bool resizeDesired = false;
+                    bool forceRehash = false;
+                    bool lockTaken = false;
+                    try
+                    {
+                        Monitor.Enter(locks[lockNo], ref lockTaken);
+
+                        // If the table just got resized, we may not be holding the right lock, and must retry.
+                        // This should be a rare occurrence.
+                        if (tables != Dictionary._tables)
+                        {
+                            tables = Dictionary._tables;
+                            if (!ReferenceEquals(comparer, tables._comparer))
+                            {
+                                comparer = GetAlternateComparer<TAlternateKey>(tables);
+                                hashcode = comparer.GetHashCode(key);
+                            }
+                            continue;
+                        }
+
+                        // Try to find this key in the bucket
+                        uint collisionCount = 0;
+                        Node? prev = null;
+                        for (Node? node = bucket; node is not null; node = node._next)
+                        {
+                            Debug.Assert((prev is null && node == bucket) || prev!._next == node);
+                            if (hashcode == node._hashcode && comparer.Equals(key, node._key))
+                            {
+                                // The key was found in the dictionary. If updates are allowed, update the value for that key.
+                                // We need to create a new node for the update, in order to support TValue types that cannot
+                                // be written atomically, since lock-free reads may be happening concurrently.
+                                if (updateIfExists)
+                                {
+                                    // Do the reference type check up front to handle many cases of shared generics.
+                                    // If TValue is a value type then the field's value here can be baked in. Otherwise,
+                                    // for the remaining shared generic cases the field access here would disqualify inlining,
+                                    // so the following check cannot be factored out of TryAddInternal/TryUpdateInternal.
+                                    if (!typeof(TValue).IsValueType || ConcurrentDictionaryTypeProps<TValue>.IsWriteAtomic)
+                                    {
+                                        node._value = value;
+                                    }
+                                    else
+                                    {
+                                        var newNode = new Node(node._key, value, hashcode, node._next);
+                                        if (prev is null)
+                                        {
+                                            Volatile.Write(ref bucket, newNode);
+                                        }
+                                        else
+                                        {
+                                            prev._next = newNode;
+                                        }
+                                    }
+                                    resultingValue = value;
+                                }
+                                else
+                                {
+                                    resultingValue = node._value;
+                                }
+                                return false;
+                            }
+                            prev = node;
+                            if (!typeof(TKey).IsValueType) // this is only relevant to strings, and we can avoid this code for all value types
+                            {
+                                collisionCount++;
+                            }
+                        }
+
+                        TKey actualKey = comparer.Create(key);
+                        if (actualKey is null)
+                        {
+                            ThrowHelper.ThrowKeyNullException();
+                        }
+
+                        // The key was not found in the bucket. Insert the key-value pair.
+                        var resultNode = new Node(actualKey, value, hashcode, bucket);
+                        Volatile.Write(ref bucket, resultNode);
+                        checked
+                        {
+                            tables._countPerLock[lockNo]++;
+                        }
+
+                        // If the number of elements guarded by this lock has exceeded the budget, resize the bucket table.
+                        // It is also possible that GrowTable will increase the budget but won't resize the bucket table.
+                        // That happens if the bucket table is found to be poorly utilized due to a bad hash function.
+                        if (tables._countPerLock[lockNo] > Dictionary._budget)
+                        {
+                            resizeDesired = true;
+                        }
+
+                        // We similarly want to invoke redo the tables if we're using a non-randomized comparer
+                        // and need to upgrade to a randomized comparer due to too many collisions.
+                        if (!typeof(TKey).IsValueType &&
+                            collisionCount > HashHelpers.HashCollisionThreshold &&
+                            comparer is NonRandomizedStringEqualityComparer)
+                        {
+                            forceRehash = true;
+                        }
+                    }
+                    finally
+                    {
+                        if (lockTaken)
+                        {
+                            Monitor.Exit(locks[lockNo]);
+                        }
+                    }
+
+                    // The fact that we got here means that we just performed an insertion. If necessary, we will grow the table.
+                    // See comments in TryAddInternal.
+                    if (resizeDesired | forceRehash)
+                    {
+                        Dictionary.GrowTable(tables, resizeDesired, forceRehash);
+                    }
+
+                    resultingValue = value;
+                    return true;
+                }
+            }
+
+            /// <summary>Gets the value associated with the specified alternate key.</summary>
+            /// <param name="key">The alternate key of the value to get.</param>
+            /// <param name="value">
+            /// When this method returns, contains the value associated with the specified key, if the key is found;
+            /// otherwise, the default value for the type of the value parameter.
+            /// </param>
+            /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
+            public bool TryGetValue(TAlternateKey key, [MaybeNullWhen(false)] out TValue value) =>
+                TryGetValue(key, out _, out value);
+
+            /// <summary>Gets the value associated with the specified alternate key.</summary>
+            /// <param name="key">The alternate key of the value to get.</param>
+            /// <param name="actualKey">
+            /// When this method returns, contains the actual key associated with the alternate key, if the key is found;
+            /// otherwise, the default value for the type of the key parameter.
+            /// </param>
+            /// <param name="value">
+            /// When this method returns, contains the value associated with the specified key, if the key is found;
+            /// otherwise, the default value for the type of the value parameter.
+            /// </param>
+            /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
+            public bool TryGetValue(TAlternateKey key, [MaybeNullWhen(false)] out TKey actualKey, [MaybeNullWhen(false)] out TValue value)
+            {
+                if (key is null)
+                {
+                    ThrowHelper.ThrowKeyNullException();
+                }
+
+                Tables tables = Dictionary._tables;
+                IAlternateEqualityComparer<TAlternateKey, TKey> comparer = GetAlternateComparer<TAlternateKey>(tables);
+
+                int hashcode = comparer.GetHashCode(key);
+                for (Node? n = GetBucket(tables, hashcode); n is not null; n = n._next)
+                {
+                    if (hashcode == n._hashcode && comparer.Equals(key, n._key))
+                    {
+                        actualKey = n._key;
+                        value = n._value;
+                        return true;
+                    }
+                }
+
+                actualKey = default;
+                value = default;
+                return false;
+            }
+
+            /// <summary>
+            /// Removes the value with the specified alternate key from the <see cref="Dictionary{TKey, TValue}"/>,
+            /// and copies the element to the value parameter.
+            /// </summary>
+            /// <param name="key">The alternate key of the element to remove.</param>
+            /// <param name="value">The removed element.</param>
+            /// <returns>true if the element is successfully found and removed; otherwise, false.</returns>
+            /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
+            public bool TryRemove(TAlternateKey key, [MaybeNullWhen(false)] out TValue value) =>
+                TryRemove(key, out _, out value);
+
+            /// <summary>
+            /// Removes the value with the specified alternate key from the <see cref="Dictionary{TKey, TValue}"/>,
+            /// and copies the associated key and element to the value parameter.
+            /// </summary>
+            /// <param name="key">The alternate key of the element to remove.</param>
+            /// <param name="actualKey">The removed key.</param>
+            /// <param name="value">The removed element.</param>
+            /// <returns>true if the element is successfully found and removed; otherwise, false.</returns>
+            /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
+            public bool TryRemove(TAlternateKey key, [MaybeNullWhen(false)] out TKey actualKey, [MaybeNullWhen(false)] out TValue value)
+            {
+                if (key is null)
+                {
+                    ThrowHelper.ThrowKeyNullException();
+                }
+
+                Tables tables = Dictionary._tables;
+                IAlternateEqualityComparer<TAlternateKey, TKey> comparer = GetAlternateComparer<TAlternateKey>(tables);
+                int hashcode = comparer.GetHashCode(key);
+
+                while (true)
+                {
+                    object[] locks = tables._locks;
+                    ref Node? bucket = ref GetBucketAndLock(tables, hashcode, out uint lockNo);
+
+                    // Do a hot read on number of items stored in the bucket.  If it's empty, we can avoid
+                    // taking the lock and fail fast.
+                    if (tables._countPerLock[lockNo] != 0)
+                    {
+                        lock (locks[lockNo])
+                        {
+                            // If the table just got resized, we may not be holding the right lock, and must retry.
+                            // This should be a rare occurrence.
+                            if (tables != Dictionary._tables)
+                            {
+                                tables = Dictionary._tables;
+                                if (!ReferenceEquals(comparer, tables._comparer))
+                                {
+                                    comparer = GetAlternateComparer<TAlternateKey>(tables);
+                                    hashcode = comparer.GetHashCode(key);
+                                }
+                                continue;
+                            }
+
+                            Node? prev = null;
+                            for (Node? curr = bucket; curr is not null; curr = curr._next)
+                            {
+                                Debug.Assert((prev is null && curr == bucket) || prev!._next == curr);
+
+                                if (hashcode == curr._hashcode && comparer.Equals(key, curr._key))
+                                {
+                                    if (prev is null)
+                                    {
+                                        Volatile.Write(ref bucket, curr._next);
+                                    }
+                                    else
+                                    {
+                                        prev._next = curr._next;
+                                    }
+
+                                    actualKey = curr._key;
+                                    value = curr._value;
+                                    tables._countPerLock[lockNo]--;
+                                    return true;
+                                }
+                                prev = curr;
+                            }
+                        }
+                    }
+
+                    actualKey = default;
+                    value = default;
+                    return false;
+                }
+            }
         }
     }
 

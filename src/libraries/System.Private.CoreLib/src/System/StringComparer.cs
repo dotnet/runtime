@@ -210,7 +210,7 @@ namespace System
 
     [Serializable]
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public sealed class CultureAwareComparer : StringComparer, ISerializable
+    public sealed class CultureAwareComparer : StringComparer, IAlternateEqualityComparer<ReadOnlySpan<char>, string?>, ISerializable
     {
         internal static readonly CultureAwareComparer InvariantCaseSensitiveInstance = new CultureAwareComparer(CompareInfo.Invariant, CompareOptions.None);
         internal static readonly CultureAwareComparer InvariantIgnoreCaseInstance = new CultureAwareComparer(CompareInfo.Invariant, CompareOptions.IgnoreCase);
@@ -268,6 +268,23 @@ namespace System
             return _compareInfo.GetHashCode(obj, _options);
         }
 
+        int IAlternateEqualityComparer<ReadOnlySpan<char>, string?>.GetHashCode(ReadOnlySpan<char> span) =>
+            _compareInfo.GetHashCode(span, _options);
+
+        bool IAlternateEqualityComparer<ReadOnlySpan<char>, string?>.Equals(ReadOnlySpan<char> span, string? target)
+        {
+            // See explanation in StringEqualityComparer.Equals.
+            if (span.IsEmpty && target is null)
+            {
+                return false;
+            }
+
+            return _compareInfo.Compare(span, target, _options) == 0;
+        }
+
+        string IAlternateEqualityComparer<ReadOnlySpan<char>, string?>.Create(ReadOnlySpan<char> span) =>
+            span.ToString();
+
         // Equals method for the comparer itself.
         public override bool Equals([NotNullWhen(true)] object? obj)
         {
@@ -299,7 +316,7 @@ namespace System
 
     [Serializable]
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public class OrdinalComparer : StringComparer
+    public class OrdinalComparer : StringComparer, IAlternateEqualityComparer<ReadOnlySpan<char>, string?>
     {
         private readonly bool _ignoreCase; // Do not rename (binary serialization)
 
@@ -358,6 +375,27 @@ namespace System
             return obj.GetHashCode();
         }
 
+        bool IAlternateEqualityComparer<ReadOnlySpan<char>, string?>.Equals(ReadOnlySpan<char> span, string? target)
+        {
+            // See explanation in StringEqualityComparer.Equals.
+            if (span.IsEmpty && target is null)
+            {
+                return false;
+            }
+
+            return _ignoreCase?
+                span.EqualsOrdinalIgnoreCase(target) :
+                span.SequenceEqual(target);
+        }
+
+        int IAlternateEqualityComparer<ReadOnlySpan<char>, string?>.GetHashCode(ReadOnlySpan<char> span) =>
+            _ignoreCase ?
+                string.GetHashCodeOrdinalIgnoreCase(span) :
+                string.GetHashCode(span);
+
+        string IAlternateEqualityComparer<ReadOnlySpan<char>, string?>.Create(ReadOnlySpan<char> span) =>
+            span.ToString();
+
         // Equals method for the comparer itself.
         public override bool Equals([NotNullWhen(true)] object? obj)
         {
@@ -382,7 +420,7 @@ namespace System
     }
 
     [Serializable]
-    internal sealed class OrdinalCaseSensitiveComparer : OrdinalComparer, ISerializable
+    internal sealed class OrdinalCaseSensitiveComparer : OrdinalComparer, ISerializable, IAlternateEqualityComparer<ReadOnlySpan<char>, string?>
     {
         internal static readonly OrdinalCaseSensitiveComparer Instance = new OrdinalCaseSensitiveComparer();
 
@@ -403,6 +441,23 @@ namespace System
             return obj.GetHashCode();
         }
 
+        bool IAlternateEqualityComparer<ReadOnlySpan<char>, string?>.Equals(ReadOnlySpan<char> span, string? target)
+        {
+            // See explanation in StringEqualityComparer.Equals.
+            if (span.IsEmpty && target is null)
+            {
+                return false;
+            }
+
+            return span.SequenceEqual(target);
+        }
+
+        int IAlternateEqualityComparer<ReadOnlySpan<char>, string?>.GetHashCode(ReadOnlySpan<char> span) =>
+            string.GetHashCode(span);
+
+        string IAlternateEqualityComparer<ReadOnlySpan<char>, string?>.Create(ReadOnlySpan<char> span) =>
+            span.ToString();
+
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             info.SetType(typeof(OrdinalComparer));
@@ -411,7 +466,7 @@ namespace System
     }
 
     [Serializable]
-    internal sealed class OrdinalIgnoreCaseComparer : OrdinalComparer, ISerializable
+    internal sealed class OrdinalIgnoreCaseComparer : OrdinalComparer, IAlternateEqualityComparer<ReadOnlySpan<char>, string?>, ISerializable
     {
         internal static readonly OrdinalIgnoreCaseComparer Instance = new OrdinalIgnoreCaseComparer();
 
@@ -467,6 +522,23 @@ namespace System
             }
             return obj.GetHashCodeOrdinalIgnoreCase();
         }
+
+        bool IAlternateEqualityComparer<ReadOnlySpan<char>, string?>.Equals(ReadOnlySpan<char> span, string? target)
+        {
+            // See explanation in StringEqualityComparer.Equals.
+            if (span.IsEmpty && target is null)
+            {
+                return false;
+            }
+
+            return span.EqualsOrdinalIgnoreCase(target);
+        }
+
+        int IAlternateEqualityComparer<ReadOnlySpan<char>, string?>.GetHashCode(ReadOnlySpan<char> span) =>
+            string.GetHashCodeOrdinalIgnoreCase(span);
+
+        string IAlternateEqualityComparer<ReadOnlySpan<char>, string?>.Create(ReadOnlySpan<char> span) =>
+            span.ToString();
 
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
