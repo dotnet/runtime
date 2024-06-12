@@ -3456,6 +3456,57 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe void PrefetchInt64(Vector<ulong> mask, void* address, [ConstantExpected] SvePrefetchType prefetchType) => PrefetchInt64(mask, address, prefetchType);
 
+        ///  Reverse bits
+
+        /// <summary>
+        /// svuint8_t svrbit[_u8]_x(svbool_t pg, svuint8_t op)
+        ///   RBIT Ztied.B, Pg/M, Ztied.B
+        /// </summary>
+        public static unsafe Vector<byte> ReverseBits(Vector<byte> value) => ReverseBits(value);
+
+        /// <summary>
+        /// svint16_t svrbit[_s16]_m(svint16_t inactive, svbool_t pg, svint16_t op)
+        ///   RBIT Ztied.H, Pg/M, Zop.H
+        /// </summary>
+        public static unsafe Vector<short> ReverseBits(Vector<short> value) => ReverseBits(value);
+
+        /// <summary>
+        /// svint32_t svrbit[_s32]_m(svint32_t inactive, svbool_t pg, svint32_t op)
+        ///   RBIT Ztied.S, Pg/M, Zop.S
+        /// </summary>
+        public static unsafe Vector<int> ReverseBits(Vector<int> value) => ReverseBits(value);
+
+        /// <summary>
+        /// svint64_t svrbit[_s64]_m(svint64_t inactive, svbool_t pg, svint64_t op)
+        ///   RBIT Ztied.D, Pg/M, Zop.D
+        /// </summary>
+        public static unsafe Vector<long> ReverseBits(Vector<long> value) => ReverseBits(value);
+
+        /// <summary>
+        /// svint8_t svrbit[_s8]_m(svint8_t inactive, svbool_t pg, svint8_t op)
+        ///   RBIT Ztied.B, Pg/M, Zop.B
+        /// </summary>
+        public static unsafe Vector<sbyte> ReverseBits(Vector<sbyte> value) => ReverseBits(value);
+
+        /// <summary>
+        /// svuint16_t svrbit[_u16]_m(svuint16_t inactive, svbool_t pg, svuint16_t op)
+        ///   RBIT Ztied.H, Pg/M, Zop.H
+        /// </summary>
+        public static unsafe Vector<ushort> ReverseBits(Vector<ushort> value) => ReverseBits(value);
+
+        /// <summary>
+        /// svuint32_t svrbit[_u32]_m(svuint32_t inactive, svbool_t pg, svuint32_t op)
+        ///   RBIT Ztied.S, Pg/M, Zop.S
+        /// </summary>
+        public static unsafe Vector<uint> ReverseBits(Vector<uint> value) => ReverseBits(value);
+
+        /// <summary>
+        /// svuint64_t svrbit[_u64]_m(svuint64_t inactive, svbool_t pg, svuint64_t op)
+        ///   RBIT Ztied.D, Pg/M, Zop.D
+        /// </summary>
+        public static unsafe Vector<ulong> ReverseBits(Vector<ulong> value) => ReverseBits(value);
+
+
         ///  Reverse all elements
 
         /// <summary>
@@ -4278,6 +4329,69 @@ namespace System.Runtime.Intrinsics.Arm
         ///   SUNPKHI Zresult.D, Zop.S
         /// </summary>
         public static unsafe Vector<long> SignExtendWideningUpper(Vector<int> value) => SignExtendWideningUpper(value);
+
+
+        ///  Splice two vectors under predicate control
+
+        /// <summary>
+        /// svuint8_t svsplice[_u8](svbool_t pg, svuint8_t op1, svuint8_t op2)
+        ///   SPLICE Ztied1.B, Pg, Ztied1.B, Zop2.B
+        /// </summary>
+        public static unsafe Vector<byte> Splice(Vector<byte> mask, Vector<byte> left, Vector<byte> right) => Splice(mask, left, right);
+
+        /// <summary>
+        /// svfloat64_t svsplice[_f64](svbool_t pg, svfloat64_t op1, svfloat64_t op2)
+        ///   SPLICE Ztied1.D, Pg, Ztied1.D, Zop2.D
+        /// </summary>
+        public static unsafe Vector<double> Splice(Vector<double> mask, Vector<double> left, Vector<double> right) => Splice(mask, left, right);
+
+        /// <summary>
+        /// svint16_t svsplice[_s16](svbool_t pg, svint16_t op1, svint16_t op2)
+        ///   SPLICE Ztied1.H, Pg, Ztied1.H, Zop2.H
+        /// </summary>
+        public static unsafe Vector<short> Splice(Vector<short> mask, Vector<short> left, Vector<short> right) => Splice(mask, left, right);
+
+        /// <summary>
+        /// svint32_t svsplice[_s32](svbool_t pg, svint32_t op1, svint32_t op2)
+        ///   SPLICE Ztied1.S, Pg, Ztied1.S, Zop2.S
+        /// </summary>
+        public static unsafe Vector<int> Splice(Vector<int> mask, Vector<int> left, Vector<int> right) => Splice(mask, left, right);
+
+        /// <summary>
+        /// svint64_t svsplice[_s64](svbool_t pg, svint64_t op1, svint64_t op2)
+        ///   SPLICE Ztied1.D, Pg, Ztied1.D, Zop2.D
+        /// </summary>
+        public static unsafe Vector<long> Splice(Vector<long> mask, Vector<long> left, Vector<long> right) => Splice(mask, left, right);
+
+        /// <summary>
+        /// svint8_t svsplice[_s8](svbool_t pg, svint8_t op1, svint8_t op2)
+        ///   SPLICE Ztied1.B, Pg, Ztied1.B, Zop2.B
+        /// </summary>
+        public static unsafe Vector<sbyte> Splice(Vector<sbyte> mask, Vector<sbyte> left, Vector<sbyte> right) => Splice(mask, left, right);
+
+        /// <summary>
+        /// svfloat32_t svsplice[_f32](svbool_t pg, svfloat32_t op1, svfloat32_t op2)
+        ///   SPLICE Ztied1.S, Pg, Ztied1.S, Zop2.S
+        /// </summary>
+        public static unsafe Vector<float> Splice(Vector<float> mask, Vector<float> left, Vector<float> right) => Splice(mask, left, right);
+
+        /// <summary>
+        /// svuint16_t svsplice[_u16](svbool_t pg, svuint16_t op1, svuint16_t op2)
+        ///   SPLICE Ztied1.H, Pg, Ztied1.H, Zop2.H
+        /// </summary>
+        public static unsafe Vector<ushort> Splice(Vector<ushort> mask, Vector<ushort> left, Vector<ushort> right) => Splice(mask, left, right);
+
+        /// <summary>
+        /// svuint32_t svsplice[_u32](svbool_t pg, svuint32_t op1, svuint32_t op2)
+        ///   SPLICE Ztied1.S, Pg, Ztied1.S, Zop2.S
+        /// </summary>
+        public static unsafe Vector<uint> Splice(Vector<uint> mask, Vector<uint> left, Vector<uint> right) => Splice(mask, left, right);
+
+        /// <summary>
+        /// svuint64_t svsplice[_u64](svbool_t pg, svuint64_t op1, svuint64_t op2)
+        ///   SPLICE Ztied1.D, Pg, Ztied1.D, Zop2.D
+        /// </summary>
+        public static unsafe Vector<ulong> Splice(Vector<ulong> mask, Vector<ulong> left, Vector<ulong> right) => Splice(mask, left, right);
 
 
         ///  Non-truncating store

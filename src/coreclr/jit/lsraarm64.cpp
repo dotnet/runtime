@@ -1514,6 +1514,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
     const bool isRMW = intrinsicTree->isRMWHWIntrinsic(compiler);
 
     bool tgtPrefOp1        = false;
+    bool op2IsTarget       = (isRMW && HWIntrinsicInfo::IsExplicitMaskedOperation(intrin.id));
     bool delayFreeMultiple = false;
     if (intrin.op1 != nullptr)
     {
@@ -1567,7 +1568,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
         // If we have an RMW intrinsic or an intrinsic with simple move semantic between two SIMD registers,
         // we want to preference op1Reg to the target if op1 is not contained.
-        if (isRMW || simdRegToSimdRegMove)
+
+        if ((isRMW || simdRegToSimdRegMove) && !HWIntrinsicInfo::IsExplicitMaskedOperation(intrin.id))
         {
             tgtPrefOp1 = !intrin.op1->isContained();
         }
@@ -1610,7 +1612,14 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 predMask = RBM_LOWMASK.GetPredicateRegSet();
             }
 
-            srcCount += BuildOperandUses(intrin.op1, predMask);
+            if (HWIntrinsicInfo::IsExplicitMaskedOperation(intrin.id) && isRMW)
+            {
+                srcCount += BuildDelayFreeUses(intrin.op1, intrin.op2, predMask);
+            }
+            else
+            {
+                srcCount += BuildOperandUses(intrin.op1, predMask);
+            }
         }
         else if (intrinsicTree->OperIsMemoryLoadOrStore())
         {
@@ -1970,6 +1979,18 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                                                (argNum == lowVectorOperandNum) ? lowVectorCandidates : RBM_NONE);
             }
         }
+        else if (op2IsTarget)
+        {
+            if (!intrin.op2->isContained())
+            {
+                tgtPrefUse = BuildUse(intrin.op2);
+                srcCount ++;
+            }
+            else
+            {
+                srcCount += BuildOperandUses(intrin.op2);
+            }
+        }
         else
         {
             switch (intrin.id)
@@ -2011,12 +2032,20 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         {
             SingleTypeRegSet candidates = lowVectorOperandNum == 3 ? lowVectorCandidates : RBM_NONE;
 
-            srcCount += isRMW ? BuildDelayFreeUses(intrin.op3, intrin.op1, candidates)
+            if (op2IsTarget)
+            {
+                srcCount += BuildDelayFreeUses(intrin.op3, intrin.op2, candidates);
+            }
+            else
+            {
+                srcCount += isRMW ? BuildDelayFreeUses(intrin.op3, intrin.op1, candidates)
                               : BuildOperandUses(intrin.op3, candidates);
+            }
 
             if (intrin.op4 != nullptr)
             {
                 assert(lowVectorOperandNum != 4);
+                assert(!op2IsTarget);
                 srcCount += isRMW ? BuildDelayFreeUses(intrin.op4, intrin.op1) : BuildOperandUses(intrin.op4);
             }
         }
