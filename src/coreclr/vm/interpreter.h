@@ -1795,9 +1795,9 @@ private:
     void DoGetIsSupported();
     void DoGetArrayDataReference();
     void DoIsReferenceOrContainsReferences(CORINFO_METHOD_HANDLE method);
-    bool DoInterlockedCompareExchange();
-    bool DoInterlockedExchange();
-    bool DoInterlockedExchangeAdd();
+    bool DoInterlockedCompareExchange(CorInfoType retType);
+    bool DoInterlockedExchange(CorInfoType retType);
+    bool DoInterlockedExchangeAdd(CorInfoType retType);
 
     // Returns the proper generics context for use in resolving tokens ("precise" in the sense of including generic instantiation
     // information).

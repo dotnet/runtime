@@ -9272,15 +9272,17 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
             break;
 
         case NI_System_Threading_Interlocked_CompareExchange:
-            didIntrinsic = DoInterlockedCompareExchange();
+            // Here and in other Interlocked.* intrinsics we use sigInfo.retType to be able
+            // to detect small-integer overloads.
+            didIntrinsic = DoInterlockedCompareExchange(sigInfo.retType);
             break;
 
         case NI_System_Threading_Interlocked_Exchange:
-            didIntrinsic = DoInterlockedExchange();
+            didIntrinsic = DoInterlockedExchange(sigInfo.retType);
             break;
 
         case NI_System_Threading_Interlocked_ExchangeAdd:
-            didIntrinsic = DoInterlockedExchangeAdd();
+            didIntrinsic = DoInterlockedExchangeAdd(sigInfo.retType);
             break;
 
         default:
@@ -10942,7 +10944,7 @@ void Interpreter::DoIsReferenceOrContainsReferences(CORINFO_METHOD_HANDLE method
     m_curStackHt++;
 }
 
-bool Interpreter::DoInterlockedCompareExchange()
+bool Interpreter::DoInterlockedCompareExchange(CorInfoType retType)
 {
     CONTRACTL{
         THROWS;
@@ -10957,11 +10959,11 @@ bool Interpreter::DoInterlockedCompareExchange()
     //  ushort CompareExchange(ref ushort location1, ushort value, ushort comparand)
     //  byte   CompareExchange(ref byte location1, byte value, byte comparand)
     //
-    // Detect these by comparand's type (stack - 1):
+    // Detect these by retType (signature)
     unsigned comparandInd = m_curStackHt - 1;
     unsigned valueInd = m_curStackHt - 2;
     unsigned locationInd = m_curStackHt - 3;
-    switch (OpStackTypeGet(comparandInd).ToCorInfoType())
+    switch (retType)
     {
         case CORINFO_TYPE_LONG:
             m_curStackHt -= 3;
@@ -10969,7 +10971,7 @@ bool Interpreter::DoInterlockedCompareExchange()
                 OpStackGet<int64_t*>(locationInd),
                 OpStackGet<int64_t>(valueInd),
                 OpStackGet<int64_t>(comparandInd)));
-            OpStackTypeSet(m_curStackHt, InterpreterType(CORINFO_TYPE_LONG));
+            OpStackTypeSet(m_curStackHt, InterpreterType(retType));
             m_curStackHt++;
             return true;
 
@@ -10979,7 +10981,7 @@ bool Interpreter::DoInterlockedCompareExchange()
                 OpStackGet<LONG*>(locationInd),
                 OpStackGet<LONG>(valueInd),
                 OpStackGet<LONG>(comparandInd)));
-            OpStackTypeSet(m_curStackHt, InterpreterType(CORINFO_TYPE_INT));
+            OpStackTypeSet(m_curStackHt, InterpreterType(retType));
             m_curStackHt++;
             return true;
 
@@ -10994,7 +10996,7 @@ bool Interpreter::DoInterlockedCompareExchange()
     }
 }
 
-bool Interpreter::DoInterlockedExchange()
+bool Interpreter::DoInterlockedExchange(CorInfoType retType)
 {
     CONTRACTL{
         THROWS;
@@ -11009,17 +11011,17 @@ bool Interpreter::DoInterlockedExchange()
     //  ushort Exchange(ref ushort location1, ushort value)
     //  byte   Exchange(ref byte location1, byte value)
     //
-    // Detect these by value's type (stack - 1):
+    // Detect these by retType (signature)
     unsigned valueInd = m_curStackHt - 1;
     unsigned locationInd = m_curStackHt - 2;
-    switch (OpStackTypeGet(valueInd).ToCorInfoType())
+    switch (retType)
     {
         case CORINFO_TYPE_LONG:
             m_curStackHt -= 2;
             OpStackSet<int64_t>(m_curStackHt, InterlockedExchange64(
                 OpStackGet<int64_t*>(locationInd),
                 OpStackGet<int64_t>(valueInd)));
-            OpStackTypeSet(m_curStackHt, InterpreterType(CORINFO_TYPE_LONG));
+            OpStackTypeSet(m_curStackHt, InterpreterType(retType));
             m_curStackHt++;
             return true;
 
@@ -11028,7 +11030,7 @@ bool Interpreter::DoInterlockedExchange()
             OpStackSet<LONG>(m_curStackHt, InterlockedExchange(
                 OpStackGet<LONG*>(locationInd),
                 OpStackGet<LONG>(valueInd)));
-            OpStackTypeSet(m_curStackHt, InterpreterType(CORINFO_TYPE_INT));
+            OpStackTypeSet(m_curStackHt, InterpreterType(retType));
             m_curStackHt++;
             return true;
 
@@ -11043,7 +11045,7 @@ bool Interpreter::DoInterlockedExchange()
     }
 }
 
-bool Interpreter::DoInterlockedExchangeAdd()
+bool Interpreter::DoInterlockedExchangeAdd(CorInfoType retType)
 {
     CONTRACTL{
         THROWS;
@@ -11056,17 +11058,17 @@ bool Interpreter::DoInterlockedExchangeAdd()
     //  long ExchangeAdd(ref long location1, long value)
     //  int  ExchangeAdd(ref int location1, int value)
     //
-    // Detect these by value's type (stack - 1):
+    // Detect these by retType (signature)
     unsigned valueInd = m_curStackHt - 1;
     unsigned locationInd = m_curStackHt - 2;
-    switch (OpStackTypeGet(valueInd).ToCorInfoType())
+    switch (retType)
     {
         case CORINFO_TYPE_LONG:
             m_curStackHt -= 2;
             OpStackSet<int64_t>(m_curStackHt, InterlockedExchangeAdd64(
                 OpStackGet<int64_t*>(locationInd),
                 OpStackGet<int64_t>(valueInd)));
-            OpStackTypeSet(m_curStackHt, InterpreterType(CORINFO_TYPE_LONG));
+            OpStackTypeSet(m_curStackHt, InterpreterType(retType));
             m_curStackHt++;
             return true;
 
@@ -11075,7 +11077,7 @@ bool Interpreter::DoInterlockedExchangeAdd()
             OpStackSet<LONG>(m_curStackHt, InterlockedExchangeAdd(
                 OpStackGet<LONG*>(locationInd),
                 OpStackGet<LONG>(valueInd)));
-            OpStackTypeSet(m_curStackHt, InterpreterType(CORINFO_TYPE_INT));
+            OpStackTypeSet(m_curStackHt, InterpreterType(retType));
             m_curStackHt++;
             return true;
 
