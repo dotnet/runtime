@@ -21530,6 +21530,35 @@ GenTree* Compiler::gtNewSimdCeilNode(var_types type, GenTree* op1, CorInfoType s
     return gtNewSimdHWIntrinsicNode(type, op1, intrinsic, simdBaseJitType, simdSize);
 }
 
+//------------------------------------------------------------------------
+// gtNewSimdCvtMaskToVectorNode: Convert a HW instrinsic mask node to a vector
+//
+// Arguments:
+//    type            -- The type of the node to convert to
+//    op1             -- The node to convert
+//    simdBaseJitType -- the base jit type of the converted node
+//    simdSize        -- the simd size of the converted node
+//
+// Return Value:
+//    The node converted to the given type
+//
+GenTree* Compiler::gtNewSimdCvtMaskToVectorNode(var_types   type,
+                                                GenTree*    op1,
+                                                CorInfoType simdBaseJitType,
+                                                unsigned    simdSize)
+{
+    assert(varTypeIsMask(op1));
+    assert(varTypeIsSIMD(type));
+
+#if defined(TARGET_XARCH)
+    return gtNewSimdHWIntrinsicNode(type, op1, NI_EVEX_ConvertMaskToVector, simdBaseJitType, simdSize);
+#elif defined(TARGET_ARM64)
+    return gtNewSimdHWIntrinsicNode(type, op1, NI_Sve_ConvertMaskToVector, simdBaseJitType, simdSize);
+#else
+#error Unsupported platform
+#endif // !TARGET_XARCH && !TARGET_ARM64
+}
+
 GenTree* Compiler::gtNewSimdCvtNode(var_types   type,
                                     GenTree*    op1,
                                     CorInfoType simdTargetBaseJitType,
@@ -21890,6 +21919,37 @@ GenTree* Compiler::gtNewSimdCvtNativeNode(var_types   type,
 
     assert(hwIntrinsicID != NI_Illegal);
     return gtNewSimdHWIntrinsicNode(type, op1, hwIntrinsicID, simdSourceBaseJitType, simdSize);
+}
+
+//------------------------------------------------------------------------
+// gtNewSimdCvtVectorToMaskNode: Convert a HW instrinsic vector node to a mask
+//
+// Arguments:
+//    type            -- The type of the mask to produce.
+//    op1             -- The node to convert
+//    simdBaseJitType -- the base jit type of the converted node
+//    simdSize        -- the simd size of the converted node
+//
+// Return Value:
+//    The node converted to the a mask type
+//
+GenTree* Compiler::gtNewSimdCvtVectorToMaskNode(var_types   type,
+                                                GenTree*    op1,
+                                                CorInfoType simdBaseJitType,
+                                                unsigned    simdSize)
+{
+    assert(varTypeIsMask(type));
+    assert(varTypeIsSIMD(op1));
+
+#if defined(TARGET_XARCH)
+    return gtNewSimdHWIntrinsicNode(TYP_MASK, op1, NI_EVEX_ConvertVectorToMask, simdBaseJitType, simdSize);
+#elif defined(TARGET_ARM64)
+    // We use cmpne which requires an embedded mask.
+    GenTree* trueMask = gtNewSimdAllTrueMaskNode(simdBaseJitType, simdSize);
+    return gtNewSimdHWIntrinsicNode(TYP_MASK, trueMask, op1, NI_Sve_ConvertVectorToMask, simdBaseJitType, simdSize);
+#else
+#error Unsupported platform
+#endif // !TARGET_XARCH && !TARGET_ARM64
 }
 
 GenTree* Compiler::gtNewSimdCmpOpNode(
@@ -22569,19 +22629,15 @@ GenTree* Compiler::gtNewSimdCmpOpNode(
 
     assert(intrinsic != NI_Illegal);
 
-#if defined(TARGET_XARCH)
     if (needsConvertMaskToVector)
     {
         GenTree* retNode = gtNewSimdHWIntrinsicNode(TYP_MASK, op1, op2, intrinsic, simdBaseJitType, simdSize);
-        return gtNewSimdHWIntrinsicNode(type, retNode, NI_EVEX_ConvertMaskToVector, simdBaseJitType, simdSize);
+        return gtNewSimdCvtMaskToVectorNode(type, retNode, simdBaseJitType, simdSize);
     }
     else
     {
         return gtNewSimdHWIntrinsicNode(type, op1, op2, intrinsic, simdBaseJitType, simdSize);
     }
-#else
-    return gtNewSimdHWIntrinsicNode(type, op1, op2, intrinsic, simdBaseJitType, simdSize);
-#endif
 }
 
 GenTree* Compiler::gtNewSimdCmpOpAllNode(
@@ -26860,6 +26916,10 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad(GenTree** pAddr) const
             case NI_Sve_Load2xVectorAndUnzip:
             case NI_Sve_Load3xVectorAndUnzip:
             case NI_Sve_Load4xVectorAndUnzip:
+            case NI_Sve_PrefetchBytes:
+            case NI_Sve_PrefetchInt16:
+            case NI_Sve_PrefetchInt32:
+            case NI_Sve_PrefetchInt64:
                 addr = Op(2);
                 break;
 #endif // TARGET_ARM64
@@ -27158,6 +27218,20 @@ bool GenTreeHWIntrinsic::OperIsCreateScalarUnsafe() const
 }
 
 //------------------------------------------------------------------------
+// OperIsBitwiseHWIntrinsic: Is the operation a bitwise logic operation.
+//
+// Arguments:
+//    oper -- The operation to check
+//
+// Return Value:
+//    Whether oper is a bitwise logic intrinsic node.
+//
+bool GenTreeHWIntrinsic::OperIsBitwiseHWIntrinsic(genTreeOps oper)
+{
+    return (oper == GT_AND) || (oper == GT_AND_NOT) || (oper == GT_OR) || (oper == GT_XOR);
+}
+
+//------------------------------------------------------------------------
 // OperIsBitwiseHWIntrinsic: Is this HWIntrinsic a bitwise logic intrinsic node.
 //
 // Return Value:
@@ -27165,8 +27239,8 @@ bool GenTreeHWIntrinsic::OperIsCreateScalarUnsafe() const
 //
 bool GenTreeHWIntrinsic::OperIsBitwiseHWIntrinsic() const
 {
-    genTreeOps Oper = HWOperGet();
-    return Oper == GT_AND || Oper == GT_OR || Oper == GT_XOR || Oper == GT_AND_NOT;
+    genTreeOps oper = HWOperGet();
+    return OperIsBitwiseHWIntrinsic(oper);
 }
 
 //------------------------------------------------------------------------
