@@ -2202,11 +2202,11 @@ namespace System
                 0;
         }
 
-        // Convert the byte value to a string in base fromBase
+        // Convert the byte value to a string in base toBase
         public static string ToString(byte value, int toBase) =>
             ToString((int)value, toBase);
 
-        // Convert the Int16 value to a string in base fromBase
+        // Convert the Int16 value to a string in base toBase
         public static string ToString(short value, int toBase)
         {
             string format = "d";
