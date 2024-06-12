@@ -624,10 +624,6 @@ namespace ILCompiler.DependencyAnalysis
                     dependencies.Add(new DependencyListEntry(factory.TypeGVMEntries(_type.GetTypeDefinition()), "Type with generic virtual methods"));
 
                     AddDependenciesForUniversalGVMSupport(factory, _type, ref dependencies);
-
-                    TypeDesc canonicalType = _type.ConvertToCanonForm(CanonicalFormKind.Specific);
-                    if (canonicalType != _type)
-                        dependencies.Add(factory.ConstructedTypeSymbol(canonicalType), "Type with generic virtual methods");
                 }
             }
 
