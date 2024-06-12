@@ -920,6 +920,7 @@ public:
         NI_Illegal = 0,
         NI_System_StubHelpers_GetStubContext,
         NI_System_Runtime_InteropService_MemoryMarshal_GetArrayDataReference,
+        NI_System_Runtime_CompilerServices_RuntimeHelpers_IsReferenceOrContainsReferences,
     };
     static InterpreterNamedIntrinsics getNamedIntrinsicID(CEEInfo* info, CORINFO_METHOD_HANDLE methodHnd);
     static const char* getMethodName(CEEInfo* info, CORINFO_METHOD_HANDLE hnd, const char** className, const char** namespaceName = NULL, const char **enclosingClassName = NULL);

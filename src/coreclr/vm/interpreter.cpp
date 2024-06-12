@@ -9264,6 +9264,14 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
             m_curStackHt++; didIntrinsic = true;
             break;
 #endif // INTERP_ILSTUBS
+
+        case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsReferenceOrContainsReferences:
+            OpStackSet<BOOL>(m_curStackHt, GetMethodTableFromClsHnd(callInfoPtr->sig.sigInst.methInst[0])->ContainsPointers());
+            OpStackTypeSet(m_curStackHt, InterpreterType(CORINFO_TYPE_INT));
+            m_curStackHt++;
+            didIntrinsic = true;
+        break;
+
         default:
 #if INTERP_TRACING
             InterlockedIncrement(&s_totalInterpCallsToIntrinsicsUnhandled);
@@ -11759,6 +11767,16 @@ Interpreter::InterpreterNamedIntrinsics Interpreter::getNamedIntrinsicID(CEEInfo
                         if (strcmp(methodName, "GetArrayDataReference") == 0)
                         {
                             result = NI_System_Runtime_InteropService_MemoryMarshal_GetArrayDataReference;
+                        }
+                    }
+                }
+                else if (strcmp(namespaceName, "CompilerServices") == 0)
+                {
+                    if (strcmp(className, "RuntimeHelpers") == 0)
+                    {
+                        if (strcmp(methodName, "IsReferenceOrContainsReferences") == 0)
+                        {
+                            result = NI_System_Runtime_CompilerServices_RuntimeHelpers_IsReferenceOrContainsReferences;
                         }
                     }
                 }
