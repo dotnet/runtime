@@ -73,8 +73,8 @@ namespace System.Net.Http
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(proxyHelper, $"ManualSettingsUsed, {proxyHelper.Proxy}");
 
-                _secureProxy = MultiProxy.Parse(_failedProxies, proxyHelper.Proxy, true);
-                _insecureProxy = MultiProxy.Parse(_failedProxies, proxyHelper.Proxy, false);
+                _secureProxy = MultiProxy.ParseManualSettings(_failedProxies, proxyHelper.Proxy, true);
+                _insecureProxy = MultiProxy.ParseManualSettings(_failedProxies, proxyHelper.Proxy, false);
 
                 if (!string.IsNullOrWhiteSpace(proxyHelper.ProxyBypass))
                 {
