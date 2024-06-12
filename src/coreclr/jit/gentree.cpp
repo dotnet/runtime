@@ -14852,6 +14852,13 @@ DONE_FOLD:
     JITDUMP("Transformed into:\n");
     DISPTREE(op);
 
+    if (fgGlobalMorph)
+    {
+        // We can sometimes produce a comma over the constant if the original op
+        // had a side effect, so just ensure we set the flag (which will be already
+        // set for the operands otherwise).
+        INDEBUG(op->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+    }
     return op;
 }
 
