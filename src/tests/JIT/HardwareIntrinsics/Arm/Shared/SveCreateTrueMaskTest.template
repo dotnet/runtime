@@ -24,6 +24,8 @@ namespace JIT.HardwareIntrinsics.Arm
                 // Validates basic functionality works
                 test.RunBasicScenario_CreateTrueMask();
 
+                test.RunBasicScenario_CreateTrueMask_Imm();
+
                 // Validates calling via reflection works
                 test.RunReflectionScenario_CreateTrueMask();
             }
@@ -173,6 +175,15 @@ namespace JIT.HardwareIntrinsics.Arm
 
                 ValidateResult(pattern, result);
             }
+        }
+
+        public void RunBasicScenario_CreateTrueMask_Imm()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_CreateTrueMask_Imm));
+
+            var result = {Isa}.{Method}({Op1Type}.All);
+
+            ValidateResult({Op1Type}.All, result);
         }
 
         public void RunReflectionScenario_CreateTrueMask()
