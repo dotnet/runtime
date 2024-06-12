@@ -208,5 +208,45 @@ namespace System.Net.Http.Functional.Tests
                 }, new LoopbackServer.Options { UseSsl = true });
             }
         }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Android)]
+        public async Task Android_GetCertificateFromKeyStoreViaAlias()
+        {
+            var options = new LoopbackServer.Options { UseSsl = true };
+
+            var (store, alias) = AndroidKeyStoreHelper.AddCertificate(Configuration.Certificates.GetClientCertificate());
+            try
+            {
+                var clientCertificate = AndroidKeyStoreHelper.GetCertificateViaAlias(store, alias);
+                Assert.True(clientCertificate.HasPrivateKey);
+
+
+                await LoopbackServer.CreateServerAsync(async (server, url) =>
+                {
+                    using HttpClient client = CreateHttpClientWithCert(clientCertificate);
+
+                    await TestHelper.WhenAllCompletedOrAnyFailed(
+                        client.GetStringAsync(url),
+                        server.AcceptConnectionAsync(async connection =>
+                        {
+                            SslStream sslStream = Assert.IsType<SslStream>(connection.Stream);
+
+                            _output.WriteLine(
+                                "Client cert: {0}",
+                                new X509Certificate2(sslStream.RemoteCertificate.Export(X509ContentType.Cert)).GetNameInfo(X509NameType.SimpleName, false));
+
+                            Assert.Equal(clientCertificate.GetCertHashString(), sslStream.RemoteCertificate.GetCertHashString());
+
+                            await connection.ReadRequestHeaderAndSendResponseAsync(additionalHeaders: "Connection: close\r\n");
+                        }));
+                }, options);
+            }
+            finally
+            {
+                Assert.True(AndroidKeyStoreHelper.DeleteAlias(store, alias));
+                store.Dispose();
+            }
+        }
     }
 }

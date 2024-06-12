@@ -503,6 +503,7 @@ bool AndroidCryptoNative_X509StoreDeleteEntry(jobject /*KeyStore*/ store, const 
 
     loc[alias] = make_java_string(env, hashString);
 
+    // store.deleteEntry(alias);
     (*env)->CallVoidMethod(env, store, g_KeyStoreDeleteEntry, loc[alias]);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
