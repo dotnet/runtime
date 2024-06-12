@@ -4471,8 +4471,8 @@ void GCInfo::gcMakeRegPtrTable(
             assert(call->u1.cdArgMask == 0 && call->cdArgCnt == 0);
 
             // Other than that, we just have to deal with the regmasks.
-            regMaskSmall gcrefRegMask = call->cdGCrefRegs & RBM_CALL_GC_REGS;
-            regMaskSmall byrefRegMask = call->cdByrefRegs & RBM_CALL_GC_REGS;
+            regMaskSmall gcrefRegMask = call->cdGCrefRegs & RBM_CALL_GC_REGS.GetIntRegSet();
+            regMaskSmall byrefRegMask = call->cdByrefRegs & RBM_CALL_GC_REGS.GetIntRegSet();
 
             assert((gcrefRegMask & byrefRegMask) == 0);
 
@@ -4558,9 +4558,11 @@ void GCInfo::gcMakeRegPtrTable(
                 {
                     // This is a true call site.
 
-                    regMaskSmall gcrefRegMask = genRegMaskFromCalleeSavedMask(genRegPtrTemp->rpdCallGCrefRegs);
+                    regMaskSmall gcrefRegMask =
+                        genRegMaskFromCalleeSavedMask(genRegPtrTemp->rpdCallGCrefRegs).GetIntRegSet();
 
-                    regMaskSmall byrefRegMask = genRegMaskFromCalleeSavedMask(genRegPtrTemp->rpdCallByrefRegs);
+                    regMaskSmall byrefRegMask =
+                        genRegMaskFromCalleeSavedMask(genRegPtrTemp->rpdCallByrefRegs).GetIntRegSet();
 
                     assert((gcrefRegMask & byrefRegMask) == 0);
 

@@ -92,8 +92,8 @@
     <Import Project="Sdk.targets" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk.${NetVersion}" />
   </ImportGroup>
   <ImportGroup Condition="'$(_IsAndroidLibraryMode)' == 'true' or '$(_IsAppleMobileLibraryMode)' == 'true'">
-    <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.LibraryBuilder.Sdk" />
-    <Import Project="Sdk.targets" Sdk="Microsoft.NET.Runtime.LibraryBuilder.Sdk" />
+    <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.LibraryBuilder.Sdk.${NetVersion}" />
+    <Import Project="Sdk.targets" Sdk="Microsoft.NET.Runtime.LibraryBuilder.Sdk.${NetVersion}" />
   </ImportGroup>
   <ImportGroup Condition="'$(TargetsCurrent)' == 'true' and '$(RunAOTCompilation)' == 'true' and ('$(TargetPlatformIdentifier)' == 'android' or '$(_IsAndroidLibraryMode)' == 'true')">
     <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.${NetVersion}.android-x86" />
@@ -104,7 +104,7 @@
 
   <ImportGroup Condition="'$(TargetsCurrent)' == 'true' and '$(TargetPlatformIdentifier)' == 'macOS'">
     <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk.${NetVersion}" />
-    <Import Project="Sdk.targets" Sdk="Microsoft.NET.Runtime.MonoTargets..${NetVersion}" />
+    <Import Project="Sdk.targets" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk.${NetVersion}" />
   </ImportGroup>
 
   <ImportGroup Condition="'$(TargetsCurrent)' == 'true' and ('$(TargetPlatformIdentifier)' == 'ios' or '$(_IsiOSLibraryMode)' == 'true')">

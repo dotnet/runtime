@@ -178,12 +178,31 @@ namespace Microsoft.Extensions.Logging
                     {
                         LoggerInformation loggerInfo = logger.Loggers[i];
                         string providerName = ProviderAliasUtilities.GetAlias(loggerInfo.ProviderType) ?? loggerInfo.ProviderType.Name;
-                        MessageLogger? messageLogger = logger.MessageLoggers?.FirstOrDefault(messageLogger => messageLogger.Logger == loggerInfo.Logger);
+                        MessageLogger? messageLogger = FirstOrNull(logger.MessageLoggers, loggerInfo.Logger);
 
                         providers.Add(new LoggerProviderDebugView(providerName, messageLogger));
                     }
 
                     return providers;
+
+                    // Find message logger or return null if there is no match. FirstOrDefault isn't used because MessageLogger is a struct.
+                    static MessageLogger? FirstOrNull(MessageLogger[]? messageLoggers, ILogger logger)
+                    {
+                        if (messageLoggers is null || messageLoggers.Length == 0)
+                        {
+                            return null;
+                        }
+
+                        foreach (MessageLogger item in messageLoggers)
+                        {
+                            if (item.Logger == logger)
+                            {
+                                return item;
+                            }
+                        }
+
+                        return null;
+                    }
                 }
             }
 

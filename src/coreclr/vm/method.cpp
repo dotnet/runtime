@@ -48,9 +48,9 @@ bool FixupSignatureContainingInternalTypes(
     DWORD           cSig,
     bool checkOnly = false);
 
-// Alias ComPlusCallMethodDesc to regular MethodDesc to simplify definition of the size table
+// Alias CLRToCOMCallMethodDesc to regular MethodDesc to simplify definition of the size table
 #ifndef FEATURE_COMINTEROP
-#define ComPlusCallMethodDesc MethodDesc
+#define CLRToCOMCallMethodDesc MethodDesc
 #endif
 
 // Verify that the structure sizes of our MethodDescs support proper
@@ -62,7 +62,7 @@ static_assert_no_msg((sizeof(FCallMethodDesc)       & MethodDesc::ALIGNMENT_MASK
 static_assert_no_msg((sizeof(NDirectMethodDesc)     & MethodDesc::ALIGNMENT_MASK) == 0);
 static_assert_no_msg((sizeof(EEImplMethodDesc)      & MethodDesc::ALIGNMENT_MASK) == 0);
 static_assert_no_msg((sizeof(ArrayMethodDesc)       & MethodDesc::ALIGNMENT_MASK) == 0);
-static_assert_no_msg((sizeof(ComPlusCallMethodDesc) & MethodDesc::ALIGNMENT_MASK) == 0);
+static_assert_no_msg((sizeof(CLRToCOMCallMethodDesc) & MethodDesc::ALIGNMENT_MASK) == 0);
 static_assert_no_msg((sizeof(DynamicMethodDesc)     & MethodDesc::ALIGNMENT_MASK) == 0);
 
 #define METHOD_DESC_SIZES(adjustment)                                       \
@@ -72,7 +72,7 @@ static_assert_no_msg((sizeof(DynamicMethodDesc)     & MethodDesc::ALIGNMENT_MASK
     adjustment + sizeof(EEImplMethodDesc),           /* mcEEImpl        */  \
     adjustment + sizeof(ArrayMethodDesc),            /* mcArray         */  \
     adjustment + sizeof(InstantiatedMethodDesc),     /* mcInstantiated  */  \
-    adjustment + sizeof(ComPlusCallMethodDesc),      /* mcComInterOp    */  \
+    adjustment + sizeof(CLRToCOMCallMethodDesc),      /* mcComInterOp    */  \
     adjustment + sizeof(DynamicMethodDesc)           /* mcDynamic       */
 
 const BYTE MethodDesc::s_ClassificationSizeTable[] = {
@@ -92,7 +92,7 @@ const BYTE MethodDesc::s_ClassificationSizeTable[] = {
 };
 
 #ifndef FEATURE_COMINTEROP
-#undef ComPlusCallMethodDesc
+#undef CLRToCOMCallMethodDesc
 #endif
 
 class ArgIteratorBaseForPInvoke : public ArgIteratorBase
@@ -2312,7 +2312,7 @@ BOOL MethodDesc::RequiresMethodDescCallingConvention(BOOL fEstimateForChunk /*=F
     LIMITED_METHOD_CONTRACT;
 
     // Interop marshaling is implemented using shared stubs
-    if (IsNDirect() || IsComPlusCall())
+    if (IsNDirect() || IsCLRToCOMCall())
         return TRUE;
 
 
@@ -2349,7 +2349,7 @@ BOOL MethodDesc::RequiresStableEntryPoint(BOOL fEstimateForChunk /*=FALSE*/)
             return TRUE;
 
         // TODO: Can we avoid early allocation of precodes for interfaces and cominterop?
-        if ((IsInterface() && !IsStatic() && IsVirtual()) || IsComPlusCall())
+        if ((IsInterface() && !IsStatic() && IsVirtual()) || IsCLRToCOMCall())
             return TRUE;
     }
 
@@ -3697,7 +3697,7 @@ BOOL MethodDesc::ShouldSuppressGCTransition()
 
 #ifdef FEATURE_COMINTEROP
 //*******************************************************************************
-void ComPlusCallMethodDesc::InitComEventCallInfo()
+void CLRToCOMCallMethodDesc::InitComEventCallInfo()
 {
     CONTRACTL
     {
@@ -3714,16 +3714,16 @@ void ComPlusCallMethodDesc::InitComEventCallInfo()
 
     // Retrieve the event provider class.
     WORD cbExtraSlots = ComMethodTable::GetNumExtraSlots(pItfMT->GetComInterfaceType());
-    WORD itfSlotNum = (WORD) m_pComPlusCallInfo->m_cachedComSlot - cbExtraSlots;
+    WORD itfSlotNum = (WORD) m_pCLRToCOMCallInfo->m_cachedComSlot - cbExtraSlots;
     pItfMT->GetEventInterfaceInfo(&pSrcItfClass, &pEvProvClass);
-    m_pComPlusCallInfo->m_pEventProviderMD = MemberLoader::FindMethodForInterfaceSlot(pEvProvClass, pItfMT, itfSlotNum);
+    m_pCLRToCOMCallInfo->m_pEventProviderMD = MemberLoader::FindMethodForInterfaceSlot(pEvProvClass, pItfMT, itfSlotNum);
 
     // If we could not find the method, then the event provider does not support
     // this event. This is a fatal error.
-    if (!m_pComPlusCallInfo->m_pEventProviderMD)
+    if (!m_pCLRToCOMCallInfo->m_pEventProviderMD)
     {
         // Init the interface MD for error reporting.
-        pItfMD = (ComPlusCallMethodDesc*)pItfMT->GetMethodDescForSlot(itfSlotNum);
+        pItfMD = (CLRToCOMCallMethodDesc*)pItfMT->GetMethodDescForSlot(itfSlotNum);
 
         // Retrieve the event provider class name.
         StackSString ssEvProvClassName;
@@ -4047,19 +4047,19 @@ PrecodeType MethodDesc::GetPrecodeType()
 
 #ifdef FEATURE_COMINTEROP
 #ifndef DACCESS_COMPILE
-void ComPlusCallMethodDesc::InitRetThunk()
+void CLRToCOMCallMethodDesc::InitRetThunk()
 {
     WRAPPER_NO_CONTRACT;
 
 #ifdef TARGET_X86
-    if (m_pComPlusCallInfo->m_pRetThunk != NULL)
+    if (m_pCLRToCOMCallInfo->m_pRetThunk != NULL)
         return;
 
     UINT numStackBytes = CbStackPop();
 
-    LPVOID pRetThunk = ComPlusCall::GetRetThunk(numStackBytes);
+    LPVOID pRetThunk = CLRToCOMCall::GetRetThunk(numStackBytes);
 
-    InterlockedCompareExchangeT<void *>(&m_pComPlusCallInfo->m_pRetThunk, pRetThunk, NULL);
+    InterlockedCompareExchangeT<void *>(&m_pCLRToCOMCallInfo->m_pRetThunk, pRetThunk, NULL);
 #endif // TARGET_X86
 }
 #endif //!DACCESS_COMPILE

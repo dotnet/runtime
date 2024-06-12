@@ -68,6 +68,16 @@ public class Validate
     }
 
     [Fact]
+    public static void Validate_RecognizedOpCodeSequences_Mismatch()
+    {
+        Console.WriteLine($"{nameof(Validate_RecognizedOpCodeSequences_Mismatch)}...");
+
+        // box !T ; isinst S ; unbox.any S should always be guarded by a box !T ; isinst S;
+        // brtrue/brfalse branch, so if it's ever executed and the types aren't equal that's invalid
+        Assert.Throws<InvalidProgramException>(() => { Exec.BoxIsinstUnboxAny_Mismatch(); });
+    }
+
+    [Fact]
     public static void Validate_InvalidOpCode_Scenarios()
     {
         Console.WriteLine($"{nameof(Validate_InvalidOpCode_Scenarios)}...");

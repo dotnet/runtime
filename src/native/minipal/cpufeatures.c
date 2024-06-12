@@ -225,6 +225,7 @@ int minipal_getcpufeatures(void)
                                         if ((cpuidInfo[CPUID_EBX] & (1 << 16)) != 0)                            // AVX512F
                                         {
                                             result |= XArchIntrinsicConstants_Avx512f;
+                                            result |= XArchIntrinsicConstants_Evex;
 
                                             bool isAVX512_VLSupported = false;
                                             if ((cpuidInfo[CPUID_EBX] & (1 << 31)) != 0)                        // AVX512VL
@@ -286,11 +287,7 @@ int minipal_getcpufeatures(void)
                                             if ((cpuidInfo[CPUID_EBX] & (1 << 16)) != 0)
                                             {
                                                 result |= XArchIntrinsicConstants_Avx10v1;
-                                            }
-
-                                            if ((cpuidInfo[CPUID_EBX] & (1 << 17)) != 0)
-                                            {
-                                                result |= XArchIntrinsicConstants_Avx10v1_V256;
+                                                result |= XArchIntrinsicConstants_Evex;
                                             }
 
                                             if ((cpuidInfo[CPUID_EBX] & (1 << 18)) != 0)
