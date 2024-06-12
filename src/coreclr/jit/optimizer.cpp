@@ -2477,22 +2477,26 @@ PhaseStatus Compiler::optOptimizePostLayout()
         // Reverse conditions to enable fallthrough flow into BBJ_COND's false target
         if (block->KindIs(BBJ_COND) && block->CanRemoveJumpToTarget(block->GetTrueTarget(), this))
         {
-            GenTree* test = block->lastNode();
+            GenTree* const test = block->lastNode();
             assert(test->OperIsConditionalJump());
 
             if (test->OperIs(GT_JTRUE))
             {
-                // If we didn't lower a GT_JTRUE node to some conditional IR,
-                // search for the correct node to flip the condition on
-                do
+                // Flip GT_JTRUE node's conditional operand, and handle any new nodes this may introduce
+                GenTree* const cond    = test->gtGetOp1();
+                GenTree* const newCond = gtReverseCond(cond);
+                if (cond != newCond)
                 {
-                    test = test->gtPrev;
-                    assert(test != nullptr);
-                } while (!test->OperIsCompare() && !test->OperIs(GT_SETCC));
+                    LIR::AsRange(block).InsertAfter(cond, newCond);
+                    test->AsUnOp()->gtOp1 = newCond;
+                }
             }
-
-            GenTree* const cond = gtReverseCond(test);
-            assert(cond == test); // Ensure `gtReverseCond` did not create a new node
+            else
+            {
+                // gtReverseCond can handle other conditional jumps without introducing a new node
+                GenTree* const cond = gtReverseCond(test);
+                assert(cond == test);
+            }
 
             FlowEdge* const oldTrueEdge  = block->GetTrueEdge();
             FlowEdge* const oldFalseEdge = block->GetFalseEdge();
