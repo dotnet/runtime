@@ -1111,7 +1111,7 @@ namespace System.Text.Json.Serialization.Tests
             [JsonExtensionData]
             public Dictionary<string, object> MyOverflow { get; set; }
 
-            public Dictionary<string, object> ActualDictionary { get; set; }
+            public Dictionary<string, object>? ActualDictionary { get; set; }
         }
 
         [Fact]

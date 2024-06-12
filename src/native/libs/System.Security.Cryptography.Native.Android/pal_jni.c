@@ -496,6 +496,10 @@ jmethodID g_DotnetProxyTrustManagerCtor;
 jclass    g_DotnetX509KeyManager;
 jmethodID g_DotnetX509KeyManagerCtor;
 
+// net/dot/android/crypto/PalPbkdf2
+jclass    g_PalPbkdf2;
+jmethodID g_PalPbkdf2Pbkdf2OneShot;
+
 jobject ToGRef(JNIEnv *env, jobject lref)
 {
     if (lref)
@@ -1107,6 +1111,9 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
 
     g_DotnetX509KeyManager =     GetClassGRef(env, "net/dot/android/crypto/DotnetX509KeyManager");
     g_DotnetX509KeyManagerCtor = GetMethod(env, false, g_DotnetX509KeyManager, "<init>", "(Ljava/security/KeyStore$PrivateKeyEntry;)V");
+
+    g_PalPbkdf2              = GetClassGRef(env, "net/dot/android/crypto/PalPbkdf2");
+    g_PalPbkdf2Pbkdf2OneShot = GetMethod(env, true, g_PalPbkdf2, "pbkdf2OneShot", "(Ljava/lang/String;[BLjava/nio/ByteBuffer;ILjava/nio/ByteBuffer;)I");
 
     return JNI_VERSION_1_6;
 }

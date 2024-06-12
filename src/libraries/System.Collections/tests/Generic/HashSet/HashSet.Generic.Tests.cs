@@ -763,24 +763,24 @@ namespace System.Collections.Tests
                 var bf = new BinaryFormatter();
                 var s = new MemoryStream();
 
-                var dict = new HashSet<TCompared>(equalityComparer);
+                var set = new HashSet<TCompared>(equalityComparer);
 
-                Assert.Same(equalityComparer, dict.Comparer);
+                Assert.Same(equalityComparer, set.Comparer);
 
-                bf.Serialize(s, dict);
+                bf.Serialize(s, set);
                 s.Position = 0;
-                dict = (HashSet<TCompared>)bf.Deserialize(s);
+                set = (HashSet<TCompared>)bf.Deserialize(s);
 
                 if (internalTypeName == null)
                 {
-                    Assert.IsType(equalityComparer.GetType(), dict.Comparer);
+                    Assert.IsType(equalityComparer.GetType(), set.Comparer);
                 }
                 else
                 {
-                    Assert.Equal(internalTypeName, dict.Comparer.GetType().ToString());
+                    Assert.Equal(internalTypeName, set.Comparer.GetType().ToString());
                 }
 
-                Assert.True(equalityComparer.Equals(dict.Comparer));
+                Assert.True(equalityComparer.Equals(set.Comparer));
             }
         }
 

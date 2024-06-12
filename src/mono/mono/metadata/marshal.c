@@ -6818,9 +6818,11 @@ mono_marshal_get_swift_physical_lowering (MonoType *type, gboolean native_layout
 	}
 
 	// Non-value types are illegal at the interop boundary.
-	if (type->type == MONO_TYPE_GENERICINST && !mono_type_generic_inst_is_valuetype (type)) {
-		lowering.by_reference = TRUE;
-		return lowering;
+	if (type->type == MONO_TYPE_GENERICINST) {
+		if (!mono_type_generic_inst_is_valuetype (type)) {
+			lowering.by_reference = TRUE;
+			return lowering;
+		}
 	} else if (type->type != MONO_TYPE_VALUETYPE && !mono_type_is_primitive(type)) {
 		lowering.by_reference = TRUE;
 		return lowering;

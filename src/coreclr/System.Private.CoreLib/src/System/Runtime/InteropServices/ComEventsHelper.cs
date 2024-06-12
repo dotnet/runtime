@@ -16,7 +16,7 @@
 // event sinks are COM objects implementing source interfaces. Once an event sink is passed to the COM
 // server (through a mechanism known as 'binding/advising to connection point'), COM server will be
 // calling source interface methods to "fire events".
-// See https://docs.microsoft.com/cpp/mfc/connection-points
+// See https://learn.microsoft.com/cpp/mfc/connection-points
 //
 // There are few interesting obervations about source interfaces. Usually source interfaces are defined
 // as 'dispinterface' - meaning that only late-bound invocations on this interface are allowed. Even

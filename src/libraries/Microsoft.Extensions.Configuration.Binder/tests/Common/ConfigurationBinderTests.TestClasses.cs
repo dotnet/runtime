@@ -161,7 +161,7 @@ namespace Microsoft.Extensions
             public string Color { get; } = color;
             public int Length { get; } = length;
             public decimal Height { get; } = height;
-            public EditorBrowsableState EB { get;} = eb;
+            public EditorBrowsableState EB { get; } = eb;
         }
         public record RecordTypeOptions(string Color, int Length);
 
@@ -174,11 +174,13 @@ namespace Microsoft.Extensions
             public ClassWithMatchingParametersAndProperties(string Color, int Length)
             {
                 _color = Color;
+                this.ColorFromCtor = Color;
                 this.Length = Length;
             }
 
             public int Length { get; set; }
 
+            public string ColorFromCtor { get; }
             public string Color
             {
                 get => _color;
@@ -341,6 +343,10 @@ namespace Microsoft.Extensions
             public string Color { get; }
             public int Length { get; }
             public decimal Thickness { get; init; }
+            public bool WasInitOnlyCalled { get; private set; }
+            public decimal InitOnly { init => WasInitOnlyCalled = true; }
+            public bool WasPrivateGetInitOnlyCalled { get; private set; }
+            public decimal PrivateGetInitOnly { private get => 3.14m; init => WasPrivateGetInitOnlyCalled = true; }
         }
 
         public struct ValueTypeOptions
@@ -476,9 +482,18 @@ namespace Microsoft.Extensions
             private int _otherCode;
             private int _otherCodeNullable;
             private string _otherCodeString = "default";
+            private bool _wasOtherCodeStringSet;
             private object _otherCodeNull;
             private Uri _otherCodeUri;
             private ICollection<string> blacklist = new HashSet<string>();
+            private string? _StringWithNullDefault;
+            private bool _wasStringWithNullDefaultSet;
+            private int _IntWithDefault = 123;
+            private bool _WasIntWithDefaultSet;
+            private SimplePocoWithOnlyDefaults _PocoWithDefault = new SimplePocoWithOnlyDefaults();
+            private bool _WasPocoWithDefaultSet;
+            private List<SimplePocoWithOnlyDefaults> _PocoListWithDefault = new List<SimplePocoWithOnlyDefaults> { new SimplePocoWithOnlyDefaults() };
+            private bool _WasPocoListWithDefaultSet;
 
             public ICollection<string> Blacklist
             {
@@ -512,8 +527,14 @@ namespace Microsoft.Extensions
             public string OtherCodeString
             {
                 get => _otherCodeString;
-                set => _otherCodeString = value;
+                set
+                {
+                    _otherCodeString = value;
+                    _wasOtherCodeStringSet = true;
+                }
             }
+
+            public bool WasOtherCodeStringSet => _wasOtherCodeStringSet;
 
             public object? OtherCodeNull
             {
@@ -526,6 +547,68 @@ namespace Microsoft.Extensions
                 get => _otherCodeUri;
                 set => _otherCodeUri = value is null ? new Uri("hello") : value;
             }
+
+            public string? StringWithNullDefault
+            {
+                get => _StringWithNullDefault;
+                set
+                {
+                    _StringWithNullDefault = value;
+                    _wasStringWithNullDefaultSet = true;
+                }
+            }
+
+            public bool WasStringWithNullDefaultSet => _wasStringWithNullDefaultSet;
+
+            public int IntWithDefault
+            {
+                get => _IntWithDefault;
+                set
+                {
+                    _IntWithDefault = value;
+                    _WasIntWithDefaultSet = true;
+                }
+            }
+
+            public bool WasIntWithDefaultSet => _WasIntWithDefaultSet;
+
+            public SimplePocoWithOnlyDefaults PocoWithDefault
+            {
+                get => _PocoWithDefault;
+                set
+                {
+                    _PocoWithDefault = value;
+                    _WasPocoWithDefaultSet = true;
+                }
+            }
+
+            public bool WasPocoWithDefaultSet => _WasPocoWithDefaultSet;
+
+            public List<SimplePocoWithOnlyDefaults> PocoListWithDefault
+            {
+                get => _PocoListWithDefault;
+                set
+                {
+                    _PocoListWithDefault = value;
+                    _WasPocoListWithDefaultSet = true;
+                }
+            }
+
+            public bool WasPocoListWithDefaultSet => _WasPocoListWithDefaultSet;
+        }
+
+        public class SimplePocoWithOnlyDefaults
+        {
+            public string Example { get; set; } = "default";
+        }
+
+        public class SetOnlyPoco
+        {
+            private bool _AnyCalled;
+            public bool AnyCalled => _AnyCalled;
+            public string SetOnly { set => _AnyCalled |= true; }
+            public string PrivateGetter { private get => "foo"; set => _AnyCalled |= true; }
+            public string InitOnly { init => _AnyCalled |= true; }
         }
 
         public interface ISomeInterface
@@ -873,7 +956,7 @@ namespace Microsoft.Extensions
         {
             public int Value2 { get; set; }
         }
-        
+
         internal class ClassWithAbstractProp
         {
             public AbstractBase AbstractProp { get; set; }
@@ -910,16 +993,9 @@ namespace Microsoft.Extensions
 
         public class ClassThatThrowsOnSetters
         {
-            private int _myIntProperty;
-
-            public ClassThatThrowsOnSetters()
+            public int? MyIntProperty
             {
-                _myIntProperty = 42;
-            }
-
-            public int MyIntProperty
-            {
-                get => _myIntProperty;
+                get => null;
                 set => throw new InvalidOperationException("Not expected");
             }
         }
@@ -934,7 +1010,7 @@ namespace Microsoft.Extensions
         {
             public string A { get; set; }
             public string B { get; set; }
-            public TestSettingsEnum E {get; set;}
+            public TestSettingsEnum E { get; set; }
 
             public virtual string C { get => CBase; set => CBase = value; }
 

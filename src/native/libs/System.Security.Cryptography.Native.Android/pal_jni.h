@@ -510,6 +510,10 @@ extern jmethodID g_DotnetProxyTrustManagerCtor;
 extern jclass    g_DotnetX509KeyManager;
 extern jmethodID g_DotnetX509KeyManagerCtor;
 
+// net/dot/android/crypto/PalPbkdf2
+extern jclass    g_PalPbkdf2;
+extern jmethodID g_PalPbkdf2Pbkdf2OneShot;
+
 // Compatibility macros
 #if !defined (__mallocfunc)
 #if defined (__clang__) || defined (__GNUC__)

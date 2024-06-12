@@ -136,11 +136,22 @@ namespace ILCompiler
                     offsetsToVisit.Push(ehRegion.FilterOffset);
 
                 offsetsToVisit.Push(ehRegion.HandlerOffset);
+
+                if ((uint)ehRegion.TryLength >= (uint)methodBytes.Length
+                    || (uint)ehRegion.HandlerLength >= (uint)methodBytes.Length
+                    || ((uint)methodBytes.Length - (uint)ehRegion.TryLength) < (uint)ehRegion.TryOffset
+                    || ((uint)methodBytes.Length - (uint)ehRegion.HandlerLength) < (uint)ehRegion.HandlerOffset)
+                {
+                    ThrowHelper.ThrowInvalidProgramException();
+                }
             }
 
             // Identify basic blocks and instruction boundaries
             while (offsetsToVisit.TryPop(out int offset))
             {
+                if ((uint)offset >= (uint)flags.Length)
+                    ThrowHelper.ThrowInvalidProgramException();
+
                 // If this was already visited, we're done
                 if (flags[offset] != 0)
                 {
@@ -415,7 +426,8 @@ namespace ILCompiler
                 return method;
 
             // Maps instruction offsets in original method body to offsets in rewritten method body.
-            var offsetMap = new int[methodBytes.Length];
+            // Do a + 1 to length because exception handlers might refer to offset at the end of last instruction.
+            var offsetMap = new int[methodBytes.Length + 1];
 #if DEBUG
             Array.Fill(offsetMap, -1);
 #endif
@@ -469,6 +481,7 @@ namespace ILCompiler
                     dstPos += 2;
                 }
             }
+            offsetMap[methodBytes.Length] = dstPos;
 
             // Now generate the new body
             var newBody = new byte[dstPos];

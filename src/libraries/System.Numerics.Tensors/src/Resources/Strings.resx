@@ -219,4 +219,10 @@
   <data name="ThrowArgument_StrideLessThan0" xml:space="preserve">
     <value>Strides cannot be less than 0.</value>
   </data>
+  <data name="Argument_2DTensorRequired" xml:space="preserve">
+    <value>Must be a 2d Tensor.</value>
+  </data>
+  <data name="Argument_IncompatibleDimensions" xml:space="preserve">
+    <value>Incompatible dimensions for provided tensors. left.Lengths[1] == {0} while right.Lengths[1] == {1}.</value>
+  </data>
 </root>

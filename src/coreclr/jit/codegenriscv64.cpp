@@ -607,7 +607,7 @@ void CodeGen::genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowe
 
     assert((spDelta % STACK_ALIGN) == 0);
 
-    assert(regsToSaveCount <= genCountBits(RBM_CALLEE_SAVED));
+    assert(regsToSaveCount <= genCountBits(regMaskTP(RBM_CALLEE_SAVED)));
 
     // Save integer registers at higher addresses than floating-point registers.
     regMaskTP maskSaveRegsFloat = regsToSaveMask & RBM_ALLFLOAT;
@@ -718,7 +718,7 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, in
     assert((spDelta % STACK_ALIGN) == 0);
 
     // We also can restore FP and RA, even though they are not in RBM_CALLEE_SAVED.
-    assert(regsToRestoreCount <= genCountBits(RBM_CALLEE_SAVED | RBM_FP | RBM_RA));
+    assert(regsToRestoreCount <= genCountBits(regMaskTP(RBM_CALLEE_SAVED | RBM_FP | RBM_RA)));
 
     // Point past the end, to start. We predecrement to find the offset to load from.
     static_assert_no_msg(REGSIZE_BYTES == FPSAVE_REGSIZE_BYTES);
@@ -4006,7 +4006,7 @@ void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
                     else
                     {
                         imm = static_cast<int32_t>(imm);
-                        emit->emitIns_R_R_I(INS_addiw, EA_8BYTE, tmpRegOp1, regOp1, 0);
+                        emit->emitIns_R_R(INS_sext_w, EA_8BYTE, tmpRegOp1, regOp1);
                     }
                     regOp1 = tmpRegOp1;
                     break;
@@ -4033,7 +4033,7 @@ void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
                 }
                 else
                 {
-                    emit->emitIns_R_R_I(INS_addiw, EA_8BYTE, tmpRegOp1, regOp1, 0);
+                    emit->emitIns_R_R(INS_sext_w, EA_8BYTE, tmpRegOp1, regOp1);
                 }
                 regOp1 = tmpRegOp1;
             }
@@ -5672,13 +5672,13 @@ void CodeGen::genRangeCheck(GenTree* oper)
     if (genActualType(length) == TYP_INT)
     {
         regNumber tempReg = internalRegisters.Extract(oper);
-        GetEmitter()->emitIns_R_R_I(INS_addiw, EA_4BYTE, tempReg, lengthReg, 0); // sign-extend
+        GetEmitter()->emitIns_R_R(INS_sext_w, EA_4BYTE, tempReg, lengthReg);
         lengthReg = tempReg;
     }
     if (genActualType(index) == TYP_INT)
     {
         regNumber tempReg = internalRegisters.GetSingle(oper);
-        GetEmitter()->emitIns_R_R_I(INS_addiw, EA_4BYTE, tempReg, indexReg, 0); // sign-extend
+        GetEmitter()->emitIns_R_R(INS_sext_w, EA_4BYTE, tempReg, indexReg);
         indexReg = tempReg;
     }
 

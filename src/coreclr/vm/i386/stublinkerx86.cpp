@@ -3195,7 +3195,7 @@ extern "C" VOID __cdecl DebugCheckStubUnwindInfoWorker (CONTEXT *pStubContext)
 
     if (!g_pfnGetModuleInformation)
     {
-        HMODULE hmodPSAPI = WszGetModuleHandle(W("PSAPI.DLL"));
+        HMODULE hmodPSAPI = GetModuleHandle(W("PSAPI.DLL"));
 
         if (!hmodPSAPI)
         {
@@ -3219,7 +3219,7 @@ extern "C" VOID __cdecl DebugCheckStubUnwindInfoWorker (CONTEXT *pStubContext)
         // debugger spew.  This is just debugging code after all...
     }
 
-    HMODULE hmodKERNEL32 = WszGetModuleHandle(W("KERNEL32"));
+    HMODULE hmodKERNEL32 = GetModuleHandle(W("KERNEL32"));
     _ASSERTE(hmodKERNEL32);
 
     MODULEINFO modinfoKERNEL32;

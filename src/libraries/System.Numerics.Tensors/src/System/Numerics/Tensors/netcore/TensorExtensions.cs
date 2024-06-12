@@ -6,11 +6,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography;
-using Microsoft.VisualBasic;
 using System.Text;
 using System.Buffers;
-using System.Xml.Linq;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 #pragma warning disable CS8601 // Possible null reference assignment.
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
@@ -20,60 +18,6 @@ namespace System.Numerics.Tensors
 {
     public static partial class Tensor
     {
-        #region ToString
-        // REVIEW: WHAT SHOULD WE NAME THIS? WHERE DO WE WANT IT TO LIVE?
-        /// <summary>
-        /// Creates a <see cref="string"/> representation of the <see cref="TensorSpan{T}"/>."/>
-        /// </summary>
-        /// <param name="span">The <see cref="TensorSpan{T}"/> you want to represent as a string.</param>
-        /// <param name="maximumLengths">Maximum Length of each dimension</param>
-        /// <returns>A <see cref="string"/> representation of the <paramref name="span"/></returns>
-        public static string ToString<T>(this TensorSpan<T> span, params scoped ReadOnlySpan<nint> maximumLengths) => ((ReadOnlyTensorSpan<T>)span).ToString(maximumLengths);
-
-        /// <summary>
-        /// Creates a <see cref="string"/> representation of the <see cref="ReadOnlyTensorSpan{T}"/>."/>
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="span">The <see cref="ReadOnlyTensorSpan{T}"/> you want to represent as a string.</param>
-        /// <param name="maximumLengths">Maximum Length of each dimension</param>
-        public static string ToString<T>(this ReadOnlyTensorSpan<T> span, params scoped ReadOnlySpan<nint> maximumLengths)
-        {
-            var sb = new StringBuilder();
-            scoped Span<nint> curIndexes;
-            nint[]? curIndexesArray;
-            if (span.Rank > 6)
-            {
-                curIndexesArray = ArrayPool<nint>.Shared.Rent(span.Rank);
-                curIndexes = curIndexesArray;
-            }
-            else
-            {
-                curIndexesArray = null;
-                curIndexes = stackalloc nint[span.Rank];
-            }
-
-            nint copiedValues = 0;
-
-            T[] values = new T[span.Lengths[span.Rank - 1]];
-            while (copiedValues < span._flattenedLength)
-            {
-                var sp = new ReadOnlyTensorSpan<T>(ref Unsafe.Add(ref span._reference, TensorSpanHelpers.ComputeLinearIndex(curIndexes, span.Strides, span.Lengths)), [span.Lengths[span.Rank - 1]], [1], span.Lengths[span.Rank - 1]);
-                sb.Append('{');
-                sp.FlattenTo(values);
-                sb.Append(string.Join(",", values));
-                sb.AppendLine("}");
-
-                TensorSpanHelpers.AdjustIndexes(span.Rank - 2, 1, curIndexes, span._lengths);
-                copiedValues += span.Lengths[span.Rank - 1];
-            }
-
-            if (curIndexesArray != null)
-                ArrayPool<nint>.Shared.Return(curIndexesArray);
-
-            return sb.ToString();
-        }
-        #endregion
-
         #region Resize
         /// <summary>
         /// Creates a new <see cref="Tensor{T}"/>, allocates new memory, and copies the data from <paramref name="input"/>. If the final shape is smaller all data after
@@ -81,7 +25,7 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="input">Input <see cref="Tensor{T}"/>.</param>
         /// <param name="shape"><see cref="ReadOnlySpan{T}"/> of the desired new shape.</param>
-        public static Tensor<T> Resize<T>(Tensor<T> input, scoped ReadOnlySpan<nint> shape)
+        public static Tensor<T> Resize<T>(Tensor<T> input, ReadOnlySpan<nint> shape)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
             nint newSize = TensorSpanHelpers.CalculateTotalLength(shape);
@@ -97,29 +41,23 @@ namespace System.Numerics.Tensors
             return output;
         }
 
-        /// <summary>
-        /// Creates a new <see cref="TensorSpan{T}"/>, allocates new managed memory, and copies the data from <paramref name="input"/>. If the final shape is smaller all data after
-        /// </summary>
-        /// <param name="input">Input <see cref="TensorSpan{T}"/>.</param>
-        /// <param name="shape"><see cref="ReadOnlySpan{T}"/> of the desired new shape.</param>
-        public static TensorSpan<T> Resize<T>(TensorSpan<T> input, scoped ReadOnlySpan<nint> shape)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool>
-        {
-            nint newSize = TensorSpanHelpers.CalculateTotalLength(shape);
-            T[] values = new T[newSize];
-            TensorSpan<T> output = new TensorSpan<T>(values, 0, shape, default);
-            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input.FlattenedLength);
-            Span<T> ospan = MemoryMarshal.CreateSpan(ref output._reference, (int)output.FlattenedLength);
-            if (newSize > input.FlattenedLength)
-                TensorSpanHelpers.Memmove(ospan, span, input.FlattenedLength);
-            else
-                TensorSpanHelpers.Memmove(ospan, span, newSize);
-
-            return output;
-        }
         #endregion
 
         #region Broadcast
+        /// <summary>
+        /// Broadcast the data from <paramref name="left"/> to the smallest broadcastable shape compatible with <paramref name="right"/>. Creates a new <see cref="Tensor{T}"/> and allocates new memory.
+        /// </summary>
+        /// <param name="left">Input <see cref="Tensor{T}"/>.</param>
+        /// <param name="right">Other <see cref="Tensor{T}"/> to make shapes broadcastable.</param>
+        public static Tensor<T> Broadcast<T>(Tensor<T> left, Tensor<T> right)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>
+        {
+            nint[] newSize = TensorHelpers.GetSmallestBroadcastableSize(left.Lengths, right.Lengths);
+
+            Tensor<T> intermediate = BroadcastTo(left, newSize);
+            return Tensor.Create(intermediate.ToArray(), intermediate.Lengths);
+        }
+
         /// <summary>
         /// Broadcast the data from <paramref name="input"/> to the new shape <paramref name="shape"/>. Creates a new <see cref="Tensor{T}"/> and allocates new memory.
         /// If the shape of the <paramref name="input"/> is not compatible with the new shape, an exception is thrown.
@@ -127,7 +65,7 @@ namespace System.Numerics.Tensors
         /// <param name="input">Input <see cref="Tensor{T}"/>.</param>
         /// <param name="shape"><see cref="ReadOnlySpan{T}"/> of the desired new shape.</param>
         /// <exception cref="ArgumentException">Thrown when the shapes are not broadcast compatible.</exception>
-        public static Tensor<T> Broadcast<T>(Tensor<T> input, scoped ReadOnlySpan<nint> shape)
+        public static Tensor<T> Broadcast<T>(Tensor<T> input, ReadOnlySpan<nint> shape)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
             Tensor<T> intermediate = BroadcastTo(input, shape);
@@ -178,49 +116,6 @@ namespace System.Numerics.Tensors
             return output;
         }
 
-        // Lazy/non-copy broadcasting, internal only for now.
-        /// <summary>
-        /// Broadcast the data from <paramref name="input"/> to the new shape <paramref name="shape"/>. Creates a new <see cref="Tensor{T}"/>
-        /// but no memory is allocated. It manipulates the strides to achieve this affect.
-        /// If the shape of the <paramref name="input"/> is not compatible with the new shape, an exception is thrown.
-        /// </summary>
-        /// <param name="input">Input <see cref="TensorSpan{T}"/>.</param>
-        /// <param name="shape"><see cref="ReadOnlySpan{T}"/> of the desired new shape.</param>
-        /// <exception cref="ArgumentException">Thrown when the shapes are not broadcast compatible.</exception>
-        internal static TensorSpan<T> BroadcastTo<T>(TensorSpan<T> input, scoped ReadOnlySpan<nint> shape)
-        where T : IEquatable<T>, IEqualityOperators<T, T, bool>
-        {
-            if (input.Lengths.SequenceEqual(shape))
-                return new TensorSpan<T>(ref input._reference, shape, input.Strides, input._memoryLength);
-
-            if (!TensorHelpers.AreShapesBroadcastCompatible(input.Lengths, shape))
-                ThrowHelper.ThrowArgument_ShapesNotBroadcastCompatible();
-
-            nint newSize = TensorSpanHelpers.CalculateTotalLength(shape);
-
-            if (newSize == input.FlattenedLength)
-                return Reshape(input, shape);
-
-            nint[] intermediateShape = TensorHelpers.GetIntermediateShape(input.Lengths, shape.Length);
-            nint[] strides = new nint[shape.Length];
-
-            nint stride = 1;
-
-            for (int i = strides.Length - 1; i >= 0; i--)
-            {
-                if ((intermediateShape[i] == 1 && shape[i] != 1) || (intermediateShape[i] == 1 && shape[i] == 1))
-                    strides[i] = 0;
-                else
-                {
-                    strides[i] = stride;
-                    stride *= intermediateShape[i];
-                }
-            }
-
-            TensorSpan<T> output = new TensorSpan<T>(ref input._reference, shape, strides, input._memoryLength);
-
-            return output;
-        }
         #endregion
 
         #region Reverse
@@ -293,79 +188,6 @@ namespace System.Numerics.Tensors
             }
 
             return output;
-        }
-
-        /// <summary>
-        /// Reverse the order of elements in the <paramref name="input"/> along the given axis. The shape of the tensor is preserved, but the elements are reordered.
-        /// <paramref name="axis"/> defaults to -1 when not provided, which reverses the entire span.
-        /// </summary>
-        /// <param name="input">Input <see cref="TensorSpan{T}"/>.</param>
-        /// <param name="axis">Axis along which to reverse over. The default, -1, will reverse over all of the axes of the left span.</param>
-        public static TensorSpan<T> Reverse<T>(TensorSpan<T> input, nint axis = -1)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool>
-        {
-            if (axis == -1)
-            {
-                nint index = input.FlattenedLength - 1;
-                Span<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input.FlattenedLength);
-                T temp;
-                for (int i = 0; i <= input.FlattenedLength / 2; i++)
-                {
-                    temp = span[(int)index];
-                    span[(int)index] = span[i];
-                    span[i] = temp;
-                }
-            }
-            else
-            {
-                T[] values = new T[input.FlattenedLength];
-
-                nint copyLength = 1;
-                for (nint i = axis; i < input.Lengths.Length; i++)
-                {
-                    copyLength *= input.Lengths[(int)i];
-                }
-                copyLength /= input.Lengths[(int)axis];
-
-                scoped Span<nint> oIndices;
-                nint[]? oIndicesArray;
-                scoped Span<nint> iIndices;
-                nint[]? iIndicesArray;
-                if (input.Rank > 6)
-                {
-                    oIndicesArray = ArrayPool<nint>.Shared.Rent(input.Rank);
-                    oIndices = oIndicesArray;
-                    iIndicesArray = ArrayPool<nint>.Shared.Rent(input.Rank);
-                    iIndices = iIndicesArray;
-                }
-                else
-                {
-                    oIndicesArray = null;
-                    oIndices = stackalloc nint[input.Rank];
-                    iIndicesArray = null;
-                    iIndices = stackalloc nint[input.Rank];
-                }
-
-                iIndices[(int)axis] = input.Lengths[(int)axis] - 1;
-                nint copiedValues = 0;
-                TensorSpan<T> islice = input.Slice(input.Lengths);
-                while (copiedValues < input.FlattenedLength)
-                {
-                    TensorSpanHelpers.Memmove(ref Unsafe.Add(ref values, TensorSpanHelpers.ComputeLinearIndex(oIndices, input.Strides, input.Lengths)), ref Unsafe.Add(ref islice._reference, TensorSpanHelpers.ComputeLinearIndex(iIndices, islice.Strides, islice.Lengths)), copyLength);
-                    TensorSpanHelpers.AdjustIndexes((int)axis, 1, oIndices, input.Lengths);
-                    TensorSpanHelpers.AdjustIndexesDown((int)axis, 1, iIndices, input.Lengths);
-                    copiedValues += copyLength;
-                }
-                TensorSpanHelpers.Memmove(ref input._reference, ref values[0], input.FlattenedLength);
-
-                if (oIndicesArray != null && iIndicesArray != null)
-                {
-                    ArrayPool<nint>.Shared.Return(oIndicesArray);
-                    ArrayPool<nint>.Shared.Return(iIndicesArray);
-                }
-            }
-
-            return input;
         }
         #endregion
 
@@ -453,7 +275,7 @@ namespace System.Numerics.Tensors
         /// <param name="tensor">Input <see cref="Tensor{T}"/>.</param>
         /// <param name="values">The values you want to set in the <paramref name="tensor"/>.</param>
         /// <param name="ranges">The ranges you want to set.</param>
-        public static Tensor<T> SetSlice<T>(this Tensor<T> tensor, Tensor<T> values, params scoped ReadOnlySpan<NRange> ranges)
+        public static Tensor<T> SetSlice<T>(this Tensor<T> tensor, Tensor<T> values, params ReadOnlySpan<NRange> ranges)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
             TensorSpan<T> srcSpan;
@@ -1003,7 +825,7 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="input"><see cref="Tensor{T}"/> you want to reshape.</param>
         /// <param name="lengths"><see cref="ReadOnlySpan{T}"/> with the new dimensions.</param>
-        public static Tensor<T> Reshape<T>(this Tensor<T> input, params scoped ReadOnlySpan<nint> lengths)
+        public static Tensor<T> Reshape<T>(this Tensor<T> input, params ReadOnlySpan<nint> lengths)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
             nint[] arrLengths = lengths.ToArray();
@@ -1029,41 +851,6 @@ namespace System.Numerics.Tensors
                 ThrowHelper.ThrowArgument_InvalidReshapeDimensions();
             nint[] strides = TensorSpanHelpers.CalculateStrides(arrLengths);
             return new Tensor<T>(input._values, arrLengths, strides);
-        }
-
-        /// <summary>
-        /// Reshapes the <paramref name="input"/> tensor to the specified <paramref name="lengths"/>. If one of the lengths is -1, it will be calculated automatically.
-        /// Does not change the length of the underlying memory nor does it allocate new memory. If the new shape is not compatible with the old shape,
-        /// an exception is thrown.
-        /// </summary>
-        /// <param name="input"><see cref="TensorSpan{T}"/> you want to reshape.</param>
-        /// <param name="lengths"><see cref="ReadOnlySpan{T}"/> with the new dimensions.</param>
-        public static TensorSpan<T> Reshape<T>(this TensorSpan<T> input, params scoped ReadOnlySpan<nint> lengths)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool>
-        {
-            nint[] arrLengths = lengths.ToArray();
-            // Calculate wildcard info.
-            if (lengths.Contains(-1))
-            {
-                if (lengths.Count(-1) > 1)
-                    ThrowHelper.ThrowArgument_OnlyOneWildcard();
-                nint tempTotal = input.FlattenedLength;
-                for (int i = 0; i < lengths.Length; i++)
-                {
-                    if (lengths[i] != -1)
-                    {
-                        tempTotal /= lengths[i];
-                    }
-                }
-                arrLengths[lengths.IndexOf(-1)] = tempTotal;
-
-            }
-
-            nint tempLinear = TensorSpanHelpers.CalculateTotalLength(arrLengths);
-            if (tempLinear != input.FlattenedLength)
-                ThrowHelper.ThrowArgument_InvalidReshapeDimensions();
-            nint[] strides = TensorSpanHelpers.CalculateStrides(arrLengths);
-            return new TensorSpan<T>(ref input._reference, arrLengths, strides, input._memoryLength);
         }
         #endregion
 
@@ -1274,12 +1061,18 @@ namespace System.Numerics.Tensors
         /// <param name="input">The <see cref="Tensor{T}"/> to take the standard deviation of.</param>
         /// <returns><typeparamref name="TResult"/> representing the standard deviation.</returns>
         public static TResult StdDev<T, TResult>(Tensor<T> input)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, INumber<T>
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, INumber<T>, IFloatingPoint<T>, IPowerFunctions<T>, IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
             where TResult : IEquatable<TResult>, IEqualityOperators<TResult, TResult, bool>, IFloatingPoint<TResult>
 
         {
-            T sum = Tensor.Sum(input);
-            return TResult.CreateChecked(TResult.CreateChecked(sum) / TResult.CreateChecked(input.FlattenedLength));
+            T mean = Mean(input);
+            Span<T> span = MemoryMarshal.CreateSpan(ref input._values[0], (int)input._flattenedLength);
+            Span<T> output = new T[input._flattenedLength].AsSpan();
+            TensorPrimitives.Subtract(span, mean, output);
+            TensorPrimitives.Abs(output, output);
+            TensorPrimitives.Pow((ReadOnlySpan<T>)output, T.CreateChecked(2), output);
+            T sum = TensorPrimitives.Sum((ReadOnlySpan<T>)output);
+            return TResult.CreateChecked(sum / T.CreateChecked(input.FlattenedLength));
         }
 
         #endregion
@@ -1294,7 +1087,7 @@ namespace System.Numerics.Tensors
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IFloatingPoint<T>
 
         {
-            T sum = Tensor.Sum(input);
+            T sum = Sum(input);
             return T.CreateChecked(sum / T.CreateChecked(input.FlattenedLength));
         }
 
@@ -1308,7 +1101,7 @@ namespace System.Numerics.Tensors
             where TResult : IEquatable<TResult>, IEqualityOperators<TResult, TResult, bool>, IFloatingPoint<TResult>
 
         {
-            T sum = Tensor.Sum(input);
+            T sum = Sum(input);
             return TResult.CreateChecked(TResult.CreateChecked(sum) / TResult.CreateChecked(input.FlattenedLength));
         }
 
@@ -1338,7 +1131,7 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="input">Input <see cref="Tensor{T}"/></param>
         /// <param name="axis"><see cref="ReadOnlySpan{T}"/> with the new axis ordering.</param>
-        public static Tensor<T> Permute<T>(Tensor<T> input, params scoped ReadOnlySpan<int> axis)
+        public static Tensor<T> Permute<T>(Tensor<T> input, params ReadOnlySpan<int> axis)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
             if (input.Rank == 1)
@@ -1410,115 +1203,676 @@ namespace System.Numerics.Tensors
         #endregion
 
         #region TensorPrimitives
-        #region Multiply
+        #region Abs
         /// <summary>
-        /// Multiplies each element of <paramref name="input"/> with <paramref name="val"/> and returns a new <see cref="Tensor{T}"/> with the result.
+        /// Takes the absolute value of each element of the <see cref="Tensor{T}"/> and returns a new <see cref="Tensor{T}"/> with the result.
         /// </summary>
-        /// <param name="input">Input <see cref="Tensor{T}"/></param>
-        /// <param name="val"><typeparamref name="T"/> value to multiply by.</param>
-        public static Tensor<T> Multiply<T>(Tensor<T> input, T val)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IMultiplyOperators<T, T, T>, IMultiplicativeIdentity<T, T>
+        /// <param name="input">The <see cref="Tensor{T}"/> to take the sin of.</param>
+        public static Tensor<T> Abs<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, INumberBase<T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.Abs);
+        }
+
+        /// <summary>
+        /// Takes the absolute of each element of the <see cref="Tensor{T}"/> in place.
+        /// </summary>
+        /// <param name="input">The <see cref="Tensor{T}"/> to take the sin of.</param>
+        public static Tensor<T> AbsInPlace<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, INumberBase<T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.Abs, true);
+        }
+        #endregion
+
+        #region Acos
+        /// <summary>
+        /// Takes the inverse cosine of each element of the <see cref="Tensor{T}"/> and returns a new <see cref="Tensor{T}"/> with the result.
+        /// </summary>
+        /// <param name="input">The <see cref="Tensor{T}"/> to take the sin of.</param>
+        public static Tensor<T> Acos<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ITrigonometricFunctions<T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.Acos);
+        }
+
+        /// <summary>
+        /// Takes the inverse cosine of each element of the <see cref="Tensor{T}"/> in place.
+        /// </summary>
+        /// <param name="input">The <see cref="Tensor{T}"/> to take the sin of.</param>
+        public static Tensor<T> AcosInPlace<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ITrigonometricFunctions<T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.Acos, true);
+        }
+        #endregion
+
+        #region Acosh
+        /// <summary>
+        /// Takes the inverse hyperbolic cosine of each element of the <see cref="Tensor{T}"/> and returns a new <see cref="Tensor{T}"/> with the result.
+        /// </summary>
+        /// <param name="input">The <see cref="Tensor{T}"/> to take the sin of.</param>
+        public static Tensor<T> Acosh<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IHyperbolicFunctions<T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.Acosh);
+        }
+
+        /// <summary>
+        /// Takes the inverse hyperbolic cosine of each element of the <see cref="Tensor{T}"/> in place.
+        /// </summary>
+        /// <param name="input">The <see cref="Tensor{T}"/> to take the sin of.</param>
+        public static Tensor<T> AcoshInPlace<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IHyperbolicFunctions<T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.Acosh, true);
+        }
+        #endregion
+
+        #region AcosPi
+        /// <summary>
+        /// Takes the inverse hyperbolic cosine divided by pi of each element of the <see cref="Tensor{T}"/> and returns a new <see cref="Tensor{T}"/> with the result.
+        /// </summary>
+        /// <param name="input">The <see cref="Tensor{T}"/> to take the sin of.</param>
+        public static Tensor<T> AcosPi<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ITrigonometricFunctions<T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.AcosPi);
+        }
+
+        /// <summary>
+        /// Takes the inverse hyperbolic cosine divided by pi of each element of the <see cref="Tensor{T}"/> in place.
+        /// </summary>
+        /// <param name="input">The <see cref="Tensor{T}"/> to take the sin of.</param>
+        public static Tensor<T> AcosPiInPlace<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ITrigonometricFunctions<T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.AcosPi, true);
+        }
+        #endregion
+
+        #region Add
+        /// <summary>
+        /// Adds each element of <paramref name="left"/> to each element of <paramref name="right"/> and returns a new <see cref="Tensor{T}"/> with the result.
+        /// </summary>
+        /// <param name="left">The <see cref="Tensor{T}"/> of values to add.</param>
+        /// <param name="right">The second <see cref="Tensor{T}"/> of values to add.</param>
+        public static Tensor<T> Add<T>(Tensor<T> left, Tensor<T> right)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
+        {
+            return TensorPrimitivesHelperTwoSpanInSpanOut(left, right, TensorPrimitives.Add);
+        }
+
+        /// <summary>
+        /// Adds each element of <paramref name="left"/> to each element of <paramref name="right"/> in place.
+        /// </summary>
+        /// <param name="left">The <see cref="Tensor{T}"/> of values to add.</param>
+        /// <param name="right">The second <see cref="Tensor{T}"/> of values to add.</param>
+        public static Tensor<T> AddInPlace<T>(Tensor<T> left, Tensor<T> right)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
+        {
+            return TensorPrimitivesHelperTwoSpanInSpanOut(left, right, TensorPrimitives.Add, true);
+        }
+
+        /// <summary>
+        /// Adds <paramref name="val"/> to each element of <paramref name="input"/> and returns a new <see cref="Tensor{T}"/> with the result.
+        /// </summary>
+        /// <param name="input">The <see cref="Tensor{T}"/> of values to add.</param>
+        /// <param name="val">The <typeparamref name="T"/> to add to each element of <paramref name="input"/>.</param>
+        public static Tensor<T> Add<T>(Tensor<T> input, T val)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
+        {
+            return TensorPrimitivesHelperSpanInTInSpanOut(input, val, TensorPrimitives.Add);
+        }
+
+        /// <summary>
+        /// Adds <paramref name="val"/> to each element of <paramref name="input"/> in place.
+        /// </summary>
+        /// <param name="input">The <see cref="Tensor{T}"/> of values to add.</param>
+        /// <param name="val">The <typeparamref name="T"/> to add to each element of <paramref name="input"/>.</param>
+        public static Tensor<T> AddInPlace<T>(Tensor<T> input, T val)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
+        {
+            return TensorPrimitivesHelperSpanInTInSpanOut(input, val, TensorPrimitives.Add, true);
+
+        }
+        #endregion
+
+        #region Asin
+        /// <summary>
+        /// Takes the inverse sin of each element of the <see cref="Tensor{T}"/> and returns a new <see cref="Tensor{T}"/> with the result.
+        /// </summary>
+        /// <param name="input">The <see cref="Tensor{T}"/> to take the sin of.</param>
+        public static Tensor<T> Asin<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ITrigonometricFunctions<T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.Asin);
+        }
+
+        /// <summary>
+        /// Takes the inverse sine each element of the <see cref="Tensor{T}"/> in place.
+        /// </summary>
+        /// <param name="input">The <see cref="Tensor{T}"/> to take the sin of.</param>
+        public static Tensor<T> AsinInPlace<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ITrigonometricFunctions<T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.Asin, true);
+        }
+        #endregion
+
+        #region Asinh
+        /// <summary>
+        /// Takes the inverse hyperbolic sine of each element of the <see cref="Tensor{T}"/> and returns a new <see cref="Tensor{T}"/> with the result.
+        /// </summary>
+        /// <param name="input">The <see cref="Tensor{T}"/> to take the sin of.</param>
+        public static Tensor<T> Asinh<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IHyperbolicFunctions<T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.Asinh);
+        }
+
+        /// <summary>
+        /// Takes the inverse hyperbolic sine each element of the <see cref="Tensor{T}"/> in place.
+        /// </summary>
+        /// <param name="input">The <see cref="Tensor{T}"/> to take the sin of.</param>
+        public static Tensor<T> AsinhInPlace<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IHyperbolicFunctions<T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.Asinh, true);
+        }
+        #endregion
+
+        #region AsinPi
+        /// <summary>
+        /// Takes the inverse hyperbolic sine divided by pi of each element of the <see cref="Tensor{T}"/> and returns a new <see cref="Tensor{T}"/> with the result.
+        /// </summary>
+        /// <param name="input">The <see cref="Tensor{T}"/> to take the sin of.</param>
+        public static Tensor<T> AsinPi<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ITrigonometricFunctions<T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.AsinPi);
+        }
+
+        /// <summary>
+        /// Takes the inverse hyperbolic sine divided by pi of each element of the <see cref="Tensor{T}"/> in place.
+        /// </summary>
+        /// <param name="input">The <see cref="Tensor{T}"/> to take the sin of.</param>
+        public static Tensor<T> AsinPiInPlace<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ITrigonometricFunctions<T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.AsinPi, true);
+        }
+        #endregion
+
+        #region Atan
+        /// <summary>
+        /// Takes the arc tangent of each element of the <see cref="Tensor{T}"/> and returns a new <see cref="Tensor{T}"/> with the result.
+        /// </summary>
+        /// <param name="input">The input <see cref="Tensor{T}"/></param>
+        public static Tensor<T> Atan<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ITrigonometricFunctions<T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.Atan);
+        }
+
+        /// <summary>
+        /// Takes the arc tangent of each element of the <see cref="Tensor{T}"/> in place.
+        /// </summary>
+        /// <param name="input">The input <see cref="Tensor{T}"/></param>
+        public static Tensor<T> AtanInPlace<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ITrigonometricFunctions<T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.Atan, true);
+        }
+        #endregion
+
+        #region Atan2
+        /// <summary>
+        /// Takes the arc tangent of the two input <see cref="Tensor{T}"/> and returns a new <see cref="Tensor{T}"/> with the result.
+        /// </summary>
+        /// <param name="left">The left <see cref="Tensor{T}"/>.</param>
+        /// <param name="right">The right <see cref="Tensor{T}"/>.</param>
+        public static Tensor<T> Atan2<T>(Tensor<T> left, Tensor<T> right)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IFloatingPointIeee754<T>
+        {
+            return TensorPrimitivesHelperTwoSpanInSpanOut(left, right, TensorPrimitives.Atan2);
+        }
+
+        /// <summary>
+        /// Takes the arc tangent of the two input <see cref="Tensor{T}"/> in place.
+        /// </summary>
+        /// <param name="left">The left <see cref="Tensor{T}"/>.</param>
+        /// <param name="right">The right <see cref="Tensor{T}"/>.</param>
+        public static Tensor<T> Atan2InPlace<T>(Tensor<T> left, Tensor<T> right)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IFloatingPointIeee754<T>
+        {
+            return TensorPrimitivesHelperTwoSpanInSpanOut(left, right, TensorPrimitives.Atan2, true);
+        }
+        #endregion
+
+        #region Atan2Pi
+        /// <summary>
+        /// Takes the arc tangent of the two input <see cref="Tensor{T}"/>, divides each element by pi, and returns a new <see cref="Tensor{T}"/> with the result.
+        /// </summary>
+        /// <param name="left">The left <see cref="Tensor{T}"/>.</param>
+        /// <param name="right">The right <see cref="Tensor{T}"/>.</param>
+        public static Tensor<T> Atan2Pi<T>(Tensor<T> left, Tensor<T> right)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IFloatingPointIeee754<T>
+        {
+            return TensorPrimitivesHelperTwoSpanInSpanOut(left, right, TensorPrimitives.Atan2Pi);
+        }
+
+        /// <summary>
+        /// Takes the arc tangent of the two input <see cref="Tensor{T}"/>, divides each element by pi in place.
+        /// </summary>
+        /// <param name="left">The left <see cref="Tensor{T}"/>.</param>
+        /// <param name="right">The right <see cref="Tensor{T}"/>.</param>
+        public static Tensor<T> Atan2PiInPlace<T>(Tensor<T> left, Tensor<T> right)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IFloatingPointIeee754<T>
+        {
+            return TensorPrimitivesHelperTwoSpanInSpanOut(left, right, TensorPrimitives.Atan2Pi, true);
+        }
+        #endregion
+
+        #region Atanh
+        /// <summary>
+        /// Takes the inverse hyperbolic tangent of each element of the <see cref="Tensor{T}"/> and returns a new <see cref="Tensor{T}"/> with the result.
+        /// </summary>
+        /// <param name="input">The input <see cref="Tensor{T}"/>.</param>
+        public static Tensor<T> Atanh<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IHyperbolicFunctions<T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.Atanh);
+        }
+
+        /// <summary>
+        /// Takes the inverse hyperbolic tangent of each element of the <see cref="Tensor{T}"/> in place.
+        /// </summary>
+        /// <param name="input">The input <see cref="Tensor{T}"/>.</param>
+        public static Tensor<T> AtanhInPlace<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IHyperbolicFunctions<T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.Atanh, true);
+        }
+        #endregion
+
+        #region AtanPi
+        /// <summary>
+        /// Takes the inverse hyperbolic tangent divided by pi of each element of the <see cref="Tensor{T}"/> and returns a new <see cref="Tensor{T}"/> with the result.
+        /// </summary>
+        /// <param name="input">The input<see cref="Tensor{T}"/>.</param>
+        public static Tensor<T> AtanPi<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ITrigonometricFunctions<T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.AtanPi);
+        }
+
+        /// <summary>
+        /// Takes the inverse hyperbolic tangent divided by pi of each element of the <see cref="Tensor{T}"/> in place.
+        /// </summary>
+        /// <param name="input">The input<see cref="Tensor{T}"/>.</param>
+        public static Tensor<T> AtanPiInPlace<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ITrigonometricFunctions<T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.AtanPi, true);
+        }
+        #endregion
+
+        #region BitwiseAnd
+        /// <summary>
+        /// Computes the element-wise bitwise and of the two input <see cref="Tensor{T}"/> and returns a new <see cref="Tensor{T}"/> with the result.
+        /// </summary>
+        /// <param name="left">The left <see cref="Tensor{T}"/>.</param>
+        /// <param name="right">The right <see cref="Tensor{T}"/>.</param>
+        public static Tensor<T> BitwiseAnd<T>(Tensor<T> left, Tensor<T> right)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IBitwiseOperators<T, T, T>
+        {
+            return TensorPrimitivesHelperTwoSpanInSpanOut(left, right, TensorPrimitives.BitwiseAnd);
+        }
+
+        /// <summary>
+        /// Computes the element-wise bitwise and of the two input <see cref="Tensor{T}"/> in place.
+        /// </summary>
+        /// <param name="left">The left <see cref="Tensor{T}"/>.</param>
+        /// <param name="right">The right <see cref="Tensor{T}"/>.</param>
+        public static Tensor<T> BitwiseAndInPlace<T>(Tensor<T> left, Tensor<T> right)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IBitwiseOperators<T, T, T>
+        {
+            return TensorPrimitivesHelperTwoSpanInSpanOut(left, right, TensorPrimitives.BitwiseAnd, true);
+        }
+        #endregion
+
+        #region BitwiseOr
+        /// <summary>
+        /// Computes the element-wise bitwise of of the two input <see cref="Tensor{T}"/> and returns a new <see cref="Tensor{T}"/> with the result.
+        /// </summary>
+        /// <param name="left">The left <see cref="Tensor{T}"/>.</param>
+        /// <param name="right">The right <see cref="Tensor{T}"/>.</param>
+        public static Tensor<T> BitwiseOr<T>(Tensor<T> left, Tensor<T> right)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IBitwiseOperators<T, T, T>
+        {
+            return TensorPrimitivesHelperTwoSpanInSpanOut(left, right, TensorPrimitives.BitwiseOr);
+        }
+
+        /// <summary>
+        /// Computes the element-wise bitwise of of the two input <see cref="Tensor{T}"/> in place.
+        /// </summary>
+        /// <param name="left">The left <see cref="Tensor{T}"/>.</param>
+        /// <param name="right">The right <see cref="Tensor{T}"/>.</param>
+        public static Tensor<T> BitwiseOrInPlace<T>(Tensor<T> left, Tensor<T> right)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IBitwiseOperators<T, T, T>
+        {
+            return TensorPrimitivesHelperTwoSpanInSpanOut(left, right, TensorPrimitives.BitwiseOr, true);
+        }
+        #endregion
+
+        #region CubeRoot
+        /// <summary>
+        /// Computes the element-wise cube root of the input <see cref="Tensor{T}"/> and returns a new <see cref="Tensor{T}"/> with the result.
+        /// </summary>
+        /// <param name="input">The left <see cref="Tensor{T}"/>.</param>
+        public static Tensor<T> CubeRoot<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IRootFunctions<T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.Cbrt);
+        }
+
+        /// <summary>
+        /// Computes the element-wise cube root of the input <see cref="Tensor{T}"/> in place.
+        /// </summary>
+        /// <param name="input">The left <see cref="Tensor{T}"/>.</param>
+        public static Tensor<T> CubeRootInPlace<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IRootFunctions<T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.Cbrt, true);
+        }
+        #endregion
+
+        #region Ceiling
+        /// <summary>
+        /// Computes the element-wise ceiling of the input <see cref="Tensor{T}"/> and returns a new <see cref="Tensor{T}"/> with the result.
+        /// </summary>
+        /// <param name="input">The left <see cref="Tensor{T}"/>.</param>
+        public static Tensor<T> Ceiling<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IFloatingPoint<T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.Ceiling);
+        }
+
+        /// <summary>
+        /// Computes the element-wise ceiling of the input <see cref="Tensor{T}"/> in place.
+        /// </summary>
+        /// <param name="input">The left <see cref="Tensor{T}"/>.</param>
+        public static Tensor<T> CeilingInPlace<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IFloatingPoint<T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.Ceiling, true);
+        }
+        #endregion
+
+        #region ConvertChecked
+        /// <summary>
+        /// Copies <paramref name="source"/> to a new <see cref="Tensor{TTO}"/> converting each <typeparamref name="TFrom"/>
+        /// value to a <typeparamref name="TTo"/> value.
+        /// </summary>
+        /// <param name="source">The input <see cref="Tensor{T}"/>.</param>
+        public static Tensor<TTo> ConvertChecked<TFrom, TTo>(Tensor<TFrom> source)
+            where TFrom : IEquatable<TFrom>, IEqualityOperators<TFrom, TFrom, bool>, INumberBase<TFrom>
+            where TTo : INumberBase<TTo>
+        {
+            return TensorPrimitivesHelperTFromSpanInTToSpanOut<TFrom, TTo>(source, TensorPrimitives.ConvertChecked);
+        }
+        #endregion
+
+        #region ConvertSaturating
+        /// <summary>
+        /// Copies <paramref name="source"/> to a new <see cref="Tensor{TTO}"/> converting each <typeparamref name="TFrom"/>
+        /// value to a <typeparamref name="TTo"/> value.
+        /// </summary>
+        /// <param name="source">The input <see cref="Tensor{T}"/>.</param>
+        public static Tensor<TTo> ConvertSaturating<TFrom, TTo>(Tensor<TFrom> source)
+            where TFrom : IEquatable<TFrom>, IEqualityOperators<TFrom, TFrom, bool>, INumberBase<TFrom>
+            where TTo : INumberBase<TTo>
+        {
+            return TensorPrimitivesHelperTFromSpanInTToSpanOut<TFrom, TTo>(source, TensorPrimitives.ConvertSaturating);
+        }
+        #endregion
+
+        #region ConvertTruncating
+        /// <summary>
+        /// Copies <paramref name="source"/> to a new <see cref="Tensor{TTO}"/> converting each <typeparamref name="TFrom"/>
+        /// value to a <typeparamref name="TTo"/> value.
+        /// </summary>
+        /// <param name="source">The input <see cref="Tensor{T}"/>.</param>
+        public static Tensor<TTo> ConvertTruncating<TFrom, TTo>(Tensor<TFrom> source)
+            where TFrom : IEquatable<TFrom>, IEqualityOperators<TFrom, TFrom, bool>, INumberBase<TFrom>
+            where TTo : INumberBase<TTo>
+        {
+            return TensorPrimitivesHelperTFromSpanInTToSpanOut<TFrom, TTo>(source, TensorPrimitives.ConvertTruncating);
+        }
+        #endregion
+
+        #region CopySign
+        /// <summary>
+        /// Computes the element-wise result of copying the sign from one number to another number in the specified tensors and returns a new tensor with the result.
+        /// </summary>
+        /// <param name="input">Input <see cref="Tensor{T}"/>.</param>
+        /// <param name="sign">The number with the associated sign.</param>
+        public static Tensor<T> CopySign<T>(Tensor<T> input, T sign)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, INumber<T>
         {
             ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._values[0], (int)input._flattenedLength);
             Tensor<T> output = Create<T>(input.Lengths, input.IsPinned);
             Span<T> ospan = MemoryMarshal.CreateSpan(ref output._values[0], (int)output._flattenedLength);
-            TensorPrimitives.Multiply(span, val, ospan);
+            TensorPrimitives.CopySign(span, sign, ospan);
             return output;
         }
 
         /// <summary>
-        /// Multiplies each element of <paramref name="input"/> with <paramref name="val"/> in place.
+        /// Computes the element-wise result of copying the sign from one number to another number in the specified tensors in place.
         /// </summary>
-        /// <param name="input">Input <see cref="Tensor{T}"/></param>
-        /// <param name="val"><typeparamref name="T"/> value to multiply by.</param>
-        public static Tensor<T> MultiplyInPlace<T>(Tensor<T> input, T val)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IMultiplyOperators<T, T, T>, IMultiplicativeIdentity<T, T>
+        /// <param name="input">Input <see cref="Tensor{T}"/>.</param>
+        /// <param name="sign">The number with the associated sign.</param>
+        public static Tensor<T> CopySignInPlace<T>(Tensor<T> input, T sign)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, INumber<T>
         {
-            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._values[0], (int)input._flattenedLength);
-            Tensor<T> output = input;
-            Span<T> ospan = MemoryMarshal.CreateSpan(ref output._values[0], (int)output._flattenedLength);
-            TensorPrimitives.Multiply(span, val, ospan);
-            return output;
+            Span<T> span = MemoryMarshal.CreateSpan(ref input._values[0], (int)input._flattenedLength);
+            TensorPrimitives.CopySign(span, sign, span);
+            return input;
         }
 
         /// <summary>
-        /// Multiplies each element of <paramref name="left"/> with <paramref name="right"/> and returns a new <see cref="Tensor{T}"/> with the result.
-        /// If the shapes are not the same they are broadcast to the smallest compatible shape.
+        /// Computes the element-wise result of copying the sign from one number to another number in the specified tensors and returns a new <see cref="Tensor{T}"/> with the result.
         /// </summary>
-        /// <param name="left">Left <see cref="Tensor{T}"/> for multiplication.</param>
-        /// <param name="right">Right <see cref="Tensor{T}"/> for multiplication.</param>
-        public static Tensor<T> Multiply<T>(Tensor<T> left, Tensor<T> right)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IMultiplyOperators<T, T, T>, IMultiplicativeIdentity<T, T>
+        /// <param name="input">Input <see cref="Tensor{T}"/>.</param>
+        /// <param name="sign">The <see cref="Tensor{T}"/> with the associated signs.</param>
+        public static Tensor<T> CopySign<T>(Tensor<T> input, Tensor<T> sign)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, INumber<T>
         {
-            return TensorPrimitivesHelperT1T2(left, right, TensorPrimitives.Multiply);
+            return TensorPrimitivesHelperTwoSpanInSpanOut(input, sign, TensorPrimitives.CopySign);
         }
 
         /// <summary>
-        /// Multiplies each element of <paramref name="left"/> with <paramref name="right"/> in place.
-        /// If the shapes are not the same they are broadcast to the smallest compatible shape.
+        /// Computes the element-wise result of copying the sign from one number to another number in the specified tensors in place.
         /// </summary>
-        /// <param name="left">Left <see cref="Tensor{T}"/> for multiplication.</param>
-        /// <param name="right">Right <see cref="Tensor{T}"/> for multiplication.</param>
-        public static Tensor<T> MultiplyInPlace<T>(Tensor<T> left, Tensor<T> right)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IMultiplyOperators<T, T, T>, IMultiplicativeIdentity<T, T>
+        /// <param name="input">Input <see cref="Tensor{T}"/>.</param>
+        /// <param name="sign">The <see cref="Tensor{T}"/> with the associated signs.</param>
+        public static Tensor<T> CopySignInPlace<T>(Tensor<T> input, Tensor<T> sign)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, INumber<T>
         {
-            return TensorPrimitivesHelperT1T2(left, right, TensorPrimitives.Multiply, true);
+            return TensorPrimitivesHelperTwoSpanInSpanOut(input, sign, TensorPrimitives.CopySign, true);
+        }
+        #endregion
+
+        #region Cos
+        /// <summary>
+        /// Takes the cosine of each element of the <see cref="Tensor{T}"/> and returns a new <see cref="Tensor{T}"/> with the result.
+        /// </summary>
+        /// <param name="input">The <see cref="Tensor{T}"/> to take the cosine of.</param>
+        public static Tensor<T> Cos<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ITrigonometricFunctions<T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.Cos);
         }
 
         /// <summary>
-        /// Multiplies each element of <paramref name="input"/> with <paramref name="val"/> and returns a new <see cref="TensorSpan{T}"/> with the result.
+        /// Takes the cosine of each element of the <see cref="Tensor{T}"/> in place.
         /// </summary>
-        /// <param name="input">Input <see cref="TensorSpan{T}"/></param>
-        /// <param name="val"><typeparamref name="T"/> value to multiply by.</param>
-        public static TensorSpan<T> Multiply<T>(TensorSpan<T> input, T val)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IMultiplyOperators<T, T, T>, IMultiplicativeIdentity<T, T>
+        /// <param name="input">The <see cref="Tensor{T}"/> to take the cosine of.</param>
+        public static Tensor<T> CosInPlace<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ITrigonometricFunctions<T>
         {
-            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input.FlattenedLength);
-            T[] values = new T[input.FlattenedLength];
-            TensorSpan<T> output = new TensorSpan<T>(values, 0, input.Lengths, default);
-            Span<T> ospan = MemoryMarshal.CreateSpan(ref output._reference, (int)output.FlattenedLength);
-            TensorPrimitives.Multiply(span, val, ospan);
-            return output;
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.Cos, true);
+        }
+        #endregion
+
+        #region Cosh
+        /// <summary>
+        /// Takes the hyperbolic cosine of each element of the <see cref="Tensor{T}"/> and returns a new <see cref="Tensor{T}"/> with the result.
+        /// </summary>
+        /// <param name="input">The <see cref="Tensor{T}"/> to take the cosine of.</param>
+        public static Tensor<T> Cosh<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IHyperbolicFunctions<T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.Cosh);
         }
 
         /// <summary>
-        /// Multiplies each element of <paramref name="input"/> with <paramref name="val"/> in place.
+        /// Takes the hyperbolic cosine of each element of the <see cref="Tensor{T}"/> in place.
         /// </summary>
-        /// <param name="input">Input <see cref="TensorSpan{T}"/></param>
-        /// <param name="val"><typeparamref name="T"/> value to multiply by.</param>
-        public static TensorSpan<T> MultiplyInPlace<T>(TensorSpan<T> input, T val)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IMultiplyOperators<T, T, T>, IMultiplicativeIdentity<T, T>
+        /// <param name="input">The <see cref="Tensor{T}"/> to take the cosine of.</param>
+        public static Tensor<T> CoshInPlace<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IHyperbolicFunctions<T>
         {
-            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input.FlattenedLength);
-            TensorSpan<T> output = input;
-            Span<T> ospan = MemoryMarshal.CreateSpan(ref output._reference, (int)output.FlattenedLength);
-            TensorPrimitives.Multiply(span, val, ospan);
-            return output;
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.Cosh, true);
+        }
+        #endregion
+
+        #region CosineSimilarity
+        /// <summary>
+        /// Compute cosine similarity between <paramref name="left"/> and <paramref name="right"/>.
+        /// </summary>
+        /// <param name="left">The first <see cref="Tensor{T}"/></param>
+        /// <param name="right">The second <see cref="Tensor{T}"/></param>
+        public static Tensor<T> CosineSimilarity<T>(Tensor<T> left, Tensor<T> right)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IRootFunctions<T>
+        {
+            if (left.Rank != 2)
+                ThrowHelper.ThrowArgument_2DTensorRequired(nameof(left));
+
+            if (right.Rank != 2)
+                ThrowHelper.ThrowArgument_2DTensorRequired(nameof(right));
+
+            if (left.Lengths[1] != right.Lengths[1])
+                ThrowHelper.ThrowArgument_IncompatibleDimensions(left.Lengths[1], right.Lengths[1]);
+
+            nint dim1 = left.Lengths[0];
+            nint dim2 = right.Lengths[0];
+
+            T[] values = new T[dim1 * dim2];
+
+            scoped Span<nint> leftIndexes = stackalloc nint[2];
+            scoped Span<nint> rightIndexes = stackalloc nint[2];
+
+            int outputOffset = 0;
+
+            ReadOnlySpan<T> lspan;
+            ReadOnlySpan<T> rspan;
+            int rowLength = (int)left.Lengths[1];
+            for (int i = 0; i < dim1; i++)
+            {
+                for (int j = 0; j < dim2; j++)
+                {
+                    lspan = MemoryMarshal.CreateSpan(ref left[leftIndexes], rowLength);
+                    rspan = MemoryMarshal.CreateSpan(ref right[rightIndexes], rowLength);
+                    values[outputOffset++] = TensorPrimitives.CosineSimilarity(lspan, rspan);
+                    rightIndexes[0]++;
+                }
+                rightIndexes[0] = 0;
+                leftIndexes[0]++;
+            }
+
+            return Tensor.Create<T>(values, [dim1, dim2]);
+
+        }
+        #endregion
+
+        #region CosPi
+        /// <summary>Computes the element-wise cosine of the value in the specified tensor that has been multiplied by Pi and returns a new <see cref="Tensor{T}"/> with the results.</summary>
+        /// <param name="input">The input <see cref="Tensor{T}"/></param>
+        /// <remarks>
+        /// <para>
+        /// This method effectively computes <c><typeparamref name="T"/>.CosPi(<paramref name="input" />[i])</c>.
+        /// </para>
+        /// <para>
+        /// The angles in x must be in radians. Use <see cref="M:System.Single.DegreesToRadians"/> or multiply by <typeparamref name="T"/>.Pi/180 to convert degrees to radians.
+        /// </para>
+        /// <para>
+        /// This method may call into the underlying C runtime or employ instructions specific to the current architecture. Exact results may differ between different
+        /// operating systems or architectures.
+        /// </para>
+        /// </remarks>
+        public static Tensor<T> CosPi<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ITrigonometricFunctions<T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.CosPi);
+        }
+
+        /// <summary>Computes the element-wise cosine of the value in the specified tensor that has been multiplied by Pi in place.</summary>
+        /// <param name="input">The input <see cref="Tensor{T}"/></param>
+        /// <remarks>
+        /// <para>
+        /// This method effectively computes <c><typeparamref name="T"/>.CosPi(<paramref name="input" />[i])</c>.
+        /// </para>
+        /// <para>
+        /// The angles in x must be in radians. Use <see cref="M:System.Single.DegreesToRadians"/> or multiply by <typeparamref name="T"/>.Pi/180 to convert degrees to radians.
+        /// </para>
+        /// <para>
+        /// This method may call into the underlying C runtime or employ instructions specific to the current architecture. Exact results may differ between different
+        /// operating systems or architectures.
+        /// </para>
+        /// </remarks>
+        public static Tensor<T> CosPiInPlace<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ITrigonometricFunctions<T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.CosPi, true);
+        }
+        #endregion
+
+        #region DegreesToRadians
+        /// <summary>
+        /// Computes the element-wise conversion of each number of degrees in the specified tensor to radians and returns a new tensor with the results.
+        /// </summary>
+        /// <param name="input">The input <see cref="Tensor{T}"/>.</param>
+        public static Tensor<T> DegreesToRadians<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ITrigonometricFunctions<T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.DegreesToRadians);
         }
 
         /// <summary>
-        /// Multiplies each element of <paramref name="left"/> with <paramref name="right"/> and returns a new <see cref="TensorSpan{T}"/> with the result.
-        /// If the shapes are not the same they are broadcast to the smallest compatible shape.
+        /// Computes the element-wise conversion of each number of degrees in the specified tensor to radians in place.
         /// </summary>
-        /// <param name="left">Left <see cref="TensorSpan{T}"/> for multiplication.</param>
-        /// <param name="right">Right <see cref="TensorSpan{T}"/> for multiplication.</param>
-        public static TensorSpan<T> Multiply<T>(TensorSpan<T> left, TensorSpan<T> right)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IMultiplyOperators<T, T, T>, IMultiplicativeIdentity<T, T>
+        /// <param name="input">The input <see cref="Tensor{T}"/>.</param>
+        public static Tensor<T> DegreesToRadiansInPlace<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ITrigonometricFunctions<T>
         {
-            return TensorPrimitivesHelperT1T2(left, right, TensorPrimitives.Multiply);
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.DegreesToRadians, true);
+        }
+        #endregion
+
+        #region Distance
+        /// <summary>
+        /// Computes the distance between two points, specified as non-empty, equal-length tensors of numbers, in Euclidean space.
+        /// </summary>
+        /// <param name="left">The input <see cref="Tensor{T}"/>.</param>
+        /// <param name="right">The input <see cref="Tensor{T}"/>.</param>
+        public static T Distance<T>(Tensor<T> left, Tensor<T> right)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IRootFunctions<T>
+        {
+            return TensorPrimitivesHelperTwoSpanInTOut(left, right, TensorPrimitives.Distance);
         }
 
-        /// <summary>
-        /// Multiplies each element of <paramref name="left"/> with <paramref name="right"/> in place.
-        /// If the shapes are not the same they are broadcast to the smallest compatible shape.
-        /// </summary>
-        /// <param name="left">Left <see cref="TensorSpan{T}"/> for multiplication.</param>
-        /// <param name="right">Right <see cref="TensorSpan{T}"/> for multiplication.</param>
-        public static TensorSpan<T> MultiplyInPlace<T>(TensorSpan<T> left, TensorSpan<T> right)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IMultiplyOperators<T, T, T>, IMultiplicativeIdentity<T, T>
-        {
-            return TensorPrimitivesHelperT1T2(left, right, TensorPrimitives.Multiply, true);
-        }
         #endregion
 
         #region Divide
@@ -1591,7 +1945,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Divide<T>(Tensor<T> left, Tensor<T> right)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IDivisionOperators<T, T, T>
         {
-            return TensorPrimitivesHelperT1T2(left, right, TensorPrimitives.Divide);
+            return TensorPrimitivesHelperTwoSpanInSpanOut(left, right, TensorPrimitives.Divide);
         }
 
         /// <summary>
@@ -1602,94 +1956,803 @@ namespace System.Numerics.Tensors
         public static Tensor<T> DivideInPlace<T>(Tensor<T> left, Tensor<T> right)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IDivisionOperators<T, T, T>
         {
-            return TensorPrimitivesHelperT1T2(left, right, TensorPrimitives.Divide, true);
+            return TensorPrimitivesHelperTwoSpanInSpanOut(left, right, TensorPrimitives.Divide, true);
+        }
+        #endregion
+
+        #region Dot
+        /// <summary>
+        /// Computes the dot product of two tensors containing numbers.
+        /// </summary>
+        /// <param name="left">The input <see cref="Tensor{T}"/>.</param>
+        /// <param name="right">The input <see cref="Tensor{T}"/>.</param>
+        public static T Dot<T>(Tensor<T> left, Tensor<T> right)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>, IMultiplicativeIdentity<T, T>, IMultiplyOperators<T, T, T>
+        {
+            return TensorPrimitivesHelperTwoSpanInTOut(left, right, TensorPrimitives.Dot);
+        }
+
+        #endregion
+
+        #region Exp
+        /// <summary>
+        /// Computes the element-wise result of raising <c>e</c> to the single-precision floating-point number powers in the specified tensor.
+        /// </summary>
+        /// <param name="input">The input <see cref="Tensor{T}"/>.</param>
+        public static Tensor<T> Exp<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IExponentialFunctions<T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.Exp);
         }
 
         /// <summary>
-        /// Divides each element of <paramref name="input"/> by <paramref name="val"/> and returns a new <see cref="TensorSpan{T}"/> with the result.
+        /// Computes the element-wise result of raising <c>e</c> to the single-precision floating-point number powers in the specified tensor.
         /// </summary>
-        /// <param name="input">Input <see cref="TensorSpan{T}"/>.</param>
-        /// <param name="val">The divisor</param>
-        public static TensorSpan<T> Divide<T>(TensorSpan<T> input, T val)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IDivisionOperators<T, T, T>
+        /// <param name="input">The input <see cref="Tensor{T}"/>.</param>
+        public static Tensor<T> ExpInPlace<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IExponentialFunctions<T>
         {
-            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input.FlattenedLength);
-            T[] values = new T[input.FlattenedLength];
-            TensorSpan<T> output = new TensorSpan<T>(values, 0, input.Lengths, default);
-            Span<T> ospan = MemoryMarshal.CreateSpan(ref output._reference, (int)output.FlattenedLength);
-            TensorPrimitives.Divide(span, val, ospan);
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.Exp, true);
+        }
+        #endregion
+
+        #region Exp10
+        /// <summary>
+        /// Computes the element-wise result of raising 10 to the number powers in the specified tensor.
+        /// </summary>
+        /// <param name="input">The input <see cref="Tensor{T}"/>.</param>
+        public static Tensor<T> Exp10<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IExponentialFunctions<T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.Exp10);
+        }
+
+        /// <summary>
+        /// Computes the element-wise result of raising 10 to the number powers in the specified tensor.
+        /// </summary>
+        /// <param name="input">The input <see cref="Tensor{T}"/>.</param>
+        public static Tensor<T> Exp10InPlace<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IExponentialFunctions<T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.Exp10, true);
+        }
+        #endregion
+
+        #region Exp10M1
+        /// <summary>Computes the element-wise result of raising 10 to the number powers in the specified tensor, minus one.</summary>
+        /// <param name="input">The input <see cref="Tensor{T}"/>.</param>
+        public static Tensor<T> Exp10M1<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IExponentialFunctions<T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.Exp10M1);
+        }
+
+        /// <summary>Computes the element-wise result of raising 10 to the number powers in the specified tensor, minus one.</summary>
+        /// <param name="input">The input <see cref="Tensor{T}"/>.</param>
+        public static Tensor<T> Exp10M1InPlace<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IExponentialFunctions<T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.Exp10M1, true);
+        }
+        #endregion
+
+        #region Exp2
+        /// <summary>Computes the element-wise result of raising 2 to the number powers in the specified tensor.</summary>
+        /// <param name="input">The input <see cref="Tensor{T}"/>.</param>
+        public static Tensor<T> Exp2<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IExponentialFunctions<T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.Exp2);
+        }
+
+        /// <summary>Computes the element-wise result of raising 2 to the number powers in the specified tensor.</summary>
+        /// <param name="input">The input <see cref="Tensor{T}"/>.</param>
+        public static Tensor<T> Exp2InPlace<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IExponentialFunctions<T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.Exp2, true);
+        }
+        #endregion
+
+        #region Exp2M1
+        /// <summary>Computes the element-wise result of raising 2 to the number powers in the specified tensor, minus one.</summary>
+        /// <param name="input">The input <see cref="Tensor{T}"/>.</param>
+        public static Tensor<T> Exp2M1<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IExponentialFunctions<T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.Exp2M1);
+        }
+
+        /// <summary>Computes the element-wise result of raising 2 to the number powers in the specified tensor, minus one.</summary>
+        /// <param name="input">The input <see cref="Tensor{T}"/>.</param>
+        public static Tensor<T> Exp2M1InPlace<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IExponentialFunctions<T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.Exp2M1, true);
+        }
+        #endregion
+
+        #region ExpM1
+        /// <summary>Computes the element-wise result of raising <c>e</c> to the number powers in the specified tensor, minus 1.</summary>
+        /// <param name="input">The input <see cref="Tensor{T}"/>.</param>
+        public static Tensor<T> ExpM1<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IExponentialFunctions<T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.ExpM1);
+        }
+
+        /// <summary>Computes the element-wise result of raising <c>e</c> to the number powers in the specified tensor, minus 1.</summary>
+        /// <param name="input">The input <see cref="Tensor{T}"/>.</param>
+        public static Tensor<T> ExpM1InPlace<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IExponentialFunctions<T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.ExpM1, true);
+        }
+        #endregion
+
+        #region Floor
+        /// <summary>Computes the element-wise floor of numbers in the specified tensor.</summary>
+        /// <param name="input">The input <see cref="Tensor{T}"/>.</param>
+        public static Tensor<T> Floor<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IFloatingPoint<T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.Floor);
+        }
+
+        /// <summary>Computes the element-wise floor of numbers in the specified tensor.</summary>
+        /// <param name="input">The input <see cref="Tensor{T}"/>.</param>
+        public static Tensor<T> FloorInPlace<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IFloatingPoint<T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.Floor, true);
+        }
+        #endregion
+
+        #region Hypotenuse
+        /// <summary>
+        /// Computes the element-wise hypotenuse given values from two tensors representing the lengths of the shorter sides in a right-angled triangle.
+        /// If the shapes are not the same they are broadcast to the smallest compatible shape.
+        /// </summary>
+        /// <param name="left">Left <see cref="Tensor{T}"/>.</param>
+        /// <param name="right">Right <see cref="Tensor{T}"/>.</param>
+        public static Tensor<T> Hypotenuse<T>(Tensor<T> left, Tensor<T> right)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IRootFunctions<T>
+        {
+            return TensorPrimitivesHelperTwoSpanInSpanOut(left, right, TensorPrimitives.Hypot);
+        }
+
+        /// <summary>
+        /// Computes the element-wise hypotenuse given values from two tensors representing the lengths of the shorter sides in a right-angled triangle.
+        /// If the shapes are not the same they are broadcast to the smallest compatible shape.
+        /// </summary>
+        /// <param name="left">Left <see cref="Tensor{T}"/>.</param>
+        /// <param name="right">Right <see cref="Tensor{T}"/>.</param>
+        public static Tensor<T> HypotenuseInPlace<T>(Tensor<T> left, Tensor<T> right)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IRootFunctions<T>
+        {
+            return TensorPrimitivesHelperTwoSpanInSpanOut(left, right, TensorPrimitives.Hypot, true);
+        }
+        #endregion
+
+        #region Ieee754Remainder
+        /// <summary>Computes the element-wise remainder of the numbers in the specified tensors.</summary>
+        /// If the shapes are not the same they are broadcast to the smallest compatible shape.
+        /// <param name="left">Left <see cref="Tensor{T}"/>.</param>
+        /// <param name="right">Right <see cref="Tensor{T}"/>.</param>
+        public static Tensor<T> Ieee754Remainder<T>(Tensor<T> left, Tensor<T> right)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IFloatingPointIeee754<T>
+        {
+            return TensorPrimitivesHelperTwoSpanInSpanOut(left, right, TensorPrimitives.Ieee754Remainder);
+        }
+
+        /// <summary>
+        /// <summary>Computes the element-wise remainder of the numbers in the specified tensors.</summary>
+        /// If the shapes are not the same they are broadcast to the smallest compatible shape.
+        /// </summary>
+        /// <param name="left">Left <see cref="Tensor{T}"/>.</param>
+        /// <param name="right">Right <see cref="Tensor{T}"/>.</param>
+        public static Tensor<T> Ieee754RemainderInPlace<T>(Tensor<T> left, Tensor<T> right)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IFloatingPointIeee754<T>
+        {
+            return TensorPrimitivesHelperTwoSpanInSpanOut(left, right, TensorPrimitives.Ieee754Remainder, true);
+        }
+        #endregion
+
+        #region ILogB
+        /// <summary>Computes the element-wise floor of numbers in the specified tensor.</summary>
+        /// <param name="input">The input <see cref="Tensor{T}"/>.</param>
+        public static Tensor<int> ILogB<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IFloatingPointIeee754<T>
+        {
+            return TensorPrimitivesHelperSpanInIntSpanOut(input, TensorPrimitives.ILogB);
+        }
+        #endregion
+
+        #region IndexOfMax
+        /// <summary>Searches for the index of the largest number in the specified tensor.</summary>
+        /// <param name="input">The input <see cref="Tensor{T}"/>.</param>
+        public static int IndexOfMax<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, INumber<T>
+
+        {
+            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._values[0], (int)input._flattenedLength);
+            return TensorPrimitives.IndexOfMax(span);
+        }
+        #endregion
+
+        #region IndexOfMaxMagnitude
+        /// <summary>Searches for the index of the number with the largest magnitude in the specified tensor.</summary>
+        /// <param name="input">The input <see cref="Tensor{T}"/>.</param>
+        public static int IndexOfMaxMagnitude<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, INumber<T>
+
+        {
+            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._values[0], (int)input._flattenedLength);
+            return TensorPrimitives.IndexOfMaxMagnitude(span);
+        }
+        #endregion
+
+        #region IndexOfMin
+        /// <summary>Searches for the index of the smallest number in the specified tensor.</summary>
+        /// <param name="input">The input <see cref="Tensor{T}"/>.</param>
+        public static int IndexOfMin<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, INumber<T>
+
+        {
+            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._values[0], (int)input._flattenedLength);
+            return TensorPrimitives.IndexOfMin(span);
+        }
+        #endregion
+
+        #region IndexOfMinMagnitude
+        /// <summary>
+        /// Searches for the index of the number with the smallest magnitude in the specified tensor.
+        /// </summary>
+        /// <param name="input">The input <see cref="Tensor{T}"/>.</param>
+        public static int IndexOfMinMagnitude<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, INumber<T>
+
+        {
+            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._values[0], (int)input._flattenedLength);
+            return TensorPrimitives.IndexOfMinMagnitude(span);
+        }
+        #endregion
+
+        #region LeadingZeroCount
+        /// <summary>
+        /// Computes the element-wise leading zero count of numbers in the specified tensor.
+        /// </summary>
+        /// <param name="input">The input <see cref="Tensor{T}"/>.</param>
+        public static Tensor<T> LeadingZeroCount<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IBinaryInteger<T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.LeadingZeroCount);
+        }
+
+        /// <summary>
+        /// Computes the element-wise leading zero count of numbers in the specified tensor.
+        /// </summary>
+        /// <param name="input">The input <see cref="Tensor{T}"/>.</param>
+        public static Tensor<T> LeadingZeroCountInPlace<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IBinaryInteger<T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.LeadingZeroCount, true);
+        }
+        #endregion
+
+        #region Log
+        /// <summary>
+        /// Takes the natural logarithm of each element of the <see cref="Tensor{T}"/> and returns a new <see cref="Tensor{T}"/> with the result.
+        /// </summary>
+        /// <param name="input">The <see cref="Tensor{T}"/> to take the natural logarithm of.</param>
+        public static Tensor<T> Log<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ILogarithmicFunctions<T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.Log);
+        }
+
+        /// <summary>
+        /// Takes the natural logarithm of each element of the <see cref="Tensor{T}"/> in place.
+        /// </summary>
+        /// <param name="input">The <see cref="Tensor{T}"/> to take the natural logarithm of.</param>
+        public static Tensor<T> LogInPlace<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ILogarithmicFunctions<T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.Log, true);
+        }
+        #endregion
+
+        #region Log10
+        /// <summary>
+        /// Takes the base 10 logarithm of each element of the <see cref="Tensor{T}"/> and returns a new <see cref="Tensor{T}"/> with the result.
+        /// </summary>
+        /// <param name="input">The <see cref="Tensor{T}"/> to take the base 10 logarithm of.</param>
+        public static Tensor<T> Log10<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ILogarithmicFunctions<T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.Log10);
+        }
+
+        /// <summary>
+        /// Takes the base 10 logarithm of each element of the <see cref="Tensor{T}"/> in place.
+        /// </summary>
+        /// <param name="input">The <see cref="Tensor{T}"/> to take the base 10 logarithm of.</param>
+        public static Tensor<T> Log10InPlace<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ILogarithmicFunctions<T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.Log10, true);
+        }
+        #endregion
+
+        #region Log10P1
+        /// <summary>
+        /// Takes the base 10 logarithm plus 1 of each element of the <see cref="Tensor{T}"/> and returns a new <see cref="Tensor{T}"/> with the result.
+        /// </summary>
+        /// <param name="input">The <see cref="Tensor{T}"/> to take the base 10 logarithm of.</param>
+        public static Tensor<T> Log10P1<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ILogarithmicFunctions<T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.Log10P1);
+        }
+
+        /// <summary>
+        /// Takes the base 10 logarithm plus 1 of each element of the <see cref="Tensor{T}"/> in place.
+        /// </summary>
+        /// <param name="input">The <see cref="Tensor{T}"/> to take the base 10 logarithm of.</param>
+        public static Tensor<T> Log10P1InPlace<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ILogarithmicFunctions<T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.Log10P1, true);
+        }
+        #endregion
+
+        #region Log2
+        /// <summary>
+        /// Takes the base 2 logarithm of each element of the <see cref="Tensor{T}"/> and returns a new <see cref="Tensor{T}"/> with the result.
+        /// </summary>
+        /// <param name="input">The <see cref="Tensor{T}"/> to take the base 2 logarithm of.</param>
+        public static Tensor<T> Log2<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ILogarithmicFunctions<T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.Log2);
+        }
+
+        /// <summary>
+        /// Takes the base 2 logarithm of each element of the <see cref="Tensor{T}"/> in place.
+        /// </summary>
+        /// <param name="input">The <see cref="Tensor{T}"/> to take the base 2 logarithm of.</param>
+        public static Tensor<T> Log2InPlace<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ILogarithmicFunctions<T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.Log2, true);
+        }
+
+        #endregion
+
+        #region Log2P1
+        /// <summary>
+        /// Takes the base 2 logarithm plus 1 of each element of the <see cref="Tensor{T}"/> and returns a new <see cref="Tensor{T}"/> with the result.
+        /// </summary>
+        /// <param name="input">The <see cref="Tensor{T}"/> to take the base 2 logarithm of.</param>
+        public static Tensor<T> Log2P1<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ILogarithmicFunctions<T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.Log2P1);
+        }
+
+        /// <summary>
+        /// Takes the base 2 logarithm plus 1 of each element of the <see cref="Tensor{T}"/> in place.
+        /// </summary>
+        /// <param name="input">The <see cref="Tensor{T}"/> to take the base 2 logarithm of.</param>
+        public static Tensor<T> Log2P1InPlace<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ILogarithmicFunctions<T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.Log2P1, true);
+        }
+        #endregion
+
+        #region LogP1
+        /// <summary>
+        /// Takes the natural logarithm plus 1 of each element of the <see cref="Tensor{T}"/> and returns a new <see cref="Tensor{T}"/> with the result.
+        /// </summary>
+        /// <param name="input">The <see cref="Tensor{T}"/> to take the natural logarithm of.</param>
+        public static Tensor<T> LogP1<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ILogarithmicFunctions<T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.LogP1);
+        }
+
+        /// <summary>
+        /// Takes the natural logarithm plus 1 of each element of the <see cref="Tensor{T}"/> in place.
+        /// </summary>
+        /// <param name="input">The <see cref="Tensor{T}"/> to take the natural logarithm of.</param>
+        public static Tensor<T> LogP1InPlace<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ILogarithmicFunctions<T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.LogP1, true);
+        }
+        #endregion
+
+        #region Max
+        /// <summary>Searches for the largest number in the specified tensor.</summary>
+        /// <param name="input">The input <see cref="Tensor{T}"/>..</param>
+        public static T Max<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, INumber<T>
+        {
+            return TensorPrimitivesHelperSpanInTOut(input, TensorPrimitives.Max);
+        }
+        #endregion
+
+        #region MaxMagnitude
+        /// <summary>Searches for the number with the largest magnitude in the specified tensor.</summary>
+        /// <param name="input">The input <see cref="Tensor{T}"/>..</param>
+        public static T MaxMagnitude<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, INumber<T>
+        {
+            return TensorPrimitivesHelperSpanInTOut(input, TensorPrimitives.MaxMagnitude);
+        }
+        #endregion
+
+        #region MaxNumber
+        /// <summary>Searches for the largest number in the specified tensor.</summary>
+        /// <param name="input">The input <see cref="Tensor{T}"/>..</param>
+        public static T MaxNumber<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, INumber<T>
+        {
+            return TensorPrimitivesHelperSpanInTOut(input, TensorPrimitives.MaxNumber);
+        }
+        #endregion
+
+        #region Min
+        /// <summary>Searches for the smallest number in the specified tensor.</summary>
+        /// <param name="input">The input <see cref="Tensor{T}"/>.</param>
+        public static T Min<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, INumber<T>
+        {
+            return TensorPrimitivesHelperSpanInTOut(input, TensorPrimitives.Min);
+        }
+        #endregion
+
+        #region MinMagnitude
+        /// <summary>Searches for the number with the smallest magnitude in the specified tensor.</summary>
+        /// <param name="input">The input <see cref="Tensor{T}"/>.</param>
+        public static T MinMagnitude<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, INumber<T>
+        {
+            return TensorPrimitivesHelperSpanInTOut(input, TensorPrimitives.MinMagnitude);
+        }
+        #endregion
+
+        #region MinNumber
+        /// <summary>Searches for the smallest number in the specified tensor.</summary>
+        /// <param name="input">The input <see cref="Tensor{T}"/>..</param>
+        public static T MinNumber<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, INumber<T>
+        {
+            return TensorPrimitivesHelperSpanInTOut(input, TensorPrimitives.MinNumber);
+        }
+        #endregion
+
+        #region Multiply
+        /// <summary>
+        /// Multiplies each element of <paramref name="input"/> with <paramref name="val"/> and returns a new <see cref="Tensor{T}"/> with the result.
+        /// </summary>
+        /// <param name="input">Input <see cref="Tensor{T}"/></param>
+        /// <param name="val"><typeparamref name="T"/> value to multiply by.</param>
+        public static Tensor<T> Multiply<T>(Tensor<T> input, T val)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IMultiplyOperators<T, T, T>, IMultiplicativeIdentity<T, T>
+        {
+            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._values[0], (int)input._flattenedLength);
+            Tensor<T> output = Create<T>(input.Lengths, input.IsPinned);
+            Span<T> ospan = MemoryMarshal.CreateSpan(ref output._values[0], (int)output._flattenedLength);
+            TensorPrimitives.Multiply(span, val, ospan);
             return output;
         }
 
         /// <summary>
-        /// Divides each element of <paramref name="input"/> by <paramref name="val"/> in place.
+        /// Multiplies each element of <paramref name="input"/> with <paramref name="val"/> in place.
         /// </summary>
-        /// <param name="input">Input <see cref="TensorSpan{T}"/>.</param>
-        /// <param name="val">The divisor</param>
-        public static TensorSpan<T> DivideInPlace<T>(TensorSpan<T> input, T val)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IDivisionOperators<T, T, T>
+        /// <param name="input">Input <see cref="Tensor{T}"/></param>
+        /// <param name="val"><typeparamref name="T"/> value to multiply by.</param>
+        public static Tensor<T> MultiplyInPlace<T>(Tensor<T> input, T val)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IMultiplyOperators<T, T, T>, IMultiplicativeIdentity<T, T>
         {
-            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input.FlattenedLength);
-            TensorSpan<T> output = input;
-            Span<T> ospan = MemoryMarshal.CreateSpan(ref output._reference, (int)output.FlattenedLength);
-            TensorPrimitives.Divide(span, val, ospan);
+            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._values[0], (int)input._flattenedLength);
+            Tensor<T> output = input;
+            Span<T> ospan = MemoryMarshal.CreateSpan(ref output._values[0], (int)output._flattenedLength);
+            TensorPrimitives.Multiply(span, val, ospan);
             return output;
         }
 
         /// <summary>
-        /// Divides <paramref name="val"/> by each element of <paramref name="input"/> and returns a new <see cref="TensorSpan{T}"/> with the result."/>
+        /// Multiplies each element of <paramref name="left"/> with <paramref name="right"/> and returns a new <see cref="Tensor{T}"/> with the result.
+        /// If the shapes are not the same they are broadcast to the smallest compatible shape.
         /// </summary>
-        /// <param name="val">The value to be divided.</param>
-        /// <param name="input">The <see cref="TensorSpan{T}"/> divisor.</param>
-        public static TensorSpan<T> Divide<T>(T val, TensorSpan<T> input)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IDivisionOperators<T, T, T>
+        /// <param name="left">Left <see cref="Tensor{T}"/> for multiplication.</param>
+        /// <param name="right">Right <see cref="Tensor{T}"/> for multiplication.</param>
+        public static Tensor<T> Multiply<T>(Tensor<T> left, Tensor<T> right)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IMultiplyOperators<T, T, T>, IMultiplicativeIdentity<T, T>
         {
-            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input.FlattenedLength);
-            T[] values = new T[input.FlattenedLength];
-            TensorSpan<T> output = new TensorSpan<T>(values, 0, input.Lengths, default);
-            Span<T> ospan = MemoryMarshal.CreateSpan(ref output._reference, (int)output.FlattenedLength);
-            TensorPrimitives.Divide(val, span, ospan);
-            return output;
+            return TensorPrimitivesHelperTwoSpanInSpanOut(left, right, TensorPrimitives.Multiply);
         }
 
         /// <summary>
-        /// Divides <paramref name="val"/> by each element of <paramref name="input"/> in place.
+        /// Multiplies each element of <paramref name="left"/> with <paramref name="right"/> in place.
+        /// If the shapes are not the same they are broadcast to the smallest compatible shape.
         /// </summary>
-        /// <param name="val">The value to be divided.</param>
-        /// <param name="input">The <see cref="TensorSpan{T}"/> divisor.</param>
-        public static TensorSpan<T> DivideInPlace<T>(T val, TensorSpan<T> input)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IDivisionOperators<T, T, T>
+        /// <param name="left">Left <see cref="Tensor{T}"/> for multiplication.</param>
+        /// <param name="right">Right <see cref="Tensor{T}"/> for multiplication.</param>
+        public static Tensor<T> MultiplyInPlace<T>(Tensor<T> left, Tensor<T> right)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IMultiplyOperators<T, T, T>, IMultiplicativeIdentity<T, T>
         {
-            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input.FlattenedLength);
-            TensorSpan<T> output = input;
-            Span<T> ospan = MemoryMarshal.CreateSpan(ref output._reference, (int)output.FlattenedLength);
-            TensorPrimitives.Divide(val, span, ospan);
-            return output;
+            return TensorPrimitivesHelperTwoSpanInSpanOut(left, right, TensorPrimitives.Multiply, true);
+        }
+        #endregion
+
+        #region Negate
+        /// <summary>Computes the element-wise negation of each number in the specified tensor.</summary>
+        /// <param name="input">The <see cref="Tensor{T}"/></param>
+        public static Tensor<T> Negate<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IUnaryNegationOperators<T, T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.Negate);
+        }
+
+        /// <summary>Computes the element-wise negation of each number in the specified tensor.</summary>
+        /// <param name="input">The <see cref="Tensor{T}"/></param>
+        public static Tensor<T> NegateInPlace<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IUnaryNegationOperators<T, T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.Negate, true);
+        }
+        #endregion
+
+        #region Norm
+        /// <summary>
+        /// Takes the norm of the <see cref="Tensor{T}"/> and returns the result.
+        /// </summary>
+        /// <param name="input">The <see cref="Tensor{T}"/> to take the norm of.</param>
+        public static T Norm<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IRootFunctions<T>
+        {
+            return TensorPrimitivesHelperSpanInTOut(input, TensorPrimitives.Norm);
+        }
+        #endregion
+
+        #region OnesComplement
+        /// <summary>Computes the element-wise one's complement of numbers in the specified tensor.</summary>
+        /// <param name="input">The <see cref="Tensor{T}"/></param>
+        public static Tensor<T> OnesComplement<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IBitwiseOperators<T, T, T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.OnesComplement);
+        }
+
+        /// <summary>Computes the element-wise one's complement of numbers in the specified tensor.</summary>
+        /// <param name="input">The <see cref="Tensor{T}"/></param>
+        public static Tensor<T> OnesComplementInPlace<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IBitwiseOperators<T, T, T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.OnesComplement, true);
+        }
+        #endregion
+
+        #region PopCount
+        /// <summary>Computes the element-wise population count of numbers in the specified tensor.</summary>
+        /// <param name="input">The <see cref="Tensor{T}"/></param>
+        public static Tensor<T> PopCount<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IBinaryInteger<T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.PopCount);
+        }
+
+        /// <summary>Computes the element-wise population count of numbers in the specified tensor.</summary>
+        /// <param name="input">The <see cref="Tensor{T}"/></param>
+        public static Tensor<T> PopCountInPlace<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IBinaryInteger<T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.PopCount, true);
+        }
+        #endregion
+
+        #region Pow
+        /// <summary>Computes the element-wise power of a number in a specified tensor raised to a number in another specified tensors.</summary>
+        /// <param name="left">The input <see cref="Tensor{T}"/>.</param>
+        /// <param name="right">The second input <see cref="Tensor{T}"/></param>
+        public static Tensor<T> Pow<T>(Tensor<T> left, Tensor<T> right)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IPowerFunctions<T>
+        {
+            return TensorPrimitivesHelperTwoSpanInSpanOut(left, right, TensorPrimitives.Pow);
+        }
+
+        /// <summary>Computes the element-wise power of a number in a specified tensor raised to a number in another specified tensors.</summary>
+        /// <param name="left">The input <see cref="Tensor{T}"/>.</param>
+        /// <param name="right">The second input <see cref="Tensor{T}"/></param>
+        public static Tensor<T> PowInPlace<T>(Tensor<T> left, Tensor<T> right)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IPowerFunctions<T>
+        {
+            return TensorPrimitivesHelperTwoSpanInSpanOut(left, right, TensorPrimitives.Pow, true);
+        }
+        #endregion
+
+        #region Product
+        /// <summary>Computes the product of all elements in the specified non-empty tensor of numbers.</summary>
+        /// <param name="input">The input <see cref="Tensor{T}"/>.</param>
+        public static T Product<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IMultiplicativeIdentity<T, T>, IMultiplyOperators<T, T, T>
+        {
+            return TensorPrimitivesHelperSpanInTOut(input, TensorPrimitives.Product);
+        }
+        #endregion
+
+        #region RadiansToDegrees
+        /// <summary>Computes the element-wise conversion of each number of radians in the specified tensor to degrees.</summary>
+        /// <param name="input">The input <see cref="Tensor{T}"/>.</param>
+        public static Tensor<T> RadiansToDegrees<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ITrigonometricFunctions<T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.RadiansToDegrees);
+        }
+
+        /// <summary>Computes the element-wise conversion of each number of radians in the specified tensor to degrees.</summary>
+        /// <param name="input">The input <see cref="Tensor{T}"/>.</param>
+        public static Tensor<T> RadiansToDegreesInPlace<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ITrigonometricFunctions<T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.RadiansToDegrees, true);
+        }
+        #endregion
+
+        #region Reciprocal
+        /// <summary>Computes the element-wise reciprocal of numbers in the specified tensor.</summary>
+        /// <param name="input">The input <see cref="Tensor{T}"/>.</param>
+        public static Tensor<T> Reciprocal<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IFloatingPoint<T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.Reciprocal);
+        }
+
+        /// <summary>Computes the element-wise reciprocal of numbers in the specified tensor.</summary>
+        /// <param name="input">The input <see cref="Tensor{T}"/>.</param>
+        public static Tensor<T> ReciprocalInPlace<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IFloatingPoint<T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.Reciprocal, true);
+        }
+        #endregion
+
+        #region Round
+        /// <summary>Computes the element-wise rounding of the numbers in the specified tensor</summary>
+        /// <param name="input">The input <see cref="Tensor{T}"/>.</param>
+        public static Tensor<T> Round<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IFloatingPoint<T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.Round);
+        }
+
+        /// <summary>Computes the element-wise rounding of the numbers in the specified tensor</summary>
+        /// <param name="input">The input <see cref="Tensor{T}"/>.</param>
+        public static Tensor<T> RoundInPlace<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IFloatingPoint<T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.Round, true);
+        }
+        #endregion
+
+        #region Sigmoid
+        /// <summary>Computes the element-wise sigmoid function on the specified non-empty tensor of numbers.</summary>
+        /// <param name="input">The input <see cref="Tensor{T}"/>.</param>
+        public static Tensor<T> Sigmoid<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IExponentialFunctions<T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.Sigmoid);
+        }
+
+        /// <summary>Computes the element-wise sigmoid function on the specified non-empty tensor of numbers.</summary>
+        /// <param name="input">The input <see cref="Tensor{T}"/>.</param>
+        public static Tensor<T> SigmoidInPlace<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IExponentialFunctions<T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.Sigmoid, true);
+        }
+        #endregion
+
+        #region Sin
+        /// <summary>
+        /// Takes the sin of each element of the <see cref="Tensor{T}"/> and returns a new <see cref="Tensor{T}"/> with the result.
+        /// </summary>
+        /// <param name="input">The <see cref="Tensor{T}"/> to take the sin of.</param>
+        public static Tensor<T> Sin<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ITrigonometricFunctions<T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.Sin);
         }
 
         /// <summary>
-        /// Divides each element of <paramref name="left"/> by its corresponding element in <paramref name="right"/> and returns
-        /// a new <see cref="TensorSpan{T}"/> with the result.
+        /// Takes the sin of each element of the <see cref="Tensor{T}"/> in place.
         /// </summary>
-        /// <param name="left">The <see cref="TensorSpan{T}"/> to be divided.</param>
-        /// <param name="right">The <see cref="TensorSpan{T}"/> divisor.</param>
-        public static TensorSpan<T> Divide<T>(TensorSpan<T> left, TensorSpan<T> right)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IDivisionOperators<T, T, T>
+        /// <param name="input">The <see cref="Tensor{T}"/> to take the sin of.</param>
+        public static Tensor<T> SinInPlace<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ITrigonometricFunctions<T>
         {
-            return TensorPrimitivesHelperT1T2(left, right, TensorPrimitives.Divide);
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.Sin, true);
+        }
+        #endregion
+
+        #region Sinh
+        /// <summary>Computes the element-wise hyperbolic sine of each radian angle in the specified tensor.</summary>
+        /// <param name="input">The <see cref="Tensor{T}"/> to take the sin of.</param>
+        public static Tensor<T> Sinh<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IHyperbolicFunctions<T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.Sinh);
+        }
+
+        /// <summary>Computes the element-wise hyperbolic sine of each radian angle in the specified tensor.</summary>
+        /// <param name="input">The <see cref="Tensor{T}"/> to take the sin of.</param>
+        public static Tensor<T> SinhInPlace<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IHyperbolicFunctions<T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.Sinh, true);
+        }
+        #endregion
+
+        #region SinPi
+        /// <summary>Computes the element-wise sine of the value in the specified tensor that has been multiplied by Pi.</summary>
+        /// <param name="input">The <see cref="Tensor{T}"/> to take the sin of.</param>
+        public static Tensor<T> SinPi<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ITrigonometricFunctions<T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.SinPi);
+        }
+
+        /// <summary>Computes the element-wise sine of the value in the specified tensor that has been multiplied by Pi.</summary>
+        /// <param name="input">The <see cref="Tensor{T}"/> to take the sin of.</param>
+        public static Tensor<T> SinPiInPlace<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ITrigonometricFunctions<T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.SinPi, true);
+        }
+        #endregion
+
+        #region SoftMax
+        /// <summary>Computes the softmax function over the specified non-empty tensor of numbers.</summary>
+        /// <param name="input">The <see cref="Tensor{T}"/> to take the sin of.</param>
+        public static Tensor<T> SoftMax<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IExponentialFunctions<T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.SoftMax);
+        }
+
+        /// <summary>Computes the softmax function over the specified non-empty tensor of numbers.</summary>
+        /// <param name="input">The <see cref="Tensor{T}"/> to take the sin of.</param>
+        public static Tensor<T> SoftMaxInPlace<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IExponentialFunctions<T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.SoftMax, true);
+        }
+        #endregion
+
+        #region Sqrt
+        /// <summary>
+        /// Takes the square root of each element of the <see cref="Tensor{T}"/> and returns a new <see cref="Tensor{T}"/> with the result.
+        /// </summary>
+        /// <param name="input">The <see cref="Tensor{T}"/> to take the square root of.</param>
+        public static Tensor<T> Sqrt<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IRootFunctions<T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.Sqrt);
         }
 
         /// <summary>
-        /// Divides each element of <paramref name="left"/> by its corresponding element in <paramref name="right"/> in place.
+        /// Takes the square root of each element of the <see cref="Tensor{T}"/> in place.
         /// </summary>
-        /// <param name="left">The <see cref="TensorSpan{T}"/> to be divided.</param>
-        /// <param name="right">The <see cref="TensorSpan{T}"/> divisor.</param>
-        public static TensorSpan<T> DivideInPlace<T>(TensorSpan<T> left, TensorSpan<T> right)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IDivisionOperators<T, T, T>
+        /// <param name="input">The <see cref="Tensor{T}"/> to take the square root of.</param>
+        public static Tensor<T> SqrtInPlace<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IRootFunctions<T>
         {
-            return TensorPrimitivesHelperT1T2(left, right, TensorPrimitives.Divide, true);
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.Sqrt, true);
         }
-
         #endregion
 
         #region Subtract
@@ -1761,7 +2824,7 @@ namespace System.Numerics.Tensors
         public static Tensor<T> Subtract<T>(Tensor<T> left, Tensor<T> right)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ISubtractionOperators<T, T, T>
         {
-            return TensorPrimitivesHelperT1T2(left, right, TensorPrimitives.Subtract);
+            return TensorPrimitivesHelperTwoSpanInSpanOut(left, right, TensorPrimitives.Subtract);
         }
 
         /// <summary>
@@ -1772,93 +2835,8 @@ namespace System.Numerics.Tensors
         public static Tensor<T> SubtractInPlace<T>(Tensor<T> left, Tensor<T> right)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ISubtractionOperators<T, T, T>
         {
-            return TensorPrimitivesHelperT1T2(left, right, TensorPrimitives.Subtract, true);
+            return TensorPrimitivesHelperTwoSpanInSpanOut(left, right, TensorPrimitives.Subtract, true);
         }
-
-        /// <summary>
-        /// Subtracts <paramref name="val"/> from each element of <paramref name="input"/> and returns a new <see cref="TensorSpan{T}"/> with the result.
-        /// </summary>
-        /// <param name="input">The <see cref="TensorSpan{T}"/> with values to be subtracted from.</param>
-        /// <param name="val">The <typeparamref name="T"/> value to subtract.</param>
-        public static TensorSpan<T> Subtract<T>(TensorSpan<T> input, T val)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ISubtractionOperators<T, T, T>
-        {
-            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input.FlattenedLength);
-            T[] values = new T[input.FlattenedLength];
-            TensorSpan<T> output = new TensorSpan<T>(values, 0, input.Lengths, default);
-            Span<T> ospan = MemoryMarshal.CreateSpan(ref output._reference, (int)output.FlattenedLength);
-            TensorPrimitives.Subtract(span, val, ospan);
-            return output;
-        }
-
-        /// <summary>
-        /// Subtracts <paramref name="val"/> from each element of <paramref name="input"/> in place.
-        /// </summary>
-        /// <param name="input">The <see cref="TensorSpan{T}"/> with values to be subtracted from.</param>
-        /// <param name="val">The <typeparamref name="T"/> value to subtract.</param>
-        public static TensorSpan<T> SubtractInPlace<T>(TensorSpan<T> input, T val)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ISubtractionOperators<T, T, T>
-        {
-            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input.FlattenedLength);
-            TensorSpan<T> output = input;
-            Span<T> ospan = MemoryMarshal.CreateSpan(ref output._reference, (int)output.FlattenedLength);
-            TensorPrimitives.Subtract(span, val, ospan);
-            return output;
-        }
-
-        /// <summary>
-        /// Subtracts each element of <paramref name="input"/> from <paramref name="val"/> and returns a new <see cref="TensorSpan{T}"/> with the result.
-        /// </summary>
-        /// <param name="val">The <typeparamref name="T"/> value to be subtracted from.</param>
-        /// <param name="input">The <see cref="TensorSpan{T}"/> values to subtract.</param>
-        public static TensorSpan<T> Subtract<T>(T val, TensorSpan<T> input)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ISubtractionOperators<T, T, T>
-        {
-            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input.FlattenedLength);
-            T[] values = new T[input.FlattenedLength];
-            TensorSpan<T> output = new TensorSpan<T>(values, 0, input.Lengths, default);
-            Span<T> ospan = MemoryMarshal.CreateSpan(ref output._reference, (int)output.FlattenedLength);
-            TensorPrimitives.Subtract(val, span, ospan);
-            return output;
-        }
-
-        /// <summary>
-        /// Subtracts each element of <paramref name="input"/> from <paramref name="val"/> in place.
-        /// </summary>
-        /// <param name="val">The <typeparamref name="T"/> value to be subtracted from.</param>
-        /// <param name="input">The <see cref="TensorSpan{T}"/> values to subtract.</param>
-        public static TensorSpan<T> SubtractInPlace<T>(T val, TensorSpan<T> input)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ISubtractionOperators<T, T, T>
-        {
-            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input.FlattenedLength);
-            TensorSpan<T> output = input;
-            Span<T> ospan = MemoryMarshal.CreateSpan(ref output._reference, (int)output.FlattenedLength);
-            TensorPrimitives.Subtract(val, span, ospan);
-            return output;
-        }
-
-        /// <summary>
-        /// Subtracts each element of <paramref name="left"/> from <paramref name="right"/> and returns a new <see cref="TensorSpan{T}"/> with the result.
-        /// </summary>
-        /// <param name="left">The <see cref="TensorSpan{T}"/> of values to be subtracted from.</param>
-        /// <param name="right">The <see cref="TensorSpan{T}"/>of values to subtract.</param>
-        public static TensorSpan<T> Subtract<T>(TensorSpan<T> left, TensorSpan<T> right)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ISubtractionOperators<T, T, T>
-        {
-            return TensorPrimitivesHelperT1T2(left, right, TensorPrimitives.Subtract);
-        }
-
-        /// <summary>
-        /// Subtracts each element of <paramref name="left"/> from <paramref name="right"/> in place.
-        /// </summary>
-        /// <param name="left">The <see cref="TensorSpan{T}"/> of values to be subtracted from.</param>
-        /// <param name="right">The <see cref="TensorSpan{T}"/>of values to subtract.</param>
-        public static TensorSpan<T> SubtractInPlace<T>(TensorSpan<T> left, TensorSpan<T> right)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ISubtractionOperators<T, T, T>
-        {
-            return TensorPrimitivesHelperT1T2(left, right, TensorPrimitives.Subtract, true);
-        }
-
         #endregion
 
         #region Sum
@@ -1874,417 +2852,162 @@ namespace System.Numerics.Tensors
             return TensorPrimitives.Sum(span);
         }
 
-        /// <summary>
-        /// Sums all the elements of the <see cref="TensorSpan{T}"/> and returns the result.
-        /// </summary>
-        /// <param name="input">The <see cref="TensorSpan{T}"/> to sum.</param>
-        public static T Sum<T>(TensorSpan<T> input)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
-        {
-            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input.FlattenedLength);
-            return TensorPrimitives.Sum(span);
-        }
-
         #endregion
 
-        #region Add
-        /// <summary>
-        /// Adds each element of <paramref name="left"/> to each element of <paramref name="right"/> and returns a new <see cref="Tensor{T}"/> with the result.
-        /// </summary>
-        /// <param name="left">The <see cref="Tensor{T}"/> of values to add.</param>
-        /// <param name="right">The second <see cref="Tensor{T}"/> of values to add.</param>
-        public static Tensor<T> Add<T>(Tensor<T> left, Tensor<T> right)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
-        {
-            return TensorPrimitivesHelperT1T2(left, right, TensorPrimitives.Add);
-        }
-
-        /// <summary>
-        /// Adds each element of <paramref name="left"/> to each element of <paramref name="right"/> in place.
-        /// </summary>
-        /// <param name="left">The <see cref="Tensor{T}"/> of values to add.</param>
-        /// <param name="right">The second <see cref="Tensor{T}"/> of values to add.</param>
-        public static Tensor<T> AddInPlace<T>(Tensor<T> left, Tensor<T> right)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
-        {
-            return TensorPrimitivesHelperT1T2(left, right, TensorPrimitives.Add, true);
-        }
-
-        /// <summary>
-        /// Adds <paramref name="val"/> to each element of <paramref name="input"/> and returns a new <see cref="Tensor{T}"/> with the result.
-        /// </summary>
-        /// <param name="input">The <see cref="Tensor{T}"/> of values to add.</param>
-        /// <param name="val">The <typeparamref name="T"/> to add to each element of <paramref name="input"/>.</param>
-        public static Tensor<T> Add<T>(Tensor<T> input, T val)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
-        {
-            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._values[0], (int)input._flattenedLength);
-            Tensor<T> output = Create<T>(input.Lengths, input.IsPinned);
-            Span<T> ospan = MemoryMarshal.CreateSpan(ref output._values[0], (int)output._flattenedLength);
-            TensorPrimitives.Add(span, val, ospan);
-            return output;
-        }
-
-        /// <summary>
-        /// Adds <paramref name="val"/> to each element of <paramref name="input"/> in place.
-        /// </summary>
-        /// <param name="input">The <see cref="Tensor{T}"/> of values to add.</param>
-        /// <param name="val">The <typeparamref name="T"/> to add to each element of <paramref name="input"/>.</param>
-        public static Tensor<T> AddInPlace<T>(Tensor<T> input, T val)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
-        {
-            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._values[0], (int)input._flattenedLength);
-            Tensor<T> output = input;
-            Span<T> ospan = MemoryMarshal.CreateSpan(ref output._values[0], (int)output._flattenedLength);
-            TensorPrimitives.Add(span, val, ospan);
-            return output;
-        }
-
-        /// <summary>
-        /// Adds each element of <paramref name="left"/> to each element of <paramref name="right"/> and returns a new <see cref="TensorSpan{T}"/> with the result.
-        /// </summary>
-        /// <param name="left">The first <see cref="TensorSpan{T}"/> of elements to add.</param>
-        /// <param name="right">The second <see cref="TensorSpan{T}"/> of elements to add.</param>
-        public static TensorSpan<T> Add<T>(TensorSpan<T> left, TensorSpan<T> right)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
-        {
-            return TensorPrimitivesHelperT1T2(left, right, TensorPrimitives.Add);
-        }
-
-        /// <summary>
-        /// Adds each element of <paramref name="left"/> to each element of <paramref name="right"/> in place.
-        /// </summary>
-        /// <param name="left">The first <see cref="TensorSpan{T}"/> of values to add.</param>
-        /// <param name="right">The second <see cref="TensorSpan{T}"/> of values to add.</param>
-        public static TensorSpan<T> AddInPlace<T>(TensorSpan<T> left, TensorSpan<T> right)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
-        {
-            return TensorPrimitivesHelperT1T2(left, right, TensorPrimitives.Add, true);
-        }
-
-        /// <summary>
-        /// Adds <paramref name="val"/> to each element of <paramref name="input"/> and returns a new <see cref="TensorSpan{T}"/> with the result.
-        /// </summary>
-        /// <param name="input">The <see cref="TensorSpan{T}"/> of values to add.</param>
-        /// <param name="val">The <typeparamref name="T"/> value to add to each element of <paramref name="input"/>.</param>
-        public static TensorSpan<T> Add<T>(TensorSpan<T> input, T val)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
-        {
-            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input.FlattenedLength);
-            T[] values = new T[input.FlattenedLength];
-            TensorSpan<T> output = new TensorSpan<T>(values, 0, input.Lengths, default);
-            Span<T> ospan = MemoryMarshal.CreateSpan(ref output._reference, (int)output.FlattenedLength);
-            TensorPrimitives.Add(span, val, ospan);
-            return output;
-        }
-
-        /// <summary>
-        /// Adds <paramref name="val"/> to each element of <paramref name="input"/> in place.
-        /// </summary>
-        /// <param name="input">The <see cref="TensorSpan{T}"/> of values to add.</param>
-        /// <param name="val">The <typeparamref name="T"/> value to add to each element of <paramref name="input"/>.</param>
-        public static TensorSpan<T> AddInPlace<T>(TensorSpan<T> input, T val)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
-        {
-            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input.FlattenedLength);
-            TensorSpan<T> output = input;
-            Span<T> ospan = MemoryMarshal.CreateSpan(ref output._reference, (int)output.FlattenedLength);
-            TensorPrimitives.Add(span, val, ospan);
-            return output;
-        }
-
-        #endregion
-
-        #region Norm
-        /// <summary>
-        /// Takes the norm of the <see cref="Tensor{T}"/> and returns the result.
-        /// </summary>
-        /// <param name="input">The <see cref="Tensor{T}"/> to take the norm of.</param>
-        public static T Norm<T>(Tensor<T> input)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IRootFunctions<T>
-        {
-            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._values[0], (int)input._flattenedLength);
-            return TensorPrimitives.Norm(span);
-        }
-
-        /// <summary>
-        ///  Takes the norm of the <see cref="TensorSpan{T}"/> and returns the result.
-        /// </summary>
-        /// <param name="input">The <see cref="TensorSpan{T}"/> to take the norm of.</param>
-        public static T Norm<T>(TensorSpan<T> input)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IRootFunctions<T>
-        {
-            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input.FlattenedLength);
-            return TensorPrimitives.Norm(span);
-        }
-
-        #endregion
-
-        #region Cos
-        /// <summary>
-        /// Takes the cosine of each element of the <see cref="Tensor{T}"/> and returns a new <see cref="Tensor{T}"/> with the result.
-        /// </summary>
-        /// <param name="input">The <see cref="Tensor{T}"/> to take the cosine of.</param>
-        public static Tensor<T> Cos<T>(Tensor<T> input)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ITrigonometricFunctions<T>
-        {
-            return TensorPrimitivesHelperT1(input, TensorPrimitives.Cos);
-        }
-
-        /// <summary>
-        /// Takes the cosine of each element of the <see cref="TensorSpan{T}"/> and returns a new <see cref="TensorSpan{T}"/> with the result.
-        /// </summary>
-        /// <param name="input">The <see cref="TensorSpan{T}"/> to take the cosine of.</param>
-        public static TensorSpan<T> Cos<T>(TensorSpan<T> input)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ITrigonometricFunctions<T>
-        {
-            return TensorPrimitivesHelperT1(input, TensorPrimitives.Cos);
-        }
-
-        /// <summary>
-        /// Takes the cosine of each element of the <see cref="Tensor{T}"/> in place.
-        /// </summary>
-        /// <param name="input">The <see cref="Tensor{T}"/> to take the cosine of.</param>
-        public static Tensor<T> CosInPlace<T>(Tensor<T> input)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ITrigonometricFunctions<T>
-        {
-            return TensorPrimitivesHelperT1(input, TensorPrimitives.Cos, true);
-        }
-
-        /// <summary>
-        /// Takes the cosine of each element of the <see cref="TensorSpan{T}"/> in place.
-        /// </summary>
-        /// <param name="input">The <see cref="TensorSpan{T}"/> to take the cosine of.</param>
-        public static TensorSpan<T> CosInPlace<T>(TensorSpan<T> input)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ITrigonometricFunctions<T>
-        {
-            return TensorPrimitivesHelperT1(input, TensorPrimitives.Cos, true);
-        }
-
-        #endregion
-
-        #region Sin
-        /// <summary>
-        /// Takes the sin of each element of the <see cref="Tensor{T}"/> and returns a new <see cref="Tensor{T}"/> with the result.
-        /// </summary>
+        #region Tan
+        /// <summary>Computes the element-wise tangent of the value in the specified tensor.</summary>
         /// <param name="input">The <see cref="Tensor{T}"/> to take the sin of.</param>
-        public static Tensor<T> Sin<T>(Tensor<T> input)
+        public static Tensor<T> Tan<T>(Tensor<T> input)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ITrigonometricFunctions<T>
         {
-            return TensorPrimitivesHelperT1(input, TensorPrimitives.Sin);
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.Tan);
         }
 
-        /// <summary>
-        /// Takes the sin of each element of the <see cref="TensorSpan{T}"/> and returns a new <see cref="TensorSpan{T}"/> with the result.
-        /// </summary>
-        /// <param name="input">The <see cref="TensorSpan{T}"/> to take the sin of.</param>
-        public static TensorSpan<T> Sin<T>(TensorSpan<T> input)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ITrigonometricFunctions<T>
-        {
-            return TensorPrimitivesHelperT1(input, TensorPrimitives.Sin);
-        }
-
-        /// <summary>
-        /// Takes the sin of each element of the <see cref="Tensor{T}"/> in place.
-        /// </summary>
+        /// <summary>Computes the element-wise tangent of the value in the specified tensor.</summary>
         /// <param name="input">The <see cref="Tensor{T}"/> to take the sin of.</param>
-        public static Tensor<T> SinInPlace<T>(Tensor<T> input)
+        public static Tensor<T> TanInPlace<T>(Tensor<T> input)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ITrigonometricFunctions<T>
         {
-            return TensorPrimitivesHelperT1(input, TensorPrimitives.Sin, true);
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.Tan, true);
+        }
+        #endregion
+
+        #region Tanh
+        /// <summary>Computes the element-wise hyperbolic tangent of each radian angle in the specified tensor.</summary>
+        /// <param name="input">The <see cref="Tensor{T}"/> to take the sin of.</param>
+        public static Tensor<T> Tanh<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IHyperbolicFunctions<T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.Tanh);
         }
 
-        /// <summary>
-        /// Takes the sin of each element of the <see cref="TensorSpan{T}"/> in place.
-        /// </summary>
-        /// <param name="input">The <see cref="TensorSpan{T}"/> to take the sin of.</param>
-        public static TensorSpan<T> SinInPlace<T>(TensorSpan<T> input)
+        /// <summary>Computes the element-wise hyperbolic tangent of each radian angle in the specified tensor.</summary>
+        /// <param name="input">The <see cref="Tensor{T}"/> to take the sin of.</param>
+        public static Tensor<T> TanhInPlace<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IHyperbolicFunctions<T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.Tanh, true);
+        }
+        #endregion
+
+        #region TanPi
+        /// <summary>Computes the element-wise tangent of the value in the specified tensor that has been multiplied by Pi.</summary>
+        /// <param name="input">The <see cref="Tensor{T}"/> to take the sin of.</param>
+        public static Tensor<T> TanPi<T>(Tensor<T> input)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ITrigonometricFunctions<T>
         {
-            return TensorPrimitivesHelperT1(input, TensorPrimitives.Sin, true);
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.TanPi);
         }
 
-        #endregion
-
-        #region Sqrt
-        /// <summary>
-        /// Takes the square root of each element of the <see cref="Tensor{T}"/> and returns a new <see cref="Tensor{T}"/> with the result.
-        /// </summary>
-        /// <param name="input">The <see cref="Tensor{T}"/> to take the square root of.</param>
-        public static Tensor<T> Sqrt<T>(Tensor<T> input)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IRootFunctions<T>
+        /// <summary>Computes the element-wise tangent of the value in the specified tensor that has been multiplied by Pi.</summary>
+        /// <param name="input">The <see cref="Tensor{T}"/> to take the sin of.</param>
+        public static Tensor<T> TanPiInPlace<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ITrigonometricFunctions<T>
         {
-            return TensorPrimitivesHelperT1(input, TensorPrimitives.Sqrt);
-        }
-
-        /// <summary>
-        /// Takes the square root of each element of the <see cref="TensorSpan{T}"/> and returns a new <see cref="TensorSpan{T}"/> with the result.
-        /// </summary>
-        /// <param name="input">The <see cref="TensorSpan{T}"/> to take the square root of.</param>
-        public static TensorSpan<T> Sqrt<T>(TensorSpan<T> input)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IRootFunctions<T>
-        {
-            return TensorPrimitivesHelperT1(input, TensorPrimitives.Sqrt);
-        }
-
-        /// <summary>
-        /// Takes the square root of each element of the <see cref="Tensor{T}"/> in place.
-        /// </summary>
-        /// <param name="input">The <see cref="Tensor{T}"/> to take the square root of.</param>
-        public static Tensor<T> SqrtInPlace<T>(Tensor<T> input)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IRootFunctions<T>
-        {
-            return TensorPrimitivesHelperT1(input, TensorPrimitives.Sqrt, true);
-        }
-
-        /// <summary>
-        /// Takes the square root of each element of the <see cref="TensorSpan{T}"/> in place.
-        /// </summary>
-        /// <param name="input">The <see cref="TensorSpan{T}"/> to take the square root of.</param>
-        public static TensorSpan<T> SqrtInPlace<T>(TensorSpan<T> input)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IRootFunctions<T>
-        {
-            return TensorPrimitivesHelperT1(input, TensorPrimitives.Sqrt, true);
-        }
-
-        #endregion
-
-        #region Log
-        /// <summary>
-        /// Takes the natural logarithm of each element of the <see cref="Tensor{T}"/> and returns a new <see cref="Tensor{T}"/> with the result.
-        /// </summary>
-        /// <param name="input">The <see cref="Tensor{T}"/> to take the natural logarithm of.</param>
-        public static Tensor<T> Log<T>(Tensor<T> input)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ILogarithmicFunctions<T>
-        {
-            return TensorPrimitivesHelperT1(input, TensorPrimitives.Log);
-        }
-
-        /// <summary>
-        /// Takes the natural logarithm of each element of the <see cref="TensorSpan{T}"/> and returns a new <see cref="TensorSpan{T}"/> with the result.
-        /// </summary>
-        /// <param name="input">The <see cref="TensorSpan{T}"/> to take the natural logarithm of.</param>
-        public static TensorSpan<T> Log<T>(TensorSpan<T> input)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ILogarithmicFunctions<T>
-        {
-            return TensorPrimitivesHelperT1(input, TensorPrimitives.Log);
-        }
-
-        /// <summary>
-        /// Takes the natural logarithm of each element of the <see cref="Tensor{T}"/> in place.
-        /// </summary>
-        /// <param name="input">The <see cref="Tensor{T}"/> to take the natural logarithm of.</param>
-        public static Tensor<T> LogInPlace<T>(Tensor<T> input)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ILogarithmicFunctions<T>
-        {
-            return TensorPrimitivesHelperT1(input, TensorPrimitives.Log, true);
-        }
-
-        /// <summary>
-        /// Takes the natural logarithm of each element of the <see cref="TensorSpan{T}"/> in place.
-        /// </summary>
-        /// <param name="input">The <see cref="TensorSpan{T}"/> to take the natural logarithm of.</param>
-        public static TensorSpan<T> LogInPlace<T>(TensorSpan<T> input)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ILogarithmicFunctions<T>
-        {
-            return TensorPrimitivesHelperT1(input, TensorPrimitives.Log, true);
-        }
-
-        #endregion
-
-        #region Log10
-        /// <summary>
-        /// Takes the base 10 logarithm of each element of the <see cref="Tensor{T}"/> and returns a new <see cref="Tensor{T}"/> with the result.
-        /// </summary>
-        /// <param name="input">The <see cref="Tensor{T}"/> to take the base 10 logarithm of.</param>
-        public static Tensor<T> Log10<T>(Tensor<T> input)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ILogarithmicFunctions<T>
-        {
-            return TensorPrimitivesHelperT1(input, TensorPrimitives.Log10);
-        }
-
-        /// <summary>
-        /// Takes the base 10 logarithm of each element of the <see cref="TensorSpan{T}"/> and returns a new <see cref="TensorSpan{T}"/> with the result.
-        /// </summary>
-        /// <param name="input">The <see cref="TensorSpan{T}"/> to take the base 10 logarithm of.</param>
-        public static TensorSpan<T> Log10<T>(TensorSpan<T> input)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ILogarithmicFunctions<T>
-        {
-            return TensorPrimitivesHelperT1(input, TensorPrimitives.Log10);
-        }
-
-        /// <summary>
-        /// Takes the base 10 logarithm of each element of the <see cref="Tensor{T}"/> in place.
-        /// </summary>
-        /// <param name="input">The <see cref="Tensor{T}"/> to take the base 10 logarithm of.</param>
-        public static Tensor<T> Log10InPlace<T>(Tensor<T> input)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ILogarithmicFunctions<T>
-        {
-            return TensorPrimitivesHelperT1(input, TensorPrimitives.Log10, true);
-        }
-
-        /// <summary>
-        /// Takes the base 10 logarithm of each element of the <see cref="TensorSpan{T}"/> in place.
-        /// </summary>
-        /// <param name="input">The <see cref="TensorSpan{T}"/> to take the base 10 logarithm of.</param>
-        public static TensorSpan<T> Log10InPlace<T>(TensorSpan<T> input)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ILogarithmicFunctions<T>
-        {
-            return TensorPrimitivesHelperT1(input, TensorPrimitives.Log10, true);
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.TanPi, true);
         }
         #endregion
 
-        #region Log2
-        /// <summary>
-        /// Takes the base 2 logarithm of each element of the <see cref="Tensor{T}"/> and returns a new <see cref="Tensor{T}"/> with the result.
-        /// </summary>
-        /// <param name="input">The <see cref="Tensor{T}"/> to take the base 2 logarithm of.</param>
-        public static Tensor<T> Log2<T>(Tensor<T> input)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ILogarithmicFunctions<T>
+        #region TrailingZeroCount
+        /// <summary>Computes the element-wise trailing zero count of numbers in the specified tensor.</summary>
+        /// <param name="input">The input <see cref="Tensor{T}"/>.</param>
+        public static Tensor<T> TrailingZeroCount<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IBinaryInteger<T>
         {
-            return TensorPrimitivesHelperT1(input, TensorPrimitives.Log2);
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.TrailingZeroCount);
         }
 
-        /// <summary>
-        /// Takes the base 2 logarithm of each element of the <see cref="TensorSpan{T}"/> and returns a new <see cref="TensorSpan{T}"/> with the result.
-        /// </summary>
-        /// <param name="input">The <see cref="TensorSpan{T}"/> to take the base 2 logarithm of.</param>
-        public static TensorSpan<T> Log2<T>(TensorSpan<T> input)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ILogarithmicFunctions<T>
+        /// <summary>Computes the element-wise trailing zero count of numbers in the specified tensor.</summary>
+        /// <param name="input">The input <see cref="Tensor{T}"/>.</param>
+        public static Tensor<T> TrailingZeroCountInPlace<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IBinaryInteger<T>
         {
-            return TensorPrimitivesHelperT1(input, TensorPrimitives.Log2);
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.TrailingZeroCount, true);
+        }
+        #endregion
+
+        #region Truncate
+        /// <summary>Computes the element-wise truncation of numbers in the specified tensor.</summary>
+        /// <param name="input">The input <see cref="Tensor{T}"/>.</param>
+        public static Tensor<T> Truncate<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IFloatingPoint<T>
+        {
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.Truncate);
         }
 
-        /// <summary>
-        /// Takes the base 2 logarithm of each element of the <see cref="Tensor{T}"/> in place.
-        /// </summary>
-        /// <param name="input">The <see cref="Tensor{T}"/> to take the base 2 logarithm of.</param>
-        public static Tensor<T> Log2InPlace<T>(Tensor<T> input)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ILogarithmicFunctions<T>
+        /// <summary>Computes the element-wise truncation of numbers in the specified tensor.</summary>
+        /// <param name="input">The input <see cref="Tensor{T}"/>.</param>
+        public static Tensor<T> TruncateInPlace<T>(Tensor<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IFloatingPoint<T>
         {
-            return TensorPrimitivesHelperT1(input, TensorPrimitives.Log2, true);
+            return TensorPrimitivesHelperSpanInSpanOut(input, TensorPrimitives.Truncate, true);
+        }
+        #endregion
+
+        #region Xor
+        /// <summary>Computes the element-wise XOR of numbers in the specified tensors.</summary>
+        /// <param name="left">The left <see cref="Tensor{T}"/>.</param>
+        /// <param name="right">The right <see cref="Tensor{T}"/>.</param>
+        public static Tensor<T> Xor<T>(Tensor<T> left, Tensor<T> right)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IBitwiseOperators<T, T, T>
+        {
+            return TensorPrimitivesHelperTwoSpanInSpanOut(left, right, TensorPrimitives.Xor);
         }
 
-        /// <summary>
-        /// Takes the base 2 logarithm of each element of the <see cref="TensorSpan{T}"/> in place.
-        /// </summary>
-        /// <param name="input">The <see cref="TensorSpan{T}"/> to take the base 2 logarithm of.</param>
-        public static TensorSpan<T> Log2InPlace<T>(TensorSpan<T> input)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, ILogarithmicFunctions<T>
+        /// <summary>Computes the element-wise XOR of numbers in the specified tensors.</summary>
+        /// <param name="left">The left <see cref="Tensor{T}"/>.</param>
+        /// <param name="right">The right <see cref="Tensor{T}"/>.</param>
+        public static Tensor<T> XorInPlace<T>(Tensor<T> left, Tensor<T> right)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IBitwiseOperators<T, T, T>
         {
-            return TensorPrimitivesHelperT1(input, TensorPrimitives.Log2, true);
+            return TensorPrimitivesHelperTwoSpanInSpanOut(left, right, TensorPrimitives.Xor, true);
         }
-
         #endregion
 
         #region TensorPrimitivesHelpers
-        private delegate void PerformCalculationT1<T>(ReadOnlySpan<T> input, Span<T> output)
-             where T : IEquatable<T>, IEqualityOperators<T, T, bool>;
+        private delegate void PerformCalculationTFromSpanInTToSpanOut<TFrom, TTo>(ReadOnlySpan<TFrom> input, Span<TTo> output)
+            where TFrom : IEquatable<TFrom>, IEqualityOperators<TFrom, TFrom, bool>, INumberBase<TFrom>
+            where TTo : INumberBase<TTo>;
 
-        private delegate void PerformCalculationT1T2<T>(ReadOnlySpan<T> input, ReadOnlySpan<T> inputTwo, Span<T> output)
+        private delegate void PerformCalculationSpanInTInSpanOut<T>(ReadOnlySpan<T> input, T value, Span<T> output)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>;
 
-        private static Tensor<T> TensorPrimitivesHelperT1<T>(Tensor<T> input, PerformCalculationT1<T> performCalculation, bool inPlace = false)
+        private delegate void PerformCalculationSpanInSpanOut<T>(ReadOnlySpan<T> input, Span<T> output)
+             where T : IEquatable<T>, IEqualityOperators<T, T, bool>;
+
+        private delegate void PerformCalculationSpanInIntSpanOut<T>(ReadOnlySpan<T> input, Span<int> output)
+             where T : IEquatable<T>, IEqualityOperators<T, T, bool>;
+
+        private delegate T PerformCalculationTwoSpanInTOut<T>(ReadOnlySpan<T> input, ReadOnlySpan<T> inputTwo)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>;
+
+        private delegate T PerformCalculationSpanInTOut<T>(ReadOnlySpan<T> input)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>;
+
+        private delegate void PerformCalculationTwoSpanInSpanOut<T>(ReadOnlySpan<T> input, ReadOnlySpan<T> inputTwo, Span<T> output)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>;
+
+        private static Tensor<T> TensorPrimitivesHelperSpanInTInSpanOut<T>(Tensor<T> input, T value, PerformCalculationSpanInTInSpanOut<T> performCalculation, bool inPlace = false)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>
+        {
+            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._values[0], (int)input._flattenedLength);
+            Tensor<T> output = inPlace ? input : Create<T>(input.Lengths, input.IsPinned);
+            Span<T> ospan = MemoryMarshal.CreateSpan(ref output._values[0], (int)output._flattenedLength);
+            performCalculation(span, value, ospan);
+            return output;
+        }
+
+        private static Tensor<int> TensorPrimitivesHelperSpanInIntSpanOut<T>(Tensor<T> input, PerformCalculationSpanInIntSpanOut<T> performCalculation)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool>
+        {
+            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._values[0], (int)input._flattenedLength);
+            Tensor<int> output = Create<int>(input.Lengths, input.IsPinned);
+            Span<int> ospan = MemoryMarshal.CreateSpan(ref output._values[0], (int)output._flattenedLength);
+            performCalculation(span, ospan);
+            return output;
+        }
+
+        private static Tensor<T> TensorPrimitivesHelperSpanInSpanOut<T>(Tensor<T> input, PerformCalculationSpanInSpanOut<T> performCalculation, bool inPlace = false)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
             ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._values[0], (int)input._flattenedLength);
@@ -2294,20 +3017,28 @@ namespace System.Numerics.Tensors
             return output;
         }
 
-        private static TensorSpan<T> TensorPrimitivesHelperT1<T>(TensorSpan<T> input, PerformCalculationT1<T> performCalculation, bool inPlace = false)
+        private static T TensorPrimitivesHelperSpanInTOut<T>(Tensor<T> input, PerformCalculationSpanInTOut<T> performCalculation)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
-            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input.FlattenedLength);
-            TensorSpan<T> output = inPlace ? input : new TensorSpan<T>(new T[input.FlattenedLength], 0, input.Lengths, input.Strides);
-            Span<T> ospan = MemoryMarshal.CreateSpan(ref output._reference, (int)output.FlattenedLength);
+            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._values[0], (int)input._flattenedLength);
+            return performCalculation(span);
+        }
+
+        private static Tensor<TTo> TensorPrimitivesHelperTFromSpanInTToSpanOut<TFrom, TTo>(Tensor<TFrom> input, PerformCalculationTFromSpanInTToSpanOut<TFrom, TTo> performCalculation)
+            where TFrom : IEquatable<TFrom>, IEqualityOperators<TFrom, TFrom, bool>, INumberBase<TFrom>
+            where TTo : INumberBase<TTo>
+        {
+            ReadOnlySpan<TFrom> span = MemoryMarshal.CreateSpan(ref input._values[0], (int)input._flattenedLength);
+            Tensor<TTo> output = Create<TTo>(input.Lengths, input.IsPinned);
+            Span<TTo> ospan = MemoryMarshal.CreateSpan(ref output._values[0], (int)output._flattenedLength);
             performCalculation(span, ospan);
             return output;
         }
 
-        private static Tensor<T> TensorPrimitivesHelperT1T2<T>(Tensor<T> left, Tensor<T> right, PerformCalculationT1T2<T> performCalculation, bool inPlace = false)
+        private static Tensor<T> TensorPrimitivesHelperTwoSpanInSpanOut<T>(Tensor<T> left, Tensor<T> right, PerformCalculationTwoSpanInSpanOut<T> performCalculation, bool inPlace = false)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
-            if (inPlace && left.Lengths != right.Lengths)
+            if (inPlace && !left.Lengths.SequenceEqual(right.Lengths))
                 ThrowHelper.ThrowArgument_InPlaceInvalidShape();
 
             Tensor<T> output;
@@ -2410,37 +3141,15 @@ namespace System.Numerics.Tensors
             return output;
         }
 
-        private static TensorSpan<T> TensorPrimitivesHelperT1T2<T>(TensorSpan<T> left, TensorSpan<T> right, PerformCalculationT1T2<T> performCalculation, bool inPlace = false)
+        private static T TensorPrimitivesHelperTwoSpanInTOut<T>(Tensor<T> left, Tensor<T> right, PerformCalculationTwoSpanInTOut<T> performCalculation)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
-            if (inPlace && left.Lengths != right.Lengths)
-                ThrowHelper.ThrowArgument_InPlaceInvalidShape();
-
-            //ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref tensor._reference, (int)tensor.FlattenedLength);
-            //ReadOnlySpan<T> rspan = MemoryMarshal.CreateSpan(ref right._reference, (int)right.FlattenedLength);
-            //TensorSpan<T> output = inPlace ? tensor : Create<T>(tensor.IsPinned, tensor.Lengths);
-            //Span<T> ospan = MemoryMarshal.CreateSpan(ref output._reference, (int)output.FlattenedLength);
-            //performCalculation(span, rspan, ospan);
-            //return output;
-
-            TensorSpan<T> output;
-            if (inPlace)
-            {
-                ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref left._reference, (int)left.FlattenedLength);
-                ReadOnlySpan<T> rspan = MemoryMarshal.CreateSpan(ref right._reference, (int)right.FlattenedLength);
-                output = left;
-                Span<T> ospan = MemoryMarshal.CreateSpan(ref output._reference, (int)output.FlattenedLength);
-                performCalculation(span, rspan, ospan);
-            }
             // If not in place but sizes are the same.
-            else if (left.Lengths.SequenceEqual(right.Lengths))
+            if (left.Lengths.SequenceEqual(right.Lengths))
             {
-                ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref left._reference, (int)left.FlattenedLength);
-                ReadOnlySpan<T> rspan = MemoryMarshal.CreateSpan(ref right._reference, (int)right.FlattenedLength);
-                output = new TensorSpan<T>(new T[left.FlattenedLength], 0, left.Lengths, left.Strides);
-                Span<T> ospan = MemoryMarshal.CreateSpan(ref output._reference, (int)output.FlattenedLength);
-                performCalculation(span, rspan, ospan);
-                return output;
+                ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref left.AsTensorSpan()._reference, (int)left.FlattenedLength);
+                ReadOnlySpan<T> rspan = MemoryMarshal.CreateSpan(ref right.AsTensorSpan()._reference, (int)right.FlattenedLength);
+                return performCalculation(span, rspan);
             }
             // Not in place and broadcasting needs to happen.
             else
@@ -2448,78 +3157,15 @@ namespace System.Numerics.Tensors
                 // Have a couple different possible cases here.
                 // 1 - Both tensors have row contiguous memory (i.e. a 1x5 being broadcast to a 5x5)
                 // 2 - One tensor has row contiguous memory and the right has column contiguous memory (i.e. a 1x5 and a 5x1)
+                // Because we are returning a single T though we need to actual realize the broadcasts at this point to perform the calculations.
 
-                nint[] newSize = TensorHelpers.GetSmallestBroadcastableSize(left.Lengths, right.Lengths);
+                var broadcastedLeft = Tensor.Broadcast(left, right);
+                var broadcastedRight = Tensor.Broadcast(right, left);
 
-                TensorSpan<T> broadcastedLeft = Tensor.BroadcastTo(left, newSize);
-                TensorSpan<T> broadcastedRight = Tensor.BroadcastTo(right, newSize);
-
-                output = new TensorSpan<T>(new T[TensorSpanHelpers.CalculateTotalLength(newSize)], newSize, default);
-                nint rowLength = newSize[^1];
-                Span<T> ospan;
-                Span<T> ispan;
-                Span<T> buffer = new T[rowLength];
-
-                scoped Span<nint> curIndex;
-                nint[]? curIndexArray;
-                if (newSize.Length > 6)
-                {
-                    curIndexArray = ArrayPool<nint>.Shared.Rent(newSize.Length);
-                    curIndex = curIndexArray;
-                }
-                else
-                {
-                    curIndexArray = null;
-                    curIndex = stackalloc nint[newSize.Length];
-                }
-
-                int outputOffset = 0;
-                // ADD IN CASE WHERE NEITHER ARE ROW CONTIGUOUS
-                // tensor not row contiguous
-                if (broadcastedLeft.Strides[^1] == 0)
-                {
-                    while (outputOffset < output.FlattenedLength)
-                    {
-                        ospan = MemoryMarshal.CreateSpan(ref Unsafe.Add(ref output._reference, outputOffset), (int)rowLength);
-                        buffer.Fill(broadcastedLeft[curIndex]);
-                        ispan = MemoryMarshal.CreateSpan(ref broadcastedRight[curIndex], (int)rowLength);
-                        performCalculation(buffer, ispan, ospan);
-                        outputOffset += (int)rowLength;
-                        TensorSpanHelpers.AdjustIndexes(broadcastedLeft.Rank - 2, 1, curIndex, broadcastedLeft.Lengths);
-                    }
-                }
-                // right not row contiguous
-                else if (broadcastedRight.Strides[^1] == 0)
-                {
-                    while (outputOffset < output.FlattenedLength)
-                    {
-                        ospan = MemoryMarshal.CreateSpan(ref Unsafe.Add(ref output._reference, outputOffset), (int)rowLength);
-                        buffer.Fill(broadcastedRight[curIndex]);
-                        ispan = MemoryMarshal.CreateSpan(ref broadcastedLeft[curIndex], (int)rowLength);
-                        performCalculation(ispan, buffer, ospan);
-                        outputOffset += (int)rowLength;
-                        TensorSpanHelpers.AdjustIndexes(broadcastedLeft.Rank - 2, 1, curIndex, broadcastedLeft.Lengths);
-                    }
-                }
-                // both row contiguous
-                else
-                {
-                    Span<T> rspan;
-                    while (outputOffset < output.FlattenedLength)
-                    {
-                        ospan = MemoryMarshal.CreateSpan(ref Unsafe.Add(ref output._reference, outputOffset), (int)rowLength);
-                        ispan = MemoryMarshal.CreateSpan(ref broadcastedLeft[curIndex], (int)rowLength);
-                        rspan = MemoryMarshal.CreateSpan(ref broadcastedRight[curIndex], (int)rowLength);
-                        performCalculation(ispan, rspan, ospan);
-                        outputOffset += (int)rowLength;
-                        TensorSpanHelpers.AdjustIndexes(broadcastedLeft.Rank - 2, 1, curIndex, broadcastedLeft.Lengths);
-                    }
-                }
-
-                if (curIndexArray != null)
-                    ArrayPool<nint>.Shared.Return(curIndexArray);
+                ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref broadcastedLeft.AsTensorSpan()._reference, (int)broadcastedLeft.FlattenedLength);
+                ReadOnlySpan<T> rspan = MemoryMarshal.CreateSpan(ref broadcastedRight.AsTensorSpan()._reference, (int)broadcastedRight.FlattenedLength);
+                return performCalculation(span, rspan);
             }
-            return output;
         }
         #endregion
         #endregion

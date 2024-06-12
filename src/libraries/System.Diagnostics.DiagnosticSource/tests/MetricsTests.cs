@@ -924,6 +924,63 @@ namespace System.Diagnostics.Metrics.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void ListenerWithoutMeasurementsCompletedDisposalsTest()
+        {
+            RemoteExecutor.Invoke(() => {
+                Meter meter = new Meter("MinimalListenerDisposalsTest");
+
+                Counter<int> counter = meter.CreateCounter<int>("Counter");
+                UpDownCounter<short> upDownCounter = meter.CreateUpDownCounter<short>("upDownCounter");
+                Histogram<double> histogram = meter.CreateHistogram<double>("Histogram");
+                ObservableCounter<long> observableCounter = meter.CreateObservableCounter("ObservableCounter", () => new Measurement<long>(10, new KeyValuePair<string, object?>[] { new KeyValuePair<string, object?>("Key", "value")}));
+                ObservableGauge<decimal> observableGauge = meter.CreateObservableGauge("ObservableGauge", () => new Measurement<decimal>(5.7m, new KeyValuePair<string, object?>[] { new KeyValuePair<string, object?>("Key", "value")}));
+                ObservableUpDownCounter<float> observableUpDownCounter = meter.CreateObservableUpDownCounter("ObservableUpDownCounter", () => new Measurement<float>(-5.7f, new KeyValuePair<string, object?>[] { new KeyValuePair<string, object?>("Key", "value")}));
+
+                MeterListener listener = new MeterListener();
+                listener.InstrumentPublished = (theInstrument, theListener) => theListener.EnableMeasurementEvents(theInstrument, theInstrument);
+
+                int count = 0;
+
+                listener.SetMeasurementEventCallback<short>((inst, measurement, tags, state)   => count++);
+                listener.SetMeasurementEventCallback<int>((inst, measurement, tags, state)     => count++);
+                listener.SetMeasurementEventCallback<float>((inst, measurement, tags, state)   => count++);
+                listener.SetMeasurementEventCallback<double>((inst, measurement, tags, state)  => count++);
+                listener.SetMeasurementEventCallback<long>((inst, measurement, tags, state)    => count++);
+                listener.SetMeasurementEventCallback<decimal>((inst, measurement, tags, state) => count++);
+
+                listener.Start();
+
+                Assert.Equal(0, count);
+
+                counter.Add(1);
+                Assert.Equal(1, count);
+
+                upDownCounter.Add(-1);
+                Assert.Equal(2, count);
+
+                histogram.Record(1);
+                Assert.Equal(3, count);
+
+                listener.RecordObservableInstruments();
+                Assert.Equal(6, count);
+
+                listener.Dispose();
+
+                counter.Add(1);
+                Assert.Equal(6, count);
+
+                upDownCounter.Add(-1);
+                Assert.Equal(6, count);
+
+                histogram.Record(1);
+                Assert.Equal(6, count);
+
+                listener.RecordObservableInstruments();
+                Assert.Equal(6, count);
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void MultipleListenersTest()
         {
             RemoteExecutor.Invoke(() => {
