@@ -10937,7 +10937,7 @@ void Interpreter::DoIsReferenceOrContainsReferences(CORINFO_METHOD_HANDLE method
     }
 
     MethodTable* typeArg = GetMethodTableFromClsHnd(sigInfoFull.sigInst.methInst[0]);
-    OpStackSet<BOOL>(m_curStackHt, typeArg->IsByRefLike || typeArg->ContainsPointers());
+    OpStackSet<BOOL>(m_curStackHt, typeArg->IsByRefLike() || typeArg->ContainsPointers());
     OpStackTypeSet(m_curStackHt, InterpreterType(CORINFO_TYPE_INT));
     m_curStackHt++;
 }
