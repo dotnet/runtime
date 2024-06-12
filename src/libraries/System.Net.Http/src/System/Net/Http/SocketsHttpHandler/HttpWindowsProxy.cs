@@ -17,7 +17,7 @@ namespace System.Net.Http
 {
     internal sealed class HttpWindowsProxy : IMultiWebProxy, IDisposable
     {
-        private readonly RegistryKey? _internetSettingsRegistry = Registry.CurrentUser.OpenSubKey("Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings");
+        private readonly RegistryKey? _internetSettingsRegistry = Registry.CurrentUser?.OpenSubKey("Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings");
         private MultiProxy _insecureProxy;      // URI of the http system proxy if set
         private  MultiProxy _secureProxy;       // URI of the https system proxy if set
         private FailedProxyCache _failedProxies = new FailedProxyCache();
