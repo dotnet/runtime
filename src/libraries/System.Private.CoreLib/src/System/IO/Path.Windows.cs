@@ -17,7 +17,11 @@ namespace System.IO
 {
     public static unsafe partial class Path
     {
+#if MS_IO_REDIST
+        private static volatile int s_GetTempPathVersion;
+#else
         private static volatile delegate* unmanaged<int, char*, uint> s_GetTempPathWFunc;
+#endif
 
         public static char[] GetInvalidFileNameChars() => new char[]
         {
@@ -155,6 +159,20 @@ namespace System.IO
             return path;
         }
 
+#if MS_IO_REDIST
+        private static int GetGetTempPathVersion()
+        {
+            IntPtr kernel32 = Interop.Kernel32.GetModuleHandle(Interop.Libraries.Kernel32);
+            if (kernel32 != IntPtr.Zero)
+            {
+                if (Interop.Kernel32.GetProcAddress(kernel32, "GetTempPath2W") != IntPtr.Zero)
+                {
+                    return 2;
+                }
+            }
+            return 1;
+        }
+#else
         private static unsafe delegate* unmanaged<int, char*, uint> GetGetTempPathWFunc()
         {
             IntPtr kernel32 = Interop.Kernel32.LoadLibraryEx(Interop.Libraries.Kernel32, IntPtr.Zero, Interop.Kernel32.LOAD_LIBRARY_SEARCH_SYSTEM32);
@@ -166,6 +184,7 @@ namespace System.IO
 
             return (delegate* unmanaged<int, char*, uint>)func;
         }
+#endif
 
         internal static void GetTempPath(ref ValueStringBuilder builder)
         {
@@ -183,6 +202,16 @@ namespace System.IO
 
             static uint GetTempPathW(int bufferLen, ref char buffer)
             {
+#if MS_IO_REDIST
+                int getTempPathVersion = s_GetTempPathVersion;
+                if (getTempPathVersion == 0)
+                {
+                    s_GetTempPathVersion = getTempPathVersion = GetGetTempPathVersion();
+                }
+                return getTempPathVersion == 2
+                    ? Interop.Kernel32.GetTempPath2W(bufferLen, ref buffer)
+                    : Interop.Kernel32.GetTempPathW(bufferLen, ref buffer);
+#else
                 delegate* unmanaged<int, char*, uint> func = s_GetTempPathWFunc;
                 if (func == null)
                 {
@@ -200,6 +229,7 @@ namespace System.IO
 
                 Marshal.SetLastPInvokeError(lastError);
                 return retVal;
+#endif
             }
         }
 

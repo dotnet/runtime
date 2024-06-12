@@ -1,6 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <IsPackable>true</IsPackable>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <ServicingVersion>1</ServicingVersion>
     <PackageDescription>Downlevel support package for System.IO classes.</PackageDescription>
     <DefineConstants>$(DefineConstants);MS_IO_REDIST</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -108,6 +110,10 @@
              Link="Interop\Windows\Interop.GetTempFileNameW.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetTempPathW.cs"
              Link="Interop\Windows\Kernel32\Interop.GetTempPathW.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetModuleHandle.cs"
+             Link="Interop\Windows\Kernel32\Interop.GetModuleHandle.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetProcAddress.cs"
+             Link="Interop\Windows\Kernel32\Interop.GetProcAddress.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.MAX_PATH.cs"
              Link="Interop\Windows\Interop.MAX_PATH.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.REPARSE_DATA_BUFFER.cs"
