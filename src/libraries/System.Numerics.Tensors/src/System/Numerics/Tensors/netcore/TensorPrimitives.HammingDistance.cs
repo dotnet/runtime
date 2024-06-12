@@ -173,11 +173,22 @@ namespace System.Numerics.Tensors
                     }
                 }
             }
-            else
+            else if (typeof(T).IsValueType)
             {
                 for (int i = 0; i < x.Length; i++)
                 {
                     if (!EqualityComparer<T>.Default.Equals(x[i], y[i]))
+                    {
+                        count++;
+                    }
+                }
+            }
+            else
+            {
+                EqualityComparer<T> comparer = EqualityComparer<T>.Default;
+                for (int i = 0; i < x.Length; i++)
+                {
+                    if (!comparer.Equals(x[i], y[i]))
                     {
                         count++;
                     }
