@@ -632,7 +632,6 @@ FCIMPL4(Object*, RuntimeMethodHandle::InvokeMethod,
 
         UINT structSize = argit.GetArgSize();
 
-        bool needsStackCopy = false;
         ArgDestination argDest(pTransitionBlock, ofs, argit.GetArgLocDescForStructInRegs());
 
 #ifdef ENREGISTERED_PARAMTYPE_MAXSIZE

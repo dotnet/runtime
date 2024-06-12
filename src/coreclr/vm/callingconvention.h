@@ -553,8 +553,15 @@ public:
         {
             if (size <= ENREGISTERED_PARAMTYPE_MAXSIZE)
                 return FALSE;
-            // Struct larger than 16 can still be passed in registers according to FP call conv if it has empty fields or
-            // more padding, so make sure it's passed according to integer call conv which bounds struct to 16 bytes.
+
+            // Structs larger than 16 bytes can still be passed in registers according to FP call conv if it has empty
+            // fields or more padding, so make sure it's passed according to integer call conv which bounds structs
+            // passed by value to 16 bytes.
+            //
+            // Note: if it's larger than 16 bytes and elegible for passing according to FP call conv, it still does not
+            // mean it will not be passed by reference. We need to know if there's enough free registers, otherwise
+            // it will fall back to passing according to integer calling convention (by implicit reference).
+            // (see the non-static overload of IsArgPassedByRef())
             return MethodTable::GetRiscV64PassFpStructInRegistersInfo(th).flags == FpStruct::UseIntCallConv;
         }
         return FALSE;
@@ -616,13 +623,10 @@ public:
         if (m_argType == ELEMENT_TYPE_VALUETYPE)
         {
             _ASSERTE(!m_argTypeHandle.IsNull());
-        #ifdef TARGET_RISCV64
-            if (m_argSize <= ENREGISTERED_PARAMTYPE_MAXSIZE)
-                return FALSE;
-            return MethodTable::GetRiscV64PassFpStructInRegistersInfo(m_argTypeHandle).flags == FpStruct::UseIntCallConv;
-        #else
-            return (m_argSize > ENREGISTERED_PARAMTYPE_MAXSIZE);
-        #endif
+            // On RISC-V structs larger than 16 bytes can still be passed in registers according to FP call conv if it
+            // has empty fields or more padding, so also check for m_hasArgLocDescForStructInRegs.
+            return (m_argSize > ENREGISTERED_PARAMTYPE_MAXSIZE)
+                RISCV64_ONLY(&& !m_hasArgLocDescForStructInRegs);
         }
         return FALSE;
 #else
@@ -1879,10 +1883,8 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
         {
             int regOffset = TransitionBlock::GetOffsetOfFloatArgumentRegisters() + m_idxFPReg * FLOAT_REGISTER_SIZE;
 
-            if ((info.flags & (FpStruct::BothFloat | FpStruct::OnlyOne))
-                && (info.offset1st != 0 || info.offset2nd != FLOAT_REGISTER_SIZE))
+            if (info.flags & (FpStruct::BothFloat | FpStruct::OnlyOne))
             {
-                // Struct with one or two floating-point fields laid out differently than in TransitionBlock::FloatArgumentRegisters
                 m_argLocDescForStructInRegs.Init();
                 m_argLocDescForStructInRegs.m_idxFloatReg = m_idxFPReg;
                 m_argLocDescForStructInRegs.m_cFloatReg = cFPRegs;
