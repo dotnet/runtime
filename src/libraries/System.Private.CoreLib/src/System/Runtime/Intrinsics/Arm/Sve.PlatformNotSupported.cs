@@ -1496,6 +1496,7 @@ namespace System.Runtime.Intrinsics.Arm
         /// svint32_t svld1_gather[_u32base]_s32(svbool_t pg, svuint32_t bases)
         ///   LD1W Zresult.S, Pg/Z, [Zbases.S, #0]
         /// </summary>
+        // Removed as per #103297
         // public static unsafe Vector<int> GatherVector(Vector<int> mask, Vector<uint> addresses) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -1532,6 +1533,7 @@ namespace System.Runtime.Intrinsics.Arm
         /// svfloat32_t svld1_gather[_u32base]_f32(svbool_t pg, svuint32_t bases)
         ///   LD1W Zresult.S, Pg/Z, [Zbases.S, #0]
         /// </summary>
+        // Removed as per #103297
         // public static unsafe Vector<float> GatherVector(Vector<float> mask, Vector<uint> addresses) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
@@ -1550,6 +1552,7 @@ namespace System.Runtime.Intrinsics.Arm
         /// svuint32_t svld1_gather[_u32base]_u32(svbool_t pg, svuint32_t bases)
         ///   LD1W Zresult.S, Pg/Z, [Zbases.S, #0]
         /// </summary>
+        // Removed as per #103297
         // public static unsafe Vector<uint> GatherVector(Vector<uint> mask, Vector<uint> addresses) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
