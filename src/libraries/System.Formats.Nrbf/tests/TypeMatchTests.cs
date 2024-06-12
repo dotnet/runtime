@@ -74,6 +74,18 @@ public class TypeMatchTests : ReadTests
     }
 
     [Fact]
+    public void TakesGenericTypeDefinitionIntoAccount()
+    {
+        List<int> input = new List<int>();
+
+        SerializationRecord one = NrbfDecoder.Decode(Serialize(input));
+
+        // The generic arguments match, the generic type definition does not.
+        Assert.False(one.TypeNameMatches(typeof(Stack<int>)));
+        Assert.True(one.TypeNameMatches(typeof(List<int>)));
+    }
+
+    [Fact]
     public void CanRecognizeGenericNonSystemTypes()
     {
         Verify(new GenericNonSystemClass<NonSystemClass>());

@@ -69,10 +69,17 @@ public abstract class SerializationRecord
         }
         else if (typeName.IsArray)
         {
+            // We don't need to check for pointers and references to arrays,
+            // as it's impossible to serialize them with BF.
             return Matches(type.GetElementType()!, typeName.GetElementType());
         }
         else if (type.IsConstructedGenericType)
         {
+            if (!Matches(type.GetGenericTypeDefinition(), typeName.GetGenericTypeDefinition()))
+            {
+                return false;
+            }
+
             ImmutableArray<TypeName> genericNames = typeName.GetGenericArguments();
             Type[] genericTypes = type.GetGenericArguments();
 
