@@ -1041,7 +1041,7 @@ public:
                 {
                     JITDUMP("Rewriting known address-of comparison [%06u]\n", m_compiler->dspTreeID(node));
                     *lhs.Use() = m_compiler->gtNewIconNode(0);
-                    *rhs.Use() = m_compiler->gtNewIconNode(node->OperIs(GT_EQ) ? 0 : 1);
+                    *rhs.Use() = m_compiler->gtNewIconNode(1);
                     m_stmtModified = true;
 
                     INDEBUG(TopValue(0).Consume());
