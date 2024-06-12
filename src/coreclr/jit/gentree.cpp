@@ -14683,15 +14683,12 @@ GenTree* Compiler::gtFoldExprSpecialFloating(GenTree* tree)
     /* Get the constant value */
     val = cons->AsDblCon()->DconValue();
 
-    // Transforms that would drop op cannot be performed if op has side effects
-    bool opHasSideEffects = (op->gtFlags & GTF_SIDE_EFFECT) != 0;
-
     // Helper function that creates a new IntCon node and morphs it, if required
     auto NewMorphedIntConNode = [&](int value) -> GenTreeIntCon* {
         GenTreeIntCon* icon = gtNewIconNode(value);
         if (fgGlobalMorph)
         {
-            fgMorphTreeDone(icon);
+            INDEBUG(icon->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
         }
         return icon;
     };
@@ -14708,10 +14705,7 @@ GenTree* Compiler::gtFoldExprSpecialFloating(GenTree* tree)
 
             if (FloatingPointUtils::isNaN(val))
             {
-                if (opHasSideEffects)
-                {
-                    break;
-                }
+                op = gtWrapWithSideEffects(cons, op, GTF_ALL_EFFECT);
                 goto DONE_FOLD;
             }
 
@@ -14733,10 +14727,7 @@ GenTree* Compiler::gtFoldExprSpecialFloating(GenTree* tree)
 
             if (FloatingPointUtils::isNaN(val))
             {
-                if (opHasSideEffects)
-                {
-                    break;
-                }
+                op = gtWrapWithSideEffects(cons, op, GTF_ALL_EFFECT);
                 goto DONE_FOLD;
             }
 
@@ -14756,13 +14747,8 @@ GenTree* Compiler::gtFoldExprSpecialFloating(GenTree* tree)
 
             if (FloatingPointUtils::isNaN(val))
             {
-                if (opHasSideEffects)
-                {
-                    break;
-                }
-
                 // Comparison with NaN is always false
-                op = NewMorphedIntConNode(0);
+                op = gtWrapWithSideEffects(NewMorphedIntConNode(0), op, GTF_ALL_EFFECT);
                 goto DONE_FOLD;
             }
             break;
@@ -14775,20 +14761,15 @@ GenTree* Compiler::gtFoldExprSpecialFloating(GenTree* tree)
         {
             if (FloatingPointUtils::isNaN(val))
             {
-                if (opHasSideEffects)
-                {
-                    break;
-                }
-
                 if ((tree->gtFlags & GTF_RELOP_NAN_UN) != 0)
                 {
                     // Unordered comparison with NaN is always true
-                    op = NewMorphedIntConNode(1);
+                    op = gtWrapWithSideEffects(NewMorphedIntConNode(1), op, GTF_ALL_EFFECT);
                 }
                 else
                 {
                     // Comparison with NaN is always false
-                    op = NewMorphedIntConNode(0);
+                    op = gtWrapWithSideEffects(NewMorphedIntConNode(0), op, GTF_ALL_EFFECT);
                 }
                 goto DONE_FOLD;
             }
@@ -14802,10 +14783,7 @@ GenTree* Compiler::gtFoldExprSpecialFloating(GenTree* tree)
 
             if (FloatingPointUtils::isNaN(val))
             {
-                if (opHasSideEffects)
-                {
-                    break;
-                }
+                op = gtWrapWithSideEffects(cons, op, GTF_ALL_EFFECT);
                 goto DONE_FOLD;
             }
 
@@ -14828,13 +14806,8 @@ GenTree* Compiler::gtFoldExprSpecialFloating(GenTree* tree)
 
             if (FloatingPointUtils::isNaN(val))
             {
-                if (opHasSideEffects)
-                {
-                    break;
-                }
-
                 // Comparison with NaN is always true
-                op = NewMorphedIntConNode(1);
+                op = gtWrapWithSideEffects(NewMorphedIntConNode(1), op, GTF_ALL_EFFECT);
                 goto DONE_FOLD;
             }
             break;
@@ -14847,10 +14820,7 @@ GenTree* Compiler::gtFoldExprSpecialFloating(GenTree* tree)
 
             if (FloatingPointUtils::isNaN(val))
             {
-                if (opHasSideEffects)
-                {
-                    break;
-                }
+                op = gtWrapWithSideEffects(cons, op, GTF_ALL_EFFECT);
                 goto DONE_FOLD;
             }
 
