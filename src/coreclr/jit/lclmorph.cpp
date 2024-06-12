@@ -1033,34 +1033,30 @@ public:
                 assert(TopValue(1).Node() == node->AsOp()->gtOp1);
                 assert(TopValue(0).Node() == node->AsOp()->gtOp2);
 
-                GenTree* op1 = node->AsOp()->gtOp1;
-                GenTree* op2 = node->AsOp()->gtOp2;
-                bool rewrite = false;
+                Value& lhs = TopValue(1);
+                Value& rhs = TopValue(0);
 
-                if (op1->OperIs(GT_LCL_ADDR) && op2->IsIntegralConst(0))
-                {
-                    op1 = m_compiler->gtNewIconNode(1);
-                    op2->ChangeType(TYP_INT);
-                    rewrite = true;
-                }
-                else if (op2->OperIs(GT_LCL_ADDR) && op1->IsIntegralConst(0))
-                {
-                    op2 = m_compiler->gtNewIconNode(1);
-                    op1->ChangeType(TYP_INT);
-                    rewrite = true;
-                }
-
-                if (rewrite)
+                if ((lhs.IsAddress() && rhs.Node()->IsIntegralConst(0)) ||
+                    (rhs.IsAddress() && lhs.Node()->IsIntegralConst(0)))
                 {
                     JITDUMP("Rewriting known address-of comparison [%06u]\n", m_compiler->dspTreeID(node));
-                    node->AsOp()->gtOp1 = op1;
-                    node->AsOp()->gtOp2 = op2;
+                    *lhs.Use() = m_compiler->gtNewIconNode(0);
+                    *rhs.Use() = m_compiler->gtNewIconNode(1);
+                    m_stmtModified = true;
+
+                    INDEBUG(TopValue(0).Consume());
+                    INDEBUG(TopValue(1).Consume());
+                    PopValue();
+                    PopValue();
+                }
+                else
+                {
+                    EscapeValue(TopValue(0), node);
+                    PopValue();
+                    EscapeValue(TopValue(0), node);
+                    PopValue();
                 }
 
-                INDEBUG(TopValue(0).Consume());
-                INDEBUG(TopValue(1).Consume());
-                PopValue();
-                PopValue();
                 break;
             }
 

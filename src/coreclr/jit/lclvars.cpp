@@ -2550,6 +2550,7 @@ bool Compiler::StructPromotionHelper::CanPromoteStructVar(unsigned lclNum)
     if (varDsc->lvStackAllocatedBox)
     {
         JITDUMP("  struct promotion of V%02u is disabled because it is a stack allocated box\n", lclNum);
+        return false;
     }
 
 #ifdef SWIFT_SUPPORT
