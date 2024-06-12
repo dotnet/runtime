@@ -13067,6 +13067,21 @@ void region_free_list::age_free_regions()
     }
 }
 
+size_t region_free_list::get_size_free_regions(int min_age)
+{
+    size_t result = 0;
+
+    for (heap_segment* region = head_free_region; region != nullptr; region = heap_segment_next (region))
+    {
+        if (heap_segment_age_in_free (region) >= min_age)
+        {
+            result += get_region_size(region);
+        }
+    }
+
+    return result;
+}
+
 void region_free_list::age_free_regions (region_free_list free_lists[count_free_region_kinds])
 {
     for (int kind = basic_free_region; kind < count_free_region_kinds; kind++)
@@ -13369,7 +13384,7 @@ void gc_heap::distribute_free_regions()
 
     global_free_huge_regions.transfer_regions (&global_regions_to_decommit[huge_free_region]);
 
-    size_t free_space_in_huge_regions = global_free_huge_regions.get_size_free_regions();
+    size_t free_space_in_huge_regions = global_free_huge_regions.get_size_free_regions(MIN_AGE_TO_DECOMMIT_HUGE);
 
     ptrdiff_t num_regions_to_decommit[kind_count];
     int region_factor[kind_count] = { 1, LARGE_REGION_FACTOR };
