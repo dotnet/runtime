@@ -97,7 +97,6 @@ internal sealed unsafe partial class MsQuicApi
             // support developers explicitly providing OpenSSL version of MsQuic.
             // in the application directory, so we first check there and default
             // to the Schannel version if not found.
-#pragma warning disable IL3000
             loaded = NativeLibrary.TryLoad(Path.Combine(AppContext.BaseDirectory, Interop.Libraries.MsQuic), out msQuicHandle);
 
             if (!loaded)
