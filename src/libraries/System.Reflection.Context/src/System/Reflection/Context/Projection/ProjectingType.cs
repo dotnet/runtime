@@ -206,11 +206,13 @@ namespace System.Reflection.Context.Projection
             return _projector.Project(base.GetEvents(bindingAttr), _projector.ProjectEvent);
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
         public override FieldInfo? GetField(string name, BindingFlags bindingAttr)
         {
             return _projector.ProjectField(base.GetField(name, bindingAttr));
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
         public override FieldInfo[] GetFields(BindingFlags bindingAttr)
         {
             return _projector.Project(base.GetFields(bindingAttr), _projector.ProjectField);
