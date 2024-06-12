@@ -1607,6 +1607,12 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                     assert(varTypeIsSIMD(op2->TypeGet()));
                     retNode->AsHWIntrinsic()->SetAuxiliaryJitType(getBaseJitTypeOfSIMDType(sigReader.op2ClsHnd));
                 }
+#elif defined(TARGET_ARM64)
+                if (intrinsic == NI_Sve_GatherVector)
+                {
+                    assert(varTypeIsSIMD(op3->TypeGet()));
+                    retNode->AsHWIntrinsic()->SetAuxiliaryJitType(getBaseJitTypeOfSIMDType(sigReader.op3ClsHnd));
+                }
 #endif
                 break;
             }
