@@ -77,8 +77,6 @@ internal sealed partial class Deserializer : IDeserializer
     private Queue<PendingSerializationInfo>? _pendingSerializationInfo;
     private HashSet<SerializationRecordId>? _pendingSerializationInfoIds;
 
-    // Keeping a separate stack for ids for fast infinite loop checks.
-    private readonly Stack<SerializationRecordId> _parseStack = [];
     private readonly Stack<ObjectRecordDeserializer> _parserStack = [];
 
     /// <inheritdoc cref="IDeserializer.IncompleteObjects"/>
@@ -183,41 +181,36 @@ internal sealed partial class Deserializer : IDeserializer
     [RequiresUnreferencedCode("Calls DeserializeNew(SerializationRecordId)")]
     private void DeserializeRoot(SerializationRecordId rootId)
     {
-        object root = DeserializeNew(rootId);
+        object root = DeserializeNew(rootId, out _);
         if (root is not ObjectRecordDeserializer parser)
         {
             return;
         }
 
-        _parseStack.Push(rootId);
         _parserStack.Push(parser);
 
         while (_parserStack.Count > 0)
         {
             ObjectRecordDeserializer? currentParser = _parserStack.Pop();
-            SerializationRecordId currentId = _parseStack.Pop();
-            Debug.Assert(currentId.Equals(currentParser.ObjectRecord.Id));
 
             SerializationRecordId requiredId;
             while (!(requiredId = currentParser.Continue()).Equals(default(SerializationRecordId)))
             {
                 // Beside ObjectRecordDeserializer, DeserializeNew can return a raw value like int, string or an array.
-                if (DeserializeNew(requiredId) is ObjectRecordDeserializer requiredParser)
+                if (DeserializeNew(requiredId, out bool wasAddedToIncompleteObjects) is ObjectRecordDeserializer requiredParser)
                 {
                     // The required object is not complete.
 
-                    if (_parseStack.Contains(requiredId))
+                    if (!wasAddedToIncompleteObjects)
                     {
                         // All objects should be available before they're asked for a second time.
                         throw new SerializationException(SR.Serialization_Cycle);
                     }
 
                     // Push our current parser.
-                    _parseStack.Push(currentId);
                     _parserStack.Push(currentParser);
 
                     // Push the required parser so we can complete it.
-                    _parseStack.Push(requiredId);
                     _parserStack.Push(requiredParser);
 
                     break;
@@ -227,7 +220,7 @@ internal sealed partial class Deserializer : IDeserializer
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [RequiresUnreferencedCode("Calls System.Windows.Forms.BinaryFormat.Deserializer.ObjectRecordParser.Create(SerializationRecordId, IRecord, IDeserializer)")]
-        object DeserializeNew(SerializationRecordId id)
+        object DeserializeNew(SerializationRecordId id, out bool wasAddedToIncompleteObjects)
         {
             // Strings, string arrays, and primitive arrays can be completed without creating a
             // parser object. Single primitives don't normally show up as records unless they are top
@@ -249,11 +242,12 @@ internal sealed partial class Deserializer : IDeserializer
             if (value is not null)
             {
                 _deserializedObjects.Add(record.Id, value);
+                wasAddedToIncompleteObjects = false;
                 return value;
             }
 
             // Not a simple case, need to do a full deserialization of the record.
-            _incompleteObjects.Add(id);
+            wasAddedToIncompleteObjects = _incompleteObjects.Add(id);
 
             var deserializer = ObjectRecordDeserializer.Create(record, this);
 
