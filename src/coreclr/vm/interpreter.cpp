@@ -9266,10 +9266,19 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
 #endif // INTERP_ILSTUBS
 
         case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsReferenceOrContainsReferences:
-            OpStackSet<BOOL>(m_curStackHt, GetMethodTableFromClsHnd(callInfoPtr->sig.sigInst.methInst[0])->ContainsPointers());
+        {
+            CORINFO_SIG_INFO sigInfoFull;
+            {
+                GCX_PREEMP();
+                m_interpCeeInfo.getMethodSig(CORINFO_METHOD_HANDLE(methToCall), &sigInfoFull, nullptr);
+            }
+
+            MethodTable* typeArg = GetMethodTableFromClsHnd(sigInfoFull.sigInst.methInst[0]);
+            OpStackSet<BOOL>(m_curStackHt, typeArg->ContainsPointers());
             OpStackTypeSet(m_curStackHt, InterpreterType(CORINFO_TYPE_INT));
             m_curStackHt++;
             didIntrinsic = true;
+        }
         break;
 
         default:
