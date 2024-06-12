@@ -34,7 +34,26 @@ namespace System.Security.Cryptography
             _key = InitializeKey(key);
         }
 
-        public override HashProvider Clone() => throw new System.NotImplementedException("TODO");
+        private HMACManagedHashProvider(HashProvider hash1, HashProvider hash2, byte[] key, int blockSize, int hashSize, bool hashing)
+        {
+            _hash1 = hash1;
+            _hash2 = hash2;
+            _key = key;
+            _blockSizeValue = blockSize;
+            _hashSizeValue = hashSize;
+            _hashing = hashing;
+
+            // This constructor is used for cloning so the key should be pre-adjusted.
+            Debug.Assert(_key.Length <= _blockSizeValue);
+        }
+
+        public override HashProvider Clone()
+        {
+            HashProvider hash1Clone = _hash1.Clone();
+            HashProvider hash2Clone = _hash2.Clone();
+            byte[] keyClone = _key.AsSpan().ToArray();
+            return new HMACManagedHashProvider(hash1Clone, hash2Clone, keyClone, _blockSizeValue, _hashSizeValue, _hashing);
+        }
 
         private byte[] InitializeKey(ReadOnlySpan<byte> key)
         {
