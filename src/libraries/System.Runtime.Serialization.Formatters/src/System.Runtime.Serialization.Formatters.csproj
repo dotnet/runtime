@@ -17,7 +17,7 @@
     <SuppressDependenciesWhenPacking Condition="'$(FunctioningBinaryFormatter)' != 'true'">true</SuppressDependenciesWhenPacking>
   </PropertyGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="'$(FunctioningBinaryFormatter)' == 'true'">
     <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.xml" />
   </ItemGroup>
 
