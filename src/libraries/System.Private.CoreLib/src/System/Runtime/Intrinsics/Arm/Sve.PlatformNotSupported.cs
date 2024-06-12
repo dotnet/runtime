@@ -848,6 +848,30 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<double> ConditionalSelect(Vector<double> mask, Vector<double> left, Vector<double> right) { throw new PlatformNotSupportedException(); }
 
 
+        ///  ConvertToInt32 : Floating-point convert
+
+        /// <summary>
+        /// svint32_t svcvt_s32[_f32]_m(svint32_t inactive, svbool_t pg, svfloat32_t op)
+        ///   FCVTZS Ztied.S, Pg/M, Zop.S
+        /// svint32_t svcvt_s32[_f32]_x(svbool_t pg, svfloat32_t op)
+        ///   FCVTZS Ztied.S, Pg/M, Ztied.S
+        /// svint32_t svcvt_s32[_f32]_z(svbool_t pg, svfloat32_t op)
+        /// </summary>
+        public static unsafe Vector<int> ConvertToInt32(Vector<float> value) { throw new PlatformNotSupportedException(); }
+
+
+        ///  ConvertToUInt32 : Floating-point convert
+
+        /// <summary>
+        /// svuint32_t svcvt_u32[_f32]_m(svuint32_t inactive, svbool_t pg, svfloat32_t op)
+        ///   FCVTZU Ztied.S, Pg/M, Zop.S
+        /// svuint32_t svcvt_u32[_f32]_x(svbool_t pg, svfloat32_t op)
+        ///   FCVTZU Ztied.S, Pg/M, Ztied.S
+        /// svuint32_t svcvt_u32[_f32]_z(svbool_t pg, svfloat32_t op)
+        /// </summary>
+        public static unsafe Vector<uint> ConvertToUInt32(Vector<float> value) { throw new PlatformNotSupportedException(); }
+
+
         ///  Count16BitElements : Count the number of 16-bit elements in a vector
 
         /// <summary>

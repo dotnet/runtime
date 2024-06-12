@@ -115,8 +115,8 @@
       "packs": [
         "Microsoft.NETCore.App.Runtime.Mono.${NetVersion}.osx-arm64",
         "Microsoft.NETCore.App.Runtime.Mono.${NetVersion}.osx-x64",
-        "Microsoft.NETCore.App.Runtime.osx-arm64",
-        "Microsoft.NETCore.App.Runtime.osx-x64"
+        "Microsoft.NETCore.App.Runtime.${NetVersion}.osx-arm64",
+        "Microsoft.NETCore.App.Runtime.${NetVersion}.osx-x64"
       ],
       "extends": [ "microsoft-net-runtime-mono-tooling" ],
       "platforms": [ "osx-arm64", "osx-x64" ]
@@ -484,17 +484,26 @@
           "any": "Microsoft.NETCore.App.Runtime.Mono.wasi-wasm"
       }
     },
-    "Microsoft.NETCore.App.Runtime.win-x64" : {
+    "Microsoft.NETCore.App.Runtime.${NetVersion}.win-x64" : {
       "kind": "framework",
-      "version": "${PackageVersion}"
+      "version": "${PackageVersion}",
+      "alias-to": {
+          "any": "Microsoft.NETCore.App.Runtime.win-x64"
+      }
     },
-    "Microsoft.NETCore.App.Runtime.win-x86" : {
+    "Microsoft.NETCore.App.Runtime.${NetVersion}.win-x86" : {
       "kind": "framework",
-      "version": "${PackageVersion}"
+      "version": "${PackageVersion}",
+      "alias-to": {
+          "any": "Microsoft.NETCore.App.Runtime.win-x86"
+      }
     },
-    "Microsoft.NETCore.App.Runtime.win-arm64" : {
+    "Microsoft.NETCore.App.Runtime.${NetVersion}.win-arm64" : {
       "kind": "framework",
-      "version": "${PackageVersion}"
+      "version": "${PackageVersion}",
+      "alias-to": {
+          "any": "Microsoft.NETCore.App.Runtime.win-arm64"
+      }
     }
   }
 }

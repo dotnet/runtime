@@ -266,7 +266,7 @@ namespace System.Net.Security.Tests
                     }
                     else
                     {
-                       Assert.Null(server.RemoteCertificate);
+                        Assert.Null(server.RemoteCertificate);
                     }
                 };
             }
@@ -320,7 +320,7 @@ namespace System.Net.Security.Tests
                     }
                     else
                     {
-                       Assert.Null(server.RemoteCertificate);
+                        Assert.Null(server.RemoteCertificate);
                     }
                 };
             }
@@ -357,7 +357,7 @@ namespace System.Net.Security.Tests
 
                     if (expectMutualAuthentication)
                     {
-                      clientOptions.LocalCertificateSelectionCallback = (s, t, l, r, a) => _clientCertificate;
+                        clientOptions.LocalCertificateSelectionCallback = (s, t, l, r, a) => _clientCertificate;
                     }
                     else
                     {
@@ -378,7 +378,7 @@ namespace System.Net.Security.Tests
                     }
                     else
                     {
-                       Assert.Null(server.RemoteCertificate);
+                        Assert.Null(server.RemoteCertificate);
                     }
                 };
             }
