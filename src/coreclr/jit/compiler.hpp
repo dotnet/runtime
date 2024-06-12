@@ -1031,17 +1031,25 @@ inline regNumber genFirstRegNumFromMask(const regMaskTP& mask)
 //
 // Arguments:
 //    mask               - the register mask
+//    type               - type of the register mask
 //
 // Return Value:
 //    The number of the first register contained in the mask.
 //
-inline regNumber genFirstRegNumFromMask(SingleTypeRegSet mask)
+inline regNumber genFirstRegNumFromMask(SingleTypeRegSet mask, var_types type)
 {
     assert(mask != RBM_NONE); // Must have one bit set, so can't have a mask of zero
 
     /* Convert the mask to a register number */
 
     regNumber regNum = (regNumber)BitOperations::BitScanForward(mask);
+
+#ifdef HAS_MORE_THAN_64_REGISTERS
+    if (varTypeIsMask(type))
+    {
+        regNum = (regNumber)(64 + regNum);
+    }
+#endif
 
     return regNum;
 }
@@ -1075,13 +1083,14 @@ inline regNumber genFirstRegNumFromMaskAndToggle(regMaskTP& mask)
 //          register number and also toggle the bit in the `mask`.
 // Arguments:
 //    mask               - the register mask
+//    type               - type of the register mask
 //
 // Return Value:
 //    The number of the first register contained in the mask and updates the `mask` to toggle
 //    the bit.
 //
 
-inline regNumber genFirstRegNumFromMaskAndToggle(SingleTypeRegSet& mask)
+inline regNumber genFirstRegNumFromMaskAndToggle(SingleTypeRegSet& mask, var_types type)
 {
     assert(mask != RBM_NONE); // Must have one bit set, so can't have a mask of zero
 
@@ -1090,6 +1099,13 @@ inline regNumber genFirstRegNumFromMaskAndToggle(SingleTypeRegSet& mask)
     regNumber regNum = (regNumber)BitOperations::BitScanForward(mask);
 
     mask ^= genSingleTypeRegMask(regNum);
+
+#ifdef HAS_MORE_THAN_64_REGISTERS
+    if (varTypeIsMask(type))
+    {
+        regNum = (regNumber)(64 + regNum);
+    }
+#endif
 
     return regNum;
 }
