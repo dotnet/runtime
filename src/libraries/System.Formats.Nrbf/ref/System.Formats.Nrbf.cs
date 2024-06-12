@@ -12,7 +12,8 @@ namespace System.Formats.Nrbf
         public override System.Formats.Nrbf.SerializationRecordId Id { get { throw null; } }
         public abstract System.ReadOnlySpan<int> Lengths { get; }
         public int Rank { get { throw null; } }
-        public System.Array GetArray(System.Type expectedArrayType, bool allowNulls=true) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("The code for an array of the specified type might not be available.")]
+        public System.Array GetArray(System.Type expectedArrayType, bool allowNulls = true) { throw null; }
     }
     public abstract partial class ClassRecord : System.Formats.Nrbf.SerializationRecord
     {
