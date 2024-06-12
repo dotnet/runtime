@@ -10,7 +10,7 @@ parameters:
   hotColdSplitting: false
   liveLibrariesBuildConfig: ''
   compositeBuildMode: false
-  useCodeFlowEnforcement: ''
+  useCodeFlowEnforcement: true
   helixQueues: ''
   condition: true
   displayNameArgs: ''
