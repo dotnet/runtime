@@ -1492,10 +1492,10 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<int> GatherVector(Vector<int> mask, int* address, Vector<int> indices) { throw new PlatformNotSupportedException(); }
 
-        /// <summary>
-        /// svint32_t svld1_gather[_u32base]_s32(svbool_t pg, svuint32_t bases)
-        ///   LD1W Zresult.S, Pg/Z, [Zbases.S, #0]
-        /// </summary>
+        // <summary>
+        // svint32_t svld1_gather[_u32base]_s32(svbool_t pg, svuint32_t bases)
+        //   LD1W Zresult.S, Pg/Z, [Zbases.S, #0]
+        // </summary>
         // Removed as per #103297
         // public static unsafe Vector<int> GatherVector(Vector<int> mask, Vector<uint> addresses) { throw new PlatformNotSupportedException(); }
 
@@ -1529,10 +1529,10 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<float> GatherVector(Vector<float> mask, float* address, Vector<int> indices) { throw new PlatformNotSupportedException(); }
 
-        /// <summary>
-        /// svfloat32_t svld1_gather[_u32base]_f32(svbool_t pg, svuint32_t bases)
-        ///   LD1W Zresult.S, Pg/Z, [Zbases.S, #0]
-        /// </summary>
+        // <summary>
+        // svfloat32_t svld1_gather[_u32base]_f32(svbool_t pg, svuint32_t bases)
+        //   LD1W Zresult.S, Pg/Z, [Zbases.S, #0]
+        // </summary>
         // Removed as per #103297
         // public static unsafe Vector<float> GatherVector(Vector<float> mask, Vector<uint> addresses) { throw new PlatformNotSupportedException(); }
 
@@ -1548,10 +1548,10 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<uint> GatherVector(Vector<uint> mask, uint* address, Vector<int> indices) { throw new PlatformNotSupportedException(); }
 
-        /// <summary>
-        /// svuint32_t svld1_gather[_u32base]_u32(svbool_t pg, svuint32_t bases)
-        ///   LD1W Zresult.S, Pg/Z, [Zbases.S, #0]
-        /// </summary>
+        // <summary>
+        // svuint32_t svld1_gather[_u32base]_u32(svbool_t pg, svuint32_t bases)
+        //   LD1W Zresult.S, Pg/Z, [Zbases.S, #0]
+        // </summary>
         // Removed as per #103297
         // public static unsafe Vector<uint> GatherVector(Vector<uint> mask, Vector<uint> addresses) { throw new PlatformNotSupportedException(); }
 
