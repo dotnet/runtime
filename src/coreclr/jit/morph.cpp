@@ -10800,7 +10800,13 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                     break;
                 }
 
+#if defined(TARGET_XARCH)
                 GenTree* vectorNode = cvtOp->Op(1);
+#elif defined(TARGET_ARM64)
+                GenTree* vectorNode = cvtOp->Op(2);
+#else
+#error Unsupported platform
+#endif // !TARGET_XARCH && !TARGET_ARM64
 
                 DEBUG_DESTROY_NODE(op, node);
                 INDEBUG(vectorNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
