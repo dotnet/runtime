@@ -1185,7 +1185,10 @@ private:
 
     void associateRefPosWithInterval(RefPosition* rp);
 
-    weight_t getWeight(RefPosition* refPos);
+    weight_t getWeight(RefPosition* refPos DEBUG_ARG(bool forDump = false));
+#ifdef DEBUG
+    weight_t getWeightForDump(RefPosition* refPos);
+#endif // DEBUG
 
     /*****************************************************************************
      * Register management

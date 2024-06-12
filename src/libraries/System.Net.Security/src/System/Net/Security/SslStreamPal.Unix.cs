@@ -17,7 +17,7 @@ namespace System.Net.Security
             return status.Exception ?? new Interop.OpenSsl.SslException((int)status.ErrorCode);
         }
 
-        internal const bool StartMutualAuthAsAnonymous = true;
+        internal const bool StartMutualAuthAsAnonymous = false;
         internal const bool CanEncryptEmptyMessage = false;
 
         public static void VerifyPackageInfo()
@@ -168,8 +168,8 @@ namespace System.Net.Security
             return true;
         }
 
-         private static ProtocolToken HandshakeInternal(ref SafeDeleteSslContext? context,
-            ReadOnlySpan<byte> inputBuffer, SslAuthenticationOptions sslAuthenticationOptions)
+        private static ProtocolToken HandshakeInternal(ref SafeDeleteSslContext? context,
+           ReadOnlySpan<byte> inputBuffer, SslAuthenticationOptions sslAuthenticationOptions)
         {
             ProtocolToken token = default;
             token.RentBuffer = true;
@@ -186,8 +186,20 @@ namespace System.Net.Security
                 {
                     // this should happen only for clients
                     Debug.Assert(sslAuthenticationOptions.IsClient);
-                    token.Status = new SecurityStatusPal(errorCode);
-                    return token;
+
+                    // if we don't have a client certificate ready, bubble up so
+                    // that the certificate selection routine runs again. This
+                    // happens if the first call to LocalCertificateSelectionCallback
+                    // returns null.
+                    if (sslAuthenticationOptions.CertificateContext == null)
+                    {
+                        token.Status = new SecurityStatusPal(SecurityStatusPalErrorCode.CredentialsNeeded);
+                        return token;
+                    }
+
+                    // set the cert and continue
+                    TryUpdateClintCertificate(null, context, sslAuthenticationOptions);
+                    errorCode = Interop.OpenSsl.DoSslHandshake((SafeSslHandle)context, ReadOnlySpan<byte>.Empty, ref token);
                 }
 
                 // sometimes during renegotiation processing message does not yield new output.

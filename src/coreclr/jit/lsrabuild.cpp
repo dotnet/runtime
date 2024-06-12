@@ -647,7 +647,18 @@ RefPosition* LinearScan::newRefPosition(Interval*        theInterval,
         assert(theInterval != nullptr);
         theInterval->isSingleDef = theInterval->firstRefPosition == newRP;
     }
-
+#ifdef DEBUG
+#ifdef HAS_MORE_THAN_64_REGISTERS
+    // Need to do this here do the dump can print the mask correctly.
+    // Doing in DEBUG so we do not incur of cost of this check for
+    // every RefPosition. We will set this anyway in addKillForRegs()
+    // in RELEASE.
+    if (theRefType == RefTypeKill)
+    {
+        newRP->killRegisterAssignment = mask;
+    }
+#endif // HAS_MORE_THAN_64_REGISTERS
+#endif
     DBEXEC(VERBOSE, newRP->dump(this));
     return newRP;
 }
