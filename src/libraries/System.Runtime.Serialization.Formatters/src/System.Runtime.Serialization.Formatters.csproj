@@ -1,33 +1,24 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);$(NetCoreAppMinimum)-browser;$(NetCoreAppMinimum)-ios;$(NetCoreAppMinimum)-tvos;$(NetCoreAppMinimum)-android</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum)</TargetFrameworks>
     <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
     <IsPackable>true</IsPackable>
+    <!-- TODO: Enable validation after the .NET 9 package release -->
     <EnablePackageValidation>false</EnablePackageValidation>
   </PropertyGroup>
 
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
-    <TargetPlatformIdentifier Condition="$(TargetFramework.Contains('-'))">$(TargetFramework.SubString($([MSBuild]::Add($(TargetFramework.IndexOf('-')), 1))))</TargetPlatformIdentifier>
     <NoWarn>$(NoWarn);CA1822;IDE0060</NoWarn>
 
-  <!--
-      The real implementation of this library is built for NetCoreAppMinimum,
-      the NetCoreAppCurrent build has a non-functional copy of BinaryFormatter.
-
-      The NetCoreAppCurrent build is only included in the shared runtime,
-      and should always lose to the package for unification; so it is pinned
-      at an assembly version that will always lose.
-  -->
-    <AssemblyVersion Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">8.1.0.0</AssemblyVersion>
-    <IncludeBuildOutput Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">false</IncludeBuildOutput>
-    <SuppressDependenciesWhenPacking Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">true</SuppressDependenciesWhenPacking>
     <FunctioningBinaryFormatter Condition="'$(TargetFramework)' == '$(NetCoreAppMinimum)'">true</FunctioningBinaryFormatter>
+    <IncludeBuildOutput Condition="'$(FunctioningBinaryFormatter)' != 'true'">false</IncludeBuildOutput>
+    <SuppressDependenciesWhenPacking Condition="'$(FunctioningBinaryFormatter)' != 'true'">true</SuppressDependenciesWhenPacking>
   </PropertyGroup>
 
   <ItemGroup>
-    <ILLinkSubstitutionsXmls Condition="'$(TargetPlatformIdentifier)' == ''" Include="$(ILLinkDirectory)ILLink.Substitutions.NonMobile.xml" />
+    <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.xml" />
   </ItemGroup>
 
   <ItemGroup>
@@ -94,12 +85,8 @@
     </Compile>
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+  <ItemGroup Condition="'$(FunctioningBinaryFormatter)' != 'true'">
     <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryFormatter.Removed.cs" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != ''">
-    <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryFormatter.PlatformNotSupported.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">

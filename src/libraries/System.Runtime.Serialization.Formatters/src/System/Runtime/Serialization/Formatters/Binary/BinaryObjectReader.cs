@@ -75,8 +75,6 @@ namespace System.Runtime.Serialization.Formatters.Binary
             _formatterEnums = formatterEnums;
         }
 
-        [RequiresDynamicCode(ObjectReaderUnreferencedCodeMessage)]
-        [RequiresUnreferencedCode("Types might be removed")]
         private static IDisposable? StartDeserialization()
         {
             MethodInfo? targetMethod = typeof(SerializationInfo).GetMethod(
@@ -84,7 +82,6 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 BindingFlags.Public | BindingFlags.Static,
                 Type.EmptyTypes);
 
-            // It might have been removed in AoT.
             if (targetMethod is null)
             {
                 throw new InvalidOperationException();
