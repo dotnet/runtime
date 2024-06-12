@@ -13327,6 +13327,8 @@ void gc_heap::distribute_free_regions()
         heap_budget_in_region_units[i][large_free_region] = 0;
     }
 
+    dprintf (1, ("moved %2zd regions (%8zd) to decommit based on time", num_decommit_regions_by_time, size_decommit_regions_by_time));
+
     for (int gen = soh_gen0; gen < total_generation_count; gen++)
     {
         if ((gen <= soh_gen2) &&
@@ -13365,8 +13367,6 @@ void gc_heap::distribute_free_regions()
         }
     }
 
-    dprintf (1, ("moved %2zd regions (%8zd) to decommit based on time", num_decommit_regions_by_time, size_decommit_regions_by_time));
-
     global_free_huge_regions.transfer_regions_from (&global_regions_to_decommit[huge_free_region]);
 
     size_t free_space_in_huge_regions = global_free_huge_regions.get_size_free_regions();
@@ -13388,7 +13388,7 @@ void gc_heap::distribute_free_regions()
     {
         num_regions_to_decommit[kind] = surplus_regions[kind].get_num_free_regions();
 
-        dprintf(REGIONS_LOG, ("%zd %s free regions, %zd regions budget, %zd regions on decommit list, %zd huge regions to consider",
+        dprintf(REGIONS_LOG, ("%zd %s free regions, %zd regions budget, %zd regions on decommit list, %zd huge region units to consider",
             total_num_free_regions[kind],
             kind_name[kind],
             total_budget_in_region_units[kind],
@@ -13407,7 +13407,7 @@ void gc_heap::distribute_free_regions()
 #endif
             (balance < 0))
         {
-            dprintf (REGIONS_LOG, ("distributing the %zd %s regions deficit", -balance, kind_name[kind]));
+            dprintf (REGIONS_LOG, ("distributing the %zd %s region units deficit", -balance, kind_name[kind]));
 
 #ifdef MULTIPLE_HEAPS
             // we may have a deficit or  - if background GC is going on - a surplus.
@@ -13433,7 +13433,7 @@ void gc_heap::distribute_free_regions()
                     rem_balance += new_budget - heap_budget_in_region_units[i][kind];
                 }
                 assert (rem_balance <= 0);
-                dprintf (REGIONS_LOG, ("remaining balance: %zd %s regions", rem_balance, kind_name[kind]));
+                dprintf (REGIONS_LOG, ("remaining balance: %zd %s region units", rem_balance, kind_name[kind]));
 
                 // if we have a left over deficit, distribute that to the heaps that still have more than the minimum
                 while (rem_balance < 0)
@@ -13443,7 +13443,7 @@ void gc_heap::distribute_free_regions()
                         size_t min_budget = (kind == basic_free_region) ? min_heap_budget_in_region_units[i] : 0;
                         if (heap_budget_in_region_units[i][kind] > min_budget)
                         {
-                            dprintf (REGIONS_LOG, ("adjusting the budget for heap %d from %zd %s regions by %d to %zd",
+                            dprintf (REGIONS_LOG, ("adjusting the budget for heap %d from %zd %s region units by %d to %zd",
                                 i,
                                 heap_budget_in_region_units[i][kind],
                                 kind_name[kind],
@@ -13463,7 +13463,7 @@ void gc_heap::distribute_free_regions()
         else
         {
             num_regions_to_decommit[kind] = balance;
-            dprintf(REGIONS_LOG, ("distributing the %zd %s regions, removing %zd regions",
+            dprintf(REGIONS_LOG, ("distributing the %zd %s region units, removing %zd region units",
                 total_budget_in_region_units[kind],
                 kind_name[kind],
                 num_regions_to_decommit[kind]));
@@ -13489,8 +13489,9 @@ void gc_heap::distribute_free_regions()
                 }
                 else
                 {
-                    dprintf (REGIONS_LOG, ("Moved %zd %s regions to decommit list",
-                        global_regions_to_decommit[huge_free_region].get_num_free_regions(), kind_name[huge_free_region]));
+                    dprintf (REGIONS_LOG, ("Moved %zd %s regions (%zd units) to decommit list",
+                        global_regions_to_decommit[huge_free_region].get_num_free_regions(), kind_name[huge_free_region],
+                        (global_regions_to_decommit[huge_free_region].get_size_free_regions() / region_size[kind])));
 
                     // cannot assert we moved any regions because there may be a single huge region with more than we want to decommit
                 }
