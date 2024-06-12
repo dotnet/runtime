@@ -2508,7 +2508,8 @@ VOID StubLinkerCPU::X86EmitCurrentThreadAllocContextFetch(X86Reg dstreg, unsigne
 
     X86EmitIndexRegLoad(dstreg, dstreg, sizeof(void *) * _tls_index);
 
-    X86EmitIndexRegLoad(dstreg, dstreg, (int)Thread::GetOffsetOfThreadStatic(&t_thread_alloc_context));
+    _ASSERTE(Thread::GetOffsetOfThreadStatic(&t_thread_alloc_context) < INT_MAX);
+    X86EmitAddReg(dstreg, (int32_t)Thread::GetOffsetOfThreadStatic(&t_thread_alloc_context));
 
 #endif // TARGET_UNIX
 }
