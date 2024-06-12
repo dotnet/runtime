@@ -74,131 +74,34 @@ LOCAL_LABEL(CallDescrWorkerInternalReturnAddress):
 
     lw a3, CallDescrData__fpReturnSize(s1)
 
-    // Int return case
     beq a3, zero, LOCAL_LABEL(IntReturn)
 
-    // Struct with Float/Double field return case.
-    ori  t4, zero, CallDescrData__flagOneFloat
-    beq  t4, a3, LOCAL_LABEL(FloatReturn)
+    // Save struct returned according to hardware floating-point calling convention
 
-    ori  t4, zero, CallDescrData__flagOneDouble
-    beq  t4, a3, LOCAL_LABEL(DoubleReturn)
+    // Note: due to padding such structs may be larger than sizeof(CallDescrData::returnValue) (16 bytes)
+    // so just save the returned registers and let the routine copying the struct to the final memory location
+    // (CopyReturnedFpStructFromRegisters) worry about placing the fields as they were originally laid out.
 
-    ori  t4, zero, CallDescrData__flagFloatInt
-    beq  t4, a3, LOCAL_LABEL(FloatIntReturn)
+    fsd fa0, CallDescrData__returnValue(s1) // we have at least one floating field in fa0
 
-    ori  t4, zero, CallDescrData__flagDoubleInt
-    beq  t4, a3, LOCAL_LABEL(DoubleIntReturn)
+    andi a3, a3, FpStruct__BothFloat
+    bne a3, zero, LOCAL_LABEL(SecondFieldFloatReturn)
 
-    ori  t4, zero, CallDescrData__flagFloatLong
-    beq  t4, a3, LOCAL_LABEL(FloatLongReturn)
-
-    ori  t4, zero, CallDescrData__flagDoubleLong
-    beq  t4, a3, LOCAL_LABEL(DoubleLongReturn)
-
-    ori  t4, zero, CallDescrData__flagIntFloat
-    beq  t4, a3, LOCAL_LABEL(IntFloatReturn)
-
-    ori  t4, zero, CallDescrData__flagLongFloat
-    beq  t4, a3, LOCAL_LABEL(LongFloatReturn)
-
-    ori  t4, zero, CallDescrData__flagIntDouble
-    beq  t4, a3, LOCAL_LABEL(IntDoubleReturn)
-
-    ori  t4, zero, CallDescrData__flagLongDouble
-    beq  t4, a3, LOCAL_LABEL(LongDoubleReturn)
-
-    ori  t4, zero, CallDescrData__flagFloatFloat
-    beq  t4, a3, LOCAL_LABEL(FloatFloatReturn)
-
-    ori  t4, zero, CallDescrData__flagDoubleFloat
-    beq  t4, a3, LOCAL_LABEL(DoubleFloatReturn)
-
-    ori  t4, zero, CallDescrData__flagFloatDouble
-    beq  t4, a3, LOCAL_LABEL(FloatDoubleReturn)
-
-    ori  t4, zero, CallDescrData__flagDoubleDouble
-    beq  t4, a3, LOCAL_LABEL(DoubleDoubleReturn)
-
-LOCAL_LABEL(NotCorrectReturn):
-    sw  ra, 0(zero)
-    EMIT_BREAKPOINT // Unreachable
-
-LOCAL_LABEL(FloatReturn):
-    fsw  fa0, CallDescrData__returnValue(s1)
+    // The second returned field is integer (FpStruct::Float1st | FpStruct::Float2nd)
+    // Note: will go in here also for FpStruct::OnlyOne but storing a register of trash is probably faster than branching
+    sd a0, (CallDescrData__returnValue + 8)(s1)
     j  LOCAL_LABEL(ReturnDone)
 
-LOCAL_LABEL(DoubleReturn):
-    fsd  fa0, CallDescrData__returnValue(s1)
-    j  LOCAL_LABEL(ReturnDone)
-
-LOCAL_LABEL(FloatIntReturn):
-    fsw  fa0, CallDescrData__returnValue(s1)
-    sw  a0, (CallDescrData__returnValue + 4)(s1)
-    j  LOCAL_LABEL(ReturnDone)
-
-LOCAL_LABEL(DoubleIntReturn):
-    fsd  fa0, CallDescrData__returnValue(s1)
-    sw  a0, (CallDescrData__returnValue + 8)(s1)
-    j  LOCAL_LABEL(ReturnDone)
-
-LOCAL_LABEL(FloatLongReturn):
-    fsw  fa0, CallDescrData__returnValue(s1)
-    sd  a0, (CallDescrData__returnValue + 8)(s1)
-    j  LOCAL_LABEL(ReturnDone)
-
-LOCAL_LABEL(DoubleLongReturn):
-    fsd  fa0, CallDescrData__returnValue(s1)
-    sd  a0, (CallDescrData__returnValue + 8)(s1)
-    j  LOCAL_LABEL(ReturnDone)
-
-LOCAL_LABEL(IntFloatReturn):
-    sw  a0, CallDescrData__returnValue(s1)
-    fsw  fa0, (CallDescrData__returnValue + 4)(s1)
-    j  LOCAL_LABEL(ReturnDone)
-
-LOCAL_LABEL(LongFloatReturn):
-    sd  a0, CallDescrData__returnValue(s1)
-    fsw  fa0, (CallDescrData__returnValue + 8)(s1)
-    j  LOCAL_LABEL(ReturnDone)
-
-LOCAL_LABEL(IntDoubleReturn):
-    sw  a0, CallDescrData__returnValue(s1)
-    fsd  fa0, (CallDescrData__returnValue + 8)(s1)
-    j  LOCAL_LABEL(ReturnDone)
-
-LOCAL_LABEL(LongDoubleReturn):
-    sd  a0, CallDescrData__returnValue(s1)
-    fsd  fa0, (CallDescrData__returnValue + 8)(s1)
-    j  LOCAL_LABEL(ReturnDone)
-
-LOCAL_LABEL(FloatFloatReturn):
-    fsw  fa0, CallDescrData__returnValue(s1)
-    fsw  fa1, (CallDescrData__returnValue + 4)(s1)
-    j  LOCAL_LABEL(ReturnDone)
-
-LOCAL_LABEL(DoubleFloatReturn):
-    fsd  fa0, CallDescrData__returnValue(s1)
-    fsw  fa1, (CallDescrData__returnValue + 8)(s1)
-    j  LOCAL_LABEL(ReturnDone)
-
-LOCAL_LABEL(FloatDoubleReturn):
-    fsw  fa0, CallDescrData__returnValue(s1)
-    fsd  fa1, (CallDescrData__returnValue + 8)(s1)
-    j  LOCAL_LABEL(ReturnDone)
-
-LOCAL_LABEL(DoubleDoubleReturn):
-    fsd  fa0, CallDescrData__returnValue(s1)
-    fsd  fa1, (CallDescrData__returnValue + 8)(s1)
+LOCAL_LABEL(SecondFieldFloatReturn):
+    fsd fa1, (CallDescrData__returnValue + 8)(s1)
     j  LOCAL_LABEL(ReturnDone)
 
 LOCAL_LABEL(IntReturn):
-    // Save return value into retbuf for int
+    // Save struct returned according to integer calling convention
     sd  a0, CallDescrData__returnValue(s1)
     sd  a1, (CallDescrData__returnValue + 8)(s1)
 
 LOCAL_LABEL(ReturnDone):
-
     EPILOG_STACK_RESTORE
     EPILOG_RESTORE_REG  s1, 16
     EPILOG_RESTORE_REG_PAIR_INDEXED  fp, ra, 0x20

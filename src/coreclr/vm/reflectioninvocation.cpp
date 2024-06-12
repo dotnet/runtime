@@ -704,7 +704,17 @@ FCIMPL4(Object*, RuntimeMethodHandle::InvokeMethod,
         // we have allocated for this purpose.
         else if (!fHasRetBuffArg)
         {
-            CopyValueClass(gc.retVal->GetData(), &callDescrData.returnValue, gc.retVal->GetMethodTable());
+        #if defined(TARGET_RISCV64)
+            FpStructInRegistersInfo info = argit.GetReturnFpStructInRegistersInfo();
+            if (info.flags != FpStruct::UseIntCallConv)
+            {
+                CopyReturnedFpStructFromRegisters(gc.retVal->GetData(), callDescrData.returnValue, info);
+            }
+            else
+        #endif // TARGET_RISCV64
+            {
+                CopyValueClass(gc.retVal->GetData(), &callDescrData.returnValue, gc.retVal->GetMethodTable());
+            }
         }
         // From here on out, it is OK to have GCs since the return object (which may have had
         // GC pointers has been put into a GC object and thus protected.

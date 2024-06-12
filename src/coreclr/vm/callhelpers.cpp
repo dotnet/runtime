@@ -162,6 +162,46 @@ void DispatchCallDebuggerWrapper(
     PAL_ENDTRY
 }
 
+#if defined(TARGET_RISCV64)
+void CopyReturnedFpStructFromRegisters(void* dest, UINT64 returnRegs[2], FpStructInRegistersInfo info)
+{
+    _ASSERTE(info.flags != FpStruct::UseIntCallConv);
+    unsigned reg1Offset, reg1Size; // offset and size of the field passed in the first saved register (fa0)
+    unsigned reg2Offset, reg2Size; // offset and size of the field passed in the second saved register (fa1 or a0)
+    if (info.flags & FpStruct::Float2nd)
+    {
+        reg1Offset = info.offset2nd;
+        reg2Offset = info.offset1st;
+        reg1Size = info.GetSize2nd();
+        reg2Size = info.GetSize1st();
+    }
+    else
+    {
+        reg1Offset = info.offset1st;
+        reg2Offset = info.offset2nd;
+        reg1Size = info.GetSize1st();
+        reg2Size = info.GetSize2nd();
+    }
+
+    memcpyNoGCRefs((char*)dest + reg1Offset, &returnRegs[0], reg1Size);
+
+    if ((info.flags & FpStruct::OnlyOne) == 0)
+    {
+        char* pField = (char*)dest + reg2Offset;
+        if (info.flags & FpStruct::GcRef)
+        {
+            _ASSERTE(info.flags & (FpStruct::Float1st | FpStruct::Float2nd));
+            _ASSERTE(reg2Size == TARGET_POINTER_SIZE);
+            memmoveGCRefs(pField, &returnRegs[1], TARGET_POINTER_SIZE);
+        }
+        else
+        {
+            memcpyNoGCRefs(pField, &returnRegs[1], reg2Size);
+        }
+    }
+}
+#endif // TARGET_RISCV64
+
 // Helper for VM->managed calls with simple signatures.
 void * DispatchCallSimple(
                     SIZE_T *pSrc,

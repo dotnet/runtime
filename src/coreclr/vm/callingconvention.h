@@ -436,6 +436,21 @@ public:
         return m_dwFlags >> RETURN_FP_SIZE_SHIFT;
     }
 
+#if defined(TARGET_RISCV64)
+    FpStructInRegistersInfo GetReturnFpStructInRegistersInfo()
+    {
+        WRAPPER_NO_CONTRACT;
+        if (!(m_dwFlags & RETURN_FLAGS_COMPUTED))
+            ComputeReturnFlags();
+
+        return {
+            FpStruct::Flags(m_dwFlags >> RETURN_FP_SIZE_SHIFT),
+            m_returnedFpFieldOffsets[0],
+            m_returnedFpFieldOffsets[1],
+        };
+    }
+#endif // TARGET_RISCV64
+
 #ifdef TARGET_X86
     //=========================================================================
     // Indicates whether an argument is to be put in a register using the
@@ -923,6 +938,11 @@ public:
 protected:
     DWORD               m_dwFlags;              // Cached flags
     int                 m_nSizeOfArgStack;      // Cached value of SizeOfArgStack
+#if defined(TARGET_RISCV64)
+    // Offsets of fields returned according to hardware floating-point calling convention
+    // (FpStruct::Flags are embedded in m_dwFlags, accessible with GetFPReturnSize())
+    unsigned m_returnedFpFieldOffsets[2];
+#endif
 
     DWORD               m_argNum;
 
@@ -2033,7 +2053,9 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ComputeReturnFlags()
 #elif defined(TARGET_RISCV64)
             assert(!thValueType.IsTypeDesc());
             FpStructInRegistersInfo info = MethodTable::GetRiscV64PassFpStructInRegistersInfo(thValueType);
-            flags |= (info.ToOldFlags() & 0xff) << RETURN_FP_SIZE_SHIFT;
+            flags |= info.flags << RETURN_FP_SIZE_SHIFT;
+            m_returnedFpFieldOffsets[0] = info.offset1st;
+            m_returnedFpFieldOffsets[1] = info.offset2nd;
 
             if  (info.flags != FpStruct::UseIntCallConv || size <= ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE)
                 break;
