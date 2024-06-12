@@ -33,18 +33,18 @@ namespace System.Text.Json.Serialization.Converters
             return ReadAsPropertyNameCore(ref reader, typeToConvert, options);
         }
 
-        private protected static JsonSchema GetSchemaForNumericType(JsonSchemaType schemaType, JsonNumberHandling numberHandling, bool isFloatingPoint = false)
+        private protected static JsonSchema GetSchemaForNumericType(JsonSchemaType schemaType, JsonNumberHandling numberHandling, bool isIeeeFloatingPoint = false)
         {
             Debug.Assert(schemaType is JsonSchemaType.Integer or JsonSchemaType.Number);
-            Debug.Assert(!isFloatingPoint || schemaType is JsonSchemaType.Number);
-#if NETCOREAPP
-            Debug.Assert(isFloatingPoint == (typeof(T) == typeof(double) || typeof(T) == typeof(float) || typeof(T) == typeof(Half)));
+            Debug.Assert(!isIeeeFloatingPoint || schemaType is JsonSchemaType.Number);
+#if NET
+            Debug.Assert(isIeeeFloatingPoint == (typeof(T) == typeof(double) || typeof(T) == typeof(float) || typeof(T) == typeof(Half)));
 #endif
             if ((numberHandling & (JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.WriteAsString)) != 0)
             {
                 schemaType |= JsonSchemaType.String;
             }
-            else if (isFloatingPoint && numberHandling is JsonNumberHandling.AllowNamedFloatingPointLiterals)
+            else if (isIeeeFloatingPoint && numberHandling is JsonNumberHandling.AllowNamedFloatingPointLiterals)
             {
                 return new JsonSchema
                 {

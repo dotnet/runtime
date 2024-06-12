@@ -184,7 +184,7 @@ namespace System.Text.Json.Schema.Tests
                 """);
 
             yield return new TestData<PocoWithRequiredMembers>(
-                new() { X = "str1", Y = "str2" },
+                new() { X = "str1", Y = "str2", Z = 42 },
                 ExpectedJsonSchema: """
                 {
                   "type": ["object","null"],
