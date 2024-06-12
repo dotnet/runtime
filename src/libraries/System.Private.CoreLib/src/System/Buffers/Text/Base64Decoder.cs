@@ -277,20 +277,20 @@ namespace System.Buffers.Text
                     OperationStatus.InvalidData;
             }
 
-            static OperationStatus InvalidDataFallback(ReadOnlySpan<T> utf8, Span<byte> bytes, ref int bytesConsumed, ref int bytesWritten, bool isFinalBlock)
+            static OperationStatus InvalidDataFallback(ReadOnlySpan<T> source, Span<byte> bytes, ref int bytesConsumed, ref int bytesWritten, bool isFinalBlock)
             {
-                utf8 = utf8.Slice(bytesConsumed);
+                source = source.Slice(bytesConsumed);
                 bytes = bytes.Slice(bytesWritten);
 
                 OperationStatus status;
                 do
                 {
-                    int localConsumed = TBase64Decoder.IndexOfAnyExceptWhiteSpace(utf8);
+                    int localConsumed = TBase64Decoder.IndexOfAnyExceptWhiteSpace(source);
                     if (localConsumed < 0)
                     {
                         // The remainder of the input is all whitespace. Mark it all as having been consumed,
                         // and mark the operation as being done.
-                        bytesConsumed += utf8.Length;
+                        bytesConsumed += source.Length;
                         status = OperationStatus.Done;
                         break;
                     }
@@ -303,15 +303,15 @@ namespace System.Buffers.Text
                         // Fall back to block-wise decoding. This is very slow, but it's also very non-standard
                         // formatting of the input; whitespace is typically only found between blocks, such as
                         // when Convert.ToBase64String inserts a line break every 76 output characters.
-                        return TBase64Decoder.DecodeWithWhiteSpaceBlockwiseWrapper<TBase64Decoder>(utf8, bytes, ref bytesConsumed, ref bytesWritten, isFinalBlock);
+                        return TBase64Decoder.DecodeWithWhiteSpaceBlockwiseWrapper<TBase64Decoder>(source, bytes, ref bytesConsumed, ref bytesWritten, isFinalBlock);
                     }
 
                     // Skip over the starting whitespace and continue.
                     bytesConsumed += localConsumed;
-                    utf8 = utf8.Slice(localConsumed);
+                    source = source.Slice(localConsumed);
 
                     // Try again after consumed whitespace
-                    status = DecodeFrom<TBase64Decoder, T>(utf8, bytes, out localConsumed, out int localWritten, isFinalBlock, ignoreWhiteSpace: false);
+                    status = DecodeFrom<TBase64Decoder, T>(source, bytes, out localConsumed, out int localWritten, isFinalBlock, ignoreWhiteSpace: false);
                     bytesConsumed += localConsumed;
                     bytesWritten += localWritten;
                     if (status is not OperationStatus.InvalidData)
@@ -319,10 +319,10 @@ namespace System.Buffers.Text
                         break;
                     }
 
-                    utf8 = utf8.Slice(localConsumed);
+                    source = source.Slice(localConsumed);
                     bytes = bytes.Slice(localWritten);
                 }
-                while (!utf8.IsEmpty);
+                while (!source.IsEmpty);
 
                 return status;
             }
@@ -528,9 +528,9 @@ namespace System.Buffers.Text
 
                 bool hasAnotherBlock;
 
-                if (typeof(TBase64Decoder) == typeof(Base64DecoderByte) || bufferIdx == 1)
+                if (typeof(TBase64Decoder) == typeof(Base64DecoderByte))
                 {
-                    hasAnotherBlock = source.Length >= BlockSize && bufferIdx == BlockSize;
+                    hasAnotherBlock = source.Length >= BlockSize;
                 }
                 else
                 {
