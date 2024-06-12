@@ -535,8 +535,8 @@ namespace System.Buffers.Text
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static unsafe int Decode(byte* encodedBytes, ref sbyte decodingMap) =>
-                Base64DecoderByte.Decode(encodedBytes, ref decodingMap);
+            public static unsafe int DecodeFourElements(byte* source, ref sbyte decodingMap) =>
+                Base64DecoderByte.DecodeFourElements(source, ref decodingMap);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static unsafe int DecodeRemaining(byte* srcEnd, ref sbyte decodingMap, long remaining, out uint t2, out uint t3)
@@ -618,12 +618,13 @@ namespace System.Buffers.Text
                 Base64UrlDecoderByte.TryDecode256Core(str, hiNibbles, maskSlashOrUnderscore, lutLow, lutHigh, lutShift, shiftForUnderscore, out result);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static unsafe int Decode(ushort* encodedBytes, ref sbyte decodingMap)
+            public static unsafe int DecodeFourElements(ushort* source, ref sbyte decodingMap)
             {
-                uint t0 = encodedBytes[0];
-                uint t1 = encodedBytes[1];
-                uint t2 = encodedBytes[2];
-                uint t3 = encodedBytes[3];
+                // The 'source' span expected to have at least 4 elements, and the 'decodingMap' consists 256 sbytes
+                uint t0 = source[0];
+                uint t1 = source[1];
+                uint t2 = source[2];
+                uint t3 = source[3];
 
                 if (((t0 | t1 | t2 | t3) & 0xffffff00) != 0)
                 {

@@ -124,7 +124,7 @@ namespace System.Buffers.Text
                 Vector256<sbyte> lutShift,
                 Vector256<sbyte> shiftForUnderscore,
                 out Vector256<sbyte> result);
-            static abstract unsafe int Decode(T* encodedBytes, ref sbyte decodingMap);
+            static abstract unsafe int DecodeFourElements(T* source, ref sbyte decodingMap);
             static abstract unsafe int DecodeRemaining(T* srcEnd, ref sbyte decodingMap, long remaining, out uint t2, out uint t3);
             static abstract int IndexOfAnyExceptWhiteSpace(ReadOnlySpan<T> span);
             static abstract OperationStatus DecodeWithWhiteSpaceBlockwiseWrapper<TTBase64Decoder>(ReadOnlySpan<T> source,

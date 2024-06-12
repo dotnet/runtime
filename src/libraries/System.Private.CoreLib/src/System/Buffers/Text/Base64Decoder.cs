@@ -142,7 +142,7 @@ namespace System.Buffers.Text
 
                 while (src < srcMax)
                 {
-                    int result = TBase64Decoder.Decode(src, ref decodingMap);
+                    int result = TBase64Decoder.DecodeFourElements(src, ref decodingMap);
 
                     if (result < 0)
                     {
@@ -386,7 +386,7 @@ namespace System.Buffers.Text
                 {
                     while (sourceIndex < bufferLength - 4)
                     {
-                        int result = Decode(bufferBytes + sourceIndex, ref decodingMap);
+                        int result = Base64DecoderByte.DecodeFourElements(bufferBytes + sourceIndex, ref decodingMap);
                         if (result < 0)
                         {
                             goto InvalidExit;
@@ -1183,30 +1183,6 @@ namespace System.Buffers.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe int Decode(byte* encodedBytes, ref sbyte decodingMap)
-        {
-            uint t0 = encodedBytes[0];
-            uint t1 = encodedBytes[1];
-            uint t2 = encodedBytes[2];
-            uint t3 = encodedBytes[3];
-
-            int i0 = Unsafe.Add(ref decodingMap, t0);
-            int i1 = Unsafe.Add(ref decodingMap, t1);
-            int i2 = Unsafe.Add(ref decodingMap, t2);
-            int i3 = Unsafe.Add(ref decodingMap, t3);
-
-            i0 <<= 18;
-            i1 <<= 12;
-            i2 <<= 6;
-
-            i0 |= i3;
-            i1 |= i2;
-
-            i0 |= i1;
-            return i0;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe void WriteThreeLowOrderBytes(byte* destination, int value)
         {
             destination[0] = (byte)(value >> 16);
@@ -1398,12 +1374,13 @@ namespace System.Buffers.Text
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static unsafe int Decode(byte* encodedBytes, ref sbyte decodingMap)
+            public static unsafe int DecodeFourElements(byte* source, ref sbyte decodingMap)
             {
-                uint t0 = encodedBytes[0];
-                uint t1 = encodedBytes[1];
-                uint t2 = encodedBytes[2];
-                uint t3 = encodedBytes[3];
+                // The 'source' span expected to have at least 4 elements, and the 'decodingMap' consists 256 sbytes
+                uint t0 = source[0];
+                uint t1 = source[1];
+                uint t2 = source[2];
+                uint t3 = source[3];
 
                 int i0 = Unsafe.Add(ref decodingMap, t0);
                 int i1 = Unsafe.Add(ref decodingMap, t1);
