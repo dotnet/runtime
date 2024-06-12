@@ -55,8 +55,6 @@ namespace System.Net.Http
 
         private static void RegistryChangeNotificationCallback(object? state, bool timedOut)
         {
-            Console.WriteLine("WaitOrTimerCallback called!!!! {0}", timedOut);
-
             HttpWindowsProxy proxy = (HttpWindowsProxy)state!;
             // We need to register for notification every time
             Interop.Advapi32.RegNotifyChangeKeyValue(proxy._internetSettingsRegistry!.Handle, true, _registrationFlags, proxy._waitHandle.SafeWaitHandle, true);
@@ -67,7 +65,6 @@ namespace System.Net.Http
         {
 
             WinInetProxyHelper proxyHelper = new WinInetProxyHelper();
-            Console.WriteLine("UpateProxies {0} {1}", proxyHelper.ManualSettingsUsed, proxyHelper.AutoSettingsUsed);
 
             if (proxyHelper.AutoSettingsUsed)
             {
