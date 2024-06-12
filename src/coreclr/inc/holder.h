@@ -1195,7 +1195,7 @@ public:
 //
 //  {
 //      HKEYHolder hFoo = NULL;
-//      WszRegOpenKeyEx(HKEY_CLASSES_ROOT, L"Interface",0, KEY_READ, hFoo);
+//      RegOpenKeyEx(HKEY_CLASSES_ROOT, L"Interface",0, KEY_READ, hFoo);
 //
 //  } // close key on out of scope via RegCloseKey.
 //-----------------------------------------------------------------------------

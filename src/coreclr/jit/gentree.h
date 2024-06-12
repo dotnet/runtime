@@ -5610,7 +5610,7 @@ struct GenTreeCall final : public GenTree
             return WellKnownArg::VirtualStubCell;
         }
 
-#if defined(TARGET_ARMARCH) || defined(TARGET_RISCV64)
+#if defined(TARGET_ARMARCH) || defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
         // For ARM architectures, we always use an indirection cell for R2R calls.
         if (IsR2RRelativeIndir() && !IsDelegateInvoke())
         {
@@ -6504,6 +6504,8 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     {
     }
 #endif
+
+    static bool OperIsBitwiseHWIntrinsic(genTreeOps oper);
 
     bool OperIsMemoryLoad(GenTree** pAddr = nullptr) const;
     bool OperIsMemoryStore(GenTree** pAddr = nullptr) const;

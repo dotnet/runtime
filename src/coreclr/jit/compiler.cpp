@@ -3740,6 +3740,29 @@ bool Compiler::compPromoteFewerStructs(unsigned lclNum)
 //
 // Arguments:
 //   regs - The set of registers to display
+//   type - The type of `regs`
+//
+void Compiler::dumpRegMask(SingleTypeRegSet regs, var_types type) const
+{
+#ifdef FEATURE_MASKED_HW_INTRINSICS
+    if (varTypeIsMask(type))
+    {
+        dumpRegMask(regMaskTP(RBM_NONE, regs));
+    }
+    else
+#endif
+    {
+        assert(varTypeUsesIntReg(type) || varTypeUsesFloatReg(type));
+        dumpRegMask(regMaskTP(regs, RBM_NONE));
+    }
+}
+
+//------------------------------------------------------------------------
+// dumpRegMask: display a register mask. For well-known sets of registers, display a well-known token instead of
+// a potentially large number of registers.
+//
+// Arguments:
+//   regs - The set of registers to display
 //
 void Compiler::dumpRegMask(regMaskTP regs) const
 {

@@ -1056,7 +1056,7 @@ namespace System
         {
             int length = str.Length;
 
-            // We allocate one char more than the length to accomodate a null terminator.
+            // We allocate one char more than the length to accommodate a null terminator.
             // That lets the reading always be performed two characters at a time, as odd-length
             // inputs will have a final terminator to backstop the last read.
             char[]? borrowedArr = null;
