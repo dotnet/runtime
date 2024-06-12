@@ -11,24 +11,12 @@ namespace System.Runtime.Serialization.Formatters.Binary
     {
         private static readonly ConcurrentDictionary<Type, TypeInformation> s_typeNameCache = new ConcurrentDictionary<Type, TypeInformation>();
 
-        private static readonly bool s_disallowedByPlatform =
-            OperatingSystem.IsAndroid() ||
-            OperatingSystem.IsBrowser() ||
-            OperatingSystem.IsIOS() ||
-            OperatingSystem.IsMacCatalyst() ||
-            OperatingSystem.IsTvOS();
-
         internal object[]? _crossAppDomainArray;
 
         [RequiresDynamicCode(IFormatter.RequiresDynamicCodeMessage)]
         [RequiresUnreferencedCode(IFormatter.RequiresUnreferencedCodeMessage)]
         public object Deserialize(Stream serializationStream)
         {
-            if (s_disallowedByPlatform)
-            {
-                throw new PlatformNotSupportedException(SR.BinaryFormatter_SerializationNotSupportedOnThisPlatform);
-            }
-
             // don't refactor the 'throw' into a helper method; trimming tools will have difficulty trimming
             if (!LocalAppContextSwitches.BinaryFormatterEnabled)
             {
