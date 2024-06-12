@@ -106,6 +106,6 @@
     <value>Non-negative number required.</value>
   </data>
   <data name="InvalidOperation_IncompatibleComparer" xml:space="preserve">
-    <value>The collection's comparer does not support the requested operation.</value>
+    <value>The collection, in conjunction with its comparer, does not support the specified alternate key type.</value>
   </data>
 </root>

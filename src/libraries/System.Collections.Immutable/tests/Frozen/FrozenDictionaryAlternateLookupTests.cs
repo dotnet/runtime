@@ -12,12 +12,26 @@ namespace System.Collections.Frozen.Tests
         [Fact]
         public void AlternateLookup_Empty()
         {
-            Assert.False(FrozenDictionary<string, string>.Empty.TryGetAlternateLookup<ReadOnlySpan<char>>(out _));
-
-            foreach (StringComparer comparer in new[] { StringComparer.Ordinal, StringComparer.OrdinalIgnoreCase })
+            FrozenDictionary<string, string>[] unsupported =
+            [
+                FrozenDictionary<string, string>.Empty,
+                FrozenDictionary.ToFrozenDictionary<string, string>([]),
+                FrozenDictionary.ToFrozenDictionary<string, string>([], EqualityComparer<string>.Default),
+            ];
+            foreach (FrozenDictionary<string, string> frozen in unsupported)
             {
-                FrozenDictionary<string, string>.AlternateLookup<ReadOnlySpan<char>> lookup =
-                    FrozenDictionary.ToFrozenDictionary<string, string>([], comparer).GetAlternateLookup<ReadOnlySpan<char>>();
+                Assert.Throws<InvalidOperationException>(() => frozen.GetAlternateLookup<ReadOnlySpan<char>>());
+                Assert.False(frozen.TryGetAlternateLookup<ReadOnlySpan<char>>(out _));
+            }
+
+            FrozenDictionary<string, string>[] supported =
+            [
+                FrozenDictionary.ToFrozenDictionary<string, string>([], StringComparer.Ordinal),
+                FrozenDictionary.ToFrozenDictionary<string, string>([], StringComparer.OrdinalIgnoreCase),
+            ];
+            foreach (FrozenDictionary<string, string> frozen in supported)
+            {
+                FrozenDictionary<string, string>.AlternateLookup<ReadOnlySpan<char>> lookup = frozen.GetAlternateLookup<ReadOnlySpan<char>>();
                 Assert.False(lookup.ContainsKey("anything".AsSpan()));
             }
         }
