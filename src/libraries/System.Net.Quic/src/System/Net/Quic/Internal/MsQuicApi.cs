@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Net.Sockets;
+using System.IO;
 using System.Runtime.InteropServices;
 using Microsoft.Quic;
 using static Microsoft.Quic.MsQuic;
@@ -89,8 +90,20 @@ internal sealed unsafe partial class MsQuicApi
 
         if (OperatingSystem.IsWindows())
         {
-            // Windows ships msquic in the assembly directory.
-            loaded = NativeLibrary.TryLoad(Interop.Libraries.MsQuic, typeof(MsQuicApi).Assembly, DllImportSearchPath.AssemblyDirectory, out msQuicHandle);
+            // we ship Schannel version of MsQuic as part of the .NET runtime.
+            // This version works on newer OS versions (see s_minWindowsVersion).
+            //
+            // For cases where the Schannel version cannot be used, we want to
+            // support developers explicitly providing OpenSSL version of MsQuic.
+            // in the application directory, so we first check there and default
+            // to the Schannel version if not found.
+#pragma warning disable IL3000
+            loaded = NativeLibrary.TryLoad(Path.Combine(AppContext.BaseDirectory, Interop.Libraries.MsQuic), out msQuicHandle);
+
+            if (!loaded)
+            {
+                loaded = NativeLibrary.TryLoad(Interop.Libraries.MsQuic, typeof(MsQuicApi).Assembly, DllImportSearchPath.AssemblyDirectory, out msQuicHandle);
+            }
         }
         else
         {
