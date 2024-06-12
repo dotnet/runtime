@@ -18,10 +18,12 @@ internal sealed class MethodTable : IData<MethodTable>
         BaseSize = target.Read<uint>(address + (ulong)type.Fields[nameof(BaseSize)].Offset);
         DwFlags2 = target.Read<uint>(address + (ulong)type.Fields[nameof(DwFlags2)].Offset);
         EEClassOrCanonMT = target.ReadPointer(address + (ulong)type.Fields[nameof(EEClassOrCanonMT)].Offset);
+        Module = target.ReadPointer(address + (ulong)type.Fields[(nameof(Module))].Offset);
     }
 
     public uint DwFlags { get; init; }
     public uint BaseSize { get; init; }
     public uint DwFlags2 { get; init; }
     public TargetPointer EEClassOrCanonMT { get; init; }
+    public TargetPointer Module { get; init; }
 }

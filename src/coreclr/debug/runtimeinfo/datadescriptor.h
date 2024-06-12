@@ -134,6 +134,8 @@ CDAC_TYPE_FIELD(MethodTable, /*uint32*/, DwFlags, cdac_offsets<MethodTable>::m_d
 CDAC_TYPE_FIELD(MethodTable, /*uint32*/, BaseSize, cdac_offsets<MethodTable>::m_BaseSize)
 CDAC_TYPE_FIELD(MethodTable, /*uint32*/, DwFlags2, cdac_offsets<MethodTable>::m_dwFlags2)
 CDAC_TYPE_FIELD(MethodTable, /*nuint*/, EEClassOrCanonMT, cdac_offsets<MethodTable>::m_pEEClassOrCanonMT)
+CDAC_TYPE_FIELD(MethodTable, /*pointer*/, Module, cdac_offsets<MethodTable>::m_pModule)
+CDAC_TYPE_FIELD(MethodTable, /*pointer*/, AuxiliaryData, cdac_offsets<MethodTable>::m_pAuxiliaryData)
 CDAC_TYPE_END(MethodTable)
 
 CDAC_TYPE_BEGIN(EEClass)

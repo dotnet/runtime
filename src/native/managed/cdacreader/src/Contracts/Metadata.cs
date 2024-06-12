@@ -24,6 +24,8 @@ internal interface IMetadata : IContract
     }
 
     public virtual MethodTable GetMethodTableData(TargetPointer targetPointer) => throw new NotImplementedException();
+
+    public virtual TargetPointer GetClass(in MethodTable methodTable) => throw new NotImplementedException();
 }
 
 internal struct Metadata : IMetadata
@@ -57,7 +59,20 @@ internal struct UntrustedMethodTable_1 : IMethodTableFlags
 
     public TargetPointer EEClassOrCanonMT => _target.ReadPointer(Address + (ulong)_type.Fields[nameof(EEClassOrCanonMT)].Offset);
     public TargetPointer EEClass => Metadata_1.GetEEClassOrCanonMTBits(EEClassOrCanonMT) == Metadata_1.EEClassOrCanonMTBits.EEClass ? EEClassOrCanonMT : throw new InvalidOperationException("not an EEClass");
-    public TargetPointer CanonMT => Metadata_1.GetEEClassOrCanonMTBits(EEClassOrCanonMT) == Metadata_1.EEClassOrCanonMTBits.CanonMT ? EEClassOrCanonMT : throw new InvalidOperationException("not a canonical method table");
+    public TargetPointer CanonMT
+    {
+        get
+        {
+            if (Metadata_1.GetEEClassOrCanonMTBits(EEClassOrCanonMT) == Metadata_1.EEClassOrCanonMTBits.CanonMT)
+            {
+                return new TargetPointer((ulong)EEClassOrCanonMT & ~(ulong)Metadata_1.EEClassOrCanonMTBits.Mask);
+            }
+            else
+            {
+                throw new InvalidOperationException("not a canonical method table");
+            }
+        }
+    }
 }
 
 internal struct UntrustedEEClass_1
@@ -92,8 +107,14 @@ internal struct MethodTable_1 : IMethodTableFlags
     public uint DwFlags2 => MethodTableData.DwFlags2;
     public uint BaseSize => MethodTableData.BaseSize;
     public TargetPointer EEClassOrCanonMT => MethodTableData.EEClassOrCanonMT;
+    public TargetPointer Module => MethodTableData.Module;
 
     public TargetPointer EEClass => Metadata_1.GetEEClassOrCanonMTBits(EEClassOrCanonMT) == Metadata_1.EEClassOrCanonMTBits.EEClass ? EEClassOrCanonMT : throw new InvalidOperationException("not an EEClass");
+
+    public bool IsString => ((IMethodTableFlags)this).IsString;
+
+    public int GetComponentSize() => ((IMethodTableFlags)this).HasComponentSize ? ((IMethodTableFlags)this).RawGetComponentSize() : 0;
+
 }
 
 internal struct EEClass_1
@@ -264,5 +285,20 @@ internal partial struct Metadata_1 : IMetadata
     private static TargetPointer GetMethodTableWithPossibleAV(ref readonly UntrustedEEClass eeClass)
     {
         return eeClass.MethodTable;
+    }
+
+    internal TargetPointer GetClass(ref readonly MethodTable methodTable)
+    {
+        switch (GetEEClassOrCanonMTBits(methodTable.EEClassOrCanonMT))
+        {
+            case EEClassOrCanonMTBits.EEClass:
+                return methodTable.EEClassOrCanonMT;
+            case EEClassOrCanonMTBits.CanonMT:
+                TargetPointer canonMTPtr = new TargetPointer((ulong)methodTable.EEClassOrCanonMT & ~(ulong)Metadata_1.EEClassOrCanonMTBits.Mask);
+                MethodTable canonMT = GetMethodTableData(canonMTPtr);
+                return canonMT.EEClassOrCanonMT; // canonical method table EEClassOrCanonMT is always EEClass
+            default:
+                throw new InvalidOperationException();
+        }
     }
 }

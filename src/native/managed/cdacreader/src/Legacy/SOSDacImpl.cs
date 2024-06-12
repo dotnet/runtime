@@ -91,7 +91,32 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface9
             Contracts.IMetadata contract = _target.Contracts.Metadata;
             Contracts.MethodTable_1 methodTable = contract.GetMethodTableData(mt);
 
-            return HResults.E_NOTIMPL;
+            DacpMethodTableData result = default;
+            result.baseSize = methodTable.BaseSize;
+            if (methodTable.IsString)
+                result.baseSize -= 2 /*sizeof(WCHAR) */;
+            result.componentSize = checked((uint)methodTable.GetComponentSize());
+            result.bIsFree = methodTable.IsFreeObjectMethodTable ? 1 : 0;
+            if (!methodTable.IsFreeObjectMethodTable)
+            {
+                result.module = methodTable.Module;
+                result.@class = contract.GetClass(in methodTable);
+#if false
+                // TODO
+                MTData->ParentMethodTable = HOST_CDADDR(pMT->GetParentMethodTable()); ;
+                MTData->wNumInterfaces = (WORD)pMT->GetNumInterfaces();
+                MTData->wNumMethods = pMT->GetNumMethods();
+                MTData->wNumVtableSlots = pMT->GetNumVtableSlots();
+                MTData->wNumVirtuals = pMT->GetNumVirtuals();
+                MTData->cl = pMT->GetCl();
+                MTData->dwAttrClass = pMT->GetAttrClass();
+                MTData->bContainsPointers = pMT->ContainsPointers();
+                MTData->bIsShared = FALSE;
+                MTData->bIsDynamic = pMT->IsDynamicStatics();
+#endif
+                return HResults.E_NOTIMPL;
+            }
+            return HResults.S_OK;
         }
         catch (Exception ex)
         {
