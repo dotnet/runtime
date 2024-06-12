@@ -9257,6 +9257,7 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
             DoGetArrayDataReference();
             didIntrinsic = true;
             break;
+
 #if INTERP_ILSTUBS
         case NI_System_StubHelpers_GetStubContext:
             OpStackSet<void*>(m_curStackHt, GetStubContext());
@@ -9266,20 +9267,21 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
 #endif // INTERP_ILSTUBS
 
         case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsReferenceOrContainsReferences:
-        {
-            CORINFO_SIG_INFO sigInfoFull;
-            {
-                GCX_PREEMP();
-                m_interpCeeInfo.getMethodSig(CORINFO_METHOD_HANDLE(methToCall), &sigInfoFull, nullptr);
-            }
-
-            MethodTable* typeArg = GetMethodTableFromClsHnd(sigInfoFull.sigInst.methInst[0]);
-            OpStackSet<BOOL>(m_curStackHt, typeArg->ContainsPointers());
-            OpStackTypeSet(m_curStackHt, InterpreterType(CORINFO_TYPE_INT));
-            m_curStackHt++;
+            DoIsReferenceOrContainsReferences(reinterpret_cast<CORINFO_METHOD_HANDLE>(methToCall));
             didIntrinsic = true;
-        }
-        break;
+            break;
+
+        case NI_System_Threading_Interlocked_CompareExchange:
+            didIntrinsic = DoInterlockedCompareExchange();
+            break;
+
+        case NI_System_Threading_Interlocked_Exchange:
+            didIntrinsic = DoInterlockedExchange();
+            break;
+
+        case NI_System_Threading_Interlocked_ExchangeAdd:
+            didIntrinsic = DoInterlockedExchangeAdd();
+            break;
 
         default:
 #if INTERP_TRACING
@@ -10920,6 +10922,169 @@ void Interpreter::DoGetArrayDataReference()
     OpStackTypeSet(ind, InterpreterType(CORINFO_TYPE_BYREF));
 }
 
+void Interpreter::DoIsReferenceOrContainsReferences(CORINFO_METHOD_HANDLE method)
+{
+    CONTRACTL{
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    } CONTRACTL_END;
+
+    CORINFO_SIG_INFO sigInfoFull;
+    {
+        GCX_PREEMP();
+        m_interpCeeInfo.getMethodSig(method, & sigInfoFull, nullptr);
+    }
+
+    MethodTable* typeArg = GetMethodTableFromClsHnd(sigInfoFull.sigInst.methInst[0]);
+    OpStackSet<BOOL>(m_curStackHt, typeArg->ContainsPointers());
+    OpStackTypeSet(m_curStackHt, InterpreterType(CORINFO_TYPE_INT));
+    m_curStackHt++;
+}
+
+bool Interpreter::DoInterlockedCompareExchange()
+{
+    CONTRACTL{
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    } CONTRACTL_END;
+
+    // These CompareExchange are must-expand:
+    // 
+    //  long   CompareExchange(ref long location1, long value, long comparand)
+    //  int    CompareExchange(ref int location1, int value, int comparand)
+    //  ushort CompareExchange(ref ushort location1, ushort value, ushort comparand)
+    //  byte   CompareExchange(ref byte location1, byte value, byte comparand)
+    //
+    // Detect these by comparand's type (stack - 1):
+    unsigned comparandInd = m_curStackHt - 1;
+    unsigned valueInd = m_curStackHt - 2;
+    unsigned locationInd = m_curStackHt - 3;
+    switch (OpStackTypeGet(comparandInd).ToCorInfoType())
+    {
+        case CORINFO_TYPE_LONG:
+            m_curStackHt -= 3;
+            OpStackSet<int64_t>(m_curStackHt, InterlockedCompareExchange64(
+                OpStackGet<int64_t*>(locationInd),
+                OpStackGet<int64_t>(valueInd),
+                OpStackGet<int64_t>(comparandInd)));
+            OpStackTypeSet(m_curStackHt, InterpreterType(CORINFO_TYPE_LONG));
+            m_curStackHt++;
+            return true;
+
+        case CORINFO_TYPE_INT:
+            m_curStackHt -= 3;
+            OpStackSet<LONG>(m_curStackHt, InterlockedCompareExchange(
+                OpStackGet<LONG*>(locationInd),
+                OpStackGet<LONG>(valueInd),
+                OpStackGet<LONG>(comparandInd)));
+            OpStackTypeSet(m_curStackHt, InterpreterType(CORINFO_TYPE_INT));
+            m_curStackHt++;
+            return true;
+
+        case CORINFO_TYPE_SHORT:
+        case CORINFO_TYPE_BYTE:
+            NYI_INTERP("TODO: Implement must-expand atomics for small types.");
+            return false;
+
+        default:
+            // Non must-expand intrinsics
+            return false;
+    }
+}
+
+bool Interpreter::DoInterlockedExchange()
+{
+    CONTRACTL{
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    } CONTRACTL_END;
+
+    // These Exchange are must-expand:
+    // 
+    //  long   Exchange(ref long location1, long value)
+    //  int    Exchange(ref int location1, int value)
+    //  ushort Exchange(ref ushort location1, ushort value)
+    //  byte   Exchange(ref byte location1, byte value)
+    //
+    // Detect these by value's type (stack - 1):
+    unsigned valueInd = m_curStackHt - 1;
+    unsigned locationInd = m_curStackHt - 2;
+    switch (OpStackTypeGet(valueInd).ToCorInfoType())
+    {
+        case CORINFO_TYPE_LONG:
+            m_curStackHt -= 2;
+            OpStackSet<int64_t>(m_curStackHt, InterlockedExchange64(
+                OpStackGet<int64_t*>(locationInd),
+                OpStackGet<int64_t>(valueInd)));
+            OpStackTypeSet(m_curStackHt, InterpreterType(CORINFO_TYPE_LONG));
+            m_curStackHt++;
+            return true;
+
+        case CORINFO_TYPE_INT:
+            m_curStackHt -= 2;
+            OpStackSet<LONG>(m_curStackHt, InterlockedExchange(
+                OpStackGet<LONG*>(locationInd),
+                OpStackGet<LONG>(valueInd)));
+            OpStackTypeSet(m_curStackHt, InterpreterType(CORINFO_TYPE_INT));
+            m_curStackHt++;
+            return true;
+
+        case CORINFO_TYPE_SHORT:
+        case CORINFO_TYPE_BYTE:
+            NYI_INTERP("TODO: Implement must-expand Exchange for small types.");
+            return false;
+
+        default:
+            // Non must-expand intrinsics
+            return false;
+    }
+}
+
+bool Interpreter::DoInterlockedExchangeAdd()
+{
+    CONTRACTL{
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    } CONTRACTL_END;
+
+    // These ExchangeAdd are must-expand:
+    // 
+    //  long ExchangeAdd(ref long location1, long value)
+    //  int  ExchangeAdd(ref int location1, int value)
+    //
+    // Detect these by value's type (stack - 1):
+    unsigned valueInd = m_curStackHt - 1;
+    unsigned locationInd = m_curStackHt - 2;
+    switch (OpStackTypeGet(valueInd).ToCorInfoType())
+    {
+        case CORINFO_TYPE_LONG:
+            m_curStackHt -= 2;
+            OpStackSet<int64_t>(m_curStackHt, InterlockedExchangeAdd64(
+                OpStackGet<int64_t*>(locationInd),
+                OpStackGet<int64_t>(valueInd)));
+            OpStackTypeSet(m_curStackHt, InterpreterType(CORINFO_TYPE_LONG));
+            m_curStackHt++;
+            return true;
+
+        case CORINFO_TYPE_INT:
+            m_curStackHt -= 2;
+            OpStackSet<LONG>(m_curStackHt, InterlockedExchangeAdd(
+                OpStackGet<LONG*>(locationInd),
+                OpStackGet<LONG>(valueInd)));
+            OpStackTypeSet(m_curStackHt, InterpreterType(CORINFO_TYPE_INT));
+            m_curStackHt++;
+            return true;
+
+        default:
+            // Non must-expand intrinsics
+            return false;
+    }
+}
+
 void Interpreter::RecordConstrainedCall()
 {
     CONTRACTL {
@@ -11787,6 +11952,24 @@ Interpreter::InterpreterNamedIntrinsics Interpreter::getNamedIntrinsicID(CEEInfo
                         {
                             result = NI_System_Runtime_CompilerServices_RuntimeHelpers_IsReferenceOrContainsReferences;
                         }
+                    }
+                }
+            }
+            else if (strncmp(namespaceName, "Threading", 8) == 0)
+            {
+                if (strcmp(className, "Interlocked") == 0)
+                {
+                    if (strcmp(methodName, "CompareExchange") == 0)
+                    {
+                        result = NI_System_Threading_Interlocked_CompareExchange;
+                    }
+                    else if (strcmp(methodName, "Exchange") == 0)
+                    {
+                        result = NI_System_Threading_Interlocked_Exchange;
+                    }
+                    else if (strcmp(methodName, "ExchangeAdd") == 0)
+                    {
+                        result = NI_System_Threading_Interlocked_ExchangeAdd;
                     }
                 }
             }

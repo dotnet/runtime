@@ -921,6 +921,9 @@ public:
         NI_System_StubHelpers_GetStubContext,
         NI_System_Runtime_InteropService_MemoryMarshal_GetArrayDataReference,
         NI_System_Runtime_CompilerServices_RuntimeHelpers_IsReferenceOrContainsReferences,
+        NI_System_Threading_Interlocked_CompareExchange,
+        NI_System_Threading_Interlocked_Exchange,
+        NI_System_Threading_Interlocked_ExchangeAdd,
     };
     static InterpreterNamedIntrinsics getNamedIntrinsicID(CEEInfo* info, CORINFO_METHOD_HANDLE methodHnd);
     static const char* getMethodName(CEEInfo* info, CORINFO_METHOD_HANDLE hnd, const char** className, const char** namespaceName = NULL, const char **enclosingClassName = NULL);
@@ -1791,6 +1794,10 @@ private:
     void DoSIMDHwAccelerated();
     void DoGetIsSupported();
     void DoGetArrayDataReference();
+    void DoIsReferenceOrContainsReferences(CORINFO_METHOD_HANDLE method);
+    bool DoInterlockedCompareExchange();
+    bool DoInterlockedExchange();
+    bool DoInterlockedExchangeAdd();
 
     // Returns the proper generics context for use in resolving tokens ("precise" in the sense of including generic instantiation
     // information).
