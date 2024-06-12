@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using Microsoft.Win32.SafeHandles;
+using Internal.Cryptography;
 using BCryptCreateHashFlags = Interop.BCrypt.BCryptCreateHashFlags;
 using BCryptOpenAlgorithmProviderFlags = Interop.BCrypt.BCryptOpenAlgorithmProviderFlags;
 using NTSTATUS = Interop.BCrypt.NTSTATUS;
@@ -60,6 +61,22 @@ namespace System.Security.Cryptography
                     _reusable = true;
                 }
             }
+        }
+
+        private HashProviderCng(
+            SafeBCryptAlgorithmHandle algorithmHandle,
+            SafeBCryptHashHandle hashHandle,
+            byte[]? key,
+            bool reusable,
+            int hashSize,
+            bool running)
+        {
+            _hAlgorithm = algorithmHandle;
+            _hHash = hashHandle;
+            _key = key.CloneByteArray();
+            _reusable = reusable;
+            _hashSize = hashSize;
+            _running = running;
         }
 
         public sealed override unsafe void AppendHashData(ReadOnlySpan<byte> source)
@@ -119,7 +136,14 @@ namespace System.Security.Cryptography
             }
         }
 
-        public override HashProvider Clone() => throw new System.NotImplementedException("TODO");
+        public override HashProviderCng Clone()
+        {
+            using (ConcurrencyBlock.Enter(ref _block))
+            {
+                SafeBCryptHashHandle clone = Interop.BCrypt.BCryptDuplicateHash(_hHash);
+                return new HashProviderCng(_hAlgorithm, clone, _key, _reusable, _hashSize, _running);
+            }
+        }
 
         public sealed override void Dispose(bool disposing)
         {
