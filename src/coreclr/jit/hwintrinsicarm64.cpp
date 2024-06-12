@@ -2657,17 +2657,17 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 1);
 
-            GenTree*  immOp1          = nullptr;
-            GenTree*  immOp2          = nullptr;
-            int       immLowerBound   = 0;
-            int       immUpperBound   = 0;
-            bool      hasFullRangeImm = false;
-            bool      useFallback     = false;
-            unsigned  immSimdSize     = simdSize;
-            var_types immSimdBaseType = simdBaseType;
-            CORINFO_ARG_LIST_HANDLE arg1 = sig->args;
-            var_types               argType = TYP_UNKNOWN;
-            CORINFO_CLASS_HANDLE    argClass = NO_CLASS_HANDLE;
+            GenTree*                immOp1          = nullptr;
+            GenTree*                immOp2          = nullptr;
+            int                     immLowerBound   = 0;
+            int                     immUpperBound   = 0;
+            bool                    hasFullRangeImm = false;
+            bool                    useFallback     = false;
+            unsigned                immSimdSize     = simdSize;
+            var_types               immSimdBaseType = simdBaseType;
+            CORINFO_ARG_LIST_HANDLE arg1            = sig->args;
+            var_types               argType         = TYP_UNKNOWN;
+            CORINFO_CLASS_HANDLE    argClass        = NO_CLASS_HANDLE;
 
             argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg1, &argClass)));
             immOp1  = getArgForHWIntrinsic(argType, argClass);
@@ -2675,7 +2675,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             HWIntrinsicInfo::lookupImmBounds(intrinsic, immSimdSize, immSimdBaseType, 1, &immLowerBound,
                                              &immUpperBound);
             if (CheckHWIntrinsicImmRange(intrinsic, simdBaseJitType, immOp1, mustExpand, immLowerBound, immUpperBound,
-                                     hasFullRangeImm, &useFallback))
+                                         hasFullRangeImm, &useFallback))
             {
                 // Convert to *Mask equivalent
                 NamedIntrinsic maskedIntrinsic =
