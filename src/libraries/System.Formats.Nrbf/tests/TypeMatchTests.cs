@@ -303,7 +303,12 @@ public class TypeMatchTests : ReadTests
         ArrayRecord arrayRecord = (ArrayRecord)NrbfDecoder.Decode(Serialize(array));
 
         Assert.Equal(typeof(T[]).GetTypeFullNameIncludingTypeForwards(), arrayRecord.TypeName.FullName);
-        Assert.Equal(typeof(T).GetAssemblyNameIncludingTypeForwards(), arrayRecord.TypeName.GetElementType().AssemblyName!.FullName);
+
+        string expectedAssemblyName = typeof(T).Assembly == typeof(object).Assembly
+            ? "mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
+            : typeof(T).Assembly.FullName;
+
+        Assert.Equal(expectedAssemblyName, arrayRecord.TypeName.AssemblyName!.FullName);
 
         if (PrimitiveTypes.Contains(typeof(T)))
         {
