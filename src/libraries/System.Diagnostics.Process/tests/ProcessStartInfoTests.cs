@@ -235,6 +235,8 @@ namespace System.Diagnostics.Tests
         {
             const string ExtraEnvVar = "TestEnvironmentOfChildProcess_SpecialStuff";
             Environment.SetEnvironmentVariable(ExtraEnvVar, "\x1234" + Environment.NewLine + "\x5678"); // ensure some Unicode characters and newlines are in the output
+            const string EmptyEnvVar = "TestEnvironmentOfChildProcess_Empty";
+            Environment.SetEnvironmentVariable(EmptyEnvVar, "");
             try
             {
                 // Schedule a process to see what env vars it gets.  Have it write out those variables
@@ -274,6 +276,7 @@ namespace System.Diagnostics.Tests
             finally
             {
                 Environment.SetEnvironmentVariable(ExtraEnvVar, null);
+                Environment.SetEnvironmentVariable(EmptyEnvVar, null);
             }
         }
 
