@@ -4316,7 +4316,7 @@ bool Lowering::TryLowerConditionToFlagsNode(GenTree* parent, GenTree* condition,
 #ifdef DEBUG
     if (comp->compStressCompile(Compiler::STRESS_SKIP_COND_NODE_LOWERING, 50))
     {
-        JITDUMP("JitStress: skip lowering attempt\n")
+        JITDUMP("JitStress: skip lowering attempt\n");
         return false;
     }
 #endif // DEBUG
