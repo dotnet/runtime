@@ -3744,17 +3744,6 @@ heap_segment* get_region_info_for_address (uint8_t* address)
     return ((heap_segment*)(&seg_mapping_table[basic_region_index]));
 }
 
-// Go from the physical start of a region to its region info.
-inline
-heap_segment* get_region_info (uint8_t* region_start)
-{
-    size_t region_index = (size_t)region_start >> gc_heap::min_segment_size_shr;
-    heap_segment* region_info_entry = (heap_segment*)&seg_mapping_table[region_index];
-    dprintf (REGIONS_LOG, ("region info for region %p is at %zd, %zx (alloc: %p)",
-        region_start, region_index, (size_t)region_info_entry, heap_segment_allocated (region_info_entry)));
-    return (heap_segment*)&seg_mapping_table[region_index];
-}
-
 // Go from the actual region info to its region start.
 inline
 uint8_t* get_region_start (heap_segment* region_info)
@@ -3767,6 +3756,17 @@ inline
 size_t get_region_size (heap_segment* region_info)
 {
     return (size_t)(heap_segment_reserved (region_info) - get_region_start (region_info));
+}
+
+// Go from the physical start of a region to its region info.
+inline
+heap_segment* get_region_info (uint8_t* region_start)
+{
+    size_t region_index = (size_t)region_start >> gc_heap::min_segment_size_shr;
+    heap_segment* region_info_entry = (heap_segment*)&seg_mapping_table[region_index];
+    dprintf (REGIONS_LOG, ("region info for region %p is at %zd, %zx (size: %zx, alloc: %p)",
+        region_start, region_index, (size_t)region_info_entry, get_region_size(region_info_entry), heap_segment_allocated (region_info_entry)));
+    return (heap_segment*)&seg_mapping_table[region_index];
 }
 
 inline
