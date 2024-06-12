@@ -3184,8 +3184,8 @@ bool Compiler::optIsProfitableToSubstitute(GenTree* dest, BasicBlock* destBlock,
                     return (simdBaseType == TYP_FLOAT) && vecCon->IsZero();
                 }
 
-                case NI_AVX512F_CompareEqualMask:
-                case NI_AVX512F_CompareNotEqualMask:
+                case NI_EVEX_CompareEqualMask:
+                case NI_EVEX_CompareNotEqualMask:
                 {
                     // We can optimize when the constant is zero, but only
                     // for non floating-point since +0.0 == -0.0

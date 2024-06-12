@@ -598,7 +598,7 @@ HRESULT GetStringizedTypeLibGuidForAssembly(Assembly *pAssembly, CQuickArray<BYT
     // Get the name, and determine its length.
     pszName = pAssembly->GetSimpleName();
     cbName=(ULONG)strlen(pszName);
-    cchName = WszMultiByteToWideChar(CP_ACP,0, pszName,cbName+1, 0,0);
+    cchName = MultiByteToWideChar(CP_ACP,0, pszName,cbName+1, 0,0);
 
     // See if there is a public key.
     EX_TRY
@@ -663,7 +663,7 @@ HRESULT GetStringizedTypeLibGuidForAssembly(Assembly *pAssembly, CQuickArray<BYT
     IfFailGo(rDef.ReSizeNoThrow(cbCur + cchName*sizeof(WCHAR) + sizeof(szTypeLibKeyName)-1 + cbSN + sizeof(ver)+sizeof(USHORT)));
 
     // Put it all together.  Name first.
-    WszMultiByteToWideChar(CP_ACP,0, pszName,cbName+1, (LPWSTR)(&rDef[cbCur]),cchName);
+    MultiByteToWideChar(CP_ACP,0, pszName,cbName+1, (LPWSTR)(&rDef[cbCur]),cchName);
     pName = (LPWSTR)(&rDef[cbCur]);
     for (pch=pName; *pch; ++pch)
         if (*pch == '.' || *pch == ' ')
@@ -907,7 +907,7 @@ int InternalWideToAnsi(_In_reads_(iNumWideChars) LPCWSTR szWideString, int iNumW
     if (fThrowOnUnmappableChar)
     {
         BOOL DefaultCharUsed = FALSE;
-        retval = WszWideCharToMultiByte(CP_ACP,
+        retval = WideCharToMultiByte(CP_ACP,
                                     flags,
                                     szWideString,
                                     iNumWideChars,
@@ -940,7 +940,7 @@ int InternalWideToAnsi(_In_reads_(iNumWideChars) LPCWSTR szWideString, int iNumW
     }
     else
     {
-        retval = WszWideCharToMultiByte(CP_ACP,
+        retval = WideCharToMultiByte(CP_ACP,
                                     flags,
                                     szWideString,
                                     iNumWideChars,
@@ -3715,7 +3715,7 @@ void InitializeComInterop()
     InitializeSListHead(&RCW::s_RCWStandbyList);
     ComCall::Init();
 #ifdef TARGET_X86
-    ComPlusCall::Init();
+    CLRToCOMCall::Init();
 #endif
     CtxEntryCache::Init();
     ComCallWrapperTemplate::Init();

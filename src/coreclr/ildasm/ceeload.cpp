@@ -79,7 +79,7 @@ BOOL PELoader::open(LPCSTR moduleName)
         return FALSE;
     m_FileSize = dwFileSizeLow;
 
-    m_hMapFile = WszCreateFileMapping(m_hFile, NULL, PAGE_READONLY, 0, 0, NULL);
+    m_hMapFile = CreateFileMapping(m_hFile, NULL, PAGE_READONLY, 0, 0, NULL);
     if (m_hMapFile == NULL)
         return FALSE;
 
@@ -108,7 +108,7 @@ BOOL PELoader::open(const WCHAR* moduleName)
         return FALSE;
     m_FileSize = dwFileSizeLow;
 
-    m_hMapFile = WszCreateFileMapping(m_hFile, NULL, PAGE_READONLY, 0, 0, NULL);
+    m_hMapFile = CreateFileMapping(m_hFile, NULL, PAGE_READONLY, 0, 0, NULL);
     if (m_hMapFile == NULL)
         return FALSE;
 

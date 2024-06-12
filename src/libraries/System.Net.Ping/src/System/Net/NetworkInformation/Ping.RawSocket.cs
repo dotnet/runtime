@@ -252,7 +252,6 @@ namespace System.Net.NetworkInformation
             SocketConfig socketConfig = GetSocketConfig(address, buffer, timeout, options);
             using (Socket socket = GetRawSocket(socketConfig))
             {
-                Span<byte> socketAddress = stackalloc byte[SocketAddress.GetMaximumAddressSize(address.AddressFamily)];
                 int ipHeaderLength = socketConfig.IsIpv4 ? MinIpHeaderLengthInBytes : 0;
                 try
                 {
@@ -290,29 +289,34 @@ namespace System.Net.NetworkInformation
                 {
                     // This happens on Linux where we explicitly subscribed to error messages
                     // We should be able to get more info by getting extended socket error from error queue.
-
-                    Interop.Sys.MessageHeader header = default;
-
-                    SocketError result;
-                    fixed (byte* sockAddr = &MemoryMarshal.GetReference(socketAddress))
-                    {
-                        header.SocketAddress = sockAddr;
-                        header.SocketAddressLen = socketAddress.Length;
-                        header.IOVectors = null;
-                        header.IOVectorCount = 0;
-
-                        result = Interop.Sys.ReceiveSocketError(socket.SafeHandle, &header);
-                    }
-
-                    if (result == SocketError.Success && header.SocketAddressLen > 0)
-                    {
-                        return CreatePingReply(IPStatus.TtlExpired, IPEndPointExtensions.GetIPAddress(socketAddress.Slice(0, header.SocketAddressLen)));
-                    }
+                    return CreatePingReplyForUnreachableHost(address, socket);
                 }
 
                 // We have exceeded our timeout duration, and no reply has been received.
                 return CreatePingReply(IPStatus.TimedOut);
             }
+        }
+
+        private static PingReply CreatePingReplyForUnreachableHost(IPAddress address, Socket socket)
+        {
+            Span<byte> socketAddress = stackalloc byte[SocketAddress.GetMaximumAddressSize(address.AddressFamily)];
+            unsafe
+            {
+                Interop.Sys.MessageHeader header = default;
+
+                SocketError result;
+                fixed (byte* sockAddr = &MemoryMarshal.GetReference(socketAddress))
+                {
+                    header.SocketAddress = sockAddr;
+                    header.SocketAddressLen = socketAddress.Length;
+                    result = Interop.Sys.ReceiveSocketError(socket.SafeHandle, &header);
+                }
+                if (result == SocketError.Success && header.SocketAddressLen > 0)
+                {
+                     return CreatePingReply(IPStatus.TtlExpired, IPEndPointExtensions.GetIPAddress(socketAddress.Slice(0, header.SocketAddressLen)));
+                }
+            }
+            return CreatePingReply(IPStatus.TimedOut);
         }
 
         private async Task<PingReply> SendIcmpEchoRequestOverRawSocketAsync(IPAddress address, byte[] buffer, int timeout, PingOptions? options)
@@ -368,6 +372,12 @@ namespace System.Net.NetworkInformation
             }
             catch (OperationCanceledException) when (!_canceled)
             {
+            }
+            catch (SocketException ex) when (ex.SocketErrorCode == SocketError.HostUnreachable)
+            {
+                // This happens on Linux where we explicitly subscribed to error messages
+                // We should be able to get more info by getting extended socket error from error queue.
+                return CreatePingReplyForUnreachableHost(address, socket);
             }
 
             // We have exceeded our timeout duration, and no reply has been received.

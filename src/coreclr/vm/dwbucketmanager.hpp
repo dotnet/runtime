@@ -511,7 +511,7 @@ void BaseBucketParamsManager::GetAppTimeStamp(_Out_writes_(maxLength) WCHAR* tar
     {
         CONTRACT_VIOLATION(GCViolation);
 
-        HMODULE hModule = WszGetModuleHandle(NULL);
+        HMODULE hModule = GetModuleHandle(NULL);
         PEDecoder pe(hModule);
 
         ULONG ulTimeStamp = pe.GetTimeDateStamp();
@@ -551,7 +551,7 @@ void BaseBucketParamsManager::GetModuleName(_Out_writes_(maxLength) WCHAR* targe
         // Get the assembly name, and determine its length, including terminating NULL.
         Assembly* pAssembly = pModule->GetAssembly();
         LPCUTF8 utf8AssemblyName = pAssembly->GetSimpleName();
-        const int assemblyNameLength = WszMultiByteToWideChar(CP_UTF8, 0, utf8AssemblyName, -1, NULL, 0);
+        const int assemblyNameLength = MultiByteToWideChar(CP_UTF8, 0, utf8AssemblyName, -1, NULL, 0);
 
         // full name and length.  minor assumption that this is not multi-module.
         WCHAR *fullName = NULL;
@@ -561,7 +561,7 @@ void BaseBucketParamsManager::GetModuleName(_Out_writes_(maxLength) WCHAR* targe
         {
             // Single-module assembly; allocate a buffer and convert assembly name.
             fullName = reinterpret_cast< WCHAR* >(_alloca(sizeof(WCHAR)*(fullNameLength)));
-            WszMultiByteToWideChar(CP_UTF8, 0, utf8AssemblyName, -1, fullName, fullNameLength);
+            MultiByteToWideChar(CP_UTF8, 0, utf8AssemblyName, -1, fullName, fullNameLength);
         }
         else
         {   //  This is a non-manifest module, which means it is a multi-module assembly.
@@ -569,7 +569,7 @@ void BaseBucketParamsManager::GetModuleName(_Out_writes_(maxLength) WCHAR* targe
 
             // Get the module name, and determine its length, including terminating NULL.
             LPCUTF8 utf8ModuleName = pModule->GetSimpleName();
-            const int moduleNameLength = WszMultiByteToWideChar(CP_UTF8, 0, utf8ModuleName, -1, NULL, 0);
+            const int moduleNameLength = MultiByteToWideChar(CP_UTF8, 0, utf8ModuleName, -1, NULL, 0);
 
             //  Full name length is assembly name length + module name length + 1 char for '+'.
             //  However, both assemblyNameLength and moduleNameLength include space for terminating NULL,
@@ -591,14 +591,14 @@ void BaseBucketParamsManager::GetModuleName(_Out_writes_(maxLength) WCHAR* targe
                     fullName = reinterpret_cast< WCHAR* >(_alloca(AllocLen));
 
                     // Convert the assembly name.
-                    WszMultiByteToWideChar(CP_UTF8, 0, utf8AssemblyName, -1, fullName, assemblyNameLength);
+                    MultiByteToWideChar(CP_UTF8, 0, utf8AssemblyName, -1, fullName, assemblyNameLength);
 
                     // replace NULL with '+'
                     _ASSERTE(fullName[assemblyNameLength-1] == 0);
                     fullName[assemblyNameLength-1] = W('+');
 
                     // Convert the module name after the '+'
-                    WszMultiByteToWideChar(CP_UTF8, 0, utf8ModuleName,-1, &fullName[assemblyNameLength], moduleNameLength);
+                    MultiByteToWideChar(CP_UTF8, 0, utf8ModuleName,-1, &fullName[assemblyNameLength], moduleNameLength);
                 }
             }
         }
