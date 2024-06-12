@@ -2015,7 +2015,7 @@ static bool TryGetPlatformSocketOption(int32_t socketOptionLevel, int32_t socket
                     *optName = TCP_KEEPINTVL;
                     return true;
 
-#ifdef TCP_FASTOPEN_CONNECT
+#ifdef TCP_FASTOPEN
                 case SocketOptionName_SO_TCP_FASTOPEN:
                     *optName = TCP_FASTOPEN;
                     return true;
