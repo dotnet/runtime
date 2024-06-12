@@ -75,11 +75,5 @@
     <UnofficialBuildRID Include="linux-musl-riscv64">
       <Platform>riscv64</Platform>
     </UnofficialBuildRID>
-    <UnofficialBuildRID Include="linux-loongarch64">
-      <Platform>loongarch64</Platform>
-    </UnofficialBuildRID>
-    <UnofficialBuildRID Include="linux-musl-loongarch64">
-      <Platform>loongarch64</Platform>
-    </UnofficialBuildRID>
   </ItemGroup>
 </Project>
