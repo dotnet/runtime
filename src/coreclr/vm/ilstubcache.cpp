@@ -322,7 +322,6 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
     }
 
 // if we made it this far, we can set a more descriptive stub name
-#ifdef FEATURE_ARRAYSTUB_AS_IL
     if (SF_IsArrayOpStub(dwStubFlags))
     {
         switch(dwStubFlags)
@@ -337,7 +336,6 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
         }
     }
     else
-#endif
     {
         pMD->m_pszMethodName = GetStubMethodName(pMD->GetILStubType());
     }
