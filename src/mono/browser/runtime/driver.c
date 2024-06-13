@@ -53,6 +53,7 @@ extern mono_bool mono_bundled_resources_get_data_resource_values (const char *id
 #ifndef INVARIANT_GLOBALIZATION
 extern void mono_register_icu_bundle (void);
 extern int32_t mono_wasm_load_icu_data(const void* pData);
+extern const char* dotnet_browser_geticufilename();
 #endif /* INVARIANT_GLOBALIZATION */
 #endif /* WASM_SINGLE_FILE */
 extern void mono_wasm_set_entrypoint_breakpoint (const char* assembly_name, int method_token);
@@ -198,7 +199,8 @@ load_icu ()
 
 	const uint8_t *buffer = NULL;
 	uint32_t data_len = 0;
-	if (!mono_bundled_resources_get_data_resource_values ("icudt.dat", &buffer, &data_len)) {
+	const char* icu_name = dotnet_browser_geticufilename ();
+	if (!mono_bundled_resources_get_data_resource_values (icu_name, &buffer, &data_len)) {
 		printf("Could not load icudt.dat from the bundle");
 		assert(buffer);
 	}
