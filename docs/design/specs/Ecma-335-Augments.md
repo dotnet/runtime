@@ -1047,7 +1047,7 @@ Update the `SpecialConstraintMask` flag value and description, and add a new fla
 New sub-section should be added after III.4.33 that describes sequences of IL instructions that can be used on ByRefLike types when using within a generic context.
 
 #### III.4.X
-The following are IL sequences involving the `box` instruction. They can be used on ByRefLike types and shall be valid in cases where the result can be computed at run-time and elided safely&mdash;through JIT compilation or interpretation. These sequences must now be elided when the target type is ByRefLike. The conditions where each sequence is elided are described below.
+The following are IL sequences involving the `box` instruction. They are used for ByRefLike types and shall be valid in cases where the result can be computed at run-time and elided safely&mdash;through JIT compilation or interpretation. These sequences **must** now be elided when the target type is ByRefLike. The conditions where each sequence is elided are described below.
 
 `box` ; `unbox.any` &ndash; The box target type is equal to the unboxed target type.
 
@@ -1055,7 +1055,7 @@ The following are IL sequences involving the `box` instruction. They can be used
 
 `box` ; `isinst` ; `unbox.any` &ndash; The box, `isinst`, and unbox target types are all equal.
 
-`box` ; `isinst` ; `br_true/false` &ndash; The box target type is equal to the unboxed target type or the box target type is `Nullable<T>` and target type equalities can be computed.
+`box` ; `isinst` ; `br_true/false` &ndash; The box target type is ByRefLike or the box target type is `Nullable<T>` and target type equalities can be computed.
 
 ## Rules for IL Rewriters
 

@@ -13,7 +13,7 @@ Supporting ByRefLike type as Generic parameters will impact the following IL ins
 - `stsfld` / `ldsfld` &ndash; Type fields of a ByRefLike parameter cannot be marked `static`.
 - `newarr` / `stelem` / `ldelem` / `ldelema` &ndash; Arrays are not able to contain ByRefLike types.
     - `newobj` &ndash; For multi-dimensional array construction.
-- `constrained.callvirt` &ndash; If this IL sequence resolves to a method implemented on `object` or default interface method, an error will occur during the attempt to box the instance.
+- `constrained.callvirt` &ndash; When applied to a ByRefLike instance, if this IL sequence resolves to a method implemented on `object` or a default interface method, an error will occur during the attempt to box the ByRefLike instance.
 
 If any of the above instructions are attempted to be used with a ByRefLike type, the runtime will throw an `InvalidProgramException`.
 
@@ -116,7 +116,7 @@ Enumerating of constructors/methods on `Span<T>` and `ReadOnlySpan<T>` may throw
 
 ## <a name="special_il_sequences"></a> Special IL Sequences
 
-The following are IL sequences involving the `box` instruction. They are used for common C# language constructs and shall continue to be valid, even with ByRefLike types, in cases where the result can be computed at JIT time and elided safely. These sequences must now be elided when the target type is ByRefLike. The conditions where each sequence is elided are described below and each condition will be added to the ECMA-335 addendum.
+The following are IL sequences involving the `box` instruction. They are used for common C# language constructs and shall continue to be valid, even with ByRefLike types, in cases where the result can be computed at JIT compile time or interpretation and elided safely. These sequences **must** now be elided when the target type is ByRefLike. The conditions where each sequence is elided are described below and each condition will be added to the ECMA-335 addendum.
 
 `box` ; `unbox.any` &ndash; The box target type is equal to the unboxed target type.
 
@@ -124,11 +124,11 @@ The following are IL sequences involving the `box` instruction. They are used fo
 
 `box` ; `isinst` ; `unbox.any` &ndash; The box, `isinst`, and unbox target types are all equal.
 
-`box` ; `isinst` ; `br_true/false` &ndash; The box target type is equal to the unboxed target type or the box target type is `Nullable<T>` and target type equalities can be computed.
+`box` ; `isinst` ; `br_true/false` &ndash; The box target type is ByRefLike or the box target type is `Nullable<T>` and target type equalities can be computed.
 
 ## Examples
 
-Below are valid and invalid examples of ByRefLike as Generic parameters. All examples use the **not official** syntax, `allows ref struct`, for indicating the Generic permits ByRefLike types.
+Below are valid and invalid examples of ByRefLike as Generic parameters.
 
 **1) Valid**
 ```csharp
