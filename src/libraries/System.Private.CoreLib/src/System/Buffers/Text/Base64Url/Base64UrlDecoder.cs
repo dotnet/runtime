@@ -8,7 +8,6 @@ using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
 using System.Text;
-using System.Text.Unicode;
 using static System.Buffers.Text.Base64;
 
 namespace System.Buffers.Text
@@ -41,7 +40,7 @@ namespace System.Buffers.Text
         /// <param name="bytesConsumed">When this method returns, contains the number of input bytes consumed during the operation. This can be used to slice the input for subsequent calls, if necessary. This parameter is treated as uninitialized.</param>
         /// <param name="bytesWritten">When this method returns, contains the number of bytes written into the output span. This can be used to slice the output for subsequent calls, if necessary. This parameter is treated as uninitialized.</param>
         /// <param name="isFinalBlock"><see langword="true"/> when the input span contains the entirety of data to encode; <see langword="false"/> when more data may follow,
-        /// such as when calling in a loop, subsequent calls with <see langword="false"/> should end with <see langword="true"/> call. The default is <see langword="true" />.</param>
+        /// such as when calling in a loop. Calls with <see langword="false"/> should be followed up with another call where this parameter is <see langword="true"/> call. The default is <see langword="true" />.</param>
         /// <returns>One of the enumeration values that indicates the success or failure of the operation.</returns>
         /// <remarks>
         /// As padding is optional for Base64Url the <paramref name="source"/> length not required to be a multiple of 4 even if <paramref name="isFinalBlock"/> is <see langword="true"/>.
@@ -79,6 +78,7 @@ namespace System.Buffers.Text
                 throw new FormatException(SR.Format_BadBase64Char);
             }
 
+            Debug.Assert(status is OperationStatus.Done);
             return bytesWritten;
         }
 
@@ -92,7 +92,7 @@ namespace System.Buffers.Text
         /// <exception cref="FormatException"><paramref name="source"/> contains an invalid Base64Url character,
         /// more than two padding characters, or a non white space character among the padding characters.</exception>
         /// <remarks>
-        /// As padding is optional the <paramref name="source"/> length not required to be a multiple of 4.
+        /// As padding is optional for Base64Url the <paramref name="source"/> length not required to be a multiple of 4.
         /// If the <paramref name="source"/> length is not a multiple of 4 the remainders decoded accordingly:
         /// - Remainder of 3 bytes - decoded into 2 bytes data, decoding succeeds.
         /// - Remainder of 2 bytes - decoded into 1 byte data. decoding succeeds.
@@ -112,6 +112,7 @@ namespace System.Buffers.Text
                 throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
             }
 
+            Debug.Assert(status is OperationStatus.InvalidData);
             throw new FormatException(SR.Format_BadBase64Char);
         }
 
@@ -176,7 +177,7 @@ namespace System.Buffers.Text
         /// such as when calling in a loop. Calls with <see langword="false"/> should be followed up with another call where this parameter is <see langword="true"/> call. The default is <see langword="true" />.</param>
         /// <returns>One of the enumeration values that indicates the success or failure of the operation.</returns>
         /// <remarks>
-        /// As padding is optional the <paramref name="source"/> length not required to be a multiple of 4 even if <paramref name="isFinalBlock"/> is <see langword="true"/>.
+        /// As padding is optional for Base64Url the <paramref name="source"/> length not required to be a multiple of 4 even if <paramref name="isFinalBlock"/> is <see langword="true"/>.
         /// If the <paramref name="source"/> length is not a multiple of 4 and <paramref name="isFinalBlock"/> is <see langword="true"/> the remainders decoded accordingly:
         /// - Remainder of 3 chars - decoded into 2 bytes data, decoding succeeds.
         /// - Remainder of 2 chars - decoded into 1 byte data. decoding succeeds.
