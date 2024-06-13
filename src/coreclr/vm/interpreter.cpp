@@ -10924,6 +10924,25 @@ void Interpreter::DoGetArrayDataReference()
     OpStackTypeSet(ind, InterpreterType(CORINFO_TYPE_BYREF));
 }
 
+static bool HasByrefFields(MethodTable* pMT)
+{
+    // Inspect all instance fields recursively
+    ApproxFieldDescIterator fieldIterator(pMT, ApproxFieldDescIterator::INSTANCE_FIELDS);
+    for (FieldDesc* pFD = fieldIterator.Next(); pFD != nullptr; pFD = fieldIterator.Next())
+    {
+        if (pFD->IsByRef())
+        {
+            return true;
+        }
+        if ((pFD->GetFieldType() == ELEMENT_TYPE_VALUETYPE &&
+            HasByrefFields(pFD->GetApproxFieldTypeHandleThrowing().AsMethodTable())))
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
 void Interpreter::DoIsReferenceOrContainsReferences(CORINFO_METHOD_HANDLE method)
 {
     CONTRACTL{
@@ -10939,7 +10958,16 @@ void Interpreter::DoIsReferenceOrContainsReferences(CORINFO_METHOD_HANDLE method
     }
 
     MethodTable* typeArg = GetMethodTableFromClsHnd(sigInfoFull.sigInst.methInst[0]);
-    OpStackSet<BOOL>(m_curStackHt, typeArg->IsByRefLike() || typeArg->ContainsPointers());
+
+    bool containsGcPtrs = typeArg->ContainsPointers();
+
+    // Return true for byref-like structs with ref fields (they might not have them)
+    if (!containsGcPtrs && typeArg->IsByRefLike())
+    {
+        containsGcPtrs |= HasByrefFields(typeArg);
+    }
+
+    OpStackSet<BOOL>(m_curStackHt, containsGcPtrs);
     OpStackTypeSet(m_curStackHt, InterpreterType(CORINFO_TYPE_INT));
     m_curStackHt++;
 }
