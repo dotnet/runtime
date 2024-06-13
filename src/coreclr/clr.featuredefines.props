@@ -1,5 +1,6 @@
 <Project>
     <PropertyGroup>
+        <FeatureArrayStubAsIL>true</FeatureArrayStubAsIL>
         <FeatureCoreCLR>true</FeatureCoreCLR>
         <FeatureEventTrace>true</FeatureEventTrace>
         <FeatureICastable>true</FeatureICastable>
@@ -16,7 +17,6 @@
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(TargetsWindows)' == 'true'">
-        <FeatureArrayStubAsIL Condition="'$(Platform)' != 'x86'">true</FeatureArrayStubAsIL>
         <FeatureMulticastStubAsIL Condition="'$(Platform)' != 'x86'">true</FeatureMulticastStubAsIL>
         <FeatureComWrappers>true</FeatureComWrappers>
         <FeatureCominterop>true</FeatureCominterop>
