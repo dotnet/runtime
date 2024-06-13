@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using Xunit;
 
 namespace System.Collections.Tests
 {
@@ -27,6 +28,21 @@ namespace System.Collections.Tests
             byte[] bytes1 = new byte[stringLength];
             rand.NextBytes(bytes1);
             return Convert.ToBase64String(bytes1);
+        }
+
+        [Fact]
+        public void IList_Generic_IndexOfRequiresValueMatch()
+        {
+            var dictionary = new OrderedDictionary<string, string>()
+            {
+                ["a"] = "1",
+                ["b"] = "2",
+                ["c"] = "3"
+            };
+
+            KeyValuePair<string, string> pair = dictionary.GetAt(2);
+            Assert.Equal(2, ((IList<KeyValuePair<string, string>>)dictionary).IndexOf(pair));
+            Assert.Equal(-1, ((IList<KeyValuePair<string, string>>)dictionary).IndexOf(new KeyValuePair<string, string>(pair.Key, "d")));
         }
     }
 
@@ -54,6 +70,37 @@ namespace System.Collections.Tests
             byte[] bytes1 = new byte[stringLength];
             rand.NextBytes(bytes1);
             return Convert.ToBase64String(bytes1);
+        }
+
+        [Fact]
+        public void Indexer_Set_WrongType_ThrowsException()
+        {
+            IList list = NonGenericIListFactory();
+            list.Add(new KeyValuePair<string, string>("key", "value"));
+            AssertExtensions.Throws<ArgumentException>("value", () => list[0] = new KeyValuePair<int, int>(42, 42));
+            AssertExtensions.Throws<ArgumentException>("value", () => list[0] = "key");
+        }
+
+        [Fact]
+        public void Add_WrongType_ThrowsException()
+        {
+            IList list = NonGenericIListFactory();
+            list.Add(KeyValuePair.Create("key", "value"));
+            AssertExtensions.Throws<ArgumentException>("value", () => list.Add(new KeyValuePair<int, int>(42, 42)));
+            AssertExtensions.Throws<ArgumentException>("value", () => list.Add(new KeyValuePair<string, int>("42", 42)));
+            AssertExtensions.Throws<ArgumentException>("value", () => list.Add(42));
+            Assert.Equal(1, list.Count);
+        }
+
+        [Fact]
+        public void Insert_WrongType_ThrowsException()
+        {
+            IList list = NonGenericIListFactory();
+            list.Insert(0, KeyValuePair.Create("key", "value"));
+            AssertExtensions.Throws<ArgumentException>("value", () => list.Insert(0, new KeyValuePair<int, int>(42, 42)));
+            AssertExtensions.Throws<ArgumentException>("value", () => list.Insert(0, new KeyValuePair<string, int>("42", 42)));
+            AssertExtensions.Throws<ArgumentException>("value", () => list.Insert(0, 42));
+            Assert.Equal(1, list.Count);
         }
     }
 

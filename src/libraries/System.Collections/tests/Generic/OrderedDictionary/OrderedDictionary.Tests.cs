@@ -106,6 +106,15 @@ namespace System.Collections.Tests
         }
 
         [Fact]
+        public void IDictionary_NonGeneric_ItemGet_KeyOfWrongType()
+        {
+            IDictionary dictionary = new OrderedDictionary<string, string>();
+            dictionary.Add("key", "value");
+            Assert.Null(dictionary[42]);
+            Assert.Null(dictionary[KeyValuePair.Create("key", "value")]);
+        }
+
+        [Fact]
         public void IDictionary_NonGeneric_ItemSet_KeyOfWrongType()
         {
             if (!IsReadOnly)
@@ -136,6 +145,10 @@ namespace System.Collections.Tests
                 IDictionary dictionary = new OrderedDictionary<string, string>();
                 object missingKey = 23;
                 AssertExtensions.Throws<ArgumentException>("key", () => dictionary.Add(missingKey, CreateTValue(12345)));
+                Assert.Empty(dictionary);
+
+                dictionary = new OrderedDictionary<string, int>();
+                AssertExtensions.Throws<ArgumentNullException>("value", () => dictionary.Add("key", null));
                 Assert.Empty(dictionary);
             }
         }
@@ -171,6 +184,17 @@ namespace System.Collections.Tests
             {
                 IDictionary dictionary = new OrderedDictionary<string, int>();
                 Assert.False(dictionary.Contains(1));
+            }
+        }
+
+        [Fact]
+        public void IDictionary_NonGeneric_Remove_KeyOfWrongType()
+        {
+            if (!IsReadOnly)
+            {
+                IDictionary dictionary = new OrderedDictionary<string, int>();
+                dictionary.Remove(1); // ignored
+                Assert.Empty(dictionary);
             }
         }
 

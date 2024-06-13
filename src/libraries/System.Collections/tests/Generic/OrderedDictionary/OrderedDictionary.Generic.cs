@@ -9,7 +9,7 @@ namespace System.Collections.Tests
     public class OrderedDictionary_Generic_Tests_string_string : OrderedDictionary_Generic_Tests<string, string>
     {
         protected override KeyValuePair<string, string> CreateT(int seed) =>
-            new KeyValuePair<string, string>(CreateTKey(seed), CreateTKey(seed + 500));
+            new KeyValuePair<string, string>(CreateTKey(seed), CreateTValue(seed + 500));
 
         protected override string CreateTKey(int seed)
         {
@@ -21,6 +21,23 @@ namespace System.Collections.Tests
         }
 
         protected override string CreateTValue(int seed) => CreateTKey(seed);
+    }
+
+    public class OrderedDictionary_Generic_Tests_object_byte : OrderedDictionary_Generic_Tests<object, byte>
+    {
+        protected override KeyValuePair<object, byte> CreateT(int seed) =>
+            new KeyValuePair<object, byte>(CreateTKey(seed), CreateTValue(seed + 500));
+
+        protected override object CreateTKey(int seed)
+        {
+            int stringLength = seed % 10 + 5;
+            Random rand = new Random(seed);
+            byte[] bytes1 = new byte[stringLength];
+            rand.NextBytes(bytes1);
+            return Convert.ToBase64String(bytes1);
+        }
+
+        protected override byte CreateTValue(int seed) => (byte)new Random(seed).Next();
     }
 
     public class OrderedDictionary_Generic_Tests_int_int : OrderedDictionary_Generic_Tests<int, int>

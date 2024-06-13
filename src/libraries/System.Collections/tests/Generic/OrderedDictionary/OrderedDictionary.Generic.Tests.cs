@@ -58,6 +58,14 @@ namespace System.Collections.Tests
             Assert.Empty(instance.Values);
             Assert.Same(comparer, instance.Comparer);
             Assert.InRange(instance.Capacity, 42, int.MaxValue);
+
+            IEqualityComparer<TKey> customComparer = EqualityComparer<TKey>.Create(comparer.Equals, comparer.GetHashCode);
+            instance = new OrderedDictionary<TKey, TValue>(42, customComparer);
+            Assert.Empty(instance);
+            Assert.Empty(instance.Keys);
+            Assert.Empty(instance.Values);
+            Assert.Same(customComparer, instance.Comparer);
+            Assert.InRange(instance.Capacity, 42, int.MaxValue);
         }
 
         [Theory]
@@ -355,14 +363,17 @@ namespace System.Collections.Tests
         public void OrderedDictionary_Generic_EnsureCapacity()
         {
             OrderedDictionary<TKey, TValue> dictionary = (OrderedDictionary<TKey, TValue>)GenericIDictionaryFactory();
-
             Assert.Equal(0, dictionary.Capacity);
-            for (int i = 0; i < 10; i++)
+
+            dictionary.EnsureCapacity(1);
+            Assert.InRange(dictionary.Capacity, 1, int.MaxValue);
+
+            for (int i = 0; i < 30; i++)
             {
                 dictionary.TryAdd(CreateTKey(i), CreateTValue(i));
             }
             int count = dictionary.Count;
-            Assert.InRange(count, 1, 10);
+            Assert.InRange(count, 1, 30);
             Assert.InRange(dictionary.Capacity, dictionary.Count, int.MaxValue);
             Assert.Equal(dictionary.Capacity, dictionary.EnsureCapacity(dictionary.Capacity));
             Assert.Equal(dictionary.Capacity, dictionary.EnsureCapacity(dictionary.Capacity - 1));
@@ -374,7 +385,7 @@ namespace System.Collections.Tests
             Assert.Equal(newCapacity, dictionary.Capacity);
             Assert.InRange(newCapacity, oldCapacity * 2, int.MaxValue);
 
-            for (int i = 0; i < 10; i++)
+            for (int i = 0; i < 30; i++)
             {
                 Assert.True(dictionary.ContainsKey(CreateTKey(i)));
             }
