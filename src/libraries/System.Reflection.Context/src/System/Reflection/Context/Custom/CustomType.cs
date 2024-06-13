@@ -44,7 +44,9 @@ namespace System.Reflection.Context.Custom
             return IsAssignableFrom(objectType);
         }
 
+#if NET6_0_OR_GREATER
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
+#endif
         public override PropertyInfo[] GetProperties(BindingFlags bindingAttr)
         {
             // list of properties on this type according to the underlying ReflectionContext
@@ -140,7 +142,9 @@ namespace System.Reflection.Context.Custom
             return binder.SelectProperty(bindingAttr, matchingProperties.ToArray(), returnType, types, modifiers);
         }
 
+#if NET6_0_OR_GREATER
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
+#endif
         public override MethodInfo[] GetMethods(BindingFlags bindingAttr)
         {
             // list of methods on this type according to the underlying ReflectionContext
