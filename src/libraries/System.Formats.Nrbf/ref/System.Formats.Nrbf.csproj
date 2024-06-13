@@ -16,6 +16,5 @@
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\RequiresDynamicCodeAttribute.cs" />
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
-    <PackageReference Include="System.ValueTuple" Version="$(SystemValueTupleVersion)" />
   </ItemGroup>
 </Project>
