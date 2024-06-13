@@ -96,7 +96,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			// the compiler, don't consider the method to be compiler-generated
 			// for the purpose of Kept validation, because they are attributable
 			// in source like any other method.
-			if (member is MethodDefinition method && method.Name.Contains("<Main>$"))
+			if (member is MethodDefinition method && method.Name.Contains ("<Main>$"))
 				return false;
 
 			if (IsCompilerGeneratedMemberName (member.Name))
@@ -336,7 +336,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				return;
 			var expectedBaseTypesOverridden = new HashSet<string> (original.CustomAttributes
 				.Where (ca => ca.AttributeType.Name == nameof (KeptOverrideAttribute))
-				.Select (ca => (ca.ConstructorArguments[0].Value as TypeReference).FullName));
+				.Select (ca => (ca.ConstructorArguments[0].Value as TypeReference)?.FullName ?? (string) ca.ConstructorArguments[0].Value));
 			var originalBaseTypesOverridden = new HashSet<string> (original.Overrides.Select (ov => ov.DeclaringType.FullName));
 			var linkedBaseTypesOverridden = new HashSet<string> (linked.Overrides.Select (ov => ov.DeclaringType.FullName));
 			foreach (var expectedBaseType in expectedBaseTypesOverridden) {
@@ -349,31 +349,13 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 			var expectedBaseTypesNotOverridden = new HashSet<string> (original.CustomAttributes
 				.Where (ca => ca.AttributeType.Name == nameof (RemovedOverrideAttribute))
-				.Select (ca => (ca.ConstructorArguments[0].Value as TypeReference).FullName));
+				.Select (ca => (ca.ConstructorArguments[0].Value as TypeReference)?.FullName ?? (string) ca.ConstructorArguments[0].Value));
 			foreach (var expectedRemovedBaseType in expectedBaseTypesNotOverridden) {
 				Assert.IsTrue (originalBaseTypesOverridden.Contains (expectedRemovedBaseType),
 					$"Method {linked.FullName} was expected to remove override {expectedRemovedBaseType}::{linked.Name}, " +
 					$"but it wasn't in the unlinked assembly");
 				Assert.IsFalse (linkedBaseTypesOverridden.Contains (expectedRemovedBaseType),
 					$"Method {linked.FullName} was expected to not override {expectedRemovedBaseType}::{linked.Name}");
-			}
-
-			foreach (var overriddenMethod in linked.Overrides) {
-				if (overriddenMethod.Resolve () is not MethodDefinition overriddenDefinition) {
-					Assert.Fail ($"Method {linked.GetDisplayName ()} overrides method {overriddenMethod} which does not exist");
-				} else if (overriddenDefinition.DeclaringType.IsInterface) {
-					Assert.True (linked.DeclaringType.Interfaces.Select (i => i.InterfaceType).Contains (overriddenMethod.DeclaringType),
-						$"Method {linked} overrides method {overriddenMethod}, but {linked.DeclaringType} does not implement interface {overriddenMethod.DeclaringType}");
-				} else {
-					TypeDefinition baseType = linked.DeclaringType;
-					TypeReference overriddenType = overriddenMethod.DeclaringType;
-					while (baseType is not null) {
-						if (baseType.Equals (overriddenType))
-							break;
-						if (baseType.Resolve ()?.BaseType is null)
-							Assert.Fail ($"Method {linked} overrides method {overriddenMethod} from, but {linked.DeclaringType} does not inherit from type {overriddenMethod.DeclaringType}");
-					}
-				}
 			}
 		}
 
@@ -510,6 +492,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 
 			VerifyMethodKept (src, linked, compilerGenerated);
+			VerifyOverrides (src, linked);
 		}
 
 		void VerifyMemberBackingField (IMemberDefinition src, TypeDefinition linkedType)
@@ -1136,7 +1119,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		private static IEnumerable<CustomAttribute> GetActiveKeptAttributes (ICustomAttributeProvider provider, string attributeName)
 		{
-			return provider.CustomAttributes.Where(ca => {
+			return provider.CustomAttributes.Where (ca => {
 				if (ca.AttributeType.Name != attributeName) {
 					return false;
 				}
@@ -1144,7 +1127,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				object keptBy = ca.GetPropertyValue (nameof (KeptAttribute.By));
 				return keptBy is null ? true : ((Tool) keptBy).HasFlag (Tool.Trimmer);
 			});
- 		}
+		}
 
 		private static bool HasActiveKeptAttribute (ICustomAttributeProvider provider)
 		{
