@@ -8596,7 +8596,15 @@ void LinearScan::insertMove(
     // This var can't be marked lvRegister now
     varDsc->SetRegNum(REG_STK);
 
-    GenTree* src = compiler->gtNewLclvNode(lclNum, varDsc->TypeGet());
+    var_types typ = varDsc->TypeGet();
+#if defined(FEATURE_SIMD)
+    if ((typ == TYP_SIMD12) && compiler->lvaMapSimd12ToSimd16(varDsc))
+    {
+        typ = TYP_SIMD16;
+    }
+#endif
+
+    GenTree* src = compiler->gtNewLclvNode(lclNum, typ);
     SetLsraAdded(src);
 
     // There are three cases we need to handle:

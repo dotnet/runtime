@@ -159,6 +159,15 @@ namespace System.Diagnostics.SymbolStore
 #endif // !BUILDING_CORELIB_REFERENCE
 namespace System.Diagnostics
 {
+    public sealed partial class DiagnosticMethodInfo
+    {
+        private DiagnosticMethodInfo() { }
+        public string Name { get { throw null; } }
+        public string DeclaringTypeName { get { throw null; } }
+        public string DeclaringAssemblyName { get { throw null; } }
+        public static DiagnosticMethodInfo? Create(System.Delegate @delegate) { throw null; }
+        public static DiagnosticMethodInfo? Create(System.Diagnostics.StackFrame frame) { throw null; }
+    }
     public partial class StackFrame
     {
         public const int OFFSET_UNKNOWN = -1;
