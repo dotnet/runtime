@@ -5638,7 +5638,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(GenTree*                op1,
 
     if (*booleanCheck)
     {
-        GenTreeOp*    condMT   = gtNewOperNode(GT_EQ, TYP_INT, gtNewMethodTableLookup(op1Clone), op2);
+        GenTreeOp*    condMT   = gtNewOperNode(GT_NE, TYP_INT, gtNewMethodTableLookup(op1Clone), op2);
         GenTreeOp*    condNull = gtNewOperNode(GT_EQ, TYP_INT, gtClone(op1), gtNewNull());
         GenTreeQmark* qmarkMT =
             gtNewQmarkNode(TYP_REF, condMT,
