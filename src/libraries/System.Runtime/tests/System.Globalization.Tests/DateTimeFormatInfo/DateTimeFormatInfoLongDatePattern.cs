@@ -33,7 +33,7 @@ namespace System.Globalization.Tests
             yield return new object[] {"bg-BG", "dddd, d MMMM yyyy г." }; // "dddd, d MMMM yyyy 'г'."
             yield return new object[] {"bn-BD", "dddd, d MMMM, yyyy" };
             yield return new object[] {"bn-IN", "dddd, d MMMM, yyyy" };
-            string catalanianPattern = PlatformDetection.IsFirefox ? "dddd, d de MMMM de yyyy" : "dddd, d de MMMM del yyyy"; // "dddd, d MMMM 'de' yyyy"
+            string catalanianPattern = PlatformDetection.IsFirefox || PlatformDetection.IsNodeJS ? "dddd, d de MMMM de yyyy" : "dddd, d de MMMM del yyyy"; // "dddd, d MMMM 'de' yyyy"
             yield return new object[] {"ca-AD", catalanianPattern };
             yield return new object[] {"ca-ES", catalanianPattern };
             yield return new object[] {"cs-CZ", "dddd d. MMMM yyyy" };
@@ -52,7 +52,7 @@ namespace System.Globalization.Tests
             yield return new object[] {"en-AI", "dddd, d MMMM yyyy" };
             yield return new object[] {"en-AS", "dddd, MMMM d, yyyy" };
             yield return new object[] {"en-AT", "dddd, d MMMM yyyy" };
-            yield return new object[] {"en-AU", PlatformDetection.IsFirefox ? "dddd, d MMMM yyyy" : "dddd d MMMM yyyy" };
+            yield return new object[] {"en-AU", PlatformDetection.IsFirefox || PlatformDetection.IsNodeJS ? "dddd, d MMMM yyyy" : "dddd d MMMM yyyy" };
             yield return new object[] {"en-BB", "dddd, d MMMM yyyy" };
             yield return new object[] {"en-BE", "dddd, d MMMM yyyy" };
             yield return new object[] {"en-BI", "dddd, MMMM d, yyyy" };
@@ -75,7 +75,7 @@ namespace System.Globalization.Tests
             yield return new object[] {"en-FJ", "dddd, d MMMM yyyy" };
             yield return new object[] {"en-FK", "dddd, d MMMM yyyy" };
             yield return new object[] {"en-FM", "dddd, d MMMM yyyy" };
-            yield return new object[] {"en-GB", PlatformDetection.IsFirefox ? "dddd, d MMMM yyyy" :"dddd d MMMM yyyy" };
+            yield return new object[] {"en-GB", PlatformDetection.IsFirefox || PlatformDetection.IsNodeJS ? "dddd, d MMMM yyyy" :"dddd d MMMM yyyy" };
             yield return new object[] {"en-GD", "dddd, d MMMM yyyy" };
             yield return new object[] {"en-GG", "dddd, d MMMM yyyy" };
             yield return new object[] {"en-GH", "dddd, d MMMM yyyy" };
@@ -87,7 +87,7 @@ namespace System.Globalization.Tests
             yield return new object[] {"en-IE", "dddd d MMMM yyyy" };
             yield return new object[] {"en-IL", "dddd, d MMMM yyyy" };
             yield return new object[] {"en-IM", "dddd, d MMMM yyyy" };
-            yield return new object[] {"en-IN", PlatformDetection.IsFirefox ? "dddd, d MMMM, yyyy" : "dddd d MMMM, yyyy" }; // dddd, d MMMM, yyyy
+            yield return new object[] {"en-IN", PlatformDetection.IsFirefox || PlatformDetection.IsNodeJS ? "dddd, d MMMM, yyyy" : "dddd d MMMM, yyyy" }; // dddd, d MMMM, yyyy
             yield return new object[] {"en-IO", "dddd, d MMMM yyyy" };
             yield return new object[] {"en-JE", "dddd, d MMMM yyyy" };
             yield return new object[] {"en-JM", "dddd, d MMMM yyyy" };

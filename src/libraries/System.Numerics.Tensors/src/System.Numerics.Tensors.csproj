@@ -80,6 +80,7 @@
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Floor.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.FusedMultiplyAdd.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Half.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.HammingDistance.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Hypot.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Ieee754Remainder.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.ILogB.cs" />

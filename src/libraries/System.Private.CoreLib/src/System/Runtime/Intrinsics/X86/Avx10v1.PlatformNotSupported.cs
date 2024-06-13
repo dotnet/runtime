@@ -1877,6 +1877,28 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector128<float> MultiplySubtractScalar(Vector128<float> a, Vector128<float> b, Vector128<float> c) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// __m128i _mm_multishift_epi64_epi8(__m128i a, __m128i b)
+        ///   VPMULTISHIFTQB xmm1 {k1}{z}, xmm2, xmm3/m128/m64bcst
+        /// </summary>
+        public static Vector128<byte> MultiShift(Vector128<byte> control, Vector128<ulong> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m128i _mm_multishift_epi64_epi8(__m128i a, __m128i b)
+        ///   VPMULTISHIFTQB xmm1 {k1}{z}, xmm2, xmm3/m128/m64bcst
+        /// </summary>
+        public static Vector128<sbyte> MultiShift(Vector128<sbyte> control, Vector128<long> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m256i _mm256_multishift_epi64_epi8(__m256i a, __m256i b)
+        ///   VPMULTISHIFTQB ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst
+        /// </summary>
+        public static Vector256<byte> MultiShift(Vector256<byte> control, Vector256<ulong> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m256i _mm256_multishift_epi64_epi8(__m256i a, __m256i b)
+        ///   VPMULTISHIFTQB ymm1 {k1}{z}, ymm2, ymm3/m256/m64bcst
+        /// </summary>
+        public static Vector256<sbyte> MultiShift(Vector256<sbyte> control, Vector256<long> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// __m256i _mm256_permutevar16x16_epi16 (__m256i a, __m256i b)
         ///   VPERMW ymm1 {k1}{z}, ymm2, ymm3/m256
         /// </summary>
@@ -3298,6 +3320,17 @@ namespace System.Runtime.Intrinsics.X86
             ///   VPMULLQ zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst
             /// </summary>
             public static Vector512<ulong> MultiplyLow(Vector512<ulong> left, Vector512<ulong> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// __m512i _mm512_multishift_epi64_epi8( __m512i a, __m512i b)
+            ///   VPMULTISHIFTQB zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst
+            /// </summary>
+            public static Vector512<byte> MultiShift(Vector512<byte> control, Vector512<ulong> value) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m512i _mm512_multishift_epi64_epi8( __m512i a, __m512i b)
+            ///   VPMULTISHIFTQB zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst
+            /// </summary>
+            public static Vector512<sbyte> MultiShift(Vector512<sbyte> control, Vector512<long> value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             /// __m512 _mm512_or_ps (__m512 a, __m512 b)
