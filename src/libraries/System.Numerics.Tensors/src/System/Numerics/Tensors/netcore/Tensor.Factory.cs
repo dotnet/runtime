@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.VisualBasic;
 
 #pragma warning disable CS8601 // Possible null reference assignment.
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
@@ -22,7 +23,7 @@ namespace System.Numerics.Tensors
         {
             nint linearLength = TensorSpanHelpers.CalculateTotalLength(lengths);
             T[] values = pinned ? GC.AllocateArray<T>((int)linearLength, pinned) : (new T[linearLength]);
-            return new Tensor<T>(values, lengths, pinned);
+            return Create(values, lengths, [], pinned);
         }
 
         /// <summary>
@@ -36,7 +37,7 @@ namespace System.Numerics.Tensors
         {
             nint linearLength = TensorSpanHelpers.CalculateTotalLength(lengths);
             T[] values = pinned ? GC.AllocateArray<T>((int)linearLength, pinned) : (new T[linearLength]);
-            return new Tensor<T>(values, lengths, strides, pinned);
+            return Create(values, lengths, strides, pinned);
         }
 
         /// <summary>
@@ -47,14 +48,7 @@ namespace System.Numerics.Tensors
         /// <param name="lengths">A <see cref="ReadOnlySpan{T}"/> indicating the lengths of each dimension.</param>
         /// <exception cref="ArgumentOutOfRangeException"></exception>
         public static Tensor<T> Create<T>(T[] values, scoped ReadOnlySpan<nint> lengths)
-            where T : IEquatable<T>
-        {
-            nint linearLength = TensorSpanHelpers.CalculateTotalLength(lengths);
-            if (linearLength != values.Length)
-                ThrowHelper.ThrowArgument_LengthsMustEqualArrayLength();
-
-            return new Tensor<T>(values, lengths, false);
-        }
+            where T : IEquatable<T> => Create(values, lengths, []);
 
         /// <summary>
         /// Creates a <see cref="Tensor{T}"/> from the provided <paramref name="values"/>. If the product of the
@@ -63,15 +57,12 @@ namespace System.Numerics.Tensors
         /// <param name="values">An array of the backing memory.</param>
         /// <param name="lengths">A <see cref="ReadOnlySpan{T}"/> indicating the lengths of each dimension.</param>
         /// <param name="strides">A <see cref="ReadOnlySpan{T}"/> indicating the strides of each dimension.</param>
+        /// <param name="isPinned">A <see cref="bool"/> indicating whether the <paramref name="values"/> were pinned or not.</param>
         /// <exception cref="ArgumentOutOfRangeException"></exception>
-        public static Tensor<T> Create<T>(T[] values, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides)
+        public static Tensor<T> Create<T>(T[] values, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides, bool isPinned = false)
             where T : IEquatable<T>
         {
-            nint linearLength = TensorSpanHelpers.CalculateTotalLength(lengths);
-            if (linearLength != values.Length)
-                ThrowHelper.ThrowArgument_LengthsMustEqualArrayLength();
-
-            return new Tensor<T>(values, lengths, strides, false);
+            return new Tensor<T>(values, lengths, strides, isPinned);
         }
 
         /// <summary>
@@ -80,12 +71,8 @@ namespace System.Numerics.Tensors
         /// <param name="lengths">A <see cref="ReadOnlySpan{T}"/> indicating the lengths of each dimension.</param>
         /// <param name="pinned">A <see cref="bool"/> whether the underlying data should be pinned or not.</param>
         public static Tensor<T> CreateUninitialized<T>(scoped ReadOnlySpan<nint> lengths, bool pinned = false)
-            where T : IEquatable<T>
-        {
-            nint linearLength = TensorSpanHelpers.CalculateTotalLength(lengths);
-            T[] values = GC.AllocateUninitializedArray<T>((int)linearLength, pinned);
-            return new Tensor<T>(values, lengths, pinned);
-        }
+            where T : IEquatable<T> => CreateUninitialized<T>(lengths, [], pinned);
+
 
         /// <summary>
         /// Creates a <see cref="Tensor{T}"/> and does not initialize it. If <paramref name="pinned"/> is true, the memory will be pinned.

@@ -111,24 +111,6 @@ BYTE* ThreadStore::s_pOSContextBuffer = NULL;
 
 CLREvent *ThreadStore::s_pWaitForStackCrawlEvent;
 
-PTR_ThreadLocalModule ThreadLocalBlock::GetTLMIfExists(ModuleIndex index)
-{
-    WRAPPER_NO_CONTRACT;
-    SUPPORTS_DAC;
-
-    if (index.m_dwIndex >= m_TLMTableSize)
-        return NULL;
-
-    return m_pTLMTable[index.m_dwIndex].pTLM;
-}
-
-PTR_ThreadLocalModule ThreadLocalBlock::GetTLMIfExists(MethodTable* pMT)
-{
-    WRAPPER_NO_CONTRACT;
-    ModuleIndex index = pMT->GetModuleForStatics()->GetModuleIndex();
-    return GetTLMIfExists(index);
-}
-
 #ifndef DACCESS_COMPILE
 
 BOOL Thread::s_fCleanFinalizedThread = FALSE;
@@ -370,6 +352,7 @@ void SetThread(Thread* t)
     gCurrentThreadInfo.m_pThread = t;
     if (t != NULL)
     {
+        InitializeCurrentThreadsStaticData(t);
         EnsureTlsDestructionMonitor();
     }
 
@@ -683,22 +666,6 @@ Thread* SetupThread()
         // thread spinning up.
         if (pThread)
         {
-            if (IsThreadPoolWorkerSpecialThread())
-            {
-                pThread->SetThreadState(Thread::TS_TPWorkerThread);
-                pThread->SetBackground(TRUE);
-            }
-            else if (IsThreadPoolIOCompletionSpecialThread())
-            {
-                pThread->SetThreadState(Thread::TS_CompletionPortThread);
-                pThread->SetBackground(TRUE);
-            }
-            else if (IsWaitSpecialThread())
-            {
-                pThread->SetThreadState(Thread::TS_TPWorkerThread);
-                pThread->SetBackground(TRUE);
-            }
-
             BOOL fStatus = pThread->HasStarted();
             ensurePreemptive.SuppressRelease();
             return fStatus ? pThread : NULL;
@@ -774,19 +741,6 @@ Thread* SetupThread()
     pThread->SetBackground(TRUE);
 
     ensurePreemptive.SuppressRelease();
-
-    if (IsThreadPoolWorkerSpecialThread())
-    {
-        pThread->SetThreadState(Thread::TS_TPWorkerThread);
-    }
-    else if (IsThreadPoolIOCompletionSpecialThread())
-    {
-        pThread->SetThreadState(Thread::TS_CompletionPortThread);
-    }
-    else if (IsWaitSpecialThread())
-    {
-        pThread->SetThreadState(Thread::TS_TPWorkerThread);
-    }
 
 #ifdef FEATURE_EVENT_TRACE
     ETW::ThreadLog::FireThreadCreated(pThread);
@@ -1613,6 +1567,8 @@ Thread::Thread()
     m_isInForbidSuspendForDebuggerRegion = false;
     m_hasPendingActivation = false;
 
+    m_ThreadLocalDataPtr = NULL;
+
 #ifdef _DEBUG
     memset(dangerousObjRefs, 0, sizeof(dangerousObjRefs));
 #endif // _DEBUG
@@ -2038,7 +1994,6 @@ BOOL Thread::CreateNewThread(SIZE_T stackSize, LPTHREAD_START_ROUTINE start, voi
         return bRet;
 #endif // !TARGET_UNIX
 
-    m_StateNC = (ThreadStateNoConcurrency)((ULONG)m_StateNC | TSNC_CLRCreatedThread);
     bRet = CreateNewOSThread(stackSize, start, args);
 #ifndef TARGET_UNIX
     UndoRevert(bReverted, token);
@@ -3842,9 +3797,6 @@ DWORD Thread::DoSyncContextWait(OBJECTREF *pSyncCtxObj, int countHandles, HANDLE
         BoolToArgSlot(waitAll),
         (ARG_SLOT)millis,
     };
-
-    // Needed by TriggerGCForMDAInternal to avoid infinite recursion
-    ThreadStateNCStackHolder holder(TRUE, TSNC_InsideSyncContextWait);
 
     return invokeWaitMethodHelper.Call_RetI4(args);
 }
@@ -7486,10 +7438,6 @@ LPVOID Thread::GetStaticFieldAddress(FieldDesc *pFD)
     // for static field the MethodTable is exact even for generic classes
     MethodTable *pMT = pFD->GetEnclosingMethodTable();
 
-    // We need to make sure that the class has been allocated, however
-    // we should not call the class constructor
-    ThreadStatics::GetTLM(pMT)->EnsureClassAllocated(pMT);
-
     PTR_BYTE base = NULL;
 
     if (pFD->GetFieldType() == ELEMENT_TYPE_CLASS ||
@@ -7647,25 +7595,15 @@ void Thread::DeleteThreadStaticData()
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
+        MODE_COOPERATIVE;
     }
     CONTRACTL_END;
 
-    m_ThreadLocalBlock.FreeTable();
-}
-
-//+----------------------------------------------------------------------------
-//
-//  Method:     Thread::DeleteThreadStaticData   public
-//
-//  Synopsis:   Delete the static data for the given module. This is called
-//              when the AssemblyLoadContext unloads.
-//
-//
-//+----------------------------------------------------------------------------
-
-void Thread::DeleteThreadStaticData(ModuleIndex index)
-{
-    m_ThreadLocalBlock.FreeTLM(index.m_dwIndex, FALSE /* isThreadShuttingDown */);
+    FreeLoaderAllocatorHandlesForTLSData(this);
+    if (!IsAtProcessExit() && !g_fEEShutDown)
+    {
+        FreeThreadStaticData(m_ThreadLocalDataPtr, this);
+    }
 }
 
 OBJECTREF Thread::GetCulture(BOOL bUICulture)
@@ -8170,12 +8108,15 @@ void Thread::InitializeSpecialUserModeApc()
 EXTERN_C void STDCALL ClrRestoreNonvolatileContextWorker(PCONTEXT ContextRecord, DWORD64 ssp);
 #endif
 
-void ClrRestoreNonvolatileContext(PCONTEXT ContextRecord)
+void ClrRestoreNonvolatileContext(PCONTEXT ContextRecord, size_t targetSSP)
 {
 #if defined(TARGET_AMD64)
-    DWORD64 ssp = GetSSP(ContextRecord);
+    if (targetSSP == 0)
+    {
+        targetSSP = GetSSP(ContextRecord);
+    }
     __asan_handle_no_return();
-    ClrRestoreNonvolatileContextWorker(ContextRecord, ssp);
+    ClrRestoreNonvolatileContextWorker(ContextRecord, targetSSP);
 #else
     __asan_handle_no_return();
     // Falling back to RtlRestoreContext() for now, though it should be possible to have simpler variants for these cases
@@ -8215,7 +8156,8 @@ Thread::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 
     m_ExceptionState.EnumChainMemoryRegions(flags);
 
-    m_ThreadLocalBlock.EnumMemoryRegions(flags);
+    if (GetThreadLocalDataPtr() != NULL)
+        EnumThreadMemoryRegions(GetThreadLocalDataPtr(), flags);
 
     if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE)
     {

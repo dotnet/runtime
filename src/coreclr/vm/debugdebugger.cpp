@@ -164,13 +164,13 @@ extern "C" void QCALLTYPE DebugDebugger_Log(INT32 Level, PCWSTR pwzModule, PCWST
     // OutputDebugString will log to native/interop debugger.
     if (pwzModule != NULL)
     {
-        WszOutputDebugString(pwzModule);
-        WszOutputDebugString(W(" : "));
+        OutputDebugString(pwzModule);
+        OutputDebugString(W(" : "));
     }
 
     if (pwzMessage != NULL)
     {
-        WszOutputDebugString(pwzMessage);
+        OutputDebugString(pwzMessage);
     }
 
     // If we're not logging a module prefix, then don't log the newline either.
@@ -179,7 +179,7 @@ extern "C" void QCALLTYPE DebugDebugger_Log(INT32 Level, PCWSTR pwzModule, PCWST
     // already prepending that to the message, so we append a newline for readability.
     if (pwzModule != NULL)
     {
-        WszOutputDebugString(W("\n"));
+        OutputDebugString(W("\n"));
     }
 
 
