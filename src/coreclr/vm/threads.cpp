@@ -683,22 +683,6 @@ Thread* SetupThread()
         // thread spinning up.
         if (pThread)
         {
-            if (IsThreadPoolWorkerSpecialThread())
-            {
-                pThread->SetThreadState(Thread::TS_TPWorkerThread);
-                pThread->SetBackground(TRUE);
-            }
-            else if (IsThreadPoolIOCompletionSpecialThread())
-            {
-                pThread->SetThreadState(Thread::TS_CompletionPortThread);
-                pThread->SetBackground(TRUE);
-            }
-            else if (IsWaitSpecialThread())
-            {
-                pThread->SetThreadState(Thread::TS_TPWorkerThread);
-                pThread->SetBackground(TRUE);
-            }
-
             BOOL fStatus = pThread->HasStarted();
             ensurePreemptive.SuppressRelease();
             return fStatus ? pThread : NULL;
@@ -774,19 +758,6 @@ Thread* SetupThread()
     pThread->SetBackground(TRUE);
 
     ensurePreemptive.SuppressRelease();
-
-    if (IsThreadPoolWorkerSpecialThread())
-    {
-        pThread->SetThreadState(Thread::TS_TPWorkerThread);
-    }
-    else if (IsThreadPoolIOCompletionSpecialThread())
-    {
-        pThread->SetThreadState(Thread::TS_CompletionPortThread);
-    }
-    else if (IsWaitSpecialThread())
-    {
-        pThread->SetThreadState(Thread::TS_TPWorkerThread);
-    }
 
 #ifdef FEATURE_EVENT_TRACE
     ETW::ThreadLog::FireThreadCreated(pThread);

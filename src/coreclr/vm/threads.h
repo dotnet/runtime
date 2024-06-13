@@ -644,7 +644,7 @@ public:
         TS_Interruptible          = 0x02000000,    // sitting in a Sleep(), Wait(), Join()
         TS_Interrupted            = 0x04000000,    // was awakened by an interrupt APC. !!! This can be moved to TSNC
 
-        TS_CompletionPortThread   = 0x08000000,    // Completion port thread
+        // unused
 
         TS_AbortInitiated         = 0x10000000,    // set when abort is begun
 
@@ -1882,7 +1882,7 @@ public:
     BOOL        IsThreadPoolThread()
     {
         LIMITED_METHOD_CONTRACT;
-        return m_State & (Thread::TS_TPWorkerThread | Thread::TS_CompletionPortThread);
+        return m_State & Thread::TS_TPWorkerThread;
     }
 
     void        SetIsThreadPoolThread()
