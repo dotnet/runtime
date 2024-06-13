@@ -908,6 +908,15 @@ namespace System.Runtime.Intrinsics.Arm
         ///  ConvertToInt32 : Floating-point convert
 
         /// <summary>
+        /// svint32_t svcvt_s32[_f64]_m(svint32_t inactive, svbool_t pg, svfloat64_t op)
+        ///   FCVTZS Ztied.S, Pg/M, Zop.D
+        /// svint32_t svcvt_s32[_f64]_x(svbool_t pg, svfloat64_t op)
+        ///   FCVTZS Ztied.S, Pg/M, Ztied.D
+        /// svint32_t svcvt_s32[_f64]_z(svbool_t pg, svfloat64_t op)
+        /// </summary>
+        public static unsafe Vector<int> ConvertToInt32(Vector<double> value) => ConvertToInt32(value);
+
+        /// <summary>
         /// svint32_t svcvt_s32[_f32]_m(svint32_t inactive, svbool_t pg, svfloat32_t op)
         ///   FCVTZS Ztied.S, Pg/M, Zop.S
         /// svint32_t svcvt_s32[_f32]_x(svbool_t pg, svfloat32_t op)
@@ -918,6 +927,15 @@ namespace System.Runtime.Intrinsics.Arm
 
 
         ///  ConvertToUInt32 : Floating-point convert
+
+        /// <summary>
+        /// svuint32_t svcvt_u32[_f64]_m(svuint32_t inactive, svbool_t pg, svfloat64_t op)
+        ///   FCVTZU Ztied.S, Pg/M, Zop.D
+        /// svuint32_t svcvt_u32[_f64]_x(svbool_t pg, svfloat64_t op)
+        ///   FCVTZU Ztied.S, Pg/M, Ztied.D
+        /// svuint32_t svcvt_u32[_f64]_z(svbool_t pg, svfloat64_t op)
+        /// </summary>
+        public static unsafe Vector<uint> ConvertToUInt32(Vector<double> value) => ConvertToUInt32(value);
 
         /// <summary>
         /// svuint32_t svcvt_u32[_f32]_m(svuint32_t inactive, svbool_t pg, svfloat32_t op)

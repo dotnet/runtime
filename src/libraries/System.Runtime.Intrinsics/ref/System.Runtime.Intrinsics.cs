@@ -4307,7 +4307,9 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<float> ConditionalSelect(System.Numerics.Vector<float> mask, System.Numerics.Vector<float> left, System.Numerics.Vector<float> right) { throw null; }
         public static System.Numerics.Vector<double> ConditionalSelect(System.Numerics.Vector<double> mask, System.Numerics.Vector<double> left, System.Numerics.Vector<double> right) { throw null; }
 
+        public static System.Numerics.Vector<int> ConvertToInt32(System.Numerics.Vector<double> value) { throw null; }
         public static System.Numerics.Vector<int> ConvertToInt32(System.Numerics.Vector<float> value) { throw null; }
+        public static System.Numerics.Vector<uint> ConvertToUInt32(System.Numerics.Vector<double> value) { throw null; }
         public static System.Numerics.Vector<uint> ConvertToUInt32(System.Numerics.Vector<float> value) { throw null; }
 
         public static ulong Count16BitElements([ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
