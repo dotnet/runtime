@@ -5116,6 +5116,14 @@ void Compiler::fgMoveColdBlocks()
     ehUpdateTryLasts<decltype(getTryLast), decltype(setTryLast)>(getTryLast, setTryLast);
 }
 
+//-----------------------------------------------------------------------------
+// fgSearchImprovedLayout: Try to improve upon RPO-based layout with the 3-opt method:
+//   - Identify a subset of "interesting" (not cold, has branches, etc.) blocks to move
+//   - Partition this set into three segments: S1 - S2 - S3
+//   - Evaluate cost of swapped layout: S1 - S3 - S2
+//   - If the cost improves, keep this layout
+//   - Repeat for a certain number of iterations, or until no improvements are made
+//
 void Compiler::fgSearchImprovedLayout()
 {
 #ifdef DEBUG
@@ -5134,15 +5142,21 @@ void Compiler::fgSearchImprovedLayout()
     weight_t layoutScore = 0.0;
     weight_t minLayoutScore = 0.0;
 
+    // Evaluate initial minimum layout costs
+    // (Minimum layout cost may not actually be possible to achieve,
+    // as we cannot always fall into a block's hottest successor)
+    //
     for (BasicBlock* const block : Blocks(fgFirstBB, fgLastBBInMainFunction()))
     {
+        // Ignore EH blocks
+        //
         if (block->hasHndIndex())
         {
             continue;
         }
 
         BlockSetOps::AddElemD(this, visitedBlocks, block->bbNum);
-        BasicBlock* heaviestSucc = nullptr;
+        BasicBlock* hottestSucc = nullptr;
         weight_t maxEdgeCost = 0.0;
         weight_t fallthroughEdgeCost = 0.0;
         bool hasNonEHSuccs = false;
@@ -5151,6 +5165,8 @@ void Compiler::fgSearchImprovedLayout()
         {
             BasicBlock* const succ = succEdge->getDestinationBlock();
 
+            // Ignore EH successors
+            //
             if (succ->hasHndIndex())
             {
                 continue;
@@ -5165,24 +5181,28 @@ void Compiler::fgSearchImprovedLayout()
 
                 if (block->NextIs(succ))
                 {
-                    assert(fallthroughEdgeCost == 0.0);
                     fallthroughEdgeCost = edgeCost;
                 }
 
                 if (edgeCost > maxEdgeCost)
                 {
                     maxEdgeCost = edgeCost;
-                    heaviestSucc = succ;
+                    hottestSucc = succ;
                 }
             }
         }
 
+        // Only factor costs of non-EH edges into layout cost calculations
+        //
         if (hasNonEHSuccs)
         {
             layoutScore += (block->bbWeight - fallthroughEdgeCost);
             minLayoutScore += (block->bbWeight - maxEdgeCost);
 
-            if ((startBlock == nullptr) && !block->NextIs(heaviestSucc) && !block->hasTryIndex())
+            // We have found our first "interesting" block in the main method body,
+            // as this block does not fall into its hottest successor
+            //
+            if ((startBlock == nullptr) && !block->NextIs(hottestSucc) && !block->hasTryIndex())
             {
                 startBlock = block;
             }
@@ -5197,18 +5217,26 @@ void Compiler::fgSearchImprovedLayout()
         return;
     }
 
-    ArrayStack<CallFinallyPair> callFinallyPairs(getAllocator());
+    // blockVector will contain the set of interesting blocks to move.
+    // tempBlockVector will assist with moving segments of interesting blocks.
+    //
     BasicBlock** blockVector = new BasicBlock*[fgBBNumMax];
     BasicBlock** tempBlockVector = new BasicBlock*[fgBBNumMax];
+    ArrayStack<CallFinallyPair> callFinallyPairs(getAllocator());
     unsigned blockCount = 0;
 
     for (BasicBlock* const block : Blocks(startBlock, fgLastBBInMainFunction()))
     {
+        // Don't consider blocks in EH regions
+        //
         if (block->hasTryIndex() || block->hasHndIndex())
         {
             continue;
         }
 
+        // We've reached the cold section of the main method body;
+        // nothing is interesting at this point
+        //
         if (block->isRunRarely())
         {
             break;
@@ -5252,6 +5280,10 @@ void Compiler::fgSearchImprovedLayout()
         return cost;
     };
 
+    // finalBlock is the first block after the set of interesting blocks.
+    // We will need to keep track of it to compute the cost of creating/breaking fallthrough into it.
+    // finalBlock can be null.
+    //
     BasicBlock* const finalBlock = blockVector[blockCount - 1]->Next();
     bool improvedLayout = true;
 
@@ -5271,7 +5303,7 @@ void Compiler::fgSearchImprovedLayout()
                 // Evaluate the current partition at (i,j)
                 // S1: 0 ~ i-1
                 // S2: i ~ j-1
-                // S3: j ~ exit
+                // S3: j ~ exitBlock
 
                 BasicBlock* const blockJ = blockVector[j];
                 BasicBlock* const blockJPrev = blockVector[j - 1];
@@ -5304,6 +5336,8 @@ void Compiler::fgSearchImprovedLayout()
         }
     }
 
+    // Rearrange blocks
+    //
     for (unsigned i = 1; i < blockCount; i++)
     {
         BasicBlock* const block = blockVector[i - 1];
@@ -5317,6 +5351,8 @@ void Compiler::fgSearchImprovedLayout()
         }
     }
 
+    // Fix call-finally pairs
+    //
     for (int i = 0; i < callFinallyPairs.Height(); i++)
     {
         const CallFinallyPair& pair = callFinallyPairs.BottomRef(i);
