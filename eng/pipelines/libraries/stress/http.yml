@@ -38,7 +38,7 @@ extends:
           DUMPS_SHARE_MOUNT_ROOT: "/dumps-share"
         pool:
           name: $(DncEngPublicBuildPool)
-          demands: ImageOverride -equals 1es-ubuntu-1804-open
+          demands: ImageOverride -equals 1es-ubuntu-2204-open
 
         steps:
         - checkout: self
