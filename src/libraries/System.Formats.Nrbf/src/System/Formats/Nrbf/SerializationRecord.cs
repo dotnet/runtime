@@ -57,7 +57,9 @@ public abstract class SerializationRecord
         // We don't need to check for pointers and references to arrays,
         // as it's impossible to serialize them with BF.
         if (type.IsPointer || type.IsByRef)
+        {
             return false;
+        }
 
         // At first, check the non-allocating properties for mismatch.
         if (type.IsArray != typeName.IsArray || type.IsConstructedGenericType != typeName.IsConstructedGenericType
