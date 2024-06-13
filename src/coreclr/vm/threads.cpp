@@ -2883,6 +2883,21 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
 
     }
 
+    if  (GCHeapUtilities::IsGCHeapInitialized())
+    {
+        // Guaranteed to NOT be a shutdown case, because we tear down the heap before
+        // we tear down any threads during shutdown.
+        if (ThisThreadID == CurrentThreadID && GetAllocContext() != nullptr)
+        {
+            GCX_COOP();
+            // GetTotalAllocatedBytes reads dead_threads_non_alloc_bytes, but will suspend EE, being in COOP mode we cannot race with that
+            // however, there could be other threads terminating and doing the same Add.
+            InterlockedExchangeAdd64((LONG64*)&dead_threads_non_alloc_bytes, GetAllocContext()->alloc_limit - GetAllocContext()->alloc_ptr);
+            GCHeapUtilities::GetGCHeap()->FixAllocContext(GetAllocContext(), NULL, NULL);
+            GetAllocContext()->init(); // re-initialize the context.
+        }
+    }
+
     // We switch a thread to dead when it has finished doing useful work.  But it
     // remains in the thread store so long as someone keeps it alive.  An exposed
     // object will do this (it releases the refcount in its finalizer).  If the
