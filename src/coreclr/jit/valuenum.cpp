@@ -2282,49 +2282,45 @@ TSimd BroadcastConstantToSimd(ValueNumStore* vns, var_types baseType, ValueNum a
     return result;
 }
 
-ValueNum ValueNumStore::VNOneForSimdType(var_types simdType, var_types simdBaseType)
+ValueNum ValueNumStore::VNBroadcastForSimdType(var_types simdType, var_types simdBaseType, ValueNum valVN)
 {
     assert(varTypeIsSIMD(simdType));
-
-    ValueNum oneVN = VNOneForType(simdBaseType);
 
     switch (simdType)
     {
         case TYP_SIMD8:
         {
-            simd8_t result = BroadcastConstantToSimd<simd8_t>(this, simdBaseType, oneVN);
+            simd8_t result = BroadcastConstantToSimd<simd8_t>(this, simdBaseType, valVN);
             return VNForSimd8Con(result);
         }
 
         case TYP_SIMD12:
         {
-            simd12_t result = BroadcastConstantToSimd<simd12_t>(this, simdBaseType, oneVN);
+            simd12_t result = BroadcastConstantToSimd<simd12_t>(this, simdBaseType, valVN);
             return VNForSimd12Con(result);
         }
 
         case TYP_SIMD16:
         {
-            simd16_t result = BroadcastConstantToSimd<simd16_t>(this, simdBaseType, oneVN);
+            simd16_t result = BroadcastConstantToSimd<simd16_t>(this, simdBaseType, valVN);
             return VNForSimd16Con(result);
         }
 
 #if defined(TARGET_XARCH)
         case TYP_SIMD32:
         {
-            simd32_t result = BroadcastConstantToSimd<simd32_t>(this, simdBaseType, oneVN);
+            simd32_t result = BroadcastConstantToSimd<simd32_t>(this, simdBaseType, valVN);
             return VNForSimd32Con(result);
         }
 
         case TYP_SIMD64:
         {
-            simd64_t result = BroadcastConstantToSimd<simd64_t>(this, simdBaseType, oneVN);
+            simd64_t result = BroadcastConstantToSimd<simd64_t>(this, simdBaseType, valVN);
             return VNForSimd64Con(result);
         }
 
         case TYP_MASK:
         {
-            // '1' doesn't make sense for TYP_MASK?
-            // Or should it be AllBitsSet?
             unreached();
         }
 #endif // TARGET_XARCH
@@ -2336,6 +2332,12 @@ ValueNum ValueNumStore::VNOneForSimdType(var_types simdType, var_types simdBaseT
     }
 }
 
+ValueNum ValueNumStore::VNOneForSimdType(var_types simdType, var_types simdBaseType)
+{
+    ValueNum oneVN = VNOneForType(simdBaseType);
+    return VNBroadcastForSimdType(simdType, simdBaseType, oneVN);
+}
+
 ValueNum ValueNumStore::VNForSimdType(unsigned simdSize, CorInfoType simdBaseJitType)
 {
     ValueNum baseTypeVN = VNForIntCon(INT32(simdBaseJitType));
@@ -2343,6 +2345,148 @@ ValueNum ValueNumStore::VNForSimdType(unsigned simdSize, CorInfoType simdBaseJit
     ValueNum simdTypeVN = VNForFunc(TYP_REF, VNF_SimdType, sizeVN, baseTypeVN);
 
     return simdTypeVN;
+}
+
+bool ValueNumStore::VNIsVectorNaN(var_types simdType, var_types simdBaseType, ValueNum valVN)
+{
+    assert(varTypeIsSIMD(simdType));
+
+    simd_t vector = {};
+
+    switch (simdType)
+    {
+        case TYP_SIMD8:
+        {
+            simd8_t tmp = GetConstantSimd8(valVN);
+            memcpy(&vector, &tmp, genTypeSize(simdType));
+            break;
+        }
+
+        case TYP_SIMD12:
+        {
+            simd12_t tmp = GetConstantSimd12(valVN);
+            memcpy(&vector, &tmp, genTypeSize(simdType));
+            break;
+        }
+
+        case TYP_SIMD16:
+        {
+            simd16_t tmp = GetConstantSimd16(valVN);
+            memcpy(&vector, &tmp, genTypeSize(simdType));
+            break;
+        }
+
+#if defined(TARGET_XARCH)
+        case TYP_SIMD32:
+        {
+            simd32_t tmp = GetConstantSimd32(valVN);
+            memcpy(&vector, &tmp, genTypeSize(simdType));
+            break;
+        }
+
+        case TYP_SIMD64:
+        {
+            simd64_t tmp = GetConstantSimd64(valVN);
+            memcpy(&vector, &tmp, genTypeSize(simdType));
+            break;
+        }
+
+        case TYP_MASK:
+        {
+            unreached();
+        }
+#endif // TARGET_XARCH
+
+        default:
+        {
+            unreached();
+        }
+    }
+
+    uint32_t elementCount = GenTreeVecCon::ElementCount(genTypeSize(simdType), simdBaseType);
+
+    for (uint32_t i = 0; i < elementCount; i++)
+    {
+        double element = EvaluateGetElementFloating(simdBaseType, vector, i);
+
+        if (!FloatingPointUtils::isNaN(element))
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool ValueNumStore::VNIsVectorNegativeZero(var_types simdType, var_types simdBaseType, ValueNum valVN)
+{
+    assert(varTypeIsSIMD(simdType));
+
+    simd_t vector = {};
+
+    switch (simdType)
+    {
+        case TYP_SIMD8:
+        {
+            simd8_t tmp = GetConstantSimd8(valVN);
+            memcpy(&vector, &tmp, genTypeSize(simdType));
+            break;
+        }
+
+        case TYP_SIMD12:
+        {
+            simd12_t tmp = GetConstantSimd12(valVN);
+            memcpy(&vector, &tmp, genTypeSize(simdType));
+            break;
+        }
+
+        case TYP_SIMD16:
+        {
+            simd16_t tmp = GetConstantSimd16(valVN);
+            memcpy(&vector, &tmp, genTypeSize(simdType));
+            break;
+        }
+
+#if defined(TARGET_XARCH)
+        case TYP_SIMD32:
+        {
+            simd32_t tmp = GetConstantSimd32(valVN);
+            memcpy(&vector, &tmp, genTypeSize(simdType));
+            break;
+        }
+
+        case TYP_SIMD64:
+        {
+            simd64_t tmp = GetConstantSimd64(valVN);
+            memcpy(&vector, &tmp, genTypeSize(simdType));
+            break;
+        }
+
+        case TYP_MASK:
+        {
+            unreached();
+        }
+#endif // TARGET_XARCH
+
+        default:
+        {
+            unreached();
+        }
+    }
+
+    uint32_t elementCount = GenTreeVecCon::ElementCount(genTypeSize(simdType), simdBaseType);
+
+    for (uint32_t i = 0; i < elementCount; i++)
+    {
+        double element = EvaluateGetElementFloating(simdBaseType, vector, i);
+
+        if (!FloatingPointUtils::isNegativeZero(element))
+        {
+            return false;
+        }
+    }
+
+    return true;
 }
 #endif // FEATURE_SIMD
 
@@ -7895,7 +8039,22 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(GenTreeHWIntrinsic* tree,
             {
                 if (varTypeIsFloating(baseType))
                 {
-                    // Not safe for floating-point when x == -0.0
+                    // Handle `x + NaN == NaN` and `NaN + x == NaN`
+                    // This is safe for all floats since we do not fault for sNaN
+
+                    if (VNIsVectorNaN(type, baseType, cnsVN))
+                    {
+                        return cnsVN;
+                    }
+
+                    // Handle `x + -0 == x` and `-0 + x == x`
+
+                    if (VNIsVectorNegativeZero(type, baseType, cnsVN))
+                    {
+                        return argVN;
+                    }
+
+                    // We cannot handle `x + 0 == x` or `0 + x == x` since `-0 + 0 == 0`
                     break;
                 }
 
@@ -7962,6 +8121,17 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(GenTreeHWIntrinsic* tree,
 
             case GT_DIV:
             {
+                if (varTypeIsFloating(baseType))
+                {
+                    // Handle `x / NaN == NaN` and `NaN / x == NaN`
+                    // This is safe for all floats since we do not fault for sNaN
+
+                    if (VNIsVectorNaN(type, baseType, cnsVN))
+                    {
+                        return cnsVN;
+                    }
+                }
+
                 // Handle `x / 1 == x`.
                 // This is safe for all floats since we do not fault for sNaN
                 ValueNum oneVN;
@@ -7994,6 +8164,19 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(GenTreeHWIntrinsic* tree,
                     {
                         return zeroVN;
                     }
+                }
+                else
+                {
+                    // Handle `x * NaN == NaN` and `NaN * x == NaN`
+                    // This is safe for all floats since we do not fault for sNaN
+
+                    if (VNIsVectorNaN(type, baseType, cnsVN))
+                    {
+                        return cnsVN;
+                    }
+
+                    // We cannot handle `x *  0 ==  0` or ` 0 * x ==  0` since `-0 *  0 == -0`
+                    // We cannot handle `x * -0 == -0` or `-0 * x == -0` since `-0 * -0 ==  0`
                 }
 
                 // Handle `x * 1 == x` and `1 * x == x`
@@ -8060,8 +8243,15 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(GenTreeHWIntrinsic* tree,
             {
                 if (varTypeIsFloating(baseType))
                 {
-                    // Not safe for floating-point when x == -0.0
-                    break;
+                    // Handle `x - NaN == NaN` and `NaN - x == NaN`
+                    // This is safe for all floats since we do not fault for sNaN
+
+                    if (VNIsVectorNaN(type, baseType, cnsVN))
+                    {
+                        return cnsVN;
+                    }
+
+                    // We cannot handle `x - -0 == x` since `-0 - -0 == 0`
                 }
 
                 // Handle `x - 0 == x`
@@ -8098,18 +8288,23 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(GenTreeHWIntrinsic* tree,
             case NI_AdvSimd_MultiplyByScalar:
             case NI_AdvSimd_Arm64_MultiplyByScalar:
             {
+                assert((TypeOfVN(arg0VN) == type) && (TypeOfVN(arg1VN) == TYP_SIMD8));
+
                 if (!varTypeIsFloating(baseType))
                 {
                     // Handle `x * 0 == 0` and `0 * x == 0`
                     // Not safe for floating-point when x == -0.0, NaN, +Inf, -Inf
-                    ValueNum zeroVN = VNZeroForType(TypeOfVN(cnsVN));
 
-                    if (cnsVN == zeroVN)
+                    if (cnsVN == arg0VN)
                     {
-                        return VNZeroForType(type);
+                        if (cnsVN == VNZeroForType(type))
+                        {
+                            return cnsVN;
+                        }
                     }
-                    else if (cnsVN == arg1VN)
+                    else
                     {
+                        assert(cnsVN == arg1VN);
                         ValueNum scalarVN = EvaluateSimdGetElement(this, TYP_SIMD8, baseType, arg1VN, 0);
 
                         if (scalarVN == VNZeroForType(baseType))
@@ -8118,8 +8313,44 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(GenTreeHWIntrinsic* tree,
                         }
                     }
                 }
+                else
+                {
+                    // Handle `x * NaN == NaN` and `NaN * x == NaN`
+                    // This is safe for all floats since we do not fault for sNaN
 
-                assert((TypeOfVN(arg0VN) == type) && (TypeOfVN(arg1VN) == TYP_SIMD8));
+                    if (cnsVN == arg0VN)
+                    {
+                        if (VNIsVectorNaN(type, baseType, cnsVN))
+                        {
+                            return cnsVN;
+                        }
+                    }
+                    else
+                    {
+                        assert(cnsVN == arg1VN);
+                        ValueNum scalarVN = EvaluateSimdGetElement(this, TYP_SIMD8, baseType, arg1VN, 0);
+
+                        double val;
+
+                        if (baseType == TYP_FLOAT)
+                        {
+                            val = GetConstantSingle(scalarVN);
+                        }
+                        else
+                        {
+                            assert(baseType == TYP_DOUBLE);
+                            val = GetConstantDouble(scalarVN);
+                        }
+
+                        if (FloatingPointUtils::isNaN(val))
+                        {
+                            return VNBroadcastForSimdType(type, baseType, scalarVN);
+                        }
+                    }
+
+                    // We cannot handle `x *  0 ==  0` or ` 0 * x ==  0` since `-0 *  0 == -0`
+                    // We cannot handle `x * -0 == -0` or `-0 * x == -0` since `-0 * -0 ==  0`
+                }
 
                 // Handle x * 1 => x, but only if the scalar RHS is <1, ...>.
                 if (IsVNConstant(arg1VN))

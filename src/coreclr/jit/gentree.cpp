@@ -18600,12 +18600,11 @@ bool Compiler::IsValidForShuffle(GenTreeVecCon* vecCon, unsigned simdSize, var_t
 // Arguments:
 //    oper     - the operation to use in the evaluation
 //    scalar   - true if this is a scalar operation; otherwise, false
-//    simdType - the size of the constant being checked
 //    baseType - the base type of the constant being checked
 //
-void GenTreeVecCon::EvaluateUnaryInPlace(genTreeOps oper, bool scalar, var_types simdType, var_types baseType)
+void GenTreeVecCon::EvaluateUnaryInPlace(genTreeOps oper, bool scalar, var_types baseType)
 {
-    switch (simdType)
+    switch (gtType)
     {
         case TYP_SIMD8:
         {
@@ -18662,14 +18661,12 @@ void GenTreeVecCon::EvaluateUnaryInPlace(genTreeOps oper, bool scalar, var_types
 // Arguments:
 //    oper     - the operation to use in the evaluation
 //    scalar   - true if this is a scalar operation; otherwise, false
-//    simdType - the size of the constant being checked
 //    baseType - the base type of the constant being checked
 //    other    - the other vector constant to use in the evaluation
 //
-void GenTreeVecCon::EvaluateBinaryInPlace(
-    genTreeOps oper, bool scalar, var_types simdType, var_types baseType, GenTreeVecCon* other)
+void GenTreeVecCon::EvaluateBinaryInPlace(genTreeOps oper, bool scalar, var_types baseType, GenTreeVecCon* other)
 {
-    switch (simdType)
+    switch (gtType)
     {
         case TYP_SIMD8:
         {
@@ -18724,23 +18721,22 @@ void GenTreeVecCon::EvaluateBinaryInPlace(
 // GenTreeVecCon::EvaluateBroadcastInPlace: Evaluates this constant using a broadcast
 //
 // Arguments:
-//    simdType - the size of the constant being checked
 //    baseType - the base type of the constant being checked
 //    scalar   - the value to broadcast as part of the evaluation
 //
-void GenTreeVecCon::EvaluateBroadcastInPlace(var_types simdType, var_types baseType, double scalar)
+void GenTreeVecCon::EvaluateBroadcastInPlace(var_types baseType, double scalar)
 {
     switch (baseType)
     {
         case TYP_FLOAT:
         {
-            EvaluateBroadcastInPlace<float>(simdType, static_cast<float>(scalar));
+            EvaluateBroadcastInPlace<float>(static_cast<float>(scalar));
             break;
         }
 
         case TYP_DOUBLE:
         {
-            EvaluateBroadcastInPlace<double>(simdType, static_cast<double>(scalar));
+            EvaluateBroadcastInPlace<double>(static_cast<double>(scalar));
             break;
         }
 
@@ -18755,59 +18751,58 @@ void GenTreeVecCon::EvaluateBroadcastInPlace(var_types simdType, var_types baseT
 // GenTreeVecCon::EvaluateBroadcastInPlace: Evaluates this constant using a broadcast
 //
 // Arguments:
-//    simdType - the size of the constant being checked
 //    baseType - the base type of the constant being checked
 //    scalar   - the value to broadcast as part of the evaluation
 //
-void GenTreeVecCon::EvaluateBroadcastInPlace(var_types simdType, var_types baseType, int64_t scalar)
+void GenTreeVecCon::EvaluateBroadcastInPlace(var_types baseType, int64_t scalar)
 {
     switch (baseType)
     {
         case TYP_BYTE:
         {
-            EvaluateBroadcastInPlace<int8_t>(simdType, static_cast<int8_t>(scalar));
+            EvaluateBroadcastInPlace<int8_t>(static_cast<int8_t>(scalar));
             break;
         }
 
         case TYP_UBYTE:
         {
-            EvaluateBroadcastInPlace<uint8_t>(simdType, static_cast<uint8_t>(scalar));
+            EvaluateBroadcastInPlace<uint8_t>(static_cast<uint8_t>(scalar));
             break;
         }
 
         case TYP_SHORT:
         {
-            EvaluateBroadcastInPlace<int16_t>(simdType, static_cast<int16_t>(scalar));
+            EvaluateBroadcastInPlace<int16_t>(static_cast<int16_t>(scalar));
             break;
         }
 
         case TYP_USHORT:
         {
-            EvaluateBroadcastInPlace<uint16_t>(simdType, static_cast<uint16_t>(scalar));
+            EvaluateBroadcastInPlace<uint16_t>(static_cast<uint16_t>(scalar));
             break;
         }
 
         case TYP_INT:
         {
-            EvaluateBroadcastInPlace<int32_t>(simdType, static_cast<int32_t>(scalar));
+            EvaluateBroadcastInPlace<int32_t>(static_cast<int32_t>(scalar));
             break;
         }
 
         case TYP_UINT:
         {
-            EvaluateBroadcastInPlace<uint32_t>(simdType, static_cast<uint32_t>(scalar));
+            EvaluateBroadcastInPlace<uint32_t>(static_cast<uint32_t>(scalar));
             break;
         }
 
         case TYP_LONG:
         {
-            EvaluateBroadcastInPlace<int64_t>(simdType, static_cast<int64_t>(scalar));
+            EvaluateBroadcastInPlace<int64_t>(static_cast<int64_t>(scalar));
             break;
         }
 
         case TYP_ULONG:
         {
-            EvaluateBroadcastInPlace<uint64_t>(simdType, static_cast<uint64_t>(scalar));
+            EvaluateBroadcastInPlace<uint64_t>(static_cast<uint64_t>(scalar));
             break;
         }
 
@@ -18822,18 +18817,17 @@ void GenTreeVecCon::EvaluateBroadcastInPlace(var_types simdType, var_types baseT
 // GenTreeVecCon::IsBroadcast: Determines if this vector constant is a broadcast
 //
 // Arguments:
-//    simdType     - the size of the constant being checked
 //    simdBaseType - the base type of the constant being checked
 //
 // Returns:
 //    true if the constant represents a broadcast value; otherwise, false
 //
-bool GenTreeVecCon::IsBroadcast(var_types simdType, var_types simdBaseType) const
+bool GenTreeVecCon::IsBroadcast(var_types simdBaseType) const
 {
-    assert(varTypeIsSIMD(simdType));
+    assert(varTypeIsSIMD(gtType));
     assert(varTypeIsArithmetic(simdBaseType));
 
-    int elementCount = ElementCount(genTypeSize(simdType), simdBaseType);
+    int elementCount = ElementCount(genTypeSize(gtType), simdBaseType);
 
     switch (simdBaseType)
     {
@@ -18868,6 +18862,60 @@ bool GenTreeVecCon::IsBroadcast(var_types simdType, var_types simdBaseType) cons
             return false;
         }
     }
+}
+
+//------------------------------------------------------------------------
+// GenTreeVecCon::IsNaN: Determines if this vector constant has all elements being NaN
+//
+// Arguments:
+//    simdBaseType - the base type of the constant being checked
+//
+// Returns:
+//    true if the constant has all elements being NaN; otherwise, false
+//
+bool GenTreeVecCon::IsNaN(var_types simdBaseType) const
+{
+    assert(varTypeIsFloating(simdBaseType));
+    uint32_t elementCount = ElementCount(genTypeSize(gtType), simdBaseType);
+
+    for (uint32_t i = 0; i < elementCount; i++)
+    {
+        double element = GetElementFloating(simdBaseType, i);
+
+        if (!FloatingPointUtils::isNaN(element))
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------
+// GenTreeVecCon::IsNaN: Determines if this vector constant has all elements being -0
+//
+// Arguments:
+//    simdBaseType - the base type of the constant being checked
+//
+// Returns:
+//    true if the constant has all elements being -0; otherwise, false
+//
+bool GenTreeVecCon::IsNegativeZero(var_types simdBaseType) const
+{
+    assert(varTypeIsFloating(simdBaseType));
+    uint32_t elementCount = ElementCount(genTypeSize(gtType), simdBaseType);
+
+    for (uint32_t i = 0; i < elementCount; i++)
+    {
+        double element = GetElementFloating(simdBaseType, i);
+
+        if (!FloatingPointUtils::isNegativeZero(element))
+        {
+            return false;
+        }
+    }
+
+    return true;
 }
 #endif // FEATURE_HW_INTRINSICS*/
 
@@ -29520,7 +29568,6 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
     var_types      simdBaseType    = tree->GetSimdBaseType();
     CorInfoType    simdBaseJitType = tree->GetSimdBaseJitType();
     unsigned int   simdSize        = tree->GetSimdSize();
-    bool           isNewNode       = false;
 
     if (otherNode == nullptr)
     {
@@ -29529,7 +29576,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 
         if (oper != GT_NONE)
         {
-            cnsNode->AsVecCon()->EvaluateUnaryInPlace(oper, isScalar, retType, simdBaseType);
+            cnsNode->AsVecCon()->EvaluateUnaryInPlace(oper, isScalar, simdBaseType);
             resultNode = cnsNode;
         }
         else
@@ -29695,25 +29742,22 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 
                     if (varTypeIsFloating(retType))
                     {
-                        double result = cnsNode->AsVecCon()->ToScalarFloating(simdType, simdBaseType);
+                        double result = cnsNode->AsVecCon()->ToScalarFloating(simdBaseType);
 
                         resultNode = gtNewDconNode(result, retType);
-                        isNewNode  = true;
                     }
                     else
                     {
                         assert(varTypeIsIntegral(retType));
-                        int64_t result = cnsNode->AsVecCon()->ToScalarIntegral(simdType, simdBaseType);
+                        int64_t result = cnsNode->AsVecCon()->ToScalarIntegral(simdBaseType);
 
                         if (varTypeIsLong(retType))
                         {
                             resultNode = gtNewLconNode(result);
-                            isNewNode  = true;
                         }
                         else
                         {
                             resultNode = gtNewIconNode(static_cast<int32_t>(result), retType);
-                            isNewNode  = true;
                         }
                     }
                     break;
@@ -29745,14 +29789,14 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                         // a simd16, in which case they take the shift amount from the lower
                         // 64-bits.
 
-                        int64_t shiftAmount = otherNode->AsVecCon()->GetElementIntegral(TYP_SIMD16, TYP_LONG, 0);
+                        int64_t shiftAmount = otherNode->AsVecCon()->GetElementIntegral(TYP_LONG, 0);
 
                         if ((genTypeSize(simdBaseType) != 8) && (shiftAmount > INT_MAX))
                         {
                             // Ensure we don't lose track the the amount is an overshift
                             shiftAmount = -1;
                         }
-                        otherNode->AsVecCon()->EvaluateBroadcastInPlace(retType, simdBaseType, shiftAmount);
+                        otherNode->AsVecCon()->EvaluateBroadcastInPlace(simdBaseType, shiftAmount);
                     }
                 }
             }
@@ -29763,10 +29807,10 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                 int64_t scalar = otherNode->AsIntConCommon()->IntegralValue();
 
                 otherNode = gtNewVconNode(retType);
-                otherNode->AsVecCon()->EvaluateBroadcastInPlace(retType, simdBaseType, scalar);
+                otherNode->AsVecCon()->EvaluateBroadcastInPlace(simdBaseType, scalar);
             }
 
-            cnsNode->AsVecCon()->EvaluateBinaryInPlace(oper, isScalar, retType, simdBaseType, otherNode->AsVecCon());
+            cnsNode->AsVecCon()->EvaluateBinaryInPlace(oper, isScalar, simdBaseType, otherNode->AsVecCon());
             resultNode = cnsNode;
         }
         else
@@ -29794,25 +29838,22 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 
                     if (varTypeIsFloating(retType))
                     {
-                        double result = cnsNode->AsVecCon()->GetElementFloating(simdType, simdBaseType, index);
+                        double result = cnsNode->AsVecCon()->GetElementFloating(simdBaseType, index);
 
                         resultNode = gtNewDconNode(result, retType);
-                        isNewNode  = true;
                     }
                     else
                     {
                         assert(varTypeIsIntegral(retType));
-                        int64_t result = cnsNode->AsVecCon()->GetElementIntegral(simdType, simdBaseType, index);
+                        int64_t result = cnsNode->AsVecCon()->GetElementIntegral(simdBaseType, index);
 
                         if (varTypeIsLong(retType))
                         {
                             resultNode = gtNewLconNode(result);
-                            isNewNode  = true;
                         }
                         else
                         {
                             resultNode = gtNewIconNode(static_cast<int32_t>(result), retType);
-                            isNewNode  = true;
                         }
                     }
                     break;
@@ -29830,18 +29871,17 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 
                     if (varTypeIsFloating(simdBaseType))
                     {
-                        double scalar = otherNode->AsVecCon()->ToScalarFloating(retType, simdBaseType);
-                        otherNode->AsVecCon()->EvaluateBroadcastInPlace(retType, simdBaseType, scalar);
+                        double scalar = otherNode->AsVecCon()->ToScalarFloating(simdBaseType);
+                        otherNode->AsVecCon()->EvaluateBroadcastInPlace(simdBaseType, scalar);
                     }
                     else
                     {
                         assert(varTypeIsIntegral(simdBaseType));
-                        int64_t scalar = otherNode->AsVecCon()->ToScalarIntegral(retType, simdBaseType);
-                        otherNode->AsVecCon()->EvaluateBroadcastInPlace(retType, simdBaseType, scalar);
+                        int64_t scalar = otherNode->AsVecCon()->ToScalarIntegral(simdBaseType);
+                        otherNode->AsVecCon()->EvaluateBroadcastInPlace(simdBaseType, scalar);
                     }
 
-                    cnsNode->AsVecCon()->EvaluateBinaryInPlace(GT_MUL, isScalar, retType, simdBaseType,
-                                                               otherNode->AsVecCon());
+                    cnsNode->AsVecCon()->EvaluateBinaryInPlace(GT_MUL, isScalar, simdBaseType, otherNode->AsVecCon());
                     resultNode = cnsNode;
                     break;
                 }
@@ -29873,14 +29913,14 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                     if (varTypeIsFloating(simdBaseType))
                     {
                         double value = op3->AsDblCon()->DconValue();
-                        cnsNode->AsVecCon()->SetElementFloating(simdType, simdBaseType, index, value);
+                        cnsNode->AsVecCon()->SetElementFloating(simdBaseType, index, value);
                         resultNode = cnsNode;
                     }
                     else
                     {
                         assert(varTypeIsIntegral(simdBaseType));
                         int64_t value = op3->AsIntConCommon()->IntegralValue();
-                        cnsNode->AsVecCon()->SetElementIntegral(simdType, simdBaseType, index, value);
+                        cnsNode->AsVecCon()->SetElementIntegral(simdBaseType, index, value);
                         resultNode = cnsNode;
                     }
                     break;
@@ -29965,15 +30005,30 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
     }
     else if (op3 == nullptr)
     {
-        bool otherNodeHasSideEffects = (otherNode->gtFlags & GTF_SIDE_EFFECT) != 0;
-
         switch (oper)
         {
             case GT_ADD:
             {
                 if (varTypeIsFloating(simdBaseType))
                 {
-                    // Not safe for floating-point when x == -0.0
+                    // Handle `x + NaN == NaN` and `NaN + x == NaN`
+                    // This is safe for all floats since we do not fault for sNaN
+
+                    if (cnsNode->IsVectorNaN(simdBaseType))
+                    {
+                        resultNode = gtWrapWithSideEffects(cnsNode, otherNode, GTF_ALL_EFFECT);
+                        break;
+                    }
+
+                    // Handle `x + -0 == x` and `-0 + x == x`
+
+                    if (cnsNode->IsVectorNegativeZero(simdBaseType))
+                    {
+                        resultNode = otherNode;
+                        break;
+                    }
+
+                    // We cannot handle `x + 0 == x` or `0 + x == x` since `-0 + 0 == 0`
                     break;
                 }
 
@@ -29990,11 +30045,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                 // Handle `x & 0 == 0` and `0 & x == 0`
                 if (cnsNode->IsVectorZero())
                 {
-                    if (!otherNodeHasSideEffects)
-                    {
-                        // We need to preserve side effects when they exist
-                        resultNode = cnsNode;
-                    }
+                    resultNode = gtWrapWithSideEffects(cnsNode, otherNode, GTF_ALL_EFFECT);
                     break;
                 }
 
@@ -30013,11 +30064,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                 {
                     if (cnsNode == op1)
                     {
-                        if (!otherNodeHasSideEffects)
-                        {
-                            // We need to preserve side effects when they exist
-                            resultNode = cnsNode;
-                        }
+                        resultNode = gtWrapWithSideEffects(cnsNode, otherNode, GTF_ALL_EFFECT);
                         break;
                     }
                     else
@@ -30030,17 +30077,25 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                 // Handle `x & ~AllBitsSet == 0`
                 if (cnsNode->IsVectorAllBitsSet() && (cnsNode == op2))
                 {
-                    if (!otherNodeHasSideEffects)
-                    {
-                        // We need to preserve side effects when they exist
-                        resultNode = cnsNode;
-                    }
+                    resultNode = gtWrapWithSideEffects(cnsNode, otherNode, GTF_ALL_EFFECT);
                 }
                 break;
             }
 
             case GT_DIV:
             {
+                if (varTypeIsFloating(simdBaseType))
+                {
+                    // Handle `x / NaN == NaN` and `NaN / x == NaN`
+                    // This is safe for all floats since we do not fault for sNaN
+
+                    if (cnsNode->IsVectorNaN(simdBaseType))
+                    {
+                        resultNode = gtWrapWithSideEffects(cnsNode, otherNode, GTF_ALL_EFFECT);
+                        break;
+                    }
+                }
+
                 // Handle `x / 1 == x`.
                 // This is safe for all floats since we do not fault for sNaN
 
@@ -30049,12 +30104,12 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                     break;
                 }
 
-                if (!cnsNode->IsVectorBroadcast(retType, simdBaseType))
+                if (!cnsNode->IsVectorBroadcast(simdBaseType))
                 {
                     break;
                 }
 
-                if (cnsNode->AsVecCon()->IsScalarOne(retType, simdBaseType))
+                if (cnsNode->AsVecCon()->IsScalarOne(simdBaseType))
                 {
                     resultNode = otherNode;
                 }
@@ -30069,24 +30124,34 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                     // Not safe for floating-point when x == -0.0, NaN, +Inf, -Inf
                     if (cnsNode->IsVectorZero())
                     {
-                        if (!otherNodeHasSideEffects)
-                        {
-                            // We need to preserve side effects when they exist
-                            resultNode = cnsNode;
-                        }
+                        resultNode = gtWrapWithSideEffects(cnsNode, otherNode, GTF_ALL_EFFECT);
                         break;
                     }
+                }
+                else
+                {
+                    // Handle `x * NaN == NaN` and `NaN * x == NaN`
+                    // This is safe for all floats since we do not fault for sNaN
+
+                    if (cnsNode->IsVectorNaN(simdBaseType))
+                    {
+                        resultNode = gtWrapWithSideEffects(cnsNode, otherNode, GTF_ALL_EFFECT);
+                        break;
+                    }
+
+                    // We cannot handle `x *  0 ==  0` or ` 0 * x ==  0` since `-0 *  0 == -0`
+                    // We cannot handle `x * -0 == -0` or `-0 * x == -0` since `-0 * -0 ==  0`
                 }
 
                 // Handle `x * 1 == x` and `1 * x == x`
                 // This is safe for all floats since we do not fault for sNaN
 
-                if (!cnsNode->IsVectorBroadcast(retType, simdBaseType))
+                if (!cnsNode->IsVectorBroadcast(simdBaseType))
                 {
                     break;
                 }
 
-                if (cnsNode->AsVecCon()->IsScalarOne(retType, simdBaseType))
+                if (cnsNode->AsVecCon()->IsScalarOne(simdBaseType))
                 {
                     resultNode = otherNode;
                 }
@@ -30105,11 +30170,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                 // Handle `x | AllBitsSet == AllBitsSet` and `AllBitsSet | x == AllBitsSet`
                 if (cnsNode->IsVectorAllBitsSet())
                 {
-                    if (!otherNodeHasSideEffects)
-                    {
-                        // We need to preserve side effects when they exist
-                        resultNode = cnsNode;
-                    }
+                    resultNode = gtWrapWithSideEffects(cnsNode, otherNode, GTF_ALL_EFFECT);
                 }
                 break;
             }
@@ -30132,10 +30193,9 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                     {
                         resultNode = otherNode;
                     }
-                    else if (!otherNodeHasSideEffects)
+                    else
                     {
-                        // We need to preserve side effects when they exist
-                        resultNode = cnsNode;
+                        resultNode = gtWrapWithSideEffects(cnsNode, otherNode, GTF_ALL_EFFECT);
                     }
                 }
                 else if (cnsNode->IsIntegralConst(0))
@@ -30150,8 +30210,16 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
             {
                 if (varTypeIsFloating(simdBaseType))
                 {
-                    // Not safe for floating-point when x == -0.0
-                    break;
+                    // Handle `x - NaN == NaN` and `NaN - x == NaN`
+                    // This is safe for all floats since we do not fault for sNaN
+
+                    if (cnsNode->IsVectorNaN(simdBaseType))
+                    {
+                        resultNode = gtWrapWithSideEffects(cnsNode, otherNode, GTF_ALL_EFFECT);
+                        break;
+                    }
+
+                    // We cannot handle `x - -0 == x` since `-0 - -0 == 0`
                 }
 
                 // Handle `x - 0 == x`
@@ -30188,28 +30256,64 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                 {
                     // Handle `x * 0 == 0` and `0 * x == 0`
                     // Not safe for floating-point when x == -0.0, NaN, +Inf, -Inf
-                    if (cnsNode->IsVectorZero())
+                    if (cnsNode == op1)
                     {
-                        if (!otherNodeHasSideEffects)
+                        if (cnsNode->IsVectorZero())
                         {
-                            // We need to preserve side effects when they exist
-                            resultNode = cnsNode;
+                            resultNode = gtWrapWithSideEffects(cnsNode, otherNode, GTF_ALL_EFFECT);
+                            break;
                         }
-                        break;
                     }
-                    else if ((cnsNode == op2) && cnsNode->AsVecCon()->IsScalarZero(TYP_SIMD8, simdBaseType))
+                    else
                     {
-                        if (!otherNodeHasSideEffects)
+                        assert(cnsNode == op2);
+
+                        if (cnsNode->AsVecCon()->IsScalarZero(simdBaseType))
                         {
-                            // We need to preserve side effects when they exist
-                            resultNode = cnsNode;
+                            int64_t val = 0;
+
+                            cnsNode->gtType = retType;
+                            cnsNode->AsVecCon()->EvaluateBroadcastInPlace(simdBaseType, val);
+
+                            resultNode = gtWrapWithSideEffects(cnsNode, otherNode, GTF_ALL_EFFECT);
+                            break;
                         }
-                        break;
                     }
+                }
+                else
+                {
+                    // Handle `x * NaN == NaN` and `NaN * x == NaN`
+                    // This is safe for all floats since we do not fault for sNaN
+
+                    if (cnsNode == op1)
+                    {
+                        if (cnsNode->IsVectorNaN(simdBaseType))
+                        {
+                            resultNode = gtWrapWithSideEffects(cnsNode, otherNode, GTF_ALL_EFFECT);
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        assert(cnsNode == op2);
+                        double val = cnsNode->AsVecCon()->GetElementFloating(simdBaseType, 0);
+
+                        if (FloatingPointUtils::isNaN(val))
+                        {
+                            cnsNode->gtType = retType;
+                            cnsNode->AsVecCon()->EvaluateBroadcastInPlace(simdBaseType, val);
+
+                            resultNode = gtWrapWithSideEffects(cnsNode, otherNode, GTF_ALL_EFFECT);
+                            break;
+                        }
+                    }
+
+                    // We cannot handle `x *  0 ==  0` or ` 0 * x ==  0` since `-0 *  0 == -0`
+                    // We cannot handle `x * -0 == -0` or `-0 * x == -0` since `-0 * -0 ==  0`
                 }
 
                 // Handle x * 1 => x, but only if the scalar RHS is <1, ...>.
-                if ((cnsNode == op2) && cnsNode->AsVecCon()->IsScalarOne(TYP_SIMD8, simdBaseType))
+                if ((cnsNode == op2) && cnsNode->AsVecCon()->IsScalarOne(simdBaseType))
                 {
                     resultNode = otherNode;
                 }
@@ -30224,13 +30328,21 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
         }
     }
 
-    if (isNewNode && fgGlobalMorph)
-    {
-        fgMorphTreeDone(resultNode);
-    }
-
     if (resultNode != tree)
     {
+        if (fgGlobalMorph)
+        {
+            // We can sometimes produce a comma over the constant if the original op
+            // had a side effect or even a new constant node, so just ensure we set
+            // the flag (which will be already set for the operands otherwise).
+            INDEBUG(resultNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+
+            if (resultNode->OperIs(GT_COMMA))
+            {
+                INDEBUG(resultNode->AsOp()->gtGetOp2()->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+            }
+        }
+
         if (resultNode->OperIsConst())
         {
             if (vnStore != nullptr)

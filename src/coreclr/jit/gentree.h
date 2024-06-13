@@ -1763,9 +1763,11 @@ public:
     inline bool IsFloatPositiveZero() const;
     inline bool IsFloatNegativeZero() const;
     inline bool IsVectorZero() const;
+    inline bool IsVectorNegativeZero(var_types simdBaseType) const;
+    inline bool IsVectorNaN(var_types simdBaseType) const;
     inline bool IsVectorCreate() const;
     inline bool IsVectorAllBitsSet() const;
-    inline bool IsVectorBroadcast(var_types simdType, var_types simdBaseType) const;
+    inline bool IsVectorBroadcast(var_types simdBaseType) const;
     inline bool IsMaskAllBitsSet() const;
     inline bool IsVectorConst();
 
@@ -6879,14 +6881,13 @@ struct GenTreeVecCon : public GenTree
 
 #endif // FEATURE_HW_INTRINSICS
 
-    void EvaluateUnaryInPlace(genTreeOps oper, bool scalar, var_types simdType, var_types baseType);
-    void EvaluateBinaryInPlace(
-        genTreeOps oper, bool scalar, var_types simdType, var_types baseType, GenTreeVecCon* other);
+    void EvaluateUnaryInPlace(genTreeOps oper, bool scalar, var_types baseType);
+    void EvaluateBinaryInPlace(genTreeOps oper, bool scalar, var_types baseType, GenTreeVecCon* other);
 
     template <typename TBase>
-    void EvaluateBroadcastInPlace(var_types simdType, TBase scalar)
+    void EvaluateBroadcastInPlace(TBase scalar)
     {
-        switch (simdType)
+        switch (gtType)
         {
 #if defined(FEATURE_SIMD)
             case TYP_SIMD8:
@@ -6939,12 +6940,12 @@ struct GenTreeVecCon : public GenTree
         }
     }
 
-    void EvaluateBroadcastInPlace(var_types simdType, var_types baseType, double scalar);
-    void EvaluateBroadcastInPlace(var_types simdType, var_types baseType, int64_t scalar);
+    void EvaluateBroadcastInPlace(var_types baseType, double scalar);
+    void EvaluateBroadcastInPlace(var_types baseType, int64_t scalar);
 
-    void SetElementFloating(var_types simdType, var_types simdBaseType, int32_t index, double value)
+    void SetElementFloating(var_types simdBaseType, int32_t index, double value)
     {
-        switch (simdType)
+        switch (gtType)
         {
 #if defined(FEATURE_SIMD)
             case TYP_SIMD8:
@@ -6997,9 +6998,9 @@ struct GenTreeVecCon : public GenTree
         }
     }
 
-    void SetElementIntegral(var_types simdType, var_types simdBaseType, int32_t index, int64_t value)
+    void SetElementIntegral(var_types simdBaseType, int32_t index, int64_t value)
     {
-        switch (simdType)
+        switch (gtType)
         {
 #if defined(FEATURE_SIMD)
             case TYP_SIMD8:
@@ -7097,7 +7098,7 @@ struct GenTreeVecCon : public GenTree
         }
     }
 
-    bool IsBroadcast(var_types simdType, var_types simdBaseType) const;
+    bool IsBroadcast(var_types simdBaseType) const;
 
     static bool Equals(const GenTreeVecCon* left, const GenTreeVecCon* right)
     {
@@ -7151,6 +7152,10 @@ struct GenTreeVecCon : public GenTree
         }
     }
 
+    bool IsNaN(var_types simdBaseType) const;
+
+    bool IsNegativeZero(var_types simdBaseType) const;
+
     bool IsZero() const
     {
         switch (gtType)
@@ -7196,9 +7201,9 @@ struct GenTreeVecCon : public GenTree
         }
     }
 
-    double GetElementFloating(var_types simdType, var_types simdBaseType, int32_t index) const
+    double GetElementFloating(var_types simdBaseType, int32_t index) const
     {
-        switch (simdType)
+        switch (gtType)
         {
 #if defined(FEATURE_SIMD)
             case TYP_SIMD8:
@@ -7236,9 +7241,9 @@ struct GenTreeVecCon : public GenTree
         }
     }
 
-    int64_t GetElementIntegral(var_types simdType, var_types simdBaseType, int32_t index) const
+    int64_t GetElementIntegral(var_types simdBaseType, int32_t index) const
     {
-        switch (simdType)
+        switch (gtType)
         {
 #if defined(FEATURE_SIMD)
             case TYP_SIMD8:
@@ -7276,62 +7281,62 @@ struct GenTreeVecCon : public GenTree
         }
     }
 
-    double ToScalarFloating(var_types simdType, var_types simdBaseType) const
+    double ToScalarFloating(var_types simdBaseType) const
     {
-        return GetElementFloating(simdType, simdBaseType, 0);
+        return GetElementFloating(simdBaseType, 0);
     }
 
-    int64_t ToScalarIntegral(var_types simdType, var_types simdBaseType) const
+    int64_t ToScalarIntegral(var_types simdBaseType) const
     {
-        return GetElementIntegral(simdType, simdBaseType, 0);
+        return GetElementIntegral(simdBaseType, 0);
     }
 
-    bool IsElementZero(var_types simdType, var_types simdBaseType, int32_t index) const
+    bool IsElementZero(var_types simdBaseType, int32_t index) const
     {
         switch (simdBaseType)
         {
             case TYP_FLOAT:
             {
-                return GetElementIntegral(simdType, TYP_INT, index) == 0;
+                return GetElementIntegral(TYP_INT, index) == 0;
             }
 
             case TYP_DOUBLE:
             {
-                return GetElementIntegral(simdType, TYP_LONG, index) == 0;
+                return GetElementIntegral(TYP_LONG, index) == 0;
             }
 
             default:
             {
-                return GetElementIntegral(simdType, simdBaseType, index) == 0;
+                return GetElementIntegral(simdBaseType, index) == 0;
             }
         }
     }
 
-    bool IsElementOne(var_types simdType, var_types simdBaseType, int32_t index) const
+    bool IsElementOne(var_types simdBaseType, int32_t index) const
     {
         switch (simdBaseType)
         {
             case TYP_FLOAT:
             case TYP_DOUBLE:
             {
-                return GetElementFloating(simdType, simdBaseType, index) == 1;
+                return GetElementFloating(simdBaseType, index) == 1;
             }
 
             default:
             {
-                return GetElementIntegral(simdType, simdBaseType, index) == 1;
+                return GetElementIntegral(simdBaseType, index) == 1;
             }
         }
     }
 
-    bool IsScalarZero(var_types simdType, var_types simdBaseType) const
+    bool IsScalarZero(var_types simdBaseType) const
     {
-        return IsElementZero(simdType, simdBaseType, 0);
+        return IsElementZero(simdBaseType, 0);
     }
 
-    bool IsScalarOne(var_types simdType, var_types simdBaseType) const
+    bool IsScalarOne(var_types simdBaseType) const
     {
-        return IsElementOne(simdType, simdBaseType, 0);
+        return IsElementOne(simdBaseType, 0);
     }
 
     GenTreeVecCon(var_types type)
@@ -9553,6 +9558,36 @@ inline bool GenTree::IsVectorZero() const
 }
 
 //-------------------------------------------------------------------
+// IsVectorNegativeZero: returns true if this node is a vector constant with all elements negative zero.
+//
+// Arguments:
+//     simdBaseType - the base type of the constant being checked
+//
+// Returns:
+//     True if this node is a vector constant with all elements negative zero
+//
+inline bool GenTree::IsVectorNegativeZero(var_types simdBaseType) const
+{
+    assert(varTypeIsFloating(simdBaseType));
+    return IsCnsVec() && AsVecCon()->IsNegativeZero(simdBaseType);
+}
+
+//-------------------------------------------------------------------
+// IsVectorZero: returns true if this node is a vector constant with all bits zero.
+//
+// Arguments:
+//     simdBaseType - the base type of the constant being checked
+//
+// Returns:
+//     True if this node is a vector constant with all bits zero
+//
+inline bool GenTree::IsVectorNaN(var_types simdBaseType) const
+{
+    assert(varTypeIsFloating(simdBaseType));
+    return IsCnsVec() && AsVecCon()->IsNaN(simdBaseType);
+}
+
+//-------------------------------------------------------------------
 // IsVectorCreate: returns true if this node is the creation of a vector.
 //                 Does not include "Unsafe" method calls.
 //
@@ -9608,12 +9643,12 @@ inline bool GenTree::IsVectorAllBitsSet() const
 // Returns:
 //     True if this node is a vector constant with the same value in all elements.
 //
-inline bool GenTree::IsVectorBroadcast(var_types simdType, var_types simdBaseType) const
+inline bool GenTree::IsVectorBroadcast(var_types simdBaseType) const
 {
 #ifdef FEATURE_SIMD
     if (IsCnsVec())
     {
-        return AsVecCon()->IsBroadcast(simdType, simdBaseType);
+        return AsVecCon()->IsBroadcast(simdBaseType);
     }
 #endif // FEATURE_SIMD
 

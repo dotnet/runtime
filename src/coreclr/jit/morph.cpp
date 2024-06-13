@@ -10679,10 +10679,16 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
 
         default:
         {
-            genTreeOps oper = node->HWOperGet();
+            bool       isScalar = false;
+            genTreeOps oper     = node->HWOperGet(&isScalar);
 
             if (GenTreeHWIntrinsic::OperIsBitwiseHWIntrinsic(oper))
             {
+                if (oper == GT_NOT)
+                {
+                    break;
+                }
+
                 GenTree* op1 = node->Op(1);
                 GenTree* op2 = node->Op(2);
 

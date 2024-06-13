@@ -553,11 +553,20 @@ public:
     ValueNum VNAllBitsForType(var_types typ);
 
 #ifdef FEATURE_SIMD
+    // Returns the value number broadcast of the given "simdType" and "simdBaseType".
+    ValueNum VNBroadcastForSimdType(var_types simdType, var_types simdBaseType, ValueNum valVN);
+
     // Returns the value number for one of the given "simdType" and "simdBaseType".
     ValueNum VNOneForSimdType(var_types simdType, var_types simdBaseType);
 
     // A helper function for constructing VNF_SimdType VNs.
     ValueNum VNForSimdType(unsigned simdSize, CorInfoType simdBaseJitType);
+
+    // Returns if a value number represents NaN in all elements
+    bool VNIsVectorNaN(var_types simdType, var_types simdBaseType, ValueNum valVN);
+
+    // Returns if a value number represents negative zero in all elements
+    bool VNIsVectorNegativeZero(var_types simdType, var_types simdBaseType, ValueNum valVN);
 #endif // FEATURE_SIMD
 
     // Create or return the existimg value number representing a singleton exception set

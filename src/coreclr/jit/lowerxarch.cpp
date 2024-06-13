@@ -9280,7 +9280,7 @@ void Lowering::TryFoldCnsVecForEmbeddedBroadcast(GenTreeHWIntrinsic* parentNode,
 #endif // TARGET_64BIT
     else
     {
-        isCreatedFromScalar = childNode->IsBroadcast(simdType, simdBaseType);
+        isCreatedFromScalar = childNode->IsBroadcast(simdBaseType);
     }
 
     if (isCreatedFromScalar)
