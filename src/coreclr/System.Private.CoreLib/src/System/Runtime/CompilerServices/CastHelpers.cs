@@ -463,7 +463,6 @@ namespace System.Runtime.CompilerServices
             WriteBarrier(ref element, obj);
         }
 
-#if FEATURE_ARRAYSTUB_AS_IL
         [DebuggerHidden]
         private static unsafe void ArrayTypeCheck(object obj, Array array)
         {
@@ -493,6 +492,5 @@ namespace System.Runtime.CompilerServices
                 ThrowArrayMismatchException();
             }
         }
-#endif
     }
 }

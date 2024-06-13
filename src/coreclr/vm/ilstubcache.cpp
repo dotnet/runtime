@@ -146,9 +146,7 @@ namespace
             case DynamicMethodDesc::StubNativeToCLRInterop: return "IL_STUB_ReversePInvoke";
             case DynamicMethodDesc::StubCOMToCLRInterop:    return "IL_STUB_COMtoCLR";
             case DynamicMethodDesc::StubStructMarshalInterop: return "IL_STUB_StructMarshal";
-#ifdef FEATURE_ARRAYSTUB_AS_IL
             case DynamicMethodDesc::StubArrayOp:            return "IL_STUB_Array";
-#endif
 #ifdef FEATURE_MULTICASTSTUB_AS_IL
             case DynamicMethodDesc::StubMulticastDelegate:  return "IL_STUB_MulticastDelegate_Invoke";
 #endif
@@ -236,13 +234,11 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
 #endif // _DEBUG
     pMD->m_pResolver = new (pMD->m_pResolver) ILStubResolver();
 
-#ifdef FEATURE_ARRAYSTUB_AS_IL
     if (SF_IsArrayOpStub(dwStubFlags))
     {
         pMD->SetILStubType(DynamicMethodDesc::StubArrayOp);
     }
     else
-#endif
 #ifdef FEATURE_MULTICASTSTUB_AS_IL
     if (SF_IsMulticastDelegateStub(dwStubFlags))
     {

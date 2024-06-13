@@ -72,10 +72,8 @@ VOID ArrayClass::GenerateArrayAccessorCallSig(
     PCCOR_SIGNATURE *ppSig,// Generated signature
     DWORD * pcSig,         // Generated signature size
     LoaderAllocator *pLoaderAllocator,
-    AllocMemTracker *pamTracker
-#ifdef FEATURE_ARRAYSTUB_AS_IL
-    ,BOOL fForStubAsIL
-#endif
+    AllocMemTracker *pamTracker,
+    BOOL fForStubAsIL
     )
 {
     CONTRACTL {
@@ -109,9 +107,7 @@ VOID ArrayClass::GenerateArrayAccessorCallSig(
         // <callconv> <argcount> BYREF VAR 0 I4 , ... , I4
         case ArrayMethodDesc::ARRAY_FUNC_ADDRESS:
             dwCallSigSize += 5;
-#ifdef FEATURE_ARRAYSTUB_AS_IL
             if(fForStubAsIL) {dwArgCount++; dwCallSigSize++;}
-#endif
             break;
     }
 
@@ -124,11 +120,7 @@ VOID ArrayClass::GenerateArrayAccessorCallSig(
     pSig = pSigMemory;
     BYTE callConv = IMAGE_CEE_CS_CALLCONV_DEFAULT + IMAGE_CEE_CS_CALLCONV_HASTHIS;
 
-    if (dwFuncType == ArrayMethodDesc::ARRAY_FUNC_ADDRESS
-#ifdef FEATURE_ARRAYSTUB_AS_IL
-        && !fForStubAsIL
-#endif
-	   )
+    if (dwFuncType == ArrayMethodDesc::ARRAY_FUNC_ADDRESS && !fForStubAsIL)
     {
         callConv |= CORINFO_CALLCONV_PARAMTYPE;     // Address routine needs special hidden arg
     }
@@ -154,7 +146,7 @@ VOID ArrayClass::GenerateArrayAccessorCallSig(
             break;
     }
 
-#if defined(FEATURE_ARRAYSTUB_AS_IL ) && !defined(TARGET_X86)
+#ifndef TARGET_X86
     if(dwFuncType == ArrayMethodDesc::ARRAY_FUNC_ADDRESS && fForStubAsIL)
     {
         *pSig++ = ELEMENT_TYPE_I;
@@ -169,7 +161,7 @@ VOID ArrayClass::GenerateArrayAccessorCallSig(
         *pSig++ = ELEMENT_TYPE_VAR;
         *pSig++ = 0;        // variable 0
     }
-#if defined(FEATURE_ARRAYSTUB_AS_IL ) && defined(TARGET_X86)
+#ifdef TARGET_X86
     else if(dwFuncType == ArrayMethodDesc::ARRAY_FUNC_ADDRESS && fForStubAsIL)
     {
         *pSig++ = ELEMENT_TYPE_I;
@@ -515,11 +507,7 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
             PCCOR_SIGNATURE pSig;
             DWORD           cSig;
 
-            pClass->GenerateArrayAccessorCallSig(dwFuncRank, dwFuncType, &pSig, &cSig, pAllocator, pamTracker
-    #ifdef FEATURE_ARRAYSTUB_AS_IL
-                                                 ,0
-    #endif
-                                                );
+            pClass->GenerateArrayAccessorCallSig(dwFuncRank, dwFuncType, &pSig, &cSig, pAllocator, pamTracker, FALSE);
 
             pClass->InitArrayMethodDesc(pNewMD, pSig, cSig, numVirtuals + dwMethodIndex, pAllocator, pamTracker);
 

@@ -2432,9 +2432,7 @@ public:
         StubNativeToCLRInterop,
         StubCOMToCLRInterop,
         StubStructMarshalInterop,
-#ifdef FEATURE_ARRAYSTUB_AS_IL
         StubArrayOp,
-#endif
 #ifdef FEATURE_MULTICASTSTUB_AS_IL
         StubMulticastDelegate,
 #endif
