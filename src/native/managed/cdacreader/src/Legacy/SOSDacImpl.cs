@@ -2,10 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Reflection.Metadata.Ecma335;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
-using Microsoft.Diagnostics.DataContractReader.Data;
 
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 
@@ -94,7 +92,7 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface9
 
             DacpMethodTableData result = default;
             result.baseSize = methodTable.BaseSize;
-            if (methodTable.IsString)
+            if (contract.IsString(methodTable))
                 result.baseSize -= 2 /*sizeof(WCHAR) */;
             result.componentSize = checked((uint)methodTable.GetComponentSize());
             result.bIsFree = methodTable.IsFreeObjectMethodTable ? 1 : 0;
@@ -107,11 +105,11 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface9
                 result.wNumMethods = contract.GetNumMethods(methodTable);
                 result.wNumVtableSlots = contract.GetNumVtableSlots(methodTable);
                 result.wNumVirtuals = methodTable.NumVirtuals;
-                result.cl = (uint)(methodTable.GetTypeDefRid() | ((int)TableIndex.TypeDef << 24));
+                result.cl = contract.GetTypeDefToken(methodTable);
                 result.dwAttrClass = contract.GetTypeDefTypeAttributes(methodTable);
-                result.bContainsPointers = methodTable.ContainsPointers ? 1 : 0;
+                result.bContainsPointers = contract.ContainsPointers(methodTable) ? 1 : 0;
                 result.bIsShared = 0;
-                result.bIsDynamic = methodTable.IsDynamicStatics ? 1 : 0;
+                result.bIsDynamic = contract.IsDynamicStatics(methodTable) ? 1 : 0;
             }
             return HResults.S_OK;
         }

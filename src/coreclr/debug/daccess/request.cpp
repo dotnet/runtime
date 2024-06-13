@@ -1784,8 +1784,21 @@ ClrDataAccess::GetMethodTableData(CLRDATA_ADDRESS mt, struct DacpMethodTableData
             DacpMethodTableData mtDataLocal;
             HRESULT hrLocal = GetMethodTableDataImpl(mt, &mtDataLocal);
             _ASSERTE(hr == hrLocal);
-            //_ASSERTE(threadStoreData->threadCount == threadStoreDataLocal.threadCount);
-            // TODO(cdac)
+            _ASSERTE(MTData->BaseSize == mtDataLocal.BaseSize);
+            _ASSERTE(MTData->ComponentSize == mtDataLocal.ComponentSize);
+            _ASSERTE(MTData->bIsFree == mtDataLocal.bIsFree);
+            _ASSERTE(MTData->Module == mtDataLocal.Module);
+            _ASSERTE(MTData->Class == mtDataLocal.Class);
+            _ASSERTE(MTData->ParentMethodTable == mtDataLocal.ParentMethodTable);
+            _ASSERTE(MTData->wNumInterfaces == mtDataLocal.wNumInterfaces);
+            _ASSERTE(MTData->wNumMethods == mtDataLocal.wNumMethods);
+            _ASSERTE(MTData->wNumVtableSlots == mtDataLocal.wNumVtableSlots);
+            _ASSERTE(MTData->wNumVirtuals == mtDataLocal.wNumVirtuals);
+            _ASSERTE(MTData->cl == mtDataLocal.cl);
+            _ASSERTE(MTData->dwAttrClass = mtDataLocal.dwAttrClass);
+            _ASSERTE(MTData->bContainsPointers == mtDataLocal.bContainsPointers);
+            _ASSERTE(MTData->bIsShared == mtDataLocal.bIsShared);
+            _ASSERTE(MTData->bIsDynamic == mtDataLocal.bIsDynamic);
         }
 #endif
     }

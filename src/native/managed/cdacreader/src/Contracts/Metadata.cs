@@ -2,11 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Reflection.Metadata.Ecma335;
 using UntrustedMethodTable = Microsoft.Diagnostics.DataContractReader.Contracts.UntrustedMethodTable_1;
 using MethodTable = Microsoft.Diagnostics.DataContractReader.Contracts.MethodTable_1;
 using UntrustedEEClass = Microsoft.Diagnostics.DataContractReader.Contracts.UntrustedEEClass_1;
 using EEClass = Microsoft.Diagnostics.DataContractReader.Contracts.EEClass_1;
-using System.Diagnostics.SymbolStore;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
@@ -28,11 +28,15 @@ internal interface IMetadata : IContract
 
     public virtual TargetPointer GetClass(in MethodTable methodTable) => throw new NotImplementedException();
 
+    public virtual bool IsString(in MethodTable methodTable) => throw new NotImplementedException();
+    public virtual bool ContainsPointers(in MethodTable methodTable) => throw new NotImplementedException();
+    public virtual bool IsDynamicStatics(in MethodTable methodTable) => throw new NotImplementedException();
+    public virtual uint GetTypeDefToken(in MethodTable methodTable) => throw new NotImplementedException();
     public virtual ushort GetNumMethods(in MethodTable methodTable) => throw new NotImplementedException();
 
     public virtual ushort GetNumVtableSlots(in MethodTable methodTable) => throw new NotImplementedException();
 
-    public virtual ushort GetTypeDefTypeAttributes(in MethodTable methodTable) => throw new NotImplementedException();
+    public virtual uint GetTypeDefTypeAttributes(in MethodTable methodTable) => throw new NotImplementedException();
 }
 
 internal struct Metadata : IMetadata
@@ -64,9 +68,9 @@ internal struct UntrustedMethodTable_1 : IMethodTableFlags
     public uint DwFlags2 => _target.Read<uint>(Address + (ulong)_type.Fields[nameof(DwFlags)].Offset);
     public uint BaseSize => _target.Read<uint>(Address + (ulong)_type.Fields[nameof(BaseSize)].Offset);
 
-    public TargetPointer EEClassOrCanonMT => _target.ReadPointer(Address + (ulong)_type.Fields[nameof(EEClassOrCanonMT)].Offset);
-    public TargetPointer EEClass => Metadata_1.GetEEClassOrCanonMTBits(EEClassOrCanonMT) == Metadata_1.EEClassOrCanonMTBits.EEClass ? EEClassOrCanonMT : throw new InvalidOperationException("not an EEClass");
-    public TargetPointer CanonMT
+    internal TargetPointer EEClassOrCanonMT => _target.ReadPointer(Address + (ulong)_type.Fields[nameof(EEClassOrCanonMT)].Offset);
+    internal TargetPointer EEClass => Metadata_1.GetEEClassOrCanonMTBits(EEClassOrCanonMT) == Metadata_1.EEClassOrCanonMTBits.EEClass ? EEClassOrCanonMT : throw new InvalidOperationException("not an EEClass");
+    internal TargetPointer CanonMT
     {
         get
         {
@@ -102,8 +106,8 @@ internal struct UntrustedEEClass_1
 
 internal struct MethodTable_1 : IMethodTableFlags
 {
-    public Data.MethodTable MethodTableData { get; init; }
-    public bool IsFreeObjectMethodTable { get; init; }
+    private Data.MethodTable MethodTableData { get; init; }
+    internal bool IsFreeObjectMethodTable { get; init; }
     internal MethodTable_1(Data.MethodTable data, bool isFreeObjectMT)
     {
         MethodTableData = data;
@@ -113,13 +117,11 @@ internal struct MethodTable_1 : IMethodTableFlags
     public uint DwFlags => MethodTableData.DwFlags;
     public uint DwFlags2 => MethodTableData.DwFlags2;
     public uint BaseSize => MethodTableData.BaseSize;
-    public int GetTypeDefRid() => ((IMethodTableFlags)this).GetTypeDefRid();
-    public TargetPointer EEClassOrCanonMT => MethodTableData.EEClassOrCanonMT;
-    public TargetPointer Module => MethodTableData.Module;
+    internal TargetPointer EEClassOrCanonMT => MethodTableData.EEClassOrCanonMT;
+    internal TargetPointer Module => MethodTableData.Module;
 
     public TargetPointer EEClass => Metadata_1.GetEEClassOrCanonMTBits(EEClassOrCanonMT) == Metadata_1.EEClassOrCanonMTBits.EEClass ? EEClassOrCanonMT : throw new InvalidOperationException("not an EEClass");
 
-    public bool IsString => ((IMethodTableFlags)this).IsString;
 
     public int GetComponentSize() => ((IMethodTableFlags)this).HasComponentSize ? ((IMethodTableFlags)this).RawGetComponentSize() : 0;
 
@@ -127,8 +129,6 @@ internal struct MethodTable_1 : IMethodTableFlags
     public ushort NumInterfaces => MethodTableData.NumInterfaces;
     public ushort NumVirtuals => MethodTableData.NumVirtuals;
 
-    public bool ContainsPointers => ((IMethodTableFlags)this).ContainsPointers;
-    public bool IsDynamicStatics => ((IMethodTableFlags)this).IsDynamicStatics;
 }
 
 internal struct EEClass_1
@@ -143,7 +143,7 @@ internal struct EEClass_1
     public ushort NumMethods => EEClassData.NumMethods;
     public ushort NumNonVirtualSlots => EEClassData.NumNonVirtualSlots;
 
-    public ushort TypeDefTypeAttributes => EEClassData.DwAttrClass;
+    public uint TypeDefTypeAttributes => EEClassData.DwAttrClass;
 }
 
 
@@ -333,6 +333,15 @@ internal partial struct Metadata_1 : IMetadata
         return new EEClass_1(eeClassData);
     }
 
+    public bool IsString(in MethodTable methodTable) => ((IMethodTableFlags)methodTable).IsString;
+    public bool ContainsPointers(in MethodTable methodTable) => ((IMethodTableFlags)methodTable).ContainsPointers;
+    public bool IsDynamicStatics(in MethodTable methodTable) => ((IMethodTableFlags)methodTable).IsDynamicStatics;
+
+    public uint GetTypeDefToken(in MethodTable methodTable)
+    {
+        return (uint)(((IMethodTableFlags)methodTable).GetTypeDefRid() | ((int)TableIndex.TypeDef << 24));
+    }
+
     public ushort GetNumMethods(in MethodTable methodTable)
     {
         EEClass cls = GetClassData(in methodTable);
@@ -357,11 +366,10 @@ internal partial struct Metadata_1 : IMetadata
         return checked((ushort)(methodTable.NumVirtuals + GetNumNonVirtualSlots(methodTable)));
     }
 
-    public ushort GetTypeDefTypeAttributes(in MethodTable methodTable)
+    public uint GetTypeDefTypeAttributes(in MethodTable methodTable)
     {
         return GetClassData(methodTable).TypeDefTypeAttributes;
     }
-
 
     [Flags]
     internal enum MethodTableAuxiliaryDataFlags : uint
