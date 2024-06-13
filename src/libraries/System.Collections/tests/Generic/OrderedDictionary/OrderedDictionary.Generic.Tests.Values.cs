@@ -21,7 +21,7 @@ namespace System.Collections.Tests
 
         protected override ICollection<string> GenericICollectionFactory(int count)
         {
-            OrderedDictionary<string, string> dictionary = new OrderedDictionary<string, string>();
+            OrderedDictionary<string, string> dictionary = new();
 
             int seed = 12453;
             for (int i = 0; i < count; i++)
@@ -45,7 +45,7 @@ namespace System.Collections.Tests
         [MemberData(nameof(ValidCollectionSizes))]
         public void OrderedDictionary_Generic_ValueCollection_GetEnumerator(int count)
         {
-            OrderedDictionary<string, string> dictionary = new OrderedDictionary<string, string>();
+            OrderedDictionary<string, string> dictionary = new();
 
             int seed = 12453;
             while (dictionary.Count < count)

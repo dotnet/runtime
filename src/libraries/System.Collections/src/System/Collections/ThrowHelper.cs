@@ -25,7 +25,7 @@ namespace System.Collections
 
         /// <summary>Throws an exception for an index being out of range.</summary>
         [DoesNotReturn]
-        internal static void ThrowIndexOutOfRange() =>
+        internal static void ThrowIndexArgumentOutOfRange() =>
             throw new ArgumentOutOfRangeException("index");
 
         /// <summary>Throws an exception for a version check failing during enumeration.</summary>

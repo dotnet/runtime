@@ -564,7 +564,7 @@ namespace System.Collections.Generic
         {
             if ((uint)index >= (uint)_count)
             {
-                ThrowHelper.ThrowIndexOutOfRange();
+                ThrowHelper.ThrowIndexArgumentOutOfRange();
             }
 
             Debug.Assert(_entries is not null, "count must be positive, which means we must have entries");
@@ -693,7 +693,7 @@ namespace System.Collections.Generic
         {
             if ((uint)index > (uint)_count)
             {
-                ThrowHelper.ThrowIndexOutOfRange();
+                ThrowHelper.ThrowIndexArgumentOutOfRange();
             }
 
             ArgumentNullException.ThrowIfNull(key);
@@ -738,7 +738,7 @@ namespace System.Collections.Generic
             int count = _count;
             if ((uint)index >= (uint)count)
             {
-                ThrowHelper.ThrowIndexOutOfRange();
+                ThrowHelper.ThrowIndexArgumentOutOfRange();
             }
 
             // Remove from the associated bucket chain the entry that lives at the specified index.
@@ -764,7 +764,7 @@ namespace System.Collections.Generic
         {
             if ((uint)index >= (uint)_count)
             {
-                ThrowHelper.ThrowIndexOutOfRange();
+                ThrowHelper.ThrowIndexArgumentOutOfRange();
             }
 
             Debug.Assert(_entries is not null);
@@ -781,7 +781,7 @@ namespace System.Collections.Generic
         {
             if ((uint)index >= (uint)_count)
             {
-                ThrowHelper.ThrowIndexOutOfRange();
+                ThrowHelper.ThrowIndexArgumentOutOfRange();
             }
 
             ArgumentNullException.ThrowIfNull(key);

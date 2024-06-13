@@ -121,7 +121,7 @@ namespace System.Collections.Tests
 
         protected override IList<string> GenericIListFactory(int count)
         {
-            OrderedDictionary<string, string> dictionary = new OrderedDictionary<string, string>();
+            OrderedDictionary<string, string> dictionary = new();
 
             int seed = 42;
             while (dictionary.Count < count)
@@ -164,7 +164,7 @@ namespace System.Collections.Tests
 
         protected override IList NonGenericIListFactory(int count)
         {
-            OrderedDictionary<string, string> dictionary = new OrderedDictionary<string, string>();
+            OrderedDictionary<string, string> dictionary = new();
 
             int seed = 42;
             while (dictionary.Count < count)
@@ -203,7 +203,7 @@ namespace System.Collections.Tests
 
         protected override IList<string> GenericIListFactory(int count)
         {
-            OrderedDictionary<string, string> dictionary = new OrderedDictionary<string, string>();
+            OrderedDictionary<string, string> dictionary = new();
 
             int seed = 42;
             while (dictionary.Count < count)
@@ -244,7 +244,7 @@ namespace System.Collections.Tests
 
         protected override IList NonGenericIListFactory(int count)
         {
-            OrderedDictionary<string, string> dictionary = new OrderedDictionary<string, string>();
+            OrderedDictionary<string, string> dictionary = new();
 
             int seed = 42;
             while (dictionary.Count < count)
