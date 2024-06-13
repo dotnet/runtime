@@ -102,47 +102,6 @@ static void get_dirname(char* source)
     }
 }
 
-extern "C" EXPORT_API int EXPORT_CC mono_array_element_size(MonoClass* classOfArray)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        PRECONDITION(classOfArray != NULL);
-    }
-    CONTRACTL_END;
-
-    return reinterpret_cast<MonoClass_clr*>(classOfArray)->GetArrayElementTypeHandle().GetSize();
-}
-
-extern "C" EXPORT_API MonoImage* EXPORT_CC mono_assembly_get_image(MonoAssembly *assembly)
-{
-    TRACE_API("%p", assembly);
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        PRECONDITION(assembly != NULL);
-    }
-    CONTRACTL_END;
-
-    // Assume for now that Assembly == Image
-    return (MonoImage*)assembly;
-}
-
-extern "C" EXPORT_API gint32 EXPORT_CC mono_class_array_element_size(MonoClass *ac)
-{
-    CONTRACTL{
-        STANDARD_VM_CHECK;
-        PRECONDITION(ac != nullptr);
-    } CONTRACTL_END;
-    auto ac_clr = (MonoClass_clr*)ac;
-
-    // TODO: Is it really the method to use?
-    DWORD s = ac_clr->IsValueType() ? ac_clr->GetNumInstanceFieldBytes() : sizeof(void*);// ac_clr->GetBaseSize();
-    return s;
-}
-
 extern "C" EXPORT_API MonoClass* EXPORT_CC mono_class_from_mono_type(MonoType *image)
 {
     MonoClass_clr* klass = MonoType_clr_from_MonoType(image).GetMethodTable();
@@ -472,13 +431,6 @@ extern "C" EXPORT_API void* EXPORT_CC unity_coreclr_create_delegate(const char* 
     }
 
     return (void*)func;
-}
-
-extern "C" EXPORT_API gboolean EXPORT_CC mono_metadata_type_equal (MonoType * t1, MonoType * t2)
-{
-    MonoType_clr* type1 = (MonoType_clr*)t1;
-    MonoType_clr* type2 = (MonoType_clr*)t2;
-    return type1->IsEquivalentTo(*type2);
 }
 
 extern "C" EXPORT_API MonoClass* EXPORT_CC mono_method_get_class(MonoMethod *method)
