@@ -1548,8 +1548,12 @@ assembly_name_to_aname (MonoAssemblyName *assembly, char *p)
 	}
 	assembly->name = p;
 	s = p;
-	while (*p && (*p != ','))
-		p++;
+	guchar *inptr = (guchar *) p;
+	while (*p && (*p != ',')) {
+		if (quoted && (*p == '"'))
+			break;
+		p += g_utf8_jump_table[*inptr];
+	}
 	if (quoted) {
 		if (*p != '"')
 			return 1;
