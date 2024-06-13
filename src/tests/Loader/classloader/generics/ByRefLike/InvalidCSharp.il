@@ -334,22 +334,46 @@
     }
 
     .method public hidebysig
-        instance bool BoxIsinstBranch_UsingTypeConstraints<byreflike (InvalidCSharp.EmptyInterface) U>(class InvalidCSharp.EmptyInterface) cil managed
+        instance bool BoxIsinstBranch_CheckForSimpleInterface<byreflike U>(!!U) cil managed
     {
-        .locals init (
-            [0] !!U
-        )
         ldarg.1
-        isinst !!U
-        brfalse.s NOT_U
-        ldarg.1
-        isinst !!U
-        unbox.any !!U
-        stloc.0
+        box !!U
+        isinst InvalidCSharp.SimpleInterface
+        brfalse.s NOT_SIMPLEINTERFACE
+
+        ldc.i4.1
+        ret
+
+    NOT_SIMPLEINTERFACE:
         ldc.i4.0
         ret
-        NOT_U:
-        ldc.i4.1
+    }
+
+    .method public hidebysig
+        instance bool BoxIsinstBranch_CheckForByRefLikeTypeWithInterface<byreflike (InvalidCSharp.SimpleInterface) U>(!!U) cil managed
+    {
+        .locals init (
+            [0] valuetype InvalidCSharp.ByRefLikeTypeWithInterface
+        )
+
+        ldarg.1
+        box !!U
+        isinst InvalidCSharp.ByRefLikeTypeWithInterface
+        brfalse.s NOT_BYREFLIKETYPEWITHINTERFACE
+
+        ldarg.1
+        box !!U
+        isinst InvalidCSharp.ByRefLikeTypeWithInterface
+        unbox.any InvalidCSharp.ByRefLikeTypeWithInterface
+        stloc.0
+
+        ldloca.s 0
+        constrained. InvalidCSharp.ByRefLikeTypeWithInterface
+        callvirt instance int32 InvalidCSharp.SimpleInterface::Method()
+        ret
+
+    NOT_BYREFLIKETYPEWITHINTERFACE:
+        ldc.i4.0
         ret
     }
 
@@ -465,17 +489,28 @@
     )
 }
 
-.class interface public auto ansi abstract InvalidCSharp.EmptyInterface
+.class interface public auto ansi abstract InvalidCSharp.SimpleInterface
 {
+    .method public hidebysig newslot abstract virtual
+        instance int32 Method() cil managed
+    {
+    }
 }
 
 .class public sequential ansi sealed beforefieldinit InvalidCSharp.ByRefLikeTypeWithInterface
     extends [System.Runtime]System.ValueType
-    implements InvalidCSharp.EmptyInterface
+    implements InvalidCSharp.SimpleInterface
 {
     .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsByRefLikeAttribute::.ctor() = (
         01 00 00 00
     )
+
+    .method public final hidebysig newslot virtual
+        instance int32 Method() cil managed
+    {
+        ldc.i4.1
+        ret
+    }
 }
 
 .class public sequential ansi sealed beforefieldinit RegularValueType
@@ -485,13 +520,20 @@
 
 .class public auto ansi beforefieldinit InvalidCSharp.ClassWithInterface
     extends [System.Runtime]System.Object
-    implements InvalidCSharp.EmptyInterface
+    implements InvalidCSharp.SimpleInterface
 {
     .method public hidebysig specialname rtspecialname
         instance void .ctor () cil managed
     {
         ldarg.0
         call instance void [System.Runtime]System.Object::.ctor()
+        ret
+    }
+
+    .method public final hidebysig newslot virtual
+        instance int32 Method() cil managed
+    {
+        ldc.i4.0
         ret
     }
 }
@@ -662,7 +704,7 @@
     .method public hidebysig static
         class [System.Runtime]System.Type GenericByRefLike_ConstraintsAreIndependent_Interface_ByRefLike_Invalid() cil managed
     {
-        newobj instance void class InvalidCSharp.GenericClass_IndependentConstraints`2<class InvalidCSharp.EmptyInterface, valuetype InvalidCSharp.ByRefLikeTypeWithInterface>::.ctor()
+        newobj instance void class InvalidCSharp.GenericClass_IndependentConstraints`2<class InvalidCSharp.SimpleInterface, valuetype InvalidCSharp.ByRefLikeTypeWithInterface>::.ctor()
         callvirt instance class [System.Runtime]System.Type [System.Runtime]System.Object::GetType()
         ret
     }
@@ -709,10 +751,11 @@
     }
 
     .method public hidebysig static
-        bool BoxUnboxAny() cil managed
+        int32 BoxUnboxAny() cil managed
     {
         .locals init (
-            [0] valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>
+            [0] valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>,
+            [1] int32
         )
 
         ldloca.s 0
@@ -721,15 +764,24 @@
         ldloc 0
         ldfld !0 valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::Field
         call instance bool valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::BoxUnboxAny(!0)
+        brfalse.s NEXT_1
+
+        ldloc.1
+        ldc.i4.1
+        add
+        stloc.1
+
+    NEXT_1:
+        ldloc.1
         ret
     }
 
     .method public hidebysig static
-        bool BoxBranch() cil managed
+        int32 BoxBranch() cil managed
     {
         .locals init (
             [0] valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>,
-            [1] bool
+            [1] int32
         )
 
         ldloca.s 0
@@ -739,33 +791,60 @@
         ldloc 0
         ldfld !0 valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::Field
         call instance bool valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::BoxBranch(!0)
-        pop
+        brfalse.s NEXT_1
 
+        ldloc.1
+        ldc.i4.1
+        add
+        stloc.1
+
+    NEXT_1:
         ldloca.s 0
         ldloc 0
         ldfld !0 valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::Field
         call instance bool valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::BoxBranchToOther<valuetype InvalidCSharp.ByRefLikeTypeWithInterface>(!0)
-        pop
+        brfalse.s NEXT_2
 
+        ldloc.1
+        ldc.i4.1
+        add
+        stloc.1
+
+    NEXT_2:
         ldloca.s 0
         ldloc 0
         ldfld !0 valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::Field
         call instance bool valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::BoxBranchToOther<valuetype RegularValueType>(!0)
-        pop
+        brfalse.s NEXT_3
 
+        ldloc.1
+        ldc.i4.1
+        add
+        stloc.1
+
+    NEXT_3:
         ldloca.s 0
         ldloca.s 0
         ldflda !0 valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::Field
         call instance bool valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::BoxBranch_WithSideEffects(!0&)
+        brfalse.s NEXT_4
 
+        ldloc.1
+        ldc.i4.1
+        add
+        stloc.1
+
+    NEXT_4:
+        ldloc.1
         ret
     }
 
     .method public hidebysig static
-        bool BoxIsinstUnboxAny() cil managed
+        int32 BoxIsinstUnboxAny() cil managed
     {
         .locals init (
-            [0] valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>
+            [0] valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>,
+            [1] int32
         )
 
         ldloca.s 0
@@ -774,6 +853,15 @@
         ldloc 0
         ldfld !0 valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::Field
         call instance bool valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::BoxIsinstUnboxAny(!0)
+        brfalse.s NEXT_1
+
+        ldloc.1
+        ldc.i4.1
+        add
+        stloc.1
+
+    NEXT_1:
+        ldloc.1
         ret
     }
 
@@ -794,10 +882,12 @@
     }
 
     .method public hidebysig static
-        bool BoxIsinstBranch() cil managed
+        int32 BoxIsinstBranch() cil managed
     {
         .locals init (
-            [0] valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>
+            [0] valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>,
+            [1] int32,
+            [2] valuetype InvalidCSharp.ByRefLikeTypeWithInterface
         )
 
         ldloca.s 0
@@ -807,18 +897,69 @@
         ldloc 0
         ldfld !0 valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::Field
         call instance bool valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::BoxIsinstBranch(!0)
-        pop
+        brfalse.s NEXT_1
 
+        ldloc.1
+        ldc.i4.1
+        add
+        stloc.1
+
+    NEXT_1:
         ldloca.s 0
         ldloca.s 0
         ldflda !0 valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::Field
         call instance bool valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::BoxIsinstBranch_WithSideEffects(!0&)
-        pop
+        brfalse.s NEXT_2
 
+        ldloc.1
+        ldc.i4.1
+        add
+        stloc.1
+
+    NEXT_2:
+        ldloca.s 0
+        ldloca.s 2
+        initobj InvalidCSharp.ByRefLikeTypeWithInterface
+        ldloc.2
+        call instance bool valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::
+            BoxIsinstBranch_CheckForSimpleInterface<valuetype InvalidCSharp.ByRefLikeTypeWithInterface>(!!0)
+        brfalse.s NEXT_3
+
+        ldloc.1
+        ldc.i4.1
+        add
+        stloc.1
+
+    NEXT_3:
+        ldloca.s 0
+        ldloca.s 2
+        initobj InvalidCSharp.ByRefLikeTypeWithInterface
+        ldloc.2
+        call instance bool valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::
+            BoxIsinstBranch_CheckForByRefLikeTypeWithInterface<valuetype InvalidCSharp.ByRefLikeTypeWithInterface>(!!0)
+        brfalse.s NEXT_4
+
+        ldloc.1
+        ldc.i4.1
+        add
+        stloc.1
+
+    NEXT_4:
         ldloca.s 0
         newobj instance void InvalidCSharp.ClassWithInterface::.ctor()
-        call instance bool valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::BoxIsinstBranch_UsingTypeConstraints<valuetype InvalidCSharp.ByRefLikeTypeWithInterface>(class InvalidCSharp.EmptyInterface)
 
+        // This is expected to fail since we are not passing a ByRefLikeTypeWithInterface instance.
+        call instance bool valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::
+            BoxIsinstBranch_CheckForByRefLikeTypeWithInterface<class InvalidCSharp.ClassWithInterface>(!!0)
+        brfalse.s NEXT_5
+
+        ldloc.1
+        ldc.i4.1
+        add
+        stloc.1
+
+    NEXT_5:
+        ldloc.1
         ret
     }
 
