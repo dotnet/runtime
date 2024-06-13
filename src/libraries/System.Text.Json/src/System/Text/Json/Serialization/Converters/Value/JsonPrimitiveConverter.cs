@@ -40,23 +40,32 @@ namespace System.Text.Json.Serialization.Converters
 #if NET
             Debug.Assert(isIeeeFloatingPoint == (typeof(T) == typeof(double) || typeof(T) == typeof(float) || typeof(T) == typeof(Half)));
 #endif
+            string? pattern = null;
+
             if ((numberHandling & (JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.WriteAsString)) != 0)
             {
+                pattern = schemaType is JsonSchemaType.Integer
+                    ? @"^-?(?:0|[1-9]\d*)$"
+                    : isIeeeFloatingPoint
+                        ? @"^-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?$"
+                        : @"^-?(?:0|[1-9]\d*)(?:\.\d+)?$";
+
                 schemaType |= JsonSchemaType.String;
             }
-            else if (isIeeeFloatingPoint && numberHandling is JsonNumberHandling.AllowNamedFloatingPointLiterals)
+
+            if (isIeeeFloatingPoint && (numberHandling & JsonNumberHandling.AllowNamedFloatingPointLiterals) != 0)
             {
                 return new JsonSchema
                 {
                     AnyOf =
                     [
-                        new JsonSchema { Type = schemaType },
+                        new JsonSchema { Type = schemaType, Pattern = pattern },
                         new JsonSchema { Enum = [(JsonNode)"NaN", (JsonNode)"Infinity", (JsonNode)"-Infinity"] },
                     ]
                 };
             }
 
-            return new JsonSchema { Type = schemaType };
+            return new JsonSchema { Type = schemaType, Pattern = pattern };
         }
     }
 }

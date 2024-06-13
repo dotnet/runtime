@@ -215,30 +215,56 @@ namespace System.Text.Json.Schema.Tests
                 ExpectedJsonSchema: """
                 {
                     "type": ["object","null"],
-                    "properties": { "X": { "type": ["string","integer"] } }
+                    "properties": { "X": { "type": ["string","integer"], "pattern": "^-?(?:0|[1-9]\\d*)$" } }
                 }
                 """);
 
             yield return new TestData<PocoWithCustomNumberHandlingOnProperties>(
-                Value: new() { X = 1, Y = 2, Z = 3 },
+                Value: new() {
+                    IntegerReadingFromString = 3,
+                    DoubleReadingFromString = 3.14,
+                    DecimalReadingFromString = 3.14M,
+                    IntegerWritingAsString = 3,
+                    DoubleWritingAsString = 3.14,
+                    DecimalWritingAsString = 3.14M,
+                    IntegerAllowingFloatingPointLiterals = 3,
+                    DoubleAllowingFloatingPointLiterals = 3.14,
+                    DecimalAllowingFloatingPointLiterals = 3.14M,
+                    IntegerAllowingFloatingPointLiteralsAndReadingFromString = 3,
+                    DoubleAllowingFloatingPointLiteralsAndReadingFromString = 3.14,
+                    DecimalAllowingFloatingPointLiteralsAndReadingFromString = 3.14M,
+                },
                 AdditionalValues: [
-                    new() { X = 1, Y = double.NaN, Z = 3 },
-                    new() { X = 1, Y = double.PositiveInfinity, Z = 3 },
-                    new() { X = 1, Y = double.NegativeInfinity, Z = 3 },
+                    new() { DoubleAllowingFloatingPointLiterals = double.NaN, },
+                    new() { DoubleAllowingFloatingPointLiterals = double.PositiveInfinity },
+                    new() { DoubleAllowingFloatingPointLiterals = double.NegativeInfinity },
                 ],
                 ExpectedJsonSchema: """
                 {
                   "type": ["object","null"],
                   "properties": {
-                    "X": { "type": ["string", "integer"] },
-                    "Y": {
-                      "anyOf": [
-                        { "type": "number" },
-                        { "enum": ["NaN", "Infinity", "-Infinity"]}
-                      ]
+                    "IntegerReadingFromString": { "type": ["string","integer"], "pattern": "^-?(?:0|[1-9]\\d*)$" },
+                    "DoubleReadingFromString": { "type": ["string","number"], "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$" },
+                    "DecimalReadingFromString": { "type": ["string","number"], "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$" },
+                    "IntegerWritingAsString": { "type": ["string","integer"], "pattern": "^-?(?:0|[1-9]\\d*)$" },
+                    "DoubleWritingAsString": { "type": ["string","number"], "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$" },
+                    "DecimalWritingAsString": { "type": ["string","number"], "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$" },
+                    "IntegerAllowingFloatingPointLiterals": { "type": "integer" },
+                    "DoubleAllowingFloatingPointLiterals": {
+                        "anyOf": [
+                            { "type": "number" },
+                            { "enum": ["NaN", "Infinity", "-Infinity"] }
+                        ]
                     },
-                    "Z": { "type": ["string", "integer"] },
-                    "W" : { "type": "number" }
+                    "DecimalAllowingFloatingPointLiterals": { "type": "number" },
+                    "IntegerAllowingFloatingPointLiteralsAndReadingFromString": { "type": ["string","integer"], "pattern": "^-?(?:0|[1-9]\\d*)$" },
+                    "DoubleAllowingFloatingPointLiteralsAndReadingFromString": {
+                        "anyOf": [
+                            { "type": ["string","number"], "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$" },
+                            { "enum": ["NaN", "Infinity", "-Infinity"] }
+                        ]
+                    },
+                    "DecimalAllowingFloatingPointLiteralsAndReadingFromString": { "type": ["string","number"], "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$" }
                   }
                 }
                 """);
@@ -993,16 +1019,40 @@ namespace System.Text.Json.Schema.Tests
         public class PocoWithCustomNumberHandlingOnProperties
         {
             [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)]
-            public int X { get; set; }
+            public int IntegerReadingFromString { get; set; }
 
-            [JsonNumberHandling(JsonNumberHandling.AllowNamedFloatingPointLiterals)]
-            public double Y { get; set; }
+            [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)]
+            public double DoubleReadingFromString { get; set; }
+
+            [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)]
+            public decimal DecimalReadingFromString { get; set; }
 
             [JsonNumberHandling(JsonNumberHandling.WriteAsString)]
-            public int Z { get; set; }
+            public int IntegerWritingAsString { get; set; }
+
+            [JsonNumberHandling(JsonNumberHandling.WriteAsString)]
+            public double DoubleWritingAsString { get; set; }
+
+            [JsonNumberHandling(JsonNumberHandling.WriteAsString)]
+            public decimal DecimalWritingAsString { get; set; }
 
             [JsonNumberHandling(JsonNumberHandling.AllowNamedFloatingPointLiterals)]
-            public decimal W { get; set; }
+            public int IntegerAllowingFloatingPointLiterals { get; set; }
+
+            [JsonNumberHandling(JsonNumberHandling.AllowNamedFloatingPointLiterals)]
+            public double DoubleAllowingFloatingPointLiterals { get; set; }
+
+            [JsonNumberHandling(JsonNumberHandling.AllowNamedFloatingPointLiterals)]
+            public decimal DecimalAllowingFloatingPointLiterals { get; set; }
+
+            [JsonNumberHandling(JsonNumberHandling.AllowNamedFloatingPointLiterals | JsonNumberHandling.AllowReadingFromString)]
+            public int IntegerAllowingFloatingPointLiteralsAndReadingFromString { get; set; }
+
+            [JsonNumberHandling(JsonNumberHandling.AllowNamedFloatingPointLiterals | JsonNumberHandling.AllowReadingFromString)]
+            public double DoubleAllowingFloatingPointLiteralsAndReadingFromString { get; set; }
+
+            [JsonNumberHandling(JsonNumberHandling.AllowNamedFloatingPointLiterals | JsonNumberHandling.AllowReadingFromString)]
+            public decimal DecimalAllowingFloatingPointLiteralsAndReadingFromString { get; set; }
         }
 
         public class PocoWithRecursiveMembers
