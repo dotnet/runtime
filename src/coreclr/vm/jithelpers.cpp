@@ -2109,7 +2109,7 @@ HCIMPL1_RAW(Object*, JIT_NewS_MP_FastPortable, CORINFO_CLASS_HANDLE typeHnd_)
 {
     CONTRACTL {
         THROWS;
-        GC_TRIGGERS;
+        GC_NOTRIGGER;
         MODE_COOPERATIVE;
     } CONTRACTL_END;
 
@@ -2218,7 +2218,7 @@ HCIMPL1_RAW(StringObject*, AllocateString_MP_FastPortable, DWORD stringLength)
 {
     CONTRACTL {
         THROWS;
-        GC_TRIGGERS;
+        GC_NOTRIGGER;
         MODE_COOPERATIVE;
     } CONTRACTL_END;
 
@@ -2330,7 +2330,7 @@ HCIMPL2_RAW(Object*, JIT_NewArr1VC_MP_FastPortable, CORINFO_CLASS_HANDLE arrayMT
 {
     CONTRACTL {
         THROWS;
-        GC_TRIGGERS;
+        GC_NOTRIGGER;
         MODE_COOPERATIVE;
     } CONTRACTL_END;
 
@@ -2395,7 +2395,7 @@ HCIMPL2_RAW(Object*, JIT_NewArr1OBJ_MP_FastPortable, CORINFO_CLASS_HANDLE arrayM
 {
     CONTRACTL {
         THROWS;
-        GC_TRIGGERS;
+        GC_NOTRIGGER;
         MODE_COOPERATIVE;
     } CONTRACTL_END;
 
