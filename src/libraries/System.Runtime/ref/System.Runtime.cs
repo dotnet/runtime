@@ -3872,6 +3872,7 @@ namespace System
         static int System.Numerics.INumberBase<System.Int32>.Zero { get { throw null; } }
         static int System.Numerics.ISignedNumber<System.Int32>.NegativeOne { get { throw null; } }
         public static int Abs(int value) { throw null; }
+        public static long BigMul(int left, int right) { throw null; }
         public static int Clamp(int value, int min, int max) { throw null; }
         public int CompareTo(int value) { throw null; }
         public int CompareTo(object? value) { throw null; }
@@ -4012,6 +4013,7 @@ namespace System
         static long System.Numerics.INumberBase<System.Int64>.Zero { get { throw null; } }
         static long System.Numerics.ISignedNumber<System.Int64>.NegativeOne { get { throw null; } }
         public static long Abs(long value) { throw null; }
+        public static Int128 BigMul(long left, long right) { throw null; }
         public static long Clamp(long value, long min, long max) { throw null; }
         public int CompareTo(long value) { throw null; }
         public int CompareTo(object? value) { throw null; }
@@ -4427,6 +4429,11 @@ namespace System
         public static double Atan2(double y, double x) { throw null; }
         public static double Atanh(double d) { throw null; }
         public static long BigMul(int a, int b) { throw null; }
+        public static Int128 BigMul(long a, long b) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static ulong BigMul(uint a, uint b) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static UInt128 BigMul(ulong a, ulong b) { throw null; }
         public static long BigMul(long a, long b, out long low) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static ulong BigMul(ulong a, ulong b, out ulong low) { throw null; }
@@ -7090,6 +7097,7 @@ namespace System
         static uint System.Numerics.INumberBase<System.UInt32>.One { get { throw null; } }
         static int System.Numerics.INumberBase<System.UInt32>.Radix { get { throw null; } }
         static uint System.Numerics.INumberBase<System.UInt32>.Zero { get { throw null; } }
+        public static ulong BigMul(uint left, uint right) { throw null; }
         public static uint Clamp(uint value, uint min, uint max) { throw null; }
         public int CompareTo(object? value) { throw null; }
         public int CompareTo(uint value) { throw null; }
@@ -7230,6 +7238,7 @@ namespace System
         static ulong System.Numerics.INumberBase<System.UInt64>.One { get { throw null; } }
         static int System.Numerics.INumberBase<System.UInt64>.Radix { get { throw null; } }
         static ulong System.Numerics.INumberBase<System.UInt64>.Zero { get { throw null; } }
+        public static UInt128 BigMul(ulong left, ulong right) { throw null; }
         public static ulong Clamp(ulong value, ulong min, ulong max) { throw null; }
         public int CompareTo(object? value) { throw null; }
         public int CompareTo(ulong value) { throw null; }
