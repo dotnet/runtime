@@ -4651,6 +4651,20 @@ void Compiler::fgMoveBackwardJumpsToSuccessors()
     }
 }
 
+struct CallFinallyPair
+{
+    BasicBlock* callFinally;
+    BasicBlock* callFinallyRet;
+
+    // Constructor provided so we can call ArrayStack::Emplace
+    //
+    CallFinallyPair(BasicBlock* first, BasicBlock* second)
+        : callFinally(first)
+        , callFinallyRet(second)
+    {
+    }
+};
+
 //-----------------------------------------------------------------------------
 // fgDoReversePostOrderLayout: Reorder blocks using a greedy RPO traversal.
 //
@@ -4715,20 +4729,6 @@ void Compiler::fgDoReversePostOrderLayout()
 
     // The RPO will break up call-finally pairs, so save them before re-ordering
     //
-    struct CallFinallyPair
-    {
-        BasicBlock* callFinally;
-        BasicBlock* callFinallyRet;
-
-        // Constructor provided so we can call ArrayStack::Emplace
-        //
-        CallFinallyPair(BasicBlock* first, BasicBlock* second)
-            : callFinally(first)
-            , callFinallyRet(second)
-        {
-        }
-    };
-
     ArrayStack<CallFinallyPair> callFinallyPairs(getAllocator());
 
     for (EHblkDsc* const HBtab : EHClauses(this))
@@ -4776,6 +4776,7 @@ void Compiler::fgDoReversePostOrderLayout()
     }
 
     // Fix up call-finally pairs
+    // (We assume the RPO will mess these up, so don't bother checking if the blocks are still adjacent)
     //
     for (int i = 0; i < callFinallyPairs.Height(); i++)
     {
@@ -5128,13 +5129,6 @@ void Compiler::fgSearchImprovedLayout()
     }
 #endif // DEBUG
 
-    // TODO: Enable for methods with EH
-    //
-    if (compHndBBtabCount != 0)
-    {
-        return;
-    }
-
     BlockSet visitedBlocks(BlockSetOps::MakeEmpty(this));
     BasicBlock* startBlock = nullptr;
     weight_t layoutScore = 0.0;
@@ -5142,14 +5136,27 @@ void Compiler::fgSearchImprovedLayout()
 
     for (BasicBlock* const block : Blocks(fgFirstBB, fgLastBBInMainFunction()))
     {
+        if (block->hasHndIndex())
+        {
+            continue;
+        }
+
         BlockSetOps::AddElemD(this, visitedBlocks, block->bbNum);
         BasicBlock* heaviestSucc = nullptr;
         weight_t maxEdgeCost = 0.0;
         weight_t fallthroughEdgeCost = 0.0;
+        bool hasNonEHSuccs = false;
 
         for (FlowEdge* const succEdge : block->SuccEdges(this))
         {
             BasicBlock* const succ = succEdge->getDestinationBlock();
+
+            if (succ->hasHndIndex())
+            {
+                continue;
+            }
+
+            hasNonEHSuccs = true;
             const bool isForwardJump = !BlockSetOps::IsMember(this, visitedBlocks, succ->bbNum);
 
             if (isForwardJump)
@@ -5170,12 +5177,12 @@ void Compiler::fgSearchImprovedLayout()
             }
         }
 
-        if (block->NumSucc() > 0)
+        if (hasNonEHSuccs)
         {
             layoutScore += (block->bbWeight - fallthroughEdgeCost);
             minLayoutScore += (block->bbWeight - maxEdgeCost);
 
-            if ((startBlock == nullptr) && !block->NextIs(heaviestSucc))
+            if ((startBlock == nullptr) && !block->NextIs(heaviestSucc) && !block->hasTryIndex())
             {
                 startBlock = block;
             }
@@ -5190,12 +5197,18 @@ void Compiler::fgSearchImprovedLayout()
         return;
     }
 
+    ArrayStack<CallFinallyPair> callFinallyPairs(getAllocator());
     BasicBlock** blockVector = new BasicBlock*[fgBBNumMax];
     BasicBlock** tempBlockVector = new BasicBlock*[fgBBNumMax];
     unsigned blockCount = 0;
 
     for (BasicBlock* const block : Blocks(startBlock, fgLastBBInMainFunction()))
     {
+        if (block->hasTryIndex() || block->hasHndIndex())
+        {
+            continue;
+        }
+
         if (block->isRunRarely())
         {
             break;
@@ -5203,6 +5216,11 @@ void Compiler::fgSearchImprovedLayout()
 
         blockVector[blockCount] = block;
         tempBlockVector[blockCount++] = block;
+
+        if (block->isBBCallFinallyPair())
+        {
+            callFinallyPairs.Emplace(block, block->Next());
+        }
     }
 
     if (blockCount < 3)
@@ -5211,7 +5229,7 @@ void Compiler::fgSearchImprovedLayout()
         return;
     }
 
-    JITDUMP("\nInteresting blocks: [" FMT_BB ", " FMT_BB "]", startBlock->bbNum, blockVector[blockCount - 1]->bbNum);
+    JITDUMP("\nInteresting blocks: [" FMT_BB "-" FMT_BB "]", startBlock->bbNum, blockVector[blockCount - 1]->bbNum);
 
     auto evaluateCost = [](BasicBlock* const block, BasicBlock* const next) -> weight_t {
         assert(block != nullptr);
@@ -5290,11 +5308,23 @@ void Compiler::fgSearchImprovedLayout()
     {
         BasicBlock* const block = blockVector[i - 1];
         BasicBlock* const next = blockVector[i];
+        assert(BasicBlock::sameEHRegion(block, next));
 
         if (!block->NextIs(next))
         {
             fgUnlinkBlock(next);
             fgInsertBBafter(block, next);
+        }
+    }
+
+    for (int i = 0; i < callFinallyPairs.Height(); i++)
+    {
+        const CallFinallyPair& pair = callFinallyPairs.BottomRef(i);
+
+        if (!pair.callFinally->NextIs(pair.callFinallyRet))
+        {
+            fgUnlinkBlock(pair.callFinallyRet);
+            fgInsertBBafter(pair.callFinally, pair.callFinallyRet);
         }
     }
 }
