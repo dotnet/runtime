@@ -130,6 +130,7 @@ namespace System.Text.Json.Serialization.Converters
             new()
             {
                 Type = JsonSchemaType.String,
+                Comment = "Represents a version string.",
                 Pattern = @"^\d+(\.\d+){1,3}$",
             };
     }

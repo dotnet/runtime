@@ -73,7 +73,7 @@ namespace System.Text.Json.Schema.Tests
             yield return new TestData<TimeSpan>(
                 Value: new(hours: 5, minutes: 13, seconds: 3),
                 AdditionalValues: [TimeSpan.MinValue, TimeSpan.MaxValue],
-                ExpectedJsonSchema: """{"type":"string", "pattern": "^-?(\\d+\\.)?\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,7})?$"}""");
+                ExpectedJsonSchema: """{"$comment": "Represents a System.TimeSpan value.", "type":"string", "pattern": "^-?(\\d+\\.)?\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,7})?$"}""");
 
 #if NET
             yield return new TestData<DateOnly>(new(2021, 1, 1), ExpectedJsonSchema: """{"type":"string","format": "date"}""");
@@ -81,7 +81,7 @@ namespace System.Text.Json.Schema.Tests
 #endif
             yield return new TestData<Guid>(Guid.Empty, ExpectedJsonSchema: """{"type":"string","format":"uuid"}""");
             yield return new TestData<Uri>(new("http://example.com"), """{"type":["string","null"],"format":"uri"}""");
-            yield return new TestData<Version>(new(1, 2, 3, 4), ExpectedJsonSchema: """{"type":["string","null"],"pattern":"^\\d+(\\.\\d+){1,3}$"}""");
+            yield return new TestData<Version>(new(1, 2, 3, 4), ExpectedJsonSchema: """{"$comment": "Represents a version string.", "type":["string","null"],"pattern":"^\\d+(\\.\\d+){1,3}$"}""");
             yield return new TestData<JsonDocument>(JsonDocument.Parse("""[{ "x" : 42 }]"""), ExpectedJsonSchema: "true");
             yield return new TestData<JsonElement>(JsonDocument.Parse("""[{ "x" : 42 }]""").RootElement, ExpectedJsonSchema: "true");
             yield return new TestData<JsonNode>(JsonNode.Parse("""[{ "x" : 42 }]"""), ExpectedJsonSchema: "true");

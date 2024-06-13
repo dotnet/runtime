@@ -95,10 +95,10 @@ namespace System.Text.Json.Serialization.Converters
         }
 
         internal override JsonSchema? GetSchema(JsonNumberHandling _) => new()
-            {
-                Type = JsonSchemaType.String,
-                // TimeSpan is represented as a string in the format "[-][d.]hh:mm:ss[.fffffff]"
-                Pattern = @"^-?(\d+\.)?\d{2}:\d{2}:\d{2}(\.\d{1,7})?$"
-            };
+        {
+            Type = JsonSchemaType.String,
+            Comment = "Represents a System.TimeSpan value.",
+            Pattern = @"^-?(\d+\.)?\d{2}:\d{2}:\d{2}(\.\d{1,7})?$"
+        };
     }
 }
