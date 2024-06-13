@@ -454,6 +454,12 @@ JS_ENGINES = [NODE_JS]
       <_MonoBuildEnv Include="TARGET_BUILD_ARCH=x86" />
     </ItemGroup>
 
+    <!-- loongarch64 Linux cross build options -->
+    <ItemGroup Condition="'$(MonoCrossDir)' != '' and '$(TargetArchitecture)' == 'loongarch64'">
+      <_MonoCMakeArgs Include="-DCMAKE_TOOLCHAIN_FILE=$(CrossToolchainFile)" />
+      <_MonoBuildEnv Include="TARGET_BUILD_ARCH=loongarch64" />
+    </ItemGroup>
+
     <!-- riscv64 Linux cross build options -->
     <ItemGroup Condition="'$(MonoCrossDir)' != '' and '$(TargetArchitecture)' == 'riscv64'">
       <_MonoCMakeArgs Include="-DCMAKE_TOOLCHAIN_FILE=$(CrossToolchainFile)" />
