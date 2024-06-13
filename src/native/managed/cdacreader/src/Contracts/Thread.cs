@@ -17,10 +17,21 @@ internal record struct ThreadStoreCounts(
     int PendingThreadCount,
     int DeadThreadCount);
 
+[Flags]
+internal enum ThreadState
+{
+    Unknown             = 0x00000000,
+    Hijacked            = 0x00000080,   // Return address has been hijacked
+    Background          = 0x00000200,   // Thread is a background thread
+    Unstarted           = 0x00000400,   // Thread has never been started
+    Dead                = 0x00000800,   // Thread is dead
+    ThreadPoolWorker    = 0x01000000,   // Thread is a thread pool worker thread
+}
+
 internal record struct ThreadData(
     uint Id,
     TargetNUInt OSId,
-    uint State,
+    ThreadState State,
     bool PreemptiveGCDisabled,
     TargetPointer AllocContextPointer,
     TargetPointer AllocContextLimit,
@@ -109,7 +120,7 @@ internal readonly struct Thread_1 : IThread
         return new ThreadData(
             thread.Id,
             thread.OSId,
-            thread.State,
+            (ThreadState)thread.State,
             thread.PreemptiveGCDisabled != 0,
             thread.AllocContextPointer,
             thread.AllocContextLimit,
