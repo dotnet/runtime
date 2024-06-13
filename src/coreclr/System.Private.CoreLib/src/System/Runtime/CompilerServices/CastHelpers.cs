@@ -465,7 +465,7 @@ namespace System.Runtime.CompilerServices
 
 #if FEATURE_ARRAYSTUB_AS_IL
         [DebuggerHidden]
-        private static unsafe void ArrayTypeCheck(object obj, object[] array)
+        private static unsafe void ArrayTypeCheck(object obj, Array array)
         {
             Debug.Assert(obj != null);
 
