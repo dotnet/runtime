@@ -1823,6 +1823,9 @@ protected:
 template<> struct ::cdac_offsets<EEClass>
 {
     static constexpr size_t m_pMethodTable = offsetof(EEClass, m_pMethodTable);
+    static constexpr size_t m_NumMethods = offsetof(EEClass, m_NumMethods);
+    static constexpr size_t m_NumNonVirtualSlots = offsetof(EEClass, m_NumNonVirtualSlots);
+    static constexpr size_t m_dwAttrClass = offsetof(EEClass, m_dwAttrClass);
 };
 
 // --------------------------------------------------------------------------------------------

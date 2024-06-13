@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Reflection.Metadata.Ecma335;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using Microsoft.Diagnostics.DataContractReader.Data;
@@ -100,21 +101,17 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface9
             if (!methodTable.IsFreeObjectMethodTable)
             {
                 result.module = methodTable.Module;
-                result.@class = contract.GetClass(in methodTable);
-#if false
-                // TODO
-                MTData->ParentMethodTable = HOST_CDADDR(pMT->GetParentMethodTable()); ;
-                MTData->wNumInterfaces = (WORD)pMT->GetNumInterfaces();
-                MTData->wNumMethods = pMT->GetNumMethods();
-                MTData->wNumVtableSlots = pMT->GetNumVtableSlots();
-                MTData->wNumVirtuals = pMT->GetNumVirtuals();
-                MTData->cl = pMT->GetCl();
-                MTData->dwAttrClass = pMT->GetAttrClass();
-                MTData->bContainsPointers = pMT->ContainsPointers();
-                MTData->bIsShared = FALSE;
-                MTData->bIsDynamic = pMT->IsDynamicStatics();
-#endif
-                return HResults.E_NOTIMPL;
+                result.@class = contract.GetClass(methodTable);
+                result.parentMethodTable = methodTable.ParentMethodTable;
+                result.wNumInterfaces = methodTable.NumInterfaces;
+                result.wNumMethods = contract.GetNumMethods(methodTable);
+                result.wNumVtableSlots = contract.GetNumVtableSlots(methodTable);
+                result.wNumVirtuals = methodTable.NumVirtuals;
+                result.cl = (uint)(methodTable.GetTypeDefRid() | ((int)TableIndex.TypeDef << 24));
+                result.dwAttrClass = contract.GetTypeDefTypeAttributes(methodTable);
+                result.bContainsPointers = methodTable.ContainsPointers ? 1 : 0;
+                result.bIsShared = 0;
+                result.bIsDynamic = methodTable.IsDynamicStatics ? 1 : 0;
             }
             return HResults.S_OK;
         }

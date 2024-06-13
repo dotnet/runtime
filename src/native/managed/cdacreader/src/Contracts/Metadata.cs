@@ -6,6 +6,7 @@ using UntrustedMethodTable = Microsoft.Diagnostics.DataContractReader.Contracts.
 using MethodTable = Microsoft.Diagnostics.DataContractReader.Contracts.MethodTable_1;
 using UntrustedEEClass = Microsoft.Diagnostics.DataContractReader.Contracts.UntrustedEEClass_1;
 using EEClass = Microsoft.Diagnostics.DataContractReader.Contracts.EEClass_1;
+using System.Diagnostics.SymbolStore;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
@@ -26,6 +27,12 @@ internal interface IMetadata : IContract
     public virtual MethodTable GetMethodTableData(TargetPointer targetPointer) => throw new NotImplementedException();
 
     public virtual TargetPointer GetClass(in MethodTable methodTable) => throw new NotImplementedException();
+
+    public virtual ushort GetNumMethods(in MethodTable methodTable) => throw new NotImplementedException();
+
+    public virtual ushort GetNumVtableSlots(in MethodTable methodTable) => throw new NotImplementedException();
+
+    public virtual ushort GetTypeDefTypeAttributes(in MethodTable methodTable) => throw new NotImplementedException();
 }
 
 internal struct Metadata : IMetadata
@@ -106,6 +113,7 @@ internal struct MethodTable_1 : IMethodTableFlags
     public uint DwFlags => MethodTableData.DwFlags;
     public uint DwFlags2 => MethodTableData.DwFlags2;
     public uint BaseSize => MethodTableData.BaseSize;
+    public int GetTypeDefRid() => ((IMethodTableFlags)this).GetTypeDefRid();
     public TargetPointer EEClassOrCanonMT => MethodTableData.EEClassOrCanonMT;
     public TargetPointer Module => MethodTableData.Module;
 
@@ -115,6 +123,12 @@ internal struct MethodTable_1 : IMethodTableFlags
 
     public int GetComponentSize() => ((IMethodTableFlags)this).HasComponentSize ? ((IMethodTableFlags)this).RawGetComponentSize() : 0;
 
+    public TargetPointer ParentMethodTable => MethodTableData.ParentMethodTable;
+    public ushort NumInterfaces => MethodTableData.NumInterfaces;
+    public ushort NumVirtuals => MethodTableData.NumVirtuals;
+
+    public bool ContainsPointers => ((IMethodTableFlags)this).ContainsPointers;
+    public bool IsDynamicStatics => ((IMethodTableFlags)this).IsDynamicStatics;
 }
 
 internal struct EEClass_1
@@ -126,6 +140,10 @@ internal struct EEClass_1
     }
 
     public TargetPointer MethodTable => EEClassData.MethodTable;
+    public ushort NumMethods => EEClassData.NumMethods;
+    public ushort NumNonVirtualSlots => EEClassData.NumNonVirtualSlots;
+
+    public ushort TypeDefTypeAttributes => EEClassData.DwAttrClass;
 }
 
 
@@ -191,7 +209,7 @@ internal partial struct Metadata_1 : IMetadata
         return new MethodTable(trustedMethodTableData, isFreeObjectMT: false);
     }
 
-    private bool ValidateMethodTablePointer(ref readonly UntrustedMethodTable umt)
+    private bool ValidateMethodTablePointer(in UntrustedMethodTable umt)
     {
         // FIXME: is methodTablePointer properly sign-extended from 32-bit targets?
         // FIXME2: do we need this? Data.MethodTable probably would throw if methodTablePointer is invalid
@@ -201,11 +219,11 @@ internal partial struct Metadata_1 : IMetadata
         //}
         try
         {
-            if (!ValidateWithPossibleAV(in umt))
+            if (!ValidateWithPossibleAV(umt))
             {
                 return false;
             }
-            if (!ValidateMethodTable(in umt))
+            if (!ValidateMethodTable(umt))
             {
                 return false;
             }
@@ -218,7 +236,7 @@ internal partial struct Metadata_1 : IMetadata
         return true;
     }
 
-    private bool ValidateWithPossibleAV(ref readonly UntrustedMethodTable methodTable)
+    private bool ValidateWithPossibleAV(in UntrustedMethodTable methodTable)
     {
         // For non-generic classes, we can rely on comparing
         //    object->methodtable->class->methodtable
@@ -231,7 +249,7 @@ internal partial struct Metadata_1 : IMetadata
         //    object->methodtable->class->methodtable->class
         // to
         //    object->methodtable->class
-        TargetPointer eeClassPtr = GetClassWithPossibleAV(in methodTable);
+        TargetPointer eeClassPtr = GetClassWithPossibleAV(methodTable);
         if (eeClassPtr != TargetPointer.Null)
         {
             UntrustedEEClass eeClass = GetUntrustedEEClassData(eeClassPtr);
@@ -250,7 +268,7 @@ internal partial struct Metadata_1 : IMetadata
         return false;
     }
 
-    private bool ValidateMethodTable(ref readonly UntrustedMethodTable methodTable)
+    private bool ValidateMethodTable(in UntrustedMethodTable methodTable)
     {
         if (!((IMethodTableFlags)methodTable).IsInterface && !((IMethodTableFlags)methodTable).IsString)
         {
@@ -266,7 +284,7 @@ internal partial struct Metadata_1 : IMetadata
     {
         return (EEClassOrCanonMTBits)(eeClassOrCanonMTPtr & (ulong)EEClassOrCanonMTBits.Mask);
     }
-    private TargetPointer GetClassWithPossibleAV(ref readonly UntrustedMethodTable methodTable)
+    private TargetPointer GetClassWithPossibleAV(in UntrustedMethodTable methodTable)
     {
         TargetPointer eeClassOrCanonMT = methodTable.EEClassOrCanonMT;
 
@@ -282,12 +300,12 @@ internal partial struct Metadata_1 : IMetadata
         }
     }
 
-    private static TargetPointer GetMethodTableWithPossibleAV(ref readonly UntrustedEEClass eeClass)
+    private static TargetPointer GetMethodTableWithPossibleAV(in UntrustedEEClass eeClass)
     {
         return eeClass.MethodTable;
     }
 
-    internal TargetPointer GetClass(ref readonly MethodTable methodTable)
+    public TargetPointer GetClass(in MethodTable methodTable)
     {
         switch (GetEEClassOrCanonMTBits(methodTable.EEClassOrCanonMT))
         {
@@ -300,5 +318,61 @@ internal partial struct Metadata_1 : IMetadata
             default:
                 throw new InvalidOperationException();
         }
+    }
+
+    // only called on trusted method tables, so we always trust the resulting EEClass
+    private EEClass GetClassData(in MethodTable methodTable)
+    {
+        TargetPointer clsPtr = GetClass(in methodTable);
+        // Check if we cached it already
+        if (_target.ProcessedData.TryGet(clsPtr, out Data.EEClass? eeClassData))
+        {
+            return new EEClass_1(eeClassData);
+        }
+        eeClassData = _target.ProcessedData.GetOrAdd<Data.EEClass>(clsPtr);
+        return new EEClass_1(eeClassData);
+    }
+
+    public ushort GetNumMethods(in MethodTable methodTable)
+    {
+        EEClass cls = GetClassData(in methodTable);
+        return cls.NumMethods;
+    }
+
+    private ushort GetNumNonVirtualSlots(in MethodTable methodTable)
+    {
+        TargetPointer eeClassOrCanonMT = methodTable.EEClassOrCanonMT;
+        if (GetEEClassOrCanonMTBits(eeClassOrCanonMT) == EEClassOrCanonMTBits.EEClass)
+        {
+            return GetClassData(methodTable).NumNonVirtualSlots;
+        }
+        else
+        {
+            return 0;
+        }
+    }
+
+    public ushort GetNumVtableSlots(in MethodTable methodTable)
+    {
+        return checked((ushort)(methodTable.NumVirtuals + GetNumNonVirtualSlots(methodTable)));
+    }
+
+    public ushort GetTypeDefTypeAttributes(in MethodTable methodTable)
+    {
+        return GetClassData(methodTable).TypeDefTypeAttributes;
+    }
+
+
+    [Flags]
+    internal enum MethodTableAuxiliaryDataFlags : uint
+    {
+        CanCompareBitsOrUseFastGetHashCode = 0x0001,     // Is any field type or sub field type overrode Equals or GetHashCode
+        HasCheckedCanCompareBitsOrUseFastGetHashCode = 0x0002,  // Whether we have checked the overridden Equals or GetHashCode
+        HasApproxParent = 0x0010,
+        IsNotFullyLoaded = 0x0040,
+        DependenciesLoaded = 0x0080,     // class and all dependencies loaded up to CLASS_LOADED_BUT_NOT_VERIFIED
+        MayHaveOpenInterfaceInInterfaceMap = 0x0100,
+        DebugOnly_ParentMethodTablePointerValid = 0x4000,
+        DebugOnly_HasInjectedInterfaceDuplicates = 0x8000,
     }
 }

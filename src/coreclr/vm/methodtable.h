@@ -3671,6 +3671,9 @@ template<> struct ::cdac_offsets<MethodTable>
     static constexpr size_t m_pEEClassOrCanonMT = offsetof(MethodTable, m_pEEClass);
     static constexpr size_t m_pModule = offsetof(MethodTable, m_pModule);
     static constexpr size_t m_pAuxiliaryData = offsetof(MethodTable, m_pAuxiliaryData);
+    static constexpr size_t m_pParentMethodTable = offsetof(MethodTable, m_pParentMethodTable)
+    static constexpr size_t m_wNumInterfaces = offsetof(MethodTable, m_wNumInterfaces)
+    static constexpr size_t m_wNumVirtuals = offsetof(MethodTable, m_wNumVirtuals)
 };
 
 #ifndef CROSSBITNESS_COMPILE

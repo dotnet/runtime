@@ -13,8 +13,13 @@ public sealed class EEClass : IData<EEClass>
         Target.TypeInfo type = target.GetTypeInfo(DataType.EEClass);
 
         MethodTable = target.ReadPointer(address + (ulong)type.Fields[nameof(MethodTable)].Offset);
+        NumMethods = target.Read<ushort>(address + (ulong)type.Fields[nameof(NumMethods)].Offset);
+        NumNonVirtualSlots = target.Read<ushort>(address + (ulong)type.Fields[nameof(NumNonVirtualSlots)].Offset);
+        DwAttrClass = target.Read<uint>(address + (ulong)type.Fields[nameof(DwAttrClass)].Offset);
     }
 
     public TargetPointer MethodTable { get; init; }
-
+    public ushort NumMethods { get; init; }
+    public ushort NumNonVirtualSlots { get; init; }
+    public uint DwAttrClass { get; init; }
 }

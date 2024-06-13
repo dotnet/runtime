@@ -141,7 +141,7 @@ internal interface IMethodTableFlags
 
     private Metadata_1.WFLAGS_HIGH FlagsHigh => (Metadata_1.WFLAGS_HIGH)DwFlags;
     private Metadata_1.WFLAGS_LOW FlagsLow => (Metadata_1.WFLAGS_LOW)DwFlags;
-    private int GetTypeDefRid() => (int)(DwFlags2 >> Metadata_1.Constants.MethodTableDwFlags2TypeDefRidShift);
+    public int GetTypeDefRid() => (int)(DwFlags2 >> Metadata_1.Constants.MethodTableDwFlags2TypeDefRidShift);
 
     public Metadata_1.WFLAGS_LOW GetFlag(Metadata_1.WFLAGS_LOW mask) => throw new NotImplementedException("TODO");
     public Metadata_1.WFLAGS_HIGH GetFlag(Metadata_1.WFLAGS_HIGH mask) => FlagsHigh & mask;
@@ -167,4 +167,8 @@ internal interface IMethodTableFlags
         }
     }
     public bool HasInstantiation => !TestFlagWithMask(Metadata_1.WFLAGS_LOW.GenericsMask, Metadata_1.WFLAGS_LOW.GenericsMask_NonGeneric);
+
+    public bool ContainsPointers => GetFlag(Metadata_1.WFLAGS_HIGH.ContainsPointers) != 0;
+
+    public bool IsDynamicStatics => !TestFlagWithMask(Metadata_1.WFLAGS_LOW.StaticsMask, Metadata_1.WFLAGS_LOW.StaticsMask_Dynamic);
 }

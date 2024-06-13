@@ -12,13 +12,14 @@ internal sealed class MethodTable : IData<MethodTable>
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.MethodTable);
 
-        //Id = target.Read<uint>(address + (ulong)type.Fields[nameof(Id)].Offset);
-        //LinkNext = target.ReadPointer(address + (ulong)type.Fields[nameof(LinkNext)].Offset);
         DwFlags = target.Read<uint>(address + (ulong)type.Fields[nameof(DwFlags)].Offset);
         BaseSize = target.Read<uint>(address + (ulong)type.Fields[nameof(BaseSize)].Offset);
         DwFlags2 = target.Read<uint>(address + (ulong)type.Fields[nameof(DwFlags2)].Offset);
         EEClassOrCanonMT = target.ReadPointer(address + (ulong)type.Fields[nameof(EEClassOrCanonMT)].Offset);
-        Module = target.ReadPointer(address + (ulong)type.Fields[(nameof(Module))].Offset);
+        Module = target.ReadPointer(address + (ulong)type.Fields[nameof(Module)].Offset);
+        ParentMethodTable = target.ReadPointer(address + (ulong)type.Fields[nameof(ParentMethodTable)].Offset);
+        NumInterfaces = target.Read<ushort>(address + (ulong)type.Fields[nameof(NumInterfaces)].Offset);
+        NumVirtuals = target.Read<ushort>(address + (ulong)type.Fields[nameof(NumVirtuals)].Offset);
     }
 
     public uint DwFlags { get; init; }
@@ -26,4 +27,7 @@ internal sealed class MethodTable : IData<MethodTable>
     public uint DwFlags2 { get; init; }
     public TargetPointer EEClassOrCanonMT { get; init; }
     public TargetPointer Module { get; init; }
+    public TargetPointer ParentMethodTable { get; init; }
+    public ushort NumInterfaces { get; init; }
+    public ushort NumVirtuals { get; init; }
 }

@@ -136,12 +136,23 @@ CDAC_TYPE_FIELD(MethodTable, /*uint32*/, DwFlags2, cdac_offsets<MethodTable>::m_
 CDAC_TYPE_FIELD(MethodTable, /*nuint*/, EEClassOrCanonMT, cdac_offsets<MethodTable>::m_pEEClassOrCanonMT)
 CDAC_TYPE_FIELD(MethodTable, /*pointer*/, Module, cdac_offsets<MethodTable>::m_pModule)
 CDAC_TYPE_FIELD(MethodTable, /*pointer*/, AuxiliaryData, cdac_offsets<MethodTable>::m_pAuxiliaryData)
+CDAC_TYPE_FIELD(MethodTable, /*pointer*/, ParentMethodTable, cdac_offsets<MethodTable>::m_pParentMethodTable)
+CDAC_TYPE_FIELD(MethodTable, /*uint16*/, NumInterfaces, cdac_offsets<MethodTable>::m_wNumInterfaces)
+CDAC_TYPE_FIELD(MethodTable, /*uint16*/, NumVirtuals, cdac_offsets<MethodTable>::m_wNumVirtuals)
 CDAC_TYPE_END(MethodTable)
 
 CDAC_TYPE_BEGIN(EEClass)
 CDAC_TYPE_INDETERMINATE(EEClass)
 CDAC_TYPE_FIELD(EEClass, /*pointer*/, MethodTable, cdac_offsets<EEClass>::m_pMethodTable)
+CDAC_TYPE_FIELD(EEClass, /*uint16*/, NumMethods, cdac_offsets<EEClass>::m_NumMethods)
+CDAC_TYPE_FIELD(EEClass, /*uint16*/, NumNonVirtualSlots, cdac_offsets<EEClass>::m_NumNonVirtualSlots)
+CDAC_TYPE_FIELD(EEClass, /*uint32*/, DwAttrClass, cdac_offsets<EEClass>::m_dwAttrClass)
 CDAC_TYPE_END(EEClass)
+
+CDAC_TYPE_BEGIN(MethodTableAuxiliaryData)
+CDAC_TYPE_INDETERMINATE(MethodTableAuxiliaryData)
+CDAC_TYPE_FIELD(MethodTableAuxiliaryData, /*uint32*/, DwFlags, offsetof(MethodTableAuxiliaryData, m_dwFlags))
+CDAC_TYPE_END(MethodTableAuxiliaryData)
 
 CDAC_TYPES_END()
 
