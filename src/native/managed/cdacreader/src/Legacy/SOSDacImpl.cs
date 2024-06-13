@@ -120,14 +120,14 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface9
             data->preemptiveGCDisabled = (uint)(threadData.PreemptiveGCDisabled ? 1 : 0);
             data->allocContextPtr = threadData.AllocContextPointer;
             data->allocContextLimit = threadData.AllocContextLimit;
-            data->fiberData = 0;    // Always set to 0
+            data->fiberData = 0;    // Always set to 0 - fibers are no longer supported
 
             TargetPointer appDomainPointer = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
             TargetPointer appDomain = _target.ReadPointer(appDomainPointer);
             data->context = appDomain;
             data->domain = appDomain;
 
-            data->lockCount = -1;   // Always set to -1
+            data->lockCount = -1;   // Always set to -1 - lock count was .NET Framework and no longer needed
             data->pFrame = threadData.Frame;
             data->firstNestedException = threadData.FirstNestedException;
             data->teb = threadData.TEB;
