@@ -271,7 +271,8 @@ namespace System.Net.Security
             {
                 if (!receiveFirst)
                 {
-                    token = NextMessage(reAuthenticationData);
+                    token = NextMessage(reAuthenticationData, out int consumed);
+                    Debug.Assert(consumed == (reAuthenticationData?.Length ?? 0));
 
                     if (token.Size > 0)
                     {
@@ -462,16 +463,13 @@ namespace System.Net.Security
             int chunkSize = frameSize;
 
             ReadOnlySpan<byte> availableData = _buffer.EncryptedReadOnlySpan;
-            // DiscardEncrypted() does not touch data, it just increases start index so next
-            // EncryptedSpan will exclude the "discarded" data.
-            _buffer.DiscardEncrypted(frameSize);
 
             // Often more TLS messages fit into same packet. Get as many complete frames as we can.
-            while (_buffer.EncryptedLength > TlsFrameHelper.HeaderSize)
+            while (_buffer.EncryptedLength - chunkSize > TlsFrameHelper.HeaderSize)
             {
                 TlsFrameHeader nextHeader = default;
 
-                if (!TlsFrameHelper.TryGetFrameHeader(_buffer.EncryptedReadOnlySpan, ref nextHeader))
+                if (!TlsFrameHelper.TryGetFrameHeader(_buffer.EncryptedReadOnlySpan.Slice(chunkSize), ref nextHeader))
                 {
                     break;
                 }
@@ -487,10 +485,11 @@ namespace System.Net.Security
                 }
 
                 chunkSize += frameSize;
-                _buffer.DiscardEncrypted(frameSize);
             }
 
-            return NextMessage(availableData.Slice(0, chunkSize));
+            ProtocolToken token = NextMessage(availableData.Slice(0, chunkSize), out int consumed);
+            _buffer.DiscardEncrypted(consumed);
+            return token;
         }
 
         //
