@@ -413,34 +413,27 @@ namespace System.Text.Json.Serialization.Converters
                 // This explicitly ignores the integer component in converters configured as AllowNumbers | AllowStrings
                 // which is the default for JsonStringEnumConverter. This sacrifices some precision in the schema for simplicity.
 
-                JsonArray? enumValues;
                 if (s_isFlagsEnum)
                 {
                     // Do not report enum values in case of flags.
-                    enumValues = null;
+                    return new() { Type = JsonSchemaType.String };
                 }
-                else
-                {
-                    enumValues = [];
+
+                JsonNamingPolicy? namingPolicy = _namingPolicy;
+                JsonArray enumValues = [];
 #if NET
-                    string[] names = Enum.GetNames<T>();
+                string[] names = Enum.GetNames<T>();
 #else
-                    string[] names = Enum.GetNames(Type);
+                string[] names = Enum.GetNames(Type);
 #endif
-                    JsonNamingPolicy? namingPolicy = _namingPolicy;
 
-                    for (int i = 0; i < names.Length; i++)
-                    {
-                        JsonNode name = FormatJsonName(names[i], namingPolicy);
-                        enumValues.Add(name);
-                    }
+                for (int i = 0; i < names.Length; i++)
+                {
+                    JsonNode name = FormatJsonName(names[i], namingPolicy);
+                    enumValues.Add(name);
                 }
 
-                return new()
-                {
-                    Type = JsonSchemaType.String,
-                    Enum = enumValues,
-                };
+                return new() { Enum = enumValues };
             }
 
             return new() { Type = JsonSchemaType.Integer };

@@ -91,7 +91,7 @@ namespace System.Text.Json.Schema.Tests
 
             // Enum types
             yield return new TestData<IntEnum>(IntEnum.A, ExpectedJsonSchema: """{"type":"integer"}""");
-            yield return new TestData<StringEnum>(StringEnum.A, ExpectedJsonSchema: """{"type":"string","enum":["A","B","C"]}""");
+            yield return new TestData<StringEnum>(StringEnum.A, ExpectedJsonSchema: """{"enum":["A","B","C"]}""");
             yield return new TestData<FlagsStringEnum>(FlagsStringEnum.A, ExpectedJsonSchema: """{"type":"string"}""");
 
             // Nullable<T> types
@@ -101,7 +101,7 @@ namespace System.Text.Json.Schema.Tests
             yield return new TestData<Guid?>(Guid.Empty, AdditionalValues: [null], ExpectedJsonSchema: """{"type":["string","null"],"format":"uuid"}""");
             yield return new TestData<JsonElement?>(JsonDocument.Parse("{}").RootElement, AdditionalValues: [null], ExpectedJsonSchema: "true");
             yield return new TestData<IntEnum?>(IntEnum.A, AdditionalValues: [null], ExpectedJsonSchema: """{"type":["integer","null"]}""");
-            yield return new TestData<StringEnum?>(StringEnum.A, AdditionalValues: [null], ExpectedJsonSchema: """{"type":["string","null"],"enum":["A","B","C",null]}""");
+            yield return new TestData<StringEnum?>(StringEnum.A, AdditionalValues: [null], ExpectedJsonSchema: """{"enum":["A","B","C",null]}""");
             yield return new TestData<SimpleRecordStruct?>(
                 new(1, "two", true, 3.14),
                 AdditionalValues: [null],
@@ -172,12 +172,12 @@ namespace System.Text.Json.Schema.Tests
                     "X2": { "type": "string" },
                     "X3": { "type": "boolean" },
                     "X4": { "type": "number" },
-                    "X5": { "type": "string", "enum": ["A", "B", "C"] },
+                    "X5": { "enum": ["A", "B", "C"] },
                     "Y1": { "type": "integer", "default": 42 },
                     "Y2": { "type": "string", "default": "str" },
                     "Y3": { "type": "boolean", "default": true },
                     "Y4": { "type": "number", "default": 0 },
-                    "Y5": { "type": "string", "enum": ["A", "B", "C"], "default": "A" }
+                    "Y5": { "enum": ["A", "B", "C"], "default": "A" }
                   },
                   "required": ["X1", "X2", "X3", "X4", "X5"]
                 }
@@ -471,14 +471,58 @@ namespace System.Text.Json.Schema.Tests
                     "type": ["object","null"],
                     "properties": {
                         "IntEnum": { "type": "integer" },
-                        "StringEnum": { "type": "string", "enum": [ "A", "B", "C" ] },
-                        "IntEnumUsingStringConverter": { "type": "string", "enum": [ "A", "B", "C" ] },
-                        "NullableIntEnumUsingStringConverter": { "type": ["string", "null"], "enum": [ "A", "B", "C", null ] },
+                        "StringEnum": { "enum": [ "A", "B", "C" ] },
+                        "IntEnumUsingStringConverter": { "enum": [ "A", "B", "C" ] },
+                        "NullableIntEnumUsingStringConverter": { "enum": [ "A", "B", "C", null ] },
                         "StringEnumUsingIntConverter": { "type": "integer" },
                         "NullableStringEnumUsingIntConverter": { "type": [ "integer", "null" ] }
                     }
                 }
                 """);
+
+            // Same but using a callback to insert a type keyword for string enums.
+            yield return new TestData<PocoWithEnums>(
+                Value: new()
+                {
+                    IntEnum = IntEnum.A,
+                    StringEnum = StringEnum.B,
+                    IntEnumUsingStringConverter = IntEnum.A,
+                    NullableIntEnumUsingStringConverter = IntEnum.B,
+                    StringEnumUsingIntConverter = StringEnum.A,
+                    NullableStringEnumUsingIntConverter = StringEnum.B
+                },
+                ExpectedJsonSchema: """
+                {
+                    "type": ["object","null"],
+                    "properties": {
+                        "IntEnum": { "type": "integer" },
+                        "StringEnum": { "type" : "string", "enum": [ "A", "B", "C" ] },
+                        "IntEnumUsingStringConverter": { "type" : "string", "enum": [ "A", "B", "C" ] },
+                        "NullableIntEnumUsingStringConverter": { "type" : ["string","null"], "enum": [ "A", "B", "C", null ] },
+                        "StringEnumUsingIntConverter": { "type": "integer" },
+                        "NullableStringEnumUsingIntConverter": { "type": [ "integer", "null" ] }
+                    }
+                }
+                """,
+                Options: new()
+                {
+                    OnSchemaNodeGenerated = static (ctx, schema) =>
+                    {
+                        Type type = ctx.TypeInfo.Type;
+
+                        if (schema.ContainsKey("enum"))
+                        {
+                            if (ctx.TypeInfo.Type.IsEnum)
+                            {
+                                schema.Add("type", "string");
+                            }
+                            else if (Nullable.GetUnderlyingType(type)?.IsEnum is true)
+                            {
+                                schema.Add("type", new JsonArray { (JsonNode)"string", (JsonNode)"null" });
+                            }
+                        }
+                    }
+                });
 
             var recordStruct = new SimpleRecordStruct(42, "str", true, 3.14);
             yield return new TestData<PocoWithStructFollowedByNullableStruct>(
@@ -613,12 +657,12 @@ namespace System.Text.Json.Schema.Tests
                         "X2": {"type":"integer", "default": 42 },
                         "X3": {"type":"boolean", "default": true },
                         "X4": {"type":"number", "default": 0 },
-                        "X5": {"type":"string", "enum":["A","B","C"], "default": "A" },
+                        "X5": {"enum":["A","B","C"], "default": "A" },
                         "X6": {"type":["string","null"], "default": "str" },
                         "X7": {"type":["integer","null"], "default": 42 },
                         "X8": {"type":["boolean","null"], "default": true },
                         "X9": {"type":["number","null"], "default": 0 },
-                        "X10": {"type":["string","null"], "enum":["A","B","C", null], "default": "A" }
+                        "X10": {"enum":["A","B","C", null], "default": "A" }
                     }
                 }
                 """);
