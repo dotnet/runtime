@@ -71,6 +71,7 @@
     See also eng\testing\WasmRunnerTemplate.sh
     -->
   <ItemGroup Condition="'$(OS)' != 'Windows_NT'">
+    <SetScriptCommands Include="df -h" />
     <SetScriptCommands Condition="'$(Scenario)' != '' and '$(ContinuousIntegrationBuild)' != 'true'" Include="export SCENARIO=$(Scenario)" />
     <SetScriptCommands Condition="'$(JSEngine)' != ''" Include="export JS_ENGINE=--engine=$(JSEngine)" />
     <SetScriptCommands Condition="'$(JSEngineArgs)' != ''" Include="export JS_ENGINE_ARGS=$(JSEngineArgs)" />
