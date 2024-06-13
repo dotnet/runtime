@@ -5137,10 +5137,10 @@ void Compiler::fgSearchImprovedLayout()
     }
 #endif // DEBUG
 
-    BlockSet visitedBlocks(BlockSetOps::MakeEmpty(this));
-    BasicBlock* startBlock = nullptr;
-    weight_t layoutScore = 0.0;
-    weight_t minLayoutScore = 0.0;
+    BlockSet    visitedBlocks(BlockSetOps::MakeEmpty(this));
+    BasicBlock* startBlock     = nullptr;
+    weight_t    layoutScore    = 0.0;
+    weight_t    minLayoutScore = 0.0;
 
     // Evaluate initial minimum layout costs
     // (Minimum layout cost may not actually be possible to achieve,
@@ -5156,10 +5156,10 @@ void Compiler::fgSearchImprovedLayout()
         }
 
         BlockSetOps::AddElemD(this, visitedBlocks, block->bbNum);
-        BasicBlock* hottestSucc = nullptr;
-        weight_t maxEdgeCost = 0.0;
-        weight_t fallthroughEdgeCost = 0.0;
-        bool hasNonEHSuccs = false;
+        BasicBlock* hottestSucc         = nullptr;
+        weight_t    maxEdgeCost         = 0.0;
+        weight_t    fallthroughEdgeCost = 0.0;
+        bool        hasNonEHSuccs       = false;
 
         for (FlowEdge* const succEdge : block->SuccEdges(this))
         {
@@ -5172,7 +5172,7 @@ void Compiler::fgSearchImprovedLayout()
                 continue;
             }
 
-            hasNonEHSuccs = true;
+            hasNonEHSuccs            = true;
             const bool isForwardJump = !BlockSetOps::IsMember(this, visitedBlocks, succ->bbNum);
 
             if (isForwardJump)
@@ -5220,10 +5220,10 @@ void Compiler::fgSearchImprovedLayout()
     // blockVector will contain the set of interesting blocks to move.
     // tempBlockVector will assist with moving segments of interesting blocks.
     //
-    BasicBlock** blockVector = new BasicBlock*[fgBBNumMax];
-    BasicBlock** tempBlockVector = new BasicBlock*[fgBBNumMax];
+    BasicBlock**                blockVector     = new BasicBlock*[fgBBNumMax];
+    BasicBlock**                tempBlockVector = new BasicBlock*[fgBBNumMax];
     ArrayStack<CallFinallyPair> callFinallyPairs(getAllocator());
-    unsigned blockCount = 0;
+    unsigned                    blockCount = 0;
 
     for (BasicBlock* const block : Blocks(startBlock, fgLastBBInMainFunction()))
     {
@@ -5242,7 +5242,7 @@ void Compiler::fgSearchImprovedLayout()
             break;
         }
 
-        blockVector[blockCount] = block;
+        blockVector[blockCount]       = block;
         tempBlockVector[blockCount++] = block;
 
         if (block->isBBCallFinallyPair())
@@ -5268,7 +5268,7 @@ void Compiler::fgSearchImprovedLayout()
         }
 
         const weight_t cost = block->bbWeight;
-        
+
         for (FlowEdge* const edge : block->SuccEdges())
         {
             if (edge->getDestinationBlock() == next)
@@ -5284,18 +5284,18 @@ void Compiler::fgSearchImprovedLayout()
     // We will need to keep track of it to compute the cost of creating/breaking fallthrough into it.
     // finalBlock can be null.
     //
-    BasicBlock* const finalBlock = blockVector[blockCount - 1]->Next();
-    bool improvedLayout = true;
+    BasicBlock* const finalBlock     = blockVector[blockCount - 1]->Next();
+    bool              improvedLayout = true;
 
     for (unsigned numIter = 0; improvedLayout && (numIter < 20); numIter++)
     {
         JITDUMP("\n\n--Iteration %d--", (numIter + 1));
-        improvedLayout = false;
+        improvedLayout              = false;
         BasicBlock* const exitBlock = blockVector[blockCount - 1];
 
         for (unsigned i = 1; i < (blockCount - 1); i++)
         {
-            BasicBlock* const blockI = blockVector[i];
+            BasicBlock* const blockI     = blockVector[i];
             BasicBlock* const blockIPrev = blockVector[i - 1];
 
             for (unsigned j = i + 1; j < blockCount; j++)
@@ -5305,11 +5305,13 @@ void Compiler::fgSearchImprovedLayout()
                 // S2: i ~ j-1
                 // S3: j ~ exitBlock
 
-                BasicBlock* const blockJ = blockVector[j];
+                BasicBlock* const blockJ     = blockVector[j];
                 BasicBlock* const blockJPrev = blockVector[j - 1];
 
-                const weight_t oldScore = evaluateCost(blockIPrev, blockI) + evaluateCost(blockJPrev, blockJ) + evaluateCost(exitBlock, finalBlock);
-                const weight_t newScore = evaluateCost(blockIPrev, blockJ) + evaluateCost(exitBlock, blockI) + evaluateCost(blockJPrev, finalBlock);
+                const weight_t oldScore = evaluateCost(blockIPrev, blockI) + evaluateCost(blockJPrev, blockJ) +
+                                          evaluateCost(exitBlock, finalBlock);
+                const weight_t newScore = evaluateCost(blockIPrev, blockJ) + evaluateCost(exitBlock, blockI) +
+                                          evaluateCost(blockJPrev, finalBlock);
 
                 if ((newScore < oldScore) && !Compiler::fgProfileWeightsEqual(oldScore, newScore, 0.001))
                 {
@@ -5320,8 +5322,10 @@ void Compiler::fgSearchImprovedLayout()
                     const unsigned part3Size = blockCount - j;
 
                     memcpy(tempBlockVector, blockVector, sizeof(BasicBlock*) * part1Size);
-                    memcpy(tempBlockVector + part1Size, blockVector + part1Size + part2Size, sizeof(BasicBlock*) * part3Size);
-                    memcpy(tempBlockVector + part1Size + part3Size, blockVector + part1Size, sizeof(BasicBlock*) * part2Size);
+                    memcpy(tempBlockVector + part1Size, blockVector + part1Size + part2Size,
+                           sizeof(BasicBlock*) * part3Size);
+                    memcpy(tempBlockVector + part1Size + part3Size, blockVector + part1Size,
+                           sizeof(BasicBlock*) * part2Size);
 
                     std::swap(blockVector, tempBlockVector);
                     improvedLayout = true;
@@ -5341,7 +5345,7 @@ void Compiler::fgSearchImprovedLayout()
     for (unsigned i = 1; i < blockCount; i++)
     {
         BasicBlock* const block = blockVector[i - 1];
-        BasicBlock* const next = blockVector[i];
+        BasicBlock* const next  = blockVector[i];
         assert(BasicBlock::sameEHRegion(block, next));
 
         if (!block->NextIs(next))
