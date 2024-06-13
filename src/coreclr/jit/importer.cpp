@@ -2483,70 +2483,6 @@ GenTree* Compiler::impTypeIsAssignable(GenTree* typeTo, GenTree* typeFrom)
     return nullptr;
 }
 
-/*****************************************************************************
- * 'logMsg' is true if a log message needs to be logged. false if the caller has
- *   already logged it (presumably in a more detailed fashion than done here)
- */
-
-void Compiler::verConvertBBToThrowVerificationException(BasicBlock* block DEBUGARG(bool logMsg))
-{
-    block->SetKindAndTargetEdge(BBJ_THROW);
-    block->SetFlags(BBF_FAILED_VERIFICATION);
-    block->RemoveFlags(BBF_IMPORTED);
-
-    impCurStmtOffsSet(block->bbCodeOffs);
-
-    // Clear the statement list as it exists so far; we're only going to have a verification exception.
-    impStmtList = impLastStmt = nullptr;
-
-#ifdef DEBUG
-    if (logMsg)
-    {
-        JITLOG((LL_ERROR, "Verification failure: while compiling %s near IL offset %x..%xh \n", info.compFullName,
-                block->bbCodeOffs, block->bbCodeOffsEnd));
-        if (verbose)
-        {
-            printf("\n\nVerification failure: %s near IL %xh \n", info.compFullName, block->bbCodeOffs);
-        }
-    }
-
-    if (JitConfig.DebugBreakOnVerificationFailure())
-    {
-        DebugBreak();
-    }
-#endif
-
-    impBeginTreeList();
-
-    // if the stack is non-empty evaluate all the side-effects
-    if (verCurrentState.esStackDepth > 0)
-    {
-        impEvalSideEffects();
-    }
-    assert(verCurrentState.esStackDepth == 0);
-
-    GenTree* op1 = gtNewHelperCallNode(CORINFO_HELP_VERIFICATION, TYP_VOID, gtNewIconNode(block->bbCodeOffs));
-    // verCurrentState.esStackDepth = 0;
-    impAppendTree(op1, CHECK_SPILL_NONE, impCurStmtDI);
-
-    // The inliner is not able to handle methods that require throw block, so
-    // make sure this methods never gets inlined.
-    info.compCompHnd->setMethodAttribs(info.compMethodHnd, CORINFO_FLG_BAD_INLINEE);
-}
-
-/*****************************************************************************
- *
- */
-void Compiler::verHandleVerificationFailure(BasicBlock* block DEBUGARG(bool logMsg))
-{
-    verResetCurrentState(block, &verCurrentState);
-    verConvertBBToThrowVerificationException(block DEBUGARG(logMsg));
-
-#ifdef DEBUG
-    impNoteLastILoffs(); // Remember at which BC offset the tree was finished
-#endif                   // DEBUG
-}
-
 typeInfo Compiler::verMakeTypeInfoForLocal(unsigned lclNum)
 {
     LclVarDsc* varDsc = lvaGetDesc(lclNum);
@@ -11216,8 +11152,6 @@ void Compiler::impImportBlock(BasicBlock* block)
         return;
     }
 
-    bool markImport;
-
     assert(block);
 
     /* Make the block globally available */
@@ -11247,10 +11181,6 @@ void Compiler::impImportBlock(BasicBlock* block)
     }
 
     assert(!compDonotInline());
-
-    markImport = false;
-
-SPILLSTACK:
 
     unsigned    baseTmp             = NO_BASE_TMP; // input temps assigned to successor blocks
     bool        reimportSpillClique = false;
@@ -11466,25 +11396,9 @@ SPILLSTACK:
                 }
             }
 
-            /* Spill the stack entry, and replace with the temp */
-
-            if (!impSpillStackEntry(level, tempNum
-#ifdef DEBUG
-                                    ,
-                                    true, "Spill Stack Entry"
-#endif
-                                    ))
-            {
-                if (markImport)
-                {
-                    BADCODE("bad stack state");
-                }
-
-                // Oops. Something went wrong when spilling. Bad code.
-                verHandleVerificationFailure(block DEBUGARG(true));
-
-                goto SPILLSTACK;
-            }
+            // Spill the stack entry, and replace with the temp.
+            bool success = impSpillStackEntry(level, tempNum DEBUGARG(true) DEBUGARG("Spill Stack Entry"));
+            noway_assert(success);
         }
 
         /* Put back the 'jtrue'/'switch' if we removed it earlier */
@@ -11554,9 +11468,7 @@ SPILLSTACK:
 // Notes:
 //   Ensures that "block" is a member of the list of BBs waiting to be imported, pushing it on the list if
 //   necessary (and ensures that it is a member of the set of BB's on the list, by setting its byte in
-//   impPendingBlockMembers).  Does *NOT* change the existing "pre-state" of the block.
-//
-//   Merges the current verification state into the verification state of "block" (its "pre-state")./
+//   impPendingBlockMembers).
 //
 void Compiler::impImportBlockPending(BasicBlock* block)
 {
@@ -11572,8 +11484,7 @@ void Compiler::impImportBlockPending(BasicBlock* block)
     // Initialize bbEntryState just the first time we try to add this block to the pending list
     // Just because bbEntryState is NULL, doesn't mean the pre-state wasn't previously set
     // We use NULL to indicate the 'common' state to avoid memory allocation
-    if ((block->bbEntryState == nullptr) && !block->HasAnyFlag(BBF_IMPORTED | BBF_FAILED_VERIFICATION) &&
-        (impGetPendingBlockMember(block) == 0))
+    if ((block->bbEntryState == nullptr) && !block->HasFlag(BBF_IMPORTED) && (impGetPendingBlockMember(block) == 0))
     {
         verInitBBEntryState(block, &verCurrentState);
         assert(block->bbStkDepth == 0);
@@ -11832,10 +11743,7 @@ void Compiler::ReimportSpillClique::Visit(SpillCliqueDir predOrSucc, BasicBlock*
     {
         // If we haven't imported this block and we're not going to (because it isn't on
         // the pending list) then just ignore it for now.
-
-        // This block has either never been imported (EntryState == NULL) or it failed
-        // verification. Neither state requires us to force it to be imported now.
-        assert((blk->bbEntryState == nullptr) || blk->HasFlag(BBF_FAILED_VERIFICATION));
+        assert(blk->bbEntryState == nullptr);
         return;
     }
 
@@ -12163,20 +12071,11 @@ void Compiler::impImport()
         impPendingFree = dsc;
 
         /* Now import the block */
+        impImportBlock(dsc->pdBB);
 
-        if (dsc->pdBB->HasFlag(BBF_FAILED_VERIFICATION))
+        if (compDonotInline())
         {
-            verConvertBBToThrowVerificationException(dsc->pdBB DEBUGARG(true));
-            impEndTreeList(dsc->pdBB);
-        }
-        else
-        {
-            impImportBlock(dsc->pdBB);
-
-            if (compDonotInline())
-            {
-                return;
-            }
+            return;
         }
     }
 

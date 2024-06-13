@@ -685,15 +685,13 @@ void Compiler::fgExtendDbgScopes()
         {
             // If we get to a funclet, reset the scope lists and start again, since the block
             // offsets will be out of order compared to the previous block.
-
-            if (block->HasFlag(BBF_FUNCLET_BEG))
+            if (funIsFuncletEntry(block))
             {
                 compResetScopeLists();
                 VarSetOps::ClearD(this, inScope);
             }
 
             // Process all scopes up to the current offset
-
             if (block->bbCodeOffs != BAD_IL_OFFSET)
             {
                 compProcessScopesUntil(block->bbCodeOffs, &inScope, &Compiler::fgBeginScopeLife,
@@ -701,7 +699,6 @@ void Compiler::fgExtendDbgScopes()
             }
 
             // Assign the current set of variables that are in scope to the block variables tracking this.
-
             fgMarkInScope(block, inScope);
         }
 
