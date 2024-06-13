@@ -470,6 +470,8 @@ namespace System.Runtime.CompilerServices
             Debug.Assert(obj != null);
 
             void* elementType = RuntimeHelpers.GetMethodTable(array)->ElementType;
+            Debug.Assert(elementType != RuntimeHelpers.GetMethodTable(obj)); // Should be handled by caller
+
             CastResult result = CastCache.TryGet(s_table!, (nuint)RuntimeHelpers.GetMethodTable(obj), (nuint)elementType);
             if (result == CastResult.CanCast)
             {
