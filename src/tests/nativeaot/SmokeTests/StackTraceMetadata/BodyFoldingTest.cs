@@ -397,6 +397,14 @@ class BodyFoldingTest
                 throw new Exception();
         }
 
+        // Sanity check equality of delegates pointing to exact same thing
+        {
+            var f1 = typeof(ReflectedOnType).GetMethod(nameof(ReflectedOnType.Return1Del)).CreateDelegate<Func<object>>();
+            var f2 = typeof(ReflectedOnType).GetMethod(nameof(ReflectedOnType.Return1Del)).CreateDelegate<Func<object>>();
+            if (!f1.Equals(f2))
+                throw new Exception();
+        }
+
         ConstructedInGenericContextToGenerics<int>.Test();
         ConstructedInGenericContextToGenerics<object>.Test();
 
