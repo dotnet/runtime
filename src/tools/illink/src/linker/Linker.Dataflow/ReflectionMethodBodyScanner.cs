@@ -75,7 +75,7 @@ namespace Mono.Linker.Dataflow
 
 			if (!methodIL.Method.ReturnsVoid ()) {
 				var method = methodIL.Method;
-				var methodReturnValue = _annotations.GetMethodReturnValue (method);
+				var methodReturnValue = _annotations.GetMethodReturnValue (method, isNewObj: false);
 				if (methodReturnValue.DynamicallyAccessedMemberTypes != 0)
 					HandleAssignmentPattern (_origin, ReturnValue, methodReturnValue);
 			}
@@ -179,7 +179,8 @@ namespace Mono.Linker.Dataflow
 			Debug.Assert (callingMethodDefinition != null);
 
 			bool requiresDataFlowAnalysis = context.Annotations.FlowAnnotations.RequiresDataFlowAnalysis (calledMethodDefinition);
-			var annotatedMethodReturnValue = context.Annotations.FlowAnnotations.GetMethodReturnValue (calledMethodDefinition);
+			bool isNewObj = operation.OpCode.Code == Code.Newobj;
+			var annotatedMethodReturnValue = context.Annotations.FlowAnnotations.GetMethodReturnValue (calledMethodDefinition, isNewObj);
 			Debug.Assert (requiresDataFlowAnalysis || annotatedMethodReturnValue.DynamicallyAccessedMemberTypes == DynamicallyAccessedMemberTypes.None);
 
 			var handleCallAction = new HandleCallAction (context, operation, markStep, reflectionMarker, diagnosticContext, callingMethodDefinition, calledMethod);

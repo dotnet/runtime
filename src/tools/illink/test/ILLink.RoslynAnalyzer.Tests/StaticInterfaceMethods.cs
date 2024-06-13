@@ -17,6 +17,12 @@ namespace ILLink.RoslynAnalyzer.Tests.Inheritance.Interfaces
 		}
 
 		[Fact]
+		public Task RemovedInterfaceImplementationRemovedOverride()
+		{
+			return RunTest (allowMissingWarnings: false);
+		}
+
+		[Fact]
 		public Task StaticAbstractInterfaceMethods ()
 		{
 			return RunTest (allowMissingWarnings: false);

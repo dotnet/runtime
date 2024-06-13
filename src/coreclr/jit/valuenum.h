@@ -165,7 +165,8 @@
 // (Though some of these may be labeled "illegal").
 enum VNFunc
 {
-    // Implicitly, elements of genTreeOps here.
+#define GTNODE(en, st, cm, ivn, ok) VNF_##en,
+#include "gtlist.h"
     VNF_Boundary = GT_COUNT,
 #define ValueNumFuncDef(nm, arity, commute, knownNonNull, sharedStatic, extra) VNF_##nm,
 #include "valuenumfuncs.h"
@@ -905,6 +906,9 @@ public:
     // of the length argument to a GT_BOUNDS_CHECK node.
     bool IsVNCheckedBound(ValueNum vn);
 
+    // Returns true if the VN is known to be a cast to ulong
+    bool IsVNCastToULong(ValueNum vn, ValueNum* castedOp);
+
     // Record that a VN is known to appear as the conservative value number of the length
     // argument to a GT_BOUNDS_CHECK node.
     void SetVNIsCheckedBound(ValueNum vn);
@@ -1578,7 +1582,7 @@ private:
     {
         static bool Equals(double x, double y)
         {
-            return *(__int64*)&x == *(__int64*)&y;
+            return *(int64_t*)&x == *(int64_t*)&y;
         }
     };
 

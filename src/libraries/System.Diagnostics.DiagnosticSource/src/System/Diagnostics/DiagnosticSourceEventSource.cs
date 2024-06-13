@@ -1362,7 +1362,7 @@ namespace System.Diagnostics
                     private static PropertyFetch CreateEnumeratePropertyFetch(Type type, TypeInfo enumerableOfTType)
                     {
                         Type elemType = enumerableOfTType.GetGenericArguments()[0];
-#if NETCOREAPP
+#if NET
                         if (!RuntimeFeature.IsDynamicCodeSupported && elemType.IsValueType)
                         {
                             return new EnumeratePropertyFetch(type);
@@ -1377,7 +1377,7 @@ namespace System.Diagnostics
                         Justification = "MakeGenericType is only called when IsDynamicCodeSupported is true or only with ref types.")]
                     private static PropertyFetch CreatePropertyFetch(Type type, PropertyInfo propertyInfo)
                     {
-#if NETCOREAPP
+#if NET
                         if (!RuntimeFeature.IsDynamicCodeSupported && (propertyInfo.DeclaringType!.IsValueType || propertyInfo.PropertyType.IsValueType))
                         {
                             return new ReflectionPropertyFetch(type, propertyInfo);
@@ -1434,7 +1434,7 @@ namespace System.Diagnostics
                         private readonly StructFunc<TStruct, TProperty> _propertyFetch;
                     }
 
-#if NETCOREAPP
+#if NET
                     /// <summary>
                     /// A fetcher that can be used when MakeGenericType isn't available.
                     /// </summary>

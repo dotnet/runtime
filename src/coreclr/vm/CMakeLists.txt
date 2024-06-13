@@ -103,7 +103,6 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     peassembly.cpp
     peimage.cpp
     perfmap.cpp
-    perfinfo.cpp
     pgo.cpp
     precode.cpp
     prestub.cpp
@@ -206,7 +205,6 @@ set(VM_HEADERS_DAC_AND_WKS_COMMON
     peimagelayout.h
     peimagelayout.inl
     perfmap.h
-    perfinfo.h
     pgo.h
     precode.h
     rejit.h
@@ -620,7 +618,7 @@ if(CLR_CMAKE_TARGET_ARCH_AMD64)
         ${ARCH_SOURCES_DIR}/CallDescrWorkerAMD64.asm
         ${ARCH_SOURCES_DIR}/ComCallPreStub.asm
         ${ARCH_SOURCES_DIR}/GenericComCallStubs.asm
-        ${ARCH_SOURCES_DIR}/GenericComPlusCallStubs.asm
+        ${ARCH_SOURCES_DIR}/GenericCLRToCOMCallStubs.asm
         ${ARCH_SOURCES_DIR}/getstate.asm
         ${ARCH_SOURCES_DIR}/JitHelpers_Fast.asm
         ${ARCH_SOURCES_DIR}/JitHelpers_FastWriteBarriers.asm

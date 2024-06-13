@@ -4823,38 +4823,82 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
         return resultVN; // return the unsuccessful value
     }
 
-    // (0 + x) == x
-    // (x + 0) == x
-    // This identity does not apply for floating point (when x == -0.0).
+    ValueNum cnsVN = NoVN;
+    ValueNum opVN  = NoVN;
+
+    if (IsVNConstant(arg0VN))
+    {
+        cnsVN = arg0VN;
+        opVN  = arg1VN;
+    }
+    else if (IsVNConstant(arg1VN))
+    {
+        cnsVN = arg1VN;
+        opVN  = arg0VN;
+    }
+
     auto identityForAddition = [=]() -> ValueNum {
+        ValueNum ZeroVN = VNZeroForType(typ);
+
         if (!varTypeIsFloating(typ))
         {
-            ValueNum ZeroVN = VNZeroForType(typ);
-            if (arg0VN == ZeroVN)
+            // Handle `0 + x == x` and `x + 0 == x`
+            if (cnsVN == ZeroVN)
             {
-                return arg1VN;
-            }
-            else if (arg1VN == ZeroVN)
-            {
-                return arg0VN;
+                return opVN;
             }
         }
+        else if (cnsVN == NoVN)
+        {
+            return NoVN;
+        }
+        else
+        {
+            double val;
 
+            if (typ == TYP_FLOAT)
+            {
+                val = GetConstantSingle(cnsVN);
+            }
+            else
+            {
+                assert(typ == TYP_DOUBLE);
+                val = GetConstantDouble(cnsVN);
+            }
+
+            // Handle `x + NaN == NaN` and `NaN + x == NaN`
+            // This is safe for all floats since we do not fault for sNaN
+
+            if (FloatingPointUtils::isNaN(val))
+            {
+                return cnsVN;
+            }
+
+            // Handle `x + -0 == x` and `-0 + x == x`
+
+            if (FloatingPointUtils::isNegativeZero(val))
+            {
+                return opVN;
+            }
+
+            // We cannot handle `x + 0 == x` or `0 + x == x` since `-0 + 0 == 0`
+        }
         return NoVN;
     };
 
-    // (x - 0) == x
-    // (x - x) == 0
-    // This identity does not apply for floating point (when x == -0.0).
     auto identityForSubtraction = [=](bool ovf) -> ValueNum {
+        ValueNum ZeroVN = VNZeroForType(typ);
+
         if (!varTypeIsFloating(typ))
         {
-            ValueNum ZeroVN = VNZeroForType(typ);
+            // Handle `x - 0 == x`
             if (arg1VN == ZeroVN)
             {
                 return arg0VN;
             }
-            else if (arg0VN == arg1VN)
+
+            // Handle `x - x == 0`
+            if (arg0VN == arg1VN)
             {
                 return ZeroVN;
             }
@@ -4892,110 +4936,179 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
                 }
             }
         }
+        else if (cnsVN == NoVN)
+        {
+            return NoVN;
+        }
+        else
+        {
+            double val;
 
+            if (typ == TYP_FLOAT)
+            {
+                val = GetConstantSingle(cnsVN);
+            }
+            else
+            {
+                assert(typ == TYP_DOUBLE);
+                val = GetConstantDouble(cnsVN);
+            }
+
+            // Handle `x - NaN == NaN` and `NaN - x == NaN`
+            // This is safe for all floats since we do not fault for sNaN
+
+            if (FloatingPointUtils::isNaN(val))
+            {
+                return cnsVN;
+            }
+
+            // Handle `x - 0 == x`
+
+            if ((cnsVN == arg1VN) && FloatingPointUtils::isPositiveZero(val))
+            {
+                return opVN;
+            }
+
+            // We cannot handle `x - -0 == x` since `-0 - -0 == 0`
+            // We cannot handle `x - x == 0` since `NaN - NaN == NaN`
+            // We cannot handle other scenarios since floating-point rounds after each operation
+        }
         return NoVN;
     };
 
-    // These identities do not apply for floating point.
     auto identityForMultiplication = [=]() -> ValueNum {
+        ValueNum ZeroVN = VNZeroForType(typ);
+
+        // Handle `x * 1 == x` and `1 * x == x`
+        // This is safe for all floats since we do not fault for sNaN
+
+        if (cnsVN == VNOneForType(typ))
+        {
+            return opVN;
+        }
+
         if (!varTypeIsFloating(typ))
         {
-            // (0 * x) == 0
-            // (x * 0) == 0
-            // This identity does not apply for floating-point (when x == -0.0, NaN, +Inf, -Inf)
-            ValueNum ZeroVN = VNZeroForType(typ);
-            if (arg0VN == ZeroVN)
-            {
-                return ZeroVN;
-            }
-            else if (arg1VN == ZeroVN)
+            // Handle `0 * x == 0` and `x * 0 == 0`
+            if (cnsVN == ZeroVN)
             {
                 return ZeroVN;
             }
         }
-
-        // (x * 1) == x
-        // (1 * x) == x
-        // This is safe for all floats since we do not fault for sNaN
-        ValueNum OneVN = VNOneForType(typ);
-        if (arg0VN == OneVN)
+        else if (cnsVN == NoVN)
         {
-            return arg1VN;
+            return NoVN;
         }
-        else if (arg1VN == OneVN)
+        else
         {
-            return arg0VN;
-        }
+            double val;
 
+            if (typ == TYP_FLOAT)
+            {
+                val = GetConstantSingle(cnsVN);
+            }
+            else
+            {
+                assert(typ == TYP_DOUBLE);
+                val = GetConstantDouble(cnsVN);
+            }
+
+            // Handle `x * NaN == NaN` and `NaN * x == NaN`
+            // This is safe for all floats since we do not fault for sNaN
+
+            if (FloatingPointUtils::isNaN(val))
+            {
+                return cnsVN;
+            }
+
+            // We cannot handle `x *  0 ==  0` or ` 0 * x ==  0` since `-0 *  0 == -0`
+            // We cannot handle `x * -0 == -0` or `-0 * x == -0` since `-0 * -0 ==  0`
+        }
         return NoVN;
     };
 
     // We have ways of evaluating some binary functions.
     if (func < VNF_Boundary)
     {
-        ValueNum ZeroVN;
-        ValueNum OneVN;
-        ValueNum AllBitsVN;
-
         switch (genTreeOps(func))
         {
             case GT_ADD:
+            {
                 resultVN = identityForAddition();
                 break;
+            }
 
             case GT_SUB:
+            {
                 resultVN = identityForSubtraction(/* ovf */ false);
                 break;
+            }
 
             case GT_MUL:
+            {
                 resultVN = identityForMultiplication();
                 break;
+            }
 
             case GT_DIV:
             case GT_UDIV:
             {
-                // (x / 1) == x
+                // Handle `x / 1 == x`
                 // This is safe for all floats since we do not fault for sNaN
-                OneVN = VNOneForType(typ);
 
-                if (arg1VN == OneVN)
+                if (arg1VN == VNOneForType(typ))
                 {
                     resultVN = arg0VN;
+                }
+
+                if (cnsVN == NoVN)
+                {
+                    break;
+                }
+                else if (varTypeIsFloating(typ))
+                {
+                    double val;
+
+                    if (typ == TYP_FLOAT)
+                    {
+                        val = GetConstantSingle(cnsVN);
+                    }
+                    else
+                    {
+                        assert(typ == TYP_DOUBLE);
+                        val = GetConstantDouble(cnsVN);
+                    }
+
+                    // Handle `x / NaN == NaN` and `NaN / x == NaN`
+                    // This is safe for all floats since we do not fault for sNaN
+
+                    if (FloatingPointUtils::isNaN(val))
+                    {
+                        return cnsVN;
+                    }
                 }
                 break;
             }
 
             case GT_OR:
             {
-                // (0 | x) == x
-                // (x | 0) == x
-                ZeroVN = VNZeroForType(typ);
-                if (arg0VN == ZeroVN)
+                ValueNum ZeroVN = VNZeroForType(typ);
+
+                // Handle `0 | x == x` and `x | 0 == x`
+                if (cnsVN == ZeroVN)
                 {
-                    resultVN = arg1VN;
-                    break;
-                }
-                else if (arg1VN == ZeroVN)
-                {
-                    resultVN = arg0VN;
+                    resultVN = opVN;
                     break;
                 }
 
-                // (x | ~0) == ~0
-                // (~0 | x) == ~0
-                AllBitsVN = VNAllBitsForType(typ);
-                if (arg0VN == AllBitsVN)
+                // Handle `x | AllBitsSet == AllBitsSet` and `AllBitsSet | x == AllBitsSet`
+                if (cnsVN == VNAllBitsForType(typ))
                 {
-                    resultVN = AllBitsVN;
-                    break;
-                }
-                else if (arg1VN == AllBitsVN)
-                {
-                    resultVN = AllBitsVN;
+                    resultVN = cnsVN;
                     break;
                 }
 
-                // x | x == x
+                // Handle `x | x == x`
                 if (arg0VN == arg1VN)
                 {
                     resultVN = arg0VN;
@@ -5005,21 +5118,16 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
 
             case GT_XOR:
             {
-                // (0 ^ x) == x
-                // (x ^ 0) == x
-                ZeroVN = VNZeroForType(typ);
-                if (arg0VN == ZeroVN)
+                ValueNum ZeroVN = VNZeroForType(typ);
+
+                // Handle `0 ^ x == x` and `x ^ 0 == x`
+                if (cnsVN == ZeroVN)
                 {
-                    resultVN = arg1VN;
-                    break;
-                }
-                else if (arg1VN == ZeroVN)
-                {
-                    resultVN = arg0VN;
+                    resultVN = opVN;
                     break;
                 }
 
-                // x ^ x == 0
+                // Handle `x ^ x == 0`
                 if (arg0VN == arg1VN)
                 {
                     resultVN = ZeroVN;
@@ -5029,35 +5137,23 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
 
             case GT_AND:
             {
-                // (x & 0) == 0
-                // (0 & x) == 0
-                ZeroVN = VNZeroForType(typ);
-                if (arg0VN == ZeroVN)
-                {
-                    resultVN = ZeroVN;
-                    break;
-                }
-                else if (arg1VN == ZeroVN)
+                ValueNum ZeroVN = VNZeroForType(typ);
+
+                // Handle `x & 0 == 0` and `0 & x == 0`
+                if (cnsVN == ZeroVN)
                 {
                     resultVN = ZeroVN;
                     break;
                 }
 
-                // (x & ~0) == x
-                // (~0 & x) == x
-                AllBitsVN = VNAllBitsForType(typ);
-                if (arg0VN == AllBitsVN)
+                // Handle `x & AllBitsSet == x` and `AllBitsSet & x == x`
+                if (cnsVN == VNAllBitsForType(typ))
                 {
-                    resultVN = arg1VN;
-                    break;
-                }
-                else if (arg1VN == AllBitsVN)
-                {
-                    resultVN = arg0VN;
+                    resultVN = opVN;
                     break;
                 }
 
-                // x & x == x
+                // Handle `x & x == x`
                 if (arg0VN == arg1VN)
                 {
                     resultVN = arg0VN;
@@ -5071,20 +5167,16 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
             case GT_ROL:
             case GT_ROR:
             {
-                // (x << 0)  == x
-                // (x >> 0)  == x
-                // (x rol 0) == x
-                // (x ror 0) == x
-                ZeroVN = VNZeroForType(typ);
+                ValueNum ZeroVN = VNZeroForType(typ);
+
+                // Handle `x << 0 == x`, `x >> 0 == x`, `x rol 0 == x`, and `x ror 0 == x`
                 if (arg1VN == ZeroVN)
                 {
                     resultVN = arg0VN;
+                    break;
                 }
 
-                // (0 << x)  == 0
-                // (0 >> x)  == 0
-                // (0 rol x) == 0
-                // (0 ror x) == 0
+                // Handle `0 << x == 0`, `0 >> x == 0`, `0 rol x == 0`, and `0 ror x == 0`
                 if (arg0VN == ZeroVN)
                 {
                     resultVN = ZeroVN;
@@ -5093,156 +5185,237 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
             }
 
             case GT_EQ:
-                // (null == non-null) == false
-                // (non-null == null) == false
-                if (((arg0VN == VNForNull()) && IsKnownNonNull(arg1VN)) ||
-                    ((arg1VN == VNForNull()) && IsKnownNonNull(arg0VN)))
+            {
+                ValueNum ZeroVN = VNZeroForType(typ);
+
+                // Handle `(null == non-null) == false` and  `(non-null == null) == false`
+                if ((cnsVN == VNForNull()) && IsKnownNonNull(opVN))
                 {
                     resultVN = VNZeroForType(typ);
                     break;
                 }
-                // (relop == 0) == !relop
-                ZeroVN = VNZeroForType(typ);
-                if (IsVNRelop(arg0VN) && (arg1VN == ZeroVN))
+
+                if (IsVNRelop(opVN))
                 {
-                    ValueNum rev0VN = GetRelatedRelop(arg0VN, VN_RELATION_KIND::VRK_Reverse);
-                    if (rev0VN != NoVN)
+                    // Handle `(relop == 1) == relop` and  `(1 == relop) == relop`
+                    if (cnsVN == VNOneForType(typ))
                     {
-                        resultVN = rev0VN;
+                        resultVN = opVN;
                         break;
                     }
-                }
-                else if (IsVNRelop(arg1VN) && (arg0VN == ZeroVN))
-                {
-                    ValueNum rev1VN = GetRelatedRelop(arg1VN, VN_RELATION_KIND::VRK_Reverse);
-                    if (rev1VN != NoVN)
+
+                    // Handle `(relop == 0) == !relop` and `(0 == relop) == !relop`
+                    if (cnsVN == ZeroVN)
                     {
-                        resultVN = rev1VN;
-                        break;
+                        ValueNum revVN = GetRelatedRelop(opVN, VN_RELATION_KIND::VRK_Reverse);
+                        if (revVN != NoVN)
+                        {
+                            resultVN = revVN;
+                            break;
+                        }
                     }
                 }
-                // (relop == 1) == relop
-                OneVN = VNOneForType(typ);
-                if (IsVNRelop(arg0VN) && (arg1VN == OneVN))
-                {
-                    resultVN = arg0VN;
-                    break;
-                }
-                else if (IsVNRelop(arg1VN) && (arg0VN == OneVN))
-                {
-                    resultVN = arg1VN;
-                    break;
-                }
+
                 // (x == x) == true (integer only)
                 FALLTHROUGH;
+            }
+
             case GT_GE:
             case GT_LE:
-                // (x <= x) == true (integer only)
-                // (x >= x) == true (integer only)
-                if ((arg0VN == arg1VN) && varTypeIsIntegralOrI(TypeOfVN(arg0VN)))
+            {
+                ValueNum  ZeroVN = VNZeroForType(typ);
+                var_types opTyp  = TypeOfVN(arg0VN);
+
+                if (varTypeIsFloating(opTyp))
+                {
+                    if (cnsVN == NoVN)
+                    {
+                        break;
+                    }
+
+                    double val;
+
+                    if (opTyp == TYP_FLOAT)
+                    {
+                        val = GetConstantSingle(cnsVN);
+                    }
+                    else
+                    {
+                        assert(opTyp == TYP_DOUBLE);
+                        val = GetConstantDouble(cnsVN);
+                    }
+
+                    if (FloatingPointUtils::isNaN(val))
+                    {
+                        // Comparison with NaN is always false
+                        resultVN = ZeroVN;
+                    }
+                    break;
+                }
+
+                // The remaining only apply to integers
+                assert(varTypeIsIntegralOrI(TypeOfVN(arg0VN)));
+
+                // Handle (x == x) == true
+                if (arg0VN == arg1VN)
                 {
                     resultVN = VNOneForType(typ);
+                    break;
                 }
-                else if (varTypeIsIntegralOrI(TypeOfVN(arg0VN)))
+
+                if (genTreeOps(func) == GT_GE)
                 {
-                    ZeroVN = VNZeroForType(typ);
-                    if (genTreeOps(func) == GT_GE)
+                    // (never negative) >= 0 == true
+                    if ((arg1VN == VNZeroForType(TypeOfVN(arg1VN))) && IsVNNeverNegative(arg0VN))
                     {
-                        // (never negative) >= 0 == true
-                        if ((arg1VN == ZeroVN) && IsVNNeverNegative(arg0VN))
-                        {
-                            resultVN = VNOneForType(typ);
-                        }
+                        resultVN = VNOneForType(typ);
                     }
-                    else if (genTreeOps(func) == GT_LE)
+                }
+                else if (genTreeOps(func) == GT_LE)
+                {
+                    // 0 <= (never negative) == true
+                    if ((arg0VN == VNZeroForType(TypeOfVN(arg0VN))) && IsVNNeverNegative(arg1VN))
                     {
-                        // 0 <= (never negative) == true
-                        if ((arg0VN == ZeroVN) && IsVNNeverNegative(arg1VN))
-                        {
-                            resultVN = VNOneForType(typ);
-                        }
+                        resultVN = VNOneForType(typ);
                     }
                 }
                 break;
+            }
 
             case GT_NE:
-                // (null != non-null) == true
-                // (non-null != null) == true
-                if (((arg0VN == VNForNull()) && IsKnownNonNull(arg1VN)) ||
-                    ((arg1VN == VNForNull()) && IsKnownNonNull(arg0VN)))
+            {
+                ValueNum ZeroVN = VNZeroForType(typ);
+
+                // Handle `(relop != 0) == relop` and `(0 != relop) == relop`
+                if (IsVNRelop(opVN))
+                {
+                    if (cnsVN == ZeroVN)
+                    {
+                        resultVN = opVN;
+                        break;
+                    }
+
+                    // Handle `(relop != 1) == !relop` and `(1 != relop) == !relop`
+                    if (cnsVN == VNOneForType(typ))
+                    {
+                        ValueNum revVN = GetRelatedRelop(opVN, VN_RELATION_KIND::VRK_Reverse);
+                        if (revVN != NoVN)
+                        {
+                            resultVN = revVN;
+                            break;
+                        }
+                    }
+                }
+
+                var_types opTyp = TypeOfVN(arg0VN);
+
+                if (varTypeIsFloating(opTyp))
+                {
+                    if (cnsVN == NoVN)
+                    {
+                        break;
+                    }
+
+                    double val;
+
+                    if (opTyp == TYP_FLOAT)
+                    {
+                        val = GetConstantSingle(cnsVN);
+                    }
+                    else
+                    {
+                        assert(opTyp == TYP_DOUBLE);
+                        val = GetConstantDouble(cnsVN);
+                    }
+
+                    if (FloatingPointUtils::isNaN(val))
+                    {
+                        // Comparison with NaN is always true
+                        resultVN = VNOneForType(typ);
+                    }
+                    break;
+                }
+
+                // The remaining only apply to integers
+                assert(varTypeIsIntegralOrI(TypeOfVN(arg0VN)));
+
+                // Handle `(null != non-null) == true` and `(non-null != null) == true`
+                if ((cnsVN == VNForNull()) && IsKnownNonNull(opVN))
                 {
                     resultVN = VNOneForType(typ);
                     break;
                 }
-                // (x != x) == false (integer only)
-                else if ((arg0VN == arg1VN) && varTypeIsIntegralOrI(TypeOfVN(arg0VN)))
-                {
-                    resultVN = VNZeroForType(typ);
-                    break;
-                }
-                // (relop != 0) == relop
-                ZeroVN = VNZeroForType(typ);
-                if (IsVNRelop(arg0VN) && (arg1VN == ZeroVN))
-                {
-                    resultVN = arg0VN;
-                    break;
-                }
-                else if (IsVNRelop(arg1VN) && (arg0VN == ZeroVN))
-                {
-                    resultVN = arg1VN;
-                    break;
-                }
-                // (relop != 1) == !relop
-                OneVN = VNOneForType(typ);
-                if (IsVNRelop(arg0VN) && (arg1VN == OneVN))
-                {
-                    ValueNum rev0VN = GetRelatedRelop(arg0VN, VN_RELATION_KIND::VRK_Reverse);
-                    if (rev0VN != NoVN)
-                    {
-                        resultVN = rev0VN;
-                        break;
-                    }
-                }
-                else if (IsVNRelop(arg1VN) && (arg0VN == OneVN))
-                {
-                    ValueNum rev1VN = GetRelatedRelop(arg1VN, VN_RELATION_KIND::VRK_Reverse);
-                    if (rev1VN != NoVN)
-                    {
-                        resultVN = rev1VN;
-                        break;
-                    }
-                }
-                break;
 
-            case GT_GT:
-            case GT_LT:
-                // (x > x) == false (integer & floating point)
-                // (x < x) == false (integer & floating point)
+                // Handle `(x != x) == false`
                 if (arg0VN == arg1VN)
                 {
                     resultVN = VNZeroForType(typ);
+                    break;
                 }
-                else if (varTypeIsIntegralOrI(TypeOfVN(arg0VN)))
+                break;
+            }
+
+            case GT_GT:
+            case GT_LT:
+            {
+                ValueNum ZeroVN = VNZeroForType(typ);
+
+                // Handle `(x > x) == false` and `x < x == false`
+                if (arg0VN == arg1VN)
                 {
-                    ZeroVN = VNZeroForType(typ);
-                    if (genTreeOps(func) == GT_LT)
+                    resultVN = ZeroVN;
+                }
+
+                var_types opTyp = TypeOfVN(arg0VN);
+
+                if (varTypeIsFloating(opTyp))
+                {
+                    if (cnsVN == NoVN)
                     {
-                        // (never negative) < 0 == false
-                        if ((arg1VN == ZeroVN) && IsVNNeverNegative(arg0VN))
-                        {
-                            resultVN = ZeroVN;
-                        }
+                        break;
                     }
-                    else if (genTreeOps(func) == GT_GT)
+
+                    double val;
+
+                    if (opTyp == TYP_FLOAT)
                     {
-                        // 0 > (never negative) == false
-                        if ((arg0VN == ZeroVN) && IsVNNeverNegative(arg1VN))
-                        {
-                            resultVN = ZeroVN;
-                        }
+                        val = GetConstantSingle(cnsVN);
+                    }
+                    else
+                    {
+                        assert(opTyp == TYP_DOUBLE);
+                        val = GetConstantDouble(cnsVN);
+                    }
+
+                    if (FloatingPointUtils::isNaN(val))
+                    {
+                        // Comparison with NaN is always false
+                        resultVN = ZeroVN;
+                    }
+                    break;
+                }
+
+                // The remaining only apply to integers
+                assert(varTypeIsIntegralOrI(TypeOfVN(arg0VN)));
+
+                if (genTreeOps(func) == GT_LT)
+                {
+                    // (never negative) < 0 == false
+                    if ((arg1VN == VNZeroForType(TypeOfVN(arg1VN))) && IsVNNeverNegative(arg0VN))
+                    {
+                        resultVN = ZeroVN;
+                    }
+                }
+                else if (genTreeOps(func) == GT_GT)
+                {
+                    // 0 > (never negative) == false
+                    if ((arg0VN == VNZeroForType(TypeOfVN(arg0VN))) && IsVNNeverNegative(arg1VN))
+                    {
+                        resultVN = ZeroVN;
                     }
                 }
                 break;
+            }
 
             default:
                 break;
@@ -5254,53 +5427,101 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
         {
             case VNF_ADD_OVF:
             case VNF_ADD_UN_OVF:
+            {
                 resultVN = identityForAddition();
                 break;
+            }
 
             case VNF_SUB_OVF:
             case VNF_SUB_UN_OVF:
+            {
                 resultVN = identityForSubtraction(/* ovf */ true);
                 break;
+            }
 
             case VNF_MUL_OVF:
             case VNF_MUL_UN_OVF:
+            {
                 resultVN = identityForMultiplication();
                 break;
+            }
 
             case VNF_LT_UN:
-                // (x < 0) == false
-                // (x < x) == false
+            {
+                // Handle `(x < 0) == false` and `(x < x) == false`
                 std::swap(arg0VN, arg1VN);
                 FALLTHROUGH;
+            }
+
             case VNF_GT_UN:
-                // (0 > x) == false
-                // (x > x) == false
-                // None of the above identities apply to floating point comparisons.
-                // For example, (NaN > NaN) is true instead of false because these are
-                // unordered comparisons.
-                if (varTypeIsIntegralOrI(TypeOfVN(arg0VN)) &&
-                    ((arg0VN == VNZeroForType(TypeOfVN(arg0VN))) || (arg0VN == arg1VN)))
+            {
+                ValueNum ZeroVN = VNZeroForType(typ);
+
+                // Handle `(0 > x) == false` and `(x > x) == false`
+
+                var_types opTyp = TypeOfVN(arg0VN);
+
+                if (varTypeIsFloating(opTyp))
                 {
-                    resultVN = VNZeroForType(typ);
+                    if (cnsVN == NoVN)
+                    {
+                        break;
+                    }
+
+                    double val;
+
+                    if (opTyp == TYP_FLOAT)
+                    {
+                        val = GetConstantSingle(cnsVN);
+                    }
+                    else
+                    {
+                        assert(opTyp == TYP_DOUBLE);
+                        val = GetConstantDouble(cnsVN);
+                    }
+
+                    if (FloatingPointUtils::isNaN(val))
+                    {
+                        // Unordered comparison with NaN is always true
+                        resultVN = VNOneForType(typ);
+                    }
+                    break;
+                }
+
+                assert(varTypeIsIntegralOrI(TypeOfVN(arg0VN)));
+
+                if (((arg0VN == VNZeroForType(TypeOfVN(arg0VN))) || (arg0VN == arg1VN)))
+                {
+                    resultVN = ZeroVN;
                 }
                 break;
+            }
 
             case VNF_GE_UN:
-                // (x >= 0) == true
-                // (x >= x) == true
+            {
+                // Handle `(x >= 0) == true` and `(x >= x) == true`
                 std::swap(arg0VN, arg1VN);
                 FALLTHROUGH;
+            }
+
             case VNF_LE_UN:
-                // (0 <= x) == true
-                // (x <= x) == true
-                // Unlike (x < x) and (x > x), (x >= x) and (x <= x) also apply to floating
-                // point comparisons: x is either equal to itself or is unordered if it's NaN.
-                if ((varTypeIsIntegralOrI(TypeOfVN(arg0VN)) && (arg0VN == VNZeroForType(TypeOfVN(arg0VN)))) ||
-                    (arg0VN == arg1VN))
+            {
+                // Handle `(0 <= x) == true` and `(x <= x) == true`
+
+                if (arg0VN == arg1VN)
+                {
+                    // This is safe for floating-point since unordered comparison with NaN is always true
+                    resultVN = VNOneForType(typ);
+                    break;
+                }
+
+                if (varTypeIsIntegralOrI(TypeOfVN(arg0VN)) && (arg0VN == VNZeroForType(TypeOfVN(arg0VN))))
                 {
                     resultVN = VNOneForType(typ);
+                    break;
                 }
                 break;
+            }
 
             default:
                 break;
@@ -6521,6 +6742,7 @@ bool ValueNumStore::IsVNPositiveInt32Constant(ValueNum vn)
 // IsVNArrLenUnsignedBound: Checks if the specified vn represents an expression
 //    of one of the following forms:
 //    - "(uint)i < (uint)len" that implies (0 <= i < len)
+//    - "(ulong)i < (ulong)len" that implies (0 <= i < len)
 //    - "const < (uint)len" that implies "len > const"
 //    - "const <= (uint)len" that implies "len > const - 1"
 //
@@ -6544,49 +6766,57 @@ bool ValueNumStore::IsVNUnsignedCompareCheckedBound(ValueNum vn, UnsignedCompare
         if ((funcApp.m_func == VNF_LT_UN) || (funcApp.m_func == VNF_GE_UN))
         {
             // We only care about "(uint)i < (uint)len" and its negation "(uint)i >= (uint)len"
-            if (IsVNCheckedBound(funcApp.m_args[1]))
+            // Same for (ulong)
+            ValueNum vnBound  = funcApp.m_args[1];
+            ValueNum vnIdx    = funcApp.m_args[0];
+            ValueNum vnCastOp = NoVN;
+            if (IsVNCheckedBound(vnBound) || (IsVNCastToULong(vnBound, &vnCastOp) && IsVNCheckedBound(vnCastOp)))
             {
-                info->vnIdx   = funcApp.m_args[0];
+                info->vnIdx   = vnIdx;
                 info->cmpOper = funcApp.m_func;
-                info->vnBound = funcApp.m_args[1];
+                info->vnBound = (vnCastOp != NoVN) ? vnCastOp : vnBound;
                 return true;
             }
             // We care about (uint)len < constant and its negation "(uint)len >= constant"
-            else if (IsVNPositiveInt32Constant(funcApp.m_args[1]) && IsVNCheckedBound(funcApp.m_args[0]))
+            else if (IsVNPositiveInt32Constant(vnBound) && IsVNCheckedBound(vnIdx))
             {
                 // Change constant < len into (uint)len >= (constant - 1)
                 // to make consuming this simpler (and likewise for it's negation).
-                INT32 validIndex = ConstantValue<INT32>(funcApp.m_args[1]) - 1;
+                INT32 validIndex = ConstantValue<INT32>(vnBound) - 1;
                 assert(validIndex >= 0);
 
                 info->vnIdx   = VNForIntCon(validIndex);
                 info->cmpOper = (funcApp.m_func == VNF_GE_UN) ? VNF_LT_UN : VNF_GE_UN;
-                info->vnBound = funcApp.m_args[0];
+                info->vnBound = vnIdx;
                 return true;
             }
         }
         else if ((funcApp.m_func == VNF_GT_UN) || (funcApp.m_func == VNF_LE_UN))
         {
             // We only care about "(uint)a.len > (uint)i" and its negation "(uint)a.len <= (uint)i"
-            if (IsVNCheckedBound(funcApp.m_args[0]))
+            // Same for (ulong)
+            ValueNum vnBound  = funcApp.m_args[0];
+            ValueNum vnIdx    = funcApp.m_args[1];
+            ValueNum vnCastOp = NoVN;
+            if (IsVNCheckedBound(vnBound) || (IsVNCastToULong(vnBound, &vnCastOp) && IsVNCheckedBound(vnCastOp)))
             {
-                info->vnIdx = funcApp.m_args[1];
+                info->vnIdx = vnIdx;
                 // Let's keep a consistent operand order - it's always i < len, never len > i
                 info->cmpOper = (funcApp.m_func == VNF_GT_UN) ? VNF_LT_UN : VNF_GE_UN;
-                info->vnBound = funcApp.m_args[0];
+                info->vnBound = (vnCastOp != NoVN) ? vnCastOp : vnBound;
                 return true;
             }
             // Look for constant > (uint)len and its negation "constant <= (uint)len"
-            else if (IsVNPositiveInt32Constant(funcApp.m_args[0]) && IsVNCheckedBound(funcApp.m_args[1]))
+            else if (IsVNPositiveInt32Constant(vnBound) && IsVNCheckedBound(vnIdx))
             {
                 // Change constant <= (uint)len to (constant - 1) < (uint)len
                 // to make consuming this simpler (and likewise for it's negation).
-                INT32 validIndex = ConstantValue<INT32>(funcApp.m_args[0]) - 1;
+                INT32 validIndex = ConstantValue<INT32>(vnBound) - 1;
                 assert(validIndex >= 0);
 
                 info->vnIdx   = VNForIntCon(validIndex);
                 info->cmpOper = (funcApp.m_func == VNF_LE_UN) ? VNF_LT_UN : VNF_GE_UN;
-                info->vnBound = funcApp.m_args[1];
+                info->vnBound = vnIdx;
                 return true;
             }
         }
@@ -6820,6 +7050,33 @@ bool ValueNumStore::IsVNCheckedBound(ValueNum vn)
         return true;
     }
 
+    return false;
+}
+
+//----------------------------------------------------------------------------------
+// IsVNCastToULong: checks whether the given VN represents (ulong)op cast
+//
+// Arguments:
+//    vn       - VN, presumably, representing (ulong)op cast
+//    castedOp - [Out] VN of op being cast
+//
+// Return Value:
+//    true if the given VN represents (ulong)op cast
+//
+bool ValueNumStore::IsVNCastToULong(ValueNum vn, ValueNum* castedOp)
+{
+    VNFuncApp funcApp;
+    if (GetVNFunc(vn, &funcApp) && (funcApp.m_func == VNF_Cast))
+    {
+        var_types castToType;
+        bool      srcIsUnsigned;
+        GetCastOperFromVN(funcApp.m_args[1], &castToType, &srcIsUnsigned);
+        if (srcIsUnsigned && (castToType == TYP_LONG))
+        {
+            *castedOp = funcApp.m_args[0];
+            return true;
+        }
+    }
     return false;
 }
 
@@ -7289,6 +7546,8 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(var_types      type,
 #if defined(TARGET_XARCH)
             case NI_AVX512CD_LeadingZeroCount:
             case NI_AVX512CD_VL_LeadingZeroCount:
+            case NI_AVX10v1_V512_LeadingZeroCount:
+            case NI_AVX10v1_LeadingZeroCount:
             {
                 return EvaluateUnarySimd(this, GT_LZCNT, /* scalar */ false, type, baseType, arg0VN);
             }
@@ -7488,6 +7747,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_AVX2_And:
             case NI_AVX512F_And:
             case NI_AVX512DQ_And:
+            case NI_AVX10v1_V512_And:
 #endif
             {
                 return EvaluateBinarySimd(this, GT_AND, /* scalar */ false, type, baseType, arg0VN, arg1VN);
@@ -7505,6 +7765,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_AVX2_AndNot:
             case NI_AVX512F_AndNot:
             case NI_AVX512DQ_AndNot:
+            case NI_AVX10v1_V512_AndNot:
             {
                 // xarch does: ~arg0VN & arg1VN
                 return EvaluateBinarySimd(this, GT_AND_NOT, /* scalar */ false, type, baseType, arg1VN, arg0VN);
@@ -7583,6 +7844,8 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_AVX512BW_MultiplyLow:
             case NI_AVX512DQ_MultiplyLow:
             case NI_AVX512DQ_VL_MultiplyLow:
+            case NI_AVX10v1_MultiplyLow:
+            case NI_AVX10v1_V512_MultiplyLow:
 #endif
             {
                 return EvaluateBinarySimd(this, GT_MUL, /* scalar */ false, type, baseType, arg0VN, arg1VN);
@@ -7607,6 +7870,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_AVX2_Or:
             case NI_AVX512F_Or:
             case NI_AVX512DQ_Or:
+            case NI_AVX10v1_V512_Or:
 #endif
             {
                 return EvaluateBinarySimd(this, GT_OR, /* scalar */ false, type, baseType, arg0VN, arg1VN);
@@ -7615,12 +7879,14 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
 #ifdef TARGET_XARCH
             case NI_AVX512F_RotateLeft:
             case NI_AVX512F_VL_RotateLeft:
+            case NI_AVX10v1_RotateLeft:
             {
                 return EvaluateBinarySimd(this, GT_ROL, /* scalar */ false, type, baseType, arg0VN, arg1VN);
             }
 
             case NI_AVX512F_RotateRight:
             case NI_AVX512F_VL_RotateRight:
+            case NI_AVX10v1_RotateRight:
             {
                 return EvaluateBinarySimd(this, GT_ROR, /* scalar */ false, type, baseType, arg0VN, arg1VN);
             }
@@ -7671,6 +7937,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_AVX512F_ShiftRightArithmetic:
             case NI_AVX512F_VL_ShiftRightArithmetic:
             case NI_AVX512BW_ShiftRightArithmetic:
+            case NI_AVX10v1_ShiftRightArithmetic:
 #endif
             {
 #ifdef TARGET_XARCH
@@ -7789,6 +8056,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_AVX2_Xor:
             case NI_AVX512F_Xor:
             case NI_AVX512DQ_Xor:
+            case NI_AVX10v1_V512_Xor:
 #endif
             {
                 return EvaluateBinarySimd(this, GT_XOR, /* scalar */ false, type, baseType, arg0VN, arg1VN);
@@ -7839,6 +8107,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_AVX2_And:
             case NI_AVX512F_And:
             case NI_AVX512DQ_And:
+            case NI_AVX10v1_V512_And:
 #endif
             {
                 // Handle `x & 0 == 0` and `0 & x == 0`
@@ -7868,6 +8137,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_AVX2_AndNot:
             case NI_AVX512F_AndNot:
             case NI_AVX512DQ_AndNot:
+            case NI_AVX10v1_V512_AndNot:
             {
 #ifdef TARGET_ARM64
                 if (cnsVN == arg0VN)
@@ -7987,6 +8257,8 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_AVX512BW_MultiplyLow:
             case NI_AVX512DQ_MultiplyLow:
             case NI_AVX512DQ_VL_MultiplyLow:
+            case NI_AVX10v1_MultiplyLow:
+            case NI_AVX10v1_V512_MultiplyLow:
 #endif
             {
                 if (!varTypeIsFloating(baseType))
@@ -8030,6 +8302,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_AVX2_Or:
             case NI_AVX512F_Or:
             case NI_AVX512DQ_Or:
+            case NI_AVX10v1_V512_Or:
 #endif
             {
                 // Handle `x | 0 == x` and `0 | x == x`
@@ -8068,6 +8341,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_AVX512BW_ShiftLeftLogical:
             case NI_AVX512BW_ShiftRightArithmetic:
             case NI_AVX512BW_ShiftRightLogical:
+            case NI_AVX10v1_ShiftRightArithmetic:
 #endif
             {
                 // Handle `x <<  0 == x` and `0 <<  x == 0`
@@ -8119,6 +8393,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_AVX2_Xor:
             case NI_AVX512F_Xor:
             case NI_AVX512DQ_Xor:
+            case NI_AVX10v1_V512_Xor:
 #endif
             {
                 // Handle `x | 0 == x` and `0 | x == x`
@@ -8148,6 +8423,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_AVX2_And:
             case NI_AVX512F_And:
             case NI_AVX512DQ_And:
+            case NI_AVX10v1_V512_And:
 #endif
             {
                 // Handle `x & x == x`
@@ -8163,6 +8439,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_AVX2_AndNot:
             case NI_AVX512F_AndNot:
             case NI_AVX512DQ_AndNot:
+            case NI_AVX10v1_V512_AndNot:
             {
                 // Handle `x & ~x == 0`
                 return VNZeroForType(type);
@@ -8178,6 +8455,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_AVX2_Or:
             case NI_AVX512F_Or:
             case NI_AVX512DQ_Or:
+            case NI_AVX10v1_V512_Or:
 #endif
             {
                 // Handle `x | x == x`
@@ -8215,6 +8493,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_AVX2_Xor:
             case NI_AVX512F_Xor:
             case NI_AVX512DQ_Xor:
+            case NI_AVX10v1_V512_Xor:
 #endif
             {
                 // Handle `x ^ x == 0`
@@ -9971,7 +10250,7 @@ PhaseStatus Compiler::fgValueNumber()
             ssaDef->m_vnPair.SetBoth(initVal);
             ssaDef->SetBlock(fgFirstBB);
         }
-        else if (info.compInitMem || varDsc->lvMustInit ||
+        else if (info.compInitMem || varDsc->lvMustInit || (varTypeIsGC(varDsc) && !varDsc->lvHasExplicitInit) ||
                  VarSetOps::IsMember(this, fgFirstBB->bbLiveIn, varDsc->lvVarIndex))
         {
             // The last clause covers the use-before-def variables (the ones that are live-in to the first block),
@@ -12129,24 +12408,13 @@ void Compiler::fgValueNumberHWIntrinsic(GenTreeHWIntrinsic* tree)
     // Some intrinsics should always be unique
     bool makeUnique = false;
 
-#if defined(TARGET_XARCH)
-    switch (intrinsicId)
+    if (tree->OperIsConvertMaskToVector())
     {
-        case NI_AVX512F_ConvertMaskToVector:
-        {
-            // We want to ensure that we get a TYP_MASK local to
-            // ensure the relevant optimizations can kick in
+        // We want to ensure that we get a TYP_MASK local to
+        // ensure the relevant optimizations can kick in
 
-            makeUnique = true;
-            break;
-        }
-
-        default:
-        {
-            break;
-        }
+        makeUnique = true;
     }
-#endif // TARGET_XARCH
 
     if (makeUnique)
     {
@@ -12921,23 +13189,35 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
             vnf = opts.IsReadyToRun() ? VNF_JitReadyToRunNewArr : VNF_JitNewArr;
             break;
 
-        case CORINFO_HELP_GETGENERICS_GCSTATIC_BASE:
-            vnf = VNF_GetgenericsGcstaticBase;
+        case CORINFO_HELP_GET_GCSTATIC_BASE:
+            vnf = VNF_GetGcstaticBase;
             break;
-        case CORINFO_HELP_GETGENERICS_NONGCSTATIC_BASE:
-            vnf = VNF_GetgenericsNongcstaticBase;
+        case CORINFO_HELP_GET_NONGCSTATIC_BASE:
+            vnf = VNF_GetNongcstaticBase;
             break;
-        case CORINFO_HELP_GETSHARED_GCSTATIC_BASE:
-            vnf = VNF_GetsharedGcstaticBase;
+        case CORINFO_HELP_GETDYNAMIC_GCSTATIC_BASE:
+            vnf = VNF_GetdynamicGcstaticBase;
             break;
-        case CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE:
-            vnf = VNF_GetsharedNongcstaticBase;
+        case CORINFO_HELP_GETDYNAMIC_NONGCSTATIC_BASE:
+            vnf = VNF_GetdynamicNongcstaticBase;
             break;
-        case CORINFO_HELP_GETSHARED_GCSTATIC_BASE_NOCTOR:
-            vnf = VNF_GetsharedGcstaticBaseNoctor;
+        case CORINFO_HELP_GETDYNAMIC_GCSTATIC_BASE_NOCTOR:
+            vnf = VNF_GetdynamicGcstaticBaseNoctor;
             break;
-        case CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_NOCTOR:
-            vnf = VNF_GetsharedNongcstaticBaseNoctor;
+        case CORINFO_HELP_GETDYNAMIC_NONGCSTATIC_BASE_NOCTOR:
+            vnf = VNF_GetdynamicNongcstaticBaseNoctor;
+            break;
+        case CORINFO_HELP_GETPINNED_GCSTATIC_BASE:
+            vnf = VNF_GetpinnedGcstaticBase;
+            break;
+        case CORINFO_HELP_GETPINNED_NONGCSTATIC_BASE:
+            vnf = VNF_GetpinnedNongcstaticBase;
+            break;
+        case CORINFO_HELP_GETPINNED_GCSTATIC_BASE_NOCTOR:
+            vnf = VNF_GetpinnedGcstaticBaseNoctor;
+            break;
+        case CORINFO_HELP_GETPINNED_NONGCSTATIC_BASE_NOCTOR:
+            vnf = VNF_GetpinnedNongcstaticBaseNoctor;
             break;
         case CORINFO_HELP_READYTORUN_GCSTATIC_BASE:
             vnf = VNF_ReadyToRunStaticBaseGC;
@@ -12957,44 +13237,38 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
         case CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE:
             vnf = VNF_ReadyToRunGenericStaticBase;
             break;
-        case CORINFO_HELP_GETSHARED_GCSTATIC_BASE_DYNAMICCLASS:
-            vnf = VNF_GetsharedGcstaticBaseDynamicclass;
+        case CORINFO_HELP_GET_GCTHREADSTATIC_BASE:
+            vnf = VNF_GetGcthreadstaticBase;
             break;
-        case CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_DYNAMICCLASS:
-            vnf = VNF_GetsharedNongcstaticBaseDynamicclass;
+        case CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE:
+            vnf = VNF_GetNongcthreadstaticBase;
             break;
-        case CORINFO_HELP_CLASSINIT_SHARED_DYNAMICCLASS:
-            vnf = VNF_ClassinitSharedDynamicclass;
+        case CORINFO_HELP_GET_GCTHREADSTATIC_BASE_NOCTOR:
+            vnf = VNF_GetGcthreadstaticBaseNoctor;
             break;
-        case CORINFO_HELP_GETGENERICS_GCTHREADSTATIC_BASE:
-            vnf = VNF_GetgenericsGcthreadstaticBase;
+        case CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE_NOCTOR:
+            vnf = VNF_GetNongcthreadstaticBaseNoctor;
             break;
-        case CORINFO_HELP_GETGENERICS_NONGCTHREADSTATIC_BASE:
-            vnf = VNF_GetgenericsNongcthreadstaticBase;
+        case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE:
+            vnf = VNF_GetdynamicGcthreadstaticBase;
             break;
-        case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE:
-            vnf = VNF_GetsharedGcthreadstaticBase;
+        case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE:
+            vnf = VNF_GetdynamicNongcthreadstaticBase;
             break;
-        case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE:
-            vnf = VNF_GetsharedNongcthreadstaticBase;
+        case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR:
+            vnf = VNF_GetdynamicGcthreadstaticBaseNoctor;
             break;
-        case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR:
-            vnf = VNF_GetsharedGcthreadstaticBaseNoctor;
+        case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR:
+            vnf = VNF_GetdynamicNongcthreadstaticBaseNoctor;
             break;
-        case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
-            vnf = VNF_GetsharedGcthreadstaticBaseNoctorOptimized;
+        case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
+            vnf = VNF_GetdynamicGcthreadstaticBaseNoctorOptimized;
             break;
-        case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR:
-            vnf = VNF_GetsharedNongcthreadstaticBaseNoctor;
+        case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
+            vnf = VNF_GetdynamicNongcthreadstaticBaseNoctorOptimized;
             break;
-        case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
-            vnf = VNF_GetsharedNongcthreadstaticBaseNoctorOptimized;
-            break;
-        case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_DYNAMICCLASS:
-            vnf = VNF_GetsharedGcthreadstaticBaseDynamicclass;
-            break;
-        case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_DYNAMICCLASS:
-            vnf = VNF_GetsharedNongcthreadstaticBaseDynamicclass;
+        case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2:
+            vnf = VNF_GetdynamicNongcthreadstaticBaseNoctorOptimized2;
             break;
         case CORINFO_HELP_GETSTATICFIELDADDR_TLS:
             vnf = VNF_GetStaticAddrTLS;
@@ -13182,33 +13456,6 @@ bool Compiler::fgValueNumberHelperCall(GenTreeCall* call)
                 break;
             }
 
-            case CORINFO_HELP_GETSHARED_GCSTATIC_BASE:
-            case CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE:
-            case CORINFO_HELP_GETSHARED_GCSTATIC_BASE_DYNAMICCLASS:
-            case CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_DYNAMICCLASS:
-            case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE:
-            case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE:
-            case CORINFO_HELP_CLASSINIT_SHARED_DYNAMICCLASS:
-            case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_DYNAMICCLASS:
-            case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_DYNAMICCLASS:
-                // These all take (Module*, class ID) as parameters.
-                //
-                // Strictly speaking the exact possible exception thrown by the
-                // static constructor depends on heap state too, but given that
-                // the constructor is only invoked once we can model that for
-                // the same class the same exceptions are thrown. Downstream
-                // code like CSE/copy prop that makes use VNs innately need to
-                // establish some form of dominance around the individual trees
-                // that makes this ok.
-                //
-                vnpExc = vnStore->VNPExcSetSingleton(
-                    vnStore->VNPairForFunc(TYP_REF, VNF_ClassInitExc,
-                                           vnStore->VNPNormalPair(
-                                               call->gtArgs.GetUserArgByIndex(0)->GetNode()->gtVNPair),
-                                           vnStore->VNPNormalPair(
-                                               call->gtArgs.GetUserArgByIndex(1)->GetNode()->gtVNPair)));
-                break;
-
 #ifdef FEATURE_READYTORUN
             case CORINFO_HELP_READYTORUN_GCSTATIC_BASE:
             case CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE:
@@ -13225,13 +13472,43 @@ bool Compiler::fgValueNumberHelperCall(GenTreeCall* call)
             }
 #endif
 
-            case CORINFO_HELP_GETGENERICS_GCTHREADSTATIC_BASE:
-            case CORINFO_HELP_GETGENERICS_NONGCTHREADSTATIC_BASE:
-            case CORINFO_HELP_GETGENERICS_GCSTATIC_BASE:
-            case CORINFO_HELP_GETGENERICS_NONGCSTATIC_BASE:
+            case CORINFO_HELP_GET_GCSTATIC_BASE:
+            case CORINFO_HELP_GET_NONGCSTATIC_BASE:
+            case CORINFO_HELP_GET_GCSTATIC_BASE_NOCTOR:
+            case CORINFO_HELP_GET_NONGCSTATIC_BASE_NOCTOR:
+            case CORINFO_HELP_GET_GCTHREADSTATIC_BASE:
+            case CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE:
+            case CORINFO_HELP_GET_GCTHREADSTATIC_BASE_NOCTOR:
+            case CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE_NOCTOR:
                 // These take class handles as parameters.
                 vnpExc = vnStore->VNPExcSetSingleton(
                     vnStore->VNPairForFunc(TYP_REF, VNF_ClassInitGenericExc,
+                                           vnStore->VNPNormalPair(
+                                               call->gtArgs.GetUserArgByIndex(0)->GetNode()->gtVNPair)));
+                break;
+
+            case CORINFO_HELP_GETDYNAMIC_GCSTATIC_BASE:
+            case CORINFO_HELP_GETDYNAMIC_NONGCSTATIC_BASE:
+            case CORINFO_HELP_GETPINNED_GCSTATIC_BASE:
+            case CORINFO_HELP_GETPINNED_NONGCSTATIC_BASE:
+            case CORINFO_HELP_GETDYNAMIC_GCSTATIC_BASE_NOCTOR:
+            case CORINFO_HELP_GETDYNAMIC_NONGCSTATIC_BASE_NOCTOR:
+            case CORINFO_HELP_GETPINNED_GCSTATIC_BASE_NOCTOR:
+            case CORINFO_HELP_GETPINNED_NONGCSTATIC_BASE_NOCTOR:
+                // These take DynamicClassInfo handles as parameters.
+                vnpExc = vnStore->VNPExcSetSingleton(
+                    vnStore->VNPairForFunc(TYP_REF, VNF_DynamicClassInitExc,
+                                           vnStore->VNPNormalPair(
+                                               call->gtArgs.GetUserArgByIndex(0)->GetNode()->gtVNPair)));
+                break;
+
+            case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE:
+            case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE:
+            case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR:
+            case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR:
+                // These take ThreadStaticInfo as parameters.
+                vnpExc = vnStore->VNPExcSetSingleton(
+                    vnStore->VNPairForFunc(TYP_REF, VNF_ThreadClassInitExc,
                                            vnStore->VNPNormalPair(
                                                call->gtArgs.GetUserArgByIndex(0)->GetNode()->gtVNPair)));
                 break;

@@ -8,7 +8,7 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public class ConstructedEETypeNode : EETypeNode
+    public sealed class ConstructedEETypeNode : EETypeNode
     {
         public ConstructedEETypeNode(NodeFactory factory, TypeDesc type) : base(factory, type)
         {

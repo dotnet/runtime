@@ -5,6 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="ProductVersionInfoGenerator.cs" />
     <Compile Include="EventSourceGenerator.cs" />
     <Compile Include="EventSourceGenerator.Emitter.cs" />
     <Compile Include="EventSourceGenerator.Parser.cs" />
@@ -20,4 +21,5 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" PrivateAssets="all" Version="$(MicrosoftCodeAnalysisVersion_LatestVS)" />
   </ItemGroup>
+
 </Project>

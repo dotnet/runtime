@@ -53,6 +53,7 @@
 #include <mono/metadata/marshal.h>
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/threads-types.h>
+#include <mono/metadata/reflection-internals.h>
 #include <mono/metadata/mono-endian.h>
 #include <mono/utils/mono-logger-internals.h>
 #include <mono/utils/mono-mmap.h>
@@ -106,9 +107,9 @@ struct MonoAotModule {
 	GHashTable *name_cache;
 	GHashTable *extra_methods;
 	/* Maps methods to their code */
-	GHashTable *method_to_code;
+	dn_simdhash_ptr_ptr_t *method_to_code;
 	/* Maps pointers into the method info to the methods themselves */
-	GHashTable *method_ref_to_method;
+	dn_simdhash_ptr_ptr_t *method_ref_to_method;
 	MonoAssemblyName *image_names;
 	char **image_guids;
 	MonoAssembly *assembly;
@@ -1077,9 +1078,22 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 					return FALSE;
 				MonoUnsafeAccessorKind kind = (MonoUnsafeAccessorKind) decode_value (p, &p);
 				uint32_t name_len = decode_value (p, &p);
-				const char *member_name = (const char*)p;
-				p += name_len + 1;
-				ref->method = mono_marshal_get_unsafe_accessor_wrapper (m, kind, member_name);
+				const char *member_name = NULL;
+				if (name_len > 0) {
+					member_name = (const char*)p;
+					p += name_len + 1;
+				}
+				int32_t inflated = decode_value (p, &p);
+				if (inflated) {
+					MonoGenericContext ctx = {0,};
+					decode_generic_context (module, &ctx, p, &p, error);
+					mono_error_assert_ok (error);
+					ref->method = mini_inflate_unsafe_accessor_wrapper (m, &ctx, kind, member_name, error);
+					if (!is_ok (error))
+						return FALSE;
+				} else {
+					ref->method = mono_marshal_get_unsafe_accessor_wrapper (m, kind, member_name);
+				}
 			} else if (subtype == WRAPPER_SUBTYPE_GSHAREDVT_IN) {
 				ref->method = mono_marshal_get_gsharedvt_in_wrapper ();
 			} else if (subtype == WRAPPER_SUBTYPE_GSHAREDVT_OUT) {
@@ -2159,7 +2173,8 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 	amodule->llvm_got = g_malloc0 (sizeof (gpointer) * amodule->info.llvm_got_size);
 	amodule->globals = globals;
 	amodule->sofile = sofile;
-	amodule->method_to_code = g_hash_table_new (mono_aligned_addr_hash, NULL);
+	// FIXME: Select a better default size
+	amodule->method_to_code = dn_simdhash_ptr_ptr_new (4096, NULL);
 	amodule->extra_methods = g_hash_table_new (NULL, NULL);
 	amodule->shared_got = g_new0 (gpointer, info->nshared_got_entries);
 
@@ -3402,8 +3417,8 @@ decode_exception_debug_info (MonoAotModule *amodule,
 			jit_mm_lock (jit_mm);
 			/* This could be set already since this function can be called more than once for the same method */
 			MonoSeqPointInfo *existing_seq_points = NULL;
-			if (!g_hash_table_lookup_extended (jit_mm->seq_points, method, NULL, (gpointer *)&existing_seq_points)) {
-				g_hash_table_insert (jit_mm->seq_points, method, seq_points);
+			if (!dn_simdhash_ght_try_get_value (jit_mm->seq_points, method, (void **)&existing_seq_points)) {
+				dn_simdhash_ght_insert (jit_mm->seq_points, method, seq_points);
 			} else {
 				mono_seq_point_info_free (seq_points);
 				seq_points = existing_seq_points;
@@ -4444,7 +4459,7 @@ load_method (MonoAotModule *amodule, MonoImage *image, MonoMethod *method, guint
 		mono_atomic_inc_i32 (&mono_jit_stats.methods_aot);
 
 	if (method && method->wrapper_type)
-		g_hash_table_insert (amodule->method_to_code, method, code);
+		dn_simdhash_ptr_ptr_try_add (amodule->method_to_code, method, code);
 
 	/* Commit changes since methods_loaded is accessed outside the lock */
 	mono_memory_barrier ();
@@ -4513,7 +4528,7 @@ find_aot_method_in_amodule (MonoAotModule *code_amodule, MonoMethod *method, gui
 
 	index = 0xffffff;
 	while (TRUE) {
-		MonoMethod *m;
+		MonoMethod *m = NULL;
 		guint8 *p, *orig_p;
 
 		key = decode_uint_with_len (key_len, entry);
@@ -4528,8 +4543,9 @@ find_aot_method_in_amodule (MonoAotModule *code_amodule, MonoMethod *method, gui
 
 		amodule_lock (metadata_amodule);
 		if (!metadata_amodule->method_ref_to_method)
-			metadata_amodule->method_ref_to_method = g_hash_table_new (NULL, NULL);
-		m = (MonoMethod *)g_hash_table_lookup (metadata_amodule->method_ref_to_method, p);
+			// FIXME: Select a better initial capacity.
+			metadata_amodule->method_ref_to_method = dn_simdhash_ptr_ptr_new (4096, NULL);
+		dn_simdhash_ptr_ptr_try_get_value (metadata_amodule->method_ref_to_method, p, (void **)&m);
 		amodule_unlock (metadata_amodule);
 		if (!m) {
 			m = decode_resolve_method_ref_with_target (code_amodule, method, p, &p, error);
@@ -4540,7 +4556,7 @@ find_aot_method_in_amodule (MonoAotModule *code_amodule, MonoMethod *method, gui
 			 */
 			if (m && m->wrapper_type != MONO_WRAPPER_RUNTIME_INVOKE) {
 				amodule_lock (metadata_amodule);
-				g_hash_table_insert (metadata_amodule->method_ref_to_method, orig_p, m);
+				dn_simdhash_ptr_ptr_try_add (metadata_amodule->method_ref_to_method, orig_p, m);
 				amodule_unlock (metadata_amodule);
 			}
 		}
@@ -4606,6 +4622,10 @@ mono_aot_can_dedup (MonoMethod *method)
 			info->subtype == WRAPPER_SUBTYPE_STRUCTURE_TO_PTR ||
 			info->subtype == WRAPPER_SUBTYPE_INTERP_LMF ||
 			info->subtype == WRAPPER_SUBTYPE_AOT_INIT)
+			return FALSE;
+
+		// TODO: see if we can share these
+		if (info->subtype == WRAPPER_SUBTYPE_UNSAFE_ACCESSOR)
 			return FALSE;
 #if 0
 		// See is_linkonce_method () in mini-llvm.c
@@ -4901,7 +4921,7 @@ mono_aot_get_method (MonoMethod *method, MonoError *error)
 	MonoMethod *orig_method = method;
 	guint32 method_index;
 	MonoAotModule *amodule = m_class_get_image (klass)->aot_module;
-	guint8 *code;
+	guint8 *code = NULL;
 	gboolean cache_result = FALSE;
 	ERROR_DECL (inner_error);
 
@@ -4929,6 +4949,7 @@ mono_aot_get_method (MonoMethod *method, MonoError *error)
 
 	gboolean dedupable = mono_aot_can_dedup (method);
 
+	// TODO: unsafe accessor methods should come here too?
 	if (method->is_inflated && !method->wrapper_type && mono_method_is_generic_sharable_full (method, TRUE, FALSE, FALSE) && !dedupable) {
 		MonoMethod *generic_orig_method = method;
 		/*
@@ -4950,7 +4971,7 @@ mono_aot_get_method (MonoMethod *method, MonoError *error)
 	if (method_index == 0xffffff && (method->is_inflated || !method->token)) {
 		/* This hash table is used to avoid the slower search in the extra_method_table in the AOT image */
 		amodule_lock (amodule);
-		code = (guint8 *)g_hash_table_lookup (amodule->method_to_code, method);
+		dn_simdhash_ptr_ptr_try_get_value (amodule->method_to_code, method, (void **)&code);
 		amodule_unlock (amodule);
 		if (code)
 			return code;
@@ -5049,6 +5070,19 @@ mono_aot_get_method (MonoMethod *method, MonoError *error)
 			method_index = find_aot_method (shared, &amodule);
 			if (method_index != 0xffffff)
 				method = shared;
+			if (method_index == 0xffffff && !mono_method_metadata_has_header (method)) {
+				// replace lookups for unsafe accessor instances by lookups of the wrapper
+				MonoMethod *wrapper = mini_replace_generated_method (method, error);
+				mono_error_assert_ok (error);
+				if (wrapper != NULL) {
+					shared = mini_get_shared_method_full (wrapper, SHARE_MODE_NONE, error);
+					return_val_if_nok (error, NULL);
+
+					method_index = find_aot_method (shared, &amodule);
+					if (method_index != 0xffffff)
+						method = shared;
+				}
+			}
 		}
 
 		if (method_index == 0xffffff && method->is_inflated && mono_method_is_generic_sharable_full (method, FALSE, FALSE, TRUE)) {
@@ -5056,14 +5090,40 @@ mono_aot_get_method (MonoMethod *method, MonoError *error)
 			/* gsharedvt */
 			/* Use the all-vt shared method since this is what was AOTed */
 			shared = mini_get_shared_method_full (method, SHARE_MODE_GSHAREDVT, error);
+			if (shared && !mono_method_metadata_has_header (shared)) {
+				MonoMethod *wrapper = mini_replace_generated_method (shared, error);
+				mono_error_assert_ok (error);
+				if (wrapper != NULL) {
+					shared = mini_get_shared_method_full (wrapper, SHARE_MODE_GSHAREDVT, error);
+					return_val_if_nok (error, NULL);
+
+					if (shared) {
+						method = wrapper;
+					}
+				}
+			}
+
 			if (!shared)
 				return NULL;
 
 			method_index = find_aot_method (shared, &amodule);
 			if (method_index != 0xffffff) {
+				// XXX AK: I don't understand why we call mini_get_shared_method_full twice
+				// in the gshared case, above, we just say method = shared, which seems right.
 				method = mini_get_shared_method_full (method, SHARE_MODE_GSHAREDVT, error);
 				if (!method)
 					return NULL;
+			}
+		}
+
+		if (method_index == 0xffffff && !mono_method_metadata_has_header (method)) {
+			// replace lookups for unsafe accessor instances by lookups of the wrapper
+			MonoMethod *wrapper = mini_replace_generated_method (method, error);
+			mono_error_assert_ok (error);
+			if (wrapper != NULL) {
+				method_index = find_aot_method (wrapper, &amodule);
+				if (method_index != 0xffffff)
+					method = wrapper;
 			}
 		}
 
@@ -5102,7 +5162,7 @@ mono_aot_get_method (MonoMethod *method, MonoError *error)
 		return NULL;
 	if (code && cache_result) {
 		amodule_lock (amodule);
-		g_hash_table_insert (amodule->method_to_code, orig_method, code);
+		dn_simdhash_ptr_ptr_try_add (amodule->method_to_code, orig_method, code);
 		amodule_unlock (amodule);
 	}
 	return code;

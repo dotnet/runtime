@@ -171,7 +171,7 @@ enum TargetHandleType : BYTE
 /*****************************************************************************/
 
 struct BasicBlock;
-enum BasicBlockFlags : unsigned __int64;
+enum BasicBlockFlags : uint64_t;
 struct InlineCandidateInfo;
 struct HandleHistogramProfileCandidateInfo;
 struct LateDevirtualizationInfo;
@@ -559,6 +559,7 @@ enum GenTreeFlags : unsigned int
 
 #ifdef FEATURE_HW_INTRINSICS
     GTF_HW_EM_OP                  = 0x10000000, // GT_HWINTRINSIC -- node is used as an operand to an embedded mask
+    GTF_HW_USER_CALL              = 0x20000000, // GT_HWINTRINSIC -- node is implemented via a user call
 #endif // FEATURE_HW_INTRINSICS
 };
 
@@ -955,12 +956,6 @@ public:
 #endif // defined(DEBUG)
 
     ValueNumPair gtVNPair;
-
-    regMaskSmall gtRsvdRegs; // set of fixed trashed  registers
-
-    unsigned  AvailableTempRegCount(regMaskTP mask = (regMaskTP)-1) const;
-    regNumber GetSingleTempReg(regMaskTP mask = (regMaskTP)-1);
-    regNumber ExtractTempReg(regMaskTP mask = (regMaskTP)-1);
 
     void SetVNsFromNode(GenTree* tree)
     {
@@ -1770,6 +1765,7 @@ public:
     inline bool IsVectorZero() const;
     inline bool IsVectorCreate() const;
     inline bool IsVectorAllBitsSet() const;
+    inline bool IsMaskAllBitsSet() const;
     inline bool IsVectorConst();
 
     inline uint64_t GetIntegralVectorConstElement(size_t index, var_types simdBaseType);
@@ -3387,8 +3383,8 @@ public:
 
     bool isBitwiseEqual(GenTreeDblCon* other)
     {
-        unsigned __int64 bits      = *(unsigned __int64*)(&gtDconVal);
-        unsigned __int64 otherBits = *(unsigned __int64*)(&(other->gtDconVal));
+        uint64_t bits      = *(uint64_t*)(&gtDconVal);
+        uint64_t otherBits = *(uint64_t*)(&(other->gtDconVal));
         return (bits == otherBits);
     }
 
@@ -4470,7 +4466,6 @@ enum class WellKnownArg : unsigned
     InstParam,
     RetBuffer,
     PInvokeFrame,
-    SecretStubParam,
     WrapperDelegateCell,
     ShiftLow,
     ShiftHigh,
@@ -5615,7 +5610,7 @@ struct GenTreeCall final : public GenTree
             return WellKnownArg::VirtualStubCell;
         }
 
-#if defined(TARGET_ARMARCH) || defined(TARGET_RISCV64)
+#if defined(TARGET_ARMARCH) || defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
         // For ARM architectures, we always use an indirection cell for R2R calls.
         if (IsR2RRelativeIndir() && !IsDelegateInvoke())
         {
@@ -5957,24 +5952,30 @@ struct GenTreeIntrinsic : public GenTreeOp
     NamedIntrinsic        gtIntrinsicName;
     CORINFO_METHOD_HANDLE gtMethodHandle; // Method handle of the method which is treated as an intrinsic.
 
-#ifdef FEATURE_READYTORUN
+#if defined(FEATURE_READYTORUN)
     // Call target lookup info for method call from a Ready To Run module
     CORINFO_CONST_LOOKUP gtEntryPoint;
-#endif
+#endif // FEATURE_READYTORUN
 
-    GenTreeIntrinsic(var_types type, GenTree* op1, NamedIntrinsic intrinsicName, CORINFO_METHOD_HANDLE methodHandle)
+    GenTreeIntrinsic(var_types                          type,
+                     GenTree*                           op1,
+                     NamedIntrinsic                     intrinsicName,
+                     CORINFO_METHOD_HANDLE methodHandle R2RARG(CORINFO_CONST_LOOKUP entryPoint))
         : GenTreeOp(GT_INTRINSIC, type, op1, nullptr)
         , gtIntrinsicName(intrinsicName)
-        , gtMethodHandle(methodHandle)
+        , gtMethodHandle(methodHandle) R2RARG(gtEntryPoint(entryPoint))
     {
         assert(intrinsicName != NI_Illegal);
     }
 
-    GenTreeIntrinsic(
-        var_types type, GenTree* op1, GenTree* op2, NamedIntrinsic intrinsicName, CORINFO_METHOD_HANDLE methodHandle)
+    GenTreeIntrinsic(var_types                          type,
+                     GenTree*                           op1,
+                     GenTree*                           op2,
+                     NamedIntrinsic                     intrinsicName,
+                     CORINFO_METHOD_HANDLE methodHandle R2RARG(CORINFO_CONST_LOOKUP entryPoint))
         : GenTreeOp(GT_INTRINSIC, type, op1, op2)
         , gtIntrinsicName(intrinsicName)
-        , gtMethodHandle(methodHandle)
+        , gtMethodHandle(methodHandle) R2RARG(gtEntryPoint(entryPoint))
     {
         assert(intrinsicName != NI_Illegal);
     }
@@ -6094,6 +6095,15 @@ public:
     {
     }
 #endif
+
+    bool IsUserCall() const
+    {
+#if defined(FEATURE_HW_INTRINSICS)
+        return OperIs(GT_HWINTRINSIC) && (gtFlags & GTF_HW_USER_CALL) != 0;
+#else
+        return false;
+#endif
+    }
 
     GenTree*& Op(size_t index)
     {
@@ -6223,7 +6233,29 @@ private:
 struct GenTreeJitIntrinsic : public GenTreeMultiOp
 {
 protected:
-    GenTree*           gtInlineOperands[2];
+    union
+    {
+        // We don't have enough space to carry both the inline operands
+        // and the necessary information required to support rewriting
+        // the intrinsic back into a user call. As such, we union the
+        // data instead and use the GTF_HW_USER_CALL flag to indicate
+        // which fields are valid to access. -- Tracking the fields
+        // independently causes TREE_NODE_SZ_LARGE to increase and for
+        // GenTreeJitIntrinsic to become the largest node, which is
+        // undesirable, so this approach helps keep things pay-for-play.
+
+        GenTree* gtInlineOperands[2];
+
+        struct
+        {
+            CORINFO_METHOD_HANDLE gtMethodHandle;
+
+#if defined(FEATURE_READYTORUN)
+            // Call target lookup info for method call from a Ready To Run module
+            CORINFO_CONST_LOOKUP* gtEntryPoint;
+#endif // FEATURE_READYTORUN
+        };
+    };
     regNumberSmall     gtOtherReg;     // The second register for multi-reg intrinsics.
     MultiRegSpillFlags gtSpillFlags;   // Spill flags for multi-reg intrinsics.
     unsigned char  gtAuxiliaryJitType; // For intrinsics than need another type (e.g. Avx2.Gather* or SIMD (by element))
@@ -6232,6 +6264,22 @@ protected:
     NamedIntrinsic gtHWIntrinsicId;
 
 public:
+    CORINFO_METHOD_HANDLE GetMethodHandle() const
+    {
+        assert(IsUserCall());
+        return gtMethodHandle;
+    }
+
+    void SetMethodHandle(Compiler* comp, CORINFO_METHOD_HANDLE methodHandle R2RARG(CORINFO_CONST_LOOKUP entryPoint));
+
+#if defined(FEATURE_READYTORUN)
+    CORINFO_CONST_LOOKUP GetEntryPoint() const
+    {
+        assert(IsUserCall());
+        return *gtEntryPoint;
+    }
+#endif // FEATURE_READYTORUN
+
     //-----------------------------------------------------------
     // GetRegNumByIdx: Get regNumber of i'th position.
     //
@@ -6457,6 +6505,8 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     }
 #endif
 
+    static bool OperIsBitwiseHWIntrinsic(genTreeOps oper);
+
     bool OperIsMemoryLoad(GenTree** pAddr = nullptr) const;
     bool OperIsMemoryStore(GenTree** pAddr = nullptr) const;
     bool OperIsMemoryLoadOrStore() const;
@@ -6470,7 +6520,7 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     bool OperIsConvertMaskToVector() const
     {
 #if defined(TARGET_XARCH)
-        return GetHWIntrinsicId() == NI_AVX512F_ConvertMaskToVector;
+        return GetHWIntrinsicId() == NI_EVEX_ConvertMaskToVector;
 #elif defined(TARGET_ARM64)
         return GetHWIntrinsicId() == NI_Sve_ConvertMaskToVector;
 #else
@@ -6481,7 +6531,7 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     bool OperIsConvertVectorToMask() const
     {
 #if defined(TARGET_XARCH)
-        return GetHWIntrinsicId() == NI_AVX512F_ConvertVectorToMask;
+        return GetHWIntrinsicId() == NI_EVEX_ConvertVectorToMask;
 #elif defined(TARGET_ARM64)
         return GetHWIntrinsicId() == NI_Sve_ConvertVectorToMask;
 #else
@@ -9238,6 +9288,32 @@ inline bool GenTree::IsVectorAllBitsSet() const
     return false;
 }
 
+inline bool GenTree::IsMaskAllBitsSet() const
+{
+#ifdef TARGET_ARM64
+    static_assert_no_msg(AreContiguous(NI_Sve_CreateTrueMaskByte, NI_Sve_CreateTrueMaskDouble,
+                                       NI_Sve_CreateTrueMaskInt16, NI_Sve_CreateTrueMaskInt32,
+                                       NI_Sve_CreateTrueMaskInt64, NI_Sve_CreateTrueMaskSByte,
+                                       NI_Sve_CreateTrueMaskSingle, NI_Sve_CreateTrueMaskUInt16,
+                                       NI_Sve_CreateTrueMaskUInt32, NI_Sve_CreateTrueMaskUInt64));
+
+    if (OperIsHWIntrinsic())
+    {
+        NamedIntrinsic id = AsHWIntrinsic()->GetHWIntrinsicId();
+        if (id == NI_Sve_ConvertMaskToVector)
+        {
+            GenTree* op1 = AsHWIntrinsic()->Op(1);
+            assert(op1->OperIsHWIntrinsic());
+            id = op1->AsHWIntrinsic()->GetHWIntrinsicId();
+        }
+        return ((id == NI_Sve_CreateTrueMaskAll) ||
+                ((id >= NI_Sve_CreateTrueMaskByte) && (id <= NI_Sve_CreateTrueMaskUInt64)));
+    }
+
+#endif
+    return false;
+}
+
 //-------------------------------------------------------------------
 // IsVectorConst: returns true if this node is a HWIntrinsic that represents a constant.
 //
@@ -10005,7 +10081,7 @@ inline bool GenTree::IsCnsNonZeroFltOrDbl() const
     if (IsCnsFltOrDbl())
     {
         double constValue = AsDblCon()->DconValue();
-        return *(__int64*)&constValue != 0;
+        return *(int64_t*)&constValue != 0;
     }
 
     return false;

@@ -88,7 +88,7 @@ bool Compiler::impILConsumesAddr(const BYTE* codeAddr)
             // out if we need to do so.
 
             CORINFO_RESOLVED_TOKEN resolvedToken;
-            impResolveToken(codeAddr + sizeof(__int8), &resolvedToken, CORINFO_TOKENKIND_Field);
+            impResolveToken(codeAddr + sizeof(int8_t), &resolvedToken, CORINFO_TOKENKIND_Field);
 
             var_types lclTyp = JITtype2varType(info.compCompHnd->getFieldType(resolvedToken.hField));
 
@@ -3798,12 +3798,10 @@ GenTree* Compiler::impImportStaticFieldAddress(CORINFO_RESOLVED_TOKEN* pResolved
 
             switch (pFieldInfo->helper)
             {
-                case CORINFO_HELP_GETGENERICS_NONGCTHREADSTATIC_BASE:
-                    type = TYP_I_IMPL;
-                    break;
-                case CORINFO_HELP_GETGENERICS_GCSTATIC_BASE:
-                case CORINFO_HELP_GETGENERICS_NONGCSTATIC_BASE:
-                case CORINFO_HELP_GETGENERICS_GCTHREADSTATIC_BASE:
+                case CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE:
+                case CORINFO_HELP_GET_GCSTATIC_BASE:
+                case CORINFO_HELP_GET_NONGCSTATIC_BASE:
+                case CORINFO_HELP_GET_GCTHREADSTATIC_BASE:
                     break;
                 default:
                     assert(!"unknown generic statics helper");
@@ -3813,6 +3811,11 @@ GenTree* Compiler::impImportStaticFieldAddress(CORINFO_RESOLVED_TOKEN* pResolved
             isHoistable = !s_helperCallProperties.MayRunCctor(pFieldInfo->helper) ||
                           (info.compCompHnd->getClassAttribs(pResolvedToken->hClass) & CORINFO_FLG_BEFOREFIELDINIT);
             op1 = gtNewHelperCallNode(pFieldInfo->helper, type, op1);
+            if (IsStaticHelperEligibleForExpansion(op1))
+            {
+                // Mark the helper call with the initClsHnd so that rewriting it for expansion can reliably fail
+                op1->AsCall()->gtInitClsHnd = pResolvedToken->hClass;
+            }
             op1 = gtNewOperNode(GT_ADD, type, op1, gtNewIconNode(pFieldInfo->offset, innerFldSeq));
         }
         break;
@@ -3823,13 +3826,14 @@ GenTree* Compiler::impImportStaticFieldAddress(CORINFO_RESOLVED_TOKEN* pResolved
             if (!opts.IsReadyToRun())
 #endif // FEATURE_READYTORUN
             {
-                if (pFieldInfo->helper == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED)
+                if ((pFieldInfo->helper == CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED) ||
+                    (pFieldInfo->helper == CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2))
                 {
                     typeIndex = info.compCompHnd->getThreadLocalFieldInfo(pResolvedToken->hField, false);
                 }
                 else
                 {
-                    assert(pFieldInfo->helper == CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED);
+                    assert(pFieldInfo->helper == CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED);
                     typeIndex = info.compCompHnd->getThreadLocalFieldInfo(pResolvedToken->hField, true);
                 }
             }
@@ -5136,10 +5140,14 @@ void Compiler::impResetLeaveBlock(BasicBlock* block, unsigned jmpAddr)
         // We are unlikely to be able to repair the profile.
         // For now we don't even try.
         //
-        JITDUMP("\nimpResetLeaveBlock: Profile data could not be locally repaired. Data %s inconsisent.\n",
+        JITDUMP("\nimpResetLeaveBlock: Profile data could not be locally repaired. Data %s inconsistent.\n",
                 fgPgoConsistent ? "is now" : "was already");
-        fgPgoConsistent = false;
-        Metrics.ProfileInconsistentResetLeave++;
+
+        if (fgPgoConsistent)
+        {
+            Metrics.ProfileInconsistentResetLeave++;
+            fgPgoConsistent = false;
+        }
     }
 }
 
@@ -5152,7 +5160,7 @@ OPCODE Compiler::impGetNonPrefixOpcode(const BYTE* codeAddr, const BYTE* codeEnd
     while (codeAddr < codeEndp)
     {
         OPCODE opcode = (OPCODE)getU1LittleEndian(codeAddr);
-        codeAddr += sizeof(__int8);
+        codeAddr += sizeof(int8_t);
 
         if (opcode == CEE_PREFIX1)
         {
@@ -5161,7 +5169,7 @@ OPCODE Compiler::impGetNonPrefixOpcode(const BYTE* codeAddr, const BYTE* codeEnd
                 break;
             }
             opcode = (OPCODE)(getU1LittleEndian(codeAddr) + 256);
-            codeAddr += sizeof(__int8);
+            codeAddr += sizeof(int8_t);
         }
 
         switch (opcode)
@@ -6132,7 +6140,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
         /* Get the next opcode and the size of its parameters */
 
         OPCODE opcode = (OPCODE)getU1LittleEndian(codeAddr);
-        codeAddr += sizeof(__int8);
+        codeAddr += sizeof(int8_t);
 
 #ifdef DEBUG
         impCurOpcOffs = (IL_OFFSET)(codeAddr - info.compCode - 1);
@@ -6193,14 +6201,14 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             {
                 int     intVal;
                 float   fltVal;
-                __int64 lngVal;
+                int64_t lngVal;
                 double  dblVal;
             } cval;
 
             case CEE_PREFIX1:
                 opcode     = (OPCODE)(getU1LittleEndian(codeAddr) + 256);
                 opcodeOffs = (IL_OFFSET)(codeAddr - info.compCode);
-                codeAddr += sizeof(__int8);
+                codeAddr += sizeof(int8_t);
                 goto DECODE_OPCODE;
 
             SPILL_APPEND:
@@ -7177,12 +7185,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             case CEE_LEAVE:
 
                 val     = getI4LittleEndian(codeAddr); // jump distance
-                jmpAddr = (IL_OFFSET)((codeAddr - info.compCode + sizeof(__int32)) + val);
+                jmpAddr = (IL_OFFSET)((codeAddr - info.compCode + sizeof(int32_t)) + val);
                 goto LEAVE;
 
             case CEE_LEAVE_S:
                 val     = getI1LittleEndian(codeAddr); // jump distance
-                jmpAddr = (IL_OFFSET)((codeAddr - info.compCode + sizeof(__int8)) + val);
+                jmpAddr = (IL_OFFSET)((codeAddr - info.compCode + sizeof(int8_t)) + val);
 
             LEAVE:
 
@@ -7371,8 +7379,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             {
                                 JITDUMP("Profile data could not be locally repaired. Data %s inconsistent.\n",
                                         fgPgoConsistent ? "is now" : "was already");
-                                fgPgoConsistent = false;
-                                Metrics.ProfileInconsistentImporterBranchFold++;
+
+                                if (fgPgoConsistent)
+                                {
+                                    Metrics.ProfileInconsistentImporterBranchFold++;
+                                    fgPgoConsistent = false;
+                                }
                             }
                         }
                     }
@@ -7657,10 +7669,14 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         // We are unlikely to be able to repair the profile.
                         // For now we don't even try.
                         //
-                        JITDUMP("Profile data could not be locally repaired. Data %s inconsisent.\n",
+                        JITDUMP("Profile data could not be locally repaired. Data %s inconsistent.\n",
                                 fgPgoConsistent ? "is now" : "was already");
-                        fgPgoConsistent = false;
-                        Metrics.ProfileInconsistentImporterSwitchFold++;
+
+                        if (fgPgoConsistent)
+                        {
+                            Metrics.ProfileInconsistentImporterSwitchFold++;
+                            fgPgoConsistent = false;
+                        }
                     }
 
                     // Create a NOP node
@@ -8222,7 +8238,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             PREFIX:
                 opcode     = (OPCODE)getU1LittleEndian(codeAddr);
                 opcodeOffs = (IL_OFFSET)(codeAddr - info.compCode);
-                codeAddr += sizeof(__int8);
+                codeAddr += sizeof(int8_t);
                 goto DECODE_OPCODE;
 
             case CEE_VOLATILE:

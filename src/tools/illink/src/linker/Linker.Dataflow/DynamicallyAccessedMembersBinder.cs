@@ -297,7 +297,7 @@ namespace Mono.Linker
 				foreach (var @event in type.Events) {
 					// Ignore private properties on a base type - those are completely ignored by reflection
 					// (anything private on the base type is not visible via the derived type)
-					// Note that properties themselves are not actually private, their accessors are
+					// Note that events themselves are not actually private, their accessors are
 					if (onBaseType &&
 						(@event.AddMethod == null || @event.AddMethod.IsPrivate) &&
 						(@event.RemoveMethod == null || @event.RemoveMethod.IsPrivate))

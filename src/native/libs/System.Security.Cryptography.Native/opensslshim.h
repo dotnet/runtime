@@ -187,6 +187,10 @@ int EVP_DigestSqueeze(EVP_MD_CTX *ctx, unsigned char *out, size_t outlen);
 
 #define API_EXISTS(fn) (fn != NULL)
 
+#if defined(FEATURE_DISTRO_AGNOSTIC_SSL) && defined(TARGET_ARM) && defined(TARGET_LINUX)
+extern bool g_libSslUses32BitTime;
+#endif
+
 // List of all functions from the libssl that are used in the System.Security.Cryptography.Native.
 // Forgetting to add a function here results in build failure with message reporting the function
 // that needs to be added.
@@ -555,6 +559,7 @@ int EVP_DigestSqueeze(EVP_MD_CTX *ctx, unsigned char *out, size_t outlen);
     REQUIRED_FUNCTION(SSL_CTX_new) \
     REQUIRED_FUNCTION(SSL_CTX_sess_set_new_cb) \
     REQUIRED_FUNCTION(SSL_CTX_sess_set_remove_cb) \
+    REQUIRED_FUNCTION(SSL_CTX_remove_session) \
     LIGHTUP_FUNCTION(SSL_CTX_set_alpn_protos) \
     LIGHTUP_FUNCTION(SSL_CTX_set_alpn_select_cb) \
     REQUIRED_FUNCTION(SSL_CTX_set_cipher_list) \
@@ -584,6 +589,7 @@ int EVP_DigestSqueeze(EVP_MD_CTX *ctx, unsigned char *out, size_t outlen);
     REQUIRED_FUNCTION(SSL_get_version) \
     LIGHTUP_FUNCTION(SSL_get0_alpn_selected) \
     RENAMED_FUNCTION(SSL_get1_peer_certificate, SSL_get_peer_certificate) \
+    REQUIRED_FUNCTION(SSL_get_certificate) \
     LEGACY_FUNCTION(SSL_library_init) \
     LEGACY_FUNCTION(SSL_load_error_strings) \
     REQUIRED_FUNCTION(SSL_new) \
@@ -592,6 +598,8 @@ int EVP_DigestSqueeze(EVP_MD_CTX *ctx, unsigned char *out, size_t outlen);
     REQUIRED_FUNCTION(SSL_renegotiate) \
     REQUIRED_FUNCTION(SSL_renegotiate_pending) \
     REQUIRED_FUNCTION(SSL_SESSION_free) \
+    REQUIRED_FUNCTION(SSL_SESSION_get_ex_data) \
+    REQUIRED_FUNCTION(SSL_SESSION_set_ex_data) \
     LIGHTUP_FUNCTION(SSL_SESSION_get0_hostname) \
     LIGHTUP_FUNCTION(SSL_SESSION_set1_hostname) \
     FALLBACK_FUNCTION(SSL_session_reused) \
@@ -604,6 +612,7 @@ int EVP_DigestSqueeze(EVP_MD_CTX *ctx, unsigned char *out, size_t outlen);
     REQUIRED_FUNCTION(SSL_set_ex_data) \
     FALLBACK_FUNCTION(SSL_set_options) \
     REQUIRED_FUNCTION(SSL_set_session) \
+    REQUIRED_FUNCTION(SSL_get_session) \
     REQUIRED_FUNCTION(SSL_set_verify) \
     REQUIRED_FUNCTION(SSL_shutdown) \
     LEGACY_FUNCTION(SSL_state) \
@@ -617,7 +626,6 @@ int EVP_DigestSqueeze(EVP_MD_CTX *ctx, unsigned char *out, size_t outlen);
     REQUIRED_FUNCTION(SSL_version) \
     FALLBACK_FUNCTION(X509_check_host) \
     REQUIRED_FUNCTION(X509_check_purpose) \
-    REQUIRED_FUNCTION(X509_cmp_current_time) \
     REQUIRED_FUNCTION(X509_cmp_time) \
     REQUIRED_FUNCTION(X509_CRL_free) \
     FALLBACK_FUNCTION(X509_CRL_get0_nextUpdate) \
@@ -716,7 +724,9 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #undef LIGHTUP_FUNCTION
 #undef REQUIRED_FUNCTION_110
 #undef REQUIRED_FUNCTION
-
+#if defined(TARGET_ARM) && defined(TARGET_LINUX)
+extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
+#endif
 // Redefine all calls to OpenSSL functions as calls through pointers that are set
 // to the functions from the libssl.so selected by the shim.
 #define a2d_ASN1_OBJECT a2d_ASN1_OBJECT_ptr
@@ -1017,6 +1027,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define OCSP_RESPONSE_new OCSP_RESPONSE_new_ptr
 #define OPENSSL_add_all_algorithms_conf OPENSSL_add_all_algorithms_conf_ptr
 #define OPENSSL_cleanse OPENSSL_cleanse_ptr
+#define OPENSSL_gmtime OPENSSL_gmtime_ptr
 #define OPENSSL_init_ssl OPENSSL_init_ssl_ptr
 #define OPENSSL_sk_free OPENSSL_sk_free_ptr
 #define OPENSSL_sk_new_null OPENSSL_sk_new_null_ptr
@@ -1083,6 +1094,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define SSL_CTX_new SSL_CTX_new_ptr
 #define SSL_CTX_sess_set_new_cb SSL_CTX_sess_set_new_cb_ptr
 #define SSL_CTX_sess_set_remove_cb SSL_CTX_sess_set_remove_cb_ptr
+#define SSL_CTX_remove_session SSL_CTX_remove_session_ptr
 #define SSL_CTX_set_alpn_protos SSL_CTX_set_alpn_protos_ptr
 #define SSL_CTX_set_alpn_select_cb SSL_CTX_set_alpn_select_cb_ptr
 #define SSL_CTX_set_cipher_list SSL_CTX_set_cipher_list_ptr
@@ -1101,6 +1113,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define SSL_free SSL_free_ptr
 #define SSL_get_ciphers SSL_get_ciphers_ptr
 #define SSL_get_client_CA_list SSL_get_client_CA_list_ptr
+#define SSL_get_certificate SSL_get_certificate_ptr
 #define SSL_get_current_cipher SSL_get_current_cipher_ptr
 #define SSL_get_error SSL_get_error_ptr
 #define SSL_get_ex_data SSL_get_ex_data_ptr
@@ -1125,6 +1138,8 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define SSL_SESSION_get0_hostname SSL_SESSION_get0_hostname_ptr
 #define SSL_SESSION_set1_hostname SSL_SESSION_set1_hostname_ptr
 #define SSL_session_reused SSL_session_reused_ptr
+#define SSL_SESSION_get_ex_data SSL_SESSION_get_ex_data_ptr
+#define SSL_SESSION_set_ex_data SSL_SESSION_set_ex_data_ptr
 #define SSL_set_accept_state SSL_set_accept_state_ptr
 #define SSL_set_bio SSL_set_bio_ptr
 #define SSL_set_cert_cb  SSL_set_cert_cb_ptr
@@ -1134,6 +1149,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define SSL_set_ex_data SSL_set_ex_data_ptr
 #define SSL_set_options SSL_set_options_ptr
 #define SSL_set_session SSL_set_session_ptr
+#define SSL_get_session SSL_get_session_ptr
 #define SSL_set_verify SSL_set_verify_ptr
 #define SSL_shutdown SSL_shutdown_ptr
 #define SSL_state SSL_state_ptr
@@ -1147,7 +1163,6 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define TLS_method TLS_method_ptr
 #define X509_check_host X509_check_host_ptr
 #define X509_check_purpose X509_check_purpose_ptr
-#define X509_cmp_current_time X509_cmp_current_time_ptr
 #define X509_cmp_time X509_cmp_time_ptr
 #define X509_CRL_free X509_CRL_free_ptr
 #define X509_CRL_get0_nextUpdate X509_CRL_get0_nextUpdate_ptr

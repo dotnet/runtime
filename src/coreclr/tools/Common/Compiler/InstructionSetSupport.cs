@@ -97,6 +97,10 @@ namespace ILCompiler
                 if (potentialType.Namespace != "System.Runtime.Intrinsics.Arm")
                     return "";
             }
+            else if (architecture == TargetArchitecture.LoongArch64)
+            {
+                return "";
+            }
             else if (architecture == TargetArchitecture.RiscV64)
             {
                 return "";

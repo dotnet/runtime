@@ -334,7 +334,7 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
     MethodTable* pMT = (MethodTable *) pMTHead;
 
     // Allocate the private data block ("private" during runtime in the ngen'ed case).
-    pMT->AllocateAuxiliaryData(pAllocator, this, pamTracker, false, static_cast<WORD>(numNonVirtualSlots));
+    pMT->AllocateAuxiliaryData(pAllocator, this, pamTracker, MethodTableStaticsFlags::None, static_cast<WORD>(numNonVirtualSlots));
     pMT->SetLoaderAllocator(pAllocator);
     pMT->SetModule(elemTypeHnd.GetModule());
 
@@ -406,7 +406,7 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
     }
 #endif // FEATURE_TYPEEQUIVALENCE
 
-    _ASSERTE(pMT->IsClassPreInited());
+    pMT->SetClassInited();
 
     // Set BaseSize to be size of non-data portion of the array
     DWORD baseSize = ARRAYBASE_BASESIZE;
@@ -1210,14 +1210,29 @@ MethodDesc* GetActualImplementationForArrayGenericIListOrIReadOnlyListMethod(Met
     }
     CONTRACTL_END
 
+    int slot = pItfcMeth->GetSlot();
+
+    // We need to pick the right starting method depending on the depth of the inheritance chain
+    static const BinderMethodID startingMethod[] = {
+        METHOD__SZARRAYHELPER__GETENUMERATOR,   // First method of IEnumerable`1
+        METHOD__SZARRAYHELPER__GET_COUNT,       // First method of ICollection`1/IReadOnlyCollection`1
+        METHOD__SZARRAYHELPER__GET_ITEM         // First method of IList`1/IReadOnlyList`1
+    };
+
     // Subtract one for the non-generic IEnumerable that the generic enumerable inherits from
     unsigned int inheritanceDepth = pItfcMeth->GetMethodTable()->GetNumInterfaces() - 1;
+    PREFIX_ASSUME(0 <= inheritanceDepth && inheritanceDepth < ARRAY_SIZE(startingMethod));
 
-    MethodDesc *pGenericImplementor = MemberLoader::FindMethodByName(g_pSZArrayHelperClass, pItfcMeth->GetName());
+    MethodDesc *pGenericImplementor = CoreLibBinder::GetMethod((BinderMethodID)(startingMethod[inheritanceDepth] + slot));
+
+    // The most common reason for this assert is that the order of the SZArrayHelper methods in
+    // corelib.h does not match the order they are implemented on the generic interfaces.
+    _ASSERTE(pGenericImplementor == MemberLoader::FindMethodByName(g_pSZArrayHelperClass, pItfcMeth->GetName()));
 
     // OPTIMIZATION: For any method other than GetEnumerator(), we can safely substitute
     // "Object" for reference-type theT's. This causes fewer methods to be instantiated.
-    if (inheritanceDepth != 0 && !theT.IsValueType())
+    if (startingMethod[inheritanceDepth] != METHOD__SZARRAYHELPER__GETENUMERATOR &&
+        !theT.IsValueType())
     {
         theT = TypeHandle(g_pObjectClass);
     }

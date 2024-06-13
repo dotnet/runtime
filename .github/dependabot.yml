@@ -1,10 +1,5 @@
 version: 2
-registries:
-  public-nuget:
-    type: nuget-feed
-    url: https://api.nuget.org/v3/index.json
 updates:
-
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
@@ -12,3 +7,6 @@ updates:
     open-pull-requests-limit: 5
     labels:
       - area-codeflow
+    ignore:
+      - dependency-name: "actions/checkout"
+        update-types: ["version-update:semver-patch","version-update:semver-minor"]

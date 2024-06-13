@@ -19,7 +19,7 @@ namespace System.Diagnostics
         /// we avoid the allocation of a new array by using the second collection as is and not converting it to an array. the reason
         /// is we call this every time we try to create a meter or instrument and we don't want to allocate a new array every time.
         /// </remarks>
-        internal static bool CompareTags(List<KeyValuePair<string, object?>>? sortedTags, IEnumerable<KeyValuePair<string, object?>>? tags2)
+        internal static bool CompareTags(IList<KeyValuePair<string, object?>>? sortedTags, IEnumerable<KeyValuePair<string, object?>>? tags2)
         {
             if (sortedTags == tags2)
             {
@@ -35,22 +35,14 @@ namespace System.Diagnostics
             int size = count / (sizeof(ulong) * 8) + 1;
             BitMapper bitMapper = new BitMapper(size <= 100 ? stackalloc ulong[size] : new ulong[size]);
 
-#if NET9_0_OR_GREATER // ICollection<T> : IReadOnlyCollection<T> on .NET 9+
-            if (tags2 is IReadOnlyCollection<KeyValuePair<string, object?>> tagsCol)
-#else
             if (tags2 is ICollection<KeyValuePair<string, object?>> tagsCol)
-#endif
             {
                 if (tagsCol.Count != count)
                 {
                     return false;
                 }
 
-#if NET9_0_OR_GREATER // IList<T> : IReadOnlyList<T> on .NET 9+
-                if (tagsCol is IReadOnlyList<KeyValuePair<string, object?>> secondList)
-#else
                 if (tagsCol is IList<KeyValuePair<string, object?>> secondList)
-#endif
                 {
                     for (int i = 0; i < count; i++)
                     {

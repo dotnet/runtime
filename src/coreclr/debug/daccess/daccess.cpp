@@ -101,7 +101,7 @@ ConvertUtf8(_In_ LPCUTF8 utf8,
 {
     if (nameLen)
     {
-        *nameLen = WszMultiByteToWideChar(CP_UTF8, 0, utf8, -1, NULL, 0);
+        *nameLen = MultiByteToWideChar(CP_UTF8, 0, utf8, -1, NULL, 0);
         if (!*nameLen)
         {
             return HRESULT_FROM_GetLastError();
@@ -110,7 +110,7 @@ ConvertUtf8(_In_ LPCUTF8 utf8,
 
     if (buffer && bufLen)
     {
-        if (!WszMultiByteToWideChar(CP_UTF8, 0, utf8, -1, buffer, bufLen))
+        if (!MultiByteToWideChar(CP_UTF8, 0, utf8, -1, buffer, bufLen))
         {
             return HRESULT_FROM_GetLastError();
         }
@@ -124,7 +124,7 @@ AllocUtf8(_In_opt_ LPCWSTR wstr,
           ULONG32 srcChars,
           _Outptr_ LPUTF8* utf8)
 {
-    ULONG32 chars = WszWideCharToMultiByte(CP_UTF8, 0, wstr, srcChars,
+    ULONG32 chars = WideCharToMultiByte(CP_UTF8, 0, wstr, srcChars,
                                            NULL, 0, NULL, NULL);
     if (!chars)
     {
@@ -146,7 +146,7 @@ AllocUtf8(_In_opt_ LPCWSTR wstr,
         return E_OUTOFMEMORY;
     }
 
-    if (!WszWideCharToMultiByte(CP_UTF8, 0, wstr, srcChars,
+    if (!WideCharToMultiByte(CP_UTF8, 0, wstr, srcChars,
                                 mem, chars, NULL, NULL))
     {
         HRESULT hr = HRESULT_FROM_GetLastError();
@@ -1752,7 +1752,7 @@ DacInstanceManager::Find(TADDR addr)
 {
 
 #if defined(DAC_MEASURE_PERF)
-    unsigned _int64 nStart, nEnd;
+    uint64_t nStart, nEnd;
     g_nFindCalls++;
     nStart = GetCycleCount();
 #endif // #if defined(DAC_MEASURE_PERF)
@@ -3038,7 +3038,7 @@ private:
 //----------------------------------------------------------------------------
 
 ClrDataAccess::ClrDataAccess(ICorDebugDataTarget * pTarget, ICLRDataTarget * pLegacyTarget/*=0*/)
-    : m_cdac{CDAC::Invalid()}
+    : m_cdac{}
 {
     SUPPORTS_DAC_HOST_ONLY;     // ctor does no marshalling - don't check with DacCop
 

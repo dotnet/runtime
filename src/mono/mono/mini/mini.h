@@ -3033,4 +3033,10 @@ MonoMemoryManager* mini_get_default_mem_manager (void);
 MONO_COMPONENT_API int
 mono_wasm_get_debug_level (void);
 
+MonoMethod*
+mini_inflate_unsafe_accessor_wrapper (MonoMethod *extern_decl, MonoGenericContext *ctx, MonoUnsafeAccessorKind accessor_kind, const char *member_name, MonoError *error);
+
+MonoMethod *
+mini_replace_generated_method (MonoMethod *method, MonoError *error);
+
 #endif /* __MONO_MINI_H__ */

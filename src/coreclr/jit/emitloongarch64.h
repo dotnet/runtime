@@ -19,10 +19,6 @@ struct CnsVal
     bool    cnsReloc;
 };
 
-#ifdef DEBUG
-/************************************************************************/
-/*             Debug-only routines to display instructions              */
-/************************************************************************/
 enum insDisasmFmt
 {
     DF_G_INVALID = 0,
@@ -108,7 +104,6 @@ code_t       emitGetInsMask(int ins);
 insDisasmFmt emitGetInsFmt(instruction ins);
 void         emitDispInst(instruction ins);
 void         emitDisInsName(code_t code, const BYTE* addr, instrDesc* id);
-#endif // DEBUG
 
 void emitIns_J_cond_la(instruction ins, BasicBlock* dst, regNumber reg1 = REG_R0, regNumber reg2 = REG_R0);
 void emitIns_I_la(emitAttr attr, regNumber reg, ssize_t imm);
@@ -350,11 +345,12 @@ void emitIns_Call(EmitCallType          callType,
                   regMaskTP        gcrefRegs,
                   regMaskTP        byrefRegs,
                   const DebugInfo& di,
-                  regNumber        ireg   = REG_NA,
-                  regNumber        xreg   = REG_NA,
-                  unsigned         xmul   = 0,
-                  ssize_t          disp   = 0,
-                  bool             isJump = false);
+                  regNumber        ireg        = REG_NA,
+                  regNumber        xreg        = REG_NA,
+                  unsigned         xmul        = 0,
+                  ssize_t          disp        = 0,
+                  bool             isJump      = false,
+                  bool             noSafePoint = false);
 
 unsigned emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* id, code_t code);
 

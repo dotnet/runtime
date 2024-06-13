@@ -28,6 +28,8 @@
              Link="Common\System\Net\Configuration.Security.cs" />
     <Compile Include="$(CommonTestPath)System\Net\QuicLoad.cs"
              Link="Common\System\Net\System\Net\QuicLoad.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\RemoteExecutorExtensions.cs"
+             Link="Common\System\Net\RemoteExecutorExtensions.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\LoopbackServer.cs"
              Link="Common\System\Net\Http\LoopbackServer.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\LoopbackServer.AuthenticationHelpers.cs"

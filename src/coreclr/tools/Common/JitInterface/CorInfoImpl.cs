@@ -415,9 +415,10 @@ namespace Internal.JitInterface
             if (codeSize < _code.Length)
             {
                 if (_compilation.TypeSystemContext.Target.Architecture != TargetArchitecture.ARM64
+                    && _compilation.TypeSystemContext.Target.Architecture != TargetArchitecture.LoongArch64
                     && _compilation.TypeSystemContext.Target.Architecture != TargetArchitecture.RiscV64)
                 {
-                    // For xarch/arm32/RiscV64, the generated code is sometimes smaller than the memory allocated.
+                    // For xarch/arm32/LoongArch64/RiscV64, the generated code is sometimes smaller than the memory allocated.
                     // In that case, trim the codeBlock to the actual value.
                     //
                     // For arm64, the allocation request of `hotCodeSize` also includes the roData size
@@ -877,6 +878,7 @@ namespace Internal.JitInterface
                 ThrowHelper.ThrowBadImageFormatException();
 
             if (!signature.IsStatic) sig->callConv |= CorInfoCallConv.CORINFO_CALLCONV_HASTHIS;
+            if (signature.IsExplicitThis) sig->callConv |= CorInfoCallConv.CORINFO_CALLCONV_EXPLICITTHIS;
 
             TypeDesc returnType = signature.ReturnType;
 
@@ -2111,8 +2113,10 @@ namespace Internal.JitInterface
             Marshal.FreeCoTaskMem((IntPtr)obj);
         }
 
-        private UIntPtr getClassModuleIdForStatics(CORINFO_CLASS_STRUCT_* cls, CORINFO_MODULE_STRUCT_** pModule, void** ppIndirection)
-        { throw new NotImplementedException("getClassModuleIdForStatics"); }
+        private UIntPtr getClassStaticDynamicInfo(CORINFO_CLASS_STRUCT_* cls)
+        { throw new NotImplementedException("getClassStaticDynamicInfo"); }
+        private UIntPtr getClassThreadStaticDynamicInfo(CORINFO_CLASS_STRUCT_* cls)
+        { throw new NotImplementedException("getClassThreadStaticDynamicInfo"); }
 
         private uint getClassSize(CORINFO_CLASS_STRUCT_* cls)
         {
@@ -2625,17 +2629,15 @@ namespace Internal.JitInterface
             MethodDesc md = method == null ? MethodBeingCompiled : HandleToObject(method);
             TypeDesc type = fd != null ? fd.OwningType : typeFromContext(context);
 
+#if !READYTORUN
             if (
-#if READYTORUN
-                IsClassPreInited(type)
-#else
                 _isFallbackBodyCompilation ||
                 !_compilation.HasLazyStaticConstructor(type)
-#endif
                 )
             {
                 return CorInfoInitClassResult.CORINFO_INITCLASS_NOT_REQUIRED;
             }
+#endif
 
             MetadataType typeToInit = (MetadataType)type;
 
@@ -3062,7 +3064,7 @@ namespace Internal.JitInterface
         }
 
 #pragma warning disable CA1822 // Mark members as static
-        private void getThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType)
+        private void getThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
 #pragma warning restore CA1822 // Mark members as static
         {
             // Implemented for JIT only for now.
@@ -3277,7 +3279,7 @@ namespace Internal.JitInterface
             // In debug, write some bogus data to the struct to ensure we have filled everything
             // properly.
             fixed (CORINFO_EE_INFO* tmp = &pEEInfoOut)
-                MemoryHelper.FillMemory((byte*)tmp, 0xcc, Marshal.SizeOf<CORINFO_EE_INFO>());
+                NativeMemory.Fill(tmp, (nuint)sizeof(CORINFO_EE_INFO), 0xcc);
 #endif
 
             int pointerSize = this.PointerSize;
@@ -3560,9 +3562,6 @@ namespace Internal.JitInterface
             constLookup.accessType = symbol.RepresentsIndirectionCell ? InfoAccessType.IAT_PVALUE : InfoAccessType.IAT_VALUE;
             return constLookup;
         }
-
-        private uint getClassDomainID(CORINFO_CLASS_STRUCT_* cls, ref void* ppIndirection)
-        { throw new NotImplementedException("getClassDomainID"); }
 
         private CORINFO_CLASS_STRUCT_* getStaticFieldCurrentClass(CORINFO_FIELD_STRUCT_* field, byte* pIsSpeculative)
         {
@@ -4255,7 +4254,7 @@ namespace Internal.JitInterface
         }
 
         private HRESULT getPgoInstrumentationResults(CORINFO_METHOD_STRUCT_* ftnHnd, ref PgoInstrumentationSchema* pSchema, ref uint countSchemaItems, byte** pInstrumentationData,
-            ref PgoSource pPgoSource)
+            ref PgoSource pPgoSource, ref bool pDynamicPgo)
         {
             MethodDesc methodDesc = HandleToObject(ftnHnd);
 
@@ -4302,6 +4301,7 @@ namespace Internal.JitInterface
             countSchemaItems = pgoResults.countSchemaItems;
             *pInstrumentationData = pgoResults.pInstrumentationData;
             pPgoSource = PgoSource.Static;
+            pDynamicPgo = false;
             return pgoResults.hr;
         }
 

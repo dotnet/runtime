@@ -916,6 +916,7 @@ Debugger::Debugger()
     m_ignoreThreadDetach(FALSE),
     m_pMethodInfos(NULL),
     m_pForceCatchHandlerFoundEventsTable(NULL),
+    m_pCustomNotificationTable(NULL),
     m_mutex(CrstDebuggerMutex, (CrstFlags)(CRST_UNSAFE_ANYMODE | CRST_REENTRANCY | CRST_DEBUGGER_THREAD)),
 #ifdef _DEBUG
     m_mutexOwner(0),
@@ -958,8 +959,7 @@ Debugger::Debugger()
     m_processId = GetCurrentProcessId();
 
     m_pForceCatchHandlerFoundEventsTable = new ForceCatchHandlerFoundTable();
-
-
+    m_pCustomNotificationTable = new CustomNotificationTable();
 
     //------------------------------------------------------------------------------
     // Metadata data structure version numbers
@@ -971,7 +971,7 @@ Debugger::Debugger()
     m_mdDataStructureVersion = 1;
     m_fOutOfProcessSetContextEnabled =
 #if defined(OUT_OF_PROCESS_SETTHREADCONTEXT) && !defined(DACCESS_COMPILE)
-        Thread::AreCetShadowStacksEnabled() || CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_OutOfProcessSetContext) != 0;
+        Thread::AreShadowStacksEnabled() || CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_OutOfProcessSetContext) != 0;
 #else
         FALSE;
 #endif
@@ -1062,7 +1062,7 @@ void Debugger::InitDebugEventCounting()
     {
         LPSTR   strValue;
         int     cbReq;
-        cbReq = WszWideCharToMultiByte(CP_UTF8, 0, wstrValue,-1, 0,0, 0,0);
+        cbReq = WideCharToMultiByte(CP_UTF8, 0, wstrValue,-1, 0,0, 0,0);
 
         strValue = new (nothrow) char[cbReq+1];
         // This is a debug only thingy, if it fails, not worth taking
@@ -1072,7 +1072,7 @@ void Debugger::InitDebugEventCounting()
 
 
         // now translate the unicode to ansi string
-        WszWideCharToMultiByte(CP_UTF8, 0, wstrValue, -1, strValue, cbReq+1, 0,0);
+        WideCharToMultiByte(CP_UTF8, 0, wstrValue, -1, strValue, cbReq+1, 0,0);
         char *szEnd = (char *)strchr(strValue, ';');
         char *szStart = strValue;
         while (szEnd != NULL)
@@ -1422,7 +1422,7 @@ DWORD WINAPI DbgInteropStressProc(void * lpParameter)
         else
         {
             // Generate the occasional oob-event.
-            WszOutputDebugString(W("Ping from DbgInteropStressProc"));
+            OutputDebugString(W("Ping from DbgInteropStressProc"));
         }
 
         // This helps parallelize if we have a lot of threads, and keeps us from
@@ -1472,7 +1472,7 @@ DWORD WINAPI DbgInteropOOBStressProc(void * lpParameter)
         else
         {
             // Generate the occasional oob-event.
-            WszOutputDebugString(W("OOB ping from "));
+            OutputDebugString(W("OOB ping from "));
         }
 
         ClrSleepEx(3000, FALSE);
@@ -1749,7 +1749,7 @@ HANDLE OpenStartupNotificationEvent()
 
     DWORD debuggeePID = GetCurrentProcessId();
     FormatInteger(eventName + ARRAY_SIZE(prefix) - 1, ARRAY_SIZE(eventName) - ARRAY_SIZE(prefix), "%08x", debuggeePID);
-    return WszOpenEvent(MAXIMUM_ALLOWED | SYNCHRONIZE | EVENT_MODIFY_STATE, FALSE, eventName);
+    return OpenEvent(MAXIMUM_ALLOWED | SYNCHRONIZE | EVENT_MODIFY_STATE, FALSE, eventName);
 }
 
 void NotifyDebuggerOfStartup()
@@ -1759,7 +1759,7 @@ void NotifyDebuggerOfStartup()
     // the instant we signal the startup notification event.
 
     CONSISTENCY_CHECK(INVALID_HANDLE_VALUE == g_hContinueStartupEvent);
-    g_hContinueStartupEvent = WszCreateEvent(NULL, TRUE, FALSE, NULL);
+    g_hContinueStartupEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
     CONSISTENCY_CHECK(INVALID_HANDLE_VALUE != g_hContinueStartupEvent); // we reserve this value for error conditions in EnumerateCLRs
 
     HANDLE startupEvent = OpenStartupNotificationEvent();
@@ -2063,7 +2063,7 @@ HRESULT Debugger::StartupPhase2(Thread * pThread)
         {
             // Remove the env var from our process so that the debugger we spin up won't inherit it.
             // Else, if the debugger is managed, we'll have an infinite recursion.
-            BOOL fOk = WszSetEnvironmentVariable(DBG_ATTACH_ON_STARTUP_ENV_VAR, NULL);
+            BOOL fOk = SetEnvironmentVariable(DBG_ATTACH_ON_STARTUP_ENV_VAR, NULL);
 
             if (fOk)
             {
@@ -5828,7 +5828,7 @@ void Debugger::SuspendForGarbageCollectionCompleted()
         InitIPCEvent(ipce1,
             DB_IPCE_BEFORE_GARBAGE_COLLECTION,
             pThread,
-            pThread->GetDomain());
+            AppDomain::GetCurrentDomain());
 
         m_pRCThread->SendIPCEvent();
         this->SuspendComplete(true);
@@ -5866,7 +5866,7 @@ void Debugger::ResumeForGarbageCollectionStarted()
         InitIPCEvent(ipce1,
             DB_IPCE_AFTER_GARBAGE_COLLECTION,
             pThread,
-            pThread->GetDomain());
+            AppDomain::GetCurrentDomain());
 
         m_pRCThread->SendIPCEvent();
         this->SuspendComplete(true);
@@ -5916,7 +5916,7 @@ void Debugger::SendDataBreakpoint(Thread *thread, CONTEXT *context,
     InitIPCEvent(ipce,
         DB_IPCE_DATA_BREAKPOINT,
         thread,
-        thread->GetDomain());
+        AppDomain::GetCurrentDomain());
     //_ASSERTE(breakpoint->m_pAppDomain == ipce->vmAppDomain.GetRawPtr());
 
     m_pRCThread->SendIPCEvent();
@@ -5963,7 +5963,7 @@ void Debugger::SendBreakpoint(Thread *thread, CONTEXT *context,
     InitIPCEvent(ipce,
                  DB_IPCE_BREAKPOINT,
                  thread,
-                 thread->GetDomain());
+                 AppDomain::GetCurrentDomain());
     ipce->BreakpointData.breakpointToken.Set(breakpoint);
     _ASSERTE( breakpoint->m_pAppDomain == ipce->vmAppDomain.GetRawPtr());
 
@@ -6036,7 +6036,7 @@ void Debugger::SendRawUserBreakpoint(Thread * pThread)
     InitIPCEvent(pEvent,
                  DB_IPCE_USER_BREAKPOINT,
                  pThread,
-                 pThread->GetDomain());
+                 AppDomain::GetCurrentDomain());
 
     m_pRCThread->SendIPCEvent();
 }
@@ -6068,7 +6068,7 @@ void Debugger::SendInterceptExceptionComplete(Thread *thread)
     InitIPCEvent(ipce,
                  DB_IPCE_INTERCEPT_EXCEPTION_COMPLETE,
                  thread,
-                 thread->GetDomain());
+                 AppDomain::GetCurrentDomain());
 
     m_pRCThread->SendIPCEvent();
 }
@@ -6107,7 +6107,7 @@ void Debugger::SendStep(Thread *thread, CONTEXT *context,
     InitIPCEvent(ipce,
                  DB_IPCE_STEP_COMPLETE,
                  thread,
-                 thread->GetDomain());
+                 AppDomain::GetCurrentDomain());
     ipce->StepData.stepperToken.Set(stepper);
     ipce->StepData.reason = reason;
     m_pRCThread->SendIPCEvent();
@@ -6148,7 +6148,7 @@ void Debugger::LockAndSendEnCRemapEvent(DebuggerJitInfo * dji, SIZE_T currentIP,
     InitIPCEvent(ipce,
                  DB_IPCE_ENC_REMAP,
                  thread,
-                 thread->GetDomain());
+                 AppDomain::GetCurrentDomain());
 
     ipce->EnCRemap.currentVersionNumber = dji->m_encVersion;
     ipce->EnCRemap.resumeVersionNumber = dji->m_methodInfo->GetCurrentEnCVersion();;
@@ -6161,7 +6161,7 @@ void Debugger::LockAndSendEnCRemapEvent(DebuggerJitInfo * dji, SIZE_T currentIP,
 
     Module *pRuntimeModule = pMD->GetModule();
 
-    DebuggerModule * pDModule = LookupOrCreateModule(pRuntimeModule, thread->GetDomain());
+    DebuggerModule * pDModule = LookupOrCreateModule(pRuntimeModule, AppDomain::GetCurrentDomain());
     ipce->EnCRemap.vmDomainAssembly.SetRawPtr((pDModule ? pDModule->GetDomainAssembly() : NULL));
 
     LOG((LF_CORDB, LL_INFO10000, "D::LASEnCRE: %s::%s dmod:%p\n",
@@ -6200,13 +6200,13 @@ void Debugger::LockAndSendEnCRemapCompleteEvent(MethodDesc *pMD)
     InitIPCEvent(ipce,
                  DB_IPCE_ENC_REMAP_COMPLETE,
                  thread,
-                 thread->GetDomain());
+                 AppDomain::GetCurrentDomain());
 
     ipce->EnCRemapComplete.funcMetadataToken = pMD->GetMemberDef();
 
     Module *pRuntimeModule = pMD->GetModule();
 
-    DebuggerModule * pDModule = LookupOrCreateModule(pRuntimeModule, thread->GetDomain());
+    DebuggerModule * pDModule = LookupOrCreateModule(pRuntimeModule, AppDomain::GetCurrentDomain());
     ipce->EnCRemapComplete.vmDomainAssembly.SetRawPtr((pDModule ? pDModule->GetDomainAssembly() : NULL));
 
     LOG((LF_CORDB, LL_INFO10000, "D::LASEnCRE: %s::%s dmod:%p, methodDef:0x%08x \n",
@@ -6321,7 +6321,7 @@ void Debugger::LockAndSendBreakpointSetError(PATCH_UNORDERED_ARRAY * listUnbinda
             i+1, count, controller, controller->GetDCType()));
 
         // Send a breakpoint set error event to the Right Side.
-        InitIPCEvent(ipce, DB_IPCE_BREAKPOINT_SET_ERROR, thread, thread->GetDomain());
+        InitIPCEvent(ipce, DB_IPCE_BREAKPOINT_SET_ERROR, thread, AppDomain::GetCurrentDomain());
 
         ipce->BreakpointSetErrorData.breakpointToken.Set(static_cast<DebuggerBreakpoint*> (controller));
 
@@ -7294,7 +7294,7 @@ HRESULT Debugger::SendExceptionHelperAndBlock(
     //
     // Send pre-Whidbey EXCEPTION IPC event.
     //
-    InitIPCEvent(ipce, DB_IPCE_EXCEPTION, pThread, pThread->GetDomain());
+    InitIPCEvent(ipce, DB_IPCE_EXCEPTION, pThread, AppDomain::GetCurrentDomain());
 
     ipce->Exception.vmExceptionHandle.SetRawPtr(exceptionHandle);
     ipce->Exception.firstChance = (eventType == DEBUG_EXCEPTION_FIRST_CHANCE);
@@ -7306,7 +7306,7 @@ HRESULT Debugger::SendExceptionHelperAndBlock(
     //
     // Send Whidbey EXCEPTION IPC event.
     //
-    InitIPCEvent(ipce, DB_IPCE_EXCEPTION_CALLBACK2, pThread, pThread->GetDomain());
+    InitIPCEvent(ipce, DB_IPCE_EXCEPTION_CALLBACK2, pThread, AppDomain::GetCurrentDomain());
 
     ipce->ExceptionCallback2.framePointer = framePointer;
     ipce->ExceptionCallback2.eventType = eventType;
@@ -7459,7 +7459,7 @@ void Debugger::SendExceptionEventsWorker(
         {
             SENDIPCEVENT_BEGIN(this, pThread);
 
-            InitIPCEvent(ipce, DB_IPCE_EXCEPTION_CALLBACK2, pThread, pThread->GetDomain());
+            InitIPCEvent(ipce, DB_IPCE_EXCEPTION_CALLBACK2, pThread, AppDomain::GetCurrentDomain());
 
             ipce->ExceptionCallback2.framePointer = framePointer;
             ipce->ExceptionCallback2.eventType = DEBUG_EXCEPTION_USER_FIRST_CHANCE;
@@ -8045,6 +8045,20 @@ BOOL Debugger::ShouldSendCatchHandlerFound(Thread* pThread)
     }
 }
 
+BOOL Debugger::ShouldSendCustomNotification(DomainAssembly *pAssembly, mdTypeDef typeDef)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    Module *pModule = pAssembly->GetModule();
+    TypeInModule tim(pModule, typeDef);
+    return !(m_pCustomNotificationTable->Lookup(tim).IsNull());
+}
 
 // Actually send the catch handler found event.
 // This can be used to send CHF for both regular managed catchers as well
@@ -8105,7 +8119,7 @@ void Debugger::SendCatchHandlerFound(
                 //
                 // Send Whidbey EXCEPTION IPC event.
                 //
-                InitIPCEvent(ipce, DB_IPCE_EXCEPTION_CALLBACK2, pThread, pThread->GetDomain());
+                InitIPCEvent(ipce, DB_IPCE_EXCEPTION_CALLBACK2, pThread, AppDomain::GetCurrentDomain());
 
                 ipce->ExceptionCallback2.framePointer = fp;
                 ipce->ExceptionCallback2.eventType = DEBUG_EXCEPTION_CATCH_HANDLER_FOUND;
@@ -8208,7 +8222,7 @@ void Debugger::ManagedExceptionUnwindBegin(Thread *pThread)
                 //
                 // Send Whidbey EXCEPTION IPC event.
                 //
-                InitIPCEvent(ipce, DB_IPCE_EXCEPTION_UNWIND, pThread, pThread->GetDomain());
+                InitIPCEvent(ipce, DB_IPCE_EXCEPTION_UNWIND, pThread, AppDomain::GetCurrentDomain());
 
                 ipce->ExceptionUnwind.eventType = DEBUG_EXCEPTION_UNWIND_BEGIN;
                 ipce->ExceptionUnwind.dwFlags = 0;
@@ -8989,7 +9003,7 @@ void Debugger::ThreadStarted(Thread* pRuntimeThread)
         return;
 
     LOG((LF_CORDB, LL_INFO100, "D::TS: thread attach : ID=%#x AD:%#x\n",
-         GetThreadIdHelper(pRuntimeThread), pRuntimeThread->GetDomain()));
+         GetThreadIdHelper(pRuntimeThread), AppDomain::GetCurrentDomain()));
 
     // We just need to send a VMPTR_Thread. The RS will get everything else it needs from DAC.
     //
@@ -9003,7 +9017,7 @@ void Debugger::ThreadStarted(Thread* pRuntimeThread)
     InitIPCEvent(ipce,
                  DB_IPCE_THREAD_ATTACH,
                  pRuntimeThread,
-                 pRuntimeThread->GetDomain());
+                 AppDomain::GetCurrentDomain());
 
 
     m_pRCThread->SendIPCEvent();
@@ -9056,7 +9070,7 @@ void Debugger::DetachThread(Thread *pRuntimeThread)
 
 
     LOG((LF_CORDB, LL_INFO100, "D::DT: thread detach : ID=%#x AD:%#x.\n",
-         GetThreadIdHelper(pRuntimeThread), pRuntimeThread->GetDomain()));
+         GetThreadIdHelper(pRuntimeThread), AppDomain::GetCurrentDomain()));
 
 
     // We may be killing a thread before the Thread-starter fired.
@@ -9077,7 +9091,7 @@ void Debugger::DetachThread(Thread *pRuntimeThread)
         InitIPCEvent(pEvent,
                      DB_IPCE_THREAD_DETACH,
                      pRuntimeThread,
-                     pRuntimeThread->GetDomain());
+                     AppDomain::GetCurrentDomain());
 
         m_pRCThread->SendIPCEvent();
 
@@ -10052,7 +10066,7 @@ void Debugger::FuncEvalComplete(Thread* pThread, DebuggerEval *pDE)
     // We can't easily convert our ADID to an AppDomain* (SystemDomain::GetAppDomainFromId)
     // because we can't prove that the AppDomain* would be valid (not unloaded).
     //
-    AppDomain *pDomain = pThread->GetDomain();
+    AppDomain *pDomain = AppDomain::GetCurrentDomain();
     AppDomain *pResultDomain = ((pDE->m_debuggerModule == NULL) ? pDomain : pDE->m_debuggerModule->GetAppDomain());
 
     // Send a func eval complete event to the Right Side.
@@ -10476,6 +10490,26 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
             DebuggerIPCEvent * pIPCResult = m_pRCThread->GetIPCEventReceiveBuffer();
             InitIPCEvent(pIPCResult,
                          DB_IPCE_CATCH_HANDLER_FOUND_RESULT,
+                         g_pEEInterface->GetThread(),
+                         pEvent->vmAppDomain);
+
+            pIPCResult->hr = hr;
+
+            m_pRCThread->SendIPCReply();
+        }
+        break;
+
+    case DB_IPCE_SET_ENABLE_CUSTOM_NOTIFICATION:
+        {
+            Module * pModule = pEvent->CustomNotificationData.vmModule.GetRawPtr();
+            mdTypeDef classToken = pEvent->CustomNotificationData.classMetadataToken;
+            BOOL enabled = pEvent->CustomNotificationData.Enabled;
+
+            HRESULT hr = UpdateCustomNotificationTable(pModule, classToken, enabled);
+
+            DebuggerIPCEvent * pIPCResult = m_pRCThread->GetIPCEventReceiveBuffer();
+            InitIPCEvent(pIPCResult,
+                         DB_IPCE_SET_ENABLE_CUSTOM_NOTIFICATION_RESULT,
                          g_pEEInterface->GetThread(),
                          pEvent->vmAppDomain);
 
@@ -11011,7 +11045,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
 
             Thread * pThread = pEvent->FuncEval.vmThreadToken.GetRawPtr();
 
-            InitIPCEvent(pEvent, DB_IPCE_FUNC_EVAL_SETUP_RESULT, pThread, pThread->GetDomain());
+            InitIPCEvent(pEvent, DB_IPCE_FUNC_EVAL_SETUP_RESULT, pThread, AppDomain::GetCurrentDomain());
 
             BYTE * pbArgDataArea = NULL;
             DebuggerEval * pDebuggerEvalKey = NULL;
@@ -12279,13 +12313,14 @@ HRESULT Debugger::DeoptimizeMethodHelper(Module* pModule, mdMethodDef methodDef)
     ILCodeVersion ilCodeVersion;
     CodeVersionManager *pCodeVersionManager = pModule->GetCodeVersionManager();
 
+    LOG((LF_TIEREDCOMPILATION, LL_INFO100, "Debugger::DeoptimizeMethodHelper Module=%p Method=0x%08x\n",
+        pModule, methodDef));
+
     {
         CodeVersionManager::LockHolder codeVersioningLockHolder;
         if (FAILED(hr = pCodeVersionManager->AddILCodeVersion(pModule, methodDef, &ilCodeVersion, TRUE)))
         {
-            LOG((LF_TIEREDCOMPILATION, LL_INFO100, "TieredCompilationManager::DeOptimizeMethodHelper Module=0x%x Method=0x%x, AddILCodeVersion returned hr 0x%x\n",
-                pModule, methodDef,
-                hr));
+            LOG((LF_TIEREDCOMPILATION, LL_INFO100, "Debugger::DeoptimizeMethodHelper AddILCodeVersion returned hr 0x%x\n", hr));
             return hr;
         }
 
@@ -12301,8 +12336,7 @@ HRESULT Debugger::DeoptimizeMethodHelper(Module* pModule, mdMethodDef methodDef)
     {
         if (FAILED(hr = pCodeVersionManager->SetActiveILCodeVersions(&ilCodeVersion, 1, NULL)))
         {
-            LOG((LF_TIEREDCOMPILATION, LL_INFO100, "TieredCompilationManager::DeOptimizeMethodHelper Module=0x%x Method=0x%x, SetActiveILCodeVersions returned hr 0x%x\n",
-                pModule, methodDef,
+            LOG((LF_TIEREDCOMPILATION, LL_INFO100, "Debugger::DeoptimizeMethodHelper SetActiveILCodeVersions returned hr 0x%x\n",
                 hr));
             return hr;
         }
@@ -12324,7 +12358,7 @@ HRESULT Debugger::DeoptimizeMethod(Module* pModule, mdMethodDef methodDef)
     HRESULT hr = DeoptimizeMethodHelper(pModule, methodDef);
     if (FAILED(hr))
     {
-        LOG((LF_TIEREDCOMPILATION, LL_INFO100, "TieredCompilationManager::DeOptimizeMethod Module=0x%x Method=0x%x,, initial ReJIT returned hr 0x%x, aborting\n",
+        LOG((LF_TIEREDCOMPILATION, LL_INFO100, "Debugger::DeoptimizeMethod Module=%p Method=0x%08x, initial ReJIT returned hr 0x%x, aborting\n",
             pModule, methodDef, hr));
         return hr;
     }
@@ -12403,6 +12437,35 @@ HRESULT Debugger::IsMethodDeoptimized(Module *pModule, mdMethodDef methodDef, BO
         CodeVersionManager *pCodeVersionManager = pModule->GetCodeVersionManager();
         ILCodeVersion activeILVersion = pCodeVersionManager->GetActiveILCodeVersion(pModule, methodDef);
         *pResult = activeILVersion.IsDeoptimized();
+    }
+
+    return S_OK;
+}
+
+HRESULT Debugger::UpdateCustomNotificationTable(Module *pModule, mdTypeDef classToken, BOOL enabled)
+{
+    CONTRACTL
+    {
+        THROWS;
+        CAN_TAKE_LOCK;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+    TypeInModule tim(pModule, classToken);
+    if (enabled)
+    {
+        if (m_pCustomNotificationTable->Lookup(tim).IsNull())
+        {
+            m_pCustomNotificationTable->Add(tim);
+        }
+    }
+    else
+    {
+        if (!(m_pCustomNotificationTable->Lookup(tim).IsNull()))
+        {
+            m_pCustomNotificationTable->Remove(tim);
+        }
     }
 
     return S_OK;
@@ -14239,7 +14302,7 @@ void Debugger::SendRawMDANotification(
     DebuggerIPCEvent* ipce = m_pRCThread->GetIPCEventSendBuffer();
 
     Thread * pThread = params->m_pThread;
-    AppDomain *pAppDomain = (pThread != NULL) ? pThread->GetDomain() : NULL;
+    AppDomain *pAppDomain = (pThread != NULL) ? AppDomain::GetCurrentDomain() : NULL;
 
     InitIPCEvent(ipce,
                  DB_IPCE_MDA_NOTIFICATION,
@@ -14420,7 +14483,7 @@ void Debugger::SendLogMessage(int iLevel,
     // Send the message only if the debugger is attached to this appdomain.
     // Note the debugger may detach at any time, so we'll have to check
     // this again after we get the lock.
-    AppDomain *pAppDomain = g_pEEInterface->GetThread()->GetDomain();
+    AppDomain *pAppDomain = AppDomain::GetCurrentDomain();
 
     if (!CORDebuggerAttached())
     {
@@ -14526,7 +14589,7 @@ void Debugger::SendLogSwitchSetting(int iLevel,
         InitIPCEvent(ipce,
                      DB_IPCE_LOGSWITCH_SET_MESSAGE,
                      pThread,
-                     pThread->GetDomain());
+                     AppDomain::GetCurrentDomain());
 
         ipce->LogSwitchSettingMessage.iLevel = iLevel;
         ipce->LogSwitchSettingMessage.iReason = iReason;
@@ -14583,13 +14646,13 @@ void Debugger::SendCustomDebuggerNotification(Thread * pThread,
     Thread *curThread = g_pEEInterface->GetThread();
     SENDIPCEVENT_BEGIN(this, curThread);
 
-    if (CORDebuggerAttached())
+    if (CORDebuggerAttached() && ShouldSendCustomNotification(pDomain, classToken))
     {
         DebuggerIPCEvent* ipce = m_pRCThread->GetIPCEventSendBuffer();
         InitIPCEvent(ipce,
                      DB_IPCE_CUSTOM_NOTIFICATION,
                      curThread,
-                     curThread->GetDomain());
+                     AppDomain::GetCurrentDomain());
 
         VMPTR_DomainAssembly vmDomainAssembly = VMPTR_DomainAssembly::MakePtr(pDomain);
 
@@ -14870,7 +14933,7 @@ HRESULT Debugger::InitAppDomainIPC(void)
     // Create a mutex to allow the Left and Right Sides to properly
     // synchronize. The Right Side will spin until m_hMutex is valid,
     // then it will acquire it before accessing the data.
-    HandleHolder hMutex(WszCreateMutex(NULL, TRUE/*hold*/, NULL));
+    HandleHolder hMutex(CreateMutex(NULL, TRUE/*hold*/, NULL));
     if (hMutex == NULL)
     {
         ThrowLastError();
@@ -15711,8 +15774,7 @@ HRESULT Debugger::NameChangeEvent(AppDomain *pAppDomain, Thread *pThread)
         InitIPCEvent(ipce,
                      DB_IPCE_NAME_CHANGE,
                      curThread,
-                     curThread->GetDomain());
-
+                     AppDomain::GetCurrentDomain());
 
         if (pAppDomain)
         {

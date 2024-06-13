@@ -30,7 +30,7 @@ namespace System.Linq
             public override int GetCount(bool onlyIfCheap)
             {
                 int count;
-                if (!onlyIfCheap || _source is IReadOnlyCollection<TSource> || _source is ICollection)
+                if (!onlyIfCheap || _source is ICollection<TSource> || _source is ICollection)
                 {
                     count = _source.Count();
                 }

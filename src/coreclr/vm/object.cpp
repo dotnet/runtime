@@ -807,7 +807,7 @@ STRINGREF StringObject::NewString(LPCUTF8 psz)
     }
     CQuickBytes qb;
     WCHAR* pwsz = (WCHAR*) qb.AllocThrows((length) * sizeof(WCHAR));
-    length = WszMultiByteToWideChar(CP_UTF8, 0, psz, length, pwsz, length);
+    length = MultiByteToWideChar(CP_UTF8, 0, psz, length, pwsz, length);
     if (length == 0) {
         COMPlusThrow(kArgumentException, W("Arg_InvalidUTF8String"));
     }
@@ -836,7 +836,7 @@ STRINGREF StringObject::NewString(LPCUTF8 psz, int cBytes)
         COMPlusThrowOM();
     CQuickBytes qb;
     WCHAR* pwsz = (WCHAR*) qb.AllocThrows(cWszBytes);
-    int length = WszMultiByteToWideChar(CP_UTF8, 0, psz, cBytes, pwsz, cBytes);
+    int length = MultiByteToWideChar(CP_UTF8, 0, psz, cBytes, pwsz, cBytes);
     if (length == 0) {
         COMPlusThrow(kArgumentException, W("Arg_InvalidUTF8String"));
     }
@@ -1623,6 +1623,15 @@ BOOL Nullable::IsNullableForTypeHelperNoGC(MethodTable* nullableMT, MethodTable*
 }
 
 //===============================================================================
+int32_t Nullable::GetValueAddrOffset(MethodTable* nullableMT)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    _ASSERTE(IsNullableType(nullableMT));
+    _ASSERTE(strcmp(nullableMT->GetApproxFieldDescListRaw()[1].GetDebugName(), "value") == 0);
+    return nullableMT->GetApproxFieldDescListRaw()[1].GetOffset();
+}
+
 CLR_BOOL* Nullable::HasValueAddr(MethodTable* nullableMT) {
 
     LIMITED_METHOD_CONTRACT;

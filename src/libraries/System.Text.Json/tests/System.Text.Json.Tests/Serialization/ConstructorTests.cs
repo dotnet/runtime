@@ -27,4 +27,10 @@ namespace System.Text.Json.Serialization.Tests
         public ConstructorTests_Span()
             : base(JsonSerializerWrapper.SpanSerializer) { }
     }
+
+    public class ConstructorTests_Pipe : ConstructorTests
+    {
+        public ConstructorTests_Pipe()
+            : base(JsonSerializerWrapper.AsyncPipeSerializer) { }
+    }
 }

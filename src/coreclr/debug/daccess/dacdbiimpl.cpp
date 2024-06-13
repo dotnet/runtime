@@ -4922,12 +4922,7 @@ VMPTR_AppDomain DacDbiInterfaceImpl::GetCurrentAppDomain(VMPTR_Thread vmThread)
     DD_ENTER_MAY_THROW;
 
     Thread *    pThread    = vmThread.GetDacPtr();
-    AppDomain * pAppDomain = pThread->GetDomain();
-
-    if (pAppDomain == NULL)
-    {
-        ThrowHR(E_FAIL);
-    }
+    AppDomain * pAppDomain = AppDomain::GetCurrentDomain();
 
     VMPTR_AppDomain vmAppDomain = VMPTR_AppDomain::NullPtr();
     vmAppDomain.SetDacTargetPtr(PTR_HOST_TO_TADDR(pAppDomain));
@@ -5700,7 +5695,7 @@ void DacDbiInterfaceImpl::GetContext(VMPTR_Thread vmThread, DT_CONTEXT * pContex
 
             // Going through thread Frames and looking for first (deepest one) one that
             // that has context available for stackwalking (SP and PC)
-            // For example: RedirectedThreadFrame, InlinedCallFrame, HelperMethodFrame, ComPlusMethodFrame
+            // For example: RedirectedThreadFrame, InlinedCallFrame, HelperMethodFrame, CLRToCOMMethodFrame
             Frame *frame = pThread->GetFrame();
             while (frame != NULL && frame != FRAME_TOP)
             {
@@ -7477,7 +7472,7 @@ HRESULT DacDbiInterfaceImpl::GetDefinesBitField(ULONG32 *pDefines)
 
     if (g_pDebugger == NULL)
         return CORDBG_E_NOTREADY;
-        
+
     *pDefines = g_pDebugger->m_defines;
     return S_OK;
 }

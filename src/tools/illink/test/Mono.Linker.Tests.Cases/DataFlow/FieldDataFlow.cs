@@ -230,24 +230,21 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			static AccessReturnedInstanceField GetInstance ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)] Type unused) => null;
 
-			[ExpectedWarning ("IL2072", nameof (GetUnknownType), nameof (GetInstance),
-				ProducedBy = Tool.Trimmer | Tool.NativeAot)] // https://github.com/dotnet/linker/issues/2832
+			[ExpectedWarning ("IL2072", nameof (GetUnknownType), nameof (GetInstance), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/linker/issues/2832")]
 			[ExpectedWarning ("IL2077", nameof (field), nameof (DataFlowTypeExtensions.RequiresAll))]
 			static void TestRead ()
 			{
 				GetInstance (GetUnknownType ()).field.RequiresAll ();
 			}
 
-			[ExpectedWarning ("IL2072", nameof (GetUnknownType), nameof (GetInstance),
-				ProducedBy = Tool.Trimmer | Tool.NativeAot)] // https://github.com/dotnet/linker/issues/2832
+			[ExpectedWarning ("IL2072", nameof (GetUnknownType), nameof (GetInstance), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/linker/issues/2832")]
 			[ExpectedWarning ("IL2074", nameof (GetUnknownType), nameof (field))]
 			static void TestWrite ()
 			{
 				GetInstance (GetUnknownType ()).field = GetUnknownType ();
 			}
 
-			[ExpectedWarning ("IL2072", nameof (GetUnknownType), nameof (GetInstance),
-				ProducedBy = Tool.Trimmer | Tool.NativeAot)] // https://github.com/dotnet/linker/issues/2832
+			[ExpectedWarning ("IL2072", nameof (GetUnknownType), nameof (GetInstance), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/linker/issues/2832")]
 			[ExpectedWarning ("IL2074", nameof (GetUnknownType), nameof (field))]
 			static void TestNullCoalescingAssignment ()
 			{
@@ -341,13 +338,13 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			{
 			}
 
-			[ExpectedWarning ("IL2077", ProducedBy = Tool.Analyzer)] // https://github.com/dotnet/runtime/issues/101211
+			[UnexpectedWarning ("IL2077", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/101211")]
 			static void TestFlowOutOfField ()
 			{
 				RequirePublicFields (unsupportedTypeInstance);
 			}
 
-			[ExpectedWarning ("IL2074", ProducedBy = Tool.Analyzer)] // https://github.com/dotnet/runtime/issues/101211
+			[UnexpectedWarning ("IL2074", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/101211")]
 			public static void Test () {
 				var t = GetUnsupportedTypeInstance ();
 				unsupportedTypeInstance = t;

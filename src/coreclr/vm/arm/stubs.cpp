@@ -98,7 +98,7 @@ class ThumbCondJump : public InstructionFormat
         //Encoding 1|0|1|1|op|0|i|1|imm5|Rn
         //op = Bit3(variation)
         //Rn = Bits2-0(variation)
-        virtual VOID EmitInstruction(UINT refsize, __int64 fixedUpReference, BYTE *pOutBufferRX, BYTE *pOutBufferRW, UINT variationCode, BYTE *pDataBuffer)
+        virtual VOID EmitInstruction(UINT refsize, int64_t fixedUpReference, BYTE *pOutBufferRX, BYTE *pOutBufferRW, UINT variationCode, BYTE *pDataBuffer)
         {
             LIMITED_METHOD_CONTRACT
 
@@ -138,7 +138,7 @@ class ThumbNearJump : public InstructionFormat
             return 0;
         }
 
-        virtual VOID EmitInstruction(UINT refsize, __int64 fixedUpReference, BYTE *pOutBufferRX, BYTE *pOutBufferRW, UINT cond, BYTE *pDataBuffer)
+        virtual VOID EmitInstruction(UINT refsize, int64_t fixedUpReference, BYTE *pOutBufferRX, BYTE *pOutBufferRW, UINT cond, BYTE *pDataBuffer)
         {
             LIMITED_METHOD_CONTRACT
 

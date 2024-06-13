@@ -42,7 +42,7 @@ namespace Internal.StackTraceMetadata
             formatter._outputBuilder.Append('.');
             formatter.EmitString(name);
 
-            if (!genericArguments.IsNull(metadataReader))
+            if (!genericArguments.IsNil)
             {
                 var args = metadataReader.GetConstantStringArray(genericArguments);
                 bool first = true;
@@ -262,7 +262,7 @@ namespace Internal.StackTraceMetadata
         private void EmitNamespaceReferenceName(NamespaceReferenceHandle namespaceRefHandle)
         {
             NamespaceReference namespaceRef = _metadataReader.GetNamespaceReference(namespaceRefHandle);
-            if (!namespaceRef.ParentScopeOrNamespace.IsNull(_metadataReader) &&
+            if (!namespaceRef.ParentScopeOrNamespace.IsNil &&
                 namespaceRef.ParentScopeOrNamespace.HandleType == HandleType.NamespaceReference)
             {
                 int charsWritten = _outputBuilder.Length;
@@ -276,7 +276,7 @@ namespace Internal.StackTraceMetadata
         private void EmitNamespaceDefinitionName(NamespaceDefinitionHandle namespaceDefHandle)
         {
             NamespaceDefinition namespaceDef = _metadataReader.GetNamespaceDefinition(namespaceDefHandle);
-            if (!namespaceDef.ParentScopeOrNamespace.IsNull(_metadataReader) &&
+            if (!namespaceDef.ParentScopeOrNamespace.IsNil &&
                 namespaceDef.ParentScopeOrNamespace.HandleType == HandleType.NamespaceDefinition)
             {
                 int charsWritten = _outputBuilder.Length;
@@ -295,7 +295,7 @@ namespace Internal.StackTraceMetadata
         private void EmitTypeReferenceName(TypeReferenceHandle typeRefHandle, bool namespaceQualified)
         {
             TypeReference typeRef = _metadataReader.GetTypeReference(typeRefHandle);
-            if (!typeRef.ParentNamespaceOrType.IsNull(_metadataReader))
+            if (!typeRef.ParentNamespaceOrType.IsNil)
             {
                 if (typeRef.ParentNamespaceOrType.HandleType != HandleType.NamespaceReference)
                 {
@@ -317,7 +317,7 @@ namespace Internal.StackTraceMetadata
         private void EmitTypeDefinitionName(TypeDefinitionHandle typeDefHandle, bool namespaceQualified)
         {
             TypeDefinition typeDef = _metadataReader.GetTypeDefinition(typeDefHandle);
-            if (!typeDef.EnclosingType.IsNull(_metadataReader))
+            if (!typeDef.EnclosingType.IsNil)
             {
                 // Nested type
                 EmitTypeName(typeDef.EnclosingType, namespaceQualified);
@@ -403,9 +403,10 @@ namespace Internal.StackTraceMetadata
         /// <summary>
         /// Emit function pointer type.
         /// </summary>
-        private void EmitFunctionPointerTypeName()
+        private static void EmitFunctionPointerTypeName()
         {
-            _outputBuilder.Append("IntPtr");
+            // Function pointer types have no textual representation and we have tests making sure
+            // they show up as empty strings in stack traces, so deliberately do nothing.
         }
 
         /// <summary>
@@ -520,7 +521,7 @@ namespace Internal.StackTraceMetadata
             public static SigTypeContext FromMethod(MetadataReader metadataReader, Handle enclosingTypeHandle, ConstantStringArrayHandle methodInst)
             {
                 object methodContext = null;
-                if (!methodInst.IsNull(metadataReader))
+                if (!methodInst.IsNil)
                     methodContext = methodInst.GetConstantStringArray(metadataReader).Value;
                 return new SigTypeContext(GetTypeContext(metadataReader, enclosingTypeHandle), methodContext);
             }

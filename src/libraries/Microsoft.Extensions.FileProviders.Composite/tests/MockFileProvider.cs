@@ -11,7 +11,7 @@ namespace Microsoft.Extensions.FileProviders.Composite
 {
     public class MockFileProvider : IFileProvider
     {
-#if NETCOREAPP
+#if NET
         static MockFileProvider()
         {
             // Castle DynamicProxy hasn't been updated to ignore .net5 infrastructure attributes
