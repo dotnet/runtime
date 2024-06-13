@@ -1050,11 +1050,11 @@ _GenericPInvokeCalliHelper@0 endp
 _CopyConstructorCallStub@0 proc public
     ; there may be an argument in ecx - save it
     push    ecx
-    
+
     ; push pointer to arguments
     lea     edx, [esp + 8]
     push    edx
-    
+
     call    _CallCopyConstructorsWorker@4
 
     ; restore ecx and tail call to the target
@@ -1266,7 +1266,7 @@ _TheUMEntryPrestub@0 endp
 ifdef FEATURE_COMINTEROP
 ;==========================================================================
 ; CLR -> COM generic or late-bound call
-_GenericComPlusCallStub@0 proc public
+_GenericCLRToCOMCallStub@0 proc public
 
     STUB_PROLOG
 
@@ -1288,19 +1288,19 @@ _GenericComPlusCallStub@0 proc public
 
     ; From here on, mustn't trash eax:edx
 
-    ; Get pComPlusCallInfo for return thunk
-    mov         ecx, [ebx + ComPlusCallMethodDesc__m_pComPlusCallInfo]
+    ; Get pCLRToCOMCallInfo for return thunk
+    mov         ecx, [ebx + CLRToCOMCallMethodDesc__m_pCLRToCOMCallInfo]
 
     STUB_EPILOG_RETURN
 
     ; Tailcall return thunk
-    jmp [ecx + ComPlusCallInfo__m_pRetThunk]
+    jmp [ecx + CLRToCOMCallInfo__m_pRetThunk]
 
     ; This will never be executed. It is just to help out stack-walking logic
     ; which disassembles the epilog to unwind the stack.
     ret
 
-_GenericComPlusCallStub@0 endp
+_GenericCLRToCOMCallStub@0 endp
 endif ; FEATURE_COMINTEROP
 
 

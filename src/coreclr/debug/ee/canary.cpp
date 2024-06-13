@@ -119,7 +119,7 @@ void HelperCanary::Init()
         m_initialized = true;
     }
 
-    m_hPingEvent = WszCreateEvent(NULL, (BOOL) kAutoResetEvent, FALSE, NULL);
+    m_hPingEvent = CreateEvent(NULL, (BOOL) kAutoResetEvent, FALSE, NULL);
     if (m_hPingEvent == NULL)
     {
         STRESS_LOG1(LF_CORDB, LL_ALWAYS, "Canary failed to create ping event. gle=%d\n", GetLastError());
@@ -130,7 +130,7 @@ void HelperCanary::Init()
         return;
     }
 
-    m_hWaitEvent = WszCreateEvent(NULL, (BOOL) kManualResetEvent, FALSE, NULL);
+    m_hWaitEvent = CreateEvent(NULL, (BOOL) kManualResetEvent, FALSE, NULL);
     if (m_hWaitEvent == NULL)
     {
         STRESS_LOG1(LF_CORDB, LL_ALWAYS, "Canary failed to create wait event. gle=%d\n", GetLastError());

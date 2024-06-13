@@ -111,24 +111,6 @@ BYTE* ThreadStore::s_pOSContextBuffer = NULL;
 
 CLREvent *ThreadStore::s_pWaitForStackCrawlEvent;
 
-PTR_ThreadLocalModule ThreadLocalBlock::GetTLMIfExists(ModuleIndex index)
-{
-    WRAPPER_NO_CONTRACT;
-    SUPPORTS_DAC;
-
-    if (index.m_dwIndex >= m_TLMTableSize)
-        return NULL;
-
-    return m_pTLMTable[index.m_dwIndex].pTLM;
-}
-
-PTR_ThreadLocalModule ThreadLocalBlock::GetTLMIfExists(MethodTable* pMT)
-{
-    WRAPPER_NO_CONTRACT;
-    ModuleIndex index = pMT->GetModuleForStatics()->GetModuleIndex();
-    return GetTLMIfExists(index);
-}
-
 #ifndef DACCESS_COMPILE
 
 BOOL Thread::s_fCleanFinalizedThread = FALSE;
@@ -370,6 +352,7 @@ void SetThread(Thread* t)
     gCurrentThreadInfo.m_pThread = t;
     if (t != NULL)
     {
+        InitializeCurrentThreadsStaticData(t);
         EnsureTlsDestructionMonitor();
     }
 
@@ -1612,6 +1595,8 @@ Thread::Thread()
     m_currentPrepareCodeConfig = nullptr;
     m_isInForbidSuspendForDebuggerRegion = false;
     m_hasPendingActivation = false;
+
+    m_ThreadLocalDataPtr = NULL;
 
 #ifdef _DEBUG
     memset(dangerousObjRefs, 0, sizeof(dangerousObjRefs));
@@ -7482,10 +7467,6 @@ LPVOID Thread::GetStaticFieldAddress(FieldDesc *pFD)
     // for static field the MethodTable is exact even for generic classes
     MethodTable *pMT = pFD->GetEnclosingMethodTable();
 
-    // We need to make sure that the class has been allocated, however
-    // we should not call the class constructor
-    ThreadStatics::GetTLM(pMT)->EnsureClassAllocated(pMT);
-
     PTR_BYTE base = NULL;
 
     if (pFD->GetFieldType() == ELEMENT_TYPE_CLASS ||
@@ -7643,25 +7624,15 @@ void Thread::DeleteThreadStaticData()
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
+        MODE_COOPERATIVE;
     }
     CONTRACTL_END;
 
-    m_ThreadLocalBlock.FreeTable();
-}
-
-//+----------------------------------------------------------------------------
-//
-//  Method:     Thread::DeleteThreadStaticData   public
-//
-//  Synopsis:   Delete the static data for the given module. This is called
-//              when the AssemblyLoadContext unloads.
-//
-//
-//+----------------------------------------------------------------------------
-
-void Thread::DeleteThreadStaticData(ModuleIndex index)
-{
-    m_ThreadLocalBlock.FreeTLM(index.m_dwIndex, FALSE /* isThreadShuttingDown */);
+    FreeLoaderAllocatorHandlesForTLSData(this);
+    if (!IsAtProcessExit() && !g_fEEShutDown)
+    {
+        FreeThreadStaticData(m_ThreadLocalDataPtr, this);
+    }
 }
 
 OBJECTREF Thread::GetCulture(BOOL bUICulture)
@@ -8214,7 +8185,8 @@ Thread::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 
     m_ExceptionState.EnumChainMemoryRegions(flags);
 
-    m_ThreadLocalBlock.EnumMemoryRegions(flags);
+    if (GetThreadLocalDataPtr() != NULL)
+        EnumThreadMemoryRegions(GetThreadLocalDataPtr(), flags);
 
     if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE)
     {

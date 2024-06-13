@@ -503,6 +503,7 @@ namespace System.Net.Http
                 catch (Exception e)
                 {
                     InitialSettingsReceived.TrySetException(new HttpIOException(HttpRequestError.InvalidResponse, SR.net_http_http2_connection_not_established, e));
+                    LogExceptions(InitialSettingsReceived.Task);
                     throw new HttpIOException(HttpRequestError.InvalidResponse, SR.net_http_http2_connection_not_established, e);
                 }
 
