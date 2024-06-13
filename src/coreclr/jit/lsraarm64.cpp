@@ -1592,7 +1592,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 srcCount += BuildOperandUses(intrin.op1);
             }
             else
-            {            
+            {
                 SingleTypeRegSet predMask = RBM_ALLMASK.GetPredicateRegSet();
                 if (intrin.id == NI_Sve_ConditionalSelect)
                 {

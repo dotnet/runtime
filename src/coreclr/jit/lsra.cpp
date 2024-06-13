@@ -11512,11 +11512,11 @@ void LinearScan::dumpRegRecordTitleIfNeeded()
         lastUsedRegNumIndex = 0;
         int lastRegNumIndex = compiler->compFloatingPointUsed ?
 #ifdef HAS_MORE_THAN_64_REGISTERS
-            REG_MASK_LAST
+                                                              REG_MASK_LAST
 #else
-            REG_FP_LAST
+                                                              REG_FP_LAST
 #endif
-        : REG_INT_LAST;
+                                                              : REG_INT_LAST;
         for (int regNumIndex = 0; regNumIndex <= lastRegNumIndex; regNumIndex++)
         {
             if (registersToDump.IsRegNumInMask((regNumber)regNumIndex))
