@@ -21,7 +21,7 @@
 #include "mini-arm.h"
 #elif defined(TARGET_ARM64)
 #include "mini-arm64.h"
-#elif defined(__loongarch64)
+#elif defined (TARGET_LOONGARCH64)
 #include "mini-loongarch64.h"
 #elif defined (TARGET_RISCV)
 #include "mini-riscv.h"
