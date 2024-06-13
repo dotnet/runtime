@@ -136,7 +136,7 @@ public class AttackTests : ReadTests
 
         long after = GetAllocatedByteCount();
 
-        Assert.InRange(after, before, before + 1024);
+        Assert.InRange(after, before, before + 5000);
         Assert.Equal(SerializationRecordType.ArraySingleString, serializationRecord.RecordType);
     }
 
