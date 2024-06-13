@@ -410,41 +410,40 @@ namespace System.Text.Json.Serialization.Converters
         {
             if ((_converterOptions & EnumConverterOptions.AllowStrings) != 0)
             {
-                // NB this explicitly ignores the integer component in converters configured as AllowNumbers | AllowStrings
+                // This explicitly ignores the integer component in converters configured as AllowNumbers | AllowStrings
                 // which is the default for JsonStringEnumConverter. This sacrifices some precision in the schema for simplicity.
+
+                JsonArray? enumValues;
+                if (s_isFlagsEnum)
+                {
+                    // Do not report enum values in case of flags.
+                    enumValues = null;
+                }
+                else
+                {
+                    enumValues = [];
+#if NET
+                    string[] names = Enum.GetNames<T>();
+#else
+                    string[] names = Enum.GetNames(Type);
+#endif
+                    JsonNamingPolicy? namingPolicy = _namingPolicy;
+
+                    for (int i = 0; i < names.Length; i++)
+                    {
+                        JsonNode name = FormatJsonName(names[i], namingPolicy);
+                        enumValues.Add(name);
+                    }
+                }
+
                 return new()
                 {
                     Type = JsonSchemaType.String,
-                    Enum = GetEnumValues(),
+                    Enum = enumValues,
                 };
             }
 
             return new() { Type = JsonSchemaType.Integer };
-
-            JsonArray? GetEnumValues()
-            {
-                if (s_isFlagsEnum)
-                {
-                    // Do not report enum values in case of flags.
-                    return null;
-                }
-
-#if NETCOREAPP
-                string[] names = Enum.GetNames<T>();
-#else
-                string[] names = Enum.GetNames(Type);
-#endif
-                JsonNamingPolicy? namingPolicy = _namingPolicy;
-                var array = new JsonArray();
-
-                for (int i = 0; i < names.Length; i++)
-                {
-                    JsonNode name = FormatJsonName(names[i], namingPolicy);
-                    array.Add(name);
-                }
-
-                return array;
-            }
         }
 
         private T ReadEnumUsingNamingPolicy(string? enumString)

@@ -243,7 +243,7 @@ namespace System.Text.Json.Schema
             }
         }
 
-        private static readonly JsonSchemaType[] s_schemaValues =
+        private static ReadOnlySpan<JsonSchemaType> s_schemaValues =>
         [
             // NB the order of these values influences order of types in the rendered schema
             JsonSchemaType.String,
