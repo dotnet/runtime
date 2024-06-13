@@ -19665,6 +19665,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_vpermt2pd:
         case INS_vpermt2ps:
         case INS_vpermt2q:
+        case INS_vpmultishiftqb:
         case INS_vshuff32x4:
         case INS_vshuff64x2:
         case INS_vshufi32x4:

@@ -3185,6 +3185,10 @@ public:
     GenTree* gtNewSimdAbsNode(
         var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize);
 
+#if defined(TARGET_ARM64)
+    GenTree* gtNewSimdAllTrueMaskNode(CorInfoType simdBaseJitType, unsigned simdSize);
+#endif
+
     GenTree* gtNewSimdBinOpNode(genTreeOps  op,
                                 var_types   type,
                                 GenTree*    op1,
@@ -3223,6 +3227,8 @@ public:
                                  CorInfoType simdBaseJitType,
                                  unsigned    simdSize);
 
+    GenTree* gtNewSimdCvtMaskToVectorNode(var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize);
+
     GenTree* gtNewSimdCvtNode(var_types   type,
                               GenTree*    op1,
                               CorInfoType simdTargetBaseJitType,
@@ -3234,6 +3240,8 @@ public:
                                     CorInfoType simdTargetBaseJitType,
                                     CorInfoType simdSourceBaseJitType,
                                     unsigned    simdSize);
+
+    GenTree* gtNewSimdCvtVectorToMaskNode(var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize);
 
     GenTree* gtNewSimdCreateBroadcastNode(
         var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize);
@@ -3516,12 +3524,6 @@ public:
 
     GenTreeIndir* gtNewMethodTableLookup(GenTree* obj);
 
-#if defined(TARGET_ARM64)
-    GenTree* gtNewSimdConvertVectorToMaskNode(var_types type, GenTree* node, CorInfoType simdBaseJitType, unsigned simdSize);
-    GenTree* gtNewSimdConvertMaskToVectorNode(GenTreeHWIntrinsic* node, var_types type);
-    GenTree* gtNewSimdAllTrueMaskNode(CorInfoType simdBaseJitType, unsigned simdSize);
-#endif
-
     //------------------------------------------------------------------------
     // Other GenTree functions
 
@@ -3639,6 +3641,7 @@ public:
     GenTree* gtFoldExprConst(GenTree* tree);
     GenTree* gtFoldIndirConst(GenTreeIndir* indir);
     GenTree* gtFoldExprSpecial(GenTree* tree);
+    GenTree* gtFoldExprSpecialFloating(GenTree* tree);
     GenTree* gtFoldBoxNullable(GenTree* tree);
     GenTree* gtFoldExprCompare(GenTree* tree);
     GenTree* gtFoldExprConditional(GenTree* tree);
