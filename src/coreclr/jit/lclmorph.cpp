@@ -1072,7 +1072,7 @@ public:
                     node->gtBashToNOP();
                     m_stmtModified = true;
                 }
-                INDEBUG(TopValue(0).Consume());
+                EscapeValue(TopValue(0), node);
                 PopValue();
                 break;
             }
