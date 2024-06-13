@@ -5138,80 +5138,52 @@ void Compiler::fgSearchImprovedLayout()
 #endif // DEBUG
 
     BlockSet    visitedBlocks(BlockSetOps::MakeEmpty(this));
-    BasicBlock* startBlock     = nullptr;
-    weight_t    layoutScore    = 0.0;
-    weight_t    minLayoutScore = 0.0;
+    BasicBlock* startBlock = nullptr;
 
-    // Evaluate initial minimum layout costs
-    // (Minimum layout cost may not actually be possible to achieve,
-    // as we cannot always fall into a block's hottest successor)
+    // Find the first block that doesn't fall into its hottest successor.
+    // This will be our first "interesting" block.
     //
     for (BasicBlock* const block : Blocks(fgFirstBB, fgLastBBInMainFunction()))
     {
-        // Ignore EH and cold blocks -- neither should contribute to the layout cost of the main method body
-        //
-        if (block->hasHndIndex() || block->isRunRarely())
+        // Ignore try/handler blocks
+        if (block->hasTryIndex() || block->hasHndIndex())
         {
             continue;
         }
 
         BlockSetOps::AddElemD(this, visitedBlocks, block->bbNum);
-        BasicBlock* hottestSucc         = nullptr;
-        weight_t    maxEdgeCost         = 0.0;
-        weight_t    fallthroughEdgeCost = 0.0;
-        bool        hasNonEHSuccs       = false;
+        FlowEdge* hottestSuccEdge = nullptr;
 
         for (FlowEdge* const succEdge : block->SuccEdges(this))
         {
             BasicBlock* const succ = succEdge->getDestinationBlock();
 
-            // Ignore EH successors
+            // Ignore try/handler successors
             //
-            if (succ->hasHndIndex())
+            if (succ->hasTryIndex() || succ->hasHndIndex())
             {
                 continue;
             }
 
-            hasNonEHSuccs            = true;
             const bool isForwardJump = !BlockSetOps::IsMember(this, visitedBlocks, succ->bbNum);
 
-            if (isForwardJump)
+            if (isForwardJump &&
+                ((hottestSuccEdge == nullptr) || (succEdge->getLikelihood() > hottestSuccEdge->getLikelihood())))
             {
-                const weight_t edgeCost = succEdge->getLikelyWeight();
-
-                if (block->NextIs(succ))
-                {
-                    fallthroughEdgeCost = edgeCost;
-                }
-
-                if (edgeCost > maxEdgeCost)
-                {
-                    maxEdgeCost = edgeCost;
-                    hottestSucc = succ;
-                }
+                hottestSuccEdge = succEdge;
             }
         }
 
-        // Only factor costs of non-EH edges into layout cost calculations
-        //
-        if (hasNonEHSuccs)
+        if ((hottestSuccEdge != nullptr) && !block->NextIs(hottestSuccEdge->getDestinationBlock()))
         {
-            layoutScore += (block->bbWeight - fallthroughEdgeCost);
-            minLayoutScore += (block->bbWeight - maxEdgeCost);
-
-            // We have found our first "interesting" block in the main method body,
-            // as this block does not fall into its hottest successor
+            // We found the first "interesting" block that doesn't fall into its hottest successor
             //
-            if ((startBlock == nullptr) && !block->NextIs(hottestSucc) && !block->hasTryIndex())
-            {
-                startBlock = block;
-            }
+            startBlock = block;
+            break;
         }
     }
 
-    JITDUMP("Layout score: %f, Min score: %f", layoutScore, minLayoutScore);
-
-    if ((startBlock == nullptr) || Compiler::fgProfileWeightsEqual(layoutScore, minLayoutScore, 0.001))
+    if (startBlock == nullptr)
     {
         JITDUMP("\nSkipping reordering");
         return;
@@ -5286,7 +5258,7 @@ void Compiler::fgSearchImprovedLayout()
     //
     BasicBlock* const  finalBlock     = blockVector[blockCount - 1]->Next();
     bool               improvedLayout = true;
-    constexpr unsigned maxIter        = 1; // TODO: Reconsider?
+    constexpr unsigned maxIter        = 5; // TODO: Reconsider?
 
     for (unsigned numIter = 0; improvedLayout && (numIter < maxIter); numIter++)
     {
