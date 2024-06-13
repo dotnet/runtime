@@ -5614,8 +5614,9 @@ GenTree* Compiler::impCastClassOrIsInstToTree(GenTree*                op1,
     {
         GenTreeOp*    condMT   = gtNewOperNode(GT_EQ, TYP_INT, gtNewMethodTableLookup(op1Clone), op2);
         GenTreeOp*    condNull = gtNewOperNode(GT_EQ, TYP_INT, gtClone(op1), gtNewNull());
+        GenTreeQmark* qmarkMT   = gtNewQmarkNode(TYP_REF, condMT, gtNewColonNode(TYP_INT, gtNewZeroConNode(TYP_INT), gtNewOneConNode(TYP_INT)));
         GenTreeQmark* qmarkNull =
-            gtNewQmarkNode(TYP_INT, condNull, gtNewColonNode(TYP_INT, gtNewZeroConNode(TYP_INT), condMT));
+            gtNewQmarkNode(TYP_INT, condNull, gtNewColonNode(TYP_INT, gtNewZeroConNode(TYP_INT), qmarkMT));
 
         // Make QMark node a top level node by spilling it.
         const unsigned result = lvaGrabTemp(true DEBUGARG("spilling qmarkNull"));
@@ -9673,7 +9674,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     if (!usingReadyToRunHelper)
 #endif
                     {
-                        bool reverse     = false;
                         int consumed = 0;
                         bool booleanCheck = impMatchIsInstBooleanConversion(codeAddr + sz, codeEndp, &consumed);
                         op1 = impCastClassOrIsInstToTree(op1, op2, &resolvedToken, false, &booleanCheck, opcodeOffs);
