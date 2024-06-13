@@ -1617,7 +1617,8 @@ namespace System.Runtime.Intrinsics.Arm
         /// svint32_t svld1ub_gather[_u32base]_s32(svbool_t pg, svuint32_t bases)
         ///   LD1B Zresult.S, Pg/Z, [Zbases.S, #0]
         /// </summary>
-        public static unsafe Vector<int> GatherVectorByteZeroExtend(Vector<int> mask, Vector<uint> addresses) { throw new PlatformNotSupportedException(); }
+        // Removed as per #103297
+        // public static unsafe Vector<int> GatherVectorByteZeroExtend(Vector<int> mask, Vector<uint> addresses) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svint32_t svld1ub_gather_[u32]offset_s32(svbool_t pg, const uint8_t *base, svuint32_t offsets)
@@ -1653,7 +1654,8 @@ namespace System.Runtime.Intrinsics.Arm
         /// svuint32_t svld1ub_gather[_u32base]_u32(svbool_t pg, svuint32_t bases)
         ///   LD1B Zresult.S, Pg/Z, [Zbases.S, #0]
         /// </summary>
-        public static unsafe Vector<uint> GatherVectorByteZeroExtend(Vector<uint> mask, Vector<uint> addresses) { throw new PlatformNotSupportedException(); }
+        // Removed as per #103297
+        // public static unsafe Vector<uint> GatherVectorByteZeroExtend(Vector<uint> mask, Vector<uint> addresses) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svuint32_t svld1ub_gather_[u32]offset_u32(svbool_t pg, const uint8_t *base, svuint32_t offsets)
@@ -1692,7 +1694,8 @@ namespace System.Runtime.Intrinsics.Arm
         /// svint32_t svld1sh_gather[_u32base]_s32(svbool_t pg, svuint32_t bases)
         ///   LD1SH Zresult.S, Pg/Z, [Zbases.S, #0]
         /// </summary>
-        public static unsafe Vector<int> GatherVectorInt16SignExtend(Vector<int> mask, Vector<uint> addresses) { throw new PlatformNotSupportedException(); }
+        // Removed as per #103297
+        // public static unsafe Vector<int> GatherVectorInt16SignExtend(Vector<int> mask, Vector<uint> addresses) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svint32_t svld1sh_gather_[u32]index_s32(svbool_t pg, const int16_t *base, svuint32_t indices)
@@ -1728,7 +1731,8 @@ namespace System.Runtime.Intrinsics.Arm
         /// svuint32_t svld1sh_gather[_u32base]_u32(svbool_t pg, svuint32_t bases)
         ///   LD1SH Zresult.S, Pg/Z, [Zbases.S, #0]
         /// </summary>
-        public static unsafe Vector<uint> GatherVectorInt16SignExtend(Vector<uint> mask, Vector<uint> addresses) { throw new PlatformNotSupportedException(); }
+        // Removed as per #103297
+        // public static unsafe Vector<uint> GatherVectorInt16SignExtend(Vector<uint> mask, Vector<uint> addresses) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svuint32_t svld1sh_gather_[u32]index_u32(svbool_t pg, const int16_t *base, svuint32_t indices)
@@ -1884,7 +1888,8 @@ namespace System.Runtime.Intrinsics.Arm
         /// svint32_t svld1sb_gather[_u32base]_s32(svbool_t pg, svuint32_t bases)
         ///   LD1SB Zresult.S, Pg/Z, [Zbases.S, #0]
         /// </summary>
-        public static unsafe Vector<int> GatherVectorSByteSignExtend(Vector<int> mask, Vector<uint> addresses) { throw new PlatformNotSupportedException(); }
+        // Removed as per #103297
+        // public static unsafe Vector<int> GatherVectorSByteSignExtend(Vector<int> mask, Vector<uint> addresses) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svint32_t svld1sb_gather_[u32]offset_s32(svbool_t pg, const int8_t *base, svuint32_t offsets)
@@ -1920,7 +1925,8 @@ namespace System.Runtime.Intrinsics.Arm
         /// svuint32_t svld1sb_gather[_u32base]_u32(svbool_t pg, svuint32_t bases)
         ///   LD1SB Zresult.S, Pg/Z, [Zbases.S, #0]
         /// </summary>
-        public static unsafe Vector<uint> GatherVectorSByteSignExtend(Vector<uint> mask, Vector<uint> addresses) { throw new PlatformNotSupportedException(); }
+        // Removed as per #103297
+        // public static unsafe Vector<uint> GatherVectorSByteSignExtend(Vector<uint> mask, Vector<uint> addresses) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svuint32_t svld1sb_gather_[u32]offset_u32(svbool_t pg, const int8_t *base, svuint32_t offsets)
@@ -2010,7 +2016,8 @@ namespace System.Runtime.Intrinsics.Arm
         /// svint32_t svld1uh_gather[_u32base]_s32(svbool_t pg, svuint32_t bases)
         ///   LD1H Zresult.S, Pg/Z, [Zbases.S, #0]
         /// </summary>
-        public static unsafe Vector<int> GatherVectorUInt16ZeroExtend(Vector<int> mask, Vector<uint> addresses) { throw new PlatformNotSupportedException(); }
+        // Removed as per #103297
+        // public static unsafe Vector<int> GatherVectorUInt16ZeroExtend(Vector<int> mask, Vector<uint> addresses) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svint32_t svld1uh_gather_[u32]index_s32(svbool_t pg, const uint16_t *base, svuint32_t indices)
@@ -2046,7 +2053,8 @@ namespace System.Runtime.Intrinsics.Arm
         /// svuint32_t svld1uh_gather[_u32base]_u32(svbool_t pg, svuint32_t bases)
         ///   LD1H Zresult.S, Pg/Z, [Zbases.S, #0]
         /// </summary>
-        public static unsafe Vector<uint> GatherVectorUInt16ZeroExtend(Vector<uint> mask, Vector<uint> addresses) { throw new PlatformNotSupportedException(); }
+        // Removed as per #103297
+        // public static unsafe Vector<uint> GatherVectorUInt16ZeroExtend(Vector<uint> mask, Vector<uint> addresses) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svuint32_t svld1uh_gather_[u32]index_u32(svbool_t pg, const uint16_t *base, svuint32_t indices)
@@ -2136,7 +2144,8 @@ namespace System.Runtime.Intrinsics.Arm
         /// svint64_t svld1uw_gather[_u64base]_s64(svbool_t pg, svuint64_t bases)
         ///   LD1W Zresult.D, Pg/Z, [Zbases.D, #0]
         /// </summary>
-        public static unsafe Vector<int> GatherVectorUInt32ZeroExtend(Vector<int> mask, Vector<uint> addresses) { throw new PlatformNotSupportedException(); }
+        // Removed as per #103297
+        // public static unsafe Vector<int> GatherVectorUInt32ZeroExtend(Vector<int> mask, Vector<uint> addresses) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svint64_t svld1uw_gather_[u64]index_s64(svbool_t pg, const uint32_t *base, svuint64_t indices)
@@ -2172,7 +2181,8 @@ namespace System.Runtime.Intrinsics.Arm
         /// svuint64_t svld1uw_gather[_u64base]_u64(svbool_t pg, svuint64_t bases)
         ///   LD1W Zresult.D, Pg/Z, [Zbases.D, #0]
         /// </summary>
-        public static unsafe Vector<uint> GatherVectorUInt32ZeroExtend(Vector<uint> mask, Vector<uint> addresses) { throw new PlatformNotSupportedException(); }
+        // Removed as per #103297
+        // public static unsafe Vector<uint> GatherVectorUInt32ZeroExtend(Vector<uint> mask, Vector<uint> addresses) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svuint64_t svld1uw_gather_[u64]index_u64(svbool_t pg, const uint32_t *base, svuint64_t indices)
@@ -2190,7 +2200,8 @@ namespace System.Runtime.Intrinsics.Arm
         /// svuint64_t svld1uw_gather[_u64base]_u64(svbool_t pg, svuint64_t bases)
         ///   LD1W Zresult.D, Pg/Z, [Zbases.D, #0]
         /// </summary>
-        public static unsafe Vector<ulong> GatherVectorUInt32ZeroExtend(Vector<ulong> mask, Vector<ulong> addresses) { throw new PlatformNotSupportedException(); }
+        // Removed as per #103297
+        // public static unsafe Vector<ulong> GatherVectorUInt32ZeroExtend(Vector<ulong> mask, Vector<ulong> addresses) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svuint64_t svld1uw_gather_[u64]index_u64(svbool_t pg, const uint32_t *base, svuint64_t indices)
