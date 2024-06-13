@@ -152,9 +152,17 @@
 {
   "items": {
     "WasmOptConfigurationFlags": [@(WasmOptConfigurationFlags -> '%22%(Identity)%22', ',')],
+    "BoolPropertiesThatTriggerRelinking": [
+      { "identity": "InvariantTimezone",      "defaultValueInRuntimePack": "false" },
+      { "identity": "InvariantGlobalization", "defaultValueInRuntimePack": "false" },
+      { "identity": "WasmNativeStrip",        "defaultValueInRuntimePack": "true" },
+      { "identity": "WasmSingleFileBundle",   "defaultValueInRuntimePack": "false" },
+      { "identity": "WasmEnableSIMD",         "defaultValueInRuntimePack": "false" },
+    ],
   }
 }
 ]]>
+<!-- { "identity": "WasmEnableExceptionHandling",  "defaultValueInRuntimePack": "true" }, -->
       </_WasiPropsJson>
     </PropertyGroup>
 
