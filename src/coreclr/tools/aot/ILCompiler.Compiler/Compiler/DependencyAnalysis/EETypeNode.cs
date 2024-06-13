@@ -234,8 +234,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected virtual bool EmitVirtualSlots => false;
 
-        public override bool InterestingForDynamicDependencyAnalysis
-            => (_virtualMethodAnalysisFlags & VirtualMethodAnalysisFlags.InterestingForDynamicDependencies) != 0;
+        public override bool InterestingForDynamicDependencyAnalysis => false;
 
         internal bool HasOptionalFields
         {
@@ -624,6 +623,11 @@ namespace ILCompiler.DependencyAnalysis
                     dependencies.Add(new DependencyListEntry(factory.TypeGVMEntries(_type.GetTypeDefinition()), "Type with generic virtual methods"));
 
                     AddDependenciesForUniversalGVMSupport(factory, _type, ref dependencies);
+                }
+
+                if ((_virtualMethodAnalysisFlags & VirtualMethodAnalysisFlags.InterestingForDynamicDependencies) != 0)
+                {
+                    dependencies.Add(factory.TypeWithGenericVirtualMethods(_type), "Type with generic virtual methods");
                 }
             }
 

@@ -442,6 +442,7 @@
     <Compile Include="Compiler\DependencyAnalysis\TentativeInstanceMethodNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\TentativeMethodNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\TrimmingDescriptorNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\TypeWithGenericVirtualMethodsNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\VariantInterfaceMethodUseNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\CustomAttributeBasedDependencyAlgorithm.cs" />
     <Compile Include="Compiler\DependencyAnalysis\FieldMetadataNode.cs" />
