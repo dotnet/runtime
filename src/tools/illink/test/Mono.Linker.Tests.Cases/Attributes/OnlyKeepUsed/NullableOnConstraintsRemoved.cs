@@ -1,5 +1,8 @@
 #nullable enable
 
+using System.Reflection;
+using System.Runtime.CompilerServices;
+
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
@@ -9,7 +12,7 @@ namespace Mono.Linker.Tests.Cases.Attributes.OnlyKeepUsed
 	[SetupLinkerArgument ("--used-attrs-only", "true")]
 	[SetupLinkerTrimMode ("link")]
 	[IgnoreDescriptors (false)]
-	public class NullableOnConstraints
+	public class NullableOnConstraintsRemoved
 	{
 		public static void Main ()
 		{
@@ -28,21 +31,24 @@ namespace Mono.Linker.Tests.Cases.Attributes.OnlyKeepUsed
 			}
 
 			[Kept]
-			static T? Method<T> () where T : class, I?
+			static T? Method<
+				[KeptGenericParamAttributes (GenericParameterAttributes.ReferenceTypeConstraint)] 
+				T
+			> () where T : class, I?
 			{
 				return default;
 			}
 		}
-	}
 
-	[Kept]
-	interface I
-	{
-	}
+		[Kept]
+		interface I
+		{
+		}
 
-	[Kept]
-	[KeptMember (".ctor()")]
-	class C<T> where T : I?
-	{
+		[Kept]
+		[KeptMember (".ctor()")]
+		class C<T> where T : I?
+		{
+		}
 	}
 }
