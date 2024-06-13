@@ -2879,7 +2879,7 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
             // however, there could be other threads terminating and doing the same Add.
             InterlockedExchangeAdd64((LONG64*)&dead_threads_non_alloc_bytes, GetAllocContext()->alloc_limit - GetAllocContext()->alloc_ptr);
             GCHeapUtilities::GetGCHeap()->FixAllocContext(GetAllocContext(), NULL, NULL);
-            *GetAllocContext() = { }; // re-zero-initialize the context.
+            GetAllocContext()->init(); // re-initialize the context.
         }
     }
 
@@ -2931,13 +2931,14 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
 
         }
 
-        if  (GCHeapUtilities::IsGCHeapInitialized() && ThisThreadID != CurrentThreadID)
+        if  (GCHeapUtilities::IsGCHeapInitialized()
+            && ThisThreadID != CurrentThreadID)
         {
             // We must be holding the ThreadStore lock in order to clean up alloc context.
             // We should never call FixAllocContext during GC.
             dead_threads_non_alloc_bytes += GetAllocContext()->alloc_limit - GetAllocContext()->alloc_ptr;
             GCHeapUtilities::GetGCHeap()->FixAllocContext(GetAllocContext(), NULL, NULL);
-            *GetAllocContext() = { }; // re-zero-initialize the context.
+            GetAllocContext()->init(); // re-zero-initialize the context.
         }
 
         SetThreadState(TS_Dead);
