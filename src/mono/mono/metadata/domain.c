@@ -140,6 +140,7 @@ mono_init_internal (const char *root_domain_name)
 	mono_icall_init ();
 
 	create_root_domain ();
+	domain = mono_root_domain;
 
 	mono_alcs_init ();
 	mono_jit_info_tables_init ();
