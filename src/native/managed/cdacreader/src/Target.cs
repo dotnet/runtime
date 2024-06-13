@@ -26,9 +26,6 @@ public struct TargetNUInt
 {
     public ulong Value;
     public TargetNUInt(ulong value) => Value = value;
-
-    public static implicit operator ulong(TargetNUInt p) => p.Value;
-    public static implicit operator TargetNUInt(ulong v) => new TargetNUInt(v);
 }
 
 /// <summary>
