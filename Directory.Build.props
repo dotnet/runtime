@@ -1,5 +1,6 @@
 <Project>
   <PropertyGroup>
+    <HelixBaseUri>https://helix.int-dot.net/</HelixBaseUri>
     <!-- For non-SDK projects that import this file and then import Microsoft.Common.props,
          tell Microsoft.Common.props not to import Directory.Build.props again. -->
     <ImportDirectoryBuildProps>false</ImportDirectoryBuildProps>
