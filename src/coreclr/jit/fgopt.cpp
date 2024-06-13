@@ -5148,9 +5148,9 @@ void Compiler::fgSearchImprovedLayout()
     //
     for (BasicBlock* const block : Blocks(fgFirstBB, fgLastBBInMainFunction()))
     {
-        // Ignore EH blocks
+        // Ignore EH and cold blocks -- neither should contribute to the layout cost of the main method body
         //
-        if (block->hasHndIndex())
+        if (block->hasHndIndex() || block->isRunRarely())
         {
             continue;
         }
@@ -5284,10 +5284,11 @@ void Compiler::fgSearchImprovedLayout()
     // We will need to keep track of it to compute the cost of creating/breaking fallthrough into it.
     // finalBlock can be null.
     //
-    BasicBlock* const finalBlock     = blockVector[blockCount - 1]->Next();
-    bool              improvedLayout = true;
+    BasicBlock* const  finalBlock     = blockVector[blockCount - 1]->Next();
+    bool               improvedLayout = true;
+    constexpr unsigned maxIter        = 1; // TODO: Reconsider?
 
-    for (unsigned numIter = 0; improvedLayout && (numIter < 20); numIter++)
+    for (unsigned numIter = 0; improvedLayout && (numIter < maxIter); numIter++)
     {
         JITDUMP("\n\n--Iteration %d--", (numIter + 1));
         improvedLayout              = false;
