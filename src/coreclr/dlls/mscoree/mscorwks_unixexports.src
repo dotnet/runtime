@@ -20,10 +20,7 @@ coreclr_image_get_custom_attribute_data
 coreclr_unity_profiler_register
 coreclr_unity_profiler_get_managed_assembly_load_context
 coreclr_unity_gc_concurrent_mode
-mono_array_element_size
 mono_assembly_get_assemblyref
-mono_assembly_get_image
-mono_class_array_element_size
 mono_class_from_mono_type
 mono_class_get_methods
 mono_class_get_name
@@ -43,7 +40,6 @@ mono_field_get_offset
 mono_field_get_parent
 mono_image_get_table_rows
 coreclr_initialize_domain
-mono_metadata_type_equal
 mono_method_get_class
 mono_method_get_last_managed
 mono_method_signature
