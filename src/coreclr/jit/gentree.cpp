@@ -16918,9 +16918,19 @@ bool Compiler::gtNodeHasSideEffects(GenTree* tree, GenTreeFlags flags)
     // Are there only GTF_CALL side effects remaining? (and no other side effect kinds)
     if (flags & GTF_CALL)
     {
-        if (tree->OperGet() == GT_CALL)
+        GenTree* potentialCall = tree;
+
+        if (potentialCall->OperIs(GT_RET_EXPR))
         {
-            GenTreeCall* const call             = tree->AsCall();
+            // We need to preserve return expressions where the underlying call
+            // has side effects. Otherwise early folding can result in us dropping
+            // the call.
+            potentialCall = potentialCall->AsRetExpr()->gtInlineCandidate;
+        }
+
+        if (potentialCall->OperIs(GT_CALL))
+        {
+            GenTreeCall* const call             = potentialCall->AsCall();
             const bool         ignoreExceptions = (flags & GTF_EXCEPT) == 0;
             const bool         ignoreCctors     = (flags & GTF_IS_IN_CSE) != 0; // We can CSE helpers that run cctors.
             if (!call->HasSideEffects(this, ignoreExceptions, ignoreCctors))
