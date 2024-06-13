@@ -414,8 +414,7 @@ bool ObjectAllocator::MorphAllocObjNodes()
                     JITDUMP("Allocating V%02u on the stack\n", lclNum);
                     canStack = true;
 
-                    // printf("@@@ SA V%02u (%s) in %s\n", lclNum, comp->eeGetClassName(clsHnd),
-                    // comp->info.compFullName);
+                    // printf("@@@ SA V%02u (%s) in %s\n", lclNum, comp->eeGetClassName(clsHnd), comp->info.compFullName);
 
                     const unsigned int stackLclNum = MorphAllocObjNodeIntoStackAlloc(asAllocObj, block, stmt);
                     m_HeapLocalToStackLocalMap.AddOrUpdate(lclNum, stackLclNum);
@@ -751,6 +750,22 @@ void ObjectAllocator::UpdateAncestorTypes(GenTree* tree, ArrayStack<GenTree*>* p
                 if (parent->TypeGet() == TYP_REF)
                 {
                     parent->ChangeType(newType);
+
+                    if (parent->OperIs(GT_COLON))
+                    {
+                        GenTree* const lhs = parent->AsOp()->gtGetOp1();
+                        GenTree* const rhs = parent->AsOp()->gtGetOp2();
+
+                        if (lhs->TypeIs(TYP_REF))
+                        {
+                            lhs->ChangeType(newType);
+                        }
+
+                        if (rhs->TypeIs(TYP_REF))
+                        {
+                            rhs->ChangeType(newType);
+                        }
+                    }
                 }
                 ++parentIndex;
                 keepChecking = true;
