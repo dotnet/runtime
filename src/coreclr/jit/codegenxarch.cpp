@@ -9173,6 +9173,30 @@ void CodeGen::genAmd64EmitterUnitTestsApx()
     theEmitter->emitIns_AR_R(INS_cmp, EA_4BYTE, REG_EAX, REG_ECX, 4);
     theEmitter->emitIns_AR_R(INS_test, EA_4BYTE, REG_EAX, REG_ECX, 4);
 
+    theEmitter->emitIns_R_AR(INS_movsx, EA_2BYTE, REG_ECX, REG_EAX, 4);
+    theEmitter->emitIns_R_AR(INS_movzx, EA_2BYTE, REG_EAX, REG_ECX, 4);
+    theEmitter->emitIns_R_AR(INS_cmovo, EA_4BYTE, REG_EAX, REG_ECX, 4);
+
+    theEmitter->emitIns_R_S(INS_add, EA_1BYTE, REG_EAX, 0, 0);
+    theEmitter->emitIns_R_S(INS_add, EA_2BYTE, REG_EAX, 0, 0);
+    theEmitter->emitIns_R_S(INS_add, EA_4BYTE, REG_EAX, 0, 0);
+    theEmitter->emitIns_R_S(INS_add, EA_8BYTE, REG_EAX, 0, 0);
+    theEmitter->emitIns_R_S(INS_or,  EA_4BYTE, REG_EAX, 0, 0);
+    theEmitter->emitIns_R_S(INS_adc, EA_4BYTE, REG_EAX, 0, 0);
+    theEmitter->emitIns_R_S(INS_sbb, EA_4BYTE, REG_EAX, 0, 0);
+    theEmitter->emitIns_R_S(INS_and, EA_4BYTE, REG_EAX, 0, 0);
+    theEmitter->emitIns_R_S(INS_sub, EA_4BYTE, REG_EAX, 0, 0);
+    theEmitter->emitIns_R_S(INS_xor, EA_4BYTE, REG_EAX, 0, 0);
+    theEmitter->emitIns_R_S(INS_cmp, EA_4BYTE, REG_EAX, 0, 0);
+    theEmitter->emitIns_R_S(INS_test, EA_4BYTE, REG_EAX, 0, 0);
+
+    theEmitter->emitIns_S_I(INS_shl_N, EA_4BYTE, 0, 0, 4);
+    theEmitter->emitIns_S(INS_shl_1, EA_4BYTE, 0, 4);
+    
+    theEmitter->emitIns_R_S(INS_movsx, EA_2BYTE, REG_ECX, 1, 2);
+    theEmitter->emitIns_R_S(INS_movzx, EA_2BYTE, REG_EAX, 1, 2);
+    theEmitter->emitIns_R_S(INS_cmovo, EA_4BYTE, REG_EAX, 1, 2);
+
 }
 
 #endif // defined(DEBUG) && defined(TARGET_AMD64)
