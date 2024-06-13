@@ -145,6 +145,8 @@ namespace System.Security.Cryptography
             return destination.Length;
         }
 
+        public LiteKmac Clone() => throw new NotImplementedException("TODO");
+
         public void Dispose()
         {
             _hashHandle.Dispose();

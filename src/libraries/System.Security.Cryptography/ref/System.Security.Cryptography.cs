@@ -1659,6 +1659,7 @@ namespace System.Security.Cryptography
         public static bool IsSupported { get { throw null; } }
         public void AppendData(byte[] data) { }
         public void AppendData(System.ReadOnlySpan<byte> data) { }
+        public System.Security.Cryptography.Kmac128 Clone() { throw null; }
         public void Dispose() { }
         public byte[] GetCurrentHash(int outputLength) { throw null; }
         public void GetCurrentHash(System.Span<byte> destination) { }
@@ -1681,6 +1682,7 @@ namespace System.Security.Cryptography
         public static bool IsSupported { get { throw null; } }
         public void AppendData(byte[] data) { }
         public void AppendData(System.ReadOnlySpan<byte> data) { }
+        public System.Security.Cryptography.Kmac256 Clone() { throw null; }
         public void Dispose() { }
         public byte[] GetCurrentHash(int outputLength) { throw null; }
         public void GetCurrentHash(System.Span<byte> destination) { }
@@ -1703,6 +1705,7 @@ namespace System.Security.Cryptography
         public static bool IsSupported { get { throw null; } }
         public void AppendData(byte[] data) { }
         public void AppendData(System.ReadOnlySpan<byte> data) { }
+        public System.Security.Cryptography.KmacXof128 Clone() { throw null; }
         public void Dispose() { }
         public byte[] GetCurrentHash(int outputLength) { throw null; }
         public void GetCurrentHash(System.Span<byte> destination) { }
@@ -1725,6 +1728,7 @@ namespace System.Security.Cryptography
         public static bool IsSupported { get { throw null; } }
         public void AppendData(byte[] data) { }
         public void AppendData(System.ReadOnlySpan<byte> data) { }
+        public System.Security.Cryptography.KmacXof256 Clone() { throw null; }
         public void Dispose() { }
         public byte[] GetCurrentHash(int outputLength) { throw null; }
         public void GetCurrentHash(System.Span<byte> destination) { }
