@@ -77,6 +77,6 @@ Looks up priate key and certificate chain based on the alias in the provided key
 PALEXPORT jobject AndroidCryptoNative_X509StoreGetPrivateKeyEntry(jobject /*KeyStore*/ store, const char* hashString);
 
 /*
-Looks up priate key and certificate chain based on the alias in the provided keystore
+Removes an entry from the keystore for the given alias
 */
 PALEXPORT bool AndroidCryptoNative_X509StoreDeleteEntry(jobject /*KeyStore*/ store, const char* hashString);
