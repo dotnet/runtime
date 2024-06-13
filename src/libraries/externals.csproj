@@ -84,7 +84,7 @@
     <ItemGroup>
       <RuntimeFiles Include="@(HostFxrFile)" Condition="Exists('@(HostFxrFile)')" />
       <RuntimeFiles Include="@(HostPolicyFile)" Condition="Exists('@(HostPolicyFile)')" />
-      <RuntimeFiles Include="@(_HostSymbols)" IsNative="true" />
+      <RuntimeFiles Include="@(_HostSymbols)" Condition="Exists('@(_HostSymbols)')" IsNative="true" />
       <!-- CoreRun is not used for testing anymore, but we still use it for benchmarking and profiling -->
       <RuntimeFiles Include="$(CoreCLRArtifactsPath)\corerun*" />
       <RuntimeFiles Include="$(CoreCLRArtifactsPath)\PDB\corerun*" />
