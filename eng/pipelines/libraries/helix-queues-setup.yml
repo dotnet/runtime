@@ -165,15 +165,15 @@ jobs:
 
     # WASI
     - ${{ if eq(parameters.platform, 'wasi_wasm') }}:
-      - (Ubuntu.2204.Amd64)pr-ubuntu.1804.amd64.tiger.perf-fix-wasm-on-firefox-ten@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04-helix-webassembly
+      - (Ubuntu.2204.Amd64)r-ubuntu.2204.amd64-fix-wasm-on-firefox-ten@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04-helix-webassembly
 
     # Browser WebAssembly
     - ${{ if eq(parameters.platform, 'browser_wasm') }}:
-      - (Ubuntu.2204.Amd64)pr-ubuntu.1804.amd64.tiger.perf-fix-wasm-on-firefox-te@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04-helix-webassembly
+      - (Ubuntu.2204.Amd64)r-ubuntu.2204.amd64-fix-wasm-on-firefox-te@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04-helix-webassembly
 
     # Browser WebAssembly Firefox
     - ${{ if eq(parameters.platform, 'browser_wasm_firefox') }}:
-      - (Ubuntu.2204.Amd64)pr-ubuntu.1804.amd64.tiger.perf-fix-wasm-on-firefox-te@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04-helix-webassembly
+      - (Ubuntu.2204.Amd64)r-ubuntu.2204.amd64-fix-wasm-on-firefox-te@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04-helix-webassembly
 
     # Browser WebAssembly windows
     - ${{ if in(parameters.platform, 'browser_wasm_win', 'wasi_wasm_win') }}:
