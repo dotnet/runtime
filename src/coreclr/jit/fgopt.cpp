@@ -3421,6 +3421,8 @@ bool Compiler::fgReorderBlocks(bool useProfile)
             fgDoReversePostOrderLayout();
             fgMoveColdBlocks();
 
+            fgSearchImprovedLayout();
+
             // Renumber blocks to facilitate LSRA's order of block visitation
             // TODO: Consider removing this, and using traversal order in lSRA
             //
@@ -4677,8 +4679,12 @@ void Compiler::fgDoReversePostOrderLayout()
         {
             BasicBlock* const block       = dfsTree->GetPostOrder(i);
             BasicBlock* const blockToMove = dfsTree->GetPostOrder(i - 1);
-            fgUnlinkBlock(blockToMove);
-            fgInsertBBafter(block, blockToMove);
+
+            if (!block->NextIs(blockToMove))
+            {
+                fgUnlinkBlock(blockToMove);
+                fgInsertBBafter(block, blockToMove);
+            }
         }
 
         // The RPO established a good base layout, but in some cases, it might produce a subpar layout for loops.
@@ -4761,8 +4767,11 @@ void Compiler::fgDoReversePostOrderLayout()
                 continue;
             }
 
-            fgUnlinkBlock(blockToMove);
-            fgInsertBBafter(block, blockToMove);
+            if (!block->NextIs(blockToMove))
+            {
+                fgUnlinkBlock(blockToMove);
+                fgInsertBBafter(block, blockToMove);
+            }
         }
     }
 
@@ -5104,6 +5113,190 @@ void Compiler::fgMoveColdBlocks()
     };
 
     ehUpdateTryLasts<decltype(getTryLast), decltype(setTryLast)>(getTryLast, setTryLast);
+}
+
+void Compiler::fgSearchImprovedLayout()
+{
+#ifdef DEBUG
+    if (verbose)
+    {
+        printf("*************** In fgSearchImprovedLayout()\n");
+
+        printf("\nInitial BasicBlocks");
+        fgDispBasicBlocks(verboseTrees);
+        printf("\n");
+    }
+#endif // DEBUG
+
+    // TODO: Enable for methods with EH
+    //
+    if (compHndBBtabCount != 0)
+    {
+        return;
+    }
+
+    BlockSet visitedBlocks(BlockSetOps::MakeEmpty(this));
+    BasicBlock* startBlock = nullptr;
+    weight_t layoutScore = 0.0;
+    weight_t minLayoutScore = 0.0;
+
+    for (BasicBlock* const block : Blocks(fgFirstBB, fgLastBBInMainFunction()))
+    {
+        BlockSetOps::AddElemD(this, visitedBlocks, block->bbNum);
+        BasicBlock* heaviestSucc = nullptr;
+        weight_t maxEdgeCost = 0.0;
+        weight_t fallthroughEdgeCost = 0.0;
+
+        for (FlowEdge* const succEdge : block->SuccEdges(this))
+        {
+            BasicBlock* const succ = succEdge->getDestinationBlock();
+            const bool isForwardJump = !BlockSetOps::IsMember(this, visitedBlocks, succ->bbNum);
+
+            if (isForwardJump)
+            {
+                const weight_t edgeCost = succEdge->getLikelyWeight();
+
+                if (block->NextIs(succ))
+                {
+                    assert(fallthroughEdgeCost == 0.0);
+                    fallthroughEdgeCost = edgeCost;
+                }
+
+                if (edgeCost > maxEdgeCost)
+                {
+                    maxEdgeCost = edgeCost;
+                    heaviestSucc = succ;
+                }
+            }
+        }
+
+        if (block->NumSucc() > 0)
+        {
+            layoutScore += (block->bbWeight - fallthroughEdgeCost);
+            minLayoutScore += (block->bbWeight - maxEdgeCost);
+
+            if ((startBlock == nullptr) && !block->NextIs(heaviestSucc))
+            {
+                startBlock = block;
+            }
+        }
+    }
+
+    JITDUMP("Layout score: %f, Min score: %f", layoutScore, minLayoutScore);
+
+    if ((startBlock == nullptr) || Compiler::fgProfileWeightsEqual(layoutScore, minLayoutScore, 0.001))
+    {
+        JITDUMP("\nSkipping reordering");
+        return;
+    }
+
+    BasicBlock** blockVector = new BasicBlock*[fgBBNumMax];
+    BasicBlock** tempBlockVector = new BasicBlock*[fgBBNumMax];
+    unsigned blockCount = 0;
+
+    for (BasicBlock* const block : Blocks(startBlock, fgLastBBInMainFunction()))
+    {
+        if (block->isRunRarely())
+        {
+            break;
+        }
+
+        blockVector[blockCount] = block;
+        tempBlockVector[blockCount++] = block;
+    }
+
+    if (blockCount < 3)
+    {
+        JITDUMP("\nNot enough interesting blocks; skipping reordering");
+        return;
+    }
+
+    JITDUMP("\nInteresting blocks: [" FMT_BB ", " FMT_BB "]", startBlock->bbNum, blockVector[blockCount - 1]->bbNum);
+
+    auto evaluateCost = [](BasicBlock* const block, BasicBlock* const next) -> weight_t {
+        assert(block != nullptr);
+
+        if ((block->NumSucc() == 0) || (next == nullptr))
+        {
+            return 0.0;
+        }
+
+        const weight_t cost = block->bbWeight;
+        
+        for (FlowEdge* const edge : block->SuccEdges())
+        {
+            if (edge->getDestinationBlock() == next)
+            {
+                return cost - edge->getLikelyWeight();
+            }
+        }
+
+        return cost;
+    };
+
+    BasicBlock* const finalBlock = blockVector[blockCount - 1]->Next();
+    bool improvedLayout = true;
+
+    for (unsigned numIter = 0; improvedLayout && (numIter < 20); numIter++)
+    {
+        JITDUMP("\n\n--Iteration %d--", (numIter + 1));
+        improvedLayout = false;
+        BasicBlock* const exitBlock = blockVector[blockCount - 1];
+
+        for (unsigned i = 1; i < (blockCount - 1); i++)
+        {
+            BasicBlock* const blockI = blockVector[i];
+            BasicBlock* const blockIPrev = blockVector[i - 1];
+
+            for (unsigned j = i + 1; j < blockCount; j++)
+            {
+                // Evaluate the current partition at (i,j)
+                // S1: 0 ~ i-1
+                // S2: i ~ j-1
+                // S3: j ~ exit
+
+                BasicBlock* const blockJ = blockVector[j];
+                BasicBlock* const blockJPrev = blockVector[j - 1];
+
+                const weight_t oldScore = evaluateCost(blockIPrev, blockI) + evaluateCost(blockJPrev, blockJ) + evaluateCost(exitBlock, finalBlock);
+                const weight_t newScore = evaluateCost(blockIPrev, blockJ) + evaluateCost(exitBlock, blockI) + evaluateCost(blockJPrev, finalBlock);
+
+                if ((newScore < oldScore) && !Compiler::fgProfileWeightsEqual(oldScore, newScore, 0.001))
+                {
+                    JITDUMP("\nFound better layout by partitioning at i=%d, j=%d", i, j);
+                    JITDUMP("\nOld score: %f, New score: %f", oldScore, newScore);
+                    const unsigned part1Size = i;
+                    const unsigned part2Size = j - i;
+                    const unsigned part3Size = blockCount - j;
+
+                    memcpy(tempBlockVector, blockVector, sizeof(BasicBlock*) * part1Size);
+                    memcpy(tempBlockVector + part1Size, blockVector + part1Size + part2Size, sizeof(BasicBlock*) * part3Size);
+                    memcpy(tempBlockVector + part1Size + part3Size, blockVector + part1Size, sizeof(BasicBlock*) * part2Size);
+
+                    std::swap(blockVector, tempBlockVector);
+                    improvedLayout = true;
+                    break;
+                }
+            }
+
+            if (improvedLayout)
+            {
+                break;
+            }
+        }
+    }
+
+    for (unsigned i = 1; i < blockCount; i++)
+    {
+        BasicBlock* const block = blockVector[i - 1];
+        BasicBlock* const next = blockVector[i];
+
+        if (!block->NextIs(next))
+        {
+            fgUnlinkBlock(next);
+            fgInsertBBafter(block, next);
+        }
+    }
 }
 
 //-------------------------------------------------------------

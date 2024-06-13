@@ -6140,6 +6140,8 @@ public:
     void fgDoReversePostOrderLayout();
     void fgMoveColdBlocks();
 
+    void fgSearchImprovedLayout();
+
     template <bool hasEH>
     void fgMoveBackwardJumpsToSuccessors();
 
