@@ -79,6 +79,7 @@
     <Compile Include="System\Runtime\Serialization\Formatters\Binary\ObjectNull.cs" />
     <Compile Include="System\Runtime\Serialization\Formatters\Binary\ObjectProgress.cs" />
     <Compile Include="System\Runtime\Serialization\Formatters\Binary\SerializationHeaderRecord.cs" />
+    <Compile Include="System\Runtime\Serialization\SerializationGuard.cs" />
     <Compile Include="System\Runtime\Serialization\LocalAppContextSwitches.cs" />
     <Compile Include="$(CommonPath)System\LocalAppContextSwitches.Common.cs">
       <Link>Common\System\LocalAppContextSwitches.Common.cs</Link>

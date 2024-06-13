@@ -75,21 +75,6 @@ namespace System.Runtime.Serialization.Formatters.Binary
             _formatterEnums = formatterEnums;
         }
 
-        private static IDisposable? StartDeserialization()
-        {
-            MethodInfo? targetMethod = typeof(SerializationInfo).GetMethod(
-                "StartDeserialization",
-                BindingFlags.Public | BindingFlags.Static,
-                Type.EmptyTypes);
-
-            if (targetMethod is null)
-            {
-                throw new InvalidOperationException();
-            }
-
-            return (IDisposable?)targetMethod.Invoke(null, null);
-        }
-
         [RequiresDynamicCode(ObjectReaderUnreferencedCodeMessage)]
         [RequiresUnreferencedCode("Types might be removed")]
         internal object Deserialize(BinaryParser serParser)
@@ -102,7 +87,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
             _isSimpleAssembly = (_formatterEnums._assemblyFormat == FormatterAssemblyStyle.Simple);
 
-            using (StartDeserialization())
+            using (SerializationGuard.StartDeserialization())
             {
                 if (_fullDeserialization)
                 {
