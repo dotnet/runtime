@@ -111,7 +111,7 @@ namespace System.Collections.Generic
                 _comparer = comparer ?? EqualityComparer<TKey>.Default;
 
                 if (typeof(TKey) == typeof(string) &&
-                    NonRandomizedStringEqualityComparer.GetStringComparer(_comparer!) is IEqualityComparer<string> stringComparer)
+                    NonRandomizedStringEqualityComparer.GetStringComparer(_comparer) is IEqualityComparer<string> stringComparer)
                 {
                     _comparer = (IEqualityComparer<TKey>)stringComparer;
                 }
@@ -361,7 +361,7 @@ namespace System.Collections.Generic
             {
                 ArgumentNullException.ThrowIfNull(key);
 
-                bool modified = TryInsert(-1, key, value, InsertionBehavior.OverwriteExisting);
+                bool modified = TryInsert(index: -1, key, value, InsertionBehavior.OverwriteExisting);
                 Debug.Assert(modified);
             }
         }
@@ -391,6 +391,7 @@ namespace System.Collections.Generic
                 switch (behavior)
                 {
                     case InsertionBehavior.OverwriteExisting:
+                        Debug.Assert(index < 0, "Expected index to be unspecied when overwriting an existing key.");
                         _entries[i].Value = value;
                         return true;
 
@@ -399,6 +400,8 @@ namespace System.Collections.Generic
                         break;
 
                     default:
+                        Debug.Assert(behavior is InsertionBehavior.IgnoreInsertion, $"Unknown behavior: {behavior}");
+                        Debug.Assert(index < 0, "Expected index to be unspecied when ignoring a duplicate key.");
                         return false;
                 }
             }
@@ -460,7 +463,7 @@ namespace System.Collections.Generic
         {
             ArgumentNullException.ThrowIfNull(key);
 
-            TryInsert(-1, key, value, InsertionBehavior.ThrowOnExisting);
+            TryInsert(index: -1, key, value, InsertionBehavior.ThrowOnExisting);
         }
 
         /// <summary>Adds the specified key and value to the dictionary if the key doesn't already exist.</summary>
@@ -472,7 +475,7 @@ namespace System.Collections.Generic
         {
             ArgumentNullException.ThrowIfNull(key);
 
-            return TryInsert(-1, key, value, InsertionBehavior.IgnoreInsertion);
+            return TryInsert(index: -1, key, value, InsertionBehavior.IgnoreInsertion);
         }
 
         /// <summary>Adds each element of the enumerable to the dictionary.</summary>
