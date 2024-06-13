@@ -3421,7 +3421,14 @@ bool Compiler::fgReorderBlocks(bool useProfile)
             fgDoReversePostOrderLayout();
             fgMoveColdBlocks();
 
-            fgSearchImprovedLayout();
+            if (compHndBBtabCount != 0)
+            {
+                fgSearchImprovedLayout<true>();
+            }
+            else
+            {
+                fgSearchImprovedLayout<false>();
+            }
 
             // Renumber blocks to facilitate LSRA's order of block visitation
             // TODO: Consider removing this, and using traversal order in lSRA
@@ -5124,6 +5131,10 @@ void Compiler::fgMoveColdBlocks()
 //   - If the cost improves, keep this layout
 //   - Repeat for a certain number of iterations, or until no improvements are made
 //
+// Template parameters:
+//    hasEH - If true, method has EH regions, so check that we don't try to move blocks in different regions
+//
+template <bool hasEH>
 void Compiler::fgSearchImprovedLayout()
 {
 #ifdef DEBUG
@@ -5146,7 +5157,7 @@ void Compiler::fgSearchImprovedLayout()
     for (BasicBlock* const block : Blocks(fgFirstBB, fgLastBBInMainFunction()))
     {
         // Ignore try/handler blocks
-        if (block->hasTryIndex() || block->hasHndIndex())
+        if (hasEH && (block->hasTryIndex() || block->hasHndIndex()))
         {
             continue;
         }
@@ -5160,7 +5171,7 @@ void Compiler::fgSearchImprovedLayout()
 
             // Ignore try/handler successors
             //
-            if (succ->hasTryIndex() || succ->hasHndIndex())
+            if (hasEH && (succ->hasTryIndex() || succ->hasHndIndex()))
             {
                 continue;
             }
@@ -5194,8 +5205,8 @@ void Compiler::fgSearchImprovedLayout()
     //
     BasicBlock**                blockVector     = new BasicBlock*[fgBBNumMax];
     BasicBlock**                tempBlockVector = new BasicBlock*[fgBBNumMax];
-    ArrayStack<CallFinallyPair> callFinallyPairs(getAllocator());
-    unsigned                    blockCount = 0;
+    unsigned                    blockCount      = 0;
+    ArrayStack<CallFinallyPair> callFinallyPairs(getAllocator(), hasEH ? ArrayStack<CallFinallyPair>::builtinSize : 0);
 
     for (BasicBlock* const block : Blocks(startBlock, fgLastBBInMainFunction()))
     {
@@ -5217,7 +5228,7 @@ void Compiler::fgSearchImprovedLayout()
         blockVector[blockCount]       = block;
         tempBlockVector[blockCount++] = block;
 
-        if (block->isBBCallFinallyPair())
+        if (hasEH && block->isBBCallFinallyPair())
         {
             callFinallyPairs.Emplace(block, block->Next());
         }
@@ -5330,7 +5341,7 @@ void Compiler::fgSearchImprovedLayout()
 
     // Fix call-finally pairs
     //
-    for (int i = 0; i < callFinallyPairs.Height(); i++)
+    for (int i = 0; hasEH && (i < callFinallyPairs.Height()); i++)
     {
         const CallFinallyPair& pair = callFinallyPairs.BottomRef(i);
 
