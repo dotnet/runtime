@@ -59,18 +59,42 @@ namespace System.Net.Test.Common
             }
         }
 
+        public static IEnumerable<SslProtocols> EnumerateSupportedProtocols()
+        {
+            foreach (SslProtocols protocol in Enum.GetValues(typeof(SslProtocols)))
+            {
+#pragma warning disable 0618 // SSL2/3 are deprecated
+                if (protocol != SslProtocols.None && protocol != SslProtocols.Default && (protocol & SupportedSslProtocols) == protocol)
+                {
+                    yield return protocol;
+                }
+#pragma warning restore 0618
+            }
+        }
+
+        public static IEnumerable<SslProtocols> EnumerateSupportedProtocols(SslProtocols mask, bool includeNone = false)
+        {
+            if (includeNone)
+            {
+                yield return SslProtocols.None;
+            }
+
+            foreach (SslProtocols protocol in EnumerateSupportedProtocols())
+            {
+                if ((protocol & mask) == protocol)
+                {
+                    yield return protocol;
+                }
+            }
+        }
+
         public class SupportedSslProtocolsTestData : IEnumerable<object[]>
         {
             public IEnumerator<object[]> GetEnumerator()
             {
-                foreach (SslProtocols protocol in Enum.GetValues(typeof(SslProtocols)))
+                foreach (SslProtocols protocol in SslProtocolSupport.EnumerateSupportedProtocols())
                 {
-#pragma warning disable 0618 // SSL2/3 are deprecated
-                    if (protocol != SslProtocols.None && protocol != SslProtocols.Default && (protocol & SupportedSslProtocols) == protocol)
-                    {
-                        yield return new object[] { protocol };
-                    }
-#pragma warning restore 0618
+                    yield return new object[] { protocol };
                 }
             }
 
