@@ -8544,7 +8544,9 @@ extern "C" bool QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollideCla
             _ASSERTE(retVal != SWA_FAILED);
             _ASSERTE(pThis->GetFrameState() != StackFrameIterator::SFITER_SKIPPED_FRAME_FUNCTION);
 
-            if (pThis->m_crawl.GetFrame() == FRAME_TOP)
+            pFrame = pThis->m_crawl.GetFrame();
+            // Check if there are any further managed frames on the stack, if not, the exception is unhandled.
+            if ((pFrame == FRAME_TOP) || (pFrame->GetVTablePtr() == DebuggerU2MCatchHandlerFrame::GetMethodFrameVPtr()))
             {
                 if (pTopExInfo->m_passNumber == 1)
                 {
