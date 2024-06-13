@@ -37,7 +37,7 @@ set DOTNET_TC_QuickJitForLoops=1
 set DOTNET_TC_CallCountThreshold=10000
 set DOTNET_ReadyToRun=0
 
-dotnet-trace collect --providers Microsoft-Windows-DotNETRuntime:0x1E000080018:4 -- bin\Release\net6.0\pgotest.exe
+dotnet-trace collect --providers Microsoft-Windows-DotNETRuntime:0x4000080018:5 -- bin\Release\net8.0\pgotest.exe
 
 set DOTNET_TieredPGO=
 set DOTNET_TC_QuickJitForLoops=
