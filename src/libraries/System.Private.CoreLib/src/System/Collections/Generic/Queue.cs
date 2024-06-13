@@ -493,14 +493,8 @@ namespace System.Collections.Generic
             private void ThrowEnumerationNotStartedOrEnded()
             {
                 Debug.Assert(_index == -1 || _index == -2);
-                if (_index == -1)
-                {
-                    ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumNotStarted();
-                }
-                else
-                {
-                    ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumEnded();
-                }
+                throw new InvalidOperationException(_index == -1 ? SR.InvalidOperation_EnumNotStarted : SR.InvalidOperation_EnumEnded);
+
             }
 
             object? IEnumerator.Current
