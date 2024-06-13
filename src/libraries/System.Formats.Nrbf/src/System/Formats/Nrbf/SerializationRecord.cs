@@ -54,9 +54,13 @@ public abstract class SerializationRecord
 
     private static bool Matches(Type type, TypeName typeName)
     {
+        // We don't need to check for pointers and references to arrays,
+        // as it's impossible to serialize them with BF.
+        if (type.IsPointer || type.IsByRef)
+            return false;
+
         // At first, check the non-allocating properties for mismatch.
         if (type.IsArray != typeName.IsArray || type.IsConstructedGenericType != typeName.IsConstructedGenericType
-            || type.IsPointer != typeName.IsPointer || type.IsByRef != typeName.IsByRef
             || type.IsNested != typeName.IsNested
             || (type.IsArray && type.GetArrayRank() != typeName.GetArrayRank()))
         {
@@ -69,8 +73,6 @@ public abstract class SerializationRecord
         }
         else if (typeName.IsArray)
         {
-            // We don't need to check for pointers and references to arrays,
-            // as it's impossible to serialize them with BF.
             return Matches(type.GetElementType()!, typeName.GetElementType());
         }
         else if (type.IsConstructedGenericType)
