@@ -280,21 +280,29 @@ public:
 #endif
     }
 
+#ifdef HAS_MORE_THAN_64_REGISTERS
     constexpr regMaskTP(regMaskSmall lowMask, regMaskSmall highMask)
         : low(lowMask)
-#ifdef HAS_MORE_THAN_64_REGISTERS
         , high(highMask)
-#endif
     {
     }
 
     constexpr regMaskTP(regMaskSmall regMask)
         : low(regMask)
-#ifdef HAS_MORE_THAN_64_REGISTERS
         , high(RBM_NONE)
-#endif
     {
     }
+#else
+    constexpr regMaskTP(regMaskSmall lowMask, regMaskSmall highMask)
+        : low(lowMask)
+    {
+    }
+
+    constexpr regMaskTP(regMaskSmall regMask)
+        : low(regMask)
+    {
+    }
+#endif // HAS_MORE_THAN_64_REGISTERS
 
     regMaskTP()
     {
