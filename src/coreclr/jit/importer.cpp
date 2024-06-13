@@ -5464,6 +5464,26 @@ GenTree* Compiler::impOptimizeCastClassOrIsInst(GenTree* op1, CORINFO_RESOLVED_T
     return nullptr;
 }
 
+//------------------------------------------------------------------------
+// impMatchIsInstBooleanConversion: Match IL to determine whether an isinst IL
+// instruction is used for a simple boolean check.
+//
+// Arguments:
+//   codeAddr - IL after the isinst
+//   codeEndp - End of IL code stream
+//   consumed - [out] If this function returns true, set to the number of IL
+//              bytes to consume to create the boolean check
+//
+// Return Value:
+//   True if the isinst is used as a boolean check; otherwise false.
+//
+// Remarks:
+//   The isinst instruction is specced to return the original object refernce
+//   when the type check succeeds. However, in many cases it is used strictly
+//   as a boolean type check (if (x is Foo) for example). In those cases it is
+//   beneficial for the JIT if we avoid creating QMARKs returning the object
+//   itself which may disable some important optimization in some cases.
+//
 bool Compiler::impMatchIsInstBooleanConversion(const BYTE* codeAddr, const BYTE* codeEndp, int* consumed)
 {
     OPCODE nextOpcode = impGetNonPrefixOpcode(codeAddr, codeEndp);
@@ -5471,6 +5491,9 @@ bool Compiler::impMatchIsInstBooleanConversion(const BYTE* codeAddr, const BYTE*
     {
         case CEE_BRFALSE:
         case CEE_BRFALSE_S:
+            // BRFALSE/BRTRUE importation are expected to transparently handle
+            // that the created tree is a TYP_INT instead of TYP_REF, so we do
+            // not consume them here.
             *consumed = 0;
             return true;
         case CEE_BRTRUE:
@@ -5498,6 +5521,9 @@ bool Compiler::impMatchIsInstBooleanConversion(const BYTE* codeAddr, const BYTE*
 //   op2 - type handle for type to cast to
 //   pResolvedToken - resolved token from the cast operation
 //   isCastClass - true if this is castclass, false means isinst
+//   booleanCheck - [in, out] If true, allow creating a boolean-returning check
+//                  instead of returning the object reference. Set to false if this function
+//                  was not able to create a boolean check.
 //
 // Return Value:
 //   Tree representing the cast
@@ -5614,7 +5640,9 @@ GenTree* Compiler::impCastClassOrIsInstToTree(GenTree*                op1,
     {
         GenTreeOp*    condMT   = gtNewOperNode(GT_EQ, TYP_INT, gtNewMethodTableLookup(op1Clone), op2);
         GenTreeOp*    condNull = gtNewOperNode(GT_EQ, TYP_INT, gtClone(op1), gtNewNull());
-        GenTreeQmark* qmarkMT   = gtNewQmarkNode(TYP_REF, condMT, gtNewColonNode(TYP_INT, gtNewZeroConNode(TYP_INT), gtNewOneConNode(TYP_INT)));
+        GenTreeQmark* qmarkMT =
+            gtNewQmarkNode(TYP_REF, condMT,
+                           gtNewColonNode(TYP_INT, gtNewZeroConNode(TYP_INT), gtNewOneConNode(TYP_INT)));
         GenTreeQmark* qmarkNull =
             gtNewQmarkNode(TYP_INT, condNull, gtNewColonNode(TYP_INT, gtNewZeroConNode(TYP_INT), qmarkMT));
 
@@ -9674,7 +9702,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     if (!usingReadyToRunHelper)
 #endif
                     {
-                        int consumed = 0;
+                        int  consumed     = 0;
                         bool booleanCheck = impMatchIsInstBooleanConversion(codeAddr + sz, codeEndp, &consumed);
                         op1 = impCastClassOrIsInstToTree(op1, op2, &resolvedToken, false, &booleanCheck, opcodeOffs);
 
