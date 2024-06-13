@@ -764,7 +764,7 @@ public:
     static CorJitResult GenerateInterpreterStub(CEEInfo* comp,
                                                 CORINFO_METHOD_INFO* info,
                                                 /*OUT*/ BYTE **nativeEntry,
-                                                /*OUT*/ ULONG *nativeSizeOfCode,
+                                                /*OUT*/ uint32_t *nativeSizeOfCode,
                                                 InterpreterMethodInfo** ppInterpMethodInfo = NULL,
                                                 bool jmpCall = false);
 
