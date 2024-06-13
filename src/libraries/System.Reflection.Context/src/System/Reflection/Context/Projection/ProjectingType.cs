@@ -78,9 +78,6 @@ namespace System.Reflection.Context.Projection
             return _projector.Project(base.GetCustomAttributesData(), _projector.ProjectCustomAttributeData);
         }
 
-#if NET6_0_OR_GREATER
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents)]
-#endif
         public override EventInfo[] GetEvents()
         {
             return _projector.Project(base.GetEvents(), _projector.ProjectEvent);
@@ -108,15 +105,6 @@ namespace System.Reflection.Context.Projection
             return _projector.ProjectInterfaceMapping(base.GetInterfaceMap(interfaceType));
         }
 
-#if NET6_0_OR_GREATER
-        [DynamicallyAccessedMembers(
-            DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields |
-            DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods |
-            DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents |
-            DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties |
-            DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors |
-            DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)]
-#endif
         public override MemberInfo[] GetMember(string name, MemberTypes type, BindingFlags bindingAttr)
         {
             StringComparison comparisonType = (bindingAttr & BindingFlags.IgnoreCase) == BindingFlags.IgnoreCase
@@ -198,9 +186,6 @@ namespace System.Reflection.Context.Projection
             return _projector.ProjectConstructor(base.GetConstructorImpl(bindingAttr, binder, callConvention, types, modifiers));
         }
 
-#if NET6_0_OR_GREATER
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
-#endif
         public override ConstructorInfo[] GetConstructors(BindingFlags bindingAttr)
         {
             return _projector.Project(base.GetConstructors(bindingAttr), _projector.ProjectConstructor);
@@ -211,33 +196,21 @@ namespace System.Reflection.Context.Projection
             return _projector.ProjectType(base.GetElementType());
         }
 
-#if NET6_0_OR_GREATER
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents)]
-#endif
         public override EventInfo? GetEvent(string name, BindingFlags bindingAttr)
         {
             return _projector.ProjectEvent(base.GetEvent(name, bindingAttr));
         }
 
-#if NET6_0_OR_GREATER
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents)]
-#endif
         public override EventInfo[] GetEvents(BindingFlags bindingAttr)
         {
             return _projector.Project(base.GetEvents(bindingAttr), _projector.ProjectEvent);
         }
 
-#if NET6_0_OR_GREATER
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
-#endif
         public override FieldInfo? GetField(string name, BindingFlags bindingAttr)
         {
             return _projector.ProjectField(base.GetField(name, bindingAttr));
         }
 
-#if NET6_0_OR_GREATER
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
-#endif
         public override FieldInfo[] GetFields(BindingFlags bindingAttr)
         {
             return _projector.Project(base.GetFields(bindingAttr), _projector.ProjectField);
@@ -253,15 +226,6 @@ namespace System.Reflection.Context.Projection
             return _projector.Project(base.GetInterfaces(), _projector.ProjectType);
         }
 
-#if NET6_0_OR_GREATER
-        [DynamicallyAccessedMembers(
-            DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields |
-            DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods |
-            DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents |
-            DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties |
-            DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors |
-            DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)]
-#endif
         public override MemberInfo[] GetMembers(BindingFlags bindingAttr)
         {
             MethodInfo[] methods = GetMethods(bindingAttr);
@@ -300,9 +264,6 @@ namespace System.Reflection.Context.Projection
             return _projector.ProjectMethod(base.GetMethodImpl(name, bindingAttr, binder, callConvention, types, modifiers));
         }
 
-#if NET6_0_OR_GREATER
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
-#endif
         public override MethodInfo[] GetMethods(BindingFlags bindingAttr)
         {
             return _projector.Project(base.GetMethods(bindingAttr), _projector.ProjectMethod);
@@ -318,9 +279,6 @@ namespace System.Reflection.Context.Projection
             return _projector.Project(base.GetNestedTypes(bindingAttr), _projector.ProjectType);
         }
 
-#if NET6_0_OR_GREATER
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
-#endif
         public override PropertyInfo[] GetProperties(BindingFlags bindingAttr)
         {
             return _projector.Project(base.GetProperties(bindingAttr), _projector.ProjectProperty);
