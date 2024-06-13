@@ -5464,6 +5464,32 @@ GenTree* Compiler::impOptimizeCastClassOrIsInst(GenTree* op1, CORINFO_RESOLVED_T
     return nullptr;
 }
 
+bool Compiler::impMatchIsInstBooleanConversion(const BYTE* codeAddr, const BYTE* codeEndp, int* consumed)
+{
+    OPCODE nextOpcode = impGetNonPrefixOpcode(codeAddr, codeEndp);
+    switch (nextOpcode)
+    {
+        case CEE_BRFALSE:
+        case CEE_BRFALSE_S:
+            *consumed = 0;
+            return true;
+        case CEE_BRTRUE:
+        case CEE_BRTRUE_S:
+            *consumed = 0;
+            return true;
+        case CEE_LDNULL:
+            nextOpcode = impGetNonPrefixOpcode(codeAddr + 1, codeEndp);
+            if (nextOpcode == CEE_CGT_UN)
+            {
+                *consumed = 3;
+                return true;
+            }
+            return false;
+        default:
+            return false;
+    }
+}
+
 //------------------------------------------------------------------------
 // impCastClassOrIsInstToTree: build and import castclass/isinst
 //
@@ -5479,8 +5505,12 @@ GenTree* Compiler::impOptimizeCastClassOrIsInst(GenTree* op1, CORINFO_RESOLVED_T
 // Notes:
 //   May expand into a series of runtime checks or a helper call.
 //
-GenTree* Compiler::impCastClassOrIsInstToTree(
-    GenTree* op1, GenTree* op2, CORINFO_RESOLVED_TOKEN* pResolvedToken, bool isCastClass, IL_OFFSET ilOffset)
+GenTree* Compiler::impCastClassOrIsInstToTree(GenTree*                op1,
+                                              GenTree*                op2,
+                                              CORINFO_RESOLVED_TOKEN* pResolvedToken,
+                                              bool                    isCastClass,
+                                              bool*                   booleanCheck,
+                                              IL_OFFSET               ilOffset)
 {
     assert(op1->TypeGet() == TYP_REF);
 
@@ -5553,6 +5583,8 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
             call->gtCallMoreFlags |= GTF_CALL_M_CAST_CAN_BE_EXPANDED;
             call->gtCastHelperILOffset = ilOffset;
         }
+
+        *booleanCheck = false;
         return call;
     }
 
@@ -5578,19 +5610,34 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
     GenTree* op1Clone;
     op1 = impCloneExpr(op1, &op1Clone, CHECK_SPILL_ALL, nullptr DEBUGARG("ISINST eval op1"));
 
-    GenTreeOp*    condMT    = gtNewOperNode(GT_NE, TYP_INT, gtNewMethodTableLookup(op1Clone), op2);
-    GenTreeOp*    condNull  = gtNewOperNode(GT_EQ, TYP_INT, gtClone(op1), gtNewNull());
-    GenTreeQmark* qmarkMT   = gtNewQmarkNode(TYP_REF, condMT, gtNewColonNode(TYP_REF, gtNewNull(), gtClone(op1)));
-    GenTreeQmark* qmarkNull = gtNewQmarkNode(TYP_REF, condNull, gtNewColonNode(TYP_REF, gtNewNull(), qmarkMT));
+    if (*booleanCheck)
+    {
+        GenTreeOp*    condMT   = gtNewOperNode(GT_EQ, TYP_INT, gtNewMethodTableLookup(op1Clone), op2);
+        GenTreeOp*    condNull = gtNewOperNode(GT_EQ, TYP_INT, gtClone(op1), gtNewNull());
+        GenTreeQmark* qmarkNull =
+            gtNewQmarkNode(TYP_INT, condNull, gtNewColonNode(TYP_INT, gtNewZeroConNode(TYP_INT), condMT));
 
-    // Make QMark node a top level node by spilling it.
-    const unsigned result = lvaGrabTemp(true DEBUGARG("spilling qmarkNull"));
-    impStoreToTemp(result, qmarkNull, CHECK_SPILL_NONE);
+        // Make QMark node a top level node by spilling it.
+        const unsigned result = lvaGrabTemp(true DEBUGARG("spilling qmarkNull"));
+        impStoreToTemp(result, qmarkNull, CHECK_SPILL_NONE);
+        return gtNewLclvNode(result, TYP_INT);
+    }
+    else
+    {
+        GenTreeOp*    condMT    = gtNewOperNode(GT_NE, TYP_INT, gtNewMethodTableLookup(op1Clone), op2);
+        GenTreeOp*    condNull  = gtNewOperNode(GT_EQ, TYP_INT, gtClone(op1), gtNewNull());
+        GenTreeQmark* qmarkMT   = gtNewQmarkNode(TYP_REF, condMT, gtNewColonNode(TYP_REF, gtNewNull(), gtClone(op1)));
+        GenTreeQmark* qmarkNull = gtNewQmarkNode(TYP_REF, condNull, gtNewColonNode(TYP_REF, gtNewNull(), qmarkMT));
 
-    // See also gtGetHelperCallClassHandle where we make the same
-    // determination for the helper call variants.
-    lvaSetClass(result, pResolvedToken->hClass);
-    return gtNewLclvNode(result, TYP_REF);
+        // Make QMark node a top level node by spilling it.
+        const unsigned result = lvaGrabTemp(true DEBUGARG("spilling qmarkNull"));
+        impStoreToTemp(result, qmarkNull, CHECK_SPILL_NONE);
+
+        // See also gtGetHelperCallClassHandle where we make the same
+        // determination for the helper call variants.
+        lvaSetClass(result, pResolvedToken->hClass);
+        return gtNewLclvNode(result, TYP_REF);
+    }
 }
 
 #ifndef DEBUG
@@ -9626,7 +9673,15 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     if (!usingReadyToRunHelper)
 #endif
                     {
-                        op1 = impCastClassOrIsInstToTree(op1, op2, &resolvedToken, false, opcodeOffs);
+                        bool reverse     = false;
+                        int consumed = 0;
+                        bool booleanCheck = impMatchIsInstBooleanConversion(codeAddr + sz, codeEndp, &consumed);
+                        op1 = impCastClassOrIsInstToTree(op1, op2, &resolvedToken, false, &booleanCheck, opcodeOffs);
+
+                        if (booleanCheck)
+                        {
+                            sz += consumed;
+                        }
                     }
                     if (compDonotInline())
                     {
@@ -10148,7 +10203,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     if (!usingReadyToRunHelper)
 #endif
                     {
-                        op1 = impCastClassOrIsInstToTree(op1, op2, &resolvedToken, true, opcodeOffs);
+                        bool booleanCheck = false;
+                        op1 = impCastClassOrIsInstToTree(op1, op2, &resolvedToken, true, &booleanCheck, opcodeOffs);
                     }
                     if (compDonotInline())
                     {
