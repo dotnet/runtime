@@ -545,7 +545,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     if (!instrIsRMW)
                     {
                         assert(intrin.op3->IsVectorZero());
-                        // Finally, perform the actual "predicated" operation so that `targetReg` is the first operand
+                        // Perform the actual "predicated" operation so that `embMaskOp1Reg` is the first operand
                         // and `embMaskOp2Reg` is the second operand.
                         GetEmitter()->emitIns_R_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp1Reg,
                                                       embMaskOp2Reg, opt);
