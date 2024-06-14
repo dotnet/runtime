@@ -1155,7 +1155,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
 
         INDEBUG(ilInstsSet->bitVectSet((UINT)(codeAddr - codeBegp)));
 
-        codeAddr += sizeof(__int8);
+        codeAddr += sizeof(int8_t);
 
         if (!handled && preciseScan)
         {
@@ -1194,7 +1194,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                     goto TOO_FAR;
                 }
                 opcode = (OPCODE)(256 + getU1LittleEndian(codeAddr));
-                codeAddr += sizeof(__int8);
+                codeAddr += sizeof(int8_t);
                 goto DECODE_OPCODE;
             }
 
@@ -1400,10 +1400,6 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             case NI_Vector3_Create:
                             case NI_Vector3_CreateBroadcast:
                             case NI_Vector3_CreateFromVector2:
-                            case NI_Vector4_Create:
-                            case NI_Vector4_CreateBroadcast:
-                            case NI_Vector4_CreateFromVector2:
-                            case NI_Vector4_CreateFromVector3:
                             case NI_Vector128_Create:
                             case NI_Vector128_CreateScalar:
                             case NI_Vector128_CreateScalarUnsafe:
@@ -1675,6 +1671,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             case NI_VectorT_AsVectorUInt16:
                             case NI_VectorT_AsVectorUInt32:
                             case NI_VectorT_AsVectorUInt64:
+                            case NI_VectorT_op_Explicit:
                             case NI_VectorT_op_UnaryPlus:
 #if defined(TARGET_XARCH)
                             case NI_Vector256_As:
@@ -1704,6 +1701,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             case NI_Vector512_AsUInt16:
                             case NI_Vector512_AsUInt32:
                             case NI_Vector512_AsUInt64:
+                            case NI_Vector512_op_UnaryPlus:
 #endif // TARGET_XARCH
 #endif // FEATURE_HW_INTRINSICS
                             case NI_SRCS_UNSAFE_As:
@@ -1726,12 +1724,6 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             case NI_Vector64_get_One:
                             case NI_Vector64_get_Zero:
 #endif // TARGET_ARM64
-                            case NI_Vector2_get_One:
-                            case NI_Vector2_get_Zero:
-                            case NI_Vector3_get_One:
-                            case NI_Vector3_get_Zero:
-                            case NI_Vector4_get_One:
-                            case NI_Vector4_get_Zero:
                             case NI_Vector128_get_AllBitsSet:
                             case NI_Vector128_get_One:
                             case NI_Vector128_get_Zero:
@@ -2255,10 +2247,10 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
 
             case CEE_UNALIGNED:
             {
-                noway_assert(sz == sizeof(__int8));
+                noway_assert(sz == sizeof(int8_t));
                 prefixFlags |= PREFIX_UNALIGNED;
 
-                codeAddr += sizeof(__int8);
+                codeAddr += sizeof(int8_t);
 
                 impValidateMemoryAccessOpcode(codeAddr, codeEndp, false);
                 handled = true;
@@ -3137,7 +3129,7 @@ void Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
         BBswtDesc*      swtDsc  = nullptr;
         unsigned        nxtBBoffs;
         OPCODE          opcode = (OPCODE)getU1LittleEndian(codeAddr);
-        codeAddr += sizeof(__int8);
+        codeAddr += sizeof(int8_t);
         BBKinds jmpKind = BBJ_COUNT;
 
     DECODE_OPCODE:
@@ -3160,7 +3152,7 @@ void Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                 }
 
                 opcode = (OPCODE)(256 + getU1LittleEndian(codeAddr));
-                codeAddr += sizeof(__int8);
+                codeAddr += sizeof(int8_t);
                 goto DECODE_OPCODE;
 
                 /* Check to see if we have a jump/return opcode */
@@ -6154,7 +6146,7 @@ BasicBlock* Compiler::fgNewBBFromTreeAfter(
  */
 void Compiler::fgInsertBBbefore(BasicBlock* insertBeforeBlk, BasicBlock* newBlk)
 {
-    if (insertBeforeBlk->IsFirst())
+    if (fgFirstBB == insertBeforeBlk)
     {
         newBlk->SetNext(fgFirstBB);
 

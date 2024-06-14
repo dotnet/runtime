@@ -550,7 +550,7 @@ namespace System.Runtime.InteropServices
         }
 
         /// <summary>
-        /// Creates a new instance of "structuretype" and marshals data from a
+        /// Creates a new instance of <paramref name="structureType"/> and marshals data from a
         /// native memory block to it.
         /// </summary>
         [RequiresDynamicCode("Marshalling code for the object might not be available")]

@@ -45,13 +45,13 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		static Type s_typeWithPublicParameterlessConstructor;
 
 		[Kept]
-		// Trimmer and analyzer use different formats for ref parameters: https://github.com/dotnet/linker/issues/2406
-		[ExpectedWarning ("IL2077", nameof (ByRefDataflow) + "." + nameof (MethodWithRefParameter) + "(Type&)", Tool.Trimmer | Tool.NativeAot, "")]
-		[ExpectedWarning ("IL2077", nameof (ByRefDataflow) + "." + nameof (MethodWithRefParameter) + "(ref Type)", Tool.Analyzer, "")]
-		[ExpectedWarning ("IL2069", [nameof (s_typeWithPublicParameterlessConstructor), "parameter 'type'", nameof (MethodWithRefParameter)], Tool.Trimmer | Tool.NativeAot, "")]
+		// Trimmer and analyzer use different formats for ref parameters
+		[ExpectedWarning ("IL2077", nameof (ByRefDataflow) + "." + nameof (MethodWithRefParameter) + "(Type&)", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/linker/issues/2406")]
+		[ExpectedWarning ("IL2077", nameof (ByRefDataflow) + "." + nameof (MethodWithRefParameter) + "(ref Type)", Tool.Analyzer, "https://github.com/dotnet/linker/issues/2406")]
+		[ExpectedWarning ("IL2069", [nameof (s_typeWithPublicParameterlessConstructor), "parameter 'type'", nameof (MethodWithRefParameter)], Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/101955")]
 		// MethodWithRefParameter (ref x)
-		[ExpectedWarning ("IL2077", nameof (ByRefDataflow) + "." + nameof (MethodWithRefParameter) + "(Type&)", Tool.Trimmer | Tool.NativeAot, "")]
-		[ExpectedWarning ("IL2077", nameof (ByRefDataflow) + "." + nameof (MethodWithRefParameter) + "(ref Type)", Tool.Analyzer, "")]
+		[ExpectedWarning ("IL2077", nameof (ByRefDataflow) + "." + nameof (MethodWithRefParameter) + "(Type&)", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/linker/issues/2406")]
+		[ExpectedWarning ("IL2077", nameof (ByRefDataflow) + "." + nameof (MethodWithRefParameter) + "(ref Type)", Tool.Analyzer, "https://github.com/dotnet/linker/issues/2406")]
 		public static void PassRefToField ()
 		{
 			MethodWithRefParameter (ref s_typeWithPublicParameterlessConstructor);
@@ -60,9 +60,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		[Kept]
-		// Trimmer and analyzer use different formats for ref parameters: https://github.com/dotnet/linker/issues/2406
-		[ExpectedWarning ("IL2067", nameof (ByRefDataflow) + "." + nameof (MethodWithRefParameter) + "(Type&)", Tool.Trimmer | Tool.NativeAot, "")]
-		[ExpectedWarning ("IL2067", nameof (ByRefDataflow) + "." + nameof (MethodWithRefParameter) + "(ref Type)", Tool.Analyzer, "")]
+		// Trimmer and analyzer use different formats for ref parameters:
+		[ExpectedWarning ("IL2067", nameof (ByRefDataflow) + "." + nameof (MethodWithRefParameter) + "(Type&)", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/linker/issues/2406")]
+		[ExpectedWarning ("IL2067", nameof (ByRefDataflow) + "." + nameof (MethodWithRefParameter) + "(ref Type)", Tool.Analyzer, "https://github.com/dotnet/linker/issues/2406")]
 		public static void PassRefToParameter (Type parameter)
 		{
 			MethodWithRefParameter (ref parameter);
@@ -181,9 +181,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[Kept]
-			// https://github.com/dotnet/runtime/issues/85464
-			[ExpectedWarning ("IL2069", Tool.Trimmer | Tool.NativeAot, "")]
-			[ExpectedWarning ("IL2069", Tool.Trimmer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL2069", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/85464")]
+			[ExpectedWarning ("IL2069", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/85464")]
 			public static void Test ()
 			{
 				TwoOutRefs (out _publicMethodsField, out _publicPropertiesField);
@@ -243,13 +242,13 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[Kept]
-			[ExpectedWarning ("IL2072", [nameof (GetUnknownType), nameof (DataFlowTypeExtensions.RequiresAll)], Tool.Analyzer, "")]
-			[ExpectedWarning ("IL2072", [nameof (GetTypeWithPublicConstructors), nameof (DataFlowTypeExtensions.RequiresAll)], Tool.Analyzer, "")]
-			[ExpectedWarning ("IL2072", [nameof (GetTypeWithPublicFields), nameof (DataFlowTypeExtensions.RequiresAll)], Tool.Analyzer, "")]
-			[ExpectedWarning ("IL2072", [nameof (GetTypeWithPublicFields), nameof (DataFlowTypeExtensions.RequiresAll)], Tool.Analyzer, "")]
-			// ILLink/ILCompiler produce different warning code: https://github.com/dotnet/linker/issues/2737
-			[ExpectedWarning ("IL2062", nameof (DataFlowTypeExtensions.RequiresAll), Tool.Trimmer | Tool.NativeAot, "")]
-			[ExpectedWarning ("IL2062", nameof (DataFlowTypeExtensions.RequiresAll), Tool.Trimmer | Tool.NativeAot, "")]
+			// ILLink/ILCompiler produce different warning code:
+			[ExpectedWarning ("IL2072", [nameof (GetUnknownType), nameof (DataFlowTypeExtensions.RequiresAll)], Tool.Analyzer, "https://github.com/dotnet/linker/issues/2737")]
+			[ExpectedWarning ("IL2072", [nameof (GetTypeWithPublicConstructors), nameof (DataFlowTypeExtensions.RequiresAll)], Tool.Analyzer, "https://github.com/dotnet/linker/issues/2737")]
+			[ExpectedWarning ("IL2072", [nameof (GetTypeWithPublicFields), nameof (DataFlowTypeExtensions.RequiresAll)], Tool.Analyzer, "https://github.com/dotnet/linker/issues/2737")]
+			[ExpectedWarning ("IL2072", [nameof (GetTypeWithPublicFields), nameof (DataFlowTypeExtensions.RequiresAll)], Tool.Analyzer, "https://github.com/dotnet/linker/issues/2737")]
+			[UnexpectedWarning ("IL2062", nameof (DataFlowTypeExtensions.RequiresAll), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/linker/issues/2737")]
+			[UnexpectedWarning ("IL2062", nameof (DataFlowTypeExtensions.RequiresAll), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/linker/issues/2737")]
 			static void TestArrayElementReferenceAssignment (bool b = true)
 			{
 				var arr1 = new Type[] { GetUnknownType () };

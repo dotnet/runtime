@@ -26,7 +26,7 @@ namespace ILCompiler.ObjectWriter
     /// </summary>
     /// <remarks>
     /// The PE/COFF object format is described in the official specifciation at
-    /// https://learn.microsoft.com/en-us/windows/win32/debug/pe-format. However,
+    /// https://learn.microsoft.com/windows/win32/debug/pe-format. However,
     /// numerous extensions are missing in the specification. The most notable
     /// ones are listed below.
     ///

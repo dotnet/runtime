@@ -4,6 +4,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ApiCompatSuppressionFile Include="$(MSBuildProjectDirectory)\CompatibilitySuppressions.xml" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ILLinkSubstitutionsXmls Include="ILLink\ILLink.Substitutions.xml" />
     <ILLinkLinkAttributesXmls Include="ILLink\ILLink.LinkAttributes.xml" />
   </ItemGroup>
@@ -127,6 +131,7 @@
     <Compile Include="Internal\Reflection\Extensions\NonPortable\CustomAttributeInheritanceRules.cs" />
     <Compile Include="Internal\Reflection\Extensions\NonPortable\CustomAttributeInstantiator.cs" />
     <Compile Include="Internal\Reflection\Extensions\NonPortable\CustomAttributeSearcher.cs" />
+    <Compile Include="System\Diagnostics\DiagnosticMethodInfo.NativeAot.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="System\Reflection\RuntimeAssembly.cs" />
@@ -196,7 +201,6 @@
     <Compile Include="System\Runtime\InteropServices\ComEventsHelper.NativeAot.cs" Condition="'$(FeatureCominterop)' == 'true'" />
     <Compile Include="System\Runtime\InteropServices\ComWrappers.NativeAot.cs" Condition="'$(FeatureComWrappers)' == 'true'" />
     <Compile Include="System\Runtime\InteropServices\GCHandle.NativeAot.cs" />
-    <Compile Include="System\Runtime\InteropServices\InteropExtensions.cs" />
     <Compile Include="System\Runtime\InteropServices\NativeFunctionPointerWrapper.cs" />
     <Compile Include="System\Runtime\InteropServices\NativeLibrary.NativeAot.cs" />
     <Compile Include="System\Runtime\InteropServices\PInvokeMarshal.cs" />
@@ -493,7 +497,7 @@
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeTypeInfo.CoreGetDeclared.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeTypeInfo.InvokeMember.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeTypeInfo.TypeComponentsCache.cs" />
-    <Compile Include="System\Reflection\TypeNameParser.NativeAot.cs" />
+    <Compile Include="System\Reflection\TypeNameResolver.NativeAot.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Internal\Reflection\Core\AssemblyBinder.cs" />

@@ -80,15 +80,11 @@ int32_t minipal_get_cryptographically_secure_random_bytes(uint8_t* buffer, int32
             return 0;
     }
 #elif defined(__APPLE__) && __APPLE__
-    CCRNGStatus status = CCRandomGenerateBytes(buffer, bufferLength);
+    CCRNGStatus status = CCRandomGenerateBytes(buffer, (size_t)bufferLength);
 
     if (status == kCCSuccess)
     {
         return 0;
-    }
-    else
-    {
-        return -1;
     }
 #else
 

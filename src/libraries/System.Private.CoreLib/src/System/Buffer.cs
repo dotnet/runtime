@@ -62,7 +62,7 @@ namespace System
 
             nuint byteLength = array.NativeLength * (nuint)array.GetElementSize();
 
-            // This API is explosed both as Buffer.ByteLength and also used indirectly in argument
+            // This API is exposed both as Buffer.ByteLength and also used indirectly in argument
             // checks for Buffer.GetByte/SetByte.
             //
             // If somebody called Get/SetByte on 2GB+ arrays, there is a decent chance that

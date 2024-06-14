@@ -123,7 +123,6 @@ ABIPassingInformation LoongArch64Classifier::Classify(Compiler*    comp,
 
                 if (!canPassArgInRegisters)
                 {
-                    m_floatRegs.Clear();
                     slots = (passedSize + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE;
                     // On LoongArch64, if there aren't any remaining floating-point registers to pass the argument,
                     // integer registers (if any) are used instead.
@@ -161,8 +160,7 @@ ABIPassingInformation LoongArch64Classifier::Classify(Compiler*    comp,
             canPassArgInRegisters = m_floatRegs.Count() > 0;
             if (!canPassArgInRegisters)
             {
-                type = TYP_I_IMPL;
-                m_floatRegs.Clear();
+                type                  = TYP_I_IMPL;
                 canPassArgInRegisters = m_intRegs.Count() > 0;
             }
         }

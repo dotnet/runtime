@@ -503,6 +503,10 @@ extern jclass g_TrustManager;
 extern jclass    g_DotnetProxyTrustManager;
 extern jmethodID g_DotnetProxyTrustManagerCtor;
 
+// net/dot/android/crypto/PalPbkdf2
+extern jclass    g_PalPbkdf2;
+extern jmethodID g_PalPbkdf2Pbkdf2OneShot;
+
 // Compatibility macros
 #if !defined (__mallocfunc)
 #if defined (__clang__) || defined (__GNUC__)

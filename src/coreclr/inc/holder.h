@@ -997,19 +997,6 @@ FORCEINLINE void Delete(TYPE *value)
 template<typename _TYPE>
 using NewHolder = SpecializedWrapper<_TYPE, Delete<_TYPE>>;
 
- //-----------------------------------------------------------------------------
-// NewExecutableHolder : New'ed memory holder for executable memory.
-//
-//  {
-//      NewExecutableHolder<Foo> foo = (Foo*) new (executable) Byte[num];
-//  } // delete foo on out of scope
-//-----------------------------------------------------------------------------
-// IJW
-template<class T> void DeleteExecutable(T *p);
-
-template<typename _TYPE>
-using NewExecutableHolder = SpecializedWrapper<_TYPE, DeleteExecutable<_TYPE>>;
-
 //-----------------------------------------------------------------------------
 // NewArrayHolder : New []'ed pointer holder
 //  {
@@ -1208,7 +1195,7 @@ public:
 //
 //  {
 //      HKEYHolder hFoo = NULL;
-//      WszRegOpenKeyEx(HKEY_CLASSES_ROOT, L"Interface",0, KEY_READ, hFoo);
+//      RegOpenKeyEx(HKEY_CLASSES_ROOT, L"Interface",0, KEY_READ, hFoo);
 //
 //  } // close key on out of scope via RegCloseKey.
 //-----------------------------------------------------------------------------

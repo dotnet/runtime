@@ -84,12 +84,21 @@ switch (testCase) {
             .withRuntimeOptions(['--interp-pgo-logging'])
             .withInterpreterPgo(true);
         break;
+    case "DownloadThenInit":
+        const originalFetch = globalThis.fetch;
+        globalThis.fetch = (url, fetchArgs) => {
+            testOutput("fetching " + url);
+            return originalFetch(url, fetchArgs);
+        };
+        await dotnet.download();
+        testOutput("download finished");
+        break;
 }
 
 const { setModuleImports, getAssemblyExports, getConfig, INTERNAL } = await dotnet.create();
 const config = getConfig();
 const exports = await getAssemblyExports(config.mainAssemblyName);
-const assemblyExtension = config.resources.assembly['System.Private.CoreLib.wasm'] !== undefined ? ".wasm" : ".dll";
+const assemblyExtension = config.resources.coreAssembly['System.Private.CoreLib.wasm'] !== undefined ? ".wasm" : ".dll";
 
 // Run the test case
 try {
@@ -135,6 +144,9 @@ try {
                 exports.InterpPgoTest.Greeting();
             };
             await INTERNAL.interp_pgo_save_data();
+            exit(0);
+            break;
+        case "DownloadThenInit":
             exit(0);
             break;
         default:

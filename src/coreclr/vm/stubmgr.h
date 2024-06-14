@@ -627,7 +627,7 @@ class RangeSectionStubManager : public StubManager
 typedef VPTR(class ILStubManager) PTR_ILStubManager;
 
 #ifdef FEATURE_COMINTEROP
-struct ComPlusCallInfo;
+struct CLRToCOMCallInfo;
 #endif // FEATURE_COMINTEROP
 
 class ILStubManager : public StubManager
@@ -680,7 +680,7 @@ class ILStubManager : public StubManager
 };
 
 // This is used to recognize
-//   GenericComPlusCallStub()
+//   GenericCLRToCOMCallStub()
 //   VarargPInvokeStub()
 //   GenericPInvokeCalliHelper()
 typedef VPTR(class InteropDispatchStubManager) PTR_InteropDispatchStubManager;
