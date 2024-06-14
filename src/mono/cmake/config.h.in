@@ -585,6 +585,9 @@
 /* Host is RISC-V */
 #cmakedefine HOST_RISCV 1
 
+/* Host is 32-bit RISC-V */
+#cmakedefine HOST_RISCV32 1
+
 /* Host is 64-bit RISC-V */
 #cmakedefine HOST_RISCV64 1
 
