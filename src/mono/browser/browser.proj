@@ -332,8 +332,8 @@
       { "identity": "WasmNativeStrip",              "defaultValueInRuntimePack": "true" },
       { "identity": "WasmSingleFileBundle",         "defaultValueInRuntimePack": "false" },
       { "identity": "WasmEnableSIMD",               "defaultValueInRuntimePack": "true" },
-      { "identity": "WasmEnableExceptionHandling",  "defaultValueInRuntimePack": "true" },
-    ],
+      { "identity": "WasmEnableExceptionHandling",  "defaultValueInRuntimePack": "true" }
+    ]
   }
 }
 ]]>
