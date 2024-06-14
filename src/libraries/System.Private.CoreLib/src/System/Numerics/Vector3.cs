@@ -268,7 +268,14 @@ namespace System.Numerics
         /// <summary>Constructs a vector from the given <see cref="ReadOnlySpan{Single}" />. The span must contain at least 3 elements.</summary>
         /// <param name="values">The span of elements to assign to the vector.</param>
         [Intrinsic]
-        public static Vector3 Create(ReadOnlySpan<float> values) => Vector128.Create(values).AsVector3();
+        public static Vector3 Create(ReadOnlySpan<float> values)
+        {
+            if (values.Length < Count)
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.values);
+            }
+            return Unsafe.ReadUnaligned<Vector3>(ref Unsafe.As<float, byte>(ref MemoryMarshal.GetReference(values)));
+        }
 
         /// <summary>Creates a vector with <see cref="X" /> initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="x">The value to assign to the <see cref="X" /> field.</param>
