@@ -97,7 +97,7 @@ internal sealed unsafe partial class MsQuicApi
             // support developers explicitly providing OpenSSL version of MsQuic.
             // in the application directory, so we first check there and default
             // to the Schannel version if not found.
-            if (AllowAppLocalMsQuic())
+            if (IsAppLocalMsQuicAllowed())
             {
                 loaded = NativeLibrary.TryLoad(Path.Combine(AppContext.BaseDirectory, Interop.Libraries.MsQuic), out msQuicHandle);
             }
@@ -279,5 +279,7 @@ internal sealed unsafe partial class MsQuicApi
         return false;
     }
 
-    private static bool AllowAppLocalMsQuic() => AppContextSwitchHelper.GetBooleanConfig("System.Net.Quic.AppLocalMsQuic", "DOTNET_SYSTEM_NET_QUIC_APPLOCALMSQUIC");
+    private static bool IsAppLocalMsQuicAllowed() => AppContextSwitchHelper.GetBooleanConfig(
+        "System.Net.Quic.AppLocalMsQuic",
+        "DOTNET_SYSTEM_NET_QUIC_APPLOCALMSQUIC");
 }
