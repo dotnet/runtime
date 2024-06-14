@@ -25621,8 +25621,6 @@ void gc_heap::check_heap_count ()
             // background GC is running - reset the new heap count
             dynamic_heap_count_data.new_n_heaps = n_heaps;
             dprintf (6666, ("can't change heap count! BGC in progress"));
-
-            GCToEEInterface::RestartEE(TRUE);
         }
 #endif //BACKGROUND_GC
     }
@@ -25645,6 +25643,8 @@ void gc_heap::check_heap_count ()
 
         dprintf (6666, ("heap count stays the same %d, no work to do, set processed sample count to %Id",
             dynamic_heap_count_data.new_n_heaps, dynamic_heap_count_data.current_samples_count));
+
+        GCToEEInterface::RestartEE(TRUE);
 
         return;
     }
