@@ -395,6 +395,7 @@ extends:
           jobParameters:
             buildArgs: -s libs -allConfigurations -c $(_BuildConfig) /p:TestAssemblies=false /p:TestPackages=true
             nameSuffix: Libraries_AllConfigurations
+            isOfficialBuild: ${{ variables.isOfficialBuild }}
             postBuildSteps:
               - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
                 parameters:
