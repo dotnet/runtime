@@ -121,6 +121,12 @@ namespace ILCompiler.Dataflow
                 foreach (var e in typeDefinition.GetEventsOnTypeHierarchy(filter: null, bindingFlags: BindingFlags.Public | declaredOnlyFlags))
                     yield return e;
             }
+
+            if (memberTypes.HasFlag(DynamicallyAccessedMemberTypes.Interfaces))
+            {
+                foreach (DefType iface in typeDefinition.GetAllInterfaceImplementations(declaredOnly))
+                    yield return iface;
+            }
         }
 
         public static IEnumerable<MethodDesc> GetConstructorsOnType(this TypeDesc type, Func<MethodDesc, bool> filter, BindingFlags? bindingFlags = null)

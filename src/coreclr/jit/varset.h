@@ -108,7 +108,7 @@ typedef BitSetOpsWithCounter<VARSET_TP,
                              VarSetOpsRaw::Iter>
     VarSetOps;
 #else
-typedef VarSetOpsRaw       VarSetOps;
+typedef VarSetOpsRaw VarSetOps;
 #endif
 
 #define ALLVARSET_REP BSShortLong

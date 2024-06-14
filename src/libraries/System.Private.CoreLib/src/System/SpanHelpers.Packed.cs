@@ -7,7 +7,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 
-
 #pragma warning disable 8500 // sizeof of managed types
 
 namespace System
@@ -28,7 +27,7 @@ namespace System
             Debug.Assert(RuntimeHelpers.IsBitwiseEquatable<T>());
             Debug.Assert(sizeof(T) == sizeof(ushort));
 
-            return *(ushort*)&value - 1u < 254u;
+            return Unsafe.BitCast<T, ushort>(value) - 1u < 254u;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

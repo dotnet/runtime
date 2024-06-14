@@ -117,6 +117,16 @@ void RegSet::rsClearRegsModified()
 #endif // DEBUG
 
     rsModifiedRegsMask = RBM_NONE;
+
+#ifdef SWIFT_SUPPORT
+    // If this method has a SwiftError* parameter, we will return SwiftError::Value in REG_SWIFT_ERROR,
+    // so don't treat it as callee-save.
+    if (m_rsCompiler->lvaSwiftErrorArg != BAD_VAR_NUM)
+    {
+        rsAllCalleeSavedMask &= ~RBM_SWIFT_ERROR;
+        rsIntCalleeSavedMask &= ~RBM_SWIFT_ERROR;
+    }
+#endif // SWIFT_SUPPORT
 }
 
 void RegSet::rsSetRegsModified(regMaskTP mask DEBUGARG(bool suppressDump))
@@ -233,7 +243,9 @@ void RegSet::SetMaskVars(regMaskTP newMaskVars)
 
 /*****************************************************************************/
 
-RegSet::RegSet(Compiler* compiler, GCInfo& gcInfo) : m_rsCompiler(compiler), m_rsGCInfo(gcInfo)
+RegSet::RegSet(Compiler* compiler, GCInfo& gcInfo)
+    : m_rsCompiler(compiler)
+    , m_rsGCInfo(gcInfo)
 {
     /* Initialize the spill logic */
 
@@ -255,6 +267,11 @@ RegSet::RegSet(Compiler* compiler, GCInfo& gcInfo) : m_rsCompiler(compiler), m_r
     rsMaskPreSpillRegArg = RBM_NONE;
     rsMaskPreSpillAlign  = RBM_NONE;
 #endif
+
+#ifdef SWIFT_SUPPORT
+    rsAllCalleeSavedMask = RBM_CALLEE_SAVED;
+    rsIntCalleeSavedMask = RBM_INT_CALLEE_SAVED;
+#endif // SWIFT_SUPPORT
 
 #ifdef DEBUG
     rsModifiedRegsMaskInitialized = false;
@@ -425,9 +442,9 @@ void RegSet::rsSpillTree(regNumber reg, GenTree* tree, unsigned regIdx /* =0 */)
 
 #if defined(TARGET_X86)
 /*****************************************************************************
-*
-*  Spill the top of the FP x87 stack.
-*/
+ *
+ *  Spill the top of the FP x87 stack.
+ */
 void RegSet::rsSpillFPStack(GenTreeCall* call)
 {
     SpillDsc* spill;
@@ -895,7 +912,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 regNumber genRegArgNext(regNumber argReg)
 {
-    assert(isValidIntArgReg(argReg) || isValidFloatArgReg(argReg));
+    assert(isValidIntArgReg(argReg, CorInfoCallConvExtension::Managed) || isValidFloatArgReg(argReg));
 
     switch (argReg)
     {
@@ -929,21 +946,18 @@ regNumber genRegArgNext(regNumber argReg)
 
 /*****************************************************************************
  *
- *  The following table determines the order in which callee-saved registers
- *  are encoded in GC information at call sites (perhaps among other things).
- *  In any case, they establish a mapping from ordinal callee-save reg "indices" to
- *  register numbers and corresponding bitmaps.
+ *  The following table determines the order in which callee registers
+ *  are encoded in GC information at call sites.
  */
 
-const regNumber raRegCalleeSaveOrder[] = {REG_CALLEE_SAVED_ORDER};
-const regMaskTP raRbmCalleeSaveOrder[] = {RBM_CALLEE_SAVED_ORDER};
+const regMaskTP raRbmCalleeSaveOrder[] = {RBM_CALL_GC_REGS_ORDER};
 
-regMaskSmall genRegMaskFromCalleeSavedMask(unsigned short calleeSaveMask)
+regMaskTP genRegMaskFromCalleeSavedMask(unsigned short calleeSaveMask)
 {
-    regMaskSmall res = 0;
-    for (int i = 0; i < CNT_CALLEE_SAVED; i++)
+    regMaskTP res = 0;
+    for (int i = 0; i < CNT_CALL_GC_REGS; i++)
     {
-        if ((calleeSaveMask & ((regMaskTP)1 << i)) != 0)
+        if ((calleeSaveMask & (1 << i)) != 0)
         {
             res |= raRbmCalleeSaveOrder[i];
         }

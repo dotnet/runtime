@@ -1012,6 +1012,12 @@ namespace System.Tests
             Assert.True(ComparisonOperatorsHelper<Int128, Int128, bool>.op_GreaterThan(MaxValue, 1));
             Assert.False(ComparisonOperatorsHelper<Int128, Int128, bool>.op_GreaterThan(MinValue, 1));
             Assert.False(ComparisonOperatorsHelper<Int128, Int128, bool>.op_GreaterThan(NegativeOne, 1));
+
+            Assert.True(ComparisonOperatorsHelper<Int128, Int128, bool>.op_GreaterThan(Zero, NegativeOne));
+            Assert.True(ComparisonOperatorsHelper<Int128, Int128, bool>.op_GreaterThan(One, NegativeOne));
+            Assert.True(ComparisonOperatorsHelper<Int128, Int128, bool>.op_GreaterThan(MaxValue, NegativeOne));
+            Assert.False(ComparisonOperatorsHelper<Int128, Int128, bool>.op_GreaterThan(MinValue, NegativeOne));
+            Assert.False(ComparisonOperatorsHelper<Int128, Int128, bool>.op_GreaterThan(NegativeOne, NegativeOne));
         }
 
         [Fact]
@@ -1022,6 +1028,12 @@ namespace System.Tests
             Assert.True(ComparisonOperatorsHelper<Int128, Int128, bool>.op_GreaterThanOrEqual(MaxValue, 1));
             Assert.False(ComparisonOperatorsHelper<Int128, Int128, bool>.op_GreaterThanOrEqual(MinValue, 1));
             Assert.False(ComparisonOperatorsHelper<Int128, Int128, bool>.op_GreaterThanOrEqual(NegativeOne, 1));
+
+            Assert.True(ComparisonOperatorsHelper<Int128, Int128, bool>.op_GreaterThanOrEqual(Zero, NegativeOne));
+            Assert.True(ComparisonOperatorsHelper<Int128, Int128, bool>.op_GreaterThanOrEqual(One, NegativeOne));
+            Assert.True(ComparisonOperatorsHelper<Int128, Int128, bool>.op_GreaterThanOrEqual(MaxValue, NegativeOne));
+            Assert.False(ComparisonOperatorsHelper<Int128, Int128, bool>.op_GreaterThanOrEqual(MinValue, NegativeOne));
+            Assert.True(ComparisonOperatorsHelper<Int128, Int128, bool>.op_GreaterThanOrEqual(NegativeOne, NegativeOne));
         }
 
         [Fact]
@@ -1032,6 +1044,12 @@ namespace System.Tests
             Assert.False(ComparisonOperatorsHelper<Int128, Int128, bool>.op_LessThan(MaxValue, 1));
             Assert.True(ComparisonOperatorsHelper<Int128, Int128, bool>.op_LessThan(MinValue, 1));
             Assert.True(ComparisonOperatorsHelper<Int128, Int128, bool>.op_LessThan(NegativeOne, 1));
+
+            Assert.False(ComparisonOperatorsHelper<Int128, Int128, bool>.op_LessThan(Zero, NegativeOne));
+            Assert.False(ComparisonOperatorsHelper<Int128, Int128, bool>.op_LessThan(One, NegativeOne));
+            Assert.False(ComparisonOperatorsHelper<Int128, Int128, bool>.op_LessThan(MaxValue, NegativeOne));
+            Assert.True(ComparisonOperatorsHelper<Int128, Int128, bool>.op_LessThan(MinValue, NegativeOne));
+            Assert.False(ComparisonOperatorsHelper<Int128, Int128, bool>.op_LessThan(NegativeOne, NegativeOne));
         }
 
         [Fact]
@@ -1042,6 +1060,12 @@ namespace System.Tests
             Assert.False(ComparisonOperatorsHelper<Int128, Int128, bool>.op_LessThanOrEqual(MaxValue, 1));
             Assert.True(ComparisonOperatorsHelper<Int128, Int128, bool>.op_LessThanOrEqual(MinValue, 1));
             Assert.True(ComparisonOperatorsHelper<Int128, Int128, bool>.op_LessThanOrEqual(NegativeOne, 1));
+
+            Assert.False(ComparisonOperatorsHelper<Int128, Int128, bool>.op_LessThanOrEqual(Zero, NegativeOne));
+            Assert.False(ComparisonOperatorsHelper<Int128, Int128, bool>.op_LessThanOrEqual(One, NegativeOne));
+            Assert.False(ComparisonOperatorsHelper<Int128, Int128, bool>.op_LessThanOrEqual(MaxValue, NegativeOne));
+            Assert.True(ComparisonOperatorsHelper<Int128, Int128, bool>.op_LessThanOrEqual(MinValue, NegativeOne));
+            Assert.True(ComparisonOperatorsHelper<Int128, Int128, bool>.op_LessThanOrEqual(NegativeOne, NegativeOne));
         }
 
         //

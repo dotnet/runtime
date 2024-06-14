@@ -39,6 +39,8 @@ namespace System.Security.Cryptography
         public int Finalize(Span<byte> destination) => throw new UnreachableException();
         public void Current(Span<byte> destination) => throw new UnreachableException();
         public int Reset() => throw new UnreachableException();
+        public LiteXof Clone() => throw new UnreachableException();
+        public void Read(Span<byte> destination) => throw new UnreachableException();
         public void Dispose() => throw new UnreachableException();
 #pragma warning restore IDE0060
 #pragma warning restore CA1822
@@ -64,7 +66,7 @@ namespace System.Security.Cryptography
                 throw new PlatformNotSupportedException(
                     SR.Format(
                         SR.Cryptography_UnknownHashAlgorithm,
-                        Enum.GetName(typeof(PAL_HashAlgorithm), algorithm)));
+                        Enum.GetName(algorithm)));
             }
 
             if (_ctx.IsInvalid)
@@ -159,7 +161,7 @@ namespace System.Security.Cryptography
                 throw new PlatformNotSupportedException(
                     SR.Format(
                         SR.Cryptography_UnknownHashAlgorithm,
-                        Enum.GetName(typeof(Interop.AppleCrypto.PAL_HashAlgorithm), algorithm)));
+                        Enum.GetName(algorithm)));
             }
 
             if (_ctx.IsInvalid)

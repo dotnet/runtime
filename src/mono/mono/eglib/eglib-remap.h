@@ -98,6 +98,7 @@
 #define g_log_set_fatal_mask monoeg_g_log_set_fatal_mask
 #define g_logv monoeg_g_logv
 #define g_memdup monoeg_g_memdup
+#define g_memrchr monoeg_g_memrchr
 #define g_mem_set_vtable monoeg_g_mem_set_vtable
 #define g_mem_get_vtable monoeg_g_mem_get_vtable
 #define g_mkdtemp monoeg_g_mkdtemp
@@ -218,6 +219,7 @@
 #define g_wtf8_to_utf16 monoeg_g_wtf8_to_utf16
 #define g_utf8_to_utf16_custom_alloc monoeg_g_utf8_to_utf16_custom_alloc
 #define g_utf8_to_utf16le_custom_alloc monoeg_g_utf8_to_utf16le_custom_alloc
+#define g_utf8_validate_part monoeg_g_utf8_validate_part
 #define g_utf8_validate monoeg_g_utf8_validate
 #define g_vasprintf monoeg_g_vasprintf
 #define g_assertion_disable_global monoeg_assertion_disable_global

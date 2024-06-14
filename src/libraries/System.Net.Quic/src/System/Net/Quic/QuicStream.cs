@@ -162,14 +162,20 @@ public sealed partial class QuicStream
         try
         {
             QUIC_HANDLE* handle;
-            ThrowHelper.ThrowIfMsQuicError(MsQuicApi.Api.StreamOpen(
+            int status = MsQuicApi.Api.StreamOpen(
                 connectionHandle,
                 type == QuicStreamType.Unidirectional ? QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL : QUIC_STREAM_OPEN_FLAGS.NONE,
                 &NativeCallback,
                 (void*)GCHandle.ToIntPtr(context),
-                &handle),
-                "StreamOpen failed");
+                &handle);
+
+            if (ThrowHelper.TryGetStreamExceptionForMsQuicStatus(status, out Exception? ex, streamWasSuccessfullyStarted: false, message: "StreamOpen failed"))
+            {
+                throw ex;
+            }
+
             _handle = new MsQuicContextSafeHandle(handle, context, SafeHandleType.Stream, connectionHandle);
+            _handle.Disposable = _sendBuffers;
         }
         catch
         {
@@ -201,6 +207,7 @@ public sealed partial class QuicStream
         try
         {
             _handle = new MsQuicContextSafeHandle(handle, context, SafeHandleType.Stream, connectionHandle);
+            _handle.Disposable = _sendBuffers;
             delegate* unmanaged[Cdecl]<QUIC_HANDLE*, void*, QUIC_STREAM_EVENT*, int> nativeCallback = &NativeCallback;
             MsQuicApi.Api.SetCallbackHandler(
                 _handle,
@@ -223,6 +230,7 @@ public sealed partial class QuicStream
         }
         _id = (long)GetMsQuicParameter<ulong>(_handle, QUIC_PARAM_STREAM_ID);
         _type = flags.HasFlag(QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL) ? QuicStreamType.Unidirectional : QuicStreamType.Bidirectional;
+
         _startedTcs.TrySetResult();
     }
 
@@ -242,7 +250,8 @@ public sealed partial class QuicStream
                 int status = MsQuicApi.Api.StreamStart(
                     _handle,
                     QUIC_STREAM_START_FLAGS.SHUTDOWN_ON_FAIL | QUIC_STREAM_START_FLAGS.INDICATE_PEER_ACCEPT);
-                if (ThrowHelper.TryGetStreamExceptionForMsQuicStatus(status, out Exception? exception))
+
+                if (ThrowHelper.TryGetStreamExceptionForMsQuicStatus(status, out Exception? exception, streamWasSuccessfullyStarted: false))
                 {
                     _startedTcs.TrySetException(exception);
                 }
@@ -321,6 +330,11 @@ public sealed partial class QuicStream
                     1),
                 "StreamReceivedSetEnabled failed");
             }
+        }
+
+        if (NetEventSource.Log.IsEnabled())
+        {
+            NetEventSource.Info(this, $"{this} Stream read '{totalCopied}' bytes.");
         }
 
         return totalCopied;
@@ -432,6 +446,7 @@ public sealed partial class QuicStream
         {
             return;
         }
+        ThrowHelper.ValidateErrorCode(nameof(errorCode), errorCode, $"{nameof(Abort)}.{nameof(errorCode)}");
 
         QUIC_STREAM_SHUTDOWN_FLAGS flags = QUIC_STREAM_SHUTDOWN_FLAGS.NONE;
         if (abortDirection.HasFlag(QuicAbortDirection.Read) && !_receiveTcs.IsCompleted)
@@ -688,6 +703,11 @@ public sealed partial class QuicStream
             return;
         }
 
+        if (NetEventSource.Log.IsEnabled())
+        {
+            NetEventSource.Info(this, $"{this} Disposing.");
+        }
+
         // If the stream wasn't started successfully, gracelessly abort it.
         if (!_startedTcs.IsCompletedSuccessfully)
         {
@@ -714,9 +734,6 @@ public sealed partial class QuicStream
         }
         Debug.Assert(_startedTcs.IsCompleted);
         _handle.Dispose();
-
-        // TODO: memory leak if not disposed
-        _sendBuffers.Dispose();
 
         unsafe void StreamShutdown(QUIC_STREAM_SHUTDOWN_FLAGS flags, long errorCode)
         {

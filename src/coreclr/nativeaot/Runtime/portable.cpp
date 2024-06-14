@@ -332,28 +332,6 @@ void * ReturnFromUniversalTransition;
 EXTERN_C void * ReturnFromUniversalTransition_DebugStepTailCall;
 void * ReturnFromUniversalTransition_DebugStepTailCall;
 
-#endif // USE_PORTABLE_HELPERS
-
-#if defined(USE_PORTABLE_HELPERS)
-//
-// Return address hijacking
-//
-FCIMPL0(void, RhpGcStressHijack)
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-}
-FCIMPLEND
-
-FCIMPL0(void, RhpGcProbeHijack)
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-}
-FCIMPLEND
-
-#endif // defined(USE_PORTABLE_HELPERS) || defined(TARGET_UNIX)
-
-#if defined(USE_PORTABLE_HELPERS)
-
 #if !defined (HOST_ARM64)
 FCIMPL2(void, RhpAssignRef, Object ** dst, Object * ref)
 {
@@ -374,7 +352,6 @@ FCIMPLEND
 
 FCIMPL3(Object *, RhpCheckedLockCmpXchg, Object ** location, Object * value, Object * comparand)
 {
-    // @TODO: USE_PORTABLE_HELPERS - Null check
     Object * ret = (Object *)PalInterlockedCompareExchangePointer((void * volatile *)location, value, comparand);
     InlineCheckedWriteBarrier(location, value);
     return ret;
@@ -387,20 +364,6 @@ FCIMPL2(Object *, RhpCheckedXchg, Object ** location, Object * value)
     Object * ret = (Object *)PalInterlockedExchangePointer((void * volatile *)location, value);
     InlineCheckedWriteBarrier(location, value);
     return ret;
-}
-FCIMPLEND
-
-FCIMPL3(int32_t, RhpLockCmpXchg32, int32_t * location, int32_t value, int32_t comparand)
-{
-    // @TODO: USE_PORTABLE_HELPERS - Null check
-    return PalInterlockedCompareExchange(location, value, comparand);
-}
-FCIMPLEND
-
-FCIMPL3(int64_t, RhpLockCmpXchg64, int64_t * location, int64_t value, int64_t comparand)
-{
-    // @TODO: USE_PORTABLE_HELPERS - Null check
-    return PalInterlockedCompareExchange64(location, value, comparand);
 }
 FCIMPLEND
 

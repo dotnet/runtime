@@ -6,4 +6,5 @@
   -->
   <assembly fullname="mscorlib" />
   <assembly fullname="TestILAssembly" />
+  <assembly fullname="System.Private.CoreLib" />
 </linker>

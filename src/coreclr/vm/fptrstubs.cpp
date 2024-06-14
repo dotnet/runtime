@@ -79,7 +79,7 @@ PCODE FuncPtrStubs::GetFuncPtrStub(MethodDesc * pMD, PrecodeType type)
         return pPrecode->GetEntryPoint();
     }
 
-    PCODE target = NULL;
+    PCODE target = (PCODE)NULL;
     bool setTargetAfterAddingToHashTable = false;
 
     if (type != GetDefaultType(pMD) &&
@@ -123,7 +123,7 @@ PCODE FuncPtrStubs::GetFuncPtrStub(MethodDesc * pMD, PrecodeType type)
         AllocMemTracker amt;
         Precode* pNewPrecode = Precode::Allocate(type, pMD, pMD->GetLoaderAllocator(), &amt);
 
-        if (target != NULL)
+        if (target != (PCODE)NULL)
         {
             pNewPrecode->SetTargetInterlocked(target);
         }

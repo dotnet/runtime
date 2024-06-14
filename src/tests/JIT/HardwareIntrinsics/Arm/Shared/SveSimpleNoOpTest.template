@@ -1,0 +1,114 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System;
+using System.Numerics;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
+using Xunit;
+
+namespace JIT.HardwareIntrinsics.Arm
+{
+    public static partial class Program
+    {
+        [Fact]
+        public static void {TestName}()
+        {
+            var test = new CreateFalseMaskTest__{TestName}();
+
+            if (test.IsSupported)
+            {
+                // Validates basic functionality works
+                test.RunBasicScenario_CreateFalseMask();
+
+                // Validates calling via reflection works
+                test.RunReflectionScenario_CreateFalseMask();
+            }
+            else
+            {
+                // Validates we throw on unsupported hardware
+                test.RunUnsupportedScenario();
+            }
+
+            if (!test.Succeeded)
+            {
+                throw new Exception("One or more scenarios did not complete as expected.");
+            }
+        }
+    }
+
+    public sealed unsafe class CreateFalseMaskTest__{TestName}
+    {
+        private static readonly int RetElementCount = Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>() / sizeof({RetBaseType});
+
+        public CreateFalseMaskTest__{TestName}()
+        {
+            Succeeded = true;
+        }
+
+        public bool IsSupported => {Isa}.IsSupported;
+
+        public bool Succeeded { get; set; }
+
+        public void RunBasicScenario_CreateFalseMask()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_CreateFalseMask));
+
+            var result = {Isa}.{Method}();
+
+            ValidateResult(result);
+        }
+
+        public void RunReflectionScenario_CreateFalseMask()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario_CreateFalseMask));
+
+            var result = typeof({Isa}).GetMethod(nameof({Isa}.{Method}), new Type[] { })
+                                     .Invoke(null, new object[] {});
+
+            ValidateResult(({RetVectorType}<{RetBaseType}>)(result));
+        }
+
+        public void RunUnsupportedScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunUnsupportedScenario));
+
+            Succeeded = false;
+
+            try
+            {
+                RunBasicScenario_CreateFalseMask();
+            }
+            catch (PlatformNotSupportedException)
+            {
+                Succeeded = true;
+            }
+        }
+
+        private void ValidateResult({RetVectorType}<{RetBaseType}> result, [CallerMemberName] string method = "")
+        {
+            bool succeeded = true;
+
+            for (var i = 0; i < RetElementCount; i++)
+            {
+                if ({ValidateIterResult})
+                {
+                    succeeded = false;
+                    break;
+                }
+            }
+
+            if (!succeeded)
+            {
+                TestLibrary.TestFramework.LogInformation($"{nameof({Isa})}.{nameof({Isa}.{Method})}<{RetBaseType}>(): {method} failed:");
+                TestLibrary.TestFramework.LogInformation($"   result: ({string.Join(", ", result)})");
+                TestLibrary.TestFramework.LogInformation(string.Empty);
+
+                Succeeded = false;
+            }
+        }
+    }
+}

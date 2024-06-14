@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project>
+
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets, $(MSBuildThisFileDirectory)..))" />
+
+  <PropertyGroup>
+    <GeneratedHWIntrinsicTestDirectory Condition="'$(GeneratedHWIntrinsicTestDirectory)' == ''">$(IntermediateOutputPath)$(MSBuildProjectName)/gen/</GeneratedHWIntrinsicTestDirectory>
+    <GeneratedHWIntrinsicTestListFile Condition="'$(GeneratedHWIntrinsicTestListFile)' == ''">$(GeneratedHWIntrinsicTestDirectory)GeneratedHWIntrinsicTestList.txt</GeneratedHWIntrinsicTestListFile>
+  </PropertyGroup>
+
+  <Target Name="ExecuteGenerateTestsScript"
+          Inputs="$(MSBuildAllProjects);$(RepoRoot)/src/tests/Common/GenerateHWIntrinsicTests/GenerateHWIntrinsicTests_X86.cs"
+          Outputs="$(GeneratedHWIntrinsicTestListFile)"
+          Condition="'$(Language)' == 'C#'">
+    <Exec Command="$(DotNetCli) build $(RepoRoot)/src/tests/Common/GenerateHWIntrinsicTests/GenerateHWIntrinsicTests_X86.csproj -c $(Configuration) --no-restore /p:IntermediateOutputPath=$(IntermediateOutputPath)/GenerateHWIntrinsicTests/ /p:OutputPath=$(OutputPath)/GenerateHWIntrinsicTests/" />
+    <Exec Command="$(DotNetCli) exec $(OutputPath)/GenerateHWIntrinsicTests/GenerateHWIntrinsicTests_X86.dll $(MSBuildProjectName) $(MSBuildThisFileDirectory)../X86/Shared $(GeneratedHWIntrinsicTestDirectory) $(GeneratedHWIntrinsicTestListFile)" />
+  </Target>
+
+  <Target Name="ReadGeneratedHWIntrinsicTestListFile"
+          BeforeTargets="BeforeCompile;CoreCompile"
+          DependsOnTargets="ExecuteGenerateTestsScript"
+          Returns="$(GeneratedHWIntrinsicTestList)"
+          Condition="'$(Language)' == 'C#'">
+    <ReadLinesFromFile File="$(GeneratedHWIntrinsicTestListFile)">
+      <Output TaskParameter="Lines" ItemName="GeneratedHWIntrinsicTestList" />
+    </ReadLinesFromFile>
+    <ItemGroup>
+      <Compile Include="@(GeneratedHWIntrinsicTestList)" />
+    </ItemGroup>
+  </Target>
+
+</Project>

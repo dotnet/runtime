@@ -77,6 +77,7 @@
       System.IO.MemoryMappedFiles;
       System.IO.Pipes;
       System.IO.Pipes.AccessControl;
+      System.IO.Pipelines;
       System.IO.UnmanagedMemoryStream;
       System.Linq;
       System.Linq.Expressions;
@@ -220,7 +221,6 @@
       Microsoft.Extensions.Options.DataAnnotations;
       Microsoft.Extensions.Primitives;
       System.Diagnostics.EventLog;
-      System.IO.Pipelines;
       System.Security.Cryptography.Xml;
       System.Threading.RateLimiting;
     </AspNetCoreAppLibrary>

@@ -63,14 +63,10 @@ bool emitInsIsLoadOrStore(instruction ins);
 void emitDispInsName(
     code_t code, const BYTE* addr, bool doffs, unsigned insOffset, const instrDesc* id, const insGroup* ig);
 void emitDispInsInstrNum(const instrDesc* id) const;
-bool emitDispBranch(unsigned         opcode2,
-                    const char*      register1Name,
-                    const char*      register2Name,
-                    const instrDesc* id,
-                    const insGroup*  ig) const;
+bool emitDispBranch(unsigned opcode2, unsigned rs1, unsigned rs2, const instrDesc* id, const insGroup* ig) const;
 void emitDispBranchOffset(const instrDesc* id, const insGroup* ig) const;
 void emitDispBranchLabel(const instrDesc* id) const;
-bool emitDispBranchInstrType(unsigned opcode2) const;
+bool emitDispBranchInstrType(unsigned opcode2, bool is_zero_reg, bool& print_second_reg) const;
 void emitDispIllegalInstruction(code_t instructionCode);
 
 emitter::code_t emitInsCode(instruction ins /*, insFormat fmt*/) const;
@@ -82,17 +78,17 @@ void emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataReg, GenTr
 unsigned emitOutput_Instr(BYTE* dst, code_t code) const;
 
 ssize_t emitOutputInstrJumpDistance(const BYTE* src, const insGroup* ig, instrDescJmp* jmp);
-void emitOutputInstrJumpDistanceHelper(const insGroup* ig,
-                                       instrDescJmp*   jmp,
-                                       UNATIVE_OFFSET& dstOffs,
-                                       const BYTE*&    dstAddr) const;
+void    emitOutputInstrJumpDistanceHelper(const insGroup* ig,
+                                          instrDescJmp*   jmp,
+                                          UNATIVE_OFFSET& dstOffs,
+                                          const BYTE*&    dstAddr) const;
 
 // Method to do check if mov is redundant with respect to the last instruction.
 // If yes, the caller of this method can choose to omit current mov instruction.
 static bool IsMovInstruction(instruction ins);
-bool IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regNumber src, bool canSkip);
-bool IsRedundantLdStr(
-    instruction ins, regNumber reg1, regNumber reg2, ssize_t imm, emitAttr size, insFormat fmt); // New functions end.
+bool        IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regNumber src, bool canSkip);
+bool        IsRedundantLdStr(
+           instruction ins, regNumber reg1, regNumber reg2, ssize_t imm, emitAttr size, insFormat fmt); // New functions end.
 
 static code_t insEncodeRTypeInstr(
     unsigned opcode, unsigned rd, unsigned funct3, unsigned rs1, unsigned rs2, unsigned funct7);
@@ -141,10 +137,10 @@ BYTE* emitOutputInstr_OptsJCond(BYTE* dst, instrDesc* id, const insGroup* ig, in
 BYTE* emitOutputInstr_OptsJ(BYTE* dst, instrDesc* id, const insGroup* ig, instruction* ins);
 BYTE* emitOutputInstr_OptsC(BYTE* dst, instrDesc* id, const insGroup* ig, size_t* size);
 
-static unsigned TrimSignedToImm12(int imm12);
-static unsigned TrimSignedToImm13(int imm13);
-static unsigned TrimSignedToImm20(int imm20);
-static unsigned TrimSignedToImm21(int imm21);
+static unsigned TrimSignedToImm12(ssize_t imm12);
+static unsigned TrimSignedToImm13(ssize_t imm13);
+static unsigned TrimSignedToImm20(ssize_t imm20);
+static unsigned TrimSignedToImm21(ssize_t imm21);
 
 /************************************************************************/
 /*           Public inline informational methods                        */
@@ -293,9 +289,9 @@ void emitIns_J_R(instruction ins, emitAttr attr, BasicBlock* dst, regNumber reg)
 
 void emitIns_R_AR(instruction ins, emitAttr attr, regNumber ireg, regNumber reg, int offs);
 
-void emitIns_R_AI(instruction ins,
-                  emitAttr    attr,
-                  regNumber   reg,
+void emitIns_R_AI(instruction  ins,
+                  emitAttr     attr,
+                  regNumber    reg,
                   ssize_t disp DEBUGARG(size_t targetHandle = 0) DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
 
 enum EmitCallType
@@ -310,7 +306,7 @@ enum EmitCallType
 
     EC_FUNC_TOKEN, //   Direct call to a helper/static/nonvirtual/global method
                    //  EC_FUNC_TOKEN_INDIR,    // Indirect call to a helper/static/nonvirtual/global method
-    // EC_FUNC_ADDR,  // Direct call to an absolute address
+                   // EC_FUNC_ADDR,  // Direct call to an absolute address
 
     //  EC_FUNC_VIRTUAL,        // Call to a virtual method (using the vtable)
     EC_INDIR_R, // Indirect call via register
@@ -324,18 +320,19 @@ enum EmitCallType
 void emitIns_Call(EmitCallType          callType,
                   CORINFO_METHOD_HANDLE methHnd,
                   INDEBUG_LDISASM_COMMA(CORINFO_SIG_INFO* sigInfo) // used to report call sites to the EE
-                  void*    addr,
-                  ssize_t  argSize,
+                  void*            addr,
+                  ssize_t          argSize,
                   emitAttr retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
                   VARSET_VALARG_TP ptrVars,
                   regMaskTP        gcrefRegs,
                   regMaskTP        byrefRegs,
                   const DebugInfo& di,
-                  regNumber        ireg   = REG_NA,
-                  regNumber        xreg   = REG_NA,
-                  unsigned         xmul   = 0,
-                  ssize_t          disp   = 0,
-                  bool             isJump = false);
+                  regNumber        ireg        = REG_NA,
+                  regNumber        xreg        = REG_NA,
+                  unsigned         xmul        = 0,
+                  ssize_t          disp        = 0,
+                  bool             isJump      = false,
+                  bool             noSafePoint = false);
 
 unsigned emitOutputCall(const insGroup* ig, BYTE* dst, instrDesc* id, code_t code);
 

@@ -428,7 +428,7 @@ BOOL StubManager::CheckIsStub_Worker(PCODE stubStartAddress)
     // @todo - consider having a single check for null right up front.
     // Though this may cover bugs where stub-managers don't handle bad addresses.
     // And someone could just as easily pass (0x01) as NULL.
-    if (stubStartAddress == NULL)
+    if (stubStartAddress == (PCODE)NULL)
     {
         return FALSE;
     }
@@ -715,22 +715,6 @@ void StubManager::InitializeStubManagers()
 #endif
     s_StubManagerListCrst.Init(CrstDebuggerHeapLock, (CrstFlags)(CRST_UNSAFE_ANYMODE | CRST_DEBUGGER_THREAD | CRST_TAKEN_DURING_SHUTDOWN));
 
-#endif // !DACCESS_COMPILE
-}
-
-//-----------------------------------------------------------
-// Terminate the global stub manager service.
-//-----------------------------------------------------------
-void StubManager::TerminateStubManagers()
-{
-#if !defined(DACCESS_COMPILE)
-
-#if defined(_DEBUG)
-    DbgFinishLog();
-    s_DbgLogCrst.Destroy();
-#endif
-
-    s_StubManagerListCrst.Destroy();
 #endif // !DACCESS_COMPILE
 }
 
@@ -1053,7 +1037,7 @@ BOOL PrecodeStubManager::DoTraceStub(PCODE stubStartAddress,
 #ifndef DACCESS_COMPILE
             trace->InitForUnmanaged(GetEEFuncEntryPoint(NDirectImportThunk));
 #else
-            trace->InitForOther(NULL);
+            trace->InitForOther((PCODE)NULL);
 #endif
             LOG_TRACE_DESTINATION(trace, stubStartAddress, "PrecodeStubManager::DoTraceStub - NDirect import");
             return TRUE;
@@ -1346,8 +1330,8 @@ static PCODE GetStubTarget(PTR_MethodDesc pTargetMD)
     targetCode = NativeCodeVersion(pTargetMD);
 #endif
 
-    if (targetCode.IsNull() || targetCode.GetNativeCode() == NULL)
-        return NULL;
+    if (targetCode.IsNull() || targetCode.GetNativeCode() == (PCODE)NULL)
+        return (PCODE)NULL;
 
     return targetCode.GetNativeCode();
 }
@@ -1476,7 +1460,7 @@ BOOL StubLinkStubManager::TraceManager(Thread *thread,
         _ASSERTE(pMD != NULL);
 
         PCODE target = GetStubTarget(pMD);
-        if (target == NULL)
+        if (target == (PCODE)NULL)
         {
             LOG((LF_CORDB,LL_INFO10000, "SLSM:TM Unable to determine stub target, pMD %p\n", pMD));
             trace->InitForUnjittedMethod(pMD);
@@ -1824,7 +1808,7 @@ BOOL ILStubManager::DoTraceStub(PCODE stubStartAddress,
 
 #ifndef DACCESS_COMPILE
 
-    PCODE traceDestination = NULL;
+    PCODE traceDestination = (PCODE)NULL;
 
 #ifdef FEATURE_MULTICASTSTUB_AS_IL
     MethodDesc* pStubMD = ExecutionManager::GetCodeMethodDesc(stubStartAddress);
@@ -1845,7 +1829,7 @@ BOOL ILStubManager::DoTraceStub(PCODE stubStartAddress,
     return TRUE;
 
 #else // !DACCESS_COMPILE
-    trace->InitForOther(NULL);
+    trace->InitForOther((PCODE)NULL);
     return FALSE;
 
 #endif // !DACCESS_COMPILE
@@ -1853,7 +1837,7 @@ BOOL ILStubManager::DoTraceStub(PCODE stubStartAddress,
 
 #ifndef DACCESS_COMPILE
 #ifdef FEATURE_COMINTEROP
-static PCODE GetCOMTarget(Object *pThis, ComPlusCallInfo *pComPlusCallInfo)
+static PCODE GetCOMTarget(Object *pThis, CLRToCOMCallInfo *pCLRToCOMCallInfo)
 {
     CONTRACTL
     {
@@ -1868,12 +1852,12 @@ static PCODE GetCOMTarget(Object *pThis, ComPlusCallInfo *pComPlusCallInfo)
 
     OBJECTREF oref = ObjectToOBJECTREF(pThis);
     GCPROTECT_BEGIN(oref);
-    pUnk = ComObject::GetComIPFromRCWThrowing(&oref, pComPlusCallInfo->m_pInterfaceMT);
+    pUnk = ComObject::GetComIPFromRCWThrowing(&oref, pCLRToCOMCallInfo->m_pInterfaceMT);
     GCPROTECT_END();
 
     LPVOID *lpVtbl = *(LPVOID **)(IUnknown *)pUnk;
 
-    PCODE target = (PCODE)lpVtbl[pComPlusCallInfo->m_cachedComSlot];
+    PCODE target = (PCODE)lpVtbl[pCLRToCOMCallInfo->m_cachedComSlot];
     return target;
 }
 #endif // FEATURE_COMINTEROP
@@ -1903,7 +1887,7 @@ BOOL ILStubManager::TraceManager(Thread *thread,
         pStubMD, arg, pThis));
 
     // See code:ILStubCache.CreateNewMethodDesc for the code that sets flags on stub MDs
-    PCODE target = NULL;
+    PCODE target = (PCODE)NULL;
 
 #ifdef FEATURE_MULTICASTSTUB_AS_IL
     if (pStubMD->IsMulticastStub())
@@ -1981,7 +1965,7 @@ BOOL ILStubManager::TraceManager(Thread *thread,
 
         LOG((LF_CORDB, LL_INFO1000, "ILSM::TraceManager: Step through to target - 0x%p\n", pTargetMD));
         target = GetStubTarget(pTargetMD);
-        if (target == NULL)
+        if (target == (PCODE)NULL)
             return FALSE;
 
         trace->InitForManaged(target);
@@ -2004,13 +1988,13 @@ BOOL ILStubManager::TraceManager(Thread *thread,
         else
         {
             LOG((LF_CORDB, LL_INFO1000, "ILSM::TraceManager: Stub is CLR-to-COM\n"));
-            _ASSERTE(pMD->IsComPlusCall());
-            ComPlusCallMethodDesc *pCMD = (ComPlusCallMethodDesc *)pMD;
+            _ASSERTE(pMD->IsCLRToCOMCall());
+            CLRToCOMCallMethodDesc *pCMD = (CLRToCOMCallMethodDesc *)pMD;
             _ASSERTE(!pCMD->IsStatic() && !pCMD->IsCtor() && "Static methods and constructors are not supported for built-in classic COM");
 
             if (pThis != NULL)
             {
-                target = GetCOMTarget(pThis, pCMD->m_pComPlusCallInfo);
+                target = GetCOMTarget(pThis, pCMD->m_pCLRToCOMCallInfo);
                 LOG((LF_CORDB, LL_INFO10000, "ILSM::TraceManager: CLR-to-COM case 0x%p\n", target));
                 trace->InitForUnmanaged(target);
             }
@@ -2028,7 +2012,7 @@ BOOL ILStubManager::TraceManager(Thread *thread,
 }
 #endif //!DACCESS_COMPILE
 
-// This is used to recognize GenericComPlusCallStub, VarargPInvokeStub, and GenericPInvokeCalliHelper.
+// This is used to recognize GenericCLRToCOMCallStub, VarargPInvokeStub, and GenericPInvokeCalliHelper.
 
 #ifndef DACCESS_COMPILE
 
@@ -2048,7 +2032,7 @@ void InteropDispatchStubManager::Init()
 
 #endif // #ifndef DACCESS_COMPILE
 
-PCODE TheGenericComplusCallStub(); // clrtocom.cpp
+PCODE TheGenericCLRToCOMCallStub(); // clrtocomcall.cpp
 
 #ifndef DACCESS_COMPILE
 static BOOL IsVarargPInvokeStub(PCODE stubStartAddress)
@@ -2074,7 +2058,7 @@ BOOL InteropDispatchStubManager::CheckIsStub_Internal(PCODE stubStartAddress)
 
 #ifndef DACCESS_COMPILE
 #ifdef FEATURE_COMINTEROP
-    if (stubStartAddress == GetEEFuncEntryPoint(GenericComPlusCallStub))
+    if (stubStartAddress == GetEEFuncEntryPoint(GenericCLRToCOMCallStub))
     {
         return true;
     }
@@ -2110,7 +2094,7 @@ BOOL InteropDispatchStubManager::DoTraceStub(PCODE stubStartAddress, TraceDestin
     return TRUE;
 
 #else // !DACCESS_COMPILE
-    trace->InitForOther(NULL);
+    trace->InitForOther((PCODE)NULL);
     return FALSE;
 
 #endif // !DACCESS_COMPILE
@@ -2155,16 +2139,16 @@ BOOL InteropDispatchStubManager::TraceManager(Thread *thread,
 #ifdef FEATURE_COMINTEROP
     else
     {
-        ComPlusCallMethodDesc *pCMD = (ComPlusCallMethodDesc *)arg;
-        _ASSERTE(pCMD->IsComPlusCall());
+        CLRToCOMCallMethodDesc *pCMD = (CLRToCOMCallMethodDesc *)arg;
+        _ASSERTE(pCMD->IsCLRToCOMCall());
 
         Object * pThis = StubManagerHelpers::GetThisPtr(pContext);
 
         {
-            if (!pCMD->m_pComPlusCallInfo->m_pInterfaceMT->IsComEventItfType() && (pCMD->m_pComPlusCallInfo->m_pILStub != NULL))
+            if (!pCMD->m_pCLRToCOMCallInfo->m_pInterfaceMT->IsComEventItfType() && (pCMD->m_pCLRToCOMCallInfo->m_pILStub != NULL))
             {
                 // Early-bound CLR->COM call - continue in the IL stub
-                trace->InitForStub(pCMD->m_pComPlusCallInfo->m_pILStub);
+                trace->InitForStub(pCMD->m_pCLRToCOMCallInfo->m_pILStub);
             }
             else
             {
@@ -2172,7 +2156,7 @@ BOOL InteropDispatchStubManager::TraceManager(Thread *thread,
                 OBJECTREF oref = ObjectToOBJECTREF(pThis);
                 GCPROTECT_BEGIN(oref);
 
-                MethodTable *pItfMT = pCMD->m_pComPlusCallInfo->m_pInterfaceMT;
+                MethodTable *pItfMT = pCMD->m_pCLRToCOMCallInfo->m_pInterfaceMT;
                 _ASSERTE(pItfMT->GetComInterfaceType() == ifDispatch);
 
                 SafeComHolder<IUnknown> pUnk = ComObject::GetComIPFromRCWThrowing(&oref, pItfMT);

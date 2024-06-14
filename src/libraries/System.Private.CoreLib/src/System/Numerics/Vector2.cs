@@ -93,10 +93,8 @@ namespace System.Numerics
         public float this[int index]
         {
             [Intrinsic]
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             readonly get => this.GetElement(index);
 
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             set => this = this.WithElement(index, value);
         }
 
@@ -136,11 +134,7 @@ namespace System.Numerics
         /// <returns>The result of the division.</returns>
         /// <remarks>The <see cref="Vector2.op_Division" /> method defines the division operation for <see cref="Vector2" /> objects.</remarks>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector2 operator /(Vector2 value1, float value2)
-        {
-            return value1 / new Vector2(value2);
-        }
+        public static Vector2 operator /(Vector2 value1, float value2) => value1 / new Vector2(value2);
 
         /// <summary>Returns a value that indicates whether each pair of elements in two specified vectors is equal.</summary>
         /// <param name="left">The first vector to compare.</param>
@@ -160,11 +154,7 @@ namespace System.Numerics
         /// <param name="right">The second vector to compare.</param>
         /// <returns><see langword="true" /> if <paramref name="left" /> and <paramref name="right" /> are not equal; otherwise, <see langword="false" />.</returns>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool operator !=(Vector2 left, Vector2 right)
-        {
-            return !(left == right);
-        }
+        public static bool operator !=(Vector2 left, Vector2 right) => !(left == right);
 
         /// <summary>Returns a new vector whose values are the product of each pair of elements in two specified vectors.</summary>
         /// <param name="left">The first vector.</param>
@@ -187,11 +177,7 @@ namespace System.Numerics
         /// <returns>The scaled vector.</returns>
         /// <remarks>The <see cref="Vector2.op_Multiply" /> method defines the multiplication operation for <see cref="Vector2" /> objects.</remarks>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector2 operator *(Vector2 left, float right)
-        {
-            return left * new Vector2(right);
-        }
+        public static Vector2 operator *(Vector2 left, float right) => left * new Vector2(right);
 
         /// <summary>Multiplies the scalar value by the specified vector.</summary>
         /// <param name="left">The vector.</param>
@@ -199,11 +185,7 @@ namespace System.Numerics
         /// <returns>The scaled vector.</returns>
         /// <remarks>The <see cref="Vector2.op_Multiply" /> method defines the multiplication operation for <see cref="Vector2" /> objects.</remarks>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector2 operator *(float left, Vector2 right)
-        {
-            return right * left;
-        }
+        public static Vector2 operator *(float left, Vector2 right) => right * left;
 
         /// <summary>Subtracts the second vector from the first.</summary>
         /// <param name="left">The first vector.</param>
@@ -225,11 +207,7 @@ namespace System.Numerics
         /// <returns>The negated vector.</returns>
         /// <remarks>The <see cref="op_UnaryNegation" /> method defines the unary negation operation for <see cref="Vector2" /> objects.</remarks>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector2 operator -(Vector2 value)
-        {
-            return Zero - value;
-        }
+        public static Vector2 operator -(Vector2 value) => Zero - value;
 
         /// <summary>Returns a vector whose elements are the absolute values of each of the specified vector's elements.</summary>
         /// <param name="value">A vector.</param>
@@ -249,11 +227,7 @@ namespace System.Numerics
         /// <param name="right">The second vector to add.</param>
         /// <returns>The summed vector.</returns>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector2 Add(Vector2 left, Vector2 right)
-        {
-            return left + right;
-        }
+        public static Vector2 Add(Vector2 left, Vector2 right) => left + right;
 
         /// <summary>Restricts a vector between a minimum and a maximum value.</summary>
         /// <param name="value1">The vector to restrict.</param>
@@ -261,7 +235,6 @@ namespace System.Numerics
         /// <param name="max">The maximum value.</param>
         /// <returns>The restricted vector.</returns>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector2 Clamp(Vector2 value1, Vector2 min, Vector2 max)
         {
             // We must follow HLSL behavior in the case user specified min value is bigger than max value.
@@ -273,46 +246,28 @@ namespace System.Numerics
         /// <param name="value2">The second point.</param>
         /// <returns>The distance.</returns>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float Distance(Vector2 value1, Vector2 value2)
-        {
-            float distanceSquared = DistanceSquared(value1, value2);
-            return MathF.Sqrt(distanceSquared);
-        }
+        public static float Distance(Vector2 value1, Vector2 value2) => MathF.Sqrt(DistanceSquared(value1, value2));
 
         /// <summary>Returns the Euclidean distance squared between two specified points.</summary>
         /// <param name="value1">The first point.</param>
         /// <param name="value2">The second point.</param>
         /// <returns>The distance squared.</returns>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float DistanceSquared(Vector2 value1, Vector2 value2)
-        {
-            Vector2 difference = value1 - value2;
-            return Dot(difference, difference);
-        }
+        public static float DistanceSquared(Vector2 value1, Vector2 value2) => (value1 - value2).LengthSquared();
 
         /// <summary>Divides the first vector by the second.</summary>
         /// <param name="left">The first vector.</param>
         /// <param name="right">The second vector.</param>
         /// <returns>The vector resulting from the division.</returns>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector2 Divide(Vector2 left, Vector2 right)
-        {
-            return left / right;
-        }
+        public static Vector2 Divide(Vector2 left, Vector2 right) => left / right;
 
         /// <summary>Divides the specified vector by a specified scalar value.</summary>
         /// <param name="left">The vector.</param>
         /// <param name="divisor">The scalar value.</param>
         /// <returns>The vector that results from the division.</returns>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector2 Divide(Vector2 left, float divisor)
-        {
-            return left / divisor;
-        }
+        public static Vector2 Divide(Vector2 left, float divisor) => left / divisor;
 
         /// <summary>Returns the dot product of two vectors.</summary>
         /// <param name="value1">The first vector.</param>
@@ -326,6 +281,17 @@ namespace System.Numerics
                  + (value1.Y * value2.Y);
         }
 
+        /// <inheritdoc cref="Vector128.MultiplyAddEstimate(Vector128{float}, Vector128{float}, Vector128{float})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector2 FusedMultiplyAdd(Vector2 left, Vector2 right, Vector2 addend)
+        {
+            return new Vector2(
+                float.FusedMultiplyAdd(left.X, right.X, addend.X),
+                float.FusedMultiplyAdd(left.Y, right.Y, addend.Y)
+            );
+        }
+
         /// <summary>Performs a linear interpolation between two vectors based on the given weighting.</summary>
         /// <param name="value1">The first vector.</param>
         /// <param name="value2">The second vector.</param>
@@ -336,10 +302,7 @@ namespace System.Numerics
         /// ]]></format></remarks>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector2 Lerp(Vector2 value1, Vector2 value2, float amount)
-        {
-            return (value1 * (1.0f - amount)) + (value2 * amount);
-        }
+        public static Vector2 Lerp(Vector2 value1, Vector2 value2, float amount) => (value1 * (1.0f - amount)) + (value2 * amount);
 
         /// <summary>Returns a vector whose elements are the maximum of each of the pairs of elements in two specified vectors.</summary>
         /// <param name="value1">The first vector.</param>
@@ -374,64 +337,51 @@ namespace System.Numerics
         /// <param name="right">The second vector.</param>
         /// <returns>The element-wise product vector.</returns>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector2 Multiply(Vector2 left, Vector2 right)
-        {
-            return left * right;
-        }
+        public static Vector2 Multiply(Vector2 left, Vector2 right) => left * right;
 
         /// <summary>Multiplies a vector by a specified scalar.</summary>
         /// <param name="left">The vector to multiply.</param>
         /// <param name="right">The scalar value.</param>
         /// <returns>The scaled vector.</returns>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector2 Multiply(Vector2 left, float right)
-        {
-            return left * right;
-        }
+        public static Vector2 Multiply(Vector2 left, float right) => left * right;
 
         /// <summary>Multiplies a scalar value by a specified vector.</summary>
         /// <param name="left">The scaled value.</param>
         /// <param name="right">The vector.</param>
         /// <returns>The scaled vector.</returns>
         [Intrinsic]
+        public static Vector2 Multiply(float left, Vector2 right) => left * right;
+
+        /// <inheritdoc cref="Vector128.MultiplyAddEstimate(Vector128{float}, Vector128{float}, Vector128{float})" />
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector2 Multiply(float left, Vector2 right)
+        public static Vector2 MultiplyAddEstimate(Vector2 left, Vector2 right, Vector2 addend)
         {
-            return left * right;
+            return new Vector2(
+                float.MultiplyAddEstimate(left.X, right.X, addend.X),
+                float.MultiplyAddEstimate(left.Y, right.Y, addend.Y)
+            );
         }
 
         /// <summary>Negates a specified vector.</summary>
         /// <param name="value">The vector to negate.</param>
         /// <returns>The negated vector.</returns>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector2 Negate(Vector2 value)
-        {
-            return -value;
-        }
+        public static Vector2 Negate(Vector2 value) => -value;
 
         /// <summary>Returns a vector with the same direction as the specified vector, but with a length of one.</summary>
         /// <param name="value">The vector to normalize.</param>
         /// <returns>The normalized vector.</returns>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector2 Normalize(Vector2 value)
-        {
-            return value / value.Length();
-        }
+        public static Vector2 Normalize(Vector2 value) => value / value.Length();
 
         /// <summary>Returns the reflection of a vector off a surface that has the specified normal.</summary>
         /// <param name="vector">The source vector.</param>
         /// <param name="normal">The normal of the surface being reflected off.</param>
         /// <returns>The reflected vector.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector2 Reflect(Vector2 vector, Vector2 normal)
-        {
-            float dot = Dot(vector, normal);
-            return vector - (2.0f * (dot * normal));
-        }
+        public static Vector2 Reflect(Vector2 vector, Vector2 normal) => vector - (2.0f * (Dot(vector, normal) * normal));
 
         /// <summary>Returns a vector whose elements are the square root of each of a specified vector's elements.</summary>
         /// <param name="value">A vector.</param>
@@ -451,21 +401,13 @@ namespace System.Numerics
         /// <param name="right">The second vector.</param>
         /// <returns>The difference vector.</returns>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector2 Subtract(Vector2 left, Vector2 right)
-        {
-            return left - right;
-        }
+        public static Vector2 Subtract(Vector2 left, Vector2 right) => left - right;
 
         /// <summary>Transforms a vector by a specified 3x2 matrix.</summary>
         /// <param name="position">The vector to transform.</param>
         /// <param name="matrix">The transformation matrix.</param>
         /// <returns>The transformed vector.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector2 Transform(Vector2 position, Matrix3x2 matrix)
-        {
-            return Transform(position, in matrix.AsImpl());
-        }
+        public static Vector2 Transform(Vector2 position, Matrix3x2 matrix) => Transform(position, in matrix.AsImpl());
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static Vector2 Transform(Vector2 position, in Matrix3x2.Impl matrix)
@@ -483,10 +425,7 @@ namespace System.Numerics
         /// <param name="matrix">The transformation matrix.</param>
         /// <returns>The transformed vector.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector2 Transform(Vector2 position, Matrix4x4 matrix)
-        {
-            return Vector4.Transform(position, in matrix.AsImpl()).AsVector128().AsVector2();
-        }
+        public static Vector2 Transform(Vector2 position, Matrix4x4 matrix) => Vector4.Transform(position, in matrix.AsImpl()).AsVector128().AsVector2();
 
         /// <summary>Transforms a vector by the specified Quaternion rotation value.</summary>
         /// <param name="value">The vector to rotate.</param>
@@ -515,11 +454,7 @@ namespace System.Numerics
         /// <param name="normal">The source vector.</param>
         /// <param name="matrix">The matrix.</param>
         /// <returns>The transformed vector.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector2 TransformNormal(Vector2 normal, Matrix3x2 matrix)
-        {
-            return TransformNormal(normal, in matrix.AsImpl());
-        }
+        public static Vector2 TransformNormal(Vector2 normal, Matrix3x2 matrix) => TransformNormal(normal, in matrix.AsImpl());
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static Vector2 TransformNormal(Vector2 normal, in Matrix3x2.Impl matrix)
@@ -535,11 +470,7 @@ namespace System.Numerics
         /// <param name="normal">The source vector.</param>
         /// <param name="matrix">The matrix.</param>
         /// <returns>The transformed vector.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector2 TransformNormal(Vector2 normal, Matrix4x4 matrix)
-        {
-            return TransformNormal(normal, in matrix.AsImpl());
-        }
+        public static Vector2 TransformNormal(Vector2 normal, Matrix4x4 matrix) => TransformNormal(normal, in matrix.AsImpl());
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static Vector2 TransformNormal(Vector2 normal, in Matrix4x4.Impl matrix)
@@ -631,11 +562,7 @@ namespace System.Numerics
         /// <param name="obj">The object to compare with the current instance.</param>
         /// <returns><see langword="true" /> if the current instance and <paramref name="obj" /> are equal; otherwise, <see langword="false" />. If <paramref name="obj" /> is <see langword="null" />, the method returns <see langword="false" />.</returns>
         /// <remarks>The current instance and <paramref name="obj" /> are equal if <paramref name="obj" /> is a <see cref="Vector2" /> object and their <see cref="X" /> and <see cref="Y" /> elements are equal.</remarks>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public override readonly bool Equals([NotNullWhen(true)] object? obj)
-        {
-            return (obj is Vector2 other) && Equals(other);
-        }
+        public override readonly bool Equals([NotNullWhen(true)] object? obj) => (obj is Vector2 other) && Equals(other);
 
         /// <summary>Returns a value that indicates whether this instance and another vector are equal.</summary>
         /// <param name="other">The other vector.</param>
@@ -667,40 +594,25 @@ namespace System.Numerics
 
         /// <summary>Returns the hash code for this instance.</summary>
         /// <returns>The hash code.</returns>
-        public override readonly int GetHashCode()
-        {
-            return HashCode.Combine(X, Y);
-        }
+        public override readonly int GetHashCode() => HashCode.Combine(X, Y);
 
         /// <summary>Returns the length of the vector.</summary>
         /// <returns>The vector's length.</returns>
         /// <altmember cref="LengthSquared"/>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public readonly float Length()
-        {
-            float lengthSquared = LengthSquared();
-            return MathF.Sqrt(lengthSquared);
-        }
+        public readonly float Length() => MathF.Sqrt(LengthSquared());
 
         /// <summary>Returns the length of the vector squared.</summary>
         /// <returns>The vector's length squared.</returns>
         /// <remarks>This operation offers better performance than a call to the <see cref="Length" /> method.</remarks>
         /// <altmember cref="Length"/>
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public readonly float LengthSquared()
-        {
-            return Dot(this, this);
-        }
+        public readonly float LengthSquared() => Dot(this, this);
 
         /// <summary>Returns the string representation of the current instance using default formatting.</summary>
         /// <returns>The string representation of the current instance.</returns>
         /// <remarks>This method returns a string in which each element of the vector is formatted using the "G" (general) format string and the formatting conventions of the current thread culture. The "&lt;" and "&gt;" characters are used to begin and end the string, and the current culture's <see cref="NumberFormatInfo.NumberGroupSeparator" /> property followed by a space is used to separate each element.</remarks>
-        public override readonly string ToString()
-        {
-            return ToString("G", CultureInfo.CurrentCulture);
-        }
+        public override readonly string ToString() => ToString("G", CultureInfo.CurrentCulture);
 
         /// <summary>Returns the string representation of the current instance using the specified format string to format individual elements.</summary>
         /// <param name="format">A standard or custom numeric format string that defines the format of individual elements.</param>
@@ -708,10 +620,7 @@ namespace System.Numerics
         /// <remarks>This method returns a string in which each element of the vector is formatted using <paramref name="format" /> and the current culture's formatting conventions. The "&lt;" and "&gt;" characters are used to begin and end the string, and the current culture's <see cref="NumberFormatInfo.NumberGroupSeparator" /> property followed by a space is used to separate each element.</remarks>
         /// <related type="Article" href="/dotnet/standard/base-types/standard-numeric-format-strings">Standard Numeric Format Strings</related>
         /// <related type="Article" href="/dotnet/standard/base-types/custom-numeric-format-strings">Custom Numeric Format Strings</related>
-        public readonly string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format)
-        {
-            return ToString(format, CultureInfo.CurrentCulture);
-        }
+        public readonly string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format) => ToString(format, CultureInfo.CurrentCulture);
 
         /// <summary>Returns the string representation of the current instance using the specified format string to format individual elements and the specified format provider to define culture-specific formatting.</summary>
         /// <param name="format">A standard or custom numeric format string that defines the format of individual elements.</param>

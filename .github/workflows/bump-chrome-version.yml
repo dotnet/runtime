@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Setup Branch
         run: |
           git config user.name github-actions[bot]
@@ -27,7 +27,7 @@ jobs:
         run: >-
           make -C src/mono/wasm build-tasks &&
           PATH=$PWD/.dotnet:$PATH dotnet build eng/testing/bump-chrome-version.proj -p:Configuration=Release &&
-          git add eng/testing/ChromeVersions.props &&
+          git add eng/testing/BrowserVersions.props &&
           cat eng/testing/bump-chrome-pr.env >> "$GITHUB_ENV"
 
       - name: Check for changes
@@ -47,7 +47,7 @@ jobs:
 
       - name: Create PR
         if: steps.check_changes.outputs.has_changes == 'true'
-        uses: actions/github-script@v6
+        uses: actions/github-script@v7
         with:
           script: |
             const { CHROME_LINUX_VER, CHROME_WIN_VER } = process.env;
@@ -70,6 +70,6 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               pull_number: pullRequest.number,
-              reviewers: ["lewing", "pavelsavara", "maraf", "ilonatommy", "radical"]
+              reviewers: ["lewing", "pavelsavara", "maraf", "ilonatommy", "akoeplinger"]
             });
             return pullRequest.number;

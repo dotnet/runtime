@@ -164,13 +164,13 @@ extern "C" void QCALLTYPE DebugDebugger_Log(INT32 Level, PCWSTR pwzModule, PCWST
     // OutputDebugString will log to native/interop debugger.
     if (pwzModule != NULL)
     {
-        WszOutputDebugString(pwzModule);
-        WszOutputDebugString(W(" : "));
+        OutputDebugString(pwzModule);
+        OutputDebugString(W(" : "));
     }
 
     if (pwzMessage != NULL)
     {
-        WszOutputDebugString(pwzMessage);
+        OutputDebugString(pwzMessage);
     }
 
     // If we're not logging a module prefix, then don't log the newline either.
@@ -179,7 +179,7 @@ extern "C" void QCALLTYPE DebugDebugger_Log(INT32 Level, PCWSTR pwzModule, PCWST
     // already prepending that to the message, so we append a newline for readability.
     if (pwzModule != NULL)
     {
-        WszOutputDebugString(W("\n"));
+        OutputDebugString(W("\n"));
     }
 
 
@@ -765,7 +765,7 @@ extern MethodDesc* QCALLTYPE StackFrame_GetMethodDescFromNativeIP(LPVOID ip)
 }
 
 FORCEINLINE void HolderDestroyStrongHandle(OBJECTHANDLE h) { if (h != NULL) DestroyStrongHandle(h); }
-typedef Wrapper<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, HolderDestroyStrongHandle, NULL> StrongHandleHolder;
+typedef Wrapper<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, HolderDestroyStrongHandle, 0> StrongHandleHolder;
 
 // receives a custom notification object from the target and sends it to the RS via
 // code:Debugger::SendCustomDebuggerNotification
@@ -787,7 +787,7 @@ FCIMPL1(void, DebugDebugger::CustomNotification, Object * dataUNSAFE)
         HELPER_METHOD_FRAME_BEGIN_PROTECT(pData);
 
         Thread * pThread = GetThread();
-        AppDomain * pAppDomain = pThread->GetDomain();
+        AppDomain * pAppDomain = AppDomain::GetCurrentDomain();
 
         StrongHandleHolder objHandle = pAppDomain->CreateStrongHandle(pData);
         MethodTable * pMT = pData->GetGCSafeMethodTable();
@@ -977,7 +977,7 @@ StackWalkAction DebugStackTrace::GetStackFramesCallback(CrawlFrame* pCf, VOID* d
     }
     else
     {
-        ip = NULL;
+        ip = (PCODE)NULL;
         dwNativeOffset = 0;
     }
 
@@ -1162,7 +1162,7 @@ void DebugStackTrace::DebugStackTraceElement::InitPass2()
 
 #ifdef DEBUGGING_SUPPORTED
     // Calculate the IL offset using the debugging services
-    if ((this->ip != NULL) && g_pDebugInterface)
+    if ((this->ip != (PCODE)NULL) && g_pDebugInterface)
     {
         // To get the source line number of the actual code that threw an exception, the dwOffset needs to be
         // adjusted in certain cases when calculating the IL offset.
