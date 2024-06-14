@@ -37,7 +37,7 @@
     <ILLinkRewritePDBs Condition="'$(ILLinkRewritePDBs)' == ''">true</ILLinkRewritePDBs>
 
     <ILLinkResourcesSubstitutionIntermediatePath>$(IntermediateOutputPath)ILLink.Resources.Substitutions.xml</ILLinkResourcesSubstitutionIntermediatePath>
-    <GenerateResourcesSubstitutions Condition="'$(GenerateResourcesSubstitutions)' == '' and '$(StringResourcesPath)' != ''">true</GenerateResourcesSubstitutions>
+    <GenerateResourcesSubstitutions Condition="'$(GenerateResourcesSubstitutions)' == '' and '$(StringResourcesPath)' != '' and '$(OmitResources)' != 'true'">true</GenerateResourcesSubstitutions>
   </PropertyGroup>
 
    <ItemGroup>
@@ -222,6 +222,8 @@
       <LinkerNoWarn>$(LinkerNoWarn);IL2008;IL2009;IL2121;IL2025;IL2035</LinkerNoWarn>
       <ILLinkArgs>$(ILLinkArgs) --nowarn $(LinkerNoWarn)</ILLinkArgs>
       <ILLinkArgs Condition="'$(ILLinkDisableIPConstProp)' == 'true'">$(ILLinkArgs) --disable-opt ipconstprop</ILLinkArgs>
+      <!-- Featuredefault for System.Resources.UseSystemResourceKeys would hardcode all libraries as not using resource keys, don't apply it -->
+      <ILLinkArgs Condition="'$(GenerateResourcesSubstitutions)' == 'true'">$(ILLinkArgs) --ignore-featuredefault System.Resources.UseSystemResourceKeys</ILLinkArgs>
     </PropertyGroup>
 
     <!-- Move the assembly into a subdirectory for ILLink -->
