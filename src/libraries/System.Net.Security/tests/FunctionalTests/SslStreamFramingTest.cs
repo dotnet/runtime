@@ -60,6 +60,11 @@ namespace System.Net.Security.Tests
                 {
                     foreach (ClientCertScenario clientCertScenario in Enum.GetValues(typeof(ClientCertScenario)))
                     {
+                        if (clientCertScenario == ClientCertScenario.PostHandshake && !TestConfiguration.SupportsRenegotiation)
+                        {
+                            continue;
+                        }
+
                         data.Add(framingType, sslProtocol, clientCertScenario);
                     }
                 }
