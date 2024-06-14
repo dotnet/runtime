@@ -478,4 +478,43 @@ public class InvalidInputTests : ReadTests
         stream.Position = 0;
         Assert.Throws<SerializationException>(() => NrbfDecoder.Decode(stream));
     }
+
+    public static IEnumerable<object[]> ThrowsForOrphanedRecord_Args()
+    {
+        SerializationRecordType[] supported =
+        {
+            SerializationRecordType.BinaryObjectString,
+            SerializationRecordType.ArraySingleString,
+            SerializationRecordType.MemberPrimitiveTyped,
+            SerializationRecordType.ArraySinglePrimitive,
+            SerializationRecordType.SystemClassWithMembersAndTypes,
+            SerializationRecordType.ClassWithMembersAndTypes
+        };
+
+        for (int i = 0; i < supported.Length; i++)
+        {
+            for (int j = 0; j < supported.Length; j++)
+            {
+                yield return new object[] { supported[i], supported[j] };
+            }
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(ThrowsForOrphanedRecord_Args))]
+    public void ThrowsForOrphanedRecord(SerializationRecordType root, SerializationRecordType orphaned)
+    {
+        int objectId = 1;
+        using MemoryStream stream = new();
+        BinaryWriter writer = new(stream, Encoding.UTF8);
+
+        WriteSerializedStreamHeader(writer);
+        WriteValidRecord(writer, root, ref objectId);
+        WriteValidRecord(writer, orphaned, ref objectId);
+
+        writer.Write((byte)SerializationRecordType.MessageEnd);
+
+        stream.Position = 0;
+        Assert.Throws<SerializationException>(() => NrbfDecoder.Decode(stream));
+    }
 }
