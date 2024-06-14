@@ -389,8 +389,18 @@ bool ObjectAllocator::MorphAllocObjNodes()
                 GenTreeAllocObj*     asAllocObj   = data->AsAllocObj();
                 unsigned int         lclNum       = stmtExpr->AsLclVar()->GetLclNum();
                 CORINFO_CLASS_HANDLE clsHnd       = data->AsAllocObj()->gtAllocObjClsHnd;
+                const bool           isValueClass = comp->info.compCompHnd->isValueClass(clsHnd);
                 const char*          onHeapReason = nullptr;
                 bool                 canStack     = false;
+
+                if (isValueClass)
+                {
+                    comp->Metrics.NewBoxedValueClassHelperCalls++;
+                }
+                else
+                {
+                    comp->Metrics.NewRefClassHelperCalls++;
+                }
 
                 // Don't attempt to do stack allocations inside basic blocks that may be in a loop.
                 //
@@ -414,7 +424,8 @@ bool ObjectAllocator::MorphAllocObjNodes()
                     JITDUMP("Allocating V%02u on the stack\n", lclNum);
                     canStack = true;
 
-                    // printf("@@@ SA V%02u (%s) in %s\n", lclNum, comp->eeGetClassName(clsHnd), comp->info.compFullName);
+                    // printf("@@@ SA V%02u (%s) in %s\n", lclNum, comp->eeGetClassName(clsHnd),
+                    // comp->info.compFullName);
 
                     const unsigned int stackLclNum = MorphAllocObjNodeIntoStackAlloc(asAllocObj, block, stmt);
                     m_HeapLocalToStackLocalMap.AddOrUpdate(lclNum, stackLclNum);
@@ -427,7 +438,18 @@ bool ObjectAllocator::MorphAllocObjNodes()
                     didStackAllocate = true;
                 }
 
-                if (!canStack)
+                if (canStack)
+                {
+                    if (isValueClass)
+                    {
+                        comp->Metrics.StackAllocatedBoxedValueClasses++;
+                    }
+                    else
+                    {
+                        comp->Metrics.StackAllocatedRefClasses++;
+                    }
+                }
+                else
                 {
                     assert(onHeapReason != nullptr);
                     JITDUMP("Allocating V%02u on the heap: %s\n", lclNum, onHeapReason);

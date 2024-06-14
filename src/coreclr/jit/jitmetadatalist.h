@@ -71,6 +71,10 @@ JITMETADATAMETRIC(ProfileInconsistentInlineeScale,       int,              0)
 JITMETADATAMETRIC(ProfileInconsistentInlinee,            int,              0)
 JITMETADATAMETRIC(ProfileInconsistentNoReturnInlinee,    int,              0)
 JITMETADATAMETRIC(ProfileInconsistentMayThrowInlinee,    int,              0)
+JITMETADATAMETRIC(NewRefClassHelperCalls,                int,              0)
+JITMETADATAMETRIC(StackAllocatedRefClasses,              int,              0)
+JITMETADATAMETRIC(NewBoxedValueClassHelperCalls,         int,              0)
+JITMETADATAMETRIC(StackAllocatedBoxedValueClasses,       int,              0)
 
 #undef JITMETADATA
 #undef JITMETADATAINFO
