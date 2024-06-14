@@ -11,7 +11,7 @@ namespace System.Resources.Extensions.Tests.Common;
 // because the base type is annotated with [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
 public abstract class SystemDrawingTests<T> : SerializationTest<T> where T : ISerializer
 {
-    [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsDrawingSupported))]
+    [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsDrawingSupported), nameof(PlatformDetection.SupportsComInterop))]
     [MemberData(nameof(FormatterOptions))]
     [SupportedOSPlatform("windows")]
     public void Bitmap_RoundTrip(FormatterTypeStyle typeStyle, FormatterAssemblyStyle assemblyMatching)
@@ -21,7 +21,7 @@ public abstract class SystemDrawingTests<T> : SerializationTest<T> where T : ISe
         deserialized.Size.Should().Be(bitmap.Size);
     }
 
-    [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsDrawingSupported))]
+    [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsDrawingSupported), nameof(PlatformDetection.SupportsComInterop))]
     [MemberData(nameof(FormatterOptions))]
     [SupportedOSPlatform("windows")]
     public void Png_RoundTrip(FormatterTypeStyle typeStyle, FormatterAssemblyStyle assemblyMatching)
