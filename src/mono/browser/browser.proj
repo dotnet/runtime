@@ -365,9 +365,6 @@
                                   $(ICULibDir)/libicudata.a;
                                   $(BrowserProjectRoot)runtime/hybrid-globalization/segmentation-rules.json" />
       <ICULibFiles Include="$(ICULibDir)/*.dat" />
-
-      <!-- fixme https://github.com/WebAssembly/binaryen/issues/6639 -->
-      <WasmOptConfigurationFlags Include="-O1" Condition="'$(OS)' == 'Windows_NT'" />
     </ItemGroup>
     <PropertyGroup>
       <PInvokeTableFile>$(ArtifactsObjDir)wasm/pinvoke-table.h</PInvokeTableFile>
@@ -384,9 +381,6 @@
       <CMakeConfigurationLinkFlags Condition="'$(WasmEnableSIMD)' == 'true'">$(CMakeConfigurationLinkFlags) -msimd128</CMakeConfigurationLinkFlags>
       <CMakeConfigurationLinkFlags Condition="'$(WasmEnableThreads)' == 'true'">$(CMakeConfigurationLinkFlags) -Wno-pthreads-mem-growth</CMakeConfigurationLinkFlags>
       <CMakeConfigurationLinkFlags                                            >$(CMakeConfigurationLinkFlags) --emit-symbol-map</CMakeConfigurationLinkFlags>
-
-      <!-- fixme https://github.com/WebAssembly/binaryen/issues/6639 -->
-      <CMakeConfigurationLinkFlags Condition="'$(OS)' == 'Windows_NT'">$(CMakeConfigurationLinkFlags) -O1</CMakeConfigurationLinkFlags>
 
       <CMakeConfigurationEmsdkPath Condition="'$(Configuration)' == 'Release'"> -DEMSDK_PATH=&quot;$(EMSDK_PATH.TrimEnd('\/').Replace('\','/'))&quot;</CMakeConfigurationEmsdkPath>
 
