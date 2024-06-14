@@ -275,7 +275,8 @@ GenTree* Compiler::impSimdAsHWIntrinsic(NamedIntrinsic        intrinsic,
 
     assert(!sig->hasThis());
 
-    if ((clsHnd == m_simdHandleCache->VectorHandle) && (numArgs != 0) && !SimdAsHWIntrinsicInfo::KeepBaseTypeFromRet(intrinsic))
+    if ((clsHnd == m_simdHandleCache->VectorHandle) && (numArgs != 0) &&
+        !SimdAsHWIntrinsicInfo::KeepBaseTypeFromRet(intrinsic))
     {
         // We need to fixup the clsHnd in the case we are an intrinsic on Vector
         // The first argument will be the appropriate Vector<T> handle to use
@@ -1179,7 +1180,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
             argType                      = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
             op2                          = getArgForHWIntrinsic(argType, argClass);
 
-
             argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, argList, &argClass)));
 
             op1 = getArgForHWIntrinsic(argType, argClass);
@@ -1450,7 +1450,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 
             argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
             op2     = getArgForHWIntrinsic(argType, argClass);
-
 
             argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, argList, &argClass)));
             op1     = getArgForHWIntrinsic(argType, argClass);
