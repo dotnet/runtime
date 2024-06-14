@@ -10089,15 +10089,21 @@ namespace System.IO
     public static partial class File
     {
         public static void AppendAllBytes(string path, byte[] bytes) { }
+        public static void AppendAllBytes(string path, System.ReadOnlySpan<byte> bytes) { }
         public static System.Threading.Tasks.Task AppendAllBytesAsync(string path, byte[] bytes, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.Task AppendAllBytesAsync(string path, System.ReadOnlyMemory<byte> bytes, System.Threading.CancellationToken cancellationToken = default) { throw null; }
         public static void AppendAllLines(string path, System.Collections.Generic.IEnumerable<string> contents) { }
         public static void AppendAllLines(string path, System.Collections.Generic.IEnumerable<string> contents, System.Text.Encoding encoding) { }
         public static System.Threading.Tasks.Task AppendAllLinesAsync(string path, System.Collections.Generic.IEnumerable<string> contents, System.Text.Encoding encoding, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public static System.Threading.Tasks.Task AppendAllLinesAsync(string path, System.Collections.Generic.IEnumerable<string> contents, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public static void AppendAllText(string path, string? contents) { }
         public static void AppendAllText(string path, string? contents, System.Text.Encoding encoding) { }
+        public static void AppendAllText(string path, System.ReadOnlySpan<char> contents) { }
+        public static void AppendAllText(string path, System.ReadOnlySpan<char> contents, System.Text.Encoding encoding) { }
         public static System.Threading.Tasks.Task AppendAllTextAsync(string path, string? contents, System.Text.Encoding encoding, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public static System.Threading.Tasks.Task AppendAllTextAsync(string path, string? contents, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.Task AppendAllTextAsync(string path, System.ReadOnlyMemory<char> contents, System.Threading.CancellationToken cancellationToken = default) { throw null; }
+        public static System.Threading.Tasks.Task AppendAllTextAsync(string path, System.ReadOnlyMemory<char> contents, System.Text.Encoding encoding, System.Threading.CancellationToken cancellationToken = default) { throw null; }
         public static System.IO.StreamWriter AppendText(string path) { throw null; }
         public static void Copy(string sourceFileName, string destFileName) { }
         public static void Copy(string sourceFileName, string destFileName, bool overwrite) { }
@@ -10176,7 +10182,9 @@ namespace System.IO
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
         public static void SetUnixFileMode(string path, System.IO.UnixFileMode mode) { }
         public static void WriteAllBytes(string path, byte[] bytes) { }
+        public static void WriteAllBytes(string path, System.ReadOnlySpan<byte> bytes) { }
         public static System.Threading.Tasks.Task WriteAllBytesAsync(string path, byte[] bytes, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.Task WriteAllBytesAsync(string path, System.ReadOnlyMemory<byte> bytes, System.Threading.CancellationToken cancellationToken = default) { throw null; }
         public static void WriteAllLines(string path, System.Collections.Generic.IEnumerable<string> contents) { }
         public static void WriteAllLines(string path, System.Collections.Generic.IEnumerable<string> contents, System.Text.Encoding encoding) { }
         public static void WriteAllLines(string path, string[] contents) { }
@@ -10185,8 +10193,12 @@ namespace System.IO
         public static System.Threading.Tasks.Task WriteAllLinesAsync(string path, System.Collections.Generic.IEnumerable<string> contents, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public static void WriteAllText(string path, string? contents) { }
         public static void WriteAllText(string path, string? contents, System.Text.Encoding encoding) { }
+        public static void WriteAllText(string path, System.ReadOnlySpan<char> contents) { }
+        public static void WriteAllText(string path, System.ReadOnlySpan<char> contents, System.Text.Encoding encoding) { }
         public static System.Threading.Tasks.Task WriteAllTextAsync(string path, string? contents, System.Text.Encoding encoding, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public static System.Threading.Tasks.Task WriteAllTextAsync(string path, string? contents, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.Task WriteAllTextAsync(string path, System.ReadOnlyMemory<char> contents, System.Threading.CancellationToken cancellationToken = default) { throw null; }
+        public static System.Threading.Tasks.Task WriteAllTextAsync(string path, System.ReadOnlyMemory<char> contents, System.Text.Encoding encoding, System.Threading.CancellationToken cancellationToken = default) { throw null; }
     }
     [System.FlagsAttribute]
     public enum FileAccess

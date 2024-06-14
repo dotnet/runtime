@@ -279,7 +279,7 @@ namespace System.IO
             try
             {
                 NativeOverlapped* nativeOverlapped = vts.PrepareForOperation(buffer, fileOffset, strategy);
-                Debug.Assert(vts._memoryHandle.Pointer != null);
+                Debug.Assert(vts._memoryHandle.Pointer != null || buffer.IsEmpty);
 
                 // Queue an async ReadFile operation.
                 if (Interop.Kernel32.ReadFile(handle, (byte*)vts._memoryHandle.Pointer, buffer.Length, IntPtr.Zero, nativeOverlapped) == 0)
@@ -372,7 +372,7 @@ namespace System.IO
             try
             {
                 NativeOverlapped* nativeOverlapped = vts.PrepareForOperation(buffer, fileOffset, strategy);
-                Debug.Assert(vts._memoryHandle.Pointer != null);
+                Debug.Assert(vts._memoryHandle.Pointer != null || buffer.IsEmpty);
 
                 // Queue an async WriteFile operation.
                 if (Interop.Kernel32.WriteFile(handle, (byte*)vts._memoryHandle.Pointer, buffer.Length, IntPtr.Zero, nativeOverlapped) == 0)
