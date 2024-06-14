@@ -880,7 +880,6 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
         //     bne retry
         //     dmb ish
 
-
 #ifndef TARGET_ARM64
         instGen_MemoryBarrier();
 #endif
@@ -1132,7 +1131,7 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
 #ifdef TARGET_ARM
                 && emitter::isLowRegister(targetReg)
 #endif
-                )
+            )
             {
                 GetEmitter()->emitIns_J_R(INS_cbnz, emitActualTypeSize(treeNode), labelCompareFail, targetReg);
             }
