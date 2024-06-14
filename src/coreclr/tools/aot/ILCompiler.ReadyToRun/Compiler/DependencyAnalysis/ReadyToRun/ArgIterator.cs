@@ -235,6 +235,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public int m_byteStackSize;      // Stack size in bytes
 
         public uint m_floatFlags;        // struct with two-fields can be passed by registers.
+        public FpStructInRegistersInfo m_structFields; // RISC-V - Struct field info when using floating-point register(s)
+
         // Initialize to represent a non-placed argument (no register or stack slots referenced).
         public void Init()
         {
@@ -245,6 +247,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             m_byteStackIndex = -1;
             m_byteStackSize = 0;
             m_floatFlags = 0;
+            m_structFields = new FpStructInRegistersInfo();
 
             m_fRequires64BitAlignment = false;
         }
@@ -593,6 +596,19 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return _fpReturnSize;
         }
 
+        public FpStructInRegistersInfo GetReturnFpStructInRegistersInfo()
+        {
+            //        WRAPPER_NO_CONTRACT;
+            Debug.Assert(_transitionBlock.Architecture == TargetArchitecture.RiscV64);
+            if (!_RETURN_FLAGS_COMPUTED)
+                ComputeReturnFlags();
+            return new FpStructInRegistersInfo {
+                flags = (FpStruct)_fpReturnSize,
+                offset1st = _returnedFpFieldOffset1st,
+                offset2nd = _returnedFpFieldOffset2nd
+            };
+        }
+
         public bool IsArgPassedByRef()
         {
             //        LIMITED_METHOD_CONTRACT;
@@ -626,7 +642,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         }
                         return false;
                     case TargetArchitecture.RiscV64:
-                        return (_argType == CorElementType.ELEMENT_TYPE_VALUETYPE) && _transitionBlock.IsArgPassedByRef(_argTypeHandle);
+                        if (_argType == CorElementType.ELEMENT_TYPE_VALUETYPE)
+                        {
+                            Debug.Assert(!_argTypeHandle.IsNull());
+                            // On RISC-V structs larger than 16 bytes can still be passed in registers according to FP call conv if it
+                            // has empty fields or more padding, so also check for _hasArgLocDescForStructInRegs.
+                            return (_argSize > _transitionBlock.EnregisteredParamTypeMaxSize)
+                                && !_hasArgLocDescForStructInRegs;
+                        }
+                        return false;
                     default:
                         throw new NotImplementedException();
                 }
@@ -1499,7 +1523,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                                     _argLocDescForStructInRegs.m_idxGenReg = _riscv64IdxGenReg;
                                     _argLocDescForStructInRegs.m_cGenReg = 1;
 
-                                    _argLocDescForStructInRegs.m_floatFlags = (uint)info.ToOldFlags();
+                                    _argLocDescForStructInRegs.m_structFields = info;
                                     _hasArgLocDescForStructInRegs = true;
 
                                     int regOffset = ((info.flags & FpStruct.Float2nd) != 0)
@@ -1514,18 +1538,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                             else if (cFPRegs + _riscv64IdxFPReg <= _transitionBlock.NumArgumentRegisters)
                             {
                                 int regOffset = _transitionBlock.OffsetOfFloatArgumentRegisters + _riscv64IdxFPReg * _transitionBlock.FloatRegisterSize;
-                                if (info.flags == (FpStruct.BothFloat | (FpStruct)(2 << (int)FpStruct.PosSizeShift1st) | (FpStruct)(2 << (int)FpStruct.PosSizeShift2nd)))
+                                if ((info.flags & (FpStruct.BothFloat | FpStruct.OnlyOne)) != 0)
                                 {
-                                    // Struct with two single-float fields
-                                    Debug.Assert(info.GetSize1st() == sizeof(float));
-                                    Debug.Assert(info.GetSize2nd() == sizeof(float));
                                     _argLocDescForStructInRegs = new ArgLocDesc();
                                     _argLocDescForStructInRegs.m_idxFloatReg = _riscv64IdxFPReg;
                                     _argLocDescForStructInRegs.m_cFloatReg = 2;
-                                    Debug.Assert(cFPRegs == 2);
-                                    Debug.Assert(argSize == 2 * sizeof(float));
 
-                                    _argLocDescForStructInRegs.m_floatFlags = (uint)info.ToOldFlags();
+                                    _argLocDescForStructInRegs.m_structFields = info;
                                     _hasArgLocDescForStructInRegs = true;
                                 }
                                 _riscv64IdxFPReg += cFPRegs;
@@ -2048,7 +2067,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private bool _SIZE_OF_ARG_STACK_COMPUTED;
         private bool _RETURN_FLAGS_COMPUTED;
         private bool _RETURN_HAS_RET_BUFFER; // Cached value of HasRetBuffArg
+
         private uint _fpReturnSize;
+
+        // Offsets of fields returned according to RISC-V hardware floating-point calling convention
+        // (FpStruct flags are in _fpReturnSize)
+        private uint _returnedFpFieldOffset1st;
+        private uint _returnedFpFieldOffset2nd;
 
         /*        ITERATION_STARTED               = 0x0001,   
                 SIZE_OF_ARG_STACK_COMPUTED      = 0x0002,
@@ -2079,7 +2104,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             if (!_RETURN_HAS_RET_BUFFER)
             {
-                _transitionBlock.ComputeReturnValueTreatment(type, thRetType, IsVarArg, out _RETURN_HAS_RET_BUFFER, out _fpReturnSize);
+                _transitionBlock.ComputeReturnValueTreatment(type, thRetType, IsVarArg, out _RETURN_HAS_RET_BUFFER, out _fpReturnSize, out _returnedFpFieldOffset1st, out _returnedFpFieldOffset2nd);
             }
 
             _RETURN_FLAGS_COMPUTED = true;

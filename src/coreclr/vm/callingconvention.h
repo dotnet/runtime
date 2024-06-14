@@ -374,6 +374,10 @@ public:
     {
         WRAPPER_NO_CONTRACT;
         m_dwFlags = 0;
+#if defined(TARGET_RISCV64)
+        m_returnedFpFieldOffsets[0] = 0;
+        m_returnedFpFieldOffsets[1] = 0;
+#endif
     }
 
     UINT SizeOfArgStack()
@@ -944,7 +948,7 @@ protected:
     int                 m_nSizeOfArgStack;      // Cached value of SizeOfArgStack
 #if defined(TARGET_RISCV64)
     // Offsets of fields returned according to hardware floating-point calling convention
-    // (FpStruct::Flags are embedded in m_dwFlags, accessible with GetFPReturnSize())
+    // (FpStruct::Flags are embedded in m_dwFlags)
     unsigned m_returnedFpFieldOffsets[2];
 #endif
 

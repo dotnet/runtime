@@ -1301,6 +1301,16 @@ namespace Internal.JitInterface
         public uint offset1st;
         public uint offset2nd;
 
+        public uint GetSizeShift1st()
+        {
+            return (uint)((int)flags >> (int)FpStruct.PosSizeShift1st) & 0b11;
+        }
+
+        public uint GetSizeShift2nd()
+        {
+            return (uint)((int)flags >> (int)FpStruct.PosSizeShift2nd) & 0b11;
+        }
+
         public uint GetSize1st()
         {
             int shift = ((int)flags >> (int)FpStruct.PosSizeShift1st) & 0b11;
