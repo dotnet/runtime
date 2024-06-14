@@ -8583,7 +8583,7 @@ int MethodTable::GetFieldAlignmentRequirement()
     return min((int)GetNumInstanceFieldBytes(), TARGET_POINTER_SIZE);
 }
 
-#if defined(TARGET_LINUX) && defined(TARGET_ARM64)
+#if defined(TARGET_ARM64) && defined(__llvm__)
 // Workaround bug https://github.com/dotnet/runtime/issues/103489
 [[clang::optnone]]
 #endif
