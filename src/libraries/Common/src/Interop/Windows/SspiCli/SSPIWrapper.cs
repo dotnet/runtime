@@ -152,11 +152,11 @@ namespace System.Net
             return errorCode;
         }
 
-        internal static int AcceptSecurityContext(ISSPIInterface secModule, SafeFreeCredentials? credential, ref SafeDeleteSslContext? context, Interop.SspiCli.ContextFlags inFlags, Interop.SspiCli.Endianness datarep, InputSecurityBuffers inputBuffers, ref ProtocolToken outToken, ref Interop.SspiCli.ContextFlags outFlags)
+        internal static int AcceptSecurityContext(ISSPIInterface secModule, SafeFreeCredentials? credential, ref SafeDeleteSslContext? context, Interop.SspiCli.ContextFlags inFlags, Interop.SspiCli.Endianness datarep, ref InputSecurityBuffers inputBuffers, ref ProtocolToken outToken, ref Interop.SspiCli.ContextFlags outFlags)
         {
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Log.AcceptSecurityContext(credential, context, inFlags);
 
-            int errorCode = secModule.AcceptSecurityContext(credential, ref context, inputBuffers, inFlags, datarep, ref outToken, ref outFlags);
+            int errorCode = secModule.AcceptSecurityContext(credential, ref context, ref inputBuffers, inFlags, datarep, ref outToken, ref outFlags);
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Log.SecurityContextInputBuffers(nameof(AcceptSecurityContext), inputBuffers.Count, outToken.Size, (Interop.SECURITY_STATUS)errorCode);
 

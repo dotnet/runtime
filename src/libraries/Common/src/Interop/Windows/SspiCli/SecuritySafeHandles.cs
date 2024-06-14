@@ -508,7 +508,7 @@ namespace System.Net.Security
                             {
                                 inSecBuffers._item1.Type = inUnmanagedBuffer[1].BufferType;
 
-                                // since SecurityBuffer does not have separate Length field,
+                                // since SecurityBuffer type does not have separate Length field,
                                 // we point to the unused portion of the input buffer.
                                 Debug.Assert(inSecBuffers._item0.Token.Length > inUnmanagedBuffer[1].cbBuffer);
                                 inSecBuffers._item1.Token = inSecBuffers._item0.Token.Slice(inSecBuffers._item0.Token.Length - inUnmanagedBuffer[1].cbBuffer);
@@ -631,7 +631,7 @@ namespace System.Net.Security
             ref SafeDeleteSslContext? refContext,
             Interop.SspiCli.ContextFlags inFlags,
             Interop.SspiCli.Endianness endianness,
-            InputSecurityBuffers inSecBuffers,
+            ref InputSecurityBuffers inSecBuffers,
             ref ProtocolToken outToken,
             ref Interop.SspiCli.ContextFlags outFlags)
         {
