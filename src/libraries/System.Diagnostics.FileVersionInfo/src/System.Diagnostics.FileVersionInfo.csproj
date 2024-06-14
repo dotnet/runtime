@@ -10,7 +10,7 @@
   <PropertyGroup>
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' == ''">SR.DiagnosticsFileVersionInfo_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
-    <OmitResources Condition="'$(GeneratePlatformNotSupportedAssemblyMessage)' == ''">true</OmitResources>
+    <OmitResources Condition="'$(TargetPlatformIdentifier)' == 'windows'">true</OmitResources>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != ''">
