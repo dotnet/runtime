@@ -311,25 +311,27 @@ namespace System.Text.Json.Schema.Tests
                 """,
                 Options: new JsonSchemaExporterOptions
                 {
-                    OnSchemaNodeGenerated = static (ctx, schema) =>
+                    TransformSchemaNode = static (ctx, schema) =>
                     {
-                        if (ctx.TypeInfo.Kind is JsonTypeInfoKind.None)
+                        if (ctx.TypeInfo.Kind is JsonTypeInfoKind.None || schema is not JsonObject schemaObj)
                         {
-                            return;
+                            return schema;
                         }
 
                         string anchorName = ctx.PropertyInfo is { } property
                             ? ctx.TypeInfo.Type.Name + "_" + property.Name
                             : ctx.TypeInfo.Type.Name;
 
-                        if (schema.ContainsKey("$ref"))
+                        if (schemaObj.ContainsKey("$ref"))
                         {
-                            schema["$ref"] = "#" + anchorName;
+                            schemaObj["$ref"] = "#" + anchorName;
                         }
                         else
                         {
-                            schema["$anchor"] = anchorName;
+                            schemaObj["$anchor"] = anchorName;
                         }
+
+                        return schemaObj;
                     }
                 });
 
@@ -356,11 +358,11 @@ namespace System.Text.Json.Schema.Tests
                 """,
                 Options: new JsonSchemaExporterOptions
                 {
-                    OnSchemaNodeGenerated = static (ctx, schema) =>
+                    TransformSchemaNode = static (ctx, schema) =>
                     {
-                        if (ctx.TypeInfo.Kind is JsonTypeInfoKind.None)
+                        if (ctx.TypeInfo.Kind is JsonTypeInfoKind.None || schema is not JsonObject schemaObj)
                         {
-                            return;
+                            return schema;
                         }
 
                         string idPath = ctx.PropertyInfo is { } property
@@ -369,14 +371,16 @@ namespace System.Text.Json.Schema.Tests
 
                         string idUrl = "https://example.com/schema/" + idPath + ".json";
 
-                        if (schema.ContainsKey("$ref"))
+                        if (schemaObj.ContainsKey("$ref"))
                         {
-                            schema["$ref"] = idUrl;
+                            schemaObj["$ref"] = idUrl;
                         }
                         else
                         {
-                            schema["$id"] = idUrl;
+                            schemaObj["$id"] = idUrl;
                         }
+
+                        return schemaObj;
                     }
                 });
 
@@ -424,11 +428,11 @@ namespace System.Text.Json.Schema.Tests
                 """,
                 Options: new()
                 {
-                    OnSchemaNodeGenerated = static (ctx, schema) =>
+                    TransformSchemaNode = static (ctx, schema) =>
                     {
-                        if (schema.ContainsKey("$ref"))
+                        if (schema is not JsonObject schemaObj || schemaObj.ContainsKey("$ref"))
                         {
-                            return;
+                            return schema;
                         }
 
                         DescriptionAttribute? descriptionAttribute =
@@ -438,8 +442,10 @@ namespace System.Text.Json.Schema.Tests
 
                         if (descriptionAttribute != null)
                         {
-                            schema["description"] = (JsonNode)descriptionAttribute.Description;
+                            schemaObj["description"] = (JsonNode)descriptionAttribute.Description;
                         }
+
+                        return schemaObj;
                     }
                 });
 
@@ -506,21 +512,28 @@ namespace System.Text.Json.Schema.Tests
                 """,
                 Options: new()
                 {
-                    OnSchemaNodeGenerated = static (ctx, schema) =>
+                    TransformSchemaNode = static (ctx, schema) =>
                     {
+                        if (schema is not JsonObject schemaObj)
+                        {
+                            return schema;
+                        }
+
                         Type type = ctx.TypeInfo.Type;
 
-                        if (schema.ContainsKey("enum"))
+                        if (schemaObj.ContainsKey("enum"))
                         {
                             if (ctx.TypeInfo.Type.IsEnum)
                             {
-                                schema.Add("type", "string");
+                                schemaObj.Add("type", "string");
                             }
                             else if (Nullable.GetUnderlyingType(type)?.IsEnum is true)
                             {
-                                schema.Add("type", new JsonArray { (JsonNode)"string", (JsonNode)"null" });
+                                schemaObj.Add("type", new JsonArray { (JsonNode)"string", (JsonNode)"null" });
                             }
                         }
+
+                        return schemaObj;
                     }
                 });
 
@@ -894,11 +907,11 @@ namespace System.Text.Json.Schema.Tests
                 """,
                 Options: new()
                 {
-                    OnSchemaNodeGenerated = static (ctx, schema) =>
+                    TransformSchemaNode = static (ctx, schema) =>
                     {
-                        if (ctx.PropertyInfo is null || schema.ContainsKey("$ref"))
+                        if (ctx.PropertyInfo is null || schema is not JsonObject schemaObj || schemaObj.ContainsKey("$ref"))
                         {
-                            return;
+                            return schema;
                         }
 
                         DefaultValueAttribute? defaultValueAttr =
@@ -907,7 +920,7 @@ namespace System.Text.Json.Schema.Tests
 
                         if (defaultValueAttr != null)
                         {
-                            schema["default"] = JsonSerializer.SerializeToNode(defaultValueAttr.Value, ctx.TypeInfo);
+                            schemaObj["default"] = JsonSerializer.SerializeToNode(defaultValueAttr.Value, ctx.TypeInfo);
                         }
 
                         RegularExpressionAttribute? regexAttr =
@@ -916,8 +929,10 @@ namespace System.Text.Json.Schema.Tests
 
                         if (regexAttr != null)
                         {
-                            schema["pattern"] = regexAttr.Pattern;
+                            schemaObj["pattern"] = regexAttr.Pattern;
                         }
+
+                        return schemaObj;
                     }
                 });
 

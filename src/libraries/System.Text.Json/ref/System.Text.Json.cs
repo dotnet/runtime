@@ -907,7 +907,7 @@ namespace System.Text.Json.Schema
     {
         public JsonSchemaExporterOptions() { }
         public static System.Text.Json.Schema.JsonSchemaExporterOptions Default { get { throw null; } }
-        public System.Action<JsonSchemaExporterContext, System.Text.Json.Nodes.JsonObject>? OnSchemaNodeGenerated { get; init; }
+        public System.Func<JsonSchemaExporterContext, System.Text.Json.Nodes.JsonNode, System.Text.Json.Nodes.JsonNode>? TransformSchemaNode { get; init; }
     }
 }
 namespace System.Text.Json.Serialization

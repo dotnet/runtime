@@ -18,6 +18,6 @@ namespace System.Text.Json.Schema
         /// <summary>
         /// Defines a callback that is invoked for every schema that is generated within the type graph.
         /// </summary>
-        public Action<JsonSchemaExporterContext, JsonObject>? OnSchemaNodeGenerated { get; init; }
+        public Func<JsonSchemaExporterContext, JsonNode, JsonNode>? TransformSchemaNode { get; init; }
     }
 }

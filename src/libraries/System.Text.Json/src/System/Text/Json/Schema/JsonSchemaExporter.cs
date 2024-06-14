@@ -75,20 +75,18 @@ namespace System.Text.Json.Schema
             bool cacheResult = true)
         {
             Debug.Assert(typeInfo.IsConfigured);
-            JsonSchema? schema;
 
             if (cacheResult && state.TryPushType(typeInfo, propertyInfo, out string? existingJsonPointer))
             {
                 // Schema for type has already been generated, return a reference to it.
-                schema = new JsonSchema { Ref = existingJsonPointer };
-                goto FinalizeSchema;
+                return CompleteSchema(ref state, new JsonSchema { Ref = existingJsonPointer });
             }
 
             JsonConverter effectiveConverter = customConverter ?? typeInfo.Converter;
             JsonNumberHandling effectiveNumberHandling = customNumberHandling ?? typeInfo.NumberHandling ?? typeInfo.Options.NumberHandling;
-            if ((schema = effectiveConverter.GetSchema(effectiveNumberHandling)) != null)
+            if (effectiveConverter.GetSchema(effectiveNumberHandling) is { } schema)
             {
-                goto FinalizeSchema;
+                return CompleteSchema(ref state, schema);
             }
 
             if (parentPolymorphicType is null && typeInfo.PolymorphismOptions is { DerivedTypes.Count: > 0 } polyOptions)
@@ -107,11 +105,10 @@ namespace System.Text.Json.Schema
                 }
 
                 bool containsTypesWithoutDiscriminator = derivedTypes.Exists(static derivedTypes => derivedTypes.TypeDiscriminator is null);
+                JsonSchemaType schemaType = JsonSchemaType.Any;
+                List<JsonSchema>? anyOf = new(derivedTypes.Count);
 
                 state.PushSchemaNode(JsonSchema.AnyOfPropertyName);
-                JsonSchemaType? commonDerivedSchemaType = null;
-                List<JsonSchema> anyOf = new(derivedTypes.Count);
-                int i = 0;
 
                 foreach (JsonDerivedType derivedType in derivedTypes)
                 {
@@ -132,7 +129,7 @@ namespace System.Text.Json.Schema
 
                     JsonTypeInfo derivedTypeInfo = typeInfo.Options.GetTypeInfoInternal(derivedType.DerivedType);
 
-                    state.PushSchemaNode(i.ToString(CultureInfo.InvariantCulture));
+                    state.PushSchemaNode(anyOf.Count.ToString(CultureInfo.InvariantCulture));
                     JsonSchema derivedSchema = MapJsonSchemaCore(
                         ref state,
                         derivedTypeInfo,
@@ -142,43 +139,48 @@ namespace System.Text.Json.Schema
                         parentPolymorphicTypeIsNonNullable: propertyInfo is { IsGetNullable: false, IsSetNullable: false },
                         cacheResult: false);
 
-                    anyOf.Add(derivedSchema);
                     state.PopSchemaNode();
 
                     // Determine if all derived types have the same schema type.
-                    if (i++ == 0)
+                    if (anyOf.Count == 0)
                     {
-                        commonDerivedSchemaType = derivedSchema.Type;
+                        schemaType = derivedSchema.Type;
                     }
-                    else if (commonDerivedSchemaType != derivedSchema.Type)
+                    else if (schemaType != derivedSchema.Type)
                     {
-                        commonDerivedSchemaType = null;
+                        schemaType = JsonSchemaType.Any;
                     }
+
+                    anyOf.Add(derivedSchema);
                 }
 
                 state.PopSchemaNode();
 
-                schema = new JsonSchema { AnyOf = anyOf };
-
-                if (!containsTypesWithoutDiscriminator)
-                {
-                    // If all derived types have a discriminator, we can require it in the base schema.
-                    schema.Required = [typeDiscriminatorKey];
-                }
-
-                if (commonDerivedSchemaType is JsonSchemaType commonType)
+                if (schemaType is not JsonSchemaType.Any)
                 {
                     // If all derived types have the same schema type, we can simplify the schema
                     // by moving the type keyword to the base schema and removing it from the derived schemas.
                     foreach (JsonSchema derivedSchema in anyOf)
                     {
                         derivedSchema.Type = JsonSchemaType.Any;
-                    }
 
-                    schema.Type = commonType;
+                        if (derivedSchema.KeywordCount == 0)
+                        {
+                            // if removing the type results in an empty schema,
+                            // remove the anyOf array entirely since it's always true.
+                            anyOf = null;
+                            break;
+                        }
+                    }
                 }
 
-                goto FinalizeSchema;
+                return CompleteSchema(ref state, new()
+                {
+                    Type = schemaType,
+                    AnyOf = anyOf,
+                    // If all derived types have a discriminator, we can require it in the base schema.
+                    Required = containsTypesWithoutDiscriminator ? null : [typeDiscriminatorKey]
+                });
             }
 
             if (effectiveConverter.NullableElementConverter is { } elementConverter)
@@ -192,7 +194,7 @@ namespace System.Text.Json.Schema
                     schema.Enum.Add(null); // Append null to the enum array.
                 }
 
-                goto FinalizeSchema;
+                return CompleteSchema(ref state, schema);
             }
 
             switch (typeInfo.Kind)
@@ -250,19 +252,16 @@ namespace System.Text.Json.Schema
                     }
 
                     state.PopSchemaNode();
-                    schema = new()
+                    return CompleteSchema(ref state, new()
                     {
                         Type = JsonSchemaType.Object,
                         Properties = properties,
                         Required = required,
                         AdditionalProperties = additionalProperties,
-                    };
-
-                    break;
+                    });
 
                 case JsonTypeInfoKind.Enumerable:
                     Debug.Assert(typeInfo.ElementTypeInfo != null);
-
 
                     if (typeDiscriminator is null)
                     {
@@ -270,11 +269,11 @@ namespace System.Text.Json.Schema
                         JsonSchema items = MapJsonSchemaCore(ref state, typeInfo.ElementTypeInfo, customNumberHandling: effectiveNumberHandling);
                         state.PopSchemaNode();
 
-                        schema = new()
+                        return CompleteSchema(ref state, new()
                         {
                             Type = JsonSchemaType.Array,
-                            Items = items,
-                        };
+                            Items = items.IsTrue ? null : items,
+                        });
                     }
                     else
                     {
@@ -294,24 +293,22 @@ namespace System.Text.Json.Schema
                         state.PopSchemaNode();
                         state.PopSchemaNode();
 
-                        schema = new()
+                        return CompleteSchema(ref state, new()
                         {
                             Type = JsonSchemaType.Object,
                             Properties =
                             [
                                 typeDiscriminator.Value,
-                                new(ValuesKeyword, new() { Type = JsonSchemaType.Array, Items = items }),
+                                new(ValuesKeyword,
+                                    new JsonSchema()
+                                    {
+                                        Type = JsonSchemaType.Array,
+                                        Items = items.IsTrue ? null : items,
+                                    }),
                             ],
-                        };
-
-                        if (parentPolymorphicTypeContainsTypesWithoutDiscriminator)
-                        {
-                            // Require the discriminator here since it's not common to all derived types.
-                            schema.Required = [typeDiscriminator.Value.Key];
-                        }
+                            Required = parentPolymorphicTypeContainsTypesWithoutDiscriminator ? [typeDiscriminator.Value.Key] : null,
+                        });
                     }
-
-                    break;
 
                 case JsonTypeInfoKind.Dictionary:
                     Debug.Assert(typeInfo.ElementTypeInfo != null);
@@ -330,49 +327,48 @@ namespace System.Text.Json.Schema
                     }
 
                     state.PushSchemaNode(JsonSchema.AdditionalPropertiesPropertyName);
-                    JsonSchema additionalPropertiesSchema = MapJsonSchemaCore(ref state, typeInfo.ElementTypeInfo, customNumberHandling: effectiveNumberHandling);
+                    JsonSchema valueSchema = MapJsonSchemaCore(ref state, typeInfo.ElementTypeInfo, customNumberHandling: effectiveNumberHandling);
                     state.PopSchemaNode();
 
-                    schema = new()
+                    return CompleteSchema(ref state, new()
                     {
                         Type = JsonSchemaType.Object,
                         Properties = dictProps,
                         Required = dictRequired,
-                        AdditionalProperties = additionalPropertiesSchema,
-                    };
-
-                    break;
+                        AdditionalProperties = valueSchema.IsTrue ? null : valueSchema,
+                    });
 
                 default:
                     Debug.Assert(typeInfo.Kind is JsonTypeInfoKind.None);
-                    schema = JsonSchema.CreateTrueSchemaAsObject();
-                    break;
+                    return CompleteSchema(ref state, JsonSchema.True);
             }
 
-        FinalizeSchema:
-            if (schema.Ref is null)
+            JsonSchema CompleteSchema(ref GenerationState state, JsonSchema schema)
             {
-                bool isNullableSchema = propertyInfo != null
-                    ? propertyInfo.IsGetNullable || propertyInfo.IsSetNullable
-                    : typeInfo.CanBeNull && !parentPolymorphicTypeIsNonNullable;
-
-                if (isNullableSchema)
+                if (schema.Ref is null)
                 {
-                    schema.MakeNullable();
+                    bool isNullableSchema = propertyInfo != null
+                        ? propertyInfo.IsGetNullable || propertyInfo.IsSetNullable
+                        : typeInfo.CanBeNull && !parentPolymorphicTypeIsNonNullable;
+
+                    if (isNullableSchema)
+                    {
+                        schema.MakeNullable();
+                    }
+
+                    if (cacheResult)
+                    {
+                        state.PopGeneratedType();
+                    }
                 }
 
-                if (cacheResult)
+                if (state.ExporterOptions.TransformSchemaNode != null)
                 {
-                    state.PopGeneratedType();
+                    schema.ExporterContext = state.CreateContext(typeInfo, propertyInfo);
                 }
-            }
 
-            if (state.ExporterOptions.OnSchemaNodeGenerated != null)
-            {
-                schema.ExporterContext = state.CreateContext(typeInfo, propertyInfo);
+                return schema;
             }
-
-            return schema;
         }
 
         private static void ValidateOptions(JsonSerializerOptions options)

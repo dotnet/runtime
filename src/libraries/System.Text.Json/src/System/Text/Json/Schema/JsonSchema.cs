@@ -26,36 +26,112 @@ namespace System.Text.Json.Schema
         internal const string MinLengthPropertyName = "minLength";
         internal const string MaxLengthPropertyName = "maxLength";
 
-        public static JsonSchema False { get; } = new() { TrueOrFalse = false };
-        public static JsonSchema True { get; } = new() { TrueOrFalse = true };
+        public static JsonSchema False { get; } = new(false);
+        public static JsonSchema True { get; } = new(true);
 
-        public static JsonSchema CreateFalseSchemaAsObject() => new() { Not = True };
-        public static JsonSchema CreateTrueSchemaAsObject() => new();
+        public JsonSchema() { }
+        private JsonSchema(bool trueOrFalse) { _trueOrFalse = trueOrFalse; }
 
-        public bool? TrueOrFalse { get; private init; }
-        public string? Ref { get; set; }
-        public string? Comment { get; set; }
-        public JsonSchemaType Type { get; set; } = JsonSchemaType.Any;
-        public string? Format { get; set; }
-        public string? Pattern { get; set; }
-        public JsonNode? Constant { get; set; }
-        public List<KeyValuePair<string, JsonSchema>>? Properties { get; set; }
-        public List<string>? Required { get; set; }
-        public JsonSchema? Items { get; set; }
-        public JsonSchema? AdditionalProperties { get; set; }
-        public JsonArray? Enum { get; set; }
-        public JsonSchema? Not { get; set; }
-        public List<JsonSchema>? AnyOf { get; set; }
-        public bool HasDefaultValue { get; set; }
-        public JsonNode? DefaultValue { get; set; }
+        public bool IsTrue => _trueOrFalse is true;
+        public bool IsFalse => _trueOrFalse is false;
+        private readonly bool? _trueOrFalse;
 
-        public int? MinLength { get; set; }
-        public int? MaxLength { get; set; }
+        public string? Ref { get => _ref; set { VerifyMutable(); _ref = value; } }
+        private string? _ref;
+
+        public string? Comment { get => _comment; set { VerifyMutable(); _comment = value; } }
+        private string? _comment;
+
+        public JsonSchemaType Type { get => _type; set { VerifyMutable(); _type = value; } }
+        private JsonSchemaType _type = JsonSchemaType.Any;
+
+        public string? Format { get => _format; set { VerifyMutable(); _format = value; } }
+        private string? _format;
+
+        public string? Pattern { get => _pattern; set { VerifyMutable(); _pattern = value; } }
+        private string? _pattern;
+
+        public JsonNode? Constant { get => _constant; set { VerifyMutable(); _constant = value; } }
+        private JsonNode? _constant;
+
+        public List<KeyValuePair<string, JsonSchema>>? Properties { get => _properties; set { VerifyMutable(); _properties = value; } }
+        private List<KeyValuePair<string, JsonSchema>>? _properties;
+
+        public List<string>? Required { get => _required; set { VerifyMutable(); _required = value; } }
+        private List<string>? _required;
+
+        public JsonSchema? Items { get => _items; set { VerifyMutable(); _items = value; } }
+        private JsonSchema? _items;
+
+        public JsonSchema? AdditionalProperties { get => _additionalProperties; set { VerifyMutable(); _additionalProperties = value; } }
+        private JsonSchema? _additionalProperties;
+
+        public JsonArray? Enum { get => _enum; set { VerifyMutable(); _enum = value; } }
+        private JsonArray? _enum;
+
+        public JsonSchema? Not { get => _not; set { VerifyMutable(); _not = value; } }
+        private JsonSchema? _not;
+
+        public List<JsonSchema>? AnyOf { get => _anyOf; set { VerifyMutable(); _anyOf = value; } }
+        private List<JsonSchema>? _anyOf;
+
+        public bool HasDefaultValue { get => _hasDefaultValue; set { VerifyMutable(); _hasDefaultValue = value; } }
+        private bool _hasDefaultValue;
+
+        public JsonNode? DefaultValue { get => _defaultValue; set { VerifyMutable(); _defaultValue = value; } }
+        private JsonNode? _defaultValue;
+
+        public int? MinLength { get => _minLength; set { VerifyMutable(); _minLength = value; } }
+        private int? _minLength;
+
+        public int? MaxLength { get => _maxLength; set { VerifyMutable(); _maxLength = value; } }
+        private int? _maxLength;
 
         public JsonSchemaExporterContext? ExporterContext { get; set; }
 
+        public int KeywordCount
+        {
+            get
+            {
+                if (_trueOrFalse != null)
+                {
+                    return 0;
+                }
+
+                int count = 0;
+                Count(Ref != null);
+                Count(Comment != null);
+                Count(Type != JsonSchemaType.Any);
+                Count(Format != null);
+                Count(Pattern != null);
+                Count(Constant != null);
+                Count(Properties != null);
+                Count(Required != null);
+                Count(Items != null);
+                Count(AdditionalProperties != null);
+                Count(Enum != null);
+                Count(Not != null);
+                Count(AnyOf != null);
+                Count(HasDefaultValue);
+                Count(MinLength != null);
+                Count(MaxLength != null);
+
+                return count;
+
+                void Count(bool isKeywordSpecified)
+                {
+                    count += isKeywordSpecified ? 1 : 0;
+                }
+            }
+        }
+
         public void MakeNullable()
         {
+            if (_trueOrFalse != null)
+            {
+                return;
+            }
+
             if (Type != JsonSchemaType.Any)
             {
                 Type |= JsonSchemaType.Null;
@@ -64,9 +140,9 @@ namespace System.Text.Json.Schema
 
         public JsonNode ToJsonNode(JsonSchemaExporterOptions options)
         {
-            if (TrueOrFalse is { } boolSchema)
+            if (_trueOrFalse is { } boolSchema)
             {
-                return (JsonNode)boolSchema;
+                return CompleteSchema((JsonNode)boolSchema);
             }
 
             var objSchema = new JsonObject();
@@ -125,22 +201,12 @@ namespace System.Text.Json.Schema
 
             if (Items != null)
             {
-                JsonNode itemsSchema = Items.ToJsonNode(options);
-                if (ResolveTrueOrFalseSchema(itemsSchema) != true)
-                {
-                    // Skip "items" : true keywords
-                    objSchema.Add(ItemsPropertyName, itemsSchema);
-                }
+                objSchema.Add(ItemsPropertyName, Items.ToJsonNode(options));
             }
 
             if (AdditionalProperties != null)
             {
-                JsonNode additionalPropsSchema = AdditionalProperties.ToJsonNode(options);
-                if (ResolveTrueOrFalseSchema(additionalPropsSchema) != true)
-                {
-                    // Skip "additionalProperties" : true keywords
-                    objSchema.Add(AdditionalPropertiesPropertyName, additionalPropsSchema);
-                }
+                objSchema.Add(AdditionalPropertiesPropertyName, AdditionalProperties.ToJsonNode(options));
             }
 
             if (Enum != null)
@@ -150,43 +216,18 @@ namespace System.Text.Json.Schema
 
             if (Not != null)
             {
-                JsonNode notSchema = Not.ToJsonNode(options);
-                if (ResolveTrueOrFalseSchema(notSchema) != false)
-                {
-                    // Skip "not" : false keywords
-                    objSchema.Add(NotPropertyName, notSchema);
-                }
+                objSchema.Add(NotPropertyName, Not.ToJsonNode(options));
             }
 
             if (AnyOf != null)
             {
-                JsonArray? anyOfArray = new();
-
+                JsonArray anyOfArray = [];
                 foreach (JsonSchema schema in AnyOf)
                 {
-                    JsonNode schemaNode = schema.ToJsonNode(options);
-                    bool? isTrueOrFalseSchema = ResolveTrueOrFalseSchema(schemaNode);
-
-                    if (isTrueOrFalseSchema is true)
-                    {
-                        // Skip "anyOf" keywords containing true subschemas
-                        anyOfArray = null;
-                        break;
-                    }
-                    else if (isTrueOrFalseSchema is false)
-                    {
-                        // Skip false subschemas
-                        continue;
-                    }
-
-                    anyOfArray.Add(schemaNode);
+                    anyOfArray.Add(schema.ToJsonNode(options));
                 }
 
-                if (anyOfArray != null)
-                {
-                    // Skip "anyOf" keywords containing true schemas
-                    objSchema.Add(AnyOfPropertyName, anyOfArray);
-                }
+                objSchema.Add(AnyOfPropertyName, anyOfArray);
             }
 
             if (HasDefaultValue)
@@ -204,42 +245,18 @@ namespace System.Text.Json.Schema
                 objSchema.Add(MaxLengthPropertyName, (JsonNode)maxLength);
             }
 
-            if (ExporterContext is { } context)
-            {
-                Debug.Assert(options.OnSchemaNodeGenerated != null, "context should only be populated if a callback is present.");
-                // Apply any user-defined transformations to the schema.
-                options.OnSchemaNodeGenerated(context, objSchema);
-            }
+            return CompleteSchema(objSchema);
 
-            if (ResolveTrueOrFalseSchema(objSchema) is bool trueOrFalse)
+            JsonNode CompleteSchema(JsonNode schema)
             {
-                // Reduce '{}' or '{ "not": true }' schemas to 'true' and 'false' respectively.
-                return (JsonNode)trueOrFalse;
-            }
-
-            return objSchema;
-
-            static bool? ResolveTrueOrFalseSchema(JsonNode? schema)
-            {
-                switch (schema)
+                if (ExporterContext is { } context)
                 {
-                    case JsonValue:
-                        return schema.GetValueKind() switch
-                        {
-                            JsonValueKind.False => false,
-                            JsonValueKind.True => true,
-                            _ => null,
-                        };
-
-                    case JsonObject { Count: 0 }:
-                        return true;
-
-                    case JsonObject { Count: 1 } jsonObject when jsonObject.TryGetPropertyValue(NotPropertyName, out JsonNode? notValue):
-                        return !ResolveTrueOrFalseSchema(notValue);
-
-                    default:
-                        return null;
+                    Debug.Assert(options.TransformSchemaNode != null, "context should only be populated if a callback is present.");
+                    // Apply any user-defined transformations to the schema.
+                    return options.TransformSchemaNode(context, schema);
                 }
+
+                return schema;
             }
         }
 
@@ -254,6 +271,16 @@ namespace System.Text.Json.Schema
             JsonSchemaType.Object,
             JsonSchemaType.Null,
         ];
+
+        private void VerifyMutable()
+        {
+            Debug.Assert(_trueOrFalse is null, "Schema is not mutable");
+            if (_trueOrFalse is not null)
+            {
+                Throw();
+                static void Throw() => throw new InvalidOperationException();
+            }
+        }
 
         public static JsonNode? MapSchemaType(JsonSchemaType schemaType)
         {
