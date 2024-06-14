@@ -22,7 +22,10 @@ public abstract class ClassRecord : SerializationRecord
     /// <inheritdoc />
     public override TypeName TypeName => ClassInfo.TypeName;
 
-    // Currently we don't expose raw values, so we are not preserving the order here.
+    /// <summary>
+    /// Gets the names of the serialized members.
+    /// </summary>
+    /// <value>The names of the serialized members.</value>
     public IEnumerable<string> MemberNames => ClassInfo.MemberNames.Keys;
 
     /// <inheritdoc />

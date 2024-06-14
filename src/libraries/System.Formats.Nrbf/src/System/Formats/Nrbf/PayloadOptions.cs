@@ -5,10 +5,19 @@ using System.Reflection.Metadata;
 
 namespace System.Formats.Nrbf;
 
+/// <summary>
+/// Defines a variety of configuration options for decoding NRBF payloads.
+/// </summary>
 public sealed class PayloadOptions
 {
+    /// <summary>
+    /// Initializes a <see cref="PayloadOptions"/> instance with default values.
+    /// </summary>
     public PayloadOptions() { }
 
+    /// <summary>
+    /// Configuration options for parsing <see cref="TypeName"/> instances.
+    /// </summary>
     public TypeNameParseOptions? TypeNameParseOptions { get; set; }
 
     /// <summary>

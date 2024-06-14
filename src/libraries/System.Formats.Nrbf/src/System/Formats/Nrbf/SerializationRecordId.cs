@@ -38,10 +38,13 @@ public readonly struct SerializationRecordId : IEquatable<SerializationRecordId>
         return new SerializationRecordId(id);
     }
 
+    /// <inheritdoc />
     public bool Equals(SerializationRecordId other) => _id == other._id;
 
+    /// <inheritdoc />
     public override bool Equals(object? obj) => obj is SerializationRecordId other && Equals(other);
 
+    /// <inheritdoc />
     public override int GetHashCode()
     {
         int id = _id;

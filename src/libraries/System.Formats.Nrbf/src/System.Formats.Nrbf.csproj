@@ -6,7 +6,7 @@
     <CLSCompliant>false</CLSCompliant>
     <UseCompilerGeneratedDocXmlFile>true</UseCompilerGeneratedDocXmlFile>
     <IsPackable>true</IsPackable>
-    <PackageDescription>Provides a safe reader for BinaryFormatted payloads.
+    <PackageDescription>Provides a safe reader for .NET Remoting Binary Format (NRBF) payloads.
 
 Commonly Used Types:
 System.Formats.Nrbf.NrbfDecoder</PackageDescription>    

@@ -11,6 +11,9 @@ using System.Runtime.Serialization;
 
 namespace System.Formats.Nrbf;
 
+/// <summary>
+/// Provides stateless methods for decoding .NET Remoting Binary Format (NRBF) encoded data.
+/// </summary>
 public static class NrbfDecoder
 {
     private static UTF8Encoding ThrowOnInvalidUtf8Encoding { get; } = new(false, throwOnInvalidBytes: true);
