@@ -582,7 +582,7 @@ public:
                 // If it has, then we don't need to do anything
                 return false;
             }
-            
+
             oldValFromInterlockedOp = InterlockedCompareExchangeT(pAddr, newVal | oldVal, oldVal);
         } while(oldValFromInterlockedOp != oldVal);
         return true;

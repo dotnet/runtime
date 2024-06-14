@@ -335,7 +335,6 @@ internal partial struct Metadata_1 : IMetadata
 
     public bool IsString(in MethodTable methodTable) => ((IMethodTableFlags)methodTable).IsString;
     public bool ContainsPointers(in MethodTable methodTable) => ((IMethodTableFlags)methodTable).ContainsPointers;
-    public bool IsDynamicStatics(in MethodTable methodTable) => ((IMethodTableFlags)methodTable).IsDynamicStatics;
 
     public uint GetTypeDefToken(in MethodTable methodTable)
     {
@@ -371,16 +370,29 @@ internal partial struct Metadata_1 : IMetadata
         return GetClassData(methodTable).TypeDefTypeAttributes;
     }
 
+    public bool IsDynamicStatics(in MethodTable methodTable) => ((IMethodTableFlags)methodTable).GetFlag(WFLAGS2_ENUM.DynamicStatics) != 0;
+
     [Flags]
     internal enum MethodTableAuxiliaryDataFlags : uint
     {
-        CanCompareBitsOrUseFastGetHashCode = 0x0001,     // Is any field type or sub field type overrode Equals or GetHashCode
+        Initialized = 0x0001,
         HasCheckedCanCompareBitsOrUseFastGetHashCode = 0x0002,  // Whether we have checked the overridden Equals or GetHashCode
+        CanCompareBitsOrUseFastGetHashCode = 0x0004,     // Is any field type or sub field type overridden Equals or GetHashCode
+
         HasApproxParent = 0x0010,
+        // enum_unused                      = 0x0020,
         IsNotFullyLoaded = 0x0040,
         DependenciesLoaded = 0x0080,     // class and all dependencies loaded up to CLASS_LOADED_BUT_NOT_VERIFIED
-        MayHaveOpenInterfaceInInterfaceMap = 0x0100,
-        DebugOnly_ParentMethodTablePointerValid = 0x4000,
-        DebugOnly_HasInjectedInterfaceDuplicates = 0x8000,
+
+        IsInitError = 0x0100,
+        IsStaticDataAllocated = 0x0200,
+        // unum_unused                      = 0x0400,
+        IsTlsIndexAllocated = 0x0800,
+        MayHaveOpenInterfaceInInterfaceMap = 0x1000,
+        // enum_unused                      = 0x2000,
+
+        // ifdef _DEBUG
+        DEBUG_ParentMethodTablePointerValid = 0x4000,
+        DEBUG_HasInjectedInterfaceDuplicates = 0x8000,
     }
 }

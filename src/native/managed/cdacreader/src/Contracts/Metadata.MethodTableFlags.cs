@@ -22,12 +22,6 @@ internal partial struct Metadata_1
         UNUSED_ComponentSize_1 = 0x00000001,
         // GC depends on this bit
         HasCriticalFinalizer = 0x00000002, // finalizer must be run on Appdomain Unload
-        StaticsMask = 0x0000000C,
-        StaticsMask_NonDynamic = 0x00000000,
-        StaticsMask_Dynamic = 0x00000008,   // dynamic statics (EnC, reflection.emit)
-        StaticsMask_Generics = 0x00000004,   // generics statics
-        StaticsMask_CrossModuleGenerics = 0x0000000C, // cross module generics statics (NGen)
-        StaticsMask_IfGenericsThenCrossModule = 0x00000008, // helper constant to get rid of unnecessary check
 
 
         GenericsMask = 0x00000030,
@@ -41,10 +35,10 @@ internal partial struct Metadata_1
         HasDefaultCtor = 0x00000200,
         HasPreciseInitCctors = 0x00000400,   // Do we need to run class constructors at allocation time? (Not perf important, could be moved to EEClass
 
-        // if FEATURE_HFA
+        // if defined(FEATURE_HFA)
         IsHFA = 0x00000800,   // This type is an HFA (Homogeneous Floating-point Aggregate)
 
-        // if UNIX_AMD64_ABI
+        // if defined(UNIX_AMD64_ABI)
         IsRegStructPassed = 0x00000800,   // This type is a System V register passed struct.
 
         IsByRefLike = 0x00001000,
@@ -61,20 +55,27 @@ internal partial struct Metadata_1
         // As you change the flags in WFLAGS_LOW_ENUM you also need to change this
         // to be up to date to reflect the default values of those flags for the
         // case where this MethodTable is for a String or Array
-        StringArrayValues = //SET_FALSE(enum_flag_HasCriticalFinalizer) |
-                                      StaticsMask_NonDynamic |
-                                      //SET_FALSE(enum_flag_HasBoxedRegularStatics) |
-                                      //SET_FALSE(enum_flag_HasBoxedThreadStatics) |
+        StringArrayValues = // SET_FALSE(enum_flag_HasCriticalFinalizer) |
+                            // SET_FALSE(enum_flag_HasBoxedRegularStatics) |
+                            // SET_FALSE(enum_flag_HasBoxedThreadStatics) |
                                       GenericsMask_NonGeneric |
-                                      //SET_FALSE(enum_flag_HasVariance) |
-                                      //SET_FALSE(enum_flag_HasDefaultCtor) |
-                                      //SET_FALSE(enum_flag_HasPreciseInitCctors)
+                                      // SET_FALSE(enum_flag_HasVariance) |
+                                      // SET_FALSE(enum_flag_HasDefaultCtor) |
+                                      // SET_FALSE(enum_flag_HasPreciseInitCctors),
                                       0,
     }
 
     [Flags]
     internal enum WFLAGS_HIGH : uint
     {
+        // DO NOT use flags that have bits set in the low 2 bytes.
+        // These flags are DWORD sized so that our atomic masking
+        // operations can operate on the entire 4-byte aligned DWORD
+        // instead of the logical non-aligned WORD of flags.  The
+        // low WORD of flags is reserved for the component size.
+
+        // The following bits describe mutually exclusive locations of the type
+        // in the type hierarchy.
         Category_Mask = 0x000F0000,
 
         Category_Class = 0x00000000,
@@ -90,7 +91,7 @@ internal partial struct Metadata_1
 
         Category_Array = 0x00080000,
         Category_Array_Mask = 0x000C0000,
-        // Category_IfArrayThenUnused                 = 0x00010000, // sub-category of Array
+        // enum_flag_Category_IfArrayThenUnused                 = 0x00010000, // sub-category of Array
         Category_IfArrayThenSzArray = 0x00020000, // sub-category of Array
 
         Category_Interface = 0x000C0000,
@@ -100,29 +101,23 @@ internal partial struct Metadata_1
 
         Category_ElementTypeMask = 0x000E0000, // bits that matter for element type mask
 
-        // GC depends on this bit
-        HasFinalizer = 0x00100000, // instances require finalization
-
-        IDynamicInterfaceCastable = 0x10000000, // class implements IDynamicInterfaceCastable interface
-
+        HasFinalizer = 0x00100000, // instances require finalization. GC depends on this bit.
+        Collectible = 0x00200000, // GC depends on this bit.
         ICastable = 0x00400000, // class implements ICastable interface
 
-        RequiresAlign8 = 0x00800000, // Type requires 8-byte alignment (only set on platforms that require this and don't get it implicitly)
+        // ifdef FEATURE_64BIT_ALIGNMENT
+        eRequiresAlign8 = 0x00800000, // Type requires 8-byte alignment (only set on platforms that require this and don't get it implicitly)
 
-        ContainsPointers = 0x01000000,
-
+        ContainsPointers = 0x01000000, // Contains object references
         HasTypeEquivalence = 0x02000000, // can be equivalent to another type
-
         IsTrackedReferenceWithFinalizer = 0x04000000,
+        // unused                             = 0x08000000,
 
-        // GC depends on this bit
-        Collectible = 0x00200000,
-        ContainsGenericVariables = 0x20000000,   // we cache this flag to help detect these efficiently and
-                                                 // to detect this condition when restoring
-
+        IDynamicInterfaceCastable = 0x10000000, // class implements IDynamicInterfaceCastable interface
+        ContainsGenericVariables = 0x20000000, // we cache this flag to help detect these efficiently and
+                                               // to detect this condition when restoring
         ComObject = 0x40000000, // class is a com object
-
-        HasComponentSize = 0x80000000,   // This is set if component size is used for flags.
+        HasComponentSize = 0x80000000, // This is set if component size is used for flags.
 
         // Types that require non-trivial interface cast have this bit set in the category
         NonTrivialInterfaceCast = Category_Array
@@ -130,7 +125,22 @@ internal partial struct Metadata_1
                                              | ICastable
                                              | IDynamicInterfaceCastable
                                              | Category_ValueType
+    }
 
+    [Flags]
+    internal enum WFLAGS2_ENUM : uint
+    {
+        HasPerInstInfo = 0x0001,
+        DynamicStatics = 0x0002,
+        HasDispatchMapSlot = 0x0004,
+
+        // wflags2_unused_2          = 0x0008,
+        HasModuleDependencies = 0x0010,
+        IsIntrinsicType = 0x0020,
+        HasCctor = 0x0040,
+        HasVirtualStaticMethods = 0x0080,
+
+        TokenMask = 0xFFFFFF00,
     }
 }
 internal interface IMethodTableFlags
@@ -145,6 +155,8 @@ internal interface IMethodTableFlags
 
     public Metadata_1.WFLAGS_LOW GetFlag(Metadata_1.WFLAGS_LOW mask) => throw new NotImplementedException("TODO");
     public Metadata_1.WFLAGS_HIGH GetFlag(Metadata_1.WFLAGS_HIGH mask) => FlagsHigh & mask;
+
+    public Metadata_1.WFLAGS2_ENUM GetFlag(Metadata_1.WFLAGS2_ENUM mask) => (Metadata_1.WFLAGS2_ENUM)DwFlags2 & mask;
     public bool IsInterface => GetFlag(Metadata_1.WFLAGS_HIGH.Category_Mask) == Metadata_1.WFLAGS_HIGH.Category_Interface;
     public bool IsString => HasComponentSize && !IsArray && RawGetComponentSize() == 2;
 
@@ -166,9 +178,13 @@ internal interface IMethodTableFlags
             return (FlagsLow & mask) == flag;
         }
     }
+
+    public bool TestFlagWithMask(Metadata_1.WFLAGS2_ENUM mask, Metadata_1.WFLAGS2_ENUM flag)
+    {
+        return ((Metadata_1.WFLAGS2_ENUM)DwFlags2 & mask) == flag;
+    }
+
     public bool HasInstantiation => !TestFlagWithMask(Metadata_1.WFLAGS_LOW.GenericsMask, Metadata_1.WFLAGS_LOW.GenericsMask_NonGeneric);
 
     public bool ContainsPointers => GetFlag(Metadata_1.WFLAGS_HIGH.ContainsPointers) != 0;
-
-    public bool IsDynamicStatics => !TestFlagWithMask(Metadata_1.WFLAGS_LOW.StaticsMask, Metadata_1.WFLAGS_LOW.StaticsMask_Dynamic);
 }
