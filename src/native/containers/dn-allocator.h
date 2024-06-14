@@ -8,7 +8,9 @@
 #include <stdlib.h>
 #include <memory.h>
 
-DN_UTILS_EXTERN_C_BEGIN()
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #define DN_ALLOCATOR_MEM_ALIGN8 8
 #define DN_ALLOCATOR_MEM_ALIGN16 16
@@ -106,6 +108,8 @@ dn_allocator_fixed_or_malloc_reset (dn_allocator_fixed_or_malloc_t *allocator);
 #define DN_DEFAULT_ALLOCATOR NULL
 #define DN_DEFAULT_LOCAL_ALLOCATOR(var_name, buffer_size) DN_ALLOCATOR_FIXED_OR_MALLOC (var_name, buffer_size)
 
-DN_UTILS_EXTERN_C_END()
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif /* __DN_ALLOCATOR_H__ */

@@ -8,7 +8,9 @@
 #include "dn-allocator.h"
 #include "dn-vector-types.h"
 
-DN_UTILS_EXTERN_C_BEGIN()
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 bool
 _dn_vector_ensure_capacity (
@@ -94,6 +96,8 @@ _dn_vector_find_adapter (
 	*found = _dn_vector_custom_find (vector, data, equal_func);
 }
 
-DN_UTILS_EXTERN_C_END()
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif /* __DN_VECTOR_PRIV_H__ */

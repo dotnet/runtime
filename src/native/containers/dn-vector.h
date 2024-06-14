@@ -9,7 +9,9 @@
 #include "dn-vector-types.h"
 #include "dn-vector-priv.h"
 
-DN_UTILS_EXTERN_C_BEGIN()
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 static inline dn_vector_it_t
 dn_vector_begin (dn_vector_t *vector)
@@ -327,6 +329,8 @@ dn_vector_find (
 	return dn_vector_custom_find (vector, value, equal_func);
 }
 
-DN_UTILS_EXTERN_C_END()
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif /* __DN_VECTOR_H__ */

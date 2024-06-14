@@ -8,7 +8,9 @@
 #include "dn-allocator.h"
 #include "dn-list.h"
 
-DN_UTILS_EXTERN_C_BEGIN()
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef void (DN_CALLBACK_CALLTYPE *dn_queue_dispose_func_t) (void *data);
 
@@ -146,6 +148,8 @@ dn_queue_clear (dn_queue_t *queue)
 	dn_queue_custom_clear (queue, NULL);
 }
 
-DN_UTILS_EXTERN_C_END()
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif /* __DN_QUEUE_H__ */
