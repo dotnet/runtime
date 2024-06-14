@@ -74,7 +74,7 @@ internal sealed unsafe partial class MsQuicApi
     static MsQuicApi()
     {
         bool loaded = false;
-        IntPtr msQuicHandle;
+        IntPtr msQuicHandle = IntPtr.Zero;
         Version = default;
 
         // MsQuic is using DualMode sockets and that will fail even for IPv4 if AF_INET6 is not available.
@@ -97,7 +97,10 @@ internal sealed unsafe partial class MsQuicApi
             // support developers explicitly providing OpenSSL version of MsQuic.
             // in the application directory, so we first check there and default
             // to the Schannel version if not found.
-            loaded = NativeLibrary.TryLoad(Path.Combine(AppContext.BaseDirectory, Interop.Libraries.MsQuic), out msQuicHandle);
+            if (AllowAppLocalMsQuic())
+            {
+                loaded = NativeLibrary.TryLoad(Path.Combine(AppContext.BaseDirectory, Interop.Libraries.MsQuic), out msQuicHandle);
+            }
 
             if (!loaded)
             {
@@ -275,4 +278,6 @@ internal sealed unsafe partial class MsQuicApi
 #endif
         return false;
     }
+
+    private static bool AllowAppLocalMsQuic() => AppContextSwitchHelper.GetBooleanConfig("System.Net.Quic.AppLocalMsQuic", "DOTNET_SYSTEM_NET_QUIC_APPLOCALMSQUIC");
 }
