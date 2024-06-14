@@ -54,24 +54,4 @@ public class ModuleConfigTests : AppTestBase
                 : "The download progress test did emit unexpected message about failing download"
         );
     }
-
-    [Fact]
-    public async Task OutErrOverrideWorks()
-    {
-        CopyTestAsset("WasmBasicTestApp", $"ModuleConfigTests_OutErrOverrideWorks");
-        PublishProject("Debug");
-
-        var result = await RunSdkStyleApp(new(
-            Configuration: "Debug",
-            TestScenario: "OutErrOverrideWorks"
-        ));
-        Assert.True(
-            result.ConsoleOutput.Any(m => m.Contains("Emscripten out override works!")),
-            "Emscripten out override doesn't work"
-        );
-        Assert.True(
-            result.ConsoleOutput.Any(m => m.Contains("Emscripten err override works!")),
-            "Emscripten err override doesn't work"
-        );
-    }
 }

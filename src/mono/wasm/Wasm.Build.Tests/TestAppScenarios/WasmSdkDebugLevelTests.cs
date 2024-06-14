@@ -20,7 +20,7 @@ public class WasmSdkDebugLevelTests : DebugLevelTestsBase
     {
     }
 
-    protected override void SetupProject(string projectId) => CopyTestAsset("WasmBasicTestApp", projectId, "App");
+    protected override void SetupProject(string projectId) => CopyTestAsset("WasmBasicTestApp", projectId);
     
     protected override Task<RunResult> RunForBuild(string configuration) => RunSdkStyleAppForBuild(new(
         Configuration: configuration,
@@ -38,7 +38,7 @@ public class WasmSdkDebugLevelTests : DebugLevelTestsBase
     public async Task PublishWithDefaultLevelAndPdbs(string configuration)
     {
         SetupProject($"DebugLevelTests_PublishWithDefaultLevelAndPdbs_{configuration}");
-        PublishProject(configuration, assertAppBundle: false, extraArgs: $"-p:CopyOutputSymbolsToPublishDirectory=true");
+        PublishProject(configuration, extraArgs: $"-p:CopyOutputSymbolsToPublishDirectory=true");
 
         var result = await RunForPublish(configuration);
         AssertDebugLevel(result, -1);

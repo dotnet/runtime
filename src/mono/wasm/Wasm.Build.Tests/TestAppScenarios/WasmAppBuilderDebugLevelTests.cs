@@ -23,13 +23,12 @@ public class WasmAppBuilderDebugLevelTests : DebugLevelTestsBase
     protected override void SetupProject(string projectId)
     {
         Id = $"{projectId}_{GetRandomId()}";
-        string projectfile = CreateWasmTemplateProject(Id, "wasmconsole");
+        string projectfile = CreateWasmTemplateProject(Id, "wasmconsole", extraArgs: "-f net8.0");
         string projectDir = Path.GetDirectoryName(projectfile)!;
         string mainJs = Path.Combine(projectDir, "main.mjs");
         string mainJsContent = File.ReadAllText(mainJs);
         mainJsContent = mainJsContent
-            .Replace("import { dotnet }", "import { dotnet, exit }")
-            .Replace("await runMainAndExit()", "console.log('TestOutput -> WasmDebugLevel: ' + config.debugLevel); exit(0)");
+            .Replace("await dotnet.run()", "console.log('TestOutput -> WasmDebugLevel: ' + config.debugLevel); exit(0)");
         File.WriteAllText(mainJs, mainJsContent);
     }
 
@@ -54,7 +53,7 @@ public class WasmAppBuilderDebugLevelTests : DebugLevelTestsBase
             .ToArray();
 
         _testOutput.WriteLine($"DEBUG: testOutput '{String.Join(", ", testOutput)}'");
-        return new RunResult(res.ExitCode, testOutput, output, []);
+        return new RunResult(res.ExitCode, testOutput, output);
     }
 
     protected override Task<RunResult> RunForPublish(string configuration)

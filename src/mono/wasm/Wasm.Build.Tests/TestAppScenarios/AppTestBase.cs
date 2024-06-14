@@ -36,15 +36,15 @@ public abstract class AppTestBase : BlazorWasmTestBase
             _projectDir = Path.Combine(_projectDir!, "App");
     }
 
-    protected void BuildProject(string configuration, params string[] extraArgs)
+    protected void BuildProject(string configuration, bool assertAppBundle = true, params string[] extraArgs)
     {
-        (CommandResult result, _) = BlazorBuild(new BlazorBuildOptions(Id, configuration), extraArgs);
+        (CommandResult result, _) = BlazorBuild(new BlazorBuildOptions(Id, configuration, AssertAppBundle: assertAppBundle), extraArgs);
         result.EnsureSuccessful();
     }
 
-    protected void PublishProject(string configuration, params string[] extraArgs)
+    protected void PublishProject(string configuration, bool assertAppBundle = true, params string[] extraArgs)
     {
-        (CommandResult result, _) = BlazorPublish(new BlazorBuildOptions(Id, configuration), extraArgs);
+        (CommandResult result, _) = BlazorPublish(new BlazorBuildOptions(Id, configuration, AssertAppBundle: assertAppBundle), extraArgs);
         result.EnsureSuccessful();
     }
 
