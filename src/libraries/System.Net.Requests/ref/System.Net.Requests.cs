@@ -486,7 +486,7 @@ namespace System.Net
         public bool CloseConnectionGroup(string connectionGroupName) { throw null; }
         public void SetTcpKeepAlive(bool enabled, int keepAliveTime, int keepAliveInterval) { }
     }
-    [System.ObsoleteAttribute("WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead.", DiagnosticId = "SYSLIB0014", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+    [System.ObsoleteAttribute("WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead. Settings on ServicePointManager no longer affect SslStream or HttpClient.", DiagnosticId = "SYSLIB0014", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public partial class ServicePointManager
     {
         internal ServicePointManager() { }

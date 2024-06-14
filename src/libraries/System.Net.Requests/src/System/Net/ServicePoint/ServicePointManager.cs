@@ -9,7 +9,7 @@ using System.Threading;
 
 namespace System.Net
 {
-    [Obsolete(Obsoletions.WebRequestMessage, DiagnosticId = Obsoletions.WebRequestDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+    [Obsolete(Obsoletions.WebRequestMessage + " Settings on ServicePointManager no longer affect SslStream or HttpClient.", DiagnosticId = Obsoletions.WebRequestDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
     public class ServicePointManager
     {
         public const int DefaultNonPersistentConnectionLimit = 4;
