@@ -84,6 +84,12 @@
     <Compile Include="Generic\List\List.Generic.Tests.InsertRange.cs" />
     <Compile Include="Generic\List\List.Generic.Tests.Remove.cs" />
     <Compile Include="Generic\List\List.Generic.Tests.Sort.cs" />
+    <Compile Include="Generic\OrderedDictionary\OrderedDictionary.IList.Tests.cs" />
+    <Compile Include="Generic\OrderedDictionary\OrderedDictionary.Generic.cs" />
+    <Compile Include="Generic\OrderedDictionary\OrderedDictionary.Generic.Tests.cs" />
+    <Compile Include="Generic\OrderedDictionary\OrderedDictionary.Generic.Tests.Keys.cs" />
+    <Compile Include="Generic\OrderedDictionary\OrderedDictionary.Generic.Tests.Values.cs" />
+    <Compile Include="Generic\OrderedDictionary\OrderedDictionary.Tests.cs" />
     <Compile Include="Generic\PriorityQueue\PriorityQueue.Generic.cs" />
     <Compile Include="Generic\PriorityQueue\PriorityQueue.Generic.Tests.cs" />
     <Compile Include="Generic\PriorityQueue\PriorityQueue.PropertyTests.cs" />
