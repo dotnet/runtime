@@ -17,9 +17,9 @@ namespace System.Net.NameResolution.Tests
         private const string DnsLookupDuration = "dns.lookup.duration";
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public static void ResolveValidHostName_MetricsRecorded()
+        public static async Task ResolveValidHostName_MetricsRecorded()
         {
-            RemoteExecutor.Invoke(async () =>
+            await RemoteExecutor.Invoke(async () =>
             {
                 const string ValidHostName = "localhost";
 
@@ -38,7 +38,7 @@ namespace System.Net.NameResolution.Tests
 
                 Assert.Equal(6, measurements.Length);
                 Assert.All(measurements, m => Assert.True(m > double.Epsilon));
-            }).Dispose();
+            }).DisposeAsync();
         }
 
         [Fact]

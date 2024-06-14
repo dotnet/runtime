@@ -157,7 +157,7 @@ To run a test with `FooBar` in the name:
 
 `make run-debugger-tests TEST_FILTER=FooBar`
 
-(See https://docs.microsoft.com/en-us/dotnet/core/testing/selective-unit-tests?pivots=xunit for filter options)
+(See https://learn.microsoft.com/dotnet/core/testing/selective-unit-tests?pivots=xunit for filter options)
 
 Additional arguments for `dotnet test` can be passed via `MSBUILD_ARGS` or `TEST_ARGS`. For example `MSBUILD_ARGS="/p:WasmDebugLevel=5"`. Though only one of `TEST_ARGS`, or `TEST_FILTER` can be used at a time.
 
@@ -189,7 +189,7 @@ Also check [bench](../sample/wasm/browser-bench/README.md) sample to measure mon
 
 The wasm templates, located in the `templates` directory, are templates for `dotnet new`, VS and VS for Mac. They are packaged and distributed as part of the `wasm-experimental` workload. We have 2 templates, `wasmbrowser` and `wasmconsole`, for browser and console WebAssembly applications.
 
-For details about using `dotnet new` see the dotnet tool [documentation](https://docs.microsoft.com/en-us/dotnet/core/tools/dotnet-new).
+For details about using `dotnet new` see the dotnet tool [documentation](https://learn.microsoft.com/dotnet/core/tools/dotnet-new).
 
 To test changes in the templates, use `dotnet new install --force src/mono/wasm/templates/templates/browser`.
 

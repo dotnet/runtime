@@ -23,6 +23,13 @@ LEAF_ENTRY GetDataCacheZeroIDReg, _TEXT
     ret     lr
 LEAF_END GetDataCacheZeroIDReg, _TEXT
 
+// uint64_t GetSveLengthFromOS(void);
+.arch_extension sve
+    LEAF_ENTRY GetSveLengthFromOS, _TEXT
+        rdvl    x0, 1
+        ret     lr
+    LEAF_END GetSveLengthFromOS, _TEXT
+
 //-----------------------------------------------------------------------------
 // This routine captures the machine state. It is used by helper method frame
 //-----------------------------------------------------------------------------
@@ -652,58 +659,34 @@ DynamicHelper DynamicHelperFrameFlags_ObjectArg | DynamicHelperFrameFlags_Object
 //
 
 // ------------------------------------------------------------------
-// void* JIT_GetSharedNonGCStaticBase(SIZE_T moduleDomainID, DWORD dwClassDomainID)
+// void* JIT_GetDynamicNonGCStaticBase(DynamicStaticsInfo* pStaticsInfo)
 
-LEAF_ENTRY JIT_GetSharedNonGCStaticBase_SingleAppDomain, _TEXT
+LEAF_ENTRY JIT_GetDynamicNonGCStaticBase_SingleAppDomain, _TEXT
     // If class is not initialized, bail to C++ helper
-    add x2, x0, #DomainLocalModule__m_pDataBlob
-    ldrb w2, [x2, w1, UXTW]
-    tst w2, #1
-    beq LOCAL_LABEL(JIT_GetSharedNonGCStaticBase_SingleAppDomain_CallHelper)
-
+    ldr x1, [x0, #OFFSETOF__DynamicStaticsInfo__m_pNonGCStatics]
+    tbnz x1, #0, LOCAL_LABEL(JIT_GetDynamicNonGCStaticBase_SingleAppDomain_CallHelper)
+    mov x0, x1
     ret lr
 
-LOCAL_LABEL(JIT_GetSharedNonGCStaticBase_SingleAppDomain_CallHelper):
-    // Tail call JIT_GetSharedNonGCStaticBase_Helper
-    b C_FUNC(JIT_GetSharedNonGCStaticBase_Helper)
-LEAF_END JIT_GetSharedNonGCStaticBase_SingleAppDomain, _TEXT
-
-
-// ------------------------------------------------------------------
-// void* JIT_GetSharedNonGCStaticBaseNoCtor(SIZE_T moduleDomainID, DWORD dwClassDomainID)
-
-LEAF_ENTRY JIT_GetSharedNonGCStaticBaseNoCtor_SingleAppDomain, _TEXT
-    ret lr
-LEAF_END JIT_GetSharedNonGCStaticBaseNoCtor_SingleAppDomain, _TEXT
-
+LOCAL_LABEL(JIT_GetDynamicNonGCStaticBase_SingleAppDomain_CallHelper):
+    // Tail call JIT_GetDynamicNonGCStaticBase_Portable
+    b C_FUNC(JIT_GetDynamicNonGCStaticBase_Portable)
+LEAF_END JIT_GetDynamicNonGCStaticBase_SingleAppDomain, _TEXT
 
 // ------------------------------------------------------------------
-// void* JIT_GetSharedGCStaticBase(SIZE_T moduleDomainID, DWORD dwClassDomainID)
+// void* JIT_GetDynamicGCStaticBase(DynamicStaticsInfo* pStaticsInfo)
 
-LEAF_ENTRY JIT_GetSharedGCStaticBase_SingleAppDomain, _TEXT
+LEAF_ENTRY JIT_GetDynamicGCStaticBase_SingleAppDomain, _TEXT
     // If class is not initialized, bail to C++ helper
-    add x2, x0, #DomainLocalModule__m_pDataBlob
-    ldrb w2, [x2, w1, UXTW]
-    tst w2, #1
-    beq LOCAL_LABEL(JIT_GetSharedGCStaticBase_SingleAppDomain_CallHelper)
-
-    ldr x0, [x0, #DomainLocalModule__m_pGCStatics]
+    ldr x1, [x0, #OFFSETOF__DynamicStaticsInfo__m_pGCStatics]
+    tbnz x1, #0, LOCAL_LABEL(JIT_GetDynamicGCStaticBase_SingleAppDomain_CallHelper)
+    mov x0, x1
     ret lr
 
-LOCAL_LABEL(JIT_GetSharedGCStaticBase_SingleAppDomain_CallHelper):
-    // Tail call Jit_GetSharedGCStaticBase_Helper
-    b C_FUNC(JIT_GetSharedGCStaticBase_Helper)
-LEAF_END JIT_GetSharedGCStaticBase_SingleAppDomain, _TEXT
-
-
-// ------------------------------------------------------------------
-// void* JIT_GetSharedGCStaticBaseNoCtor(SIZE_T moduleDomainID, DWORD dwClassDomainID)
-
-LEAF_ENTRY JIT_GetSharedGCStaticBaseNoCtor_SingleAppDomain, _TEXT
-    ldr x0, [x0, #DomainLocalModule__m_pGCStatics]
-    ret lr
-LEAF_END JIT_GetSharedGCStaticBaseNoCtor_SingleAppDomain, _TEXT
-
+LOCAL_LABEL(JIT_GetDynamicGCStaticBase_SingleAppDomain_CallHelper):
+    // Tail call JIT_GetDynamicGCStaticBase_Portable
+    b C_FUNC(JIT_GetDynamicGCStaticBase_Portable)
+LEAF_END JIT_GetDynamicGCStaticBase_SingleAppDomain, _TEXT
 
 #ifdef PROFILING_SUPPORTED
 
