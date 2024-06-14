@@ -4588,16 +4588,27 @@ void Compiler::fgMoveHotJumps()
         }
 
         FlowEdge* targetEdge;
+        FlowEdge* unlikelyEdge;
 
         if (block->KindIs(BBJ_ALWAYS))
         {
-            targetEdge = block->GetTargetEdge();
+            targetEdge   = block->GetTargetEdge();
+            unlikelyEdge = nullptr;
         }
         else if (block->KindIs(BBJ_COND))
         {
             // Consider conditional block's most likely branch for moving
             //
-            targetEdge = (block->GetTrueEdge()->getLikelihood() > 0.5) ? block->GetTrueEdge() : block->GetFalseEdge();
+            if (block->GetTrueEdge()->getLikelihood() > 0.5)
+            {
+                targetEdge   = block->GetTrueEdge();
+                unlikelyEdge = block->GetFalseEdge();
+            }
+            else
+            {
+                targetEdge   = block->GetFalseEdge();
+                unlikelyEdge = block->GetTrueEdge();
+            }
         }
         else
         {
@@ -4606,23 +4617,8 @@ void Compiler::fgMoveHotJumps()
             continue;
         }
 
-        BasicBlock* const target = targetEdge->getDestinationBlock();
-
-        // Check for single-block loop and fallthrough cases
-        //
-        if ((block == target) || block->NextIs(target))
-        {
-            continue;
-        }
-
-        if (target->isRunRarely())
-        {
-            // block is not run rarely, so why is target marked as run rarely?
-            //
-            continue;
-        }
-
-        const bool isBackwardJump = BlockSetOps::IsMember(this, visitedBlocks, target->bbNum);
+        BasicBlock* target         = targetEdge->getDestinationBlock();
+        bool        isBackwardJump = BlockSetOps::IsMember(this, visitedBlocks, target->bbNum);
 
         if (isBackwardJump)
         {
@@ -4636,10 +4632,39 @@ void Compiler::fgMoveHotJumps()
 
             if (block->KindIs(BBJ_COND))
             {
-                // This could be a loop exit, so don't bother moving this block up
+                // This could be a loop exit, so don't bother moving this block up.
+                // Instead, try moving the unlikely target up to create fallthrough.
                 //
+                targetEdge     = unlikelyEdge;
+                target         = targetEdge->getDestinationBlock();
+                isBackwardJump = BlockSetOps::IsMember(this, visitedBlocks, target->bbNum);
+
+                if (isBackwardJump)
+                {
+                    continue;
+                }
+            }
+            // Check for single-block loop case
+            //
+            else if (block == target)
+            {
                 continue;
             }
+        }
+
+        // Check if block already falls into target
+        //
+        if (block->NextIs(target))
+        {
+            continue;
+        }
+
+        if (target->isRunRarely())
+        {
+            // TODO: If target is block's most-likely successor, and block is not rarely-run,
+            // perhaps the profile data is misleading? Consider moving target anyway.
+            //
+            continue;
         }
 
         if (hasEH)
