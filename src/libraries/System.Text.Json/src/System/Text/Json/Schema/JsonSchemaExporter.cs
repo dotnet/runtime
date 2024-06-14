@@ -78,7 +78,7 @@ namespace System.Text.Json.Schema
 
             if (cacheResult && state.TryPushType(typeInfo, propertyInfo, out string? existingJsonPointer))
             {
-                // Schema for type has already been generated, return a reference to it.
+                // We're generating the schema of a recursive type, return a reference pointing to the outermost schema.
                 return CompleteSchema(ref state, new JsonSchema { Ref = existingJsonPointer });
             }
 
@@ -86,6 +86,7 @@ namespace System.Text.Json.Schema
             JsonNumberHandling effectiveNumberHandling = customNumberHandling ?? typeInfo.NumberHandling ?? typeInfo.Options.NumberHandling;
             if (effectiveConverter.GetSchema(effectiveNumberHandling) is { } schema)
             {
+                // A schema has been provided by the converter.
                 return CompleteSchema(ref state, schema);
             }
 
@@ -93,7 +94,6 @@ namespace System.Text.Json.Schema
             {
                 // This is the base type of a polymorphic type hierarchy. The schema for this type
                 // will include an "anyOf" property with the schemas for all derived types.
-
                 string typeDiscriminatorKey = polyOptions.TypeDiscriminatorPropertyName;
                 List<JsonDerivedType> derivedTypes = new(polyOptions.DerivedTypes);
 
@@ -141,7 +141,7 @@ namespace System.Text.Json.Schema
 
                     state.PopSchemaNode();
 
-                    // Determine if all derived types have the same schema type.
+                    // Determine if all derived schemas have the same type.
                     if (anyOf.Count == 0)
                     {
                         schemaType = derivedSchema.Type;
@@ -245,6 +245,9 @@ namespace System.Text.Json.Schema
 
                         (properties ??= []).Add(new(property.Name, propertySchema));
 
+                        // Mark as required if either the property is required or the associated constructor parameter is non-optional.
+                        // While the latter implies the former in cases where the JsonSerializerOptions.RespectRequiredConstructorParameters
+                        // setting has been enabled, for the case of the schema exporter we always mark non-optional constructor parameters as required.
                         if (property is { IsRequired: true } or { AssociatedParameter.IsRequiredParameter: true })
                         {
                             (required ??= []).Add(property.Name);
@@ -340,6 +343,7 @@ namespace System.Text.Json.Schema
 
                 default:
                     Debug.Assert(typeInfo.Kind is JsonTypeInfoKind.None);
+                    // Return a `true` schema for types with user-defined converters.
                     return CompleteSchema(ref state, JsonSchema.True);
             }
 
@@ -347,6 +351,9 @@ namespace System.Text.Json.Schema
             {
                 if (schema.Ref is null)
                 {
+                    // A schema is marked as nullable if either
+                    // 1. We have a schema for a property where either the getter or setter are marked as nullable.
+                    // 2. We have a schema for a reference type, unless we're explicitly treating null-oblivious types as non-nullable.
                     bool isNullableSchema = propertyInfo != null
                         ? propertyInfo.IsGetNullable || propertyInfo.IsSetNullable
                         : typeInfo.CanBeNull && !parentPolymorphicTypeIsNonNullable && !state.ExporterOptions.TreatNullObliviousAsNonNullable;
@@ -364,6 +371,7 @@ namespace System.Text.Json.Schema
 
                 if (state.ExporterOptions.TransformSchemaNode != null)
                 {
+                    // Prime the schema for invocation by the JsonNode transformer.
                     schema.ExporterContext = state.CreateContext(typeInfo, propertyInfo);
                 }
 
