@@ -224,12 +224,6 @@ public partial class BinaryFormatterTests
             return;
         }
 
-        if (obj is DataSet or DataTable)
-        {
-            // The blobs may not be identical (the output is not deterministic), but still valid.
-            return;
-        }
-
         // The blobs aren't identical because of different implementations on Unix vs. Windows.
         if (obj is Bitmap or Icon or Metafile)
         {
