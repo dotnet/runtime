@@ -318,7 +318,7 @@ dn_umap_begin (dn_umap_t *map)
 		index ++;
 	}
 
-	dn_umap_it_t it = { map, map->_internal._buckets [index], index };
+	dn_umap_it_t it = { { map, map->_internal._buckets [index], index } };
 	return it;
 }
 
