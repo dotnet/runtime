@@ -103,7 +103,7 @@ namespace System.Net
                     mask = BinaryPrimitives.ReverseEndianness(mask);
                 }
 
-                return BaseAddress.PrivateAddress == (address.PrivateAddress & mask);
+                return BaseAddress.PrivateIPv4Address == (address.PrivateIPv4Address & mask);
             }
             else
             {
