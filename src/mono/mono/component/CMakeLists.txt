@@ -225,15 +225,14 @@ if (ENABLE_PERFTRACING)
         UNITY_BUILD_BATCH_SIZE 0
     )
     target_link_libraries(eventpipe-mono-objects PRIVATE component_base eglib_api dn-eventpipe dn-diagnosticserver dn-diagnosticserver-pal)
-    target_link_libraries(eventpipe-mono-objects PUBLIC dn-containers)
     # Link the diagnostics_tracing component to the EventPipe and DiagnosticServer libraries.
     if (TARGET ${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}-objects)
-        target_sources(${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}-objects PRIVATE $<TARGET_OBJECTS:eventpipe-mono-objects>)
+        target_sources(${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}-objects PRIVATE $<TARGET_OBJECTS:eventpipe-mono-objects> $<TARGET_OBJECTS:dn-containers>)
     endif()
     if (TARGET mono-component-${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME})
-        target_link_libraries(mono-component-${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME} PRIVATE eventpipe-mono-objects)
+        target_link_libraries(mono-component-${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME} PRIVATE eventpipe-mono-objects dn-containers)
     endif()
-    list(APPEND mono-components-objects $<TARGET_OBJECTS:eventpipe-mono-objects>)
+    list(APPEND mono-components-objects $<TARGET_OBJECTS:eventpipe-mono-objects> $<TARGET_OBJECTS:dn-containers>)
 endif()
 
 # define a list of mono-components-stubs objects that will be linked into
