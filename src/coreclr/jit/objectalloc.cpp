@@ -672,6 +672,7 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
             case GT_QMARK:
             case GT_ADD:
             case GT_BOX:
+            case GT_FIELD_ADDR:
                 // Check whether the local escapes via its grandparent.
                 ++parentIndex;
                 keepChecking = true;
