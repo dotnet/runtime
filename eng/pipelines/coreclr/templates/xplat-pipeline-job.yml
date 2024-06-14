@@ -71,6 +71,12 @@ jobs:
     - name: buildProductRootFolderPath
       value: '$(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(buildConfigUpper)'
 
+    - name: buildCrossDacArtifactName
+      value: CoreCLRCrossDacArtifacts
+
+    - name: crossDacArtifactPath
+      value: $(Build.SourcesDirectory)/artifacts/$(buildCrossDacArtifactName)
+
     - name: buildMuslDacRootFolderPath
       value: '$(Build.SourcesDirectory)/artifacts/bin/coreclr/alpine.$(archType).$(buildConfigUpper)'
 
