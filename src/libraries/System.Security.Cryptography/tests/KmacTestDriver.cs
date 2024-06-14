@@ -222,6 +222,30 @@ namespace System.Security.Cryptography.Tests
         }
 
         [ConditionalFact(nameof(IsSupported))]
+        public void KnownAnswerTests_Clone_UseAfterReset()
+        {
+            foreach (KmacTestVector testVector in TestVectors)
+            {
+                byte[] mac = new byte[testVector.Mac.Length / 2];
+
+                using (TKmac kmac = TKmacTrait.Create(testVector.KeyBytes, testVector.CustomBytes))
+                {
+                    TKmacTrait.AppendData(kmac, testVector.MsgBytes);
+
+                    using (TKmac clone = TKmacTrait.Clone(kmac))
+                    {
+                        TKmacTrait.GetHashAndReset(clone, mac);
+                        Assert.Equal(testVector.MacBytes, mac);
+                        TKmacTrait.AppendData(clone, testVector.MsgBytes);
+
+                        TKmacTrait.GetHashAndReset(clone, mac);
+                        Assert.Equal(testVector.MacBytes, mac);
+                    }
+                }
+            }
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
         public void KnownAnswerTests_Clone_Independent_Observed()
         {
             foreach (KmacTestVector testVector in TestVectors)
