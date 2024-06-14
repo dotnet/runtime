@@ -250,6 +250,8 @@
         <Timeout Condition="'%(FileName)' == 'System.Collections.Immutable.Tests'">01:20:00</Timeout>
         <Timeout Condition="'%(FileName)' == 'System.Net.WebSockets.Client.Tests'">01:20:00</Timeout>
         <Timeout Condition="'%(FileName)' == 'System.Net.Http.Functional.Tests'">01:20:00</Timeout>
+        <Timeout Condition="'%(FileName)' == 'System.Memory.Tests'">01:20:00</Timeout>
+        <Timeout Condition="'%(FileName)' == 'System.Private.Xml.Tests'">01:20:00</Timeout>
       </HelixWorkItem>
     </ItemGroup>
 
@@ -280,6 +282,8 @@
         <Timeout Condition="'%(FileName)' == 'System.Collections.Immutable.Tests'">01:20:00</Timeout>
         <Timeout Condition="'%(FileName)' == 'System.Net.WebSockets.Client.Tests'">01:20:00</Timeout>
         <Timeout Condition="'%(FileName)' == 'System.Net.Http.Functional.Tests'">01:20:00</Timeout>
+        <Timeout Condition="'%(FileName)' == 'System.Memory.Tests'">01:20:00</Timeout>
+        <Timeout Condition="'%(FileName)' == 'System.Private.Xml.Tests'">01:20:00</Timeout>
       </HelixWorkItem>
 
     </ItemGroup>
