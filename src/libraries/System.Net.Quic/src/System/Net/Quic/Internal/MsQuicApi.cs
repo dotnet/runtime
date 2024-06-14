@@ -280,5 +280,7 @@ internal sealed unsafe partial class MsQuicApi
         return false;
     }
 
-    private static bool AllowAppLocalMsQuic() => AppContextSwitchHelper.GetBooleanConfig("System.Net.Quic.AppLocalMsQuic", "DOTNET_SYSTEM_NET_QUIC_APPLOCALMSQUIC");
+    private static bool IsAppLocalMsQuicAllowed() => AppContextSwitchHelper.GetBooleanConfig(
+        "System.Net.Quic.AppLocalMsQuic",
+        "DOTNET_SYSTEM_NET_QUIC_APPLOCALMSQUIC");
 }
