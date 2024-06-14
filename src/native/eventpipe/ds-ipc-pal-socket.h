@@ -12,7 +12,7 @@
 #endif
 #include "ds-getter-setter.h"
 
-#ifdef HAVE_SYS_SOCKET_H
+#if HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 typedef int ds_ipc_socket_t;
 typedef struct sockaddr ds_ipc_socket_address_t;
