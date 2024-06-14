@@ -54,26 +54,16 @@ public partial class BinaryFormatterTests
     private static readonly DateTime s_fixedTimestamp = DateTime.Parse("11/3/1989 04:50:29 AM", CultureInfo.InvariantCulture.DateTimeFormat);
     // *** AUTO UPDATED BLOBS ***
 
-    private static (object, TypeSerializableValue[])[]? s_serializableObjects;
-
     public static IEnumerable<(object, TypeSerializableValue[])> RawSerializableObjects()
     {
-        if (s_serializableObjects is null)
+        // Save old culture and set a fixed culture for object instantiation
+        using (new ThreadCultureChange(CultureInfo.InvariantCulture, CultureInfo.InvariantCulture))
         {
-            // Save old culture and set a fixed culture for object instantiation
-            using (new ThreadCultureChange(CultureInfo.InvariantCulture, CultureInfo.InvariantCulture))
-            {
-                s_serializableObjects = SerializableObjects().ToArray();
-            }
+            return SerializableObjects().ToArray();
         }
-
-        return s_serializableObjects;
     }
 
-    private static TheoryData<object, TypeSerializableValue[]>? s_serializableObjects_MemberData;
-
-    public static TheoryData<object, TypeSerializableValue[]> SerializableObjects_MemberData =>
-        s_serializableObjects_MemberData ??= RawSerializableObjects().ToTheoryData();
+    public static TheoryData<object, TypeSerializableValue[]> SerializableObjects_MemberData => RawSerializableObjects().ToTheoryData();
 
     public static TheoryData<object, TypeSerializableValue[]> SerializableEqualityComparers_MemberData => SerializableEqualityComparers().ToTheoryData();
 
