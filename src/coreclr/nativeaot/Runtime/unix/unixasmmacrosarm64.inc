@@ -298,27 +298,6 @@ C_FUNC(\Name):
 0:
 .endm
 
-// Inlined version of RhpGetThreadAllocContext
-.macro INLINE_GET_ALLOC_CONTEXT target
-    INLINE_GET_TLS_VAR \target, C_FUNC(t_thread_alloc_context)
-.endm
-
-// Do not use these ETLS macros in functions that already create a stack frame.
-// Creating two stack frames in one function can confuse the unwinder/debugger
-
-.macro GETALLOCCONTEXT_ETLS_3
-    PROLOG_SAVE_REG_PAIR_INDEXED   fp, lr, -48           // ;; Push down stack pointer and store FP and LR
-    stp         x0, x1, [sp, #0x10]
-    str         x2,  [sp, #0x20]
-
-    bl C_FUNC(RhpGetThreadAllocContext)
-    mov x3, x0
-
-    ldp         x0, x1, [sp, #0x10]
-    ldr         x2,  [sp, #0x20]
-    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr, 48
-.endm
-
 // Note: these must match the defs in PInvokeTransitionFrameFlags
 PTFF_SAVE_SP            = 0x00000400
 PTFF_SAVE_X0            = 0x00000800

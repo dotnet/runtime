@@ -264,10 +264,14 @@ void Thread::Construct()
              (offsetof(Thread, m_pTransitionFrame)));
 #endif // USE_PORTABLE_HELPERS
 
+    // NOTE: We do not explicitly defer to the GC implementation to initialize the alloc_context.  The
+    // alloc_context will be initialized to 0 via the static initialization of tls_CurrentThread. If the
+    // alloc_context ever needs different initialization, a matching change to the tls_CurrentThread
+    // static initialization will need to be made.
+
     m_pTransitionFrame = TOP_OF_STACK_MARKER;
     m_pDeferredTransitionFrame = TOP_OF_STACK_MARKER;
     m_hPalThread = INVALID_HANDLE_VALUE;
-    m_palloc_context = &t_thread_alloc_context;
 
     m_threadId = PalGetCurrentOSThreadId();
 

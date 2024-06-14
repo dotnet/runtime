@@ -33,18 +33,6 @@ bool g_sw_ww_enabled_for_gc_heap = false;
 
 IGCHandleManager* g_pGCHandleManager = nullptr;
 
-#ifdef _MSC_VER
-__declspec(thread) gc_alloc_context t_thread_alloc_context;
-#else
-__thread gc_alloc_context t_thread_alloc_context;
-#endif
-
-EXTERN_C gc_alloc_context* RhpGetThreadAllocContext()
-{
-    return &t_thread_alloc_context;
-}
-
-
 GcDacVars g_gc_dac_vars;
 GPTR_IMPL(GcDacVars, g_gcDacGlobals);
 

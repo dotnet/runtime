@@ -59,20 +59,6 @@ INLINE_THREAD_UNHIJACK macro threadReg, trashReg1, trashReg2
 endm
 
 ;;
-;; __declspec(thread) version
-;;
-INLINE_GET_ALLOC_CONTEXT macro destReg, trashReg
-    ASSUME fs : NOTHING
-    EXTERN __tls_index : DWORD
-    EXTERN _t_thread_alloc_context : DWORD
-
-    mov         destReg, [__tls_index]
-    mov         trashReg, fs:[__tls_array]
-    mov         destReg, [trashReg + destReg * 4]
-    add         destReg, SECTIONREL _t_thread_alloc_context
-endm
-
-;;
 ;; Macro used from unmanaged helpers called from managed code where the helper does not transition immediately
 ;; into pre-emptive mode but may cause a GC and thus requires the stack is crawlable. This is typically the
 ;; case for helpers that meddle in GC state (e.g. allocation helpers) where the code must remain in
@@ -150,6 +136,12 @@ TrapThreadsFlags_TrapThreads     equ 2
 
 ;; This must match HwExceptionCode.STATUS_REDHAWK_THREAD_ABORT
 STATUS_REDHAWK_THREAD_ABORT      equ 43h
+
+;;
+;; Rename fields of nested structs
+;;
+OFFSETOF__Thread__m_alloc_context__alloc_ptr        equ OFFSETOF__Thread__m_rgbAllocContextBuffer + OFFSETOF__gc_alloc_context__alloc_ptr
+OFFSETOF__Thread__m_alloc_context__alloc_limit      equ OFFSETOF__Thread__m_rgbAllocContextBuffer + OFFSETOF__gc_alloc_context__alloc_limit
 
 ;;
 ;; CONSTANTS -- SYMBOLS

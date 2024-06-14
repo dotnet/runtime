@@ -27,6 +27,10 @@
 #define TrapThreadsFlags_AbortInProgress 1
 #define TrapThreadsFlags_TrapThreads     2
 
+// Rename fields of nested structs
+#define OFFSETOF__Thread__m_alloc_context__alloc_ptr (OFFSETOF__Thread__m_rgbAllocContextBuffer + OFFSETOF__gc_alloc_context__alloc_ptr)
+#define OFFSETOF__Thread__m_alloc_context__alloc_limit (OFFSETOF__Thread__m_rgbAllocContextBuffer + OFFSETOF__gc_alloc_context__alloc_limit)
+
 // GC minimal sized object. We use this to switch between 4 and 8 byte alignment in the GC heap (see AllocFast.asm).
 #define SIZEOF__MinObject 12
 
@@ -294,15 +298,6 @@ C_FUNC(\Name):
         str         \trashReg1, [\threadReg, #OFFSETOF__Thread__m_pvHijackedReturnAddress]
 
 1:
-.endm
-
-.macro INLINE_GET_ALLOC_CONTEXT
-#ifdef FEATURE_EMULATED_TLS
-        call        C_FUNC(RhpGetThreadAllocContext)
-#else
-        // Inlined version of call C_FUNC(RhpGetThreadAllocContext)
-        INLINE_GET_TLS_VAR t_thread_alloc_context
-#endif
 .endm
 
 .macro EPILOG_BRANCH_REG reg

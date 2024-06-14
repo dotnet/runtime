@@ -237,6 +237,12 @@ C_FUNC(\Name):
 #define TSF_SuppressGcStress            0x08
 #define TSF_DoNotTriggerGc              0x10
 
+//
+// Rename fields of nested structs
+//
+#define OFFSETOF__Thread__m_alloc_context__alloc_ptr    OFFSETOF__Thread__m_rgbAllocContextBuffer + OFFSETOF__gc_alloc_context__alloc_ptr
+#define OFFSETOF__Thread__m_alloc_context__alloc_limit  OFFSETOF__Thread__m_rgbAllocContextBuffer + OFFSETOF__gc_alloc_context__alloc_limit
+
 // GC type flags
 #define GC_ALLOC_FINALIZE           1
 
@@ -298,15 +304,6 @@ C_FUNC(\Name):
         mov         qword ptr [\threadReg + OFFSETOF__Thread__m_pvHijackedReturnAddress], 0
 
 1:
-.endm
-
-.macro INLINE_GET_ALLOC_CONTEXT
-#ifdef FEATURE_EMULATED_TLS
-        call        C_FUNC(RhpGetThreadAllocContext)
-#else
-        // Inlined version of call C_FUNC(RhpGetThreadAllocContext)
-        INLINE_GET_TLS_VAR t_thread_alloc_context
-#endif
 .endm
 
 DEFAULT_FRAME_SAVE_FLAGS = PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_RSP

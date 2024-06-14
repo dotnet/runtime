@@ -33,12 +33,6 @@ extern "C" bool g_sw_ww_enabled_for_gc_heap;
 extern "C" uint8_t* g_write_watch_table;
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 
-#ifdef _MSC_VER
-EXTERN_C __declspec(thread) gc_alloc_context t_thread_alloc_context;
-#else
-EXTERN_C __thread gc_alloc_context t_thread_alloc_context;
-#endif
-
 
 // g_gc_dac_vars is a structure of pointers to GC globals that the
 // DAC uses. It is not exposed directly to the DAC.

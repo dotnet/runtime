@@ -265,13 +265,6 @@ INLINE_THREAD_UNHIJACK macro threadReg, trashReg1, trashReg2
 @@:
 endm
 
-;;
-;; __declspec(thread) t_thread_alloc_context
-;;
-INLINE_GET_ALLOC_CONTEXT macro destReg, trashReg
-    INLINE_GET_TLS_VAR destReg, trashReg, t_thread_alloc_context
-endm
-
 DEFAULT_FRAME_SAVE_FLAGS equ PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_RSP
 
 ;;
@@ -339,6 +332,14 @@ TAILJMP_RAX TEXTEQU <DB 048h, 0FFh, 0E0h>
 TSF_Attached                    equ 01h
 TSF_SuppressGcStress            equ 08h
 TSF_DoNotTriggerGc              equ 10h
+
+;;
+;; Rename fields of nested structs
+;;
+OFFSETOF__Thread__m_alloc_context__alloc_ptr        equ OFFSETOF__Thread__m_rgbAllocContextBuffer + OFFSETOF__gc_alloc_context__alloc_ptr
+OFFSETOF__Thread__m_alloc_context__alloc_limit      equ OFFSETOF__Thread__m_rgbAllocContextBuffer + OFFSETOF__gc_alloc_context__alloc_limit
+
+
 
 ;; GC type flags
 GC_ALLOC_FINALIZE               equ 1

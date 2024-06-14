@@ -7,16 +7,24 @@
 // GC type flags
 GC_ALLOC_FINALIZE               = 1
 
+//
+// Rename fields of nested structs
+//
+OFFSETOF__Thread__m_alloc_context__alloc_ptr        = OFFSETOF__Thread__m_rgbAllocContextBuffer + OFFSETOF__gc_alloc_context__alloc_ptr
+OFFSETOF__Thread__m_alloc_context__alloc_limit      = OFFSETOF__Thread__m_rgbAllocContextBuffer + OFFSETOF__gc_alloc_context__alloc_limit
+
+
+
 // Allocate non-array, non-finalizable object. If the allocation doesn't fit into the current thread's
 // allocation context then automatically fallback to the slow allocation path.
 //  x0 == MethodTable
     LEAF_ENTRY RhpNewFast, _TEXT
 
-        // x1 = GetThreadAllocContext()
+        // x1 = GetThread()
 #ifdef FEATURE_EMULATED_TLS
-        GETALLOCCONTEXT_ETLS_1
+        GETTHREAD_ETLS_1
 #else
-        INLINE_GET_ALLOC_CONTEXT x1
+        INLINE_GETTHREAD x1
 #endif
 
         //
@@ -26,22 +34,22 @@ GC_ALLOC_FINALIZE               = 1
 
         //
         // x0: MethodTable pointer
-        // x1: gc_alloc_context pointer
+        // x1: Thread pointer
         // x2: base size
         //
 
         // Load potential new object address into x12.
-        ldr         x12, [x1, #OFFSETOF__gc_alloc_context__alloc_ptr]
+        ldr         x12, [x1, #OFFSETOF__Thread__m_alloc_context__alloc_ptr]
 
         // Determine whether the end of the object would lie outside of the current allocation context. If so,
         // we abandon the attempt to allocate the object directly and fall back to the slow helper.
         add         x2, x2, x12
-        ldr         x13, [x1, #OFFSETOF__gc_alloc_context__alloc_limit]
+        ldr         x13, [x1, #OFFSETOF__Thread__m_alloc_context__alloc_limit]
         cmp         x2, x13
         bhi         LOCAL_LABEL(RhpNewFast_RarePath)
 
         // Update the alloc pointer to account for the allocation.
-        str         x2, [x1, #OFFSETOF__gc_alloc_context__alloc_ptr]
+        str         x2, [x1, #OFFSETOF__Thread__m_alloc_context__alloc_ptr]
 
         // Set the new objects MethodTable pointer
         str         x0, [x12, #OFFSETOF__Object__m_pEEType]
@@ -120,26 +128,26 @@ LOCAL_LABEL(NewOutOfMemory):
         // x2 == string size
 
 #ifdef FEATURE_EMULATED_TLS
-        GETALLOCCONTEXT_ETLS_3
+        GETTHREAD_ETLS_3
 #else
-        INLINE_GET_ALLOC_CONTEXT x3
+        INLINE_GETTHREAD x3
 #endif
 
         // Load potential new object address into x12.
-        ldr         x12, [x3, #OFFSETOF__gc_alloc_context__alloc_ptr]
+        ldr         x12, [x3, #OFFSETOF__Thread__m_alloc_context__alloc_ptr]
 
         // Determine whether the end of the object would lie outside of the current allocation context. If so,
         // we abandon the attempt to allocate the object directly and fall back to the slow helper.
         add         x2, x2, x12
-        ldr         x12, [x3, #OFFSETOF__gc_alloc_context__alloc_limit]
+        ldr         x12, [x3, #OFFSETOF__Thread__m_alloc_context__alloc_limit]
         cmp         x2, x12
         bhi         LOCAL_LABEL(RhNewString_Rare)
 
         // Reload new object address into r12.
-        ldr         x12, [x3, #OFFSETOF__gc_alloc_context__alloc_ptr]
+        ldr         x12, [x3, #OFFSETOF__Thread__m_alloc_context__alloc_ptr]
 
         // Update the alloc pointer to account for the allocation.
-        str         x2, [x3, #OFFSETOF__gc_alloc_context__alloc_ptr]
+        str         x2, [x3, #OFFSETOF__Thread__m_alloc_context__alloc_ptr]
 
         // Set the new objects MethodTable pointer and element count.
         str         x0, [x12, #OFFSETOF__Object__m_pEEType]
@@ -188,26 +196,26 @@ LOCAL_LABEL(RhNewString_Rare):
         // x2 == array size
 
 #ifdef FEATURE_EMULATED_TLS
-        GETALLOCCONTEXT_ETLS_3
+        GETTHREAD_ETLS_3
 #else
-        INLINE_GET_ALLOC_CONTEXT x3
+        INLINE_GETTHREAD x3
 #endif
 
         // Load potential new object address into x12.
-        ldr         x12, [x3, #OFFSETOF__gc_alloc_context__alloc_ptr]
+        ldr         x12, [x3, #OFFSETOF__Thread__m_alloc_context__alloc_ptr]
 
         // Determine whether the end of the object would lie outside of the current allocation context. If so,
         // we abandon the attempt to allocate the object directly and fall back to the slow helper.
         add         x2, x2, x12
-        ldr         x12, [x3, #OFFSETOF__gc_alloc_context__alloc_limit]
+        ldr         x12, [x3, #OFFSETOF__Thread__m_alloc_context__alloc_limit]
         cmp         x2, x12
         bhi         LOCAL_LABEL(RhpNewArray_Rare)
 
         // Reload new object address into x12.
-        ldr         x12, [x3, #OFFSETOF__gc_alloc_context__alloc_ptr]
+        ldr         x12, [x3, #OFFSETOF__Thread__m_alloc_context__alloc_ptr]
 
         // Update the alloc pointer to account for the allocation.
-        str         x2, [x3, #OFFSETOF__gc_alloc_context__alloc_ptr]
+        str         x2, [x3, #OFFSETOF__Thread__m_alloc_context__alloc_ptr]
 
         // Set the new objects MethodTable pointer and element count.
         str         x0, [x12, #OFFSETOF__Object__m_pEEType]
@@ -234,12 +242,12 @@ LOCAL_LABEL(RhpNewArray_Rare):
 // Allocate one dimensional, zero based array (SZARRAY) using the slow path that calls a runtime helper.
 //  x0 == MethodTable
 //  x1 == element count
-//  x2 == array size + gc_alloc_context::alloc_ptr
+//  x2 == array size + Thread::m_alloc_context::alloc_ptr
 //  x3 == Thread
     NESTED_ENTRY RhpNewArrayRare, _TEXT, NoHandler
 
         // Recover array size by subtracting the alloc_ptr from x2.
-        ldr x12, [x3, #OFFSETOF__gc_alloc_context__alloc_ptr]
+        ldr x12, [x3, #OFFSETOF__Thread__m_alloc_context__alloc_ptr]
         sub x2, x2, x12
 
         PUSH_COOP_PINVOKE_FRAME x3

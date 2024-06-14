@@ -18,6 +18,25 @@ class TypeManager;
 #include "UnixContext.h"
 #endif
 
+// The offsets of some fields in the thread (in particular, m_pTransitionFrame) are known to the compiler and get
+// inlined into the code.  Let's make sure they don't change just because we enable/disable server GC in a particular
+// runtime build.
+#define KEEP_THREAD_LAYOUT_CONSTANT
+
+#ifndef HOST_64BIT
+# if defined(FEATURE_SVR_GC) || defined(KEEP_THREAD_LAYOUT_CONSTANT)
+#  define SIZEOF_ALLOC_CONTEXT 40
+# else
+#  define SIZEOF_ALLOC_CONTEXT 28
+# endif
+#else // HOST_64BIT
+# if defined(FEATURE_SVR_GC) || defined(KEEP_THREAD_LAYOUT_CONSTANT)
+#  define SIZEOF_ALLOC_CONTEXT 56
+# else
+#  define SIZEOF_ALLOC_CONTEXT 40
+# endif
+#endif // HOST_64BIT
+
 #define TOP_OF_STACK_MARKER ((PInvokeTransitionFrame*)(ptrdiff_t)-1)
 
 // the thread has been interrupted and context for the interruption point
@@ -66,6 +85,7 @@ struct InlinedThreadStaticRoot
 
 struct ThreadBuffer
 {
+    uint8_t                 m_rgbAllocContextBuffer[SIZEOF_ALLOC_CONTEXT];
     uint32_t volatile       m_ThreadStateFlags;                     // see Thread::ThreadStateFlags enum
     PInvokeTransitionFrame* m_pTransitionFrame;
     PInvokeTransitionFrame* m_pDeferredTransitionFrame;             // see Thread::EnablePreemptiveMode
@@ -79,7 +99,6 @@ struct ThreadBuffer
 #endif // FEATURE_HIJACK
     PTR_ExInfo              m_pExInfoStackHead;
     Object*                 m_threadAbortException;                 // ThreadAbortException instance -set only during thread abort
-    gc_alloc_context*       m_palloc_context;                       // pointer to the allocation context for the current thread.
 #ifdef TARGET_X86
     PCODE                   m_LastRedirectIP;
     uint64_t                m_SpinCount;
@@ -202,10 +221,7 @@ public:
 
     bool                IsInitialized();
 
-    gc_alloc_context *  GetAllocContext()
-    {
-        return m_palloc_context;
-    }
+    gc_alloc_context *  GetAllocContext();
 
     uint64_t            GetPalThreadIdForLogging();
 

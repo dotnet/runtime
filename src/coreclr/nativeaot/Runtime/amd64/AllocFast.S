@@ -12,8 +12,8 @@ NESTED_ENTRY RhpNewFast, _TEXT, NoHandler
         push_nonvol_reg rbx
         mov         rbx, rdi
 
-        // rax = GetThreadAllocContext()
-        INLINE_GET_ALLOC_CONTEXT
+        // rax = GetThread()
+        INLINE_GETTHREAD
 
         //
         // rbx contains MethodTable pointer
@@ -21,18 +21,18 @@ NESTED_ENTRY RhpNewFast, _TEXT, NoHandler
         mov         edx, [rbx + OFFSETOF__MethodTable__m_uBaseSize]
 
         //
-        // rax: gc_alloc_context pointer
+        // rax: Thread pointer
         // rbx: MethodTable pointer
         // rdx: base size
         //
 
-        mov         rsi, [rax + OFFSETOF__gc_alloc_context__alloc_ptr]
+        mov         rsi, [rax + OFFSETOF__Thread__m_alloc_context__alloc_ptr]
         add         rdx, rsi
-        cmp         rdx, [rax + OFFSETOF__gc_alloc_context__alloc_limit]
+        cmp         rdx, [rax + OFFSETOF__Thread__m_alloc_context__alloc_limit]
         ja          LOCAL_LABEL(RhpNewFast_RarePath)
 
         // set the new alloc pointer
-        mov         [rax + OFFSETOF__gc_alloc_context__alloc_ptr], rdx
+        mov         [rax + OFFSETOF__Thread__m_alloc_context__alloc_ptr], rdx
 
         mov         rax, rsi
 
@@ -120,10 +120,10 @@ NESTED_ENTRY RhNewString, _TEXT, NoHandler
         mov         rbx, rdi    // save MethodTable
         mov         r12, rsi    // save element count
 
-        // rax = GetThreadAllocContext()
-        INLINE_GET_ALLOC_CONTEXT
+        // rax = GetThread()
+        INLINE_GETTHREAD
 
-        mov         rcx, rax    // rcx = gc_alloc_context*
+        mov         rcx, rax    // rcx = Thread*
 
         // Compute overall allocation size (align(base size + (element size * elements), 8)).
         lea         rax, [r12 * STRING_COMPONENT_SIZE + STRING_BASE_SIZE + 7]
@@ -135,7 +135,7 @@ NESTED_ENTRY RhNewString, _TEXT, NoHandler
         // r12 == element count
 
         mov         rdx, rax
-        add         rax, [rcx + OFFSETOF__gc_alloc_context__alloc_ptr]
+        add         rax, [rcx + OFFSETOF__Thread__m_alloc_context__alloc_ptr]
         jc          LOCAL_LABEL(RhNewString_RarePath)
 
         // rax == new alloc ptr
@@ -143,10 +143,10 @@ NESTED_ENTRY RhNewString, _TEXT, NoHandler
         // rcx == Thread*
         // rdx == string size
         // r12 == element count
-        cmp         rax, [rcx + OFFSETOF__gc_alloc_context__alloc_limit]
+        cmp         rax, [rcx + OFFSETOF__Thread__m_alloc_context__alloc_limit]
         ja          LOCAL_LABEL(RhNewString_RarePath)
 
-        mov         [rcx + OFFSETOF__gc_alloc_context__alloc_ptr], rax
+        mov         [rcx + OFFSETOF__Thread__m_alloc_context__alloc_ptr], rax
 
         // calc the new object pointer
         sub         rax, rdx
@@ -199,10 +199,10 @@ NESTED_ENTRY RhpNewArray, _TEXT, NoHandler
         mov         rbx, rdi    // save MethodTable
         mov         r12, rsi    // save element count
 
-        // rax = GetThreadAllocContext()
-        INLINE_GET_ALLOC_CONTEXT
+        // rax = GetThread()
+        INLINE_GETTHREAD
 
-        mov         rcx, rax    // rcx = gc_alloc_context*
+        mov         rcx, rax    // rcx = Thread*
 
         // Compute overall allocation size (align(base size + (element size * elements), 8)).
         movzx       eax, word ptr [rbx + OFFSETOF__MethodTable__m_usComponentSize]
@@ -218,7 +218,7 @@ NESTED_ENTRY RhpNewArray, _TEXT, NoHandler
         // r12 == element count
 
         mov         rdx, rax
-        add         rax, [rcx + OFFSETOF__gc_alloc_context__alloc_ptr]
+        add         rax, [rcx + OFFSETOF__Thread__m_alloc_context__alloc_ptr]
         jc          LOCAL_LABEL(RhpNewArray_RarePath)
 
         // rax == new alloc ptr
@@ -226,10 +226,10 @@ NESTED_ENTRY RhpNewArray, _TEXT, NoHandler
         // rcx == Thread*
         // rdx == array size
         // r12 == element count
-        cmp         rax, [rcx + OFFSETOF__gc_alloc_context__alloc_limit]
+        cmp         rax, [rcx + OFFSETOF__Thread__m_alloc_context__alloc_limit]
         ja          LOCAL_LABEL(RhpNewArray_RarePath)
 
-        mov         [rcx + OFFSETOF__gc_alloc_context__alloc_ptr], rax
+        mov         [rcx + OFFSETOF__Thread__m_alloc_context__alloc_ptr], rax
 
         // calc the new object pointer
         sub         rax, rdx
