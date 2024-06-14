@@ -76,7 +76,7 @@ internal sealed unsafe partial class MsQuicApi
     static MsQuicApi()
     {
         bool loaded = false;
-        IntPtr msQuicHandle;
+        IntPtr msQuicHandle = IntPtr.Zero;
         Version = default;
 
         // MsQuic is using DualMode sockets and that will fail even for IPv4 if AF_INET6 is not available.
@@ -95,7 +95,7 @@ internal sealed unsafe partial class MsQuicApi
             // Windows ships msquic in the assembly directory next to System.Net.Quic, so load that.
             // For single-file deployments, the assembly location is an empty string so we fall back
             // to AppContext.BaseDirectory which is the directory containing the single-file executable.
-            string path = typeof(MsQuicApi).Assembly.Location is string assemblyLocation && !string.IsNullOrEmpty(assemblyLocation)
+            string path = typeof(MsQuicApi).Assembly.Location is string assemblyLocation && !string.IsNullOrEmpty(assemblyLocation) && !AllowAppLocalMsQuic()
                 ? System.IO.Path.GetDirectoryName(assemblyLocation)!
                 : AppContext.BaseDirectory;
 
@@ -279,4 +279,6 @@ internal sealed unsafe partial class MsQuicApi
 #endif
         return false;
     }
+
+    private static bool AllowAppLocalMsQuic() => AppContextSwitchHelper.GetBooleanConfig("System.Net.Quic.AppLocalMsQuic", "DOTNET_SYSTEM_NET_QUIC_APPLOCALMSQUIC");
 }
