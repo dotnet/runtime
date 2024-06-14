@@ -1741,10 +1741,10 @@ namespace System.Tests
         [InlineData(-1, -1, "0000000000000001")]
         [InlineData(-1, int.MinValue, "0000000080000000")]
         [InlineData(1, int.MinValue, "FFFFFFFF80000000")]
-        [InlineData(0xE61C42C7, 0x69A5D354, "5EF6A58F7592EE4C")]
-        [InlineData(0x835F41B5, -0x7ED29BBA, "BEEB099AE387AB7E")]
-        [InlineData(-0x56154C28, 0x3370AB0B, "EEB3DEFEC9B70248")]
-        [InlineData(-0x778E4F94, -0xD41A44C9, "630E1E7A50E7CB34")]
+        [InlineData(0x19E3BD39,  0x69A5D354, "0AAF2DC48A6D11B4")]
+        [InlineData(0x7CA0BE4B, -0x7ED29BBA, "C2425AAB1C785482")]
+        [InlineData(-0x56154C28,  0x3370AB0B, "EEB3DEFEC9B70248")]
+        [InlineData(-0x778E4F94, -0x541A44C9, "2746F6B050E7CB34")]
         public static void BigMul32x32Signed(int a, int b, string result)
         {
             Assert.Equal(result, $"{Math.BigMul(a, b):X16}");
