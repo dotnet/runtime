@@ -1006,8 +1006,7 @@ HRESULT Thread::DetachThread(BOOL fDLLThreadDetach)
 
     if (GCHeapUtilities::IsGCHeapInitialized())
     {
-        // Guaranteed to NOT be a shutdown case, because we tear down the heap before
-        // we tear down any threads during shutdown.
+        // If the GC heap is initialized, we need to fix the alloc context for this detaching thread.
         GCX_COOP();
         // GetTotalAllocatedBytes reads dead_threads_non_alloc_bytes, but will suspend EE, being in COOP mode we cannot race with that
         // however, there could be other threads terminating and doing the same Add.
