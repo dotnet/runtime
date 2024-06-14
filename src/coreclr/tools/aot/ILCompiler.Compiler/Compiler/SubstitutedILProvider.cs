@@ -136,11 +136,22 @@ namespace ILCompiler
                     offsetsToVisit.Push(ehRegion.FilterOffset);
 
                 offsetsToVisit.Push(ehRegion.HandlerOffset);
+
+                if ((uint)ehRegion.TryLength >= (uint)methodBytes.Length
+                    || (uint)ehRegion.HandlerLength >= (uint)methodBytes.Length
+                    || ((uint)methodBytes.Length - (uint)ehRegion.TryLength) < (uint)ehRegion.TryOffset
+                    || ((uint)methodBytes.Length - (uint)ehRegion.HandlerLength) < (uint)ehRegion.HandlerOffset)
+                {
+                    ThrowHelper.ThrowInvalidProgramException();
+                }
             }
 
             // Identify basic blocks and instruction boundaries
             while (offsetsToVisit.TryPop(out int offset))
             {
+                if ((uint)offset >= (uint)flags.Length)
+                    ThrowHelper.ThrowInvalidProgramException();
+
                 // If this was already visited, we're done
                 if (flags[offset] != 0)
                 {
@@ -415,7 +426,8 @@ namespace ILCompiler
                 return method;
 
             // Maps instruction offsets in original method body to offsets in rewritten method body.
-            var offsetMap = new int[methodBytes.Length];
+            // Do a + 1 to length because exception handlers might refer to offset at the end of last instruction.
+            var offsetMap = new int[methodBytes.Length + 1];
 #if DEBUG
             Array.Fill(offsetMap, -1);
 #endif
@@ -469,6 +481,7 @@ namespace ILCompiler
                     dstPos += 2;
                 }
             }
+            offsetMap[methodBytes.Length] = dstPos;
 
             // Now generate the new body
             var newBody = new byte[dstPos];
@@ -673,10 +686,10 @@ namespace ILCompiler
                         {
                             return true;
                         }
-                        else if (method.IsIntrinsic && method.Name is "get_IsValueType"
+                        else if (method.IsIntrinsic && method.Name is "get_IsValueType" or "get_IsEnum"
                             && method.OwningType is MetadataType mdt
                             && mdt.Name == "Type" && mdt.Namespace == "System" && mdt.Module == mdt.Context.SystemModule
-                            && TryExpandTypeIsValueType(methodIL, body, flags, currentOffset, out constant))
+                            && TryExpandTypeIs(methodIL, body, flags, currentOffset, method.Name, out constant))
                         {
                             return true;
                         }
@@ -819,7 +832,7 @@ namespace ILCompiler
             return false;
         }
 
-        private static bool TryExpandTypeIsValueType(MethodIL methodIL, byte[] body, OpcodeFlags[] flags, int offset, out int constant)
+        private static bool TryExpandTypeIs(MethodIL methodIL, byte[] body, OpcodeFlags[] flags, int offset, string name, out int constant)
         {
             // We expect to see a sequence:
             // ldtoken Foo
@@ -848,7 +861,12 @@ namespace ILCompiler
             if (type.IsSignatureVariable)
                 return false;
 
-            constant = type.IsValueType ? 1 : 0;
+            constant = name switch
+            {
+                "get_IsValueType" => type.IsValueType ? 1 : 0,
+                "get_IsEnum" => type.IsEnum ? 1 : 0,
+                _ => throw new Exception(),
+            };
 
             return true;
         }

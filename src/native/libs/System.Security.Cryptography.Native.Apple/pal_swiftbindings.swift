@@ -4,166 +4,174 @@
 import CryptoKit
 import Foundation
 
-@_cdecl("AppleCryptoNative_ChaCha20Poly1305Encrypt")
-public func AppleCryptoNative_ChaCha20Poly1305Encrypt(
-    keyPtr: UnsafeMutableRawPointer,
-    keyLength: Int32,
-    noncePtr: UnsafeMutableRawPointer,
-    nonceLength: Int32,
-    plaintextPtr: UnsafeMutableRawPointer,
-    plaintextLength: Int32,
-    ciphertextBuffer: UnsafeMutablePointer<UInt8>,
-    ciphertextBufferLength: Int32,
-    tagBuffer: UnsafeMutablePointer<UInt8>,
-    tagBufferLength: Int32,
-    aadPtr: UnsafeMutableRawPointer,
-    aadLength: Int32
- ) -> Int32 {
-    let nonceData = Data(bytesNoCopy: noncePtr, count: Int(nonceLength), deallocator: Data.Deallocator.none)
-    let key = Data(bytesNoCopy: keyPtr, count: Int(keyLength), deallocator: Data.Deallocator.none)
-    let plaintext = Data(bytesNoCopy: plaintextPtr, count: Int(plaintextLength), deallocator: Data.Deallocator.none)
-    let aad = Data(bytesNoCopy: aadPtr, count: Int(aadLength), deallocator: Data.Deallocator.none)
-    let symmetricKey = SymmetricKey(data: key)
-
-    guard let nonce = try? ChaChaPoly.Nonce(data: nonceData) else {
-        return 0
-    }
-
-    guard let result = try? ChaChaPoly.seal(plaintext, using: symmetricKey, nonce: nonce, authenticating: aad) else {
-        return 0
-    }
-
-    assert(ciphertextBufferLength >= result.ciphertext.count)
-    assert(tagBufferLength >= result.tag.count)
-
-    result.ciphertext.copyBytes(to: ciphertextBuffer, count: result.ciphertext.count)
-    result.tag.copyBytes(to: tagBuffer, count: result.tag.count)
-    return 1
- }
-
-@_cdecl("AppleCryptoNative_ChaCha20Poly1305Decrypt")
-public func AppleCryptoNative_ChaCha20Poly1305Decrypt(
-    keyPtr: UnsafeMutableRawPointer,
-    keyLength: Int32,
-    noncePtr: UnsafeMutableRawPointer,
-    nonceLength: Int32,
-    ciphertextPtr: UnsafeMutableRawPointer,
-    ciphertextLength: Int32,
-    tagPtr: UnsafeMutableRawPointer,
-    tagLength: Int32,
-    plaintextBuffer: UnsafeMutablePointer<UInt8>,
-    plaintextBufferLength: Int32,
-    aadPtr: UnsafeMutableRawPointer,
-    aadLength: Int32
-) -> Int32 {
-    let nonceData = Data(bytesNoCopy: noncePtr, count: Int(nonceLength), deallocator: Data.Deallocator.none)
-    let key = Data(bytesNoCopy: keyPtr, count: Int(keyLength), deallocator: Data.Deallocator.none)
-    let ciphertext = Data(bytesNoCopy: ciphertextPtr, count: Int(ciphertextLength), deallocator: Data.Deallocator.none)
-    let aad = Data(bytesNoCopy: aadPtr, count: Int(aadLength), deallocator: Data.Deallocator.none)
-    let tag = Data(bytesNoCopy: tagPtr, count: Int(tagLength), deallocator: Data.Deallocator.none)
-    let symmetricKey = SymmetricKey(data: key)
-
-    guard let nonce = try? ChaChaPoly.Nonce(data: nonceData) else {
-        return 0
-    }
-
-    guard let sealedBox = try? ChaChaPoly.SealedBox(nonce: nonce, ciphertext: ciphertext, tag: tag) else {
-        return 0
-    }
-
-    do {
-        let result = try ChaChaPoly.open(sealedBox, using: symmetricKey, authenticating: aad)
-
-        assert(plaintextBufferLength >= result.count)
-        result.copyBytes(to: plaintextBuffer, count: result.count)
-        return 1
-    }
-    catch CryptoKitError.authenticationFailure {
-        return -1
-    }
-    catch {
-        return 0
-    }
+protocol NonceProtocol {
+    init<D>(data: D) throws where D : DataProtocol
 }
 
-@_cdecl("AppleCryptoNative_AesGcmEncrypt")
-public func AppleCryptoNative_AesGcmEncrypt(
-    keyPtr: UnsafeMutableRawPointer,
-    keyLength: Int32,
-    noncePtr: UnsafeMutableRawPointer,
-    nonceLength: Int32,
-    plaintextPtr: UnsafeMutableRawPointer,
-    plaintextLength: Int32,
-    ciphertextBuffer: UnsafeMutablePointer<UInt8>,
-    ciphertextBufferLength: Int32,
-    tagBuffer: UnsafeMutablePointer<UInt8>,
-    tagBufferLength: Int32,
-    aadPtr: UnsafeMutableRawPointer,
-    aadLength: Int32
- ) -> Int32 {
-    let nonceData = Data(bytesNoCopy: noncePtr, count: Int(nonceLength), deallocator: Data.Deallocator.none)
-    let key = Data(bytesNoCopy: keyPtr, count: Int(keyLength), deallocator: Data.Deallocator.none)
-    let plaintext = Data(bytesNoCopy: plaintextPtr, count: Int(plaintextLength), deallocator: Data.Deallocator.none)
-    let aad = Data(bytesNoCopy: aadPtr, count: Int(aadLength), deallocator: Data.Deallocator.none)
+protocol SealedBoxProtocol {
+    associatedtype Nonce : NonceProtocol
+
+    var ciphertext: Data { get }
+    var tag: Data { get }
+
+    init<C, T>(
+        nonce: Nonce,
+        ciphertext: C,
+        tag: T
+    ) throws where C : DataProtocol, T : DataProtocol
+}
+
+protocol AEADSymmetricAlgorithm {
+    associatedtype SealedBox : SealedBoxProtocol
+
+    static func seal<Plaintext>(_ plaintext: Plaintext, using key: SymmetricKey, nonce: SealedBox.Nonce?) throws -> SealedBox where Plaintext: DataProtocol
+    static func seal<Plaintext, AuthenticatedData>(_ plaintext: Plaintext, using key: SymmetricKey, nonce: SealedBox.Nonce?, authenticating additionalData: AuthenticatedData) throws -> SealedBox where Plaintext: DataProtocol, AuthenticatedData: DataProtocol
+    static func open<AuthenticatedData>(_ sealedBox: SealedBox, using key: SymmetricKey, authenticating additionalData: AuthenticatedData) throws -> Data where AuthenticatedData: DataProtocol
+    static func open(_ sealedBox: SealedBox, using key: SymmetricKey) throws -> Data
+}
+
+extension AES.GCM.Nonce: NonceProtocol {}
+extension AES.GCM.SealedBox: SealedBoxProtocol {
+    typealias Nonce = AES.GCM.Nonce
+}
+extension AES.GCM: AEADSymmetricAlgorithm {}
+
+extension ChaChaPoly.Nonce: NonceProtocol {}
+extension ChaChaPoly.SealedBox: SealedBoxProtocol {
+    typealias Nonce = ChaChaPoly.Nonce
+}
+extension ChaChaPoly: AEADSymmetricAlgorithm {}
+
+func encrypt<Algorithm>(
+    _ algorithm: Algorithm.Type,
+    key: UnsafeBufferPointer<UInt8>,
+    nonceData: UnsafeBufferPointer<UInt8>,
+    plaintext: UnsafeBufferPointer<UInt8>,
+    cipherText: UnsafeMutableBufferPointer<UInt8>,
+    tag: UnsafeMutableBufferPointer<UInt8>,
+    aad: UnsafeBufferPointer<UInt8>) throws where Algorithm: AEADSymmetricAlgorithm {
+
     let symmetricKey = SymmetricKey(data: key)
 
-    guard let nonce = try? AES.GCM.Nonce(data: nonceData) else {
-        return 0
-    }
+    let nonce = try Algorithm.SealedBox.Nonce(data: nonceData)
 
-    guard let result = try? AES.GCM.seal(plaintext, using: symmetricKey, nonce: nonce, authenticating: aad) else {
-        return 0
-    }
+    let result = try Algorithm.seal(plaintext, using: symmetricKey, nonce: nonce, authenticating: aad)
 
-    assert(ciphertextBufferLength >= result.ciphertext.count)
-    assert(tagBufferLength >= result.tag.count)
+    // Copy results out of the SealedBox as the Data objects returned here are sometimes slices,
+    // which don't have a correct implementation of copyBytes.
+    // See https://github.com/apple/swift-foundation/issues/638 for more information.
+    let resultCiphertext = Data(result.ciphertext)
+    let resultTag = Data(result.tag)
 
-    result.ciphertext.copyBytes(to: ciphertextBuffer, count: result.ciphertext.count)
-    result.tag.copyBytes(to: tagBuffer, count: result.tag.count)
-    return 1
+    _ = resultCiphertext.copyBytes(to: cipherText)
+    _ = resultTag.copyBytes(to: tag)
+}
+
+func decrypt<Algorithm>(
+    _ algorithm: Algorithm.Type,
+    key: UnsafeBufferPointer<UInt8>,
+    nonceData: UnsafeBufferPointer<UInt8>,
+    cipherText: UnsafeBufferPointer<UInt8>,
+    tag: UnsafeBufferPointer<UInt8>,
+    plaintext: UnsafeMutableBufferPointer<UInt8>,
+    aad: UnsafeBufferPointer<UInt8>) throws where Algorithm: AEADSymmetricAlgorithm {
+
+    let symmetricKey = SymmetricKey(data: key)
+
+    let nonce = try Algorithm.SealedBox.Nonce(data: nonceData)
+
+    let sealedBox = try Algorithm.SealedBox(nonce: nonce, ciphertext: cipherText, tag: tag)
+
+    let result = try Algorithm.open(sealedBox, using: symmetricKey, authenticating: aad)
+
+    _ = result.copyBytes(to: plaintext)
+}
+
+@_silgen_name("AppleCryptoNative_ChaCha20Poly1305Encrypt")
+public func AppleCryptoNative_ChaCha20Poly1305Encrypt(
+    key: UnsafeBufferPointer<UInt8>,
+    nonceData: UnsafeBufferPointer<UInt8>,
+    plaintext: UnsafeBufferPointer<UInt8>,
+    cipherText: UnsafeMutableBufferPointer<UInt8>,
+    tag: UnsafeMutableBufferPointer<UInt8>,
+    aad: UnsafeBufferPointer<UInt8>
+) throws {
+    return try encrypt(
+        ChaChaPoly.self,
+        key: key,
+        nonceData: nonceData,
+        plaintext: plaintext,
+        cipherText: cipherText,
+        tag: tag,
+        aad: aad)
  }
 
-@_cdecl("AppleCryptoNative_AesGcmDecrypt")
+@_silgen_name("AppleCryptoNative_ChaCha20Poly1305Decrypt")
+public func AppleCryptoNative_ChaCha20Poly1305Decrypt(
+    key: UnsafeBufferPointer<UInt8>,
+    nonceData: UnsafeBufferPointer<UInt8>,
+    cipherText: UnsafeBufferPointer<UInt8>,
+    tag: UnsafeBufferPointer<UInt8>,
+    plaintext: UnsafeMutableBufferPointer<UInt8>,
+    aad: UnsafeBufferPointer<UInt8>
+) throws {
+    return try decrypt(
+        ChaChaPoly.self,
+        key: key,
+        nonceData: nonceData,
+        cipherText: cipherText,
+        tag: tag,
+        plaintext: plaintext,
+        aad: aad);
+}
+
+@_silgen_name("AppleCryptoNative_AesGcmEncrypt")
+public func AppleCryptoNative_AesGcmEncrypt(
+    key: UnsafeBufferPointer<UInt8>,
+    nonceData: UnsafeBufferPointer<UInt8>,
+    plaintext: UnsafeBufferPointer<UInt8>,
+    cipherText: UnsafeMutableBufferPointer<UInt8>,
+    tag: UnsafeMutableBufferPointer<UInt8>,
+    aad: UnsafeBufferPointer<UInt8>
+) throws {
+    return try encrypt(
+        AES.GCM.self,
+        key: key,
+        nonceData: nonceData,
+        plaintext: plaintext,
+        cipherText: cipherText,
+        tag: tag,
+        aad: aad)
+ }
+
+@_silgen_name("AppleCryptoNative_AesGcmDecrypt")
 public func AppleCryptoNative_AesGcmDecrypt(
-    keyPtr: UnsafeMutableRawPointer,
-    keyLength: Int32,
-    noncePtr: UnsafeMutableRawPointer,
-    nonceLength: Int32,
-    ciphertextPtr: UnsafeMutableRawPointer,
-    ciphertextLength: Int32,
-    tagPtr: UnsafeMutableRawPointer,
-    tagLength: Int32,
-    plaintextBuffer: UnsafeMutablePointer<UInt8>,
-    plaintextBufferLength: Int32,
-    aadPtr: UnsafeMutableRawPointer,
-    aadLength: Int32
-) -> Int32 {
-    let nonceData = Data(bytesNoCopy: noncePtr, count: Int(nonceLength), deallocator: Data.Deallocator.none)
-    let key = Data(bytesNoCopy: keyPtr, count: Int(keyLength), deallocator: Data.Deallocator.none)
-    let ciphertext = Data(bytesNoCopy: ciphertextPtr, count: Int(ciphertextLength), deallocator: Data.Deallocator.none)
-    let aad = Data(bytesNoCopy: aadPtr, count: Int(aadLength), deallocator: Data.Deallocator.none)
-    let tag = Data(bytesNoCopy: tagPtr, count: Int(tagLength), deallocator: Data.Deallocator.none)
-    let symmetricKey = SymmetricKey(data: key)
+    key: UnsafeBufferPointer<UInt8>,
+    nonceData: UnsafeBufferPointer<UInt8>,
+    cipherText: UnsafeBufferPointer<UInt8>,
+    tag: UnsafeBufferPointer<UInt8>,
+    plaintext: UnsafeMutableBufferPointer<UInt8>,
+    aad: UnsafeBufferPointer<UInt8>
+) throws {
+    return try decrypt(
+        AES.GCM.self,
+        key: key,
+        nonceData: nonceData,
+        cipherText: cipherText,
+        tag: tag,
+        plaintext: plaintext,
+        aad: aad);
+}
 
-    guard let nonce = try? AES.GCM.Nonce(data: nonceData) else {
-        return 0
+@_silgen_name("AppleCryptoNative_IsAuthenticationFailure")
+public func AppleCryptoNative_IsAuthenticationFailure(error: Error) -> Bool {
+    if let error = error as? CryptoKitError {
+        switch error {
+        case .authenticationFailure:
+            return true
+        default:
+            return false
+        }
     }
-
-    guard let sealedBox = try? AES.GCM.SealedBox(nonce: nonce, ciphertext: ciphertext, tag: tag) else {
-        return 0
-    }
-
-    do {
-        let result = try AES.GCM.open(sealedBox, using: symmetricKey, authenticating: aad)
-
-        assert(plaintextBufferLength >= result.count)
-        result.copyBytes(to: plaintextBuffer, count: result.count)
-        return 1
-    }
-    catch CryptoKitError.authenticationFailure {
-        return -1
-    }
-    catch {
-        return 0
-    }
+    return false
 }

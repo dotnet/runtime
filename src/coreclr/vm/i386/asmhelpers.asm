@@ -24,7 +24,6 @@ EXTERN __imp__RtlUnwind@16:DWORD
 ifdef _DEBUG
 EXTERN _HelperMethodFrameConfirmState@20:PROC
 endif
-EXTERN _StubRareEnableWorker@4:PROC
 ifdef FEATURE_COMINTEROP
 EXTERN _StubRareDisableHRWorker@4:PROC
 endif ; FEATURE_COMINTEROP
@@ -41,6 +40,7 @@ EXTERN _NDirectImportWorker@4:PROC
 
 EXTERN _VarargPInvokeStubWorker@12:PROC
 EXTERN _GenericPInvokeCalliStubWorker@12:PROC
+EXTERN _CallCopyConstructorsWorker@4:PROC
 
 EXTERN _PreStubWorker@8:PROC
 EXTERN _TheUMEntryPrestubWorker@4:PROC
@@ -392,29 +392,6 @@ endif
         pop     ebp ; don't use 'leave' here, as ebp as been trashed
         retn    8
 _CallJitEHFinallyHelper@8 ENDP
-
-;-----------------------------------------------------------------------
-; The out-of-line portion of the code to enable preemptive GC.
-; After the work is done, the code jumps back to the "pRejoinPoint"
-; which should be emitted right after the inline part is generated.
-;
-; Assumptions:
-;      ebx = Thread
-; Preserves
-;      all registers except ecx.
-;
-;-----------------------------------------------------------------------
-_StubRareEnable proc public
-        push    eax
-        push    edx
-
-        push    ebx
-        call    _StubRareEnableWorker@4
-
-        pop     edx
-        pop     eax
-        retn
-_StubRareEnable ENDP
 
 ifdef FEATURE_COMINTEROP
 _StubRareDisableHR proc public
@@ -1062,6 +1039,29 @@ GoCallCalliWorker:
 
 _GenericPInvokeCalliHelper@0 endp
 
+;==========================================================================
+; This is small stub whose purpose is to record current stack pointer and
+; call CallCopyConstructorsWorker to invoke copy constructors and destructors
+; as appropriate. This stub operates on arguments already pushed to the
+; stack by JITted IL stub and must not create a new frame, i.e. it must tail
+; call to the target for it to see the arguments that copy ctors have been
+; called on.
+;
+_CopyConstructorCallStub@0 proc public
+    ; there may be an argument in ecx - save it
+    push    ecx
+
+    ; push pointer to arguments
+    lea     edx, [esp + 8]
+    push    edx
+
+    call    _CallCopyConstructorsWorker@4
+
+    ; restore ecx and tail call to the target
+    pop     ecx
+    jmp     eax
+_CopyConstructorCallStub@0 endp
+
 ifdef FEATURE_COMINTEROP
 
 ;==========================================================================
@@ -1266,7 +1266,7 @@ _TheUMEntryPrestub@0 endp
 ifdef FEATURE_COMINTEROP
 ;==========================================================================
 ; CLR -> COM generic or late-bound call
-_GenericComPlusCallStub@0 proc public
+_GenericCLRToCOMCallStub@0 proc public
 
     STUB_PROLOG
 
@@ -1288,19 +1288,19 @@ _GenericComPlusCallStub@0 proc public
 
     ; From here on, mustn't trash eax:edx
 
-    ; Get pComPlusCallInfo for return thunk
-    mov         ecx, [ebx + ComPlusCallMethodDesc__m_pComPlusCallInfo]
+    ; Get pCLRToCOMCallInfo for return thunk
+    mov         ecx, [ebx + CLRToCOMCallMethodDesc__m_pCLRToCOMCallInfo]
 
     STUB_EPILOG_RETURN
 
     ; Tailcall return thunk
-    jmp [ecx + ComPlusCallInfo__m_pRetThunk]
+    jmp [ecx + CLRToCOMCallInfo__m_pRetThunk]
 
     ; This will never be executed. It is just to help out stack-walking logic
     ; which disassembles the epilog to unwind the stack.
     ret
 
-_GenericComPlusCallStub@0 endp
+_GenericCLRToCOMCallStub@0 endp
 endif ; FEATURE_COMINTEROP
 
 

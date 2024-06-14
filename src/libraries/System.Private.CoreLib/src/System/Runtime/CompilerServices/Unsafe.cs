@@ -33,6 +33,7 @@ namespace System.Runtime.CompilerServices
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void* AsPointer<T>(ref T value)
+            where T : allows ref struct
         {
             throw new PlatformNotSupportedException();
 
@@ -51,6 +52,7 @@ namespace System.Runtime.CompilerServices
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int SizeOf<T>()
+            where T : allows ref struct
         {
             return sizeof(T);
         }
@@ -83,6 +85,8 @@ namespace System.Runtime.CompilerServices
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ref TTo As<TFrom, TTo>(ref TFrom source)
+            where TFrom : allows ref struct
+            where TTo : allows ref struct
         {
             throw new PlatformNotSupportedException();
 
@@ -100,6 +104,7 @@ namespace System.Runtime.CompilerServices
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ref T Add<T>(ref T source, int elementOffset)
+            where T : allows ref struct
         {
 #if CORECLR
             typeof(T).ToString(); // Type token used by the actual method body
@@ -126,6 +131,7 @@ namespace System.Runtime.CompilerServices
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ref T Add<T>(ref T source, IntPtr elementOffset)
+            where T : allows ref struct
         {
 #if CORECLR
             typeof(T).ToString(); // Type token used by the actual method body
@@ -153,6 +159,7 @@ namespace System.Runtime.CompilerServices
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void* Add<T>(void* source, int elementOffset)
+            where T : allows ref struct
         {
 #if CORECLR
             typeof(T).ToString(); // Type token used by the actual method body
@@ -179,6 +186,7 @@ namespace System.Runtime.CompilerServices
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ref T Add<T>(ref T source, nuint elementOffset)
+            where T : allows ref struct
         {
 #if CORECLR
             typeof(T).ToString();
@@ -206,6 +214,7 @@ namespace System.Runtime.CompilerServices
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ref T AddByteOffset<T>(ref T source, nuint byteOffset)
+            where T : allows ref struct
         {
 #if CORECLR
             typeof(T).ToString();
@@ -230,6 +239,7 @@ namespace System.Runtime.CompilerServices
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool AreSame<T>([AllowNull] ref readonly T left, [AllowNull] ref readonly T right)
+            where T : allows ref struct
         {
             throw new PlatformNotSupportedException();
 
@@ -242,15 +252,16 @@ namespace System.Runtime.CompilerServices
         /// <summary>
         /// Reinterprets the given value of type <typeparamref name="TFrom" /> as a value of type <typeparamref name="TTo" />.
         /// </summary>
-        /// <exception cref="NotSupportedException">The size of <typeparamref name="TFrom" /> and <typeparamref name="TTo" /> are not the same.</exception>
+        /// <exception cref="NotSupportedException">The sizes of <typeparamref name="TFrom" /> and <typeparamref name="TTo" /> are not the same
+        /// or the type parameters are not <see langword="struct"/>s.</exception>
         [Intrinsic]
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static TTo BitCast<TFrom, TTo>(TFrom source)
-            where TFrom : struct
-            where TTo : struct
+            where TFrom : allows ref struct
+            where TTo : allows ref struct
         {
-            if (sizeof(TFrom) != sizeof(TTo))
+            if (sizeof(TFrom) != sizeof(TTo) || default(TFrom) is null || default(TTo) is null)
             {
                 ThrowHelper.ThrowNotSupportedException();
             }
@@ -266,6 +277,7 @@ namespace System.Runtime.CompilerServices
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Copy<T>(void* destination, ref readonly T source)
+            where T : allows ref struct
         {
             throw new PlatformNotSupportedException();
 
@@ -285,6 +297,7 @@ namespace System.Runtime.CompilerServices
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Copy<T>(ref T destination, void* source)
+            where T : allows ref struct
         {
             throw new PlatformNotSupportedException();
 
@@ -387,6 +400,7 @@ namespace System.Runtime.CompilerServices
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsAddressGreaterThan<T>([AllowNull] ref readonly T left, [AllowNull] ref readonly T right)
+            where T : allows ref struct
         {
             throw new PlatformNotSupportedException();
 
@@ -410,6 +424,7 @@ namespace System.Runtime.CompilerServices
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsAddressLessThan<T>([AllowNull] ref readonly T left, [AllowNull] ref readonly T right)
+            where T : allows ref struct
         {
             throw new PlatformNotSupportedException();
 
@@ -515,6 +530,7 @@ namespace System.Runtime.CompilerServices
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T ReadUnaligned<T>(void* source)
+            where T : allows ref struct
         {
 #if CORECLR
             typeof(T).ToString(); // Type token used by the actual method body
@@ -538,7 +554,8 @@ namespace System.Runtime.CompilerServices
         // Mono:ReadUnaligned
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static T ReadUnaligned<T>(ref readonly byte source)
+        public static T ReadUnaligned<T>(scoped ref readonly byte source)
+            where T : allows ref struct
         {
 #if CORECLR
             typeof(T).ToString(); // Type token used by the actual method body
@@ -564,6 +581,7 @@ namespace System.Runtime.CompilerServices
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteUnaligned<T>(void* destination, T value)
+            where T : allows ref struct
         {
 #if CORECLR
             typeof(T).ToString(); // Type token used by the actual method body
@@ -589,6 +607,7 @@ namespace System.Runtime.CompilerServices
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteUnaligned<T>(ref byte destination, T value)
+            where T : allows ref struct
         {
 #if CORECLR
             typeof(T).ToString(); // Type token used by the actual method body
@@ -614,6 +633,7 @@ namespace System.Runtime.CompilerServices
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ref T AddByteOffset<T>(ref T source, IntPtr byteOffset)
+            where T : allows ref struct
         {
             // This method is implemented by the toolchain
             throw new PlatformNotSupportedException();
@@ -632,6 +652,7 @@ namespace System.Runtime.CompilerServices
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T Read<T>(void* source)
+            where T : allows ref struct
         {
             return *(T*)source;
         }
@@ -644,6 +665,7 @@ namespace System.Runtime.CompilerServices
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Write<T>(void* destination, T value)
+            where T : allows ref struct
         {
             *(T*)destination = value;
         }
@@ -656,6 +678,7 @@ namespace System.Runtime.CompilerServices
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ref T AsRef<T>(void* source)
+            where T : allows ref struct
         {
             return ref *(T*)source;
         }
@@ -671,6 +694,7 @@ namespace System.Runtime.CompilerServices
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ref T AsRef<T>(scoped ref readonly T source)
+            where T : allows ref struct
         {
             throw new PlatformNotSupportedException();
 
@@ -688,6 +712,7 @@ namespace System.Runtime.CompilerServices
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static IntPtr ByteOffset<T>([AllowNull] ref readonly T origin, [AllowNull] ref readonly T target)
+            where T : allows ref struct
         {
             throw new PlatformNotSupportedException();
 
@@ -706,6 +731,7 @@ namespace System.Runtime.CompilerServices
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ref T NullRef<T>()
+            where T : allows ref struct
         {
             return ref AsRef<T>(null);
 
@@ -726,6 +752,7 @@ namespace System.Runtime.CompilerServices
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsNullRef<T>(ref readonly T source)
+            where T : allows ref struct
         {
             return AsPointer(ref Unsafe.AsRef(in source)) == null;
 
@@ -746,6 +773,7 @@ namespace System.Runtime.CompilerServices
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void SkipInit<T>(out T value)
+            where T : allows ref struct
         {
             throw new PlatformNotSupportedException();
 
@@ -760,6 +788,7 @@ namespace System.Runtime.CompilerServices
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ref T Subtract<T>(ref T source, int elementOffset)
+            where T : allows ref struct
         {
 #if CORECLR
             typeof(T).ToString();
@@ -786,6 +815,7 @@ namespace System.Runtime.CompilerServices
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void* Subtract<T>(void* source, int elementOffset)
+            where T : allows ref struct
         {
 #if CORECLR
             typeof(T).ToString();
@@ -811,6 +841,7 @@ namespace System.Runtime.CompilerServices
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ref T Subtract<T>(ref T source, IntPtr elementOffset)
+            where T : allows ref struct
         {
 #if CORECLR
             typeof(T).ToString();
@@ -836,6 +867,7 @@ namespace System.Runtime.CompilerServices
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ref T Subtract<T>(ref T source, nuint elementOffset)
+            where T : allows ref struct
         {
 #if CORECLR
             typeof(T).ToString();
@@ -860,6 +892,7 @@ namespace System.Runtime.CompilerServices
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ref T SubtractByteOffset<T>(ref T source, IntPtr byteOffset)
+            where T : allows ref struct
         {
             throw new PlatformNotSupportedException();
 
@@ -878,6 +911,7 @@ namespace System.Runtime.CompilerServices
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ref T SubtractByteOffset<T>(ref T source, nuint byteOffset)
+            where T : allows ref struct
         {
 #if CORECLR
             typeof(T).ToString();

@@ -1571,9 +1571,6 @@ EXCEPTION_HANDLER_IMPL(COMPlusFrameHandler)
 
     _ASSERTE((pContext == NULL) || ((pContext->ContextFlags & CONTEXT_CONTROL) == CONTEXT_CONTROL));
 
-    if (g_fNoExceptions)
-        return ExceptionContinueSearch; // No EH during EE shutdown.
-
     // Check if the exception represents a GCStress Marker. If it does,
     // we shouldnt record its entry in the TLS as such exceptions are
     // continuable and can confuse the VM to treat them as CSE,
@@ -1961,7 +1958,7 @@ BOOL PopNestedExceptionRecords(LPVOID pTargetSP, BOOL bCheckForUnknownHandlers)
         // Cache the handle to the dll with the handler pushed by ExecuteHandler2.
         if (!ExecuteHandler2ModuleInited)
         {
-            ExecuteHandler2Module = WszGetModuleHandle(W("ntdll.dll"));
+            ExecuteHandler2Module = GetModuleHandle(W("ntdll.dll"));
             ExecuteHandler2ModuleInited = TRUE;
         }
 

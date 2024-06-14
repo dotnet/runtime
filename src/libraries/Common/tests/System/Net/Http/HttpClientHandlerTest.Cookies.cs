@@ -313,7 +313,7 @@ namespace System.Net.Http.Functional.Tests
                 using (HttpClient client = CreateHttpClient(handler))
                 {
                     client.DefaultRequestHeaders.ConnectionClose = true; // to avoid issues with connection pooling
-                        await client.GetAsync(url1);
+                    await client.GetAsync(url1);
                 }
             },
             async server =>

@@ -10,12 +10,12 @@ class CILJit : public ICorJitCompiler
                                unsigned             flags,           /* IN */
                                uint8_t**            nativeEntry,     /* OUT */
                                uint32_t*            nativeSizeOfCode /* OUT */
-                               );
+    );
 
     void ProcessShutdownWork(ICorStaticInfo* statInfo);
 
     void getVersionIdentifier(GUID* versionIdentifier /* OUT */
-                              );
+    );
 
     void setTargetOS(CORINFO_OS os);
 };

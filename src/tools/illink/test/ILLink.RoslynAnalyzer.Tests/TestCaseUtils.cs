@@ -90,7 +90,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 				switch (attributeName) {
 				case "SetupCompileBefore": {
 						var arrayExpression = args["#1"];
-						if (arrayExpression is not (ArrayCreationExpressionSyntax or ImplicitArrayCreationExpressionSyntax))
+						if (arrayExpression is not (ArrayCreationExpressionSyntax or ImplicitArrayCreationExpressionSyntax or CollectionExpressionSyntax))
 							throw new InvalidOperationException ();
 						foreach (var sourceFile in args["#1"].DescendantNodes ().OfType<LiteralExpressionSyntax> ())
 							yield return Path.Combine (testCaseDir, LinkerTestBase.GetStringFromExpression (sourceFile));

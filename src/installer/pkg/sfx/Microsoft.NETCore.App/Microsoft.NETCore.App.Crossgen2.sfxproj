@@ -15,8 +15,6 @@
     <PermitDllAndExeFilesLackingFileVersion>true</PermitDllAndExeFilesLackingFileVersion>
     <!-- Publishing as single-file or NativeAOT means we can't examine the interior DLLs -->
     <ShouldVerifyClosure>false</ShouldVerifyClosure>
-    <!-- Publish crossgen2 as a single-file app on native-OS builds. Cross-OS NativeAOT compilation is not supported yet -->
-    <NativeAotSupported Condition="'$(CrossBuild)' == 'true' and '$(TargetOS)' != '$(HostOS)'">false</NativeAotSupported>
   </PropertyGroup>
 
   <ItemGroup>

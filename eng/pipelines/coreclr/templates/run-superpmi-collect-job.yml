@@ -16,7 +16,6 @@ parameters:
   liveLibrariesBuildConfig: ''    # optional -- live-live libraries configuration to use for the run
   collectionType: ''
   collectionName: ''
-  dependOnEvaluatePaths: false
 
 jobs:
 - template: /eng/pipelines/common/templates/runtimes/xplat-job.yml
@@ -32,7 +31,6 @@ jobs:
     continueOnError: ${{ parameters.continueOnError }}
     collectionType: $ {{ parameters.collectionType }}
     collectionName: ${{ parameters.collectionName }}
-    dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
 
     ${{ if ne(parameters.displayName, '') }}:
       displayName: '${{ parameters.displayName }}'
@@ -42,7 +40,7 @@ jobs:
     # tests collection takes longer so increase timeout to 8 hours
     ${{ if or(eq(parameters.collectionName, 'coreclr_tests'), eq(parameters.collectionName, 'libraries_tests')) }}:
       timeoutInMinutes: 480
-    ${{ if and(ne(parameters.collectionName, 'coreclr_tests'), ne(parameters.collectionName, 'libraries_tests')) }}:
+    ${{ else }}:
       timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
 
     variables:

@@ -391,7 +391,11 @@ ds_rt_server_log_pause_message (void)
 	STATIC_CONTRACT_NOTHROW;
 
 	const char diagPortsName[] = "DiagnosticPorts";
-	CLRConfigNoCache diagPorts = CLRConfigNoCache::Get(diagPortsName);
+#ifdef HOST_WINDOWS
+    CLRConfigNoCache diagPorts = CLRConfigNoCache::Get(diagPortsName);
+#else
+    CLRConfigNoCache diagPorts = CLRConfigNoCache::Get(diagPortsName, /* noPrefix */ false, &PAL_getenv);
+#endif
 	LPCSTR ports = nullptr;
 	if (diagPorts.IsSet())
 	{

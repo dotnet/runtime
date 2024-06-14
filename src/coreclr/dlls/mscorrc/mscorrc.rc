@@ -113,7 +113,6 @@ BEGIN
     COR_E_FILELOAD                          "Unable to load file '%1'."
     COR_E_ASSEMBLYEXPECTED                  "The module '%1' was expected to contain an assembly manifest."
     FUSION_E_REF_DEF_MISMATCH               "The located assembly's manifest definition with name '%1' does not match the assembly reference."
-    FUSION_E_PRIVATE_ASM_DISALLOWED         "Assembly '%1' is required to be strongly named."
     FUSION_E_INVALID_NAME                   "The given assembly name, '%1', was invalid."
     FUSION_E_APP_DOMAIN_LOCKED              "The requested assembly version conflicts with what is already bound in the app domain or specified in the manifest."
     IDS_EE_HASH_VAL_FAILED                  "Hash validation failed for file or assembly '%1'."
@@ -490,9 +489,6 @@ BEGIN
 
     IDS_EE_CLASS_TO_VARIANT_TLB_NOT_REG     "Type '%1' cannot be marshalled to a Variant. Type library is not registered."
     IDS_EE_CANNOT_MAP_TO_MANAGED_VC         "The specified record cannot be mapped to a managed value class."
-
-    IDS_EE_SAFEHANDLECLOSED                 "Safe handle has been closed"
-    IDS_EE_SAFEHANDLECANNOTSETHANDLE        "Safe handle's handle field can only be set if the safe handle is not closed and has a ref count of 1."
 
     IDS_EE_SH_IN_VARIANT_NOT_SUPPORTED      "SafeHandle derived types cannot be stored in Variants."
 

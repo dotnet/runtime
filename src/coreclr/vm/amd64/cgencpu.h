@@ -48,9 +48,6 @@ EXTERN_C void FastCallFinalizeWorker(Object *obj, PCODE funcPtr);
 #define SIZEOF_LOAD_AND_JUMP_THUNK              22   // # bytes to mov r10, X; jmp Z
 #define SIZEOF_LOAD2_AND_JUMP_THUNK             32   // # bytes to mov r10, X; mov r11, Y; jmp Z
 
-// Also in CorCompile.h, FnTableAccess.h
-#define USE_INDIRECT_CODEHEADER                 // use CodeHeader, RealCodeHeader construct
-
 #define HAS_NDIRECT_IMPORT_PRECODE              1
 #define HAS_FIXUP_PRECODE                       1
 
@@ -188,6 +185,9 @@ struct REGDISPLAY;
 
 #define NUM_CALLEE_SAVED_REGISTERS 6
 
+// No floating point callee saved registers on Unix AMD64
+#define ENUM_FP_CALLEE_SAVED_REGISTERS()
+
 #else // UNIX_AMD64_ABI
 
 #define ENUM_ARGUMENT_REGISTERS() \
@@ -211,6 +211,18 @@ struct REGDISPLAY;
     CALLEE_SAVED_REGISTER(R15)
 
 #define NUM_CALLEE_SAVED_REGISTERS 8
+
+#define ENUM_FP_CALLEE_SAVED_REGISTERS() \
+    CALLEE_SAVED_REGISTER(Xmm6) \
+    CALLEE_SAVED_REGISTER(Xmm7) \
+    CALLEE_SAVED_REGISTER(Xmm8) \
+    CALLEE_SAVED_REGISTER(Xmm9) \
+    CALLEE_SAVED_REGISTER(Xmm10) \
+    CALLEE_SAVED_REGISTER(Xmm11) \
+    CALLEE_SAVED_REGISTER(Xmm12) \
+    CALLEE_SAVED_REGISTER(Xmm13) \
+    CALLEE_SAVED_REGISTER(Xmm14) \
+    CALLEE_SAVED_REGISTER(Xmm15)
 
 #endif // UNIX_AMD64_ABI
 
@@ -492,7 +504,7 @@ inline PCODE decodeBackToBackJump(PCODE pCode)
     if (isJumpRel64(pCode))
         return decodeJump64(pCode);
     else
-        return NULL;
+        return (PCODE)0;
 }
 
 extern "C" void setFPReturn(int fpSize, INT64 retVal);
@@ -597,11 +609,7 @@ inline BOOL ClrFlushInstructionCache(LPCVOID pCodeAddr, size_t sizeOfCode, bool 
 //
 // Create alias for optimized implementations of helpers provided on this platform
 //
-#define JIT_GetSharedGCStaticBase           JIT_GetSharedGCStaticBase_SingleAppDomain
-#define JIT_GetSharedNonGCStaticBase        JIT_GetSharedNonGCStaticBase_SingleAppDomain
-#define JIT_GetSharedGCStaticBaseNoCtor     JIT_GetSharedGCStaticBaseNoCtor_SingleAppDomain
-#define JIT_GetSharedNonGCStaticBaseNoCtor  JIT_GetSharedNonGCStaticBaseNoCtor_SingleAppDomain
-
-
+#define JIT_GetDynamicGCStaticBase           JIT_GetDynamicGCStaticBase_SingleAppDomain
+#define JIT_GetDynamicNonGCStaticBase        JIT_GetDynamicNonGCStaticBase_SingleAppDomain
 
 #endif // __cgencpu_h__

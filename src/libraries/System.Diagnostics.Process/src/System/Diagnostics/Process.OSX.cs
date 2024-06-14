@@ -117,8 +117,8 @@ namespace System.Diagnostics
             if (denom == default)
             {
                 Interop.libSystem.mach_timebase_info_data_t timeBase = GetTimeBase();
-                s_timeBase_denom = denom = timeBase.denom;
                 s_timeBase_numer = timeBase.numer;
+                s_timeBase_denom = denom = timeBase.denom;
             }
             uint numer = s_timeBase_numer;
 

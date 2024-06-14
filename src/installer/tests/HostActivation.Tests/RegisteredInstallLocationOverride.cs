@@ -36,7 +36,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 //   product must look into the 32-bit hive.
                 //   Without the redirection we would not be able to test that the product always looks
                 //   into 32-bit only.
-                // Per this page https://docs.microsoft.com/en-us/windows/desktop/WinProg64/shared-registry-keys
+                // Per this page https://learn.microsoft.com/windows/desktop/WinProg64/shared-registry-keys
                 // a user writable redirected key is for example HKCU\Software\Classes\Interface
                 // so we're going to use that one - it's not super clean as the key stores COM interfaces,
                 // but we should not corrupt anything by adding a special subkey even if it's left behind.
@@ -56,7 +56,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 // On Linux/macOS the install location is registered in a file which is normally
                 // located in /etc/dotnet/install_location
                 // So we need to redirect it to a different place here.
-                string directory = Path.Combine(TestArtifact.TestArtifactsPath, "installLocationOverride" + Process.GetCurrentProcess().Id.ToString());
+                string directory = Path.Combine(TestContext.TestArtifactsPath, "installLocationOverride" + Process.GetCurrentProcess().Id.ToString());
                 if (Directory.Exists(directory))
                     Directory.Delete(directory, true);
                 Directory.CreateDirectory(directory);

@@ -642,11 +642,7 @@ namespace System
 
             RuntimeType arrayType = (RuntimeType)GetType();
 
-            if (arrayType.GenericCache is not ArrayInitializeCache cache)
-            {
-                cache = new ArrayInitializeCache(arrayType);
-                arrayType.GenericCache = cache;
-            }
+            ArrayInitializeCache cache = arrayType.GetOrCreateCacheEntry<ArrayInitializeCache>();
 
             delegate*<ref byte, void> constructorFtn = cache.ConstructorEntrypoint;
             ref byte arrayRef = ref MemoryMarshal.GetArrayDataReference(this);
@@ -659,17 +655,21 @@ namespace System
             }
         }
 
-        private sealed unsafe partial class ArrayInitializeCache
+        internal sealed unsafe partial class ArrayInitializeCache : RuntimeType.IGenericCacheEntry<ArrayInitializeCache>
         {
             internal readonly delegate*<ref byte, void> ConstructorEntrypoint;
 
             [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Array_GetElementConstructorEntrypoint")]
             private static partial delegate*<ref byte, void> GetElementConstructorEntrypoint(QCallTypeHandle arrayType);
 
-            public ArrayInitializeCache(RuntimeType arrayType)
+            private ArrayInitializeCache(delegate*<ref byte, void> constructorEntrypoint)
             {
-                ConstructorEntrypoint = GetElementConstructorEntrypoint(new QCallTypeHandle(ref arrayType));
+                ConstructorEntrypoint = constructorEntrypoint;
             }
+
+            public static ArrayInitializeCache Create(RuntimeType arrayType) => new(GetElementConstructorEntrypoint(new QCallTypeHandle(ref arrayType)));
+            public void InitializeCompositeCache(RuntimeType.CompositeCacheEntry compositeEntry) => compositeEntry._arrayInitializeCache = this;
+            public static ref ArrayInitializeCache? GetStorageRef(RuntimeType.CompositeCacheEntry compositeEntry) => ref compositeEntry._arrayInitializeCache;
         }
     }
 
@@ -694,7 +694,7 @@ namespace System
     // it for type <T> and executes it.
     //
     // The "T" will reflect the interface used to invoke the method. The actual runtime "this" will be
-    // array that is castable to "T[]" (i.e. for primitivs and valuetypes, it will be exactly
+    // array that is castable to "T[]" (i.e. for primitives and valuetypes, it will be exactly
     // "T[]" - for orefs, it may be a "U[]" where U derives from T.)
     //----------------------------------------------------------------------------------------
     internal sealed class SZArrayHelper

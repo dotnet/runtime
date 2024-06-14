@@ -7,7 +7,7 @@ import { deep_merge_config, normalizeConfig } from "./config";
 import { ENVIRONMENT_IS_WEB, loaderHelpers, runtimeHelpers } from "./globals";
 import { mono_log_debug } from "./logging";
 
-export function setupPreloadChannelToMainThread() {
+export function setupPreloadChannelToMainThread () {
     const channel = new MessageChannel();
     const workerPort = channel.port1;
     const mainPort = channel.port2;
@@ -31,7 +31,7 @@ export function setupPreloadChannelToMainThread() {
 let workerMonoConfigReceived = false;
 
 // called when the main thread sends us the mono config
-function onMonoConfigReceived(config: MonoConfigInternal, monoThreadInfo: PThreadInfo): void {
+function onMonoConfigReceived (config: MonoConfigInternal, monoThreadInfo: PThreadInfo): void {
     if (workerMonoConfigReceived) {
         mono_log_debug("mono config already received");
         return;

@@ -544,7 +544,11 @@ void EESocketCleanupHelper(bool isExecutingOnAltStack)
 
     if (isExecutingOnAltStack)
     {
-        GetThread()->SetExecutingOnAltStack();
+        Thread *pThread = GetThreadNULLOk();
+        if (pThread)
+        {
+             pThread->SetExecutingOnAltStack();
+        }
     }
 
     // Close the debugger transport socket first
@@ -929,11 +933,13 @@ void EEStartupHelper()
 
         SystemDomain::System()->DefaultDomain()->SetupSharedStatics();
 
+        InitializeThreadStaticData();
+
 #ifdef FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
         // retrieve configured max size for the mini-metadata buffer (defaults to 64KB)
         g_MiniMetaDataBuffMaxSize = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_MiniMdBufferCapacity);
         // align up to GetOsPageSize(), with a maximum of 1 MB
-        g_MiniMetaDataBuffMaxSize = (DWORD) min(ALIGN_UP(g_MiniMetaDataBuffMaxSize, GetOsPageSize()), 1024 * 1024);
+        g_MiniMetaDataBuffMaxSize = (DWORD) min(ALIGN_UP(g_MiniMetaDataBuffMaxSize, GetOsPageSize()), (DWORD)(1024 * 1024));
         // allocate the buffer. this is never touched while the process is running, so it doesn't
         // contribute to the process' working set. it is needed only as a "shadow" for a mini-metadata
         // buffer that will be set up and reported / updated in the Watson process (the
@@ -1244,6 +1250,8 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
         // This will check a flag and do nothing if not enabled.
         Interpreter::PrintPostMortemData();
 #endif // FEATURE_INTERPRETER
+        VirtualCallStubManager::LogFinalStats();
+        WriteJitHelperCountToSTRESSLOG();
 
 #ifdef PROFILING_SUPPORTED
         // If profiling is enabled, then notify of shutdown first so that the
@@ -1329,12 +1337,6 @@ part2:
             {
                 g_fEEShutDown |= ShutDown_Phase2;
 
-                // Shutdown finalizer before we suspend all background threads. Otherwise we
-                // never get to finalize anything.
-
-                // No longer process exceptions
-                g_fNoExceptions = true;
-
                 // <TODO>@TODO: This does things which shouldn't occur in part 2.  Namely,
                 // calling managed dll main callbacks (AppDomain::SignalProcessDetach), and
                 // RemoveAppDomainFromIPC.
@@ -1350,34 +1352,6 @@ part2:
                 // Terminate the debugging services.
                 TerminateDebugger();
 #endif // DEBUGGING_SUPPORTED
-
-                StubManager::TerminateStubManagers();
-
-#ifdef FEATURE_INTERPRETER
-                Interpreter::Terminate();
-#endif // FEATURE_INTERPRETER
-
-                //@TODO: find the right place for this
-                VirtualCallStubManager::UninitStatic();
-
-                // Unregister our vectored exception and continue handlers from the OS.
-                // This will ensure that if any other DLL unload (after ours) has an exception,
-                // we wont attempt to process that exception (which could lead to various
-                // issues including AV in the runtime).
-                //
-                // This should be done:
-                //
-                // 1) As the last action during the shutdown so that any unexpected AVs
-                //    in the runtime during shutdown do result in FailFast in VEH.
-                //
-                // 2) Only when the runtime is processing DLL_PROCESS_DETACH.
-                CLRRemoveVectoredHandlers();
-
-#if USE_DISASSEMBLER
-                Disassembler::StaticClose();
-#endif // USE_DISASSEMBLER
-
-                WriteJitHelperCountToSTRESSLOG();
 
                 STRESS_LOG0(LF_STARTUP, LL_INFO10, "EEShutdown shutting down logging");
 
@@ -1421,7 +1395,7 @@ BOOL IsThreadInSTA()
     CONTRACTL_END;
 
     // If ole32.dll is not loaded
-    if (WszGetModuleHandle(W("ole32.dll")) == NULL)
+    if (GetModuleHandle(W("ole32.dll")) == NULL)
     {
         return FALSE;
     }
@@ -1700,10 +1674,6 @@ BOOL STDMETHODCALLTYPE EEDllMain( // TRUE on success, FALSE on error.
                     LOG((LF_STARTUP, INFO3, "EEShutDown invoked from EEDllMain"));
                     EEShutDown(TRUE); // shut down EE if it was started up
                 }
-                else
-                {
-                    CLRRemoveVectoredHandlers();
-                }
                 break;
             }
         }
@@ -1752,10 +1722,27 @@ struct TlsDestructionMonitor
                     thread->m_pFrame = FRAME_TOP;
                     GCX_COOP_NO_DTOR_END();
                 }
+#ifdef _DEBUG
+                BOOL oldGCOnTransitionsOK = thread->m_GCOnTransitionsOK;
+                thread->m_GCOnTransitionsOK = FALSE;
+#endif
+                if (!IsAtProcessExit() && !g_fEEShutDown)
+                {
+                    GCX_COOP_NO_DTOR();
+                    FreeThreadStaticData(&t_ThreadStatics, thread);
+                    GCX_COOP_NO_DTOR_END();
+                }
+#ifdef _DEBUG
+                thread->m_GCOnTransitionsOK = oldGCOnTransitionsOK;
+#endif
                 thread->DetachThread(TRUE);
             }
+            else
+            {
+                // Since we don't actually cleanup the TLS data along this path, verify that it is already cleaned up
+                AssertThreadStaticDataFreed(&t_ThreadStatics);
+            }
 
-            DeleteThreadLocalMemory();
             ThreadDetaching();
         }
     }
@@ -1768,30 +1755,6 @@ thread_local TlsDestructionMonitor tls_destructionMonitor;
 void EnsureTlsDestructionMonitor()
 {
     tls_destructionMonitor.Activate();
-}
-
-#ifdef _MSC_VER
-__declspec(thread)  ThreadStaticBlockInfo t_ThreadStatics;
-#else
-__thread ThreadStaticBlockInfo t_ThreadStatics;
-#endif // _MSC_VER
-
-// Delete the thread local memory only if we the current thread
-// is the one executing this code. If we do not guard it, it will
-// end up deleting the thread local memory of the calling thread.
-void DeleteThreadLocalMemory()
-{
-    t_NonGCThreadStaticBlocksSize = 0;
-    t_GCThreadStaticBlocksSize = 0;
-
-    t_ThreadStatics.NonGCMaxThreadStaticBlocks = 0;
-    t_ThreadStatics.GCMaxThreadStaticBlocks = 0;
-
-    delete[] t_ThreadStatics.NonGCThreadStaticBlocks;
-    t_ThreadStatics.NonGCThreadStaticBlocks = nullptr;
-
-    delete[] t_ThreadStatics.GCThreadStaticBlocks;
-    t_ThreadStatics.GCThreadStaticBlocks = nullptr;
 }
 
 #ifdef DEBUGGING_SUPPORTED

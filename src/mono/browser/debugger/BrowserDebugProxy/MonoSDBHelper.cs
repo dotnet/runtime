@@ -1373,7 +1373,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             using var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdAssembly.GetName, commandParamsWriter, token);
             var name = retDebuggerCmdReader.ReadString();
-            return name.Remove(name.IndexOf(",")) + ".dll";
+            return name.Remove(name.IndexOf(',')) + ".dll";
         }
 
         public async Task<string> GetMethodName(int methodId, CancellationToken token)
@@ -2185,7 +2185,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         asyncLocal["name"] = match.Groups["varName"].Value;
                     }
                 }
-                else if (fieldName.StartsWith("$"))
+                else if (fieldName.StartsWith('$'))
                 {
                     continue;
                 }

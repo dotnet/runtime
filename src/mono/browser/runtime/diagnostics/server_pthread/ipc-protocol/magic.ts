@@ -3,7 +3,7 @@
 
 let magic_buf: Uint8Array = null!;
 const Magic = {
-    get DOTNET_IPC_V1(): Uint8Array {
+    get DOTNET_IPC_V1 (): Uint8Array {
         if (magic_buf === null) {
             const magic = "DOTNET_IPC_V1";
             const magic_len = magic.length + 1; // nul terminated
@@ -15,7 +15,7 @@ const Magic = {
         }
         return magic_buf;
     },
-    get MinimalHeaderSize(): number {
+    get MinimalHeaderSize (): number {
         // we just need to see the magic and the size
         const sizeOfSize = 2;
         return Magic.DOTNET_IPC_V1.byteLength + sizeOfSize;

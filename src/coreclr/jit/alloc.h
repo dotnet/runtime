@@ -22,9 +22,9 @@ enum CompMemKind
 class ArenaAllocator
 {
 private:
-    ArenaAllocator(const ArenaAllocator& other) = delete;
+    ArenaAllocator(const ArenaAllocator& other)            = delete;
     ArenaAllocator& operator=(const ArenaAllocator& other) = delete;
-    ArenaAllocator& operator=(ArenaAllocator&& other) = delete;
+    ArenaAllocator& operator=(ArenaAllocator&& other)      = delete;
 
     struct PageDescriptor
     {
@@ -52,7 +52,7 @@ private:
     void* allocateNewPage(size_t size);
 
     static void* allocateHostMemory(size_t size, size_t* pActualSize);
-    static void freeHostMemory(void* block, size_t size);
+    static void  freeHostMemory(void* block, size_t size);
 
 #if MEASURE_MEM_ALLOC
     struct MemStats
@@ -125,8 +125,8 @@ private:
 
 public:
     MemStatsAllocator* getMemStatsAllocator(CompMemKind kind);
-    void finishMemStats();
-    void dumpMemStats(FILE* file);
+    void               finishMemStats();
+    void               dumpMemStats(FILE* file);
 
     static void dumpMaxMemStats(FILE* file);
     static void dumpAggregateMemStats(FILE* file);
@@ -276,7 +276,8 @@ class CompIAllocator : public IAllocator
     char          m_zeroLenAllocTarg;
 
 public:
-    CompIAllocator(CompAllocator alloc) : m_alloc(alloc)
+    CompIAllocator(CompAllocator alloc)
+        : m_alloc(alloc)
     {
     }
 

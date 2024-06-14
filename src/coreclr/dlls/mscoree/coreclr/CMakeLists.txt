@@ -109,7 +109,14 @@ set(CORECLR_LIBRARIES
     interop
     coreclrminipal
     gc_pal
+    cdac_contract_descriptor
 )
+
+if(CLR_CMAKE_TARGET_ARCH_AMD64)
+    list(APPEND CORECLR_LIBRARIES
+        gc_vxsort
+    )
+endif(CLR_CMAKE_TARGET_ARCH_AMD64)
 
 if(CLR_CMAKE_TARGET_WIN32)
     list(APPEND CORECLR_LIBRARIES

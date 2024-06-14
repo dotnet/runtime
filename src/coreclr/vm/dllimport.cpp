@@ -1630,6 +1630,10 @@ NDirectStubLinker::NDirectStubLinker(
         m_pcsSetup->EmitSTLOC(m_dwTargetInterfacePointerLocalNum);
     }
 #endif // FEATURE_COMINTEROP
+
+#if defined(TARGET_X86) && defined(FEATURE_IJW)
+    m_dwCopyCtorChainLocalNum = (DWORD)-1;
+#endif // defined(TARGET_X86) && defined(FEATURE_IJW)
 }
 
 void NDirectStubLinker::SetCallingConvention(CorInfoCallConvExtension unmngCallConv, BOOL fIsVarArg)
@@ -1841,6 +1845,23 @@ DWORD NDirectStubLinker::GetReturnValueLocalNum()
     LIMITED_METHOD_CONTRACT;
     return m_dwRetValLocalNum;
 }
+
+#if defined(TARGET_X86) && defined(FEATURE_IJW)
+DWORD NDirectStubLinker::GetCopyCtorChainLocalNum()
+{
+    STANDARD_VM_CONTRACT;
+
+    if (m_dwCopyCtorChainLocalNum == (DWORD)-1)
+    {
+        // The local is created and initialized lazily when first asked.
+        m_dwCopyCtorChainLocalNum = NewLocal(CoreLibBinder::GetClass(CLASS__COPY_CONSTRUCTOR_CHAIN));
+        m_pcsSetup->EmitLDLOCA(m_dwCopyCtorChainLocalNum);
+        m_pcsSetup->EmitINITOBJ(m_pcsSetup->GetToken(CoreLibBinder::GetClass(CLASS__COPY_CONSTRUCTOR_CHAIN)));
+    }
+
+    return m_dwCopyCtorChainLocalNum;
+}
+#endif // defined(TARGET_X86) && defined(FEATURE_IJW)
 
 BOOL NDirectStubLinker::IsCleanupNeeded()
 {
@@ -2071,6 +2092,10 @@ void NDirectStubLinker::End(DWORD dwStubFlags)
     }
 }
 
+#if defined(TARGET_X86) && defined(TARGET_WINDOWS)
+EXTERN_C void STDCALL CopyConstructorCallStub(void);
+#endif // defined(TARGET_X86) && defined(TARGET_WINDOWS)
+
 void NDirectStubLinker::DoNDirect(ILCodeStream *pcsEmit, DWORD dwStubFlags, MethodDesc * pStubMD)
 {
     STANDARD_VM_CONTRACT;
@@ -2153,6 +2178,21 @@ void NDirectStubLinker::DoNDirect(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
             pcsEmit->EmitLDIND_I();  // Get UMEntryThunk::m_pManagedTarget
         }
     }
+
+#if defined(TARGET_X86) && defined(FEATURE_IJW)
+    if (m_dwCopyCtorChainLocalNum != (DWORD)-1)
+    {
+        // If we have a copy constructor chain local, we need to call the copy constructor stub
+        // to ensure that the chain is called correctly.
+        // Let's install the stub chain here and redirect the call to the stub.
+        DWORD targetLoc = NewLocal(ELEMENT_TYPE_I);
+        pcsEmit->EmitSTLOC(targetLoc);
+        pcsEmit->EmitLDLOCA(m_dwCopyCtorChainLocalNum);
+        pcsEmit->EmitLDLOC(targetLoc);
+        pcsEmit->EmitCALL(METHOD__COPY_CONSTRUCTOR_CHAIN__INSTALL, 2, 0);
+        pcsEmit->EmitLDC((DWORD_PTR)&CopyConstructorCallStub);
+    }
+#endif // defined(TARGET_X86) && defined(FEATURE_IJW)
 
     // For managed-to-native calls, the rest of the work is done by the JIT. It will
     // erect InlinedCallFrame, flip GC mode, and use the specified calling convention
@@ -2404,7 +2444,7 @@ public:
 
         if (SF_IsCOMLateBoundStub(m_dwStubFlags) && pInfo->GetDispWrapperType() != 0)
         {
-            m_lateBoundFlags |= ComPlusCallInfo::kRequiresArgumentWrapping;
+            m_lateBoundFlags |= CLRToCOMCallInfo::kRequiresArgumentWrapping;
         }
     }
 
@@ -2442,14 +2482,14 @@ public:
         STANDARD_VM_CONTRACT;
 
         // set flags directly on the interop MD
-        _ASSERTE(pMD->IsComPlusCall());
+        _ASSERTE(pMD->IsCLRToCOMCall());
 
-        ((ComPlusCallMethodDesc *)pMD)->SetLateBoundFlags(m_lateBoundFlags);
+        ((CLRToCOMCallMethodDesc *)pMD)->SetLateBoundFlags(m_lateBoundFlags);
     }
 
 protected:
     DWORD        m_dwStubFlags;
-    BYTE         m_lateBoundFlags; // ComPlusCallMethodDesc::Flags
+    BYTE         m_lateBoundFlags; // CLRToCOMCallMethodDesc::Flags
 };
 
 #endif // FEATURE_COMINTEROP
@@ -2827,6 +2867,7 @@ static LPBYTE FollowIndirect(LPBYTE pTarget)
 }
 #endif // !TARGET_UNIX
 
+#ifdef FEATURE_IJW
 BOOL HeuristicDoesThisLookLikeAGetLastErrorCall(LPBYTE pTarget)
 {
     CONTRACTL
@@ -2837,12 +2878,11 @@ BOOL HeuristicDoesThisLookLikeAGetLastErrorCall(LPBYTE pTarget)
     }
     CONTRACTL_END;
 
-#if !defined(TARGET_UNIX)
     static LPBYTE pGetLastError = NULL;
     if (!pGetLastError)
     {
         // No need to use a holder here, since no cleanup is necessary.
-        HMODULE hMod = WszGetModuleHandle(WINDOWS_KERNEL32_DLLNAME_W);
+        HMODULE hMod = GetModuleHandle(WINDOWS_KERNEL32_DLLNAME_W);
         if (hMod)
         {
             pGetLastError = (LPBYTE)GetProcAddress(hMod, "GetLastError");
@@ -2872,18 +2912,10 @@ BOOL HeuristicDoesThisLookLikeAGetLastErrorCall(LPBYTE pTarget)
         // jmp [xxxx] - could be an import thunk
         return pTarget2 == pGetLastError;
     }
-#endif // !TARGET_UNIX
 
     return FALSE;
 }
-
-DWORD STDMETHODCALLTYPE FalseGetLastError()
-{
-    WRAPPER_NO_CONTRACT;
-
-    return GetThread()->m_dwLastError;
-}
-
+#endif // FEATURE_IJW
 
 CorInfoCallConvExtension GetDefaultCallConv(BOOL bIsVarArg)
 {
@@ -3200,7 +3232,7 @@ BOOL NDirect::MarshalingRequired(
     if (pMD != NULL)
     {
         // HRESULT swapping is handled by stub
-        if (pMD->IsNDirect() || pMD->IsComPlusCall())
+        if (pMD->IsNDirect() || pMD->IsCLRToCOMCall())
         {
             if (!IsMiPreserveSig(pMD->GetImplAttrs()))
                 return TRUE;
@@ -3274,7 +3306,7 @@ BOOL NDirect::MarshalingRequired(
     // we'd rather have developers use the feature flag to diable the whole COM interop subsystem at once.
     bool runtimeMarshallingEnabled = pModule->IsRuntimeMarshallingEnabled();
 #ifdef FEATURE_COMINTEROP
-    runtimeMarshallingEnabled |= pMD && pMD->IsComPlusCall();
+    runtimeMarshallingEnabled |= pMD && pMD->IsCLRToCOMCall();
 #endif
 
     for (ULONG i = 0; i < numArgs; i++)
@@ -3421,10 +3453,10 @@ BOOL NDirect::MarshalingRequired(
             ((NDirectMethodDesc *)pMD)->SetStackArgumentSize(static_cast<WORD>(dwStackSize), callConv);
         }
 #ifdef FEATURE_COMINTEROP
-        else if (pMD->IsComPlusCall())
+        else if (pMD->IsCLRToCOMCall())
         {
             // calling convention is always stdcall
-            ((ComPlusCallMethodDesc *)pMD)->SetStackArgumentSize(static_cast<WORD>(dwStackSize));
+            ((CLRToCOMCallMethodDesc *)pMD)->SetStackArgumentSize(static_cast<WORD>(dwStackSize));
         }
 #endif // FEATURE_COMINTEROP
     }
@@ -4484,7 +4516,7 @@ HRESULT FindPredefinedILStubMethod(MethodDesc *pTargetMD, DWORD dwStubFlags, Met
             // interfaces forwarded to CustomMarshalers.dll such as IEnumerable::GetEnumerator)
             return E_FAIL;
         }
-        _ASSERTE(pTargetMD->IsComPlusCall());
+        _ASSERTE(pTargetMD->IsCLRToCOMCall());
 
         if (pTargetMD->IsInterface())
         {
@@ -5134,7 +5166,7 @@ namespace
             {
                 if (SF_IsCOMStub(dwStubFlags))
                 {
-                    ComPlusCallInfo *pComInfo = ComPlusCallInfo::FromMethodDesc(pTargetMD);
+                    CLRToCOMCallInfo *pComInfo = CLRToCOMCallInfo::FromMethodDesc(pTargetMD);
 
                     if (pComInfo != NULL)
                     {
@@ -5541,7 +5573,7 @@ namespace
             StackSString ssLibName(SString::Utf8, pMD->GetLibName());
 
             WCHAR wszEPName[50];
-            if (WszMultiByteToWideChar(CP_UTF8, 0, (LPCSTR)pMD->GetEntrypointName(), -1, wszEPName, sizeof(wszEPName)/sizeof(WCHAR)) == 0)
+            if (MultiByteToWideChar(CP_UTF8, 0, (LPCSTR)pMD->GetEntrypointName(), -1, wszEPName, sizeof(wszEPName)/sizeof(WCHAR)) == 0)
             {
                 wszEPName[0] = W('?');
                 wszEPName[1] = W('\0');
@@ -5578,7 +5610,7 @@ PCODE NDirect::GetStubForILStub(NDirectMethodDesc* pNMD, MethodDesc** ppStubMD, 
 {
     STANDARD_VM_CONTRACT;
 
-    PCODE pStub = NULL;
+    PCODE pStub = (PCODE)NULL;
 
     CONSISTENCY_CHECK(*ppStubMD == NULL);
 
@@ -5588,7 +5620,7 @@ PCODE NDirect::GetStubForILStub(NDirectMethodDesc* pNMD, MethodDesc** ppStubMD, 
     *ppStubMD = NDirect::GetILStubMethodDesc(pNMD, &sigInfo, dwStubFlags);
 
     if (SF_IsForNumParamBytes(dwStubFlags))
-        return NULL;
+        return (PCODE)NULL;
 
     if (*ppStubMD)
     {
@@ -5635,7 +5667,7 @@ PCODE JitILStub(MethodDesc* pStubMD)
 
     PCODE pCode = pStubMD->GetNativeCode();
 
-    if (pCode == NULL)
+    if (pCode == (PCODE)NULL)
     {
         ///////////////////////////////
         //
@@ -5684,11 +5716,11 @@ PCODE GetStubForInteropMethod(MethodDesc* pMD, DWORD dwStubFlags)
         STANDARD_VM_CHECK;
 
         PRECONDITION(CheckPointer(pMD));
-        PRECONDITION(pMD->IsNDirect() || pMD->IsComPlusCall() || pMD->IsEEImpl() || pMD->IsIL());
+        PRECONDITION(pMD->IsNDirect() || pMD->IsCLRToCOMCall() || pMD->IsEEImpl() || pMD->IsIL());
     }
     CONTRACT_END;
 
-    PCODE                   pStub = NULL;
+    PCODE                   pStub = (PCODE)NULL;
     MethodDesc*             pStubMD = NULL;
 
     if (pMD->IsNDirect())
@@ -5698,9 +5730,9 @@ PCODE GetStubForInteropMethod(MethodDesc* pMD, DWORD dwStubFlags)
     }
 #ifdef FEATURE_COMINTEROP
     else
-    if (pMD->IsComPlusCall())
+    if (pMD->IsCLRToCOMCall())
     {
-        pStub = ComPlusCall::GetStubForILStub(pMD, &pStubMD);
+        pStub = CLRToCOMCall::GetStubForILStub(pMD, &pStubMD);
     }
 #endif // FEATURE_COMINTEROP
     else
@@ -5751,8 +5783,8 @@ void CreateCLRToDispatchCOMStub(
     // COM event call information.
     if (SF_IsCOMEventCallStub(dwStubFlags))
     {
-        _ASSERTE(pMD->IsComPlusCall()); //  no generic COM eventing
-        ((ComPlusCallMethodDesc *)pMD)->InitComEventCallInfo();
+        _ASSERTE(pMD->IsCLRToCOMCall()); //  no generic COM eventing
+        ((CLRToCOMCallMethodDesc *)pMD)->InitComEventCallInfo();
     }
 
     // Get the call signature information
@@ -5785,8 +5817,8 @@ void CreateCLRToDispatchCOMStub(
                             pParamTokenArray,
                             iLCIDArg);
 
-    _ASSERTE(pMD->IsComPlusCall()); // no generic disp-calls
-    ((ComPlusCallMethodDesc *)pMD)->InitRetThunk();
+    _ASSERTE(pMD->IsCLRToCOMCall()); // no generic disp-calls
+    ((CLRToCOMCallMethodDesc *)pMD)->InitRetThunk();
 }
 
 
@@ -5990,7 +6022,7 @@ PCODE GetILStubForCalli(VASigCookie *pVASigCookie, MethodDesc *pMD)
     }
     CONTRACT_END;
 
-    PCODE pTempILStub = NULL;
+    PCODE pTempILStub = (PCODE)NULL;
 
     INSTALL_MANAGED_EXCEPTION_DISPATCHER;
     // this function is called by CLR to native assembly stubs which are called by
@@ -6093,7 +6125,7 @@ PCODE GetILStubForCalli(VASigCookie *pVASigCookie, MethodDesc *pMD)
 
     InterlockedCompareExchangeT<PCODE>(&pVASigCookie->pNDirectILStub,
                                                     pTempILStub,
-                                                    NULL);
+                                                    (PCODE)NULL);
 
     UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
     UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
@@ -6101,5 +6133,21 @@ PCODE GetILStubForCalli(VASigCookie *pVASigCookie, MethodDesc *pMD)
     RETURN pVASigCookie->pNDirectILStub;
 }
 
+#if defined(TARGET_X86) && defined(FEATURE_IJW)
+// Copy constructor support for C++/CLI
+EXTERN_C void* STDCALL CallCopyConstructorsWorker(void* esp)
+{
+    STATIC_CONTRACT_THROWS;
+    STATIC_CONTRACT_GC_TRIGGERS;
+    STATIC_CONTRACT_MODE_PREEMPTIVE; // we've already switched to preemptive
+
+    using ExecuteCallback = void*(STDMETHODCALLTYPE*)(void*);
+
+    MethodDesc* pMD = CoreLibBinder::GetMethod(METHOD__COPY_CONSTRUCTOR_CHAIN__EXECUTE_CURRENT_COPIES_AND_GET_TARGET);
+    ExecuteCallback pExecute = (ExecuteCallback)pMD->GetMultiCallableAddrOfCode();
+
+    return pExecute(esp);
+}
+#endif // defined(TARGET_X86) && defined(FEATURE_IJW)
 
 #endif // #ifndef DACCESS_COMPILE

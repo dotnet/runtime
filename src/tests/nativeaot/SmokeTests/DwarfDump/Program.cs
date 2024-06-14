@@ -5,12 +5,10 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
-using Xunit;
 
 public class Program
 {
-    [Fact]
-    public static int TestEntryPoint()
+    public static int Main(string[] args)
     {
         var llvmDwarfDumpPath = Path.Combine(
             Environment.GetEnvironmentVariable("CORE_ROOT"),

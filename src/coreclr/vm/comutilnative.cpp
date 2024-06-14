@@ -1081,24 +1081,24 @@ FCIMPLEND
 **Arguments: Object of interest
 **Exceptions: None
 ==============================================================================*/
-FCIMPL1(void, GCInterface::ReRegisterForFinalize, Object *obj)
+extern "C" void QCALLTYPE GCInterface_ReRegisterForFinalize(QCall::ObjectHandleOnStack pObj)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
 
     // Checked by the caller
-    _ASSERTE(obj != NULL);
+    _ASSERTE(pObj.Get() != NULL);
+    _ASSERTE(pObj.Get()->GetMethodTable()->HasFinalizer());
 
-    if (obj->GetMethodTable()->HasFinalizer())
+    if (!GCHeapUtilities::GetGCHeap()->RegisterForFinalization(-1, OBJECTREFToObject(pObj.Get())))
     {
-        HELPER_METHOD_FRAME_BEGIN_1(obj);
-        if (!GCHeapUtilities::GetGCHeap()->RegisterForFinalization(-1, obj))
-        {
-            ThrowOutOfMemory();
-        }
-        HELPER_METHOD_FRAME_END();
+        ThrowOutOfMemory();
     }
+    END_QCALL;
 }
-FCIMPLEND
 
 FORCEINLINE UINT64 GCInterface::InterlockedAdd (UINT64 *pAugend, UINT64 addend) {
     WRAPPER_NO_CONTRACT;
@@ -1463,22 +1463,6 @@ NOINLINE void GCInterface::GarbageCollectModeAny(int generation)
 
 #include <optsmallperfcritical.h>
 
-FCIMPL2(FC_UINT8_RET,COMInterlocked::Exchange8, UINT8 *location, UINT8 value)
-{
-    FCALL_CONTRACT;
-
-    return (UINT8)InterlockedExchange8((CHAR *) location, (CHAR)value);
-}
-FCIMPLEND
-
-FCIMPL2(FC_INT16_RET,COMInterlocked::Exchange16, INT16 *location, INT16 value)
-{
-    FCALL_CONTRACT;
-
-    return InterlockedExchange16((SHORT *) location, value);
-}
-FCIMPLEND
-
 FCIMPL2(INT32,COMInterlocked::Exchange32, INT32 *location, INT32 value)
 {
     FCALL_CONTRACT;
@@ -1492,22 +1476,6 @@ FCIMPL2_IV(INT64,COMInterlocked::Exchange64, INT64 *location, INT64 value)
     FCALL_CONTRACT;
 
     return InterlockedExchange64((INT64 *) location, value);
-}
-FCIMPLEND
-
-FCIMPL3(FC_UINT8_RET, COMInterlocked::CompareExchange8, UINT8* location, UINT8 value, UINT8 comparand)
-{
-    FCALL_CONTRACT;
-
-    return (UINT8)InterlockedCompareExchange8((CHAR*)location, (CHAR)value, (CHAR)comparand);
-}
-FCIMPLEND
-
-FCIMPL3(FC_INT16_RET, COMInterlocked::CompareExchange16, INT16* location, INT16 value, INT16 comparand)
-{
-    FCALL_CONTRACT;
-
-    return InterlockedCompareExchange16((SHORT*)location, value, comparand);
 }
 FCIMPLEND
 

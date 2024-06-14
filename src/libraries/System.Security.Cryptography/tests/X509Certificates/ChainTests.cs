@@ -216,7 +216,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         /// and trusted root. It will fail to build any chain if those are not valid.
         /// </summary>
         [Fact]
-        [OuterLoop]
+        [OuterLoop("May take a long time on some platforms", ~TestPlatforms.Browser)]
         [SkipOnPlatform(TestPlatforms.Android, "Not supported on Android.")]
         public static void BuildChainExtraStoreUntrustedRoot()
         {
@@ -656,7 +656,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [ConditionalFact(nameof(TrustsMicrosoftDotComRoot))]
-        [OuterLoop(/* Modifies user certificate store */)]
+        [OuterLoop("Modifies user certificate store", ~TestPlatforms.Browser)]
         [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "Root certificate store is not accessible")]
         public static void BuildChain_MicrosoftDotCom_WithRootCertInUserAndSystemRootCertStores()
         {
@@ -1270,6 +1270,7 @@ LjCvFGJ+RiZCbxIZfUZEuJ5vAH5WOa2S0tYoEAeyfzuLMIqY9xK74nlZ/vzz1cY=");
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/100224", typeof(PlatformDetection), nameof(PlatformDetection.IsAndroid), nameof(PlatformDetection.IsArmOrArm64Process))]
         public static void BuildChainForSelfSignedCertificate_WithSha256RsaSignature()
         {
             using (ChainHolder chainHolder = new ChainHolder())
@@ -1288,6 +1289,7 @@ LjCvFGJ+RiZCbxIZfUZEuJ5vAH5WOa2S0tYoEAeyfzuLMIqY9xK74nlZ/vzz1cY=");
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/100224", typeof(PlatformDetection), nameof(PlatformDetection.IsAndroid), nameof(PlatformDetection.IsArmOrArm64Process))]
         public static void BuildChainForSelfSignedCertificate_WithUnknownOidSignature()
         {
             using (ChainHolder chainHolder = new ChainHolder())

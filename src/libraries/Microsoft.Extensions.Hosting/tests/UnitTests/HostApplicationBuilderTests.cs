@@ -255,7 +255,7 @@ namespace Microsoft.Extensions.Hosting.Tests
             HostApplicationBuilder builder = createBuilder();
 
             Assert.Equal(Environments.Production, builder.Environment.EnvironmentName);
-#if NETCOREAPP
+#if NET
             Assert.NotNull(builder.Environment.ApplicationName);
 #elif NETFRAMEWORK
             // Note GetEntryAssembly returns null for the net4x console test runner.
@@ -270,7 +270,7 @@ namespace Microsoft.Extensions.Hosting.Tests
 
             var env = host.Services.GetRequiredService<IHostEnvironment>();
             Assert.Equal(Environments.Production, env.EnvironmentName);
-#if NETCOREAPP
+#if NET
             Assert.NotNull(env.ApplicationName);
 #elif NETFRAMEWORK
             // Note GetEntryAssembly returns null for the net4x console test runner.
@@ -382,7 +382,7 @@ namespace Microsoft.Extensions.Hosting.Tests
 
         private static string CreateTempSubdirectory()
         {
-#if NETCOREAPP
+#if NET
             DirectoryInfo directoryInfo = Directory.CreateTempSubdirectory();
 #else
             DirectoryInfo directoryInfo = new DirectoryInfo(Path.Combine(Path.GetTempPath(), Path.GetRandomFileName()));

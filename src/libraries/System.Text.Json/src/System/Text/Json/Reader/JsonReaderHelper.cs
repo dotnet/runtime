@@ -145,7 +145,7 @@ namespace System.Text.Json
             return false;
         }
 
-#if NETCOREAPP
+#if NET
         public static bool TryGetFloatingPointConstant(ReadOnlySpan<byte> span, out Half value)
         {
             if (span.Length == 3)

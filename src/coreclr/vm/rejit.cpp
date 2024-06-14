@@ -1134,7 +1134,7 @@ ReJITID ReJitManager::GetReJitId(PTR_MethodDesc pMD, PCODE pCodeStart)
     // of a lock to impact our caller (the prestub worker) as little as possible. If the
     // map is nonempty, we'll acquire the lock at that point and do the lookup for real.
     CodeVersionManager* pCodeVersionManager = pMD->GetCodeVersionManager();
-    if (pCodeVersionManager->GetNonDefaultILVersionCount() == 0)
+    if (!pCodeVersionManager->HasNonDefaultILVersions())
     {
         return 0;
     }
