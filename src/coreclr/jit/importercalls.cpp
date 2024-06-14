@@ -3070,12 +3070,17 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
             GenTree* hwintrinsic = impHWIntrinsic(ni, clsHnd, method, sig R2RARG(entryPoint), mustExpand);
 
-            if (mustExpand && (hwintrinsic == nullptr))
+            if (hwintrinsic == nullptr)
             {
-                return impUnsupportedNamedIntrinsic(CORINFO_HELP_THROW_NOT_IMPLEMENTED, method, sig, mustExpand);
+                if (mustExpand)
+                {
+                    return impUnsupportedNamedIntrinsic(CORINFO_HELP_THROW_NOT_IMPLEMENTED, method, sig, mustExpand);
+                }
+                return nullptr;
             }
 
-            return hwintrinsic;
+            // Fold result, if possible
+            return gtFoldExpr(hwintrinsic);
         }
         else
         {
@@ -3083,7 +3088,16 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
             if (isIntrinsic)
             {
-                return impSimdAsHWIntrinsic(ni, clsHnd, method, sig, newobjThis, mustExpand);
+                GenTree* hwintrinsic = impSimdAsHWIntrinsic(ni, clsHnd, method, sig, newobjThis, mustExpand);
+
+                if (hwintrinsic == nullptr)
+                {
+                    assert(!mustExpand);
+                    return nullptr;
+                }
+
+                // Fold result, if possible
+                return gtFoldExpr(hwintrinsic);
             }
         }
     }

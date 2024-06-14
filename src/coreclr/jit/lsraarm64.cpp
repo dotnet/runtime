@@ -1542,6 +1542,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             }
 
             case NI_Vector64_ToVector128Unsafe:
+            case NI_Vector128_AsVector128Unsafe:
             case NI_Vector128_AsVector3:
             case NI_Vector128_GetLower:
             {
@@ -1974,6 +1975,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         {
             switch (intrin.id)
             {
+                case NI_Sve_LoadVectorNonTemporal:
+                case NI_Sve_LoadVector128AndReplicateToVector:
                 case NI_Sve_StoreAndZip:
                 case NI_Sve_PrefetchBytes:
                 case NI_Sve_PrefetchInt16:
