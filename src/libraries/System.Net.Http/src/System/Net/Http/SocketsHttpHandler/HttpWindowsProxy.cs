@@ -57,9 +57,13 @@ namespace System.Net.Http
                 // This is executed from threadpool. we should not ever throw here.
                 try
                 {
-                    // We need to register for notification every time
+                    // We need to register for notification every time. We regisrerand lock before we process configuration
+                    // so if there is update it would be serialized to ensure consistency.
                     Interop.Advapi32.RegNotifyChangeKeyValue(proxy._internetSettingsRegistry!.Handle, true, RegistrationFlags, proxy._waitHandle.SafeWaitHandle, true);
-                    proxy.UpdateConfiguration();
+                    lock (proxy)
+                    {
+                        proxy.UpdateConfiguration();
+                    }
                 }
                 catch (Exception ex)
                 {
