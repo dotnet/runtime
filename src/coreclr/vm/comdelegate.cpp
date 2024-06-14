@@ -761,7 +761,7 @@ void COMDelegate::Init()
 }
 
 #ifdef FEATURE_COMINTEROP
-ComPlusCallInfo * COMDelegate::PopulateComPlusCallInfo(MethodTable * pDelMT)
+CLRToCOMCallInfo * COMDelegate::PopulateCLRToCOMCallInfo(MethodTable * pDelMT)
 {
     CONTRACTL
     {
@@ -773,21 +773,21 @@ ComPlusCallInfo * COMDelegate::PopulateComPlusCallInfo(MethodTable * pDelMT)
 
     DelegateEEClass * pClass = (DelegateEEClass *)pDelMT->GetClass();
 
-    // set up the ComPlusCallInfo if it does not exist already
-    if (pClass->m_pComPlusCallInfo == NULL)
+    // set up the CLRToCOMCallInfo if it does not exist already
+    if (pClass->m_pCLRToCOMCallInfo == NULL)
     {
         LoaderHeap *pHeap = pDelMT->GetLoaderAllocator()->GetHighFrequencyHeap();
-        ComPlusCallInfo *pTemp = (ComPlusCallInfo *)(void *)pHeap->AllocMem(S_SIZE_T(sizeof(ComPlusCallInfo)));
+        CLRToCOMCallInfo *pTemp = (CLRToCOMCallInfo *)(void *)pHeap->AllocMem(S_SIZE_T(sizeof(CLRToCOMCallInfo)));
 
         pTemp->m_cachedComSlot = ComMethodTable::GetNumExtraSlots(ifVtable);
         pTemp->InitStackArgumentSize();
 
-        InterlockedCompareExchangeT(&pClass->m_pComPlusCallInfo, pTemp, NULL);
+        InterlockedCompareExchangeT(&pClass->m_pCLRToCOMCallInfo, pTemp, NULL);
     }
 
-    pClass->m_pComPlusCallInfo->m_pInterfaceMT = pDelMT;
+    pClass->m_pCLRToCOMCallInfo->m_pInterfaceMT = pDelMT;
 
-    return pClass->m_pComPlusCallInfo;
+    return pClass->m_pCLRToCOMCallInfo;
 }
 #endif // FEATURE_COMINTEROP
 

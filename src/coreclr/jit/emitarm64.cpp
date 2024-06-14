@@ -17064,12 +17064,28 @@ void emitter::emitStoreSimd12ToLclOffset(unsigned varNum, unsigned offset, regNu
     // store lower 8 bytes
     emitIns_S_R(INS_str, EA_8BYTE, dataReg, varNum, offset);
 
-    // Extract upper 4-bytes from data
-    regNumber tmpReg = codeGen->internalRegisters.GetSingle(tmpRegProvider);
-    emitIns_R_R_I(INS_mov, EA_4BYTE, tmpReg, dataReg, 2);
+    if (codeGen->internalRegisters.Count(tmpRegProvider) == 0)
+    {
+        // We don't have temp regs - let's do two shuffles then
 
-    // 4-byte write
-    emitIns_S_R(INS_str, EA_4BYTE, tmpReg, varNum, offset + 8);
+        // [0,1,2,3] -> [2,3,0,1]
+        emitIns_R_R_R_I(INS_ext, EA_16BYTE, dataReg, dataReg, dataReg, 8, INS_OPTS_16B);
+
+        // store lower 4 bytes
+        emitIns_S_R(INS_str, EA_4BYTE, dataReg, varNum, offset + 8);
+
+        // Restore dataReg to its previous state: [2,3,0,1] -> [0,1,2,3]
+        emitIns_R_R_R_I(INS_ext, EA_16BYTE, dataReg, dataReg, dataReg, 8, INS_OPTS_16B);
+    }
+    else
+    {
+        // Extract upper 4-bytes from data
+        regNumber tmpReg = codeGen->internalRegisters.GetSingle(tmpRegProvider);
+        emitIns_R_R_I(INS_mov, EA_4BYTE, tmpReg, dataReg, 2);
+
+        // 4-byte write
+        emitIns_S_R(INS_str, EA_4BYTE, tmpReg, varNum, offset + 8);
+    }
 }
 #endif // FEATURE_SIMD
 

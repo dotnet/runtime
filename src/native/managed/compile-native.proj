@@ -13,26 +13,11 @@
         <NativeLibsProjectsToBuild Include="$(MSBuildThisFileDirectory)cdacreader/src/cdacreader.csproj" />
     </ItemGroup>
 
-    <!-- Decide if we're going to do the NativeAOT builds -->
-    <PropertyGroup>
-        <!-- disable on Mono, for now -->
-        <SupportsNativeAotComponents Condition="'$(SupportsNativeAotComponents)' == '' and '$(RuntimeFlavor)' == 'Mono'">false</SupportsNativeAotComponents>
-        <!-- disable on linux-bionic, for now -->
-        <SupportsNativeAotComponents Condition="'$(SupportsNativeAotComponents)' == '' and '$(TargetsLinuxBionic)' == 'true'">false</SupportsNativeAotComponents>
-        <!-- NativeAOT doesn't support cross-OS compilation. disable for crossdac-->
-        <SupportsNativeAotComponents Condition="'$(SupportsNativeAotComponents)' == '' and '$(HostOS)' != '$(TargetOS)'">false</SupportsNativeAotComponents>
-        <!-- unsupported targets -->
-        <SupportsNativeAotComponents Condition="'$(SupportsNativeAotComponents)' == '' and '$(DotNetBuildSourceOnly)' == 'true'">false</SupportsNativeAotComponents>
-        <SupportsNativeAotComponents Condition="'$(SupportsNativeAotComponents)' == '' and ('$(TargetArchitecture)' == 'arm' or '$(TargetArchitecture)' == 'armel' or '$(TargetArchitecture)' == 'x86' or '$(TargetArchitecture)' == 'riscv64')">false</SupportsNativeAotComponents>
-        <SupportsNativeAotComponents Condition="'$(SupportsNativeAotComponents)' == '' and ('$(TargetsWindows)' == 'true' or '$(TargetsOSX)' == 'true' or ('$(TargetsLinux)' == 'true' and '$(TargetsAndroid)' != 'true' and '$(TargetsLinuxMusl)' != 'true'))">true</SupportsNativeAotComponents>
-        <SupportsNativeAotComponents Condition="'$(SupportsNativeAotComponents)' == ''">false</SupportsNativeAotComponents>
-    </PropertyGroup>
-
     <!-- some special kinds of runtime builds need extra NativeAOT flags -->
     <PropertyGroup>
         <SysRoot Condition="'$(CrossBuild)' == 'true' and '$(HostOS)' != 'windows'">$(ROOTFS_DIR)</SysRoot>
         <LinkerFlavor Condition="'$(CrossBuild)' == 'true' and '$(TargetsLinux)' == 'true'">lld</LinkerFlavor>
-        <CustomLinkerArgToolchainArg Condition="'$(CrossBuild)' == 'true' and '$(_hostArchitecture)' == '$(_targetArchitecture)' and '$(_hostOS)' != 'windows'">--gcc-toolchain=$(ROOTFS_DIR)/usr</CustomLinkerArgToolchainArg>
+        <CustomLinkerArgToolchainArg Condition="'$(CrossBuild)' == 'true' and '$(HostArchitecture)' == '$(TargetArchitecture)' and '$(HostOS)' != 'windows'">--gcc-toolchain=$(ROOTFS_DIR)/usr</CustomLinkerArgToolchainArg>
     </PropertyGroup>
 
     <ItemGroup>
@@ -51,6 +36,6 @@
                           ReferenceOutputAssembly="false"
                           AdditionalProperties="%(AdditionalProperties);$(SplitSubprojectProps)"
                           Targets="LinkNative"
-                          Condition="$(SupportsNativeAotComponents)"/>
+                          Condition="'$(UseNativeAotForComponents)' == 'true'"/>
     </ItemGroup>
 </Project>
