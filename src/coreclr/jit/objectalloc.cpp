@@ -389,6 +389,7 @@ bool ObjectAllocator::MorphAllocObjNodes()
                 GenTreeAllocObj*     asAllocObj   = data->AsAllocObj();
                 unsigned int         lclNum       = stmtExpr->AsLclVar()->GetLclNum();
                 CORINFO_CLASS_HANDLE clsHnd       = data->AsAllocObj()->gtAllocObjClsHnd;
+                CORINFO_CLASS_HANDLE stackClsHnd  = clsHnd;
                 const bool           isValueClass = comp->info.compCompHnd->isValueClass(clsHnd);
                 const char*          onHeapReason = nullptr;
                 bool                 canStack     = false;
@@ -396,6 +397,7 @@ bool ObjectAllocator::MorphAllocObjNodes()
                 if (isValueClass)
                 {
                     comp->Metrics.NewBoxedValueClassHelperCalls++;
+                    stackClsHnd = comp->info.compCompHnd->getTypeForBoxOnStack(clsHnd);
                 }
                 else
                 {
@@ -419,6 +421,12 @@ bool ObjectAllocator::MorphAllocObjNodes()
                     // reason set by the call
                     canStack = false;
                 }
+                else if (stackClsHnd == NO_CLASS_HANDLE)
+                {
+                    assert(isValueClass);
+                    onHeapReason = "[no class handle for this boxed value class]";
+                    canStack     = false;
+                }
                 else
                 {
                     JITDUMP("Allocating V%02u on the stack\n", lclNum);
@@ -427,7 +435,8 @@ bool ObjectAllocator::MorphAllocObjNodes()
                     // printf("@@@ SA V%02u (%s) in %s\n", lclNum, comp->eeGetClassName(clsHnd),
                     // comp->info.compFullName);
 
-                    const unsigned int stackLclNum = MorphAllocObjNodeIntoStackAlloc(asAllocObj, block, stmt);
+                    const unsigned int stackLclNum =
+                        MorphAllocObjNodeIntoStackAlloc(asAllocObj, stackClsHnd, isValueClass, block, stmt);
                     m_HeapLocalToStackLocalMap.AddOrUpdate(lclNum, stackLclNum);
                     // We keep the set of possibly-stack-pointing pointers as a superset of the set of
                     // definitely-stack-pointing pointers. All definitely-stack-pointing pointers are in both sets.
@@ -527,35 +536,28 @@ GenTree* ObjectAllocator::MorphAllocObjNodeIntoHelperCall(GenTreeAllocObj* alloc
 // MorphAllocObjNodeIntoStackAlloc: Morph a GT_ALLOCOBJ node into stack
 //                                  allocation.
 // Arguments:
-//    allocObj - GT_ALLOCOBJ that will be replaced by a stack allocation
-//    block    - a basic block where allocObj is
-//    stmt     - a statement where allocObj is
+//    allocObj     - GT_ALLOCOBJ that will be replaced by a stack allocation
+//    clsHnd       - class representing the stack allocated object
+//    isValueClass - we are stack allocating a boxed value class
+//    block        - a basic block where allocObj is
+//    stmt         - a statement where allocObj is
 //
 // Return Value:
 //    local num for the new stack allocated local
 //
 // Notes:
 //    This function can insert additional statements before stmt.
-
-unsigned int ObjectAllocator::MorphAllocObjNodeIntoStackAlloc(GenTreeAllocObj* allocObj,
-                                                              BasicBlock*      block,
-                                                              Statement*       stmt)
+//
+unsigned int ObjectAllocator::MorphAllocObjNodeIntoStackAlloc(
+    GenTreeAllocObj* allocObj, CORINFO_CLASS_HANDLE clsHnd, bool isValueClass, BasicBlock* block, Statement* stmt)
 {
     assert(allocObj != nullptr);
     assert(m_AnalysisDone);
+    assert(clsHnd != NO_CLASS_HANDLE);
 
-    CORINFO_CLASS_HANDLE clsHnd        = allocObj->gtAllocObjClsHnd;
-    const bool           isValueClass  = comp->info.compCompHnd->isValueClass(clsHnd);
-    const bool           shortLifetime = false;
-    const unsigned int   lclNum        = comp->lvaGrabTemp(shortLifetime DEBUGARG(
+    const bool         shortLifetime = false;
+    const unsigned int lclNum        = comp->lvaGrabTemp(shortLifetime DEBUGARG(
         isValueClass ? "stack allocated boxed value class temp" : "stack allocated ref class temp"));
-
-    if (isValueClass)
-    {
-        clsHnd = comp->info.compCompHnd->getTypeForBoxOnStack(clsHnd);
-        // must pre-check for this
-        assert(clsHnd != NO_CLASS_HANDLE);
-    }
 
     comp->lvaSetStruct(lclNum, clsHnd, /* unsafeValueClsCheck */ false);
 
