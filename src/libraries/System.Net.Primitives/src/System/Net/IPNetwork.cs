@@ -230,7 +230,7 @@ namespace System.Net
                 ReadOnlySpan<byte> ipAddressSpan = utf8Text.Slice(0, separatorIndex);
                 ReadOnlySpan<byte> prefixLengthSpan = utf8Text.Slice(separatorIndex + 1);
 
-                if (IPAddress.TryParse(ipAddressSpan, CultureInfo.InvariantCulture, out IPAddress? address) &&
+                if (IPAddress.TryParse(ipAddressSpan, out IPAddress? address) &&
                     int.TryParse(prefixLengthSpan, NumberStyles.None, CultureInfo.InvariantCulture, out int prefixLength) &&
                     prefixLength <= GetMaxPrefixLength(address) &&
                     !HasNonZeroBitsAfterNetworkPrefix(address, prefixLength))
