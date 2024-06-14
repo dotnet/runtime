@@ -19,7 +19,7 @@ namespace System.Net.Http
     {
         private readonly RegistryKey? _internetSettingsRegistry = Registry.CurrentUser?.OpenSubKey("Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings");
         private MultiProxy _insecureProxy;      // URI of the http system proxy if set
-        private  MultiProxy _secureProxy;       // URI of the https system proxy if set
+        private MultiProxy _secureProxy;       // URI of the https system proxy if set
         private FailedProxyCache _failedProxies = new FailedProxyCache();
         private List<string>? _bypass;          // list of domains not to proxy
         private List<IPAddress>? _localIp;
@@ -28,43 +28,50 @@ namespace System.Net.Http
         private SafeWinHttpHandle? _sessionHandle;
         private bool _disposed;
         private EventWaitHandle _waitHandle = new EventWaitHandle(false, EventResetMode.AutoReset);
-        private const int _registrationFlags = Interop.Advapi32.REG_NOTIFY_CHANGE_NAME | Interop.Advapi32.REG_NOTIFY_CHANGE_LAST_SET | Interop.Advapi32.REG_NOTIFY_CHANGE_ATTRIBUTES | Interop.Advapi32.REG_NOTIFY_THREAD_AGNOSTIC;
+        private const int RegistrationFlags = Interop.Advapi32.REG_NOTIFY_CHANGE_NAME | Interop.Advapi32.REG_NOTIFY_CHANGE_LAST_SET | Interop.Advapi32.REG_NOTIFY_CHANGE_ATTRIBUTES | Interop.Advapi32.REG_NOTIFY_THREAD_AGNOSTIC;
         private RegisteredWaitHandle? _registeredWaitHandle;
 
-        public static bool TryCreate([NotNullWhen(true)] out IWebProxy? proxy)
-        {
-            proxy = new HttpWindowsProxy();
-            return true;
-        }
-
-        public HttpWindowsProxy()
+        // 'proxy' used from tests via Reflection
+        public HttpWindowsProxy(WinInetProxyHelper? proxy = null)
         {
 
-            if (_internetSettingsRegistry != null)
+            if (_internetSettingsRegistry != null && proxy == null)
             {
                 // we register for change notifications so we can react to changes during lifetime.
-                if (Interop.Advapi32.RegNotifyChangeKeyValue(_internetSettingsRegistry.Handle, true, _registrationFlags, _waitHandle.SafeWaitHandle, true) == 0)
+                if (Interop.Advapi32.RegNotifyChangeKeyValue(_internetSettingsRegistry.Handle, true, RegistrationFlags, _waitHandle.SafeWaitHandle, true) == 0)
                 {
                     _registeredWaitHandle = ThreadPool.RegisterWaitForSingleObject(_waitHandle, RegistryChangeNotificationCallback, this, -1, false);
                 }
             }
 
-            _proxyHelper = new WinInetProxyHelper();
-            UpdateConfiguration();
+            _proxyHelper = proxy ?? new WinInetProxyHelper();
+            UpdateConfiguration(_proxyHelper);
         }
 
         private static void RegistryChangeNotificationCallback(object? state, bool timedOut)
         {
             HttpWindowsProxy proxy = (HttpWindowsProxy)state!;
-            // We need to register for notification every time
-            Interop.Advapi32.RegNotifyChangeKeyValue(proxy._internetSettingsRegistry!.Handle, true, _registrationFlags, proxy._waitHandle.SafeWaitHandle, true);
-            proxy.UpdateConfiguration();
+            if (!proxy._disposed)
+            {
+
+                // This is executed from threadpool. we should not ever throw here.
+                try
+                {
+                    // We need to register for notification every time
+                    Interop.Advapi32.RegNotifyChangeKeyValue(proxy._internetSettingsRegistry!.Handle, true, RegistrationFlags, proxy._waitHandle.SafeWaitHandle, true);
+                    proxy.UpdateConfiguration();
+                }
+                catch (Exception ex)
+                {
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(proxy, $"Failed to refresh proxy configuration: {ex.Message}");
+                }
+            }
         }
 
-        private void UpdateConfiguration()
+        private void UpdateConfiguration(WinInetProxyHelper? proxyHelper = null)
         {
 
-            WinInetProxyHelper proxyHelper = new WinInetProxyHelper();
+            proxyHelper ??= new WinInetProxyHelper();
 
             if (proxyHelper.AutoSettingsUsed)
             {
@@ -192,8 +199,8 @@ namespace System.Net.Http
                     SafeWinHttpHandle.DisposeAndClearHandle(ref _sessionHandle);
                 }
 
-                _registeredWaitHandle?.Unregister(null);
                 _internetSettingsRegistry?.Dispose();
+                _registeredWaitHandle?.Unregister(null);
             }
         }
 
