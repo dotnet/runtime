@@ -25,6 +25,9 @@ namespace Mono.Linker
 
 	internal sealed class CustomSymbolWriter : ISymbolWriter
 	{
+		// ASCII "RSDS": https://github.com/dotnet/runtime/blob/main/docs/design/specs/PE-COFF.md#codeview-debug-directory-entry-type-2
+		const int CodeViewSignature = 0x53445352;
+
 		readonly ISymbolWriter _symbolWriter;
 		readonly ModuleDefinition _module;
 		readonly bool _preserveSymbolPaths;
@@ -62,7 +65,7 @@ namespace Mono.Linker
 			var writer = new BinaryWriter (newDataStream);
 
 			var sig = reader.ReadUInt32 ();
-			if (sig != 0x53445352)
+			if (sig != CodeViewSignature)
 				return entry;
 
 			writer.Write (sig);
@@ -92,7 +95,7 @@ namespace Mono.Linker
 
 				var reader = new BinaryReader (new MemoryStream (entry.Data));
 				var sig = reader.ReadUInt32 ();
-				if (sig != 0x53445352)
+				if (sig != CodeViewSignature)
 					return string.Empty;
 
 				var stream = reader.BaseStream;
