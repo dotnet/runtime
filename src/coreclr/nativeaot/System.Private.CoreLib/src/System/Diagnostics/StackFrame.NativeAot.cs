@@ -46,6 +46,19 @@ namespace System.Diagnostics
             return _method;
         }
 
+        internal bool TryGetMethodStartAddress(out IntPtr startAddress)
+        {
+            if (_ipAddress == IntPtr.Zero || _ipAddress == Exception.EdiSeparator)
+            {
+                startAddress = IntPtr.Zero;
+                return false;
+            }
+
+            startAddress = _ipAddress - _nativeOffset;
+            Debug.Assert(RuntimeImports.RhFindMethodStartAddress(_ipAddress) == startAddress);
+            return true;
+        }
+
         private bool TryInitializeMethodBase()
         {
             if (_noMethodBaseAvailable || _ipAddress == IntPtr.Zero || _ipAddress == Exception.EdiSeparator)

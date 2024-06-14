@@ -3431,16 +3431,6 @@ inline BOOL IsGCSpecialThread ()
     return !!(t_ThreadType & ThreadType_GC);
 }
 
-// check if current thread is a Gate thread
-inline BOOL IsGateSpecialThread ()
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_MODE_ANY;
-
-    return !!(t_ThreadType & ThreadType_Gate);
-}
-
 // check if current thread is a debugger helper thread
 inline BOOL IsDbgHelperSpecialThread ()
 {
@@ -3481,33 +3471,6 @@ inline BOOL IsShutdownSpecialThread ()
     return !!(t_ThreadType & ThreadType_Shutdown);
 }
 
-inline BOOL IsThreadPoolIOCompletionSpecialThread ()
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_MODE_ANY;
-
-    return !!(t_ThreadType & ThreadType_Threadpool_IOCompletion);
-}
-
-inline BOOL IsThreadPoolWorkerSpecialThread ()
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_MODE_ANY;
-
-    return !!(t_ThreadType & ThreadType_Threadpool_Worker);
-}
-
-inline BOOL IsWaitSpecialThread ()
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_MODE_ANY;
-
-    return !!(t_ThreadType & ThreadType_Wait);
-}
-
 // check if current thread is a thread which is performing shutdown
 inline BOOL IsSuspendEEThread ()
 {
@@ -3525,15 +3488,6 @@ inline BOOL IsFinalizerThread ()
     STATIC_CONTRACT_MODE_ANY;
 
     return !!(t_ThreadType & ThreadType_Finalizer);
-}
-
-inline BOOL IsShutdownHelperThread ()
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_MODE_ANY;
-
-    return !!(t_ThreadType & ThreadType_ShutdownHelper);
 }
 
 inline BOOL IsProfilerAttachThread ()

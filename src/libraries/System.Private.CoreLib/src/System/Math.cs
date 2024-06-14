@@ -238,13 +238,24 @@ namespace System
             return (long)high - ((a >> 63) & b) - ((b >> 63) & a);
         }
 
+        /// <summary>Produces the full product of two unsigned 64-bit numbers.</summary>
+        /// <param name="a">The first number to multiply.</param>
+        /// <param name="b">The second number to multiply.</param>
+        /// <returns>The full product of the specified numbers.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static UInt128 BigMul(ulong a, ulong b)
+        {
+            ulong high = BigMul(a, b, out ulong low);
+            return new UInt128(high, low);
+        }
+
         /// <summary>Produces the full product of two 64-bit numbers.</summary>
         /// <param name="a">The first number to multiply.</param>
         /// <param name="b">The second number to multiply.</param>
         /// <returns>The full product of the specified numbers.</returns>
         internal static Int128 BigMul(long a, long b)
         {
-            long high = Math.BigMul(a, b, out long low);
+            long high = BigMul(a, b, out long low);
             return new Int128((ulong)high, (ulong)low);
         }
 
