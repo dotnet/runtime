@@ -8,213 +8,218 @@ schedules:
     - main
   always: true
 
-jobs:
-
-- template: /eng/pipelines/common/platform-matrix.yml
+extends:
+  template: /eng/pipelines/common/templates/pipeline-with-resources.yml
   parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
-    buildConfig: checked
-    platforms:
-    - Linux_x64
-    - Linux_arm64
-    - OSX_arm64
-    - OSX_x64
-    - windows_x64
-    - windows_arm64
-    - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
-    jobParameters:
-      testGroup: outerloop
+    stages:
+    - stage: Build
+      jobs:
 
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
-    buildConfig: Release
-    platforms:
-    - Linux_arm
-    - Linux_arm64
-    - Linux_x64
-    - OSX_arm64
-    - windows_x86
-    - windows_x64
-    jobParameters:
-      testGroup: outerloop
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
+          buildConfig: checked
+          platforms:
+          - Linux_x64
+          - Linux_arm64
+          - OSX_arm64
+          - OSX_x64
+          - windows_x64
+          - windows_arm64
+          - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
+          jobParameters:
+            testGroup: outerloop
 
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/libraries/build-job.yml
-    buildConfig: Release
-    platforms:
-    - Linux_arm
-    - Linux_arm64
-    - Linux_x64
-    - OSX_arm64
-    - OSX_x64
-    - windows_x86
-    - windows_x64
-    - windows_arm64
-    - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
-    jobParameters:
-      isOfficialBuild: false
-      liveRuntimeBuildConfig: Release
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
+          buildConfig: Release
+          platforms:
+          - Linux_arm
+          - Linux_arm64
+          - Linux_x64
+          - OSX_arm64
+          - windows_x86
+          - windows_x64
+          jobParameters:
+            testGroup: outerloop
 
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
-    buildConfig: checked
-    platforms:
-    - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
-    jobParameters:
-      testGroup: outerloop
-      liveLibrariesBuildConfig: Release
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/libraries/build-job.yml
+          buildConfig: Release
+          platforms:
+          - Linux_arm
+          - Linux_arm64
+          - Linux_x64
+          - OSX_arm64
+          - OSX_x64
+          - windows_x86
+          - windows_x64
+          - windows_arm64
+          - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
+          jobParameters:
+            isOfficialBuild: false
+            liveRuntimeBuildConfig: Release
 
-# Test most platforms in composite mode as the expected mainline shipping mode
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
-    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-    buildConfig: checked
-    platforms:
-    - Linux_x64
-    - Linux_arm64
-    - OSX_arm64
-    - OSX_x64
-    - windows_x64
-    - windows_arm64
-    jobParameters:
-      testGroup: outerloop
-      readyToRun: true
-      crossgen2: true
-      compositeBuildMode: true
-      displayNameArgs: Composite
-      liveLibrariesBuildConfig: Release
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
+          buildConfig: checked
+          platforms:
+          - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
+          jobParameters:
+            testGroup: outerloop
+            liveLibrariesBuildConfig: Release
 
-# Limited outerloop testing in non-composite mode
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
-    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-    buildConfig: checked
-    platforms:
-    - OSX_x64
-    jobParameters:
-      testGroup: outerloop
-      readyToRun: true
-      crossgen2: true
-      displayNameArgs: R2R_CG2
-      liveLibrariesBuildConfig: Release
+      # Test most platforms in composite mode as the expected mainline shipping mode
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          buildConfig: checked
+          platforms:
+          - Linux_x64
+          - Linux_arm64
+          - OSX_arm64
+          - OSX_x64
+          - windows_x64
+          - windows_arm64
+          jobParameters:
+            testGroup: outerloop
+            readyToRun: true
+            crossgen2: true
+            compositeBuildMode: true
+            displayNameArgs: Composite
+            liveLibrariesBuildConfig: Release
 
-# Build Crossgen2 baselines
-# These are the various crossgen2 targets that are supported, and cover all major
-# significantly different code generators
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/crossgen2-comparison-build-job.yml
-    buildConfig: Release
-    platforms:
-    - Linux_arm
-    - Linux_arm64
-    - Linux_x64
-    - OSX_arm64
-    - windows_x86
-    - windows_x64
-    jobParameters:
-      testGroup: outerloop
-      liveLibrariesBuildConfig: Release
+      # Limited outerloop testing in non-composite mode
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          buildConfig: checked
+          platforms:
+          - OSX_x64
+          jobParameters:
+            testGroup: outerloop
+            readyToRun: true
+            crossgen2: true
+            displayNameArgs: R2R_CG2
+            liveLibrariesBuildConfig: Release
 
-# test crossgen target Windows X86
-# This job verifies that 32-bit and 64 bit crossgen2 produces the same binaries,
-# and that cross-os targetting works
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/crossgen2-comparison-job.yml
-    buildConfig: Release
-    platforms:
-    - Linux_x64
-    - windows_x86
-    helixQueueGroup: pr
-    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-    jobParameters:
-      testGroup: outerloop
-      liveLibrariesBuildConfig: Release
-      targetos: windows
-      targetarch: x86
+      # Build Crossgen2 baselines
+      # These are the various crossgen2 targets that are supported, and cover all major
+      # significantly different code generators
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/coreclr/templates/crossgen2-comparison-build-job.yml
+          buildConfig: Release
+          platforms:
+          - Linux_arm
+          - Linux_arm64
+          - Linux_x64
+          - OSX_arm64
+          - windows_x86
+          - windows_x64
+          jobParameters:
+            testGroup: outerloop
+            liveLibrariesBuildConfig: Release
 
-# test target Linux X64
-# verify that cross OS targetting works
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/crossgen2-comparison-job.yml
-    buildConfig: Release
-    platforms:
-    - windows_x64
-    helixQueueGroup: pr
-    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-    jobParameters:
-      testGroup: outerloop
-      liveLibrariesBuildConfig: Release
-      targetos: Linux
-      targetarch: x64
+      # test crossgen target Windows X86
+      # This job verifies that 32-bit and 64 bit crossgen2 produces the same binaries,
+      # and that cross-os targetting works
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/coreclr/templates/crossgen2-comparison-job.yml
+          buildConfig: Release
+          platforms:
+          - Linux_x64
+          - windows_x86
+          helixQueueGroup: pr
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          jobParameters:
+            testGroup: outerloop
+            liveLibrariesBuildConfig: Release
+            targetos: windows
+            targetarch: x86
 
-# test target Windows X64
-# verify that cross OS targetting works
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/crossgen2-comparison-job.yml
-    buildConfig: Release
-    platforms:
-    - Linux_x64
-    helixQueueGroup: pr
-    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-    jobParameters:
-      testGroup: outerloop
-      liveLibrariesBuildConfig: Release
-      targetos: windows
-      targetarch: x64
+      # test target Linux X64
+      # verify that cross OS targetting works
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/coreclr/templates/crossgen2-comparison-job.yml
+          buildConfig: Release
+          platforms:
+          - windows_x64
+          helixQueueGroup: pr
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          jobParameters:
+            testGroup: outerloop
+            liveLibrariesBuildConfig: Release
+            targetos: Linux
+            targetarch: x64
 
-# test target Linux arm
-# verify that cross architecture targetting works
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/crossgen2-comparison-job.yml
-    buildConfig: Release
-    platforms:
-    - Linux_arm
-    helixQueueGroup: pr
-    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-    jobParameters:
-      testGroup: outerloop
-      liveLibrariesBuildConfig: Release
-      targetos: Linux
-      targetarch: arm
+      # test target Windows X64
+      # verify that cross OS targetting works
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/coreclr/templates/crossgen2-comparison-job.yml
+          buildConfig: Release
+          platforms:
+          - Linux_x64
+          helixQueueGroup: pr
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          jobParameters:
+            testGroup: outerloop
+            liveLibrariesBuildConfig: Release
+            targetos: windows
+            targetarch: x64
 
-# test target Linux arm64
-# verify that cross architecture targetting works
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/crossgen2-comparison-job.yml
-    buildConfig: Release
-    platforms:
-    - Linux_arm64
-    helixQueueGroup: pr
-    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-    jobParameters:
-      testGroup: outerloop
-      liveLibrariesBuildConfig: Release
-      targetos: Linux
-      targetarch: arm64
+      # test target Linux arm
+      # verify that cross architecture targetting works
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/coreclr/templates/crossgen2-comparison-job.yml
+          buildConfig: Release
+          platforms:
+          - Linux_arm
+          helixQueueGroup: pr
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          jobParameters:
+            testGroup: outerloop
+            liveLibrariesBuildConfig: Release
+            targetos: Linux
+            targetarch: arm
 
-# test target osx-arm64
-# verify that cross architecture targetting works
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/crossgen2-comparison-job.yml
-    buildConfig: Release
-    platforms:
-    - OSX_arm64
-    helixQueueGroup: pr
-    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-    jobParameters:
-      testGroup: outerloop
-      liveLibrariesBuildConfig: Release
-      targetos: OSX
-      targetarch: arm64
+      # test target Linux arm64
+      # verify that cross architecture targetting works
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/coreclr/templates/crossgen2-comparison-job.yml
+          buildConfig: Release
+          platforms:
+          - Linux_arm64
+          helixQueueGroup: pr
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          jobParameters:
+            testGroup: outerloop
+            liveLibrariesBuildConfig: Release
+            targetos: Linux
+            targetarch: arm64
+
+      # test target osx-arm64
+      # verify that cross architecture targetting works
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/coreclr/templates/crossgen2-comparison-job.yml
+          buildConfig: Release
+          platforms:
+          - OSX_arm64
+          helixQueueGroup: pr
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          jobParameters:
+            testGroup: outerloop
+            liveLibrariesBuildConfig: Release
+            targetos: OSX
+            targetarch: arm64

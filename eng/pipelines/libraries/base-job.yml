@@ -4,7 +4,6 @@ parameters:
   archType: ''
   osSubgroup: ''
   crossBuild: false
-  crossrootfsDir: ''
   framework: 'net6.0'
   isSourceBuild: false
   liveRuntimeBuildConfig: ''

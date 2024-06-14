@@ -24,129 +24,134 @@ trigger:
     - eng/pipelines/libraries/*
     - eng/pipelines/runtime.yml
 
-jobs:
-
-#
-# Debug builds
-#
-- template: /eng/pipelines/common/platform-matrix.yml
+extends:
+  template: /eng/pipelines/common/templates/pipeline-with-resources.yml
   parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
-    buildConfig: debug
-    platforms:
-    - Linux_arm
-    - Linux_arm64
-    - Linux_musl_arm64
-    - Linux_musl_x64
-    - Linux_x64
-    - OSX_arm64
-    - OSX_x64
-    - windows_arm
-    - windows_arm64
-    jobParameters:
-      testGroup: outerloop
+    stages:
+    - stage: Build
+      jobs:
 
-#
-# Checked builds
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
-    buildConfig: checked
-    platformGroup: all
-    platforms:
-    # It is too early to include OSX_arm64 in platform group all
-    # Adding it here will enable it also
-    - OSX_arm64
-    jobParameters:
-      testGroup: outerloop
+      #
+      # Debug builds
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
+          buildConfig: debug
+          platforms:
+          - Linux_arm
+          - Linux_arm64
+          - Linux_musl_arm64
+          - Linux_musl_x64
+          - Linux_x64
+          - OSX_arm64
+          - OSX_x64
+          - windows_arm
+          - windows_arm64
+          jobParameters:
+            testGroup: outerloop
 
-#
-# Release builds
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
-    buildConfig: release
-    platforms:
-    - Linux_arm
-    - Linux_musl_arm64
-    - Linux_x64
-    - OSX_arm64
-    - OSX_x64
-    - windows_x86
-    jobParameters:
-      testGroup: outerloop
+      #
+      # Checked builds
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
+          buildConfig: checked
+          platformGroup: all
+          platforms:
+          # It is too early to include OSX_arm64 in platform group all
+          # Adding it here will enable it also
+          - OSX_arm64
+          jobParameters:
+            testGroup: outerloop
 
-#
-# Release library builds
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/libraries/build-job.yml
-    buildConfig: Release
-    platformGroup: all
-    platforms:
-    # It is too early to include OSX_arm64 in platform group all
-    # Adding it here will enable it also
-    - OSX_arm64
-    jobParameters:
-      isOfficialBuild: false
-      liveRuntimeBuildConfig: checked
+      #
+      # Release builds
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
+          buildConfig: release
+          platforms:
+          - Linux_arm
+          - Linux_musl_arm64
+          - Linux_x64
+          - OSX_arm64
+          - OSX_x64
+          - windows_x86
+          jobParameters:
+            testGroup: outerloop
 
-#
-# Checked test builds
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
-    buildConfig: checked
-    platforms:
-    - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
-    testGroup: outerloop
-    jobParameters:
-      liveLibrariesBuildConfig: Release
+      #
+      # Release library builds
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/libraries/build-job.yml
+          buildConfig: Release
+          platformGroup: all
+          platforms:
+          # It is too early to include OSX_arm64 in platform group all
+          # Adding it here will enable it also
+          - OSX_arm64
+          jobParameters:
+            isOfficialBuild: false
+            liveRuntimeBuildConfig: checked
 
-#
-# Checked JIT test runs
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
-    buildConfig: checked
-    platformGroup: all
-    platforms:
-    # It is too early to include OSX_arm64 in platform group all
-    # Adding it here will enable it to also run this test
-    - OSX_arm64
-    helixQueueGroup: ci
-    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-    jobParameters:
-      testGroup: outerloop
-      liveLibrariesBuildConfig: Release
+      #
+      # Checked test builds
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
+          buildConfig: checked
+          platforms:
+          - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
+          testGroup: outerloop
+          jobParameters:
+            liveLibrariesBuildConfig: Release
 
-#
-# Checked R2R test runs
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
-    buildConfig: checked
-    platforms:
-    - Linux_arm64
-    - Linux_musl_x64
-    - Linux_musl_arm64
-    - Linux_x64
-    - OSX_x64
-    - windows_x64
-    - windows_x86
-    - windows_arm
-    - windows_arm64
-    helixQueueGroup: ci
-    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-    jobParameters:
-      testGroup: outerloop
-      readyToRun: true
-      crossgen2: true
-      displayNameArgs: R2R_CG2
-      liveLibrariesBuildConfig: Release
+      #
+      # Checked JIT test runs
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
+          buildConfig: checked
+          platformGroup: all
+          platforms:
+          # It is too early to include OSX_arm64 in platform group all
+          # Adding it here will enable it to also run this test
+          - OSX_arm64
+          helixQueueGroup: ci
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          jobParameters:
+            testGroup: outerloop
+            liveLibrariesBuildConfig: Release
+
+      #
+      # Checked R2R test runs
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
+          buildConfig: checked
+          platforms:
+          - Linux_arm64
+          - Linux_musl_x64
+          - Linux_musl_arm64
+          - Linux_x64
+          - OSX_x64
+          - windows_x64
+          - windows_x86
+          - windows_arm
+          - windows_arm64
+          helixQueueGroup: ci
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          jobParameters:
+            testGroup: outerloop
+            readyToRun: true
+            crossgen2: true
+            displayNameArgs: R2R_CG2
+            liveLibrariesBuildConfig: Release

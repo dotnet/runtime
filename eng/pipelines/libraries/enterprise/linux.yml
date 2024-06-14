@@ -27,54 +27,59 @@ variables:
   - name: containerLibrariesRoot
     value: /repo/src/libraries
 
-jobs:
-- job: EnterpriseLinuxTests
-  timeoutInMinutes: 120
-  pool:
-    name: NetCore-Svc-Public
-    demands: ImageOverride -equals Build.Ubuntu.1804.Amd64.Open
-  steps:
-  - bash: |
-      cd $(enterpriseTestsSetup)
-      docker-compose build
-    displayName: Build test machine images
-    env:
-      DOTNET_RUNTIME_REPO_ROOT: $(Build.SourcesDirectory)
+extends:
+  template: /eng/pipelines/common/templates/pipeline-with-resources.yml
+  parameters:
+    stages:
+    - stage: Build
+      jobs:
+      - job: EnterpriseLinuxTests
+        timeoutInMinutes: 120
+        pool:
+          name: NetCore-Svc-Public
+          demands: ImageOverride -equals Build.Ubuntu.1804.Amd64.Open
+        steps:
+        - bash: |
+            cd $(enterpriseTestsSetup)
+            docker-compose build
+          displayName: Build test machine images
+          env:
+            DOTNET_RUNTIME_REPO_ROOT: $(Build.SourcesDirectory)
 
-  - bash: |
-      cd $(enterpriseTestsSetup)
-      docker-compose up -d
-    displayName: Start test network and machines
-    env:
-      DOTNET_RUNTIME_REPO_ROOT: $(Build.SourcesDirectory)
+        - bash: |
+            cd $(enterpriseTestsSetup)
+            docker-compose up -d
+          displayName: Start test network and machines
+          env:
+            DOTNET_RUNTIME_REPO_ROOT: $(Build.SourcesDirectory)
 
-  - bash: |
-      docker exec linuxclient bash /setup/test-webserver.sh
-    displayName: Test linuxclient connection to web server
+        - bash: |
+            docker exec linuxclient bash /setup/test-webserver.sh
+          displayName: Test linuxclient connection to web server
 
-  - bash: |
-      docker exec linuxclient bash -c '/repo/build.sh -subset clr+libs -runtimeconfiguration release -ci /p:NoPgoOptimize=true'
-      docker exec linuxclient bash -c '/repo/dotnet.sh build $(containerLibrariesRoot)/System.Net.Http/tests/EnterpriseTests/System.Net.Http.Enterprise.Tests.csproj'
-      docker exec linuxclient bash -c '/repo/dotnet.sh build $(containerLibrariesRoot)/System.Net.Security/tests/EnterpriseTests/System.Net.Security.Enterprise.Tests.csproj'
-    displayName: Build product sources
+        - bash: |
+            docker exec linuxclient bash -c '/repo/build.sh -subset clr+libs -runtimeconfiguration release -ci /p:NoPgoOptimize=true'
+            docker exec linuxclient bash -c '/repo/dotnet.sh build $(containerLibrariesRoot)/System.Net.Http/tests/EnterpriseTests/System.Net.Http.Enterprise.Tests.csproj'
+            docker exec linuxclient bash -c '/repo/dotnet.sh build $(containerLibrariesRoot)/System.Net.Security/tests/EnterpriseTests/System.Net.Security.Enterprise.Tests.csproj'
+          displayName: Build product sources
 
-  - bash: |
-      docker exec linuxclient bash -c 'if [ -f /erc/resolv.conf.ORI ]; then cp -f /erc/resolv.conf.ORI /etc/resolv.conf; fi'
-      docker exec linuxclient $(containerRunTestsCommand) $(containerLibrariesRoot)/System.Net.Http/tests/EnterpriseTests/System.Net.Http.Enterprise.Tests.csproj
-      docker exec linuxclient $(containerRunTestsCommand) $(containerLibrariesRoot)/System.Net.Security/tests/EnterpriseTests/System.Net.Security.Enterprise.Tests.csproj
-    displayName: Build and run tests
+        - bash: |
+            docker exec linuxclient bash -c 'if [ -f /erc/resolv.conf.ORI ]; then cp -f /erc/resolv.conf.ORI /etc/resolv.conf; fi'
+            docker exec linuxclient $(containerRunTestsCommand) $(containerLibrariesRoot)/System.Net.Http/tests/EnterpriseTests/System.Net.Http.Enterprise.Tests.csproj
+            docker exec linuxclient $(containerRunTestsCommand) $(containerLibrariesRoot)/System.Net.Security/tests/EnterpriseTests/System.Net.Security.Enterprise.Tests.csproj
+          displayName: Build and run tests
 
-  - bash: |
-      cd $(enterpriseTestsSetup)
-      docker-compose down
-    displayName: Stop test network and machines
-    env:
-      DOTNET_RUNTIME_REPO_ROOT: $(Build.SourcesDirectory)
+        - bash: |
+            cd $(enterpriseTestsSetup)
+            docker-compose down
+          displayName: Stop test network and machines
+          env:
+            DOTNET_RUNTIME_REPO_ROOT: $(Build.SourcesDirectory)
 
-  - task: PublishTestResults@2
-    inputs:
-      testRunner: 'xUnit'
-      testResultsFiles: '**/testResults.xml'
-      testRunTitle: 'Enterprise Tests'
-      mergeTestResults: true
-      failTaskOnFailedTests: true
+        - task: PublishTestResults@2
+          inputs:
+            testRunner: 'xUnit'
+            testResultsFiles: '**/testResults.xml'
+            testRunTitle: 'Enterprise Tests'
+            mergeTestResults: true
+            failTaskOnFailedTests: true

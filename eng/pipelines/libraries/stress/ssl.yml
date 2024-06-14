@@ -23,55 +23,60 @@ variables:
     value: dotnet-sdk-libraries-current
 
 
-jobs:
+extends:
+  template: /eng/pipelines/common/templates/pipeline-with-resources.yml
+  parameters:
+    stages:
+    - stage: Build
+      jobs:
 
-- job: linux
-  displayName: Docker Linux
-  timeoutInMinutes: 120
-  pool:
-    name: NetCore-Svc-Public
-    demands: ImageOverride -equals Build.Ubuntu.1804.Amd64.Open
+      - job: linux
+        displayName: Docker Linux
+        timeoutInMinutes: 120
+        pool:
+          name: NetCore-Svc-Public
+          demands: ImageOverride -equals Build.Ubuntu.1804.Amd64.Open
 
-  steps:
-  - checkout: self
-    clean: true
-    fetchDepth: 5
+        steps:
+        - checkout: self
+          clean: true
+          fetchDepth: 5
 
-  - bash: |
-      $(dockerfilesFolder)/build-docker-sdk.sh -t $(sdkBaseImage) -c $(BUILD_CONFIGURATION)
-    displayName: Build CLR and Libraries
+        - bash: |
+            $(dockerfilesFolder)/build-docker-sdk.sh -t $(sdkBaseImage) -c $(BUILD_CONFIGURATION)
+          displayName: Build CLR and Libraries
 
-  - bash: |
-      $(sslStressProject)/run-docker-compose.sh -o -c $(BUILD_CONFIGURATION) -t $(sdkBaseImage)
-    displayName: Build SslStress
+        - bash: |
+            $(sslStressProject)/run-docker-compose.sh -o -c $(BUILD_CONFIGURATION) -t $(sdkBaseImage)
+          displayName: Build SslStress
 
-  - bash: |
-      cd '$(sslStressProject)'
-      docker-compose up --abort-on-container-exit --no-color
-    displayName: Run SslStress
+        - bash: |
+            cd '$(sslStressProject)'
+            docker-compose up --abort-on-container-exit --no-color
+          displayName: Run SslStress
 
-- job: windows
-  displayName: Docker NanoServer
-  timeoutInMinutes: 120
-  pool:
-    name: NetCore-Svc-Public
-    demands: ImageOverride -equals windows.vs2019.amd64.open
+      - job: windows
+        displayName: Docker NanoServer
+        timeoutInMinutes: 120
+        pool:
+          name: NetCore-Svc-Public
+          demands: ImageOverride -equals windows.vs2019.amd64.open
 
-  steps:
-  - checkout: self
-    clean: true
-    fetchDepth: 5
-    lfs: false
+        steps:
+        - checkout: self
+          clean: true
+          fetchDepth: 5
+          lfs: false
 
-  - powershell: |
-      $(dockerfilesFolder)/build-docker-sdk.ps1 -w -t $(sdkBaseImage) -c $(BUILD_CONFIGURATION)
-    displayName: Build CLR and Libraries
-  
-  - powershell: |
-      $(sslStressProject)/run-docker-compose.ps1 -w -o -c $(BUILD_CONFIGURATION) -t $(sdkBaseImage)
-    displayName: Build SslStress
-  
-  - powershell: |
-      cd '$(sslStressProject)'
-      docker-compose up --abort-on-container-exit --no-color
-    displayName: Run SslStress 
+        - powershell: |
+            $(dockerfilesFolder)/build-docker-sdk.ps1 -w -t $(sdkBaseImage) -c $(BUILD_CONFIGURATION)
+          displayName: Build CLR and Libraries
+        
+        - powershell: |
+            $(sslStressProject)/run-docker-compose.ps1 -w -o -c $(BUILD_CONFIGURATION) -t $(sdkBaseImage)
+          displayName: Build SslStress
+        
+        - powershell: |
+            cd '$(sslStressProject)'
+            docker-compose up --abort-on-container-exit --no-color
+          displayName: Run SslStress 

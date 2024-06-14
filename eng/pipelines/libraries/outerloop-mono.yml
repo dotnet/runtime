@@ -12,61 +12,66 @@ trigger: none
 variables:
   - template: variables.yml
 
-jobs:
+extends:
+  template: /eng/pipelines/common/templates/pipeline-with-resources.yml
+  parameters:
+    stages:
+    - stage: Build
+      jobs:
 
-  - template: /eng/pipelines/common/platform-matrix.yml
-    parameters:
-      jobTemplate: /eng/pipelines/common/global-build-job.yml
-      helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-      buildConfig: Release
-      runtimeFlavor: mono
-      platforms:
-      - windows_x86
-      - Browser_wasm
-      - ${{ if eq(variables['isFullMatrix'], true) }}:
-        - windows_x64
-        - Linux_x64
-        - Linux_arm
-        - Linux_musl_x64
-        - OSX_x64
-      jobParameters:
-        testScope: outerloop
-        nameSuffix: AllSubsets_Mono
-        buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) -testscope outerloop /p:ArchiveTests=true
-        timeoutInMinutes: 180
-        isFullMatrix: ${{ variables['isFullMatrix'] }}
-        # extra steps, run tests
-        postBuildSteps:
-          - template: /eng/pipelines/libraries/helix.yml
-            parameters:
-              scenarios:
-              - wasmtestonbrowser
+        - template: /eng/pipelines/common/platform-matrix.yml
+          parameters:
+            jobTemplate: /eng/pipelines/common/global-build-job.yml
+            helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+            buildConfig: Release
+            runtimeFlavor: mono
+            platforms:
+            - windows_x86
+            - Browser_wasm
+            - ${{ if eq(variables['isFullMatrix'], true) }}:
+              - windows_x64
+              - Linux_x64
+              - Linux_arm
+              - Linux_musl_x64
+              - OSX_x64
+            jobParameters:
               testScope: outerloop
-              creator: dotnet-bot
-              testRunNamePrefixSuffix: Mono_$(_BuildConfig)
-    
-  - ${{ if eq(variables['isFullMatrix'], false) }}:
-    - template: /eng/pipelines/common/platform-matrix.yml
-      parameters:
-        jobTemplate: /eng/pipelines/common/global-build-job.yml
-        helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-        buildConfig: Debug
-        runtimeFlavor: mono
-        platforms:
-        - windows_x64
-        - Linux_x64
-        - Linux_musl_x64
-        - OSX_x64
-        jobParameters:
-          testScope: outerloop
-          nameSuffix: AllSubsets_Mono
-          buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) -testscope outerloop /p:ArchiveTests=true
-          timeoutInMinutes: 180
-          isFullMatrix: ${{ variables['isFullMatrix'] }}
-          # extra steps, run tests
-          postBuildSteps:
-            - template: /eng/pipelines/libraries/helix.yml
-              parameters:
+              nameSuffix: AllSubsets_Mono
+              buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) -testscope outerloop /p:ArchiveTests=true
+              timeoutInMinutes: 180
+              isFullMatrix: ${{ variables['isFullMatrix'] }}
+              # extra steps, run tests
+              postBuildSteps:
+                - template: /eng/pipelines/libraries/helix.yml
+                  parameters:
+                    scenarios:
+                    - wasmtestonbrowser
+                    testScope: outerloop
+                    creator: dotnet-bot
+                    testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+          
+        - ${{ if eq(variables['isFullMatrix'], false) }}:
+          - template: /eng/pipelines/common/platform-matrix.yml
+            parameters:
+              jobTemplate: /eng/pipelines/common/global-build-job.yml
+              helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+              buildConfig: Debug
+              runtimeFlavor: mono
+              platforms:
+              - windows_x64
+              - Linux_x64
+              - Linux_musl_x64
+              - OSX_x64
+              jobParameters:
                 testScope: outerloop
-                creator: dotnet-bot
-                testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+                nameSuffix: AllSubsets_Mono
+                buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) -testscope outerloop /p:ArchiveTests=true
+                timeoutInMinutes: 180
+                isFullMatrix: ${{ variables['isFullMatrix'] }}
+                # extra steps, run tests
+                postBuildSteps:
+                  - template: /eng/pipelines/libraries/helix.yml
+                    parameters:
+                      testScope: outerloop
+                      creator: dotnet-bot
+                      testRunNamePrefixSuffix: Mono_$(_BuildConfig)

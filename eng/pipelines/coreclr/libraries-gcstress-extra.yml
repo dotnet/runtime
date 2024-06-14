@@ -9,37 +9,42 @@ trigger: none
 #     - main
 #   always: true
 
-jobs:
-
-#
-# Build CoreCLR checked and libraries Release
-#
-- template: /eng/pipelines/common/platform-matrix.yml
+extends:
+  template: /eng/pipelines/common/templates/pipeline-with-resources.yml
   parameters:
-    jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
-    buildConfig: checked
-    platformGroup: gcstress
-    jobParameters:
-      # libraries test build platforms
-      testBuildPlatforms:
-      - Linux_x64
-      - windows_x64
+    stages:
+    - stage: Build
+      jobs:
 
-#
-# Libraries Test Run using Release libraries, Checked CoreCLR, and stress modes
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/libraries/run-test-job.yml
-    buildConfig: Release
-    platformGroup: gcstress
-    helixQueueGroup: libraries
-    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-    jobParameters:
-      # Default timeout is 150 minutes (2.5 hours), which is not enough for stress.
-      timeoutInMinutes: 600
-      testScope: innerloop
-      liveRuntimeBuildConfig: checked
-      dependsOnTestBuildConfiguration: Release
-      dependsOnTestArchitecture: x64
-      coreclrTestGroup: gcstress-extra
+      #
+      # Build CoreCLR checked and libraries Release
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
+          buildConfig: checked
+          platformGroup: gcstress
+          jobParameters:
+            # libraries test build platforms
+            testBuildPlatforms:
+            - Linux_x64
+            - windows_x64
+
+      #
+      # Libraries Test Run using Release libraries, Checked CoreCLR, and stress modes
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/libraries/run-test-job.yml
+          buildConfig: Release
+          platformGroup: gcstress
+          helixQueueGroup: libraries
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          jobParameters:
+            # Default timeout is 150 minutes (2.5 hours), which is not enough for stress.
+            timeoutInMinutes: 600
+            testScope: innerloop
+            liveRuntimeBuildConfig: checked
+            dependsOnTestBuildConfiguration: Release
+            dependsOnTestArchitecture: x64
+            coreclrTestGroup: gcstress-extra
