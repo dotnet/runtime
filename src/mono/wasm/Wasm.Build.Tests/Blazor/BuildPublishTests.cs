@@ -28,7 +28,7 @@ public class BuildPublishTests : BlazorWasmTestBase
     [InlineData("Release")]
     public async Task DefaultTemplate_WithoutWorkload(string config)
     {
-        string id = $"blz_no_workload_{config}_{GetRandomId()}_{s_unicodeChar}";
+        string id = $"blz_no_workload_{config}_{GetRandomId()}_{s_unicodeChars}";
         CreateBlazorWasmTemplateProject(id);
 
         BlazorBuild(new BlazorBuildOptions(id, config));
@@ -63,7 +63,7 @@ public class BuildPublishTests : BlazorWasmTestBase
     public void DefaultTemplate_NoAOT_WithWorkload(string config, bool testUnicode)
     {
         string id = testUnicode ?
-            $"blz_no_aot_{config}_{GetRandomId()}_{s_unicodeChar}" :
+            $"blz_no_aot_{config}_{GetRandomId()}_{s_unicodeChars}" :
             $"blz_no_aot_{config}_{GetRandomId()}";
         CreateBlazorWasmTemplateProject(id);
 
@@ -84,7 +84,7 @@ public class BuildPublishTests : BlazorWasmTestBase
     public void DefaultTemplate_AOT_WithWorkload(string config, bool testUnicode)
     {
         string id = testUnicode ?
-            $"blz_aot_{config}_{GetRandomId()}_{s_unicodeChar}" :
+            $"blz_aot_{config}_{GetRandomId()}_{s_unicodeChars}" :
             $"blz_aot_{config}_{GetRandomId()}";
         CreateBlazorWasmTemplateProject(id);
 

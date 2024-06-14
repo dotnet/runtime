@@ -383,7 +383,7 @@ void InlineContext::Dump(bool verbose, unsigned indent)
 #if defined(DEBUG)
         calleeName = compiler->eeGetMethodFullName(m_Callee);
 #else
-        calleeName         = "callee";
+        calleeName = "callee";
 #endif // defined(DEBUG)
     }
 
@@ -1519,8 +1519,8 @@ void InlineStrategy::DumpDataContents(FILE* file)
     mdMethodDef currentMethodToken = info.compCompHnd->getMethodDefFromMethod(info.compMethodHnd);
 
     // Convert time spent jitting into microseconds
-    unsigned         microsecondsSpentJitting = 0;
-    unsigned __int64 compCycles               = m_Compiler->getInlineCycleCount();
+    unsigned microsecondsSpentJitting = 0;
+    uint64_t compCycles               = m_Compiler->getInlineCycleCount();
     if (compCycles > 0)
     {
         double countsPerSec      = CachedCyclesPerSecond();
@@ -1613,8 +1613,8 @@ void InlineStrategy::DumpXml(FILE* file, unsigned indent)
     unsigned hash = info.compMethodHash();
 
     // Convert time spent jitting into microseconds
-    unsigned         microsecondsSpentJitting = 0;
-    unsigned __int64 compCycles               = m_Compiler->getInlineCycleCount();
+    unsigned microsecondsSpentJitting = 0;
+    uint64_t compCycles               = m_Compiler->getInlineCycleCount();
     if (compCycles > 0)
     {
         double countsPerSec      = CachedCyclesPerSecond();

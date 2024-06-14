@@ -51,6 +51,8 @@ jobs:
 
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
 
+    logsName: 'Performance_Run_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.runtimeType }}_${{ parameters.codeGenType }}_${{ parameters.runKind }}_${{ parameters.logicalMachine }}_${{ parameters.javascriptEngine }}_${{ parameters.pgoRunType }}_${{ parameters.physicalPromotionRunType }}_${{ parameters.r2rRunType }}_${{ parameters.experimentName }}'
+
     variables:
     - ${{ each variable in parameters.variables }}:
       - ${{insert}}: ${{ variable }}
@@ -84,11 +86,14 @@ jobs:
           ${V8_ENGINE_PATH} -e 'console.log(`V8 version: ${this.version()}`)'
     - ${{ if ne(parameters.runtimeType, 'wasm') }}:
       - HelixPreCommandsWasmOnLinux: echo
-    - HelixPreCommandStemWindows: 'set ORIGPYPATH=%PYTHONPATH%;py -m pip install -U pip;py -3 -m venv %HELIX_WORKITEM_PAYLOAD%\.venv;call %HELIX_WORKITEM_PAYLOAD%\.venv\Scripts\activate.bat;set PYTHONPATH=;py -3 -m pip install -U pip;py -3 -m pip install urllib3==1.26.15;py -3 -m pip install azure.storage.blob==12.0.0;py -3 -m pip install azure.storage.queue==12.0.0;set "PERFLAB_UPLOAD_TOKEN=$(HelixPerfUploadTokenValue)"'
+    - HelixPreCommandStemWindows: 'set ORIGPYPATH=%PYTHONPATH%;py -m pip install -U pip;py -3 -m venv %HELIX_WORKITEM_PAYLOAD%\.venv;call %HELIX_WORKITEM_PAYLOAD%\.venv\Scripts\activate.bat;set PYTHONPATH=;py -3 -m pip install -U pip;py -3 -m pip install urllib3==1.26.15;py -3 -m pip install azure.storage.blob==12.13.0;py -3 -m pip install azure.storage.queue==12.4.0;py -3 -m pip install azure.identity==1.16.1;set "PERFLAB_UPLOAD_TOKEN=$(HelixPerfUploadTokenValue)"'
     - HelixPreCommandStemLinux: >-
         export ORIGPYPATH=$PYTHONPATH
         export CRYPTOGRAPHY_ALLOW_OPENSSL_102=true;
         echo "** Installing prerequistes **";
+        echo "** Waiting for dpkg to unlock (up to 2 minutes) **" &&
+        timeout 2m bash -c 'while sudo fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1; do if [ -z "$printed" ]; then echo "Waiting for dpkg lock to be released... Lock is held by: $(ps -o cmd= -p $(sudo fuser /var/lib/dpkg/lock-frontend))"; printed=1; fi; echo "Waiting 5 seconds to check again"; sleep 5; done;' &&
+        sudo apt-get remove -y lttng-modules-dkms &&
         sudo apt-get -y install python3-pip &&
         python3 -m pip install --user -U pip &&
         sudo apt-get -y install python3-venv &&
@@ -97,15 +102,16 @@ jobs:
         export PYTHONPATH= &&
         python3 -m pip install --user -U pip &&
         pip3 install urllib3==1.26.15 &&
-        pip3 install --user azure.storage.blob==12.0.0 &&
-        pip3 install --user azure.storage.queue==12.0.0 &&
+        pip3 install --user azure.storage.blob==12.13.0 &&
+        pip3 install --user azure.storage.queue==12.4.0 &&
+        pip3 install --user azure.identity==1.16.1 &&
         sudo apt-get update &&
         sudo apt -y install curl dirmngr apt-transport-https lsb-release ca-certificates &&
         $(HelixPreCommandsWasmOnLinux) &&
         export PERFLAB_UPLOAD_TOKEN="$(HelixPerfUploadTokenValue)"
         || export PERF_PREREQS_INSTALL_FAILED=1;
         test "x$PERF_PREREQS_INSTALL_FAILED" = "x1" && echo "** Error: Failed to install prerequites **"
-    - HelixPreCommandStemMusl: 'ulimit -n 4096;export ORIGPYPATH=$PYTHONPATH;sudo apk add icu-libs krb5-libs libgcc libintl libssl1.1 libstdc++ zlib cargo;sudo apk add libgdiplus --repository http://dl-cdn.alpinelinux.org/alpine/edge/testing; python3 -m venv $HELIX_WORKITEM_PAYLOAD/.venv;source $HELIX_WORKITEM_PAYLOAD/.venv/bin/activate;export PYTHONPATH=;python3 -m pip install -U pip;pip3 install urllib3==1.26.15;pip3 install azure.storage.blob==12.7.1;pip3 install azure.storage.queue==12.1.5;export PERFLAB_UPLOAD_TOKEN="$(HelixPerfUploadTokenValue)"'
+    - HelixPreCommandStemMusl: 'ulimit -n 4096;export ORIGPYPATH=$PYTHONPATH;sudo apk add icu-libs krb5-libs libgcc libintl libssl1.1 libstdc++ zlib cargo;sudo apk add libgdiplus --repository http://dl-cdn.alpinelinux.org/alpine/edge/testing; python3 -m venv $HELIX_WORKITEM_PAYLOAD/.venv;source $HELIX_WORKITEM_PAYLOAD/.venv/bin/activate;export PYTHONPATH=;python3 -m pip install -U pip;pip3 install urllib3==1.26.15;pip3 install azure.storage.blob==12.13.0;pip3 install azure.storage.queue==12.4.0;pip3 install azure.identity==1.16.1;export PERFLAB_UPLOAD_TOKEN="$(HelixPerfUploadTokenValue)"'
     - ExtraMSBuildLogsWindows: 'set MSBUILDDEBUGCOMM=1;set "MSBUILDDEBUGPATH=%HELIX_WORKITEM_UPLOAD_ROOT%"'
     - ExtraMSBuildLogsLinux: 'export MSBUILDDEBUGCOMM=1;export "MSBUILDDEBUGPATH=$HELIX_WORKITEM_UPLOAD_ROOT"'
     - HelixPreCommand: ''
@@ -153,7 +159,6 @@ jobs:
           - HelixPreCommand: 'export MONO_ENV_OPTIONS="--interpreter";$(ExtraMSBuildLogsLinux)'
           - Interpreter: ' --monointerpreter'
 
-
     workspace:
       clean: all
     pool:
@@ -192,10 +197,3 @@ jobs:
         CorrelationPayloadDirectory: '$(PayloadDirectory)' # it gets checked out to a folder with shorter path than WorkItemDirectory so we can avoid file name too long exceptions
         ProjectFile: ${{ parameters.projectFile }}
         osGroup: ${{ parameters.osGroup }}
-    - task: PublishPipelineArtifact@1
-      displayName: Publish Logs
-      inputs:
-        targetPath: $(Build.SourcesDirectory)/artifacts/log
-        artifactName: 'Performance_Run_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.runtimeType }}_${{ parameters.codeGenType }}_${{ parameters.runKind }}_${{ parameters.logicalMachine }}_${{ parameters.javascriptEngine }}_${{ parameters.pgoRunType }}_${{ parameters.physicalPromotionRunType }}_${{ parameters.r2rRunType }}_${{ parameters.experimentName }}'
-      continueOnError: true
-      condition: always()

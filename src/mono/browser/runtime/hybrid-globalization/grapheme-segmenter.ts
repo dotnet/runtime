@@ -2,12 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /**
- * This file is partially using code from FormatJS Intl.Segmenter implementation, reference: 
+ * This file is partially using code from FormatJS Intl.Segmenter implementation, reference:
  * https://github.com/formatjs/formatjs/blob/58d6a7b398d776ca3d2726d72ae1573b65cc3bef/packages/intl-segmenter/src/segmenter.ts
  * https://github.com/formatjs/formatjs/blob/58d6a7b398d776ca3d2726d72ae1573b65cc3bef/packages/intl-segmenter/src/segmentation-utils.ts
  */
 
-import { mono_assert } from "../globals";
 import { isSurrogate } from "./helpers";
 
 type SegmentationRule = {
@@ -21,7 +20,7 @@ type SegmentationRuleRaw = {
     before?: string
     after?: string
 }
-  
+
 type SegmentationTypeRaw = {
     variables: Record<string, string>
     rules: Record<string, SegmentationRuleRaw>
@@ -29,7 +28,7 @@ type SegmentationTypeRaw = {
 
 let segmentationRules: Record<string, SegmentationRule>;
 
-function replaceVariables(variables: Record<string, string>, input: string): string {
+function replaceVariables (variables: Record<string, string>, input: string): string {
     const findVarRegex = /\$[A-Za-z0-9_]+/gm;
     return input.replaceAll(findVarRegex, match => {
         if (!(match in variables)) {
@@ -43,12 +42,13 @@ function generateRegexRule (rule: string, variables: Record<string, string>, aft
     return new RegExp(`${after ? "^" : ""}${replaceVariables(variables, rule)}${after ? "" : "$"}`);
 }
 
-function isSegmentationTypeRaw(obj: any): obj is SegmentationTypeRaw {
+function isSegmentationTypeRaw (obj: any): obj is SegmentationTypeRaw {
     return obj.variables != null && obj.rules != null;
 }
 
-export function setSegmentationRulesFromJson(json: string) {
-    mono_assert(isSegmentationTypeRaw(json), "Provided grapheme segmentation rules are not valid");
+export function setSegmentationRulesFromJson (json: string) {
+    if (!isSegmentationTypeRaw(json))
+        throw new Error("Provided grapheme segmentation rules are not valid");
     segmentationRules = GraphemeSegmenter.prepareSegmentationRules(json);
 }
 
@@ -56,7 +56,7 @@ export class GraphemeSegmenter {
     private readonly rules: Record<string, SegmentationRule>;
     private readonly ruleSortedKeys: string[];
 
-    public constructor() {  
+    public constructor () {
         this.rules = segmentationRules;
         this.ruleSortedKeys = Object.keys(this.rules).sort((a, b) => Number(a) - Number(b));
     }
@@ -67,25 +67,25 @@ export class GraphemeSegmenter {
      * @param startIndex - The starting index.
      * @returns The next grapheme.
      */
-    public nextGrapheme(str: string, startIndex: number): string {
+    public nextGrapheme (str: string, startIndex: number): string {
         const breakIdx = this.nextGraphemeBreak(str, startIndex);
         return str.substring(startIndex, breakIdx);
     }
 
     /**
      * Finds the index of the next grapheme break in a given string starting from a specified index.
-     * 
+     *
      * @param str - The input string.
      * @param startIndex - The index to start searching from.
      * @returns The index of the next grapheme break.
      */
-    public nextGraphemeBreak(str: string, startIndex: number): number {
+    public nextGraphemeBreak (str: string, startIndex: number): number {
         if (startIndex < 0)
             return 0;
-    
+
         if (startIndex >= str.length - 1)
             return str.length;
-    
+
         let prev = String.fromCodePoint(str.codePointAt(startIndex)!);
         for (let i = startIndex + 1; i < str.length; i++) {
             // Don't break surrogate pairs
@@ -96,16 +96,16 @@ export class GraphemeSegmenter {
             const curr = String.fromCodePoint(str.codePointAt(i)!);
             if (this.isGraphemeBreak(prev, curr))
                 return i;
-    
+
             prev = curr;
         }
-    
+
         return str.length;
     }
 
-    private isGraphemeBreak(previous: string, current: string): boolean {
+    private isGraphemeBreak (previous: string, current: string): boolean {
         for (const key of this.ruleSortedKeys) {
-            const {before, after, breaks} = this.rules[key];
+            const { before, after, breaks } = this.rules[key];
             // match before and after rules
             if (before && !before.test(previous)) {
                 continue;
@@ -121,20 +121,20 @@ export class GraphemeSegmenter {
         return true;
     }
 
-    public static prepareSegmentationRules(segmentationRules: SegmentationTypeRaw): Record<string, SegmentationRule> {
+    public static prepareSegmentationRules (segmentationRules: SegmentationTypeRaw): Record<string, SegmentationRule> {
         const preparedRules: Record<string, SegmentationRule> = {};
-    
+
         for (const key of Object.keys(segmentationRules.rules)) {
             const ruleValue = segmentationRules.rules[key];
             const preparedRule: SegmentationRule = { breaks: ruleValue.breaks, };
-    
+
             if ("before" in ruleValue && ruleValue.before) {
                 preparedRule.before = generateRegexRule(ruleValue.before, segmentationRules.variables, false);
             }
             if ("after" in ruleValue && ruleValue.after) {
                 preparedRule.after = generateRegexRule(ruleValue.after, segmentationRules.variables, true);
             }
-    
+
             preparedRules[key] = preparedRule;
         }
         return preparedRules;

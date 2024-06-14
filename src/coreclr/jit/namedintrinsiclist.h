@@ -37,7 +37,6 @@ enum NamedIntrinsic : unsigned short
     NI_System_Math_Cosh,
     NI_System_Math_Exp,
     NI_System_Math_Floor,
-    NI_System_Math_FMod,
     NI_System_Math_FusedMultiplyAdd,
     NI_System_Math_ILogB,
     NI_System_Math_Log,
@@ -51,7 +50,10 @@ enum NamedIntrinsic : unsigned short
     NI_System_Math_MinMagnitude,
     NI_System_Math_MinMagnitudeNumber,
     NI_System_Math_MinNumber,
+    NI_System_Math_MultiplyAddEstimate,
     NI_System_Math_Pow,
+    NI_System_Math_ReciprocalEstimate,
+    NI_System_Math_ReciprocalSqrtEstimate,
     NI_System_Math_Round,
     NI_System_Math_Sin,
     NI_System_Math_Sinh,
@@ -107,6 +109,7 @@ enum NamedIntrinsic : unsigned short
     NI_System_Runtime_CompilerServices_RuntimeHelpers_CreateSpan,
     NI_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray,
     NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant,
+    NI_System_Runtime_CompilerServices_RuntimeHelpers_IsReferenceOrContainsReferences,
 
     NI_System_Runtime_InteropService_MemoryMarshal_GetArrayDataReference,
 
@@ -137,6 +140,10 @@ enum NamedIntrinsic : unsigned short
     NI_System_Threading_Interlocked_ExchangeAdd,
     NI_System_Threading_Interlocked_MemoryBarrier,
     NI_System_Threading_Interlocked_ReadMemoryBarrier,
+
+    // These two are special marker IDs so that we still get the inlining profitability boost
+    NI_System_Numerics_Intrinsic,
+    NI_System_Runtime_Intrinsics_Intrinsic,
 
 #ifdef FEATURE_HW_INTRINSICS
     NI_HW_INTRINSIC_START,
@@ -228,6 +235,8 @@ enum NamedIntrinsic : unsigned short
 
     NI_PRIMITIVE_START,
 
+    NI_PRIMITIVE_ConvertToInteger,
+    NI_PRIMITIVE_ConvertToIntegerNative,
     NI_PRIMITIVE_Crc32C,
     NI_PRIMITIVE_LeadingZeroCount,
     NI_PRIMITIVE_Log2,

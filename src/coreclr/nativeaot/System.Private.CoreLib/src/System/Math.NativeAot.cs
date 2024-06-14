@@ -155,12 +155,6 @@ namespace System
         }
 
         [Intrinsic]
-        private static double FMod(double x, double y)
-        {
-            return RuntimeImports.fmod(x, y);
-        }
-
-        [Intrinsic]
         private static unsafe double ModF(double x, double* intptr)
         {
             return RuntimeImports.modf(x, intptr);

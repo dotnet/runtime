@@ -36,7 +36,7 @@ jobs:
       isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
       nameSuffix: AllSubsets_Mono_RuntimeTests
       runtimeVariant: monointerpreter
-      buildArgs: -s mono+libs -c $(_BuildConfig) /p:InstallV8ForTests=false ${{ parameters.extraBuildArgs }}
+      buildArgs: -s mono+libs -c $(_BuildConfig) /p:MonoEnableAssertMessages=true /p:InstallV8ForTests=false ${{ parameters.extraBuildArgs }}
       timeoutInMinutes: 180
       condition: >-
         or(

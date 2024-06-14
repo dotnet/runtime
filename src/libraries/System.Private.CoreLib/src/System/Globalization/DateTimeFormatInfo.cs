@@ -358,8 +358,8 @@ namespace System.Globalization
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
             return typeof(TChar) == typeof(char) ?
-                MemoryMarshal.Cast<char, TChar>(AMDesignator) :
-                MemoryMarshal.Cast<byte, TChar>(amDesignatorUtf8 ??= Encoding.UTF8.GetBytes(AMDesignator));
+                Unsafe.BitCast<ReadOnlySpan<char>, ReadOnlySpan<TChar>>(AMDesignator) :
+                Unsafe.BitCast<ReadOnlySpan<byte>, ReadOnlySpan<TChar>>(amDesignatorUtf8 ??= Encoding.UTF8.GetBytes(AMDesignator));
         }
 
         public Calendar Calendar
@@ -607,8 +607,8 @@ namespace System.Globalization
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
             return typeof(TChar) == typeof(char) ?
-                MemoryMarshal.Cast<char, TChar>(DateSeparator) :
-                MemoryMarshal.Cast<byte, TChar>(dateSeparatorUtf8 ??= Encoding.UTF8.GetBytes(DateSeparator));
+                Unsafe.BitCast<ReadOnlySpan<char>, ReadOnlySpan<TChar>>(DateSeparator) :
+                Unsafe.BitCast<ReadOnlySpan<byte>, ReadOnlySpan<TChar>>(dateSeparatorUtf8 ??= Encoding.UTF8.GetBytes(DateSeparator));
         }
 
         public DayOfWeek FirstDayOfWeek
@@ -810,8 +810,8 @@ namespace System.Globalization
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
             return typeof(TChar) == typeof(char) ?
-                MemoryMarshal.Cast<char, TChar>(PMDesignator) :
-                MemoryMarshal.Cast<byte, TChar>(pmDesignatorUtf8 ??= Encoding.UTF8.GetBytes(PMDesignator));
+                Unsafe.BitCast<ReadOnlySpan<char>, ReadOnlySpan<TChar>>(PMDesignator) :
+                Unsafe.BitCast<ReadOnlySpan<byte>, ReadOnlySpan<TChar>>(pmDesignatorUtf8 ??= Encoding.UTF8.GetBytes(PMDesignator));
         }
 
         public string RFC1123Pattern => rfc1123Pattern;
@@ -992,8 +992,8 @@ namespace System.Globalization
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
             return typeof(TChar) == typeof(char) ?
-                MemoryMarshal.Cast<char, TChar>(TimeSeparator) :
-                MemoryMarshal.Cast<byte, TChar>(timeSeparatorUtf8 ??= Encoding.UTF8.GetBytes(TimeSeparator));
+                Unsafe.BitCast<ReadOnlySpan<char>, ReadOnlySpan<TChar>>(TimeSeparator) :
+                Unsafe.BitCast<ReadOnlySpan<byte>, ReadOnlySpan<TChar>>(timeSeparatorUtf8 ??= Encoding.UTF8.GetBytes(TimeSeparator));
         }
 
         public string UniversalSortableDateTimePattern => universalSortableDateTimePattern;
@@ -1731,8 +1731,8 @@ namespace System.Globalization
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
             return typeof(TChar) == typeof(char) ?
-                MemoryMarshal.Cast<char, TChar>(DecimalSeparator) :
-                MemoryMarshal.Cast<byte, TChar>(_decimalSeparatorUtf8 ??= Encoding.UTF8.GetBytes(DecimalSeparator));
+                Unsafe.BitCast<ReadOnlySpan<char>, ReadOnlySpan<TChar>>(DecimalSeparator) :
+                Unsafe.BitCast<ReadOnlySpan<byte>, ReadOnlySpan<TChar>>(_decimalSeparatorUtf8 ??= Encoding.UTF8.GetBytes(DecimalSeparator));
         }
 
         // Positive TimeSpan Pattern
@@ -1914,8 +1914,8 @@ namespace System.Globalization
         internal const string JapaneseLangName = "ja";
         internal const string EnglishLangName = "en";
 
-        private static volatile DateTimeFormatInfo? s_jajpDTFI;
-        private static volatile DateTimeFormatInfo? s_zhtwDTFI;
+        private static DateTimeFormatInfo? s_jajpDTFI;
+        private static DateTimeFormatInfo? s_zhtwDTFI;
 
         /// <summary>
         /// Create a Japanese DTFI which uses JapaneseCalendar.  This is used to parse

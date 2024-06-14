@@ -20,6 +20,7 @@ namespace System.Text.Json.Serialization.Converters
 
         internal override Type? KeyType => Converter.KeyType;
         internal override Type? ElementType => Converter.ElementType;
+        internal override JsonConverter? NullableElementConverter => Converter.NullableElementConverter;
         public override bool HandleNull { get; }
 
         internal override bool ConstructorIsParameterized => Converter.ConstructorIsParameterized;

@@ -113,10 +113,10 @@ namespace HostApiInvokerApp
             switch (apiToTest)
             {
                 case $"{nameof(host_runtime_contract)}.{nameof(host_runtime_contract.get_runtime_property)}":
-                    Test_get_runtime_property(args[1..]);
+                    Test_get_runtime_property(args);
                     break;
                 case $"{nameof(host_runtime_contract)}.{nameof(host_runtime_contract.bundle_probe)}":
-                    Test_bundle_probe(args[1..]);
+                    Test_bundle_probe(args);
                     break;
                 default:
                     return false;

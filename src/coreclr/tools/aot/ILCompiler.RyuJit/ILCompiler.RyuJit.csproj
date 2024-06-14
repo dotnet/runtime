@@ -73,9 +73,6 @@
     <Compile Include="..\..\Common\JitInterface\CorInfoImpl.cs">
       <Link>JitInterface\CorInfoImpl.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\JitInterface\MemoryHelper.cs">
-      <Link>JitInterface\MemoryHelper.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\JitInterface\UnboxingMethodDesc.cs">
       <Link>JitInterface\UnboxingMethodDesc.cs</Link>
     </Compile>

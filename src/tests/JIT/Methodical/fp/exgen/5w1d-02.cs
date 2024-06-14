@@ -22,6 +22,7 @@ public unsafe class testout1
     }
 
     [Fact]
+    [OuterLoop]
     public static int TestEntryPoint()
     {
         s_arr1d_0[0] = 3758096384.0;

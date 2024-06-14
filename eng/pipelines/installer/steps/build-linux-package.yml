@@ -1,0 +1,33 @@
+parameters:
+  osGroup: ''
+  osSubgroup: ''
+  packageType: null
+  target: ''
+  packageStepDescription: null
+  packagingArgs: ''
+  condition: succeeded()
+
+steps:
+- ${{ if and(eq(parameters.osGroup, 'linux'), eq(parameters.osSubgroup, '')) }}:
+  ## Run NuGet Authentication for each of the side containers
+  - ${{ if and(ne(variables['System.TeamProject'], 'public'), ne(parameters.target, '')) }}:
+    - task: NuGetAuthenticate@1
+      target: ${{ parameters.target }}
+      condition: ${{ parameters.condition }}
+
+  - template: /eng/pipelines/common/templates/global-build-step.yml
+    parameters:
+      buildArgs: -s packs.installers ${{ parameters.packagingArgs }} /bl:artifacts/log/$(_BuildConfig)/msbuild.${{ parameters.packageType }}.installers.binlog
+      container: ${{ parameters.target }}
+      displayName: Package Runtime Deps, Runtime, Framework Packs - ${{ parameters.packageType }} packages
+      # Even for cross-build targets, our installer build steps are not cross-builds
+      crossArg: ''
+      condition: ${{ parameters.condition }}
+
+  # Broken symbolic links break the SBOM processing
+  # We make some symlinks during the installer generation process,
+  # but they aren't always valid on disk afterwards. Some of our tooling,
+  # in particular the SBOM tooling, breaks on broken symlinks.
+  - script: find . -xtype l -delete
+    displayName: Remove broken symbolic links
+    condition: ${{ parameters.condition }}

@@ -320,6 +320,7 @@ namespace System
         }
 
         public static string Create<TState>(int length, TState state, SpanAction<char, TState> action)
+            where TState : allows ref struct
         {
             if (action is null)
             {

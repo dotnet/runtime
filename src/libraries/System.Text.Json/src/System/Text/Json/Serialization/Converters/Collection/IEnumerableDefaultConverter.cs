@@ -37,7 +37,7 @@ namespace System.Text.Json.Serialization.Converters
             JsonConverter<TElement> converter = GetElementConverter(ref state);
             do
             {
-                if (ShouldFlush(writer, ref state))
+                if (ShouldFlush(ref state, writer))
                 {
                     state.Current.CollectionEnumerator = enumerator;
                     return false;

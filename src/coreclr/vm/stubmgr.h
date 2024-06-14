@@ -210,13 +210,12 @@ class StubManager
   public:
     // Startup and shutdown the global stubmanager service.
     static void InitializeStubManagers();
-    static void TerminateStubManagers();
 
     // Does any sub manager recognise this EIP?
     static BOOL IsStub(PCODE stubAddress)
     {
         WRAPPER_NO_CONTRACT;
-        return FindStubManager(stubAddress) != NULL;
+        return FindStubManager(stubAddress) != nullptr;
     }
 
     // Find stub manager for given code address
@@ -628,7 +627,7 @@ class RangeSectionStubManager : public StubManager
 typedef VPTR(class ILStubManager) PTR_ILStubManager;
 
 #ifdef FEATURE_COMINTEROP
-struct ComPlusCallInfo;
+struct CLRToCOMCallInfo;
 #endif // FEATURE_COMINTEROP
 
 class ILStubManager : public StubManager
@@ -681,7 +680,7 @@ class ILStubManager : public StubManager
 };
 
 // This is used to recognize
-//   GenericComPlusCallStub()
+//   GenericCLRToCOMCallStub()
 //   VarargPInvokeStub()
 //   GenericPInvokeCalliHelper()
 typedef VPTR(class InteropDispatchStubManager) PTR_InteropDispatchStubManager;

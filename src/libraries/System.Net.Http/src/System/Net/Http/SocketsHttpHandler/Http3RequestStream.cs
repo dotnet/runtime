@@ -277,8 +277,12 @@ namespace System.Net.Http
             }
             catch (QuicException ex) when (ex.QuicError == QuicError.OperationAborted && _connection.AbortException != null)
             {
-                // we close the connection, propagate the AbortException
-                throw new HttpRequestException(HttpRequestError.Unknown, SR.net_http_client_execution_error, _connection.AbortException);
+                // we closed the connection already, propagate the AbortException
+                HttpRequestError httpRequestError = _connection.AbortException is HttpProtocolException
+                    ? HttpRequestError.HttpProtocolError
+                    : HttpRequestError.Unknown;
+
+                throw new HttpRequestException(httpRequestError, SR.net_http_client_execution_error, _connection.AbortException);
             }
             // It is possible for user's Content code to throw an unexpected OperationCanceledException.
             catch (OperationCanceledException ex) when (ex.CancellationToken == _requestBodyCancellationSource.Token || ex.CancellationToken == cancellationToken)
@@ -300,6 +304,16 @@ namespace System.Net.Http
                 _connection.Abort(ex);
                 throw new HttpRequestException(ex.HttpRequestError, SR.net_http_client_execution_error, ex);
             }
+            catch (QPackDecodingException ex)
+            {
+                Exception abortException = _connection.Abort(HttpProtocolException.CreateHttp3ConnectionException(Http3ErrorCode.QPackDecompressionFailed));
+                throw new HttpRequestException(HttpRequestError.InvalidResponse, SR.net_http_invalid_response, ex);
+            }
+            catch (QPackEncodingException ex)
+            {
+                _stream.Abort(QuicAbortDirection.Write, (long)Http3ErrorCode.InternalError);
+                throw new HttpRequestException(HttpRequestError.Unknown, SR.net_http_client_execution_error, ex);
+            }
             catch (Exception ex)
             {
                 _stream.Abort(QuicAbortDirection.Write, (long)Http3ErrorCode.InternalError);
@@ -307,6 +321,9 @@ namespace System.Net.Http
                 {
                     throw;
                 }
+
+                // all exceptions should be already handled above
+                Debug.Fail($"Unexpected exception type in Http3RequestStream.SendAsync: {ex}");
                 throw new HttpRequestException(HttpRequestError.Unknown, SR.net_http_client_execution_error, ex);
             }
             finally
@@ -573,8 +590,7 @@ namespace System.Net.Http
             _sendBuffer.AvailableSpan[1] = 0x00; // s + delta base.
             _sendBuffer.Commit(2);
 
-            HttpMethod normalizedMethod = HttpMethod.Normalize(request.Method);
-            BufferBytes(normalizedMethod.Http3EncodedBytes);
+            BufferBytes(request.Method.Http3EncodedBytes);
             BufferIndexedHeader(H3StaticTable.SchemeHttps);
 
             if (request.HasHeaders && request.Headers.Host is string host)
@@ -626,7 +642,7 @@ namespace System.Net.Http
 
             if (request.Content == null)
             {
-                if (normalizedMethod.MustHaveRequestBody)
+                if (request.Method.MustHaveRequestBody)
                 {
                     BufferIndexedHeader(H3StaticTable.ContentLength0);
                     headerListSize += HttpKnownHeaderNames.ContentLength.Length + HeaderField.RfcOverhead;
@@ -708,19 +724,8 @@ namespace System.Net.Http
 
                         // For all other known headers, send them via their pre-encoded name and the associated value.
                         BufferBytes(knownHeader.Http3EncodedName);
-                        string? separator = null;
-                        if (headerValues.Length > 1)
-                        {
-                            HttpHeaderParser? parser = header.Key.Parser;
-                            if (parser != null && parser.SupportsMultipleValues)
-                            {
-                                separator = parser.Separator;
-                            }
-                            else
-                            {
-                                separator = HttpHeaderParser.DefaultSeparator;
-                            }
-                        }
+
+                        byte[]? separator = headerValues.Length > 1 ? header.Key.SeparatorBytes : null;
 
                         BufferLiteralHeaderValues(headerValues, separator, valueEncoding);
                     }
@@ -728,7 +733,7 @@ namespace System.Net.Http
                 else
                 {
                     // The header is not known: fall back to just encoding the header name and value(s).
-                    BufferLiteralHeaderWithoutNameReference(header.Key.Name, headerValues, HttpHeaderParser.DefaultSeparator, valueEncoding);
+                    BufferLiteralHeaderWithoutNameReference(header.Key.Name, headerValues, HttpHeaderParser.DefaultSeparatorBytes, valueEncoding);
                 }
             }
 
@@ -755,7 +760,7 @@ namespace System.Net.Http
             _sendBuffer.Commit(bytesWritten);
         }
 
-        private void BufferLiteralHeaderWithoutNameReference(string name, ReadOnlySpan<string> values, string separator, Encoding? valueEncoding)
+        private void BufferLiteralHeaderWithoutNameReference(string name, ReadOnlySpan<string> values, byte[] separator, Encoding? valueEncoding)
         {
             int bytesWritten;
             while (!QPackEncoder.EncodeLiteralHeaderFieldWithoutNameReference(name, values, separator, valueEncoding, _sendBuffer.AvailableSpan, out bytesWritten))
@@ -775,7 +780,7 @@ namespace System.Net.Http
             _sendBuffer.Commit(bytesWritten);
         }
 
-        private void BufferLiteralHeaderValues(ReadOnlySpan<string> values, string? separator, Encoding? valueEncoding)
+        private void BufferLiteralHeaderValues(ReadOnlySpan<string> values, byte[]? separator, Encoding? valueEncoding)
         {
             int bytesWritten;
             while (!QPackEncoder.EncodeValueString(values, separator, valueEncoding, _sendBuffer.AvailableSpan, out bytesWritten))
@@ -1264,6 +1269,13 @@ namespace System.Net.Http
                     HttpProtocolException exception = HttpProtocolException.CreateHttp3ConnectionException((Http3ErrorCode)e.ApplicationErrorCode.Value, SR.net_http_http3_connection_close);
                     _connection.Abort(exception);
                     throw exception;
+
+                case QuicException e when (e.QuicError == QuicError.OperationAborted && _connection.AbortException != null):
+                    // we closed the connection already, propagate the AbortException
+                    HttpRequestError httpRequestError = _connection.AbortException is HttpProtocolException
+                        ? HttpRequestError.HttpProtocolError
+                        : HttpRequestError.Unknown;
+                    throw new HttpRequestException(httpRequestError, SR.net_http_client_execution_error, _connection.AbortException);
 
                 case HttpIOException:
                     _connection.Abort(ex);
