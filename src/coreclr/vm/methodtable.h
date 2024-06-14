@@ -3862,7 +3862,7 @@ public:
     template<typename T> friend struct ::cdac_offsets;
 };  // class MethodTable
 
-template<> struct ::cdac_offsets<MethodTable>
+template<> struct cdac_offsets<MethodTable>
 {
     static constexpr size_t m_dwFlags = offsetof(MethodTable, m_dwFlags);
     static constexpr size_t m_BaseSize = offsetof(MethodTable, m_BaseSize);
