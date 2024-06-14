@@ -121,7 +121,7 @@ internal readonly struct Thread_1 : IThread
             thread.Id,
             thread.OSId,
             (ThreadState)thread.State,
-            thread.PreemptiveGCDisabled != 0,
+            (thread.PreemptiveGCDisabled & 0x1) != 0,
             thread.AllocContextPointer,
             thread.AllocContextLimit,
             thread.Frame,
