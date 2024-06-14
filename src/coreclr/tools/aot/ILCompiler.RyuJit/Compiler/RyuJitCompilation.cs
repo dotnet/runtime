@@ -223,9 +223,8 @@ namespace ILCompiler
     [Flags]
     public enum RyuJitCompilationOptions
     {
-        MethodBodyFolding = 0x1,
-        ControlFlowGuardAnnotations = 0x2,
-        UseDwarf5 = 0x4,
-        UseResilience = 0x8,
+        ControlFlowGuardAnnotations = 0x1,
+        UseDwarf5 = 0x2,
+        UseResilience = 0x4,
     }
 }

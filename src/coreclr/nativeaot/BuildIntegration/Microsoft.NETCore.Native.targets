@@ -255,7 +255,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <IlcArg Condition="$(IlcGenerateCompleteTypeMetadata) == 'true'" Include="--completetypemetadata" />
       <IlcArg Condition="$(StackTraceSupport) != 'false'" Include="--stacktracedata" />
       <IlcArg Condition="$(IlcScanReflection) != 'false' and $(IlcDisableReflection) != 'true'" Include="--scanreflection" />
-      <IlcArg Condition="$(IlcFoldIdenticalMethodBodies) == 'true'" Include="--methodbodyfolding" />
+      <IlcArg Condition="$(IlcFoldIdenticalMethodBodies) == 'true' or $(StackTraceSupport) == 'false'" Include="--methodbodyfolding" />
       <IlcArg Condition="$(Optimize) == 'true' and $(OptimizationPreference) == 'Size'" Include="--Os" />
       <IlcArg Condition="$(Optimize) == 'true' and $(OptimizationPreference) == 'Speed'" Include="--Ot" />
       <IlcArg Condition="'$(_linuxLibcFlavor)' == 'bionic'" Include="--noinlinetls" />

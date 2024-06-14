@@ -1,11 +1,11 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.Serialization.BinaryFormat;
+using System.Formats.Nrbf;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Resources.Extensions.BinaryFormat;
 using System.Resources.Extensions.Tests.Common;
-using PrimitiveType = System.Runtime.Serialization.BinaryFormat.PrimitiveType;
+using PrimitiveType = System.Formats.Nrbf.PrimitiveType;
 
 namespace System.Resources.Extensions.Tests.FormattedObject;
 
@@ -70,7 +70,7 @@ public class PrimitiveTypeTests : SerializationTest<FormattedObjectSerializer>
     public void PrimitiveTypeMemberName(object value)
     {
         BinaryFormattedObject format = new(Serialize(value));
-        VerifyNonGeneric(value, format[1]);
+        VerifyNonGeneric(value, format[format.RootRecord.Id]);
     }
 
     [Theory]
@@ -79,7 +79,7 @@ public class PrimitiveTypeTests : SerializationTest<FormattedObjectSerializer>
     public void BinaryFormattedObject_ReadPrimitive(object value)
     {
         BinaryFormattedObject formattedObject = new(Serialize(value));
-        formattedObject.RootRecord.GetMemberPrimitiveTypedValue().Should().Be(value);
+        ((PrimitiveTypeRecord)formattedObject.RootRecord).Value.Should().Be(value);
     }
 
     public static TheoryData<object> Primitive_Data => new()
@@ -117,6 +117,7 @@ public class PrimitiveTypeTests : SerializationTest<FormattedObjectSerializer>
 
     private static void VerifyGeneric<T>(T value, SerializationRecord record) where T : unmanaged
     {
+        record.As<PrimitiveTypeRecord>().Value.Should().Be(value);
         record.As<PrimitiveTypeRecord<T>>().Value.Should().Be(value);
     }
 }

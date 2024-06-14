@@ -1733,7 +1733,8 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 {
                     assert(retType == TYP_VOID);
                     assert(simdBaseType == TYP_FLOAT);
-                    assert((simdSize == 12) || (simdSize == 16));
+                    assert(simdSize == 12);
+                    assert(simdType == TYP_SIMD12);
 
                     // TODO-CQ: We should be able to check for contiguous args here after
                     // the relevant methods are updated to support more than just float
@@ -1743,21 +1744,19 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                         GenTreeVecCon* vecCon = op2->AsVecCon();
                         vecCon->gtType        = simdType;
 
-                        if (simdSize == 12)
-                        {
-                            vecCon->gtSimdVal.f32[2] = static_cast<float>(op3->AsDblCon()->DconValue());
-                        }
-                        else
-                        {
-                            vecCon->gtSimdVal.f32[3] = static_cast<float>(op3->AsDblCon()->DconValue());
-                        }
-
-                        copyBlkSrc = vecCon;
+                        vecCon->gtSimdVal.f32[2] = static_cast<float>(op3->AsDblCon()->DconValue());
+                        copyBlkSrc               = vecCon;
                     }
                     else
                     {
-                        GenTree* idx = gtNewIconNode((simdSize == 12) ? 2 : 3, TYP_INT);
-                        copyBlkSrc   = gtNewSimdWithElementNode(simdType, op2, idx, op3, simdBaseJitType, simdSize);
+                        GenTree* idx = gtNewIconNode(2, TYP_INT);
+
+                        op2 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, NI_Vector128_AsVector128Unsafe, simdBaseJitType,
+                                                       12);
+                        op2 = gtNewSimdWithElementNode(TYP_SIMD16, op2, idx, op3, simdBaseJitType, 16);
+
+                        copyBlkSrc =
+                            gtNewSimdHWIntrinsicNode(TYP_SIMD12, op2, NI_Vector128_AsVector3, simdBaseJitType, 16);
                     }
 
                     copyBlkDst = op1;
