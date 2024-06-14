@@ -42,6 +42,33 @@ namespace System.Text.Json.Schema.Tests
         }
 
         [Theory]
+        [InlineData(typeof(string), "string")]
+        [InlineData(typeof(int[]), "array")]
+        [InlineData(typeof(Dictionary<string, int>), "object")]
+        [InlineData(typeof(SimplePoco), "object")]
+        public void TreatNullObliviousAsNonNullable_False_MarksReferenceTypesAsNullable(Type referenceType, string expectedType)
+        {
+            Assert.True(!referenceType.IsValueType);
+            var config = new JsonSchemaExporterOptions { TreatNullObliviousAsNonNullable = false };
+            JsonNode schema = Serializer.DefaultOptions.GetJsonSchemaAsNode(referenceType, config);
+            JsonArray arr = Assert.IsType<JsonArray>(schema["type"]);
+            Assert.Equal([expectedType, "null"], arr.Select(e => (string)e!));
+        }
+
+        [Theory]
+        [InlineData(typeof(string), "string")]
+        [InlineData(typeof(int[]), "array")]
+        [InlineData(typeof(Dictionary<string, int>), "object")]
+        [InlineData(typeof(SimplePoco), "object")]
+        public void TreatNullObliviousAsNonNullable_True_MarksReferenceTypesAsNonNullable(Type referenceType, string expectedType)
+        {
+            Assert.True(!referenceType.IsValueType);
+            var config = new JsonSchemaExporterOptions { TreatNullObliviousAsNonNullable = true };
+            JsonNode schema = Serializer.DefaultOptions.GetJsonSchemaAsNode(referenceType, config);
+            Assert.Equal(expectedType, (string)schema["type"]!);
+        }
+
+        [Theory]
         [InlineData(typeof(Type))]
         [InlineData(typeof(MethodInfo))]
         [InlineData(typeof(UIntPtr))]
@@ -93,6 +120,23 @@ namespace System.Text.Json.Schema.Tests
 
             var ex = Assert.Throws<NotSupportedException>(() => options.GetJsonSchemaAsNode(typeof(SimplePoco)));
             Assert.Contains("ReferenceHandler.Preserve", ex.Message);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void JsonSchemaExporterOptions_DefaultSettings(bool useSingleton)
+        {
+            JsonSchemaExporterOptions options = useSingleton ? JsonSchemaExporterOptions.Default : new();
+
+            Assert.False(options.TreatNullObliviousAsNonNullable);
+            Assert.Null(options.TransformSchemaNode);
+        }
+
+        [Fact]
+        public void JsonSchemaExporterOptions_Default_IsSame()
+        {
+            Assert.Same(JsonSchemaExporterOptions.Default, JsonSchemaExporterOptions.Default);
         }
 
         protected void AssertValidJsonSchema(Type type, string expectedJsonSchema, JsonNode actualJsonSchema)

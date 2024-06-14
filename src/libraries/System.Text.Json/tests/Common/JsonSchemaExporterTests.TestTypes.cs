@@ -288,6 +288,27 @@ namespace System.Text.Json.Schema.Tests
                 }
                 """);
 
+            // Same as above with non-nullable reference type handling
+            yield return new TestData<PocoWithRecursiveMembers>(
+                Value: new() { Value = 1, Next = new() { Value = 2, Next = new() { Value = 3 } } },
+                AdditionalValues: [new() { Value = 1, Next = null }],
+                ExpectedJsonSchema: """
+                {
+                    "type": "object",
+                    "properties": {
+                        "Value": { "type": "integer" },
+                        "Next": {
+                            "type": ["object", "null"],
+                            "properties": {
+                                "Value": { "type": "integer" },
+                                "Next": { "$ref": "#/properties/Next" }
+                            }
+                        }
+                    }
+                }
+                """,
+                Options: new() { TreatNullObliviousAsNonNullable = true });
+
             // Same as above but using an anchor-based reference scheme
             yield return new TestData<PocoWithRecursiveMembers>(
                 Value: new() { Value = 1, Next = new() { Value = 2, Next = new() { Value = 3 } } },
@@ -398,6 +419,22 @@ namespace System.Text.Json.Schema.Tests
                 }
                 """);
 
+            // Same as above but with non-nullable reference type handling
+            yield return new TestData<PocoWithRecursiveCollectionElement>(
+                Value: new() { Children = [new(), new() { Children = [] }] },
+                ExpectedJsonSchema: """
+                {
+                    "type": "object",
+                    "properties": {
+                        "Children": {
+                            "type": "array",
+                            "items": { "$ref" : "#" }
+                        }
+                    }
+                }
+                """,
+                Options: new() { TreatNullObliviousAsNonNullable = true });
+
             yield return new TestData<PocoWithRecursiveDictionaryValue>(
                 Value: new() { Children = new() { ["key1"] = new(), ["key2"] = new() { Children = new() { ["key3"] = new() }  } } },
                 ExpectedJsonSchema: """
@@ -411,6 +448,22 @@ namespace System.Text.Json.Schema.Tests
                     }
                 }
                 """);
+
+            // Same as above but with non-nullable reference type handling
+            yield return new TestData<PocoWithRecursiveDictionaryValue>(
+                Value: new() { Children = new() { ["key1"] = new(), ["key2"] = new() { Children = new() { ["key3"] = new() } } } },
+                ExpectedJsonSchema: """
+                {
+                    "type": "object",
+                    "properties": {
+                        "Children": {
+                            "type": "object",
+                            "additionalProperties": { "$ref" : "#" }
+                        }
+                    }
+                }
+                """,
+                Options: new() { TreatNullObliviousAsNonNullable = true });
 
             yield return new TestData<PocoWithDescription>(
                 Value: new() { X = 42 },
@@ -1390,7 +1443,7 @@ namespace System.Text.Json.Schema.Tests
             {
                 yield return this;
 
-                if (default(T) is null)
+                if (default(T) is null && Options?.TreatNullObliviousAsNonNullable != true)
                 {
                     yield return this with { Value = default, AdditionalValues = null };
                 }

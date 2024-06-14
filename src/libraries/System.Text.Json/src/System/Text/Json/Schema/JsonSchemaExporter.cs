@@ -349,7 +349,7 @@ namespace System.Text.Json.Schema
                 {
                     bool isNullableSchema = propertyInfo != null
                         ? propertyInfo.IsGetNullable || propertyInfo.IsSetNullable
-                        : typeInfo.CanBeNull && !parentPolymorphicTypeIsNonNullable;
+                        : typeInfo.CanBeNull && !parentPolymorphicTypeIsNonNullable && !state.ExporterOptions.TreatNullObliviousAsNonNullable;
 
                     if (isNullableSchema)
                     {
