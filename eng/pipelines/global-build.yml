@@ -128,11 +128,9 @@ jobs:
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/common/global-build-job.yml
-    buildConfig: Release
+    buildConfig: release
     platforms:
-    - SourceBuild_linux_x64
+    - SourceBuild_Linux_x64
     jobParameters:
-      nameSuffix: PortableSourceBuild
-      timeoutInMinutes: 95
-      condition:
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true)
+      nameSuffix: SourceBuild
+      timeoutInMinutes: 90
