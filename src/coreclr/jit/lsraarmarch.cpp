@@ -962,16 +962,24 @@ int LinearScan::BuildAtomic(GenTree* atomic, int dstCount)
             srcCount = atomic->gtGetOp2()->isContained() ? 1 : 2;
 
 #ifdef TARGET_ARM64
-            if (!compiler->compOpportunisticallyDependsOn(InstructionSet_Atomics))
+            if (compiler->compOpportunisticallyDependsOn(InstructionSet_Atomics))
+            {
+                if (atomic->OperIs(GT_XAND))
+                {
+                    // for ldclral we need an internal register.
+                    buildInternalIntRegisterDefForNode(atomic);
+                }
+            }
+            else
 #endif
             {
                 buildInternalIntRegisterDefForNode(atomic);
-            }
 
-            // GT_XCHG requires a single internal register; the others require two.
-            if (atomic->OperGet() != GT_XCHG)
-            {
-                buildInternalIntRegisterDefForNode(atomic);
+                // GT_XCHG requires a single internal register; the others require two.
+                if (atomic->OperGet() != GT_XCHG)
+                {
+                    buildInternalIntRegisterDefForNode(atomic);
+                }
             }
 
             assert(!atomic->gtGetOp1()->isContained());
