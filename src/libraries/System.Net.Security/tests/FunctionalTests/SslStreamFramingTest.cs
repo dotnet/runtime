@@ -200,24 +200,5 @@ namespace System.Net.Security.Tests
                 _stream.Write(buffer, offset, count);
             }
         }
-
-        public static TheoryData<SslProtocols> SslProtocolsData()
-        {
-            var data = new TheoryData<SslProtocols>();
-
-            data.Add(SslProtocols.None);
-
-            if (PlatformDetection.SupportsTls12)
-            {
-                data.Add(SslProtocols.Tls12);
-            }
-
-            if (PlatformDetection.SupportsTls13)
-            {
-                data.Add(SslProtocols.Tls13);
-            }
-
-            return data;
-        }
     }
 }
