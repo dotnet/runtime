@@ -164,6 +164,8 @@ implication        ,X86   ,AVX10v1_V512         ,AVX512VBMI
 implication        ,X86   ,AVX10v1_V512         ,AVX512VBMI_VL
 
 ; These synthetic ISAs need to appear after the core ISAs
+; as they depend on the other implications being correct first
+; otherwise they may not be disabled if the required isa is disabled
 
 implication        ,X86   ,Vector128            ,SSE
 implication        ,X86   ,Vector256            ,AVX

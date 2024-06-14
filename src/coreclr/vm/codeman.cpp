@@ -1270,7 +1270,7 @@ void EEJitManager::SetCpuInfo()
         CPUCompileFlags.Set(InstructionSet_VectorT256);
     }
 
-    if (((cpuFeatures & XArchIntrinsicConstants_Avx512f) != 0) && (maxVectorTBitWidth >= 512))
+    if (((cpuFeatures & XArchIntrinsicConstants_Avx512) != 0) && (maxVectorTBitWidth >= 512))
     {
         // We require 512-bit Vector<T> to be opt-in
         CPUCompileFlags.Set(InstructionSet_VectorT512);
