@@ -894,6 +894,126 @@ int LinearScan::BuildCast(GenTreeCast* cast)
 }
 
 //------------------------------------------------------------------------
+// BuildCast: Set the NodeInfo for a GT_CAST.
+//
+// Arguments:
+//    cast - The GT_CAST node
+//
+// Return Value:
+//    The number of sources consumed by this node.
+//
+int LinearScan::BuildAtomic(GenTree* atomic, int dstCount)
+{
+    int srcCount;
+    switch (atomic->OperGet())
+    {
+        case GT_CMPXCHG:
+        {
+            GenTreeCmpXchg* cmpXchgNode = atomic->AsCmpXchg();
+            srcCount                    = cmpXchgNode->Comparand()->isContained() ? 2 : 3;
+            assert(dstCount == 1);
+
+#ifdef TARGET_ARM64
+            if (!compiler->compOpportunisticallyDependsOn(InstructionSet_Atomics))
+#endif
+            {
+                // For legacy exclusives requires a single internal register
+                buildInternalIntRegisterDefForNode(atomic);
+            }
+
+            // For legacy exclusives the lifetime of the addr and data must be extended because
+            // it may be used multiple during retries
+
+            // For ARMv8.1 atomic cas the lifetime of the addr and data must be extended to prevent
+            // them being reused as the target register which must be destroyed early
+
+            RefPosition* locationUse = BuildUse(atomic->AsCmpXchg()->Addr());
+            setDelayFree(locationUse);
+            RefPosition* valueUse = BuildUse(atomic->AsCmpXchg()->Data());
+            setDelayFree(valueUse);
+            if (!cmpXchgNode->Comparand()->isContained())
+            {
+                RefPosition* comparandUse = BuildUse(atomic->AsCmpXchg()->Comparand());
+
+                // For legacy exclusives the lifetime of the comparand must be extended because
+                // it may be used multiple during retries
+#ifdef TARGET_ARM64
+                if (!compiler->compOpportunisticallyDependsOn(InstructionSet_Atomics))
+#endif
+                {
+                    setDelayFree(comparandUse);
+                }
+            }
+
+            // Internals may not collide with target
+            setInternalRegsDelayFree = true;
+            buildInternalRegisterUses();
+            BuildDef(atomic);
+        }
+        break;
+
+        case GT_LOCKADD:
+        case GT_XORR:
+        case GT_XAND:
+        case GT_XADD:
+        case GT_XCHG:
+        {
+            assert(dstCount == (atomic->TypeIs(TYP_VOID) ? 0 : 1));
+            srcCount = atomic->gtGetOp2()->isContained() ? 1 : 2;
+
+#ifdef TARGET_ARM64
+            if (!compiler->compOpportunisticallyDependsOn(InstructionSet_Atomics))
+#endif
+            {
+                buildInternalIntRegisterDefForNode(atomic);
+            }
+
+            // GT_XCHG requires a single internal register; the others require two.
+            if (atomic->OperGet() != GT_XCHG)
+            {
+                buildInternalIntRegisterDefForNode(atomic);
+            }
+
+            assert(!atomic->gtGetOp1()->isContained());
+            RefPosition* op1Use = BuildUse(atomic->gtGetOp1());
+            RefPosition* op2Use = nullptr;
+            if (!atomic->gtGetOp2()->isContained())
+            {
+                op2Use = BuildUse(atomic->gtGetOp2());
+            }
+
+            // For legacy exclusives the lifetime of the addr and data must be extended because
+            // it may be used multiple during retries
+#ifdef TARGET_ARM64
+            if (!compiler->compOpportunisticallyDependsOn(InstructionSet_Atomics))
+#endif
+            {
+                // Internals may not collide with target
+                if (dstCount == 1)
+                {
+                    setDelayFree(op1Use);
+                    if (op2Use != nullptr)
+                    {
+                        setDelayFree(op2Use);
+                    }
+                    setInternalRegsDelayFree = true;
+                }
+            }
+            buildInternalRegisterUses();
+            if (dstCount == 1)
+            {
+                BuildDef(atomic);
+            }
+        }
+        break;
+
+        default:
+            unreached();
+    }
+    return srcCount;
+}
+
+//------------------------------------------------------------------------
 // BuildSelect: Build RefPositions for a GT_SELECT node.
 //
 // Arguments:

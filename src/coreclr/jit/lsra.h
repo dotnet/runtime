@@ -2028,6 +2028,9 @@ private:
     int  BuildIndir(GenTreeIndir* indirTree);
     int  BuildGCWriteBarrier(GenTree* tree);
     int  BuildCast(GenTreeCast* cast);
+#ifdef TARGET_ARMARCH
+    int BuildAtomic(GenTree* atomic, int dstCount);
+#endif
 
 #if defined(TARGET_XARCH)
     // returns true if the tree can use the read-modify-write memory instruction form

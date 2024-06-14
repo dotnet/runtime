@@ -961,101 +961,14 @@ int LinearScan::BuildNode(GenTree* tree)
             buildInternalRegisterUses();
             break;
 
-        case GT_CMPXCHG:
-        {
-            GenTreeCmpXchg* cmpXchgNode = tree->AsCmpXchg();
-            srcCount                    = cmpXchgNode->Comparand()->isContained() ? 2 : 3;
-            assert(dstCount == 1);
-
-            if (!compiler->compOpportunisticallyDependsOn(InstructionSet_Atomics))
-            {
-                // For ARMv8 exclusives requires a single internal register
-                buildInternalIntRegisterDefForNode(tree);
-            }
-
-            // For ARMv8 exclusives the lifetime of the addr and data must be extended because
-            // it may be used used multiple during retries
-
-            // For ARMv8.1 atomic cas the lifetime of the addr and data must be extended to prevent
-            // them being reused as the target register which must be destroyed early
-
-            RefPosition* locationUse = BuildUse(tree->AsCmpXchg()->Addr());
-            setDelayFree(locationUse);
-            RefPosition* valueUse = BuildUse(tree->AsCmpXchg()->Data());
-            setDelayFree(valueUse);
-            if (!cmpXchgNode->Comparand()->isContained())
-            {
-                RefPosition* comparandUse = BuildUse(tree->AsCmpXchg()->Comparand());
-
-                // For ARMv8 exclusives the lifetime of the comparand must be extended because
-                // it may be used used multiple during retries
-                if (!compiler->compOpportunisticallyDependsOn(InstructionSet_Atomics))
-                {
-                    setDelayFree(comparandUse);
-                }
-            }
-
-            // Internals may not collide with target
-            setInternalRegsDelayFree = true;
-            buildInternalRegisterUses();
-            BuildDef(tree);
-        }
-        break;
-
         case GT_LOCKADD:
         case GT_XORR:
         case GT_XAND:
         case GT_XADD:
         case GT_XCHG:
-        {
-            assert(dstCount == (tree->TypeIs(TYP_VOID) ? 0 : 1));
-            srcCount = tree->gtGetOp2()->isContained() ? 1 : 2;
-
-            if (!compiler->compOpportunisticallyDependsOn(InstructionSet_Atomics))
-            {
-                // GT_XCHG requires a single internal register; the others require two.
-                buildInternalIntRegisterDefForNode(tree);
-                if (tree->OperGet() != GT_XCHG)
-                {
-                    buildInternalIntRegisterDefForNode(tree);
-                }
-            }
-            else if (tree->OperIs(GT_XAND))
-            {
-                // for ldclral we need an internal register.
-                buildInternalIntRegisterDefForNode(tree);
-            }
-
-            assert(!tree->gtGetOp1()->isContained());
-            RefPosition* op1Use = BuildUse(tree->gtGetOp1());
-            RefPosition* op2Use = nullptr;
-            if (!tree->gtGetOp2()->isContained())
-            {
-                op2Use = BuildUse(tree->gtGetOp2());
-            }
-
-            // For ARMv8 exclusives the lifetime of the addr and data must be extended because
-            // it may be used used multiple during retries
-            if (!compiler->compOpportunisticallyDependsOn(InstructionSet_Atomics))
-            {
-                // Internals may not collide with target
-                if (dstCount == 1)
-                {
-                    setDelayFree(op1Use);
-                    if (op2Use != nullptr)
-                    {
-                        setDelayFree(op2Use);
-                    }
-                    setInternalRegsDelayFree = true;
-                }
-            }
-            buildInternalRegisterUses();
-            if (dstCount == 1)
-            {
-                BuildDef(tree);
-            }
-        }
-        break;
+        case GT_CMPXCHG:
+            srcCount = BuildAtomic(tree, dstCount);
+            break;
 
 #if FEATURE_ARG_SPLIT
         case GT_PUTARG_SPLIT:
