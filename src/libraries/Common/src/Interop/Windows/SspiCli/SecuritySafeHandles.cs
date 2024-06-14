@@ -762,51 +762,17 @@ namespace System.Net.Security
                         }
                         outToken.Size = length;
 
+                        // In some cases schannel may not process all the given data.
+                        // and it will return them back as SECBUFFER_EXTRA, expecting caller to
+                        // feed them in again. Propagate this information back up.
                         if (inSecBuffers.Count > 1 && inUnmanagedBuffer[1].BufferType == SecurityBufferType.SECBUFFER_EXTRA && inSecBuffers._item1.Type == SecurityBufferType.SECBUFFER_EMPTY)
                         {
-                            // OS function did not use all provided data and turned EMPTY to EXTRA
-                            // https://learn.microsoft.com/windows/win32/secauthn/extra-buffers-returned-by-schannel
+                            inSecBuffers._item1.Type = inUnmanagedBuffer[1].BufferType;
 
-                            int leftover = inUnmanagedBuffer[1].cbBuffer;
-                            int processed = inSecBuffers._item0.Token.Length - inUnmanagedBuffer[1].cbBuffer;
-
-                            /* skip over processed data and try it again. */
-                            inUnmanagedBuffer[0].cbBuffer = leftover;
-                            inUnmanagedBuffer[0].pvBuffer = inUnmanagedBuffer[0].pvBuffer + processed;
-                            inUnmanagedBuffer[1].BufferType = SecurityBufferType.SECBUFFER_EMPTY;
-                            inUnmanagedBuffer[1].cbBuffer = 0;
-
-                            outUnmanagedBuffer[0].cbBuffer = 0;
-                            if (isSspiAllocated && outUnmanagedBuffer[0].pvBuffer != IntPtr.Zero)
-                            {
-                                Interop.SspiCli.FreeContextBuffer(outUnmanagedBuffer[0].pvBuffer);
-                                outUnmanagedBuffer[0].pvBuffer = IntPtr.Zero;
-                            }
-
-                            errorCode = MustRunAcceptSecurityContext_SECURITY(
-                                        ref inCredentials,
-                                        isContextAbsent,
-                                        &inSecurityBufferDescriptor,
-                                        inFlags,
-                                        endianness,
-                                        refContext!,
-                                        ref outSecurityBufferDescriptor,
-                                        ref outFlags,
-                                        null);
-
-                            index = outUnmanagedBuffer[0].cbBuffer == 0 && outUnmanagedBuffer[1].cbBuffer > 0 ? 1 : 0;
-                            if (outUnmanagedBuffer[index].cbBuffer > 0)
-                            {
-                                outToken.EnsureAvailableSpace(outUnmanagedBuffer[index].cbBuffer);
-                                new Span<byte>((byte*)outUnmanagedBuffer[index].pvBuffer, outUnmanagedBuffer[index].cbBuffer).CopyTo(outToken.AvailableSpan);
-                                outToken.Size += outUnmanagedBuffer[index].cbBuffer;
-                            }
-
-                            if (inUnmanagedBuffer[1].BufferType == SecurityBufferType.SECBUFFER_EXTRA)
-                            {
-                                // we are left with unprocessed data again. fail with SEC_E_INCOMPLETE_MESSAGE hResult.
-                                errorCode = unchecked((int)0x80090318);
-                            }
+                            // since SecurityBuffer type does not have separate Length field,
+                            // we point to the unused portion of the input buffer.
+                            Debug.Assert(inSecBuffers._item0.Token.Length > inUnmanagedBuffer[1].cbBuffer);
+                            inSecBuffers._item1.Token = inSecBuffers._item0.Token.Slice(inSecBuffers._item0.Token.Length - inUnmanagedBuffer[1].cbBuffer);
                         }
                     }
                 }
