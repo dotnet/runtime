@@ -77,7 +77,7 @@ void * DispatchCallSimple(
 // On RISC-V structs returned according to floating-point calling convention may be larger than 16 bytes.
 // This routine copies such structs from 'returnRegs' containing fields (each in one register) as they are filled
 // by CallDescrWorkerInternal, to the final destination 'dest' respecting the struct's layout described in 'info'.
-void CopyReturnedFpStructFromRegisters(void* dest, UINT64 returnRegs[2], FpStructInRegistersInfo info);
+void CopyReturnedFpStructFromRegisters(void* dest, UINT64 returnRegs[2], FpStructInRegistersInfo info, bool handleGcRefs);
 #endif // TARGET_RISCV64
 
 bool IsCerRootMethod(MethodDesc *pMD);

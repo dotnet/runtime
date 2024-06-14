@@ -703,14 +703,14 @@ FCIMPL4(Object*, RuntimeMethodHandle::InvokeMethod,
         // we have allocated for this purpose.
         else if (!fHasRetBuffArg)
         {
-        #if defined(TARGET_RISCV64)
-            FpStructInRegistersInfo info = argit.GetReturnFpStructInRegistersInfo();
-            if (info.flags != FpStruct::UseIntCallConv)
+#if defined(TARGET_RISCV64)
+            if (callDescrData.fpReturnSize != FpStruct::UseIntCallConv)
             {
-                CopyReturnedFpStructFromRegisters(gc.retVal->GetData(), callDescrData.returnValue, info);
+                FpStructInRegistersInfo info = argit.GetReturnFpStructInRegistersInfo();
+                CopyReturnedFpStructFromRegisters(gc.retVal->GetData(), callDescrData.returnValue, info, true);
             }
             else
-        #endif // TARGET_RISCV64
+#endif // TARGET_RISCV64
             {
                 CopyValueClass(gc.retVal->GetData(), &callDescrData.returnValue, gc.retVal->GetMethodTable());
             }

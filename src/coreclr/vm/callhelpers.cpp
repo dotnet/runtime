@@ -163,40 +163,29 @@ void DispatchCallDebuggerWrapper(
 }
 
 #if defined(TARGET_RISCV64)
-void CopyReturnedFpStructFromRegisters(void* dest, UINT64 returnRegs[2], FpStructInRegistersInfo info)
+void CopyReturnedFpStructFromRegisters(void* dest, UINT64 returnRegs[2], FpStructInRegistersInfo info,
+    bool handleGcRefs)
 {
     _ASSERTE(info.flags != FpStruct::UseIntCallConv);
-    unsigned reg1Offset, reg1Size; // offset and size of the field passed in the first saved register (fa0)
-    unsigned reg2Offset, reg2Size; // offset and size of the field passed in the second saved register (fa1 or a0)
-    if (info.flags & FpStruct::Float2nd)
-    {
-        reg1Offset = info.offset2nd;
-        reg2Offset = info.offset1st;
-        reg1Size = info.GetSize2nd();
-        reg2Size = info.GetSize1st();
-    }
-    else
-    {
-        reg1Offset = info.offset1st;
-        reg2Offset = info.offset2nd;
-        reg1Size = info.GetSize1st();
-        reg2Size = info.GetSize2nd();
-    }
 
-    memcpyNoGCRefs((char*)dest + reg1Offset, &returnRegs[0], reg1Size);
+    // Float2nd is the only case where returnRegs[0] (fa0) represents the second field, not the first.
+    UINT64* returnField1st = &returnRegs[(info.flags & FpStruct::Float2nd) ? 1 : 0];
+    UINT64* returnField2nd = &returnRegs[(info.flags & FpStruct::Float2nd) ? 0 : 1];
+
+    memcpyNoGCRefs((char*)dest + info.offset1st, returnField1st, info.GetSize1st());
 
     if ((info.flags & FpStruct::OnlyOne) == 0)
     {
-        char* pField = (char*)dest + reg2Offset;
-        if (info.flags & FpStruct::GcRef)
+        char* field2ndDest = (char*)dest + info.offset2nd;
+        if (handleGcRefs && (info.flags & FpStruct::GcRef))
         {
             _ASSERTE(info.flags & (FpStruct::Float1st | FpStruct::Float2nd));
-            _ASSERTE(reg2Size == TARGET_POINTER_SIZE);
-            memmoveGCRefs(pField, &returnRegs[1], TARGET_POINTER_SIZE);
+            _ASSERTE(info.GetSize2nd() == TARGET_POINTER_SIZE);
+            memmoveGCRefs(field2ndDest, returnField2nd, TARGET_POINTER_SIZE);
         }
         else
         {
-            memcpyNoGCRefs(pField, &returnRegs[1], reg2Size);
+            memcpyNoGCRefs(field2ndDest, returnField2nd, info.GetSize2nd());
         }
     }
 }
@@ -593,15 +582,27 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
         CallDescrWorkerWithHandler(&callDescrData);
     }
 
+#ifdef FEATURE_HFA
     if (pvRetBuff != NULL)
     {
         memcpyNoGCRefs(pvRetBuff, &callDescrData.returnValue, sizeof(callDescrData.returnValue));
     }
+#endif // FEATURE_HFA
 
     if (pReturnValue != NULL)
     {
-        _ASSERTE((DWORD)cbReturnValue <= sizeof(callDescrData.returnValue));
-        memcpyNoGCRefs(pReturnValue, &callDescrData.returnValue, cbReturnValue);
+        NOT_RISCV64(_ASSERTE((DWORD)cbReturnValue <= sizeof(callDescrData.returnValue));)
+#if defined(TARGET_RISCV64)
+        if (callDescrData.fpReturnSize != FpStruct::UseIntCallConv)
+        {
+            FpStructInRegistersInfo info = m_argIt.GetReturnFpStructInRegistersInfo();
+            CopyReturnedFpStructFromRegisters(pReturnValue, callDescrData.returnValue, info, false);
+        }
+        else
+#endif // TARGET_RISCV64
+        {
+            memcpyNoGCRefs(pReturnValue, &callDescrData.returnValue, cbReturnValue);
+        }
 
 #if !defined(HOST_64BIT) && BIGENDIAN
         {
