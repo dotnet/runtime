@@ -236,19 +236,11 @@ int minipal_getcpufeatures(void)
                                             // provided a similar but not quite the same feature.
 
                                             result |= XArchIntrinsicConstants_Evex;
-                                            result |= XArchIntrinsicConstants_Avx512f;
-                                            result |= XArchIntrinsicConstants_Avx512f_vl;
-                                            result |= XArchIntrinsicConstants_Avx512bw;
-                                            result |= XArchIntrinsicConstants_Avx512bw_vl;
-                                            result |= XArchIntrinsicConstants_Avx512cd;
-                                            result |= XArchIntrinsicConstants_Avx512cd_vl;
-                                            result |= XArchIntrinsicConstants_Avx512dq;
-                                            result |= XArchIntrinsicConstants_Avx512dq_vl;
+                                            result |= XArchIntrinsicConstants_Avx512;
 
                                             if ((cpuidInfo[CPUID_ECX] & (1 << 1)) != 0)                         // AVX512VBMI
                                             {
                                                 result |= XArchIntrinsicConstants_Avx512Vbmi;
-                                                result |= XArchIntrinsicConstants_Avx512Vbmi_vl;
                                             }
                                         }
                                     }

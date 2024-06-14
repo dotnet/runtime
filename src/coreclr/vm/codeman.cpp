@@ -1364,14 +1364,7 @@ void EEJitManager::SetCpuInfo()
     // x86-64-v4
 
     if (((cpuFeatures & XArchIntrinsicConstants_Evex) != 0) &&
-        ((cpuFeatures & XArchIntrinsicConstants_Avx512f) != 0) &&
-        ((cpuFeatures & XArchIntrinsicConstants_Avx512f_vl) != 0) &&
-        ((cpuFeatures & XArchIntrinsicConstants_Avx512bw) != 0) &&
-        ((cpuFeatures & XArchIntrinsicConstants_Avx512bw_vl) != 0) &&
-        ((cpuFeatures & XArchIntrinsicConstants_Avx512cd) != 0) &&
-        ((cpuFeatures & XArchIntrinsicConstants_Avx512cd_vl) != 0) &&
-        ((cpuFeatures & XArchIntrinsicConstants_Avx512dq) != 0) &&
-        ((cpuFeatures & XArchIntrinsicConstants_Avx512dq_vl) != 0))
+        ((cpuFeatures & XArchIntrinsicConstants_Avx512) != 0))
     {
         // While the AVX-512 ISAs can be individually lit-up, they really
         // need F, BW, CD, DQ, and VL to be fully functional without adding
@@ -1401,14 +1394,14 @@ void EEJitManager::SetCpuInfo()
         }
     }
 
-    if (((cpuFeatures & XArchIntrinsicConstants_Avx512Vbmi) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512VBMI))
+    if ((cpuFeatures & XArchIntrinsicConstants_Avx512Vbmi) != 0)
     {
-        CPUCompileFlags.Set(InstructionSet_AVX512VBMI);
-    }
-
-    if (((cpuFeatures & XArchIntrinsicConstants_Avx512Vbmi_vl) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512VBMI_VL))
-    {
-        CPUCompileFlags.Set(InstructionSet_AVX512VBMI_VL);
+        if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512VBMI) &&
+            CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512VBMI_VL))
+        {
+            CPUCompileFlags.Set(InstructionSet_AVX512VBMI);
+            CPUCompileFlags.Set(InstructionSet_AVX512VBMI_VL);
+        }
     }
 
     // Unversioned
