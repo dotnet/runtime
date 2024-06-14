@@ -55,7 +55,6 @@ namespace System.Diagnostics
 
         private const string EventLogKey = "SYSTEM\\CurrentControlSet\\Services\\EventLog";
         private const string eventLogMutexName = "netfxeventlog.1.0";
-        private const int SecondsPerDay = 60 * 60 * 24;
 
         private const int Flag_notifying = 0x1;           // keeps track of whether we're notifying our listeners - to prevent double notifications
         private const int Flag_forwards = 0x2;     // whether the cache contains entries in forwards order (true) or backwards (false)
@@ -317,7 +316,7 @@ namespace System.Diagnostics
                     if (retention == 0 || retention == -1)
                         return retention;
                     else
-                        return (int)(((double)retention) / SecondsPerDay);
+                        return (int)(((double)retention) / TimeSpan.SecondsPerDay);
                 }
 
                 return 7;
@@ -1030,7 +1029,7 @@ namespace System.Diagnostics
                 if (retentionDays < 1 || retentionDays > 365)
                     throw new ArgumentOutOfRangeException(SR.RentionDaysOutOfRange);
 
-                retentionvalue = (long)retentionDays * SecondsPerDay;
+                retentionvalue = (long)retentionDays * TimeSpan.SecondsPerDay;
             }
 
             using (RegistryKey logkey = GetLogRegKey(currentMachineName, true))

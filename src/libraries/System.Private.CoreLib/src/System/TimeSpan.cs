@@ -62,25 +62,25 @@ namespace System
         public const long TicksPerHour = TicksPerMinute * 60;                                       //  36,000,000,000
         public const long TicksPerDay = TicksPerHour * 24;                                          // 864,000,000,000
 
-        internal const long MicrosecondsPerMillisecond = TicksPerMillisecond / TicksPerMicrosecond; //           1,000
-        internal const long MicrosecondsPerSecond = TicksPerSecond / TicksPerMicrosecond;           //       1,000,000
-        internal const long MicrosecondsPerMinute = TicksPerMinute / TicksPerMicrosecond;           //      60,000,000
-        internal const long MicrosecondsPerHour = TicksPerHour / TicksPerMicrosecond;               //   3,600,000,000
-        internal const long MicrosecondsPerDay = TicksPerDay / TicksPerMicrosecond;                 //  86,400,000,000
+        public const long MicrosecondsPerMillisecond = TicksPerMillisecond / TicksPerMicrosecond;   //           1,000
+        public const long MicrosecondsPerSecond = TicksPerSecond / TicksPerMicrosecond;             //       1,000,000
+        public const long MicrosecondsPerMinute = TicksPerMinute / TicksPerMicrosecond;             //      60,000,000
+        public const long MicrosecondsPerHour = TicksPerHour / TicksPerMicrosecond;                 //   3,600,000,000
+        public const long MicrosecondsPerDay = TicksPerDay / TicksPerMicrosecond;                   //  86,400,000,000
 
-        internal const long MillisecondsPerSecond = TicksPerSecond / TicksPerMillisecond;           //           1,000
-        internal const long MillisecondsPerMinute = TicksPerMinute / TicksPerMillisecond;           //          60,000
-        internal const long MillisecondsPerHour = TicksPerHour / TicksPerMillisecond;               //       3,600,000
-        internal const long MillisecondsPerDay = TicksPerDay / TicksPerMillisecond;                 //      86,400,000
+        public const long MillisecondsPerSecond = TicksPerSecond / TicksPerMillisecond;             //           1,000
+        public const long MillisecondsPerMinute = TicksPerMinute / TicksPerMillisecond;             //          60,000
+        public const long MillisecondsPerHour = TicksPerHour / TicksPerMillisecond;                 //       3,600,000
+        public const long MillisecondsPerDay = TicksPerDay / TicksPerMillisecond;                   //      86,400,000
 
-        internal const long SecondsPerMinute = TicksPerMinute / TicksPerSecond;                     //              60
-        internal const long SecondsPerHour = TicksPerHour / TicksPerSecond;                         //           3,600
-        internal const long SecondsPerDay = TicksPerDay / TicksPerSecond;                           //          86,400
+        public const long SecondsPerMinute = TicksPerMinute / TicksPerSecond;                       //              60
+        public const long SecondsPerHour = TicksPerHour / TicksPerSecond;                           //           3,600
+        public const long SecondsPerDay = TicksPerDay / TicksPerSecond;                             //          86,400
 
-        internal const long MinutesPerHour = TicksPerHour / TicksPerMinute;                         //              60
-        internal const long MinutesPerDay = TicksPerDay / TicksPerMinute;                           //           1,440
+        public const long MinutesPerHour = TicksPerHour / TicksPerMinute;                           //              60
+        public const long MinutesPerDay = TicksPerDay / TicksPerMinute;                             //           1,440
 
-        internal const long HoursPerDay = TicksPerDay / TicksPerHour;                               //              24
+        public const long HoursPerDay = TicksPerDay / TicksPerHour;                                 //              24
 
         internal const long MinTicks = long.MinValue;                                               // -9,223,372,036,854,775,808
         internal const long MaxTicks = long.MaxValue;                                               // +9,223,372,036,854,775,807

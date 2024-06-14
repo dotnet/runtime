@@ -115,9 +115,9 @@ namespace System.Globalization
         {
             // Gregorian 1/1/0001 is Julian 1/3/0001. Remember DateTime(0) is referred to Gregorian 1/1/0001.
             // The following line convert Gregorian ticks to Julian ticks.
-            long julianTicks = ticks + TicksPerDay * 2;
+            long julianTicks = ticks + TimeSpan.TicksPerDay * 2;
             // n = number of days since 1/1/0001
-            int n = (int)(julianTicks / TicksPerDay);
+            int n = (int)(julianTicks / TimeSpan.TicksPerDay);
             // y4 = number of whole 4-year periods within 100-year period
             int y4 = n / JulianDaysPer4Years;
             // n = day number within 4-year period
@@ -174,7 +174,7 @@ namespace System.Globalization
             // Gregorian 1/1/0001 is Julian 1/3/0001. n * TicksPerDay is the ticks in JulianCalendar.
             // Therefore, we subtract two days in the following to convert the ticks in JulianCalendar
             // to ticks in Gregorian calendar.
-            return (n - 2) * TicksPerDay;
+            return (n - 2) * TimeSpan.TicksPerDay;
         }
 
         public override DateTime AddMonths(DateTime time, int months)
@@ -209,7 +209,7 @@ namespace System.Globalization
                 d = days;
             }
 
-            long ticks = DateToTicks(y, m, d) + time.Ticks % TicksPerDay;
+            long ticks = DateToTicks(y, m, d) + time.Ticks % TimeSpan.TicksPerDay;
             CheckAddResult(ticks, MinSupportedDateTime, MaxSupportedDateTime);
             return new DateTime(ticks);
         }
@@ -303,12 +303,12 @@ namespace System.Globalization
             CheckYearEraRange(year, era);
             CheckMonthRange(month);
             CheckDayRange(year, month, day);
-            if (millisecond < 0 || millisecond >= MillisPerSecond)
+            if (millisecond < 0 || millisecond >= TimeSpan.MillisecondsPerSecond)
             {
                 throw new ArgumentOutOfRangeException(
                     nameof(millisecond),
                     millisecond,
-                    SR.Format(SR.ArgumentOutOfRange_Range, 0, MillisPerSecond - 1));
+                    SR.Format(SR.ArgumentOutOfRange_Range, 0, TimeSpan.MillisecondsPerSecond - 1));
             }
 
             if (hour < 0 || hour >= 24 || minute < 0 || minute >= 60 || second < 0 || second >= 60)
