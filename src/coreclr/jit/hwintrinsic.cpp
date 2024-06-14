@@ -1450,16 +1450,6 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 
             case 1:
             {
-                if ((category == HW_Category_MemoryLoad) && op1->OperIs(GT_CAST))
-                {
-                    // Although the API specifies a pointer, if what we have is a BYREF, that's what
-                    // we really want, so throw away the cast.
-                    if (op1->gtGetOp1()->TypeGet() == TYP_BYREF)
-                    {
-                        op1 = op1->gtGetOp1();
-                    }
-                }
-
                 retNode = isScalar ? gtNewScalarHWIntrinsicNode(nodeRetType, op1, intrinsic)
                                    : gtNewSimdHWIntrinsicNode(nodeRetType, op1, intrinsic, simdBaseJitType, simdSize);
 
@@ -1655,6 +1645,20 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     if (setMethodHandle && (retNode != nullptr))
     {
         retNode->AsHWIntrinsic()->SetMethodHandle(this, method R2RARG(*entryPoint));
+    }
+
+    if (category == HW_Category_MemoryLoad)
+    {
+        GenTree** pAddr = nullptr;
+        bool      isMem = retNode->AsHWIntrinsic()->OperIsMemoryLoad(pAddr);
+        assert(isMem);
+
+        // Although the API specifies a pointer, if what we have is a BYREF, that's what
+        // we really want, so throw away the cast.
+        if (pAddr && (*pAddr)->OperIs(GT_CAST))
+        {
+            *pAddr = (*pAddr)->gtGetOp1();
+        }
     }
 
 #if defined(TARGET_ARM64)
