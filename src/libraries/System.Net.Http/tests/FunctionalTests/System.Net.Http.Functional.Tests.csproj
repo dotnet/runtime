@@ -29,6 +29,10 @@
     <WasmXHarnessTestsTimeout>01:15:00</WasmXHarnessTestsTimeout>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(TargetsAndroid)' == 'true'">
+    <DefineConstants>$(DefineConstants);TARGETS_ANDROID</DefineConstants>
+  </PropertyGroup>
+
   <ItemGroup>
     <WasmExtraFilesToDeploy Include="package.json" />
     <WasmExtraFilesToDeploy Include="package-lock.json" />
@@ -233,7 +237,7 @@
     <Compile Include="ImpersonatedAuthTests.cs" />
   </ItemGroup>
   <!-- Linux specific files -->
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'linux' or '$(TargetPlatformIdentifier)' == 'browser'">
+  <ItemGroup Condition="('$(TargetPlatformIdentifier)' == 'linux' and '$(TargetsAndroid)' != 'true') or '$(TargetPlatformIdentifier)' == 'browser'">
     <Compile Include="$(CommonPath)Interop\Linux\Interop.Libraries.cs"
              Link="Common\Interop\Linux\Interop.Libraries.cs" />
   </ItemGroup>
@@ -241,6 +245,22 @@
   <ItemGroup Condition=" '$(TargetPlatformIdentifier)' == 'osx' ">
     <Compile Include="$(CommonPath)Interop\OSX\Interop.Libraries.cs"
              Link="Common\Interop\OSX\Interop.Libraries.cs" />
+  </ItemGroup>
+  <!-- Android specific files -->
+  <ItemGroup Condition=" '$(TargetsAndroid)' == 'true' ">
+    <Compile Include="AndroidKeyStoreHelper.cs" />
+    <Compile Include="$(CommonPath)Interop\Android\Interop.Libraries.cs"
+             Link="Common\Interop\Android\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Android\Interop.JObjectLifetime.cs"
+             Link="Common\Interop\Android\Interop.JObjectLifetime.cs" />
+    <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.Ssl.ProtocolSupport.cs"
+             Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.Ssl.ProtocolSupport.cs" />
+    <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.X509.cs"
+             Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.X509.cs" />
+    <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\Interop.X509Store.cs"
+             Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.X509Store.cs" />
+    <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\SafeKeyHandle.cs"
+             Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\SafeKeyHandle.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CustomContent.netcore.cs" />

@@ -209,10 +209,11 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact]
         [PlatformSpecific(TestPlatforms.Android)]
         public async Task Android_GetCertificateFromKeyStoreViaAlias()
         {
+#if TARGETS_ANDROID
             var options = new LoopbackServer.Options { UseSsl = true };
 
             var (store, alias) = AndroidKeyStoreHelper.AddCertificate(Configuration.Certificates.GetClientCertificate());
@@ -220,7 +221,6 @@ namespace System.Net.Http.Functional.Tests
             {
                 var clientCertificate = AndroidKeyStoreHelper.GetCertificateViaAlias(store, alias);
                 Assert.True(clientCertificate.HasPrivateKey);
-
 
                 await LoopbackServer.CreateServerAsync(async (server, url) =>
                 {
@@ -247,6 +247,10 @@ namespace System.Net.Http.Functional.Tests
                 Assert.True(AndroidKeyStoreHelper.DeleteAlias(store, alias));
                 store.Dispose();
             }
+#else
+            await Task.CompletedTask;
+            throw new SkipTestException("Android-specific test");
+#endif
         }
     }
 }

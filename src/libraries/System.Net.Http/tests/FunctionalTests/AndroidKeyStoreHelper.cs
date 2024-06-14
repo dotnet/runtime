@@ -3,9 +3,9 @@
 
 using System.Security.Cryptography.X509Certificates;
 
-namespace System
+namespace System.Net.Http.Functional.Tests
 {
-    public static partial class AndroidKeyStoreHelper
+    public static class AndroidKeyStoreHelper
     {
         public static (X509Store, string) AddCertificate(X509Certificate2 cert)
         {
