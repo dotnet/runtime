@@ -12,6 +12,11 @@ namespace System
 
         internal static bool GetBooleanConfig(string switchName, string envVariable, bool defaultValue = false)
         {
+            if (AppContext.TryGetSwitch(switchName, out bool value))
+            {
+                return value;
+            }
+
             if (Environment.GetEnvironmentVariable(envVariable) is string str)
             {
                 if (str == "1" || string.Equals(str, bool.TrueString, StringComparison.OrdinalIgnoreCase))
@@ -24,7 +29,7 @@ namespace System
                 }
             }
 
-            return GetBooleanConfig(switchName, defaultValue);
+            return defaultValue;
         }
     }
 }
