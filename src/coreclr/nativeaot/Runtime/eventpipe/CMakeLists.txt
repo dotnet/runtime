@@ -218,7 +218,7 @@ list(APPEND AOT_EVENTPIPE_DISABLED_SOURCES
 
 add_library(eventpipe-enabled STATIC ${EVENTPIPE_SOURCES})
 
-target_link_libraries(eventpipe-enabled PRIVATE eventpipe-shared-objects)
+target_link_libraries(eventpipe-enabled PRIVATE eventpipe-shared-objects dn-containers)
 add_dependencies(eventpipe-enabled aot_eventing_headers)
 if(CLR_CMAKE_TARGET_WIN32)
   add_dependencies(eventpipe-enabled aot_etw_headers)
@@ -229,7 +229,7 @@ add_dependencies(eventpipe-disabled aot_eventing_headers)
 
 if (CLR_CMAKE_TARGET_WIN32)
   add_library(eventpipe-enabled.GuardCF STATIC ${EVENTPIPE_SOURCES})
-  target_link_libraries(eventpipe-enabled.GuardCF PRIVATE eventpipe-shared-objects.GuardCF)
+  target_link_libraries(eventpipe-enabled.GuardCF PRIVATE eventpipe-shared-objects.GuardCF dn-containers)
   add_dependencies(eventpipe-enabled.GuardCF aot_eventing_headers)
   add_dependencies(eventpipe-enabled.GuardCF aot_etw_headers)
   add_library(eventpipe-disabled.GuardCF STATIC ${AOT_EVENTPIPE_DISABLED_SOURCES})

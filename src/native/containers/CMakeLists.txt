@@ -21,3 +21,5 @@ configure_file(dn-config.h.in ${CMAKE_CURRENT_BINARY_DIR}/dn-config.h)
 target_include_directories(dn-containers PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 target_include_directories(dn-containers PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+
+set_target_properties(dn-containers PROPERTIES CLR_CONTROL_FLOW_GUARD ON)

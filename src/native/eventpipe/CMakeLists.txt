@@ -1,4 +1,10 @@
 include(CheckSymbolExists)
+include(CheckIncludeFile)
+
+check_include_file(
+    sys/socket.h
+    HAVE_SYS_SOCKET_H
+)
 
 check_symbol_exists(
     accept4
