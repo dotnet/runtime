@@ -95,9 +95,9 @@
     <Compile Include="..\..\..\System.Net.Http\src\System\Net\Http\SocketsHttpHandler\IMultiWebProxy.cs"
              Link="ProductionCode\IMultiWebProxy.cs" />
     <Compile Include="..\..\..\System.Net.Http\src\System\Net\Http\SocketsHttpHandler\MultiProxy.cs"
-	    Link="ProductionCode\MultiProxy.cs" />
+             Link="ProductionCode\MultiProxy.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\Advapi32\Interop.RegNotifyChangeKeyValue.cs"
-            Link="Common\Interop\Windows\Advapi32\Interop.RegNotifyChangeKeyValue.cs" />
+             Link="Common\Interop\Windows\Advapi32\Interop.RegNotifyChangeKeyValue.cs" />
     <Compile Include="APICallHistory.cs" />
     <Compile Include="ClientCertificateHelper.cs" />
     <Compile Include="ClientCertificateScenarioTest.cs" />

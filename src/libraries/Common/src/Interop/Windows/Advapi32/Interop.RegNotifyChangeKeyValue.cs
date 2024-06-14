@@ -9,7 +9,6 @@ internal static partial class Interop
 {
     internal static partial class Advapi32
     {
-
         internal const int REG_NOTIFY_CHANGE_NAME = 0x1;
         internal const int REG_NOTIFY_CHANGE_ATTRIBUTES = 0x2;
         internal const int REG_NOTIFY_CHANGE_LAST_SET = 0x4;
