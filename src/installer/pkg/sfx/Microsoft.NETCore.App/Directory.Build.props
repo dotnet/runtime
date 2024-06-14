@@ -120,9 +120,12 @@
     <PlatformManifestFileEntry Include="mscordaccore.dll" IsNative="true" />
     <PlatformManifestFileEntry Include="libmscordaccore.so" IsNative="true" />
     <PlatformManifestFileEntry Include="libmscordaccore.dylib" IsNative="true" />
+
+    <!-- We don't want to ship cdacreader yet -->
     <PlatformManifestFileEntry Include="cdacreader.dll" ExcludeFromDataFiles="true" />
     <PlatformManifestFileEntry Include="libcdacreader.so" ExcludeFromDataFiles="true" />
     <PlatformManifestFileEntry Include="libcdacreader.dylib" ExcludeFromDataFiles="true" />
+
     <PlatformManifestFileEntry Include="mscordbi.dll" IsNative="true" />
     <PlatformManifestFileEntry Include="libmscordbi.so" IsNative="true" />
     <PlatformManifestFileEntry Include="libmscordbi.dylib" IsNative="true" />
