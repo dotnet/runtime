@@ -8,6 +8,7 @@ using System.Runtime.Serialization.Formatters;
 
 namespace System.Resources.Extensions.Tests.Common;
 
+[ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
 public abstract class SerializationTest<TSerializer> where TSerializer : ISerializer
 {
     public static TheoryData<FormatterTypeStyle, FormatterAssemblyStyle> FormatterOptions => new()
