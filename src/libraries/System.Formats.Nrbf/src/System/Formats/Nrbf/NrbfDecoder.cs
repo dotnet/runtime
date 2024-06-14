@@ -8,6 +8,7 @@ using System.IO;
 using System.Formats.Nrbf.Utils;
 using System.Text;
 using System.Runtime.Serialization;
+using System.Diagnostics;
 
 namespace System.Formats.Nrbf;
 
@@ -162,7 +163,7 @@ public static class NrbfDecoder
         // Everything has to start with a header
         var header = (SerializedStreamHeaderRecord)DecodeNext(reader, recordMap, AllowedRecordTypes.SerializedStreamHeader, options, out _);
         // and can be followed by any Object, BinaryLibrary and a MessageEnd.
-        const AllowedRecordTypes Allowed = AllowedRecordTypes.AnyObject
+        AllowedRecordTypes allowed = AllowedRecordTypes.AnyObject
             | AllowedRecordTypes.BinaryLibrary | AllowedRecordTypes.MessageEnd;
 
         SerializationRecordType recordType;
@@ -186,24 +187,44 @@ public static class NrbfDecoder
                     }
                     while (nextRecord is BinaryLibraryRecord);
 
+                    if (nextRecord is MemberReferenceRecord)
+                    {
+                        // We were supposed to decode a record of specific type or a reference to it.
+                        // Since a reference was decoded, it means that we still need to read the record.
+                        // Reference can not point to a null.
+                        AllowedRecordTypes allowedRecord = nextInfo.Allowed
+                            & ~AllowedRecordTypes.MemberReference
+                            & ~AllowedRecordTypes.Nulls;
+                        // The parent is set to null, because we don't want to add it to member values.
+                        readStack.Push(new NextInfo(allowedRecord, parent: null, readStack));
+                    }
+
                     // Handle it:
                     // - add to the parent records list,
                     // - push next info if there are remaining nested records to read.
-                    nextInfo.Parent.HandleNextRecord(nextRecord, nextInfo);
+                    nextInfo.Parent?.HandleNextRecord(nextRecord, nextInfo);
                     // Push on the top of the stack the first nested record of last read record,
                     // so it gets read as next record.
                     PushFirstNestedRecordInfo(nextRecord, readStack);
                 }
                 else
                 {
+                    Debug.Assert(nextInfo.Parent is not null);
+
                     object value = reader.ReadPrimitiveValue(nextInfo.PrimitiveType);
 
                     nextInfo.Parent.HandleNextValue(value, nextInfo);
                 }
             }
 
-            nextRecord = DecodeNext(reader, recordMap, Allowed, options, out recordType);
+            nextRecord = DecodeNext(reader, recordMap, allowed, options, out recordType);
             PushFirstNestedRecordInfo(nextRecord, readStack);
+
+            // Only a binary library can be followed by something that is not a MessageEnd.
+            if (readStack.Count == 0 && recordType != SerializationRecordType.BinaryLibrary)
+            {
+                allowed = AllowedRecordTypes.MessageEnd;
+            }
         }
         while (recordType != SerializationRecordType.MessageEnd);
 

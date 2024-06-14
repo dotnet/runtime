@@ -74,6 +74,8 @@ internal readonly struct MemberTypeInfo
             | AllowedRecordTypes.ObjectNull | AllowedRecordTypes.MemberReference;
         const AllowedRecordTypes ObjectArray = AllowedRecordTypes.ArraySingleObject
             | AllowedRecordTypes.ObjectNull | AllowedRecordTypes.MemberReference;
+        const AllowedRecordTypes NonPrimitiveArray = AllowedRecordTypes.BinaryArray
+            | AllowedRecordTypes.ObjectNull | AllowedRecordTypes.MemberReference;
 
         // Every string can be a string, a null or a reference (to a string)
         const AllowedRecordTypes Strings = AllowedRecordTypes.BinaryObjectString
@@ -95,8 +97,8 @@ internal readonly struct MemberTypeInfo
             BinaryType.Object => (AllowedRecordTypes.AnyObject, default),
             BinaryType.StringArray => (StringArray, default),
             BinaryType.PrimitiveArray => (PrimitiveArray, default),
-            BinaryType.Class => (NonSystemClass, default),
-            BinaryType.SystemClass => (SystemClass, default),
+            BinaryType.Class => (((ClassTypeInfo)additionalInfo!).TypeName.IsArray ? NonPrimitiveArray : NonSystemClass, default),
+            BinaryType.SystemClass => (((TypeName)additionalInfo!).IsArray ? NonPrimitiveArray : SystemClass, default),
             _ => (ObjectArray, default)
         };
     }
