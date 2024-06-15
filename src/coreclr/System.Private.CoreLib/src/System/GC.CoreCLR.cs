@@ -303,6 +303,27 @@ namespace System
         //
         public static int MaxGeneration => GetMaxGeneration();
 
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_GetNextFinalizableObject")]
+        private static unsafe partial void* GetNextFinalizeableObject(ObjectHandleOnStack target);
+
+        private static unsafe uint RunFinalizers()
+        {
+            Thread currentThread = Thread.CurrentThread;
+
+            uint count = 0;
+            while (true)
+            {
+                object? target = null;
+                void* fptr = GetNextFinalizeableObject(ObjectHandleOnStack.Create(ref target));
+                if (fptr == null)
+                    break;
+                ((delegate*<object, void>)fptr)(target!);
+                currentThread.ResetFinalizerThread();
+                count++;
+            }
+            return count;
+        }
+
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_WaitForPendingFinalizers")]
         private static partial void _WaitForPendingFinalizers();
 

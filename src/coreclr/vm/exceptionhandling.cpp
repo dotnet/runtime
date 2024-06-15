@@ -8518,8 +8518,8 @@ extern "C" bool QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollideCla
         }
         else
         {
-            // TODO-NewEH: Currently there are two other cases of internal VM->managed transitions. The FastCallFinalize and COMToCLRDispatchHelperWithStack
-            // Either add handling those here as well or rewrite all these perf critical places in C#, so that CallDescrWorker is the only path that
+            // TODO-NewEH: Currently there is one case of internal VM->managed transitions: COMToCLRDispatchHelperWithStack
+            // Either add handling here as well or rewrite it in C#, so that CallDescrWorker is the only path that
             // needs to be handled here.
             size_t CallDescrWorkerInternalReturnAddress = (size_t)CallDescrWorkerInternal + CallDescrWorkerInternalReturnAddressOffset;
             if (GetIP(pThis->m_crawl.GetRegisterSet()->pCallerContext) == CallDescrWorkerInternalReturnAddress)
