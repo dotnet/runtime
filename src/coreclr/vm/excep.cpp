@@ -2989,7 +2989,6 @@ void FreeExceptionData(ExceptionData *pedata)
     if (pedata->bstrHelpFile)
         SysFreeString(pedata->bstrHelpFile);
 }
-#endif // FEATURE_COMINTEROP
 
 void GetExceptionForHR(HRESULT hr, IErrorInfo* pErrInfo, OBJECTREF* pProtectedThrowable)
 {
@@ -3005,7 +3004,6 @@ void GetExceptionForHR(HRESULT hr, IErrorInfo* pErrInfo, OBJECTREF* pProtectedTh
     // Initialize
     *pProtectedThrowable = NULL;
 
-#if defined(FEATURE_COMINTEROP)
     if (pErrInfo != NULL)
     {
         // If this represents a managed object...
@@ -3039,7 +3037,6 @@ void GetExceptionForHR(HRESULT hr, IErrorInfo* pErrInfo, OBJECTREF* pProtectedTh
             (*pProtectedThrowable) = ex.GetThrowable();
         }
     }
-#endif // defined(FEATURE_COMINTEROP)
 
     // If we made it here and we don't have an exception object, we didn't have a valid IErrorInfo
     // so we'll create an exception based solely on the hresult.
@@ -3062,14 +3059,26 @@ void GetExceptionForHR(HRESULT hr, OBJECTREF* pProtectedThrowable)
 
     // Get an IErrorInfo if one is available.
     IErrorInfo *pErrInfo = NULL;
-#ifdef FEATURE_COMINTEROP
     if (SafeGetErrorInfo(&pErrInfo) != S_OK)
         pErrInfo = NULL;
-#endif // FEATURE_COMINTEROP
 
     GetExceptionForHR(hr, pErrInfo, pProtectedThrowable);
 }
+#else
+void GetExceptionForHR(HRESULT hr, OBJECTREF* pProtectedThrowable)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;        // because of IErrorInfo
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
+    EEMessageException ex(hr);
+    (*pProtectedThrowable) = ex.GetThrowable();
+}
+#endif // FEATURE_COMINTEROP
 
 //
 // Maps a Win32 fault to a COM+ Exception enumeration code

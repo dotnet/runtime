@@ -359,7 +359,9 @@ void ExceptionPreserveStackTrace(OBJECTREF throwable);
 // Create an exception object for an HRESULT
 //==========================================================================
 
+#ifdef FEATURE_COMINTEROP
 void GetExceptionForHR(HRESULT hr, IErrorInfo* pErrInfo, OBJECTREF* pProtectedThrowable);
+#endif
 void GetExceptionForHR(HRESULT hr, OBJECTREF* pProtectedThrowable);
 HRESULT GetHRFromThrowable(OBJECTREF throwable);
 
