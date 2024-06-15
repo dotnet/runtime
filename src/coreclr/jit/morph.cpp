@@ -1923,8 +1923,8 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
     }
     JITDUMP("Initializing arg info for %d.%s:\n", call->gtTreeID, GenTree::OpName(call->gtOper));
 
-    m_hasRegArgs          = false;
-    m_hasStackArgs        = false;
+    m_hasRegArgs   = false;
+    m_hasStackArgs = false;
     // At this point, we should not have any late args, as this needs to be done before those are determined.
     assert(m_lateHead == nullptr);
 
@@ -2066,9 +2066,9 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
 #endif
 
     ClassifierInfo info;
-    info.CallConv = call->GetUnmanagedCallConv();
-    info.IsVarArgs = call->IsVarargs();
-    info.HasThis = call->gtArgs.HasThisPointer();
+    info.CallConv   = call->GetUnmanagedCallConv();
+    info.IsVarArgs  = call->IsVarargs();
+    info.HasThis    = call->gtArgs.HasThisPointer();
     info.HasRetBuff = call->gtArgs.HasRetBuffer();
     PlatformClassifier classifier(info);
 
@@ -2092,7 +2092,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
         ClassLayout* argLayout = argSigClass == NO_CLASS_HANDLE ? nullptr : comp->typGetObjLayout(argSigClass);
 
         ABIPassingInformation abiInfo;
-        ABIPassingSegment inlineSegment;
+        ABIPassingSegment     inlineSegment;
 
         // Some well known args have custom register assignment.
         // These should not affect the placement of any other args or stack space required.
@@ -2107,10 +2107,10 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
         else
         {
             inlineSegment = ABIPassingSegment::InRegister(nonStdRegNum, 0, TARGET_POINTER_SIZE);
-            abiInfo = ABIPassingInformation(1, &inlineSegment);
+            abiInfo       = ABIPassingInformation(1, &inlineSegment);
         }
 
-        arg.NewAbiInfo = abiInfo;
+        arg.NewAbiInfo      = abiInfo;
         arg.AbiInfo         = CallArgABIInformation();
         arg.AbiInfo.NumRegs = abiInfo.CountRegisterSegments();
 
@@ -2119,7 +2119,8 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
             assert(argx == arg.GetEarlyNode());
 
             Compiler::structPassingKind howToPassStruct;
-            var_types structBaseType  = comp->getArgTypeForStruct(argSigClass, &howToPassStruct, IsVarArgs(), argLayout->GetSize());
+            var_types                   structBaseType =
+                comp->getArgTypeForStruct(argSigClass, &howToPassStruct, IsVarArgs(), argLayout->GetSize());
             arg.AbiInfo.PassedByRef = howToPassStruct == Compiler::SPK_ByReference;
             arg.AbiInfo.ArgType     = structBaseType == TYP_UNKNOWN ? argx->TypeGet() : structBaseType;
 
@@ -2133,13 +2134,13 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
         }
 
         // TODO-Fixme: remove HFA information from VarDsc.
-        var_types hfaType = TYP_UNDEF;
-        bool isHfaArg = false;
-        unsigned hfaSlots = 0;
+        var_types hfaType  = TYP_UNDEF;
+        bool      isHfaArg = false;
+        unsigned  hfaSlots = 0;
 
         if (GlobalJitOptions::compFeatureHfa)
         {
-            hfaType = comp->GetHfaType(argSigClass);
+            hfaType  = comp->GetHfaType(argSigClass);
             isHfaArg = varTypeIsValidHfaType(hfaType);
 
             if (TargetOS::IsWindows && TargetArchitecture::IsArm64 && IsVarArgs())
@@ -2171,13 +2172,13 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
         if (abiInfo.IsSplitAcrossRegistersAndStack())
         {
             m_hasStackArgs = true;
-            m_hasRegArgs = true;
+            m_hasRegArgs   = true;
 
             arg.AbiInfo.SetSplit(true);
             // All of our ABIs have their split args at offset 0 relative to
             // the stack arguments passed.
             arg.AbiInfo.ByteOffset = 0;
-            arg.AbiInfo.ByteSize = 0;
+            arg.AbiInfo.ByteSize   = 0;
             for (unsigned i = 0; i < abiInfo.NumSegments; i++)
             {
                 const ABIPassingSegment& segment = abiInfo.Segments[i];
@@ -2198,14 +2199,13 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
             m_hasRegArgs = true;
 
             unsigned numRegsToWrite = min(abiInfo.NumSegments, (unsigned)MAX_ARG_REG_COUNT);
-            arg.AbiInfo.ByteSize = 0;
+            arg.AbiInfo.ByteSize    = 0;
             for (unsigned i = 0; i < numRegsToWrite; i++)
             {
                 const ABIPassingSegment& segment = abiInfo.Segments[i];
                 arg.AbiInfo.SetRegNum(0, segment.GetRegister());
                 arg.AbiInfo.ByteSize += segment.Size;
             }
-
 
 #if defined(UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
             INDEBUG(arg.CheckIsStruct());
@@ -2217,10 +2217,10 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
             // We only expect to see one stack segment in these cases.
             assert(abiInfo.NumSegments == 1);
             // This is a stack argument
-            m_hasStackArgs = true;
+            m_hasStackArgs                   = true;
             const ABIPassingSegment& segment = abiInfo.Segments[0];
             arg.AbiInfo.SetRegNum(0, REG_STK);
-            arg.AbiInfo.ByteSize = segment.Size;
+            arg.AbiInfo.ByteSize   = segment.Size;
             arg.AbiInfo.ByteOffset = segment.GetStackOffset();
         }
     } // end foreach argument loop

@@ -1692,7 +1692,8 @@ void Compiler::lvaInitVarDsc(LclVarDsc*              varDsc,
 template <typename Classifier>
 void Compiler::lvaClassifyParameterABI(Classifier& classifier)
 {
-    lvaParameterPassingInfo = info.compArgsCount == 0 ? nullptr : new (this, CMK_LvaTable) ABIPassingInformation[info.compArgsCount];
+    lvaParameterPassingInfo =
+        info.compArgsCount == 0 ? nullptr : new (this, CMK_LvaTable) ABIPassingInformation[info.compArgsCount];
 
     for (unsigned i = 0; i < info.compArgsCount; i++)
     {
