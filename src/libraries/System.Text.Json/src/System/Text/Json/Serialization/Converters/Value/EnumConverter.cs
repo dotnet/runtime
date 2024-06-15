@@ -7,6 +7,8 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text.Encodings.Web;
+using System.Text.Json.Nodes;
+using System.Text.Json.Schema;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -17,6 +19,7 @@ namespace System.Text.Json.Serialization.Converters
 
         // Odd type codes are conveniently signed types (for enum backing types).
         private static readonly bool s_isSignedEnum = ((int)s_enumTypeCode % 2) == 1;
+        private static readonly bool s_isFlagsEnum = typeof(T).IsDefined(typeof(FlagsAttribute), inherit: false);
 
         private const string ValueSeparator = ", ";
 
@@ -401,6 +404,39 @@ namespace System.Text.Json.Serialization.Converters
             }
 #endif
             return success;
+        }
+
+        internal override JsonSchema? GetSchema(JsonNumberHandling numberHandling)
+        {
+            if ((_converterOptions & EnumConverterOptions.AllowStrings) != 0)
+            {
+                // This explicitly ignores the integer component in converters configured as AllowNumbers | AllowStrings
+                // which is the default for JsonStringEnumConverter. This sacrifices some precision in the schema for simplicity.
+
+                if (s_isFlagsEnum)
+                {
+                    // Do not report enum values in case of flags.
+                    return new() { Type = JsonSchemaType.String };
+                }
+
+                JsonNamingPolicy? namingPolicy = _namingPolicy;
+                JsonArray enumValues = [];
+#if NET
+                string[] names = Enum.GetNames<T>();
+#else
+                string[] names = Enum.GetNames(Type);
+#endif
+
+                for (int i = 0; i < names.Length; i++)
+                {
+                    JsonNode name = FormatJsonName(names[i], namingPolicy);
+                    enumValues.Add(name);
+                }
+
+                return new() { Enum = enumValues };
+            }
+
+            return new() { Type = JsonSchemaType.Integer };
         }
 
         private T ReadEnumUsingNamingPolicy(string? enumString)

@@ -171,7 +171,7 @@ void Logger::LogVprintf(
     if (!s_initialized)
     {
         fprintf(stderr, "ERROR: [Logger::LogVprintf] Invoked the logging system before initializing it.\n");
-        __debugbreak();
+        DEBUG_BREAK;
     }
 
     // Early out if we're not logging at this level.

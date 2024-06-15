@@ -127,20 +127,12 @@ namespace System
         protected virtual bool IsMarshalByRefImpl() => false;
         public bool IsPrimitive
         {
-#if NATIVEAOT
-            // https://github.com/dotnet/runtime/issues/97272
-            [MethodImpl(MethodImplOptions.NoOptimization)]
-#endif
             [Intrinsic]
             get => IsPrimitiveImpl();
         }
         protected abstract bool IsPrimitiveImpl();
         public bool IsValueType
         {
-#if NATIVEAOT
-            // https://github.com/dotnet/runtime/issues/97272
-            [MethodImpl(MethodImplOptions.NoOptimization)]
-#endif
             [Intrinsic]
             get => IsValueTypeImpl();
         }

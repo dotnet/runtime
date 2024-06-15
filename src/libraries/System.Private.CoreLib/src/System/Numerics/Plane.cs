@@ -30,7 +30,7 @@ namespace System.Numerics
         [Intrinsic]
         public Plane(float x, float y, float z, float d)
         {
-            this = Vector128.Create(x, y, z, d).AsPlane();
+            this = Create(x, y, z, d);
         }
 
         /// <summary>Creates a <see cref="Plane" /> object from a specified normal and the distance along the normal from the origin.</summary>
@@ -39,7 +39,7 @@ namespace System.Numerics
         [Intrinsic]
         public Plane(Vector3 normal, float d)
         {
-            this = new Vector4(normal, d).AsPlane();
+            this = Create(normal, d);
         }
 
         /// <summary>Creates a <see cref="Plane" /> object from a specified four-dimensional vector.</summary>
@@ -49,6 +49,22 @@ namespace System.Numerics
         {
             this = value.AsPlane();
         }
+
+        /// <summary>Creates a <see cref="Plane" /> object from the X, Y, and Z components of its normal, and its distance from the origin on that normal.</summary>
+        /// <param name="x">The X component of the normal.</param>
+        /// <param name="y">The Y component of the normal.</param>
+        /// <param name="z">The Z component of the normal.</param>
+        /// <param name="d">The distance of the plane along its normal from the origin.</param>
+        /// <returns>A new <see cref="Plane" /> object from the X, Y, and Z components of its normal, and its distance from the origin on that normal.</returns>
+        [Intrinsic]
+        internal static Plane Create(float x, float y, float z, float d) => Vector128.Create(x, y, z, d).AsPlane();
+
+        /// <summary>Creates a <see cref="Plane" /> object from a specified normal and the distance along the normal from the origin.</summary>
+        /// <param name="normal">The plane's normal vector.</param>
+        /// <param name="d">The plane's distance from the origin along its normal vector.</param>\
+        /// <returns>A new <see cref="Plane" /> object from a specified normal and the distance along the normal from the origin.</returns>
+        [Intrinsic]
+        internal static Plane Create(Vector3 normal, float d) => Vector4.Create(normal, d).AsPlane();
 
         /// <summary>Creates a <see cref="Plane" /> object that contains three specified points.</summary>
         /// <param name="point1">The first point defining the plane.</param>
@@ -70,7 +86,7 @@ namespace System.Numerics
                 // D = - Dot(N, point1)
                 float d = -Vector3.Dot(normal, point1);
 
-                return new Plane(normal, d);
+                return Create(normal, d);
             }
             else
             {
@@ -89,16 +105,17 @@ namespace System.Numerics
 
                 // Normalize(N)
                 float ls = nx * nx + ny * ny + nz * nz;
-                float invNorm = 1.0f / MathF.Sqrt(ls);
+                float invNorm = 1.0f / float.Sqrt(ls);
 
-                Vector3 normal = new Vector3(
+                Vector3 normal = Vector3.Create(
                     nx * invNorm,
                     ny * invNorm,
                     nz * invNorm);
 
-                return new Plane(
+                return Create(
                     normal,
-                    -(normal.X * point1.X + normal.Y * point1.Y + normal.Z * point1.Z));
+                    -(normal.X * point1.X + normal.Y * point1.Y + normal.Z * point1.Z)
+                );
             }
         }
 
@@ -130,13 +147,13 @@ namespace System.Numerics
         {
             float normalLengthSquared = value.Normal.LengthSquared();
 
-            if (MathF.Abs(normalLengthSquared - 1.0f) < NormalizeEpsilon)
+            if (float.Abs(normalLengthSquared - 1.0f) < NormalizeEpsilon)
             {
                 // It already normalized, so we don't need to farther process.
                 return value;
             }
 
-            return (value.AsVector128() / MathF.Sqrt(normalLengthSquared)).AsPlane();
+            return (value.AsVector128() / float.Sqrt(normalLengthSquared)).AsPlane();
         }
 
         /// <summary>Transforms a normalized plane by a 4x4 matrix.</summary>
@@ -151,11 +168,12 @@ namespace System.Numerics
 
             float x = plane.Normal.X, y = plane.Normal.Y, z = plane.Normal.Z, w = plane.D;
 
-            return new Plane(
+            return Create(
                 x * m.M11 + y * m.M12 + z * m.M13 + w * m.M14,
                 x * m.M21 + y * m.M22 + z * m.M23 + w * m.M24,
                 x * m.M31 + y * m.M32 + z * m.M33 + w * m.M34,
-                x * m.M41 + y * m.M42 + z * m.M43 + w * m.M44);
+                x * m.M41 + y * m.M42 + z * m.M43 + w * m.M44
+            );
         }
 
         /// <summary>Transforms a normalized plane by a Quaternion rotation.</summary>
@@ -195,11 +213,12 @@ namespace System.Numerics
 
             float x = plane.Normal.X, y = plane.Normal.Y, z = plane.Normal.Z;
 
-            return new Plane(
+            return Create(
                 x * m11 + y * m21 + z * m31,
                 x * m12 + y * m22 + z * m32,
                 x * m13 + y * m23 + z * m33,
-                plane.D);
+                plane.D
+            );
         }
 
         /// <summary>Returns a value that indicates whether two planes are equal.</summary>
