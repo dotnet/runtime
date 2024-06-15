@@ -23,7 +23,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     <FullRuntimeName>Runtime.WorkstationGC</FullRuntimeName>
     <FullRuntimeName Condition="'$(ServerGarbageCollection)' == 'true' or '$(IlcLinkServerGC)' == 'true' or '$(ControlFlowGuard)' == 'Guard'">Runtime.ServerGC</FullRuntimeName>
     <BootstrapperName>bootstrapper</BootstrapperName>
-    <BootstrapperName Condition="'$(NativeLib)' != '' or '$(CustomNativeMain)' == 'true'">bootstrapperdll</BootstrapperName>
+    <BootstrapperName Condition="'$(NativeLib)' != ''">bootstrapperdll</BootstrapperName>
     <VxSortSupportName>Runtime.VxsortEnabled</VxSortSupportName>
     <VxSortSupportName Condition="'$(ControlFlowGuard)' != 'Guard' and ('$(OptimizationPreference)' == 'Size' or '$(IlcDisableVxsort)' == 'true')">Runtime.VxsortDisabled</VxSortSupportName>
     <StandaloneGCSupportName>standalonegc-disabled</StandaloneGCSupportName>
@@ -84,15 +84,15 @@ The .NET Foundation licenses this file to you under the MIT license.
     </ItemGroup>
 
     <ItemGroup>
-      <LinkerArg Condition="'$(NativeLib)' == 'Shared' or '$(CustomNativeMain)' == 'true'" Include="/DLL" />
+      <LinkerArg Condition="'$(NativeLib)' == 'Shared'" Include="/DLL" />
       <LinkerArg Include="@(NativeLibrary->'&quot;%(Identity)&quot;')" />
       <LinkerArg Include="@(SdkNativeLibrary->'&quot;%(Identity)&quot;')" />
       <LinkerArg Include="/NOLOGO /MANIFEST:NO" />
       <LinkerArg Condition="$(NativeDebugSymbols) == 'true'" Include="/DEBUG" />
       <!-- The runtime is not compatible with jump stubs inserted by incremental linking. -->
       <LinkerArg Include="/INCREMENTAL:NO" />
-      <LinkerArg Condition="'$(LinkerSubsystem)' != '' and '$(CustomNativeMain)' != 'true'" Include="/SUBSYSTEM:$(LinkerSubsystem)" />
-      <LinkerArg Condition="('$(OutputType)' == 'WinExe' or '$(OutputType)' == 'Exe') and '$(CustomNativeMain)' != 'true'" Include="/ENTRY:$(EntryPointSymbol) /NOEXP /NOIMPLIB /STACK:$(IlcDefaultStackSize)" />
+      <LinkerArg Condition="'$(LinkerSubsystem)' != '' and '$(NativeLib)' != 'Shared'" Include="/SUBSYSTEM:$(LinkerSubsystem)" />
+      <LinkerArg Condition="('$(OutputType)' == 'WinExe' or '$(OutputType)' == 'Exe') and '$(NativeLib)' != 'Shared'" Include="/ENTRY:$(EntryPointSymbol) /NOEXP /NOIMPLIB /STACK:$(IlcDefaultStackSize)" />
       <LinkerArg Include="/NATVIS:&quot;$(MSBuildThisFileDirectory)NativeAOT.natvis&quot;" />
       <LinkerArg Condition="'$(ControlFlowGuard)' == 'Guard'" Include="/guard:cf" />
       <LinkerArg Condition="'$(_targetArchitecture)' == 'x86'" Include="/safeseh" />
