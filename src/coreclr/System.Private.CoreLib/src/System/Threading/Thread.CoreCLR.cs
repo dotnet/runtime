@@ -361,14 +361,39 @@ namespace System.Threading
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void ResetThreadPoolThread()
+        internal void ResetFinalizerThread()
         {
             Debug.Assert(this == CurrentThread);
-            Debug.Assert(IsThreadPoolThread);
 
             if (_mayNeedResetForThreadPool)
             {
-                ResetThreadPoolThreadSlow();
+                ResetFinalizerThreadSlow();
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void ResetFinalizerThreadSlow()
+        {
+            Debug.Assert(this == CurrentThread);
+            Debug.Assert(_mayNeedResetForThreadPool);
+
+            _mayNeedResetForThreadPool = false;
+
+            const string FinalizerThreadName = ".NET Finalizer";
+
+            if (Name != FinalizerThreadName)
+            {
+                Name = FinalizerThreadName;
+            }
+
+            if (!IsBackground)
+            {
+                IsBackground = true;
+            }
+
+            if (Priority != ThreadPriority.Highest)
+            {
+                Priority = ThreadPriority.Highest;
             }
         }
     }
