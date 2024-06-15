@@ -4309,6 +4309,11 @@ namespace System.Runtime.Intrinsics.Arm
 
         public static System.Numerics.Vector<int> ConvertToInt32(System.Numerics.Vector<double> value) { throw null; }
         public static System.Numerics.Vector<int> ConvertToInt32(System.Numerics.Vector<float> value) { throw null; }
+        public static System.Numerics.Vector<float> ConvertToSingle(System.Numerics.Vector<double> value) { throw null; }
+        public static System.Numerics.Vector<float> ConvertToSingle(System.Numerics.Vector<int> value) { throw null; }
+        public static System.Numerics.Vector<float> ConvertToSingle(System.Numerics.Vector<long> value) { throw null; }
+        public static System.Numerics.Vector<float> ConvertToSingle(System.Numerics.Vector<uint> value) { throw null; }
+        public static System.Numerics.Vector<float> ConvertToSingle(System.Numerics.Vector<ulong> value) { throw null; }
         public static System.Numerics.Vector<uint> ConvertToUInt32(System.Numerics.Vector<double> value) { throw null; }
         public static System.Numerics.Vector<uint> ConvertToUInt32(System.Numerics.Vector<float> value) { throw null; }
 

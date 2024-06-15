@@ -6130,9 +6130,13 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static UInt64 ConvertToUInt64RoundToZero(double op1) => ConvertToUInt64(RoundToZero(op1));
 
-        public static float ConvertToSingle(int op1) => op1;
+        public static float ConvertIntToSingle(int op1) => op1;
 
-        public static float ConvertToSingle(uint op1) => op1;
+        public static float ConvertUIntToSingle(uint op1) => op1;
+
+        public static float ConvertLongToSingle(long op1) => (float)op1;
+
+        public static float ConvertULongToSingle(ulong op1) => (float)op1;
 
         public static float ConvertToSingle(double op1) => (float)op1;
 
