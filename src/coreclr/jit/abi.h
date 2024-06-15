@@ -3,6 +3,9 @@
 
 #pragma once
 
+class ClassLayout;
+enum class WellKnownArg : unsigned;
+
 class ABIPassingSegment
 {
     regNumber m_register    = REG_NA;
@@ -65,6 +68,7 @@ struct ABIPassingInformation
     bool HasExactlyOneRegisterSegment() const;
     bool HasExactlyOneStackSegment() const;
     bool IsSplitAcrossRegistersAndStack() const;
+    unsigned CountRegisterSegments() const;
 
     static ABIPassingInformation FromSegment(Compiler* comp, const ABIPassingSegment& segment);
 
