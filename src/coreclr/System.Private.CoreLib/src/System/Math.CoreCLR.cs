@@ -92,6 +92,7 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern double Sin(double a);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe (double Sin, double Cos) SinCos(double x)
         {
             double sin, cos;
