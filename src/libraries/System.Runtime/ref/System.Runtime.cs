@@ -16274,7 +16274,7 @@ namespace System
     {
         public NewsStyleUriParser() { }
     }
-    public partial class Uri : System.IFormattable, System.ISpanFormattable, System.Runtime.Serialization.ISerializable
+    public partial class Uri : System.IFormattable, System.ISpanFormattable, System.IEquatable<Uri>, System.Runtime.Serialization.ISerializable
     {
         public static readonly string SchemeDelimiter;
         public static readonly string UriSchemeFile;
@@ -16335,6 +16335,7 @@ namespace System
         protected virtual void CheckSecurity() { }
         public static int Compare(System.Uri? uri1, System.Uri? uri2, System.UriComponents partsToCompare, System.UriFormat compareFormat, System.StringComparison comparisonType) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? comparand) { throw null; }
+        public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] Uri? other) { throw null; }
         [System.ObsoleteAttribute("Uri.Escape has been deprecated and is not supported.")]
         protected virtual void Escape() { }
         public static string EscapeDataString(string stringToEscape) { throw null; }
