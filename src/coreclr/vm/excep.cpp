@@ -11211,6 +11211,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowNonLocalized(RuntimeExceptionKind reKind,
 //==========================================================================
 // Throw a runtime exception based on an HResult
 //==========================================================================
+#ifdef FEATURE_COMINTEROP
 VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr, IErrorInfo* pErrInfo, Exception * pInnerException)
 {
     CONTRACTL
@@ -11233,7 +11234,6 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr, IErrorInfo* pErrInfo, Exce
     //_ASSERTE((hr != COR_E_EXECUTIONENGINE) ||
     //         !"ExecutionEngineException shouldn't be thrown. Use EEPolicy to failfast or a better exception. The caller of this function should modify their code.");
 
-#ifdef FEATURE_COMINTEROP
     // check for complus created IErrorInfo pointers
     if (pErrInfo != NULL)
     {
@@ -11247,9 +11247,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr, IErrorInfo* pErrInfo, Exce
             GCPROTECT_END ();
         }
     }
-#endif // FEATURE_COMINTEROP
 
-    _ASSERTE((pErrInfo == NULL) || !"pErrInfo should always be null when FEATURE_COMINTEROP is disabled.");
     if (pInnerException == NULL)
     {
         EX_THROW(EEMessageException, (hr));
@@ -11281,8 +11279,6 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr)
     RealCOMPlusThrowHR(hr, (IErrorInfo*)NULL);
 }
 
-
-#ifdef FEATURE_COMINTEROP
 VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr, tagGetErrorInfo)
 {
     CONTRACTL
@@ -11301,6 +11297,19 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr, tagGetErrorInfo)
 
     // Throw the exception.
     RealCOMPlusThrowHR(hr, pErrInfo);
+}
+#else // FEATURE_COMINTEROP
+VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr)
+{
+    CONTRACTL
+    {
+        THROWS;
+        DISABLED(GC_NOTRIGGER);  // Must sanitize first pass handling to enable this
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    EX_THROW(EEMessageException, (hr));
 }
 #endif // FEATURE_COMINTEROP
 
