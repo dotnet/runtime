@@ -103,40 +103,7 @@ namespace System.Numerics
         /// <remarks>The <see cref="op_Division" /> method defines the division operation for <see cref="Quaternion" /> objects.</remarks>
         public static Quaternion operator /(Quaternion value1, Quaternion value2)
         {
-            Quaternion ans;
-
-            float q1x = value1.X;
-            float q1y = value1.Y;
-            float q1z = value1.Z;
-            float q1w = value1.W;
-
-            //-------------------------------------
-            // Inverse part.
-            float ls = value2.X * value2.X + value2.Y * value2.Y +
-                       value2.Z * value2.Z + value2.W * value2.W;
-            float invNorm = 1.0f / ls;
-
-            float q2x = -value2.X * invNorm;
-            float q2y = -value2.Y * invNorm;
-            float q2z = -value2.Z * invNorm;
-            float q2w = value2.W * invNorm;
-
-            //-------------------------------------
-            // Multiply part.
-
-            // cross(av, bv)
-            float cx = q1y * q2z - q1z * q2y;
-            float cy = q1z * q2x - q1x * q2z;
-            float cz = q1x * q2y - q1y * q2x;
-
-            float dot = q1x * q2x + q1y * q2y + q1z * q2z;
-
-            ans.X = q1x * q2w + q2x * q1w + cx;
-            ans.Y = q1y * q2w + q2y * q1w + cy;
-            ans.Z = q1z * q2w + q2z * q1w + cz;
-            ans.W = q1w * q2w - dot;
-
-            return ans;
+            return value1 * Inverse(value2);
         }
 
         /// <summary>Returns a value that indicates whether two quaternions are equal.</summary>
@@ -169,6 +136,7 @@ namespace System.Numerics
                 Vector128<float> right = value2.AsVector128();
 
                 Vector128<float> result = right * left.GetElementUnsafe(3);
+
                 result += (Vector128.Shuffle(right, Vector128.Create(3, 2, 1, 0)) * left.GetElementUnsafe(0)) * Vector128.Create(+1.0f, -1.0f, +1.0f, -1.0f);
                 result += (Vector128.Shuffle(right, Vector128.Create(2, 3, 0, 1)) * left.GetElementUnsafe(1)) * Vector128.Create(+1.0f, +1.0f, -1.0f, -1.0f);
                 result += (Vector128.Shuffle(right, Vector128.Create(1, 0, 3, 2)) * left.GetElementUnsafe(2)) * Vector128.Create(-1.0f, +1.0f, +1.0f, -1.0f);
@@ -241,36 +209,7 @@ namespace System.Numerics
         /// <param name="value1">The first quaternion rotation in the series.</param>
         /// <param name="value2">The second quaternion rotation in the series.</param>
         /// <returns>A new quaternion representing the concatenation of the <paramref name="value1" /> rotation followed by the <paramref name="value2" /> rotation.</returns>
-        public static Quaternion Concatenate(Quaternion value1, Quaternion value2)
-        {
-            Quaternion ans;
-
-            // Concatenate rotation is actually q2 * q1 instead of q1 * q2.
-            // So that's why value2 goes q1 and value1 goes q2.
-            float q1x = value2.X;
-            float q1y = value2.Y;
-            float q1z = value2.Z;
-            float q1w = value2.W;
-
-            float q2x = value1.X;
-            float q2y = value1.Y;
-            float q2z = value1.Z;
-            float q2w = value1.W;
-
-            // cross(av, bv)
-            float cx = q1y * q2z - q1z * q2y;
-            float cy = q1z * q2x - q1x * q2z;
-            float cz = q1x * q2y - q1y * q2x;
-
-            float dot = q1x * q2x + q1y * q2y + q1z * q2z;
-
-            ans.X = q1x * q2w + q2x * q1w + cx;
-            ans.Y = q1y * q2w + q2y * q1w + cy;
-            ans.Z = q1z * q2w + q2z * q1w + cz;
-            ans.W = q1w * q2w - dot;
-
-            return ans;
-        }
+        public static Quaternion Concatenate(Quaternion value1, Quaternion value2) => value2 * value1;
 
         /// <summary>Returns the conjugate of a specified quaternion.</summary>
         /// <param name="value">The quaternion.</param>

@@ -166,31 +166,10 @@ namespace System.Numerics
             public static Impl operator *(in Impl left, in Impl right)
             {
                 Impl result;
-
-                // result.X = Transform(left.X, in right);
-                result.X = right.X * left.X.X;
-                result.X += right.Y * left.X.Y;
-                result.X += right.Z * left.X.Z;
-                result.X += right.W * left.X.W;
-
-                // result.Y = Transform(left.Y, in right);
-                result.Y = right.X * left.Y.X;
-                result.Y += right.Y * left.Y.Y;
-                result.Y += right.Z * left.Y.Z;
-                result.Y += right.W * left.Y.W;
-
-                // result.Z = Transform(left.Z, in right);
-                result.Z = right.X * left.Z.X;
-                result.Z += right.Y * left.Z.Y;
-                result.Z += right.Z * left.Z.Z;
-                result.Z += right.W * left.Z.W;
-
-                // result.W = Transform(left.W, in right);
-                result.W = right.X * left.W.X;
-                result.W += right.Y * left.W.Y;
-                result.W += right.Z * left.W.Z;
-                result.W += right.W * left.W.W;
-
+                result.X = Vector4.Transform(left.X, in right);
+                result.Y = Vector4.Transform(left.Y, in right);
+                result.Z = Vector4.Transform(left.Z, in right);
+                result.W = Vector4.Transform(left.W, in right);
                 return result;
             }
 
