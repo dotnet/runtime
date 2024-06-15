@@ -82,7 +82,6 @@ typedef interface ICLRRuntimeInfo ICLRRuntimeInfo;
 
 /* header files for imported files */
 #include "unknwn.h"
-#include "oaidl.h"
 #include "ocidl.h"
 #include "mscoree.h"
 
