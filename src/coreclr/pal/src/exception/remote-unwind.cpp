@@ -60,17 +60,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define MACOS_ARM64_POINTER_AUTH_MASK 0x7fffffffffffull
 #endif
 
-// Sub-headers included from the libunwind.h contain an empty struct
-// and clang issues a warning. Until the libunwind is fixed, disable
-// the warning.
-#ifdef __llvm__
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wextern-c-compat"
-#endif
 #include <libunwind.h>
-#ifdef __llvm__
-#pragma clang diagnostic pop
-#endif
 
 SET_DEFAULT_DEBUG_CHANNEL(EXCEPT);
 

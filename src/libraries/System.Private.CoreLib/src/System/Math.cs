@@ -151,8 +151,13 @@ namespace System
             throw new OverflowException(SR.Overflow_NegateTwosCompNum);
         }
 
+        /// <summary>Produces the full product of two unsigned 32-bit numbers.</summary>
+        /// <param name="a">The first number to multiply.</param>
+        /// <param name="b">The second number to multiply.</param>
+        /// <returns>The number containing the product of the specified numbers.</returns>
+        [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe ulong BigMul(uint a, uint b)
+        public static unsafe ulong BigMul(uint a, uint b)
         {
 #if false // TARGET_32BIT
             // This generates slower code currently than the simple multiplication
@@ -167,6 +172,10 @@ namespace System
             return ((ulong)a) * b;
         }
 
+        /// <summary>Produces the full product of two 32-bit numbers.</summary>
+        /// <param name="a">The first number to multiply.</param>
+        /// <param name="b">The second number to multiply.</param>
+        /// <returns>The number containing the product of the specified numbers.</returns>
         public static long BigMul(int a, int b)
         {
             return ((long)a) * b;
@@ -242,8 +251,9 @@ namespace System
         /// <param name="a">The first number to multiply.</param>
         /// <param name="b">The second number to multiply.</param>
         /// <returns>The full product of the specified numbers.</returns>
+        [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static UInt128 BigMul(ulong a, ulong b)
+        public static UInt128 BigMul(ulong a, ulong b)
         {
             ulong high = BigMul(a, b, out ulong low);
             return new UInt128(high, low);
@@ -253,7 +263,7 @@ namespace System
         /// <param name="a">The first number to multiply.</param>
         /// <param name="b">The second number to multiply.</param>
         /// <returns>The full product of the specified numbers.</returns>
-        internal static Int128 BigMul(long a, long b)
+        public static Int128 BigMul(long a, long b)
         {
             long high = BigMul(a, b, out long low);
             return new Int128((ulong)high, (ulong)low);

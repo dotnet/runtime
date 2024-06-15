@@ -10679,10 +10679,16 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
 
         default:
         {
-            genTreeOps oper = node->HWOperGet();
+            bool       isScalar = false;
+            genTreeOps oper     = node->HWOperGet(&isScalar);
 
             if (GenTreeHWIntrinsic::OperIsBitwiseHWIntrinsic(oper))
             {
+                if (oper == GT_NOT)
+                {
+                    break;
+                }
+
                 GenTree* op1 = node->Op(1);
                 GenTree* op2 = node->Op(2);
 
@@ -10861,11 +10867,19 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
         }
     }
 
-    // Transforms:
-    // 1.(~v1 & v2) to VectorXxx.AndNot(v1, v2)
-    // 2.(v1 & (~v2)) to VectorXxx.AndNot(v2, v1)
-    switch (node->HWOperGet())
+    bool       isScalar = false;
+    genTreeOps oper     = node->HWOperGet(&isScalar);
+
+    if (isScalar)
     {
+        return node;
+    }
+
+    switch (oper)
+    {
+        // Transforms:
+        // 1.(~v1 & v2) to VectorXxx.AndNot(v1, v2)
+        // 2.(v1 & (~v2)) to VectorXxx.AndNot(v2, v1)
         case GT_AND:
         {
             GenTree* op1 = node->Op(1);
@@ -10877,7 +10891,12 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
             {
                 // Try handle: ~op1 & op2
                 GenTreeHWIntrinsic* hw     = op1->AsHWIntrinsic();
-                genTreeOps          hwOper = hw->HWOperGet();
+                genTreeOps          hwOper = hw->HWOperGet(&isScalar);
+
+                if (isScalar)
+                {
+                    return node;
+                }
 
                 if (hwOper == GT_NOT)
                 {
@@ -10906,7 +10925,12 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
             {
                 // Try handle: op1 & ~op2
                 GenTreeHWIntrinsic* hw     = op2->AsHWIntrinsic();
-                genTreeOps          hwOper = hw->HWOperGet();
+                genTreeOps          hwOper = hw->HWOperGet(&isScalar);
+
+                if (isScalar)
+                {
+                    return node;
+                }
 
                 if (hwOper == GT_NOT)
                 {
@@ -11930,8 +11954,6 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree, bool* optAssertionPropD
 //
 GenTree* Compiler::fgMorphMultiOp(GenTreeMultiOp* multiOp)
 {
-    gtUpdateNodeOperSideEffects(multiOp);
-
     bool dontCseConstArguments = false;
 #if defined(FEATURE_HW_INTRINSICS)
     // Opportunistically, avoid unexpected CSE for hw intrinsics with IMM arguments
@@ -11954,12 +11976,10 @@ GenTree* Compiler::fgMorphMultiOp(GenTreeMultiOp* multiOp)
 
     for (GenTree** use : multiOp->UseEdges())
     {
-        *use = fgMorphTree(*use);
-
+        *use             = fgMorphTree(*use);
         GenTree* operand = *use;
-        multiOp->gtFlags |= (operand->gtFlags & GTF_ALL_EFFECT);
 
-        if (dontCseConstArguments && operand->OperIsConst())
+        if (dontCseConstArguments && operand->IsCnsIntOrI())
         {
             operand->SetDoNotCSE();
         }
@@ -11978,10 +11998,33 @@ GenTree* Compiler::fgMorphMultiOp(GenTreeMultiOp* multiOp)
         }
     }
 
-#if defined(FEATURE_HW_INTRINSICS)
-    if (opts.OptimizationEnabled() && multiOp->OperIs(GT_HWINTRINSIC))
+    gtUpdateNodeOperSideEffects(multiOp);
+
+    for (GenTree** use : multiOp->UseEdges())
     {
-        GenTreeHWIntrinsic* hw = multiOp->AsHWIntrinsic();
+        GenTree* operand = *use;
+        multiOp->AddAllEffectsFlags(operand);
+    }
+
+#if defined(FEATURE_HW_INTRINSICS)
+    if (opts.OptimizationEnabled() && multiOp->OperIsHWIntrinsic())
+    {
+        // Try to fold it, maybe we get lucky,
+        GenTree* foldedTree = gtFoldExpr(multiOp);
+
+        if (foldedTree != multiOp)
+        {
+            assert(!fgIsCommaThrow(foldedTree));
+            INDEBUG(foldedTree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+            return foldedTree;
+        }
+        else if (!foldedTree->OperIsHWIntrinsic())
+        {
+            INDEBUG(foldedTree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+            return foldedTree;
+        }
+
+        GenTreeHWIntrinsic* hw = foldedTree->AsHWIntrinsic();
 
         // Move constant vectors from op1 to op2 for commutative and compare operations
         if ((hw->GetOperandCount() == 2) && hw->Op(1)->IsVectorConst() &&

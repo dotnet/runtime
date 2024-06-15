@@ -1108,6 +1108,30 @@ namespace System.Runtime.Intrinsics
             );
         }
 
+        /// <summary>Creates a new <see cref="Vector512{T}" /> instance with all 64-bit parts initialized to a specified value.</summary>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <param name="value">The value that the 64-bit parts will be initialized to.</param>
+        /// <returns>A new <see cref="Vector128{T}" /> with the 64-bit parts initialized to <paramref name="value" />.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector512<T> Create<T>(Vector64<T> value) => Create(Vector128.Create(value, value));
+
+        /// <summary>Creates a new <see cref="Vector512{T}" /> instance with all 128-bit parts initialized to a specified value.</summary>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <param name="value">The value that the 128-bit parts will be initialized to.</param>
+        /// <returns>A new <see cref="Vector128{T}" /> with the 128-bit parts initialized to <paramref name="value" />.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector512<T> Create<T>(Vector128<T> value) => Create(Vector256.Create(value, value));
+
+        /// <summary>Creates a new <see cref="Vector512{T}" /> instance with the lower and upper 256-bits initialized to a specified value.</summary>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <param name="value">The value that the lower and upper 256-bits will be initialized to.</param>
+        /// <returns>A new <see cref="Vector128{T}" /> with the lower and upper 256-bits initialized to <paramref name="value" />.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector512<T> Create<T>(Vector256<T> value) => Create(value, value);
+
         /// <summary>Creates a new <see cref="Vector512{T}" /> instance from two <see cref="Vector256{T}" /> instances.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="lower">The value that the lower 256-bits will be initialized to.</param>
