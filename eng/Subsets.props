@@ -291,6 +291,8 @@
                             HostCrossOS=$(HostOS);
                             HostOS=$(HostOS);
                             TargetOS=$(TargetOS);
+                            RuntimeIdentifier=$(RuntimeIdentifier);
+                            NETCoreSdkPortableRuntimeIdentifier=$(NETCoreSdkPortableRuntimeIdentifier);
                             PgoInstrument=false;
                             NoPgoOptimize=true;
                             CrossBuild=false;
