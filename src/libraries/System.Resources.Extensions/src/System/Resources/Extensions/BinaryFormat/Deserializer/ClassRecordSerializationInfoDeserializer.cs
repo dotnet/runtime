@@ -3,7 +3,7 @@
 
 using System.Collections.Generic;
 using System.Runtime.Serialization;
-using System.Runtime.Serialization.BinaryFormat;
+using System.Formats.Nrbf;
 
 namespace System.Resources.Extensions.BinaryFormat.Deserializer;
 
@@ -19,14 +19,14 @@ namespace System.Resources.Extensions.BinaryFormat.Deserializer;
 /// </remarks>
 internal sealed class ClassRecordSerializationInfoDeserializer : ClassRecordDeserializer
 {
-    private readonly Runtime.Serialization.BinaryFormat.ClassRecord _classRecord;
+    private readonly ClassRecord _classRecord;
     private readonly SerializationInfo _serializationInfo;
     private readonly ISerializationSurrogate? _surrogate;
     private readonly IEnumerator<string> _memberNamesIterator;
     private bool _canIterate;
 
     internal ClassRecordSerializationInfoDeserializer(
-        Runtime.Serialization.BinaryFormat.ClassRecord classRecord,
+        ClassRecord classRecord,
         object @object,
         Type type,
         ISerializationSurrogate? surrogate,
@@ -39,14 +39,14 @@ internal sealed class ClassRecordSerializationInfoDeserializer : ClassRecordDese
         _canIterate = _memberNamesIterator.MoveNext(); // start the iterator
     }
 
-    internal override Id Continue()
+    internal override SerializationRecordId Continue()
     {
         if (_canIterate)
         {
             do
             {
                 string memberName = _memberNamesIterator.Current;
-                (object? memberValue, Id reference) = UnwrapMemberValue(_classRecord.GetRawValue(memberName));
+                (object? memberValue, SerializationRecordId reference) = UnwrapMemberValue(_classRecord.GetRawValue(memberName));
 
                 if (s_missingValueSentinel == memberValue)
                 {
@@ -57,7 +57,7 @@ internal sealed class ClassRecordSerializationInfoDeserializer : ClassRecordDese
                 if (memberValue is not null && DoesValueNeedUpdated(memberValue, reference))
                 {
                     Deserializer.PendValueUpdater(new SerializationInfoValueUpdater(
-                        _classRecord.ObjectId,
+                        _classRecord.Id,
                         reference,
                         _serializationInfo,
                         memberName));
@@ -81,11 +81,11 @@ internal sealed class ClassRecordSerializationInfoDeserializer : ClassRecordDese
         // If we were confident that there were no cycles in the graph to this point we could apply directly
         // if there were no pending value types (which should also not happen if there are no cycles).
 
-        PendingSerializationInfo pending = new(_classRecord.ObjectId, _serializationInfo, _surrogate);
+        PendingSerializationInfo pending = new(_classRecord.Id, _serializationInfo, _surrogate);
         Deserializer.PendSerializationInfo(pending);
 
         // No more missing member refs.
-        return Id.Null;
+        return default(SerializationRecordId);
     }
 }
 

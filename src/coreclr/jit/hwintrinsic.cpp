@@ -1601,19 +1601,36 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                                    : gtNewSimdHWIntrinsicNode(nodeRetType, op1, op2, op3, intrinsic, simdBaseJitType,
                                                               simdSize);
 
-#ifdef TARGET_XARCH
-                if ((intrinsic == NI_AVX2_GatherVector128) || (intrinsic == NI_AVX2_GatherVector256))
+                switch (intrinsic)
                 {
-                    assert(varTypeIsSIMD(op2->TypeGet()));
-                    retNode->AsHWIntrinsic()->SetAuxiliaryJitType(getBaseJitTypeOfSIMDType(sigReader.op2ClsHnd));
-                }
+#if defined(TARGET_XARCH)
+                    case NI_AVX2_GatherVector128:
+                    case NI_AVX2_GatherVector256:
+                        assert(varTypeIsSIMD(op2->TypeGet()));
+                        retNode->AsHWIntrinsic()->SetAuxiliaryJitType(getBaseJitTypeOfSIMDType(sigReader.op2ClsHnd));
+                        break;
+
 #elif defined(TARGET_ARM64)
-                if (intrinsic == NI_Sve_GatherVector)
-                {
-                    assert(varTypeIsSIMD(op3->TypeGet()));
-                    retNode->AsHWIntrinsic()->SetAuxiliaryJitType(getBaseJitTypeOfSIMDType(sigReader.op3ClsHnd));
-                }
+                    case NI_Sve_GatherVector:
+                    case NI_Sve_GatherVectorByteZeroExtend:
+                    case NI_Sve_GatherVectorInt16SignExtend:
+                    case NI_Sve_GatherVectorInt16WithByteOffsetsSignExtend:
+                    case NI_Sve_GatherVectorInt32SignExtend:
+                    case NI_Sve_GatherVectorInt32WithByteOffsetsSignExtend:
+                    case NI_Sve_GatherVectorSByteSignExtend:
+                    case NI_Sve_GatherVectorUInt16WithByteOffsetsZeroExtend:
+                    case NI_Sve_GatherVectorUInt16ZeroExtend:
+                    case NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtend:
+                    case NI_Sve_GatherVectorUInt32ZeroExtend:
+                        assert(varTypeIsSIMD(op3->TypeGet()));
+                        retNode->AsHWIntrinsic()->SetAuxiliaryJitType(getBaseJitTypeOfSIMDType(sigReader.op3ClsHnd));
+                        break;
 #endif
+
+                    default:
+                        break;
+                }
+
                 break;
             }
 
