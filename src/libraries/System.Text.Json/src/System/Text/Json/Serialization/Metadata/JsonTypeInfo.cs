@@ -360,6 +360,7 @@ namespace System.Text.Json.Serialization.Metadata
         internal bool PropertyMetadataSerializationNotSupported { get; set; }
 
         internal bool IsNullable => Converter.NullableElementConverter is not null;
+        internal bool CanBeNull => PropertyInfoForTypeInfo.PropertyTypeCanBeNull;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void ValidateCanBeUsedForPropertyMetadataSerialization()

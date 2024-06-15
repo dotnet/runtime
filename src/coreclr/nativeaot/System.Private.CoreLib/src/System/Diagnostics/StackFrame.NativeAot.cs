@@ -39,7 +39,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Returns the method the frame is executing
         /// </summary>
-        [RequiresUnreferencedCode("Metadata for the method might be incomplete or removed")]
+        [RequiresUnreferencedCode("Metadata for the method might be incomplete or removed. Consider using " + nameof(DiagnosticMethodInfo) + "." + nameof(DiagnosticMethodInfo.Create) + " instead")]
         public virtual MethodBase? GetMethod()
         {
             TryInitializeMethodBase();

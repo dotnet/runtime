@@ -944,28 +944,35 @@ LEAF_END setFPReturn, _TEXT
 
 #endif // FEATURE_COMINTEROP
 
-//
-// JIT Static access helpers when coreclr host specifies single appdomain flag
-//
+// ------------------------------------------------------------------
+// void* JIT_GetDynamicNonGCStaticBase(DynamicStaticsInfo* pStaticsInfo)
+
+LEAF_ENTRY JIT_GetDynamicNonGCStaticBase_SingleAppDomain, _TEXT
+    // If class is not initialized, bail to C++ helper
+    ld.d $a1, $a0, OFFSETOF__DynamicStaticsInfo__m_pNonGCStatics
+    bnez $a1, LOCAL_LABEL(JIT_GetDynamicNonGCStaticBase_SingleAppDomain_CallHelper)
+    ori  $a0, $a1, 0
+    jirl $r0, $ra, 0
+
+LOCAL_LABEL(JIT_GetDynamicNonGCStaticBase_SingleAppDomain_CallHelper):
+    // Tail call JIT_GetDynamicNonGCStaticBase_Portable
+    b JIT_GetDynamicNonGCStaticBase_Portable
+LEAF_END JIT_GetDynamicNonGCStaticBase_SingleAppDomain, _TEXT
 
 // ------------------------------------------------------------------
-// void* JIT_GetSharedNonGCStaticBase(SIZE_T moduleDomainID, DWORD dwClassDomainID)
+// void* JIT_GetDynamicGCStaticBase(DynamicStaticsInfo* pStaticsInfo)
 
-LEAF_ENTRY JIT_GetSharedNonGCStaticBase_SingleAppDomain, _TEXT
+LEAF_ENTRY JIT_GetDynamicGCStaticBase_SingleAppDomain, _TEXT
     // If class is not initialized, bail to C++ helper
-    //dext $a1, $a1, 0, 32
-    addi.d  $a2, $a0, DomainLocalModule__m_pDataBlob
+    ld.d $a1, $a0, OFFSETOF__DynamicStaticsInfo__m_pGCStatics
+    bnez $a1, LOCAL_LABEL(JIT_GetDynamicGCStaticBase_SingleAppDomain_CallHelper)
+    ori  $a0, $a1, 0
+    jirl $r0, $ra, 0
 
-    ldx.b $a2, $a2, $a1
-    andi  $t4, $a2, 1
-    beq  $t4, $zero, LOCAL_LABEL(JIT_GetSharedNonGCStaticBase_SingleAppDomain_CallHelper)
-
-    jirl  $r0, $ra, 0
-
-LOCAL_LABEL(JIT_GetSharedNonGCStaticBase_SingleAppDomain_CallHelper):
-    // Tail call JIT_GetSharedNonGCStaticBase_Helper
-    b  JIT_GetSharedNonGCStaticBase_Helper
-LEAF_END JIT_GetSharedNonGCStaticBase_SingleAppDomain, _TEXT
+LOCAL_LABEL(JIT_GetDynamicGCStaticBase_SingleAppDomain_CallHelper):
+    // Tail call JIT_GetDynamicGCStaticBase_Portable
+    b JIT_GetDynamicGCStaticBase_Portable
+LEAF_END JIT_GetDynamicGCStaticBase_SingleAppDomain, _TEXT
 
 #ifdef FEATURE_READYTORUN
 

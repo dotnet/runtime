@@ -448,7 +448,9 @@ namespace System.Text.Json.Serialization.Metadata
 
             if (IsRequired)
             {
-                if (!CanDeserialize && AssociatedParameter?.IsRequiredParameter != true)
+                if (!CanDeserialize &&
+                    !(AssociatedParameter?.IsRequiredParameter is true &&
+                      Options.RespectRequiredConstructorParameters))
                 {
                     ThrowHelper.ThrowInvalidOperationException_JsonPropertyRequiredAndNotDeserializable(this);
                 }

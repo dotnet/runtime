@@ -1542,6 +1542,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             }
 
             case NI_Vector64_ToVector128Unsafe:
+            case NI_Vector128_AsVector128Unsafe:
             case NI_Vector128_AsVector3:
             case NI_Vector128_GetLower:
             {
@@ -1587,30 +1588,37 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         }
         else if (HWIntrinsicInfo::IsMaskedOperation(intrin.id))
         {
-            SingleTypeRegSet predMask = RBM_ALLMASK.GetPredicateRegSet();
-            if (intrin.id == NI_Sve_ConditionalSelect)
+            if (!varTypeIsMask(intrin.op1->TypeGet()) && !HWIntrinsicInfo::IsExplicitMaskedOperation(intrin.id))
             {
-                // If this is conditional select, make sure to check the embedded
-                // operation to determine the predicate mask.
-                assert(intrinsicTree->GetOperandCount() == 3);
-                assert(!HWIntrinsicInfo::IsLowMaskedOperation(intrin.id));
-
-                if (intrin.op2->OperIs(GT_HWINTRINSIC))
+                srcCount += BuildOperandUses(intrin.op1);
+            }
+            else
+            {
+                SingleTypeRegSet predMask = RBM_ALLMASK.GetPredicateRegSet();
+                if (intrin.id == NI_Sve_ConditionalSelect)
                 {
-                    GenTreeHWIntrinsic* embOp2Node = intrin.op2->AsHWIntrinsic();
-                    const HWIntrinsic   intrinEmb(embOp2Node);
-                    if (HWIntrinsicInfo::IsLowMaskedOperation(intrinEmb.id))
+                    // If this is conditional select, make sure to check the embedded
+                    // operation to determine the predicate mask.
+                    assert(intrinsicTree->GetOperandCount() == 3);
+                    assert(!HWIntrinsicInfo::IsLowMaskedOperation(intrin.id));
+
+                    if (intrin.op2->OperIs(GT_HWINTRINSIC))
                     {
-                        predMask = RBM_LOWMASK.GetPredicateRegSet();
+                        GenTreeHWIntrinsic* embOp2Node = intrin.op2->AsHWIntrinsic();
+                        const HWIntrinsic   intrinEmb(embOp2Node);
+                        if (HWIntrinsicInfo::IsLowMaskedOperation(intrinEmb.id))
+                        {
+                            predMask = RBM_LOWMASK.GetPredicateRegSet();
+                        }
                     }
                 }
-            }
-            else if (HWIntrinsicInfo::IsLowMaskedOperation(intrin.id))
-            {
-                predMask = RBM_LOWMASK.GetPredicateRegSet();
-            }
+                else if (HWIntrinsicInfo::IsLowMaskedOperation(intrin.id))
+                {
+                    predMask = RBM_LOWMASK.GetPredicateRegSet();
+                }
 
-            srcCount += BuildOperandUses(intrin.op1, predMask);
+                srcCount += BuildOperandUses(intrin.op1, predMask);
+            }
         }
         else if (intrinsicTree->OperIsMemoryLoadOrStore())
         {
@@ -1974,6 +1982,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         {
             switch (intrin.id)
             {
+                case NI_Sve_LoadVectorNonTemporal:
+                case NI_Sve_LoadVector128AndReplicateToVector:
                 case NI_Sve_StoreAndZip:
                 case NI_Sve_PrefetchBytes:
                 case NI_Sve_PrefetchInt16:
