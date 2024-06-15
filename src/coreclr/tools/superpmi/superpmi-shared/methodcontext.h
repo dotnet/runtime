@@ -1048,7 +1048,7 @@ enum mcPackets
     Packet_GetRelocTypeHint = 84,
     //Packet_GetSecurityPrologHelper = 85,
     Packet_GetSharedCCtorHelper = 86,
-    Packet_GetTypeForBoxOnStack = 87,
+    //Packet_GetTailCallCopyArgsThunk = 87,
     Packet_GetThreadTLSIndex = 88,
     Packet_GetTokenTypeAsHandle = 89,
     Packet_GetTypeForBox = 90,
@@ -1180,6 +1180,7 @@ enum mcPackets
     Packet_IsNullableType = 217,
     Packet_GetClassStaticDynamicInfo = 218,
     Packet_GetClassThreadStaticDynamicInfo = 219,
+    Packet_GetTypeForBoxOnStack = 220,
 };
 
 void SetDebugDumpVariables();
