@@ -638,7 +638,7 @@ unsigned int toCorInfoSize(CorInfoType cit)
         case CORINFO_TYPE_UNDEF:
         case CORINFO_TYPE_VOID:
         default:
-            __debugbreak();
+            DEBUG_BREAK;
             return 0;
     }
     return -1;
