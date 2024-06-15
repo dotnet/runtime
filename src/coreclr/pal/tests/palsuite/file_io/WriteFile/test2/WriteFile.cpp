@@ -59,10 +59,10 @@ BOOL writeTest_WriteFile_test2(DWORD dwByteCount, DWORD dwBytesWrittenResult, BO
 PALTEST(file_io_WriteFile_test2_paltest_writefile_test2, "file_io/WriteFile/test2/paltest_writefile_test2")
 {
     const char * testString = "The quick fox jumped over the lazy dog's back.";
-    const int testStringLen = strlen(testString);
+    const DWORD testStringLen = strlen(testString);
 
-    DWORD dwByteCount[4] =   {(DWORD)-1,    10,   (DWORD)testStringLen, 0};
-    DWORD dwByteWritten[4] = {0,     10,   (DWORD)testStringLen, 0};
+    DWORD dwByteCount[4] =   {(DWORD)-1,    10,   testStringLen, 0};
+    DWORD dwByteWritten[4] = {0,     10,   testStringLen, 0};
     BOOL bResults[] =        {FALSE, TRUE, TRUE,          TRUE};
 
     const int BUFFER_SIZE = 2 * PAGESIZE;
