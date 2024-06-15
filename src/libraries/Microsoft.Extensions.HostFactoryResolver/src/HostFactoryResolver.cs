@@ -163,7 +163,7 @@ namespace Microsoft.Extensions.Hosting
                         => arg.Equals("--applicationName", StringComparison.OrdinalIgnoreCase) ||
                             arg.Equals("/applicationName", StringComparison.OrdinalIgnoreCase);
 
-                    args = args.Any(arg => IsApplicationNameArg(arg)) || assembly?.GetName().Name is null
+                    args = args.Any(arg => IsApplicationNameArg(arg)) || assembly is null || assembly.GetName().Name is null
                         ? args
                         : args.Concat(new[] { "--applicationName", assembly.GetName().Name }).ToArray();
 
