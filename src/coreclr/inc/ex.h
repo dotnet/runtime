@@ -1298,15 +1298,19 @@ inline HRMsgException::HRMsgException(HRESULT hr, SString const &s)
 }
 
 inline COMException::COMException()
-  : HRException(),
-  m_pErrorInfo(NULL)
+  : HRException()
+#ifdef FEATURE_COMINTEROP
+  , m_pErrorInfo(NULL)
+#endif
 {
     WRAPPER_NO_CONTRACT;
 }
 
 inline COMException::COMException(HRESULT hr)
-  : HRException(hr),
-  m_pErrorInfo(NULL)
+  : HRException(hr)
+#ifdef FEATURE_COMINTEROP
+  , m_pErrorInfo(NULL)
+#endif
 {
     LIMITED_METHOD_CONTRACT;
 }
