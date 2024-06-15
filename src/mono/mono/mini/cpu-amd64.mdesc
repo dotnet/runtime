@@ -31,7 +31,7 @@
 #
 # cost:number        describe how many cycles are needed to complete the instruction (unused)
 #
-# clob:spec          describe if the instruction clobbers registers or has special needs
+# clob:spec          describe if the instruction clobbers registers or has special requirements
 #
 #	c  clobbers caller-save registers
 #	1  clobbers the first source register

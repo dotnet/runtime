@@ -168,7 +168,6 @@ public:
     static FCDECL0(int,     GetMaxGeneration);
     static FCDECL1(void,    KeepAlive, Object *obj);
     static FCDECL1(void,    SuppressFinalize, Object *obj);
-    static FCDECL1(void,    ReRegisterForFinalize, Object *obj);
     static FCDECL2(int,     CollectionCount, INT32 generation, INT32 getSpecialGCCount);
 
     static FCDECL0(INT64,    GetAllocatedBytesForCurrentThread);
@@ -217,6 +216,8 @@ extern "C" int QCALLTYPE GCInterface_EndNoGCRegion();
 extern "C" void QCALLTYPE GCInterface_AddMemoryPressure(UINT64 bytesAllocated);
 
 extern "C" void QCALLTYPE GCInterface_RemoveMemoryPressure(UINT64 bytesAllocated);
+
+extern "C" void QCALLTYPE GCInterface_ReRegisterForFinalize(QCall::ObjectHandleOnStack pObj);
 
 extern "C" void QCALLTYPE GCInterface_EnumerateConfigurationValues(void* configurationContext, EnumerateConfigurationValuesCallback callback);
 

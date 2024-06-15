@@ -8,7 +8,7 @@ using System.Runtime.CompilerServices;
 namespace System.Collections.Frozen
 {
     /// <summary>The base class for the specialized frozen string sets.</summary>
-    internal abstract class OrdinalStringFrozenSet : FrozenSetInternalBase<string, OrdinalStringFrozenSet.GSW>
+    internal abstract partial class OrdinalStringFrozenSet : FrozenSetInternalBase<string, OrdinalStringFrozenSet.GSW>
     {
         private readonly FrozenHashTable _hashTable;
         private readonly string[] _items;
@@ -52,12 +52,21 @@ namespace System.Collections.Frozen
 
         private protected int HashIndex { get; }
         private protected int HashCount { get; }
-        private protected abstract bool Equals(string? x, string? y);
+        private protected virtual bool Equals(string? x, string? y) => string.Equals(x, y);
+        private protected virtual bool Equals(ReadOnlySpan<char> x, string? y) => EqualsOrdinal(x, y);
         private protected abstract int GetHashCode(string s);
-        private protected virtual bool CheckLengthQuick(string key) => true;
+        private protected abstract int GetHashCode(ReadOnlySpan<char> s);
+        private protected virtual bool CheckLengthQuick(uint length) => true;
         private protected override string[] ItemsCore => _items;
         private protected override Enumerator GetEnumeratorCore() => new Enumerator(_items);
         private protected override int CountCore => _hashTable.Count;
+
+        // We want to avoid having to implement FindItemIndex for each of the multiple types
+        // that derive from this one, but each of those needs to supply its own notion of Equals/GetHashCode.
+        // To avoid lots of virtual calls, we have every derived type override FindItemIndex and
+        // call to that span-based method that's aggressively inlined. That then exposes the implementation
+        // to the sealed Equals/GetHashCodes on each derived type, allowing them to be devirtualized and inlined
+        // into each unique copy of the code.
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private protected override int FindItemIndex(string item)
@@ -65,19 +74,16 @@ namespace System.Collections.Frozen
             if (item is not null && // this implementation won't be used for null values
                 (uint)(item.Length - _minimumLength) <= (uint)_maximumLengthDiff)
             {
-                if (CheckLengthQuick(item))
+                if (CheckLengthQuick((uint)item.Length))
                 {
                     int hashCode = GetHashCode(item);
                     _hashTable.FindMatchingEntries(hashCode, out int index, out int endIndex);
 
                     while (index <= endIndex)
                     {
-                        if (hashCode == _hashTable.HashCodes[index])
+                        if (hashCode == _hashTable.HashCodes[index] && Equals(item, _items[index]))
                         {
-                            if (Equals(item, _items[index]))
-                            {
-                                return index;
-                            }
+                            return index;
                         }
 
                         index++;
@@ -87,6 +93,20 @@ namespace System.Collections.Frozen
 
             return -1;
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private protected static bool EqualsOrdinal(ReadOnlySpan<char> x, string? y) =>
+            // Same behavior as the IAlternateEqualityComparer<ReadOnlySpan<char>, string>
+            // implementation on StringComparer.Ordinal. See comment on OrdinalComparer.Equals
+            // in corelib for explanation.
+            (!x.IsEmpty || y is not null) && x.SequenceEqual(y.AsSpan());
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private protected static bool EqualsOrdinalIgnoreCase(ReadOnlySpan<char> x, string? y) =>
+            // Same behavior as the IAlternateEqualityComparer<ReadOnlySpan<char>, string>
+            // implementation on StringComparer.OrdinalIgnoreCase. See comment on OrdinalComparer.Equals
+            // in corelib for explanation.
+            (!x.IsEmpty || y is not null) && x.Equals(y.AsSpan(), StringComparison.OrdinalIgnoreCase);
 
         internal struct GSW : IGenericSpecializedWrapper
         {

@@ -2115,7 +2115,7 @@ bool Compiler::fgExposeUnpropagatedLocals(bool propagatedAny, LocalEqualsLocalAd
 
     struct Store
     {
-        Statement*           Statement;
+        struct Statement*    Statement;
         GenTreeLclVarCommon* Tree;
     };
 

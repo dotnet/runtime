@@ -933,6 +933,8 @@ void EEStartupHelper()
 
         SystemDomain::System()->DefaultDomain()->SetupSharedStatics();
 
+        InitializeThreadStaticData();
+
 #ifdef FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
         // retrieve configured max size for the mini-metadata buffer (defaults to 64KB)
         g_MiniMetaDataBuffMaxSize = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_MiniMdBufferCapacity);
@@ -1393,7 +1395,7 @@ BOOL IsThreadInSTA()
     CONTRACTL_END;
 
     // If ole32.dll is not loaded
-    if (WszGetModuleHandle(W("ole32.dll")) == NULL)
+    if (GetModuleHandle(W("ole32.dll")) == NULL)
     {
         return FALSE;
     }
@@ -1720,10 +1722,27 @@ struct TlsDestructionMonitor
                     thread->m_pFrame = FRAME_TOP;
                     GCX_COOP_NO_DTOR_END();
                 }
+#ifdef _DEBUG
+                BOOL oldGCOnTransitionsOK = thread->m_GCOnTransitionsOK;
+                thread->m_GCOnTransitionsOK = FALSE;
+#endif
+                if (!IsAtProcessExit() && !g_fEEShutDown)
+                {
+                    GCX_COOP_NO_DTOR();
+                    FreeThreadStaticData(&t_ThreadStatics, thread);
+                    GCX_COOP_NO_DTOR_END();
+                }
+#ifdef _DEBUG
+                thread->m_GCOnTransitionsOK = oldGCOnTransitionsOK;
+#endif
                 thread->DetachThread(TRUE);
             }
+            else
+            {
+                // Since we don't actually cleanup the TLS data along this path, verify that it is already cleaned up
+                AssertThreadStaticDataFreed(&t_ThreadStatics);
+            }
 
-            DeleteThreadLocalMemory();
             ThreadDetaching();
         }
     }
@@ -1736,30 +1755,6 @@ thread_local TlsDestructionMonitor tls_destructionMonitor;
 void EnsureTlsDestructionMonitor()
 {
     tls_destructionMonitor.Activate();
-}
-
-#ifdef _MSC_VER
-__declspec(thread)  ThreadStaticBlockInfo t_ThreadStatics;
-#else
-__thread ThreadStaticBlockInfo t_ThreadStatics;
-#endif // _MSC_VER
-
-// Delete the thread local memory only if we the current thread
-// is the one executing this code. If we do not guard it, it will
-// end up deleting the thread local memory of the calling thread.
-void DeleteThreadLocalMemory()
-{
-    t_NonGCThreadStaticBlocksSize = 0;
-    t_GCThreadStaticBlocksSize = 0;
-
-    t_ThreadStatics.NonGCMaxThreadStaticBlocks = 0;
-    t_ThreadStatics.GCMaxThreadStaticBlocks = 0;
-
-    delete[] t_ThreadStatics.NonGCThreadStaticBlocks;
-    t_ThreadStatics.NonGCThreadStaticBlocks = nullptr;
-
-    delete[] t_ThreadStatics.GCThreadStaticBlocks;
-    t_ThreadStatics.GCThreadStaticBlocks = nullptr;
 }
 
 #ifdef DEBUGGING_SUPPORTED
