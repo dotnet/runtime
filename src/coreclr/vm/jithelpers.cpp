@@ -2109,7 +2109,7 @@ HCIMPL1_RAW(Object*, JIT_NewS_MP_FastPortable, CORINFO_CLASS_HANDLE typeHnd_)
 {
     CONTRACTL {
         THROWS;
-        GC_NOTRIGGER;
+        DISABLED(GC_TRIGGERS);
         MODE_COOPERATIVE;
     } CONTRACTL_END;
 
@@ -2128,7 +2128,6 @@ HCIMPL1_RAW(Object*, JIT_NewS_MP_FastPortable, CORINFO_CLASS_HANDLE typeHnd_)
     if (size > static_cast<SIZE_T>(allocContext->alloc_limit - allocPtr))
     {
         // Tail call to the slow helper
-        ENDFORBIDGC();
         return HCCALL1(JIT_New, typeHnd_);
     }
 
@@ -2218,7 +2217,7 @@ HCIMPL1_RAW(StringObject*, AllocateString_MP_FastPortable, DWORD stringLength)
 {
     CONTRACTL {
         THROWS;
-        GC_NOTRIGGER;
+        DISABLED(GC_TRIGGERS);
         MODE_COOPERATIVE;
     } CONTRACTL_END;
 
@@ -2229,7 +2228,6 @@ HCIMPL1_RAW(StringObject*, AllocateString_MP_FastPortable, DWORD stringLength)
     if (stringLength >= (LARGE_OBJECT_SIZE - 256) / sizeof(WCHAR))
     {
         // Tail call to the slow helper
-        ENDFORBIDGC();
         return HCCALL1(FramedAllocateString, stringLength);
     }
 
@@ -2250,7 +2248,6 @@ HCIMPL1_RAW(StringObject*, AllocateString_MP_FastPortable, DWORD stringLength)
     if (totalSize > static_cast<SIZE_T>(allocContext->alloc_limit - allocPtr))
     {
         // Tail call to the slow helper
-        ENDFORBIDGC();
         return HCCALL1(FramedAllocateString, stringLength);
     }
     allocContext->alloc_ptr = allocPtr + totalSize;
@@ -2330,7 +2327,7 @@ HCIMPL2_RAW(Object*, JIT_NewArr1VC_MP_FastPortable, CORINFO_CLASS_HANDLE arrayMT
 {
     CONTRACTL {
         THROWS;
-        GC_NOTRIGGER;
+        DISABLED(GC_TRIGGERS);
         MODE_COOPERATIVE;
     } CONTRACTL_END;
 
@@ -2347,7 +2344,6 @@ HCIMPL2_RAW(Object*, JIT_NewArr1VC_MP_FastPortable, CORINFO_CLASS_HANDLE arrayMT
     if (componentCount >= static_cast<SIZE_T>(65535 - 256))
     {
         // Tail call to the slow helper
-        ENDFORBIDGC();
         return HCCALL2(JIT_NewArr1, arrayMT, size);
     }
 
@@ -2373,7 +2369,6 @@ HCIMPL2_RAW(Object*, JIT_NewArr1VC_MP_FastPortable, CORINFO_CLASS_HANDLE arrayMT
     if (totalSize > static_cast<SIZE_T>(allocContext->alloc_limit - allocPtr))
     {
         // Tail call to the slow helper
-        ENDFORBIDGC();
         return HCCALL2(JIT_NewArr1, arrayMT, size);
     }
     allocContext->alloc_ptr = allocPtr + totalSize;
@@ -2395,7 +2390,7 @@ HCIMPL2_RAW(Object*, JIT_NewArr1OBJ_MP_FastPortable, CORINFO_CLASS_HANDLE arrayM
 {
     CONTRACTL {
         THROWS;
-        GC_NOTRIGGER;
+        DISABLED(GC_TRIGGERS);
         MODE_COOPERATIVE;
     } CONTRACTL_END;
 
@@ -2407,7 +2402,6 @@ HCIMPL2_RAW(Object*, JIT_NewArr1OBJ_MP_FastPortable, CORINFO_CLASS_HANDLE arrayM
     if (componentCount >= static_cast<SIZE_T>((LARGE_OBJECT_SIZE - 256) / sizeof(void *)))
     {
         // Tail call to the slow helper
-        ENDFORBIDGC();
         return HCCALL2(JIT_NewArr1, arrayMT, size);
     }
 
@@ -2433,7 +2427,6 @@ HCIMPL2_RAW(Object*, JIT_NewArr1OBJ_MP_FastPortable, CORINFO_CLASS_HANDLE arrayM
     if (totalSize > static_cast<SIZE_T>(allocContext->alloc_limit - allocPtr))
     {
         // Tail call to the slow helper
-        ENDFORBIDGC();
         return HCCALL2(JIT_NewArr1, arrayMT, size);
     }
     allocContext->alloc_ptr = allocPtr + totalSize;
