@@ -1346,12 +1346,6 @@ public:
         m_StartHelper = NULL;
     }
 
-    void ResetName()
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_Name = NULL;
-    }
-
     void SetPriority(INT32 priority)
     {
         LIMITED_METHOD_CONTRACT;
