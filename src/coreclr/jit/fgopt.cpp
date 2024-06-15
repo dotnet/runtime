@@ -4582,7 +4582,7 @@ void Compiler::fgMoveHotJumps()
 
         // Don't bother trying to move cold blocks
         //
-        if (block->isRunRarely())
+        if (block->isBBWeightCold())
         {
             continue;
         }
@@ -4659,10 +4659,10 @@ void Compiler::fgMoveHotJumps()
             continue;
         }
 
-        if (target->isRunRarely())
+        if (target->isBBWeightCold())
         {
-            // TODO: If target is block's most-likely successor, and block is not rarely-run,
-            // perhaps the profile data is misleading? Consider moving target anyway.
+            // If target is block's most-likely successor, and block is not rarely-run,
+            // perhaps the profile data is misleading, and we need to run profile repair?
             //
             continue;
         }
