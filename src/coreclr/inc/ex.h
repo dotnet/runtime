@@ -434,8 +434,10 @@ class COMException : public HRException
 {
     friend bool DebugIsEECxxExceptionPointer(void* pv);
 
+#ifdef FEATURE_COMINTEROP
  private:
     IErrorInfo          *m_pErrorInfo;
+#endif
 
  public:
     COMException();

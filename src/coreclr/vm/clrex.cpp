@@ -686,6 +686,7 @@ OBJECTREF CLRException::GetThrowableFromException(Exception *pException)
                 }
                 else
                 {
+#ifdef FEATURE_COMINTEROP
                     SafeComHolder<IErrorInfo> pErrInfo(pException->GetErrorInfo());
 
                     if (pErrInfo != NULL)
@@ -693,6 +694,7 @@ OBJECTREF CLRException::GetThrowableFromException(Exception *pException)
                         GetExceptionForHR(hr, pErrInfo, &oRetVal);
                     }
                     else
+#endif
                     {
                         SString message;
                         pException->GetMessage(message);
