@@ -366,18 +366,6 @@ IErrorInfo *CLRException::GetErrorInfo()
     // return the IErrorInfo we got...
     return pErrorInfo;
 }
-#else   // FEATURE_COMINTEROP
-IErrorInfo *CLRException::GetErrorInfo()
-{
-    LIMITED_METHOD_CONTRACT;
-    return NULL;
-}
-HRESULT CLRException::SetErrorInfo()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return S_OK;
- }
 #endif  // FEATURE_COMINTEROP
 
 void CLRException::GetMessage(SString &result)
@@ -938,12 +926,14 @@ HRESULT EEException::GetHR()
     return EEException::GetHRFromKind(m_kind);
 }
 
+#ifdef FEATURE_COMINTEROP
 IErrorInfo *EEException::GetErrorInfo()
 {
     LIMITED_METHOD_CONTRACT;
 
     return NULL;
 }
+#endif
 
 BOOL EEException::GetThrowableMessage(SString &result)
 {

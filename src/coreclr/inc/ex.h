@@ -192,8 +192,10 @@ class Exception
     virtual BOOL IsDomainBound() {return m_innerException!=NULL && m_innerException->IsDomainBound();} ;
     virtual HRESULT GetHR() = 0;
     virtual void GetMessage(SString &s);
+#ifdef FEATURE_COMINTEROP
     virtual IErrorInfo *GetErrorInfo() { LIMITED_METHOD_CONTRACT; return NULL; }
     virtual HRESULT SetErrorInfo() { LIMITED_METHOD_CONTRACT; return S_OK; }
+#endif
     void SetInnerException(Exception * pInnerException) { LIMITED_METHOD_CONTRACT; m_innerException = pInnerException; }
 
     // Dynamic type query for catchers
@@ -488,7 +490,9 @@ class SEHException : public Exception
 
     // Virtual overrides
     HRESULT GetHR();
+#ifdef FEATURE_COMINTEROP
     IErrorInfo *GetErrorInfo();
+#endif
     void GetMessage(SString &result);
 
  protected:
@@ -533,7 +537,9 @@ class DelegatingException : public Exception
     // Virtual overrides
     virtual BOOL IsDomainBound() {return Exception::IsDomainBound() ||(m_delegatedException!=NULL && m_delegatedException->IsDomainBound());} ;
     HRESULT GetHR();
+#ifdef FEATURE_COMINTEROP
     IErrorInfo *GetErrorInfo();
+#endif
     void GetMessage(SString &result);
     virtual Exception *Clone();
 
