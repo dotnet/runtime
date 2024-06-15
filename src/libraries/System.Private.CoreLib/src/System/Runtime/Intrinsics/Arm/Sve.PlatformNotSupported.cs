@@ -848,6 +848,54 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<double> ConditionalSelect(Vector<double> mask, Vector<double> left, Vector<double> right) { throw new PlatformNotSupportedException(); }
 
 
+        ///  ConvertToDouble : Floating-point convert
+
+        /// <summary>
+        /// svfloat64_t svcvt_f64[_s32]_m(svfloat64_t inactive, svbool_t pg, svint32_t op)
+        ///   SCVTF Ztied.D, Pg/M, Zop.S
+        /// svfloat64_t svcvt_f64[_s32]_x(svbool_t pg, svint32_t op)
+        ///   SCVTF Ztied.D, Pg/M, Ztied.S
+        /// svfloat64_t svcvt_f64[_s32]_z(svbool_t pg, svint32_t op)
+        /// </summary>
+        public static unsafe Vector<double> ConvertToDouble(Vector<int> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svfloat64_t svcvt_f64[_s64]_m(svfloat64_t inactive, svbool_t pg, svint64_t op)
+        ///   SCVTF Ztied.D, Pg/M, Zop.D
+        /// svfloat64_t svcvt_f64[_s64]_x(svbool_t pg, svint64_t op)
+        ///   SCVTF Ztied.D, Pg/M, Ztied.D
+        /// svfloat64_t svcvt_f64[_s64]_z(svbool_t pg, svint64_t op)
+        /// </summary>
+        public static unsafe Vector<double> ConvertToDouble(Vector<long> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svfloat64_t svcvt_f64[_f32]_m(svfloat64_t inactive, svbool_t pg, svfloat32_t op)
+        ///   FCVT Ztied.D, Pg/M, Zop.S
+        /// svfloat64_t svcvt_f64[_f32]_x(svbool_t pg, svfloat32_t op)
+        ///   FCVT Ztied.D, Pg/M, Ztied.S
+        /// svfloat64_t svcvt_f64[_f32]_z(svbool_t pg, svfloat32_t op)
+        /// </summary>
+        public static unsafe Vector<double> ConvertToDouble(Vector<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svfloat64_t svcvt_f64[_u32]_m(svfloat64_t inactive, svbool_t pg, svuint32_t op)
+        ///   UCVTF Ztied.D, Pg/M, Zop.S
+        /// svfloat64_t svcvt_f64[_u32]_x(svbool_t pg, svuint32_t op)
+        ///   UCVTF Ztied.D, Pg/M, Ztied.S
+        /// svfloat64_t svcvt_f64[_u32]_z(svbool_t pg, svuint32_t op)
+        /// </summary>
+        public static unsafe Vector<double> ConvertToDouble(Vector<uint> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svfloat64_t svcvt_f64[_u64]_m(svfloat64_t inactive, svbool_t pg, svuint64_t op)
+        ///   UCVTF Ztied.D, Pg/M, Zop.D
+        /// svfloat64_t svcvt_f64[_u64]_x(svbool_t pg, svuint64_t op)
+        ///   UCVTF Ztied.D, Pg/M, Ztied.D
+        /// svfloat64_t svcvt_f64[_u64]_z(svbool_t pg, svuint64_t op)
+        /// </summary>
+        public static unsafe Vector<double> ConvertToDouble(Vector<ulong> value) { throw new PlatformNotSupportedException(); }
+
+
         ///  ConvertToInt32 : Floating-point convert
 
         /// <summary>

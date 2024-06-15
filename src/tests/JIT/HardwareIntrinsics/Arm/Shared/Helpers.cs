@@ -6146,9 +6146,13 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static double ConvertToDoubleUpper(float[] op1, int i) => ConvertToDouble(op1[i + op1.Length / 2]);
 
-        public static double ConvertToDouble(long op1) => op1;
+        public static double ConvertLongToDouble(long op1) => op1;
 
-        public static double ConvertToDouble(ulong op1) => op1;
+        public static double ConvertULongToDouble(ulong op1) => op1;
+
+        public static double ConvertIntToDouble(int op1) => op1;
+
+        public static double ConvertUIntToDouble(uint op1) => op1;
 
         public static short ReverseElement8(short val)
         {
