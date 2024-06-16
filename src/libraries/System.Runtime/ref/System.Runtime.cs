@@ -3872,6 +3872,7 @@ namespace System
         static int System.Numerics.INumberBase<System.Int32>.Zero { get { throw null; } }
         static int System.Numerics.ISignedNumber<System.Int32>.NegativeOne { get { throw null; } }
         public static int Abs(int value) { throw null; }
+        public static long BigMul(int left, int right) { throw null; }
         public static int Clamp(int value, int min, int max) { throw null; }
         public int CompareTo(int value) { throw null; }
         public int CompareTo(object? value) { throw null; }
@@ -4012,6 +4013,7 @@ namespace System
         static long System.Numerics.INumberBase<System.Int64>.Zero { get { throw null; } }
         static long System.Numerics.ISignedNumber<System.Int64>.NegativeOne { get { throw null; } }
         public static long Abs(long value) { throw null; }
+        public static Int128 BigMul(long left, long right) { throw null; }
         public static long Clamp(long value, long min, long max) { throw null; }
         public int CompareTo(long value) { throw null; }
         public int CompareTo(object? value) { throw null; }
@@ -4427,6 +4429,11 @@ namespace System
         public static double Atan2(double y, double x) { throw null; }
         public static double Atanh(double d) { throw null; }
         public static long BigMul(int a, int b) { throw null; }
+        public static Int128 BigMul(long a, long b) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static ulong BigMul(uint a, uint b) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static UInt128 BigMul(ulong a, ulong b) { throw null; }
         public static long BigMul(long a, long b, out long low) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static ulong BigMul(ulong a, ulong b, out ulong low) { throw null; }
@@ -7090,6 +7097,7 @@ namespace System
         static uint System.Numerics.INumberBase<System.UInt32>.One { get { throw null; } }
         static int System.Numerics.INumberBase<System.UInt32>.Radix { get { throw null; } }
         static uint System.Numerics.INumberBase<System.UInt32>.Zero { get { throw null; } }
+        public static ulong BigMul(uint left, uint right) { throw null; }
         public static uint Clamp(uint value, uint min, uint max) { throw null; }
         public int CompareTo(object? value) { throw null; }
         public int CompareTo(uint value) { throw null; }
@@ -7230,6 +7238,7 @@ namespace System
         static ulong System.Numerics.INumberBase<System.UInt64>.One { get { throw null; } }
         static int System.Numerics.INumberBase<System.UInt64>.Radix { get { throw null; } }
         static ulong System.Numerics.INumberBase<System.UInt64>.Zero { get { throw null; } }
+        public static UInt128 BigMul(ulong left, ulong right) { throw null; }
         public static ulong Clamp(ulong value, ulong min, ulong max) { throw null; }
         public int CompareTo(object? value) { throw null; }
         public int CompareTo(ulong value) { throw null; }
@@ -7848,6 +7857,34 @@ namespace System.Buffers.Text
         public static bool IsValid(System.ReadOnlySpan<byte> base64TextUtf8, out int decodedLength) { throw null; }
         public static bool IsValid(System.ReadOnlySpan<char> base64Text) { throw null; }
         public static bool IsValid(System.ReadOnlySpan<char> base64Text, out int decodedLength) { throw null; }
+    }
+    public static class Base64Url
+    {
+        public static byte[] DecodeFromChars(System.ReadOnlySpan<char> source) { throw null; }
+        public static int DecodeFromChars(System.ReadOnlySpan<char> source, System.Span<byte> destination) { throw null; }
+        public static System.Buffers.OperationStatus DecodeFromChars(System.ReadOnlySpan<char> source, System.Span<byte> destination, out int charsConsumed, out int bytesWritten, bool isFinalBlock = true) { throw null; }
+        public static byte[] DecodeFromUtf8(System.ReadOnlySpan<byte> source) { throw null; }
+        public static int DecodeFromUtf8(System.ReadOnlySpan<byte> source, System.Span<byte> destination) { throw null; }
+        public static System.Buffers.OperationStatus DecodeFromUtf8(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesConsumed, out int bytesWritten, bool isFinalBlock = true) { throw null; }
+        public static int DecodeFromUtf8InPlace(System.Span<byte> buffer) { throw null; }
+        public static char[] EncodeToChars(System.ReadOnlySpan<byte> source) { throw null; }
+        public static int EncodeToChars(System.ReadOnlySpan<byte> source, System.Span<char> destination) { throw null; }
+        public static System.Buffers.OperationStatus EncodeToChars(System.ReadOnlySpan<byte> source, System.Span<char> destination, out int bytesConsumed, out int charsWritten, bool isFinalBlock = true) { throw null; }
+        public static string EncodeToString(System.ReadOnlySpan<byte> source) { throw null; }
+        public static byte[] EncodeToUtf8(System.ReadOnlySpan<byte> source) { throw null; }
+        public static int EncodeToUtf8(System.ReadOnlySpan<byte> source, System.Span<byte> destination) { throw null; }
+        public static System.Buffers.OperationStatus EncodeToUtf8(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesConsumed, out int bytesWritten, bool isFinalBlock = true) { throw null; }
+        public static int GetEncodedLength(int bytesLength) { throw null; }
+        public static int GetMaxDecodedLength(int base64Length) { throw null; }
+        public static bool IsValid(System.ReadOnlySpan<char> base64UrlText) { throw null; }
+        public static bool IsValid(System.ReadOnlySpan<char> base64UrlText, out int decodedLength) { throw null; }
+        public static bool IsValid(System.ReadOnlySpan<byte> utf8Base64UrlText) { throw null; }
+        public static bool IsValid(System.ReadOnlySpan<byte> utf8Base64UrlText, out int decodedLength) { throw null; }
+        public static bool TryDecodeFromChars(System.ReadOnlySpan<char> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
+        public static bool TryDecodeFromUtf8(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
+        public static bool TryEncodeToChars(System.ReadOnlySpan<byte> source, System.Span<char> destination, out int charsWritten) { throw null; }
+        public static bool TryEncodeToUtf8(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
+        public static bool TryEncodeToUtf8InPlace(System.Span<byte> buffer, int dataLength, out int bytesWritten) { throw null; }
     }
 }
 namespace System.CodeDom.Compiler
@@ -10061,15 +10098,21 @@ namespace System.IO
     public static partial class File
     {
         public static void AppendAllBytes(string path, byte[] bytes) { }
+        public static void AppendAllBytes(string path, System.ReadOnlySpan<byte> bytes) { }
         public static System.Threading.Tasks.Task AppendAllBytesAsync(string path, byte[] bytes, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.Task AppendAllBytesAsync(string path, System.ReadOnlyMemory<byte> bytes, System.Threading.CancellationToken cancellationToken = default) { throw null; }
         public static void AppendAllLines(string path, System.Collections.Generic.IEnumerable<string> contents) { }
         public static void AppendAllLines(string path, System.Collections.Generic.IEnumerable<string> contents, System.Text.Encoding encoding) { }
         public static System.Threading.Tasks.Task AppendAllLinesAsync(string path, System.Collections.Generic.IEnumerable<string> contents, System.Text.Encoding encoding, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public static System.Threading.Tasks.Task AppendAllLinesAsync(string path, System.Collections.Generic.IEnumerable<string> contents, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public static void AppendAllText(string path, string? contents) { }
         public static void AppendAllText(string path, string? contents, System.Text.Encoding encoding) { }
+        public static void AppendAllText(string path, System.ReadOnlySpan<char> contents) { }
+        public static void AppendAllText(string path, System.ReadOnlySpan<char> contents, System.Text.Encoding encoding) { }
         public static System.Threading.Tasks.Task AppendAllTextAsync(string path, string? contents, System.Text.Encoding encoding, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public static System.Threading.Tasks.Task AppendAllTextAsync(string path, string? contents, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.Task AppendAllTextAsync(string path, System.ReadOnlyMemory<char> contents, System.Threading.CancellationToken cancellationToken = default) { throw null; }
+        public static System.Threading.Tasks.Task AppendAllTextAsync(string path, System.ReadOnlyMemory<char> contents, System.Text.Encoding encoding, System.Threading.CancellationToken cancellationToken = default) { throw null; }
         public static System.IO.StreamWriter AppendText(string path) { throw null; }
         public static void Copy(string sourceFileName, string destFileName) { }
         public static void Copy(string sourceFileName, string destFileName, bool overwrite) { }
@@ -10148,7 +10191,9 @@ namespace System.IO
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
         public static void SetUnixFileMode(string path, System.IO.UnixFileMode mode) { }
         public static void WriteAllBytes(string path, byte[] bytes) { }
+        public static void WriteAllBytes(string path, System.ReadOnlySpan<byte> bytes) { }
         public static System.Threading.Tasks.Task WriteAllBytesAsync(string path, byte[] bytes, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.Task WriteAllBytesAsync(string path, System.ReadOnlyMemory<byte> bytes, System.Threading.CancellationToken cancellationToken = default) { throw null; }
         public static void WriteAllLines(string path, System.Collections.Generic.IEnumerable<string> contents) { }
         public static void WriteAllLines(string path, System.Collections.Generic.IEnumerable<string> contents, System.Text.Encoding encoding) { }
         public static void WriteAllLines(string path, string[] contents) { }
@@ -10157,8 +10202,12 @@ namespace System.IO
         public static System.Threading.Tasks.Task WriteAllLinesAsync(string path, System.Collections.Generic.IEnumerable<string> contents, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public static void WriteAllText(string path, string? contents) { }
         public static void WriteAllText(string path, string? contents, System.Text.Encoding encoding) { }
+        public static void WriteAllText(string path, System.ReadOnlySpan<char> contents) { }
+        public static void WriteAllText(string path, System.ReadOnlySpan<char> contents, System.Text.Encoding encoding) { }
         public static System.Threading.Tasks.Task WriteAllTextAsync(string path, string? contents, System.Text.Encoding encoding, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public static System.Threading.Tasks.Task WriteAllTextAsync(string path, string? contents, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.Task WriteAllTextAsync(string path, System.ReadOnlyMemory<char> contents, System.Threading.CancellationToken cancellationToken = default) { throw null; }
+        public static System.Threading.Tasks.Task WriteAllTextAsync(string path, System.ReadOnlyMemory<char> contents, System.Text.Encoding encoding, System.Threading.CancellationToken cancellationToken = default) { throw null; }
     }
     [System.FlagsAttribute]
     public enum FileAccess
@@ -16225,7 +16274,7 @@ namespace System
     {
         public NewsStyleUriParser() { }
     }
-    public partial class Uri : System.IFormattable, System.ISpanFormattable, System.Runtime.Serialization.ISerializable
+    public partial class Uri : System.IFormattable, System.ISpanFormattable, System.IEquatable<Uri>, System.Runtime.Serialization.ISerializable
     {
         public static readonly string SchemeDelimiter;
         public static readonly string UriSchemeFile;
@@ -16286,6 +16335,7 @@ namespace System
         protected virtual void CheckSecurity() { }
         public static int Compare(System.Uri? uri1, System.Uri? uri2, System.UriComponents partsToCompare, System.UriFormat compareFormat, System.StringComparison comparisonType) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? comparand) { throw null; }
+        public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] Uri? other) { throw null; }
         [System.ObsoleteAttribute("Uri.Escape has been deprecated and is not supported.")]
         protected virtual void Escape() { }
         public static string EscapeDataString(string stringToEscape) { throw null; }

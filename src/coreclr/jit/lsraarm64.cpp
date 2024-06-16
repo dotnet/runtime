@@ -1447,6 +1447,10 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                     case NI_AdvSimd_Arm64_StoreSelectedScalarVector128x2:
                     case NI_AdvSimd_Arm64_StoreSelectedScalarVector128x3:
                     case NI_AdvSimd_Arm64_StoreSelectedScalarVector128x4:
+                    case NI_Sve_PrefetchBytes:
+                    case NI_Sve_PrefetchInt16:
+                    case NI_Sve_PrefetchInt32:
+                    case NI_Sve_PrefetchInt64:
                         needBranchTargetReg = !intrin.op3->isContainedIntOrIImmed();
                         break;
 
@@ -1538,6 +1542,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             }
 
             case NI_Vector64_ToVector128Unsafe:
+            case NI_Vector128_AsVector128Unsafe:
             case NI_Vector128_AsVector3:
             case NI_Vector128_GetLower:
             {
@@ -1583,30 +1588,37 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         }
         else if (HWIntrinsicInfo::IsMaskedOperation(intrin.id))
         {
-            SingleTypeRegSet predMask = RBM_ALLMASK.GetPredicateRegSet();
-            if (intrin.id == NI_Sve_ConditionalSelect)
+            if (!varTypeIsMask(intrin.op1->TypeGet()) && !HWIntrinsicInfo::IsExplicitMaskedOperation(intrin.id))
             {
-                // If this is conditional select, make sure to check the embedded
-                // operation to determine the predicate mask.
-                assert(intrinsicTree->GetOperandCount() == 3);
-                assert(!HWIntrinsicInfo::IsLowMaskedOperation(intrin.id));
-
-                if (intrin.op2->OperIs(GT_HWINTRINSIC))
+                srcCount += BuildOperandUses(intrin.op1);
+            }
+            else
+            {
+                SingleTypeRegSet predMask = RBM_ALLMASK.GetPredicateRegSet();
+                if (intrin.id == NI_Sve_ConditionalSelect)
                 {
-                    GenTreeHWIntrinsic* embOp2Node = intrin.op2->AsHWIntrinsic();
-                    const HWIntrinsic   intrinEmb(embOp2Node);
-                    if (HWIntrinsicInfo::IsLowMaskedOperation(intrinEmb.id))
+                    // If this is conditional select, make sure to check the embedded
+                    // operation to determine the predicate mask.
+                    assert(intrinsicTree->GetOperandCount() == 3);
+                    assert(!HWIntrinsicInfo::IsLowMaskedOperation(intrin.id));
+
+                    if (intrin.op2->OperIs(GT_HWINTRINSIC))
                     {
-                        predMask = RBM_LOWMASK.GetPredicateRegSet();
+                        GenTreeHWIntrinsic* embOp2Node = intrin.op2->AsHWIntrinsic();
+                        const HWIntrinsic   intrinEmb(embOp2Node);
+                        if (HWIntrinsicInfo::IsLowMaskedOperation(intrinEmb.id))
+                        {
+                            predMask = RBM_LOWMASK.GetPredicateRegSet();
+                        }
                     }
                 }
-            }
-            else if (HWIntrinsicInfo::IsLowMaskedOperation(intrin.id))
-            {
-                predMask = RBM_LOWMASK.GetPredicateRegSet();
-            }
+                else if (HWIntrinsicInfo::IsLowMaskedOperation(intrin.id))
+                {
+                    predMask = RBM_LOWMASK.GetPredicateRegSet();
+                }
 
-            srcCount += BuildOperandUses(intrin.op1, predMask);
+                srcCount += BuildOperandUses(intrin.op1, predMask);
+            }
         }
         else if (intrinsicTree->OperIsMemoryLoadOrStore())
         {
@@ -1966,28 +1978,42 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                                                (argNum == lowVectorOperandNum) ? lowVectorCandidates : RBM_NONE);
             }
         }
-        else if (intrin.id == NI_Sve_StoreAndZip)
-        {
-            srcCount += BuildAddrUses(intrin.op2);
-        }
         else
         {
-            SingleTypeRegSet candidates = lowVectorOperandNum == 2 ? lowVectorCandidates : RBM_NONE;
+            switch (intrin.id)
+            {
+                case NI_Sve_LoadVectorNonTemporal:
+                case NI_Sve_LoadVector128AndReplicateToVector:
+                case NI_Sve_StoreAndZip:
+                case NI_Sve_PrefetchBytes:
+                case NI_Sve_PrefetchInt16:
+                case NI_Sve_PrefetchInt32:
+                case NI_Sve_PrefetchInt64:
+                    assert(intrinsicTree->OperIsMemoryLoadOrStore());
+                    srcCount += BuildAddrUses(intrin.op2);
+                    break;
 
-            if (intrin.op2->gtType == TYP_MASK)
-            {
-                assert(lowVectorOperandNum != 2);
-                candidates = RBM_ALLMASK.GetPredicateRegSet();
-            }
+                default:
+                {
+                    SingleTypeRegSet candidates = lowVectorOperandNum == 2 ? lowVectorCandidates : RBM_NONE;
 
-            if (forceOp2DelayFree)
-            {
-                srcCount += BuildDelayFreeUses(intrin.op2, nullptr, candidates);
-            }
-            else
-            {
-                srcCount += isRMW ? BuildDelayFreeUses(intrin.op2, intrin.op1, candidates)
-                                  : BuildOperandUses(intrin.op2, candidates);
+                    if (intrin.op2->gtType == TYP_MASK)
+                    {
+                        assert(lowVectorOperandNum != 2);
+                        candidates = RBM_ALLMASK.GetPredicateRegSet();
+                    }
+
+                    if (forceOp2DelayFree)
+                    {
+                        srcCount += BuildDelayFreeUses(intrin.op2, nullptr, candidates);
+                    }
+                    else
+                    {
+                        srcCount += isRMW ? BuildDelayFreeUses(intrin.op2, intrin.op1, candidates)
+                                          : BuildOperandUses(intrin.op2, candidates);
+                    }
+                }
+                break;
             }
         }
 
