@@ -4575,16 +4575,16 @@ TypeCompareState CEEInfo::isGenericType(CORINFO_CLASS_HANDLE cls)
 TypeCompareState CEEInfo::isNullableType(CORINFO_CLASS_HANDLE cls)
 {
     CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
+        NOTHROW;
+        GC_NOTRIGGER;
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    TypeHandle typeHandle = TypeHandle();
-
     TypeCompareState result = TypeCompareState::May;
 
-    JIT_TO_EE_TRANSITION();
+    JIT_TO_EE_TRANSITION_LEAF();
+
+    TypeHandle typeHandle = TypeHandle();
 
     if (typeHandle != TypeHandle(g_pCanonMethodTableClass))
     {
@@ -4592,7 +4592,7 @@ TypeCompareState CEEInfo::isNullableType(CORINFO_CLASS_HANDLE cls)
         result = Nullable::IsNullableType(VMClsHnd) ? TypeCompareState::Must : TypeCompareState::MustNot;
     }
 
-    EE_TO_JIT_TRANSITION();
+    EE_TO_JIT_TRANSITION_LEAF();
     return result;
 }
 
