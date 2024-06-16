@@ -938,9 +938,7 @@ DEFINE_METHOD(STUBHELPERS,          PROFILER_BEGIN_TRANSITION_CALLBACK, Profiler
 DEFINE_METHOD(STUBHELPERS,          PROFILER_END_TRANSITION_CALLBACK,   ProfilerEndTransitionCallback,   SM_IntPtr_IntPtr_RetVoid)
 #endif
 
-#ifdef FEATURE_MULTICASTSTUB_AS_IL
 DEFINE_METHOD(STUBHELPERS,          MULTICAST_DEBUGGER_TRACE_HELPER,    MulticastDebuggerTraceHelper,    SM_Obj_Int_RetVoid)
-#endif
 
 DEFINE_CLASS(CLEANUP_WORK_LIST_ELEMENT,     StubHelpers,            CleanupWorkListElement)
 
