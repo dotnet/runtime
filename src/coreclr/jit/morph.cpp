@@ -2226,7 +2226,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
             m_hasStackArgs                   = true;
             const ABIPassingSegment& segment = abiInfo.Segments[0];
             arg.AbiInfo.SetRegNum(0, REG_STK);
-            arg.AbiInfo.ByteSize   = segment.Size;
+            arg.AbiInfo.ByteSize   = roundUp(segment.Size, TARGET_POINTER_SIZE);
             arg.AbiInfo.ByteOffset = segment.GetStackOffset();
         }
     } // end foreach argument loop
