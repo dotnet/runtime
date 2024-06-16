@@ -277,8 +277,7 @@ namespace System.Net.Http
             }
             catch (QuicException ex) when (ex.QuicError == QuicError.OperationAborted && cancellationToken.IsCancellationRequested)
             {
-                OperationCanceledException wrapperOce = new OperationCanceledException(ex.Message, ex, cancellationToken);
-                throw new HttpRequestException(HttpRequestError.Unknown, SR.net_http_client_execution_error, wrapperOce);
+                throw new TaskCanceledException(ex.Message, ex, cancellationToken);
             }
             catch (QuicException ex) when (ex.QuicError == QuicError.OperationAborted && _connection.AbortException != null)
             {
@@ -1283,8 +1282,7 @@ namespace System.Net.Http
                     throw new HttpRequestException(httpRequestError, SR.net_http_client_execution_error, _connection.AbortException);
 
                 case QuicException e when (e.QuicError == QuicError.OperationAborted && cancellationToken.IsCancellationRequested):
-                    OperationCanceledException wrapperOce = new OperationCanceledException(e.Message, e, cancellationToken);
-                    throw new HttpRequestException(HttpRequestError.Unknown, SR.net_http_client_execution_error, wrapperOce);
+                    throw new TaskCanceledException(e.Message, e, cancellationToken);
 
                 case HttpIOException:
                     _connection.Abort(ex);
