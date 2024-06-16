@@ -2139,42 +2139,6 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
             arg.AbiInfo.ArgType = argx->TypeGet();
         }
 
-        // TODO-Fixme: remove HFA information from VarDsc.
-        var_types hfaType  = TYP_UNDEF;
-        bool      isHfaArg = false;
-        unsigned  hfaSlots = 0;
-
-        if (GlobalJitOptions::compFeatureHfa)
-        {
-            hfaType  = comp->GetHfaType(argSigClass);
-            isHfaArg = varTypeIsValidHfaType(hfaType);
-
-            if (TargetOS::IsWindows && TargetArchitecture::IsArm64 && IsVarArgs())
-            {
-                // Make sure for vararg methods isHfaArg is not true.
-                isHfaArg = false;
-            }
-
-            if (isHfaArg)
-            {
-                hfaSlots = abiInfo.NumSegments;
-
-                assert(hfaSlots == comp->GetHfaCount(argSigClass));
-
-                // If we have a HFA struct it's possible we transition from a method that originally
-                // only had integer types to now start having FP types.  We have to communicate this
-                // through this flag since LSRA later on will use this flag to determine whether
-                // or not to track the FP register set.
-                //
-                comp->compFloatingPointUsed = true;
-            }
-        }
-
-        if (isHfaArg)
-        {
-            arg.AbiInfo.SetHfaType(hfaType, hfaSlots);
-        }
-
         if (abiInfo.IsSplitAcrossRegistersAndStack())
         {
             m_hasStackArgs = true;
@@ -2228,6 +2192,40 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
             arg.AbiInfo.SetRegNum(0, REG_STK);
             arg.AbiInfo.ByteSize   = roundUp(segment.Size, TARGET_POINTER_SIZE);
             arg.AbiInfo.ByteOffset = segment.GetStackOffset();
+        }
+
+        // TODO-Cleanup: remove HFA information from VarDsc.
+        var_types hfaType  = TYP_UNDEF;
+        bool      isHfaArg = false;
+        unsigned  hfaSlots = 0;
+
+        if (GlobalJitOptions::compFeatureHfa)
+        {
+            hfaType  = comp->GetHfaType(argSigClass);
+            isHfaArg = varTypeIsValidHfaType(hfaType);
+
+            if (TargetOS::IsWindows && TargetArchitecture::IsArm64 && IsVarArgs())
+            {
+                // Make sure for vararg methods isHfaArg is not true.
+                isHfaArg = false;
+            }
+
+            if (isHfaArg)
+            {
+                hfaSlots = comp->GetHfaCount(argSigClass);
+
+                // If we have a HFA struct it's possible we transition from a method that originally
+                // only had integer types to now start having FP types.  We have to communicate this
+                // through this flag since LSRA later on will use this flag to determine whether
+                // or not to track the FP register set.
+                //
+                comp->compFloatingPointUsed = true;
+            }
+        }
+
+        if (isHfaArg)
+        {
+            arg.AbiInfo.SetHfaType(hfaType, hfaSlots);
         }
     } // end foreach argument loop
 
