@@ -728,9 +728,6 @@ VOID GenerateShuffleArray(MethodDesc* pInvoke, MethodDesc *pTargetMeth, SArray<S
 
 
 ShuffleThunkCache *COMDelegate::m_pShuffleThunkCache = NULL;
-#ifndef FEATURE_MULTICASTSTUB_AS_IL
-MulticastStubCache *COMDelegate::m_pMulticastStubCache = NULL;
-#endif
 
 CrstStatic   COMDelegate::s_DelegateToFPtrHashCrst;
 PtrHashMap*  COMDelegate::s_pDelegateToFPtrHash = NULL;
@@ -755,9 +752,6 @@ void COMDelegate::Init()
     s_pDelegateToFPtrHash->Init(TRUE, &lock);
 
     m_pShuffleThunkCache = new ShuffleThunkCache(SystemDomain::GetGlobalLoaderAllocator()->GetStubHeap());
-#ifndef FEATURE_MULTICASTSTUB_AS_IL
-    m_pMulticastStubCache = new MulticastStubCache();
-#endif
 }
 
 #ifdef FEATURE_COMINTEROP
@@ -2139,7 +2133,6 @@ FCIMPL1(MethodDesc*, COMDelegate::GetInvokeMethod, Object* refThisIn)
 }
 FCIMPLEND
 
-#ifdef FEATURE_MULTICASTSTUB_AS_IL
 FCIMPL1(PCODE, COMDelegate::GetMulticastInvoke, Object* refThisIn)
 {
     FCALL_CONTRACT;
@@ -2259,66 +2252,6 @@ FCIMPL1(PCODE, COMDelegate::GetMulticastInvoke, Object* refThisIn)
     return pStub->GetEntryPoint();
 }
 FCIMPLEND
-
-#else // FEATURE_MULTICASTSTUB_AS_IL
-
-FCIMPL1(PCODE, COMDelegate::GetMulticastInvoke, Object* refThisIn)
-{
-    FCALL_CONTRACT;
-
-    OBJECTREF refThis = ObjectToOBJECTREF(refThisIn);
-    MethodTable *pDelegateMT = refThis->GetMethodTable();
-
-    DelegateEEClass *delegateEEClass = ((DelegateEEClass*)(pDelegateMT->GetClass()));
-    Stub *pStub = delegateEEClass->m_pMultiCastInvokeStub;
-    if (pStub == NULL)
-    {
-        MethodDesc* pMD = delegateEEClass->GetInvokeMethod();
-
-        HELPER_METHOD_FRAME_BEGIN_RET_0();
-
-        GCX_PREEMP();
-
-        MetaSig sig(pMD);
-
-        UINT_PTR hash = CPUSTUBLINKER::HashMulticastInvoke(&sig);
-
-        pStub = m_pMulticastStubCache->GetStub(hash);
-        if (!pStub)
-        {
-            CPUSTUBLINKER sl;
-
-            LOG((LF_CORDB,LL_INFO10000, "COMD::GIMS making a multicast delegate\n"));
-
-            sl.EmitMulticastInvoke(hash);
-
-            // The cache is process-wide, based on signature.  It never unloads
-            Stub *pCandidate = sl.Link(SystemDomain::GetGlobalLoaderAllocator()->GetStubHeap(), NEWSTUB_FL_MULTICAST);
-
-            Stub *pWinner = m_pMulticastStubCache->AttemptToSetStub(hash,pCandidate);
-            ExecutableWriterHolder<Stub> candidateWriterHolder(pCandidate, sizeof(Stub));
-            candidateWriterHolder.GetRW()->DecRef();
-
-            if (!pWinner)
-                COMPlusThrowOM();
-
-            LOG((LF_CORDB,LL_INFO10000, "Putting a MC stub at 0x%p (code:0x%p)\n",
-                pWinner, (BYTE*)pWinner+sizeof(Stub)));
-
-            pStub = pWinner;
-        }
-
-        // we don't need to do an InterlockedCompareExchange here - the m_pMulticastStubCache->AttemptToSetStub
-        // will make sure all threads racing here will get the same stub, so they'll all store the same value
-        delegateEEClass->m_pMultiCastInvokeStub = pStub;
-
-        HELPER_METHOD_FRAME_END();
-    }
-
-    return pStub->GetEntryPoint();
-}
-FCIMPLEND
-#endif // FEATURE_MULTICASTSTUB_AS_IL
 
 PCODE COMDelegate::GetWrapperInvoke(MethodDesc* pMD)
 {
