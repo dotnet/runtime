@@ -2490,7 +2490,6 @@ GenTree* Compiler::impTypeIsAssignable(GenTree* typeTo, GenTree* typeFrom)
     return nullptr;
 }
 
-
 GenTree* Compiler::impGetGenericTypeDefinition(GenTree* type)
 {
     // This intrinsic requires the first arg to be some `typeof()` expression,
