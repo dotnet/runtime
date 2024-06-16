@@ -2068,7 +2068,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
 #endif
 
     ClassifierInfo info;
-    info.CallConv   = call->GetUnmanagedCallConv();
+    info.CallConv = call->GetUnmanagedCallConv();
     // X86 tailcall helper is considered varargs, but not for ABI classification purposes.
     info.IsVarArgs  = call->IsVarargs() && !call->IsTailCallViaJitHelper();
     info.HasThis    = call->gtArgs.HasThisPointer();
@@ -2116,8 +2116,8 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
         JITDUMP("Argument %u ABI info: ", GetIndex(&arg));
         DBEXEC(VERBOSE, abiInfo.Dump());
 
-        arg.NewAbiInfo      = abiInfo;
-        arg.AbiInfo         = CallArgABIInformation();
+        arg.NewAbiInfo = abiInfo;
+        arg.AbiInfo    = CallArgABIInformation();
 
         if (varTypeIsStruct(argSigType))
         {
@@ -2146,7 +2146,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
             arg.AbiInfo.SetSplit(true);
             arg.AbiInfo.ByteOffset = 0;
             arg.AbiInfo.ByteSize   = 0;
-            unsigned regNumIndex = 0;
+            unsigned regNumIndex   = 0;
             for (unsigned i = 0; i < abiInfo.NumSegments; i++)
             {
                 const ABIPassingSegment& segment = abiInfo.Segments[i];
@@ -2173,7 +2173,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
             // This is a register argument
             m_hasRegArgs = true;
 
-            arg.AbiInfo.ByteSize    = 0;
+            arg.AbiInfo.ByteSize = 0;
             unsigned regNumIndex = 0;
             for (unsigned i = 0; i < abiInfo.NumSegments; i++)
             {
@@ -6398,19 +6398,26 @@ void Compiler::fgMorphTailCallViaJitHelper(GenTreeCall* call)
     unsigned nOldStkArgsWords =
         (compArgSize - (codeGen->intRegState.rsCalleeRegArgCount * REGSIZE_BYTES)) / REGSIZE_BYTES;
     GenTree* arg3Node = gtNewIconNode((ssize_t)nOldStkArgsWords, TYP_I_IMPL);
-    CallArg* arg3     = call->gtArgs.PushBack(this, NewCallArg::Primitive(arg3Node).WellKnown(WellKnownArg::X86TailCallSpecialArg));
+    CallArg* arg3 =
+        call->gtArgs.PushBack(this, NewCallArg::Primitive(arg3Node).WellKnown(WellKnownArg::X86TailCallSpecialArg));
     // Inject a placeholder for the count of outgoing stack arguments that the Lowering phase will generate.
     // The constant will be replaced.
     GenTree* arg2Node = gtNewIconNode(9, TYP_I_IMPL);
-    CallArg* arg2     = call->gtArgs.InsertAfter(this, arg3, NewCallArg::Primitive(arg2Node).WellKnown(WellKnownArg::X86TailCallSpecialArg));
+    CallArg* arg2 =
+        call->gtArgs.InsertAfter(this, arg3,
+                                 NewCallArg::Primitive(arg2Node).WellKnown(WellKnownArg::X86TailCallSpecialArg));
     // Inject a placeholder for the flags.
     // The constant will be replaced.
     GenTree* arg1Node = gtNewIconNode(8, TYP_I_IMPL);
-    CallArg* arg1     = call->gtArgs.InsertAfter(this, arg2, NewCallArg::Primitive(arg1Node).WellKnown(WellKnownArg::X86TailCallSpecialArg));
+    CallArg* arg1 =
+        call->gtArgs.InsertAfter(this, arg2,
+                                 NewCallArg::Primitive(arg1Node).WellKnown(WellKnownArg::X86TailCallSpecialArg));
     // Inject a placeholder for the real call target that the Lowering phase will generate.
     // The constant will be replaced.
     GenTree* arg0Node = gtNewIconNode(7, TYP_I_IMPL);
-    CallArg* arg0     = call->gtArgs.InsertAfter(this, arg1, NewCallArg::Primitive(arg0Node).WellKnown(WellKnownArg::X86TailCallSpecialArg));
+    CallArg* arg0 =
+        call->gtArgs.InsertAfter(this, arg1,
+                                 NewCallArg::Primitive(arg0Node).WellKnown(WellKnownArg::X86TailCallSpecialArg));
 
     // It is now a varargs tail call.
     call->gtArgs.SetIsVarArgs();
