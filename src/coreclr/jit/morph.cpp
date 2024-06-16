@@ -2209,7 +2209,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
             for (unsigned i = 0; i < numRegsToWrite; i++)
             {
                 const ABIPassingSegment& segment = abiInfo.Segments[i];
-                arg.AbiInfo.SetRegNum(0, segment.GetRegister());
+                arg.AbiInfo.SetRegNum(i, segment.GetRegister());
                 arg.AbiInfo.ByteSize += segment.Size;
             }
 
