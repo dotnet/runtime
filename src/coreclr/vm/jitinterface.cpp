@@ -4556,7 +4556,7 @@ TypeCompareState CEEInfo::isGenericType(CORINFO_CLASS_HANDLE cls)
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    TypeHandle typeHandle = TypeHandle();
+    TypeHandle typeHandle(cls);
 
     TypeCompareState result = TypeCompareState::May;
 
