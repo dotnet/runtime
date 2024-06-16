@@ -1,5 +1,6 @@
 <Project>
     <PropertyGroup>
+        <FeatureMulticastStubAsIL>true</FeatureMulticastStubAsIL>
         <FeatureCoreCLR>true</FeatureCoreCLR>
         <FeatureEventTrace>true</FeatureEventTrace>
         <FeatureICastable>true</FeatureICastable>
@@ -10,12 +11,10 @@
 
     <PropertyGroup Condition="'$(TargetsUnix)' == 'true'">
         <FeatureXplatEventSource Condition="'$(TargetOS)' == 'linux'">true</FeatureXplatEventSource>
-        <FeatureMulticastStubAsIL>true</FeatureMulticastStubAsIL>
         <FeatureComWrappers>true</FeatureComWrappers>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(TargetsWindows)' == 'true'">
-        <FeatureMulticastStubAsIL Condition="'$(Platform)' != 'x86'">true</FeatureMulticastStubAsIL>
         <FeatureComWrappers>true</FeatureComWrappers>
         <FeatureCominterop>true</FeatureCominterop>
         <FeatureCominteropApartmentSupport>true</FeatureCominteropApartmentSupport>
