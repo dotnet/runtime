@@ -5351,7 +5351,7 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
     callee->gtArgs.AddFinalArgsAndDetermineABIInfo(this, callee);
 
     unsigned calleeArgStackSize = 0;
-    unsigned callerArgStackSize = info.compArgStackSize;
+    unsigned callerArgStackSize = roundUp(info.compArgStackSize, TARGET_POINTER_SIZE);
 
     auto reportFastTailCallDecision = [&](const char* thisFailReason) {
         if (failReason != nullptr)
