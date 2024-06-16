@@ -1070,10 +1070,15 @@ public:
                 {
                     JITDUMP("Bashing nullcheck of local [%06u] to NOP\n", m_compiler->dspTreeID(node));
                     node->gtBashToNOP();
+                    INDEBUG(TopValue(0).Consume());
+                    PopValue();
                     m_stmtModified = true;
                 }
-                EscapeValue(TopValue(0), node);
-                PopValue();
+                else
+                {
+                    EscapeValue(TopValue(0), node);
+                    PopValue();
+                }
                 break;
             }
 
