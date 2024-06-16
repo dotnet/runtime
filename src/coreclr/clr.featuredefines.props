@@ -1,6 +1,5 @@
 <Project>
     <PropertyGroup>
-        <FeatureMulticastStubAsIL>true</FeatureMulticastStubAsIL>
         <FeatureCoreCLR>true</FeatureCoreCLR>
         <FeatureEventTrace>true</FeatureEventTrace>
         <FeatureICastable>true</FeatureICastable>
@@ -29,7 +28,6 @@
     </PropertyGroup>
 
     <PropertyGroup>
-        <DefineConstants Condition="'$(FeatureMulticastStubAsIL)' == 'true'">$(DefineConstants);FEATURE_MULTICASTSTUB_AS_IL</DefineConstants>
         <DefineConstants Condition="'$(FeatureComWrappers)' == 'true'">$(DefineConstants);FEATURE_COMWRAPPERS</DefineConstants>
         <DefineConstants Condition="'$(FeatureCominterop)' == 'true'">$(DefineConstants);FEATURE_COMINTEROP</DefineConstants>
         <DefineConstants Condition="'$(FeatureCominteropApartmentSupport)' == 'true'">$(DefineConstants);FEATURE_COMINTEROP_APARTMENT_SUPPORT</DefineConstants>
