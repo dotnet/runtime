@@ -91,7 +91,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <LinkerArg Condition="$(NativeDebugSymbols) == 'true'" Include="/DEBUG" />
       <!-- The runtime is not compatible with jump stubs inserted by incremental linking. -->
       <LinkerArg Include="/INCREMENTAL:NO" />
-      <LinkerArg Condition="''$(NativeLib)' == '' and $(LinkerSubsystem)' != ''" Include="/SUBSYSTEM:$(LinkerSubsystem)" />
+      <LinkerArg Condition="'$(NativeLib)' == '' and $(LinkerSubsystem)' != ''" Include="/SUBSYSTEM:$(LinkerSubsystem)" />
       <LinkerArg Condition="'$(NativeLib)' == ''" Include="/ENTRY:$(EntryPointSymbol) /NOEXP /NOIMPLIB /STACK:$(IlcDefaultStackSize)" />
       <LinkerArg Include="/NATVIS:&quot;$(MSBuildThisFileDirectory)NativeAOT.natvis&quot;" />
       <LinkerArg Condition="'$(ControlFlowGuard)' == 'Guard'" Include="/guard:cf" />
