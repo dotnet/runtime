@@ -706,7 +706,7 @@ public:
                 // Call type check helper
                 m_pCode->EmitLDARG(rank);
                 m_pCode->EmitLoadThis();
-                m_pCode->EmitCALL(METHOD__STUBHELPERS__ARRAY_TYPE_CHECK,2,0);
+                m_pCode->EmitCALL(METHOD__CASTHELPERS__ARRAYTYPECHECK,2,0);
 
                 m_pCode->EmitLabel(pTypeCheckOK);
 
