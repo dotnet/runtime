@@ -37,7 +37,7 @@ namespace System.Numerics
         [Intrinsic]
         public Vector4(float value)
         {
-            this = Vector128.Create(value).AsVector4();
+            this = Create(value);
         }
 
         /// <summary>Creates a   new <see cref="Vector4" /> object from the specified <see cref="Vector2" /> object and a Z and a W component.</summary>
@@ -47,10 +47,7 @@ namespace System.Numerics
         [Intrinsic]
         public Vector4(Vector2 value, float z, float w)
         {
-            this = value.AsVector128()
-                        .WithElement(2, z)
-                        .WithElement(3, w)
-                        .AsVector4();
+            this = Create(value, z, w);
         }
 
         /// <summary>Constructs a new <see cref="Vector4" /> object from the specified <see cref="Vector3" /> object and a W component.</summary>
@@ -59,9 +56,7 @@ namespace System.Numerics
         [Intrinsic]
         public Vector4(Vector3 value, float w)
         {
-            this = value.AsVector128()
-                        .WithElement(3, w)
-                        .AsVector4();
+            this = Create(value, w);
         }
 
         /// <summary>Creates a vector whose elements have the specified values.</summary>
@@ -72,14 +67,15 @@ namespace System.Numerics
         [Intrinsic]
         public Vector4(float x, float y, float z, float w)
         {
-            this = Vector128.Create(x, y, z, w).AsVector4();
+            this = Create(x, y, z, w);
         }
 
         /// <summary>Constructs a vector from the given <see cref="ReadOnlySpan{Single}" />. The span must contain at least 4 elements.</summary>
         /// <param name="values">The span of elements to assign to the vector.</param>
+        [Intrinsic]
         public Vector4(ReadOnlySpan<float> values)
         {
-            this = Vector128.Create(values).AsVector4();
+            this = Create(values);
         }
 
         /// <summary>Gets a vector whose 4 elements are equal to zero.</summary>
@@ -96,7 +92,7 @@ namespace System.Numerics
         public static Vector4 One
         {
             [Intrinsic]
-            get => new Vector4(1);
+            get => Create(1);
         }
 
         /// <summary>Gets the vector (1,0,0,0).</summary>
@@ -104,7 +100,7 @@ namespace System.Numerics
         public static Vector4 UnitX
         {
             [Intrinsic]
-            get => new Vector4(1.0f, 0.0f, 0.0f, 0.0f);
+            get => CreateScalar(1.0f);
         }
 
         /// <summary>Gets the vector (0,1,0,0).</summary>
@@ -112,7 +108,7 @@ namespace System.Numerics
         public static Vector4 UnitY
         {
             [Intrinsic]
-            get => new Vector4(0.0f, 1.0f, 0.0f, 0.0f);
+            get => Create(0.0f, 1.0f, 0.0f, 0.0f);
         }
 
         /// <summary>Gets the vector (0,0,1,0).</summary>
@@ -120,7 +116,7 @@ namespace System.Numerics
         public static Vector4 UnitZ
         {
             [Intrinsic]
-            get => new Vector4(0.0f, 0.0f, 1.0f, 0.0f);
+            get => Create(0.0f, 0.0f, 1.0f, 0.0f);
         }
 
         /// <summary>Gets the vector (0,0,0,1).</summary>
@@ -128,7 +124,7 @@ namespace System.Numerics
         public static Vector4 UnitW
         {
             [Intrinsic]
-            get => new Vector4(0.0f, 0.0f, 0.0f, 1.0f);
+            get => Create(0.0f, 0.0f, 0.0f, 1.0f);
         }
 
         /// <summary>Gets or sets the element at the specified index.</summary>
@@ -138,9 +134,13 @@ namespace System.Numerics
         public float this[int index]
         {
             [Intrinsic]
-            readonly get => this.GetElement(index);
+            readonly get => this.AsVector128().GetElement(index);
 
-            set => this = this.WithElement(index, value);
+            [Intrinsic]
+            set
+            {
+                this = this.AsVector128().WithElement(index, value).AsVector4();
+            }
         }
 
         /// <summary>Adds two vectors together.</summary>
@@ -167,7 +167,7 @@ namespace System.Numerics
         /// <returns>The result of the division.</returns>
         /// <remarks>The <see cref="Vector4.op_Division" /> method defines the division operation for <see cref="Vector4" /> objects.</remarks>
         [Intrinsic]
-        public static Vector4 operator /(Vector4 value1, float value2) => value1 / new Vector4(value2);
+        public static Vector4 operator /(Vector4 value1, float value2) => (value1.AsVector128() / value2).AsVector4();
 
         /// <summary>Returns a value that indicates whether each pair of elements in two specified vectors is equal.</summary>
         /// <param name="left">The first vector to compare.</param>
@@ -200,7 +200,7 @@ namespace System.Numerics
         /// <returns>The scaled vector.</returns>
         /// <remarks>The <see cref="Vector4.op_Multiply" /> method defines the multiplication operation for <see cref="Vector4" /> objects.</remarks>
         [Intrinsic]
-        public static Vector4 operator *(Vector4 left, float right) => left * new Vector4(right);
+        public static Vector4 operator *(Vector4 left, float right) => (left.AsVector128() * right).AsVector4();
 
         /// <summary>Multiplies the scalar value by the specified vector.</summary>
         /// <param name="left">The vector.</param>
@@ -253,12 +253,70 @@ namespace System.Numerics
             return Min(Max(value1, min), max);
         }
 
+        /// <summary>Creates a new <see cref="Vector4" /> object whose four elements have the same value.</summary>
+        /// <param name="value">The value to assign to all four elements.</param>
+        /// <returns>A new <see cref="Vector4" /> whose four elements have the same value.</returns>
+        [Intrinsic]
+        public static Vector4 Create(float value) => Vector128.Create(value).AsVector4();
+
+        /// <summary>Creates a new <see cref="Vector4" /> object from the specified <see cref="Vector2" /> object and a Z and a W component.</summary>
+        /// <param name="vector">The vector to use for the X and Y components.</param>
+        /// <param name="z">The Z component.</param>
+        /// <param name="w">The W component.</param>
+        /// <returns>A new <see cref="Vector4" /> from the specified <see cref="Vector2" /> object and a Z and a W component.</returns>
+        [Intrinsic]
+        public static Vector4 Create(Vector2 vector, float z, float w)
+        {
+            return vector.AsVector128Unsafe()
+                         .WithElement(2, z)
+                         .WithElement(3, w)
+                         .AsVector4();
+        }
+
+        /// <summary>Constructs a new <see cref="Vector4" /> object from the specified <see cref="Vector3" /> object and a W component.</summary>
+        /// <param name="vector">The vector to use for the X, Y, and Z components.</param>
+        /// <param name="w">The W component.</param>
+        /// <returns>A new <see cref="Vector4" /> from the specified <see cref="Vector3" /> object and a W component.</returns>
+        [Intrinsic]
+        public static Vector4 Create(Vector3 vector, float w)
+        {
+            return vector.AsVector128Unsafe()
+                         .WithElement(3, w)
+                         .AsVector4();
+        }
+
+        /// <summary>Creates a vector whose elements have the specified values.</summary>
+        /// <param name="x">The value to assign to the <see cref="X" /> field.</param>
+        /// <param name="y">The value to assign to the <see cref="Y" /> field.</param>
+        /// <param name="z">The value to assign to the <see cref="Z" /> field.</param>
+        /// <param name="w">The value to assign to the <see cref="W" /> field.</param>
+        /// <returns>A new <see cref="Vector4" /> whose elements have the specified values.</returns>
+        [Intrinsic]
+        public static Vector4 Create(float x, float y, float z, float w) => Vector128.Create(x, y, z, w).AsVector4();
+
+        /// <summary>Constructs a vector from the given <see cref="ReadOnlySpan{Single}" />. The span must contain at least 4 elements.</summary>
+        /// <param name="values">The span of elements to assign to the vector.</param>
+        [Intrinsic]
+        public static Vector4 Create(ReadOnlySpan<float> values) => Vector128.Create(values).AsVector4();
+
+        /// <summary>Creates a vector with <see cref="X" /> initialized to the specified value and the remaining elements initialized to zero.</summary>
+        /// <param name="x">The value to assign to the <see cref="X" /> field.</param>
+        /// <returns>A new <see cref="Vector4" /> with <see cref="X" /> initialized <paramref name="x" /> and the remaining elements initialized to zero.</returns>
+        [Intrinsic]
+        internal static Vector4 CreateScalar(float x) => Vector128.CreateScalar(x).AsVector4();
+
+        /// <summary>Creates a vector with <see cref="X" /> initialized to the specified value and the remaining elements left uninitialized.</summary>
+        /// <param name="x">The value to assign to the <see cref="X" /> field.</param>
+        /// <returns>A new <see cref="Vector4" /> with <see cref="X" /> initialized <paramref name="x" /> and the remaining elements left uninitialized.</returns>
+        [Intrinsic]
+        internal static Vector4 CreateScalarUnsafe(float x) => Vector128.CreateScalarUnsafe(x).AsVector4();
+
         /// <summary>Computes the Euclidean distance between the two given points.</summary>
         /// <param name="value1">The first point.</param>
         /// <param name="value2">The second point.</param>
         /// <returns>The distance.</returns>
         [Intrinsic]
-        public static float Distance(Vector4 value1, Vector4 value2) => MathF.Sqrt(DistanceSquared(value1, value2));
+        public static float Distance(Vector4 value1, Vector4 value2) => float.Sqrt(DistanceSquared(value1, value2));
 
         /// <summary>Returns the Euclidean distance squared between two specified points.</summary>
         /// <param name="value1">The first point.</param>
@@ -412,7 +470,7 @@ namespace System.Numerics
             float yz2 = rotation.Y * z2;
             float zz2 = rotation.Z * z2;
 
-            return new Vector4(
+            return Create(
                 value.X * (1.0f - yy2 - zz2) + value.Y * (xy2 - wz2),
                 value.X * (xy2 + wz2) + value.Y * (1.0f - xx2 - zz2),
                 value.X * (xz2 - wy2) + value.Y * (yz2 + wx2),
@@ -459,7 +517,7 @@ namespace System.Numerics
             float yz2 = rotation.Y * z2;
             float zz2 = rotation.Z * z2;
 
-            return new Vector4(
+            return Create(
                 value.X * (1.0f - yy2 - zz2) + value.Y * (xy2 - wz2) + value.Z * (xz2 + wy2),
                 value.X * (xy2 + wz2) + value.Y * (1.0f - xx2 - zz2) + value.Z * (yz2 - wx2),
                 value.X * (xz2 - wy2) + value.Y * (yz2 + wx2) + value.Z * (1.0f - xx2 - yy2),
@@ -506,7 +564,7 @@ namespace System.Numerics
             float yz2 = rotation.Y * z2;
             float zz2 = rotation.Z * z2;
 
-            return new Vector4(
+            return Create(
                 value.X * (1.0f - yy2 - zz2) + value.Y * (xy2 - wz2) + value.Z * (xz2 + wy2),
                 value.X * (xy2 + wz2) + value.Y * (1.0f - xx2 - zz2) + value.Z * (yz2 - wx2),
                 value.X * (xz2 - wy2) + value.Y * (yz2 + wx2) + value.Z * (1.0f - xx2 - yy2),
@@ -564,7 +622,7 @@ namespace System.Numerics
         /// <returns>The vector's length.</returns>
         /// <altmember cref="LengthSquared"/>
         [Intrinsic]
-        public readonly float Length() => MathF.Sqrt(LengthSquared());
+        public readonly float Length() => float.Sqrt(LengthSquared());
 
         /// <summary>Returns the length of the vector squared.</summary>
         /// <returns>The vector's length squared.</returns>

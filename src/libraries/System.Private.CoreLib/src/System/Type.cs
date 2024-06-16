@@ -57,7 +57,7 @@ namespace System
         public virtual bool IsGenericParameter => false;
         public virtual bool IsGenericTypeParameter => IsGenericParameter && DeclaringMethod is null;
         public virtual bool IsGenericMethodParameter => IsGenericParameter && DeclaringMethod != null;
-        public virtual bool IsGenericType => false;
+        public virtual bool IsGenericType { [Intrinsic] get => false; }
         public virtual bool IsGenericTypeDefinition => false;
 
         public virtual bool IsSZArray => throw NotImplemented.ByDesign;
@@ -127,20 +127,12 @@ namespace System
         protected virtual bool IsMarshalByRefImpl() => false;
         public bool IsPrimitive
         {
-#if NATIVEAOT
-            // https://github.com/dotnet/runtime/issues/97272
-            [MethodImpl(MethodImplOptions.NoOptimization)]
-#endif
             [Intrinsic]
             get => IsPrimitiveImpl();
         }
         protected abstract bool IsPrimitiveImpl();
         public bool IsValueType
         {
-#if NATIVEAOT
-            // https://github.com/dotnet/runtime/issues/97272
-            [MethodImpl(MethodImplOptions.NoOptimization)]
-#endif
             [Intrinsic]
             get => IsValueTypeImpl();
         }

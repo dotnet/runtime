@@ -334,7 +334,7 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
     MethodTable* pMT = (MethodTable *) pMTHead;
 
     // Allocate the private data block ("private" during runtime in the ngen'ed case).
-    pMT->AllocateAuxiliaryData(pAllocator, this, pamTracker, false, static_cast<WORD>(numNonVirtualSlots));
+    pMT->AllocateAuxiliaryData(pAllocator, this, pamTracker, MethodTableStaticsFlags::None, static_cast<WORD>(numNonVirtualSlots));
     pMT->SetLoaderAllocator(pAllocator);
     pMT->SetModule(elemTypeHnd.GetModule());
 
@@ -406,7 +406,7 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
     }
 #endif // FEATURE_TYPEEQUIVALENCE
 
-    _ASSERTE(pMT->IsClassPreInited());
+    pMT->SetClassInited();
 
     // Set BaseSize to be size of non-data portion of the array
     DWORD baseSize = ARRAYBASE_BASESIZE;
@@ -706,7 +706,7 @@ public:
                 // Call type check helper
                 m_pCode->EmitLDARG(rank);
                 m_pCode->EmitLoadThis();
-                m_pCode->EmitCALL(METHOD__STUBHELPERS__ARRAY_TYPE_CHECK,2,0);
+                m_pCode->EmitCALL(METHOD__CASTHELPERS__ARRAYTYPECHECK,2,0);
 
                 m_pCode->EmitLabel(pTypeCheckOK);
 
