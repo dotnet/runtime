@@ -5405,8 +5405,12 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
 
     for (CallArg& arg : callee->gtArgs.Args())
     {
-        calleeArgStackSize = roundUp(calleeArgStackSize, arg.AbiInfo.ByteAlignment);
-        calleeArgStackSize += arg.AbiInfo.GetStackByteSize();
+        unsigned stackSize = arg.AbiInfo.GetStackByteSize();
+        if (stackSize > 0)
+        {
+            calleeArgStackSize = roundUp(calleeArgStackSize, arg.AbiInfo.ByteAlignment);
+            calleeArgStackSize += arg.AbiInfo.GetStackByteSize();
+        }
 
 #if defined(TARGET_ARM) || defined(TARGET_RISCV64)
         if (arg.AbiInfo.IsSplit())
