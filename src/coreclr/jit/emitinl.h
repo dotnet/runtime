@@ -592,7 +592,8 @@ bool emitter::emitGenNoGCLst(Callback& cb)
         if (ig->igFlags & IGF_NOGCINTERRUPT)
         {
             emitter::instrDesc* id = emitFirstInstrDesc(ig->igData);
-            if (!cb(ig->igFuncIdx, ig->igOffs, ig->igSize, id->idCodeSize(), ig->igFlags & (IGF_FUNCLET_PROLOG)))
+            if (!cb(ig->igFuncIdx, ig->igOffs, ig->igSize, id->idCodeSize(),
+                    ig->igFlags & (IGF_FUNCLET_PROLOG | IGF_FUNCLET_EPILOG | IGF_EPILOG)))
             {
                 return false;
             }
