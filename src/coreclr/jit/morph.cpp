@@ -2145,14 +2145,12 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
 
             arg.AbiInfo.SetSplit(true);
             arg.AbiInfo.ByteOffset = 0;
-            arg.AbiInfo.ByteSize   = 0;
             unsigned regNumIndex   = 0;
             for (unsigned i = 0; i < abiInfo.NumSegments; i++)
             {
                 const ABIPassingSegment& segment = abiInfo.Segments[i];
                 if (segment.IsPassedInRegister())
                 {
-                    arg.AbiInfo.ByteSize += segment.Size;
                     if (regNumIndex < MAX_ARG_REG_COUNT)
                     {
                         arg.AbiInfo.SetRegNum(regNumIndex, segment.GetRegister());
@@ -2163,7 +2161,6 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
                 }
                 else
                 {
-                    arg.AbiInfo.ByteSize += roundUp(segment.Size, TARGET_POINTER_SIZE);
                     assert(segment.GetStackOffset() == 0);
                 }
             }
@@ -2173,7 +2170,6 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
             // This is a register argument
             m_hasRegArgs = true;
 
-            arg.AbiInfo.ByteSize = 0;
             unsigned regNumIndex = 0;
             for (unsigned i = 0; i < abiInfo.NumSegments; i++)
             {
@@ -2185,7 +2181,6 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
                     regNumIndex++;
                 }
 
-                arg.AbiInfo.ByteSize += segment.Size;
                 arg.AbiInfo.NumRegs++;
 
 #ifdef TARGET_ARM
@@ -2216,7 +2211,6 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
             m_hasStackArgs                   = true;
             const ABIPassingSegment& segment = abiInfo.Segments[0];
             arg.AbiInfo.SetRegNum(0, REG_STK);
-            arg.AbiInfo.ByteSize   = roundUp(segment.Size, TARGET_POINTER_SIZE);
             arg.AbiInfo.ByteOffset = segment.GetStackOffset();
         }
 
@@ -2246,6 +2240,28 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
                 // or not to track the FP register set.
                 //
                 comp->compFloatingPointUsed = true;
+            }
+        }
+
+        if (arg.AbiInfo.PassedByRef)
+        {
+            arg.AbiInfo.ByteSize = TARGET_POINTER_SIZE;
+        }
+        else
+        {
+            unsigned size = argLayout != nullptr ? argLayout->GetSize() : genTypeSize(argSigType);
+
+            // Apple arm64 reuses the same stack slot for multiple args in some
+            // cases; old ABI info reflects that in the size.
+            // Primitives and float HFAs do not necessarily take up full stack
+            // slots.
+            if (compAppleArm64Abi() && (!varTypeIsStruct(argSigType) || (isHfaArg && (hfaType == TYP_FLOAT))))
+            {
+                arg.AbiInfo.ByteSize = size;
+            }
+            else
+            {
+                arg.AbiInfo.ByteSize = roundUp(size, TARGET_POINTER_SIZE);
             }
         }
 
@@ -4606,9 +4622,6 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
 
     unsigned calleeArgStackSize = callee->gtArgs.OutgoingArgsStackSize();
     unsigned callerArgStackSize = roundUp(lvaParameterStackSize, TARGET_POINTER_SIZE);
-
-    JITDUMP("Caller parameter stack size: %u\n", callerArgStackSize);
-    JITDUMP("Callee arguments stack size: %u", calleeArgStackSize);
 
     auto reportFastTailCallDecision = [&](const char* thisFailReason) {
         if (failReason != nullptr)
