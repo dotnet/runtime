@@ -260,9 +260,8 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
 
             GetEmitter()->emitIns_J(INS_call, block->GetTarget());
 
-            BasicBlock* const finallyContinuation = nextBlock->GetFinallyContinuation();
-
             // Now go to where the finally funclet needs to return to.
+            BasicBlock* const finallyContinuation = nextBlock->GetFinallyContinuation();
             if (nextBlock->NextIs(finallyContinuation) &&
                 !compiler->fgInDifferentRegions(nextBlock, finallyContinuation))
             {
