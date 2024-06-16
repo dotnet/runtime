@@ -2504,7 +2504,8 @@ GenTree* Compiler::impGetGenericTypeDefinition(GenTree* type)
         {
             CORINFO_CLASS_HANDLE hClassResult = info.compCompHnd->getTypeDefinition(hClassType);
 
-            GenTree* retNode = gtNewIconEmbClsHndNode(hClassResult);
+            GenTree* handle  = gtNewIconEmbClsHndNode(hClassResult);
+            GenTree* retNode = gtNewHelperCallNode(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE, TYP_REF, handle);
 
             // Drop the typeof(T) node
             impPopStack();
