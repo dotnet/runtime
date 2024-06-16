@@ -2166,7 +2166,7 @@ HCIMPL2(LPVOID, ArrayStoreCheck, Object** pElement, PtrArray** pArray)
 }
 HCIMPLEND
 
-extern "C" BOOL QCALLTYPE CastHelpers_CanCastTypeToType(CORINFO_CLASS_HANDLE fromTypeHnd, CORINFO_CLASS_HANDLE toTypeHnd)
+extern "C" BOOL QCALLTYPE CastHelpers_AreTypesAssignable(CORINFO_CLASS_HANDLE fromTypeHnd, CORINFO_CLASS_HANDLE toTypeHnd)
 {
     QCALL_CONTRACT;
 

@@ -3035,7 +3035,7 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
 
                                 GenTree* toType   = impTokenToHandle(pResolvedToken);
                                 GenTree* fromType = impTokenToHandle(&isInstResolvedToken);
-                                impPushOnStack(gtNewHelperCallNode(CORINFO_HELP_CHKCASTTYPETOTYPE, TYP_INT, toType,
+                                impPushOnStack(gtNewHelperCallNode(CORINFO_HELP_ISASSIGNABLE, TYP_INT, toType,
                                                                    fromType),
                                                typeInfo(TYP_INT));
                                 return returnToken;

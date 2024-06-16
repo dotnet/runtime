@@ -307,10 +307,6 @@ namespace System.Runtime
             return objRet;
         }
 
-        [RuntimeExport("RhTypeCast_CheckCastTypeToType")]
-        public static unsafe int CheckCastTypeToType(MethodTable* fromTypeMT, MethodTable* toTypeMT)
-            => AreTypesAssignable(fromTypeMT, toTypeMT) ? 1 : 0;
-
         [RuntimeExport("RhTypeCast_CheckCastInterface")]
         public static unsafe object CheckCastInterface(MethodTable* pTargetType, object obj)
         {
@@ -478,6 +474,10 @@ namespace System.Runtime
         fail:
             return ThrowInvalidCastException(pTargetType);
         }
+
+        [RuntimeExport("RhTypeCast_IsAssignable")]
+        public static unsafe bool IsAssignable(MethodTable* fromTypeMT, MethodTable* toTypeMT)
+            => AreTypesAssignable(fromTypeMT, toTypeMT);
 
         private static unsafe bool IsInstanceOfInterfaceViaIDynamicInterfaceCastable(MethodTable* pTargetType, object obj, bool throwing)
         {
