@@ -276,26 +276,6 @@ bool ABIPassingInformation::IsSplitAcrossRegistersAndStack() const
 }
 
 //-----------------------------------------------------------------------------
-// CountRegisterSegments:
-//   Count the number of registers used to pass this argument.
-//
-// Return Value:
-//   Count of registers.
-//
-unsigned ABIPassingInformation::CountRegisterSegments() const
-{
-    unsigned count = 0;
-    for (unsigned i = 0; i < NumSegments; i++)
-    {
-        if (Segments[i].IsPassedInRegister())
-        {
-            count++;
-        }
-    }
-    return count;
-}
-
-//-----------------------------------------------------------------------------
 // FromSegment:
 //   Create ABIPassingInformation from a single segment.
 //
