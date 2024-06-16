@@ -2498,6 +2498,7 @@ public:
     void SetILStubType(ILStubType type)
     {
         _ASSERTE(HasFlags(FlagIsILStub));
+        m_dwExtendedFlags &= ~ILStubTypeMask;
         m_dwExtendedFlags |= type;
     }
 

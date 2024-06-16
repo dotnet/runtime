@@ -296,6 +296,11 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
         pMD->SetILStubType(DynamicMethodDesc::StubStructMarshalInterop);
     }
     else
+    if (SF_IsVirtualStaticMethodDispatchStub(dwStubFlags))
+    {
+        pMD->SetILStubType(DynamicMethodDesc::StubVirtualStaticMethodDispatch);
+    }
+    else
     {
         // mark certain types of stub MDs with random flags so ILStubManager recognizes them
         if (SF_IsReverseStub(dwStubFlags))
@@ -314,11 +319,6 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
             }
             pMD->SetILStubType(DynamicMethodDesc::StubCLRToNativeInterop);
         }
-    }
-
-    if (SF_IsVirtualStaticMethodDispatchStub(dwStubFlags))
-    {
-        pMD->SetILStubType(DynamicMethodDesc::StubVirtualStaticMethodDispatch);
     }
 
 // if we made it this far, we can set a more descriptive stub name
