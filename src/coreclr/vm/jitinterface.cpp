@@ -4580,17 +4580,13 @@ TypeCompareState CEEInfo::isNullableType(CORINFO_CLASS_HANDLE cls)
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    TypeCompareState result = TypeCompareState::May;
+    TypeCompareState result;
 
     JIT_TO_EE_TRANSITION_LEAF();
 
-    TypeHandle typeHandle = TypeHandle();
+    TypeHandle typeHandle(cls);
 
-    if (typeHandle != TypeHandle(g_pCanonMethodTableClass))
-    {
-        TypeHandle VMClsHnd(cls);
-        result = Nullable::IsNullableType(VMClsHnd) ? TypeCompareState::Must : TypeCompareState::MustNot;
-    }
+    result = Nullable::IsNullableType(typeHandle) ? TypeCompareState::Must : TypeCompareState::MustNot;
 
     EE_TO_JIT_TRANSITION_LEAF();
     return result;
