@@ -2624,6 +2624,7 @@ namespace System
         /// </summary>
         /// <param name="span">The span to search.</param>
         /// <param name="value">The value to compare.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool StartsWith<T>(this ReadOnlySpan<T> span, T value) where T : IEquatable<T>? =>
             span.Length != 0 && (span[0]?.Equals(value) ?? (object?)value is null);
 
@@ -2632,6 +2633,7 @@ namespace System
         /// </summary>
         /// <param name="span">The span to search.</param>
         /// <param name="value">The value to compare.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool EndsWith<T>(this ReadOnlySpan<T> span, T value) where T : IEquatable<T>? =>
             span.Length != 0 && (span[^1]?.Equals(value) ?? (object?)value is null);
 
