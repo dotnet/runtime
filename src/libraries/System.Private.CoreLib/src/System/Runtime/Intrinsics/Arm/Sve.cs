@@ -4261,6 +4261,88 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe void PrefetchInt64(Vector<ulong> mask, void* address, [ConstantExpected] SvePrefetchType prefetchType) => PrefetchInt64(mask, address, prefetchType);
 
+
+        ///  ReciprocalEstimate : Reciprocal estimate
+
+        /// <summary>
+        /// svfloat64_t svrecpe[_f64](svfloat64_t op)
+        ///   FRECPE Zresult.D, Zop.D
+        /// </summary>
+        public static unsafe Vector<double> ReciprocalEstimate(Vector<double> value) => ReciprocalEstimate(value);
+
+        /// <summary>
+        /// svfloat32_t svrecpe[_f32](svfloat32_t op)
+        ///   FRECPE Zresult.S, Zop.S
+        /// </summary>
+        public static unsafe Vector<float> ReciprocalEstimate(Vector<float> value) => ReciprocalEstimate(value);
+
+
+        ///  ReciprocalExponent : Reciprocal exponent
+
+        /// <summary>
+        /// svfloat64_t svrecpx[_f64]_m(svfloat64_t inactive, svbool_t pg, svfloat64_t op)
+        ///   FRECPX Ztied.D, Pg/M, Zop.D
+        /// svfloat64_t svrecpx[_f64]_x(svbool_t pg, svfloat64_t op)
+        ///   FRECPX Ztied.D, Pg/M, Ztied.D
+        /// svfloat64_t svrecpx[_f64]_z(svbool_t pg, svfloat64_t op)
+        /// </summary>
+        public static unsafe Vector<double> ReciprocalExponent(Vector<double> value) => ReciprocalExponent(value);
+
+        /// <summary>
+        /// svfloat32_t svrecpx[_f32]_m(svfloat32_t inactive, svbool_t pg, svfloat32_t op)
+        ///   FRECPX Ztied.S, Pg/M, Zop.S
+        /// svfloat32_t svrecpx[_f32]_x(svbool_t pg, svfloat32_t op)
+        ///   FRECPX Ztied.S, Pg/M, Ztied.S
+        /// svfloat32_t svrecpx[_f32]_z(svbool_t pg, svfloat32_t op)
+        /// </summary>
+        public static unsafe Vector<float> ReciprocalExponent(Vector<float> value) => ReciprocalExponent(value);
+
+
+        ///  ReciprocalSqrtEstimate : Reciprocal square root estimate
+
+        /// <summary>
+        /// svfloat64_t svrsqrte[_f64](svfloat64_t op)
+        ///   FRSQRTE Zresult.D, Zop.D
+        /// </summary>
+        public static unsafe Vector<double> ReciprocalSqrtEstimate(Vector<double> value) => ReciprocalSqrtEstimate(value);
+
+        /// <summary>
+        /// svfloat32_t svrsqrte[_f32](svfloat32_t op)
+        ///   FRSQRTE Zresult.S, Zop.S
+        /// </summary>
+        public static unsafe Vector<float> ReciprocalSqrtEstimate(Vector<float> value) => ReciprocalSqrtEstimate(value);
+
+
+        ///  ReciprocalSqrtStep : Reciprocal square root step
+
+        /// <summary>
+        /// svfloat64_t svrsqrts[_f64](svfloat64_t op1, svfloat64_t op2)
+        ///   FRSQRTS Zresult.D, Zop1.D, Zop2.D
+        /// </summary>
+        public static unsafe Vector<double> ReciprocalSqrtStep(Vector<double> left, Vector<double> right) => ReciprocalSqrtStep(left, right);
+
+        /// <summary>
+        /// svfloat32_t svrsqrts[_f32](svfloat32_t op1, svfloat32_t op2)
+        ///   FRSQRTS Zresult.S, Zop1.S, Zop2.S
+        /// </summary>
+        public static unsafe Vector<float> ReciprocalSqrtStep(Vector<float> left, Vector<float> right) => ReciprocalSqrtStep(left, right);
+
+
+        ///  ReciprocalStep : Reciprocal step
+
+        /// <summary>
+        /// svfloat64_t svrecps[_f64](svfloat64_t op1, svfloat64_t op2)
+        ///   FRECPS Zresult.D, Zop1.D, Zop2.D
+        /// </summary>
+        public static unsafe Vector<double> ReciprocalStep(Vector<double> left, Vector<double> right) => ReciprocalStep(left, right);
+
+        /// <summary>
+        /// svfloat32_t svrecps[_f32](svfloat32_t op1, svfloat32_t op2)
+        ///   FRECPS Zresult.S, Zop1.S, Zop2.S
+        /// </summary>
+        public static unsafe Vector<float> ReciprocalStep(Vector<float> left, Vector<float> right) => ReciprocalStep(left, right);
+
+
         ///  Reverse all elements
 
         /// <summary>

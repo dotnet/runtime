@@ -4680,7 +4680,7 @@ namespace JIT.HardwareIntrinsics.Arm
         }
 
         public static double FPRecipStepFused(double op1, double op2) => FusedMultiplySubtract(2, op1, op2);
-
+                
         public static double FPRSqrtStepFused(double op1, double op2) => FusedMultiplySubtract(3, op1, op2) / 2;
 
         private static uint RecipEstimate(uint a)
@@ -4693,6 +4693,10 @@ namespace JIT.HardwareIntrinsics.Arm
             return r;
         }
 
+        public static double RecipEstimate(double op1) => Math.ReciprocalEstimate(op1);
+        
+        public static float RecipEstimate(float op1) => MathF.ReciprocalEstimate(op1);
+        
         private static uint RecipSqrtEstimate(uint a)
         {
             if (a < 256)
@@ -4715,6 +4719,22 @@ namespace JIT.HardwareIntrinsics.Arm
             uint r = (b + 1) / 2;
 
             return r;
+        }
+
+        public static double RecipSqrtEstimate(double op1) => Math.ReciprocalSqrtEstimate(op1);
+        
+        public static float RecipSqrtEstimate(float op1) => MathF.ReciprocalSqrtEstimate(op1);
+
+        public static double RecipExpo(double op1, double op2){
+            double result = 1.0 / Math.Pow(op1, op2);
+
+            return result;
+        }
+
+        public static float RecipExpo(float op1, float op2){
+            float result = (float)(1.0 / MathF.Pow(op1, op2));
+
+            return result;
         }
 
         private static uint ExtractBits(uint val, byte msbPos, byte lsbPos)
