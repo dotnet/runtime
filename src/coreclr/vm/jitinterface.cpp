@@ -4551,23 +4551,23 @@ bool CEEInfo::isExactType(CORINFO_CLASS_HANDLE cls)
 TypeCompareState CEEInfo::isGenericType(CORINFO_CLASS_HANDLE cls)
 {
     CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
+        NOTHROW;
+        GC_NOTRIGGER;
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    TypeHandle typeHandle(cls);
-
     TypeCompareState result = TypeCompareState::May;
 
-    JIT_TO_EE_TRANSITION();
+    JIT_TO_EE_TRANSITION_LEAF();
+
+    TypeHandle typeHandle(cls);
 
     if (typeHandle != TypeHandle(g_pCanonMethodTableClass))
     {
         result = typeHandle.HasInstantiation() ? TypeCompareState::Must : TypeCompareState::MustNot;
     }
 
-    EE_TO_JIT_TRANSITION();
+    EE_TO_JIT_TRANSITION_LEAF();
     return result;
 }
 
