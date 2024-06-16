@@ -13093,6 +13093,8 @@ const char* Compiler::gtGetWellKnownArgNameForArgMsg(WellKnownArg arg)
             return "swift error";
         case WellKnownArg::SwiftSelf:
             return "swift self";
+        case WellKnownArg::X86TailCallSpecialArg:
+            return "tail call";
         default:
             return nullptr;
     }

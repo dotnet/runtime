@@ -4478,6 +4478,7 @@ enum class WellKnownArg : unsigned
     DispatchIndirectCallTarget,
     SwiftError,
     SwiftSelf,
+    X86TailCallSpecialArg,
 };
 
 #ifdef DEBUG
