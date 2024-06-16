@@ -5409,7 +5409,7 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
         if (stackSize > 0)
         {
             calleeArgStackSize = roundUp(calleeArgStackSize, arg.AbiInfo.ByteAlignment);
-            calleeArgStackSize += arg.AbiInfo.GetStackByteSize();
+            calleeArgStackSize += stackSize;
         }
 
 #if defined(TARGET_ARM) || defined(TARGET_RISCV64)
