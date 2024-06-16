@@ -1049,13 +1049,13 @@ New sub-section should be added after III.4.33 that describes sequences of IL in
 #### III.4.X
 The following are IL sequences involving the `box` instruction. They are used for ByRefLike types and shall be valid in cases where the result can be computed at run-time and elided safely&mdash;through JIT compilation or interpretation. These sequences **must** now be elided when the target type is ByRefLike. The conditions where each sequence is elided are described below.
 
-`box` ; `unbox.any` &ndash; The box target type is equal to the unboxed target type.
+`box` ; `unbox.any` &ndash; Becomes a NOP, if the box target type is equal to the unboxed target type.
 
-`box` ; `br_true/false` &ndash; The box target type is non-`Nullable<T>`.
+`box` ; `br_true/false` &ndash; Becomes the constant `true`, if the box target type is non-`Nullable<T>`.
 
-`box` ; `isinst` ; `unbox.any` &ndash; The box, `isinst`, and unbox target types are all equal.
+`box` ; `isinst` ; `unbox.any` &ndash; Becomes a NOP, if the box, `isinst`, and unbox target types are all equal.
 
-`box` ; `isinst` ; `br_true/false` &ndash; The box target type is ByRefLike or the box target type is `Nullable<T>` and target type equalities can be computed.
+`box` ; `isinst` ; `br_true/false` &ndash; Becomes a constant, if the box target type is ByRefLike or the box target type is `Nullable<T>` and target type equalities are computed to be equal. The sequence will also be elided if the box target type is a ByRefLike type, but needs to be checked at run-time, not JIT compile time. This latter case is common when the box target type uses Generic parameters.
 
 ## Rules for IL Rewriters
 

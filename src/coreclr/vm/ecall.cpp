@@ -121,6 +121,10 @@ void ECall::PopulateManagedHelpers()
     // array cast uses the "ANY" helper
     SetJitHelperFunction(CORINFO_HELP_CHKCASTARRAY, pDest);
 
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__CHKCASTTYPETOTYPE));
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_CHKCASTTYPETOTYPE, pDest);
+
     pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__CHKCASTINTERFACE));
     pDest = pMD->GetMultiCallableAddrOfCode();
     SetJitHelperFunction(CORINFO_HELP_CHKCASTINTERFACE, pDest);

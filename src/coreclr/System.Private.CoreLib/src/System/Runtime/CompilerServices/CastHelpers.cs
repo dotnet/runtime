@@ -8,7 +8,7 @@ namespace System.Runtime.CompilerServices
 {
     [StackTraceHidden]
     [DebuggerStepThrough]
-    internal static unsafe class CastHelpers
+    internal static unsafe partial class CastHelpers
     {
         // In coreclr the table is allocated and written to on the native side.
         internal static int[]? s_table;
@@ -24,6 +24,9 @@ namespace System.Runtime.CompilerServices
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void WriteBarrier(ref object? dst, object? obj);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "CastHelpers_CanCastTypeToType")]
+        private static partial int CanCastTypeToType(void* fromTypeHnd, void* toTypeHnd);
 
         // IsInstanceOf test used for unusual cases (naked type parameters, variant generic types)
         // Unlike the IsInstanceOfInterface and IsInstanceOfClass functions,
@@ -315,6 +318,10 @@ namespace System.Runtime.CompilerServices
 
             return ChkCastClassSpecial(toTypeHnd, obj);
         }
+
+        [DebuggerHidden]
+        private static int ChkCastTypeToType(void* fromTypeHnd, void* toTypeHnd)
+            => CanCastTypeToType(fromTypeHnd, toTypeHnd);
 
         // Optimized helper for classes. Assumes that the trivial cases
         // has been taken care of by the inlined check

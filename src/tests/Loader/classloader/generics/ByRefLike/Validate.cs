@@ -61,10 +61,10 @@ public class Validate
     {
         Console.WriteLine($"{nameof(Validate_RecognizedOpCodeSequences_Scenarios)}...");
 
-        Assert.Equal(1, Exec.BoxUnboxAny());
-        Assert.Equal(4, Exec.BoxBranch());
-        Assert.Equal(1, Exec.BoxIsinstUnboxAny());
-        Assert.Equal(4, Exec.BoxIsinstBranch());
+        Exec.BoxUnboxAny();
+        Exec.BoxBranch();
+        Exec.BoxIsinstUnboxAny();
+        Exec.BoxIsinstBranch();
     }
 
     [Fact]

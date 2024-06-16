@@ -278,6 +278,9 @@ namespace ILCompiler
                 case ReadyToRunHelper.CheckCastAny:
                     mangledName = "RhTypeCast_CheckCastAny";
                     break;
+                case ReadyToRunHelper.CheckCastTypeToType:
+                    mangledName = "RhTypeCast_CheckCastTypeToType";
+                    break;
                 case ReadyToRunHelper.CheckCastInterface:
                     mangledName = "RhTypeCast_CheckCastInterface";
                     break;

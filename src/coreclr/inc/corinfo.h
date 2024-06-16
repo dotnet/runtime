@@ -437,6 +437,7 @@ enum CorInfoHelpFunc
     CORINFO_HELP_CHKCASTARRAY,
     CORINFO_HELP_CHKCASTCLASS,
     CORINFO_HELP_CHKCASTANY,
+    CORINFO_HELP_CHKCASTTYPETOTYPE, // Used to check if TypeHandle can be cast to TypeHandle
     CORINFO_HELP_CHKCASTCLASS_SPECIAL, // Optimized helper for classes. Assumes that the trivial cases
                                     // has been taken care of by the inlined check
 

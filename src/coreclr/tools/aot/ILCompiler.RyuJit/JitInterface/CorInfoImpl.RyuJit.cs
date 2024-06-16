@@ -728,6 +728,9 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_CHKCASTARRAY:
                     id = ReadyToRunHelper.CheckCastAny;
                     break;
+                case CorInfoHelpFunc.CORINFO_HELP_CHKCASTTYPETOTYPE:
+                    id = ReadyToRunHelper.CheckCastTypeToType;
+                    break;
                 case CorInfoHelpFunc.CORINFO_HELP_CHKCASTINTERFACE:
                     id = ReadyToRunHelper.CheckCastInterface;
                     break;

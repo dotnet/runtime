@@ -2612,6 +2612,21 @@ HCIMPL2(LPVOID, ArrayStoreCheck, Object** pElement, PtrArray** pArray)
 }
 HCIMPLEND
 
+extern "C" BOOL QCALLTYPE CastHelpers_CanCastTypeToType(CORINFO_CLASS_HANDLE fromTypeHnd, CORINFO_CLASS_HANDLE toTypeHnd)
+{
+    QCALL_CONTRACT;
+
+    BOOL ret = FALSE;
+
+    BEGIN_QCALL;
+    TypeHandle fromType(fromTypeHnd);
+    TypeHandle toType(toTypeHnd);
+    ret = fromType.CanCastTo(toType);
+    END_QCALL;
+
+    return ret;
+}
+
 //========================================================================
 //
 //      VALUETYPE/BYREF HELPERS

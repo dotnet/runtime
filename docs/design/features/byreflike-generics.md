@@ -19,10 +19,10 @@ If any of the above instructions are attempted to be used with a ByRefLike type,
 
 The following instructions are already set up to support this feature since their behavior will fail as currently defined due to the inability to box a ByRefLike type.
 
-- `throw` &ndash; Requires an object reference to be on stack, which can never be a ByRefLike type.
-- `unbox` / `unbox.any` &ndash; Requires an object reference to be on stack, which can never be a ByRefLike type.
-- `isinst` &ndash; Will always place `null` on stack.
-- `castclass` &ndash; Will always throw `InvalidCastException`.
+- `throw`
+- `unbox` / `unbox.any`
+- `isinst`
+- `castclass`
 
 **NOTE** There are sequences involving some of the above instructions that will remain valid regardless of a `T` being ByRefLike&mdash;see ["Special IL Sequences" section](#special_il_sequences) below for details.
 
@@ -118,13 +118,13 @@ Enumerating of constructors/methods on `Span<T>` and `ReadOnlySpan<T>` may throw
 
 The following are IL sequences involving the `box` instruction. They are used for common C# language constructs and shall continue to be valid, even with ByRefLike types, in cases where the result can be computed at JIT compile time or interpretation and elided safely. These sequences **must** now be elided when the target type is ByRefLike. The conditions where each sequence is elided are described below and each condition will be added to the ECMA-335 addendum.
 
-`box` ; `unbox.any` &ndash; The box target type is equal to the unboxed target type.
+`box` ; `unbox.any` &ndash; Becomes a NOP, if the box target type is equal to the unboxed target type.
 
-`box` ; `br_true/false` &ndash; The box target type is non-`Nullable<T>`.
+`box` ; `br_true/false` &ndash; Becomes the constant `true`, if the box target type is non-`Nullable<T>`.
 
-`box` ; `isinst` ; `unbox.any` &ndash; The box, `isinst`, and unbox target types are all equal.
+`box` ; `isinst` ; `unbox.any` &ndash; Becomes a NOP, if the box, `isinst`, and unbox target types are all equal.
 
-`box` ; `isinst` ; `br_true/false` &ndash; The box target type is ByRefLike or the box target type is `Nullable<T>` and target type equalities can be computed.
+`box` ; `isinst` ; `br_true/false` &ndash; Becomes a constant, if the box target type is ByRefLike or the box target type is `Nullable<T>` and target type equalities are computed to be equal. The sequence will also be elided if the box target type is a ByRefLike type, but needs to be checked at run-time, not JIT compile time. This latter case is common when the box target type uses Generic parameters.
 
 ## Examples
 
