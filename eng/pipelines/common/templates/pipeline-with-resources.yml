@@ -79,7 +79,7 @@ extends:
         env:
           ROOTFS_DIR: /crossrootfs/x64
 
-      # We use a CentOS Stream 8 image here to test building from source on CentOS Stream 9.
+      # Test building from source on CentOS Stream.
       SourceBuild_centos_x64:
         image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream9
 
