@@ -2118,7 +2118,6 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
 
         arg.NewAbiInfo      = abiInfo;
         arg.AbiInfo         = CallArgABIInformation();
-        arg.AbiInfo.NumRegs = abiInfo.CountRegisterSegments();
 
         if (varTypeIsStruct(argSigType))
         {
@@ -2145,20 +2144,26 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
             m_hasRegArgs   = true;
 
             arg.AbiInfo.SetSplit(true);
-            // All of our ABIs have their split args at offset 0 relative to
-            // the stack arguments passed.
             arg.AbiInfo.ByteOffset = 0;
             arg.AbiInfo.ByteSize   = 0;
+            unsigned regNumIndex = 0;
             for (unsigned i = 0; i < abiInfo.NumSegments; i++)
             {
                 const ABIPassingSegment& segment = abiInfo.Segments[i];
-                arg.AbiInfo.ByteSize += segment.Size;
                 if (segment.IsPassedInRegister())
                 {
-                    arg.AbiInfo.SetRegNum(i, segment.GetRegister());
+                    arg.AbiInfo.ByteSize += segment.Size;
+                    if (regNumIndex < MAX_ARG_REG_COUNT)
+                    {
+                        arg.AbiInfo.SetRegNum(regNumIndex, segment.GetRegister());
+                        regNumIndex++;
+                    }
+
+                    arg.AbiInfo.NumRegs++;
                 }
                 else
                 {
+                    arg.AbiInfo.ByteSize += roundUp(segment.Size, TARGET_POINTER_SIZE);
                     assert(segment.GetStackOffset() == 0);
                 }
             }
@@ -2168,13 +2173,34 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
             // This is a register argument
             m_hasRegArgs = true;
 
-            unsigned numRegsToWrite = min(abiInfo.NumSegments, (unsigned)MAX_ARG_REG_COUNT);
             arg.AbiInfo.ByteSize    = 0;
-            for (unsigned i = 0; i < numRegsToWrite; i++)
+            unsigned regNumIndex = 0;
+            for (unsigned i = 0; i < abiInfo.NumSegments; i++)
             {
                 const ABIPassingSegment& segment = abiInfo.Segments[i];
-                arg.AbiInfo.SetRegNum(i, segment.GetRegister());
+
+                if (regNumIndex < MAX_ARG_REG_COUNT)
+                {
+                    arg.AbiInfo.SetRegNum(regNumIndex, segment.GetRegister());
+                    regNumIndex++;
+                }
+
                 arg.AbiInfo.ByteSize += segment.Size;
+                arg.AbiInfo.NumRegs++;
+
+#ifdef TARGET_ARM
+                // Old style ABI info expects two registers counted for these segments.
+                if (segment.GetRegisterType() == TYP_DOUBLE)
+                {
+                    arg.AbiInfo.NumRegs++;
+
+                    if (argSigType == TYP_DOUBLE)
+                    {
+                        arg.AbiInfo.SetRegNum(regNumIndex, REG_NEXT(segment.GetRegister()));
+                        regNumIndex++;
+                    }
+                }
+#endif
             }
 
 #if defined(UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
