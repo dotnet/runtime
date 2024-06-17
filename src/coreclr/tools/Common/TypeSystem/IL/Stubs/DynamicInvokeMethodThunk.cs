@@ -114,7 +114,7 @@ namespace Internal.IL.Stubs
 
         protected override int ComputeHashCode()
         {
-            // The hashcode of DynamicInvoke thunks is not persisted. It allows us to override default and 
+            // The hashcode of DynamicInvoke thunks is not persisted. It allows us to override default and
             // use a hashcode with good distribution to reduce hash table collisions.
             return base.ComputeHashCode() ^ _targetSignature.GetHashCode();
         }
