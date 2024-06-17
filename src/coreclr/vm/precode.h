@@ -209,7 +209,7 @@ typedef DPTR(NDirectImportPrecode) PTR_NDirectImportPrecode;
 struct FixupPrecodeData
 {
     PCODE Target;
-    MethodDesc *MethodDesc;
+    class MethodDesc *MethodDesc;
     PCODE PrecodeFixupThunk;
 };
 

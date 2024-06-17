@@ -476,10 +476,10 @@ namespace System.Net.Http
     public partial class StringContent : System.Net.Http.ByteArrayContent
     {
         public StringContent(string content) : base (default(byte[])) { }
-        public StringContent(string content, System.Net.Http.Headers.MediaTypeHeaderValue mediaType) : base (default(byte[])) { }
+        public StringContent(string content, System.Net.Http.Headers.MediaTypeHeaderValue? mediaType) : base (default(byte[])) { }
         public StringContent(string content, System.Text.Encoding? encoding) : base (default(byte[])) { }
-        public StringContent(string content, System.Text.Encoding? encoding, System.Net.Http.Headers.MediaTypeHeaderValue mediaType) : base (default(byte[])) { }
-        public StringContent(string content, System.Text.Encoding? encoding, string mediaType) : base (default(byte[])) { }
+        public StringContent(string content, System.Text.Encoding? encoding, System.Net.Http.Headers.MediaTypeHeaderValue? mediaType) : base (default(byte[])) { }
+        public StringContent(string content, System.Text.Encoding? encoding, string? mediaType) : base (default(byte[])) { }
         protected override System.Threading.Tasks.Task SerializeToStreamAsync(System.IO.Stream stream, System.Net.TransportContext? context, System.Threading.CancellationToken cancellationToken) { throw null; }
     }
 }

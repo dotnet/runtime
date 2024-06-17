@@ -856,6 +856,31 @@ extern "C" void QCALLTYPE GCInterface_Collect(INT32 generation, INT32 mode)
     END_QCALL;
 }
 
+extern "C" void* QCALLTYPE GCInterface_GetNextFinalizableObject(QCall::ObjectHandleOnStack pObj)
+{
+    QCALL_CONTRACT;
+
+    PCODE funcPtr = 0;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    OBJECTREF target = FinalizerThread::GetNextFinalizableObject();
+
+    if (target != NULL)
+    {
+        pObj.Set(target);
+
+        MethodTable* pMT = target->GetMethodTable();
+
+        funcPtr = pMT->GetRestoredSlot(g_pObjectFinalizerMD->GetSlot());
+    }
+
+    END_QCALL;
+
+    return (void*)funcPtr;
+}
 
 /*==========================WaitForPendingFinalizers============================
 **Action: Run all Finalizers that haven't been run.

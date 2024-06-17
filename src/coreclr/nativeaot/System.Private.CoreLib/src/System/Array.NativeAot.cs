@@ -148,7 +148,7 @@ namespace System
             ref byte arrayRef = ref MemoryMarshal.GetArrayDataReference(this);
             nuint elementSize = ElementSize;
 
-            for (int i = 0; i < Length; i++)
+            for (nuint i = 0; i < NativeLength; i++)
             {
                 RawCalliHelper.CallDefaultStructConstructor(constructorFtn, ref arrayRef);
                 arrayRef = ref Unsafe.Add(ref arrayRef, elementSize);

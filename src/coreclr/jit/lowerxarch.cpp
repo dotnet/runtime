@@ -2202,7 +2202,8 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                     break;
                 }
 
-                if (second->AsHWIntrinsic()->HWOperGet() == GT_AND_NOT)
+                bool isScalar = false;
+                if ((second->AsHWIntrinsic()->HWOperGet(&isScalar) == GT_AND_NOT) || isScalar)
                 {
                     // currently ANDNOT logic cannot be optimized by the ternary node.
                     break;
@@ -9266,50 +9267,22 @@ void Lowering::TryFoldCnsVecForEmbeddedBroadcast(GenTreeHWIntrinsic* parentNode,
     {
         simdType = Compiler::getSIMDTypeForSize(simdSize);
     }
-    int elementCount = GenTreeVecCon::ElementCount(genTypeSize(simdType), simdBaseType);
 
-    switch (simdBaseType)
+    if (varTypeIsSmall(simdBaseType))
     {
-        case TYP_FLOAT:
-        case TYP_INT:
-        case TYP_UINT:
-        {
-            uint32_t firstElement = static_cast<uint32_t>(childNode->gtSimdVal.u32[0]);
-            for (int i = 1; i < elementCount; i++)
-            {
-                uint32_t elementToCheck = static_cast<uint32_t>(childNode->gtSimdVal.u32[i]);
-                if (firstElement != elementToCheck)
-                {
-                    isCreatedFromScalar = false;
-                    break;
-                }
-            }
-            break;
-        }
-
-        case TYP_DOUBLE:
-#if defined(TARGET_AMD64)
-        case TYP_LONG:
-        case TYP_ULONG:
-#endif // TARGET_AMD64
-        {
-            uint64_t firstElement = static_cast<uint64_t>(childNode->gtSimdVal.u64[0]);
-            for (int i = 1; i < elementCount; i++)
-            {
-                uint64_t elementToCheck = static_cast<uint64_t>(childNode->gtSimdVal.u64[i]);
-                if (firstElement != elementToCheck)
-                {
-                    isCreatedFromScalar = false;
-                    break;
-                }
-            }
-            break;
-        }
-
-        default:
-            isCreatedFromScalar = false;
-            break;
+        isCreatedFromScalar = false;
     }
+#ifndef TARGET_64BIT
+    else if (varTypeIsLong(simdBaseType))
+    {
+        isCreatedFromScalar = false;
+    }
+#endif // TARGET_64BIT
+    else
+    {
+        isCreatedFromScalar = childNode->IsBroadcast(simdBaseType);
+    }
+
     if (isCreatedFromScalar)
     {
         NamedIntrinsic broadcastName = NI_AVX2_BroadcastScalarToVector128;

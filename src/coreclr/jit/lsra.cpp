@@ -8596,7 +8596,15 @@ void LinearScan::insertMove(
     // This var can't be marked lvRegister now
     varDsc->SetRegNum(REG_STK);
 
-    GenTree* src = compiler->gtNewLclvNode(lclNum, varDsc->TypeGet());
+    var_types typ = varDsc->TypeGet();
+#if defined(FEATURE_SIMD)
+    if ((typ == TYP_SIMD12) && compiler->lvaMapSimd12ToSimd16(varDsc))
+    {
+        typ = TYP_SIMD16;
+    }
+#endif
+
+    GenTree* src = compiler->gtNewLclvNode(lclNum, typ);
     SetLsraAdded(src);
 
     // There are three cases we need to handle:
@@ -11510,7 +11518,13 @@ void LinearScan::dumpRegRecordTitleIfNeeded()
     if ((lastDumpedRegisters != registersToDump) || (rowCountSinceLastTitle > MAX_ROWS_BETWEEN_TITLES))
     {
         lastUsedRegNumIndex = 0;
-        int lastRegNumIndex = compiler->compFloatingPointUsed ? REG_FP_LAST : REG_INT_LAST;
+        int lastRegNumIndex = compiler->compFloatingPointUsed ?
+#ifdef HAS_MORE_THAN_64_REGISTERS
+                                                              REG_MASK_LAST
+#else
+                                                              REG_FP_LAST
+#endif
+                                                              : REG_INT_LAST;
         for (int regNumIndex = 0; regNumIndex <= lastRegNumIndex; regNumIndex++)
         {
             if (registersToDump.IsRegNumInMask((regNumber)regNumIndex))
@@ -12121,7 +12135,7 @@ void LinearScan::verifyFinalAllocation()
 
             case RefTypeKill:
                 dumpLsraAllocationEvent(LSRA_EVENT_KILL_REGS, nullptr, REG_NA, currentBlock, NONE,
-                                        currentRefPosition.registerAssignment);
+                                        currentRefPosition.getKillRegisterAssignment());
                 break;
 
             case RefTypeFixedReg:
