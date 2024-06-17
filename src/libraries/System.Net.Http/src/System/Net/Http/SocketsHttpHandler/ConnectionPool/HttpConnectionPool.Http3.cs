@@ -27,7 +27,7 @@ namespace System.Net.Http
 
         [SupportedOSPlatformGuard("linux")]
         [SupportedOSPlatformGuard("macOS")]
-        [SupportedOSPlatformGuard("Windows")]
+        [SupportedOSPlatformGuard("windows")]
         internal static bool IsHttp3Supported() => (OperatingSystem.IsLinux() && !OperatingSystem.IsAndroid()) || OperatingSystem.IsWindows() || OperatingSystem.IsMacOS();
 
         /// <summary>List of available HTTP/3 connections stored in the pool.</summary>
@@ -62,9 +62,9 @@ namespace System.Net.Http
         private bool EnableMultipleHttp3Connections => _poolManager.Settings.EnableMultipleHttp3Connections;
 
         // Returns null if HTTP3 cannot be used.
-        [SupportedOSPlatform("windows")]
         [SupportedOSPlatform("linux")]
         [SupportedOSPlatform("macos")]
+        [SupportedOSPlatform("windows")]
         private async ValueTask<HttpResponseMessage?> TrySendUsingHttp3Async(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             Debug.Assert(IsHttp3Supported());
@@ -114,9 +114,9 @@ namespace System.Net.Http
             }
         }
 
-        [SupportedOSPlatformGuard("linux")]
-        [SupportedOSPlatformGuard("macOS")]
-        [SupportedOSPlatformGuard("Windows")]
+        [SupportedOSPlatform("linux")]
+        [SupportedOSPlatform("macOS")]
+        [SupportedOSPlatform("windows")]
         private bool TryGetPooledHttp3Connection(HttpRequestMessage request, [NotNullWhen(true)] out Http3Connection? connection, [NotNullWhen(false)] out HttpConnectionWaiter<Http3Connection?>? waiter)
         {
             Debug.Assert(IsHttp3Supported());
@@ -186,9 +186,9 @@ namespace System.Net.Http
             }
         }
 
-        [SupportedOSPlatformGuard("linux")]
-        [SupportedOSPlatformGuard("macOS")]
-        [SupportedOSPlatformGuard("Windows")]
+        [SupportedOSPlatform("linux")]
+        [SupportedOSPlatform("macOS")]
+        [SupportedOSPlatform("windows")]
         private void CheckForHttp3ConnectionInjection()
         {
             Debug.Assert(IsHttp3Supported());
@@ -225,9 +225,9 @@ namespace System.Net.Http
             }
         }
 
-        [SupportedOSPlatformGuard("linux")]
-        [SupportedOSPlatformGuard("macOS")]
-        [SupportedOSPlatformGuard("Windows")]
+        [SupportedOSPlatform("linux")]
+        [SupportedOSPlatform("macOS")]
+        [SupportedOSPlatform("windows")]
         private async Task InjectNewHttp3ConnectionAsync(RequestQueue<Http3Connection?>.QueueItem queueItem)
         {
             Debug.Assert(IsHttp3Supported());
@@ -302,9 +302,9 @@ namespace System.Net.Http
             }
         }
 
-        [SupportedOSPlatformGuard("linux")]
-        [SupportedOSPlatformGuard("macOS")]
-        [SupportedOSPlatformGuard("Windows")]
+        [SupportedOSPlatform("linux")]
+        [SupportedOSPlatform("macOS")]
+        [SupportedOSPlatform("windows")]
         private void HandleHttp3ConnectionFailure(HttpConnectionWaiter<Http3Connection?> requestWaiter, Exception? e)
         {
             Debug.Assert(IsHttp3Supported());
@@ -333,9 +333,9 @@ namespace System.Net.Http
             }
         }
 
-        [SupportedOSPlatformGuard("linux")]
-        [SupportedOSPlatformGuard("macOS")]
-        [SupportedOSPlatformGuard("Windows")]
+        [SupportedOSPlatform("linux")]
+        [SupportedOSPlatform("macOS")]
+        [SupportedOSPlatform("windows")]
         private void ReturnHttp3Connection(Http3Connection connection, bool isNewConnection, HttpConnectionWaiter<Http3Connection?>? initialRequestWaiter = null)
         {
             Debug.Assert(IsHttp3Supported());
@@ -457,9 +457,9 @@ namespace System.Net.Http
         /// Disable usage of the specified connection because it cannot handle any more streams at the moment.
         /// We will register to be notified when it can handle more streams (or becomes permanently unusable).
         /// </summary>
-        [SupportedOSPlatformGuard("linux")]
-        [SupportedOSPlatformGuard("macOS")]
-        [SupportedOSPlatformGuard("Windows")]
+        [SupportedOSPlatform("linux")]
+        [SupportedOSPlatform("macOS")]
+        [SupportedOSPlatform("windows")]
         private void DisableHttp3Connection(Http3Connection connection)
         {
             Debug.Assert(IsHttp3Supported());
@@ -500,9 +500,9 @@ namespace System.Net.Http
         /// <summary>
         /// Called when an Http3Connection from this pool is no longer usable.
         /// </summary>
-        [SupportedOSPlatformGuard("linux")]
-        [SupportedOSPlatformGuard("macOS")]
-        [SupportedOSPlatformGuard("Windows")]
+        [SupportedOSPlatform("linux")]
+        [SupportedOSPlatform("macOS")]
+        [SupportedOSPlatform("windows")]
         public void InvalidateHttp3Connection(Http3Connection connection)
         {
             Debug.Assert(IsHttp3Supported());
@@ -536,9 +536,9 @@ namespace System.Net.Http
             }
         }
 
-        [SupportedOSPlatformGuard("linux")]
-        [SupportedOSPlatformGuard("macOS")]
-        [SupportedOSPlatformGuard("Windows")]
+        [SupportedOSPlatform("linux")]
+        [SupportedOSPlatform("macOS")]
+        [SupportedOSPlatform("windows")]
         private static int ScavengeHttp3ConnectionList(List<Http3Connection> list, ref List<HttpConnectionBase>? toDispose, long nowTicks, TimeSpan pooledConnectionLifetime, TimeSpan pooledConnectionIdleTimeout)
         {
             Debug.Assert(IsHttp3Supported());

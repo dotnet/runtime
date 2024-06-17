@@ -14,9 +14,9 @@ using System.Threading.Tasks;
 
 namespace System.Net.Http
 {
-    [SupportedOSPlatform("windows")]
     [SupportedOSPlatform("linux")]
     [SupportedOSPlatform("macos")]
+    [SupportedOSPlatform("windows")]
     internal sealed class Http3Connection : HttpConnectionBase
     {
         private readonly HttpAuthority _authority;

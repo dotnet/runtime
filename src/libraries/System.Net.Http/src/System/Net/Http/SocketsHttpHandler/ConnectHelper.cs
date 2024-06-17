@@ -109,9 +109,9 @@ namespace System.Net.Http
             return sslStream;
         }
 
-        [SupportedOSPlatform("windows")]
         [SupportedOSPlatform("linux")]
         [SupportedOSPlatform("macos")]
+        [SupportedOSPlatform("windows")]
         public static async ValueTask<QuicConnection> ConnectQuicAsync(HttpRequestMessage request, DnsEndPoint endPoint, TimeSpan idleTimeout, SslClientAuthenticationOptions clientAuthenticationOptions, Action<QuicConnection, QuicStreamCapacityChangedArgs> streamCapacityCallback, CancellationToken cancellationToken)
         {
             clientAuthenticationOptions = SetUpRemoteCertificateValidationCallback(clientAuthenticationOptions, request);
