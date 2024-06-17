@@ -38,7 +38,7 @@ namespace System.Numerics
             public ref Matrix4x4 AsM4x4() => ref Unsafe.As<Impl, Matrix4x4>(ref this);
 
             private const float BillboardEpsilon = 1e-4f;
-            private const float BillboardMinAngle = 1.0f - (0.1f * (MathF.PI / 180.0f)); // 0.1 degrees
+            private const float BillboardMinAngle = 1.0f - (0.1f * (float.Pi / 180.0f)); // 0.1 degrees
             private const float DecomposeEpsilon = 0.0001f;
 
             public Vector4 X;
@@ -52,19 +52,19 @@ namespace System.Numerics
                              float m31, float m32, float m33, float m34,
                              float m41, float m42, float m43, float m44)
             {
-                X = new Vector4(m11, m12, m13, m14);
-                Y = new Vector4(m21, m22, m23, m24);
-                Z = new Vector4(m31, m32, m33, m34);
-                W = new Vector4(m41, m42, m43, m44);
+                X = Vector4.Create(m11, m12, m13, m14);
+                Y = Vector4.Create(m21, m22, m23, m24);
+                Z = Vector4.Create(m31, m32, m33, m34);
+                W = Vector4.Create(m41, m42, m43, m44);
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public void Init(in Matrix3x2.Impl value)
             {
-                X = new Vector4(value.X, 0, 0);
-                Y = new Vector4(value.Y, 0, 0);
+                X = Vector4.Create(value.X, 0, 0);
+                Y = Vector4.Create(value.Y, 0, 0);
                 Z = Vector4.UnitZ;
-                W = new Vector4(value.Z, 0, 1);
+                W = Vector4.Create(value.Z, 0, 1);
             }
 
             public static Impl Identity
@@ -122,12 +122,12 @@ namespace System.Numerics
             public Vector3 Translation
             {
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                readonly get => new Vector3(W.X, W.Y, W.Z);
+                readonly get => W.AsVector3();
 
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 set
                 {
-                    W = new Vector4(value, W.W);
+                    W = Vector4.Create(value, W.W);
                 }
             }
 
@@ -245,7 +245,7 @@ namespace System.Numerics
                 }
                 else
                 {
-                    axisZ = Vector3.Multiply(axisZ, 1.0f / MathF.Sqrt(norm));
+                    axisZ = Vector3.Multiply(axisZ, 1.0f / float.Sqrt(norm));
                 }
 
                 Vector3 axisX = Vector3.Normalize(Vector3.Cross(cameraUpVector, axisZ));
@@ -253,10 +253,10 @@ namespace System.Numerics
 
                 Impl result;
 
-                result.X = new Vector4(axisX, 0);
-                result.Y = new Vector4(axisY, 0);
-                result.Z = new Vector4(axisZ, 0);
-                result.W = new Vector4(objectPosition, 1);
+                result.X = axisX.AsVector4();
+                result.Y = axisY.AsVector4();
+                result.Z = axisZ.AsVector4();;
+                result.W = Vector4.Create(objectPosition, 1);
 
                 return result;
             }
@@ -274,7 +274,7 @@ namespace System.Numerics
                 }
                 else
                 {
-                    faceDir = Vector3.Multiply(faceDir, (1.0f / MathF.Sqrt(norm)));
+                    faceDir = Vector3.Multiply(faceDir, (1.0f / float.Sqrt(norm)));
                 }
 
                 Vector3 axisY = rotateAxis;
@@ -282,16 +282,16 @@ namespace System.Numerics
                 // Treat the case when angle between faceDir and rotateAxis is too close to 0.
                 float dot = Vector3.Dot(axisY, faceDir);
 
-                if (MathF.Abs(dot) > BillboardMinAngle)
+                if (float.Abs(dot) > BillboardMinAngle)
                 {
                     faceDir = objectForwardVector;
 
                     // Make sure passed values are useful for compute.
                     dot = Vector3.Dot(axisY, faceDir);
 
-                    if (MathF.Abs(dot) > BillboardMinAngle)
+                    if (float.Abs(dot) > BillboardMinAngle)
                     {
-                        faceDir = (MathF.Abs(axisY.Z) > BillboardMinAngle) ? Vector3.UnitX : new Vector3(0, 0, -1);
+                        faceDir = (float.Abs(axisY.Z) > BillboardMinAngle) ? Vector3.UnitX : Vector3.Create(0, 0, -1);
                     }
                 }
 
@@ -300,10 +300,10 @@ namespace System.Numerics
 
                 Impl result;
 
-                result.X = new Vector4(axisX, 0);
-                result.Y = new Vector4(axisY, 0);
-                result.Z = new Vector4(axisZ, 0);
-                result.W = new Vector4(objectPosition, 1);
+                result.X = axisX.AsVector4();
+                result.Y = axisY.AsVector4();
+                result.Z = axisZ.AsVector4();
+                result.W = Vector4.Create(objectPosition, 1);
 
                 return result;
             }
@@ -341,8 +341,7 @@ namespace System.Numerics
                 float y = axis.Y;
                 float z = axis.Z;
 
-                float sa = MathF.Sin(angle);
-                float ca = MathF.Cos(angle);
+                (float sa, float ca) = float.SinCos(angle);
 
                 float xx = x * x;
                 float yy = y * y;
@@ -354,19 +353,19 @@ namespace System.Numerics
 
                 Impl result;
 
-                result.X = new Vector4(
+                result.X = Vector4.Create(
                     xx + ca * (1.0f - xx),
                     xy - ca * xy + sa * z,
                     xz - ca * xz - sa * y,
                     0
                 );
-                result.Y = new Vector4(
+                result.Y = Vector4.Create(
                     xy - ca * xy - sa * z,
                     yy + ca * (1.0f - yy),
                     yz - ca * yz + sa * x,
                     0
                 );
-                result.Z = new Vector4(
+                result.Z = Vector4.Create(
                     xz - ca * xz + sa * y,
                     yz - ca * yz - sa * x,
                     zz + ca * (1.0f - zz),
@@ -393,19 +392,19 @@ namespace System.Numerics
 
                 Impl result;
 
-                result.X = new Vector4(
+                result.X = Vector4.Create(
                     1.0f - 2.0f * (yy + zz),
                     2.0f * (xy + wz),
                     2.0f * (xz - wy),
                     0
                 );
-                result.Y = new Vector4(
+                result.Y = Vector4.Create(
                     2.0f * (xy - wz),
                     1.0f - 2.0f * (zz + xx),
                     2.0f * (yz + wx),
                     0
                 );
-                result.Z = new Vector4(
+                result.Z = Vector4.Create(
                     2.0f * (xz + wy),
                     2.0f * (yz - wx),
                     1.0f - 2.0f * (yy + xx),
@@ -433,25 +432,25 @@ namespace System.Numerics
 
                 Impl result;
 
-                result.X = new Vector4(
+                result.X = Vector4.Create(
                     axisX.X,
                     axisY.X,
                     axisZ.X,
                     0
                 );
-                result.Y = new Vector4(
+                result.Y = Vector4.Create(
                     axisX.Y,
                     axisY.Y,
                     axisZ.Y,
                     0
                 );
-                result.Z = new Vector4(
+                result.Z = Vector4.Create(
                     axisX.Z,
                     axisY.Z,
                     axisZ.Z,
                     0
                 );
-                result.W = new Vector4(
+                result.W = Vector4.Create(
                     Vector3.Dot(axisX, negativeCameraPosition),
                     Vector3.Dot(axisY, negativeCameraPosition),
                     Vector3.Dot(axisZ, negativeCameraPosition),
@@ -471,25 +470,25 @@ namespace System.Numerics
 
                 Impl result;
 
-                result.X = new Vector4(
+                result.X = Vector4.Create(
                     axisX.X,
                     axisY.X,
                     axisZ.X,
                     0
                 );
-                result.Y = new Vector4(
+                result.Y = Vector4.Create(
                     axisX.Y,
                     axisY.Y,
                     axisZ.Y,
                     0
                 );
-                result.Z = new Vector4(
+                result.Z = Vector4.Create(
                     axisX.Z,
                     axisY.Z,
                     axisZ.Z,
                     0
                 );
-                result.W = new Vector4(
+                result.W = Vector4.Create(
                     Vector3.Dot(axisX, negativeCameraPosition),
                     Vector3.Dot(axisY, negativeCameraPosition),
                     Vector3.Dot(axisZ, negativeCameraPosition),
@@ -506,10 +505,10 @@ namespace System.Numerics
 
                 Impl result;
 
-                result.X = new Vector4(2.0f / width, 0, 0, 0);
-                result.Y = new Vector4(0, 2.0f / height, 0, 0);
-                result.Z = new Vector4(0, 0, range, 0);
-                result.W = new Vector4(0, 0, range * zNearPlane, 1);
+                result.X = Vector4.Create(2.0f / width, 0, 0, 0);
+                result.Y = Vector4.Create(0, 2.0f / height, 0, 0);
+                result.Z = Vector4.Create(0, 0, range, 0);
+                result.W = Vector4.Create(0, 0, range * zNearPlane, 1);
 
                 return result;
             }
@@ -521,10 +520,10 @@ namespace System.Numerics
 
                 Impl result;
 
-                result.X = new Vector4(2.0f / width, 0, 0, 0);
-                result.Y = new Vector4(0, 2.0f / height, 0, 0);
-                result.Z = new Vector4(0, 0, range, 0);
-                result.W = new Vector4(0, 0, -range * zNearPlane, 1);
+                result.X = Vector4.Create(2.0f / width, 0, 0, 0);
+                result.Y = Vector4.Create(0, 2.0f / height, 0, 0);
+                result.Z = Vector4.Create(0, 0, range, 0);
+                result.W = Vector4.Create(0, 0, -range * zNearPlane, 1);
 
                 return result;
             }
@@ -538,10 +537,10 @@ namespace System.Numerics
 
                 Impl result;
 
-                result.X = new Vector4(reciprocalWidth + reciprocalWidth, 0, 0, 0);
-                result.Y = new Vector4(0, reciprocalHeight + reciprocalHeight, 0, 0);
-                result.Z = new Vector4(0, 0, range, 0);
-                result.W = new Vector4(
+                result.X = Vector4.Create(reciprocalWidth + reciprocalWidth, 0, 0, 0);
+                result.Y = Vector4.Create(0, reciprocalHeight + reciprocalHeight, 0, 0);
+                result.Z = Vector4.Create(0, 0, range, 0);
+                result.W = Vector4.Create(
                     -(left + right) * reciprocalWidth,
                     -(top + bottom) * reciprocalHeight,
                     range * zNearPlane,
@@ -560,10 +559,10 @@ namespace System.Numerics
 
                 Impl result;
 
-                result.X = new Vector4(reciprocalWidth + reciprocalWidth, 0, 0, 0);
-                result.Y = new Vector4(0, reciprocalHeight + reciprocalHeight, 0, 0);
-                result.Z = new Vector4(0, 0, range, 0);
-                result.W = new Vector4(
+                result.X = Vector4.Create(reciprocalWidth + reciprocalWidth, 0, 0, 0);
+                result.Y = Vector4.Create(0, reciprocalHeight + reciprocalHeight, 0, 0);
+                result.Z = Vector4.Create(0, 0, range, 0);
+                result.W = Vector4.Create(
                     -(left + right) * reciprocalWidth,
                     -(top + bottom) * reciprocalHeight,
                     -range * zNearPlane,
@@ -585,10 +584,10 @@ namespace System.Numerics
 
                 Impl result;
 
-                result.X = new Vector4(dblNearPlaneDistance / width, 0, 0, 0);
-                result.Y = new Vector4(0, dblNearPlaneDistance / height, 0, 0);
-                result.Z = new Vector4(0, 0, range, -1.0f);
-                result.W = new Vector4(0, 0, range * nearPlaneDistance, 0);
+                result.X = Vector4.Create(dblNearPlaneDistance / width, 0, 0, 0);
+                result.Y = Vector4.Create(0, dblNearPlaneDistance / height, 0, 0);
+                result.Z = Vector4.Create(0, 0, range, -1.0f);
+                result.W = Vector4.Create(0, 0, range * nearPlaneDistance, 0);
 
                 return result;
             }
@@ -605,10 +604,10 @@ namespace System.Numerics
 
                 Impl result;
 
-                result.X = new Vector4(dblNearPlaneDistance / width, 0, 0, 0);
-                result.Y = new Vector4(0, dblNearPlaneDistance / height, 0, 0);
-                result.Z = new Vector4(0, 0, range, 1.0f);
-                result.W = new Vector4(0, 0, -range * nearPlaneDistance, 0);
+                result.X = Vector4.Create(dblNearPlaneDistance / width, 0, 0, 0);
+                result.Y = Vector4.Create(0, dblNearPlaneDistance / height, 0, 0);
+                result.Z = Vector4.Create(0, 0, range, 1.0f);
+                result.W = Vector4.Create(0, 0, -range * nearPlaneDistance, 0);
 
                 return result;
             }
@@ -623,16 +622,16 @@ namespace System.Numerics
                 ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(farPlaneDistance, 0.0f);
                 ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(nearPlaneDistance, farPlaneDistance);
 
-                float height = 1.0f / MathF.Tan(fieldOfView * 0.5f);
+                float height = 1.0f / float.Tan(fieldOfView * 0.5f);
                 float width = height / aspectRatio;
                 float range = float.IsPositiveInfinity(farPlaneDistance) ? -1.0f : farPlaneDistance / (nearPlaneDistance - farPlaneDistance);
 
                 Impl result;
 
-                result.X = new Vector4(width, 0, 0, 0);
-                result.Y = new Vector4(0, height, 0, 0);
-                result.Z = new Vector4(0, 0, range, -1.0f);
-                result.W = new Vector4(0, 0, range * nearPlaneDistance, 0);
+                result.X = Vector4.Create(width, 0, 0, 0);
+                result.Y = Vector4.Create(0, height, 0, 0);
+                result.Z = Vector4.Create(0, 0, range, -1.0f);
+                result.W = Vector4.Create(0, 0, range * nearPlaneDistance, 0);
 
                 return result;
             }
@@ -647,16 +646,16 @@ namespace System.Numerics
                 ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(farPlaneDistance, 0.0f);
                 ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(nearPlaneDistance, farPlaneDistance);
 
-                float height = 1.0f / MathF.Tan(fieldOfView * 0.5f);
+                float height = 1.0f / float.Tan(fieldOfView * 0.5f);
                 float width = height / aspectRatio;
                 float range = float.IsPositiveInfinity(farPlaneDistance) ? 1.0f : farPlaneDistance / (farPlaneDistance - nearPlaneDistance);
 
                 Impl result;
 
-                result.X = new Vector4(width, 0, 0, 0);
-                result.Y = new Vector4(0, height, 0, 0);
-                result.Z = new Vector4(0, 0, range, 1.0f);
-                result.W = new Vector4(0, 0, -range * nearPlaneDistance, 0);
+                result.X = Vector4.Create(width, 0, 0, 0);
+                result.Y = Vector4.Create(0, height, 0, 0);
+                result.Z = Vector4.Create(0, 0, range, 1.0f);
+                result.W = Vector4.Create(0, 0, -range * nearPlaneDistance, 0);
 
                 return result;
             }
@@ -675,15 +674,15 @@ namespace System.Numerics
 
                 Impl result;
 
-                result.X = new Vector4(dblNearPlaneDistance * reciprocalWidth, 0, 0, 0);
-                result.Y = new Vector4(0, dblNearPlaneDistance * reciprocalHeight, 0, 0);
-                result.Z = new Vector4(
+                result.X = Vector4.Create(dblNearPlaneDistance * reciprocalWidth, 0, 0, 0);
+                result.Y = Vector4.Create(0, dblNearPlaneDistance * reciprocalHeight, 0, 0);
+                result.Z = Vector4.Create(
                     (left + right) * reciprocalWidth,
                     (top + bottom) * reciprocalHeight,
                     range,
                     -1.0f
                 );
-                result.W = new Vector4(0, 0, range * nearPlaneDistance, 0);
+                result.W = Vector4.Create(0, 0, range * nearPlaneDistance, 0);
 
                 return result;
             }
@@ -702,15 +701,15 @@ namespace System.Numerics
 
                 Impl result;
 
-                result.X = new Vector4(dblNearPlaneDistance * reciprocalWidth, 0, 0, 0);
-                result.Y = new Vector4(0, dblNearPlaneDistance * reciprocalHeight, 0, 0);
-                result.Z = new Vector4(
+                result.X = Vector4.Create(dblNearPlaneDistance * reciprocalWidth, 0, 0, 0);
+                result.Y = Vector4.Create(0, dblNearPlaneDistance * reciprocalHeight, 0, 0);
+                result.Z = Vector4.Create(
                     -(left + right) * reciprocalWidth,
                     -(top + bottom) * reciprocalHeight,
                     range,
                     1.0f
                 );
-                result.W = new Vector4(0, 0, -range * nearPlaneDistance, 0);
+                result.W = Vector4.Create(0, 0, -range * nearPlaneDistance, 0);
 
                 return result;
             }
@@ -723,10 +722,10 @@ namespace System.Numerics
 
                 Impl result;
 
-                result.X = new Vector4(f * p.Normal.X, 0) + Vector4.UnitX;
-                result.Y = new Vector4(f * p.Normal.Y, 0) + Vector4.UnitY;
-                result.Z = new Vector4(f * p.Normal.Z, 0) + Vector4.UnitZ;
-                result.W = new Vector4(f * p.D, 1);
+                result.X = (f * p.Normal.X).AsVector4() + Vector4.UnitX;
+                result.Y = (f * p.Normal.Y).AsVector4() + Vector4.UnitY;
+                result.Z = (f * p.Normal.Z).AsVector4() + Vector4.UnitZ;
+                result.W = Vector4.Create(f * p.D, 1);
 
                 return result;
             }
@@ -734,8 +733,7 @@ namespace System.Numerics
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Impl CreateRotationX(float radians)
             {
-                float c = MathF.Cos(radians);
-                float s = MathF.Sin(radians);
+                (float s, float c) = float.SinCos(radians);
 
                 // [  1  0  0  0 ]
                 // [  0  c  s  0 ]
@@ -745,8 +743,8 @@ namespace System.Numerics
                 Impl result;
 
                 result.X = Vector4.UnitX;
-                result.Y = new Vector4(0,  c, s, 0);
-                result.Z = new Vector4(0, -s, c, 0);
+                result.Y = Vector4.Create(0,  c, s, 0);
+                result.Z = Vector4.Create(0, -s, c, 0);
                 result.W = Vector4.UnitW;
 
                 return result;
@@ -755,8 +753,7 @@ namespace System.Numerics
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Impl CreateRotationX(float radians, in Vector3 centerPoint)
             {
-                float c = MathF.Cos(radians);
-                float s = MathF.Sin(radians);
+                (float s, float c) = float.SinCos(radians);
 
                 float y = centerPoint.Y * (1 - c) + centerPoint.Z * s;
                 float z = centerPoint.Z * (1 - c) - centerPoint.Y * s;
@@ -769,9 +766,9 @@ namespace System.Numerics
                 Impl result;
 
                 result.X = Vector4.UnitX;
-                result.Y = new Vector4(0,  c, s, 0);
-                result.Z = new Vector4(0, -s, c, 0);
-                result.W = new Vector4(0,  y, z, 1);
+                result.Y = Vector4.Create(0,  c, s, 0);
+                result.Z = Vector4.Create(0, -s, c, 0);
+                result.W = Vector4.Create(0,  y, z, 1);
 
                 return result;
             }
@@ -779,8 +776,7 @@ namespace System.Numerics
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Impl CreateRotationY(float radians)
             {
-                float c = MathF.Cos(radians);
-                float s = MathF.Sin(radians);
+                (float s, float c) = float.SinCos(radians);
 
                 // [  c  0 -s  0 ]
                 // [  0  1  0  0 ]
@@ -789,9 +785,9 @@ namespace System.Numerics
 
                 Impl result;
 
-                result.X = new Vector4(c, 0, -s, 0);
+                result.X = Vector4.Create(c, 0, -s, 0);
                 result.Y = Vector4.UnitY;
-                result.Z = new Vector4(s, 0,  c, 0);
+                result.Z = Vector4.Create(s, 0,  c, 0);
                 result.W = Vector4.UnitW;
 
                 return result;
@@ -800,8 +796,7 @@ namespace System.Numerics
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Impl CreateRotationY(float radians, in Vector3 centerPoint)
             {
-                float c = MathF.Cos(radians);
-                float s = MathF.Sin(radians);
+                (float s, float c) = float.SinCos(radians);
 
                 float x = centerPoint.X * (1 - c) - centerPoint.Z * s;
                 float z = centerPoint.Z * (1 - c) + centerPoint.X * s;
@@ -813,10 +808,10 @@ namespace System.Numerics
 
                 Impl result;
 
-                result.X = new Vector4(c, 0, -s, 0);
+                result.X = Vector4.Create(c, 0, -s, 0);
                 result.Y = Vector4.UnitY;
-                result.Z = new Vector4(s, 0,  c, 0);
-                result.W = new Vector4(x, 0,  z, 1);
+                result.Z = Vector4.Create(s, 0,  c, 0);
+                result.W = Vector4.Create(x, 0,  z, 1);
 
                 return result;
             }
@@ -824,9 +819,7 @@ namespace System.Numerics
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Impl CreateRotationZ(float radians)
             {
-
-                float c = MathF.Cos(radians);
-                float s = MathF.Sin(radians);
+                (float s, float c) = float.SinCos(radians);
 
                 // [  c  s  0  0 ]
                 // [ -s  c  0  0 ]
@@ -835,8 +828,8 @@ namespace System.Numerics
 
                 Impl result;
 
-                result.X = new Vector4( c, s, 0, 0);
-                result.Y = new Vector4(-s, c, 0, 0);
+                result.X = Vector4.Create( c, s, 0, 0);
+                result.Y = Vector4.Create(-s, c, 0, 0);
                 result.Z = Vector4.UnitZ;
                 result.W = Vector4.UnitW;
 
@@ -846,8 +839,7 @@ namespace System.Numerics
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Impl CreateRotationZ(float radians, in Vector3 centerPoint)
             {
-                float c = MathF.Cos(radians);
-                float s = MathF.Sin(radians);
+                (float s, float c) = float.SinCos(radians);
 
                 float x = centerPoint.X * (1 - c) + centerPoint.Y * s;
                 float y = centerPoint.Y * (1 - c) - centerPoint.X * s;
@@ -859,10 +851,10 @@ namespace System.Numerics
 
                 Impl result;
 
-                result.X = new Vector4( c, s, 0, 0);
-                result.Y = new Vector4(-s, c, 0, 0);
+                result.X = Vector4.Create( c, s, 0, 0);
+                result.Y = Vector4.Create(-s, c, 0, 0);
                 result.Z = Vector4.UnitZ;
-                result.W = new Vector4(x, y, 0, 1);
+                result.W = Vector4.Create(x, y, 0, 1);
 
                 return result;
             }
@@ -872,9 +864,9 @@ namespace System.Numerics
             {
                 Impl result;
 
-                result.X = new Vector4(scaleX, 0, 0, 0);
-                result.Y = new Vector4(0, scaleY, 0, 0);
-                result.Z = new Vector4(0, 0, scaleZ, 0);
+                result.X = Vector4.Create(scaleX, 0, 0, 0);
+                result.Y = Vector4.Create(0, scaleY, 0, 0);
+                result.Z = Vector4.Create(0, 0, scaleZ, 0);
                 result.W = Vector4.UnitW;
 
                 return result;
@@ -885,10 +877,10 @@ namespace System.Numerics
             {
                 Impl result;
 
-                result.X = new Vector4(scaleX, 0, 0, 0);
-                result.Y = new Vector4(0, scaleY, 0, 0);
-                result.Z = new Vector4(0, 0, scaleZ, 0);
-                result.W = new Vector4(centerPoint * (Vector3.One - new Vector3(scaleX, scaleY, scaleZ)), 1);
+                result.X = Vector4.Create(scaleX, 0, 0, 0);
+                result.Y = Vector4.Create(0, scaleY, 0, 0);
+                result.Z = Vector4.Create(0, 0, scaleZ, 0);
+                result.W = Vector4.Create(centerPoint * (Vector3.One - Vector3.Create(scaleX, scaleY, scaleZ)), 1);
 
                 return result;
             }
@@ -898,9 +890,9 @@ namespace System.Numerics
             {
                 Impl result;
 
-                result.X = new Vector4(scales.X, 0, 0, 0);
-                result.Y = new Vector4(0, scales.Y, 0, 0);
-                result.Z = new Vector4(0, 0, scales.Z, 0);
+                result.X = Vector4.Create(scales.X, 0, 0, 0);
+                result.Y = Vector4.Create(0, scales.Y, 0, 0);
+                result.Z = Vector4.Create(0, 0, scales.Z, 0);
                 result.W = Vector4.UnitW;
 
                 return result;
@@ -911,10 +903,10 @@ namespace System.Numerics
             {
                 Impl result;
 
-                result.X = new Vector4(scales.X, 0, 0, 0);
-                result.Y = new Vector4(0, scales.Y, 0, 0);
-                result.Z = new Vector4(0, 0, scales.Z, 0);
-                result.W = new Vector4(centerPoint * (Vector3.One - scales), 1);
+                result.X = Vector4.Create(scales.X, 0, 0, 0);
+                result.Y = Vector4.Create(0, scales.Y, 0, 0);
+                result.Z = Vector4.Create(0, 0, scales.Z, 0);
+                result.W = Vector4.Create(centerPoint * (Vector3.One - scales), 1);
 
                 return result;
             }
@@ -924,9 +916,9 @@ namespace System.Numerics
             {
                 Impl result;
 
-                result.X = new Vector4(scale, 0, 0, 0);
-                result.Y = new Vector4(0, scale, 0, 0);
-                result.Z = new Vector4(0, 0, scale, 0);
+                result.X = Vector4.Create(scale, 0, 0, 0);
+                result.Y = Vector4.Create(0, scale, 0, 0);
+                result.Z = Vector4.Create(0, 0, scale, 0);
                 result.W = Vector4.UnitW;
 
                 return result;
@@ -937,10 +929,10 @@ namespace System.Numerics
             {
                 Impl result;
 
-                result.X = new Vector4(scale, 0, 0, 0);
-                result.Y = new Vector4(0, scale, 0, 0);
-                result.Z = new Vector4(0, 0, scale, 0);
-                result.W = new Vector4(centerPoint * (Vector3.One - new Vector3(scale)), 1);
+                result.X = Vector4.Create(scale, 0, 0, 0);
+                result.Y = Vector4.Create(0, scale, 0, 0);
+                result.Z = Vector4.Create(0, 0, scale, 0);
+                result.W = Vector4.Create(centerPoint * (Vector3.One - Vector3.Create(scale)), 1);
 
                 return result;
             }
@@ -955,10 +947,10 @@ namespace System.Numerics
 
                 Impl result;
 
-                result.X = new Vector4(lightDirection * normal.X, 0) + new Vector4(dot, 0, 0, 0);
-                result.Y = new Vector4(lightDirection * normal.Y, 0) + new Vector4(0, dot, 0, 0);
-                result.Z = new Vector4(lightDirection * normal.Z, 0) + new Vector4(0, 0, dot, 0);
-                result.W = new Vector4(lightDirection * -p.D, dot);
+                result.X = (lightDirection * normal.X).AsVector4() + Vector4.CreateScalar(dot);
+                result.Y = (lightDirection * normal.Y).AsVector4() + Vector4.Create(0, dot, 0, 0);
+                result.Z = (lightDirection * normal.Z).AsVector4() + Vector4.Create(0, 0, dot, 0);
+                result.W = Vector4.Create(lightDirection * -p.D, dot);
 
                 return result;
             }
@@ -971,7 +963,7 @@ namespace System.Numerics
                 result.X = Vector4.UnitX;
                 result.Y = Vector4.UnitY;
                 result.Z = Vector4.UnitZ;
-                result.W = new Vector4(position, 1);
+                result.W = Vector4.Create(position, 1);
 
                 return result;
             }
@@ -984,7 +976,7 @@ namespace System.Numerics
                 result.X = Vector4.UnitX;
                 result.Y = Vector4.UnitY;
                 result.Z = Vector4.UnitZ;
-                result.W = new Vector4(positionX, positionY, positionZ, 1);
+                result.W = Vector4.Create(positionX, positionY, positionZ, 1);
 
                 return result;
             }
@@ -996,13 +988,13 @@ namespace System.Numerics
                 Impl result;
 
                 // 4x SIMD fields to get a lot better codegen
-                result.W = new Vector4(width, height, 0f, 0f);
-                result.W *= new Vector4(0.5f, 0.5f, 0f, 0f);
+                result.W = Vector4.Create(width, height, 0f, 0f);
+                result.W *= Vector4.Create(0.5f, 0.5f, 0f, 0f);
 
-                result.X = new Vector4(result.W.X, 0f, 0f, 0f);
-                result.Y = new Vector4(0f, -result.W.Y, 0f, 0f);
-                result.Z = new Vector4(0f, 0f, minDepth - maxDepth, 0f);
-                result.W += new Vector4(x, y, minDepth, 1f);
+                result.X = Vector4.Create(result.W.X, 0f, 0f, 0f);
+                result.Y = Vector4.Create(0f, -result.W.Y, 0f, 0f);
+                result.Z = Vector4.Create(0f, 0f, minDepth - maxDepth, 0f);
+                result.W += Vector4.Create(x, y, minDepth, 1f);
 
                 return result;
             }
@@ -1013,13 +1005,13 @@ namespace System.Numerics
                 Impl result;
 
                 // 4x SIMD fields to get a lot better codegen
-                result.W = new Vector4(width, height, 0f, 0f);
-                result.W *= new Vector4(0.5f, 0.5f, 0f, 0f);
+                result.W = Vector4.Create(width, height, 0f, 0f);
+                result.W *= Vector4.Create(0.5f, 0.5f, 0f, 0f);
 
-                result.X = new Vector4(result.W.X, 0f, 0f, 0f);
-                result.Y = new Vector4(0f, -result.W.Y, 0f, 0f);
-                result.Z = new Vector4(0f, 0f, maxDepth - minDepth, 0f);
-                result.W += new Vector4(x, y, minDepth, 1f);
+                result.X = Vector4.Create(result.W.X, 0f, 0f, 0f);
+                result.Y = Vector4.Create(0f, -result.W.Y, 0f, 0f);
+                result.Z = Vector4.Create(0f, 0f, maxDepth - minDepth, 0f);
+                result.W += Vector4.Create(x, y, minDepth, 1f);
 
                 return result;
             }
@@ -1033,10 +1025,10 @@ namespace System.Numerics
 
                 Impl result;
 
-                result.X = new Vector4(axisX, 0);
-                result.Y = new Vector4(axisY, 0);
-                result.Z = new Vector4(axisZ, 0);
-                result.W = new Vector4(position, 1);
+                result.X = axisX.AsVector4();
+                result.Y = axisY.AsVector4();
+                result.Z = axisZ.AsVector4();
+                result.W = Vector4.Create(position, 1);
 
                 return result;
             }
@@ -1058,22 +1050,19 @@ namespace System.Numerics
                     CanonicalBasis canonicalBasis = default;
                     Vector3* pCanonicalBasis = &canonicalBasis.Row0;
 
-                    canonicalBasis.Row0 = new Vector3(1.0f, 0.0f, 0.0f);
-                    canonicalBasis.Row1 = new Vector3(0.0f, 1.0f, 0.0f);
-                    canonicalBasis.Row2 = new Vector3(0.0f, 0.0f, 1.0f);
+                    canonicalBasis.Row0 = Vector3.UnitX;
+                    canonicalBasis.Row1 = Vector3.UnitY;
+                    canonicalBasis.Row2 = Vector3.UnitZ;
 
-                    translation = new Vector3(
-                        matrix.W.X,
-                        matrix.W.Y,
-                        matrix.W.Z);
+                    translation = matrix.W.AsVector3();
 
                     pVectorBasis[0] = (Vector3*)&matTemp.X;
                     pVectorBasis[1] = (Vector3*)&matTemp.Y;
                     pVectorBasis[2] = (Vector3*)&matTemp.Z;
 
-                    *(pVectorBasis[0]) = new Vector3(matrix.X.X, matrix.X.Y, matrix.X.Z);
-                    *(pVectorBasis[1]) = new Vector3(matrix.Y.X, matrix.Y.Y, matrix.Y.Z);
-                    *(pVectorBasis[2]) = new Vector3(matrix.Z.X, matrix.Z.Y, matrix.Z.Z);
+                    *(pVectorBasis[0]) = matrix.X.AsVector3();
+                    *(pVectorBasis[1]) = matrix.Y.AsVector3();
+                    *(pVectorBasis[2]) = matrix.Z.AsVector3();
 
                     scale.X = pVectorBasis[0]->Length();
                     scale.Y = pVectorBasis[1]->Length();
@@ -1148,9 +1137,9 @@ namespace System.Numerics
                         uint cc;
                         float fAbsX, fAbsY, fAbsZ;
 
-                        fAbsX = MathF.Abs(pVectorBasis[a]->X);
-                        fAbsY = MathF.Abs(pVectorBasis[a]->Y);
-                        fAbsZ = MathF.Abs(pVectorBasis[a]->Z);
+                        fAbsX = float.Abs(pVectorBasis[a]->X);
+                        fAbsY = float.Abs(pVectorBasis[a]->Y);
+                        fAbsZ = float.Abs(pVectorBasis[a]->Z);
 
                         #region Ranking
                         if (fAbsX < fAbsY)
@@ -1387,9 +1376,9 @@ namespace System.Numerics
                     float det = Vector4.Dot(C0.AsVector4(), row1.AsVector4());
 
                     // Check determinate is not zero
-                    if (MathF.Abs(det) < float.Epsilon)
+                    if (float.Abs(det) < float.Epsilon)
                     {
-                        Vector4 vNaN = new Vector4(float.NaN);
+                        Vector4 vNaN = Vector4.Create(float.NaN);
 
                         result.X = vNaN;
                         result.Y = vNaN;
@@ -1546,9 +1535,9 @@ namespace System.Numerics
 
                     float det = a * a11 + b * a12 + c * a13 + d * a14;
 
-                    if (MathF.Abs(det) < float.Epsilon)
+                    if (float.Abs(det) < float.Epsilon)
                     {
-                        Vector4 vNaN = new Vector4(float.NaN);
+                        Vector4 vNaN = Vector4.Create(float.NaN);
 
                         result.X = vNaN;
                         result.Y = vNaN;
@@ -1645,25 +1634,25 @@ namespace System.Numerics
 
                 Impl result;
 
-                result.X = new Vector4(
+                result.X = Vector4.Create(
                     value.X.X * q11 + value.X.Y * q21 + value.X.Z * q31,
                     value.X.X * q12 + value.X.Y * q22 + value.X.Z * q32,
                     value.X.X * q13 + value.X.Y * q23 + value.X.Z * q33,
                     value.X.W
                 );
-                result.Y = new Vector4(
+                result.Y = Vector4.Create(
                     value.Y.X * q11 + value.Y.Y * q21 + value.Y.Z * q31,
                     value.Y.X * q12 + value.Y.Y * q22 + value.Y.Z * q32,
                     value.Y.X * q13 + value.Y.Y * q23 + value.Y.Z * q33,
                     value.Y.W
                 );
-                result.Z = new Vector4(
+                result.Z = Vector4.Create(
                     value.Z.X * q11 + value.Z.Y * q21 + value.Z.Z * q31,
                     value.Z.X * q12 + value.Z.Y * q22 + value.Z.Z * q32,
                     value.Z.X * q13 + value.Z.Y * q23 + value.Z.Z * q33,
                     value.Z.W
                 );
-                result.W = new Vector4(
+                result.W = Vector4.Create(
                     value.W.X * q11 + value.W.Y * q21 + value.W.Z * q31,
                     value.W.X * q12 + value.W.Y * q22 + value.W.Z * q32,
                     value.W.X * q13 + value.W.Y * q23 + value.W.Z * q33,
@@ -1717,10 +1706,10 @@ namespace System.Numerics
                 }
                 else
                 {
-                    result.X = new Vector4(matrix.X.X, matrix.Y.X, matrix.Z.X, matrix.W.X);
-                    result.Y = new Vector4(matrix.X.Y, matrix.Y.Y, matrix.Z.Y, matrix.W.Y);
-                    result.Z = new Vector4(matrix.X.Z, matrix.Y.Z, matrix.Z.Z, matrix.W.Z);
-                    result.W = new Vector4(matrix.X.W, matrix.Y.W, matrix.Z.W, matrix.W.W);
+                    result.X = Vector4.Create(matrix.X.X, matrix.Y.X, matrix.Z.X, matrix.W.X);
+                    result.Y = Vector4.Create(matrix.X.Y, matrix.Y.Y, matrix.Z.Y, matrix.W.Y);
+                    result.Z = Vector4.Create(matrix.X.Z, matrix.Y.Z, matrix.Z.Z, matrix.W.Z);
+                    result.W = Vector4.Create(matrix.X.W, matrix.Y.W, matrix.Z.W, matrix.W.W);
                 }
 
                 return result;

@@ -671,10 +671,6 @@ public:
                                                       // There are cases during managed debugging when we can run into this situation
     };
 
-    void InternalReset (BOOL fNotFinalizerThread=FALSE, BOOL fThreadObjectResetNeeded=TRUE, BOOL fResetAbort=TRUE);
-    INT32 ResetManagedThreadObject(INT32 nPriority);
-    INT32 ResetManagedThreadObjectInCoopMode(INT32 nPriority);
-
 public:
     HRESULT DetachThread(BOOL fDLLThreadDetach);
 
