@@ -26,8 +26,9 @@ public unsafe class QuicTestCollection : ICollectionFixture<QuicTestCollection>,
     public QuicTestCollection()
     {
         string msQuicLibraryVersion = GetMsQuicLibraryVersion();
+        string tlsBackend = IsUsingSchannelBackend() ? "Schannel" : "OpenSSL";
         // If any of the reflection bellow breaks due to changes in "System.Net.Quic.MsQuicApi", also check and fix HttpStress project as it uses the same hack.
-        Console.WriteLine($"MsQuic {(IsSupported ? "supported" : "not supported")} and using '{msQuicLibraryVersion}'.");
+        Console.WriteLine($"MsQuic {(IsSupported ? "supported" : "not supported")} and using '{msQuicLibraryVersion}' ({tlsBackend}).");
 
         if (IsSupported)
         {
@@ -109,6 +110,20 @@ public unsafe class QuicTestCollection : ICollectionFixture<QuicTestCollection>,
         Type msQuicApiType = Type.GetType("System.Net.Quic.MsQuicApi, System.Net.Quic");
 
         return (string)msQuicApiType.GetProperty("MsQuicLibraryVersion", BindingFlags.NonPublic | BindingFlags.Static).GetGetMethod(true).Invoke(null, Array.Empty<object?>());
+    }
+
+    internal static bool IsWindowsVersionWithSchannelSupport()
+    {
+        Type msQuicApiType = Type.GetType("System.Net.Quic.MsQuicApi, System.Net.Quic");
+
+        return (bool)msQuicApiType.GetMethod("IsWindowsVersionSupported", BindingFlags.NonPublic | BindingFlags.Static).Invoke(null, Array.Empty<object?>());
+    }
+
+    internal static bool IsUsingSchannelBackend()
+    {
+        Type msQuicApiType = Type.GetType("System.Net.Quic.MsQuicApi, System.Net.Quic");
+
+        return (bool)msQuicApiType.GetProperty("UsesSChannelBackend", BindingFlags.NonPublic | BindingFlags.Static).GetGetMethod(true).Invoke(null, Array.Empty<object?>());
     }
 
     private static QUIC_API_TABLE* GetApiTable()
