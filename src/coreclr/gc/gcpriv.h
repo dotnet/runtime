@@ -4255,7 +4255,7 @@ private:
     // to smooth out the situation when we rarely pick the gen2 GCs in the first array.
     struct dynamic_heap_count_data_t
     {
-        float target_tcp = 5.0;
+        float target_tcp = 2.0;
         float target_gen2_tcp = 10.0;
 
         static const int recorded_adjustment_size = 4;
