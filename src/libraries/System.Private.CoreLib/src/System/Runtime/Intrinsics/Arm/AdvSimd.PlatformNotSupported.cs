@@ -14632,7 +14632,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A32: VRSHR.S16 Dd, Dm, #n
         ///   A64: SRSHR Vd.4H, Vn.4H, #n
         /// </summary>
-        public static Vector64<short> ShiftRightArithmeticRounded(Vector64<short> value, [ConstantExpected(Min = 1, Max = (byte)(8))] byte count) { throw new PlatformNotSupportedException(); }
+        public static Vector64<short> ShiftRightArithmeticRounded(Vector64<short> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte count) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int32x2_t vrshr_n_s32 (int32x2_t a, const int n)
@@ -14702,7 +14702,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A32: VRSRA.S16 Qd, Qm, #n
         ///   A64: SRSRA Vd.8H, Vn.8H, #n
         /// </summary>
-        public static Vector128<short> ShiftRightArithmeticRoundedAdd(Vector128<short> addend, Vector128<short> value, [ConstantExpected(Min = 1, Max = (byte)(8))] byte count) { throw new PlatformNotSupportedException(); }
+        public static Vector128<short> ShiftRightArithmeticRoundedAdd(Vector128<short> addend, Vector128<short> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte count) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int32x4_t vrsraq_n_s32 (int32x4_t a, int32x4_t b, const int n)
