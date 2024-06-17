@@ -4725,17 +4725,9 @@ namespace JIT.HardwareIntrinsics.Arm
         
         public static float RecipSqrtEstimate(float op1) => MathF.ReciprocalSqrtEstimate(op1);
 
-        public static double RecipExpo(double op1, double op2){
-            double result = 1.0 / Math.Pow(op1, op2);
+        public static double RecipExpo(double op1) => Math.Pow(op1, -1);
 
-            return result;
-        }
-
-        public static float RecipExpo(float op1, float op2){
-            float result = (float)(1.0 / MathF.Pow(op1, op2));
-
-            return result;
-        }
+        public static float RecipExpo(float op1) => MathF.Pow(op1, -1);
 
         private static uint ExtractBits(uint val, byte msbPos, byte lsbPos)
         {
