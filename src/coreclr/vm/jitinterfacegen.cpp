@@ -65,6 +65,7 @@ void InitJITHelpers1()
 #ifdef TARGET_UNIX
         SetJitHelperFunction(CORINFO_HELP_NEWSFAST, JIT_NewS_MP_FastPortable);
         SetJitHelperFunction(CORINFO_HELP_NEWSFAST_ALIGN8, JIT_NewS_MP_FastPortable);
+        SetJitHelperFunction(CORINFO_HELP_BOX, JIT_Box_MP_FastPortable);
         SetJitHelperFunction(CORINFO_HELP_NEWARR_1_VC, JIT_NewArr1VC_MP_FastPortable);
         SetJitHelperFunction(CORINFO_HELP_NEWARR_1_OBJ, JIT_NewArr1OBJ_MP_FastPortable);
 
@@ -75,7 +76,7 @@ void InitJITHelpers1()
         {
             SetJitHelperFunction(CORINFO_HELP_NEWSFAST, JIT_NewS_MP_FastPortable);
             SetJitHelperFunction(CORINFO_HELP_NEWSFAST_ALIGN8, JIT_NewS_MP_FastPortable);
-            SetJitHelperFunction(CORINFO_HELP_BOX, JIT_BoxFastMP);
+            SetJitHelperFunction(CORINFO_HELP_BOX, JIT_Box_MP_FastPortable);
             SetJitHelperFunction(CORINFO_HELP_NEWARR_1_VC, JIT_NewArr1VC_MP_FastPortable);
             SetJitHelperFunction(CORINFO_HELP_NEWARR_1_OBJ, JIT_NewArr1OBJ_MP_FastPortable);
 
