@@ -7626,36 +7626,46 @@ HRESULT ProfToEEInterfaceImpl::EnumerateGCHeapObjects(object_callback callback, 
         // Yay!
         NOTHROW;
 
-        // Yay!
-        GC_NOTRIGGER;
+        // Suspending EE is contracted to trigger GC through ThreadSuspend::SuspendAllThreads
+        GC_TRIGGERS;
 
         // Yay!
         MODE_ANY;
 
-        // Yay!
-        CANNOT_TAKE_LOCK;
+        // Suspending EE will acquire the ThreadStore Lock via ThreadSuspend::LockThreadStore.
+        CAN_TAKE_LOCK;
 
         // Yay!
         EE_THREAD_NOT_REQUIRED;
     }
     CONTRACTL_END;
 
-    PROFILER_TO_CLR_ENTRYPOINT_ASYNC_EX(kP2EEAllowableAfterAttach,
+    PROFILER_TO_CLR_ENTRYPOINT_ASYNC_EX(kP2EEAllowableAfterAttach | kP2EETriggers,
         (LF_CORPROF,
         LL_INFO1000,
         "**PROF: EnumerateGCHeapObjects.\n"));
 
     // Checks
+    if (callback == nullptr)
+    {
+        return E_INVALIDARG;
+    }
+
+    if (!g_fEEStarted)
+    {
+        return CORPROF_E_RUNTIME_UNINITIALIZED;
+    }
 
     // SuspendEE
+    if (!ThreadSuspend::SysIsSuspendInProgress() && (ThreadSuspend::GetSuspensionThread() == 0))
+    {
+        ThreadSuspend::SuspendEE(ThreadSuspend::SUSPEND_REASON::SUSPEND_FOR_PROFILER);
+    }
 
-    // Prepare to walk the GC Heap by fixing allocation contexts
-
-    // Walk the GC Heap
-
-    // Repair the allocation contexts that were fixed before walking the GC Heap
+    // Walk the GC Heap outside of GC
 
     // ResumeEE
+    ThreadSuspend::RestartEE(FALSE /* bFinishedGC */, TRUE /* SuspendSucceeded */);
 
     return S_OK;
 }
