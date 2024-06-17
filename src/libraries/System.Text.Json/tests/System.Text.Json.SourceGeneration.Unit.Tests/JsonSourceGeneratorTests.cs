@@ -574,6 +574,42 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         }
 
         [Fact]
+        public static void NoErrorsWhenUsingTypesWithMultipleEqualsOperators()
+        {
+            // Types that override equals operators used to cause the generated to
+            // emit 'Error CS0034 : Operator '==' is ambiguous on operands of type 'Foo' and '<null>''
+            // This has been changed to use `is null` and `is not null` to disambiguate.
+            string source = """
+                using System.Text.Json.Serialization;
+                
+                namespace Test
+                {
+                    public class Foo
+                    {
+                        public override bool Equals(object obj) => false;
+                
+                        public static bool operator ==(Foo left, Foo right) => false;
+                        public static bool operator !=(Foo left, Foo right) => false;
+                    
+                        public static bool operator ==(Foo left, string right) => false;
+                        public static bool operator !=(Foo left, string right) => false;
+                    
+                        public override int GetHashCode() => 1;
+                    }
+
+                    [JsonSourceGenerationOptions(WriteIndented = true)]
+                    [JsonSerializable(typeof(Foo))]
+                    internal partial class JsonSourceGenerationContext : JsonSerializerContext
+                    {
+                    }
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            CompilationHelper.RunJsonSourceGenerator(compilation);
+        }
+
+        [Fact]
         public static void NoErrorsWhenUsingIgnoredReservedCSharpKeywords()
         {
             string source = """
