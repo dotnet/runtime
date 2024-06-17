@@ -166,8 +166,6 @@ namespace System.Text.RegularExpressions.Symbolic
         internal byte BuildNullabilityInfo()
         {
             byte nullabilityInfo = 0;
-            // this is significantly cheaper to initialize once
-            // than to pay for it on every call
             if (Node.CanBeNullable)
             {
                 for (uint ck = 0; ck < CharKind.CharKindCount; ck++)

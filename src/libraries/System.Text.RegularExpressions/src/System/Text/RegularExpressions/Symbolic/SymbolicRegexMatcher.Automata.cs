@@ -60,13 +60,13 @@ namespace System.Text.RegularExpressions.Symbolic
         private bool[] _canBeAcceleratedArray;
 
 #if DEBUG
-        // private readonly Action<string> _wout = st =>
-        // {
-        //     var a_cons = System.Reflection.Assembly.Load("System.Console");
-        //     var t_cons = a_cons.GetType("System.Console")!;
-        //     var wl = t_cons.GetMethod("WriteLine", [typeof(string)]);
-        //     wl!.Invoke(null, [st]);
-        // };
+        private readonly Action<string> _wout = st =>
+        {
+            var a_cons = System.Reflection.Assembly.Load("System.Console");
+            var t_cons = a_cons.GetType("System.Console")!;
+            var wl = t_cons.GetMethod("WriteLine", [typeof(string)]);
+            wl!.Invoke(null, [st]);
+        };
 #endif
         /// <summary>
         /// The transition function for DFA mode.
@@ -199,7 +199,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// </summary>
         /// <param name="node">reversed initial pattern</param>
         /// <returns>returns n of chars to skip and adjusted reversal start state</returns>
-        private (int, MatchingState<TSet>) CreateOptimizedReversal(SymbolicRegexNode<TSet> node)
+        private MatchReversal<TSet> CreateOptimizedReversal(SymbolicRegexNode<TSet> node)
         {
             int pos = 0;
             SymbolicRegexNode<TSet>? current = node;
@@ -240,10 +240,15 @@ namespace System.Text.RegularExpressions.Symbolic
             while (canLoop)
             {
 #if DEBUG
-                // _wout($"{pos} {current._kind} l:{current._left!._kind} {current}");
+                // if (current._left is null)
+                //     _wout($"NULL {current._kind}");
+                // else
+                //     _wout($"{pos} {current._kind} l:{current._left!._kind} {current}");
 #endif
                 (bool loop, SymbolicRegexNode<TSet> next) = current switch
                 {
+                    // if this is reached then entire match is fixed length
+                    { _kind: SymbolicRegexNodeKind.CaptureStart} => (false, _builder.Epsilon),
                     {_kind:SymbolicRegexNodeKind.Concat, _left._kind: SymbolicRegexNodeKind.CaptureEnd} =>
                         (true, current._right!),
                     {_kind: SymbolicRegexNodeKind.Concat, _left._kind: SymbolicRegexNodeKind.BoundaryAnchor } =>
@@ -257,7 +262,17 @@ namespace System.Text.RegularExpressions.Symbolic
                 canLoop = loop;
                 current = next;
             }
-            return (pos, GetOrCreateState_NoLock(_builder.CreateDisableBacktrackingSimulation(current), 0));
+
+            MatchReversal<TSet> reversal =
+                (pos, current) switch
+                {
+                    { pos: > 0 } when current == _builder.Epsilon => new MatchReversal<TSet>(MatchReversalKind.FixedLength, pos),
+                    { pos: > 0 } => new MatchReversal<TSet>(MatchReversalKind.PartialFixedLength, pos,
+                        GetOrCreateState_NoLock(_builder.CreateDisableBacktrackingSimulation(current), 0)),
+                    _ => new MatchReversal<TSet>(MatchReversalKind.MatchStart, 0)
+                };
+
+            return reversal;
         }
 
         /// <summary>
@@ -424,7 +439,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     MatchingState<TSet> coreState = GetState(coreId);
                     TSet minterm = GetMintermFromId(mintermId);
                     uint nextCharKind = GetPositionKind(mintermId);
-                    SymbolicRegexNode<TSet>? targetNode = coreTargetId > 0 ?
+                    SymbolicRegexNode<TSet> targetNode = coreTargetId > 0 ?
                         GetState(coreTargetId).Node : coreState.Next(_builder, minterm, nextCharKind);
 
                     List<int> targetsList = new();
