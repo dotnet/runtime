@@ -272,6 +272,13 @@ void LinearScan::resolveConflictingDefAndUse(Interval* interval, RefPosition* de
         defReg = defRefPosition->assignedReg();
         if (canChangeUseAssignment)
         {
+#ifdef DEBUG
+            RegRecord*   defRegRecord            = getRegisterRecord(defReg);
+            RefPosition* currFixedRegRefPosition = defRegRecord->recentRefPosition;
+            assert((currFixedRegRefPosition != nullptr) &&
+                   (currFixedRegRefPosition->nodeLocation == defRefPosition->nodeLocation));
+#endif
+
             LsraLocation nextRegLoc = getNextFixedRef(defReg, defRefPosition->getRegisterType());
             if (nextRegLoc > useRefPosition->getRefEndLocation())
             {
