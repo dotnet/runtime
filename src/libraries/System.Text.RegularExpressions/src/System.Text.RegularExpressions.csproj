@@ -5,7 +5,9 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);SYSTEM_TEXT_REGULAREXPRESSIONS</DefineConstants>
     <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
-<!--    <NoWarn>IL2026;IL2075;IDE0059;CA1823;CS0162;IDE0060;CS0649</NoWarn>-->
+   <NoWarn>IL2026;IL2075;IDE0059;CA1823;CS0162;IDE0060;CS0649;</NoWarn>
+<!--   documentation warnings -->
+   <NoWarn>$(NoWarn);CS1574</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -94,6 +96,8 @@
     <Compile Include="System\Text\RegularExpressions\Symbolic\UnicodeCategoryConditions.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\UnicodeCategoryRanges.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\UnicodeCategoryRangesGenerator.cs" />
+    <Compile Include="System\Text\RegularExpressions\Symbolic\MatchReversalKind.cs"/>
+    <Compile Include="System\Text\RegularExpressions\Symbolic\MatchReversal.cs"/>
     <!-- Common or Common-branched source files -->
     <Compile Include="$(CommonPath)System\HexConverter.cs" Link="Common\System\HexConverter.cs" />
     <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />

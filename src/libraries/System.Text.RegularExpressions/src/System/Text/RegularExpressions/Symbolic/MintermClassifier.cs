@@ -49,6 +49,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
             // ascii-only array to save memory
             // int mintermId = c >= 128 ? 0 : mtlookup[c];
+            // _isAsciiOnly = true;
             _isAsciiOnly = true;
             for (int mintermId = 1; mintermId < minterms.Length; mintermId++)
             {
@@ -63,20 +64,24 @@ namespace System.Text.RegularExpressions.Symbolic
             // but it's there as a fallback mechanism
             if (minterms.Length > 255)
             {
+                // WIP: temporary exception to see if any tests in the pipeline reach this
+                // if nothing reaches this perhaps it'd be easier to just throw an exception
+                // during construction
+                throw new Exception($"reached over 255 minterms, count {minterms}");
                 // over 255 unique sets also means it's never ascii only
-                int[] lookup = new int[ushort.MaxValue + 1];
-                for (int mintermId = 1; mintermId < minterms.Length; mintermId++)
-                {
-                    // precompute all assigned minterm categories
-                    (uint, uint)[] mintermRanges = BDDRangeConverter.ToRanges(minterms[mintermId]);
-                    foreach ((uint start, uint end) in mintermRanges)
-                    {
-                        // assign character ranges in bulk
-                        Span<int> slice = lookup.AsSpan((int)start, (int)(end + 1 - start));
-                        slice.Fill(mintermId);
-                    }
-                }
-                _intLookup = lookup;
+                // int[] lookup = new int[ushort.MaxValue + 1];
+                // for (int mintermId = 1; mintermId < minterms.Length; mintermId++)
+                // {
+                //     // precompute all assigned minterm categories
+                //     (uint, uint)[] mintermRanges = BDDRangeConverter.ToRanges(minterms[mintermId]);
+                //     foreach ((uint start, uint end) in mintermRanges)
+                //     {
+                //         // assign character ranges in bulk
+                //         Span<int> slice = lookup.AsSpan((int)start, (int)(end + 1 - start));
+                //         slice.Fill(mintermId);
+                //     }
+                // }
+                // _intLookup = lookup;
             }
             else
             {
