@@ -95,7 +95,7 @@ internal sealed unsafe partial class MsQuicApi
             // Windows ships msquic in the assembly directory next to System.Net.Quic, so load that.
             // For single-file deployments, the assembly location is an empty string so we fall back
             // to AppContext.BaseDirectory which is the directory containing the single-file executable.
-            string path = typeof(MsQuicApi).Assembly.Location is string assemblyLocation && !string.IsNullOrEmpty(assemblyLocation) && !AllowAppLocalMsQuic()
+            string path = !ShouldUseAppLocalMsQuic() && typeof(MsQuicApi).Assembly.Location is string assemblyLocation && !string.IsNullOrEmpty(assemblyLocation)
                 ? System.IO.Path.GetDirectoryName(assemblyLocation)!
                 : AppContext.BaseDirectory;
 
@@ -280,7 +280,6 @@ internal sealed unsafe partial class MsQuicApi
         return false;
     }
 
-    private static bool IsAppLocalMsQuicAllowed() => AppContextSwitchHelper.GetBooleanConfig(
-        "System.Net.Quic.AppLocalMsQuic",
-        "DOTNET_SYSTEM_NET_QUIC_APPLOCALMSQUIC");
+    private static bool ShouldUseAppLocalMsQuic() => AppContextSwitchHelper.GetBooleanConfig(
+        "System.Net.Quic.AppLocalMsQuic");
 }
