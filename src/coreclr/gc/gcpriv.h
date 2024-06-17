@@ -2132,6 +2132,7 @@ private:
 
 #ifdef DYNAMIC_HEAP_COUNT
     PER_HEAP_ISOLATED_METHOD size_t get_total_soh_stable_size();
+    PER_HEAP_ISOLATED_METHOD void update_total_soh_stable_size();
     PER_HEAP_ISOLATED_METHOD void assign_new_budget (int gen_number, size_t desired_per_heap);
     PER_HEAP_METHOD bool prepare_rethread_fl_items();
     PER_HEAP_METHOD void rethread_fl_items(int gen_idx);
@@ -4954,15 +4955,15 @@ private:
 
                         size_t new_budget_per_heap = (size_t)(last_budget_per_heap / last_alloc_time * target_alloc_time);
                         new_budget_per_heap = Align (new_budget_per_heap, get_alignment_constant (TRUE));
+                        size_t saved_new_budget_per_heap = new_budget_per_heap;
 
-                        dprintf (6666, ("adjust last budget %Id to %Id (%.3fmb)",
-                            last_budget_per_heap, new_budget_per_heap, (new_budget_per_heap / 1000.0 / 1000.0)));
+                        new_budget_per_heap = max (new_budget_per_heap, bcs_per_heap);
+                        new_budget_per_heap = min (new_budget_per_heap, budget_old_gen_per_heap);
 
-                        if ((new_budget_per_heap >= bcs_per_heap) && (new_budget_per_heap <= budget_old_gen_per_heap))
-                        {
-                            dprintf (6666, ("setting this as the new budget!"));
-                            return new_budget_per_heap;
-                        }
+                        dprintf (6666, ("adjust last budget %Id to %Id->%Id (%.3fmb)",
+                            last_budget_per_heap, saved_new_budget_per_heap, new_budget_per_heap, (new_budget_per_heap / 1000.0 / 1000.0)));
+
+                        return new_budget_per_heap;
                     }
                 }
             }
@@ -5009,6 +5010,7 @@ private:
         }
     };
     PER_HEAP_ISOLATED_FIELD_MAINTAINED dynamic_heap_count_data_t dynamic_heap_count_data;
+    PER_HEAP_ISOLATED_FIELD_MAINTAINED size_t current_total_soh_stable_size;
     PER_HEAP_ISOLATED_FIELD_MAINTAINED uint64_t last_suspended_end_time;
     // If the last full GC is blocking, this is that GC's index; for BGC, this is the settings.gc_index
     // when the BGC ended.
