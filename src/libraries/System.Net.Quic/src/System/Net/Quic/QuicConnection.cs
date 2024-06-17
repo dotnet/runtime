@@ -182,7 +182,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
     /// <summary>
     /// Occurres when an additional stream capacity has been released by the peer. Corresponds to receiving MAX_STREAMS frame.
     /// </summary>
-    private QuicConnectionStreamsAvailableCallback? _streamsAvailableCallback;
+    private Action<QuicConnection, QuicStreamCapacityChangedArgs>? _streamsCapacityCallback;
     /// <summary>
     /// Represents how many bidirectional streams can be accepted by the peer. Is only manipulated from MsQuic thread.
     /// </summary>
@@ -220,10 +220,10 @@ public sealed partial class QuicConnection : IAsyncDisposable
     /// </summary>
     public IPEndPoint LocalEndPoint => _localEndPoint;
 
-    private async void OnStreamsAvailable(int bidirectionalStreamsCountIncrement, int unidirectionalStreamsCountIncrement)
+    private async void OnStreamsCapacityIncreased(int bidirectionalStreamsCountIncrement, int unidirectionalStreamsCountIncrement)
     {
         // Bail out early to avoid queueing work on the thread pool as well as event args instantiation.
-        if (_streamsAvailableCallback is null)
+        if (_streamsCapacityCallback is null)
         {
             return;
         }
@@ -235,16 +235,16 @@ public sealed partial class QuicConnection : IAsyncDisposable
         {
             if (NetEventSource.Log.IsEnabled())
             {
-                NetEventSource.Info(this, $"{this} Signaling StreamsAvailable with {bidirectionalStreamsCountIncrement} bidirectional increment (absolute value {_availableBidirectionalStreamsCount}) and {unidirectionalStreamsCountIncrement} unidirectional increment (absolute value {_availableUnidirectionalStreamsCount}).");
+                NetEventSource.Info(this, $"{this} Signaling StreamsCapacityIncreased with {bidirectionalStreamsCountIncrement} bidirectional increment (absolute value {_availableBidirectionalStreamsCount}) and {unidirectionalStreamsCountIncrement} unidirectional increment (absolute value {_availableUnidirectionalStreamsCount}).");
             }
-            _streamsAvailableCallback(this, bidirectionalStreamsCountIncrement, unidirectionalStreamsCountIncrement);
+            _streamsCapacityCallback(this, new QuicStreamCapacityChangedArgs { BidirectionalIncrement = bidirectionalStreamsCountIncrement, UnidirectionalIncrement = unidirectionalStreamsCountIncrement });
         }
         catch (Exception ex)
         {
             // Just log the exception, we're on a thread-pool thread and there's no way to report this to anyone.
             if (NetEventSource.Log.IsEnabled())
             {
-                NetEventSource.Info(this, $"{this} {nameof(QuicConnectionOptions.StreamsAvailableCallback)} failed with {ex}.");
+                NetEventSource.Info(this, $"{this} {nameof(QuicConnectionOptions.StreamCapacityCallback)} failed with {ex}.");
             }
         }
     }
@@ -342,7 +342,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
             _canAccept = options.MaxInboundBidirectionalStreams > 0 || options.MaxInboundUnidirectionalStreams > 0;
             _defaultStreamErrorCode = options.DefaultStreamErrorCode;
             _defaultCloseErrorCode = options.DefaultCloseErrorCode;
-            _streamsAvailableCallback = options.StreamsAvailableCallback;
+            _streamsCapacityCallback = options.StreamCapacityCallback;
 
             if (!options.RemoteEndPoint.TryParse(out string? host, out IPAddress? address, out int port))
             {
@@ -419,7 +419,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
             _canAccept = options.MaxInboundBidirectionalStreams > 0 || options.MaxInboundUnidirectionalStreams > 0;
             _defaultStreamErrorCode = options.DefaultStreamErrorCode;
             _defaultCloseErrorCode = options.DefaultCloseErrorCode;
-            _streamsAvailableCallback = options.StreamsAvailableCallback;
+            _streamsCapacityCallback = options.StreamCapacityCallback;
 
             // RFC 6066 forbids IP literals, avoid setting IP address here for consistency with SslStream
             if (TargetHostNameHelper.IsValidAddress(targetHost))
@@ -450,7 +450,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
     }
 
     /// <summary>
-    /// In order to provide meaningful increments in <see cref="_streamsAvailableCallback"/>, available streams count can be only manipulated from MsQuic thread.
+    /// In order to provide meaningful increments in <see cref="_streamsCapacityCallback"/>, available streams count can be only manipulated from MsQuic thread.
     /// For that purpose we pass this function to <see cref="QuicStream"/> so that it can call it from <c>START_COMPLETE</c> event handler.
     ///
     /// Note that MsQuic itself manipulates stream counts right before indicating <c>START_COMPLETE</c> event.
@@ -681,14 +681,14 @@ public sealed partial class QuicConnection : IAsyncDisposable
         int unidirectionalStreamsCountIncrement = data.UnidirectionalCount - _availableUnidirectionalStreamsCount;
         _availableBidirectionalStreamsCount = data.BidirectionalCount;
         _availableUnidirectionalStreamsCount = data.UnidirectionalCount;
-        OnStreamsAvailable(bidirectionalStreamsCountIncrement, unidirectionalStreamsCountIncrement);
+        OnStreamsCapacityIncreased(bidirectionalStreamsCountIncrement, unidirectionalStreamsCountIncrement);
         return QUIC_STATUS_SUCCESS;
     }
     private unsafe int HandleEventPeerCertificateReceived(ref PEER_CERTIFICATE_RECEIVED_DATA data)
     {
         //
         // The certificate validation is an expensive operation and we don't want to delay MsQuic
-        // worker thread. So we offload the validation to the .NET threadpool. Incidentally, this
+        // worker thread. So we offload the validation to the .NET thread pool. Incidentally, this
         // also prevents potential user RemoteCertificateValidationCallback from blocking MsQuic
         // worker threads.
         //
@@ -816,14 +816,3 @@ public sealed partial class QuicConnection : IAsyncDisposable
         }
     }
 }
-
-/// <summary>
-/// Callback that is invoked when new stream limit is released by the peer. Corresponds to receiving MAX_STREAMS frame.
-/// The callback values represent increments of stream limits, e.g.: current limit is 10 bidirectional streams, callback arguments notify 5 more additional bidirectional streams => 15 bidirectional streams can be opened in total at the moment.
-/// The initial capacity is reported with the first invocation of the callback that might happen before the <see cref="QuicConnection"/> instance is handed out via either
-/// <see cref="QuicConnection.ConnectAsync(QuicClientConnectionOptions, CancellationToken)"/> or <see cref="QuicListener.AcceptConnectionAsync(CancellationToken)"/>.
-/// </summary>
-/// <param name="connection">The <see cref="QuicConnection"/> that received the new stream limits.</param>
-/// <param name="bidirectionalStreamsCountIncrement">The increment saying how many additional bidirectional streams can be opened on the connection, increased via the latest STREAMS_AVAILABLE frame.</param>
-/// <param name="unidirectionalStreamsCountIncrement">The increment saying how many additional unidirectional streams can be opened on the connection, increased via the latest STREAMS_AVAILABLE frame.</param>
-public delegate void QuicConnectionStreamsAvailableCallback(QuicConnection connection, int bidirectionalStreamsCountIncrement, int unidirectionalStreamsCountIncrement);

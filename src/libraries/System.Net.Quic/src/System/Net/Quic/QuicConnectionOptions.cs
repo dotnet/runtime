@@ -51,6 +51,21 @@ public sealed class QuicReceiveWindowSizes
 }
 
 /// <summary>
+/// Arguments for <see cref="QuicConnectionOptions.StreamCapacityCallback"/>.
+/// </summary>
+public readonly struct QuicStreamCapacityChangedArgs
+{
+    /// <summary>
+    /// The increment saying how many additional bidirectional streams can be opened on the connection, increased via the latest STREAMS_AVAILABLE frame.
+    /// </summary>
+    public int BidirectionalIncrement { get; init; }
+    /// <summary>
+    /// The increment saying how many additional unidirectional streams can be opened on the connection, increased via the latest STREAMS_AVAILABLE frame.
+    /// </summary>
+    public int UnidirectionalIncrement { get; init; }
+}
+
+/// <summary>
 /// Shared options for both client (outbound) and server (inbound) <see cref="QuicConnection" />.
 /// </summary>
 public abstract class QuicConnectionOptions
@@ -130,7 +145,7 @@ public abstract class QuicConnectionOptions
     /// The initial capacity is reported with the first invocation of the callback that might happen before the <see cref="QuicConnection"/> instance is handed out via either
     /// <see cref="QuicConnection.ConnectAsync(QuicClientConnectionOptions, CancellationToken)"/> or <see cref="QuicListener.AcceptConnectionAsync(CancellationToken)"/>.
     /// </summary>
-    public QuicConnectionStreamsAvailableCallback? StreamsAvailableCallback { get; set; }
+    public Action<QuicConnection, QuicStreamCapacityChangedArgs>? StreamCapacityCallback { get; set; }
 
     /// <summary>
     /// Validates the options and potentially sets platform specific defaults.

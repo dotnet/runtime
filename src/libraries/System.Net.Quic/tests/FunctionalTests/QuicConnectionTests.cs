@@ -195,10 +195,10 @@ namespace System.Net.Quic.Tests
             int bidiIncrement = -1, unidiIncrement = -1;
 
             var clientOptions = CreateQuicClientOptions(new IPEndPoint(0, 0));
-            clientOptions.StreamsAvailableCallback = (sender, bidirectionalStreamsCountIncrement, unidirectionalStreamsCountIncrement) =>
+            clientOptions.StreamCapacityCallback = (connection, args) =>
             {
-                bidiIncrement = bidirectionalStreamsCountIncrement;
-                unidiIncrement = unidirectionalStreamsCountIncrement;
+                bidiIncrement = args.BidirectionalIncrement;
+                unidiIncrement = args.UnidirectionalIncrement;
                 streamsAvailableFired.Release();
             };
 
