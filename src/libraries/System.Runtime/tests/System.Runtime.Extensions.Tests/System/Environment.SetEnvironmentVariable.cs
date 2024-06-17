@@ -284,7 +284,7 @@ namespace System.Tests
                 Environment.SetEnvironmentVariable(varName, value);
                 Environment.SetEnvironmentVariable(varName, null);
                 Assert.Null(Environment.GetEnvironmentVariable(varName));
-                Assert.False(Environment.GetEnvironmentVariables().ContainsKey(varName));
+                Assert.False(Environment.GetEnvironmentVariables().Contains(varName));
             });
         }
 
