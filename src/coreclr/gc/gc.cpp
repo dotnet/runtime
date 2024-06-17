@@ -25473,6 +25473,8 @@ void gc_heap::calculate_new_heap_count ()
         float tcp_to_consider = 0.0f;
         int agg_factor = 0;
         size_t total_soh_stable_size = 0;
+        int max_heap_count_datas = 0;
+        int min_heap_count_datas = 0;
         dynamic_heap_count_data_t::adjust_metric adj_metric = dynamic_heap_count_data_t::adjust_metric::not_adjusted;
 
         // For diagnostic purpose. need to init these
@@ -25490,8 +25492,8 @@ void gc_heap::calculate_new_heap_count ()
         {
             total_soh_stable_size = get_total_soh_stable_size();
             size_t total_bcd = dynamic_heap_count_data.compute_total_gen0_budget (total_soh_stable_size);
-            int max_heap_count_datas = (int)(total_bcd / dynamic_heap_count_data.min_gen0_new_allocation);
-            int min_heap_count_datas = (int)(total_bcd / dynamic_heap_count_data.max_gen0_new_allocation);
+            max_heap_count_datas = (int)(total_bcd / dynamic_heap_count_data.min_gen0_new_allocation);
+            min_heap_count_datas = (int)(total_bcd / dynamic_heap_count_data.max_gen0_new_allocation);
             int max_heap_count_growth_step = dynamic_heap_count_data.get_max_growth (n_heaps);
             int max_heap_count_growth_datas = max_heap_count_datas - n_heaps;
             if (max_heap_count_growth_datas < 0)
@@ -25557,7 +25559,9 @@ void gc_heap::calculate_new_heap_count ()
         }
 
         GCEventFireSizeAdaptationTuning_V1 (
-            (uint16_t)dynamic_heap_count_data.new_n_heaps,
+            (uint16_t)new_n_heaps,
+            (uint16_t)max_heap_count_datas,
+            (uint16_t)min_heap_count_datas,
             (uint64_t)current_gc_index,
             (uint64_t)total_soh_stable_size,
             (float)median_throughput_cost_percent,
@@ -25574,8 +25578,11 @@ void gc_heap::calculate_new_heap_count ()
             (uint8_t)adj_metric);
     }
 
+    size_t num_gen2s_since_last_change = 0;
+
     if ((new_n_heaps == n_heaps) && !process_eph_samples_p && process_gen2_samples_p)
     {
+        num_gen2s_since_last_change = dynamic_heap_count_data.current_gen2_samples_count - dynamic_heap_count_data.gen2_last_changed_sample_count;
         // If we have already been processing eph samples, we don't need to process gen2.
         if ((dynamic_heap_count_data.current_samples_count / dynamic_heap_count_data.current_gen2_samples_count) < 10)
         {
@@ -25598,8 +25605,7 @@ void gc_heap::calculate_new_heap_count ()
                     new_n_heaps = actual_n_max_heaps;
                 }
             }
-            else if ((median_gen2_tcp < (target_gen2_tcp / 2)) &&
-                     ((dynamic_heap_count_data.current_gen2_samples_count - dynamic_heap_count_data.gen2_last_changed_sample_count) > 30))
+            else if ((median_gen2_tcp < (target_gen2_tcp / 2)) && (num_gen2s_since_last_change > 30))
             {
                 new_n_heaps -= step_down;
                 dprintf (6666, ("[CHP3-0] last gen2 sample count when changed: %Id, gen2 tcp: %.3f, dec by %d, %d -> %d",
@@ -25625,12 +25631,12 @@ void gc_heap::calculate_new_heap_count ()
 
     if (process_gen2_samples_p)
     {
-        int num_gen2s_since_last_change = (int)(dynamic_heap_count_data.current_gen2_samples_count - dynamic_heap_count_data.gen2_last_changed_sample_count);
         dynamic_heap_count_data_t::gen2_sample* gen2_samples = dynamic_heap_count_data.gen2_samples;
         GCEventFireSizeAdaptationFullGCTuning_V1 (
             (uint16_t)dynamic_heap_count_data.new_n_heaps,
             (uint64_t)current_gc_index,
             (float)median_gen2_tcp,
+            (uint32_t)num_gen2s_since_last_change,
             (uint32_t)(current_gc_index - gen2_samples[0].gc_index),
             (float)gen2_samples[0].gc_percent,
             (uint32_t)(current_gc_index - gen2_samples[1].gc_index),

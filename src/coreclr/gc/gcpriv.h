@@ -4613,7 +4613,6 @@ private:
             size_t last_changed_gc_index = adj->gc_index;
             *recorded_tcp_count = 0;
             *recorded_tcp_slope = 0.0f;
-            *current_around_target_accumulation = around_target_accumulation;
 
             check_success_after_adjust (current_gc_index, adj, tcp);
 
@@ -4621,6 +4620,7 @@ private:
             dprintf (6666, ("accumulating %.3f + %.3f -> %.3f",
                 around_target_accumulation, diff_to_target, (around_target_accumulation + diff_to_target)));
             around_target_accumulation += diff_to_target;
+            *current_around_target_accumulation = around_target_accumulation;
 
             *num_gcs_since_last_change = current_gc_index - last_changed_gc_index;
             dprintf (6666, ("we adjusted at GC#%Id, %Id GCs ago", last_changed_gc_index, *num_gcs_since_last_change));
@@ -4743,7 +4743,7 @@ private:
 
                 if (change_heap_count_time > avg_gc_pause_time)
                 {
-                    factor *= 2 * (int)(change_heap_count_time/ avg_gc_pause_time);
+                    factor *= 2 * (int)(change_heap_count_time / avg_gc_pause_time);
                     *reason = hc_change_freq_reason::expensive_hc_change;
                 }
 
@@ -4756,7 +4756,7 @@ private:
             {
                 // Dec in general should be done less frequently than inc.
                 factor *= 2;
-                *reason = hc_change_freq_reason::dec;
+                *reason = (hc_change_freq_reason)((int)*reason | hc_change_freq_reason::dec);
 
                 adjustment* adj = get_last_adjustment();
                 int last_hc_change = adj->hc_change;
@@ -4768,7 +4768,7 @@ private:
                     // If it's the 2nd time in a row we want to dec, we also delay it.
                     dprintf (6666, ("last was dec, factor %d->%d", factor, (factor * 2)));
                     factor *= 2;
-                    *reason = hc_change_freq_reason::dec_multiple;
+                    *reason = (hc_change_freq_reason)((int)*reason | hc_change_freq_reason::dec_multiple);
                 }
                 else
                 {
@@ -4790,7 +4790,7 @@ private:
                             {
                                 dprintf (6666, ("We dec-ed and quickly followed with an inc, factor %d -> %d", factor, (factor * 4)));
                                 factor *= 4;
-                                *reason = hc_change_freq_reason::fluctuation;
+                                *reason = (hc_change_freq_reason)((int)*reason | hc_change_freq_reason::fluctuation);
                             }
                         }
                     }
@@ -4832,16 +4832,16 @@ private:
                 }
             }
 
-            if (change_int == 0)
-            {
-                *adj_reason = decide_adjustment_reason::limited_by_bounds;
-                dprintf (6666, ("cannot change due to upper/lower limit!"));
-                return adj_metric;
-            }
-
             if (saved_change_int != change_int)
             {
+                *adj_reason = decide_adjustment_reason::limited_by_bounds;
                 dprintf (6666, ("change %d heaps instead of %d so we don't go over upper/lower limit", change_int, saved_change_int));
+            }
+
+            if (change_int == 0)
+            {
+                dprintf (6666, ("cannot change due to upper/lower limit!"));
+                return adj_metric;
             }
 
             // Now we need to decide whether we should change the HC or the budget.
@@ -4860,13 +4860,13 @@ private:
             // because we use this to indicate if at some point we should change HC instead.
             if ((change_int > 0) && (n_heaps == min_hc_datas))
             {
-                *adj_reason = decide_adjustment_reason::cannot_adjust_budget;
+                *adj_reason = (decide_adjustment_reason)((int)*adj_reason | decide_adjustment_reason::cannot_adjust_budget);
                 dprintf (6666, ("we are already at min datas heaps %d, cannot inc budget so must inc HC", n_heaps));
                 adj_metric = adjust_hc;
             }
             else if ((change_int < 0) && (n_heaps == max_hc_datas))
             {
-                *adj_reason = decide_adjustment_reason::cannot_adjust_budget;
+                *adj_reason = (decide_adjustment_reason)((int)*adj_reason | decide_adjustment_reason::cannot_adjust_budget);
                 dprintf (6666, ("we are already at max datas heaps %d, cannot dec budget so must dec HC", n_heaps));
                 adj_metric = adjust_hc;
             }
@@ -4884,7 +4884,7 @@ private:
                 size_t num_gcs_since_change = current_gc_index - last_change_gc_index;
                 *hc_change_freq_factor = get_hc_change_freq_factors (change_int, last_change_gc_index, hc_freq_reason);
 
-                dprintf (6666, ("hc would change %.3f, factor is %d", hc_change_pct, hc_change_freq_factor));
+                dprintf (6666, ("hc would change %.3f, factor is %d", hc_change_pct, *hc_change_freq_factor));
                 if (hc_change_pct < 0.2)
                 {
                     // Should we also consider absolute time here?
@@ -4907,7 +4907,7 @@ private:
                 else
                 {
                     bool change_p = (num_gcs_since_change > (size_t)(*hc_change_freq_factor * sample_size));
-                    dprintf (6666, ("It's been %Id GCs since we wanted to change HC last time, thres %d GCs, %s",
+                    dprintf (6666, ("It's been %Id GCs since we changed last time, thres %d GCs, %s",
                         num_gcs_since_change, (*hc_change_freq_factor * sample_size), (change_p ? "change" : "don't change yet")));
                     if (!change_p)
                     {
