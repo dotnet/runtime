@@ -2152,9 +2152,6 @@ void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, 
     CallArg* const swiftErrorArg =
         (swiftErrorIndex != UINT_MAX) ? call->gtArgs.GetArgByIndex(swiftErrorIndex) : nullptr;
 
-    CallArg* const swiftIndirectResultArg =
-        (swiftIndirectResultIndex != UINT_MAX) ? call->gtArgs.GetArgByIndex(swiftIndirectResultIndex) : nullptr;
-
     // Now expand struct args that must be lowered into primitives
     unsigned argIndex = 0;
     for (CallArg* arg = call->gtArgs.Args().begin().GetArg(); arg != nullptr; argIndex++)
