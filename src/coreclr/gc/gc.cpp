@@ -13433,7 +13433,7 @@ void gc_heap::distribute_free_regions()
 
         if (
 #ifdef BACKGROUND_GC
-            background_running_p() ||
+            //background_running_p() ||
 #endif
             (balance < 0))
         {
