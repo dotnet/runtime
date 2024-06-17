@@ -7,7 +7,7 @@ namespace System
 {
     internal static class AppContextSwitchHelper
     {
-        internal static bool GetBooleanConfig(string switchName, bool defaultValue) =>
+        internal static bool GetBooleanConfig(string switchName, bool defaultValue = false) =>
             AppContext.TryGetSwitch(switchName, out bool value) ? value : defaultValue;
 
         internal static bool GetBooleanConfig(string switchName, string envVariable, bool defaultValue = false)
