@@ -208,21 +208,9 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__DynamicStaticsInfo__m_pGCStatics
 ASMCONSTANTS_C_ASSERT(   CORINFO_NullReferenceException_ASM
                       == CORINFO_NullReferenceException);
 
-#define                  CORINFO_InvalidCastException_ASM 2
-ASMCONSTANTS_C_ASSERT(   CORINFO_InvalidCastException_ASM
-                      == CORINFO_InvalidCastException);
-
 #define                  CORINFO_IndexOutOfRangeException_ASM 3
 ASMCONSTANTS_C_ASSERT(   CORINFO_IndexOutOfRangeException_ASM
                       == CORINFO_IndexOutOfRangeException);
-
-#define                  CORINFO_ArrayTypeMismatchException_ASM 6
-ASMCONSTANTS_C_ASSERT(   CORINFO_ArrayTypeMismatchException_ASM
-                      == CORINFO_ArrayTypeMismatchException);
-
-#define                  CORINFO_ArgumentNullException_ASM 8
-ASMCONSTANTS_C_ASSERT(   CORINFO_ArgumentNullException_ASM
-                      == CORINFO_ArgumentNullException);
 
 #define                  CORINFO_ArgumentException_ASM 9
 ASMCONSTANTS_C_ASSERT(   CORINFO_ArgumentException_ASM

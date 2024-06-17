@@ -2620,6 +2620,24 @@ namespace System
         }
 
         /// <summary>
+        /// Determines whether the specified value appears at the start of the span.
+        /// </summary>
+        /// <param name="span">The span to search.</param>
+        /// <param name="value">The value to compare.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool StartsWith<T>(this ReadOnlySpan<T> span, T value) where T : IEquatable<T>? =>
+            span.Length != 0 && (span[0]?.Equals(value) ?? (object?)value is null);
+
+        /// <summary>
+        /// Determines whether the specified value appears at the end of the span.
+        /// </summary>
+        /// <param name="span">The span to search.</param>
+        /// <param name="value">The value to compare.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool EndsWith<T>(this ReadOnlySpan<T> span, T value) where T : IEquatable<T>? =>
+            span.Length != 0 && (span[^1]?.Equals(value) ?? (object?)value is null);
+
+        /// <summary>
         /// Reverses the sequence of the elements in the entire span.
         /// </summary>
         public static void Reverse<T>(this Span<T> span)
