@@ -132,7 +132,7 @@
 #include "profilinghelper.inl"
 #include "eetoprofinterfaceimpl.inl"
 #include "profilingenumerators.h"
-#endif
+#endif // PROFILING_SUPPORTED
 
 #include "profdetach.h"
 
