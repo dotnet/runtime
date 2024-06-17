@@ -654,7 +654,7 @@ RefPosition* LinearScan::newRefPosition(Interval*        theInterval,
     // in RELEASE.
     if (theRefType == RefTypeKill)
     {
-        newRP->killRegisterAssignment = mask;
+        newRP->killedRegisters = mask;
     }
 #endif
     DBEXEC(VERBOSE, newRP->dump(this));
@@ -719,7 +719,7 @@ void LinearScan::addKillForRegs(regMaskTP mask, LsraLocation currentLoc)
 
     RefPosition* pos = newRefPosition((Interval*)nullptr, currentLoc, RefTypeKill, nullptr, mask.getLow());
 
-    pos->killRegisterAssignment = mask;
+    pos->killedRegisters = mask;
 
     *killTail = pos;
     killTail  = &pos->nextRefPosition;

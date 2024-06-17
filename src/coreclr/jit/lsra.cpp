@@ -282,7 +282,7 @@ void LinearScan::updateNextFixedRef(RegRecord* regRecord, RefPosition* nextRefPo
     RefPosition* kill = nextKill;
     while ((kill != nullptr) && (kill->nodeLocation < nextLocation))
     {
-        if (kill->killRegisterAssignment.IsRegNumInMask(regRecord->regNum))
+        if (kill->killedRegisters.IsRegNumInMask(regRecord->regNum))
         {
             nextLocation = kill->nodeLocation;
             break;
@@ -4041,7 +4041,7 @@ void LinearScan::processKills(RefPosition* killRefPosition)
 {
     RefPosition* nextKill = killRefPosition->nextRefPosition;
 
-    regMaskTP killedRegs = killRefPosition->getKillRegisterAssignment();
+    regMaskTP killedRegs = killRefPosition->getKilledRegisters();
     while (killedRegs.IsNonEmpty())
     {
         regNumber  killedReg        = genFirstRegNumFromMaskAndToggle(killedRegs);
@@ -4061,9 +4061,9 @@ void LinearScan::processKills(RefPosition* killRefPosition)
         updateNextFixedRef(regRecord, regNextRefPos, nextKill);
     }
 
-    regsBusyUntilKill &= ~killRefPosition->getKillRegisterAssignment();
+    regsBusyUntilKill &= ~killRefPosition->getKilledRegisters();
     INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_KILL_REGS, nullptr, REG_NA, nullptr, NONE,
-                                    killRefPosition->getKillRegisterAssignment()));
+                                    killRefPosition->getKilledRegisters()));
 }
 
 //------------------------------------------------------------------------
@@ -10417,7 +10417,7 @@ void RefPosition::dump(LinearScan* linearScan)
     printf("regmask=");
     if (refType == RefTypeKill)
     {
-        linearScan->compiler->dumpRegMask(getKillRegisterAssignment());
+        linearScan->compiler->dumpRegMask(getKilledRegisters());
     }
     else
     {
@@ -11093,7 +11093,7 @@ void LinearScan::TupleStyleDump(LsraTupleDumpMode mode)
                                 printf("\n        Kill: ");
                                 killPrinted = true;
                             }
-                            compiler->dumpRegMask(currentRefPosition->getKillRegisterAssignment());
+                            compiler->dumpRegMask(currentRefPosition->getKilledRegisters());
                             printf(" ");
                             break;
                         case RefTypeFixedReg:
@@ -12107,7 +12107,7 @@ void LinearScan::verifyFinalAllocation()
 
             case RefTypeKill:
                 dumpLsraAllocationEvent(LSRA_EVENT_KILL_REGS, nullptr, REG_NA, currentBlock, NONE,
-                                        currentRefPosition.getKillRegisterAssignment());
+                                        currentRefPosition.getKilledRegisters());
                 break;
 
             case RefTypeFixedReg:
