@@ -9,7 +9,7 @@ namespace System.Resources.Extensions.Tests.FormattedObject;
 
 public class SystemDrawingTests : Common.SystemDrawingTests<FormattedObjectSerializer>
 {
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDrawingSupported))]
     public void PointF_Parse()
     {
         PointF input = new() { X = 123.5f, Y = 456.1f };
@@ -26,7 +26,7 @@ public class SystemDrawingTests : Common.SystemDrawingTests<FormattedObjectSeria
         classInfo.GetSingle("y").Should().Be(input.Y);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDrawingSupported))]
     public void RectangleF_Parse()
     {
         RectangleF input = new(x: 123.5f, y: 456.1f, width: 100.25f, height: 200.75f);
