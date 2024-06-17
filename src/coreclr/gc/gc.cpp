@@ -2856,6 +2856,7 @@ BOOL gc_heap::should_expand_in_full_gc = FALSE;
 #ifdef DYNAMIC_HEAP_COUNT
 int gc_heap::dynamic_adaptation_mode = dynamic_adaptation_default;
 gc_heap::dynamic_heap_count_data_t SVR::gc_heap::dynamic_heap_count_data;
+size_t gc_heap::current_total_soh_stable_size = 0;
 uint64_t gc_heap::last_suspended_end_time = 0;
 size_t gc_heap::gc_index_full_gc_end = 0;
 
@@ -22108,8 +22109,7 @@ void gc_heap::update_end_gc_time_per_heap()
 
             dprintf (6666, ("sample#%d: %d heaps, this GC end %I64d - last sus end %I64d = %I64d, this GC pause %.3fms, msl wait %I64dus, tcp %.3f, surv %zd, gc speed %.3fmb/ms (%.3fkb/ms/heap)",
                 dynamic_heap_count_data.sample_index, n_heaps, end_gc_time, last_suspended_end_time, sample.elapsed_between_gcs,
-                (sample.gc_pause_time / 1000.0), sample.msl_wait_time, ((float)((sample.msl_wait_time / n_heaps) + sample.gc_pause_time) * 100.0 / (float)sample.elapsed_between_gcs),
-                sample.gc_survived_size,
+                (sample.gc_pause_time / 1000.0), sample.msl_wait_time, tcp, sample.gc_survived_size,
                 (sample.gc_pause_time ? (sample.gc_survived_size / 1000.0 / sample.gc_pause_time) : 0),
                 (sample.gc_pause_time ? ((float)sample.gc_survived_size / sample.gc_pause_time / n_heaps) : 0)));
 
@@ -22775,6 +22775,10 @@ void gc_heap::gc1()
 #endif //USE_REGIONS
             }
 
+#ifdef DYNAMIC_HEAP_COUNT
+            update_total_soh_stable_size();
+#endif //DYNAMIC_HEAP_COUNT
+
             fire_pevents();
             update_end_ngc_time();
             pm_full_gc_init_or_clear();
@@ -22846,25 +22850,37 @@ void gc_heap::gc1()
 #ifdef DYNAMIC_HEAP_COUNT
 size_t gc_heap::get_total_soh_stable_size()
 {
-    size_t total_stable_size = 0;
-    bool use_max_gen_p = (dynamic_heap_count_data.current_gen2_samples_count > 0);
-    int gen_number = max_generation;
-    for (int i = 0; i < gc_heap::n_heaps; i++)
+    if (current_total_soh_stable_size)
     {
-        gc_heap* hp = g_heaps[i];
-
-        if (use_max_gen_p)
+        return current_total_soh_stable_size;
+    }
+    else
+    {
+        size_t total_stable_size = 0;
+        for (int i = 0; i < gc_heap::n_heaps; i++)
         {
-            dynamic_data* dd = hp->dynamic_data_of (gen_number);
-            total_stable_size += dd_current_size (dd) + dd_desired_allocation (dd);
-        }
-        else
-        {
+            gc_heap* hp = g_heaps[i];
             total_stable_size += hp->generation_size (max_generation - 1) / 2;
         }
-        }
 
-    return total_stable_size;
+        return total_stable_size;
+    }
+}
+
+void gc_heap::update_total_soh_stable_size()
+{
+    if ((dynamic_adaptation_mode == dynamic_adaptation_to_application_sizes) && (settings.condemned_generation == max_generation))
+    {
+        current_total_soh_stable_size = 0;
+        for (int i = 0; i < gc_heap::n_heaps; i++)
+        {
+            gc_heap* hp = g_heaps[i];
+
+            dynamic_data* dd = hp->dynamic_data_of (max_generation);
+            current_total_soh_stable_size += dd_current_size (dd) + dd_desired_allocation (dd);
+            dprintf (6666, ("current size is %.3fmb, budget %.3fmb, total -> %.3fmb", mb (dd_current_size (dd)), mb (dd_desired_allocation (dd)), mb (current_total_soh_stable_size)));
+        }
+    }
 }
 
 void gc_heap::assign_new_budget (int gen_number, size_t desired_per_heap)
@@ -46080,6 +46096,10 @@ void gc_heap::background_sweep()
         // look into eliminating it - check to make sure things that use
         // this state can live with per heap state like should_check_bgc_mark.
         current_c_gc_state = c_gc_state_free;
+
+#ifdef DYNAMIC_HEAP_COUNT
+        update_total_soh_stable_size();
+#endif //DYNAMIC_HEAP_COUNT
 
 #ifdef BGC_SERVO_TUNING
         if (bgc_tuning::enable_fl_tuning)
