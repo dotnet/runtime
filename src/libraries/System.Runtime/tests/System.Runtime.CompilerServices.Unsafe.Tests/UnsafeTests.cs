@@ -1263,10 +1263,9 @@ namespace System.Runtime.CompilerServices
 
             // Conversion between same sized ref structs should succeed
 
-            // TODO https://github.com/dotnet/runtime/issues/102988: Uncomment once this works on mono
-            //int i = 42;
-            //Span<int> span = Unsafe.BitCast<ReadOnlySpan<int>, Span<int>>(new ReadOnlySpan<int>(&i, 1));
-            //Assert.Equal(42, span[0]);
+            int i = 42;
+            Span<int> span = Unsafe.BitCast<ReadOnlySpan<int>, Span<int>>(new ReadOnlySpan<int>(&i, 1));
+            Assert.Equal(42, span[0]);
 
             // Conversion from runtime SIMD type to a custom struct should succeed
 

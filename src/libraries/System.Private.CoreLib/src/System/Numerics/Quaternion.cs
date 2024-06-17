@@ -38,7 +38,7 @@ namespace System.Numerics
         [Intrinsic]
         public Quaternion(float x, float y, float z, float w)
         {
-            this = Vector128.Create(x, y, z, w).AsQuaternion();
+            this = Create(x, y, z, w);
         }
 
         /// <summary>Creates a quaternion from the specified vector and rotation parts.</summary>
@@ -47,7 +47,7 @@ namespace System.Numerics
         [Intrinsic]
         public Quaternion(Vector3 vectorPart, float scalarPart)
         {
-            this = new Vector4(vectorPart, scalarPart).AsQuaternion();
+            this = Create(vectorPart, scalarPart);
         }
 
         /// <summary>Gets a quaternion that represents a zero.</summary>
@@ -63,7 +63,7 @@ namespace System.Numerics
         public static Quaternion Identity
         {
             [Intrinsic]
-            get => new Quaternion(0.0f, 0.0f, 0.0f, 1.0f);
+            get => Create(0.0f, 0.0f, 0.0f, 1.0f);
         }
 
         /// <summary>Gets or sets the element at the specified index.</summary>
@@ -73,9 +73,13 @@ namespace System.Numerics
         public float this[int index]
         {
             [Intrinsic]
-            readonly get => this.GetElement(index);
+            readonly get => this.AsVector128().GetElement(index);
 
-            set => this = this.WithElement(index, value);
+            [Intrinsic]
+            set
+            {
+                this = this.AsVector128().WithElement(index, value).AsQuaternion();
+            }
         }
 
         /// <summary>Gets a value that indicates whether the current instance is the identity quaternion.</summary>
@@ -161,10 +165,10 @@ namespace System.Numerics
         {
             if (Vector128.IsHardwareAccelerated)
             {
-                var left = value1.AsVector128();
-                var right = value2.AsVector128();
+                Vector128<float> left = value1.AsVector128();
+                Vector128<float> right = value2.AsVector128();
 
-                var result = right * left.GetElementUnsafe(3);
+                Vector128<float> result = right * left.GetElementUnsafe(3);
                 result += (Vector128.Shuffle(right, Vector128.Create(3, 2, 1, 0)) * left.GetElementUnsafe(0)) * Vector128.Create(+1.0f, -1.0f, +1.0f, -1.0f);
                 result += (Vector128.Shuffle(right, Vector128.Create(2, 3, 0, 1)) * left.GetElementUnsafe(1)) * Vector128.Create(+1.0f, +1.0f, -1.0f, -1.0f);
                 result += (Vector128.Shuffle(right, Vector128.Create(1, 0, 3, 2)) * left.GetElementUnsafe(2)) * Vector128.Create(-1.0f, +1.0f, +1.0f, -1.0f);
@@ -275,6 +279,22 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Quaternion Conjugate(Quaternion value) => (value.AsVector128() * Vector128.Create(-1.0f, -1.0f, -1.0f, 1.0f)).AsQuaternion();
 
+        /// <summary>Creates a quaternion from the specified components.</summary>
+        /// <param name="x">The value to assign to the X component of the quaternion.</param>
+        /// <param name="y">The value to assign to the Y component of the quaternion.</param>
+        /// <param name="z">The value to assign to the Z component of the quaternion.</param>
+        /// <param name="w">The value to assign to the W component of the quaternion.</param>
+        /// <returns>A new quaternion created from the specified components.</returns>>
+        [Intrinsic]
+        internal static Quaternion Create(float x, float y, float z, float w) => Vector128.Create(x, y, z, w).AsQuaternion();
+
+        /// <summary>Creates a quaternion from the specified vector and rotation parts.</summary>
+        /// <param name="vectorPart">The vector part of the quaternion.</param>
+        /// <param name="scalarPart">The rotation part of the quaternion.</param>
+        /// <returns>A new quaternion created from the specified vector and rotation parts.</returns>
+        [Intrinsic]
+        internal static Quaternion Create(Vector3 vectorPart, float scalarPart) => Vector4.Create(vectorPart, scalarPart).AsQuaternion();
+
         /// <summary>Creates a quaternion from a unit vector and an angle to rotate around the vector.</summary>
         /// <param name="axis">The unit vector to rotate around.</param>
         /// <param name="angle">The angle, in radians, to rotate around the vector.</param>
@@ -284,9 +304,7 @@ namespace System.Numerics
         {
             Quaternion ans;
 
-            float halfAngle = angle * 0.5f;
-            float s = MathF.Sin(halfAngle);
-            float c = MathF.Cos(halfAngle);
+            (float s, float c) = float.SinCos(angle * 0.5f);
 
             ans.X = axis.X * s;
             ans.Y = axis.Y * s;
@@ -307,7 +325,7 @@ namespace System.Numerics
 
             if (trace > 0.0f)
             {
-                float s = MathF.Sqrt(trace + 1.0f);
+                float s = float.Sqrt(trace + 1.0f);
                 q.W = s * 0.5f;
                 s = 0.5f / s;
                 q.X = (matrix.M23 - matrix.M32) * s;
@@ -318,7 +336,7 @@ namespace System.Numerics
             {
                 if (matrix.M11 >= matrix.M22 && matrix.M11 >= matrix.M33)
                 {
-                    float s = MathF.Sqrt(1.0f + matrix.M11 - matrix.M22 - matrix.M33);
+                    float s = float.Sqrt(1.0f + matrix.M11 - matrix.M22 - matrix.M33);
                     float invS = 0.5f / s;
                     q.X = 0.5f * s;
                     q.Y = (matrix.M12 + matrix.M21) * invS;
@@ -327,7 +345,7 @@ namespace System.Numerics
                 }
                 else if (matrix.M22 > matrix.M33)
                 {
-                    float s = MathF.Sqrt(1.0f + matrix.M22 - matrix.M11 - matrix.M33);
+                    float s = float.Sqrt(1.0f + matrix.M22 - matrix.M11 - matrix.M33);
                     float invS = 0.5f / s;
                     q.X = (matrix.M21 + matrix.M12) * invS;
                     q.Y = 0.5f * s;
@@ -336,7 +354,7 @@ namespace System.Numerics
                 }
                 else
                 {
-                    float s = MathF.Sqrt(1.0f + matrix.M33 - matrix.M11 - matrix.M22);
+                    float s = float.Sqrt(1.0f + matrix.M33 - matrix.M11 - matrix.M22);
                     float invS = 0.5f / s;
                     q.X = (matrix.M31 + matrix.M13) * invS;
                     q.Y = (matrix.M32 + matrix.M23) * invS;
@@ -357,19 +375,9 @@ namespace System.Numerics
         {
             //  Roll first, about axis the object is facing, then
             //  pitch upward, then yaw to face into the new heading
-            float sr, cr, sp, cp, sy, cy;
-
-            float halfRoll = roll * 0.5f;
-            sr = MathF.Sin(halfRoll);
-            cr = MathF.Cos(halfRoll);
-
-            float halfPitch = pitch * 0.5f;
-            sp = MathF.Sin(halfPitch);
-            cp = MathF.Cos(halfPitch);
-
-            float halfYaw = yaw * 0.5f;
-            sy = MathF.Sin(halfYaw);
-            cy = MathF.Cos(halfYaw);
+            (float sr, float cr) = float.SinCos(roll * 0.5f);
+            (float sp, float cp) = float.SinCos(pitch * 0.5f);
+            (float sy, float cy) = float.SinCos(yaw * 0.5f);
 
             Quaternion result;
 
@@ -441,7 +449,7 @@ namespace System.Numerics
 
             // Normalize it.
             float ls = r.X * r.X + r.Y * r.Y + r.Z * r.Z + r.W * r.W;
-            float invNorm = 1.0f / MathF.Sqrt(ls);
+            float invNorm = 1.0f / float.Sqrt(ls);
 
             r.X *= invNorm;
             r.Y *= invNorm;
@@ -507,13 +515,13 @@ namespace System.Numerics
             }
             else
             {
-                float omega = MathF.Acos(cosOmega);
-                float invSinOmega = 1 / MathF.Sin(omega);
+                float omega = float.Acos(cosOmega);
+                float invSinOmega = 1 / float.Sin(omega);
 
-                s1 = MathF.Sin((1.0f - t) * omega) * invSinOmega;
+                s1 = float.Sin((1.0f - t) * omega) * invSinOmega;
                 s2 = (flip)
-                    ? -MathF.Sin(t * omega) * invSinOmega
-                    : MathF.Sin(t * omega) * invSinOmega;
+                    ? -float.Sin(t * omega) * invSinOmega
+                    : float.Sin(t * omega) * invSinOmega;
             }
 
             Quaternion ans;
@@ -553,7 +561,7 @@ namespace System.Numerics
         /// <summary>Calculates the length of the quaternion.</summary>
         /// <returns>The computed length of the quaternion.</returns>
         [Intrinsic]
-        public readonly float Length() => MathF.Sqrt(LengthSquared());
+        public readonly float Length() => float.Sqrt(LengthSquared());
 
         /// <summary>Calculates the squared length of the quaternion.</summary>
         /// <returns>The length squared of the quaternion.</returns>

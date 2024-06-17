@@ -274,7 +274,7 @@ namespace Microsoft.Extensions.Hosting.Tests
             IServiceProvider? serviceProvider = factory(Array.Empty<string>());
 
             var configuration = (IConfiguration)serviceProvider.GetService(typeof(IConfiguration));
-            Assert.Contains("ApplicationNameSetFromArgument", configuration["applicationName"]);
+            Assert.Equal("ApplicationNameSetFromArgument", configuration["applicationName"]);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
