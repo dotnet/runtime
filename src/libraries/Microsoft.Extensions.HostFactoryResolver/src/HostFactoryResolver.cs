@@ -165,7 +165,7 @@ namespace Microsoft.Extensions.Hosting
 
                     args = args.Any(arg => IsApplicationNameArg(arg)) || assembly?.GetName().Name is null
                         ? args
-                        : args.Concat(new[] { "--applicationName", assembly.GetName().Name }).ToArray();
+                        : args.Concat(new[] { "--applicationName", assembly.GetName().Name! }).ToArray();
 
                     var host = hostFactory(args);
                     return GetServiceProvider(host);
