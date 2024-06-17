@@ -18,7 +18,7 @@ The .NET Foundation licenses this file to you under the MIT license.
   <PropertyGroup>
 
     <!-- Always enable CFG on x64 for now. (for testing, will remove) -->
-    <ControlFlowGuard Condition="'$(CETCompat)' != 'false' and '$(_targetArchitecture)' == 'x64'">Guard</ControlFlowGuard>
+    <ControlFlowGuard Condition="'$(CETCompat)' != 'false' and  '$(_targetArchitecture)' == 'x64'">Guard</ControlFlowGuard>
 
     <StripSymbols Condition="'$(StripSymbols)' == '' and '$(_targetOS)' != 'win'">true</StripSymbols>
     <NativeLib Condition="'$(OutputType)' == 'Library' and '$(NativeLib)' == '' and '$(IlcMultiModule)' != 'true'">Shared</NativeLib>
