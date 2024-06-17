@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 
@@ -88,23 +89,26 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface9
         try
         {
             Contracts.IMetadata contract = _target.Contracts.Metadata;
-            Contracts.MethodTable_1 methodTable = contract.GetMethodTableData(mt);
+            Contracts.MethodTableHandle methodTable = contract.GetMethodTableData(mt);
 
             DacpMethodTableData result = default;
-            result.baseSize = methodTable.BaseSize;
+            result.baseSize = contract.GetBaseSize(methodTable);
             if (contract.IsString(methodTable))
                 result.baseSize -= 2 /*sizeof(WCHAR) */;
-            result.componentSize = checked((uint)methodTable.GetComponentSize());
-            result.bIsFree = methodTable.IsFreeObjectMethodTable ? 1 : 0;
-            if (!methodTable.IsFreeObjectMethodTable)
+            result.componentSize = contract.GetComponentSize(methodTable);
+            bool isFreeObjectMT = contract.IsFreeObjectMethodTable(methodTable);
+            result.bIsFree = isFreeObjectMT ? 1 : 0;
+            if (!isFreeObjectMT)
             {
-                result.module = methodTable.Module;
+                result.module = contract.GetModule(methodTable);
+                // TODO[cdac]: it looks like this is only used in output.  Can we just return the canonical MT pointer here
+                // instead and avoid exposing the EEClass concept from the contract?
                 result.@class = contract.GetClass(methodTable);
-                result.parentMethodTable = methodTable.ParentMethodTable;
-                result.wNumInterfaces = methodTable.NumInterfaces;
+                result.parentMethodTable = contract.GetParentMethodTable(methodTable);
+                result.wNumInterfaces = contract.GetNumInterfaces(methodTable);
                 result.wNumMethods = contract.GetNumMethods(methodTable);
                 result.wNumVtableSlots = contract.GetNumVtableSlots(methodTable);
-                result.wNumVirtuals = methodTable.NumVirtuals;
+                result.wNumVirtuals = contract.GetNumVirtuals(methodTable);
                 result.cl = contract.GetTypeDefToken(methodTable);
                 result.dwAttrClass = contract.GetTypeDefTypeAttributes(methodTable);
                 result.bContainsPointers = contract.ContainsPointers(methodTable) ? 1 : 0;
