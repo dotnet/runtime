@@ -950,7 +950,7 @@ public:
     gc_alloc_context*        m_alloc_context;
 
 public:
-    inline void InitAllocContext() { LIMITED_METHOD_CONTRACT; m_alloc_context = &t_thread_alloc_context; }
+    inline void InitAllocContext() { LIMITED_METHOD_CONTRACT; m_alloc_context = &t_gc_thread_locals.alloc_context; }
 
     inline gc_alloc_context *GetAllocContext() { LIMITED_METHOD_CONTRACT; return m_alloc_context; }
 

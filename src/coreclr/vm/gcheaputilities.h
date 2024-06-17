@@ -26,13 +26,20 @@ GVAL_DECL(gc_alloc_context, g_global_alloc_context);
 }
 #endif // !DACCESS_COMPILE
 
-// on MP systems, each thread has its own allocation chunk so we can avoid
-// lock prefixes and expensive MP cache snooping stuff
+struct GCThreadLocals
+{
+    // on MP systems, each thread has its own allocation chunk so we can avoid
+    // lock prefixes and expensive MP cache snooping stuff
+    gc_alloc_context alloc_context;
+};
+
 #ifdef _MSC_VER
-EXTERN_C __declspec(selectany) __declspec(thread) gc_alloc_context t_thread_alloc_context;
+// use selectany to avoid initialization de-optimization issues in the compiler
+__declspec(selectany)
 #else
-EXTERN_C __thread gc_alloc_context t_thread_alloc_context;
+extern
 #endif
+thread_local GCThreadLocals t_gc_thread_locals;
 
 extern "C" uint32_t* g_card_bundle_table;
 extern "C" uint8_t* g_ephemeral_low;
