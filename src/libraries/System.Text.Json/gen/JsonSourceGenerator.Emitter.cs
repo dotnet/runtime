@@ -974,7 +974,7 @@ namespace System.Text.Json.SourceGeneration
                 if (!skipNullCheck && typeGenSpec.TypeRef.CanBeNull)
                 {
                     writer.WriteLine($$"""
-                        if ({{ValueVarName}} == null)
+                        if ({{ValueVarName}} is null)
                         {
                             {{WriterVarName}}.WriteNullValue();
                             return;
