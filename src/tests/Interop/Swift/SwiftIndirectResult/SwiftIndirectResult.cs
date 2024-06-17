@@ -19,11 +19,11 @@ public unsafe class SwiftIndirectResultTests
     private const string SwiftLib = "libSwiftIndirectResult.dylib";
 
     [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
-    [DllImport(SwiftLib, EntryPoint = "$s6output21ReturnNonFrozenStruct1a1b1cAA0cdE0Vs5Int32V_A2ItF")]
+    [DllImport(SwiftLib, EntryPoint = "$s19SwiftIndirectResult21ReturnNonFrozenStruct1a1b1cAA0efG0Vs5Int32V_A2ItF")]
     public static extern void ReturnNonFrozenStruct(SwiftIndirectResult result, int a, int b, int c);
 
     [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
-    [DllImport(SwiftLib, EntryPoint = "$s6output26SumReturnedNonFrozenStruct1fs5Int32VAA0deF0VyXE_tF")]
+    [DllImport(SwiftLib, EntryPoint = "$s19SwiftIndirectResult26SumReturnedNonFrozenStruct1fs5Int32VAA0fgH0VyXE_tF")]
     public static extern int SumReturnedNonFrozenStruct(delegate* unmanaged[Swift]<SwiftIndirectResult, SwiftSelf, void> func, void* funcContext);
 
     [Fact]
