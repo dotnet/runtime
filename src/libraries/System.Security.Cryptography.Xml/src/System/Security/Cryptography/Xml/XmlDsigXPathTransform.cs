@@ -48,7 +48,7 @@ namespace System.Security.Cryptography.Xml
                     if (elem.LocalName == "XPath")
                     {
                         _xpathexpr = elem.InnerXml.Trim(null);
-                        XmlNodeReader nr = new XmlNodeReader(elem);
+                        using XmlNodeReader nr = new XmlNodeReader(elem);
                         XmlNameTable nt = nr.NameTable;
                         _nsm = new XmlNamespaceManager(nt);
                         if (!Utils.VerifyAttributes(elem, (string?)null))
@@ -134,7 +134,7 @@ namespace System.Security.Cryptography.Xml
         private void LoadStreamInput(Stream stream)
         {
             XmlResolver resolver = (ResolverSet ? _xmlResolver : XmlResolverHelper.GetThrowingResolver());
-            XmlReader valReader = Utils.PreProcessStreamInput(stream, resolver, BaseURI!);
+            using XmlReader valReader = Utils.PreProcessStreamInput(stream, resolver, BaseURI!);
             _document = new XmlDocument();
             _document.PreserveWhitespace = true;
             _document.Load(valReader);

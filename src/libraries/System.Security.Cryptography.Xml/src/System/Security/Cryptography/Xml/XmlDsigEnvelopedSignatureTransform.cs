@@ -80,7 +80,7 @@ namespace System.Security.Cryptography.Xml
             XmlDocument doc = new XmlDocument();
             doc.PreserveWhitespace = true;
             XmlResolver resolver = ResolverSet ? _xmlResolver : XmlResolverHelper.GetThrowingResolver();
-            XmlReader xmlReader = Utils.PreProcessStreamInput(stream, resolver, BaseURI!);
+            using XmlReader xmlReader = Utils.PreProcessStreamInput(stream, resolver, BaseURI!);
             doc.Load(xmlReader);
             _containingDocument = doc;
             if (_containingDocument == null)
