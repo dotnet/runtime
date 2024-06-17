@@ -133,9 +133,9 @@ void ECall::PopulateManagedHelpers()
     pDest = pMD->GetMultiCallableAddrOfCode();
     SetJitHelperFunction(CORINFO_HELP_CHKCASTCLASS_SPECIAL, pDest);
 
-    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__ISASSIGNABLE));
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__ARETYPESASSIGNABLE));
     pDest = pMD->GetMultiCallableAddrOfCode();
-    SetJitHelperFunction(CORINFO_HELP_ISASSIGNABLE, pDest);
+    SetJitHelperFunction(CORINFO_HELP_ARETYPESASSIGNABLE, pDest);
 
     pMD = CoreLibBinder::GetMethod((BinderMethodID)(METHOD__CASTHELPERS__UNBOX));
     pDest = pMD->GetMultiCallableAddrOfCode();

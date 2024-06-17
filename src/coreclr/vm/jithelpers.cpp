@@ -2141,7 +2141,7 @@ HCIMPL3(Object*, JIT_NewMDArr, CORINFO_CLASS_HANDLE classHnd, unsigned dwNumArgs
 }
 HCIMPLEND
 
-extern "C" BOOL QCALLTYPE CastHelpers_AreTypesAssignable(CORINFO_CLASS_HANDLE fromTypeHnd, CORINFO_CLASS_HANDLE toTypeHnd)
+extern "C" BOOL QCALLTYPE CastHelpers_AreTypesAssignableHelper(CORINFO_CLASS_HANDLE fromTypeHnd, CORINFO_CLASS_HANDLE toTypeHnd)
 {
     QCALL_CONTRACT;
 

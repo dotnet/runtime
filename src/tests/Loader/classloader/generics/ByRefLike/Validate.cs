@@ -56,6 +56,18 @@ public class Validate
         Assert.Throws<InvalidCastException>(() => { Exec.UnboxToT(new object()); });
     }
 
+    interface I1 { }
+
+    struct S {}
+    struct S<T> {}
+    struct S_I1 : I1 {}
+    struct S_I1<T> : I1 {}
+
+    ref struct RS { }
+    ref struct RS<T> { }
+    ref struct RS_I1 : I1 { }
+    ref struct RS_I1<T> : I1 { }
+
     [Fact]
     public static void Validate_RecognizedOpCodeSequences_Scenarios()
     {
@@ -64,7 +76,52 @@ public class Validate
         Exec.BoxUnboxAny();
         Exec.BoxBranch();
         Exec.BoxIsinstUnboxAny();
-        Exec.BoxIsinstBranch();
+
+        Exec.BoxIsinstBranchVarious();
+
+        Assert.True(Exec.BoxIsinstBranch<int, object>(default));
+        Assert.False(Exec.BoxIsinstBranch<int, I1>(default));
+        Assert.False(Exec.BoxIsinstBranch<object, I1>(default));
+
+        Assert.True(Exec.BoxIsinstBranch<S, object>(default));
+        Assert.True(Exec.BoxIsinstBranch<S<int>, object>(default));
+        Assert.True(Exec.BoxIsinstBranch<S<object>, object>(default));
+        Assert.True(Exec.BoxIsinstBranch<S, S>(default));
+        Assert.True(Exec.BoxIsinstBranch<S<int>, S<int>>(default));
+        Assert.True(Exec.BoxIsinstBranch<S<object>, S<object>>(default));
+        Assert.False(Exec.BoxIsinstBranch<S, I1>(default));
+        Assert.False(Exec.BoxIsinstBranch<S<int>, I1>(default));
+        Assert.False(Exec.BoxIsinstBranch<S<object>, I1>(default));
+
+        Assert.True(Exec.BoxIsinstBranch<S_I1, object>(default));
+        Assert.True(Exec.BoxIsinstBranch<S_I1<int>, object>(default));
+        Assert.True(Exec.BoxIsinstBranch<S_I1<object>, object>(default));
+        Assert.True(Exec.BoxIsinstBranch<S_I1, S_I1>(default));
+        Assert.True(Exec.BoxIsinstBranch<S_I1<int>, S_I1<int>>(default));
+        Assert.True(Exec.BoxIsinstBranch<S_I1<object>, S_I1<object>>(default));
+        Assert.True(Exec.BoxIsinstBranch<S_I1, I1>(default));
+        Assert.True(Exec.BoxIsinstBranch<S_I1<int>, I1>(default));
+        Assert.True(Exec.BoxIsinstBranch<S_I1<object>, I1>(default));
+
+        Assert.True(Exec.BoxIsinstBranch<RS, object>(default));
+        Assert.True(Exec.BoxIsinstBranch<RS<int>, object>(default));
+        Assert.True(Exec.BoxIsinstBranch<RS<object>, object>(default));
+        Assert.True(Exec.BoxIsinstBranch<RS, RS>(default));
+        Assert.True(Exec.BoxIsinstBranch<RS<int>, RS<int>>(default));
+        Assert.True(Exec.BoxIsinstBranch<RS<object>, RS<object>>(default));
+        Assert.False(Exec.BoxIsinstBranch<RS, I1>(default));
+        Assert.False(Exec.BoxIsinstBranch<RS<int>, I1>(default));
+        Assert.False(Exec.BoxIsinstBranch<RS<object>, I1>(default));
+
+        Assert.True(Exec.BoxIsinstBranch<RS_I1, object>(default));
+        Assert.True(Exec.BoxIsinstBranch<RS_I1<int>, object>(default));
+        Assert.True(Exec.BoxIsinstBranch<RS_I1<object>, object>(default));
+        Assert.True(Exec.BoxIsinstBranch<RS_I1, RS_I1>(default));
+        Assert.True(Exec.BoxIsinstBranch<RS_I1<int>, RS_I1<int>>(default));
+        Assert.True(Exec.BoxIsinstBranch<RS_I1<object>, RS_I1<object>>(default));
+        Assert.True(Exec.BoxIsinstBranch<RS_I1, I1>(default));
+        Assert.True(Exec.BoxIsinstBranch<RS_I1<int>, I1>(default));
+        Assert.True(Exec.BoxIsinstBranch<RS_I1<object>, I1>(default));
     }
 
     [Fact]

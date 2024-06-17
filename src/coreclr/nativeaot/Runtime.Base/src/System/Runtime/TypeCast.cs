@@ -475,10 +475,6 @@ namespace System.Runtime
             return ThrowInvalidCastException(pTargetType);
         }
 
-        [RuntimeExport("RhTypeCast_IsAssignable")]
-        public static unsafe bool IsAssignable(MethodTable* fromTypeMT, MethodTable* toTypeMT)
-            => AreTypesAssignable(fromTypeMT, toTypeMT);
-
         private static unsafe bool IsInstanceOfInterfaceViaIDynamicInterfaceCastable(MethodTable* pTargetType, object obj, bool throwing)
         {
             var pfnIsInterfaceImplemented = (delegate*<object, MethodTable*, bool, bool>)

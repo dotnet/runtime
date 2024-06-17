@@ -359,34 +359,6 @@
     }
 
     .method public hidebysig
-        instance bool BoxIsinstBranch_CheckForByRefLikeTypeWithInterface<byreflike (InvalidCSharp.SimpleInterface) U>(!!U) cil managed
-    {
-        .locals init (
-            [0] valuetype ByRefLikeTypeWithInterface
-        )
-
-        ldarg.1
-        box !!U
-        isinst ByRefLikeTypeWithInterface
-        brfalse.s NOT_BYREFLIKETYPEWITHINTERFACE
-
-        ldarg.1
-        box !!U
-        isinst ByRefLikeTypeWithInterface
-        unbox.any ByRefLikeTypeWithInterface
-        stloc.0
-
-        ldloca.s 0
-        constrained. ByRefLikeTypeWithInterface
-        callvirt instance int32 InvalidCSharp.SimpleInterface::Method()
-        ret
-
-    NOT_BYREFLIKETYPEWITHINTERFACE:
-        ldc.i4.0
-        ret
-    }
-
-    .method public hidebysig
         instance bool AllocArrayOfT() cil managed aggressiveinlining
     {
         ldc.i4.1
@@ -886,33 +858,12 @@
         ret
     }
 
-    .method private hidebysig static
-        bool CheckIsInstance<byreflike T, U>(!!T) cil managed noinlining
-    {
-        ldarg.0
-        // Begin sequence
-            box !!T
-            isinst !!U
-            brfalse.s IS_FALSE
-        // End sequence
-
-        ldc.i4.1
-        ret
-
-    IS_FALSE:
-        ldc.i4.0
-        ret
-    }
-
     .method public hidebysig static
-        void BoxIsinstBranch() cil managed
+        void BoxIsinstBranchVarious() cil managed
     {
         .locals init (
             [0] valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>,
-            [1] valuetype ByRefLikeType,
-            [2] valuetype ByRefLikeTypeWithInterface,
-            [3] valuetype ByRefLikeType`1<int32>,
-            [4] valuetype ByRefLikeType`1<string>
+            [1] valuetype ByRefLikeTypeWithInterface
         )
 
         ldloca.s 0
@@ -941,9 +892,9 @@
 
     NEXT_2:
         ldloca.s 0
-        ldloca.s 2
+        ldloca.s 1
         initobj valuetype ByRefLikeTypeWithInterface
-        ldloc.2
+        ldloc.1
         call instance bool valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::
             BoxIsinstBranch_CheckForSimpleInterface<valuetype ByRefLikeTypeWithInterface>(!!0)
         brtrue.s NEXT_3
@@ -964,101 +915,24 @@
         throw
 
     NEXT_4:
-        ldloca.s 0
-        ldloca.s 2
-        initobj valuetype ByRefLikeTypeWithInterface
-        ldloc.2
-        call instance bool valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::
-            BoxIsinstBranch_CheckForByRefLikeTypeWithInterface<valuetype ByRefLikeTypeWithInterface>(!!0)
-        brtrue.s NEXT_5
+        ret
+    }
 
-        ldstr "Failed: BoxIsinstBranch_CheckForByRefLikeTypeWithInterface for ByRefLikeTypeWithInterface"
-        newobj instance void [System.Runtime]System.Exception::.ctor(string)
-        throw
+    .method public hidebysig static
+        bool BoxIsinstBranch<byreflike T, byreflike U>(!!T) cil managed noinlining
+    {
+        ldarg.0
+        // Begin sequence
+            box !!T
+            isinst !!U
+            brfalse.s IS_FALSE
+        // End sequence
 
-    NEXT_5:
-        ldloca.s 0
-        newobj instance void InvalidCSharp.ClassWithInterface::.ctor()
-        call instance bool valuetype InvalidCSharp.GenericByRefLike_Over`1<valuetype ByRefLikeType>::
-            BoxIsinstBranch_CheckForByRefLikeTypeWithInterface<class InvalidCSharp.ClassWithInterface>(!!0)
-        brfalse.s NEXT_6
-
-        ldstr "The above is expected to be false since we are not passing a ByRefLikeTypeWithInterface instance."
-        newobj instance void [System.Runtime]System.Exception::.ctor(string)
-        throw
-
-    NEXT_6:
-        ldloca.s 1
-        initobj valuetype ByRefLikeType
-        ldloc.1
-        call bool Exec::CheckIsInstance<valuetype ByRefLikeType, class InvalidCSharp.SimpleInterface>(!!0)
-        brfalse.s NEXT_7
-
-        ldstr "Failed: CheckIsInstance for ByRefLikeType and SimpleInterface"
-        newobj instance void [System.Runtime]System.Exception::.ctor(string)
-        throw
-
-    NEXT_7:
-        ldloca.s 2
-        initobj valuetype ByRefLikeTypeWithInterface
-        ldloc.2
-        call bool Exec::CheckIsInstance<valuetype ByRefLikeTypeWithInterface, class InvalidCSharp.SimpleInterface>(!!0)
-        brtrue.s NEXT_8
-
-        ldstr "Failed: CheckIsInstance for ByRefLikeTypeWithInterface and SimpleInterface"
-        newobj instance void [System.Runtime]System.Exception::.ctor(string)
-        throw
-
-    NEXT_8:
-        newobj instance void InvalidCSharp.ClassWithInterface::.ctor()
-        call bool Exec::CheckIsInstance<class InvalidCSharp.ClassWithInterface, class InvalidCSharp.SimpleInterface>(!!0)
-        brtrue.s NEXT_9
-
-        ldstr "Failed: CheckIsInstance for ClassWithInterface and SimpleInterface"
-        newobj instance void [System.Runtime]System.Exception::.ctor(string)
-        throw
-
-    NEXT_9:
-        ldstr "EMPTY"
-        call bool Exec::CheckIsInstance<string, class InvalidCSharp.SimpleInterface>(!!0)
-        brfalse.s NEXT_10
-
-        ldstr "Failed: CheckIsInstance for string and SimpleInterface"
-        newobj instance void [System.Runtime]System.Exception::.ctor(string)
-        throw
-
-    NEXT_10:
         ldc.i4.1
-        call bool Exec::CheckIsInstance<int32, class InvalidCSharp.SimpleInterface>(!!0)
-        brfalse.s NEXT_11
+        ret
 
-        ldstr "Failed: CheckIsInstance for int32 and SimpleInterface"
-        newobj instance void [System.Runtime]System.Exception::.ctor(string)
-        throw
-
-    NEXT_11:
-        ldloca.s 3
-        initobj valuetype ByRefLikeType`1<int32>
-        ldloc.3
-        call bool Exec::CheckIsInstance<valuetype ByRefLikeType`1<int32>, class InvalidCSharp.SimpleInterface>(!!0)
-        brfalse.s NEXT_12
-
-        ldstr "Failed: CheckIsInstance for valuetype ByRefLikeType`1<int32> and SimpleInterface"
-        newobj instance void [System.Runtime]System.Exception::.ctor(string)
-        throw
-
-    NEXT_12:
-        ldloca.s 4
-        initobj valuetype ByRefLikeType`1<string>
-        ldloc 4
-        call bool Exec::CheckIsInstance<valuetype ByRefLikeType`1<string>, class InvalidCSharp.SimpleInterface>(!!0)
-        brfalse.s NEXT_13
-
-        ldstr "Failed: CheckIsInstance for valuetype ByRefLikeType`1<string> and SimpleInterface"
-        newobj instance void [System.Runtime]System.Exception::.ctor(string)
-        throw
-
-    NEXT_13:
+    IS_FALSE:
+        ldc.i4.0
         ret
     }
 

@@ -1095,7 +1095,6 @@ namespace Internal.IL
 
             // There are some sequences of box with ByRefLike types that are allowed
             // per the extension to the ECMA-335 specification.
-            // Everything else is invalid.
             if (!type.IsRuntimeDeterminedType && type.IsByRefLike)
             {
                 ILReader reader = new ILReader(_ilBytes, _currentOffset);
@@ -1129,8 +1128,6 @@ namespace Internal.IL
                         }
                     }
                 }
-
-                ThrowHelper.ThrowInvalidProgramException();
             }
 
             AddBoxingDependencies(type, "Box");
@@ -1161,6 +1158,11 @@ namespace Internal.IL
             else
             {
                 _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.Box), reason);
+            }
+
+            if (type.IsByRefLike)
+            {
+                _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.AreTypesAssignable), reason);
             }
         }
 

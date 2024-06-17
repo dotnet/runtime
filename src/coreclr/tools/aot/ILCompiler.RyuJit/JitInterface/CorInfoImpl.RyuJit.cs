@@ -737,8 +737,8 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_CHKCASTCLASS_SPECIAL:
                     id = ReadyToRunHelper.CheckCastClassSpecial;
                     break;
-                case CorInfoHelpFunc.CORINFO_HELP_ISASSIGNABLE:
-                    id = ReadyToRunHelper.IsAssignable;
+                case CorInfoHelpFunc.CORINFO_HELP_ARETYPESASSIGNABLE:
+                    id = ReadyToRunHelper.AreTypesAssignable;
                     break;
 
                 case CorInfoHelpFunc.CORINFO_HELP_ISINSTANCEOFANY:

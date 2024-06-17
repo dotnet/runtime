@@ -25,8 +25,8 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void WriteBarrier(ref object? dst, object? obj);
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "CastHelpers_AreTypesAssignable")]
-        private static partial Interop.BOOL AreTypesAssignable(void* fromTypeHnd, void* toTypeHnd);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "CastHelpers_AreTypesAssignableHelper")]
+        private static partial Interop.BOOL AreTypesAssignableHelper(void* fromTypeHnd, void* toTypeHnd);
 
         // IsInstanceOf test used for unusual cases (naked type parameters, variant generic types)
         // Unlike the IsInstanceOfInterface and IsInstanceOfClass functions,
@@ -320,8 +320,28 @@ namespace System.Runtime.CompilerServices
         }
 
         [DebuggerHidden]
-        private static bool IsAssignable(void* fromTypeHnd, void* toTypeHnd)
-            => AreTypesAssignable(fromTypeHnd, toTypeHnd) != Interop.BOOL.FALSE;
+        private static bool AreTypesAssignable(void* fromTypeHnd, void* toTypeHnd)
+        {
+            if (fromTypeHnd == toTypeHnd)
+            {
+                return true;
+            }
+
+            CastResult result = CastCache.TryGet(s_table!, (nuint)fromTypeHnd, (nuint)toTypeHnd);
+            if (result == CastResult.CanCast)
+            {
+                return true;
+            }
+            else if (result == CastResult.CannotCast)
+            {
+                return false;
+            }
+            else
+            {
+                // Result will be cached in the helper.
+                return AreTypesAssignableHelper(fromTypeHnd, toTypeHnd) != Interop.BOOL.FALSE;
+            }
+        }
 
         // Optimized helper for classes. Assumes that the trivial cases
         // has been taken care of by the inlined check

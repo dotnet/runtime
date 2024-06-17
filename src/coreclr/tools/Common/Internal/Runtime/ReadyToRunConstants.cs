@@ -365,7 +365,7 @@ namespace Internal.ReadyToRunConstants
 
         GetRuntimeType,
 
-        IsAssignable,
+        AreTypesAssignable,
         CheckCastInterface,
         CheckCastClass,
         CheckCastClassSpecial,
