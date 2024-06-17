@@ -13388,12 +13388,13 @@ void gc_heap::distribute_free_regions()
     {
         num_regions_to_decommit[kind] = surplus_regions[kind].get_num_free_regions();
 
-        dprintf(REGIONS_LOG, ("%zd %s free regions, %zd regions budget, %zd regions on decommit list, %zd huge region units to consider",
+        dprintf(REGIONS_LOG, ("%zd %s free regions, %zd regions budget, %zd regions on decommit list, %zd huge region units (%zd young) to consider",
             total_num_free_regions[kind],
             kind_name[kind],
             total_budget_in_region_units[kind],
             num_regions_to_decommit[kind],
-            num_huge_region_units_to_consider[kind]));
+            num_huge_region_units_to_consider[kind],
+            num_young_huge_region_units_to_consider[kind]));
 
         // check if the free regions exceed the budget
         // if so, put the highest free regions on the decommit list
