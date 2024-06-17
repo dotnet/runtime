@@ -278,7 +278,7 @@ namespace System.Runtime.Intrinsics
                     AdvSimd.ExtractNarrowingLower(a),
                     AdvSimd.ExtractNarrowingLower(b)).As<long, T>();
             }
-            if (AdvSimd.IsSupported && typeof(T) == typeof(ulong))
+            if (AdvSimd.Arm64.IsSupported && typeof(T) == typeof(ulong))
             {
                 Vector128<ulong> a = left.AsUInt64();
                 Vector128<ulong> b = left.AsUInt64();
