@@ -124,7 +124,7 @@ public sealed partial class QuicStream
     /// Provided via <see cref="StartAsync(Action{QuicStreamType}, CancellationToken)" /> from <see cref="QuicConnection" /> so that <see cref="QuicStream"/> can decrement its available stream count field.
     /// When <see cref="HandleEventStartComplete(ref START_COMPLETE_DATA)">START_COMPLETE</see> arrives it gets invoked and unset back to <c>null</c> to not to hold any unintended reference to <see cref="QuicConnection"/>.
     /// </summary>
-    private Action<QuicStreamType>? _decrementAvailableStreamCount;
+    private Action<QuicStreamType>? _decrementStreamCapacity;
 
     /// <summary>
     /// Stream id, see <see href="https://www.rfc-editor.org/rfc/rfc9000.html#name-stream-types-and-identifier" />.
@@ -245,16 +245,16 @@ public sealed partial class QuicStream
     /// If no more concurrent streams can be opened at the moment, the operation will wait until it can,
     /// either by closing some existing streams or receiving more available stream ids from the peer.
     /// </summary>
-    /// <param name="decrementAvailableStreamCount"></param>
+    /// <param name="decrementStreamCapacity"></param>
     /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation.</param>
     /// <returns>An asynchronous task that completes with the opened <see cref="QuicStream" />.</returns>
-    internal ValueTask StartAsync(Action<QuicStreamType> decrementAvailableStreamCount, CancellationToken cancellationToken = default)
+    internal ValueTask StartAsync(Action<QuicStreamType> decrementStreamCapacity, CancellationToken cancellationToken = default)
     {
         Debug.Assert(!_startedTcs.IsCompleted);
 
         // Always call StreamStart to get consistent behavior (events, stream count, frames send to peer) regardless of cancellation.
         _startedTcs.TryInitialize(out ValueTask valueTask, this, cancellationToken);
-        _decrementAvailableStreamCount = decrementAvailableStreamCount;
+        _decrementStreamCapacity = decrementStreamCapacity;
         unsafe
         {
             int status = MsQuicApi.Api.StreamStart(
@@ -534,12 +534,12 @@ public sealed partial class QuicStream
 
     private unsafe int HandleEventStartComplete(ref START_COMPLETE_DATA data)
     {
-        Debug.Assert(_decrementAvailableStreamCount is not null);
+        Debug.Assert(_decrementStreamCapacity is not null);
 
         _id = unchecked((long)data.ID);
         if (StatusSucceeded(data.Status))
         {
-            _decrementAvailableStreamCount(Type);
+            _decrementStreamCapacity(Type);
 
             if (data.PeerAccepted != 0)
             {
@@ -555,7 +555,7 @@ public sealed partial class QuicStream
             }
         }
 
-        _decrementAvailableStreamCount = null;
+        _decrementStreamCapacity = null;
         return QUIC_STATUS_SUCCESS;
     }
     private unsafe int HandleEventReceive(ref RECEIVE_DATA data)

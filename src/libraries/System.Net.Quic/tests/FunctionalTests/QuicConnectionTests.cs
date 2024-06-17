@@ -189,7 +189,7 @@ namespace System.Net.Quic.Tests
         }
 
         [Fact]
-        public async Task GetAvailableStreamsCount_OpenCloseStream_CountsCorrectly()
+        public async Task GetStreamCapacity_OpenCloseStream_CountsCorrectly()
         {
             SemaphoreSlim streamsAvailableFired = new SemaphoreSlim(0);
             int bidiIncrement = -1, unidiIncrement = -1;

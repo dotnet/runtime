@@ -182,15 +182,20 @@ public sealed partial class QuicConnection : IAsyncDisposable
     /// <summary>
     /// Occurres when an additional stream capacity has been released by the peer. Corresponds to receiving MAX_STREAMS frame.
     /// </summary>
-    private Action<QuicConnection, QuicStreamCapacityChangedArgs>? _streamsCapacityCallback;
+    private Action<QuicConnection, QuicStreamCapacityChangedArgs>? _streamCapacityCallback;
+    /// <summary>
+    /// Optimization to avoid `Action` instantiation with every <see cref="OpenOutboundStreamAsync(QuicStreamType, CancellationToken)"/>.
+    /// Holds <see cref="DecrementStreamCapacity(QuicStreamType)"/> method.
+    /// </summary>
+    private Action<QuicStreamType> _decrementStreamCapacity;
     /// <summary>
     /// Represents how many bidirectional streams can be accepted by the peer. Is only manipulated from MsQuic thread.
     /// </summary>
-    private int _availableBidirectionalStreamsCount;
+    private int _bidirectionalStreamCapacity;
     /// <summary>
     /// Represents how many unidirectional streams can be accepted by the peer. Is only manipulated from MsQuic thread.
     /// </summary>
-    private int _availableUnidirectionalStreamsCount;
+    private int _unidirectionalStreamCapacity;
     /// <summary>
     /// Keeps track whether <see cref="RemoteCertificate"/> has been accessed so that we know whether to dispose the certificate or not.
     /// </summary>
@@ -220,10 +225,10 @@ public sealed partial class QuicConnection : IAsyncDisposable
     /// </summary>
     public IPEndPoint LocalEndPoint => _localEndPoint;
 
-    private async void OnStreamsCapacityIncreased(int bidirectionalStreamsCountIncrement, int unidirectionalStreamsCountIncrement)
+    private async void OnStreamCapacityIncreased(int bidirectionalIncrement, int unidirectionalIncrement)
     {
         // Bail out early to avoid queueing work on the thread pool as well as event args instantiation.
-        if (_streamsCapacityCallback is null)
+        if (_streamCapacityCallback is null)
         {
             return;
         }
@@ -235,9 +240,9 @@ public sealed partial class QuicConnection : IAsyncDisposable
         {
             if (NetEventSource.Log.IsEnabled())
             {
-                NetEventSource.Info(this, $"{this} Signaling StreamsCapacityIncreased with {bidirectionalStreamsCountIncrement} bidirectional increment (absolute value {_availableBidirectionalStreamsCount}) and {unidirectionalStreamsCountIncrement} unidirectional increment (absolute value {_availableUnidirectionalStreamsCount}).");
+                NetEventSource.Info(this, $"{this} Signaling StreamCapacityIncreased with {bidirectionalIncrement} bidirectional increment (absolute value {_bidirectionalStreamCapacity}) and {unidirectionalIncrement} unidirectional increment (absolute value {_unidirectionalStreamCapacity}).");
             }
-            _streamsCapacityCallback(this, new QuicStreamCapacityChangedArgs { BidirectionalIncrement = bidirectionalStreamsCountIncrement, UnidirectionalIncrement = unidirectionalStreamsCountIncrement });
+            _streamCapacityCallback(this, new QuicStreamCapacityChangedArgs { BidirectionalIncrement = bidirectionalIncrement, UnidirectionalIncrement = unidirectionalIncrement });
         }
         catch (Exception ex)
         {
@@ -304,6 +309,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
             NetEventSource.Info(this, $"{this} New outbound connection.");
         }
 
+        _decrementStreamCapacity = DecrementStreamCapacity;
         _tlsSecret = MsQuicTlsSecret.Create(_handle);
     }
 
@@ -332,6 +338,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
 
         _remoteEndPoint = MsQuicHelpers.QuicAddrToIPEndPoint(info->RemoteAddress);
         _localEndPoint = MsQuicHelpers.QuicAddrToIPEndPoint(info->LocalAddress);
+        _decrementStreamCapacity = DecrementStreamCapacity;
         _tlsSecret = MsQuicTlsSecret.Create(_handle);
     }
 
@@ -342,7 +349,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
             _canAccept = options.MaxInboundBidirectionalStreams > 0 || options.MaxInboundUnidirectionalStreams > 0;
             _defaultStreamErrorCode = options.DefaultStreamErrorCode;
             _defaultCloseErrorCode = options.DefaultCloseErrorCode;
-            _streamsCapacityCallback = options.StreamCapacityCallback;
+            _streamCapacityCallback = options.StreamCapacityCallback;
 
             if (!options.RemoteEndPoint.TryParse(out string? host, out IPAddress? address, out int port))
             {
@@ -419,7 +426,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
             _canAccept = options.MaxInboundBidirectionalStreams > 0 || options.MaxInboundUnidirectionalStreams > 0;
             _defaultStreamErrorCode = options.DefaultStreamErrorCode;
             _defaultCloseErrorCode = options.DefaultCloseErrorCode;
-            _streamsCapacityCallback = options.StreamCapacityCallback;
+            _streamCapacityCallback = options.StreamCapacityCallback;
 
             // RFC 6066 forbids IP literals, avoid setting IP address here for consistency with SslStream
             if (TargetHostNameHelper.IsValidAddress(targetHost))
@@ -450,28 +457,28 @@ public sealed partial class QuicConnection : IAsyncDisposable
     }
 
     /// <summary>
-    /// In order to provide meaningful increments in <see cref="_streamsCapacityCallback"/>, available streams count can be only manipulated from MsQuic thread.
+    /// In order to provide meaningful increments in <see cref="_streamCapacityCallback"/>, available streams count can be only manipulated from MsQuic thread.
     /// For that purpose we pass this function to <see cref="QuicStream"/> so that it can call it from <c>START_COMPLETE</c> event handler.
     ///
     /// Note that MsQuic itself manipulates stream counts right before indicating <c>START_COMPLETE</c> event.
     /// </summary>
     /// <param name="streamType">Type of the stream to decrement appropriate field.</param>
-    private void DecrementAvailableStreamCount(QuicStreamType streamType)
+    private void DecrementStreamCapacity(QuicStreamType streamType)
     {
         if (streamType == QuicStreamType.Unidirectional)
         {
-            --_availableUnidirectionalStreamsCount;
+            --_unidirectionalStreamCapacity;
             if (NetEventSource.Log.IsEnabled())
             {
-                NetEventSource.Info(this, $"{this} decremented stream count for {streamType} to {_availableUnidirectionalStreamsCount}.");
+                NetEventSource.Info(this, $"{this} decremented stream count for {streamType} to {_unidirectionalStreamCapacity}.");
             }
         }
         else
         {
-            --_availableBidirectionalStreamsCount;
+            --_bidirectionalStreamCapacity;
             if (NetEventSource.Log.IsEnabled())
             {
-                NetEventSource.Info(this, $"{this} decremented stream count for {streamType} to {_availableBidirectionalStreamsCount}.");
+                NetEventSource.Info(this, $"{this} decremented stream count for {streamType} to {_bidirectionalStreamCapacity}.");
             }
         }
     }
@@ -498,7 +505,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
                 NetEventSource.Info(this, $"{this} New outbound {type} stream {stream}.");
             }
 
-            await stream.StartAsync(DecrementAvailableStreamCount, cancellationToken).ConfigureAwait(false);
+            await stream.StartAsync(DecrementStreamCapacity, cancellationToken).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
@@ -677,11 +684,11 @@ public sealed partial class QuicConnection : IAsyncDisposable
     }
     private unsafe int HandleEventStreamsAvailable(ref STREAMS_AVAILABLE_DATA data)
     {
-        int bidirectionalStreamsCountIncrement = data.BidirectionalCount - _availableBidirectionalStreamsCount;
-        int unidirectionalStreamsCountIncrement = data.UnidirectionalCount - _availableUnidirectionalStreamsCount;
-        _availableBidirectionalStreamsCount = data.BidirectionalCount;
-        _availableUnidirectionalStreamsCount = data.UnidirectionalCount;
-        OnStreamsCapacityIncreased(bidirectionalStreamsCountIncrement, unidirectionalStreamsCountIncrement);
+        int bidirectionalIncrement = data.BidirectionalCount - _bidirectionalStreamCapacity;
+        int unidirectionalIncrement = data.UnidirectionalCount - _unidirectionalStreamCapacity;
+        _bidirectionalStreamCapacity = data.BidirectionalCount;
+        _unidirectionalStreamCapacity = data.UnidirectionalCount;
+        OnStreamCapacityIncreased(bidirectionalIncrement, unidirectionalIncrement);
         return QUIC_STATUS_SUCCESS;
     }
     private unsafe int HandleEventPeerCertificateReceived(ref PEER_CERTIFICATE_RECEIVED_DATA data)
