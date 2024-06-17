@@ -1466,7 +1466,7 @@ bool Compiler::lvaInitSpecialSwiftParam(CORINFO_ARG_LIST_HANDLE argHnd,
 
         compArgSize += TARGET_POINTER_SIZE;
 
-        info.compRetBuffArg = varDscInfo->varNum;
+        lvaSwiftIndirectResultArg = varDscInfo->varNum;
         return true;
     }
 
@@ -1735,6 +1735,10 @@ void Compiler::lvaClassifyParameterABI(Classifier& classifier)
         else if (i == lvaSwiftSelfArg)
         {
             wellKnownArg = WellKnownArg::SwiftSelf;
+        }
+        else if (i == lvaSwiftIndirectResultArg)
+        {
+            wellKnownArg = WellKnownArg::RetBuffer;
         }
         else if (i == lvaSwiftErrorArg)
         {
