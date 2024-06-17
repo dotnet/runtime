@@ -308,6 +308,11 @@ public partial class Program
         AreEqual(GetGenericTypeDefinition<List<string>>(), typeof(List<>));
         AreEqual(GetGenericTypeDefinition<Action<string>>(), typeof(Action<>));
         AreEqual(GetGenericTypeDefinition<Func<string, int>>(), typeof(Func<,>));
+
+        // Test for failures
+        GetGenericTypeDefinitionThrows<int>();
+        GetGenericTypeDefinitionThrows<string>();
+        GetGenericTypeDefinitionThrows<object>();
     }
 
     private static int _varInt = 42;
@@ -345,6 +350,27 @@ public partial class Program
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static Type GetGenericTypeDefinition<T>() => typeof(T).GetGenericTypeDefinition();
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void GetGenericTypeDefinitionThrows<T>([CallerLineNumber] int line = 0, [CallerFilePath] string file = "")
+    {
+        bool success = false;
+
+        try
+        {
+            _ = typeof(T).GetGenericTypeDefinition();
+        }
+        catch (InvalidOperationException)
+        {
+            success = true;
+        }
+
+        if (!success)
+        {
+            Console.WriteLine($"{file}:L{line} test failed (expected: 'InvalidOperationException').");
+            _errors++;
+        }
+    }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     static void IsTrue(bool expression, [CallerLineNumber] int line = 0, [CallerFilePath] string file = "")
