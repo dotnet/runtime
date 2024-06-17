@@ -397,7 +397,7 @@
     </ParameterGroup>
   </UsingTask>
 
-  <Target Name="_ReadWasmProps" Condition="'$(_IsToolchainMissing)' != 'true'">
+  <Target Name="_ReadWasmProps">
     <ReadWasmProps JsonFilePath="$(_WasmRuntimePackSrcDir)wasm-props.json">
       <Output TaskParameter="EmccProperties" ItemName="_EmccPropItems" />
       <Output TaskParameter="EmccDefaultExportedFunctions" ItemName="EmccExportedFunction" />
