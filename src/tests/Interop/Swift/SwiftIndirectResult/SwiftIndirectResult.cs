@@ -24,7 +24,7 @@ public class SwiftIndirectResultTests
 
     [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
     [DllImport(SwiftLib, EntryPoint = "$s6output26SumReturnedNonFrozenStruct1fs5Int32VAA0deF0VyXE_tF")]
-    public unsafe static extern int SumReturnedNonFrozenStruct(delegate*[Swift]<SwiftIndirectResult, SwiftSelf, void> func, void* funcContext);
+    public unsafe static extern int SumReturnedNonFrozenStruct(delegate* unmanaged[Swift]<SwiftIndirectResult, SwiftSelf, void> func, void* funcContext);
 
     [Fact]
     public unsafe static void TestReturnNonFrozenStruct()
