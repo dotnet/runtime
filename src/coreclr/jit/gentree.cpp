@@ -25989,6 +25989,18 @@ GenTree* Compiler::gtNewSimdShuffleNode(
     uint64_t value  = 0;
     simd_t   vecCns = {};
 
+    if (simdSize == 16)
+    {
+        // Vector128.Shuffle(a, Vector128.Create(2, 3, 0, 1)) -> ExtractVector128(v.AsUInt64(), v.AsUInt64(), 1)
+        if ((op2->GetIntegralVectorConstElement(0, TYP_ULONG) == 0x300000002) &&
+            (op2->GetIntegralVectorConstElement(1, TYP_ULONG) == 0x100000000))
+        {
+            GenTree* op1Clone = fgMakeMultiUse(&op1);
+            return gtNewSimdHWIntrinsicNode(type, op1, op1Clone, gtNewIconNode(1), NI_AdvSimd_ExtractVector128,
+                                            CORINFO_TYPE_ULONG, simdSize);
+        }
+    }
+
     for (size_t index = 0; index < elementCount; index++)
     {
         value = op2->GetIntegralVectorConstElement(index, simdBaseType);
