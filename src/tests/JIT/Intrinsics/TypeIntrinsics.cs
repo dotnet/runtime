@@ -133,6 +133,7 @@ public partial class Program
         GetEnumUnderlyingType.TestGetEnumUnderlyingType();
 
         IsPrimitiveTests();
+        IsGenericTypeTests();
 
         return 100 + _errors;
     }
@@ -184,6 +185,95 @@ public partial class Program
         IsFalse(typeof(delegate*<int>).IsPrimitive);
         IsFalse(typeof(Nullable<>).IsPrimitive);
         IsFalse(typeof(Dictionary<,>).IsPrimitive);
+    }
+
+    private static void IsGenericTypeTests()
+    {
+        IsFalse(typeof(bool).IsGenericType);
+        IsFalse(typeof(char).IsGenericType);
+        IsFalse(typeof(sbyte).IsGenericType);
+        IsFalse(typeof(byte).IsGenericType);
+        IsFalse(typeof(short).IsGenericType);
+        IsFalse(typeof(ushort).IsGenericType);
+        IsFalse(typeof(int).IsGenericType);
+        IsFalse(typeof(uint).IsGenericType);
+        IsFalse(typeof(long).IsGenericType);
+        IsFalse(typeof(ulong).IsGenericType);
+        IsFalse(typeof(float).IsGenericType);
+        IsFalse(typeof(double).IsGenericType);
+        IsFalse(typeof(nint).IsGenericType);
+        IsFalse(typeof(nuint).IsGenericType);
+        IsFalse(typeof(IntPtr).IsGenericType);
+        IsFalse(typeof(UIntPtr).IsGenericType);
+        IsFalse(typeof(Enum).IsGenericType);
+        IsFalse(typeof(ValueType).IsGenericType);
+        IsFalse(typeof(SimpleEnum).IsGenericType);
+        IsFalse(typeof(IntPtrEnum).IsGenericType);
+        IsFalse(typeof(FloatEnum).IsGenericType);
+        IsFalse(typeof(decimal).IsGenericType);
+        IsFalse(typeof(TimeSpan).IsGenericType);
+        IsFalse(typeof(DateTime).IsGenericType);
+        IsFalse(typeof(DateTimeOffset).IsGenericType);
+        IsFalse(typeof(Guid).IsGenericType);
+        IsFalse(typeof(Half).IsGenericType);
+        IsFalse(typeof(DateOnly).IsGenericType);
+        IsFalse(typeof(TimeOnly).IsGenericType);
+        IsFalse(typeof(Int128).IsGenericType);
+        IsFalse(typeof(UInt128).IsGenericType);
+        IsFalse(typeof(string).IsGenericType);
+        IsFalse(typeof(object).IsGenericType);
+        IsFalse(typeof(RuntimeArgumentHandle).IsGenericType);
+        IsFalse(typeof(DerivedGenericSimpleClass).IsGenericType);
+        IsFalse(typeof(int[]).IsGenericType);
+        IsFalse(typeof(int[,]).IsGenericType);
+        IsFalse(typeof(int*).IsGenericType);
+        IsFalse(typeof(void*).IsGenericType);
+        IsFalse(typeof(delegate*<int>).IsGenericType);
+        IsFalse(new ClassUsingIsGenericTypeOnT<char>().IsGenericType());
+        IsFalse(new ClassUsingIsGenericTypeOnT<string>().IsGenericType());
+        IsFalse(new ClassUsingIsGenericTypeOnT<object>().IsGenericType());
+        IsFalse(new ClassUsingIsGenericTypeOnT<int[]>().IsGenericType());
+        IsFalse(new ClassUsingIsGenericTypeOnT<SimpleStruct>().IsGenericType());
+        IsFalse(new ClassUsingIsGenericTypeOnT<char>().IsGenericTypeFromArray());
+        IsFalse(new ClassUsingIsGenericTypeOnT<string>().IsGenericTypeFromArray());
+        IsFalse(new ClassUsingIsGenericTypeOnT<object>().IsGenericTypeFromArray());
+        IsFalse(new ClassUsingIsGenericTypeOnT<int[]>().IsGenericTypeFromArray());
+        IsFalse(new ClassUsingIsGenericTypeOnT<GenericSimpleClass<int>>().IsGenericTypeFromArray());
+        IsFalse(new ClassUsingIsGenericTypeOnT<IGenericInterface<string>>().IsGenericTypeFromArray());
+        IsFalse(new ClassUsingIsGenericTypeOnT<List<object>>().IsGenericTypeFromArray());
+        IsFalse(new ClassUsingIsGenericTypeOnT<Action<string>>().IsGenericTypeFromArray());
+
+        IsTrue(typeof(GenericSimpleClass<int>).IsGenericType);
+        IsTrue(typeof(GenericSimpleClass<>).IsGenericType);
+        IsTrue(typeof(GenericSimpleClass<int>.Nested).IsGenericType);
+        IsTrue(typeof(GenericSimpleClass<>.Nested).IsGenericType);
+        IsTrue(typeof(GenericEnumClass<SimpleEnum>).IsGenericType);
+        IsTrue(typeof(GenericEnumClass<>).IsGenericType);
+        IsTrue(typeof(IGenericInterface<string>).IsGenericType);
+        IsTrue(typeof(IGenericInterface<>).IsGenericType);
+        IsTrue(typeof(GenericStruct<string>).IsGenericType);
+        IsTrue(typeof(GenericStruct<>).IsGenericType);
+        IsTrue(typeof(SimpleEnum?).IsGenericType);
+        IsTrue(typeof(int?).IsGenericType);
+        IsTrue(typeof(IntPtr?).IsGenericType);
+        IsTrue(typeof(Nullable<>).IsGenericType);
+        IsTrue(typeof(Dictionary<int,string>).IsGenericType);
+        IsTrue(typeof(Dictionary<,>).IsGenericType);
+        IsTrue(typeof(List<string>).IsGenericType);
+        IsTrue(typeof(List<>).IsGenericType);
+        IsTrue(typeof(Action<>).IsGenericType);
+        IsTrue(typeof(Action<string>).IsGenericType);
+        IsTrue(typeof(Func<string, int>).IsGenericType);
+        IsTrue(typeof(Func<,>).IsGenericType);
+        IsTrue(new ClassUsingIsGenericTypeOnT<List<string>>().IsGenericType());
+        IsTrue(new ClassUsingIsGenericTypeOnT<List<object>>().IsGenericType());
+        IsTrue(new ClassUsingIsGenericTypeOnT<GenericSimpleClass<int>>().IsGenericType());
+        IsTrue(new ClassUsingIsGenericTypeOnT<int?>().IsGenericType());
+        IsTrue(new ClassUsingIsGenericTypeOnT<Action<string>>().IsGenericType());
+        IsTrue(new ClassUsingIsGenericTypeOnT<char>().IsGenericTypeFromOtherGenericType());
+        IsTrue(new ClassUsingIsGenericTypeOnT<string>().IsGenericTypeFromOtherGenericType());
+        IsTrue(new ClassUsingIsGenericTypeOnT<object>().IsGenericTypeFromOtherGenericType());
+        IsTrue(new ClassUsingIsGenericTypeOnT<int[]>().IsGenericTypeFromOtherGenericType());
     }
 
     private static int _varInt = 42;
@@ -256,6 +346,29 @@ public partial class Program
         Console.WriteLine($"Line {line}: test failed (expected: NullReferenceException)");
         _errors++;
     }
+}
+
+public class ClassUsingIsGenericTypeOnT<T>
+{
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public bool IsGenericType() => typeof(T).IsGenericType;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public bool IsGenericTypeFromArray() => typeof(T[]).IsGenericType;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public bool IsGenericTypeFromOtherGenericType() => typeof(GenericSimpleClass<T>).IsGenericType;
+}
+
+public class GenericSimpleClass<T>
+{
+    public class Nested
+    {
+    }
+}
+
+public class DerivedGenericSimpleClass : GenericSimpleClass<string>
+{
 }
 
 public class GenericEnumClass<T> where T : Enum

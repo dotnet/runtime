@@ -721,6 +721,18 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector128_AsVector128Unsafe:
+        {
+            assert(sig->numArgs == 1);
+            assert(retType == TYP_SIMD16);
+            assert(simdBaseJitType == CORINFO_TYPE_FLOAT);
+            assert((simdSize == 8) || (simdSize == 12));
+
+            op1     = impSIMDPopStack();
+            retNode = gtNewSimdHWIntrinsicNode(retType, op1, NI_Vector128_AsVector128Unsafe, simdBaseJitType, simdSize);
+            break;
+        }
+
         case NI_Vector64_op_BitwiseAnd:
         case NI_Vector128_op_BitwiseAnd:
         {

@@ -745,16 +745,11 @@ bool HWIntrinsicInfo::isImmOp(NamedIntrinsic id, const GenTree* op)
 // Arguments:
 //    argType    -- the required type of argument
 //    argClass   -- the class handle of argType
-//    expectAddr -- if true indicates we are expecting type stack entry to be a TYP_BYREF.
-//    newobjThis -- For CEE_NEWOBJ, this is the temp grabbed for the allocated uninitialized object.
 //
 // Return Value:
 //     the validated argument
 //
-GenTree* Compiler::getArgForHWIntrinsic(var_types            argType,
-                                        CORINFO_CLASS_HANDLE argClass,
-                                        bool                 expectAddr,
-                                        GenTree*             newobjThis)
+GenTree* Compiler::getArgForHWIntrinsic(var_types argType, CORINFO_CLASS_HANDLE argClass)
 {
     GenTree* arg = nullptr;
 
@@ -768,31 +763,12 @@ GenTree* Compiler::getArgForHWIntrinsic(var_types            argType,
         }
         assert(varTypeIsSIMD(argType));
 
-        if (newobjThis == nullptr)
-        {
-            if (expectAddr)
-            {
-                arg = gtNewLoadValueNode(argType, impPopStack().val);
-            }
-            else
-            {
-                arg = impSIMDPopStack();
-            }
-            assert(varTypeIsSIMDOrMask(arg));
-        }
-        else
-        {
-            assert(newobjThis->IsLclVarAddr());
-            arg = newobjThis;
-
-            // push newobj result on type stack
-            unsigned lclNum = arg->AsLclVarCommon()->GetLclNum();
-            impPushOnStack(gtNewLclvNode(lclNum, lvaGetRealType(lclNum)), verMakeTypeInfo(argClass));
-        }
+        arg = impSIMDPopStack();
+        assert(varTypeIsSIMDOrMask(arg));
     }
     else
     {
-        assert(varTypeIsArithmetic(argType) || ((argType == TYP_BYREF) && (newobjThis == nullptr)));
+        assert(varTypeIsArithmetic(argType) || (argType == TYP_BYREF));
 
         arg = impPopStack().val;
         assert(varTypeIsArithmetic(arg->TypeGet()) || ((argType == TYP_BYREF) && arg->TypeIs(TYP_BYREF)));
@@ -835,7 +811,7 @@ GenTree* Compiler::addRangeCheckIfNeeded(
     )
     {
         assert(!immOp->IsCnsIntOrI());
-        assert(varTypeIsUnsigned(immOp));
+        assert(varTypeIsIntegral(immOp));
 
         return addRangeCheckForHWIntrinsic(immOp, immLowerBound, immUpperBound);
     }
