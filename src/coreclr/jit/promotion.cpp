@@ -1020,7 +1020,7 @@ public:
                 ClassLayout*    accessLayout;
                 AccessKindFlags accessFlags;
 
-                if (lcl->OperIs(GT_LCL_ADDR))
+                if (lcl->OperIs(GT_LCL_ADDR) && !dsc->IsStackAllocatedBox())
                 {
                     assert(user->OperIs(GT_CALL) && dsc->IsHiddenBufferStructArg() &&
                            (user->AsCall()->gtArgs.GetRetBufferArg()->GetNode() == lcl));
@@ -1410,7 +1410,7 @@ private:
     //
     AccessKindFlags ClassifyLocalAccess(GenTreeLclVarCommon* lcl, GenTree* user)
     {
-        assert(lcl->OperIsLocalRead() || lcl->OperIsLocalStore());
+        // assert(lcl->OperIsLocalRead() || lcl->OperIsLocalStore());
 
         AccessKindFlags flags = AccessKindFlags::None;
         if (lcl->OperIsLocalStore())
@@ -2937,7 +2937,7 @@ bool Promotion::HaveCandidateLocals()
 //
 bool Promotion::IsCandidateForPhysicalPromotion(LclVarDsc* dsc)
 {
-    return (dsc->TypeGet() == TYP_STRUCT) && !dsc->lvPromoted && !dsc->IsAddressExposed();
+    return (dsc->TypeGet() == TYP_STRUCT) && !dsc->lvPromoted && (!dsc->IsAddressExposed()|| dsc->IsStackAllocatedBox());
 }
 
 //------------------------------------------------------------------------

@@ -807,6 +807,11 @@ public:
         return lvIsMultiRegArg || lvIsMultiRegRet;
     }
 
+    bool IsStackAllocatedBox() const
+    {
+        return lvStackAllocatedBox;
+    }
+
 #if defined(DEBUG)
 private:
     DoNotEnregisterReason m_doNotEnregReason;
