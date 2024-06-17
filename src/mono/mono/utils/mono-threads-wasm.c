@@ -33,7 +33,10 @@ uintptr_t get_wasm_stack_low(void);
 static int
 wasm_get_stack_size (void)
 {
-#ifdef __EMSCRIPTEN_PTHREADS__
+#if defined(HOST_WASI) && !defined(DISABLE_THREADS)
+	// TODO: this will need changes for WASI multithreading as the stack will be allocated per thread at different addresses
+	g_assert_not_reached ();
+#else
 	/*
 	 * | -- increasing address ---> |
 	 * | data |(stack low) stack (stack high)| heap |
@@ -47,9 +50,6 @@ wasm_get_stack_size (void)
 
 	// this is the max available stack size size
 	return max_stack_size;
-#else
-	// TODO: this will need changes for WASI multithreading as the stack will be allocated per thread at different addresses
-	g_assert_not_reached ();
 #endif
 }
 
@@ -201,9 +201,12 @@ mono_threads_platform_get_stack_bounds (guint8 **staddr, size_t *stsize)
 		*staddr = (guint8*)get_wasm_stack_low ();
 		*stsize = wasm_get_stack_size ();
 	}
-#else
+#elif defined(HOST_WASI) && !defined(DISABLE_THREADS)
 	// TODO: this will need changes for WASI multithreading as the stack will be allocated per thread at different addresses
 	g_assert_not_reached ();
+#else
+	*staddr = (guint8*)get_wasm_stack_low ();
+	*stsize = wasm_get_stack_size ();
 #endif
 
 	g_assert ((guint8*)&tmp > *staddr);
