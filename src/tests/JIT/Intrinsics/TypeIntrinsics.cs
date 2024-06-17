@@ -299,6 +299,15 @@ public partial class Program
         AreEqual(typeof(Action<string>).GetGenericTypeDefinition(), typeof(Action<>));
         AreEqual(typeof(Func<string, int>).GetGenericTypeDefinition(), typeof(Func<,>));
         AreEqual(typeof(Func<,>).GetGenericTypeDefinition(), typeof(Func<,>));
+
+        // Test for __Canon
+        AreEqual(GetGenericTypeDefinition<GenericEnumClass<SimpleEnum>>(), typeof(GenericEnumClass<>));
+        AreEqual(GetGenericTypeDefinition<IGenericInterface<string>>(), typeof(IGenericInterface<>));
+        AreEqual(GetGenericTypeDefinition<GenericStruct<string>>(), typeof(GenericStruct<>));
+        AreEqual(GetGenericTypeDefinition<Dictionary<int,string>>(), typeof(Dictionary<,>));
+        AreEqual(GetGenericTypeDefinition<List<string>>(), typeof(List<>));
+        AreEqual(GetGenericTypeDefinition<Action<string>>(), typeof(Action<>));
+        AreEqual(GetGenericTypeDefinition<Func<string, int>>(), typeof(Func<,>));
     }
 
     private static int _varInt = 42;
@@ -333,6 +342,9 @@ public partial class Program
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static dynamic CreateDynamic2() => new { Name = "Test" };
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Type GetGenericTypeDefinition<T>() => typeof(T).GetGenericTypeDefinition();
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     static void IsTrue(bool expression, [CallerLineNumber] int line = 0, [CallerFilePath] string file = "")
