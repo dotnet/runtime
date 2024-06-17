@@ -718,11 +718,35 @@ namespace LibraryImportGenerator.UnitTests
             yield return new object[] { ID(), source, TestTargetFramework.Net };
         }
 
-        [Theory]
-        [MemberData(nameof(CodeSnippetsToVerifyNoTreesProduced))]
-        public async Task ValidateNoGeneratedOutputForNoImport(string id, string source, TestTargetFramework framework)
+        [Fact]
+        public async Task ValidateNoGeneratedOutputForNoImport()
         {
-            TestUtils.Use(id);
+            string source = """
+                using System.Runtime.InteropServices;
+                public class Basic { }
+                """;
+
+            var test = new NoChangeTest(TestTargetFramework.Net)
+            {
+                TestCode = source,
+                TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck
+            };
+
+            await test.RunAsync();
+        }
+
+        
+        [OuterLoop("Uses the network for downlevel ref packs")]
+        [InlineData(TestTargetFramework.Standard)]
+        [InlineData(TestTargetFramework.Framework)]
+        [Theory]
+        public async Task ValidateNoGeneratedOutputForNoImportDownlevel(TestTargetFramework framework)
+        {
+            string source = """
+                using System.Runtime.InteropServices;
+                public class Basic { }
+                """;
+
             var test = new NoChangeTest(framework)
             {
                 TestCode = source,
