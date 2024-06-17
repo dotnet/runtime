@@ -33,10 +33,6 @@ namespace Mono.Linker
 				return false;
 			}
 
-			if (bIsDefault && context.IgnoredFeatureDefaultSettings.Contains (feature)) {
-				bIsDefault = false;
-			}
-
 			if (!context.FeatureSettings.TryGetValue (feature, out bool featureSetting))
 				return bIsDefault;
 

@@ -470,14 +470,6 @@ namespace Mono.Linker
 
 							continue;
 						}
-					case "--ignore-featuredefault": {
-						if (!GetStringParam (token, out string? featureName))
-							return -1;
-
-						context.SetIgnoredFeatureDefault (featureName);
-
-						continue;
-					}
 					case "--new-mvid":
 						//
 						// This is not same as --deterministic which calculates MVID

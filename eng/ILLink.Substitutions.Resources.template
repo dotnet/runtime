@@ -7,7 +7,7 @@
       <method signature="System.Boolean GetUsingResourceKeysSwitchValue()" body="stub" value="true" />
     </type>
   </assembly>
-  <assembly fullname="{AssemblyName}" feature="System.Resources.UseSystemResourceKeys" featurevalue="false" featuredefault="true">
+  <assembly fullname="{AssemblyName}" feature="System.Resources.UseSystemResourceKeys" featurevalue="false">
     <type fullname="System.SR">
       <method signature="System.Boolean UsingResourceKeys()" body="stub" value="false" />
       <method signature="System.Boolean GetUsingResourceKeysSwitchValue()" body="stub" value="false" />

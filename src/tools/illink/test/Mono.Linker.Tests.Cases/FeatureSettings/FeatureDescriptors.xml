@@ -47,16 +47,4 @@
       <field name="DefaultConditionFalse" />
     </type>
   </assembly>
-  <!-- Check that a default feature condition can be ignored -->
-  <assembly fullname="test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null" feature="IgnoredDefaultCondition" featurevalue="true" featuredefault="true">
-    <type fullname="Mono.Linker.Tests.Cases.FeatureSettings.FeatureDescriptors">
-      <field name="IgnoredDefaultConditionTrue" />
-    </type>
-  </assembly>
-  <!-- Else case for the ignored default condition -->
-  <assembly fullname="test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null" feature="IgnoredDefaultCondition" featurevalue="false">
-    <type fullname="Mono.Linker.Tests.Cases.FeatureSettings.FeatureDescriptors">
-      <field name="IgnoredDefaultConditionFalse" />
-    </type>
-  </assembly>
 </linker>

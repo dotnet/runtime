@@ -136,8 +136,6 @@ namespace Mono.Linker
 
 		public Dictionary<string, bool> FeatureSettings { get; init; }
 
-		public HashSet<string> IgnoredFeatureDefaultSettings { get; init; }
-
 		public List<PInvokeInfo> PInvokes { get; private set; }
 
 		public string? PInvokesListFile;
@@ -220,7 +218,6 @@ namespace Mono.Linker
 			_isTrimmable = new Dictionary<AssemblyDefinition, bool> ();
 			OutputDirectory = outputDirectory;
 			FeatureSettings = new Dictionary<string, bool> (StringComparer.Ordinal);
-			IgnoredFeatureDefaultSettings = new HashSet<string> (StringComparer.Ordinal);
 
 			SymbolReaderProvider = new DefaultSymbolReaderProvider (false);
 
@@ -265,12 +262,6 @@ namespace Mono.Linker
 		{
 			Debug.Assert (!string.IsNullOrEmpty (feature));
 			FeatureSettings[feature] = value;
-		}
-
-		public void SetIgnoredFeatureDefault (string feature)
-		{
-			Debug.Assert (!string.IsNullOrEmpty (feature));
-			IgnoredFeatureDefaultSettings.Add (feature);
 		}
 
 		public bool HasFeatureValue (string feature, bool value)

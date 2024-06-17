@@ -15,7 +15,6 @@ namespace Mono.Linker.Tests.Cases.FeatureSettings
 	[SetupLinkerArgument ("--feature", "FieldCondition", "true")]
 	[SetupLinkerArgument ("--feature", "PropertyCondition", "false")]
 	[SetupLinkerArgument ("--feature", "EventCondition", "true")]
-	[SetupLinkerArgument ("--ignore-featuredefault", "IgnoredDefaultCondition")]
 	public class FeatureDescriptors
 	{
 		public static void Main ()
@@ -25,9 +24,6 @@ namespace Mono.Linker.Tests.Cases.FeatureSettings
 		[Kept]
 		static bool DefaultConditionTrue;
 		static bool DefaultConditionFalse;
-
-                static bool IgnoredDefaultConditionTrue;
-                static bool IgnoredDefaultConditionFalse;
 
 		[Kept]
 		static bool GlobalConditionTrue;
