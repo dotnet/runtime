@@ -448,6 +448,8 @@ public:
     const PortableTailCallFrame* GetFrame() { return m_frame; }
 };
 
+typedef DPTR(struct gc_alloc_context) PTR_gc_alloc_context;
+
 // #ThreadClass
 //
 // A code:Thread contains all the per-thread information needed by the runtime.  We can get this
@@ -947,12 +949,12 @@ public:
 
     // We store a pointer to this thread's alloc context here for easier introspection
     // from other threads and diagnostic tools
-    gc_alloc_context*        m_alloc_context;
+    PTR_gc_alloc_context        m_alloc_context;
 
 public:
-    inline void InitAllocContext() { LIMITED_METHOD_CONTRACT; m_alloc_context = &t_thread_alloc_context; }
+    inline void InitAllocContext() { LIMITED_METHOD_CONTRACT; m_alloc_context = PTR_gc_alloc_context(&t_thread_alloc_context); }
 
-    inline gc_alloc_context *GetAllocContext() { LIMITED_METHOD_CONTRACT; return m_alloc_context; }
+    inline PTR_gc_alloc_context GetAllocContext() { LIMITED_METHOD_CONTRACT; return m_alloc_context; }
 
     // This is the type handle of the first object in the alloc context at the time
     // we fire the AllocationTick event. It's only for tooling purpose.

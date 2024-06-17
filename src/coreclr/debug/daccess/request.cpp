@@ -720,7 +720,7 @@ ClrDataAccess::GetThreadAllocData(CLRDATA_ADDRESS addr, struct DacpAllocData *da
 
     Thread* thread = PTR_Thread(TO_TADDR(addr));
 
-    gc_alloc_context* pAllocContext = thread->GetAllocContext();
+    PTR_gc_alloc_context pAllocContext = thread->GetAllocContext();
 
     if (pAllocContext != NULL)
     {
@@ -827,7 +827,7 @@ HRESULT ClrDataAccess::GetThreadDataImpl(CLRDATA_ADDRESS threadAddr, struct Dacp
     threadData->state = thread->m_State;
     threadData->preemptiveGCDisabled = thread->m_fPreemptiveGCDisabled;
 
-    gc_alloc_context* allocContext = thread->GetAllocContext();
+    PTR_gc_alloc_context allocContext = thread->GetAllocContext();
     if (allocContext)
     {
         threadData->allocContextPtr = TO_CDADDR(allocContext->alloc_ptr);
