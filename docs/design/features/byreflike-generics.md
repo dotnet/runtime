@@ -124,7 +124,7 @@ The following are IL sequences involving the `box` instruction. They are used fo
 
 `box` ; `isinst` ; `unbox.any` &ndash; Becomes a NOP, if the box, `isinst`, and unbox target types are all equal.
 
-`box` ; `isinst` ; `br_true/false` &ndash; Becomes a constant, if the box target type is ByRefLike or the box target type is `Nullable<T>` and target type equalities are computed to be equal. The sequence will also be elided if the box target type is a ByRefLike type, but needs to be checked at run-time, not JIT compile time. This latter case is common when the box target type uses Generic parameters.
+`box` ; `isinst` ; `br_true/false` &ndash; Can become a constant, if the box target type is ByRefLike or the box target type is `Nullable<T>` and target type equalities are computed to be equal. This sequence can be interpreted as behaving as if the ByRefLike nature of the input type doesn't exist.
 
 ## Examples
 
@@ -249,5 +249,14 @@ class B : A
     // If a user has an instance of A, they are
     // not aware they could be calling B.
     override void M<T2>();
+}
+```
+
+**8) Valid**
+```csharp
+class A
+{
+    public bool M<T, U>(T t) where T: allows ref struct
+        => t is U;
 }
 ```
