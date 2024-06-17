@@ -19,7 +19,6 @@ namespace System.Numerics.Tensors
         /// <param name="lengths">A <see cref="ReadOnlySpan{T}"/> indicating the lengths of each dimension.</param>
         /// <param name="pinned">A <see cref="bool"/> whether the underlying data should be pinned or not.</param>
         public static Tensor<T> Create<T>(scoped ReadOnlySpan<nint> lengths, bool pinned = false)
-            where T : IEquatable<T>
         {
             nint linearLength = TensorSpanHelpers.CalculateTotalLength(lengths);
             T[] values = pinned ? GC.AllocateArray<T>((int)linearLength, pinned) : (new T[linearLength]);
@@ -33,7 +32,6 @@ namespace System.Numerics.Tensors
         /// <param name="strides">A <see cref="ReadOnlySpan{T}"/> indicating the strides of each dimension.</param>
         /// <param name="pinned">A <see cref="bool"/> whether the underlying data should be pinned or not.</param>
         public static Tensor<T> Create<T>(scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides, bool pinned = false)
-            where T : IEquatable<T>
         {
             nint linearLength = TensorSpanHelpers.CalculateTotalLength(lengths);
             T[] values = pinned ? GC.AllocateArray<T>((int)linearLength, pinned) : (new T[linearLength]);
@@ -48,7 +46,7 @@ namespace System.Numerics.Tensors
         /// <param name="lengths">A <see cref="ReadOnlySpan{T}"/> indicating the lengths of each dimension.</param>
         /// <exception cref="ArgumentOutOfRangeException"></exception>
         public static Tensor<T> Create<T>(T[] values, scoped ReadOnlySpan<nint> lengths)
-            where T : IEquatable<T> => Create(values, lengths, []);
+            => Create(values, lengths, []);
 
         /// <summary>
         /// Creates a <see cref="Tensor{T}"/> from the provided <paramref name="values"/>. If the product of the
@@ -60,7 +58,6 @@ namespace System.Numerics.Tensors
         /// <param name="isPinned">A <see cref="bool"/> indicating whether the <paramref name="values"/> were pinned or not.</param>
         /// <exception cref="ArgumentOutOfRangeException"></exception>
         public static Tensor<T> Create<T>(T[] values, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides, bool isPinned = false)
-            where T : IEquatable<T>
         {
             return new Tensor<T>(values, lengths, strides, isPinned);
         }
@@ -71,7 +68,7 @@ namespace System.Numerics.Tensors
         /// <param name="lengths">A <see cref="ReadOnlySpan{T}"/> indicating the lengths of each dimension.</param>
         /// <param name="pinned">A <see cref="bool"/> whether the underlying data should be pinned or not.</param>
         public static Tensor<T> CreateUninitialized<T>(scoped ReadOnlySpan<nint> lengths, bool pinned = false)
-            where T : IEquatable<T> => CreateUninitialized<T>(lengths, [], pinned);
+            => CreateUninitialized<T>(lengths, [], pinned);
 
 
         /// <summary>
@@ -81,7 +78,6 @@ namespace System.Numerics.Tensors
         /// <param name="strides">A <see cref="ReadOnlySpan{T}"/> indicating the strides of each dimension.</param>
         /// <param name="pinned">A <see cref="bool"/> whether the underlying data should be pinned or not.</param>
         public static Tensor<T> CreateUninitialized<T>(scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides, bool pinned = false )
-            where T : IEquatable<T>
         {
             nint linearLength = TensorSpanHelpers.CalculateTotalLength(lengths);
             T[] values = GC.AllocateUninitializedArray<T>((int)linearLength, pinned);
@@ -93,7 +89,6 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="data">A <see cref="IEnumerable{T}"/> with the data to use for the initialization.</param>
         public static Tensor<T> CreateFromEnumerable<T>(IEnumerable<T> data)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool>
         {
             T[] values = data.ToArray();
             return new Tensor<T>(values, [values.Length], false);
@@ -104,7 +99,7 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="lengths">A <see cref="ReadOnlySpan{T}"/> indicating the lengths of each dimension.</param>
         public static Tensor<T> CreateAndFillUniformDistribution<T>(params scoped ReadOnlySpan<nint> lengths)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IFloatingPoint<T>
+            where T : IFloatingPoint<T>
         {
             nint linearLength = TensorSpanHelpers.CalculateTotalLength(lengths);
             T[] values = new T[linearLength];
@@ -121,7 +116,7 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="lengths">A <see cref="ReadOnlySpan{T}"/> indicating the lengths of each dimension.</param>
         public static Tensor<T> CreateAndFillGaussianNormalDistribution<T>(params scoped ReadOnlySpan<nint> lengths)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IFloatingPoint<T>
+            where T : IFloatingPoint<T>
         {
             nint linearLength = TensorSpanHelpers.CalculateTotalLength(lengths);
             T[] values = new T[linearLength];
@@ -130,7 +125,7 @@ namespace System.Numerics.Tensors
         }
 
         private static void GaussianDistribution<T>(ref T[] values, nint linearLength)
-             where T : IEquatable<T>, IEqualityOperators<T, T, bool>, IFloatingPoint<T>
+             where T : IFloatingPoint<T>
         {
             Random rand = Random.Shared;
             for (int i = 0; i < linearLength; i++)

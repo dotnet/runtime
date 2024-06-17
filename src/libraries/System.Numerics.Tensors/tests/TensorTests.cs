@@ -47,7 +47,7 @@ namespace System.Numerics.Tensors.Tests
             yield return Create<float>(TensorPrimitives.Atan, Tensor.Atan);
             yield return Create<float>(TensorPrimitives.Atanh, Tensor.Atanh);
             yield return Create<float>(TensorPrimitives.AtanPi, Tensor.AtanPi);
-            yield return Create<float>(TensorPrimitives.Cbrt, Tensor.CubeRoot);
+            yield return Create<float>(TensorPrimitives.Cbrt, Tensor.Cbrt);
             yield return Create<float>(TensorPrimitives.Ceiling, Tensor.Ceiling);
             yield return Create<float>(TensorPrimitives.Cos, Tensor.Cos);
             yield return Create<float>(TensorPrimitives.Cosh, Tensor.Cosh);
@@ -158,7 +158,7 @@ namespace System.Numerics.Tensors.Tests
             yield return Create<float>(TensorPrimitives.Atan2Pi, Tensor.Atan2Pi);
             yield return Create<float>(TensorPrimitives.CopySign, Tensor.CopySign);
             yield return Create<float>(TensorPrimitives.Divide, Tensor.Divide);
-            yield return Create<float>(TensorPrimitives.Hypot, Tensor.Hypotenuse);
+            yield return Create<float>(TensorPrimitives.Hypot, Tensor.Hypot);
             yield return Create<float>(TensorPrimitives.Ieee754Remainder, Tensor.Ieee754Remainder);
             yield return Create<float>(TensorPrimitives.Multiply, Tensor.Multiply);
             yield return Create<float>(TensorPrimitives.Pow, Tensor.Pow);
@@ -653,10 +653,6 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(0, t2[2, 0]);
             Assert.Equal(7, t2[2, 1]);
             Assert.Equal(16, t2[2, 2]);
-
-
-
-
         }
 
         [Fact]

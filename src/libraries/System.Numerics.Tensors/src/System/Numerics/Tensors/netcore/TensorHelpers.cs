@@ -84,10 +84,10 @@ namespace System.Numerics.Tensors
         }
 
         internal static bool IsUnderlyingStorageSameSize<T>(Tensor<T> tensor1, Tensor<T> tensor2)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool> => tensor1.Lengths.Length == tensor2.Lengths.Length;
+            => tensor1.Lengths.Length == tensor2.Lengths.Length;
 
         internal static bool AreShapesTheSame<T>(Tensor<T> tensor1, Tensor<T> tensor2)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool> => tensor1._lengths.SequenceEqual(tensor2._lengths);
+            => tensor1._lengths.SequenceEqual(tensor2._lengths);
 
 
         internal static void PermuteIndices(Span<nint> indices, Span<nint> permutedIndices, ReadOnlySpan<int> permutation)

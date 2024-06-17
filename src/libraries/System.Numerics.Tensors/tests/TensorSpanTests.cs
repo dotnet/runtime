@@ -50,7 +50,7 @@ namespace System.Numerics.Tensors.Tests
             yield return Create<float>(TensorPrimitives.Atan, Tensor.Atan);
             yield return Create<float>(TensorPrimitives.Atanh, Tensor.Atanh);
             yield return Create<float>(TensorPrimitives.AtanPi, Tensor.AtanPi);
-            yield return Create<float>(TensorPrimitives.Cbrt, Tensor.CubeRoot);
+            yield return Create<float>(TensorPrimitives.Cbrt, Tensor.Cbrt);
             yield return Create<float>(TensorPrimitives.Ceiling, Tensor.Ceiling);
             yield return Create<float>(TensorPrimitives.Cos, Tensor.Cos);
             yield return Create<float>(TensorPrimitives.Cosh, Tensor.Cosh);
@@ -136,7 +136,7 @@ namespace System.Numerics.Tensors.Tests
             yield return Create<float>(TensorPrimitives.Atan, Tensor.AtanInPlace);
             yield return Create<float>(TensorPrimitives.Atanh, Tensor.AtanhInPlace);
             yield return Create<float>(TensorPrimitives.AtanPi, Tensor.AtanPiInPlace);
-            yield return Create<float>(TensorPrimitives.Cbrt, Tensor.CubeRootInPlace);
+            yield return Create<float>(TensorPrimitives.Cbrt, Tensor.CbrtInPlace);
             yield return Create<float>(TensorPrimitives.Ceiling, Tensor.CeilingInPlace);
             yield return Create<float>(TensorPrimitives.Cos, Tensor.CosInPlace);
             yield return Create<float>(TensorPrimitives.Cosh, Tensor.CoshInPlace);
@@ -249,7 +249,7 @@ namespace System.Numerics.Tensors.Tests
             yield return Create<float>(TensorPrimitives.Atan2Pi, Tensor.Atan2Pi);
             yield return Create<float>(TensorPrimitives.CopySign, Tensor.CopySign);
             yield return Create<float>(TensorPrimitives.Divide, Tensor.Divide);
-            yield return Create<float>(TensorPrimitives.Hypot, Tensor.Hypotenuse);
+            yield return Create<float>(TensorPrimitives.Hypot, Tensor.Hypot);
             yield return Create<float>(TensorPrimitives.Ieee754Remainder, Tensor.Ieee754Remainder);
             yield return Create<float>(TensorPrimitives.Multiply, Tensor.Multiply);
             yield return Create<float>(TensorPrimitives.Pow, Tensor.Pow);
@@ -301,7 +301,7 @@ namespace System.Numerics.Tensors.Tests
             yield return Create<float>(TensorPrimitives.Atan2Pi, Tensor.Atan2PiInPlace);
             yield return Create<float>(TensorPrimitives.CopySign, Tensor.CopySignInPlace);
             yield return Create<float>(TensorPrimitives.Divide, Tensor.DivideInPlace);
-            yield return Create<float>(TensorPrimitives.Hypot, Tensor.HypotenuseInPlace);
+            yield return Create<float>(TensorPrimitives.Hypot, Tensor.HypotInPlace);
             yield return Create<float>(TensorPrimitives.Ieee754Remainder, Tensor.Ieee754RemainderInPlace);
             yield return Create<float>(TensorPrimitives.Multiply, Tensor.MultiplyInPlace);
             yield return Create<float>(TensorPrimitives.Pow, Tensor.PowInPlace);
