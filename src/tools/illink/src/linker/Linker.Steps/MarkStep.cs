@@ -2513,6 +2513,9 @@ namespace Mono.Linker.Steps
 			if (Annotations.IsMarked (method))
 				return false;
 
+			if (!Annotations.IsMarked (method.DeclaringType))
+				return false;
+
 			// If the interface implementation is not marked, do not mark the implementation method
 			// A type that doesn't implement the interface isn't required to have methods that implement the interface.
 			// We must check all possible ways the interface could be implemented by the type (through all recursive interface implementations, not just the primary one)
