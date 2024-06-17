@@ -208,7 +208,7 @@ namespace System.Net.Http
             }
         }
 
-        public void StreamsAvailableCallback(QuicConnection connection, int bidirectionalStreamsCountIncrement, int _)
+        public void StreamCapacityCallback(QuicConnection connection, QuicStreamCapacityChangedArgs args)
         {
             Debug.Assert(_connection is null || connection == _connection);
 
@@ -216,9 +216,9 @@ namespace System.Net.Http
             {
                 Debug.Assert(_availableRequestStreamsCount >= 0);
 
-                if (NetEventSource.Log.IsEnabled()) Trace($"StreamsAvailableCallback: _availableRequestStreamsCount = {_availableRequestStreamsCount} + bidirectionalStreamsCountIncrement = {bidirectionalStreamsCountIncrement}");
+                if (NetEventSource.Log.IsEnabled()) Trace($"StreamCapacityCallback: _availableRequestStreamsCount = {_availableRequestStreamsCount} + bidirectionalStreamsCountIncrement = {args.BidirectionalIncrement}");
 
-                _availableRequestStreamsCount += bidirectionalStreamsCountIncrement;
+                _availableRequestStreamsCount += args.BidirectionalIncrement;
                 _availableStreamsWaiter?.SetResult(!ShuttingDown);
                 _availableStreamsWaiter = null;
             }
