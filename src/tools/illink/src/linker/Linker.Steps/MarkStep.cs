@@ -2513,7 +2513,7 @@ namespace Mono.Linker.Steps
 			if (Annotations.IsMarked (method))
 				return false;
 
-			if (!Annotations.IsMarked (method.DeclaringType))
+			if (!Annotations.IsMarked (overrideInformation.RuntimeInterfaceImplementation.Implementor))
 				return false;
 
 			// If the interface implementation is not marked, do not mark the implementation method
