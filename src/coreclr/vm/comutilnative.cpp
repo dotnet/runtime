@@ -856,6 +856,31 @@ extern "C" void QCALLTYPE GCInterface_Collect(INT32 generation, INT32 mode)
     END_QCALL;
 }
 
+extern "C" void* QCALLTYPE GCInterface_GetNextFinalizableObject(QCall::ObjectHandleOnStack pObj)
+{
+    QCALL_CONTRACT;
+
+    PCODE funcPtr = 0;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    OBJECTREF target = FinalizerThread::GetNextFinalizableObject();
+
+    if (target != NULL)
+    {
+        pObj.Set(target);
+
+        MethodTable* pMT = target->GetMethodTable();
+
+        funcPtr = pMT->GetRestoredSlot(g_pObjectFinalizerMD->GetSlot());
+    }
+
+    END_QCALL;
+
+    return (void*)funcPtr;
+}
 
 /*==========================WaitForPendingFinalizers============================
 **Action: Run all Finalizers that haven't been run.
@@ -1081,24 +1106,24 @@ FCIMPLEND
 **Arguments: Object of interest
 **Exceptions: None
 ==============================================================================*/
-FCIMPL1(void, GCInterface::ReRegisterForFinalize, Object *obj)
+extern "C" void QCALLTYPE GCInterface_ReRegisterForFinalize(QCall::ObjectHandleOnStack pObj)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
 
     // Checked by the caller
-    _ASSERTE(obj != NULL);
+    _ASSERTE(pObj.Get() != NULL);
+    _ASSERTE(pObj.Get()->GetMethodTable()->HasFinalizer());
 
-    if (obj->GetMethodTable()->HasFinalizer())
+    if (!GCHeapUtilities::GetGCHeap()->RegisterForFinalization(-1, OBJECTREFToObject(pObj.Get())))
     {
-        HELPER_METHOD_FRAME_BEGIN_1(obj);
-        if (!GCHeapUtilities::GetGCHeap()->RegisterForFinalization(-1, obj))
-        {
-            ThrowOutOfMemory();
-        }
-        HELPER_METHOD_FRAME_END();
+        ThrowOutOfMemory();
     }
+    END_QCALL;
 }
-FCIMPLEND
 
 FORCEINLINE UINT64 GCInterface::InterlockedAdd (UINT64 *pAugend, UINT64 addend) {
     WRAPPER_NO_CONTRACT;

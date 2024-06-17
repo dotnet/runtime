@@ -1,13 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Runtime.Intrinsics;
-using System.Xml.Serialization;
 
 
 #pragma warning disable 8500 // sizeof of managed types
@@ -56,21 +51,6 @@ namespace System.Numerics.Tensors
                 dest = ref Unsafe.Add(ref dest, toFill);
                 numElements -= toFill;
             }
-        }
-
-        public static bool SequenceEqual<T>(ref T first, ref T second, nuint length) where T : IEquatable<T>?
-        {
-            bool equal = true;
-            while (length > 0)
-            {
-                nuint toCompare = Math.Min(length, int.MaxValue);
-                equal &= MemoryMarshal.CreateSpan(ref first, (int)toCompare).SequenceEqual(MemoryMarshal.CreateSpan(ref second, (int)toCompare));
-                first = ref Unsafe.Add(ref first, toCompare);
-                second = ref Unsafe.Add(ref second, toCompare);
-                length -= toCompare;
-            }
-
-            return equal;
         }
     }
 }

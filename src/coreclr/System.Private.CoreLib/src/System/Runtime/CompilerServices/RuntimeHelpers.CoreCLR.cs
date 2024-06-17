@@ -221,15 +221,6 @@ namespace System.Runtime.CompilerServices
         [LibraryImport(QCall, EntryPoint = "ObjectNative_AllocateUninitializedClone")]
         internal static partial void AllocateUninitializedClone(ObjectHandleOnStack objHandle);
 
-        /// <returns>true if given type is reference type or value type that contains references</returns>
-        [Intrinsic]
-        public static bool IsReferenceOrContainsReferences<T>()
-        {
-            // The body of this function will be replaced by the EE with unsafe code!!!
-            // See getILIntrinsicImplementationForRuntimeHelpers for how this happens.
-            throw new InvalidOperationException();
-        }
-
         /// <returns>true if given type is bitwise equatable (memcmp can be used for equality checking)</returns>
         /// <remarks>
         /// Only use the result of this for Equals() comparison, not for CompareTo() comparison.
@@ -431,32 +422,7 @@ namespace System.Runtime.CompilerServices
             if (type.IsNullHandle())
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.type);
 
-            TypeHandle handle = type.GetNativeTypeHandle();
-
-            if (handle.IsTypeDesc)
-                throw new ArgumentException(SR.Arg_TypeNotSupported);
-
-            MethodTable* pMT = handle.AsMethodTable();
-
-            if (pMT->ContainsGenericVariables)
-                throw new ArgumentException(SR.Arg_TypeNotSupported);
-
-            if (pMT->IsValueType)
-            {
-                if (pMT->IsByRefLike)
-                    throw new NotSupportedException(SR.NotSupported_ByRefLike);
-
-                if (MethodTable.AreSameType(pMT, (MethodTable*)RuntimeTypeHandle.ToIntPtr(typeof(void).TypeHandle)))
-                    throw new ArgumentException(SR.Arg_TypeNotSupported);
-
-                object? result = Box(pMT, ref target);
-                GC.KeepAlive(type);
-                return result;
-            }
-            else
-            {
-                return Unsafe.As<byte, object?>(ref target);
-            }
+            return type.GetRuntimeType().Box(ref target);
         }
 
         [LibraryImport(QCall, EntryPoint = "ReflectionInvocation_SizeOf")]
@@ -594,6 +560,7 @@ namespace System.Runtime.CompilerServices
         private const uint enum_flag_ContainsGenericVariables = 0x20000000;
         private const uint enum_flag_HasComponentSize = 0x80000000;
         private const uint enum_flag_HasTypeEquivalence = 0x02000000;
+        private const uint enum_flag_HasFinalizer = 0x00100000;
         private const uint enum_flag_Category_Mask = 0x000F0000;
         private const uint enum_flag_Category_ValueType = 0x00040000;
         private const uint enum_flag_Category_Nullable = 0x00050000;
@@ -647,6 +614,8 @@ namespace System.Runtime.CompilerServices
         public bool NonTrivialInterfaceCast => (Flags & enum_flag_NonTrivialInterfaceCast) != 0;
 
         public bool HasTypeEquivalence => (Flags & enum_flag_HasTypeEquivalence) != 0;
+
+        public bool HasFinalizer => (Flags & enum_flag_HasFinalizer) != 0;
 
         internal static bool AreSameType(MethodTable* mt1, MethodTable* mt2) => mt1 == mt2;
 
@@ -724,8 +693,8 @@ namespace System.Runtime.CompilerServices
         [FieldOffset(0)]
         private uint Flags;
 
-        private const uint enum_flag_CanCompareBitsOrUseFastGetHashCode = 0x0001;     // Is any field type or sub field type overrode Equals or GetHashCode
         private const uint enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode = 0x0002;  // Whether we have checked the overridden Equals or GetHashCode
+        private const uint enum_flag_CanCompareBitsOrUseFastGetHashCode = 0x0004;     // Is any field type or sub field type overridden Equals or GetHashCode
 
         public bool HasCheckedCanCompareBitsOrUseFastGetHashCode => (Flags & enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode) != 0;
 

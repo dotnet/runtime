@@ -509,6 +509,7 @@ void BulkStaticsLogger::LogAllStatics()
     CONTRACTL_END;
 
     {
+        // TODO: This code does not appear to find all generic instantiations of types, and thus does not log ALL statics
         AppDomain *domain = ::GetAppDomain(); // There is only 1 AppDomain, so no iterator here.
 
         AppDomain::AssemblyIterator assemblyIter = domain->IterateAssembliesEx((AssemblyIterationFlags)(kIncludeLoaded|kIncludeExecution));
@@ -531,10 +532,6 @@ void BulkStaticsLogger::LogAllStatics()
 
             // Ensure the module has fully loaded.
             if (!domainAssembly->IsActive())
-                continue;
-
-            DomainLocalModule *domainModule = module->GetDomainLocalModule();
-            if (domainModule == NULL)
                 continue;
 
             // Now iterate all types with
@@ -566,7 +563,7 @@ void BulkStaticsLogger::LogAllStatics()
                     if (fieldType != ELEMENT_TYPE_CLASS && fieldType != ELEMENT_TYPE_VALUETYPE)
                         continue;
 
-                    BYTE *base = field->GetBaseInDomainLocalModule(domainModule);
+                    BYTE *base = field->GetBase();
                     if (base == NULL)
                         continue;
 

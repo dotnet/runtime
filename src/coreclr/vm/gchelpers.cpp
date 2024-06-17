@@ -127,7 +127,7 @@ public:
         lock->Release();
     }
 
-    typedef Holder<GlobalAllocLock *, GlobalAllocLock::AcquireLock, GlobalAllocLock::ReleaseLock> Holder;
+    typedef class Holder<GlobalAllocLock *, GlobalAllocLock::AcquireLock, GlobalAllocLock::ReleaseLock> Holder;
 };
 
 typedef GlobalAllocLock::Holder GlobalAllocLockHolder;

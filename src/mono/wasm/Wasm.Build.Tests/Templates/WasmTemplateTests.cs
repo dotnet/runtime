@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
@@ -452,13 +453,21 @@ namespace Wasm.Build.Tests
             Assert.Contains("args[2] = z", res.Output);
         }
 
+        public static IEnumerable<object?[]> BrowserBuildAndRunTestData()
+        {
+            yield return new object?[] { "", BuildTestBase.DefaultTargetFramework, DefaultRuntimeAssetsRelativePath };
+            yield return new object?[] { "-f net9.0", "net9.0", DefaultRuntimeAssetsRelativePath };
+
+            if (EnvironmentVariables.WorkloadsTestPreviousVersions)
+                yield return new object?[] { "-f net8.0", "net8.0", DefaultRuntimeAssetsRelativePath };
+
+            // ActiveIssue("https://github.com/dotnet/runtime/issues/90979")
+            // yield return new object?[] { "", BuildTestBase.DefaultTargetFramework, "./" };
+            // yield return new object?[] { "-f net8.0", "net8.0", "./" };
+        }
+
         [Theory]
-        [InlineData("", BuildTestBase.DefaultTargetFramework, DefaultRuntimeAssetsRelativePath)]
-        [InlineData("-f net9.0", "net9.0", DefaultRuntimeAssetsRelativePath)]
-        [InlineData("-f net8.0", "net8.0", DefaultRuntimeAssetsRelativePath)]
-        // [ActiveIssue("https://github.com/dotnet/runtime/issues/90979")]
-        // [InlineData("", BuildTestBase.DefaultTargetFramework, "./")]
-        // [InlineData("-f net8.0", "net8.0", "./")]
+        [MemberData(nameof(BrowserBuildAndRunTestData))]
         public async Task BrowserBuildAndRun(string extraNewArgs, string targetFramework, string runtimeAssetsRelativePath)
         {
             string config = "Debug";

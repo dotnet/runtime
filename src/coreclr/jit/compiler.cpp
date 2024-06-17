@@ -2000,7 +2000,7 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
 
     // check that HelperCallProperties are initialized
 
-    assert(s_helperCallProperties.IsPure(CORINFO_HELP_GETSHARED_GCSTATIC_BASE));
+    assert(s_helperCallProperties.IsPure(CORINFO_HELP_GET_GCSTATIC_BASE));
     assert(!s_helperCallProperties.IsPure(CORINFO_HELP_GETFIELDOBJ)); // quick sanity check
 
     // We start with the flow graph in tree-order
@@ -2307,7 +2307,6 @@ void Compiler::compSetProcessor()
     {
         instructionSetFlags.AddInstructionSet(InstructionSet_Vector256);
     }
-
     // x86-64-v4 feature level supports AVX512F, AVX512BW, AVX512CD, AVX512DQ, AVX512VL
     // These have been shipped together historically and at the time of this writing
     // there exists no hardware which doesn't support the entire feature set. To simplify
@@ -3733,6 +3732,29 @@ bool Compiler::compPromoteFewerStructs(unsigned lclNum)
         rejectThisPromo = (((info.compMethodHash() ^ lclNum) & 1) == 0);
     }
     return rejectThisPromo;
+}
+
+//------------------------------------------------------------------------
+// dumpRegMask: display a register mask. For well-known sets of registers, display a well-known token instead of
+// a potentially large number of registers.
+//
+// Arguments:
+//   regs - The set of registers to display
+//   type - The type of `regs`
+//
+void Compiler::dumpRegMask(SingleTypeRegSet regs, var_types type) const
+{
+#ifdef FEATURE_MASKED_HW_INTRINSICS
+    if (varTypeIsMask(type))
+    {
+        dumpRegMask(regMaskTP(RBM_NONE, regs));
+    }
+    else
+#endif
+    {
+        assert(varTypeUsesIntReg(type) || varTypeUsesFloatReg(type));
+        dumpRegMask(regMaskTP(regs, RBM_NONE));
+    }
 }
 
 //------------------------------------------------------------------------

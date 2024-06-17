@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<!-- https://learn.microsoft.com/en-us/dotnet/fundamentals/package-validation/diagnostic-ids -->
+<!-- https://learn.microsoft.com/dotnet/fundamentals/package-validation/diagnostic-ids -->
 <Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <Suppression>
     <DiagnosticId>CP0014</DiagnosticId>
@@ -468,6 +468,12 @@
     <Target>P:System.ComponentModel.EnumConverter.EnumType:[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
     <Left>net8.0/System.dll</Left>
     <Right>net9.0/System.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>T:System.Text.RegularExpressions.GeneratedRegexAttribute:[T:System.AttributeUsageAttribute]</Target>
+    <Left>net8.0/System.Text.RegularExpressions.dll</Left>
+    <Right>net9.0/System.Text.RegularExpressions.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0021</DiagnosticId>

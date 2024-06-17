@@ -465,7 +465,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, simd_t
             {
                 if (emitter::isHighSimdReg(targetReg))
                 {
-                    assert(compiler->compIsaSupportedDebugOnly(InstructionSet_AVX512F));
+                    assert(compiler->canUseEvexEncodingDebugOnly());
                     emit->emitIns_SIMD_R_R_R_I(INS_vpternlogd, attr, targetReg, targetReg, targetReg,
                                                static_cast<int8_t>(0xFF), INS_OPTS_NONE);
                 }
@@ -492,7 +492,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, simd_t
             {
                 if (emitter::isHighSimdReg(targetReg))
                 {
-                    assert(compiler->compIsaSupportedDebugOnly(InstructionSet_AVX512F));
+                    assert(compiler->canUseEvexEncodingDebugOnly());
                     emit->emitIns_SIMD_R_R_R_I(INS_vpternlogd, attr, targetReg, targetReg, targetReg,
                                                static_cast<int8_t>(0xFF), INS_OPTS_NONE);
                 }
@@ -521,7 +521,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, simd_t
             {
                 if (emitter::isHighSimdReg(targetReg))
                 {
-                    assert(compiler->compIsaSupportedDebugOnly(InstructionSet_AVX512F));
+                    assert(compiler->canUseEvexEncodingDebugOnly());
                     emit->emitIns_SIMD_R_R_R_I(INS_vpternlogd, attr, targetReg, targetReg, targetReg,
                                                static_cast<int8_t>(0xFF), INS_OPTS_NONE);
                 }
@@ -548,7 +548,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, simd_t
             {
                 if (emitter::isHighSimdReg(targetReg))
                 {
-                    assert(compiler->compIsaSupportedDebugOnly(InstructionSet_AVX512F));
+                    assert(compiler->canUseEvexEncodingDebugOnly());
                     emit->emitIns_SIMD_R_R_R_I(INS_vpternlogd, attr, targetReg, targetReg, targetReg,
                                                static_cast<int8_t>(0xFF), INS_OPTS_NONE);
                 }
@@ -667,7 +667,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
             {
                 if (emitter::isHighSimdReg(targetReg))
                 {
-                    assert(compiler->compIsaSupportedDebugOnly(InstructionSet_AVX512F));
+                    assert(compiler->canUseEvexEncodingDebugOnly());
                     emit->emitIns_SIMD_R_R_R_I(INS_vpternlogd, EA_16BYTE, targetReg, targetReg, targetReg,
                                                static_cast<int8_t>(0xFF), INS_OPTS_NONE);
                 }
@@ -5654,6 +5654,8 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
                         case NI_AVX512F_ExtractVector256:
                         case NI_AVX512DQ_ExtractVector128:
                         case NI_AVX512DQ_ExtractVector256:
+                        case NI_AVX10v1_V512_ExtractVector128:
+                        case NI_AVX10v1_V512_ExtractVector256:
                         {
                             // These intrinsics are "ins reg/mem, xmm, imm8"
                             ins  = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
@@ -5682,6 +5684,8 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
                         case NI_AVX512F_ConvertToVector256UInt32:
                         case NI_AVX512F_VL_ConvertToVector128UInt32:
                         case NI_AVX512F_VL_ConvertToVector128UInt32WithSaturation:
+                        case NI_AVX10v1_ConvertToVector128UInt32:
+                        case NI_AVX10v1_ConvertToVector128UInt32WithSaturation:
                         {
                             assert(!varTypeIsFloating(baseType));
                             FALLTHROUGH;
@@ -5719,6 +5723,16 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
                         case NI_AVX512BW_VL_ConvertToVector128ByteWithSaturation:
                         case NI_AVX512BW_VL_ConvertToVector128SByte:
                         case NI_AVX512BW_VL_ConvertToVector128SByteWithSaturation:
+                        case NI_AVX10v1_ConvertToVector128Byte:
+                        case NI_AVX10v1_ConvertToVector128ByteWithSaturation:
+                        case NI_AVX10v1_ConvertToVector128Int16:
+                        case NI_AVX10v1_ConvertToVector128Int16WithSaturation:
+                        case NI_AVX10v1_ConvertToVector128Int32:
+                        case NI_AVX10v1_ConvertToVector128Int32WithSaturation:
+                        case NI_AVX10v1_ConvertToVector128SByte:
+                        case NI_AVX10v1_ConvertToVector128SByteWithSaturation:
+                        case NI_AVX10v1_ConvertToVector128UInt16:
+                        case NI_AVX10v1_ConvertToVector128UInt16WithSaturation:
                         {
                             // These intrinsics are "ins reg/mem, xmm"
                             ins  = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
@@ -7324,13 +7338,11 @@ void CodeGen::genIntToFloatCast(GenTree* treeNode)
     // Also we don't expect to see uint32 -> float/double and uint64 -> float conversions
     // here since they should have been lowered appropriately.
     noway_assert(srcType != TYP_UINT);
-    assert((srcType != TYP_ULONG) || (dstType != TYP_FLOAT) ||
-           compiler->compIsaSupportedDebugOnly(InstructionSet_AVX512F));
+    assert((srcType != TYP_ULONG) || (dstType != TYP_FLOAT) || compiler->canUseEvexEncodingDebugOnly());
 
-    if ((srcType == TYP_ULONG) && varTypeIsFloating(dstType) &&
-        compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512F))
+    if ((srcType == TYP_ULONG) && varTypeIsFloating(dstType) && compiler->canUseEvexEncoding())
     {
-        assert(compiler->compIsaSupportedDebugOnly(InstructionSet_AVX512F));
+        assert(compiler->canUseEvexEncodingDebugOnly());
         genConsumeOperands(treeNode->AsOp());
         instruction ins = ins_FloatConv(dstType, srcType, emitTypeSize(srcType));
         GetEmitter()->emitInsBinary(ins, emitTypeSize(srcType), treeNode, op1);
@@ -7458,13 +7470,12 @@ void CodeGen::genFloatToIntCast(GenTree* treeNode)
     // into a helper call by either front-end or lowering phase, unless we have AVX512F
     // accelerated conversions.
     assert(!varTypeIsUnsigned(dstType) || (dstSize != EA_ATTR(genTypeSize(TYP_LONG))) ||
-           compiler->compIsaSupportedDebugOnly(InstructionSet_AVX512F));
+           compiler->canUseEvexEncodingDebugOnly());
 
     // If the dstType is TYP_UINT, we have 32-bits to encode the
     // float number. Any of 33rd or above bits can be the sign bit.
     // To achieve it we pretend as if we are converting it to a long.
-    if (varTypeIsUnsigned(dstType) && (dstSize == EA_ATTR(genTypeSize(TYP_INT))) &&
-        !compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512F))
+    if (varTypeIsUnsigned(dstType) && (dstSize == EA_ATTR(genTypeSize(TYP_INT))) && !compiler->canUseEvexEncoding())
     {
         dstType = TYP_LONG;
     }
@@ -8841,7 +8852,7 @@ void CodeGen::genCreateAndStoreGCInfoX64(unsigned codeSize, unsigned prologSize 
         //  -saved bool for synchronized methods
 
         // slots for ret address + FP + EnC callee-saves
-        int preservedAreaSize = (2 + genCountBits((uint64_t)RBM_ENC_CALLEE_SAVED)) * REGSIZE_BYTES;
+        int preservedAreaSize = (2 + genCountBits(RBM_ENC_CALLEE_SAVED)) * REGSIZE_BYTES;
 
         if (compiler->info.compFlags & CORINFO_FLG_SYNCH)
         {
@@ -9912,7 +9923,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
     // if we reported the frame pointer in the prolog. The Windows x64 unwinding ABI specifically
     // disallows this `lea` form:
     //
-    //    See https://docs.microsoft.com/en-us/cpp/build/prolog-and-epilog?view=msvc-160#epilog-code
+    //    See https://learn.microsoft.com/cpp/build/prolog-and-epilog?view=msvc-160#epilog-code
     //
     //    "When a frame pointer is not used, the epilog must use add RSP,constant to deallocate the fixed part of the
     //    stack. It may not use lea RSP,constant[RSP] instead. This restriction exists so the unwind code has fewer

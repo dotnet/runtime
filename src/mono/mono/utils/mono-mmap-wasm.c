@@ -119,7 +119,7 @@ valloc_impl (void *addr, size_t size, int flags, MonoMemAccountType type)
 		if ((flags & MONO_MMAP_FIXED) && addr)
 			return NULL;
 
-		ptr = mwpm_alloc_range (size, 1);
+		ptr = mwpm_alloc_range (size, (flags & MONO_MMAP_NOZERO) == 0);
 		if (!ptr)
 			return NULL;
 	} else

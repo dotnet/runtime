@@ -27,8 +27,8 @@ namespace Tracing.Tests.SimpleRuntimeEventValidation
                 // Validation is done with _DoesTraceContainEvents
                 new Dictionary<string, ExpectedEventCount>(){{ "Microsoft-Windows-DotNETRuntime", -1 }},
                 _eventGeneratingActionForGC,
-                //GCKeyword (0x1): 0b1
-                new List<EventPipeProvider>(){new EventPipeProvider("Microsoft-Windows-DotNETRuntime", EventLevel.Informational, 0b1)},
+                // GCKeyword (0x1): 0b1, GCAllocationTick requires Verbose level
+                new List<EventPipeProvider>(){new EventPipeProvider("Microsoft-Windows-DotNETRuntime", EventLevel.Verbose, 0b1)},
                 1024, _DoesTraceContainGCEvents, enableRundownProvider:false);
             if (ret != 100)
                 return ret;
@@ -37,11 +37,11 @@ namespace Tracing.Tests.SimpleRuntimeEventValidation
             if (ret == 100)
             {
                 ret = IpcTraceTest.RunAndValidateEventCounts(
-                    new Dictionary<string, ExpectedEventCount>() { { "Microsoft-DotNETCore-EventPipe", 1 } },
+                    new Dictionary<string, ExpectedEventCount>(){{ "Microsoft-DotNETCore-EventPipe", 1 }},
                     _eventGeneratingActionForExceptions,
-                    //ExceptionKeyword (0x8000): 0b1000_0000_0000_0000
-                    new List<EventPipeProvider>() { new EventPipeProvider("Microsoft-Windows-DotNETRuntime", EventLevel.Warning, 0b1000_0000_0000_0000) },
-                    1024, _DoesTraceContainExceptionEvents, enableRundownProvider: false);
+                    // ExceptionKeyword (0x8000): 0b1000_0000_0000_0000
+                    new List<EventPipeProvider>(){new EventPipeProvider("Microsoft-Windows-DotNETRuntime", EventLevel.Warning, 0b1000_0000_0000_0000)},
+                    1024, _DoesTraceContainExceptionEvents, enableRundownProvider:false);
 
                 if (ret == 100)
                 {
@@ -68,6 +68,9 @@ namespace Tracing.Tests.SimpleRuntimeEventValidation
                 RuntimeEventValidation eventValidation = new RuntimeEventValidation();
                 eventValidation = null;
                 GC.Collect();
+
+                // Explicitly targeting AllocationTick event
+                GC.KeepAlive(new int[1000]);
             }
         };
 
@@ -118,6 +121,9 @@ namespace Tracing.Tests.SimpleRuntimeEventValidation
             source.Clr.GCSuspendEEStart += (eventData) => GCSuspendEEEvents += 1;
             source.Clr.GCSuspendEEStop += (eventData) => GCSuspendEEEndEvents += 1;
 
+            int GCAllocationTickEvents = 0;
+            source.Clr.GCAllocationTick += (eventData) => GCAllocationTickEvents += 1;
+
             return () => {
                 Logger.logger.Log("Event counts validation");
 
@@ -136,7 +142,10 @@ namespace Tracing.Tests.SimpleRuntimeEventValidation
                 bool GCSuspendEEStartStopResult = GCSuspendEEEvents >= 50 && GCSuspendEEEndEvents >= 50;
                 Logger.logger.Log("GCSuspendEEStartStopResult check: " + GCSuspendEEStartStopResult);
 
-                return GCStartStopResult && GCRestartEEStartStopResult && GCSuspendEEStartStopResult ? 100 : -1;
+                Logger.logger.Log("GCAllocationTickEvents: " + GCAllocationTickEvents);
+                bool GCAllocationTickResult = GCAllocationTickEvents > 0;
+
+                return GCStartStopResult && GCRestartEEStartStopResult && GCSuspendEEStartStopResult && GCAllocationTickResult ? 100 : -1;
             };
         };
 

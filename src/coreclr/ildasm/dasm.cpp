@@ -249,7 +249,7 @@ WCHAR* RstrW(unsigned id)
     LoadNativeStringResource(NATIVE_STRING_RESOURCE_TABLE(NATIVE_STRING_RESOURCE_NAME),id, buff, cchBuff, NULL);
 #else
     _ASSERTE(g_hResources != NULL);
-    WszLoadString(g_hResources,id,buff,cchBuff);
+    LoadString(g_hResources,id,buff,cchBuff);
 #endif
     if(id == IDS_E_NORVA)
         wcscat_s(buff,cchBuff,W(" */"));
@@ -262,7 +262,7 @@ char* RstrA(unsigned n, unsigned codepage)
     WCHAR* wz = RstrW(n);
     // Unicode -> UTF-8
     memset(buff,0,sizeof(buff));
-    if(!WszWideCharToMultiByte(codepage,0,(LPCWSTR)wz,-1,buff,sizeof(buff),NULL,NULL))
+    if(!WideCharToMultiByte(codepage,0,(LPCWSTR)wz,-1,buff,sizeof(buff),NULL,NULL))
         buff[0] = 0;
     return buff;
 }
@@ -3119,7 +3119,7 @@ char *DumpGenericPars(_Inout_updates_(SZSTRING_SIZE) char* szString, mdToken tok
         if (chName)
         {
             char* sz = (char*)(&wzUniBuf[UNIBUF_SIZE/2]);
-            WszWideCharToMultiByte(CP_UTF8,0,wzArgName,-1,sz,UNIBUF_SIZE,NULL,NULL);
+            WideCharToMultiByte(CP_UTF8,0,wzArgName,-1,sz,UNIBUF_SIZE,NULL,NULL);
             szptr += sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr),"%s",ProperName(sz));
         }
         CHECK_REMAINING_SIZE;
@@ -3187,7 +3187,7 @@ void DumpGenericParsCA(mdToken tok, void* GUICookie/*=NULL*/)
                     //if(u16_strlen(wzArgName) >= MAX_CLASSNAME_LENGTH)
                     //    wzArgName[MAX_CLASSNAME_LENGTH-1] = 0;
                     char* sz = (char*)(&wzUniBuf[UNIBUF_SIZE/2]);
-                    WszWideCharToMultiByte(CP_UTF8,0,wzArgName,-1,sz,UNIBUF_SIZE,NULL,NULL);
+                    WideCharToMultiByte(CP_UTF8,0,wzArgName,-1,sz,UNIBUF_SIZE,NULL,NULL);
                     szptr += sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr),"%s ",ProperName(sz));
                 }
                 else
@@ -3255,7 +3255,7 @@ void DumpGenericParsCA(mdToken tok, void* GUICookie/*=NULL*/)
                         if (chName > 0)
                         {
                             char* sz = (char*)(&wzUniBuf[UNIBUF_SIZE / 2]);
-                            WszWideCharToMultiByte(CP_UTF8, 0, wzArgName, -1, sz, UNIBUF_SIZE, NULL, NULL);
+                            WideCharToMultiByte(CP_UTF8, 0, wzArgName, -1, sz, UNIBUF_SIZE, NULL, NULL);
                             szptr += sprintf_s(szptr, SZSTRING_REMAINING_SIZE(szptr), "  %s", ProperName(sz));
                         }
                         else
@@ -6981,7 +6981,7 @@ void DumpMetaInfo(_In_ __nullterminated const WCHAR* pwzFileName, _In_opt_z_ con
                 int nLength = (int) strlen(pszObjFileName)+1;
                 pwzObjFileName = new WCHAR[nLength];
                 memset(pwzObjFileName,0,sizeof(WCHAR)*nLength);
-                WszMultiByteToWideChar(CP_UTF8,0,pszObjFileName,-1,pwzObjFileName,nLength);
+                MultiByteToWideChar(CP_UTF8,0,pszObjFileName,-1,pwzObjFileName,nLength);
             }
             DisplayFile((WCHAR*)pwzFileName, true, g_ulMetaInfoFilter, pwzObjFileName, DumpMI);
             g_pDisp->Release();
@@ -7427,9 +7427,9 @@ BOOL DumpFile()
     }
 
     memset(wzInputFileName,0,sizeof(WCHAR)*MAX_FILENAME_LENGTH);
-    WszMultiByteToWideChar(CP_UTF8,0,pszFilename,-1,wzInputFileName,MAX_FILENAME_LENGTH);
+    MultiByteToWideChar(CP_UTF8,0,pszFilename,-1,wzInputFileName,MAX_FILENAME_LENGTH);
     memset(szFilenameANSI,0,MAX_FILENAME_LENGTH*3);
-    WszWideCharToMultiByte(g_uConsoleCP,0,wzInputFileName,-1,szFilenameANSI,MAX_FILENAME_LENGTH*3,NULL,NULL);
+    WideCharToMultiByte(g_uConsoleCP,0,wzInputFileName,-1,szFilenameANSI,MAX_FILENAME_LENGTH*3,NULL,NULL);
         fSuccess = g_pPELoader->open(wzInputFileName);
 
     if (fSuccess == FALSE)
@@ -7779,7 +7779,7 @@ ReportAndExit:
         {
             WCHAR wzResFileName[2048], *pwc;
             memset(wzResFileName,0,sizeof(wzResFileName));
-            WszMultiByteToWideChar(CP_UTF8,0,g_szOutputFile,-1,wzResFileName,2048);
+            MultiByteToWideChar(CP_UTF8,0,g_szOutputFile,-1,wzResFileName,2048);
             pwc = (WCHAR*)u16_strrchr(wzResFileName,L'.');
             if(pwc == NULL) pwc = &wzResFileName[u16_strlen(wzResFileName)];
             wcscpy_s(pwc, 2048 - (pwc - wzResFileName), L".res");

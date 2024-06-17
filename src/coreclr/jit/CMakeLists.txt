@@ -167,6 +167,7 @@ set( JIT_SOURCES
   redundantbranchopts.cpp
   regalloc.cpp
   registerargconvention.cpp
+  regMaskTPOps.cpp
   regset.cpp
   scev.cpp
   scopeinfo.cpp
