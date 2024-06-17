@@ -23,6 +23,10 @@
   <PropertyGroup>
     <ICULibDir Condition="'$(WasmEnableThreads)' != 'true'">$([MSBuild]::NormalizeDirectory('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'browser-wasm', 'native', 'lib'))</ICULibDir>
     <ICULibDir Condition="'$(WasmEnableThreads)' == 'true'">$([MSBuild]::NormalizeDirectory('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'browser-wasm-threads', 'native', 'lib'))</ICULibDir>
+    <InvariantTimezone Condition="'$(InvariantTimezone)' == ''">false</InvariantTimezone>
+    <InvariantGlobalization Condition="'$(InvariantGlobalization)' == ''">false</InvariantGlobalization>
+    <WasmNativeStrip Condition="'$(WasmNativeStrip)' == ''">true</WasmNativeStrip>
+    <WasmSingleFileBundle Condition="'$(WasmSingleFileBundle)' == ''">false</WasmSingleFileBundle>
     <WasmEnableSIMD Condition="'$(WasmEnableSIMD)' == ''">true</WasmEnableSIMD>
     <WasmEnableExceptionHandling Condition="'$(WasmEnableExceptionHandling)' == ''">true</WasmEnableExceptionHandling>
     <WasmEnableJsInteropByValue Condition="'$(WasmEnableJsInteropByValue)' == '' and '$(WasmEnableThreads)' == 'true'">true</WasmEnableJsInteropByValue>
@@ -327,12 +331,12 @@
     "EmccDefaultExportedFunctions": [@(EmccExportedFunction -> '%22%(Identity)%22', ',')],
     "EmccDefaultExportedRuntimeMethods": [@(EmccExportedRuntimeMethod -> '%22%(Identity)%22', ',')],
     "BoolPropertiesThatTriggerRelinking": [
-      { "identity": "InvariantTimezone",            "defaultValueInRuntimePack": "false" },
-      { "identity": "InvariantGlobalization",       "defaultValueInRuntimePack": "false" },
-      { "identity": "WasmNativeStrip",              "defaultValueInRuntimePack": "true" },
-      { "identity": "WasmSingleFileBundle",         "defaultValueInRuntimePack": "false" },
-      { "identity": "WasmEnableSIMD",               "defaultValueInRuntimePack": "true" },
-      { "identity": "WasmEnableExceptionHandling",  "defaultValueInRuntimePack": "true" }
+      { "identity": "InvariantTimezone",            "defaultValueInRuntimePack": "$(InvariantTimezone)" },
+      { "identity": "InvariantGlobalization",       "defaultValueInRuntimePack": "$(InvariantGlobalization)" },
+      { "identity": "WasmNativeStrip",              "defaultValueInRuntimePack": "$(WasmNativeStrip)" },
+      { "identity": "WasmSingleFileBundle",         "defaultValueInRuntimePack": "$(WasmSingleFileBundle)" },
+      { "identity": "WasmEnableSIMD",               "defaultValueInRuntimePack": "$(WasmEnableSIMD)" },
+      { "identity": "WasmEnableExceptionHandling",  "defaultValueInRuntimePack": "$(WasmEnableExceptionHandling)" }
     ]
   }
 }
