@@ -52,7 +52,7 @@ public abstract class SerializationRecord
     /// <returns><see langword="true" /> if the serialized type name match provided type; otherwise, <see langword="false" />.</returns>
     public bool TypeNameMatches(Type type) => Matches(type, TypeName);
 
-    private static bool Matches(Type type, TypeName typeName)
+    internal static bool Matches(Type type, TypeName typeName)
     {
         // We don't need to check for pointers and references to arrays,
         // as it's impossible to serialize them with BF.

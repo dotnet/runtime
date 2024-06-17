@@ -98,9 +98,32 @@ internal readonly struct MemberTypeInfo
             BinaryType.StringArray => (StringArray, default),
             BinaryType.PrimitiveArray => (PrimitiveArray, default),
             BinaryType.Class => (((ClassTypeInfo)additionalInfo!).TypeName.IsArray ? NonPrimitiveArray : NonSystemClass, default),
-            BinaryType.SystemClass => (((TypeName)additionalInfo!).IsArray ? NonPrimitiveArray : SystemClass, default),
-            _ => (ObjectArray, default)
+            BinaryType.SystemClass => (MapSystemClassTypeName((TypeName)additionalInfo!), default),
+            _ => (ObjectArray, default),
         };
+
+        static AllowedRecordTypes MapSystemClassTypeName(TypeName typeName)
+        {
+            if (!typeName.IsArray)
+            {
+                return SystemClass;
+            }
+
+            if (typeName.IsSZArray)
+            {
+                TypeName elementTypeName = typeName.GetElementType();
+                if (SerializationRecord.Matches(typeof(decimal), elementTypeName)
+                 || SerializationRecord.Matches(typeof(TimeSpan), elementTypeName)
+                 || SerializationRecord.Matches(typeof(DateTime), elementTypeName))
+                {
+                    // BinaryFormatter should use BinaryType.PrimitiveArray for these 3 types,
+                    // but it uses BinaryType.SystemClass and we need this workaround.
+                    return PrimitiveArray;
+                }
+            }
+
+            return NonPrimitiveArray;
+        }
     }
 
     internal bool ShouldBeRepresentedAsArrayOfClassRecords()

@@ -6,10 +6,10 @@ using System.Diagnostics;
 
 namespace System.Formats.Nrbf;
 
-[DebuggerDisplay("{Parent?.RecordType}, {Allowed}, {PrimitiveType}")]
+[DebuggerDisplay("{Parent.RecordType}, {Allowed}, {PrimitiveType}")]
 internal readonly struct NextInfo
 {
-    internal NextInfo(AllowedRecordTypes allowed, SerializationRecord? parent,
+    internal NextInfo(AllowedRecordTypes allowed, SerializationRecord parent,
         Stack<NextInfo> stack, PrimitiveType primitiveType = default)
     {
         Allowed = allowed;
@@ -20,7 +20,7 @@ internal readonly struct NextInfo
 
     internal AllowedRecordTypes Allowed { get; }
 
-    internal SerializationRecord? Parent { get; }
+    internal SerializationRecord Parent { get; }
 
     internal Stack<NextInfo> Stack { get; }
 

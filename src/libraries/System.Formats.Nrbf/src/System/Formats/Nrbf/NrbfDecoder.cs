@@ -160,11 +160,13 @@ public static class NrbfDecoder
         Stack<NextInfo> readStack = new();
         RecordMap recordMap = new();
 
-        // Everything has to start with a header
+        // Every NRBF payload has to start with a header
         var header = (SerializedStreamHeaderRecord)DecodeNext(reader, recordMap, AllowedRecordTypes.SerializedStreamHeader, options, out _);
-        // and can be followed by any Object, BinaryLibrary and a MessageEnd.
-        AllowedRecordTypes allowed = AllowedRecordTypes.AnyObject
-            | AllowedRecordTypes.BinaryLibrary | AllowedRecordTypes.MessageEnd;
+
+        // All we know about root is its Id. It can be any Object or BinaryLibrary, but not a reference.
+        AllowedRecordTypes allowed = (AllowedRecordTypes.AnyObject & ~AllowedRecordTypes.MemberReference) | AllowedRecordTypes.BinaryLibrary;
+        SerializationRecord rootRecord = DecodeNext(reader, recordMap, allowed, options, out _);
+        PushFirstNestedRecordInfo(rootRecord, readStack);
 
         SerializationRecordType recordType;
         SerializationRecord nextRecord;
@@ -177,54 +179,46 @@ public static class NrbfDecoder
                 if (nextInfo.Allowed != AllowedRecordTypes.None)
                 {
                     // Decode the next Record
-                    do
-                    {
-                        nextRecord = DecodeNext(reader, recordMap, nextInfo.Allowed, options, out _);
-                        // BinaryLibrary often precedes class records.
-                        // It has been already added to the RecordMap and it must not be added
-                        // to the array record, so simply read next record.
-                        // It's possible to read multiple BinaryLibraryRecord in a row, hence the loop.
-                    }
-                    while (nextRecord is BinaryLibraryRecord);
+                    nextRecord = DecodeNext(reader, recordMap, nextInfo.Allowed, options, out SerializationRecordType nextRecordType);
 
-                    if (nextRecord is MemberReferenceRecord)
+                    if (nextRecordType == SerializationRecordType.MemberReference)
                     {
                         // We were supposed to decode a record of specific type or a reference to it.
-                        // Since a reference was decoded, it means that we still need to read the record.
-                        // Reference can not point to a null.
-                        AllowedRecordTypes allowedRecord = nextInfo.Allowed
-                            & ~AllowedRecordTypes.MemberReference
-                            & ~AllowedRecordTypes.Nulls;
-                        // The parent is set to null, because we don't want to add it to member values.
-                        readStack.Push(new NextInfo(allowedRecord, parent: null, readStack));
+                        // Since a reference was decoded and we don't know when the referenced record will be provided.
+                        // We just store the allowed record type and are going to check it later.
+                        ((MemberReferenceRecord)nextRecord).ReferencedRecordType = nextInfo.Allowed
+                            & ~(AllowedRecordTypes.MemberReference | AllowedRecordTypes.Nulls);
                     }
 
                     // Handle it:
                     // - add to the parent records list,
                     // - push next info if there are remaining nested records to read.
-                    nextInfo.Parent?.HandleNextRecord(nextRecord, nextInfo);
+                    nextInfo.Parent.HandleNextRecord(nextRecord, nextInfo);
                     // Push on the top of the stack the first nested record of last read record,
                     // so it gets read as next record.
                     PushFirstNestedRecordInfo(nextRecord, readStack);
                 }
                 else
                 {
-                    Debug.Assert(nextInfo.Parent is not null);
-
                     object value = reader.ReadPrimitiveValue(nextInfo.PrimitiveType);
 
                     nextInfo.Parent.HandleNextValue(value, nextInfo);
                 }
             }
 
-            nextRecord = DecodeNext(reader, recordMap, allowed, options, out recordType);
-            PushFirstNestedRecordInfo(nextRecord, readStack);
-
-            // Only a binary library can be followed by something that is not a MessageEnd.
-            if (readStack.Count == 0 && recordType != SerializationRecordType.BinaryLibrary)
+            if (recordMap.UnresolvedReferences == 0)
             {
+                // There are no unresolved references, so the End is the only allowed record.
                 allowed = AllowedRecordTypes.MessageEnd;
             }
+            else
+            {
+                // There are unresolved references and we don't know in what order they are going to appear.
+                allowed = AllowedRecordTypes.ReferencedRecord;
+            }
+
+            nextRecord = DecodeNext(reader, recordMap, allowed, options, out recordType);
+            PushFirstNestedRecordInfo(nextRecord, readStack);
         }
         while (recordType != SerializationRecordType.MessageEnd);
 
@@ -235,34 +229,44 @@ public static class NrbfDecoder
     private static SerializationRecord DecodeNext(BinaryReader reader, RecordMap recordMap,
         AllowedRecordTypes allowed, PayloadOptions options, out SerializationRecordType recordType)
     {
-        byte nextByte = reader.ReadByte();
-        if (((uint)allowed & (1u << nextByte)) == 0)
-        {
-            ThrowHelper.ThrowForUnexpectedRecordType(nextByte);
-        }
-        recordType = (SerializationRecordType)nextByte;
+        SerializationRecord? record;
 
-        SerializationRecord record = recordType switch
+        do
         {
-            SerializationRecordType.ArraySingleObject => ArraySingleObjectRecord.Decode(reader),
-            SerializationRecordType.ArraySinglePrimitive => DecodeArraySinglePrimitiveRecord(reader),
-            SerializationRecordType.ArraySingleString => ArraySingleStringRecord.Decode(reader),
-            SerializationRecordType.BinaryArray => BinaryArrayRecord.Decode(reader, recordMap, options),
-            SerializationRecordType.BinaryLibrary => BinaryLibraryRecord.Decode(reader),
-            SerializationRecordType.BinaryObjectString => BinaryObjectStringRecord.Decode(reader),
-            SerializationRecordType.ClassWithId => ClassWithIdRecord.Decode(reader, recordMap),
-            SerializationRecordType.ClassWithMembersAndTypes => ClassWithMembersAndTypesRecord.Decode(reader, recordMap, options),
-            SerializationRecordType.MemberPrimitiveTyped => DecodeMemberPrimitiveTypedRecord(reader),
-            SerializationRecordType.MemberReference => MemberReferenceRecord.Decode(reader, recordMap),
-            SerializationRecordType.MessageEnd => MessageEndRecord.Singleton,
-            SerializationRecordType.ObjectNull => ObjectNullRecord.Instance,
-            SerializationRecordType.ObjectNullMultiple => ObjectNullMultipleRecord.Decode(reader),
-            SerializationRecordType.ObjectNullMultiple256 => ObjectNullMultiple256Record.Decode(reader),
-            SerializationRecordType.SerializedStreamHeader => SerializedStreamHeaderRecord.Decode(reader),
-            _ => SystemClassWithMembersAndTypesRecord.Decode(reader, recordMap, options),
-        };
+            byte nextByte = reader.ReadByte();
+            if (((uint)allowed & (1u << nextByte)) == 0)
+            {
+                ThrowHelper.ThrowForUnexpectedRecordType(nextByte);
+            }
+            recordType = (SerializationRecordType)nextByte;
 
-        recordMap.Add(record);
+            record = recordType switch
+            {
+                SerializationRecordType.ArraySingleObject => ArraySingleObjectRecord.Decode(reader),
+                SerializationRecordType.ArraySinglePrimitive => DecodeArraySinglePrimitiveRecord(reader),
+                SerializationRecordType.ArraySingleString => ArraySingleStringRecord.Decode(reader),
+                SerializationRecordType.BinaryArray => BinaryArrayRecord.Decode(reader, recordMap, options),
+                SerializationRecordType.BinaryLibrary => BinaryLibraryRecord.Decode(reader),
+                SerializationRecordType.BinaryObjectString => BinaryObjectStringRecord.Decode(reader),
+                SerializationRecordType.ClassWithId => ClassWithIdRecord.Decode(reader, recordMap),
+                SerializationRecordType.ClassWithMembersAndTypes => ClassWithMembersAndTypesRecord.Decode(reader, recordMap, options),
+                SerializationRecordType.MemberPrimitiveTyped => DecodeMemberPrimitiveTypedRecord(reader),
+                SerializationRecordType.MemberReference => MemberReferenceRecord.Decode(reader, recordMap),
+                SerializationRecordType.MessageEnd => MessageEndRecord.Singleton,
+                SerializationRecordType.ObjectNull => ObjectNullRecord.Instance,
+                SerializationRecordType.ObjectNullMultiple => ObjectNullMultipleRecord.Decode(reader),
+                SerializationRecordType.ObjectNullMultiple256 => ObjectNullMultiple256Record.Decode(reader),
+                SerializationRecordType.SerializedStreamHeader => SerializedStreamHeaderRecord.Decode(reader),
+                _ => SystemClassWithMembersAndTypesRecord.Decode(reader, recordMap, options),
+            };
+
+            recordMap.Add(record, allowed == AllowedRecordTypes.ReferencedRecord);
+
+            // BinaryLibrary often precedes class records.
+            // It has been already added to the RecordMap and it must not be added
+            // to the array record or class member values, so simply read next record.
+            // It's possible to read multiple BinaryLibraryRecord in a row, hence the loop.
+        } while (recordType == SerializationRecordType.BinaryLibrary);
 
         return record;
     }

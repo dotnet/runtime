@@ -25,6 +25,8 @@ internal sealed class MemberReferenceRecord : SerializationRecord
 
     internal SerializationRecordId Reference { get; }
 
+    internal AllowedRecordTypes ReferencedRecordType { get; set; }
+
     private RecordMap RecordMap { get; }
 
     // MemberReferenceRecord has no Id, which makes it impossible to create a cycle

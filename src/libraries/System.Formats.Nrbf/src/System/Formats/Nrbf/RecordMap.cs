@@ -4,6 +4,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Formats.Nrbf.Utils;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 
@@ -21,6 +22,8 @@ internal sealed class RecordMap : IReadOnlyDictionary<SerializationRecordId, Ser
 
     public SerializationRecord this[SerializationRecordId objectId] => _map[objectId];
 
+    internal int UnresolvedReferences { get; private set; }
+
     public bool ContainsKey(SerializationRecordId key) => _map.ContainsKey(key);
 
     public bool TryGetValue(SerializationRecordId key, [MaybeNullWhen(false)] out SerializationRecord value) => _map.TryGetValue(key, out value);
@@ -29,8 +32,32 @@ internal sealed class RecordMap : IReadOnlyDictionary<SerializationRecordId, Ser
 
     IEnumerator IEnumerable.GetEnumerator() => _map.GetEnumerator();
 
-    internal void Add(SerializationRecord record)
+    internal void Add(SerializationRecord record, bool isReferencedRecord)
     {
+        if (isReferencedRecord)
+        {
+            if (record.Id._id <= 0)
+            {
+                // Negative record Ids should never be referenced.
+                // 0 is simply illegal Id for such records.
+                ThrowHelper.ThrowInvalidReference();
+            }
+            else if (!_map.TryGetValue(record.Id, out SerializationRecord? stored) || stored is not MemberReferenceRecord memberReferenceRecord)
+            {
+                // The id was either unexpected or there was no reference stored for it.
+                ThrowHelper.ThrowForUnexpectedRecordType((byte)record.RecordType);
+            }
+            else if (((uint)memberReferenceRecord.ReferencedRecordType & (1u << (byte)record.RecordType)) == 0)
+            {
+                // We expected a reference to a record of a different type.
+                ThrowHelper.ThrowInvalidReference();
+            }
+
+            _map[record.Id] = record;
+            UnresolvedReferences--;
+            return;
+        }
+
         // From https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-nrbf/0a192be0-58a1-41d0-8a54-9c91db0ab7bf:
         // "If the ObjectId is not referenced by any MemberReference in the serialization stream,
         // then the ObjectId SHOULD be positive, but MAY be negative."
@@ -38,25 +65,21 @@ internal sealed class RecordMap : IReadOnlyDictionary<SerializationRecordId, Ser
         {
             if (record.Id._id < 0)
             {
-                // Negative record Ids should never be referenced. Duplicate negative ids can be
-                // exported by the writer. The root object Id can be negative.
+                // Negative ids can be exported by the writer. The root object Id can be negative.
                 _map[record.Id] = record;
             }
-            else
+            else if (!TryAdd(record.Id, record))
             {
-#if NET
-                if (_map.TryAdd(record.Id, record))
-                {
-                    return;
-                }
-#else
-                if (!_map.ContainsKey(record.Id))
-                {
-                    _map.Add(record.Id, record);
-                    return;
-                }
-#endif
-                throw new SerializationException(SR.Format(SR.Serialization_DuplicateSerializationRecordId, record.Id));
+                throw new SerializationException(SR.Format(SR.Serialization_DuplicateSerializationRecordId, record.Id._id));
+            }
+        }
+        else if (record.RecordType == SerializationRecordType.MemberReference)
+        {
+            MemberReferenceRecord memberReferenceRecord = (MemberReferenceRecord)record;
+
+            if (TryAdd(memberReferenceRecord.Reference, memberReferenceRecord))
+            {
+                UnresolvedReferences++;
             }
         }
     }
@@ -71,5 +94,19 @@ internal sealed class RecordMap : IReadOnlyDictionary<SerializationRecordId, Ser
         }
 
         return rootRecord;
+    }
+
+    private bool TryAdd(SerializationRecordId id, SerializationRecord record)
+    {
+#if NET
+        return _map.TryAdd(id, record);
+#else
+        if (!_map.ContainsKey(id))
+        {
+            _map.Add(id, record);
+            return true;
+        }
+        return false;
+#endif
     }
 }

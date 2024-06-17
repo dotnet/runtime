@@ -35,4 +35,7 @@ internal enum AllowedRecordTypes : uint
         | BinaryObjectString
         | MemberReference
         | ObjectNull,
+
+    // The referenced record can point to any object except of a null or another reference.
+    ReferencedRecord = AnyObject & ~(ObjectNull | MemberReference)
 }
