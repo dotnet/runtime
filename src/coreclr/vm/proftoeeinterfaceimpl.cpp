@@ -576,6 +576,10 @@ COM_METHOD ProfToEEInterfaceImpl::QueryInterface(REFIID id, void ** pInterface)
     {
         *pInterface = static_cast<ICorProfilerInfo14 *>(this);
     }
+    else if (id == IID_ICorProfilerInfo15)
+    {
+        *pInterface = static_cast<ICorProfilerInfo15 *>(this);
+    }
     else if (id == IID_IUnknown)
     {
         *pInterface = static_cast<IUnknown *>(static_cast<ICorProfilerInfo *>(this));
