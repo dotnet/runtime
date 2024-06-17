@@ -277,7 +277,7 @@ namespace System.Runtime.Intrinsics
             if (Sse41.IsSupported)
             {
                 Vector128<ulong> a = left.AsUInt64();
-                Vector128<ulong> b = left.AsUInt64();
+                Vector128<ulong> b = right.AsUInt64();
                 return Sse2.Add(
                     Sse2.Multiply(a.AsUInt32(), b.AsUInt32()).AsUInt64(),
                     Sse2.Shuffle(
