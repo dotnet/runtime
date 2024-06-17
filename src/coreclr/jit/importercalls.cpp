@@ -2024,8 +2024,8 @@ void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, 
 {
     JITDUMP("Creating args for Swift call [%06u]\n", dspTreeID(call));
 
-    unsigned swiftErrorIndex = UINT_MAX;
-    unsigned swiftSelfIndex = UINT_MAX;
+    unsigned swiftErrorIndex          = UINT_MAX;
+    unsigned swiftSelfIndex           = UINT_MAX;
     unsigned swiftIndirectResultIndex = UINT_MAX;
 
     // We are importing an unmanaged Swift call, which might require special parameter handling
@@ -2071,8 +2071,8 @@ void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, 
                     BADCODE("Duplicate SwiftError* parameter");
                 }
 
-                swiftErrorIndex  = argIndex;
-                spillStack = true;
+                swiftErrorIndex = argIndex;
+                spillStack      = true;
             }
             else if ((strcmp(className, "SwiftSelf") == 0) &&
                      (strcmp(namespaceName, "System.Runtime.InteropServices.Swift") == 0))
@@ -2092,7 +2092,7 @@ void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, 
                 // Fall through to make sure the struct value becomes a local.
             }
             else if ((strcmp(className, "SwiftIndirectResult") == 0) &&
-                (strcmp(namespaceName, "System.Runtime.InteropServices.Swift") == 0))
+                     (strcmp(namespaceName, "System.Runtime.InteropServices.Swift") == 0))
             {
                 if (argIsByrefOrPtr)
                 {
@@ -2113,7 +2113,7 @@ void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, 
 
                 // We will move this arg to the beginning of the arg list, so
                 // we must spill due to this potential reordering of arguments.
-                spillStack = true; 
+                spillStack = true;
             }
             // TODO: Handle SwiftAsync
         }
@@ -2183,10 +2183,10 @@ void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, 
         {
             assert(arg->GetNode()->OperIsLocalRead());
             GenTree*   primitiveSelf = gtNewLclFldNode(structVal->GetLclNum(), TYP_I_IMPL, structVal->GetLclOffs());
-            NewCallArg newArg = NewCallArg::Primitive(primitiveSelf, TYP_I_IMPL);
+            NewCallArg newArg        = NewCallArg::Primitive(primitiveSelf, TYP_I_IMPL);
             if (argIndex == swiftSelfIndex)
             {
-                newArg = newArg.WellKnown(WellKnownArg::SwiftSelf);
+                newArg      = newArg.WellKnown(WellKnownArg::SwiftSelf);
                 insertAfter = call->gtArgs.InsertAfter(this, insertAfter, newArg);
             }
             else

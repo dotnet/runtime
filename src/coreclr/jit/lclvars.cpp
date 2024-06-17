@@ -73,9 +73,9 @@ void Compiler::lvaInit()
     lvaRetAddrVar       = BAD_VAR_NUM;
 
 #ifdef SWIFT_SUPPORT
-    lvaSwiftSelfArg  = BAD_VAR_NUM;
+    lvaSwiftSelfArg           = BAD_VAR_NUM;
     lvaSwiftIndirectResultArg = BAD_VAR_NUM;
-    lvaSwiftErrorArg = BAD_VAR_NUM;
+    lvaSwiftErrorArg          = BAD_VAR_NUM;
 #endif
 
     lvaInlineeReturnSpillTemp = BAD_VAR_NUM;
@@ -1444,7 +1444,8 @@ bool Compiler::lvaInitSpecialSwiftParam(CORINFO_ARG_LIST_HANDLE argHnd,
         return true;
     }
 
-    if ((strcmp(className, "SwiftIndirectResult") == 0) && (strcmp(namespaceName, "System.Runtime.InteropServices.Swift") == 0))
+    if ((strcmp(className, "SwiftIndirectResult") == 0) &&
+        (strcmp(namespaceName, "System.Runtime.InteropServices.Swift") == 0))
     {
         if (argIsByrefOrPtr)
         {

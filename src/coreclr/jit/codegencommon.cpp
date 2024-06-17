@@ -5699,7 +5699,9 @@ void CodeGen::genFnProlog()
         if ((compiler->lvaSwiftIndirectResultArg != BAD_VAR_NUM) &&
             ((intRegState.rsCalleeRegArgMaskLiveIn & theFixedRetBuffMask(CorInfoCallConvExtension::Swift)) != 0))
         {
-            GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, theFixedRetBuffReg(CorInfoCallConvExtension::Swift), compiler->lvaSwiftIndirectResultArg, 0);
+            GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE,
+                                      theFixedRetBuffReg(CorInfoCallConvExtension::Swift),
+                                      compiler->lvaSwiftIndirectResultArg, 0);
             intRegState.rsCalleeRegArgMaskLiveIn &= ~theFixedRetBuffMask(CorInfoCallConvExtension::Swift);
         }
 
