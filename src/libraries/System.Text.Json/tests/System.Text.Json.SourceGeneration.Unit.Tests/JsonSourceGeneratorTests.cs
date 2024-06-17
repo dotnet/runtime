@@ -576,9 +576,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         [Fact]
         public static void NoErrorsWhenUsingTypesWithMultipleEqualsOperators()
         {
-            // Types that override equals operators used to cause the generated to
-            // emit 'Error CS0034 : Operator '==' is ambiguous on operands of type 'Foo' and '<null>''
-            // This has been changed to use `is null` and `is not null` to disambiguate.
+            // Regression test for https://github.com/dotnet/runtime/issues/103515
             string source = """
                 using System.Text.Json.Serialization;
                 
