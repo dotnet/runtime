@@ -65,24 +65,6 @@ namespace System.Numerics.Tensors
             return areCompatible;
         }
 
-        internal static nint[] GetSmallestBroadcastableSize(ReadOnlySpan<nint> shape1, ReadOnlySpan<nint> shape2)
-        {
-            if (!IsBroadcastableTo(shape1, shape2))
-                throw new Exception("Shapes are not broadcast compatible");
-
-            nint[] intermediateShape = GetIntermediateShape(shape1, shape2.Length);
-            for (int i = 1; i <= shape1.Length; i++)
-            {
-                intermediateShape[^i] = Math.Max(intermediateShape[^i], shape1[^i]);
-            }
-            for (int i = 1; i <= shape2.Length; i++)
-            {
-                intermediateShape[^i] = Math.Max(intermediateShape[^i], shape2[^i]);
-            }
-
-            return intermediateShape;
-        }
-
         internal static nint[] GetIntermediateShape(ReadOnlySpan<nint> shape1, int shape2Length)
         {
             int shape1Index = shape1.Length - 1;
