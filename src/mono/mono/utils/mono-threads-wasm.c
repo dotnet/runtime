@@ -20,32 +20,12 @@
 #include <mono/utils/mono-threads-wasm.h>
 
 #include <emscripten.h>
-#include <emscripten/stack.h>
 #ifndef DISABLE_THREADS
 #include <emscripten/threading.h>
 #include <mono/metadata/threads-types.h>
 #endif
 
-
-#define round_down(addr, val) ((void*)((addr) & ~((val) - 1)))
-
-EMSCRIPTEN_KEEPALIVE
-static int
-wasm_get_stack_base (void)
-{
-	// wasm-mt: add MONO_ENTER_GC_UNSAFE / MONO_EXIT_GC_UNSAFE if this function becomes more complex
-	return emscripten_stack_get_end ();
-}
-
-EMSCRIPTEN_KEEPALIVE
-static int
-wasm_get_stack_size (void)
-{
-	// wasm-mt: add MONO_ENTER_GC_UNSAFE / MONO_EXIT_GC_UNSAFE if this function becomes more complex
-	return (guint8*)emscripten_stack_get_base () - (guint8*)emscripten_stack_get_end ();
-}
-
-#else /* HOST_BROWSER -> WASI */
+#endif
 
 uintptr_t get_wasm_stack_high(void);
 uintptr_t get_wasm_stack_low(void);
@@ -53,37 +33,28 @@ uintptr_t get_wasm_stack_low(void);
 static int
 wasm_get_stack_size (void)
 {
+	// this will need further change for multithreading as the stack will allocated be per thread at different addresses
+
 	/*
 	 * | -- increasing address ---> |
-	 * | data (data_end)| stack |(heap_base) heap |
+	 * | data |(stack low) stack (stack high)| heap |
 	 */
-	size_t heap_base = get_wasm_stack_high();
-	size_t data_end = get_wasm_stack_low();
-	size_t max_stack_size = heap_base - data_end;
+	size_t stack_high = get_wasm_stack_high();
+	size_t stack_low = get_wasm_stack_low();
+	size_t max_stack_size = stack_high - stack_low;
 
-	g_assert (data_end > 0);
-	g_assert (heap_base > data_end);
+	g_assert (stack_low > 0);
+	g_assert (stack_high > stack_low);
 
-	// this is the max available stack size size,
-	// return a 16-byte aligned smaller size
-	return max_stack_size & ~0xF;
+	// this is the max available stack size size
+	return max_stack_size;
 }
-
-static int
-wasm_get_stack_base (void)
-{
-	return get_wasm_stack_high();
-	// this will need further change for multithreading as the stack will allocated be per thread at different addresses
-}
-
-#endif /* HOST_BROWSER */
 
 int
 mono_thread_info_get_system_max_stack_size (void)
 {
 	return wasm_get_stack_size ();
 }
-
 
 void
 mono_threads_suspend_init_signals (void)
@@ -224,11 +195,11 @@ mono_threads_platform_get_stack_bounds (guint8 **staddr, size_t *stsize)
 		g_error ("%s: pthread_attr_destroy failed with \"%s\" (%d)", __func__, g_strerror (res), res);
 
 	if (*staddr == NULL) {
-		*staddr = (guint8*)wasm_get_stack_base ();
+		*staddr = (guint8*)get_wasm_stack_low ();
 		*stsize = wasm_get_stack_size ();
 	}
 #else
-	*staddr = (guint8*)wasm_get_stack_base ();
+	*staddr = (guint8*)get_wasm_stack_low ();
 	*stsize = wasm_get_stack_size ();
 #endif
 
