@@ -267,7 +267,7 @@ namespace System.Runtime.Intrinsics
             if (AdvSimd.Arm64.IsSupported && typeof(T) == typeof(ulong))
             {
                 Vector128<ulong> a = left.AsUInt64();
-                Vector128<ulong> b = left.AsUInt64();
+                Vector128<ulong> b = right.AsUInt64();
                 return AdvSimd.Arm64.UnzipEven(
                     AdvSimd.MultiplyWideningLower(
                         a.GetLower().AsUInt32(), b.GetLower().AsUInt32()).AsUInt16(),
