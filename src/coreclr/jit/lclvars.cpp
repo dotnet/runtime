@@ -74,6 +74,7 @@ void Compiler::lvaInit()
 
 #ifdef SWIFT_SUPPORT
     lvaSwiftSelfArg  = BAD_VAR_NUM;
+    lvaSwiftIndirectResultArg = BAD_VAR_NUM;
     lvaSwiftErrorArg = BAD_VAR_NUM;
 #endif
 
@@ -1455,7 +1456,7 @@ bool Compiler::lvaInitSpecialSwiftParam(CORINFO_ARG_LIST_HANDLE argHnd,
             BADCODE("Functions with SwiftIndirectResult parameters must return void");
         }
 
-        if (info.compRetBuffArg != BAD_VAR_NUM)
+        if (lvaSwiftIndirectResultArg != BAD_VAR_NUM)
         {
             BADCODE("Duplicate SwiftIndirectResult parameter");
         }
