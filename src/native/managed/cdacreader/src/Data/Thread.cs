@@ -16,8 +16,11 @@ internal sealed class Thread : IData<Thread>
         OSId = target.ReadNUInt(address + (ulong)type.Fields[nameof(OSId)].Offset);
         State = target.Read<uint>(address + (ulong)type.Fields[nameof(State)].Offset);
         PreemptiveGCDisabled = target.Read<uint>(address + (ulong)type.Fields[nameof(PreemptiveGCDisabled)].Offset);
-        AllocContext = target.ProcessedData.GetOrAdd<GCAllocContext>(
-            target.ReadPointer(address + (ulong)type.Fields[nameof(AllocContext)].Offset));
+
+        TargetPointer allocContextPointer = target.ReadPointer(address + (ulong)type.Fields[nameof(AllocContext)].Offset);
+        if (allocContextPointer != TargetPointer.Null)
+            AllocContext = target.ProcessedData.GetOrAdd<GCAllocContext>(allocContextPointer);
+
         Frame = target.ReadPointer(address + (ulong)type.Fields[nameof(Frame)].Offset);
 
         // TEB does not exist on certain platforms
@@ -35,7 +38,7 @@ internal sealed class Thread : IData<Thread>
     public TargetNUInt OSId { get; init; }
     public uint State { get; init; }
     public uint PreemptiveGCDisabled { get; init; }
-    public GCAllocContext AllocContext { get; init; }
+    public GCAllocContext? AllocContext { get; init; }
     public TargetPointer Frame { get; init; }
     public TargetPointer TEB { get; init; }
     public TargetPointer LastThrownObject { get; init; }
