@@ -2141,31 +2141,6 @@ HCIMPL3(Object*, JIT_NewMDArr, CORINFO_CLASS_HANDLE classHnd, unsigned dwNumArgs
 }
 HCIMPLEND
 
-#include <optdefault.h>
-
-//===========================================================================
-// This routine is called if the Array store needs a frame constructed
-// in order to do the array check.  It should only be called from
-// the array store check helpers.
-
-HCIMPL2(LPVOID, ArrayStoreCheck, Object** pElement, PtrArray** pArray)
-{
-    FCALL_CONTRACT;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_ATTRIB_2(Frame::FRAME_ATTR_EXACT_DEPTH|Frame::FRAME_ATTR_CAPTURE_DEPTH_2, *pElement, *pArray);
-
-    GCStress<cfg_any, EeconfigFastGcSPolicy>::MaybeTrigger();
-
-    // call "Core" version directly since all the callers do the "NoGC" call first and that checks the cache
-    if (!ObjIsInstanceOfCore(*pElement, (*pArray)->GetArrayElementTypeHandle()))
-        COMPlusThrow(kArrayTypeMismatchException);
-
-    HELPER_METHOD_FRAME_END();
-
-    return (LPVOID)0; // Used to aid epilog walker
-}
-HCIMPLEND
-
 extern "C" BOOL QCALLTYPE CastHelpers_AreTypesAssignable(CORINFO_CLASS_HANDLE fromTypeHnd, CORINFO_CLASS_HANDLE toTypeHnd)
 {
     QCALL_CONTRACT;
@@ -2180,6 +2155,8 @@ extern "C" BOOL QCALLTYPE CastHelpers_AreTypesAssignable(CORINFO_CLASS_HANDLE fr
 
     return ret;
 }
+
+#include <optdefault.h>
 
 //========================================================================
 //
