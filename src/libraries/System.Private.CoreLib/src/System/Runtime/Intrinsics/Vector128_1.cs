@@ -8,6 +8,7 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.X86;
 using System.Text;
 
 namespace System.Runtime.Intrinsics
@@ -262,9 +263,6 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<T> operator *(Vector128<T> left, Vector128<T> right)
         {
-            // TODO: ShiftLeftLogical has invalid [ConstantExpected] attribute on it
-#pragma warning disable CA1857
-
             // TODO: move this to JIT
             if (AdvSimd.Arm64.IsSupported && typeof(T) == typeof(ulong))
             {
@@ -274,10 +272,19 @@ namespace System.Runtime.Intrinsics
                     AdvSimd.MultiplyWideningLower(
                         a.GetLower().AsUInt32(), b.GetLower().AsUInt32()).AsUInt16(),
                     AdvSimd.MultiplyWideningUpper(
-                        a.AsUInt32(),
-                        b.AsUInt32()).AsUInt16()).AsUInt64().As<ulong, T>();
+                        a.AsUInt32(), b.AsUInt32()).AsUInt16()).AsUInt64().As<ulong, T>();
             }
-#pragma warning restore CA1857
+            if (Sse41.IsSupported)
+            {
+                Vector128<ulong> a = left.AsUInt64();
+                Vector128<ulong> b = left.AsUInt64();
+                return Sse2.Add(
+                    Sse2.Multiply(a.AsUInt32(), b.AsUInt32()).AsUInt64(),
+                    Sse2.Shuffle(
+                        Ssse3.HorizontalAdd(
+                            Sse41.MultiplyLow(a.AsUInt32(),
+                                Sse2.Shuffle(b.AsUInt32(), 0xB1)).AsInt32(), Vector128<int>.Zero), 0x73).AsUInt64()).As<ulong, T>();
+            }
 
             return Vector128.Create(
                 left._lower * right._lower,
