@@ -731,7 +731,7 @@ namespace System.Net.Quic.Tests
             await serverConnection.DisposeAsync();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(QuicTestCollection), nameof(QuicTestCollection.IsUsingSchannelBackend))]
         [PlatformSpecific(TestPlatforms.Windows)]
         public async Task Server_CertificateWithEphemeralKey_Throws()
         {
@@ -775,7 +775,7 @@ namespace System.Net.Quic.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(QuicTestCollection), nameof(QuicTestCollection.IsUsingSchannelBackend))]
         [PlatformSpecific(TestPlatforms.Windows)]
         public async Task Client_CertificateWithEphemeralKey_Throws()
         {
