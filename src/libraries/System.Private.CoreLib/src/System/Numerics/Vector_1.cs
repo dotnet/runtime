@@ -133,7 +133,7 @@ namespace System.Numerics
         public static Vector<T> AllBitsSet
         {
             [Intrinsic]
-            get => new Vector<T>(Scalar<T>.AllBitsSet);
+            get => Vector.Create(Scalar<T>.AllBitsSet);
         }
 
 #pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
@@ -195,7 +195,7 @@ namespace System.Numerics
         public static Vector<T> One
         {
             [Intrinsic]
-            get => new Vector<T>(Scalar<T>.One);
+            get => Vector.Create(Scalar<T>.One);
         }
 
         /// <summary>Gets a new <see cref="Vector{T}" /> with all elements initialized to zero.</summary>
@@ -506,7 +506,7 @@ namespace System.Numerics
         /// <param name="factor">The scalar to multiply with <paramref name="value" />.</param>
         /// <returns>The product of <paramref name="value" /> and <paramref name="factor" />.</returns>
         [Intrinsic]
-        public static Vector<T> operator *(Vector<T> value, T factor) => value * new Vector<T>(factor);
+        public static Vector<T> operator *(Vector<T> value, T factor) => value * Vector.Create(factor);
 
         /// <summary>Multiplies a vector by a scalar to compute their product.</summary>
         /// <param name="factor">The scalar to multiply with <paramref name="value" />.</param>

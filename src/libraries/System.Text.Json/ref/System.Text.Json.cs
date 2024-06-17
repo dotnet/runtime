@@ -888,6 +888,29 @@ namespace System.Text.Json.Nodes
         public abstract bool TryGetValue<T>([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out T? value);
     }
 }
+namespace System.Text.Json.Schema
+{
+    public static partial class JsonSchemaExporter
+    {
+        public static System.Text.Json.Nodes.JsonNode GetJsonSchemaAsNode(this System.Text.Json.JsonSerializerOptions options, System.Type type, System.Text.Json.Schema.JsonSchemaExporterOptions? exporterOptions = null) { throw null; }
+        public static System.Text.Json.Nodes.JsonNode GetJsonSchemaAsNode(this System.Text.Json.Serialization.Metadata.JsonTypeInfo typeInfo, System.Text.Json.Schema.JsonSchemaExporterOptions? exporterOptions = null) { throw null; }
+    }
+    public readonly partial struct JsonSchemaExporterContext
+    {
+        private readonly object _dummy;
+        private readonly int _dummyPrimitive;
+        public System.Text.Json.Serialization.Metadata.JsonPropertyInfo? PropertyInfo { get { throw null; } }
+        public System.ReadOnlySpan<string> Path { get { throw null; } }
+        public System.Text.Json.Serialization.Metadata.JsonTypeInfo TypeInfo { get { throw null; } }
+    }
+    public sealed partial class JsonSchemaExporterOptions
+    {
+        public JsonSchemaExporterOptions() { }
+        public static System.Text.Json.Schema.JsonSchemaExporterOptions Default { get { throw null; } }
+        public System.Func<JsonSchemaExporterContext, System.Text.Json.Nodes.JsonNode, System.Text.Json.Nodes.JsonNode>? TransformSchemaNode { get { throw null; } init { } }
+        public bool TreatNullObliviousAsNonNullable { get { throw null; } init { } }
+    }
+}
 namespace System.Text.Json.Serialization
 {
     public partial interface IJsonOnDeserialized

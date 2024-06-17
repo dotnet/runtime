@@ -151,6 +151,11 @@
       </Type>
     </Assembly>
 
+    <Assembly Name="System.Collections">
+      <!-- Test doing things the static analysis cannot predict. Could also fix the test. -->
+      <Type Name="System.Collections.Generic.OrderedDictionary`2" Dynamic="Required All" />
+    </Assembly>
+
     <Assembly Name="System.Private.CoreLib">
       <!-- Test doing things the static analysis cannot predict. Could also fix the test. -->
       <Type Name="System.Collections.Generic.Dictionary`2" Dynamic="Required All" />
