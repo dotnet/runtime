@@ -13067,13 +13067,13 @@ void region_free_list::age_free_regions()
     }
 }
 
-size_t region_free_list::get_size_free_regions(int min_age)
+size_t region_free_list::get_size_free_regions(int max_age)
 {
     size_t result = 0;
 
     for (heap_segment* region = head_free_region; region != nullptr; region = heap_segment_next (region))
     {
-        if (heap_segment_age_in_free (region) >= min_age)
+        if (heap_segment_age_in_free (region) <= max_age)
         {
             result += get_region_size(region);
         }
@@ -13384,7 +13384,8 @@ void gc_heap::distribute_free_regions()
 
     global_free_huge_regions.transfer_regions (&global_regions_to_decommit[huge_free_region]);
 
-    size_t free_space_in_huge_regions = global_free_huge_regions.get_size_free_regions(MIN_AGE_TO_DECOMMIT_HUGE);
+    size_t free_space_in_huge_regions = global_free_huge_regions.get_size_free_regions();
+    size_t free_space_in_young_huge_regions = global_free_huge_regions.get_size_free_regions(MIN_AGE_TO_DECOMMIT_HUGE - 1);
 
     ptrdiff_t num_regions_to_decommit[kind_count];
     int region_factor[kind_count] = { 1, LARGE_REGION_FACTOR };
@@ -13398,6 +13399,7 @@ void gc_heap::distribute_free_regions()
 #endif //!MULTIPLE_HEAPS
 
     size_t num_huge_region_units_to_consider[kind_count] = { 0, free_space_in_huge_regions / region_size[large_free_region] };
+    size_t num_young_huge_region_units_to_consider[kind_count] = { 0, free_space_in_young_huge_regions / region_size[large_free_region] };
 
     for (int kind = basic_free_region; kind < kind_count; kind++)
     {
@@ -13415,6 +13417,17 @@ void gc_heap::distribute_free_regions()
         total_num_free_regions[kind] += num_regions_to_decommit[kind];
 
         ptrdiff_t balance = total_num_free_regions[kind] + num_huge_region_units_to_consider[kind] - total_budget_in_region_units[kind];
+        if (balance > 0)
+        {
+            if (balance > static_cast<ptrdiff_t>(num_young_huge_region_units_to_consider[kind]))
+            {
+                balance -= num_young_huge_region_units_to_consider[kind];
+            }
+            else
+            {
+                balance = 0;
+            }
+        }
 
         if (
 #ifdef BACKGROUND_GC
