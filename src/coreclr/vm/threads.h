@@ -945,13 +945,14 @@ public:
     // Lock thread is trying to acquire
     VolatilePtr<DeadlockAwareLock> m_pBlockingLock;
 
+    // We store a pointer to this thread's alloc context here for easier introspection
+    // from other threads and diagnostic tools
+    gc_alloc_context*        m_alloc_context;
+
 public:
+    inline void InitAllocContext() { LIMITED_METHOD_CONTRACT; m_alloc_context = &t_thread_alloc_context; }
 
-    // on MP systems, each thread has its own allocation chunk so we can avoid
-    // lock prefixes and expensive MP cache snooping stuff
-    gc_alloc_context        m_alloc_context;
-
-    inline gc_alloc_context *GetAllocContext() { LIMITED_METHOD_CONTRACT; return &m_alloc_context; }
+    inline gc_alloc_context *GetAllocContext() { LIMITED_METHOD_CONTRACT; return m_alloc_context; }
 
     // This is the type handle of the first object in the alloc context at the time
     // we fire the AllocationTick event. It's only for tooling purpose.

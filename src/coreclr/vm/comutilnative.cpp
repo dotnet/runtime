@@ -925,7 +925,7 @@ FCIMPL0(INT64, GCInterface::GetAllocatedBytesForCurrentThread)
 
     INT64 currentAllocated = 0;
     Thread *pThread = GetThread();
-    gc_alloc_context* ac = pThread->GetAllocContext();
+    gc_alloc_context* ac = &t_thread_alloc_context;
     currentAllocated = ac->alloc_bytes + ac->alloc_bytes_uoh - (ac->alloc_limit - ac->alloc_ptr);
 
     return currentAllocated;
@@ -1012,7 +1012,10 @@ extern "C" INT64 QCALLTYPE GCInterface_GetTotalAllocatedBytesPrecise()
     for (Thread *pThread = ThreadStore::GetThreadList(NULL); pThread; pThread = ThreadStore::GetThreadList(pThread))
     {
         gc_alloc_context* ac = pThread->GetAllocContext();
-        allocated -= ac->alloc_limit - ac->alloc_ptr;
+        if (ac != nullptr)
+        {
+            allocated -= ac->alloc_limit - ac->alloc_ptr;
+        }
     }
 
     ThreadSuspend::RestartEE(FALSE, TRUE);

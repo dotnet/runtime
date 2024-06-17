@@ -621,8 +621,8 @@ if(CLR_CMAKE_TARGET_ARCH_AMD64)
         ${ARCH_SOURCES_DIR}/GenericCLRToCOMCallStubs.asm
         ${ARCH_SOURCES_DIR}/getstate.asm
         ${ARCH_SOURCES_DIR}/JitHelpers_Fast.asm
+        ${ARCH_SOURCES_DIR}/JitHelpers_FastMP.asm
         ${ARCH_SOURCES_DIR}/JitHelpers_FastWriteBarriers.asm
-        ${ARCH_SOURCES_DIR}/JitHelpers_InlineGetThread.asm
         ${ARCH_SOURCES_DIR}/JitHelpers_SingleAppDomain.asm
         ${ARCH_SOURCES_DIR}/JitHelpers_Slow.asm
         ${ARCH_SOURCES_DIR}/patchedcode.asm
