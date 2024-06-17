@@ -215,7 +215,7 @@ elseif(AOT_COMPONENTS OR (NOT DISABLE_COMPONENTS AND STATIC_COMPONENTS))
 
 endif()
 
-if (ENABLE_PERFTRACING)
+if (ENABLE_PERFTRACING AND "${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}" IN_LIST components_to_build)
     # Build EventPipe and DiagnosticServer with the Mono runtime implementation as unity-builds.
     add_library(eventpipe-mono-objects OBJECT)
     set_target_properties(
@@ -228,11 +228,11 @@ if (ENABLE_PERFTRACING)
     # Link the diagnostics_tracing component to the EventPipe and DiagnosticServer libraries.
     if (TARGET ${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}-objects)
         target_sources(${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}-objects PRIVATE $<TARGET_OBJECTS:eventpipe-mono-objects> $<TARGET_OBJECTS:dn-containers>)
+        list(APPEND mono-components-objects $<TARGET_OBJECTS:eventpipe-mono-objects> $<TARGET_OBJECTS:dn-containers>)
     endif()
     if (TARGET mono-component-${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME})
         target_link_libraries(mono-component-${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME} PRIVATE eventpipe-mono-objects dn-containers)
     endif()
-    list(APPEND mono-components-objects $<TARGET_OBJECTS:eventpipe-mono-objects> $<TARGET_OBJECTS:dn-containers>)
 endif()
 
 # define a list of mono-components-stubs objects that will be linked into
