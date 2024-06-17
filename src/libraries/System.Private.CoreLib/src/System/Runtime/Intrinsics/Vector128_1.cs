@@ -266,18 +266,6 @@ namespace System.Runtime.Intrinsics
 #pragma warning disable CA1857
 
             // TODO: move this to JIT
-            if (AdvSimd.IsSupported && typeof(T) == typeof(long))
-            {
-                Vector128<long> a = left.AsInt64();
-                Vector128<long> b = left.AsInt64();
-                return AdvSimd.MultiplyWideningLowerAndAdd(
-                    AdvSimd.ShiftLeftLogical(
-                        AdvSimd.AddPairwiseWidening(
-                            AdvSimd.Multiply(b.AsInt32(),
-                                AdvSimd.ReverseElement32(a).AsInt32()).AsUInt32()).AsInt64(), 32),
-                    AdvSimd.ExtractNarrowingLower(a),
-                    AdvSimd.ExtractNarrowingLower(b)).As<long, T>();
-            }
             if (AdvSimd.Arm64.IsSupported && typeof(T) == typeof(ulong))
             {
                 Vector128<ulong> a = left.AsUInt64();
