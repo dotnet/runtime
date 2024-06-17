@@ -3971,8 +3971,7 @@ struct cdac_offsets<Thread>
     static constexpr size_t OSId = offsetof(Thread, m_OSThreadId);
     static constexpr size_t State = offsetof(Thread, m_State);
     static constexpr size_t PreemptiveGCDisabled = offsetof(Thread, m_fPreemptiveGCDisabled);
-    static constexpr size_t AllocContextPointer = offsetof(Thread, m_alloc_context) + offsetof(gc_alloc_context, alloc_ptr);
-    static constexpr size_t AllocContextLimit = offsetof(Thread, m_alloc_context) + offsetof(gc_alloc_context, alloc_limit);
+    static constexpr size_t AllocContext = offsetof(Thread, m_alloc_context);
     static constexpr size_t Frame = offsetof(Thread, m_pFrame);
     static constexpr size_t ExposedObject = offsetof(Thread, m_ExposedObject);
     static constexpr size_t LastThrownObject = offsetof(Thread, m_LastThrownObjectHandle);
