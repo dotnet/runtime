@@ -4,6 +4,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO.Pipelines;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Text.Json.Serialization;
@@ -87,6 +88,8 @@ namespace System.Text.Json
         /// current buffer adjusted to remove the processed bytes.
         /// </summary>
         public int FlushThreshold;
+
+        public PipeWriter? PipeWriter;
 
         /// <summary>
         /// Indicates that the state still contains suspended frames waiting re-entry.

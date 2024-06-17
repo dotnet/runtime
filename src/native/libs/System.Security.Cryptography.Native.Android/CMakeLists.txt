@@ -20,6 +20,7 @@ set(NATIVECRYPTO_SOURCES
     pal_lifetime.c
     pal_memory.c
     pal_misc.c
+    pal_pbkdf2.c
     pal_rsa.c
     pal_signature.c
     pal_ssl.c

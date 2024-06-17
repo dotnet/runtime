@@ -2620,6 +2620,24 @@ namespace System
         }
 
         /// <summary>
+        /// Determines whether the specified value appears at the start of the span.
+        /// </summary>
+        /// <param name="span">The span to search.</param>
+        /// <param name="value">The value to compare.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool StartsWith<T>(this ReadOnlySpan<T> span, T value) where T : IEquatable<T>? =>
+            span.Length != 0 && (span[0]?.Equals(value) ?? (object?)value is null);
+
+        /// <summary>
+        /// Determines whether the specified value appears at the end of the span.
+        /// </summary>
+        /// <param name="span">The span to search.</param>
+        /// <param name="value">The value to compare.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool EndsWith<T>(this ReadOnlySpan<T> span, T value) where T : IEquatable<T>? =>
+            span.Length != 0 && (span[^1]?.Equals(value) ?? (object?)value is null);
+
+        /// <summary>
         /// Reverses the sequence of the elements in the entire span.
         /// </summary>
         public static void Reverse<T>(this Span<T> span)
@@ -4173,7 +4191,7 @@ namespace System
         /// <returns><see langword="true"/> if the entire interpolated string could be formatted successfully; otherwise, <see langword="false"/>.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="format"/> is null.</exception>
         /// <exception cref="FormatException">The index of a format item is greater than or equal to the number of supplied arguments.</exception>
-        public static bool TryWrite(this Span<char> destination, IFormatProvider? provider, CompositeFormat format, out int charsWritten, /*params*/ ReadOnlySpan<object?> args)
+        public static bool TryWrite(this Span<char> destination, IFormatProvider? provider, CompositeFormat format, out int charsWritten, params ReadOnlySpan<object?> args)
         {
             ArgumentNullException.ThrowIfNull(format);
             format.ValidateNumberOfArgs(args.Length);

@@ -268,6 +268,7 @@ namespace System
         public static bool EndsWith(this System.ReadOnlySpan<char> span, System.ReadOnlySpan<char> value, System.StringComparison comparisonType) { throw null; }
         public static bool EndsWith<T>(this System.ReadOnlySpan<T> span, System.ReadOnlySpan<T> value) where T : System.IEquatable<T>? { throw null; }
         public static bool EndsWith<T>(this System.Span<T> span, System.ReadOnlySpan<T> value) where T : System.IEquatable<T>? { throw null; }
+        public static bool EndsWith<T>(this System.ReadOnlySpan<T> span, T value) where T : System.IEquatable<T>? { throw null; }
         public static System.Text.SpanLineEnumerator EnumerateLines(this System.ReadOnlySpan<char> span) { throw null; }
         public static System.Text.SpanLineEnumerator EnumerateLines(this System.Span<char> span) { throw null; }
         public static System.Text.SpanRuneEnumerator EnumerateRunes(this System.ReadOnlySpan<char> span) { throw null; }
@@ -356,6 +357,7 @@ namespace System
         public static bool StartsWith(this System.ReadOnlySpan<char> span, System.ReadOnlySpan<char> value, System.StringComparison comparisonType) { throw null; }
         public static bool StartsWith<T>(this System.ReadOnlySpan<T> span, System.ReadOnlySpan<T> value) where T : System.IEquatable<T>? { throw null; }
         public static bool StartsWith<T>(this System.Span<T> span, System.ReadOnlySpan<T> value) where T : System.IEquatable<T>? { throw null; }
+        public static bool StartsWith<T>(this System.ReadOnlySpan<T> span, T value) where T : System.IEquatable<T>? { throw null; }
         public static int ToLower(this System.ReadOnlySpan<char> source, System.Span<char> destination, System.Globalization.CultureInfo? culture) { throw null; }
         public static int ToLowerInvariant(this System.ReadOnlySpan<char> source, System.Span<char> destination) { throw null; }
         public static int ToUpper(this System.ReadOnlySpan<char> source, System.Span<char> destination, System.Globalization.CultureInfo? culture) { throw null; }
@@ -408,7 +410,7 @@ namespace System
         public static bool TryWrite<TArg0, TArg1>(this System.Span<char> destination, System.IFormatProvider? provider, System.Text.CompositeFormat format, out int charsWritten, TArg0 arg0, TArg1 arg1) { throw null; }
         public static bool TryWrite<TArg0, TArg1, TArg2>(this System.Span<char> destination, System.IFormatProvider? provider, System.Text.CompositeFormat format, out int charsWritten, TArg0 arg0, TArg1 arg1, TArg2 arg2) { throw null; }
         public static bool TryWrite(this Span<char> destination, System.IFormatProvider? provider, System.Text.CompositeFormat format, out int charsWritten, params object?[] args) { throw null; }
-        public static bool TryWrite(this Span<char> destination, System.IFormatProvider? provider, System.Text.CompositeFormat format, out int charsWritten, System.ReadOnlySpan<object?> args) { throw null; }
+        public static bool TryWrite(this Span<char> destination, System.IFormatProvider? provider, System.Text.CompositeFormat format, out int charsWritten, params System.ReadOnlySpan<object?> args) { throw null; }
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [System.Runtime.CompilerServices.InterpolatedStringHandlerAttribute]
         public ref struct TryWriteInterpolatedStringHandler

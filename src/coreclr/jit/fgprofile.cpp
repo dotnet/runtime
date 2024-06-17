@@ -2846,22 +2846,14 @@ PhaseStatus Compiler::fgInstrumentMethod()
 //
 PhaseStatus Compiler::fgIncorporateProfileData()
 {
-    // For now we only rely on profile data when optimizing.
-    //
-    if (!opts.OptimizationEnabled())
-    {
-        JITDUMP("not optimizing, so not incorporating any profile data\n");
-        return PhaseStatus::MODIFIED_NOTHING;
-    }
-
     // Are we doing profile stress?
     //
     if (fgStressBBProf() > 0)
     {
         JITDUMP("JitStress -- incorporating random profile data\n");
         fgIncorporateBlockCounts();
-        fgApplyProfileScale();
         ProfileSynthesis::Run(this, ProfileSynthesisOption::RepairLikelihoods);
+        fgApplyProfileScale();
         return PhaseStatus::MODIFIED_EVERYTHING;
     }
 
@@ -2882,6 +2874,7 @@ PhaseStatus Compiler::fgIncorporateProfileData()
         {
             JITDUMP("Synthesizing profile data\n");
             ProfileSynthesis::Run(this, ProfileSynthesisOption::AssignLikelihoods);
+            fgApplyProfileScale();
             return PhaseStatus::MODIFIED_EVERYTHING;
         }
     }
@@ -2893,6 +2886,7 @@ PhaseStatus Compiler::fgIncorporateProfileData()
     {
         JITDUMP("Synthesizing profile data and writing it out as the actual profile data\n");
         ProfileSynthesis::Run(this, ProfileSynthesisOption::AssignLikelihoods);
+        fgApplyProfileScale();
         return PhaseStatus::MODIFIED_EVERYTHING;
     }
 #endif

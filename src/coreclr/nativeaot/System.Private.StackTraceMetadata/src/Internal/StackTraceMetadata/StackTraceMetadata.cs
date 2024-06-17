@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Reflection.Runtime.General;
 
 using Internal.Metadata.NativeFormat;
@@ -51,9 +52,18 @@ namespace Internal.StackTraceMetadata
             {
                 if (moduleInfo.Handle.OsModuleBase == moduleStartAddress)
                 {
-                    string name = _perModuleMethodNameResolverHashtable.GetOrCreateValue(moduleInfo.Handle.GetIntPtrUNSAFE()).GetMethodNameFromRvaIfAvailable(rva, out isStackTraceHidden);
-                    if (name != null || isStackTraceHidden)
-                        return name;
+                    PerModuleMethodNameResolver resolver = _perModuleMethodNameResolverHashtable.GetOrCreateValue(moduleInfo.Handle.GetIntPtrUNSAFE());
+                    if (resolver.TryGetStackTraceData(rva, out var data))
+                    {
+                        isStackTraceHidden = data.IsHidden;
+                        if (data.OwningType.IsNil)
+                        {
+                            Debug.Assert(data.Name.IsNil && data.Signature.IsNil);
+                            Debug.Assert(isStackTraceHidden);
+                            return null;
+                        }
+                        return MethodNameFormatter.FormatMethodName(resolver.Reader, data.OwningType, data.Name, data.Signature, data.GenericArguments);
+                    }
                 }
             }
 
@@ -87,6 +97,93 @@ namespace Internal.StackTraceMetadata
             }
 
             return null;
+        }
+
+        public static unsafe DiagnosticMethodInfo? GetDiagnosticMethodInfoFromStartAddressIfAvailable(IntPtr methodStartAddress)
+        {
+            IntPtr moduleStartAddress = RuntimeAugments.GetOSModuleFromPointer(methodStartAddress);
+            int rva = (int)((byte*)methodStartAddress - (byte*)moduleStartAddress);
+            foreach (NativeFormatModuleInfo moduleInfo in ModuleList.EnumerateModules())
+            {
+                if (moduleInfo.Handle.OsModuleBase == moduleStartAddress)
+                {
+                    PerModuleMethodNameResolver resolver = _perModuleMethodNameResolverHashtable.GetOrCreateValue(moduleInfo.Handle.GetIntPtrUNSAFE());
+                    if (resolver.TryGetStackTraceData(rva, out var data))
+                    {
+                        if (data.OwningType.IsNil)
+                        {
+                            Debug.Assert(data.Name.IsNil && data.Signature.IsNil);
+                            return null;
+                        }
+                        return new DiagnosticMethodInfo(
+                            resolver.Reader.GetString(data.Name),
+                            MethodNameFormatter.FormatReflectionNotationTypeName(resolver.Reader, data.OwningType),
+                            FormatAssemblyName(resolver.Reader, data.OwningType)
+                            );
+                    }
+                }
+            }
+
+            // We haven't found information in the stack trace metadata tables, but maybe reflection will have this
+            if (IsReflectionExecutionAvailable() && ReflectionExecution.TryGetMethodMetadataFromStartAddress(methodStartAddress,
+                out MetadataReader reader,
+                out TypeDefinitionHandle typeHandle,
+                out MethodHandle methodHandle))
+            {
+                return new DiagnosticMethodInfo(
+                            reader.GetString(reader.GetMethod(methodHandle).Name),
+                            MethodNameFormatter.FormatReflectionNotationTypeName(reader, typeHandle),
+                            FormatAssemblyName(reader, typeHandle)
+                            );
+            }
+
+            return null;
+        }
+
+        private static string FormatAssemblyName(MetadataReader reader, Handle handle)
+        {
+            switch (handle.HandleType)
+            {
+                case HandleType.TypeDefinition:
+                    TypeDefinition typeDef = reader.GetTypeDefinition(handle.ToTypeDefinitionHandle(reader));
+                    TypeDefinitionHandle enclosingTypeDef = typeDef.EnclosingType;
+                    if (!enclosingTypeDef.IsNil)
+                        return FormatAssemblyName(reader, enclosingTypeDef);
+                    return FormatAssemblyName(reader, typeDef.NamespaceDefinition);
+                case HandleType.TypeReference:
+                    TypeReference typeRef = reader.GetTypeReference(handle.ToTypeReferenceHandle(reader));
+                    return FormatAssemblyName(reader, typeRef.ParentNamespaceOrType);
+                case HandleType.TypeSpecification:
+                    TypeSpecification typeSpec = reader.GetTypeSpecification(handle.ToTypeSpecificationHandle(reader));
+                    return FormatAssemblyName(reader, typeSpec.Signature);
+                case HandleType.TypeInstantiationSignature:
+                    TypeInstantiationSignature typeInst = reader.GetTypeInstantiationSignature(handle.ToTypeInstantiationSignatureHandle(reader));
+                    return FormatAssemblyName(reader, typeInst.GenericType);
+                case HandleType.NamespaceDefinition:
+                    NamespaceDefinition nsDef = reader.GetNamespaceDefinition(handle.ToNamespaceDefinitionHandle(reader));
+                    return FormatAssemblyName(reader, nsDef.ParentScopeOrNamespace);
+                case HandleType.NamespaceReference:
+                    NamespaceReference nsRef = reader.GetNamespaceReference(handle.ToNamespaceReferenceHandle(reader));
+                    return FormatAssemblyName(reader, nsRef.ParentScopeOrNamespace);
+                case HandleType.ScopeDefinition:
+                    return FormatAssemblyName(reader, handle.ToScopeDefinitionHandle(reader));
+                case HandleType.ScopeReference:
+                    return FormatAssemblyName(reader, handle.ToScopeReferenceHandle(reader));
+                default:
+                    return "<unknown>";
+            }
+        }
+
+        private static string FormatAssemblyName(MetadataReader reader, ScopeDefinitionHandle handle)
+        {
+            ScopeDefinition scopeDef = reader.GetScopeDefinition(handle);
+            return $"{reader.GetString(scopeDef.Name)}, Version={scopeDef.MajorVersion}.{scopeDef.MinorVersion}.{scopeDef.BuildNumber}.{scopeDef.RevisionNumber}";
+        }
+
+        private static string FormatAssemblyName(MetadataReader reader, ScopeReferenceHandle handle)
+        {
+            ScopeReference scopeRef = reader.GetScopeReference(handle);
+            return $"{reader.GetString(scopeRef.Name)}, Version={scopeRef.MajorVersion}.{scopeRef.MinorVersion}.{scopeRef.BuildNumber}.{scopeRef.RevisionNumber}";
         }
 
         // Can be rewritten to false through a feature switch.
@@ -148,6 +245,11 @@ namespace Internal.StackTraceMetadata
         /// </summary>
         private sealed class StackTraceMetadataCallbacksImpl : StackTraceMetadataCallbacks
         {
+            public override DiagnosticMethodInfo TryGetDiagnosticMethodInfoFromStartAddress(nint methodStartAddress)
+            {
+                return GetDiagnosticMethodInfoFromStartAddressIfAvailable(methodStartAddress);
+            }
+
             public override string TryGetMethodNameFromStartAddress(IntPtr methodStartAddress, out bool isStackTraceHidden)
             {
                 return GetMethodNameFromStartAddressIfAvailable(methodStartAddress, out isStackTraceHidden);
@@ -172,7 +274,7 @@ namespace Internal.StackTraceMetadata
             /// <summary>
             /// Metadata reader for the stack trace metadata.
             /// </summary>
-            private readonly MetadataReader _metadataReader;
+            public readonly MetadataReader Reader;
 
             /// <summary>
             /// Publicly exposed module address property.
@@ -216,7 +318,7 @@ namespace Internal.StackTraceMetadata
                         out rvaToTokenMapBlob,
                         out rvaToTokenMapBlobSize))
                 {
-                    _metadataReader = new MetadataReader(new IntPtr(metadataBlob), (int)metadataBlobSize);
+                    Reader = new MetadataReader(new IntPtr(metadataBlob), (int)metadataBlobSize);
 
                     int entryCount = *(int*)rvaToTokenMapBlob;
                     _stacktraceDatas = new StackTraceData[entryCount];
@@ -253,19 +355,19 @@ namespace Internal.StackTraceMetadata
 
                     if ((command & StackTraceDataCommand.UpdateName) != 0)
                     {
-                        currentName = new Handle(HandleType.ConstantStringValue, (int)NativePrimitiveDecoder.DecodeUnsigned(ref pCurrent)).ToConstantStringValueHandle(_metadataReader);
+                        currentName = new Handle(HandleType.ConstantStringValue, (int)NativePrimitiveDecoder.DecodeUnsigned(ref pCurrent)).ToConstantStringValueHandle(Reader);
                     }
 
                     if ((command & StackTraceDataCommand.UpdateSignature) != 0)
                     {
-                        currentSignature = new Handle(HandleType.MethodSignature, (int)NativePrimitiveDecoder.DecodeUnsigned(ref pCurrent)).ToMethodSignatureHandle(_metadataReader);
+                        currentSignature = new Handle(HandleType.MethodSignature, (int)NativePrimitiveDecoder.DecodeUnsigned(ref pCurrent)).ToMethodSignatureHandle(Reader);
                         currentMethodInst = default;
                     }
 
                     if ((command & StackTraceDataCommand.UpdateGenericSignature) != 0)
                     {
-                        currentSignature = new Handle(HandleType.MethodSignature, (int)NativePrimitiveDecoder.DecodeUnsigned(ref pCurrent)).ToMethodSignatureHandle(_metadataReader);
-                        currentMethodInst = new Handle(HandleType.ConstantStringArray, (int)NativePrimitiveDecoder.DecodeUnsigned(ref pCurrent)).ToConstantStringArrayHandle(_metadataReader);
+                        currentSignature = new Handle(HandleType.MethodSignature, (int)NativePrimitiveDecoder.DecodeUnsigned(ref pCurrent)).ToMethodSignatureHandle(Reader);
+                        currentMethodInst = new Handle(HandleType.ConstantStringArray, (int)NativePrimitiveDecoder.DecodeUnsigned(ref pCurrent)).ToConstantStringArrayHandle(Reader);
                     }
 
                     void* pMethod = ReadRelPtr32(pCurrent);
@@ -296,38 +398,28 @@ namespace Internal.StackTraceMetadata
             /// <summary>
             /// Try to resolve method name based on its address using the stack trace metadata
             /// </summary>
-            public string GetMethodNameFromRvaIfAvailable(int rva, out bool isStackTraceHidden)
+            public bool TryGetStackTraceData(int rva, out StackTraceData data)
             {
-                isStackTraceHidden = false;
-
                 if (_stacktraceDatas == null)
                 {
                     // No stack trace metadata for this module
-                    return null;
+                    data = default;
+                    return false;
                 }
 
                 int index = Array.BinarySearch(_stacktraceDatas, new StackTraceData() { Rva = rva });
                 if (index < 0)
                 {
                     // Method RVA not found in the map
-                    return null;
+                    data = default;
+                    return false;
                 }
 
-                StackTraceData data = _stacktraceDatas[index];
-
-                isStackTraceHidden = data.IsHidden;
-
-                if (data.OwningType.IsNil)
-                {
-                    Debug.Assert(data.Name.IsNil && data.Signature.IsNil);
-                    Debug.Assert(isStackTraceHidden);
-                    return null;
-                }
-
-                return MethodNameFormatter.FormatMethodName(_metadataReader, data.OwningType, data.Name, data.Signature, data.GenericArguments);
+                data = _stacktraceDatas[index];
+                return true;
             }
 
-            private struct StackTraceData : IComparable<StackTraceData>
+            public struct StackTraceData : IComparable<StackTraceData>
             {
                 private const int IsHiddenFlag = 0x2;
 

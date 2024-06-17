@@ -349,33 +349,33 @@ namespace System
 
         public override string ToString()
         {
-            return Number.FormatSingle(m_value, null, NumberFormatInfo.CurrentInfo);
+            return Number.FormatFloat(m_value, null, NumberFormatInfo.CurrentInfo);
         }
 
         public string ToString(IFormatProvider? provider)
         {
-            return Number.FormatSingle(m_value, null, NumberFormatInfo.GetInstance(provider));
+            return Number.FormatFloat(m_value, null, NumberFormatInfo.GetInstance(provider));
         }
 
         public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format)
         {
-            return Number.FormatSingle(m_value, format, NumberFormatInfo.CurrentInfo);
+            return Number.FormatFloat(m_value, format, NumberFormatInfo.CurrentInfo);
         }
 
         public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? provider)
         {
-            return Number.FormatSingle(m_value, format, NumberFormatInfo.GetInstance(provider));
+            return Number.FormatFloat(m_value, format, NumberFormatInfo.GetInstance(provider));
         }
 
         public bool TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
         {
-            return Number.TryFormatSingle(m_value, format, NumberFormatInfo.GetInstance(provider), destination, out charsWritten);
+            return Number.TryFormatFloat(m_value, format, NumberFormatInfo.GetInstance(provider), destination, out charsWritten);
         }
 
         /// <inheritdoc cref="IUtf8SpanFormattable.TryFormat" />
         public bool TryFormat(Span<byte> utf8Destination, out int bytesWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
         {
-            return Number.TryFormatSingle(m_value, format, NumberFormatInfo.GetInstance(provider), utf8Destination, out bytesWritten);
+            return Number.TryFormatFloat(m_value, format, NumberFormatInfo.GetInstance(provider), utf8Destination, out bytesWritten);
         }
 
         // Parses a float from a String in the given style.  If
@@ -658,7 +658,19 @@ namespace System
         /// <inheritdoc cref="IFloatingPoint{TSelf}.ConvertToIntegerNative{TInteger}(TSelf)" />
         [Intrinsic]
         public static TInteger ConvertToIntegerNative<TInteger>(float value)
-            where TInteger : IBinaryInteger<TInteger> => TInteger.CreateSaturating(value);
+            where TInteger : IBinaryInteger<TInteger>
+        {
+#if !MONO
+            if (typeof(TInteger).IsPrimitive)
+            {
+                // We need this to be recursive so indirect calls (delegates
+                // for example) produce the same result as direct invocation
+                return ConvertToIntegerNative<TInteger>(value);
+            }
+#endif
+
+            return TInteger.CreateSaturating(value);
+        }
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Floor(TSelf)" />
         [Intrinsic]
@@ -1185,6 +1197,19 @@ namespace System
             }
 
             return y;
+        }
+
+
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MultiplyAddEstimate(TSelf, TSelf, TSelf)" />
+        [Intrinsic]
+        public static float MultiplyAddEstimate(float left, float right, float addend)
+        {
+#if MONO
+            return (left * right) + addend;
+#else
+            return MultiplyAddEstimate(left, right, addend);
+#endif
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromChecked{TOther}(TOther, out TSelf)" />
@@ -2191,6 +2216,10 @@ namespace System
         static float IBinaryFloatParseAndFormatInfo<float>.BitsToFloat(ulong bits) => BitConverter.UInt32BitsToSingle((uint)(bits));
 
         static ulong IBinaryFloatParseAndFormatInfo<float>.FloatToBits(float value) => BitConverter.SingleToUInt32Bits(value);
+
+        static int IBinaryFloatParseAndFormatInfo<float>.MaxRoundTripDigits => 9;
+
+        static int IBinaryFloatParseAndFormatInfo<float>.MaxPrecisionCustomFormat => 7;
 
         //
         // Helpers

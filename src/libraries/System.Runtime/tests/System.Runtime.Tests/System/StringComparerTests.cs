@@ -231,6 +231,80 @@ namespace System.Tests
             }
         }
 
+        [Fact]
+        public void Comparers_AllImplementAlternateComparer()
+        {
+            Assert.IsAssignableFrom<IAlternateEqualityComparer<ReadOnlySpan<char>, string>>(StringComparer.Ordinal);
+            Assert.IsAssignableFrom<IAlternateEqualityComparer<ReadOnlySpan<char>, string>>(StringComparer.OrdinalIgnoreCase);
+
+            Assert.IsAssignableFrom<IAlternateEqualityComparer<ReadOnlySpan<char>, string>>(StringComparer.CurrentCulture);
+            Assert.IsAssignableFrom<IAlternateEqualityComparer<ReadOnlySpan<char>, string>>(StringComparer.CurrentCultureIgnoreCase);
+
+            Assert.IsAssignableFrom<IAlternateEqualityComparer<ReadOnlySpan<char>, string>>(StringComparer.InvariantCulture);
+            Assert.IsAssignableFrom<IAlternateEqualityComparer<ReadOnlySpan<char>, string>>(StringComparer.InvariantCultureIgnoreCase);
+
+            Assert.IsAssignableFrom<IAlternateEqualityComparer<ReadOnlySpan<char>, string>>(StringComparer.Create(new CultureInfo("en-US"), false));
+            Assert.IsAssignableFrom<IAlternateEqualityComparer<ReadOnlySpan<char>, string>>(StringComparer.Create(new CultureInfo("en-US"), true));
+
+            Assert.IsAssignableFrom<IAlternateEqualityComparer<ReadOnlySpan<char>, string>>(StringComparer.Create(new CultureInfo("en-US"), CompareOptions.IgnoreSymbols));
+        }
+
+        [Fact]
+        public void IAlternateEqualityComparer_SpansBehaveLikeStrings()
+        {
+            List<StringComparer> caseSensitive =
+            [
+                StringComparer.Ordinal,
+                StringComparer.CurrentCulture,
+                StringComparer.InvariantCulture,
+                StringComparer.Create(new CultureInfo("en-US"), false),
+            ];
+            if (!PlatformDetection.IsHybridGlobalization)
+            {
+                // "CompareOptions = IgnoreSymbols are not supported when HybridGlobalization=true"
+                caseSensitive.Add(StringComparer.Create(new CultureInfo("en-US"), CompareOptions.IgnoreSymbols));
+            }
+
+            StringComparer[] caseInsensitive =
+            [
+                StringComparer.OrdinalIgnoreCase,
+                StringComparer.CurrentCultureIgnoreCase,
+                StringComparer.InvariantCultureIgnoreCase,
+                StringComparer.Create(new CultureInfo("en-US"), true)
+            ];
+
+            StringComparer[] comparers = [.. caseSensitive, .. caseInsensitive];
+
+            foreach (StringComparer comparer in comparers)
+            {
+                IAlternateEqualityComparer<ReadOnlySpan<char>, string> alternateComparer = (IAlternateEqualityComparer<ReadOnlySpan<char>, string>)comparer;
+
+                Assert.True(alternateComparer.Equals(ReadOnlySpan<char>.Empty, ""));
+                Assert.False(alternateComparer.Equals(ReadOnlySpan<char>.Empty, null));
+                Assert.False(alternateComparer.Equals(null, null));
+
+                Assert.True(alternateComparer.Equals("hello".AsSpan(), "hello"));
+                Assert.False(alternateComparer.Equals("hello".AsSpan(), "yello"));
+
+                Assert.Equal(comparer.GetHashCode("hello"), alternateComparer.GetHashCode("hello".AsSpan()));
+
+                Assert.Same(string.Empty, alternateComparer.Create(ReadOnlySpan<char>.Empty));
+                Assert.Same(string.Empty, alternateComparer.Create(string.Empty));
+            }
+
+            foreach (IAlternateEqualityComparer<ReadOnlySpan<char>, string> alternateComparer in caseSensitive)
+            {
+                Assert.False(alternateComparer.Equals("hello".AsSpan(), "HELLO"));
+                Assert.False(alternateComparer.Equals("HELLO".AsSpan(), "hello"));
+            }
+
+            foreach (IAlternateEqualityComparer<ReadOnlySpan<char>, string> alternateComparer in caseInsensitive)
+            {
+                Assert.True(alternateComparer.Equals("hello".AsSpan(), "HELLO"));
+                Assert.True(alternateComparer.Equals("HELLO".AsSpan(), "hello"));
+            }
+        }
+
         private static IEqualityComparer<string> GetNonRandomizedComparer(string name)
         {
             Type nonRandomizedComparerType = typeof(StringComparer).Assembly.GetType("System.Collections.Generic.NonRandomizedStringEqualityComparer");

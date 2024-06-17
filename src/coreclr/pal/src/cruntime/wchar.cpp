@@ -24,7 +24,6 @@ Abstract:
 #include "config.h"
 #endif
 
-#include <wctype.h>
 #include <errno.h>
 #include <algorithm>
 

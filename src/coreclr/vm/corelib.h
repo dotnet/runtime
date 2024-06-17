@@ -261,6 +261,14 @@ DEFINE_CLASS(UINT128,              System,                 UInt128)
 
 DEFINE_CLASS(MATH,                  System,                 Math)
 DEFINE_METHOD(MATH,                 ROUND,                  Round,                      SM_Dbl_RetDbl)
+#ifndef TARGET_64BIT
+DEFINE_METHOD(MATH,                 MULTIPLY_CHECKED_INT64, MultiplyChecked,            SM_Long_Long_RetLong)
+DEFINE_METHOD(MATH,                 MULTIPLY_CHECKED_UINT64, MultiplyChecked,           SM_ULong_ULong_RetULong)
+#endif
+DEFINE_METHOD(MATH,                 CONVERT_TO_INT32_CHECKED, ConvertToInt32Checked,    NoSig)
+DEFINE_METHOD(MATH,                 CONVERT_TO_UINT32_CHECKED, ConvertToUInt32Checked,  NoSig)
+DEFINE_METHOD(MATH,                 CONVERT_TO_INT64_CHECKED, ConvertToInt64Checked,    NoSig)
+DEFINE_METHOD(MATH,                 CONVERT_TO_UINT64_CHECKED, ConvertToUInt64Checked,  NoSig)
 
 DEFINE_CLASS(MATHF,                 System,                 MathF)
 DEFINE_METHOD(MATHF,                ROUND,                  Round,                      SM_Flt_RetFlt)
@@ -624,7 +632,6 @@ DEFINE_CLASS(RTFIELD,               Reflection,             RtFieldInfo)
 DEFINE_METHOD(RTFIELD,              GET_FIELDHANDLE,        GetFieldHandle,            IM_RetIntPtr)
 
 DEFINE_CLASS(RUNTIME_HELPERS,       CompilerServices,       RuntimeHelpers)
-DEFINE_METHOD(RUNTIME_HELPERS,      IS_REFERENCE_OR_CONTAINS_REFERENCES, IsReferenceOrContainsReferences, NoSig)
 DEFINE_METHOD(RUNTIME_HELPERS,      IS_BITWISE_EQUATABLE,    IsBitwiseEquatable, NoSig)
 DEFINE_METHOD(RUNTIME_HELPERS,      GET_METHOD_TABLE,        GetMethodTable,     NoSig)
 DEFINE_METHOD(RUNTIME_HELPERS,      GET_RAW_DATA,            GetRawData,         NoSig)
@@ -877,8 +884,7 @@ DEFINE_METHOD(VALUE_TYPE,           EQUALS,                 Equals,             
 
 DEFINE_CLASS(GC,                    System,                 GC)
 DEFINE_METHOD(GC,                   KEEP_ALIVE,             KeepAlive,                  SM_Obj_RetVoid)
-DEFINE_METHOD(GC,                   COLLECT,                Collect,                    SM_RetVoid)
-DEFINE_METHOD(GC,                   WAIT_FOR_PENDING_FINALIZERS, WaitForPendingFinalizers, SM_RetVoid)
+DEFINE_METHOD(GC,                   RUN_FINALIZERS,         RunFinalizers,              SM_RetUInt)
 
 DEFINE_CLASS_U(System,              WeakReference,          WeakReferenceObject)
 DEFINE_FIELD_U(_taggedHandle,       WeakReferenceObject,    m_taggedHandle)
@@ -930,10 +936,6 @@ DEFINE_METHOD(STUBHELPERS,          SAFE_HANDLE_RELEASE,    SafeHandleRelease,  
 #ifdef PROFILING_SUPPORTED
 DEFINE_METHOD(STUBHELPERS,          PROFILER_BEGIN_TRANSITION_CALLBACK, ProfilerBeginTransitionCallback, SM_IntPtr_IntPtr_Obj_RetIntPtr)
 DEFINE_METHOD(STUBHELPERS,          PROFILER_END_TRANSITION_CALLBACK,   ProfilerEndTransitionCallback,   SM_IntPtr_IntPtr_RetVoid)
-#endif
-
-#ifdef FEATURE_ARRAYSTUB_AS_IL
-DEFINE_METHOD(STUBHELPERS,          ARRAY_TYPE_CHECK,    ArrayTypeCheck,          SM_Obj_ArrObject_RetVoid)
 #endif
 
 #ifdef FEATURE_MULTICASTSTUB_AS_IL
@@ -1162,6 +1164,7 @@ DEFINE_METHOD(CASTHELPERS, CHKCASTCLASSSPECIAL, ChkCastClassSpecial,      SM_Ptr
 DEFINE_METHOD(CASTHELPERS, UNBOX,            Unbox,                       SM_PtrVoid_Obj_RetRefByte)
 DEFINE_METHOD(CASTHELPERS, STELEMREF,        StelemRef,                   SM_ArrObject_IntPtr_Obj_RetVoid)
 DEFINE_METHOD(CASTHELPERS, LDELEMAREF,       LdelemaRef,                  SM_ArrObject_IntPtr_PtrVoid_RetRefObj)
+DEFINE_METHOD(CASTHELPERS, ARRAYTYPECHECK,   ArrayTypeCheck,              SM_Obj_Array_RetVoid)
 
 #ifdef FEATURE_EH_FUNCLETS
 DEFINE_CLASS(EH, Runtime, EH)

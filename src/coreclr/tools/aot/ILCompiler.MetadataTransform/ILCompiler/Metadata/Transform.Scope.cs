@@ -3,6 +3,10 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Linq;
+using System.Reflection;
+using System.Runtime.InteropServices;
 using Internal.Metadata.NativeFormat.Writer;
 
 using Cts = Internal.TypeSystem;
@@ -10,9 +14,7 @@ using Ecma = System.Reflection.Metadata;
 
 using Debug = System.Diagnostics.Debug;
 using AssemblyFlags = Internal.Metadata.NativeFormat.AssemblyFlags;
-using AssemblyNameFlags = System.Reflection.AssemblyNameFlags;
-using AssemblyContentType = System.Reflection.AssemblyContentType;
-using AssemblyName = System.Reflection.AssemblyName;
+using AssemblyNameInfo = System.Reflection.Metadata.AssemblyNameInfo;
 
 namespace ILCompiler.Metadata
 {
@@ -35,35 +37,13 @@ namespace ILCompiler.Metadata
                 var assemblyName = assemblyDesc.GetName();
 
                 scopeDefinition.Name = HandleString(assemblyName.Name);
-#if NETFX_45
-                // With NET 4.5 contract System.Reflection 4.0.0.0 EcmaModule has no way
-                // to set Culture in its AssemblyName.
-                scopeDefinition.Culture = HandleString(assemblyName.CultureName ?? "");
-#else
                 scopeDefinition.Culture = HandleString(assemblyName.CultureName);
-#endif
                 scopeDefinition.MajorVersion = checked((ushort)assemblyName.Version.Major);
                 scopeDefinition.MinorVersion = checked((ushort)assemblyName.Version.Minor);
                 scopeDefinition.BuildNumber = checked((ushort)assemblyName.Version.Build);
                 scopeDefinition.RevisionNumber = checked((ushort)assemblyName.Version.Revision);
-
-                Debug.Assert((int)AssemblyFlags.PublicKey == (int)AssemblyNameFlags.PublicKey);
-                Debug.Assert((int)AssemblyFlags.Retargetable == (int)AssemblyNameFlags.Retargetable);
                 scopeDefinition.Flags = (AssemblyFlags)assemblyName.Flags;
-
-                if (assemblyName.ContentType == AssemblyContentType.WindowsRuntime)
-                {
-                    scopeDefinition.Flags |= (AssemblyFlags)((int)AssemblyContentType.WindowsRuntime << 9);
-                }
-
-                if ((scopeDefinition.Flags & AssemblyFlags.PublicKey) != 0)
-                {
-                    scopeDefinition.PublicKey = assemblyName.GetPublicKey();
-                }
-                else
-                {
-                    scopeDefinition.PublicKey = assemblyName.GetPublicKeyToken();
-                }
+                scopeDefinition.PublicKey = assemblyName.PublicKeyOrToken.ToArray();
 
                 Cts.MetadataType moduleType = module.GetGlobalModuleType();
                 if (moduleType != null && _policy.GeneratesMetadata(moduleType))
@@ -107,9 +87,9 @@ namespace ILCompiler.Metadata
             }
         }
 
-        private EntityMap<AssemblyName, ScopeReference> _scopeRefs
-            = new EntityMap<AssemblyName, ScopeReference>(new SimpleAssemblyNameComparer());
-        private Action<AssemblyName, ScopeReference> _initScopeRef;
+        private EntityMap<AssemblyNameInfo, ScopeReference> _scopeRefs
+            = new EntityMap<AssemblyNameInfo, ScopeReference>(new SimpleAssemblyNameComparer());
+        private Action<AssemblyNameInfo, ScopeReference> _initScopeRef;
 
         private ScopeReference HandleScopeReference(Cts.ModuleDesc module)
         {
@@ -120,12 +100,12 @@ namespace ILCompiler.Metadata
                 throw new NotSupportedException("Multi-module assemblies");
         }
 
-        private ScopeReference HandleScopeReference(AssemblyName assemblyName)
+        private ScopeReference HandleScopeReference(AssemblyNameInfo assemblyName)
         {
             return _scopeRefs.GetOrCreate(assemblyName, _initScopeRef ??= InitializeScopeReference);
         }
 
-        private void InitializeScopeReference(AssemblyName assemblyName, ScopeReference scopeReference)
+        private void InitializeScopeReference(AssemblyNameInfo assemblyName, ScopeReference scopeReference)
         {
             scopeReference.Name = HandleString(assemblyName.Name);
             scopeReference.Culture = HandleString(assemblyName.CultureName);
@@ -133,31 +113,30 @@ namespace ILCompiler.Metadata
             scopeReference.MinorVersion = checked((ushort)assemblyName.Version.Minor);
             scopeReference.BuildNumber = checked((ushort)assemblyName.Version.Build);
             scopeReference.RevisionNumber = checked((ushort)assemblyName.Version.Revision);
-
-            Debug.Assert((int)AssemblyFlags.PublicKey == (int)AssemblyNameFlags.PublicKey);
-            Debug.Assert((int)AssemblyFlags.Retargetable == (int)AssemblyNameFlags.Retargetable);
+            scopeReference.Flags = (AssemblyFlags)assemblyName.Flags & (AssemblyFlags.Retargetable | AssemblyFlags.ContentTypeMask);
 
             // References use a public key token instead of full public key.
-            scopeReference.Flags = (AssemblyFlags)(assemblyName.Flags & ~AssemblyNameFlags.PublicKey);
-
-            if (assemblyName.ContentType == AssemblyContentType.WindowsRuntime)
+            ImmutableArray<byte> publicKeyOrToken = assemblyName.PublicKeyOrToken;
+            if ((assemblyName.Flags & AssemblyNameFlags.PublicKey) != 0)
             {
-                scopeReference.Flags |= (AssemblyFlags)((int)AssemblyContentType.WindowsRuntime << 9);
+                // Use AssemblyName to convert PublicKey to PublicKeyToken to avoid calling crypto APIs directly
+                AssemblyName an = new();
+                an.SetPublicKey(ImmutableCollectionsMarshal.AsArray<byte>(publicKeyOrToken));
+                publicKeyOrToken = ImmutableCollectionsMarshal.AsImmutableArray<byte>(an.GetPublicKeyToken());
             }
-
-            scopeReference.PublicKeyOrToken = assemblyName.GetPublicKeyToken();
+            scopeReference.PublicKeyOrToken = publicKeyOrToken.ToArray();
         }
 
-        private sealed class SimpleAssemblyNameComparer : IEqualityComparer<AssemblyName>
+        private sealed class SimpleAssemblyNameComparer : IEqualityComparer<AssemblyNameInfo>
         {
-            public bool Equals(AssemblyName x, AssemblyName y)
+            public bool Equals(AssemblyNameInfo x, AssemblyNameInfo y)
             {
                 return Equals(x.Name, y.Name);
             }
 
-            public int GetHashCode(AssemblyName obj)
+            public int GetHashCode(AssemblyNameInfo obj)
             {
-                return obj.Name?.GetHashCode() ?? 0;
+                return obj.Name.GetHashCode();
             }
         }
     }

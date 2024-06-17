@@ -135,10 +135,6 @@ namespace System
         public static bool IsThreadingSupported => (!IsWasi && !IsBrowser) || IsWasmThreadingSupported;
         public static bool IsWasmThreadingSupported => IsBrowser && IsEnvironmentVariableTrue("IsBrowserThreadingSupported");
         public static bool IsNotWasmThreadingSupported => !IsWasmThreadingSupported;
-        public static bool IsWasmBackgroundExec => IsBrowser && IsEnvironmentVariableTrue("IsWasmBackgroundExec");
-        public static bool IsThreadingSupportedNotBrowserBackgroundExec => IsWasmThreadingSupported && !IsWasmBackgroundExec;
-        public static bool IsWasmBackgroundExecOrSingleThread => IsWasmBackgroundExec || IsNotWasmThreadingSupported;
-        public static bool IsThreadingSupportedOrBrowserBackgroundExec => IsWasmBackgroundExec || !IsBrowser;
         public static bool IsBinaryFormatterSupported => IsNotMobile && !IsNativeAot;
 
         public static bool IsStartingProcessesSupported => !IsiOS && !IstvOS;
@@ -176,6 +172,7 @@ namespace System
         public static bool IsAsyncFileIOSupported => !IsBrowser && !IsWasi;
 
         public static bool IsLineNumbersSupported => !IsNativeAot;
+        public static bool IsILOffsetsSupported => !IsNativeAot;
 
         public static bool IsInContainer => GetIsInContainer();
         public static bool IsNotInContainer => !IsInContainer;

@@ -225,4 +225,25 @@ namespace System.IO.Tests
             Assert.Throws<ArgumentNullException>(() => File.ReadAllText(path, null));
         }
     }
+
+    public class File_ReadWriteAllText_Span_Encoded : File_ReadWriteAllText
+    {
+        protected override void Write(string path, string content)
+        {
+            File.WriteAllText(path, content.AsSpan(), new UTF8Encoding(false));
+        }
+
+        protected override string Read(string path)
+        {
+            return File.ReadAllText(path, new UTF8Encoding(false));
+        }
+
+        [Fact]
+        public void NullEncoding()
+        {
+            string path = GetTestFilePath();
+            Assert.Throws<ArgumentNullException>(() => File.WriteAllText(path, "Text".AsSpan(), null));
+            Assert.Throws<ArgumentNullException>(() => File.ReadAllText(path, null));
+        }
+    }
 }

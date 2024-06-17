@@ -4720,20 +4720,10 @@ LONG InternalUnhandledExceptionFilter_Worker(
 
         if (pParam->pThread != NULL)
         {
-            BOOL fIsProcessTerminating = TRUE;
 
-            // In CoreCLR, we can be asked to not let an exception go unhandled on managed threads in a given AppDomain.
+            // In CoreCLR, we can be asked to not let an exception go unhandled on managed threads.
             // If the exception reaches the top of the thread's stack, we simply deliver AppDomain's UnhandledException event and
             // return back to the filter, instead of letting the process terminate because of unhandled exception.
-
-            // Below is how we perform the check:
-            //
-            // 1) The flag is specified on the AD when it is created by the host and all managed threads created
-            //    in such an AD will inherit the flag. For non-finalizer and non-threadpool threads, we check the flag against the thread.
-            // 2) The finalizer thread always switches to the AD of the object that is going to be finalized. Thus,
-            //    while it wont have the flag specified, the AD it switches to will.
-            // 3) The threadpool thread also switches to the correct AD before executing the request. The thread wont have the
-            //    flag specified, but the AD it switches to will.
 
             // This code must only be exercised when running as a normal filter; returning
             // EXCEPTION_EXECUTE_HANDLER is not valid if this code is being invoked from
@@ -4741,10 +4731,7 @@ LONG InternalUnhandledExceptionFilter_Worker(
             // Fortunately, we should never get into this case, since the thread flag about
             // ignoring unhandled exceptions cannot be set on the default domain.
 
-            if (IsFinalizerThread() || (pParam->pThread->IsThreadPoolThread()))
-                fIsProcessTerminating = !(pParam->pThread->GetDomain()->IgnoreUnhandledExceptions());
-            else
-                fIsProcessTerminating = !(pParam->pThread->HasThreadStateNC(Thread::TSNC_IgnoreUnhandledExceptions));
+            BOOL fIsProcessTerminating = !(AppDomain::GetCurrentDomain()->IgnoreUnhandledExceptions());
 
 #ifndef TARGET_UNIX
             // Setup the watson bucketing details for UE processing.
@@ -6767,12 +6754,19 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo
 
     if (pExceptionInfo->ExceptionRecord->ExceptionCode == STATUS_RETURN_ADDRESS_HIJACK_ATTEMPT)
     {
+        if (pThread == NULL || !pThread->PreemptiveGCDisabled())
+        {
+            // We are not running managed code, so this cannot be our hijack
+            // Perhaps some other runtime is responsible.
+            return VEH_CONTINUE_SEARCH;
+        }
+
         HijackArgs hijackArgs;
         hijackArgs.Rax = pExceptionInfo->ContextRecord->Rax;
         hijackArgs.Rsp = pExceptionInfo->ContextRecord->Rsp;
 
-        bool areCetShadowStacksEnabled = Thread::AreCetShadowStacksEnabled();
-        if (areCetShadowStacksEnabled)
+        bool areShadowStacksEnabled = Thread::AreShadowStacksEnabled();
+        if (areShadowStacksEnabled)
         {
             // When the CET is enabled, the return address is still on stack, so we need to set the Rsp as
             // if it was popped.
@@ -6790,7 +6784,7 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo
         #undef CALLEE_SAVED_REGISTER
         pExceptionInfo->ContextRecord->Rax = hijackArgs.Rax;
 
-        if (areCetShadowStacksEnabled)
+        if (areShadowStacksEnabled)
         {
             // The context refers to the return instruction
             // Set the return address on the stack to the original one
@@ -7894,10 +7888,10 @@ LONG NotifyOfCHFFilterWrapper(
          (pThread->GetExceptionState()->GetContextRecord() == NULL)  ||
          (GetSP(pThread->GetExceptionState()->GetContextRecord()) != GetSP(pExceptionInfo->ContextRecord) ) )
     {
-        LOG((LF_EH, LL_INFO1000, "NotifyOfCHFFilterWrapper: not sending notices. pThread: %0x8", pThread));
+        LOG((LF_EH, LL_INFO1000, "NotifyOfCHFFilterWrapper: not sending notices. pThread: %p", pThread));
         if (pThread)
         {
-            LOG((LF_EH, LL_INFO1000, ", Thread SP: %0x8, Exception SP: %08x",
+            LOG((LF_EH, LL_INFO1000, ", Thread SP: %p, Exception SP: %p",
                  pThread->GetExceptionState()->GetContextRecord() ? GetSP(pThread->GetExceptionState()->GetContextRecord()) : NULL,
                  pExceptionInfo->ContextRecord ? GetSP(pExceptionInfo->ContextRecord) : NULL ));
         }

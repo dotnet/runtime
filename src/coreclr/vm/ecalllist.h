@@ -387,7 +387,6 @@ FCFuncStart(gGCInterfaceFuncs)
     FCFuncElement("GetGeneration", GCInterface::GetGeneration)
     FCFuncElement("GetMaxGeneration", GCInterface::GetMaxGeneration)
     FCFuncElement("_SuppressFinalize", GCInterface::SuppressFinalize)
-    FCFuncElement("_ReRegisterForFinalize", GCInterface::ReRegisterForFinalize)
 
     FCFuncElement("GetAllocatedBytesForCurrentThread", GCInterface::GetAllocatedBytesForCurrentThread)
     FCFuncElement("GetTotalAllocatedBytesApproximate", GCInterface::GetTotalAllocatedBytesApproximate)
@@ -480,9 +479,6 @@ FCFuncStart(gStubHelperFuncs)
     FCFuncElement("ValidateByref", StubHelpers::ValidateByref)
     FCFuncElement("LogPinnedArgument", StubHelpers::LogPinnedArgument)
     FCFuncElement("GetStubContext", StubHelpers::GetStubContext)
-#ifdef FEATURE_ARRAYSTUB_AS_IL
-    FCFuncElement("ArrayTypeCheck", StubHelpers::ArrayTypeCheck)
-#endif //FEATURE_ARRAYSTUB_AS_IL
 #ifdef FEATURE_MULTICASTSTUB_AS_IL
     FCFuncElement("MulticastDebuggerTraceHelper", StubHelpers::MulticastDebuggerTraceHelper)
 #endif //FEATURE_MULTICASTSTUB_AS_IL
