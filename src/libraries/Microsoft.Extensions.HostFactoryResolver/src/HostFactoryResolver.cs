@@ -163,8 +163,10 @@ namespace Microsoft.Extensions.Hosting
                         => arg.Equals("--applicationName", StringComparison.OrdinalIgnoreCase) ||
                             arg.Equals("/applicationName", StringComparison.OrdinalIgnoreCase);
 
-                    if (!args.Any(arg => IsApplicationNameArg(arg)) && assembly?.GetName().Name is string assemblyName)
+                    if (!args.Any(arg => IsApplicationNameArg(arg)) && assembly.GetName().Name is string assemblyName)
+                    {
                         args = args.Concat(new[] { "--applicationName", assemblyName }).ToArray();
+                    }
 
                     var host = hostFactory(args);
                     return GetServiceProvider(host);
