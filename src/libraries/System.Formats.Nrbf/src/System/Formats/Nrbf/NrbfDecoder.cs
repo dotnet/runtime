@@ -8,7 +8,6 @@ using System.IO;
 using System.Formats.Nrbf.Utils;
 using System.Text;
 using System.Runtime.Serialization;
-using System.Diagnostics;
 
 namespace System.Formats.Nrbf;
 
@@ -179,17 +178,7 @@ public static class NrbfDecoder
                 if (nextInfo.Allowed != AllowedRecordTypes.None)
                 {
                     // Decode the next Record
-                    nextRecord = DecodeNext(reader, recordMap, nextInfo.Allowed, options, out SerializationRecordType nextRecordType);
-
-                    if (nextRecordType == SerializationRecordType.MemberReference)
-                    {
-                        // We were supposed to decode a record of specific type or a reference to it.
-                        // Since a reference was decoded and we don't know when the referenced record will be provided.
-                        // We just store the allowed record type and are going to check it later.
-                        ((MemberReferenceRecord)nextRecord).ReferencedRecordType = nextInfo.Allowed
-                            & ~(AllowedRecordTypes.MemberReference | AllowedRecordTypes.Nulls);
-                    }
-
+                    nextRecord = DecodeNext(reader, recordMap, nextInfo.Allowed, options, out _);
                     // Handle it:
                     // - add to the parent records list,
                     // - push next info if there are remaining nested records to read.
@@ -251,7 +240,7 @@ public static class NrbfDecoder
                 SerializationRecordType.ClassWithId => ClassWithIdRecord.Decode(reader, recordMap),
                 SerializationRecordType.ClassWithMembersAndTypes => ClassWithMembersAndTypesRecord.Decode(reader, recordMap, options),
                 SerializationRecordType.MemberPrimitiveTyped => DecodeMemberPrimitiveTypedRecord(reader),
-                SerializationRecordType.MemberReference => MemberReferenceRecord.Decode(reader, recordMap),
+                SerializationRecordType.MemberReference => MemberReferenceRecord.Decode(reader, recordMap, allowed),
                 SerializationRecordType.MessageEnd => MessageEndRecord.Singleton,
                 SerializationRecordType.ObjectNull => ObjectNullRecord.Instance,
                 SerializationRecordType.ObjectNullMultiple => ObjectNullMultipleRecord.Decode(reader),

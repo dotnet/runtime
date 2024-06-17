@@ -108,8 +108,7 @@ internal readonly struct MemberTypeInfo
             {
                 return SystemClass;
             }
-
-            if (typeName.IsSZArray)
+            else if (typeName.IsSZArray)
             {
                 TypeName elementTypeName = typeName.GetElementType();
                 if (SerializationRecord.Matches(typeof(decimal), elementTypeName)

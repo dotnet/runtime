@@ -15,17 +15,18 @@ namespace System.Formats.Nrbf;
 /// </remarks>
 internal sealed class MemberReferenceRecord : SerializationRecord
 {
-    private MemberReferenceRecord(SerializationRecordId reference, RecordMap recordMap)
+    private MemberReferenceRecord(SerializationRecordId reference, RecordMap recordMap, AllowedRecordTypes referencedRecordType)
     {
         Reference = reference;
         RecordMap = recordMap;
+        ReferencedRecordType = referencedRecordType;
     }
 
     public override SerializationRecordType RecordType => SerializationRecordType.MemberReference;
 
     internal SerializationRecordId Reference { get; }
 
-    internal AllowedRecordTypes ReferencedRecordType { get; set; }
+    internal AllowedRecordTypes ReferencedRecordType { get; }
 
     private RecordMap RecordMap { get; }
 
@@ -37,8 +38,17 @@ internal sealed class MemberReferenceRecord : SerializationRecord
 
     internal override object? GetValue() => GetReferencedRecord().GetValue();
 
-    internal static MemberReferenceRecord Decode(BinaryReader reader, RecordMap recordMap)
-        => new(SerializationRecordId.Decode(reader), recordMap);
+    internal static MemberReferenceRecord Decode(BinaryReader reader, RecordMap recordMap, AllowedRecordTypes allowed)
+    {
+        SerializationRecordId reference = SerializationRecordId.Decode(reader);
+
+        // We were supposed to decode a record of specific type or a reference to it.
+        // Since a reference was decoded and we don't know when the referenced record will be provided.
+        // We just store the allowed record type and are going to check it later.
+        AllowedRecordTypes referencedRecordType = allowed & ~(AllowedRecordTypes.MemberReference | AllowedRecordTypes.Nulls);
+
+        return new MemberReferenceRecord(reference, recordMap, referencedRecordType);
+    }
 
     internal SerializationRecord GetReferencedRecord() => RecordMap[Reference];
 }
