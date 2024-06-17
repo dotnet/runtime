@@ -873,7 +873,13 @@ namespace System.Diagnostics
             var result = new StringBuilder(8 * keys.Length);
             foreach (string key in keys)
             {
-                result.Append(key).Append('=').Append(sd[key]).Append('\0');
+                string? value = sd[key];
+
+                // Ignore null values for consistency with Environment.SetEnvironmentVariable
+                if (value != null)
+                {
+                    result.Append(key).Append('=').Append(value).Append('\0');
+                }
             }
 
             return result.ToString();
