@@ -277,6 +277,8 @@ namespace System.Net.Http
             }
             catch (QuicException ex) when (ex.QuicError == QuicError.OperationAborted && cancellationToken.IsCancellationRequested)
             {
+                // It is possible for QuicStream's code to throw an
+                // OperationAborted QuicException when cancellation is requested.
                 throw new TaskCanceledException(ex.Message, ex, cancellationToken);
             }
             catch (QuicException ex) when (ex.QuicError == QuicError.OperationAborted && _connection.AbortException != null)
@@ -1282,6 +1284,8 @@ namespace System.Net.Http
                     throw new HttpRequestException(httpRequestError, SR.net_http_client_execution_error, _connection.AbortException);
 
                 case QuicException e when (e.QuicError == QuicError.OperationAborted && cancellationToken.IsCancellationRequested):
+                    // It is possible for QuicStream's code to throw an
+                    // OperationAborted QuicException when cancellation is requested.
                     throw new TaskCanceledException(e.Message, e, cancellationToken);
 
                 case HttpIOException:
