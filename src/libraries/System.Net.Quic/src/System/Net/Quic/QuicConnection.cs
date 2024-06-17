@@ -505,7 +505,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
                 NetEventSource.Info(this, $"{this} New outbound {type} stream {stream}.");
             }
 
-            await stream.StartAsync(DecrementStreamCapacity, cancellationToken).ConfigureAwait(false);
+            await stream.StartAsync(_decrementStreamCapacity, cancellationToken).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
