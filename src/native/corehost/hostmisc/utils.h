@@ -6,6 +6,7 @@
 
 #include "pal.h"
 #include "trace.h"
+#include "host_runtime_contract.h"
 #include <type_traits>
 #include <runtime_version.h>
 #include <minipal/utils.h>

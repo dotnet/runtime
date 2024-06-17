@@ -5,6 +5,8 @@
 #define DEPS_RESOLVER_H
 
 #include <vector>
+#include <deque>
+#include <memory>
 
 #include "pal.h"
 #include "args.h"
@@ -14,6 +16,7 @@
 #include "deps_entry.h"
 #include "runtime_config.h"
 #include "bundle/runner.h"
+#include <host_runtime_contract.h>
 
 // Probe paths to be resolved for ordering
 struct probe_paths_t
@@ -129,6 +132,7 @@ public:
 
     bool resolve_probe_paths(
         probe_paths_t* probe_paths,
+        std::unique_ptr<name_to_resolved_asset_map_t>& host_assemblies,
         std::unordered_set<pal::string_t>* breadcrumb,
         bool ignore_missing_assemblies = false);
 
@@ -207,7 +211,7 @@ private:
 private:
     // Resolve order for TPA lookup.
     bool resolve_tpa_list(
-        pal::string_t* output,
+        std::unique_ptr<name_to_resolved_asset_map_t>& host_assemblies,
         std::unordered_set<pal::string_t>* breadcrumb,
         bool ignore_missing_assemblies);
 

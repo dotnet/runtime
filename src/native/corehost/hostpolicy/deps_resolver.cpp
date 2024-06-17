@@ -2,16 +2,21 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include <set>
+#include <deque>
 #include <functional>
 #include <cassert>
+#include <memory>
 
 #include <trace.h>
+#include <host_runtime_contract.h>
 #include "deps_entry.h"
 #include "deps_format.h"
 #include "deps_resolver.h"
+
 #include "shared_store.h"
 #include <utils.h>
 #include <fx_ver.h>
+#include <string.h>
 
 namespace
 {
@@ -42,6 +47,7 @@ namespace
         deps_entry_t::asset_types asset_type,
         const pal::string_t& path,
         std::unordered_set<pal::string_t>* existing,
+        std::deque<pal::string_t>* items,
         pal::string_t* serviced,
         pal::string_t* non_serviced,
         const pal::string_t& svc_dir)
@@ -56,13 +62,16 @@ namespace
 
         trace::verbose(_X("Adding to %s path: %s"), deps_entry_t::s_known_asset_types[asset_type], path.c_str());
 
+        // serviced paths come before non-serviced paths.
         if (utils::starts_with(path, svc_dir.c_str(), svc_dir.length(), false))
         {
+            items->push_front(path);
             serviced->append(path);
             serviced->push_back(PATH_SEPARATOR);
         }
         else
         {
+            items->push_back(path);
             non_serviced->append(path);
             non_serviced->push_back(PATH_SEPARATOR);
         }
@@ -92,10 +101,10 @@ namespace
     void add_tpa_asset(
         const deps_asset_t& asset,
         const pal::string_t& resolved_path,
-        name_to_resolved_asset_map_t* items)
+        std::unique_ptr<name_to_resolved_asset_map_t>& host_assemblies)
     {
-        name_to_resolved_asset_map_t::iterator existing = items->find(asset.name);
-        if (existing == items->end())
+        name_to_resolved_asset_map_t::iterator existing = host_assemblies->find(asset.name);
+        if (existing == host_assemblies->end())
         {
             if (trace::is_enabled())
             {
@@ -105,7 +114,7 @@ namespace
                     asset.file_version.as_str().c_str());
             }
 
-            items->emplace(asset.name, deps_resolved_asset_t(asset, resolved_path));
+            host_assemblies->emplace(asset.name, deps_resolved_asset_t(asset, resolved_path));
         }
     }
 
@@ -116,13 +125,13 @@ namespace
     void get_dir_assemblies(
         const pal::string_t& dir,
         const pal::string_t& dir_name,
-        name_to_resolved_asset_map_t* items)
+        std::unique_ptr<name_to_resolved_asset_map_t>& host_assemblies)
     {
         version_t empty;
         trace::verbose(_X("Adding files from %s dir %s"), dir_name.c_str(), dir.c_str());
 
         // Managed extensions in priority order, pick DLL over EXE and NI over IL.
-        const pal::string_t managed_ext[] = { _X(".ni.dll"), _X(".dll"), _X(".ni.exe"), _X(".exe") };
+        const pal::string_t managed_ext[] = { _X(".dll"), _X(".exe") };
 
         // List of files in the dir
         std::vector<pal::string_t> files;
@@ -148,11 +157,11 @@ namespace
                 }
 
                 // Already added entry for this asset, by priority order skip this ext
-                if (items->count(file_name))
+                if (host_assemblies->count(file_name))
                 {
                     trace::verbose(_X("Skipping %s because the %s already exists in %s assemblies"),
                         file.c_str(),
-                        items->find(file_name)->second.asset.relative_path.c_str(),
+                        host_assemblies->find(file_name)->second.asset.relative_path.c_str(),
                         dir_name.c_str());
 
                     continue;
@@ -172,7 +181,7 @@ namespace
                     file_path.c_str());
 
                 deps_asset_t asset(file_name, file, empty, empty);
-                add_tpa_asset(asset, file_path, items);
+                add_tpa_asset(asset, file_path, host_assemblies);
             }
         }
     }
@@ -411,11 +420,11 @@ bool report_missing_assembly_in_manifest(const deps_entry_t& entry, bool continu
  *  Resolve the TPA assembly locations
  */
 bool deps_resolver_t::resolve_tpa_list(
-        pal::string_t* output,
+        std::unique_ptr<name_to_resolved_asset_map_t>& host_assemblies,
         std::unordered_set<pal::string_t>* breadcrumb,
         bool ignore_missing_assemblies)
-{
-    name_to_resolved_asset_map_t items;
+{   
+    host_assemblies = std::unique_ptr<name_to_resolved_asset_map_t>(new name_to_resolved_asset_map_t());
 
     auto process_entry = [&](const pal::string_t& deps_dir, const deps_entry_t& entry, int fx_level) -> bool
     {
@@ -436,8 +445,8 @@ bool deps_resolver_t::resolve_tpa_list(
 
         pal::string_t resolved_path;
 
-        name_to_resolved_asset_map_t::iterator existing = items.find(entry.asset.name);
-        if (existing == items.end())
+        name_to_resolved_asset_map_t::iterator existing = host_assemblies->find(entry.asset.name);
+        if (existing == host_assemblies->end())
         {
             bool found_in_bundle = false;
             if (probe_deps_entry(entry, deps_dir, fx_level, &resolved_path, found_in_bundle))
@@ -446,7 +455,7 @@ bool deps_resolver_t::resolve_tpa_list(
                 // The runtime directly probes the bundle-manifest using a host-callback.
                 if (!found_in_bundle)
                 {
-                    add_tpa_asset(entry.asset, resolved_path, &items);
+                    add_tpa_asset(entry.asset, resolved_path, host_assemblies);
                 }
 
                 return true;
@@ -487,12 +496,12 @@ bool deps_resolver_t::resolve_tpa_list(
                             resolved_path.c_str(), entry.asset.assembly_version.as_str().c_str(), entry.asset.file_version.as_str().c_str());
 
                         existing_entry = nullptr;
-                        items.erase(existing);
+                        host_assemblies->erase(existing);
 
                         if (!found_in_bundle)
                         {
                             deps_asset_t asset(entry.asset.name, entry.asset.relative_path, entry.asset.assembly_version, entry.asset.file_version);
-                            add_tpa_asset(asset, resolved_path, &items);
+                            add_tpa_asset(asset, resolved_path, host_assemblies);
                         }
                     }
                 }
@@ -524,7 +533,7 @@ bool deps_resolver_t::resolve_tpa_list(
             bundle::runner_t::app()->probe(managed_app_name) == nullptr)
         {
             deps_asset_t asset(get_filename_without_ext(m_managed_app), managed_app_name, version_t(), version_t());
-            add_tpa_asset(asset, m_managed_app, &items);
+            add_tpa_asset(asset, m_managed_app, host_assemblies);
         }
 
         // Add the app's entries
@@ -543,7 +552,7 @@ bool deps_resolver_t::resolve_tpa_list(
         if (!get_app_deps().exists())
         {
             // Obtain the local assemblies in the app dir.
-            get_dir_assemblies(m_app_dir, _X("local"), &items);
+            get_dir_assemblies(m_app_dir, _X("local"), host_assemblies);
         }
     }
 
@@ -579,13 +588,6 @@ bool deps_resolver_t::resolve_tpa_list(
                 }
             }
         }
-    }
-
-    // Convert the paths into a string and return it
-    for (const auto& item : items)
-    {
-        output->append(item.second.resolved_path);
-        output->push_back(PATH_SEPARATOR);
     }
 
     return true;
@@ -763,6 +765,9 @@ bool deps_resolver_t::resolve_probe_dirs(
     // Action for post processing the resolved path
     std::function<pal::string_t(const pal::string_t&)>& action = is_resources ? resources : native;
 
+    // Set to track the entries in probing_lookup_paths
+    std::deque<pal::string_t> probing_items;
+
     // Set for de-duplication
     std::unordered_set<pal::string_t> items;
 
@@ -802,7 +807,7 @@ bool deps_resolver_t::resolve_probe_dirs(
             if (!found_in_bundle)
             {
                 init_known_entry_path(entry, candidate);
-                add_unique_path(asset_type, action(candidate), &items, output, &non_serviced, core_servicing);
+                add_unique_path(asset_type, action(candidate), &items, &probing_items, output, &non_serviced, core_servicing);
             }
         }
         else
@@ -834,7 +839,7 @@ bool deps_resolver_t::resolve_probe_dirs(
     if (!get_app_deps().exists())
     {
         // App local path
-        add_unique_path(asset_type, m_app_dir, &items, output, &non_serviced, core_servicing);
+        add_unique_path(asset_type, m_app_dir, &items, &probing_items, output, &non_serviced, core_servicing);
 
         // deps_resolver treats being able to get the coreclr path as optional, so we ignore the return value here.
         // The caller is responsible for checking whether coreclr path is set and handling as appropriate.
@@ -872,12 +877,12 @@ bool deps_resolver_t::resolve_probe_dirs(
     if (bundle::info_t::is_single_file_bundle() && !is_resources)
     {
         auto bundle = bundle::runner_t::app();
-        add_unique_path(asset_type, bundle->base_path(), &items, output, &non_serviced, core_servicing);
+        add_unique_path(asset_type, bundle->base_path(), &items, &probing_items, output, &non_serviced, core_servicing);
 
         // Add the extraction path if it exists.
         if (pal::directory_exists(bundle->extraction_path()))
         {
-            add_unique_path(asset_type, bundle->extraction_path(), &items, output, &non_serviced, core_servicing);
+            add_unique_path(asset_type, bundle->extraction_path(), &items, &probing_items, output, &non_serviced, core_servicing);
         }
     }
 
@@ -893,14 +898,15 @@ bool deps_resolver_t::resolve_probe_dirs(
 //  Parameters:
 //     probe_paths       - Pointer to struct containing fields that will contain
 //                         resolved path ordering.
+//     host_assemblies   - The name + path of the assemblies that made up the TPA list
 //     breadcrumb        - set of breadcrumb paths - or null if no breadcrumbs should be collected.
 //     ignore_missing_assemblies - if set to true, resolving TPA assemblies will not fail if an assembly can't be found on disk
 //                                 instead such entry will simply be ignored.
 //
 //
-bool deps_resolver_t::resolve_probe_paths(probe_paths_t* probe_paths, std::unordered_set<pal::string_t>* breadcrumb, bool ignore_missing_assemblies)
+bool deps_resolver_t::resolve_probe_paths(probe_paths_t* probe_paths, std::unique_ptr<name_to_resolved_asset_map_t>& host_assemblies, std::unordered_set<pal::string_t>* breadcrumb, bool ignore_missing_assemblies)
 {
-    if (!resolve_tpa_list(&probe_paths->tpa, breadcrumb, ignore_missing_assemblies))
+    if (!resolve_tpa_list(host_assemblies, breadcrumb, ignore_missing_assemblies))
     {
         return false;
     }

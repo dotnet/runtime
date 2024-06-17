@@ -4,6 +4,7 @@
 #include "utils.h"
 #include "trace.h"
 #include "bundle/info.h"
+#include "host_runtime_contract.h"
 #if defined(TARGET_WINDOWS)
 #include <_version.h>
 #else
@@ -499,6 +500,7 @@ pal::string_t to_upper(const pal::char_t* in) {
         [](pal::char_t c) { return static_cast<pal::char_t>(::toupper(c)); });
     return ret;
 }
+
 
 #define TEST_ONLY_MARKER "d38cc827-e34f-4453-9df4-1e796e9f1d07"
 

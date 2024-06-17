@@ -9,6 +9,7 @@
 #include "args.h"
 #include "coreclr.h"
 #include <corehost_context_contract.h>
+#include "deps_resolver.h"
 #include <host_runtime_contract.h>
 #include "hostpolicy_init.h"
 
@@ -29,6 +30,8 @@ public:
     std::unique_ptr<coreclr_t> coreclr;
 
     host_runtime_contract host_contract;
+
+    std::unique_ptr<name_to_resolved_asset_map_t> host_assemblies;
 
     int initialize(const hostpolicy_init_t &hostpolicy_init, const arguments_t &args, bool enable_breadcrumbs);
 

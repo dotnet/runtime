@@ -51,6 +51,21 @@ struct host_runtime_contract
     const void* (HOST_CONTRACT_CALLTYPE* pinvoke_override)(
         const char* library_name,
         const char* entry_point_name);
+
+    // Gets the list of assemblies (name plus extension) identified by the host.
+    char** (HOST_CONTRACT_CALLTYPE* get_assemblies)(
+        /*out*/ uint32_t* assembly_count,
+        void* contract_context);
+    
+    void (HOST_CONTRACT_CALLTYPE* destroy_assemblies)(
+        char** assemblies,
+        uint32_t assembly_count);
+
+    const char* (HOST_CONTRACT_CALLTYPE* resolve_assembly_to_path)(
+        const char* assembly_name,
+        void* contract_context);
+
+    char* entry_assembly;
 };
 
 #endif // __HOST_RUNTIME_CONTRACT_H__
