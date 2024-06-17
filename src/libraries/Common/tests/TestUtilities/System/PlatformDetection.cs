@@ -726,20 +726,18 @@ namespace System
 
         private static bool DetermineBinaryFormatterSupport()
         {
-            Assembly assembly = typeof(System.Runtime.Serialization.Formatters.Binary.BinaryFormatter).Assembly;
-            AssemblyName name = assembly.GetName();
-            Version assemblyVersion = name.Version;
-
             if (IsNetFramework)
             {
                 return true;
             }
-
-            if (IsNativeAot)
+            else if (IsNativeAot)
             {
-                Console.WriteLine("BinaryFormatter is disabled in NativeAOT");
                 return false;
             }
+            
+            Assembly assembly = typeof(System.Runtime.Serialization.Formatters.Binary.BinaryFormatter).Assembly;
+            AssemblyName name = assembly.GetName();
+            Version assemblyVersion = name.Version;
 
             bool isSupported = true;
 
@@ -752,7 +750,6 @@ namespace System
                 isSupported = false;
             }
 
-            Console.WriteLine($"BinaryFormatter is from assembly version {assemblyVersion}, supported={isSupported}");
             return isSupported;
         }
     }
