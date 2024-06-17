@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Swift;
 using Xunit;
 
-public class SwiftIndirectResultTests
+public unsafe class SwiftIndirectResultTests
 {
     private struct NonFrozenStruct
     {
@@ -24,14 +24,14 @@ public class SwiftIndirectResultTests
 
     [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
     [DllImport(SwiftLib, EntryPoint = "$s6output26SumReturnedNonFrozenStruct1fs5Int32VAA0deF0VyXE_tF")]
-    public unsafe static extern int SumReturnedNonFrozenStruct(delegate* unmanaged[Swift]<SwiftIndirectResult, SwiftSelf, void> func, void* funcContext);
+    public static extern int SumReturnedNonFrozenStruct(delegate* unmanaged[Swift]<SwiftIndirectResult, SwiftSelf, void> func, void* funcContext);
 
     [Fact]
-    public unsafe static void TestReturnNonFrozenStruct()
+    public static void TestReturnNonFrozenStruct()
     {
         // In normal circumstances this instance would have unknown/dynamically determined size.
         NonFrozenStruct instance;
-        ReturnNonFrozenStruct(&instance, 10, 20, 30);
+        ReturnNonFrozenStruct(new SwiftIndirectResult(&instance), 10, 20, 30);
         Assert.Equal(10, instance.A);
         Assert.Equal(20, instance.B);
         Assert.Equal(30, instance.C);
@@ -45,7 +45,7 @@ public class SwiftIndirectResultTests
     }
 
     [Fact]
-    public unsafe static void TestSumReturnedNonFrozenStruct()
+    public static void TestSumReturnedNonFrozenStruct()
     {
         int result = SumReturnedNonFrozenStruct(&ReversePInvokeReturnNonFrozenStruct, null);
         Assert.Equal(60, result);
