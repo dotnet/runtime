@@ -271,6 +271,16 @@ namespace System.Formats.Tar.Tests
         }
 
         [Fact]
+        public async Task Throw_ArchiveIsShortAsync()
+        {
+            // writer-big has a header for a 16G file but not its contents.
+            using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.Uncompressed, "golang_tar", "writer-big");
+            using TarReader reader = new TarReader(archiveStream);
+            // MemoryStream throws when we try to change its Position past its Length.
+            await Assert.ThrowsAsync<ArgumentOutOfRangeException>(async () => await reader.GetNextEntryAsync());
+        }
+
+        [Fact]
         public async Task GarbageEntryChecksumZeroReturnNullAsync()
         {
             await using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.Uncompressed, "golang_tar", "issue12435");
