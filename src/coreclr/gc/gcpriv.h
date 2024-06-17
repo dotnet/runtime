@@ -1405,7 +1405,7 @@ public:
     static void add_region (heap_segment* region, region_free_list to_free_list[count_free_region_kinds]);
     static void add_region_descending (heap_segment* region, region_free_list to_free_list[count_free_region_kinds]);
     void age_free_regions();
-    static void age_free_regions (region_free_list free_list[count_free_region_kinds]);
+    static void age_free_regions (region_free_list *global_free_list, region_free_list free_list[count_free_region_kinds]);
     void print (int hn, const char* msg="", int* ages=nullptr);
     static void print (region_free_list free_list[count_free_region_kinds], int hn, const char* msg="", int* ages=nullptr);
     void sort_by_committed_and_age();
