@@ -5491,13 +5491,11 @@ bool Compiler::impMatchIsInstBooleanConversion(const BYTE* codeAddr, const BYTE*
     {
         case CEE_BRFALSE:
         case CEE_BRFALSE_S:
+        case CEE_BRTRUE:
+        case CEE_BRTRUE_S:
             // BRFALSE/BRTRUE importation are expected to transparently handle
             // that the created tree is a TYP_INT instead of TYP_REF, so we do
             // not consume them here.
-            *consumed = 0;
-            return true;
-        case CEE_BRTRUE:
-        case CEE_BRTRUE_S:
             *consumed = 0;
             return true;
         case CEE_LDNULL:
