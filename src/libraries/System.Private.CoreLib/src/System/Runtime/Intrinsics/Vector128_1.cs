@@ -282,13 +282,12 @@ namespace System.Runtime.Intrinsics
             {
                 Vector128<ulong> a = left.AsUInt64();
                 Vector128<ulong> b = left.AsUInt64();
-                return AdvSimd.MultiplyWideningLowerAndAdd(
-                    AdvSimd.ShiftLeftLogical(
-                        AdvSimd.AddPairwiseWidening(
-                            AdvSimd.Multiply(b.AsUInt32(),
-                                AdvSimd.ReverseElement32(a).AsUInt32()).AsUInt32()).AsUInt64(), 32),
-                    AdvSimd.ExtractNarrowingLower(a),
-                    AdvSimd.ExtractNarrowingLower(b)).As<ulong, T>();
+                return AdvSimd.Arm64.UnzipEven(
+                    AdvSimd.MultiplyWideningLower(
+                        a.GetLower().AsUInt32(), b.GetLower().AsUInt32()).AsUInt16(),
+                    AdvSimd.MultiplyWideningUpper(
+                        a.AsUInt32(),
+                        b.AsUInt32()).AsUInt16()).AsUInt64().As<ulong, T>();
             }
 #pragma warning restore CA1857
 
