@@ -2099,14 +2099,14 @@ void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, 
                     BADCODE("Expected SwiftIndirectResult struct, got pointer/reference");
                 }
 
-                if (swiftIndirectResultIndex != UINT_MAX)
-                {
-                    BADCODE("Duplicate SwiftIndirectResult parameter");
-                }
-
                 if (sig->retType != CORINFO_TYPE_VOID)
                 {
-                    BADCODE("Functions with SwiftIndirectResult parameters must return void");
+                    BADCODE("Functions with SwiftIndirectResult arguments must return void");
+                }
+
+                if (swiftIndirectResultIndex != UINT_MAX)
+                {
+                    BADCODE("Duplicate SwiftIndirectResult argument");
                 }
 
                 swiftIndirectResultIndex = argIndex;

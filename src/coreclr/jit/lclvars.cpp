@@ -1443,6 +1443,33 @@ bool Compiler::lvaInitSpecialSwiftParam(CORINFO_ARG_LIST_HANDLE argHnd,
         return true;
     }
 
+    if ((strcmp(className, "SwiftIndirectResult") == 0) && (strcmp(namespaceName, "System.Runtime.InteropServices.Swift") == 0))
+    {
+        if (argIsByrefOrPtr)
+        {
+            BADCODE("Expected SwiftIndirectResult struct, got pointer/reference");
+        }
+
+        if (info.compRetType != TYP_VOID)
+        {
+            BADCODE("Functions with SwiftIndirectResult parameters must return void");
+        }
+
+        if (info.compRetBuffArg != BAD_VAR_NUM)
+        {
+            BADCODE("Duplicate SwiftIndirectResult parameter");
+        }
+
+        LclVarDsc* const varDsc = varDscInfo->varDsc;
+        varDsc->SetArgReg(theFixedRetBuffReg(CorInfoCallConvExtension::Swift));
+        varDsc->lvIsRegArg = true;
+
+        compArgSize += TARGET_POINTER_SIZE;
+
+        info.compRetBuffArg = varDscInfo->varNum;
+        return true;
+    }
+
     if ((strcmp(className, "SwiftError") == 0) && (strcmp(namespaceName, "System.Runtime.InteropServices.Swift") == 0))
     {
         if (!argIsByrefOrPtr)
