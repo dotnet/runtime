@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "mockcoreclr.h"
+#include "host_runtime_contract.h"
 #include <chrono>
 #include <iostream>
 #include <thread>
@@ -44,14 +45,46 @@ SHARED_API pal::hresult_t STDMETHODCALLTYPE coreclr_initialize(
     MockLogArg(hostHandle);
     MockLogArg(domainId);
 
+    host_runtime_contract* host_contract;
+
     for (int i = 0; i < propertyCount; ++i)
     {
-        MockLogEntry("property", propertyKeys[i], propertyValues[i]);
+        if (strcmp(propertyKeys[i], "HOST_RUNTIME_CONTRACT") == 0)
+        {
+            char* endPtr;
+            uint64_t contractValue = strtoul(propertyValues[i], nullptr, 0);
+            host_contract = (host_runtime_contract*)contractValue;
+        }
+        else
+        {
+            MockLogEntry("property", propertyKeys[i], propertyValues[i]);
+        }
     }
 
     if (hostHandle != nullptr)
     {
         *hostHandle = reinterpret_cast<coreclr_t::host_handle_t>(static_cast<size_t>(0xdeadbeef));
+    }
+
+    if (host_contract != nullptr)
+    {
+        // construct the formerly known as TPA list
+        char** assemblies;
+        uint32_t assemblyCount = 0;
+        std::stringstream asmss;
+
+        assemblies = host_contract->get_assemblies(&assemblyCount, host_contract->context);
+
+        for (int ac = 0; ac < assemblyCount; ac++)
+        {
+            const char* assemblyPath = host_contract->resolve_assembly_to_path(assemblies[ac], host_contract->context);
+            asmss << assemblyPath << ":";
+        }
+
+        delete assemblies;
+
+        // for now - name this something else when tests start passing
+        MockLogEntry("property", "TRUSTED_PLATFORM_ASSEMBLIES", asmss.str());
     }
 
     return StatusCode::Success;
