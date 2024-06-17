@@ -7619,6 +7619,47 @@ HRESULT ProfToEEInterfaceImpl::GetNonGCHeapBounds(ULONG cObjectRanges,
     return S_OK;
 }
 
+HRESULT ProfToEEInterfaceImpl::EnumerateGCHeapObjects(object_callback callback, void* callbackState)
+{
+    CONTRACTL
+    {
+        // Yay!
+        NOTHROW;
+
+        // Yay!
+        GC_NOTRIGGER;
+
+        // Yay!
+        MODE_ANY;
+
+        // Yay!
+        CANNOT_TAKE_LOCK;
+
+        // Yay!
+        EE_THREAD_NOT_REQUIRED;
+    }
+    CONTRACTL_END;
+
+    PROFILER_TO_CLR_ENTRYPOINT_ASYNC_EX(kP2EEAllowableAfterAttach,
+        (LF_CORPROF,
+        LL_INFO1000,
+        "**PROF: EnumerateGCHeapObjects.\n"));
+
+    // Checks
+
+    // SuspendEE
+
+    // Prepare to walk the GC Heap by fixing allocation contexts
+
+    // Walk the GC Heap
+
+    // Repair the allocation contexts that were fixed before walking the GC Heap
+
+    // ResumeEE
+
+    return S_OK;
+}
+
 /*
  * GetStringLayout
  *
