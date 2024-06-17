@@ -65,7 +65,7 @@ namespace System
                     }
                     else if (Vector<byte>.Count == 32)
                     {
-                        vector = Vector256.Create(vec128, vec128).AsVector();
+                        vector = Vector256.Create(vec128).AsVector();
                     }
                     else
                     {

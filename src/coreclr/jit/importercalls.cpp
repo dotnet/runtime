@@ -242,7 +242,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             }
 #endif // FEATURE_READYTORUN
 
-            call = impIntrinsic(newobjThis, clsHnd, methHnd, sig, mflags, pResolvedToken, isReadonlyCall, isTailCall,
+            call = impIntrinsic(clsHnd, methHnd, sig, mflags, pResolvedToken, isReadonlyCall, isTailCall,
                                 opcode == CEE_CALLVIRT, pConstrainedResolvedToken,
                                 callInfo->thisTransform R2RARG(&entryPoint), &ni, &isSpecialIntrinsic);
 
@@ -2818,7 +2818,6 @@ GenTree* Compiler::impCreateSpanIntrinsic(CORINFO_SIG_INFO* sig)
 // impIntrinsic: possibly expand intrinsic call into alternate IR sequence
 //
 // Arguments:
-//    newobjThis - for constructor calls, the tree for the newly allocated object
 //    clsHnd - handle for the intrinsic method's class
 //    method - handle for the intrinsic method
 //    sig    - signature of the intrinsic method
@@ -2861,8 +2860,7 @@ GenTree* Compiler::impCreateSpanIntrinsic(CORINFO_SIG_INFO* sig)
 //    identified as "must expand" if they are invoked from within their
 //    own method bodies.
 //
-GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
-                                CORINFO_CLASS_HANDLE    clsHnd,
+GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                                 CORINFO_METHOD_HANDLE   method,
                                 CORINFO_SIG_INFO*       sig,
                                 unsigned                methodFlags,
@@ -2886,7 +2884,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
     if (isIntrinsic)
     {
         // The recursive non-virtual calls to Jit intrinsics are must-expand by convention.
-        mustExpand = gtIsRecursiveCall(method) && !(methodFlags & CORINFO_FLG_VIRTUAL);
+        mustExpand = gtIsRecursiveCall(method, false) && !(methodFlags & CORINFO_FLG_VIRTUAL);
     }
     else
     {
@@ -3088,7 +3086,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
             if (isIntrinsic)
             {
-                GenTree* hwintrinsic = impSimdAsHWIntrinsic(ni, clsHnd, method, sig, newobjThis, mustExpand);
+                GenTree* hwintrinsic = impSimdAsHWIntrinsic(ni, clsHnd, method, sig, mustExpand);
 
                 if (hwintrinsic == nullptr)
                 {
@@ -3167,6 +3165,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_Type_get_IsByRefLike:
             case NI_System_Type_IsAssignableFrom:
             case NI_System_Type_IsAssignableTo:
+            case NI_System_Type_get_IsGenericType:
 
             // Lightweight intrinsics
             case NI_System_String_get_Chars:
@@ -3787,6 +3786,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_Type_get_IsValueType:
             case NI_System_Type_get_IsPrimitive:
             case NI_System_Type_get_IsByRefLike:
+            case NI_System_Type_get_IsGenericType:
             {
                 // Optimize
                 //
@@ -3833,7 +3833,17 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                                 retNode = gtNewFalse();
                             }
                             break;
-
+                        case NI_System_Type_get_IsGenericType:
+                        {
+                            TypeCompareState state = info.compCompHnd->isGenericType(hClass);
+                            if (state == TypeCompareState::May)
+                            {
+                                retNode = nullptr;
+                                break;
+                            }
+                            retNode = state == TypeCompareState::Must ? gtNewTrue() : gtNewFalse();
+                            break;
+                        }
                         default:
                             NO_WAY("Intrinsic not supported in this path.");
                     }
@@ -10017,6 +10027,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         {
                             result = NI_System_Type_get_IsPrimitive;
                         }
+                        else if (strcmp(methodName, "get_IsGenericType") == 0)
+                        {
+                            result = NI_System_Type_get_IsGenericType;
+                        }
                         else if (strcmp(methodName, "get_IsByRefLike") == 0)
                         {
                             result = NI_System_Type_get_IsByRefLike;
@@ -10135,7 +10149,7 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                                 assert(strcmp(className, "Vector`1") == 0);
                                 result = NI_Vector_GetCount;
                             }
-                            else if (gtIsRecursiveCall(method))
+                            else if (gtIsRecursiveCall(method, false))
                             {
                                 // For the framework itself, any recursive intrinsics will either be
                                 // only supported on a single platform or will be guarded by a relevant
@@ -10370,7 +10384,7 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
 
                                 result = NI_Vector_GetCount;
                             }
-                            else if (gtIsRecursiveCall(method))
+                            else if (gtIsRecursiveCall(method, false))
                             {
                                 // For the framework itself, any recursive intrinsics will either be
                                 // only supported on a single platform or will be guarded by a relevant

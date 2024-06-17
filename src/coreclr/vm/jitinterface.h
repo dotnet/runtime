@@ -207,7 +207,6 @@ extern FCDECL1(Object*, JIT_NewS_MP_FastPortable, CORINFO_CLASS_HANDLE typeHnd_)
 extern FCDECL1(Object*, JIT_New, CORINFO_CLASS_HANDLE typeHnd_);
 
 extern FCDECL1(StringObject*, AllocateString_MP_FastPortable, DWORD stringLength);
-extern FCDECL1(StringObject*, UnframedAllocateString, DWORD stringLength);
 extern FCDECL1(StringObject*, FramedAllocateString, DWORD stringLength);
 
 extern FCDECL2(Object*, JIT_NewArr1VC_MP_FastPortable, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
@@ -317,14 +316,6 @@ private:
 };
 
 #endif // TARGET_AMD64
-
-#ifdef HOST_64BIT
-EXTERN_C FCDECL1(Object*, JIT_TrialAllocSFastMP_InlineGetThread, CORINFO_CLASS_HANDLE typeHnd_);
-EXTERN_C FCDECL2(Object*, JIT_BoxFastMP_InlineGetThread, CORINFO_CLASS_HANDLE type, void* data);
-EXTERN_C FCDECL2(Object*, JIT_NewArr1VC_MP_InlineGetThread, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
-EXTERN_C FCDECL2(Object*, JIT_NewArr1OBJ_MP_InlineGetThread, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
-
-#endif // HOST_64BIT
 
 EXTERN_C FCDECL2_VV(INT64, JIT_LMul, INT64 val1, INT64 val2);
 
@@ -1069,13 +1060,12 @@ BOOL OnGcCoverageInterrupt(PT_CONTEXT regs);
 void DoGcStress (PT_CONTEXT regs, NativeCodeVersion nativeCodeVersion);
 #endif //HAVE_GCCOVER
 
-EXTERN_C FCDECL2(LPVOID, ArrayStoreCheck, Object** pElement, PtrArray** pArray);
-
 // ppPinnedString: If the string is pinned (e.g. allocated in frozen heap),
 // the pointer to the pinned string is returned in *ppPinnedPointer. ppPinnedPointer == nullptr
 // means that the caller does not care whether the string is pinned or not.
 OBJECTHANDLE ConstructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd, mdToken metaTok, void** ppPinnedString = nullptr);
 
+FCDECL2(Object*, JIT_Box_MP_FastPortable, CORINFO_CLASS_HANDLE type, void* data);
 FCDECL2(Object*, JIT_Box, CORINFO_CLASS_HANDLE type, void* data);
 FCDECL0(VOID, JIT_PollGC);
 
