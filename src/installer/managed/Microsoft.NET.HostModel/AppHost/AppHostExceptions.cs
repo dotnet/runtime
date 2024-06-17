@@ -18,17 +18,6 @@ namespace Microsoft.NET.HostModel.AppHost
     }
 
     /// <summary>
-    /// The application host executable cannot be customized because adding resources requires
-    /// that the build be performed on Windows (excluding Nano Server).
-    /// </summary>
-    public sealed class AppHostCustomizationUnsupportedOSException : AppHostUpdateException
-    {
-        internal AppHostCustomizationUnsupportedOSException()
-        {
-        }
-    }
-
-    /// <summary>
     /// The MachO application host executable cannot be customized because
     /// it was not in the expected format
     /// </summary>

@@ -79,7 +79,7 @@ namespace System.Diagnostics.Metrics
             {
                 var tagList = new List<KeyValuePair<string, object?>>(tags);
                 tagList.Sort((left, right) => string.Compare(left.Key, right.Key, StringComparison.Ordinal));
-                Tags = tagList;
+                Tags = tagList.AsReadOnly();
             }
             Scope = scope;
 

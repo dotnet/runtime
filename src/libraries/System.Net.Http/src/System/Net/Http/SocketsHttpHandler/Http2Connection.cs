@@ -503,6 +503,7 @@ namespace System.Net.Http
                 catch (Exception e)
                 {
                     InitialSettingsReceived.TrySetException(new HttpIOException(HttpRequestError.InvalidResponse, SR.net_http_http2_connection_not_established, e));
+                    LogExceptions(InitialSettingsReceived.Task);
                     throw new HttpIOException(HttpRequestError.InvalidResponse, SR.net_http_http2_connection_not_established, e);
                 }
 
@@ -2136,7 +2137,7 @@ namespace System.Net.Http
                     break;
                 case KeepAliveState.PingSent:
                     if (now > _keepAlivePingTimeoutTimestamp)
-                        ThrowProtocolError();
+                        ThrowProtocolError(Http2ProtocolErrorCode.ProtocolError, SR.net_ping_request_timed_out);
                     break;
                 default:
                     Debug.Fail($"Unexpected keep alive state ({_keepAliveState})");

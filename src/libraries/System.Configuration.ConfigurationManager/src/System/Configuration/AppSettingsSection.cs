@@ -127,7 +127,7 @@ namespace System.Configuration
                 }
             }
 
-            ConfigXmlReader internalReader = new ConfigXmlReader(rawXml, sourceFileFullPath, lineOffset);
+            using ConfigXmlReader internalReader = new ConfigXmlReader(rawXml, sourceFileFullPath, lineOffset);
             internalReader.Read();
 
             if (internalReader.MoveToNextAttribute())

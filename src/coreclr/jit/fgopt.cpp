@@ -4912,7 +4912,8 @@ void Compiler::fgMoveColdBlocks()
             // as we want to keep these pairs contiguous
             // (if we encounter the end of a pair below, we'll move the whole pair).
             //
-            if (!block->isRunRarely() || block->hasTryIndex() || block->hasHndIndex() || block->isBBCallFinallyPair())
+            if (!block->isBBWeightCold(this) || block->hasTryIndex() || block->hasHndIndex() ||
+                block->isBBCallFinallyPair())
             {
                 continue;
             }
@@ -4937,7 +4938,7 @@ void Compiler::fgMoveColdBlocks()
         // We have moved all cold main blocks before lastMainBB to after lastMainBB.
         // If lastMainBB itself is cold, move it to the end of the method to restore its relative ordering.
         //
-        if (lastMainBB->isRunRarely())
+        if (lastMainBB->isBBWeightCold(this))
         {
             BasicBlock* const newLastMainBB = this->fgLastBBInMainFunction();
             if (lastMainBB != newLastMainBB)
@@ -4991,13 +4992,14 @@ void Compiler::fgMoveColdBlocks()
     {
         prev = block->Prev();
 
-        // Only consider rarely-run blocks in try regions.
+        // Only consider cold blocks in try regions.
         // If we have such a block that is also part of an exception handler, don't bother moving it.
         // Finally, don't move block if it is the beginning of a call-finally pair,
         // as we want to keep these pairs contiguous
         // (if we encounter the end of a pair below, we'll move the whole pair).
         //
-        if (!block->hasTryIndex() || !block->isRunRarely() || block->hasHndIndex() || block->isBBCallFinallyPair())
+        if (!block->isBBWeightCold(this) || !block->hasTryIndex() || block->hasHndIndex() ||
+            block->isBBCallFinallyPair())
         {
             continue;
         }
@@ -5008,7 +5010,7 @@ void Compiler::fgMoveColdBlocks()
         // Don't move the beginning of a try region.
         // Also, if this try region's entry is cold, don't bother moving its blocks.
         //
-        if ((HBtab->ebdTryBeg == block) || (HBtab->ebdTryBeg->isRunRarely()))
+        if ((HBtab->ebdTryBeg == block) || HBtab->ebdTryBeg->isBBWeightCold(this))
         {
             continue;
         }
@@ -5069,7 +5071,7 @@ void Compiler::fgMoveColdBlocks()
         // We moved cold blocks to the end of this try region, but the old end block is cold, too.
         // Move the old end block to the end of the region to preserve its relative ordering.
         //
-        if ((tryEnd != newTryEnd) && tryEnd->isRunRarely() && !tryEnd->hasHndIndex())
+        if ((tryEnd != newTryEnd) && !tryEnd->hasHndIndex() && tryEnd->isBBWeightCold(this))
         {
             BasicBlock* const prev = tryEnd->Prev();
             fgUnlinkBlock(tryEnd);

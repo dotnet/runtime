@@ -489,6 +489,10 @@ jclass g_TrustManager;
 jclass    g_DotnetProxyTrustManager;
 jmethodID g_DotnetProxyTrustManagerCtor;
 
+// net/dot/android/crypto/PalPbkdf2
+jclass    g_PalPbkdf2;
+jmethodID g_PalPbkdf2Pbkdf2OneShot;
+
 jobject ToGRef(JNIEnv *env, jobject lref)
 {
     if (lref)
@@ -1095,6 +1099,9 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
 
     g_DotnetProxyTrustManager =     GetClassGRef(env, "net/dot/android/crypto/DotnetProxyTrustManager");
     g_DotnetProxyTrustManagerCtor = GetMethod(env, false, g_DotnetProxyTrustManager, "<init>", "(J)V");
+
+    g_PalPbkdf2              = GetClassGRef(env, "net/dot/android/crypto/PalPbkdf2");
+    g_PalPbkdf2Pbkdf2OneShot = GetMethod(env, true, g_PalPbkdf2, "pbkdf2OneShot", "(Ljava/lang/String;[BLjava/nio/ByteBuffer;ILjava/nio/ByteBuffer;)I");
 
     return JNI_VERSION_1_6;
 }
