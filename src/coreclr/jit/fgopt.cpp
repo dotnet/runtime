@@ -3421,6 +3421,15 @@ bool Compiler::fgReorderBlocks(bool useProfile)
             fgDoReversePostOrderLayout();
             fgMoveColdBlocks();
 
+            if (compHndBBtabCount != 0)
+            {
+                fgSearchImprovedLayout<true>();
+            }
+            else
+            {
+                fgSearchImprovedLayout<false>();
+            }
+
             // Renumber blocks to facilitate LSRA's order of block visitation
             // TODO: Consider removing this, and using traversal order in lSRA
             //
@@ -4649,6 +4658,20 @@ void Compiler::fgMoveBackwardJumpsToSuccessors()
     }
 }
 
+struct CallFinallyPair
+{
+    BasicBlock* callFinally;
+    BasicBlock* callFinallyRet;
+
+    // Constructor provided so we can call ArrayStack::Emplace
+    //
+    CallFinallyPair(BasicBlock* first, BasicBlock* second)
+        : callFinally(first)
+        , callFinallyRet(second)
+    {
+    }
+};
+
 //-----------------------------------------------------------------------------
 // fgDoReversePostOrderLayout: Reorder blocks using a greedy RPO traversal.
 //
@@ -4677,8 +4700,12 @@ void Compiler::fgDoReversePostOrderLayout()
         {
             BasicBlock* const block       = dfsTree->GetPostOrder(i);
             BasicBlock* const blockToMove = dfsTree->GetPostOrder(i - 1);
-            fgUnlinkBlock(blockToMove);
-            fgInsertBBafter(block, blockToMove);
+
+            if (!block->NextIs(blockToMove))
+            {
+                fgUnlinkBlock(blockToMove);
+                fgInsertBBafter(block, blockToMove);
+            }
         }
 
         // The RPO established a good base layout, but in some cases, it might produce a subpar layout for loops.
@@ -4709,20 +4736,6 @@ void Compiler::fgDoReversePostOrderLayout()
 
     // The RPO will break up call-finally pairs, so save them before re-ordering
     //
-    struct CallFinallyPair
-    {
-        BasicBlock* callFinally;
-        BasicBlock* callFinallyRet;
-
-        // Constructor provided so we can call ArrayStack::Emplace
-        //
-        CallFinallyPair(BasicBlock* first, BasicBlock* second)
-            : callFinally(first)
-            , callFinallyRet(second)
-        {
-        }
-    };
-
     ArrayStack<CallFinallyPair> callFinallyPairs(getAllocator());
 
     for (EHblkDsc* const HBtab : EHClauses(this))
@@ -4761,12 +4774,16 @@ void Compiler::fgDoReversePostOrderLayout()
                 continue;
             }
 
-            fgUnlinkBlock(blockToMove);
-            fgInsertBBafter(block, blockToMove);
+            if (!block->NextIs(blockToMove))
+            {
+                fgUnlinkBlock(blockToMove);
+                fgInsertBBafter(block, blockToMove);
+            }
         }
     }
 
     // Fix up call-finally pairs
+    // (We assume the RPO will mess these up, so don't bother checking if the blocks are still adjacent)
     //
     for (int i = 0; i < callFinallyPairs.Height(); i++)
     {
@@ -5106,6 +5123,236 @@ void Compiler::fgMoveColdBlocks()
     };
 
     ehUpdateTryLasts<decltype(getTryLast), decltype(setTryLast)>(getTryLast, setTryLast);
+}
+
+//-----------------------------------------------------------------------------
+// fgSearchImprovedLayout: Try to improve upon RPO-based layout with the 3-opt method:
+//   - Identify a subset of "interesting" (not cold, has branches, etc.) blocks to move
+//   - Partition this set into three segments: S1 - S2 - S3
+//   - Evaluate cost of swapped layout: S1 - S3 - S2
+//   - If the cost improves, keep this layout
+//   - Repeat for a certain number of iterations, or until no improvements are made
+//
+// Template parameters:
+//    hasEH - If true, method has EH regions, so check that we don't try to move blocks in different regions
+//
+template <bool hasEH>
+void Compiler::fgSearchImprovedLayout()
+{
+#ifdef DEBUG
+    if (verbose)
+    {
+        printf("*************** In fgSearchImprovedLayout()\n");
+
+        printf("\nInitial BasicBlocks");
+        fgDispBasicBlocks(verboseTrees);
+        printf("\n");
+    }
+#endif // DEBUG
+
+    BlockSet    visitedBlocks(BlockSetOps::MakeEmpty(this));
+    BasicBlock* startBlock = nullptr;
+
+    // Find the first block that doesn't fall into its hottest successor.
+    // This will be our first "interesting" block.
+    //
+    for (BasicBlock* const block : Blocks(fgFirstBB, fgLastBBInMainFunction()))
+    {
+        // Ignore try/handler blocks
+        if (hasEH && (block->hasTryIndex() || block->hasHndIndex()))
+        {
+            continue;
+        }
+
+        BlockSetOps::AddElemD(this, visitedBlocks, block->bbNum);
+        FlowEdge* hottestSuccEdge = nullptr;
+
+        for (FlowEdge* const succEdge : block->SuccEdges(this))
+        {
+            BasicBlock* const succ = succEdge->getDestinationBlock();
+
+            // Ignore try/handler successors
+            //
+            if (hasEH && (succ->hasTryIndex() || succ->hasHndIndex()))
+            {
+                continue;
+            }
+
+            const bool isForwardJump = !BlockSetOps::IsMember(this, visitedBlocks, succ->bbNum);
+
+            if (isForwardJump &&
+                ((hottestSuccEdge == nullptr) || (succEdge->getLikelihood() > hottestSuccEdge->getLikelihood())))
+            {
+                hottestSuccEdge = succEdge;
+            }
+        }
+
+        if ((hottestSuccEdge != nullptr) && !block->NextIs(hottestSuccEdge->getDestinationBlock()))
+        {
+            // We found the first "interesting" block that doesn't fall into its hottest successor
+            //
+            startBlock = block;
+            break;
+        }
+    }
+
+    if (startBlock == nullptr)
+    {
+        JITDUMP("\nSkipping reordering");
+        return;
+    }
+
+    // blockVector will contain the set of interesting blocks to move.
+    // tempBlockVector will assist with moving segments of interesting blocks.
+    //
+    BasicBlock**                blockVector     = new BasicBlock*[fgBBNumMax];
+    BasicBlock**                tempBlockVector = new BasicBlock*[fgBBNumMax];
+    unsigned                    blockCount      = 0;
+    ArrayStack<CallFinallyPair> callFinallyPairs(getAllocator(), hasEH ? ArrayStack<CallFinallyPair>::builtinSize : 0);
+
+    for (BasicBlock* const block : Blocks(startBlock, fgLastBBInMainFunction()))
+    {
+        // Don't consider blocks in EH regions
+        //
+        if (block->hasTryIndex() || block->hasHndIndex())
+        {
+            continue;
+        }
+
+        // We've reached the cold section of the main method body;
+        // nothing is interesting at this point
+        //
+        if (block->isRunRarely())
+        {
+            break;
+        }
+
+        blockVector[blockCount]       = block;
+        tempBlockVector[blockCount++] = block;
+
+        if (hasEH && block->isBBCallFinallyPair())
+        {
+            callFinallyPairs.Emplace(block, block->Next());
+        }
+    }
+
+    if (blockCount < 3)
+    {
+        JITDUMP("\nNot enough interesting blocks; skipping reordering");
+        return;
+    }
+
+    JITDUMP("\nInteresting blocks: [" FMT_BB "-" FMT_BB "]", startBlock->bbNum, blockVector[blockCount - 1]->bbNum);
+
+    auto evaluateCost = [](BasicBlock* const block, BasicBlock* const next) -> weight_t {
+        assert(block != nullptr);
+
+        if ((block->NumSucc() == 0) || (next == nullptr))
+        {
+            return 0.0;
+        }
+
+        const weight_t cost = block->bbWeight;
+
+        for (FlowEdge* const edge : block->SuccEdges())
+        {
+            if (edge->getDestinationBlock() == next)
+            {
+                return cost - edge->getLikelyWeight();
+            }
+        }
+
+        return cost;
+    };
+
+    // finalBlock is the first block after the set of interesting blocks.
+    // We will need to keep track of it to compute the cost of creating/breaking fallthrough into it.
+    // finalBlock can be null.
+    //
+    BasicBlock* const  finalBlock     = blockVector[blockCount - 1]->Next();
+    bool               improvedLayout = true;
+    constexpr unsigned maxIter        = 5; // TODO: Reconsider?
+
+    for (unsigned numIter = 0; improvedLayout && (numIter < maxIter); numIter++)
+    {
+        JITDUMP("\n\n--Iteration %d--", (numIter + 1));
+        improvedLayout              = false;
+        BasicBlock* const exitBlock = blockVector[blockCount - 1];
+
+        for (unsigned i = 1; i < (blockCount - 1); i++)
+        {
+            BasicBlock* const blockI     = blockVector[i];
+            BasicBlock* const blockIPrev = blockVector[i - 1];
+
+            for (unsigned j = i + 1; j < blockCount; j++)
+            {
+                // Evaluate the current partition at (i,j)
+                // S1: 0 ~ i-1
+                // S2: i ~ j-1
+                // S3: j ~ exitBlock
+
+                BasicBlock* const blockJ     = blockVector[j];
+                BasicBlock* const blockJPrev = blockVector[j - 1];
+
+                const weight_t oldScore = evaluateCost(blockIPrev, blockI) + evaluateCost(blockJPrev, blockJ) +
+                                          evaluateCost(exitBlock, finalBlock);
+                const weight_t newScore = evaluateCost(blockIPrev, blockJ) + evaluateCost(exitBlock, blockI) +
+                                          evaluateCost(blockJPrev, finalBlock);
+
+                if ((newScore < oldScore) && !Compiler::fgProfileWeightsEqual(oldScore, newScore, 0.001))
+                {
+                    JITDUMP("\nFound better layout by partitioning at i=%d, j=%d", i, j);
+                    JITDUMP("\nOld score: %f, New score: %f", oldScore, newScore);
+                    const unsigned part1Size = i;
+                    const unsigned part2Size = j - i;
+                    const unsigned part3Size = blockCount - j;
+
+                    memcpy(tempBlockVector, blockVector, sizeof(BasicBlock*) * part1Size);
+                    memcpy(tempBlockVector + part1Size, blockVector + part1Size + part2Size,
+                           sizeof(BasicBlock*) * part3Size);
+                    memcpy(tempBlockVector + part1Size + part3Size, blockVector + part1Size,
+                           sizeof(BasicBlock*) * part2Size);
+
+                    std::swap(blockVector, tempBlockVector);
+                    improvedLayout = true;
+                    break;
+                }
+            }
+
+            if (improvedLayout)
+            {
+                break;
+            }
+        }
+    }
+
+    // Rearrange blocks
+    //
+    for (unsigned i = 1; i < blockCount; i++)
+    {
+        BasicBlock* const block = blockVector[i - 1];
+        BasicBlock* const next  = blockVector[i];
+        assert(BasicBlock::sameEHRegion(block, next));
+
+        if (!block->NextIs(next))
+        {
+            fgUnlinkBlock(next);
+            fgInsertBBafter(block, next);
+        }
+    }
+
+    // Fix call-finally pairs
+    //
+    for (int i = 0; hasEH && (i < callFinallyPairs.Height()); i++)
+    {
+        const CallFinallyPair& pair = callFinallyPairs.BottomRef(i);
+
+        if (!pair.callFinally->NextIs(pair.callFinallyRet))
+        {
+            fgUnlinkBlock(pair.callFinallyRet);
+            fgInsertBBafter(pair.callFinally, pair.callFinallyRet);
+        }
+    }
 }
 
 //-------------------------------------------------------------

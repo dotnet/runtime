@@ -7,9 +7,9 @@
 template <class T>
 class ArrayStack
 {
-    static const int builtinSize = 8;
-
 public:
+    static constexpr int builtinSize = 8;
+
     explicit ArrayStack(CompAllocator alloc, int initialCapacity = builtinSize)
         : m_alloc(alloc)
     {

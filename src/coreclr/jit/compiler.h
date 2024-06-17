@@ -6146,6 +6146,9 @@ public:
     void fgMoveColdBlocks();
 
     template <bool hasEH>
+    void fgSearchImprovedLayout();
+
+    template <bool hasEH>
     void fgMoveBackwardJumpsToSuccessors();
 
     bool fgFuncletsAreCold();
