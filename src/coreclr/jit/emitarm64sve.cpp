@@ -2438,7 +2438,7 @@ void emitter::emitInsSve_R_R_I(instruction     ins,
             break;
 
         case INS_sve_mov:
-            if (sopt == INS_SCALABLE_OPTS_BROADCAST)
+            if (isVectorRegister(reg2))
             {
                 return emitInsSve_R_R_I(INS_sve_dup, attr, reg1, reg2, imm, opt, sopt);
             }

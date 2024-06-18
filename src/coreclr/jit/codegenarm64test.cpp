@@ -5598,26 +5598,16 @@ void CodeGen::genArm64EmitterUnitTestsSve()
                               INS_OPTS_SCALABLE_Q); // MOV     <Zd>.<T>, <V><n>
 
     // MOV implementation should produce same output as DUP implementation with same parameters
-    theEmitter->emitIns_R_R_I(INS_sve_mov, EA_SCALABLE, REG_V1, REG_V16, 63, INS_OPTS_SCALABLE_B,
-                              INS_SCALABLE_OPTS_BROADCAST); // MOV     <Zd>.<T>, <Zn>.<T>[<imm>]
-    theEmitter->emitIns_R_R_I(INS_sve_mov, EA_SCALABLE, REG_V17, REG_V18, 31, INS_OPTS_SCALABLE_H,
-                              INS_SCALABLE_OPTS_BROADCAST); // MOV     <Zd>.<T>, <Zn>.<T>[<imm>]
-    theEmitter->emitIns_R_R_I(INS_sve_mov, EA_SCALABLE, REG_V9, REG_V11, 15, INS_OPTS_SCALABLE_S,
-                              INS_SCALABLE_OPTS_BROADCAST); // MOV     <Zd>.<T>, <Zn>.<T>[<imm>]
-    theEmitter->emitIns_R_R_I(INS_sve_mov, EA_SCALABLE, REG_V2, REG_V3, 7, INS_OPTS_SCALABLE_D,
-                              INS_SCALABLE_OPTS_BROADCAST); // MOV     <Zd>.<T>, <Zn>.<T>[<imm>]
-    theEmitter->emitIns_R_R_I(INS_sve_mov, EA_SCALABLE, REG_V3, REG_V8, 3, INS_OPTS_SCALABLE_Q,
-                              INS_SCALABLE_OPTS_BROADCAST); // MOV     <Zd>.<T>, <Zn>.<T>[<imm>]
-    theEmitter->emitIns_R_R_I(INS_sve_mov, EA_SCALABLE, REG_V13, REG_V9, 0, INS_OPTS_SCALABLE_B,
-                              INS_SCALABLE_OPTS_BROADCAST); // MOV     <Zd>.<T>, <V><n>
-    theEmitter->emitIns_R_R_I(INS_sve_mov, EA_SCALABLE, REG_V12, REG_V6, 0, INS_OPTS_SCALABLE_H,
-                              INS_SCALABLE_OPTS_BROADCAST); // MOV     <Zd>.<T>, <V><n>
-    theEmitter->emitIns_R_R_I(INS_sve_mov, EA_SCALABLE, REG_V2, REG_V7, 0, INS_OPTS_SCALABLE_S,
-                              INS_SCALABLE_OPTS_BROADCAST); // MOV     <Zd>.<T>, <V><n>
-    theEmitter->emitIns_R_R_I(INS_sve_mov, EA_SCALABLE, REG_V0, REG_V0, 0, INS_OPTS_SCALABLE_D,
-                              INS_SCALABLE_OPTS_BROADCAST); // MOV     <Zd>.<T>, <V><n>
-    theEmitter->emitIns_R_R_I(INS_sve_mov, EA_SCALABLE, REG_V10, REG_V20, 0, INS_OPTS_SCALABLE_Q,
-                              INS_SCALABLE_OPTS_BROADCAST); // MOV     <Zd>.<T>, <V><n>
+    theEmitter->emitIns_R_R_I(INS_sve_mov, EA_SCALABLE, REG_V1, REG_V16, 63, INS_OPTS_SCALABLE_B); // MOV     <Zd>.<T>, <Zn>.<T>[<imm>]
+    theEmitter->emitIns_R_R_I(INS_sve_mov, EA_SCALABLE, REG_V17, REG_V18, 31, INS_OPTS_SCALABLE_H); // MOV     <Zd>.<T>, <Zn>.<T>[<imm>]
+    theEmitter->emitIns_R_R_I(INS_sve_mov, EA_SCALABLE, REG_V9, REG_V11, 15, INS_OPTS_SCALABLE_S); // MOV     <Zd>.<T>, <Zn>.<T>[<imm>]
+    theEmitter->emitIns_R_R_I(INS_sve_mov, EA_SCALABLE, REG_V2, REG_V3, 7, INS_OPTS_SCALABLE_D); // MOV     <Zd>.<T>, <Zn>.<T>[<imm>]
+    theEmitter->emitIns_R_R_I(INS_sve_mov, EA_SCALABLE, REG_V3, REG_V8, 3, INS_OPTS_SCALABLE_Q); // MOV     <Zd>.<T>, <Zn>.<T>[<imm>]
+    theEmitter->emitIns_R_R_I(INS_sve_mov, EA_SCALABLE, REG_V13, REG_V9, 0, INS_OPTS_SCALABLE_B); // MOV     <Zd>.<T>, <V><n>
+    theEmitter->emitIns_R_R_I(INS_sve_mov, EA_SCALABLE, REG_V12, REG_V6, 0, INS_OPTS_SCALABLE_H); // MOV     <Zd>.<T>, <V><n>
+    theEmitter->emitIns_R_R_I(INS_sve_mov, EA_SCALABLE, REG_V2, REG_V7, 0, INS_OPTS_SCALABLE_S); // MOV     <Zd>.<T>, <V><n>
+    theEmitter->emitIns_R_R_I(INS_sve_mov, EA_SCALABLE, REG_V0, REG_V0, 0, INS_OPTS_SCALABLE_D); // MOV     <Zd>.<T>, <V><n>
+    theEmitter->emitIns_R_R_I(INS_sve_mov, EA_SCALABLE, REG_V10, REG_V20, 0, INS_OPTS_SCALABLE_Q); // MOV     <Zd>.<T>, <V><n>
 
     // IF_SVE_BZ_3A
     theEmitter->emitIns_R_R_R(INS_sve_tbl, EA_SCALABLE, REG_V0, REG_V1, REG_V2,
