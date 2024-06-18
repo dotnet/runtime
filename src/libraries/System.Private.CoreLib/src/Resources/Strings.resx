@@ -2641,9 +2641,6 @@
   <data name="InvalidOperation_IComparerFailed" xml:space="preserve">
     <value>Failed to compare two elements in the array.</value>
   </data>
-  <data name="InvalidOperation_InlineArrayEqualsGetHashCode" xml:space="preserve">
-    <value>Calling built-in Equals() or GetHashCode() on type marked as InlineArray is invalid.</value>
-  </data>
   <data name="InvalidOperation_MethodBaked" xml:space="preserve">
     <value>Type definition of the method is complete.</value>
   </data>
@@ -3031,6 +3028,9 @@
   </data>
   <data name="NotSupported_IllegalOneByteBranch" xml:space="preserve">
     <value>Illegal one-byte branch at position: {0}. Requested branch was: {1}.</value>
+  </data>
+  <data name="NotSupported_InlineArrayEqualsGetHashCode" xml:space="preserve">
+    <value>Calling built-in Equals() or GetHashCode() on type marked as InlineArray is invalid.</value>
   </data>
   <data name="NotSupported_KeyCollectionSet" xml:space="preserve">
     <value>Mutating a key collection derived from a dictionary is not allowed.</value>

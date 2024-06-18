@@ -1687,7 +1687,7 @@ extern "C" BOOL QCALLTYPE MethodTable_CanCompareBitsOrUseFastGetHashCode(MethodT
     BEGIN_QCALL;
 
     if (mt->GetClass()->IsInlineArray())
-        COMPlusThrow(kInvalidOperationException, W("InvalidOperation_InlineArrayEqualsGetHashCode"));
+        COMPlusThrow(kNotSupportedException, W("NotSupported_InlineArrayEqualsGetHashCode"));
 
     ret = CanCompareBitsOrUseFastGetHashCode(mt);
 

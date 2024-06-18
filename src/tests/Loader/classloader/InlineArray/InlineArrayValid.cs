@@ -404,17 +404,17 @@ public unsafe class Validate
     {
         Console.WriteLine($"{nameof(InlineArrayEqualsGetHashCode_Fails)}...");
 
-        Assert.Throws<InvalidOperationException>(() =>
+        Assert.Throws<NotSupportedException>(() =>
         {
             new FourtyTwoBytes().Equals(new FourtyTwoBytes());
         });
 
-        Assert.Throws<InvalidOperationException>(() =>
+        Assert.Throws<NotSupportedException>(() =>
         {
             new StructHasInlineArrayField().Equals(new StructHasInlineArrayField());
         });
 
-        Assert.Throws<InvalidOperationException>(() =>
+        Assert.Throws<NotSupportedException>(() =>
         {
             new FourtyTwoBytes().GetHashCode();
         });

@@ -1253,7 +1253,7 @@ ves_icall_System_ValueType_InternalGetHashCode (MonoObjectHandle this_obj, MonoA
 	klass = mono_handle_class (this_obj);
 
 	if (m_class_is_inlinearray (klass)) {
-		mono_error_set_invalid_operation (error, "Calling built-in GetHashCode() on type marked as InlineArray is invalid.");
+		mono_error_set_not_supported (error, "Calling built-in GetHashCode() on type marked as InlineArray is invalid.");
 		return FALSE;
 	}
 
@@ -1333,7 +1333,7 @@ ves_icall_System_ValueType_Equals (MonoObjectHandle this_obj, MonoObjectHandle t
 	klass = mono_handle_class (this_obj);
 
 	if (m_class_is_inlinearray (klass)) {
-		mono_error_set_invalid_operation (error, "Calling built-in Equals() on type marked as InlineArray is invalid.");
+		mono_error_set_not_supported (error, "Calling built-in Equals() on type marked as InlineArray is invalid.");
 		return FALSE;
 	}
 

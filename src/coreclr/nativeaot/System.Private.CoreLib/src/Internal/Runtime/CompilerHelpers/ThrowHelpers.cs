@@ -133,9 +133,9 @@ namespace Internal.Runtime.CompilerHelpers
             throw new ArgumentOutOfRangeException();
         }
 
-        public static void ThrowInvalidOperationInlineArrayEqualsGetHashCode()
+        public static void ThrowNotSupportedInlineArrayEqualsGetHashCode()
         {
-            throw new InvalidOperationException(SR.InvalidOperation_InlineArrayEqualsGetHashCode);
+            throw new NotSupportedException(SR.NotSupported_InlineArrayEqualsGetHashCode);
         }
     }
 }
