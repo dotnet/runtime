@@ -2072,7 +2072,9 @@ void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, 
                 }
 
                 swiftErrorIndex = argIndex;
-                spillStack      = true;
+                // Spill entire stack as we will need to reuse the error
+                // argument after the call.
+                spillStack = true;
             }
             else if ((strcmp(className, "SwiftSelf") == 0) &&
                      (strcmp(namespaceName, "System.Runtime.InteropServices.Swift") == 0))
@@ -2135,8 +2137,6 @@ void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, 
         }
     }
 
-    // If using SwiftError*, spill entire stack as we will need to reuse the
-    // error argument after the call.
     if (spillStack)
     {
         impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("Spill for swift call"));
