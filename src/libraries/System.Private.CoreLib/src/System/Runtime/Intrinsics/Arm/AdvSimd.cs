@@ -2099,302 +2099,302 @@ namespace System.Runtime.Intrinsics.Arm
             /// <summary>
             ///   A64: LD2 { Vn.16B, Vn+1.16B }, [Xn]
             /// </summary>
-            public static unsafe (Vector128<byte> Value1, Vector128<byte> Value2) LoadVector128x2AndUnzip(byte* address) => LoadVector128x2AndUnzip(address);
+            public static unsafe (Vector128<byte> Value1, Vector128<byte> Value2) Load2xVector128AndUnzip(byte* address) => Load2xVector128AndUnzip(address);
 
             /// <summary>
             ///   A64: LD2 { Vn.16B, Vn+1.16B }, [Xn]
             /// </summary>
-            public static unsafe (Vector128<sbyte> Value1, Vector128<sbyte> Value2) LoadVector128x2AndUnzip(sbyte* address) => LoadVector128x2AndUnzip(address);
+            public static unsafe (Vector128<sbyte> Value1, Vector128<sbyte> Value2) Load2xVector128AndUnzip(sbyte* address) => Load2xVector128AndUnzip(address);
 
             /// <summary>
             ///   A64: LD2 { Vn.8H, Vn+1.8H }, [Xn]
             /// </summary>
-            public static unsafe (Vector128<short> Value1, Vector128<short> Value2) LoadVector128x2AndUnzip(short* address) => LoadVector128x2AndUnzip(address);
+            public static unsafe (Vector128<short> Value1, Vector128<short> Value2) Load2xVector128AndUnzip(short* address) => Load2xVector128AndUnzip(address);
 
             /// <summary>
             ///   A64: LD2 { Vn.8H, Vn+1.8H }, [Xn]
             /// </summary>
-            public static unsafe (Vector128<ushort> Value1, Vector128<ushort> Value2) LoadVector128x2AndUnzip(ushort* address) => LoadVector128x2AndUnzip(address);
+            public static unsafe (Vector128<ushort> Value1, Vector128<ushort> Value2) Load2xVector128AndUnzip(ushort* address) => Load2xVector128AndUnzip(address);
 
             /// <summary>
             ///   A64: LD2 { Vn.4S, Vn+1.4S }, [Xn]
             /// </summary>
-            public static unsafe (Vector128<int> Value1, Vector128<int> Value2) LoadVector128x2AndUnzip(int* address) => LoadVector128x2AndUnzip(address);
+            public static unsafe (Vector128<int> Value1, Vector128<int> Value2) Load2xVector128AndUnzip(int* address) => Load2xVector128AndUnzip(address);
 
             /// <summary>
             ///   A64: LD2 { Vn.4S, Vn+1.4S }, [Xn]
             /// </summary>
-            public static unsafe (Vector128<uint> Value1, Vector128<uint> Value2) LoadVector128x2AndUnzip(uint* address) => LoadVector128x2AndUnzip(address);
+            public static unsafe (Vector128<uint> Value1, Vector128<uint> Value2) Load2xVector128AndUnzip(uint* address) => Load2xVector128AndUnzip(address);
 
             /// <summary>
             ///   A64: LD2 { Vn.2D, Vn+1.2D }, [Xn]
             /// </summary>
-            public static unsafe (Vector128<long> Value1, Vector128<long> Value2) LoadVector128x2AndUnzip(long* address) => LoadVector128x2AndUnzip(address);
+            public static unsafe (Vector128<long> Value1, Vector128<long> Value2) Load2xVector128AndUnzip(long* address) => Load2xVector128AndUnzip(address);
 
             /// <summary>
             ///   A64: LD2 { Vn.2D, Vn+1.2D }, [Xn]
             /// </summary>
-            public static unsafe (Vector128<ulong> Value1, Vector128<ulong> Value2) LoadVector128x2AndUnzip(ulong* address) => LoadVector128x2AndUnzip(address);
+            public static unsafe (Vector128<ulong> Value1, Vector128<ulong> Value2) Load2xVector128AndUnzip(ulong* address) => Load2xVector128AndUnzip(address);
 
             /// <summary>
             ///   A64: LD2 { Vn.4S, Vn+1.4S }, [Xn]
             /// </summary>
-            public static unsafe (Vector128<float> Value1, Vector128<float> Value2) LoadVector128x2AndUnzip(float* address) => LoadVector128x2AndUnzip(address);
+            public static unsafe (Vector128<float> Value1, Vector128<float> Value2) Load2xVector128AndUnzip(float* address) => Load2xVector128AndUnzip(address);
 
             /// <summary>
             ///   A64: LD2 { Vn.2D, Vn+1.2D }, [Xn]
             /// </summary>
-            public static unsafe (Vector128<double> Value1, Vector128<double> Value2) LoadVector128x2AndUnzip(double* address) => LoadVector128x2AndUnzip(address);
+            public static unsafe (Vector128<double> Value1, Vector128<double> Value2) Load2xVector128AndUnzip(double* address) => Load2xVector128AndUnzip(address);
 
             /// <summary>
             ///   A64: LD3 { Vn.16B, Vn+1.16B, Vn+2.16B }, [Xn]
             /// </summary>
-            public static unsafe (Vector128<byte> Value1, Vector128<byte> Value2, Vector128<byte> Value3) LoadVector128x3AndUnzip(byte* address) => LoadVector128x3AndUnzip(address);
+            public static unsafe (Vector128<byte> Value1, Vector128<byte> Value2, Vector128<byte> Value3) Load3xVector128AndUnzip(byte* address) => Load3xVector128AndUnzip(address);
 
             /// <summary>
             ///   A64: LD3 { Vn.16B, Vn+1.16B, Vn+2.16B }, [Xn]
             /// </summary>
-            public static unsafe (Vector128<sbyte> Value1, Vector128<sbyte> Value2, Vector128<sbyte> Value3) LoadVector128x3AndUnzip(sbyte* address) => LoadVector128x3AndUnzip(address);
+            public static unsafe (Vector128<sbyte> Value1, Vector128<sbyte> Value2, Vector128<sbyte> Value3) Load3xVector128AndUnzip(sbyte* address) => Load3xVector128AndUnzip(address);
 
             /// <summary>
             ///   A64: LD3 { Vn.8H, Vn+1.8H, Vn+2.8H }, [Xn]
             /// </summary>
-            public static unsafe (Vector128<short> Value1, Vector128<short> Value2, Vector128<short> Value3) LoadVector128x3AndUnzip(short* address) => LoadVector128x3AndUnzip(address);
+            public static unsafe (Vector128<short> Value1, Vector128<short> Value2, Vector128<short> Value3) Load3xVector128AndUnzip(short* address) => Load3xVector128AndUnzip(address);
 
             /// <summary>
             ///   A64: LD3 { Vn.8H, Vn+1.8H, Vn+2.8H }, [Xn]
             /// </summary>
-            public static unsafe (Vector128<ushort> Value1, Vector128<ushort> Value2, Vector128<ushort> Value3) LoadVector128x3AndUnzip(ushort* address) => LoadVector128x3AndUnzip(address);
+            public static unsafe (Vector128<ushort> Value1, Vector128<ushort> Value2, Vector128<ushort> Value3) Load3xVector128AndUnzip(ushort* address) => Load3xVector128AndUnzip(address);
 
             /// <summary>
             ///   A64: LD3 { Vn.4S, Vn+1.4S, Vn+2.4S }, [Xn]
             /// </summary>
-            public static unsafe (Vector128<int> Value1, Vector128<int> Value2, Vector128<int> Value3) LoadVector128x3AndUnzip(int* address) => LoadVector128x3AndUnzip(address);
+            public static unsafe (Vector128<int> Value1, Vector128<int> Value2, Vector128<int> Value3) Load3xVector128AndUnzip(int* address) => Load3xVector128AndUnzip(address);
 
             /// <summary>
             ///   A64: LD3 { Vn.4S, Vn+1.4S, Vn+2.4S }, [Xn]
             /// </summary>
-            public static unsafe (Vector128<uint> Value1, Vector128<uint> Value2, Vector128<uint> Value3) LoadVector128x3AndUnzip(uint* address) => LoadVector128x3AndUnzip(address);
+            public static unsafe (Vector128<uint> Value1, Vector128<uint> Value2, Vector128<uint> Value3) Load3xVector128AndUnzip(uint* address) => Load3xVector128AndUnzip(address);
 
             /// <summary>
             ///   A64: LD3 { Vn.2D, Vn+1.2D, Vn+2.2D }, [Xn]
             /// </summary>
-            public static unsafe (Vector128<long> Value1, Vector128<long> Value2, Vector128<long> Value3) LoadVector128x3AndUnzip(long* address) => LoadVector128x3AndUnzip(address);
+            public static unsafe (Vector128<long> Value1, Vector128<long> Value2, Vector128<long> Value3) Load3xVector128AndUnzip(long* address) => Load3xVector128AndUnzip(address);
 
             /// <summary>
             ///   A64: LD3 { Vn.2D, Vn+1.2D, Vn+2.2D }, [Xn]
             /// </summary>
-            public static unsafe (Vector128<ulong> Value1, Vector128<ulong> Value2, Vector128<ulong> Value3) LoadVector128x3AndUnzip(ulong* address) => LoadVector128x3AndUnzip(address);
+            public static unsafe (Vector128<ulong> Value1, Vector128<ulong> Value2, Vector128<ulong> Value3) Load3xVector128AndUnzip(ulong* address) => Load3xVector128AndUnzip(address);
 
             /// <summary>
             ///   A64: LD3 { Vn.4S, Vn+1.4S, Vn+2.4S }, [Xn]
             /// </summary>
-            public static unsafe (Vector128<float> Value1, Vector128<float> Value2, Vector128<float> Value3) LoadVector128x3AndUnzip(float* address) => LoadVector128x3AndUnzip(address);
+            public static unsafe (Vector128<float> Value1, Vector128<float> Value2, Vector128<float> Value3) Load3xVector128AndUnzip(float* address) => Load3xVector128AndUnzip(address);
 
             /// <summary>
             ///   A64: LD3 { Vn.2D, Vn+1.2D, Vn+2.2D }, [Xn]
             /// </summary>
-            public static unsafe (Vector128<double> Value1, Vector128<double> Value2, Vector128<double> Value3) LoadVector128x3AndUnzip(double* address) => LoadVector128x3AndUnzip(address);
+            public static unsafe (Vector128<double> Value1, Vector128<double> Value2, Vector128<double> Value3) Load3xVector128AndUnzip(double* address) => Load3xVector128AndUnzip(address);
 
             /// <summary>
             ///   A64: LD4 { Vn.16B, Vn+1.16B, Vn+2.16B, Vn+3.16B }, [Xn]
             /// </summary>
-            public static unsafe (Vector128<byte> Value1, Vector128<byte> Value2, Vector128<byte> Value3, Vector128<byte> Value4) LoadVector128x4AndUnzip(byte* address) => LoadVector128x4AndUnzip(address);
+            public static unsafe (Vector128<byte> Value1, Vector128<byte> Value2, Vector128<byte> Value3, Vector128<byte> Value4) Load4xVector128AndUnzip(byte* address) => Load4xVector128AndUnzip(address);
 
             /// <summary>
             ///   A64: LD4 { Vn.16B, Vn+1.16B, Vn+2.16B, Vn+3.16B }, [Xn]
             /// </summary>
-            public static unsafe (Vector128<sbyte> Value1, Vector128<sbyte> Value2, Vector128<sbyte> Value3, Vector128<sbyte> Value4) LoadVector128x4AndUnzip(sbyte* address) => LoadVector128x4AndUnzip(address);
+            public static unsafe (Vector128<sbyte> Value1, Vector128<sbyte> Value2, Vector128<sbyte> Value3, Vector128<sbyte> Value4) Load4xVector128AndUnzip(sbyte* address) => Load4xVector128AndUnzip(address);
 
             /// <summary>
             ///   A64: LD4 { Vn.8H, Vn+1.8H, Vn+2.8H, Vn+3.8H }, [Xn]
             /// </summary>
-            public static unsafe (Vector128<short> Value1, Vector128<short> Value2, Vector128<short> Value3, Vector128<short> Value4) LoadVector128x4AndUnzip(short* address) => LoadVector128x4AndUnzip(address);
+            public static unsafe (Vector128<short> Value1, Vector128<short> Value2, Vector128<short> Value3, Vector128<short> Value4) Load4xVector128AndUnzip(short* address) => Load4xVector128AndUnzip(address);
 
             /// <summary>
             ///   A64: LD4 { Vn.8H, Vn+1.8H, Vn+2.8H, Vn+3.8H }, [Xn]
             /// </summary>
-            public static unsafe (Vector128<ushort> Value1, Vector128<ushort> Value2, Vector128<ushort> Value3, Vector128<ushort> Value4) LoadVector128x4AndUnzip(ushort* address) => LoadVector128x4AndUnzip(address);
+            public static unsafe (Vector128<ushort> Value1, Vector128<ushort> Value2, Vector128<ushort> Value3, Vector128<ushort> Value4) Load4xVector128AndUnzip(ushort* address) => Load4xVector128AndUnzip(address);
 
             /// <summary>
             ///   A64: LD4 { Vn.4S, Vn+1.4S, Vn+2.4S, Vn+3.4S }, [Xn]
             /// </summary>
-            public static unsafe (Vector128<int> Value1, Vector128<int> Value2, Vector128<int> Value3, Vector128<int> Value4) LoadVector128x4AndUnzip(int* address) => LoadVector128x4AndUnzip(address);
+            public static unsafe (Vector128<int> Value1, Vector128<int> Value2, Vector128<int> Value3, Vector128<int> Value4) Load4xVector128AndUnzip(int* address) => Load4xVector128AndUnzip(address);
 
             /// <summary>
             ///   A64: LD4 { Vn.4S, Vn+1.4S, Vn+2.4S, Vn+3.4S }, [Xn]
             /// </summary>
-            public static unsafe (Vector128<uint> Value1, Vector128<uint> Value2, Vector128<uint> Value3, Vector128<uint> Value4) LoadVector128x4AndUnzip(uint* address) => LoadVector128x4AndUnzip(address);
+            public static unsafe (Vector128<uint> Value1, Vector128<uint> Value2, Vector128<uint> Value3, Vector128<uint> Value4) Load4xVector128AndUnzip(uint* address) => Load4xVector128AndUnzip(address);
 
             /// <summary>
             ///   A64: LD4 { Vn.2D, Vn+1.2D, Vn+2.2D, Vn+3.2D }, [Xn]
             /// </summary>
-            public static unsafe (Vector128<long> Value1, Vector128<long> Value2, Vector128<long> Value3, Vector128<long> Value4) LoadVector128x4AndUnzip(long* address) => LoadVector128x4AndUnzip(address);
+            public static unsafe (Vector128<long> Value1, Vector128<long> Value2, Vector128<long> Value3, Vector128<long> Value4) Load4xVector128AndUnzip(long* address) => Load4xVector128AndUnzip(address);
 
             /// <summary>
             ///   A64: LD4 { Vn.2D, Vn+1.2D, Vn+2.2D, Vn+3.2D }, [Xn]
             /// </summary>
-            public static unsafe (Vector128<ulong> Value1, Vector128<ulong> Value2, Vector128<ulong> Value3, Vector128<ulong> Value4) LoadVector128x4AndUnzip(ulong* address) => LoadVector128x4AndUnzip(address);
+            public static unsafe (Vector128<ulong> Value1, Vector128<ulong> Value2, Vector128<ulong> Value3, Vector128<ulong> Value4) Load4xVector128AndUnzip(ulong* address) => Load4xVector128AndUnzip(address);
 
             /// <summary>
             ///   A64: LD4 { Vn.4S, Vn+1.4S, Vn+2.4S, Vn+3.4S }, [Xn]
             /// </summary>
-            public static unsafe (Vector128<float> Value1, Vector128<float> Value2, Vector128<float> Value3, Vector128<float> Value4) LoadVector128x4AndUnzip(float* address) => LoadVector128x4AndUnzip(address);
+            public static unsafe (Vector128<float> Value1, Vector128<float> Value2, Vector128<float> Value3, Vector128<float> Value4) Load4xVector128AndUnzip(float* address) => Load4xVector128AndUnzip(address);
 
             /// <summary>
             ///   A64: LD4 { Vn.2D, Vn+1.2D, Vn+2.2D, Vn+3.2D }, [Xn]
             /// </summary>
-            public static unsafe (Vector128<double> Value1, Vector128<double> Value2, Vector128<double> Value3, Vector128<double> Value4) LoadVector128x4AndUnzip(double* address) => LoadVector128x4AndUnzip(address);
+            public static unsafe (Vector128<double> Value1, Vector128<double> Value2, Vector128<double> Value3, Vector128<double> Value4) Load4xVector128AndUnzip(double* address) => Load4xVector128AndUnzip(address);
 
             /// <summary>
             ///   A64: LD1 { Vn.16B, Vn+1.16B }, [Xn]
             /// </summary>
-            public static unsafe (Vector128<byte> Value1, Vector128<byte> Value2) LoadVector128x2(byte* address) => LoadVector128x2(address);
+            public static unsafe (Vector128<byte> Value1, Vector128<byte> Value2) Load2xVector128(byte* address) => Load2xVector128(address);
 
             /// <summary>
             ///   A64: LD1 { Vn.16B, Vn+1.16B }, [Xn]
             /// </summary>
-            public static unsafe (Vector128<sbyte> Value1, Vector128<sbyte> Value2) LoadVector128x2(sbyte* address) => LoadVector128x2(address);
+            public static unsafe (Vector128<sbyte> Value1, Vector128<sbyte> Value2) Load2xVector128(sbyte* address) => Load2xVector128(address);
 
             /// <summary>
             ///   A64: LD1 { Vn.8H, Vn+1.8H }, [Xn]
             /// </summary>
-            public static unsafe (Vector128<short> Value1, Vector128<short> Value2) LoadVector128x2(short* address) => LoadVector128x2(address);
+            public static unsafe (Vector128<short> Value1, Vector128<short> Value2) Load2xVector128(short* address) => Load2xVector128(address);
 
             /// <summary>
             ///   A64: LD1 { Vn.8H, Vn+1.8H }, [Xn]
             /// </summary>
-            public static unsafe (Vector128<ushort> Value1, Vector128<ushort> Value2) LoadVector128x2(ushort* address) => LoadVector128x2(address);
+            public static unsafe (Vector128<ushort> Value1, Vector128<ushort> Value2) Load2xVector128(ushort* address) => Load2xVector128(address);
 
             /// <summary>
             ///   A64: LD1 { Vn.4S, Vn+1.4S }, [Xn]
             /// </summary>
-            public static unsafe (Vector128<int> Value1, Vector128<int> Value2) LoadVector128x2(int* address) => LoadVector128x2(address);
+            public static unsafe (Vector128<int> Value1, Vector128<int> Value2) Load2xVector128(int* address) => Load2xVector128(address);
 
             /// <summary>
             ///   A64: LD1 { Vn.4S, Vn+1.4S }, [Xn]
             /// </summary>
-            public static unsafe (Vector128<uint> Value1, Vector128<uint> Value2) LoadVector128x2(uint* address) => LoadVector128x2(address);
+            public static unsafe (Vector128<uint> Value1, Vector128<uint> Value2) Load2xVector128(uint* address) => Load2xVector128(address);
 
             /// <summary>
             ///   A64: LD1 { Vn.2D, Vn+1.2D }, [Xn]
             /// </summary>
-            public static unsafe (Vector128<long> Value1, Vector128<long> Value2) LoadVector128x2(long* address)  => LoadVector128x2(address);
+            public static unsafe (Vector128<long> Value1, Vector128<long> Value2) Load2xVector128(long* address)  => Load2xVector128(address);
 
             /// <summary>
             ///   A64: LD1 { Vn.2D, Vn+1.2D }, [Xn]
             /// </summary>
-            public static unsafe (Vector128<ulong> Value1, Vector128<ulong> Value2) LoadVector128x2(ulong* address) => LoadVector128x2(address);
+            public static unsafe (Vector128<ulong> Value1, Vector128<ulong> Value2) Load2xVector128(ulong* address) => Load2xVector128(address);
 
             /// <summary>
             ///   A64: LD1 { Vn.4S, Vn+1.4S }, [Xn]
             /// </summary>
-            public static unsafe (Vector128<float> Value1, Vector128<float> Value2) LoadVector128x2(float* address) => LoadVector128x2(address);
+            public static unsafe (Vector128<float> Value1, Vector128<float> Value2) Load2xVector128(float* address) => Load2xVector128(address);
 
             /// <summary>
             ///   A64: LD1 { Vn.2D, Vn+1.2D }, [Xn]
             /// </summary>
-            public static unsafe (Vector128<double> Value1, Vector128<double> Value2) LoadVector128x2(double* address) => LoadVector128x2(address);
+            public static unsafe (Vector128<double> Value1, Vector128<double> Value2) Load2xVector128(double* address) => Load2xVector128(address);
 
             /// <summary>
             ///   A64: LD1 { Vn.16B, Vn+1.16B, Vn+2.16B }, [Xn]
             /// </summary>
-            public static unsafe (Vector128<byte> Value1, Vector128<byte> Value2, Vector128<byte> Value3) LoadVector128x3(byte* address) => LoadVector128x3(address);
+            public static unsafe (Vector128<byte> Value1, Vector128<byte> Value2, Vector128<byte> Value3) Load3xVector128(byte* address) => Load3xVector128(address);
 
             /// <summary>
             ///   A64: LD1 { Vn.16B, Vn+1.16B, Vn+2.16B }, [Xn]
             /// </summary>
-            public static unsafe (Vector128<sbyte> Value1, Vector128<sbyte> Value2, Vector128<sbyte> Value3) LoadVector128x3(sbyte* address) => LoadVector128x3(address);
+            public static unsafe (Vector128<sbyte> Value1, Vector128<sbyte> Value2, Vector128<sbyte> Value3) Load3xVector128(sbyte* address) => Load3xVector128(address);
 
             /// <summary>
             ///   A64: LD1 { Vn.8H, Vn+1.8H, Vn+2.8H }, [Xn]
             /// </summary>
-            public static unsafe (Vector128<short> Value1, Vector128<short> Value2, Vector128<short> Value3) LoadVector128x3(short* address) => LoadVector128x3(address);
+            public static unsafe (Vector128<short> Value1, Vector128<short> Value2, Vector128<short> Value3) Load3xVector128(short* address) => Load3xVector128(address);
 
             /// <summary>
             ///   A64: LD1 { Vn.8H, Vn+1.8H, Vn+2.8H }, [Xn]
             /// </summary>
-            public static unsafe (Vector128<ushort> Value1, Vector128<ushort> Value2, Vector128<ushort> Value3) LoadVector128x3(ushort* address) => LoadVector128x3(address);
+            public static unsafe (Vector128<ushort> Value1, Vector128<ushort> Value2, Vector128<ushort> Value3) Load3xVector128(ushort* address) => Load3xVector128(address);
 
             /// <summary>
             ///   A64: LD1 { Vn.4S, Vn+1.4S, Vn+2.4S }, [Xn]
             /// </summary>
-            public static unsafe (Vector128<int> Value1, Vector128<int> Value2, Vector128<int> Value3) LoadVector128x3(int* address) => LoadVector128x3(address);
+            public static unsafe (Vector128<int> Value1, Vector128<int> Value2, Vector128<int> Value3) Load3xVector128(int* address) => Load3xVector128(address);
 
             /// <summary>
             ///   A64: LD1 { Vn.4S, Vn+1.4S, Vn+2.4S }, [Xn]
             /// </summary>
-            public static unsafe (Vector128<uint> Value1, Vector128<uint> Value2, Vector128<uint> Value3) LoadVector128x3(uint* address) => LoadVector128x3(address);
+            public static unsafe (Vector128<uint> Value1, Vector128<uint> Value2, Vector128<uint> Value3) Load3xVector128(uint* address) => Load3xVector128(address);
 
             /// <summary>
             ///   A64: LD1 { Vn.2D, Vn+1.2D, Vn+2.2D }, [Xn]
             /// </summary>
-            public static unsafe (Vector128<long> Value1, Vector128<long> Value2, Vector128<long> Value3) LoadVector128x3(long* address)  => LoadVector128x3(address);
+            public static unsafe (Vector128<long> Value1, Vector128<long> Value2, Vector128<long> Value3) Load3xVector128(long* address)  => Load3xVector128(address);
 
             /// <summary>
             ///   A64: LD1 { Vn.2D, Vn+1.2D, Vn+2.2D }, [Xn]
             /// </summary>
-            public static unsafe (Vector128<ulong> Value1, Vector128<ulong> Value2, Vector128<ulong> Value3) LoadVector128x3(ulong* address) => LoadVector128x3(address);
+            public static unsafe (Vector128<ulong> Value1, Vector128<ulong> Value2, Vector128<ulong> Value3) Load3xVector128(ulong* address) => Load3xVector128(address);
 
             /// <summary>
             ///   A64: LD1 { Vn.4S, Vn+1.4S, Vn+2.4S }, [Xn]
             /// </summary>
-            public static unsafe (Vector128<float> Value1, Vector128<float> Value2, Vector128<float> Value3) LoadVector128x3(float* address) => LoadVector128x3(address);
+            public static unsafe (Vector128<float> Value1, Vector128<float> Value2, Vector128<float> Value3) Load3xVector128(float* address) => Load3xVector128(address);
 
             /// <summary>
             ///   A64: LD1 { Vn.2D, Vn+1.2D, Vn+2.2D }, [Xn]
             /// </summary>
-            public static unsafe (Vector128<double> Value1, Vector128<double> Value2, Vector128<double> Value3) LoadVector128x3(double* address) => LoadVector128x3(address);
+            public static unsafe (Vector128<double> Value1, Vector128<double> Value2, Vector128<double> Value3) Load3xVector128(double* address) => Load3xVector128(address);
 
             /// <summary>
             ///   A64: LD1 { Vn.16B, Vn+1.16B, Vn+2.16B, Vn+3.16B }, [Xn]
             /// </summary>
-            public static unsafe (Vector128<byte> Value1, Vector128<byte> Value2, Vector128<byte> Value3, Vector128<byte> Value4) LoadVector128x4(byte* address) => LoadVector128x4(address);
+            public static unsafe (Vector128<byte> Value1, Vector128<byte> Value2, Vector128<byte> Value3, Vector128<byte> Value4) Load4xVector128(byte* address) => Load4xVector128(address);
 
             /// <summary>
             ///   A64: LD1 { Vn.16B, Vn+1.16B, Vn+2.16B, Vn+3.16B }, [Xn]
             /// </summary>
-            public static unsafe (Vector128<sbyte> Value1, Vector128<sbyte> Value2, Vector128<sbyte> Value3, Vector128<sbyte> Value4) LoadVector128x4(sbyte* address) => LoadVector128x4(address);
+            public static unsafe (Vector128<sbyte> Value1, Vector128<sbyte> Value2, Vector128<sbyte> Value3, Vector128<sbyte> Value4) Load4xVector128(sbyte* address) => Load4xVector128(address);
 
             /// <summary>
             ///   A64: LD1 { Vn.8H, Vn+1.8H, Vn+2.8H, Vn+3.8H }, [Xn]
             /// </summary>
-            public static unsafe (Vector128<short> Value1, Vector128<short> Value2, Vector128<short> Value3, Vector128<short> Value4) LoadVector128x4(short* address) => LoadVector128x4(address);
+            public static unsafe (Vector128<short> Value1, Vector128<short> Value2, Vector128<short> Value3, Vector128<short> Value4) Load4xVector128(short* address) => Load4xVector128(address);
 
             /// <summary>
             ///   A64: LD1 { Vn.8H, Vn+1.8H, Vn+2.8H, Vn+3.8H }, [Xn]
             /// </summary>
-            public static unsafe (Vector128<ushort> Value1, Vector128<ushort> Value2, Vector128<ushort> Value3, Vector128<ushort> Value4) LoadVector128x4(ushort* address) => LoadVector128x4(address);
+            public static unsafe (Vector128<ushort> Value1, Vector128<ushort> Value2, Vector128<ushort> Value3, Vector128<ushort> Value4) Load4xVector128(ushort* address) => Load4xVector128(address);
 
             /// <summary>
             ///   A64: LD1 { Vn.4S, Vn+1.4S, Vn+2.4S, Vn+3.4S }, [Xn]
             /// </summary>
-            public static unsafe (Vector128<int> Value1, Vector128<int> Value2, Vector128<int> Value3, Vector128<int> Value4) LoadVector128x4(int* address) => LoadVector128x4(address);
+            public static unsafe (Vector128<int> Value1, Vector128<int> Value2, Vector128<int> Value3, Vector128<int> Value4) Load4xVector128(int* address) => Load4xVector128(address);
 
             /// <summary>
             ///   A64: LD1 { Vn.4S, Vn+1.4S, Vn+2.4S, Vn+3.4S }, [Xn]
             /// </summary>
-            public static unsafe (Vector128<uint> Value1, Vector128<uint> Value2, Vector128<uint> Value3, Vector128<uint> Value4) LoadVector128x4(uint* address) => LoadVector128x4(address);
+            public static unsafe (Vector128<uint> Value1, Vector128<uint> Value2, Vector128<uint> Value3, Vector128<uint> Value4) Load4xVector128(uint* address) => Load4xVector128(address);
 
             /// <summary>
             ///   A64: LD1 { Vn.2D, Vn+1.2D, Vn+2.2D, Vn+3.2D }, [Xn]
             /// </summary>
-            public static unsafe (Vector128<long> Value1, Vector128<long> Value2, Vector128<long> Value3, Vector128<long> Value4) LoadVector128x4(long* address)  => LoadVector128x4(address);
+            public static unsafe (Vector128<long> Value1, Vector128<long> Value2, Vector128<long> Value3, Vector128<long> Value4) Load4xVector128(long* address)  => Load4xVector128(address);
 
             /// <summary>
             ///   A64: LD1 { Vn.2D, Vn+1.2D, Vn+2.2D, Vn+3.2D}, [Xn]
             /// </summary>
-            public static unsafe (Vector128<ulong> Value1, Vector128<ulong> Value2, Vector128<ulong> Value3, Vector128<ulong> Value4) LoadVector128x4(ulong* address) => LoadVector128x4(address);
+            public static unsafe (Vector128<ulong> Value1, Vector128<ulong> Value2, Vector128<ulong> Value3, Vector128<ulong> Value4) Load4xVector128(ulong* address) => Load4xVector128(address);
 
             /// <summary>
             ///   A64: LD1 { Vn.4S, Vn+1.4S, Vn+2.4S, Vn+3.4S }, [Xn]
             /// </summary>
-            public static unsafe (Vector128<float> Value1, Vector128<float> Value2, Vector128<float> Value3, Vector128<float> Value4) LoadVector128x4(float* address) => LoadVector128x4(address);
+            public static unsafe (Vector128<float> Value1, Vector128<float> Value2, Vector128<float> Value3, Vector128<float> Value4) Load4xVector128(float* address) => Load4xVector128(address);
 
             /// <summary>
             ///   A64: LD1 { Vn.2D, Vn+1.2D, Vn+2.2D, Vn+3.2D }, [Xn]
             /// </summary>
-            public static unsafe (Vector128<double> Value1, Vector128<double> Value2, Vector128<double> Value3, Vector128<double> Value4) LoadVector128x4(double* address) => LoadVector128x4(address);
+            public static unsafe (Vector128<double> Value1, Vector128<double> Value2, Vector128<double> Value3, Vector128<double> Value4) Load4xVector128(double* address) => Load4xVector128(address);
 
             /// <summary>
             /// float64x2_t vmaxq_f64 (float64x2_t a, float64x2_t b)
