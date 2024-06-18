@@ -5619,9 +5619,9 @@ GenTree* Compiler::impCastClassOrIsInstToTree(GenTree*                op1,
     // Now we import it as two QMark nodes representing this:
     //
     //  tmp = op1;
-    //  if (tmp != null) // qmarkNull
+    //  if (tmp != null) // condNull
     //  {
-    //      if (tmp->pMT == op2) // qmarkMT
+    //      if (tmp->pMT == op2) // condMT
     //          result = tmp;
     //      else
     //          result = null;
@@ -5629,42 +5629,42 @@ GenTree* Compiler::impCastClassOrIsInstToTree(GenTree*                op1,
     //  else
     //      result = null;
     //
+    // When a boolean check is possible we create 1/0 instead of tmp/null.
 
     // Spill op1 if it's a complex expression
     GenTree* op1Clone;
     op1 = impCloneExpr(op1, &op1Clone, CHECK_SPILL_ALL, nullptr DEBUGARG("ISINST eval op1"));
 
+    GenTreeOp* condNull = gtNewOperNode(GT_EQ, TYP_INT, gtClone(op1), gtNewNull());
+    GenTreeOp* condMT   = gtNewOperNode(GT_NE, TYP_INT, gtNewMethodTableLookup(op1Clone), op2);
+
+    GenTreeQmark* qmarkResult;
+
     if (*booleanCheck)
     {
-        GenTreeOp*    condMT   = gtNewOperNode(GT_NE, TYP_INT, gtNewMethodTableLookup(op1Clone), op2);
-        GenTreeOp*    condNull = gtNewOperNode(GT_EQ, TYP_INT, gtClone(op1), gtNewNull());
         GenTreeQmark* qmarkMT =
-            gtNewQmarkNode(TYP_REF, condMT,
+            gtNewQmarkNode(TYP_INT, condMT,
                            gtNewColonNode(TYP_INT, gtNewZeroConNode(TYP_INT), gtNewOneConNode(TYP_INT)));
-        GenTreeQmark* qmarkNull =
-            gtNewQmarkNode(TYP_INT, condNull, gtNewColonNode(TYP_INT, gtNewZeroConNode(TYP_INT), qmarkMT));
-
-        // Make QMark node a top level node by spilling it.
-        const unsigned result = lvaGrabTemp(true DEBUGARG("spilling qmarkNull"));
-        impStoreToTemp(result, qmarkNull, CHECK_SPILL_NONE);
-        return gtNewLclvNode(result, TYP_INT);
+        qmarkResult = gtNewQmarkNode(TYP_INT, condNull, gtNewColonNode(TYP_INT, gtNewZeroConNode(TYP_INT), qmarkMT));
     }
     else
     {
-        GenTreeOp*    condMT    = gtNewOperNode(GT_NE, TYP_INT, gtNewMethodTableLookup(op1Clone), op2);
-        GenTreeOp*    condNull  = gtNewOperNode(GT_EQ, TYP_INT, gtClone(op1), gtNewNull());
-        GenTreeQmark* qmarkMT   = gtNewQmarkNode(TYP_REF, condMT, gtNewColonNode(TYP_REF, gtNewNull(), gtClone(op1)));
-        GenTreeQmark* qmarkNull = gtNewQmarkNode(TYP_REF, condNull, gtNewColonNode(TYP_REF, gtNewNull(), qmarkMT));
+        GenTreeQmark* qmarkMT = gtNewQmarkNode(TYP_REF, condMT, gtNewColonNode(TYP_REF, gtNewNull(), gtClone(op1)));
+        qmarkResult           = gtNewQmarkNode(TYP_REF, condNull, gtNewColonNode(TYP_REF, gtNewNull(), qmarkMT));
+    }
 
-        // Make QMark node a top level node by spilling it.
-        const unsigned result = lvaGrabTemp(true DEBUGARG("spilling qmarkNull"));
-        impStoreToTemp(result, qmarkNull, CHECK_SPILL_NONE);
+    // Make QMark node a top level node by spilling it.
+    const unsigned result = lvaGrabTemp(true DEBUGARG("spilling qmarkNull"));
+    impStoreToTemp(result, qmarkResult, CHECK_SPILL_NONE);
 
+    if (!*booleanCheck)
+    {
         // See also gtGetHelperCallClassHandle where we make the same
         // determination for the helper call variants.
         lvaSetClass(result, pResolvedToken->hClass);
-        return gtNewLclvNode(result, TYP_REF);
     }
+
+    return gtNewLclvNode(result, qmarkResult->TypeGet());
 }
 
 #ifndef DEBUG
