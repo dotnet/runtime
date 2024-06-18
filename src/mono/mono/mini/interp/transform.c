@@ -2271,9 +2271,9 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 			g_assert (ctx->method_inst->type_argc == 1);
 			MonoType *t = ctx->method_inst->type_argv [0];
 
-			int base_var = td->sp[-2].var,
-				offset_var = td->sp[-1].var,
-				temp, align, esize;
+			int base_var = td->sp [-2].var,
+				offset_var = td->sp [-1].var,
+				align, esize;
 
 #if SIZEOF_VOID_P == 8
 			if (td->sp [-1].type == STACK_TYPE_I4) {
@@ -2283,21 +2283,19 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 			}
 #endif
 
-			push_simple_type (td, STACK_TYPE_I);
-			temp = td->sp [-1].var;
-			td->sp -= 3;
+			td->sp -= 2;
 
-			// temp = (ldarg 1) mul (sizeof !!T)
 			esize = mono_type_size (t, &align);
-			g_assert (esize <= 32767);
-			interp_add_ins (td, MINT_MUL_P_IMM);
-			td->last_ins->data[0] = (gint16)esize;
-			interp_ins_set_sreg (td->last_ins, offset_var);
-			interp_ins_set_dreg (td->last_ins, temp);
+			if (esize != 1) {
+				g_assert (esize <= 32767);
+				interp_add_ins (td, MINT_MUL_P_IMM);
+				td->last_ins->data [0] = (gint16)esize;
+				interp_ins_set_sreg (td->last_ins, offset_var);
+				interp_ins_set_dreg (td->last_ins, offset_var);
+			}
 
-			// (ldarg 0) add temp
 			interp_add_ins (td, MINT_ADD_P);
-			interp_ins_set_sregs2 (td->last_ins, base_var, temp);
+			interp_ins_set_sregs2 (td->last_ins, base_var, offset_var);
 			push_simple_type (td, STACK_TYPE_MP);
 			interp_ins_set_dreg (td->last_ins, td->sp [-1].var);
 
