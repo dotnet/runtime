@@ -71,11 +71,9 @@ internal struct UntrustedEEClass_1
 internal struct MethodTable_1 : IMethodTableFlags
 {
     private Data.MethodTable MethodTableData { get; init; }
-    internal bool IsFreeObjectMethodTable { get; init; }
-    internal MethodTable_1(Data.MethodTable data, bool isFreeObjectMT)
+    internal MethodTable_1(Data.MethodTable data)
     {
         MethodTableData = data;
-        IsFreeObjectMethodTable = isFreeObjectMT;
     }
 
     public uint DwFlags => MethodTableData.DwFlags;
@@ -85,7 +83,6 @@ internal struct MethodTable_1 : IMethodTableFlags
     internal TargetPointer Module => MethodTableData.Module;
 
     public TargetPointer EEClass => Metadata_1.GetEEClassOrCanonMTBits(EEClassOrCanonMT) == Metadata_1.EEClassOrCanonMTBits.EEClass ? EEClassOrCanonMT : throw new InvalidOperationException("not an EEClass");
-
 
     public TargetPointer ParentMethodTable => MethodTableData.ParentMethodTable;
     public ushort NumInterfaces => MethodTableData.NumInterfaces;
@@ -158,7 +155,7 @@ internal partial struct Metadata_1 : IMetadata
         if (_target.ProcessedData.TryGet(methodTablePointer, out Data.MethodTable? methodTableData))
         {
             // we already cached the data, we trust it, create the representation struct for our use
-            MethodTable_1 trustedMethodTable = new MethodTable_1(methodTableData, methodTablePointer == FreeObjectMethodTablePointer);
+            MethodTable_1 trustedMethodTable = new MethodTable_1(methodTableData);
             _ = _methodTables.TryAdd(methodTablePointer, trustedMethodTable);
             return new MethodTableHandle(methodTablePointer);
         }
@@ -170,7 +167,7 @@ internal partial struct Metadata_1 : IMetadata
         if (methodTablePointer == FreeObjectMethodTablePointer)
         {
             Data.MethodTable freeObjectMethodTableData = _target.ProcessedData.GetOrAdd<Data.MethodTable>(methodTablePointer);
-            MethodTable_1 trustedMethodTable = new MethodTable_1(freeObjectMethodTableData, isFreeObjectMT: true);
+            MethodTable_1 trustedMethodTable = new MethodTable_1(freeObjectMethodTableData);
             _ = _methodTables.TryAdd(methodTablePointer, trustedMethodTable);
             return new MethodTableHandle(methodTablePointer);
         }
@@ -180,7 +177,7 @@ internal partial struct Metadata_1 : IMetadata
         }
         // ok, we trust it, cache the data
         Data.MethodTable trustedMethodTableData = _target.ProcessedData.GetOrAdd<Data.MethodTable>(methodTablePointer);
-        MethodTable_1 trustedMethodTableF = new MethodTable_1(trustedMethodTableData, isFreeObjectMT: false);
+        MethodTable_1 trustedMethodTableF = new MethodTable_1(trustedMethodTableData);
         _ = _methodTables.TryAdd(methodTablePointer, trustedMethodTableF);
         return new MethodTableHandle(methodTablePointer);
     }
@@ -256,6 +253,7 @@ internal partial struct Metadata_1 : IMetadata
         return true;
     }
 
+
     internal static EEClassOrCanonMTBits GetEEClassOrCanonMTBits(TargetPointer eeClassOrCanonMTPtr)
     {
         return (EEClassOrCanonMTBits)(eeClassOrCanonMTPtr & (ulong)EEClassOrCanonMTBits.Mask);
@@ -321,12 +319,8 @@ internal partial struct Metadata_1 : IMetadata
         return new EEClass_1(eeClassData);
     }
 
-    public bool IsFreeObjectMethodTable(MethodTableHandle methodTableHandle)
-    {
-        // TODO: just store the MethodTableHandle of the free object MT in the contract and do an equality comparison
-        // no need to store it on every MethodTable_1 instance
-        return _methodTables[methodTableHandle.Address].IsFreeObjectMethodTable;
-    }
+    public bool IsFreeObjectMethodTable(MethodTableHandle methodTableHandle) => FreeObjectMethodTablePointer == methodTableHandle.Address;
+
     public bool IsString(MethodTableHandle methodTableHandle) => ((IMethodTableFlags)_methodTables[methodTableHandle.Address]).IsString;
     public bool ContainsPointers(MethodTableHandle methodTableHandle) => ((IMethodTableFlags)_methodTables[methodTableHandle.Address]).ContainsPointers;
 
