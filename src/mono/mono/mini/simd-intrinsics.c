@@ -3616,17 +3616,12 @@ static SimdIntrinsic advsimd_methods [] = {
 	{SN_StorePairScalarNonTemporal, OP_ARM64_STNP_SCALAR},
 	{SN_StoreSelectedScalar},
 	{SN_StoreVector128x2},
-	{SN_StoreVector128x2AndZip},
 	{SN_StoreVector128x3},
-	{SN_StoreVector128x3AndZip},
 	{SN_StoreVector128x4},
-	{SN_StoreVector128x4AndZip},
 	{SN_StoreVector64x2},
-	{SN_StoreVector64x2AndZip},
 	{SN_StoreVector64x3},
-	{SN_StoreVector64x3AndZip},
 	{SN_StoreVector64x4},
-	{SN_StoreVector64x4AndZip},
+	{SN_StoreVectorAndZip},
 	{SN_Subtract, OP_XBINOP, OP_ISUB, None, None, OP_XBINOP, OP_FSUB},
 	{SN_SubtractHighNarrowingLower, OP_ARM64_SUBHN},
 	{SN_SubtractHighNarrowingUpper, OP_ARM64_SUBHN2},
@@ -3875,6 +3870,11 @@ emit_arm64_intrinsics (
 			MonoClass* klass_tuple_var = mono_class_from_mono_type_internal (fsig->params [1]);
 			return emit_simd_ins_for_sig (cfg, klass_tuple_var, store_op, 0, arg0_type, fsig, args);
 		}
+		case SN_StoreVectorAndZip: {
+			int store_op = OP_ARM64_STM_ANDZIP;
+			MonoClass* klass_tuple_var = mono_class_from_mono_type_internal (fsig->params [1]);
+			return emit_simd_ins_for_sig (cfg, klass_tuple_var, store_op, 0, arg0_type, fsig, args);
+		}
 		case SN_MultiplyRoundedDoublingBySelectedScalarSaturateHigh:
 		case SN_MultiplyRoundedDoublingScalarBySelectedScalarSaturateHigh:
 		case SN_MultiplyDoublingScalarBySelectedScalarSaturateHigh:
@@ -4034,13 +4034,7 @@ emit_arm64_intrinsics (
 		case SN_StoreVector128x4:
 		case SN_StoreVector64x2:
 		case SN_StoreVector64x3:
-		case SN_StoreVector64x4:
-		case SN_StoreVector128x2AndZip:
-		case SN_StoreVector128x3AndZip:
-		case SN_StoreVector128x4AndZip:
-		case SN_StoreVector64x2AndZip:
-		case SN_StoreVector64x3AndZip:
-		case SN_StoreVector64x4AndZip: {
+		case SN_StoreVector64x4: {
 			int iid = 0;
 			switch (id) {
 			case SN_StoreVector128x2: iid = INTRINS_AARCH64_ADV_SIMD_ST1X2_V128; break;
@@ -4049,12 +4043,6 @@ emit_arm64_intrinsics (
 			case SN_StoreVector64x2: iid = INTRINS_AARCH64_ADV_SIMD_ST1X2_V64; break;
 			case SN_StoreVector64x3: iid = INTRINS_AARCH64_ADV_SIMD_ST1X3_V64; break;
 			case SN_StoreVector64x4: iid = INTRINS_AARCH64_ADV_SIMD_ST1X4_V64; break;
-			case SN_StoreVector128x2AndZip: iid = INTRINS_AARCH64_ADV_SIMD_ST2_V128; break;
-			case SN_StoreVector128x3AndZip: iid = INTRINS_AARCH64_ADV_SIMD_ST3_V128; break;
-			case SN_StoreVector128x4AndZip: iid = INTRINS_AARCH64_ADV_SIMD_ST4_V128; break;
-			case SN_StoreVector64x2AndZip: iid = INTRINS_AARCH64_ADV_SIMD_ST2_V64; break;
-			case SN_StoreVector64x3AndZip: iid = INTRINS_AARCH64_ADV_SIMD_ST3_V64; break;
-			case SN_StoreVector64x4AndZip: iid = INTRINS_AARCH64_ADV_SIMD_ST4_V64; break;
 			default: g_assert_not_reached ();
 			}
 

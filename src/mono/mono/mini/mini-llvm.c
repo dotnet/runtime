@@ -11813,6 +11813,7 @@ MONO_RESTORE_WARNING
 			mono_llvm_build_aligned_store (builder, val, address, FALSE, alignment);
 			break;
 		}
+		case OP_ARM64_STM_ANDZIP:
 		case OP_ARM64_STM_SCALAR: {
 			LLVMTypeRef tuple_t = simd_class_to_llvm_type (ctx, ins->klass);
 			LLVMTypeRef vec_t = LLVMGetElementType (tuple_t);
@@ -11860,7 +11861,6 @@ MONO_RESTORE_WARNING
 			default:
 				g_assert_not_reached ();
 				break;
-			
 			}
 
 			rhs = LLVMBuildLoad2 (builder, tuple_t, addresses [ins->sreg2]->value, "");
@@ -11870,23 +11870,32 @@ MONO_RESTORE_WARNING
 			for ( ; idx < n_elem_tuple; idx++) {
 				args [idx] = LLVMBuildExtractValue (builder, rhs, idx, "extract_elem");
 			}
-			args [idx++] = arg3;
+			if (ins->opcode == OP_ARM64_STM_SCALAR)
+			{
+				args [idx++] = arg3;
+			}
 			args [idx] = lhs;
-
 			llvm_ovr_tag_t ovr_tag = ovr_tag_from_llvm_type (vec_t);
 
-			// convert arg3 to a constant
-			LLVMTypeRef ret_t = LLVMVoidType ();
-			ImmediateUnrollCtx ictx = immediate_unroll_begin (ctx, bb, 16, arg3, ret_t, "");
-			int i = 0;
-			while (immediate_unroll_next (&ictx, &i)) {
-				args [idx - 1] = const_int64 (i);
-				call_overloaded_intrins (ctx, iid, ovr_tag, args, "");
-				immediate_unroll_commit (&ictx, i, NULL);
+			if (ins->opcode == OP_ARM64_STM_SCALAR)
+			{
+				// convert arg3 to a constant
+				LLVMTypeRef ret_t = LLVMVoidType ();
+				ImmediateUnrollCtx ictx = immediate_unroll_begin (ctx, bb, 16, arg3, ret_t, "");
+				int i = 0;
+				while (immediate_unroll_next (&ictx, &i)) {
+					args [idx - 1] = const_int64 (i);
+					call_overloaded_intrins (ctx, iid, ovr_tag, args, "");
+					immediate_unroll_commit (&ictx, i, NULL);
+				}
+				immediate_unroll_default (&ictx);
+				immediate_unroll_commit_default (&ictx, NULL);
+				immediate_unroll_end (&ictx, &cbb);
 			}
-			immediate_unroll_default (&ictx);
-			immediate_unroll_commit_default (&ictx, NULL);
-			immediate_unroll_end (&ictx, &cbb);
+			else
+			{
+				call_overloaded_intrins (ctx, iid, ovr_tag, args, "");
+			}
 			break;
 		}
 		case OP_ARM64_ADDHN:
