@@ -54,6 +54,8 @@ internal unsafe partial struct QUIC_CONNECTION_EVENT
                 => $"{{ {nameof(DATAGRAM_RECEIVED.Flags)} = {DATAGRAM_RECEIVED.Flags} }}",
             QUIC_CONNECTION_EVENT_TYPE.DATAGRAM_SEND_STATE_CHANGED
                 => $"{{ {nameof(DATAGRAM_SEND_STATE_CHANGED.ClientContext)} = 0x{(IntPtr)DATAGRAM_SEND_STATE_CHANGED.ClientContext:X11}, {nameof(DATAGRAM_SEND_STATE_CHANGED.State)} = {DATAGRAM_SEND_STATE_CHANGED.State} }}",
+            QUIC_CONNECTION_EVENT_TYPE.RESUMED
+                => $"{{ {nameof(RESUMED.ResumptionStateLength)} = {RESUMED.ResumptionStateLength} }}",
             QUIC_CONNECTION_EVENT_TYPE.RESUMPTION_TICKET_RECEIVED
                 => $"{{ {nameof(RESUMPTION_TICKET_RECEIVED.ResumptionTicketLength)} = {RESUMPTION_TICKET_RECEIVED.ResumptionTicketLength} }}",
             QUIC_CONNECTION_EVENT_TYPE.PEER_CERTIFICATE_RECEIVED

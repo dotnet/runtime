@@ -180,7 +180,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
     /// </summary>
     private IPEndPoint _localEndPoint = null!;
     /// <summary>
-    /// Occurres when an additional stream capacity has been released by the peer. Corresponds to receiving MAX_STREAMS frame.
+    /// Occurres when an additional stream capacity has been released by the peer. Corresponds to receiving a MAX_STREAMS frame.
     /// </summary>
     private Action<QuicConnection, QuicStreamCapacityChangedArgs>? _streamCapacityCallback;
     /// <summary>

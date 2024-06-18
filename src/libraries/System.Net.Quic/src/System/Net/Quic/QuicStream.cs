@@ -263,6 +263,7 @@ public sealed partial class QuicStream
 
             if (ThrowHelper.TryGetStreamExceptionForMsQuicStatus(status, out Exception? exception, streamWasSuccessfullyStarted: false))
             {
+                _decrementStreamCapacity = null;
                 _startedTcs.TrySetException(exception);
             }
         }

@@ -178,7 +178,7 @@ namespace System.Net.Http
             {
                 Debug.Assert(_availableRequestStreamsCount >= 0);
 
-                if (NetEventSource.Log.IsEnabled()) Trace($"TryReserveStream: _availableRequestStreamsCount = {_availableRequestStreamsCount}");
+                if (NetEventSource.Log.IsEnabled()) Trace($"_availableRequestStreamsCount = {_availableRequestStreamsCount}");
 
                 if (_availableRequestStreamsCount == 0)
                 {
@@ -200,7 +200,7 @@ namespace System.Net.Http
             {
                 Debug.Assert(_availableRequestStreamsCount >= 0);
 
-                if (NetEventSource.Log.IsEnabled()) Trace($"ReleaseStream: _availableRequestStreamsCount = {_availableRequestStreamsCount}");
+                if (NetEventSource.Log.IsEnabled()) Trace($"_availableRequestStreamsCount = {_availableRequestStreamsCount}");
                 ++_availableRequestStreamsCount;
 
                 _availableStreamsWaiter?.SetResult(!ShuttingDown);
@@ -216,7 +216,7 @@ namespace System.Net.Http
             {
                 Debug.Assert(_availableRequestStreamsCount >= 0);
 
-                if (NetEventSource.Log.IsEnabled()) Trace($"StreamCapacityCallback: _availableRequestStreamsCount = {_availableRequestStreamsCount} + bidirectionalStreamsCountIncrement = {args.BidirectionalIncrement}");
+                if (NetEventSource.Log.IsEnabled()) Trace($"_availableRequestStreamsCount = {_availableRequestStreamsCount} + bidirectionalStreamsCountIncrement = {args.BidirectionalIncrement}");
 
                 _availableRequestStreamsCount += args.BidirectionalIncrement;
                 _availableStreamsWaiter?.SetResult(!ShuttingDown);
