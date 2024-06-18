@@ -1433,12 +1433,12 @@ void EEJitManager::SetCpuInfo()
         {
             CPUCompileFlags.Set(InstructionSet_EVEX);
             CPUCompileFlags.Set(InstructionSet_AVX10v1);
-        }
-    }
 
-    if ((cpuFeatures & XArchIntrinsicConstants_Avx10v1_V512) != 0)
-    {
-        CPUCompileFlags.Set(InstructionSet_AVX10v1_V512);
+            if((cpuFeatures & XArchIntrinsicConstants_Avx512) != 0)
+            {
+                CPUCompileFlags.Set(InstructionSet_AVX10v1_V512);
+            }
+        }
     }
 #elif defined(TARGET_ARM64)
 

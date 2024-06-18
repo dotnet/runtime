@@ -49,12 +49,29 @@ namespace ILCompiler
             var emit = new ILEmitter();
             ILCodeStream codeStream = emit.NewCodeStream();
 
-            codeStream.Emit(ILOpcode.ldsfld, emit.NewToken(isSupportedField));
-            codeStream.EmitLdc(flag);
-            codeStream.Emit(ILOpcode.and);
-            codeStream.EmitLdc(0);
-            codeStream.Emit(ILOpcode.cgt_un);
-            codeStream.Emit(ILOpcode.ret);
+            if(!uint.IsPow2((uint)flag))
+            {
+                // These are the ISAs managed by multiple-bit flags.
+                // we need to emit different IL to handle the checks.
+                // For now just Avx10v1_V512 = (Avx10v1 | Avx512)
+                // (isSupportedField & flag) == flag
+                codeStream.Emit(ILOpcode.ldsfld, emit.NewToken(isSupportedField));
+                codeStream.EmitLdc(flag);
+                codeStream.Emit(ILOpcode.and);
+                codeStream.EmitLdc(flag);
+                codeStream.Emit(ILOpcode.ceq);
+                codeStream.Emit(ILOpcode.ret);
+            }
+            else
+            {
+                // (isSupportedField & flag) >= (unsigned)0
+                codeStream.Emit(ILOpcode.ldsfld, emit.NewToken(isSupportedField));
+                codeStream.EmitLdc(flag);
+                codeStream.Emit(ILOpcode.and);
+                codeStream.EmitLdc(0);
+                codeStream.Emit(ILOpcode.cgt_un);
+                codeStream.Emit(ILOpcode.ret);
+            }
 
             return emit.Link(method);
         }
