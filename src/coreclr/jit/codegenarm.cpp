@@ -121,10 +121,10 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
 
     BasicBlock* nextBlock = block->Next();
 
-    GetEmitter()->emitIns_J(INS_bl, block->GetTarget());
-
     if (block->HasFlag(BBF_RETLESS_CALL))
     {
+        GetEmitter()->emitIns_J(INS_bl, block->GetTarget());
+
         if ((nextBlock == nullptr) || !BasicBlock::sameEHRegion(block, nextBlock))
         {
             instGen(INS_BREAKPOINT);
@@ -140,6 +140,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
         // after the call is not (can not be) correct in cases where a variable has a last use in the
         // handler.  So turn off GC reporting once we execute the call and reenable after the jmp/nop
         GetEmitter()->emitDisableGC();
+        GetEmitter()->emitIns_J(INS_bl, block->GetTarget());
 
         // Now go to where the finally funclet needs to return to.
         BasicBlock* const finallyContinuation = nextBlock->GetFinallyContinuation();
