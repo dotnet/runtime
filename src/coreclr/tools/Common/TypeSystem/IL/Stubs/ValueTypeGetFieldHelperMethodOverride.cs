@@ -68,8 +68,8 @@ namespace Internal.IL.Stubs
                 if (mdType.IsInlineArray)
                 {
                     var stream = emitter.NewCodeStream();
-                    MethodDesc invalidOp = Context.GetHelperEntryPoint("ThrowHelpers", "ThrowNotSupportedInlineArrayEqualsGetHashCode");
-                    stream.EmitCallThrowHelper(emitter, invalidOp);
+                    MethodDesc thrower = Context.GetHelperEntryPoint("ThrowHelpers", "ThrowNotSupportedInlineArrayEqualsGetHashCode");
+                    stream.EmitCallThrowHelper(emitter, thrower);
                     return emitter.Link(this);
                 }
             }
