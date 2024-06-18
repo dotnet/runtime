@@ -1185,7 +1185,10 @@ private:
 
     void associateRefPosWithInterval(RefPosition* rp);
 
-    weight_t getWeight(RefPosition* refPos);
+    weight_t getWeight(RefPosition* refPos DEBUG_ARG(bool forDump = false));
+#ifdef DEBUG
+    weight_t getWeightForDump(RefPosition* refPos);
+#endif // DEBUG
 
     /*****************************************************************************
      * Register management
@@ -1725,13 +1728,15 @@ private:
 #endif
     PhasedVar<SingleTypeRegSet>* availableRegs[TYP_COUNT];
 
-#if defined(TARGET_XARCH)
-#define allAvailableRegs regMaskTP(availableIntRegs | availableFloatRegs | availableMaskRegs)
-#elif defined(TARGET_ARM64)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+#ifdef HAS_MORE_THAN_64_REGISTERS
 #define allAvailableRegs regMaskTP(availableIntRegs | availableFloatRegs, availableMaskRegs)
 #else
+#define allAvailableRegs regMaskTP(availableIntRegs | availableFloatRegs | availableMaskRegs)
+#endif // HAS_MORE_THAN_64_REGISTERS
+#else
 #define allAvailableRegs regMaskTP(availableIntRegs | availableFloatRegs)
-#endif
+#endif // defined(TARGET_XARCH) || defined(TARGET_ARM64)
 
     // Register mask of argument registers currently occupied because we saw a
     // PUTARG_REG node. Tracked between the PUTARG_REG and its corresponding
@@ -2464,15 +2469,24 @@ public:
     RefPosition* nextRefPosition;
 
     // The remaining fields are common to both options
-    GenTree*     treeNode;
+    union
+    {
+        struct
+        {
+            GenTree* treeNode;
+
+            // Prior to the allocation pass, registerAssignment captures the valid registers
+            // for this RefPosition.
+            // After the allocation pass, this contains the actual assignment
+            SingleTypeRegSet registerAssignment;
+        };
+#ifdef HAS_MORE_THAN_64_REGISTERS
+        regMaskTP killRegisterAssignment;
+#endif
+    };
     unsigned int bbNum;
 
     LsraLocation nodeLocation;
-
-    // Prior to the allocation pass, registerAssignment captures the valid registers
-    // for this RefPosition.
-    // After the allocation pass, this contains the actual assignment
-    SingleTypeRegSet registerAssignment;
 
     RefType refType;
 
@@ -2584,9 +2598,9 @@ public:
         : referent(nullptr)
         , nextRefPosition(nullptr)
         , treeNode(treeNode)
+        , registerAssignment(RBM_NONE)
         , bbNum(bbNum)
         , nodeLocation(nodeLocation)
-        , registerAssignment(RBM_NONE)
         , refType(refType)
         , multiRegIdx(0)
 #ifdef TARGET_ARM64
@@ -2649,6 +2663,16 @@ public:
     RegisterType getRegisterType()
     {
         return referent->registerType;
+    }
+
+    regMaskTP getKillRegisterAssignment()
+    {
+        assert(refType == RefTypeKill);
+#ifdef HAS_MORE_THAN_64_REGISTERS
+        return killRegisterAssignment;
+#else
+        return registerAssignment;
+#endif
     }
 
     // Returns true if it is a reference on a GenTree node.

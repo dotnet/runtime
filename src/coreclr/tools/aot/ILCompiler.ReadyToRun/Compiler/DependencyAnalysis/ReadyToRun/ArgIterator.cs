@@ -1390,7 +1390,16 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                                     _hasArgLocDescForStructInRegs = true;
                                     _argLocDescForStructInRegs.m_floatFlags = floatFieldFlags;
 
-                                    int argOfsInner = _transitionBlock.OffsetOfFloatArgumentRegisters + _loongarch64IdxFPReg * 8;
+                                    int argOfsInner = 0;
+                                    if ((floatFieldFlags & (uint)StructFloatFieldInfoFlags.STRUCT_FLOAT_FIELD_SECOND) != 0)
+                                    {
+                                        argOfsInner = _transitionBlock.OffsetOfArgumentRegisters + _loongarch64IdxGenReg * 8;
+                                    }
+                                    else
+                                    {
+                                        argOfsInner = _transitionBlock.OffsetOfFloatArgumentRegisters + _loongarch64IdxFPReg * 8;
+                                    }
+
                                     _loongarch64IdxFPReg++;
                                     _loongarch64IdxGenReg++;
                                     return argOfsInner;
@@ -1512,7 +1521,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                                     _hasArgLocDescForStructInRegs = true;
                                     _argLocDescForStructInRegs.m_floatFlags = floatFieldFlags;
 
-                                    int argOfsInner = _transitionBlock.OffsetOfFloatArgumentRegisters + _riscv64IdxFPReg * 8;
+                                    int argOfsInner =
+                                        ((floatFieldFlags & (uint)StructFloatFieldInfoFlags.STRUCT_FLOAT_FIELD_SECOND) != 0)
+                                            ? _transitionBlock.OffsetOfArgumentRegisters + _riscv64IdxGenReg * 8
+                                            : _transitionBlock.OffsetOfFloatArgumentRegisters + _riscv64IdxFPReg * 8;
+
                                     _riscv64IdxFPReg++;
                                     _riscv64IdxGenReg++;
                                     return argOfsInner;

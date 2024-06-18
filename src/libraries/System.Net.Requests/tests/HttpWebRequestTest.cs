@@ -2118,9 +2118,11 @@ namespace System.Net.Tests
         }
 
         [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task SendHttpPostRequest_WhenBufferingChanges_Success(bool buffering)
+        [InlineData(true, true)]
+        [InlineData(true, false)]
+        [InlineData(false, true)]
+        [InlineData(false, false)]
+        public async Task SendHttpPostRequest_WhenBufferingChanges_Success(bool buffering, bool setContentLength)
         {
             byte[] randomData = Encoding.ASCII.GetBytes("Hello World!!!!\n");
             await LoopbackServer.CreateClientAndServerAsync(
@@ -2130,6 +2132,12 @@ namespace System.Net.Tests
                     HttpWebRequest request = WebRequest.CreateHttp(uri);
                     request.Method = "POST";
                     request.AllowWriteStreamBuffering = buffering;
+
+                    if (setContentLength)
+                    {
+                        request.Headers.Add("content-length", size.ToString());
+                    }
+
                     using var stream = await request.GetRequestStreamAsync();
                     for (int i = 0; i < size / randomData.Length; i++)
                     {

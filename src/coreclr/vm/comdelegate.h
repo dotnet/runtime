@@ -71,7 +71,7 @@ public:
     static OBJECTREF ConvertToDelegate(LPVOID pCallback, MethodTable* pMT);
 
 #ifdef FEATURE_COMINTEROP
-    static ComPlusCallInfo * PopulateComPlusCallInfo(MethodTable * pDelMT);
+    static CLRToCOMCallInfo * PopulateCLRToCOMCallInfo(MethodTable * pDelMT);
 #endif // FEATURE_COMINTEROP
 
     static PCODE GetStubForILStub(EEImplMethodDesc* pDelegateMD, MethodDesc** ppStubMD, DWORD dwStubFlags);
