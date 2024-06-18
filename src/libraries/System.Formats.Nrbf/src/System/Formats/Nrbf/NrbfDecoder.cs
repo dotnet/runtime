@@ -160,10 +160,11 @@ public static class NrbfDecoder
         RecordMap recordMap = new();
 
         // Every NRBF payload has to start with a header
-        var header = (SerializedStreamHeaderRecord)DecodeNext(reader, recordMap, AllowedRecordTypes.SerializedStreamHeader, options, out _);
+        AllowedRecordTypes allowed = AllowedRecordTypes.SerializedStreamHeader;
+        var header = (SerializedStreamHeaderRecord)DecodeNext(reader, recordMap, allowed, options, out _);
 
-        // All we know about root is its Id. It can be any Object or BinaryLibrary, but not a reference.
-        AllowedRecordTypes allowed = (AllowedRecordTypes.AnyObject & ~AllowedRecordTypes.MemberReference) | AllowedRecordTypes.BinaryLibrary;
+        // The root can be any Object or BinaryLibrary, but not a reference.
+        allowed = AllowedRecordTypes.AnyObject | AllowedRecordTypes.BinaryLibrary;
         SerializationRecord rootRecord = DecodeNext(reader, recordMap, allowed, options, out _);
         PushFirstNestedRecordInfo(rootRecord, readStack);
 
@@ -203,10 +204,12 @@ public static class NrbfDecoder
             else
             {
                 // There are unresolved references and we don't know in what order they are going to appear.
-                allowed = AllowedRecordTypes.ReferencedRecord;
+                // We allow for any Object (which does not include references or nulls).
+                // The actual type validation is going to be performed by RecordMap.Add.
+                allowed = AllowedRecordTypes.AnyObject | AllowedRecordTypes.BinaryLibrary;
             }
 
-            nextRecord = DecodeNext(reader, recordMap, allowed, options, out recordType);
+            nextRecord = DecodeNext(reader, recordMap, allowed, options, out recordType, isReferencedRecord: true);
             PushFirstNestedRecordInfo(nextRecord, readStack);
         }
         while (recordType != SerializationRecordType.MessageEnd);
@@ -216,7 +219,7 @@ public static class NrbfDecoder
     }
 
     private static SerializationRecord DecodeNext(BinaryReader reader, RecordMap recordMap,
-        AllowedRecordTypes allowed, PayloadOptions options, out SerializationRecordType recordType)
+        AllowedRecordTypes allowed, PayloadOptions options, out SerializationRecordType recordType, bool isReferencedRecord = false)
     {
         SerializationRecord? record;
 
@@ -249,7 +252,7 @@ public static class NrbfDecoder
                 _ => SystemClassWithMembersAndTypesRecord.Decode(reader, recordMap, options),
             };
 
-            recordMap.Add(record, allowed == AllowedRecordTypes.ReferencedRecord);
+            recordMap.Add(record, isReferencedRecord);
 
             // BinaryLibrary often precedes class records.
             // It has been already added to the RecordMap and it must not be added

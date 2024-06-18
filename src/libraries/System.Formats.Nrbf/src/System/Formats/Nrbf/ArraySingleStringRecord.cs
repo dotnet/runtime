@@ -57,11 +57,6 @@ internal sealed class ArraySingleStringRecord : SZArrayRecord<string?>
             if (record is MemberReferenceRecord memberReference)
             {
                 record = memberReference.GetReferencedRecord();
-
-                if (record is not BinaryObjectStringRecord)
-                {
-                    ThrowHelper.ThrowInvalidReference();
-                }
             }
 
             if (record is BinaryObjectStringRecord stringRecord)

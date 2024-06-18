@@ -27,15 +27,16 @@ internal enum AllowedRecordTypes : uint
     Nulls = ObjectNull | ObjectNullMultiple256 | ObjectNullMultiple,
 
     /// <summary>
-    /// Any .NET object (a primitive, a reference type, a reference or single null).
+    /// Any .NET object (a class, primitive type or an array).
     /// </summary>
     AnyObject = MemberPrimitiveTyped
         | ArraySingleObject | ArraySinglePrimitive | ArraySingleString | BinaryArray
         | ClassWithId | ClassWithMembersAndTypes | SystemClassWithMembersAndTypes
         | BinaryObjectString
-        | MemberReference
-        | ObjectNull,
+        | MemberReference,
 
-    // The referenced record can point to any object except of a null or another reference.
-    ReferencedRecord = AnyObject & ~(ObjectNull | MemberReference)
+    /// <summary>
+    /// Any .NET object or a reference or a single null.
+    /// </summary>
+    AnyObjectOrNullOrReference = AnyObject | ObjectNull | MemberReference,
 }

@@ -57,4 +57,6 @@ public readonly struct SerializationRecordId : IEquatable<SerializationRecordId>
 #endif
         return (int)XxHash32.HashToUInt32(MemoryMarshal.AsBytes(integers));
     }
+
+    internal bool IsDefault => _id == default;
 }

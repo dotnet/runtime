@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Formats.Nrbf.Utils;
 using System.IO;
 using System.Reflection.Metadata;
 
@@ -26,7 +27,7 @@ internal sealed class MemberReferenceRecord : SerializationRecord
 
     internal SerializationRecordId Reference { get; }
 
-    internal AllowedRecordTypes ReferencedRecordType { get; }
+    private AllowedRecordTypes ReferencedRecordType { get; }
 
     private RecordMap RecordMap { get; }
 
@@ -51,4 +52,13 @@ internal sealed class MemberReferenceRecord : SerializationRecord
     }
 
     internal SerializationRecord GetReferencedRecord() => RecordMap[Reference];
+
+    internal void VerifyReferencedRecordType(SerializationRecord serializationRecord)
+    {
+        if (((uint)ReferencedRecordType & (1u << (byte)serializationRecord.RecordType)) == 0)
+        {
+            // We expected a reference to a record of a different type.
+            ThrowHelper.ThrowInvalidReference();
+        }
+    }
 }
