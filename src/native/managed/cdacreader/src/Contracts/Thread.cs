@@ -58,6 +58,7 @@ internal interface IThread : IContract
     public virtual ThreadStoreData GetThreadStoreData() => throw new NotImplementedException();
     public virtual ThreadStoreCounts GetThreadCounts() => throw new NotImplementedException();
     public virtual ThreadData GetThreadData(TargetPointer thread) => throw new NotImplementedException();
+    public virtual TargetPointer GetExceptionInfo(TargetPointer exception, out TargetPointer nextNestedException) => throw new NotImplementedException();
 }
 
 internal readonly struct Thread : IThread
@@ -127,8 +128,15 @@ internal readonly struct Thread_1 : IThread
             thread.Frame,
             firstNestedException,
             thread.TEB,
-            thread.LastThrownObject,
+            thread.LastThrownObject.Handle,
             GetThreadFromLink(thread.LinkNext));
+    }
+
+    TargetPointer IThread.GetExceptionInfo(TargetPointer exception, out TargetPointer nextNestedException)
+    {
+        Data.ExceptionInfo exceptionInfo = _target.ProcessedData.GetOrAdd<Data.ExceptionInfo>(exception);
+        nextNestedException = exceptionInfo.PreviousNestedInfo;
+        return exceptionInfo.ThrownObject.Object;
     }
 
     private TargetPointer GetThreadFromLink(TargetPointer threadLink)
