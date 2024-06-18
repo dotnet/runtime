@@ -48,13 +48,10 @@ namespace System.Text.RegularExpressions.Symbolic
             }
 
             // ascii-only array to save memory
-            // int mintermId = c >= 128 ? 0 : mtlookup[c];
-            // _isAsciiOnly = true;
             _isAsciiOnly = true;
             for (int mintermId = 1; mintermId < minterms.Length; mintermId++)
             {
-                (uint, uint)[] mintermRanges = BDDRangeConverter.ToRanges(minterms[mintermId]);
-                if (mintermRanges[^1].Item2 >= 128)
+                if (BDDRangeConverter.ToRanges(minterms[mintermId])[^1].Item2 >= 128)
                 {
                     _isAsciiOnly = false;
                 }

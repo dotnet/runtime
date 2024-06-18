@@ -3,15 +3,13 @@
 
 namespace System.Text.RegularExpressions.Symbolic;
 
-internal sealed class MatchReversal<TSet> where TSet : IComparable<TSet>, IEquatable<TSet>
+internal sealed class MatchReversal<TSet>(
+    MatchReversalKind kind,
+    int fixedLength,
+    MatchingState<TSet>? adjustedStartState = null)
+    where TSet : IComparable<TSet>, IEquatable<TSet>
 {
-    public MatchReversal(MatchReversalKind kind, int fixedLength, MatchingState<TSet>? adjustedStartState = null)
-    {
-        Kind = kind;
-        FixedLength = fixedLength;
-        AdjustedStartState = adjustedStartState;
-    }
-    internal MatchReversalKind Kind { get; }
-    internal int FixedLength { get; }
-    internal MatchingState<TSet>? AdjustedStartState { get; }
+    internal MatchReversalKind Kind { get; } = kind;
+    internal int FixedLength { get; } = fixedLength;
+    internal MatchingState<TSet>? AdjustedStartState { get; } = adjustedStartState;
 }
