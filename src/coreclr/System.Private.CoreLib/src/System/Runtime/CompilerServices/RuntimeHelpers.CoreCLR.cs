@@ -87,13 +87,14 @@ namespace System.Runtime.CompilerServices
             if (!RuntimeFieldHandle.GetRVAFieldInfo(new QCallFieldHandle(ref fldInfo), out IntPtr data, out uint totalSize))
                 throw new ArgumentException(SR.Argument_BadFieldForInitializeArray);
 
-            TypeHandle th = new TypeHandle((void*)targetTypeHandle.Value);
+            TypeHandle th = targetTypeHandle.GetNativeTypeHandle();
             Debug.Assert(!th.IsTypeDesc); // TypeDesc can't be used as generic parameter
+            MethodTable* targetMT = th.AsMethodTable();
 
-            if (!th.GetVerifierCorElementType().IsPrimitiveType()) // Enum is included
+            if (!targetMT->IsPrimitive) // Enum is included
                 throw new ArgumentException(SR.Argument_MustBePrimitiveArray);
 
-            uint targetTypeSize = th.AsMethodTable()->GetNumInstanceFieldBytes();
+            uint targetTypeSize = targetMT->GetNumInstanceFieldBytes();
 
             if (data % targetTypeSize != 0)
                 throw new ArgumentException(SR.Argument_BadFieldForInitializeArray);
