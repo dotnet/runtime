@@ -55,11 +55,8 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
 		public BlockProxy Entry => new BlockProxy (ControlFlowGraph.EntryBlock ());
 
-		public static ControlFlowBranch? CreateProxyBranch (Microsoft.CodeAnalysis.FlowAnalysis.ControlFlowBranch? branch)
+		public static ControlFlowBranch CreateProxyBranch (Microsoft.CodeAnalysis.FlowAnalysis.ControlFlowBranch branch)
 		{
-			if (branch == null)
-				return null;
-
 			var finallyRegions = ImmutableArray.CreateBuilder<RegionProxy> ();
 			foreach (var region in branch.FinallyRegions) {
 				Debug.Assert (region != null);
@@ -73,7 +70,12 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 				new BlockProxy (branch.Source),
 				branch.Destination == null ? null : new BlockProxy (branch.Destination),
 				finallyRegions.ToImmutable (),
-				branch.IsConditionalSuccessor);
+				branch.Source.ConditionKind switch {
+					ControlFlowConditionKind.None => ConditionKind.Unconditional,
+					ControlFlowConditionKind.WhenFalse => branch.IsConditionalSuccessor ? ConditionKind.WhenFalse : ConditionKind.WhenTrue,
+					ControlFlowConditionKind.WhenTrue => branch.IsConditionalSuccessor ? ConditionKind.WhenTrue : ConditionKind.WhenFalse,
+					_ => throw new InvalidOperationException ()
+				});
 		}
 
 		// This is implemented by getting predecessors of the underlying Roslyn BasicBlock.
@@ -86,9 +88,13 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			}
 		}
 
-		public ControlFlowBranch? GetConditionalSuccessor (BlockProxy block) => CreateProxyBranch (block.Block.ConditionalSuccessor);
-
-		public ControlFlowBranch? GetFallThroughSuccessor (BlockProxy block) => CreateProxyBranch (block.Block.FallThroughSuccessor);
+		public IEnumerable<ControlFlowBranch> GetSuccessors (BlockProxy block)
+		{
+			if (block.Block.ConditionalSuccessor is Microsoft.CodeAnalysis.FlowAnalysis.ControlFlowBranch conditionalSuccessor)
+				yield return CreateProxyBranch (conditionalSuccessor);
+			if (block.Block.FallThroughSuccessor is Microsoft.CodeAnalysis.FlowAnalysis.ControlFlowBranch fallThroughSuccessor)
+				yield return CreateProxyBranch (fallThroughSuccessor);
+		}
 
 		public bool TryGetEnclosingTryOrCatchOrFilter (BlockProxy block, out RegionProxy tryOrCatchOrFilterRegion)
 		{
