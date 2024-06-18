@@ -8,13 +8,6 @@ namespace System.Text.Json
 {
     internal sealed partial class JsonPropertyDictionary<T>
     {
-        private KeyCollection? _keyCollection;
-
-        public IList<string> GetKeyCollection()
-        {
-            return _keyCollection ??= new KeyCollection(this);
-        }
-
         private sealed class KeyCollection : IList<string>
         {
             private readonly JsonPropertyDictionary<T> _parent;
@@ -30,7 +23,7 @@ namespace System.Text.Json
 
             public string this[int index]
             {
-                get => _parent.List[index].Key;
+                get => _parent.GetAt(index).Key;
                 set => throw ThrowHelper.GetNotSupportedException_CollectionIsReadOnly();
             }
 
@@ -46,7 +39,7 @@ namespace System.Text.Json
 
             public void Clear() => ThrowHelper.ThrowNotSupportedException_CollectionIsReadOnly();
 
-            public bool Contains(string propertyName) => _parent.ContainsProperty(propertyName);
+            public bool Contains(string propertyName) => _parent.ContainsKey(propertyName);
 
             public void CopyTo(string[] propertyNameArray, int index)
             {

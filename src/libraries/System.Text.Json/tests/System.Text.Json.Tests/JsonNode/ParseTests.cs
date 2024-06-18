@@ -164,11 +164,13 @@ namespace System.Text.Json.Nodes.Tests
 
             jsonPropertyDictionaryType = jsonPropertyDictionaryType.MakeGenericType(new Type[] { typeof(JsonNode) });
 
+#if !NET9_0_OR_GREATER // Bespoke implementation replaced with OrderedDictionary
             FieldInfo listField = jsonPropertyDictionaryType.GetField("_propertyList", BindingFlags.Instance | BindingFlags.NonPublic);
             Assert.NotNull(listField);
 
             FieldInfo dictionaryField = jsonPropertyDictionaryType.GetField("_propertyDictionary", BindingFlags.Instance | BindingFlags.NonPublic);
             Assert.NotNull(dictionaryField);
+#endif
 
             using (MemoryStream stream = new MemoryStream(SimpleTestClass.s_data))
             {
@@ -186,8 +188,10 @@ namespace System.Text.Json.Nodes.Tests
                 jsonDictionary = jsonDictionaryField.GetValue(node);
                 Assert.NotNull(jsonDictionary);
 
+#if !NET9_0_OR_GREATER // Bespoke implementation replaced with OrderedDictionary
                 Assert.NotNull(listField.GetValue(jsonDictionary));
                 Assert.NotNull(dictionaryField.GetValue(jsonDictionary)); // The dictionary threshold was reached.
+#endif
                 Test();
 
                 void Test()
@@ -217,8 +221,11 @@ namespace System.Text.Json.Nodes.Tests
                 jsonDictionary = jsonDictionaryField.GetValue(node);
                 Assert.NotNull(jsonDictionary);
 
+#if !NET9_0_OR_GREATER // Bespoke implementation replaced with OrderedDictionary
                 Assert.NotNull(listField.GetValue(jsonDictionary));
                 Assert.NotNull(dictionaryField.GetValue(jsonDictionary)); // The dictionary threshold was reached.
+#endif
+
                 Test();
 
                 void Test()

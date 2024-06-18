@@ -56,7 +56,7 @@ namespace System.Text.Json.Nodes
                 return;
             }
 
-            foreach (JsonNode? node in dictionary.GetValueCollection())
+            foreach (JsonNode? node in dictionary.Values)
             {
                 DetachParent(node);
             }
@@ -98,7 +98,7 @@ namespace System.Text.Json.Nodes
                 ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
             }
 
-            bool success = Dictionary.TryRemoveProperty(propertyName, out JsonNode? removedNode);
+            bool success = Dictionary.Remove(propertyName, out JsonNode? removedNode);
             if (success)
             {
                 DetachParent(removedNode);
@@ -114,7 +114,8 @@ namespace System.Text.Json.Nodes
         /// <returns>
         ///   <see langword="true"/> if the <see cref="JsonObject"/> contains an element with the property name; otherwise, <see langword="false"/>.
         /// </returns>
-        bool ICollection<KeyValuePair<string, JsonNode?>>.Contains(KeyValuePair<string, JsonNode?> item) => Dictionary.Contains(item);
+        bool ICollection<KeyValuePair<string, JsonNode?>>.Contains(KeyValuePair<string, JsonNode?> item) =>
+            ((IDictionary<string, JsonNode?>)Dictionary).Contains(item);
 
         /// <summary>
         ///   Copies the elements of the <see cref="JsonObject"/> to an array of type KeyValuePair starting at the specified array index.
@@ -133,7 +134,8 @@ namespace System.Text.Json.Nodes
         ///   The number of elements in the source ICollection is greater than the available space from <paramref name="index"/>
         ///   to the end of the destination <paramref name="array"/>.
         /// </exception>
-        void ICollection<KeyValuePair<string, JsonNode?>>.CopyTo(KeyValuePair<string, JsonNode?>[] array, int index) => Dictionary.CopyTo(array, index);
+        void ICollection<KeyValuePair<string, JsonNode?>>.CopyTo(KeyValuePair<string, JsonNode?>[] array, int index) =>
+            ((IDictionary<string, JsonNode?>)Dictionary).CopyTo(array, index);
 
         /// <summary>
         ///   Returns an enumerator that iterates through the <see cref="JsonObject"/>.
@@ -199,7 +201,7 @@ namespace System.Text.Json.Nodes
 
             if (dictionary is null)
             {
-                dictionary = new JsonPropertyDictionary<JsonNode?>(IsCaseInsensitive(Options));
+                dictionary = new JsonPropertyDictionary<JsonNode?>(GetStringComparer(Options));
 
                 if (jsonElement.HasValue)
                 {
@@ -211,7 +213,7 @@ namespace System.Text.Json.Nodes
                             node.Parent = this;
                         }
 
-                        dictionary.Add(new KeyValuePair<string, JsonNode?>(jElementProperty.Name, node));
+                        dictionary.Add(jElementProperty.Name, node);
                     }
                 }
 
@@ -224,8 +226,8 @@ namespace System.Text.Json.Nodes
             return dictionary;
         }
 
-        private static bool IsCaseInsensitive(JsonNodeOptions? options) =>
-            options?.PropertyNameCaseInsensitive ?? false;
+        private static StringComparer GetStringComparer(JsonNodeOptions? options) =>
+            options?.PropertyNameCaseInsensitive ?? false ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
 
         /// <summary>
         /// Provides a coherent view of the underlying representation of the current node.

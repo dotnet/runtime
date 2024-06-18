@@ -8,13 +8,6 @@ namespace System.Text.Json
 {
     internal sealed partial class JsonPropertyDictionary<T>
     {
-        private ValueCollection? _valueCollection;
-
-        public IList<T> GetValueCollection()
-        {
-            return _valueCollection ??= new ValueCollection(this);
-        }
-
         private sealed class ValueCollection : IList<T>
         {
             private readonly JsonPropertyDictionary<T> _parent;
@@ -30,7 +23,7 @@ namespace System.Text.Json
 
             public T this[int index]
             {
-                get => _parent.List[index].Value;
+                get => _parent.GetAt(index).Value;
                 set => throw ThrowHelper.GetNotSupportedException_CollectionIsReadOnly();
             }
 
@@ -42,13 +35,25 @@ namespace System.Text.Json
                 }
             }
 
-            public void Add(T jsonNode) => ThrowHelper.ThrowNotSupportedException_CollectionIsReadOnly();
+            public void Add(T value) => ThrowHelper.ThrowNotSupportedException_CollectionIsReadOnly();
 
             public void Clear() => ThrowHelper.ThrowNotSupportedException_CollectionIsReadOnly();
 
-            public bool Contains(T jsonNode) => _parent.ContainsValue(jsonNode);
+            public bool Contains(T value)
+            {
+                EqualityComparer<T> comparer = _parent._valueComparer;
+                foreach (KeyValuePair<string, T> item in _parent._propertyList)
+                {
+                    if (comparer.Equals(item.Value, value))
+                    {
+                        return true;
+                    }
+                }
 
-            public void CopyTo(T[] nodeArray, int index)
+                return false;
+            }
+
+            public void CopyTo(T[] destination, int index)
             {
                 if (index < 0)
                 {
@@ -57,12 +62,12 @@ namespace System.Text.Json
 
                 foreach (KeyValuePair<string, T> item in _parent)
                 {
-                    if (index >= nodeArray.Length)
+                    if (index >= destination.Length)
                     {
-                        ThrowHelper.ThrowArgumentException_ArrayTooSmall(nameof(nodeArray));
+                        ThrowHelper.ThrowArgumentException_ArrayTooSmall(nameof(destination));
                     }
 
-                    nodeArray[index++] = item.Value;
+                    destination[index++] = item.Value;
                 }
             }
 
@@ -74,9 +79,9 @@ namespace System.Text.Json
                 }
             }
 
-            bool ICollection<T>.Remove(T node) => throw ThrowHelper.GetNotSupportedException_CollectionIsReadOnly();
+            bool ICollection<T>.Remove(T value) => throw ThrowHelper.GetNotSupportedException_CollectionIsReadOnly();
             public int IndexOf(T item) => throw ThrowHelper.GetNotSupportedException_CollectionIsReadOnly();
-            public void Insert(int index, T item) => throw ThrowHelper.GetNotSupportedException_CollectionIsReadOnly();
+            public void Insert(int index, T value) => throw ThrowHelper.GetNotSupportedException_CollectionIsReadOnly();
             public void RemoveAt(int index) => throw ThrowHelper.GetNotSupportedException_CollectionIsReadOnly();
         }
     }

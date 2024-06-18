@@ -33,11 +33,9 @@ namespace System.Text.Json.Nodes
         /// <param name="options">Options to control the behavior.</param>
         public JsonObject(IEnumerable<KeyValuePair<string, JsonNode?>> properties, JsonNodeOptions? options = null) : this(options)
         {
-            bool isCaseInsensitive = IsCaseInsensitive(options);
-
-            JsonPropertyDictionary<JsonNode?> dictionary = properties is ICollection<KeyValuePair<string, JsonNode?>> propertiesCollection
-                ? new(isCaseInsensitive, propertiesCollection.Count)
-                : new(isCaseInsensitive);
+            StringComparer stringComparer = GetStringComparer(options);
+            int capacity = properties is ICollection<KeyValuePair<string, JsonNode?>> propertiesCollection ? propertiesCollection.Count : 0;
+            JsonPropertyDictionary<JsonNode?> dictionary = new(stringComparer, capacity);
 
             foreach (KeyValuePair<string, JsonNode?> node in properties)
             {
@@ -76,7 +74,10 @@ namespace System.Text.Json.Nodes
         /// <summary>
         /// Gets or creates the underlying dictionary containing the properties of the object.
         /// </summary>
-        internal JsonPropertyDictionary<JsonNode?> Dictionary => _dictionary ?? InitializeDictionary();
+        private JsonPropertyDictionary<JsonNode?> Dictionary => _dictionary ?? InitializeDictionary();
+
+        private protected override JsonNode? GetItem(int index) => GetAt(index).Value;
+        private protected override void SetItem(int index, JsonNode? value) => SetAt(index, value);
 
         internal override JsonNode DeepCloneCore()
         {
@@ -89,10 +90,10 @@ namespace System.Text.Json.Nodes
                     : new JsonObject(Options);
             }
 
-            bool caseInsensitive = IsCaseInsensitive(Options);
+            StringComparer comparer = GetStringComparer(Options);
             var jObject = new JsonObject(Options)
             {
-                _dictionary = new JsonPropertyDictionary<JsonNode?>(caseInsensitive, dictionary.Count)
+                _dictionary = new JsonPropertyDictionary<JsonNode?>(comparer, dictionary.Count)
             };
 
             foreach (KeyValuePair<string, JsonNode?> item in dictionary)
@@ -105,7 +106,7 @@ namespace System.Text.Json.Nodes
 
         internal string GetPropertyName(JsonNode? node)
         {
-            KeyValuePair<string, JsonNode?>? item = Dictionary.FindValue(node);
+            KeyValuePair<string, JsonNode?>? item = FindValue(node);
             return item.HasValue ? item.Value.Key : string.Empty;
         }
 
@@ -118,7 +119,7 @@ namespace System.Text.Json.Nodes
         ///   <see langword="true"/> if a property with the specified name was found; otherwise, <see langword="false"/>.
         /// </returns>
         public bool TryGetPropertyValue(string propertyName, out JsonNode? jsonNode) =>
-            ((IDictionary<string, JsonNode?>)this).TryGetValue(propertyName, out jsonNode);
+            Dictionary.TryGetValue(propertyName, out jsonNode);
 
         /// <inheritdoc/>
         public override void WriteTo(Utf8JsonWriter writer, JsonSerializerOptions? options = null)
@@ -157,7 +158,7 @@ namespace System.Text.Json.Nodes
             }
         }
 
-        internal override JsonValueKind GetValueKindCore() => JsonValueKind.Object;
+        private protected override JsonValueKind GetValueKindCore() => JsonValueKind.Object;
 
         internal override bool DeepEqualsCore(JsonNode? node)
         {
@@ -179,7 +180,7 @@ namespace System.Text.Json.Nodes
 
                     foreach (KeyValuePair<string, JsonNode?> item in currentDict)
                     {
-                        JsonNode? jsonNode = otherDict[item.Key];
+                        otherDict.TryGetValue(item.Key, out JsonNode? jsonNode);
 
                         if (!DeepEquals(item.Value, jsonNode))
                         {
@@ -211,7 +212,7 @@ namespace System.Text.Json.Nodes
 
             if (child != null)
             {
-                string propertyName = Dictionary.FindValue(child)!.Value.Key;
+                string propertyName = FindValue(child)!.Value.Key;
                 if (propertyName.AsSpan().ContainsSpecialCharacters())
                 {
                     path.Append("['");
@@ -228,14 +229,20 @@ namespace System.Text.Json.Nodes
 
         internal void SetItem(string propertyName, JsonNode? value)
         {
-            JsonNode? replacedValue = Dictionary.SetValue(propertyName, value, out bool valueAlreadyInDictionary);
+            JsonPropertyDictionary<JsonNode?> dict = Dictionary;
 
-            if (!valueAlreadyInDictionary)
+            if (dict.TryGetValue(propertyName, out JsonNode? replacedValue))
             {
-                value?.AssignParent(this);
+                if (ReferenceEquals(value, replacedValue))
+                {
+                    return;
+                }
+
+                DetachParent(replacedValue);
             }
 
-            DetachParent(replacedValue);
+            dict[propertyName] = value;
+            value?.AssignParent(this);
         }
 
         private void DetachParent(JsonNode? item)
@@ -246,6 +253,19 @@ namespace System.Text.Json.Nodes
             {
                 item.Parent = null;
             }
+        }
+
+        private KeyValuePair<string, JsonNode?>? FindValue(JsonNode? value)
+        {
+            foreach (KeyValuePair<string, JsonNode?> item in Dictionary)
+            {
+                if (ReferenceEquals(item.Value, value))
+                {
+                    return item;
+                }
+            }
+
+            return null;
         }
 
         [ExcludeFromCodeCoverage] // Justification = "Design-time"
