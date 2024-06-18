@@ -11780,7 +11780,6 @@ MONO_RESTORE_WARNING
 			LLVMTypeRef tuple_t = simd_class_to_llvm_type (ctx, ins->klass);
 			LLVMTypeRef vec_t = LLVMGetElementType (tuple_t);
 
-			IntrinsicId iid = (IntrinsicId) ins->inst_c0;
 			llvm_ovr_tag_t ovr_tag = ovr_tag_from_llvm_type (vec_t);
 
 			LLVMValueRef value_tuple = LLVMBuildLoad2 (builder, tuple_t, addresses [ins->sreg2]->value, "load_param");
@@ -11794,6 +11793,54 @@ MONO_RESTORE_WARNING
 				args [i] = elem;
 			}
 			args [len] = lhs;
+
+			IntrinsicId iid = (IntrinsicId) ins->inst_c0;
+			if (iid == 0) {
+				unsigned int n_elem_vector = LLVMGetVectorSize (vec_t);
+				LLVMTypeRef elem_t = LLVMGetElementType (vec_t);
+				unsigned int elem_bits = mono_llvm_get_prim_size_bits (elem_t);
+				unsigned int vector_size = n_elem_vector * elem_bits;
+				switch (vector_size) {
+				case 64: {
+					switch (len) {
+					case 2:
+						iid = INTRINS_AARCH64_ADV_SIMD_ST2_V64;
+						break;
+					case 3:
+						iid = INTRINS_AARCH64_ADV_SIMD_ST3_V64;
+						break;
+					case 4:
+						iid = INTRINS_AARCH64_ADV_SIMD_ST4_V64;
+						break;
+					default:
+						g_assert_not_reached ();
+						break;
+					}
+					break;
+				}
+				case 128: {
+					switch (len) {
+					case 2:
+						iid = INTRINS_AARCH64_ADV_SIMD_ST2_V128;
+						break;
+					case 3:
+						iid = INTRINS_AARCH64_ADV_SIMD_ST3_V128;
+						break;
+					case 4:
+						iid = INTRINS_AARCH64_ADV_SIMD_ST4_V128;
+						break;
+					default:
+						g_assert_not_reached ();
+						break;
+					}
+					break;
+				}
+				default:
+					g_assert_not_reached ();
+					break;
+				
+				}
+			}
 
 			call_overloaded_intrins (ctx, iid, ovr_tag, args, "");
 			break;
@@ -11813,7 +11860,6 @@ MONO_RESTORE_WARNING
 			mono_llvm_build_aligned_store (builder, val, address, FALSE, alignment);
 			break;
 		}
-		case OP_ARM64_STM_ANDZIP:
 		case OP_ARM64_STM_SCALAR: {
 			LLVMTypeRef tuple_t = simd_class_to_llvm_type (ctx, ins->klass);
 			LLVMTypeRef vec_t = LLVMGetElementType (tuple_t);
@@ -11870,32 +11916,23 @@ MONO_RESTORE_WARNING
 			for ( ; idx < n_elem_tuple; idx++) {
 				args [idx] = LLVMBuildExtractValue (builder, rhs, idx, "extract_elem");
 			}
-			if (ins->opcode == OP_ARM64_STM_SCALAR)
-			{
-				args [idx++] = arg3;
-			}
+			args [idx++] = arg3;
 			args [idx] = lhs;
+
 			llvm_ovr_tag_t ovr_tag = ovr_tag_from_llvm_type (vec_t);
 
-			if (ins->opcode == OP_ARM64_STM_SCALAR)
-			{
-				// convert arg3 to a constant
-				LLVMTypeRef ret_t = LLVMVoidType ();
-				ImmediateUnrollCtx ictx = immediate_unroll_begin (ctx, bb, 16, arg3, ret_t, "");
-				int i = 0;
-				while (immediate_unroll_next (&ictx, &i)) {
-					args [idx - 1] = const_int64 (i);
-					call_overloaded_intrins (ctx, iid, ovr_tag, args, "");
-					immediate_unroll_commit (&ictx, i, NULL);
-				}
-				immediate_unroll_default (&ictx);
-				immediate_unroll_commit_default (&ictx, NULL);
-				immediate_unroll_end (&ictx, &cbb);
-			}
-			else
-			{
+			// convert arg3 to a constant
+			LLVMTypeRef ret_t = LLVMVoidType ();
+			ImmediateUnrollCtx ictx = immediate_unroll_begin (ctx, bb, 16, arg3, ret_t, "");
+			int i = 0;
+			while (immediate_unroll_next (&ictx, &i)) {
+				args [idx - 1] = const_int64 (i);
 				call_overloaded_intrins (ctx, iid, ovr_tag, args, "");
+				immediate_unroll_commit (&ictx, i, NULL);
 			}
+			immediate_unroll_default (&ictx);
+			immediate_unroll_commit_default (&ictx, NULL);
+			immediate_unroll_end (&ictx, &cbb);
 			break;
 		}
 		case OP_ARM64_ADDHN:
