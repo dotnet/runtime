@@ -1303,6 +1303,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
         {
             GenTree* user = use.User();
             // Wrap the intrinsic in ConditionalSelect only if it is not already inside another ConditionalSelect
+            // If it is inside ConditionalSelect, then make sure that it is the `mask` operation of it.
             if (!user->OperIsHWIntrinsic() || (user->AsHWIntrinsic()->GetHWIntrinsicId() != NI_Sve_ConditionalSelect) ||
                 (HWIntrinsic(user->AsHWIntrinsic()).op1 == node))
             {
@@ -1310,12 +1311,21 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                 unsigned    simdSize        = node->GetSimdSize();
                 var_types   simdType        = Compiler::getSIMDTypeForSize(simdSize);
                 GenTree*    trueMask        = comp->gtNewSimdAllTrueMaskNode(simdBaseJitType, simdSize);
-                GenTree*    trueVal         = node;
                 GenTree*    falseVal        = comp->gtNewZeroConNode(simdType);
+                GenTree*    trueVal         = node;
                 var_types   nodeType        = simdType;
+                GenTree*    trueMaskForOp1  = nullptr;
+
                 if (HWIntrinsicInfo::ReturnsPerElementMask(node->GetHWIntrinsicId()))
                 {
                     nodeType = TYP_MASK;
+
+                    trueMaskForOp1 = comp->gtNewSimdAllTrueMaskNode(simdBaseJitType, simdSize);
+                    BlockRange().InsertBefore(node, trueMaskForOp1);
+                    BlockRange().InsertBefore(node, falseVal);
+
+                    falseVal = comp->gtNewSimdHWIntrinsicNode(TYP_MASK, trueMaskForOp1, falseVal,
+                                                              NI_Sve_ConvertVectorToMask, simdBaseJitType, simdSize);
                 }
 
                 GenTreeHWIntrinsic* condSelNode =

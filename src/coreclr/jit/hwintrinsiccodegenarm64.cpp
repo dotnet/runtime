@@ -544,7 +544,12 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 {
                     if (!instrIsRMW)
                     {
-                        assert(intrin.op3->IsVectorZero());
+                        // Either this is VectorZero or ConvertVectorToMask(TrueMask, VectorZero)
+                        assert(intrin.op3->IsVectorZero() ||
+                               (intrin.op3->OperIs(GT_HWINTRINSIC) &&
+                                intrin.op3->AsHWIntrinsic()->OperIsConvertVectorToMask() &&
+                                intrin.op3->AsHWIntrinsic()->Op(2)->IsVectorZero()));
+
                         // Perform the actual "predicated" operation so that `embMaskOp1Reg` is the first operand
                         // and `embMaskOp2Reg` is the second operand.
                         GetEmitter()->emitIns_R_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp1Reg,
