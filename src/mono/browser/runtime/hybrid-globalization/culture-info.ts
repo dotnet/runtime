@@ -4,7 +4,7 @@
 import { VoidPtrNull } from "../types/internal";
 import { runtimeHelpers } from "./module-exports";
 import { Int32Ptr, VoidPtr } from "../types/emscripten";
-import { OUTER_SEPARATOR, normalizeLocale, normalizeSpaces } from "./helpers";
+import { OUTER_SEPARATOR, normalizeLocale } from "./helpers";
 
 export function mono_wasm_get_culture_info (culture: number, cultureLength: number, dst: number, dstMaxLength: number, dstLength: Int32Ptr): VoidPtr {
     try {
@@ -91,7 +91,7 @@ function getLongTimePattern (locale: string | undefined, designators: any): stri
         hourPattern = hasPrefix ? "hh" : "h";
         pattern = pattern.replace(hasPrefix ? hour12WithPrefix : localizedHour12, hourPattern);
     }
-    return normalizeSpaces(pattern);
+    return pattern;
 }
 
 function getShortTimePattern (pattern: string): string {

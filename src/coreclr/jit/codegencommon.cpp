@@ -4356,7 +4356,7 @@ void CodeGen::genHomeSwiftStructParameters(bool handleStack)
 {
     for (unsigned lclNum = 0; lclNum < compiler->info.compArgsCount; lclNum++)
     {
-        if (lclNum == compiler->lvaSwiftSelfArg)
+        if ((lclNum == compiler->lvaSwiftSelfArg) || (lclNum == compiler->lvaSwiftIndirectResultArg))
         {
             continue;
         }
@@ -5694,6 +5694,15 @@ void CodeGen::genFnProlog()
         {
             GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_SWIFT_SELF, compiler->lvaSwiftSelfArg, 0);
             intRegState.rsCalleeRegArgMaskLiveIn &= ~RBM_SWIFT_SELF;
+        }
+
+        if ((compiler->lvaSwiftIndirectResultArg != BAD_VAR_NUM) &&
+            ((intRegState.rsCalleeRegArgMaskLiveIn & theFixedRetBuffMask(CorInfoCallConvExtension::Swift)) != 0))
+        {
+            GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE,
+                                      theFixedRetBuffReg(CorInfoCallConvExtension::Swift),
+                                      compiler->lvaSwiftIndirectResultArg, 0);
+            intRegState.rsCalleeRegArgMaskLiveIn &= ~theFixedRetBuffMask(CorInfoCallConvExtension::Swift);
         }
 
         if (compiler->lvaSwiftErrorArg != BAD_VAR_NUM)

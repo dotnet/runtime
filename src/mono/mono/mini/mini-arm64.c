@@ -2877,14 +2877,15 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		}
 		case ArgSwiftError: {
 			ins->flags |= MONO_INST_VOLATILE;
-			size = 8;
-			align = 8;
-			offset += align - 1;
-			offset &= ~(align - 1);
 			ins->opcode = OP_REGOFFSET;
-			ins->inst_basereg = cfg->frame_reg;
-			ins->inst_offset = offset;
-			offset += size;
+			if (ainfo->offset) {
+				g_assert (cfg->arch.args_reg);
+				ins->inst_basereg = cfg->arch.args_reg;
+				ins->inst_offset = ainfo->offset;
+			} else {
+				ins->inst_offset = offset;
+				offset += 8;
+			}
 
 			cfg->arch.swift_error_var = ins;
 
@@ -5955,10 +5956,7 @@ emit_move_args (MonoCompile *cfg, guint8 *code)
 				break;
 			case ArgSwiftError:
 				if (cfg->method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) {
-					if (ainfo->offset) {
-						code = emit_ldrx (code, ARMREG_IP0, cfg->arch.args_reg, ainfo->offset);
-						code = emit_strx (code, ARMREG_IP0, cfg->arch.swift_error_var->inst_basereg, GTMREG_TO_INT (cfg->arch.swift_error_var->inst_offset));
-					} else {
+					if (ainfo->offset == 0) {
 						code = emit_strx (code, ainfo->reg, cfg->arch.swift_error_var->inst_basereg, GTMREG_TO_INT (cfg->arch.swift_error_var->inst_offset));
 					}
 				} else if (cfg->method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED) {
