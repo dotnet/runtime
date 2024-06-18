@@ -5,9 +5,9 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);SYSTEM_TEXT_REGULAREXPRESSIONS</DefineConstants>
     <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
-<!--   <NoWarn>IL2026;IL2075;IDE0059;CA1823;CS0162;IDE0060;CS0649;</NoWarn>-->
-<!--&lt;!&ndash;   documentation warnings &ndash;&gt;-->
-<!--   <NoWarn>$(NoWarn);CS1574</NoWarn>-->
+   <NoWarn>IL2026;IL2075;IDE0059;CA1823;CS0162;IDE0060;CS0649;</NoWarn>
+<!--   documentation warnings -->
+   <NoWarn>$(NoWarn);CS1574</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
