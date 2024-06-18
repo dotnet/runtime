@@ -802,7 +802,7 @@ namespace System.Buffers.Text
                 Vector128<byte> res1, Vector128<byte> res2, Vector128<byte> res3, Vector128<byte> res4)
             {
                 AssertWrite<Vector128<byte>>(dest, destStart, destLength);
-                AdvSimd.Arm64.StoreVector128x4AndZip(dest, (res1, res2, res3, res4));
+                AdvSimd.Arm64.StoreVectorAndZip(dest, (res1, res2, res3, res4));
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
