@@ -33,9 +33,8 @@ namespace System.Text.Json.Nodes
         /// <param name="options">Options to control the behavior.</param>
         public JsonObject(IEnumerable<KeyValuePair<string, JsonNode?>> properties, JsonNodeOptions? options = null) : this(options)
         {
-            StringComparer stringComparer = GetStringComparer(options);
             int capacity = properties is ICollection<KeyValuePair<string, JsonNode?>> propertiesCollection ? propertiesCollection.Count : 0;
-            JsonPropertyDictionary<JsonNode?> dictionary = new(stringComparer, capacity);
+            OrderedDictionary<string, JsonNode?> dictionary = CreateDictionary(options, capacity);
 
             foreach (KeyValuePair<string, JsonNode?> node in properties)
             {
@@ -74,14 +73,14 @@ namespace System.Text.Json.Nodes
         /// <summary>
         /// Gets or creates the underlying dictionary containing the properties of the object.
         /// </summary>
-        private JsonPropertyDictionary<JsonNode?> Dictionary => _dictionary ?? InitializeDictionary();
+        private OrderedDictionary<string, JsonNode?> Dictionary => _dictionary ?? InitializeDictionary();
 
         private protected override JsonNode? GetItem(int index) => GetAt(index).Value;
         private protected override void SetItem(int index, JsonNode? value) => SetAt(index, value);
 
         internal override JsonNode DeepCloneCore()
         {
-            GetUnderlyingRepresentation(out JsonPropertyDictionary<JsonNode?>? dictionary, out JsonElement? jsonElement);
+            GetUnderlyingRepresentation(out OrderedDictionary<string, JsonNode?>? dictionary, out JsonElement? jsonElement);
 
             if (dictionary is null)
             {
@@ -90,10 +89,9 @@ namespace System.Text.Json.Nodes
                     : new JsonObject(Options);
             }
 
-            StringComparer comparer = GetStringComparer(Options);
             var jObject = new JsonObject(Options)
             {
-                _dictionary = new JsonPropertyDictionary<JsonNode?>(comparer, dictionary.Count)
+                _dictionary = CreateDictionary(Options, Count)
             };
 
             foreach (KeyValuePair<string, JsonNode?> item in dictionary)
@@ -129,7 +127,7 @@ namespace System.Text.Json.Nodes
                 ThrowHelper.ThrowArgumentNullException(nameof(writer));
             }
 
-            GetUnderlyingRepresentation(out JsonPropertyDictionary<JsonNode?>? dictionary, out JsonElement? jsonElement);
+            GetUnderlyingRepresentation(out OrderedDictionary<string, JsonNode?>? dictionary, out JsonElement? jsonElement);
 
             if (dictionary is null && jsonElement.HasValue)
             {
@@ -170,8 +168,8 @@ namespace System.Text.Json.Nodes
                     // JsonValue instances have special comparison semantics, dispatch to their implementation.
                     return value.DeepEqualsCore(this);
                 case JsonObject jsonObject:
-                    JsonPropertyDictionary<JsonNode?> currentDict = Dictionary;
-                    JsonPropertyDictionary<JsonNode?> otherDict = jsonObject.Dictionary;
+                    OrderedDictionary<string, JsonNode?> currentDict = Dictionary;
+                    OrderedDictionary<string, JsonNode?> otherDict = jsonObject.Dictionary;
 
                     if (currentDict.Count != otherDict.Count)
                     {
@@ -229,7 +227,7 @@ namespace System.Text.Json.Nodes
 
         internal void SetItem(string propertyName, JsonNode? value)
         {
-            JsonPropertyDictionary<JsonNode?> dict = Dictionary;
+            OrderedDictionary<string, JsonNode?> dict = Dictionary;
 
             if (dict.TryGetValue(propertyName, out JsonNode? replacedValue))
             {

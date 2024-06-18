@@ -9,32 +9,33 @@ using System.Diagnostics.CodeAnalysis;
 namespace System.Text.Json
 {
     /// <summary>
-    /// Defines an ordered dictionary for storing JSON property metadata.
+    /// Polyfill for System.Collections.Generic.OrderedDictionary added in .NET 9.
     /// </summary>
-    internal sealed partial class JsonPropertyDictionary<T> : IDictionary<string, T>, IList<KeyValuePair<string, T>>
+    internal sealed partial class OrderedDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IList<KeyValuePair<TKey, TValue>>
+        where TKey : notnull
     {
         private const int ListToDictionaryThreshold = 9;
 
-        private Dictionary<string, T>? _propertyDictionary;
-        private readonly List<KeyValuePair<string, T>> _propertyList;
-        private readonly StringComparer _stringComparer;
-        private readonly EqualityComparer<T> _valueComparer = EqualityComparer<T>.Default;
+        private Dictionary<TKey, TValue>? _propertyDictionary;
+        private readonly List<KeyValuePair<TKey, TValue>> _propertyList;
+        private readonly IEqualityComparer<TKey> _keyComparer;
+        private readonly EqualityComparer<TValue> _valueComparer = EqualityComparer<TValue>.Default;
 
-        public JsonPropertyDictionary(StringComparer stringComparer, int capacity = 0)
+        public OrderedDictionary(int capacity, IEqualityComparer<TKey>? keyComparer = null)
         {
-            _stringComparer = stringComparer;
-            _propertyList = new List<KeyValuePair<string, T>>(capacity);
+            _keyComparer = keyComparer ?? EqualityComparer<TKey>.Default;
+            _propertyList = new(capacity);
             if (capacity > ListToDictionaryThreshold)
             {
-                _propertyDictionary = new(capacity, _stringComparer);
+                _propertyDictionary = new(capacity, _keyComparer);
             }
         }
 
-        public void Add(string propertyName, T value)
+        public void Add(TKey key, TValue value)
         {
-            if (!TryAdd(propertyName, value))
+            if (!TryAdd(key, value))
             {
-                ThrowHelper.ThrowArgumentException_DuplicateKey(nameof(propertyName), propertyName);
+                ThrowHelper.ThrowArgumentException_DuplicateKey(nameof(key), key);
             }
         }
 
@@ -44,39 +45,39 @@ namespace System.Text.Json
             _propertyDictionary?.Clear();
         }
 
-        public bool ContainsKey(string propertyName)
+        public bool ContainsKey(TKey key)
         {
             return _propertyDictionary is { } dict
-                ? dict.ContainsKey(propertyName)
-                : IndexOf(propertyName) >= 0;
+                ? dict.ContainsKey(key)
+                : IndexOf(key) >= 0;
         }
 
         public int Count => _propertyList.Count;
-        public List<KeyValuePair<string, T>>.Enumerator GetEnumerator() => _propertyList.GetEnumerator();
+        public List<KeyValuePair<TKey, TValue>>.Enumerator GetEnumerator() => _propertyList.GetEnumerator();
 
-        public ICollection<string> Keys => _keys ??= new(this);
+        public ICollection<TKey> Keys => _keys ??= new(this);
         private KeyCollection? _keys;
 
-        public ICollection<T> Values => _values ??= new(this);
+        public ICollection<TValue> Values => _values ??= new(this);
         private ValueCollection? _values;
 
-        public bool TryGetValue(string propertyName, [MaybeNullWhen(false)] out T value)
+        public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value)
         {
-            if (propertyName is null)
+            if (key is null)
             {
-                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
+                ThrowHelper.ThrowArgumentNullException(nameof(key));
             }
 
             if (_propertyDictionary is { } dict)
             {
-                return dict.TryGetValue(propertyName, out value);
+                return dict.TryGetValue(key, out value);
             }
             else
             {
-                StringComparer comparer = _stringComparer;
-                foreach (KeyValuePair<string, T> item in _propertyList)
+                IEqualityComparer<TKey> comparer = _keyComparer;
+                foreach (KeyValuePair<TKey, TValue> item in _propertyList)
                 {
-                    if (comparer.Equals(propertyName, item.Key))
+                    if (comparer.Equals(key, item.Key))
                     {
                         value = item.Value;
                         return true;
@@ -88,11 +89,11 @@ namespace System.Text.Json
             return false;
         }
 
-        public T this[string propertyName]
+        public TValue this[TKey key]
         {
             get
             {
-                if (!TryGetValue(propertyName, out T? value))
+                if (!TryGetValue(key, out TValue? value))
                 {
                     ThrowHelper.ThrowKeyNotFoundException();
                 }
@@ -104,11 +105,11 @@ namespace System.Text.Json
             {
                 if (_propertyDictionary is { } dict)
                 {
-                    dict[propertyName] = value;
+                    dict[key] = value;
                 }
 
-                KeyValuePair<string, T> item = new(propertyName, value);
-                int i = IndexOf(propertyName);
+                KeyValuePair<TKey, TValue> item = new(key, value);
+                int i = IndexOf(key);
                 if (i < 0)
                 {
                     _propertyList.Add(item);
@@ -120,28 +121,28 @@ namespace System.Text.Json
             }
         }
 
-        public bool TryAdd(string propertyName, T value)
+        public bool TryAdd(TKey key, TValue value)
         {
-            if (propertyName is null)
+            if (key is null)
             {
-                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
+                ThrowHelper.ThrowArgumentNullException(nameof(key));
             }
 
             CreateDictionaryIfThresholdMet();
 
             if (_propertyDictionary is { } dict)
             {
-                if (!dict.TryAdd(propertyName, value))
+                if (!dict.TryAdd(key, value))
                 {
                     return false;
                 }
             }
-            else if (IndexOf(propertyName) >= 0)
+            else if (IndexOf(key) >= 0)
             {
                 return false;
             }
 
-            _propertyList.Add(new(propertyName, value));
+            _propertyList.Add(new(key, value));
             return true;
         }
 
@@ -149,23 +150,23 @@ namespace System.Text.Json
         {
             if (_propertyDictionary == null && _propertyList.Count > ListToDictionaryThreshold)
             {
-                _propertyDictionary = JsonHelpers.CreateDictionaryFromCollection(_propertyList, _stringComparer);
+                _propertyDictionary = JsonHelpers.CreateDictionaryFromCollection(_propertyList, _keyComparer);
             }
         }
 
-        public int IndexOf(string propertyName)
+        public int IndexOf(TKey key)
         {
-            if (propertyName is null)
+            if (key is null)
             {
-                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
+                ThrowHelper.ThrowArgumentNullException(nameof(key));
             }
 
-            List<KeyValuePair<string, T>> propertyList = _propertyList;
-            StringComparer keyComparer = _stringComparer;
+            List<KeyValuePair<TKey, TValue>> propertyList = _propertyList;
+            IEqualityComparer<TKey> keyComparer = _keyComparer;
 
             for (int i = 0; i < propertyList.Count; i++)
             {
-                if (keyComparer.Equals(propertyName, propertyList[i].Key))
+                if (keyComparer.Equals(key, propertyList[i].Key))
                 {
                     return i;
                 }
@@ -174,24 +175,24 @@ namespace System.Text.Json
             return -1;
         }
 
-        public bool Remove(string propertyName, [MaybeNullWhen(false)] out T existing)
+        public bool Remove(TKey key, [MaybeNullWhen(false)] out TValue existing)
         {
             if (_propertyDictionary != null)
             {
-                if (!_propertyDictionary.TryGetValue(propertyName, out existing))
+                if (!_propertyDictionary.TryGetValue(key, out existing))
                 {
                     return false;
                 }
 
-                bool success = _propertyDictionary.Remove(propertyName);
+                bool success = _propertyDictionary.Remove(key);
                 Debug.Assert(success);
             }
 
             for (int i = 0; i < _propertyList.Count; i++)
             {
-                KeyValuePair<string, T> current = _propertyList[i];
+                KeyValuePair<TKey, TValue> current = _propertyList[i];
 
-                if (_stringComparer.Equals(current.Key, propertyName))
+                if (_keyComparer.Equals(current.Key, key))
                 {
                     _propertyList.RemoveAt(i);
                     existing = current.Value;
@@ -203,12 +204,12 @@ namespace System.Text.Json
             return false;
         }
 
-        public KeyValuePair<string, T> GetAt(int index) => _propertyList[index];
+        public KeyValuePair<TKey, TValue> GetAt(int index) => _propertyList[index];
 
-        public void SetAt(int index, string key, T value)
+        public void SetAt(int index, TKey key, TValue value)
         {
-            string existingKey = _propertyList[index].Key;
-            if (!_stringComparer.Equals(existingKey, key))
+            TKey existingKey = _propertyList[index].Key;
+            if (!_keyComparer.Equals(existingKey, key))
             {
                 if (ContainsKey(key))
                 {
@@ -227,9 +228,9 @@ namespace System.Text.Json
             _propertyList[index] = new(key, value);
         }
 
-        public void SetAt(int index, T value)
+        public void SetAt(int index, TValue value)
         {
-            string key = _propertyList[index].Key;
+            TKey key = _propertyList[index].Key;
             if (_propertyDictionary != null)
             {
                 _propertyDictionary[key] = value;
@@ -238,7 +239,7 @@ namespace System.Text.Json
             _propertyList[index] = new(key, value);
         }
 
-        public void Insert(int index, string key, T value)
+        public void Insert(int index, TKey key, TValue value)
         {
             if (key is null)
             {
@@ -256,31 +257,31 @@ namespace System.Text.Json
 
         public void RemoveAt(int index)
         {
-            KeyValuePair<string, T> item = _propertyList[index];
+            KeyValuePair<TKey, TValue> item = _propertyList[index];
             _propertyList.RemoveAt(index);
             _propertyDictionary?.Remove(item.Key);
         }
 
-        IEnumerator<KeyValuePair<string, T>> IEnumerable<KeyValuePair<string, T>>.GetEnumerator() => GetEnumerator();
+        IEnumerator<KeyValuePair<TKey, TValue>> IEnumerable<KeyValuePair<TKey, TValue>>.GetEnumerator() => GetEnumerator();
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-        bool ICollection<KeyValuePair<string, T>>.IsReadOnly => false;
-        void ICollection<KeyValuePair<string, T>>.Add(KeyValuePair<string, T> item) => Add(item.Key, item.Value);
-        bool ICollection<KeyValuePair<string, T>>.Contains(KeyValuePair<string, T> item) => TryGetValue(item.Key, out T? existingValue) && _valueComparer.Equals(item.Value, existingValue);
-        bool ICollection<KeyValuePair<string, T>>.Remove(KeyValuePair<string, T> item)
+        bool ICollection<KeyValuePair<TKey, TValue>>.IsReadOnly => false;
+        void ICollection<KeyValuePair<TKey, TValue>>.Add(KeyValuePair<TKey, TValue> item) => Add(item.Key, item.Value);
+        bool ICollection<KeyValuePair<TKey, TValue>>.Contains(KeyValuePair<TKey, TValue> item) => TryGetValue(item.Key, out TValue? existingValue) && _valueComparer.Equals(item.Value, existingValue);
+        bool ICollection<KeyValuePair<TKey, TValue>>.Remove(KeyValuePair<TKey, TValue> item)
         {
-            return TryGetValue(item.Key, out T? existingValue) && _valueComparer.Equals(existingValue, item.Value)
+            return TryGetValue(item.Key, out TValue? existingValue) && _valueComparer.Equals(existingValue, item.Value)
                 ? Remove(item.Key, out _)
                 : false;
         }
 
-        void ICollection<KeyValuePair<string, T>>.CopyTo(KeyValuePair<string, T>[] array, int arrayIndex)
+        void ICollection<KeyValuePair<TKey, TValue>>.CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex)
         {
             if (arrayIndex < 0)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException_ArrayIndexNegative(nameof(arrayIndex));
             }
 
-            foreach (KeyValuePair<string, T> item in _propertyList)
+            foreach (KeyValuePair<TKey, TValue> item in _propertyList)
             {
                 if (arrayIndex >= array.Length)
                 {
@@ -291,17 +292,17 @@ namespace System.Text.Json
             }
         }
 
-        bool IDictionary<string, T>.Remove(string key) => Remove(key, out _);
-        void IList<KeyValuePair<string, T>>.Insert(int index, KeyValuePair<string, T> item) => Insert(index, item.Key, item.Value);
-        int IList<KeyValuePair<string, T>>.IndexOf(KeyValuePair<string, T> item)
+        bool IDictionary<TKey, TValue>.Remove(TKey key) => Remove(key, out _);
+        void IList<KeyValuePair<TKey, TValue>>.Insert(int index, KeyValuePair<TKey, TValue> item) => Insert(index, item.Key, item.Value);
+        int IList<KeyValuePair<TKey, TValue>>.IndexOf(KeyValuePair<TKey, TValue> item)
         {
-            List<KeyValuePair<string, T>> propertyList = _propertyList;
-            StringComparer keyComparer = _stringComparer;
-            EqualityComparer<T> valueComparer = _valueComparer;
+            List<KeyValuePair<TKey, TValue>> propertyList = _propertyList;
+            IEqualityComparer<TKey> keyComparer = _keyComparer;
+            EqualityComparer<TValue> valueComparer = _valueComparer;
 
             for (int i = 0; i < propertyList.Count; i++)
             {
-                KeyValuePair<string, T> entry = propertyList[i];
+                KeyValuePair<TKey, TValue> entry = propertyList[i];
                 if (keyComparer.Equals(entry.Key, item.Key) && valueComparer.Equals(item.Value, entry.Value))
                 {
                     return i;
@@ -311,7 +312,7 @@ namespace System.Text.Json
             return -1;
         }
 
-        KeyValuePair<string, T> IList<KeyValuePair<string, T>>.this[int index]
+        KeyValuePair<TKey, TValue> IList<KeyValuePair<TKey, TValue>>.this[int index]
         {
             get => GetAt(index);
             set => SetAt(index, value.Key, value.Value);

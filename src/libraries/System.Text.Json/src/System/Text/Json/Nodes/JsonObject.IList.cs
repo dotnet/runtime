@@ -23,7 +23,7 @@ namespace System.Text.Json.Nodes
         /// <exception cref="InvalidOperationException"><paramref name="value"/> already has a parent.</exception>
         public void SetAt(int index, string propertyName, JsonNode? value)
         {
-            JsonPropertyDictionary<JsonNode?> dictionary = Dictionary;
+            OrderedDictionary<string, JsonNode?> dictionary = Dictionary;
             KeyValuePair<string, JsonNode?> existing = dictionary.GetAt(index);
             dictionary.SetAt(index, propertyName, value);
             DetachParent(existing.Value);
@@ -37,7 +37,7 @@ namespace System.Text.Json.Nodes
         /// <exception cref="InvalidOperationException"><paramref name="value"/> already has a parent.</exception>
         public void SetAt(int index, JsonNode? value)
         {
-            JsonPropertyDictionary<JsonNode?> dictionary = Dictionary;
+            OrderedDictionary<string, JsonNode?> dictionary = Dictionary;
             KeyValuePair<string, JsonNode?> existing = dictionary.GetAt(index);
             dictionary.SetAt(index, value);
             DetachParent(existing.Value);

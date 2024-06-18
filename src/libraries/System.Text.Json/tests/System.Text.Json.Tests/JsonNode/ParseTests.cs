@@ -159,12 +159,12 @@ namespace System.Text.Json.Nodes.Tests
             FieldInfo jsonDictionaryField = typeof(JsonObject).GetField("_dictionary", BindingFlags.Instance | BindingFlags.NonPublic);
             Assert.NotNull(jsonDictionaryField);
 
-            Type jsonPropertyDictionaryType = typeof(JsonObject).Assembly.GetType("System.Text.Json.JsonPropertyDictionary`1");
+#if !NET9_0_OR_GREATER // Bespoke implementation replaced with OrderedDictionary
+            Type jsonPropertyDictionaryType = typeof(JsonObject).Assembly.GetType("System.Text.Json.OrderedDictionary`2");
             Assert.NotNull(jsonPropertyDictionaryType);
 
-            jsonPropertyDictionaryType = jsonPropertyDictionaryType.MakeGenericType(new Type[] { typeof(JsonNode) });
+            jsonPropertyDictionaryType = jsonPropertyDictionaryType.MakeGenericType(new Type[] { typeof(string), typeof(JsonNode) });
 
-#if !NET9_0_OR_GREATER // Bespoke implementation replaced with OrderedDictionary
             FieldInfo listField = jsonPropertyDictionaryType.GetField("_propertyList", BindingFlags.Instance | BindingFlags.NonPublic);
             Assert.NotNull(listField);
 

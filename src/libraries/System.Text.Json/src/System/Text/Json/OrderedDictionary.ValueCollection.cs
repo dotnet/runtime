@@ -6,22 +6,22 @@ using System.Collections.Generic;
 
 namespace System.Text.Json
 {
-    internal sealed partial class JsonPropertyDictionary<T>
+    internal sealed partial class OrderedDictionary<TKey, TValue>
     {
-        private sealed class ValueCollection : IList<T>
+        private sealed class ValueCollection : IList<TValue>
         {
-            private readonly JsonPropertyDictionary<T> _parent;
+            private readonly OrderedDictionary<TKey, TValue> _parent;
 
-            public ValueCollection(JsonPropertyDictionary<T> jsonObject)
+            public ValueCollection(OrderedDictionary<TKey, TValue> parent)
             {
-                _parent = jsonObject;
+                _parent = parent;
             }
 
             public int Count => _parent.Count;
 
             public bool IsReadOnly => true;
 
-            public T this[int index]
+            public TValue this[int index]
             {
                 get => _parent.GetAt(index).Value;
                 set => throw ThrowHelper.GetNotSupportedException_CollectionIsReadOnly();
@@ -29,20 +29,20 @@ namespace System.Text.Json
 
             IEnumerator IEnumerable.GetEnumerator()
             {
-                foreach (KeyValuePair<string, T> item in _parent)
+                foreach (KeyValuePair<TKey, TValue> item in _parent)
                 {
                     yield return item.Value;
                 }
             }
 
-            public void Add(T value) => ThrowHelper.ThrowNotSupportedException_CollectionIsReadOnly();
+            public void Add(TValue value) => ThrowHelper.ThrowNotSupportedException_CollectionIsReadOnly();
 
             public void Clear() => ThrowHelper.ThrowNotSupportedException_CollectionIsReadOnly();
 
-            public bool Contains(T value)
+            public bool Contains(TValue value)
             {
-                EqualityComparer<T> comparer = _parent._valueComparer;
-                foreach (KeyValuePair<string, T> item in _parent._propertyList)
+                EqualityComparer<TValue> comparer = _parent._valueComparer;
+                foreach (KeyValuePair<TKey, TValue> item in _parent._propertyList)
                 {
                     if (comparer.Equals(item.Value, value))
                     {
@@ -53,14 +53,14 @@ namespace System.Text.Json
                 return false;
             }
 
-            public void CopyTo(T[] destination, int index)
+            public void CopyTo(TValue[] destination, int index)
             {
                 if (index < 0)
                 {
                     ThrowHelper.ThrowArgumentOutOfRangeException_ArrayIndexNegative(nameof(index));
                 }
 
-                foreach (KeyValuePair<string, T> item in _parent)
+                foreach (KeyValuePair<TKey, TValue> item in _parent)
                 {
                     if (index >= destination.Length)
                     {
@@ -71,17 +71,17 @@ namespace System.Text.Json
                 }
             }
 
-            public IEnumerator<T> GetEnumerator()
+            public IEnumerator<TValue> GetEnumerator()
             {
-                foreach (KeyValuePair<string, T> item in _parent)
+                foreach (KeyValuePair<TKey, TValue> item in _parent)
                 {
                     yield return item.Value;
                 }
             }
 
-            bool ICollection<T>.Remove(T value) => throw ThrowHelper.GetNotSupportedException_CollectionIsReadOnly();
-            public int IndexOf(T item) => throw ThrowHelper.GetNotSupportedException_CollectionIsReadOnly();
-            public void Insert(int index, T value) => throw ThrowHelper.GetNotSupportedException_CollectionIsReadOnly();
+            bool ICollection<TValue>.Remove(TValue value) => throw ThrowHelper.GetNotSupportedException_CollectionIsReadOnly();
+            public int IndexOf(TValue item) => throw ThrowHelper.GetNotSupportedException_CollectionIsReadOnly();
+            public void Insert(int index, TValue value) => throw ThrowHelper.GetNotSupportedException_CollectionIsReadOnly();
             public void RemoveAt(int index) => throw ThrowHelper.GetNotSupportedException_CollectionIsReadOnly();
         }
     }
