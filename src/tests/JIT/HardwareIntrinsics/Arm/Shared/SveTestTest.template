@@ -1,0 +1,125 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+/******************************************************************************
+ * This file is auto-generated from a template file by the GenerateTests.csx  *
+ * script in tests\src\JIT\HardwareIntrinsics\Arm\Shared. In order to make    *
+ * changes, please update the corresponding template and run according to the *
+ * directions listed in the file.                                             *
+ ******************************************************************************/
+
+using System;
+using System.Numerics;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
+using Xunit;
+
+namespace JIT.HardwareIntrinsics.Arm
+{
+    public static partial class Program
+    {
+        [Fact]
+        public static void {TestName}()
+        {
+            var test = new TestTest__{TestName}();
+
+            if (test.IsSupported)
+            {
+                // Validates basic functionality works
+                test.RunBasicScenario_Load();
+
+                // Validates calling via reflection works
+                test.RunReflectionScenario_Load();
+            }
+            else
+            {
+                // Validates we throw on unsupported hardware
+                test.RunUnsupportedScenario();
+            }
+
+            if (!test.Succeeded)
+            {
+                throw new Exception("One or more scenarios did not complete as expected.");
+            }
+        }
+    }
+
+    public sealed unsafe class TestTest__{TestName}
+    {
+        public TestTest__{TestName}()
+        {
+            Succeeded = true;
+        }
+
+        public bool IsSupported => {Isa}.IsSupported;
+
+        public bool Succeeded { get; set; }
+
+        public void RunBasicScenario_Load()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_Load));
+
+            Vector<{MaskBaseType}> op1 = {Op1Value};
+            Vector<{MaskBaseType}> op2 = {Op2Value};
+
+            var result = {Isa}.{Method}(op1, op2);
+
+            ValidateResult(op1, op2, result);
+        }
+
+        public void RunReflectionScenario_Load()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario_Load));
+
+            Vector<{MaskBaseType}> op1 = {Op1Value};
+            Vector<{MaskBaseType}> op2 = {Op2Value};
+
+            var result = typeof({Isa}).GetMethod(nameof({Isa}.{Method}), new Type[] { typeof(Vector<{MaskBaseType}>), typeof(Vector<{MaskBaseType}>) })
+                                     .Invoke(null, new object[] {
+                                        op1, op2
+                                     });
+
+            ValidateResult(op1, op2, (bool)result);
+        }
+
+        public void RunUnsupportedScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunUnsupportedScenario));
+
+            Succeeded = false;
+
+            try
+            {
+                RunBasicScenario_Load();
+            }
+            catch (PlatformNotSupportedException)
+            {
+                Succeeded = true;
+            }
+        }
+
+        private void ValidateResult(Vector<{MaskBaseType}> op1, Vector<{MaskBaseType}> op2, bool result, [CallerMemberName] string method = "")
+        {
+            bool succeeded = true;
+
+            if ({ValidateEntry})
+            {
+                succeeded = false;
+            }
+
+            if (!succeeded)
+            {
+                TestLibrary.TestFramework.LogInformation($"{nameof({Isa})}.{nameof({Isa}.{Method})}(Vector<{MaskBaseType}>, Vector<{MaskBaseType}>): {method} failed:");
+                TestLibrary.TestFramework.LogInformation($"      op1: ({op1})");
+                TestLibrary.TestFramework.LogInformation($"      op2: ({op2})");
+                TestLibrary.TestFramework.LogInformation($"   result: ({result})");
+                TestLibrary.TestFramework.LogInformation(string.Empty);
+
+                Succeeded = false;
+            }
+        }
+    }
+}

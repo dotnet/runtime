@@ -1458,6 +1458,348 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<ulong> DotProductBySelectedScalar(Vector<ulong> addend, Vector<ushort> left, Vector<ushort> right, [ConstantExpected] byte rightIndex) => DotProductBySelectedScalar(addend, left, right, rightIndex);
 
+
+        /// <summary>
+        /// uint8_t svlasta[_u8](svbool_t pg, svuint8_t op)
+        ///   LASTA Wresult, Pg, Zop.B
+        ///   LASTA Bresult, Pg, Zop.B
+        /// </summary>
+        public static unsafe byte ExtractAfterLastScalar(Vector<byte> value) => ExtractAfterLastScalar(value);
+
+        /// <summary>
+        /// float64_t svlasta[_f64](svbool_t pg, svfloat64_t op)
+        ///   LASTA Xresult, Pg, Zop.D
+        ///   LASTA Dresult, Pg, Zop.D
+        /// </summary>
+        public static unsafe double ExtractAfterLastScalar(Vector<double> value) => ExtractAfterLastScalar(value);
+
+        /// <summary>
+        /// int16_t svlasta[_s16](svbool_t pg, svint16_t op)
+        ///   LASTA Wresult, Pg, Zop.H
+        ///   LASTA Hresult, Pg, Zop.H
+        /// </summary>
+        public static unsafe short ExtractAfterLastScalar(Vector<short> value) => ExtractAfterLastScalar(value);
+
+        /// <summary>
+        /// int32_t svlasta[_s32](svbool_t pg, svint32_t op)
+        ///   LASTA Wresult, Pg, Zop.S
+        ///   LASTA Sresult, Pg, Zop.S
+        /// </summary>
+        public static unsafe int ExtractAfterLastScalar(Vector<int> value) => ExtractAfterLastScalar(value);
+
+        /// <summary>
+        /// int64_t svlasta[_s64](svbool_t pg, svint64_t op)
+        ///   LASTA Xresult, Pg, Zop.D
+        ///   LASTA Dresult, Pg, Zop.D
+        /// </summary>
+        public static unsafe long ExtractAfterLastScalar(Vector<long> value) => ExtractAfterLastScalar(value);
+
+        /// <summary>
+        /// int8_t svlasta[_s8](svbool_t pg, svint8_t op)
+        ///   LASTA Wresult, Pg, Zop.B
+        ///   LASTA Bresult, Pg, Zop.B
+        /// </summary>
+        public static unsafe sbyte ExtractAfterLastScalar(Vector<sbyte> value) => ExtractAfterLastScalar(value);
+
+        /// <summary>
+        /// float32_t svlasta[_f32](svbool_t pg, svfloat32_t op)
+        ///   LASTA Wresult, Pg, Zop.S
+        ///   LASTA Sresult, Pg, Zop.S
+        /// </summary>
+        public static unsafe float ExtractAfterLastScalar(Vector<float> value) => ExtractAfterLastScalar(value);
+
+        /// <summary>
+        /// uint16_t svlasta[_u16](svbool_t pg, svuint16_t op)
+        ///   LASTA Wresult, Pg, Zop.H
+        ///   LASTA Hresult, Pg, Zop.H
+        /// </summary>
+        public static unsafe ushort ExtractAfterLastScalar(Vector<ushort> value) => ExtractAfterLastScalar(value);
+
+        /// <summary>
+        /// uint32_t svlasta[_u32](svbool_t pg, svuint32_t op)
+        ///   LASTA Wresult, Pg, Zop.S
+        ///   LASTA Sresult, Pg, Zop.S
+        /// </summary>
+        public static unsafe uint ExtractAfterLastScalar(Vector<uint> value) => ExtractAfterLastScalar(value);
+
+        /// <summary>
+        /// uint64_t svlasta[_u64](svbool_t pg, svuint64_t op)
+        ///   LASTA Xresult, Pg, Zop.D
+        ///   LASTA Dresult, Pg, Zop.D
+        /// </summary>
+        public static unsafe ulong ExtractAfterLastScalar(Vector<ulong> value) => ExtractAfterLastScalar(value);
+
+        /// <summary>
+        /// uint8_t svlasta[_u8](svbool_t pg, svuint8_t op)
+        ///   LASTA Wresult, Pg, Zop.B
+        ///   LASTA Bresult, Pg, Zop.B
+        /// </summary>
+        public static unsafe Vector<byte> ExtractAfterLastVector(Vector<byte> value) => ExtractAfterLastVector(value);
+
+        /// <summary>
+        /// float64_t svlasta[_f64](svbool_t pg, svfloat64_t op)
+        ///   LASTA Xresult, Pg, Zop.D
+        ///   LASTA Dresult, Pg, Zop.D
+        /// </summary>
+        public static unsafe Vector<double> ExtractAfterLastVector(Vector<double> value) => ExtractAfterLastVector(value);
+
+        /// <summary>
+        /// int16_t svlasta[_s16](svbool_t pg, svint16_t op)
+        ///   LASTA Wresult, Pg, Zop.H
+        ///   LASTA Hresult, Pg, Zop.H
+        /// </summary>
+        public static unsafe Vector<short> ExtractAfterLastVector(Vector<short> value) => ExtractAfterLastVector(value);
+
+        /// <summary>
+        /// int32_t svlasta[_s32](svbool_t pg, svint32_t op)
+        ///   LASTA Wresult, Pg, Zop.S
+        ///   LASTA Sresult, Pg, Zop.S
+        /// </summary>
+        public static unsafe Vector<int> ExtractAfterLastVector(Vector<int> value) => ExtractAfterLastVector(value);
+
+        /// <summary>
+        /// int64_t svlasta[_s64](svbool_t pg, svint64_t op)
+        ///   LASTA Xresult, Pg, Zop.D
+        ///   LASTA Dresult, Pg, Zop.D
+        /// </summary>
+        public static unsafe Vector<long> ExtractAfterLastVector(Vector<long> value) => ExtractAfterLastVector(value);
+
+        /// <summary>
+        /// int8_t svlasta[_s8](svbool_t pg, svint8_t op)
+        ///   LASTA Wresult, Pg, Zop.B
+        ///   LASTA Bresult, Pg, Zop.B
+        /// </summary>
+        public static unsafe Vector<sbyte> ExtractAfterLastVector(Vector<sbyte> value) => ExtractAfterLastVector(value);
+
+        /// <summary>
+        /// float32_t svlasta[_f32](svbool_t pg, svfloat32_t op)
+        ///   LASTA Wresult, Pg, Zop.S
+        ///   LASTA Sresult, Pg, Zop.S
+        /// </summary>
+        public static unsafe Vector<float> ExtractAfterLastVector(Vector<float> value) => ExtractAfterLastVector(value);
+
+        /// <summary>
+        /// uint16_t svlasta[_u16](svbool_t pg, svuint16_t op)
+        ///   LASTA Wresult, Pg, Zop.H
+        ///   LASTA Hresult, Pg, Zop.H
+        /// </summary>
+        public static unsafe Vector<ushort> ExtractAfterLastVector(Vector<ushort> value) => ExtractAfterLastVector(value);
+
+        /// <summary>
+        /// uint32_t svlasta[_u32](svbool_t pg, svuint32_t op)
+        ///   LASTA Wresult, Pg, Zop.S
+        ///   LASTA Sresult, Pg, Zop.S
+        /// </summary>
+        public static unsafe Vector<uint> ExtractAfterLastVector(Vector<uint> value) => ExtractAfterLastVector(value);
+
+        /// <summary>
+        /// uint64_t svlasta[_u64](svbool_t pg, svuint64_t op)
+        ///   LASTA Xresult, Pg, Zop.D
+        ///   LASTA Dresult, Pg, Zop.D
+        /// </summary>
+        public static unsafe Vector<ulong> ExtractAfterLastVector(Vector<ulong> value) => ExtractAfterLastVector(value);
+
+        /// <summary>
+        /// uint8_t svlastb[_u8](svbool_t pg, svuint8_t op)
+        ///   LASTB Wresult, Pg, Zop.B
+        ///   LASTB Bresult, Pg, Zop.B
+        /// </summary>
+        public static unsafe byte ExtractLastScalar(Vector<byte> value) => ExtractLastScalar(value);
+
+        /// <summary>
+        /// float64_t svlastb[_f64](svbool_t pg, svfloat64_t op)
+        ///   LASTB Xresult, Pg, Zop.D
+        ///   LASTB Dresult, Pg, Zop.D
+        /// </summary>
+        public static unsafe double ExtractLastScalar(Vector<double> value) => ExtractLastScalar(value);
+
+        /// <summary>
+        /// int16_t svlastb[_s16](svbool_t pg, svint16_t op)
+        ///   LASTB Wresult, Pg, Zop.H
+        ///   LASTB Hresult, Pg, Zop.H
+        /// </summary>
+        public static unsafe short ExtractLastScalar(Vector<short> value) => ExtractLastScalar(value);
+
+        /// <summary>
+        /// int32_t svlastb[_s32](svbool_t pg, svint32_t op)
+        ///   LASTB Wresult, Pg, Zop.S
+        ///   LASTB Sresult, Pg, Zop.S
+        /// </summary>
+        public static unsafe int ExtractLastScalar(Vector<int> value) => ExtractLastScalar(value);
+
+        /// <summary>
+        /// int64_t svlastb[_s64](svbool_t pg, svint64_t op)
+        ///   LASTB Xresult, Pg, Zop.D
+        ///   LASTB Dresult, Pg, Zop.D
+        /// </summary>
+        public static unsafe long ExtractLastScalar(Vector<long> value) => ExtractLastScalar(value);
+
+        /// <summary>
+        /// int8_t svlastb[_s8](svbool_t pg, svint8_t op)
+        ///   LASTB Wresult, Pg, Zop.B
+        ///   LASTB Bresult, Pg, Zop.B
+        /// </summary>
+        public static unsafe sbyte ExtractLastScalar(Vector<sbyte> value) => ExtractLastScalar(value);
+
+        /// <summary>
+        /// float32_t svlastb[_f32](svbool_t pg, svfloat32_t op)
+        ///   LASTB Wresult, Pg, Zop.S
+        ///   LASTB Sresult, Pg, Zop.S
+        /// </summary>
+        public static unsafe float ExtractLastScalar(Vector<float> value) => ExtractLastScalar(value);
+
+        /// <summary>
+        /// uint16_t svlastb[_u16](svbool_t pg, svuint16_t op)
+        ///   LASTB Wresult, Pg, Zop.H
+        ///   LASTB Hresult, Pg, Zop.H
+        /// </summary>
+        public static unsafe ushort ExtractLastScalar(Vector<ushort> value) => ExtractLastScalar(value);
+
+        /// <summary>
+        /// uint32_t svlastb[_u32](svbool_t pg, svuint32_t op)
+        ///   LASTB Wresult, Pg, Zop.S
+        ///   LASTB Sresult, Pg, Zop.S
+        /// </summary>
+        public static unsafe uint ExtractLastScalar(Vector<uint> value) => ExtractLastScalar(value);
+
+        /// <summary>
+        /// uint64_t svlastb[_u64](svbool_t pg, svuint64_t op)
+        ///   LASTB Xresult, Pg, Zop.D
+        ///   LASTB Dresult, Pg, Zop.D
+        /// </summary>
+        public static unsafe ulong ExtractLastScalar(Vector<ulong> value) => ExtractLastScalar(value);
+
+        /// <summary>
+        /// uint8_t svlastb[_u8](svbool_t pg, svuint8_t op)
+        ///   LASTB Wresult, Pg, Zop.B
+        ///   LASTB Bresult, Pg, Zop.B
+        /// </summary>
+        public static unsafe Vector<byte> ExtractLastVector(Vector<byte> value) => ExtractLastVector(value);
+
+        /// <summary>
+        /// float64_t svlastb[_f64](svbool_t pg, svfloat64_t op)
+        ///   LASTB Xresult, Pg, Zop.D
+        ///   LASTB Dresult, Pg, Zop.D
+        /// </summary>
+        public static unsafe Vector<double> ExtractLastVector(Vector<double> value) => ExtractLastVector(value);
+
+        /// <summary>
+        /// int16_t svlastb[_s16](svbool_t pg, svint16_t op)
+        ///   LASTB Wresult, Pg, Zop.H
+        ///   LASTB Hresult, Pg, Zop.H
+        /// </summary>
+        public static unsafe Vector<short> ExtractLastVector(Vector<short> value) => ExtractLastVector(value);
+
+        /// <summary>
+        /// int32_t svlastb[_s32](svbool_t pg, svint32_t op)
+        ///   LASTB Wresult, Pg, Zop.S
+        ///   LASTB Sresult, Pg, Zop.S
+        /// </summary>
+        public static unsafe Vector<int> ExtractLastVector(Vector<int> value) => ExtractLastVector(value);
+
+        /// <summary>
+        /// int64_t svlastb[_s64](svbool_t pg, svint64_t op)
+        ///   LASTB Xresult, Pg, Zop.D
+        ///   LASTB Dresult, Pg, Zop.D
+        /// </summary>
+        public static unsafe Vector<long> ExtractLastVector(Vector<long> value) => ExtractLastVector(value);
+
+        /// <summary>
+        /// int8_t svlastb[_s8](svbool_t pg, svint8_t op)
+        ///   LASTB Wresult, Pg, Zop.B
+        ///   LASTB Bresult, Pg, Zop.B
+        /// </summary>
+        public static unsafe Vector<sbyte> ExtractLastVector(Vector<sbyte> value) => ExtractLastVector(value);
+
+        /// <summary>
+        /// float32_t svlastb[_f32](svbool_t pg, svfloat32_t op)
+        ///   LASTB Wresult, Pg, Zop.S
+        ///   LASTB Sresult, Pg, Zop.S
+        /// </summary>
+        public static unsafe Vector<float> ExtractLastVector(Vector<float> value) => ExtractLastVector(value);
+
+        /// <summary>
+        /// uint16_t svlastb[_u16](svbool_t pg, svuint16_t op)
+        ///   LASTB Wresult, Pg, Zop.H
+        ///   LASTB Hresult, Pg, Zop.H
+        /// </summary>
+        public static unsafe Vector<ushort> ExtractLastVector(Vector<ushort> value) => ExtractLastVector(value);
+
+        /// <summary>
+        /// uint32_t svlastb[_u32](svbool_t pg, svuint32_t op)
+        ///   LASTB Wresult, Pg, Zop.S
+        ///   LASTB Sresult, Pg, Zop.S
+        /// </summary>
+        public static unsafe Vector<uint> ExtractLastVector(Vector<uint> value) => ExtractLastVector(value);
+
+        /// <summary>
+        /// uint64_t svlastb[_u64](svbool_t pg, svuint64_t op)
+        ///   LASTB Xresult, Pg, Zop.D
+        ///   LASTB Dresult, Pg, Zop.D
+        /// </summary>
+        public static unsafe Vector<ulong> ExtractLastVector(Vector<ulong> value) => ExtractLastVector(value);
+
+        /// <summary>
+        /// svuint8_t svext[_u8](svuint8_t op1, svuint8_t op2, uint64_t imm3)
+        ///   EXT Ztied1.B, Ztied1.B, Zop2.B, #imm3
+        /// </summary>
+        public static unsafe Vector<byte> ExtractVector(Vector<byte> upper, Vector<byte> lower, [ConstantExpected] byte index) => ExtractVector(upper, lower, index);
+
+        /// <summary>
+        /// svfloat64_t svext[_f64](svfloat64_t op1, svfloat64_t op2, uint64_t imm3)
+        ///   EXT Ztied1.B, Ztied1.B, Zop2.B, #imm3 * 8
+        /// </summary>
+        public static unsafe Vector<double> ExtractVector(Vector<double> upper, Vector<double> lower, [ConstantExpected] byte index) => ExtractVector(upper, lower, index);
+
+        /// <summary>
+        /// svint16_t svext[_s16](svint16_t op1, svint16_t op2, uint64_t imm3)
+        ///   EXT Ztied1.B, Ztied1.B, Zop2.B, #imm3 * 2
+        /// </summary>
+        public static unsafe Vector<short> ExtractVector(Vector<short> upper, Vector<short> lower, [ConstantExpected] byte index) => ExtractVector(upper, lower, index);
+
+        /// <summary>
+        /// svint32_t svext[_s32](svint32_t op1, svint32_t op2, uint64_t imm3)
+        ///   EXT Ztied1.B, Ztied1.B, Zop2.B, #imm3 * 4
+        /// </summary>
+        public static unsafe Vector<int> ExtractVector(Vector<int> upper, Vector<int> lower, [ConstantExpected] byte index) => ExtractVector(upper, lower, index);
+
+        /// <summary>
+        /// svint64_t svext[_s64](svint64_t op1, svint64_t op2, uint64_t imm3)
+        ///   EXT Ztied1.B, Ztied1.B, Zop2.B, #imm3 * 8
+        /// </summary>
+        public static unsafe Vector<long> ExtractVector(Vector<long> upper, Vector<long> lower, [ConstantExpected] byte index) => ExtractVector(upper, lower, index);
+
+        /// <summary>
+        /// svint8_t svext[_s8](svint8_t op1, svint8_t op2, uint64_t imm3)
+        ///   EXT Ztied1.B, Ztied1.B, Zop2.B, #imm3
+        /// </summary>
+        public static unsafe Vector<sbyte> ExtractVector(Vector<sbyte> upper, Vector<sbyte> lower, [ConstantExpected] byte index) => ExtractVector(upper, lower, index);
+
+        /// <summary>
+        /// svfloat32_t svext[_f32](svfloat32_t op1, svfloat32_t op2, uint64_t imm3)
+        ///   EXT Ztied1.B, Ztied1.B, Zop2.B, #imm3 * 4
+        /// </summary>
+        public static unsafe Vector<float> ExtractVector(Vector<float> upper, Vector<float> lower, [ConstantExpected] byte index) => ExtractVector(upper, lower, index);
+
+        /// <summary>
+        /// svuint16_t svext[_u16](svuint16_t op1, svuint16_t op2, uint64_t imm3)
+        ///   EXT Ztied1.B, Ztied1.B, Zop2.B, #imm3 * 2
+        /// </summary>
+        public static unsafe Vector<ushort> ExtractVector(Vector<ushort> upper, Vector<ushort> lower, [ConstantExpected] byte index) => ExtractVector(upper, lower, index);
+
+        /// <summary>
+        /// svuint32_t svext[_u32](svuint32_t op1, svuint32_t op2, uint64_t imm3)
+        ///   EXT Ztied1.B, Ztied1.B, Zop2.B, #imm3 * 4
+        /// </summary>
+        public static unsafe Vector<uint> ExtractVector(Vector<uint> upper, Vector<uint> lower, [ConstantExpected] byte index) => ExtractVector(upper, lower, index);
+
+        /// <summary>
+        /// svuint64_t svext[_u64](svuint64_t op1, svuint64_t op2, uint64_t imm3)
+        ///   EXT Ztied1.B, Ztied1.B, Zop2.B, #imm3 * 8
+        /// </summary>
+        public static unsafe Vector<ulong> ExtractVector(Vector<ulong> upper, Vector<ulong> lower, [ConstantExpected] byte index) => ExtractVector(upper, lower, index);
+
+
         ///  FusedMultiplyAdd : Multiply-add, addend first
 
         /// <summary>
@@ -5638,6 +5980,151 @@ namespace System.Runtime.Intrinsics.Arm
         ///   UQSUB Zresult.D, Zop1.D, Zop2.D
         /// </summary>
         public static unsafe Vector<ulong> SubtractSaturate(Vector<ulong> left, Vector<ulong> right) => SubtractSaturate(left, right);
+
+
+        /// <summary>
+        /// bool svptest_any(svbool_t pg, svbool_t op)
+        ///   PTEST
+        /// </summary>
+        public static unsafe bool TestAnyTrue(Vector<byte> leftMask, Vector<byte> rightMask) => TestAnyTrue(leftMask, rightMask);
+
+        /// <summary>
+        /// bool svptest_any(svbool_t pg, svbool_t op)
+        ///   PTEST
+        /// </summary>
+        public static unsafe bool TestAnyTrue(Vector<short> leftMask, Vector<short> rightMask) => TestAnyTrue(leftMask, rightMask);
+
+        /// <summary>
+        /// bool svptest_any(svbool_t pg, svbool_t op)
+        ///   PTEST
+        /// </summary>
+        public static unsafe bool TestAnyTrue(Vector<int> leftMask, Vector<int> rightMask) => TestAnyTrue(leftMask, rightMask);
+
+        /// <summary>
+        /// bool svptest_any(svbool_t pg, svbool_t op)
+        ///   PTEST
+        /// </summary>
+        public static unsafe bool TestAnyTrue(Vector<long> leftMask, Vector<long> rightMask) => TestAnyTrue(leftMask, rightMask);
+
+        /// <summary>
+        /// bool svptest_any(svbool_t pg, svbool_t op)
+        ///   PTEST
+        /// </summary>
+        public static unsafe bool TestAnyTrue(Vector<sbyte> leftMask, Vector<sbyte> rightMask) => TestAnyTrue(leftMask, rightMask);
+
+        /// <summary>
+        /// bool svptest_any(svbool_t pg, svbool_t op)
+        ///   PTEST
+        /// </summary>
+        public static unsafe bool TestAnyTrue(Vector<ushort> leftMask, Vector<ushort> rightMask) => TestAnyTrue(leftMask, rightMask);
+
+        /// <summary>
+        /// bool svptest_any(svbool_t pg, svbool_t op)
+        ///   PTEST
+        /// </summary>
+        public static unsafe bool TestAnyTrue(Vector<uint> leftMask, Vector<uint> rightMask) => TestAnyTrue(leftMask, rightMask);
+
+        /// <summary>
+        /// bool svptest_any(svbool_t pg, svbool_t op)
+        ///   PTEST
+        /// </summary>
+        public static unsafe bool TestAnyTrue(Vector<ulong> leftMask, Vector<ulong> rightMask) => TestAnyTrue(leftMask, rightMask);
+
+        /// <summary>
+        /// bool svptest_first(svbool_t pg, svbool_t op)
+        ///   PTEST
+        /// </summary>
+        public static unsafe bool TestFirstTrue(Vector<byte> leftMask, Vector<byte> rightMask) => TestFirstTrue(leftMask, rightMask);
+
+        /// <summary>
+        /// bool svptest_first(svbool_t pg, svbool_t op)
+        ///   PTEST
+        /// </summary>
+        public static unsafe bool TestFirstTrue(Vector<short> leftMask, Vector<short> rightMask) => TestFirstTrue(leftMask, rightMask);
+
+        /// <summary>
+        /// bool svptest_first(svbool_t pg, svbool_t op)
+        ///   PTEST
+        /// </summary>
+        public static unsafe bool TestFirstTrue(Vector<int> leftMask, Vector<int> rightMask) => TestFirstTrue(leftMask, rightMask);
+
+        /// <summary>
+        /// bool svptest_first(svbool_t pg, svbool_t op)
+        ///   PTEST
+        /// </summary>
+        public static unsafe bool TestFirstTrue(Vector<long> leftMask, Vector<long> rightMask) => TestFirstTrue(leftMask, rightMask);
+
+        /// <summary>
+        /// bool svptest_first(svbool_t pg, svbool_t op)
+        ///   PTEST
+        /// </summary>
+        public static unsafe bool TestFirstTrue(Vector<sbyte> leftMask, Vector<sbyte> rightMask) => TestFirstTrue(leftMask, rightMask);
+
+        /// <summary>
+        /// bool svptest_first(svbool_t pg, svbool_t op)
+        ///   PTEST
+        /// </summary>
+        public static unsafe bool TestFirstTrue(Vector<ushort> leftMask, Vector<ushort> rightMask) => TestFirstTrue(leftMask, rightMask);
+
+        /// <summary>
+        /// bool svptest_first(svbool_t pg, svbool_t op)
+        ///   PTEST
+        /// </summary>
+        public static unsafe bool TestFirstTrue(Vector<uint> leftMask, Vector<uint> rightMask) => TestFirstTrue(leftMask, rightMask);
+
+        /// <summary>
+        /// bool svptest_first(svbool_t pg, svbool_t op)
+        ///   PTEST
+        /// </summary>
+        public static unsafe bool TestFirstTrue(Vector<ulong> leftMask, Vector<ulong> rightMask) => TestFirstTrue(leftMask, rightMask);
+
+        /// <summary>
+        /// bool svptest_last(svbool_t pg, svbool_t op)
+        ///   PTEST
+        /// </summary>
+        public static unsafe bool TestLastTrue(Vector<byte> leftMask, Vector<byte> rightMask) => TestLastTrue(leftMask, rightMask);
+
+        /// <summary>
+        /// bool svptest_last(svbool_t pg, svbool_t op)
+        ///   PTEST
+        /// </summary>
+        public static unsafe bool TestLastTrue(Vector<short> leftMask, Vector<short> rightMask) => TestLastTrue(leftMask, rightMask);
+
+        /// <summary>
+        /// bool svptest_last(svbool_t pg, svbool_t op)
+        ///   PTEST
+        /// </summary>
+        public static unsafe bool TestLastTrue(Vector<int> leftMask, Vector<int> rightMask) => TestLastTrue(leftMask, rightMask);
+
+        /// <summary>
+        /// bool svptest_last(svbool_t pg, svbool_t op)
+        ///   PTEST
+        /// </summary>
+        public static unsafe bool TestLastTrue(Vector<long> leftMask, Vector<long> rightMask) => TestLastTrue(leftMask, rightMask);
+
+        /// <summary>
+        /// bool svptest_last(svbool_t pg, svbool_t op)
+        ///   PTEST
+        /// </summary>
+        public static unsafe bool TestLastTrue(Vector<sbyte> leftMask, Vector<sbyte> rightMask) => TestLastTrue(leftMask, rightMask);
+
+        /// <summary>
+        /// bool svptest_last(svbool_t pg, svbool_t op)
+        ///   PTEST
+        /// </summary>
+        public static unsafe bool TestLastTrue(Vector<ushort> leftMask, Vector<ushort> rightMask) => TestLastTrue(leftMask, rightMask);
+
+        /// <summary>
+        /// bool svptest_last(svbool_t pg, svbool_t op)
+        ///   PTEST
+        /// </summary>
+        public static unsafe bool TestLastTrue(Vector<uint> leftMask, Vector<uint> rightMask) => TestLastTrue(leftMask, rightMask);
+
+        /// <summary>
+        /// bool svptest_last(svbool_t pg, svbool_t op)
+        ///   PTEST
+        /// </summary>
+        public static unsafe bool TestLastTrue(Vector<ulong> leftMask, Vector<ulong> rightMask) => TestLastTrue(leftMask, rightMask);
 
 
         ///  Interleave even elements from two inputs
