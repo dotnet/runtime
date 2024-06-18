@@ -94,16 +94,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         protected override X509Certificate2 LoadCertificateNoFile(byte[] bytes)
         {
-            string path = Path.GetTempFileName();
-
-            try
+            using (TempFileHolder holder = new TempFileHolder(bytes))
             {
-                File.WriteAllBytes(path, bytes);
-                return LoadCertificate(bytes, path);
-            }
-            finally
-            {
-                File.Delete(path);
+                return LoadCertificate(bytes, holder.FilePath);
             }
         }
 
@@ -284,9 +277,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         internal static void AssertRawDataEquals(byte[] expected, X509Certificate2 cert)
         {
 #if NET
-                AssertExtensions.SequenceEqual(TestData.MsCertificate, cert.RawDataMemory.Span);
+            AssertExtensions.SequenceEqual(TestData.MsCertificate, cert.RawDataMemory.Span);
 #else
-                AssertExtensions.SequenceEqual(TestData.MsCertificate, cert.RawData);
+            AssertExtensions.SequenceEqual(TestData.MsCertificate, cert.RawData);
 #endif
         }
 

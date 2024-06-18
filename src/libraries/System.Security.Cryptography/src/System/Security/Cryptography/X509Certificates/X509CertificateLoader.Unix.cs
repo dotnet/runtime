@@ -264,9 +264,7 @@ namespace System.Security.Cryptography.X509Certificates
 
                             if (key is not null)
                             {
-                                // No need to check bytesRead since it was verified
-                                // in PrivateKeyInfoAsn.Decode
-                                key.ImportPkcs8PrivateKey(safeBag.BagValue.Span, out int _);
+                                ImportPrivateKey(key, safeBag.BagValue.Span);
 
                                 if (_rentedSpki is null)
                                 {
@@ -390,7 +388,7 @@ namespace System.Security.Cryptography.X509Certificates
                                 }
 
                                 _certAndKeys[certBagIdx].Key = key;
-                                key.ImportPkcs8PrivateKey(keyBag.BagValue.Span, out _);
+                                ImportPrivateKey(key, keyBag.BagValue.Span);
                             }
                             else
                             {
@@ -562,6 +560,24 @@ namespace System.Security.Cryptography.X509Certificates
                 }
 
                 this = default;
+            }
+
+            private static void ImportPrivateKey(AsymmetricAlgorithm key, ReadOnlySpan<byte> pkcs8)
+            {
+                try
+                {
+                    key.ImportPkcs8PrivateKey(pkcs8, out int bytesRead);
+
+                    // The key should have already been run through PrivateKeyInfoAsn.Decode,
+                    // verifying no trailing data.
+                    Debug.Assert(bytesRead == pkcs8.Length);
+                }
+                catch (PlatformNotSupportedException nse)
+                {
+                    // Turn a "curve not supported" PNSE (or other PNSE)
+                    // into a standardized CryptographicException.
+                    throw new CryptographicException(SR.Cryptography_NotValidPrivateKey, nse);
+                }
             }
         }
 

@@ -151,16 +151,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             X509KeyStorageFlags keyStorageFlags,
             Pkcs12LoaderLimits loaderLimits)
         {
-            string path = Path.GetTempFileName();
-
-            try
+            using (TempFileHolder holder = new TempFileHolder(bytes))
             {
-                File.WriteAllBytes(path, bytes);
-                return LoadPfx(bytes, path, password, keyStorageFlags, loaderLimits);
-            }
-            finally
-            {
-                File.Delete(path);
+                return LoadPfx(bytes, holder.FilePath, password, keyStorageFlags, loaderLimits);
             }
         }
 

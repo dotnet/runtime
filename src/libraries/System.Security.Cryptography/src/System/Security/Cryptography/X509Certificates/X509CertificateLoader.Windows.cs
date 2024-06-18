@@ -236,34 +236,24 @@ namespace System.Security.Cryptography.X509Certificates
             X509KeyStorageFlags keyStorageFlags)
         {
             const int MaxStackPasswordLength = 64;
-            void* alloc = default;
             Span<char> szPassword = stackalloc char[MaxStackPasswordLength + 1];
-            ReadOnlySpan<char> effectivePassword = szPassword;
             Interop.Crypt32.PfxCertStoreFlags flags = MapKeyStorageFlags(keyStorageFlags);
 
-            try
+            if (password.Length >= MaxStackPasswordLength)
             {
-                if (password.Contains('\0'))
-                {
-                    effectivePassword = password;
-                }
-                else
-                {
-                    if (password.Length >= MaxStackPasswordLength)
-                    {
-                        alloc = NativeMemory.Alloc((uint)password.Length + 1, sizeof(char));
-                        szPassword = new Span<char>(alloc, password.Length + 1);
-                    }
+                szPassword = new char[password.Length + 1];
+            }
 
+            SafeCertStoreHandle storeHandle;
+
+            fixed (byte* dataPtr = data)
+            fixed (char* szPtr = szPassword)
+            {
+                try
+                {
                     password.CopyTo(szPassword);
                     szPassword[password.Length] = '\0';
-                }
 
-                SafeCertStoreHandle storeHandle;
-
-                fixed (byte* dataPtr = data)
-                fixed (char* szPtr = szPassword)
-                {
                     Interop.Crypt32.DATA_BLOB blob = new((IntPtr)dataPtr, (uint)data.Length);
 
                     storeHandle = Interop.Crypt32.PFXImportCertStore(
@@ -271,25 +261,20 @@ namespace System.Security.Cryptography.X509Certificates
                         szPtr,
                         flags);
                 }
-
-                if (storeHandle.IsInvalid)
+                finally
                 {
-                    Exception e = Marshal.GetHRForLastWin32Error().ToCryptographicException();
-                    storeHandle.Dispose();
-                    throw e;
+                    CryptographicOperations.ZeroMemory(MemoryMarshal.AsBytes(szPassword));
                 }
-
-                return storeHandle;
             }
-            finally
+
+            if (storeHandle.IsInvalid)
             {
-                CryptographicOperations.ZeroMemory(MemoryMarshal.AsBytes(szPassword));
-
-                if (alloc != (void*)0)
-                {
-                    NativeMemory.Free(alloc);
-                }
+                Exception e = Marshal.GetHRForLastWin32Error().ToCryptographicException();
+                storeHandle.Dispose();
+                throw e;
             }
+
+            return storeHandle;
         }
 
         private static Interop.Crypt32.PfxCertStoreFlags MapKeyStorageFlags(X509KeyStorageFlags keyStorageFlags)
