@@ -2937,7 +2937,8 @@ bool Promotion::HaveCandidateLocals()
 //
 bool Promotion::IsCandidateForPhysicalPromotion(LclVarDsc* dsc)
 {
-    return (dsc->TypeGet() == TYP_STRUCT) && !dsc->lvPromoted && (!dsc->IsAddressExposed()|| dsc->IsStackAllocatedBox());
+    return (dsc->TypeGet() == TYP_STRUCT) && !dsc->lvPromoted &&
+           (!dsc->IsAddressExposed() || dsc->IsStackAllocatedBox());
 }
 
 //------------------------------------------------------------------------

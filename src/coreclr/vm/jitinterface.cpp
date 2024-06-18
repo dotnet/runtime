@@ -1948,6 +1948,10 @@ bool CEEInfo::canAllocateOnStack(CORINFO_CLASS_HANDLE clsHnd)
 
     result = !pMT->HasFinalizer();
 
+#ifdef FEATURE_COMINTEROP
+    result &= !pMT->IsComObjectType();
+#endif // FEATURE_COMINTEROP
+
     EE_TO_JIT_TRANSITION_LEAF();
     return result;
 }

@@ -705,7 +705,8 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
                     // 2. Protect objects as interior (GCPROTECT_BEGININTERIOR() instead of GCPROTECT_BEGIN()).
                     // 3. Don't check that the object is in the heap in ValidateInner.
 
-                    canLclVarEscapeViaParentStack = true;
+                    canLclVarEscapeViaParentStack =
+                        !Compiler::s_helperCallProperties.IsNoEscape(comp->eeGetHelperNum(asCall->gtCallMethHnd));
                 }
                 break;
             }
@@ -814,6 +815,7 @@ void ObjectAllocator::UpdateAncestorTypes(GenTree* tree, ArrayStack<GenTree*>* p
                 break;
 
             case GT_IND:
+            case GT_CALL:
                 break;
 
             default:
