@@ -3928,6 +3928,7 @@ public:
 
 #ifdef SWIFT_SUPPORT
     unsigned lvaSwiftSelfArg;
+    unsigned lvaSwiftIndirectResultArg;
     unsigned lvaSwiftErrorArg;
     unsigned lvaSwiftErrorLocal;
 #endif
