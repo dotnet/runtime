@@ -1316,10 +1316,11 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 for (GenTreeFieldList::Use& use : fieldList->Uses())
                 {
                     regCount++;
-
+#ifdef DEBUG
                     GenTree* argNode = use.GetNode();
                     assert(argReg == argNode->GetRegNum());
                     argReg = getNextSIMDRegWithWraparound(argReg);
+#endif
                 }
 
                 switch (regCount)
