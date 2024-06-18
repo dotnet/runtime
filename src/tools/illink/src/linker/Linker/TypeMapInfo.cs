@@ -336,13 +336,14 @@ namespace Mono.Linker
 		/// <param name="implOfInterface">
 		/// The InterfaceImplementation on <paramref name="type"/> that points to the DeclaringType of <paramref name="interfaceMethod"/>.
 		/// </param>
-		void FindAndAddDefaultInterfaceImplementations (RuntimeInterfaceImplementation originalInterfaceImpl, MethodReference _, MethodDefinition interfaceMethodDef)
+		void FindAndAddDefaultInterfaceImplementations (RuntimeInterfaceImplementation originalInterfaceImpl, MethodReference inflatedInterfaceMethod, MethodDefinition interfaceMethodDef)
 		{
 			// Go over all interfaces, trying to find a method that is an explicit MethodImpl of the
 			// interface method in question.
 			if (!_runtimeInterfaceImpls.TryGetValue (originalInterfaceImpl.Implementor, out var runtimeIfaces))
 				return;
 
+			bool findAllPossibleImplementations = inflatedInterfaceMethod.DeclaringType is GenericInstanceType;
 			foreach (var interfaceImpl in runtimeIfaces) {
 				var potentialImplInterface = interfaceImpl.InterfaceTypeDefinition;
 				if (potentialImplInterface is null)
@@ -367,7 +368,7 @@ namespace Mono.Linker
 					foreach (var baseMethod in potentialImplMethod.Overrides) {
 						if (context.TryResolve (baseMethod) == interfaceMethodDef) {
 							AddDefaultInterfaceImplementation (interfaceMethodDef, originalInterfaceImpl, @potentialImplMethod);
-							foundImpl = true;
+							foundImpl = true && !findAllPossibleImplementations;
 						}
 					}
 					if (foundImpl) {

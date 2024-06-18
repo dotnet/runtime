@@ -15,23 +15,33 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.RecursiveInterfaces
 	[TestCaseRequirements (TestRunCharacteristics.SupportsDefaultInterfaceMethods | TestRunCharacteristics.SupportsStaticInterfaceMethods, "Requires support for default and static interface methods")]
 	[Define ("IL_ASSEMBLY_AVAILABLE")]
 	[SetupCompileBefore ("library.dll", new[] { "Dependencies/RecursiveGenericInterfacesStatic.il" })]
+	[KeptAllTypesAndMembersInAssembly ("library.dll")]
 	[KeptMemberInAssembly ("library.dll", "IBase`3", "GetT()", "GetU()", "GetV()")]
 	[KeptTypeInAssembly ("library.dll", "IMiddle`2")]
 	// Below isn't strictly necessary, but we keep them since the interface is generic and we haven't hardened generic interface handling to only keep the single closest DIM.
 	// We use method definition to match the .override to the required DIM. However, one DIM might be for a different generic instance than we are searching for.
 	// Because of this, we keep all generic interface DIMs that may be the DIM we need.
-	[KeptMemberInAssembly ("library.dll", "IMiddle`2", "IBase<T,U,System.Int32>.GetV()")]
+	[KeptMemberInAssembly ("library.dll", "IMiddle`2", "IBase<T,U,System.Int32>.GetV()", "IBase<T,U,System.Single>.GetV()")]
 	[KeptInterfaceOnTypeInAssembly ("library.dll", "IMiddle`2", "library.dll", "IBase`3<T,U,System.Int32>")]
 	[KeptInterfaceOnTypeInAssembly ("library.dll", "IMiddle`2", "library.dll", "IBase`3<T,U,System.Single>")]
 	[KeptOverrideOnMethodInAssembly ("library.dll", "IMiddle`2", "IBase<T,U,System.Int32>.GetV", "V IBase`3<T,U,System.Int32>::GetV()")]
+	[KeptOverrideOnMethodInAssembly ("library.dll", "IMiddle`2", "IBase<T,U,System.Single>.GetV", "V IBase`3<T,U,System.Single>::GetV()")]
 	[KeptTypeInAssembly ("library.dll", "IDerived`1")]
 	[KeptMemberInAssembly ("library.dll", "IDerived`1",
 			"IBase<T,System.Int64,System.Int32>.GetV()",
-			"IBase<T,System.Int64,System.Int32>.GetU()")]
+			"IBase<T,System.Int64,System.Single>.GetV()",
+			"IBase<T,System.Int64,System.Int32>.GetU()",
+			"IBase<T,System.Int64,System.Single>.GetU()",
+			"IBase<T,System.Double,System.Int32>.GetU()",
+			"IBase<T,System.Double,System.Single>.GetU()")]
 	[KeptInterfaceOnTypeInAssembly ("library.dll", "IDerived`1", "library.dll", "IMiddle`2<T,System.Int64>")]
 	[KeptInterfaceOnTypeInAssembly ("library.dll", "IDerived`1", "library.dll", "IMiddle`2<T,System.Double>")]
 	[KeptOverrideOnMethodInAssembly ("library.dll", "IDerived`1", "IBase<T,System.Int64,System.Int32>.GetV", "V IBase`3<T,System.Int64,System.Int32>::GetV()")]
+	[KeptOverrideOnMethodInAssembly ("library.dll", "IDerived`1", "IBase<T,System.Int64,System.Single>.GetV", "V IBase`3<T,System.Int64,System.Single>::GetV()")]
 	[KeptOverrideOnMethodInAssembly ("library.dll", "IDerived`1", "IBase<T,System.Int64,System.Int32>.GetU", "U IBase`3<T,System.Int64,System.Int32>::GetU()")]
+	[KeptOverrideOnMethodInAssembly ("library.dll", "IDerived`1", "IBase<T,System.Int64,System.Single>.GetU", "U IBase`3<T,System.Int64,System.Single>::GetU()")]
+	[KeptOverrideOnMethodInAssembly ("library.dll", "IDerived`1", "IBase<T,System.Double,System.Int32>.GetU", "U IBase`3<T,System.Double,System.Int32>::GetU()")]
+	[KeptOverrideOnMethodInAssembly ("library.dll", "IDerived`1", "IBase<T,System.Double,System.Single>.GetU", "U IBase`3<T,System.Double,System.Single>::GetU()")]
 	[KeptTypeInAssembly ("library.dll", "MyClass")]
 	[KeptMemberInAssembly ("library.dll", "MyClass",
 			"IBase<System.Char,System.Int64,System.Int32>.GetT()",
