@@ -4518,6 +4518,19 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<ulong> GatherVectorUInt32ZeroExtend(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> addresses) { throw null; }
         public static unsafe System.Numerics.Vector<ulong> GatherVectorUInt32ZeroExtend(System.Numerics.Vector<ulong> mask, uint* address, System.Numerics.Vector<ulong> indices) { throw null; }
 
+        public static unsafe System.Numerics.Vector<double> GatherVectorWithByteOffsets(System.Numerics.Vector<double> mask, double* address, System.Numerics.Vector<long> offsets) { throw null; }
+        public static unsafe System.Numerics.Vector<double> GatherVectorWithByteOffsets(System.Numerics.Vector<double> mask, double* address, System.Numerics.Vector<ulong> offsets) { throw null; }
+        public static unsafe System.Numerics.Vector<int> GatherVectorWithByteOffsets(System.Numerics.Vector<int> mask, int* address, System.Numerics.Vector<int> offsets) { throw null; }
+        public static unsafe System.Numerics.Vector<int> GatherVectorWithByteOffsets(System.Numerics.Vector<int> mask, int* address, System.Numerics.Vector<uint> offsets) { throw null; }
+        public static unsafe System.Numerics.Vector<long> GatherVectorWithByteOffsets(System.Numerics.Vector<long> mask, long* address, System.Numerics.Vector<long> offsets) { throw null; }
+        public static unsafe System.Numerics.Vector<long> GatherVectorWithByteOffsets(System.Numerics.Vector<long> mask, long* address, System.Numerics.Vector<ulong> offsets) { throw null; }
+        public static unsafe System.Numerics.Vector<float> GatherVectorWithByteOffsets(System.Numerics.Vector<float> mask, float* address, System.Numerics.Vector<int> offsets) { throw null; }
+        public static unsafe System.Numerics.Vector<float> GatherVectorWithByteOffsets(System.Numerics.Vector<float> mask, float* address, System.Numerics.Vector<uint> offsets) { throw null; }
+        public static unsafe System.Numerics.Vector<uint> GatherVectorWithByteOffsets(System.Numerics.Vector<uint> mask, uint* address, System.Numerics.Vector<int> offsets) { throw null; }
+        public static unsafe System.Numerics.Vector<uint> GatherVectorWithByteOffsets(System.Numerics.Vector<uint> mask, uint* address, System.Numerics.Vector<uint> offsets) { throw null; }
+        public static unsafe System.Numerics.Vector<ulong> GatherVectorWithByteOffsets(System.Numerics.Vector<ulong> mask, ulong* address, System.Numerics.Vector<long> offsets) { throw null; }
+        public static unsafe System.Numerics.Vector<ulong> GatherVectorWithByteOffsets(System.Numerics.Vector<ulong> mask, ulong* address, System.Numerics.Vector<ulong> offsets) { throw null; }
+
         public static ulong GetActiveElementCount(System.Numerics.Vector<byte> mask, System.Numerics.Vector<byte> from) { throw null; }
         public static ulong GetActiveElementCount(System.Numerics.Vector<double> mask, System.Numerics.Vector<double> from) { throw null; }
         public static ulong GetActiveElementCount(System.Numerics.Vector<short> mask, System.Numerics.Vector<short> from) { throw null; }
