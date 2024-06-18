@@ -431,9 +431,9 @@ bool ObjectAllocator::MorphAllocObjNodes()
                 {
                     JITDUMP("Allocating V%02u on the stack\n", lclNum);
                     canStack = true;
-
-                    // printf("@@@ SA V%02u (%s) in %s\n", lclNum, comp->eeGetClassName(clsHnd),
-                    // comp->info.compFullName);
+// #ifdef DEBUG
+//                     printf("@@@ SA V%02u (%s) in %s\n", lclNum, comp->eeGetClassName(clsHnd), comp->info.compFullName);
+// #endif
 
                     const unsigned int stackLclNum =
                         MorphAllocObjNodeIntoStackAlloc(asAllocObj, stackClsHnd, isValueClass, block, stmt);
