@@ -144,6 +144,8 @@ namespace System.Net.Quic
     }
     public readonly partial struct QuicStreamCapacityChangedArgs
     {
+        private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public int BidirectionalIncrement { get { throw null; } init { } }
         public int UnidirectionalIncrement { get { throw null; } init { } }
     }
