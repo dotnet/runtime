@@ -2058,8 +2058,10 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             }
 
             case NI_Sve_TestAnyTrue:
+            case NI_Sve_TestFirstTrue:
+            case NI_Sve_TestLastTrue:
+                assert(targetReg == REG_NA);
                 GetEmitter()->emitIns_R_R(INS_sve_ptest, EA_SCALABLE, op1Reg, op2Reg, INS_OPTS_SCALABLE_B);
-                GetEmitter()->emitIns_R_COND(INS_cset, EA_8BYTE, targetReg, INS_COND_EQ); // TODO
                 break;
 
             default:
