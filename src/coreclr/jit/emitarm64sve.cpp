@@ -3129,9 +3129,9 @@ void emitter::emitInsSve_R_R_R(instruction     ins,
                 assert(insOptsScalableWide(opt));
                 fmt = IF_SVE_AO_3A;
             }
-            else if (sopt == INS_SCALABLE_OPTS_UNPREDICATED_WIDE)
+            else if (isVectorRegister(reg2))
             {
-                assert(isVectorRegister(reg2));
+                assert(insScalableOptsNone(sopt));
                 assert(insOptsScalableWide(opt));
                 fmt = IF_SVE_BG_3A;
             }
