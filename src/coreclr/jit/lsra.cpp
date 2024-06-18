@@ -10449,7 +10449,7 @@ void RefPosition::dump(LinearScan* linearScan)
 #endif // HAS_MORE_THAN_64_REGISTERS
     {
         var_types type = TYP_UNKNOWN;
-        if ((refType == RefTypeBB) || (refType == RefTypeKillGCRefs))
+        if ((refType == RefTypeBB) || (refType == RefTypeKillGCRefs) || (refType == RefTypeKill))
         {
             // These refTypes do not have intervals
             type = TYP_INT;
@@ -11116,12 +11116,7 @@ void LinearScan::TupleStyleDump(LsraTupleDumpMode mode)
                                 printf("\n        Kill: ");
                                 killPrinted = true;
                             }
-#ifdef HAS_MORE_THAN_64_REGISTERS
                             compiler->dumpRegMask(currentRefPosition->getKillRegisterAssignment());
-#else
-                            compiler->dumpRegMask(currentRefPosition->registerAssignment,
-                                                  currentRefPosition->getRegisterType());
-#endif
                             printf(" ");
                             break;
                         case RefTypeFixedReg:
@@ -11518,7 +11513,13 @@ void LinearScan::dumpRegRecordTitleIfNeeded()
     if ((lastDumpedRegisters != registersToDump) || (rowCountSinceLastTitle > MAX_ROWS_BETWEEN_TITLES))
     {
         lastUsedRegNumIndex = 0;
-        int lastRegNumIndex = compiler->compFloatingPointUsed ? REG_FP_LAST : REG_INT_LAST;
+        int lastRegNumIndex = compiler->compFloatingPointUsed ?
+#ifdef HAS_MORE_THAN_64_REGISTERS
+                                                              REG_MASK_LAST
+#else
+                                                              REG_FP_LAST
+#endif
+                                                              : REG_INT_LAST;
         for (int regNumIndex = 0; regNumIndex <= lastRegNumIndex; regNumIndex++)
         {
             if (registersToDump.IsRegNumInMask((regNumber)regNumIndex))
@@ -12129,7 +12130,7 @@ void LinearScan::verifyFinalAllocation()
 
             case RefTypeKill:
                 dumpLsraAllocationEvent(LSRA_EVENT_KILL_REGS, nullptr, REG_NA, currentBlock, NONE,
-                                        currentRefPosition.registerAssignment);
+                                        currentRefPosition.getKillRegisterAssignment());
                 break;
 
             case RefTypeFixedReg:

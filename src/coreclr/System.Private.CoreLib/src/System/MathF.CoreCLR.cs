@@ -89,6 +89,7 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern float Sin(float x);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe (float Sin, float Cos) SinCos(float x)
         {
             float sin, cos;

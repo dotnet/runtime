@@ -75,10 +75,6 @@ public:
     static FCDECL2(void,            ProfilerEndTransitionCallback,      MethodDesc* pRealMD, Thread* pThread);
 #endif
 
-#ifdef	FEATURE_ARRAYSTUB_AS_IL
-    static FCDECL2(void,            ArrayTypeCheck,             Object*, PtrArray*);
-#endif
-
 #ifdef FEATURE_MULTICASTSTUB_AS_IL
     static FCDECL2(void,            MulticastDebuggerTraceHelper, Object*, INT32);
 #endif
