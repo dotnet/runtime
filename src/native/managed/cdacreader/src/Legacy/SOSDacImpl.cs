@@ -114,6 +114,7 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface9
                 result.bIsShared = 0;
                 result.bIsDynamic = contract.IsDynamicStatics(methodTable) ? 1 : 0;
             }
+            *data = result;
             return HResults.S_OK;
         }
         catch (Exception ex)
