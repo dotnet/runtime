@@ -163,7 +163,7 @@ namespace System.Text.RegularExpressions.Symbolic
         }
 
         /// <summary>Constructs matcher for given symbolic regex.</summary>
-        private SymbolicRegexMatcher(SymbolicRegexBuilder<BDD> bddBuilder, SymbolicRegexBuilder<TSet> builder, SymbolicRegexNode<TSet> rootNode, int captureCount, RegexFindOptimizations findOptimizations, TimeSpan matchTimeout)
+        private SymbolicRegexMatcher(SymbolicRegexBuilder<BDD> _, SymbolicRegexBuilder<TSet> builder, SymbolicRegexNode<TSet> rootNode, int captureCount, RegexFindOptimizations findOptimizations, TimeSpan matchTimeout)
         {
             Debug.Assert(builder._solver is UInt64Solver or BitVectorSolver, $"Unsupported solver: {builder._solver}");
 
@@ -226,8 +226,8 @@ namespace System.Text.RegularExpressions.Symbolic
                             (fds.Chars.Length > 4 &&
                             Array.Exists(fds.Chars, char.IsAsciiLetterLower)),
                         { Range: not null } => false,
+                        // for fixed length strings just trust the optimizations
                         _ => _optimizedReversalState.Kind != MatchReversalKind.FixedLength,
-                            // false
                     };
                 });
                 // a DFA is sometimes 10x-100x faster than the optimizations
@@ -408,20 +408,53 @@ namespace System.Text.RegularExpressions.Symbolic
             // It returns NoMatchExists (-2) when there is no match.
             // As an example, consider the pattern a{1,3}(b*) run against an input of aacaaaabbbc: phase 1 will find
             // the position of the last b: aacaaaabbbc.  It additionally records the position of the first a after
-            // the c as the low boundary for the starting position.
-            // int matchStartLowBoundary, matchStartLengthMarker;
-            int matchStartLowBoundary;
-            int matchEnd = (_pattern._info.ContainsEndZAnchor, _findOpts is not null, _pattern._info.ContainsSomeAnchor) switch
+            // the c as the low boundary for the starting position.d
+            // int matchStartLowBoundary = startat;
+            int matchEnd;
+            if (!_containsEndZAnchor)
             {
-                (true, true, true) => FindEndPosition<FullInputReader, InitialStateFindOptimizationsHandler, FullNullabilityHandler>(input, startat, timeoutOccursAt, mode, out matchStartLowBoundary, perThreadData),
-                (true, true, false) => FindEndPosition<FullInputReader, InitialStateFindOptimizationsHandler, NoAnchorsNullabilityHandler>(input, startat, timeoutOccursAt, mode, out matchStartLowBoundary, perThreadData),
-                (true, false, true) => FindEndPosition<FullInputReader, NoOptimizationsInitialStateHandler, FullNullabilityHandler>(input, startat, timeoutOccursAt, mode, out matchStartLowBoundary, perThreadData),
-                (true, false, false) => FindEndPosition<FullInputReader, NoOptimizationsInitialStateHandler, NoAnchorsNullabilityHandler>(input, startat, timeoutOccursAt, mode, out matchStartLowBoundary, perThreadData),
-                (false, true, true) => FindEndPosition<NoZAnchorInputReader, InitialStateFindOptimizationsHandler, FullNullabilityHandler>(input, startat, timeoutOccursAt, mode, out matchStartLowBoundary, perThreadData),
-                (false, true, false) => FindEndPosition<NoZAnchorInputReader, InitialStateFindOptimizationsHandler, NoAnchorsNullabilityHandler>(input, startat, timeoutOccursAt, mode, out matchStartLowBoundary, perThreadData),
-                (false, false, true) => FindEndPosition<NoZAnchorInputReader, NoOptimizationsInitialStateHandler, FullNullabilityHandler>(input, startat, timeoutOccursAt, mode, out matchStartLowBoundary, perThreadData),
-                (false, false, false) => FindEndPosition<NoZAnchorInputReader, NoOptimizationsInitialStateHandler, NoAnchorsNullabilityHandler>(input, startat, timeoutOccursAt, mode, out matchStartLowBoundary, perThreadData),
-            };
+                bool isAsciiOnly = _mintermClassifier.IsAsciiOnly();
+                matchEnd = (isAsciiOnly, _findOpts is not null, _containsAnyAnchor) switch
+                {
+                    (true, true, true) =>
+                        FindEndPositionOptimized<OptimizedAsciiInputReader, AcceleratedStateHandler,
+                            AnchorOptimizedNullabilityHandler>(input, startat, timeoutOccursAt, mode, perThreadData),
+                    (true, true, false) =>
+                        FindEndPositionOptimized<OptimizedAsciiInputReader, NoAnchorAcceleratedStateHandler,
+                            NoAnchorOptimizedNullabilityHandler>(input, startat, timeoutOccursAt, mode, perThreadData),
+                    (true, false, false) =>
+                        FindEndPositionOptimized<OptimizedAsciiInputReader, NoAcceleratedStateHandler,
+                            NoAnchorOptimizedNullabilityHandler>(input, startat, timeoutOccursAt, mode, perThreadData),
+                    (true, false, true) =>
+                        FindEndPositionOptimized<OptimizedAsciiInputReader, NoAcceleratedStateHandler,
+                            AnchorOptimizedNullabilityHandler>(input, startat, timeoutOccursAt, mode, perThreadData),
+                    (false, true, false) =>
+                        FindEndPositionOptimized<OptimizedUnicodeInputReader, NoAnchorAcceleratedStateHandler,
+                            NoAnchorOptimizedNullabilityHandler>(input, startat, timeoutOccursAt, mode, perThreadData),
+                    (false, true, true) =>
+                        FindEndPositionOptimized<OptimizedUnicodeInputReader, AcceleratedStateHandler,
+                            AnchorOptimizedNullabilityHandler>(input, startat, timeoutOccursAt, mode, perThreadData),
+                    (false, false, true) =>
+                        FindEndPositionOptimized<OptimizedUnicodeInputReader, NoAcceleratedStateHandler,
+                            NoAnchorOptimizedNullabilityHandler>(input, startat, timeoutOccursAt, mode, perThreadData),
+                    (false, false, false) =>
+                        FindEndPositionOptimized<OptimizedUnicodeInputReader, NoAcceleratedStateHandler,
+                            AnchorOptimizedNullabilityHandler>(input, startat, timeoutOccursAt, mode, perThreadData),
+                };
+            }
+            else
+            {
+                // fallback for EndZ anchor
+                matchEnd = (_findOpts is not null) switch
+                {
+                    true =>
+                        FindEndPositionFallback<FullInputReader, InitialStateFindOptimizationsHandler, FullNullabilityHandler>(
+                            input, startat, timeoutOccursAt, mode, perThreadData),
+                    false =>
+                        FindEndPositionFallback<FullInputReader, NoOptimizationsInitialStateHandler, FullNullabilityHandler>(
+                            input, startat, timeoutOccursAt, mode, perThreadData),
+                };
+            }
 
             // If there wasn't a match, we're done.
             if (matchEnd == NoMatchExists)
@@ -453,10 +486,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 case MatchReversalKind.PartialFixedLength:
                     int initialLastStart = -1; // invalid sentinel value
                     int i = matchEnd;
-                    uint charKind2 = GetCharKind<FullInputReader>(input, matchEnd);
                     CurrentState reversalStartState;
-
-                    // _containsAnyAnchor
                     if (_optimizedReversalState.Kind == MatchReversalKind.PartialFixedLength)
                     {
                         i -= _optimizedReversalState.FixedLength;
@@ -474,26 +504,25 @@ namespace System.Text.RegularExpressions.Symbolic
                     }
                     else
                     {
-                        reversalStartState = new CurrentState(_reverseInitialStates[charKind2]);
+                        reversalStartState = new CurrentState(_reverseInitialStates[
+                            GetCharKind<FullInputReader>(input, matchEnd)]);
                     }
-                    uint charKind = GetCharKind<FullInputReader>(input, matchEnd);
-                    var startState = new CurrentState(_reverseInitialStates[charKind]);
                     matchStart = matchEnd < startat
                         ? startat
                     : (_containsEndZAnchor, _containsAnyAnchor) switch
                     {
                         (true, true) =>
                             FindStartPosition<FullInputReader, FullNullabilityHandler>(
-                            startState, initialLastStart, input, matchEnd, matchStartLowBoundary, perThreadData),
+                                reversalStartState, initialLastStart, input, i, startat, perThreadData),
                         (true, false) =>
                             FindStartPosition<FullInputReader, NoAnchorsNullabilityHandler>(
-                            startState, initialLastStart, input, matchEnd, matchStartLowBoundary, perThreadData),
+                                reversalStartState, initialLastStart, input, i, startat, perThreadData),
                         (false, true) =>
                             FindStartPosition<NoZAnchorInputReader, FullNullabilityHandler>(
-                            startState, initialLastStart, input, matchEnd, matchStartLowBoundary, perThreadData),
+                                reversalStartState, initialLastStart, input, i, startat, perThreadData),
                         (false, false) =>
                             FindStartPosition<NoZAnchorInputReader, NoAnchorsNullabilityHandler>(
-                            startState, initialLastStart, input, matchEnd, matchStartLowBoundary, perThreadData),
+                                reversalStartState, initialLastStart, input, i, startat, perThreadData),
                     };
                     break;
                 default:
@@ -511,78 +540,46 @@ namespace System.Text.RegularExpressions.Symbolic
             }
             else
             {
-                Registers endRegisters = _pattern._info.ContainsLineAnchor ?
+                Registers endRegisters = _containsAnyAnchor ?
                     FindSubcaptures<FullInputReader>(input, matchStart, matchEnd, perThreadData) :
                     FindSubcaptures<NoZAnchorInputReader>(input, matchStart, matchEnd, perThreadData);
                 return new SymbolicMatch(matchStart, matchEnd - matchStart, endRegisters.CaptureStarts, endRegisters.CaptureEnds);
             }
         }
 
-        /// <summary>Performs the initial Phase 1 match to find the end position of the match, or first final state if this is an isMatch call.</summary>
-        /// <param name="input">The input text.</param>
-        /// <param name="pos">The starting position in <paramref name="input"/>.</param>
-        /// <param name="timeoutOccursAt">The time at which timeout occurs, if timeouts are being checked.</param>
-        /// <param name="mode">The mode of execution based on the regex operation being performed.</param>
-        /// <param name="initialStatePos">The last position the initial state of <see cref="_dotStarredPattern"/> was visited before the end position was found.</param>
-        /// <param name="perThreadData">Per thread data reused between calls.</param>
-        /// <returns>
-        /// A one-past-the-end index into input for the preferred match, or first final state position if isMatch is true, or NoMatchExists if no match exists.
-        /// </returns>
-        private int FindEndPosition<TInputReader, TFindOptimizationsHandler, TNullabilityHandler>(ReadOnlySpan<char> input, int pos, long timeoutOccursAt, RegexRunnerMode mode, out int initialStatePos, PerThreadData perThreadData)
-            where TInputReader : struct, IInputReader
-            where TFindOptimizationsHandler : struct, IInitialStateHandler
-            where TNullabilityHandler : struct, INullabilityHandler
+        private int FindEndPositionOptimized<TOptimizedInputReader, TAcceleratedStateHandler, TOptimizedNullabilityHandler>(ReadOnlySpan<char> input, int pos, long timeoutOccursAt, RegexRunnerMode mode, PerThreadData perThreadData)
+            where TOptimizedInputReader : struct, IOptimizedInputReader
+            where TAcceleratedStateHandler : struct, IAcceleratedStateHandler
+            where TOptimizedNullabilityHandler : struct, IOptimizedNullabilityHandler
         {
-            initialStatePos = pos;
             int initialStatePosCandidate = pos;
-
-            var currentState = new CurrentState(_dotstarredInitialStates[GetCharKind<TInputReader>(input, pos - 1)]);
-
+            var currentState = new CurrentState(_dotstarredInitialStates[GetCharKind<FullInputReader>(input, pos - 1)]);
             int endPos = NoMatchExists;
 
             while (true)
             {
-                // Now run the DFA or NFA traversal from the current point using the current state. If timeouts are being checked,
-                // we need to pop out of the inner loop every now and then to do the timeout check in this outer loop. Note that
-                // the timeout exists not to provide perfect guarantees around execution time but rather as a mitigation against
-                // catastrophic backtracking.  Catastrophic backtracking is not an issue for the NonBacktracking engine, but we
-                // still check the timeout now and again to provide some semblance of the behavior a developer experiences with
-                // the backtracking engines.  We can, however, choose a large number here, since it's not actually needed for security.
                 const int CharsPerTimeoutCheck = 1_000;
                 // TODO: maybe this should be for NFA mode only
                 int innerLoopLength = _checkTimeout && input.Length - pos > CharsPerTimeoutCheck ?
                     pos + CharsPerTimeoutCheck :
                     input.Length;
 
-
-
                 bool done;
-                if (currentState.NfaState is not null)
-                    // nfa fallback check
-                    done = FindEndPositionDeltasNFA<NfaStateHandler, TInputReader, TFindOptimizationsHandler,
-                            TNullabilityHandler>(input, innerLoopLength, mode, ref pos, ref currentState, ref endPos, ref initialStatePos, ref initialStatePosCandidate);
-                // else if (_findOpts is null && !_containsEndZAnchor && _mintermClassifier.ByteLookup() is not null)
-                else if (_findOpts is null && !_containsEndZAnchor)
-                {
+                if (currentState.NfaState is null)
                     done =
-                        // _mintermClassifier.IsAsciiOnly()
-                        // ? FindEndPositionDeltasDFANoSkipAscii(input, innerLoopLength - 1,
-                        //     mode, ref pos,
-                        //     currentState.DfaStateId, ref endPos, ref endStateId, ref initialStatePos,
-                        //     ref initialStatePosCandidate)
-                        // if there are no edge cases then use the quicker loop
-                        // :
-                        FindEndPositionDeltasDFANoSkip<DfaStateHandler, TInputReader, TFindOptimizationsHandler,
-                            TNullabilityHandler>(input, innerLoopLength - 1, mode, ref pos,
-                        currentState.DfaStateId, ref endPos, ref initialStatePos,
-                        ref initialStatePosCandidate);
-                }
+                        FindEndPositionDeltasDFAOptimized<TOptimizedInputReader,
+                            TAcceleratedStateHandler,
+                            TOptimizedNullabilityHandler>(input, innerLoopLength - 1, mode, ref pos,
+                            currentState.DfaStateId, ref endPos, ref initialStatePosCandidate,
+                            ref initialStatePosCandidate);
                 else
-                {
-                    // dfa loop with potential skipping
-                    done = FindEndPositionDeltasDFA<DfaStateHandler, TInputReader, TFindOptimizationsHandler,
-                            TNullabilityHandler>(input, innerLoopLength, mode, ref pos, ref currentState, ref endPos, ref initialStatePos, ref initialStatePosCandidate);
-                }
+                    // nfa fallback check
+                    // assume \Z and full nullability for nfa since it's already extremely rare to get here
+                    done =
+                        FindEndPositionDeltasNFA<NfaStateHandler, FullInputReader, NoOptimizationsInitialStateHandler,
+                            FullNullabilityHandler>(input, innerLoopLength, mode, ref pos, ref currentState, ref endPos,
+                            ref initialStatePosCandidate, ref initialStatePosCandidate);
+
                 // If the inner loop indicates that the search finished (for example due to reaching a deadend state) or
                 // there is no more input available, then the whole search is done.
                 if (done || pos >= input.Length)
@@ -607,73 +604,156 @@ namespace System.Text.RegularExpressions.Symbolic
                 {
                     CheckTimeout(timeoutOccursAt);
                 }
-
-
             }
             return endPos;
         }
 
+        /// <summary>Performs the initial Phase 1 match to find the end position of the match, or first final state if this is an isMatch call.</summary>
+        /// <param name="input">The input text.</param>
+        /// <param name="pos">The starting position in <paramref name="input"/>.</param>
+        /// <param name="timeoutOccursAt">The time at which timeout occurs, if timeouts are being checked.</param>
+        /// <param name="mode">The mode of execution based on the regex operation being performed.</param>
+        /// <param name="perThreadData">Per thread data reused between calls.</param>
+        /// <returns>
+        /// A one-past-the-end index into input for the preferred match, or first final state position if isMatch is true, or NoMatchExists if no match exists.
+        /// </returns>
+        private int FindEndPositionFallback<TInputReader, TFindOptimizationsHandler, TNullabilityHandler>(ReadOnlySpan<char> input, int pos, long timeoutOccursAt, RegexRunnerMode mode, PerThreadData perThreadData)
+            where TInputReader : struct, IInputReader
+            where TFindOptimizationsHandler : struct, IInitialStateHandler
+            where TNullabilityHandler : struct, INullabilityHandler
+        {
+            int initialStatePosCandidate = pos;
+
+            var currentState = new CurrentState(_dotstarredInitialStates[GetCharKind<TInputReader>(input, pos - 1)]);
+
+            int endPos = NoMatchExists;
+            int endStateId = -1;
+
+            while (true)
+            {
+                // Now run the DFA or NFA traversal from the current point using the current state. If timeouts are being checked,
+                // we need to pop out of the inner loop every now and then to do the timeout check in this outer loop. Note that
+                // the timeout exists not to provide perfect guarantees around execution time but rather as a mitigation against
+                // catastrophic backtracking.  Catastrophic backtracking is not an issue for the NonBacktracking engine, but we
+                // still check the timeout now and again to provide some semblance of the behavior a developer experiences with
+                // the backtracking engines.  We can, however, choose a large number here, since it's not actually needed for security.
+                const int CharsPerTimeoutCheck = 1_000;
+                int innerLoopLength = _checkTimeout && input.Length - pos > CharsPerTimeoutCheck ?
+                    pos + CharsPerTimeoutCheck :
+                    input.Length;
+
+                bool done = currentState.NfaState is not null ?
+                    FindEndPositionDeltasNFA<NfaStateHandler, TInputReader, TFindOptimizationsHandler, TNullabilityHandler>(input, innerLoopLength, mode, ref pos, ref currentState, ref endPos, ref endStateId, ref initialStatePosCandidate) :
+                    FindEndPositionDeltasDFA<DfaStateHandler, TInputReader, TFindOptimizationsHandler, TNullabilityHandler>(input, innerLoopLength, mode, ref pos, ref currentState, ref endPos, ref endStateId, ref initialStatePosCandidate);
+
+                // If the inner loop indicates that the search finished (for example due to reaching a deadend state) or
+                // there is no more input available, then the whole search is done.
+                if (done || pos >= input.Length)
+                {
+                    break;
+                }
+
+                // The search did not finish, so we either failed to transition (which should only happen if we were in DFA mode and
+                // need to switch over to NFA mode) or ran out of input in the inner loop. Check if the inner loop still had more
+                // input available.
+                if (pos < innerLoopLength)
+                {
+                    // Because there was still more input available, a failure to transition in DFA mode must be the cause
+                    // of the early exit. Upgrade to NFA mode.
+                    NfaMatchingState nfaState = perThreadData.NfaState;
+                    nfaState.InitializeFrom(this, GetState(currentState.DfaStateId));
+                    currentState = new CurrentState(nfaState);
+                }
+
+                // Check for a timeout before continuing.
+                if (_checkTimeout)
+                {
+                    CheckTimeout(timeoutOccursAt);
+                }
+            }
+
+            // Check whether there's a fixed-length marker for the current state.  If there is, we can
+            // use that length to optimize subsequent matching phases.
+            // matchLength = endStateId > 0 ? GetState(endStateId).FixedLength(GetCharKind<TInputReader>(input, endPos)) : -1;
+            return endPos;
+        }
+
         /// <summary>
-        /// Ascii-only variant of the hot loop to conserve memory.
-        /// Only major difference is the minterm lookup:
-        /// `int positionId = c >= 128 ? 0 : mtlookup[c]`;
+        /// Workhorse inner loop for <see cref="FindEndPositionFallback{TInputReader,TFindOptimizationsHandler,TNullabilityHandler}"/>.  Consumes the <paramref name="input"/> character by character,
+        /// starting at <paramref name="posRef"/>, for each character transitioning from one state in the DFA or NFA graph to the next state,
+        /// lazily building out the graph as needed.
         /// </summary>
-        private bool FindEndPositionDeltasDFANoSkipAscii(ReadOnlySpan<char> input, int lengthMinus1, RegexRunnerMode mode,
-                ref int posRef, int startStateId, ref int endPosRef, ref int initialStatePosRef, ref int initialStatePosCandidateRef)
+        /// <remarks>
+        /// The <typeparamref name="TStateHandler"/> supplies the actual transitioning logic, controlling whether processing is
+        /// performed in DFA mode or in NFA mode.  However, it expects <paramref name="state"/> to be configured to match,
+        /// so for example if <typeparamref name="TStateHandler"/> is a <see cref="DfaStateHandler"/>, it expects the <paramref name="state"/>'s
+        /// <see cref="CurrentState.DfaStateId"/> to be non-negative and its <see cref="CurrentState.NfaState"/> to be null; vice versa for
+        /// <see cref="NfaStateHandler"/>.
+        /// </remarks>
+        /// <returns>
+        /// A positive value if iteration completed because it reached a deadend state or nullable state and the call is an isMatch.
+        /// 0 if iteration completed because we reached an initial state.
+        /// A negative value if iteration completed because we ran out of input or we failed to transition.
+        /// </returns>
+        private bool FindEndPositionDeltas<TStateHandler, TInputReader, TFindOptimizationsHandler, TNullabilityHandler>(ReadOnlySpan<char> input, int length, RegexRunnerMode mode,
+                ref int posRef, ref CurrentState state, ref int endPosRef, ref int initialStatePosRef, ref int initialStatePosCandidateRef)
+            where TStateHandler : struct, IStateHandler
+            where TInputReader : struct, IInputReader
+            where TFindOptimizationsHandler : struct, IInitialStateHandler
+            where TNullabilityHandler : struct, INullabilityHandler
         {
             // To avoid frequent reads/writes to ref and out values, make and operate on local copies, which we then copy back once before returning.
             int pos = posRef;
             int endPos = endPosRef;
-            // can only be used with full array initialized and <= 255 minterms
-            byte[] mtlookup = _mintermClassifier.ByteLookup()!;
-            int currStateId = startStateId;
+            // int endStateId = endStateIdRef;
+            int initialStatePos = initialStatePosRef;
+            int initialStatePosCandidate = initialStatePosCandidateRef;
             try
             {
                 // Loop through each character in the input, transitioning from state to state for each.
                 while (true)
                 {
-                    if (currStateId == _deadStateId)
+                    StateFlags flags = TStateHandler.GetStateFlags(this, in state);
+
+                    // Check if currentState represents an initial state. If it does, call into any possible find optimizations
+                    // to hopefully more quickly find the next possible starting location.
+                    if (flags.IsInitial())
+                    {
+                        if (!TFindOptimizationsHandler.TryFindNextStartingPosition<TInputReader>(this, input, ref state, ref pos))
+                        {
+                            return true;
+                        }
+
+                        initialStatePosCandidate = pos;
+                    }
+
+                    // If the state is a dead end, such that we can't transition anywhere else, end the search.
+                    if (state.DfaStateId == _deadStateId)
                     {
                         return true;
                     }
 
-                    int c = input[pos];
-                    int positionId = c >= 128 ? 0 : mtlookup[c];
+                    int positionId = TInputReader.GetPositionId(this, input, pos);
 
-                    // If the state is nullable for the next character we found a potential end state.
-                    // note: the double array lookup is important here, storing a local variable is expensive
-                    if (_nullabilityArray[currStateId] > 0 && IsNullableWithContext(currStateId, positionId))
+                    // If the state is nullable for the next character, meaning it accepts the empty string,
+                    // we found a potential end state.
+                    if (TNullabilityHandler.IsNullableAt<TStateHandler>(this, in state, positionId, flags))
                     {
+                        endPos = pos;
+                        // endStateId = TStateHandler.ExtractNullableCoreStateId(this, in state, input, pos);
+                        initialStatePos = initialStatePosCandidate;
+
+                        // A match is known to exist.  If that's all we need to know, we're done.
+                        if (mode == RegexRunnerMode.ExistenceRequired)
                         {
-                            endPos = pos;
-                            // A match is known to exist.  If that's all we need to know, we're done.
-                            if (mode == RegexRunnerMode.ExistenceRequired)
-                            {
-                                return true;
-                            }
+                            return true;
                         }
                     }
 
                     // If there is more input available try to transition with the next character.
-                    // Note: the order here is important so the transition gets taken
-                    if (!DfaStateHandler.TryTakeDFATransition(this, ref currStateId, positionId)|| pos >= lengthMinus1)
+                    if (pos >= length || !TStateHandler.TryTakeTransition(this, ref state, positionId))
                     {
-                        if (pos + 1 < input.Length)
-                        {
-                            return false;
-                        }
-                        pos++;
-                        // one off check for the final position
-                        // this is just to move it out of the hot loop
-                        if (!(_stateFlagsArray[currStateId].IsNullable() ||
-                             _stateArray[currStateId]!.IsNullableFor(
-                                 GetPositionKind(-1))))
-                        {
-                            return false;
-                        }
-                        // the end position (-1) was nullable
-                        endPos = pos;
-                        return mode == RegexRunnerMode.ExistenceRequired;
+                        return false;
                     }
 
                     // We successfully transitioned, so update our current input index to match.
@@ -685,56 +765,47 @@ namespace System.Text.RegularExpressions.Symbolic
                 // Write back the local copies of the ref values.
                 posRef = pos;
                 endPosRef = endPos;
-                initialStatePosRef = currStateId > 0 ? initialStatePosCandidateRef : initialStatePosRef;
+                // endStateIdRef = endStateId;
+                initialStatePosRef = initialStatePos;
+                initialStatePosCandidateRef = initialStatePosCandidate;
             }
         }
 
+
         /// <summary>
-        /// TODO: this is essentially a stripped down version when there's no good prefix optimizations
-        /// i don't trust the compiler to optimize this and it makes a
-        /// ~50% difference in performance with removing unnecessary checks alone
-        ///
+        /// tbd
         /// </summary>
-        private bool FindEndPositionDeltasDFANoSkip<TStateHandler, TInputReader, TFindOptimizationsHandler,
-            TNullabilityHandler>(ReadOnlySpan<char> input, int lengthMinus1, RegexRunnerMode mode,
+        private bool FindEndPositionDeltasDFAOptimized<TOptimizedInputReader, TAcceleratedStateHandler,
+            TOptimizedNullabilityHandler>(ReadOnlySpan<char> input, int lengthMinus1, RegexRunnerMode mode,
                 ref int posRef, int startStateId, ref int endPosRef, ref int initialStatePosRef, ref int initialStatePosCandidateRef)
-            where TStateHandler : struct, IStateHandler
-            where TInputReader : struct, IInputReader
-            where TFindOptimizationsHandler : struct, IInitialStateHandler
-            where TNullabilityHandler : struct, INullabilityHandler
+            where TOptimizedInputReader : struct, IOptimizedInputReader
+            where TAcceleratedStateHandler : struct, IAcceleratedStateHandler
+            where TOptimizedNullabilityHandler : struct, IOptimizedNullabilityHandler
         {
             // initial check for input end to get it out of the loop
             if (posRef == input.Length)
             {
                 if (!(_stateFlagsArray[startStateId].IsNullable() ||
-                      _stateArray[startStateId]!.IsNullableFor(
-                          GetPositionKind(-1))))
+                      _stateArray[startStateId]!.IsNullableFor(GetPositionKind(-1))))
                 {
                     return true;
                 }
-
-                // the end position (-1) was nullable
+                // the end position kind (-1) was nullable
                 endPosRef = posRef;
                 return true;
             }
 
-            // Debug.Assert(posRef < input.Length, $"input end condition should be handled outside the loop");
             // To avoid frequent reads/writes to ref and out values, make and operate on local copies, which we then copy back once before returning.
             int pos = posRef;
             int endPos = endPosRef;
-            // can only be used with full array initialized and <= 255 minterms
             byte[] mtlookup = _mintermClassifier.ByteLookup()!;
             int currStateId = startStateId;
-            // ldfld only once
             int deadStateId = _deadStateId;
+            int initialStateId = _dotstarredInitialStates[CharKind.General].Id;
             try
             {
-                // Loop through each character in the input, transitioning from state to state for each.
                 // The goal is to make this loop as fast as it can possibly be,
                 // every single piece of overhead should be removed here
-                // there should be not a single callvirt instruction in the loop
-                // ldfld only if necessary (e.g. a reference changes)
-                // no memory writes unless necessary
                 while (true)
                 {
                     if (currStateId == deadStateId)
@@ -742,11 +813,18 @@ namespace System.Text.RegularExpressions.Symbolic
                         return true;
                     }
 
-                    // acceleratedstatehandler
+                    if (TAcceleratedStateHandler.TryFindNextStartingPosition<TOptimizedInputReader>(
+                    this, mtlookup, input, ref currStateId, ref pos, initialStateId))
+                    {
+                        // future work could combine this with an immediate state transition
+                        // but this requires changing too much for now
+                        continue;
+                    }
 
                     // If the state is nullable for the next character, we found a potential end state.
                     // note: the double array lookup is important here, storing a local variable is expensive
-                    if (_nullabilityArray[currStateId] > 0 && IsNullableWithContext(currStateId, mtlookup[input[pos]]))
+                    // if (_nullabilityArray[currStateId] > 0 && IsNullableWithContext(currStateId, mtlookup[input[pos]]))
+                    if (TOptimizedNullabilityHandler.IsNullable<TOptimizedInputReader>(this, _nullabilityArray, currStateId, mtlookup, input, pos))
                     {
                         {
                             endPos = pos;
@@ -760,7 +838,9 @@ namespace System.Text.RegularExpressions.Symbolic
 
                     // If there is more input available try to transition with the next character.
                     // Note: the order here is important so the transition gets taken
-                    if (!DfaStateHandler.TryTakeDFATransition(this, ref currStateId, mtlookup[input[pos]])|| pos >= lengthMinus1)
+                    if (!DfaStateHandler.TryTakeDFATransition(
+                    this, ref currStateId, TOptimizedInputReader.GetPositionId(mtlookup, input, pos))
+                        || pos >= lengthMinus1)
                     {
                         if (pos + 1 < input.Length)
                         {
@@ -796,7 +876,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
         /// <summary>
         /// TODO: this is a separate DFA function that takes advantage of short circuit array lookups
-        /// Workhorse inner loop for <see cref="FindEndPosition"/>.  Consumes the <paramref name="input"/> character by character,
+        /// Workhorse inner loop for <see cref="FindEndPositionFallback{TInputReader,TFindOptimizationsHandler,TNullabilityHandler}"/>.  Consumes the <paramref name="input"/> character by character,
         /// starting at <paramref name="posRef"/>, for each character transitioning from one state in the DFA or NFA graph to the next state,
         /// lazily building out the graph as needed.
         /// </summary>
@@ -886,7 +966,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
         /// <summary>
         /// TODO: this is the fallback NFA function
-        /// Workhorse inner loop for <see cref="FindEndPosition"/>.  Consumes the <paramref name="input"/> character by character,
+        /// Workhorse inner loop for <see cref="FindEndPositionFallback{TInputReader,TFindOptimizationsHandler,TNullabilityHandler}"/>.  Consumes the <paramref name="input"/> character by character,
         /// starting at <paramref name="posRef"/>, for each character transitioning from one state in the DFA or NFA graph to the next state,
         /// lazily building out the graph as needed.
         /// </summary>
@@ -920,9 +1000,6 @@ namespace System.Text.RegularExpressions.Symbolic
                 while (true)
                 {
                     StateFlags flags = TStateHandler.GetStateFlags(this, in state);
-
-                    // TFindOptimizationsHandler is redundant here as
-                    // going into NFA mode signals something already exploded
 
                     // Dead end here means the set is empty
                     if (state.NfaState!.NfaStateSet.Count == 0)
@@ -1650,6 +1727,58 @@ namespace System.Text.RegularExpressions.Symbolic
 #endif
         }
 
+        private interface IOptimizedInputReader
+        {
+            public static abstract int GetPositionId(byte[] lookup, ReadOnlySpan<char> input,
+                int pos);
+        }
+
+        private readonly struct OptimizedAsciiInputReader : IOptimizedInputReader
+        {
+            public static int GetPositionId(byte[] lookup, ReadOnlySpan<char> input, int pos)
+            {
+                Debug.Assert(pos < input.Length);
+                return input[pos] >= 128 ? 0 : lookup[input[pos]];
+            }
+        }
+
+        private readonly struct OptimizedUnicodeInputReader : IOptimizedInputReader
+        {
+            public static int GetPositionId(byte[] lookup, ReadOnlySpan<char> input, int pos)
+            {
+                Debug.Assert(pos < input.Length);
+                Debug.Assert(lookup.Length == (ushort.MaxValue + 1));
+                return lookup[input[pos]];
+            }
+        }
+
+        private interface IOptimizedNullabilityHandler
+        {
+            public static abstract bool IsNullable<TOptimizedInputReader>(SymbolicRegexMatcher<TSet> matcher,
+                byte[] nullabilityArray, int
+                    currStateId, byte[] lookup, ReadOnlySpan<char> input, int pos)
+                where TOptimizedInputReader : struct, IOptimizedInputReader;
+        }
+
+        private readonly struct NoAnchorOptimizedNullabilityHandler : IOptimizedNullabilityHandler
+        {
+            public static bool IsNullable<TOptimizedInputReader>(SymbolicRegexMatcher<TSet> matcher, byte[] nullabilityArray, int currStateId, byte[] lookup, ReadOnlySpan<char> input, int pos)
+                where TOptimizedInputReader : struct, IOptimizedInputReader
+            {
+                return nullabilityArray[currStateId] > 0;
+            }
+        }
+
+        private readonly struct AnchorOptimizedNullabilityHandler : IOptimizedNullabilityHandler
+        {
+            public static bool IsNullable<TOptimizedInputReader>(SymbolicRegexMatcher<TSet> matcher,
+                byte[] nullabilityArray, int currStateId, byte[] lookup, ReadOnlySpan<char> input, int pos)
+                where TOptimizedInputReader : struct, IOptimizedInputReader
+            {
+                return nullabilityArray[currStateId] > 0 && matcher.IsNullableWithContext(currStateId, TOptimizedInputReader.GetPositionId(lookup, input, pos));
+            }
+        }
+
         /// <summary>
         /// Interface for mapping positions in the input to position IDs, which capture all the information necessary to
         /// both take transitions and decide nullability. For positions of valid characters that are handled normally,
@@ -1662,11 +1791,7 @@ namespace System.Text.RegularExpressions.Symbolic
             public static abstract int GetPositionId(SymbolicRegexMatcher<TSet> matcher, ReadOnlySpan<char> input, int pos);
         }
 
-        private readonly struct OptimizedAsciiInputReader : IInputReader
-        {
-            public static int GetPositionId(SymbolicRegexMatcher<TSet> matcher, ReadOnlySpan<char> input, int pos) =>
-                matcher._mintermClassifier.GetMintermID(input[pos]);
-        }
+
 
         /// <summary>This reader omits the special handling of \n for the \Z anchor.</summary>
         private readonly struct NoZAnchorInputReader : IInputReader
@@ -1701,35 +1826,77 @@ namespace System.Text.RegularExpressions.Symbolic
         }
 
         /// <summary>
-        /// Interface for optimizations to accelerate search from initial states.
+        /// Interface for accelerated states, returns true if position was changed
         /// </summary>
         private interface IAcceleratedStateHandler
         {
-            public static abstract void TryFindNextStartingPosition<TInputReader>(SymbolicRegexMatcher<TSet> matcher, ReadOnlySpan<char> input, ref CurrentState state, ref int pos)
-                where TInputReader : struct, IInputReader;
+            public static abstract bool TryFindNextStartingPosition<TOptimizedInputReader>(
+                SymbolicRegexMatcher<TSet> matcher, byte[] lookup, ReadOnlySpan<char> input, ref
+                int currentStateId, ref int pos, int initialStateId)
+                where TOptimizedInputReader : struct, IOptimizedInputReader;
         }
 
+        private readonly struct NoAnchorAcceleratedStateHandler : IAcceleratedStateHandler
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static bool TryFindNextStartingPosition<TOptimizedInputReader>(SymbolicRegexMatcher<TSet> matcher,
+                byte[] lookup,
+                ReadOnlySpan<char> input, ref int currentStateId, ref int pos, int initialStateId)
+                where TOptimizedInputReader : struct, IOptimizedInputReader
+
+            {
+                // if (!matcher._canBeAcceleratedArray[currentStateId])
+                if (currentStateId != initialStateId)
+                    return false;
+                // Find the first position that matches with some likely character.
+                if (matcher._findOpts!.TryFindNextStartingPositionLeftToRight(input, ref pos, 0))
+                {
+                    return false;
+                }
+
+                // No match exists
+                currentStateId = matcher._deadStateId;
+                pos = input.Length;
+                return true;
+            }
+        }
         private readonly struct AcceleratedStateHandler : IAcceleratedStateHandler
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static void TryFindNextStartingPosition<TInputReader>(SymbolicRegexMatcher<TSet> matcher,
-                ReadOnlySpan<char> input, ref CurrentState state, ref int pos)
-                where TInputReader : struct, IInputReader
+            public static bool TryFindNextStartingPosition<TOptimizedInputReader>(SymbolicRegexMatcher<TSet> matcher,
+                byte[] lookup,
+                ReadOnlySpan<char> input, ref int currentStateId, ref int pos, int initialStateId)
+                where TOptimizedInputReader : struct, IOptimizedInputReader
+
             {
+                // if (!matcher._canBeAcceleratedArray[currentStateId])
+                if (currentStateId != initialStateId)
+                    return false;
+                // int tempPos = pos;
                 // Find the first position that matches with some likely character.
                 if (!matcher._findOpts!.TryFindNextStartingPositionLeftToRight(input, ref pos, 0))
                 {
                     // No match exists
-                    state = new CurrentState(matcher.GetState(matcher._deadStateId));
+                    currentStateId = matcher._deadStateId;
                     pos = input.Length;
-                    return;
+                    return true;
                 }
+                currentStateId = matcher._dotstarredInitialStates[
+                    matcher._positionKinds[TOptimizedInputReader.GetPositionId(lookup, input, pos - 1) + 1]
+                    ].Id;
+                return false;
+            }
+        }
 
-                // Update the starting state based on where TryFindNextStartingPosition moved us to.
-                // As with the initial starting state, if it's a dead end, no match exists.
-                state = new CurrentState(
-                    matcher._dotstarredInitialStates[matcher.GetCharKind<TInputReader>(input, pos - 1)]);
-                return;
+        private readonly struct NoAcceleratedStateHandler : IAcceleratedStateHandler
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static bool TryFindNextStartingPosition<TOptimizedInputReader>(SymbolicRegexMatcher<TSet> matcher,
+                byte[] lookup,
+                ReadOnlySpan<char> input, ref int currentStateId, ref int pos, int initialStateId)
+                where TOptimizedInputReader : struct, IOptimizedInputReader
+            {
+                return false;
             }
         }
 

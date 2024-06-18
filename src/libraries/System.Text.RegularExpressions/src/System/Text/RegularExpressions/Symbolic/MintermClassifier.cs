@@ -27,11 +27,11 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>Conserve memory if pattern is ascii-only</summary>
         private readonly bool _isAsciiOnly;
 
-        /// <summary>
-        /// fallback lookup if over 255 minterms
-        /// this is almost never used
-        /// </summary>
-        private readonly int[]? _intLookup;
+        // /// <summary>
+        // /// fallback lookup if over 255 minterms
+        // /// this is almost never used
+        // /// </summary>
+        // private readonly int[]? _intLookup;
 
         /// <summary>Create a classifier that maps a character to the ID of its associated minterm.</summary>
         /// <param name="minterms">A BDD for classifying all characters (ASCII and non-ASCII) to their corresponding minterm IDs.</param>
@@ -111,7 +111,8 @@ namespace System.Text.RegularExpressions.Symbolic
             }
             // high performance variant would use a span directly.
             // additional memory is saved by using a byte
-            return _intLookup is null ? _lookup![c] : _intLookup[c];
+            return _lookup![c];
+            // return _intLookup is null ? _lookup![c] : _intLookup[c];
         }
 
         /// <summary>
