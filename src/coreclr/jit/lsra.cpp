@@ -10422,7 +10422,7 @@ void RefPosition::dump(LinearScan* linearScan)
     else
     {
         var_types type = TYP_UNKNOWN;
-        if ((refType == RefTypeBB) || (refType == RefTypeKillGCRefs))
+        if ((refType == RefTypeBB) || (refType == RefTypeKillGCRefs) || (refType == RefTypeKill))
         {
             // These refTypes do not have intervals
             type = TYP_INT;
