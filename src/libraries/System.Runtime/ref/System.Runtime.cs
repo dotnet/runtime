@@ -14179,6 +14179,7 @@ namespace System.Runtime.InteropServices.Marshalling
     [System.CLSCompliantAttribute(false)]
     [System.Runtime.InteropServices.Marshalling.ContiguousCollectionMarshallerAttribute]
     [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(System.ReadOnlySpan<>), System.Runtime.InteropServices.Marshalling.MarshalMode.ManagedToUnmanagedIn, typeof(System.Runtime.InteropServices.Marshalling.ReadOnlySpanMarshaller<,>.ManagedToUnmanagedIn))]
+    [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(System.ReadOnlySpan<>), System.Runtime.InteropServices.Marshalling.MarshalMode.ManagedToUnmanagedOut, typeof(System.Runtime.InteropServices.Marshalling.ReadOnlySpanMarshaller<,>.ManagedToUnmanagedOut))]
     [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(System.ReadOnlySpan<>), System.Runtime.InteropServices.Marshalling.MarshalMode.UnmanagedToManagedOut, typeof(System.Runtime.InteropServices.Marshalling.ReadOnlySpanMarshaller<,>.UnmanagedToManagedOut))]
     public static unsafe partial class ReadOnlySpanMarshaller<T, TUnmanagedElement> where TUnmanagedElement : unmanaged
     {
@@ -14194,6 +14195,16 @@ namespace System.Runtime.InteropServices.Marshalling
             public static ref T GetPinnableReference(System.ReadOnlySpan<T> managed) { throw null; }
             public System.Span<TUnmanagedElement> GetUnmanagedValuesDestination() { throw null; }
             public unsafe TUnmanagedElement* ToUnmanaged() { throw null; }
+        }
+        public partial struct ManagedToUnmanagedOut
+        {
+            private object _dummy;
+            private int _dummyPrimitive;
+            public void FromUnmanaged(TUnmanagedElement* unmanaged) { throw null; }
+            public System.ReadOnlySpan<T> ToManaged() { throw null; }
+            public System.ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(int numElements) { throw null; }
+            public System.Span<T> GetManagedValuesDestination(int numElements) { throw null; }
+            public void Free() { throw null; }
         }
         public static partial class UnmanagedToManagedOut
         {

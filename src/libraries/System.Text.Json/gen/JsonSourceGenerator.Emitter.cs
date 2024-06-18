@@ -838,7 +838,7 @@ namespace System.Text.Json.SourceGeneration
                     switch (defaultCheckType)
                     {
                         case SerializedValueCheckType.IgnoreWhenNull:
-                            writer.WriteLine($"if ({propValueExpr} != null)");
+                            writer.WriteLine($"if ({propValueExpr} is not null)");
                             writer.WriteLine('{');
                             writer.Indentation++;
 
@@ -974,7 +974,7 @@ namespace System.Text.Json.SourceGeneration
                 if (!skipNullCheck && typeGenSpec.TypeRef.CanBeNull)
                 {
                     writer.WriteLine($$"""
-                        if ({{ValueVarName}} == null)
+                        if ({{ValueVarName}} is null)
                         {
                             {{WriterVarName}}.WriteNullValue();
                             return;

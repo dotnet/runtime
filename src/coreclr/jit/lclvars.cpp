@@ -73,8 +73,9 @@ void Compiler::lvaInit()
     lvaRetAddrVar       = BAD_VAR_NUM;
 
 #ifdef SWIFT_SUPPORT
-    lvaSwiftSelfArg  = BAD_VAR_NUM;
-    lvaSwiftErrorArg = BAD_VAR_NUM;
+    lvaSwiftSelfArg           = BAD_VAR_NUM;
+    lvaSwiftIndirectResultArg = BAD_VAR_NUM;
+    lvaSwiftErrorArg          = BAD_VAR_NUM;
 #endif
 
     lvaInlineeReturnSpillTemp = BAD_VAR_NUM;
@@ -1443,6 +1444,34 @@ bool Compiler::lvaInitSpecialSwiftParam(CORINFO_ARG_LIST_HANDLE argHnd,
         return true;
     }
 
+    if ((strcmp(className, "SwiftIndirectResult") == 0) &&
+        (strcmp(namespaceName, "System.Runtime.InteropServices.Swift") == 0))
+    {
+        if (argIsByrefOrPtr)
+        {
+            BADCODE("Expected SwiftIndirectResult struct, got pointer/reference");
+        }
+
+        if (info.compRetType != TYP_VOID)
+        {
+            BADCODE("Functions with SwiftIndirectResult parameters must return void");
+        }
+
+        if (lvaSwiftIndirectResultArg != BAD_VAR_NUM)
+        {
+            BADCODE("Duplicate SwiftIndirectResult parameter");
+        }
+
+        LclVarDsc* const varDsc = varDscInfo->varDsc;
+        varDsc->SetArgReg(theFixedRetBuffReg(CorInfoCallConvExtension::Swift));
+        varDsc->lvIsRegArg = true;
+
+        compArgSize += TARGET_POINTER_SIZE;
+
+        lvaSwiftIndirectResultArg = varDscInfo->varNum;
+        return true;
+    }
+
     if ((strcmp(className, "SwiftError") == 0) && (strcmp(namespaceName, "System.Runtime.InteropServices.Swift") == 0))
     {
         if (!argIsByrefOrPtr)
@@ -1708,6 +1737,10 @@ void Compiler::lvaClassifyParameterABI(Classifier& classifier)
         else if (i == lvaSwiftSelfArg)
         {
             wellKnownArg = WellKnownArg::SwiftSelf;
+        }
+        else if (i == lvaSwiftIndirectResultArg)
+        {
+            wellKnownArg = WellKnownArg::RetBuffer;
         }
         else if (i == lvaSwiftErrorArg)
         {

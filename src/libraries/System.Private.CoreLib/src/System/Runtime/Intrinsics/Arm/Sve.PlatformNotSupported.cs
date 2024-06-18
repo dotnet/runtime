@@ -4351,6 +4351,111 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> ReverseElement8(Vector<ulong> value) { throw new PlatformNotSupportedException(); }
 
 
+        ///  RoundAwayFromZero : Round to nearest, ties away from zero
+
+        /// <summary>
+        /// svfloat64_t svrinta[_f64]_m(svfloat64_t inactive, svbool_t pg, svfloat64_t op)
+        ///   FRINTA Ztied.D, Pg/M, Zop.D
+        /// svfloat64_t svrinta[_f64]_x(svbool_t pg, svfloat64_t op)
+        ///   FRINTA Ztied.D, Pg/M, Ztied.D
+        /// svfloat64_t svrinta[_f64]_z(svbool_t pg, svfloat64_t op)
+        /// </summary>
+        public static unsafe Vector<double> RoundAwayFromZero(Vector<double> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svfloat32_t svrinta[_f32]_m(svfloat32_t inactive, svbool_t pg, svfloat32_t op)
+        ///   FRINTA Ztied.S, Pg/M, Zop.S
+        /// svfloat32_t svrinta[_f32]_x(svbool_t pg, svfloat32_t op)
+        ///   FRINTA Ztied.S, Pg/M, Ztied.S
+        /// svfloat32_t svrinta[_f32]_z(svbool_t pg, svfloat32_t op)
+        /// </summary>
+        public static unsafe Vector<float> RoundAwayFromZero(Vector<float> value) { throw new PlatformNotSupportedException(); }
+
+
+        ///  RoundToNearest : Round to nearest, ties to even
+
+        /// <summary>
+        /// svfloat64_t svrintn[_f64]_m(svfloat64_t inactive, svbool_t pg, svfloat64_t op)
+        ///   FRINTN Ztied.D, Pg/M, Zop.D
+        /// svfloat64_t svrintn[_f64]_x(svbool_t pg, svfloat64_t op)
+        ///   FRINTN Ztied.D, Pg/M, Ztied.D
+        /// svfloat64_t svrintn[_f64]_z(svbool_t pg, svfloat64_t op)
+        /// </summary>
+        public static unsafe Vector<double> RoundToNearest(Vector<double> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svfloat32_t svrintn[_f32]_m(svfloat32_t inactive, svbool_t pg, svfloat32_t op)
+        ///   FRINTN Ztied.S, Pg/M, Zop.S
+        /// svfloat32_t svrintn[_f32]_x(svbool_t pg, svfloat32_t op)
+        ///   FRINTN Ztied.S, Pg/M, Ztied.S
+        /// svfloat32_t svrintn[_f32]_z(svbool_t pg, svfloat32_t op)
+        /// </summary>
+        public static unsafe Vector<float> RoundToNearest(Vector<float> value) { throw new PlatformNotSupportedException(); }
+
+
+        ///  RoundToNegativeInfinity : Round towards -∞
+
+        /// <summary>
+        /// svfloat64_t svrintm[_f64]_m(svfloat64_t inactive, svbool_t pg, svfloat64_t op)
+        ///   FRINTM Ztied.D, Pg/M, Zop.D
+        /// svfloat64_t svrintm[_f64]_x(svbool_t pg, svfloat64_t op)
+        ///   FRINTM Ztied.D, Pg/M, Ztied.D
+        /// svfloat64_t svrintm[_f64]_z(svbool_t pg, svfloat64_t op)
+        /// </summary>
+        public static unsafe Vector<double> RoundToNegativeInfinity(Vector<double> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svfloat32_t svrintm[_f32]_m(svfloat32_t inactive, svbool_t pg, svfloat32_t op)
+        ///   FRINTM Ztied.S, Pg/M, Zop.S
+        /// svfloat32_t svrintm[_f32]_x(svbool_t pg, svfloat32_t op)
+        ///   FRINTM Ztied.S, Pg/M, Ztied.S
+        /// svfloat32_t svrintm[_f32]_z(svbool_t pg, svfloat32_t op)
+        /// </summary>
+        public static unsafe Vector<float> RoundToNegativeInfinity(Vector<float> value) { throw new PlatformNotSupportedException(); }
+
+
+        ///  RoundToPositiveInfinity : Round towards +∞
+
+        /// <summary>
+        /// svfloat64_t svrintp[_f64]_m(svfloat64_t inactive, svbool_t pg, svfloat64_t op)
+        ///   FRINTP Ztied.D, Pg/M, Zop.D
+        /// svfloat64_t svrintp[_f64]_x(svbool_t pg, svfloat64_t op)
+        ///   FRINTP Ztied.D, Pg/M, Ztied.D
+        /// svfloat64_t svrintp[_f64]_z(svbool_t pg, svfloat64_t op)
+        /// </summary>
+        public static unsafe Vector<double> RoundToPositiveInfinity(Vector<double> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svfloat32_t svrintp[_f32]_m(svfloat32_t inactive, svbool_t pg, svfloat32_t op)
+        ///   FRINTP Ztied.S, Pg/M, Zop.S
+        /// svfloat32_t svrintp[_f32]_x(svbool_t pg, svfloat32_t op)
+        ///   FRINTP Ztied.S, Pg/M, Ztied.S
+        /// svfloat32_t svrintp[_f32]_z(svbool_t pg, svfloat32_t op)
+        /// </summary>
+        public static unsafe Vector<float> RoundToPositiveInfinity(Vector<float> value) { throw new PlatformNotSupportedException(); }
+
+
+        ///  RoundToZero : Round towards zero
+
+        /// <summary>
+        /// svfloat64_t svrintz[_f64]_m(svfloat64_t inactive, svbool_t pg, svfloat64_t op)
+        ///   FRINTZ Ztied.D, Pg/M, Zop.D
+        /// svfloat64_t svrintz[_f64]_x(svbool_t pg, svfloat64_t op)
+        ///   FRINTZ Ztied.D, Pg/M, Ztied.D
+        /// svfloat64_t svrintz[_f64]_z(svbool_t pg, svfloat64_t op)
+        /// </summary>
+        public static unsafe Vector<double> RoundToZero(Vector<double> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svfloat32_t svrintz[_f32]_m(svfloat32_t inactive, svbool_t pg, svfloat32_t op)
+        ///   FRINTZ Ztied.S, Pg/M, Zop.S
+        /// svfloat32_t svrintz[_f32]_x(svbool_t pg, svfloat32_t op)
+        ///   FRINTZ Ztied.S, Pg/M, Ztied.S
+        /// svfloat32_t svrintz[_f32]_z(svbool_t pg, svfloat32_t op)
+        /// </summary>
+        public static unsafe Vector<float> RoundToZero(Vector<float> value) { throw new PlatformNotSupportedException(); }
+
+
         /// Saturating decrement by number of halfword elements
 
         /// <summary>
