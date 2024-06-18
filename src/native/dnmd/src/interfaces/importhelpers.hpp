@@ -27,4 +27,17 @@ HRESULT ImportReferenceToTypeDefOrRefOrSpec(
     std::function<void(mdcursor_t)> onRowAdded,
     mdToken* importedToken);
 
+// Import a reference to a MemberRef row from one module and assembly pair to another.
+// This method works at the IMetadataEmit/Import level as it is implementation-agnostic.
+HRESULT DefineImportMember(
+    IMetaDataEmit* emit,
+    IMetaDataAssemblyImport *pAssemImport,
+    void const  *pbHashValue,
+    ULONG        cbHashValue,
+    IMetaDataImport *pImport,
+    mdToken     mbMember,
+    IMetaDataAssemblyEmit *pAssemEmit,
+    mdToken     tkImport,
+    mdMemberRef *pmr);
+
 #endif // _SRC_INTERFACES_IMPORTHELPERS_HPP

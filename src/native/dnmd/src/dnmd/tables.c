@@ -772,11 +772,18 @@ bool initialize_new_table_details(
     // Set the new table's row count temporarily to 1 to ensure that we initialize the table.
     table_row_counts[id] = 1;
 
+    // We'll treat any new table that has keys as sorted.
+    // We only want to do this for tables with keys as tables without keys
+    // never use the is_sorted bit.
+    md_key_info_t const* keys;
+    uint8_t key_count = get_table_keys(id, &keys);
+    bool has_keys = key_count != 0;
+
     if (!initialize_table_details(
         table_row_counts,
         cxt->context_flags,
         id,
-        false,
+        has_keys,
         table))
         return false;
 

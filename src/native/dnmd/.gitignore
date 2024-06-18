@@ -2,3 +2,4 @@ artifacts/
 .vs/
 .idea/
 *~
+TestResults/

@@ -37,10 +37,12 @@ target_include_directories(dnmd PUBLIC $<INSTALL_INTERFACE:include>)
 target_include_directories(dnmd_pdb PUBLIC $<INSTALL_INTERFACE:include>)
 
 set_target_properties(dnmd PROPERTIES
-  PUBLIC_HEADER "../inc/dnmd.h;../inc/dnmd.hpp")
+  PUBLIC_HEADER "../inc/dnmd.h;../inc/dnmd.hpp"
+  POSITION_INDEPENDENT_CODE ON)
 
 set_target_properties(dnmd_pdb PROPERTIES
-  PUBLIC_HEADER "../inc/dnmd.h;../inc/dnmd.hpp;../inc/dnmd_pdb.h")
+  PUBLIC_HEADER "../inc/dnmd.h;../inc/dnmd.hpp;../inc/dnmd_pdb.h"
+  POSITION_INDEPENDENT_CODE ON)
 
 install(TARGETS dnmd dnmd_pdb EXPORT dnmd
   PUBLIC_HEADER DESTINATION include

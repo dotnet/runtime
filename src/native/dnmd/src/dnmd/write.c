@@ -343,16 +343,10 @@ int32_t md_set_column_value_as_utf8(mdcursor_t c, col_index_t col_idx, uint32_t 
     do
     {
         uint32_t heap_offset;
-        if (str[written][0] == '\0')
-        {
-            heap_offset = 0;
-        }
-        else
-        {
-            heap_offset = add_to_string_heap(CursorTable(&c)->cxt, str[written]);
-            if (heap_offset == 0)
-                return -1;
-        }
+        heap_offset = add_to_string_heap(CursorTable(&c)->cxt, str[written]);
+
+        if (heap_offset == 0 && str[written][0] != '\0')
+            return -1;
 
         if (!write_column_data(&acxt, heap_offset))
             return -1;
@@ -384,7 +378,7 @@ int32_t md_set_column_value_as_blob(mdcursor_t c, col_index_t col_idx, uint32_t 
     {
         uint32_t heap_offset = add_to_blob_heap(CursorTable(&c)->cxt, blob[written], blob_len[written]);
 
-        if (heap_offset == 0)
+        if (heap_offset == 0 && blob_len[written] != 0)
             return -1;
 
         if (!write_column_data(&acxt, heap_offset))
@@ -417,7 +411,7 @@ int32_t md_set_column_value_as_guid(mdcursor_t c, col_index_t col_idx, uint32_t 
     {
         uint32_t index = add_to_guid_heap(CursorTable(&c)->cxt, guid[written]);
 
-        if (index == 0)
+        if (index == 0 && memcmp(&guid[written], &empty_guid, sizeof(mdguid_t)) != 0)
             return -1;
 
         if (!write_column_data(&acxt, index))
@@ -450,7 +444,7 @@ int32_t md_set_column_value_as_userstring(mdcursor_t c, col_index_t col_idx, uin
     {
         uint32_t index = add_to_user_string_heap(CursorTable(&c)->cxt, userstring[written]);
 
-        if (index == 0)
+        if (index == 0 && userstring[written][0] != 0)
             return -1;
 
         if (!write_column_data(&acxt, index))
@@ -701,9 +695,10 @@ static bool add_new_row_to_list(mdcursor_t list_owner, col_index_t list_col, mdc
     if (!md_get_column_value_as_range(list_owner, list_col, &range, &count))
         return false;
     
-    // Assert that the insertion location is in our range.
+    // Assert that the insertion location is in our range or points to the first row of the next range.
+    // For a zero-length range, row_to_insert_before will be the first row of the next range, so we need to account for that.
     assert(CursorTable(&range) == CursorTable(&row_to_insert_before));
-    assert(CursorRow(&range) <= CursorRow(&row_to_insert_before) && CursorRow(&row_to_insert_before) <= CursorRow(&range) + count);
+    assert(CursorRow(&range) <= CursorRow(&row_to_insert_before) && CursorRow(&row_to_insert_before) <= CursorRow(&range) + (count == 0 ? 1 : count));
 
     mdcursor_t target_row;
     // If the range is in an indirection table, we'll normalize our insert to the actual target table.
@@ -724,10 +719,11 @@ static bool add_new_row_to_list(mdcursor_t list_owner, col_index_t list_col, mdc
         if (!md_set_column_value_as_cursor(new_indirection_row, index_to_col(0, CursorTable(&row_to_insert_before)->table_id), 1, new_row))
             return false;
 
-        if (count == 0)
+        if (count == 0 || CursorRow(&range) == CursorRow(&row_to_insert_before))
         {
             // If our original count was zero, then this is the first element in the list for this parent.
-            // We need to update the parent's row column to point to the newly inserted row.
+            // If the start of our range is the same as the row we're inserting before, then we're inserting at the start of the list.
+            // In both of these cases, we need to update the parent's row column to point to the newly inserted row.
             // Otherwise, this element would be associated with the entry before the parent row.
             if (!md_set_column_value_as_cursor(list_owner, list_col, 1, &new_indirection_row))
                 return false;
@@ -869,10 +865,9 @@ bool md_add_new_row_to_sorted_list(mdcursor_t list_owner, col_index_t list_col, 
         // so start searching there to make this a little faster.
         mdcursor_t row_to_check = row_to_insert_before;
 
-        // Move our cursor to the last row in the list.
+        // Move our cursor to the last row in the list and move back one more row each iteration.
         // This can't return false as we got to row_to_insert_before by moving forward at least one row.
-        (void)md_cursor_move(&row_to_check, -1);
-        for (; CursorRow(&row_to_check) >= CursorRow(&existing_range); (void)md_cursor_move(&row_to_check, -1))
+        for (; md_cursor_move(&row_to_check, -1) && CursorRow(&row_to_check) >= CursorRow(&existing_range);)
         {
             // If the range is in an indirection table, we need to normalize to the target table to
             // get the sort column value.
@@ -893,6 +888,15 @@ bool md_add_new_row_to_sorted_list(mdcursor_t list_owner, col_index_t list_col, 
                 (void)md_cursor_next(&row_to_insert_before); // We got to row_to_insert_before by moving back from an existing row, so there must be a next row.
                 break;
             }
+        }
+
+        // If we didn't find a row with a sort order less than or equal to the new row, we want to insert the new row at the beginning of the list.
+        // If our cursor is pointing at the first row, that means that our existing range starts at the first row.
+        if (CursorRow(&row_to_check) == 1 || CursorRow(&row_to_check) < CursorRow(&existing_range))
+        {
+            // We didn't find a row with a sort order less than or equal to the new row.
+            // So we want to insert the new row at the beginning of the list.
+            row_to_insert_before = existing_range;
         }
     }
 
@@ -954,6 +958,13 @@ static bool validate_row_sorted_within_table(mdcursor_t row)
 void md_commit_row_add(mdcursor_t row)
 {
     mdtable_t* table = CursorTable(&row);
+
+    // If this method is called with a zero-initialized cursor,
+    // no-op. This helps make the C++ helper md_added_row_t function more easily.
+    // This also allows users to call this method in all cases, even if the row-add fails.
+    if (table == NULL)
+        return;
+
     assert(table->is_adding_new_row);
 
     // If the table was previously sorted,

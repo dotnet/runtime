@@ -54,7 +54,7 @@ mdhandle_t md_create_new_pdb_handle();
 #endif // DNMD_PORTABLE_PDB
 
 // Apply delta data to the current metadata.
-bool md_apply_delta(mdhandle_t handle, void const* data, size_t data_len);
+bool md_apply_delta(mdhandle_t handle, mdhandle_t delta_handle);
 
 // Destroy the metadata handle and free all associated memory.
 void md_destroy_handle(mdhandle_t handle);

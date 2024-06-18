@@ -430,4 +430,6 @@ bool sort_list_by_column(mdcursor_t parent, col_index_t list_col, col_index_t co
 // Add the heap with the specified id from the delta image to the cxt image.
 bool append_heap(mdcxt_t* cxt, mdcxt_t* delta, mdtcol_t heap_id);
 
+extern mdguid_t const empty_guid;
+
 #endif // _SRC_DNMD_INTERNAL_H_

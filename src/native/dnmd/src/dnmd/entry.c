@@ -297,7 +297,7 @@ static bool initialize_minimal_table_rows(mdcxt_t* cxt)
     if (1 != md_set_column_value_as_utf8(global_type_cursor, mdtTypeDef_TypeNamespace, 1, &namespace))
         return false;
     
-    mdToken nil_typedef = CreateTokenType(mdtTypeDef);
+    mdToken nil_typedef = CreateTokenType(mdtid_TypeDef);
     if (1 != md_set_column_value_as_token(global_type_cursor, mdtTypeDef_Extends, 1, &nil_typedef))
         return false;
 
@@ -361,26 +361,21 @@ mdhandle_t md_create_new_pdb_handle()
 }
 #endif // DNMD_PORTABLE_PDB
 
-bool md_apply_delta(mdhandle_t handle, void const* data, size_t data_len)
+bool md_apply_delta(mdhandle_t handle, mdhandle_t delta_handle)
 {
     mdcxt_t* base = extract_mdcxt(handle);
     if (base == NULL)
         return false;
 
-    mdhandle_t h;
-    if (!md_create_handle(data, data_len, &h))
+    mdcxt_t* delta = extract_mdcxt(delta_handle);
+    if (delta == NULL)
         return false;
-
-    mdcxt_t* delta = extract_mdcxt(h);
-    assert(delta != NULL);
 
     // Verify the supplied delta is actually a delta file
     bool result = false;
     if (delta->context_flags & mdc_minimal_delta)
         result = merge_in_delta(base, delta);
 
-    // Free all data for the delta
-    md_destroy_handle(h);
     return result;
 }
 

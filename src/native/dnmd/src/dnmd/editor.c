@@ -568,7 +568,7 @@ static bool reserve_heap_space(mdeditor_t* editor, uint32_t space_size, mdtcol_t
     {
         // Set the default heap size based on likely reasonable sizes for the heaps.
         // In most images, there won't be more than three guids, so we can start with a small heap in that case.
-        const size_t initial_heap_size = heap_id == mdtc_hguid ? sizeof(mdguid_t) * 3 : 0x100;
+        size_t const initial_heap_size = heap_id == mdtc_hguid ? sizeof(mdguid_t) * 3 : 0x100;
         void* mem = alloc_mdmem(editor->cxt, initial_heap_size);
         if (mem == NULL)
             return false;
@@ -628,6 +628,14 @@ static bool reserve_heap_space(mdeditor_t* editor, uint32_t space_size, mdtcol_t
 
 uint32_t add_to_string_heap(mdcxt_t* cxt, char const* str)
 {
+    // II.24.2.3 - When the #String heap is present, the first entry is always the empty string (i.e., \0). 
+    // II.24.2.2 -  Streams need not be there if they are empty.
+    // We can avoid allocating the heap if the only entry is the empty string.
+    // Columns that point to the string heap can be 0 if there is no #String heap.
+    // In that case, they represent the empty string.
+    if (str[0] == '\0')
+        return 0;
+
     mdeditor_t* editor = get_editor(cxt);
     if (editor == NULL)
         return 0;
@@ -646,12 +654,21 @@ uint32_t add_to_string_heap(mdcxt_t* cxt, char const* str)
 
 uint32_t add_to_blob_heap(mdcxt_t* cxt, uint8_t const* data, uint32_t length)
 {
+    // II.24.2.4 - When the #Blob heap is present, the first entry is always the empty blob. 
+    // II.24.2.2 -  Streams need not be there if they are empty.
+    // We can avoid allocating the heap if the only entry is the empty blob.
+    // Columns that point to the blob heap can be 0 if there is no #Blob heap.
+    // In that case, they represent the empty blob.
+    if (length == 0)
+        return 0;
+
     mdeditor_t* editor = get_editor(cxt);
     if (editor == NULL)
         return 0;
+
     // TODO: Deduplicate heap
     uint8_t compressed_length[4];
-    size_t compressed_length_size = 0;
+    size_t compressed_length_size = ARRAY_SIZE(compressed_length);
     if (!compress_u32(length, compressed_length, &compressed_length_size))
         return 0;
 
@@ -670,16 +687,12 @@ uint32_t add_to_blob_heap(mdcxt_t* cxt, uint8_t const* data, uint32_t length)
 
 uint32_t add_to_user_string_heap(mdcxt_t* cxt, char16_t const* str)
 {
-    mdeditor_t* editor = get_editor(cxt);
-    if (editor == NULL)
-        return 0;
-    // TODO: Deduplicate heap
     uint32_t str_len;
     uint8_t has_special_char = 0;
     for (str_len = 0; str[str_len] != (char16_t)0; str_len++)
     {
         char16_t c = str[str_len];
-        // II.23.2.4
+        // II.24.2.4
         // There is an additional terminal byte which holds a 1 or 0.
         // The 1 signifies Unicode characters that require handling beyond
         // that normally provided for 8-bit encoding sets.
@@ -713,24 +726,52 @@ uint32_t add_to_user_string_heap(mdcxt_t* cxt, char16_t const* str)
         }
     }
 
-    uint8_t compressed_length[sizeof(str_len)];
-    size_t compressed_length_size = 0;
-    if (!compress_u32(str_len, compressed_length, &compressed_length_size))
+    // II.24.2.4 - When the #US heap is present, the first entry is always the empty blob. 
+    // II.24.2.2 -  Streams need not be there if they are empty.
+    // We can avoid allocating the heap if the only entry is the empty blob.
+    // Indices into the #US heap can be 0 if there is no #US heap.
+    // In that case, they represent the empty userstring blob.
+    if (str_len == 0)
         return 0;
 
-    uint32_t heap_slot_size = str_len + (uint32_t)compressed_length_size + 1;
+    mdeditor_t* editor = get_editor(cxt);
+    if (editor == NULL)
+        return 0;
+
+    // TODO: Deduplicate heap
+    
+    // II.24.2.4
+    // Strings in the #US (user string) heap are encoded using 16-bit Unicode encodings.
+    // The count on each string is the number of bytes (not characters) in the string.
+    // Furthermore, there is an additional terminal byte (so all byte counts are odd, not even).
+    size_t us_blob_bytes = str_len * sizeof(char16_t) + 1;
+    
+    // The string is too long to represent in the heap.
+    if (us_blob_bytes > INT32_MAX)
+        return 0;
+    uint8_t compressed_length[sizeof(uint32_t)];
+    size_t compressed_length_size = ARRAY_SIZE(compressed_length);
+    if (!compress_u32((uint32_t)us_blob_bytes, compressed_length, &compressed_length_size))
+        return 0;
+
+    uint32_t heap_slot_size = (uint32_t)us_blob_bytes + (uint32_t)compressed_length_size;
     uint32_t heap_offset;
     if (!reserve_heap_space(editor, heap_slot_size, mdtc_hus, false, &heap_offset))
     {
         return 0;
     }
 
+    // Copy the compressed blob length into the heap.
     memcpy(editor->user_string_heap.heap.ptr + heap_offset, compressed_length, compressed_length_size);
-    memcpy(editor->user_string_heap.heap.ptr + heap_offset + compressed_length_size, str, str_len);
+    // Copy the UTF-16-encoded user string into the heap.
+    memcpy(editor->user_string_heap.heap.ptr + heap_offset + compressed_length_size, str, us_blob_bytes - 1);
 
-    editor->user_string_heap.heap.ptr[heap_offset + compressed_length_size + str_len] = has_special_char;
+    // Set the trailing byte.
+    editor->user_string_heap.heap.ptr[heap_offset + compressed_length_size + us_blob_bytes - 1] = has_special_char;
     return heap_offset;
 }
+
+mdguid_t const empty_guid = { 0 };
 
 uint32_t add_to_guid_heap(mdcxt_t* cxt, mdguid_t guid)
 {
@@ -738,6 +779,8 @@ uint32_t add_to_guid_heap(mdcxt_t* cxt, mdguid_t guid)
     if (editor == NULL)
         return 0;
     // TODO: Deduplicate heap
+    if (memcmp(&guid, &empty_guid, sizeof(mdguid_t)) == 0)
+        return 0;
 
     uint32_t heap_offset;
     if (!reserve_heap_space(editor, sizeof(mdguid_t), mdtc_hguid, false, &heap_offset))
@@ -746,7 +789,10 @@ uint32_t add_to_guid_heap(mdcxt_t* cxt, mdguid_t guid)
     }
 
     memcpy(editor->guid_heap.heap.ptr + heap_offset, &guid, sizeof(mdguid_t));
-    return heap_offset / sizeof(mdguid_t);
+    // II.22 -  The Guid heap is an array of GUIDs, each 16 bytes wide.  Its 
+    //    first element is numbered 1, its second 2, and so on. 
+    // So, we need to make the offset 1-based and at the scale of the GUID size.
+    return (heap_offset / sizeof(mdguid_t)) + 1;
 }
 
 bool append_heap(mdcxt_t* cxt, mdcxt_t* delta, mdtcol_t heap_id)

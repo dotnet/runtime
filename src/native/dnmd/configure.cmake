@@ -56,3 +56,9 @@ endif()
 # Agnostic compiler/platform settings
 #
 add_compile_definitions(__STDC_WANT_LIB_EXT1__=1) # https://en.cppreference.com/w/c/error#Bounds_checking
+
+option(DNMD_ENABLE_PROFILING OFF)
+
+if (DNMD_ENABLE_PROFILING AND MSVC)
+    add_link_options(/PROFILE)
+endif()

@@ -2,6 +2,7 @@ set(SOURCES
   ./dispenser.cpp
   ./symbinder.cpp
   ./metadataimport.cpp
+  ./metadataemit.cpp
   ./hcorenum.cpp
   ./pal.cpp
   ./signatures.cpp
@@ -12,6 +13,7 @@ set(HEADERS
   ../inc/dnmd_interfaces.hpp
   ../inc/internal/span.hpp
   ./metadataimportro.hpp
+  ./metadataemit.hpp
   ./hcorenum.hpp
   ./controllingiunknown.hpp
   ./tearoffbase.hpp
@@ -24,6 +26,12 @@ set(HEADERS
 if(NOT MSVC)
   # Adds global GUID constants.
   list(APPEND SOURCES ./iids.cpp ./options.cpp)
+endif()
+
+if (WIN32)
+  # Disable "secure CRT" warnings when targeting Windows
+  # as the "secure CRT" is not cross-platform.
+  add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
 endif()
 
 add_library(dnmd_interfaces_static

@@ -52,4 +52,4 @@ if(WIN32)
                         COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:nethost> $<TARGET_FILE_DIR:regtest>)
 endif()
 
-gtest_discover_tests(regtest)
+gtest_discover_tests(regtest DISCOVERY_TIMEOUT 1200)
