@@ -813,14 +813,14 @@ namespace System.Buffers.Text.Tests
             Assert.Equal(OperationStatus.Done, status);
             Assert.Equal(utf8Bytes.Length, bytesRead);
             Assert.Equal(decodedLength, bytesDecoded);
-            Assert.Equal(decoded, decodedSpan);
+            Assert.True(decodedSpan.SequenceEqual(decoded));
             decodedSpan.Clear();
             Assert.True(Base64Url.TryDecodeFromUtf8(utf8Bytes, decodedSpan, out bytesDecoded));
             Assert.Equal(decodedLength, bytesDecoded);
-            Assert.Equal(decoded, decodedSpan);
+            Assert.True(decodedSpan.SequenceEqual(decoded));
             bytesDecoded = Base64Url.DecodeFromUtf8InPlace(utf8Bytes);
             Assert.Equal(decodedLength, bytesDecoded);
-            Assert.Equal(decoded, utf8Bytes.AsSpan().Slice(0, bytesDecoded));
+            Assert.True(utf8Bytes.AsSpan().Slice(0, bytesDecoded).SequenceEqual(decoded));
         }
 
         [Theory]
