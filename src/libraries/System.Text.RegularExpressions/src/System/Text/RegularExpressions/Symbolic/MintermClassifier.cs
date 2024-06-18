@@ -31,7 +31,7 @@ namespace System.Text.RegularExpressions.Symbolic
         // /// fallback lookup if over 255 minterms
         // /// this is almost never used
         // /// </summary>
-        // private readonly int[]? _intLookup;
+        private readonly int[]? _intLookup;
 
         /// <summary>Create a classifier that maps a character to the ID of its associated minterm.</summary>
         /// <param name="minterms">A BDD for classifying all characters (ASCII and non-ASCII) to their corresponding minterm IDs.</param>
@@ -57,28 +57,24 @@ namespace System.Text.RegularExpressions.Symbolic
                 }
             }
 
-            // i have never seen a regex use over 80 minterms not to speak of 255,
-            // but it's there as a fallback mechanism
+            // It's incredibly rare for a regex to use more than a hundred or two minterms,
+            // but we need a fallback just in case.
             if (minterms.Length > 255)
             {
-                // WIP: temporary exception to see if any tests in the pipeline reach this
-                // if nothing reaches this perhaps it'd be easier to just throw an exception
-                // during construction
-                throw new Exception($"reached over 255 minterms, count {minterms}");
                 // over 255 unique sets also means it's never ascii only
-                // int[] lookup = new int[ushort.MaxValue + 1];
-                // for (int mintermId = 1; mintermId < minterms.Length; mintermId++)
-                // {
-                //     // precompute all assigned minterm categories
-                //     (uint, uint)[] mintermRanges = BDDRangeConverter.ToRanges(minterms[mintermId]);
-                //     foreach ((uint start, uint end) in mintermRanges)
-                //     {
-                //         // assign character ranges in bulk
-                //         Span<int> slice = lookup.AsSpan((int)start, (int)(end + 1 - start));
-                //         slice.Fill(mintermId);
-                //     }
-                // }
-                // _intLookup = lookup;
+                int[] lookup = new int[ushort.MaxValue + 1];
+                for (int mintermId = 1; mintermId < minterms.Length; mintermId++)
+                {
+                    // precompute all assigned minterm categories
+                    (uint, uint)[] mintermRanges = BDDRangeConverter.ToRanges(minterms[mintermId]);
+                    foreach ((uint start, uint end) in mintermRanges)
+                    {
+                        // assign character ranges in bulk
+                        Span<int> slice = lookup.AsSpan((int)start, (int)(end + 1 - start));
+                        slice.Fill(mintermId);
+                    }
+                }
+                _intLookup = lookup;
             }
             else
             {
@@ -108,8 +104,7 @@ namespace System.Text.RegularExpressions.Symbolic
             }
             // high performance variant would use a span directly.
             // additional memory is saved by using a byte
-            return _lookup![c];
-            // return _intLookup is null ? _lookup![c] : _intLookup[c];
+            return _intLookup is null ? _lookup![c] : _intLookup[c];
         }
 
         /// <summary>
@@ -126,5 +121,12 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <returns></returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public byte[]? ByteLookup() => _lookup;
+
+        /// <summary>
+        /// Int lookup for rare cases
+        /// </summary>
+        /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public int[]? IntLookup() => _intLookup;
     }
 }
