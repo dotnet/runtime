@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 
@@ -100,9 +101,8 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface9
             if (!isFreeObjectMT)
             {
                 result.module = contract.GetModule(methodTable);
-                // TODO[cdac]: it looks like this is only used in output.  Can we just return the canonical MT pointer here
-                // instead and avoid exposing the EEClass concept from the contract?
-                result.@class = contract.GetClass(methodTable);
+                // Note: really the canonical method table, not the EEClass, which we don't expose
+                result.@class = contract.GetCanonicalMethodTable(methodTable);
                 result.parentMethodTable = contract.GetParentMethodTable(methodTable);
                 result.wNumInterfaces = contract.GetNumInterfaces(methodTable);
                 result.wNumMethods = contract.GetNumMethods(methodTable);
@@ -123,7 +123,22 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface9
         }
     }
     public unsafe int GetMethodTableFieldData(ulong mt, void* data) => HResults.E_NOTIMPL;
-    public unsafe int GetMethodTableForEEClass(ulong eeClass, ulong* value) => HResults.E_NOTIMPL;
+    public unsafe int GetMethodTableForEEClass(ulong eeClassReallyCanonMT, ulong* value)
+    {
+        if (eeClassReallyCanonMT == 0 || value == null)
+            return HResults.E_INVALIDARG;
+        try
+        {
+            Contracts.IMetadata contract = _target.Contracts.Metadata;
+            Contracts.MethodTableHandle methodTableHandle = contract.GetMethodTableHandle(eeClassReallyCanonMT);
+            *value = methodTableHandle.Address;
+            return HResults.S_OK;
+        }
+        catch (Exception ex)
+        {
+            return ex.HResult;
+        }
+    }
     public unsafe int GetMethodTableName(ulong mt, uint count, char* mtName, uint* pNeeded) => HResults.E_NOTIMPL;
     public unsafe int GetMethodTableSlot(ulong mt, uint slot, ulong* value) => HResults.E_NOTIMPL;
     public unsafe int GetMethodTableTransparencyData(ulong mt, void* data) => HResults.E_NOTIMPL;

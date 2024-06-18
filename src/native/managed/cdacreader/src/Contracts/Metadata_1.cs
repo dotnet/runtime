@@ -301,7 +301,21 @@ internal partial struct Metadata_1 : IMetadata
         return methodTable.Flags.HasComponentSize ? methodTable.Flags.RawGetComponentSize() : 0u;
     }
     public uint GetComponentSize(MethodTableHandle methodTableHandle) => GetComponentSize(_methodTables[methodTableHandle.Address]);
-    public TargetPointer GetClass(MethodTableHandle methodTableHandle)
+
+    // only called on trusted method tables, so we always trust the resulting EEClass
+    private EEClass_1 GetClassData(MethodTableHandle methodTableHandle)
+    {
+        TargetPointer clsPtr = GetClass(methodTableHandle);
+        // Check if we cached it already
+        if (_target.ProcessedData.TryGet(clsPtr, out Data.EEClass? eeClassData))
+        {
+            return new EEClass_1(eeClassData);
+        }
+        eeClassData = _target.ProcessedData.GetOrAdd<Data.EEClass>(clsPtr);
+        return new EEClass_1(eeClassData);
+    }
+
+    private TargetPointer GetClass(MethodTableHandle methodTableHandle)
     {
         MethodTable_1 methodTable = _methodTables[methodTableHandle.Address];
         switch (GetEEClassOrCanonMTBits(methodTable.EEClassOrCanonMT))
@@ -317,22 +331,10 @@ internal partial struct Metadata_1 : IMetadata
                 throw new InvalidOperationException();
         }
     }
+    public TargetPointer GetCanonicalMethodTable(MethodTableHandle methodTableHandle) => GetClassData(methodTableHandle).MethodTable;
 
     public TargetPointer GetModule(MethodTableHandle methodTableHandle) => _methodTables[methodTableHandle.Address].Module;
     public TargetPointer GetParentMethodTable(MethodTableHandle methodTableHandle) => _methodTables[methodTableHandle.Address].ParentMethodTable;
-
-    // only called on trusted method tables, so we always trust the resulting EEClass
-    private EEClass_1 GetClassData(MethodTableHandle methodTableHandle)
-    {
-        TargetPointer clsPtr = GetClass(methodTableHandle);
-        // Check if we cached it already
-        if (_target.ProcessedData.TryGet(clsPtr, out Data.EEClass? eeClassData))
-        {
-            return new EEClass_1(eeClassData);
-        }
-        eeClassData = _target.ProcessedData.GetOrAdd<Data.EEClass>(clsPtr);
-        return new EEClass_1(eeClassData);
-    }
 
     public bool IsFreeObjectMethodTable(MethodTableHandle methodTableHandle) => FreeObjectMethodTablePointer == methodTableHandle.Address;
 

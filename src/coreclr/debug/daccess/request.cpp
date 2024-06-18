@@ -1850,7 +1850,8 @@ ClrDataAccess::GetMethodTableDataImpl(CLRDATA_ADDRESS mt, struct DacpMethodTable
         if(!bIsFree)
         {
             MTData->Module = HOST_CDADDR(pMT->GetModule());
-            MTData->Class = HOST_CDADDR(pMT->GetClass());
+            // Note: DacpMethodTableData::Class is really a pointer to the canonical method table
+            MTData->Class = HOST_CDADDR(pMT->GetClass()->GetMethodTable());
             MTData->ParentMethodTable = HOST_CDADDR(pMT->GetParentMethodTable());;
             MTData->wNumInterfaces = (WORD)pMT->GetNumInterfaces();
             MTData->wNumMethods = pMT->GetNumMethods();
@@ -2109,25 +2110,54 @@ ClrDataAccess::GetMethodTableTransparencyData(CLRDATA_ADDRESS mt, struct DacpMet
 }
 
 HRESULT
-ClrDataAccess::GetMethodTableForEEClass(CLRDATA_ADDRESS eeClass, CLRDATA_ADDRESS *value)
+ClrDataAccess::GetMethodTableForEEClass(CLRDATA_ADDRESS eeClassReallyCanonMT, CLRDATA_ADDRESS *value)
 {
-    if (eeClass == 0 || value == NULL)
+    if (eeClassReallyCanonMT == 0 || value == NULL)
         return E_INVALIDARG;
 
     SOSDacEnter();
-
-    PTR_EEClass pClass = PTR_EEClass(TO_TADDR(eeClass));
-    if (!DacValidateEEClass(pClass))
+    if (m_cdacSos != NULL)
     {
-        hr = E_INVALIDARG;
+        // Try the cDAC first - it will return E_NOTIMPL if it doesn't support this method yet. Fall back to the DAC.
+        hr = m_cdacSos->GetMethodTableForEEClass(eeClassReallyCanonMT, value);
+        if (FAILED(hr))
+        {
+            hr = GetMethodTableForEEClassImpl(eeClassReallyCanonMT, value);
+        }
+#ifdef _DEBUG
+        else
+        {
+            // Assert that the data is the same as what we get from the DAC.
+            CLRDATA_ADDRESS valueLocal;
+            HRESULT hrLocal = GetMethodTableForEEClassImpl(eeClassReallyCanonMT, &valueLocal);
+            _ASSERTE(hr == hrLocal);
+            _ASSERTE(*value == valueLocal);
+        }
+#endif
     }
     else
     {
-        *value = HOST_CDADDR(pClass->GetMethodTable());
+        hr = GetMethodTableForEEClassImpl (eeClassReallyCanonMT, value);
     }
-
     SOSDacLeave();
     return hr;
+}
+
+HRESULT
+ClrDataAccess::GetMethodTableForEEClassImpl(CLRDATA_ADDRESS eeClassReallyCanonMT, CLRDATA_ADDRESS *value)
+{
+    PTR_MethodTable pCanonMT = PTR_MethodTable(TO_TADDR(eeClassReallyCanonMT));
+    BOOL bIsFree;
+    if (!DacValidateMethodTable(pCanonMT, bIsFree))
+    {
+        return E_INVALIDARG;
+    }
+    else
+    {
+        *value = HOST_CDADDR(pCanonMT);
+    }
+
+    return S_OK;
 }
 
 HRESULT

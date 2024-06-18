@@ -34,7 +34,7 @@ internal interface IMetadata : IContract
     public virtual MethodTableHandle GetMethodTableHandle(TargetPointer targetPointer) => throw new NotImplementedException();
 
     public virtual TargetPointer GetModule(MethodTableHandle methodTable) => throw new NotImplementedException();
-    public virtual TargetPointer GetClass(MethodTableHandle methodTable) => throw new NotImplementedException();
+    public virtual TargetPointer GetCanonicalMethodTable(MethodTableHandle methodTable) => throw new NotImplementedException();
     public virtual TargetPointer GetParentMethodTable(MethodTableHandle methodTable) => throw new NotImplementedException();
 
     public virtual uint GetBaseSize(MethodTableHandle methodTable) => throw new NotImplementedException();
