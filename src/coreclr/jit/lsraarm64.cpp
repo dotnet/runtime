@@ -1997,8 +1997,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 {
                     SingleTypeRegSet candidates = lowVectorOperandNum == 2 ? lowVectorCandidates : RBM_NONE;
 
-                    if (intrin.op2->OperIs(GT_HWINTRINSIC) &&
-                        (intrin.op2->AsHWIntrinsic()->GetHWIntrinsicId() == NI_Sve_ConvertVectorToMask))
+                    if (intrin.op2->OperIsHWIntrinsic(NI_Sve_ConvertVectorToMask))
                     {
                         // Have RBM_ALLMASK candidates only if op2 is VectorToMask
                         assert(intrin.op2->gtType == TYP_MASK);
