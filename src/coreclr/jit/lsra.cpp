@@ -10449,7 +10449,7 @@ void RefPosition::dump(LinearScan* linearScan)
 #endif // HAS_MORE_THAN_64_REGISTERS
     {
         var_types type = TYP_UNKNOWN;
-        if ((refType == RefTypeBB) || (refType == RefTypeKillGCRefs))
+        if ((refType == RefTypeBB) || (refType == RefTypeKillGCRefs) || (refType == RefTypeKill))
         {
             // These refTypes do not have intervals
             type = TYP_INT;
@@ -11116,12 +11116,7 @@ void LinearScan::TupleStyleDump(LsraTupleDumpMode mode)
                                 printf("\n        Kill: ");
                                 killPrinted = true;
                             }
-#ifdef HAS_MORE_THAN_64_REGISTERS
                             compiler->dumpRegMask(currentRefPosition->getKillRegisterAssignment());
-#else
-                            compiler->dumpRegMask(currentRefPosition->registerAssignment,
-                                                  currentRefPosition->getRegisterType());
-#endif
                             printf(" ");
                             break;
                         case RefTypeFixedReg:
