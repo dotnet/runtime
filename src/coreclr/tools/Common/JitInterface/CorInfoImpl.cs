@@ -2945,6 +2945,18 @@ namespace Internal.JitInterface
             return _compilation.IsEffectivelySealed(type);
         }
 
+        private TypeCompareState isGenericType(CORINFO_CLASS_STRUCT_* cls)
+        {
+            TypeDesc type = HandleToObject(cls);
+
+            if (type.IsCanonicalDefinitionType(CanonicalFormKind.Any))
+            {
+                return TypeCompareState.May;
+            }
+
+            return type.HasInstantiation ? TypeCompareState.Must : TypeCompareState.MustNot;
+        }
+
         private TypeCompareState isNullableType(CORINFO_CLASS_STRUCT_* cls)
         {
             TypeDesc type = HandleToObject(cls);

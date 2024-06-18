@@ -720,8 +720,18 @@ ClrDataAccess::GetThreadAllocData(CLRDATA_ADDRESS addr, struct DacpAllocData *da
 
     Thread* thread = PTR_Thread(TO_TADDR(addr));
 
-    data->allocBytes = TO_CDADDR(thread->m_alloc_context.alloc_bytes);
-    data->allocBytesLoh = TO_CDADDR(thread->m_alloc_context.alloc_bytes_uoh);
+    gc_alloc_context* pAllocContext = thread->GetAllocContext();
+
+    if (pAllocContext != NULL)
+    {
+        data->allocBytes = TO_CDADDR(pAllocContext->alloc_bytes);
+        data->allocBytesLoh = TO_CDADDR(pAllocContext->alloc_bytes_uoh);
+    }
+    else
+    {
+        data->allocBytes = TO_CDADDR(0);
+        data->allocBytesLoh = TO_CDADDR(0);
+    }
 
     SOSDacLeave();
     return hr;
@@ -816,8 +826,18 @@ HRESULT ClrDataAccess::GetThreadDataImpl(CLRDATA_ADDRESS threadAddr, struct Dacp
     threadData->osThreadId = (DWORD)thread->m_OSThreadId;
     threadData->state = thread->m_State;
     threadData->preemptiveGCDisabled = thread->m_fPreemptiveGCDisabled;
-    threadData->allocContextPtr = TO_CDADDR(thread->m_alloc_context.alloc_ptr);
-    threadData->allocContextLimit = TO_CDADDR(thread->m_alloc_context.alloc_limit);
+
+    gc_alloc_context* allocContext = thread->GetAllocContext();
+    if (allocContext)
+    {
+        threadData->allocContextPtr = TO_CDADDR(allocContext->alloc_ptr);
+        threadData->allocContextLimit = TO_CDADDR(allocContext->alloc_limit);
+    }
+    else
+    {
+        threadData->allocContextPtr = TO_CDADDR(0);
+        threadData->allocContextLimit = TO_CDADDR(0);
+    }
 
     threadData->fiberData = (CLRDATA_ADDRESS)NULL;
 

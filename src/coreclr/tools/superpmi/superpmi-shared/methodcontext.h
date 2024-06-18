@@ -731,6 +731,10 @@ public:
     void dmpIsExactType(DWORDLONG key, DWORD value);
     bool repIsExactType(CORINFO_CLASS_HANDLE cls);
 
+    void recIsGenericType(CORINFO_CLASS_HANDLE cls, TypeCompareState result);
+    void dmpIsGenericType(DWORDLONG key, DWORD value);
+    TypeCompareState repIsGenericType(CORINFO_CLASS_HANDLE cls);
+
     void recIsNullableType(CORINFO_CLASS_HANDLE cls, TypeCompareState result);
     void dmpIsNullableType(DWORDLONG key, DWORD value);
     TypeCompareState repIsNullableType(CORINFO_CLASS_HANDLE cls);
@@ -1180,7 +1184,8 @@ enum mcPackets
     Packet_IsNullableType = 217,
     Packet_GetClassStaticDynamicInfo = 218,
     Packet_GetClassThreadStaticDynamicInfo = 219,
-    Packet_GetTypeForBoxOnStack = 220,
+    Packet_IsGenericType = 220,
+    Packet_GetTypeForBoxOnStack = 221,
 };
 
 void SetDebugDumpVariables();

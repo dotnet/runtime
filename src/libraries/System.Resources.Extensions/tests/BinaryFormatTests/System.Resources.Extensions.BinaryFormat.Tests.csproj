@@ -14,7 +14,9 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- TODO 103447: These tests all require BinaryFormatter, which won't work until there's a published NuGet package.
     <Compile Include="**\*.cs" />
+    -->
   </ItemGroup>
 
   <ItemGroup>
