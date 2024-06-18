@@ -1487,7 +1487,7 @@ namespace System.Buffers.Text
                 out Vector128<byte> str1, out Vector128<byte> str2, out Vector128<byte> str3, out Vector128<byte> str4)
             {
                 AssertRead<Vector128<byte>>(src, srcStart, sourceLength);
-                (str1, str2, str3, str4) = AdvSimd.Arm64.LoadVector128x4AndUnzip(src);
+                (str1, str2, str3, str4) = AdvSimd.Arm64.Load4xVector128AndUnzip(src);
 
                 return true;
             }

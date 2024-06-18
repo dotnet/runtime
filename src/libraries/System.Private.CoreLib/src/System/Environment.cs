@@ -67,7 +67,7 @@ namespace System
 
         public static void SetEnvironmentVariable(string variable, string? value)
         {
-            ValidateVariableAndValue(variable, ref value);
+            ValidateVariable(variable);
             SetEnvironmentVariableCore(variable, value);
         }
 
@@ -79,7 +79,7 @@ namespace System
                 return;
             }
 
-            ValidateVariableAndValue(variable, ref value);
+            ValidateVariable(variable);
 
             bool fromMachine = ValidateAndConvertRegistryTarget(target);
             SetEnvironmentVariableFromRegistry(variable, value, fromMachine: fromMachine);
@@ -234,7 +234,7 @@ namespace System
             throw new ArgumentOutOfRangeException(nameof(target), target, SR.Format(SR.Arg_EnumIllegalVal, target));
         }
 
-        private static void ValidateVariableAndValue(string variable, ref string? value)
+        private static void ValidateVariable(string variable)
         {
             ArgumentException.ThrowIfNullOrEmpty(variable);
 
@@ -243,12 +243,6 @@ namespace System
 
             if (variable.Contains('='))
                 throw new ArgumentException(SR.Argument_IllegalEnvVarName, nameof(variable));
-
-            if (string.IsNullOrEmpty(value) || value[0] == '\0')
-            {
-                // Explicitly null out value if it's empty
-                value = null;
-            }
         }
     }
 }
