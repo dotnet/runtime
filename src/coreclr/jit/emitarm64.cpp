@@ -4252,9 +4252,8 @@ void emitter::emitIns_Mov(
         {
             if (isPredicateRegister(dstReg) && isPredicateRegister(srcReg))
             {
-                assert(insOptsNone(opt));
+                assert(opt == INS_OPTS_SCALABLE_B);
 
-                opt  = INS_OPTS_SCALABLE_B;
                 attr = EA_SCALABLE;
 
                 if (IsRedundantMov(ins, size, dstReg, srcReg, canSkip))
