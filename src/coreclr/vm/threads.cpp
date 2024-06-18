@@ -358,7 +358,7 @@ void SetThread(Thread* t)
     {
         InitializeCurrentThreadsStaticData(t);
         EnsureTlsDestructionMonitor();
-        t->InitAllocContext();
+        t->InitRuntimeThreadLocals();
     }
 
     // Clear or set the app domain to the one domain based on if the thread is being nulled out or set

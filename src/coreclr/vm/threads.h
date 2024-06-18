@@ -464,6 +464,7 @@ extern
 #endif
 thread_local RuntimeThreadLocals t_runtime_thread_locals;
 
+typedef DPTR(struct RuntimeThreadLocals) PTR_RuntimeThreadLocals;
 typedef DPTR(struct gc_alloc_context) PTR_gc_alloc_context;
 
 // #ThreadClass
@@ -963,14 +964,14 @@ public:
     // Lock thread is trying to acquire
     VolatilePtr<DeadlockAwareLock> m_pBlockingLock;
 
-    // We store a pointer to this thread's alloc context here for easier introspection
+    // We store a pointer to the runtime thread locals here for easier introspection
     // from other threads and diagnostic tools
-    PTR_gc_alloc_context        m_alloc_context;
+    PTR_RuntimeThreadLocals        m_pRuntimeThreadLocals;
 
 public:
-    inline void InitAllocContext() { LIMITED_METHOD_CONTRACT; m_alloc_context = PTR_gc_alloc_context(&t_runtime_thread_locals.alloc_context); }
+    inline void InitRuntimeThreadLocals() { LIMITED_METHOD_CONTRACT; m_pRuntimeThreadLocals = PTR_RuntimeThreadLocals(&t_runtime_thread_locals); }
 
-    inline PTR_gc_alloc_context GetAllocContext() { LIMITED_METHOD_CONTRACT; return m_alloc_context; }
+    inline PTR_gc_alloc_context GetAllocContext() { LIMITED_METHOD_CONTRACT; return PTR_gc_alloc_context(&m_pRuntimeThreadLocals->alloc_context); }
 
     // This is the type handle of the first object in the alloc context at the time
     // we fire the AllocationTick event. It's only for tooling purpose.
