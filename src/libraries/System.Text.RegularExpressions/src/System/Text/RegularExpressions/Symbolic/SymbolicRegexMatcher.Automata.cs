@@ -60,13 +60,13 @@ namespace System.Text.RegularExpressions.Symbolic
         private bool[] _canBeAcceleratedArray;
 
 #if DEBUG
-        private readonly Action<string> _wout = st =>
-        {
-            var a_cons = System.Reflection.Assembly.Load("System.Console");
-            var t_cons = a_cons.GetType("System.Console")!;
-            var wl = t_cons.GetMethod("WriteLine", [typeof(string)]);
-            wl!.Invoke(null, [st]);
-        };
+        // private readonly Action<string> _wout = st =>
+        // {
+        //     var a_cons = System.Reflection.Assembly.Load("System.Console");
+        //     var t_cons = a_cons.GetType("System.Console")!;
+        //     var wl = t_cons.GetMethod("WriteLine", [typeof(string)]);
+        //     wl!.Invoke(null, [st]);
+        // };
 #endif
         /// <summary>
         /// The transition function for DFA mode.
