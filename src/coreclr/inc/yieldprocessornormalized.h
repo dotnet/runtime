@@ -6,7 +6,11 @@
 // Undefine YieldProcessor to encourage using the normalized versions below instead. System_YieldProcessor() can be used where
 // the intention is to use the system-default implementation of YieldProcessor().
 #define HAS_SYSTEM_YIELDPROCESSOR
+#ifdef FEATURE_NATIVEAOT
+FORCEINLINE void System_YieldProcessor() { PalYieldProcessor(); }
+#else
 FORCEINLINE void System_YieldProcessor() { YieldProcessor(); }
+#endif
 #ifdef YieldProcessor
 #undef YieldProcessor
 #endif
@@ -19,6 +23,35 @@ FORCEINLINE void System_YieldProcessor() { YieldProcessor(); }
 #define DISABLE_CONSTRUCT_COPY(T) \
     T() = delete; \
     DISABLE_COPY(T)
+
+#ifdef FEATURE_NATIVEAOT
+#define static_assert_no_msg( cond ) static_assert( cond, #cond )
+// I haven't seen an equivalent for GetTickCount yet, defining it like this for now
+unsigned int GetTickCount() {
+    return 0;
+}
+#define SIZE_T uintptr_t
+// verify these are correct
+typedef BYTE UINT8;
+typedef ULONGLONG UINT64;
+
+template <typename T>
+T Min(T v1, T v2)
+{
+    // STATIC_CONTRACT_LEAF;
+    return v1 < v2 ? v1 : v2;
+}
+
+template <typename T>
+T Max(T v1, T v2)
+{
+    // STATIC_CONTRACT_LEAF;
+    return v1 > v2 ? v1 : v2;
+}
+
+void InitializeYieldProcessorNormalizedCrst();
+void EnsureYieldProcessorNormalizedInitialized();
+#endif
 
 class YieldProcessorNormalization
 {
