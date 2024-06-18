@@ -769,7 +769,7 @@ namespace System.IO.Ports
                     {
                         lock (this)
                         {
-                            _handle.Close();
+                            _handle?.Close();
                             _handle = null;
                             _threadPoolBinding.Dispose();
                         }
