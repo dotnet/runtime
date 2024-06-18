@@ -149,7 +149,7 @@ namespace System.Diagnostics.Metrics
         /// <param name="name">The instrument name. cannot be null.</param>
         /// <remarks>
         /// Gauge is an Instrument which used to record non-additive values.
-        /// Example uses for Gauge: record each time the number of active threads changes.
+        /// Example uses for Gauge: record the room background noise level value when changes occur.
         /// </remarks>
         public Gauge<T> CreateGauge<T>(string name) where T : struct => CreateGauge<T>(name, unit: null, description: null, tags: null);
 
@@ -162,7 +162,7 @@ namespace System.Diagnostics.Metrics
         /// <param name="tags">tags to attach to the counter.</param>
         /// <remarks>
         /// Gauge is an Instrument which used to record non-additive values.
-        /// Example uses for Gauge: record each time the number of active threads changes.
+        /// Example uses for Gauge: record the room background noise level value when changes occur.
         /// </remarks>
         public Gauge<T> CreateGauge<T>(string name, string? unit = null, string? description = null, IEnumerable<KeyValuePair<string, object?>>? tags = null) where T : struct
                 => (Gauge<T>)GetOrCreateInstrument<T>(typeof(Gauge<T>), name, unit, description, tags, () => new Gauge<T>(this, name, unit, description, tags));

@@ -6,7 +6,7 @@ using System.Collections.Generic;
 namespace System.Diagnostics.Metrics
 {
     /// <summary>
-    /// The Gauge is an instrument used to record non-additive values whenever changes occur. For example, record each time the number of active threads changes.
+    /// The Gauge is an instrument used to record non-additive values whenever changes occur. For example, record the room background noise level value when changes occur.
     /// </summary>
     /// <remarks>
     /// This class supports only the following generic parameter types: <see cref="byte" />, <see cref="short" />, <see cref="int" />, <see cref="long" />, <see cref="float" />, <see cref="double" />, and <see cref="decimal" />
