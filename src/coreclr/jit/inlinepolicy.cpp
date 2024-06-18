@@ -1628,7 +1628,16 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
         //
         //  void Caller() => DoNothing(42); // 42 is going to be boxed at the call site.
         //
-        multiplier += 0.5;
+        if (JitConfig.JitObjectStackAllocation() > 0)
+        {
+            // We might also be able to stack allocate the box
+            //
+            multiplier += 3.0 + m_ArgIsBoxedAtCallsite;
+        }
+        else
+        {
+            multiplier += 0.5;
+        }
         JITDUMP("\nCallsite is going to box %d arguments.  Multiplier increased to %g.", m_ArgIsBoxedAtCallsite,
                 multiplier);
     }
