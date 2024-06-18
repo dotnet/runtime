@@ -4713,8 +4713,16 @@ void DacDbiInterfaceImpl::GetThreadAllocInfo(VMPTR_Thread        vmThread,
 
     Thread * pThread = vmThread.GetDacPtr();
     gc_alloc_context* allocContext = pThread->GetAllocContext();
-    threadAllocInfo->m_allocBytesSOH = allocContext->alloc_bytes - (allocContext->alloc_limit - allocContext->alloc_ptr);
-    threadAllocInfo->m_allocBytesUOH = allocContext->alloc_bytes_uoh;
+    if (allocContext != nullptr)
+    {
+        threadAllocInfo->m_allocBytesSOH = allocContext->alloc_bytes - (allocContext->alloc_limit - allocContext->alloc_ptr);
+        threadAllocInfo->m_allocBytesUOH = allocContext->alloc_bytes_uoh;
+    }
+    else
+    {
+            threadAllocInfo->m_allocBytesSOH = 0;
+            threadAllocInfo->m_allocBytesUOH = 0;
+    }
 }
 
 // Set and reset the TSNC_DebuggerUserSuspend bit on the state of the specified thread
