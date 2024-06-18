@@ -2641,6 +2641,9 @@
   <data name="InvalidOperation_IComparerFailed" xml:space="preserve">
     <value>Failed to compare two elements in the array.</value>
   </data>
+  <data name="InvalidOperation_InlineArrayEqualsGetHashCode" xml:space="preserve">
+    <value>Calling built-in Equals() or GetHashCode() on type marked as InlineArray is invalid.</value>
+  </data>
   <data name="InvalidOperation_MethodBaked" xml:space="preserve">
     <value>Type definition of the method is complete.</value>
   </data>

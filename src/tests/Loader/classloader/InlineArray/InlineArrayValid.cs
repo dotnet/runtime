@@ -393,4 +393,30 @@ public unsafe class Validate
             Assert.Equal(i + 1, holder.arr[i].s);
         }
     }
+
+    struct StructHasInlineArrayField
+    {
+        FourtyTwoBytes _field;
+    }
+
+    [Fact]
+    public static void InlineArrayEqualsGetHashCode_Fails()
+    {
+        Console.WriteLine($"{nameof(InlineArrayEqualsGetHashCode_Fails)}...");
+
+        Assert.Throws<InvalidOperationException>(() =>
+        {
+            new FourtyTwoBytes().Equals(new FourtyTwoBytes());
+        });
+
+        Assert.Throws<InvalidOperationException>(() =>
+        {
+            new StructHasInlineArrayField().Equals(new StructHasInlineArrayField());
+        });
+
+        Assert.Throws<InvalidOperationException>(() =>
+        {
+            new FourtyTwoBytes().GetHashCode();
+        });
+    }
 }
