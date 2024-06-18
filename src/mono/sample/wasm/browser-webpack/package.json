@@ -8,11 +8,11 @@
     "webpack": "webpack"
   },
   "devDependencies": {
-    "webpack": "5.88.1",
+    "webpack": "5.92.0",
     "webpack-cli": "5.1.4"
   },
   "dependencies": {
     "@microsoft/dotnet-runtime": "file:bin/dotnet-runtime",
-    "underscore": "1.13.2"
+    "underscore": "1.13.6"
   }
 }
