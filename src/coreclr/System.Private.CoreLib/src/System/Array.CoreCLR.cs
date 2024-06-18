@@ -487,7 +487,7 @@ namespace System
                     CorElementType srcType = pValueMethodTable->GetVerifierCorElementType();
                     CorElementType targetType = pElementMethodTable->GetVerifierCorElementType();
 
-                    // Array.SetValue() does *not* permit conversion from a primitive to an Enum.  
+                    // Array.SetValue() does *not* permit conversion from a primitive to an Enum.
                     if (!pValueMethodTable->IsPrimitive || !pElementMethodTable->IsTruePrimitive)
                         throw new InvalidCastException(SR.InvalidCast_StoreArrayElement);
 
