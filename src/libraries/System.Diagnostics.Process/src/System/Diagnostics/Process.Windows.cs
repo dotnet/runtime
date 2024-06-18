@@ -674,7 +674,7 @@ namespace System.Diagnostics
             // problems (it specifies exactly which part of the string
             // is the file to execute).
             ReadOnlySpan<char> fileName = startInfo.FileName.AsSpan().Trim();
-            bool fileNameIsQuoted = fileName.Length > 0 && fileName[0] == '\"' && fileName[fileName.Length - 1] == '\"';
+            bool fileNameIsQuoted = fileName.StartsWith('"') && fileName.EndsWith('"');
             if (!fileNameIsQuoted)
             {
                 commandLine.Append('"');

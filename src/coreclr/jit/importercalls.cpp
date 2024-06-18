@@ -3165,6 +3165,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             case NI_System_Type_get_IsByRefLike:
             case NI_System_Type_IsAssignableFrom:
             case NI_System_Type_IsAssignableTo:
+            case NI_System_Type_get_IsGenericType:
 
             // Lightweight intrinsics
             case NI_System_String_get_Chars:
@@ -3785,6 +3786,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             case NI_System_Type_get_IsValueType:
             case NI_System_Type_get_IsPrimitive:
             case NI_System_Type_get_IsByRefLike:
+            case NI_System_Type_get_IsGenericType:
             {
                 // Optimize
                 //
@@ -3831,7 +3833,17 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                                 retNode = gtNewFalse();
                             }
                             break;
-
+                        case NI_System_Type_get_IsGenericType:
+                        {
+                            TypeCompareState state = info.compCompHnd->isGenericType(hClass);
+                            if (state == TypeCompareState::May)
+                            {
+                                retNode = nullptr;
+                                break;
+                            }
+                            retNode = state == TypeCompareState::Must ? gtNewTrue() : gtNewFalse();
+                            break;
+                        }
                         default:
                             NO_WAY("Intrinsic not supported in this path.");
                     }
@@ -4024,11 +4036,8 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     op2 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op2, callJitType, 16);
                     op1 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op1, callJitType, 16);
 
-                    retNode = compOpportunisticallyDependsOn(InstructionSet_AVX10v1)
-                                  ? gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, op3, NI_AVX10v1_MultiplyAddScalar,
-                                                             callJitType, 16)
-                                  : gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, op3, NI_FMA_MultiplyAddScalar,
-                                                             callJitType, 16);
+                    retNode =
+                        gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, op3, NI_FMA_MultiplyAddScalar, callJitType, 16);
 
                     retNode = gtNewSimdToScalarNode(callType, retNode, callJitType, 16);
                     break;
@@ -9310,8 +9319,9 @@ GenTree* Compiler::impMinMaxIntrinsic(CORINFO_METHOD_HANDLE method,
 #if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
         if (!isMagnitude && compOpportunisticallyDependsOn(InstructionSet_SSE2))
         {
-            bool needsFixup = false;
-            bool canHandle  = false;
+            bool needsFixup      = false;
+            bool canHandle       = false;
+            bool isV512Supported = false;
 
             if (isMax)
             {
@@ -9340,7 +9350,7 @@ GenTree* Compiler::impMinMaxIntrinsic(CORINFO_METHOD_HANDLE method,
                     needsFixup = cnsNode->IsFloatPositiveZero();
                 }
 
-                if (!needsFixup || compOpportunisticallyDependsOn(InstructionSet_AVX512F))
+                if (!needsFixup || compIsEvexOpportunisticallySupported(isV512Supported))
                 {
                     // Given the checks, op1 can safely be the cns and op2 the other node
 
@@ -9381,7 +9391,7 @@ GenTree* Compiler::impMinMaxIntrinsic(CORINFO_METHOD_HANDLE method,
                     needsFixup = cnsNode->IsFloatNegativeZero();
                 }
 
-                if (!needsFixup || compOpportunisticallyDependsOn(InstructionSet_AVX512F))
+                if (!needsFixup || compIsEvexOpportunisticallySupported(isV512Supported))
                 {
                     // Given the checks, op1 can safely be the cns and op2 the other node
 
@@ -9465,8 +9475,10 @@ GenTree* Compiler::impMinMaxIntrinsic(CORINFO_METHOD_HANDLE method,
                         tbl->gtSimdVal.i32[0] = 0x0700;
                     }
 
+                    NamedIntrinsic fixupScalarId = isV512Supported ? NI_AVX512F_FixupScalar : NI_AVX10v1_FixupScalar;
+
                     retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, retNode, op2Clone, tbl, gtNewIconNode(0),
-                                                       NI_AVX512F_FixupScalar, callJitType, 16);
+                                                       fixupScalarId, callJitType, 16);
                 }
 
                 if (isNumber)
@@ -10014,6 +10026,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         else if (strcmp(methodName, "get_IsPrimitive") == 0)
                         {
                             result = NI_System_Type_get_IsPrimitive;
+                        }
+                        else if (strcmp(methodName, "get_IsGenericType") == 0)
+                        {
+                            result = NI_System_Type_get_IsGenericType;
                         }
                         else if (strcmp(methodName, "get_IsByRefLike") == 0)
                         {

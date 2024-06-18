@@ -732,9 +732,7 @@ public:
     }
 
     friend class StubLinkerCPU;
-#ifdef FEATURE_ARRAYSTUB_AS_IL
     friend class ArrayOpLinker;
-#endif
 public:
     OBJECTREF    m_Array[1];
 };

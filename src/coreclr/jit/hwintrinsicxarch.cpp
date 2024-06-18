@@ -970,8 +970,8 @@ GenTree* Compiler::impNonConstFallback(NamedIntrinsic intrinsic, var_types simdT
             static_assert_no_msg(NI_AVX512F_RotateLeftVariable == (NI_AVX512F_RotateLeft + 1));
             static_assert_no_msg(NI_AVX512F_RotateRightVariable == (NI_AVX512F_RotateRight + 1));
             static_assert_no_msg(NI_AVX512F_VL_RotateLeftVariable == (NI_AVX512F_VL_RotateLeft + 1));
-            static_assert_no_msg(NI_AVX10v1_RotateLeftVariable == (NI_AVX10v1_RotateLeft + 1));
             static_assert_no_msg(NI_AVX512F_VL_RotateRightVariable == (NI_AVX512F_VL_RotateRight + 1));
+            static_assert_no_msg(NI_AVX10v1_RotateLeftVariable == (NI_AVX10v1_RotateLeft + 1));
             static_assert_no_msg(NI_AVX10v1_RotateRightVariable == (NI_AVX10v1_RotateRight + 1));
 
             impSpillSideEffect(true,
