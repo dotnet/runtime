@@ -4717,13 +4717,17 @@ namespace JIT.HardwareIntrinsics.Arm
             return r;
         }
 
-        public static double RecipSqrtEstimate(double op1) => Math.ReciprocalSqrtEstimate(op1);
+        public static double RecipEstimate(double op1) => Math.ReciprocalEstimate(op1);
         
-        public static float RecipSqrtEstimate(float op1) => MathF.ReciprocalSqrtEstimate(op1);
+        public static float RecipEstimate(float op1) => MathF.ReciprocalEstimate(op1);
 
         public static double RecipExpo(double op1) => Math.Pow(op1, -1);
 
         public static float RecipExpo(float op1) => MathF.Pow(op1, -1);
+
+        public static double RecipSqrtEstimate(double op1) => Math.ReciprocalSqrtEstimate(op1);
+        
+        public static float RecipSqrtEstimate(float op1) => MathF.ReciprocalSqrtEstimate(op1);
 
         private static uint ExtractBits(uint val, byte msbPos, byte lsbPos)
         {
