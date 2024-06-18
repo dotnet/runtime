@@ -138,17 +138,17 @@ namespace Microsoft.Extensions.Logging.EventSource
             int EventId,
             string? EventName,
             string? FormattedMessage,
-            string? ActivityTraceId,
-            string? ActivitySpanId,
-            string? ActivityTraceFlags)
+            string ActivityTraceId,
+            string ActivitySpanId,
+            string ActivityTraceFlags)
         {
             Debug.Assert(LoggerName != null);
+            Debug.Assert(ActivityTraceId != null);
+            Debug.Assert(ActivitySpanId != null);
+            Debug.Assert(ActivityTraceFlags != null);
 
             EventName ??= string.Empty;
             FormattedMessage ??= string.Empty;
-            ActivityTraceId ??= string.Empty;
-            ActivitySpanId ??= string.Empty;
-            ActivityTraceFlags ??= string.Empty;
 
             fixed (char* loggerName = LoggerName)
             fixed (char* eventName = EventName)
@@ -190,17 +190,17 @@ namespace Microsoft.Extensions.Logging.EventSource
             string? EventName,
             ExceptionInfo Exception,
             IEnumerable<KeyValuePair<string, string?>> Arguments,
-            string? ActivityTraceId,
-            string? ActivitySpanId,
-            string? ActivityTraceFlags)
+            string ActivityTraceId,
+            string ActivitySpanId,
+            string ActivityTraceFlags)
         {
             Debug.Assert(LoggerName != null);
             Debug.Assert(Exception != null);
+            Debug.Assert(ActivityTraceId != null);
+            Debug.Assert(ActivitySpanId != null);
+            Debug.Assert(ActivityTraceFlags != null);
 
             EventName ??= string.Empty;
-            ActivityTraceId ??= string.Empty;
-            ActivitySpanId ??= string.Empty;
-            ActivityTraceFlags ??= string.Empty;
 
             WriteEvent(2, Level, FactoryID, LoggerName, EventId, EventName, Exception, Arguments, ActivityTraceId, ActivitySpanId, ActivityTraceFlags);
         }
@@ -255,19 +255,19 @@ namespace Microsoft.Extensions.Logging.EventSource
             string ExceptionJson,
             string ArgumentsJson,
             string? FormattedMessage,
-            string? ActivityTraceId,
-            string? ActivitySpanId,
-            string? ActivityTraceFlags)
+            string ActivityTraceId,
+            string ActivitySpanId,
+            string ActivityTraceFlags)
         {
             Debug.Assert(LoggerName != null);
             Debug.Assert(ExceptionJson != null);
             Debug.Assert(ArgumentsJson != null);
+            Debug.Assert(ActivityTraceId != null);
+            Debug.Assert(ActivitySpanId != null);
+            Debug.Assert(ActivityTraceFlags != null);
 
             EventName ??= string.Empty;
             FormattedMessage ??= string.Empty;
-            ActivityTraceId ??= string.Empty;
-            ActivitySpanId ??= string.Empty;
-            ActivityTraceFlags ??= string.Empty;
 
             fixed (char* loggerName = LoggerName)
             fixed (char* eventName = EventName)

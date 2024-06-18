@@ -73,9 +73,9 @@ namespace Microsoft.Extensions.Logging.EventSource
             string? message = null;
 
             Activity? activity = Activity.Current;
-            string? activityTraceId;
-            string? activitySpanId;
-            string? activityTraceFlags;
+            string activityTraceId;
+            string activitySpanId;
+            string activityTraceFlags;
             if (activity != null && activity.IdFormat == ActivityIdFormat.W3C)
             {
                 activityTraceId = activity.TraceId.ToHexString();
@@ -86,9 +86,9 @@ namespace Microsoft.Extensions.Logging.EventSource
             }
             else
             {
-                activityTraceId = null;
-                activitySpanId = null;
-                activityTraceFlags = null;
+                activityTraceId = string.Empty;
+                activitySpanId = string.Empty;
+                activityTraceFlags = string.Empty;
             }
 
             // See if they want the formatted message
