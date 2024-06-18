@@ -281,6 +281,30 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void EnvironmentNullValue()
+        {
+            const string NullEnvVar = "TestEnvironmentOfChildProcess_Null";
+            Environment.SetEnvironmentVariable(NullEnvVar, "");
+            try
+            {
+                Process p = CreateProcess(() =>
+                {
+                    // Verify that setting the value to null in StartInfo is going to remove the process environment.
+                    Assert.Null(Environment.GetEnvironmentVariable(NullEnvVar));
+                    return RemoteExecutor.SuccessExitCode;
+                });
+                p.StartInfo.Environment[NullEnvVar] = null;
+                Assert.Null(p.StartInfo.Environment[NullEnvVar]);
+                p.Start();
+                Assert.True(p.WaitForExit(WaitInMS));
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(NullEnvVar, null);
+            }
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/76140", TestPlatforms.LinuxBionic)]
         public void EnvironmentGetEnvironmentVariablesIsCaseSensitive()
         {
