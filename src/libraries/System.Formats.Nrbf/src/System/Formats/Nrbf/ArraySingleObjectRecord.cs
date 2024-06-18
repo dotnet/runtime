@@ -23,7 +23,7 @@ internal sealed class ArraySingleObjectRecord : SZArrayRecord<object?>
     public override SerializationRecordType RecordType => SerializationRecordType.ArraySingleObject;
 
     public override TypeName TypeName
-        => s_typeName ??= TypeName.Parse(("System.Object[], " + TypeNameExtensions.CoreLibAssemblyName).AsSpan());
+        => s_typeName ??= TypeName.Parse("System.Object[]".AsSpan()).WithCoreLibAssemblyName();
 
     private List<SerializationRecord> Records { get; }
 

@@ -69,6 +69,25 @@ namespace System.Reflection.Metadata
 #endif
         }
 
+#if SYSTEM_REFLECTION_METADATA
+        private TypeName(string? fullName,
+            AssemblyNameInfo? assemblyName,
+            TypeName? elementOrGenericType = default,
+            TypeName? declaringType = default,
+            ImmutableArray<TypeName> genericTypeArguments = default,
+            sbyte rankOrModifier = default,
+            int nestedNameLength = -1)
+        {
+            _fullName = fullName;
+            AssemblyName = assemblyName;
+            _elementOrGenericType = elementOrGenericType;
+            _declaringType = declaringType;
+            _genericArguments = genericTypeArguments;
+            _rankOrModifier = rankOrModifier;
+            _nestedNameLength = nestedNameLength;
+        }
+#endif
+
         /// <summary>
         /// The assembly-qualified name of the type; e.g., "System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089".
         /// </summary>
@@ -391,6 +410,109 @@ namespace System.Reflection.Metadata
         ReadOnlySpan<TypeName> GetGenericArguments() => CollectionsMarshal.AsSpan(_genericArguments);
 #else
         ImmutableArray<TypeName> GetGenericArguments() => _genericArguments;
+#endif
+
+#if SYSTEM_REFLECTION_METADATA
+        /// <summary>
+        /// Returns a <see cref="TypeName" /> object representing a one-dimensional array
+        /// of the current type, with a lower bound of zero.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="TypeName" /> object representing a one-dimensional array
+        /// of the current type, with a lower bound of zero.
+        /// </returns>
+        public TypeName MakeArrayTypeName() => MakeElementTypeName(TypeNameParserHelpers.SZArray);
+
+        /// <summary>
+        /// Returns a <see cref="TypeName" /> object representing an array of the current type,
+        /// with the specified number of dimensions.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="TypeName" /> object representing an array of the current type,
+        /// with the specified number of dimensions.
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException">rank is invalid. For example, 0 or negative.</exception>
+        public TypeName MakeArrayTypeName(int rank)
+            => rank <= 0 || rank > 32
+                ? throw new ArgumentOutOfRangeException(nameof(rank))
+                : MakeElementTypeName((sbyte)rank);
+
+        /// <summary>
+        /// Returns a <see cref="TypeName" /> object that represents a pointer to the current type.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="TypeName" /> object that represents a pointer to the current type.
+        /// </returns>
+        public TypeName MakePointerTypeName() => MakeElementTypeName(TypeNameParserHelpers.Pointer);
+
+        /// <summary>
+        /// Returns a <see cref="TypeName" /> object that represents a managed reference to the current type.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="TypeName" /> object that represents a managed reference to the current type.
+        /// </returns>
+        public TypeName MakeByRefTypeName() => MakeElementTypeName(TypeNameParserHelpers.ByRef);
+
+        public TypeName MakeGenericTypeName(ImmutableArray<TypeName> typeArguments)
+            => new TypeName(fullName: null, AssemblyName, elementOrGenericType: this, genericTypeArguments: typeArguments);
+
+        // Nulls are allowed, as they allow for simply removing the name.
+        public TypeName WithAssemblyName(AssemblyNameInfo? assemblyName)
+            => WithAssemblyName(this, AssemblyName, assemblyName)!;
+
+        private static TypeName? WithAssemblyName(TypeName? typeName, AssemblyNameInfo? oldName, AssemblyNameInfo? newName)
+        {
+            if (typeName is null)
+            {
+                return null;
+            }
+            else if (oldName is not null && !ReferenceEquals(typeName.AssemblyName, oldName))
+            {
+                // There is nothing to update, do nothing.
+                return typeName;
+            }
+
+            ImmutableArray<TypeName> genericArguments = typeName._genericArguments;
+
+            if (typeName.IsConstructedGenericType)
+            {
+                bool needsNewArray = false;
+                for (int i = 0; i < typeName._genericArguments.Length; i++)
+                {
+                    if (ReferenceEquals(typeName._genericArguments[i].AssemblyName, oldName))
+                    {
+                        needsNewArray = true;
+                    }
+                }
+
+                if (needsNewArray)
+                {
+                    ImmutableArray<TypeName>.Builder builder = ImmutableArray.CreateBuilder<TypeName>(typeName._genericArguments.Length);
+                    for (int i = 0; i < typeName._genericArguments.Length; i++)
+                    {
+                        builder.Add(WithAssemblyName(typeName._genericArguments[i], oldName, newName)!);
+                    }
+                    genericArguments = builder.MoveToImmutable();
+                }
+            }
+
+            return new TypeName(
+                fullName: typeName._fullName,
+                newName,
+                elementOrGenericType: WithAssemblyName(typeName._elementOrGenericType, oldName, newName),
+                declaringType: WithAssemblyName(typeName._declaringType, oldName, newName),
+                genericTypeArguments: genericArguments,
+                rankOrModifier: typeName._rankOrModifier,
+                nestedNameLength: typeName._nestedNameLength);
+        }
+
+        private TypeName MakeElementTypeName(sbyte rankOrModifier)
+            => new TypeName(
+                fullName: null,
+                assemblyName: AssemblyName,
+                elementOrGenericType: this,
+                genericTypeArguments: ImmutableArray<TypeName>.Empty,
+                rankOrModifier: rankOrModifier);
 #endif
     }
 }

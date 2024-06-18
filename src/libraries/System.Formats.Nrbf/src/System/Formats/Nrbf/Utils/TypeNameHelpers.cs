@@ -10,9 +10,9 @@ using System.Text;
 
 namespace System.Formats.Nrbf.Utils;
 
-internal static class TypeNameExtensions
+internal static class TypeNameHelpers
 {
-    internal const string CoreLibAssemblyName = "mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089";
+    internal static readonly AssemblyNameInfo s_CoreLibAssemblyName = AssemblyNameInfo.Parse("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089".AsSpan());
 
     internal static TypeName ParseNonSystemClassRecordTypeName(this string rawName, BinaryLibraryRecord libraryRecord, PayloadOptions payloadOptions)
     {
@@ -42,49 +42,26 @@ internal static class TypeNameExtensions
 
     internal static TypeName ParseSystemRecordTypeName(this string rawName, PayloadOptions payloadOptions)
     {
-        ArraySegment<char> assemblyQualifiedName = GetAssemblyQualifiedName(rawName,
-            CoreLibAssemblyName); // We know it's a System Record, so we set the LibraryName to CoreLib
+        if (!TypeName.TryParse(rawName.AsSpan(), out TypeName? typeName, payloadOptions.TypeNameParseOptions))
+        {
+            throw new SerializationException(SR.Format(SR.Serialization_InvalidTypeName, rawName));
+        }
 
-        TypeName.TryParse(assemblyQualifiedName.AsSpan(), out TypeName? typeName, payloadOptions.TypeNameParseOptions);
-        ArrayPool<char>.Shared.Return(assemblyQualifiedName.Array!);
-
-        return typeName ?? throw new SerializationException(SR.Format(SR.Serialization_InvalidTypeName, rawName));
+        // We know it's a System Record, so we set the LibraryName to CoreLib
+        return WithCoreLibAssemblyName(typeName);
     }
 
     internal static TypeName WithCoreLibAssemblyName(this TypeName systemType)
-        => systemType.WithAssemblyName(CoreLibAssemblyName);
-
-    internal static TypeName WithAssemblyName(this TypeName typeName, string assemblyName)
-    {
-        // For ClassWithMembersAndTypesRecord, the TypeName and LibraryName and provided separately,
-        // and the LibraryName may not be known when parsing TypeName.
-        // For SystemClassWithMembersAndTypesRecord, the LibraryName is not provided, it's always mscorlib.
-        // Ideally, we would just create TypeName with new AssemblyNameInfo.
-        // This will be possible once https://github.com/dotnet/runtime/issues/102263 is done.
-
-        ArraySegment<char> assemblyQualifiedName = GetAssemblyQualifiedName(typeName.FullName, assemblyName);
-        TypeName result = TypeName.Parse(assemblyQualifiedName.AsSpan());
-        ArrayPool<char>.Shared.Return(assemblyQualifiedName.Array!);
-
-        return result;
-    }
+        => systemType.WithAssemblyName(s_CoreLibAssemblyName);
 
     internal static TypeName BuildCoreLibArrayTypeName(this Type type, int arrayRank)
-    {
-        ArraySegment<char> assemblyQualifiedName = GetAssemblyQualifiedName(type.FullName!, CoreLibAssemblyName, arrayRank);
-        TypeName result = TypeName.Parse(assemblyQualifiedName.AsSpan());
-        ArrayPool<char>.Shared.Return(assemblyQualifiedName.Array!);
-
-        return result;
-    }
+        => WithCoreLibAssemblyName(BuildArrayTypeName(TypeName.Parse(type.FullName.AsSpan()), arrayRank));
 
     internal static TypeName BuildArrayTypeName(this TypeName typeName, int arrayRank)
     {
-        ArraySegment<char> assemblyQualifiedName = GetAssemblyQualifiedName(typeName.FullName, typeName.AssemblyName!.FullName, arrayRank);
-        TypeName result = TypeName.Parse(assemblyQualifiedName.AsSpan());
-        ArrayPool<char>.Shared.Return(assemblyQualifiedName.Array!);
-
-        return result;
+        // In this particular context, arrayRank == 1 means SZArray (custom offset arrays are not supported by design).
+        // That is why we don't call typeName.MakeArrayTypeName(1) because it would create [*] instead of [] name.
+        return arrayRank == 1 ? typeName.MakeArrayTypeName() : typeName.MakeArrayTypeName(arrayRank);
     }
 
     private static ArraySegment<char> GetAssemblyQualifiedName(string typeName, string libraryName, int arrayRank = 0)

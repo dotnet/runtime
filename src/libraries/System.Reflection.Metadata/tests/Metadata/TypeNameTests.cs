@@ -107,9 +107,7 @@ namespace System.Reflection.Metadata.Tests
 
             static void Verify(Type type, AssemblyName expectedAssemblyName, TypeName parsed)
             {
-                Assert.Equal(type.AssemblyQualifiedName, parsed.AssemblyQualifiedName);
-                Assert.Equal(type.FullName, parsed.FullName);
-                Assert.Equal(type.Name, parsed.Name);
+                EnsureBasicMatch(parsed, type);
 
                 AssemblyNameInfo parsedAssemblyName = parsed.AssemblyName;
                 Assert.NotNull(parsedAssemblyName);
@@ -484,9 +482,41 @@ namespace System.Reflection.Metadata.Tests
 
             Assert.Equal(expected, parsed.GetNodeCount());
 
-            Assert.Equal(type.Name, parsed.Name);
-            Assert.Equal(type.FullName, parsed.FullName);
-            Assert.Equal(type.AssemblyQualifiedName, parsed.AssemblyQualifiedName);
+            EnsureBasicMatch(parsed, type);
+
+            if (!type.IsByRef)
+            {
+                EnsureBasicMatch(parsed.MakeArrayTypeName(), type.MakeArrayType());
+                EnsureBasicMatch(parsed.MakeArrayTypeName(3), type.MakeArrayType(3));
+                EnsureBasicMatch(parsed.MakeByRefTypeName(), type.MakeByRefType());
+                EnsureBasicMatch(parsed.MakePointerTypeName(), type.MakePointerType());
+            }
+        }
+
+        [Fact]
+        public void MakeGenericTypeName()
+        {
+            Type genericTypeDefinition = typeof(Dictionary<,>);
+            TypeName genericTypeNameDefinition = TypeName.Parse(genericTypeDefinition.AssemblyQualifiedName.AsSpan());
+
+            Type[] genericArgs = new Type[] { typeof(int), typeof(bool) };
+            EnsureBasicMatch(
+                genericTypeNameDefinition.MakeGenericTypeName(genericArgs.Select(type => TypeName.Parse(type.AssemblyQualifiedName.AsSpan())).ToImmutableArray()),
+                genericTypeDefinition.MakeGenericType(genericArgs));
+        }
+
+        [Theory]
+        [InlineData("Namespace.Simple")]
+        [InlineData("Namespace.Simple, SomeAssembly")]
+        public void WithAssemblyName_SimpleNames(string name)
+        {
+            TypeName simpleName = TypeName.Parse(name.AsSpan());
+            Assert.Equal(name, simpleName.AssemblyQualifiedName);
+            AssemblyNameInfo assemblyName = new("Different");
+
+            TypeName withDifferentAssemblyName = simpleName.WithAssemblyName(assemblyName);
+            Assert.Same(assemblyName, withDifferentAssemblyName.AssemblyName);
+            Assert.Equal("Namespace.Simple, Different", withDifferentAssemblyName.AssemblyQualifiedName);
         }
 
         [Fact]
@@ -561,9 +591,7 @@ namespace System.Reflection.Metadata.Tests
         {
             TypeName parsed = TypeName.Parse(type.AssemblyQualifiedName.AsSpan());
 
-            Assert.Equal(type.Name, parsed.Name);
-            Assert.Equal(type.FullName, parsed.FullName);
-            Assert.Equal(type.AssemblyQualifiedName, parsed.AssemblyQualifiedName);
+            EnsureBasicMatch(parsed, type);
 
             if (type.IsGenericType)
             {
@@ -626,9 +654,7 @@ namespace System.Reflection.Metadata.Tests
                 TypeName parsed = TypeName.Parse(type.AssemblyQualifiedName.AsSpan());
 
                 // ensure that Name, FullName and AssemblyQualifiedName match reflection APIs!!
-                Assert.Equal(type.Name, parsed.Name);
-                Assert.Equal(type.FullName, parsed.FullName);
-                Assert.Equal(type.AssemblyQualifiedName, parsed.AssemblyQualifiedName);
+                EnsureBasicMatch(parsed, type);
                 // now load load the type from name
                 Verify(type, parsed, ignoreCase: false);
 #if NET  // something weird is going on here
@@ -727,6 +753,22 @@ namespace System.Reflection.Metadata.Tests
                 }
             }
 #pragma warning restore IL2055, IL2057, IL2075, IL2096
+        }
+
+        private static void EnsureBasicMatch(TypeName typeName, Type type)
+        {
+            Assert.Equal(type.AssemblyQualifiedName, typeName.AssemblyQualifiedName);
+            Assert.Equal(type.FullName, typeName.FullName);
+            Assert.Equal(type.Name, typeName.Name);
+
+#if NET
+            Assert.Equal(type.IsSZArray, typeName.IsSZArray);
+#endif
+            Assert.Equal(type.IsArray, typeName.IsArray);
+            Assert.Equal(type.IsPointer, typeName.IsPointer);
+            Assert.Equal(type.IsByRef, typeName.IsByRef);
+            Assert.Equal(type.IsConstructedGenericType, typeName.IsConstructedGenericType);
+            Assert.Equal(type.IsNested, typeName.IsNested);
         }
 
         public class NestedNonGeneric_0
