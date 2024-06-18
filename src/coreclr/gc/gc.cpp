@@ -13067,6 +13067,14 @@ void region_free_list::age_free_regions()
     }
 }
 
+void region_free_list::age_free_regions (region_free_list free_lists[count_free_region_kinds])
+{
+    for (int kind = basic_free_region; kind < count_free_region_kinds; kind++)
+    {
+        free_lists[kind].age_free_regions();
+    }
+}
+
 size_t region_free_list::get_size_free_regions(int max_age)
 {
     size_t result = 0;
@@ -13080,16 +13088,6 @@ size_t region_free_list::get_size_free_regions(int max_age)
     }
 
     return result;
-}
-
-void region_free_list::age_free_regions (region_free_list *global_free_list, region_free_list free_lists[count_free_region_kinds])
-{
-    global_free_list->age_free_regions();
-
-    for (int kind = basic_free_region; kind < count_free_region_kinds; kind++)
-    {
-        free_lists[kind].age_free_regions();
-    }
 }
 
 void region_free_list::print (int hn, const char* msg, int* ages)
@@ -22793,7 +22791,11 @@ void gc_heap::gc1()
                 if (settings.condemned_generation == max_generation)
                 {
                     // age and print all kinds of free regions
-                    region_free_list::age_free_regions (&global_free_huge_regions, g_heaps[i]->free_regions);
+                    if (i == 0)
+                    {
+                        global_free_huge_regions.age_free_regions();
+                    }
+                    region_free_list::age_free_regions (g_heaps[i]->free_regions);
                     region_free_list::print (g_heaps[i]->free_regions, i, "END");
                 }
                 else
@@ -22842,7 +22844,8 @@ void gc_heap::gc1()
         if (settings.condemned_generation == max_generation)
         {
             // age and print all kinds of free regions
-            region_free_list::age_free_regions(&global_free_huge_regions, free_regions);
+            global_free_huge_regions.age_free_regions();
+            region_free_list::age_free_regions(free_regions);
             region_free_list::print(free_regions, 0, "END");
         }
         else
@@ -37979,6 +37982,31 @@ void gc_heap::background_mark_phase ()
     if (bgc_t_join.joined())
 #endif //MULTIPLE_HEAPS
     {
+        distribute_free_regions ();
+
+#ifdef MULTIPLE_HEAPS
+        for (int i = 0; i < gc_heap::n_heaps; i++)
+        {
+            gc_heap* hp = gc_heap::g_heaps[i];
+#else //MULTIPLE_HEAPS
+        {
+            gc_heap* hp = pGenGCHeap;
+            const int i = 0;
+#endif //MULTIPLE_HEAPS
+
+            hp->descr_generations ("BGC"); //string value?   needed?
+#ifdef USE_REGIONS
+            assert (settings.condemned_generation == max_generation);
+            // age and print all kinds of free regions //! large and huge only?
+            if (i == 0)
+            {
+                global_free_huge_regions.age_free_regions();
+            }
+            region_free_list::age_free_regions (hp->free_regions);
+            region_free_list::print (hp->free_regions, i, "BGC");
+#endif //USE_REGIONS
+        }
+
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
         // Resetting write watch for software write watch is pretty fast, much faster than for hardware write watch. Reset
         // can be done while the runtime is suspended or after the runtime is restarted, the preference was to reset while
@@ -38232,27 +38260,6 @@ void gc_heap::background_mark_phase ()
     if (bgc_t_join.joined())
 #endif //MULTIPLE_HEAPS
     {
-        distribute_free_regions ();
-
-#ifdef MULTIPLE_HEAPS
-        for (int i = 0; i < gc_heap::n_heaps; i++)
-        {
-            gc_heap* hp = gc_heap::g_heaps[i];
-#else //MULTIPLE_HEAPS
-        {
-            gc_heap* hp = pGenGCHeap;
-            const int i = 0;
-#endif //MULTIPLE_HEAPS
-
-            hp->descr_generations ("BGC"); //string value?
-#ifdef USE_REGIONS
-            assert (settings.condemned_generation == max_generation); // not needed - 10 lines above
-            // age and print all kinds of free regions //! large and huge only?
-            region_free_list::age_free_regions (&global_free_huge_regions, hp->free_regions);
-            region_free_list::print (hp->free_regions, i, "BGC");
-#endif //USE_REGIONS
-        }
-
 #ifdef BGC_SERVO_TUNING
         bgc_tuning::record_bgc_sweep_start();
 #endif //BGC_SERVO_TUNING
