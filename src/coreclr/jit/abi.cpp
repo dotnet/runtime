@@ -379,13 +379,11 @@ ABIPassingInformation SwiftABIClassifier::Classify(Compiler*    comp,
                                                    ClassLayout* structLayout,
                                                    WellKnownArg wellKnownParam)
 {
-#ifdef TARGET_AMD64
     if (wellKnownParam == WellKnownArg::RetBuffer)
     {
-        return ABIPassingInformation::FromSegment(comp, ABIPassingSegment::InRegister(REG_SWIFT_ARG_RET_BUFF, 0,
-                                                                                      TARGET_POINTER_SIZE));
+        regNumber reg = theFixedRetBuffReg(CorInfoCallConvExtension::Swift);
+        return ABIPassingInformation::FromSegment(comp, ABIPassingSegment::InRegister(reg, 0, TARGET_POINTER_SIZE));
     }
-#endif
 
     if (wellKnownParam == WellKnownArg::SwiftSelf)
     {
