@@ -305,6 +305,9 @@ internal partial struct Metadata_1 : IMetadata
         }
     }
 
+    public TargetPointer GetModule(MethodTableHandle methodTableHandle) => _methodTables[methodTableHandle.Address].Module;
+    public TargetPointer GetParentMethodTable(MethodTableHandle methodTableHandle) => _methodTables[methodTableHandle.Address].ParentMethodTable;
+
     // only called on trusted method tables, so we always trust the resulting EEClass
     private EEClass_1 GetClassData(MethodTableHandle methodTableHandle)
     {
@@ -339,8 +342,12 @@ internal partial struct Metadata_1 : IMetadata
         return cls.NumMethods;
     }
 
-    private ushort GetNumNonVirtualSlots(MethodTableHandle methodTableHandle, in MethodTable_1 methodTable)
+    public ushort GetNumInterfaces(MethodTableHandle methodTableHandle) => _methodTables[methodTableHandle.Address].NumInterfaces;
+
+    public ushort GetNumVirtuals(MethodTableHandle methodTableHandle) => _methodTables[methodTableHandle.Address].NumVirtuals;
+    private ushort GetNumNonVirtualSlots(MethodTableHandle methodTableHandle)
     {
+        MethodTable_1 methodTable = _methodTables[methodTableHandle.Address];
         TargetPointer eeClassOrCanonMT = methodTable.EEClassOrCanonMT;
         if (GetEEClassOrCanonMTBits(eeClassOrCanonMT) == EEClassOrCanonMTBits.EEClass)
         {
@@ -354,8 +361,7 @@ internal partial struct Metadata_1 : IMetadata
 
     public ushort GetNumVtableSlots(MethodTableHandle methodTableHandle)
     {
-        MethodTable_1 methodTable = _methodTables[methodTableHandle.Address];
-        return checked((ushort)(methodTable.NumVirtuals + GetNumNonVirtualSlots(methodTableHandle, methodTable)));
+        return checked((ushort)(GetNumVirtuals(methodTableHandle) + GetNumNonVirtualSlots(methodTableHandle)));
     }
 
     public uint GetTypeDefTypeAttributes(MethodTableHandle methodTableHandle)

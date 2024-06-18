@@ -33,7 +33,9 @@ internal interface IMetadata : IContract
 
     public virtual MethodTableHandle GetMethodTableData(TargetPointer targetPointer) => throw new NotImplementedException();
 
+    public virtual TargetPointer GetModule(MethodTableHandle methodTable) => throw new NotImplementedException();
     public virtual TargetPointer GetClass(MethodTableHandle methodTable) => throw new NotImplementedException();
+    public virtual TargetPointer GetParentMethodTable(MethodTableHandle methodTable) => throw new NotImplementedException();
 
     public virtual uint GetBaseSize(MethodTableHandle methodTable) => throw new NotImplementedException();
     public virtual uint GetComponentSize(MethodTableHandle methodTable) => throw new NotImplementedException();
@@ -44,7 +46,8 @@ internal interface IMetadata : IContract
     public virtual bool IsDynamicStatics(MethodTableHandle methodTable) => throw new NotImplementedException();
     public virtual uint GetTypeDefToken(MethodTableHandle methodTable) => throw new NotImplementedException();
     public virtual ushort GetNumMethods(MethodTableHandle methodTable) => throw new NotImplementedException();
-
+    public virtual ushort GetNumInterfaces(MethodTableHandle methodTable) => throw new NotImplementedException();
+    public virtual ushort GetNumVirtuals(MethodTableHandle methodTable) => throw new NotImplementedException();
     public virtual ushort GetNumVtableSlots(MethodTableHandle methodTable) => throw new NotImplementedException();
 
     public virtual uint GetTypeDefTypeAttributes(MethodTableHandle methodTable) => throw new NotImplementedException();
