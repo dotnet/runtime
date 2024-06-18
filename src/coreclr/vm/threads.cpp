@@ -973,7 +973,7 @@ HRESULT Thread::DetachThread(BOOL fDLLThreadDetach)
         t_runtime_thread_locals.alloc_context.init(); // re-initialize the context.
 
         // Clear out the alloc context pointer for this thread. When TLS is gone, this pointer will point into freed memory.
-        m_alloc_context = nullptr;
+        m_pRuntimeThreadLocals = nullptr;
     }
 
     // We need to make sure that TLS are touched last here.
@@ -1384,7 +1384,7 @@ Thread::Thread()
 
     m_pBlockingLock = NULL;
 
-    m_alloc_context = nullptr;
+    m_pRuntimeThreadLocals = nullptr;
     m_thAllocContextObj = 0;
 
     m_UserInterrupt = 0;
