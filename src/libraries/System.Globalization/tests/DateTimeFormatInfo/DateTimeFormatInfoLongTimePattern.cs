@@ -282,5 +282,13 @@ namespace System.Globalization.Tests
                 }
             }
         }
+
+        [Fact]
+        public void LongTimePattern_CheckTimeFormatWithSpaces()
+        {
+            var date = DateTime.Today + TimeSpan.FromHours(15) + TimeSpan.FromMinutes(15);
+            var culture = new CultureInfo("en-US");
+            Assert.Equal("3:15:00 PM", date.ToString("T", culture));
+        }
     }
 }

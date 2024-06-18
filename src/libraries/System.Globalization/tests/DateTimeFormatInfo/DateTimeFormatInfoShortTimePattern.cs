@@ -253,5 +253,13 @@ namespace System.Globalization.Tests
         {
             Assert.Throws<InvalidOperationException>(() => DateTimeFormatInfo.InvariantInfo.ShortTimePattern = "HH:mm");
         }
+
+        [Fact]
+        public void ShortTimePattern_CheckTimeFormatWithSpaces()
+        {
+            var date = DateTime.Today + TimeSpan.FromHours(15) + TimeSpan.FromMinutes(15);
+            var culture = new CultureInfo("en-US");
+            Assert.Equal("3:15 PM", date.ToString("t", culture));
+        }
     }
 }
