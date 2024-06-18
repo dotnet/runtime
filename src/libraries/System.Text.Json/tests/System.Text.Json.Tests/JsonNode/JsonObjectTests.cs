@@ -1313,10 +1313,8 @@ namespace System.Text.Json.Nodes.Tests
 
             Assert.Equal(3, jObject.Count);
             Assert.DoesNotContain("Three", jObject);
-#if !NET9_0_OR_GREATER // https://github.com/dotnet/runtime/issues/103637
             Assert.Contains("Four", jObject);
             Assert.Equal("str", jObject["Four"].GetValue<string>());
-#endif
         }
 
         [Fact]
@@ -1346,10 +1344,8 @@ namespace System.Text.Json.Nodes.Tests
 
             Assert.Equal(3, jObject.Count);
             Assert.DoesNotContain("Three", jObject);
-#if !NET9_0_OR_GREATER // https://github.com/dotnet/runtime/issues/103637
             Assert.Contains("FOUR", jObject);
             Assert.Equal("str", jObject["FoUR"].GetValue<string>());
-#endif
         }
 
         [Fact]
@@ -1588,7 +1584,6 @@ namespace System.Text.Json.Nodes.Tests
             ilist[1] = kvp;
             Assert.Contains(kvp, ilist);
             Assert.DoesNotContain("Two", jObject);
-#if !NET9_0_OR_GREATER // https://github.com/dotnet/runtime/issues/103637
             Assert.Contains("Four", jObject);
 
             // IndexOf
@@ -1606,7 +1601,6 @@ namespace System.Text.Json.Nodes.Tests
             Assert.Equal(3, ilist.Count);
             Assert.DoesNotContain("Two", jObject);
             Assert.Equal(-1, jObject.IndexOf("Two"));
-#endif
         }
     }
 }
