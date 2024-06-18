@@ -144,7 +144,7 @@ namespace System.Diagnostics.Metrics
                 => (Counter<T>)GetOrCreateInstrument<T>(typeof(Counter<T>), name, unit, description, tags, () => new Counter<T>(this, name, unit, description, tags));
 
         /// <summary>
-        /// Create a metrics Gauge object.
+        /// Creates a Gauge instrument, which can be used to record non-additive values.
         /// </summary>
         /// <param name="name">The instrument name. cannot be null.</param>
         /// <remarks>
@@ -159,7 +159,7 @@ namespace System.Diagnostics.Metrics
         /// <param name="name">The instrument name. cannot be null.</param>
         /// <param name="unit">Optional instrument unit of measurements.</param>
         /// <param name="description">Optional instrument description.</param>
-        /// <param name="tags">tags to attach to the counter.</param>
+        /// <param name="tags">tags to attach to the Gauge.</param>
         /// <remarks>
         /// Gauge is an Instrument which used to record non-additive values.
         /// Example uses for Gauge: record the room background noise level value when changes occur.
