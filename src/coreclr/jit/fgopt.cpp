@@ -999,17 +999,9 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext DEBUGARG(boo
         JITDUMP("Second block has %u other incoming edges\n", bNext->countOfInEdges());
         assert(block->isEmpty());
 
-        // Retarget all the other edges incident on bNext. Do this
-        // in two passes as we can't both walk and modify the pred list.
-        //
-        ArrayStack<BasicBlock*> preds(getAllocator(CMK_BasicBlock), bNext->countOfInEdges());
-        for (BasicBlock* const predBlock : bNext->PredBlocks())
+        // Retarget all the other edges incident on bNext
+        for (BasicBlock* const predBlock : bNext->PredBlocksEditing())
         {
-            preds.Push(predBlock);
-        }
-        while (preds.Height() > 0)
-        {
-            BasicBlock* const predBlock = preds.Pop();
             fgReplaceJumpTarget(predBlock, bNext, block);
         }
     }
