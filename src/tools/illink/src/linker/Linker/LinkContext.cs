@@ -803,7 +803,7 @@ namespace Mono.Linker
 				return null;
 
 			if (methodresolveCache.TryGetValue (methodReference, out MethodDefinition? md)) {
-				if (md == null & !IgnoreUnresolved)
+				if (md == null && !IgnoreUnresolved)
 					ReportUnresolved (methodReference);
 				return md;
 			}
