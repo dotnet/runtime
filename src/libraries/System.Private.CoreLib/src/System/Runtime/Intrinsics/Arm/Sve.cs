@@ -320,6 +320,28 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<ulong> AddAcross(Vector<ulong> value) => AddAcross(value);
 
+
+        ///  AddRotateComplex : Complex add with rotate
+
+        /// <summary>
+        /// svfloat64_t svcadd[_f64]_m(svbool_t pg, svfloat64_t op1, svfloat64_t op2, uint64_t imm_rotation)
+        ///   FCADD Ztied1.D, Pg/M, Ztied1.D, Zop2.D, #imm_rotation
+        /// svfloat64_t svcadd[_f64]_x(svbool_t pg, svfloat64_t op1, svfloat64_t op2, uint64_t imm_rotation)
+        ///   FCADD Ztied1.D, Pg/M, Ztied1.D, Zop2.D, #imm_rotation
+        /// svfloat64_t svcadd[_f64]_z(svbool_t pg, svfloat64_t op1, svfloat64_t op2, uint64_t imm_rotation)
+        /// </summary>
+        public static unsafe Vector<double> AddRotateComplex(Vector<double> left, Vector<double> right, [ConstantExpected] byte rotation) => AddRotateComplex(left, right, rotation);
+
+        /// <summary>
+        /// svfloat32_t svcadd[_f32]_m(svbool_t pg, svfloat32_t op1, svfloat32_t op2, uint64_t imm_rotation)
+        ///   FCADD Ztied1.S, Pg/M, Ztied1.S, Zop2.S, #imm_rotation
+        /// svfloat32_t svcadd[_f32]_x(svbool_t pg, svfloat32_t op1, svfloat32_t op2, uint64_t imm_rotation)
+        ///   FCADD Ztied1.S, Pg/M, Ztied1.S, Zop2.S, #imm_rotation
+        /// svfloat32_t svcadd[_f32]_z(svbool_t pg, svfloat32_t op1, svfloat32_t op2, uint64_t imm_rotation)
+        /// </summary>
+        public static unsafe Vector<float> AddRotateComplex(Vector<float> left, Vector<float> right, [ConstantExpected] byte rotation) => AddRotateComplex(left, right, rotation);
+
+
         ///  AddSaturate : Saturating add
 
         /// <summary>
@@ -369,6 +391,22 @@ namespace System.Runtime.Intrinsics.Arm
         ///   UQADD Zresult.D, Zop1.D, Zop2.D
         /// </summary>
         public static unsafe Vector<ulong> AddSaturate(Vector<ulong> left, Vector<ulong> right) => AddSaturate(left, right);
+
+
+        ///  AddSequentialAcross : Add reduction (strictly-ordered)
+
+        /// <summary>
+        /// float64_t svadda[_f64](svbool_t pg, float64_t initial, svfloat64_t op)
+        ///   FADDA Dtied, Pg, Dtied, Zop.D
+        /// </summary>
+        public static unsafe Vector<double> AddSequentialAcross(Vector<double> initial, Vector<double> value) => AddSequentialAcross(initial, value);
+
+        /// <summary>
+        /// float32_t svadda[_f32](svbool_t pg, float32_t initial, svfloat32_t op)
+        ///   FADDA Stied, Pg, Stied, Zop.S
+        /// </summary>
+        public static unsafe Vector<float> AddSequentialAcross(Vector<float> initial, Vector<float> value) => AddSequentialAcross(initial, value);
+
 
         ///  And : Bitwise AND
 
