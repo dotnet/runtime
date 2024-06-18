@@ -215,23 +215,23 @@ namespace Microsoft.Extensions.Logging.Test
 
                 using Activity activity = new Activity("TestOperation");
 
-                if (useW3CFormatId)
-                {
-                    activity.SetIdFormat(ActivityIdFormat.W3C);
-                }
-                else
-                {
-                    activity.SetIdFormat(ActivityIdFormat.Hierarchical);
-                }
-
                 if (hasTrace)
                 {
-                    activity.Start();
-                }
+                    if (useW3CFormatId)
+                    {
+                        activity.SetIdFormat(ActivityIdFormat.W3C);
+                    }
+                    else
+                    {
+                        activity.SetIdFormat(ActivityIdFormat.Hierarchical);
+                    }
 
-                if (sampled)
-                {
-                    activity.ActivityTraceFlags = ActivityTraceFlags.Recorded;
+                    activity.Start();
+
+                    if (sampled)
+                    {
+                        activity.ActivityTraceFlags = ActivityTraceFlags.Recorded;
+                    }
                 }
 
                 var logger = factory.CreateLogger("TestLogger");
