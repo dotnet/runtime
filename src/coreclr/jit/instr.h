@@ -381,8 +381,6 @@ enum insScalableOpts : unsigned
     INS_SCALABLE_OPTS_IMM_FIRST,           // Variants with an immediate and a register, where the immediate comes first
 
     // Removable once REG_V0 and REG_P0 are distinct
-    INS_SCALABLE_OPTS_TO_PREDICATE,      // Variants moving to a predicate from a vector (e.g. pmov)
-    INS_SCALABLE_OPTS_TO_VECTOR,         // Variants moving to a vector from a predicate (e.g. pmov)
     INS_SCALABLE_OPTS_BROADCAST,         // Used to distinguish mov from cpy, where mov is an alias for both
 };
 

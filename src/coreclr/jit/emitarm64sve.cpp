@@ -1926,21 +1926,16 @@ void emitter::emitInsSve_R_R(instruction     ins,
                 assert(insOptsScalableStandard(opt));
                 return emitInsSve_R_R_I(INS_sve_pmov, attr, reg1, reg2, 0, opt, sopt);
             }
-            if (sopt == INS_SCALABLE_OPTS_TO_PREDICATE)
+            if (isPredicateRegister(reg1))
             {
-                assert(isPredicateRegister(reg1));
                 assert(isVectorRegister(reg2));
                 fmt = IF_SVE_CE_2A;
             }
-            else if (sopt == INS_SCALABLE_OPTS_TO_VECTOR)
+            else
             {
                 assert(isVectorRegister(reg1));
                 assert(isPredicateRegister(reg2));
                 fmt = IF_SVE_CF_2A;
-            }
-            else
-            {
-                assert(!"invalid instruction");
             }
             break;
 
@@ -2486,9 +2481,8 @@ void emitter::emitInsSve_R_R_I(instruction     ins,
             break;
 
         case INS_sve_pmov:
-            if (sopt == INS_SCALABLE_OPTS_TO_PREDICATE)
+            if (isPredicateRegister(reg1))
             {
-                assert(isPredicateRegister(reg1));
                 assert(isVectorRegister(reg2));
                 switch (opt)
                 {
@@ -2508,7 +2502,7 @@ void emitter::emitInsSve_R_R_I(instruction     ins,
                         unreached();
                 }
             }
-            else if (sopt == INS_SCALABLE_OPTS_TO_VECTOR)
+            else
             {
                 assert(isVectorRegister(reg1));
                 assert(isPredicateRegister(reg2));
@@ -2529,10 +2523,6 @@ void emitter::emitInsSve_R_R_I(instruction     ins,
                     default:
                         unreached();
                 }
-            }
-            else
-            {
-                unreached();
             }
             break;
 
