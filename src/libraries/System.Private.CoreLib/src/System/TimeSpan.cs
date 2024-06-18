@@ -134,7 +134,7 @@ namespace System
         /// Represents the number of milliseconds in 1 second. This field is constant.
         /// </summary>
         /// <remarks>
-        /// The value of this constant is 86.4 billion; that is, 86,400,000,000.
+        /// The value of this constant is 1 thousand; that is, 1,000.
         /// </remarks>
         public const long MillisecondsPerSecond = TicksPerSecond / TicksPerMillisecond;             //           1,000
 
