@@ -98,7 +98,14 @@ internal sealed unsafe partial class MsQuicApi
             // in the application directory.
             if (ShouldUseAppLocalMsQuic())
             {
-                loaded = NativeLibrary.TryLoad(Path.Combine(AppContext.BaseDirectory, Interop.Libraries.MsQuic), out msQuicHandle);
+                var path = Path.Combine(AppContext.BaseDirectory, Interop.Libraries.MsQuic);
+
+                if (NetEventSource.Log.IsEnabled())
+                {
+                    NetEventSource.Info(null, $"Attempting to load MsQuic library from '{path}'.");
+                }
+
+                loaded = NativeLibrary.TryLoad(path, out msQuicHandle);
             }
             else
             {
