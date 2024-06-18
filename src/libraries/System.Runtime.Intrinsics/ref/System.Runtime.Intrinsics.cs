@@ -4816,6 +4816,17 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<uint> ReverseElement8(System.Numerics.Vector<uint> value) { throw null; }
         public static System.Numerics.Vector<ulong> ReverseElement8(System.Numerics.Vector<ulong> value) { throw null; }
 
+        public static System.Numerics.Vector<double> RoundAwayFromZero(System.Numerics.Vector<double> value) { throw null; }
+        public static System.Numerics.Vector<float> RoundAwayFromZero(System.Numerics.Vector<float> value) { throw null; }
+        public static System.Numerics.Vector<double> RoundToNearest(System.Numerics.Vector<double> value) { throw null; }
+        public static System.Numerics.Vector<float> RoundToNearest(System.Numerics.Vector<float> value) { throw null; }
+        public static System.Numerics.Vector<double> RoundToNegativeInfinity(System.Numerics.Vector<double> value) { throw null; }
+        public static System.Numerics.Vector<float> RoundToNegativeInfinity(System.Numerics.Vector<float> value) { throw null; }
+        public static System.Numerics.Vector<double> RoundToPositiveInfinity(System.Numerics.Vector<double> value) { throw null; }
+        public static System.Numerics.Vector<float> RoundToPositiveInfinity(System.Numerics.Vector<float> value) { throw null; }
+        public static System.Numerics.Vector<double> RoundToZero(System.Numerics.Vector<double> value) { throw null; }
+        public static System.Numerics.Vector<float> RoundToZero(System.Numerics.Vector<float> value) { throw null; }
+
         public static int SaturatingDecrementBy16BitElementCount(int value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
         public static long SaturatingDecrementBy16BitElementCount(long value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
         public static uint SaturatingDecrementBy16BitElementCount(uint value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) { throw null; }
