@@ -2028,6 +2028,7 @@ void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, 
     unsigned swiftSelfIndex           = UINT_MAX;
     unsigned swiftIndirectResultIndex = UINT_MAX;
 
+    CORINFO_CLASS_HANDLE selfType = NO_CLASS_HANDLE;
     // We are importing an unmanaged Swift call, which might require special parameter handling
     bool spillStack = false;
 
@@ -2092,6 +2093,34 @@ void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, 
 
                 swiftSelfIndex = argIndex;
                 // Fall through to make sure the struct value becomes a local.
+            }
+            else if ((strcmp(className, "SwiftSelf`1") == 0) &&
+                     (strcmp(namespaceName, "System.Runtime.InteropServices.Swift") == 0))
+            {
+                // We expect a SwiftSelf struct to be passed, not a pointer/reference
+                if (argIsByrefOrPtr)
+                {
+                    BADCODE("Expected SwiftSelf<T> struct, got pointer/reference");
+                }
+
+                if (swiftSelfIndex != UINT_MAX)
+                {
+                    BADCODE("Duplicate SwiftSelf parameter");
+                }
+
+                if (argIndex != 0)
+                {
+                    BADCODE("SwiftSelf<T> must be the first argument in the signature");
+                }
+
+                selfType                = info.compCompHnd->getTypeInstantiationArgument(argClass, 0);
+                CorInfoType selfCorType = info.compCompHnd->asCorInfoType(selfType);
+                if (selfCorType != CORINFO_TYPE_VALUECLASS)
+                {
+                    BADCODE("SwiftSelf<T> expects T to be a value class");
+                }
+
+                swiftSelfIndex = argIndex;
             }
             else if ((strcmp(className, "SwiftIndirectResult") == 0) &&
                      (strcmp(namespaceName, "System.Runtime.InteropServices.Swift") == 0))
@@ -2176,7 +2205,7 @@ void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, 
         // For the self/indirect result args, change them to a TYP_I_IMPL
         // primitive directly. They must also be marked as a well known arg
         // because they have a non-standard calling convention.
-        if ((argIndex == swiftSelfIndex) || (argIndex == swiftIndirectResultIndex))
+        if (((argIndex == swiftSelfIndex) && (selfType == NO_CLASS_HANDLE)) || (argIndex == swiftIndirectResultIndex))
         {
             assert(arg->GetNode()->OperIsLocalRead());
             GenTree*   primitiveSelf = gtNewLclFldNode(structVal->GetLclNum(), TYP_I_IMPL, structVal->GetLclOffs());
@@ -2198,7 +2227,8 @@ void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, 
         }
         else
         {
-            const CORINFO_SWIFT_LOWERING* lowering = GetSwiftLowering(arg->GetSignatureClassHandle());
+            CORINFO_CLASS_HANDLE argClass = argIndex == swiftSelfIndex ? selfType : arg->GetSignatureClassHandle();
+            const CORINFO_SWIFT_LOWERING* lowering = GetSwiftLowering(argClass);
             if (lowering->byReference)
             {
                 JITDUMP("  Argument %d of type %s must be passed by reference\n", argIndex,
@@ -2220,7 +2250,13 @@ void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, 
                 GenTree* addrNode = gtNewLclAddrNode(structVal->GetLclNum(), structVal->GetLclOffs());
                 JITDUMP("    Passing by reference\n");
 
-                insertAfter = call->gtArgs.InsertAfter(this, insertAfter, NewCallArg::Primitive(addrNode, TYP_I_IMPL));
+                NewCallArg newArg = NewCallArg::Primitive(addrNode, TYP_I_IMPL);
+                if (argIndex == swiftSelfIndex)
+                {
+                    newArg = newArg.WellKnown(WellKnownArg::SwiftSelf);
+                }
+
+                insertAfter = call->gtArgs.InsertAfter(this, insertAfter, newArg);
             }
             else
             {
@@ -4068,11 +4104,8 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     op2 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op2, callJitType, 16);
                     op1 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op1, callJitType, 16);
 
-                    retNode = compOpportunisticallyDependsOn(InstructionSet_AVX10v1)
-                                  ? gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, op3, NI_AVX10v1_MultiplyAddScalar,
-                                                             callJitType, 16)
-                                  : gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, op3, NI_FMA_MultiplyAddScalar,
-                                                             callJitType, 16);
+                    retNode =
+                        gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, op3, NI_FMA_MultiplyAddScalar, callJitType, 16);
 
                     retNode = gtNewSimdToScalarNode(callType, retNode, callJitType, 16);
                     break;
@@ -9354,8 +9387,9 @@ GenTree* Compiler::impMinMaxIntrinsic(CORINFO_METHOD_HANDLE method,
 #if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
         if (!isMagnitude && compOpportunisticallyDependsOn(InstructionSet_SSE2))
         {
-            bool needsFixup = false;
-            bool canHandle  = false;
+            bool needsFixup      = false;
+            bool canHandle       = false;
+            bool isV512Supported = false;
 
             if (isMax)
             {
@@ -9384,7 +9418,7 @@ GenTree* Compiler::impMinMaxIntrinsic(CORINFO_METHOD_HANDLE method,
                     needsFixup = cnsNode->IsFloatPositiveZero();
                 }
 
-                if (!needsFixup || compOpportunisticallyDependsOn(InstructionSet_AVX512F))
+                if (!needsFixup || compIsEvexOpportunisticallySupported(isV512Supported))
                 {
                     // Given the checks, op1 can safely be the cns and op2 the other node
 
@@ -9425,7 +9459,7 @@ GenTree* Compiler::impMinMaxIntrinsic(CORINFO_METHOD_HANDLE method,
                     needsFixup = cnsNode->IsFloatNegativeZero();
                 }
 
-                if (!needsFixup || compOpportunisticallyDependsOn(InstructionSet_AVX512F))
+                if (!needsFixup || compIsEvexOpportunisticallySupported(isV512Supported))
                 {
                     // Given the checks, op1 can safely be the cns and op2 the other node
 
@@ -9509,8 +9543,10 @@ GenTree* Compiler::impMinMaxIntrinsic(CORINFO_METHOD_HANDLE method,
                         tbl->gtSimdVal.i32[0] = 0x0700;
                     }
 
+                    NamedIntrinsic fixupScalarId = isV512Supported ? NI_AVX512F_FixupScalar : NI_AVX10v1_FixupScalar;
+
                     retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, retNode, op2Clone, tbl, gtNewIconNode(0),
-                                                       NI_AVX512F_FixupScalar, callJitType, 16);
+                                                       fixupScalarId, callJitType, 16);
                 }
 
                 if (isNumber)

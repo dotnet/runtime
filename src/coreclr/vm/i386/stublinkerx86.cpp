@@ -2429,6 +2429,73 @@ VOID StubLinkerCPU::X86EmitCurrentThreadFetch(X86Reg dstreg, unsigned preservedR
 #endif // TARGET_UNIX
 }
 
+#ifdef TARGET_UNIX
+namespace
+{
+    gc_alloc_context* STDCALL GetAllocContextHelper()
+    {
+        return &t_thread_alloc_context;
+    }
+}
+#endif
+
+VOID StubLinkerCPU::X86EmitCurrentThreadAllocContextFetch(X86Reg dstreg, unsigned preservedRegSet)
+{
+    CONTRACTL
+    {
+        STANDARD_VM_CHECK;
+
+        // It doesn't make sense to have the destination register be preserved
+        PRECONDITION((preservedRegSet & (1 << dstreg)) == 0);
+        AMD64_ONLY(PRECONDITION(dstreg < 8)); // code below doesn't support high registers
+    }
+    CONTRACTL_END;
+
+#ifdef TARGET_UNIX
+
+    X86EmitPushRegs(preservedRegSet & ((1 << kEAX) | (1 << kEDX) | (1 << kECX)));
+
+    // call GetThread
+    X86EmitCall(NewExternalCodeLabel((LPVOID)GetAllocContextHelper), sizeof(void*));
+
+    // mov dstreg, eax
+    X86EmitMovRegReg(dstreg, kEAX);
+
+    X86EmitPopRegs(preservedRegSet & ((1 << kEAX) | (1 << kEDX) | (1 << kECX)));
+
+#ifdef _DEBUG
+    // Trash caller saved regs that we were not told to preserve, and that aren't the dstreg.
+    preservedRegSet |= 1 << dstreg;
+    if (!(preservedRegSet & (1 << kEAX)))
+        X86EmitDebugTrashReg(kEAX);
+    if (!(preservedRegSet & (1 << kEDX)))
+        X86EmitDebugTrashReg(kEDX);
+    if (!(preservedRegSet & (1 << kECX)))
+        X86EmitDebugTrashReg(kECX);
+#endif // _DEBUG
+
+#else // TARGET_UNIX
+
+#ifdef TARGET_AMD64
+    BYTE code[] = { 0x65,0x48,0x8b,0x04,0x25 };    // mov dstreg, qword ptr gs:[IMM32]
+    static const int regByteIndex = 3;
+#elif defined(TARGET_X86)
+    BYTE code[] = { 0x64,0x8b,0x05 };              // mov dstreg, dword ptr fs:[IMM32]
+    static const int regByteIndex = 2;
+#endif
+    code[regByteIndex] |= (dstreg << 3);
+
+    EmitBytes(code, sizeof(code));
+    Emit32(offsetof(TEB, ThreadLocalStoragePointer));
+
+    X86EmitIndexRegLoad(dstreg, dstreg, sizeof(void *) * _tls_index);
+
+    _ASSERTE(Thread::GetOffsetOfThreadStatic(&t_thread_alloc_context) < INT_MAX);
+    X86EmitAddReg(dstreg, (int32_t)Thread::GetOffsetOfThreadStatic(&t_thread_alloc_context));
+
+#endif // TARGET_UNIX
+}
+
 #if defined(FEATURE_COMINTEROP) && defined(TARGET_X86)
 
 #if defined(PROFILING_SUPPORTED)

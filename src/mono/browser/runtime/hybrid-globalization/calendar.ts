@@ -5,7 +5,7 @@
 import { VoidPtrNull } from "../types/internal";
 import { runtimeHelpers } from "./module-exports";
 import { Int32Ptr, VoidPtr } from "../types/emscripten";
-import { INNER_SEPARATOR, OUTER_SEPARATOR, normalizeSpaces } from "./helpers";
+import { INNER_SEPARATOR, OUTER_SEPARATOR } from "./helpers";
 
 const MONTH_CODE = "MMMM";
 const YEAR_CODE = "yyyy";
@@ -96,7 +96,6 @@ function getMonthYearPattern (locale: string | undefined, date: Date): string {
     pattern = pattern.replace("999", YEAR_CODE);
     // sometimes the number is localized and the above does not have an effect
     const yearStr = date.toLocaleDateString(locale, { year: "numeric" });
-    pattern = normalizeSpaces(pattern);
     return pattern.replace(yearStr, YEAR_CODE);
 }
 
@@ -165,7 +164,7 @@ function getShortDatePattern (locale: string | undefined): string {
         const localizedDayCode = dayStr.length == 1 ? "d" : "dd";
         pattern = pattern.replace(dayStr, localizedDayCode);
     }
-    return normalizeSpaces(pattern);
+    return pattern;
 }
 
 function getLongDatePattern (locale: string | undefined, date: Date): string {
@@ -196,7 +195,6 @@ function getLongDatePattern (locale: string | undefined, date: Date): string {
     pattern = pattern.replace(replacedWeekday, "dddd");
     pattern = pattern.replace("22", DAY_CODE);
     const dayStr = date.toLocaleDateString(locale, { day: "numeric" }); // should we replace it for localized digits?
-    pattern = normalizeSpaces(pattern);
     return pattern.replace(dayStr, DAY_CODE);
 }
 

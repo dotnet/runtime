@@ -14,9 +14,10 @@ namespace System.Runtime.Serialization.Formatters.Tests
         public static bool ShouldRunFullFeatureSwitchEnablementChecks => !PlatformDetection.IsNetFramework && RemoteExecutor.IsSupported;
 
         // determines whether BinaryFormatter will always fail, regardless of config, on this platform
-        public static bool IsBinaryFormatterSuppressedOnThisPlatform => !PlatformDetection.IsBinaryFormatterSupported;
+        public static bool IsBinaryFormatterSuppressedOnThisPlatform => !TestConfiguration.IsBinaryFormatterSupported;
 
-        private const string EnableBinaryFormatterSwitchName = "System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization";
+        public static bool IsFeatureSwitchIgnored = !TestConfiguration.IsFeatureSwitchRespected;
+
         private const string MoreInfoUrl = "https://aka.ms/binaryformatter";
 
         [ConditionalFact(nameof(IsBinaryFormatterSuppressedOnThisPlatform))]
@@ -39,43 +40,66 @@ namespace System.Runtime.Serialization.Formatters.Tests
         public static void EnabledThroughFeatureSwitch()
         {
             RemoteInvokeOptions options = new RemoteInvokeOptions();
-            options.RuntimeConfigurationOptions[EnableBinaryFormatterSwitchName] = bool.TrueString;
+            options.RuntimeConfigurationOptions[TestConfiguration.EnableBinaryFormatterSwitchName] = bool.TrueString;
 
-            RemoteExecutor.Invoke(() =>
-            {
-                // Test serialization
-
-                MemoryStream ms = new MemoryStream();
-                new BinaryFormatter().Serialize(ms, "A string to serialize.");
-
-                // Test round-trippability
-
-                ms.Position = 0;
-                object roundTripped = new BinaryFormatter().Deserialize(ms);
-                Assert.Equal("A string to serialize.", roundTripped);
-            }, options).Dispose();
+            RunRemoteTest(options, TestConfiguration.IsBinaryFormatterSupported);
         }
 
         [ConditionalFact(nameof(ShouldRunFullFeatureSwitchEnablementChecks))]
         public static void DisabledThroughFeatureSwitch()
         {
             RemoteInvokeOptions options = new RemoteInvokeOptions();
-            options.RuntimeConfigurationOptions[EnableBinaryFormatterSwitchName] = bool.FalseString;
+            options.RuntimeConfigurationOptions[TestConfiguration.EnableBinaryFormatterSwitchName] = bool.FalseString;
 
-            RemoteExecutor.Invoke(() =>
+            bool expectSuccess = TestConfiguration.IsBinaryFormatterSupported;
+
+            if (TestConfiguration.IsFeatureSwitchRespected)
             {
-                // First, test serialization
+                expectSuccess = false;
+            }
 
-                MemoryStream ms = new MemoryStream();
-                BinaryFormatter bf = new BinaryFormatter();
-                var ex = Assert.Throws<NotSupportedException>(() => bf.Serialize(ms, "A string to serialize."));
-                Assert.Contains(MoreInfoUrl, ex.Message, StringComparison.Ordinal); // error message should link to the more info URL
+            RunRemoteTest(options, expectSuccess);
+        }
 
-                // Then test deserialization
+        private static void RunRemoteTest(RemoteInvokeOptions options, bool expectSuccess)
+        {
+            if (expectSuccess)
+            {
+                RemoteExecutor.Invoke(
+                    () =>
+                    {
+                        // Test serialization
 
-                ex = Assert.Throws<NotSupportedException>(() => bf.Deserialize(ms));
-                Assert.Contains(MoreInfoUrl, ex.Message, StringComparison.Ordinal); // error message should link to the more info URL
-            }, options).Dispose();
+                        MemoryStream ms = new MemoryStream();
+                        new BinaryFormatter().Serialize(ms, "A string to serialize.");
+
+                        // Test round-trippability
+
+                        ms.Position = 0;
+                        object roundTripped = new BinaryFormatter().Deserialize(ms);
+                        Assert.Equal("A string to serialize.", roundTripped);
+                    },
+                    options).Dispose();
+            }
+            else
+            {
+                RemoteExecutor.Invoke(
+                    () =>
+                    {
+                        // First, test serialization
+
+                        MemoryStream ms = new MemoryStream();
+                        BinaryFormatter bf = new BinaryFormatter();
+                        var ex = Assert.ThrowsAny<NotSupportedException>(() => bf.Serialize(ms, "A string to serialize."));
+                        Assert.Contains(MoreInfoUrl, ex.Message, StringComparison.Ordinal); // error message should link to the more info URL
+
+                        // Then test deserialization
+
+                        ex = Assert.ThrowsAny<NotSupportedException>(() => bf.Deserialize(ms));
+                        Assert.Contains(MoreInfoUrl, ex.Message, StringComparison.Ordinal); // error message should link to the more info URL
+                    },
+                    options).Dispose();
+            }
         }
     }
 }
