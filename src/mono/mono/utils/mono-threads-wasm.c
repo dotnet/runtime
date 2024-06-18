@@ -45,8 +45,9 @@ wasm_get_stack_size (void)
 	size_t stack_low = get_wasm_stack_low();
 	size_t max_stack_size = stack_high - stack_low;
 
-	g_assert (stack_low > 0);
+	g_assert (stack_low >= 0);
 	g_assert (stack_high > stack_low);
+	g_assert (max_stack_size >= 64 * 1024);
 
 	// this is the max available stack size size
 	return max_stack_size;
@@ -197,10 +198,8 @@ mono_threads_platform_get_stack_bounds (guint8 **staddr, size_t *stsize)
 	if (G_UNLIKELY (res != 0))
 		g_error ("%s: pthread_attr_destroy failed with \"%s\" (%d)", __func__, g_strerror (res), res);
 
-	if (*staddr == NULL) {
-		*staddr = (guint8*)get_wasm_stack_low ();
-		*stsize = wasm_get_stack_size ();
-	}
+	g_assert (*staddr != NULL);
+	g_assert (*stsize != (size_t)-1);
 #elif defined(HOST_WASI) && !defined(DISABLE_THREADS)
 	// TODO: this will need changes for WASI multithreading as the stack will be allocated per thread at different addresses
 	g_assert_not_reached ();
