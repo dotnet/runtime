@@ -1191,10 +1191,11 @@ namespace System
         internal static extern int GetInstanceFieldOffset(RtFieldInfo field);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern IntPtr GetStaticFieldAddress(IRuntimeFieldInfo field);
+        internal static extern IntPtr GetStaticFieldAddress(RtFieldInfo field);
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeFieldHandle_GetFieldSize")]
-        internal static partial uint GetFieldSize(QCallFieldHandle field);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeFieldHandle_GetRVAFieldInfo")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static partial bool GetRVAFieldInfo(QCallFieldHandle field, out IntPtr address, out uint size);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern int GetToken(RtFieldInfo field);

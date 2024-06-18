@@ -21,7 +21,7 @@ namespace System.Runtime.CompilerServices
             if (array is null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
 
-            if ((RuntimeFieldHandle.GetAttributes(fldInfo.Value) & FieldAttributes.HasFieldRVA) == 0)
+            if (!RuntimeFieldHandle.GetRVAFieldInfo(new QCallFieldHandle(ref fldInfo), out IntPtr address, out uint size))
                 throw new ArgumentException(SR.Argument_BadFieldForInitializeArray);
 
             // Note that we do not check that the field is actually in the PE file that is initializing
@@ -35,13 +35,11 @@ namespace System.Runtime.CompilerServices
             MethodTable* pMT = GetMethodTable(array);
             nuint totalSize = pMT->ComponentSize * array.NativeLength;
 
-            uint size = RuntimeFieldHandle.GetFieldSize(new QCallFieldHandle(ref fldInfo));
-
             // make certain you don't go off the end of the rva static
             if (totalSize > size)
                 throw new ArgumentException(SR.Argument_BadFieldForInitializeArray);
 
-            void* src = (void*)RuntimeFieldHandle.GetStaticFieldAddress(fldInfo);
+            void* src = (void*)address;
             ref byte dst = ref MemoryMarshal.GetArrayDataReference(array);
 
             Debug.Assert(!pMT->GetArrayElementTypeHandle().AsMethodTable()->ContainsGCPointers);
@@ -86,7 +84,7 @@ namespace System.Runtime.CompilerServices
         {
             IRuntimeFieldInfo fldInfo = fldHandle.GetRuntimeFieldInfo();
 
-            if ((RuntimeFieldHandle.GetAttributes(fldInfo.Value) & FieldAttributes.HasFieldRVA) == 0)
+            if (!RuntimeFieldHandle.GetRVAFieldInfo(new QCallFieldHandle(ref fldInfo), out IntPtr data, out uint totalSize))
                 throw new ArgumentException(SR.Argument_BadFieldForInitializeArray);
 
             TypeHandle th = new TypeHandle((void*)targetTypeHandle.Value);
@@ -95,10 +93,8 @@ namespace System.Runtime.CompilerServices
             if (!th.GetVerifierCorElementType().IsPrimitiveType()) // Enum is included
                 throw new ArgumentException(SR.Argument_MustBePrimitiveArray);
 
-            uint totalSize = RuntimeFieldHandle.GetFieldSize(new QCallFieldHandle(ref fldInfo));
             uint targetTypeSize = th.AsMethodTable()->GetNumInstanceFieldBytes();
 
-            IntPtr data = RuntimeFieldHandle.GetStaticFieldAddress(fldInfo);
             if (data % targetTypeSize != 0)
                 throw new ArgumentException(SR.Argument_BadFieldForInitializeArray);
 
