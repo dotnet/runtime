@@ -895,12 +895,23 @@ PhaseStatus Compiler::fgPostImportationCleanup()
 // Returns:
 //    true if compaction is allowed
 //
-bool Compiler::fgCanCompactBlocks(BasicBlock* block, BasicBlock* bNext)
+bool Compiler::fgCanCompactBlocks(BasicBlock* block)
 {
     assert(block != nullptr);
-    assert(block->NextIs(bNext));
 
-    if (!block->KindIs(BBJ_ALWAYS) || !block->TargetIs(bNext) || block->HasFlag(BBF_KEEP_BBJ_ALWAYS))
+    if (!block->KindIs(BBJ_ALWAYS) || block->HasFlag(BBF_KEEP_BBJ_ALWAYS))
+    {
+        return false;
+    }
+
+    BasicBlock* const bNext = block->GetTarget();
+
+    if (block == bNext)
+    {
+        return false;
+    }
+
+    if (bNext->IsFirst() || (bNext == fgEntryBB) || (bNext == fgOSREntryBB))
     {
         return false;
     }
@@ -968,18 +979,17 @@ bool Compiler::fgCanCompactBlocks(BasicBlock* block, BasicBlock* bNext)
 //    doDebugCheck - in Debug builds, check flowgraph for correctness after compaction
 //    (some callers might compact blocks during destructive flowgraph changes, and thus should skip checks)
 //
-void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext DEBUGARG(bool doDebugCheck /* = true */))
+void Compiler::fgCompactBlocks(BasicBlock* block DEBUGARG(bool doDebugCheck /* = true */))
 {
     noway_assert(block != nullptr);
+    BasicBlock* const bNext = block->GetTarget();
+
     noway_assert(bNext != nullptr);
     noway_assert(!block->HasFlag(BBF_REMOVED));
     noway_assert(!bNext->HasFlag(BBF_REMOVED));
-    noway_assert(block->NextIs(bNext));
     noway_assert(bNext->countOfInEdges() == 1 || block->isEmpty());
     noway_assert(bNext->bbPreds != nullptr);
 
-    assert(block->KindIs(BBJ_ALWAYS));
-    assert(block->TargetIs(bNext));
     assert(!fgInDifferentRegions(block, bNext));
 
     // Make sure the second block is not the start of a TRY block or an exception handler
@@ -3287,9 +3297,9 @@ bool Compiler::fgExpandRarelyRunBlocks()
         }
 
         /* COMPACT blocks if possible */
-        if (fgCanCompactBlocks(bPrev, block))
+        if (fgCanCompactBlocks(bPrev))
         {
-            fgCompactBlocks(bPrev, block);
+            fgCompactBlocks(bPrev);
 
             block = bPrev;
             continue;
@@ -4554,11 +4564,11 @@ void Compiler::fgMoveBackwardJumpsToSuccessors()
     //
     for (BasicBlock* block = fgFirstBB; block != fgFirstFuncletBB;)
     {
-        if (fgCanCompactBlocks(block, block->Next()))
+        if (fgCanCompactBlocks(block))
         {
             // We haven't fixed EH information yet, so don't do any correctness checks here
             //
-            fgCompactBlocks(block, block->Next() DEBUGARG(/* doDebugCheck */ false));
+            fgCompactBlocks(block DEBUGARG(/* doDebugCheck */ false));
         }
         else
         {
@@ -5542,13 +5552,14 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */, bool isPh
 
             /* COMPACT blocks if possible */
 
-            if (fgCanCompactBlocks(block, bNext))
+            if (fgCanCompactBlocks(block))
             {
-                fgCompactBlocks(block, bNext);
+                fgCompactBlocks(block);
 
                 /* we compacted two blocks - goto REPEAT to catch similar cases */
                 change   = true;
                 modified = true;
+                bPrev = block->Prev();
                 goto REPEAT;
             }
 

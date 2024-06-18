@@ -6083,9 +6083,9 @@ public:
 
     void fgPrepareCallFinallyRetForRemoval(BasicBlock* block);
 
-    bool fgCanCompactBlocks(BasicBlock* block, BasicBlock* bNext);
+    bool fgCanCompactBlocks(BasicBlock* block);
 
-    void fgCompactBlocks(BasicBlock* block, BasicBlock* bNext DEBUGARG(bool doDebugCheck = true));
+    void fgCompactBlocks(BasicBlock* block DEBUGARG(bool doDebugCheck = true));
 
     BasicBlock* fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst);
 

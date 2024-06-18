@@ -139,7 +139,7 @@ void Compiler::fgDebugCheckUpdate()
 
         /* no un-compacted blocks */
 
-        if (fgCanCompactBlocks(block, block->Next()))
+        if (fgCanCompactBlocks(block))
         {
             noway_assert(!"Found un-compacted blocks!");
         }
