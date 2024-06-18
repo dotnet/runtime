@@ -29916,7 +29916,9 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 
                     // MultiplyByScalar takes a vector as the second operand but only utilizes element 0
                     // We need to extract it and then functionally broadcast it up for the evaluation to
-                    // work as expected.
+                    // work as expected. Ensuring we broadcast up to the target vector size.
+
+                    otherNode->gtType = retType;
 
                     if (varTypeIsFloating(simdBaseType))
                     {
