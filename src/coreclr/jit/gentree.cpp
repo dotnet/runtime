@@ -18290,7 +18290,8 @@ bool GenTree::canBeContained() const
     }
     else if (OperIsHWIntrinsic() && !isContainableHWIntrinsic())
     {
-        return isEmbeddedMaskingCompatibleHWIntrinsic();
+        return isEmbeddedMaskingCompatibleHWIntrinsic() ||
+               HWIntrinsicInfo::SupportsContainment(AsHWIntrinsic()->GetHWIntrinsicId());
     }
 
     return true;

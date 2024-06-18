@@ -3380,6 +3380,32 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
 
                 // Handle op3
+                if (op1->IsMaskAllBitsSet())
+                {
+                    bool isZeroValue = false;
+                    if (op3->IsVectorZero())
+                    {
+                        isZeroValue = true;
+                    }
+                    else if (op3->OperIsHWIntrinsic(NI_Sve_ConvertVectorToMask))
+                    {
+                        GenTreeHWIntrinsic* gtVectorToMask = op3->AsHWIntrinsic();
+
+                        if (gtVectorToMask->Op(1)->IsMaskAllBitsSet() && gtVectorToMask->Op(2)->IsVectorZero())
+                        {
+                            isZeroValue = true;
+                        }
+                    }
+
+                    if (isZeroValue)
+                    {
+                        // When we are merging with zero, we can specialize
+                        // and avoid instantiating the vector constant.
+                        // Do this only if op1 was AllTrueMask
+                        MakeSrcContained(node, op3);
+                    }
+                }
+
                 if (op3->IsVectorZero() && op1->IsMaskAllBitsSet())
                 {
                     // When we are merging with zero, we can specialize
@@ -3423,6 +3449,22 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 {
                     MakeSrcContained(node, intrin.op2);
                     MakeSrcContained(node, intrin.op3);
+                }
+                break;
+            case NI_Sve_ConvertVectorToMask:
+                assert(varTypeIsMask(intrin.op1));
+                assert(varTypeIsSIMD(intrin.op2));
+                if (intrin.op1->IsMaskAllBitsSet() && intrin.op2->IsVectorZero())
+                {
+                    MakeSrcContained(node, intrin.op2);
+                }
+                break;
+
+            case NI_Sve_ConvertMaskToVector:
+                assert(varTypeIsMask(intrin.op1));
+                if (intrin.op1->IsVectorZero())
+                {
+                    MakeSrcContained(node, intrin.op1);
                 }
                 break;
 
