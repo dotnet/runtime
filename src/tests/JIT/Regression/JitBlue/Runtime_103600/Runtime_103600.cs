@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Runtime.CompilerServices;
 using Xunit;
 
@@ -16,9 +17,27 @@ using Xunit;
 public class Runtime_103600
 {
     [Fact]
-    public static void TestEntryPoint()
+    public static int TestEntryPoint()
+    {
+        int result = 0;
+
+        try
+        {
+            Test();
+        }
+        catch (NullReferenceException)
+        {
+            result = 100;
+        }
+
+        return result;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void Test()
     {
         ulong[] vr0 = default(ulong[]);
+
         if (0 > vr0[0])
         {
             vr0 = vr0;
