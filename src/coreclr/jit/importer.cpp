@@ -7391,6 +7391,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         }
                     }
 
+                    if (!op1->OperIs(GT_CNS_INT))
+                    {
+                        // Ensure we spill any side effects and don't drop them
+                        op1 = gtUnusedValNode(op1);
+                        goto SPILL_APPEND;
+                    }
                     break;
                 }
 
