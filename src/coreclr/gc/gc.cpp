@@ -38210,25 +38210,28 @@ void gc_heap::background_mark_phase ()
 
     bgc_alloc_lock->check();
 
-    distribute_free_regions ();
+    if (heap_number == 0)
+    {
+        distribute_free_regions ();
 
 #ifdef MULTIPLE_HEAPS
-    for (int i = 0; i < gc_heap::n_heaps; i++)
-    {
-        gc_heap* hp = gc_heap::g_heaps[i];
+        for (int i = 0; i < gc_heap::n_heaps; i++)
+        {
+            gc_heap* hp = gc_heap::g_heaps[i];
 #else //MULTIPLE_HEAPS
-    {
-        gc_heap* hp = pGenGCHeap;
-        const int i = 0;
+        {
+            gc_heap* hp = pGenGCHeap;
+            const int i = 0;
 #endif //MULTIPLE_HEAPS
 
-        hp->descr_generations ("BGC"); //string value?
+            hp->descr_generations ("BGC"); //string value?
 #ifdef USE_REGIONS
-        assert (settings.condemned_generation == max_generation); // not needed - 10 lines above
-        // age and print all kinds of free regions //! large and huge only?
-        region_free_list::age_free_regions (&global_free_huge_regions, hp->free_regions);
-        region_free_list::print (hp->free_regions, i, "BGC");
+            assert (settings.condemned_generation == max_generation); // not needed - 10 lines above
+            // age and print all kinds of free regions //! large and huge only?
+            region_free_list::age_free_regions (&global_free_huge_regions, hp->free_regions);
+            region_free_list::print (hp->free_regions, i, "BGC");
 #endif //USE_REGIONS
+        }
     }
 
     current_bgc_state = bgc_final_marking;
