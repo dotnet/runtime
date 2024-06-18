@@ -2840,7 +2840,6 @@ INST1(ldnt1sw,           "ldnt1sw",               0,                       IF_SV
 INST1(st1q,              "st1q",                  0,                       IF_SVE_IY_4A,            0xE4202000                                   )
     // ST1Q    {<Zt>.Q }, <Pg>, [<Zn>.D{, <Xm>}]                                         SVE_IY_4A           11100100001mmmmm 001gggnnnnnttttt     E420 2000
 
-
 // clang-format on
 
 /*****************************************************************************/

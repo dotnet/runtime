@@ -2682,7 +2682,7 @@ void emitter::emitInsSve_R_R_I(instruction     ins,
 
             assert(insScalableOptsNone(sopt));
             if (isVectorRegister(reg1))
-            {                
+            {
                 fmt = IF_SVE_JH_2A;
             }
             else
@@ -3761,7 +3761,7 @@ void emitter::emitInsSve_R_R_R(instruction     ins,
                     assert(isGeneralRegisterOrSP(reg3));
                     assert(insScalableOptsNone(sopt));
 
-                    fmt = IF_SVE_CQ_3A;
+                    fmt  = IF_SVE_CQ_3A;
                     reg3 = encodingSPtoZR(reg3);
                     // MOV is an alias for CPY, and is always the preferred disassembly.
                     ins = INS_sve_mov;
@@ -4149,7 +4149,7 @@ void emitter::emitInsSve_R_R_R(instruction     ins,
             assert(isVectorRegister(reg3)); // mmmmm
             assert(insScalableOptsNone(sopt));
 
-            if (isVectorRegister(reg2))  // nnnnn
+            if (isVectorRegister(reg2)) // nnnnn
             {
                 fmt = IF_SVE_HK_3B;
             }
