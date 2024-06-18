@@ -437,33 +437,24 @@ namespace System
                 if (pElementMethodTable->IsValueType)
                 {
                     ref byte offsetDataRef = ref Unsafe.Add(ref arrayDataRef, flattenedIndex * pMethodTable->ComponentSize);
+                    nuint elementSize = pElementMethodTable->GetNumInstanceFieldBytes();
                     if (pElementMethodTable->ContainsGCPointers)
-                        SpanHelpers.ClearWithReferences(ref Unsafe.As<byte, nint>(ref offsetDataRef), pElementMethodTable->GetNumInstanceFieldBytes() / (nuint)sizeof(IntPtr));
+                        SpanHelpers.ClearWithReferences(ref Unsafe.As<byte, nint>(ref offsetDataRef), elementSize / (nuint)sizeof(IntPtr));
                     else
-                        SpanHelpers.ClearWithoutReferences(ref offsetDataRef, pElementMethodTable->GetNumInstanceFieldBytes());
+                        SpanHelpers.ClearWithoutReferences(ref offsetDataRef, elementSize);
                 }
                 else
                 {
-                    ref object? elementRef = ref Unsafe.As<byte, object?>(ref arrayDataRef);
-                    ref object? offsetElementRef = ref Unsafe.Add(ref elementRef, (nuint)flattenedIndex);
-                    offsetElementRef = null;
+                    Unsafe.Add(ref Unsafe.As<byte, object?>(ref arrayDataRef), (nuint)flattenedIndex) = null;
                 }
-            }
-            else if (TypeHandle.AreSameType(arrayElementTypeHandle, TypeHandle.TypeHandleOf<object>()))
-            {
-                // Everything is compatible with Object
-                ref object? elementRef = ref Unsafe.As<byte, object?>(ref arrayDataRef);
-                ref object? offsetElementRef = ref Unsafe.Add(ref elementRef, (nuint)flattenedIndex);
-                offsetElementRef = value;
             }
             else if (!pElementMethodTable->IsValueType)
             {
-                if (CastHelpers.IsInstanceOfAny(pElementMethodTable, value) == null)
+                if (pElementMethodTable != TypeHandle.TypeHandleOf<object>().AsMethodTable() //  Everything is compatible with Object
+                    && CastHelpers.IsInstanceOfAny(pElementMethodTable, value) == null)
                     throw new InvalidCastException(SR.InvalidCast_StoreArrayElement);
 
-                ref object? elementRef = ref Unsafe.As<byte, object?>(ref arrayDataRef);
-                ref object? offsetElementRef = ref Unsafe.Add(ref elementRef, (nuint)flattenedIndex);
-                offsetElementRef = value;
+                Unsafe.Add(ref Unsafe.As<byte, object?>(ref arrayDataRef), (nuint)flattenedIndex) = value;
             }
             else
             {
@@ -476,23 +467,28 @@ namespace System
                     {
                         RuntimeHelpers.Unbox_Nullable(ref offsetDataRef, pElementMethodTable, value);
                     }
-                    else if (pElementMethodTable->ContainsGCPointers)
-                    {
-                        Buffer.BulkMoveWithWriteBarrier(ref offsetDataRef, ref value.GetRawData(), pElementMethodTable->GetNumInstanceFieldBytes());
-                    }
                     else
                     {
-                        SpanHelpers.Memmove(ref offsetDataRef, ref value.GetRawData(), pElementMethodTable->GetNumInstanceFieldBytes());
+                        nuint elementSize = pElementMethodTable->GetNumInstanceFieldBytes();
+                        if (pElementMethodTable->ContainsGCPointers)
+                        {
+                            Buffer.BulkMoveWithWriteBarrier(ref offsetDataRef, ref value.GetRawData(), elementSize);
+                        }
+                        else
+                        {
+                            SpanHelpers.Memmove(ref offsetDataRef, ref value.GetRawData(), elementSize);
+                        }
                     }
                 }
                 else
                 {
                     // Allow enum -> primitive conversion, disallow primitive -> enum conversion
-                    MethodTable* thSrc = RuntimeHelpers.GetMethodTable(value);
-                    CorElementType srcType = thSrc->GetVerifierCorElementType();
+                    MethodTable* pValueMethodTable = RuntimeHelpers.GetMethodTable(value);
+                    CorElementType srcType = pValueMethodTable->GetVerifierCorElementType();
                     CorElementType targetType = pElementMethodTable->GetVerifierCorElementType();
 
-                    if (!srcType.IsPrimitiveType() || !targetType.IsPrimitiveType() || !pElementMethodTable->IsTruePrimitive)
+                    // Array.SetValue() does *not* permit conversion from a primitive to an Enum.  
+                    if (!pValueMethodTable->IsPrimitive || !pElementMethodTable->IsTruePrimitive)
                         throw new InvalidCastException(SR.InvalidCast_StoreArrayElement);
 
                     // Get a properly widened type

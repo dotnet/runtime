@@ -25,7 +25,7 @@ namespace System.Runtime.CompilerServices
                 throw new ArgumentException(SR.Argument_BadFieldForInitializeArray);
 
             // Note that we do not check that the field is actually in the PE file that is initializing
-            // the array. Basically the data being published is can be accessed by anyone with the proper
+            // the array. Basically, the data being published can be accessed by anyone with the proper
             // permissions (C# marks these as assembly visibility, and thus are protected from outside
             // snooping)
 
