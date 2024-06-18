@@ -152,7 +152,6 @@ namespace System.Security.Cryptography.X509Certificates
 
             if (key is RSAImplementation.RSASecurityTransforms rsa)
             {
-                // Convert data key to legacy CSSM key that can be imported into keychain
                 byte[] rsaPrivateKey = rsa.ExportRSAPrivateKey();
                 using (PinAndClear.Track(rsaPrivateKey))
                 {
@@ -162,13 +161,16 @@ namespace System.Security.Cryptography.X509Certificates
 
             if (key is DSAImplementation.DSASecurityTransforms dsa)
             {
-                // DSA always uses legacy CSSM keys do no need to convert
-                return dsa.GetKeys().PrivateKey;
+                DSAParameters dsaParameters = dsa.ExportParameters(true);
+
+                using (PinAndClear.Track(dsaParameters.X!))
+                {
+                    return DSAImplementation.DSASecurityTransforms.ImportKey(dsaParameters);
+                }
             }
 
             if (key is ECDsaImplementation.ECDsaSecurityTransforms ecdsa)
             {
-                // Convert data key to legacy CSSM key that can be imported into keychain
                 byte[] ecdsaPrivateKey = ecdsa.ExportECPrivateKey();
                 using (PinAndClear.Track(ecdsaPrivateKey))
                 {
