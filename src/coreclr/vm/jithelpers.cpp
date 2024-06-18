@@ -2127,6 +2127,13 @@ HCIMPL2_RAW(Object*, JIT_Box_MP_FastPortable, CORINFO_CLASS_HANDLE type, void* u
     MethodTable *methodTable = typeHandle.AsMethodTable();
     // The fast helper should never be called for nullable types.
     _ASSERTE(!methodTable->IsNullable());
+    
+#ifdef FEATURE_64BIT_ALIGNMENT
+    if (methodTable->RequiresAlign8())
+    {
+        return HCCALL2(JIT_Box, type, unboxedData);
+    }
+#endif    
 
     SIZE_T size = methodTable->GetBaseSize();
     _ASSERTE(size % DATA_ALIGNMENT == 0);
