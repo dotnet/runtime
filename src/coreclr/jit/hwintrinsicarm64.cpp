@@ -2079,26 +2079,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             }
             op2 = gtConvertTableOpToFieldList(op2, fieldCount);
 
-            switch (fieldCount)
-            {
-                case 2:
-                    intrinsic =
-                        simdSize == 8 ? NI_AdvSimd_StoreVector64x2AndZip : NI_AdvSimd_Arm64_StoreVector128x2AndZip;
-                    break;
-
-                case 3:
-                    intrinsic =
-                        simdSize == 8 ? NI_AdvSimd_StoreVector64x3AndZip : NI_AdvSimd_Arm64_StoreVector128x3AndZip;
-                    break;
-
-                case 4:
-                    intrinsic =
-                        simdSize == 8 ? NI_AdvSimd_StoreVector64x4AndZip : NI_AdvSimd_Arm64_StoreVector128x4AndZip;
-                    break;
-
-                default:
-                    assert("unsupported");
-            }
+            intrinsic = simdSize == 8 ? NI_AdvSimd_StoreVectorAndZip : NI_AdvSimd_Arm64_StoreVectorAndZip;
 
             info.compNeedsConsecutiveRegisters = true;
             retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseJitType, simdSize);
