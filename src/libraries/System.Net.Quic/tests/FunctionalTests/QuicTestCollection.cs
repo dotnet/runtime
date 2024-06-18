@@ -98,6 +98,14 @@ public unsafe class QuicTestCollection : ICollectionFixture<QuicTestCollection>,
         Console.WriteLine($"Unobserved exceptions of {s_unobservedExceptions.Count} different types: {Environment.NewLine}{string.Join(Environment.NewLine + new string('=', 120) + Environment.NewLine, s_unobservedExceptions.Select(pair => $"Count {pair.Value}: {pair.Key}"))}");
     }
 
+    internal static bool IsWindowsVersionWithSchannelSupport()
+    {
+        // copied from MsQuicApi implementation to avoid triggering the static constructor
+        Version minWindowsVersion = new Version(10, 0, 20145, 1000);
+        return OperatingSystem.IsWindowsVersionAtLeast(minWindowsVersion.Major,
+        minWindowsVersion.Minor, minWindowsVersion.Build, minWindowsVersion.Revision);
+    }
+
     private static Version GetMsQuicVersion()
     {
         Type msQuicApiType = Type.GetType("System.Net.Quic.MsQuicApi, System.Net.Quic");
@@ -110,13 +118,6 @@ public unsafe class QuicTestCollection : ICollectionFixture<QuicTestCollection>,
         Type msQuicApiType = Type.GetType("System.Net.Quic.MsQuicApi, System.Net.Quic");
 
         return (string)msQuicApiType.GetProperty("MsQuicLibraryVersion", BindingFlags.NonPublic | BindingFlags.Static).GetGetMethod(true).Invoke(null, Array.Empty<object?>());
-    }
-
-    internal static bool IsWindowsVersionWithSchannelSupport()
-    {
-        Type msQuicApiType = Type.GetType("System.Net.Quic.MsQuicApi, System.Net.Quic");
-
-        return (bool)msQuicApiType.GetMethod("IsWindowsVersionSupported", BindingFlags.NonPublic | BindingFlags.Static).Invoke(null, Array.Empty<object?>());
     }
 
     internal static bool IsUsingSchannelBackend()
