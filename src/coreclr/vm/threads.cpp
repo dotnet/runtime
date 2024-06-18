@@ -354,6 +354,7 @@ void SetThread(Thread* t)
     {
         InitializeCurrentThreadsStaticData(t);
         EnsureTlsDestructionMonitor();
+        t->InitAllocContext();
     }
 
     // Clear or set the app domain to the one domain based on if the thread is being nulled out or set
@@ -957,6 +958,20 @@ HRESULT Thread::DetachThread(BOOL fDLLThreadDetach)
         m_ThreadHandleForClose = hThread;
     }
 
+    if (GCHeapUtilities::IsGCHeapInitialized())
+    {
+        // If the GC heap is initialized, we need to fix the alloc context for this detaching thread.
+        GCX_COOP();
+        // GetTotalAllocatedBytes reads dead_threads_non_alloc_bytes, but will suspend EE, being in COOP mode we cannot race with that
+        // however, there could be other threads terminating and doing the same Add.
+        InterlockedExchangeAdd64((LONG64*)&dead_threads_non_alloc_bytes, t_thread_alloc_context.alloc_limit - t_thread_alloc_context.alloc_ptr);
+        GCHeapUtilities::GetGCHeap()->FixAllocContext(&t_thread_alloc_context, NULL, NULL);
+        t_thread_alloc_context.init(); // re-initialize the context.
+
+        // Clear out the alloc context pointer for this thread. When TLS is gone, this pointer will point into freed memory.
+        m_alloc_context = nullptr;
+    }
+
     // We need to make sure that TLS are touched last here.
     SetThread(NULL);
 
@@ -1365,7 +1380,7 @@ Thread::Thread()
 
     m_pBlockingLock = NULL;
 
-    m_alloc_context.init();
+    m_alloc_context = nullptr;
     m_thAllocContextObj = 0;
 
     m_UserInterrupt = 0;
@@ -2826,14 +2841,14 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
     {
         // Guaranteed to NOT be a shutdown case, because we tear down the heap before
         // we tear down any threads during shutdown.
-        if (ThisThreadID == CurrentThreadID)
+        if (ThisThreadID == CurrentThreadID && GetAllocContext() != nullptr)
         {
             GCX_COOP();
             // GetTotalAllocatedBytes reads dead_threads_non_alloc_bytes, but will suspend EE, being in COOP mode we cannot race with that
             // however, there could be other threads terminating and doing the same Add.
-            InterlockedExchangeAdd64((LONG64*)&dead_threads_non_alloc_bytes, m_alloc_context.alloc_limit - m_alloc_context.alloc_ptr);
-            GCHeapUtilities::GetGCHeap()->FixAllocContext(&m_alloc_context, NULL, NULL);
-            m_alloc_context.init();
+            InterlockedExchangeAdd64((LONG64*)&dead_threads_non_alloc_bytes, GetAllocContext()->alloc_limit - GetAllocContext()->alloc_ptr);
+            GCHeapUtilities::GetGCHeap()->FixAllocContext(GetAllocContext(), NULL, NULL);
+            GetAllocContext()->init(); // re-initialize the context.
         }
     }
 
@@ -2883,15 +2898,6 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
             LOG((LF_SYNC, INFO3, "OnThreadTerminate obtain lock\n"));
             ThreadSuspend::LockThreadStore(ThreadSuspend::SUSPEND_OTHER);
 
-        }
-
-        if  (GCHeapUtilities::IsGCHeapInitialized() && ThisThreadID != CurrentThreadID)
-        {
-            // We must be holding the ThreadStore lock in order to clean up alloc context.
-            // We should never call FixAllocContext during GC.
-            dead_threads_non_alloc_bytes += m_alloc_context.alloc_limit - m_alloc_context.alloc_ptr;
-            GCHeapUtilities::GetGCHeap()->FixAllocContext(&m_alloc_context, NULL, NULL);
-            m_alloc_context.init();
         }
 
         SetThreadState(TS_Dead);

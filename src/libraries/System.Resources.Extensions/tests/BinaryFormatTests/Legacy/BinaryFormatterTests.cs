@@ -15,6 +15,7 @@ using System.Text.RegularExpressions;
 
 namespace BinaryFormatTests.FormatterTests;
 
+[ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
 public partial class BinaryFormatterTests
 {
     [Theory]
