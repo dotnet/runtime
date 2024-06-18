@@ -2275,6 +2275,14 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 				offset_var = td->sp[-1].var,
 				temp, align, esize;
 
+#if SIZEOF_VOID_P == 8
+			if (td->sp [-1].type == STACK_TYPE_I4) {
+				interp_add_ins (td, MINT_CONV_I8_I4);
+				interp_ins_set_sreg (td->last_ins, offset_var);
+				interp_ins_set_dreg (td->last_ins, offset_var);
+			}
+#endif
+
 			push_simple_type (td, STACK_TYPE_I);
 			temp = td->sp [-1].var;
 			td->sp -= 3;
