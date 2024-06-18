@@ -22,4 +22,6 @@ public enum DataType
     GCHandle,
     Thread,
     ThreadStore,
+    GCAllocContext,
+    ExceptionInfo,
 }
