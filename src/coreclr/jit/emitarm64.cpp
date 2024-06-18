@@ -4252,7 +4252,14 @@ void emitter::emitIns_Mov(
         {
             if (isPredicateRegister(dstReg) && isPredicateRegister(srcReg))
             {
-                assert(opt == INS_OPTS_SCALABLE_B);
+                if (insOptsNone(opt))
+                {
+                    opt = INS_OPTS_SCALABLE_B;
+                }
+                else
+                {
+                    assert(opt == INS_OPTS_SCALABLE_B);
+                }
 
                 attr = EA_SCALABLE;
 
