@@ -525,7 +525,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                             GetEmitter()->emitIns_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp1Reg, opt);
 
                             GetEmitter()->emitIns_R_R_R_R(INS_sve_sel, emitSize, targetReg, maskReg, targetReg,
-                                                          falseReg, opt, INS_SCALABLE_OPTS_UNPREDICATED);
+                                                          falseReg, opt);
                             break;
                         }
                         else
@@ -569,7 +569,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                                 // If the embedded instruction supports optional mask operation, use the "unpredicated"
                                 // version of the instruction, followed by "sel" to select the active lanes.
                                 GetEmitter()->emitIns_R_R_R(insEmbMask, emitSize, targetReg, embMaskOp1Reg,
-                                                            embMaskOp2Reg, opt, INS_SCALABLE_OPTS_UNPREDICATED);
+                                                            embMaskOp2Reg, opt);
                             }
                             else
                             {
@@ -588,7 +588,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                             }
 
                             GetEmitter()->emitIns_R_R_R_R(INS_sve_sel, emitSize, targetReg, maskReg, targetReg,
-                                                          falseReg, opt, INS_SCALABLE_OPTS_UNPREDICATED);
+                                                          falseReg, opt);
                             break;
                         }
                         else if (targetReg != embMaskOp1Reg)
@@ -761,7 +761,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                                 // have the value from embMaskOp1Reg
 
                                 GetEmitter()->emitIns_R_R_R_R(INS_sve_sel, emitSize, targetReg, maskReg, embMaskOp1Reg,
-                                                              falseReg, opt, INS_SCALABLE_OPTS_UNPREDICATED);
+                                                              falseReg, opt);
                             }
                         }
                         else if (targetReg != embMaskOp1Reg)
@@ -816,8 +816,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         {
                             // This generates an unpredicated version
                             // Implicitly predicated should be taken care above `intrin.op2->IsEmbMaskOp()`
-                            GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt,
-                                                        INS_SCALABLE_OPTS_UNPREDICATED);
+                            GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
                         }
                     }
                     else if (isRMW)
@@ -852,8 +851,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     }
                     else
                     {
-                        GetEmitter()->emitIns_R_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, op3Reg, opt,
-                                                      INS_SCALABLE_OPTS_UNPREDICATED);
+                        GetEmitter()->emitIns_R_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, op3Reg, opt);
                     }
                     break;
 
@@ -1922,9 +1920,30 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
+            case NI_Sve_GatherVectorWithByteOffsets:
+            {
+                assert(!varTypeIsSIMD(intrin.op2->gtType));
+                assert(intrin.numOperands == 3);
+                emitAttr baseSize = emitActualTypeSize(intrin.baseType);
+
+                if (baseSize == EA_4BYTE)
+                {
+                    // Index is sign or zero extended to 64bits.
+                    opt = varTypeIsUnsigned(node->GetAuxiliaryType()) ? INS_OPTS_SCALABLE_S_UXTW
+                                                                      : INS_OPTS_SCALABLE_S_SXTW;
+                }
+                else
+                {
+                    assert(baseSize == EA_8BYTE);
+                }
+
+                GetEmitter()->emitIns_R_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, op3Reg, opt);
+                break;
+            }
+
             case NI_Sve_ReverseElement:
                 // Use non-predicated version explicitly
-                GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg, opt, INS_SCALABLE_OPTS_UNPREDICATED);
+                GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg, opt);
                 break;
 
             case NI_Sve_StoreNarrowing:
@@ -1939,8 +1958,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_Sve_ZipHigh:
             case NI_Sve_ZipLow:
                 // Use non-predicated version explicitly
-                GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt,
-                                            INS_SCALABLE_OPTS_UNPREDICATED);
+                GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
                 break;
 
             case NI_Sve_SaturatingDecrementBy16BitElementCountScalar:
