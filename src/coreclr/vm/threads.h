@@ -448,6 +448,22 @@ public:
     const PortableTailCallFrame* GetFrame() { return m_frame; }
 };
 
+// This struct contains data that lives as long as the current OS thread.
+struct RuntimeThreadLocals
+{
+    // on MP systems, each thread has its own allocation chunk so we can avoid
+    // lock prefixes and expensive MP cache snooping stuff
+    gc_alloc_context alloc_context;
+};
+
+#ifdef _MSC_VER
+// use selectany to avoid initialization de-optimization issues in the compiler
+__declspec(selectany)
+#else
+extern
+#endif
+thread_local RuntimeThreadLocals t_runtime_thread_locals;
+
 // #ThreadClass
 //
 // A code:Thread contains all the per-thread information needed by the runtime.  We can get this
@@ -950,7 +966,7 @@ public:
     gc_alloc_context*        m_alloc_context;
 
 public:
-    inline void InitAllocContext() { LIMITED_METHOD_CONTRACT; m_alloc_context = &t_gc_thread_locals.alloc_context; }
+    inline void InitAllocContext() { LIMITED_METHOD_CONTRACT; m_alloc_context = &t_runtime_thread_locals.alloc_context; }
 
     inline gc_alloc_context *GetAllocContext() { LIMITED_METHOD_CONTRACT; return m_alloc_context; }
 

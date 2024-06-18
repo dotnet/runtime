@@ -58,6 +58,10 @@ TailCallTls::TailCallTls()
 {
 }
 
+#ifndef _MSC_VER
+thread_local RuntimeThreadLocals t_runtime_thread_locals;
+#endif
+
 Thread* STDCALL GetThreadHelper()
 {
     return GetThreadNULLOk();
@@ -964,9 +968,9 @@ HRESULT Thread::DetachThread(BOOL fDLLThreadDetach)
         GCX_COOP();
         // GetTotalAllocatedBytes reads dead_threads_non_alloc_bytes, but will suspend EE, being in COOP mode we cannot race with that
         // however, there could be other threads terminating and doing the same Add.
-        InterlockedExchangeAdd64((LONG64*)&dead_threads_non_alloc_bytes, t_gc_thread_locals.alloc_context.alloc_limit - t_gc_thread_locals.alloc_context.alloc_ptr);
-        GCHeapUtilities::GetGCHeap()->FixAllocContext(&t_gc_thread_locals.alloc_context, NULL, NULL);
-        t_gc_thread_locals.alloc_context.init(); // re-initialize the context.
+        InterlockedExchangeAdd64((LONG64*)&dead_threads_non_alloc_bytes, t_runtime_thread_locals.alloc_context.alloc_limit - t_runtime_thread_locals.alloc_context.alloc_ptr);
+        GCHeapUtilities::GetGCHeap()->FixAllocContext(&t_runtime_thread_locals.alloc_context, NULL, NULL);
+        t_runtime_thread_locals.alloc_context.init(); // re-initialize the context.
 
         // Clear out the alloc context pointer for this thread. When TLS is gone, this pointer will point into freed memory.
         m_alloc_context = nullptr;
