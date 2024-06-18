@@ -3,7 +3,6 @@
 
 namespace System.Buffers.Text
 {
-    [System.CLSCompliant(false)]
     public static class Base64Url
     {
         public static byte[] DecodeFromChars(System.ReadOnlySpan<char> source) { throw null; }

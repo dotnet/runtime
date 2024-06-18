@@ -8,7 +8,6 @@ using System.Numerics;
 
 namespace System.Buffers.Text
 {
-    [CLSCompliant(false)]
     public static partial class Base64Url
     {
         private const uint EncodingPadEqual = '='; // '=', for padding
