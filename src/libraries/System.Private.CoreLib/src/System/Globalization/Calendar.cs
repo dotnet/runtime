@@ -127,7 +127,7 @@ namespace System.Globalization
             }
         }
 
-        internal DateTime Add(DateTime time, double value, long scale)
+        internal DateTime Add(DateTime time, double value, int scale)
         {
             // From ECMA CLI spec, Partition III, section 3.27:
             //
@@ -169,7 +169,7 @@ namespace System.Globalization
         /// </summary>
         public virtual DateTime AddDays(DateTime time, int days)
         {
-            return Add(time, days, TimeSpan.MillisecondsPerDay);
+            return Add(time, days, (int)TimeSpan.MillisecondsPerDay);
         }
 
         /// <summary>
@@ -181,7 +181,7 @@ namespace System.Globalization
         /// </summary>
         public virtual DateTime AddHours(DateTime time, int hours)
         {
-            return Add(time, hours, TimeSpan.MillisecondsPerHour);
+            return Add(time, hours, (int)TimeSpan.MillisecondsPerHour);
         }
 
         /// <summary>
@@ -193,7 +193,7 @@ namespace System.Globalization
         /// </summary>
         public virtual DateTime AddMinutes(DateTime time, int minutes)
         {
-            return Add(time, minutes, TimeSpan.MillisecondsPerMinute);
+            return Add(time, minutes, (int)TimeSpan.MillisecondsPerMinute);
         }
 
         /// <summary>
@@ -225,7 +225,7 @@ namespace System.Globalization
         /// </summary>
         public virtual DateTime AddSeconds(DateTime time, int seconds)
         {
-            return Add(time, seconds, TimeSpan.MillisecondsPerSecond);
+            return Add(time, seconds, (int)TimeSpan.MillisecondsPerSecond);
         }
 
         // Returns the DateTime resulting from adding a number of
