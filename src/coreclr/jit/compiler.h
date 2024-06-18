@@ -3928,6 +3928,7 @@ public:
 
 #ifdef SWIFT_SUPPORT
     unsigned lvaSwiftSelfArg;
+    unsigned lvaSwiftIndirectResultArg;
     unsigned lvaSwiftErrorArg;
     unsigned lvaSwiftErrorLocal;
 #endif
@@ -4777,8 +4778,10 @@ public:
     bool impIsCastHelperEligibleForClassProbe(GenTree* tree);
     bool impIsCastHelperMayHaveProfileData(CorInfoHelpFunc helper);
 
+    bool impMatchIsInstBooleanConversion(const BYTE* codeAddr, const BYTE* codeEndp, int* consumed);
+
     GenTree* impCastClassOrIsInstToTree(
-        GenTree* op1, GenTree* op2, CORINFO_RESOLVED_TOKEN* pResolvedToken, bool isCastClass, IL_OFFSET ilOffset);
+        GenTree* op1, GenTree* op2, CORINFO_RESOLVED_TOKEN* pResolvedToken, bool isCastClass, bool* booleanCheck, IL_OFFSET ilOffset);
 
     GenTree* impOptimizeCastClassOrIsInst(GenTree* op1, CORINFO_RESOLVED_TOKEN* pResolvedToken, bool isCastClass);
 
