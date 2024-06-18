@@ -283,11 +283,11 @@ internal partial struct Metadata_1 : IMetadata
 
     public uint GetBaseSize(MethodTableHandle methodTableHandle) => ((IMethodTableFlags)_methodTables[methodTableHandle.Address]).BaseSize;
 
-    public uint GetComponentSize(MethodTableHandle methodTableHandle)
+    private static uint GetComponentSize(MethodTable_1 methodTable)
     {
-        IMethodTableFlags methodTable = _methodTables[methodTableHandle.Address];
-        return methodTable.HasComponentSize ? methodTable.RawGetComponentSize() : 0u;
+        return ((IMethodTableFlags)methodTable).HasComponentSize ? ((IMethodTableFlags)methodTable).RawGetComponentSize() : 0u;
     }
+    public uint GetComponentSize(MethodTableHandle methodTableHandle) => GetComponentSize(_methodTables[methodTableHandle.Address]);
     public TargetPointer GetClass(MethodTableHandle methodTableHandle)
     {
         MethodTable_1 methodTable = _methodTables[methodTableHandle.Address];
