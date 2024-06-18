@@ -27525,11 +27525,11 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad(GenTree** pAddr) const
             case NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtend:
             case NI_Sve_GatherVectorUInt32ZeroExtend:
                 addr = Op(2);
-                if (varTypeIsSIMD(addr->gtType))
+                if (!varTypeIsI(addr))
                 {
-                    // The address is a vector of addresses.
-                    // Return true, but do not set pAddr.
-                    return true;
+                    // For some variants, the address is in vector.
+                    // Return false for such cases.
+                    return false;
                 }
                 break;
 
