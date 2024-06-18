@@ -8,6 +8,7 @@ using System.IO;
 using System.Formats.Nrbf.Utils;
 using System.Text;
 using System.Runtime.Serialization;
+using System.Runtime.InteropServices;
 
 namespace System.Formats.Nrbf;
 
@@ -23,26 +24,25 @@ public static class NrbfDecoder
     /// </summary>
     /// <param name="bytes">The buffer to inspect.</param>
     /// <returns><see langword="true" /> if it starts with NRBF payload header; otherwise, <see langword="false" />.</returns>
-    public static bool StartsWithPayloadHeader(byte[] bytes)
+    public static bool StartsWithPayloadHeader(ReadOnlySpan<byte> bytes)
     {
-#if NET
-        ArgumentNullException.ThrowIfNull(bytes);
-#else
-        if (bytes is null)
+        if (bytes.Length < SerializedStreamHeaderRecord.Size || bytes[0] != (byte)SerializationRecordType.SerializedStreamHeader)
         {
-            throw new ArgumentNullException(nameof(bytes));
+            return false;
         }
-#endif
 
-        return bytes.Length >= SerializedStreamHeaderRecord.Size
-            && bytes[0] == (byte)SerializationRecordType.SerializedStreamHeader
-#if NET
-            && BinaryPrimitives.ReadInt32LittleEndian(bytes.AsSpan(9)) == SerializedStreamHeaderRecord.MajorVersion
-            && BinaryPrimitives.ReadInt32LittleEndian(bytes.AsSpan(13)) == SerializedStreamHeaderRecord.MinorVersion;
-#else
-            && BitConverter.ToInt32(bytes, 9) == SerializedStreamHeaderRecord.MajorVersion
-            && BitConverter.ToInt32(bytes, 13) == SerializedStreamHeaderRecord.MinorVersion;
-#endif
+        ReadOnlySpan<int> integers = MemoryMarshal.Cast<byte, int>(bytes.Slice(sizeof(byte), sizeof(int) * 4));
+        int majorVersion = integers[2];
+        int minorVersion = integers[3];
+
+        if (!BitConverter.IsLittleEndian)
+        {
+            majorVersion = BinaryPrimitives.ReverseEndianness(majorVersion);
+            minorVersion = BinaryPrimitives.ReverseEndianness(minorVersion);
+        }
+
+        return majorVersion == SerializedStreamHeaderRecord.MajorVersion
+            && minorVersion == SerializedStreamHeaderRecord.MinorVersion;
     }
 
 
@@ -76,13 +76,13 @@ public static class NrbfDecoder
             return false;
         }
 
-        byte[] buffer = new byte[SerializedStreamHeaderRecord.Size];
-
         try
         {
 #if NET
-            stream.ReadExactly(buffer, 0, buffer.Length);
+            Span<byte> buffer = stackalloc byte[SerializedStreamHeaderRecord.Size];
+            stream.ReadExactly(buffer);
 #else
+            byte[] buffer = new byte[SerializedStreamHeaderRecord.Size];
             int offset = 0;
             while (offset < buffer.Length)
             {
