@@ -207,6 +207,8 @@
              Link="CommonTest\System\Security\Cryptography\X509Certificates\CertificateAuthority.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\X509Certificates\RevocationResponder.cs"
              Link="CommonTest\System\Security\Cryptography\509Certificates\RevocationResponder.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\X509Certificates\TempFileHolder.cs"
+             Link="CommonTest\System\Security\Cryptography\X509Certificates\TempFileHolder.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\X509Certificates\TestData.cs"
              Link="CommonTest\System\Security\Cryptography\509Certificates\TestData.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\X509Certificates\X509CertificateLoaderPkcs12Tests.cs"
@@ -360,7 +362,6 @@
     <Compile Include="X509Certificates\PublicKeyTests.cs" />
     <Compile Include="X509Certificates\RSAOther.cs" />
     <Compile Include="X509Certificates\SignatureSupport.cs" />
-    <Compile Include="X509Certificates\TempFileHolder.cs" />
     <Compile Include="X509Certificates\TestDataGenerator.cs" />
     <Compile Include="X509Certificates\TestEnvironmentConfiguration.cs" />
     <Compile Include="X509Certificates\TestFiles.cs" />
