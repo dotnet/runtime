@@ -2,10 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using UntrustedMethodTable = Microsoft.Diagnostics.DataContractReader.Contracts.UntrustedMethodTable_1;
-using MethodTable = Microsoft.Diagnostics.DataContractReader.Contracts.MethodTable_1;
-using UntrustedEEClass = Microsoft.Diagnostics.DataContractReader.Contracts.UntrustedEEClass_1;
-using EEClass = Microsoft.Diagnostics.DataContractReader.Contracts.EEClass_1;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
@@ -142,49 +138,74 @@ internal partial struct Metadata_1
 
         TokenMask = 0xFFFFFF00,
     }
-}
-internal interface IMethodTableFlags
-{
-    public uint DwFlags { get; }
-    public uint DwFlags2 { get; }
-    public uint BaseSize { get; }
 
-    private Metadata_1.WFLAGS_HIGH FlagsHigh => (Metadata_1.WFLAGS_HIGH)DwFlags;
-    private Metadata_1.WFLAGS_LOW FlagsLow => (Metadata_1.WFLAGS_LOW)DwFlags;
-    public int GetTypeDefRid() => (int)(DwFlags2 >> Metadata_1.Constants.MethodTableDwFlags2TypeDefRidShift);
-
-    public Metadata_1.WFLAGS_LOW GetFlag(Metadata_1.WFLAGS_LOW mask) => throw new NotImplementedException("TODO");
-    public Metadata_1.WFLAGS_HIGH GetFlag(Metadata_1.WFLAGS_HIGH mask) => FlagsHigh & mask;
-
-    public Metadata_1.WFLAGS2_ENUM GetFlag(Metadata_1.WFLAGS2_ENUM mask) => (Metadata_1.WFLAGS2_ENUM)DwFlags2 & mask;
-    public bool IsInterface => GetFlag(Metadata_1.WFLAGS_HIGH.Category_Mask) == Metadata_1.WFLAGS_HIGH.Category_Interface;
-    public bool IsString => HasComponentSize && !IsArray && RawGetComponentSize() == 2;
-
-    public bool HasComponentSize => GetFlag(Metadata_1.WFLAGS_HIGH.HasComponentSize) != 0;
-
-    public bool IsArray => GetFlag(Metadata_1.WFLAGS_HIGH.Category_Array_Mask) == Metadata_1.WFLAGS_HIGH.Category_Array;
-
-    public bool IsStringOrArray => HasComponentSize;
-    public ushort RawGetComponentSize() => (ushort)(DwFlags >> 16);
-
-    public bool TestFlagWithMask(Metadata_1.WFLAGS_LOW mask, Metadata_1.WFLAGS_LOW flag)
+    [Flags]
+    internal enum MethodTableAuxiliaryDataFlags : uint
     {
-        if (IsStringOrArray)
-        {
-            return (Metadata_1.WFLAGS_LOW.StringArrayValues & mask) == flag;
-        }
-        else
-        {
-            return (FlagsLow & mask) == flag;
-        }
+        Initialized = 0x0001,
+        HasCheckedCanCompareBitsOrUseFastGetHashCode = 0x0002,  // Whether we have checked the overridden Equals or GetHashCode
+        CanCompareBitsOrUseFastGetHashCode = 0x0004,     // Is any field type or sub field type overridden Equals or GetHashCode
+
+        HasApproxParent = 0x0010,
+        // enum_unused                      = 0x0020,
+        IsNotFullyLoaded = 0x0040,
+        DependenciesLoaded = 0x0080,     // class and all dependencies loaded up to CLASS_LOADED_BUT_NOT_VERIFIED
+
+        IsInitError = 0x0100,
+        IsStaticDataAllocated = 0x0200,
+        // unum_unused                      = 0x0400,
+        IsTlsIndexAllocated = 0x0800,
+        MayHaveOpenInterfaceInInterfaceMap = 0x1000,
+        // enum_unused                      = 0x2000,
+
+        // ifdef _DEBUG
+        DEBUG_ParentMethodTablePointerValid = 0x4000,
+        DEBUG_HasInjectedInterfaceDuplicates = 0x8000,
     }
 
-    public bool TestFlagWithMask(Metadata_1.WFLAGS2_ENUM mask, Metadata_1.WFLAGS2_ENUM flag)
+    internal struct MethodTableFlags
     {
-        return ((Metadata_1.WFLAGS2_ENUM)DwFlags2 & mask) == flag;
+        public uint DwFlags { get; init; }
+        public uint DwFlags2 { get; init; }
+        public uint BaseSize { get; init; }
+
+        private WFLAGS_HIGH FlagsHigh => (WFLAGS_HIGH)DwFlags;
+        private WFLAGS_LOW FlagsLow => (WFLAGS_LOW)DwFlags;
+        public int GetTypeDefRid() => (int)(DwFlags2 >> Constants.MethodTableDwFlags2TypeDefRidShift);
+
+        public WFLAGS_LOW GetFlag(WFLAGS_LOW mask) => throw new NotImplementedException("TODO");
+        public WFLAGS_HIGH GetFlag(WFLAGS_HIGH mask) => FlagsHigh & mask;
+
+        public WFLAGS2_ENUM GetFlag(WFLAGS2_ENUM mask) => (WFLAGS2_ENUM)DwFlags2 & mask;
+        public bool IsInterface => GetFlag(WFLAGS_HIGH.Category_Mask) == WFLAGS_HIGH.Category_Interface;
+        public bool IsString => HasComponentSize && !IsArray && RawGetComponentSize() == 2;
+
+        public bool HasComponentSize => GetFlag(WFLAGS_HIGH.HasComponentSize) != 0;
+
+        public bool IsArray => GetFlag(WFLAGS_HIGH.Category_Array_Mask) == WFLAGS_HIGH.Category_Array;
+
+        public bool IsStringOrArray => HasComponentSize;
+        public ushort RawGetComponentSize() => (ushort)(DwFlags >> 16);
+
+        public bool TestFlagWithMask(WFLAGS_LOW mask, WFLAGS_LOW flag)
+        {
+            if (IsStringOrArray)
+            {
+                return (WFLAGS_LOW.StringArrayValues & mask) == flag;
+            }
+            else
+            {
+                return (FlagsLow & mask) == flag;
+            }
+        }
+
+        public bool TestFlagWithMask(WFLAGS2_ENUM mask, WFLAGS2_ENUM flag)
+        {
+            return ((WFLAGS2_ENUM)DwFlags2 & mask) == flag;
+        }
+
+        public bool HasInstantiation => !TestFlagWithMask(WFLAGS_LOW.GenericsMask, WFLAGS_LOW.GenericsMask_NonGeneric);
+
+        public bool ContainsPointers => GetFlag(WFLAGS_HIGH.ContainsPointers) != 0;
     }
-
-    public bool HasInstantiation => !TestFlagWithMask(Metadata_1.WFLAGS_LOW.GenericsMask, Metadata_1.WFLAGS_LOW.GenericsMask_NonGeneric);
-
-    public bool ContainsPointers => GetFlag(Metadata_1.WFLAGS_HIGH.ContainsPointers) != 0;
 }

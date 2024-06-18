@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 
@@ -89,7 +88,7 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface9
         try
         {
             Contracts.IMetadata contract = _target.Contracts.Metadata;
-            Contracts.MethodTableHandle methodTable = contract.GetMethodTableData(mt);
+            Contracts.MethodTableHandle methodTable = contract.GetMethodTableHandle(mt);
 
             DacpMethodTableData result = default;
             result.baseSize = contract.GetBaseSize(methodTable);
