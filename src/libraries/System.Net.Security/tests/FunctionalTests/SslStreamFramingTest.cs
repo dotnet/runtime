@@ -107,6 +107,7 @@ namespace System.Net.Security.Tests
             Task clientTask = Task.Run(async () =>
                 {
                     await client.AuthenticateAsClientAsync(clientOptions);
+                    await client.WriteAsync(Encoding.UTF8.GetBytes("Hello, world!"));
                     await client.ReadAsync(new byte[13]);
                 });
             Task serverTask = Task.Run(async () =>
@@ -116,6 +117,7 @@ namespace System.Net.Security.Tests
                     {
                         await server.NegotiateClientCertificateAsync();
                     }
+                    await server.ReadAsync(new byte[13]);
                     await server.WriteAsync(Encoding.UTF8.GetBytes("Hello, world!"));
                 });
 
