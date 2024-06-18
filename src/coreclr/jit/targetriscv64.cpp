@@ -137,35 +137,41 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
     else
     {
         // Integer calling convention
-        auto passSlot = [this](unsigned offset, unsigned size) -> ABIPassingSegment {
+        auto passOnStack = [this](unsigned offset, unsigned size) -> ABIPassingSegment {
             assert(size > 0);
-            assert(size <= TARGET_POINTER_SIZE);
-            if (m_intRegs.Count() > 0)
-            {
-                return ABIPassingSegment::InRegister(m_intRegs.Dequeue(), offset, size);
-            }
-            else
-            {
-                assert((m_stackArgSize % TARGET_POINTER_SIZE) == 0);
-                ABIPassingSegment seg = ABIPassingSegment::OnStack(m_stackArgSize, offset, size);
-                m_stackArgSize += TARGET_POINTER_SIZE;
-                return seg;
-            }
+            assert(size <= 2 * TARGET_POINTER_SIZE);
+            assert((m_stackArgSize % TARGET_POINTER_SIZE) == 0);
+            ABIPassingSegment seg = ABIPassingSegment::OnStack(m_stackArgSize, offset, size);
+            m_stackArgSize += (size > TARGET_POINTER_SIZE) ? (2 * TARGET_POINTER_SIZE) : TARGET_POINTER_SIZE;
+            return seg;
         };
 
         if (passedSize > MAX_PASS_MULTIREG_BYTES)
             passedSize = TARGET_POINTER_SIZE; // pass by implicit reference
 
-        if (passedSize <= TARGET_POINTER_SIZE)
+        if (m_intRegs.Count() > 0)
         {
-            return ABIPassingInformation::FromSegment(comp, passSlot(0, passedSize));
+            if (passedSize <= TARGET_POINTER_SIZE)
+            {
+                ABIPassingSegment seg = ABIPassingSegment::InRegister(m_intRegs.Dequeue(), 0, passedSize);
+                return ABIPassingInformation::FromSegment(comp, seg);
+            }
+            else
+            {
+                assert(varTypeIsStruct(type));
+                unsigned int tailSize = passedSize - TARGET_POINTER_SIZE;
+
+                ABIPassingSegment head = ABIPassingSegment::InRegister(m_intRegs.Dequeue(), 0, TARGET_POINTER_SIZE);
+                ABIPassingSegment tail =
+                    (m_intRegs.Count() > 0)
+                        ? ABIPassingSegment::InRegister(m_intRegs.Dequeue(), TARGET_POINTER_SIZE, tailSize)
+                        : passOnStack(TARGET_POINTER_SIZE, tailSize);
+                return {2, new (comp, CMK_ABI) ABIPassingSegment[2]{head, tail}};
+            }
         }
         else
         {
-            assert(varTypeIsStruct(type));
-            return {2, new (comp, CMK_ABI)
-                           ABIPassingSegment[2]{passSlot(0, TARGET_POINTER_SIZE),
-                                                passSlot(TARGET_POINTER_SIZE, passedSize - TARGET_POINTER_SIZE)}};
+            return ABIPassingInformation::FromSegment(comp, passOnStack(0, passedSize));
         }
     }
 }

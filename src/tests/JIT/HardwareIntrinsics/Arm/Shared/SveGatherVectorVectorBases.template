@@ -439,7 +439,8 @@ namespace JIT.HardwareIntrinsics.Arm
 
             for (var i = 0; i < RetElementCount; i++)
             {
-                if (result[i] != (firstOp[i] == 0 ? 0 : *({RetBaseType}*)(secondOp[i])))
+                {RetBaseType} gatherResult = ({RetBaseType})(firstOp[i] == 0 ? 0 : *({ExtendedElementType}*)(secondOp[i]));
+                if (result[i] != gatherResult)
                 {
                     succeeded = false;
                     break;
@@ -532,7 +533,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
             for (var i = 0; i < RetElementCount; i++)
             {
-                {RetBaseType} gatherResult = (firstOp[i] == 0 ? 0 : *({RetBaseType}*)(secondOp[i]));
+                {RetBaseType} gatherResult = ({RetBaseType})(firstOp[i] == 0 ? 0 : *({ExtendedElementType}*)(secondOp[i]));
                 {RetBaseType} iterResult = (maskOp[i] != 0) ? gatherResult : falseOp[i];
                 if (iterResult != result[i])
                 {
@@ -543,7 +544,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
             if (!succeeded)
             {
-                TestLibrary.TestFramework.LogInformation($"{nameof({Isa})}.{nameof({Isa}.{Method})}<{RetBaseType}>({Op1BaseType}*): {method} failed:");
+                TestLibrary.TestFramework.LogInformation($"{nameof({Isa})}.{nameof({Isa}.{Method})}<{RetBaseType}>({Op1BaseType}, {Op2BaseType}, {Op2BaseType}): {method} failed:");
                 TestLibrary.TestFramework.LogInformation($"   maskOp: ({string.Join(", ", maskOp)})");
                 TestLibrary.TestFramework.LogInformation($"  firstOp: ({string.Join(", ", firstOp)})");
                 TestLibrary.TestFramework.LogInformation($" secondOp: ({string.Join(", ", secondOp)})");

@@ -448,6 +448,8 @@ public:
     const PortableTailCallFrame* GetFrame() { return m_frame; }
 };
 
+typedef DPTR(struct gc_alloc_context) PTR_gc_alloc_context;
+
 // #ThreadClass
 //
 // A code:Thread contains all the per-thread information needed by the runtime.  We can get this
@@ -670,10 +672,6 @@ public:
                                                       // and does not proceed with a stackwalk on the same thread
                                                       // There are cases during managed debugging when we can run into this situation
     };
-
-    void InternalReset (BOOL fNotFinalizerThread=FALSE, BOOL fThreadObjectResetNeeded=TRUE, BOOL fResetAbort=TRUE);
-    INT32 ResetManagedThreadObject(INT32 nPriority);
-    INT32 ResetManagedThreadObjectInCoopMode(INT32 nPriority);
 
 public:
     HRESULT DetachThread(BOOL fDLLThreadDetach);
@@ -949,13 +947,14 @@ public:
     // Lock thread is trying to acquire
     VolatilePtr<DeadlockAwareLock> m_pBlockingLock;
 
+    // We store a pointer to this thread's alloc context here for easier introspection
+    // from other threads and diagnostic tools
+    PTR_gc_alloc_context        m_alloc_context;
+
 public:
+    inline void InitAllocContext() { LIMITED_METHOD_CONTRACT; m_alloc_context = PTR_gc_alloc_context(&t_thread_alloc_context); }
 
-    // on MP systems, each thread has its own allocation chunk so we can avoid
-    // lock prefixes and expensive MP cache snooping stuff
-    gc_alloc_context        m_alloc_context;
-
-    inline gc_alloc_context *GetAllocContext() { LIMITED_METHOD_CONTRACT; return &m_alloc_context; }
+    inline PTR_gc_alloc_context GetAllocContext() { LIMITED_METHOD_CONTRACT; return m_alloc_context; }
 
     // This is the type handle of the first object in the alloc context at the time
     // we fire the AllocationTick event. It's only for tooling purpose.

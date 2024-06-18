@@ -1984,10 +1984,8 @@ public:
                                       PCCOR_SIGNATURE *ppSig, // Generated signature
                                       DWORD * pcSig,      // Generated signature size
                                       LoaderAllocator *pLoaderAllocator,
-                                      AllocMemTracker *pamTracker
-#ifdef FEATURE_ARRAYSTUB_AS_IL
-                                      ,BOOL fForStubAsIL
-#endif
+                                      AllocMemTracker *pamTracker,
+                                      BOOL fForStubAsIL
     );
 
 

@@ -100,6 +100,11 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="System\Text\Json\Reader\Utf8JsonReader.cs" />
     <Compile Include="System\Text\Json\Reader\Utf8JsonReader.MultiSegment.cs" />
     <Compile Include="System\Text\Json\Reader\Utf8JsonReader.TryGet.cs" />
+    <Compile Include="System\Text\Json\Schema\JsonSchema.cs" />
+    <Compile Include="System\Text\Json\Schema\JsonSchemaExporter.cs" />
+    <Compile Include="System\Text\Json\Schema\JsonSchemaExporterOptions.cs" />
+    <Compile Include="System\Text\Json\Schema\JsonSchemaExporterContext.cs" />
+    <Compile Include="System\Text\Json\Schema\JsonSchemaType.cs" />
     <Compile Include="System\Text\Json\Serialization\Arguments.cs" />
     <Compile Include="System\Text\Json\Serialization\ArgumentState.cs" />
     <Compile Include="System\Text\Json\Serialization\Attributes\JsonObjectCreationHandlingAttribute.cs" />

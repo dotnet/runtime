@@ -811,6 +811,15 @@ bool WrapICorJitInfo::isExactType(
     return temp;
 }
 
+TypeCompareState WrapICorJitInfo::isGenericType(
+          CORINFO_CLASS_HANDLE cls)
+{
+    API_ENTER(isGenericType);
+    TypeCompareState temp = wrapHnd->isGenericType(cls);
+    API_LEAVE(isGenericType);
+    return temp;
+}
+
 TypeCompareState WrapICorJitInfo::isNullableType(
           CORINFO_CLASS_HANDLE cls)
 {
