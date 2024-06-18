@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using Microsoft.VisualBasic;
 
 #pragma warning disable CS8601 // Possible null reference assignment.
@@ -63,35 +64,27 @@ namespace System.Numerics.Tensors
         }
 
         /// <summary>
-        /// Creates a <see cref="Tensor{T}"/> and does not initialize it. If <paramref name="pinned"/> is true, the memory will be pinned.
+        /// Creates a <see cref="Tensor{T}"/> and initializes it with the data from <paramref name="data"/>.
         /// </summary>
-        /// <param name="lengths">A <see cref="ReadOnlySpan{T}"/> indicating the lengths of each dimension.</param>
-        /// <param name="pinned">A <see cref="bool"/> whether the underlying data should be pinned or not.</param>
-        public static Tensor<T> CreateUninitialized<T>(scoped ReadOnlySpan<nint> lengths, bool pinned = false)
-            => CreateUninitialized<T>(lengths, [], pinned);
-
-
-        /// <summary>
-        /// Creates a <see cref="Tensor{T}"/> and does not initialize it. If <paramref name="pinned"/> is true, the memory will be pinned.
-        /// </summary>
-        /// <param name="lengths">A <see cref="ReadOnlySpan{T}"/> indicating the lengths of each dimension.</param>
-        /// <param name="strides">A <see cref="ReadOnlySpan{T}"/> indicating the strides of each dimension.</param>
-        /// <param name="pinned">A <see cref="bool"/> whether the underlying data should be pinned or not.</param>
-        public static Tensor<T> CreateUninitialized<T>(scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides, bool pinned = false )
+        /// <param name="data">A <see cref="IEnumerable{T}"/> with the data to use for the initialization.</param>
+        /// <param name="lengths"></param>
+        public static Tensor<T> Create<T>(IEnumerable<T> data, scoped ReadOnlySpan<nint> lengths)
         {
-            nint linearLength = TensorSpanHelpers.CalculateTotalLength(lengths);
-            T[] values = GC.AllocateUninitializedArray<T>((int)linearLength, pinned);
-            return new Tensor<T>(values, lengths, strides, pinned);
+            T[] values = data.ToArray();
+            return new Tensor<T>(values, lengths.IsEmpty ? [values.Length] : lengths, false);
         }
 
         /// <summary>
         /// Creates a <see cref="Tensor{T}"/> and initializes it with the data from <paramref name="data"/>.
         /// </summary>
         /// <param name="data">A <see cref="IEnumerable{T}"/> with the data to use for the initialization.</param>
-        public static Tensor<T> CreateFromEnumerable<T>(IEnumerable<T> data)
+        /// <param name="lengths"></param>
+        /// <param name="strides"></param>
+        /// <param name="isPinned"></param>
+        public static Tensor<T> Create<T>(IEnumerable<T> data, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides, bool isPinned = false)
         {
             T[] values = data.ToArray();
-            return new Tensor<T>(values, [values.Length], false);
+            return new Tensor<T>(values, lengths.IsEmpty ? [values.Length] : lengths, strides, isPinned);
         }
 
         /// <summary>
@@ -120,11 +113,11 @@ namespace System.Numerics.Tensors
         {
             nint linearLength = TensorSpanHelpers.CalculateTotalLength(lengths);
             T[] values = new T[linearLength];
-            GaussianDistribution(ref values, linearLength);
+            GaussianDistribution<T>(values, linearLength);
             return new Tensor<T>(values, lengths, false);
         }
 
-        private static void GaussianDistribution<T>(ref T[] values, nint linearLength)
+        private static void GaussianDistribution<T>(in Span<T> values, nint linearLength)
              where T : IFloatingPoint<T>
         {
             Random rand = Random.Shared;
@@ -136,5 +129,45 @@ namespace System.Numerics.Tensors
             }
         }
         #endregion
+
+        /// <summary>
+        /// Creates a <see cref="Tensor{T}"/> and does not initialize it. If <paramref name="pinned"/> is true, the memory will be pinned.
+        /// </summary>
+        /// <param name="lengths">A <see cref="ReadOnlySpan{T}"/> indicating the lengths of each dimension.</param>
+        /// <param name="pinned">A <see cref="bool"/> whether the underlying data should be pinned or not.</param>
+        public static Tensor<T> CreateUninitialized<T>(scoped ReadOnlySpan<nint> lengths, bool pinned = false)
+            => CreateUninitialized<T>(lengths, [], pinned);
+
+        /// <summary>
+        /// Creates a <see cref="Tensor{T}"/> and does not initialize it. If <paramref name="pinned"/> is true, the memory will be pinned.
+        /// </summary>
+        /// <param name="lengths">A <see cref="ReadOnlySpan{T}"/> indicating the lengths of each dimension.</param>
+        /// <param name="strides">A <see cref="ReadOnlySpan{T}"/> indicating the strides of each dimension.</param>
+        /// <param name="pinned">A <see cref="bool"/> whether the underlying data should be pinned or not.</param>
+        public static Tensor<T> CreateUninitialized<T>(scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides, bool pinned = false)
+        {
+            nint linearLength = TensorSpanHelpers.CalculateTotalLength(lengths);
+            T[] values = GC.AllocateUninitializedArray<T>((int)linearLength, pinned);
+            return new Tensor<T>(values, lengths, strides, pinned);
+        }
+
+        public static ref readonly TensorSpan<T> FillGaussianNormalDistribution<T>(in TensorSpan<T> destination) where T : IFloatingPoint<T>
+        {
+            Span<T> span = MemoryMarshal.CreateSpan<T>(ref destination._reference, (int)destination._flattenedLength);
+
+            GaussianDistribution<T>(span, destination._flattenedLength);
+
+            return ref destination;
+        }
+
+        public static ref readonly TensorSpan<T> FillUniformDistribution<T>(in TensorSpan<T> destination) where T : IFloatingPoint<T>
+        {
+            Span<T> span = MemoryMarshal.CreateSpan<T>(ref destination._reference, (int)destination._flattenedLength);
+
+            for (int i = 0; i < span.Length; i++)
+                span[i] = T.CreateChecked(Random.Shared.NextDouble());
+
+            return ref destination;
+        }
     }
 }

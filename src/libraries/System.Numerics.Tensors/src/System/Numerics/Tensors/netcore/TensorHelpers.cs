@@ -15,9 +15,9 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="filter"></param>
         /// <returns>How many boolean values are true.</returns>
-        public static nint CountTrueElements(Tensor<bool> filter)
+        public static nint CountTrueElements(scoped in ReadOnlyTensorSpan<bool> filter)
         {
-            Span<bool> filterSpan = MemoryMarshal.CreateSpan(ref filter._values[0], (int)filter._flattenedLength);
+            Span<bool> filterSpan = MemoryMarshal.CreateSpan(ref filter._reference, (int)filter._flattenedLength);
             nint count = 0;
             for (int i = 0; i < filterSpan.Length; i++)
             {
@@ -86,9 +86,11 @@ namespace System.Numerics.Tensors
         internal static bool IsUnderlyingStorageSameSize<T>(Tensor<T> tensor1, Tensor<T> tensor2)
             => tensor1.Lengths.Length == tensor2.Lengths.Length;
 
-        internal static bool AreShapesTheSame<T>(Tensor<T> tensor1, Tensor<T> tensor2)
+        internal static bool AreLengthsTheSame<T>(ReadOnlyTensorSpan<T> tensor1, ReadOnlyTensorSpan<T> tensor2)
             => tensor1._lengths.SequenceEqual(tensor2._lengths);
 
+        internal static bool AreLengthsTheSame(ReadOnlySpan<nint> lengths1, ReadOnlySpan<nint> lengths2)
+            => lengths1.SequenceEqual(lengths2);
 
         internal static void PermuteIndices(Span<nint> indices, Span<nint> permutedIndices, ReadOnlySpan<int> permutation)
         {

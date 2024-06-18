@@ -10,6 +10,7 @@ using System.Text;
 using System.Buffers;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 using System.Security.Cryptography;
+using System.Runtime.Serialization;
 
 #pragma warning disable CS8601 // Possible null reference assignment.
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
@@ -19,141 +20,100 @@ namespace System.Numerics.Tensors
 {
     public static partial class Tensor
     {
+        #region AsTensorSpan
+        /// <summary>
+        /// Extension method to more easily create a TensorSpan from an array.
+        /// </summary>
+        /// <typeparam name="T">The type of the elements in the array</typeparam>
+        /// <param name="array">The <see cref="System.Array"/> with the data</param>
+        /// <param name="shape">The shape for the <see cref="TensorSpan{T}"/></param>
+        /// <returns></returns>
+        public static TensorSpan<T> AsTensorSpan<T>(this T[]? array, params scoped ReadOnlySpan<nint> shape) => new(array, 0, shape, default);
+        #endregion
+
+        #region AsReadOnlySpan
+        /// <summary>
+        /// Extension method to more easily create a TensorSpan from an array.
+        /// </summary>
+        /// <typeparam name="T">The type of the elements in the array</typeparam>
+        /// <param name="array">The <see cref="System.Array"/> with the data</param>
+        /// <param name="shape">The shape for the <see cref="TensorSpan{T}"/></param>
+        /// <returns></returns>
+        public static ReadOnlyTensorSpan<T> AsReadOnlyTensorSpan<T>(this T[]? array, params scoped ReadOnlySpan<nint> shape) => new(array, 0, shape, default);
+        #endregion
+
         #region Broadcast
         /// <summary>
-        /// Broadcast the data from <paramref name="left"/> to the smallest broadcastable shape compatible with <paramref name="right"/>. Creates a new <see cref="Tensor{T}"/> and allocates new memory.
-        /// If the shapes are not compatible, <see cref="bool"/> is returned.
+        /// Broadcast the data from <paramref name="input"/> to the smallest broadcastable shape compatible with <paramref name="lengthsSource"/>. Creates a new <see cref="Tensor{T}"/> and allocates new memory.
         /// </summary>
-        /// <param name="left">Input <see cref="Tensor{T}"/>.</param>
-        /// <param name="right">Other <see cref="Tensor{T}"/> to make shapes broadcastable.</param>
-        /// <param name="destination">Destination <see cref="Tensor{T}"/>.</param>
-        /// <returns></returns>
-        public static bool TryBroadcastTo<T>(Tensor<T> left, Tensor<T> right, out Tensor<T> destination)
+        /// <param name="input">Input <see cref="Tensor{T}"/>.</param>
+        /// <param name="lengthsSource">Other <see cref="Tensor{T}"/> to make shapes broadcastable.</param>
+        public static Tensor<T> Broadcast<T>(scoped in ReadOnlyTensorSpan<T> input, scoped in ReadOnlyTensorSpan<T> lengthsSource)
         {
-            if (!TensorHelpers.IsBroadcastableTo(left.Lengths, right.Lengths))
-            {
-                destination = Tensor<T>.Empty;
-                return false;
-            }
-
-            nint[] newSize = Tensor.GetSmallestBroadcastableSize(left.Lengths, right.Lengths);
-
-            Tensor<T> intermediate = BroadcastTo(left, newSize);
-            destination = Tensor.Create(intermediate.ToArray(), intermediate.Lengths);
-            return true;
+            return Broadcast(input, lengthsSource.Lengths);
         }
 
         /// <summary>
-        /// Broadcast the data from <paramref name="input"/> to the new shape <paramref name="shape"/>. Creates a new <see cref="Tensor{T}"/> and allocates new memory.
+        /// Broadcast the data from <paramref name="input"/> to the new shape <paramref name="lengths"/>. Creates a new <see cref="Tensor{T}"/> and allocates new memory.
         /// If the shape of the <paramref name="input"/> is not compatible with the new shape, an exception is thrown.
         /// </summary>
         /// <param name="input">Input <see cref="Tensor{T}"/>.</param>
-        /// <param name="shape"><see cref="ReadOnlySpan{T}"/> of the desired new shape.</param>
+        /// <param name="lengths"><see cref="ReadOnlySpan{T}"/> of the desired new shape.</param>
         /// <exception cref="ArgumentException">Thrown when the shapes are not broadcast compatible.</exception>
-        public static Tensor<T> TryBroadcastTo<T>(Tensor<T> input, ReadOnlySpan<nint> shape)
+        public static Tensor<T> Broadcast<T>(scoped in ReadOnlyTensorSpan<T> input, scoped ReadOnlySpan<nint> lengths)
         {
-            Tensor<T> intermediate = BroadcastTo(input, shape);
-            return Tensor.Create(intermediate.ToArray(), intermediate.Lengths);
-        }
+            nint[] newSize = Tensor.GetSmallestBroadcastableLengths(input.Lengths, lengths);
 
-        /// <summary>
-        /// Broadcast the data from <paramref name="left"/> to the smallest broadcastable shape compatible with <paramref name="right"/>. Creates a new <see cref="Tensor{T}"/> and allocates new memory.
-        /// </summary>
-        /// <param name="left">Input <see cref="Tensor{T}"/>.</param>
-        /// <param name="right">Other <see cref="Tensor{T}"/> to make shapes broadcastable.</param>
-        public static Tensor<T> Broadcast<T>(Tensor<T> left, Tensor<T> right)
-        {
-            nint[] newSize = Tensor.GetSmallestBroadcastableSize(left.Lengths, right.Lengths);
-
-            Tensor<T> intermediate = BroadcastTo(left, newSize);
-            return Tensor.Create(intermediate.ToArray(), intermediate.Lengths);
-        }
-
-        /// <summary>
-        /// Broadcast the data from <paramref name="input"/> to the new shape <paramref name="shape"/>. Creates a new <see cref="Tensor{T}"/> and allocates new memory.
-        /// If the shape of the <paramref name="input"/> is not compatible with the new shape, an exception is thrown.
-        /// </summary>
-        /// <param name="input">Input <see cref="Tensor{T}"/>.</param>
-        /// <param name="shape"><see cref="ReadOnlySpan{T}"/> of the desired new shape.</param>
-        /// <exception cref="ArgumentException">Thrown when the shapes are not broadcast compatible.</exception>
-        public static Tensor<T> Broadcast<T>(Tensor<T> input, ReadOnlySpan<nint> shape)
-        {
-            Tensor<T> intermediate = BroadcastTo(input, shape);
-            return Tensor.Create(intermediate.ToArray(), intermediate.Lengths);
-        }
-
-        // Lazy/non-copy broadcasting, internal only for now.
-        /// <summary>
-        /// Broadcast the data from <paramref name="input"/> to the new shape <paramref name="shape"/>. Creates a new <see cref="Tensor{T}"/>
-        /// but no memory is allocated. It manipulates the strides to achieve this affect.
-        /// If the shape of the <paramref name="input"/> is not compatible with the new shape, an exception is thrown.
-        /// </summary>
-        /// <param name="input">Input <see cref="Tensor{T}"/>.</param>
-        /// <param name="shape"><see cref="ReadOnlySpan{T}"/> of the desired new shape.</param>
-        /// <exception cref="ArgumentException">Thrown when the shapes are not broadcast compatible.</exception>
-        internal static Tensor<T> BroadcastTo<T>(Tensor<T> input, ReadOnlySpan<nint> shape)
-        {
-            if (input.Lengths.SequenceEqual(shape))
-                return new Tensor<T>(input._values, shape, false);
-
-            if (!TensorHelpers.IsBroadcastableTo(input.Lengths, shape))
-                ThrowHelper.ThrowArgument_ShapesNotBroadcastCompatible();
-
-            nint newSize = TensorSpanHelpers.CalculateTotalLength(shape);
-
-            if (newSize == input.FlattenedLength)
-                return Reshape(input, shape);
-
-            nint[] intermediateShape = TensorHelpers.GetIntermediateShape(input.Lengths, shape.Length);
-            nint[] strides = new nint[shape.Length];
-
-            nint stride = 1;
-
-            for (int i = strides.Length - 1; i >= 0; i--)
-            {
-                if ((intermediateShape[i] == 1 && shape[i] != 1) || (intermediateShape[i] == 1 && shape[i] == 1))
-                    strides[i] = 0;
-                else
-                {
-                    strides[i] = stride;
-                    stride *= intermediateShape[i];
-                }
-            }
-
-            Tensor<T> output = new Tensor<T>(input._values, shape, strides);
-
+            ReadOnlyTensorSpan<T> intermediate = LazyBroadcast(input, newSize);
+            Tensor<T> output = Tensor.CreateUninitialized<T>(intermediate.Lengths);
+            intermediate.FlattenTo(MemoryMarshal.CreateSpan<T>(ref output._values[0], (int)output.FlattenedLength));
             return output;
         }
+        #endregion
 
-
+        #region BroadcastTo
         /// <summary>
-        /// Broadcast the data from <paramref name="left"/> to the smallest broadcastable shape compatible with <paramref name="right"/>. Creates a new <see cref="TensorSpan{T}"/> and allocates new memory.
+        /// Broadcast the data from <paramref name="source"/> to <paramref name="destination"/>.
         /// </summary>
-        /// <param name="left">Input <see cref="TensorSpan{T}"/>.</param>
-        /// <param name="right">Other <see cref="TensorSpan{T}"/> to make shapes broadcastable.</param>
-        public static TensorSpan<T> Broadcast<T>(in TensorSpan<T> left, scoped in ReadOnlyTensorSpan<T> right)
+        /// <param name="source">Input <see cref="TensorSpan{T}"/>.</param>
+        /// <param name="destination"></param>
+        public static void BroadcastTo<T>(this Tensor<T> source, in TensorSpan<T> destination)
         {
-            nint[] newSize = Tensor.GetSmallestBroadcastableSize(left.Lengths, right.Lengths);
+            nint[] newSize = Tensor.GetSmallestBroadcastableLengths(source.Lengths, destination.Lengths);
+            if (!destination.Lengths.SequenceEqual(newSize))
+                ThrowHelper.ThrowArgument_ShapesNotBroadcastCompatible();
 
-            ReadOnlyTensorSpan<T> intermediate = BroadcastTo(left, newSize);
-            T[] data = new T[intermediate.FlattenedLength];
-            intermediate.FlattenTo(data);
-            return new TensorSpan<T>(data, 0, intermediate.Lengths, []);
+            ReadOnlyTensorSpan<T> intermediate = LazyBroadcast(source, newSize);
+            intermediate.FlattenTo(MemoryMarshal.CreateSpan(ref destination._reference, (int)destination.FlattenedLength));
+        }
+        /// <summary>
+        /// Broadcast the data from <paramref name="source"/> to <paramref name="destination"/>.
+        /// </summary>
+        /// <param name="source">Input <see cref="TensorSpan{T}"/>.</param>
+        /// <param name="destination">Other <see cref="TensorSpan{T}"/> to make shapes broadcastable.</param>
+        public static void BroadcastTo<T>(in this TensorSpan<T> source, in TensorSpan<T> destination)
+        {
+            nint[] newSize = Tensor.GetSmallestBroadcastableLengths(source.Lengths, destination.Lengths);
+            if (!destination.Lengths.SequenceEqual(newSize))
+                ThrowHelper.ThrowArgument_ShapesNotBroadcastCompatible();
+
+            ReadOnlyTensorSpan<T> intermediate = LazyBroadcast(source, newSize);
+            intermediate.FlattenTo(MemoryMarshal.CreateSpan(ref destination._reference, (int)destination.FlattenedLength));
         }
 
         /// <summary>
-        /// Broadcast the data from <paramref name="left"/> to the smallest broadcastable shape compatible with <paramref name="right"/>. Creates a new <see cref="TensorSpan{T}"/> and allocates new memory.
+        /// Broadcast the data from <paramref name="source"/> to <paramref name="destination"/>.
         /// </summary>
-        /// <param name="left">Input <see cref="TensorSpan{T}"/>.</param>
-        /// <param name="right">Other <see cref="TensorSpan{T}"/> to make shapes broadcastable.</param>
-        public static TensorSpan<T> Broadcast<T>(scoped in ReadOnlyTensorSpan<T> left, scoped in ReadOnlyTensorSpan<T> right)
+        /// <param name="source">Input <see cref="TensorSpan{T}"/>.</param>
+        /// <param name="destination"></param>
+        public static void BroadcastTo<T>(in this ReadOnlyTensorSpan<T> source, in TensorSpan<T> destination)
         {
-            nint[] newSize = Tensor.GetSmallestBroadcastableSize(left.Lengths, right.Lengths);
+            nint[] newSize = Tensor.GetSmallestBroadcastableLengths(source.Lengths, destination.Lengths);
+            if (!destination.Lengths.SequenceEqual(newSize))
+                ThrowHelper.ThrowArgument_ShapesNotBroadcastCompatible();
 
-            ReadOnlyTensorSpan<T> intermediate = BroadcastTo(left, newSize);
-            T[] data = new T[intermediate.FlattenedLength];
-            intermediate.FlattenTo(data);
-            return new TensorSpan<T>(data, 0, intermediate.Lengths, []);
+            ReadOnlyTensorSpan<T> intermediate = LazyBroadcast(source, newSize);
+            intermediate.FlattenTo(MemoryMarshal.CreateSpan(ref destination._reference, (int)destination.FlattenedLength));
         }
 
         // Lazy/non-copy broadcasting, internal only for now.
@@ -165,7 +125,7 @@ namespace System.Numerics.Tensors
         /// <param name="input">Input <see cref="TensorSpan{T}"/>.</param>
         /// <param name="shape"><see cref="ReadOnlySpan{T}"/> of the desired new shape.</param>
         /// <exception cref="ArgumentException">Thrown when the shapes are not broadcast compatible.</exception>
-        internal static TensorSpan<T> BroadcastTo<T>(in TensorSpan<T> input, ReadOnlySpan<nint> shape)
+        internal static TensorSpan<T> LazyBroadcast<T>(in TensorSpan<T> input, ReadOnlySpan<nint> shape)
         {
             if (input.Lengths.SequenceEqual(shape))
                 return new TensorSpan<T>(ref input._reference, shape, input.Strides, input._memoryLength);
@@ -208,7 +168,7 @@ namespace System.Numerics.Tensors
         /// <param name="input">Input <see cref="TensorSpan{T}"/>.</param>
         /// <param name="shape"><see cref="ReadOnlySpan{T}"/> of the desired new shape.</param>
         /// <exception cref="ArgumentException">Thrown when the shapes are not broadcast compatible.</exception>
-        internal static ReadOnlyTensorSpan<T> BroadcastTo<T>(in ReadOnlyTensorSpan<T> input, ReadOnlySpan<nint> shape)
+        internal static ReadOnlyTensorSpan<T> LazyBroadcast<T>(in ReadOnlyTensorSpan<T> input, ReadOnlySpan<nint> shape)
         {
             if (input.Lengths.SequenceEqual(shape))
                 return new TensorSpan<T>(ref input._reference, shape, input.Strides, input._memoryLength);
@@ -238,6 +198,49 @@ namespace System.Numerics.Tensors
             }
 
             TensorSpan<T> output = new TensorSpan<T>(ref input._reference, shape, strides, input._memoryLength);
+
+            return output;
+        }
+
+        // Lazy/non-copy broadcasting, internal only for now.
+        /// <summary>
+        /// Broadcast the data from <paramref name="input"/> to the new shape <paramref name="lengths"/>. Creates a new <see cref="Tensor{T}"/>
+        /// but no memory is allocated. It manipulates the strides to achieve this affect.
+        /// If the shape of the <paramref name="input"/> is not compatible with the new shape, an exception is thrown.
+        /// </summary>
+        /// <param name="input">Input <see cref="Tensor{T}"/>.</param>
+        /// <param name="lengths"><see cref="ReadOnlySpan{T}"/> of the desired new shape.</param>
+        /// <exception cref="ArgumentException">Thrown when the shapes are not broadcast compatible.</exception>
+        internal static Tensor<T> LazyBroadcast<T>(Tensor<T> input, ReadOnlySpan<nint> lengths)
+        {
+            if (input.Lengths.SequenceEqual(lengths))
+                return new Tensor<T>(input._values, lengths, false);
+
+            if (!TensorHelpers.IsBroadcastableTo(input.Lengths, lengths))
+                ThrowHelper.ThrowArgument_ShapesNotBroadcastCompatible();
+
+            nint newSize = TensorSpanHelpers.CalculateTotalLength(lengths);
+
+            if (newSize == input.FlattenedLength)
+                return Reshape(input, lengths);
+
+            nint[] intermediateShape = TensorHelpers.GetIntermediateShape(input.Lengths, lengths.Length);
+            nint[] strides = new nint[lengths.Length];
+
+            nint stride = 1;
+
+            for (int i = strides.Length - 1; i >= 0; i--)
+            {
+                if ((intermediateShape[i] == 1 && lengths[i] != 1) || (intermediateShape[i] == 1 && lengths[i] == 1))
+                    strides[i] = 0;
+                else
+                {
+                    strides[i] = stride;
+                    stride *= intermediateShape[i];
+                }
+            }
+
+            Tensor<T> output = new Tensor<T>(input._values, lengths, strides);
 
             return output;
         }
@@ -249,7 +252,7 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="tensors">The tensors must have the same shape, except in the dimension corresponding to axis (the first, by default).</param>
         /// <param name="axis">The axis along which the tensors will be joined. If axis is -1, arrays are flattened before use. Default is 0.</param>
-        public static Tensor<T> Concatenate<T>(ReadOnlySpan<Tensor<T>> tensors, int axis = 0)
+        public static Tensor<T> Concatenate<T>(scoped ReadOnlySpan<Tensor<T>> tensors, int axis = 0)
         {
             if (tensors.Length < 2)
                 ThrowHelper.ThrowArgument_ConcatenateTooFewTensors();
@@ -349,8 +352,140 @@ namespace System.Numerics.Tensors
         }
         #endregion
 
+        #region ElementwiseEqual
+        /// <summary>
+        /// Compares the elements of two <see cref="Tensor{T}"/> for equality. If the shapes are not the same, the tensors are broadcasted to the smallest broadcastable size
+        /// before they are compared. It returns a <see cref="Tensor{Boolean}"/> where the value is true if the elements are equal and false if they are not."/>
+        /// </summary>
+        /// <param name="left">First <see cref="Tensor{T}"/> to compare.</param>
+        /// <param name="right">Second <see cref="Tensor{T}"/> to compare.</param>
+        /// <returns>A <see cref="Tensor{Boolean}"/> where the value is true if the elements are equal and false if they are not.</returns>
+        public static Tensor<bool> ElementwiseEqual<T>(Tensor<T> left, Tensor<T> right)
+            where T : IEqualityOperators<T, T, bool>
+        {
+            Tensor<bool> result;
+            if (TensorHelpers.AreLengthsTheSame<T>(left, right))
+            {
+                result = Tensor.Create<bool>(left.Lengths, false);
+
+                for (int i = 0; i < left.FlattenedLength; i++)
+                {
+                    result._values[i] = left._values[i] == right._values[i];
+                }
+            }
+            else
+            {
+                nint[] newSize = Tensor.GetSmallestBroadcastableLengths(left.Lengths, right.Lengths);
+                result = Tensor.Create<bool>(newSize, false);
+                Tensor<T> broadcastedLeft = LazyBroadcast(left, newSize);
+                Tensor<T> broadcastedRight = LazyBroadcast(right, newSize);
+
+                scoped Span<nint> curIndex;
+                nint[]? curIndexArray;
+
+                if (broadcastedRight.Lengths.Length > 6)
+                {
+                    curIndexArray = ArrayPool<nint>.Shared.Rent(broadcastedRight.Lengths.Length);
+                    curIndex = curIndexArray;
+                }
+                else
+                {
+                    curIndexArray = null;
+                    curIndex = stackalloc nint[broadcastedRight.Lengths.Length];
+                }
+
+                for (int i = 0; i < broadcastedLeft.FlattenedLength; i++)
+                {
+                    result._values[i] = broadcastedLeft[curIndex] == broadcastedRight[curIndex];
+                    TensorSpanHelpers.AdjustIndexes(broadcastedRight.Rank - 1, 1, curIndex, broadcastedRight.Lengths);
+                }
+
+                if (curIndexArray != null)
+                    ArrayPool<nint>.Shared.Return(curIndexArray);
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Compares the elements of two <see cref="ReadOnlyTensorSpan{T}"/> for equality. If the shapes are not the same, the tensors are broadcasted to the smallest broadcastable size
+        /// before they are compared. It returns a <see cref="TensorSpan{Boolean}"/> where the value is true if the elements are equal and false if they are not."/>
+        /// </summary>
+        /// <param name="left">First <see cref="Tensor{T}"/> to compare.</param>
+        /// <param name="right">Second <see cref="Tensor{T}"/> to compare.</param>
+        /// <param name="destination"></param>
+        /// <returns>A <see cref="TensorSpan{Boolean}"/> where the value is true if the elements are equal and false if they are not.</returns>
+        public static ref readonly TensorSpan<bool> ElementwiseEqual<T>(scoped in ReadOnlyTensorSpan<T> left, scoped in ReadOnlyTensorSpan<T> right, in TensorSpan<bool> destination)
+            where T : IEqualityOperators<T, T, bool>
+        {
+            Span<bool> result = MemoryMarshal.CreateSpan<bool>(ref destination._reference, (int)destination.FlattenedLength);
+            if (TensorHelpers.AreLengthsTheSame<T>(left, right))
+            {
+                if (!TensorHelpers.AreLengthsTheSame(destination.Lengths, left.Lengths))
+                    ThrowHelper.ThrowArgument_DimensionsNotSame(nameof(destination));
+
+                scoped Span<nint> curIndex;
+                nint[]? curIndexArray;
+
+                if (left.Rank > 6)
+                {
+                    curIndexArray = ArrayPool<nint>.Shared.Rent(left.Lengths.Length);
+                    curIndex = curIndexArray;
+                }
+                else
+                {
+                    curIndexArray = null;
+                    curIndex = stackalloc nint[left.Lengths.Length];
+                }
+
+                for (int i = 0; i < left.FlattenedLength; i++)
+                {
+                    result[i] = left[curIndex] == right[curIndex];
+                    TensorSpanHelpers.AdjustIndexes(left.Rank - 1, 1, curIndex, left.Lengths);
+                }
+
+                if (curIndexArray != null)
+                    ArrayPool<nint>.Shared.Return(curIndexArray);
+            }
+            else
+            {
+                nint[] newSize = Tensor.GetSmallestBroadcastableLengths(left.Lengths, right.Lengths);
+                if (!TensorHelpers.AreLengthsTheSame(destination.Lengths, newSize))
+                    ThrowHelper.ThrowArgument_DimensionsNotSame(nameof(destination));
+
+                ReadOnlyTensorSpan<T> broadcastedLeft = LazyBroadcast(left, newSize);
+                ReadOnlyTensorSpan<T> broadcastedRight = LazyBroadcast(right, newSize);
+
+                scoped Span<nint> curIndex;
+                nint[]? curIndexArray;
+
+                if (broadcastedRight.Lengths.Length > 6)
+                {
+                    curIndexArray = ArrayPool<nint>.Shared.Rent(broadcastedRight.Lengths.Length);
+                    curIndex = curIndexArray;
+                }
+                else
+                {
+                    curIndexArray = null;
+                    curIndex = stackalloc nint[broadcastedRight.Lengths.Length];
+                }
+
+                for (int i = 0; i < broadcastedLeft.FlattenedLength; i++)
+                {
+                    result[i] = broadcastedLeft[curIndex] == broadcastedRight[curIndex];
+                    TensorSpanHelpers.AdjustIndexes(broadcastedRight.Rank - 1, 1, curIndex, broadcastedRight.Lengths);
+                }
+
+                if (curIndexArray != null)
+                    ArrayPool<nint>.Shared.Return(curIndexArray);
+            }
+
+            return ref destination;
+        }
+        #endregion
+
         #region FilteredUpdate
-        // REVIEW: PYTORCH/NUMPY DO THIS.
+        //  REVIEW: PYTORCH/NUMPY DO THIS.
         //  t0[t0 < 2] = -1;
         //  OR SHOULD THIS BE AN OVERLOAD OF FILL THAT TAKES IN A FUNC TO KNOW WHICH ONE TO UPDATE?
         /// <summary>
@@ -359,13 +494,13 @@ namespace System.Numerics.Tensors
         /// <param name="tensor">Input <see cref="Tensor{T}"/>.</param>
         /// <param name="filter">Input filter where if the index is true then it will update the <paramref name="tensor"/>.</param>
         /// <param name="value">Value to update in the <paramref name="tensor"/>.</param>
-        public static Tensor<T> FilteredUpdate<T>(Tensor<T> tensor, Tensor<bool> filter, T value)
+        public static TensorSpan<T> FilteredUpdate<T>(in this TensorSpan<T> tensor, scoped in ReadOnlyTensorSpan<bool> filter, T value)
         {
             if (filter.Lengths.Length != tensor.Lengths.Length)
                 ThrowHelper.ThrowArgument_DimensionsNotSame(nameof(filter));
 
-            Span<T> srcSpan = MemoryMarshal.CreateSpan(ref tensor._values[0], (int)tensor._flattenedLength);
-            Span<bool> filterSpan = MemoryMarshal.CreateSpan(ref filter._values[0], (int)tensor._flattenedLength);
+            Span<T> srcSpan = MemoryMarshal.CreateSpan(ref tensor._reference, (int)tensor._flattenedLength);
+            Span<bool> filterSpan = MemoryMarshal.CreateSpan(ref filter._reference, (int)tensor._flattenedLength);
 
             for (int i = 0; i < filterSpan.Length; i++)
             {
@@ -385,7 +520,7 @@ namespace System.Numerics.Tensors
         /// <param name="tensor">Input <see cref="Tensor{T}"/>.</param>
         /// <param name="filter">Input filter where if the index is true then it will update the <paramref name="tensor"/>.</param>
         /// <param name="values">Values to update in the <paramref name="tensor"/>.</param>
-        public static Tensor<T> FilteredUpdate<T>(Tensor<T> tensor, Tensor<bool> filter, Tensor<T> values)
+        public static TensorSpan<T> FilteredUpdate<T>(in this TensorSpan<T> tensor, scoped in ReadOnlyTensorSpan<bool> filter, scoped in ReadOnlyTensorSpan<T> values)
         {
             if (filter.Lengths.Length != tensor.Lengths.Length)
                 ThrowHelper.ThrowArgument_DimensionsNotSame(nameof(filter));
@@ -396,9 +531,9 @@ namespace System.Numerics.Tensors
             if (numTrueElements != values._flattenedLength)
                 ThrowHelper.ThrowArgument_IncorrectNumberOfFilterItems(nameof(values));
 
-            Span<T> dstSpan = MemoryMarshal.CreateSpan(ref tensor._values[0], (int)tensor._flattenedLength);
-            Span<bool> filterSpan = MemoryMarshal.CreateSpan(ref filter._values[0], (int)tensor._flattenedLength);
-            Span<T> valuesSpan = MemoryMarshal.CreateSpan(ref values._values[0], (int)values._flattenedLength);
+            Span<T> dstSpan = MemoryMarshal.CreateSpan(ref tensor._reference, (int)tensor._flattenedLength);
+            Span<bool> filterSpan = MemoryMarshal.CreateSpan(ref filter._reference, (int)tensor._flattenedLength);
+            Span<T> valuesSpan = MemoryMarshal.CreateSpan(ref values._reference, (int)values._flattenedLength);
 
             int index = 0;
             for (int i = 0; i < filterSpan.Length; i++)
@@ -428,7 +563,7 @@ namespace System.Numerics.Tensors
             where T : IComparisonOperators<T, T, bool>
         {
             Tensor<bool> result;
-            if (TensorHelpers.AreShapesTheSame(left, right))
+            if (TensorHelpers.AreLengthsTheSame<T>(left, right))
             {
                 result = Tensor.Create<bool>(left.Lengths, false);
 
@@ -439,10 +574,10 @@ namespace System.Numerics.Tensors
             }
             else
             {
-                nint[] newSize = Tensor.GetSmallestBroadcastableSize(left.Lengths, right.Lengths);
+                nint[] newSize = Tensor.GetSmallestBroadcastableLengths(left.Lengths, right.Lengths);
                 result = Tensor.Create<bool>(newSize, false);
-                Tensor<T> broadcastedLeft = BroadcastTo(left, newSize);
-                Tensor<T> broadcastedRight = BroadcastTo(right, newSize);
+                Tensor<T> broadcastedLeft = LazyBroadcast(left, newSize);
+                Tensor<T> broadcastedRight = LazyBroadcast(right, newSize);
 
                 scoped Span<nint> curIndex;
                 nint[]? curIndexArray;
@@ -503,7 +638,7 @@ namespace System.Numerics.Tensors
         public static bool GreaterThanAny<T>(Tensor<T> left, Tensor<T> right)
             where T : IComparisonOperators<T, T, bool>
         {
-            if (TensorHelpers.AreShapesTheSame(left, right))
+            if (TensorHelpers.AreLengthsTheSame<T>(left, right))
             {
 
                 for (int i = 0; i < left.FlattenedLength; i++)
@@ -514,9 +649,9 @@ namespace System.Numerics.Tensors
             }
             else
             {
-                nint[] newSize = Tensor.GetSmallestBroadcastableSize(left.Lengths, right.Lengths);
-                Tensor<T> broadcastedLeft = BroadcastTo(left, newSize);
-                Tensor<T> broadcastedRight = BroadcastTo(right, newSize);
+                nint[] newSize = Tensor.GetSmallestBroadcastableLengths(left.Lengths, right.Lengths);
+                Tensor<T> broadcastedLeft = LazyBroadcast(left, newSize);
+                Tensor<T> broadcastedRight = LazyBroadcast(right, newSize);
 
                 scoped Span<nint> curIndex;
                 nint[]? curIndexArray;
@@ -556,7 +691,7 @@ namespace System.Numerics.Tensors
         public static bool GreaterThanAll<T>(Tensor<T> left, Tensor<T> right)
             where T : IComparisonOperators<T, T, bool>
         {
-            if (TensorHelpers.AreShapesTheSame(left, right))
+            if (TensorHelpers.AreLengthsTheSame<T>(left, right))
             {
 
                 for (int i = 0; i < left.FlattenedLength; i++)
@@ -567,9 +702,9 @@ namespace System.Numerics.Tensors
             }
             else
             {
-                nint[] newSize = Tensor.GetSmallestBroadcastableSize(left.Lengths, right.Lengths);
-                Tensor<T> broadcastedLeft = BroadcastTo(left, newSize);
-                Tensor<T> broadcastedRight = BroadcastTo(right, newSize);
+                nint[] newSize = Tensor.GetSmallestBroadcastableLengths(left.Lengths, right.Lengths);
+                Tensor<T> broadcastedLeft = LazyBroadcast(left, newSize);
+                Tensor<T> broadcastedRight = LazyBroadcast(right, newSize);
 
                 scoped Span<nint> curIndex;
                 nint[]? curIndexArray;
@@ -614,7 +749,7 @@ namespace System.Numerics.Tensors
             where T : IComparisonOperators<T, T, bool>
         {
             Tensor<bool> result;
-            if (TensorHelpers.AreShapesTheSame(left, right))
+            if (TensorHelpers.AreLengthsTheSame<T>(left, right))
             {
                 result = Tensor.Create<bool>(left.Lengths, false);
 
@@ -625,10 +760,10 @@ namespace System.Numerics.Tensors
             }
             else
             {
-                nint[] newSize = Tensor.GetSmallestBroadcastableSize(left.Lengths, right.Lengths);
+                nint[] newSize = Tensor.GetSmallestBroadcastableLengths(left.Lengths, right.Lengths);
                 result = Tensor.Create<bool>(newSize, false);
-                Tensor<T> broadcastedLeft = BroadcastTo(left, newSize);
-                Tensor<T> broadcastedRight = BroadcastTo(right, newSize);
+                Tensor<T> broadcastedLeft = LazyBroadcast(left, newSize);
+                Tensor<T> broadcastedRight = LazyBroadcast(right, newSize);
 
                 scoped Span<nint> curIndex;
                 nint[]? curIndexArray;
@@ -689,7 +824,7 @@ namespace System.Numerics.Tensors
         public static bool LessThanAny<T>(Tensor<T> left, Tensor<T> right)
             where T : IComparisonOperators<T, T, bool>
         {
-            if (TensorHelpers.AreShapesTheSame(left, right))
+            if (TensorHelpers.AreLengthsTheSame<T>(left, right))
             {
                 for (int i = 0; i < left.FlattenedLength; i++)
                 {
@@ -699,9 +834,9 @@ namespace System.Numerics.Tensors
             }
             else
             {
-                nint[] newSize = Tensor.GetSmallestBroadcastableSize(left.Lengths, right.Lengths);
-                Tensor<T> broadcastedLeft = BroadcastTo(left, newSize);
-                Tensor<T> broadcastedRight = BroadcastTo(right, newSize);
+                nint[] newSize = Tensor.GetSmallestBroadcastableLengths(left.Lengths, right.Lengths);
+                Tensor<T> broadcastedLeft = LazyBroadcast(left, newSize);
+                Tensor<T> broadcastedRight = LazyBroadcast(right, newSize);
 
                 scoped Span<nint> curIndex;
                 nint[]? curIndexArray;
@@ -742,7 +877,7 @@ namespace System.Numerics.Tensors
         public static bool LessThanAll<T>(Tensor<T> left, Tensor<T> right)
             where T : IComparisonOperators<T, T, bool>
         {
-            if (TensorHelpers.AreShapesTheSame(left, right))
+            if (TensorHelpers.AreLengthsTheSame<T>(left, right))
             {
                 for (int i = 0; i < left.FlattenedLength; i++)
                 {
@@ -752,9 +887,9 @@ namespace System.Numerics.Tensors
             }
             else
             {
-                nint[] newSize = Tensor.GetSmallestBroadcastableSize(left.Lengths, right.Lengths);
-                Tensor<T> broadcastedLeft = BroadcastTo(left, newSize);
-                Tensor<T> broadcastedRight = BroadcastTo(right, newSize);
+                nint[] newSize = Tensor.GetSmallestBroadcastableLengths(left.Lengths, right.Lengths);
+                Tensor<T> broadcastedLeft = LazyBroadcast(left, newSize);
+                Tensor<T> broadcastedRight = LazyBroadcast(right, newSize);
 
                 scoped Span<nint> curIndex;
                 nint[]? curIndexArray;
@@ -788,44 +923,17 @@ namespace System.Numerics.Tensors
         /// <summary>
         /// Returns the mean of the elements in the <paramref name="input"/> tensor.
         /// </summary>
-        /// <param name="input">The <see cref="Tensor{T}"/> to take the mean of.</param>
-        /// <returns><typeparamref name="T"/> representing the mean.</returns>
-        public static T Mean<T>(Tensor<T> input)
-            where T : IFloatingPoint<T>
-
-        {
-            return Mean<T>((ReadOnlyTensorSpan<T>)input);
-        }
-
-        /// <summary>
-        /// Returns the mean of the elements in the <paramref name="input"/> tensor.
-        /// </summary>
         /// <param name="input">The <see cref="TensorSpan{T}"/> to take the mean of.</param>
         /// <returns><typeparamref name="T"/> representing the mean.</returns>
         public static T Mean<T>(scoped in ReadOnlyTensorSpan<T> input)
             where T : IFloatingPoint<T>
-
         {
             T sum = Sum(input);
             return T.CreateChecked(sum / T.CreateChecked(input.FlattenedLength));
         }
         #endregion
 
-        #region Permute/Transpose
-        /// <summary>
-        /// Swaps the last two dimensions of the <paramref name="input"/> tensor.
-        /// </summary>
-        /// <param name="input">Input <see cref="Tensor{T}"/>.</param>
-        public static Tensor<T> Transpose<T>(Tensor<T> input)
-        {
-            if (input.Lengths.Length < 2)
-                ThrowHelper.ThrowArgument_TransposeTooFewDimensions();
-            int[] axis = Enumerable.Range(0, input.Rank).ToArray();
-            int temp = axis[input.Rank - 1];
-            axis[input.Rank - 1] = axis[input.Rank - 2];
-            axis[input.Rank - 2] = temp;
-            return Permute(input, axis.AsSpan());
-        }
+        #region Permute
 
         /// <summary>
         /// Swaps the dimensions of the <paramref name="input"/> tensor according to the <paramref name="axis"/> parameter.
@@ -834,7 +942,7 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="input">Input <see cref="Tensor{T}"/></param>
         /// <param name="axis"><see cref="ReadOnlySpan{T}"/> with the new axis ordering.</param>
-        public static Tensor<T> Permute<T>(Tensor<T> input, params ReadOnlySpan<int> axis)
+        public static Tensor<T> Permute<T>(this Tensor<T> input, params ReadOnlySpan<int> axis)
         {
             if (input.Rank == 1)
             {
@@ -947,7 +1055,7 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="input"><see cref="TensorSpan{T}"/> you want to reshape.</param>
         /// <param name="lengths"><see cref="ReadOnlySpan{T}"/> with the new dimensions.</param>
-        public static TensorSpan<T> Reshape<T>(this in TensorSpan<T> input, params ReadOnlySpan<nint> lengths)
+        public static TensorSpan<T> Reshape<T>(this in TensorSpan<T> input, params scoped ReadOnlySpan<nint> lengths)
         {
             nint[] arrLengths = lengths.ToArray();
             // Calculate wildcard info.
@@ -971,10 +1079,10 @@ namespace System.Numerics.Tensors
             if (tempLinear != input.FlattenedLength)
                 ThrowHelper.ThrowArgument_InvalidReshapeDimensions();
             nint[] strides = TensorSpanHelpers.CalculateStrides(arrLengths);
-            return new TensorSpan<T>(ref input._reference, arrLengths, strides, input._memoryLength);
+            TensorSpan<T> output = new TensorSpan<T>(ref input._reference, arrLengths, strides, input._memoryLength);
+            return output;
         }
 
-        // Internal as a helper for the ,also, internal BroadcastTo method. Not sure if we want to expose Reshape on ReadOnlyTensorSpan publicly.
         /// <summary>
         /// Reshapes the <paramref name="input"/> tensor to the specified <paramref name="lengths"/>. If one of the lengths is -1, it will be calculated automatically.
         /// Does not change the length of the underlying memory nor does it allocate new memory. If the new shape is not compatible with the old shape,
@@ -982,7 +1090,7 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="input"><see cref="TensorSpan{T}"/> you want to reshape.</param>
         /// <param name="lengths"><see cref="ReadOnlySpan{T}"/> with the new dimensions.</param>
-        internal static ReadOnlyTensorSpan<T> Reshape<T>(this in ReadOnlyTensorSpan<T> input, params ReadOnlySpan<nint> lengths)
+        public static ReadOnlyTensorSpan<T> Reshape<T>(this in ReadOnlyTensorSpan<T> input, params scoped ReadOnlySpan<nint> lengths)
         {
             nint[] arrLengths = lengths.ToArray();
             // Calculate wildcard info.
@@ -1006,7 +1114,8 @@ namespace System.Numerics.Tensors
             if (tempLinear != input.FlattenedLength)
                 ThrowHelper.ThrowArgument_InvalidReshapeDimensions();
             nint[] strides = TensorSpanHelpers.CalculateStrides(arrLengths);
-            return new TensorSpan<T>(ref input._reference, arrLengths, strides, input._memoryLength);
+            ReadOnlyTensorSpan<T> output = new ReadOnlyTensorSpan<T>(ref input._reference, arrLengths, strides, input._memoryLength);
+            return output;
         }
         #endregion
 
@@ -1033,23 +1142,21 @@ namespace System.Numerics.Tensors
         }
 
         /// <summary>
-        /// Creates a new <see cref="TensorSpan{T}"/>, allocates new managed memory, and copies the data from <paramref name="input"/>. If the final shape is smaller, all data after that point is dropped.
+        /// Copies the data from <paramref name="input"/>. If the final shape is smaller all data after that point is ignored.
+        /// If the final shape is bigger it is filled with 0s.
         /// </summary>
-        /// <param name="input">Input <see cref="TensorSpan{T}"/>.</param>
-        /// <param name="shape"><see cref="ReadOnlySpan{T}"/> of the desired new shape.</param>
-        public static TensorSpan<T> Resize<T>(scoped in TensorSpan<T> input, ReadOnlySpan<nint> shape)
+        /// <param name="input">Input <see cref="ReadOnlyTensorSpan{T}"/>.</param>
+        /// <param name="destination">Destination <see cref="TensorSpan{T}"/> with the desired new shape.</param>
+        public static ref readonly TensorSpan<T> Resize<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
         {
-            nint newSize = TensorSpanHelpers.CalculateTotalLength(shape);
-            T[] values = new T[newSize];
-            TensorSpan<T> output = new TensorSpan<T>(values, 0, shape, default);
             ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input.FlattenedLength);
-            Span<T> ospan = MemoryMarshal.CreateSpan(ref output._reference, (int)output.FlattenedLength);
-            if (newSize > input.FlattenedLength)
+            Span<T> ospan = MemoryMarshal.CreateSpan(ref destination._reference, (int)destination.FlattenedLength);
+            if (destination.FlattenedLength > input.FlattenedLength)
                 TensorSpanHelpers.Memmove(ospan, span, input.FlattenedLength);
             else
-                TensorSpanHelpers.Memmove(ospan, span, newSize);
+                TensorSpanHelpers.Memmove(ospan, span, input.FlattenedLength);
 
-            return output;
+            return ref destination;
         }
         #endregion
 
@@ -1060,66 +1167,10 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="input">Input <see cref="Tensor{T}"/>.</param>
         /// <param name="axis">Axis along which to reverse over. The default, -1, will reverse over all of the axes of the left tensor.</param>
-        public static Tensor<T> Reverse<T>(Tensor<T> input, nint axis = -1)
+        public static Tensor<T> Reverse<T>(in ReadOnlyTensorSpan<T> input, nint axis = -1)
         {
-            T[] values = input.IsPinned ? GC.AllocateArray<T>((int)input._flattenedLength) : (new T[input._flattenedLength]);
-            Tensor<T> output = new Tensor<T>(values, input.Lengths.ToArray(), input.Strides.ToArray());
-            if (axis == -1)
-            {
-                int index = 0;
-                ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._values[0], (int)input.FlattenedLength);
-                Span<T> ospan = MemoryMarshal.CreateSpan(ref output._values[0], (int)output.FlattenedLength);
-                for (int i = (int)input.FlattenedLength - 1; i >= 0; i--)
-                {
-                    ospan[index++] = span[i];
-                }
-            }
-            else
-            {
-                nint copyLength = 1;
-                for (nint i = axis; i < input.Lengths.Length; i++)
-                {
-                    copyLength *= input.Lengths[(int)i];
-                }
-                copyLength /= input.Lengths[(int)axis];
-
-                scoped Span<nint> oIndices;
-                nint[]? oIndicesArray;
-                scoped Span<nint> iIndices;
-                nint[]? iIndicesArray;
-                if (input.Rank > 6)
-                {
-                    oIndicesArray = ArrayPool<nint>.Shared.Rent(input.Rank);
-                    oIndices = oIndicesArray;
-                    iIndicesArray = ArrayPool<nint>.Shared.Rent(input.Rank);
-                    iIndices = iIndicesArray;
-                }
-                else
-                {
-                    oIndicesArray = null;
-                    oIndices = stackalloc nint[input.Rank];
-                    iIndicesArray = null;
-                    iIndices = stackalloc nint[input.Rank];
-                }
-
-                iIndices[(int)axis] = input.Lengths[(int)axis] - 1;
-                nint copiedValues = 0;
-                TensorSpan<T> islice = input.AsTensorSpan().Slice(input.Lengths);
-                TensorSpan<T> oslice = output.AsTensorSpan().Slice(output._lengths);
-                while (copiedValues < input._flattenedLength)
-                {
-                    TensorSpanHelpers.Memmove(ref Unsafe.Add(ref oslice._reference, TensorSpanHelpers.ComputeLinearIndex(oIndices, input.Strides, input.Lengths)), ref Unsafe.Add(ref islice._reference, TensorSpanHelpers.ComputeLinearIndex(iIndices, islice.Strides, islice.Lengths)), copyLength);
-                    TensorSpanHelpers.AdjustIndexes((int)axis, 1, oIndices, input._lengths);
-                    TensorSpanHelpers.AdjustIndexesDown((int)axis, 1, iIndices, input._lengths);
-                    copiedValues += copyLength;
-                }
-
-                if (oIndicesArray != null && iIndicesArray != null)
-                {
-                    ArrayPool<nint>.Shared.Return(oIndicesArray);
-                    ArrayPool<nint>.Shared.Return(iIndicesArray);
-                }
-            }
+            Tensor<T> output = Tensor.Create<T>(input.Lengths);
+            Reverse<T>(input, output, axis);
 
             return output;
         }
@@ -1129,88 +1180,15 @@ namespace System.Numerics.Tensors
         /// <paramref name="axis"/> defaults to -1 when not provided, which reverses the entire span.
         /// </summary>
         /// <param name="input">Input <see cref="TensorSpan{T}"/>.</param>
+        /// <param name="destination"></param>
         /// <param name="axis">Axis along which to reverse over. The default, -1, will reverse over all of the axes of the left span.</param>
-        public static TensorSpan<T> ReverseInPlace<T>(in TensorSpan<T> input, nint axis = -1)
+        public static ref readonly TensorSpan<T> Reverse<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination, nint axis = -1)
         {
-            if (axis == -1)
-            {
-                nint index = input.FlattenedLength - 1;
-                Span<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input.FlattenedLength);
-                T temp;
-                for (int i = 0; i <= input.FlattenedLength / 2; i++)
-                {
-                    temp = span[(int)index];
-                    span[(int)index--] = span[i];
-                    span[i] = temp;
-                }
-            }
-            else
-            {
-                T[] values = new T[input.FlattenedLength];
-
-                nint copyLength = 1;
-                for (nint i = axis; i < input.Lengths.Length; i++)
-                {
-                    copyLength *= input.Lengths[(int)i];
-                }
-                copyLength /= input.Lengths[(int)axis];
-
-                scoped Span<nint> oIndices;
-                nint[]? oIndicesArray;
-                scoped Span<nint> iIndices;
-                nint[]? iIndicesArray;
-                if (input.Rank > 6)
-                {
-                    oIndicesArray = ArrayPool<nint>.Shared.Rent(input.Rank);
-                    oIndices = oIndicesArray;
-                    iIndicesArray = ArrayPool<nint>.Shared.Rent(input.Rank);
-                    iIndices = iIndicesArray;
-                }
-                else
-                {
-                    oIndicesArray = null;
-                    oIndices = stackalloc nint[input.Rank];
-                    iIndicesArray = null;
-                    iIndices = stackalloc nint[input.Rank];
-                }
-
-                iIndices[(int)axis] = input.Lengths[(int)axis] - 1;
-                nint copiedValues = 0;
-                TensorSpan<T> islice = input.Slice(input.Lengths);
-                while (copiedValues < input.FlattenedLength)
-                {
-                    TensorSpanHelpers.Memmove(ref Unsafe.Add(ref values, TensorSpanHelpers.ComputeLinearIndex(oIndices, input.Strides, input.Lengths)), ref Unsafe.Add(ref islice._reference, TensorSpanHelpers.ComputeLinearIndex(iIndices, islice.Strides, islice.Lengths)), copyLength);
-                    TensorSpanHelpers.AdjustIndexes((int)axis, 1, oIndices, input.Lengths);
-                    TensorSpanHelpers.AdjustIndexesDown((int)axis, 1, iIndices, input.Lengths);
-                    copiedValues += copyLength;
-                }
-                TensorSpanHelpers.Memmove(ref input._reference, ref values[0], input.FlattenedLength);
-
-                if (oIndicesArray != null && iIndicesArray != null)
-                {
-                    ArrayPool<nint>.Shared.Return(oIndicesArray);
-                    ArrayPool<nint>.Shared.Return(iIndicesArray);
-                }
-            }
-
-            return input;
-        }
-
-        /// <summary>
-        /// Reverse the order of elements in the <paramref name="input"/> along the given axis. The shape of the tensor is preserved, but the elements are reordered.
-        /// <paramref name="axis"/> defaults to -1 when not provided, which reverses the entire span.
-        /// </summary>
-        /// <param name="input">Input <see cref="TensorSpan{T}"/>.</param>
-        /// <param name="axis">Axis along which to reverse over. The default, -1, will reverse over all of the axes of the left span.</param>
-        public static TensorSpan<T> Reverse<T>(in ReadOnlyTensorSpan<T> input, nint axis = -1)
-        {
-            TensorSpan<T> output = new TensorSpan<T>(new T[input.FlattenedLength], 0, input.Lengths, input.Strides);
-
             if (axis == -1)
             {
                 nint index = input.FlattenedLength - 1;
                 Span<T> inputSpan = MemoryMarshal.CreateSpan(ref input._reference, (int)input.FlattenedLength);
-                Span<T> outputSpan = MemoryMarshal.CreateSpan(ref output._reference, (int)output.FlattenedLength);
+                Span<T> outputSpan = MemoryMarshal.CreateSpan(ref destination._reference, (int)destination.FlattenedLength);
                 for (int i = 0; i <= input.FlattenedLength / 2; i++)
                 {
                     outputSpan[i] = inputSpan[(int)index];
@@ -1251,7 +1229,7 @@ namespace System.Numerics.Tensors
 
                 while (copiedValues < input.FlattenedLength)
                 {
-                    TensorSpanHelpers.Memmove(ref Unsafe.Add(ref output._reference, TensorSpanHelpers.ComputeLinearIndex(oIndices, input.Strides, input.Lengths)), ref Unsafe.Add(ref islice._reference, TensorSpanHelpers.ComputeLinearIndex(iIndices, islice.Strides, islice.Lengths)), copyLength);
+                    TensorSpanHelpers.Memmove(ref Unsafe.Add(ref destination._reference, TensorSpanHelpers.ComputeLinearIndex(oIndices, input.Strides, input.Lengths)), ref Unsafe.Add(ref islice._reference, TensorSpanHelpers.ComputeLinearIndex(iIndices, islice.Strides, islice.Lengths)), copyLength);
                     TensorSpanHelpers.AdjustIndexes((int)axis, 1, oIndices, input.Lengths);
                     TensorSpanHelpers.AdjustIndexesDown((int)axis, 1, iIndices, input.Lengths);
                     copiedValues += copyLength;
@@ -1265,63 +1243,19 @@ namespace System.Numerics.Tensors
                 }
             }
 
-            return output;
+            return ref destination;
         }
         #endregion
 
         #region SequenceEqual
+
         /// <summary>
-        /// Compares the elements of two <see cref="Tensor{T}"/> for equality. If the shapes are not the same, the tensors are broadcasted to the smallest broadcastable size
-        /// before they are compared. It returns a <see cref="Tensor{Boolean}"/> where the value is true if the elements are equal and false if they are not."/>
+        /// Determines whether two sequences are equal by comparing the elements using IEquatable{T}.Equals(T).
         /// </summary>
-        /// <param name="left">First <see cref="Tensor{T}"/> to compare.</param>
-        /// <param name="right">Second <see cref="Tensor{T}"/> to compare.</param>
-        /// <returns>A <see cref="Tensor{Boolean}"/> where the value is true if the elements are equal and false if they are not.</returns>
-        public static Tensor<bool> SequenceEqual<T>(Tensor<T> left, Tensor<T> right)
-            where T : IEqualityOperators<T, T, bool>
+        public static bool SequenceEqual<T>(this scoped in ReadOnlyTensorSpan<T> span, scoped in ReadOnlyTensorSpan<T> other)
         {
-            Tensor<bool> result;
-            if (TensorHelpers.AreShapesTheSame(left, right))
-            {
-                result = Tensor.Create<bool>(left.Lengths, false);
-
-                for (int i = 0; i < left.FlattenedLength; i++)
-                {
-                    result._values[i] = left._values[i] == right._values[i];
-                }
-            }
-            else
-            {
-                nint[] newSize = Tensor.GetSmallestBroadcastableSize(left.Lengths, right.Lengths);
-                result = Tensor.Create<bool>(newSize, false);
-                Tensor<T> broadcastedLeft = BroadcastTo(left, newSize);
-                Tensor<T> broadcastedRight = BroadcastTo(right, newSize);
-
-                scoped Span<nint> curIndex;
-                nint[]? curIndexArray;
-
-                if (broadcastedRight.Lengths.Length > 6)
-                {
-                    curIndexArray = ArrayPool<nint>.Shared.Rent(broadcastedRight.Lengths.Length);
-                    curIndex = curIndexArray;
-                }
-                else
-                {
-                    curIndexArray = null;
-                    curIndex = stackalloc nint[broadcastedRight.Lengths.Length];
-                }
-
-                for (int i = 0; i < broadcastedLeft.FlattenedLength; i++)
-                {
-                    result._values[i] = broadcastedLeft[curIndex] == broadcastedRight[curIndex];
-                    TensorSpanHelpers.AdjustIndexes(broadcastedRight.Rank - 1, 1, curIndex, broadcastedRight.Lengths);
-                }
-
-                if (curIndexArray != null)
-                    ArrayPool<nint>.Shared.Return(curIndexArray);
-            }
-
-            return result;
+            return span.FlattenedLength == other.FlattenedLength
+                && MemoryMarshal.CreateReadOnlySpan(in span.GetPinnableReference(), (int)span.FlattenedLength).SequenceEqual(MemoryMarshal.CreateReadOnlySpan(in other.GetPinnableReference(), (int)other.FlattenedLength));
         }
         #endregion
 
@@ -1333,24 +1267,37 @@ namespace System.Numerics.Tensors
         /// <param name="tensor">Input <see cref="Tensor{T}"/>.</param>
         /// <param name="values">The values you want to set in the <paramref name="tensor"/>.</param>
         /// <param name="ranges">The ranges you want to set.</param>
-        public static Tensor<T> SetSlice<T>(this Tensor<T> tensor, Tensor<T> values, params ReadOnlySpan<NRange> ranges)
+        public static Tensor<T> SetSlice<T>(this Tensor<T> tensor, in ReadOnlyTensorSpan<T> values, params ReadOnlySpan<NRange> ranges)
+        {
+            SetSlice<T>((TensorSpan<T>)tensor, values, ranges);
+
+            return tensor;
+        }
+
+        /// <summary>
+        /// Sets a slice of the given <paramref name="tensor"/> with the provided <paramref name="values"/> for the given <paramref name="ranges"/>
+        /// </summary>
+        /// <param name="tensor">Input <see cref="Tensor{T}"/>.</param>
+        /// <param name="values">The values you want to set in the <paramref name="tensor"/>.</param>
+        /// <param name="ranges">The ranges you want to set.</param>
+        public static ref readonly TensorSpan<T> SetSlice<T>(this in TensorSpan<T> tensor, scoped in ReadOnlyTensorSpan<T> values, params scoped ReadOnlySpan<NRange> ranges)
         {
             TensorSpan<T> srcSpan;
             if (ranges == ReadOnlySpan<NRange>.Empty)
             {
                 if (!tensor.Lengths.SequenceEqual(values.Lengths))
                     ThrowHelper.ThrowArgument_SetSliceNoRange(nameof(values));
-                srcSpan = tensor.AsTensorSpan().Slice(tensor.Lengths);
+                srcSpan = tensor.Slice(tensor.Lengths);
             }
             else
-                srcSpan = tensor.AsTensorSpan().Slice(ranges);
+                srcSpan = tensor.Slice(ranges);
 
             if (!srcSpan.Lengths.SequenceEqual(values.Lengths))
                 ThrowHelper.ThrowArgument_SetSliceInvalidShapes(nameof(values));
 
-            values.AsTensorSpan().CopyTo(srcSpan);
+            values.CopyTo(srcSpan);
 
-            return tensor;
+            return ref tensor;
         }
         #endregion
 
@@ -1362,7 +1309,7 @@ namespace System.Numerics.Tensors
         /// <param name="input">Input <see cref="Tensor{T}"/>.</param>
         /// <param name="numSplits">How many times to split the <paramref name="input"/></param>
         /// <param name="axis">The axis to split on.</param>
-        public static Tensor<T>[] Split<T>(Tensor<T> input, nint numSplits, nint axis)
+        public static Tensor<T>[] Split<T>(scoped in ReadOnlyTensorSpan<T> input, nint numSplits, nint axis)
         {
             if (input.Lengths[(int)axis] % numSplits != 0)
                 ThrowHelper.ThrowArgument_SplitNotSplitEvenly();
@@ -1400,13 +1347,13 @@ namespace System.Numerics.Tensors
 
             for (int i = 0; i < outputs.Length; i++)
             {
-                T[] values = input.IsPinned ? GC.AllocateArray<T>((int)totalToCopy) : (new T[(int)totalToCopy]);
+                T[] values = new T[(int)totalToCopy];
                 outputs[i] = new Tensor<T>(values, newShape);
                 oIndices.Clear();
                 iIndices.Clear();
 
                 iIndices[(int)axis] = i;
-                TensorSpan<T> islice = input.AsTensorSpan().Slice(input.Lengths);
+                ReadOnlyTensorSpan<T> islice = input.Slice(input.Lengths);
                 TensorSpan<T> oslice = outputs[i].AsTensorSpan().Slice(outputs[i]._lengths);
 
                 nint copiedValues = 0;
@@ -1437,7 +1384,7 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="input">The <see cref="Tensor{T}"/> to remove axis of length 1.</param>
         /// <param name="axis">The axis to remove. Defaults to -1 which removes all axis of length 1.</param>
-        public static Tensor<T> Squeeze<T>(Tensor<T> input, int axis = -1)
+        public static Tensor<T> Squeeze<T>(this Tensor<T> input, int axis = -1)
         {
             if (axis >= input.Rank)
                 ThrowHelper.ThrowArgument_AxisLargerThanRank();
@@ -1484,7 +1431,7 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="input">The <see cref="TensorSpan{T}"/> to remove axis of length 1.</param>
         /// <param name="axis">The axis to remove. Defaults to -1 which removes all axis of length 1.</param>
-        public static TensorSpan<T> Squeeze<T>(in TensorSpan<T> input, int axis = -1)
+        public static TensorSpan<T> Squeeze<T>(in this TensorSpan<T> input, int axis = -1)
         {
             if (axis >= input.Rank)
                 ThrowHelper.ThrowArgument_AxisLargerThanRank();
@@ -1524,23 +1471,75 @@ namespace System.Numerics.Tensors
 
             return new TensorSpan<T>(ref input._reference, lengths, strides, input._memoryLength);
         }
+
+        /// <summary>
+        /// Removes axis of length one from the <paramref name="input"/>. <paramref name="axis"/> defaults to -1 and will remove all axis with length of 1.
+        /// If <paramref name="axis"/> is specified, it will only remove that axis and if it is not of length one it will throw an exception.
+        /// </summary>
+        /// <param name="input">The <see cref="TensorSpan{T}"/> to remove axis of length 1.</param>
+        /// <param name="axis">The axis to remove. Defaults to -1 which removes all axis of length 1.</param>
+        public static ReadOnlyTensorSpan<T> Squeeze<T>(in this ReadOnlyTensorSpan<T> input, int axis = -1)
+        {
+            if (axis >= input.Rank)
+                ThrowHelper.ThrowArgument_AxisLargerThanRank();
+
+            nint[] lengths;
+            nint[] strides;
+
+            List<nint> tempLengths = new List<nint>();
+            if (axis == -1)
+            {
+                for (int i = 0; i < input.Lengths.Length; i++)
+                {
+                    if (input.Lengths[i] != 1)
+                    {
+                        tempLengths.Add(input.Lengths[i]);
+                    }
+                }
+                lengths = tempLengths.ToArray();
+                strides = TensorSpanHelpers.CalculateStrides(lengths);
+            }
+            else
+            {
+                if (input.Lengths[axis] != 1)
+                {
+                    ThrowHelper.ThrowArgument_InvalidSqueezeAxis();
+                }
+                for (int i = 0; i < input.Lengths.Length; i++)
+                {
+                    if (i != axis)
+                    {
+                        tempLengths.Add(input.Lengths[i]);
+                    }
+                }
+                lengths = tempLengths.ToArray();
+                strides = TensorSpanHelpers.CalculateStrides(lengths);
+            }
+
+            return new ReadOnlyTensorSpan<T>(ref input._reference, lengths, strides, input._memoryLength);
+        }
         #endregion
 
         #region Stack
-        // REVIEW: NEEDS A DIFFERENT NAME?
-        // JUST AN OVERLOAD FOR CONCATENATE?
         /// <summary>
         /// Join an array of <see cref="Tensor{T}"/> along a new axis. The axis parameter specifies the index of the new axis in the dimensions of the result and
         /// defaults to 0. All tensors must have the same shape.
         /// </summary>
         /// <param name="input">Array of <see cref="Tensor{T}"/>.</param>
         /// <param name="axis">Index of where the new axis will be. Defaults to 0.</param>
-        public static Tensor<T> Stack<T>(Tensor<T>[] input, int axis = 0)
+        public static Tensor<T> Stack<T>(ReadOnlySpan<Tensor<T>> input, int axis = 0)
         {
             if (input.Length < 2)
                 ThrowHelper.ThrowArgument_StackTooFewTensors();
+
+            for (int i = 1; i < input.Length; i++)
+            {
+                if (!TensorHelpers.AreLengthsTheSame<T>(input[0], input[i]))
+                    ThrowHelper.ThrowArgument_StackShapesNotSame();
+            }
+
             if (axis < 0)
-                axis = input.Rank - axis;
+                axis = input[0].Rank - axis;
 
             Tensor<T>[] outputs = new Tensor<T>[input.Length];
             for (int i = 0; i < input.Length; i++)
@@ -1557,21 +1556,8 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="input">The <see cref="TensorSpan{T}"/> to take the standard deviation of.</param>
         /// <returns><typeparamref name="T"/> representing the standard deviation.</returns>
-        public static T StdDev<T>(Tensor<T> input)
-            where T : IFloatingPoint<T>, IPowerFunctions<T>, IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
-
-        {
-            return StdDev<T>((ReadOnlyTensorSpan<T>)input);
-        }
-
-        /// <summary>
-        /// Returns the standard deviation of the elements in the <paramref name="input"/> tensor.
-        /// </summary>
-        /// <param name="input">The <see cref="TensorSpan{T}"/> to take the standard deviation of.</param>
-        /// <returns><typeparamref name="T"/> representing the standard deviation.</returns>
         public static T StdDev<T>(in ReadOnlyTensorSpan<T> input)
             where T : IFloatingPoint<T>, IPowerFunctions<T>, IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
-
         {
             T mean = Mean(input);
             Span<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input._flattenedLength);
@@ -1584,6 +1570,119 @@ namespace System.Numerics.Tensors
         }
         #endregion
 
+        #region ToString
+        /// <summary>
+        /// Creates a <see cref="string"/> representation of the <see cref="TensorSpan{T}"/>."/>
+        /// </summary>
+        /// <param name="span">The <see cref="TensorSpan{T}"/> you want to represent as a string.</param>
+        /// <param name="maximumLengths">Maximum Length of each dimension</param>
+        /// <returns>A <see cref="string"/> representation of the <paramref name="span"/></returns>
+        public static string ToString<T>(this in TensorSpan<T> span, params ReadOnlySpan<nint> maximumLengths) => ((ReadOnlyTensorSpan<T>)span).ToString(maximumLengths);
+
+        /// <summary>
+        /// Creates a <see cref="string"/> representation of the <see cref="ReadOnlyTensorSpan{T}"/>."/>
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="span">The <see cref="ReadOnlyTensorSpan{T}"/> you want to represent as a string.</param>
+        /// <param name="maximumLengths">Maximum Length of each dimension</param>
+        public static string ToString<T>(this in ReadOnlyTensorSpan<T> span, params ReadOnlySpan<nint> maximumLengths)
+        {
+            var sb = new StringBuilder();
+            scoped Span<nint> curIndexes;
+            nint[]? curIndexesArray;
+            if (span.Rank > 6)
+            {
+                curIndexesArray = ArrayPool<nint>.Shared.Rent(span.Rank);
+                curIndexes = curIndexesArray;
+            }
+            else
+            {
+                curIndexesArray = null;
+                curIndexes = stackalloc nint[span.Rank];
+            }
+
+            nint copiedValues = 0;
+
+            T[] values = new T[span.Lengths[span.Rank - 1]];
+            while (copiedValues < span._flattenedLength)
+            {
+                var sp = new ReadOnlyTensorSpan<T>(ref Unsafe.Add(ref span._reference, TensorSpanHelpers.ComputeLinearIndex(curIndexes, span.Strides, span.Lengths)), [span.Lengths[span.Rank - 1]], [1], span.Lengths[span.Rank - 1]);
+                sb.Append('{');
+                sp.FlattenTo(values);
+                sb.Append(string.Join(",", values));
+                sb.AppendLine("}");
+
+                TensorSpanHelpers.AdjustIndexes(span.Rank - 2, 1, curIndexes, span._lengths);
+                copiedValues += span.Lengths[span.Rank - 1];
+            }
+
+            if (curIndexesArray != null)
+                ArrayPool<nint>.Shared.Return(curIndexesArray);
+
+            return sb.ToString();
+        }
+        #endregion
+
+        #region Transpose
+        /// <summary>
+        /// Swaps the last two dimensions of the <paramref name="input"/> tensor.
+        /// </summary>
+        /// <param name="input">Input <see cref="Tensor{T}"/>.</param>
+        public static Tensor<T> Transpose<T>(Tensor<T> input)
+        {
+            if (input.Lengths.Length < 2)
+                ThrowHelper.ThrowArgument_TransposeTooFewDimensions();
+            int[] axis = Enumerable.Range(0, input.Rank).ToArray();
+            int temp = axis[input.Rank - 1];
+            axis[input.Rank - 1] = axis[input.Rank - 2];
+            axis[input.Rank - 2] = temp;
+            return Permute(input, axis.AsSpan());
+        }
+        #endregion
+
+        #region TryBroadcastTo
+        /// <summary>
+        /// Broadcast the data from <paramref name="input"/> to the smallest broadcastable shape compatible with <paramref name="destination"/> and stores it in <paramref name="destination"/>
+        /// If the shapes are not compatible, false is returned.
+        /// </summary>
+        /// <param name="input">Input <see cref="Tensor{T}"/>.</param>
+        /// <param name="destination">Destination <see cref="TensorSpan{T}"/>.</param>
+        public static bool TryBroadcastTo<T>(this Tensor<T> input, in TensorSpan<T> destination)
+        {
+            return TryBroadcastTo((ReadOnlyTensorSpan<T>)input, destination);
+        }
+
+        /// <summary>
+        /// Broadcast the data from <paramref name="input"/> to the smallest broadcastable shape compatible with <paramref name="destination"/> and stores it in <paramref name="destination"/>
+        /// If the shapes are not compatible, false is returned.
+        /// </summary>
+        /// <param name="input">Input <see cref="TensorSpan{T}"/>.</param>
+        /// <param name="destination">Destination <see cref="TensorSpan{T}"/>.</param>
+        public static bool TryBroadcastTo<T>(in this TensorSpan<T> input, in TensorSpan<T> destination)
+        {
+            return TryBroadcastTo((ReadOnlyTensorSpan<T>)input, destination);
+        }
+
+        /// <summary>
+        /// Broadcast the data from <paramref name="input"/> to the smallest broadcastable shape compatible with <paramref name="destination"/> and stores it in <paramref name="destination"/>
+        /// If the shapes are not compatible, false is returned.
+        /// </summary>
+        /// <param name="input">Input <see cref="ReadOnlyTensorSpan{T}"/>.</param>
+        /// <param name="destination">Destination <see cref="TensorSpan{T}"/>.</param>
+        public static bool TryBroadcastTo<T>(in this ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
+        {
+            if (!TensorHelpers.IsBroadcastableTo(input.Lengths, destination.Lengths))
+                return false;
+
+            nint[] newSize = Tensor.GetSmallestBroadcastableLengths(input.Lengths, destination.Lengths);
+            if (!TensorHelpers.AreLengthsTheSame(destination.Lengths, newSize))
+                return false;
+
+            LazyBroadcast(input, newSize).CopyTo(destination);
+            return true;
+        }
+        #endregion
+
         #region Unsqueeze
         // REVIEW: NAME? NUMPY CALLS THIS expand_dims.
         /// <summary>
@@ -1591,7 +1690,7 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="input">The <see cref="Tensor{T}"/> to remove axis of length 1.</param>
         /// <param name="axis">The axis to add.</param>
-        public static Tensor<T> Unsqueeze<T>(Tensor<T> input, int axis)
+        public static Tensor<T> Unsqueeze<T>(this Tensor<T> input, int axis)
         {
             if (axis > input.Lengths.Length)
                 ThrowHelper.ThrowArgument_AxisLargerThanRank();
@@ -1611,7 +1710,7 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="input">The <see cref="TensorSpan{T}"/> to remove axis of length 1.</param>
         /// <param name="axis">The axis to add.</param>
-        public static TensorSpan<T> Unsqueeze<T>(in TensorSpan<T> input, int axis)
+        public static TensorSpan<T> Unsqueeze<T>(in this TensorSpan<T> input, int axis)
         {
             if (axis > input.Lengths.Length)
                 ThrowHelper.ThrowArgument_AxisLargerThanRank();
@@ -1623,6 +1722,26 @@ namespace System.Numerics.Tensors
             nint[] lengths = tempLengths.ToArray();
             nint[] strides = TensorSpanHelpers.CalculateStrides(lengths);
             return new TensorSpan<T>(ref input._reference, lengths, strides, input._memoryLength);
+        }
+
+        // REVIEW: NAME? NUMPY CALLS THIS expand_dims.
+        /// <summary>
+        /// Insert a new axis of length 1 that will appear at the axis position.
+        /// </summary>
+        /// <param name="input">The <see cref="ReadOnlyTensorSpan{T}"/> to remove axis of length 1.</param>
+        /// <param name="axis">The axis to add.</param>
+        public static ReadOnlyTensorSpan<T> Unsqueeze<T>(in this ReadOnlyTensorSpan<T> input, int axis)
+        {
+            if (axis > input.Lengths.Length)
+                ThrowHelper.ThrowArgument_AxisLargerThanRank();
+            if (axis < 0)
+                axis = input.Rank - axis;
+
+            List<nint> tempLengths = input._lengths.ToArray().ToList();
+            tempLengths.Insert(axis, 1);
+            nint[] lengths = tempLengths.ToArray();
+            nint[] strides = TensorSpanHelpers.CalculateStrides(lengths);
+            return new ReadOnlyTensorSpan<T>(ref input._reference, lengths, strides, input._memoryLength);
         }
         #endregion
 
@@ -1645,20 +1764,10 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="input">The <see cref="TensorSpan{T}"/> to take the abs of.</param>
         /// <param name="destination">The <see cref="TensorSpan{T}"/> destination.</param>
-        public static TensorSpan<T> Abs<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
+        public static ref readonly TensorSpan<T> Abs<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
             where T : INumberBase<T>
         {
-            return TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.Abs);
-        }
-
-        /// <summary>
-        /// Takes the absolute of each element of the <see cref="TensorSpan{T}"/> in place.
-        /// </summary>
-        /// <param name="input">The <see cref="TensorSpan{T}"/> to take the abs of.</param>
-        public static TensorSpan<T> AbsInPlace<T>(in TensorSpan<T> input)
-            where T : INumberBase<T>
-        {
-            return Abs(input, input);
+            return ref TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.Abs);
         }
         #endregion
 
@@ -1680,20 +1789,10 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="input">The <see cref="TensorSpan{T}"/> to take the sin of.</param>
         /// <param name="destination"></param>
-        public static TensorSpan<T> Acos<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
+        public static ref readonly TensorSpan<T> Acos<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
             where T : ITrigonometricFunctions<T>
         {
-            return TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.Acos);
-        }
-
-        /// <summary>
-        /// Takes the inverse cosine of each element of the <see cref="TensorSpan{T}"/> in place.
-        /// </summary>
-        /// <param name="input">The <see cref="TensorSpan{T}"/> to take the sin of.</param>
-        public static TensorSpan<T> AcosInPlace<T>(in TensorSpan<T> input)
-            where T : ITrigonometricFunctions<T>
-        {
-            return Acos(input, input);
+            return ref TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.Acos);
         }
         #endregion
 
@@ -1715,20 +1814,10 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="input">The <see cref="TensorSpan{T}"/> to take the sin of.</param>
         /// <param name="destination"></param>
-        public static TensorSpan<T> Acosh<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
+        public static ref readonly TensorSpan<T> Acosh<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
             where T : IHyperbolicFunctions<T>
         {
-            return TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.Acosh);
-        }
-
-        /// <summary>
-        /// Takes the inverse hyperbolic cosine of each element of the <see cref="TensorSpan{T}"/> in place.
-        /// </summary>
-        /// <param name="input">The <see cref="Tensor{T}"/> to take the sin of.</param>
-        public static TensorSpan<T> AcoshInPlace<T>(in TensorSpan<T> input)
-            where T : IHyperbolicFunctions<T>
-        {
-            return Acosh(input, input);
+            return ref TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.Acosh);
         }
         #endregion
 
@@ -1750,20 +1839,10 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="input">The <see cref="TensorSpan{T}"/> to take the sin of.</param>
         /// <param name="destination"></param>
-        public static TensorSpan<T> AcosPi<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
+        public static ref readonly TensorSpan<T> AcosPi<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
             where T : ITrigonometricFunctions<T>
         {
-            return TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.AcosPi);
-        }
-
-        /// <summary>
-        /// Takes the inverse hyperbolic cosine divided by pi of each element of the <see cref="TensorSpan{T}"/> in place.
-        /// </summary>
-        /// <param name="input">The <see cref="TensorSpan{T}"/> to take the sin of.</param>
-        public static TensorSpan<T> AcosPiInPlace<T>(in TensorSpan<T> input)
-            where T : ITrigonometricFunctions<T>
-        {
-            return AcosPi(input, input);
+            return ref TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.AcosPi);
         }
         #endregion
 
@@ -1783,7 +1862,7 @@ namespace System.Numerics.Tensors
             }
             else
             {
-                output = Tensor.Create<T>(GetSmallestBroadcastableSize(left.Lengths, right.Lengths));
+                output = Tensor.Create<T>(GetSmallestBroadcastableLengths(left.Lengths, right.Lengths));
             }
 
             Add<T>(left, right, output);
@@ -1809,21 +1888,10 @@ namespace System.Numerics.Tensors
         /// <param name="left">The <see cref="ReadOnlyTensorSpan{T}"/> of values to add.</param>
         /// <param name="right">The second <see cref="ReadOnlyTensorSpan{T}"/> of values to add.</param>
         /// <param name="destination"></param>
-        public static TensorSpan<T> Add<T>(scoped in ReadOnlyTensorSpan<T> left, scoped in ReadOnlyTensorSpan<T> right, in TensorSpan<T> destination)
+        public static ref readonly TensorSpan<T> Add<T>(scoped in ReadOnlyTensorSpan<T> left, scoped in ReadOnlyTensorSpan<T> right, in TensorSpan<T> destination)
             where T : IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
         {
-            return TensorPrimitivesHelperTwoSpanInSpanOut(left, right, destination, TensorPrimitives.Add);
-        }
-
-        /// <summary>
-        /// Adds each element of <paramref name="left"/> to each element of <paramref name="right"/> in <paramref name="left"/> place.
-        /// </summary>
-        /// <param name="left">The <see cref="TensorSpan{T}"/> of values to add.</param>
-        /// <param name="right">The second <see cref="ReadOnlyTensorSpan{T}"/> of values to add.</param>
-        public static TensorSpan<T> AddInPlace<T>(in TensorSpan<T> left, scoped in ReadOnlyTensorSpan<T> right)
-            where T : IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
-        {
-            return Add(left, right, left);
+            return ref TensorPrimitivesHelperTwoSpanInSpanOut(left, right, destination, TensorPrimitives.Add);
         }
 
         /// <summary>
@@ -1832,22 +1900,10 @@ namespace System.Numerics.Tensors
         /// <param name="input">The <see cref="ReadOnlyTensorSpan{T}"/> of values to add.</param>
         /// <param name="val">The <typeparamref name="T"/> to add to each element of <paramref name="input"/>.</param>
         /// <param name="destination"></param>
-        public static TensorSpan<T> Add<T>(scoped in ReadOnlyTensorSpan<T> input, T val, in TensorSpan<T> destination)
+        public static ref readonly TensorSpan<T> Add<T>(scoped in ReadOnlyTensorSpan<T> input, T val, in TensorSpan<T> destination)
             where T : IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
         {
-            return TensorPrimitivesHelperSpanInTInSpanOut(input, val, destination, TensorPrimitives.Add);
-        }
-
-        /// <summary>
-        /// Adds <paramref name="val"/> to each element of <paramref name="input"/> in place.
-        /// </summary>
-        /// <param name="input">The <see cref="TensorSpan{T}"/> of values to add.</param>
-        /// <param name="val">The <typeparamref name="T"/> to add to each element of <paramref name="input"/>.</param>
-        public static TensorSpan<T> AddInPlace<T>(in TensorSpan<T> input, T val)
-            where T : IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
-        {
-            return Add(input, val, input);
-
+            return ref TensorPrimitivesHelperSpanInTInSpanOut(input, val, destination, TensorPrimitives.Add);
         }
         #endregion
 
@@ -1869,20 +1925,10 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="input">The <see cref="ReadOnlyTensorSpan{T}"/> to take the sin of.</param>
         /// <param name="destination"></param>
-        public static TensorSpan<T> Asin<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
+        public static ref readonly TensorSpan<T> Asin<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
             where T : ITrigonometricFunctions<T>
         {
-            return TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.Asin);
-        }
-
-        /// <summary>
-        /// Takes the inverse sine each element of the <see cref="TensorSpan{T}"/> in place.
-        /// </summary>
-        /// <param name="input">The <see cref="TensorSpan{T}"/> to take the sin of.</param>
-        public static TensorSpan<T> AsinInPlace<T>(in TensorSpan<T> input)
-            where T : ITrigonometricFunctions<T>
-        {
-            return Asin(input, input);
+            return ref TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.Asin);
         }
         #endregion
 
@@ -1904,20 +1950,10 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="input">The <see cref="ReadOnlyTensorSpan{T}"/> to take the sin of.</param>
         /// <param name="destination"></param>
-        public static TensorSpan<T> Asinh<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
+        public static ref readonly TensorSpan<T> Asinh<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
             where T : IHyperbolicFunctions<T>
         {
-            return TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.Asinh);
-        }
-
-        /// <summary>
-        /// Takes the inverse hyperbolic sine each element of the <see cref="TensorSpan{T}"/> in place.
-        /// </summary>
-        /// <param name="input">The <see cref="TensorSpan{T}"/> to take the sin of.</param>
-        public static TensorSpan<T> AsinhInPlace<T>(in TensorSpan<T> input)
-            where T : IHyperbolicFunctions<T>
-        {
-            return Asinh(input, input);
+            return ref TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.Asinh);
         }
         #endregion
 
@@ -1939,20 +1975,10 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="input">The <see cref="ReadOnlyTensorSpan{T}"/> to take the sin of.</param>
         /// <param name="destination"></param>
-        public static TensorSpan<T> AsinPi<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
+        public static ref readonly TensorSpan<T> AsinPi<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
             where T : ITrigonometricFunctions<T>
         {
-            return TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.AsinPi);
-        }
-
-        /// <summary>
-        /// Takes the inverse hyperbolic sine divided by pi of each element of the <see cref="TensorSpan{T}"/> in place.
-        /// </summary>
-        /// <param name="input">The <see cref="TensorSpan{T}"/> to take the sin of.</param>
-        public static TensorSpan<T> AsinPiInPlace<T>(in TensorSpan<T> input)
-            where T : ITrigonometricFunctions<T>
-        {
-            return AsinPi(input, input);
+            return ref TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.AsinPi);
         }
         #endregion
 
@@ -1974,20 +2000,10 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="input">The input <see cref="ReadOnlyTensorSpan{T}"/></param>
         /// <param name="destination"></param>
-        public static TensorSpan<T> Atan<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
+        public static ref readonly TensorSpan<T> Atan<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
             where T : ITrigonometricFunctions<T>
         {
-            return TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.Atan);
-        }
-
-        /// <summary>
-        /// Takes the arc tangent of each element of the <see cref="TensorSpan{T}"/> in place.
-        /// </summary>
-        /// <param name="input">The input <see cref="TensorSpan{T}"/></param>
-        public static TensorSpan<T> AtanInPlace<T>(in TensorSpan<T> input)
-            where T : ITrigonometricFunctions<T>
-        {
-            return Atan(input, input);
+            return ref TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.Atan);
         }
         #endregion
 
@@ -2007,7 +2023,7 @@ namespace System.Numerics.Tensors
             }
             else
             {
-                output = Tensor.Create<T>(GetSmallestBroadcastableSize(left.Lengths, right.Lengths));
+                output = Tensor.Create<T>(GetSmallestBroadcastableLengths(left.Lengths, right.Lengths));
             }
 
             Atan2<T>(left, right, output);
@@ -2020,21 +2036,10 @@ namespace System.Numerics.Tensors
         /// <param name="left">The left <see cref="ReadOnlyTensorSpan{T}"/>.</param>
         /// <param name="right">The right <see cref="ReadOnlyTensorSpan{T}"/>.</param>
         /// <param name="destination"></param>
-        public static TensorSpan<T> Atan2<T>(scoped in ReadOnlyTensorSpan<T> left, scoped in ReadOnlyTensorSpan<T> right, in TensorSpan<T> destination)
+        public static ref readonly TensorSpan<T> Atan2<T>(scoped in ReadOnlyTensorSpan<T> left, scoped in ReadOnlyTensorSpan<T> right, in TensorSpan<T> destination)
             where T : IFloatingPointIeee754<T>
         {
-            return TensorPrimitivesHelperTwoSpanInSpanOut(left, right, destination, TensorPrimitives.Atan2);
-        }
-
-        /// <summary>
-        /// Takes the arc tangent of the two input <see cref="ReadOnlyTensorSpan{T}"/> in <paramref name="left"/> place.
-        /// </summary>
-        /// <param name="left">The left <see cref="TensorSpan{T}"/>.</param>
-        /// <param name="right">The right <see cref="ReadOnlyTensorSpan{T}"/>.</param>
-        public static TensorSpan<T> Atan2InPlace<T>(in TensorSpan<T> left, scoped in ReadOnlyTensorSpan<T> right)
-            where T : IFloatingPointIeee754<T>
-        {
-            return Atan2(left, right, left);
+            return ref TensorPrimitivesHelperTwoSpanInSpanOut(left, right, destination, TensorPrimitives.Atan2);
         }
         #endregion
 
@@ -2054,7 +2059,7 @@ namespace System.Numerics.Tensors
             }
             else
             {
-                output = Tensor.Create<T>(GetSmallestBroadcastableSize(left.Lengths, right.Lengths));
+                output = Tensor.Create<T>(GetSmallestBroadcastableLengths(left.Lengths, right.Lengths));
             }
 
             Atan2Pi<T>(left, right, output);
@@ -2067,21 +2072,10 @@ namespace System.Numerics.Tensors
         /// <param name="left">The left <see cref="ReadOnlyTensorSpan{T}"/>.</param>
         /// <param name="right">The right <see cref="ReadOnlyTensorSpan{T}"/>.</param>
         /// <param name="destination"></param>
-        public static TensorSpan<T> Atan2Pi<T>(scoped in ReadOnlyTensorSpan<T> left, scoped in ReadOnlyTensorSpan<T> right, in TensorSpan<T> destination)
+        public static ref readonly TensorSpan<T> Atan2Pi<T>(scoped in ReadOnlyTensorSpan<T> left, scoped in ReadOnlyTensorSpan<T> right, in TensorSpan<T> destination)
             where T : IFloatingPointIeee754<T>
         {
-            return TensorPrimitivesHelperTwoSpanInSpanOut(left, right, destination, TensorPrimitives.Atan2Pi);
-        }
-
-        /// <summary>
-        /// Takes the arc tangent of the two input <see cref="ReadOnlyTensorSpan{T}"/>, divides each element by pi in <paramref name="left"/> place.
-        /// </summary>
-        /// <param name="left">The left <see cref="TensorSpan{T}"/>.</param>
-        /// <param name="right">The right <see cref="ReadOnlyTensorSpan{T}"/>.</param>
-        public static TensorSpan<T> Atan2PiInPlace<T>(in TensorSpan<T> left, scoped in ReadOnlyTensorSpan<T> right)
-            where T : IFloatingPointIeee754<T>
-        {
-            return Atan2Pi(left, right, left);
+            return ref TensorPrimitivesHelperTwoSpanInSpanOut(left, right, destination, TensorPrimitives.Atan2Pi);
         }
         #endregion
 
@@ -2103,20 +2097,10 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="input">The input <see cref="ReadOnlyTensorSpan{T}"/>.</param>
         /// <param name="destination"></param>
-        public static TensorSpan<T> Atanh<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
+        public static ref readonly TensorSpan<T> Atanh<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
             where T : IHyperbolicFunctions<T>
         {
-            return TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.Atanh);
-        }
-
-        /// <summary>
-        /// Takes the inverse hyperbolic tangent of each element of the <see cref="TensorSpan{T}"/> in place.
-        /// </summary>
-        /// <param name="input">The input <see cref="TensorSpan{T}"/>.</param>
-        public static TensorSpan<T> AtanhInPlace<T>(in TensorSpan<T> input)
-            where T : IHyperbolicFunctions<T>
-        {
-            return Atanh(input, input);
+            return ref TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.Atanh);
         }
         #endregion
 
@@ -2138,20 +2122,10 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="input">The input<see cref="ReadOnlyTensorSpan{T}"/>.</param>
         /// <param name="destination"></param>
-        public static TensorSpan<T> AtanPi<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
+        public static ref readonly TensorSpan<T> AtanPi<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
             where T : ITrigonometricFunctions<T>
         {
-            return TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.AtanPi);
-        }
-
-        /// <summary>
-        /// Takes the inverse hyperbolic tangent divided by pi of each element of the <see cref="TensorSpan{T}"/> in place.
-        /// </summary>
-        /// <param name="input">The input<see cref="TensorSpan{T}"/>.</param>
-        public static TensorSpan<T> AtanPiInPlace<T>(in TensorSpan<T> input)
-            where T : ITrigonometricFunctions<T>
-        {
-            return AtanPi(input, input);
+            return ref TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.AtanPi);
         }
         #endregion
 
@@ -2171,7 +2145,7 @@ namespace System.Numerics.Tensors
             }
             else
             {
-                output = Tensor.Create<T>(GetSmallestBroadcastableSize(left.Lengths, right.Lengths));
+                output = Tensor.Create<T>(GetSmallestBroadcastableLengths(left.Lengths, right.Lengths));
             }
 
             BitwiseAnd<T>(left, right, output);
@@ -2184,21 +2158,10 @@ namespace System.Numerics.Tensors
         /// <param name="left">The left <see cref="ReadOnlyTensorSpan{T}"/>.</param>
         /// <param name="right">The right <see cref="ReadOnlyTensorSpan{T}"/>.</param>
         /// <param name="destination"></param>
-        public static TensorSpan<T> BitwiseAnd<T>(scoped in ReadOnlyTensorSpan<T> left, scoped in ReadOnlyTensorSpan<T> right, in TensorSpan<T> destination)
+        public static ref readonly TensorSpan<T> BitwiseAnd<T>(scoped in ReadOnlyTensorSpan<T> left, scoped in ReadOnlyTensorSpan<T> right, in TensorSpan<T> destination)
             where T : IBitwiseOperators<T, T, T>
         {
-            return TensorPrimitivesHelperTwoSpanInSpanOut(left, right, destination, TensorPrimitives.BitwiseAnd);
-        }
-
-        /// <summary>
-        /// Computes the element-wise bitwise and of the two input <see cref="TensorSpan{T}"/> in <paramref name="left"/> place.
-        /// </summary>
-        /// <param name="left">The left <see cref="TensorSpan{T}"/>.</param>
-        /// <param name="right">The right <see cref="ReadOnlyTensorSpan{T}"/>.</param>
-        public static TensorSpan<T> BitwiseAndInPlace<T>(in TensorSpan<T> left, scoped in ReadOnlyTensorSpan<T> right)
-            where T : IBitwiseOperators<T, T, T>
-        {
-            return BitwiseAnd(left, right, left);
+            return ref TensorPrimitivesHelperTwoSpanInSpanOut(left, right, destination, TensorPrimitives.BitwiseAnd);
         }
         #endregion
 
@@ -2218,7 +2181,7 @@ namespace System.Numerics.Tensors
             }
             else
             {
-                output = Tensor.Create<T>(GetSmallestBroadcastableSize(left.Lengths, right.Lengths));
+                output = Tensor.Create<T>(GetSmallestBroadcastableLengths(left.Lengths, right.Lengths));
             }
 
             BitwiseOr<T>(left, right, output);
@@ -2231,21 +2194,10 @@ namespace System.Numerics.Tensors
         /// <param name="left">The left <see cref="ReadOnlyTensorSpan{T}"/>.</param>
         /// <param name="right">The right <see cref="ReadOnlyTensorSpan{T}"/>.</param>
         /// <param name="destination"></param>
-        public static TensorSpan<T> BitwiseOr<T>(scoped in ReadOnlyTensorSpan<T> left, scoped in ReadOnlyTensorSpan<T> right, in TensorSpan<T> destination)
+        public static ref readonly TensorSpan<T> BitwiseOr<T>(scoped in ReadOnlyTensorSpan<T> left, scoped in ReadOnlyTensorSpan<T> right, in TensorSpan<T> destination)
             where T : IBitwiseOperators<T, T, T>
         {
-            return TensorPrimitivesHelperTwoSpanInSpanOut(left, right, destination, TensorPrimitives.BitwiseOr);
-        }
-
-        /// <summary>
-        /// Computes the element-wise bitwise of of the two input <see cref="TensorSpan{T}"/> in <paramref name="left"/> place.
-        /// </summary>
-        /// <param name="left">The left <see cref="TensorSpan{T}"/>.</param>
-        /// <param name="right">The right <see cref="ReadOnlyTensorSpan{T}"/>.</param>
-        public static TensorSpan<T> BitwiseOrInPlace<T>(in TensorSpan<T> left, scoped in ReadOnlyTensorSpan<T> right)
-            where T : IBitwiseOperators<T, T, T>
-        {
-            return BitwiseOr(left, right, left);
+            return ref TensorPrimitivesHelperTwoSpanInSpanOut(left, right, destination, TensorPrimitives.BitwiseOr);
         }
         #endregion
 
@@ -2267,20 +2219,10 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="input">The left <see cref="ReadOnlyTensorSpan{T}"/>.</param>
         /// <param name="destination"></param>
-        public static TensorSpan<T> Cbrt<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
+        public static ref readonly TensorSpan<T> Cbrt<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
             where T : IRootFunctions<T>
         {
-            return TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.Cbrt);
-        }
-
-        /// <summary>
-        /// Computes the element-wise cube root of the input <see cref="TensorSpan{T}"/> in place.
-        /// </summary>
-        /// <param name="input">The left <see cref="TensorSpan{T}"/>.</param>
-        public static TensorSpan<T> CbrtInPlace<T>(in TensorSpan<T> input)
-            where T : IRootFunctions<T>
-        {
-            return Cbrt(input, input);
+            return ref TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.Cbrt);
         }
         #endregion
 
@@ -2302,20 +2244,10 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="input">The left <see cref="ReadOnlyTensorSpan{T}"/>.</param>
         /// <param name="destination"></param>
-        public static TensorSpan<T> Ceiling<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
+        public static ref readonly TensorSpan<T> Ceiling<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
             where T : IFloatingPoint<T>
         {
-            return TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.Ceiling);
-        }
-
-        /// <summary>
-        /// Computes the element-wise ceiling of the input <see cref="TensorSpan{T}"/> in place.
-        /// </summary>
-        /// <param name="input">The left <see cref="TensorSpan{T}"/>.</param>
-        public static TensorSpan<T> CeilingInPlace<T>(in TensorSpan<T> input)
-            where T : IFloatingPoint<T>
-        {
-            return Ceiling(input, input);
+            return ref TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.Ceiling);
         }
         #endregion
 
@@ -2341,11 +2273,11 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="source">The input <see cref="TensorSpan{TFrom}"/>.</param>
         /// <param name="destination"></param>
-        public static TensorSpan<TTo> ConvertChecked<TFrom, TTo>(scoped in ReadOnlyTensorSpan<TFrom> source, in TensorSpan<TTo> destination)
+        public static ref readonly TensorSpan<TTo> ConvertChecked<TFrom, TTo>(scoped in ReadOnlyTensorSpan<TFrom> source, in TensorSpan<TTo> destination)
             where TFrom : IEquatable<TFrom>, IEqualityOperators<TFrom, TFrom, bool>, INumberBase<TFrom>
             where TTo : INumberBase<TTo>
         {
-            return TensorPrimitivesHelperTFromSpanInTToSpanOut<TFrom, TTo>(source, TensorPrimitives.ConvertChecked);
+            return ref TensorPrimitivesHelperTFromSpanInTToSpanOut<TFrom, TTo>(source, destination, TensorPrimitives.ConvertChecked);
         }
         #endregion
 
@@ -2371,11 +2303,11 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="source">The input <see cref="TensorSpan{TFrom}"/>.</param>
         /// <param name="destination"></param>
-        public static TensorSpan<TTo> ConvertSaturating<TFrom, TTo>(scoped in ReadOnlyTensorSpan<TFrom> source, in TensorSpan<TTo> destination)
+        public static ref readonly TensorSpan<TTo> ConvertSaturating<TFrom, TTo>(scoped in ReadOnlyTensorSpan<TFrom> source, in TensorSpan<TTo> destination)
             where TFrom : IEquatable<TFrom>, IEqualityOperators<TFrom, TFrom, bool>, INumberBase<TFrom>
             where TTo : INumberBase<TTo>
         {
-            return TensorPrimitivesHelperTFromSpanInTToSpanOut<TFrom, TTo>(source, TensorPrimitives.ConvertSaturating);
+            return ref TensorPrimitivesHelperTFromSpanInTToSpanOut<TFrom, TTo>(source, destination, TensorPrimitives.ConvertSaturating);
         }
         #endregion
 
@@ -2401,11 +2333,11 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="source">The input <see cref="TensorSpan{TFrom}"/>.</param>
         /// <param name="destination"></param>
-        public static TensorSpan<TTo> ConvertTruncating<TFrom, TTo>(scoped in ReadOnlyTensorSpan<TFrom> source, in TensorSpan<TTo> destination)
+        public static ref readonly TensorSpan<TTo> ConvertTruncating<TFrom, TTo>(scoped in ReadOnlyTensorSpan<TFrom> source, in TensorSpan<TTo> destination)
             where TFrom : IEquatable<TFrom>, IEqualityOperators<TFrom, TFrom, bool>, INumberBase<TFrom>
             where TTo : INumberBase<TTo>
         {
-            return TensorPrimitivesHelperTFromSpanInTToSpanOut<TFrom, TTo>(source, TensorPrimitives.ConvertTruncating);
+            return ref TensorPrimitivesHelperTFromSpanInTToSpanOut<TFrom, TTo>(source, destination, TensorPrimitives.ConvertTruncating);
         }
         #endregion
 
@@ -2439,7 +2371,7 @@ namespace System.Numerics.Tensors
             }
             else
             {
-                output = Tensor.Create<T>(GetSmallestBroadcastableSize(input.Lengths, sign.Lengths));
+                output = Tensor.Create<T>(GetSmallestBroadcastableLengths(input.Lengths, sign.Lengths));
             }
 
             CopySign<T>(input, sign, output);
@@ -2452,21 +2384,10 @@ namespace System.Numerics.Tensors
         /// <param name="input">Input <see cref="ReadOnlyTensorSpan{T}"/>.</param>
         /// <param name="sign">The number with the associated sign.</param>
         /// <param name="destination"></param>
-        public static TensorSpan<T> CopySign<T>(scoped in ReadOnlyTensorSpan<T> input, T sign, in TensorSpan<T> destination)
+        public static ref readonly TensorSpan<T> CopySign<T>(scoped in ReadOnlyTensorSpan<T> input, T sign, in TensorSpan<T> destination)
             where T : INumber<T>
         {
-            return TensorPrimitivesHelperSpanInTInSpanOut(input, sign, destination, TensorPrimitives.CopySign);
-        }
-
-        /// <summary>
-        /// Computes the element-wise result of copying the sign from one number to another number in the specified tensors in place.
-        /// </summary>
-        /// <param name="input">Input <see cref="TensorSpan{T}"/>.</param>
-        /// <param name="sign">The number with the associated sign.</param>
-        public static TensorSpan<T> CopySignInPlace<T>(in TensorSpan<T> input, T sign)
-            where T : INumber<T>
-        {
-            return CopySign(input, sign, input);
+            return ref TensorPrimitivesHelperSpanInTInSpanOut(input, sign, destination, TensorPrimitives.CopySign);
         }
 
         /// <summary>
@@ -2475,21 +2396,10 @@ namespace System.Numerics.Tensors
         /// <param name="input">Input <see cref="ReadOnlyTensorSpan{T}"/>.</param>
         /// <param name="sign">The <see cref="ReadOnlyTensorSpan{T}"/> with the associated signs.</param>
         /// <param name="destination"></param>
-        public static TensorSpan<T> CopySign<T>(scoped in ReadOnlyTensorSpan<T> input, scoped in ReadOnlyTensorSpan<T> sign, in TensorSpan<T> destination)
+        public static ref readonly TensorSpan<T> CopySign<T>(scoped in ReadOnlyTensorSpan<T> input, scoped in ReadOnlyTensorSpan<T> sign, in TensorSpan<T> destination)
             where T : INumber<T>
         {
-            return TensorPrimitivesHelperTwoSpanInSpanOut(input, sign, destination, TensorPrimitives.CopySign);
-        }
-
-        /// <summary>
-        /// Computes the element-wise result of copying the sign from one number to another number in the specified tensors in <paramref name="input"/> place.
-        /// </summary>
-        /// <param name="input">Input <see cref="TensorSpan{T}"/>.</param>
-        /// <param name="sign">The <see cref="ReadOnlyTensorSpan{T}"/> with the associated signs.</param>
-        public static TensorSpan<T> CopySignInPlace<T>(in TensorSpan<T> input, scoped in ReadOnlyTensorSpan<T> sign)
-            where T : INumber<T>
-        {
-            return CopySign(input, sign, input);
+            return ref TensorPrimitivesHelperTwoSpanInSpanOut(input, sign, destination, TensorPrimitives.CopySign);
         }
         #endregion
 
@@ -2511,20 +2421,10 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="input">The <see cref="ReadOnlyTensorSpan{T}"/> to take the cosine of.</param>
         /// <param name="destination"></param>
-        public static TensorSpan<T> Cos<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
+        public static ref readonly TensorSpan<T> Cos<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
             where T : ITrigonometricFunctions<T>
         {
-            return TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.Cos);
-        }
-
-        /// <summary>
-        /// Takes the cosine of each element of the <see cref="TensorSpan{T}"/> in place.
-        /// </summary>
-        /// <param name="input">The <see cref="TensorSpan{T}"/> to take the cosine of.</param>
-        public static TensorSpan<T> CosInPlace<T>(in TensorSpan<T> input)
-            where T : ITrigonometricFunctions<T>
-        {
-            return Cos(input, input);
+            return ref TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.Cos);
         }
         #endregion
 
@@ -2546,20 +2446,10 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="input">The <see cref="ReadOnlyTensorSpan{T}"/> to take the cosine of.</param>
         /// <param name="destination"></param>
-        public static TensorSpan<T> Cosh<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
+        public static ref readonly TensorSpan<T> Cosh<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
             where T : IHyperbolicFunctions<T>
         {
-            return TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.Cosh);
-        }
-
-        /// <summary>
-        /// Takes the hyperbolic cosine of each element of the <see cref="TensorSpan{T}"/> in place.
-        /// </summary>
-        /// <param name="input">The <see cref="TensorSpan{T}"/> to take the cosine of.</param>
-        public static TensorSpan<T> CoshInPlace<T>(in TensorSpan<T> input)
-            where T : IHyperbolicFunctions<T>
-        {
-            return Cosh(input, input);
+            return ref TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.Cosh);
         }
         #endregion
 
@@ -2610,7 +2500,7 @@ namespace System.Numerics.Tensors
             return Tensor.Create<T>(values, [dim1, dim2]);
         }
 
-        public static TensorSpan<T> CosineSimilarity<T>(scoped in ReadOnlyTensorSpan<T> left, scoped in ReadOnlyTensorSpan<T> right, in TensorSpan<T> destination)
+        public static ref readonly TensorSpan<T> CosineSimilarity<T>(scoped in ReadOnlyTensorSpan<T> left, scoped in ReadOnlyTensorSpan<T> right, in TensorSpan<T> destination)
             where T : IRootFunctions<T>
         {
             if (left.Rank != 2)
@@ -2651,7 +2541,7 @@ namespace System.Numerics.Tensors
                 leftIndexes[0]++;
             }
 
-            return destination;
+            return ref destination;
 
         }
         #endregion
@@ -2694,30 +2584,10 @@ namespace System.Numerics.Tensors
         /// operating systems or architectures.
         /// </para>
         /// </remarks>
-        public static TensorSpan<T> CosPi<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
+        public static ref readonly TensorSpan<T> CosPi<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
             where T : ITrigonometricFunctions<T>
         {
-            return TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.CosPi);
-        }
-
-        /// <summary>Computes the element-wise cosine of the value in the specified tensor that has been multiplied by Pi in place.</summary>
-        /// <param name="input">The input <see cref="TensorSpan{T}"/></param>
-        /// <remarks>
-        /// <para>
-        /// This method effectively computes <c><typeparamref name="T"/>.CosPi(<paramref name="input" />[i])</c>.
-        /// </para>
-        /// <para>
-        /// The angles in x must be in radians. Use <see cref="M:System.Single.DegreesToRadians"/> or multiply by <typeparamref name="T"/>.Pi/180 to convert degrees to radians.
-        /// </para>
-        /// <para>
-        /// This method may call into the underlying C runtime or employ instructions specific to the current architecture. Exact results may differ between different
-        /// operating systems or architectures.
-        /// </para>
-        /// </remarks>
-        public static TensorSpan<T> CosPiInPlace<T>(in TensorSpan<T> input)
-            where T : ITrigonometricFunctions<T>
-        {
-            return CosPi(input, input);
+            return ref TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.CosPi);
         }
         #endregion
 
@@ -2739,20 +2609,10 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="input">The input <see cref="ReadOnlyTensorSpan{T}"/>.</param>
         /// <param name="destination"></param>
-        public static TensorSpan<T> DegreesToRadians<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
+        public static ref readonly TensorSpan<T> DegreesToRadians<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
             where T : ITrigonometricFunctions<T>
         {
-            return TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.DegreesToRadians);
-        }
-
-        /// <summary>
-        /// Computes the element-wise conversion of each number of degrees in the specified tensor to radians in place.
-        /// </summary>
-        /// <param name="input">The input <see cref="TensorSpan{T}"/>.</param>
-        public static TensorSpan<T> DegreesToRadiansInPlace<T>(in TensorSpan<T> input)
-            where T : ITrigonometricFunctions<T>
-        {
-            return DegreesToRadians(input, input);
+            return ref TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.DegreesToRadians);
         }
         #endregion
 
@@ -2823,7 +2683,7 @@ namespace System.Numerics.Tensors
             }
             else
             {
-                output = Tensor.Create<T>(GetSmallestBroadcastableSize(left.Lengths, right.Lengths));
+                output = Tensor.Create<T>(GetSmallestBroadcastableLengths(left.Lengths, right.Lengths));
             }
 
             Divide<T>(left, right, output);
@@ -2836,24 +2696,13 @@ namespace System.Numerics.Tensors
         /// <param name="input">Input <see cref="ReadOnlyTensorSpan{T}"/>.</param>
         /// <param name="val">The divisor</param>
         /// <param name="destination"></param>
-        public static TensorSpan<T> Divide<T>(scoped in ReadOnlyTensorSpan<T> input, T val, in TensorSpan<T> destination)
+        public static ref readonly TensorSpan<T> Divide<T>(scoped in ReadOnlyTensorSpan<T> input, T val, in TensorSpan<T> destination)
             where T : IDivisionOperators<T, T, T>
         {
             ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input.FlattenedLength);
             Span<T> ospan = MemoryMarshal.CreateSpan(ref destination._reference, (int)destination.FlattenedLength);
             TensorPrimitives.Divide(span, val, ospan);
-            return destination;
-        }
-
-        /// <summary>
-        /// Divides each element of <paramref name="input"/> by <paramref name="val"/> in place.
-        /// </summary>
-        /// <param name="input">Input <see cref="TensorSpan{T}"/>.</param>
-        /// <param name="val">The divisor</param>
-        public static TensorSpan<T> DivideInPlace<T>(in TensorSpan<T> input, T val)
-            where T : IDivisionOperators<T, T, T>
-        {
-            return Divide(input, val, input);
+            return ref destination;
         }
 
         /// <summary>
@@ -2862,24 +2711,13 @@ namespace System.Numerics.Tensors
         /// <param name="val">The value to be divided.</param>
         /// <param name="input">The <see cref="ReadOnlyTensorSpan{T}"/> divisor.</param>
         /// <param name="destination"></param>
-        public static TensorSpan<T> Divide<T>(T val, scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
+        public static ref readonly TensorSpan<T> Divide<T>(T val, scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
             where T : IDivisionOperators<T, T, T>
         {
             ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input.FlattenedLength);
             Span<T> ospan = MemoryMarshal.CreateSpan(ref destination._reference, (int)destination.FlattenedLength);
             TensorPrimitives.Divide(val, span, ospan);
-            return destination;
-        }
-
-        /// <summary>
-        /// Divides <paramref name="val"/> by each element of <paramref name="input"/> in place.
-        /// </summary>
-        /// <param name="val">The value to be divided.</param>
-        /// <param name="input">The <see cref="TensorSpan{T}"/> divisor.</param>
-        public static TensorSpan<T> DivideInPlace<T>(T val, in TensorSpan<T> input)
-            where T : IDivisionOperators<T, T, T>
-        {
-            return Divide(val, input, input);
+            return ref destination;
         }
 
         /// <summary>
@@ -2889,21 +2727,10 @@ namespace System.Numerics.Tensors
         /// <param name="left">The <see cref="ReadOnlyTensorSpan{T}"/> to be divided.</param>
         /// <param name="right">The <see cref="ReadOnlyTensorSpan{T}"/> divisor.</param>
         /// <param name="destination"></param>
-        public static TensorSpan<T> Divide<T>(scoped in ReadOnlyTensorSpan<T> left, scoped in ReadOnlyTensorSpan<T> right, in TensorSpan<T> destination)
+        public static ref readonly TensorSpan<T> Divide<T>(scoped in ReadOnlyTensorSpan<T> left, scoped in ReadOnlyTensorSpan<T> right, in TensorSpan<T> destination)
             where T : IDivisionOperators<T, T, T>
         {
-            return TensorPrimitivesHelperTwoSpanInSpanOut(left, right, destination, TensorPrimitives.Divide);
-        }
-
-        /// <summary>
-        /// Divides each element of <paramref name="left"/> by its corresponding element in <paramref name="right"/> in <paramref name="left"/> place.
-        /// </summary>
-        /// <param name="left">The <see cref="TensorSpan{T}"/> to be divided.</param>
-        /// <param name="right">The <see cref="ReadOnlyTensorSpan{T}"/> divisor.</param>
-        public static TensorSpan<T> DivideInPlace<T>(in TensorSpan<T> left, scoped in ReadOnlyTensorSpan<T> right)
-            where T : IDivisionOperators<T, T, T>
-        {
-            return Divide(left, right, left);
+            return ref TensorPrimitivesHelperTwoSpanInSpanOut(left, right, destination, TensorPrimitives.Divide);
         }
         #endregion
 
@@ -2950,20 +2777,10 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="input">The input <see cref="ReadOnlyTensorSpan{T}"/>.</param>
         /// <param name="destination"></param>
-        public static TensorSpan<T> Exp<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
+        public static ref readonly TensorSpan<T> Exp<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
             where T : IExponentialFunctions<T>
         {
-            return TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.Exp);
-        }
-
-        /// <summary>
-        /// Computes the element-wise result of raising <c>e</c> to the single-precision floating-point number powers in the specified tensor.
-        /// </summary>
-        /// <param name="input">The input <see cref="TensorSpan{T}"/>.</param>
-        public static TensorSpan<T> ExpInPlace<T>(in TensorSpan<T> input)
-            where T : IExponentialFunctions<T>
-        {
-            return Exp(input, input);
+            return ref TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.Exp);
         }
         #endregion
 
@@ -2985,20 +2802,10 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="input">The input <see cref="ReadOnlyTensorSpan{T}"/>.</param>
         /// <param name="destination"></param>
-        public static TensorSpan<T> Exp10<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
+        public static ref readonly TensorSpan<T> Exp10<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
             where T : IExponentialFunctions<T>
         {
-            return TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.Exp10);
-        }
-
-        /// <summary>
-        /// Computes the element-wise result of raising 10 to the number powers in the specified tensor.
-        /// </summary>
-        /// <param name="input">The input <see cref="TensorSpan{T}"/>.</param>
-        public static TensorSpan<T> Exp10InPlace<T>(in TensorSpan<T> input)
-            where T : IExponentialFunctions<T>
-        {
-            return Exp10(input, input);
+            return ref TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.Exp10);
         }
         #endregion
 
@@ -3016,18 +2823,10 @@ namespace System.Numerics.Tensors
         /// <summary>Computes the element-wise result of raising 10 to the number powers in the specified tensor, minus one.</summary>
         /// <param name="input">The input <see cref="ReadOnlyTensorSpan{T}"/>.</param>
         /// <param name="destination"></param>
-        public static TensorSpan<T> Exp10M1<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
+        public static ref readonly TensorSpan<T> Exp10M1<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
             where T : IExponentialFunctions<T>
         {
-            return TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.Exp10M1);
-        }
-
-        /// <summary>Computes the element-wise result of raising 10 to the number powers in the specified tensor, minus one.</summary>
-        /// <param name="input">The input <see cref="TensorSpan{T}"/>.</param>
-        public static TensorSpan<T> Exp10M1InPlace<T>(in TensorSpan<T> input)
-            where T : IExponentialFunctions<T>
-        {
-            return Exp10M1(input, input);
+            return ref TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.Exp10M1);
         }
         #endregion
 
@@ -3045,18 +2844,10 @@ namespace System.Numerics.Tensors
         /// <summary>Computes the element-wise result of raising 2 to the number powers in the specified tensor.</summary>
         /// <param name="input">The input <see cref="ReadOnlyTensorSpan{T}"/>.</param>
         /// <param name="destination"></param>
-        public static TensorSpan<T> Exp2<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
+        public static ref readonly TensorSpan<T> Exp2<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
             where T : IExponentialFunctions<T>
         {
-            return TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.Exp2);
-        }
-
-        /// <summary>Computes the element-wise result of raising 2 to the number powers in the specified tensor.</summary>
-        /// <param name="input">The input <see cref="TensorSpan{T}"/>.</param>
-        public static TensorSpan<T> Exp2InPlace<T>(in TensorSpan<T> input)
-            where T : IExponentialFunctions<T>
-        {
-            return Exp2(input, input);
+            return ref TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.Exp2);
         }
         #endregion
 
@@ -3074,18 +2865,10 @@ namespace System.Numerics.Tensors
         /// <summary>Computes the element-wise result of raising 2 to the number powers in the specified tensor, minus one.</summary>
         /// <param name="input">The input <see cref="ReadOnlyTensorSpan{T}"/>.</param>
         /// <param name="destination"></param>
-        public static TensorSpan<T> Exp2M1<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
+        public static ref readonly TensorSpan<T> Exp2M1<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
             where T : IExponentialFunctions<T>
         {
-            return TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.Exp2M1);
-        }
-
-        /// <summary>Computes the element-wise result of raising 2 to the number powers in the specified tensor, minus one.</summary>
-        /// <param name="input">The input <see cref="TensorSpan{T}"/>.</param>
-        public static TensorSpan<T> Exp2M1InPlace<T>(in TensorSpan<T> input)
-            where T : IExponentialFunctions<T>
-        {
-            return Exp2M1(input, input);
+            return ref TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.Exp2M1);
         }
         #endregion
 
@@ -3103,18 +2886,10 @@ namespace System.Numerics.Tensors
         /// <summary>Computes the element-wise result of raising <c>e</c> to the number powers in the specified tensor, minus 1.</summary>
         /// <param name="input">The input <see cref="ReadOnlyTensorSpan{T}"/>.</param>
         /// <param name="destination"></param>
-        public static TensorSpan<T> ExpM1<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
+        public static ref readonly TensorSpan<T> ExpM1<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
             where T : IExponentialFunctions<T>
         {
-            return TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.ExpM1);
-        }
-
-        /// <summary>Computes the element-wise result of raising <c>e</c> to the number powers in the specified tensor, minus 1.</summary>
-        /// <param name="input">The input <see cref="TensorSpan{T}"/>.</param>
-        public static TensorSpan<T> ExpM1InPlace<T>(in TensorSpan<T> input)
-            where T : IExponentialFunctions<T>
-        {
-            return ExpM1(input, input);
+            return ref TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.ExpM1);
         }
         #endregion
 
@@ -3132,18 +2907,10 @@ namespace System.Numerics.Tensors
         /// <summary>Computes the element-wise floor of numbers in the specified tensor.</summary>
         /// <param name="input">The input <see cref="ReadOnlyTensorSpan{T}"/>.</param>
         /// <param name="destination"></param>
-        public static TensorSpan<T> Floor<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
+        public static ref readonly TensorSpan<T> Floor<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
             where T : IFloatingPoint<T>
         {
-            return TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.Floor);
-        }
-
-        /// <summary>Computes the element-wise floor of numbers in the specified tensor.</summary>
-        /// <param name="input">The input <see cref="TensorSpan{T}"/>.</param>
-        public static TensorSpan<T> FloorInPlace<T>(in TensorSpan<T> input)
-            where T : IFloatingPoint<T>
-        {
-            return Floor(input, input);
+            return ref TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.Floor);
         }
         #endregion
 
@@ -3164,7 +2931,7 @@ namespace System.Numerics.Tensors
             }
             else
             {
-                output = Tensor.Create<T>(GetSmallestBroadcastableSize(left.Lengths, right.Lengths));
+                output = Tensor.Create<T>(GetSmallestBroadcastableLengths(left.Lengths, right.Lengths));
             }
 
             Hypot<T>(left, right, output);
@@ -3178,22 +2945,10 @@ namespace System.Numerics.Tensors
         /// <param name="left">Left <see cref="ReadOnlyTensorSpan{T}"/>.</param>
         /// <param name="right">Right <see cref="ReadOnlyTensorSpan{T}"/>.</param>
         /// <param name="destination"></param>
-        public static TensorSpan<T> Hypot<T>(scoped in ReadOnlyTensorSpan<T> left, scoped in ReadOnlyTensorSpan<T> right, in TensorSpan<T> destination)
+        public static ref readonly TensorSpan<T> Hypot<T>(scoped in ReadOnlyTensorSpan<T> left, scoped in ReadOnlyTensorSpan<T> right, in TensorSpan<T> destination)
             where T : IRootFunctions<T>
         {
-            return TensorPrimitivesHelperTwoSpanInSpanOut(left, right, destination, TensorPrimitives.Hypot);
-        }
-
-        /// <summary>
-        /// Computes the element-wise hypotenuse given values from two tensors representing the lengths of the shorter sides in a right-angled triangle.
-        /// If the shapes are not the same they are broadcast to the smallest compatible shape.
-        /// </summary>
-        /// <param name="left">Left <see cref="TensorSpan{T}"/>.</param>
-        /// <param name="right">Right <see cref="ReadOnlyTensorSpan{T}"/>.</param>
-        public static TensorSpan<T> HypotInPlace<T>(in TensorSpan<T> left, scoped in ReadOnlyTensorSpan<T> right)
-            where T : IRootFunctions<T>
-        {
-            return Hypot(left, right, left);
+            return ref TensorPrimitivesHelperTwoSpanInSpanOut(left, right, destination, TensorPrimitives.Hypot);
         }
         #endregion
 
@@ -3212,7 +2967,7 @@ namespace System.Numerics.Tensors
             }
             else
             {
-                output = Tensor.Create<T>(GetSmallestBroadcastableSize(left.Lengths, right.Lengths));
+                output = Tensor.Create<T>(GetSmallestBroadcastableLengths(left.Lengths, right.Lengths));
             }
 
             Ieee754Remainder<T>(left, right, output);
@@ -3224,22 +2979,10 @@ namespace System.Numerics.Tensors
         /// <param name="left">Left <see cref="ReadOnlyTensorSpan{T}"/>.</param>
         /// <param name="right">Right <see cref="ReadOnlyTensorSpan{T}"/>.</param>
         /// <param name="destination"></param>
-        public static TensorSpan<T> Ieee754Remainder<T>(scoped in ReadOnlyTensorSpan<T> left, scoped in ReadOnlyTensorSpan<T> right, in TensorSpan<T> destination)
+        public static ref readonly TensorSpan<T> Ieee754Remainder<T>(scoped in ReadOnlyTensorSpan<T> left, scoped in ReadOnlyTensorSpan<T> right, in TensorSpan<T> destination)
             where T : IFloatingPointIeee754<T>
         {
-            return TensorPrimitivesHelperTwoSpanInSpanOut(left, right, destination, TensorPrimitives.Ieee754Remainder);
-        }
-
-        /// <summary>
-        /// <summary>Computes the element-wise remainder of the numbers in the specified tensors.</summary>
-        /// If the shapes are not the same they are broadcast to the smallest compatible shape.
-        /// </summary>
-        /// <param name="left">Left <see cref="TensorSpan{T}"/>.</param>
-        /// <param name="right">Right <see cref="ReadOnlyTensorSpan{T}"/>.</param>
-        public static TensorSpan<T> Ieee754RemainderInPlace<T>(in TensorSpan<T> left, scoped in ReadOnlyTensorSpan<T> right)
-            where T : IFloatingPointIeee754<T>
-        {
-            return Ieee754Remainder(left, right, left);
+            return ref TensorPrimitivesHelperTwoSpanInSpanOut(left, right, destination, TensorPrimitives.Ieee754Remainder);
         }
         #endregion
 
@@ -3257,10 +3000,10 @@ namespace System.Numerics.Tensors
         /// <summary>Computes the element-wise integer logarithm of numbers in the specified tensor.</summary>
         /// <param name="input">The input <see cref="ReadOnlyTensorSpan{T}"/>.</param>
         /// <param name="destination"></param>
-        public static TensorSpan<int> ILogB<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<int> destination)
+        public static ref readonly TensorSpan<int> ILogB<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<int> destination)
             where T : IFloatingPointIeee754<T>
         {
-            return TensorPrimitivesHelperSpanInIntSpanOut(input, TensorPrimitives.ILogB);
+            return ref TensorPrimitivesHelperSpanInIntSpanOut(input, destination, TensorPrimitives.ILogB);
         }
         #endregion
 
@@ -3374,20 +3117,10 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="input">The input <see cref="ReadOnlyTensorSpan{T}"/>.</param>
         /// <param name="destination"></param>
-        public static TensorSpan<T> LeadingZeroCount<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
+        public static ref readonly TensorSpan<T> LeadingZeroCount<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
             where T : IBinaryInteger<T>
         {
-            return TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.LeadingZeroCount);
-        }
-
-        /// <summary>
-        /// Computes the element-wise leading zero count of numbers in the specified tensor.
-        /// </summary>
-        /// <param name="input">The input <see cref="TensorSpan{T}"/>.</param>
-        public static TensorSpan<T> LeadingZeroCountInPlace<T>(in TensorSpan<T> input)
-            where T : IBinaryInteger<T>
-        {
-            return LeadingZeroCount(input, input);
+            return ref TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.LeadingZeroCount);
         }
         #endregion
 
@@ -3410,20 +3143,10 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="input">The <see cref="ReadOnlyTensorSpan{T}"/> to take the natural logarithm of.</param>
         /// <param name="destination"></param>
-        public static TensorSpan<T> Log<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
+        public static ref readonly TensorSpan<T> Log<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
             where T : ILogarithmicFunctions<T>
         {
-            return TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.Log);
-        }
-
-        /// <summary>
-        /// Takes the natural logarithm of each element of the <see cref="TensorSpan{T}"/> in place.
-        /// </summary>
-        /// <param name="input">The <see cref="TensorSpan{T}"/> to take the natural logarithm of.</param>
-        public static TensorSpan<T> LogInPlace<T>(in TensorSpan<T> input)
-            where T : ILogarithmicFunctions<T>
-        {
-            return Log(input, input);
+            return ref TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.Log);
         }
         #endregion
 
@@ -3445,20 +3168,10 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="input">The <see cref="ReadOnlyTensorSpan{T}"/> to take the base 10 logarithm of.</param>
         /// <param name="destination"></param>
-        public static TensorSpan<T> Log10<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
+        public static ref readonly TensorSpan<T> Log10<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
             where T : ILogarithmicFunctions<T>
         {
-            return TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.Log10);
-        }
-
-        /// <summary>
-        /// Takes the base 10 logarithm of each element of the <see cref="TensorSpan{T}"/> in place.
-        /// </summary>
-        /// <param name="input">The <see cref="TensorSpan{T}"/> to take the base 10 logarithm of.</param>
-        public static TensorSpan<T> Log10InPlace<T>(in TensorSpan<T> input)
-            where T : ILogarithmicFunctions<T>
-        {
-            return Log10(input, input);
+            return ref TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.Log10);
         }
         #endregion
 
@@ -3480,20 +3193,10 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="input">The <see cref="ReadOnlyTensorSpan{T}"/> to take the base 10 logarithm of.</param>
         /// <param name="destination"></param>
-        public static TensorSpan<T> Log10P1<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
+        public static ref readonly TensorSpan<T> Log10P1<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
             where T : ILogarithmicFunctions<T>
         {
-            return TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.Log10P1);
-        }
-
-        /// <summary>
-        /// Takes the base 10 logarithm plus 1 of each element of the <see cref="TensorSpan{T}"/> in place.
-        /// </summary>
-        /// <param name="input">The <see cref="TensorSpan{T}"/> to take the base 10 logarithm of.</param>
-        public static TensorSpan<T> Log10P1InPlace<T>(in TensorSpan<T> input)
-            where T : ILogarithmicFunctions<T>
-        {
-            return Log10P1(input, input);
+            return ref TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.Log10P1);
         }
         #endregion
 
@@ -3515,20 +3218,10 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="input">The <see cref="ReadOnlyTensorSpan{T}"/> to take the base 2 logarithm of.</param>
         /// <param name="destination"></param>
-        public static TensorSpan<T> Log2<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
+        public static ref readonly TensorSpan<T> Log2<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
             where T : ILogarithmicFunctions<T>
         {
-            return TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.Log2);
-        }
-
-        /// <summary>
-        /// Takes the base 2 logarithm of each element of the <see cref="TensorSpan{T}"/> in place.
-        /// </summary>
-        /// <param name="input">The <see cref="TensorSpan{T}"/> to take the base 2 logarithm of.</param>
-        public static TensorSpan<T> Log2InPlace<T>(in TensorSpan<T> input)
-            where T : ILogarithmicFunctions<T>
-        {
-            return Log2(input, input);
+            return ref TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.Log2);
         }
         #endregion
 
@@ -3550,20 +3243,10 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="input">The <see cref="ReadOnlyTensorSpan{T}"/> to take the base 2 logarithm of.</param>
         /// <param name="destination"></param>
-        public static TensorSpan<T> Log2P1<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
+        public static ref readonly TensorSpan<T> Log2P1<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
             where T : ILogarithmicFunctions<T>
         {
-            return TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.Log2P1);
-        }
-
-        /// <summary>
-        /// Takes the base 2 logarithm plus 1 of each element of the <see cref="TensorSpan{T}"/> in place.
-        /// </summary>
-        /// <param name="input">The <see cref="TensorSpan{T}"/> to take the base 2 logarithm of.</param>
-        public static TensorSpan<T> Log2P1InPlace<T>(in TensorSpan<T> input)
-            where T : ILogarithmicFunctions<T>
-        {
-            return Log2P1(input, input);
+            return ref TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.Log2P1);
         }
         #endregion
 
@@ -3585,20 +3268,10 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="input">The <see cref="ReadOnlyTensorSpan{T}"/> to take the natural logarithm of.</param>
         /// <param name="destination"></param>
-        public static TensorSpan<T> LogP1<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
+        public static ref readonly TensorSpan<T> LogP1<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
             where T : ILogarithmicFunctions<T>
         {
-            return TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.LogP1);
-        }
-
-        /// <summary>
-        /// Takes the natural logarithm plus 1 of each element of the <see cref="TensorSpan{T}"/> in place.
-        /// </summary>
-        /// <param name="input">The <see cref="TensorSpan{T}"/> to take the natural logarithm of.</param>
-        public static TensorSpan<T> LogP1InPlace<T>(in TensorSpan<T> input)
-            where T : ILogarithmicFunctions<T>
-        {
-            return LogP1(input, input);
+            return ref TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.LogP1);
         }
         #endregion
 
@@ -3740,7 +3413,7 @@ namespace System.Numerics.Tensors
             }
             else
             {
-                output = Tensor.Create<T>(GetSmallestBroadcastableSize(left.Lengths, right.Lengths));
+                output = Tensor.Create<T>(GetSmallestBroadcastableLengths(left.Lengths, right.Lengths));
             }
 
             Multiply<T>((ReadOnlyTensorSpan<T>)left, right, output);
@@ -3753,26 +3426,13 @@ namespace System.Numerics.Tensors
         /// <param name="input">Input <see cref="ReadOnlyTensorSpan{T}"/></param>
         /// <param name="val"><typeparamref name="T"/> value to multiply by.</param>
         /// <param name="destination"></param>
-        public static TensorSpan<T> Multiply<T>(scoped in ReadOnlyTensorSpan<T> input, T val, in TensorSpan<T> destination)
+        public static ref readonly TensorSpan<T> Multiply<T>(scoped in ReadOnlyTensorSpan<T> input, T val, in TensorSpan<T> destination)
             where T : IMultiplyOperators<T, T, T>, IMultiplicativeIdentity<T, T>
         {
             ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input.FlattenedLength);
-            T[] values = new T[input.FlattenedLength];
-            TensorSpan<T> output = new TensorSpan<T>(values, 0, input.Lengths, default);
-            Span<T> ospan = MemoryMarshal.CreateSpan(ref output._reference, (int)output.FlattenedLength);
+            Span<T> ospan = MemoryMarshal.CreateSpan(ref destination._reference, (int)destination.FlattenedLength);
             TensorPrimitives.Multiply(span, val, ospan);
-            return output;
-        }
-
-        /// <summary>
-        /// Multiplies each element of <paramref name="input"/> with <paramref name="val"/> in place.
-        /// </summary>
-        /// <param name="input">Input <see cref="TensorSpan{T}"/></param>
-        /// <param name="val"><typeparamref name="T"/> value to multiply by.</param>
-        public static TensorSpan<T> MultiplyInPlace<T>(in TensorSpan<T> input, T val)
-            where T : IMultiplyOperators<T, T, T>, IMultiplicativeIdentity<T, T>
-        {
-            return Multiply(input, val, input);
+            return ref destination;
         }
 
         /// <summary>
@@ -3782,22 +3442,10 @@ namespace System.Numerics.Tensors
         /// <param name="left">Left <see cref="ReadOnlyTensorSpan{T}"/> for multiplication.</param>
         /// <param name="right">Right <see cref="ReadOnlyTensorSpan{T}"/> for multiplication.</param>
         /// <param name="destination"></param>
-        public static TensorSpan<T> Multiply<T>(scoped in ReadOnlyTensorSpan<T> left, scoped in ReadOnlyTensorSpan<T> right, in TensorSpan<T> destination)
+        public static ref readonly TensorSpan<T> Multiply<T>(scoped in ReadOnlyTensorSpan<T> left, scoped in ReadOnlyTensorSpan<T> right, in TensorSpan<T> destination)
             where T : IMultiplyOperators<T, T, T>, IMultiplicativeIdentity<T, T>
         {
-            return TensorPrimitivesHelperTwoSpanInSpanOut(left, right, destination, TensorPrimitives.Multiply);
-        }
-
-        /// <summary>
-        /// Multiplies each element of <paramref name="left"/> with <paramref name="right"/> in place.
-        /// If the shapes are not the same they are broadcast to the smallest compatible shape.
-        /// </summary>
-        /// <param name="left">Left <see cref="TensorSpan{T}"/> for multiplication.</param>
-        /// <param name="right">Right <see cref="TensorSpan{T}"/> for multiplication.</param>
-        public static TensorSpan<T> MultiplyInPlace<T>(in TensorSpan<T> left, scoped in ReadOnlyTensorSpan<T> right)
-            where T : IMultiplyOperators<T, T, T>, IMultiplicativeIdentity<T, T>
-        {
-            return Multiply(left, right, left);
+            return ref TensorPrimitivesHelperTwoSpanInSpanOut(left, right, destination, TensorPrimitives.Multiply);
         }
         #endregion
 
@@ -3815,18 +3463,10 @@ namespace System.Numerics.Tensors
         /// <summary>Computes the element-wise negation of each number in the specified tensor.</summary>
         /// <param name="input">The <see cref="ReadOnlyTensorSpan{T}"/></param>
         /// <param name="destination"></param>
-        public static TensorSpan<T> Negate<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
+        public static ref readonly TensorSpan<T> Negate<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
             where T : IUnaryNegationOperators<T, T>
         {
-            return TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.Negate);
-        }
-
-        /// <summary>Computes the element-wise negation of each number in the specified tensor.</summary>
-        /// <param name="input">The <see cref="TensorSpan{T}"/></param>
-        public static TensorSpan<T> NegateInPlace<T>(in TensorSpan<T> input)
-            where T : IUnaryNegationOperators<T, T>
-        {
-            return Negate(input, input);
+            return ref TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.Negate);
         }
         #endregion
 
@@ -3868,18 +3508,10 @@ namespace System.Numerics.Tensors
         /// <summary>Computes the element-wise one's complement of numbers in the specified tensor.</summary>
         /// <param name="input">The <see cref="ReadOnlyTensorSpan{T}"/></param>
         /// <param name="destination"></param>
-        public static TensorSpan<T> OnesComplement<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
+        public static ref readonly TensorSpan<T> OnesComplement<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
             where T : IBitwiseOperators<T, T, T>
         {
-            return TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.OnesComplement);
-        }
-
-        /// <summary>Computes the element-wise one's complement of numbers in the specified tensor.</summary>
-        /// <param name="input">The <see cref="TensorSpan{T}"/></param>
-        public static TensorSpan<T> OnesComplementInPlace<T>(in TensorSpan<T> input)
-            where T : IBitwiseOperators<T, T, T>
-        {
-            return OnesComplement(input, input);
+            return ref TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.OnesComplement);
         }
         #endregion
 
@@ -3897,18 +3529,10 @@ namespace System.Numerics.Tensors
         /// <summary>Computes the element-wise population count of numbers in the specified tensor.</summary>
         /// <param name="input">The <see cref="ReadOnlyTensorSpan{T}"/></param>
         /// <param name="destination"></param>
-        public static TensorSpan<T> PopCount<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
+        public static ref readonly TensorSpan<T> PopCount<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
             where T : IBinaryInteger<T>
         {
-            return TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.PopCount);
-        }
-
-        /// <summary>Computes the element-wise population count of numbers in the specified tensor.</summary>
-        /// <param name="input">The <see cref="TensorSpan{T}"/></param>
-        public static TensorSpan<T> PopCountInPlace<T>(in TensorSpan<T> input)
-            where T : IBinaryInteger<T>
-        {
-            return PopCount(input, input);
+            return ref TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.PopCount);
         }
         #endregion
 
@@ -3926,7 +3550,7 @@ namespace System.Numerics.Tensors
             }
             else
             {
-                output = Tensor.Create<T>(GetSmallestBroadcastableSize(left.Lengths, right.Lengths));
+                output = Tensor.Create<T>(GetSmallestBroadcastableLengths(left.Lengths, right.Lengths));
             }
 
             Pow<T>(left, right, output);
@@ -3937,19 +3561,10 @@ namespace System.Numerics.Tensors
         /// <param name="left">The input <see cref="ReadOnlyTensorSpan{T}"/>.</param>
         /// <param name="right">The second input <see cref="ReadOnlyTensorSpan{T}"/></param>
         /// <param name="destination"></param>
-        public static TensorSpan<T> Pow<T>(scoped in ReadOnlyTensorSpan<T> left, scoped in ReadOnlyTensorSpan<T> right, in TensorSpan<T> destination)
+        public static ref readonly TensorSpan<T> Pow<T>(scoped in ReadOnlyTensorSpan<T> left, scoped in ReadOnlyTensorSpan<T> right, in TensorSpan<T> destination)
             where T : IPowerFunctions<T>
         {
-            return TensorPrimitivesHelperTwoSpanInSpanOut(left, right, destination, TensorPrimitives.Pow);
-        }
-
-        /// <summary>Computes the element-wise power of a number in a specified tensor raised to a number in another specified tensors.</summary>
-        /// <param name="left">The input <see cref="TensorSpan{T}"/>.</param>
-        /// <param name="right">The second input <see cref="TensorSpan{T}"/></param>
-        public static TensorSpan<T> PowInPlace<T>(in TensorSpan<T> left, scoped in ReadOnlyTensorSpan<T> right)
-            where T : IPowerFunctions<T>
-        {
-            return Pow(left, right, left);
+            return ref TensorPrimitivesHelperTwoSpanInSpanOut(left, right, destination, TensorPrimitives.Pow);
         }
         #endregion
 
@@ -3985,18 +3600,10 @@ namespace System.Numerics.Tensors
         /// <summary>Computes the element-wise conversion of each number of radians in the specified tensor to degrees.</summary>
         /// <param name="input">The input <see cref="ReadOnlyTensorSpan{T}"/>.</param>
         /// <param name="destination"></param>
-        public static TensorSpan<T> RadiansToDegrees<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
+        public static ref readonly TensorSpan<T> RadiansToDegrees<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
             where T : ITrigonometricFunctions<T>
         {
-            return TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.RadiansToDegrees);
-        }
-
-        /// <summary>Computes the element-wise conversion of each number of radians in the specified tensor to degrees.</summary>
-        /// <param name="input">The input <see cref="TensorSpan{T}"/>.</param>
-        public static TensorSpan<T> RadiansToDegreesInPlace<T>(in TensorSpan<T> input)
-            where T : ITrigonometricFunctions<T>
-        {
-            return RadiansToDegrees(input, input);
+            return ref TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.RadiansToDegrees);
         }
         #endregion
 
@@ -4014,18 +3621,10 @@ namespace System.Numerics.Tensors
         /// <summary>Computes the element-wise reciprocal of numbers in the specified tensor.</summary>
         /// <param name="input">The input <see cref="ReadOnlyTensorSpan{T}"/>.</param>
         /// <param name="destination"></param>
-        public static TensorSpan<T> Reciprocal<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
+        public static ref readonly TensorSpan<T> Reciprocal<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
             where T : IFloatingPoint<T>
         {
-            return TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.Reciprocal);
-        }
-
-        /// <summary>Computes the element-wise reciprocal of numbers in the specified tensor.</summary>
-        /// <param name="input">The input <see cref="TensorSpan{T}"/>.</param>
-        public static TensorSpan<T> ReciprocalInPlace<T>(in TensorSpan<T> input)
-            where T : IFloatingPoint<T>
-        {
-            return Reciprocal(input, input);
+            return ref TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.Reciprocal);
         }
         #endregion
 
@@ -4043,18 +3642,10 @@ namespace System.Numerics.Tensors
         /// <summary>Computes the element-wise rounding of the numbers in the specified tensor</summary>
         /// <param name="input">The input <see cref="ReadOnlyTensorSpan{T}"/>.</param>
         /// <param name="destination"></param>
-        public static TensorSpan<T> Round<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
+        public static ref readonly TensorSpan<T> Round<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
             where T : IFloatingPoint<T>
         {
-            return TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.Round);
-        }
-
-        /// <summary>Computes the element-wise rounding of the numbers in the specified tensor</summary>
-        /// <param name="input">The input <see cref="TensorSpan{T}"/>.</param>
-        public static TensorSpan<T> RoundInPlace<T>(in TensorSpan<T> input)
-            where T : IFloatingPoint<T>
-        {
-            return Round(input, input);
+            return ref TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.Round);
         }
         #endregion
 
@@ -4072,18 +3663,10 @@ namespace System.Numerics.Tensors
         /// <summary>Computes the element-wise sigmoid function on the specified non-empty tensor of numbers.</summary>
         /// <param name="input">The input <see cref="ReadOnlyTensorSpan{T}"/>.</param>
         /// <param name="destination"></param>
-        public static TensorSpan<T> Sigmoid<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
+        public static ref readonly TensorSpan<T> Sigmoid<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
             where T : IExponentialFunctions<T>
         {
-            return TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.Sigmoid);
-        }
-
-        /// <summary>Computes the element-wise sigmoid function on the specified non-empty tensor of numbers.</summary>
-        /// <param name="input">The input <see cref="TensorSpan{T}"/>.</param>
-        public static TensorSpan<T> SigmoidInPlace<T>(in TensorSpan<T> input)
-            where T : IExponentialFunctions<T>
-        {
-            return Sigmoid(input, input);
+            return ref TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.Sigmoid);
         }
         #endregion
 
@@ -4105,20 +3688,10 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="input">The <see cref="ReadOnlyTensorSpan{T}"/> to take the sin of.</param>
         /// <param name="destination"></param>
-        public static TensorSpan<T> Sin<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
+        public static ref readonly TensorSpan<T> Sin<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
             where T : ITrigonometricFunctions<T>
         {
-            return TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.Sin);
-        }
-
-        /// <summary>
-        /// Takes the sin of each element of the <see cref="TensorSpan{T}"/> in place.
-        /// </summary>
-        /// <param name="input">The <see cref="TensorSpan{T}"/> to take the sin of.</param>
-        public static TensorSpan<T> SinInPlace<T>(in TensorSpan<T> input)
-            where T : ITrigonometricFunctions<T>
-        {
-            return Sin(input, input);
+            return ref TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.Sin);
         }
         #endregion
 
@@ -4136,18 +3709,10 @@ namespace System.Numerics.Tensors
         /// <summary>Computes the element-wise hyperbolic sine of each radian angle in the specified tensor.</summary>
         /// <param name="input">The <see cref="ReadOnlyTensorSpan{T}"/> to take the sin of.</param>
         /// <param name="destination"></param>
-        public static TensorSpan<T> Sinh<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
+        public static ref readonly TensorSpan<T> Sinh<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
             where T : IHyperbolicFunctions<T>
         {
-            return TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.Sinh);
-        }
-
-        /// <summary>Computes the element-wise hyperbolic sine of each radian angle in the specified tensor.</summary>
-        /// <param name="input">The <see cref="TensorSpan{T}"/> to take the sin of.</param>
-        public static TensorSpan<T> SinhInPlace<T>(in TensorSpan<T> input)
-            where T : IHyperbolicFunctions<T>
-        {
-            return Sinh(input, input);
+            return ref TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.Sinh);
         }
         #endregion
 
@@ -4165,18 +3730,10 @@ namespace System.Numerics.Tensors
         /// <summary>Computes the element-wise sine of the value in the specified tensor that has been multiplied by Pi.</summary>
         /// <param name="input">The <see cref="ReadOnlyTensorSpan{T}"/> to take the sin of.</param>
         /// <param name="destination"></param>
-        public static TensorSpan<T> SinPi<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
+        public static ref readonly TensorSpan<T> SinPi<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
             where T : ITrigonometricFunctions<T>
         {
-            return TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.SinPi);
-        }
-
-        /// <summary>Computes the element-wise sine of the value in the specified tensor that has been multiplied by Pi.</summary>
-        /// <param name="input">The <see cref="TensorSpan{T}"/> to take the sin of.</param>
-        public static TensorSpan<T> SinPiInPlace<T>(in TensorSpan<T> input)
-            where T : ITrigonometricFunctions<T>
-        {
-            return SinPi(input, input);
+            return ref TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.SinPi);
         }
         #endregion
 
@@ -4194,18 +3751,10 @@ namespace System.Numerics.Tensors
         /// <summary>Computes the softmax function over the specified non-empty tensor of numbers.</summary>
         /// <param name="input">The <see cref="ReadOnlyTensorSpan{T}"/> to take the sin of.</param>
         /// <param name="destination"></param>
-        public static TensorSpan<T> SoftMax<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
+        public static ref readonly TensorSpan<T> SoftMax<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
             where T : IExponentialFunctions<T>
         {
-            return TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.SoftMax);
-        }
-
-        /// <summary>Computes the softmax function over the specified non-empty tensor of numbers.</summary>
-        /// <param name="input">The <see cref="TensorSpan{T}"/> to take the sin of.</param>
-        public static TensorSpan<T> SoftMaxInPlace<T>(in TensorSpan<T> input)
-            where T : IExponentialFunctions<T>
-        {
-            return SoftMax(input, input);
+            return ref TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.SoftMax);
         }
         #endregion
 
@@ -4227,20 +3776,10 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="input">The <see cref="ReadOnlyTensorSpan{T}"/> to take the square root of.</param>
         /// <param name="destination"></param>
-        public static TensorSpan<T> Sqrt<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
+        public static ref readonly TensorSpan<T> Sqrt<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
             where T : IRootFunctions<T>
         {
-            return TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.Sqrt);
-        }
-
-        /// <summary>
-        /// Takes the square root of each element of the <see cref="TensorSpan{T}"/> in place.
-        /// </summary>
-        /// <param name="input">The <see cref="TensorSpan{T}"/> to take the square root of.</param>
-        public static TensorSpan<T> SqrtInPlace<T>(in TensorSpan<T> input)
-            where T : IRootFunctions<T>
-        {
-            return Sqrt(input, input);
+            return ref TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.Sqrt);
         }
         #endregion
 
@@ -4286,7 +3825,7 @@ namespace System.Numerics.Tensors
             }
             else
             {
-                output = Tensor.Create<T>(GetSmallestBroadcastableSize(left.Lengths, right.Lengths));
+                output = Tensor.Create<T>(GetSmallestBroadcastableLengths(left.Lengths, right.Lengths));
             }
 
             Subtract<T>(left, right, output);
@@ -4299,24 +3838,13 @@ namespace System.Numerics.Tensors
         /// <param name="input">The <see cref="ReadOnlyTensorSpan{T}"/> with values to be subtracted from.</param>
         /// <param name="val">The <typeparamref name="T"/> value to subtract.</param>
         /// <param name="destination"></param>
-        public static TensorSpan<T> Subtract<T>(scoped in ReadOnlyTensorSpan<T> input, T val, in TensorSpan<T> destination)
+        public static ref readonly TensorSpan<T> Subtract<T>(scoped in ReadOnlyTensorSpan<T> input, T val, in TensorSpan<T> destination)
             where T : ISubtractionOperators<T, T, T>
         {
             ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input.FlattenedLength);
             Span<T> ospan = MemoryMarshal.CreateSpan(ref destination._reference, (int)destination.FlattenedLength);
             TensorPrimitives.Subtract(span, val, ospan);
-            return destination;
-        }
-
-        /// <summary>
-        /// Subtracts <paramref name="val"/> from each element of <paramref name="input"/> in place.
-        /// </summary>
-        /// <param name="input">The <see cref="TensorSpan{T}"/> with values to be subtracted from.</param>
-        /// <param name="val">The <typeparamref name="T"/> value to subtract.</param>
-        public static TensorSpan<T> SubtractInPlace<T>(in TensorSpan<T> input, T val)
-            where T : ISubtractionOperators<T, T, T>
-        {
-            return Subtract(input, val, input);
+            return ref destination;
         }
 
         /// <summary>
@@ -4325,24 +3853,13 @@ namespace System.Numerics.Tensors
         /// <param name="val">The <typeparamref name="T"/> value to be subtracted from.</param>
         /// <param name="input">The <see cref="ReadOnlyTensorSpan{T}"/> values to subtract.</param>
         /// <param name="destination"></param>
-        public static TensorSpan<T> Subtract<T>(T val, scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
+        public static ref readonly TensorSpan<T> Subtract<T>(T val, scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
             where T : ISubtractionOperators<T, T, T>
         {
             ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input.FlattenedLength);
             Span<T> ospan = MemoryMarshal.CreateSpan(ref destination._reference, (int)destination.FlattenedLength);
             TensorPrimitives.Subtract(val, span, ospan);
-            return destination;
-        }
-
-        /// <summary>
-        /// Subtracts each element of <paramref name="input"/> from <paramref name="val"/> in place.
-        /// </summary>
-        /// <param name="val">The <typeparamref name="T"/> value to be subtracted from.</param>
-        /// <param name="input">The <see cref="TensorSpan{T}"/> values to subtract.</param>
-        public static TensorSpan<T> SubtractInPlace<T>(T val, in TensorSpan<T> input)
-            where T : ISubtractionOperators<T, T, T>
-        {
-            return Subtract(val, input, input);
+            return ref destination;
         }
 
         /// <summary>
@@ -4351,21 +3868,10 @@ namespace System.Numerics.Tensors
         /// <param name="left">The <see cref="ReadOnlyTensorSpan{T}"/> of values to be subtracted from.</param>
         /// <param name="right">The <see cref="ReadOnlyTensorSpan{T}"/>of values to subtract.</param>
         /// <param name="destination"></param>
-        public static TensorSpan<T> Subtract<T>(scoped in ReadOnlyTensorSpan<T> left, scoped in ReadOnlyTensorSpan<T> right, in TensorSpan<T> destination)
+        public static ref readonly TensorSpan<T> Subtract<T>(scoped in ReadOnlyTensorSpan<T> left, scoped in ReadOnlyTensorSpan<T> right, in TensorSpan<T> destination)
             where T : ISubtractionOperators<T, T, T>
         {
-            return TensorPrimitivesHelperTwoSpanInSpanOut(left, right, destination, TensorPrimitives.Subtract);
-        }
-
-        /// <summary>
-        /// Subtracts each element of <paramref name="left"/> from <paramref name="right"/> in <paramref name="left"/> place.
-        /// </summary>
-        /// <param name="left">The <see cref="TensorSpan{T}"/> of values to be subtracted from.</param>
-        /// <param name="right">The <see cref="ReadOnlyTensorSpan{T}"/>of values to subtract.</param>
-        public static TensorSpan<T> SubtractInPlace<T>(in TensorSpan<T> left, scoped in ReadOnlyTensorSpan<T> right)
-            where T : ISubtractionOperators<T, T, T>
-        {
-            return Subtract(left, right, left);
+            return ref TensorPrimitivesHelperTwoSpanInSpanOut(left, right, destination, TensorPrimitives.Subtract);
         }
         #endregion
 
@@ -4398,18 +3904,10 @@ namespace System.Numerics.Tensors
         /// <summary>Computes the element-wise tangent of the value in the specified tensor.</summary>
         /// <param name="input">The <see cref="ReadOnlyTensorSpan{T}"/> to take the sin of.</param>
         /// <param name="destination"></param>
-        public static TensorSpan<T> Tan<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
+        public static ref readonly TensorSpan<T> Tan<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
             where T : ITrigonometricFunctions<T>
         {
-            return TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.Tan);
-        }
-
-        /// <summary>Computes the element-wise tangent of the value in the specified tensor.</summary>
-        /// <param name="input">The <see cref="TensorSpan{T}"/> to take the sin of.</param>
-        public static TensorSpan<T> TanInPlace<T>(in TensorSpan<T> input)
-            where T : ITrigonometricFunctions<T>
-        {
-            return Tan(input, input);
+            return ref TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.Tan);
         }
         #endregion
 
@@ -4427,18 +3925,10 @@ namespace System.Numerics.Tensors
         /// <summary>Computes the element-wise hyperbolic tangent of each radian angle in the specified tensor.</summary>
         /// <param name="input">The <see cref="ReadOnlyTensorSpan{T}"/> to take the sin of.</param>
         /// <param name="destination"></param>
-        public static TensorSpan<T> Tanh<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
+        public static ref readonly TensorSpan<T> Tanh<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
             where T : IHyperbolicFunctions<T>
         {
-            return TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.Tanh);
-        }
-
-        /// <summary>Computes the element-wise hyperbolic tangent of each radian angle in the specified tensor.</summary>
-        /// <param name="input">The <see cref="TensorSpan{T}"/> to take the sin of.</param>
-        public static TensorSpan<T> TanhInPlace<T>(in TensorSpan<T> input)
-            where T : IHyperbolicFunctions<T>
-        {
-            return Tanh(input, input);
+            return ref TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.Tanh);
         }
         #endregion
 
@@ -4456,18 +3946,10 @@ namespace System.Numerics.Tensors
         /// <summary>Computes the element-wise tangent of the value in the specified tensor that has been multiplied by Pi.</summary>
         /// <param name="input">The <see cref="ReadOnlyTensorSpan{T}"/> to take the sin of.</param>
         /// <param name="destination"></param>
-        public static TensorSpan<T> TanPi<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
+        public static ref readonly TensorSpan<T> TanPi<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
             where T : ITrigonometricFunctions<T>
         {
-            return TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.TanPi);
-        }
-
-        /// <summary>Computes the element-wise tangent of the value in the specified tensor that has been multiplied by Pi.</summary>
-        /// <param name="input">The <see cref="TensorSpan{T}"/> to take the sin of.</param>
-        public static TensorSpan<T> TanPiInPlace<T>(in TensorSpan<T> input)
-            where T : ITrigonometricFunctions<T>
-        {
-            return TanPi(input, input);
+            return ref TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.TanPi);
         }
         #endregion
 
@@ -4485,18 +3967,10 @@ namespace System.Numerics.Tensors
         /// <summary>Computes the element-wise trailing zero count of numbers in the specified tensor.</summary>
         /// <param name="input">The input <see cref="ReadOnlyTensorSpan{T}"/>.</param>
         /// <param name="destination"></param>
-        public static TensorSpan<T> TrailingZeroCount<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
+        public static ref readonly TensorSpan<T> TrailingZeroCount<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
             where T : IBinaryInteger<T>
         {
-            return TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.TrailingZeroCount);
-        }
-
-        /// <summary>Computes the element-wise trailing zero count of numbers in the specified tensor.</summary>
-        /// <param name="input">The input <see cref="TensorSpan{T}"/>.</param>
-        public static TensorSpan<T> TrailingZeroCountInPlace<T>(in TensorSpan<T> input)
-            where T : IBinaryInteger<T>
-        {
-            return TrailingZeroCount(input, input);
+            return ref TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.TrailingZeroCount);
         }
         #endregion
 
@@ -4514,18 +3988,10 @@ namespace System.Numerics.Tensors
         /// <summary>Computes the element-wise truncation of numbers in the specified tensor.</summary>
         /// <param name="input">The input <see cref="ReadOnlyTensorSpan{T}"/>.</param>
         /// <param name="destination"></param>
-        public static TensorSpan<T> Truncate<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
+        public static ref readonly TensorSpan<T> Truncate<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
             where T : IFloatingPoint<T>
         {
-            return TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.Truncate);
-        }
-
-        /// <summary>Computes the element-wise truncation of numbers in the specified tensor.</summary>
-        /// <param name="input">The input <see cref="TensorSpan{T}"/>.</param>
-        public static TensorSpan<T> TruncateInPlace<T>(in TensorSpan<T> input)
-            where T : IFloatingPoint<T>
-        {
-            return Truncate(input, input);
+            return ref TensorPrimitivesHelperSpanInSpanOut(input, destination, TensorPrimitives.Truncate);
         }
         #endregion
 
@@ -4543,7 +4009,7 @@ namespace System.Numerics.Tensors
             }
             else
             {
-                output = Tensor.Create<T>(GetSmallestBroadcastableSize(left.Lengths, right.Lengths));
+                output = Tensor.Create<T>(GetSmallestBroadcastableLengths(left.Lengths, right.Lengths));
             }
 
             Xor<T>(left, right, output);
@@ -4554,26 +4020,17 @@ namespace System.Numerics.Tensors
         /// <param name="left">The left <see cref="ReadOnlyTensorSpan{T}"/>.</param>
         /// <param name="right">The right <see cref="ReadOnlyTensorSpan{T}"/>.</param>
         /// <param name="destination"></param>
-        public static TensorSpan<T> Xor<T>(scoped in ReadOnlyTensorSpan<T> left, scoped in ReadOnlyTensorSpan<T> right, in TensorSpan<T> destination)
+        public static ref readonly TensorSpan<T> Xor<T>(scoped in ReadOnlyTensorSpan<T> left, scoped in ReadOnlyTensorSpan<T> right, in TensorSpan<T> destination)
             where T : IBitwiseOperators<T, T, T>
         {
-            return TensorPrimitivesHelperTwoSpanInSpanOut(left, right, destination, TensorPrimitives.Xor);
-        }
-
-        /// <summary>Computes the element-wise XOR of numbers in the specified tensors.</summary>
-        /// <param name="left">The left <see cref="TensorSpan{T}"/>.</param>
-        /// <param name="right">The right <see cref="ReadOnlyTensorSpan{T}"/>.</param>
-        public static TensorSpan<T> XorInPlace<T>(in TensorSpan<T> left, scoped in ReadOnlyTensorSpan<T> right)
-            where T : IBitwiseOperators<T, T, T>
-        {
-            return Xor(left, right, left);
+            return ref TensorPrimitivesHelperTwoSpanInSpanOut(left, right, destination, TensorPrimitives.Xor);
         }
         #endregion
 
-        public static nint[] GetSmallestBroadcastableSize(ReadOnlySpan<nint> shape1, ReadOnlySpan<nint> shape2)
+        public static nint[] GetSmallestBroadcastableLengths(ReadOnlySpan<nint> shape1, ReadOnlySpan<nint> shape2)
         {
             if (!TensorHelpers.IsBroadcastableTo(shape1, shape2))
-                throw new Exception("Shapes are not broadcast compatible");
+                throw new Exception("Lengths are not broadcast compatible");
 
             nint[] intermediateShape = TensorHelpers.GetIntermediateShape(shape1, shape2.Length);
             for (int i = 1; i <= shape1.Length; i++)
@@ -4611,12 +4068,12 @@ namespace System.Numerics.Tensors
             return performCalculation(span);
         }
 
-        private static TensorSpan<int> TensorPrimitivesHelperSpanInIntSpanOut<T>(scoped in ReadOnlyTensorSpan<T> input, PerformCalculationSpanInIntSpanOut<T> performCalculation)
+        private static ref readonly TensorSpan<int> TensorPrimitivesHelperSpanInIntSpanOut<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<int> destination, PerformCalculationSpanInIntSpanOut<T> performCalculation)
         {
             ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input._flattenedLength);
-            int[] data = new int[input.FlattenedLength];
+            Span<int> data = MemoryMarshal.CreateSpan(ref destination._reference, (int)destination._flattenedLength);
             performCalculation(span, data);
-            return new TensorSpan<int>(data, 0, input.Lengths, input.Strides);
+            return ref destination;
         }
 
         private static T TensorPrimitivesHelperTwoSpanInTOut<T>(scoped in ReadOnlyTensorSpan<T> left, scoped in ReadOnlyTensorSpan<T> right, PerformCalculationTwoSpanInTOut<T> performCalculation)
@@ -4636,8 +4093,12 @@ namespace System.Numerics.Tensors
                 // 2 - One tensor has row contiguous memory and the right has column contiguous memory (i.e. a 1x5 and a 5x1)
                 // Because we are returning a single T though we need to actual realize the broadcasts at this point to perform the calculations.
 
-                ReadOnlyTensorSpan<T> broadcastedLeft = Broadcast(left, right);
-                ReadOnlyTensorSpan<T> broadcastedRight = Broadcast(right, left);
+                nint[] newLengths = Tensor.GetSmallestBroadcastableLengths(left.Lengths, right.Lengths);
+                nint newLength = TensorSpanHelpers.CalculateTotalLength(newLengths);
+                TensorSpan<T> broadcastedLeft = new TensorSpan<T>(new T[newLength], newLengths, ReadOnlySpan<nint>.Empty);
+                TensorSpan<T> broadcastedRight = new TensorSpan<T>(new T[newLength], newLengths, ReadOnlySpan<nint>.Empty);
+                BroadcastTo(left, broadcastedLeft);
+                BroadcastTo(right, broadcastedRight);
 
                 ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref broadcastedLeft._reference, (int)broadcastedLeft.FlattenedLength);
                 ReadOnlySpan<T> rspan = MemoryMarshal.CreateSpan(ref broadcastedRight._reference, (int)broadcastedRight.FlattenedLength);
@@ -4645,35 +4106,33 @@ namespace System.Numerics.Tensors
             }
         }
 
-        private static TensorSpan<T> TensorPrimitivesHelperSpanInSpanOut<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination, PerformCalculationSpanInSpanOut<T> performCalculation)
+        private static ref readonly TensorSpan<T> TensorPrimitivesHelperSpanInSpanOut<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination, PerformCalculationSpanInSpanOut<T> performCalculation)
         {
             ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input.FlattenedLength);
             Span<T> ospan = MemoryMarshal.CreateSpan(ref destination._reference, (int)destination.FlattenedLength);
             performCalculation(span, ospan);
-            return destination;
+            return ref destination;
         }
 
-        private static TensorSpan<T> TensorPrimitivesHelperSpanInTInSpanOut<T>(scoped in ReadOnlyTensorSpan<T> input, T value, in TensorSpan<T> destination, PerformCalculationSpanInTInSpanOut<T> performCalculation)
+        private static ref readonly TensorSpan<T> TensorPrimitivesHelperSpanInTInSpanOut<T>(scoped in ReadOnlyTensorSpan<T> input, T value, in TensorSpan<T> destination, PerformCalculationSpanInTInSpanOut<T> performCalculation)
         {
             ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input.FlattenedLength);
             Span<T> ospan = MemoryMarshal.CreateSpan(ref destination._reference, (int)destination.FlattenedLength);
             performCalculation(span, value, ospan);
-            return destination;
+            return ref destination;
         }
 
-        private static TensorSpan<TTo> TensorPrimitivesHelperTFromSpanInTToSpanOut<TFrom, TTo>(scoped in ReadOnlyTensorSpan<TFrom> input, PerformCalculationTFromSpanInTToSpanOut<TFrom, TTo> performCalculation)
+        private static ref readonly TensorSpan<TTo> TensorPrimitivesHelperTFromSpanInTToSpanOut<TFrom, TTo>(scoped in ReadOnlyTensorSpan<TFrom> input, in TensorSpan<TTo> destination, PerformCalculationTFromSpanInTToSpanOut<TFrom, TTo> performCalculation)
             where TFrom : IEquatable<TFrom>, IEqualityOperators<TFrom, TFrom, bool>, INumberBase<TFrom>
             where TTo : INumberBase<TTo>
         {
             ReadOnlySpan<TFrom> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input._flattenedLength);
-            TTo[] data = new TTo[(int)input.FlattenedLength];
-            TensorSpan<TTo> output = new TensorSpan<TTo>(data, 0, input.Lengths, input.Strides);
-            Span<TTo> ospan = MemoryMarshal.CreateSpan(ref output._reference, (int)output._flattenedLength);
+            Span<TTo> ospan = MemoryMarshal.CreateSpan(ref destination._reference, (int)destination._flattenedLength);
             performCalculation(span, ospan);
-            return output;
+            return ref destination;
         }
 
-        private static TensorSpan<T> TensorPrimitivesHelperTwoSpanInSpanOut<T>(scoped in ReadOnlyTensorSpan<T> left, scoped in ReadOnlyTensorSpan<T> right, in TensorSpan<T> destination, PerformCalculationTwoSpanInSpanOut<T> performCalculation)
+        private static ref readonly TensorSpan<T> TensorPrimitivesHelperTwoSpanInSpanOut<T>(scoped in ReadOnlyTensorSpan<T> left, scoped in ReadOnlyTensorSpan<T> right, in TensorSpan<T> destination, PerformCalculationTwoSpanInSpanOut<T> performCalculation)
         {
             // If sizes are the same.
             if (left.Lengths.SequenceEqual(right.Lengths))
@@ -4682,21 +4141,21 @@ namespace System.Numerics.Tensors
                 ReadOnlySpan<T> rspan = MemoryMarshal.CreateSpan(ref right._reference, (int)right.FlattenedLength);
                 Span<T> ospan = MemoryMarshal.CreateSpan(ref destination._reference, (int)destination.FlattenedLength);
                 performCalculation(span, rspan, ospan);
-                return destination;
+                return ref destination;
             }
-            // Not in place and broadcasting needs to happen.
+            // Broadcasting needs to happen.
             else
             {
                 // Have a couple different possible cases here.
                 // 1 - Both tensors have row contiguous memory (i.e. a 1x5 being broadcast to a 5x5)
                 // 2 - One tensor has row contiguous memory and the right has column contiguous memory (i.e. a 1x5 and a 5x1)
 
-                nint[] newSize = Tensor.GetSmallestBroadcastableSize(left.Lengths, right.Lengths);
+                nint[] newSize = Tensor.GetSmallestBroadcastableLengths(left.Lengths, right.Lengths);
 
-                ReadOnlyTensorSpan<T> broadcastedLeft = Tensor.BroadcastTo(left, newSize);
-                ReadOnlyTensorSpan<T> broadcastedRight = Tensor.BroadcastTo(right, newSize);
+                ReadOnlyTensorSpan<T> broadcastedLeft = Tensor.LazyBroadcast(left, newSize);
+                ReadOnlyTensorSpan<T> broadcastedRight = Tensor.LazyBroadcast(right, newSize);
                 if (!destination.Lengths.SequenceEqual(newSize))
-                    ThrowHelper.ThrowArgument_InPlaceInvalidShape();
+                    ThrowHelper.ThrowArgument_ShapesNotBroadcastCompatible();
 
                 nint rowLength = newSize[^1];
                 Span<T> ospan;
@@ -4762,7 +4221,7 @@ namespace System.Numerics.Tensors
                 if (curIndexArray != null)
                     ArrayPool<nint>.Shared.Return(curIndexArray);
             }
-            return destination;
+            return ref destination;
         }
 
         #endregion
