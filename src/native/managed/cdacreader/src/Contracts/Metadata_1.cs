@@ -151,7 +151,7 @@ internal partial struct Metadata_1 : IMetadata
         _freeObjectMethodTablePointer = freeObjectMethodTablePointer;
     }
 
-    public TargetPointer FreeObjectMethodTablePointer => _freeObjectMethodTablePointer;
+    internal TargetPointer FreeObjectMethodTablePointer => _freeObjectMethodTablePointer;
 
     private UntrustedMethodTable_1 GetUntrustedMethodTableData(TargetPointer methodTablePointer)
     {
