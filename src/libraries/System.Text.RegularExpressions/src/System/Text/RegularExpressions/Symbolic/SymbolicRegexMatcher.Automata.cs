@@ -253,6 +253,10 @@ namespace System.Text.RegularExpressions.Symbolic
 #endif
                 (bool loop, SymbolicRegexNode<TSet> next) = current switch
                 {
+                    // This could potentially be a very good future optimization for
+                    // anchors but there's too many edge cases to guarantee it works.
+                    // one example which fails currently: pattern: @"\By\b", input: "xy"
+                    { _info.ContainsSomeAnchor: true } => bail(current),
                     // if this is reached then entire match is fixed length
                     { _kind: SymbolicRegexNodeKind.CaptureStart} => (false, _builder.Epsilon),
                     {_kind:SymbolicRegexNodeKind.Concat, _left._kind: SymbolicRegexNodeKind.CaptureEnd} =>
@@ -263,12 +267,6 @@ namespace System.Text.RegularExpressions.Symbolic
                         addSingleton(current),
                     {_kind: SymbolicRegexNodeKind.Concat, _left._kind: SymbolicRegexNodeKind.Loop } =>
                         addFixedLengthLoop(current),
-                    {
-                        _kind: SymbolicRegexNodeKind.Concat,
-                        _left._info.ContainsSomeAnchor:true,
-                        _right._kind: SymbolicRegexNodeKind.Concat
-                    } =>
-                        bail(current),
                     _ => (false, current)
                 };
                 canLoop = loop;
