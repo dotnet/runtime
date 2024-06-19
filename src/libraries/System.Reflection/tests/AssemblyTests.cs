@@ -7,10 +7,12 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Reflection.Emit;
 using System.Reflection.Tests;
 using System.Runtime.CompilerServices;
 using System.Security;
 using System.Text;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 [assembly:
@@ -179,6 +181,38 @@ namespace System.Reflection.Tests
             }
 
             Assert.True(correct, $"Unexpected assembly name {assembly}");
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void SetEntryAssembly()
+        {
+            Assert.NotNull(Assembly.GetEntryAssembly());
+
+            RemoteExecutor.Invoke(() =>
+            {
+                SetEntryAssembly(null);
+                Assert.Null(Assembly.GetEntryAssembly());
+                
+                Assembly testAssembly = typeof(AssemblyTests).Assembly;
+                
+                SetEntryAssembly(testAssembly);
+                Assert.Equal(Assembly.GetEntryAssembly(), testAssembly);
+                
+                var invalidAssembly = new PersistedAssemblyBuilder(
+                    new AssemblyName("NotaRuntimeAssemblyTest"),
+                    typeof(object).Assembly
+                );
+                Assert.Throws<ArgumentException>(
+                    () => Assembly.SetEntryAssembly(invalidAssembly)
+                );
+            }).Dispose();
+        }
+
+        private static SetEntryAssembly(Assembly assembly)
+        {
+            typeof(Assembly)
+                .GetMethod("SetEntryAssembly", BindingFlags.Public | BindingFlags.Static)
+                .Invoke(null, new object[]{ assembly });
         }
 
         [Fact]

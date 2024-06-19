@@ -174,8 +174,8 @@ namespace System.Diagnostics.TraceSourceTests
         private static void MakeAssemblyGetEntryAssemblyReturnNull()
         {
             typeof(Assembly)
-                .GetField("s_forceNullEntryPoint", BindingFlags.NonPublic | BindingFlags.Static)
-                .SetValue(null, true);
+                .GetMethod("SetEntryAssembly", BindingFlags.Public | BindingFlags.Static)
+                .Invoke(null, new object[]{ null });
 
             Assert.Null(Assembly.GetEntryAssembly());
         }
