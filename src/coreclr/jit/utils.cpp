@@ -1644,7 +1644,7 @@ void HelperCallProperties::init()
             case CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE:
             case CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE:
 
-                isNoEscape = true;
+                // isNoEscape = true;
                 isPure     = true;
                 noThrow    = true; // These return null for a failing cast
                 break;
@@ -1661,6 +1661,7 @@ void HelperCallProperties::init()
             case CORINFO_HELP_CHKCASTANY:
             case CORINFO_HELP_CHKCASTCLASS_SPECIAL:
             case CORINFO_HELP_READYTORUN_CHKCAST:
+            case CORINFO_HELP_UNBOX_TYPETEST:
 
                 // These throw for a failing cast
                 // But if given a null input arg will return null
@@ -1669,8 +1670,11 @@ void HelperCallProperties::init()
 
             // helpers returning addresses, these can also throw
             case CORINFO_HELP_UNBOX:
-            case CORINFO_HELP_LDELEMA_REF:
                 isNoEscape = true;
+                isPure     = true;
+                break;
+
+            case CORINFO_HELP_LDELEMA_REF:
                 isPure     = true;
                 break;
 
