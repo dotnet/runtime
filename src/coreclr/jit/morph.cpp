@@ -5112,6 +5112,9 @@ GenTree* Compiler::fgMorphExpandInstanceField(GenTree* tree, MorphAddrContext* m
         {
             addr->SetHasOrderingSideEffect();
         }
+
+        // Fold it if we have const-handle + const-offset
+        addr = gtFoldExpr(addr);
     }
 
     if (addExplicitNullCheck)
