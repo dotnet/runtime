@@ -443,10 +443,227 @@ inline bool RefTypeIsDef(RefType refType)
 
 typedef regNumberSmall* VarToRegMap;
 
-typedef jitstd::list<Interval>                      IntervalList;
-typedef jitstd::list<RefPosition>                   RefPositionList;
-typedef jitstd::list<RefPosition>::iterator         RefPositionIterator;
-typedef jitstd::list<RefPosition>::reverse_iterator RefPositionReverseIterator;
+// Like normal jitstd::list, but guarantees that the memory is zeroed.
+template <typename T, size_t ChunkSize, CompMemKind MemKind>
+class PreZeroedList
+{
+    struct Node
+    {
+        T     Value;
+        Node* Prev;
+        Node* Next;
+
+        template <typename... Args>
+        Node(Args... args)
+            : Value(args...)
+        {
+        }
+    };
+
+#ifdef DEBUG
+    size_t m_count = 0;
+#endif
+
+    Node*  m_head     = nullptr;
+    Node*  m_tail     = nullptr;
+    Node** m_tailSlot = &m_head;
+
+    char* m_buffer    = nullptr;
+    char* m_bufferEnd = nullptr;
+
+public:
+#ifdef DEBUG
+    size_t size()
+    {
+        return m_count;
+    }
+#endif
+
+    template <typename... Args>
+    T* Allocate(Compiler* comp, Args... args)
+    {
+        if (m_buffer == m_bufferEnd)
+        {
+            m_buffer    = new (comp, MemKind) char[ChunkSize * sizeof(Node)];
+            m_bufferEnd = m_buffer + ChunkSize * sizeof(Node);
+            memset(m_buffer, 0, ChunkSize * sizeof(Node));
+        }
+
+        Node* newNode = new (m_buffer, jitstd::placement_t()) Node(args...);
+        m_buffer += sizeof(Node);
+
+        INDEBUG(m_count++);
+
+        newNode->Prev = m_tail;
+        *m_tailSlot = m_tail = newNode;
+        m_tailSlot           = &newNode->Next;
+
+        return &newNode->Value;
+    }
+
+    class iterator
+    {
+        friend class PreZeroedList;
+        Node* m_node;
+
+        explicit iterator(Node* node)
+            : m_node(node)
+        {
+        }
+
+    public:
+        iterator()
+            : m_node(nullptr)
+        {
+        }
+
+        iterator& operator++()
+        {
+            m_node = m_node->Next;
+            return *this;
+        }
+
+        iterator& operator++(int)
+        {
+            m_node = m_node->Next;
+            return *this;
+        }
+
+        iterator& operator--()
+        {
+            m_node = m_node->Prev;
+            return *this;
+        }
+
+        iterator& operator--(int)
+        {
+            m_node = m_node->Prev;
+            return *this;
+        }
+
+        bool operator==(const iterator& it)
+        {
+            return m_node == it.m_node;
+        }
+
+        bool operator!=(const iterator& it)
+        {
+            return m_node != it.m_node;
+        }
+
+        T& operator*()
+        {
+            return m_node->Value;
+        }
+
+        T* operator->()
+        {
+            return &m_node->Value;
+        }
+
+        operator T*()
+        {
+            return &m_node->Value;
+        }
+    };
+
+    class reverse_iterator
+    {
+        friend class PreZeroedList;
+        Node* m_node;
+
+        explicit reverse_iterator(Node* node)
+            : m_node(node)
+        {
+        }
+
+    public:
+        reverse_iterator()
+            : m_node(nullptr)
+        {
+        }
+
+        reverse_iterator& operator++()
+        {
+            m_node = m_node->Prev;
+            return *this;
+        }
+
+        reverse_iterator& operator++(int)
+        {
+            m_node = m_node->Prev;
+            return *this;
+        }
+
+        reverse_iterator& operator--()
+        {
+            m_node = m_node->Next;
+            return *this;
+        }
+
+        reverse_iterator& operator--(int)
+        {
+            m_node = m_node->Next;
+            return *this;
+        }
+
+        bool operator==(const reverse_iterator& it)
+        {
+            return m_node == it.m_node;
+        }
+
+        bool operator!=(const reverse_iterator& it)
+        {
+            return m_node != it.m_node;
+        }
+
+        T& operator*()
+        {
+            return m_node->Value;
+        }
+
+        T* operator->()
+        {
+            return &m_node->Value;
+        }
+
+        operator T*()
+        {
+            return &m_node->Value;
+        }
+    };
+
+    iterator begin()
+    {
+        return iterator(m_head);
+    }
+
+    iterator end()
+    {
+        return iterator(nullptr);
+    }
+
+    iterator backPosition()
+    {
+        return iterator(m_tail);
+    }
+
+    reverse_iterator rbegin()
+    {
+        return reverse_iterator(m_tail);
+    }
+
+    reverse_iterator rend()
+    {
+        return reverse_iterator(nullptr);
+    }
+};
+
+typedef PreZeroedList<Interval, 32, CMK_LSRA_Interval> IntervalList;
+
+typedef PreZeroedList<RefPosition, 64, CMK_LSRA_RefPosition>                   RefPositionList;
+typedef PreZeroedList<RefPosition, 64, CMK_LSRA_RefPosition>::iterator         RefPositionIterator;
+typedef PreZeroedList<RefPosition, 64, CMK_LSRA_RefPosition>::reverse_iterator RefPositionReverseIterator;
 
 class Referenceable
 {
@@ -2172,33 +2389,9 @@ public:
     Interval(RegisterType registerType, SingleTypeRegSet registerPreferences)
         : Referenceable(registerType)
         , registerPreferences(registerPreferences)
-        , registerAversion(RBM_NONE)
-        , relatedInterval(nullptr)
-        , assignedReg(nullptr)
-        , varNum(0)
         , physReg(REG_COUNT)
-        , isActive(false)
-        , isLocalVar(false)
-        , isSplit(false)
-        , isSpilled(false)
-        , isInternal(false)
-        , isStructField(false)
-        , isPromotedStruct(false)
-        , hasConflictingDefUse(false)
-        , hasInterferingUses(false)
-        , isSpecialPutArg(false)
-        , preferCalleeSave(false)
-        , isConstant(false)
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-        , isUpperVector(false)
-        , isPartiallySpilled(false)
-#endif
-        , isWriteThru(false)
-        , isSingleDef(false)
-#ifdef DEBUG
-        , intervalIndex(0)
-#endif
     {
+        // Intervals are allocated on top of zeroed memory, so all fields are already zero
     }
 
 #ifdef DEBUG
@@ -2595,36 +2788,16 @@ public:
                 LsraLocation    nodeLocation,
                 GenTree*        treeNode,
                 RefType refType DEBUG_ARG(GenTree* buildNode))
-        : referent(nullptr)
-        , nextRefPosition(nullptr)
-        , treeNode(treeNode)
-        , registerAssignment(RBM_NONE)
+        : treeNode(treeNode)
         , bbNum(bbNum)
         , nodeLocation(nodeLocation)
         , refType(refType)
-        , multiRegIdx(0)
-#ifdef TARGET_ARM64
-        , needsConsecutive(false)
-        , regCount(0)
-#endif
-        , lastUse(false)
-        , reload(false)
-        , spillAfter(false)
-        , singleDefSpill(false)
-        , writeThru(false)
-        , copyReg(false)
-        , moveReg(false)
-        , isPhysRegRef(false)
-        , isFixedRegRef(false)
-        , isLocalDefUse(false)
-        , delayRegFree(false)
-        , outOfOrder(false)
 #ifdef DEBUG
         , minRegCandidateCount(1)
-        , rpNum(0)
         , buildNode(buildNode)
 #endif
     {
+        // RefPositions are allocated on top of zeroed memory, so all fields are already zero
     }
 
     Interval* getInterval()

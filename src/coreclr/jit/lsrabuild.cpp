@@ -153,8 +153,7 @@ void RefInfoListNodePool::ReturnNode(RefInfoListNode* listNode)
 //
 Interval* LinearScan::newInterval(RegisterType theRegisterType)
 {
-    intervals.emplace_back(theRegisterType, allRegs(theRegisterType));
-    Interval* newInt = &intervals.back();
+    Interval* newInt = intervals.Allocate(compiler, theRegisterType, allRegs(theRegisterType));
 
 #ifdef DEBUG
     newInt->intervalIndex = static_cast<unsigned>(intervals.size() - 1);
@@ -178,8 +177,8 @@ Interval* LinearScan::newInterval(RegisterType theRegisterType)
 //
 RefPosition* LinearScan::newRefPositionRaw(LsraLocation nodeLocation, GenTree* treeNode, RefType refType)
 {
-    refPositions.emplace_back(curBBNum, nodeLocation, treeNode, refType DEBUG_ARG(currBuildNode));
-    RefPosition* newRP = &refPositions.back();
+    RefPosition* newRP =
+        refPositions.Allocate(compiler, curBBNum, nodeLocation, treeNode, refType DEBUG_ARG(currBuildNode));
 #ifdef DEBUG
     // Reset currBuildNode so we do not set it for subsequent refpositions belonging
     // to the same treeNode and hence, avoid printing it for every refposition inside
