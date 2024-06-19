@@ -5947,21 +5947,21 @@ namespace System
         public const long TicksPerMillisecond = (long)10000;
         public const long TicksPerMinute = (long)600000000;
         public const long TicksPerSecond = (long)10000000;
-        public const long MicrosecondsPerMillisecond =  (long)1000;
-        public const long MicrosecondsPerSecond = (long)1000000;
-        public const long MicrosecondsPerMinute = (long)60000000;
+        public const int MicrosecondsPerMillisecond =  1000;
+        public const int MicrosecondsPerSecond = 1000000;
+        public const int MicrosecondsPerMinute = 60000000;
         public const long MicrosecondsPerHour = (long)3600000000;
         public const long MicrosecondsPerDay = (long)86400000000;
-        public const long MillisecondsPerSecond = (long)1000;
-        public const long MillisecondsPerMinute = (long)60000;
-        public const long MillisecondsPerHour = (long)3600000;
-        public const long MillisecondsPerDay = (long)86400000;
-        public const long SecondsPerMinute = (long)60;
-        public const long SecondsPerHour = (long)3600;
-        public const long SecondsPerDay = (long)86400;
-        public const long MinutesPerHour = (long)60;
-        public const long MinutesPerDay = (long)1440;
-        public const long HoursPerDay = (long)24;
+        public const int MillisecondsPerSecond = 1000;
+        public const int MillisecondsPerMinute = 60000;
+        public const int MillisecondsPerHour = 3600000;
+        public const int MillisecondsPerDay = 86400000;
+        public const int SecondsPerMinute = 60;
+        public const int SecondsPerHour = 3600;
+        public const int SecondsPerDay = 86400;
+        public const int MinutesPerHour = 60;
+        public const int MinutesPerDay = 1440;
+        public const int HoursPerDay = 24;
 
         public static readonly System.TimeSpan Zero;
         public TimeSpan(int hours, int minutes, int seconds) { throw null; }
