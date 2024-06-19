@@ -12,7 +12,78 @@ namespace System.Formats.Nrbf.Utils;
 
 internal static class TypeNameHelpers
 {
+    // PrimitiveType does not define Object, we fake it as the last element.
+    internal const PrimitiveType ObjectPrimitiveType = (PrimitiveType)19;
+    private static readonly TypeName?[] s_PrimitiveTypeNames = new TypeName?[(int)ObjectPrimitiveType + 1];
+    private static readonly TypeName?[] s_PrimitiveSZArrayTypeNames = new TypeName?[(int)ObjectPrimitiveType + 1];
     private static AssemblyNameInfo? s_CoreLibAssemblyName;
+
+    internal static TypeName GetPrimitiveTypeName(PrimitiveType primitiveType)
+    {
+        Debug.Assert(primitiveType is not (PrimitiveType.None or PrimitiveType.Null));
+
+        TypeName? typeName = s_PrimitiveTypeNames[(int)primitiveType];
+        if (typeName is null)
+        {
+            string fullName = primitiveType switch
+            {
+                PrimitiveType.Boolean => "System.Boolean",
+                PrimitiveType.Byte => "System.Byte",
+                PrimitiveType.SByte => "System.SByte",
+                PrimitiveType.Char => "System.Char",
+                PrimitiveType.Int16 => "System.Int16",
+                PrimitiveType.UInt16 => "System.UInt16",
+                PrimitiveType.Int32 => "System.Int32",
+                PrimitiveType.UInt32 => "System.UInt32",
+                PrimitiveType.Int64 => "System.Int64",
+                PrimitiveType.Single => "System.Single",
+                PrimitiveType.Double => "System.Double",
+                PrimitiveType.Decimal => "System.Decimal",
+                PrimitiveType.TimeSpan => "System.TimeSpan",
+                PrimitiveType.DateTime => "System.DateTime",
+                PrimitiveType.String => "System.String",
+                ObjectPrimitiveType => "System.Object",
+                _ => "System.UInt64",
+            };
+
+            s_PrimitiveTypeNames[(int)primitiveType] = typeName = TypeName.Parse(fullName.AsSpan()).WithCoreLibAssemblyName();
+        }
+        return typeName;
+    }
+
+    internal static TypeName GetPrimitiveSZArrayTypeName(PrimitiveType primitiveType)
+    {
+        TypeName? typeName = s_PrimitiveSZArrayTypeNames[(int)primitiveType];
+        if (typeName is null)
+        {
+            s_PrimitiveSZArrayTypeNames[(int)primitiveType] = typeName = GetPrimitiveTypeName(primitiveType).MakeArrayTypeName();
+        }
+        return typeName;
+    }
+
+    internal static PrimitiveType GetPrimitiveType<T>()
+    {
+        if (typeof(T) == typeof(bool)) return PrimitiveType.Boolean;
+        else if (typeof(T) == typeof(byte)) return PrimitiveType.Byte;
+        else if (typeof(T) == typeof(sbyte)) return PrimitiveType.SByte;
+        else if (typeof(T) == typeof(char)) return PrimitiveType.Char;
+        else if (typeof(T) == typeof(short)) return PrimitiveType.Int16;
+        else if (typeof(T) == typeof(ushort)) return PrimitiveType.UInt16;
+        else if (typeof(T) == typeof(int)) return PrimitiveType.Int32;
+        else if (typeof(T) == typeof(uint)) return PrimitiveType.UInt32;
+        else if (typeof(T) == typeof(long)) return PrimitiveType.Int64;
+        else if (typeof(T) == typeof(ulong)) return PrimitiveType.UInt64;
+        else if (typeof(T) == typeof(float)) return PrimitiveType.Single;
+        else if (typeof(T) == typeof(double)) return PrimitiveType.Double;
+        else if (typeof(T) == typeof(decimal)) return PrimitiveType.Decimal;
+        else if (typeof(T) == typeof(DateTime)) return PrimitiveType.DateTime;
+        else if (typeof(T) == typeof(TimeSpan)) return PrimitiveType.TimeSpan;
+        else
+        {
+            Debug.Assert(typeof(T) == typeof(string));
+            return PrimitiveType.String;
+        }
+    }
 
     internal static TypeName ParseNonSystemClassRecordTypeName(this string rawName, BinaryLibraryRecord libraryRecord, PayloadOptions payloadOptions)
     {
@@ -52,19 +123,6 @@ internal static class TypeNameHelpers
 
     internal static TypeName WithCoreLibAssemblyName(this TypeName systemType)
         => systemType.WithAssemblyName(s_CoreLibAssemblyName ??= AssemblyNameInfo.Parse("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089".AsSpan()));
-
-    internal static TypeName BuildCoreLibArrayTypeName(this Type type, int arrayRank)
-        => WithCoreLibAssemblyName(BuildArrayTypeName(TypeName.Parse(type.FullName.AsSpan()), arrayRank));
-
-    internal static TypeName BuildArrayTypeName(this TypeName typeName, int arrayRank)
-    {
-        // In general, arrayRank == 1 may have two different meanings:
-        // - [] is a single dimension and zero-indexed array (SZArray)
-        // - [*] is single dimension, custom offset array.
-        // Custom offset arrays are not supported by design.
-        // That is why we don't call TypeName.MakeArrayTypeName(1) because it would create [*] instead of [] name.
-        return arrayRank == 1 ? typeName.MakeArrayTypeName() : typeName.MakeArrayTypeName(arrayRank);
-    }
 
     private static TypeName ParseWithoutAssemblyName(string rawName, PayloadOptions payloadOptions)
     {

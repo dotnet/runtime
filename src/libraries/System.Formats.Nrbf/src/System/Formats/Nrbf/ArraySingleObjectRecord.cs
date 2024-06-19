@@ -16,14 +16,12 @@ namespace System.Formats.Nrbf;
 /// </remarks>
 internal sealed class ArraySingleObjectRecord : SZArrayRecord<object?>
 {
-    private static TypeName? s_typeName;
-
     private ArraySingleObjectRecord(ArrayInfo arrayInfo) : base(arrayInfo) => Records = [];
 
     public override SerializationRecordType RecordType => SerializationRecordType.ArraySingleObject;
 
     public override TypeName TypeName
-        => s_typeName ??= TypeName.Parse("System.Object[]".AsSpan()).WithCoreLibAssemblyName();
+        => TypeNameHelpers.GetPrimitiveSZArrayTypeName(TypeNameHelpers.ObjectPrimitiveType);
 
     private List<SerializationRecord> Records { get; }
 
