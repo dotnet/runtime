@@ -4883,8 +4883,6 @@ GenTree* Compiler::fgMorphFieldAddr(GenTree* tree, MorphAddrContext* mac)
         assert(!"Normal statics are expected to be handled in the importer");
     }
 
-    tree = gtFoldExpr(tree);
-
     // Pass down the current mac; if non null we are computing an address
     GenTree* result;
     if (tree->OperIsSimple())
