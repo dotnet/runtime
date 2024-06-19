@@ -2074,12 +2074,12 @@ int LinearScan::BuildConsecutiveRegistersForUse(GenTree* treeNode, GenTree* rmwN
         for (GenTreeFieldList::Use& use : treeNode->AsFieldList()->Uses())
         {
             RefPosition*        restoreRefPos = nullptr;
-            RefPositionIterator prevRefPos    = refPositions.backPosition();
+            RefPosition* prevRefPos = allRefPositionsTail;
 
             currRefPos = BuildUse(use.GetNode(), RBM_NONE, 0);
 
             // Check if restore RefPositions were created
-            RefPositionIterator tailRefPos = refPositions.backPosition();
+            RefPosition* tailRefPos = allRefPositionsTail;
             assert(tailRefPos == currRefPos);
             prevRefPos++;
             if (prevRefPos != tailRefPos)
@@ -2161,15 +2161,15 @@ int LinearScan::BuildConsecutiveRegistersForUse(GenTree* treeNode, GenTree* rmwN
     }
     else
     {
-        RefPositionIterator refPositionMark   = refPositions.backPosition();
+        RefPosition* refPositionMark = allRefPositionsTail;
         int                 refPositionsAdded = BuildOperandUses(treeNode);
 
         if (rmwNode != nullptr)
         {
             // Check all the newly created RefPositions for delay free
-            RefPositionIterator iter = refPositionMark;
+            RefPosition* iter = refPositionMark;
 
-            for (iter++; iter != refPositions.end(); iter++)
+            for (iter = iter->nextAllRefPosition; iter != nullptr; iter = iter->nextAllRefPosition)
             {
                 RefPosition* refPositionAdded = &(*iter);
 

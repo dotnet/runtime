@@ -901,8 +901,8 @@ int LinearScan::BuildSelect(GenTreeOp* select)
     GenTree* trueVal  = select->gtOp1;
     GenTree* falseVal = select->gtOp2;
 
-    RefPositionIterator op1UsesPrev = refPositions.backPosition();
-    assert(op1UsesPrev != refPositions.end());
+    RefPosition* op1UsesPrev = getAllRefPositionsTail();
+    assert(op1UsesPrev != nullptr);
 
     RefPosition* uncontainedTrueRP = nullptr;
     if (trueVal->isContained())
@@ -915,7 +915,7 @@ int LinearScan::BuildSelect(GenTreeOp* select)
         srcCount++;
     }
 
-    RefPositionIterator op2UsesPrev = refPositions.backPosition();
+    RefPosition* op2UsesPrev = getAllRefPositionsTail();
 
     RefPosition* uncontainedFalseRP = nullptr;
     if (falseVal->isContained())
@@ -959,19 +959,19 @@ int LinearScan::BuildSelect(GenTreeOp* select)
     // intervals for the ref positions we built above. It marks one of the uses
     // as delay freed when it finds interference (almost never).
     //
-    RefPositionIterator op1Use = op1UsesPrev;
+    RefPosition* op1Use = op1UsesPrev;
     while (op1Use != op2UsesPrev)
     {
-        ++op1Use;
+        op1Use = op1Use->nextAllRefPosition;
 
         if (op1Use->refType != RefTypeUse)
         {
             continue;
         }
 
-        RefPositionIterator op2Use = op2UsesPrev;
-        ++op2Use;
-        while (op2Use != refPositions.end())
+        RefPosition* op2Use = op2UsesPrev;
+        op2Use = op2Use->nextAllRefPosition;
+        while (op2Use != nullptr)
         {
             if (op2Use->refType == RefTypeUse)
             {
@@ -981,7 +981,7 @@ int LinearScan::BuildSelect(GenTreeOp* select)
                     break;
                 }
 
-                ++op2Use;
+                op2Use = op2Use->nextAllRefPosition;
             }
         }
     }

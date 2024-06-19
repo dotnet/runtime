@@ -801,7 +801,9 @@ LinearScan::LinearScan(Compiler* theCompiler)
     : compiler(theCompiler)
     , intervals(theCompiler->getAllocator(CMK_LSRA_Interval))
     , allocationPassComplete(false)
-    , refPositions(theCompiler->getAllocator(CMK_LSRA_RefPosition))
+    , allRefPositionsHead(nullptr)
+    , allRefPositionsTail(nullptr)
+    , allRefPositionsTailSlot(&allRefPositionsHead)
     , killHead(nullptr)
     , killTail(&killHead)
     , listNodePool(theCompiler)
@@ -826,6 +828,8 @@ LinearScan::LinearScan(Compiler* theCompiler)
 #endif // TARGET_XARCH
 
     firstColdLoc = MaxLocation;
+
+    currentRefPositionsBuffer = currentRefPositionsBufferEnd = nullptr;
 
 #ifdef DEBUG
     maxNodeLocation              = 0;
@@ -2457,8 +2461,8 @@ void LinearScan::checkLastUses(BasicBlock* block)
     VARSET_TP computedLive(VarSetOps::MakeCopy(compiler, block->bbLiveOut));
 
     bool                       foundDiff          = false;
-    RefPositionReverseIterator currentRefPosition = refPositions.rbegin();
-    for (; currentRefPosition->refType != RefTypeBB; currentRefPosition++)
+    RefPosition* currentRefPosition = getAllRefPositionsTail();
+    for (; currentRefPosition->refType != RefTypeBB; currentRefPosition = currentRefPosition->prevAllRefPosition)
     {
         // We should never see ParamDefs or ZeroInits within a basic block.
         assert(currentRefPosition->refType != RefTypeParamDef && currentRefPosition->refType != RefTypeZeroInit);
@@ -2517,7 +2521,7 @@ void LinearScan::checkLastUses(BasicBlock* block)
             }
         }
 
-        assert(currentRefPosition != refPositions.rend());
+        assert(currentRefPosition != nullptr);
     }
 
     VARSET_TP liveInNotComputedLive(VarSetOps::Diff(compiler, block->bbLiveIn, computedLive));
@@ -4862,9 +4866,9 @@ void LinearScan::dumpRefPositions(const char* str)
     printf("------------\n");
     printf("REFPOSITIONS %s: \n", str);
     printf("------------\n");
-    for (RefPosition& refPos : refPositions)
+    for (RefPosition* refPos = allRefPositionsHead; refPos != nullptr; refPos = refPos->nextAllRefPosition)
     {
-        refPos.dump(this);
+        refPos->dump(this);
     }
 }
 #endif // DEBUG
@@ -5049,8 +5053,10 @@ void LinearScan::allocateRegistersMinimal()
 
     bool handledBlockEnd = false;
 
-    for (RefPosition& currentRefPosition : refPositions)
+    for (RefPosition* pCurrentRefPosition = allRefPositionsHead; pCurrentRefPosition != nullptr; pCurrentRefPosition = pCurrentRefPosition->nextAllRefPosition)
     {
+        RefPosition& currentRefPosition = *pCurrentRefPosition;
+
         // TODO: Can we combine this with the freeing of registers below? It might
         // mess with the dump, since this was previously being done before the call below
         // to dumpRegRecords.
@@ -5733,8 +5739,9 @@ void LinearScan::allocateRegisters()
 
     bool handledBlockEnd = false;
 
-    for (RefPosition& currentRefPosition : refPositions)
+    for (RefPosition* pCurrentRefPosition = allRefPositionsHead; pCurrentRefPosition != nullptr; pCurrentRefPosition = pCurrentRefPosition->nextAllRefPosition)
     {
+        RefPosition& currentRefPosition = *pCurrentRefPosition;
         RefPosition* nextRefPosition = currentRefPosition.nextRefPosition;
 
         // TODO: Can we combine this with the freeing of registers below? It might
@@ -8018,12 +8025,12 @@ void LinearScan::resolveRegisters()
     }
 
     // handle incoming arguments and special temps
-    RefPositionIterator currentRefPosition = refPositions.begin();
+    RefPosition* currentRefPosition = allRefPositionsHead;
 
     if (localVarsEnregistered)
     {
         VarToRegMap entryVarToRegMap = inVarToRegMaps[compiler->fgFirstBB->bbNum];
-        for (; currentRefPosition != refPositions.end(); ++currentRefPosition)
+        for (; currentRefPosition != nullptr; currentRefPosition = currentRefPosition->nextAllRefPosition)
         {
             if (currentRefPosition->refType != RefTypeParamDef && currentRefPosition->refType != RefTypeZeroInit)
             {
@@ -8050,7 +8057,7 @@ void LinearScan::resolveRegisters()
     }
     else
     {
-        assert(currentRefPosition == refPositions.end() ||
+        assert(currentRefPosition == nullptr ||
                (currentRefPosition->refType != RefTypeParamDef && currentRefPosition->refType != RefTypeZeroInit));
     }
 
@@ -8071,7 +8078,7 @@ void LinearScan::resolveRegisters()
             }
 
             // Handle the DummyDefs, updating the incoming var location.
-            for (; currentRefPosition != refPositions.end(); ++currentRefPosition)
+            for (; currentRefPosition != nullptr; currentRefPosition = currentRefPosition->nextAllRefPosition)
             {
                 if (currentRefPosition->refType != RefTypeDummyDef)
                 {
@@ -8097,12 +8104,12 @@ void LinearScan::resolveRegisters()
         }
 
         // The next RefPosition should be for the block.  Move past it.
-        assert(currentRefPosition != refPositions.end());
+        assert(currentRefPosition != nullptr);
         assert(currentRefPosition->refType == RefTypeBB);
-        ++currentRefPosition;
+        currentRefPosition = currentRefPosition->nextAllRefPosition;
 
         // Handle the RefPositions for the block
-        for (; currentRefPosition != refPositions.end(); ++currentRefPosition)
+        for (; currentRefPosition != nullptr; currentRefPosition = currentRefPosition->nextAllRefPosition)
         {
             if (currentRefPosition->refType == RefTypeBB || currentRefPosition->refType == RefTypeDummyDef)
             {
@@ -10170,7 +10177,7 @@ void LinearScan::dumpLsraStats(FILE* file)
     fprintf(file, "Total Reg Cand Vars: %d\n", regCandidateVarCount);
     fprintf(file, "Total number of Intervals: %d\n",
             static_cast<unsigned>((intervals.size() == 0 ? 0 : (intervals.size() - 1))));
-    fprintf(file, "Total number of RefPositions: %d\n", static_cast<unsigned>(refPositions.size() - 1));
+    fprintf(file, "Total number of RefPositions: %d\n", static_cast<unsigned>(numRefPositions));
 
     // compute total number of spill temps created
     unsigned numSpillTemps = 0;
@@ -10877,7 +10884,7 @@ void LinearScan::TupleStyleDump(LsraTupleDumpMode mode)
     // currentRefPosition is not used for LSRA_DUMP_PRE
     // We keep separate iterators for defs, so that we can print them
     // on the lhs of the dump
-    RefPositionIterator currentRefPosition = refPositions.begin();
+    RefPosition* currentRefPosition = allRefPositionsHead;
 
     switch (mode)
     {
@@ -10898,7 +10905,7 @@ void LinearScan::TupleStyleDump(LsraTupleDumpMode mode)
     if (mode != LSRA_DUMP_PRE)
     {
         printf("Incoming Parameters: ");
-        for (; currentRefPosition != refPositions.end(); ++currentRefPosition)
+        for (; currentRefPosition != nullptr; currentRefPosition = currentRefPosition->nextAllRefPosition)
         {
             if (currentRefPosition->refType == RefTypeBB)
             {
@@ -10944,7 +10951,7 @@ void LinearScan::TupleStyleDump(LsraTupleDumpMode mode)
         {
             bool printedBlockHeader = false;
             // We should find the boundary RefPositions in the order of exposed uses, dummy defs, and the blocks
-            for (; currentRefPosition != refPositions.end(); ++currentRefPosition)
+            for (; currentRefPosition != nullptr; currentRefPosition = currentRefPosition->nextAllRefPosition)
             {
                 Interval* interval = nullptr;
                 if (currentRefPosition->isIntervalRef())
@@ -11036,7 +11043,7 @@ void LinearScan::TupleStyleDump(LsraTupleDumpMode mode)
                 // and combining the fixed regs with their associated def or use
                 bool         killPrinted        = false;
                 RefPosition* lastFixedRegRefPos = nullptr;
-                for (; currentRefPosition != refPositions.end(); ++currentRefPosition)
+                for (; currentRefPosition != nullptr; currentRefPosition = currentRefPosition->nextAllRefPosition)
                 {
                     if (!(currentRefPosition->nodeLocation == tree->gtSeqNum ||
                           currentRefPosition->nodeLocation == tree->gtSeqNum + 1))
@@ -11443,10 +11450,10 @@ void LinearScan::dumpRegRecordHeader()
     maxNodeLocation = (maxNodeLocation == 0) ? 1 : maxNodeLocation; // corner case of a method with an infinite loop
                                                                     // without any GenTree nodes
     assert(maxNodeLocation >= 1);
-    assert(refPositions.size() >= 1);
+    assert(numRefPositions >= 1);
     int treeIdWidth               = 9; /* '[XXXXX] '*/
     int nodeLocationWidth         = (int)log10((double)maxNodeLocation) + 1;
-    int refPositionWidth          = (int)log10((double)refPositions.size()) + 1;
+    int refPositionWidth          = (int)log10((double)numRefPositions) + 1;
     int refTypeInfoWidth          = 4 /*TYPE*/ + 2 /* last-use and delayed */ + 1 /* space */;
     int locationAndRPNumWidth     = nodeLocationWidth + 2 /* .# */ + refPositionWidth + 1 /* space */;
     int shortRefPositionDumpWidth = locationAndRPNumWidth + regColumnWidth + 1 /* space */ + refTypeInfoWidth;
@@ -11971,8 +11978,9 @@ void LinearScan::verifyFinalAllocation()
     BasicBlock*  currentBlock                = nullptr;
     GenTree*     firstBlockEndResolutionNode = nullptr;
     LsraLocation currentLocation             = MinLocation;
-    for (RefPosition& currentRefPosition : refPositions)
+    for (RefPosition* pCurrentRefPosition = allRefPositionsHead; pCurrentRefPosition != nullptr; pCurrentRefPosition = pCurrentRefPosition->nextAllRefPosition)
     {
+        RefPosition& currentRefPosition = *pCurrentRefPosition;
         Interval*  interval  = nullptr;
         RegRecord* regRecord = nullptr;
         regNumber  regNum    = REG_NA;
