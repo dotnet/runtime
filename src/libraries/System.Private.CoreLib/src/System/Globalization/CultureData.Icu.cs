@@ -364,7 +364,12 @@ namespace System.Globalization
                 char current = icuFormatString[i];
                 switch (current)
                 {
+                    case '\\':
+                        result[resultPos++] = '\\';
+                        result[resultPos++] = '\\';
+                        break;
                     case '\'':
+                        int i0 = i;
                         result[resultPos++] = icuFormatString[i++];
                         while (i < icuFormatString.Length)
                         {
@@ -372,7 +377,24 @@ namespace System.Globalization
                             result[resultPos++] = current;
                             if (current == '\'')
                             {
-                                break;
+                                if (i - i0 <= 1)
+                                {
+                                    // Two adjacent single vertical quotes ('') represents a literal single quote, outside quoted text.
+                                    result[resultPos - 2] = '\\';
+                                    break;
+                                }
+                                if (i + 1 < icuFormatString.Length && icuFormatString[i + 1] == '\'')
+                                {
+                                    // Two adjacent single vertical quotes ('') represents a literal single quote, inside quoted text.
+                                    result[resultPos - 1] = '\\';
+                                    result[resultPos++] = '\'';
+                                    i++;
+                                }
+                                else break;
+                            }
+                            else if (current == '\\')
+                            {
+                                result[resultPos++] = '\\';
                             }
                             i++;
                         }
