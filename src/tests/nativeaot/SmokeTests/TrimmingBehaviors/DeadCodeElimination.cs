@@ -350,6 +350,8 @@ class DeadCodeElimination
         class Canary2 { }
         class Never3 { }
         class Canary3 { }
+        class Never4 { }
+        class Canary4 { }
 
         class Maybe1<T, U> { }
 
@@ -399,6 +401,21 @@ class DeadCodeElimination
                     if (o.GetType() == typeof(Never3))
                     {
                         s_sink = new Canary3();
+                    }
+                }
+
+                ThrowIfPresentWithUsableMethodTable(typeof(TestTypeEquals), nameof(Canary3));
+            }
+
+            {
+
+                RunCheck(GetTheObject());
+
+                static void RunCheck(object o)
+                {
+                    if (typeof(Never4) == o.GetType())
+                    {
+                        s_sink = new Canary4();
                     }
                 }
 
