@@ -265,6 +265,8 @@ namespace System.Runtime.Intrinsics
             // TODO: move this to JIT
             if (Sse41.IsSupported && (typeof(T) == typeof(long) || typeof(T) == typeof(ulong)))
             {
+                Vector128<ulong> a = left.AsUInt64();
+                Vector128<ulong> b = right.AsUInt64();
                 return Unsafe.BitCast<Vector128<ulong>, Vector128<T>>(
                     Sse2.Add(
                         Sse2.Multiply(a.AsUInt32(), b.AsUInt32()).AsUInt64(),
