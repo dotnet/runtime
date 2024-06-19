@@ -561,7 +561,7 @@ namespace System.Numerics
         /// <returns>A new <see cref="Vector{T}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements initialized to zero.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
-        internal static unsafe Vector<T> CreateScalar<T>(T value)
+        internal static Vector<T> CreateScalar<T>(T value)
         {
             Vector<T> result = Vector<T>.Zero;
             result.SetElementUnsafe(0, value);
@@ -694,6 +694,48 @@ namespace System.Numerics
             }
 
             return false;
+        }
+
+        internal static Vector<T> Exp<T>(Vector<T> vector)
+            where T : IExponentialFunctions<T>
+        {
+            Unsafe.SkipInit(out Vector<T> result);
+
+            for (int index = 0; index < Vector<T>.Count; index++)
+            {
+                T value = T.Exp(vector.GetElementUnsafe(index));
+                result.SetElementUnsafe(index, value);
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="Vector128.Exp(Vector128{double})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<double> Exp(Vector<double> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.ExpDouble<Vector<double>, Vector<long>, Vector<ulong>>(vector);
+            }
+            else
+            {
+                return Exp<double>(vector);
+            }
+        }
+
+        /// <inheritdoc cref="Vector128.Exp(Vector128{float})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<float> Exp(Vector<float> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.ExpSingle<Vector<float>, Vector<uint>, Vector<double>, Vector<ulong>>(vector);
+            }
+            else
+            {
+                return Exp<float>(vector);
+            }
         }
 
         /// <summary>Computes the floor of each element in a vector.</summary>
@@ -1256,6 +1298,90 @@ namespace System.Numerics
             ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
             ref readonly byte address = ref Unsafe.As<T, byte>(ref Unsafe.Add(ref Unsafe.AsRef(in source), (nint)elementOffset));
             return Unsafe.ReadUnaligned<Vector<T>>(in address);
+        }
+
+        internal static Vector<T> Log<T>(Vector<T> vector)
+            where T : ILogarithmicFunctions<T>
+        {
+            Unsafe.SkipInit(out Vector<T> result);
+
+            for (int index = 0; index < Vector<T>.Count; index++)
+            {
+                T value = T.Log(vector.GetElementUnsafe(index));
+                result.SetElementUnsafe(index, value);
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="Vector128.Log(Vector128{double})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<double> Log(Vector<double> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.LogDouble<Vector<double>, Vector<long>, Vector<ulong>>(vector);
+            }
+            else
+            {
+                return Log<double>(vector);
+            }
+        }
+
+        /// <inheritdoc cref="Vector128.Log(Vector128{float})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<float> Log(Vector<float> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.LogSingle<Vector<float>, Vector<int>, Vector<uint>>(vector);
+            }
+            else
+            {
+                return Log<float>(vector);
+            }
+        }
+
+        internal static Vector<T> Log2<T>(Vector<T> vector)
+            where T : ILogarithmicFunctions<T>
+        {
+            Unsafe.SkipInit(out Vector<T> result);
+
+            for (int index = 0; index < Vector<T>.Count; index++)
+            {
+                T value = T.Log2(vector.GetElementUnsafe(index));
+                result.SetElementUnsafe(index, value);
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="Vector128.Log2(Vector128{double})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<double> Log2(Vector<double> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.Log2Double<Vector<double>, Vector<long>, Vector<ulong>>(vector);
+            }
+            else
+            {
+                return Log2<double>(vector);
+            }
+        }
+
+        /// <inheritdoc cref="Vector128.Log2(Vector128{float})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<float> Log2(Vector<float> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.Log2Single<Vector<float>, Vector<int>, Vector<uint>>(vector);
+            }
+            else
+            {
+                return Log2<float>(vector);
+            }
         }
 
         /// <summary>Computes the maximum of two vectors on a per-element basis.</summary>
@@ -1859,6 +1985,48 @@ namespace System.Numerics
             ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
             return vector.GetElementUnsafe(0);
         }
+
+        /// <summary>Widens a <see cref="Vector{Byte}" /> into two <see cref="Vector{UInt16} " />.</summary>
+        /// <param name="source">The vector whose elements are to be widened.</param>
+        /// <returns>A pair of vectors that contain the widened lower and upper halves of <paramref name="source" />.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static (Vector<ushort> Lower, Vector<ushort> Upper) Widen(Vector<byte> source) => (WidenLower(source), WidenUpper(source));
+
+        /// <summary>Widens a <see cref="Vector{Int16}" /> into two <see cref="Vector{Int32} " />.</summary>
+        /// <param name="source">The vector whose elements are to be widened.</param>
+        /// <returns>A pair of vectors that contain the widened lower and upper halves of <paramref name="source" />.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static (Vector<int> Lower, Vector<int> Upper) Widen(Vector<short> source) => (WidenLower(source), WidenUpper(source));
+
+        /// <summary>Widens a <see cref="Vector{Int32}" /> into two <see cref="Vector{Int64} " />.</summary>
+        /// <param name="source">The vector whose elements are to be widened.</param>
+        /// <returns>A pair of vectors that contain the widened lower and upper halves of <paramref name="source" />.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static (Vector<long> Lower, Vector<long> Upper) Widen(Vector<int> source) => (WidenLower(source), WidenUpper(source));
+
+        /// <summary>Widens a <see cref="Vector{SByte}" /> into two <see cref="Vector{Int16} " />.</summary>
+        /// <param name="source">The vector whose elements are to be widened.</param>
+        /// <returns>A pair of vectors that contain the widened lower and upper halves of <paramref name="source" />.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static (Vector<short> Lower, Vector<short> Upper) Widen(Vector<sbyte> source) => (WidenLower(source), WidenUpper(source));
+
+        /// <summary>Widens a <see cref="Vector{Single}" /> into two <see cref="Vector{Double} " />.</summary>
+        /// <param name="source">The vector whose elements are to be widened.</param>
+        /// <returns>A pair of vectors that contain the widened lower and upper halves of <paramref name="source" />.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static (Vector<double> Lower, Vector<double> Upper) Widen(Vector<float> source) => (WidenLower(source), WidenUpper(source));
+
+        /// <summary>Widens a <see cref="Vector{UInt16}" /> into two <see cref="Vector{UInt32} " />.</summary>
+        /// <param name="source">The vector whose elements are to be widened.</param>
+        /// <returns>A pair of vectors that contain the widened lower and upper halves of <paramref name="source" />.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static (Vector<uint> Lower, Vector<uint> Upper) Widen(Vector<ushort> source) => (WidenLower(source), WidenUpper(source));
+
+        /// <summary>Widens a <see cref="Vector{UInt32}" /> into two <see cref="Vector{UInt64} " />.</summary>
+        /// <param name="source">The vector whose elements are to be widened.</param>
+        /// <returns>A pair of vectors that contain the widened lower and upper halves of <paramref name="source" />.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static (Vector<ulong> Lower, Vector<ulong> Upper) Widen(Vector<uint> source) => (WidenLower(source), WidenUpper(source));
 
         /// <summary>Widens a <see cref="Vector{Byte}" /> into two <see cref="Vector{UInt16} " />.</summary>
         /// <param name="source">The vector whose elements are to be widened.</param>

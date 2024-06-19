@@ -408,6 +408,10 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Dot(Vector3 vector1, Vector3 vector2) => Vector128.Dot(vector1.AsVector128(), vector2.AsVector128());
 
+        /// <inheritdoc cref="Vector4.Exp(Vector4)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector3 Exp(Vector3 vector) => Vector128.Exp(vector.AsVector128Unsafe()).AsVector3();
+
         /// <inheritdoc cref="Vector128.MultiplyAddEstimate(Vector128{float}, Vector128{float}, Vector128{float})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -421,6 +425,14 @@ namespace System.Numerics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 Lerp(Vector3 value1, Vector3 value2, float amount) => MultiplyAddEstimate(value1, Create(1.0f - amount), value2 * amount);
+
+        /// <inheritdoc cref="Vector4.Log2(Vector4)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector3 Log(Vector3 vector) => Vector128.Log(vector.AsVector128Unsafe()).AsVector3();
+
+        /// <inheritdoc cref="Vector4.Log(Vector4)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector3 Log2(Vector3 vector) => Vector128.Log2(vector.AsVector128Unsafe()).AsVector3();
 
         /// <summary>Returns a vector whose elements are the maximum of each of the pairs of elements in two specified vectors.</summary>
         /// <param name="value1">The first vector.</param>

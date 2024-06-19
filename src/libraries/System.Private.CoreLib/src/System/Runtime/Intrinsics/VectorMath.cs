@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 
 namespace System.Runtime.Intrinsics
@@ -812,7 +813,11 @@ namespace System.Runtime.Intrinsics
         {
             Unsafe.SkipInit(out TVectorDouble result);
 
-            if (typeof(TVectorInt64) == typeof(Vector64<long>))
+            if (typeof(TVectorInt64) == typeof(Vector<long>))
+            {
+                result = (TVectorDouble)(object)Vector.ConvertToDouble((Vector<long>)(object)vector);
+            }
+            else if (typeof(TVectorInt64) == typeof(Vector64<long>))
             {
                 result = (TVectorDouble)(object)Vector64.ConvertToDouble((Vector64<long>)(object)vector);
             }
@@ -843,7 +848,11 @@ namespace System.Runtime.Intrinsics
         {
             Unsafe.SkipInit(out TVectorSingle result);
 
-            if (typeof(TVectorInt32) == typeof(Vector64<int>))
+            if (typeof(TVectorInt32) == typeof(Vector<int>))
+            {
+                result = (TVectorSingle)(object)Vector.ConvertToSingle((Vector<int>)(object)vector);
+            }
+            else if (typeof(TVectorInt32) == typeof(Vector64<int>))
             {
                 result = (TVectorSingle)(object)Vector64.ConvertToSingle((Vector64<int>)(object)vector);
             }
@@ -874,7 +883,12 @@ namespace System.Runtime.Intrinsics
         {
             Unsafe.SkipInit(out TVectorSingle result);
 
-            if (typeof(TVectorDouble) == typeof(Vector64<double>))
+            if (typeof(TVectorDouble) == typeof(Vector<double>))
+            {
+                Debug.Assert(typeof(TVectorSingle) == typeof(Vector<float>));
+                result = (TVectorSingle)(object)Vector.Narrow((Vector<double>)(object)lower, (Vector<double>)(object)upper);
+            }
+            else if (typeof(TVectorDouble) == typeof(Vector64<double>))
             {
                 Debug.Assert(typeof(TVectorSingle) == typeof(Vector64<float>));
                 result = (TVectorSingle)(object)Vector64.Narrow((Vector64<double>)(object)lower, (Vector64<double>)(object)upper);
@@ -909,7 +923,12 @@ namespace System.Runtime.Intrinsics
         {
             Unsafe.SkipInit(out (TVectorDouble, TVectorDouble) result);
 
-            if (typeof(TVectorSingle) == typeof(Vector64<float>))
+            if (typeof(TVectorSingle) == typeof(Vector<float>))
+            {
+                Debug.Assert(typeof(TVectorDouble) == typeof(Vector<double>));
+                result = ((TVectorDouble, TVectorDouble))(object)Vector.Widen((Vector<float>)(object)vector);
+            }
+            else if (typeof(TVectorSingle) == typeof(Vector64<float>))
             {
                 Debug.Assert(typeof(TVectorDouble) == typeof(Vector64<double>));
                 result = ((TVectorDouble, TVectorDouble))(object)Vector64.Widen((Vector64<float>)(object)vector);
