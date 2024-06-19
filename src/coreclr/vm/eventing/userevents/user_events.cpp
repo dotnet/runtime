@@ -7,7 +7,7 @@
 
 namespace
 {
-	bool s_userEventsEnabled = false;
+    bool s_userEventsEnabled = false;
 }
 
 void InitDotNETRuntime();
@@ -34,10 +34,14 @@ void InitUserEvents()
 
     if (s_userEventsEnabled)
     {
-    	InitDotNETRuntime();
-    	InitDotNETRuntimePrivate();
-    	InitDotNETRuntimeRundown();
-		InitDotNETRuntimeStress();
+        InitDotNETRuntime();
+        MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context.UserEventsProvider.id = 0;
+        InitDotNETRuntimePrivate();
+        MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context.UserEventsProvider.id = 1;
+        InitDotNETRuntimeRundown();
+        MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context.UserEventsProvider.id = 2;
+        InitDotNETRuntimeStress();
+        MICROSOFT_WINDOWS_DOTNETRUNTIME_STRESS_PROVIDER_DOTNET_Context.UserEventsProvider.id = 3;
     }
 }
 
@@ -46,23 +50,30 @@ bool IsUserEventsEnabled()
     return s_userEventsEnabled;
 }
 
-bool IsUserEventsEnabledByKeyword(LPCWSTR name, uint8_t level, uint64_t keyword)
+bool IsUserEventsEnabledByKeyword(UCHAR providerId, uint8_t level, uint64_t keyword)
 {
-    if (u16_strcmp(W("Microsoft-Windows-DotNETRuntime"), name) == 0)
+    switch (providerId)
     {
-        return DotNETRuntimeEnabledByKeyword(level, keyword);
-    }
-    else if (u16_strcmp(W("Microsoft-Windows-DotNETRuntimePrivate"), name) == 0)
-    {
-        return DotNETRuntimePrivateEnabledByKeyword(level, keyword);
-    }
-    else if (u16_strcmp(W("Microsoft-Windows-DotNETRuntimeRundown"), name) == 0)
-    {
-        return DotNETRuntimeRundownEnabledByKeyword(level, keyword);
-    }
-    else if (u16_strcmp(W("Microsoft-Windows-DotNETRuntimeStress"), name) == 0)
-    {
-        return DotNETRuntimeStressEnabledByKeyword(level, keyword);
+        case 0:
+        {
+            return DotNETRuntimeEnabledByKeyword(level, keyword);
+        }
+        case 1:
+        {
+            return DotNETRuntimePrivateEnabledByKeyword(level, keyword);
+        }
+        case 2:
+        {
+            return DotNETRuntimeRundownEnabledByKeyword(level, keyword);
+        }
+        case 3:
+        {
+            return DotNETRuntimeStressEnabledByKeyword(level, keyword);
+        }
+        default:
+        {
+            _ASSERTE(!"Unknown provider id");
+        }
     }
 
     return false;

@@ -48,7 +48,64 @@
 #           );
 #           return ERROR_SUCCESS;
 #       }
-# 
+#    
+#    We also generate a function to check if a given keyword/level is enabled for each provider:
+#    
+#        bool DotNETRuntimeEnabledByKeyword(uint8_t level, uint64_t keyword)
+#        {
+#            if (!IsUserEventsEnabled())
+#            {
+#                return false;
+#            }
+#    
+#            switch (level)
+#            {
+#                case (0):
+#                    if (keyword == 0)
+#                    {
+#                        if (TraceLoggingProviderEnabled(DotNETRuntimeStress, 0, 0)) return true;
+#                    }
+#                    // Continue for every eligible keyword
+#                    break;
+#                case (1):
+#                    if (keyword == 0)
+#                    {
+#                        if (TraceLoggingProviderEnabled(DotNETRuntimeStress, 1, 0)) return true;
+#                    }
+#                    // Continue for every eligible keyword
+#                    break;
+#                case (2):
+#                    if (keyword == 0)
+#                    {
+#                        if (TraceLoggingProviderEnabled(DotNETRuntimeStress, 2, 0)) return true;
+#                    }
+#                    // Continue for every eligible keyword
+#                    break;
+#                case (3):
+#                    if (keyword == 0)
+#                    {
+#                        if (TraceLoggingProviderEnabled(DotNETRuntimeStress, 3, 0)) return true;
+#                    }
+#                    // Continue for every eligible keyword
+#                    break;
+#                case (4):
+#                    if (keyword == 0)
+#                    {
+#                        if (TraceLoggingProviderEnabled(DotNETRuntimeStress, 4, 0)) return true;
+#                    }
+#                    // Continue for every eligible keyword
+#                    break;
+#                case (5):
+#                    if (keyword == 0)
+#                    {
+#                        if (TraceLoggingProviderEnabled(DotNETRuntimeStress, 5, 0)) return true;
+#                    }
+#                    // Continue for every eligible keyword
+#                    break;
+#    
+#            }
+#            return false;
+#        }
 
 from __future__ import print_function
 from genEventing import *

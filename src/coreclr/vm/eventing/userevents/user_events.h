@@ -7,6 +7,6 @@
 
 void InitUserEvents();
 bool IsUserEventsEnabled();
-bool IsUserEventsEnabledByKeyword(LPCWSTR name, uint8_t level, uint64_t keyword);
+bool IsUserEventsEnabledByKeyword(UCHAR providerId, uint8_t level, uint64_t keyword);
 
 #endif // __USEREVENTS_H__

@@ -5810,7 +5810,7 @@ bool UserEventsHelper::Enabled()
 
 bool UserEventsHelper::IsEnabled(DOTNET_TRACE_CONTEXT Context, UCHAR Level, ULONGLONG Keyword)
 {
-    return IsUserEventsEnabledByKeyword(Context.EventPipeProvider.Name, Level, Keyword);
+    return IsUserEventsEnabledByKeyword(Context.UserEventsProvider.id, Level, Keyword);
 }
 #else // TARGET_LINUX
 bool UserEventsHelper::Enabled()

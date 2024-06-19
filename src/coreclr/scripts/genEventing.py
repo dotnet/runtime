@@ -872,7 +872,7 @@ def getKeywordsMaskCombined(keywords, keywordsToMask):
 
     return mask
 
-def updateclreventsfile(write_xplatheader, target_cpp, runtimeFlavor, eventpipe_trace_context_typedef, dotnet_trace_context_typedef_windows, tree, clrallevents, inclusion_list, generatedFileType, user_events):
+def updateclreventsfile(write_xplatheader, target_cpp, runtimeFlavor, eventpipe_trace_context_typedef, dotnet_trace_context_typedef_windows, user_events_trace_context_typedef, tree, clrallevents, inclusion_list, generatedFileType, user_events):
     is_windows = os.name == 'nt'
     with open_for_update(clrallevents) as Clrallevents:
         Clrallevents.write(stdprolog)
@@ -913,6 +913,9 @@ def updateclreventsfile(write_xplatheader, target_cpp, runtimeFlavor, eventpipe_
                 Clrallevents.write(dotnet_trace_context_typedef_windows + "\n")
             else:
                 Clrallevents.write("\n")
+        
+        if not is_windows and runtimeFlavor.coreclr:
+            Clrallevents.write(user_events_trace_context_typedef)
 
         if not is_windows and not write_xplatheader and not runtimeFlavor.nativeaot:
             Clrallevents.write(eventpipe_trace_context_typedef)  # define EVENTPIPE_TRACE_CONTEXT
@@ -965,6 +968,16 @@ typedef struct _EVENTPIPE_TRACE_CONTEXT
 #endif // EVENTPIPE_TRACE_CONTEXT_DEF
 """ % (getEventPipeDataTypeMapping(runtimeFlavor)["WCHAR"], getEventPipeDataTypeMapping(runtimeFlavor)["UCHAR"], getEventPipeDataTypeMapping(runtimeFlavor)["ULONGLONG"])
 
+    user_events_trace_context_typedef = """
+#if !defined(USER_EVENTS_TRACE_CONTEXT_DEF)
+#define USER_EVENTS_TRACE_CONTEXT_DEF
+typedef struct _USER_EVENTS_TRACE_CONTEXT
+{
+    UCHAR id;
+} USER_EVENTS_TRACE_CONTEXT, *PUSER_EVENTS_TRACE_CONTEXT;
+#endif // USER_EVENTS_TRACE_CONTEXT_DEF
+"""
+
     lttng_trace_context_typedef = """
 #if !defined(LTTNG_TRACE_CONTEXT_DEF)
 #define LTTNG_TRACE_CONTEXT_DEF
@@ -996,6 +1009,7 @@ typedef struct _DOTNET_TRACE_CONTEXT
 {
     EVENTPIPE_TRACE_CONTEXT EventPipeProvider;
     PLTTNG_TRACE_CONTEXT LttngProvider;
+    USER_EVENTS_TRACE_CONTEXT UserEventsProvider;
 } DOTNET_TRACE_CONTEXT, *PDOTNET_TRACE_CONTEXT;
 #endif // DOTNET_TRACE_CONTEXT_DEF
 """
@@ -1005,11 +1019,11 @@ typedef struct _DOTNET_TRACE_CONTEXT
     # Write the main source(s) for FireETW* functions
     # nativeaot requires header and source file to be separated as well as a noop implementation
     if runtimeFlavor.nativeaot:
-        updateclreventsfile(write_xplatheader, target_cpp, runtimeFlavor, eventpipe_trace_context_typedef, dotnet_trace_context_typedef_windows, tree, os.path.join(incDir, "clretwallmain.cpp"), inclusion_list, "source-impl", user_events)
-        updateclreventsfile(write_xplatheader, target_cpp, runtimeFlavor, eventpipe_trace_context_typedef, dotnet_trace_context_typedef_windows, tree, os.path.join(incDir, "clretwallmain.h"), inclusion_list, "header", user_events)
-        updateclreventsfile(write_xplatheader, target_cpp, runtimeFlavor, eventpipe_trace_context_typedef, dotnet_trace_context_typedef_windows, tree, os.path.join(incDir, "disabledclretwallmain.cpp"), inclusion_list, "source-impl-noop", user_events)
+        updateclreventsfile(write_xplatheader, target_cpp, runtimeFlavor, eventpipe_trace_context_typedef, dotnet_trace_context_typedef_windows, user_events_trace_context_typedef, tree, os.path.join(incDir, "clretwallmain.cpp"), inclusion_list, "source-impl", user_events)
+        updateclreventsfile(write_xplatheader, target_cpp, runtimeFlavor, eventpipe_trace_context_typedef, dotnet_trace_context_typedef_windows, user_events_trace_context_typedef, tree, os.path.join(incDir, "clretwallmain.h"), inclusion_list, "header", user_events)
+        updateclreventsfile(write_xplatheader, target_cpp, runtimeFlavor, eventpipe_trace_context_typedef, dotnet_trace_context_typedef_windows, user_events_trace_context_typedef, tree, os.path.join(incDir, "disabledclretwallmain.cpp"), inclusion_list, "source-impl-noop", user_events)
     else:
-        updateclreventsfile(write_xplatheader, target_cpp, runtimeFlavor, eventpipe_trace_context_typedef, dotnet_trace_context_typedef_windows, tree, os.path.join(incDir, "clretwallmain.h"), inclusion_list, "header-impl", user_events)
+        updateclreventsfile(write_xplatheader, target_cpp, runtimeFlavor, eventpipe_trace_context_typedef, dotnet_trace_context_typedef_windows, user_events_trace_context_typedef, tree, os.path.join(incDir, "clretwallmain.h"), inclusion_list, "header-impl", user_events)
 
     if write_xplatheader:
         clrproviders = os.path.join(incDir, "clrproviders.h")
@@ -1024,6 +1038,7 @@ typedef struct _EVENT_DESCRIPTOR
             if not is_windows and not runtimeFlavor.nativeaot:
                 Clrproviders.write(eventpipe_trace_context_typedef)  # define EVENTPIPE_TRACE_CONTEXT
                 Clrproviders.write(lttng_trace_context_typedef)  # define LTTNG_TRACE_CONTEXT
+                Clrproviders.write(user_events_trace_context_typedef)
                 Clrproviders.write(dotnet_trace_context_typedef_unix + "\n")
 
             allProviders = []
