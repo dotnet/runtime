@@ -20,7 +20,7 @@ namespace System.Net.Http.Functional.Tests
 
         public static X509Certificate2 GetCertificateViaAlias(X509Store store, string alias)
         {
-            var privateKeyEntry = Interop.AndroidCrypto.X509StoreGetPrivateKeyEntry(store.StoreHandle, alias);
+            IntPtr privateKeyEntry = Interop.AndroidCrypto.X509StoreGetPrivateKeyEntry(store.StoreHandle, alias);
             return new X509Certificate2(privateKeyEntry);
         }
 

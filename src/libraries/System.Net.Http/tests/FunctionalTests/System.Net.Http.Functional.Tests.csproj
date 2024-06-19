@@ -6,7 +6,7 @@
     <DefineConstants>$(DefineConstants);SYSNETHTTP_NO_OPENSSL;HTTP3</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-linux;$(NetCoreAppCurrent)-browser;$(NetCoreAppCurrent)-osx</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-linux;$(NetCoreAppCurrent)-android;$(NetCoreAppCurrent)-browser;$(NetCoreAppCurrent)-osx</TargetFrameworks>
     <EnablePreviewFeatures>true</EnablePreviewFeatures>
     <EventSourceSupport Condition="'$(TestNativeAot)' == 'true'">true</EventSourceSupport>
   </PropertyGroup>
@@ -29,7 +29,7 @@
     <WasmXHarnessTestsTimeout>01:15:00</WasmXHarnessTestsTimeout>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetsAndroid)' == 'true'">
+  <PropertyGroup Condition="'$(TargetPlatformIdentifier)' == 'android'">
     <DefineConstants>$(DefineConstants);TARGETS_ANDROID</DefineConstants>
   </PropertyGroup>
 
@@ -237,7 +237,7 @@
     <Compile Include="ImpersonatedAuthTests.cs" />
   </ItemGroup>
   <!-- Linux specific files -->
-  <ItemGroup Condition="('$(TargetPlatformIdentifier)' == 'linux' and '$(TargetsAndroid)' != 'true') or '$(TargetPlatformIdentifier)' == 'browser'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'linux' or '$(TargetPlatformIdentifier)' == 'browser'">
     <Compile Include="$(CommonPath)Interop\Linux\Interop.Libraries.cs"
              Link="Common\Interop\Linux\Interop.Libraries.cs" />
   </ItemGroup>
@@ -247,7 +247,7 @@
              Link="Common\Interop\OSX\Interop.Libraries.cs" />
   </ItemGroup>
   <!-- Android specific files -->
-  <ItemGroup Condition=" '$(TargetsAndroid)' == 'true' ">
+  <ItemGroup Condition=" '$(TargetPlatformIdentifier)' == 'android' ">
     <Compile Include="AndroidKeyStoreHelper.cs" />
     <Compile Include="$(CommonPath)Interop\Android\Interop.Libraries.cs"
              Link="Common\Interop\Android\Interop.Libraries.cs" />
