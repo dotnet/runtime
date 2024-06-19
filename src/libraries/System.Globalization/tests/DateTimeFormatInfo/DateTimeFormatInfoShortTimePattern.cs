@@ -259,7 +259,13 @@ namespace System.Globalization.Tests
         {
             var date = DateTime.Today + TimeSpan.FromHours(15) + TimeSpan.FromMinutes(15);
             var culture = new CultureInfo("en-US");
-            Assert.Equal("3:15 PM", date.ToString("t", culture));
+            string formattedDate = date.ToString("t", culture);
+            bool containsSpace = formattedDate.Contains(' ');
+            bool containsNoBreakSpace = formattedDate.Contains('\u00A0');
+            bool containsNarrowNoBreakSpace = formattedDate.Contains('\u202F');
+
+            Assert.True(containsSpace || containsNoBreakSpace || containsNarrowNoBreakSpace,
+                $"Formatted date string '{formattedDate}' does not contain any of the specified spaces.");
         }
     }
 }

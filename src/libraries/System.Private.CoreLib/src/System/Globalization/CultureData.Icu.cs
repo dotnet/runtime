@@ -267,7 +267,12 @@ namespace System.Globalization
             if (GlobalizationMode.Hybrid)
             {
                 string res = Interop.Globalization.GetLocaleTimeFormatNative(_sWindowsName, shortFormat);
-                span = res != null ? new ReadOnlySpan<char>(ref res.GetRawStringData(), res.Length) : ReadOnlySpan<char>.Empty;
+                if (string.IsNullOrEmpty(res))
+                {
+                    Debug.Fail("[CultureData.GetTimeFormatString(bool shortFormat)] Failed");
+                    return string.Empty;
+                }
+                span = res.AsSpan();
             }
             else
 #endif
