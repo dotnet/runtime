@@ -417,7 +417,7 @@ if(NOT DISABLE_SHARED_LIBS)
         endif()
         add_library(${frameworkconfig} SHARED $<TARGET_OBJECTS:monosgen-objects>)
         target_compile_definitions(${frameworkconfig} PRIVATE -DMONO_DLL_EXPORT)
-        target_link_libraries(${frameworkconfig} PRIVATE monoapi eglib_objects utils_objects sgen_objects metadata_objects)
+        target_link_libraries(${frameworkconfig} PRIVATE monoapi eglib_objects utils_objects sgen_objects metadata_objects dn-containers)
         target_link_libraries(${frameworkconfig} PRIVATE ${OS_LIBS} ${LLVM_LIBS} ${Z_LIBS})
 
         set_property(TARGET ${frameworkconfig} APPEND_STRING PROPERTY LINK_FLAGS " -Wl,-compatibility_version -Wl,2.0 -Wl,-current_version -Wl,2.0")
