@@ -19,8 +19,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
             ReadPfx(pfxBytes, correctPassword, expectedCert, otherWork, nonExportFlags);
             ReadPfx(pfxBytes, correctPassword, expectedCert, otherWork, exportFlags);
-            ReadPfxFromLoader(pfxBytes, correctPassword, expectedCert, otherWork, nonExportFlags);
-            ReadPfxFromLoader(pfxBytes, correctPassword, expectedCert, otherWork, exportFlags);
         }
 
         protected override void ReadMultiPfx(
@@ -29,19 +27,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             X509Certificate2 expectedSingleCert,
             X509Certificate2[] expectedOrder,
             X509KeyStorageFlags nonExportFlags,
-            Action<X509Certificate2> perCertOtherWork,
-            bool newOnly)
+            Action<X509Certificate2> perCertOtherWork)
         {
             X509KeyStorageFlags exportFlags = nonExportFlags | X509KeyStorageFlags.Exportable;
 
-            if (!newOnly)
-            {
-                ReadPfx(pfxBytes, correctPassword, expectedSingleCert, perCertOtherWork, nonExportFlags);
-                ReadPfx(pfxBytes, correctPassword, expectedSingleCert, perCertOtherWork, exportFlags);
-            }
-
-            ReadPfxFromLoader(pfxBytes, correctPassword, expectedSingleCert, perCertOtherWork, nonExportFlags);
-            ReadPfxFromLoader(pfxBytes, correctPassword, expectedSingleCert, perCertOtherWork, exportFlags);
+            ReadPfx(pfxBytes, correctPassword, expectedSingleCert, perCertOtherWork, nonExportFlags);
+            ReadPfx(pfxBytes, correctPassword, expectedSingleCert, perCertOtherWork, exportFlags);
         }
 
         private void ReadPfx(
@@ -52,20 +43,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             X509KeyStorageFlags flags)
         {
             using (X509Certificate2 cert = new X509Certificate2(pfxBytes, correctPassword, flags))
-            {
-                AssertCertEquals(expectedCert, cert);
-                otherWork?.Invoke(cert);
-            }
-        }
-
-        private void ReadPfxFromLoader(
-            byte[] pfxBytes,
-            string correctPassword,
-            X509Certificate2 expectedCert,
-            Action<X509Certificate2> otherWork,
-            X509KeyStorageFlags flags)
-        {
-            using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(pfxBytes, correctPassword, flags))
             {
                 AssertCertEquals(expectedCert, cert);
                 otherWork?.Invoke(cert);

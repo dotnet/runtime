@@ -10,7 +10,7 @@ using Xunit;
 namespace System.Security.Cryptography.X509Certificates.Tests
 {
     [SkipOnPlatform(TestPlatforms.Browser, "Browser doesn't support X.509 certificates")]
-    public class X509CertificateLoaderPkcs12Tests_FromByteArray : X509CertificateLoaderPkcs12Tests
+    public class X509CertificateLoaderPkcs12CollectionTests_FromByteArray : X509CertificateLoaderPkcs12CollectionTests
     {
         protected override void NullInputAssert(Action action) =>
             AssertExtensions.Throws<ArgumentNullException>("data", action);
@@ -18,23 +18,23 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         protected override void EmptyInputAssert(Action action) =>
             Assert.Throws<CryptographicException>(action);
 
-        protected override X509Certificate2 LoadPfxCore(
+        protected override X509Certificate2Collection LoadPfxCore(
             byte[] bytes,
             string path,
             string password,
             X509KeyStorageFlags keyStorageFlags,
             Pkcs12LoaderLimits loaderLimits)
         {
-            return X509CertificateLoader.LoadPkcs12(bytes, password, keyStorageFlags, loaderLimits);
+            return X509CertificateLoader.LoadPkcs12Collection(bytes, password, keyStorageFlags, loaderLimits);
         }
 
-        protected override X509Certificate2 LoadPfxFileOnlyCore(
+        protected override X509Certificate2Collection LoadPfxFileOnlyCore(
             string path,
             string password,
             X509KeyStorageFlags keyStorageFlags,
             Pkcs12LoaderLimits loaderLimits)
         {
-            return X509CertificateLoader.LoadPkcs12(
+            return X509CertificateLoader.LoadPkcs12Collection(
                 File.ReadAllBytes(path),
                 password,
                 keyStorageFlags,
@@ -55,7 +55,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
     }
 
     [SkipOnPlatform(TestPlatforms.Browser, "Browser doesn't support X.509 certificates")]
-    public class X509CertificateLoaderPkcs12Tests_FromByteSpan : X509CertificateLoaderPkcs12Tests
+    public class X509CertificateLoaderPkcs12CollectionTests_FromByteSpan : X509CertificateLoaderPkcs12CollectionTests
     {
         protected override void NullInputAssert(Action action) =>
             Assert.ThrowsAny<CryptographicException>(action);
@@ -63,35 +63,35 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         protected override void EmptyInputAssert(Action action) =>
             Assert.ThrowsAny<CryptographicException>(action);
 
-        protected override X509Certificate2 LoadPfxCore(
+        protected override X509Certificate2Collection LoadPfxCore(
             byte[] bytes,
             string path,
             string password,
             X509KeyStorageFlags keyStorageFlags,
             Pkcs12LoaderLimits loaderLimits)
         {
-            return X509CertificateLoader.LoadPkcs12(
+            return X509CertificateLoader.LoadPkcs12Collection(
                 new ReadOnlySpan<byte>(bytes),
                 password.AsSpan(),
                 keyStorageFlags,
                 loaderLimits);
         }
 
-        protected override X509Certificate2 LoadPfxAtOffsetCore(
+        protected override X509Certificate2Collection LoadPfxAtOffsetCore(
             byte[] bytes,
             int offset,
             string password,
             X509KeyStorageFlags keyStorageFlags,
             Pkcs12LoaderLimits loaderLimits)
         {
-            return X509CertificateLoader.LoadPkcs12(
+            return X509CertificateLoader.LoadPkcs12Collection(
                 bytes.AsSpan(offset),
                 password.AsSpan(),
                 keyStorageFlags,
                 loaderLimits);
         }
 
-        protected override X509Certificate2 LoadPfxFileOnlyCore(
+        protected override X509Certificate2Collection LoadPfxFileOnlyCore(
             string path,
             string password,
             X509KeyStorageFlags keyStorageFlags,
@@ -102,7 +102,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             using (FileStream stream = File.OpenRead(path))
             using (MemoryManager<byte> manager = MemoryMappedFileMemoryManager.CreateFromFileClamped(stream))
             {
-                return X509CertificateLoader.LoadPkcs12(
+                return X509CertificateLoader.LoadPkcs12Collection(
                     manager.Memory.Span,
                     password.AsSpan(),
                     keyStorageFlags,
@@ -118,7 +118,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
     }
 
     [SkipOnPlatform(TestPlatforms.Browser, "Browser doesn't support X.509 certificates")]
-    public class X509CertificateLoaderPkcs12Tests_FromFile : X509CertificateLoaderPkcs12Tests
+    public class X509CertificateLoaderPkcs12CollectionTests_FromFile : X509CertificateLoaderPkcs12CollectionTests
     {
         protected override void NullInputAssert(Action action) =>
             AssertExtensions.Throws<ArgumentNullException>("path", action);
@@ -126,26 +126,26 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         protected override void EmptyInputAssert(Action action) =>
             AssertExtensions.Throws<ArgumentException>("path", action);
 
-        protected override X509Certificate2 LoadPfxCore(
+        protected override X509Certificate2Collection LoadPfxCore(
             byte[] bytes,
             string path,
             string password,
             X509KeyStorageFlags keyStorageFlags,
             Pkcs12LoaderLimits loaderLimits)
         {
-            return X509CertificateLoader.LoadPkcs12FromFile(path, password, keyStorageFlags, loaderLimits);
+            return X509CertificateLoader.LoadPkcs12CollectionFromFile(path, password, keyStorageFlags, loaderLimits);
         }
 
-        protected override X509Certificate2 LoadPfxFileOnlyCore(
+        protected override X509Certificate2Collection LoadPfxFileOnlyCore(
             string path,
             string password,
             X509KeyStorageFlags keyStorageFlags,
             Pkcs12LoaderLimits loaderLimits)
         {
-            return X509CertificateLoader.LoadCertificateFromFile(path);
+            return X509CertificateLoader.LoadPkcs12CollectionFromFile(path, password, keyStorageFlags, loaderLimits);
         }
 
-        protected override X509Certificate2 LoadPfxNoFileCore(
+        protected override X509Certificate2Collection LoadPfxNoFileCore(
             byte[] bytes,
             string password,
             X509KeyStorageFlags keyStorageFlags,
@@ -170,7 +170,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
     }
 
-    public abstract partial class X509CertificateLoaderPkcs12Tests
+    public abstract partial class X509CertificateLoaderPkcs12CollectionTests
     {
         private const int ERROR_INVALID_PASSWORD = -2147024810;
 
@@ -186,7 +186,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         protected abstract void NullInputAssert(Action action);
         protected abstract void EmptyInputAssert(Action action);
 
-        protected X509Certificate2 LoadPfx(
+        protected X509Certificate2Collection LoadPfx(
             byte[] bytes,
             string path,
             string password = "",
@@ -201,14 +201,14 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 loaderLimits);
         }
 
-        protected abstract X509Certificate2 LoadPfxCore(
+        protected abstract X509Certificate2Collection LoadPfxCore(
             byte[] bytes,
             string path,
             string password,
             X509KeyStorageFlags keyStorageFlags,
             Pkcs12LoaderLimits loaderLimits);
 
-        protected X509Certificate2 LoadPfxFileOnly(
+        protected X509Certificate2Collection LoadPfxFileOnly(
             string path,
             string password = "",
             X509KeyStorageFlags? keyStorageFlags = null,
@@ -221,13 +221,13 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 loaderLimits);
         }
 
-        protected abstract X509Certificate2 LoadPfxFileOnlyCore(
+        protected abstract X509Certificate2Collection LoadPfxFileOnlyCore(
             string path,
             string password,
             X509KeyStorageFlags keyStorageFlags,
             Pkcs12LoaderLimits loaderLimits);
 
-        protected X509Certificate2 LoadPfxNoFile(
+        protected X509Certificate2Collection LoadPfxNoFile(
             byte[] bytes,
             string password = "",
             X509KeyStorageFlags? keyStorageFlags = null,
@@ -240,7 +240,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 loaderLimits);
         }
 
-        protected virtual X509Certificate2 LoadPfxNoFileCore(
+        protected virtual X509Certificate2Collection LoadPfxNoFileCore(
             byte[] bytes,
             string password,
             X509KeyStorageFlags keyStorageFlags,
@@ -249,7 +249,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             return LoadPfx(bytes, null, password, keyStorageFlags, loaderLimits);
         }
 
-        protected X509Certificate2 LoadPfxAtOffset(
+        protected X509Certificate2Collection LoadPfxAtOffset(
             byte[] bytes,
             int offset,
             string password = "",
@@ -264,7 +264,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 loaderLimits);
         }
 
-        protected virtual X509Certificate2 LoadPfxAtOffsetCore(
+        protected virtual X509Certificate2Collection LoadPfxAtOffsetCore(
             byte[] bytes,
             int offset,
             string password,
@@ -368,15 +368,18 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 IgnorePrivateKeys = ignorePrivateKeys,
             };
 
-            X509Certificate2 cert = LoadPfx(
+            X509Certificate2Collection coll = LoadPfx(
                 TestData.PfxData,
                 TestFiles.PfxFile,
                 TestData.PfxDataPassword,
                 EphemeralIfPossible,
                 loaderLimits);
 
-            using (cert)
+            using (new CollectionDisposer(coll))
             {
+                Assert.Equal(1, coll.Count);
+
+                X509Certificate2 cert = coll[0];
                 Assert.Equal("CN=MyName", cert.Subject);
                 Assert.NotEqual(ignorePrivateKeys, cert.HasPrivateKey);
             }
@@ -396,14 +399,17 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
             string password = useNull ? null : "";
 
-            X509Certificate2 cert = LoadPfxNoFile(
+            X509Certificate2Collection coll = LoadPfxNoFile(
                 TestData.PfxWithNoPassword,
                 password,
                 EphemeralIfPossible,
                 loaderLimits);
 
-            using (cert)
+            using (new CollectionDisposer(coll))
             {
+                Assert.Equal(1, coll.Count);
+
+                X509Certificate2 cert = coll[0];
                 Assert.Equal("CN=MyName", cert.Subject);
                 Assert.NotEqual(ignorePrivateKeys, cert.HasPrivateKey);
             }
@@ -423,14 +429,17 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
             string password = useNull ? null : "";
 
-            X509Certificate2 cert = LoadPfxNoFile(
+            X509Certificate2Collection coll = LoadPfxNoFile(
                 TestData.MsCertificateExportedToPfx_NullPassword,
                 password,
                 EphemeralIfPossible,
                 loaderLimits);
 
-            using (cert)
+            using (new CollectionDisposer(coll))
             {
+                Assert.Equal(1, coll.Count);
+
+                X509Certificate2 cert = coll[0];
                 X509CertificateLoaderTests.AssertRawDataEquals(TestData.MsCertificate, cert);
                 Assert.False(cert.HasPrivateKey, "cert.HasPrivateKey");
             }
@@ -463,13 +472,16 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         {
             string password = useEmpty ? "" : null;
 
-            X509Certificate2 cert = LoadPfxNoFile(
+            X509Certificate2Collection coll = LoadPfxNoFile(
                 TestData.Pkcs12OpenSslOneCertDefaultNoMac,
                 password,
                 EphemeralIfPossible);
 
-            using (cert)
+            using (new CollectionDisposer(coll))
             {
+                Assert.Equal(1, coll.Count);
+
+                X509Certificate2 cert = coll[0];
                 Assert.Equal("CN=test", cert.Subject);
             }
         }
@@ -480,8 +492,13 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             byte[] data = TestData.PfxWithNoPassword;
             Array.Resize(ref data, data.Length + 10);
 
-            using (X509Certificate2 cert = LoadPfxNoFile(data))
+            X509Certificate2Collection coll = LoadPfxNoFile(data);
+
+            using (new CollectionDisposer(coll))
             {
+                Assert.Equal(1, coll.Count);
+
+                X509Certificate2 cert = coll[0];
                 Assert.Equal("CN=MyName", cert.Subject);
             }
         }
@@ -489,9 +506,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Fact]
         public void LoadPfx_Empty()
         {
-            AssertExtensions.Throws<CryptographicException>(
-                () => LoadPfxNoFile(TestData.EmptyPfx),
-                "The provided PFX data contains no certificates.");
+            X509Certificate2Collection coll = LoadPfxNoFile(TestData.EmptyPfx);
+
+            using (new CollectionDisposer(coll))
+            {
+                Assert.Equal(0, coll.Count);
+            }
         }
 
         private void LoadPfx_VerifyLimit(
@@ -502,7 +522,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             string password,
             Pkcs12LoaderLimits loaderLimits)
         {
-            Func<X509Certificate2> test;
+            Func<X509Certificate2Collection> test;
 
             if (bytes is null)
             {
@@ -527,7 +547,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             else
             {
                 // Assert.NoThrow
-                test().Dispose();
+                (new CollectionDisposer(test())).Dispose();
             }
         }
 
@@ -656,19 +676,36 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 IgnoreEncryptedAuthSafes = ignoreEncrypted,
             };
 
-            string expectedSubject = ignoreEncrypted ?
-                "CN=Plaintext Test Certificate, OU=.NET Libraries, O=Microsoft Corporation" :
+            const string PlaintextSubject =
+                "CN=Plaintext Test Certificate, OU=.NET Libraries, O=Microsoft Corporation";
+            const string EncryptedSubject =
                 "CN=Encrypted Test Certificate, OU=.NET Libraries, O=Microsoft Corporation";
 
-            X509Certificate2 cert = LoadPfxNoFile(
+            X509Certificate2Collection coll = LoadPfxNoFile(
                 TestData.TwoCertsPfx_OneEncrypted,
                 TestData.PlaceholderPw,
                 default,
                 loaderLimits);
 
-            using (cert)
+            using (new CollectionDisposer(coll))
             {
-                Assert.Equal(expectedSubject, cert.Subject);
+                if (ignoreEncrypted)
+                {
+                    Assert.Equal(1, coll.Count);
+
+                    X509Certificate2 cert = coll[0];
+                    Assert.Equal(PlaintextSubject, cert.Subject);
+                }
+                else
+                {
+                    Assert.Equal(2, coll.Count);
+
+                    X509Certificate2 cert = coll[0];
+                    Assert.Equal(EncryptedSubject, cert.Subject);
+
+                    cert = coll[1];
+                    Assert.Equal(PlaintextSubject, cert.Subject);
+                }
             }
         }
 
@@ -682,56 +719,43 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 IgnoreEncryptedAuthSafes = ignoreEncrypted,
             };
 
-            if (ignoreEncrypted)
-            {
-                AssertExtensions.Throws<CryptographicException>(
-                    () => LoadPfx(
-                        TestData.PfxData,
-                        TestFiles.PfxFile,
-                        TestData.PfxDataPassword,
-                        default,
-                        loaderLimits),
-                    "The provided PFX data contains no certificates.");
-            }
-            else
-            {
-                X509Certificate2 cert = LoadPfx(
-                    TestData.PfxData,
-                    TestFiles.PfxFile,
-                    TestData.PfxDataPassword,
-                    default,
-                    loaderLimits);
+            X509Certificate2Collection coll = LoadPfx(
+                TestData.PfxData,
+                TestFiles.PfxFile,
+                TestData.PfxDataPassword,
+                default,
+                loaderLimits);
 
-                using (cert)
+            using (new CollectionDisposer(coll))
+            {
+                if (ignoreEncrypted)
                 {
+                    Assert.Equal(0, coll.Count);
+                }
+                else
+                {
+                    Assert.Equal(1, coll.Count);
+
+                    X509Certificate2 cert = coll[0];
                     Assert.Equal("CN=MyName", cert.Subject);
                 }
             }
         }
 
-        [Fact]
-        public void VerifyIndependentLifetime()
+        private sealed class CollectionDisposer : IDisposable
         {
-            X509Certificate2 c1 = LoadPfx(TestData.PfxData, TestFiles.PfxFile, TestData.PfxDataPassword);
+            private readonly X509Certificate2Collection _coll;
 
-            using (X509Certificate2 c2 = LoadPfx(TestData.PfxData, TestFiles.PfxFile, TestData.PfxDataPassword))
+            internal CollectionDisposer(X509Certificate2Collection coll)
             {
-                RSA rsa = c1.GetRSAPrivateKey();
-                byte[] hash = new byte[SHA256.HashSizeInBytes];
-                byte[] sig = rsa.SignHash(hash, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
-                Assert.Equal(TestData.PfxSha256Empty_ExpectedSig, sig);
+                _coll = coll;
+            }
 
-                c1.Dispose();
-                rsa.Dispose();
-
-                GC.Collect();
-                GC.WaitForPendingFinalizers();
-
-                // The c1 objects being disposed have no bearing on c2
-                using (rsa = c2.GetRSAPrivateKey())
+            public void Dispose()
+            {
+                foreach (X509Certificate2 cert in _coll)
                 {
-                    sig = rsa.SignHash(hash, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
-                    Assert.Equal(TestData.PfxSha256Empty_ExpectedSig, sig);
+                    cert.Dispose();
                 }
             }
         }

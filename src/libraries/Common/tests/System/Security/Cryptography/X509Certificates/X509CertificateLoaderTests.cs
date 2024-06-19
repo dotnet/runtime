@@ -2,8 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Buffers.Binary;
+using System.Diagnostics;
 using System.IO;
 using System.IO.MemoryMappedFiles;
+using Test.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests
@@ -274,12 +277,57 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
+        [Fact]
+        public void LoadWrappingCertificate_PEM()
+        {
+            byte[] data = System.Text.Encoding.ASCII.GetBytes(
+                ByteUtils.PemEncode("CERTIFICATE", TestData.NestedCertificates));
+
+            using (X509Certificate2 cert = LoadCertificateNoFile(data))
+            {
+                AssertRawDataEquals(TestData.NestedCertificates, cert);
+            }
+        }
+
+        [Fact]
+        public void LoadWrappingCertificate_PEM_WithTrailingData()
+        {
+            byte[] source = TestData.NestedCertificates;
+            Array.Resize(ref source, source.Length + 4);
+
+            BinaryPrimitives.WriteInt32LittleEndian(
+                source.AsSpan(TestData.NestedCertificates.Length),
+                Process.GetCurrentProcess().Id);
+
+            byte[] data = System.Text.Encoding.ASCII.GetBytes(
+                ByteUtils.PemEncode("CERTIFICATE", source));
+
+            using (X509Certificate2 cert = LoadCertificateNoFile(data))
+            {
+                AssertRawDataEquals(TestData.NestedCertificates, cert);
+            }
+        }
+
+        [Fact]
+        public void LoadWrappingCertificate_PEM_WithSurroundingText()
+        {
+            string pem = ByteUtils.PemEncode("CERTIFICATE", TestData.NestedCertificates);
+
+            byte[] data = System.Text.Encoding.ASCII.GetBytes(
+                "Four score and seven years ago ...\n" + pem + "... perish from this Earth.");
+
+            using (X509Certificate2 cert = LoadCertificateNoFile(data))
+            {
+                AssertRawDataEquals(TestData.NestedCertificates, cert);
+            }
+        }
+
         internal static void AssertRawDataEquals(byte[] expected, X509Certificate2 cert)
         {
 #if NET
-            AssertExtensions.SequenceEqual(TestData.MsCertificate, cert.RawDataMemory.Span);
+            AssertExtensions.SequenceEqual(expected, cert.RawDataMemory.Span);
 #else
-            AssertExtensions.SequenceEqual(TestData.MsCertificate, cert.RawData);
+            AssertExtensions.SequenceEqual(expected, cert.RawData);
 #endif
         }
 

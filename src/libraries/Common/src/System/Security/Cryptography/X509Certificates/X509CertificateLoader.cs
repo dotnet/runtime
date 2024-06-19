@@ -533,7 +533,7 @@ namespace System.Security.Cryptography.X509Certificates
             X509KeyStorageFlags keyStorageFlags = X509KeyStorageFlags.DefaultKeySet,
             Pkcs12LoaderLimits? loaderLimits = null)
         {
-            ThrowIfNull(path);
+            ThrowIfNullOrEmpty(path);
             ValidateKeyStorageFlagsCore(keyStorageFlags);
 
             return LoadFromFile(
