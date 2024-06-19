@@ -428,7 +428,7 @@ namespace System.Text.Json.Nodes.Tests
         private class Student
         {
             public int Id { get; set; }
-            public string Name { get; set; }
+            public string? Name { get; set; }
         }
     }
 }

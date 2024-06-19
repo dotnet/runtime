@@ -1768,19 +1768,19 @@ HRESULT CordbProcess::Init()
         // signal existing RS infrastructure. Eventually get rid of LSEA, LSER completely.
         //
 
-        m_leftSideEventAvailable = WszCreateEvent(NULL, FALSE, FALSE, NULL);
+        m_leftSideEventAvailable = CreateEvent(NULL, FALSE, FALSE, NULL);
         if (m_leftSideEventAvailable == NULL)
         {
             ThrowLastError();
         }
 
-        m_leftSideEventRead = WszCreateEvent(NULL, FALSE, FALSE, NULL);
+        m_leftSideEventRead = CreateEvent(NULL, FALSE, FALSE, NULL);
         if (m_leftSideEventRead == NULL)
         {
             ThrowLastError();
         }
 
-        m_stopWaitEvent = WszCreateEvent(NULL, TRUE, FALSE, NULL);
+        m_stopWaitEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
         if (m_stopWaitEvent == NULL)
         {
             ThrowLastError();
@@ -9413,7 +9413,7 @@ HRESULT CordbRCEventThread::Init()
     if (m_cordb == NULL)
         return E_INVALIDARG;
 
-    m_threadControlEvent = WszCreateEvent(NULL, FALSE, FALSE, NULL);
+    m_threadControlEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
 
     if (m_threadControlEvent == NULL)
         return HRESULT_FROM_GetLastError();
@@ -10940,11 +10940,11 @@ HRESULT CordbWin32EventThread::Init()
 
     m_sendToWin32EventThreadMutex.Init("Win32-Send lock", RSLock::cLockFlat, RSLock::LL_WIN32_SEND_LOCK);
 
-    m_threadControlEvent = WszCreateEvent(NULL, FALSE, FALSE, NULL);
+    m_threadControlEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
     if (m_threadControlEvent == NULL)
         return HRESULT_FROM_GetLastError();
 
-    m_actionTakenEvent = WszCreateEvent(NULL, FALSE, FALSE, NULL);
+    m_actionTakenEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
     if (m_actionTakenEvent == NULL)
         return HRESULT_FROM_GetLastError();
 

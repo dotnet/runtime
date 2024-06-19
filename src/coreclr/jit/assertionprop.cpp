@@ -923,7 +923,7 @@ void Compiler::optPrintAssertion(AssertionDsc* curAssertion, AssertionIndex asse
                 break;
 
             case O2K_CONST_DOUBLE:
-                if (*((__int64*)&curAssertion->op2.dconVal) == (__int64)I64(0x8000000000000000))
+                if (FloatingPointUtils::isNegativeZero(curAssertion->op2.dconVal))
                 {
                     printf("-0.00000");
                 }
@@ -2766,6 +2766,16 @@ GenTree* Compiler::optVNBasedFoldConstExpr(BasicBlock* block, GenTree* parent, G
     // Check if node evaluates to a constant
     if (!vnStore->IsVNConstant(vnCns))
     {
+        // Last chance - propagate VNF_PtrToLoc(lcl, offset) as GT_LCL_ADDR node
+        VNFuncApp funcApp;
+        if (((tree->gtFlags & GTF_SIDE_EFFECT) == 0) && vnStore->GetVNFunc(vnCns, &funcApp) &&
+            (funcApp.m_func == VNF_PtrToLoc))
+        {
+            unsigned lcl  = (unsigned)vnStore->CoercedConstantValue<size_t>(funcApp.m_args[0]);
+            unsigned offs = (unsigned)vnStore->CoercedConstantValue<size_t>(funcApp.m_args[1]);
+            return gtNewLclAddrNode(lcl, offs, tree->TypeGet());
+        }
+
         return nullptr;
     }
 
@@ -3118,6 +3128,10 @@ bool Compiler::optIsProfitableToSubstitute(GenTree* dest, BasicBlock* destBlock,
                 return false;
             }
 
+            // For several of the scenarios below we may skip the costing logic
+            // since we know that the operand is always containable and therefore
+            // is always cost effective to propagate.
+
             switch (intrinsicId)
             {
 #if defined(TARGET_ARM64)
@@ -3134,13 +3148,8 @@ bool Compiler::optIsProfitableToSubstitute(GenTree* dest, BasicBlock* destBlock,
 #endif // TARGET_XARCH
                 {
                     // We can optimize when the constant is zero, but only
-                    // for non floating-point since +0.0 == -0.0
-
-                    if (!vecCon->IsZero() || varTypeIsFloating(simdBaseType))
-                    {
-                        return false;
-                    }
-                    break;
+                    // for non floating-point since +0.0 == -0.0.
+                    return vecCon->IsZero() && !varTypeIsFloating(simdBaseType);
                 }
 
 #if defined(TARGET_ARM64)
@@ -3150,12 +3159,7 @@ bool Compiler::optIsProfitableToSubstitute(GenTree* dest, BasicBlock* destBlock,
                 {
                     // We can optimize when the constant is zero due to a
                     // specialized encoding for the instruction
-
-                    if (!vecCon->IsZero())
-                    {
-                        return false;
-                    }
-                    break;
+                    return vecCon->IsZero();
                 }
 
                 case NI_AdvSimd_CompareGreaterThan:
@@ -3168,43 +3172,40 @@ bool Compiler::optIsProfitableToSubstitute(GenTree* dest, BasicBlock* destBlock,
                     // We can optimize when the constant is zero, but only
                     // for signed types, due to a specialized encoding for
                     // the instruction
-
-                    if (!vecCon->IsZero() || varTypeIsUnsigned(simdBaseType))
-                    {
-                        return false;
-                    }
-                    break;
+                    return vecCon->IsZero() && !varTypeIsUnsigned(simdBaseType);
                 }
 #endif // TARGET_ARM64
 
 #if defined(TARGET_XARCH)
-                case NI_SSE2_Insert:
                 case NI_SSE41_Insert:
-                case NI_SSE41_X64_Insert:
                 {
                     // We can optimize for float when the constant is zero
                     // due to a specialized encoding for the instruction
-
-                    if ((simdBaseType != TYP_FLOAT) || !vecCon->IsZero())
-                    {
-                        return false;
-                    }
-                    break;
+                    return (simdBaseType == TYP_FLOAT) && vecCon->IsZero();
                 }
 
-                case NI_AVX512F_CompareEqualMask:
-                case NI_AVX512F_CompareNotEqualMask:
+                case NI_EVEX_CompareEqualMask:
+                case NI_EVEX_CompareNotEqualMask:
                 {
                     // We can optimize when the constant is zero, but only
                     // for non floating-point since +0.0 == -0.0
-
-                    if (!vecCon->IsZero() || varTypeIsFloating(simdBaseType))
-                    {
-                        return false;
-                    }
-                    break;
+                    return vecCon->IsZero() && !varTypeIsFloating(simdBaseType);
                 }
 #endif // TARGET_XARCH
+
+                case NI_Vector128_Shuffle:
+#if defined(TARGET_XARCH)
+                case NI_Vector256_Shuffle:
+                case NI_Vector512_Shuffle:
+#elif defined(TARGET_ARM64)
+                case NI_Vector64_Shuffle:
+#endif
+                {
+                    // The shuffle indices need to be constant so we can preserve
+                    // the node as a hwintrinsic instead of rewriting as a user call.
+                    assert(parent->GetOperandCount() == 2);
+                    return parent->IsUserCall() && (dest == parent->Op(2));
+                }
 
                 default:
                 {

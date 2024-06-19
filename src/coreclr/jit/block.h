@@ -413,7 +413,7 @@ public:
 // BasicBlockFlags: a bitmask of flags for BasicBlock
 //
 // clang-format off
-enum BasicBlockFlags : unsigned __int64
+enum BasicBlockFlags : uint64_t
 {
 #define MAKE_BBFLAG(bit) (1ULL << (bit))
     BBF_EMPTY                = 0,
@@ -500,31 +500,31 @@ enum BasicBlockFlags : unsigned __int64
 FORCEINLINE
 constexpr BasicBlockFlags operator ~(BasicBlockFlags a)
 {
-    return (BasicBlockFlags)(~(unsigned __int64)a);
+    return (BasicBlockFlags)(~(uint64_t)a);
 }
 
 FORCEINLINE
 constexpr BasicBlockFlags operator |(BasicBlockFlags a, BasicBlockFlags b)
 {
-    return (BasicBlockFlags)((unsigned __int64)a | (unsigned __int64)b);
+    return (BasicBlockFlags)((uint64_t)a | (uint64_t)b);
 }
 
 FORCEINLINE
 constexpr BasicBlockFlags operator &(BasicBlockFlags a, BasicBlockFlags b)
 {
-    return (BasicBlockFlags)((unsigned __int64)a & (unsigned __int64)b);
+    return (BasicBlockFlags)((uint64_t)a & (uint64_t)b);
 }
 
 FORCEINLINE 
 BasicBlockFlags& operator |=(BasicBlockFlags& a, BasicBlockFlags b)
 {
-    return a = (BasicBlockFlags)((unsigned __int64)a | (unsigned __int64)b);
+    return a = (BasicBlockFlags)((uint64_t)a | (uint64_t)b);
 }
 
 FORCEINLINE 
 BasicBlockFlags& operator &=(BasicBlockFlags& a, BasicBlockFlags b)
 {
-    return a = (BasicBlockFlags)((unsigned __int64)a & (unsigned __int64)b);
+    return a = (BasicBlockFlags)((uint64_t)a & (uint64_t)b);
 }
 
 enum class BasicBlockVisit
@@ -1163,6 +1163,7 @@ public:
 #define BB_UNITY_WEIGHT_UNSIGNED 100   // how much a normal execute once block weighs
 #define BB_LOOP_WEIGHT_SCALE     8.0   // synthetic profile scale factor for loops
 #define BB_ZERO_WEIGHT           0.0
+#define BB_COLD_WEIGHT           0.01    // Upper bound for cold weights; used during block layout
 #define BB_MAX_WEIGHT            FLT_MAX // maximum finite weight  -- needs rethinking.
 
     weight_t bbWeight; // The dynamic execution weight of this block
@@ -1259,6 +1260,11 @@ public:
     bool isMaxBBWeight() const
     {
         return (bbWeight >= BB_MAX_WEIGHT);
+    }
+
+    bool isBBWeightCold(Compiler* comp) const
+    {
+        return getBBWeight(comp) < BB_COLD_WEIGHT;
     }
 
     // Returns "true" if the block is empty. Empty here means there are no statement

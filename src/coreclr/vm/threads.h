@@ -144,10 +144,6 @@ struct    LockEntry;
 class     PrepareCodeConfig;
 class     NativeCodeVersion;
 
-struct    ThreadLocalBlock;
-typedef DPTR(struct ThreadLocalBlock) PTR_ThreadLocalBlock;
-typedef DPTR(PTR_ThreadLocalBlock) PTR_PTR_ThreadLocalBlock;
-
 typedef void(*ADCallBackFcnType)(LPVOID);
 
 #include "stackwalktypes.h"
@@ -163,72 +159,9 @@ typedef void(*ADCallBackFcnType)(LPVOID);
 #include "eventpipeadaptertypes.h"
 #endif // FEATURE_PERFTRACING
 
-struct TLMTableEntry;
+#include "threadstatics.h"
 
-typedef DPTR(struct TLMTableEntry) PTR_TLMTableEntry;
-typedef DPTR(struct ThreadLocalModule) PTR_ThreadLocalModule;
-
-class ThreadStaticHandleTable;
-struct ThreadLocalModule;
 class Module;
-
-struct ThreadLocalBlock
-{
-    friend class ClrDataAccess;
-
-private:
-    PTR_TLMTableEntry   m_pTLMTable;     // Table of ThreadLocalModules
-    SIZE_T              m_TLMTableSize;  // Current size of table
-    SpinLock            m_TLMTableLock;  // Spinlock used to synchronize growing the table and freeing TLM by other threads
-
-    // Each ThreadLocalBlock has its own ThreadStaticHandleTable. The ThreadStaticHandleTable works
-    // by allocating Object arrays on the GC heap and keeping them alive with pinning handles.
-    //
-    // We use the ThreadStaticHandleTable to allocate space for GC thread statics. A GC thread
-    // static is thread static that is either a reference type or a value type whose layout
-    // contains a pointer to a reference type.
-
-    ThreadStaticHandleTable * m_pThreadStaticHandleTable;
-
-public:
-
-#ifndef DACCESS_COMPILE
-    void AllocateThreadStaticHandles(Module * pModule, ThreadLocalModule * pThreadLocalModule);
-    OBJECTHANDLE AllocateStaticFieldObjRefPtrs(int nRequested, OBJECTHANDLE* ppLazyAllocate = NULL);
-    void InitThreadStaticHandleTable();
-
-    void AllocateThreadStaticBoxes(MethodTable* pMT);
-#endif
-
-public: // used by code generators
-    static SIZE_T GetOffsetOfModuleSlotsPointer() { return offsetof(ThreadLocalBlock, m_pTLMTable); }
-
-public:
-
-#ifndef DACCESS_COMPILE
-    ThreadLocalBlock()
-      : m_pTLMTable(NULL), m_TLMTableSize(0), m_pThreadStaticHandleTable(NULL)
-    {
-        m_TLMTableLock.Init(LOCK_TYPE_DEFAULT);
-    }
-
-    void    FreeTLM(SIZE_T i, BOOL isThreadShuttingDown);
-
-    void    FreeTable();
-
-    void    EnsureModuleIndex(ModuleIndex index);
-
-#endif
-
-    void SetModuleSlot(ModuleIndex index, PTR_ThreadLocalModule pLocalModule);
-
-    PTR_ThreadLocalModule GetTLMIfExists(ModuleIndex index);
-    PTR_ThreadLocalModule GetTLMIfExists(MethodTable* pMT);
-
-#ifdef DACCESS_COMPILE
-    void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
-#endif
-};
 
 // TailCallArgBuffer states
 #define TAILCALLARGBUFFER_ACTIVE       0
@@ -515,6 +448,8 @@ public:
     const PortableTailCallFrame* GetFrame() { return m_frame; }
 };
 
+typedef DPTR(struct gc_alloc_context) PTR_gc_alloc_context;
+
 // #ThreadClass
 //
 // A code:Thread contains all the per-thread information needed by the runtime.  We can get this
@@ -537,8 +472,6 @@ class Thread
     friend BOOL NTGetThreadContext(Thread *pThread, T_CONTEXT *pContext);
     friend BOOL NTSetThreadContext(Thread *pThread, const T_CONTEXT *pContext);
 
-    friend void CommonTripThread();
-
 #ifdef FEATURE_HIJACK
     // MapWin32FaultToCOMPlusException needs access to Thread::IsAddrOfRedirectFunc()
     friend DWORD MapWin32FaultToCOMPlusException(EXCEPTION_RECORD *pExceptionRecord);
@@ -551,8 +484,6 @@ class Thread
 #endif // FEATURE_HIJACK
 
     friend void         InitThreadManager();
-
-    friend void CallFinalizerOnThreadObject(Object *obj);
 
     // Debug and Profiler caches ThreadHandle.
     friend class Debugger;                  // void Debugger::ThreadStarted(Thread* pRuntimeThread, BOOL fAttaching);
@@ -648,7 +579,7 @@ public:
         TS_Interruptible          = 0x02000000,    // sitting in a Sleep(), Wait(), Join()
         TS_Interrupted            = 0x04000000,    // was awakened by an interrupt APC. !!! This can be moved to TSNC
 
-        TS_CompletionPortThread   = 0x08000000,    // Completion port thread
+        // unused
 
         TS_AbortInitiated         = 0x10000000,    // set when abort is begun
 
@@ -691,7 +622,7 @@ public:
         // unused                       = 0x00000010,
         TSNC_BlockedForShutdown         = 0x00000020, // Thread is blocked in WaitForEndOfShutdown.  We should not hit WaitForEndOfShutdown again.
         // unused                       = 0x00000040,
-        TSNC_CLRCreatedThread           = 0x00000080, // The thread was created through Thread::CreateNewThread
+        // unused                       = 0x00000080,
         TSNC_ExistInThreadStore         = 0x00000100, // For dtor to know if it needs to be removed from ThreadStore
         // unused                       = 0x00000200,
         TSNC_OwnsSpinLock               = 0x00000400, // The thread owns a spinlock.
@@ -706,11 +637,10 @@ public:
                                                       // at the beginning of wait.
         // unused                       = 0x00040000,
         // unused                       = 0x00080000,
-        TSNC_RaiseUnloadEvent           = 0x00100000, // Finalize thread is raising managed unload event which
-                                                      // may call AppDomain.Unload.
+        // unused                       = 0x00100000,
         // unused                       = 0x00200000,
         // unused                       = 0x00400000,
-        TSNC_IgnoreUnhandledExceptions  = 0x00800000, // Set for a managed thread born inside an appdomain created with the APPDOMAIN_IGNORE_UNHANDLED_EXCEPTIONS flag.
+        // unused                       = 0x00800000,
         TSNC_ProcessedUnhandledException = 0x01000000,// Set on a thread on which we have done unhandled exception processing so that
                                                       // we dont perform it again when OS invokes our UEF. Currently, applicable threads include:
                                                       // 1) entry point thread of a managed app
@@ -722,7 +652,7 @@ public:
                                                       // effort.
                                                       //
                                                       // Once we are completely independent of the OS UEF, we could remove this.
-        TSNC_InsideSyncContextWait      = 0x02000000, // Whether we are inside DoSyncContextWait
+        // unused                       = 0x02000000,
         TSNC_DebuggerSleepWaitJoin      = 0x04000000, // Indicates to the debugger that this thread is in a sleep wait or join state
                                                       // This almost mirrors the TS_Interruptible state however that flag can change
                                                       // during GC-preemptive mode whereas this one cannot.
@@ -742,10 +672,6 @@ public:
                                                       // and does not proceed with a stackwalk on the same thread
                                                       // There are cases during managed debugging when we can run into this situation
     };
-
-    void InternalReset (BOOL fNotFinalizerThread=FALSE, BOOL fThreadObjectResetNeeded=TRUE, BOOL fResetAbort=TRUE);
-    INT32 ResetManagedThreadObject(INT32 nPriority);
-    INT32 ResetManagedThreadObjectInCoopMode(INT32 nPriority);
 
 public:
     HRESULT DetachThread(BOOL fDLLThreadDetach);
@@ -1021,13 +947,14 @@ public:
     // Lock thread is trying to acquire
     VolatilePtr<DeadlockAwareLock> m_pBlockingLock;
 
+    // We store a pointer to this thread's alloc context here for easier introspection
+    // from other threads and diagnostic tools
+    PTR_gc_alloc_context        m_alloc_context;
+
 public:
+    inline void InitAllocContext() { LIMITED_METHOD_CONTRACT; m_alloc_context = PTR_gc_alloc_context(&t_thread_alloc_context); }
 
-    // on MP systems, each thread has its own allocation chunk so we can avoid
-    // lock prefixes and expensive MP cache snooping stuff
-    gc_alloc_context        m_alloc_context;
-
-    inline gc_alloc_context *GetAllocContext() { LIMITED_METHOD_CONTRACT; return &m_alloc_context; }
+    inline PTR_gc_alloc_context GetAllocContext() { LIMITED_METHOD_CONTRACT; return m_alloc_context; }
 
     // This is the type handle of the first object in the alloc context at the time
     // we fire the AllocationTick event. It's only for tooling purpose.
@@ -1887,7 +1814,7 @@ public:
     BOOL        IsThreadPoolThread()
     {
         LIMITED_METHOD_CONTRACT;
-        return m_State & (Thread::TS_TPWorkerThread | Thread::TS_CompletionPortThread);
+        return m_State & Thread::TS_TPWorkerThread;
     }
 
     void        SetIsThreadPoolThread()
@@ -2369,8 +2296,6 @@ public:
     static UINT_PTR VirtualUnwindCallFrame(PREGDISPLAY pRD, EECodeInfo * pCodeInfo = NULL);
 #ifndef DACCESS_COMPILE
     static PCODE VirtualUnwindLeafCallFrame(T_CONTEXT* pContext);
-    static PCODE VirtualUnwindNonLeafCallFrame(T_CONTEXT* pContext, T_KNONVOLATILE_CONTEXT_POINTERS* pContextPointers = NULL,
-        PT_RUNTIME_FUNCTION pFunctionEntry = NULL, UINT_PTR uImageBase = 0);
     static UINT_PTR VirtualUnwindToFirstManagedCallFrame(T_CONTEXT* pContext);
 #endif // DACCESS_COMPILE
 #endif // FEATURE_EH_FUNCLETS
@@ -3391,13 +3316,13 @@ public:
     }
 #endif //DACCESS_COMPILE
 
-    ThreadLocalBlock m_ThreadLocalBlock;
+    PTR_ThreadLocalData m_ThreadLocalDataPtr;
+    int32_t cLoaderHandles = 0;
+    PTR_LOADERHANDLE pLoaderHandles = 0;
+    SpinLock m_TlsSpinLock;
+    PTR_ThreadLocalData GetThreadLocalDataPtr() { LIMITED_METHOD_DAC_CONTRACT; return m_ThreadLocalDataPtr; }
 
-    // Called during AssemblyLoadContext teardown to clean up all structures
-    // associated with thread statics for the specific Module
-    void DeleteThreadStaticData(ModuleIndex index);
-
-private:
+public:
 
     // Called during Thread death to clean up all structures
     // associated with thread statics
@@ -4044,8 +3969,27 @@ private:
 template<>
 struct cdac_offsets<Thread>
 {
+    static constexpr size_t Id = offsetof(Thread, m_ThreadId);
+    static constexpr size_t OSId = offsetof(Thread, m_OSThreadId);
+    static constexpr size_t State = offsetof(Thread, m_State);
+    static constexpr size_t PreemptiveGCDisabled = offsetof(Thread, m_fPreemptiveGCDisabled);
+    static constexpr size_t AllocContext = offsetof(Thread, m_alloc_context);
+    static constexpr size_t Frame = offsetof(Thread, m_pFrame);
     static constexpr size_t ExposedObject = offsetof(Thread, m_ExposedObject);
+    static constexpr size_t LastThrownObject = offsetof(Thread, m_LastThrownObjectHandle);
     static constexpr size_t Link = offsetof(Thread, m_Link);
+
+    static_assert(std::is_same<decltype(std::declval<Thread>().m_ExceptionState), ThreadExceptionState>::value,
+        "Thread::m_ExceptionState is of type ThreadExceptionState");
+    #ifdef FEATURE_EH_FUNCLETS
+    static constexpr size_t ExceptionTracker = offsetof(Thread, m_ExceptionState) + offsetof(ThreadExceptionState, m_pCurrentTracker);
+    #else
+    static constexpr size_t ExceptionTracker = offsetof(Thread, m_ExceptionState) + offsetof(ThreadExceptionState, m_currentExInfo);
+    #endif
+
+    #ifndef TARGET_UNIX
+    static constexpr size_t TEB = offsetof(Thread, m_pTEB);
+    #endif
 };
 
 // End of class Thread
@@ -4307,8 +4251,12 @@ public:
 template<>
 struct cdac_offsets<ThreadStore>
 {
-    static constexpr size_t ThreadList = offsetof(ThreadStore, m_ThreadList);
+    static constexpr size_t FirstThreadLink = offsetof(ThreadStore, m_ThreadList) + offsetof(ThreadList, m_link);
     static constexpr size_t ThreadCount = offsetof(ThreadStore, m_ThreadCount);
+    static constexpr size_t UnstartedCount = offsetof(ThreadStore, m_UnstartedThreadCount);
+    static constexpr size_t BackgroundCount = offsetof(ThreadStore, m_BackgroundThreadCount);
+    static constexpr size_t PendingCount = offsetof(ThreadStore, m_PendingThreadCount);
+    static constexpr size_t DeadCount = offsetof(ThreadStore, m_DeadThreadCount);
 };
 
 struct TSSuspendHelper {
@@ -5771,7 +5719,7 @@ private:
 #if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
 EXTERN_C void STDCALL ClrRestoreNonvolatileContextWorker(PCONTEXT ContextRecord, DWORD64 ssp);
 #endif
-void ClrRestoreNonvolatileContext(PCONTEXT ContextRecord);
+void ClrRestoreNonvolatileContext(PCONTEXT ContextRecord, size_t targetSSP = 0);
 #endif // DACCESS_COMPILE
 
 #endif //__threads_h__

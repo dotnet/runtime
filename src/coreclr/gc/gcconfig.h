@@ -140,7 +140,8 @@ public:
     STRING_CONFIG(GCName,                    "GCName",                    "System.GC.Name",                                        "Specifies the name of the standalone GC implementation.")                                \
     STRING_CONFIG(GCPath,                    "GCPath",                    "System.GC.Path",                                        "Specifies the path of the standalone GC implementation.")                                \
     INT_CONFIG   (GCSpinCountUnit,           "GCSpinCountUnit",           NULL,                                0,                  "Specifies the spin count unit used by the GC.")                                          \
-    INT_CONFIG   (GCDynamicAdaptationMode,   "GCDynamicAdaptationMode",   "System.GC.DynamicAdaptationMode",   0,                  "Enable the GC to dynamically adapt to application sizes.")
+    INT_CONFIG   (GCDynamicAdaptationMode,   "GCDynamicAdaptationMode",   "System.GC.DynamicAdaptationMode",   1,                  "Enable the GC to dynamically adapt to application sizes.")                               \
+    INT_CONFIG   (GCDTargetTCP,              "GCDTargetTCP",              "System.GC.DTargetTCP",              0,                  "Specifies the target tcp for DATAS")
 // This class is responsible for retreiving configuration information
 // for how the GC should operate.
 class GCConfig

@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Xunit;
 using System.IO.Pipes;
 using Microsoft.DotNet.XUnitExtensions;
+using System.Linq;
 
 namespace System.IO.Tests
 {
@@ -17,6 +18,7 @@ namespace System.IO.Tests
         {
             string path = GetTestFilePath();
             Assert.Throws<ArgumentNullException>(() => File.WriteAllBytes(null, new byte[0]));
+            Assert.Throws<ArgumentNullException>(() => File.WriteAllBytes(null, ReadOnlySpan<byte>.Empty));
             Assert.Throws<ArgumentNullException>(() => File.WriteAllBytes(path, null));
             Assert.Throws<ArgumentNullException>(() => File.ReadAllBytes(null));
         }
@@ -25,6 +27,7 @@ namespace System.IO.Tests
         public void InvalidParameters()
         {
             Assert.Throws<ArgumentException>(() => File.WriteAllBytes(string.Empty, new byte[0]));
+            Assert.Throws<ArgumentException>(() => File.WriteAllBytes(string.Empty, ReadOnlySpan<byte>.Empty));
             Assert.Throws<ArgumentException>(() => File.ReadAllBytes(string.Empty));
         }
 
@@ -40,6 +43,7 @@ namespace System.IO.Tests
         {
             string path = GetTestFilePath();
             File.WriteAllBytes(path, new byte[0]);
+            File.WriteAllBytes(path, ReadOnlySpan<byte>.Empty);
             Assert.True(File.Exists(path));
             Assert.Empty(File.ReadAllText(path));
             File.Delete(path);
@@ -54,17 +58,28 @@ namespace System.IO.Tests
             byte[] buffer = Encoding.UTF8.GetBytes(new string('c', size));
             File.WriteAllBytes(path, buffer);
             Assert.Equal(buffer, File.ReadAllBytes(path));
+            File.WriteAllBytes(path, buffer.AsSpan());
+            Assert.Equal(buffer, File.ReadAllBytes(path));
             File.Delete(path);
         }
 
-        [Fact]
-        public void Overwrite()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void Overwrite(bool useSpan)
         {
             string path = GetTestFilePath();
             byte[] bytes = Encoding.UTF8.GetBytes(new string('c', 100));
             byte[] overwriteBytes = Encoding.UTF8.GetBytes(new string('b', 50));
             File.WriteAllBytes(path, bytes);
-            File.WriteAllBytes(path, overwriteBytes);
+            if (useSpan)
+            {
+                File.WriteAllBytes(path, overwriteBytes.AsSpan());
+            }
+            else
+            {
+                File.WriteAllBytes(path, overwriteBytes);
+            }
             Assert.Equal(overwriteBytes, File.ReadAllBytes(path));
         }
 
@@ -76,6 +91,7 @@ namespace System.IO.Tests
             using (File.Create(path))
             {
                 Assert.Throws<IOException>(() => File.WriteAllBytes(path, bytes));
+                Assert.Throws<IOException>(() => File.WriteAllBytes(path, bytes.AsSpan()));
                 Assert.Throws<IOException>(() => File.ReadAllBytes(path));
             }
         }
@@ -96,10 +112,14 @@ namespace System.IO.Tests
                 if (PlatformDetection.IsNotWindows && PlatformDetection.IsPrivilegedProcess)
                 {
                     File.WriteAllBytes(path, "text"u8.ToArray());
-                    Assert.Equal("text"u8.ToArray(), File.ReadAllBytes(path));
+                    File.WriteAllBytes(path, "text"u8);
+                    Assert.Equal("texttext"u8.ToArray(), File.ReadAllBytes(path));
                 }
                 else
+                {
                     Assert.Throws<UnauthorizedAccessException>(() => File.WriteAllBytes(path, "text"u8.ToArray()));
+                    Assert.Throws<UnauthorizedAccessException>(() => File.WriteAllBytes(path, "text"u8));
+                }
             }
             finally
             {

@@ -494,8 +494,15 @@ enum gc_oh_num
 };
 
 const int total_oh_count = gc_oh_num::poh + 1;
+#ifdef USE_REGIONS
 const int recorded_committed_free_bucket = total_oh_count;
 const int recorded_committed_bookkeeping_bucket = recorded_committed_free_bucket + 1;
+const int recorded_committed_mark_array_bucket = recorded_committed_bookkeeping_bucket;
+#else
+const int recorded_committed_ignored_bucket = total_oh_count;
+const int recorded_committed_bookkeeping_bucket = recorded_committed_ignored_bucket + 1;
+const int recorded_committed_mark_array_bucket = recorded_committed_ignored_bucket;
+#endif //USE_REGIONS
 const int recorded_committed_bucket_counts = recorded_committed_bookkeeping_bucket + 1;
 
 gc_oh_num gen_to_oh (int gen);
@@ -1563,14 +1570,19 @@ private:
 
 #ifdef VERIFY_HEAP
     PER_HEAP_METHOD void verify_free_lists();
-    PER_HEAP_METHOD void verify_regions (int gen_number, bool can_verify_gen_num, bool can_verify_tail, size_t* p_total_committed = nullptr);
+#if defined (USE_REGIONS)
+    PER_HEAP_METHOD void verify_regions (int gen_number, bool can_verify_gen_num, bool can_verify_tail);
     PER_HEAP_METHOD void verify_regions (bool can_verify_gen_num, bool concurrent_p);
+#endif //USE_REGIONS
     PER_HEAP_ISOLATED_METHOD void enter_gc_lock_for_verify_heap();
     PER_HEAP_ISOLATED_METHOD void leave_gc_lock_for_verify_heap();
     PER_HEAP_METHOD void verify_heap (BOOL begin_gc_p);
     PER_HEAP_METHOD BOOL check_need_card (uint8_t* child_obj, int gen_num_for_cards,
                           uint8_t* low, uint8_t* high);
 #endif //VERIFY_HEAP
+
+    PER_HEAP_METHOD void verify_committed_bytes_per_heap();
+    PER_HEAP_ISOLATED_METHOD void verify_committed_bytes();
 
     PER_HEAP_ISOLATED_METHOD void fire_per_heap_hist_event (gc_history_per_heap* current_gc_data_per_heap, int heap_num);
 
@@ -1667,9 +1679,6 @@ private:
     // Compute the size committed for the mark array for this region.
     PER_HEAP_METHOD size_t get_mark_array_size(heap_segment* seg);
 
-    // Accumulate the committed bytes for both the region and the mark array for this list of regions.
-    PER_HEAP_METHOD void accumulate_committed_bytes(heap_segment* seg, size_t& committed_bytes, size_t& mark_array_committed_bytes, gc_oh_num oh = unknown);
-
     PER_HEAP_ISOLATED_METHOD void verify_region_to_generation_map();
 
     PER_HEAP_ISOLATED_METHOD void compute_gc_and_ephemeral_range (int condemned_gen_number, bool end_of_gc_p);
@@ -1677,6 +1686,9 @@ private:
     PER_HEAP_METHOD void pin_by_gc (uint8_t* object);
 #endif //STRESS_REGIONS
 #endif //USE_REGIONS
+
+    // Accumulate the committed bytes for both the region and the mark array for this list of regions.
+    PER_HEAP_METHOD void accumulate_committed_bytes(heap_segment* seg, size_t& committed_bytes, size_t& mark_array_committed_bytes, gc_oh_num oh = unknown);
 
     PER_HEAP_ISOLATED_METHOD gc_heap* make_gc_heap(
 #if defined (MULTIPLE_HEAPS)
@@ -1752,7 +1764,9 @@ private:
 
     PER_HEAP_ISOLATED_METHOD void add_to_history();
 
+#ifdef BACKGROUND_GC
     PER_HEAP_ISOLATED_METHOD void get_and_reset_uoh_alloc_info();
+#endif //BACKGROUND_GC
 
 #ifdef BGC_SERVO_TUNING
     // Currently BGC servo tuning is an experimental feature.
@@ -2117,6 +2131,9 @@ private:
     PER_HEAP_METHOD void gc1();
 
 #ifdef DYNAMIC_HEAP_COUNT
+    PER_HEAP_ISOLATED_METHOD size_t get_total_soh_stable_size();
+    PER_HEAP_ISOLATED_METHOD void update_total_soh_stable_size();
+    PER_HEAP_ISOLATED_METHOD void assign_new_budget (int gen_number, size_t desired_per_heap);
     PER_HEAP_METHOD bool prepare_rethread_fl_items();
     PER_HEAP_METHOD void rethread_fl_items(int gen_idx);
     PER_HEAP_ISOLATED_METHOD void merge_fl_from_other_heaps (int gen_idx, int to_n_heaps, int from_n_heaps);
@@ -2376,6 +2393,9 @@ private:
     PER_HEAP_ISOLATED_METHOD bool virtual_alloc_commit_for_heap (void* addr, size_t size, int h_number);
     PER_HEAP_ISOLATED_METHOD bool virtual_commit (void* address, size_t size, int bucket, int h_number=-1, bool* hard_limit_exceeded_p=NULL);
     PER_HEAP_ISOLATED_METHOD bool virtual_decommit (void* address, size_t size, int bucket, int h_number=-1);
+    PER_HEAP_ISOLATED_METHOD void reduce_committed_bytes (void* address, size_t size, int bucket, int h_number, bool decommit_succeeded_p);
+    friend void destroy_card_table (uint32_t*);
+    PER_HEAP_ISOLATED_METHOD void destroy_card_table_helper (uint32_t* c_table);
     PER_HEAP_ISOLATED_METHOD void virtual_free (void* add, size_t size, heap_segment* sg=NULL);
     PER_HEAP_ISOLATED_METHOD void reset_memory(uint8_t* o, size_t sizeo);
     PER_HEAP_METHOD void clear_gen0_bricks();
@@ -2559,7 +2579,7 @@ private:
     // re-initialize a heap in preparation to putting it back into service
     PER_HEAP_METHOD void recommission_heap();
 
-    PER_HEAP_ISOLATED_METHOD int calculate_new_heap_count();
+    PER_HEAP_ISOLATED_METHOD void calculate_new_heap_count();
 
     // check if we should change the heap count
     PER_HEAP_METHOD void check_heap_count();
@@ -2567,7 +2587,7 @@ private:
     PER_HEAP_ISOLATED_METHOD bool prepare_to_change_heap_count (int new_n_heaps);
     PER_HEAP_METHOD bool change_heap_count (int new_n_heaps);
 
-    PER_HEAP_ISOLATED_METHOD size_t get_msl_wait_time();
+    PER_HEAP_ISOLATED_METHOD void get_msl_wait_time (size_t* soh_msl_wait_time, size_t* uoh_msl_wait_time);
 #endif //DYNAMIC_HEAP_COUNT
 #endif //USE_REGIONS
 
@@ -3347,11 +3367,11 @@ private:
     PER_HEAP_ISOLATED_METHOD bool compute_memory_settings(bool is_initialization, uint32_t& nhp, uint32_t nhp_from_config, size_t& seg_size_from_config,
         size_t new_current_total_committed);
 
-#ifdef USE_REGIONS
-    PER_HEAP_ISOLATED_METHOD void compute_committed_bytes(size_t& total_committed, size_t& committed_decommit, size_t& committed_free,
-                                  size_t& committed_bookkeeping, size_t& new_current_total_committed, size_t& new_current_total_committed_bookkeeping,
+    PER_HEAP_METHOD size_t compute_committed_bytes_per_heap(int oh, size_t& committed_bookkeeping);
+
+    PER_HEAP_ISOLATED_METHOD void compute_committed_bytes(size_t& total_committed, size_t& committed_decommit, size_t& committed_free, 
+                                  size_t& committed_bookkeeping, size_t& new_current_total_committed, size_t& new_current_total_committed_bookkeeping, 
                                   size_t* new_committed_by_oh);
-#endif
 
     PER_HEAP_METHOD void update_collection_counts ();
 
@@ -3890,13 +3910,10 @@ private:
     PER_HEAP_FIELD_DIAG_ONLY int gchist_index_per_heap;
     PER_HEAP_FIELD_DIAG_ONLY gc_history gchist_per_heap[max_history_count];
 
-#ifdef MULTIPLE_HEAPS
-#ifdef _DEBUG
+#if defined(MULTIPLE_HEAPS) && defined(_DEBUG)
     PER_HEAP_FIELD_DIAG_ONLY size_t committed_by_oh_per_heap[total_oh_count];
     PER_HEAP_FIELD_DIAG_ONLY size_t committed_by_oh_per_heap_refresh[total_oh_count];
-#endif //_DEBUG
-#else //MULTIPLE_HEAPS
-#endif //MULTIPLE_HEAPS
+#endif // MULTIPLE_HEAPS && _DEBUG
 
 #ifdef BACKGROUND_GC
     PER_HEAP_FIELD_DIAG_ONLY gc_history_per_heap bgc_data_per_heap;
@@ -4238,6 +4255,10 @@ private:
     // to smooth out the situation when we rarely pick the gen2 GCs in the first array.
     struct dynamic_heap_count_data_t
     {
+        float target_tcp = 2.0;
+        float target_gen2_tcp = 10.0;
+
+        static const int recorded_adjustment_size = 4;
         static const int sample_size = 3;
         static const int recorded_tcp_array_size = 64;
 
@@ -4246,14 +4267,126 @@ private:
             uint64_t    elapsed_between_gcs;    // time between gcs in microseconds (this should really be between_pauses)
             uint64_t    gc_pause_time;          // pause time for this GC
             uint64_t    msl_wait_time;
+            size_t      gc_index;
             size_t      gc_survived_size;
+            int         gen0_budget_per_heap;
         };
 
         uint32_t        sample_index;
         sample          samples[sample_size];
 
+        sample& get_last_sample()
+        {
+            int last_sample_index = (sample_index + sample_size - 1) % sample_size;
+            sample& s = samples[last_sample_index];
+            return s;
+        }
+
+        enum adjust_metric
+        {
+            not_adjusted = 0,
+            adjust_budget = 1,
+            adjust_hc = 2
+        };
+
+        const char* const str_adjust_metrics[4] =
+        {
+            "no adjustment",
+            "budget",
+            "HC"
+        };
+
+        // For adjust_budget I'm keeping a counter that records how many times we've done this instead of recording
+        // a separate entry each time since we could have many in a row.
+        struct adjustment
+        {
+            adjust_metric metric;
+            int count;
+            int avg_msl_per_heap;
+            // Distance to target
+            float distance;
+            int hc_change;
+            size_t gc_index;
+
+            // This is determined by looking at the median of the next samples after change
+            // Success means it did achieve the effect we wanted to achieve, ie,
+            // if we inc-ed HC, we observed msl and pause time go down.
+            // It doesn't mean we necessarily achieved target.
+            bool successful;
+        };
+
+        adjustment adjustment_history[recorded_adjustment_size];
+        int current_adjustment_index;
+
         size_t          current_samples_count;
         size_t          processed_samples_count;
+
+        adjustment* get_last_nth_adjustment (int distance_to_current)
+        {
+            int adjustment_idx = (current_adjustment_index + recorded_adjustment_size + distance_to_current) % recorded_adjustment_size;
+            return &adjustment_history[adjustment_idx];
+        }
+
+        adjustment* get_last_adjustment()
+        {
+            return get_last_nth_adjustment (-1);
+        }
+
+        void record_adjustment (adjust_metric metric, float distance, int change_int, size_t current_gc_index)
+        {
+            if (metric == adjust_budget)
+            {
+                adjustment* adj = get_last_adjustment();
+                if (adj->metric == adjust_budget)
+                {
+                    (adj->count)++;
+                    dprintf (6666, ("last adjustment was also budget at GC#%Id, inc count to %d", adj->gc_index, adj->count));
+                    return;
+                }
+            }
+
+            adjustment* adj = &adjustment_history[current_adjustment_index];
+            adj->metric = metric;
+            adj->count = 1;
+            adj->distance = distance;
+            adj->hc_change = change_int;
+            adj->gc_index = current_gc_index;
+
+            dprintf (6666, ("recording adjustment %s at #%d GC#%Id - distance to target %.3f, changed %d HC",
+                str_adjust_metrics[metric], current_adjustment_index, adj->gc_index, adj->distance, adj->hc_change));
+
+            current_adjustment_index = (current_adjustment_index + 1) % recorded_adjustment_size;
+        }
+
+        bool same_action_succeeded (adjust_metric metric, int distance_to_current, int change_int)
+        {
+            int adjustment_idx = (current_adjustment_index + recorded_adjustment_size + distance_to_current) % recorded_adjustment_size;
+            adjustment* adj = &adjustment_history[adjustment_idx];
+            dprintf (6666, ("adj->metric %d, metric %d, adj#%d: hc_change > 0 = %d, change_int > 0 = %d",
+                adjustment_idx, (adj->hc_change > 0), (change_int > 0)));
+            if ((adj->metric == metric) && ((change_int > 0) == (adj->hc_change > 0)))
+            {
+                return adj->successful;
+            }
+
+            return false;
+        }
+
+        void reset_budget_adjustment()
+        {
+            // adjust_budget is a transient state, as in, we only maintain it to detect if we should actually change HC instead. So
+            // if we were in a situation where we chose to change budget instead of HC, then we got out of that situation, we should
+            // reset this adjustment.
+            adjustment* adj = get_last_adjustment();
+            if (adj->metric == adjust_budget)
+            {
+                memset (adj, 0, sizeof (adjustment));
+                int saved_current_adjustment_index = current_adjustment_index;
+                current_adjustment_index = (current_adjustment_index + recorded_adjustment_size - 1) % recorded_adjustment_size;
+
+                dprintf (6666, ("reset last budget adj at %d, set current adj to %d", saved_current_adjustment_index, current_adjustment_index));
+            }
+        }
 
         //
         // We need to observe the history of tcp's so record them in a small buffer.
@@ -4262,6 +4395,78 @@ private:
         float           recorded_tcp[recorded_tcp_array_size];
         int             recorded_tcp_index;
         int             total_recorded_tcp;
+        int             tcp_count_in_rearrange;
+        float           tcp_slope_in_rearrange;
+
+        float get_avg_tcp_in_rearrange (int start_idx, int end_idx)
+        {
+            float total_tcp = 0.0;
+            int count = start_idx - end_idx + 1;
+            for (int idx = start_idx; idx >= end_idx ; idx--)
+            {
+                assert ((idx > 0) && (idx < tcp_count_in_rearrange));
+                total_tcp += recorded_tcp_rearranged[idx];
+            }
+
+            float avg_tcp = total_tcp / count;
+            dprintf (6666, ("getting avg for entry#%d-%d, total %.3f / %d = %.3f", end_idx, start_idx, total_tcp, count, avg_tcp));
+
+            return avg_tcp;
+        }
+
+        // If our buffer has a lot of entries, it means we've been stable for a while. We can have a situation where
+        // suddenly the tcp's change dramatically, we should treat those as temporary and not act on them.
+        //
+        // If we consider this not temporary, tcp_to_consider will be set to either the avg of the most recent entries
+        // or the most recent entry.
+        bool is_temp_change (float* tcp_to_consider)
+        {
+            assert (tcp_count_in_rearrange >= 1);
+
+            int avg_count = 3;
+            int start_idx = tcp_count_in_rearrange - 1;
+
+            // If we don't even have <= 3 entries, or have a really steep slope, it means we are far from target,
+            // We should consider to adjust.
+            if ((tcp_count_in_rearrange <= avg_count) || (fabs (tcp_slope_in_rearrange) > 3.0))
+            {
+                dprintf (6666, ("%d tcps, slope is %.3f, returning last one %.3f",
+                    tcp_count_in_rearrange, tcp_slope_in_rearrange, recorded_tcp_rearranged[start_idx]));
+                *tcp_to_consider = recorded_tcp_rearranged[start_idx];
+                return false;
+            }
+
+            int end_idx = start_idx - avg_count + 1;
+            float avg = get_avg_tcp_in_rearrange (start_idx, end_idx);
+            *tcp_to_consider = avg;
+
+            if (tcp_count_in_rearrange > (avg_count * 3))
+            {
+                // We look back to see if the previous entries are within 30% of this average.
+                start_idx = end_idx - 1;
+                end_idx = start_idx - avg_count + 1;
+                float last_avg = get_avg_tcp_in_rearrange (start_idx, end_idx);
+                float diff_pct_in_avg = 0.0;
+                if (avg > last_avg)
+                {
+                    diff_pct_in_avg = (avg - last_avg) / last_avg;
+                }
+                else
+                {
+                    diff_pct_in_avg = (last_avg - avg) / avg;
+                }
+
+                dprintf (6666, ("avg of last %d tcps is %.3f, avg of the %d tcps before those is %.3f, diff (to min) is %.3f",
+                    avg_count, *tcp_to_consider, avg_count, last_avg, diff_pct_in_avg));
+
+                return (diff_pct_in_avg > 0.3);
+            }
+            else
+            {
+                dprintf (6666, ("we have only %d entries, consider %.3f not temporary", tcp_count_in_rearrange, *tcp_to_consider));
+                return false;
+            }
+        }
 
         int add_to_recorded_tcp (float tcp)
         {
@@ -4299,28 +4504,6 @@ private:
             return copied_count;
         }
 
-        int highest_avg_recorded_tcp (int count, float avg, float* highest_avg)
-        {
-            float highest_sum = 0.0;
-            int highest_count = 0;
-
-            for (int i = 0; i < count; i++)
-            {
-                if (recorded_tcp_rearranged[i] > avg)
-                {
-                    highest_count++;
-                    highest_sum += recorded_tcp_rearranged[i];
-                }
-            }
-
-            if (highest_count)
-            {
-                *highest_avg = highest_sum / highest_count;
-            }
-
-            return highest_count;
-        }
-
         void init_recorded_tcp ()
         {
             total_recorded_tcp = 0;
@@ -4330,57 +4513,12 @@ private:
 
         int get_recorded_tcp_count () { return total_recorded_tcp; }
 
-        //
-        // Maintain some info about last time we did change heap count.
-        //
-        size_t          last_changed_gc_index;
-        // This is intentionally kept as a float for precision.
-        float           last_changed_count;
-        float           last_changed_stcp;
-
-        //
-        // For tuning above/below target tcp.
-        //
-        // If we just increased the heap count and immediately need to grow again, that counts as a failure.
-        // The higher the failure count, the more aggressive we should grow.
-        int             inc_failure_count;
-
-        // If we are trending up and the tcp is already close enough to target, we need this many samples
-        // before we adjust.
-        int             inc_recheck_threshold;
-
-        // If we shrink and the stcp doesn't change much, that counts as a failure. For the below target case
-        // it's fine to stay here for a while. Either it'll naturally change and break out of this situation
-        // or we wait for a while before we re-evaluate. How long we wait is defined by dec_recheck_threshold
-        // each time our calculation tells us to shrink.
-        int             dec_failure_count;
-        int             dec_failure_recheck_threshold;
-
-        // If we continue to be below target for an extended period of time, ie, we've accumulated more than
-        // below_target_threshold, we want to reduce the heap count.
-        float           below_target_accumulation;
-        float           below_target_threshold;
-
-        // TODO: we should refactor this and the inc checks into a utility class.
-        bool            dec_by_one_scheduled;
-        int             dec_by_one_count;
-
-        // Currently only used for dprintf.
-        size_t          first_below_target_gc_index;
-
-        float get_range_upper (float t)
-        {
-            return (t * 1.2f);
-        }
+        float           around_target_accumulation;
+        float           around_target_threshold;
 
         bool is_tcp_in_range (float diff_pct, float slope)
         {
             return ((diff_pct <= 0.2) && (diff_pct >= -0.2) && (slope <= 0.1) && (slope >= -0.1));
-        }
-
-        bool is_tcp_far_below (float diff_pct)
-        {
-            return (diff_pct >= 0.4);
         }
 
         bool is_close_to_max (int new_n, int max)
@@ -4388,53 +4526,513 @@ private:
             return ((max - new_n) <= (max / 10));
         }
 
-        bool should_dec_by_one()
+        float slope (float* y, int n, float* avg);
+
+        // if the last attempt was successful, and we still aren't to target, we should be more aggressive.
+        int get_aggressiveness (int change_int)
         {
-            if (!dec_by_one_scheduled)
+            int factor = 1;
+
+            adjust_metric metric = adjust_hc;
+
+            // Looking at the last 2 adjustments was too aggressive - so currently only look at the last one.
+            for (int i = -1; i >= -1; i--)
             {
-                dec_by_one_scheduled = true;
+                bool last_action_succeeded = same_action_succeeded (metric, i, change_int);
+                dprintf (6666, ("current %d adjustment of %s %s, agg factor %d",
+                    i, str_adjust_metrics[metric], (last_action_succeeded ? "succeeded" : "failed"),
+                    (factor + last_action_succeeded)));
+                if (!last_action_succeeded)
+                {
+                    break;
+                }
+
+                factor += 1;
             }
 
-            if (dec_by_one_scheduled)
+            return factor;
+        }
+
+        void check_success_after_adjust (size_t current_gc_index, adjustment* adj, float tcp)
+        {
+            // If this is right after we adjusted, we should see if we were successful with the adjustment.
+            size_t last_changed_gc_index = adj->gc_index;
+            if (!last_changed_gc_index) return;
+
+            bool check_p = (current_gc_index < (last_changed_gc_index + (2 * sample_size)));
+
+            dprintf (6666, ("last adjusted at GC#%Id, %Id GCs ago, %s",
+                last_changed_gc_index, (current_gc_index - last_changed_gc_index), (check_p ? "check success" : "already checked success")));
+            if (!check_p)
             {
-                dec_by_one_count++;
-                dprintf (6666, ("scheduled to dec by 1 heap %d times", dec_by_one_count));
+                return;
             }
 
-            return (dec_by_one_count >= 5);
+            adjust_metric adj_metric = adj->metric;
+
+            // We are guaranteed to have at least sample_size amount of new samples.
+            if (adj_metric == adjust_hc)
+            {
+                // For hc case, we just check if tcp has changed in the right direction.
+                bool adjusted_up = (adj->hc_change > 0);
+                // Do we want to do a percentage here instead of absolute comparison?
+                bool tcp_reduced_p = (tcp < (adj->distance + target_tcp));
+                adj->successful = (adjusted_up == tcp_reduced_p);
+                dprintf (6666, ("last adjust hc - %d -> %d heaps, tcp %.3f -> %.3f, %s",
+                    (n_heaps - adj->hc_change), n_heaps, (adj->distance + target_tcp), tcp,
+                    (adj->successful ? "success" : "fail")));
+            }
         }
 
-        void reset_dec_by_one()
+        void reset_accumulation()
         {
-            dec_by_one_scheduled = false;
-            dec_by_one_count = 0;
+            around_target_accumulation = 0.0;
+            init_recorded_tcp();
         }
+
+        enum decide_change_condition
+        {
+            init_change_condition = 0x0000,
+            change = 0x0001,
+            too_few_samples = 0x0002,
+            not_enough_diff_accumulated = 0x0004,
+            already_toward_target = 0x0008,
+            tcp_in_range = 0x0010,
+            temp_change = 0x0020
+        };
+
+        bool should_change (float tcp, float* tcp_to_consider, size_t current_gc_index,
+                            // The following are only for diagnostics
+                            decide_change_condition* change_decision,
+                            int* recorded_tcp_count, float* recorded_tcp_slope,
+                            size_t* num_gcs_since_last_change,
+                            float* current_around_target_accumulation)
+        {
+            *change_decision = decide_change_condition::init_change_condition;
+
+            adjustment* adj = get_last_adjustment();
+            size_t last_changed_gc_index = adj->gc_index;
+            *recorded_tcp_count = 0;
+            *recorded_tcp_slope = 0.0f;
+
+            check_success_after_adjust (current_gc_index, adj, tcp);
+
+            float diff_to_target = tcp - target_tcp;
+            dprintf (6666, ("accumulating %.3f + %.3f -> %.3f",
+                around_target_accumulation, diff_to_target, (around_target_accumulation + diff_to_target)));
+            around_target_accumulation += diff_to_target;
+            *current_around_target_accumulation = around_target_accumulation;
+
+            *num_gcs_since_last_change = current_gc_index - last_changed_gc_index;
+            dprintf (6666, ("we adjusted at GC#%Id, %Id GCs ago", last_changed_gc_index, *num_gcs_since_last_change));
+            if (last_changed_gc_index && (*num_gcs_since_last_change < (2 * sample_size)))
+            {
+                *change_decision = decide_change_condition::too_few_samples;
+                dprintf (6666, ("we just adjusted %Id GCs ago, skipping", *num_gcs_since_last_change));
+                return false;
+            }
+
+            // If we haven't accumulated enough changes.
+            if ((around_target_accumulation < around_target_threshold) && (around_target_accumulation > -around_target_threshold))
+            {
+                *change_decision = decide_change_condition::not_enough_diff_accumulated;
+                dprintf (6666, ("accumulated %.3f < %.3f and > %.3f, skipping",
+                    around_target_accumulation, around_target_threshold, -around_target_threshold));
+                return false;
+            }
+
+            // If the slope clearly indicates it's already going the direction we want to.
+            float avg_recorded_tcp = 0.0;
+            int tcp_count = rearrange_recorded_tcp ();
+            *recorded_tcp_count = tcp_count;
+            float tcp_slope = slope (recorded_tcp_rearranged, tcp_count, &avg_recorded_tcp);
+            *recorded_tcp_slope = tcp_slope;
+            dprintf (6666, ("acc thres exceeded! %s slope of %d tcps is %.3f",
+                ((around_target_accumulation > 0.0) ? "above" : "below"), tcp_count, tcp_slope));
+
+            // if threshold is 2 * target, this means the avg tcp in the buffer is 40% higher/lower
+            if ((tcp_count >= 5) &&
+                (((around_target_accumulation > 0.0) && (tcp_slope < -0.2)) ||
+                ((around_target_accumulation < 0.0) && (tcp_slope > 0.2))))
+            {
+                *change_decision = decide_change_condition::already_toward_target;
+                dprintf (6666, ("already trending the right direction, skipping"));
+                reset_accumulation();
+                return false;
+            }
+
+            // If the tcp has been hovering around the target.
+            float diff_pct = diff_to_target / target_tcp;
+            if (is_tcp_in_range (diff_pct, tcp_slope))
+            {
+                *change_decision = decide_change_condition::tcp_in_range;
+                dprintf (6666, ("diff %.3f, slope %.3f already in range", diff_pct, tcp_slope));
+                reset_accumulation();
+                return false;
+            }
+
+            tcp_count_in_rearrange = tcp_count;
+            tcp_slope_in_rearrange = tcp_slope;
+
+            if (is_temp_change (tcp_to_consider))
+            {
+                *change_decision = decide_change_condition::temp_change;
+                dprintf (6666, ("this is a temporary change, ignore"));
+                reset_accumulation();
+                return false;
+            }
+
+            return true;
+        }
+
+        /*
+        |      |      | max    |
+        | hc   | f    | growth |
+        | ---- | ---- | ------ |
+        | 1    | 4.00 | 4      |
+        | 2    | 2.46 | 5      |
+        | 4    | 1.52 | 6      |
+        | 6    | 1.14 | 7      |
+        | 8    | 0.93 | 7      |
+        | 10   | 0.80 | 8      |
+        | 14   | 0.63 | 9      |
+        | 16   | 0.57 | 9      |
+        | 32   | 0.35 | 11     |
+        | 64   | 0.22 | 14     |
+        | 80   | 0.19 | 15     |
+        */
+        int get_max_growth(int current_hc)
+        {
+            return (int)round(current_hc * (4.0 * pow (current_hc, -0.7)));
+        }
+
+        enum hc_change_freq_reason
+        {
+            // Default is just a number we set to not change really often.
+            default_reason = 0x0000,
+            expensive_hc_change = 0x0001,
+            dec = 0x0002,
+            dec_multiple = 0x0004,
+            fluctuation = 0x0008
+        };
+
+        int get_hc_change_freq_factors (int change_int, size_t last_change_gc_index, hc_change_freq_reason* reason)
+        {
+            *reason = hc_change_freq_reason::default_reason;
+
+            int factor = 3;
+            int inc_factor = factor;
+
+            if (last_change_gc_index)
+            {
+                if (change_heap_count_time == 0)
+                {
+                    dprintf (6666, ("WHAT!!! last HC change took 0us?!"));
+                    return 0;
+                }
+
+                assert (change_heap_count_time != 0);
+
+                // If changing HC is expensive, we need to space it out.
+                uint64_t total_gc_pause_time = 0;
+                for (int i = 0; i < sample_size; i++)
+                {
+                    total_gc_pause_time += samples[i].gc_pause_time;
+                }
+
+                uint64_t avg_gc_pause_time = total_gc_pause_time / sample_size;
+
+                if (change_heap_count_time > avg_gc_pause_time)
+                {
+                    factor *= 2 * (int)(change_heap_count_time / avg_gc_pause_time);
+                    *reason = hc_change_freq_reason::expensive_hc_change;
+                }
+
+                dprintf (6666, ("last HC change took %.3fms  / avg gc pause %.3fms = %d , factor %d",
+                    (change_heap_count_time / 1000.0), (avg_gc_pause_time / 1000.0),
+                    (change_heap_count_time / avg_gc_pause_time), factor));
+            }
+
+            if (change_int < 0)
+            {
+                // Dec in general should be done less frequently than inc.
+                factor *= 2;
+                *reason = (hc_change_freq_reason)((int)*reason | hc_change_freq_reason::dec);
+
+                adjustment* adj = get_last_adjustment();
+                int last_hc_change = adj->hc_change;
+
+                dprintf (6666, ("dec: last HC change %d heaps at GC#%Id, factor %d", last_hc_change, last_change_gc_index, factor));
+
+                if (last_hc_change < 0)
+                {
+                    // If it's the 2nd time in a row we want to dec, we also delay it.
+                    dprintf (6666, ("last was dec, factor %d->%d", factor, (factor * 2)));
+                    factor *= 2;
+                    *reason = (hc_change_freq_reason)((int)*reason | hc_change_freq_reason::dec_multiple);
+                }
+                else
+                {
+                    // If the last adj was inc, and there was another dec adjustment before that, we delay dec.
+                    adj = get_last_nth_adjustment (-2);
+                    size_t last_2nd_change_gc_index = adj->gc_index;
+
+                    if (last_2nd_change_gc_index > 0)
+                    {
+                        int last_2nd_hc_change = adj->hc_change;
+                        dprintf (6666, ("before last was %d heaps at GC#%Id (%Id GCs), factor is now %d",
+                            last_2nd_hc_change, last_2nd_change_gc_index, (last_change_gc_index - last_2nd_change_gc_index), factor));
+
+                        if (last_2nd_hc_change < 0)
+                        {
+                            bool inc_too_quick_p = ((last_change_gc_index - last_2nd_change_gc_index) < (size_t)(inc_factor * 2 * sample_size));
+
+                            if (inc_too_quick_p)
+                            {
+                                dprintf (6666, ("We dec-ed and quickly followed with an inc, factor %d -> %d", factor, (factor * 4)));
+                                factor *= 4;
+                                *reason = (hc_change_freq_reason)((int)*reason | hc_change_freq_reason::fluctuation);
+                            }
+                        }
+                    }
+                }
+            }
+
+            return factor;
+        }
+
+        // If we did consider changing, which adjustment are we actually doing? These are the reasons that caused us
+        // to make that decision.
+        enum decide_adjustment_reason
+        {
+            init_adjustment_reason = 0x0000,
+            limited_by_bounds = 0x0001,
+            cannot_adjust_budget = 0x0002,
+            change_pct_too_small = 0x0004,
+            change_too_soon = 0x0008
+        };
+
+        adjust_metric should_change_hc (int max_hc_datas, int min_hc_datas, int max_hc_growth, int& change_int, size_t current_gc_index,
+                                        // These are only for diagnostics.
+                                        decide_adjustment_reason* adj_reason, int* hc_change_freq_factor, hc_change_freq_reason* hc_freq_reason)
+        {
+            *adj_reason = decide_adjustment_reason::init_adjustment_reason;
+            adjust_metric adj_metric = not_adjusted;
+
+            int saved_change_int = change_int;
+
+            if (change_int > 0)
+            {
+                change_int = min (max_hc_growth, change_int);
+            }
+            else if (change_int < 0)
+            {
+                if ((change_int + n_heaps) < 1)
+                {
+                    change_int = 1 - n_heaps;
+                }
+            }
+
+            if (saved_change_int != change_int)
+            {
+                *adj_reason = decide_adjustment_reason::limited_by_bounds;
+                dprintf (6666, ("change %d heaps instead of %d so we don't go over upper/lower limit", change_int, saved_change_int));
+            }
+
+            if (change_int == 0)
+            {
+                dprintf (6666, ("cannot change due to upper/lower limit!"));
+                return adj_metric;
+            }
+
+            // Now we need to decide whether we should change the HC or the budget.
+            //
+            // There are scenarios where we must change the HC because we cannot change budget to make tcp go the
+            // direction we want.
+            // 
+            // When we are in a situation where we have the flexibility to change HC or budget, we should only change HC
+            // in the following cases -
+            //
+            // 1) if the change is large enough or we kept meaning to change it but kept getting into this same situation, or
+            //
+            // 2) if it's large enough and there have been enough GCs since we last changed
+            //
+            // Note that we only return adj_budget if we had the choice to adjust budget or HC and chose to adjust budget,
+            // because we use this to indicate if at some point we should change HC instead.
+            if ((change_int > 0) && (n_heaps == min_hc_datas))
+            {
+                *adj_reason = (decide_adjustment_reason)((int)*adj_reason | decide_adjustment_reason::cannot_adjust_budget);
+                dprintf (6666, ("we are already at min datas heaps %d, cannot inc budget so must inc HC", n_heaps));
+                adj_metric = adjust_hc;
+            }
+            else if ((change_int < 0) && (n_heaps == max_hc_datas))
+            {
+                *adj_reason = (decide_adjustment_reason)((int)*adj_reason | decide_adjustment_reason::cannot_adjust_budget);
+                dprintf (6666, ("we are already at max datas heaps %d, cannot dec budget so must dec HC", n_heaps));
+                adj_metric = adjust_hc;
+            }
+
+            float hc_change_pct = fabsf ((float)change_int / n_heaps);
+
+            adjustment* adj = get_last_adjustment();
+            size_t last_change_gc_index = adj->gc_index;
+
+            // Now we are at the point we do want to change HC but there may be some things that make us want to opt out it.
+            adj_metric = adjust_hc;
+
+            if (last_change_gc_index)
+            {
+                size_t num_gcs_since_change = current_gc_index - last_change_gc_index;
+                *hc_change_freq_factor = get_hc_change_freq_factors (change_int, last_change_gc_index, hc_freq_reason);
+
+                dprintf (6666, ("hc would change %.3f, factor is %d", hc_change_pct, *hc_change_freq_factor));
+                if (hc_change_pct < 0.2)
+                {
+                    // Should we also consider absolute time here?
+                    int delayed_hc_change_freq_factor = *hc_change_freq_factor * 3;
+                    int count = 0;
+                    if (adj->metric == adjust_budget)
+                    {
+                        count = adj->count;
+                    }
+
+                    dprintf (6666, ("we've changed budget instead of HC %d times from %Id GCs ago, thres %d times",
+                                    count, num_gcs_since_change, delayed_hc_change_freq_factor));
+
+                    if (count < delayed_hc_change_freq_factor)
+                    {
+                        *adj_reason = (decide_adjustment_reason)((int)*adj_reason | decide_adjustment_reason::change_pct_too_small);
+                        adj_metric = adjust_budget;
+                    }
+                }
+                else
+                {
+                    bool change_p = (num_gcs_since_change > (size_t)(*hc_change_freq_factor * sample_size));
+                    dprintf (6666, ("It's been %Id GCs since we changed last time, thres %d GCs, %s",
+                        num_gcs_since_change, (*hc_change_freq_factor * sample_size), (change_p ? "change" : "don't change yet")));
+                    if (!change_p)
+                    {
+                        *adj_reason = (decide_adjustment_reason)((int)*adj_reason | decide_adjustment_reason::change_too_soon);
+                        adj_metric = not_adjusted;
+                    }
+                }
+            }
+
+            dprintf (6666, ("conclusion: %s", str_adjust_metrics[adj_metric]));
+            if (adj_metric == adjust_hc)
+            {
+                reset_budget_adjustment();
+            }
+            return adj_metric;
+        }
+
+        //
+        // Budget computation. Now we have 2 budgets -
+        // BCS (Budget Computed via Survrate) and
+        // BCD (Budget Computed via DATAS)
+        //
+        // When DATAS is on, BCD is our upper bound because we want to control how much allocation to allow before
+        // the next GC happens which directly contributes to the heap size.
+        // If BCS is smaller, it means we have room to adjust budget. Currently we don't adjust it dramatically because
+        // then we risk affecting tcp too much (tcp is still calculated using both the collection time and the wait
+        // time in msl).
+        //
 
         size_t          max_gen0_new_allocation;
         size_t          min_gen0_new_allocation;
 
-        size_t compute_gen0_new_allocation (size_t total_old_gen_size)
+        size_t compute_total_gen0_budget (size_t total_soh_stable_size)
         {
-            assert (total_old_gen_size > 0);
+            assert (total_soh_stable_size > 0);
 
-            // TODO: adjust these based on conserve_mem_setting.
-            double old_gen_growth_factor = 16.0 / sqrt ((double)total_old_gen_size / 1000.0 / 1000.0);
+            float factor = (float)(20 - conserve_mem_setting);
+            double old_gen_growth_factor = factor / sqrt ((double)total_soh_stable_size / 1000.0 / 1000.0);
             double saved_old_gen_growth_factor = old_gen_growth_factor;
             old_gen_growth_factor = min (10.0, old_gen_growth_factor);
             old_gen_growth_factor = max (0.1, old_gen_growth_factor);
 
-            size_t total_new_allocation_old_gen = (size_t)(old_gen_growth_factor * (double)total_old_gen_size);
-            size_t new_allocation_old_gen = total_new_allocation_old_gen / n_heaps;
-
-            dprintf (6666, ("total gen2 %Id (%.3fmb), factor %.3f=>%.3f -> total gen0 new_alloc %Id (%Id/heap, %.3fmb)",
-                total_old_gen_size, ((double)total_old_gen_size / 1000.0 / 1000.0),
+            size_t total_new_allocation_old_gen = (size_t)(old_gen_growth_factor * (double)total_soh_stable_size);
+            dprintf (6666, ("stable soh %Id (%.3fmb), factor %.3f=>%.3f -> total gen0 new_alloc %Id (%.3fmb)",
+                total_soh_stable_size, ((double)total_soh_stable_size / 1000.0 / 1000.0),
                 saved_old_gen_growth_factor, old_gen_growth_factor, total_new_allocation_old_gen,
-                new_allocation_old_gen, ((double)new_allocation_old_gen / 1000.0 / 1000.0)));
+                ((double)total_new_allocation_old_gen  / 1000.0 / 1000.0)));
+            return total_new_allocation_old_gen;
+        }
 
-            new_allocation_old_gen = min (max_gen0_new_allocation, new_allocation_old_gen);
-            new_allocation_old_gen = max (min_gen0_new_allocation, new_allocation_old_gen);
+        // Called at the end of a blocking GC before that GC's sample is recorded.
+        // 
+        // Usually we want to take BCS because it's good for surv rate but if BCS is < BCD, we have room
+        // to adjust to affect tcp.
+        size_t compute_gen0_budget_per_heap (size_t total_soh_stable_size, float tcp, size_t bcs_per_heap)
+        {
+            size_t total_budget_old_gen = compute_total_gen0_budget (total_soh_stable_size);
+            size_t budget_old_gen_per_heap = total_budget_old_gen / n_heaps;
+            budget_old_gen_per_heap = Align (budget_old_gen_per_heap, get_alignment_constant (TRUE));
 
-            return new_allocation_old_gen;
+            dprintf (6666, ("-> %Id / heap (% .3fmb)",
+                budget_old_gen_per_heap, ((double)budget_old_gen_per_heap / 1000.0 / 1000.0)));
+
+            budget_old_gen_per_heap = min (max_gen0_new_allocation, budget_old_gen_per_heap);
+            budget_old_gen_per_heap = max (min_gen0_new_allocation, budget_old_gen_per_heap);
+
+            // We want to return a number between bcs and bcd
+            if (bcs_per_heap < budget_old_gen_per_heap)
+            {
+                // If tcp was above target, we can increase budget up to what DATAS allows. But we only
+                // do this when tcp is close enough.
+                sample& sample = get_last_sample();
+                size_t last_budget_per_heap = sample.gen0_budget_per_heap;
+
+                // We don't do anything if we just changed HC between this GC start and previous suspend end.
+                adjustment* adj = get_last_adjustment();
+                size_t last_changed_gc_index = adj->gc_index;
+                size_t saved_last_changed_gc_index = last_changed_gc_index;
+                size_t current_gc_index = VolatileLoadWithoutBarrier (&settings.gc_index);
+                size_t last_bgc_index = VolatileLoadWithoutBarrier (&saved_bgc_settings.gc_index);
+
+                if (last_bgc_index == (current_gc_index - 1))
+                {
+                    last_changed_gc_index++;
+                }
+
+                dprintf (6666, ("last gc gen0 budget %Id, last adjustment %s was at GC#%Id, last BGC was #%Id, this GC #%Id, %s",
+                    last_budget_per_heap, str_adjust_metrics[adj->metric], saved_last_changed_gc_index, last_bgc_index, current_gc_index,
+                    ((last_changed_gc_index < (current_gc_index - 1)) ? "didn't just change" : "did just change")));
+
+                if ((adj->metric == adjust_budget) || (last_changed_gc_index < (current_gc_index - 1)))
+                {
+                    float diff = tcp - target_tcp;
+
+                    adjustment* adj = get_last_adjustment();
+                    bool adjust_budget_p = (adj->metric == adjust_budget);
+                    //bool adjust_budget_p = false;
+
+                    dprintf (6666, ("tcp of last sample was %.3f, diff to target %.3f, pct %.3f, last adj %s budget",
+                        tcp, diff, (diff / target_tcp), (adjust_budget_p ? "was" : "was not")));
+
+                    if (adjust_budget_p ||
+                        ((diff > 0.0) && ((diff < 2.0) || ((diff / target_tcp) < 0.4))))
+                    {
+                        float last_alloc_time = (float)100.0 - tcp;
+                        float target_alloc_time = (float)100.0 - target_tcp;
+
+                        size_t new_budget_per_heap = (size_t)(last_budget_per_heap / last_alloc_time * target_alloc_time);
+                        new_budget_per_heap = Align (new_budget_per_heap, get_alignment_constant (TRUE));
+                        size_t saved_new_budget_per_heap = new_budget_per_heap;
+
+                        new_budget_per_heap = max (new_budget_per_heap, bcs_per_heap);
+                        new_budget_per_heap = min (new_budget_per_heap, budget_old_gen_per_heap);
+
+                        dprintf (6666, ("adjust last budget %Id to %Id->%Id (%.3fmb)",
+                            last_budget_per_heap, saved_new_budget_per_heap, new_budget_per_heap, (new_budget_per_heap / 1000.0 / 1000.0)));
+
+                        return new_budget_per_heap;
+                    }
+                }
+            }
+
+            dprintf (6666, ("taking min of the two: %Id, %Id", bcs_per_heap, budget_old_gen_per_heap));
+            return min (bcs_per_heap, budget_old_gen_per_heap);
         }
 
         //
@@ -4454,17 +5052,7 @@ private:
 
         size_t          current_gen2_samples_count;
         size_t          processed_gen2_samples_count;
-
-        // This records the stcp last time we processed ephemeral samples. We use it
-        float           last_processed_stcp;
-
-        float median_throughput_cost_percent;          // estimated overhead of allocator + gc
-        float smoothed_median_throughput_cost_percent; // exponentially smoothed version
-        float percent_heap_space_cost_per_heap;        // percent space cost of adding a heap
-        float tcp_reduction_per_step_up;               // throughput cost percent effect of increasing heap count
-        float tcp_increase_per_step_down;              // throughput cost percent effect of decreasing heap count
-        float scp_increase_per_step_up;                // space cost percent effect of increasing heap count
-        float scp_decrease_per_step_down;              // space cost percent effect of decreasing heap count
+        size_t          gen2_last_changed_sample_count;
 
         int             new_n_heaps;
         // the heap count we changed from
@@ -4485,6 +5073,7 @@ private:
         }
     };
     PER_HEAP_ISOLATED_FIELD_MAINTAINED dynamic_heap_count_data_t dynamic_heap_count_data;
+    PER_HEAP_ISOLATED_FIELD_MAINTAINED size_t current_total_soh_stable_size;
     PER_HEAP_ISOLATED_FIELD_MAINTAINED uint64_t last_suspended_end_time;
     // If the last full GC is blocking, this is that GC's index; for BGC, this is the settings.gc_index
     // when the BGC ended.
@@ -4583,7 +5172,9 @@ private:
 
     // Used both in a GC and on the allocator code paths when heap_hard_limit is non zero
     PER_HEAP_ISOLATED_FIELD_INIT_ONLY CLRCriticalSection check_commit_cs;
+#ifdef COMMITTED_BYTES_SHADOW
     PER_HEAP_ISOLATED_FIELD_INIT_ONLY CLRCriticalSection decommit_lock;
+#endif
 
     // Indicate to use large pages. This only works if hardlimit is also enabled.
     PER_HEAP_ISOLATED_FIELD_INIT_ONLY bool use_large_pages_p;

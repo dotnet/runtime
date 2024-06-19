@@ -965,8 +965,10 @@ bool Compiler::fgCanCompactBlocks(BasicBlock* block, BasicBlock* bNext)
 // Arguments:
 //    block - move all code into this block.
 //    bNext - bbNext of `block`. This block will be removed.
+//    doDebugCheck - in Debug builds, check flowgraph for correctness after compaction
+//    (some callers might compact blocks during destructive flowgraph changes, and thus should skip checks)
 //
-void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
+void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext DEBUGARG(bool doDebugCheck /* = true */))
 {
     noway_assert(block != nullptr);
     noway_assert(bNext != nullptr);
@@ -1331,7 +1333,7 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
 #endif
 
 #if DEBUG
-    if (JitConfig.JitSlowDebugChecksEnabled() != 0)
+    if (doDebugCheck && (JitConfig.JitSlowDebugChecksEnabled() != 0))
     {
         // Make sure that the predecessor lists are accurate
         fgDebugCheckBBlist();
@@ -4536,6 +4538,202 @@ bool Compiler::fgReorderBlocks(bool useProfile)
 #endif
 
 //-----------------------------------------------------------------------------
+// fgMoveHotJumps: Try to move jumps to fall into their successors, if the jump is sufficiently hot.
+//
+// Template parameters:
+//    hasEH - If true, method has EH regions, so check that we don't try to move blocks in different regions
+//
+template <bool hasEH>
+void Compiler::fgMoveHotJumps()
+{
+#ifdef DEBUG
+    if (verbose)
+    {
+        printf("*************** In fgMoveHotJumps()\n");
+
+        printf("\nInitial BasicBlocks");
+        fgDispBasicBlocks(verboseTrees);
+        printf("\n");
+    }
+#endif // DEBUG
+
+    EnsureBasicBlockEpoch();
+    BlockSet visitedBlocks(BlockSetOps::MakeEmpty(this));
+    BlockSetOps::AddElemD(this, visitedBlocks, fgFirstBB->bbNum);
+
+    // If we have a funclet region, don't bother reordering anything in it.
+    //
+    BasicBlock* next;
+    for (BasicBlock* block = fgFirstBB; block != fgFirstFuncletBB; block = next)
+    {
+        if (fgCanCompactBlocks(block, block->Next()))
+        {
+            // Compact blocks before trying to move any jumps.
+            // This can unlock more opportunities for fallthrough behavior.
+            // We haven't fixed EH information yet, so don't do any correctness checks here.
+            //
+            fgCompactBlocks(block, block->Next() DEBUGARG(/* doDebugCheck */ false));
+            next = block;
+            continue;
+        }
+
+        next = block->Next();
+        BlockSetOps::AddElemD(this, visitedBlocks, block->bbNum);
+
+        // Don't bother trying to move cold blocks
+        //
+        if (block->isBBWeightCold(this))
+        {
+            continue;
+        }
+
+        FlowEdge* targetEdge;
+        FlowEdge* unlikelyEdge;
+
+        if (block->KindIs(BBJ_ALWAYS))
+        {
+            targetEdge   = block->GetTargetEdge();
+            unlikelyEdge = nullptr;
+        }
+        else if (block->KindIs(BBJ_COND))
+        {
+            // Consider conditional block's most likely branch for moving
+            //
+            if (block->GetTrueEdge()->getLikelihood() > 0.5)
+            {
+                targetEdge   = block->GetTrueEdge();
+                unlikelyEdge = block->GetFalseEdge();
+            }
+            else
+            {
+                targetEdge   = block->GetFalseEdge();
+                unlikelyEdge = block->GetTrueEdge();
+            }
+        }
+        else
+        {
+            // Don't consider other block kinds
+            //
+            continue;
+        }
+
+        BasicBlock* target         = targetEdge->getDestinationBlock();
+        bool        isBackwardJump = BlockSetOps::IsMember(this, visitedBlocks, target->bbNum);
+
+        if (isBackwardJump)
+        {
+            // We don't want to change the first block, so if block is a backward jump to the first block,
+            // don't try moving block before it.
+            //
+            if (target->IsFirst())
+            {
+                continue;
+            }
+
+            if (block->KindIs(BBJ_COND))
+            {
+                // This could be a loop exit, so don't bother moving this block up.
+                // Instead, try moving the unlikely target up to create fallthrough.
+                //
+                targetEdge     = unlikelyEdge;
+                target         = targetEdge->getDestinationBlock();
+                isBackwardJump = BlockSetOps::IsMember(this, visitedBlocks, target->bbNum);
+
+                if (isBackwardJump)
+                {
+                    continue;
+                }
+            }
+            // Check for single-block loop case
+            //
+            else if (block == target)
+            {
+                continue;
+            }
+        }
+
+        // Check if block already falls into target
+        //
+        if (block->NextIs(target))
+        {
+            continue;
+        }
+
+        if (target->isBBWeightCold(this))
+        {
+            // If target is block's most-likely successor, and block is not rarely-run,
+            // perhaps the profile data is misleading, and we need to run profile repair?
+            //
+            continue;
+        }
+
+        if (hasEH)
+        {
+            // Don't move blocks in different EH regions
+            //
+            if (!BasicBlock::sameEHRegion(block, target))
+            {
+                continue;
+            }
+
+            if (isBackwardJump)
+            {
+                // block and target are in the same try/handler regions, and target is behind block,
+                // so block cannot possibly be the start of the region.
+                //
+                assert(!bbIsTryBeg(block) && !bbIsHandlerBeg(block));
+
+                // Don't change the entry block of an EH region
+                //
+                if (bbIsTryBeg(target) || bbIsHandlerBeg(target))
+                {
+                    continue;
+                }
+            }
+            else
+            {
+                // block and target are in the same try/handler regions, and block is behind target,
+                // so target cannot possibly be the start of the region.
+                //
+                assert(!bbIsTryBeg(target) && !bbIsHandlerBeg(target));
+            }
+        }
+
+        // If moving block will break up existing fallthrough behavior into target, make sure it's worth it
+        //
+        FlowEdge* const fallthroughEdge = fgGetPredForBlock(target, target->Prev());
+        if ((fallthroughEdge != nullptr) && (fallthroughEdge->getLikelyWeight() >= targetEdge->getLikelyWeight()))
+        {
+            continue;
+        }
+
+        if (isBackwardJump)
+        {
+            // Move block to before target
+            //
+            fgUnlinkBlock(block);
+            fgInsertBBbefore(target, block);
+        }
+        else if (hasEH && target->isBBCallFinallyPair())
+        {
+            // target is a call-finally pair, so move the pair up to block
+            //
+            fgUnlinkRange(target, target->Next());
+            fgMoveBlocksAfter(target, target->Next(), block);
+            next = target->Next();
+        }
+        else
+        {
+            // Move target up to block
+            //
+            fgUnlinkBlock(target);
+            fgInsertBBafter(block, target);
+            next = target;
+        }
+    }
+}
+
+//-----------------------------------------------------------------------------
 // fgDoReversePostOrderLayout: Reorder blocks using a greedy RPO traversal.
 //
 void Compiler::fgDoReversePostOrderLayout()
@@ -4566,6 +4764,8 @@ void Compiler::fgDoReversePostOrderLayout()
             fgUnlinkBlock(blockToMove);
             fgInsertBBafter(block, blockToMove);
         }
+
+        fgMoveHotJumps</* hasEH */ false>();
 
         return;
     }
@@ -4653,6 +4853,8 @@ void Compiler::fgDoReversePostOrderLayout()
         fgUnlinkBlock(pair.callFinallyRet);
         fgInsertBBafter(pair.callFinally, pair.callFinallyRet);
     }
+
+    fgMoveHotJumps</* hasEH */ true>();
 
     // The RPO won't change the entry blocks of any EH regions, but reordering can change the last block in a region
     // (for example, by pushing throw blocks unreachable via normal flow to the end of the region).
@@ -4789,7 +4991,8 @@ void Compiler::fgMoveColdBlocks()
             // as we want to keep these pairs contiguous
             // (if we encounter the end of a pair below, we'll move the whole pair).
             //
-            if (!block->isRunRarely() || block->hasTryIndex() || block->hasHndIndex() || block->isBBCallFinallyPair())
+            if (!block->isBBWeightCold(this) || block->hasTryIndex() || block->hasHndIndex() ||
+                block->isBBCallFinallyPair())
             {
                 continue;
             }
@@ -4814,7 +5017,7 @@ void Compiler::fgMoveColdBlocks()
         // We have moved all cold main blocks before lastMainBB to after lastMainBB.
         // If lastMainBB itself is cold, move it to the end of the method to restore its relative ordering.
         //
-        if (lastMainBB->isRunRarely())
+        if (lastMainBB->isBBWeightCold(this))
         {
             BasicBlock* const newLastMainBB = this->fgLastBBInMainFunction();
             if (lastMainBB != newLastMainBB)
@@ -4868,13 +5071,14 @@ void Compiler::fgMoveColdBlocks()
     {
         prev = block->Prev();
 
-        // Only consider rarely-run blocks in try regions.
+        // Only consider cold blocks in try regions.
         // If we have such a block that is also part of an exception handler, don't bother moving it.
         // Finally, don't move block if it is the beginning of a call-finally pair,
         // as we want to keep these pairs contiguous
         // (if we encounter the end of a pair below, we'll move the whole pair).
         //
-        if (!block->hasTryIndex() || !block->isRunRarely() || block->hasHndIndex() || block->isBBCallFinallyPair())
+        if (!block->isBBWeightCold(this) || !block->hasTryIndex() || block->hasHndIndex() ||
+            block->isBBCallFinallyPair())
         {
             continue;
         }
@@ -4885,7 +5089,7 @@ void Compiler::fgMoveColdBlocks()
         // Don't move the beginning of a try region.
         // Also, if this try region's entry is cold, don't bother moving its blocks.
         //
-        if ((HBtab->ebdTryBeg == block) || (HBtab->ebdTryBeg->isRunRarely()))
+        if ((HBtab->ebdTryBeg == block) || HBtab->ebdTryBeg->isBBWeightCold(this))
         {
             continue;
         }
@@ -4946,7 +5150,7 @@ void Compiler::fgMoveColdBlocks()
         // We moved cold blocks to the end of this try region, but the old end block is cold, too.
         // Move the old end block to the end of the region to preserve its relative ordering.
         //
-        if ((tryEnd != newTryEnd) && tryEnd->isRunRarely() && !tryEnd->hasHndIndex())
+        if ((tryEnd != newTryEnd) && !tryEnd->hasHndIndex() && tryEnd->isBBWeightCold(this))
         {
             BasicBlock* const prev = tryEnd->Prev();
             fgUnlinkBlock(tryEnd);

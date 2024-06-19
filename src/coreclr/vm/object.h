@@ -383,10 +383,10 @@ class Object
         return * PTR_BYTE(GetData() + dwOffset);
     }
 
-    __int64 GetOffset64(DWORD dwOffset)
+    int64_t GetOffset64(DWORD dwOffset)
     {
         WRAPPER_NO_CONTRACT;
-        return (__int64) * PTR_ULONG64(GetData() + dwOffset);
+        return (int64_t) * PTR_ULONG64(GetData() + dwOffset);
     }
 
     void *GetPtrOffset(DWORD dwOffset)
@@ -423,10 +423,10 @@ class Object
         *(BYTE *) &GetData()[dwOffset] = (BYTE) dwValue;
     }
 
-    void SetOffset64(DWORD dwOffset, __int64 qwValue)
+    void SetOffset64(DWORD dwOffset, int64_t qwValue)
     {
         WRAPPER_NO_CONTRACT;
-        *(__int64 *) &GetData()[dwOffset] = qwValue;
+        *(int64_t *) &GetData()[dwOffset] = qwValue;
     }
 
 #endif // #ifndef DACCESS_COMPILE
@@ -732,9 +732,7 @@ public:
     }
 
     friend class StubLinkerCPU;
-#ifdef FEATURE_ARRAYSTUB_AS_IL
     friend class ArrayOpLinker;
-#endif
 public:
     OBJECTREF    m_Array[1];
 };
@@ -1344,12 +1342,6 @@ public:
     {
         LIMITED_METHOD_CONTRACT
         m_StartHelper = NULL;
-    }
-
-    void ResetName()
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_Name = NULL;
     }
 
     void SetPriority(INT32 priority)
@@ -2472,6 +2464,8 @@ public:
         Nullable *nullable = (Nullable *)src;
         return nullable->ValueAddr(nullableMT);
     }
+
+    static int32_t GetValueAddrOffset(MethodTable* nullableMT);
 
 private:
     static BOOL IsNullableForTypeHelper(MethodTable* nullableMT, MethodTable* paramMT);

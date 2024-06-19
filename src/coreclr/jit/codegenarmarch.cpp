@@ -2120,10 +2120,10 @@ public:
     }
 
 private:
-    const regNumber intReg1;
-    const regNumber intReg2;
-    const regNumber addrReg;
-    emitter* const  emitter;
+    const regNumber      intReg1;
+    const regNumber      intReg2;
+    const regNumber      addrReg;
+    class emitter* const emitter;
 };
 
 class ProducingStream
@@ -2213,11 +2213,11 @@ public:
     }
 
 private:
-    const regNumber intReg1;
-    const regNumber simdReg1;
-    const regNumber simdReg2;
-    const regNumber addrReg;
-    emitter* const  emitter;
+    const regNumber      intReg1;
+    const regNumber      simdReg1;
+    const regNumber      simdReg2;
+    const regNumber      addrReg;
+    class emitter* const emitter;
 };
 
 class BlockUnrollHelper
@@ -3599,6 +3599,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         // We just need to emit "call reg" in this case.
         //
         assert(genIsValidIntReg(target->GetRegNum()));
+        bool noSafePoint = false;
 
 #ifdef TARGET_ARM64
         bool isTlsHandleTarget =
@@ -3612,6 +3613,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             GenTreeIntCon* iconNode = target->AsIntCon();
             methHnd                 = (CORINFO_METHOD_HANDLE)iconNode->gtIconVal;
             retSize                 = EA_SET_FLG(retSize, EA_CNS_TLSGD_RELOC);
+            noSafePoint             = true;
 
             // For NativeAOT, linux/arm64, linker wants the following pattern, so we will generate
             // it as part of the call. Generating individual instructions is tricky to get it
@@ -3647,7 +3649,8 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
                     MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
                     di,
                     target->GetRegNum(),
-                    call->IsFastTailCall());
+                    call->IsFastTailCall(),
+                    noSafePoint);
 
 #ifdef TARGET_ARM64
         if (isTlsHandleTarget)
@@ -4684,7 +4687,7 @@ void CodeGen::genPushCalleeSavedRegisters()
 
     maskPushRegsInt |= genStackAllocRegisterMask(compiler->compLclFrameSize, maskPushRegsFloat);
 
-    assert(FitsIn<int>(maskPushRegsInt));
+    assert(FitsIn<int>(maskPushRegsInt.getLow()));
     inst_IV(INS_push, (int)maskPushRegsInt);
     compiler->unwindPushMaskInt(maskPushRegsInt);
 

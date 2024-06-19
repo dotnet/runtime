@@ -4,7 +4,7 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.IO.Pipelines;
-using System.Runtime.CompilerServices;
+using System.Linq;
 using System.Text.Json.Serialization.Metadata;
 using System.Threading;
 using System.Threading.Tasks;
@@ -45,17 +45,51 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public async Task CompletedPipeThrowsFromSerialize()
+        public async Task FlushesPeriodicallyWhenWritingLargeJson()
         {
-            Pipe pipe = new Pipe();
-            pipe.Reader.Complete();
+            Pipe pipe = new Pipe(new PipeOptions(pauseWriterThreshold: 1000000));
+            IEnumerable<int> obj = Enumerable.Range(0, PipeOptions.Default.MinimumSegmentSize * 2);
+            CustomPipeWriter writer = new CustomPipeWriter(pipe.Writer);
+            await JsonSerializer.SerializeAsync(writer, obj);
 
-            await Assert.ThrowsAsync<OperationCanceledException>(() => JsonSerializer.SerializeAsync(pipe.Writer, 1));
+            Assert.Equal(3, writer.Flushes.Count);
+            foreach (long flush in writer.Flushes)
+            {
+                // Fragile check, but since we're writing integers that are 5 or less digits
+                // it should always exit to a flush while under the flush threshold
+                Assert.True(flush < PipeOptions.Default.MinimumSegmentSize * 4);
+            }
+        }
+
+        class CustomPipeWriter : PipeWriter
+        {
+            private readonly PipeWriter _originalWriter;
+
+            public CustomPipeWriter(PipeWriter originalWriter)
+            {
+                _originalWriter = originalWriter;
+            }
+
+            public List<long> Flushes { get; } = new List<long>();
+
+            public override void Advance(int bytes) => _originalWriter.Advance(bytes);
+            public override void CancelPendingFlush() => _originalWriter.CancelPendingFlush();
+            public override void Complete(Exception? exception = null) => _originalWriter.Complete(exception);
+            public override ValueTask<FlushResult> FlushAsync(CancellationToken cancellationToken = default)
+            {
+                Flushes.Add(UnflushedBytes);
+                return _originalWriter.FlushAsync(cancellationToken);
+            }
+            public override Memory<byte> GetMemory(int sizeHint = 0) => _originalWriter.GetMemory(sizeHint);
+            public override Span<byte> GetSpan(int sizeHint = 0) => _originalWriter.GetSpan(sizeHint);
+            public override bool CanGetUnflushedBytes => _originalWriter.CanGetUnflushedBytes;
+            public override long UnflushedBytes => _originalWriter.UnflushedBytes;
         }
 
         [Fact]
         public async Task CancelPendingFlushDuringBackpressureThrows()
         {
+            int i = 0;
             Pipe pipe = new Pipe(new PipeOptions(pauseWriterThreshold: 10, resumeWriterThreshold: 5));
             await pipe.Writer.WriteAsync("123456789"u8.ToArray());
             Task serializeTask = JsonSerializer.SerializeAsync(pipe.Writer, GetNumbersAsync());
@@ -68,13 +102,12 @@ namespace System.Text.Json.Serialization.Tests
             ReadResult result = await pipe.Reader.ReadAsync();
 
             // Technically this check is not needed, but helps confirm behavior, that Pipe had written but was waiting for flush to continue.
-            // result.Buffer: 123456789[0
-            Assert.Equal(11, result.Buffer.Length);
+            // result.Buffer: 123456789[0...
+            Assert.InRange(result.Buffer.Length, 10 + i - 1, 10 + i + 1);
             pipe.Reader.AdvanceTo(result.Buffer.End);
 
-            static async IAsyncEnumerable<int> GetNumbersAsync()
+            async IAsyncEnumerable<int> GetNumbersAsync()
             {
-                int i = 0;
                 while (true)
                 {
                     await Task.Delay(10);
@@ -299,7 +332,102 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(0, pool.BufferCount);
             result = await pipe.Reader.ReadAsync();
             Assert.Equal(2002, result.Buffer.Length);
+        }
 
+        [Fact]
+        public async Task ThrowForPipeWriterWithoutUnflushedBytesImplemented()
+        {
+            var pipeWriter = new BadPipeWriter();
+            var exception = await Assert.ThrowsAnyAsync<InvalidOperationException>(() => JsonSerializer.SerializeAsync(pipeWriter, 0));
+            Assert.Equal("The PipeWriter 'BadPipeWriter' does not implement PipeWriter.UnflushedBytes.", exception.Message);
+        }
+
+        class BadPipeWriter : PipeWriter
+        {
+            public override void Advance(int bytes) => throw new NotImplementedException();
+            public override void CancelPendingFlush() => throw new NotImplementedException();
+            public override void Complete(Exception? exception = null) => throw new NotImplementedException();
+            public override ValueTask<FlushResult> FlushAsync(CancellationToken cancellationToken = default) => throw new NotImplementedException();
+            public override Memory<byte> GetMemory(int sizeHint = 0) => throw new NotImplementedException();
+            public override Span<byte> GetSpan(int sizeHint = 0) => throw new NotImplementedException();
+            public override bool CanGetUnflushedBytes => false;
+            public override long UnflushedBytes => throw new NotImplementedException();
+        }
+
+        [Fact]
+        public async Task NestedSerializeAsyncCallsFlushAtThreshold()
+        {
+            string data = new string('a', 300);
+            var options = new JsonSerializerOptions();
+            options.Converters.Add(new MyStringConverter());
+
+            var pipe = new Pipe(new PipeOptions(pauseWriterThreshold: 10000000));
+            var writer = new CustomPipeWriter(pipe.Writer);
+            await JsonSerializer.SerializeAsync(writer, CreateManyTestObjects(), options);
+
+            // Flush should happen every ~14,745 bytes (+36 for writing data when just below threshold)
+            Assert.True(writer.Flushes.Count > (data.Length * 10_000 / 16_000), $"Flush count: {writer.Flushes.Count}");
+
+            foreach (long flush in writer.Flushes)
+            {
+                Assert.True(flush < PipeOptions.Default.MinimumSegmentSize * 4);
+            }
+
+            IEnumerable<string> CreateManyTestObjects()
+            {
+                int i = 0;
+                while (true)
+                {
+                    if (++i % 10_000 == 0)
+                    {
+                        break;
+                    }
+                    yield return data;
+                }
+            }
+        }
+
+        [Fact]
+        public async Task SerializeAsyncCallsFlushAtThreshold()
+        {
+            string data = new string('a', 300);
+            var options = new JsonSerializerOptions();
+
+            var pipe = new Pipe(new PipeOptions(pauseWriterThreshold: 10000000));
+            var writer = new CustomPipeWriter(pipe.Writer);
+            await JsonSerializer.SerializeAsync(writer, CreateManyTestObjects(), options);
+
+            // Flush should happen every ~14,745 bytes (+36 for writing data when just below threshold)
+            Assert.True(writer.Flushes.Count > (data.Length * 10_000 / 16_000), $"Flush count: {writer.Flushes.Count}");
+
+            foreach (long flush in writer.Flushes)
+            {
+                Assert.True(flush < PipeOptions.Default.MinimumSegmentSize * 4);
+            }
+
+            IEnumerable<string> CreateManyTestObjects()
+            {
+                int i = 0;
+                while (true)
+                {
+                    if (++i % 10_000 == 0)
+                    {
+                        break;
+                    }
+                    yield return data;
+                }
+            }
+        }
+
+        class MyStringConverter : JsonConverter<string>
+        {
+            public override string Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>
+                throw new NotImplementedException();
+
+            public override void Write(Utf8JsonWriter writer, string value, JsonSerializerOptions options)
+            {
+                JsonSerializer.Serialize(writer, value);
+            }
         }
 
         internal class TestPool : MemoryPool<byte>

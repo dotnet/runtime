@@ -227,10 +227,14 @@ extern "C"
     CallStackFrame* GetEbp()
     {
         CallStackFrame *frame=NULL;
+#ifdef TARGET_WINDOWS
         __asm
         {
             mov frame, ebp
         }
+#else
+        frame = (CallStackFrame*)__builtin_frame_address(0);
+#endif
         return frame;
     }
 }

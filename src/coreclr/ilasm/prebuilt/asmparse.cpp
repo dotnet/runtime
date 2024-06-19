@@ -432,8 +432,8 @@ union YYSTYPE
         CorTypeAttr exptAttr;
         CorManifestResourceFlags manresAttr;
         double*  float64;
-        __int64* int64;
-        __int32  int32;
+        int64_t* int64;
+        int32_t  int32;
         char*    string;
         BinStr*  binstr;
         Labels*  labels;
@@ -3706,7 +3706,7 @@ yyreduce:
 
   case 44: /* int64: INT32_V  */
 #line 266 "asmparse.y"
-                                                              { (yyval.int64) = neg ? new __int64((yyvsp[0].int32)) : new __int64((unsigned)(yyvsp[0].int32)); }
+                                                              { (yyval.int64) = neg ? new int64_t((yyvsp[0].int32)) : new int64_t((unsigned)(yyvsp[0].int32)); }
 #line 3711 "asmparse.cpp"
     break;
 
@@ -3718,7 +3718,7 @@ yyreduce:
 
   case 46: /* float64: FLOAT32_ '(' int32 ')'  */
 #line 270 "asmparse.y"
-                                                              { float f; *((__int32*) (&f)) = (yyvsp[-1].int32); (yyval.float64) = new double(f); }
+                                                              { float f; *((int32_t*) (&f)) = (yyvsp[-1].int32); (yyval.float64) = new double(f); }
 #line 3723 "asmparse.cpp"
     break;
 
@@ -5813,47 +5813,47 @@ yyreduce:
 
   case 404: /* ddItem: INT64_ '(' int64 ')' ddItemCount  */
 #line 1071 "asmparse.y"
-                                                             { __int64* p = new (nothrow) __int64[(yyvsp[0].int32)];
+                                                             { int64_t* p = new (nothrow) int64_t[(yyvsp[0].int32)];
                                                                if(p != NULL) {
                                                                  for(int i=0; i<(yyvsp[0].int32); i++) p[i] = *((yyvsp[-2].int64));
-                                                                 PASM->EmitData(p, sizeof(__int64)*(yyvsp[0].int32)); delete (yyvsp[-2].int64); delete [] p;
+                                                                 PASM->EmitData(p, sizeof(int64_t)*(yyvsp[0].int32)); delete (yyvsp[-2].int64); delete [] p;
                                                                } else PASM->report->error("Out of memory emitting data block %d bytes\n",
-                                                                     sizeof(__int64)*(yyvsp[0].int32)); }
+                                                                     sizeof(int64_t)*(yyvsp[0].int32)); }
 #line 5823 "asmparse.cpp"
     break;
 
   case 405: /* ddItem: INT32_ '(' int32 ')' ddItemCount  */
 #line 1078 "asmparse.y"
-                                                             { __int32* p = new (nothrow) __int32[(yyvsp[0].int32)];
+                                                             { int32_t* p = new (nothrow) int32_t[(yyvsp[0].int32)];
                                                                if(p != NULL) {
                                                                  for(int i=0; i<(yyvsp[0].int32); i++) p[i] = (yyvsp[-2].int32);
-                                                                 PASM->EmitData(p, sizeof(__int32)*(yyvsp[0].int32)); delete [] p;
+                                                                 PASM->EmitData(p, sizeof(int32_t)*(yyvsp[0].int32)); delete [] p;
                                                                } else PASM->report->error("Out of memory emitting data block %d bytes\n",
-                                                                     sizeof(__int32)*(yyvsp[0].int32)); }
+                                                                     sizeof(int32_t)*(yyvsp[0].int32)); }
 #line 5834 "asmparse.cpp"
     break;
 
   case 406: /* ddItem: INT16_ '(' int32 ')' ddItemCount  */
 #line 1085 "asmparse.y"
-                                                             { __int16 i = (__int16) (yyvsp[-2].int32); FAIL_UNLESS(i == (yyvsp[-2].int32), ("Value %d too big\n", (yyvsp[-2].int32)));
-                                                               __int16* p = new (nothrow) __int16[(yyvsp[0].int32)];
+                                                             { int16_t i = (int16_t) (yyvsp[-2].int32); FAIL_UNLESS(i == (yyvsp[-2].int32), ("Value %d too big\n", (yyvsp[-2].int32)));
+                                                               int16_t* p = new (nothrow) int16_t[(yyvsp[0].int32)];
                                                                if(p != NULL) {
                                                                  for(int j=0; j<(yyvsp[0].int32); j++) p[j] = i;
-                                                                 PASM->EmitData(p, sizeof(__int16)*(yyvsp[0].int32)); delete [] p;
+                                                                 PASM->EmitData(p, sizeof(int16_t)*(yyvsp[0].int32)); delete [] p;
                                                                } else PASM->report->error("Out of memory emitting data block %d bytes\n",
-                                                                     sizeof(__int16)*(yyvsp[0].int32)); }
+                                                                     sizeof(int16_t)*(yyvsp[0].int32)); }
 #line 5846 "asmparse.cpp"
     break;
 
   case 407: /* ddItem: INT8_ '(' int32 ')' ddItemCount  */
 #line 1093 "asmparse.y"
-                                                             { __int8 i = (__int8) (yyvsp[-2].int32); FAIL_UNLESS(i == (yyvsp[-2].int32), ("Value %d too big\n", (yyvsp[-2].int32)));
-                                                               __int8* p = new (nothrow) __int8[(yyvsp[0].int32)];
+                                                             { int8_t i = (int8_t) (yyvsp[-2].int32); FAIL_UNLESS(i == (yyvsp[-2].int32), ("Value %d too big\n", (yyvsp[-2].int32)));
+                                                               int8_t* p = new (nothrow) int8_t[(yyvsp[0].int32)];
                                                                if(p != NULL) {
                                                                  for(int j=0; j<(yyvsp[0].int32); j++) p[j] = i;
-                                                                 PASM->EmitData(p, sizeof(__int8)*(yyvsp[0].int32)); delete [] p;
+                                                                 PASM->EmitData(p, sizeof(int8_t)*(yyvsp[0].int32)); delete [] p;
                                                                } else PASM->report->error("Out of memory emitting data block %d bytes\n",
-                                                                     sizeof(__int8)*(yyvsp[0].int32)); }
+                                                                     sizeof(int8_t)*(yyvsp[0].int32)); }
 #line 5858 "asmparse.cpp"
     break;
 
@@ -5871,25 +5871,25 @@ yyreduce:
 
   case 410: /* ddItem: INT64_ ddItemCount  */
 #line 1102 "asmparse.y"
-                                                             { PASM->EmitData(NULL, sizeof(__int64)*(yyvsp[0].int32)); }
+                                                             { PASM->EmitData(NULL, sizeof(int64_t)*(yyvsp[0].int32)); }
 #line 5876 "asmparse.cpp"
     break;
 
   case 411: /* ddItem: INT32_ ddItemCount  */
 #line 1103 "asmparse.y"
-                                                             { PASM->EmitData(NULL, sizeof(__int32)*(yyvsp[0].int32)); }
+                                                             { PASM->EmitData(NULL, sizeof(int32_t)*(yyvsp[0].int32)); }
 #line 5882 "asmparse.cpp"
     break;
 
   case 412: /* ddItem: INT16_ ddItemCount  */
 #line 1104 "asmparse.y"
-                                                             { PASM->EmitData(NULL, sizeof(__int16)*(yyvsp[0].int32)); }
+                                                             { PASM->EmitData(NULL, sizeof(int16_t)*(yyvsp[0].int32)); }
 #line 5888 "asmparse.cpp"
     break;
 
   case 413: /* ddItem: INT8_ ddItemCount  */
 #line 1105 "asmparse.y"
-                                                             { PASM->EmitData(NULL, sizeof(__int8)*(yyvsp[0].int32)); }
+                                                             { PASM->EmitData(NULL, sizeof(int8_t)*(yyvsp[0].int32)); }
 #line 5894 "asmparse.cpp"
     break;
 
@@ -5897,14 +5897,14 @@ yyreduce:
 #line 1109 "asmparse.y"
                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_R4);
                                                                float f = (float)(*(yyvsp[-1].float64));
-                                                               (yyval.binstr)->appendInt32(*((__int32*)&f)); delete (yyvsp[-1].float64); }
+                                                               (yyval.binstr)->appendInt32(*((int32_t*)&f)); delete (yyvsp[-1].float64); }
 #line 5902 "asmparse.cpp"
     break;
 
   case 415: /* fieldSerInit: FLOAT64_ '(' float64 ')'  */
 #line 1112 "asmparse.y"
                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_R8);
-                                                               (yyval.binstr)->appendInt64((__int64 *)(yyvsp[-1].float64)); delete (yyvsp[-1].float64); }
+                                                               (yyval.binstr)->appendInt64((int64_t *)(yyvsp[-1].float64)); delete (yyvsp[-1].float64); }
 #line 5909 "asmparse.cpp"
     break;
 
@@ -5918,14 +5918,14 @@ yyreduce:
   case 417: /* fieldSerInit: FLOAT64_ '(' int64 ')'  */
 #line 1116 "asmparse.y"
                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_R8);
-                                                               (yyval.binstr)->appendInt64((__int64 *)(yyvsp[-1].int64)); delete (yyvsp[-1].int64); }
+                                                               (yyval.binstr)->appendInt64((int64_t *)(yyvsp[-1].int64)); delete (yyvsp[-1].int64); }
 #line 5923 "asmparse.cpp"
     break;
 
   case 418: /* fieldSerInit: INT64_ '(' int64 ')'  */
 #line 1118 "asmparse.y"
                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_I8);
-                                                               (yyval.binstr)->appendInt64((__int64 *)(yyvsp[-1].int64)); delete (yyvsp[-1].int64); }
+                                                               (yyval.binstr)->appendInt64((int64_t *)(yyvsp[-1].int64)); delete (yyvsp[-1].int64); }
 #line 5930 "asmparse.cpp"
     break;
 
@@ -5953,7 +5953,7 @@ yyreduce:
   case 422: /* fieldSerInit: UNSIGNED_ INT64_ '(' int64 ')'  */
 #line 1126 "asmparse.y"
                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_U8);
-                                                               (yyval.binstr)->appendInt64((__int64 *)(yyvsp[-1].int64)); delete (yyvsp[-1].int64); }
+                                                               (yyval.binstr)->appendInt64((int64_t *)(yyvsp[-1].int64)); delete (yyvsp[-1].int64); }
 #line 5958 "asmparse.cpp"
     break;
 
@@ -5981,7 +5981,7 @@ yyreduce:
   case 426: /* fieldSerInit: UINT64_ '(' int64 ')'  */
 #line 1134 "asmparse.y"
                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_U8);
-                                                               (yyval.binstr)->appendInt64((__int64 *)(yyvsp[-1].int64)); delete (yyvsp[-1].int64); }
+                                                               (yyval.binstr)->appendInt64((int64_t *)(yyvsp[-1].int64)); delete (yyvsp[-1].int64); }
 #line 5986 "asmparse.cpp"
     break;
 
@@ -6047,13 +6047,13 @@ yyreduce:
 
   case 436: /* hexbytes: HEXBYTE  */
 #line 1157 "asmparse.y"
-                                                             { __int8 i = (__int8) (yyvsp[0].int32); (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(i); }
+                                                             { int8_t i = (int8_t) (yyvsp[0].int32); (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(i); }
 #line 6052 "asmparse.cpp"
     break;
 
   case 437: /* hexbytes: hexbytes HEXBYTE  */
 #line 1158 "asmparse.y"
-                                                             { __int8 i = (__int8) (yyvsp[0].int32); (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->appendInt8(i); }
+                                                             { int8_t i = (int8_t) (yyvsp[0].int32); (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->appendInt8(i); }
 #line 6058 "asmparse.cpp"
     break;
 
@@ -6282,7 +6282,7 @@ yyreduce:
   case 468: /* f32seq: f32seq float64  */
 #line 1259 "asmparse.y"
                                                              { (yyval.binstr) = (yyvsp[-1].binstr);
-                                                               float f = (float) (*(yyvsp[0].float64)); (yyval.binstr)->appendInt32(*((__int32*)&f)); delete (yyvsp[0].float64); }
+                                                               float f = (float) (*(yyvsp[0].float64)); (yyval.binstr)->appendInt32(*((int32_t*)&f)); delete (yyvsp[0].float64); }
 #line 6287 "asmparse.cpp"
     break;
 
@@ -6302,14 +6302,14 @@ yyreduce:
   case 471: /* f64seq: f64seq float64  */
 #line 1266 "asmparse.y"
                                                              { (yyval.binstr) = (yyvsp[-1].binstr);
-                                                               (yyval.binstr)->appendInt64((__int64 *)(yyvsp[0].float64)); delete (yyvsp[0].float64); }
+                                                               (yyval.binstr)->appendInt64((int64_t *)(yyvsp[0].float64)); delete (yyvsp[0].float64); }
 #line 6307 "asmparse.cpp"
     break;
 
   case 472: /* f64seq: f64seq int64  */
 #line 1268 "asmparse.y"
                                                              { (yyval.binstr) = (yyvsp[-1].binstr);
-                                                               (yyval.binstr)->appendInt64((__int64 *)(yyvsp[0].int64)); delete (yyvsp[0].int64); }
+                                                               (yyval.binstr)->appendInt64((int64_t *)(yyvsp[0].int64)); delete (yyvsp[0].int64); }
 #line 6314 "asmparse.cpp"
     break;
 
@@ -6322,7 +6322,7 @@ yyreduce:
   case 474: /* i64seq: i64seq int64  */
 #line 1273 "asmparse.y"
                                                              { (yyval.binstr) = (yyvsp[-1].binstr);
-                                                               (yyval.binstr)->appendInt64((__int64 *)(yyvsp[0].int64)); delete (yyvsp[0].int64); }
+                                                               (yyval.binstr)->appendInt64((int64_t *)(yyvsp[0].int64)); delete (yyvsp[0].int64); }
 #line 6327 "asmparse.cpp"
     break;
 

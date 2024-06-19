@@ -22,7 +22,11 @@ namespace Microsoft.NET.Sdk.WebAssembly;
 
 public class GenerateWasmBootJson : Task
 {
-    private static readonly string[] jiterpreterOptions = new[] { "jiterpreter-traces-enabled", "jiterpreter-interp-entry-enabled", "jiterpreter-jit-call-enabled" };
+    private static readonly string[] jiterpreterOptions = [
+        "jiterpreter-traces-enabled",
+        "jiterpreter-interp-entry-enabled",
+        "jiterpreter-jit-call-enabled"
+    ];
 
     [Required]
     public string AssemblyPath { get; set; }
@@ -73,6 +77,10 @@ public class GenerateWasmBootJson : Task
 
     public bool IsPublish { get; set; }
 
+    public bool IsAot { get; set; }
+
+    public bool IsMultiThreaded { get; set; }
+
     public override bool Execute()
     {
         using var fileStream = File.Create(OutputPath);
@@ -93,12 +101,12 @@ public class GenerateWasmBootJson : Task
     // Internal for tests
     public void WriteBootJson(Stream output, string entryAssemblyName)
     {
-        var helper = new BootJsonBuilderHelper(Log);
+        var helper = new BootJsonBuilderHelper(Log, DebugLevel, IsMultiThreaded, IsPublish);
 
         var result = new BootJsonData
         {
             resources = new ResourcesData(),
-            startupMemoryCache = ParseOptionalBool(StartupMemoryCache),
+            startupMemoryCache = helper.ParseOptionalBool(StartupMemoryCache),
         };
 
         if (IsTargeting80OrLater())
@@ -128,7 +136,7 @@ public class GenerateWasmBootJson : Task
             result.runtimeOptions = runtimeOptions;
         }
 
-        bool? jiterpreter = ParseOptionalBool(Jiterpreter);
+        bool? jiterpreter = helper.ParseOptionalBool(Jiterpreter);
         if (jiterpreter != null)
         {
             var runtimeOptions = result.runtimeOptions?.ToHashSet() ?? new HashSet<string>(3);
@@ -205,15 +213,32 @@ public class GenerateWasmBootJson : Task
                     }
                     else
                     {
-                        Log.LogMessage(MessageImportance.Low, "Candidate '{0}' is defined as symbols file.", resource.ItemSpec);
-                        resourceData.pdb ??= new ResourceHashesByNameDictionary();
-                        resourceList = resourceData.pdb;
+                        if (IsTargeting90OrLater() && (IsAot || helper.IsCoreAssembly(resourceName)))
+                        {
+                            Log.LogMessage(MessageImportance.Low, "Candidate '{0}' is defined as core symbols file.", resource.ItemSpec);
+                            resourceData.corePdb ??= new ResourceHashesByNameDictionary();
+                            resourceList = resourceData.corePdb;
+                        }
+                        else
+                        {
+                            Log.LogMessage(MessageImportance.Low, "Candidate '{0}' is defined as symbols file.", resource.ItemSpec);
+                            resourceData.pdb ??= new ResourceHashesByNameDictionary();
+                            resourceList = resourceData.pdb;
+                        }
                     }
                 }
                 else if (string.Equals("runtime", assetTraitValue, StringComparison.OrdinalIgnoreCase))
                 {
-                    Log.LogMessage(MessageImportance.Low, "Candidate '{0}' is defined as an app assembly.", resource.ItemSpec);
-                    resourceList = resourceData.assembly;
+                    if (IsTargeting90OrLater() && (IsAot || helper.IsCoreAssembly(resourceName)))
+                    {
+                        Log.LogMessage(MessageImportance.Low, "Candidate '{0}' is defined as core assembly.", resource.ItemSpec);
+                        resourceList = resourceData.coreAssembly;
+                    }
+                    else
+                    {
+                        Log.LogMessage(MessageImportance.Low, "Candidate '{0}' is defined as an app assembly.", resource.ItemSpec);
+                        resourceList = resourceData.assembly;
+                    }
                 }
                 else if (string.Equals(assetTraitName, "WasmResource", StringComparison.OrdinalIgnoreCase) &&
                         string.Equals(assetTraitValue, "native", StringComparison.OrdinalIgnoreCase))
@@ -332,16 +357,7 @@ public class GenerateWasmBootJson : Task
 
         if (IsTargeting80OrLater())
         {
-            int? debugLevel = ParseOptionalInt(DebugLevel);
-
-            // If user didn't give us a value, check if we have any PDB.
-            if (debugLevel == null && result.resources?.pdb?.Count > 0)
-                debugLevel = -1;
-
-            // Fallback to -1 for build, or 0 for publish
-            debugLevel ??= IsPublish ? 0 : -1;
-
-            result.debugLevel = debugLevel.Value;
+            result.debugLevel = helper.GetDebugLevel(result.resources?.pdb?.Count > 0);
         }
 
         if (ConfigurationFiles != null)
@@ -409,22 +425,6 @@ public class GenerateWasmBootJson : Task
         return GlobalizationMode.Sharded;
     }
 
-    private static bool? ParseOptionalBool(string value)
-    {
-        if (string.IsNullOrEmpty(value) || !bool.TryParse(value, out var boolValue))
-            return null;
-
-        return boolValue;
-    }
-
-    private static int? ParseOptionalInt(string value)
-    {
-        if (string.IsNullOrEmpty(value) || !int.TryParse(value, out var intValue))
-            return null;
-
-        return intValue;
-    }
-
     private void AddToAdditionalResources(ITaskItem resource, Dictionary<string, AdditionalAsset> additionalResources, string resourceName, string behavior)
     {
         if (!additionalResources.ContainsKey(resourceName))
@@ -445,8 +445,15 @@ public class GenerateWasmBootJson : Task
 
     private Version? parsedTargetFrameworkVersion;
     private static readonly Version version80 = new Version(8, 0);
+    private static readonly Version version90 = new Version(9, 0);
 
     private bool IsTargeting80OrLater()
+        => IsTargetingVersionOrLater(version80);
+
+    private bool IsTargeting90OrLater()
+        => IsTargetingVersionOrLater(version90);
+
+    private bool IsTargetingVersionOrLater(Version version)
     {
         if (parsedTargetFrameworkVersion == null)
         {
@@ -457,6 +464,6 @@ public class GenerateWasmBootJson : Task
             parsedTargetFrameworkVersion = Version.Parse(tfv);
         }
 
-        return parsedTargetFrameworkVersion >= version80;
+        return parsedTargetFrameworkVersion >= version;
     }
 }

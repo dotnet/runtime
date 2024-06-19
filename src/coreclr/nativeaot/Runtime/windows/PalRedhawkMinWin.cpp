@@ -30,6 +30,10 @@
 #include "thread.h"
 #include "threadstore.h"
 
+#ifdef FEATURE_SPECIAL_USER_MODE_APC
+#include <versionhelpers.h>
+#endif
+
 #define REDHAWK_PALEXPORT extern "C"
 #define REDHAWK_PALAPI __stdcall
 
@@ -630,12 +634,31 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_opt_ void* p
     _ASSERTE(hThread != INVALID_HANDLE_VALUE);
 
 #ifdef FEATURE_SPECIAL_USER_MODE_APC
+
     // initialize g_pfnQueueUserAPC2Proc on demand.
     // Note that only one thread at a time may perform suspension (guaranteed by the thread store lock)
     // so simple conditional assignment is ok.
     if (g_pfnQueueUserAPC2Proc == QUEUE_USER_APC2_UNINITIALIZED)
     {
-        g_pfnQueueUserAPC2Proc = (QueueUserAPC2Proc)GetProcAddress(LoadKernel32dll(), "QueueUserAPC2");
+        HMODULE hKernel32 = LoadKernel32dll();
+#ifdef HOST_AMD64
+        typedef BOOL (WINAPI *IsWow64Process2Proc)(HANDLE hProcess, USHORT *pProcessMachine, USHORT *pNativeMachine);
+
+        IsWow64Process2Proc pfnIsWow64Process2Proc = (IsWow64Process2Proc)GetProcAddress(hKernel32, "IsWow64Process2");
+        USHORT processMachine, hostMachine;
+        if (pfnIsWow64Process2Proc != nullptr &&
+            (*pfnIsWow64Process2Proc)(GetCurrentProcess(), &processMachine, &hostMachine) &&
+            (hostMachine == IMAGE_FILE_MACHINE_ARM64) &&
+            !IsWindowsVersionOrGreater(10, 0, 26100))
+        {
+            // Special user-mode APCs are broken on WOW64 processes (x64 running on Arm64 machine) with Windows older than 11.0.26100 (24H2)
+            g_pfnQueueUserAPC2Proc = NULL;
+        }
+        else
+#endif // HOST_AMD64
+        {
+            g_pfnQueueUserAPC2Proc = (QueueUserAPC2Proc)GetProcAddress(hKernel32, "QueueUserAPC2");
+        }
     }
 
     if (g_pfnQueueUserAPC2Proc)

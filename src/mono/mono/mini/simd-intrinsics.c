@@ -3394,6 +3394,18 @@ static SimdIntrinsic advsimd_methods [] = {
 	{SN_InsertSelectedScalar},
 	{SN_LeadingSignCount, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_CLS},
 	{SN_LeadingZeroCount, OP_ARM64_CLZ},
+	{SN_Load2xVector128, OP_ARM64_LDM, INTRINS_AARCH64_ADV_SIMD_LD1X2_V128},
+	{SN_Load2xVector128AndUnzip, OP_ARM64_LDM, INTRINS_AARCH64_ADV_SIMD_LD2_V128},
+	{SN_Load2xVector64, OP_ARM64_LDM, INTRINS_AARCH64_ADV_SIMD_LD1X2_V64},
+	{SN_Load2xVector64AndUnzip, OP_ARM64_LDM, INTRINS_AARCH64_ADV_SIMD_LD2_V64},
+	{SN_Load3xVector128, OP_ARM64_LDM, INTRINS_AARCH64_ADV_SIMD_LD1X3_V128},
+	{SN_Load3xVector128AndUnzip, OP_ARM64_LDM, INTRINS_AARCH64_ADV_SIMD_LD3_V128},
+	{SN_Load3xVector64, OP_ARM64_LDM, INTRINS_AARCH64_ADV_SIMD_LD1X3_V64},
+	{SN_Load3xVector64AndUnzip, OP_ARM64_LDM, INTRINS_AARCH64_ADV_SIMD_LD3_V64},
+	{SN_Load4xVector128, OP_ARM64_LDM, INTRINS_AARCH64_ADV_SIMD_LD1X4_V128},
+	{SN_Load4xVector128AndUnzip, OP_ARM64_LDM, INTRINS_AARCH64_ADV_SIMD_LD4_V128},
+	{SN_Load4xVector64, OP_ARM64_LDM, INTRINS_AARCH64_ADV_SIMD_LD1X4_V64},
+	{SN_Load4xVector64AndUnzip, OP_ARM64_LDM, INTRINS_AARCH64_ADV_SIMD_LD4_V64},
 	{SN_LoadAndInsertScalar},
 	{SN_LoadAndReplicateToVector128, OP_ARM64_LD1R},
 	{SN_LoadAndReplicateToVector128x2, OP_ARM64_LDM, INTRINS_AARCH64_ADV_SIMD_LD2R_V128},
@@ -3410,19 +3422,7 @@ static SimdIntrinsic advsimd_methods [] = {
 	{SN_LoadPairVector64, OP_ARM64_LDP},
 	{SN_LoadPairVector64NonTemporal, OP_ARM64_LDNP},
 	{SN_LoadVector128, OP_ARM64_LD1},
-	{SN_LoadVector128x2, OP_ARM64_LDM, INTRINS_AARCH64_ADV_SIMD_LD1X2_V128},
-	{SN_LoadVector128x2AndUnzip, OP_ARM64_LDM, INTRINS_AARCH64_ADV_SIMD_LD2_V128},
-	{SN_LoadVector128x3, OP_ARM64_LDM, INTRINS_AARCH64_ADV_SIMD_LD1X3_V128},
-	{SN_LoadVector128x3AndUnzip, OP_ARM64_LDM, INTRINS_AARCH64_ADV_SIMD_LD3_V128},
-	{SN_LoadVector128x4, OP_ARM64_LDM, INTRINS_AARCH64_ADV_SIMD_LD1X4_V128},
-	{SN_LoadVector128x4AndUnzip, OP_ARM64_LDM, INTRINS_AARCH64_ADV_SIMD_LD4_V128},
 	{SN_LoadVector64, OP_ARM64_LD1},
-	{SN_LoadVector64x2, OP_ARM64_LDM, INTRINS_AARCH64_ADV_SIMD_LD1X2_V64},
-	{SN_LoadVector64x2AndUnzip, OP_ARM64_LDM, INTRINS_AARCH64_ADV_SIMD_LD2_V64},
-	{SN_LoadVector64x3, OP_ARM64_LDM, INTRINS_AARCH64_ADV_SIMD_LD1X3_V64},
-	{SN_LoadVector64x3AndUnzip, OP_ARM64_LDM, INTRINS_AARCH64_ADV_SIMD_LD3_V64},
-	{SN_LoadVector64x4, OP_ARM64_LDM, INTRINS_AARCH64_ADV_SIMD_LD1X4_V64},
-	{SN_LoadVector64x4AndUnzip, OP_ARM64_LDM, INTRINS_AARCH64_ADV_SIMD_LD4_V64},
 	{SN_Max, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_SMAX, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_UMAX, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_FMAX},
 	{SN_MaxAcross, OP_ARM64_XHORIZ, INTRINS_AARCH64_ADV_SIMD_SMAXV, OP_ARM64_XHORIZ, INTRINS_AARCH64_ADV_SIMD_UMAXV, OP_ARM64_XHORIZ, INTRINS_AARCH64_ADV_SIMD_FMAXV},
 	{SN_MaxNumber, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_FMAXNM},
@@ -3616,17 +3616,12 @@ static SimdIntrinsic advsimd_methods [] = {
 	{SN_StorePairScalarNonTemporal, OP_ARM64_STNP_SCALAR},
 	{SN_StoreSelectedScalar},
 	{SN_StoreVector128x2},
-	{SN_StoreVector128x2AndZip},
 	{SN_StoreVector128x3},
-	{SN_StoreVector128x3AndZip},
 	{SN_StoreVector128x4},
-	{SN_StoreVector128x4AndZip},
 	{SN_StoreVector64x2},
-	{SN_StoreVector64x2AndZip},
 	{SN_StoreVector64x3},
-	{SN_StoreVector64x3AndZip},
 	{SN_StoreVector64x4},
-	{SN_StoreVector64x4AndZip},
+	{SN_StoreVectorAndZip},
 	{SN_Subtract, OP_XBINOP, OP_ISUB, None, None, OP_XBINOP, OP_FSUB},
 	{SN_SubtractHighNarrowingLower, OP_ARM64_SUBHN},
 	{SN_SubtractHighNarrowingUpper, OP_ARM64_SUBHN2},
@@ -4035,12 +4030,7 @@ emit_arm64_intrinsics (
 		case SN_StoreVector64x2:
 		case SN_StoreVector64x3:
 		case SN_StoreVector64x4:
-		case SN_StoreVector128x2AndZip:
-		case SN_StoreVector128x3AndZip:
-		case SN_StoreVector128x4AndZip:
-		case SN_StoreVector64x2AndZip:
-		case SN_StoreVector64x3AndZip:
-		case SN_StoreVector64x4AndZip: {
+		case SN_StoreVectorAndZip: {
 			int iid = 0;
 			switch (id) {
 			case SN_StoreVector128x2: iid = INTRINS_AARCH64_ADV_SIMD_ST1X2_V128; break;
@@ -4049,12 +4039,7 @@ emit_arm64_intrinsics (
 			case SN_StoreVector64x2: iid = INTRINS_AARCH64_ADV_SIMD_ST1X2_V64; break;
 			case SN_StoreVector64x3: iid = INTRINS_AARCH64_ADV_SIMD_ST1X3_V64; break;
 			case SN_StoreVector64x4: iid = INTRINS_AARCH64_ADV_SIMD_ST1X4_V64; break;
-			case SN_StoreVector128x2AndZip: iid = INTRINS_AARCH64_ADV_SIMD_ST2_V128; break;
-			case SN_StoreVector128x3AndZip: iid = INTRINS_AARCH64_ADV_SIMD_ST3_V128; break;
-			case SN_StoreVector128x4AndZip: iid = INTRINS_AARCH64_ADV_SIMD_ST4_V128; break;
-			case SN_StoreVector64x2AndZip: iid = INTRINS_AARCH64_ADV_SIMD_ST2_V64; break;
-			case SN_StoreVector64x3AndZip: iid = INTRINS_AARCH64_ADV_SIMD_ST3_V64; break;
-			case SN_StoreVector64x4AndZip: iid = INTRINS_AARCH64_ADV_SIMD_ST4_V64; break;
+			case SN_StoreVectorAndZip: break;
 			default: g_assert_not_reached ();
 			}
 
@@ -4471,6 +4456,7 @@ static const IntrinGroup supported_x86_intrinsics [] = {
 	{ "Aes", MONO_CPU_X86_AES, aes_methods, sizeof (aes_methods) },
 	{ "Avx", MONO_CPU_X86_AVX, unsupported, sizeof (unsupported) },
 	{ "Avx2", MONO_CPU_X86_AVX2, unsupported, sizeof (unsupported) },
+	{ "Avx10v1", MONO_CPU_X86_AVX2, unsupported, sizeof (unsupported) },
 	{ "Avx512BW", MONO_CPU_X86_AVX2, unsupported, sizeof (unsupported) },
 	{ "Avx512CD", MONO_CPU_X86_AVX2, unsupported, sizeof (unsupported) },
 	{ "Avx512DQ", MONO_CPU_X86_AVX2, unsupported, sizeof (unsupported) },
