@@ -396,7 +396,7 @@ namespace System.Globalization
                         break;
 
                     default:
-                        // Treat non-ASCII characters as literals
+                        // Characters that are not ASCII letters are literal texts
                         if (!char.IsAsciiLetter(current))
                         {
                             result[resultPos++] = current;
