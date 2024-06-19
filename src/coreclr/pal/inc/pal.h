@@ -1876,6 +1876,11 @@ typedef struct _NEON128 {
     LONGLONG High;
 } NEON128, *PNEON128;
 
+typedef struct _SVE128 {
+    ULONGLONG Low;
+    LONGLONG High;
+} SVE128, *PSVE128;
+
 typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
 
     //
@@ -1937,14 +1942,23 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
     /* +0x314 */ DWORD Fpsr;
 
     //
+    // Sve Registers
+    //
+    //TODO-SVE: How does this structure handle variable sized Z/P/FFR registers?
+    /* +0x318 */ DWORD Vl;
+    /* +0x32C */ SVE128 Z[32];
+    /* +0x32C */ WORD P[32];
+    /* +0x32C */ WORD Ffr;
+
+    //
     // Debug registers
     //
 
-    /* +0x318 */ DWORD Bcr[ARM64_MAX_BREAKPOINTS];
-    /* +0x338 */ DWORD64 Bvr[ARM64_MAX_BREAKPOINTS];
-    /* +0x378 */ DWORD Wcr[ARM64_MAX_WATCHPOINTS];
-    /* +0x380 */ DWORD64 Wvr[ARM64_MAX_WATCHPOINTS];
-    /* +0x390 */
+    /* +0x? */ DWORD Bcr[ARM64_MAX_BREAKPOINTS];
+    /* +0x? */ DWORD64 Bvr[ARM64_MAX_BREAKPOINTS];
+    /* +0x? */ DWORD Wcr[ARM64_MAX_WATCHPOINTS];
+    /* +0x? */ DWORD64 Wvr[ARM64_MAX_WATCHPOINTS];
+    /* +0x? */
 
 } CONTEXT, *PCONTEXT, *LPCONTEXT;
 

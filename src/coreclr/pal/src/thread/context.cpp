@@ -708,7 +708,9 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
             }
         }
 #else // TARGET_OSX
-        fpsimd_context* fp = GetNativeSigSimdContext(native);
+        fpsimd_context* fp = nullptr;
+        sve_context* sve = nullptr;
+        GetNativeSigSimdContext(native, &fp, &sve);
         if (fp)
         {
             fp->fpsr = lpContext->Fpsr;
@@ -716,6 +718,25 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
             for (int i = 0; i < 32; i++)
             {
                 *(NEON128*) &fp->vregs[i] = lpContext->V[i];
+            }
+        }
+        if (sve)
+        {
+            //TODO-SVE: This only handles vector lengths of 128bits.
+
+            uint16_t vq = sve_vq_from_vl(lpContext->Vl);
+
+            sve->vl = lpContext->Vl;
+
+            //Note: Size of ffr register is SVE_SIG_FFR_SIZE(vq) bytes.
+            *(WORD*) (((uint8_t*)sve) + SVE_SIG_FFR_OFFSET(vq)) = lpContext->Ffr;
+
+            for (int i = 0; i < 32; i++)
+            {
+                //Note: Size of a Z register is SVE_SIG_ZREGS_SIZE(vq) bytes.
+                *(SVE128*) (((uint8_t*)sve) + SVE_SIG_ZREG_OFFSET(vq, i)) = lpContext->Z[i];
+                //Note: Size of a P register is SVE_SIG_PREGS_SIZE(vq) bytes.
+                *(WORD*) (((uint8_t*)sve) + SVE_SIG_PREG_OFFSET(vq, i)) = lpContext->P[i];
             }
         }
 #endif // TARGET_OSX
@@ -804,6 +825,99 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
     }
 #endif //HOST_AMD64 && XSTATE_SUPPORTED
 }
+
+#if defined(HOST_64BIT) && defined(HOST_ARM64) && !defined(TARGET_FREEBSD) && !defined(TARGET_OSX)
+/*++
+Function :
+    _GetNativeSigSimdContext
+
+    Finds the FP and SVE context from the reserved data section of a native context.
+
+Parameters :
+    uint8_t *data : native context reserved data.
+    uint32_t size : size of the reserved data.
+    fpsimd_context **fp_ptr : returns a pointer to the FP context.
+    sve_context **sve_ptr : returns a pointer to the SVE context.
+
+Return value :
+    None.
+
+--*/
+void _GetNativeSigSimdContext(uint8_t *data, uint32_t size, fpsimd_context **fp_ptr, sve_context **sve_ptr)
+{
+    size_t position = 0;
+    fpsimd_context *fp = nullptr;
+    sve_context *sve = nullptr;
+    extra_context *extra = nullptr;
+    bool done = false;
+
+    while (!done)
+    {
+        _aarch64_ctx *ctx = reinterpret_cast<_aarch64_ctx *>(&data[position]);
+
+        _ASSERTE(position + ctx->size <= size);
+
+
+        switch (ctx->magic)
+        {
+            case FPSIMD_MAGIC:
+                _ASSERTE(fp == nullptr);
+                _ASSERTE(ctx->size >= sizeof(fpsimd_context));
+                fp = reinterpret_cast<fpsimd_context *>(&data[position]);
+                break;
+
+            case SVE_MAGIC:
+                _ASSERTE(sve == nullptr);
+                _ASSERTE(ctx->size >= sizeof(sve_context));
+                sve = reinterpret_cast<sve_context *>(&data[position]);
+                break;
+
+            case EXTRA_MAGIC:
+            {
+                // Points to an additional section of reserved data.
+                _ASSERTE(extra == nullptr);
+                _ASSERTE(ctx->size >= sizeof(extra_context));
+                fpsimd_context *fpOrig = fp;
+                sve_context *sveOrig = sve;
+
+                extra = reinterpret_cast<extra_context *>(&data[position]);
+                _GetNativeSigSimdContext((uint8_t*)extra->datap, extra->size, &fp, &sve);
+
+                // There should only be one block of each type.
+                _ASSERTE(fpOrig == nullptr || fp == fpOrig);
+                _ASSERTE(sveOrig == nullptr || sve == sveOrig);
+                break;
+            }
+
+            case 0:
+                _ASSERTE(ctx->size == 0);
+                done = true;
+                break;
+
+            default:
+                // Any other section.
+                _ASSERTE(ctx->size != 0);
+                break;
+        }
+
+        position += ctx->size;
+    }
+
+    if (fp)
+    {
+        *fp_ptr = fp;
+    }
+    if (sve)
+    {
+        // If this ever fires then we have an SVE context but no FP context. Given that V and Z
+        // registers overlap, then when propagating this data to other structures, the SVE
+        // context should be used to fill the FP data.
+        _ASSERTE(fp != nullptr);
+
+        *sve_ptr = sve;
+    }
+}
+#endif // HOST_64BIT && HOST_ARM64 && !TARGET_FREEBSD && !TARGET_OSX
 
 /*++
 Function :
@@ -917,7 +1031,9 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
             }
         }
 #else // TARGET_OSX
-        const fpsimd_context* fp = GetConstNativeSigSimdContext(native);
+        const fpsimd_context* fp = nullptr;
+        const sve_context* sve = nullptr;
+        GetConstNativeSigSimdContext(native, &fp, &sve);
         if (fp)
         {
             lpContext->Fpsr = fp->fpsr;
@@ -925,6 +1041,25 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
             for (int i = 0; i < 32; i++)
             {
                 lpContext->V[i] = *(NEON128*) &fp->vregs[i];
+            }
+        }
+        if (sve)
+        {
+            //TODO-SVE: This only handles vector lengths of 128bits.
+
+            uint16_t vq = sve_vq_from_vl(sve->vl);
+
+            lpContext->Vl = sve->vl;
+
+            //Note: Size of ffr register is SVE_SIG_FFR_SIZE(vq) bytes.
+            lpContext->Ffr = *(WORD*) (((uint8_t*)sve) + SVE_SIG_FFR_OFFSET(vq));
+
+            for (int i = 0; i < 32; i++)
+            {
+                //Note: Size of a Z register is SVE_SIG_ZREGS_SIZE(vq) bytes.
+                lpContext->Z[i] = *(SVE128*) (((uint8_t*)sve) + SVE_SIG_ZREG_OFFSET(vq, i));
+                //Note: Size of a P register is SVE_SIG_PREGS_SIZE(vq) bytes.
+                lpContext->P[i] = *(WORD*) (((uint8_t*)sve) + SVE_SIG_PREG_OFFSET(vq, i));
             }
         }
 #endif // TARGET_OSX

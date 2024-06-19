@@ -399,6 +399,12 @@ typedef struct {
     LONGLONG High;
 } DT_NEON128;
 
+typedef struct {
+    ULONGLONG Low;
+    LONGLONG High;
+} DT_SVE128;
+
+
 typedef DECLSPEC_ALIGN(16) struct {
     //
     // Control flags.
@@ -459,14 +465,23 @@ typedef DECLSPEC_ALIGN(16) struct {
     /* +0x314 */ DWORD Fpsr;
 
     //
+    // Sve Registers
+    //
+    //TODO-SVE: How does this structure handle variable sized Z/P/FFR registers?
+    /* +0x318 */ DWORD Vl;
+    /* +0x32C */ DT_SVE128 Z[32];
+    /* +0x? */ WORD P[32];
+    /* +0x? */ WORD Ffr;
+
+    //
     // Debug registers
     //
 
-    /* +0x318 */ DWORD Bcr[DT_ARM64_MAX_BREAKPOINTS];
-    /* +0x338 */ DWORD64 Bvr[DT_ARM64_MAX_BREAKPOINTS];
-    /* +0x378 */ DWORD Wcr[DT_ARM64_MAX_WATCHPOINTS];
-    /* +0x380 */ DWORD64 Wvr[DT_ARM64_MAX_WATCHPOINTS];
-    /* +0x390 */
+    /* +0x? */ DWORD Bcr[DT_ARM64_MAX_BREAKPOINTS];
+    /* +0x? */ DWORD64 Bvr[DT_ARM64_MAX_BREAKPOINTS];
+    /* +0x? */ DWORD Wcr[DT_ARM64_MAX_WATCHPOINTS];
+    /* +0x? */ DWORD64 Wvr[DT_ARM64_MAX_WATCHPOINTS];
+    /* +0x5e0 */
 
 } DT_CONTEXT;
 

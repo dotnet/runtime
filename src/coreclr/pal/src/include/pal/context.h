@@ -662,41 +662,18 @@ const struct fpregs* GetConstNativeSigSimdContext(const native_context_t *mc)
 #define MCREG_Pc(mc)      ((mc).pc)
 #define MCREG_Cpsr(mc)    ((mc).pstate)
 
+void _GetNativeSigSimdContext(uint8_t *data, uint32_t size, fpsimd_context **fp_ptr, sve_context **sve_ptr);
 
 inline
-fpsimd_context* GetNativeSigSimdContext(native_context_t *mc)
+void GetNativeSigSimdContext(native_context_t *mc, fpsimd_context **fp_ptr, sve_context **sve_ptr)
 {
-    size_t size = 0;
-
-    do
-    {
-        fpsimd_context* fp = reinterpret_cast<fpsimd_context *>(&mc->uc_mcontext.__reserved[size]);
-
-        if(fp->head.magic == FPSIMD_MAGIC)
-        {
-            _ASSERTE(fp->head.size >= sizeof(fpsimd_context));
-            _ASSERTE(size + fp->head.size <= sizeof(mc->uc_mcontext.__reserved));
-
-            return fp;
-        }
-
-        if (fp->head.size == 0)
-        {
-            break;
-        }
-
-        size += fp->head.size;
-    } while (size + sizeof(fpsimd_context) <= sizeof(mc->uc_mcontext.__reserved));
-
-    _ASSERTE(false);
-
-    return nullptr;
+    _GetNativeSigSimdContext(&mc->uc_mcontext.__reserved[0], sizeof(mc->uc_mcontext.__reserved), fp_ptr, sve_ptr);
 }
 
 inline
-const fpsimd_context* GetConstNativeSigSimdContext(const native_context_t *mc)
+void GetConstNativeSigSimdContext(const native_context_t *mc, fpsimd_context const **fp_ptr, sve_context const **sve_ptr)
 {
-    return GetNativeSigSimdContext(const_cast<native_context_t*>(mc));
+    GetNativeSigSimdContext(const_cast<native_context_t*>(mc), const_cast<fpsimd_context **>(fp_ptr), const_cast<sve_context **>(sve_ptr));
 }
 
 #else // TARGET_OSX
