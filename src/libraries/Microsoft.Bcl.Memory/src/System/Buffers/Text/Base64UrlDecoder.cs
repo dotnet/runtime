@@ -370,7 +370,7 @@ namespace System.Buffers.Text
             destination[2] = (byte)value;
         }
 
-        private static bool IsValidPadding(uint padChar) => padChar == EncodingPadEqual || padChar == EncodingPadPercentage;
+        private static bool IsValidPadding(uint padChar) => padChar is EncodingPadEqual or EncodingPadPercentage;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int IndexOfAnyExceptWhiteSpace(ReadOnlySpan<byte> span)

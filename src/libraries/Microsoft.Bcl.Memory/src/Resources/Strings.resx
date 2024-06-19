@@ -121,6 +121,6 @@
     <value>Destination is too short.</value>
   </data>
   <data name="Format_BadBase64Char" xml:space="preserve">
-    <value>The input is not a valid Base64Url string as it contains a non Base64Url character, more than two padding characters, or an illegal character among the padding characters.</value>
+    <value>The input is not a valid Base64Url string as it contains a non-Base64Url character, more than two padding characters, or an illegal character among the padding characters.</value>
   </data>
 </root>
