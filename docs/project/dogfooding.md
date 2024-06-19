@@ -285,8 +285,8 @@ $ bin\Debug\net8.0\win-x64\publish\App.exe
 
 [rhel8-badge-8.0.X]: https://aka.ms/dotnet/8.0/daily/sharedfx_rhel.8-x64_Release_version_badge.svg?no-cache
 [rhel8-version-8.0.X]: https://aka.ms/dotnet/8.0/daily/runtime-productVersion.txt
-[rhel8-runtime-deps-checksum-8.0.X]: https://aka.ms/dotnet/8.0/daily/dotnet-runtime-deps-centos.8-x64.rpm
-[rhel8-runtime-deps-checksum-8.0.X]: https://aka.ms/dotnet/8.0/daily/dotnet-runtime-deps-centos.8-x64.rpm.sha512
+[rhel8-runtime-deps-checksum-8.0.X]: https://aka.ms/dotnet/8.0/daily/dotnet-runtime-deps-centos.9-x64.rpm
+[rhel8-runtime-deps-checksum-8.0.X]: https://aka.ms/dotnet/8.0/daily/dotnet-runtime-deps-centos.9-x64.rpm.sha512
 [rhel8-apphost-pack-8.0.X]: https://aka.ms/dotnet/8.0/daily/dotnet-apphost-pack-x64.rpm
 [rhel8-apphost-pack-checksum-8.0.X]: https://aka.ms/dotnet/8.0/daily/dotnet-apphost-pack-x64.rpm.sha512
 [rhel8-host-8.0.X]: https://aka.ms/dotnet/8.0/daily/dotnet-host-x64.rpm
@@ -298,10 +298,10 @@ $ bin\Debug\net8.0\win-x64\publish\App.exe
 [rhel8-targeting-pack-8.0.X]: https://aka.ms/dotnet/8.0/daily/dotnet-targeting-pack-x64.rpm
 [rhel8-targeting-pack-checksum-8.0.X]: https://aka.ms/dotnet/8.0/daily/dotnet-targeting-pack-x64.rpm.sha512
 
-[centos-8-badge-8.0.X]: https://aka.ms/dotnet/8.0/daily/sharedfx_centos.8-x64_Release_version_badge.svg?no-cache
+[centos-8-badge-8.0.X]: https://aka.ms/dotnet/8.0/daily/sharedfx_centos.9-x64_Release_version_badge.svg?no-cache
 [centos-8-version-8.0.X]: https://aka.ms/dotnet/8.0/daily/runtime-productVersion.txt
-[centos-8-runtime-deps-8.0.X]: https://aka.ms/dotnet/8.0/daily/dotnet-runtime-deps-centos.8-x64.rpm
-[centos-8-runtime-deps-checksum-8.0.X]: https://aka.ms/dotnet/8.0/daily/dotnet-runtime-deps-centos.8-x64.rpm.sha512
+[centos-8-runtime-deps-8.0.X]: https://aka.ms/dotnet/8.0/daily/dotnet-runtime-deps-centos.9-x64.rpm
+[centos-8-runtime-deps-checksum-8.0.X]: https://aka.ms/dotnet/8.0/daily/dotnet-runtime-deps-centos.9-x64.rpm.sha512
 [centos-8-apphost-pack-8.0.X]: https://aka.ms/dotnet/8.0/daily/dotnet-apphost-pack-x64.rpm
 [centos-8-apphost-pack-checksum-8.0.X]: https://aka.ms/dotnet/8.0/daily/dotnet-apphost-pack-x64.rpm.sha512
 [centos-8-host-8.0.X]: https://aka.ms/dotnet/8.0/daily/dotnet-host-x64.rpm
