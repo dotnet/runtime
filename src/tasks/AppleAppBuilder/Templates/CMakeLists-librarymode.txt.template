@@ -63,7 +63,6 @@ target_link_libraries(
     "-framework Foundation"
     "-framework Security"
     "-framework UIKit"
-    "libz.a"
     "-lc++"
     "-liconv"
     "-licucore"
