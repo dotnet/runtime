@@ -3793,11 +3793,9 @@ namespace System
                     }
 
                     // Count the last vector and mask off the elements that were already counted (number of elements between oneVectorAwayFromEnd and current).
-                    {
-                        ulong mask = Vector512.Equals(Vector512.LoadUnsafe(ref oneVectorAwayFromEnd), targetVector).ExtractMostSignificantBits();
-                        mask >>= (int)((nuint)Unsafe.ByteOffset(ref oneVectorAwayFromEnd, ref current) / (uint)Unsafe.SizeOf<T>());
-                        count += BitOperations.PopCount(mask);
-                    }
+                    ulong mask = Vector512.Equals(Vector512.LoadUnsafe(ref oneVectorAwayFromEnd), targetVector).ExtractMostSignificantBits();
+                    mask >>= (int)((nuint)Unsafe.ByteOffset(ref oneVectorAwayFromEnd, ref current) / (uint)Unsafe.SizeOf<T>());
+                    count += BitOperations.PopCount(mask);
                 }
                 else if (Vector256.IsHardwareAccelerated && length >= Vector256<T>.Count)
                 {
@@ -3810,11 +3808,9 @@ namespace System
                     }
 
                     // Count the last vector and mask off the elements that were already counted (number of elements between oneVectorAwayFromEnd and current).
-                    {
-                        uint mask = Vector256.Equals(Vector256.LoadUnsafe(ref oneVectorAwayFromEnd), targetVector).ExtractMostSignificantBits();
-                        mask >>= (int)((nuint)Unsafe.ByteOffset(ref oneVectorAwayFromEnd, ref current) / (uint)Unsafe.SizeOf<T>());
-                        count += BitOperations.PopCount(mask);
-                    }
+                    uint mask = Vector256.Equals(Vector256.LoadUnsafe(ref oneVectorAwayFromEnd), targetVector).ExtractMostSignificantBits();
+                    mask >>= (int)((nuint)Unsafe.ByteOffset(ref oneVectorAwayFromEnd, ref current) / (uint)Unsafe.SizeOf<T>());
+                    count += BitOperations.PopCount(mask);
                 }
                 else
                 {
@@ -3827,11 +3823,9 @@ namespace System
                     }
 
                     // Count the last vector and mask off the elements that were already counted (number of elements between oneVectorAwayFromEnd and current).
-                    {
-                        uint mask = Vector128.Equals(Vector128.LoadUnsafe(ref oneVectorAwayFromEnd), targetVector).ExtractMostSignificantBits();
-                        mask >>= (int)((nuint)Unsafe.ByteOffset(ref oneVectorAwayFromEnd, ref current) / (uint)Unsafe.SizeOf<T>());
-                        count += BitOperations.PopCount(mask);
-                    }
+                    uint mask = Vector128.Equals(Vector128.LoadUnsafe(ref oneVectorAwayFromEnd), targetVector).ExtractMostSignificantBits();
+                    mask >>= (int)((nuint)Unsafe.ByteOffset(ref oneVectorAwayFromEnd, ref current) / (uint)Unsafe.SizeOf<T>());
+                    count += BitOperations.PopCount(mask);
                 }
             }
             else
