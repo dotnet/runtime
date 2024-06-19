@@ -44,10 +44,10 @@ elseif(TARGETS_APPLE_MOBILE)
         "-framework Foundation"
         "-framework Security"
         "-framework UIKit"
-        "-lz"
         "-lc++"
         "-licucore"
         "-liconv"
+        "libz.a"
     )
     add_definitions(-DHOST_APPLE_MOBILE=1)
     add_definitions(-fPIC)
