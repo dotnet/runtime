@@ -5,7 +5,6 @@ using System.Diagnostics;
 using System.Formats.Nrbf.Utils;
 using System.IO;
 using System.Reflection.Metadata;
-using System.Runtime.Serialization;
 
 namespace System.Formats.Nrbf;
 

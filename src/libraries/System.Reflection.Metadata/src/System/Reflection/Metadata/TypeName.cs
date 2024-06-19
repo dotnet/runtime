@@ -466,34 +466,9 @@ namespace System.Reflection.Metadata
             {
                 return null;
             }
-            else if (oldName is not null && !ReferenceEquals(typeName.AssemblyName, oldName))
+            else if (!ReferenceEquals(typeName.AssemblyName, oldName))
             {
-                // There is nothing to update, do nothing.
-                return typeName;
-            }
-
-            ImmutableArray<TypeName> genericArguments = typeName._genericArguments;
-
-            if (typeName.IsConstructedGenericType)
-            {
-                bool needsNewArray = false;
-                for (int i = 0; i < typeName._genericArguments.Length; i++)
-                {
-                    if (ReferenceEquals(typeName._genericArguments[i].AssemblyName, oldName))
-                    {
-                        needsNewArray = true;
-                    }
-                }
-
-                if (needsNewArray)
-                {
-                    ImmutableArray<TypeName>.Builder builder = ImmutableArray.CreateBuilder<TypeName>(typeName._genericArguments.Length);
-                    for (int i = 0; i < typeName._genericArguments.Length; i++)
-                    {
-                        builder.Add(WithAssemblyName(typeName._genericArguments[i], oldName, newName)!);
-                    }
-                    genericArguments = builder.MoveToImmutable();
-                }
+                return typeName; // There is nothing to update.
             }
 
             return new TypeName(
@@ -501,7 +476,8 @@ namespace System.Reflection.Metadata
                 newName,
                 elementOrGenericType: WithAssemblyName(typeName._elementOrGenericType, oldName, newName),
                 declaringType: WithAssemblyName(typeName._declaringType, oldName, newName),
-                genericTypeArguments: genericArguments,
+                // We don't update the assembly names of generic arguments on purpose!
+                genericTypeArguments: typeName._genericArguments,
                 rankOrModifier: typeName._rankOrModifier,
                 nestedNameLength: typeName._nestedNameLength);
         }
