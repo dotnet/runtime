@@ -570,5 +570,69 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
         public class SimpleService : ISimpleService { }
 
         public class AnotherSimpleService : ISimpleService { }
+
+        [Fact]
+        public void InheritServiceKeyedResolution()
+        {
+            // Arrange
+            var services = new ServiceCollection();
+            services.AddKeyedTransient<PartService>("uniquekey");
+            services.AddKeyedTransient<CompositeService>("uniquekey");
+            IServiceProvider provider = CreateServiceProvider(services);
+
+            Assert.NotNull(provider);
+
+            // Act
+            CompositeService result = provider.GetKeyedService<CompositeService>("uniquekey");
+
+            // Assert
+            Assert.True(result.GetType() == typeof(CompositeService));
+
+            Assert.True(result.PartService.Key == "uniquekey");
+        }
+
+        [Fact]
+        public void InheritServiceKeyedResolutionFailureWithoutAttribute()
+        {
+            // Arrange
+            var services = new ServiceCollection();
+            services.AddKeyedTransient<PartService>("uniquekey");
+            services.AddKeyedTransient<CompositeServiceNoAttribute>("uniquekey");
+            IServiceProvider provider = CreateServiceProvider(services);
+
+            Assert.NotNull(provider);
+
+            Assert.Throws<InvalidOperationException>(() => provider!.GetKeyedService<CompositeServiceNoAttribute>("uniquekey"));
+        }
+
+        public class PartService
+        {
+            public string Key { get; }
+
+            public PartService([ServiceKey] string key)
+            {
+                Key = key;
+            }
+        }
+
+        public class CompositeService
+        {
+            public PartService PartService { get; }
+
+            public CompositeService([InheritServiceKey] PartService partService)
+            {
+                PartService = partService;
+            }
+        }
+
+        public class CompositeServiceNoAttribute
+        {
+            public PartService PartService { get; }
+
+            public CompositeServiceNoAttribute(PartService partService)
+            {
+                PartService = partService;
+            }
+        }
     }
 }

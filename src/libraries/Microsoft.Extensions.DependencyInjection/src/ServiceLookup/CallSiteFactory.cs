@@ -593,6 +593,12 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                         callSite = GetCallSite(parameterSvcId, callSiteChain);
                         break;
                     }
+                    if (serviceIdentifier.ServiceKey != null && attribute is InheritServiceKeyAttribute)
+                    {
+                        var parameterSvcId = new ServiceIdentifier(serviceIdentifier.ServiceKey, parameterType);
+                        callSite = GetCallSite(parameterSvcId, callSiteChain);
+                        break;
+                    }
                 }
 
                 callSite ??= GetCallSite(ServiceIdentifier.FromServiceType(parameterType), callSiteChain);
