@@ -389,24 +389,9 @@ namespace System.Buffers.Text
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool IsWhiteSpace(int value)
         {
-            if (Environment.Is64BitProcess)
-            {
-                // For description see https://github.com/dotnet/runtime/blob/48e74187cb15386c29eedaa046a5ee2c7ddef161/src/libraries/Common/src/System/HexConverter.cs#L314-L330
-                // Lookup bit mask for "\t\n\r ".
-                const ulong MagicConstant = 0xC800010000000000UL;
-                ulong i = (uint)value - '\t';
-                ulong shift = MagicConstant << (int)i;
-                ulong mask = i - 64;
-                return (long)(shift & mask) < 0;
-            }
-
-            if (value < 32)
-            {
-                const int BitMask = (1 << (int)'\t') | (1 << (int)'\n') | (1 << (int)'\r');
-                return ((1 << value) & BitMask) != 0;
-            }
-
-            return value == 32;
+            Debug.Assert(value >= 0 && value <= ushort.MaxValue);
+            uint charMinusLowUInt32;
+            return (int)((0xC8000100U << (short)(charMinusLowUInt32 = (ushort)(value - '\t'))) & (charMinusLowUInt32 - 32)) < 0;
         }
 
         private static OperationStatus DecodeWithWhiteSpaceBlockwise(ReadOnlySpan<byte> source, Span<byte> bytes, ref int bytesConsumed, ref int bytesWritten, bool isFinalBlock = true)
