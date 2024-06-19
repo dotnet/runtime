@@ -33,9 +33,17 @@
 #include "llvm-c/Core.h"
 #include "llvm-c/BitWriter.h"
 #include "llvm-c/Analysis.h"
+#if LLVM_API_VERSION < 1900
 #include "llvm-c/Transforms/InstCombine.h"
 #include "llvm-c/Transforms/Scalar.h"
 #include "llvm-c/Transforms/IPO.h"
+#else
+#ifdef _MSC_VER
+#pragma message("llvm 19 doesn't have the old pass manager")
+#else
+#warning "llvm 19 doesn't have the old pass manager"
+#endif
+#endif
 
 #include "mini-llvm-cpp.h"
 #include "llvm-jit.h"
@@ -14098,11 +14106,13 @@ mono_llvm_create_aot_module (MonoAssembly *assembly, const char *global_prefix, 
 		mono_llvm_set_is_constant (module->sentinel_exception);
 	}
 
+#if LLVM_API_VERSION < 1900
 	module->func_pass_manager = LLVMCreateFunctionPassManagerForModule (module->lmodule);
 	if (module->func_pass_manager) {
 		LLVMAddCFGSimplificationPass (module->func_pass_manager);
 		LLVMAddInstructionCombiningPass (module->func_pass_manager);
 	}
+#endif
 }
 
 void
