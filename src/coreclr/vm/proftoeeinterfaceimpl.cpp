@@ -7656,15 +7656,15 @@ HRESULT ProfToEEInterfaceImpl::EnumerateGCHeapObjects(object_callback callback, 
         return CORPROF_E_RUNTIME_UNINITIALIZED;
     }
 
-    // SuspendEE
     if (!ThreadSuspend::SysIsSuspendInProgress() && (ThreadSuspend::GetSuspensionThread() == 0))
     {
         ThreadSuspend::SuspendEE(ThreadSuspend::SUSPEND_REASON::SUSPEND_FOR_PROFILER);
     }
 
-    // Walk the GC Heap outside of GC
+    IGCHeap *hp = GCHeapUtilities::GetGCHeap();
+    unsigned max_generation = hp->GetMaxGeneration();
+    hp->DiagWalkHeapStandalone((walk_fn)callback, callbackState, max_generation, TRUE);
 
-    // ResumeEE
     ThreadSuspend::RestartEE(FALSE /* bFinishedGC */, TRUE /* SuspendSucceeded */);
 
     return S_OK;

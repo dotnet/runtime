@@ -52052,6 +52052,34 @@ void GCHeap::DiagWalkHeap (walk_fn fn, void* context, int gen_number, bool walk_
     gc_heap::walk_heap (fn, context, gen_number, walk_large_object_heap_p);
 }
 
+void GCHeap::DiagWalkHeapStandalone (walk_fn fn, void* context, int gen_number, bool walk_large_object_heap_p)
+{
+#ifdef MULTIPLE_HEAPS
+    for (int hn = 0; hn < gc_heap::n_heaps; hn++)
+    {
+        gc_heap* hp = gc_heap::g_heaps [hn];
+#else
+    {
+        gc_heap* hp = pGenGCHeap;
+#endif //MULTIPLE_HEAPS
+        hp->fix_allocation_contexts (FALSE);
+    }
+
+    DiagWalkHeap (fn, context, gen_number, walk_large_object_heap_p);
+
+
+#ifdef MULTIPLE_HEAPS
+    for (int hn = 0; hn < gc_heap::n_heaps; hn++)
+    {
+        gc_heap* hp = gc_heap::g_heaps [hn];
+#else
+    {
+        gc_heap* hp = pGenGCHeap;
+#endif //MULTIPLE_HEAPS
+        hp->repair_allocation_contexts (TRUE);
+    }
+}
+
 void GCHeap::DiagWalkFinalizeQueue (void* gc_context, fq_walk_fn fn)
 {
     gc_heap* hp = (gc_heap*)gc_context;

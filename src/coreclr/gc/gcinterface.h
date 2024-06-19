@@ -932,6 +932,9 @@ public:
     // Walk the heap object by object.
     virtual void DiagWalkHeap(walk_fn fn, void* context, int gen_number, bool walk_large_object_heap_p) PURE_VIRTUAL
 
+    // Walk the heap object by object outside of a GC.
+    virtual void DiagWalkHeapStandalone(walk_fn fn, void* context, int gen_number, bool walk_large_object_heap_p) PURE_VIRTUAL
+
     // Walks the survivors and get the relocation information if objects have moved.
     // gen_number is used when type == walk_for_uoh, otherwise ignored
     virtual void DiagWalkSurvivorsWithType(void* gc_context, record_surv_fn fn, void* diag_context, walk_surv_type type, int gen_number=-1) PURE_VIRTUAL
