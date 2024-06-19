@@ -138,9 +138,6 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>
         /// Pre-computed hot-loop version of nullability check
         /// </summary>
-        /// <param name="stateId"></param>
-        /// <param name="mintermId"></param>
-        /// <returns></returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private bool IsNullableWithContext(int stateId, int mintermId) =>
             ((1 << (int)GetPositionKind(mintermId)) & _nullabilityArray[stateId]) > 0;
@@ -243,6 +240,7 @@ namespace System.Text.RegularExpressions.Symbolic
                         return (false, concatNode);
                 }
             });
+
             while (canLoop)
             {
 #if DEBUG

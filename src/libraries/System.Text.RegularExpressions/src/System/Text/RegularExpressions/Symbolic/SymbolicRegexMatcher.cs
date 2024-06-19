@@ -233,8 +233,8 @@ namespace System.Text.RegularExpressions.Symbolic
                         _ => _optimizedReversalState.Kind != MatchReversalKind.FixedLength,
                     };
                 });
-                // a DFA is sometimes 10x-100x faster than the optimizations
-                // the "IsUseful" is harming the engine here
+
+                // In some cases where the findOptimizations are useful, just using the DFA can still be faster.
                 _findOpts = findOptimizations switch
                 {
                     { FindMode: FindNextStartingPositionMode.FixedDistanceString_LeftToRight } => findOptimizations,
@@ -242,7 +242,7 @@ namespace System.Text.RegularExpressions.Symbolic
                         findOptimizations.FixedDistanceSets!.TrueForAll(setIsTooCommon.Invoke)? null : findOptimizations,
                     { FindMode: FindNextStartingPositionMode.LeadingSet_LeftToRight } => setIsTooCommon(
                         findOptimizations.FixedDistanceSets![0]) ? null : findOptimizations,
-                    _ => findOptimizations // TODO: unsure which options are left here
+                    _ => findOptimizations
                 };
                 // _findOpts = findOptimizations;
                 // _findOpts = null;
@@ -349,8 +349,6 @@ namespace System.Text.RegularExpressions.Symbolic
         /// </summary>
         internal PerThreadData CreatePerThreadData() => new PerThreadData(_capsize);
 
-        /// TODO: when you're calling a function millions of times per second even this add 1 does cost something
-        /// this should be ideally remapped
         /// <summary>Look up what is the character kind given a position ID</summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private uint GetPositionKind(int positionId) => _positionKinds[positionId + 1];

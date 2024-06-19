@@ -20,7 +20,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>
         /// TODO: This is only used to speed up the existing architecture, ideally should be removed along with IsNullableFor
         /// </summary>
-        internal readonly int NullabilityInfo;
+        internal int NullabilityInfo { get; }
 
         /// <summary>The regular expression that labels this state and gives it its semantics.</summary>
         internal SymbolicRegexNode<TSet> Node { get; }
@@ -154,7 +154,8 @@ namespace System.Text.RegularExpressions.Symbolic
         }
 
         /// <summary>
-        /// nullability for each context is encoded in a bit
+        /// Builds the nullability information for the matching statie.
+        /// Nullability for each context is encoded in a bit
         /// 0 means node cannot be nullable
         /// 00001 -> nullable for General
         /// 00010 -> nullable for BeginningEnd
@@ -162,7 +163,6 @@ namespace System.Text.RegularExpressions.Symbolic
         /// 01000 -> nullable for NewLineS
         /// 10000 -> nullable for WordLetter
         /// </summary>
-        /// <returns></returns>
         internal byte BuildNullabilityInfo()
         {
             byte nullabilityInfo = 0;
@@ -173,6 +173,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     nullabilityInfo |= (byte)(IsNullableForInit(ck) ? 1 << (int)ck : 0);
                 }
             }
+
             return nullabilityInfo;
         }
 
