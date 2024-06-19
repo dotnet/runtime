@@ -1053,16 +1053,6 @@ bool Compiler::optMakeExitTestDownwardsCounted(ScalarEvolutionContext& scevConte
         return false;
     }
 
-    for (FlowEdge* backedge : loop->BackEdges())
-    {
-        if (!m_domTree->Dominates(exiting, backedge->getSourceBlock()))
-        {
-            JITDUMP("  No; exiting block " FMT_BB " does not dominate backedge source " FMT_BB "\n", exiting->bbNum,
-                    backedge->getSourceBlock()->bbNum);
-            return false;
-        }
-    }
-
     // At this point we know that the single exit dominates all backedges.
     JITDUMP("  All backedges are dominated by exiting block " FMT_BB "\n", exiting->bbNum);
 
