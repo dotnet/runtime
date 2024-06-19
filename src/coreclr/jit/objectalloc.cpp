@@ -921,40 +921,56 @@ void ObjectAllocator::RewriteUses()
                 }
             }
 
-#if 0
-            // Translate accesses to box payloads to have field seqs
+            // Make box accesses explicit for UNBOX_HELPER
             //
-            if (tree->OperIs(GT_ADD))
+            if (tree->IsCall())
             {
-                GenTree* op1 = tree->AsOp()->gtGetOp1();
-                GenTree* op2 = tree->AsOp()->gtGetOp2();
-                bool tryToTransform = false;
+                GenTreeCall* const call = tree->AsCall();
+                assert(call->IsHelperCall());
+                if (call->IsHelperCall(m_compiler, CORINFO_HELP_BOX))
+                {
+                    // See if first arg is our stack allocated box.
+                    //
+                    GenTree* const firstArg = call->gtArgs.GetArgByIndex(0)->GetNode();
 
-                if (op1->OperIs(GT_LCL_ADDR) && op2->IsIntegralConst())
-                {
-                    tryToTransform = true;
-                }
-                else if (op2->OperIs(GT_LCL_ADDR) && op1->IsIntegralConst())
-                {
-                    std::swap(op1, op2);
-                    tryToTransform = true;
-                }
-
-                if (tryToTransform)
-                {
-                    LclVarDsc* const varDsc = m_compiler->lvaGetDesc(op1->AsLclVarCommon());
-                    if (varDsc->lvStackAllocatedBox && (op2->AsIntConCommon()->IntegralValue() == TARGET_POINTER_SIZE))
+                    if (firstArg->OperIs(GT_LCL_ADDR))
                     {
-                        JITDUMP("Rewriting box payload ADD [%06u]\n", m_compiler->dspTreeID(tree));
-                        CORINFO_FIELD_HANDLE fieldHnd = m_compiler->info.compCompHnd->getFieldInClass(varDsc->lvClassHnd, 1);
-                        FieldSeq* const fieldSeq = m_compiler->GetFieldSeqStore()->Create(fieldHnd, TARGET_POINTER_SIZE, FieldSeq::FieldKind::Instance);
-                        op2 = m_compiler->gtNewIconNode(TARGET_POINTER_SIZE, fieldSeq);
-                        tree->AsOp()->gtOp1 = op1;
-                        tree->AsOp()->gtOp2 = op2;
+                        GenTreeLclVarCommon* const lcl    = firstArg->AsLclVarCommon();
+                        unsigned const             lclNum = lcl->GetLclNum();
+                        LclVarDsc*                 dsc    = m_compiler->lvaGetDesc(lclNum);
+
+                        // assert this?
+                        if (dsc->IsStackAllocatedBox())
+                        {
+                            // Yes -- rewrite the call to make the box accesses explicit in jitted code.
+                            // user = COMMA(CALL(UNBOX_HELPER_TYPETEST, obj->MethodTable, type), &obj +
+                            // TARGET_POINTER_SIZE)
+                            //
+                            JITDUMP("Rewriting [%06u] to invoke box type test helper\n", m_compiler->dspTreeID(tree));
+
+                            call->gtCallMethHnd = m_compiler->eeFindHelper(CORINFO_HELP_UNBOX_TYPETEST);
+                            lcl->ChangeOper(GT_LCL_VAR);
+                            GenTree* const mt = m_compiler->gtNewMethodTableLookup(lcl);
+
+                            if (user == nullptr)
+                            {
+                                // call was just for effect, we're done.
+                            }
+                            else
+                            {
+                                GenTree* const boxAddr = m_compiler->gtNewLclVarAddrNode(lclNum);
+                                GenTree* const payloadAddr =
+                                    m_compiler->gtNewOperNode(GT_ADD, TYP_BYREF, boxAddr,
+                                                              m_compiler->gtNewIconNode(TARGET_POINTER_SIZE,
+                                                                                        TYP_I_IMPL));
+                                GenTree* const comma =
+                                    m_compiler->gtNewOperNode(GT_COMMA, TYP_BYREF, call, payloadAddr);
+                                *use = comma;
+                            }
+                        }
                     }
                 }
             }
-#endif
 
             return Compiler::fgWalkResult::WALK_CONTINUE;
         }

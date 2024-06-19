@@ -1645,8 +1645,8 @@ void HelperCallProperties::init()
             case CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE:
 
                 // isNoEscape = true;
-                isPure     = true;
-                noThrow    = true; // These return null for a failing cast
+                isPure  = true;
+                noThrow = true; // These return null for a failing cast
                 break;
 
             case CORINFO_HELP_GETCURRENTMANAGEDTHREADID:
@@ -1675,7 +1675,7 @@ void HelperCallProperties::init()
                 break;
 
             case CORINFO_HELP_LDELEMA_REF:
-                isPure     = true;
+                isPure = true;
                 break;
 
             // GETREFANY is pure up to the value of the struct argument. We
