@@ -2024,11 +2024,13 @@ void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, 
 {
     JITDUMP("Creating args for Swift call [%06u]\n", dspTreeID(call));
 
-    unsigned short swiftErrorIndex = sig->numArgs;
-    unsigned short swiftSelfIndex  = sig->numArgs;
+    unsigned swiftErrorIndex          = UINT_MAX;
+    unsigned swiftSelfIndex           = UINT_MAX;
+    unsigned swiftIndirectResultIndex = UINT_MAX;
 
+    CORINFO_CLASS_HANDLE selfType = NO_CLASS_HANDLE;
     // We are importing an unmanaged Swift call, which might require special parameter handling
-    bool checkEntireStack = false;
+    bool spillStack = false;
 
     // Check the signature of the Swift call for the special types
     CORINFO_ARG_LIST_HANDLE sigArg = sig->args;
@@ -2065,13 +2067,15 @@ void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, 
                     BADCODE("Expected SwiftError pointer/reference, got struct");
                 }
 
-                if (swiftErrorIndex != sig->numArgs)
+                if (swiftErrorIndex != UINT_MAX)
                 {
                     BADCODE("Duplicate SwiftError* parameter");
                 }
 
-                swiftErrorIndex  = argIndex;
-                checkEntireStack = true;
+                swiftErrorIndex = argIndex;
+                // Spill entire stack as we will need to reuse the error
+                // argument after the call.
+                spillStack = true;
             }
             else if ((strcmp(className, "SwiftSelf") == 0) &&
                      (strcmp(namespaceName, "System.Runtime.InteropServices.Swift") == 0))
@@ -2082,7 +2086,7 @@ void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, 
                     BADCODE("Expected SwiftSelf struct, got pointer/reference");
                 }
 
-                if (swiftSelfIndex != sig->numArgs)
+                if (swiftSelfIndex != UINT_MAX)
                 {
                     BADCODE("Duplicate SwiftSelf parameter");
                 }
@@ -2090,18 +2094,64 @@ void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, 
                 swiftSelfIndex = argIndex;
                 // Fall through to make sure the struct value becomes a local.
             }
+            else if ((strcmp(className, "SwiftSelf`1") == 0) &&
+                     (strcmp(namespaceName, "System.Runtime.InteropServices.Swift") == 0))
+            {
+                // We expect a SwiftSelf struct to be passed, not a pointer/reference
+                if (argIsByrefOrPtr)
+                {
+                    BADCODE("Expected SwiftSelf<T> struct, got pointer/reference");
+                }
+
+                if (swiftSelfIndex != UINT_MAX)
+                {
+                    BADCODE("Duplicate SwiftSelf parameter");
+                }
+
+                if (argIndex != 0)
+                {
+                    BADCODE("SwiftSelf<T> must be the first argument in the signature");
+                }
+
+                selfType                = info.compCompHnd->getTypeInstantiationArgument(argClass, 0);
+                CorInfoType selfCorType = info.compCompHnd->asCorInfoType(selfType);
+                if (selfCorType != CORINFO_TYPE_VALUECLASS)
+                {
+                    BADCODE("SwiftSelf<T> expects T to be a value class");
+                }
+
+                swiftSelfIndex = argIndex;
+            }
+            else if ((strcmp(className, "SwiftIndirectResult") == 0) &&
+                     (strcmp(namespaceName, "System.Runtime.InteropServices.Swift") == 0))
+            {
+                if (argIsByrefOrPtr)
+                {
+                    BADCODE("Expected SwiftIndirectResult struct, got pointer/reference");
+                }
+
+                if (sig->retType != CORINFO_TYPE_VOID)
+                {
+                    BADCODE("Functions with SwiftIndirectResult arguments must return void");
+                }
+
+                if (swiftIndirectResultIndex != UINT_MAX)
+                {
+                    BADCODE("Duplicate SwiftIndirectResult argument");
+                }
+
+                swiftIndirectResultIndex = argIndex;
+
+                // We will move this arg to the beginning of the arg list, so
+                // we must spill due to this potential reordering of arguments.
+                spillStack = true;
+            }
             // TODO: Handle SwiftAsync
         }
 
         if (argIsByrefOrPtr)
         {
             continue;
-        }
-
-        if (argIndex != swiftSelfIndex)
-        {
-            // This is a struct type. Check if it needs to be lowered.
-            // TODO-Bug: SIMD types are not handled correctly by this.
         }
 
         // We must spill this struct to a local to be able to expand it into primitives.
@@ -2116,9 +2166,7 @@ void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, 
         }
     }
 
-    // If using SwiftError*, spill entire stack as we will need to reuse the
-    // error argument after the call.
-    if (checkEntireStack)
+    if (spillStack)
     {
         impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("Spill for swift call"));
     }
@@ -2131,7 +2179,7 @@ void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, 
 
     // Get SwiftError* arg (if it exists) before modifying the arg list
     CallArg* const swiftErrorArg =
-        (swiftErrorIndex != sig->numArgs) ? call->gtArgs.GetArgByIndex(swiftErrorIndex) : nullptr;
+        (swiftErrorIndex != UINT_MAX) ? call->gtArgs.GetArgByIndex(swiftErrorIndex) : nullptr;
 
     // Now expand struct args that must be lowered into primitives
     unsigned argIndex = 0;
@@ -2154,19 +2202,33 @@ void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, 
         GenTreeLclVarCommon* structVal = arg->GetNode()->AsLclVarCommon();
 
         CallArg* insertAfter = arg;
-        // For the self arg, change it from the SwiftSelf struct to a
-        // TYP_I_IMPL primitive directly. It must also be marked as a well
-        // known arg because it has a non-standard calling convention.
-        if (argIndex == swiftSelfIndex)
+        // For the self/indirect result args, change them to a TYP_I_IMPL
+        // primitive directly. They must also be marked as a well known arg
+        // because they have a non-standard calling convention.
+        if (((argIndex == swiftSelfIndex) && (selfType == NO_CLASS_HANDLE)) || (argIndex == swiftIndirectResultIndex))
         {
             assert(arg->GetNode()->OperIsLocalRead());
             GenTree*   primitiveSelf = gtNewLclFldNode(structVal->GetLclNum(), TYP_I_IMPL, structVal->GetLclOffs());
-            NewCallArg newArg = NewCallArg::Primitive(primitiveSelf, TYP_I_IMPL).WellKnown(WellKnownArg::SwiftSelf);
-            insertAfter       = call->gtArgs.InsertAfter(this, insertAfter, newArg);
+            NewCallArg newArg        = NewCallArg::Primitive(primitiveSelf, TYP_I_IMPL);
+            if (argIndex == swiftSelfIndex)
+            {
+                newArg      = newArg.WellKnown(WellKnownArg::SwiftSelf);
+                insertAfter = call->gtArgs.InsertAfter(this, insertAfter, newArg);
+            }
+            else
+            {
+                // We move the retbuf to the beginning of the arg list to make
+                // the call follow the same invariant as other calls with
+                // retbufs.
+                newArg = newArg.WellKnown(WellKnownArg::RetBuffer);
+                call->gtArgs.PushFront(this, newArg);
+                call->gtCallMoreFlags |= GTF_CALL_M_RETBUFFARG;
+            }
         }
         else
         {
-            const CORINFO_SWIFT_LOWERING* lowering = GetSwiftLowering(arg->GetSignatureClassHandle());
+            CORINFO_CLASS_HANDLE argClass = argIndex == swiftSelfIndex ? selfType : arg->GetSignatureClassHandle();
+            const CORINFO_SWIFT_LOWERING* lowering = GetSwiftLowering(argClass);
             if (lowering->byReference)
             {
                 JITDUMP("  Argument %d of type %s must be passed by reference\n", argIndex,
@@ -2188,7 +2250,13 @@ void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, 
                 GenTree* addrNode = gtNewLclAddrNode(structVal->GetLclNum(), structVal->GetLclOffs());
                 JITDUMP("    Passing by reference\n");
 
-                insertAfter = call->gtArgs.InsertAfter(this, insertAfter, NewCallArg::Primitive(addrNode, TYP_I_IMPL));
+                NewCallArg newArg = NewCallArg::Primitive(addrNode, TYP_I_IMPL);
+                if (argIndex == swiftSelfIndex)
+                {
+                    newArg = newArg.WellKnown(WellKnownArg::SwiftSelf);
+                }
+
+                insertAfter = call->gtArgs.InsertAfter(this, insertAfter, newArg);
             }
             else
             {

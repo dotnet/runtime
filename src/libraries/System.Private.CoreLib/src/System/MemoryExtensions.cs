@@ -3138,7 +3138,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int BinarySearch<T, TComparable>(
             this Span<T> span, TComparable comparable)
-            where TComparable : IComparable<T>
+            where TComparable : IComparable<T>, allows ref struct
         {
             return BinarySearch((ReadOnlySpan<T>)span, comparable);
         }
@@ -3164,7 +3164,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int BinarySearch<T, TComparer>(
             this Span<T> span, T value, TComparer comparer)
-            where TComparer : IComparer<T>
+            where TComparer : IComparer<T>, allows ref struct
         {
             return BinarySearch((ReadOnlySpan<T>)span, value, comparer);
         }
@@ -3212,7 +3212,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int BinarySearch<T, TComparable>(
             this ReadOnlySpan<T> span, TComparable comparable)
-            where TComparable : IComparable<T>
+            where TComparable : IComparable<T>, allows ref struct
         {
             return SpanHelpers.BinarySearch(span, comparable);
         }
@@ -3238,7 +3238,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int BinarySearch<T, TComparer>(
             this ReadOnlySpan<T> span, T value, TComparer comparer)
-            where TComparer : IComparer<T>
+            where TComparer : IComparer<T>, allows ref struct
         {
             if (comparer == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.comparer);
