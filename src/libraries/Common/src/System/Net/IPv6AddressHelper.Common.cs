@@ -398,13 +398,9 @@ namespace System.Net
                         }
                     }
                 }
-                else if (IPAddressParser<TChar>.TryParseInteger(IPAddressParser<TChar>.Hex, address[i++], out int digit))
-                {
-                    number = number * IPAddressParser<TChar>.Hex + digit;
-                }
                 else
                 {
-                    throw new ArgumentException(null, nameof(digit));
+                    number = number * IPAddressParser<TChar>.Hex + Uri.FromHex((char)short.CreateChecked(address[i++]));
                 }
             }
 

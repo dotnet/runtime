@@ -5,7 +5,6 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
-using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -63,6 +62,7 @@ namespace System.Net
 
         private static bool TryParseIPv6(ReadOnlySpan<TChar> ipSpan, Span<ushort> numbers, int numbersLength, out uint scope)
         {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
             Debug.Assert(numbersLength >= IPAddressParserStatics.IPv6AddressShorts);
 
             bool isValid = IPv6AddressHelper<TChar>.IsValidStrict(ipSpan);
@@ -100,13 +100,6 @@ namespace System.Net
                         }
 
                         interfaceName = new string(castScopeIdSpan);
-                    }
-
-                    // This can only happen if TChar is neither char nor byte. This is protected against by this method's
-                    // only call site.
-                    if (string.IsNullOrEmpty(interfaceName))
-                    {
-                        return false;
                     }
 
                     uint interfaceIndex = InterfaceInfoPal.InterfaceNameToIndex(interfaceName);

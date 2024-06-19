@@ -16,29 +16,27 @@ namespace System.Net
         internal const int MaxIPv4StringLength = 15; // 4 numbers separated by 3 periods, with up to 3 digits per number
         internal const int MaxIPv6StringLength = 65;
 
-        // Generic constants which are used for trying to parse a single digit as an integer.
-        private static readonly TChar NumericRangeStartCharacter = TChar.CreateTruncating('0');
-
         public static bool IsValidInteger(int numericBase, TChar ch)
+            => IsValidInteger(numericBase, int.CreateTruncating(ch));
+
+        private static bool IsValidInteger(int numericBase, int characterValue)
         {
             Debug.Assert(numericBase is Octal or Decimal or Hex);
 
-            return numericBase switch
-            {
-                > 0 and <= 10 => ch >= NumericRangeStartCharacter && ch - NumericRangeStartCharacter < TChar.CreateTruncating(numericBase),
-                Hex => HexConverter.IsHexChar(int.CreateTruncating(ch)),
-                _ => false
-            };
+            return numericBase <= Decimal
+                ? characterValue >= '0' && characterValue < '0' + numericBase
+                : HexConverter.IsHexChar(characterValue);
         }
 
         public static bool TryParseInteger(int numericBase, TChar ch, out int parsedNumber)
         {
-            bool validNumber = IsValidInteger(numericBase, ch);
+            int characterValue = int.CreateTruncating(ch);
+            bool validNumber = IsValidInteger(numericBase, characterValue);
 
             // HexConverter allows digits 1-F to be mapped to integers. The octal/decimal digit range restrictions are performed
             // in IsValidInteger.
             parsedNumber = validNumber
-                ? HexConverter.FromChar(int.CreateTruncating(ch))
+                ? HexConverter.FromChar(characterValue)
                 : -1;
 
             return validNumber;

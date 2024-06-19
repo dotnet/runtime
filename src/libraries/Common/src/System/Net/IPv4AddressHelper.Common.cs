@@ -269,8 +269,8 @@ namespace System.Net
             {
                 // end of string, allowed
             }
-            else if ((Array.IndexOf(PrefixSeparators, name[current]) != -1)
-                || (notImplicitFile && (Array.IndexOf(UrlSeparators, name[current]) != -1)))
+            else if ((!notImplicitFile && (name[current] == PrefixSeparators[0] || name[current] == PrefixSeparators[1]))
+                || (notImplicitFile && (name[current] == UrlSeparators[0] || name[current] == UrlSeparators[1] || name[current] == UrlSeparators[2])))
             {
                 bytesConsumed = current;
             }
