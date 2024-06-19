@@ -230,8 +230,11 @@ if (ENABLE_PERFTRACING AND "${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}" IN_LIST 
         target_sources(${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}-objects PRIVATE $<TARGET_OBJECTS:eventpipe-mono-objects> $<TARGET_OBJECTS:dn-containers>)
         list(APPEND mono-components-objects $<TARGET_OBJECTS:eventpipe-mono-objects> $<TARGET_OBJECTS:dn-containers>)
     endif()
+    if (TARGET mono-component-${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}-static)
+        target_sources(mono-component-${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}-static PRIVATE $<TARGET_OBJECTS:eventpipe-mono-objects> $<TARGET_OBJECTS:dn-containers>)
+    endif()
     if (TARGET mono-component-${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME})
-        target_link_libraries(mono-component-${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME} PRIVATE $<TARGET_OBJECTS:eventpipe-mono-objects> $<TARGET_OBJECTS:dn-containers>)
+        target_sources(mono-component-${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME} PRIVATE $<TARGET_OBJECTS:eventpipe-mono-objects> $<TARGET_OBJECTS:dn-containers>)
     endif()
 endif()
 
