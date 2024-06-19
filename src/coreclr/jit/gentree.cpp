@@ -26319,13 +26319,13 @@ GenTree* Compiler::gtNewSimdSumNode(var_types type, GenTree* op1, CorInfoType si
             {
                 assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
                 // The permute below gives us  [0, 1, 2, 3] -> [1, 0, 3, 2]
-                op1 = gtNewSimdHWIntrinsicNode(type, op1, gtNewIconNode((int)0b10110001, TYP_INT), NI_AVX_Permute,
+                op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, gtNewIconNode((int)0b10110001, TYP_INT), NI_AVX_Permute,
                                                simdBaseJitType, simdSize);
                 // The add below now results in [0 + 1, 1 + 0, 2 + 3, 3 + 2]
                 op1         = gtNewSimdBinOpNode(GT_ADD, TYP_SIMD16, op1, op1Shuffled, simdBaseJitType, simdSize);
                 op1Shuffled = fgMakeMultiUse(&op1);
                 // The permute below gives us  [0 + 1, 1 + 0, 2 + 3, 3 + 2] -> [2 + 3, 3 + 2, 0 + 1, 1 + 0]
-                op1 = gtNewSimdHWIntrinsicNode(type, op1, gtNewIconNode((int)0b01001110, TYP_INT), NI_AVX_Permute,
+                op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, gtNewIconNode((int)0b01001110, TYP_INT), NI_AVX_Permute,
                                                simdBaseJitType, simdSize);
             }
             else
@@ -26357,7 +26357,7 @@ GenTree* Compiler::gtNewSimdSumNode(var_types type, GenTree* op1, CorInfoType si
             {
                 assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
                 // The permute below gives us  [0, 1] -> [1, 0]
-                op1 = gtNewSimdHWIntrinsicNode(type, op1, gtNewIconNode((int)0b0001, TYP_INT), NI_AVX_Permute,
+                op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, gtNewIconNode((int)0b0001, TYP_INT), NI_AVX_Permute,
                                                simdBaseJitType, simdSize);
             }
             else
