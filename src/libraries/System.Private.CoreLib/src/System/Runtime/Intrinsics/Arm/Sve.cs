@@ -2421,6 +2421,79 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe ulong GetActiveElementCount(Vector<ulong> mask, Vector<ulong> from) => GetActiveElementCount(mask, from);
 
 
+        ///  Insert scalar into shifted vector
+
+        /// <summary>
+        /// svuint8_t svinsr[_n_u8](svuint8_t op1, uint8_t op2)
+        ///   INSR Ztied1.B, Wop2
+        ///   INSR Ztied1.B, Bop2
+        /// </summary>
+        public static unsafe Vector<byte> InsertIntoShiftedVector(Vector<byte> left, byte right) => InsertIntoShiftedVector(left, right);
+
+        /// <summary>
+        /// svfloat64_t svinsr[_n_f64](svfloat64_t op1, float64_t op2)
+        ///   INSR Ztied1.D, Xop2
+        ///   INSR Ztied1.D, Dop2
+        /// </summary>
+        public static unsafe Vector<double> InsertIntoShiftedVector(Vector<double> left, double right) => InsertIntoShiftedVector(left, right);
+
+        /// <summary>
+        /// svint16_t svinsr[_n_s16](svint16_t op1, int16_t op2)
+        ///   INSR Ztied1.H, Wop2
+        ///   INSR Ztied1.H, Hop2
+        /// </summary>
+        public static unsafe Vector<short> InsertIntoShiftedVector(Vector<short> left, short right) => InsertIntoShiftedVector(left, right);
+
+        /// <summary>
+        /// svint32_t svinsr[_n_s32](svint32_t op1, int32_t op2)
+        ///   INSR Ztied1.S, Wop2
+        ///   INSR Ztied1.S, Sop2
+        /// </summary>
+        public static unsafe Vector<int> InsertIntoShiftedVector(Vector<int> left, int right) => InsertIntoShiftedVector(left, right);
+
+        /// <summary>
+        /// svint64_t svinsr[_n_s64](svint64_t op1, int64_t op2)
+        ///   INSR Ztied1.D, Xop2
+        ///   INSR Ztied1.D, Dop2
+        /// </summary>
+        public static unsafe Vector<long> InsertIntoShiftedVector(Vector<long> left, long right) => InsertIntoShiftedVector(left, right);
+
+        /// <summary>
+        /// svint8_t svinsr[_n_s8](svint8_t op1, int8_t op2)
+        ///   INSR Ztied1.B, Wop2
+        ///   INSR Ztied1.B, Bop2
+        /// </summary>
+        public static unsafe Vector<sbyte> InsertIntoShiftedVector(Vector<sbyte> left, sbyte right) => InsertIntoShiftedVector(left, right);
+
+        /// <summary>
+        /// svfloat32_t svinsr[_n_f32](svfloat32_t op1, float32_t op2)
+        ///   INSR Ztied1.S, Wop2
+        ///   INSR Ztied1.S, Sop2
+        /// </summary>
+        public static unsafe Vector<float> InsertIntoShiftedVector(Vector<float> left, float right) => InsertIntoShiftedVector(left, right);
+
+        /// <summary>
+        /// svuint16_t svinsr[_n_u16](svuint16_t op1, uint16_t op2)
+        ///   INSR Ztied1.H, Wop2
+        ///   INSR Ztied1.H, Hop2
+        /// </summary>
+        public static unsafe Vector<ushort> InsertIntoShiftedVector(Vector<ushort> left, ushort right) => InsertIntoShiftedVector(left, right);
+
+        /// <summary>
+        /// svuint32_t svinsr[_n_u32](svuint32_t op1, uint32_t op2)
+        ///   INSR Ztied1.S, Wop2
+        ///   INSR Ztied1.S, Sop2
+        /// </summary>
+        public static unsafe Vector<uint> InsertIntoShiftedVector(Vector<uint> left, uint right) => InsertIntoShiftedVector(left, right);
+
+        /// <summary>
+        /// svuint64_t svinsr[_n_u64](svuint64_t op1, uint64_t op2)
+        ///   INSR Ztied1.D, Xop2
+        ///   INSR Ztied1.D, Dop2
+        /// </summary>
+        public static unsafe Vector<ulong> InsertIntoShiftedVector(Vector<ulong> left, ulong right) => InsertIntoShiftedVector(left, right);
+
+
         ///  LeadingSignCount : Count leading sign bits
 
         /// <summary>

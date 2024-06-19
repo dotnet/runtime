@@ -3353,6 +3353,19 @@ namespace JIT.HardwareIntrinsics.Arm
             return result;
         }
 
+        public static T[] ShiftAndInsert<T>(T[] op1, T op2)
+        {
+            T[] result = new T[op1.Length];
+            result[0] = op2;
+
+            for (int i = 1; i < result.Length; i++)
+            {
+                result[i] = op1[i - 1];
+            }
+
+            return result;
+        }
+
         public static sbyte ShiftLeftLogical(sbyte op1, byte op2) => UnsignedShift(op1, (sbyte)op2);
 
         public static byte ShiftLeftLogical(byte op1, byte op2) => UnsignedShift(op1, (sbyte)op2);

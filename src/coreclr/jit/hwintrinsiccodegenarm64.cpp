@@ -2114,6 +2114,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op2Reg, opt);
                 break;
             }
+
             case NI_Sve_Compute8BitAddresses:
             case NI_Sve_Compute16BitAddresses:
             case NI_Sve_Compute32BitAddresses:
@@ -2127,6 +2128,21 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                                                  INS_SCALABLE_OPTS_LSL_N);
                 break;
             }
+
+            case NI_Sve_InsertIntoShiftedVector:
+            {
+                assert(isRMW);
+                if (targetReg != op1Reg)
+                {
+                    assert(targetReg != op2Reg);
+                    GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op1Reg,
+                                              /* canSkip */ true);
+                }
+
+                GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op2Reg, opt);
+                break;
+            }
+
             default:
                 unreached();
         }
