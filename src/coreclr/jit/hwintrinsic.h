@@ -872,17 +872,23 @@ struct HWIntrinsicInfo
         }
     }
 
+    static bool HasImmediateOperand(NamedIntrinsic id)
+    {
+#if defined(TARGET_ARM64)
+        const HWIntrinsicFlag flags = lookupFlags(id);
+        return ((flags & HW_Flag_HasImmediateOperand) != 0) || HasEnumOperand(id);
+#elif defined(TARGET_XARCH)
+        return lookupCategory(id) == HW_Category_IMM;
+#else
+        return false;
+#endif
+    }
+
 #ifdef TARGET_ARM64
     static bool SIMDScalar(NamedIntrinsic id)
     {
         const HWIntrinsicFlag flags = lookupFlags(id);
         return (flags & HW_Flag_SIMDScalar) != 0;
-    }
-
-    static bool HasImmediateOperand(NamedIntrinsic id)
-    {
-        const HWIntrinsicFlag flags = lookupFlags(id);
-        return ((flags & HW_Flag_HasImmediateOperand) != 0) || HasEnumOperand(id);
     }
 
     static bool IsScalable(NamedIntrinsic id)
