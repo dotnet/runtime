@@ -1020,24 +1020,14 @@ public:
                 ClassLayout*    accessLayout;
                 AccessKindFlags accessFlags;
 
-                if (lcl->OperIs(GT_LCL_ADDR) && user->OperIs(GT_CALL))
+                if (lcl->OperIs(GT_LCL_ADDR))
                 {
-                    if (dsc->IsStackAllocatedBox())
-                    {
-                        // TODO: assert this is a call to a "no-escape helper"
-                        accessType   = TYP_STRUCT;
-                        accessLayout = dsc->GetLayout();
-                        accessFlags  = AccessKindFlags::IsCallArg;
-                    }
-                    else
-                    {
-                        assert(dsc->IsHiddenBufferStructArg() &&
-                               (user->AsCall()->gtArgs.GetRetBufferArg()->GetNode() == lcl));
+                    assert(user->OperIs(GT_CALL) && dsc->IsHiddenBufferStructArg() &&
+                           (user->AsCall()->gtArgs.GetRetBufferArg()->GetNode() == lcl));
 
-                        accessType   = TYP_STRUCT;
-                        accessLayout = m_compiler->typGetObjLayout(user->AsCall()->gtRetClsHnd);
-                        accessFlags  = AccessKindFlags::IsCallRetBuf;
-                    }
+                    accessType   = TYP_STRUCT;
+                    accessLayout = m_compiler->typGetObjLayout(user->AsCall()->gtRetClsHnd);
+                    accessFlags  = AccessKindFlags::IsCallRetBuf;
                 }
                 else
                 {
@@ -1420,7 +1410,7 @@ private:
     //
     AccessKindFlags ClassifyLocalAccess(GenTreeLclVarCommon* lcl, GenTree* user)
     {
-        // assert(lcl->OperIsLocalRead() || lcl->OperIsLocalStore());
+        assert(lcl->OperIsLocalRead() || lcl->OperIsLocalStore());
 
         AccessKindFlags flags = AccessKindFlags::None;
         if (lcl->OperIsLocalStore())
@@ -2304,21 +2294,14 @@ void ReplaceVisitor::InsertPreStatementWriteBacks()
                 for (CallArg& arg : call->gtArgs.Args())
                 {
                     GenTree* node = arg.GetNode()->gtEffectiveVal();
-
-                    bool writeBackHelperArg =
-                        node->OperIs(GT_LCL_ADDR) && (arg.GetWellKnownArg() != WellKnownArg::RetBuffer);
-                    bool writeBackStructArg = node->TypeIs(TYP_STRUCT) && node->OperIsLocalRead();
-
-                    if (!writeBackHelperArg && !writeBackStructArg)
+                    if (!node->TypeIs(TYP_STRUCT) || !node->OperIsLocalRead())
                     {
                         continue;
                     }
 
                     GenTreeLclVarCommon* lcl = node->AsLclVarCommon();
-                    LclVarDsc*           dsc = m_compiler->lvaGetDesc(lcl);
-                    unsigned size = writeBackHelperArg ? dsc->lvExactSize() : lcl->GetLayout(m_compiler)->GetSize();
-
-                    m_replacer->WriteBackBeforeCurrentStatement(lcl->GetLclNum(), lcl->GetLclOffs(), size);
+                    m_replacer->WriteBackBeforeCurrentStatement(lcl->GetLclNum(), lcl->GetLclOffs(),
+                                                                lcl->GetLayout(m_compiler)->GetSize());
                 }
             }
 
