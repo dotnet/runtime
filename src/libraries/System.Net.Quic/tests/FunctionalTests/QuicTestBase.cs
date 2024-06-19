@@ -50,7 +50,7 @@ namespace System.Net.Quic.Tests
             // version is not supported.
             //
             // This has to happen here in order to be called before QuicTestBase.IsSupported
-            if (PlatformDetection.IsWindows && !QuicTestCollection.IsWindowsVersionWithSchannelSupport())
+            if (PlatformDetection.IsWindows && !QuicTestCollection.IsWindowsVersionWithSchannelSupport() && PlatformDetection.IsWindows10OrLater)
             {
                 AppContext.SetSwitch("System.Net.Quic.AppLocalMsQuic", true);
             }
