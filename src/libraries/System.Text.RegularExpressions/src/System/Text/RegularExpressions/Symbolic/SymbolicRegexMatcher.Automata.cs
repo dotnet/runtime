@@ -204,6 +204,12 @@ namespace System.Text.RegularExpressions.Symbolic
             int pos = 0;
             SymbolicRegexNode<TSet>? current = node;
             bool canLoop = true;
+            // finding anchors inside pattern invalidates this optimization
+            var bail = new Func<SymbolicRegexNode<TSet>, (bool, SymbolicRegexNode<TSet>)>(concatNode =>
+            {
+                pos = 0;
+                return (false, node);
+            });
             var addSingleton = new Func<SymbolicRegexNode<TSet>, (bool, SymbolicRegexNode<TSet>)>(concatNode =>
             {
                 pos += 1;
@@ -257,6 +263,12 @@ namespace System.Text.RegularExpressions.Symbolic
                         addSingleton(current),
                     {_kind: SymbolicRegexNodeKind.Concat, _left._kind: SymbolicRegexNodeKind.Loop } =>
                         addFixedLengthLoop(current),
+                    {
+                        _kind: SymbolicRegexNodeKind.Concat,
+                        _left._info.ContainsSomeAnchor:true,
+                        _right._kind: SymbolicRegexNodeKind.Concat
+                    } =>
+                        bail(current),
                     _ => (false, current)
                 };
                 canLoop = loop;
