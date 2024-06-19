@@ -180,7 +180,7 @@ void lsraAssignRegToTree(GenTree* tree, regNumber reg, unsigned regIdx)
 //    Weight of ref position.
 weight_t LinearScan::getWeight(RefPosition* refPos)
 {
-    // RefTypeKill does not have a valid treeNode field, but we do not expect
+    // RefTypeKill does not have a valid treeNode field, so we do not expect
     // to see getWeight called for it
     assert(refPos->refType != RefTypeKill);
 
