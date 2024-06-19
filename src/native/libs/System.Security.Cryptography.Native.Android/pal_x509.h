@@ -65,4 +65,4 @@ PALEXPORT jobject /*X509Certificate*/ AndroidCryptoNative_X509GetCertificateForP
 /*
 Checks if the given entry is a private key entry
 */
-PALEXPORT bool AndroidCryptoNative_X509IsKeyStorePrivateKeyEntry(jobject entry);
+PALEXPORT int32_t AndroidCryptoNative_X509IsKeyStorePrivateKeyEntry(jobject entry);

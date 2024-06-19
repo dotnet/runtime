@@ -362,12 +362,12 @@ jobject /*X509Certificate*/ AndroidCryptoNative_X509GetCertificateForPrivateKeyE
     return ToGRef(env, cert);
 }
 
-bool AndroidCryptoNative_X509IsKeyStorePrivateKeyEntry(jobject entry)
+int32_t AndroidCryptoNative_X509IsKeyStorePrivateKeyEntry(jobject entry)
 {
     if (!entry)
-        return false;
+        return 0;
 
     JNIEnv* env = GetJNIEnv();
 
-    return (*env)->IsInstanceOf(env, entry, g_PrivateKeyEntryClass);
+    return (*env)->IsInstanceOf(env, entry, g_PrivateKeyEntryClass) ? 1 : 0;
 }

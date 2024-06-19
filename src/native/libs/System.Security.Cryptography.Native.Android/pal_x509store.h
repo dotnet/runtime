@@ -79,4 +79,4 @@ PALEXPORT jobject AndroidCryptoNative_X509StoreGetPrivateKeyEntry(jobject /*KeyS
 /*
 Removes an entry from the keystore for the given alias
 */
-PALEXPORT bool AndroidCryptoNative_X509StoreDeleteEntry(jobject /*KeyStore*/ store, const char* hashString);
+PALEXPORT int32_t AndroidCryptoNative_X509StoreDeleteEntry(jobject /*KeyStore*/ store, const char* hashString);

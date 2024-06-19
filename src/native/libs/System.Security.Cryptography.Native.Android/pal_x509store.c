@@ -492,7 +492,7 @@ cleanup:
     return privateKeyEntry;
 }
 
-bool AndroidCryptoNative_X509StoreDeleteEntry(jobject /*KeyStore*/ store, const char* hashString)
+int32_t AndroidCryptoNative_X509StoreDeleteEntry(jobject /*KeyStore*/ store, const char* hashString)
 {
     int32_t ret = FAIL;
 
