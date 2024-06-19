@@ -535,7 +535,7 @@ if(NOT DISABLE_EXECUTABLES)
   if (HOST_WASM)
     target_link_libraries(mono-sgen PRIVATE mono-wasm-nosimd)
   endif()
-  target_link_libraries(mono-sgen PRIVATE ${OS_LIBS} ${LLVM_LIBS})
+  target_link_libraries(mono-sgen PRIVATE ${OS_LIBS} ${LLVM_LIBS} zlib)
   # musl-libc implements ucontext in a different library on s390x
   if(CLR_CMAKE_TARGET_LINUX_MUSL AND TARGET_S390X)
     target_link_libraries(mono-sgen PRIVATE ucontext)

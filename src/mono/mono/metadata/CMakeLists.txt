@@ -212,7 +212,7 @@ endif()
 
 add_library(metadata_objects OBJECT ${metadata_sources})
 target_compile_definitions(metadata_objects PRIVATE ${metadata_compile_definitions})
-target_link_libraries(metadata_objects PRIVATE monoapi eglib_api utils_objects)
+target_link_libraries(metadata_objects PRIVATE monoapi eglib_api utils_objects zlib)
 # note: metadata_objects is an object library, so this doesn't force linking with sgen,
 # it just adds the relevant include directories - which we need even with Boehm
 target_link_libraries(metadata_objects PRIVATE sgen_objects)
