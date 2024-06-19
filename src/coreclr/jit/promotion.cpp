@@ -2314,9 +2314,11 @@ void ReplaceVisitor::InsertPreStatementWriteBacks()
                         continue;
                     }
 
-                    GenTreeLclVarCommon* lcl    = node->AsLclVarCommon();
-                    ClassLayout*         layout = m_compiler->lvaGetDesc(lcl)->GetLayout();
-                    m_replacer->WriteBackBeforeCurrentStatement(lcl->GetLclNum(), lcl->GetLclOffs(), layout->GetSize());
+                    GenTreeLclVarCommon* lcl  = node->AsLclVarCommon();
+                    LclVarDsc*           dsc  = m_compiler->lvaGetDesc(lcl);
+                    unsigned             size = writeBackHelperArg ? dsc->lvExactSize() : dsc->GetLayout()->GetSize();
+
+                    m_replacer->WriteBackBeforeCurrentStatement(lcl->GetLclNum(), lcl->GetLclOffs(), size);
                 }
             }
 
