@@ -256,6 +256,25 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
+        public void ShortTimePattern_VerifyTimePatterns()
+        {
+            foreach (var culture in CultureInfo.GetCultures(CultureTypes.AllCultures))
+            {
+                var pattern = culture.DateTimeFormat.ShortTimePattern;
+                var segments = pattern.Split('\'');
+                bool use12Hour = false;
+                bool useAMPM = false;
+                for (var i = 0; i < segments.Length; i += 2)
+                {
+                    var segment = segments[i];
+                    use12Hour |= segment.Contains('h', StringComparison.Ordinal);
+                    useAMPM |= segment.Contains('t', StringComparison.Ordinal);
+                }
+                Assert.True(!use12Hour || useAMPM, $"Bad short time pattern for culture {culture.Name}: '{pattern}'");
+            }
+        }
+
+        [Fact]
         public void ShortTimePattern_CheckTimeFormatWithSpaces()
         {
             var date = DateTime.Today + TimeSpan.FromHours(15) + TimeSpan.FromMinutes(15);
