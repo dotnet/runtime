@@ -5947,7 +5947,7 @@ namespace System
         public const long TicksPerMillisecond = (long)10000;
         public const long TicksPerMinute = (long)600000000;
         public const long TicksPerSecond = (long)10000000;
-        public const int MicrosecondsPerMillisecond =  1000;
+        public const int MicrosecondsPerMillisecond = 1000;
         public const int MicrosecondsPerSecond = 1000000;
         public const int MicrosecondsPerMinute = 60000000;
         public const long MicrosecondsPerHour = (long)3600000000;
