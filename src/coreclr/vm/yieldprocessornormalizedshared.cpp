@@ -25,6 +25,15 @@ static double s_establishedNsPerYield = YieldProcessorNormalization::TargetNsPer
 
 static LARGE_INTEGER li;
 
+inline unsigned int GetTickCountPortable()
+{
+#ifdef FEATURE_NATIVEAOT
+    return (unsigned int)PalGetTickCount64();
+#else
+    return GetTickCount();
+#endif
+}
+
 static UINT64 GetPerformanceCounter()
 {
     CONTRACTL
@@ -140,7 +149,7 @@ void YieldProcessorNormalization::PerformMeasurement()
     double latestNsPerYield;
     if (s_normalizationState == NormalizationState::Initialized)
     {
-        if (GetTickCount() - s_previousNormalizationTimeMs < MeasurementPeriodMs)
+        if (GetTickCountPortable() - s_previousNormalizationTimeMs < MeasurementPeriodMs)
         {
             return;
         }
@@ -226,7 +235,7 @@ void YieldProcessorNormalization::PerformMeasurement()
 
     GCHeapUtilities::GetGCHeap()->SetYieldProcessorScalingFactor((float)yieldsPerNormalizedYield);
 
-    s_previousNormalizationTimeMs = GetTickCount();
+    s_previousNormalizationTimeMs = GetTickCountPortable();
     s_normalizationState = NormalizationState::Initialized;
     s_isMeasurementScheduled = false;
 }
@@ -245,7 +254,7 @@ void YieldProcessorNormalization::ScheduleMeasurementIfNecessary()
     NormalizationState normalizationState = VolatileLoadWithoutBarrier(&s_normalizationState);
     if (normalizationState == NormalizationState::Initialized)
     {
-        if (GetTickCount() - s_previousNormalizationTimeMs < MeasurementPeriodMs)
+        if (GetTickCountPortable() - s_previousNormalizationTimeMs < MeasurementPeriodMs)
         {
             return;
         }
