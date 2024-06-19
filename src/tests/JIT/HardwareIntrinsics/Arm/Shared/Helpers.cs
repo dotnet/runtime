@@ -4721,9 +4721,29 @@ namespace JIT.HardwareIntrinsics.Arm
         
         public static float RecipEstimate(float op1) => MathF.ReciprocalEstimate(op1);
 
-        public static double RecipExpo(double op1) => Math.Pow(op1, -1);
+        public static double RecipExpo(double op1)
+        {
+            ulong bits = (ulong)BitConverter.DoubleToUInt64Bits(op1);
 
-        public static float RecipExpo(float op1) => MathF.Pow(op1, -1);
+            // Invert the exponent
+            bits ^= 0x7FF0000000000000;
+            // Zero the fraction
+            bits &= 0xFFF0000000000000;
+
+            return BitConverter.UInt64BitsToDouble(bits);
+        }
+
+        public static float ReciprocalExponent(float op1)
+        {
+            uint bits = BitConverter.SingleToUInt32Bits(op1);
+
+            // Invert the exponent
+            bits ^= 0x7F800000;
+            // Zero the fraction
+            bits &= 0xFF800000;
+
+            return BitConverter.UInt32BitsToSingle(bits);
+        }
 
         public static double RecipSqrtEstimate(double op1) => Math.ReciprocalSqrtEstimate(op1);
         
