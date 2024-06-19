@@ -233,6 +233,7 @@
       System.Diagnostics.PerformanceCounter;
       System.DirectoryServices;
       System.Formats.Nrbf;
+      System.IO.Hashing;
       System.IO.Packaging;
       System.Resources.Extensions;
       System.Security.Cryptography.Pkcs;
