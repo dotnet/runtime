@@ -496,7 +496,15 @@ namespace System
                     if (!InvokeUtils.CanPrimitiveWiden(srcType, targetType))
                         throw new ArgumentException(SR.Arg_PrimWiden);
 
-                    InvokeUtils.PrimitiveWiden(ref value.GetRawData(), ref offsetDataRef, srcType, targetType);
+                    if (srcType == targetType)
+                    {
+                        // Primitive types are always tightly packed in array, using ComponentSize is sufficient.
+                        SpanHelpers.Memmove(ref offsetDataRef, ref value.GetRawData(), pMethodTable->ComponentSize);
+                    }
+                    else
+                    {
+                        InvokeUtils.PrimitiveWiden(ref value.GetRawData(), ref offsetDataRef, srcType, targetType);
+                    }
                 }
             }
 
