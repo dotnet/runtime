@@ -619,16 +619,6 @@ RefPosition* LinearScan::newRefPosition(Interval*        theInterval,
     // Spill info
     newRP->isFixedRegRef = isFixedRegister;
 
-#ifndef TARGET_AMD64
-    // We don't need this for AMD because the PInvoke method epilog code is explicit
-    // at register allocation time.
-    if (theInterval != nullptr && theInterval->isLocalVar && compiler->compMethodRequiresPInvokeFrame() &&
-        theInterval->varNum == compiler->genReturnLocal)
-    {
-        mask &= ~(RBM_PINVOKE_TCB | RBM_PINVOKE_FRAME).GetRegSetForType(theInterval->registerType);
-        noway_assert(mask != RBM_NONE);
-    }
-#endif // !TARGET_AMD64
     newRP->registerAssignment = mask;
 
     newRP->setMultiRegIdx(multiRegIdx);
