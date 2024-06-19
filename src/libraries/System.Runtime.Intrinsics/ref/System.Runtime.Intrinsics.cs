@@ -5058,30 +5058,30 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<uint> SubtractSaturate(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
         public static System.Numerics.Vector<ulong> SubtractSaturate(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
 
-        public static bool TestAnyTrue(System.Numerics.Vector<byte> leftMask, System.Numerics.Vector<byte> rightMask) { throw null; }
-        public static bool TestAnyTrue(System.Numerics.Vector<short> leftMask, System.Numerics.Vector<short> rightMask) { throw null; }
-        public static bool TestAnyTrue(System.Numerics.Vector<int> leftMask, System.Numerics.Vector<int> rightMask) { throw null; }
-        public static bool TestAnyTrue(System.Numerics.Vector<long> leftMask, System.Numerics.Vector<long> rightMask) { throw null; }
-        public static bool TestAnyTrue(System.Numerics.Vector<sbyte> leftMask, System.Numerics.Vector<sbyte> rightMask) { throw null; }
-        public static bool TestAnyTrue(System.Numerics.Vector<ushort> leftMask, System.Numerics.Vector<ushort> rightMask) { throw null; }
-        public static bool TestAnyTrue(System.Numerics.Vector<uint> leftMask, System.Numerics.Vector<uint> rightMask) { throw null; }
-        public static bool TestAnyTrue(System.Numerics.Vector<ulong> leftMask, System.Numerics.Vector<ulong> rightMask) { throw null; }
-        public static bool TestFirstTrue(System.Numerics.Vector<byte> leftMask, System.Numerics.Vector<byte> rightMask) { throw null; }
-        public static bool TestFirstTrue(System.Numerics.Vector<short> leftMask, System.Numerics.Vector<short> rightMask) { throw null; }
-        public static bool TestFirstTrue(System.Numerics.Vector<int> leftMask, System.Numerics.Vector<int> rightMask) { throw null; }
-        public static bool TestFirstTrue(System.Numerics.Vector<long> leftMask, System.Numerics.Vector<long> rightMask) { throw null; }
-        public static bool TestFirstTrue(System.Numerics.Vector<sbyte> leftMask, System.Numerics.Vector<sbyte> rightMask) { throw null; }
-        public static bool TestFirstTrue(System.Numerics.Vector<ushort> leftMask, System.Numerics.Vector<ushort> rightMask) { throw null; }
-        public static bool TestFirstTrue(System.Numerics.Vector<uint> leftMask, System.Numerics.Vector<uint> rightMask) { throw null; }
-        public static bool TestFirstTrue(System.Numerics.Vector<ulong> leftMask, System.Numerics.Vector<ulong> rightMask) { throw null; }
-        public static bool TestLastTrue(System.Numerics.Vector<byte> leftMask, System.Numerics.Vector<byte> rightMask) { throw null; }
-        public static bool TestLastTrue(System.Numerics.Vector<short> leftMask, System.Numerics.Vector<short> rightMask) { throw null; }
-        public static bool TestLastTrue(System.Numerics.Vector<int> leftMask, System.Numerics.Vector<int> rightMask) { throw null; }
-        public static bool TestLastTrue(System.Numerics.Vector<long> leftMask, System.Numerics.Vector<long> rightMask) { throw null; }
-        public static bool TestLastTrue(System.Numerics.Vector<sbyte> leftMask, System.Numerics.Vector<sbyte> rightMask) { throw null; }
-        public static bool TestLastTrue(System.Numerics.Vector<ushort> leftMask, System.Numerics.Vector<ushort> rightMask) { throw null; }
-        public static bool TestLastTrue(System.Numerics.Vector<uint> leftMask, System.Numerics.Vector<uint> rightMask) { throw null; }
-        public static bool TestLastTrue(System.Numerics.Vector<ulong> leftMask, System.Numerics.Vector<ulong> rightMask) { throw null; }
+        public static bool TestAnyTrue(System.Numerics.Vector<byte> mask, System.Numerics.Vector<byte> srcMask) { throw null; }
+        public static bool TestAnyTrue(System.Numerics.Vector<short> mask, System.Numerics.Vector<short> srcMask) { throw null; }
+        public static bool TestAnyTrue(System.Numerics.Vector<int> mask, System.Numerics.Vector<int> srcMask) { throw null; }
+        public static bool TestAnyTrue(System.Numerics.Vector<long> mask, System.Numerics.Vector<long> srcMask) { throw null; }
+        public static bool TestAnyTrue(System.Numerics.Vector<sbyte> mask, System.Numerics.Vector<sbyte> srcMask) { throw null; }
+        public static bool TestAnyTrue(System.Numerics.Vector<ushort> mask, System.Numerics.Vector<ushort> srcMask) { throw null; }
+        public static bool TestAnyTrue(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> srcMask) { throw null; }
+        public static bool TestAnyTrue(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> srcMask) { throw null; }
+        public static bool TestFirstTrue(System.Numerics.Vector<byte> mask, System.Numerics.Vector<byte> srcMask) { throw null; }
+        public static bool TestFirstTrue(System.Numerics.Vector<short> mask, System.Numerics.Vector<short> srcMask) { throw null; }
+        public static bool TestFirstTrue(System.Numerics.Vector<int> mask, System.Numerics.Vector<int> srcMask) { throw null; }
+        public static bool TestFirstTrue(System.Numerics.Vector<long> mask, System.Numerics.Vector<long> srcMask) { throw null; }
+        public static bool TestFirstTrue(System.Numerics.Vector<sbyte> mask, System.Numerics.Vector<sbyte> srcMask) { throw null; }
+        public static bool TestFirstTrue(System.Numerics.Vector<ushort> mask, System.Numerics.Vector<ushort> srcMask) { throw null; }
+        public static bool TestFirstTrue(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> srcMask) { throw null; }
+        public static bool TestFirstTrue(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> srcMask) { throw null; }
+        public static bool TestLastTrue(System.Numerics.Vector<byte> mask, System.Numerics.Vector<byte> srcMask) { throw null; }
+        public static bool TestLastTrue(System.Numerics.Vector<short> mask, System.Numerics.Vector<short> srcMask) { throw null; }
+        public static bool TestLastTrue(System.Numerics.Vector<int> mask, System.Numerics.Vector<int> srcMask) { throw null; }
+        public static bool TestLastTrue(System.Numerics.Vector<long> mask, System.Numerics.Vector<long> srcMask) { throw null; }
+        public static bool TestLastTrue(System.Numerics.Vector<sbyte> mask, System.Numerics.Vector<sbyte> srcMask) { throw null; }
+        public static bool TestLastTrue(System.Numerics.Vector<ushort> mask, System.Numerics.Vector<ushort> srcMask) { throw null; }
+        public static bool TestLastTrue(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> srcMask) { throw null; }
+        public static bool TestLastTrue(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> srcMask) { throw null; }
 
         public static System.Numerics.Vector<byte> TransposeEven(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
         public static System.Numerics.Vector<double> TransposeEven(System.Numerics.Vector<double> left, System.Numerics.Vector<double> right) { throw null; }

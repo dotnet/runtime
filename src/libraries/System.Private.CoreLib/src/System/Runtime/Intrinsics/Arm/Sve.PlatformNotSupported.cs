@@ -5944,145 +5944,145 @@ namespace System.Runtime.Intrinsics.Arm
         /// bool svptest_any(svbool_t pg, svbool_t op)
         ///   PTEST
         /// </summary>
-        public static unsafe bool TestAnyTrue(Vector<byte> leftMask, Vector<byte> rightMask) { throw new PlatformNotSupportedException(); }
+        public static unsafe bool TestAnyTrue(Vector<byte> mask, Vector<byte> srcMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// bool svptest_any(svbool_t pg, svbool_t op)
         ///   PTEST
         /// </summary>
-        public static unsafe bool TestAnyTrue(Vector<short> leftMask, Vector<short> rightMask) { throw new PlatformNotSupportedException(); }
+        public static unsafe bool TestAnyTrue(Vector<short> mask, Vector<short> srcMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// bool svptest_any(svbool_t pg, svbool_t op)
         ///   PTEST
         /// </summary>
-        public static unsafe bool TestAnyTrue(Vector<int> leftMask, Vector<int> rightMask) { throw new PlatformNotSupportedException(); }
+        public static unsafe bool TestAnyTrue(Vector<int> mask, Vector<int> srcMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// bool svptest_any(svbool_t pg, svbool_t op)
         ///   PTEST
         /// </summary>
-        public static unsafe bool TestAnyTrue(Vector<long> leftMask, Vector<long> rightMask) { throw new PlatformNotSupportedException(); }
+        public static unsafe bool TestAnyTrue(Vector<long> mask, Vector<long> srcMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// bool svptest_any(svbool_t pg, svbool_t op)
         ///   PTEST
         /// </summary>
-        public static unsafe bool TestAnyTrue(Vector<sbyte> leftMask, Vector<sbyte> rightMask) { throw new PlatformNotSupportedException(); }
+        public static unsafe bool TestAnyTrue(Vector<sbyte> mask, Vector<sbyte> srcMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// bool svptest_any(svbool_t pg, svbool_t op)
         ///   PTEST
         /// </summary>
-        public static unsafe bool TestAnyTrue(Vector<ushort> leftMask, Vector<ushort> rightMask) { throw new PlatformNotSupportedException(); }
+        public static unsafe bool TestAnyTrue(Vector<ushort> mask, Vector<ushort> srcMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// bool svptest_any(svbool_t pg, svbool_t op)
         ///   PTEST
         /// </summary>
-        public static unsafe bool TestAnyTrue(Vector<uint> leftMask, Vector<uint> rightMask) { throw new PlatformNotSupportedException(); }
+        public static unsafe bool TestAnyTrue(Vector<uint> mask, Vector<uint> srcMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// bool svptest_any(svbool_t pg, svbool_t op)
         ///   PTEST
         /// </summary>
-        public static unsafe bool TestAnyTrue(Vector<ulong> leftMask, Vector<ulong> rightMask) { throw new PlatformNotSupportedException(); }
+        public static unsafe bool TestAnyTrue(Vector<ulong> mask, Vector<ulong> srcMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// bool svptest_first(svbool_t pg, svbool_t op)
         ///   PTEST
         /// </summary>
-        public static unsafe bool TestFirstTrue(Vector<byte> leftMask, Vector<byte> rightMask) { throw new PlatformNotSupportedException(); }
+        public static unsafe bool TestFirstTrue(Vector<byte> mask, Vector<byte> srcMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// bool svptest_first(svbool_t pg, svbool_t op)
         ///   PTEST
         /// </summary>
-        public static unsafe bool TestFirstTrue(Vector<short> leftMask, Vector<short> rightMask) { throw new PlatformNotSupportedException(); }
+        public static unsafe bool TestFirstTrue(Vector<short> mask, Vector<short> srcMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// bool svptest_first(svbool_t pg, svbool_t op)
         ///   PTEST
         /// </summary>
-        public static unsafe bool TestFirstTrue(Vector<int> leftMask, Vector<int> rightMask) { throw new PlatformNotSupportedException(); }
+        public static unsafe bool TestFirstTrue(Vector<int> mask, Vector<int> srcMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// bool svptest_first(svbool_t pg, svbool_t op)
         ///   PTEST
         /// </summary>
-        public static unsafe bool TestFirstTrue(Vector<long> leftMask, Vector<long> rightMask) { throw new PlatformNotSupportedException(); }
+        public static unsafe bool TestFirstTrue(Vector<long> mask, Vector<long> srcMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// bool svptest_first(svbool_t pg, svbool_t op)
         ///   PTEST
         /// </summary>
-        public static unsafe bool TestFirstTrue(Vector<sbyte> leftMask, Vector<sbyte> rightMask) { throw new PlatformNotSupportedException(); }
+        public static unsafe bool TestFirstTrue(Vector<sbyte> mask, Vector<sbyte> srcMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// bool svptest_first(svbool_t pg, svbool_t op)
         ///   PTEST
         /// </summary>
-        public static unsafe bool TestFirstTrue(Vector<ushort> leftMask, Vector<ushort> rightMask) { throw new PlatformNotSupportedException(); }
+        public static unsafe bool TestFirstTrue(Vector<ushort> mask, Vector<ushort> srcMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// bool svptest_first(svbool_t pg, svbool_t op)
         ///   PTEST
         /// </summary>
-        public static unsafe bool TestFirstTrue(Vector<uint> leftMask, Vector<uint> rightMask) { throw new PlatformNotSupportedException(); }
+        public static unsafe bool TestFirstTrue(Vector<uint> mask, Vector<uint> srcMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// bool svptest_first(svbool_t pg, svbool_t op)
         ///   PTEST
         /// </summary>
-        public static unsafe bool TestFirstTrue(Vector<ulong> leftMask, Vector<ulong> rightMask) { throw new PlatformNotSupportedException(); }
+        public static unsafe bool TestFirstTrue(Vector<ulong> mask, Vector<ulong> srcMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// bool svptest_last(svbool_t pg, svbool_t op)
         ///   PTEST
         /// </summary>
-        public static unsafe bool TestLastTrue(Vector<byte> leftMask, Vector<byte> rightMask) { throw new PlatformNotSupportedException(); }
+        public static unsafe bool TestLastTrue(Vector<byte> mask, Vector<byte> srcMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// bool svptest_last(svbool_t pg, svbool_t op)
         ///   PTEST
         /// </summary>
-        public static unsafe bool TestLastTrue(Vector<short> leftMask, Vector<short> rightMask) { throw new PlatformNotSupportedException(); }
+        public static unsafe bool TestLastTrue(Vector<short> mask, Vector<short> srcMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// bool svptest_last(svbool_t pg, svbool_t op)
         ///   PTEST
         /// </summary>
-        public static unsafe bool TestLastTrue(Vector<int> leftMask, Vector<int> rightMask) { throw new PlatformNotSupportedException(); }
+        public static unsafe bool TestLastTrue(Vector<int> mask, Vector<int> srcMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// bool svptest_last(svbool_t pg, svbool_t op)
         ///   PTEST
         /// </summary>
-        public static unsafe bool TestLastTrue(Vector<long> leftMask, Vector<long> rightMask) { throw new PlatformNotSupportedException(); }
+        public static unsafe bool TestLastTrue(Vector<long> mask, Vector<long> srcMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// bool svptest_last(svbool_t pg, svbool_t op)
         ///   PTEST
         /// </summary>
-        public static unsafe bool TestLastTrue(Vector<sbyte> leftMask, Vector<sbyte> rightMask) { throw new PlatformNotSupportedException(); }
+        public static unsafe bool TestLastTrue(Vector<sbyte> mask, Vector<sbyte> srcMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// bool svptest_last(svbool_t pg, svbool_t op)
         ///   PTEST
         /// </summary>
-        public static unsafe bool TestLastTrue(Vector<ushort> leftMask, Vector<ushort> rightMask) { throw new PlatformNotSupportedException(); }
+        public static unsafe bool TestLastTrue(Vector<ushort> mask, Vector<ushort> srcMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// bool svptest_last(svbool_t pg, svbool_t op)
         ///   PTEST
         /// </summary>
-        public static unsafe bool TestLastTrue(Vector<uint> leftMask, Vector<uint> rightMask) { throw new PlatformNotSupportedException(); }
+        public static unsafe bool TestLastTrue(Vector<uint> mask, Vector<uint> srcMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// bool svptest_last(svbool_t pg, svbool_t op)
         ///   PTEST
         /// </summary>
-        public static unsafe bool TestLastTrue(Vector<ulong> leftMask, Vector<ulong> rightMask) { throw new PlatformNotSupportedException(); }
+        public static unsafe bool TestLastTrue(Vector<ulong> mask, Vector<ulong> srcMask) { throw new PlatformNotSupportedException(); }
 
 
         ///  Interleave even elements from two inputs

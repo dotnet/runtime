@@ -5986,145 +5986,145 @@ namespace System.Runtime.Intrinsics.Arm
         /// bool svptest_any(svbool_t pg, svbool_t op)
         ///   PTEST
         /// </summary>
-        public static unsafe bool TestAnyTrue(Vector<byte> leftMask, Vector<byte> rightMask) => TestAnyTrue(leftMask, rightMask);
+        public static unsafe bool TestAnyTrue(Vector<byte> mask, Vector<byte> srcMask) => TestAnyTrue(mask, srcMask);
 
         /// <summary>
         /// bool svptest_any(svbool_t pg, svbool_t op)
         ///   PTEST
         /// </summary>
-        public static unsafe bool TestAnyTrue(Vector<short> leftMask, Vector<short> rightMask) => TestAnyTrue(leftMask, rightMask);
+        public static unsafe bool TestAnyTrue(Vector<short> mask, Vector<short> srcMask) => TestAnyTrue(mask, srcMask);
 
         /// <summary>
         /// bool svptest_any(svbool_t pg, svbool_t op)
         ///   PTEST
         /// </summary>
-        public static unsafe bool TestAnyTrue(Vector<int> leftMask, Vector<int> rightMask) => TestAnyTrue(leftMask, rightMask);
+        public static unsafe bool TestAnyTrue(Vector<int> mask, Vector<int> srcMask) => TestAnyTrue(mask, srcMask);
 
         /// <summary>
         /// bool svptest_any(svbool_t pg, svbool_t op)
         ///   PTEST
         /// </summary>
-        public static unsafe bool TestAnyTrue(Vector<long> leftMask, Vector<long> rightMask) => TestAnyTrue(leftMask, rightMask);
+        public static unsafe bool TestAnyTrue(Vector<long> mask, Vector<long> srcMask) => TestAnyTrue(mask, srcMask);
 
         /// <summary>
         /// bool svptest_any(svbool_t pg, svbool_t op)
         ///   PTEST
         /// </summary>
-        public static unsafe bool TestAnyTrue(Vector<sbyte> leftMask, Vector<sbyte> rightMask) => TestAnyTrue(leftMask, rightMask);
+        public static unsafe bool TestAnyTrue(Vector<sbyte> mask, Vector<sbyte> srcMask) => TestAnyTrue(mask, srcMask);
 
         /// <summary>
         /// bool svptest_any(svbool_t pg, svbool_t op)
         ///   PTEST
         /// </summary>
-        public static unsafe bool TestAnyTrue(Vector<ushort> leftMask, Vector<ushort> rightMask) => TestAnyTrue(leftMask, rightMask);
+        public static unsafe bool TestAnyTrue(Vector<ushort> mask, Vector<ushort> srcMask) => TestAnyTrue(mask, srcMask);
 
         /// <summary>
         /// bool svptest_any(svbool_t pg, svbool_t op)
         ///   PTEST
         /// </summary>
-        public static unsafe bool TestAnyTrue(Vector<uint> leftMask, Vector<uint> rightMask) => TestAnyTrue(leftMask, rightMask);
+        public static unsafe bool TestAnyTrue(Vector<uint> mask, Vector<uint> srcMask) => TestAnyTrue(mask, srcMask);
 
         /// <summary>
         /// bool svptest_any(svbool_t pg, svbool_t op)
         ///   PTEST
         /// </summary>
-        public static unsafe bool TestAnyTrue(Vector<ulong> leftMask, Vector<ulong> rightMask) => TestAnyTrue(leftMask, rightMask);
+        public static unsafe bool TestAnyTrue(Vector<ulong> mask, Vector<ulong> srcMask) => TestAnyTrue(mask, srcMask);
 
         /// <summary>
         /// bool svptest_first(svbool_t pg, svbool_t op)
         ///   PTEST
         /// </summary>
-        public static unsafe bool TestFirstTrue(Vector<byte> leftMask, Vector<byte> rightMask) => TestFirstTrue(leftMask, rightMask);
+        public static unsafe bool TestFirstTrue(Vector<byte> mask, Vector<byte> srcMask) => TestFirstTrue(mask, srcMask);
 
         /// <summary>
         /// bool svptest_first(svbool_t pg, svbool_t op)
         ///   PTEST
         /// </summary>
-        public static unsafe bool TestFirstTrue(Vector<short> leftMask, Vector<short> rightMask) => TestFirstTrue(leftMask, rightMask);
+        public static unsafe bool TestFirstTrue(Vector<short> mask, Vector<short> srcMask) => TestFirstTrue(mask, srcMask);
 
         /// <summary>
         /// bool svptest_first(svbool_t pg, svbool_t op)
         ///   PTEST
         /// </summary>
-        public static unsafe bool TestFirstTrue(Vector<int> leftMask, Vector<int> rightMask) => TestFirstTrue(leftMask, rightMask);
+        public static unsafe bool TestFirstTrue(Vector<int> mask, Vector<int> srcMask) => TestFirstTrue(mask, srcMask);
 
         /// <summary>
         /// bool svptest_first(svbool_t pg, svbool_t op)
         ///   PTEST
         /// </summary>
-        public static unsafe bool TestFirstTrue(Vector<long> leftMask, Vector<long> rightMask) => TestFirstTrue(leftMask, rightMask);
+        public static unsafe bool TestFirstTrue(Vector<long> mask, Vector<long> srcMask) => TestFirstTrue(mask, srcMask);
 
         /// <summary>
         /// bool svptest_first(svbool_t pg, svbool_t op)
         ///   PTEST
         /// </summary>
-        public static unsafe bool TestFirstTrue(Vector<sbyte> leftMask, Vector<sbyte> rightMask) => TestFirstTrue(leftMask, rightMask);
+        public static unsafe bool TestFirstTrue(Vector<sbyte> mask, Vector<sbyte> srcMask) => TestFirstTrue(mask, srcMask);
 
         /// <summary>
         /// bool svptest_first(svbool_t pg, svbool_t op)
         ///   PTEST
         /// </summary>
-        public static unsafe bool TestFirstTrue(Vector<ushort> leftMask, Vector<ushort> rightMask) => TestFirstTrue(leftMask, rightMask);
+        public static unsafe bool TestFirstTrue(Vector<ushort> mask, Vector<ushort> srcMask) => TestFirstTrue(mask, srcMask);
 
         /// <summary>
         /// bool svptest_first(svbool_t pg, svbool_t op)
         ///   PTEST
         /// </summary>
-        public static unsafe bool TestFirstTrue(Vector<uint> leftMask, Vector<uint> rightMask) => TestFirstTrue(leftMask, rightMask);
+        public static unsafe bool TestFirstTrue(Vector<uint> mask, Vector<uint> srcMask) => TestFirstTrue(mask, srcMask);
 
         /// <summary>
         /// bool svptest_first(svbool_t pg, svbool_t op)
         ///   PTEST
         /// </summary>
-        public static unsafe bool TestFirstTrue(Vector<ulong> leftMask, Vector<ulong> rightMask) => TestFirstTrue(leftMask, rightMask);
+        public static unsafe bool TestFirstTrue(Vector<ulong> mask, Vector<ulong> srcMask) => TestFirstTrue(mask, srcMask);
 
         /// <summary>
         /// bool svptest_last(svbool_t pg, svbool_t op)
         ///   PTEST
         /// </summary>
-        public static unsafe bool TestLastTrue(Vector<byte> leftMask, Vector<byte> rightMask) => TestLastTrue(leftMask, rightMask);
+        public static unsafe bool TestLastTrue(Vector<byte> mask, Vector<byte> srcMask) => TestLastTrue(mask, srcMask);
 
         /// <summary>
         /// bool svptest_last(svbool_t pg, svbool_t op)
         ///   PTEST
         /// </summary>
-        public static unsafe bool TestLastTrue(Vector<short> leftMask, Vector<short> rightMask) => TestLastTrue(leftMask, rightMask);
+        public static unsafe bool TestLastTrue(Vector<short> mask, Vector<short> srcMask) => TestLastTrue(mask, srcMask);
 
         /// <summary>
         /// bool svptest_last(svbool_t pg, svbool_t op)
         ///   PTEST
         /// </summary>
-        public static unsafe bool TestLastTrue(Vector<int> leftMask, Vector<int> rightMask) => TestLastTrue(leftMask, rightMask);
+        public static unsafe bool TestLastTrue(Vector<int> mask, Vector<int> srcMask) => TestLastTrue(mask, srcMask);
 
         /// <summary>
         /// bool svptest_last(svbool_t pg, svbool_t op)
         ///   PTEST
         /// </summary>
-        public static unsafe bool TestLastTrue(Vector<long> leftMask, Vector<long> rightMask) => TestLastTrue(leftMask, rightMask);
+        public static unsafe bool TestLastTrue(Vector<long> mask, Vector<long> srcMask) => TestLastTrue(mask, srcMask);
 
         /// <summary>
         /// bool svptest_last(svbool_t pg, svbool_t op)
         ///   PTEST
         /// </summary>
-        public static unsafe bool TestLastTrue(Vector<sbyte> leftMask, Vector<sbyte> rightMask) => TestLastTrue(leftMask, rightMask);
+        public static unsafe bool TestLastTrue(Vector<sbyte> mask, Vector<sbyte> srcMask) => TestLastTrue(mask, srcMask);
 
         /// <summary>
         /// bool svptest_last(svbool_t pg, svbool_t op)
         ///   PTEST
         /// </summary>
-        public static unsafe bool TestLastTrue(Vector<ushort> leftMask, Vector<ushort> rightMask) => TestLastTrue(leftMask, rightMask);
+        public static unsafe bool TestLastTrue(Vector<ushort> mask, Vector<ushort> srcMask) => TestLastTrue(mask, srcMask);
 
         /// <summary>
         /// bool svptest_last(svbool_t pg, svbool_t op)
         ///   PTEST
         /// </summary>
-        public static unsafe bool TestLastTrue(Vector<uint> leftMask, Vector<uint> rightMask) => TestLastTrue(leftMask, rightMask);
+        public static unsafe bool TestLastTrue(Vector<uint> mask, Vector<uint> srcMask) => TestLastTrue(mask, srcMask);
 
         /// <summary>
         /// bool svptest_last(svbool_t pg, svbool_t op)
         ///   PTEST
         /// </summary>
-        public static unsafe bool TestLastTrue(Vector<ulong> leftMask, Vector<ulong> rightMask) => TestLastTrue(leftMask, rightMask);
+        public static unsafe bool TestLastTrue(Vector<ulong> mask, Vector<ulong> srcMask) => TestLastTrue(mask, srcMask);
 
 
         ///  Interleave even elements from two inputs

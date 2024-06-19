@@ -3219,6 +3219,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_Sve_PrefetchInt16:
             case NI_Sve_PrefetchInt32:
             case NI_Sve_PrefetchInt64:
+            case NI_Sve_ExtractVector:
                 assert(hasImmediateOperand);
                 assert(varTypeIsIntegral(intrin.op3));
                 if (intrin.op3->IsCnsIntOrI())

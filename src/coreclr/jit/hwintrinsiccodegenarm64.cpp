@@ -2061,8 +2061,31 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_Sve_TestFirstTrue:
             case NI_Sve_TestLastTrue:
                 assert(targetReg == REG_NA);
-                GetEmitter()->emitIns_R_R(INS_sve_ptest, EA_SCALABLE, op1Reg, op2Reg, INS_OPTS_SCALABLE_B);
+                GetEmitter()->emitIns_R_R(ins, EA_SCALABLE, op1Reg, op2Reg, INS_OPTS_SCALABLE_B);
                 break;
+
+            case NI_Sve_ExtractVector:
+            {
+                assert(isRMW);
+
+                if (targetReg != op1Reg)
+                {
+                    assert(targetReg != op2Reg);
+
+                    GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op1Reg, /* canSkip */ true);
+                }
+
+                HWIntrinsicImmOpHelper helper(this, intrin.op3, node);
+
+                for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
+                {
+                    const int elementIndex = helper.ImmValue();
+                    const int byteIndex    = genTypeSize(intrin.baseType) * elementIndex;
+
+                    GetEmitter()->emitIns_R_R_I(ins, emitSize, targetReg, op2Reg, byteIndex, INS_OPTS_SCALABLE_B);
+                }
+                break;
+            }
 
             default:
                 unreached();
