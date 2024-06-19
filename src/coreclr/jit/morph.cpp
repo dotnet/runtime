@@ -4598,8 +4598,8 @@ GenTree* Compiler::fgMorphExpandStackArgForVarArgs(GenTreeLclVarCommon* lclNode)
     assert(abiInfo.HasExactlyOneStackSegment());
 
     GenTree* argsBaseAddr = gtNewLclvNode(lvaVarargsBaseOfStkArgs, TYP_I_IMPL);
-    ssize_t  offset       = (ssize_t)abiInfo.Segments[0].GetStackOffset() - lclNode->GetLclOffs();
-    assert(abiInfo.Segments[0].GetStackOffset() ==
+    ssize_t  offset       = (ssize_t)abiInfo.Segment(0).GetStackOffset() - lclNode->GetLclOffs();
+    assert(abiInfo.Segment(0).GetStackOffset() ==
            (varDsc->GetStackOffset() - codeGen->intRegState.rsCalleeRegArgCount * REGSIZE_BYTES));
     GenTree* offsetNode = gtNewIconNode(offset, TYP_I_IMPL);
     GenTree* argAddr    = gtNewOperNode(GT_SUB, TYP_I_IMPL, argsBaseAddr, offsetNode);
