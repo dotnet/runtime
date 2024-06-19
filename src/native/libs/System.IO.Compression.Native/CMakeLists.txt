@@ -179,11 +179,14 @@ else ()
     endif ()
 
     if(STATIC_LIBS_ONLY)
-        install_static_library(zlib aotsdk nativeaot)
         install_static_library(System.IO.Compression.Native.Aot aotsdk nativeaot)
         install_static_library(System.IO.Compression.Native.Aot.GuardCF aotsdk nativeaot)
     endif()
 
 endif ()
+
+if(STATIC_LIBS_ONLY)
+    install_static_library(zlib aotsdk nativeaot)
+endif()
 
 install (TARGETS System.IO.Compression.Native-Static DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
