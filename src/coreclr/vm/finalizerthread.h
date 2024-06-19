@@ -7,7 +7,9 @@
 
 #ifdef FEATURE_NATIVEAOT
 typedef void VOID;
+#ifdef TARGET_WINDOWS
 GPTR_IMPL(Thread, g_pFinalizerThread);
+#endif
 // Global state variable indicating if the EE has been started up.
 Volatile<BOOL> g_fEEStarted = FALSE;
 #endif
