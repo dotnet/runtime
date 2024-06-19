@@ -11,13 +11,15 @@ using System.Security.Cryptography.Asn1;
 using System.Text;
 using Microsoft.Win32.SafeHandles;
 
+using SafeJObjectHandle = Interop.JObjectLifetime.SafeJObjectHandle;
+
 namespace System.Security.Cryptography.X509Certificates
 {
     internal sealed class AndroidCertificatePal : ICertificatePal
     {
         private SafeX509Handle _cert;
         private SafeKeyHandle? _privateKey;
-        private Interop.JObjectLifetime.SafeJObjectHandle? _keyStorePrivateKeyEntry;
+        private SafeJObjectHandle? _keyStorePrivateKeyEntry;
 
         private CertificateData _certData;
 
@@ -28,8 +30,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             if (Interop.AndroidCrypto.IsKeyStorePrivateKeyEntry(handle))
             {
-                var newPrivateKeyEntryHandle = new Interop.JObjectLifetime.SafeJObjectHandle();
-                Marshal.InitHandle(newPrivateKeyEntryHandle, Interop.JObjectLifetime.NewGlobalReference(handle));
+                SafeJObjectHandle newPrivateKeyEntryHandle = SafeJObjectHandle.CreateGlobalReferenceFromHandle(handle);
                 return new AndroidCertificatePal(newPrivateKeyEntryHandle);
             }
 
@@ -160,7 +161,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        internal AndroidCertificatePal(Interop.JObjectLifetime.SafeJObjectHandle handle)
+        internal AndroidCertificatePal(SafeJObjectHandle handle)
         {
             _cert = Interop.AndroidCrypto.GetPrivateKeyEntryCertificate(handle);
             _keyStorePrivateKeyEntry = handle;
@@ -179,12 +180,9 @@ namespace System.Security.Cryptography.X509Certificates
 
         public bool HasPrivateKey => _privateKey is not null || _keyStorePrivateKeyEntry is not null;
 
-        public IntPtr Handle => (_keyStorePrivateKeyEntry, _cert) switch
-        {
-            ({} privateKeyEntry, _) => privateKeyEntry.DangerousGetHandle(),
-            (null, {} cert) => cert.DangerousGetHandle(),
-            _ => IntPtr.Zero,
-        };
+        public IntPtr Handle => _keyStorePrivateKeyEntry?.DangerousGetHandle()
+            ?? _cert?.DangerousGetHandle()
+            ?? IntPtr.Zero;
 
         internal SafeX509Handle SafeHandle => _cert;
 
