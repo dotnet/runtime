@@ -5918,10 +5918,33 @@ void Compiler::optRemoveRedundantZeroInits()
 
     assert(fgNodeThreading == NodeThreading::AllTrees);
 
-    for (BasicBlock* block = fgFirstBB; (block != nullptr) && !block->HasFlag(BBF_MARKED);
-         block             = block->GetUniqueSucc())
+    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->GetUniqueSucc())
     {
-        block->SetFlags(BBF_MARKED);
+        if (m_dfsTree->HasCycle())
+        {
+            // See if this block is a cycle entry
+            //
+            bool stop = false;
+            for (BasicBlock* const pred : block->PredBlocks())
+            {
+                if (m_dfsTree->IsAncestor(block, pred))
+                {
+                    JITDUMP(FMT_BB " is part of a cycle, stopping the block scan\n", block->bbNum);
+                    stop = true;
+                    break;
+                }
+            }
+
+            // If so, stop looking for redundant zero inits
+            //
+            if (stop)
+            {
+                break;
+            }
+        }
+
+        JITDUMP("Analyzing " FMT_BB "\n", block->bbNum);
+
         CompAllocator   allocator(getAllocator(CMK_ZeroInit));
         LclVarRefCounts defsInBlock(allocator);
         bool            removedTrackedDefs = false;
@@ -6038,7 +6061,7 @@ void Compiler::optRemoveRedundantZeroInits()
 
                         if (tree->Data()->IsIntegralConst(0))
                         {
-                            bool bbInALoop  = block->HasFlag(BBF_BACKWARD_JUMP);
+                            bool bbInALoop  = false;
                             bool bbIsReturn = block->KindIs(BBJ_RETURN);
 
                             if (!bbInALoop || bbIsReturn)
@@ -6115,12 +6138,6 @@ void Compiler::optRemoveRedundantZeroInits()
                 }
             }
         }
-    }
-
-    for (BasicBlock* block = fgFirstBB; (block != nullptr) && block->HasFlag(BBF_MARKED);
-         block             = block->GetUniqueSucc())
-    {
-        block->RemoveFlags(BBF_MARKED);
     }
 }
 
