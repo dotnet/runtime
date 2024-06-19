@@ -185,10 +185,6 @@ namespace System.Net.Http
                     return false;
                 }
 
-                if (_activeRequests.Count == 0)
-                {
-                    MarkConnectionAsNotIdle();
-                }
                 --_availableRequestStreamsCount;
                 return true;
             }
@@ -262,6 +258,10 @@ namespace System.Net.Http
                         requestStream = new Http3RequestStream(request, this, quicStream);
                         lock (SyncObj)
                         {
+                            if (_activeRequests.Count == 0)
+                            {
+                                MarkConnectionAsNotIdle();
+                            }
                             _activeRequests.Add(quicStream, requestStream);
                         }
                     }
