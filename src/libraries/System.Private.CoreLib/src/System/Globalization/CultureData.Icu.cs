@@ -378,18 +378,15 @@ namespace System.Globalization
                         }
                         break;
 
-                    case ':':
-                    case '.':
                     case 'H':
                     case 'h':
                     case 'm':
                     case 's':
-                    case ' ':
-                    case '\u00A0': // no-break space
-                    case '\u202F': // narrow no-break space
                         result[resultPos++] = current;
                         break;
                     case 'a': // AM/PM
+                    case 'b': // am, pm, noon, midnight
+                    case 'B': // flexible day periods
                         if (!amPmAdded)
                         {
                             amPmAdded = true;
@@ -398,6 +395,13 @@ namespace System.Globalization
                         }
                         break;
 
+                    default:
+                        // Treat non-ASCII characters as literals
+                        if (!char.IsAsciiLetter(current))
+                        {
+                            result[resultPos++] = current;
+                        }
+                        break;
                 }
             }
 
