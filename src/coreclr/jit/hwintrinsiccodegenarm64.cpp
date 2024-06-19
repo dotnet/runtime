@@ -1223,37 +1223,52 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 GetEmitter()->emitIns_R_R_R(ins, emitTypeSize(intrin.baseType), op2Reg, op3Reg, op1Reg);
                 break;
 
-            case NI_AdvSimd_StoreSelectedScalarVector64x2:
-            case NI_AdvSimd_StoreSelectedScalarVector64x3:
-            case NI_AdvSimd_StoreSelectedScalarVector64x4:
-            case NI_AdvSimd_Arm64_StoreSelectedScalarVector128x2:
-            case NI_AdvSimd_Arm64_StoreSelectedScalarVector128x3:
-            case NI_AdvSimd_Arm64_StoreSelectedScalarVector128x4:
-            {
-                assert(intrin.op2->OperIsFieldList());
-                GenTreeFieldList* fieldList  = intrin.op2->AsFieldList();
-                GenTree*          firstField = fieldList->Uses().GetHead()->GetNode();
-                op2Reg                       = firstField->GetRegNum();
-
-#ifdef DEBUG
-                unsigned  regCount = 0;
-                regNumber argReg   = op2Reg;
-                for (GenTreeFieldList::Use& use : fieldList->Uses())
-                {
-                    regCount++;
-
-                    GenTree* argNode = use.GetNode();
-                    assert(argReg == argNode->GetRegNum());
-                    argReg = getNextSIMDRegWithWraparound(argReg);
-                }
-                assert((ins == INS_st2 && regCount == 2) || (ins == INS_st3 && regCount == 3) ||
-                       (ins == INS_st4 && regCount == 4));
-#endif
-                FALLTHROUGH;
-            }
             case NI_AdvSimd_StoreSelectedScalar:
             case NI_AdvSimd_Arm64_StoreSelectedScalar:
             {
+                unsigned regCount = 0;
+                if (intrin.op2->OperIsFieldList())
+                {
+                    GenTreeFieldList* fieldList  = intrin.op2->AsFieldList();
+                    GenTree*          firstField = fieldList->Uses().GetHead()->GetNode();
+                    op2Reg                       = firstField->GetRegNum();
+
+                    regNumber argReg = op2Reg;
+                    for (GenTreeFieldList::Use& use : fieldList->Uses())
+                    {
+                        regCount++;
+#ifdef DEBUG
+                        GenTree* argNode = use.GetNode();
+                        assert(argReg == argNode->GetRegNum());
+                        argReg = getNextSIMDRegWithWraparound(argReg);
+#endif
+                    }
+                }
+                else
+                {
+                    regCount = 1;
+                }
+
+                switch (regCount)
+                {
+                    case 2:
+                        ins = INS_st2;
+                        break;
+
+                    case 3:
+                        ins = INS_st3;
+                        break;
+
+                    case 4:
+                        ins = INS_st4;
+                        break;
+
+                    default:
+                        assert(regCount == 1);
+                        ins = INS_st1;
+                        break;
+                }
+
                 HWIntrinsicImmOpHelper helper(this, intrin.op3, node);
 
                 for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
@@ -1265,12 +1280,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
-            case NI_AdvSimd_StoreVector64x2AndZip:
-            case NI_AdvSimd_StoreVector64x3AndZip:
-            case NI_AdvSimd_StoreVector64x4AndZip:
-            case NI_AdvSimd_Arm64_StoreVector128x2AndZip:
-            case NI_AdvSimd_Arm64_StoreVector128x3AndZip:
-            case NI_AdvSimd_Arm64_StoreVector128x4AndZip:
             case NI_AdvSimd_StoreVector64x2:
             case NI_AdvSimd_StoreVector64x3:
             case NI_AdvSimd_StoreVector64x4:
@@ -1300,6 +1309,50 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                        (ins == INS_st1_3regs && regCount == 3) || (ins == INS_st3 && regCount == 3) ||
                        (ins == INS_st1_4regs && regCount == 4) || (ins == INS_st4 && regCount == 4));
 #endif
+
+                GetEmitter()->emitIns_R_R(ins, emitSize, op2Reg, op1Reg, opt);
+                break;
+            }
+
+            case NI_AdvSimd_StoreVectorAndZip:
+            case NI_AdvSimd_Arm64_StoreVectorAndZip:
+            {
+                unsigned regCount = 0;
+
+                assert(intrin.op2->OperIsFieldList());
+
+                GenTreeFieldList* fieldList  = intrin.op2->AsFieldList();
+                GenTree*          firstField = fieldList->Uses().GetHead()->GetNode();
+                op2Reg                       = firstField->GetRegNum();
+
+                regNumber argReg = op2Reg;
+                for (GenTreeFieldList::Use& use : fieldList->Uses())
+                {
+                    regCount++;
+#ifdef DEBUG
+                    GenTree* argNode = use.GetNode();
+                    assert(argReg == argNode->GetRegNum());
+                    argReg = getNextSIMDRegWithWraparound(argReg);
+#endif
+                }
+
+                switch (regCount)
+                {
+                    case 2:
+                        ins = INS_st2;
+                        break;
+
+                    case 3:
+                        ins = INS_st3;
+                        break;
+
+                    case 4:
+                        ins = INS_st4;
+                        break;
+
+                    default:
+                        unreached();
+                }
 
                 GetEmitter()->emitIns_R_R(ins, emitSize, op2Reg, op1Reg, opt);
                 break;

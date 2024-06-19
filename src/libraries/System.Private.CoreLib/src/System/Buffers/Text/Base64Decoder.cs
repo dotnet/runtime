@@ -1003,7 +1003,7 @@ namespace System.Buffers.Text
 
                 // Step 6: Interleave and store decoded results.
                 AssertWrite<Vector128<byte>>(dest, destStart, destLength);
-                AdvSimd.Arm64.StoreVector128x3AndZip(dest, (res1, res2, res3));
+                AdvSimd.Arm64.StoreVectorAndZip(dest, (res1, res2, res3));
 
                 src += 64;
                 dest += 48;
