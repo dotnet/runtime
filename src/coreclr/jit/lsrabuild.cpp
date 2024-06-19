@@ -2302,7 +2302,7 @@ void LinearScan::buildIntervals()
             const ABIPassingInformation& abiInfo = compiler->lvaGetParameterABIInfo(lclNum);
             for (unsigned i = 0; i < abiInfo.NumSegments; i++)
             {
-                const ABIPassingSegment& seg = abiInfo.Segments[i];
+                const ABIPassingSegment& seg = abiInfo.Segment(i);
                 if (seg.IsPassedInRegister())
                 {
                     RegState* regState = genIsValidFloatReg(seg.GetRegister()) ? floatRegState : intRegState;
