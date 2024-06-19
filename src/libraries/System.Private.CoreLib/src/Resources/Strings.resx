@@ -4325,7 +4325,7 @@
   <data name="Argument_BadFieldForInitializeArray" xml:space="preserve">
     <value>The field is invalid for initializing array or span.</value>
   </data>
-  <data name="Argument_MustBePrimitiveArray" xml:space="preserve">
-    <value>The array must be array of primitive or enum type.</value>
+  <data name="Argument_BadArrayForInitializeArray" xml:space="preserve">
+    <value>Only array or span of primitive or enum types can be initialized from static data.</value>
   </data>
 </root>

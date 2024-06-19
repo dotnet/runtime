@@ -33,7 +33,7 @@ namespace System.Runtime.CompilerServices
             TypeHandle elementTH = pMT->GetArrayElementTypeHandle();
 
             if (elementTH.IsTypeDesc || !elementTH.AsMethodTable()->IsPrimitive) // Enum is included
-                throw new ArgumentException(SR.Argument_MustBePrimitiveArray);
+                throw new ArgumentException(SR.Argument_BadArrayForInitializeArray);
 
             nuint totalSize = pMT->ComponentSize * array.NativeLength;
 
@@ -94,7 +94,7 @@ namespace System.Runtime.CompilerServices
             MethodTable* targetMT = th.AsMethodTable();
 
             if (!targetMT->IsPrimitive) // Enum is included
-                throw new ArgumentException(SR.Argument_MustBePrimitiveArray);
+                throw new ArgumentException(SR.Argument_BadArrayForInitializeArray);
 
             uint targetTypeSize = targetMT->GetNumInstanceFieldBytes();
 
