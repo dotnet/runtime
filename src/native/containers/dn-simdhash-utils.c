@@ -15,7 +15,7 @@
 #define DEFINE_ALTERNATENAME_1(part) DEFINE_ALTERNATENAME_2(#part)
 #define DEFINE_ALTERNATENAME(alias, func) DEFINE_ALTERNATENAME_1(/ALTERNATENAME:alias=func)
 #ifdef _M_IX86
-#define DEFAULT_IMPLEMENTATION(func, impl, retval) DEFINE_ALTERNATENAME(_ ## func, _ ## impl) retval impl
+#define DEFAULT_IMPLEMENTATION(func, impl, retval) DEFINE_ALTERNATENAME(_ ## func, _ ## impl) retval __cdecl impl
 #else
 #define DEFAULT_IMPLEMENTATION(func, impl, retval) DEFINE_ALTERNATENAME(func, impl) retval impl
 #endif
