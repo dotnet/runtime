@@ -974,24 +974,8 @@ bool Compiler::fgCanCompactBlock(BasicBlock* block)
 //
 void Compiler::fgCompactBlock(BasicBlock* block)
 {
+    assert(fgCanCompactBlock(block));
     BasicBlock* const target = block->GetTarget();
-
-    noway_assert(target != nullptr);
-    noway_assert(!block->HasFlag(BBF_REMOVED));
-    noway_assert(!target->HasFlag(BBF_REMOVED));
-    noway_assert(target->countOfInEdges() == 1 || block->isEmpty());
-    noway_assert(target->bbPreds != nullptr);
-
-    assert(!fgInDifferentRegions(block, target));
-
-    // Make sure target is not the start of a TRY block or an exception handler
-
-    noway_assert(!bbIsTryBeg(target));
-    noway_assert(target->bbCatchTyp == BBCT_NONE);
-    noway_assert(!target->HasFlag(BBF_DONT_REMOVE));
-
-    /* both or none must have an exception handler */
-    noway_assert(block->hasTryIndex() == target->hasTryIndex());
 
     JITDUMP("\nCompacting " FMT_BB " into " FMT_BB ":\n", target->bbNum, block->bbNum);
     fgRemoveRefPred(block->GetTargetEdge());
