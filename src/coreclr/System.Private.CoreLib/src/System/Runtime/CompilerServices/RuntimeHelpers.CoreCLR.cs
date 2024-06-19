@@ -29,10 +29,12 @@ namespace System.Runtime.CompilerServices
             // permissions (C# marks these as assembly visibility, and thus are protected from outside
             // snooping)
 
-            if (!array.GetCorElementTypeOfElementType().IsPrimitiveType()) // Enum is included
+            MethodTable* pMT = GetMethodTable(array);
+            TypeHandle elementTH = pMT->GetArrayElementTypeHandle();
+
+            if (elementTH.IsTypeDesc || !elementTH.AsMethodTable()->IsPrimitive) // Enum is included
                 throw new ArgumentException(SR.Argument_MustBePrimitiveArray);
 
-            MethodTable* pMT = GetMethodTable(array);
             nuint totalSize = pMT->ComponentSize * array.NativeLength;
 
             // make certain you don't go off the end of the rva static
@@ -42,7 +44,7 @@ namespace System.Runtime.CompilerServices
             void* src = (void*)address;
             ref byte dst = ref MemoryMarshal.GetArrayDataReference(array);
 
-            Debug.Assert(!pMT->GetArrayElementTypeHandle().AsMethodTable()->ContainsGCPointers);
+            Debug.Assert(!elementTH.AsMethodTable()->ContainsGCPointers);
 
             if (BitConverter.IsLittleEndian)
             {
@@ -771,6 +773,10 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         public extern uint GetNumInstanceFieldBytes();
 
+        /// <summary>
+        /// Get the <see cref="CorElementType"/> representing this type. Enums are represented by underlying type.
+        /// </summary>
+        /// <remarks>This method is optimized in favor of primitive types and enums.</remarks>
         [MethodImpl(MethodImplOptions.InternalCall)]
         public extern CorElementType GetVerifierCorElementType();
     }

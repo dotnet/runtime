@@ -484,12 +484,13 @@ namespace System
                 {
                     // Allow enum -> primitive conversion, disallow primitive -> enum conversion
                     MethodTable* pValueMethodTable = RuntimeHelpers.GetMethodTable(value);
-                    CorElementType srcType = pValueMethodTable->GetVerifierCorElementType();
-                    CorElementType targetType = pElementMethodTable->GetVerifierCorElementType();
 
                     // Array.SetValue() does *not* permit conversion from a primitive to an Enum.
                     if (!pValueMethodTable->IsPrimitive || !pElementMethodTable->IsTruePrimitive)
                         throw new InvalidCastException(SR.InvalidCast_StoreArrayElement);
+
+                    CorElementType srcType = pValueMethodTable->GetVerifierCorElementType();
+                    CorElementType targetType = pElementMethodTable->GetVerifierCorElementType();
 
                     // Get a properly widened type
                     if (!InvokeUtils.CanPrimitiveWiden(srcType, targetType))

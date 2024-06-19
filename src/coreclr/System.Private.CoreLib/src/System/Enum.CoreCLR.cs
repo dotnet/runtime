@@ -21,7 +21,7 @@ namespace System
         private static unsafe CorElementType InternalGetCorElementType(RuntimeType rt)
         {
             Debug.Assert(rt.IsActualEnum);
-            CorElementType elementType = InternalGetCorElementType((MethodTable*)rt.GetUnderlyingNativeHandle());
+            CorElementType elementType = rt.GetNativeTypeHandle().AsMethodTable()->GetVerifierCorElementType();
             GC.KeepAlive(rt);
             return elementType;
         }
@@ -29,7 +29,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private unsafe CorElementType InternalGetCorElementType()
         {
-            CorElementType elementType = InternalGetCorElementType(RuntimeHelpers.GetMethodTable(this));
+            CorElementType elementType = RuntimeHelpers.GetMethodTable(this)->GetVerifierCorElementType();
             GC.KeepAlive(this);
             return elementType;
         }
@@ -71,7 +71,7 @@ namespace System
             // Sanity check the last element in the table
             Debug.Assert(s_underlyingTypes[(int)CorElementType.ELEMENT_TYPE_U] == typeof(nuint));
 
-            RuntimeType? underlyingType = s_underlyingTypes[(int)InternalGetCorElementType((MethodTable*)enumType.GetUnderlyingNativeHandle())];
+            RuntimeType? underlyingType = s_underlyingTypes[(int)enumType.GetNativeTypeHandle().AsMethodTable()->GetVerifierCorElementType()];
             GC.KeepAlive(enumType);
 
             Debug.Assert(underlyingType != null);

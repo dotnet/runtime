@@ -1818,7 +1818,9 @@ FCIMPLEND
 FCIMPL1(CorElementType, MethodTableNative::GetVerifierCorElementType, MethodTable* mt)
 {
     FCALL_CONTRACT;
-    return mt->GetVerifierCorElementType();
+    // MethodTable::GetInternalCorElementType has unnecessary overhead for primitives and enums
+    // Call EEClass::GetInternalCorElementType directly to avoid it
+    return mt->GetClass()->GetInternalCorElementType();
 }
 FCIMPLEND
 

@@ -1952,25 +1952,6 @@ extern "C" void QCALLTYPE ReflectionSerialization_GetCreateUninitializedObjectIn
     END_QCALL;
 }
 
-//*************************************************************************************************
-//*************************************************************************************************
-//*************************************************************************************************
-//      ReflectionEnum
-//*************************************************************************************************
-//*************************************************************************************************
-//*************************************************************************************************
-
-FCIMPL1(INT32, ReflectionEnum::InternalGetCorElementType, MethodTable* pMT) {
-    FCALL_CONTRACT;
-
-    _ASSERTE(pMT->IsEnum());
-
-    // MethodTable::GetInternalCorElementType has unnecessary overhead for enums
-    // Call EEClass::GetInternalCorElementType directly to avoid it
-    return pMT->GetClass()->GetInternalCorElementType();
-}
-FCIMPLEND
-
 //*******************************************************************************
 struct TempEnumValue
 {
