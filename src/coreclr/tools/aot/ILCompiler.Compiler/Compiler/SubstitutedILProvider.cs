@@ -235,6 +235,8 @@ namespace ILCompiler
                 }
             }
 
+            var analyzer = new ILPatternAnalyzer<ILPatternAnalyzerState>(new ILPatternAnalyzerState(flags), method, methodBytes);
+
             bool hasGetResourceStringCall = false;
 
             // Mark all reachable basic blocks
@@ -297,7 +299,7 @@ namespace ILCompiler
                         || opcode == ILOpcode.brtrue || opcode == ILOpcode.brtrue_s)
                     {
                         int destination = reader.ReadBranchDestination(opcode);
-                        if (!TryGetConstantArgument(method, methodBytes, flags, offset, 0, out int constant))
+                        if (!TryGetConstantArgument(analyzer, offset, 0, out int constant))
                         {
                             // Can't get the constant - both branches are live.
                             offsetsToVisit.Push(destination);
@@ -323,8 +325,8 @@ namespace ILCompiler
                         || opcode == ILOpcode.bne_un || opcode == ILOpcode.bne_un_s)
                     {
                         int destination = reader.ReadBranchDestination(opcode);
-                        if (!TryGetConstantArgument(method, methodBytes, flags, offset, 0, out int left)
-                            || !TryGetConstantArgument(method, methodBytes, flags, offset, 1, out int right))
+                        if (!TryGetConstantArgument(analyzer, offset, 0, out int left)
+                            || !TryGetConstantArgument(analyzer, offset, 1, out int right))
                         {
                             // Can't get the constant - both branches are live.
                             offsetsToVisit.Push(destination);
@@ -654,9 +656,9 @@ namespace ILCompiler
             return new SubstitutedMethodIL(method.GetMethodILDefinition(), newBody, newEHRegions.ToArray(), debugInfo, newStrings.ToArray());
         }
 
-        private bool TryGetConstantArgument(MethodIL methodIL, byte[] body, OpcodeFlags[] flags, int offset, int argIndex, out int constant)
+        private bool TryGetConstantArgument(ILPatternAnalyzer<ILPatternAnalyzerState> analyzer, int offset, int argIndex, out int constant)
         {
-            if ((flags[offset] & OpcodeFlags.BasicBlockStart) != 0)
+            if (analyzer.State.IsBasicBlockStart(offset))
             {
                 constant = 0;
                 return false;
@@ -664,14 +666,14 @@ namespace ILCompiler
 
             for (int currentOffset = offset - 1; currentOffset >= 0; currentOffset--)
             {
-                if ((flags[currentOffset] & OpcodeFlags.InstructionStart) == 0)
+                if (!analyzer.State.IsInstructionStart(currentOffset))
                     continue;
 
-                ILReader reader = new ILReader(body, currentOffset);
+                ILReader reader = new ILReader(analyzer.ILBytes, currentOffset);
                 ILOpcode opcode = reader.ReadILOpcode();
                 if (opcode == ILOpcode.call || opcode == ILOpcode.callvirt)
                 {
-                    MethodDesc method = (MethodDesc)methodIL.GetObject(reader.ReadILToken());
+                    MethodDesc method = (MethodDesc)analyzer.Method.GetObject(reader.ReadILToken());
                     if (argIndex == 0)
                     {
                         BodySubstitution substitution = _substitutionProvider.GetSubstitution(method);
@@ -684,14 +686,14 @@ namespace ILCompiler
                         else if (method.IsIntrinsic && method.Name is "op_Inequality" or "op_Equality"
                             && method.OwningType is MetadataType mdType
                             && mdType.Name == "Type" && mdType.Namespace == "System" && mdType.Module == mdType.Context.SystemModule
-                            && TryExpandTypeEquality(methodIL, body, flags, currentOffset, method.Name, out constant))
+                            && TryExpandTypeEquality(analyzer, currentOffset, method.Name, out constant))
                         {
                             return true;
                         }
                         else if (method.IsIntrinsic && method.Name is "get_IsValueType" or "get_IsEnum"
                             && method.OwningType is MetadataType mdt
                             && mdt.Name == "Type" && mdt.Namespace == "System" && mdt.Module == mdt.Context.SystemModule
-                            && TryExpandTypeIs(methodIL, body, flags, currentOffset, method.Name, out constant))
+                            && TryExpandTypeIs(analyzer, currentOffset, method.Name, out constant))
                         {
                             return true;
                         }
@@ -712,7 +714,7 @@ namespace ILCompiler
                 }
                 else if (opcode == ILOpcode.ldsfld)
                 {
-                    FieldDesc field = (FieldDesc)methodIL.GetObject(reader.ReadILToken());
+                    FieldDesc field = (FieldDesc)analyzer.Method.GetObject(reader.ReadILToken());
                     if (argIndex == 0)
                     {
                         object substitution = _substitutionProvider.GetSubstitution(field);
@@ -762,7 +764,7 @@ namespace ILCompiler
                 }
                 else if ((opcode == ILOpcode.ldloc || opcode == ILOpcode.ldloc_s ||
                     (opcode >= ILOpcode.ldloc_0 && opcode <= ILOpcode.ldloc_3)) &&
-                    ((flags[currentOffset] & OpcodeFlags.BasicBlockStart) == 0))
+                    !analyzer.State.IsBasicBlockStart(currentOffset))
                 {
                     // Paired stloc/ldloc that the C# compiler generates in debug code?
                     int locIndex = opcode switch
@@ -774,10 +776,10 @@ namespace ILCompiler
 
                     for (int potentialStlocOffset = currentOffset - 1; potentialStlocOffset >= 0; potentialStlocOffset--)
                     {
-                        if ((flags[potentialStlocOffset] & OpcodeFlags.InstructionStart) == 0)
+                        if (!analyzer.State.IsInstructionStart(potentialStlocOffset))
                             continue;
 
-                        ILReader nestedReader = new ILReader(body, potentialStlocOffset);
+                        ILReader nestedReader = new ILReader(analyzer.ILBytes, potentialStlocOffset);
                         ILOpcode otherOpcode = nestedReader.ReadILOpcode();
                         if ((otherOpcode == ILOpcode.stloc || otherOpcode == ILOpcode.stloc_s ||
                             (otherOpcode >= ILOpcode.stloc_0 && otherOpcode <= ILOpcode.stloc_3))
@@ -803,8 +805,8 @@ namespace ILCompiler
                 {
                     if (argIndex == 0)
                     {
-                        if (!TryGetConstantArgument(methodIL, body, flags, currentOffset, 0, out int left)
-                                || !TryGetConstantArgument(methodIL, body, flags, currentOffset, 1, out int right))
+                        if (!TryGetConstantArgument(analyzer, currentOffset, 0, out int left)
+                                || !TryGetConstantArgument(analyzer, currentOffset, 1, out int right))
                         {
                             constant = 0;
                             return false;
@@ -826,7 +828,7 @@ namespace ILCompiler
                     return false;
                 }
 
-                if ((flags[currentOffset] & OpcodeFlags.BasicBlockStart) != 0)
+                if (analyzer.State.IsBasicBlockStart(currentOffset))
                     break;
             }
 
@@ -834,7 +836,7 @@ namespace ILCompiler
             return false;
         }
 
-        private static bool TryExpandTypeIs(MethodIL methodIL, byte[] body, OpcodeFlags[] flags, int offset, string name, out int constant)
+        private static bool TryExpandTypeIs(ILPatternAnalyzer<ILPatternAnalyzerState> analyzer, int offset, string name, out int constant)
         {
             // We expect to see a sequence:
             // ldtoken Foo
@@ -845,16 +847,16 @@ namespace ILCompiler
             if (offset < SequenceLength)
                 return false;
 
-            if ((flags[offset - SequenceLength] & OpcodeFlags.InstructionStart) == 0)
+            if (!analyzer.State.IsInstructionStart(offset - SequenceLength))
                 return false;
 
-            ILReader reader = new ILReader(body, offset - SequenceLength);
+            ILReader reader = new ILReader(analyzer.ILBytes, offset - SequenceLength);
 
-            TypeDesc type = ReadLdToken(ref reader, methodIL, flags);
+            TypeDesc type = ReadLdToken(ref reader, analyzer);
             if (type == null)
                 return false;
 
-            if (!ReadGetTypeFromHandle(ref reader, methodIL, flags))
+            if (!ReadGetTypeFromHandle(ref reader, analyzer))
                 return false;
 
             // Dataflow runs on top of uninstantiated IL and we can't answer some questions there.
@@ -873,15 +875,10 @@ namespace ILCompiler
             return true;
         }
 
-        private bool TryExpandTypeEquality(MethodIL methodIL, byte[] body, OpcodeFlags[] flags, int offset, string op, out int constant)
+        private bool TryExpandTypeEquality(ILPatternAnalyzer<ILPatternAnalyzerState> analyzer, int offset, string op, out int constant)
         {
-            if (TryExpandTypeEquality_TokenToken(methodIL, body, flags, offset, out constant)
-                || TryExpandTypeEquality_TokenOther(methodIL, body, flags, offset, 1, expectGetType: false, out constant)
-                || TryExpandTypeEquality_TokenOther(methodIL, body, flags, offset, 2, expectGetType: false, out constant)
-                || TryExpandTypeEquality_TokenOther(methodIL, body, flags, offset, 3, expectGetType: false, out constant)
-                || TryExpandTypeEquality_TokenOther(methodIL, body, flags, offset, 1, expectGetType: true, out constant)
-                || TryExpandTypeEquality_TokenOther(methodIL, body, flags, offset, 2, expectGetType: true, out constant)
-                || TryExpandTypeEquality_TokenOther(methodIL, body, flags, offset, 3, expectGetType: true, out constant))
+            if (TryExpandTypeEquality_TokenToken(analyzer, offset, out constant)
+                || TryExpandTypeEquality_TokenOther(analyzer, offset, out constant))
             {
                 if (op == "op_Inequality")
                     constant ^= 1;
@@ -892,36 +889,11 @@ namespace ILCompiler
             return false;
         }
 
-        private static bool TryExpandTypeEquality_TokenToken(MethodIL methodIL, byte[] body, OpcodeFlags[] flags, int offset, out int constant)
+        private static bool TryExpandTypeEquality_TokenToken(ILPatternAnalyzer<ILPatternAnalyzerState> analyzer, int offset, out int constant)
         {
-            // We expect to see a sequence:
-            // ldtoken Foo
-            // call GetTypeFromHandle
-            // ldtoken Bar
-            // call GetTypeFromHandle
-            // -> offset points here
             constant = 0;
-            const int SequenceLength = 20;
-            if (offset < SequenceLength)
-                return false;
 
-            if ((flags[offset - SequenceLength] & OpcodeFlags.InstructionStart) == 0)
-                return false;
-
-            ILReader reader = new ILReader(body, offset - SequenceLength);
-
-            TypeDesc type1 = ReadLdToken(ref reader, methodIL, flags);
-            if (type1 == null)
-                return false;
-
-            if (!ReadGetTypeFromHandle(ref reader, methodIL, flags))
-                return false;
-
-            TypeDesc type2 = ReadLdToken(ref reader, methodIL, flags);
-            if (type2 == null)
-                return false;
-
-            if (!ReadGetTypeFromHandle(ref reader, methodIL, flags))
+            if (!analyzer.TryAnalyzeTypeEquality_TokenToken(offset, offsetIsAtTypeEquals: true, out TypeDesc type1, out TypeDesc type2))
                 return false;
 
             // No value in making this work for definitions
@@ -943,83 +915,12 @@ namespace ILCompiler
             return true;
         }
 
-        private bool TryExpandTypeEquality_TokenOther(MethodIL methodIL, byte[] body, OpcodeFlags[] flags, int offset, int ldInstructionSize, bool expectGetType, out int constant)
+        private bool TryExpandTypeEquality_TokenOther(ILPatternAnalyzer<ILPatternAnalyzerState> analyzer, int offset, out int constant)
         {
-            // We expect to see a sequence:
-            // ldtoken Foo
-            // call GetTypeFromHandle
-            // ldloc.X/ldloc_s X/ldarg.X/ldarg_s X
-            // [optional] call Object.GetType
-            // -> offset points here
-            //
-            // The ldtoken part can potentially be in the second argument position
-
             constant = 0;
-            int sequenceLength = 5 + 5 + ldInstructionSize + (expectGetType ? 5 : 0);
-            if (offset < sequenceLength)
+
+            if (!analyzer.TryAnalyzeTypeEquality_TokenOther(offset, offsetIsAtTypeEquals: true, out TypeDesc knownType))
                 return false;
-
-            if ((flags[offset - sequenceLength] & OpcodeFlags.InstructionStart) == 0)
-                return false;
-
-            ILReader reader = new ILReader(body, offset - sequenceLength);
-
-            TypeDesc knownType = null;
-
-            // Is the ldtoken in the first position?
-            if (reader.PeekILOpcode() == ILOpcode.ldtoken)
-            {
-                knownType = ReadLdToken(ref reader, methodIL, flags);
-                if (knownType == null)
-                    return false;
-
-                if (!ReadGetTypeFromHandle(ref reader, methodIL, flags))
-                    return false;
-            }
-
-            ILOpcode opcode = reader.ReadILOpcode();
-            if (ldInstructionSize == 1 && opcode is (>= ILOpcode.ldloc_0 and <= ILOpcode.ldloc_3) or (>= ILOpcode.ldarg_0 and <= ILOpcode.ldarg_3))
-            {
-                // Nothing to read
-            }
-            else if (ldInstructionSize == 2 && opcode is ILOpcode.ldloc_s or ILOpcode.ldarg_s)
-            {
-                reader.ReadILByte();
-            }
-            else if (ldInstructionSize == 3 && opcode is ILOpcode.ldloc or ILOpcode.ldarg)
-            {
-                reader.ReadILUInt16();
-            }
-            else
-            {
-                return false;
-            }
-
-            if ((flags[reader.Offset] & OpcodeFlags.BasicBlockStart) != 0)
-                return false;
-
-            if (expectGetType)
-            {
-                if (reader.ReadILOpcode() is not ILOpcode.callvirt and not ILOpcode.call)
-                    return false;
-
-                // We don't actually mind if this is not Object.GetType
-                reader.ReadILToken();
-
-                if ((flags[reader.Offset] & OpcodeFlags.BasicBlockStart) != 0)
-                    return false;
-            }
-
-            // If the ldtoken wasn't in the first position, it must be in the other
-            if (knownType == null)
-            {
-                knownType = ReadLdToken(ref reader, methodIL, flags);
-                if (knownType == null)
-                    return false;
-
-                if (!ReadGetTypeFromHandle(ref reader, methodIL, flags))
-                    return false;
-            }
 
             // No value in making this work for definitions
             if (knownType.IsGenericDefinition)
@@ -1045,32 +946,32 @@ namespace ILCompiler
             return true;
         }
 
-        private static TypeDesc ReadLdToken(ref ILReader reader, MethodIL methodIL, OpcodeFlags[] flags)
+        private static TypeDesc ReadLdToken(ref ILReader reader, ILPatternAnalyzer<ILPatternAnalyzerState> analyzer)
         {
             ILOpcode opcode = reader.ReadILOpcode();
             if (opcode != ILOpcode.ldtoken)
                 return null;
 
-            TypeDesc t = (TypeDesc)methodIL.GetObject(reader.ReadILToken());
+            TypeDesc t = (TypeDesc)analyzer.Method.GetObject(reader.ReadILToken());
 
-            if ((flags[reader.Offset] & OpcodeFlags.BasicBlockStart) != 0)
+            if (analyzer.State.IsBasicBlockStart(reader.Offset))
                 return null;
 
             return t;
         }
 
-        private static bool ReadGetTypeFromHandle(ref ILReader reader, MethodIL methodIL, OpcodeFlags[] flags)
+        private static bool ReadGetTypeFromHandle(ref ILReader reader, ILPatternAnalyzer<ILPatternAnalyzerState> analyzer)
         {
             ILOpcode opcode = reader.ReadILOpcode();
             if (opcode != ILOpcode.call)
                 return false;
 
-            MethodDesc method = (MethodDesc)methodIL.GetObject(reader.ReadILToken());
+            MethodDesc method = (MethodDesc)analyzer.Method.GetObject(reader.ReadILToken());
 
             if (!method.IsIntrinsic || method.Name != "GetTypeFromHandle")
                 return false;
 
-            if ((flags[reader.Offset] & OpcodeFlags.BasicBlockStart) != 0)
+            if (analyzer.State.IsBasicBlockStart(reader.Offset))
                 return false;
 
             return true;
@@ -1133,6 +1034,15 @@ namespace ILCompiler
             public override IEnumerable<Internal.IL.ILLocalVariable> GetLocalVariables() => _originalDebugInformation.GetLocalVariables();
             public override IEnumerable<string> GetParameterNames() => _originalDebugInformation.GetParameterNames();
             public override IEnumerable<ILSequencePoint> GetSequencePoints() => _sequencePoints;
+        }
+
+        private struct ILPatternAnalyzerState : ILPatternAnalyzerTraits
+        {
+            private readonly OpcodeFlags[] _flags;
+            public ILPatternAnalyzerState(OpcodeFlags[] flags) => _flags = flags;
+
+            public bool IsBasicBlockStart(int offset) => (_flags[offset] & OpcodeFlags.BasicBlockStart) != 0;
+            public bool IsInstructionStart(int offset) => (_flags[offset] & OpcodeFlags.InstructionStart) != 0;
         }
 
         private const int TokenTypeString = 0x70; // CorTokenType for strings
