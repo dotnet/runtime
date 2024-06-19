@@ -264,16 +264,6 @@ namespace System.Runtime.Intrinsics
         public static Vector128<T> operator *(Vector128<T> left, Vector128<T> right)
         {
             // TODO: move this to JIT
-            if (AdvSimd.Arm64.IsSupported && typeof(T) == typeof(ulong))
-            {
-                Vector128<ulong> a = left.AsUInt64();
-                Vector128<ulong> b = right.AsUInt64();
-                return AdvSimd.Arm64.UnzipEven(
-                    AdvSimd.MultiplyWideningLower(
-                        a.GetLower().AsUInt32(), b.GetLower().AsUInt32()).AsUInt16(),
-                    AdvSimd.MultiplyWideningUpper(
-                        a.AsUInt32(), b.AsUInt32()).AsUInt16()).AsUInt64().As<ulong, T>();
-            }
             if (Sse41.IsSupported)
             {
                 Vector128<ulong> a = left.AsUInt64();
