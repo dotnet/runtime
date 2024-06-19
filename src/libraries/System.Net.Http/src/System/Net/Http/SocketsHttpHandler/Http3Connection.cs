@@ -235,6 +235,7 @@ namespace System.Net.Http
                     return Task.FromResult(true);
                 }
 
+                Debug.Assert(_availableStreamsWaiter is null);
                 _availableStreamsWaiter = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
                 return _availableStreamsWaiter.Task;
             }
