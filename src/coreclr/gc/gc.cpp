@@ -13417,6 +13417,8 @@ void gc_heap::distribute_free_regions()
         total_num_free_regions[kind] += num_regions_to_decommit[kind];
 
         ptrdiff_t balance = total_num_free_regions[kind] + num_huge_region_units_to_consider[kind] - total_budget_in_region_units[kind];
+
+        // Ignore young huge regions if they are contributing to a surplus.
         if (balance > 0)
         {
             if (balance > static_cast<ptrdiff_t>(num_young_huge_region_units_to_consider[kind]))
@@ -13431,7 +13433,7 @@ void gc_heap::distribute_free_regions()
 
         if (
 #ifdef BACKGROUND_GC
-            //background_running_p() ||
+            (background_running_p() && (settings.condemned_generation != max_generation)) ||
 #endif
             (balance < 0))
         {
@@ -37994,10 +37996,10 @@ void gc_heap::background_mark_phase ()
             const int i = 0;
 #endif //MULTIPLE_HEAPS
 
-            hp->descr_generations ("BGC"); //string value?   needed?
+            hp->descr_generations ("BGC");
 #ifdef USE_REGIONS
             assert (settings.condemned_generation == max_generation);
-            // age and print all kinds of free regions //! large and huge only?
+            // age and print all kinds of free regions
             if (i == 0)
             {
                 global_free_huge_regions.age_free_regions();
