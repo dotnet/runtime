@@ -2,11 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
+using TestUtilities;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -226,6 +228,61 @@ namespace System.Net.Quic.Tests
             await streamsAvailableFired.WaitAsync();
             Assert.Equal(0, bidiIncrement);
             Assert.Equal(1, unidiIncrement);
+        }
+
+        [Fact]
+        public async Task GetStreamCapacity_OpenCloseStreamIntoNegative_CountsCorrectly()
+        {
+            //using var _ = new TestEventListener(_output, TestEventListener.NetworkingEvents);
+            SemaphoreSlim streamsAvailableFired = new SemaphoreSlim(0);
+            int bidiIncrement = -1, unidiIncrement = -1;
+
+            var clientOptions = CreateQuicClientOptions(new IPEndPoint(0, 0));
+            clientOptions.StreamCapacityCallback = (connection, args) =>
+            {
+                bidiIncrement = args.BidirectionalIncrement;
+                unidiIncrement = args.UnidirectionalIncrement;
+                streamsAvailableFired.Release();
+            };
+
+            (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection(clientOptions);
+            await streamsAvailableFired.WaitAsync();
+            Assert.Equal(QuicDefaults.DefaultServerMaxInboundBidirectionalStreams, bidiIncrement);
+            Assert.Equal(QuicDefaults.DefaultServerMaxInboundUnidirectionalStreams, unidiIncrement);
+
+            List<QuicStream> clientStreams = (await Task.WhenAll(Enumerable.Range(0, QuicDefaults.DefaultServerMaxInboundBidirectionalStreams)
+                                                                           .Select(i => clientConnection.OpenOutboundStreamAsync(QuicStreamType.Bidirectional).AsTask())))
+                                                                           .ToList();
+            List<Task<QuicStream>> pendingClientStreams = Enumerable.Range(0, QuicDefaults.DefaultServerMaxInboundBidirectionalStreams)
+                                                                    .Select(i => clientConnection.OpenOutboundStreamAsync(QuicStreamType.Bidirectional).AsTask())
+                                                                    .ToList();
+            foreach (var task in pendingClientStreams)
+            {
+                Assert.False(task.IsCompleted);
+            }
+            Assert.False(streamsAvailableFired.CurrentCount > 0);
+
+            // Dispose streams to release capacity.
+            foreach (var clientStream in clientStreams)
+            {
+                await clientStream.DisposeAsync();
+                await (await serverConnection.AcceptInboundStreamAsync()).DisposeAsync();
+            }
+            clientStreams.Clear();
+
+            // Pending streams should get opened.
+            Assert.False(streamsAvailableFired.CurrentCount > 0);
+            clientStreams.AddRange(await Task.WhenAll(pendingClientStreams));
+
+            // Disposing the streams now should lead to stream capacity increments.
+            foreach (var clientStream in clientStreams)
+            {
+                await clientStream.DisposeAsync();
+                await (await serverConnection.AcceptInboundStreamAsync()).DisposeAsync();
+                await streamsAvailableFired.WaitAsync();
+                Assert.Equal(1, bidiIncrement);
+                Assert.Equal(0, unidiIncrement);
+            }
         }
 
         [Fact]

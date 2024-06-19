@@ -232,6 +232,11 @@ public sealed partial class QuicConnection : IAsyncDisposable
         {
             return;
         }
+        // No increment, nothing to report.
+        if (bidirectionalIncrement == 0 && unidirectionalIncrement == 0)
+        {
+            return;
+        }
 
         // Do not invoke user-defined event handler code on MsQuic thread.
         await Task.CompletedTask.ConfigureAwait(ConfigureAwaitOptions.ForceYielding);
@@ -465,7 +470,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
     /// <param name="streamType">Type of the stream to decrement appropriate field.</param>
     private void DecrementStreamCapacity(QuicStreamType streamType)
     {
-        if (streamType == QuicStreamType.Unidirectional)
+        if (streamType == QuicStreamType.Unidirectional && _unidirectionalStreamCapacity > 0)
         {
             --_unidirectionalStreamCapacity;
             if (NetEventSource.Log.IsEnabled())
@@ -473,7 +478,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
                 NetEventSource.Info(this, $"{this} decremented stream count for {streamType} to {_unidirectionalStreamCapacity}.");
             }
         }
-        else
+        if (streamType == QuicStreamType.Bidirectional && _bidirectionalStreamCapacity > 0)
         {
             --_bidirectionalStreamCapacity;
             if (NetEventSource.Log.IsEnabled())
