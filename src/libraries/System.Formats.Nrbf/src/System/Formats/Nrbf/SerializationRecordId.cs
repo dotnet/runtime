@@ -44,5 +44,5 @@ public readonly struct SerializationRecordId : IEquatable<SerializationRecordId>
     public override bool Equals(object? obj) => obj is SerializationRecordId other && Equals(other);
 
     /// <inheritdoc />
-    public override int GetHashCode() => _id;
+    public override int GetHashCode() => HashCode.Combine(_id);
 }
