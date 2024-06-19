@@ -221,7 +221,17 @@ namespace System.Buffers.Text
                     continue;
                 }
 
-                bool hasAnotherBlock = source.Length >= BlockSize && bufferIdx == BlockSize;
+                bool hasAnotherBlock;
+
+                if (typeof(TBase64Decoder) == typeof(Base64DecoderByte))
+                {
+                    hasAnotherBlock = source.Length >= BlockSize;
+                }
+                else
+                {
+                    hasAnotherBlock = source.Length > 1;
+                }
+
                 bool localIsFinalBlock = !hasAnotherBlock;
 
                 // If this block contains padding and there's another block, then only whitespace may follow for being valid.

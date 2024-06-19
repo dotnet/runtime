@@ -443,7 +443,6 @@ namespace System.Buffers.Text
                 }
 
                 bool hasAnotherBlock = source.Length > 1;
-
                 bool localIsFinalBlock = !hasAnotherBlock;
 
                 // If this block contains padding and there's another block, then only whitespace may follow for being valid.
@@ -559,7 +558,7 @@ namespace System.Buffers.Text
                 uint sourceIndex = 0;
                 uint destIndex = 0;
 
-                if ((bufferLength & 3) == 1) // One byte cannot be decoded completely)
+                if ((bufferLength & 3) == 1) // One byte cannot be decoded completely
                 {
                     goto InvalidExit;
                 }
@@ -703,21 +702,18 @@ namespace System.Buffers.Text
                     continue;
                 }
 
-                if (bufferIdx != 4)
+                // For Base64Url 1 byte is not decodeable.
+                if (bufferIdx == 1)
                 {
-                    // For Base64Url 1 byte is not decodeable.
-                    if (bufferIdx == 1)
+                    status = OperationStatus.InvalidData;
+                    break;
+                }
+                else // Fill empty slots in last block with padding
+                {
+                    while (bufferIdx < BlockSize)  // Can happen only for last block
                     {
-                        status = OperationStatus.InvalidData;
-                        break;
-                    }
-                    else // Fill empty slots in last block with padding
-                    {
-                        while (bufferIdx < BlockSize)  // Can happen only for last block
-                        {
-                            Debug.Assert(source.Length == sourceIndex);
-                            buffer[bufferIdx++] = (byte)EncodingPadEqual;
-                        }
+                        Debug.Assert(source.Length == sourceIndex);
+                        buffer[bufferIdx++] = (byte)EncodingPadEqual;
                     }
                 }
 
@@ -1197,7 +1193,7 @@ namespace System.Buffers.Text
                     continue;
                 }
 
-                bool hasAnotherBlock = source.Length >= BlockSize && bufferIdx == BlockSize;
+                bool hasAnotherBlock = source.Length > 1;
                 bool localIsFinalBlock = !hasAnotherBlock;
 
                 // If this block contains padding and there's another block, then only whitespace may follow for being valid.

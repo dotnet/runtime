@@ -13,7 +13,7 @@
       <Link>System\Memory\Base64\Base64TestBase.cs</Link>
     </Compile>
     <Compile Include="..\..\System.Memory\tests\Base64\Base64TestHelper.cs">
-      <Link>System\Memory\Base64Url\Base64TestHelper.cs</Link>
+      <Link>System\Memory\Base64\Base64TestHelper.cs</Link>
     </Compile>
     <Compile Include="..\..\System.Memory\tests\Base64Url\Base64UrlDecoderUnitTests.cs">
       <Link>System\Memory\Base64Url\Base64UrlDecoderUnitTests.cs</Link>
