@@ -8,6 +8,7 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics.X86;
+using System.Runtime.Intrinsics.Arm;
 using System.Text;
 
 namespace System.Runtime.Intrinsics
@@ -274,6 +275,16 @@ namespace System.Runtime.Intrinsics
                             Ssse3.HorizontalAdd(
                                 Sse41.MultiplyLow(a.AsUInt32(),
                                     Sse2.Shuffle(b.AsUInt32(), 0xB1)).AsInt32(), Vector128<int>.Zero), 0x73).AsUInt64()));
+            }
+            if (AdvSimd.Arm64.IsSupported && typeof(T) == typeof(ulong))
+            {
+                Vector128<ulong> a = left.AsUInt64();
+                Vector128<ulong> b = right.AsUInt64();
+                return AdvSimd.Arm64.UnzipEven(
+                    AdvSimd.MultiplyWideningLower(
+                        a.GetLower().AsUInt32(), b.GetLower().AsUInt32()).AsUInt16(),
+                    AdvSimd.MultiplyWideningUpper(
+                        a.AsUInt32(), b.AsUInt32()).AsUInt16()).AsUInt64().As<ulong, T>();
             }
 
             return Vector128.Create(
