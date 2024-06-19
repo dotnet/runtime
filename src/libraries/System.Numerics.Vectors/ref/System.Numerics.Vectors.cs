@@ -238,6 +238,8 @@ namespace System.Numerics
         public static System.Numerics.Vector<T> BitwiseOr<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
         public static System.Numerics.Vector<System.Double> Ceiling(System.Numerics.Vector<System.Double> value) { throw null; }
         public static System.Numerics.Vector<System.Single> Ceiling(System.Numerics.Vector<System.Single> value) { throw null; }
+        public static System.Numerics.Vector<T> Clamp<T>(System.Numerics.Vector<T> value, System.Numerics.Vector<T> min, System.Numerics.Vector<T> max) { throw null; }
+        public static System.Numerics.Vector<T> ClampNative<T>(System.Numerics.Vector<T> value, System.Numerics.Vector<T> min, System.Numerics.Vector<T> max) { throw null; }
         public static System.Numerics.Vector<System.Single> ConditionalSelect(System.Numerics.Vector<System.Int32> condition, System.Numerics.Vector<System.Single> left, System.Numerics.Vector<System.Single> right) { throw null; }
         public static System.Numerics.Vector<System.Double> ConditionalSelect(System.Numerics.Vector<System.Int64> condition, System.Numerics.Vector<System.Double> left, System.Numerics.Vector<System.Double> right) { throw null; }
         public static System.Numerics.Vector<T> ConditionalSelect<T>(System.Numerics.Vector<T> condition, System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
@@ -475,6 +477,7 @@ namespace System.Numerics
         public static System.Numerics.Vector2 Abs(System.Numerics.Vector2 value) { throw null; }
         public static System.Numerics.Vector2 Add(System.Numerics.Vector2 left, System.Numerics.Vector2 right) { throw null; }
         public static System.Numerics.Vector2 Clamp(System.Numerics.Vector2 value1, System.Numerics.Vector2 min, System.Numerics.Vector2 max) { throw null; }
+        public static System.Numerics.Vector2 ClampNative(System.Numerics.Vector2 value1, System.Numerics.Vector2 min, System.Numerics.Vector2 max) { throw null; }
         public static System.Numerics.Vector2 CopySign(System.Numerics.Vector2 value, System.Numerics.Vector2 sign) { throw null; }
         public static System.Numerics.Vector2 Create(float value) { throw null; }
         public static System.Numerics.Vector2 Create(float x, float y) { throw null; }
@@ -569,6 +572,7 @@ namespace System.Numerics
         public static System.Numerics.Vector3 Abs(System.Numerics.Vector3 value) { throw null; }
         public static System.Numerics.Vector3 Add(System.Numerics.Vector3 left, System.Numerics.Vector3 right) { throw null; }
         public static System.Numerics.Vector3 Clamp(System.Numerics.Vector3 value1, System.Numerics.Vector3 min, System.Numerics.Vector3 max) { throw null; }
+        public static System.Numerics.Vector3 ClampNative(System.Numerics.Vector3 value1, System.Numerics.Vector3 min, System.Numerics.Vector3 max) { throw null; }
         public static System.Numerics.Vector3 CopySign(System.Numerics.Vector3 value, System.Numerics.Vector3 sign) { throw null; }
         public static System.Numerics.Vector3 Create(float value) { throw null; }
         public static System.Numerics.Vector3 Create(System.Numerics.Vector2 vector, float z) { throw null; }
@@ -666,6 +670,7 @@ namespace System.Numerics
         public static System.Numerics.Vector4 Abs(System.Numerics.Vector4 value) { throw null; }
         public static System.Numerics.Vector4 Add(System.Numerics.Vector4 left, System.Numerics.Vector4 right) { throw null; }
         public static System.Numerics.Vector4 Clamp(System.Numerics.Vector4 value1, System.Numerics.Vector4 min, System.Numerics.Vector4 max) { throw null; }
+        public static System.Numerics.Vector4 ClampNative(System.Numerics.Vector4 value1, System.Numerics.Vector4 min, System.Numerics.Vector4 max) { throw null; }
         public static System.Numerics.Vector4 CopySign(System.Numerics.Vector4 value, System.Numerics.Vector4 sign) { throw null; }
         public static System.Numerics.Vector4 Create(float value) { throw null; }
         public static System.Numerics.Vector4 Create(System.Numerics.Vector2 vector, float z, float w) { throw null; }

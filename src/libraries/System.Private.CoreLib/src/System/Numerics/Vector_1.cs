@@ -832,6 +832,12 @@ namespace System.Numerics
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Ceiling(TSelf)" />
         static Vector<T> ISimdVector<Vector<T>, T>.Ceiling(Vector<T> vector) => Vector.Ceiling(vector);
 
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.Clamp(TSelf, TSelf, TSelf)" />
+        static Vector<T> ISimdVector<Vector<T>, T>.Clamp(Vector<T> value, Vector<T> min, Vector<T> max) => Vector.Clamp(value, min, max);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.ClampNative(TSelf, TSelf, TSelf)" />
+        static Vector<T> ISimdVector<Vector<T>, T>.ClampNative(Vector<T> value, Vector<T> min, Vector<T> max) => Vector.ClampNative(value, min, max);
+
         /// <inheritdoc cref="ISimdVector{TSelf, T}.ConditionalSelect(TSelf, TSelf, TSelf)" />
         static Vector<T> ISimdVector<Vector<T>, T>.ConditionalSelect(Vector<T> condition, Vector<T> left, Vector<T> right) => Vector.ConditionalSelect(condition, left, right);
 

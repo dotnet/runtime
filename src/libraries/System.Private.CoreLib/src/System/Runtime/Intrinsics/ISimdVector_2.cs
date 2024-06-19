@@ -118,6 +118,22 @@ namespace System.Runtime.Intrinsics
         /// <returns>A vector whose elements are the ceiling of the elements in <paramref name="vector" />.</returns>
         static abstract TSelf Ceiling(TSelf vector);
 
+        /// <summary>Restricts a vector between a minimum and a maximum value.</summary>
+        /// <param name="value">The vector to restrict.</param>
+        /// <param name="min">The minimum value.</param>
+        /// <param name="max">The maximum value.</param>
+        /// <returns>The restricted vector.</returns>
+        /// <exception cref="NotSupportedException">The type of the elements in the vector (<typeparamref name="T" />) is not supported.</exception>
+        static abstract TSelf Clamp(TSelf value, TSelf min, TSelf max);
+
+        /// <summary>Restricts a vector between a minimum and a maximum value using platform specific behavior for <c>NaN</c> and <c>NegativeZero</c>..</summary>
+        /// <param name="value">The vector to restrict.</param>
+        /// <param name="min">The minimum value.</param>
+        /// <param name="max">The maximum value.</param>
+        /// <returns>The restricted vector.</returns>
+        /// <exception cref="NotSupportedException">The type of the elements in the vector (<typeparamref name="T" />) is not supported.</exception>
+        static abstract TSelf ClampNative(TSelf value, TSelf min, TSelf max);
+
         /// <summary>Conditionally selects bits from two vectors based on a given condition.</summary>
         /// <param name="condition">The mask that is used to select a value from <paramref name="left" /> or <paramref name="right" />.</param>
         /// <param name="left">The vector that is selected when the corresponding bit in <paramref name="condition" /> is one.</param>

@@ -265,17 +265,15 @@ namespace System.Numerics
         [Intrinsic]
         public static Vector2 Add(Vector2 left, Vector2 right) => left + right;
 
-        /// <summary>Restricts a vector between a minimum and a maximum value.</summary>
-        /// <param name="value1">The vector to restrict.</param>
-        /// <param name="min">The minimum value.</param>
-        /// <param name="max">The maximum value.</param>
-        /// <returns>The restricted vector.</returns>
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.Clamp(TSelf, TSelf, TSelf)" />
         [Intrinsic]
-        public static Vector2 Clamp(Vector2 value1, Vector2 min, Vector2 max)
-        {
-            // We must follow HLSL behavior in the case user specified min value is bigger than max value.
-            return Min(Max(value1, min), max);
-        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector2 Clamp(Vector2 value1, Vector2 min, Vector2 max) => Vector128.Clamp(value1.AsVector128Unsafe(), min.AsVector128Unsafe(), max.AsVector128Unsafe()).AsVector2();
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.ClampNative(TSelf, TSelf, TSelf)" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector2 ClampNative(Vector2 value1, Vector2 min, Vector2 max) => Vector128.ClampNative(value1.AsVector128Unsafe(), min.AsVector128Unsafe(), max.AsVector128Unsafe()).AsVector2();
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.CopySign(TSelf, TSelf)" />
         [Intrinsic]

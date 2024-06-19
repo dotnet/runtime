@@ -279,6 +279,22 @@ namespace System.Numerics
             return result;
         }
 
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.Clamp(TSelf, TSelf, TSelf)" />
+        [Intrinsic]
+        public static Vector<T> Clamp<T>(Vector<T> value, Vector<T> min, Vector<T> max)
+        {
+            // We must follow HLSL behavior in the case user specified min value is bigger than max value.
+            return Min(Max(value, min), max);
+        }
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.ClampNative(TSelf, TSelf, TSelf)" />
+        [Intrinsic]
+        public static Vector<T> ClampNative<T>(Vector<T> value, Vector<T> min, Vector<T> max)
+        {
+            // We must follow HLSL behavior in the case user specified min value is bigger than max value.
+            return MinNative(MaxNative(value, min), max);
+        }
+
         /// <summary>Conditionally selects a value from two vectors on a bitwise basis.</summary>
         /// <param name="condition">The mask that is used to select a value from <paramref name="left" /> or <paramref name="right" />.</param>
         /// <param name="left">The vector that is selected when the corresponding bit in <paramref name="condition" /> is one.</param>

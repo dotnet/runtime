@@ -468,6 +468,12 @@ namespace System.Runtime.Intrinsics
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Ceiling(TSelf)" />
         static Vector512<T> ISimdVector<Vector512<T>, T>.Ceiling(Vector512<T> vector) => Vector512.Ceiling(vector);
 
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.Clamp(TSelf, TSelf, TSelf)" />
+        static Vector512<T> ISimdVector<Vector512<T>, T>.Clamp(Vector512<T> value, Vector512<T> min, Vector512<T> max) => Vector512.Clamp(value, min, max);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.ClampNative(TSelf, TSelf, TSelf)" />
+        static Vector512<T> ISimdVector<Vector512<T>, T>.ClampNative(Vector512<T> value, Vector512<T> min, Vector512<T> max) => Vector512.ClampNative(value, min, max);
+
         /// <inheritdoc cref="ISimdVector{TSelf, T}.ConditionalSelect(TSelf, TSelf, TSelf)" />
         static Vector512<T> ISimdVector<Vector512<T>, T>.ConditionalSelect(Vector512<T> condition, Vector512<T> left, Vector512<T> right) => Vector512.ConditionalSelect(condition, left, right);
 
