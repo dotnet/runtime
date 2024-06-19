@@ -4637,7 +4637,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static float FPReciprocalStepFused(float op1, float op2) => FusedMultiplySubtract(2, op1, op2);
 
-        public static float FPRSqrtStepFused(float op1, float op2) => FusedMultiplySubtract(3, op1, op2) / 2;
+        public static float FPReciprocalSqrtStepFused(float op1, float op2) => FusedMultiplySubtract(3, op1, op2) / 2;
 
         public static double AbsoluteDifference(double op1, double op2) => Math.Abs(op1 - op2);
 
@@ -4681,7 +4681,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static double FPReciprocalStepFused(double op1, double op2) => FusedMultiplySubtract(2, op1, op2);
 
-        public static double FPRSqrtStepFused(double op1, double op2) => FusedMultiplySubtract(3, op1, op2) / 2;
+        public static double FPReciprocalSqrtStepFused(double op1, double op2) => FusedMultiplySubtract(3, op1, op2) / 2;
 
         private static uint ReciprocalEstimate(uint a)
         {
