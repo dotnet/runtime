@@ -102,6 +102,7 @@ namespace System.Text.RegularExpressions.Symbolic
             {
                 return 0;
             }
+
             // high performance variant would use a span directly.
             // additional memory is saved by using a byte
             return _intLookup is null ? _lookup![c] : _intLookup[c];
