@@ -39,10 +39,23 @@ internal static partial class Interop
         private static partial IntPtr GetPrivateKeyEntryCertificate(IntPtr privatKeyEntryHandle);
         internal static SafeX509Handle GetPrivateKeyEntryCertificate(SafeHandle privatKeyEntryHandle)
         {
-            var certificateHandle = new SafeX509Handle();
-            var certificatePtr = GetPrivateKeyEntryCertificate(privatKeyEntryHandle.DangerousGetHandle());
-            Marshal.InitHandle(certificateHandle, Interop.JObjectLifetime.NewGlobalReference(certificatePtr));
-            return certificateHandle;
+            bool addedRef = false;
+            try
+            {
+                privatKeyEntryHandle.DangerousAddRef(ref addedRef);
+                IntPtr certificatePtr = GetPrivateKeyEntryCertificate(privatKeyEntryHandle.DangerousGetHandle());
+
+                SafeX509Handle certificateHandle = new();
+                Marshal.InitHandle(certificateHandle, certificatePtr);
+                return certificateHandle;
+            }
+            finally
+            {
+                if (addedRef)
+                {
+                    privatKeyEntryHandle.DangerousRelease();
+                }
+            }
         }
 
         [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_X509DecodeCollection")]

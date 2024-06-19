@@ -44,11 +44,22 @@ namespace System.Security.Cryptography.X509Certificates
 
             AndroidCertificatePal certPal = (AndroidCertificatePal)cert.Pal;
 
-            if (certPal._keyStorePrivateKeyEntry is not null)
+            if (certPal._keyStorePrivateKeyEntry is SafeJObjectHandle privateKeyEntry)
             {
-                var jobjectHandle = new Interop.JObjectLifetime.SafeJObjectHandle();
-                Marshal.InitHandle(jobjectHandle, Interop.JObjectLifetime.NewGlobalReference(certPal.Handle));
-                return new AndroidCertificatePal(jobjectHandle);
+                bool addedRef = false;
+                try
+                {
+                    privateKeyEntry.DangerousAddRef(ref addedRef);
+                    SafeJObjectHandle newSafeHandle = SafeJObjectHandle.CreateGlobalReferenceFromHandle(privateKeyEntry.DangerousGetHandle());
+                    return new AndroidCertificatePal(newSafeHandle);
+                }
+                finally
+                {
+                    if (addedRef)
+                    {
+                        privateKeyEntry.DangerousRelease();
+                    }
+                }
             }
 
             // Ensure private key is copied
