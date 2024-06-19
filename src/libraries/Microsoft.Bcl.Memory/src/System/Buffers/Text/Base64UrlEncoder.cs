@@ -245,11 +245,7 @@ namespace System.Buffers.Text
         /// such as when calling in a loop, subsequent calls with <see langword="false"/> should end with <see langword="true"/> call. The default is <see langword="true" />.</param>
         /// <returns>One of the enumeration values that indicates the success or failure of the operation.</returns>
         /// <remarks>This implementation of the base64url encoding omits the optional padding characters.</remarks>
-        public static OperationStatus EncodeToChars(ReadOnlySpan<byte> source, Span<char> destination,
-            out int bytesConsumed, out int charsWritten, bool isFinalBlock = true) =>
-            EncodeToChars(source, MemoryMarshal.Cast<char, ushort>(destination), out bytesConsumed, out charsWritten, isFinalBlock);
-
-        private static unsafe OperationStatus EncodeToChars(ReadOnlySpan<byte> source, Span<ushort> destination,
+        public static unsafe OperationStatus EncodeToChars(ReadOnlySpan<byte> source, Span<char> destination,
             out int bytesConsumed, out int charsWritten, bool isFinalBlock = true)
         {
             if (source.IsEmpty)
@@ -260,14 +256,14 @@ namespace System.Buffers.Text
             }
 
             fixed (byte* srcBytes = &MemoryMarshal.GetReference(source))
-            fixed (ushort* destBytes = &MemoryMarshal.GetReference(destination))
+            fixed (char* destBytes = &MemoryMarshal.GetReference(destination))
             {
                 int srcLength = source.Length;
                 int destLength = destination.Length;
                 int maxSrcLength = GetEncodedLength(srcLength);
 
                 byte* src = srcBytes;
-                ushort* dest = destBytes;
+                char* dest = destBytes;
                 byte* srcEnd = srcBytes + (uint)srcLength;
                 byte* srcMax = srcBytes + (uint)maxSrcLength;
 
@@ -327,7 +323,7 @@ namespace System.Buffers.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe void EncodeOneAndWriteTwo(byte* oneByte, ushort* dest, ref byte encodingMap)
+        private static unsafe void EncodeOneAndWriteTwo(byte* oneByte, char* dest, ref byte encodingMap)
         {
             uint t0 = oneByte[0];
 
@@ -338,18 +334,18 @@ namespace System.Buffers.Text
 
             if (BitConverter.IsLittleEndian)
             {
-                dest[0] = (byte)i0;
-                dest[1] = (byte)i1;
+                dest[0] = (char)i0;
+                dest[1] = (char)i1;
             }
             else
             {
-                dest[1] = (byte)i0;
-                dest[0] = (byte)i1;
+                dest[1] = (char)i0;
+                dest[0] = (char)i1;
             }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe void EncodeTwoAndWriteThree(byte* twoBytes, ushort* dest, ref byte encodingMap)
+        private static unsafe void EncodeTwoAndWriteThree(byte* twoBytes, char* dest, ref byte encodingMap)
         {
             uint t0 = twoBytes[0];
             uint t1 = twoBytes[1];
@@ -362,20 +358,20 @@ namespace System.Buffers.Text
 
             if (BitConverter.IsLittleEndian)
             {
-                dest[0] = (byte)i0;
-                dest[1] = (byte)i1;
-                dest[2] = (byte)i2;
+                dest[0] = (char)i0;
+                dest[1] = (char)i1;
+                dest[2] = (char)i2;
             }
             else
             {
-                dest[2] = (byte)i0;
-                dest[1] = (byte)i1;
-                dest[0] = (byte)i2;
+                dest[2] = (char)i0;
+                dest[1] = (char)i1;
+                dest[0] = (char)i2;
             }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe void EncodeThreeAndWriteFour(byte* threeBytes, ushort* destination, ref byte encodingMap)
+        private static unsafe void EncodeThreeAndWriteFour(byte* threeBytes, char* destination, ref byte encodingMap)
         {
             uint t0 = threeBytes[0];
             uint t1 = threeBytes[1];
@@ -390,17 +386,17 @@ namespace System.Buffers.Text
 
             if (BitConverter.IsLittleEndian)
             {
-                destination[0] = i0;
-                destination[1] = i1;
-                destination[2] = i2;
-                destination[3] = i3;
+                destination[0] = (char)i0;
+                destination[1] = (char)i1;
+                destination[2] = (char)i2;
+                destination[3] = (char)i3;
             }
             else
             {
-                destination[3] = i0;
-                destination[2] = i1;
-                destination[1] = i2;
-                destination[0] = i3;
+                destination[3] = (char)i0;
+                destination[2] = (char)i1;
+                destination[1] = (char)i2;
+                destination[0] = (char)i3;
             }
         }
 

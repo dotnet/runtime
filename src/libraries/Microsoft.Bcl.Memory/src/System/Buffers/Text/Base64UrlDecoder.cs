@@ -853,9 +853,9 @@ namespace System.Buffers.Text
         /// </remarks>
         public static OperationStatus DecodeFromChars(ReadOnlySpan<char> source, Span<byte> destination,
             out int charsConsumed, out int bytesWritten, bool isFinalBlock = true) =>
-            DecodeFromChars(MemoryMarshal.Cast<char, ushort>(source), destination, out charsConsumed, out bytesWritten, isFinalBlock, ignoreWhiteSpace: true);
+            DecodeFromChars(source, destination, out charsConsumed, out bytesWritten, isFinalBlock, ignoreWhiteSpace: true);
 
-        private static unsafe OperationStatus DecodeFromChars(ReadOnlySpan<ushort> source, Span<byte> bytes,
+        private static unsafe OperationStatus DecodeFromChars(ReadOnlySpan<char> source, Span<byte> bytes,
             out int bytesConsumed, out int bytesWritten, bool isFinalBlock, bool ignoreWhiteSpace)
         {
             if (source.IsEmpty)
@@ -865,7 +865,7 @@ namespace System.Buffers.Text
                 return OperationStatus.Done;
             }
 
-            fixed (ushort* srcBytes = &MemoryMarshal.GetReference(source))
+            fixed (char* srcBytes = &MemoryMarshal.GetReference(source))
             fixed (byte* destBytes = &MemoryMarshal.GetReference(bytes))
             {
                 int srcLength = isFinalBlock ? source.Length : source.Length & ~0x3;
@@ -873,10 +873,10 @@ namespace System.Buffers.Text
                 int maxSrcLength = srcLength;
                 int decodedLength = GetMaxDecodedLength(srcLength);
 
-                ushort* src = srcBytes;
+                char* src = srcBytes;
                 byte* dest = destBytes;
-                ushort* srcEnd = srcBytes + (uint)srcLength;
-                ushort* srcMax = srcBytes + (uint)maxSrcLength;
+                char* srcEnd = srcBytes + (uint)srcLength;
+                char* srcMax = srcBytes + (uint)maxSrcLength;
 
                 // Last bytes could have padding characters, so process them separately and treat them as valid only if isFinalBlock is true
                 // if isFinalBlock is false, padding characters are considered invalid
@@ -1069,7 +1069,7 @@ namespace System.Buffers.Text
                     OperationStatus.InvalidData;
             }
 
-            static OperationStatus InvalidDataFallback(ReadOnlySpan<ushort> source, Span<byte> bytes, ref int bytesConsumed, ref int bytesWritten, bool isFinalBlock)
+            static OperationStatus InvalidDataFallback(ReadOnlySpan<char> source, Span<byte> bytes, ref int bytesConsumed, ref int bytesWritten, bool isFinalBlock)
             {
                 source = source.Slice(bytesConsumed);
                 bytes = bytes.Slice(bytesWritten);
@@ -1121,7 +1121,7 @@ namespace System.Buffers.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe int DecodeFourElements(ushort* source, ref sbyte decodingMap)
+        private static unsafe int DecodeFourElements(char* source, ref sbyte decodingMap)
         {
             // The 'source' span expected to have at least 4 elements, and the 'decodingMap' consists 256 sbytes
             uint t0 = source[0];
@@ -1151,7 +1151,7 @@ namespace System.Buffers.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static int IndexOfAnyExceptWhiteSpace(ReadOnlySpan<ushort> span)
+        private static int IndexOfAnyExceptWhiteSpace(ReadOnlySpan<char> span)
         {
             for (int i = 0; i < span.Length; i++)
             {
@@ -1164,10 +1164,10 @@ namespace System.Buffers.Text
             return -1;
         }
 
-        private static OperationStatus DecodeWithWhiteSpaceBlockwise(ReadOnlySpan<ushort> source, Span<byte> bytes, ref int bytesConsumed, ref int bytesWritten, bool isFinalBlock = true)
+        private static OperationStatus DecodeWithWhiteSpaceBlockwise(ReadOnlySpan<char> source, Span<byte> bytes, ref int bytesConsumed, ref int bytesWritten, bool isFinalBlock = true)
         {
             const int BlockSize = 4;
-            Span<ushort> buffer = stackalloc ushort[BlockSize];
+            Span<char> buffer = stackalloc char[BlockSize];
             OperationStatus status = OperationStatus.Done;
 
             while (!source.IsEmpty)
@@ -1252,7 +1252,7 @@ namespace System.Buffers.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static int GetPaddingCount(ref ushort ptrToLastElement)
+        private static int GetPaddingCount(ref char ptrToLastElement)
         {
             int padding = 0;
 
