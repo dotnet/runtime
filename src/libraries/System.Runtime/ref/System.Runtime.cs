@@ -3451,7 +3451,7 @@ namespace System
     {
         int CompareTo(object? obj);
     }
-    public partial interface IComparable<in T>
+    public partial interface IComparable<in T> where T : allows ref struct
     {
         int CompareTo(T? other);
     }
@@ -3484,7 +3484,7 @@ namespace System
     {
         void Dispose();
     }
-    public partial interface IEquatable<T>
+    public partial interface IEquatable<T> where T : allows ref struct
     {
         bool Equals(T? other);
     }
@@ -5947,6 +5947,22 @@ namespace System
         public const long TicksPerMillisecond = (long)10000;
         public const long TicksPerMinute = (long)600000000;
         public const long TicksPerSecond = (long)10000000;
+        public const long MicrosecondsPerMillisecond =  (long)1000;
+        public const long MicrosecondsPerSecond = (long)1000000;
+        public const long MicrosecondsPerMinute = (long)60000000;
+        public const long MicrosecondsPerHour = (long)3600000000;
+        public const long MicrosecondsPerDay = (long)86400000000;
+        public const long MillisecondsPerSecond = (long)1000;
+        public const long MillisecondsPerMinute = (long)60000;
+        public const long MillisecondsPerHour = (long)3600000;
+        public const long MillisecondsPerDay = (long)86400000;
+        public const long SecondsPerMinute = (long)60;
+        public const long SecondsPerHour = (long)3600;
+        public const long SecondsPerDay = (long)86400;
+        public const long MinutesPerHour = (long)60;
+        public const long MinutesPerDay = (long)1440;
+        public const long HoursPerDay = (long)24;
+
         public static readonly System.TimeSpan Zero;
         public TimeSpan(int hours, int minutes, int seconds) { throw null; }
         public TimeSpan(int days, int hours, int minutes, int seconds) { throw null; }
@@ -8170,7 +8186,7 @@ namespace System.Collections
 }
 namespace System.Collections.Generic
 {
-    public interface IAlternateEqualityComparer<in TAlternate, T> where TAlternate : allows ref struct
+    public interface IAlternateEqualityComparer<in TAlternate, T> where TAlternate : allows ref struct where T : allows ref struct
     {
         bool Equals(TAlternate alternate, T other);
         int GetHashCode(TAlternate alternate);
@@ -8195,7 +8211,7 @@ namespace System.Collections.Generic
         void CopyTo(T[] array, int arrayIndex);
         bool Remove(T item);
     }
-    public partial interface IComparer<in T>
+    public partial interface IComparer<in T> where T : allows ref struct
     {
         int Compare(T? x, T? y);
     }
@@ -8217,7 +8233,7 @@ namespace System.Collections.Generic
     {
         new T Current { get; }
     }
-    public partial interface IEqualityComparer<in T>
+    public partial interface IEqualityComparer<in T> where T : allows ref struct
     {
         bool Equals(T? x, T? y);
         int GetHashCode([System.Diagnostics.CodeAnalysis.DisallowNullAttribute] T obj);
@@ -14179,6 +14195,7 @@ namespace System.Runtime.InteropServices.Marshalling
     [System.CLSCompliantAttribute(false)]
     [System.Runtime.InteropServices.Marshalling.ContiguousCollectionMarshallerAttribute]
     [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(System.ReadOnlySpan<>), System.Runtime.InteropServices.Marshalling.MarshalMode.ManagedToUnmanagedIn, typeof(System.Runtime.InteropServices.Marshalling.ReadOnlySpanMarshaller<,>.ManagedToUnmanagedIn))]
+    [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(System.ReadOnlySpan<>), System.Runtime.InteropServices.Marshalling.MarshalMode.ManagedToUnmanagedOut, typeof(System.Runtime.InteropServices.Marshalling.ReadOnlySpanMarshaller<,>.ManagedToUnmanagedOut))]
     [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(System.ReadOnlySpan<>), System.Runtime.InteropServices.Marshalling.MarshalMode.UnmanagedToManagedOut, typeof(System.Runtime.InteropServices.Marshalling.ReadOnlySpanMarshaller<,>.UnmanagedToManagedOut))]
     public static unsafe partial class ReadOnlySpanMarshaller<T, TUnmanagedElement> where TUnmanagedElement : unmanaged
     {
@@ -14194,6 +14211,16 @@ namespace System.Runtime.InteropServices.Marshalling
             public static ref T GetPinnableReference(System.ReadOnlySpan<T> managed) { throw null; }
             public System.Span<TUnmanagedElement> GetUnmanagedValuesDestination() { throw null; }
             public unsafe TUnmanagedElement* ToUnmanaged() { throw null; }
+        }
+        public partial struct ManagedToUnmanagedOut
+        {
+            private object _dummy;
+            private int _dummyPrimitive;
+            public void FromUnmanaged(TUnmanagedElement* unmanaged) { throw null; }
+            public System.ReadOnlySpan<T> ToManaged() { throw null; }
+            public System.ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(int numElements) { throw null; }
+            public System.Span<T> GetManagedValuesDestination(int numElements) { throw null; }
+            public void Free() { throw null; }
         }
         public static partial class UnmanagedToManagedOut
         {
