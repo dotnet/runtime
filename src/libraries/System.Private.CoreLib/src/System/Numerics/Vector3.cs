@@ -298,6 +298,11 @@ namespace System.Numerics
             return Min(Max(value1, min), max);
         }
 
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.CopySign(TSelf, TSelf)" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector3 CopySign(Vector3 value, Vector3 sign) => Vector128.CopySign(value.AsVector128Unsafe(), sign.AsVector128Unsafe()).AsVector3();
+
         /// <summary>Creates a new <see cref="Vector3" /> object whose three elements have the same value.</summary>
         /// <param name="value">The value to assign to all three elements.</param>
         /// <returns>A new <see cref="Vector3" /> whose three elements have the same value.</returns>

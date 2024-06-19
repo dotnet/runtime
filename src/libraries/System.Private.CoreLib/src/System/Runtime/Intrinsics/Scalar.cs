@@ -335,6 +335,46 @@ namespace System.Runtime.Intrinsics
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static T CopySign(T value, T sign)
+        {
+            // byte, ushort, uint, and ulong should have already been handled
+            // avoid Math.Abs for integers since it throws for MinValue
+            if (typeof(T) == typeof(double))
+            {
+                return (T)(object)double.CopySign((double)(object)value, (double)(object)sign);
+            }
+            else if (typeof(T) == typeof(short))
+            {
+                return (T)(object)short.CopySign((short)(object)value, (short)(object)sign);
+            }
+            else if (typeof(T) == typeof(int))
+            {
+                return (T)(object)int.CopySign((int)(object)value, (int)(object)sign);
+            }
+            else if (typeof(T) == typeof(long))
+            {
+                return (T)(object)long.CopySign((long)(object)value, (long)(object)sign);
+            }
+            else if (typeof(T) == typeof(nint))
+            {
+                return (T)(object)nint.CopySign((nint)(object)value, (nint)(object)sign);
+            }
+            else if (typeof(T) == typeof(sbyte))
+            {
+                return (T)(object)sbyte.CopySign((sbyte)(object)value, (sbyte)(object)sign);
+            }
+            else if (typeof(T) == typeof(float))
+            {
+                return (T)(object)float.CopySign((float)(object)value, (float)(object)sign);
+            }
+            else
+            {
+                ThrowHelper.ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
+                return default!;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T Divide(T left, T right)
         {
             if (typeof(T) == typeof(byte))

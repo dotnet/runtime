@@ -65,6 +65,7 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector128<System.UInt64> ConvertToUInt64(System.Runtime.Intrinsics.Vector128<System.Double> vector) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector128<System.UInt64> ConvertToUInt64Native(System.Runtime.Intrinsics.Vector128<System.Double> vector) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<T> CopySign<T>(System.Runtime.Intrinsics.Vector128<T> value, System.Runtime.Intrinsics.Vector128<T> sign) { throw null; }
         public static void CopyTo<T>(this System.Runtime.Intrinsics.Vector128<T> vector, System.Span<T> destination) { }
         public static void CopyTo<T>(this System.Runtime.Intrinsics.Vector128<T> vector, T[] destination) { }
         public static void CopyTo<T>(this System.Runtime.Intrinsics.Vector128<T> vector, T[] destination, int startIndex) { }
@@ -411,6 +412,7 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector256<System.UInt64> ConvertToUInt64(System.Runtime.Intrinsics.Vector256<System.Double> vector) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector256<System.UInt64> ConvertToUInt64Native(System.Runtime.Intrinsics.Vector256<System.Double> vector) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<T> CopySign<T>(System.Runtime.Intrinsics.Vector256<T> value, System.Runtime.Intrinsics.Vector256<T> sign) { throw null; }
         public static void CopyTo<T>(this System.Runtime.Intrinsics.Vector256<T> vector, System.Span<T> destination) { }
         public static void CopyTo<T>(this System.Runtime.Intrinsics.Vector256<T> vector, T[] destination) { }
         public static void CopyTo<T>(this System.Runtime.Intrinsics.Vector256<T> vector, T[] destination, int startIndex) { }
@@ -758,6 +760,7 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector512<System.UInt64> ConvertToUInt64(System.Runtime.Intrinsics.Vector512<System.Double> vector) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector512<System.UInt64> ConvertToUInt64Native(System.Runtime.Intrinsics.Vector512<System.Double> vector) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<T> CopySign<T>(System.Runtime.Intrinsics.Vector512<T> value, System.Runtime.Intrinsics.Vector512<T> sign) { throw null; }
         public static void CopyTo<T>(this System.Runtime.Intrinsics.Vector512<T> vector, System.Span<T> destination) { }
         public static void CopyTo<T>(this System.Runtime.Intrinsics.Vector512<T> vector, T[] destination) { }
         public static void CopyTo<T>(this System.Runtime.Intrinsics.Vector512<T> vector, T[] destination, int startIndex) { }
@@ -1102,6 +1105,7 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector64<System.UInt64> ConvertToUInt64(System.Runtime.Intrinsics.Vector64<System.Double> vector) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector64<System.UInt64> ConvertToUInt64Native(System.Runtime.Intrinsics.Vector64<System.Double> vector) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<T> CopySign<T>(System.Runtime.Intrinsics.Vector64<T> value, System.Runtime.Intrinsics.Vector64<T> sign) { throw null; }
         public static void CopyTo<T>(this System.Runtime.Intrinsics.Vector64<T> vector, System.Span<T> destination) { }
         public static void CopyTo<T>(this System.Runtime.Intrinsics.Vector64<T> vector, T[] destination) { }
         public static void CopyTo<T>(this System.Runtime.Intrinsics.Vector64<T> vector, T[] destination, int startIndex) { }

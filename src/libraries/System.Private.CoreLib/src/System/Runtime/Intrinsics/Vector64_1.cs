@@ -539,6 +539,9 @@ namespace System.Runtime.Intrinsics
         /// <inheritdoc cref="ISimdVector{TSelf, T}.ConditionalSelect(TSelf, TSelf, TSelf)" />
         static Vector64<T> ISimdVector<Vector64<T>, T>.ConditionalSelect(Vector64<T> condition, Vector64<T> left, Vector64<T> right) => Vector64.ConditionalSelect(condition, left, right);
 
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.CopySign(TSelf, TSelf)" />
+        static Vector64<T> ISimdVector<Vector64<T>, T>.CopySign(Vector64<T> value, Vector64<T> sign) => Vector64.CopySign(value, sign);
+
         /// <inheritdoc cref="ISimdVector{TSelf, T}.CopyTo(TSelf, T[])" />
         static void ISimdVector<Vector64<T>, T>.CopyTo(Vector64<T> vector, T[] destination) => vector.CopyTo(destination);
 

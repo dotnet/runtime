@@ -124,7 +124,13 @@ namespace System.Runtime.Intrinsics
         /// <param name="right">The vector that is selected when the corresponding bit in <paramref name="condition" /> is zero.</param>
         /// <returns>A vector whose bits come from <paramref name="left" /> or <paramref name="right" /> based on the value of <paramref name="condition" />.</returns>
         /// <exception cref="NotSupportedException">The type of the elements in the vector (<typeparamref name="T" />) is not supported.</exception>
-        static virtual TSelf ConditionalSelect(TSelf condition, TSelf left, TSelf right) => (left & condition) | (right & ~condition);
+        static virtual TSelf ConditionalSelect(TSelf condition, TSelf left, TSelf right) => (left & condition) | And(right & ~condition);
+
+        /// <summary>Copies the per-element sign of a vector to the per-element sign of another vector.</summary>
+        /// <param name="value">The vector whose magnitude is used in the result.</param>
+        /// <param name="sign">The vector whose sign is used in the result.</param>
+        /// <returns>A vector with the magnitude of <paramref name="value" /> and the sign of <paramref name="sign" />.</returns>
+        static abstract TSelf CopySign(TSelf value, TSelf sign);
 
         /// <summary>Copies a vector to a given array.</summary>
         /// <param name="vector">The vector to be copied.</param>

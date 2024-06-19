@@ -835,6 +835,9 @@ namespace System.Numerics
         /// <inheritdoc cref="ISimdVector{TSelf, T}.ConditionalSelect(TSelf, TSelf, TSelf)" />
         static Vector<T> ISimdVector<Vector<T>, T>.ConditionalSelect(Vector<T> condition, Vector<T> left, Vector<T> right) => Vector.ConditionalSelect(condition, left, right);
 
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.CopySign(TSelf, TSelf)" />
+        static Vector<T> ISimdVector<Vector<T>, T>.CopySign(Vector<T> value, Vector<T> sign) => Vector.CopySign(value, sign);
+
         /// <inheritdoc cref="ISimdVector{TSelf, T}.CopyTo(TSelf, T[])" />
         static void ISimdVector<Vector<T>, T>.CopyTo(Vector<T> vector, T[] destination) => vector.CopyTo(destination);
 

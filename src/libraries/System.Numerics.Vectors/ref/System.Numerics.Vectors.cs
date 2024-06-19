@@ -259,6 +259,7 @@ namespace System.Numerics
         public static System.Numerics.Vector<System.UInt64> ConvertToUInt64(System.Numerics.Vector<System.Double> value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Numerics.Vector<System.UInt64> ConvertToUInt64Native(System.Numerics.Vector<System.Double> value) { throw null; }
+        public static System.Numerics.Vector<T> CopySign<T>(System.Numerics.Vector<T> value, System.Numerics.Vector<T> sign) { throw null; }
         public static System.Numerics.Vector<T> Create<T>(T value) { throw null; }
         public static System.Numerics.Vector<T> Create<T>(System.ReadOnlySpan<T> values) { throw null; }
         public static System.Numerics.Vector<T> CreateSequence<T>(T start, T step) { throw null; }
@@ -452,6 +453,7 @@ namespace System.Numerics
         public static System.Numerics.Vector2 Abs(System.Numerics.Vector2 value) { throw null; }
         public static System.Numerics.Vector2 Add(System.Numerics.Vector2 left, System.Numerics.Vector2 right) { throw null; }
         public static System.Numerics.Vector2 Clamp(System.Numerics.Vector2 value1, System.Numerics.Vector2 min, System.Numerics.Vector2 max) { throw null; }
+        public static System.Numerics.Vector2 CopySign(System.Numerics.Vector2 value, System.Numerics.Vector2 sign) { throw null; }
         public static System.Numerics.Vector2 Create(float value) { throw null; }
         public static System.Numerics.Vector2 Create(float x, float y) { throw null; }
         public static System.Numerics.Vector2 Create(System.ReadOnlySpan<float> values) { throw null; }
@@ -530,6 +532,7 @@ namespace System.Numerics
         public static System.Numerics.Vector3 Abs(System.Numerics.Vector3 value) { throw null; }
         public static System.Numerics.Vector3 Add(System.Numerics.Vector3 left, System.Numerics.Vector3 right) { throw null; }
         public static System.Numerics.Vector3 Clamp(System.Numerics.Vector3 value1, System.Numerics.Vector3 min, System.Numerics.Vector3 max) { throw null; }
+        public static System.Numerics.Vector3 CopySign(System.Numerics.Vector3 value, System.Numerics.Vector3 sign) { throw null; }
         public static System.Numerics.Vector3 Create(float value) { throw null; }
         public static System.Numerics.Vector3 Create(System.Numerics.Vector2 vector, float z) { throw null; }
         public static System.Numerics.Vector3 Create(float x, float y, float z) { throw null; }
@@ -611,6 +614,7 @@ namespace System.Numerics
         public static System.Numerics.Vector4 Abs(System.Numerics.Vector4 value) { throw null; }
         public static System.Numerics.Vector4 Add(System.Numerics.Vector4 left, System.Numerics.Vector4 right) { throw null; }
         public static System.Numerics.Vector4 Clamp(System.Numerics.Vector4 value1, System.Numerics.Vector4 min, System.Numerics.Vector4 max) { throw null; }
+        public static System.Numerics.Vector4 CopySign(System.Numerics.Vector4 value, System.Numerics.Vector4 sign) { throw null; }
         public static System.Numerics.Vector4 Create(float value) { throw null; }
         public static System.Numerics.Vector4 Create(System.Numerics.Vector2 vector, float z, float w) { throw null; }
         public static System.Numerics.Vector4 Create(System.Numerics.Vector3 vector, float w) { throw null; }

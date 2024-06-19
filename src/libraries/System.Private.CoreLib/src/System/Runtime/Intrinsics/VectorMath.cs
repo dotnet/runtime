@@ -9,6 +9,33 @@ namespace System.Runtime.Intrinsics
 {
     internal static class VectorMath
     {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static TVector CopySign<TVector, T>(TVector value, TVector sign)
+            where TVector : unmanaged, ISimdVector<TVector, T>
+        {
+            Debug.Assert((typeof(T) != typeof(byte))
+                      && (typeof(T) != typeof(ushort))
+                      && (typeof(T) != typeof(uint))
+                      && (typeof(T) != typeof(ulong))
+                      && (typeof(T) != typeof(nuint)));
+
+            if (typeof(T) == typeof(float))
+            {
+                return TVector.ConditionalSelect(Create<TVector, T>(-0.0f), sign, value);
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                return TVector.ConditionalSelect(Create<TVector, T>(-0.0), sign, value);
+            }
+            else
+            {
+                // All values are two's complement and so `value ^ sign` will produce a positive
+                // number if the signs match and a negative number if the signs differ. When the
+                // signs differ we want to negate the value and otherwise take the value as is.
+                return TVector.ConditionalSelect(TVector.LessThan(value ^ sign, TVector.Zero), -value, value);
+            }
+        }
+
         public static TVectorDouble ExpDouble<TVectorDouble, TVectorInt64, TVectorUInt64>(TVectorDouble x)
             where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
             where TVectorUInt64 : unmanaged, ISimdVector<TVectorUInt64, ulong>
@@ -867,6 +894,74 @@ namespace System.Runtime.Intrinsics
             else if (typeof(TVectorInt32) == typeof(Vector512<int>))
             {
                 result = (TVectorSingle)(object)Vector512.ConvertToSingle((Vector512<int>)(object)vector);
+            }
+            else
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static TVector Create<TVector, T>(double value)
+            where TVector : unmanaged, ISimdVector<TVector, T>
+        {
+            Unsafe.SkipInit(out TVector result);
+
+            if (typeof(TVector) == typeof(Vector<double>))
+            {
+                result = (TVector)(object)Vector.Create(value);
+            }
+            else if (typeof(TVector) == typeof(Vector64<double>))
+            {
+                result = (TVector)(object)Vector64.Create(value);
+            }
+            else if (typeof(TVector) == typeof(Vector128<double>))
+            {
+                result = (TVector)(object)Vector128.Create(value);
+            }
+            else if (typeof(TVector) == typeof(Vector256<double>))
+            {
+                result = (TVector)(object)Vector256.Create(value);
+            }
+            else if (typeof(TVector) == typeof(Vector512<double>))
+            {
+                result = (TVector)(object)Vector512.Create(value);
+            }
+            else
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static TVector Create<TVector, T>(float value)
+            where TVector : unmanaged, ISimdVector<TVector, T>
+        {
+            Unsafe.SkipInit(out TVector result);
+
+            if (typeof(TVector) == typeof(Vector<float>))
+            {
+                result = (TVector)(object)Vector.Create(value);
+            }
+            else if (typeof(TVector) == typeof(Vector64<float>))
+            {
+                result = (TVector)(object)Vector64.Create(value);
+            }
+            else if (typeof(TVector) == typeof(Vector128<float>))
+            {
+                result = (TVector)(object)Vector128.Create(value);
+            }
+            else if (typeof(TVector) == typeof(Vector256<float>))
+            {
+                result = (TVector)(object)Vector256.Create(value);
+            }
+            else if (typeof(TVector) == typeof(Vector512<float>))
+            {
+                result = (TVector)(object)Vector512.Create(value);
             }
             else
             {

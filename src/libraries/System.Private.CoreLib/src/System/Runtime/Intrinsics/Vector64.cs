@@ -496,6 +496,37 @@ namespace System.Runtime.Intrinsics
             return result;
         }
 
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.CopySign(TSelf, TSelf)" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector64<T> CopySign<T>(Vector64<T> value, Vector64<T> sign)
+        {
+            if ((typeof(T) == typeof(byte))
+             || (typeof(T) == typeof(ushort))
+             || (typeof(T) == typeof(uint))
+             || (typeof(T) == typeof(ulong))
+             || (typeof(T) == typeof(nuint)))
+            {
+                return value;
+            }
+            else if (IsHardwareAccelerated)
+            {
+                return VectorMath.CopySign<Vector64<T>, T>(value, sign);
+            }
+            else
+            {
+                Unsafe.SkipInit(out Vector64<T> result);
+
+                for (int index = 0; index < Vector64<T>.Count; index++)
+                {
+                    T element = Scalar<T>.CopySign(value.GetElementUnsafe(index), sign.GetElementUnsafe(index));
+                    result.SetElementUnsafe(index, element);
+                }
+
+                return result;
+            }
+        }
+
         /// <summary>Copies a <see cref="Vector64{T}" /> to a given array.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="vector">The vector to be copied.</param>

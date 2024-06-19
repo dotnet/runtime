@@ -521,6 +521,37 @@ namespace System.Numerics
             return result;
         }
 
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.CopySign(TSelf, TSelf)" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<T> CopySign<T>(Vector<T> value, Vector<T> sign)
+        {
+            if ((typeof(T) == typeof(byte))
+             || (typeof(T) == typeof(ushort))
+             || (typeof(T) == typeof(uint))
+             || (typeof(T) == typeof(ulong))
+             || (typeof(T) == typeof(nuint)))
+            {
+                return value;
+            }
+            else if (IsHardwareAccelerated)
+            {
+                return VectorMath.CopySign<Vector<T>, T>(value, sign);
+            }
+            else
+            {
+                Unsafe.SkipInit(out Vector<T> result);
+
+                for (int index = 0; index < Vector<T>.Count; index++)
+                {
+                    T element = Scalar<T>.CopySign(value.GetElementUnsafe(index), sign.GetElementUnsafe(index));
+                    result.SetElementUnsafe(index, element);
+                }
+
+                return result;
+            }
+        }
+
         /// <summary>Creates a new <see cref="Vector{T}" /> instance with all elements initialized to the specified value.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="value">The value that all elements will be initialized to.</param>
