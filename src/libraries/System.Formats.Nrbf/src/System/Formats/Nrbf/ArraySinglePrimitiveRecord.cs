@@ -36,7 +36,7 @@ internal sealed class ArraySinglePrimitiveRecord<T> : SZArrayRecord<T>
 
     /// <inheritdoc />
     public override TypeName TypeName
-        => s_typeName ??= TypeName.Parse(typeof(T[]).FullName.AsSpan()).WithAssemblyName(TypeNameHelpers.s_CoreLibAssemblyName);
+        => s_typeName ??= TypeName.Parse(typeof(T[]).FullName.AsSpan()).WithCoreLibAssemblyName();
 
     internal IReadOnlyList<T> Values { get; }
 
