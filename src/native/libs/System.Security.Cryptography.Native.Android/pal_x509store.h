@@ -72,7 +72,7 @@ PALEXPORT int32_t AndroidCryptoNative_X509StoreRemoveCertificate(jobject /*KeySt
                                                                  const char* hashString);
 
 /*
-Looks up priate key and certificate chain based on the alias in the provided keystore
+Looks up private key and certificate chain based on the alias in the provided keystore
 */
 PALEXPORT jobject AndroidCryptoNative_X509StoreGetPrivateKeyEntry(jobject /*KeyStore*/ store, const char* hashString);
 
