@@ -65,7 +65,7 @@
         - src/tasks/AotCompilerTask/MonoAOTCompiler.props
         - src/tasks/AppleAppBuilder/Xcode.cs
         - src/tasks/MobileBuildTasks/Apple/AppleProject.cs
-        - dotnet/installer repo > src/redist/targets/GeneratePKG.targets
+        - https://github.com/dotnet/sdk repo > src/Installer/redist-installer/targets/GeneratePKG.targets
      -->
     <AndroidApiLevelMin>21</AndroidApiLevelMin>
     <iOSVersionMin>12.2</iOSVersionMin>

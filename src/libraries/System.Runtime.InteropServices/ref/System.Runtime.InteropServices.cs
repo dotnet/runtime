@@ -674,7 +674,9 @@ namespace System.Runtime.InteropServices
     {
         public static System.Span<T> AsSpan<T>(System.Collections.Generic.List<T>? list) { throw null; }
         public static ref TValue GetValueRefOrNullRef<TKey, TValue>(System.Collections.Generic.Dictionary<TKey, TValue> dictionary, TKey key) where TKey : notnull { throw null; }
+        public static ref TValue GetValueRefOrNullRef<TKey, TValue, TAlternateKey>(System.Collections.Generic.Dictionary<TKey, TValue>.AlternateLookup<TAlternateKey> dictionary, TAlternateKey key) where TKey : notnull where TAlternateKey : notnull, allows ref struct { throw null; }
         public static ref TValue? GetValueRefOrAddDefault<TKey, TValue>(System.Collections.Generic.Dictionary<TKey, TValue> dictionary, TKey key, out bool exists) where TKey : notnull { throw null; }
+        public static ref TValue? GetValueRefOrAddDefault<TKey, TValue, TAlternateKey>(System.Collections.Generic.Dictionary<TKey, TValue>.AlternateLookup<TAlternateKey> dictionary, TAlternateKey key, out bool exists) where TKey : notnull where TAlternateKey : notnull, allows ref struct { throw null; }
         public static void SetCount<T>(System.Collections.Generic.List<T> list, int count) { throw null; }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Class, Inherited=false)]

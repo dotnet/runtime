@@ -47,8 +47,12 @@ extends:
           ROOTFS_DIR: /crossrootfs/arm64
 
       # This container contains all required toolsets to build for Android and for Linux with bionic libc.
-      linux_bionic:
+      android:
         image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-cross-android-amd64-net9.0
+
+      # This container contains all required toolsets to build for Android and for Linux with bionic libc and a special layout of OpenSSL.
+      linux_bionic:
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-android-openssl-net9.0
 
       # This container contains all required toolsets to build for Android as well as tooling to build docker images.
       android_docker:
@@ -94,7 +98,7 @@ extends:
           ROOTFS_DIR: /crossrootfs/ppc64le
 
       linux_riscv64:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04-cross-riscv64
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-cross-riscv64-net9.0
         env:
           ROOTFS_DIR: /crossrootfs/riscv64
 

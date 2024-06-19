@@ -39,7 +39,7 @@ class LoopLocalOccurrences
     struct Occurrence
     {
         BasicBlock*          Block;
-        Statement*           Statement;
+        struct Statement*    Statement;
         GenTreeLclVarCommon* Node;
         Occurrence*          Next;
     };
@@ -1179,6 +1179,7 @@ PhaseStatus Compiler::optInductionVariables()
 
     bool changed = false;
 
+    optReachableBitVecTraits = nullptr;
     m_dfsTree = fgComputeDfs();
     m_domTree = FlowGraphDominatorTree::Build(m_dfsTree);
     m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);

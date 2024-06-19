@@ -13,7 +13,7 @@ namespace System.Runtime.Intrinsics.Arm
     /// </summary>
     [Intrinsic]
     [CLSCompliant(false)]
-    [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Sve is in preview.")]
+    [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Sve is in preview. Debugger scenario is not supported.")]
     public abstract class Sve : AdvSimd
     {
         internal Sve() { }
@@ -669,7 +669,153 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<ulong> BooleanNot(Vector<ulong> value) => BooleanNot(value);
 
+        ///  Compute vector addresses for 16-bit data
 
+        /// <summary>
+        /// svuint32_t svadrh[_u32base]_[s32]index(svuint32_t bases, svint32_t indices)
+        ///   ADR Zresult.S, [Zbases.S, Zindices.S, LSL #1]
+        /// </summary>
+        public static unsafe Vector<uint> Compute16BitAddresses(Vector<uint> bases, Vector<int> indices) => Compute16BitAddresses(bases, indices);
+
+        /// <summary>
+        /// svuint32_t svadrh[_u32base]_[u32]index(svuint32_t bases, svuint32_t indices)
+        ///   ADR Zresult.S, [Zbases.S, Zindices.S, LSL #1]
+        /// </summary>
+        public static unsafe Vector<uint> Compute16BitAddresses(Vector<uint> bases, Vector<uint> indices) => Compute16BitAddresses(bases, indices);
+
+        /// <summary>
+        /// svuint64_t svadrh[_u64base]_[s64]index(svuint64_t bases, svint64_t indices)
+        ///   ADR Zresult.D, [Zbases.D, Zindices.D, LSL #1]
+        /// </summary>
+        public static unsafe Vector<ulong> Compute16BitAddresses(Vector<ulong> bases, Vector<long> indices) => Compute16BitAddresses(bases, indices);
+
+        /// <summary>
+        /// svuint64_t svadrh[_u64base]_[u64]index(svuint64_t bases, svuint64_t indices)
+        ///   ADR Zresult.D, [Zbases.D, Zindices.D, LSL #1]
+        /// </summary>
+        public static unsafe Vector<ulong> Compute16BitAddresses(Vector<ulong> bases, Vector<ulong> indices) => Compute16BitAddresses(bases, indices);
+
+
+        ///  Compute vector addresses for 32-bit data
+
+        /// <summary>
+        /// svuint32_t svadrw[_u32base]_[s32]index(svuint32_t bases, svint32_t indices)
+        ///   ADR Zresult.S, [Zbases.S, Zindices.S, LSL #2]
+        /// </summary>
+        public static unsafe Vector<uint> Compute32BitAddresses(Vector<uint> bases, Vector<int> indices) => Compute32BitAddresses(bases, indices);
+
+        /// <summary>
+        /// svuint32_t svadrw[_u32base]_[u32]index(svuint32_t bases, svuint32_t indices)
+        ///   ADR Zresult.S, [Zbases.S, Zindices.S, LSL #2]
+        /// </summary>
+        public static unsafe Vector<uint> Compute32BitAddresses(Vector<uint> bases, Vector<uint> indices) => Compute32BitAddresses(bases, indices);
+
+        /// <summary>
+        /// svuint64_t svadrw[_u64base]_[s64]index(svuint64_t bases, svint64_t indices)
+        ///   ADR Zresult.D, [Zbases.D, Zindices.D, LSL #2]
+        /// </summary>
+        public static unsafe Vector<ulong> Compute32BitAddresses(Vector<ulong> bases, Vector<long> indices) => Compute32BitAddresses(bases, indices);
+
+        /// <summary>
+        /// svuint64_t svadrw[_u64base]_[u64]index(svuint64_t bases, svuint64_t indices)
+        ///   ADR Zresult.D, [Zbases.D, Zindices.D, LSL #2]
+        /// </summary>
+        public static unsafe Vector<ulong> Compute32BitAddresses(Vector<ulong> bases, Vector<ulong> indices) => Compute32BitAddresses(bases, indices);
+
+
+        ///  Compute vector addresses for 64-bit data
+
+        /// <summary>
+        /// svuint32_t svadrd[_u32base]_[s32]index(svuint32_t bases, svint32_t indices)
+        ///   ADR Zresult.S, [Zbases.S, Zindices.S, LSL #3]
+        /// </summary>
+        public static unsafe Vector<uint> Compute64BitAddresses(Vector<uint> bases, Vector<int> indices) => Compute64BitAddresses(bases, indices);
+
+        /// <summary>
+        /// svuint32_t svadrd[_u32base]_[u32]index(svuint32_t bases, svuint32_t indices)
+        ///   ADR Zresult.S, [Zbases.S, Zindices.S, LSL #3]
+        /// </summary>
+        public static unsafe Vector<uint> Compute64BitAddresses(Vector<uint> bases, Vector<uint> indices) => Compute64BitAddresses(bases, indices);
+
+        /// <summary>
+        /// svuint64_t svadrd[_u64base]_[s64]index(svuint64_t bases, svint64_t indices)
+        ///   ADR Zresult.D, [Zbases.D, Zindices.D, LSL #3]
+        /// </summary>
+        public static unsafe Vector<ulong> Compute64BitAddresses(Vector<ulong> bases, Vector<long> indices) => Compute64BitAddresses(bases, indices);
+
+        /// <summary>
+        /// svuint64_t svadrd[_u64base]_[u64]index(svuint64_t bases, svuint64_t indices)
+        ///   ADR Zresult.D, [Zbases.D, Zindices.D, LSL #3]
+        /// </summary>
+        public static unsafe Vector<ulong> Compute64BitAddresses(Vector<ulong> bases, Vector<ulong> indices) => Compute64BitAddresses(bases, indices);
+
+
+        ///  Compute vector addresses for 8-bit data
+
+        /// <summary>
+        /// svuint32_t svadrb[_u32base]_[s32]offset(svuint32_t bases, svint32_t offsets)
+        ///   ADR Zresult.S, [Zbases.S, Zoffsets.S]
+        /// </summary>
+        public static unsafe Vector<uint> Compute8BitAddresses(Vector<uint> bases, Vector<int> indices) => Compute8BitAddresses(bases, indices);
+
+        /// <summary>
+        /// svuint32_t svadrb[_u32base]_[u32]offset(svuint32_t bases, svuint32_t offsets)
+        ///   ADR Zresult.S, [Zbases.S, Zoffsets.S]
+        /// </summary>
+        public static unsafe Vector<uint> Compute8BitAddresses(Vector<uint> bases, Vector<uint> indices) => Compute8BitAddresses(bases, indices);
+
+        /// <summary>
+        /// svuint64_t svadrb[_u64base]_[s64]offset(svuint64_t bases, svint64_t offsets)
+        ///   ADR Zresult.D, [Zbases.D, Zoffsets.D]
+        /// </summary>
+        public static unsafe Vector<ulong> Compute8BitAddresses(Vector<ulong> bases, Vector<long> indices) => Compute8BitAddresses(bases, indices);
+
+        /// <summary>
+        /// svuint64_t svadrb[_u64base]_[u64]offset(svuint64_t bases, svuint64_t offsets)
+        ///   ADR Zresult.D, [Zbases.D, Zoffsets.D]
+        /// </summary>
+        public static unsafe Vector<ulong> Compute8BitAddresses(Vector<ulong> bases, Vector<ulong> indices) => Compute8BitAddresses(bases, indices);
+
+        ///  Shuffle active elements of vector to the right and fill with zero
+
+        /// <summary>
+        /// svfloat64_t svcompact[_f64](svbool_t pg, svfloat64_t op)
+        ///   COMPACT Zresult.D, Pg, Zop.D
+        /// </summary>
+        public static unsafe Vector<double> Compact(Vector<double> mask, Vector<double> value) => Compact(mask, value);
+
+        /// <summary>
+        /// svint32_t svcompact[_s32](svbool_t pg, svint32_t op)
+        ///   COMPACT Zresult.S, Pg, Zop.S
+        /// </summary>
+        public static unsafe Vector<int> Compact(Vector<int> mask, Vector<int> value) => Compact(mask, value);
+
+        /// <summary>
+        /// svint64_t svcompact[_s64](svbool_t pg, svint64_t op)
+        ///   COMPACT Zresult.D, Pg, Zop.D
+        /// </summary>
+        public static unsafe Vector<long> Compact(Vector<long> mask, Vector<long> value) => Compact(mask, value);
+
+        /// <summary>
+        /// svfloat32_t svcompact[_f32](svbool_t pg, svfloat32_t op)
+        ///   COMPACT Zresult.S, Pg, Zop.S
+        /// </summary>
+        public static unsafe Vector<float> Compact(Vector<float> mask, Vector<float> value) => Compact(mask, value);
+
+        /// <summary>
+        /// svuint32_t svcompact[_u32](svbool_t pg, svuint32_t op)
+        ///   COMPACT Zresult.S, Pg, Zop.S
+        /// </summary>
+        public static unsafe Vector<uint> Compact(Vector<uint> mask, Vector<uint> value) => Compact(mask, value);
+
+        /// <summary>
+        /// svuint64_t svcompact[_u64](svbool_t pg, svuint64_t op)
+        ///   COMPACT Zresult.D, Pg, Zop.D
+        /// </summary>
+        public static unsafe Vector<ulong> Compact(Vector<ulong> mask, Vector<ulong> value) => Compact(mask, value);
+
+
+        ///  Compare equal to
         ///  ConditionalSelect : Conditionally select elements
 
         /// <summary>
@@ -757,6 +903,48 @@ namespace System.Runtime.Intrinsics.Arm
         ///
         /// </summary>
         public static unsafe Vector<double> ConditionalSelect(Vector<double> mask, Vector<double> left, Vector<double> right) => ConditionalSelect(mask, left, right);
+
+
+        ///  ConvertToInt32 : Floating-point convert
+
+        /// <summary>
+        /// svint32_t svcvt_s32[_f64]_m(svint32_t inactive, svbool_t pg, svfloat64_t op)
+        ///   FCVTZS Ztied.S, Pg/M, Zop.D
+        /// svint32_t svcvt_s32[_f64]_x(svbool_t pg, svfloat64_t op)
+        ///   FCVTZS Ztied.S, Pg/M, Ztied.D
+        /// svint32_t svcvt_s32[_f64]_z(svbool_t pg, svfloat64_t op)
+        /// </summary>
+        public static unsafe Vector<int> ConvertToInt32(Vector<double> value) => ConvertToInt32(value);
+
+        /// <summary>
+        /// svint32_t svcvt_s32[_f32]_m(svint32_t inactive, svbool_t pg, svfloat32_t op)
+        ///   FCVTZS Ztied.S, Pg/M, Zop.S
+        /// svint32_t svcvt_s32[_f32]_x(svbool_t pg, svfloat32_t op)
+        ///   FCVTZS Ztied.S, Pg/M, Ztied.S
+        /// svint32_t svcvt_s32[_f32]_z(svbool_t pg, svfloat32_t op)
+        /// </summary>
+        public static unsafe Vector<int> ConvertToInt32(Vector<float> value) => ConvertToInt32(value);
+
+
+        ///  ConvertToUInt32 : Floating-point convert
+
+        /// <summary>
+        /// svuint32_t svcvt_u32[_f64]_m(svuint32_t inactive, svbool_t pg, svfloat64_t op)
+        ///   FCVTZU Ztied.S, Pg/M, Zop.D
+        /// svuint32_t svcvt_u32[_f64]_x(svbool_t pg, svfloat64_t op)
+        ///   FCVTZU Ztied.S, Pg/M, Ztied.D
+        /// svuint32_t svcvt_u32[_f64]_z(svbool_t pg, svfloat64_t op)
+        /// </summary>
+        public static unsafe Vector<uint> ConvertToUInt32(Vector<double> value) => ConvertToUInt32(value);
+
+        /// <summary>
+        /// svuint32_t svcvt_u32[_f32]_m(svuint32_t inactive, svbool_t pg, svfloat32_t op)
+        ///   FCVTZU Ztied.S, Pg/M, Zop.S
+        /// svuint32_t svcvt_u32[_f32]_x(svbool_t pg, svfloat32_t op)
+        ///   FCVTZU Ztied.S, Pg/M, Ztied.S
+        /// svuint32_t svcvt_u32[_f32]_z(svbool_t pg, svfloat32_t op)
+        /// </summary>
+        public static unsafe Vector<uint> ConvertToUInt32(Vector<float> value) => ConvertToUInt32(value);
 
 
         ///  Count16BitElements : Count the number of 16-bit elements in a vector
@@ -1376,6 +1564,863 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<float> FusedMultiplySubtractNegated(Vector<float> minuend, Vector<float> left, Vector<float> right) => FusedMultiplySubtractNegated(minuend, left, right);
 
 
+        ///  Unextended load
+
+        /// <summary>
+        /// svfloat64_t svld1_gather_[s64]index[_f64](svbool_t pg, const float64_t *base, svint64_t indices)
+        ///   LD1D Zresult.D, Pg/Z, [Xbase, Zindices.D, LSL #3]
+        /// </summary>
+        public static unsafe Vector<double> GatherVector(Vector<double> mask, double* address, Vector<long> indices) => GatherVector(mask, address, indices);
+
+        /// <summary>
+        /// svfloat64_t svld1_gather[_u64base]_f64(svbool_t pg, svuint64_t bases)
+        ///   LD1D Zresult.D, Pg/Z, [Zbases.D, #0]
+        /// </summary>
+        public static unsafe Vector<double> GatherVector(Vector<double> mask, Vector<ulong> addresses) => GatherVector(mask, addresses);
+
+        /// <summary>
+        /// svfloat64_t svld1_gather_[u64]index[_f64](svbool_t pg, const float64_t *base, svuint64_t indices)
+        ///   LD1D Zresult.D, Pg/Z, [Xbase, Zindices.D, LSL #3]
+        /// </summary>
+        public static unsafe Vector<double> GatherVector(Vector<double> mask, double* address, Vector<ulong> indices) => GatherVector(mask, address, indices);
+
+        /// <summary>
+        /// svint32_t svld1_gather_[s32]index[_s32](svbool_t pg, const int32_t *base, svint32_t indices)
+        ///   LD1W Zresult.S, Pg/Z, [Xbase, Zindices.S, SXTW #2]
+        /// </summary>
+        public static unsafe Vector<int> GatherVector(Vector<int> mask, int* address, Vector<int> indices) => GatherVector(mask, address, indices);
+
+        // <summary>
+        // svint32_t svld1_gather[_u32base]_s32(svbool_t pg, svuint32_t bases)
+        //   LD1W Zresult.S, Pg/Z, [Zbases.S, #0]
+        // </summary>
+        // Removed as per #103297
+        // public static unsafe Vector<int> GatherVector(Vector<int> mask, Vector<uint> addresses) => GatherVector(mask, addresses);
+
+        /// <summary>
+        /// svint32_t svld1_gather_[u32]index[_s32](svbool_t pg, const int32_t *base, svuint32_t indices)
+        ///   LD1W Zresult.S, Pg/Z, [Xbase, Zindices.S, UXTW #2]
+        /// </summary>
+        public static unsafe Vector<int> GatherVector(Vector<int> mask, int* address, Vector<uint> indices) => GatherVector(mask, address, indices);
+
+        /// <summary>
+        /// svint64_t svld1_gather_[s64]index[_s64](svbool_t pg, const int64_t *base, svint64_t indices)
+        ///   LD1D Zresult.D, Pg/Z, [Xbase, Zindices.D, LSL #3]
+        /// </summary>
+        public static unsafe Vector<long> GatherVector(Vector<long> mask, long* address, Vector<long> indices) => GatherVector(mask, address, indices);
+
+        /// <summary>
+        /// svint64_t svld1_gather[_u64base]_s64(svbool_t pg, svuint64_t bases)
+        ///   LD1D Zresult.D, Pg/Z, [Zbases.D, #0]
+        /// </summary>
+        public static unsafe Vector<long> GatherVector(Vector<long> mask, Vector<ulong> addresses) => GatherVector(mask, addresses);
+
+        /// <summary>
+        /// svint64_t svld1_gather_[u64]index[_s64](svbool_t pg, const int64_t *base, svuint64_t indices)
+        ///   LD1D Zresult.D, Pg/Z, [Xbase, Zindices.D, LSL #3]
+        /// </summary>
+        public static unsafe Vector<long> GatherVector(Vector<long> mask, long* address, Vector<ulong> indices) => GatherVector(mask, address, indices);
+
+        /// <summary>
+        /// svfloat32_t svld1_gather_[s32]index[_f32](svbool_t pg, const float32_t *base, svint32_t indices)
+        ///   LD1W Zresult.S, Pg/Z, [Xbase, Zindices.S, SXTW #2]
+        /// </summary>
+        public static unsafe Vector<float> GatherVector(Vector<float> mask, float* address, Vector<int> indices) => GatherVector(mask, address, indices);
+
+        // <summary>
+        // svfloat32_t svld1_gather[_u32base]_f32(svbool_t pg, svuint32_t bases)
+        //   LD1W Zresult.S, Pg/Z, [Zbases.S, #0]
+        // </summary>
+        // Removed as per #103297
+        // public static unsafe Vector<float> GatherVector(Vector<float> mask, Vector<uint> addresses) => GatherVector(mask, addresses);
+
+        /// <summary>
+        /// svfloat32_t svld1_gather_[u32]index[_f32](svbool_t pg, const float32_t *base, svuint32_t indices)
+        ///   LD1W Zresult.S, Pg/Z, [Xbase, Zindices.S, UXTW #2]
+        /// </summary>
+        public static unsafe Vector<float> GatherVector(Vector<float> mask, float* address, Vector<uint> indices) => GatherVector(mask, address, indices);
+
+        /// <summary>
+        /// svuint32_t svld1_gather_[s32]index[_u32](svbool_t pg, const uint32_t *base, svint32_t indices)
+        ///   LD1W Zresult.S, Pg/Z, [Xbase, Zindices.S, SXTW #2]
+        /// </summary>
+        public static unsafe Vector<uint> GatherVector(Vector<uint> mask, uint* address, Vector<int> indices) => GatherVector(mask, address, indices);
+
+        // <summary>
+        // svuint32_t svld1_gather[_u32base]_u32(svbool_t pg, svuint32_t bases)
+        //   LD1W Zresult.S, Pg/Z, [Zbases.S, #0]
+        // </summary>
+        // Removed as per #103297
+        // public static unsafe Vector<uint> GatherVector(Vector<uint> mask, Vector<uint> addresses) => GatherVector(mask, addresses);
+
+        /// <summary>
+        /// svuint32_t svld1_gather_[u32]index[_u32](svbool_t pg, const uint32_t *base, svuint32_t indices)
+        ///   LD1W Zresult.S, Pg/Z, [Xbase, Zindices.S, UXTW #2]
+        /// </summary>
+        public static unsafe Vector<uint> GatherVector(Vector<uint> mask, uint* address, Vector<uint> indices) => GatherVector(mask, address, indices);
+
+        /// <summary>
+        /// svuint64_t svld1_gather_[s64]index[_u64](svbool_t pg, const uint64_t *base, svint64_t indices)
+        ///   LD1D Zresult.D, Pg/Z, [Xbase, Zindices.D, LSL #3]
+        /// </summary>
+        public static unsafe Vector<ulong> GatherVector(Vector<ulong> mask, ulong* address, Vector<long> indices) => GatherVector(mask, address, indices);
+
+        /// <summary>
+        /// svuint64_t svld1_gather[_u64base]_u64(svbool_t pg, svuint64_t bases)
+        ///   LD1D Zresult.D, Pg/Z, [Zbases.D, #0]
+        /// </summary>
+        public static unsafe Vector<ulong> GatherVector(Vector<ulong> mask, Vector<ulong> addresses) => GatherVector(mask, addresses);
+
+        /// <summary>
+        /// svuint64_t svld1_gather_[u64]index[_u64](svbool_t pg, const uint64_t *base, svuint64_t indices)
+        ///   LD1D Zresult.D, Pg/Z, [Xbase, Zindices.D, LSL #3]
+        /// </summary>
+        public static unsafe Vector<ulong> GatherVector(Vector<ulong> mask, ulong* address, Vector<ulong> indices) => GatherVector(mask, address, indices);
+
+
+
+
+        ///  Load 8-bit data and zero-extend
+
+        /// <summary>
+        /// svint32_t svld1ub_gather_[s32]offset_s32(svbool_t pg, const uint8_t *base, svint32_t offsets)
+        ///   LD1B Zresult.S, Pg/Z, [Xbase, Zoffsets.S, SXTW]
+        /// </summary>
+        public static unsafe Vector<int> GatherVectorByteZeroExtend(Vector<int> mask, byte* address, Vector<int> indices) => GatherVectorByteZeroExtend(mask, address, indices);
+
+        // <summary>
+        // svint32_t svld1ub_gather[_u32base]_s32(svbool_t pg, svuint32_t bases)
+        //   LD1B Zresult.S, Pg/Z, [Zbases.S, #0]
+        // </summary>
+        // Removed as per #103297
+        // public static unsafe Vector<int> GatherVectorByteZeroExtend(Vector<int> mask, Vector<uint> addresses) => GatherVectorByteZeroExtend(mask, addresses);
+
+        /// <summary>
+        /// svint32_t svld1ub_gather_[u32]offset_s32(svbool_t pg, const uint8_t *base, svuint32_t offsets)
+        ///   LD1B Zresult.S, Pg/Z, [Xbase, Zoffsets.S, UXTW]
+        /// </summary>
+        public static unsafe Vector<int> GatherVectorByteZeroExtend(Vector<int> mask, byte* address, Vector<uint> indices) => GatherVectorByteZeroExtend(mask, address, indices);
+
+        /// <summary>
+        /// svint64_t svld1ub_gather_[s64]offset_s64(svbool_t pg, const uint8_t *base, svint64_t offsets)
+        ///   LD1B Zresult.D, Pg/Z, [Xbase, Zoffsets.D]
+        /// </summary>
+        public static unsafe Vector<long> GatherVectorByteZeroExtend(Vector<long> mask, byte* address, Vector<long> indices) => GatherVectorByteZeroExtend(mask, address, indices);
+
+        /// <summary>
+        /// svint64_t svld1ub_gather[_u64base]_s64(svbool_t pg, svuint64_t bases)
+        ///   LD1B Zresult.D, Pg/Z, [Zbases.D, #0]
+        /// </summary>
+        public static unsafe Vector<long> GatherVectorByteZeroExtend(Vector<long> mask, Vector<ulong> addresses) => GatherVectorByteZeroExtend(mask, addresses);
+
+        /// <summary>
+        /// svint64_t svld1ub_gather_[u64]offset_s64(svbool_t pg, const uint8_t *base, svuint64_t offsets)
+        ///   LD1B Zresult.D, Pg/Z, [Xbase, Zoffsets.D]
+        /// </summary>
+        public static unsafe Vector<long> GatherVectorByteZeroExtend(Vector<long> mask, byte* address, Vector<ulong> indices) => GatherVectorByteZeroExtend(mask, address, indices);
+
+        /// <summary>
+        /// svuint32_t svld1ub_gather_[s32]offset_u32(svbool_t pg, const uint8_t *base, svint32_t offsets)
+        ///   LD1B Zresult.S, Pg/Z, [Xbase, Zoffsets.S, SXTW]
+        /// </summary>
+        public static unsafe Vector<uint> GatherVectorByteZeroExtend(Vector<uint> mask, byte* address, Vector<int> indices) => GatherVectorByteZeroExtend(mask, address, indices);
+
+        // <summary>
+        // svuint32_t svld1ub_gather[_u32base]_u32(svbool_t pg, svuint32_t bases)
+        //   LD1B Zresult.S, Pg/Z, [Zbases.S, #0]
+        // </summary>
+        // Removed as per #103297
+        // public static unsafe Vector<uint> GatherVectorByteZeroExtend(Vector<uint> mask, Vector<uint> addresses) => GatherVectorByteZeroExtend(mask, addresses);
+
+        /// <summary>
+        /// svuint32_t svld1ub_gather_[u32]offset_u32(svbool_t pg, const uint8_t *base, svuint32_t offsets)
+        ///   LD1B Zresult.S, Pg/Z, [Xbase, Zoffsets.S, UXTW]
+        /// </summary>
+        public static unsafe Vector<uint> GatherVectorByteZeroExtend(Vector<uint> mask, byte* address, Vector<uint> indices) => GatherVectorByteZeroExtend(mask, address, indices);
+
+        /// <summary>
+        /// svuint64_t svld1ub_gather_[s64]offset_u64(svbool_t pg, const uint8_t *base, svint64_t offsets)
+        ///   LD1B Zresult.D, Pg/Z, [Xbase, Zoffsets.D]
+        /// </summary>
+        public static unsafe Vector<ulong> GatherVectorByteZeroExtend(Vector<ulong> mask, byte* address, Vector<long> indices) => GatherVectorByteZeroExtend(mask, address, indices);
+
+        /// <summary>
+        /// svuint64_t svld1ub_gather[_u64base]_u64(svbool_t pg, svuint64_t bases)
+        ///   LD1B Zresult.D, Pg/Z, [Zbases.D, #0]
+        /// </summary>
+        public static unsafe Vector<ulong> GatherVectorByteZeroExtend(Vector<ulong> mask, Vector<ulong> addresses) => GatherVectorByteZeroExtend(mask, addresses);
+
+        /// <summary>
+        /// svuint64_t svld1ub_gather_[u64]offset_u64(svbool_t pg, const uint8_t *base, svuint64_t offsets)
+        ///   LD1B Zresult.D, Pg/Z, [Xbase, Zoffsets.D]
+        /// </summary>
+        public static unsafe Vector<ulong> GatherVectorByteZeroExtend(Vector<ulong> mask, byte* address, Vector<ulong> indices) => GatherVectorByteZeroExtend(mask, address, indices);
+
+        ///  Load 16-bit data and sign-extend
+
+        /// <summary>
+        /// svint32_t svld1sh_gather_[s32]index_s32(svbool_t pg, const int16_t *base, svint32_t indices)
+        ///   LD1SH Zresult.S, Pg/Z, [Xbase, Zindices.S, SXTW #1]
+        /// </summary>
+        public static unsafe Vector<int> GatherVectorInt16SignExtend(Vector<int> mask, short* address, Vector<int> indices) => GatherVectorInt16SignExtend(mask, address, indices);
+
+        // <summary>
+        // svint32_t svld1sh_gather[_u32base]_s32(svbool_t pg, svuint32_t bases)
+        //   LD1SH Zresult.S, Pg/Z, [Zbases.S, #0]
+        // </summary>
+        // Removed as per #103297
+        // public static unsafe Vector<int> GatherVectorInt16SignExtend(Vector<int> mask, Vector<uint> addresses) => GatherVectorInt16SignExtend(mask, addresses);
+
+        /// <summary>
+        /// svint32_t svld1sh_gather_[u32]index_s32(svbool_t pg, const int16_t *base, svuint32_t indices)
+        ///   LD1SH Zresult.S, Pg/Z, [Xbase, Zindices.S, UXTW #1]
+        /// </summary>
+        public static unsafe Vector<int> GatherVectorInt16SignExtend(Vector<int> mask, short* address, Vector<uint> indices) => GatherVectorInt16SignExtend(mask, address, indices);
+
+        /// <summary>
+        /// svint64_t svld1sh_gather_[s64]index_s64(svbool_t pg, const int16_t *base, svint64_t indices)
+        ///   LD1SH Zresult.D, Pg/Z, [Xbase, Zindices.D, LSL #1]
+        /// </summary>
+        public static unsafe Vector<long> GatherVectorInt16SignExtend(Vector<long> mask, short* address, Vector<long> indices) => GatherVectorInt16SignExtend(mask, address, indices);
+
+        /// <summary>
+        /// svint64_t svld1sh_gather[_u64base]_s64(svbool_t pg, svuint64_t bases)
+        ///   LD1SH Zresult.D, Pg/Z, [Zbases.D, #0]
+        /// </summary>
+        public static unsafe Vector<long> GatherVectorInt16SignExtend(Vector<long> mask, Vector<ulong> addresses) => GatherVectorInt16SignExtend(mask, addresses);
+
+        /// <summary>
+        /// svint64_t svld1sh_gather_[u64]index_s64(svbool_t pg, const int16_t *base, svuint64_t indices)
+        ///   LD1SH Zresult.D, Pg/Z, [Xbase, Zindices.D, LSL #1]
+        /// </summary>
+        public static unsafe Vector<long> GatherVectorInt16SignExtend(Vector<long> mask, short* address, Vector<ulong> indices) => GatherVectorInt16SignExtend(mask, address, indices);
+
+        /// <summary>
+        /// svuint32_t svld1sh_gather_[s32]index_u32(svbool_t pg, const int16_t *base, svint32_t indices)
+        ///   LD1SH Zresult.S, Pg/Z, [Xbase, Zindices.S, SXTW #1]
+        /// </summary>
+        public static unsafe Vector<uint> GatherVectorInt16SignExtend(Vector<uint> mask, short* address, Vector<int> indices) => GatherVectorInt16SignExtend(mask, address, indices);
+
+        // <summary>
+        // svuint32_t svld1sh_gather[_u32base]_u32(svbool_t pg, svuint32_t bases)
+        //   LD1SH Zresult.S, Pg/Z, [Zbases.S, #0]
+        // </summary>
+        // Removed as per #103297
+        // public static unsafe Vector<uint> GatherVectorInt16SignExtend(Vector<uint> mask, Vector<uint> addresses) => GatherVectorInt16SignExtend(mask, addresses);
+
+        /// <summary>
+        /// svuint32_t svld1sh_gather_[u32]index_u32(svbool_t pg, const int16_t *base, svuint32_t indices)
+        ///   LD1SH Zresult.S, Pg/Z, [Xbase, Zindices.S, UXTW #1]
+        /// </summary>
+        public static unsafe Vector<uint> GatherVectorInt16SignExtend(Vector<uint> mask, short* address, Vector<uint> indices) => GatherVectorInt16SignExtend(mask, address, indices);
+
+        /// <summary>
+        /// svuint64_t svld1sh_gather_[s64]index_u64(svbool_t pg, const int16_t *base, svint64_t indices)
+        ///   LD1SH Zresult.D, Pg/Z, [Xbase, Zindices.D, LSL #1]
+        /// </summary>
+        public static unsafe Vector<ulong> GatherVectorInt16SignExtend(Vector<ulong> mask, short* address, Vector<long> indices) => GatherVectorInt16SignExtend(mask, address, indices);
+
+        /// <summary>
+        /// svuint64_t svld1sh_gather[_u64base]_u64(svbool_t pg, svuint64_t bases)
+        ///   LD1SH Zresult.D, Pg/Z, [Zbases.D, #0]
+        /// </summary>
+        public static unsafe Vector<ulong> GatherVectorInt16SignExtend(Vector<ulong> mask, Vector<ulong> addresses) => GatherVectorInt16SignExtend(mask, addresses);
+
+        /// <summary>
+        /// svuint64_t svld1sh_gather_[u64]index_u64(svbool_t pg, const int16_t *base, svuint64_t indices)
+        ///   LD1SH Zresult.D, Pg/Z, [Xbase, Zindices.D, LSL #1]
+        /// </summary>
+        public static unsafe Vector<ulong> GatherVectorInt16SignExtend(Vector<ulong> mask, short* address, Vector<ulong> indices) => GatherVectorInt16SignExtend(mask, address, indices);
+
+
+        ///  Load 16-bit data and sign-extend
+
+        /// <summary>
+        /// svint32_t svld1sh_gather_[s32]offset_s32(svbool_t pg, const int16_t *base, svint32_t offsets)
+        ///   LD1SH Zresult.S, Pg/Z, [Xbase, Zoffsets.S, SXTW]
+        /// </summary>
+        public static unsafe Vector<int> GatherVectorInt16WithByteOffsetsSignExtend(Vector<int> mask, short* address, Vector<int> offsets) => GatherVectorInt16WithByteOffsetsSignExtend(mask, address, offsets);
+
+        /// <summary>
+        /// svint32_t svld1sh_gather_[u32]offset_s32(svbool_t pg, const int16_t *base, svuint32_t offsets)
+        ///   LD1SH Zresult.S, Pg/Z, [Xbase, Zoffsets.S, UXTW]
+        /// </summary>
+        public static unsafe Vector<int> GatherVectorInt16WithByteOffsetsSignExtend(Vector<int> mask, short* address, Vector<uint> offsets) => GatherVectorInt16WithByteOffsetsSignExtend(mask, address, offsets);
+
+        /// <summary>
+        /// svint64_t svld1sh_gather_[s64]offset_s64(svbool_t pg, const int16_t *base, svint64_t offsets)
+        ///   LD1SH Zresult.D, Pg/Z, [Xbase, Zoffsets.D]
+        /// </summary>
+        public static unsafe Vector<long> GatherVectorInt16WithByteOffsetsSignExtend(Vector<long> mask, short* address, Vector<long> offsets) => GatherVectorInt16WithByteOffsetsSignExtend(mask, address, offsets);
+
+        /// <summary>
+        /// svint64_t svld1sh_gather_[u64]offset_s64(svbool_t pg, const int16_t *base, svuint64_t offsets)
+        ///   LD1SH Zresult.D, Pg/Z, [Xbase, Zoffsets.D]
+        /// </summary>
+        public static unsafe Vector<long> GatherVectorInt16WithByteOffsetsSignExtend(Vector<long> mask, short* address, Vector<ulong> offsets) => GatherVectorInt16WithByteOffsetsSignExtend(mask, address, offsets);
+
+        /// <summary>
+        /// svuint32_t svld1sh_gather_[s32]offset_u32(svbool_t pg, const int16_t *base, svint32_t offsets)
+        ///   LD1SH Zresult.S, Pg/Z, [Xbase, Zoffsets.S, SXTW]
+        /// </summary>
+        public static unsafe Vector<uint> GatherVectorInt16WithByteOffsetsSignExtend(Vector<uint> mask, short* address, Vector<int> offsets) => GatherVectorInt16WithByteOffsetsSignExtend(mask, address, offsets);
+
+        /// <summary>
+        /// svuint32_t svld1sh_gather_[u32]offset_u32(svbool_t pg, const int16_t *base, svuint32_t offsets)
+        ///   LD1SH Zresult.S, Pg/Z, [Xbase, Zoffsets.S, UXTW]
+        /// </summary>
+        public static unsafe Vector<uint> GatherVectorInt16WithByteOffsetsSignExtend(Vector<uint> mask, short* address, Vector<uint> offsets) => GatherVectorInt16WithByteOffsetsSignExtend(mask, address, offsets);
+
+        /// <summary>
+        /// svuint64_t svld1sh_gather_[s64]offset_u64(svbool_t pg, const int16_t *base, svint64_t offsets)
+        ///   LD1SH Zresult.D, Pg/Z, [Xbase, Zoffsets.D]
+        /// </summary>
+        public static unsafe Vector<ulong> GatherVectorInt16WithByteOffsetsSignExtend(Vector<ulong> mask, short* address, Vector<long> offsets) => GatherVectorInt16WithByteOffsetsSignExtend(mask, address, offsets);
+
+        /// <summary>
+        /// svuint64_t svld1sh_gather_[u64]offset_u64(svbool_t pg, const int16_t *base, svuint64_t offsets)
+        ///   LD1SH Zresult.D, Pg/Z, [Xbase, Zoffsets.D]
+        /// </summary>
+        public static unsafe Vector<ulong> GatherVectorInt16WithByteOffsetsSignExtend(Vector<ulong> mask, short* address, Vector<ulong> offsets) => GatherVectorInt16WithByteOffsetsSignExtend(mask, address, offsets);
+
+
+        ///  Load 32-bit data and sign-extend
+
+        /// <summary>
+        /// svint64_t svld1sw_gather_[s64]index_s64(svbool_t pg, const int32_t *base, svint64_t indices)
+        ///   LD1SW Zresult.D, Pg/Z, [Xbase, Zindices.D, LSL #2]
+        /// </summary>
+        public static unsafe Vector<long> GatherVectorInt32SignExtend(Vector<long> mask, int* address, Vector<long> indices) => GatherVectorInt32SignExtend(mask, address, indices);
+
+        /// <summary>
+        /// svint64_t svld1sw_gather[_u64base]_s64(svbool_t pg, svuint64_t bases)
+        ///   LD1SW Zresult.D, Pg/Z, [Zbases.D, #0]
+        /// </summary>
+        public static unsafe Vector<long> GatherVectorInt32SignExtend(Vector<long> mask, Vector<ulong> addresses) => GatherVectorInt32SignExtend(mask, addresses);
+
+        /// <summary>
+        /// svint64_t svld1sw_gather_[u64]index_s64(svbool_t pg, const int32_t *base, svuint64_t indices)
+        ///   LD1SW Zresult.D, Pg/Z, [Xbase, Zindices.D, LSL #2]
+        /// </summary>
+        public static unsafe Vector<long> GatherVectorInt32SignExtend(Vector<long> mask, int* address, Vector<ulong> indices) => GatherVectorInt32SignExtend(mask, address, indices);
+
+        /// <summary>
+        /// svuint64_t svld1sw_gather_[s64]index_u64(svbool_t pg, const int32_t *base, svint64_t indices)
+        ///   LD1SW Zresult.D, Pg/Z, [Xbase, Zindices.D, LSL #2]
+        /// </summary>
+        public static unsafe Vector<ulong> GatherVectorInt32SignExtend(Vector<ulong> mask, int* address, Vector<long> indices) => GatherVectorInt32SignExtend(mask, address, indices);
+
+        /// <summary>
+        /// svuint64_t svld1sw_gather[_u64base]_u64(svbool_t pg, svuint64_t bases)
+        ///   LD1SW Zresult.D, Pg/Z, [Zbases.D, #0]
+        /// </summary>
+        public static unsafe Vector<ulong> GatherVectorInt32SignExtend(Vector<ulong> mask, Vector<ulong> addresses) => GatherVectorInt32SignExtend(mask, addresses);
+
+        /// <summary>
+        /// svuint64_t svld1sw_gather_[u64]index_u64(svbool_t pg, const int32_t *base, svuint64_t indices)
+        ///   LD1SW Zresult.D, Pg/Z, [Xbase, Zindices.D, LSL #2]
+        /// </summary>
+        public static unsafe Vector<ulong> GatherVectorInt32SignExtend(Vector<ulong> mask, int* address, Vector<ulong> indices) => GatherVectorInt32SignExtend(mask, address, indices);
+
+
+        ///  Load 32-bit data and sign-extend
+
+        /// <summary>
+        /// svint64_t svld1sw_gather_[s64]offset_s64(svbool_t pg, const int32_t *base, svint64_t offsets)
+        ///   LD1SW Zresult.D, Pg/Z, [Xbase, Zoffsets.D]
+        /// </summary>
+        public static unsafe Vector<long> GatherVectorInt32WithByteOffsetsSignExtend(Vector<long> mask, int* address, Vector<long> offsets) => GatherVectorInt32WithByteOffsetsSignExtend(mask, address, offsets);
+
+        /// <summary>
+        /// svint64_t svld1sw_gather_[u64]offset_s64(svbool_t pg, const int32_t *base, svuint64_t offsets)
+        ///   LD1SW Zresult.D, Pg/Z, [Xbase, Zoffsets.D]
+        /// </summary>
+        public static unsafe Vector<long> GatherVectorInt32WithByteOffsetsSignExtend(Vector<long> mask, int* address, Vector<ulong> offsets) => GatherVectorInt32WithByteOffsetsSignExtend(mask, address, offsets);
+
+        /// <summary>
+        /// svuint64_t svld1sw_gather_[s64]offset_u64(svbool_t pg, const int32_t *base, svint64_t offsets)
+        ///   LD1SW Zresult.D, Pg/Z, [Xbase, Zoffsets.D]
+        /// </summary>
+        public static unsafe Vector<ulong> GatherVectorInt32WithByteOffsetsSignExtend(Vector<ulong> mask, int* address, Vector<long> offsets) => GatherVectorInt32WithByteOffsetsSignExtend(mask, address, offsets);
+
+        /// <summary>
+        /// svuint64_t svld1sw_gather_[u64]offset_u64(svbool_t pg, const int32_t *base, svuint64_t offsets)
+        ///   LD1SW Zresult.D, Pg/Z, [Xbase, Zoffsets.D]
+        /// </summary>
+        public static unsafe Vector<ulong> GatherVectorInt32WithByteOffsetsSignExtend(Vector<ulong> mask, int* address, Vector<ulong> offsets) => GatherVectorInt32WithByteOffsetsSignExtend(mask, address, offsets);
+
+
+        ///  Load 8-bit data and sign-extend
+
+        /// <summary>
+        /// svint32_t svld1sb_gather_[s32]offset_s32(svbool_t pg, const int8_t *base, svint32_t offsets)
+        ///   LD1SB Zresult.S, Pg/Z, [Xbase, Zoffsets.S, SXTW]
+        /// </summary>
+        public static unsafe Vector<int> GatherVectorSByteSignExtend(Vector<int> mask, sbyte* address, Vector<int> indices) => GatherVectorSByteSignExtend(mask, address, indices);
+
+        // <summary>
+        // svint32_t svld1sb_gather[_u32base]_s32(svbool_t pg, svuint32_t bases)
+        //   LD1SB Zresult.S, Pg/Z, [Zbases.S, #0]
+        // </summary>
+        // Removed as per #103297
+        // public static unsafe Vector<int> GatherVectorSByteSignExtend(Vector<int> mask, Vector<uint> addresses) => GatherVectorSByteSignExtend(mask, addresses);
+
+        /// <summary>
+        /// svint32_t svld1sb_gather_[u32]offset_s32(svbool_t pg, const int8_t *base, svuint32_t offsets)
+        ///   LD1SB Zresult.S, Pg/Z, [Xbase, Zoffsets.S, UXTW]
+        /// </summary>
+        public static unsafe Vector<int> GatherVectorSByteSignExtend(Vector<int> mask, sbyte* address, Vector<uint> indices) => GatherVectorSByteSignExtend(mask, address, indices);
+
+        /// <summary>
+        /// svint64_t svld1sb_gather_[s64]offset_s64(svbool_t pg, const int8_t *base, svint64_t offsets)
+        ///   LD1SB Zresult.D, Pg/Z, [Xbase, Zoffsets.D]
+        /// </summary>
+        public static unsafe Vector<long> GatherVectorSByteSignExtend(Vector<long> mask, sbyte* address, Vector<long> indices) => GatherVectorSByteSignExtend(mask, address, indices);
+
+        /// <summary>
+        /// svint64_t svld1sb_gather[_u64base]_s64(svbool_t pg, svuint64_t bases)
+        ///   LD1SB Zresult.D, Pg/Z, [Zbases.D, #0]
+        /// </summary>
+        public static unsafe Vector<long> GatherVectorSByteSignExtend(Vector<long> mask, Vector<ulong> addresses) => GatherVectorSByteSignExtend(mask, addresses);
+
+        /// <summary>
+        /// svint64_t svld1sb_gather_[u64]offset_s64(svbool_t pg, const int8_t *base, svuint64_t offsets)
+        ///   LD1SB Zresult.D, Pg/Z, [Xbase, Zoffsets.D]
+        /// </summary>
+        public static unsafe Vector<long> GatherVectorSByteSignExtend(Vector<long> mask, sbyte* address, Vector<ulong> indices) => GatherVectorSByteSignExtend(mask, address, indices);
+
+        /// <summary>
+        /// svuint32_t svld1sb_gather_[s32]offset_u32(svbool_t pg, const int8_t *base, svint32_t offsets)
+        ///   LD1SB Zresult.S, Pg/Z, [Xbase, Zoffsets.S, SXTW]
+        /// </summary>
+        public static unsafe Vector<uint> GatherVectorSByteSignExtend(Vector<uint> mask, sbyte* address, Vector<int> indices) => GatherVectorSByteSignExtend(mask, address, indices);
+
+        // <summary>
+        // svuint32_t svld1sb_gather[_u32base]_u32(svbool_t pg, svuint32_t bases)
+        //   LD1SB Zresult.S, Pg/Z, [Zbases.S, #0]
+        // </summary>
+        // Removed as per #103297
+        // public static unsafe Vector<uint> GatherVectorSByteSignExtend(Vector<uint> mask, Vector<uint> addresses) => GatherVectorSByteSignExtend(mask, addresses);
+
+        /// <summary>
+        /// svuint32_t svld1sb_gather_[u32]offset_u32(svbool_t pg, const int8_t *base, svuint32_t offsets)
+        ///   LD1SB Zresult.S, Pg/Z, [Xbase, Zoffsets.S, UXTW]
+        /// </summary>
+        public static unsafe Vector<uint> GatherVectorSByteSignExtend(Vector<uint> mask, sbyte* address, Vector<uint> indices) => GatherVectorSByteSignExtend(mask, address, indices);
+
+        /// <summary>
+        /// svuint64_t svld1sb_gather_[s64]offset_u64(svbool_t pg, const int8_t *base, svint64_t offsets)
+        ///   LD1SB Zresult.D, Pg/Z, [Xbase, Zoffsets.D]
+        /// </summary>
+        public static unsafe Vector<ulong> GatherVectorSByteSignExtend(Vector<ulong> mask, sbyte* address, Vector<long> indices) => GatherVectorSByteSignExtend(mask, address, indices);
+
+        /// <summary>
+        /// svuint64_t svld1sb_gather[_u64base]_u64(svbool_t pg, svuint64_t bases)
+        ///   LD1SB Zresult.D, Pg/Z, [Zbases.D, #0]
+        /// </summary>
+        public static unsafe Vector<ulong> GatherVectorSByteSignExtend(Vector<ulong> mask, Vector<ulong> addresses) => GatherVectorSByteSignExtend(mask, addresses);
+
+        /// <summary>
+        /// svuint64_t svld1sb_gather_[u64]offset_u64(svbool_t pg, const int8_t *base, svuint64_t offsets)
+        ///   LD1SB Zresult.D, Pg/Z, [Xbase, Zoffsets.D]
+        /// </summary>
+        public static unsafe Vector<ulong> GatherVectorSByteSignExtend(Vector<ulong> mask, sbyte* address, Vector<ulong> indices) => GatherVectorSByteSignExtend(mask, address, indices);
+
+
+        ///  Load 16-bit data and zero-extend
+
+        /// <summary>
+        /// svint32_t svld1uh_gather_[s32]offset_s32(svbool_t pg, const uint16_t *base, svint32_t offsets)
+        ///   LD1H Zresult.S, Pg/Z, [Xbase, Zoffsets.S, SXTW]
+        /// </summary>
+        public static unsafe Vector<int> GatherVectorUInt16WithByteOffsetsZeroExtend(Vector<int> mask, ushort* address, Vector<int> offsets) => GatherVectorUInt16WithByteOffsetsZeroExtend(mask, address, offsets);
+
+        /// <summary>
+        /// svint32_t svld1uh_gather_[u32]offset_s32(svbool_t pg, const uint16_t *base, svuint32_t offsets)
+        ///   LD1H Zresult.S, Pg/Z, [Xbase, Zoffsets.S, UXTW]
+        /// </summary>
+        public static unsafe Vector<int> GatherVectorUInt16WithByteOffsetsZeroExtend(Vector<int> mask, ushort* address, Vector<uint> offsets) => GatherVectorUInt16WithByteOffsetsZeroExtend(mask, address, offsets);
+
+        /// <summary>
+        /// svint64_t svld1uh_gather_[s64]offset_s64(svbool_t pg, const uint16_t *base, svint64_t offsets)
+        ///   LD1H Zresult.D, Pg/Z, [Xbase, Zoffsets.D]
+        /// </summary>
+        public static unsafe Vector<long> GatherVectorUInt16WithByteOffsetsZeroExtend(Vector<long> mask, ushort* address, Vector<long> offsets) => GatherVectorUInt16WithByteOffsetsZeroExtend(mask, address, offsets);
+
+        /// <summary>
+        /// svint64_t svld1uh_gather_[u64]offset_s64(svbool_t pg, const uint16_t *base, svuint64_t offsets)
+        ///   LD1H Zresult.D, Pg/Z, [Xbase, Zoffsets.D]
+        /// </summary>
+        public static unsafe Vector<long> GatherVectorUInt16WithByteOffsetsZeroExtend(Vector<long> mask, ushort* address, Vector<ulong> offsets) => GatherVectorUInt16WithByteOffsetsZeroExtend(mask, address, offsets);
+
+        /// <summary>
+        /// svuint32_t svld1uh_gather_[s32]offset_u32(svbool_t pg, const uint16_t *base, svint32_t offsets)
+        ///   LD1H Zresult.S, Pg/Z, [Xbase, Zoffsets.S, SXTW]
+        /// </summary>
+        public static unsafe Vector<uint> GatherVectorUInt16WithByteOffsetsZeroExtend(Vector<uint> mask, ushort* address, Vector<int> offsets) => GatherVectorUInt16WithByteOffsetsZeroExtend(mask, address, offsets);
+
+        /// <summary>
+        /// svuint32_t svld1uh_gather_[u32]offset_u32(svbool_t pg, const uint16_t *base, svuint32_t offsets)
+        ///   LD1H Zresult.S, Pg/Z, [Xbase, Zoffsets.S, UXTW]
+        /// </summary>
+        public static unsafe Vector<uint> GatherVectorUInt16WithByteOffsetsZeroExtend(Vector<uint> mask, ushort* address, Vector<uint> offsets) => GatherVectorUInt16WithByteOffsetsZeroExtend(mask, address, offsets);
+
+        /// <summary>
+        /// svuint64_t svld1uh_gather_[s64]offset_u64(svbool_t pg, const uint16_t *base, svint64_t offsets)
+        ///   LD1H Zresult.D, Pg/Z, [Xbase, Zoffsets.D]
+        /// </summary>
+        public static unsafe Vector<ulong> GatherVectorUInt16WithByteOffsetsZeroExtend(Vector<ulong> mask, ushort* address, Vector<long> offsets) => GatherVectorUInt16WithByteOffsetsZeroExtend(mask, address, offsets);
+
+        /// <summary>
+        /// svuint64_t svld1uh_gather_[u64]offset_u64(svbool_t pg, const uint16_t *base, svuint64_t offsets)
+        ///   LD1H Zresult.D, Pg/Z, [Xbase, Zoffsets.D]
+        /// </summary>
+        public static unsafe Vector<ulong> GatherVectorUInt16WithByteOffsetsZeroExtend(Vector<ulong> mask, ushort* address, Vector<ulong> offsets) => GatherVectorUInt16WithByteOffsetsZeroExtend(mask, address, offsets);
+
+
+        ///  Load 16-bit data and zero-extend
+
+        /// <summary>
+        /// svint32_t svld1uh_gather_[s32]index_s32(svbool_t pg, const uint16_t *base, svint32_t indices)
+        ///   LD1H Zresult.S, Pg/Z, [Xbase, Zindices.S, SXTW #1]
+        /// </summary>
+        public static unsafe Vector<int> GatherVectorUInt16ZeroExtend(Vector<int> mask, ushort* address, Vector<int> indices) => GatherVectorUInt16ZeroExtend(mask, address, indices);
+
+        // <summary>
+        // svint32_t svld1uh_gather[_u32base]_s32(svbool_t pg, svuint32_t bases)
+        //   LD1H Zresult.S, Pg/Z, [Zbases.S, #0]
+        // </summary>
+        // Removed as per #103297
+        // public static unsafe Vector<int> GatherVectorUInt16ZeroExtend(Vector<int> mask, Vector<uint> addresses) => GatherVectorUInt16ZeroExtend(mask, addresses);
+
+        /// <summary>
+        /// svint32_t svld1uh_gather_[u32]index_s32(svbool_t pg, const uint16_t *base, svuint32_t indices)
+        ///   LD1H Zresult.S, Pg/Z, [Xbase, Zindices.S, UXTW #1]
+        /// </summary>
+        public static unsafe Vector<int> GatherVectorUInt16ZeroExtend(Vector<int> mask, ushort* address, Vector<uint> indices) => GatherVectorUInt16ZeroExtend(mask, address, indices);
+
+        /// <summary>
+        /// svint64_t svld1uh_gather_[s64]index_s64(svbool_t pg, const uint16_t *base, svint64_t indices)
+        ///   LD1H Zresult.D, Pg/Z, [Xbase, Zindices.D, LSL #1]
+        /// </summary>
+        public static unsafe Vector<long> GatherVectorUInt16ZeroExtend(Vector<long> mask, ushort* address, Vector<long> indices) => GatherVectorUInt16ZeroExtend(mask, address, indices);
+
+        /// <summary>
+        /// svint64_t svld1uh_gather[_u64base]_s64(svbool_t pg, svuint64_t bases)
+        ///   LD1H Zresult.D, Pg/Z, [Zbases.D, #0]
+        /// </summary>
+        public static unsafe Vector<long> GatherVectorUInt16ZeroExtend(Vector<long> mask, Vector<ulong> addresses) => GatherVectorUInt16ZeroExtend(mask, addresses);
+
+        /// <summary>
+        /// svint64_t svld1uh_gather_[u64]index_s64(svbool_t pg, const uint16_t *base, svuint64_t indices)
+        ///   LD1H Zresult.D, Pg/Z, [Xbase, Zindices.D, LSL #1]
+        /// </summary>
+        public static unsafe Vector<long> GatherVectorUInt16ZeroExtend(Vector<long> mask, ushort* address, Vector<ulong> indices) => GatherVectorUInt16ZeroExtend(mask, address, indices);
+
+        /// <summary>
+        /// svuint32_t svld1uh_gather_[s32]index_u32(svbool_t pg, const uint16_t *base, svint32_t indices)
+        ///   LD1H Zresult.S, Pg/Z, [Xbase, Zindices.S, SXTW #1]
+        /// </summary>
+        public static unsafe Vector<uint> GatherVectorUInt16ZeroExtend(Vector<uint> mask, ushort* address, Vector<int> indices) => GatherVectorUInt16ZeroExtend(mask, address, indices);
+
+        // <summary>
+        // svuint32_t svld1uh_gather[_u32base]_u32(svbool_t pg, svuint32_t bases)
+        //   LD1H Zresult.S, Pg/Z, [Zbases.S, #0]
+        // </summary>
+        // Removed as per #103297
+        // public static unsafe Vector<uint> GatherVectorUInt16ZeroExtend(Vector<uint> mask, Vector<uint> addresses) => GatherVectorUInt16ZeroExtend(mask, addresses);
+
+        /// <summary>
+        /// svuint32_t svld1uh_gather_[u32]index_u32(svbool_t pg, const uint16_t *base, svuint32_t indices)
+        ///   LD1H Zresult.S, Pg/Z, [Xbase, Zindices.S, UXTW #1]
+        /// </summary>
+        public static unsafe Vector<uint> GatherVectorUInt16ZeroExtend(Vector<uint> mask, ushort* address, Vector<uint> indices) => GatherVectorUInt16ZeroExtend(mask, address, indices);
+
+        /// <summary>
+        /// svuint64_t svld1uh_gather_[s64]index_u64(svbool_t pg, const uint16_t *base, svint64_t indices)
+        ///   LD1H Zresult.D, Pg/Z, [Xbase, Zindices.D, LSL #1]
+        /// </summary>
+        public static unsafe Vector<ulong> GatherVectorUInt16ZeroExtend(Vector<ulong> mask, ushort* address, Vector<long> indices) => GatherVectorUInt16ZeroExtend(mask, address, indices);
+
+        /// <summary>
+        /// svuint64_t svld1uh_gather[_u64base]_u64(svbool_t pg, svuint64_t bases)
+        ///   LD1H Zresult.D, Pg/Z, [Zbases.D, #0]
+        /// </summary>
+        public static unsafe Vector<ulong> GatherVectorUInt16ZeroExtend(Vector<ulong> mask, Vector<ulong> addresses) => GatherVectorUInt16ZeroExtend(mask, addresses);
+
+        /// <summary>
+        /// svuint64_t svld1uh_gather_[u64]index_u64(svbool_t pg, const uint16_t *base, svuint64_t indices)
+        ///   LD1H Zresult.D, Pg/Z, [Xbase, Zindices.D, LSL #1]
+        /// </summary>
+        public static unsafe Vector<ulong> GatherVectorUInt16ZeroExtend(Vector<ulong> mask, ushort* address, Vector<ulong> indices) => GatherVectorUInt16ZeroExtend(mask, address, indices);
+
+
+        ///  Load 32-bit data and zero-extend
+
+        /// <summary>
+        /// svint64_t svld1uw_gather_[s64]offset_s64(svbool_t pg, const uint32_t *base, svint64_t offsets)
+        ///   LD1W Zresult.D, Pg/Z, [Xbase, Zoffsets.D]
+        /// </summary>
+        public static unsafe Vector<int> GatherVectorUInt32WithByteOffsetsZeroExtend(Vector<int> mask, uint* address, Vector<int> offsets) => GatherVectorUInt32WithByteOffsetsZeroExtend(mask, address, offsets);
+
+        /// <summary>
+        /// svint64_t svld1uw_gather_[u64]offset_s64(svbool_t pg, const uint32_t *base, svuint64_t offsets)
+        ///   LD1W Zresult.D, Pg/Z, [Xbase, Zoffsets.D]
+        /// </summary>
+        public static unsafe Vector<int> GatherVectorUInt32WithByteOffsetsZeroExtend(Vector<int> mask, uint* address, Vector<uint> offsets) => GatherVectorUInt32WithByteOffsetsZeroExtend(mask, address, offsets);
+
+        /// <summary>
+        /// svint64_t svld1uw_gather_[s64]offset_s64(svbool_t pg, const uint32_t *base, svint64_t offsets)
+        ///   LD1W Zresult.D, Pg/Z, [Xbase, Zoffsets.D]
+        /// </summary>
+        public static unsafe Vector<long> GatherVectorUInt32WithByteOffsetsZeroExtend(Vector<long> mask, uint* address, Vector<long> offsets) => GatherVectorUInt32WithByteOffsetsZeroExtend(mask, address, offsets);
+
+        /// <summary>
+        /// svint64_t svld1uw_gather_[u64]offset_s64(svbool_t pg, const uint32_t *base, svuint64_t offsets)
+        ///   LD1W Zresult.D, Pg/Z, [Xbase, Zoffsets.D]
+        /// </summary>
+        public static unsafe Vector<long> GatherVectorUInt32WithByteOffsetsZeroExtend(Vector<long> mask, uint* address, Vector<ulong> offsets) => GatherVectorUInt32WithByteOffsetsZeroExtend(mask, address, offsets);
+
+        /// <summary>
+        /// svuint64_t svld1uw_gather_[s64]offset_u64(svbool_t pg, const uint32_t *base, svint64_t offsets)
+        ///   LD1W Zresult.D, Pg/Z, [Xbase, Zoffsets.D]
+        /// </summary>
+        public static unsafe Vector<uint> GatherVectorUInt32WithByteOffsetsZeroExtend(Vector<uint> mask, uint* address, Vector<int> offsets) => GatherVectorUInt32WithByteOffsetsZeroExtend(mask, address, offsets);
+
+        /// <summary>
+        /// svuint64_t svld1uw_gather_[u64]offset_u64(svbool_t pg, const uint32_t *base, svuint64_t offsets)
+        ///   LD1W Zresult.D, Pg/Z, [Xbase, Zoffsets.D]
+        /// </summary>
+        public static unsafe Vector<uint> GatherVectorUInt32WithByteOffsetsZeroExtend(Vector<uint> mask, uint* address, Vector<uint> offsets) => GatherVectorUInt32WithByteOffsetsZeroExtend(mask, address, offsets);
+
+        /// <summary>
+        /// svuint64_t svld1uw_gather_[s64]offset_u64(svbool_t pg, const uint32_t *base, svint64_t offsets)
+        ///   LD1W Zresult.D, Pg/Z, [Xbase, Zoffsets.D]
+        /// </summary>
+        public static unsafe Vector<ulong> GatherVectorUInt32WithByteOffsetsZeroExtend(Vector<ulong> mask, uint* address, Vector<long> offsets) => GatherVectorUInt32WithByteOffsetsZeroExtend(mask, address, offsets);
+
+        /// <summary>
+        /// svuint64_t svld1uw_gather_[u64]offset_u64(svbool_t pg, const uint32_t *base, svuint64_t offsets)
+        ///   LD1W Zresult.D, Pg/Z, [Xbase, Zoffsets.D]
+        /// </summary>
+        public static unsafe Vector<ulong> GatherVectorUInt32WithByteOffsetsZeroExtend(Vector<ulong> mask, uint* address, Vector<ulong> offsets) => GatherVectorUInt32WithByteOffsetsZeroExtend(mask, address, offsets);
+
+
+        ///  Load 32-bit data and zero-extend
+
+        /// <summary>
+        /// svint64_t svld1uw_gather_[s64]index_s64(svbool_t pg, const uint32_t *base, svint64_t indices)
+        ///   LD1W Zresult.D, Pg/Z, [Xbase, Zindices.D, LSL #2]
+        /// </summary>
+        public static unsafe Vector<int> GatherVectorUInt32ZeroExtend(Vector<int> mask, uint* address, Vector<int> indices) => GatherVectorUInt32ZeroExtend(mask, address, indices);
+
+        // <summary>
+        // svint64_t svld1uw_gather[_u64base]_s64(svbool_t pg, svuint64_t bases)
+        //   LD1W Zresult.D, Pg/Z, [Zbases.D, #0]
+        // </summary>
+        // Removed as per #103297
+        // public static unsafe Vector<int> GatherVectorUInt32ZeroExtend(Vector<int> mask, Vector<uint> addresses) => GatherVectorUInt32ZeroExtend(mask, addresses);
+
+        /// <summary>
+        /// svint64_t svld1uw_gather_[u64]index_s64(svbool_t pg, const uint32_t *base, svuint64_t indices)
+        ///   LD1W Zresult.D, Pg/Z, [Xbase, Zindices.D, LSL #2]
+        /// </summary>
+        public static unsafe Vector<int> GatherVectorUInt32ZeroExtend(Vector<int> mask, uint* address, Vector<uint> indices) => GatherVectorUInt32ZeroExtend(mask, address, indices);
+
+        /// <summary>
+        /// svint64_t svld1uw_gather_[s64]index_s64(svbool_t pg, const uint32_t *base, svint64_t indices)
+        ///   LD1W Zresult.D, Pg/Z, [Xbase, Zindices.D, LSL #2]
+        /// </summary>
+        public static unsafe Vector<long> GatherVectorUInt32ZeroExtend(Vector<long> mask, uint* address, Vector<long> indices) => GatherVectorUInt32ZeroExtend(mask, address, indices);
+
+        /// <summary>
+        /// svint64_t svld1uw_gather[_u64base]_s64(svbool_t pg, svuint64_t bases)
+        ///   LD1W Zresult.D, Pg/Z, [Zbases.D, #0]
+        /// </summary>
+        public static unsafe Vector<long> GatherVectorUInt32ZeroExtend(Vector<long> mask, Vector<ulong> addresses) => GatherVectorUInt32ZeroExtend(mask, addresses);
+
+        /// <summary>
+        /// svint64_t svld1uw_gather_[u64]index_s64(svbool_t pg, const uint32_t *base, svuint64_t indices)
+        ///   LD1W Zresult.D, Pg/Z, [Xbase, Zindices.D, LSL #2]
+        /// </summary>
+        public static unsafe Vector<long> GatherVectorUInt32ZeroExtend(Vector<long> mask, uint* address, Vector<ulong> indices) => GatherVectorUInt32ZeroExtend(mask, address, indices);
+
+        /// <summary>
+        /// svuint64_t svld1uw_gather_[s64]index_u64(svbool_t pg, const uint32_t *base, svint64_t indices)
+        ///   LD1W Zresult.D, Pg/Z, [Xbase, Zindices.D, LSL #2]
+        /// </summary>
+        public static unsafe Vector<uint> GatherVectorUInt32ZeroExtend(Vector<uint> mask, uint* address, Vector<int> indices) => GatherVectorUInt32ZeroExtend(mask, address, indices);
+
+        // <summary>
+        // svuint64_t svld1uw_gather[_u64base]_u64(svbool_t pg, svuint64_t bases)
+        //   LD1W Zresult.D, Pg/Z, [Zbases.D, #0]
+        // </summary>
+        // Removed as per #103297
+        // public static unsafe Vector<uint> GatherVectorUInt32ZeroExtend(Vector<uint> mask, Vector<uint> addresses) => GatherVectorUInt32ZeroExtend(mask, addresses);
+
+        /// <summary>
+        /// svuint64_t svld1uw_gather_[u64]index_u64(svbool_t pg, const uint32_t *base, svuint64_t indices)
+        ///   LD1W Zresult.D, Pg/Z, [Xbase, Zindices.D, LSL #2]
+        /// </summary>
+        public static unsafe Vector<uint> GatherVectorUInt32ZeroExtend(Vector<uint> mask, uint* address, Vector<uint> indices) => GatherVectorUInt32ZeroExtend(mask, address, indices);
+
+        /// <summary>
+        /// svuint64_t svld1uw_gather_[s64]index_u64(svbool_t pg, const uint32_t *base, svint64_t indices)
+        ///   LD1W Zresult.D, Pg/Z, [Xbase, Zindices.D, LSL #2]
+        /// </summary>
+        public static unsafe Vector<ulong> GatherVectorUInt32ZeroExtend(Vector<ulong> mask, uint* address, Vector<long> indices) => GatherVectorUInt32ZeroExtend(mask, address, indices);
+
+        /// <summary>
+        /// svuint64_t svld1uw_gather[_u64base]_u64(svbool_t pg, svuint64_t bases)
+        ///   LD1W Zresult.D, Pg/Z, [Zbases.D, #0]
+        /// </summary>
+        public static unsafe Vector<ulong> GatherVectorUInt32ZeroExtend(Vector<ulong> mask, Vector<ulong> addresses) => GatherVectorUInt32ZeroExtend(mask, addresses);
+
+        /// <summary>
+        /// svuint64_t svld1uw_gather_[u64]index_u64(svbool_t pg, const uint32_t *base, svuint64_t indices)
+        ///   LD1W Zresult.D, Pg/Z, [Xbase, Zindices.D, LSL #2]
+        /// </summary>
+        public static unsafe Vector<ulong> GatherVectorUInt32ZeroExtend(Vector<ulong> mask, uint* address, Vector<ulong> indices) => GatherVectorUInt32ZeroExtend(mask, address, indices);
+
+
+        ///  Unextended load
+
+        /// <summary>
+        /// svfloat64_t svld1_gather_[s64]offset[_f64](svbool_t pg, const float64_t *base, svint64_t offsets)
+        ///   LD1D Zresult.D, Pg/Z, [Xbase, Zoffsets.D]
+        /// </summary>
+        public static unsafe Vector<double> GatherVectorWithByteOffsets(Vector<double> mask, double* address, Vector<long> offsets) => GatherVectorWithByteOffsets(mask, address, offsets);
+
+        /// <summary>
+        /// svfloat64_t svld1_gather_[u64]offset[_f64](svbool_t pg, const float64_t *base, svuint64_t offsets)
+        ///   LD1D Zresult.D, Pg/Z, [Xbase, Zoffsets.D]
+        /// </summary>
+        public static unsafe Vector<double> GatherVectorWithByteOffsets(Vector<double> mask, double* address, Vector<ulong> offsets) => GatherVectorWithByteOffsets(mask, address, offsets);
+
+        /// <summary>
+        /// svint32_t svld1_gather_[s32]offset[_s32](svbool_t pg, const int32_t *base, svint32_t offsets)
+        ///   LD1W Zresult.S, Pg/Z, [Xbase, Zoffsets.S, SXTW]
+        /// </summary>
+        public static unsafe Vector<int> GatherVectorWithByteOffsets(Vector<int> mask, int* address, Vector<int> offsets) => GatherVectorWithByteOffsets(mask, address, offsets);
+
+        /// <summary>
+        /// svint32_t svld1_gather_[u32]offset[_s32](svbool_t pg, const int32_t *base, svuint32_t offsets)
+        ///   LD1W Zresult.S, Pg/Z, [Xbase, Zoffsets.S, UXTW]
+        /// </summary>
+        public static unsafe Vector<int> GatherVectorWithByteOffsets(Vector<int> mask, int* address, Vector<uint> offsets) => GatherVectorWithByteOffsets(mask, address, offsets);
+
+        /// <summary>
+        /// svint64_t svld1_gather_[s64]offset[_s64](svbool_t pg, const int64_t *base, svint64_t offsets)
+        ///   LD1D Zresult.D, Pg/Z, [Xbase, Zoffsets.D]
+        /// </summary>
+        public static unsafe Vector<long> GatherVectorWithByteOffsets(Vector<long> mask, long* address, Vector<long> offsets) => GatherVectorWithByteOffsets(mask, address, offsets);
+
+        /// <summary>
+        /// svint64_t svld1_gather_[u64]offset[_s64](svbool_t pg, const int64_t *base, svuint64_t offsets)
+        ///   LD1D Zresult.D, Pg/Z, [Xbase, Zoffsets.D]
+        /// </summary>
+        public static unsafe Vector<long> GatherVectorWithByteOffsets(Vector<long> mask, long* address, Vector<ulong> offsets) => GatherVectorWithByteOffsets(mask, address, offsets);
+
+        /// <summary>
+        /// svfloat32_t svld1_gather_[s32]offset[_f32](svbool_t pg, const float32_t *base, svint32_t offsets)
+        ///   LD1W Zresult.S, Pg/Z, [Xbase, Zoffsets.S, SXTW]
+        /// </summary>
+        public static unsafe Vector<float> GatherVectorWithByteOffsets(Vector<float> mask, float* address, Vector<int> offsets) => GatherVectorWithByteOffsets(mask, address, offsets);
+
+        /// <summary>
+        /// svfloat32_t svld1_gather_[u32]offset[_f32](svbool_t pg, const float32_t *base, svuint32_t offsets)
+        ///   LD1W Zresult.S, Pg/Z, [Xbase, Zoffsets.S, UXTW]
+        /// </summary>
+        public static unsafe Vector<float> GatherVectorWithByteOffsets(Vector<float> mask, float* address, Vector<uint> offsets) => GatherVectorWithByteOffsets(mask, address, offsets);
+
+        /// <summary>
+        /// svuint32_t svld1_gather_[s32]offset[_u32](svbool_t pg, const uint32_t *base, svint32_t offsets)
+        ///   LD1W Zresult.S, Pg/Z, [Xbase, Zoffsets.S, SXTW]
+        /// </summary>
+        public static unsafe Vector<uint> GatherVectorWithByteOffsets(Vector<uint> mask, uint* address, Vector<int> offsets) => GatherVectorWithByteOffsets(mask, address, offsets);
+
+        /// <summary>
+        /// svuint32_t svld1_gather_[u32]offset[_u32](svbool_t pg, const uint32_t *base, svuint32_t offsets)
+        ///   LD1W Zresult.S, Pg/Z, [Xbase, Zoffsets.S, UXTW]
+        /// </summary>
+        public static unsafe Vector<uint> GatherVectorWithByteOffsets(Vector<uint> mask, uint* address, Vector<uint> offsets) => GatherVectorWithByteOffsets(mask, address, offsets);
+
+        /// <summary>
+        /// svuint64_t svld1_gather_[s64]offset[_u64](svbool_t pg, const uint64_t *base, svint64_t offsets)
+        ///   LD1D Zresult.D, Pg/Z, [Xbase, Zoffsets.D]
+        /// </summary>
+        public static unsafe Vector<ulong> GatherVectorWithByteOffsets(Vector<ulong> mask, ulong* address, Vector<long> offsets) => GatherVectorWithByteOffsets(mask, address, offsets);
+
+        /// <summary>
+        /// svuint64_t svld1_gather_[u64]offset[_u64](svbool_t pg, const uint64_t *base, svuint64_t offsets)
+        ///   LD1D Zresult.D, Pg/Z, [Xbase, Zoffsets.D]
+        /// </summary>
+        public static unsafe Vector<ulong> GatherVectorWithByteOffsets(Vector<ulong> mask, ulong* address, Vector<ulong> offsets) => GatherVectorWithByteOffsets(mask, address, offsets);
+
+
+        ///  Count set predicate bits
+
+        /// <summary>
+        /// uint64_t svcntp_b8(svbool_t pg, svbool_t op)
+        ///   CNTP Xresult, Pg, Pop.B
+        /// </summary>
+        public static unsafe ulong GetActiveElementCount(Vector<byte> mask, Vector<byte> from) => GetActiveElementCount(mask, from);
+
+        /// <summary>
+        /// uint64_t svcntp_b8(svbool_t pg, svbool_t op)
+        ///   CNTP Xresult, Pg, Pop.B
+        /// </summary>
+        public static unsafe ulong GetActiveElementCount(Vector<double> mask, Vector<double> from) => GetActiveElementCount(mask, from);
+
+        /// <summary>
+        /// uint64_t svcntp_b8(svbool_t pg, svbool_t op)
+        ///   CNTP Xresult, Pg, Pop.B
+        /// </summary>
+        public static unsafe ulong GetActiveElementCount(Vector<short> mask, Vector<short> from) => GetActiveElementCount(mask, from);
+
+        /// <summary>
+        /// uint64_t svcntp_b8(svbool_t pg, svbool_t op)
+        ///   CNTP Xresult, Pg, Pop.B
+        /// </summary>
+        public static unsafe ulong GetActiveElementCount(Vector<int> mask, Vector<int> from) => GetActiveElementCount(mask, from);
+
+        /// <summary>
+        /// uint64_t svcntp_b8(svbool_t pg, svbool_t op)
+        ///   CNTP Xresult, Pg, Pop.B
+        /// </summary>
+        public static unsafe ulong GetActiveElementCount(Vector<long> mask, Vector<long> from) => GetActiveElementCount(mask, from);
+
+        /// <summary>
+        /// uint64_t svcntp_b8(svbool_t pg, svbool_t op)
+        ///   CNTP Xresult, Pg, Pop.B
+        /// </summary>
+        public static unsafe ulong GetActiveElementCount(Vector<sbyte> mask, Vector<sbyte> from) => GetActiveElementCount(mask, from);
+
+        /// <summary>
+        /// uint64_t svcntp_b8(svbool_t pg, svbool_t op)
+        ///   CNTP Xresult, Pg, Pop.B
+        /// </summary>
+        public static unsafe ulong GetActiveElementCount(Vector<float> mask, Vector<float> from) => GetActiveElementCount(mask, from);
+
+        /// <summary>
+        /// uint64_t svcntp_b16(svbool_t pg, svbool_t op)
+        ///   CNTP Xresult, Pg, Pop.H
+        /// </summary>
+        public static unsafe ulong GetActiveElementCount(Vector<ushort> mask, Vector<ushort> from) => GetActiveElementCount(mask, from);
+
+        /// <summary>
+        /// uint64_t svcntp_b32(svbool_t pg, svbool_t op)
+        ///   CNTP Xresult, Pg, Pop.S
+        /// </summary>
+        public static unsafe ulong GetActiveElementCount(Vector<uint> mask, Vector<uint> from) => GetActiveElementCount(mask, from);
+
+        /// <summary>
+        /// uint64_t svcntp_b64(svbool_t pg, svbool_t op)
+        ///   CNTP Xresult, Pg, Pop.D
+        /// </summary>
+        public static unsafe ulong GetActiveElementCount(Vector<ulong> mask, Vector<ulong> from) => GetActiveElementCount(mask, from);
+
+
         ///  LeadingSignCount : Count leading sign bits
 
         /// <summary>
@@ -1550,6 +2595,188 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<double> LoadVector(Vector<double> mask, double* address) => LoadVector(mask, address);
 
+
+        /// <summary>
+        /// svuint8_t svldnf1[_u8](svbool_t pg, const uint8_t *base)
+        ///   LDNF1B Zresult.B, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<byte> LoadVectorNonFaulting(byte* address) => LoadVectorNonFaulting(address);
+
+        /// <summary>
+        /// svfloat64_t svldnf1[_f64](svbool_t pg, const float64_t *base)
+        ///   LDNF1D Zresult.D, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<double> LoadVectorNonFaulting(double* address) => LoadVectorNonFaulting(address);
+
+        /// <summary>
+        /// svint16_t svldnf1[_s16](svbool_t pg, const int16_t *base)
+        ///   LDNF1H Zresult.H, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<short> LoadVectorNonFaulting(short* address) => LoadVectorNonFaulting(address);
+
+        /// <summary>
+        /// svint32_t svldnf1[_s32](svbool_t pg, const int32_t *base)
+        ///   LDNF1W Zresult.S, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<int> LoadVectorNonFaulting(int* address) => LoadVectorNonFaulting(address);
+
+        /// <summary>
+        /// svint64_t svldnf1[_s64](svbool_t pg, const int64_t *base)
+        ///   LDNF1D Zresult.D, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<long> LoadVectorNonFaulting(long* address) => LoadVectorNonFaulting(address);
+
+        /// <summary>
+        /// svint8_t svldnf1[_s8](svbool_t pg, const int8_t *base)
+        ///   LDNF1B Zresult.B, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<sbyte> LoadVectorNonFaulting(sbyte* address) => LoadVectorNonFaulting(address);
+
+        /// <summary>
+        /// svfloat32_t svldnf1[_f32](svbool_t pg, const float32_t *base)
+        ///   LDNF1W Zresult.S, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<float> LoadVectorNonFaulting(float* address) => LoadVectorNonFaulting(address);
+
+        /// <summary>
+        /// svuint16_t svldnf1[_u16](svbool_t pg, const uint16_t *base)
+        ///   LDNF1H Zresult.H, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<ushort> LoadVectorNonFaulting(ushort* address) => LoadVectorNonFaulting(address);
+
+        /// <summary>
+        /// svuint32_t svldnf1[_u32](svbool_t pg, const uint32_t *base)
+        ///   LDNF1W Zresult.S, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<uint> LoadVectorNonFaulting(uint* address) => LoadVectorNonFaulting(address);
+
+        /// <summary>
+        /// svuint64_t svldnf1[_u64](svbool_t pg, const uint64_t *base)
+        ///   LDNF1D Zresult.D, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<ulong> LoadVectorNonFaulting(ulong* address) => LoadVectorNonFaulting(address);
+
+
+        /// <summary>
+        /// svuint8_t svldnt1[_u8](svbool_t pg, const uint8_t *base)
+        ///   LDNT1B Zresult.B, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<byte> LoadVectorNonTemporal(Vector<byte> mask, byte* address) => LoadVectorNonTemporal(mask, address);
+
+        /// <summary>
+        /// svfloat64_t svldnt1[_f64](svbool_t pg, const float64_t *base)
+        ///   LDNT1D Zresult.D, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<double> LoadVectorNonTemporal(Vector<double> mask, double* address) => LoadVectorNonTemporal(mask, address);
+
+        /// <summary>
+        /// svint16_t svldnt1[_s16](svbool_t pg, const int16_t *base)
+        ///   LDNT1H Zresult.H, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<short> LoadVectorNonTemporal(Vector<short> mask, short* address) => LoadVectorNonTemporal(mask, address);
+
+        /// <summary>
+        /// svint32_t svldnt1[_s32](svbool_t pg, const int32_t *base)
+        ///   LDNT1W Zresult.S, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<int> LoadVectorNonTemporal(Vector<int> mask, int* address) => LoadVectorNonTemporal(mask, address);
+
+        /// <summary>
+        /// svint64_t svldnt1[_s64](svbool_t pg, const int64_t *base)
+        ///   LDNT1D Zresult.D, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<long> LoadVectorNonTemporal(Vector<long> mask, long* address) => LoadVectorNonTemporal(mask, address);
+
+        /// <summary>
+        /// svint8_t svldnt1[_s8](svbool_t pg, const int8_t *base)
+        ///   LDNT1B Zresult.B, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<sbyte> LoadVectorNonTemporal(Vector<sbyte> mask, sbyte* address) => LoadVectorNonTemporal(mask, address);
+
+        /// <summary>
+        /// svfloat32_t svldnt1[_f32](svbool_t pg, const float32_t *base)
+        ///   LDNT1W Zresult.S, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<float> LoadVectorNonTemporal(Vector<float> mask, float* address) => LoadVectorNonTemporal(mask, address);
+
+        /// <summary>
+        /// svuint16_t svldnt1[_u16](svbool_t pg, const uint16_t *base)
+        ///   LDNT1H Zresult.H, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<ushort> LoadVectorNonTemporal(Vector<ushort> mask, ushort* address) => LoadVectorNonTemporal(mask, address);
+
+        /// <summary>
+        /// svuint32_t svldnt1[_u32](svbool_t pg, const uint32_t *base)
+        ///   LDNT1W Zresult.S, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<uint> LoadVectorNonTemporal(Vector<uint> mask, uint* address) => LoadVectorNonTemporal(mask, address);
+
+        /// <summary>
+        /// svuint64_t svldnt1[_u64](svbool_t pg, const uint64_t *base)
+        ///   LDNT1D Zresult.D, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<ulong> LoadVectorNonTemporal(Vector<ulong> mask, ulong* address) => LoadVectorNonTemporal(mask, address);
+
+
+        /// <summary>
+        /// svuint8_t svld1rq[_u8](svbool_t pg, const uint8_t *base)
+        ///   LD1RQB Zresult.B, Pg/Z, [Xbase, #0]
+        /// </summary>
+        public static unsafe Vector<byte> LoadVector128AndReplicateToVector(Vector<byte> mask, byte* address) => LoadVector128AndReplicateToVector(mask, address);
+
+        /// <summary>
+        /// svfloat64_t svld1rq[_f64](svbool_t pg, const float64_t *base)
+        ///   LD1RQD Zresult.D, Pg/Z, [Xbase, #0]
+        /// </summary>
+        public static unsafe Vector<double> LoadVector128AndReplicateToVector(Vector<double> mask, double* address) => LoadVector128AndReplicateToVector(mask, address);
+
+        /// <summary>
+        /// svint16_t svld1rq[_s16](svbool_t pg, const int16_t *base)
+        ///   LD1RQH Zresult.H, Pg/Z, [Xbase, #0]
+        /// </summary>
+        public static unsafe Vector<short> LoadVector128AndReplicateToVector(Vector<short> mask, short* address) => LoadVector128AndReplicateToVector(mask, address);
+
+        /// <summary>
+        /// svint32_t svld1rq[_s32](svbool_t pg, const int32_t *base)
+        ///   LD1RQW Zresult.S, Pg/Z, [Xbase, #0]
+        /// </summary>
+        public static unsafe Vector<int> LoadVector128AndReplicateToVector(Vector<int> mask, int* address) => LoadVector128AndReplicateToVector(mask, address);
+
+        /// <summary>
+        /// svint64_t svld1rq[_s64](svbool_t pg, const int64_t *base)
+        ///   LD1RQD Zresult.D, Pg/Z, [Xbase, #0]
+        /// </summary>
+        public static unsafe Vector<long> LoadVector128AndReplicateToVector(Vector<long> mask, long* address) => LoadVector128AndReplicateToVector(mask, address);
+
+        /// <summary>
+        /// svint8_t svld1rq[_s8](svbool_t pg, const int8_t *base)
+        ///   LD1RQB Zresult.B, Pg/Z, [Xbase, #0]
+        /// </summary>
+        public static unsafe Vector<sbyte> LoadVector128AndReplicateToVector(Vector<sbyte> mask, sbyte* address) => LoadVector128AndReplicateToVector(mask, address);
+
+        /// <summary>
+        /// svfloat32_t svld1rq[_f32](svbool_t pg, const float32_t *base)
+        ///   LD1RQW Zresult.S, Pg/Z, [Xbase, #0]
+        /// </summary>
+        public static unsafe Vector<float> LoadVector128AndReplicateToVector(Vector<float> mask, float* address) => LoadVector128AndReplicateToVector(mask, address);
+
+        /// <summary>
+        /// svuint16_t svld1rq[_u16](svbool_t pg, const uint16_t *base)
+        ///   LD1RQH Zresult.H, Pg/Z, [Xbase, #0]
+        /// </summary>
+        public static unsafe Vector<ushort> LoadVector128AndReplicateToVector(Vector<ushort> mask, ushort* address) => LoadVector128AndReplicateToVector(mask, address);
+
+        /// <summary>
+        /// svuint32_t svld1rq[_u32](svbool_t pg, const uint32_t *base)
+        ///   LD1RQW Zresult.S, Pg/Z, [Xbase, #0]
+        /// </summary>
+        public static unsafe Vector<uint> LoadVector128AndReplicateToVector(Vector<uint> mask, uint* address) => LoadVector128AndReplicateToVector(mask, address);
+
+        /// <summary>
+        /// svuint64_t svld1rq[_u64](svbool_t pg, const uint64_t *base)
+        ///   LD1RQD Zresult.D, Pg/Z, [Xbase, #0]
+        /// </summary>
+        public static unsafe Vector<ulong> LoadVector128AndReplicateToVector(Vector<ulong> mask, ulong* address) => LoadVector128AndReplicateToVector(mask, address);
 
         ///  LoadVectorByteZeroExtendToInt16 : Load 8-bit data and zero-extend
 
@@ -1767,6 +2994,78 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> LoadVectorUInt32ZeroExtendToUInt64(Vector<ulong> mask, uint* address) => LoadVectorUInt32ZeroExtendToUInt64(mask, address);
 
         /// <summary>
+        /// svint16_t svldnf1ub_s16(svbool_t pg, const uint8_t *base)
+        ///   LDNF1B Zresult.H, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<short> LoadVectorByteNonFaultingZeroExtendToInt16(byte* address) => LoadVectorByteNonFaultingZeroExtendToInt16(address);
+
+        /// <summary>
+        /// svint32_t svldnf1ub_s32(svbool_t pg, const uint8_t *base)
+        ///   LDNF1B Zresult.S, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<int> LoadVectorByteNonFaultingZeroExtendToInt32(byte* address) => LoadVectorByteNonFaultingZeroExtendToInt32(address);
+
+        /// <summary>
+        /// svint64_t svldnf1ub_s64(svbool_t pg, const uint8_t *base)
+        ///   LDNF1B Zresult.D, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<long> LoadVectorByteNonFaultingZeroExtendToInt64(byte* address) => LoadVectorByteNonFaultingZeroExtendToInt64(address);
+
+        /// <summary>
+        /// svuint16_t svldnf1ub_u16(svbool_t pg, const uint8_t *base)
+        ///   LDNF1B Zresult.H, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<ushort> LoadVectorByteNonFaultingZeroExtendToUInt16(byte* address) => LoadVectorByteNonFaultingZeroExtendToUInt16(address);
+
+        /// <summary>
+        /// svuint32_t svldnf1ub_u32(svbool_t pg, const uint8_t *base)
+        ///   LDNF1B Zresult.S, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<uint> LoadVectorByteNonFaultingZeroExtendToUInt32(byte* address) => LoadVectorByteNonFaultingZeroExtendToUInt32(address);
+
+        /// <summary>
+        /// svuint64_t svldnf1ub_u64(svbool_t pg, const uint8_t *base)
+        ///   LDNF1B Zresult.D, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<ulong> LoadVectorByteNonFaultingZeroExtendToUInt64(byte* address) => LoadVectorByteNonFaultingZeroExtendToUInt64(address);
+
+        /// <summary>
+        /// svint32_t svldnf1uh_s32(svbool_t pg, const uint16_t *base)
+        ///   LDNF1H Zresult.S, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<int> LoadVectorUInt16NonFaultingZeroExtendToInt32(ushort* address) => LoadVectorUInt16NonFaultingZeroExtendToInt32(address);
+
+        /// <summary>
+        /// svint64_t svldnf1uh_s64(svbool_t pg, const uint16_t *base)
+        ///   LDNF1H Zresult.D, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<long> LoadVectorUInt16NonFaultingZeroExtendToInt64(ushort* address) => LoadVectorUInt16NonFaultingZeroExtendToInt64(address);
+
+        /// <summary>
+        /// svuint32_t svldnf1uh_u32(svbool_t pg, const uint16_t *base)
+        ///   LDNF1H Zresult.S, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<uint> LoadVectorUInt16NonFaultingZeroExtendToUInt32(ushort* address) => LoadVectorUInt16NonFaultingZeroExtendToUInt32(address);
+
+        /// <summary>
+        /// svuint64_t svldnf1uh_u64(svbool_t pg, const uint16_t *base)
+        ///   LDNF1H Zresult.D, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<ulong> LoadVectorUInt16NonFaultingZeroExtendToUInt64(ushort* address) => LoadVectorUInt16NonFaultingZeroExtendToUInt64(address);
+
+        /// <summary>
+        /// svint64_t svldnf1uw_s64(svbool_t pg, const uint32_t *base)
+        ///   LDNF1W Zresult.D, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<long> LoadVectorUInt32NonFaultingZeroExtendToInt64(uint* address) => LoadVectorUInt32NonFaultingZeroExtendToInt64(address);
+
+        /// <summary>
+        /// svuint64_t svldnf1uw_u64(svbool_t pg, const uint32_t *base)
+        ///   LDNF1W Zresult.D, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<ulong> LoadVectorUInt32NonFaultingZeroExtendToUInt64(uint* address) => LoadVectorUInt32NonFaultingZeroExtendToUInt64(address);
+
+        /// <summary>
         /// svuint8x2_t svld2[_u8](svbool_t pg, const uint8_t *base)
         ///   LD2B {Zresult0.B, Zresult1.B}, Pg/Z, [Xbase, #0, MUL VL]
         /// </summary>
@@ -1946,6 +3245,108 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe (Vector<ulong>, Vector<ulong>, Vector<ulong>, Vector<ulong>) Load4xVectorAndUnzip(Vector<ulong> mask, ulong* address) => Load4xVectorAndUnzip(mask, address);
 
+        ///  Load 16-bit data and sign-extend, non-faulting
+
+        /// <summary>
+        /// svint32_t svldnf1sh_s32(svbool_t pg, const int16_t *base)
+        ///   LDNF1SH Zresult.S, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<int> LoadVectorInt16NonFaultingSignExtendToInt32(short* address) => LoadVectorInt16NonFaultingSignExtendToInt32(address);
+
+
+        ///  Load 16-bit data and sign-extend, non-faulting
+
+        /// <summary>
+        /// svint64_t svldnf1sh_s64(svbool_t pg, const int16_t *base)
+        ///   LDNF1SH Zresult.D, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<long> LoadVectorInt16NonFaultingSignExtendToInt64(short* address) => LoadVectorInt16NonFaultingSignExtendToInt64(address);
+
+
+        ///  Load 16-bit data and sign-extend, non-faulting
+
+        /// <summary>
+        /// svuint32_t svldnf1sh_u32(svbool_t pg, const int16_t *base)
+        ///   LDNF1SH Zresult.S, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<uint> LoadVectorInt16NonFaultingSignExtendToUInt32(short* address) => LoadVectorInt16NonFaultingSignExtendToUInt32(address);
+
+
+        ///  Load 16-bit data and sign-extend, non-faulting
+
+        /// <summary>
+        /// svuint64_t svldnf1sh_u64(svbool_t pg, const int16_t *base)
+        ///   LDNF1SH Zresult.D, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<ulong> LoadVectorInt16NonFaultingSignExtendToUInt64(short* address) => LoadVectorInt16NonFaultingSignExtendToUInt64(address);
+
+        ///  Load 32-bit data and sign-extend, non-faulting
+
+        /// <summary>
+        /// svint64_t svldnf1sw_s64(svbool_t pg, const int32_t *base)
+        ///   LDNF1SW Zresult.D, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<long> LoadVectorInt32NonFaultingSignExtendToInt64(int* address) => LoadVectorInt32NonFaultingSignExtendToInt64(address);
+
+        ///  Load 32-bit data and sign-extend, non-faulting
+
+        /// <summary>
+        /// svuint64_t svldnf1sw_u64(svbool_t pg, const int32_t *base)
+        ///   LDNF1SW Zresult.D, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<ulong> LoadVectorInt32NonFaultingSignExtendToUInt64(int* address) => LoadVectorInt32NonFaultingSignExtendToUInt64(address);
+
+        ///  Load 8-bit data and sign-extend, non-faulting
+
+        /// <summary>
+        /// svint16_t svldnf1sb_s16(svbool_t pg, const int8_t *base)
+        ///   LDNF1SB Zresult.H, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<short> LoadVectorSByteNonFaultingSignExtendToInt16(sbyte* address) => LoadVectorSByteNonFaultingSignExtendToInt16(address);
+
+
+        ///  Load 8-bit data and sign-extend, non-faulting
+
+        /// <summary>
+        /// svint32_t svldnf1sb_s32(svbool_t pg, const int8_t *base)
+        ///   LDNF1SB Zresult.S, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<int> LoadVectorSByteNonFaultingSignExtendToInt32(sbyte* address) => LoadVectorSByteNonFaultingSignExtendToInt32(address);
+
+        ///  Load 8-bit data and sign-extend, non-faulting
+
+        /// <summary>
+        /// svint64_t svldnf1sb_s64(svbool_t pg, const int8_t *base)
+        ///   LDNF1SB Zresult.D, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<long> LoadVectorSByteNonFaultingSignExtendToInt64(sbyte* address) => LoadVectorSByteNonFaultingSignExtendToInt64(address);
+
+
+        ///  Load 8-bit data and sign-extend, non-faulting
+
+        /// <summary>
+        /// svuint16_t svldnf1sb_u16(svbool_t pg, const int8_t *base)
+        ///   LDNF1SB Zresult.H, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<ushort> LoadVectorSByteNonFaultingSignExtendToUInt16(sbyte* address) => LoadVectorSByteNonFaultingSignExtendToUInt16(address);
+
+
+        ///  Load 8-bit data and sign-extend, non-faulting
+
+        /// <summary>
+        /// svuint32_t svldnf1sb_u32(svbool_t pg, const int8_t *base)
+        ///   LDNF1SB Zresult.S, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<uint> LoadVectorSByteNonFaultingSignExtendToUInt32(sbyte* address) => LoadVectorSByteNonFaultingSignExtendToUInt32(address);
+
+
+        ///  Load 8-bit data and sign-extend, non-faulting
+
+        /// <summary>
+        /// svuint64_t svldnf1sb_u64(svbool_t pg, const int8_t *base)
+        ///   LDNF1SB Zresult.D, Pg/Z, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe Vector<ulong> LoadVectorSByteNonFaultingSignExtendToUInt64(sbyte* address) => LoadVectorSByteNonFaultingSignExtendToUInt64(address);
 
         ///  Max : Maximum
 
@@ -2911,6 +4312,836 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<ulong> PopCount(Vector<ulong> value) => PopCount(value);
 
+        /// <summary>
+        /// void svprfb(svbool_t pg, const void *base, enum svprfop op)
+        ///   PRFB op, Pg, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe void PrefetchBytes(Vector<byte> mask, void* address, [ConstantExpected] SvePrefetchType prefetchType) => PrefetchBytes(mask, address, prefetchType);
+
+        /// <summary>
+        /// void svprfh(svbool_t pg, const void *base, enum svprfop op)
+        ///   PRFH op, Pg, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe void PrefetchInt16(Vector<ushort> mask, void* address, [ConstantExpected] SvePrefetchType prefetchType) => PrefetchInt16(mask, address, prefetchType);
+
+        /// <summary>
+        /// void svprfw(svbool_t pg, const void *base, enum svprfop op)
+        ///   PRFW op, Pg, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe void PrefetchInt32(Vector<uint> mask, void* address, [ConstantExpected] SvePrefetchType prefetchType) => PrefetchInt32(mask, address, prefetchType);
+
+        /// <summary>
+        /// void svprfd(svbool_t pg, const void *base, enum svprfop op)
+        ///   PRFD op, Pg, [Xbase, #0, MUL VL]
+        /// </summary>
+        public static unsafe void PrefetchInt64(Vector<ulong> mask, void* address, [ConstantExpected] SvePrefetchType prefetchType) => PrefetchInt64(mask, address, prefetchType);
+
+        ///  Reverse all elements
+
+        /// <summary>
+        /// svuint8_t svrev[_u8](svuint8_t op)
+        ///   REV Zresult.B, Zop.B
+        /// </summary>
+        public static unsafe Vector<byte> ReverseElement(Vector<byte> value) => ReverseElement(value);
+
+        /// <summary>
+        /// svfloat64_t svrev[_f64](svfloat64_t op)
+        ///   REV Zresult.D, Zop.D
+        /// </summary>
+        public static unsafe Vector<double> ReverseElement(Vector<double> value) => ReverseElement(value);
+
+        /// <summary>
+        /// svint16_t svrev[_s16](svint16_t op)
+        ///   REV Zresult.H, Zop.H
+        /// </summary>
+        public static unsafe Vector<short> ReverseElement(Vector<short> value) => ReverseElement(value);
+
+        /// <summary>
+        /// svint32_t svrev[_s32](svint32_t op)
+        ///   REV Zresult.S, Zop.S
+        /// </summary>
+        public static unsafe Vector<int> ReverseElement(Vector<int> value) => ReverseElement(value);
+
+        /// <summary>
+        /// svint64_t svrev[_s64](svint64_t op)
+        ///   REV Zresult.D, Zop.D
+        /// </summary>
+        public static unsafe Vector<long> ReverseElement(Vector<long> value) => ReverseElement(value);
+
+        /// <summary>
+        /// svint8_t svrev[_s8](svint8_t op)
+        ///   REV Zresult.B, Zop.B
+        /// </summary>
+        public static unsafe Vector<sbyte> ReverseElement(Vector<sbyte> value) => ReverseElement(value);
+
+        /// <summary>
+        /// svfloat32_t svrev[_f32](svfloat32_t op)
+        ///   REV Zresult.S, Zop.S
+        /// </summary>
+        public static unsafe Vector<float> ReverseElement(Vector<float> value) => ReverseElement(value);
+
+        /// <summary>
+        /// svuint16_t svrev[_u16](svuint16_t op)
+        ///   REV Zresult.H, Zop.H
+        /// </summary>
+        public static unsafe Vector<ushort> ReverseElement(Vector<ushort> value) => ReverseElement(value);
+
+        /// <summary>
+        /// svuint32_t svrev[_u32](svuint32_t op)
+        ///   REV Zresult.S, Zop.S
+        /// </summary>
+        public static unsafe Vector<uint> ReverseElement(Vector<uint> value) => ReverseElement(value);
+
+        /// <summary>
+        /// svuint64_t svrev[_u64](svuint64_t op)
+        ///   REV Zresult.D, Zop.D
+        /// </summary>
+        public static unsafe Vector<ulong> ReverseElement(Vector<ulong> value) => ReverseElement(value);
+
+
+        ///  Reverse halfwords within elements
+
+        /// <summary>
+        /// svint32_t svrevh[_s32]_m(svint32_t inactive, svbool_t pg, svint32_t op)
+        ///   REVH Ztied.S, Pg/M, Zop.S
+        /// </summary>
+        public static unsafe Vector<int> ReverseElement16(Vector<int> value) => ReverseElement16(value);
+
+        /// <summary>
+        /// svint64_t svrevh[_s64]_m(svint64_t inactive, svbool_t pg, svint64_t op)
+        ///   REVH Ztied.D, Pg/M, Zop.D
+        /// </summary>
+        public static unsafe Vector<long> ReverseElement16(Vector<long> value) => ReverseElement16(value);
+
+        /// <summary>
+        /// svuint32_t svrevh[_u32]_m(svuint32_t inactive, svbool_t pg, svuint32_t op)
+        ///   REVH Ztied.S, Pg/M, Zop.S
+        /// </summary>
+        public static unsafe Vector<uint> ReverseElement16(Vector<uint> value) => ReverseElement16(value);
+
+        /// <summary>
+        /// svuint64_t svrevh[_u64]_m(svuint64_t inactive, svbool_t pg, svuint64_t op)
+        ///   REVH Ztied.D, Pg/M, Zop.D
+        /// </summary>
+        public static unsafe Vector<ulong> ReverseElement16(Vector<ulong> value) => ReverseElement16(value);
+
+
+        ///  Reverse words within elements
+
+        /// <summary>
+        /// svint64_t svrevw[_s64]_m(svint64_t inactive, svbool_t pg, svint64_t op)
+        ///   REVW Ztied.D, Pg/M, Zop.D
+        /// </summary>
+        public static unsafe Vector<long> ReverseElement32(Vector<long> value) => ReverseElement32(value);
+
+        /// <summary>
+        /// svuint64_t svrevw[_u64]_m(svuint64_t inactive, svbool_t pg, svuint64_t op)
+        ///   REVW Ztied.D, Pg/M, Zop.D
+        /// </summary>
+        public static unsafe Vector<ulong> ReverseElement32(Vector<ulong> value) => ReverseElement32(value);
+
+
+        ///  Reverse bytes within elements
+
+        /// <summary>
+        /// svint16_t svrevb[_s16]_m(svint16_t inactive, svbool_t pg, svint16_t op)
+        ///   REVB Ztied.H, Pg/M, Zop.H
+        /// </summary>
+        public static unsafe Vector<short> ReverseElement8(Vector<short> value) => ReverseElement8(value);
+
+        /// <summary>
+        /// svint32_t svrevb[_s32]_m(svint32_t inactive, svbool_t pg, svint32_t op)
+        ///   REVB Ztied.S, Pg/M, Zop.S
+        /// </summary>
+        public static unsafe Vector<int> ReverseElement8(Vector<int> value) => ReverseElement8(value);
+
+        /// <summary>
+        /// svint64_t svrevb[_s64]_m(svint64_t inactive, svbool_t pg, svint64_t op)
+        ///   REVB Ztied.D, Pg/M, Zop.D
+        /// </summary>
+        public static unsafe Vector<long> ReverseElement8(Vector<long> value) => ReverseElement8(value);
+
+        /// <summary>
+        /// svuint16_t svrevb[_u16]_m(svuint16_t inactive, svbool_t pg, svuint16_t op)
+        ///   REVB Ztied.H, Pg/M, Zop.H
+        /// </summary>
+        public static unsafe Vector<ushort> ReverseElement8(Vector<ushort> value) => ReverseElement8(value);
+
+        /// <summary>
+        /// svuint32_t svrevb[_u32]_m(svuint32_t inactive, svbool_t pg, svuint32_t op)
+        ///   REVB Ztied.S, Pg/M, Zop.S
+        /// </summary>
+        public static unsafe Vector<uint> ReverseElement8(Vector<uint> value) => ReverseElement8(value);
+
+        /// <summary>
+        /// svuint64_t svrevb[_u64]_m(svuint64_t inactive, svbool_t pg, svuint64_t op)
+        ///   REVB Ztied.D, Pg/M, Zop.D
+        /// </summary>
+        public static unsafe Vector<ulong> ReverseElement8(Vector<ulong> value) => ReverseElement8(value);
+
+
+        ///  RoundAwayFromZero : Round to nearest, ties away from zero
+
+        /// <summary>
+        /// svfloat64_t svrinta[_f64]_m(svfloat64_t inactive, svbool_t pg, svfloat64_t op)
+        ///   FRINTA Ztied.D, Pg/M, Zop.D
+        /// svfloat64_t svrinta[_f64]_x(svbool_t pg, svfloat64_t op)
+        ///   FRINTA Ztied.D, Pg/M, Ztied.D
+        /// svfloat64_t svrinta[_f64]_z(svbool_t pg, svfloat64_t op)
+        /// </summary>
+        public static unsafe Vector<double> RoundAwayFromZero(Vector<double> value) => RoundAwayFromZero(value);
+
+        /// <summary>
+        /// svfloat32_t svrinta[_f32]_m(svfloat32_t inactive, svbool_t pg, svfloat32_t op)
+        ///   FRINTA Ztied.S, Pg/M, Zop.S
+        /// svfloat32_t svrinta[_f32]_x(svbool_t pg, svfloat32_t op)
+        ///   FRINTA Ztied.S, Pg/M, Ztied.S
+        /// svfloat32_t svrinta[_f32]_z(svbool_t pg, svfloat32_t op)
+        /// </summary>
+        public static unsafe Vector<float> RoundAwayFromZero(Vector<float> value) => RoundAwayFromZero(value);
+
+
+        ///  RoundToNearest : Round to nearest, ties to even
+
+        /// <summary>
+        /// svfloat64_t svrintn[_f64]_m(svfloat64_t inactive, svbool_t pg, svfloat64_t op)
+        ///   FRINTN Ztied.D, Pg/M, Zop.D
+        /// svfloat64_t svrintn[_f64]_x(svbool_t pg, svfloat64_t op)
+        ///   FRINTN Ztied.D, Pg/M, Ztied.D
+        /// svfloat64_t svrintn[_f64]_z(svbool_t pg, svfloat64_t op)
+        /// </summary>
+        public static unsafe Vector<double> RoundToNearest(Vector<double> value) => RoundToNearest(value);
+
+        /// <summary>
+        /// svfloat32_t svrintn[_f32]_m(svfloat32_t inactive, svbool_t pg, svfloat32_t op)
+        ///   FRINTN Ztied.S, Pg/M, Zop.S
+        /// svfloat32_t svrintn[_f32]_x(svbool_t pg, svfloat32_t op)
+        ///   FRINTN Ztied.S, Pg/M, Ztied.S
+        /// svfloat32_t svrintn[_f32]_z(svbool_t pg, svfloat32_t op)
+        /// </summary>
+        public static unsafe Vector<float> RoundToNearest(Vector<float> value) => RoundToNearest(value);
+
+
+        ///  RoundToNegativeInfinity : Round towards -∞
+
+        /// <summary>
+        /// svfloat64_t svrintm[_f64]_m(svfloat64_t inactive, svbool_t pg, svfloat64_t op)
+        ///   FRINTM Ztied.D, Pg/M, Zop.D
+        /// svfloat64_t svrintm[_f64]_x(svbool_t pg, svfloat64_t op)
+        ///   FRINTM Ztied.D, Pg/M, Ztied.D
+        /// svfloat64_t svrintm[_f64]_z(svbool_t pg, svfloat64_t op)
+        /// </summary>
+        public static unsafe Vector<double> RoundToNegativeInfinity(Vector<double> value) => RoundToNegativeInfinity(value);
+
+        /// <summary>
+        /// svfloat32_t svrintm[_f32]_m(svfloat32_t inactive, svbool_t pg, svfloat32_t op)
+        ///   FRINTM Ztied.S, Pg/M, Zop.S
+        /// svfloat32_t svrintm[_f32]_x(svbool_t pg, svfloat32_t op)
+        ///   FRINTM Ztied.S, Pg/M, Ztied.S
+        /// svfloat32_t svrintm[_f32]_z(svbool_t pg, svfloat32_t op)
+        /// </summary>
+        public static unsafe Vector<float> RoundToNegativeInfinity(Vector<float> value) => RoundToNegativeInfinity(value);
+
+
+        ///  RoundToPositiveInfinity : Round towards +∞
+
+        /// <summary>
+        /// svfloat64_t svrintp[_f64]_m(svfloat64_t inactive, svbool_t pg, svfloat64_t op)
+        ///   FRINTP Ztied.D, Pg/M, Zop.D
+        /// svfloat64_t svrintp[_f64]_x(svbool_t pg, svfloat64_t op)
+        ///   FRINTP Ztied.D, Pg/M, Ztied.D
+        /// svfloat64_t svrintp[_f64]_z(svbool_t pg, svfloat64_t op)
+        /// </summary>
+        public static unsafe Vector<double> RoundToPositiveInfinity(Vector<double> value) => RoundToPositiveInfinity(value);
+
+        /// <summary>
+        /// svfloat32_t svrintp[_f32]_m(svfloat32_t inactive, svbool_t pg, svfloat32_t op)
+        ///   FRINTP Ztied.S, Pg/M, Zop.S
+        /// svfloat32_t svrintp[_f32]_x(svbool_t pg, svfloat32_t op)
+        ///   FRINTP Ztied.S, Pg/M, Ztied.S
+        /// svfloat32_t svrintp[_f32]_z(svbool_t pg, svfloat32_t op)
+        /// </summary>
+        public static unsafe Vector<float> RoundToPositiveInfinity(Vector<float> value) => RoundToPositiveInfinity(value);
+
+
+        ///  RoundToZero : Round towards zero
+
+        /// <summary>
+        /// svfloat64_t svrintz[_f64]_m(svfloat64_t inactive, svbool_t pg, svfloat64_t op)
+        ///   FRINTZ Ztied.D, Pg/M, Zop.D
+        /// svfloat64_t svrintz[_f64]_x(svbool_t pg, svfloat64_t op)
+        ///   FRINTZ Ztied.D, Pg/M, Ztied.D
+        /// svfloat64_t svrintz[_f64]_z(svbool_t pg, svfloat64_t op)
+        /// </summary>
+        public static unsafe Vector<double> RoundToZero(Vector<double> value) => RoundToZero(value);
+
+        /// <summary>
+        /// svfloat32_t svrintz[_f32]_m(svfloat32_t inactive, svbool_t pg, svfloat32_t op)
+        ///   FRINTZ Ztied.S, Pg/M, Zop.S
+        /// svfloat32_t svrintz[_f32]_x(svbool_t pg, svfloat32_t op)
+        ///   FRINTZ Ztied.S, Pg/M, Ztied.S
+        /// svfloat32_t svrintz[_f32]_z(svbool_t pg, svfloat32_t op)
+        /// </summary>
+        public static unsafe Vector<float> RoundToZero(Vector<float> value) => RoundToZero(value);
+
+
+        ///  Saturating decrement by number of halfword elements
+
+        /// <summary>
+        /// int32_t svqdech_pat[_n_s32](int32_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   SQDECH Xtied, Wtied, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe int SaturatingDecrementBy16BitElementCount(int value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingDecrementBy16BitElementCount(value, scale, pattern);
+
+        /// <summary>
+        /// int64_t svqdech_pat[_n_s64](int64_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   SQDECH Xtied, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe long SaturatingDecrementBy16BitElementCount(long value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingDecrementBy16BitElementCount(value, scale, pattern);
+
+        /// <summary>
+        /// uint32_t svqdech_pat[_n_u32](uint32_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   UQDECH Wtied, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe uint SaturatingDecrementBy16BitElementCount(uint value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingDecrementBy16BitElementCount(value, scale, pattern);
+
+        /// <summary>
+        /// uint64_t svqdech_pat[_n_u64](uint64_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   UQDECH Xtied, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe ulong SaturatingDecrementBy16BitElementCount(ulong value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingDecrementBy16BitElementCount(value, scale, pattern);
+
+        /// <summary>
+        /// svint16_t svqdech_pat[_s16](svint16_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   SQDECH Ztied.H, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe Vector<short> SaturatingDecrementBy16BitElementCount(Vector<short> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingDecrementBy16BitElementCount(value, scale, pattern);
+
+        /// <summary>
+        /// svuint16_t svqdech_pat[_u16](svuint16_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   UQDECH Ztied.H, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe Vector<ushort> SaturatingDecrementBy16BitElementCount(Vector<ushort> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingDecrementBy16BitElementCount(value, scale, pattern);
+
+
+        ///  Saturating decrement by number of word elements
+
+        /// <summary>
+        /// int32_t svqdecw_pat[_n_s32](int32_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   SQDECW Xtied, Wtied, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe int SaturatingDecrementBy32BitElementCount(int value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingDecrementBy32BitElementCount(value, scale, pattern);
+
+        /// <summary>
+        /// int64_t svqdecw_pat[_n_s64](int64_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   SQDECW Xtied, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe long SaturatingDecrementBy32BitElementCount(long value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingDecrementBy32BitElementCount(value, scale, pattern);
+
+        /// <summary>
+        /// uint32_t svqdecw_pat[_n_u32](uint32_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   UQDECW Wtied, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe uint SaturatingDecrementBy32BitElementCount(uint value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingDecrementBy32BitElementCount(value, scale, pattern);
+
+        /// <summary>
+        /// uint64_t svqdecw_pat[_n_u64](uint64_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   UQDECW Xtied, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe ulong SaturatingDecrementBy32BitElementCount(ulong value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingDecrementBy32BitElementCount(value, scale, pattern);
+
+        /// <summary>
+        /// svint32_t svqdecw_pat[_s32](svint32_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   SQDECW Ztied.S, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe Vector<int> SaturatingDecrementBy32BitElementCount(Vector<int> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingDecrementBy32BitElementCount(value, scale, pattern);
+
+        /// <summary>
+        /// svuint32_t svqdecw_pat[_u32](svuint32_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   UQDECW Ztied.S, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe Vector<uint> SaturatingDecrementBy32BitElementCount(Vector<uint> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingDecrementBy32BitElementCount(value, scale, pattern);
+
+
+        ///  Saturating decrement by number of doubleword elements
+
+        /// <summary>
+        /// int32_t svqdecd_pat[_n_s32](int32_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   SQDECD Xtied, Wtied, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe int SaturatingDecrementBy64BitElementCount(int value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingDecrementBy64BitElementCount(value, scale, pattern);
+
+        /// <summary>
+        /// int64_t svqdecd_pat[_n_s64](int64_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   SQDECD Xtied, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe long SaturatingDecrementBy64BitElementCount(long value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingDecrementBy64BitElementCount(value, scale, pattern);
+
+        /// <summary>
+        /// uint32_t svqdecd_pat[_n_u32](uint32_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   UQDECD Wtied, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe uint SaturatingDecrementBy64BitElementCount(uint value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingDecrementBy64BitElementCount(value, scale, pattern);
+
+        /// <summary>
+        /// uint64_t svqdecd_pat[_n_u64](uint64_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   UQDECD Xtied, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe ulong SaturatingDecrementBy64BitElementCount(ulong value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingDecrementBy64BitElementCount(value, scale, pattern);
+
+        /// <summary>
+        /// svint64_t svqdecd_pat[_s64](svint64_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   SQDECD Ztied.D, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe Vector<long> SaturatingDecrementBy64BitElementCount(Vector<long> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingDecrementBy64BitElementCount(value, scale, pattern);
+
+        /// <summary>
+        /// svuint64_t svqdecd_pat[_u64](svuint64_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   UQDECD Ztied.D, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe Vector<ulong> SaturatingDecrementBy64BitElementCount(Vector<ulong> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingDecrementBy64BitElementCount(value, scale, pattern);
+
+
+        ///  Saturating decrement by number of byte elements
+
+        /// <summary>
+        /// int32_t svqdecb_pat[_n_s32](int32_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   SQDECB Xtied, Wtied, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe int SaturatingDecrementBy8BitElementCount(int value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingDecrementBy8BitElementCount(value, scale, pattern);
+
+        /// <summary>
+        /// int64_t svqdecb_pat[_n_s64](int64_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   SQDECB Xtied, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe long SaturatingDecrementBy8BitElementCount(long value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingDecrementBy8BitElementCount(value, scale, pattern);
+
+        /// <summary>
+        /// uint32_t svqdecb_pat[_n_u32](uint32_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   UQDECB Wtied, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe uint SaturatingDecrementBy8BitElementCount(uint value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingDecrementBy8BitElementCount(value, scale, pattern);
+
+        /// <summary>
+        /// uint64_t svqdecb_pat[_n_u64](uint64_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   UQDECB Xtied, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe ulong SaturatingDecrementBy8BitElementCount(ulong value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingDecrementBy8BitElementCount(value, scale, pattern);
+
+
+        ///  Saturating decrement by active element count
+
+        /// <summary>
+        /// int32_t svqdecp[_n_s32]_b8(int32_t op, svbool_t pg)
+        ///   SQDECP Xtied, Pg.B, Wtied
+        /// </summary>
+        public static unsafe long SaturatingDecrementByActiveElementCount(int value, Vector<byte> from) => SaturatingDecrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// int64_t svqdecp[_n_s64]_b8(int64_t op, svbool_t pg)
+        ///   SQDECP Xtied, Pg.B
+        /// </summary>
+        public static unsafe long SaturatingDecrementByActiveElementCount(long value, Vector<byte> from) => SaturatingDecrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// uint32_t svqdecp[_n_u32]_b8(uint32_t op, svbool_t pg)
+        ///   UQDECP Wtied, Pg.B
+        /// </summary>
+        public static unsafe ulong SaturatingDecrementByActiveElementCount(uint value, Vector<byte> from) => SaturatingDecrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// uint64_t svqdecp[_n_u64]_b8(uint64_t op, svbool_t pg)
+        ///   UQDECP Xtied, Pg.B
+        /// </summary>
+        public static unsafe ulong SaturatingDecrementByActiveElementCount(ulong value, Vector<byte> from) => SaturatingDecrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// svint16_t svqdecp[_s16](svint16_t op, svbool_t pg)
+        ///   SQDECP Ztied.H, Pg
+        /// </summary>
+        public static unsafe Vector<short> SaturatingDecrementByActiveElementCount(Vector<short> value, Vector<short> from) => SaturatingDecrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// svint32_t svqdecp[_s32](svint32_t op, svbool_t pg)
+        ///   SQDECP Ztied.S, Pg
+        /// </summary>
+        public static unsafe Vector<int> SaturatingDecrementByActiveElementCount(Vector<int> value, Vector<int> from) => SaturatingDecrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// svint64_t svqdecp[_s64](svint64_t op, svbool_t pg)
+        ///   SQDECP Ztied.D, Pg
+        /// </summary>
+        public static unsafe Vector<long> SaturatingDecrementByActiveElementCount(Vector<long> value, Vector<long> from) => SaturatingDecrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// int32_t svqdecp[_n_s32]_b16(int32_t op, svbool_t pg)
+        ///   SQDECP Xtied, Pg.H, Wtied
+        /// </summary>
+        public static unsafe long SaturatingDecrementByActiveElementCount(int value, Vector<ushort> from) => SaturatingDecrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// int64_t svqdecp[_n_s64]_b16(int64_t op, svbool_t pg)
+        ///   SQDECP Xtied, Pg.H
+        /// </summary>
+        public static unsafe long SaturatingDecrementByActiveElementCount(long value, Vector<ushort> from) => SaturatingDecrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// uint32_t svqdecp[_n_u32]_b16(uint32_t op, svbool_t pg)
+        ///   UQDECP Wtied, Pg.H
+        /// </summary>
+        public static unsafe ulong SaturatingDecrementByActiveElementCount(uint value, Vector<ushort> from) => SaturatingDecrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// uint64_t svqdecp[_n_u64]_b16(uint64_t op, svbool_t pg)
+        ///   UQDECP Xtied, Pg.H
+        /// </summary>
+        public static unsafe ulong SaturatingDecrementByActiveElementCount(ulong value, Vector<ushort> from) => SaturatingDecrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// svuint16_t svqdecp[_u16](svuint16_t op, svbool_t pg)
+        ///   UQDECP Ztied.H, Pg
+        /// </summary>
+        public static unsafe Vector<ushort> SaturatingDecrementByActiveElementCount(Vector<ushort> value, Vector<ushort> from) => SaturatingDecrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// int32_t svqdecp[_n_s32]_b32(int32_t op, svbool_t pg)
+        ///   SQDECP Xtied, Pg.S, Wtied
+        /// </summary>
+        public static unsafe long SaturatingDecrementByActiveElementCount(int value, Vector<uint> from) => SaturatingDecrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// int64_t svqdecp[_n_s64]_b32(int64_t op, svbool_t pg)
+        ///   SQDECP Xtied, Pg.S
+        /// </summary>
+        public static unsafe long SaturatingDecrementByActiveElementCount(long value, Vector<uint> from) => SaturatingDecrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// uint32_t svqdecp[_n_u32]_b32(uint32_t op, svbool_t pg)
+        ///   UQDECP Wtied, Pg.S
+        /// </summary>
+        public static unsafe ulong SaturatingDecrementByActiveElementCount(uint value, Vector<uint> from) => SaturatingDecrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// uint64_t svqdecp[_n_u64]_b32(uint64_t op, svbool_t pg)
+        ///   UQDECP Xtied, Pg.S
+        /// </summary>
+        public static unsafe ulong SaturatingDecrementByActiveElementCount(ulong value, Vector<uint> from) => SaturatingDecrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// svuint32_t svqdecp[_u32](svuint32_t op, svbool_t pg)
+        ///   UQDECP Ztied.S, Pg
+        /// </summary>
+        public static unsafe Vector<uint> SaturatingDecrementByActiveElementCount(Vector<uint> value, Vector<uint> from) => SaturatingDecrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// int32_t svqdecp[_n_s32]_b64(int32_t op, svbool_t pg)
+        ///   SQDECP Xtied, Pg.D, Wtied
+        /// </summary>
+        public static unsafe long SaturatingDecrementByActiveElementCount(int value, Vector<ulong> from) => SaturatingDecrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// int64_t svqdecp[_n_s64]_b64(int64_t op, svbool_t pg)
+        ///   SQDECP Xtied, Pg.D
+        /// </summary>
+        public static unsafe long SaturatingDecrementByActiveElementCount(long value, Vector<ulong> from) => SaturatingDecrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// uint32_t svqdecp[_n_u32]_b64(uint32_t op, svbool_t pg)
+        ///   UQDECP Wtied, Pg.D
+        /// </summary>
+        public static unsafe ulong SaturatingDecrementByActiveElementCount(uint value, Vector<ulong> from) => SaturatingDecrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// uint64_t svqdecp[_n_u64]_b64(uint64_t op, svbool_t pg)
+        ///   UQDECP Xtied, Pg.D
+        /// </summary>
+        public static unsafe ulong SaturatingDecrementByActiveElementCount(ulong value, Vector<ulong> from) => SaturatingDecrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// svuint64_t svqdecp[_u64](svuint64_t op, svbool_t pg)
+        ///   UQDECP Ztied.D, Pg
+        /// </summary>
+        public static unsafe Vector<ulong> SaturatingDecrementByActiveElementCount(Vector<ulong> value, Vector<ulong> from) => SaturatingDecrementByActiveElementCount(value, from);
+
+
+        ///  Saturating increment by number of halfword elements
+
+        /// <summary>
+        /// int32_t svqinch_pat[_n_s32](int32_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   SQINCH Xtied, Wtied, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe int SaturatingIncrementBy16BitElementCount(int value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingIncrementBy16BitElementCount(value, scale, pattern);
+
+        /// <summary>
+        /// int64_t svqinch_pat[_n_s64](int64_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   SQINCH Xtied, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe long SaturatingIncrementBy16BitElementCount(long value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingIncrementBy16BitElementCount(value, scale, pattern);
+
+        /// <summary>
+        /// uint32_t svqinch_pat[_n_u32](uint32_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   UQINCH Wtied, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe uint SaturatingIncrementBy16BitElementCount(uint value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingIncrementBy16BitElementCount(value, scale, pattern);
+
+        /// <summary>
+        /// uint64_t svqinch_pat[_n_u64](uint64_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   UQINCH Xtied, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe ulong SaturatingIncrementBy16BitElementCount(ulong value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingIncrementBy16BitElementCount(value, scale, pattern);
+
+        /// <summary>
+        /// svint16_t svqinch_pat[_s16](svint16_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   SQINCH Ztied.H, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe Vector<short> SaturatingIncrementBy16BitElementCount(Vector<short> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingIncrementBy16BitElementCount(value, scale, pattern);
+
+        /// <summary>
+        /// svuint16_t svqinch_pat[_u16](svuint16_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   UQINCH Ztied.H, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe Vector<ushort> SaturatingIncrementBy16BitElementCount(Vector<ushort> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingIncrementBy16BitElementCount(value, scale, pattern);
+
+
+        ///  Saturating increment by number of word elements
+
+        /// <summary>
+        /// int32_t svqincw_pat[_n_s32](int32_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   SQINCW Xtied, Wtied, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe int SaturatingIncrementBy32BitElementCount(int value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingIncrementBy32BitElementCount(value, scale, pattern);
+
+        /// <summary>
+        /// int64_t svqincw_pat[_n_s64](int64_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   SQINCW Xtied, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe long SaturatingIncrementBy32BitElementCount(long value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingIncrementBy32BitElementCount(value, scale, pattern);
+
+        /// <summary>
+        /// uint32_t svqincw_pat[_n_u32](uint32_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   UQINCW Wtied, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe uint SaturatingIncrementBy32BitElementCount(uint value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingIncrementBy32BitElementCount(value, scale, pattern);
+
+        /// <summary>
+        /// uint64_t svqincw_pat[_n_u64](uint64_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   UQINCW Xtied, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe ulong SaturatingIncrementBy32BitElementCount(ulong value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingIncrementBy32BitElementCount(value, scale, pattern);
+
+        /// <summary>
+        /// svint32_t svqincw_pat[_s32](svint32_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   SQINCW Ztied.S, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe Vector<int> SaturatingIncrementBy32BitElementCount(Vector<int> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingIncrementBy32BitElementCount(value, scale, pattern);
+
+        /// <summary>
+        /// svuint32_t svqincw_pat[_u32](svuint32_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   UQINCW Ztied.S, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe Vector<uint> SaturatingIncrementBy32BitElementCount(Vector<uint> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingIncrementBy32BitElementCount(value, scale, pattern);
+
+
+        ///  Saturating increment by number of doubleword elements
+
+        /// <summary>
+        /// int32_t svqincd_pat[_n_s32](int32_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   SQINCD Xtied, Wtied, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe int SaturatingIncrementBy64BitElementCount(int value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingIncrementBy64BitElementCount(value, scale, pattern);
+
+        /// <summary>
+        /// int64_t svqincd_pat[_n_s64](int64_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   SQINCD Xtied, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe long SaturatingIncrementBy64BitElementCount(long value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingIncrementBy64BitElementCount(value, scale, pattern);
+
+        /// <summary>
+        /// uint32_t svqincd_pat[_n_u32](uint32_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   UQINCD Wtied, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe uint SaturatingIncrementBy64BitElementCount(uint value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingIncrementBy64BitElementCount(value, scale, pattern);
+
+        /// <summary>
+        /// uint64_t svqincd_pat[_n_u64](uint64_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   UQINCD Xtied, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe ulong SaturatingIncrementBy64BitElementCount(ulong value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingIncrementBy64BitElementCount(value, scale, pattern);
+
+        /// <summary>
+        /// svint64_t svqincd_pat[_s64](svint64_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   SQINCD Ztied.D, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe Vector<long> SaturatingIncrementBy64BitElementCount(Vector<long> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingIncrementBy64BitElementCount(value, scale, pattern);
+
+        /// <summary>
+        /// svuint64_t svqincd_pat[_u64](svuint64_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   UQINCD Ztied.D, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe Vector<ulong> SaturatingIncrementBy64BitElementCount(Vector<ulong> value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingIncrementBy64BitElementCount(value, scale, pattern);
+
+
+        ///  Saturating increment by number of byte elements
+
+        /// <summary>
+        /// int32_t svqincb_pat[_n_s32](int32_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   SQINCB Xtied, Wtied, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe int SaturatingIncrementBy8BitElementCount(int value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingIncrementBy8BitElementCount(value, scale, pattern);
+
+        /// <summary>
+        /// int64_t svqincb_pat[_n_s64](int64_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   SQINCB Xtied, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe long SaturatingIncrementBy8BitElementCount(long value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingIncrementBy8BitElementCount(value, scale, pattern);
+
+        /// <summary>
+        /// uint32_t svqincb_pat[_n_u32](uint32_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   UQINCB Wtied, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe uint SaturatingIncrementBy8BitElementCount(uint value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingIncrementBy8BitElementCount(value, scale, pattern);
+
+        /// <summary>
+        /// uint64_t svqincb_pat[_n_u64](uint64_t op, enum svpattern pattern, uint64_t imm_factor)
+        ///   UQINCB Xtied, pattern, MUL #imm_factor
+        /// </summary>
+        public static unsafe ulong SaturatingIncrementBy8BitElementCount(ulong value, [ConstantExpected(Min = 1, Max = (byte)(16))] byte scale, [ConstantExpected] SveMaskPattern pattern = SveMaskPattern.All) => SaturatingIncrementBy8BitElementCount(value, scale, pattern);
+
+
+        ///  Saturating increment by active element count
+
+        /// <summary>
+        /// int32_t svqincp[_n_s32]_b8(int32_t op, svbool_t pg)
+        ///   SQINCP Xtied, Pg.B, Wtied
+        /// </summary>
+        public static unsafe long SaturatingIncrementByActiveElementCount(int value, Vector<byte> from) => SaturatingIncrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// int64_t svqincp[_n_s64]_b8(int64_t op, svbool_t pg)
+        ///   SQINCP Xtied, Pg.B
+        /// </summary>
+        public static unsafe long SaturatingIncrementByActiveElementCount(long value, Vector<byte> from) => SaturatingIncrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// uint32_t svqincp[_n_u32]_b8(uint32_t op, svbool_t pg)
+        ///   UQINCP Wtied, Pg.B
+        /// </summary>
+        public static unsafe ulong SaturatingIncrementByActiveElementCount(uint value, Vector<byte> from) => SaturatingIncrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// uint64_t svqincp[_n_u64]_b8(uint64_t op, svbool_t pg)
+        ///   UQINCP Xtied, Pg.B
+        /// </summary>
+        public static unsafe ulong SaturatingIncrementByActiveElementCount(ulong value, Vector<byte> from) => SaturatingIncrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// svint16_t svqincp[_s16](svint16_t op, svbool_t pg)
+        ///   SQINCP Ztied.H, Pg
+        /// </summary>
+        public static unsafe Vector<short> SaturatingIncrementByActiveElementCount(Vector<short> value, Vector<short> from) => SaturatingIncrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// svint32_t svqincp[_s32](svint32_t op, svbool_t pg)
+        ///   SQINCP Ztied.S, Pg
+        /// </summary>
+        public static unsafe Vector<int> SaturatingIncrementByActiveElementCount(Vector<int> value, Vector<int> from) => SaturatingIncrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// svint64_t svqincp[_s64](svint64_t op, svbool_t pg)
+        ///   SQINCP Ztied.D, Pg
+        /// </summary>
+        public static unsafe Vector<long> SaturatingIncrementByActiveElementCount(Vector<long> value, Vector<long> from) => SaturatingIncrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// int32_t svqincp[_n_s32]_b16(int32_t op, svbool_t pg)
+        ///   SQINCP Xtied, Pg.H, Wtied
+        /// </summary>
+        public static unsafe long SaturatingIncrementByActiveElementCount(int value, Vector<ushort> from) => SaturatingIncrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// int64_t svqincp[_n_s64]_b16(int64_t op, svbool_t pg)
+        ///   SQINCP Xtied, Pg.H
+        /// </summary>
+        public static unsafe long SaturatingIncrementByActiveElementCount(long value, Vector<ushort> from) => SaturatingIncrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// uint32_t svqincp[_n_u32]_b16(uint32_t op, svbool_t pg)
+        ///   UQINCP Wtied, Pg.H
+        /// </summary>
+        public static unsafe ulong SaturatingIncrementByActiveElementCount(uint value, Vector<ushort> from) => SaturatingIncrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// uint64_t svqincp[_n_u64]_b16(uint64_t op, svbool_t pg)
+        ///   UQINCP Xtied, Pg.H
+        /// </summary>
+        public static unsafe ulong SaturatingIncrementByActiveElementCount(ulong value, Vector<ushort> from) => SaturatingIncrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// svuint16_t svqincp[_u16](svuint16_t op, svbool_t pg)
+        ///   UQINCP Ztied.H, Pg
+        /// </summary>
+        public static unsafe Vector<ushort> SaturatingIncrementByActiveElementCount(Vector<ushort> value, Vector<ushort> from) => SaturatingIncrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// int32_t svqincp[_n_s32]_b32(int32_t op, svbool_t pg)
+        ///   SQINCP Xtied, Pg.S, Wtied
+        /// </summary>
+        public static unsafe long SaturatingIncrementByActiveElementCount(int value, Vector<uint> from) => SaturatingIncrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// int64_t svqincp[_n_s64]_b32(int64_t op, svbool_t pg)
+        ///   SQINCP Xtied, Pg.S
+        /// </summary>
+        public static unsafe long SaturatingIncrementByActiveElementCount(long value, Vector<uint> from) => SaturatingIncrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// uint32_t svqincp[_n_u32]_b32(uint32_t op, svbool_t pg)
+        ///   UQINCP Wtied, Pg.S
+        /// </summary>
+        public static unsafe ulong SaturatingIncrementByActiveElementCount(uint value, Vector<uint> from) => SaturatingIncrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// uint64_t svqincp[_n_u64]_b32(uint64_t op, svbool_t pg)
+        ///   UQINCP Xtied, Pg.S
+        /// </summary>
+        public static unsafe ulong SaturatingIncrementByActiveElementCount(ulong value, Vector<uint> from) => SaturatingIncrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// svuint32_t svqincp[_u32](svuint32_t op, svbool_t pg)
+        ///   UQINCP Ztied.S, Pg
+        /// </summary>
+        public static unsafe Vector<uint> SaturatingIncrementByActiveElementCount(Vector<uint> value, Vector<uint> from) => SaturatingIncrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// int32_t svqincp[_n_s32]_b64(int32_t op, svbool_t pg)
+        ///   SQINCP Xtied, Pg.D, Wtied
+        /// </summary>
+        public static unsafe long SaturatingIncrementByActiveElementCount(int value, Vector<ulong> from) => SaturatingIncrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// int64_t svqincp[_n_s64]_b64(int64_t op, svbool_t pg)
+        ///   SQINCP Xtied, Pg.D
+        /// </summary>
+        public static unsafe long SaturatingIncrementByActiveElementCount(long value, Vector<ulong> from) => SaturatingIncrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// uint32_t svqincp[_n_u32]_b64(uint32_t op, svbool_t pg)
+        ///   UQINCP Wtied, Pg.D
+        /// </summary>
+        public static unsafe ulong SaturatingIncrementByActiveElementCount(uint value, Vector<ulong> from) => SaturatingIncrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// uint64_t svqincp[_n_u64]_b64(uint64_t op, svbool_t pg)
+        ///   UQINCP Xtied, Pg.D
+        /// </summary>
+        public static unsafe ulong SaturatingIncrementByActiveElementCount(ulong value, Vector<ulong> from) => SaturatingIncrementByActiveElementCount(value, from);
+
+        /// <summary>
+        /// svuint64_t svqincp[_u64](svuint64_t op, svbool_t pg)
+        ///   UQINCP Ztied.D, Pg
+        /// </summary>
+        public static unsafe Vector<ulong> SaturatingIncrementByActiveElementCount(Vector<ulong> value, Vector<ulong> from) => SaturatingIncrementByActiveElementCount(value, from);
+
 
         ///  SignExtend16 : Sign-extend the low 16 bits
 
@@ -3589,6 +5820,132 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> SubtractSaturate(Vector<ulong> left, Vector<ulong> right) => SubtractSaturate(left, right);
 
 
+        ///  Interleave even elements from two inputs
+
+        /// <summary>
+        /// svuint8_t svtrn1[_u8](svuint8_t op1, svuint8_t op2)
+        ///   TRN1 Zresult.B, Zop1.B, Zop2.B
+        /// </summary>
+        public static unsafe Vector<byte> TransposeEven(Vector<byte> left, Vector<byte> right) => TransposeEven(left, right);
+
+        /// <summary>
+        /// svfloat64_t svtrn1[_f64](svfloat64_t op1, svfloat64_t op2)
+        ///   TRN1 Zresult.D, Zop1.D, Zop2.D
+        /// </summary>
+        public static unsafe Vector<double> TransposeEven(Vector<double> left, Vector<double> right) => TransposeEven(left, right);
+
+        /// <summary>
+        /// svint16_t svtrn1[_s16](svint16_t op1, svint16_t op2)
+        ///   TRN1 Zresult.H, Zop1.H, Zop2.H
+        /// </summary>
+        public static unsafe Vector<short> TransposeEven(Vector<short> left, Vector<short> right) => TransposeEven(left, right);
+
+        /// <summary>
+        /// svint32_t svtrn1[_s32](svint32_t op1, svint32_t op2)
+        ///   TRN1 Zresult.S, Zop1.S, Zop2.S
+        /// </summary>
+        public static unsafe Vector<int> TransposeEven(Vector<int> left, Vector<int> right) => TransposeEven(left, right);
+
+        /// <summary>
+        /// svint64_t svtrn1[_s64](svint64_t op1, svint64_t op2)
+        ///   TRN1 Zresult.D, Zop1.D, Zop2.D
+        /// </summary>
+        public static unsafe Vector<long> TransposeEven(Vector<long> left, Vector<long> right) => TransposeEven(left, right);
+
+        /// <summary>
+        /// svint8_t svtrn1[_s8](svint8_t op1, svint8_t op2)
+        ///   TRN1 Zresult.B, Zop1.B, Zop2.B
+        /// </summary>
+        public static unsafe Vector<sbyte> TransposeEven(Vector<sbyte> left, Vector<sbyte> right) => TransposeEven(left, right);
+
+        /// <summary>
+        /// svfloat32_t svtrn1[_f32](svfloat32_t op1, svfloat32_t op2)
+        ///   TRN1 Zresult.S, Zop1.S, Zop2.S
+        /// </summary>
+        public static unsafe Vector<float> TransposeEven(Vector<float> left, Vector<float> right) => TransposeEven(left, right);
+
+        /// <summary>
+        /// svuint16_t svtrn1[_u16](svuint16_t op1, svuint16_t op2)
+        ///   TRN1 Zresult.H, Zop1.H, Zop2.H
+        /// </summary>
+        public static unsafe Vector<ushort> TransposeEven(Vector<ushort> left, Vector<ushort> right) => TransposeEven(left, right);
+
+        /// <summary>
+        /// svuint32_t svtrn1[_u32](svuint32_t op1, svuint32_t op2)
+        ///   TRN1 Zresult.S, Zop1.S, Zop2.S
+        /// </summary>
+        public static unsafe Vector<uint> TransposeEven(Vector<uint> left, Vector<uint> right) => TransposeEven(left, right);
+
+        /// <summary>
+        /// svuint64_t svtrn1[_u64](svuint64_t op1, svuint64_t op2)
+        ///   TRN1 Zresult.D, Zop1.D, Zop2.D
+        /// </summary>
+        public static unsafe Vector<ulong> TransposeEven(Vector<ulong> left, Vector<ulong> right) => TransposeEven(left, right);
+
+
+        ///  Interleave odd elements from two inputs
+
+        /// <summary>
+        /// svuint8_t svtrn2[_u8](svuint8_t op1, svuint8_t op2)
+        ///   TRN2 Zresult.B, Zop1.B, Zop2.B
+        /// </summary>
+        public static unsafe Vector<byte> TransposeOdd(Vector<byte> left, Vector<byte> right) => TransposeOdd(left, right);
+
+        /// <summary>
+        /// svfloat64_t svtrn2[_f64](svfloat64_t op1, svfloat64_t op2)
+        ///   TRN2 Zresult.D, Zop1.D, Zop2.D
+        /// </summary>
+        public static unsafe Vector<double> TransposeOdd(Vector<double> left, Vector<double> right) => TransposeOdd(left, right);
+
+        /// <summary>
+        /// svint16_t svtrn2[_s16](svint16_t op1, svint16_t op2)
+        ///   TRN2 Zresult.H, Zop1.H, Zop2.H
+        /// </summary>
+        public static unsafe Vector<short> TransposeOdd(Vector<short> left, Vector<short> right) => TransposeOdd(left, right);
+
+        /// <summary>
+        /// svint32_t svtrn2[_s32](svint32_t op1, svint32_t op2)
+        ///   TRN2 Zresult.S, Zop1.S, Zop2.S
+        /// </summary>
+        public static unsafe Vector<int> TransposeOdd(Vector<int> left, Vector<int> right) => TransposeOdd(left, right);
+
+        /// <summary>
+        /// svint64_t svtrn2[_s64](svint64_t op1, svint64_t op2)
+        ///   TRN2 Zresult.D, Zop1.D, Zop2.D
+        /// </summary>
+        public static unsafe Vector<long> TransposeOdd(Vector<long> left, Vector<long> right) => TransposeOdd(left, right);
+
+        /// <summary>
+        /// svint8_t svtrn2[_s8](svint8_t op1, svint8_t op2)
+        ///   TRN2 Zresult.B, Zop1.B, Zop2.B
+        /// </summary>
+        public static unsafe Vector<sbyte> TransposeOdd(Vector<sbyte> left, Vector<sbyte> right) => TransposeOdd(left, right);
+
+        /// <summary>
+        /// svfloat32_t svtrn2[_f32](svfloat32_t op1, svfloat32_t op2)
+        ///   TRN2 Zresult.S, Zop1.S, Zop2.S
+        /// </summary>
+        public static unsafe Vector<float> TransposeOdd(Vector<float> left, Vector<float> right) => TransposeOdd(left, right);
+
+        /// <summary>
+        /// svuint16_t svtrn2[_u16](svuint16_t op1, svuint16_t op2)
+        ///   TRN2 Zresult.H, Zop1.H, Zop2.H
+        /// </summary>
+        public static unsafe Vector<ushort> TransposeOdd(Vector<ushort> left, Vector<ushort> right) => TransposeOdd(left, right);
+
+        /// <summary>
+        /// svuint32_t svtrn2[_u32](svuint32_t op1, svuint32_t op2)
+        ///   TRN2 Zresult.S, Zop1.S, Zop2.S
+        /// </summary>
+        public static unsafe Vector<uint> TransposeOdd(Vector<uint> left, Vector<uint> right) => TransposeOdd(left, right);
+
+        /// <summary>
+        /// svuint64_t svtrn2[_u64](svuint64_t op1, svuint64_t op2)
+        ///   TRN2 Zresult.D, Zop1.D, Zop2.D
+        /// </summary>
+        public static unsafe Vector<ulong> TransposeOdd(Vector<ulong> left, Vector<ulong> right) => TransposeOdd(left, right);
+
+
         ///  UnzipEven : Concatenate even elements from two inputs
 
         /// <summary>
@@ -4134,5 +6491,6 @@ namespace System.Runtime.Intrinsics.Arm
         ///   ZIP1 Presult.D, Pop1.D, Pop2.D
         /// </summary>
         public static unsafe Vector<ulong> ZipLow(Vector<ulong> left, Vector<ulong> right) => ZipLow(left, right);
+
     }
 }

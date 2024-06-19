@@ -27,23 +27,52 @@ namespace System.Text.Json.Serialization.Metadata
 
         // The number of parameters the deserialization constructor has. If this is not equal to ParameterCache.Count, this means
         // that not all parameters are bound to object properties, and an exception will be thrown if deserialization is attempted.
-        internal int ParameterCount { get; private set; }
+        internal int ParameterCount { get; private protected set; }
 
-        // All of the serializable parameters on a POCO constructor keyed on parameter name.
-        // Only parameters which bind to properties are cached.
-        internal List<JsonParameterInfo>? ParameterCache { get; private set; }
+        // All of the serializable parameters on a POCO constructor
+        internal ReadOnlySpan<JsonParameterInfo> ParameterCache
+        {
+            get
+            {
+                Debug.Assert(IsConfigured && _parameterCache is not null);
+                return _parameterCache;
+            }
+        }
 
         internal bool UsesParameterizedConstructor
         {
             get
             {
                 Debug.Assert(IsConfigured);
-                return ParameterCache != null;
+                return _parameterCache != null;
             }
         }
 
-        // All of the serializable properties on a POCO (except the optional extension property) keyed on property name.
-        internal JsonPropertyDictionary<JsonPropertyInfo>? PropertyCache { get; private set; }
+        private JsonParameterInfo[]? _parameterCache;
+
+        // All of the serializable properties on a POCO (minus the extension property).
+        internal ReadOnlySpan<JsonPropertyInfo> PropertyCache
+        {
+            get
+            {
+                Debug.Assert(IsConfigured && _propertyCache is not null);
+                return _propertyCache;
+            }
+        }
+
+        private JsonPropertyInfo[]? _propertyCache;
+
+        // All of the serializable properties on a POCO (minus the extension property) keyed on property name.
+        internal Dictionary<string, JsonPropertyInfo> PropertyIndex
+        {
+            get
+            {
+                Debug.Assert(IsConfigured && _propertyIndex is not null);
+                return _propertyIndex;
+            }
+        }
+
+        private Dictionary<string, JsonPropertyInfo>? _propertyIndex;
 
         // Fast cache of properties by first JSON ordering; may not contain all properties. Accessed before PropertyCache.
         // Use an array (instead of List<T>) for highest performance.
@@ -151,14 +180,7 @@ namespace System.Text.Json.Serialization.Metadata
             }
 
             // No cached item was found. Try the main dictionary which has all of the properties.
-#if DEBUG
-            if (PropertyCache == null)
-            {
-                Debug.Fail($"Property cache is null. {GetPropertyDebugInfo(propertyName)}");
-            }
-#endif
-
-            if (PropertyCache!.TryGetValue(JsonHelpers.Utf8GetString(propertyName), out JsonPropertyInfo? info))
+            if (PropertyIndex.TryGetValue(JsonHelpers.Utf8GetString(propertyName), out JsonPropertyInfo? info))
             {
                 Debug.Assert(info != null, "PropertyCache contains null JsonPropertyInfo");
 
@@ -166,15 +188,6 @@ namespace System.Text.Json.Serialization.Metadata
                 {
                     if (propertyName.SequenceEqual(info.NameAsUtf8Bytes))
                     {
-#if DEBUG
-                        ulong recomputedKey = GetKey(info.NameAsUtf8Bytes.AsSpan());
-                        if (key != recomputedKey)
-                        {
-                            string propertyNameStr = JsonHelpers.Utf8GetString(propertyName);
-                            Debug.Fail($"key {key} [propertyName={propertyNameStr}] does not match re-computed value {recomputedKey} for the same sequence (case-insensitive). {info.GetDebugInfo()}");
-                        }
-#endif
-
                         // Use the existing byte[] reference instead of creating another one.
                         utf8PropertyName = info.NameAsUtf8Bytes!;
                     }
@@ -186,14 +199,6 @@ namespace System.Text.Json.Serialization.Metadata
                 }
                 else
                 {
-#if DEBUG
-                    ulong recomputedKey = GetKey(info.NameAsUtf8Bytes.AsSpan());
-                    if (key != recomputedKey)
-                    {
-                        string propertyNameStr = JsonHelpers.Utf8GetString(propertyName);
-                        Debug.Fail($"key {key} [propertyName={propertyNameStr}] does not match re-computed value {recomputedKey} for the same sequence (case-sensitive). {info.GetDebugInfo()}");
-                    }
-#endif
                     utf8PropertyName = info.NameAsUtf8Bytes;
                 }
             }

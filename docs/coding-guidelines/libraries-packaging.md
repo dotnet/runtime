@@ -46,7 +46,7 @@ Most metadata for packages is controlled centrally in the repository and individ
 <PackageDescription>Logging abstractions for Microsoft.Extensions.Logging.</PackageDescription>
 ```
 
-Package content can be defined using any of the publicly defined Pack inputs: https://docs.microsoft.com/en-us/nuget/reference/msbuild-targets
+Package content can be defined using any of the publicly defined Pack inputs: https://learn.microsoft.com/nuget/reference/msbuild-targets
 
 ### Package Readme
 
