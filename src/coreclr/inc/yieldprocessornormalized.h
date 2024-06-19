@@ -3,6 +3,9 @@
 
 #pragma once
 
+// not sure if necessary
+#include <limits.h>
+
 // Undefine YieldProcessor to encourage using the normalized versions below instead. System_YieldProcessor() can be used where
 // the intention is to use the system-default implementation of YieldProcessor().
 #define HAS_SYSTEM_YIELDPROCESSOR
@@ -15,6 +18,10 @@ FORCEINLINE void System_YieldProcessor() { YieldProcessor(); }
 #undef YieldProcessor
 #endif
 #define YieldProcessor Dont_Use_YieldProcessor
+#ifdef PalYieldProcessor
+#undef PalYieldProcessor
+#endif
+#define PalYieldProcessor Dont_Use_PalYieldProcessor
 
 #define DISABLE_COPY(T) \
     T(const T &) = delete; \
