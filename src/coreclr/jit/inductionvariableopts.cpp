@@ -1180,9 +1180,9 @@ PhaseStatus Compiler::optInductionVariables()
     bool changed = false;
 
     optReachableBitVecTraits = nullptr;
-    m_dfsTree = fgComputeDfs();
-    m_domTree = FlowGraphDominatorTree::Build(m_dfsTree);
-    m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
+    m_dfsTree                = fgComputeDfs();
+    m_domTree                = FlowGraphDominatorTree::Build(m_dfsTree);
+    m_loops                  = FlowGraphNaturalLoops::Find(m_dfsTree);
 
     LoopLocalOccurrences loopLocals(m_loops);
 
