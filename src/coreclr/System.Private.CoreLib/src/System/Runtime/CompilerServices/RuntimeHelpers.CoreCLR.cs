@@ -798,7 +798,7 @@ namespace System.Runtime.CompilerServices
     }
 
     /// <summary>
-    /// A type handle, which can wrap either a pointer to a <see cref="TypeDesc"/> or to a <see cref="MethodTable"/>.
+    /// A type handle, which can wrap either a pointer to a <c>TypeDesc</c> or to a <see cref="MethodTable"/>.
     /// </summary>
     internal readonly unsafe partial struct TypeHandle
     {
@@ -842,18 +842,6 @@ namespace System.Runtime.CompilerServices
             return (MethodTable*)m_asTAddr;
         }
 
-        /// <summary>
-        /// Gets the <see cref="TypeDesc"/> pointer wrapped by the current instance.
-        /// </summary>
-        /// <remarks>This is only safe to call if <see cref="IsTypeDesc"/> returned <see langword="true"/>.</remarks>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public TypeDesc* AsTypeDesc()
-        {
-            Debug.Assert(IsTypeDesc);
-
-            return (TypeDesc*)((nint)m_asTAddr - 2);
-        }
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static TypeHandle TypeHandleOf<T>()
         {
@@ -861,20 +849,6 @@ namespace System.Runtime.CompilerServices
         }
 
         public static bool AreSameType(TypeHandle left, TypeHandle right) => left.m_asTAddr == right.m_asTAddr;
-
-        public CorElementType GetVerifierCorElementType() => IsTypeDesc
-            ? AsTypeDesc()->GetInternalCorElementType()
-            : AsMethodTable()->GetVerifierCorElementType();
-    }
-
-    internal unsafe struct TypeDesc
-    {
-        private readonly int m_typeAndFlags;
-
-        // This is the ELEMENT_TYPE* that would be used in the type sig for this type
-        // For enums this is the underlying type
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public CorElementType GetInternalCorElementType() => (CorElementType)(m_typeAndFlags & 0xFF);
     }
 
     // Helper structs used for tail calls via helper.
