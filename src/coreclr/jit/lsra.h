@@ -1620,7 +1620,14 @@ private:
     RefPosition* activeRefPosition;
 #endif // DEBUG
 
-    IntervalList intervals;
+    char* currentIntervalsBuffer = nullptr;
+    char* currentIntervalsBufferEnd = nullptr;
+
+    Interval* intervalsHead = nullptr;
+    Interval** intervalsTailSlot = &intervalsHead;
+#ifdef DEBUG
+    unsigned numIntervals = 0;
+#endif
 
     RegRecord physRegs[REG_COUNT];
 
@@ -1701,17 +1708,17 @@ private:
         return enregisterLocalVars;
     }
 
-    char* currentRefPositionsBuffer;
-    char* currentRefPositionsBufferEnd;
+    char* currentRefPositionsBuffer = nullptr;
+    char* currentRefPositionsBufferEnd = nullptr;
 
-    RefPosition* allRefPositionsHead;
-    RefPosition* allRefPositionsTail;
-    RefPosition** allRefPositionsTailSlot;
+    RefPosition* allRefPositionsHead = nullptr;
+    RefPosition* allRefPositionsTail = nullptr;
+    RefPosition** allRefPositionsTailSlot = &allRefPositionsHead;
 
     // Head of linked list of RefTypeKill ref positions
-    RefPosition* killHead;
+    RefPosition* killHead = nullptr;
     // Tail slot of linked list of RefTypeKill ref positions
-    RefPosition** killTail;
+    RefPosition** killTail = &killHead;
 #ifdef DEBUG
     unsigned numRefPositions = 0;
 #endif
@@ -2181,32 +2188,7 @@ public:
     Interval(RegisterType registerType, SingleTypeRegSet registerPreferences)
         : Referenceable(registerType)
         , registerPreferences(registerPreferences)
-        , registerAversion(RBM_NONE)
-        , relatedInterval(nullptr)
-        , assignedReg(nullptr)
-        , varNum(0)
         , physReg(REG_COUNT)
-        , isActive(false)
-        , isLocalVar(false)
-        , isSplit(false)
-        , isSpilled(false)
-        , isInternal(false)
-        , isStructField(false)
-        , isPromotedStruct(false)
-        , hasConflictingDefUse(false)
-        , hasInterferingUses(false)
-        , isSpecialPutArg(false)
-        , preferCalleeSave(false)
-        , isConstant(false)
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-        , isUpperVector(false)
-        , isPartiallySpilled(false)
-#endif
-        , isWriteThru(false)
-        , isSingleDef(false)
-#ifdef DEBUG
-        , intervalIndex(0)
-#endif
     {
     }
 
@@ -2220,6 +2202,9 @@ public:
 #endif // DEBUG
 
     void setLocalNumber(Compiler* compiler, unsigned lclNum, LinearScan* l);
+
+    // Next interval in linked list of all intervals
+    Interval* nextInterval;
 
     // Fixed registers for which this Interval has a preference
     SingleTypeRegSet registerPreferences;

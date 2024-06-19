@@ -799,13 +799,7 @@ LinearScanInterface* getLinearScanAllocator(Compiler* comp)
 //
 LinearScan::LinearScan(Compiler* theCompiler)
     : compiler(theCompiler)
-    , intervals(theCompiler->getAllocator(CMK_LSRA_Interval))
     , allocationPassComplete(false)
-    , allRefPositionsHead(nullptr)
-    , allRefPositionsTail(nullptr)
-    , allRefPositionsTailSlot(&allRefPositionsHead)
-    , killHead(nullptr)
-    , killTail(&killHead)
     , listNodePool(theCompiler)
 {
     availableRegCount       = ACTUAL_REG_COUNT;
@@ -4998,11 +4992,10 @@ void LinearScan::allocateRegistersMinimal()
     DBEXEC(VERBOSE, lsraDumpIntervals("before allocateRegistersMinimal"));
 
     // at start, nothing is active except for register args
-    for (Interval& interval : intervals)
+    for (Interval* interval = intervalsHead; interval != nullptr; interval = interval->nextInterval)
     {
-        Interval* currentInterval          = &interval;
-        currentInterval->recentRefPosition = nullptr;
-        assert(!currentInterval->isActive);
+        interval->recentRefPosition = nullptr;
+        assert(!interval->isActive);
     }
 
     resetRegState();
@@ -5619,12 +5612,12 @@ void LinearScan::allocateRegistersMinimal()
         // provide a Reset function (!) - we'll probably replace this so don't bother
         // adding it
 
-        for (Interval& interval : intervals)
+        for (Interval* interval = intervalsHead; interval != nullptr; interval = interval->nextInterval)
         {
-            if (interval.isActive)
+            if (interval->isActive)
             {
                 printf("Active ");
-                interval.dump(this->compiler);
+                interval->dump(this->compiler);
             }
         }
 
@@ -5646,17 +5639,16 @@ void LinearScan::allocateRegisters()
     DBEXEC(VERBOSE, lsraDumpIntervals("before allocateRegisters"));
 
     // at start, nothing is active except for register args
-    for (Interval& interval : intervals)
+    for (Interval* interval = intervalsHead; interval != nullptr; interval = interval->nextInterval)
     {
-        Interval* currentInterval          = &interval;
-        currentInterval->recentRefPosition = nullptr;
-        currentInterval->isActive          = false;
-        if (currentInterval->isLocalVar && !stressInitialParamReg())
+        interval->recentRefPosition = nullptr;
+        interval->isActive          = false;
+        if (interval->isLocalVar && !stressInitialParamReg())
         {
-            LclVarDsc* varDsc = currentInterval->getLocalVar(compiler);
-            if (varDsc->lvIsRegArg && currentInterval->firstRefPosition != nullptr)
+            LclVarDsc* varDsc = interval->getLocalVar(compiler);
+            if (varDsc->lvIsRegArg && interval->firstRefPosition != nullptr)
             {
-                currentInterval->isActive = true;
+                interval->isActive = true;
             }
         }
     }
@@ -6921,12 +6913,12 @@ void LinearScan::allocateRegisters()
         // provide a Reset function (!) - we'll probably replace this so don't bother
         // adding it
 
-        for (Interval& interval : intervals)
+        for (Interval* interval = intervalsHead; interval != nullptr; interval = interval->nextInterval)
         {
-            if (interval.isActive)
+            if (interval->isActive)
             {
                 printf("Active ");
-                interval.dump(this->compiler);
+                interval->dump(this->compiler);
             }
         }
 
@@ -10176,7 +10168,7 @@ void LinearScan::dumpLsraStats(FILE* file)
     fprintf(file, "Total Tracked Vars:  %d\n", compiler->lvaTrackedCount);
     fprintf(file, "Total Reg Cand Vars: %d\n", regCandidateVarCount);
     fprintf(file, "Total number of Intervals: %d\n",
-            static_cast<unsigned>((intervals.size() == 0 ? 0 : (intervals.size() - 1))));
+            static_cast<unsigned>((numIntervals == 0 ? 0 : (numIntervals - 1))));
     fprintf(file, "Total number of RefPositions: %d\n", static_cast<unsigned>(numRefPositions));
 
     // compute total number of spill temps created
@@ -10682,11 +10674,11 @@ void LinearScan::dumpDefList()
 void LinearScan::lsraDumpIntervals(const char* msg)
 {
     printf("\nLinear scan intervals %s:\n", msg);
-    for (Interval& interval : intervals)
+    for (Interval* interval = intervalsHead; interval != nullptr; interval = interval->nextInterval)
     {
         // only dump something if it has references
         // if (interval->firstRefPosition)
-        interval.dump(this->compiler);
+        interval->dump(this->compiler);
     }
 
     printf("\n");
@@ -11424,7 +11416,7 @@ void LinearScan::dumpRegRecordHeader()
 
     // First, determine the width of each register column (which holds a reg name in the
     // header, and an interval name in each subsequent row).
-    int intervalNumberWidth = (int)log10((double)intervals.size()) + 1;
+    int intervalNumberWidth = (int)log10((double)numIntervals) + 1;
     // The regColumnWidth includes the identifying character (I or V) and an 'i', 'p' or 'a' (inactive,
     // partially-spilled or active)
     regColumnWidth = intervalNumberWidth + 2;
@@ -11967,10 +11959,10 @@ void LinearScan::verifyFinalAllocation()
         physRegRecord->assignedInterval = nullptr;
     }
 
-    for (Interval& interval : intervals)
+    for (Interval* interval = intervalsHead; interval != nullptr; interval = interval->nextInterval)
     {
-        interval.assignedReg = nullptr;
-        interval.physReg     = REG_NA;
+        interval->assignedReg = nullptr;
+        interval->physReg     = REG_NA;
     }
 
     DBEXEC(VERBOSE, dumpRegRecordTitle());

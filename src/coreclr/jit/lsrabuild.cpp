@@ -153,11 +153,23 @@ void RefInfoListNodePool::ReturnNode(RefInfoListNode* listNode)
 //
 Interval* LinearScan::newInterval(RegisterType theRegisterType)
 {
-    intervals.emplace_back(theRegisterType, allRegs(theRegisterType));
-    Interval* newInt = &intervals.back();
+    if (currentIntervalsBuffer == currentIntervalsBufferEnd)
+    {
+        currentIntervalsBuffer = new (compiler, CMK_LSRA_Interval) char[32 * sizeof(Interval)];
+        currentIntervalsBufferEnd = currentIntervalsBuffer + 32 * sizeof(Interval);
+        memset(currentIntervalsBuffer, 0, 32 * sizeof(Interval));
+    }
+
+    assert(currentIntervalsBuffer + sizeof(Interval) <= currentIntervalsBufferEnd);
+
+    Interval* newInt = new (currentIntervalsBuffer, jitstd::placement_t()) Interval(theRegisterType, allRegs(theRegisterType));
+    currentIntervalsBuffer += sizeof(Interval);
+
+    *intervalsTailSlot = newInt;
+    intervalsTailSlot = &newInt->nextInterval;
 
 #ifdef DEBUG
-    newInt->intervalIndex = static_cast<unsigned>(intervals.size() - 1);
+    newInt->intervalIndex = static_cast<unsigned>(1);
 #endif // DEBUG
 
     DBEXEC(VERBOSE, newInt->dump(this->compiler));
@@ -1457,16 +1469,16 @@ void LinearScan::makeUpperVectorInterval(unsigned varIndex)
 Interval* LinearScan::getUpperVectorInterval(unsigned varIndex)
 {
     // TODO-Throughput: Consider creating a map from varIndex to upperVector interval.
-    for (Interval& interval : intervals)
+    for (Interval* interval = intervalsHead; interval != nullptr; interval = interval->nextInterval)
     {
-        if (interval.isLocalVar)
+        if (interval->isLocalVar)
         {
             continue;
         }
-        noway_assert(interval.isUpperVector);
-        if (interval.relatedInterval->getVarIndex(compiler) == varIndex)
+        noway_assert(interval->isUpperVector);
+        if (interval->relatedInterval->getVarIndex(compiler) == varIndex)
         {
-            return &interval;
+            return interval;
         }
     }
     unreached();
