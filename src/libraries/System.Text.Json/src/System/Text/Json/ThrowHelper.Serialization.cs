@@ -293,15 +293,11 @@ namespace System.Text.Json
             StringBuilder listOfMissingPropertiesBuilder = new();
             bool first = true;
 
-            Debug.Assert(parent.PropertyCache != null);
-
             // Soft cut-off length - once message becomes longer than that we won't be adding more elements
             const int CutOffLength = 60;
 
-            foreach (KeyValuePair<string, JsonPropertyInfo> kvp in parent.PropertyCache.List)
+            foreach (JsonPropertyInfo property in parent.PropertyCache)
             {
-                JsonPropertyInfo property = kvp.Value;
-
                 if (!property.IsRequired || requiredPropertiesSet[property.RequiredPropertyIndex])
                 {
                     continue;

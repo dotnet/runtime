@@ -6,56 +6,49 @@ using System.Collections.Generic;
 
 namespace System.Text.Json
 {
-    internal sealed partial class JsonPropertyDictionary<T>
+    internal sealed partial class OrderedDictionary<TKey, TValue>
     {
-        private KeyCollection? _keyCollection;
-
-        public IList<string> GetKeyCollection()
+        private sealed class KeyCollection : IList<TKey>
         {
-            return _keyCollection ??= new KeyCollection(this);
-        }
+            private readonly OrderedDictionary<TKey, TValue> _parent;
 
-        private sealed class KeyCollection : IList<string>
-        {
-            private readonly JsonPropertyDictionary<T> _parent;
-
-            public KeyCollection(JsonPropertyDictionary<T> jsonObject)
+            public KeyCollection(OrderedDictionary<TKey, TValue> parent)
             {
-                _parent = jsonObject;
+                _parent = parent;
             }
 
             public int Count => _parent.Count;
 
             public bool IsReadOnly => true;
 
-            public string this[int index]
+            public TKey this[int index]
             {
-                get => _parent.List[index].Key;
+                get => _parent.GetAt(index).Key;
                 set => throw ThrowHelper.GetNotSupportedException_CollectionIsReadOnly();
             }
 
             IEnumerator IEnumerable.GetEnumerator()
             {
-                foreach (KeyValuePair<string, T> item in _parent)
+                foreach (KeyValuePair<TKey, TValue> item in _parent)
                 {
                     yield return item.Key;
                 }
             }
 
-            public void Add(string propertyName) => ThrowHelper.ThrowNotSupportedException_CollectionIsReadOnly();
+            public void Add(TKey propertyName) => ThrowHelper.ThrowNotSupportedException_CollectionIsReadOnly();
 
             public void Clear() => ThrowHelper.ThrowNotSupportedException_CollectionIsReadOnly();
 
-            public bool Contains(string propertyName) => _parent.ContainsProperty(propertyName);
+            public bool Contains(TKey propertyName) => _parent.ContainsKey(propertyName);
 
-            public void CopyTo(string[] propertyNameArray, int index)
+            public void CopyTo(TKey[] propertyNameArray, int index)
             {
                 if (index < 0)
                 {
                     ThrowHelper.ThrowArgumentOutOfRangeException_ArrayIndexNegative(nameof(index));
                 }
 
-                foreach (KeyValuePair<string, T> item in _parent)
+                foreach (KeyValuePair<TKey, TValue> item in _parent)
                 {
                     if (index >= propertyNameArray.Length)
                     {
@@ -66,17 +59,17 @@ namespace System.Text.Json
                 }
             }
 
-            public IEnumerator<string> GetEnumerator()
+            public IEnumerator<TKey> GetEnumerator()
             {
-                foreach (KeyValuePair<string, T> item in _parent)
+                foreach (KeyValuePair<TKey, TValue> item in _parent)
                 {
                     yield return item.Key;
                 }
             }
 
-            bool ICollection<string>.Remove(string propertyName) => throw ThrowHelper.GetNotSupportedException_CollectionIsReadOnly();
-            public int IndexOf(string item) => throw ThrowHelper.GetNotSupportedException_CollectionIsReadOnly();
-            public void Insert(int index, string item) => throw ThrowHelper.GetNotSupportedException_CollectionIsReadOnly();
+            bool ICollection<TKey>.Remove(TKey propertyName) => throw ThrowHelper.GetNotSupportedException_CollectionIsReadOnly();
+            public int IndexOf(TKey item) => throw ThrowHelper.GetNotSupportedException_CollectionIsReadOnly();
+            public void Insert(int index, TKey item) => throw ThrowHelper.GetNotSupportedException_CollectionIsReadOnly();
             public void RemoveAt(int index) => throw ThrowHelper.GetNotSupportedException_CollectionIsReadOnly();
         }
     }
