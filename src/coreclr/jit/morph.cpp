@@ -12042,34 +12042,6 @@ GenTree* Compiler::fgMorphMultiOp(GenTreeMultiOp* multiOp)
         {
             std::swap(hw->Op(1), hw->Op(2));
         }
-
-        switch (hw->GetHWIntrinsicId())
-        {
-#if defined(TARGET_XARCH)
-            case NI_SSE_Xor:
-            case NI_SSE2_Xor:
-            case NI_AVX_Xor:
-            case NI_AVX2_Xor:
-            {
-                // Transform XOR(X, 0) to X for vectors
-                GenTree* op1 = hw->Op(1);
-                GenTree* op2 = hw->Op(2);
-                if (!gtIsActiveCSE_Candidate(hw))
-                {
-                    if (op2->IsVectorZero() && !gtIsActiveCSE_Candidate(op2))
-                    {
-                        DEBUG_DESTROY_NODE(hw);
-                        DEBUG_DESTROY_NODE(op2);
-                        return op1;
-                    }
-                }
-                break;
-            }
-#endif
-
-            default:
-                break;
-        }
     }
 #endif // defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
 
