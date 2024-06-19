@@ -4772,6 +4772,15 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<sbyte> Negate(System.Numerics.Vector<sbyte> value) { throw null; }
         public static System.Numerics.Vector<float> Negate(System.Numerics.Vector<float> value) { throw null; }
 
+        public static System.Numerics.Vector<byte> Not(System.Numerics.Vector<byte> value) { throw null; }
+        public static System.Numerics.Vector<short> Not(System.Numerics.Vector<short> value) { throw null; }
+        public static System.Numerics.Vector<int> Not(System.Numerics.Vector<int> value) { throw null; }
+        public static System.Numerics.Vector<long> Not(System.Numerics.Vector<long> value) { throw null; }
+        public static System.Numerics.Vector<sbyte> Not(System.Numerics.Vector<sbyte> value) { throw null; }
+        public static System.Numerics.Vector<ushort> Not(System.Numerics.Vector<ushort> value) { throw null; }
+        public static System.Numerics.Vector<uint> Not(System.Numerics.Vector<uint> value) { throw null; }
+        public static System.Numerics.Vector<ulong> Not(System.Numerics.Vector<ulong> value) { throw null; }
+
         public static System.Numerics.Vector<byte> Or(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
         public static System.Numerics.Vector<short> Or(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
         public static System.Numerics.Vector<int> Or(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }

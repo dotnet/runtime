@@ -4034,6 +4034,96 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<float> Negate(Vector<float> value) { throw new PlatformNotSupportedException(); }
 
+        ///  Bitwise invert
+
+        /// <summary>
+        /// svuint8_t svnot[_u8]_m(svuint8_t inactive, svbool_t pg, svuint8_t op)
+        ///   NOT Ztied.B, Pg/M, Zop.B
+        /// svuint8_t svnot[_u8]_x(svbool_t pg, svuint8_t op)
+        ///   NOT Ztied.B, Pg/M, Ztied.B
+        /// svuint8_t svnot[_u8]_z(svbool_t pg, svuint8_t op)
+        /// svbool_t svnot[_b]_z(svbool_t pg, svbool_t op)
+        ///   EOR Presult.B, Pg/Z, Pop.B, Pg.B
+        /// </summary>
+        public static unsafe Vector<byte> Not(Vector<byte> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint16_t svnot[_s16]_m(svint16_t inactive, svbool_t pg, svint16_t op)
+        ///   NOT Ztied.H, Pg/M, Zop.H
+        /// svint16_t svnot[_s16]_x(svbool_t pg, svint16_t op)
+        ///   NOT Ztied.H, Pg/M, Ztied.H
+        /// svint16_t svnot[_s16]_z(svbool_t pg, svint16_t op)
+        /// svbool_t svnot[_b]_z(svbool_t pg, svbool_t op)
+        ///   EOR Presult.B, Pg/Z, Pop.B, Pg.B
+        /// </summary>
+        public static unsafe Vector<short> Not(Vector<short> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svnot[_s32]_m(svint32_t inactive, svbool_t pg, svint32_t op)
+        ///   NOT Ztied.S, Pg/M, Zop.S
+        /// svint32_t svnot[_s32]_x(svbool_t pg, svint32_t op)
+        ///   NOT Ztied.S, Pg/M, Ztied.S
+        /// svint32_t svnot[_s32]_z(svbool_t pg, svint32_t op)
+        /// svbool_t svnot[_b]_z(svbool_t pg, svbool_t op)
+        ///   EOR Presult.B, Pg/Z, Pop.B, Pg.B
+        /// </summary>
+        public static unsafe Vector<int> Not(Vector<int> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svnot[_s64]_m(svint64_t inactive, svbool_t pg, svint64_t op)
+        ///   NOT Ztied.D, Pg/M, Zop.D
+        /// svint64_t svnot[_s64]_x(svbool_t pg, svint64_t op)
+        ///   NOT Ztied.D, Pg/M, Ztied.D
+        /// svint64_t svnot[_s64]_z(svbool_t pg, svint64_t op)
+        /// svbool_t svnot[_b]_z(svbool_t pg, svbool_t op)
+        ///   EOR Presult.B, Pg/Z, Pop.B, Pg.B
+        /// </summary>
+        public static unsafe Vector<long> Not(Vector<long> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint8_t svnot[_s8]_m(svint8_t inactive, svbool_t pg, svint8_t op)
+        ///   NOT Ztied.B, Pg/M, Zop.B
+        /// svint8_t svnot[_s8]_x(svbool_t pg, svint8_t op)
+        ///   NOT Ztied.B, Pg/M, Ztied.B
+        /// svint8_t svnot[_s8]_z(svbool_t pg, svint8_t op)
+        /// svbool_t svnot[_b]_z(svbool_t pg, svbool_t op)
+        ///   EOR Presult.B, Pg/Z, Pop.B, Pg.B
+        /// </summary>
+        public static unsafe Vector<sbyte> Not(Vector<sbyte> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svnot[_u16]_m(svuint16_t inactive, svbool_t pg, svuint16_t op)
+        ///   NOT Ztied.H, Pg/M, Zop.H
+        /// svuint16_t svnot[_u16]_x(svbool_t pg, svuint16_t op)
+        ///   NOT Ztied.H, Pg/M, Ztied.H
+        /// svuint16_t svnot[_u16]_z(svbool_t pg, svuint16_t op)
+        /// svbool_t svnot[_b]_z(svbool_t pg, svbool_t op)
+        ///   EOR Presult.B, Pg/Z, Pop.B, Pg.B
+        /// </summary>
+        public static unsafe Vector<ushort> Not(Vector<ushort> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svnot[_u32]_m(svuint32_t inactive, svbool_t pg, svuint32_t op)
+        ///   NOT Ztied.S, Pg/M, Zop.S
+        /// svuint32_t svnot[_u32]_x(svbool_t pg, svuint32_t op)
+        ///   NOT Ztied.S, Pg/M, Ztied.S
+        /// svuint32_t svnot[_u32]_z(svbool_t pg, svuint32_t op)
+        /// svbool_t svnot[_b]_z(svbool_t pg, svbool_t op)
+        ///   EOR Presult.B, Pg/Z, Pop.B, Pg.B
+        /// </summary>
+        public static unsafe Vector<uint> Not(Vector<uint> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svnot[_u64]_m(svuint64_t inactive, svbool_t pg, svuint64_t op)
+        ///   NOT Ztied.D, Pg/M, Zop.D
+        /// svuint64_t svnot[_u64]_x(svbool_t pg, svuint64_t op)
+        ///   NOT Ztied.D, Pg/M, Ztied.D
+        /// svuint64_t svnot[_u64]_z(svbool_t pg, svuint64_t op)
+        /// svbool_t svnot[_b]_z(svbool_t pg, svbool_t op)
+        ///   EOR Presult.B, Pg/Z, Pop.B, Pg.B
+        /// </summary>
+        public static unsafe Vector<ulong> Not(Vector<ulong> value) { throw new PlatformNotSupportedException(); }
+
         ///  Or : Bitwise inclusive OR
 
         /// <summary>
