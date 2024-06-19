@@ -14,14 +14,6 @@ FORCEINLINE void System_YieldProcessor() { PalYieldProcessor(); }
 #else
 FORCEINLINE void System_YieldProcessor() { YieldProcessor(); }
 #endif
-#ifdef YieldProcessor
-#undef YieldProcessor
-#endif
-#define YieldProcessor Dont_Use_YieldProcessor
-#ifdef PalYieldProcessor
-#undef PalYieldProcessor
-#endif
-#define PalYieldProcessor Dont_Use_PalYieldProcessor
 
 #define DISABLE_COPY(T) \
     T(const T &) = delete; \

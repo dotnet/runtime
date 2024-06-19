@@ -7,11 +7,11 @@
 
 #ifdef FEATURE_NATIVEAOT
 typedef void VOID;
-#ifdef TARGET_WINDOWS
-GPTR_IMPL(Thread, g_pFinalizerThread);
-#endif
-// Global state variable indicating if the EE has been started up.
-Volatile<BOOL> g_fEEStarted = FALSE;
+
+// #ifdef TARGET_WINDOWS
+// GPTR_IMPL(Thread, g_pFinalizerThread);
+// #endif
+
 #endif
 
 class FinalizerThread
@@ -44,12 +44,14 @@ class FinalizerThread
     static void FinalizeAllObjects();
 
 public:
+#ifndef FEATURE_NATIVEAOT
     static Thread* GetFinalizerThread()
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(g_pFinalizerThread != 0);
         return g_pFinalizerThread;
     }
+#endif
 
     static BOOL IsCurrentThreadFinalizer();
 

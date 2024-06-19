@@ -268,8 +268,12 @@ void YieldProcessorNormalization::ScheduleMeasurementIfNecessary()
         return;
     }
 
+#ifdef FEATURE_NATIVEAOT
+    if (s_isMeasurementScheduled)
+#else
     // !g_fEEStarted is required for FinalizerThread::EnableFinalization() below
     if (s_isMeasurementScheduled || !g_fEEStarted)
+#endif
     {
         return;
     }
