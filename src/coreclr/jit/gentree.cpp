@@ -20856,13 +20856,11 @@ GenTree* Compiler::gtNewSimdAbsNode(var_types type, GenTree* op1, CorInfoType si
         GenTree* op1Dup1 = fgMakeMultiUse(&op1);
         GenTree* op1Dup2 = fgMakeMultiUse(&op1Dup1);
 
-        // op1 = op1 < Zero
-        tmp = gtNewZeroConNode(type);
-        op1 = gtNewSimdCmpOpNode(GT_LT, type, op1, tmp, simdBaseJitType, simdSize);
+        // op1 = IsNegative(op1)
+        op1 = gtNewSimdIsPositiveInfinityNode(type, op1, simdBaseJitType, simdSize);
 
-        // tmp = Zero - op1Dup1
-        tmp = gtNewZeroConNode(type);
-        tmp = gtNewSimdBinOpNode(GT_SUB, type, tmp, op1Dup1, simdBaseJitType, simdSize);
+        // tmp = -op1Dup1
+        tmp = gtNewSimdUnOpNode(GT_NEG, type, op1Dup1, simdBaseJitType, simdSize);
 
         // result = ConditionalSelect(op1, tmp, op1Dup2)
         return gtNewSimdCndSelNode(type, op1, tmp, op1Dup2, simdBaseJitType, simdSize);
@@ -22222,9 +22220,8 @@ GenTree* Compiler::gtNewSimdCvtNode(var_types   type,
         // mask1 contains the output either 0xFFFFFFFF or 0.
         // FixupVal zeros out any NaN values in the input by ANDing input with mask1.
         GenTree* op1Clone1 = fgMakeMultiUse(&op1);
-        GenTree* op1Clone2 = fgMakeMultiUse(&op1);
-        GenTree* mask1     = gtNewSimdCmpOpNode(GT_EQ, type, op1, op1Clone1, simdSourceBaseJitType, simdSize);
-        fixupVal           = gtNewSimdBinOpNode(GT_AND, type, op1Clone2, mask1, simdSourceBaseJitType, simdSize);
+        GenTree* mask1     = gtNewSimdIsNaNNode(type, op1, simdSourceBaseJitType, simdSize);
+        fixupVal           = gtNewSimdBinOpNode(GT_AND_NOT, type, op1Clone1, mask1, simdSourceBaseJitType, simdSize);
     }
 
     if (varTypeIsSigned(simdTargetBaseType))
@@ -23138,6 +23135,39 @@ GenTree* Compiler::gtNewSimdCmpOpNode(
             }
             break;
         }
+
+        case GT_NE:
+        {
+            if (!varTypeIsFloating(simdBaseType) && (simdSize != 64))
+            {
+                GenTree* result = gtNewSimdCmpOpNode(GT_EQ, type, op1, op2, simdBaseJitType, simdSize);
+                return gtNewSimdUnOpNode(GT_NEG, type, result, simdBaseJitType, simdSize);
+            }
+
+            if (simdSize == 64)
+            {
+                assert(canUseEvexEncodingDebugOnly());
+                intrinsic                = NI_EVEX_CompareNotEqualMask;
+                needsConvertMaskToVector = true;
+            }
+            else if (simdSize == 32)
+            {
+                assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
+                intrinsic = NI_AVX_CompareNotEqual;
+            }
+            else if (simdBaseType == TYP_FLOAT)
+            {
+                assert((simdSize == 8) || (simdSize == 12) || (simdSize == 16));
+                intrinsic = NI_SSE_CompareNotEqual;
+            }
+            else
+            {
+                assert(simdSize == 16);
+                assert(simdBaseType == TYP_DOUBLE);
+                intrinsic = NI_SSE2_CompareNotEqual;
+            }
+            break;
+        }
 #elif defined(TARGET_ARM64)
         case GT_EQ:
         {
@@ -23205,6 +23235,12 @@ GenTree* Compiler::gtNewSimdCmpOpNode(
                 intrinsic = NI_AdvSimd_CompareLessThan;
             }
             break;
+        }
+
+        case GT_NE:
+        {
+            GenTree* result = gtNewSimdCmpOpNode(GT_EQ, type, op1, op2, simdBaseJitType, simdSize);
+            return gtNewSimdUnOpNode(GT_NEG, type, result, simdBaseJitType, simdSize);
         }
 #else
 #error Unsupported platform
@@ -24521,6 +24557,199 @@ GenTree* Compiler::gtNewSimdGetUpperNode(var_types type, GenTree* op1, CorInfoTy
 
     assert(intrinsicId != NI_Illegal);
     return gtNewSimdHWIntrinsicNode(type, op1, intrinsicId, simdBaseJitType, simdSize);
+}
+
+//----------------------------------------------------------------------------------------------
+// Compiler::gtNewSimdIsNaNNode: Creates a new simd IsNaN node
+//
+//  Arguments:
+//    type                - The return type of SIMD node being created
+//    op1                 - The vector to check for NaNs
+//    simdBaseJitType     - The base JIT type of SIMD type of the intrinsic
+//    simdSize            - The size of the SIMD type of the intrinsic
+//
+// Returns:
+//    The created IsNaN node
+//
+GenTree* Compiler::gtNewSimdIsNaNNode(var_types   type,
+                                      GenTree*    op1,
+                                      CorInfoType simdBaseJitType,
+                                      unsigned    simdSize)
+{
+    assert(IsBaselineSimdIsaSupportedDebugOnly());
+
+    assert(varTypeIsSIMD(type));
+    assert(getSIMDTypeForSize(simdSize) == type);
+
+    assert(op1 != nullptr);
+    assert(op1->TypeIs(type));
+
+    var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
+    assert(varTypeIsArithmetic(simdBaseType));
+
+    if (varTypeIsFloating(simdBaseType))
+    {
+        GenTree* op1Dup = fgMakeMultiUse(&op1);
+        return gtNewSimdCmpOpNode(GT_NE, type, op1, op1Dup, simdBaseJitType, simdSize);
+    }
+    return gtNewZeroConNode(type);
+}
+
+//----------------------------------------------------------------------------------------------
+// Compiler::gtNewSimdIsNegativeNode: Creates a new simd IsNegative node
+//
+//  Arguments:
+//    type                - The return type of SIMD node being created
+//    op1                 - The vector to check for Negatives
+//    simdBaseJitType     - The base JIT type of SIMD type of the intrinsic
+//    simdSize            - The size of the SIMD type of the intrinsic
+//
+// Returns:
+//    The created IsNegative node
+//
+GenTree* Compiler::gtNewSimdIsNegativeNode(var_types   type,
+                                           GenTree*    op1,
+                                           CorInfoType simdBaseJitType,
+                                           unsigned    simdSize)
+{
+    assert(IsBaselineSimdIsaSupportedDebugOnly());
+
+    assert(varTypeIsSIMD(type));
+    assert(getSIMDTypeForSize(simdSize) == type);
+
+    assert(op1 != nullptr);
+    assert(op1->TypeIs(type));
+
+    if (simdBaseJitType == CORINFO_TYPE_FLOAT)
+    {
+        simdBaseJitType = CORINFO_TYPE_INT;
+    }
+    else if (simdBaseJitType == CORINFO_TYPE_DOUBLE)
+    {
+        simdBaseJitType = CORINFO_TYPE_LONG;
+    }
+
+    var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
+    assert(varTypeIsIntegral(simdBaseType));
+
+    if (varTypeIsUnsigned(simdBaseType))
+    {
+        return gtNewZeroConNode(type);
+    }
+    return gtNewSimdCmpOpNode(GT_LT, type, op1, gtNewZeroConNode(type), simdBaseJitType, simdSize);
+}
+
+//----------------------------------------------------------------------------------------------
+// Compiler::gtNewSimdIsPositiveNode: Creates a new simd IsPositive node
+//
+//  Arguments:
+//    type                - The return type of SIMD node being created
+//    op1                 - The vector to check for Positives
+//    simdBaseJitType     - The base JIT type of SIMD type of the intrinsic
+//    simdSize            - The size of the SIMD type of the intrinsic
+//
+// Returns:
+//    The created IsPositive node
+//
+GenTree* Compiler::gtNewSimdIsPositiveNode(var_types   type,
+                                           GenTree*    op1,
+                                           CorInfoType simdBaseJitType,
+                                           unsigned    simdSize)
+{
+    assert(IsBaselineSimdIsaSupportedDebugOnly());
+
+    assert(varTypeIsSIMD(type));
+    assert(getSIMDTypeForSize(simdSize) == type);
+
+    assert(op1 != nullptr);
+    assert(op1->TypeIs(type));
+
+    if (simdBaseJitType == CORINFO_TYPE_FLOAT)
+    {
+        simdBaseJitType = CORINFO_TYPE_INT;
+    }
+    else if (simdBaseJitType == CORINFO_TYPE_DOUBLE)
+    {
+        simdBaseJitType = CORINFO_TYPE_LONG;
+    }
+
+    var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
+    assert(varTypeIsIntegral(simdBaseType));
+
+    if (varTypeIsUnsigned(simdBaseType))
+    {
+        return gtNewAllBitsSetConNode(type);
+    }
+    return gtNewSimdCmpOpNode(GT_GE, type, op1, gtNewZeroConNode(type), simdBaseJitType, simdSize);
+}
+
+//----------------------------------------------------------------------------------------------
+// Compiler::gtNewSimdIsPositiveInfinityNode: Creates a new simd IsPositiveInfinity node
+//
+//  Arguments:
+//    type                - The return type of SIMD node being created
+//    op1                 - The vector to check for PositiveInfinities
+//    simdBaseJitType     - The base JIT type of SIMD type of the intrinsic
+//    simdSize            - The size of the SIMD type of the intrinsic
+//
+// Returns:
+//    The created IsPositiveInfinity node
+//
+GenTree* Compiler::gtNewSimdIsPositiveInfinityNode(var_types   type,
+                                                   GenTree*    op1,
+                                                   CorInfoType simdBaseJitType,
+                                                   unsigned    simdSize)
+{
+    assert(IsBaselineSimdIsaSupportedDebugOnly());
+
+    assert(varTypeIsSIMD(type));
+    assert(getSIMDTypeForSize(simdSize) == type);
+
+    assert(op1 != nullptr);
+    assert(op1->TypeIs(type));
+
+    var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
+    assert(varTypeIsArithmetic(simdBaseType));
+
+    if (varTypeIsFloating(simdBaseType))
+    {
+        double   infinity = FloatingPointUtils::convertUInt64ToDouble(0x7FF0000000000000);
+        GenTree* cnsNode  = gtNewDconNode(infinity, simdBaseType);
+        cnsNode           = gtNewSimdCreateBroadcastNode(type, cnsNode, simdBaseJitType, simdSize);
+        return gtNewSimdCmpOpNode(GT_EQ, type, op1, cnsNode, simdBaseJitType, simdSize);
+    }
+    return gtNewZeroConNode(type);
+}
+
+//----------------------------------------------------------------------------------------------
+// Compiler::gtNewSimdIsPositiveInfinityNode: Creates a new simd IsZero node
+//
+//  Arguments:
+//    type                - The return type of SIMD node being created
+//    op1                 - The vector to check for Zeroes
+//    simdBaseJitType     - The base JIT type of SIMD type of the intrinsic
+//    simdSize            - The size of the SIMD type of the intrinsic
+//
+// Returns:
+//    The created IsZero node
+//
+GenTree* Compiler::gtNewSimdIsZeroNode(var_types   type,
+                                       GenTree*    op1,
+                                       CorInfoType simdBaseJitType,
+                                       unsigned    simdSize)
+{
+    assert(IsBaselineSimdIsaSupportedDebugOnly());
+
+    assert(varTypeIsSIMD(type));
+    assert(getSIMDTypeForSize(simdSize) == type);
+
+    assert(op1 != nullptr);
+    assert(op1->TypeIs(type));
+
+    var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
+    assert(varTypeIsArithmetic(simdBaseType));
+
+    return gtNewSimdCmpOpNode(GT_EQ, type, op1, gtNewZeroConNode(type), simdBaseJitType, simdSize);
 }
 
 //----------------------------------------------------------------------------------------------

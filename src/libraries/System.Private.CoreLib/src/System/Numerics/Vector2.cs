@@ -50,20 +50,67 @@ namespace System.Numerics
             this = Create(values);
         }
 
-        /// <summary>Returns a vector whose 2 elements are equal to zero.</summary>
-        /// <value>A vector whose two elements are equal to zero (that is, it returns the vector <c>(0,0)</c>.</value>
-        public static Vector2 Zero
+        /// <inheritdoc cref="Vector4.E" />
+        public static Vector2 E
         {
             [Intrinsic]
-            get => default;
+            get => Create(float.E);
         }
 
-        /// <summary>Gets a vector whose 2 elements are equal to one.</summary>
-        /// <value>A vector whose two elements are equal to one (that is, it returns the vector <c>(1,1)</c>.</value>
+        /// <inheritdoc cref="Vector4.Epsilon" />
+        public static Vector2 Epsilon
+        {
+            [Intrinsic]
+            get => Create(float.Epsilon);
+        }
+
+        /// <inheritdoc cref="Vector4.NaN" />
+        public static Vector2 NaN
+        {
+            [Intrinsic]
+            get => Create(float.NaN);
+        }
+
+        /// <inheritdoc cref="Vector4.NegativeInfinity" />
+        public static Vector2 NegativeInfinity
+        {
+            [Intrinsic]
+            get => Create(float.NegativeInfinity);
+        }
+
+        /// <inheritdoc cref="Vector4.NegativeZero" />
+        public static Vector2 NegativeZero
+        {
+            [Intrinsic]
+            get => Create(float.NegativeZero);
+        }
+
+        /// <inheritdoc cref="Vector4.One" />
         public static Vector2 One
         {
             [Intrinsic]
             get => Create(1.0f);
+        }
+
+        /// <inheritdoc cref="Vector4.Pi" />
+        public static Vector2 Pi
+        {
+            [Intrinsic]
+            get => Create(float.Pi);
+        }
+
+        /// <inheritdoc cref="Vector4.PositiveInfinity" />
+        public static Vector2 PositiveInfinity
+        {
+            [Intrinsic]
+            get => Create(float.PositiveInfinity);
+        }
+
+        /// <inheritdoc cref="Vector4.Tau" />
+        public static Vector2 Tau
+        {
+            [Intrinsic]
+            get => Create(float.Tau);
         }
 
         /// <summary>Gets the vector (1,0).</summary>
@@ -80,6 +127,13 @@ namespace System.Numerics
         {
             [Intrinsic]
             get => Create(0.0f, 1.0f);
+        }
+
+        /// <inheritdoc cref="Vector4.Zero" />
+        public static Vector2 Zero
+        {
+            [Intrinsic]
+            get => default;
         }
 
         /// <summary>Gets or sets the element at the specified index.</summary>

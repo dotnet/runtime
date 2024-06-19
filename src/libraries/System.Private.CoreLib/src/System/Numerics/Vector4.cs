@@ -76,21 +76,76 @@ namespace System.Numerics
             this = Create(values);
         }
 
-        /// <summary>Gets a vector whose 4 elements are equal to zero.</summary>
-        /// <value>A vector whose four elements are equal to zero (that is, it returns the vector <c>(0,0,0,0)</c>.</value>
-        public static Vector4 Zero
+        /// <summary>Gets a vector whose elements are equal to <see cref="float.E" />.</summary>
+        /// <value>A vector whose elements are equal to <see cref="float.E" /> (that is, it returns the vector <c>Create(float.E)</c>).</value>
+        public static Vector4 E
         {
             [Intrinsic]
-            get => default;
+            get => Create(float.E);
         }
 
-        /// <summary>Gets a vector whose 4 elements are equal to one.</summary>
-        /// <value>Returns <see cref="Vector4" />.</value>
-        /// <remarks>A vector whose four elements are equal to one (that is, it returns the vector <c>(1,1,1,1)</c>.</remarks>
+        /// <summary>Gets a vector whose elements are equal to <see cref="float.Epsilon" />.</summary>
+        /// <value>A vector whose elements are equal to <see cref="float.Epsilon" /> (that is, it returns the vector <c>Create(float.Epsilon)</c>).</value>
+        public static Vector4 Epsilon
+        {
+            [Intrinsic]
+            get => Create(float.Epsilon);
+        }
+
+        /// <summary>Gets a vector whose elements are equal to <see cref="float.NaN" />.</summary>
+        /// <value>A vector whose elements are equal to <see cref="float.NaN" /> (that is, it returns the vector <c>Create(float.NaN)</c>).</value>
+        public static Vector4 NaN
+        {
+            [Intrinsic]
+            get => Create(float.NaN);
+        }
+
+        /// <summary>Gets a vector whose elements are equal to <see cref="float.NegativeInfinity" />.</summary>
+        /// <value>A vector whose elements are equal to <see cref="float.NegativeInfinity" /> (that is, it returns the vector <c>Create(float.NegativeInfinity)</c>).</value>
+        public static Vector4 NegativeInfinity
+        {
+            [Intrinsic]
+            get => Create(float.NegativeInfinity);
+        }
+
+        /// <summary>Gets a vector whose elements are equal to <see cref="float.NegativeZero" />.</summary>
+        /// <value>A vector whose elements are equal to <see cref="float.NegativeZero" /> (that is, it returns the vector <c>Create(float.NegativeZero)</c>).</value>
+        public static Vector4 NegativeZero
+        {
+            [Intrinsic]
+            get => Create(float.NegativeZero);
+        }
+
+        /// <summary>Gets a vector whose elements are equal to one.</summary>
+        /// <value>A vector whose elements are equal to one (that is, it returns the vector <c>Create(1)</c>).</value>
         public static Vector4 One
         {
             [Intrinsic]
             get => Create(1);
+        }
+
+        /// <summary>Gets a vector whose elements are equal to <see cref="float.Pi" />.</summary>
+        /// <value>A vector whose elements are equal to <see cref="float.Pi" /> (that is, it returns the vector <c>Create(float.Pi)</c>).</value>
+        public static Vector4 Pi
+        {
+            [Intrinsic]
+            get => Create(float.Pi);
+        }
+
+        /// <summary>Gets a vector whose elements are equal to <see cref="float.PositiveInfinity" />.</summary>
+        /// <value>A vector whose elements are equal to <see cref="float.PositiveInfinity" /> (that is, it returns the vector <c>Create(float.PositiveInfinity)</c>).</value>
+        public static Vector4 PositiveInfinity
+        {
+            [Intrinsic]
+            get => Create(float.PositiveInfinity);
+        }
+
+        /// <summary>Gets a vector whose elements are equal to <see cref="float.Tau" />.</summary>
+        /// <value>A vector whose elements are equal to <see cref="float.Tau" /> (that is, it returns the vector <c>Create(float.Tau)</c>).</value>
+        public static Vector4 Tau
+        {
+            [Intrinsic]
+            get => Create(float.Tau);
         }
 
         /// <summary>Gets the vector (1,0,0,0).</summary>
@@ -123,6 +178,14 @@ namespace System.Numerics
         {
             [Intrinsic]
             get => Create(0.0f, 0.0f, 0.0f, 1.0f);
+        }
+
+        /// <summary>Gets a vector whose elements are equal to zero.</summary>
+        /// <value>A vector whose elements are equal to zero (that is, it returns the vector <c>Create(0)</c>).</value>
+        public static Vector4 Zero
+        {
+            [Intrinsic]
+            get => default;
         }
 
         /// <summary>Gets or sets the element at the specified index.</summary>

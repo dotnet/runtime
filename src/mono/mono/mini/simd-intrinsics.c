@@ -1219,6 +1219,11 @@ static guint16 sri_vector_methods [] = {
 	SN_GreaterThanOrEqual,
 	SN_GreaterThanOrEqualAll,
 	SN_GreaterThanOrEqualAny,
+	SN_IsNaN,
+	SN_IsNegative,
+	SN_IsPositive,
+	SN_IsPositiveInfinity,
+	SN_IsZero,
 	SN_LessThan,
 	SN_LessThanAll,
 	SN_LessThanAny,
@@ -2118,6 +2123,58 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			ret->inst_c1 = mono_class_value_size (klass, NULL);
 			return ret;
 		}
+	}
+	case SN_IsNaN: {
+		if (!is_element_type_primitive (fsig->params [0]))
+			return NULL;
+		if (!type_enum_is_float(arg0_type))
+			return emit_xzero (cfg, klass);
+		args [0] = emit_xcompare (cfg, klass, arg0_type, args [0], args [0]);
+		return emit_simd_ins_for_unary_op (cfg, klass, fsig, args, arg0_type, SN_op_OnesComplement);
+	}
+	case SN_IsNegative: {
+		if (!is_element_type_primitive (fsig->params [0]))
+			return NULL;
+		if (type_enum_is_unsigned(arg0_type))
+			return emit_xzero (cfg, klass);
+		return emit_xcompare_for_intrinsic (cfg, klass, SN_LessThan, arg0_type, args [0], emit_xzero (cfg, klass));
+	}
+	case SN_IsPositive: {
+		if (!is_element_type_primitive (fsig->params [0]))
+			return NULL;
+		if (type_enum_is_unsigned(arg0_type))
+			return emit_xones (cfg, klass);
+		return emit_xcompare_for_intrinsic (cfg, klass, SN_GreaterThanOrEqual, arg0_type, args [0], emit_xzero (cfg, klass));
+	}
+	case SN_IsPositiveInfinity: {
+		if (!is_element_type_primitive (fsig->params [0]))
+			return NULL;
+		if (etype == MONO_TYPE_R4) {
+			guint32 value[4];
+
+			value [0] = 0x7F800000;
+			value [1] = 0x7F800000;
+			value [2] = 0x7F800000;
+			value [3] = 0x7F800000;
+
+			MonoInst* arg1 = emit_xconst_v128 (cfg, klass, (guint8*)value);
+			return emit_xcompare (cfg, klass, arg0_type, args [0], arg1);
+		}
+		if (etype == MONO_TYPE_R8) {
+			guint64 value[2];
+
+			value [0] = 0x7FF0000000000000;
+			value [1] = 0x7FF0000000000000;
+
+			MonoInst* arg1 = emit_xconst_v128 (cfg, klass, (guint8*)value);
+			return emit_xcompare (cfg, klass, arg0_type, args [0], arg1);
+		}
+		return emit_xzero (cfg, klass);
+	}
+	case SN_IsZero: {
+		if (!is_element_type_primitive (fsig->params [0]))
+			return NULL;
+		return emit_xcompare (cfg, klass, arg0_type, args [0], emit_xzero (cfg, klass));
 	}
 	case SN_Narrow: {
 		if (!is_element_type_primitive (fsig->params [0]))

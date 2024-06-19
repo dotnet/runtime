@@ -430,7 +430,15 @@ namespace System.Numerics
         public Vector2(float value) { throw null; }
         public Vector2(float x, float y) { throw null; }
         public Vector2(System.ReadOnlySpan<float> values) { throw null; }
+        public static System.Numerics.Vector2 E { get { throw null; } }
+        public static System.Numerics.Vector2 Epsilon { get { throw null; } }
+        public static System.Numerics.Vector2 NaN { get { throw null; } }
+        public static System.Numerics.Vector2 NegativeInfinity { get { throw null; } }
+        public static System.Numerics.Vector2 NegativeZero { get { throw null; } }
         public static System.Numerics.Vector2 One { get { throw null; } }
+        public static System.Numerics.Vector2 Pi { get { throw null; } }
+        public static System.Numerics.Vector2 PositiveInfinity { get { throw null; } }
+        public static System.Numerics.Vector2 Tau { get { throw null; } }
         public static System.Numerics.Vector2 UnitX { get { throw null; } }
         public static System.Numerics.Vector2 UnitY { get { throw null; } }
         public float this[int index] { readonly get { throw null; } set { throw null; } }
@@ -496,7 +504,15 @@ namespace System.Numerics
         public Vector3(float value) { throw null; }
         public Vector3(float x, float y, float z) { throw null; }
         public Vector3(System.ReadOnlySpan<float> values) { throw null; }
+        public static System.Numerics.Vector3 E { get { throw null; } }
+        public static System.Numerics.Vector3 Epsilon { get { throw null; } }
+        public static System.Numerics.Vector3 NaN { get { throw null; } }
+        public static System.Numerics.Vector3 NegativeInfinity { get { throw null; } }
+        public static System.Numerics.Vector3 NegativeZero { get { throw null; } }
         public static System.Numerics.Vector3 One { get { throw null; } }
+        public static System.Numerics.Vector3 Pi { get { throw null; } }
+        public static System.Numerics.Vector3 PositiveInfinity { get { throw null; } }
+        public static System.Numerics.Vector3 Tau { get { throw null; } }
         public static System.Numerics.Vector3 UnitX { get { throw null; } }
         public static System.Numerics.Vector3 UnitY { get { throw null; } }
         public static System.Numerics.Vector3 UnitZ { get { throw null; } }
@@ -565,7 +581,15 @@ namespace System.Numerics
         public Vector4(float value) { throw null; }
         public Vector4(float x, float y, float z, float w) { throw null; }
         public Vector4(System.ReadOnlySpan<float> values) { throw null; }
+        public static System.Numerics.Vector4 E { get { throw null; } }
+        public static System.Numerics.Vector4 Epsilon { get { throw null; } }
+        public static System.Numerics.Vector4 NaN { get { throw null; } }
+        public static System.Numerics.Vector4 NegativeInfinity { get { throw null; } }
+        public static System.Numerics.Vector4 NegativeZero { get { throw null; } }
         public static System.Numerics.Vector4 One { get { throw null; } }
+        public static System.Numerics.Vector4 Pi { get { throw null; } }
+        public static System.Numerics.Vector4 PositiveInfinity { get { throw null; } }
+        public static System.Numerics.Vector4 Tau { get { throw null; } }
         public static System.Numerics.Vector4 UnitW { get { throw null; } }
         public static System.Numerics.Vector4 UnitX { get { throw null; } }
         public static System.Numerics.Vector4 UnitY { get { throw null; } }
