@@ -13425,9 +13425,11 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
 // fgMorphBlockStmt: morph a single statement in a block.
 //
 // Arguments:
-//    block - block containing the statement
-//    stmt - statement to morph
-//    msg - string to identify caller in a dump
+//    block                       - block containing the statement
+//    stmt                        - statement to morph
+//    msg                         - string to identify caller in a dump
+//    invalidateDFSTreeOnFGChange - whether or not the DFS tree should be invalidated
+//                                  by this function if it makes a flow graph change
 //
 // Returns:
 //    true if 'stmt' was removed from the block.
@@ -13436,7 +13438,11 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
 // Notes:
 //   Can be called anytime, unlike fgMorphStmts() which should only be called once.
 //
-bool Compiler::fgMorphBlockStmt(BasicBlock* block, Statement* stmt DEBUGARG(const char* msg))
+//   Invalidates the DFS tree if a branch was folded.
+//
+bool Compiler::fgMorphBlockStmt(BasicBlock*     block,
+                                Statement* stmt DEBUGARG(const char* msg),
+                                bool            invalidateDFSTreeOnFGChange)
 {
     assert(block != nullptr);
     assert(stmt != nullptr);
@@ -13502,7 +13508,11 @@ bool Compiler::fgMorphBlockStmt(BasicBlock* block, Statement* stmt DEBUGARG(cons
     if (!removedStmt && (stmt->GetNextStmt() == nullptr) && !fgRemoveRestOfBlock)
     {
         FoldResult const fr = fgFoldConditional(block);
-        removedStmt         = (fr == FoldResult::FOLD_REMOVED_LAST_STMT);
+        if (invalidateDFSTreeOnFGChange && (fr != FoldResult::FOLD_DID_NOTHING))
+        {
+            fgInvalidateDfsTree();
+        }
+        removedStmt = (fr == FoldResult::FOLD_REMOVED_LAST_STMT);
     }
 
     if (!removedStmt)
@@ -13542,6 +13552,11 @@ bool Compiler::fgMorphBlockStmt(BasicBlock* block, Statement* stmt DEBUGARG(cons
         {
             // Convert block to a throw bb
             fgConvertBBToThrowBB(block);
+
+            if (invalidateDFSTreeOnFGChange)
+            {
+                fgInvalidateDfsTree();
+            }
         }
 
 #ifdef DEBUG

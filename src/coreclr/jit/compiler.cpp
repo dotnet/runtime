@@ -5132,12 +5132,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 //
                 DoPhase(this, PHASE_OPTIMIZE_BRANCHES, &Compiler::optRedundantBranches);
             }
-            else
-            {
-                // DFS tree is always invalid after this point.
-                //
-                fgInvalidateDfsTree();
-            }
 
             if (doCse)
             {
@@ -5145,6 +5139,11 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 //
                 DoPhase(this, PHASE_OPTIMIZE_VALNUM_CSES, &Compiler::optOptimizeCSEs);
             }
+
+            // After assertion prop we can no longer cross reference SSA with
+            // IR, so invalidate it here unconditionally. It may already have
+            // been invalidated if RBO made changes.
+            fgSsaValid = false;
 
             if (doAssertionProp)
             {
@@ -5183,6 +5182,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
             // Conservatively mark all VNs as stale
             vnStore = nullptr;
+
+            // Flow graph annotations are always considered invalid after this point
+            fgInvalidateDfsTree();
 
             if (fgModified)
             {

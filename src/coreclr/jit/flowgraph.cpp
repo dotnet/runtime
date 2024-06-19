@@ -2775,51 +2775,6 @@ bool Compiler::fgSimpleLowerCastOfSmpOp(LIR::Range& range, GenTreeCast* cast)
 }
 
 //------------------------------------------------------------------------------
-// fgGetDomSpeculatively: Try determine a more accurate dominator than cached bbIDom
-//
-// Arguments:
-//    block - Basic block to get a dominator for
-//
-// Return Value:
-//    Basic block that dominates this block
-//
-BasicBlock* Compiler::fgGetDomSpeculatively(const BasicBlock* block)
-{
-    assert(m_domTree != nullptr);
-    BasicBlock* lastReachablePred = nullptr;
-
-    // Check if we have unreachable preds
-    for (const FlowEdge* predEdge : block->PredEdges())
-    {
-        BasicBlock* predBlock = predEdge->getSourceBlock();
-        if (predBlock == block)
-        {
-            continue;
-        }
-
-        // We check pred's count of InEdges - it's quite conservative.
-        // We, probably, could use optReachable(fgFirstBb, pred) here to detect unreachable preds
-        if (predBlock->countOfInEdges() > 0)
-        {
-            if (lastReachablePred != nullptr)
-            {
-                // More than one of "reachable" preds - return cached result
-                return block->bbIDom;
-            }
-            lastReachablePred = predBlock;
-        }
-        else if (predBlock == block->bbIDom)
-        {
-            // IDom is unreachable, so assume this block is too.
-            //
-            return nullptr;
-        }
-    }
-
-    return lastReachablePred == nullptr ? block->bbIDom : lastReachablePred;
-}
-
-//------------------------------------------------------------------------------
 // fgLastBBInMainFunction: Return the last basic block in the main part of the function.
 // With funclets, it is the block immediately before the first funclet.
 //

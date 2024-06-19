@@ -106,10 +106,13 @@ PhaseStatus Compiler::optRedundantBranches()
     }
 #endif // DEBUG
 
-    // DFS tree is always considered invalid after RBO.
-    fgInvalidateDfsTree();
+    if (visitor.madeChanges)
+    {
+        fgInvalidateDfsTree();
+        return PhaseStatus::MODIFIED_EVERYTHING;
+    }
 
-    return visitor.madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
+    return PhaseStatus::MODIFIED_NOTHING;
 }
 
 static const ValueNumStore::VN_RELATION_KIND s_vnRelations[] = {ValueNumStore::VN_RELATION_KIND::VRK_Same,
@@ -754,7 +757,7 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
         {
             // It's possible that bbIDom is not up to date at this point due to recent BB modifications
             // so let's try to quickly calculate new one
-            domBlock = fgGetDomSpeculatively(block);
+            domBlock = optGetDomSpeculatively(block);
             if (domBlock == block->bbIDom)
             {
                 // We already checked this one
@@ -958,9 +961,54 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
 
     JITDUMP("\nRedundant branch opt in " FMT_BB ":\n", block->bbNum);
 
-    fgMorphBlockStmt(block, stmt DEBUGARG(__FUNCTION__));
+    fgMorphBlockStmt(block, stmt DEBUGARG(__FUNCTION__), /* invalidateDFSTreeOnFGChange */ false);
     Metrics.RedundantBranchesEliminated++;
     return true;
+}
+
+//------------------------------------------------------------------------------
+// optGetDomSpeculatively: Try determine a more accurate dominator than cached bbIDom
+//
+// Arguments:
+//    block - Basic block to get a dominator for
+//
+// Return Value:
+//    Basic block that dominates this block
+//
+BasicBlock* Compiler::optGetDomSpeculatively(const BasicBlock* block)
+{
+    assert(m_domTree != nullptr);
+    BasicBlock* lastReachablePred = nullptr;
+
+    // Check if we have unreachable preds
+    for (const FlowEdge* predEdge : block->PredEdges())
+    {
+        BasicBlock* predBlock = predEdge->getSourceBlock();
+        if (predBlock == block)
+        {
+            continue;
+        }
+
+        // We check pred's count of InEdges - it's quite conservative.
+        // We, probably, could use optReachable(fgFirstBb, pred) here to detect unreachable preds
+        if (predBlock->countOfInEdges() > 0)
+        {
+            if (lastReachablePred != nullptr)
+            {
+                // More than one of "reachable" preds - return cached result
+                return block->bbIDom;
+            }
+            lastReachablePred = predBlock;
+        }
+        else if (predBlock == block->bbIDom)
+        {
+            // IDom is unreachable, so assume this block is too.
+            //
+            return nullptr;
+        }
+    }
+
+    return lastReachablePred == nullptr ? block->bbIDom : lastReachablePred;
 }
 
 //------------------------------------------------------------------------

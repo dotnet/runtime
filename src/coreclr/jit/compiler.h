@@ -5395,7 +5395,7 @@ public:
 
     void fgMergeBlockReturn(BasicBlock* block);
 
-    bool fgMorphBlockStmt(BasicBlock* block, Statement* stmt DEBUGARG(const char* msg));
+    bool fgMorphBlockStmt(BasicBlock* block, Statement* stmt DEBUGARG(const char* msg), bool invalidateDfsTreeOnFGChange = true);
     void fgMorphStmtBlockOps(BasicBlock* block, Statement* stmt);
 
     //------------------------------------------------------------------------------------------------------------
@@ -6078,7 +6078,7 @@ public:
 
     BasicBlock* fgEndBBAfterMainFunction();
 
-    BasicBlock* fgGetDomSpeculatively(const BasicBlock* block);
+    BasicBlock* optGetDomSpeculatively(const BasicBlock* block);
 
     void fgUnlinkRange(BasicBlock* bBeg, BasicBlock* bEnd);
 
