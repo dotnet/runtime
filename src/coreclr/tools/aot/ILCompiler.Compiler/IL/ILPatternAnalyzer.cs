@@ -8,7 +8,7 @@ using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler
 {
-    internal class ILPatternAnalyzer<T> where T : ILPatternAnalyzerTraits
+    internal sealed class ILPatternAnalyzer<T> where T : ILPatternAnalyzerTraits
     {
         public readonly MethodIL Method;
         public T State;
