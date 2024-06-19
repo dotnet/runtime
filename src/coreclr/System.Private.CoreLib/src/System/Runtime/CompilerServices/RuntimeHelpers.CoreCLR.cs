@@ -79,7 +79,7 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-        private static unsafe void* GetSpanDataFrom(
+        private static unsafe ref byte GetSpanDataFrom(
             RuntimeFieldHandle fldHandle,
             RuntimeTypeHandle targetTypeHandle,
             out int count)
@@ -107,7 +107,7 @@ namespace System.Runtime.CompilerServices
             }
 
             count = (int)(totalSize / targetTypeSize);
-            return (void*)data;
+            return ref *(byte*)data;
         }
 
         // GetObjectValue is intended to allow value classes to be manipulated as 'Object'
