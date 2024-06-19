@@ -7,7 +7,6 @@ using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
 using System.Text;
 
@@ -264,7 +263,7 @@ namespace System.Runtime.Intrinsics
         public static Vector128<T> operator *(Vector128<T> left, Vector128<T> right)
         {
             // TODO: move this to JIT
-            if (Sse41.IsSupported)
+            if (Sse41.IsSupported && typeof(T) == typeof(ulong))
             {
                 Vector128<ulong> a = left.AsUInt64();
                 Vector128<ulong> b = right.AsUInt64();
