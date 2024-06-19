@@ -14,6 +14,9 @@ namespace System.Text.Json.Nodes
     /// declared as an <see cref="object"/> should be deserialized as a <see cref="JsonNode"/>.
     public abstract partial class JsonNode
     {
+        // Default options instance used when calling built-in JsonNode converters.
+        private protected static readonly JsonSerializerOptions s_defaultOptions = new();
+
         private JsonNode? _parent;
         private JsonNodeOptions? _options;
 
@@ -375,7 +378,7 @@ namespace System.Text.Json.Nodes
             }
 
             var jsonTypeInfo = (JsonTypeInfo<T>)JsonSerializerOptions.Default.GetTypeInfo(typeof(T));
-            return new JsonValueCustomized<T>(value, jsonTypeInfo, options);
+            return JsonValue.CreateFromTypeInfo(value, jsonTypeInfo, options);
         }
     }
 }

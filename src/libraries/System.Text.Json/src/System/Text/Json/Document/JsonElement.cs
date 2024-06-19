@@ -1194,6 +1194,28 @@ namespace System.Text.Json
             return _parent.GetPropertyRawValueAsString(_idx);
         }
 
+        internal bool ValueIsEscaped
+        {
+            // TODO make public https://github.com/dotnet/runtime/issues/77666
+            get
+            {
+                Debug.Assert(ValueKind is JsonValueKind.String);
+                CheckValidInstance();
+                return _parent.GetHasComplexChildren(_idx);
+            }
+        }
+
+        internal ReadOnlySpan<byte> ValueSpan
+        {
+            // TODO make public https://github.com/dotnet/runtime/issues/77666
+            get
+            {
+                Debug.Assert(ValueKind is JsonValueKind.String);
+                CheckValidInstance();
+                return _parent.GetRawValue(_idx, includeQuotes: false).Span;
+            }
+        }
+
         /// <summary>
         ///   Compares <paramref name="text" /> to the string value of this element.
         /// </summary>

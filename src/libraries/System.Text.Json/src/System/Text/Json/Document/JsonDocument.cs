@@ -118,6 +118,13 @@ namespace System.Text.Json
             return _parsedData.GetJsonTokenType(index);
         }
 
+        internal bool GetHasComplexChildren(int index)
+        {
+            CheckNotDisposed();
+            DbRow row = _parsedData.Get(index);
+            return row.HasComplexChildren;
+        }
+
         internal int GetArrayLength(int index)
         {
             CheckNotDisposed();

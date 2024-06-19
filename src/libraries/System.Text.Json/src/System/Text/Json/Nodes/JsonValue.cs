@@ -37,20 +37,18 @@ namespace System.Text.Json.Nodes
                 return null;
             }
 
+            if (value is JsonNode)
+            {
+                ThrowHelper.ThrowArgumentException_NodeValueNotAllowed(nameof(value));
+            }
+
             if (value is JsonElement element)
             {
-                if (element.ValueKind is JsonValueKind.Null)
-                {
-                    return null;
-                }
-
-                VerifyJsonElementIsNotArrayOrObject(ref element);
-
-                return new JsonValuePrimitive<JsonElement>(element, JsonMetadataServices.JsonElementConverter, options);
+                return CreateFromElement(ref element, options);
             }
 
             var jsonTypeInfo = (JsonTypeInfo<T>)JsonSerializerOptions.Default.GetTypeInfo(typeof(T));
-            return new JsonValueCustomized<T>(value, jsonTypeInfo, options);
+            return CreateFromTypeInfo(value, jsonTypeInfo, options);
         }
 
         /// <summary>
@@ -76,21 +74,22 @@ namespace System.Text.Json.Nodes
                 return null;
             }
 
-            if (value is JsonElement element)
+            if (value is JsonNode)
             {
-                if (element.ValueKind is JsonValueKind.Null)
-                {
-                    return null;
-                }
-
-                VerifyJsonElementIsNotArrayOrObject(ref element);
+                ThrowHelper.ThrowArgumentException_NodeValueNotAllowed(nameof(value));
             }
 
             jsonTypeInfo.EnsureConfigured();
-            return new JsonValueCustomized<T>(value, jsonTypeInfo, options);
+
+            if (value is JsonElement element && jsonTypeInfo.EffectiveConverter.IsInternalConverter)
+            {
+                return CreateFromElement(ref element, options);
+            }
+
+            return CreateFromTypeInfo(value, jsonTypeInfo, options);
         }
 
-        internal override void GetPath(ref ValueStringBuilder path, JsonNode? child)
+        internal sealed override void GetPath(ref ValueStringBuilder path, JsonNode? child)
         {
             Debug.Assert(child == null);
 
@@ -114,13 +113,35 @@ namespace System.Text.Json.Nodes
         /// <returns><see langword="true"/> if the value can be successfully obtained; otherwise, <see langword="false"/>.</returns>
         public abstract bool TryGetValue<T>([NotNullWhen(true)] out T? value);
 
-        private static void VerifyJsonElementIsNotArrayOrObject(ref JsonElement element)
+        internal static JsonValue CreateFromTypeInfo<T>(T value, JsonTypeInfo<T> jsonTypeInfo, JsonNodeOptions? options = null)
         {
+            Debug.Assert(jsonTypeInfo.IsConfigured);
+            Debug.Assert(value != null);
+
+            if (jsonTypeInfo.EffectiveConverter.IsInternalConverter && JsonValue<T>.TypeIsSupportedPrimitive)
+            {
+                // If the type is using the built-in converter for a known primitive,
+                // switch to the more efficient JsonValuePrimitive<T> implementation.
+                return new JsonValuePrimitive<T>(value, jsonTypeInfo.EffectiveConverter, options);
+            }
+
+            return new JsonValueCustomized<T>(value, jsonTypeInfo, options);
+        }
+
+        internal static JsonValue? CreateFromElement(ref readonly JsonElement element, JsonNodeOptions? options = null)
+        {
+            if (element.ValueKind is JsonValueKind.Null)
+            {
+                return null;
+            }
+
             // Force usage of JsonArray and JsonObject instead of supporting those in an JsonValue.
             if (element.ValueKind is JsonValueKind.Object or JsonValueKind.Array)
             {
                 ThrowHelper.ThrowInvalidOperationException_NodeElementCannotBeObjectOrArray();
             }
+
+            return new JsonValueOfElement(element, options);
         }
     }
 }
