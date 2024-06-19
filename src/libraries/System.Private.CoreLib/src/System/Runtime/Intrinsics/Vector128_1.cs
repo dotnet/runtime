@@ -263,16 +263,15 @@ namespace System.Runtime.Intrinsics
         public static Vector128<T> operator *(Vector128<T> left, Vector128<T> right)
         {
             // TODO: move this to JIT
-            if (Sse41.IsSupported && typeof(T) == typeof(ulong))
+            if (Sse41.IsSupported && (typeof(T) == typeof(long) || typeof(T) == typeof(ulong)))
             {
-                Vector128<ulong> a = left.AsUInt64();
-                Vector128<ulong> b = right.AsUInt64();
-                return Sse2.Add(
-                    Sse2.Multiply(a.AsUInt32(), b.AsUInt32()).AsUInt64(),
-                    Sse2.Shuffle(
-                        Ssse3.HorizontalAdd(
-                            Sse41.MultiplyLow(a.AsUInt32(),
-                                Sse2.Shuffle(b.AsUInt32(), 0xB1)).AsInt32(), Vector128<int>.Zero), 0x73).AsUInt64()).As<ulong, T>();
+                return Unsafe.BitCast<Vector128<ulong>, Vector128<T>>(
+                    Sse2.Add(
+                        Sse2.Multiply(a.AsUInt32(), b.AsUInt32()).AsUInt64(),
+                        Sse2.Shuffle(
+                            Ssse3.HorizontalAdd(
+                                Sse41.MultiplyLow(a.AsUInt32(),
+                                    Sse2.Shuffle(b.AsUInt32(), 0xB1)).AsInt32(), Vector128<int>.Zero), 0x73).AsUInt64()));
             }
 
             return Vector128.Create(
