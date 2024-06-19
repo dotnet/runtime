@@ -13617,6 +13617,40 @@ void gc_heap::distribute_free_regions()
 #endif //USE_REGIONS
 }
 
+void gc_heap::age_free_regions(const char* label)
+{
+#ifdef MULTIPLE_HEAPS
+    for (int i = 0; i < gc_heap::n_heaps; i++)
+    {
+        gc_heap* hp = gc_heap::g_heaps[i];
+#else //MULTIPLE_HEAPS
+    {
+        gc_heap* hp = pGenGCHeap;
+        const int i = 0;
+#endif //MULTIPLE_HEAPS
+
+        hp->descr_generations (label);
+#ifdef USE_REGIONS
+        if (settings.condemned_generation == max_generation)
+        {
+            // age and print all kinds of free regions
+            if (i == 0)
+            {
+                global_free_huge_regions.age_free_regions();
+            }
+            region_free_list::age_free_regions (hp->free_regions);
+            region_free_list::print (hp->free_regions, i, label);
+        }
+        else
+        {
+            // age and print only basic free regions
+            hp->free_regions[basic_free_region].age_free_regions();
+            hp->free_regions[basic_free_region].print (i, label);
+        }
+#endif //USE_REGIONS
+    }
+}
+
 #ifdef WRITE_WATCH
 uint8_t* g_addresses [array_size+2]; // to get around the bug in GetWriteWatch
 
@@ -22786,29 +22820,7 @@ void gc_heap::gc1()
                 }
             }
 
-            for (int i = 0; i < gc_heap::n_heaps; i++)
-            {
-                g_heaps[i]->descr_generations ("END");
-#ifdef USE_REGIONS
-                if (settings.condemned_generation == max_generation)
-                {
-                    // age and print all kinds of free regions
-                    if (i == 0)
-                    {
-                        global_free_huge_regions.age_free_regions();
-                    }
-                    region_free_list::age_free_regions (g_heaps[i]->free_regions);
-                    region_free_list::print (g_heaps[i]->free_regions, i, "END");
-                }
-                else
-                {
-                    // age and print only basic free regions
-                    g_heaps[i]->free_regions[basic_free_region].age_free_regions();
-                    g_heaps[i]->free_regions[basic_free_region].print (i, "END");
-                }
-#endif //USE_REGIONS
-            }
-
+            age_free_regions ("END");
             fire_pevents();
             update_end_ngc_time();
             pm_full_gc_init_or_clear();
@@ -22843,19 +22855,7 @@ void gc_heap::gc1()
         compute_gc_and_ephemeral_range (settings.condemned_generation, true);
         stomp_write_barrier_ephemeral (ephemeral_low, ephemeral_high,
                                         map_region_to_generation_skewed, (uint8_t)min_segment_size_shr);
-        if (settings.condemned_generation == max_generation)
-        {
-            // age and print all kinds of free regions
-            global_free_huge_regions.age_free_regions();
-            region_free_list::age_free_regions(free_regions);
-            region_free_list::print(free_regions, 0, "END");
-        }
-        else
-        {
-            // age and print only basic free regions
-            free_regions[basic_free_region].age_free_regions();
-            free_regions[basic_free_region].print (0, "END");
-        }
+        age_free_regions ("END");
 #endif //USE_REGIONS
 
         update_end_ngc_time();
@@ -37985,29 +37985,7 @@ void gc_heap::background_mark_phase ()
 #endif //MULTIPLE_HEAPS
     {
         distribute_free_regions ();
-
-#ifdef MULTIPLE_HEAPS
-        for (int i = 0; i < gc_heap::n_heaps; i++)
-        {
-            gc_heap* hp = gc_heap::g_heaps[i];
-#else //MULTIPLE_HEAPS
-        {
-            gc_heap* hp = pGenGCHeap;
-            const int i = 0;
-#endif //MULTIPLE_HEAPS
-
-            hp->descr_generations ("BGC");
-#ifdef USE_REGIONS
-            assert (settings.condemned_generation == max_generation);
-            // age and print all kinds of free regions
-            if (i == 0)
-            {
-                global_free_huge_regions.age_free_regions();
-            }
-            region_free_list::age_free_regions (hp->free_regions);
-            region_free_list::print (hp->free_regions, i, "BGC");
-#endif //USE_REGIONS
-        }
+        age_free_regions ("BGC");
 
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
         // Resetting write watch for software write watch is pretty fast, much faster than for hardware write watch. Reset
