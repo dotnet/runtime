@@ -444,6 +444,9 @@ inline bool RefTypeIsDef(RefType refType)
 typedef regNumberSmall* VarToRegMap;
 
 typedef jitstd::list<Interval>                      IntervalList;
+typedef jitstd::list<RefPosition>                   RefPositionList;
+typedef jitstd::list<RefPosition>::iterator         RefPositionIterator;
+typedef jitstd::list<RefPosition>::reverse_iterator RefPositionReverseIterator;
 
 class Referenceable
 {
@@ -1701,20 +1704,13 @@ private:
         return enregisterLocalVars;
     }
 
-    char* currentRefPositionsBuffer;
-    char* currentRefPositionsBufferEnd;
-
-    RefPosition* allRefPositionsHead;
-    RefPosition* allRefPositionsTail;
-    RefPosition** allRefPositionsTailSlot;
+    // Ordered list of RefPositions
+    RefPositionList refPositions;
 
     // Head of linked list of RefTypeKill ref positions
     RefPosition* killHead;
     // Tail slot of linked list of RefTypeKill ref positions
     RefPosition** killTail;
-#ifdef DEBUG
-    unsigned numRefPositions = 0;
-#endif
 
     // Per-block variable location mappings: an array indexed by block number that yields a
     // pointer to an array of regNumber, one per variable.
@@ -1911,11 +1907,6 @@ private:
     {
         resetAvailableRegs();
         regsBusyUntilKill = RBM_NONE;
-    }
-
-    RefPosition* getAllRefPositionsTail()
-    {
-        return allRefPositionsTail;
     }
 
     bool conflictingFixedRegReference(regNumber regNum, RefPosition* refPosition);
@@ -2472,13 +2463,10 @@ public:
 
     Referenceable* referent;
 
-    // nextRefPosition is the next RP in code order associated with the referent.
+    // nextRefPosition is the next in code order.
     // Note that in either case there is no need for these to be doubly linked, as they
     // are only traversed in the forward direction, and are not moved.
     RefPosition* nextRefPosition;
-
-    RefPosition* nextAllRefPosition;
-    RefPosition* prevAllRefPosition;
 
     // The remaining fields are common to both options
     union
@@ -2607,12 +2595,33 @@ public:
                 LsraLocation    nodeLocation,
                 GenTree*        treeNode,
                 RefType refType DEBUG_ARG(GenTree* buildNode))
-        : treeNode(treeNode)
+        : referent(nullptr)
+        , nextRefPosition(nullptr)
+        , treeNode(treeNode)
+        , registerAssignment(RBM_NONE)
         , bbNum(bbNum)
         , nodeLocation(nodeLocation)
         , refType(refType)
+        , multiRegIdx(0)
+#ifdef TARGET_ARM64
+        , needsConsecutive(false)
+        , regCount(0)
+#endif
+        , lastUse(false)
+        , reload(false)
+        , spillAfter(false)
+        , singleDefSpill(false)
+        , writeThru(false)
+        , copyReg(false)
+        , moveReg(false)
+        , isPhysRegRef(false)
+        , isFixedRegRef(false)
+        , isLocalDefUse(false)
+        , delayRegFree(false)
+        , outOfOrder(false)
 #ifdef DEBUG
         , minRegCandidateCount(1)
+        , rpNum(0)
         , buildNode(buildNode)
 #endif
     {

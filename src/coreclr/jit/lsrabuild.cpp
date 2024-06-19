@@ -178,28 +178,14 @@ Interval* LinearScan::newInterval(RegisterType theRegisterType)
 //
 RefPosition* LinearScan::newRefPositionRaw(LsraLocation nodeLocation, GenTree* treeNode, RefType refType)
 {
-    if (currentRefPositionsBuffer == currentRefPositionsBufferEnd)
-    {
-        currentRefPositionsBuffer = new (compiler, CMK_LSRA_RefPosition) char[64 * sizeof(RefPosition)];
-        currentRefPositionsBufferEnd = currentRefPositionsBuffer + 64 * sizeof(RefPosition);
-        memset(currentRefPositionsBuffer, 0, 64 * sizeof(RefPosition));
-    }
-
-    assert(currentRefPositionsBuffer + sizeof(RefPosition) <= currentRefPositionsBufferEnd);
-
-    RefPosition* newRP = new (currentRefPositionsBuffer, jitstd::placement_t()) RefPosition(curBBNum, nodeLocation, treeNode, refType DEBUG_ARG(currBuildNode));
-    currentRefPositionsBuffer += sizeof(RefPosition);
-
-    newRP->prevAllRefPosition = allRefPositionsTail;
-    *allRefPositionsTailSlot = allRefPositionsTail = newRP;
-    allRefPositionsTailSlot = &newRP->nextAllRefPosition;
-
+    refPositions.emplace_back(curBBNum, nodeLocation, treeNode, refType DEBUG_ARG(currBuildNode));
+    RefPosition* newRP = &refPositions.back();
 #ifdef DEBUG
     // Reset currBuildNode so we do not set it for subsequent refpositions belonging
     // to the same treeNode and hence, avoid printing it for every refposition inside
     // the allocation table.
     currBuildNode = nullptr;
-    newRP->rpNum = numRefPositions++;
+    newRP->rpNum  = static_cast<unsigned>(refPositions.size() - 1);
     if (!enregisterLocalVars)
     {
         assert(!((refType == RefTypeParamDef) || (refType == RefTypeZeroInit) || (refType == RefTypeDummyDef) ||
@@ -1782,7 +1768,7 @@ void LinearScan::buildRefPositionsForNode(GenTree* tree, LsraLocation currentLoc
     // If we are constraining the registers for allocation, we will modify all the RefPositions
     // we've built for this node after we've created them. In order to do that, we'll remember
     // the last RefPosition prior to those created for this node.
-    RefPosition* refPositionMark = allRefPositionsTail;
+    RefPositionIterator refPositionMark = refPositions.backPosition();
     int                 oldDefListCount = defList.Count();
     currBuildNode                       = tree;
 #endif // DEBUG
@@ -1807,8 +1793,8 @@ void LinearScan::buildRefPositionsForNode(GenTree* tree, LsraLocation currentLoc
         // First, we count them.
         unsigned minRegCount = 0;
 
-        RefPosition* iter = refPositionMark;
-        for (iter = iter->nextAllRefPosition; iter != nullptr; iter = iter->nextAllRefPosition)
+        RefPositionIterator iter = refPositionMark;
+        for (iter++; iter != refPositions.end(); iter++)
         {
             RefPosition* newRefPosition = &(*iter);
             if (newRefPosition->isIntervalRef())
@@ -1852,7 +1838,7 @@ void LinearScan::buildRefPositionsForNode(GenTree* tree, LsraLocation currentLoc
             // add one less than the maximum number of registers args to 'minRegCount'.
             minRegCount += MAX_REG_ARG - 1;
         }
-        for (refPositionMark = refPositionMark->nextAllRefPosition; refPositionMark != nullptr; refPositionMark = refPositionMark->nextAllRefPosition)
+        for (refPositionMark++; refPositionMark != refPositions.end(); refPositionMark++)
         {
             RefPosition* newRefPosition    = &(*refPositionMark);
             unsigned     minRegCountForRef = minRegCount;
