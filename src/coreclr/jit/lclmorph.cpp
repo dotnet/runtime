@@ -515,6 +515,13 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
             return m_offset;
         }
 
+        bool IsSameAddress(const Value& other) const
+        {
+            assert(IsAddress() && other.IsAddress());
+
+            return ((LclNum() == other.LclNum()) && (Offset() == other.Offset()));
+        }
+
         //------------------------------------------------------------------------
         // Address: Produce an address value from a LCL_ADDR node.
         //
@@ -1040,10 +1047,23 @@ public:
                 if ((lhs.IsAddress() && rhs.Node()->IsIntegralConst(0)) ||
                     (rhs.IsAddress() && lhs.Node()->IsIntegralConst(0)))
                 {
-                    JITDUMP("Rewriting known address-of comparison [%06u]\n", m_compiler->dspTreeID(node));
+                    JITDUMP("Rewriting known address vs null comparison [%06u]\n", m_compiler->dspTreeID(node));
                     *lhs.Use()     = m_compiler->gtNewIconNode(0);
                     *rhs.Use()     = m_compiler->gtNewIconNode(1);
                     m_stmtModified = true;
+
+                    INDEBUG(TopValue(0).Consume());
+                    INDEBUG(TopValue(1).Consume());
+                    PopValue();
+                    PopValue();
+                }
+                else if (lhs.IsAddress() && rhs.IsAddress())
+                {
+                    JITDUMP("Rewriting known address vs address comparison [%06u]\n", m_compiler->dspTreeID(node));
+                    bool isSameAddress = lhs.IsSameAddress(rhs);
+                    *lhs.Use()         = m_compiler->gtNewIconNode(0);
+                    *rhs.Use()         = m_compiler->gtNewIconNode(isSameAddress ? 0 : 1);
+                    m_stmtModified     = true;
 
                     INDEBUG(TopValue(0).Consume());
                     INDEBUG(TopValue(1).Consume());
