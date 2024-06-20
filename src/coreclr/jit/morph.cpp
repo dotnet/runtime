@@ -2095,7 +2095,6 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
         ClassLayout* argLayout = argSigClass == NO_CLASS_HANDLE ? nullptr : comp->typGetObjLayout(argSigClass);
 
         ABIPassingInformation abiInfo;
-        ABIPassingSegment     inlineSegment;
 
         // Some well known args have custom register assignment.
         // These should not affect the placement of any other args or stack space required.
@@ -2109,8 +2108,8 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
         }
         else
         {
-            inlineSegment = ABIPassingSegment::InRegister(nonStdRegNum, 0, TARGET_POINTER_SIZE);
-            abiInfo       = ABIPassingInformation(1, &inlineSegment);
+            ABIPassingSegment segment = ABIPassingSegment::InRegister(nonStdRegNum, 0, TARGET_POINTER_SIZE);
+            abiInfo                   = ABIPassingInformation::FromSegment(comp, segment);
         }
 
         JITDUMP("Argument %u ABI info: ", GetIndex(&arg));
@@ -2175,7 +2174,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
             unsigned regNumIndex   = 0;
             for (unsigned i = 0; i < abiInfo.NumSegments; i++)
             {
-                const ABIPassingSegment& segment = abiInfo.Segments[i];
+                const ABIPassingSegment& segment = abiInfo.Segment(i);
                 if (segment.IsPassedInRegister())
                 {
                     if (regNumIndex < MAX_ARG_REG_COUNT)
@@ -2200,7 +2199,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
             unsigned regNumIndex = 0;
             for (unsigned i = 0; i < abiInfo.NumSegments; i++)
             {
-                const ABIPassingSegment& segment = abiInfo.Segments[i];
+                const ABIPassingSegment& segment = abiInfo.Segment(i);
 
                 if (regNumIndex < MAX_ARG_REG_COUNT)
                 {
@@ -2236,7 +2235,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
             assert(abiInfo.NumSegments == 1);
             // This is a stack argument
             m_hasStackArgs                   = true;
-            const ABIPassingSegment& segment = abiInfo.Segments[0];
+            const ABIPassingSegment& segment = abiInfo.Segment(0);
             arg.AbiInfo.SetRegNum(0, REG_STK);
             arg.AbiInfo.ByteOffset = segment.GetStackOffset();
         }
