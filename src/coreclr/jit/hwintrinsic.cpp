@@ -768,15 +768,15 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
     assert(isaRange.FirstId <= isaRange.LastId);
 #endif // DEBUG
 
-    size_t rangeLower = 0;
-    size_t rangeUpper = static_cast<size_t>(isaRange.LastId) - static_cast<size_t>(isaRange.FirstId);
+    size_t rangeLower = isaRange.FirstId;
+    size_t rangeUpper = isaRange.LastId;
 
     while (rangeLower <= rangeUpper)
     {
         // This is safe since rangeLower and rangeUpper will never be negative
         size_t rangeIndex = (rangeUpper + rangeLower) / 2;
 
-        NamedIntrinsic         ni            = static_cast<NamedIntrinsic>(isaRange.FirstId + rangeIndex);
+        NamedIntrinsic         ni            = static_cast<NamedIntrinsic>(rangeIndex);
         const HWIntrinsicInfo& intrinsicInfo = HWIntrinsicInfo::lookup(ni);
 
         // We should have found the entry we expected to find here
