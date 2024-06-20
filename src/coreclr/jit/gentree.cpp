@@ -15923,10 +15923,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
 
                         // Fold into GT_IND of null byref.
                         tree->BashToConst(0, TYP_BYREF);
-                        if (vnStore != nullptr)
-                        {
-                            fgValueNumberTreeConst(tree);
-                        }
+                        fgUpdateConstTreeValueNumber(tree);
 
                         JITDUMP("\nFolded to null byref:\n");
                         DISPTREE(tree);
@@ -16128,10 +16125,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
             tree->BashToConst(static_cast<int>(i1));
             tree->AsIntCon()->gtFieldSeq = fieldSeq;
 
-            if (vnStore != nullptr)
-            {
-                fgValueNumberTreeConst(tree);
-            }
+            fgUpdateConstTreeValueNumber(tree);
 
             JITDUMP("Bashed to int constant:\n");
             DISPTREE(tree);
@@ -16351,10 +16345,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
 #ifdef TARGET_64BIT
             tree->AsIntCon()->gtFieldSeq = fieldSeq;
 #endif
-            if (vnStore != nullptr)
-            {
-                fgValueNumberTreeConst(tree);
-            }
+            fgUpdateConstTreeValueNumber(tree);
 
             JITDUMP("Bashed to long constant:\n");
             DISPTREE(tree);
@@ -16509,10 +16500,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
                    (tree->gtDebugFlags & GTF_DEBUG_NODE_LARGE));
 
             tree->BashToConst(d1, tree->TypeGet());
-            if (vnStore != nullptr)
-            {
-                fgValueNumberTreeConst(tree);
-            }
+            fgUpdateConstTreeValueNumber(tree);
 
             JITDUMP("Bashed to fp constant:\n");
             DISPTREE(tree);
@@ -29699,13 +29687,9 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
         if (fgGlobalMorph)
         {
             INDEBUG(vecCon->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
-            ;
         }
 
-        if (vnStore != nullptr)
-        {
-            fgValueNumberTreeConst(vecCon);
-        }
+        fgUpdateConstTreeValueNumber(vecCon);
         return vecCon;
     }
 
@@ -30630,10 +30614,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 
         if (resultNode->OperIsConst())
         {
-            if (vnStore != nullptr)
-            {
-                fgValueNumberTreeConst(resultNode);
-            }
+            fgUpdateConstTreeValueNumber(resultNode);
 
             // Make sure no side effect flags are set on this constant node.
             resultNode->gtFlags &= ~GTF_ALL_EFFECT;
