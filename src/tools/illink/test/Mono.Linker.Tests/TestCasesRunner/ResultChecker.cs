@@ -334,7 +334,10 @@ namespace Mono.Linker.Tests.TestCasesRunner
 						}
 
 						var expectedTypeName = checkAttrInAssembly.ConstructorArguments[1].Value.ToString ();
-						_linkedTypeNameResolver.TryResolveTypeName (linkedAssembly, expectedTypeName, out TypeReference linkedTypeRef, out _);
+						TypeReference linkedTypeRef = null;
+						try {
+							_linkedTypeNameResolver.TryResolveTypeName (linkedAssembly, expectedTypeName, out linkedTypeRef, out _);
+						} catch (AssemblyResolutionException) {}
 						TypeDefinition linkedType = linkedTypeRef?.Resolve ();
 
 						if (linkedType == null && linkedAssembly.MainModule.HasExportedTypes) {
