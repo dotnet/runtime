@@ -1005,8 +1005,8 @@ void Compiler::fgCompactBlock(BasicBlock* block)
     assert(block->IsLIR() == target->IsLIR());
     if (block->IsLIR())
     {
-        LIR::Range& blockRange = LIR::AsRange(block);
-        LIR::Range& targetRange  = LIR::AsRange(target);
+        LIR::Range& blockRange  = LIR::AsRange(block);
+        LIR::Range& targetRange = LIR::AsRange(target);
 
         // Does target have any phis?
         GenTree* targetNode = targetRange.FirstNode();
@@ -1042,8 +1042,9 @@ void Compiler::fgCompactBlock(BasicBlock* block)
                 targetFirst->SetPrevStmt(blkLastPhi);
 
                 // Now, rest of "block" after last phi of "target".
-                Statement* targetLastPhi = (targetNonPhi1 != nullptr) ? targetNonPhi1->GetPrevStmt() : targetFirst->GetPrevStmt();
-                targetlastPhi->SetNextStmt(blkNonPhi1);
+                Statement* targetLastPhi =
+                    (targetNonPhi1 != nullptr) ? targetNonPhi1->GetPrevStmt() : targetFirst->GetPrevStmt();
+                targetLastPhi->SetNextStmt(blkNonPhi1);
 
                 if (blkNonPhi1 != nullptr)
                 {
@@ -1070,7 +1071,8 @@ void Compiler::fgCompactBlock(BasicBlock* block)
                     Statement* blkLast = blkFirst->GetPrevStmt();
                     block->bbStmtList  = targetFirst;
                     // Now, rest of "block" (if it exists) after last phi of "target".
-                    Statement* targetLastPhi = (targetNonPhi1 != nullptr) ? targetNonPhi1->GetPrevStmt() : targetFirst->GetPrevStmt();
+                    Statement* targetLastPhi =
+                        (targetNonPhi1 != nullptr) ? targetNonPhi1->GetPrevStmt() : targetFirst->GetPrevStmt();
 
                     targetFirst->SetPrevStmt(blkLast);
                     targetLastPhi->SetNextStmt(blkFirst);
@@ -1114,42 +1116,15 @@ void Compiler::fgCompactBlock(BasicBlock* block)
         }
     }
 
-    // If target is BBJ_THROW, block will become run rarely.
-    //
-    // Otherwise, if either block or target has a profile weight
-    // or if both block and target have non-zero weights
-    // then we will use the max weight for the block.
-    //
-    if (target->KindIs(BBJ_THROW))
-    {
-        block->bbSetRunRarely();
-    }
-    else
-    {
-        const bool hasProfileWeight = block->hasProfileWeight() || target->hasProfileWeight();
-        const bool hasNonZeroWeight = (block->bbWeight > BB_ZERO_WEIGHT) || (target->bbWeight > BB_ZERO_WEIGHT);
+    // Transfer target's weight to block
+    // (target's weight should include block's weight,
+    // plus the weights of target's preds, which now flow into block)
+    const bool hasProfileWeight = block->hasProfileWeight();
+    block->inheritWeight(target);
 
-        if (hasProfileWeight || hasNonZeroWeight)
-        {
-            weight_t const newWeight = max(block->bbWeight, target->bbWeight);
-
-            if (hasProfileWeight)
-            {
-                block->setBBProfileWeight(newWeight);
-            }
-            else
-            {
-                assert(newWeight != BB_ZERO_WEIGHT);
-                block->bbWeight = newWeight;
-                block->RemoveFlags(BBF_RUN_RARELY);
-            }
-        }
-        // otherwise if either block has a zero weight we select the zero weight
-        else
-        {
-            noway_assert((block->bbWeight == BB_ZERO_WEIGHT) || (target->bbWeight == BB_ZERO_WEIGHT));
-            block->bbSetRunRarely();
-        }
+    if (hasProfileWeight)
+    {
+        block->SetFlags(BBF_PROF_WEIGHT);
     }
 
     VarSetOps::AssignAllowUninitRhs(this, block->bbLiveOut, target->bbLiveOut);
@@ -5575,7 +5550,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */, bool isPh
                 /* we compacted two blocks - goto REPEAT to catch similar cases */
                 change   = true;
                 modified = true;
-                bPrev = block->Prev();
+                bPrev    = block->Prev();
                 goto REPEAT;
             }
 
