@@ -448,6 +448,8 @@ Copyright (c) .NET Foundation. All rights reserved.
     </ItemGroup>
     <ItemGroup Condition="@(WasmAssembliesFinal->Count()) > 0">
       <_WasmResolvedFilesToPublish Include="@(WasmAssembliesFinal)" />
+      <!-- Ensure we have 'RelativePath' required by ComputeWasmPublishAssets. 9+ version of MonoAOTCompiler is copying this metadata, but when targeting downlevel versions it doesn't. -->
+      <_WasmResolvedFilesToPublish RelativePath="%(FileName)%(Extension)" Condition="'%(_WasmResolvedFilesToPublish.RelativePath)' == ''" />
 
       <!-- remove the original assemblies -->
       <ResolvedFileToPublish Remove="@(WasmAssembliesToBundle)" />

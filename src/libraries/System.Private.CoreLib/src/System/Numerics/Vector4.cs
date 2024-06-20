@@ -3,9 +3,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 
 namespace System.Numerics
@@ -137,6 +135,7 @@ namespace System.Numerics
             readonly get => this.AsVector128().GetElement(index);
 
             [Intrinsic]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             set
             {
                 this = this.AsVector128().WithElement(index, value).AsVector4();
@@ -167,6 +166,7 @@ namespace System.Numerics
         /// <returns>The result of the division.</returns>
         /// <remarks>The <see cref="Vector4.op_Division" /> method defines the division operation for <see cref="Vector4" /> objects.</remarks>
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector4 operator /(Vector4 value1, float value2) => (value1.AsVector128() / value2).AsVector4();
 
         /// <summary>Returns a value that indicates whether each pair of elements in two specified vectors is equal.</summary>
@@ -200,6 +200,7 @@ namespace System.Numerics
         /// <returns>The scaled vector.</returns>
         /// <remarks>The <see cref="Vector4.op_Multiply" /> method defines the multiplication operation for <see cref="Vector4" /> objects.</remarks>
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector4 operator *(Vector4 left, float right) => (left.AsVector128() * right).AsVector4();
 
         /// <summary>Multiplies the scalar value by the specified vector.</summary>
@@ -265,6 +266,7 @@ namespace System.Numerics
         /// <param name="w">The W component.</param>
         /// <returns>A new <see cref="Vector4" /> from the specified <see cref="Vector2" /> object and a Z and a W component.</returns>
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector4 Create(Vector2 vector, float z, float w)
         {
             return vector.AsVector128Unsafe()
@@ -278,6 +280,7 @@ namespace System.Numerics
         /// <param name="w">The W component.</param>
         /// <returns>A new <see cref="Vector4" /> from the specified <see cref="Vector3" /> object and a W component.</returns>
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector4 Create(Vector3 vector, float w)
         {
             return vector.AsVector128Unsafe()
@@ -362,7 +365,7 @@ namespace System.Numerics
         /// ]]></format></remarks>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector4 Lerp(Vector4 value1, Vector4 value2, float amount) => (value1 * (1.0f - amount)) + (value2 * amount);
+        public static Vector4 Lerp(Vector4 value1, Vector4 value2, float amount) => MultiplyAddEstimate(value1, Create(1.0f - amount), value2 * amount);
 
         /// <summary>Returns a vector whose elements are the maximum of each of the pairs of elements in two specified vectors.</summary>
         /// <param name="value1">The first vector.</param>
@@ -441,12 +444,12 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static Vector4 Transform(Vector2 position, in Matrix4x4.Impl matrix)
         {
+            // This implementation is based on the DirectX Math Library XMVector2Transform method
+            // https://github.com/microsoft/DirectXMath/blob/master/Inc/DirectXMathVector.inl
+
             Vector4 result = matrix.X * position.X;
-
-            result += matrix.Y * position.Y;
-            result += matrix.W;
-
-            return result;
+            result = MultiplyAddEstimate(matrix.Y, Create(position.Y), result);
+            return result + matrix.W;
         }
 
         /// <summary>Transforms a two-dimensional vector by the specified Quaternion rotation value.</summary>
@@ -454,29 +457,7 @@ namespace System.Numerics
         /// <param name="rotation">The rotation to apply.</param>
         /// <returns>The transformed vector.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector4 Transform(Vector2 value, Quaternion rotation)
-        {
-            float x2 = rotation.X + rotation.X;
-            float y2 = rotation.Y + rotation.Y;
-            float z2 = rotation.Z + rotation.Z;
-
-            float wx2 = rotation.W * x2;
-            float wy2 = rotation.W * y2;
-            float wz2 = rotation.W * z2;
-            float xx2 = rotation.X * x2;
-            float xy2 = rotation.X * y2;
-            float xz2 = rotation.X * z2;
-            float yy2 = rotation.Y * y2;
-            float yz2 = rotation.Y * z2;
-            float zz2 = rotation.Z * z2;
-
-            return Create(
-                value.X * (1.0f - yy2 - zz2) + value.Y * (xy2 - wz2),
-                value.X * (xy2 + wz2) + value.Y * (1.0f - xx2 - zz2),
-                value.X * (xz2 - wy2) + value.Y * (yz2 + wx2),
-                1.0f
-            );
-        }
+        public static Vector4 Transform(Vector2 value, Quaternion rotation) => Transform(Create(value, 0.0f, 1.0f), rotation);
 
         /// <summary>Transforms a three-dimensional vector by a specified 4x4 matrix.</summary>
         /// <param name="position">The vector to transform.</param>
@@ -487,13 +468,13 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static Vector4 Transform(Vector3 position, in Matrix4x4.Impl matrix)
         {
+            // This implementation is based on the DirectX Math Library XMVector3Transform method
+            // https://github.com/microsoft/DirectXMath/blob/master/Inc/DirectXMathVector.inl
+
             Vector4 result = matrix.X * position.X;
-
-            result += matrix.Y * position.Y;
-            result += matrix.Z * position.Z;
-            result += matrix.W;
-
-            return result;
+            result = MultiplyAddEstimate(matrix.Y, Create(position.Y), result);
+            result = MultiplyAddEstimate(matrix.Z, Create(position.Z), result);
+            return result + matrix.W;
         }
 
         /// <summary>Transforms a three-dimensional vector by the specified Quaternion rotation value.</summary>
@@ -501,29 +482,7 @@ namespace System.Numerics
         /// <param name="rotation">The rotation to apply.</param>
         /// <returns>The transformed vector.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector4 Transform(Vector3 value, Quaternion rotation)
-        {
-            float x2 = rotation.X + rotation.X;
-            float y2 = rotation.Y + rotation.Y;
-            float z2 = rotation.Z + rotation.Z;
-
-            float wx2 = rotation.W * x2;
-            float wy2 = rotation.W * y2;
-            float wz2 = rotation.W * z2;
-            float xx2 = rotation.X * x2;
-            float xy2 = rotation.X * y2;
-            float xz2 = rotation.X * z2;
-            float yy2 = rotation.Y * y2;
-            float yz2 = rotation.Y * z2;
-            float zz2 = rotation.Z * z2;
-
-            return Create(
-                value.X * (1.0f - yy2 - zz2) + value.Y * (xy2 - wz2) + value.Z * (xz2 + wy2),
-                value.X * (xy2 + wz2) + value.Y * (1.0f - xx2 - zz2) + value.Z * (yz2 - wx2),
-                value.X * (xz2 - wy2) + value.Y * (yz2 + wx2) + value.Z * (1.0f - xx2 - yy2),
-                1.0f
-            );
-        }
+        public static Vector4 Transform(Vector3 value, Quaternion rotation) => Transform(Create(value, 1.0f), rotation);
 
         /// <summary>Transforms a four-dimensional vector by a specified 4x4 matrix.</summary>
         /// <param name="vector">The vector to transform.</param>
@@ -534,12 +493,13 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static Vector4 Transform(Vector4 vector, in Matrix4x4.Impl matrix)
         {
+            // This implementation is based on the DirectX Math Library XMVector4Transform method
+            // https://github.com/microsoft/DirectXMath/blob/master/Inc/DirectXMathVector.inl
+
             Vector4 result = matrix.X * vector.X;
-
-            result += matrix.Y * vector.Y;
-            result += matrix.Z * vector.Z;
-            result += matrix.W * vector.W;
-
+            result = MultiplyAddEstimate(matrix.Y, Create(vector.Y), result);
+            result = MultiplyAddEstimate(matrix.Z, Create(vector.Z), result);
+            result = MultiplyAddEstimate(matrix.W, Create(vector.W), result);
             return result;
         }
 
@@ -550,25 +510,12 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector4 Transform(Vector4 value, Quaternion rotation)
         {
-            float x2 = rotation.X + rotation.X;
-            float y2 = rotation.Y + rotation.Y;
-            float z2 = rotation.Z + rotation.Z;
+            // This implementation is based on the DirectX Math Library XMVector3Rotate method
+            // https://github.com/microsoft/DirectXMath/blob/master/Inc/DirectXMathVector.inl
 
-            float wx2 = rotation.W * x2;
-            float wy2 = rotation.W * y2;
-            float wz2 = rotation.W * z2;
-            float xx2 = rotation.X * x2;
-            float xy2 = rotation.X * y2;
-            float xz2 = rotation.X * z2;
-            float yy2 = rotation.Y * y2;
-            float yz2 = rotation.Y * z2;
-            float zz2 = rotation.Z * z2;
-
-            return Create(
-                value.X * (1.0f - yy2 - zz2) + value.Y * (xy2 - wz2) + value.Z * (xz2 + wy2),
-                value.X * (xy2 + wz2) + value.Y * (1.0f - xx2 - zz2) + value.Z * (yz2 - wx2),
-                value.X * (xz2 - wy2) + value.Y * (yz2 + wx2) + value.Z * (1.0f - xx2 - yy2),
-                value.W);
+            Quaternion conjuagate = Quaternion.Conjugate(rotation);
+            Quaternion temp = Quaternion.Concatenate(conjuagate, value.AsQuaternion());
+            return Quaternion.Concatenate(temp, rotation).AsVector4();
         }
 
         /// <summary>Copies the elements of the vector to a specified array.</summary>
