@@ -13,7 +13,7 @@ namespace System.Numerics
     [Intrinsic]
     public static unsafe partial class Vector
     {
-        internal static readonly nuint Alignment = (sizeof(Vector<byte>) == sizeof(Vector128<byte>)) ? (uint)(Vector128.Alignment) : (uint)(Vector256.Alignment);
+        internal static int Alignment => sizeof(Vector<byte>);
 
         /// <summary>Gets a value that indicates whether vector operations are subject to hardware acceleration through JIT intrinsic support.</summary>
         /// <value><see langword="true" /> if vector operations are subject to hardware acceleration; otherwise, <see langword="false" />.</value>
@@ -206,6 +206,40 @@ namespace System.Numerics
         /// <returns>The bitwise-or of <paramref name="left" /> and <paramref name="right"/>.</returns>
         [Intrinsic]
         public static Vector<T> BitwiseOr<T>(Vector<T> left, Vector<T> right) => left | right;
+
+        /// <summary>Computes the ceiling of each element in a vector.</summary>
+        /// <param name="vector">The vector that will have its ceiling computed.</param>
+        /// <returns>A vector whose elements are the ceiling of the elements in <paramref name="vector" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector<T> Ceiling<T>(Vector<T> vector)
+        {
+            if ((typeof(T) == typeof(byte))
+             || (typeof(T) == typeof(short))
+             || (typeof(T) == typeof(int))
+             || (typeof(T) == typeof(long))
+             || (typeof(T) == typeof(nint))
+             || (typeof(T) == typeof(nuint))
+             || (typeof(T) == typeof(sbyte))
+             || (typeof(T) == typeof(ushort))
+             || (typeof(T) == typeof(uint))
+             || (typeof(T) == typeof(ulong)))
+            {
+                return vector;
+            }
+            else
+            {
+                Unsafe.SkipInit(out Vector<T> result);
+
+                for (int index = 0; index < Vector<T>.Count; index++)
+                {
+                    T value = Scalar<T>.Ceiling(vector.GetElementUnsafe(index));
+                    result.SetElementUnsafe(index, value);
+                }
+
+                return result;
+            }
+        }
 
         /// <summary>Computes the ceiling of each element in a vector.</summary>
         /// <param name="value">The vector that will have its ceiling computed.</param>
@@ -660,6 +694,40 @@ namespace System.Numerics
             }
 
             return false;
+        }
+
+        /// <summary>Computes the floor of each element in a vector.</summary>
+        /// <param name="vector">The vector that will have its floor computed.</param>
+        /// <returns>A vector whose elements are the floor of the elements in <paramref name="vector" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector<T> Floor<T>(Vector<T> vector)
+        {
+            if ((typeof(T) == typeof(byte))
+             || (typeof(T) == typeof(short))
+             || (typeof(T) == typeof(int))
+             || (typeof(T) == typeof(long))
+             || (typeof(T) == typeof(nint))
+             || (typeof(T) == typeof(nuint))
+             || (typeof(T) == typeof(sbyte))
+             || (typeof(T) == typeof(ushort))
+             || (typeof(T) == typeof(uint))
+             || (typeof(T) == typeof(ulong)))
+            {
+                return vector;
+            }
+            else
+            {
+                Unsafe.SkipInit(out Vector<T> result);
+
+                for (int index = 0; index < Vector<T>.Count; index++)
+                {
+                    T value = Scalar<T>.Floor(vector.GetElementUnsafe(index));
+                    result.SetElementUnsafe(index, value);
+                }
+
+                return result;
+            }
         }
 
         /// <summary>Computes the floor of each element in a vector.</summary>
@@ -1141,7 +1209,7 @@ namespace System.Numerics
         {
             ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
 
-            if (((nuint)(source) % Alignment) != 0)
+            if (((nuint)(source) % (uint)(Alignment)) != 0)
             {
                 ThrowHelper.ThrowAccessViolationException();
             }
@@ -1706,7 +1774,7 @@ namespace System.Numerics
         {
             ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
 
-            if (((nuint)destination % Alignment) != 0)
+            if (((nuint)destination % (uint)(Alignment)) != 0)
             {
                 ThrowHelper.ThrowAccessViolationException();
             }
