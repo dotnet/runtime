@@ -64,6 +64,7 @@
 #endif
 #if HAVE_LINUX_ERRQUEUE_H
 #include <linux/errqueue.h>
+#include <linux/icmp.h>
 #endif
 
 
@@ -1406,8 +1407,17 @@ int32_t SystemNative_ReceiveSocketError(intptr_t socket, MessageHeader* messageH
     messageHeader->ControlBuffer = (void*)buffer;
 
     struct msghdr header;
+    struct icmphdr icmph;
+    struct iovec iov;
     ConvertMessageHeaderToMsghdr(&header, messageHeader, fd);
 
+    if (header.msg_iovlen == 0 || !header.msg_iov)
+    {
+        iov.iov_base = &icmph;
+        iov.iov_len = sizeof(icmph);
+        header.msg_iov = &iov;
+        header.msg_iovlen = 1;
+    }
     while ((res = recvmsg(fd, &header, SocketFlags_MSG_DONTWAIT | SocketFlags_MSG_ERRQUEUE)) < 0 && errno == EINTR);
 
     struct cmsghdr *cmsg;
@@ -2005,9 +2015,11 @@ static bool TryGetPlatformSocketOption(int32_t socketOptionLevel, int32_t socket
                     *optName = TCP_KEEPINTVL;
                     return true;
 
+#ifdef TCP_FASTOPEN
                 case SocketOptionName_SO_TCP_FASTOPEN:
                     *optName = TCP_FASTOPEN;
                     return true;
+#endif
 
                 default:
                     return false;

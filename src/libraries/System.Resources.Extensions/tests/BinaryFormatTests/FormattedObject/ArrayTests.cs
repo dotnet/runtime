@@ -4,7 +4,7 @@
 using System.Drawing;
 using System.Linq;
 using System.Resources.Extensions.BinaryFormat;
-using System.Runtime.Serialization.BinaryFormat;
+using System.Formats.Nrbf;
 
 namespace System.Resources.Extensions.Tests.FormattedObject;
 
@@ -21,7 +21,7 @@ public class ArrayTests : Common.ArrayTests<FormattedObjectSerializer>
     public void StringArray_Parse(string?[] strings)
     {
         BinaryFormattedObject format = new(Serialize(strings));
-        var arrayRecord = (ArrayRecord<string>)format.RootRecord;
+        var arrayRecord = (SZArrayRecord<string>)format.RootRecord;
         arrayRecord.GetArray().Should().BeEquivalentTo(strings);
     }
 

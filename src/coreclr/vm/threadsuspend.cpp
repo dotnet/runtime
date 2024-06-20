@@ -787,7 +787,7 @@ StackWalkAction TAStackCrawlCallBack(CrawlFrame* pCf, void* data)
     else
     {
         MethodDesc *pMD = pCf->GetFunction();
-        if (pCf->GetFrame() != NULL && pMD != NULL && (pMD->IsNDirect() || pMD->IsComPlusCall()))
+        if (pCf->GetFrame() != NULL && pMD != NULL && (pMD->IsNDirect() || pMD->IsCLRToCOMCall()))
         {
             // This may be interop method of an interesting interop call - latch it.
             frameAction = LatchCurrentFrame;
@@ -2132,7 +2132,7 @@ void Thread::RareDisablePreemptiveGC()
     //     - revert to preempt
     //     - perform additional work
     //     - set coop mode and do the loop again
-    // 
+    //
     // NOTE: It is important that the check is done in coop mode, at least for the GC handshake,
     // as per contract with the setter of the conditions, we have to check the condition _before_
     // switching to coop mode.
@@ -2226,7 +2226,7 @@ void Thread::RareDisablePreemptiveGC()
         // nothing else to do
         break;
     }
-       
+
     STRESS_LOG0(LF_SYNC, LL_INFO1000, "RareDisablePreemptiveGC: leaving\n");
 
 Exit: ;
@@ -2360,7 +2360,7 @@ void Thread::PerformPreemptiveGC()
         // BUG(github #10318) - when not using allocation contexts, the alloc lock
         // must be acquired here. Until fixed, this assert prevents random heap corruption.
         _ASSERTE(GCHeapUtilities::UseThreadAllocationContexts());
-        GCHeapUtilities::GetGCHeap()->StressHeap(GetThread()->GetAllocContext());
+        GCHeapUtilities::GetGCHeap()->StressHeap(&t_runtime_thread_locals.alloc_context);
         m_bGCStressing = FALSE;
     }
     m_GCOnTransitionsOK = TRUE;

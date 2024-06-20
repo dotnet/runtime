@@ -17,7 +17,7 @@ namespace System.Buffers
     {
         public struct AsciiState(Vector128<byte> bitmap, BitVector256 lookup)
         {
-            public Vector256<byte> Bitmap = Vector256.Create(bitmap, bitmap);
+            public Vector256<byte> Bitmap = Vector256.Create(bitmap);
             public BitVector256 Lookup = lookup;
 
             public readonly AsciiState CreateInverse() =>
@@ -26,8 +26,8 @@ namespace System.Buffers
 
         public struct AnyByteState(Vector128<byte> bitmap0, Vector128<byte> bitmap1, BitVector256 lookup)
         {
-            public Vector256<byte> Bitmap0 = Vector256.Create(bitmap0, bitmap0);
-            public Vector256<byte> Bitmap1 = Vector256.Create(bitmap1, bitmap1);
+            public Vector256<byte> Bitmap0 = Vector256.Create(bitmap0);
+            public Vector256<byte> Bitmap1 = Vector256.Create(bitmap1);
             public BitVector256 Lookup = lookup;
         }
 
@@ -146,7 +146,7 @@ namespace System.Buffers
                 {
                     // Only initializing the bitmap here is okay as we can only get here if the search space is long enough
                     // and we support vectorization, so the IndexOfAnyVectorized implementation will never touch state.Lookup.
-                    state.Bitmap = Vector256.Create(state.Bitmap._lower, state.Bitmap._lower);
+                    state.Bitmap = Vector256.Create(state.Bitmap.GetLower());
 
                     index = (Ssse3.IsSupported || PackedSimd.IsSupported) && needleContainsZero
                         ? IndexOfAny<TNegator, Ssse3AndWasmHandleZeroInNeedle>(ref searchSpace, searchSpaceLength, ref state)
@@ -173,7 +173,7 @@ namespace System.Buffers
                 {
                     // Only initializing the bitmap here is okay as we can only get here if the search space is long enough
                     // and we support vectorization, so the LastIndexOfAnyVectorized implementation will never touch state.Lookup.
-                    state.Bitmap = Vector256.Create(state.Bitmap._lower, state.Bitmap._lower);
+                    state.Bitmap = Vector256.Create(state.Bitmap.GetLower());
 
                     index = (Ssse3.IsSupported || PackedSimd.IsSupported) && needleContainsZero
                         ? LastIndexOfAny<TNegator, Ssse3AndWasmHandleZeroInNeedle>(ref searchSpace, searchSpaceLength, ref state)

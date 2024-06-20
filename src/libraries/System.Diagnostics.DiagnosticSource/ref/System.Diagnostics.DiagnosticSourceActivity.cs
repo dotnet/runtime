@@ -350,6 +350,18 @@ namespace System.Diagnostics.Metrics
         internal Counter(Meter meter, string name, string? unit, string? description) :
                         base(meter, name, unit, description) { throw null; }
     }
+    public sealed class Gauge<T> : Instrument<T> where T : struct
+    {
+        public void Record(T value) { throw null; }
+        public void Record(T value, System.Collections.Generic.KeyValuePair<string, object?> tag) { throw null; }
+        public void Record(T value, System.Collections.Generic.KeyValuePair<string, object?> tag1, System.Collections.Generic.KeyValuePair<string, object?> tag2) { throw null; }
+        public void Record(T value, System.Collections.Generic.KeyValuePair<string, object?> tag1, System.Collections.Generic.KeyValuePair<string, object?> tag2, System.Collections.Generic.KeyValuePair<string, object?> tag3) { throw null; }
+        public void Record(T value, params System.ReadOnlySpan<System.Collections.Generic.KeyValuePair<string, object?>> tags) { throw null; }
+        public void Record(T value, params System.Collections.Generic.KeyValuePair<string, object?>[] tags) { throw null; }
+        public void Record(T value, in TagList tagList) { throw null; }
+        internal Gauge(Meter meter, string name, string? unit, string? description, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? tags) :
+                        base(meter, name, unit, description, tags) { throw null; }
+    }
     public sealed class UpDownCounter<T> : Instrument<T> where T : struct
     {
         public void Add(T delta) { throw null; }
@@ -413,10 +425,12 @@ namespace System.Diagnostics.Metrics
     public delegate void MeasurementCallback<T>(Instrument instrument, T measurement, ReadOnlySpan<System.Collections.Generic.KeyValuePair<string, object?>> tags, object? state) where T : struct;
     public class Meter : IDisposable
     {
-        public Counter<T> CreateCounter<T>(string name, string? unit = null, string? description = null) where T : struct  { throw null; }
-        public Counter<T> CreateCounter<T>(string name, string? unit, string? description, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>> tags) where T : struct  { throw null; }
-        public UpDownCounter<T> CreateUpDownCounter<T>(string name, string? unit = null, string? description = null) where T : struct  { throw null; }
-        public UpDownCounter<T> CreateUpDownCounter<T>(string name, string? unit, string? description, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>> tags) where T : struct  { throw null; }
+        public Counter<T> CreateCounter<T>(string name, string? unit = null, string? description = null) where T : struct { throw null; }
+        public Counter<T> CreateCounter<T>(string name, string? unit, string? description, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>> tags) where T : struct { throw null; }
+        public Gauge<T> CreateGauge<T>(string name) where T : struct { throw null; }
+        public Gauge<T> CreateGauge<T>(string name, string? unit = null, string? description = null, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? tags = null) where T : struct { throw null; }
+        public UpDownCounter<T> CreateUpDownCounter<T>(string name, string? unit = null, string? description = null) where T : struct { throw null; }
+        public UpDownCounter<T> CreateUpDownCounter<T>(string name, string? unit, string? description, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>> tags) where T : struct { throw null; }
         public Histogram<T> CreateHistogram<T>(string name, string? unit = null, string? description = null) where T : struct { throw null; }
         public Histogram<T> CreateHistogram<T>(string name, string? unit, string? description, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>> tags) where T : struct { throw null; }
         public ObservableCounter<T> CreateObservableCounter<T>(
