@@ -752,6 +752,13 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
 
     const HWIntrinsicIsaRange& isaRange = hwintrinsicIsaRangeArray[isaIndex];
 
+    if (isaRange.FirstId == NI_Illegal)
+    {
+        assert(isaRange.LastId == NI_Illegal);
+        return NI_Illegal;
+    }
+    assert(isaRange.LastId != NI_Illegal);
+
 #if defined(DEBUG)
     // This should be the range for the ISA we expect
     assert(HWIntrinsicInfo::lookupIsa(isaRange.FirstId) == isa);
