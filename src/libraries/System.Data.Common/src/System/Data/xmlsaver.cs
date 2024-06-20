@@ -1403,7 +1403,7 @@ namespace System.Data
                         }
                     }
                 }
-                else
+                else if(_ds != null)
                 { // if it does not have any parent table , then it should inherit NS from DataSet
                     tgNamespace = _ds!.Namespace;
                 }
@@ -1507,7 +1507,7 @@ namespace System.Data
                         schNode.AppendChild(root);
                     root = _dc.CreateElement(Keywords.XSD_PREFIX, refString, Keywords.XSDNS);
                     root.SetAttribute(Keywords.REF, _prefixes[col.Namespace] + ":" + col.EncodedColumnName);
-                    if (col.Table.Namespace != _ds!.Namespace)
+                    if (col.Table.Namespace != _ds?.Namespace)
                     {
                         _ = GetSchema(col.Table.Namespace);
                     }
