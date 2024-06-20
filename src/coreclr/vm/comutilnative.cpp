@@ -1624,7 +1624,8 @@ BOOL CanCompareBitsOrUseFastGetHashCode(MethodTable* mt)
     }
 
     if (mt->ContainsPointers()
-        || mt->IsNotTightlyPacked())
+        || mt->IsNotTightlyPacked()
+        || mt->GetClass()->IsInlineArray())
     {
         mt->SetHasCheckedCanCompareBitsOrUseFastGetHashCode();
         return FALSE;
@@ -1677,13 +1678,16 @@ BOOL CanCompareBitsOrUseFastGetHashCode(MethodTable* mt)
     return canCompareBitsOrUseFastGetHashCode;
 }
 
-extern "C" BOOL QCALLTYPE MethodTable_CanCompareBitsOrUseFastGetHashCode(MethodTable * mt)
+extern "C" BOOL QCALLTYPE MethodTable_CanCompareBitsOrUseFastGetHashCode(MethodTable* mt)
 {
     QCALL_CONTRACT;
 
     BOOL ret = FALSE;
 
     BEGIN_QCALL;
+
+    if (mt->GetClass()->IsInlineArray())
+        COMPlusThrow(kNotSupportedException, W("NotSupported_InlineArrayEqualsGetHashCode"));
 
     ret = CanCompareBitsOrUseFastGetHashCode(mt);
 
