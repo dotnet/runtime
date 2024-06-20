@@ -6660,6 +6660,14 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_STELEM_I8) STELEM(gint64, gint64); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_STELEM_R4) STELEM(float, float); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_STELEM_R8) STELEM(double, double); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_STELEM_REF_UNCHECKED) {
+			MonoArray *o;
+			guint32 aindex;
+			STELEM_PROLOG(o, aindex);
+			mono_array_setref_fast ((MonoArray *) o, aindex, LOCAL_VAR (ip [3], MonoObject*));
+			ip += 4;
+			MINT_IN_BREAK;
+		}
 		MINT_IN_CASE(MINT_STELEM_REF) {
 			MonoArray *o;
 			guint32 aindex;
@@ -6676,7 +6684,6 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			ip += 4;
 			MINT_IN_BREAK;
 		}
-
 		MINT_IN_CASE(MINT_STELEM_VT) {
 			MonoArray *o = LOCAL_VAR (ip [1], MonoArray*);
 			NULL_CHECK (o);
@@ -8027,6 +8034,7 @@ interp_parse_options (const char *options)
 			}
 		}
 	}
+	g_strfreev (args);
 }
 
 /*

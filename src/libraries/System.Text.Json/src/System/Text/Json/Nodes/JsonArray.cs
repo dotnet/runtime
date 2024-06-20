@@ -67,7 +67,7 @@ namespace System.Text.Json.Nodes
             InitializeFromSpan(items);
         }
 
-        internal override JsonValueKind GetValueKindCore() => JsonValueKind.Array;
+        private protected override JsonValueKind GetValueKindCore() => JsonValueKind.Array;
 
         internal override JsonNode DeepCloneCore()
         {
@@ -222,14 +222,14 @@ namespace System.Text.Json.Nodes
         /// <summary>
         /// Gets or creates the underlying list containing the element nodes of the array.
         /// </summary>
-        internal List<JsonNode?> List => _list is { } list ? list : InitializeList();
+        private List<JsonNode?> List => _list ?? InitializeList();
 
-        internal JsonNode? GetItem(int index)
+        private protected override JsonNode? GetItem(int index)
         {
             return List[index];
         }
 
-        internal void SetItem(int index, JsonNode? value)
+        private protected override void SetItem(int index, JsonNode? value)
         {
             value?.AssignParent(this);
             DetachParent(List[index]);

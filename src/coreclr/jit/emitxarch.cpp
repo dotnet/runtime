@@ -5620,7 +5620,7 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg)
 //     varNum         - the variable on the stack to use as a base;
 //     offset         - the offset from the varNum;
 //     dataReg        - the src reg with SIMD12 value;
-//     tmpRegProvider - a tree to grab a tmp reg from if needed.
+//     tmpRegProvider - a tree to grab a tmp reg from if needed (can be null).
 //
 void emitter::emitStoreSimd12ToLclOffset(unsigned varNum, unsigned offset, regNumber dataReg, GenTree* tmpRegProvider)
 {
@@ -5635,7 +5635,7 @@ void emitter::emitStoreSimd12ToLclOffset(unsigned varNum, unsigned offset, regNu
         // Extract and store upper 4 bytes
         emitIns_S_R_I(INS_extractps, EA_16BYTE, varNum, offset + 8, dataReg, 2);
     }
-    else
+    else if (tmpRegProvider != nullptr)
     {
         regNumber tmpReg = codeGen->internalRegisters.GetSingle(tmpRegProvider);
         assert(isFloatReg(tmpReg));
@@ -5645,6 +5645,19 @@ void emitter::emitStoreSimd12ToLclOffset(unsigned varNum, unsigned offset, regNu
 
         // Store upper 4 bytes
         emitIns_S_R(INS_movss, EA_4BYTE, tmpReg, varNum, offset + 8);
+    }
+    else
+    {
+        // We don't have temp regs - let's do two shuffles then
+
+        // [0,1,2,3] -> [2,3,0,1]
+        emitIns_R_R_I(INS_pshufd, EA_16BYTE, dataReg, dataReg, 78);
+
+        //  Store upper 4 bytes
+        emitIns_S_R(INS_movss, EA_4BYTE, dataReg, varNum, offset + 8);
+
+        // Restore dataReg to its previous state: [2,3,0,1] -> [0,1,2,3]
+        emitIns_R_R_I(INS_pshufd, EA_16BYTE, dataReg, dataReg, 78);
     }
 }
 #endif // FEATURE_SIMD
@@ -15795,6 +15808,7 @@ DONE:
                 break;
 
             case IF_RRW_CNS:
+            {
                 assert(id->idGCref() == GCT_BYREF);
 
 #ifdef DEBUG
@@ -15816,7 +15830,7 @@ DONE:
                 // Mark it as holding a GCT_BYREF
                 emitGCregLiveUpd(GCT_BYREF, id->idReg1(), dst);
                 break;
-
+            }
             default:
 #ifdef DEBUG
                 emitDispIns(id, false, false, false);
@@ -16609,6 +16623,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     assert(instrIs3opImul(id->idIns()) == 0 || size >= EA_4BYTE); // Has no 'w' bit
 
     VARSET_TP GCvars(VarSetOps::UninitVal());
+    regMaskTP gcrefRegs;
+    regMaskTP byrefRegs;
 
     // What instruction format have we got?
     switch (insFmt)
@@ -16620,9 +16636,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
         BYTE* addr;
         bool  recCall;
-
-        regMaskTP gcrefRegs;
-        regMaskTP byrefRegs;
 
         /********************************************************************/
         /*                        No operands                               */
@@ -19665,6 +19678,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_vpermt2pd:
         case INS_vpermt2ps:
         case INS_vpermt2q:
+        case INS_vpmultishiftqb:
         case INS_vshuff32x4:
         case INS_vshuff64x2:
         case INS_vshufi32x4:
@@ -20056,6 +20070,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_serialize:
         {
             result.insThroughput = PERFSCORE_THROUGHPUT_50C;
+            result.insLatency    = PERFSCORE_LATENCY_105C;
             break;
         }
 

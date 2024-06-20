@@ -379,7 +379,7 @@ mdToken Assembler::MakeTypeRef(mdToken tkResScope, LPCUTF8 pszFullClassName)
         if(*pc)
         {
             // convert name to widechar
-            WszMultiByteToWideChar(g_uCodePage,0,pc,-1,wzUniBuf,dwUniBuf);
+            MultiByteToWideChar(g_uCodePage,0,pc,-1,wzUniBuf,dwUniBuf);
             if(FAILED(m_pEmitter->DefineTypeRefByName(tkResScope, wzUniBuf, &tkRet))) tkRet = mdTokenNil;
         }
     }
@@ -925,7 +925,7 @@ BOOL Assembler::EmitField(FieldDescriptor* pFD)
     cSig = pFD->m_pbsSig->length();
     mySig = (COR_SIGNATURE*)(pFD->m_pbsSig->ptr());
 
-    WszMultiByteToWideChar(g_uCodePage,0,pFD->m_szName,-1,wzFieldName,dwUniBuf); //int)cFieldNameLength);
+    MultiByteToWideChar(g_uCodePage,0,pFD->m_szName,-1,wzFieldName,dwUniBuf); //int)cFieldNameLength);
     if(IsFdPrivateScope(pFD->m_dwAttr))
     {
         WCHAR* p = (WCHAR*)u16_strstr(wzFieldName,W("$PST04"));
@@ -1383,7 +1383,7 @@ void Assembler::EmitDataString(BinStr* str)
 
         if(UnicodeString)
         {
-            WszMultiByteToWideChar(g_uCodePage,0,pb,-1,UnicodeString,DataLen);
+            MultiByteToWideChar(g_uCodePage,0,pb,-1,UnicodeString,DataLen);
             EmitData(UnicodeString,DataLen*sizeof(WCHAR));
             if(DataLen >= dwUniBuf) delete [] UnicodeString;
         }
@@ -1420,6 +1420,15 @@ void Assembler::EmitOpcode(Instr* instr)
                 pLPC->PC = m_CurPC;
 
                 pLPC->pOwnerDocument = instr->pOwnerDocument;
+                if(m_pCurMethod->m_FirstDocument == NULL)
+                {
+                    m_pCurMethod->m_FirstDocument = instr->pOwnerDocument;
+                }
+                else if (instr->pOwnerDocument != NULL && m_pCurMethod->m_FirstDocument != instr->pOwnerDocument)
+                {
+                    m_pCurMethod->m_HasMultipleDocuments = TRUE;
+                }
+                
                 if (0xfeefee == instr->linenum &&
                     0xfeefee == instr->linenum_end &&
                     0 == instr->column &&
@@ -1783,7 +1792,7 @@ mdToken Assembler::MakeMemberRef(mdToken cr, _In_ __nullterminated char* pszMemb
     }
     else
     {
-        WszMultiByteToWideChar(g_uCodePage,0,pszMemberName,-1,wzUniBuf,dwUniBuf);
+        MultiByteToWideChar(g_uCodePage,0,pszMemberName,-1,wzUniBuf,dwUniBuf);
 
         if(cr == mdTokenNil) cr = mdTypeRefNil;
         if(TypeFromToken(cr) == mdtAssemblyRef)
@@ -2020,7 +2029,7 @@ void Assembler::EmitInstrStringLiteral(Instr* instr, BinStr* literal, BOOL Conve
         literal->appendInt8(0);
         pb = literal->ptr();
         // convert string to Unicode
-        L = UnicodeString ? WszMultiByteToWideChar(g_uCodePage,0,(char*)pb,-1,UnicodeString,DataLen+1) : 0;
+        L = UnicodeString ? MultiByteToWideChar(g_uCodePage,0,(char*)pb,-1,UnicodeString,DataLen+1) : 0;
         if(L == 0)
         {
             const char* sz=NULL;
@@ -2418,7 +2427,7 @@ void Assembler::SetPdbFileName(_In_ __nullterminated char* szName)
         if (*szName)
         {
             strcpy_s(m_szPdbFileName, MAX_FILENAME_LENGTH * 3 + 1, szName);
-            WszMultiByteToWideChar(g_uCodePage, 0, szName, -1, m_wzPdbFileName, MAX_FILENAME_LENGTH);
+            MultiByteToWideChar(g_uCodePage, 0, szName, -1, m_wzPdbFileName, MAX_FILENAME_LENGTH);
         }
     }
 }

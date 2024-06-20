@@ -163,12 +163,6 @@ ASMCONSTANTS_C_ASSERT(CORINFO_IndexOutOfRangeException_ASM == CORINFO_IndexOutOf
 #define CORINFO_OverflowException_ASM 4
 ASMCONSTANTS_C_ASSERT(CORINFO_OverflowException_ASM == CORINFO_OverflowException)
 
-#define CORINFO_ArrayTypeMismatchException_ASM 6
-ASMCONSTANTS_C_ASSERT(CORINFO_ArrayTypeMismatchException_ASM == CORINFO_ArrayTypeMismatchException)
-
-#define CORINFO_ArgumentNullException_ASM 8
-ASMCONSTANTS_C_ASSERT(CORINFO_ArgumentNullException_ASM == CORINFO_ArgumentNullException)
-
 #define CORINFO_ArgumentException_ASM 9
 ASMCONSTANTS_C_ASSERT(CORINFO_ArgumentException_ASM == CORINFO_ArgumentException)
 
@@ -233,11 +227,11 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__FrameHandlerExRecord__m_pEntryFrame == offsetof(
 
 #endif
 
-#define ComPlusCallMethodDesc__m_pComPlusCallInfo DBG_FRE(0x1C, 0x8)
-ASMCONSTANTS_C_ASSERT(ComPlusCallMethodDesc__m_pComPlusCallInfo == offsetof(ComPlusCallMethodDesc, m_pComPlusCallInfo))
+#define CLRToCOMCallMethodDesc__m_pCLRToCOMCallInfo DBG_FRE(0x20, 0xC)
+ASMCONSTANTS_C_ASSERT(CLRToCOMCallMethodDesc__m_pCLRToCOMCallInfo == offsetof(CLRToCOMCallMethodDesc, m_pCLRToCOMCallInfo))
 
-#define ComPlusCallInfo__m_pRetThunk 0x10
-ASMCONSTANTS_C_ASSERT(ComPlusCallInfo__m_pRetThunk == offsetof(ComPlusCallInfo, m_pRetThunk))
+#define CLRToCOMCallInfo__m_pRetThunk 0x10
+ASMCONSTANTS_C_ASSERT(CLRToCOMCallInfo__m_pRetThunk == offsetof(CLRToCOMCallInfo, m_pRetThunk))
 
 #endif // FEATURE_COMINTEROP
 

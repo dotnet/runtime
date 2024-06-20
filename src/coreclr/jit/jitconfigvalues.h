@@ -190,6 +190,9 @@ CONFIG_INTEGER(JitStressProcedureSplitting, W("JitStressProcedureSplitting"), 0)
 CONFIG_INTEGER(JitStressRegs, W("JitStressRegs"), 0)
 CONFIG_STRING(JitStressRegsRange, W("JitStressRegsRange")) // Only apply JitStressRegs to methods in this hash range
 
+// If non-negative value N, only stress split the first N trees.
+CONFIG_INTEGER(JitStressSplitTreeLimit, W("JitStressSplitTreeLimit"), -1)
+
 // If non-zero, assert if # of VNF_MapSelect applications considered reaches this.
 CONFIG_INTEGER(JitVNMapSelLimit, W("JitVNMapSelLimit"), 0)
 
@@ -567,6 +570,7 @@ OPT_CONFIG_STRING(JitOnlyOptimizeRange,
 OPT_CONFIG_STRING(JitEnablePhysicalPromotionRange, W("JitEnablePhysicalPromotionRange"))
 OPT_CONFIG_STRING(JitEnableCrossBlockLocalAssertionPropRange, W("JitEnableCrossBlockLocalAssertionPropRange"))
 OPT_CONFIG_STRING(JitEnableInductionVariableOptsRange, W("JitEnableInductionVariableOptsRange"))
+OPT_CONFIG_STRING(JitEnableLocalAddrPropagationRange, W("JitEnableLocalAddrPropagationRange"))
 
 OPT_CONFIG_INTEGER(JitDoSsa, W("JitDoSsa"), 1) // Perform Static Single Assignment (SSA) numbering on the variables
 OPT_CONFIG_INTEGER(JitDoValueNumber, W("JitDoValueNumber"), 1) // Perform value numbering on method expressions
@@ -771,7 +775,7 @@ RELEASE_CONFIG_INTEGER(JitEnablePhysicalPromotion, W("JitEnablePhysicalPromotion
 RELEASE_CONFIG_INTEGER(JitEnableCrossBlockLocalAssertionProp, W("JitEnableCrossBlockLocalAssertionProp"), 1)
 
 // Do greedy RPO-based layout in Compiler::fgReorderBlocks.
-RELEASE_CONFIG_INTEGER(JitDoReversePostOrderLayout, W("JitDoReversePostOrderLayout"), 0);
+RELEASE_CONFIG_INTEGER(JitDoReversePostOrderLayout, W("JitDoReversePostOrderLayout"), 1);
 
 // JitFunctionFile: Name of a file that contains a list of functions. If the currently compiled function is in the
 // file, certain other JIT config variables will be active. If the currently compiled function is not in the file,

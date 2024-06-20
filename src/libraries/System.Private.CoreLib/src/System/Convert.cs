@@ -2046,7 +2046,7 @@ namespace System
         //
         // Parses value in base base.  base can only
         // be 2, 8, 10, or 16.  If base is 16, the number may be preceded
-        // by 0x; any other leading or trailing characters cause an error.
+        // by 0x or 0X; any other leading or trailing characters cause an error.
         //
         public static byte ToByte(string? value, int fromBase)
         {
@@ -2068,7 +2068,7 @@ namespace System
 
         // Parses value in base fromBase.  fromBase can only
         // be 2, 8, 10, or 16.  If fromBase is 16, the number may be preceded
-        // by 0x; any other leading or trailing characters cause an error.
+        // by 0x or 0X; any other leading or trailing characters cause an error.
         //
         [CLSCompliant(false)]
         public static sbyte ToSByte(string? value, int fromBase)
@@ -2094,7 +2094,7 @@ namespace System
 
         // Parses value in base fromBase.  fromBase can only
         // be 2, 8, 10, or 16.  If fromBase is 16, the number may be preceded
-        // by 0x; any other leading or trailing characters cause an error.
+        // by 0x or 0X; any other leading or trailing characters cause an error.
         //
         public static short ToInt16(string? value, int fromBase)
         {
@@ -2119,7 +2119,7 @@ namespace System
 
         // Parses value in base fromBase.  fromBase can only
         // be 2, 8, 10, or 16.  If fromBase is 16, the number may be preceded
-        // by 0x; any other leading or trailing characters cause an error.
+        // by 0x or 0X; any other leading or trailing characters cause an error.
         //
         [CLSCompliant(false)]
         public static ushort ToUInt16(string? value, int fromBase)
@@ -2142,7 +2142,7 @@ namespace System
 
         // Parses value in base fromBase.  fromBase can only
         // be 2, 8, 10, or 16.  If fromBase is 16, the number may be preceded
-        // by 0x; any other leading or trailing characters cause an error.
+        // by 0x or 0X; any other leading or trailing characters cause an error.
         //
         public static int ToInt32(string? value, int fromBase)
         {
@@ -2157,7 +2157,7 @@ namespace System
 
         // Parses value in base fromBase.  fromBase can only
         // be 2, 8, 10, or 16.  If fromBase is 16, the number may be preceded
-        // by 0x; any other leading or trailing characters cause an error.
+        // by 0x or 0X; any other leading or trailing characters cause an error.
         //
         [CLSCompliant(false)]
         public static uint ToUInt32(string? value, int fromBase)
@@ -2173,7 +2173,7 @@ namespace System
 
         // Parses value in base fromBase.  fromBase can only
         // be 2, 8, 10, or 16.  If fromBase is 16, the number may be preceded
-        // by 0x; any other leading or trailing characters cause an error.
+        // by 0x or 0X; any other leading or trailing characters cause an error.
         //
         public static long ToInt64(string? value, int fromBase)
         {
@@ -2188,7 +2188,7 @@ namespace System
 
         // Parses value in base fromBase.  fromBase can only
         // be 2, 8, 10, or 16.  If fromBase is 16, the number may be preceded
-        // by 0x; any other leading or trailing characters cause an error.
+        // by 0x or 0X; any other leading or trailing characters cause an error.
         //
         [CLSCompliant(false)]
         public static ulong ToUInt64(string? value, int fromBase)
@@ -2202,11 +2202,11 @@ namespace System
                 0;
         }
 
-        // Convert the byte value to a string in base fromBase
+        // Convert the byte value to a string in base toBase
         public static string ToString(byte value, int toBase) =>
             ToString((int)value, toBase);
 
-        // Convert the Int16 value to a string in base fromBase
+        // Convert the Int16 value to a string in base toBase
         public static string ToString(short value, int toBase)
         {
             string format = "d";

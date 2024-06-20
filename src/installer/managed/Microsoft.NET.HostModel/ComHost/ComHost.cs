@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Text;
 
 namespace Microsoft.NET.HostModel.ComHost
@@ -18,10 +17,10 @@ namespace Microsoft.NET.HostModel.ComHost
         /// <summary>
         /// Create a ComHost with an embedded CLSIDMap file to map CLSIDs to .NET Classes.
         /// </summary>
-        /// <param name="comHostSourceFilePath">The path of Apphost template, which has the place holder</param>
+        /// <param name="comHostSourceFilePath">The path of the comhost library</param>
         /// <param name="comHostDestinationFilePath">The destination path for desired location to place, including the file name</param>
         /// <param name="clsidmapFilePath">The path to the *.clsidmap file.</param>
-        /// <param name="typeLibraries">Resource ids for tlbs and paths to the tlb files to be embedded.</param>
+        /// <param name="typeLibraries">Resource IDs for tlbs and paths to the tlb files to be embedded.</param>
         public static void Create(
             string comHostSourceFilePath,
             string comHostDestinationFilePath,
@@ -34,13 +33,8 @@ namespace Microsoft.NET.HostModel.ComHost
                 Directory.CreateDirectory(destinationDirectory);
             }
 
-            // Copy apphost to destination path so it inherits the same attributes/permissions.
+            // Copy comhost to destination path so it inherits the same attributes/permissions.
             File.Copy(comHostSourceFilePath, comHostDestinationFilePath, overwrite: true);
-
-            if (!ResourceUpdater.IsSupportedOS())
-            {
-                throw new ComHostCustomizationUnsupportedOSException();
-            }
 
             string clsidMap = File.ReadAllText(clsidmapFilePath);
             byte[] clsidMapBytes = Encoding.UTF8.GetBytes(clsidMap);

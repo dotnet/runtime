@@ -7,7 +7,7 @@ using System.Text;
 
 namespace System.Transactions.DtcProxyShim;
 
-// https://docs.microsoft.com/previous-versions/windows/desktop/ms679195(v=vs.85)
+// https://learn.microsoft.com/previous-versions/windows/desktop/ms679195(v=vs.85)
 [NativeMarshalling(typeof(Marshaller))]
 [StructLayout(LayoutKind.Sequential)]
 internal struct Xactopt

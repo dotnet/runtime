@@ -28,6 +28,10 @@ namespace System.Text.Json.SourceGeneration
 
         public required JsonKnownNamingPolicy? DictionaryKeyPolicy { get; init; }
 
+        public required bool? RespectNullableAnnotations { get; init; }
+
+        public required bool? RespectRequiredConstructorParameters { get; init; }
+
         public required bool? IgnoreReadOnlyFields { get; init; }
 
         public required bool? IgnoreReadOnlyProperties { get; init; }
