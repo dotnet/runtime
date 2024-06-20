@@ -9759,7 +9759,7 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
     const char* methodName =
         info.compCompHnd->getMethodNameFromMetadata(method, &className, &namespaceName, &enclosingClassName);
 
-    const mdMethodDef mdToken = info.compCompHnd->getMethodDefFromMethod(method);
+    const mdMethodDef tkMethod = info.compCompHnd->getMethodDefFromMethod(method);
 
     JITDUMP("Named Intrinsic ");
 
@@ -9808,9 +9808,9 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
     NamedIntrinsic result = NI_Illegal;
 
     MethodTokenToNamedIntrinsicMap* methodTokenToNamedIntrinsicMap = GetMethodTokenToNamedIntrinsicMap();
-    if (!IsNilToken(mdToken) && methodTokenToNamedIntrinsicMap->Lookup(mdToken, &result))
+    if (!IsNilToken(tkMethod) && methodTokenToNamedIntrinsicMap->Lookup(tkMethod, &result))
     {
-        JITDUMP("Recognized - method = 0x%x, scope = 0x%llx\n", mdToken, reinterpret_cast<INT64>(info.compScopeHnd));
+        JITDUMP("Recognized - method = 0x%x, scope = 0x%llx\n", tkMethod, reinterpret_cast<INT64>(info.compScopeHnd));
         return result;
     }
 
@@ -10586,8 +10586,8 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
     }
     else
     {
-        _ASSERTE(!IsNilToken(mdToken));
-        methodTokenToNamedIntrinsicMap->Set(mdToken, result);
+        _ASSERTE(!IsNilToken(tkMethod));
+        methodTokenToNamedIntrinsicMap->Set(tkMethod, result);
         JITDUMP("Recognized\n");
     }
     return result;
