@@ -6315,6 +6315,7 @@ protected:
 
     bool fgMayExplicitTailCall();
 
+    template<bool makeInlineObservations>
     void fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, FixedBitVect* jumpTarget);
 
     void fgMarkBackwardJump(BasicBlock* startBlock, BasicBlock* endBlock);
