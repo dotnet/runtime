@@ -263,30 +263,31 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<T> operator *(Vector128<T> left, Vector128<T> right)
         {
-            // TODO: move this to JIT
-            if (Sse41.IsSupported && (typeof(T) == typeof(long) || typeof(T) == typeof(ulong)))
+            // Multiplication for long/ulong is currently accelerated only with AVX512
+            // We need workarounds for ARM64 and pre-AVX512 hw:
+            // TODO: move this expansion to JIT
+            if (typeof(T) == typeof(long) || typeof(T) == typeof(ulong))
             {
-                Vector128<ulong> a = left.AsUInt64();
-                Vector128<ulong> b = right.AsUInt64();
-                return Unsafe.BitCast<Vector128<ulong>, Vector128<T>>(
-                    Sse2.Add(
-                        Sse2.Multiply(a.AsUInt32(), b.AsUInt32()).AsUInt64(),
-                        Sse2.Shuffle(
-                            Ssse3.HorizontalAdd(
-                                Sse41.MultiplyLow(a.AsUInt32(),
-                                    Sse2.Shuffle(b.AsUInt32(), 0xB1)).AsInt32(), Vector128<int>.Zero), 0x73).AsUInt64()));
-            }
-            if (AdvSimd.Arm64.IsSupported && (typeof(T) == typeof(long) || typeof(T) == typeof(ulong)))
-            {
-                Vector128<ulong> a = left.AsUInt64();
-                Vector128<ulong> b = right.AsUInt64();
-                Vector64<uint> aHi = AdvSimd.ShiftRightLogicalNarrowingLower(a.AsUInt64(), 32);
-                Vector64<uint> aLo = AdvSimd.ExtractNarrowingLower(a.AsUInt64());
-                Vector64<uint> bHi = AdvSimd.ShiftRightLogicalNarrowingLower(b.AsUInt64(), 32);
-                Vector64<uint> bLo = AdvSimd.ExtractNarrowingLower(b.AsUInt64());
-                Vector128<ulong> ret64 = AdvSimd.MultiplyWideningLower(aHi, bLo);
-                ret64 = AdvSimd.MultiplyWideningLowerAndAdd(ret64, aLo, bHi);
-                return AdvSimd.MultiplyWideningLowerAndAdd(ret64 << 32, aLo, bLo).As<ulong, T>();
+                if (Sse41.IsSupported)
+                {
+                    Vector128<uint> tmp1 = Sse2.Shuffle(right.AsUInt32(), 0xB1); // _MM_SHUFFLE(2,3,0,1)
+                    Vector128<uint> tmp2 = Sse41.MultiplyLow(left.AsUInt32(), tmp1);
+                    Vector128<int> tmp3 = Ssse3.HorizontalAdd(tmp2.AsInt32(), Vector128<int>.Zero);
+                    Vector128<int> tmp4 = Sse2.Shuffle(tmp3, 0x73); // _MM_SHUFFLE(1,3,0,3)
+                    Vector128<ulong> tmp5 = Sse2.Multiply(left.AsUInt32(), right.AsUInt32());
+                    return Unsafe.BitCast<Vector128<ulong>, Vector128<T>>(tmp5.AsUInt64() + tmp4.AsUInt64());
+                }
+                if (AdvSimd.Arm64.IsSupported)
+                {
+                    Vector64<uint> lHi = AdvSimd.ShiftRightLogicalNarrowingLower(left.AsUInt64(), 32);
+                    Vector64<uint> lLo = AdvSimd.ExtractNarrowingLower(left.AsUInt64());
+                    Vector64<uint> rHi = AdvSimd.ShiftRightLogicalNarrowingLower(right.AsUInt64(), 32);
+                    Vector64<uint> rLo = AdvSimd.ExtractNarrowingLower(right.AsUInt64());
+                    Vector128<ulong> ret64 = AdvSimd.MultiplyWideningLower(lHi, rLo);
+                    ret64 = AdvSimd.MultiplyWideningLowerAndAdd(ret64, lLo, rHi);
+                    return Unsafe.BitCast<Vector128<ulong>, Vector128<T>>(
+                        AdvSimd.MultiplyWideningLowerAndAdd(ret64 << 32, lLo, rLo));
+                }
             }
 
             return Vector128.Create(
