@@ -320,6 +320,11 @@ namespace System.Numerics
         [Intrinsic]
         internal static Vector2 CreateScalarUnsafe(float x) => Vector128.CreateScalarUnsafe(x).AsVector2();
 
+        /// <inheritdoc cref="Vector4.DegreesToRadians(Vector4)" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector2 DegreesToRadians(Vector2 degrees) => Vector128.DegreesToRadians(degrees.AsVector128Unsafe()).AsVector2();
+
         /// <summary>Computes the Euclidean distance between the two given points.</summary>
         /// <param name="value1">The first point.</param>
         /// <param name="value2">The second point.</param>
@@ -438,6 +443,11 @@ namespace System.Numerics
         /// <returns>The normalized vector.</returns>
         [Intrinsic]
         public static Vector2 Normalize(Vector2 value) => value / value.Length();
+
+        /// <inheritdoc cref="Vector4.RadiansToDegrees(Vector4)" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector2 RadiansToDegrees(Vector2 radians) => Vector128.RadiansToDegrees(radians.AsVector128Unsafe()).AsVector2();
 
         /// <summary>Returns the reflection of a vector off a surface that has the specified normal.</summary>
         /// <param name="vector">The source vector.</param>

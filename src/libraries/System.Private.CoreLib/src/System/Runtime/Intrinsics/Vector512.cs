@@ -1447,6 +1447,42 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector512<T> CreateSequence<T>(T start, T step) => (Vector512<T>.Indices * step) + Create(start);
 
+        /// <inheritdoc cref="Vector256.DegreesToRadians(Vector256{double})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector512<double> DegreesToRadians(Vector512<double> degrees)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.DegreesToRadians<Vector512<double>, double>(degrees);
+            }
+            else
+            {
+                return Create(
+                    Vector256.DegreesToRadians(degrees._lower),
+                    Vector256.DegreesToRadians(degrees._upper)
+                );
+            }
+        }
+
+        /// <inheritdoc cref="Vector256.DegreesToRadians(Vector256{float})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector512<float> DegreesToRadians(Vector512<float> degrees)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.DegreesToRadians<Vector512<float>, float>(degrees);
+            }
+            else
+            {
+                return Create(
+                    Vector256.DegreesToRadians(degrees._lower),
+                    Vector256.DegreesToRadians(degrees._upper)
+                );
+            }
+        }
+
         /// <summary>Divides two vectors to compute their quotient.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="left">The vector that will be divided by <paramref name="right" />.</param>
@@ -2194,6 +2230,42 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         public static Vector512<T> OnesComplement<T>(Vector512<T> vector) => ~vector;
+
+        /// <inheritdoc cref="Vector256.RadiansToDegrees(Vector256{double})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector512<double> RadiansToDegrees(Vector512<double> radians)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.RadiansToDegrees<Vector512<double>, double>(radians);
+            }
+            else
+            {
+                return Create(
+                    Vector256.RadiansToDegrees(radians._lower),
+                    Vector256.RadiansToDegrees(radians._upper)
+                );
+            }
+        }
+
+        /// <inheritdoc cref="Vector256.RadiansToDegrees(Vector256{float})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector512<float> RadiansToDegrees(Vector512<float> radians)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.RadiansToDegrees<Vector512<float>, float>(radians);
+            }
+            else
+            {
+                return Create(
+                    Vector256.RadiansToDegrees(radians._lower),
+                    Vector256.RadiansToDegrees(radians._upper)
+                );
+            }
+        }
 
         /// <summary>Shifts each element of a vector left by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>

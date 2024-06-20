@@ -36,6 +36,17 @@ namespace System.Runtime.Intrinsics
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static TVector DegreesToRadians<TVector, T>(TVector degrees)
+            where TVector : unmanaged, ISimdVector<TVector, T>
+            where T : IFloatingPointIeee754<T>
+        {
+            // NOTE: Don't change the algorithm without consulting the DIM
+            // which elaborates on why this implementation was chosen
+
+            return (degrees * TVector.Create(T.Pi)) / TVector.Create(T.CreateTruncating(180));
+        }
+
         public static TVectorDouble ExpDouble<TVectorDouble, TVectorInt64, TVectorUInt64>(TVectorDouble x)
             where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
             where TVectorUInt64 : unmanaged, ISimdVector<TVectorUInt64, ulong>
@@ -831,6 +842,17 @@ namespace System.Runtime.Intrinsics
                 specialResult,
                 n + poly
             );
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static TVector RadiansToDegrees<TVector, T>(TVector radians)
+            where TVector : unmanaged, ISimdVector<TVector, T>
+            where T : IFloatingPointIeee754<T>
+        {
+            // NOTE: Don't change the algorithm without consulting the DIM
+            // which elaborates on why this implementation was chosen
+
+            return (radians * TVector.Create(T.CreateTruncating(180))) / TVector.Create(T.Pi);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

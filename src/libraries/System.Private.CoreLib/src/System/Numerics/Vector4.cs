@@ -382,6 +382,11 @@ namespace System.Numerics
         [Intrinsic]
         internal static Vector4 CreateScalarUnsafe(float x) => Vector128.CreateScalarUnsafe(x).AsVector4();
 
+        /// <inheritdoc cref="Vector128.DegreesToRadians(Vector128{float})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector4 DegreesToRadians(Vector4 degrees) => Vector128.DegreesToRadians(degrees.AsVector128()).AsVector4();
+
         /// <summary>Computes the Euclidean distance between the two given points.</summary>
         /// <param name="value1">The first point.</param>
         /// <param name="value2">The second point.</param>
@@ -500,6 +505,11 @@ namespace System.Numerics
         /// <returns>The normalized vector.</returns>
         [Intrinsic]
         public static Vector4 Normalize(Vector4 vector) => vector / vector.Length();
+
+        /// <inheritdoc cref="Vector128.RadiansToDegrees(Vector128{float})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector4 RadiansToDegrees(Vector4 radians) => Vector128.RadiansToDegrees(radians.AsVector128()).AsVector4();
 
         /// <summary>Returns a vector whose elements are the square root of each of a specified vector's elements.</summary>
         /// <param name="value">A vector.</param>

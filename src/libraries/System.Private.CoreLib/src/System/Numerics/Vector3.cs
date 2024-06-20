@@ -377,6 +377,11 @@ namespace System.Numerics
             ).AsVector3();
         }
 
+        /// <inheritdoc cref="Vector4.DegreesToRadians(Vector4)" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector3 DegreesToRadians(Vector3 degrees) => Vector128.DegreesToRadians(degrees.AsVector128Unsafe()).AsVector3();
+
         /// <summary>Computes the Euclidean distance between the two given points.</summary>
         /// <param name="value1">The first point.</param>
         /// <param name="value2">The second point.</param>
@@ -492,6 +497,11 @@ namespace System.Numerics
         /// <returns>The normalized vector.</returns>
         [Intrinsic]
         public static Vector3 Normalize(Vector3 value) => value / value.Length();
+
+        /// <inheritdoc cref="Vector4.RadiansToDegrees(Vector4)" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector3 RadiansToDegrees(Vector3 radians) => Vector128.RadiansToDegrees(radians.AsVector128Unsafe()).AsVector3();
 
         /// <summary>Returns the reflection of a vector off a surface that has the specified normal.</summary>
         /// <param name="vector">The source vector.</param>

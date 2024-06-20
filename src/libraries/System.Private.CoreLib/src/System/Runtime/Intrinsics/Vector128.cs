@@ -989,7 +989,7 @@ namespace System.Runtime.Intrinsics
         public static unsafe Vector128<byte> Create(byte e0, byte e1, byte e2, byte e3, byte e4, byte e5, byte e6, byte e7, byte e8, byte e9, byte e10, byte e11, byte e12, byte e13, byte e14, byte e15)
         {
             return Create(
-                Vector64.Create(e0, e1, e2,  e3,  e4,  e5,  e6,  e7),
+                Vector64.Create(e0, e1, e2, e3, e4, e5, e6, e7),
                 Vector64.Create(e8, e9, e10, e11, e12, e13, e14, e15)
             );
         }
@@ -1087,7 +1087,7 @@ namespace System.Runtime.Intrinsics
         public static unsafe Vector128<sbyte> Create(sbyte e0, sbyte e1, sbyte e2, sbyte e3, sbyte e4, sbyte e5, sbyte e6, sbyte e7, sbyte e8, sbyte e9, sbyte e10, sbyte e11, sbyte e12, sbyte e13, sbyte e14, sbyte e15)
         {
             return Create(
-                Vector64.Create(e0, e1, e2,  e3,  e4,  e5,  e6,  e7),
+                Vector64.Create(e0, e1, e2, e3, e4, e5, e6, e7),
                 Vector64.Create(e8, e9, e10, e11, e12, e13, e14, e15)
             );
         }
@@ -1466,6 +1466,42 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<T> CreateSequence<T>(T start, T step) => (Vector128<T>.Indices * step) + Create(start);
+
+        /// <inheritdoc cref="Vector64.DegreesToRadians(Vector64{double})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<double> DegreesToRadians(Vector128<double> degrees)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.DegreesToRadians<Vector128<double>, double>(degrees);
+            }
+            else
+            {
+                return Create(
+                    Vector64.DegreesToRadians(degrees._lower),
+                    Vector64.DegreesToRadians(degrees._upper)
+                );
+            }
+        }
+
+        /// <inheritdoc cref="Vector64.DegreesToRadians(Vector64{float})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<float> DegreesToRadians(Vector128<float> degrees)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.DegreesToRadians<Vector128<float>, float>(degrees);
+            }
+            else
+            {
+                return Create(
+                    Vector64.DegreesToRadians(degrees._lower),
+                    Vector64.DegreesToRadians(degrees._upper)
+                );
+            }
+        }
 
         /// <summary>Divides two vectors to compute their quotient.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -2150,10 +2186,10 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector128<int> Narrow(Vector128<long> lower, Vector128<long> upper)
         {
-             return Create(
-                 Vector64.Narrow(lower._lower, lower._upper),
-                 Vector64.Narrow(upper._lower, upper._upper)
-             );
+            return Create(
+                Vector64.Narrow(lower._lower, lower._upper),
+                Vector64.Narrow(upper._lower, upper._upper)
+            );
         }
 
         /// <summary>Narrows two <see cref="Vector128{UInt16}"/> instances into one <see cref="Vector128{Byte}" />.</summary>
@@ -2216,6 +2252,42 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         public static Vector128<T> OnesComplement<T>(Vector128<T> vector) => ~vector;
+
+        /// <inheritdoc cref="Vector64.RadiansToDegrees(Vector64{double})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<double> RadiansToDegrees(Vector128<double> radians)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.RadiansToDegrees<Vector128<double>, double>(radians);
+            }
+            else
+            {
+                return Create(
+                    Vector64.RadiansToDegrees(radians._lower),
+                    Vector64.RadiansToDegrees(radians._upper)
+                );
+            }
+        }
+
+        /// <inheritdoc cref="Vector64.RadiansToDegrees(Vector64{float})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<float> RadiansToDegrees(Vector128<float> radians)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.RadiansToDegrees<Vector128<float>, float>(radians);
+            }
+            else
+            {
+                return Create(
+                    Vector64.RadiansToDegrees(radians._lower),
+                    Vector64.RadiansToDegrees(radians._upper)
+                );
+            }
+        }
 
         /// <summary>Shifts each element of a vector left by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>

@@ -627,6 +627,50 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> CreateSequence<T>(T start, T step) => (Vector<T>.Indices * step) + Create(start);
 
+        internal static Vector<T> DegreesToRadians<T>(Vector<T> degrees)
+            where T : ITrigonometricFunctions<T>
+        {
+            Unsafe.SkipInit(out Vector<T> result);
+
+            for (int index = 0; index < Vector<T>.Count; index++)
+            {
+                T value = T.DegreesToRadians(degrees.GetElementUnsafe(index));
+                result.SetElementUnsafe(index, value);
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="Vector128.DegreesToRadians(Vector128{double})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<double> DegreesToRadians(Vector<double> degrees)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.DegreesToRadians<Vector<double>, double>(degrees);
+            }
+            else
+            {
+                return DegreesToRadians<double>(degrees);
+            }
+        }
+
+        /// <inheritdoc cref="Vector128.DegreesToRadians(Vector128{float})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<float> DegreesToRadians(Vector<float> degrees)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.DegreesToRadians<Vector<float>, float>(degrees);
+            }
+            else
+            {
+                return DegreesToRadians<float>(degrees);
+            }
+        }
+
         /// <summary>Divides two vectors to compute their quotient.</summary>
         /// <param name="left">The vector that will be divided by <paramref name="right" />.</param>
         /// <param name="right">The vector that will divide <paramref name="left" />.</param>
@@ -1703,6 +1747,48 @@ namespace System.Numerics
         /// <returns>A vector whose elements are the ones-complement of the corresponding elements in <paramref name="value" />.</returns>
         [Intrinsic]
         public static Vector<T> OnesComplement<T>(Vector<T> value) => ~value;
+
+        internal static Vector<T> RadiansToDegrees<T>(Vector<T> radians)
+            where T : ITrigonometricFunctions<T>
+        {
+            Unsafe.SkipInit(out Vector<T> result);
+
+            for (int index = 0; index < Vector<T>.Count; index++)
+            {
+                T value = T.RadiansToDegrees(radians.GetElementUnsafe(index));
+                result.SetElementUnsafe(index, value);
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="Vector128.RadiansToDegrees(Vector128{double})" />
+        [Intrinsic]
+        public static Vector<double> RadiansToDegrees(Vector<double> radians)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.RadiansToDegrees<Vector<double>, double>(radians);
+            }
+            else
+            {
+                return RadiansToDegrees<double>(radians);
+            }
+        }
+
+        /// <inheritdoc cref="Vector128.RadiansToDegrees(Vector128{float})" />
+        [Intrinsic]
+        public static Vector<float> RadiansToDegrees(Vector<float> radians)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.RadiansToDegrees<Vector<float>, float>(radians);
+            }
+            else
+            {
+                return RadiansToDegrees<float>(radians);
+            }
+        }
 
         /// <summary>Shifts each element of a vector left by the specified amount.</summary>
         /// <param name="value">The vector whose elements are to be shifted.</param>

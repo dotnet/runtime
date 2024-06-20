@@ -263,6 +263,8 @@ namespace System.Numerics
         public static System.Numerics.Vector<T> Create<T>(T value) { throw null; }
         public static System.Numerics.Vector<T> Create<T>(System.ReadOnlySpan<T> values) { throw null; }
         public static System.Numerics.Vector<T> CreateSequence<T>(T start, T step) { throw null; }
+        public static System.Numerics.Vector<double> DegreesToRadians(System.Numerics.Vector<double> degrees) { throw null; }
+        public static System.Numerics.Vector<float> DegreesToRadians(System.Numerics.Vector<float> degrees) { throw null; }
         public static System.Numerics.Vector<T> Divide<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
         public static System.Numerics.Vector<T> Divide<T>(System.Numerics.Vector<T> left, T right) { throw null; }
         public static T Dot<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
@@ -343,6 +345,8 @@ namespace System.Numerics
         public static System.Numerics.Vector<System.UInt32> Narrow(System.Numerics.Vector<System.UInt64> low, System.Numerics.Vector<System.UInt64> high) { throw null; }
         public static System.Numerics.Vector<T> Negate<T>(System.Numerics.Vector<T> value) { throw null; }
         public static System.Numerics.Vector<T> OnesComplement<T>(System.Numerics.Vector<T> value) { throw null; }
+        public static System.Numerics.Vector<double> RadiansToDegrees(System.Numerics.Vector<double> radians) { throw null; }
+        public static System.Numerics.Vector<float> RadiansToDegrees(System.Numerics.Vector<float> radians) { throw null; }
         public static System.Numerics.Vector<System.Byte> ShiftLeft(System.Numerics.Vector<System.Byte> value, int shiftCount) { throw null; }
         public static System.Numerics.Vector<System.Int16> ShiftLeft(System.Numerics.Vector<System.Int16> value, int shiftCount) { throw null; }
         public static System.Numerics.Vector<System.Int32> ShiftLeft(System.Numerics.Vector<System.Int32> value, int shiftCount) { throw null; }
@@ -461,6 +465,7 @@ namespace System.Numerics
         public readonly void CopyTo(float[] array, int index) { }
         public readonly void CopyTo(System.Span<float> destination) { }
         public readonly bool TryCopyTo(System.Span<float> destination) { throw null; }
+        public static System.Numerics.Vector2 DegreesToRadians(System.Numerics.Vector2 degrees) { throw null; }
         public static float Distance(System.Numerics.Vector2 value1, System.Numerics.Vector2 value2) { throw null; }
         public static float DistanceSquared(System.Numerics.Vector2 value1, System.Numerics.Vector2 value2) { throw null; }
         public static System.Numerics.Vector2 Divide(System.Numerics.Vector2 left, System.Numerics.Vector2 right) { throw null; }
@@ -494,6 +499,7 @@ namespace System.Numerics
         public static System.Numerics.Vector2 operator *(float left, System.Numerics.Vector2 right) { throw null; }
         public static System.Numerics.Vector2 operator -(System.Numerics.Vector2 left, System.Numerics.Vector2 right) { throw null; }
         public static System.Numerics.Vector2 operator -(System.Numerics.Vector2 value) { throw null; }
+        public static System.Numerics.Vector2 RadiansToDegrees(System.Numerics.Vector2 radians) { throw null; }
         public static System.Numerics.Vector2 Reflect(System.Numerics.Vector2 vector, System.Numerics.Vector2 normal) { throw null; }
         public static System.Numerics.Vector2 SquareRoot(System.Numerics.Vector2 value) { throw null; }
         public static System.Numerics.Vector2 Subtract(System.Numerics.Vector2 left, System.Numerics.Vector2 right) { throw null; }
@@ -542,6 +548,7 @@ namespace System.Numerics
         public readonly void CopyTo(System.Span<float> destination) { }
         public readonly bool TryCopyTo(System.Span<float> destination) { throw null; }
         public static System.Numerics.Vector3 Cross(System.Numerics.Vector3 vector1, System.Numerics.Vector3 vector2) { throw null; }
+        public static System.Numerics.Vector3 DegreesToRadians(System.Numerics.Vector3 degrees) { throw null; }
         public static float Distance(System.Numerics.Vector3 value1, System.Numerics.Vector3 value2) { throw null; }
         public static float DistanceSquared(System.Numerics.Vector3 value1, System.Numerics.Vector3 value2) { throw null; }
         public static System.Numerics.Vector3 Divide(System.Numerics.Vector3 left, System.Numerics.Vector3 right) { throw null; }
@@ -575,6 +582,7 @@ namespace System.Numerics
         public static System.Numerics.Vector3 operator *(float left, System.Numerics.Vector3 right) { throw null; }
         public static System.Numerics.Vector3 operator -(System.Numerics.Vector3 left, System.Numerics.Vector3 right) { throw null; }
         public static System.Numerics.Vector3 operator -(System.Numerics.Vector3 value) { throw null; }
+        public static System.Numerics.Vector3 RadiansToDegrees(System.Numerics.Vector3 radians) { throw null; }
         public static System.Numerics.Vector3 Reflect(System.Numerics.Vector3 vector, System.Numerics.Vector3 normal) { throw null; }
         public static System.Numerics.Vector3 SquareRoot(System.Numerics.Vector3 value) { throw null; }
         public static System.Numerics.Vector3 Subtract(System.Numerics.Vector3 left, System.Numerics.Vector3 right) { throw null; }
@@ -624,6 +632,7 @@ namespace System.Numerics
         public readonly void CopyTo(float[] array, int index) { }
         public readonly void CopyTo(System.Span<float> destination) { }
         public readonly bool TryCopyTo(System.Span<float> destination) { throw null; }
+        public static System.Numerics.Vector4 DegreesToRadians(System.Numerics.Vector4 degrees) { throw null; }
         public static float Distance(System.Numerics.Vector4 value1, System.Numerics.Vector4 value2) { throw null; }
         public static float DistanceSquared(System.Numerics.Vector4 value1, System.Numerics.Vector4 value2) { throw null; }
         public static System.Numerics.Vector4 Divide(System.Numerics.Vector4 left, System.Numerics.Vector4 right) { throw null; }
@@ -657,6 +666,7 @@ namespace System.Numerics
         public static System.Numerics.Vector4 operator *(float left, System.Numerics.Vector4 right) { throw null; }
         public static System.Numerics.Vector4 operator -(System.Numerics.Vector4 left, System.Numerics.Vector4 right) { throw null; }
         public static System.Numerics.Vector4 operator -(System.Numerics.Vector4 value) { throw null; }
+        public static System.Numerics.Vector4 RadiansToDegrees(System.Numerics.Vector4 radians) { throw null; }
         public static System.Numerics.Vector4 SquareRoot(System.Numerics.Vector4 value) { throw null; }
         public static System.Numerics.Vector4 Subtract(System.Numerics.Vector4 left, System.Numerics.Vector4 right) { throw null; }
         public override readonly string ToString() { throw null; }
