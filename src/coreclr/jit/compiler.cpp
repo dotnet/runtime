@@ -5701,12 +5701,20 @@ void Compiler::SplitTreesRandomly()
     rng.Init(info.compMethodHash() ^ 0x077cc4d4);
 
     // Splitting creates a lot of new locals. Set a limit on how many we end up creating here.
-    unsigned maxLvaCount = max(lvaCount * 2, 50000u);
+    unsigned  maxLvaCount = max(lvaCount * 2, 50000u);
+    int       numSplit    = 0;
+    const int splitLimit  = JitConfig.JitStressSplitTreeLimit();
 
     for (BasicBlock* block : Blocks())
     {
         for (Statement* stmt : block->NonPhiStatements())
         {
+            if ((splitLimit >= 0) && (numSplit >= splitLimit))
+            {
+                JITDUMP("Reached split limit (%d) -- stopping\n", splitLimit);
+                return;
+            }
+
             int numTrees = 0;
             for (GenTree* tree : stmt->TreeList())
             {
@@ -5739,6 +5747,7 @@ void Compiler::SplitTreesRandomly()
 
                         fgMorphStmtBlockOps(block, stmt);
                         gtUpdateStmtSideEffects(stmt);
+                        numSplit++;
                     }
 
                     break;
@@ -5754,6 +5763,9 @@ void Compiler::SplitTreesRandomly()
             }
         }
     }
+
+    JITDUMP("Split %d trees\n", numSplit);
+
 #endif
 }
 

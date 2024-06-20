@@ -197,19 +197,22 @@ namespace System.Text.Json.Nodes
         ///   <paramref name="index"/> is less than 0 or <paramref name="index"/> is greater than the number of properties.
         /// </exception>
         /// <exception cref="InvalidOperationException">
-        ///   The current <see cref="JsonNode"/> is not a <see cref="JsonArray"/>.
+        ///   The current <see cref="JsonNode"/> is not a <see cref="JsonArray"/> or <see cref="JsonObject"/>.
         /// </exception>
         public JsonNode? this[int index]
         {
-            get
-            {
-                return AsArray().GetItem(index);
-            }
-            set
-            {
-                AsArray().SetItem(index, value);
-            }
+            get => GetItem(index);
+            set => SetItem(index, value);
         }
+
+        private protected virtual JsonNode? GetItem(int index)
+        {
+            ThrowHelper.ThrowInvalidOperationException_NodeWrongType(nameof(JsonArray), nameof(JsonObject));
+            return null;
+        }
+
+        private protected virtual void SetItem(int index, JsonNode? node) =>
+            ThrowHelper.ThrowInvalidOperationException_NodeWrongType(nameof(JsonArray), nameof(JsonObject));
 
         /// <summary>
         ///   Gets or sets the element with the specified property name.
@@ -247,7 +250,7 @@ namespace System.Text.Json.Nodes
         /// </summary>
         public JsonValueKind GetValueKind() => GetValueKindCore();
 
-        internal abstract JsonValueKind GetValueKindCore();
+        private protected abstract JsonValueKind GetValueKindCore();
 
         /// <summary>
         /// Returns property name of the current node from the parent object.

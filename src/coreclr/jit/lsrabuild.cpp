@@ -619,16 +619,6 @@ RefPosition* LinearScan::newRefPosition(Interval*        theInterval,
     // Spill info
     newRP->isFixedRegRef = isFixedRegister;
 
-#ifndef TARGET_AMD64
-    // We don't need this for AMD because the PInvoke method epilog code is explicit
-    // at register allocation time.
-    if (theInterval != nullptr && theInterval->isLocalVar && compiler->compMethodRequiresPInvokeFrame() &&
-        theInterval->varNum == compiler->genReturnLocal)
-    {
-        mask &= ~(RBM_PINVOKE_TCB | RBM_PINVOKE_FRAME).GetRegSetForType(theInterval->registerType);
-        noway_assert(mask != RBM_NONE);
-    }
-#endif // !TARGET_AMD64
     newRP->registerAssignment = mask;
 
     newRP->setMultiRegIdx(multiRegIdx);
@@ -647,16 +637,14 @@ RefPosition* LinearScan::newRefPosition(Interval*        theInterval,
         theInterval->isSingleDef = theInterval->firstRefPosition == newRP;
     }
 #ifdef DEBUG
-#ifdef HAS_MORE_THAN_64_REGISTERS
     // Need to do this here do the dump can print the mask correctly.
     // Doing in DEBUG so we do not incur of cost of this check for
     // every RefPosition. We will set this anyway in addKillForRegs()
     // in RELEASE.
     if (theRefType == RefTypeKill)
     {
-        newRP->killRegisterAssignment = mask;
+        newRP->killedRegisters = mask;
     }
-#endif // HAS_MORE_THAN_64_REGISTERS
 #endif
     DBEXEC(VERBOSE, newRP->dump(this));
     return newRP;
@@ -720,9 +708,7 @@ void LinearScan::addKillForRegs(regMaskTP mask, LsraLocation currentLoc)
 
     RefPosition* pos = newRefPosition((Interval*)nullptr, currentLoc, RefTypeKill, nullptr, mask.getLow());
 
-#ifdef HAS_MORE_THAN_64_REGISTERS
-    pos->killRegisterAssignment = mask;
-#endif
+    pos->killedRegisters = mask;
 
     *killTail = pos;
     killTail  = &pos->nextRefPosition;
@@ -2312,7 +2298,7 @@ void LinearScan::buildIntervals()
             const ABIPassingInformation& abiInfo = compiler->lvaGetParameterABIInfo(lclNum);
             for (unsigned i = 0; i < abiInfo.NumSegments; i++)
             {
-                const ABIPassingSegment& seg = abiInfo.Segments[i];
+                const ABIPassingSegment& seg = abiInfo.Segment(i);
                 if (seg.IsPassedInRegister())
                 {
                     RegState* regState = genIsValidFloatReg(seg.GetRegister()) ? floatRegState : intRegState;

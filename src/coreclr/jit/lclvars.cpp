@@ -1809,10 +1809,10 @@ void Compiler::lvaClassifyParameterABI()
             else
             {
                 assert(abiInfo.NumSegments == 1);
-                if (abiInfo.Segments[0].IsPassedInRegister())
+                if (abiInfo.Segment(0).IsPassedInRegister())
                 {
                     dsc->lvIsRegArg = true;
-                    dsc->SetArgReg(abiInfo.Segments[0].GetRegister());
+                    dsc->SetArgReg(abiInfo.Segment(0).GetRegister());
                     dsc->SetOtherArgReg(REG_NA);
                 }
                 else
@@ -1820,13 +1820,13 @@ void Compiler::lvaClassifyParameterABI()
                     dsc->lvIsRegArg = false;
                     dsc->SetArgReg(REG_STK);
                     dsc->SetOtherArgReg(REG_NA);
-                    dsc->SetStackOffset(abiInfo.Segments[0].GetStackOffset());
+                    dsc->SetStackOffset(abiInfo.Segment(0).GetStackOffset());
                 }
             }
 
             for (unsigned i = 0; i < abiInfo.NumSegments; i++)
             {
-                const ABIPassingSegment& segment = abiInfo.Segments[i];
+                const ABIPassingSegment& segment = abiInfo.Segment(i);
                 if (segment.IsPassedInRegister())
                 {
                     argRegs |= segment.GetRegisterMask();
@@ -1887,7 +1887,7 @@ void Compiler::lvaClassifyParameterABI()
 
         for (unsigned i = 0; i < numSegmentsToCompare; i++)
         {
-            const ABIPassingSegment& expected = abiInfo.Segments[i];
+            const ABIPassingSegment& expected = abiInfo.Segment(i);
             regNumber                reg      = REG_NA;
             if (i == 0)
             {
@@ -1934,19 +1934,19 @@ void Compiler::lvaClassifyParameterABI()
 
         if (lvaIsImplicitByRefLocal(lclNum))
         {
-            assert((abiInfo.NumSegments == 1) && (abiInfo.Segments[0].Size == TARGET_POINTER_SIZE));
+            assert((abiInfo.NumSegments == 1) && (abiInfo.Segment(0).Size == TARGET_POINTER_SIZE));
         }
         else
         {
             for (unsigned i = 0; i < abiInfo.NumSegments; i++)
             {
-                const ABIPassingSegment& segment = abiInfo.Segments[i];
+                const ABIPassingSegment& segment = abiInfo.Segment(i);
                 assert(segment.Size > 0);
                 assert(segment.Offset + segment.Size <= lvaLclExactSize(lclNum));
 
                 if (i > 0)
                 {
-                    assert(segment.Offset > abiInfo.Segments[i - 1].Offset);
+                    assert(segment.Offset > abiInfo.Segment(i - 1).Offset);
                 }
 
                 for (unsigned j = 0; j < abiInfo.NumSegments; j++)
@@ -1956,7 +1956,7 @@ void Compiler::lvaClassifyParameterABI()
                         continue;
                     }
 
-                    const ABIPassingSegment& otherSegment = abiInfo.Segments[j];
+                    const ABIPassingSegment& otherSegment = abiInfo.Segment(j);
                     assert((segment.Offset + segment.Size <= otherSegment.Offset) ||
                            (segment.Offset >= otherSegment.Offset + otherSegment.Size));
                 }
@@ -6054,7 +6054,7 @@ bool Compiler::lvaGetRelativeOffsetToCallerAllocatedSpaceForParameter(unsigned l
 
     for (unsigned i = 0; i < abiInfo.NumSegments; i++)
     {
-        const ABIPassingSegment& segment = abiInfo.Segments[i];
+        const ABIPassingSegment& segment = abiInfo.Segment(i);
         if (!segment.IsPassedOnStack())
         {
 #if defined(WINDOWS_AMD64_ABI)
