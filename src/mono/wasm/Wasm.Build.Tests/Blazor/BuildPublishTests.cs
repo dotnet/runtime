@@ -92,6 +92,17 @@ public class BuildPublishTests : BlazorWasmTestBase
         BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.AOT), "-p:RunAOTCompilation=true");
     }
 
+    [Fact]
+    public void DefaultTemplate_AOT_WithWorkload_LongPath()
+    {
+        string config = "Release";
+        string id = $"blz_aot_{config}_{GetRandomId()}_TEST_OF_EXTREMELY_LONG_PATH";
+        CreateBlazorWasmTemplateProject(id);
+
+        BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.FromRuntimePack));
+        BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.AOT), "-p:RunAOTCompilation=true  -p:WasmNativeStrip=false");
+    }
+
     [Theory]
     [InlineData("Debug", false)]
     [InlineData("Release", false)]
