@@ -302,6 +302,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             byte[] data = System.Text.Encoding.ASCII.GetBytes(
                 ByteUtils.PemEncode("CERTIFICATE", source));
 
+            if (OperatingSystem.IsLinux())
+            {
+                Assert.Throws<CryptographicException>(() => LoadCertificateNoFile(data));
+                return;
+            }
+
             using (X509Certificate2 cert = LoadCertificateNoFile(data))
             {
                 AssertRawDataEquals(TestData.NestedCertificates, cert);
@@ -314,7 +320,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             string pem = ByteUtils.PemEncode("CERTIFICATE", TestData.NestedCertificates);
 
             byte[] data = System.Text.Encoding.ASCII.GetBytes(
-                "Four score and seven years ago ...\n" + pem + "... perish from this Earth.");
+                "Four score and seven years ago ...\n" + pem + "\n... perish from this Earth.");
 
             using (X509Certificate2 cert = LoadCertificateNoFile(data))
             {
