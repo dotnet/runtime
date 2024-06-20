@@ -1962,7 +1962,7 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 static int
 arg_need_temp (ArgInfo *ainfo)
 {
-	if (ainfo->storage == ArgHFA && ainfo->esize == 4)
+	if ((ainfo->storage == ArgHFA && ainfo->esize == 4) || ainfo->storage == ArgSwiftVtypeLoweredRet)
 		return ainfo->size;
 	return 0;
 }
@@ -2002,10 +2002,38 @@ arg_get_val (CallContext *ccontext, ArgInfo *ainfo, gpointer dest)
 {
 	g_assert (arg_need_temp (ainfo));
 
-	float *dest_float = (float*)dest;
-	for (int k = 0; k < ainfo->nregs; k++) {
-		*dest_float = *(float*)&ccontext->fregs [ainfo->reg + k];
-		dest_float++;
+	switch (ainfo->storage) {
+		case ArgHFA: {
+			float *dest_float = (float*)dest;
+			for (int k = 0; k < ainfo->nregs; k++) {
+				*dest_float = *(float*)&ccontext->fregs [ainfo->reg + k];
+				dest_float++;
+			}
+			break;
+		}
+		case ArgSwiftVtypeLoweredRet: {
+			int i;
+            int gr = 0, fr = 0; // We can start from 0 since we are handling only returns
+			char *storage = (char*)dest;
+            for (i = 0; i < ainfo->nregs; ++i) {
+                switch (ainfo->lowered_fields [i]) {
+                    case ArgInIReg:
+                        *(gsize*)(storage + ainfo->offsets [i]) = ccontext->gregs [gr++];
+                        break;
+                    case ArgInFReg:
+                        *(double*)(storage + ainfo->offsets [i]) = ccontext->fregs [fr++];
+                        break;
+                    case ArgInFRegR4:
+                        *(float*)(storage + ainfo->offsets [i]) = *(float*)&ccontext->fregs [fr++];
+                        break;
+                    default:
+                        g_assert_not_reached ();
+                }
+            }
+			break;
+		}
+		default:
+			g_assert_not_reached ();
 	}
 }
 
@@ -3050,6 +3078,9 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 		linfo->ret.nslots = cinfo->ret.nregs;
 		linfo->ret.esize = cinfo->ret.esize;
 		break;
+	case ArgSwiftVtypeLoweredRet:
+		// LLVM compilation of P/Invoke wrappers is not supported
+		break;
 	default:
 		g_assert_not_reached ();
 		break;
@@ -3113,6 +3144,9 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 			break;
 		case ArgInSIMDReg:
 			lainfo->storage = LLVMArgVtypeInSIMDReg;
+			break;
+		case ArgSwiftError:
+			// LLVM compilation of P/Invoke wrappers is not supported
 			break;
 		default:
 			g_assert_not_reached ();
@@ -3853,7 +3887,7 @@ emit_move_return_value (MonoCompile *cfg, guint8 * code, MonoInst *ins)
 	case ArgSwiftVtypeLoweredRet: {
 		MonoInst *loc = cfg->arch.vret_addr_loc;
 		int i;
-		int gr = 0, fr = 0; // We can start from 0 since we are handling the return value
+		int gr = 0, fr = 0; // We can start from 0 since we are handling only returns
 
 		/* Load the destination address */
 		g_assert (loc && loc->opcode == OP_REGOFFSET);
