@@ -71,6 +71,7 @@ namespace System.Net.Http
             }
         }
 
+        [MemberNotNull(nameof(_proxyHelper))]
         private void UpdateConfiguration(WinInetProxyHelper? proxyHelper = null)
         {
 
