@@ -190,6 +190,9 @@ CONFIG_INTEGER(JitStressProcedureSplitting, W("JitStressProcedureSplitting"), 0)
 CONFIG_INTEGER(JitStressRegs, W("JitStressRegs"), 0)
 CONFIG_STRING(JitStressRegsRange, W("JitStressRegsRange")) // Only apply JitStressRegs to methods in this hash range
 
+// If non-negative value N, only stress split the first N trees.
+CONFIG_INTEGER(JitStressSplitTreeLimit, W("JitStressSplitTreeLimit"), -1)
+
 // If non-zero, assert if # of VNF_MapSelect applications considered reaches this.
 CONFIG_INTEGER(JitVNMapSelLimit, W("JitVNMapSelLimit"), 0)
 

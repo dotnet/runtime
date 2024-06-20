@@ -144,6 +144,30 @@ namespace System.Diagnostics.Metrics
                 => (Counter<T>)GetOrCreateInstrument<T>(typeof(Counter<T>), name, unit, description, tags, () => new Counter<T>(this, name, unit, description, tags));
 
         /// <summary>
+        /// Creates a Gauge instrument, which can be used to record non-additive values.
+        /// </summary>
+        /// <param name="name">The instrument name. cannot be null.</param>
+        /// <remarks>
+        /// Gauge is an Instrument which used to record non-additive values.
+        /// Example uses for Gauge: record the room background noise level value when changes occur.
+        /// </remarks>
+        public Gauge<T> CreateGauge<T>(string name) where T : struct => CreateGauge<T>(name, unit: null, description: null, tags: null);
+
+        /// <summary>
+        /// Create a metrics Gauge object.
+        /// </summary>
+        /// <param name="name">The instrument name. cannot be null.</param>
+        /// <param name="unit">Optional instrument unit of measurements.</param>
+        /// <param name="description">Optional instrument description.</param>
+        /// <param name="tags">tags to attach to the Gauge.</param>
+        /// <remarks>
+        /// Gauge is an Instrument which used to record non-additive values.
+        /// Example uses for Gauge: record the room background noise level value when changes occur.
+        /// </remarks>
+        public Gauge<T> CreateGauge<T>(string name, string? unit = null, string? description = null, IEnumerable<KeyValuePair<string, object?>>? tags = null) where T : struct
+                => (Gauge<T>)GetOrCreateInstrument<T>(typeof(Gauge<T>), name, unit, description, tags, () => new Gauge<T>(this, name, unit, description, tags));
+
+        /// <summary>
         /// Histogram is an Instrument which can be used to report arbitrary values that are likely to be statistically meaningful. It is intended for statistics such as histograms, summaries, and percentile.
         /// </summary>
         /// <param name="name">The instrument name. cannot be null.</param>
