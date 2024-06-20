@@ -181,6 +181,8 @@ target_link_libraries(eventpipe-shared-objects PRIVATE dn-diagnosticserver dn-ev
 set_target_properties(eventpipe-shared-objects PROPERTIES
   UNITY_BUILD ON
   UNITY_BUILD_BATCH_SIZE 0
+  COMPILE_PDB_NAME "eventpipe-shared-objects"
+  COMPILE_PDB_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
 )
 if (CLR_CMAKE_TARGET_WIN32)
     add_library(eventpipe-shared-objects.GuardCF OBJECT)
@@ -196,7 +198,18 @@ if (CLR_CMAKE_TARGET_WIN32)
     set_target_properties(eventpipe-shared-objects.GuardCF PROPERTIES
         UNITY_BUILD ON
         UNITY_BUILD_BATCH_SIZE 0
-        CLR_CONTROL_FLOW_GUARD ON)
+        CLR_CONTROL_FLOW_GUARD ON
+        COMPILE_PDB_NAME "eventpipe-shared-objects.GuardCF"
+        COMPILE_PDB_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
+
+    # Install the compile PDB for the eventpipe unity builds.
+    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/eventpipe-shared-objects.pdb" DESTINATION aotsdk COMPONENT nativeaot)
+    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/eventpipe-shared-objects.GuardCF.pdb" DESTINATION aotsdk COMPONENT nativeaot)
+    # For the container library, we need to produce a compile PDB and install it
+    set_target_properties(dn-containers-no-lto PROPERTIES
+        COMPILE_PDB_NAME "dn-containers"
+        COMPILE_PDB_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
+    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/dn-containers.pdb" DESTINATION aotsdk COMPONENT nativeaot)
 endif()
 
 list(APPEND EVENTPIPE_SOURCES
