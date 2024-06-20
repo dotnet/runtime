@@ -22,23 +22,15 @@ Minimum RAM required to build is 1GB. The build is known to fail on 512 MB VMs (
 
 ### Toolchain Setup
 
-Install the following packages for the toolchain:
+Install the packages listed in [debian-reqs.txt](/eng/debian-reqs.txt).
 
-* CMake 3.20 or newer
-* llvm
-* lld
-* clang
-* build-essential
-* python-is-python3
-* curl
-* git
-* lldb
-* libicu-dev
-* liblttng-ust-dev
-* libssl-dev
-* libkrb5-dev
-* zlib1g-dev
-* ninja-build (optional, enables building native code with ninja instead of make)
+You can install all the above dependencies by running
+
+```bash
+sudo ./eng/install-native-dependencies.sh
+```
+
+### Community-supported environments
 
 **NOTE**: If you have an Ubuntu version older than 22.04 LTS, or Debian version older than 12, don't install `cmake` using `apt` directly. Follow the note written down below.
 
