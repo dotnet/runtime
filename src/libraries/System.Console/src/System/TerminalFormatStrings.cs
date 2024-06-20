@@ -51,7 +51,7 @@ internal sealed class TerminalFormatStrings
     /// The dictionary of keystring to ConsoleKeyInfo.
     /// Only some members of the ConsoleKeyInfo are used; in particular, the actual char is ignored.
     /// </summary>
-    public readonly Dictionary<string, ConsoleKeyInfo> KeyFormatToConsoleKey = new();
+    public readonly Dictionary<string, ConsoleKeyInfo> KeyFormatToConsoleKey = new(StringComparer.Ordinal);
 
     /// <summary> Max key length </summary>
     public readonly int MaxKeyFormatLength;
