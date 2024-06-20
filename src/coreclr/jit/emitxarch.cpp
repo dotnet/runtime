@@ -2398,7 +2398,6 @@ unsigned emitter::emitOutputRexOrSimdPrefixIfNeeded(instruction ins, BYTE* dst, 
     return 0;
 }
 
-#ifdef TARGET_AMD64
 /*****************************************************************************
  * Is the last instruction emitted a call instruction?
  */
@@ -2412,6 +2411,7 @@ bool emitter::emitIsLastInsCall()
     return false;
 }
 
+#ifdef TARGET_AMD64
 /*****************************************************************************
  * We're about to create an epilog. If the last instruction we output was a 'call',
  * then we need to insert a NOP, to allow for proper exception-handling behavior.
