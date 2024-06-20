@@ -53,14 +53,14 @@ namespace System.Runtime.CompilerServices
 
             if (BitConverter.IsLittleEndian)
             {
-                SpanHelpers.Memmove(ref dst, ref *(byte*)src, totalSize);
+                SpanHelpers.Memmove(ref dst, ref src, totalSize);
             }
             else
             {
                 switch (pMT->ComponentSize)
                 {
                     case 1:
-                        SpanHelpers.Memmove(ref dst, ref *(byte*)src, totalSize);
+                        SpanHelpers.Memmove(ref dst, ref src, totalSize);
                         break;
                     case 2:
                         BinaryPrimitives.ReverseEndianness(
