@@ -323,8 +323,8 @@
       <_WasmNativeFileForLinking Remove="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)$(_WasmEHLibToExclude)" />
       <_WasmNativeFileForLinking Remove="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)$(_WasmSIMDLibToExclude)" />
 
-      <_WasmNativeFileForLinking Include="$(WasiSysRoot)\lib\wasm32-wasi\libc++.a" />
-      <_WasmNativeFileForLinking Include="$(WasiSysRoot)\lib\wasm32-wasi\libc++abi.a" />
+      <_WasmNativeFileForLinking Include="$(WasiSysRoot)\lib\wasm32-wasip2\libc++.a" />
+      <_WasmNativeFileForLinking Include="$(WasiSysRoot)\lib\wasm32-wasip2\libc++abi.a" />
 
       <_WasmNativeFileForLinking Include="@(NativeFileReference)" />
     </ItemGroup>
