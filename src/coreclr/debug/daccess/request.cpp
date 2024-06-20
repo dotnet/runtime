@@ -3250,8 +3250,8 @@ ClrDataAccess::GetNestedExceptionData(CLRDATA_ADDRESS exception, CLRDATA_ADDRESS
             hr = GetNestedExceptionDataImpl(exception, exceptionObject, nextNestedException);
         }
 #ifdef _DEBUG
-    else
-    {
+        else
+        {
             // Assert that the data is the same as what we get from the DAC.
             CLRDATA_ADDRESS exceptionObjectLocal;
             CLRDATA_ADDRESS nextNestedExceptionLocal;
