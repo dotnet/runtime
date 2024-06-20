@@ -11945,7 +11945,7 @@ GenTree* Compiler::fgMorphHWIntrinsic(GenTreeHWIntrinsic* tree)
         }
 
         // Move constant vectors from op1 to op2 for commutative and compare operations
-        if (HWIntrinsicInfo::IsCommutative(intrinsicId))
+        if (tree->isCommutativeHWIntrinsic())
         {
             assert(tree->GetOperandCount() == 2);
             GenTree*& op1 = tree->Op(1);
