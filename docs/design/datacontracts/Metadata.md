@@ -13,6 +13,7 @@ struct MethodTableHandle
 
     internal TargetPointer Address { get; }
 }
+```
 
 ``` csharp
     #region MethodTable inspection APIs
