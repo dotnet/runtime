@@ -60,7 +60,7 @@
 
   static_assert_no_msg(REG_PREDICATE_HIGH_LAST == REG_PREDICATE_LAST);
 
-  #define REGNUM_BITS              6       // number of bits in a REG_*
+  #define REGNUM_BITS              7       // number of bits in a REG_*
   #define REGSIZE_BYTES            8       // number of bytes in one general purpose register
   #define FP_REGSIZE_BYTES         16      // number of bytes in one FP/SIMD register
   #define FPSAVE_REGSIZE_BYTES     8       // number of bytes in one FP/SIMD register that are saved/restored, for callee-saved registers
@@ -223,14 +223,6 @@
 
   // JMP Indirect call register
   #define REG_INDIRECT_CALL_TARGET_REG    REG_IP0
-
-  // Registers used by PInvoke frame setup
-  #define REG_PINVOKE_FRAME        REG_R9
-  #define RBM_PINVOKE_FRAME        RBM_R9
-  #define REG_PINVOKE_TCB          REG_R10
-  #define RBM_PINVOKE_TCB          RBM_R10
-  #define REG_PINVOKE_SCRATCH      REG_R10
-  #define RBM_PINVOKE_SCRATCH      RBM_R10
 
   // The following defines are useful for iterating a regNumber
   #define REG_FIRST                REG_R0

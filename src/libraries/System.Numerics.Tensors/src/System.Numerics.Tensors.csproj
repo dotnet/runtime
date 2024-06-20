@@ -23,7 +23,6 @@
     <Compile Include="System\Numerics\Tensors\netcore\ITensor.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\IReadOnlyTensor.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorSpanDebugView.cs" />
-    <Compile Include="System\Numerics\Tensors\netcore\TensorSpanExtensions.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\ReadOnlyTensorSpan.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorSpanHelpers.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorSpanHelpers.T.cs" />
