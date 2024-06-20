@@ -17,6 +17,50 @@ namespace JIT.HardwareIntrinsics.Arm
 {
     static class Helpers
     {
+        public static Vector<T> CreateAndFillMaskFromFirstElement<T>(T value) where T: unmanaged
+        {
+            var count = Vector<T>.Count;
+            var arr = new T[count];
+            for (var i = 0; i < count; i++)
+            {
+                arr[i] = value;
+            }
+            return new Vector<T>(arr);
+        }
+
+        public static Vector<T> CreateAndFillMaskFromSecondElement<T>(T value) where T: unmanaged
+        {
+            var count = Vector<T>.Count;
+            var arr = new T[count];
+            for (var i = 1; i < count; i++)
+            {
+                arr[i] = value;
+            }
+            return new Vector<T>(arr);
+        }
+
+        public static Vector<T> CreateAndFillMaskFromLastElement<T>(T value) where T: unmanaged
+        {
+            var count = Vector<T>.Count;
+            var arr = new T[count];
+            for (var i = count - 1; i >= 0; i--)
+            {
+                arr[i] = value;
+            }
+            return new Vector<T>(arr);
+        }
+
+        public static Vector<T> CreateAndFillMaskFromSecondToLastElement<T>(T value) where T: unmanaged
+        {
+            var count = Vector<T>.Count;
+            var arr = new T[count];
+            for (var i = count - 2; i >= 0; i--)
+            {
+                arr[i] = value;
+            }
+            return new Vector<T>(arr);
+        }
+
         public static sbyte CountLeadingSignBits(sbyte op1)
         {
             return (sbyte)(CountLeadingZeroBits((sbyte)((ulong)op1 ^ ((ulong)op1 >> 1))) - 1);

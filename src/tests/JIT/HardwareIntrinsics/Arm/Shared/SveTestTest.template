@@ -33,6 +33,15 @@ namespace JIT.HardwareIntrinsics.Arm
 
                 // Validates calling via reflection works
                 test.RunReflectionScenario_Load();
+
+                // Validates passing an instance member of a class works
+                test.RunClassFldScenario();
+
+                // Validates passing the field of a local struct works
+                test.RunStructLclFldScenario();
+
+                // Validates passing an instance member of a struct works
+                test.RunStructFldScenario();
             }
             else
             {
@@ -49,8 +58,34 @@ namespace JIT.HardwareIntrinsics.Arm
 
     public sealed unsafe class TestTest__{TestName}
     {
+        private struct TestStruct
+        {
+            public Vector<{MaskBaseType}> _fld1;
+
+            public static TestStruct Create()
+            {
+                var testStruct = new TestStruct();
+
+                testStruct._fld1 = {Op1Value};
+
+                return testStruct;
+            }
+
+            public void RunStructFldScenario(TestTest__{TestName} testClass)
+            {
+                Vector<{MaskBaseType}> op2 = {Op2Value};
+
+                var result = {Isa}.{Method}(_fld1, op2);
+
+                testClass.ValidateResult(_fld1, op2, result);
+            }
+        }   
+
+        private Vector<{MaskBaseType}> _fld1;
+
         public TestTest__{TestName}()
         {
+            _fld1 = {Op1Value};
             Succeeded = true;
         }
 
@@ -83,6 +118,37 @@ namespace JIT.HardwareIntrinsics.Arm
                                      });
 
             ValidateResult(op1, op2, (bool)result);
+        }
+
+        public void RunClassFldScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunClassFldScenario));
+
+            Vector<{MaskBaseType}> op2 = {Op2Value};
+
+            var result = {Isa}.{Method}(_fld1, op2);
+
+            ValidateResult(_fld1, op2, result);
+        }
+
+        public void RunStructLclFldScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunStructLclFldScenario));
+
+            Vector<{MaskBaseType}> op2 = {Op2Value};
+
+            var test = TestStruct.Create();
+            var result = {Isa}.{Method}(test._fld1, op2);
+
+            ValidateResult(test._fld1, op2, result);
+        }
+
+        public void RunStructFldScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunStructFldScenario));
+
+            var test = TestStruct.Create();
+            test.RunStructFldScenario(this);
         }
 
         public void RunUnsupportedScenario()

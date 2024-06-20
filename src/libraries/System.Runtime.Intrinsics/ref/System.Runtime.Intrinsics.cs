@@ -4391,46 +4391,6 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<uint> DotProductBySelectedScalar(System.Numerics.Vector<uint> addend, System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right, [ConstantExpected] byte rightIndex) { throw null; }
         public static System.Numerics.Vector<ulong> DotProductBySelectedScalar(System.Numerics.Vector<ulong> addend, System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right, [ConstantExpected] byte rightIndex) { throw null; }        
 
-        public static unsafe byte ExtractAfterLastScalar(System.Numerics.Vector<byte> value) { throw null; }
-        public static unsafe double ExtractAfterLastScalar(System.Numerics.Vector<double> value) { throw null; }
-        public static unsafe short ExtractAfterLastScalar(System.Numerics.Vector<short> value) { throw null; }
-        public static unsafe int ExtractAfterLastScalar(System.Numerics.Vector<int> value) { throw null; }
-        public static unsafe long ExtractAfterLastScalar(System.Numerics.Vector<long> value) { throw null; }
-        public static unsafe sbyte ExtractAfterLastScalar(System.Numerics.Vector<sbyte> value) { throw null; }
-        public static unsafe float ExtractAfterLastScalar(System.Numerics.Vector<float> value) { throw null; }
-        public static unsafe ushort ExtractAfterLastScalar(System.Numerics.Vector<ushort> value) { throw null; }
-        public static unsafe uint ExtractAfterLastScalar(System.Numerics.Vector<uint> value) { throw null; }
-        public static unsafe ulong ExtractAfterLastScalar(System.Numerics.Vector<ulong> value) { throw null; }
-        public static unsafe System.Numerics.Vector<byte> ExtractAfterLastVector(System.Numerics.Vector<byte> value) { throw null; }
-        public static unsafe System.Numerics.Vector<double> ExtractAfterLastVector(System.Numerics.Vector<double> value) { throw null; }
-        public static unsafe System.Numerics.Vector<short> ExtractAfterLastVector(System.Numerics.Vector<short> value) { throw null; }
-        public static unsafe System.Numerics.Vector<int> ExtractAfterLastVector(System.Numerics.Vector<int> value) { throw null; }
-        public static unsafe System.Numerics.Vector<long> ExtractAfterLastVector(System.Numerics.Vector<long> value) { throw null; }
-        public static unsafe System.Numerics.Vector<sbyte> ExtractAfterLastVector(System.Numerics.Vector<sbyte> value) { throw null; }
-        public static unsafe System.Numerics.Vector<float> ExtractAfterLastVector(System.Numerics.Vector<float> value) { throw null; }
-        public static unsafe System.Numerics.Vector<ushort> ExtractAfterLastVector(System.Numerics.Vector<ushort> value) { throw null; }
-        public static unsafe System.Numerics.Vector<uint> ExtractAfterLastVector(System.Numerics.Vector<uint> value) { throw null; }
-        public static unsafe System.Numerics.Vector<ulong> ExtractAfterLastVector(System.Numerics.Vector<ulong> value) { throw null; }
-        public static unsafe byte ExtractLastScalar(System.Numerics.Vector<byte> value) { throw null; }
-        public static unsafe double ExtractLastScalar(System.Numerics.Vector<double> value) { throw null; }
-        public static unsafe short ExtractLastScalar(System.Numerics.Vector<short> value) { throw null; }
-        public static unsafe int ExtractLastScalar(System.Numerics.Vector<int> value) { throw null; }
-        public static unsafe long ExtractLastScalar(System.Numerics.Vector<long> value) { throw null; }
-        public static unsafe sbyte ExtractLastScalar(System.Numerics.Vector<sbyte> value) { throw null; }
-        public static unsafe float ExtractLastScalar(System.Numerics.Vector<float> value) { throw null; }
-        public static unsafe ushort ExtractLastScalar(System.Numerics.Vector<ushort> value) { throw null; }
-        public static unsafe uint ExtractLastScalar(System.Numerics.Vector<uint> value) { throw null; }
-        public static unsafe ulong ExtractLastScalar(System.Numerics.Vector<ulong> value) { throw null; }
-        public static unsafe System.Numerics.Vector<byte> ExtractLastVector(System.Numerics.Vector<byte> value) { throw null; }
-        public static unsafe System.Numerics.Vector<double> ExtractLastVector(System.Numerics.Vector<double> value) { throw null; }
-        public static unsafe System.Numerics.Vector<short> ExtractLastVector(System.Numerics.Vector<short> value) { throw null; }
-        public static unsafe System.Numerics.Vector<int> ExtractLastVector(System.Numerics.Vector<int> value) { throw null; }
-        public static unsafe System.Numerics.Vector<long> ExtractLastVector(System.Numerics.Vector<long> value) { throw null; }
-        public static unsafe System.Numerics.Vector<sbyte> ExtractLastVector(System.Numerics.Vector<sbyte> value) { throw null; }
-        public static unsafe System.Numerics.Vector<float> ExtractLastVector(System.Numerics.Vector<float> value) { throw null; }
-        public static unsafe System.Numerics.Vector<ushort> ExtractLastVector(System.Numerics.Vector<ushort> value) { throw null; }
-        public static unsafe System.Numerics.Vector<uint> ExtractLastVector(System.Numerics.Vector<uint> value) { throw null; }
-        public static unsafe System.Numerics.Vector<ulong> ExtractLastVector(System.Numerics.Vector<ulong> value) { throw null; }
         public static unsafe System.Numerics.Vector<byte> ExtractVector(System.Numerics.Vector<byte> upper, System.Numerics.Vector<byte> lower, [ConstantExpected] byte index) { throw null; }
         public static unsafe System.Numerics.Vector<double> ExtractVector(System.Numerics.Vector<double> upper, System.Numerics.Vector<double> lower, [ConstantExpected] byte index) { throw null; }
         public static unsafe System.Numerics.Vector<short> ExtractVector(System.Numerics.Vector<short> upper, System.Numerics.Vector<short> lower, [ConstantExpected] byte index) { throw null; }
