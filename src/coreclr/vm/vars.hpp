@@ -164,7 +164,7 @@ class OBJECTREF {
         //-------------------------------------------------------------
         OBJECTREF& operator=(const OBJECTREF &objref);
         OBJECTREF& operator=(TADDR nul);
-        
+
         // We use this delayed check to avoid ambiguous overload issues with TADDR
         // on platforms where NULL is defined as anything other than a uintptr_t constant
         // or nullptr_t exactly.
@@ -299,7 +299,7 @@ GARY_DECL(TypeHandle, g_pPredefinedArrayTypes, ELEMENT_TYPE_MAX);
 // g_TrapReturningThreads == 0 disables thread polling/traping.
 // This allows to short-circuit further examining of thread states in the most
 // common scenario - when we are not interested in trapping anything.
-// 
+//
 // The bit #1 is reserved for controlling thread suspension.
 // Setting bit #1 allows to atomically indicate/check that EE suspension is in progress.
 // There could be only one EE suspension in progress at a time. (it requires holding ThreadStore lock)

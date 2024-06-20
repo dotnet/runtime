@@ -24,5 +24,12 @@ public enum DataType
     ThreadStore,
     GCAllocContext,
     ExceptionInfo,
-    RuntimeThreadLocals
+    RuntimeThreadLocals,
+    StressLog,
+    StressLogModuleDesc,
+    StressLogHeader,
+    ThreadStressLog,
+    StressLogChunk,
+    StressMsg,
+    StressMsgHeader
 }

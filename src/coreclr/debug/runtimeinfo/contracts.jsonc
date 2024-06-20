@@ -11,5 +11,6 @@
 {
   "Exception": 1,
   "Thread": 1,
+  "StressLog": 2,
   "SOSBreakingChangeVersion": 1 // example contract: "runtime exports an SOS breaking change version global"
 }

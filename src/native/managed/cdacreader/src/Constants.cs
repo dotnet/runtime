@@ -15,5 +15,13 @@ internal static class Constants
 
         internal const string FeatureEHFunclets = nameof(FeatureEHFunclets);
         internal const string SOSBreakingChangeVersion = nameof(SOSBreakingChangeVersion);
+
+        internal const string StressLogEnabled = nameof(StressLogEnabled);
+        internal const string StressLog = nameof(StressLog);
+        internal const string StressLogModuleTable = nameof(StressLogModuleTable);
+        internal const string StressLogMaxModules = nameof(StressLogMaxModules);
+        internal const string StressLogChunkMaxSize = nameof(StressLogChunkMaxSize);
+        internal const string StressLogMaxMessageSize = nameof(StressLogMaxMessageSize);
+        internal const string StressLogChunkSize = nameof(StressLogChunkSize);
     }
 }

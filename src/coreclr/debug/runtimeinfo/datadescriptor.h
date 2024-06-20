@@ -156,6 +156,58 @@ CDAC_TYPE_BEGIN(GCHandle)
 CDAC_TYPE_SIZE(sizeof(OBJECTHANDLE))
 CDAC_TYPE_END(GCHandle)
 
+#ifdef STRESS_LOG
+CDAC_TYPE_BEGIN(StressLog)
+CDAC_TYPE_SIZE(sizeof(StressLog))
+CDAC_TYPE_FIELD(StressLog, /* uint32 */, LoggedFacilities, cdac_offsets<StressLog>::facilitiesToLog)
+CDAC_TYPE_FIELD(StressLog, /* uint32 */, Level, cdac_offsets<StressLog>::levelToLog)
+CDAC_TYPE_FIELD(StressLog, /* uint32 */, MaxSizePerThread, cdac_offsets<StressLog>::MaxSizePerThread)
+CDAC_TYPE_FIELD(StressLog, /* uint32 */, MaxSizeTotal, cdac_offsets<StressLog>::MaxSizeTotal)
+CDAC_TYPE_FIELD(StressLog, /* uint32 */, TotalChunks, cdac_offsets<StressLog>::totalChunk)
+CDAC_TYPE_FIELD(StressLog, /* pointer */, Logs, cdac_offsets<StressLog>::logs)
+CDAC_TYPE_FIELD(StressLog, /* uint64 */, TickFrequency, cdac_offsets<StressLog>::tickFrequency)
+CDAC_TYPE_FIELD(StressLog, /* uint64 */, StartTimestamp, cdac_offsets<StressLog>::startTimeStamp)
+CDAC_TYPE_FIELD(StressLog, /* nuint */, ModuleOffset, cdac_offsets<StressLog>::moduleOffset)
+CDAC_TYPE_END(StressLog)
+
+CDAC_TYPE_BEGIN(StressLogModuleDesc)
+CDAC_TYPE_SIZE(cdac_offsets<StressLog>::ModuleDesc::type_size)
+CDAC_TYPE_FIELD(StressLogModuleDesc, pointer, BaseAddress, cdac_offsets<StressLog>::ModuleDesc::baseAddress)
+CDAC_TYPE_FIELD(StressLogModuleDesc, nuint, Size, cdac_offsets<StressLog>::ModuleDesc::size)
+CDAC_TYPE_END(StressLogModuleDesc)
+
+CDAC_TYPE_BEGIN(ThreadStressLog)
+CDAC_TYPE_INDETERMINATE(ThreadStressLog)
+CDAC_TYPE_FIELD(ThreadStressLog, /* pointer */, Next, cdac_offsets<ThreadStressLog>::next)
+CDAC_TYPE_FIELD(ThreadStressLog, uint64, ThreadId, cdac_offsets<ThreadStressLog>::threadId)
+CDAC_TYPE_FIELD(ThreadStressLog, uint8, WriteHasWrapped, cdac_offsets<ThreadStressLog>::writeHasWrapped)
+CDAC_TYPE_FIELD(ThreadStressLog, pointer, CurrentPtr, cdac_offsets<ThreadStressLog>::curPtr)
+CDAC_TYPE_FIELD(ThreadStressLog, /* pointer */, ChunkListHead, cdac_offsets<ThreadStressLog>::chunkListHead)
+CDAC_TYPE_FIELD(ThreadStressLog, /* pointer */, ChunkListTail, cdac_offsets<ThreadStressLog>::chunkListTail)
+CDAC_TYPE_FIELD(ThreadStressLog, /* pointer */, CurrentWriteChunk, cdac_offsets<ThreadStressLog>::curWriteChunk)
+CDAC_TYPE_END(ThreadStressLog)
+
+CDAC_TYPE_BEGIN(StressLogChunk)
+CDAC_TYPE_SIZE(sizeof(StressLogChunk))
+CDAC_TYPE_FIELD(StressLogChunk, /* pointer */, Prev, offsetof(StressLogChunk, prev))
+CDAC_TYPE_FIELD(StressLogChunk, /* pointer */, Next, offsetof(StressLogChunk, next))
+CDAC_TYPE_FIELD(StressLogChunk, /* uint8[STRESSLOG_CHUNK_SIZE] */, Buf, offsetof(StressLogChunk, buf))
+CDAC_TYPE_FIELD(StressLogChunk, /* uint32 */, Sig1, offsetof(StressLogChunk, dwSig1))
+CDAC_TYPE_FIELD(StressLogChunk, /* uint32 */, Sig2, offsetof(StressLogChunk, dwSig2))
+CDAC_TYPE_END(StressLogChunk)
+
+// The StressMsg Header is the fixed size portion of the StressMsg
+CDAC_TYPE_BEGIN(StressMsgHeader)
+CDAC_TYPE_SIZE(sizeof(StressMsg))
+CDAC_TYPE_END(StressMsgHeader)
+
+CDAC_TYPE_BEGIN(StressMsg)
+CDAC_TYPE_INDETERMINATE(StressMsg)
+CDAC_TYPE_FIELD(StressMsg, StressMsgHeader, Header, 0)
+CDAC_TYPE_FIELD(StressMsg, /* pointer */, Args, offsetof(StressMsg, args))
+CDAC_TYPE_END(StressMsg)
+#endif
+
 CDAC_TYPES_END()
 
 CDAC_GLOBALS_BEGIN()
@@ -169,6 +221,17 @@ CDAC_GLOBAL(FeatureEHFunclets, uint8, 1)
 CDAC_GLOBAL(FeatureEHFunclets, uint8, 0)
 #endif
 CDAC_GLOBAL(SOSBreakingChangeVersion, uint8, SOS_BREAKING_CHANGE_VERSION)
+#ifdef STRESS_LOG
+CDAC_GLOBAL(StressLogEnabled, uint8, 1)
+CDAC_GLOBAL_POINTER(StressLog, &g_pStressLog)
+CDAC_GLOBAL_POINTER(StressLogModuleTable, &g_pStressLog->modules)
+CDAC_GLOBAL(StressLogMaxModules, uint64, cdac_offsets<StressLog>::MAX_MODULES)
+CDAC_GLOBAL(StressLogChunkMaxSize, uint32, STRESSLOG_CHUNK_SIZE)
+CDAC_GLOBAL(StressLogMaxMessageSize, uint64, (uint64_t)StressMsg::maxMsgSize())
+CDAC_GLOBAL(StressMsgHeaderSize, uint32, (uint32_t)sizeof(StressMsg))
+#else
+CDAC_GLOBAL(StressLogEnabled, uint8, 0)
+#endif
 CDAC_GLOBALS_END()
 
 #undef CDAC_BASELINE

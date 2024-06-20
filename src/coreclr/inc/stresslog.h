@@ -261,6 +261,9 @@
 
 void ReplacePid(LPCWSTR original, LPWSTR replaced, size_t replacedLength);
 
+template<typename T>
+struct cdac_offsets;
+
 class ThreadStressLog;
 
 struct StressLogMsg;
@@ -269,6 +272,7 @@ struct StressLogMsg;
 /* a log is a circular queue of messages */
 
 class StressLog {
+    template<typename T> friend struct ::cdac_offsets;
 public:
     static void Initialize(unsigned facilities, unsigned level, unsigned maxBytesPerThread,
         unsigned maxBytesTotal, void* moduleBase, LPWSTR logFilename = nullptr);
@@ -553,6 +557,29 @@ inline BOOL StressLog::LogOn(unsigned facility, unsigned level)
 }
 #endif
 
+template<>
+struct cdac_offsets<StressLog>
+{
+    static const size_t facilitiesToLog = offsetof(StressLog, facilitiesToLog);
+    static const size_t levelToLog = offsetof(StressLog, levelToLog);
+    static const size_t MaxSizePerThread = offsetof(StressLog, MaxSizePerThread);
+    static const size_t MaxSizeTotal = offsetof(StressLog, MaxSizeTotal);
+    static const size_t totalChunk = offsetof(StressLog, totalChunk);
+    static const size_t logs = offsetof(StressLog, logs);
+    static const size_t tickFrequency = offsetof(StressLog, tickFrequency);
+    static const size_t startTimeStamp = offsetof(StressLog, startTimeStamp);
+    static const size_t startTime = offsetof(StressLog, startTime);
+    static const size_t moduleOffset = offsetof(StressLog, moduleOffset);
+    static constexpr uint64_t MAX_MODULES = StressLog::MAX_MODULES;
+
+    struct ModuleDesc
+    {
+        static constexpr size_t type_size = sizeof(StressLog::ModuleDesc);
+        static const size_t baseAddress = offsetof(StressLog::ModuleDesc, baseAddress);
+        static const size_t size = offsetof(StressLog::ModuleDesc, size);
+    };
+};
+
 /*************************************************************************************/
 /* private classes */
 
@@ -622,7 +649,7 @@ public:
 
     static const size_t maxArgCnt = 63;
     static const int64_t maxOffset = (int64_t)1 << (formatOffsetLowBits + formatOffsetHighBits);
-    static size_t maxMsgSize ()
+    static constexpr size_t maxMsgSize ()
     { return sizeof(StressMsg) + maxArgCnt*sizeof(void*); }
 };
 
@@ -721,6 +748,7 @@ struct StressLogChunk
 //     readPtr / curPtr fields. thecaller is responsible for reading/writing
 //     to the corresponding field
 class ThreadStressLog {
+    template<typename T> friend struct ::cdac_offsets;
 #ifdef STRESS_LOG_ANALYZER
 public:
 #endif
@@ -896,6 +924,18 @@ public:
     static size_t OffsetOfNext () {return offsetof (ThreadStressLog, next);}
     static size_t OffsetOfListHead () {return offsetof (ThreadStressLog, chunkListHead);}
 #endif //STRESS_LOG_READONLY
+};
+
+template<>
+struct cdac_offsets<ThreadStressLog>
+{
+    static const size_t next = offsetof(ThreadStressLog, next);
+    static const size_t threadId = offsetof(ThreadStressLog, threadId);
+    static const size_t writeHasWrapped = offsetof(ThreadStressLog, writeHasWrapped);
+    static const size_t curPtr = offsetof(ThreadStressLog, curPtr);
+    static const size_t chunkListHead = offsetof(ThreadStressLog, chunkListHead);
+    static const size_t chunkListTail = offsetof(ThreadStressLog, chunkListTail);
+    static const size_t curWriteChunk = offsetof(ThreadStressLog, curWriteChunk);
 };
 
 #ifdef STRESS_LOG_READONLY
