@@ -5176,6 +5176,8 @@ PhaseStatus Compiler::fgUpdateFlowGraphPhase()
 // Arguments:
 //    doTailDuplication - true to attempt tail duplication optimization
 //    isPhase - true if being run as the only thing in a phase
+//    doAggressiveCompaction - if false, only compact blocks that jump to the next block
+//    to prevent modifying the flowgraph; else, compact as much as possible
 //
 // Returns: true if the flowgraph has been modified
 //
@@ -5183,7 +5185,9 @@ PhaseStatus Compiler::fgUpdateFlowGraphPhase()
 //    Debuggable code and Min Optimization JIT also introduces basic blocks
 //    but we do not optimize those!
 //
-bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */, bool isPhase /* = false */)
+bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */,
+                                 bool isPhase /* = false */,
+                                 bool doAggressiveCompaction /* = true */)
 {
 #ifdef DEBUG
     if (verbose && !isPhase)
@@ -5543,7 +5547,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */, bool isPh
 
             /* COMPACT blocks if possible */
 
-            if (fgCanCompactBlock(block))
+            if (fgCanCompactBlock(block) && (doAggressiveCompaction || block->JumpsToNext()))
             {
                 fgCompactBlock(block);
 
