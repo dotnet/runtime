@@ -292,7 +292,9 @@ struct simd64_t
     }
 };
 static_assert_no_msg(sizeof(simd64_t) == 64);
+#endif // TARGET_XARCH
 
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
 struct simdmask_t
 {
     union
@@ -342,7 +344,9 @@ struct simdmask_t
     }
 };
 static_assert_no_msg(sizeof(simdmask_t) == 8);
+#endif // TARGET_XARCH || TARGET_ARM64
 
+#if defined(TARGET_XARCH)
 typedef simd64_t simd_t;
 #else
 typedef simd16_t simd_t;

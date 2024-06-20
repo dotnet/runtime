@@ -6659,8 +6659,11 @@ struct GenTreeVecCon : public GenTree
 #if defined(TARGET_XARCH)
         simd32_t   gtSimd32Val;
         simd64_t   gtSimd64Val;
-        simdmask_t gtSimdMaskVal;
 #endif // TARGET_XARCH
+
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+        simdmask_t gtSimdMaskVal;
+#endif // TARGET_XARCH || TARGET_ARM64
 
         simd_t gtSimdVal;
     };
@@ -7084,11 +7087,14 @@ struct GenTreeVecCon : public GenTree
                 return gtSimd64Val.IsAllBitsSet();
             }
 
+#endif // TARGET_XARCH
+
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
             case TYP_MASK:
             {
                 return gtSimdMaskVal.IsAllBitsSet();
             }
-#endif // TARGET_XARCH
+#endif // TARGET_XARCH || TARGET_ARM64
 #endif // FEATURE_SIMD
 
             default:
@@ -7138,11 +7144,14 @@ struct GenTreeVecCon : public GenTree
                 return left->gtSimd64Val == right->gtSimd64Val;
             }
 
+#endif // TARGET_XARCH
+
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
             case TYP_MASK:
             {
                 return left->gtSimdMaskVal == right->gtSimdMaskVal;
             }
-#endif // TARGET_XARCH
+#endif // TARGET_XARCH || TARGET_ARM64
 #endif // FEATURE_SIMD
 
             default:
@@ -7187,11 +7196,14 @@ struct GenTreeVecCon : public GenTree
                 return gtSimd64Val.IsZero();
             }
 
+#endif // TARGET_XARCH
+
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
             case TYP_MASK:
             {
                 return gtSimdMaskVal.IsZero();
             }
-#endif // TARGET_XARCH
+#endif // TARGET_XARCH || TARGET_ARM64
 #endif // FEATURE_SIMD
 
             default:

@@ -3397,14 +3397,16 @@ AGAIN:
                 switch (vecCon->TypeGet())
                 {
 #if defined(FEATURE_SIMD)
-#if defined(TARGET_XARCH)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
                     case TYP_MASK:
                     {
                         add = genTreeHashAdd(ulo32(add), vecCon->gtSimdVal.u32[1]);
                         add = genTreeHashAdd(ulo32(add), vecCon->gtSimdVal.u32[0]);
                         break;
                     }
+#endif // TARGET_XARCH || TARGET_ARM64
 
+#if defined(TARGET_XARCH)
                     case TYP_SIMD64:
                     {
                         add = genTreeHashAdd(ulo32(add), vecCon->gtSimdVal.u32[15]);
@@ -12299,12 +12301,15 @@ void Compiler::gtDispConst(GenTree* tree)
                     break;
                 }
 
+#endif // TARGET_XARCH
+
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
                 case TYP_MASK:
                 {
                     printf("<0x%08x, 0x%08x>", vecCon->gtSimdVal.u32[0], vecCon->gtSimdVal.u32[1]);
                     break;
                 }
-#endif // TARGET_XARCH
+#endif // TARGET_XARCH || TARGET_ARM64
 
                 default:
                 {
