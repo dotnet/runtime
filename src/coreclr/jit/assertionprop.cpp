@@ -3125,14 +3125,11 @@ bool Compiler::optIsProfitableToSubstitute(GenTree* dest, BasicBlock* destBlock,
                 return false;
             }
 
-            // For several of the scenarios below we may skip the costing logic
+            // For several of the scenarios we may skip the costing logic
             // since we know that the operand is always containable and therefore
             // is always cost effective to propagate.
 
-            if (parent->ShouldConstantProp(dest, value->AsVecCon()))
-            {
-                return true;
-            }
+            return parent->ShouldConstantProp(dest, value->AsVecCon());
         }
 #endif // FEATURE_HW_INTRINSICS
     }
