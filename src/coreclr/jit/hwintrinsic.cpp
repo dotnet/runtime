@@ -469,6 +469,117 @@ CorInfoType Compiler::getBaseJitTypeFromArgIfNeeded(NamedIntrinsic       intrins
     return (diffInsCount >= 2);
 }
 
+struct HWIntrinsicIsaRange
+{
+    NamedIntrinsic FirstId;
+    NamedIntrinsic LastId;
+};
+
+static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
+// clang-format off
+#if defined(TARGET_XARCH)
+    { FIRST_NI_X86Base, LAST_NI_X86Base },
+    { FIRST_NI_SSE, LAST_NI_SSE },
+    { FIRST_NI_SSE2, LAST_NI_SSE2 },
+    { FIRST_NI_SSE3, LAST_NI_SSE3 },
+    { FIRST_NI_SSSE3, LAST_NI_SSSE3 },
+    { FIRST_NI_SSE41, LAST_NI_SSE41 },
+    { FIRST_NI_SSE42, LAST_NI_SSE42 },
+    { FIRST_NI_AVX, LAST_NI_AVX },
+    { FIRST_NI_AVX2, LAST_NI_AVX2 },
+    { FIRST_NI_AES, LAST_NI_AES },
+    { FIRST_NI_BMI1, LAST_NI_BMI1 },
+    { FIRST_NI_BMI2, LAST_NI_BMI2 },
+    { FIRST_NI_FMA, LAST_NI_FMA },
+    { FIRST_NI_LZCNT, LAST_NI_LZCNT },
+    { FIRST_NI_PCLMULQDQ, LAST_NI_PCLMULQDQ },
+    { FIRST_NI_POPCNT, LAST_NI_POPCNT },
+    { FIRST_NI_Vector128, LAST_NI_Vector128 },
+    { FIRST_NI_Vector256, LAST_NI_Vector256 },
+    { FIRST_NI_Vector512, LAST_NI_Vector512 },
+    { FIRST_NI_AVXVNNI, LAST_NI_AVXVNNI },
+    { NI_Illegal, NI_Illegal },                                 // MOVBE
+    { FIRST_NI_X86Serialize, LAST_NI_X86Serialize },
+    { NI_Illegal, NI_Illegal },                                 // EVEX
+    { FIRST_NI_AVX512F, LAST_NI_AVX512F },
+    { FIRST_NI_AVX512F_VL, LAST_NI_AVX512F_VL },
+    { FIRST_NI_AVX512BW, LAST_NI_AVX512BW },
+    { FIRST_NI_AVX512BW_VL, LAST_NI_AVX512BW_VL },
+    { FIRST_NI_AVX512CD, LAST_NI_AVX512CD },
+    { FIRST_NI_AVX512CD_VL, LAST_NI_AVX512CD_VL },
+    { FIRST_NI_AVX512DQ, LAST_NI_AVX512DQ },
+    { FIRST_NI_AVX512DQ_VL, LAST_NI_AVX512DQ_VL },
+    { FIRST_NI_AVX512VBMI, LAST_NI_AVX512VBMI },
+    { FIRST_NI_AVX512VBMI_VL, LAST_NI_AVX512VBMI_VL },
+    { FIRST_NI_AVX10v1, LAST_NI_AVX10v1 },
+    { FIRST_NI_AVX10v1_V512, LAST_NI_AVX10v1_V512 },
+    { NI_Illegal, NI_Illegal },                                 // VectorT128
+    { NI_Illegal, NI_Illegal },                                 // VectorT256
+    { NI_Illegal, NI_Illegal },                                 // VectorT512
+    { FIRST_NI_X86Base_X64, LAST_NI_X86Base_X64 },
+    { FIRST_NI_SSE_X64, LAST_NI_SSE_X64 },
+    { FIRST_NI_SSE2_X64, LAST_NI_SSE2_X64 },
+    { NI_Illegal, NI_Illegal },                                 // SSE3_X64
+    { NI_Illegal, NI_Illegal },                                 // SSSE3_X64
+    { FIRST_NI_SSE41_X64, LAST_NI_SSE41_X64 },
+    { FIRST_NI_SSE42_X64, LAST_NI_SSE42_X64 },
+    { NI_Illegal, NI_Illegal },                                 // AVX_X64
+    { NI_Illegal, NI_Illegal },                                 // AVX2_X64
+    { NI_Illegal, NI_Illegal },                                 // AES_X64
+    { FIRST_NI_BMI1_X64, LAST_NI_BMI1_X64 },
+    { FIRST_NI_BMI2_X64, LAST_NI_BMI2_X64 },
+    { NI_Illegal, NI_Illegal },                                 // FMA_X64
+    { FIRST_NI_LZCNT_X64, LAST_NI_LZCNT_X64 },
+    { NI_Illegal, NI_Illegal },                                 // PCLMULQDQ_X64
+    { FIRST_NI_POPCNT_X64, LAST_NI_POPCNT_X64 },
+    { NI_Illegal, NI_Illegal },                                 // AVXVNNI_X64
+    { NI_Illegal, NI_Illegal },                                 // MOVBE_X64
+    { NI_Illegal, NI_Illegal },                                 // X86Serialize_X64
+    { NI_Illegal, NI_Illegal },                                 // EVEX_X64
+    { FIRST_NI_AVX512F_X64, LAST_NI_AVX512F_X64 },
+    { NI_Illegal, NI_Illegal },                                 // AVX512F_VL_X64
+    { NI_Illegal, NI_Illegal },                                 // AVX512BW_X64
+    { NI_Illegal, NI_Illegal },                                 // AVX512BW_VL_X64
+    { NI_Illegal, NI_Illegal },                                 // AVX512CD_X64
+    { NI_Illegal, NI_Illegal },                                 // AVX512CD_VL_X64
+    { NI_Illegal, NI_Illegal },                                 // AVX512DQ_X64
+    { NI_Illegal, NI_Illegal },                                 // AVX512DQ_VL_X64
+    { NI_Illegal, NI_Illegal },                                 // AVX512VBMI_X64
+    { NI_Illegal, NI_Illegal },                                 // AVX512VBMI_VL_X64
+    { FIRST_NI_AVX10v1_X64, LAST_NI_AVX10v1_X64 },
+    { NI_Illegal, NI_Illegal },                                 // AVX10v1_V512_X64
+#elif defined (TARGET_ARM64)
+    { FIRST_NI_ArmBase, LAST_NI_ArmBase },
+    { FIRST_NI_AdvSimd, LAST_NI_AdvSimd },
+    { FIRST_NI_Aes, LAST_NI_Aes },
+    { FIRST_NI_Crc32, LAST_NI_Crc32 },
+    { FIRST_NI_Dp, LAST_NI_Dp },
+    { FIRST_NI_Rdm, LAST_NI_Rdm },
+    { FIRST_NI_Sha1, LAST_NI_Sha1 },
+    { FIRST_NI_Sha256, LAST_NI_Sha256 },
+    { NI_Illegal, NI_Illegal },                         // Atomics
+    { FIRST_NI_Vector64, LAST_NI_Vector64 },
+    { FIRST_NI_Vector128, LAST_NI_Vector128 },
+    { NI_Illegal, NI_Illegal },                         // Dczva
+    { NI_Illegal, NI_Illegal },                         // Rcpc
+    { NI_Illegal, NI_Illegal },                         // VectorT128
+    { NI_Illegal, NI_Illegal },                         // Rcpc2
+    { FIRST_NI_Sve, LAST_NI_Sve },
+    { FIRST_NI_ArmBase_Arm64, LAST_NI_ArmBase_Arm64 },
+    { FIRST_NI_AdvSimd_Arm64, LAST_NI_AdvSimd_Arm64 },
+    { NI_Illegal, NI_Illegal },                         // Aes_Arm64
+    { FIRST_NI_Crc32_Arm64, LAST_NI_Crc32_Arm64 },
+    { NI_Illegal, NI_Illegal },                         // Dp_Arm64
+    { FIRST_NI_Rdm_Arm64, LAST_NI_Rdm_Arm64 },
+    { NI_Illegal, NI_Illegal },                         // Sha1_Arm64
+    { NI_Illegal, NI_Illegal },                         // Sha256_Arm64
+    { NI_Illegal, NI_Illegal },                         // Sve_Arm64
+#else
+#error Unsupported platform
+#endif
+    // clang-format on
+};
+
 //------------------------------------------------------------------------
 // lookupId: Gets the NamedIntrinsic for a given method name and InstructionSet
 //
@@ -487,7 +598,6 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
                                          const char*       methodName,
                                          const char*       enclosingClassName)
 {
-    // TODO-Throughput: replace sequential search by binary search
     CORINFO_InstructionSet isa = lookupIsa(className, enclosingClassName);
 
     if (isa == InstructionSet_ILLEGAL)
@@ -496,8 +606,21 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
     }
 
     bool     isIsaSupported            = comp->compSupportsHWIntrinsic(isa);
-    bool     isHardwareAcceleratedProp = (strcmp(methodName, "get_IsHardwareAccelerated") == 0);
+    bool     isHardwareAcceleratedProp = false;
+    bool     isSupportedProp           = false;
     uint32_t vectorByteLength          = 0;
+
+    if (strncmp(methodName, "get_Is", 6) == 0)
+    {
+        if (strcmp(methodName + 6, "HardwareAccelerated") == 0)
+        {
+            isHardwareAcceleratedProp = true;
+        }
+        else if (strcmp(methodName + 6, "IsSupported") == 0)
+        {
+            isSupportedProp = true;
+        }
+    }
 
 #ifdef TARGET_XARCH
     if (isHardwareAcceleratedProp)
@@ -507,25 +630,28 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
         // still can be cases where e.g. Sse41 might give an additional boost for Vector128, but it's
         // not important enough to bump the minimal Sse version here)
 
-        if (strcmp(className, "Vector128") == 0)
+        if (isa == InstructionSet_Vector128)
         {
             isa              = InstructionSet_SSE2;
             vectorByteLength = 16;
         }
-        else if (strcmp(className, "Vector256") == 0)
+        else if (isa == InstructionSet_Vector256)
         {
             isa              = InstructionSet_AVX2;
             vectorByteLength = 32;
         }
-        else if (strcmp(className, "Vector512") == 0)
+        else if (isa == InstructionSet_Vector512)
         {
             isa              = InstructionSet_AVX512F;
             vectorByteLength = 64;
         }
+        else
+        {
+            assert((strcmp(className, "Vector128") != 0) && (strcmp(className, "Vector256") != 0) &&
+                   (strcmp(className, "Vector512") != 0));
+        }
     }
 #endif
-
-    bool isSupportedProp = (strcmp(methodName, "get_IsSupported") == 0);
 
     if (isSupportedProp && (strncmp(className, "Vector", 6) == 0))
     {
@@ -621,25 +747,55 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
     }
 #endif
 
-    for (int i = 0; i < (NI_HW_INTRINSIC_END - NI_HW_INTRINSIC_START - 1); i++)
+    size_t isaIndex = static_cast<size_t>(isa) - 1;
+    assert(isaIndex < _countof(hwintrinsicIsaRangeArray));
+
+    const HWIntrinsicIsaRange& isaRange = hwintrinsicIsaRangeArray[isaIndex];
+
+#if defined(DEBUG)
+    // This should be the range for the ISA we expect
+    assert(HWIntrinsicInfo::lookupIsa(isaRange.FirstId) == isa);
+    assert(HWIntrinsicInfo::lookupIsa(isaRange.LastId) == isa);
+
+    // The ID before/after the range should not part of the ISA we expect
+    NamedIntrinsic prevId = static_cast<NamedIntrinsic>(isaRange.FirstId - 1);
+    NamedIntrinsic nextId = static_cast<NamedIntrinsic>(isaRange.LastId + 1);
+
+    assert((prevId == NI_HW_INTRINSIC_START) || (HWIntrinsicInfo::lookupIsa(prevId) != isa));
+    assert((nextId == NI_HW_INTRINSIC_END) || (HWIntrinsicInfo::lookupIsa(nextId) != isa));
+
+    // The last id should be the same as or after the first id
+    assert(isaRange.FirstId <= isaRange.LastId);
+#endif // DEBUG
+
+    size_t rangeLower = 0;
+    size_t rangeUpper = static_cast<size_t>(isaRange.LastId) - static_cast<size_t>(isaRange.FirstId);
+
+    while (rangeLower <= rangeUpper)
     {
-        const HWIntrinsicInfo& intrinsicInfo = hwIntrinsicInfoArray[i];
+        // This is safe since rangeLower and rangeUpper will never be negative
+        size_t rangeIndex = (rangeUpper + rangeLower) / 2;
 
-        if (isa != hwIntrinsicInfoArray[i].isa)
+        NamedIntrinsic         ni            = static_cast<NamedIntrinsic>(isaRange.FirstId + rangeIndex);
+        const HWIntrinsicInfo& intrinsicInfo = HWIntrinsicInfo::lookup(ni);
+
+        // We should have found the entry we expected to find here
+        assert(ni == intrinsicInfo.id);
+
+        int sortOrder = strcmp(methodName, intrinsicInfo.name);
+
+        if (sortOrder < 0)
         {
-            continue;
+            rangeUpper = rangeIndex - 1;
         }
-
-        int numArgs = static_cast<unsigned>(intrinsicInfo.numArgs);
-
-        if ((numArgs != -1) && (sig->numArgs != static_cast<unsigned>(intrinsicInfo.numArgs)))
+        else if (sortOrder > 0)
         {
-            continue;
+            rangeLower = rangeIndex + 1;
         }
-
-        if (strcmp(methodName, intrinsicInfo.name) == 0)
+        else
         {
-            NamedIntrinsic ni = intrinsicInfo.id;
+            assert(sortOrder == 0);
+            assert((intrinsicInfo.numArgs == -1) || (sig->numArgs == static_cast<uint8_t>(intrinsicInfo.numArgs)));
 
 #if defined(TARGET_XARCH)
             // on AVX1-only CPUs we only support a subset of intrinsics in Vector256
@@ -647,7 +803,8 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
             {
                 return NI_Illegal;
             }
-#endif
+#endif // TARGET_XARCH
+
             return ni;
         }
     }
