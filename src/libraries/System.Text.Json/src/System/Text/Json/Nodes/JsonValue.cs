@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Nodes
@@ -166,7 +167,9 @@ namespace System.Text.Json.Nodes
             Debug.Assert(jsonTypeInfo.IsConfigured);
             Debug.Assert(value != null);
 
-            if (jsonTypeInfo.EffectiveConverter.IsInternalConverter && JsonValue<T>.TypeIsSupportedPrimitive)
+            if (JsonValue<T>.TypeIsSupportedPrimitive &&
+                jsonTypeInfo is { EffectiveConverter.IsInternalConverter: true } &&
+                (jsonTypeInfo.EffectiveNumberHandling & JsonNumberHandling.WriteAsString) is 0)
             {
                 // If the type is using the built-in converter for a known primitive,
                 // switch to the more efficient JsonValuePrimitive<T> implementation.

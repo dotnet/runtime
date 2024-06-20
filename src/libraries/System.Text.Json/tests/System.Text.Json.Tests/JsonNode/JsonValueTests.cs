@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 using Xunit;
 
 namespace System.Text.Json.Nodes.Tests
@@ -416,6 +417,20 @@ namespace System.Text.Json.Nodes.Tests
                 JsonValue jsonValue = JsonValue.Create(document.RootElement);
                 Assert.Equal(JsonValueKind.Number, jsonValue.GetValueKind());
             }
+        }
+
+        [Theory]
+        [InlineData(JsonNumberHandling.Strict, JsonValueKind.Number)]
+        [InlineData(JsonNumberHandling.AllowReadingFromString, JsonValueKind.Number)]
+        [InlineData(JsonNumberHandling.AllowNamedFloatingPointLiterals, JsonValueKind.Number)]
+        [InlineData(JsonNumberHandling.WriteAsString, JsonValueKind.String)]
+        [InlineData(JsonNumberHandling.WriteAsString | JsonNumberHandling.AllowNamedFloatingPointLiterals, JsonValueKind.String)]
+        public static void GetValueKind_NumberHandling(JsonNumberHandling numberHandling, JsonValueKind expectedKind)
+        {
+            JsonSerializerOptions options = new(JsonSerializerOptions.Default) { NumberHandling = numberHandling };
+            JsonTypeInfo<int> typeInfo = (JsonTypeInfo<int>)options.GetTypeInfo(typeof(int));
+            JsonValue value = JsonValue.Create(42, typeInfo);
+            Assert.Equal(expectedKind, value.GetValueKind());
         }
 
         [Fact]
