@@ -538,10 +538,6 @@ static IntrinsicsHashTable* getIntrinsicsHashTable()
 
     MallocAllocator mallocator;
     char*           mem = mallocator.allocate<char>(sizeof(IntrinsicsHashTable));
-    if (mem == nullptr)
-    {
-        NOMEM();
-    }
 
     IntrinsicsHashTable* hashTable = new (mem, jitstd::placement_t()) IntrinsicsHashTable(mallocator);
 
