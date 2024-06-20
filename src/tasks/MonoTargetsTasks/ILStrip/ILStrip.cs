@@ -164,6 +164,7 @@ public class ILStrip : Microsoft.Build.Utilities.Task
         }
 
         string trimmedAssemblyFilePath = ComputeTrimmedAssemblyPath(trimmedAssemblyFolder, assemblyFilePath);
+        string trimmedMethodListFilePath = trimmedAssemblyFilePath.Replace(".dll", ".txt");
         if (File.Exists(trimmedAssemblyFilePath))
         {
             if (IsInputNewerThanOutput(assemblyFilePath, trimmedAssemblyFilePath))
@@ -171,6 +172,7 @@ public class ILStrip : Microsoft.Build.Utilities.Task
                 Log.LogMessage(MessageImportance.Low, $"Re-trimming {assemblyFilePath} because {trimmedAssemblyFilePath} is older than {assemblyFilePath} .");
                 Log.LogMessage(MessageImportance.Low, $"Deleting {trimmedAssemblyFilePath} .");
                 File.Delete(trimmedAssemblyFilePath);
+                File.Delete(trimmedMethodListFilePath);
             }
             else
             {
@@ -196,12 +198,13 @@ public class ILStrip : Microsoft.Build.Utilities.Task
             return true;
         }
 
+        Dictionary<int, string> rvaToName = new();
         string? line = sr.ReadLine();
         if (!string.IsNullOrEmpty(line))
         {
             isTrimmed = true;
-            Dictionary<int, int> methodBodyUses = ComputeMethodBodyUsage(mr, sr, line, methodTokenFile);
-            CreateTrimmedAssembly(peReader, trimmedAssemblyFilePath, fs, methodBodyUses);
+            Dictionary<int, int> methodBodyUses = ComputeMethodBodyUsage(mr, sr, line, methodTokenFile, ref rvaToName);
+            CreateTrimmedAssembly(peReader, trimmedAssemblyFilePath, fs, methodBodyUses, rvaToName, trimmedMethodListFilePath);
         }
 
         var outAssemblyItem = isTrimmed ? GetTrimmedAssemblyItem(assemblyItem, trimmedAssemblyFilePath, assemblyFilePathArg) : assemblyItem;
@@ -237,7 +240,7 @@ public class ILStrip : Microsoft.Build.Utilities.Task
         return mvid.ToString();
     }
 
-    private Dictionary<int, int> ComputeMethodBodyUsage(MetadataReader mr, StreamReader sr, string? line, string methodTokenFile)
+    private Dictionary<int, int> ComputeMethodBodyUsage(MetadataReader mr, StreamReader sr, string? line, string methodTokenFile, ref Dictionary<int, string> rvaToName)
     {
         Dictionary<int, int> tokenToRva = new();
         Dictionary<int, int> methodBodyUses = new();
@@ -247,6 +250,7 @@ public class ILStrip : Microsoft.Build.Utilities.Task
             int methodToken = MetadataTokens.GetToken(mr, mdefh);
             MethodDefinition mdef = mr.GetMethodDefinition(mdefh);
             int rva = mdef.RelativeVirtualAddress;
+            string methodName = mr.GetString(mdef.Name);
 
             tokenToRva.Add(methodToken, rva);
 
@@ -257,6 +261,15 @@ public class ILStrip : Microsoft.Build.Utilities.Task
             else
             {
                 methodBodyUses.Add(rva, 1);
+            }
+
+            if (rvaToName.TryGetValue(rva, out var _))
+            {
+                rvaToName[rva] = rvaToName[rva] + ", " + methodName;
+            }
+            else
+            {
+                rvaToName.Add(rva, methodName);
             }
         }
 
@@ -280,8 +293,10 @@ public class ILStrip : Microsoft.Build.Utilities.Task
         return methodBodyUses;
     }
 
-    private void CreateTrimmedAssembly(PEReader peReader, string trimmedAssemblyFilePath, FileStream fs, Dictionary<int, int> methodBodyUses)
+    private void CreateTrimmedAssembly(PEReader peReader, string trimmedAssemblyFilePath, FileStream fs, Dictionary<int, int> methodBodyUses, Dictionary<int, string> rvaToName, string trimmedMethodListFilePath)
     {
+        List<string> trimmedMethods = new();
+
         using FileStream os = File.Open(trimmedAssemblyFilePath, FileMode.Create);
         {
             fs.Position = 0;
@@ -300,6 +315,7 @@ public class ILStrip : Microsoft.Build.Utilities.Task
                     if (headerSize == 1) //Set code size to zero for TinyFormat
                         SetCodeSizeToZeroForTiny(ref memStream, actualLoc);
                     ZeroOutMethodBody(ref memStream, methodSize, actualLoc, headerSize);
+                    trimmedMethods.Add(rvaToName[rva]);
                 }
                 else if (count < 0)
                 {
@@ -310,6 +326,9 @@ public class ILStrip : Microsoft.Build.Utilities.Task
             memStream.Position = 0;
             memStream.CopyTo(os);
         }
+
+        string trimmedMethodsStr = string.Join(Environment.NewLine, trimmedMethods.ToArray());
+        File.WriteAllText(trimmedMethodListFilePath, trimmedMethodsStr);
     }
 
     private static int ComputeMethodSize(PEReader peReader, int rva) => peReader.GetMethodBody(rva).Size;
