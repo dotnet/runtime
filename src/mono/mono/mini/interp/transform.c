@@ -2287,9 +2287,10 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 
 			esize = mono_type_size (t, &align);
 			if (esize != 1) {
+				int power2 = mono_is_power_of_two ((guint32)esize);
 				g_assert (esize <= 32767);
-				interp_add_ins (td, MINT_MUL_P_IMM);
-				td->last_ins->data [0] = (gint16)esize;
+				interp_add_ins (td, power2 > 0 ? MINT_SHL_P_IMM : MINT_MUL_P_IMM);
+				td->last_ins->data [0] = (gint16)(power2 > 0 ? power2 : esize);
 				interp_ins_set_sreg (td->last_ins, offset_var);
 				interp_ins_set_dreg (td->last_ins, offset_var);
 			}
