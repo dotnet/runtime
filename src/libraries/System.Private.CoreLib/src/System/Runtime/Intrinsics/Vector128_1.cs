@@ -278,6 +278,8 @@ namespace System.Runtime.Intrinsics
             }
             if (AdvSimd.Arm64.IsSupported && (typeof(T) == typeof(long) || typeof(T) == typeof(ulong)))
             {
+                Vector128<ulong> a = left.AsUInt64();
+                Vector128<ulong> b = right.AsUInt64();
                 Vector64<uint> aHi = AdvSimd.ShiftRightLogicalNarrowingLower(a.AsUInt64(), 32);
                 Vector64<uint> aLo = AdvSimd.ExtractNarrowingLower(a.AsUInt64());
                 Vector64<uint> bHi = AdvSimd.ShiftRightLogicalNarrowingLower(b.AsUInt64(), 32);
