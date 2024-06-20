@@ -365,6 +365,7 @@ namespace System.Globalization
                 switch (current)
                 {
                     case '\\':
+                        // The ICU format does not use backslashes to escape while the .NET format does
                         result[resultPos++] = '\\';
                         result[resultPos++] = '\\';
                         break;
@@ -397,6 +398,7 @@ namespace System.Globalization
                             }
                             if (current == '\\')
                             {
+                                // The same backslash escaping mentioned above
                                 result[resultPos++] = '\\';
                             }
                             result[resultPos++] = current;
