@@ -3,11 +3,16 @@ using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Helpers;
+using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Reflection
 {
 	[KeptMember (".cctor()")]
 	[ExpectedNoWarnings ()]
+	[Define ("IL_ASSEMBLY_AVAILABLE")]
+	[SetupCompileBefore ("library.dll", new[] { "Dependencies/EscapedTypeNames.il" })]
+	[KeptTypeInAssembly ("library", "Library.Not\\+Nested")]
+	[KeptTypeInAssembly ("library", "Library.Not\\+Nested+Nes\\\\ted")]
 	[KeptDelegateCacheField ("0", nameof (AssemblyResolver))]
 	[KeptDelegateCacheField ("1", nameof (GetTypeFromAssembly))]
 	public class TypeUsedViaReflection
@@ -47,8 +52,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 			BaseTypeInterfaces.Test ();
 
-
 			TestInvalidTypeCombination ();
+			TestEscapedTypeName ();
 		}
 
 		[Kept]
@@ -464,6 +469,13 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				// This should throw at runtime, but should not warn nor fail the compilation
 				Console.WriteLine (Type.GetType ("System.Span`1[[System.Byte, System.Runtime]][], System.Runtime"));
 			} catch (Exception e) { }
+		}
+
+		[Kept]
+		static void TestEscapedTypeName ()
+		{
+			var typeKept = Type.GetType ("Library.Not\\+Nested, library");
+			typeKept = Type.GetType ("Library.Not\\+Nested+Nes\\\\ted, library");
 		}
 	}
 }

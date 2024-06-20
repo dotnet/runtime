@@ -35,7 +35,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Reflection.Runtime.TypeParsing;
 using System.Text.RegularExpressions;
 using ILCompiler.DependencyAnalysisFramework;
 using ILLink.Shared;
@@ -45,6 +44,10 @@ using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Mono.Collections.Generic;
 using Mono.Linker.Dataflow;
+
+using AssemblyNameInfo = System.Reflection.Metadata.AssemblyNameInfo;
+using TypeName = System.Reflection.Metadata.TypeName;
+using TypeNameParseOptions = System.Reflection.Metadata.TypeNameParseOptions;
 
 namespace Mono.Linker.Steps
 {
@@ -2151,12 +2154,6 @@ namespace Mono.Linker.Steps
 
 				if (property.Name == "TargetTypeName") {
 					string targetTypeName = (string) property.Argument.Value;
-					TypeName? typeName = TypeParser.ParseTypeName (targetTypeName);
-					if (typeName is AssemblyQualifiedTypeName assemblyQualifiedTypeName) {
-						AssemblyDefinition? assembly = Context.TryResolve (assemblyQualifiedTypeName.AssemblyName.Name);
-						return assembly == null ? null : Context.TryResolve (assembly, targetTypeName);
-					}
-
 					return Context.TryResolve (asm, targetTypeName);
 				}
 			}

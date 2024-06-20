@@ -65,7 +65,12 @@ namespace Mono.Linker
 		TypeDefinition? TryResolve (TypeReference typeReference);
 	}
 
-	public class LinkContext : IMetadataResolver, ITryResolveMetadata, IDisposable
+	internal interface ITryResolveAssemblyName
+	{
+		AssemblyDefinition? TryResolve (string assemblyName);
+	}
+
+	public class LinkContext : IMetadataResolver, ITryResolveMetadata, ITryResolveAssemblyName, IDisposable
 	{
 
 		readonly Pipeline _pipeline;
@@ -211,7 +216,7 @@ namespace Mono.Linker
 			_logger = logger ?? throw new ArgumentNullException (nameof (logger));
 
 			_resolver = factory.CreateResolver (this);
-			_typeNameResolver = new TypeNameResolver (this);
+			_typeNameResolver = new TypeNameResolver (this, this);
 			_actions = new Dictionary<string, AssemblyAction> ();
 			_parameters = new Dictionary<string, string> (StringComparer.Ordinal);
 			_customAttributes = new CustomAttributeSource (this);
