@@ -184,7 +184,7 @@ namespace System.Reflection.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void SetEntryAssembly()
+        public void TestSetEntryAssembly()
         {
             Assert.NotNull(Assembly.GetEntryAssembly());
 
