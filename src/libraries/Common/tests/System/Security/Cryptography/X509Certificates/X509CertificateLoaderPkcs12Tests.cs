@@ -717,7 +717,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             using (X509Certificate2 c2 = LoadPfx(TestData.PfxData, TestFiles.PfxFile, TestData.PfxDataPassword))
             {
                 RSA rsa = c1.GetRSAPrivateKey();
-                byte[] hash = new byte[SHA256.HashSizeInBytes];
+                byte[] hash = new byte[256 >> 3];
                 byte[] sig = rsa.SignHash(hash, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
                 Assert.Equal(TestData.PfxSha256Empty_ExpectedSig, sig);
 
