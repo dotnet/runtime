@@ -44,8 +44,7 @@ namespace System.Net.Http
                 }
             }
 
-            _proxyHelper = proxy ?? new WinInetProxyHelper();
-            UpdateConfiguration(_proxyHelper);
+            UpdateConfiguration(proxy);
         }
 
         private static void RegistryChangeNotificationCallback(object? state, bool timedOut)
@@ -203,6 +202,7 @@ namespace System.Net.Http
                     SafeWinHttpHandle.DisposeAndClearHandle(ref _sessionHandle);
                 }
 
+                _waitHandle?.Dispose();
                 _internetSettingsRegistry?.Dispose();
                 _registeredWaitHandle?.Unregister(null);
             }
