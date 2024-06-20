@@ -98,11 +98,8 @@ inline unsigned StackElemSize(unsigned parmSize, bool isValueType, bool isFloatH
 //
 // Create alias for optimized implementations of helpers provided on this platform
 //
-#define JIT_GetSharedGCStaticBase           JIT_GetSharedGCStaticBase_SingleAppDomain
-#define JIT_GetSharedNonGCStaticBase        JIT_GetSharedNonGCStaticBase_SingleAppDomain
-#define JIT_GetSharedGCStaticBaseNoCtor     JIT_GetSharedGCStaticBaseNoCtor_SingleAppDomain
-#define JIT_GetSharedNonGCStaticBaseNoCtor  JIT_GetSharedNonGCStaticBaseNoCtor_SingleAppDomain
-
+#define JIT_GetDynamicGCStaticBase           JIT_GetDynamicGCStaticBase_SingleAppDomain
+#define JIT_GetDynamicNonGCStaticBase        JIT_GetDynamicNonGCStaticBase_SingleAppDomain
 
 //**********************************************************************
 // Frames

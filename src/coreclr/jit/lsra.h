@@ -2466,15 +2466,22 @@ public:
     RefPosition* nextRefPosition;
 
     // The remaining fields are common to both options
-    GenTree*     treeNode;
+    union
+    {
+        struct
+        {
+            GenTree* treeNode;
+
+            // Prior to the allocation pass, registerAssignment captures the valid registers
+            // for this RefPosition.
+            // After the allocation pass, this contains the actual assignment
+            SingleTypeRegSet registerAssignment;
+        };
+        regMaskTP killedRegisters;
+    };
     unsigned int bbNum;
 
     LsraLocation nodeLocation;
-
-    // Prior to the allocation pass, registerAssignment captures the valid registers
-    // for this RefPosition.
-    // After the allocation pass, this contains the actual assignment
-    SingleTypeRegSet registerAssignment;
 
     RefType refType;
 
@@ -2586,9 +2593,9 @@ public:
         : referent(nullptr)
         , nextRefPosition(nullptr)
         , treeNode(treeNode)
+        , registerAssignment(RBM_NONE)
         , bbNum(bbNum)
         , nodeLocation(nodeLocation)
-        , registerAssignment(RBM_NONE)
         , refType(refType)
         , multiRegIdx(0)
 #ifdef TARGET_ARM64
@@ -2651,6 +2658,12 @@ public:
     RegisterType getRegisterType()
     {
         return referent->registerType;
+    }
+
+    regMaskTP getKilledRegisters()
+    {
+        assert(refType == RefTypeKill);
+        return killedRegisters;
     }
 
     // Returns true if it is a reference on a GenTree node.

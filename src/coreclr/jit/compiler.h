@@ -2230,6 +2230,8 @@ public:
     bool CanDuplicate(INDEBUG(const char** reason));
     void Duplicate(BasicBlock** insertAfter, BlockToBlockMap* map, weight_t weightScale);
 
+    bool MayExecuteBlockMultipleTimesPerIteration(BasicBlock* block);
+
 #ifdef DEBUG
     static void Dump(FlowGraphNaturalLoop* loop);
 #endif // DEBUG
@@ -3185,6 +3187,10 @@ public:
     GenTree* gtNewSimdAbsNode(
         var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize);
 
+#if defined(TARGET_ARM64)
+    GenTree* gtNewSimdAllTrueMaskNode(CorInfoType simdBaseJitType, unsigned simdSize);
+#endif
+
     GenTree* gtNewSimdBinOpNode(genTreeOps  op,
                                 var_types   type,
                                 GenTree*    op1,
@@ -3223,6 +3229,8 @@ public:
                                  CorInfoType simdBaseJitType,
                                  unsigned    simdSize);
 
+    GenTree* gtNewSimdCvtMaskToVectorNode(var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize);
+
     GenTree* gtNewSimdCvtNode(var_types   type,
                               GenTree*    op1,
                               CorInfoType simdTargetBaseJitType,
@@ -3234,6 +3242,8 @@ public:
                                     CorInfoType simdTargetBaseJitType,
                                     CorInfoType simdSourceBaseJitType,
                                     unsigned    simdSize);
+
+    GenTree* gtNewSimdCvtVectorToMaskNode(var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize);
 
     GenTree* gtNewSimdCreateBroadcastNode(
         var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize);
@@ -3516,12 +3526,6 @@ public:
 
     GenTreeIndir* gtNewMethodTableLookup(GenTree* obj);
 
-#if defined(TARGET_ARM64)
-    GenTree* gtNewSimdConvertVectorToMaskNode(var_types type, GenTree* node, CorInfoType simdBaseJitType, unsigned simdSize);
-    GenTree* gtNewSimdConvertMaskToVectorNode(GenTreeHWIntrinsic* node, var_types type);
-    GenTree* gtNewSimdAllTrueMaskNode(CorInfoType simdBaseJitType, unsigned simdSize);
-#endif
-
     //------------------------------------------------------------------------
     // Other GenTree functions
 
@@ -3623,14 +3627,18 @@ public:
 
     // Return true if call is a recursive call; return false otherwise.
     // Note when inlining, this looks for calls back to the root method.
-    bool gtIsRecursiveCall(GenTreeCall* call)
+    bool gtIsRecursiveCall(GenTreeCall* call, bool useInlineRoot = true)
     {
-        return gtIsRecursiveCall(call->gtCallMethHnd);
+        return gtIsRecursiveCall(call->gtCallMethHnd, useInlineRoot);
     }
 
-    bool gtIsRecursiveCall(CORINFO_METHOD_HANDLE callMethodHandle)
+    bool gtIsRecursiveCall(CORINFO_METHOD_HANDLE callMethodHandle, bool useInlineRoot = true)
     {
-        return (callMethodHandle == impInlineRoot()->info.compMethodHnd);
+        if (useInlineRoot)
+        {
+            return callMethodHandle == impInlineRoot()->info.compMethodHnd;
+        }
+        return callMethodHandle == info.compMethodHnd;
     }
 
     //-------------------------------------------------------------------------
@@ -3639,12 +3647,17 @@ public:
     GenTree* gtFoldExprConst(GenTree* tree);
     GenTree* gtFoldIndirConst(GenTreeIndir* indir);
     GenTree* gtFoldExprSpecial(GenTree* tree);
+    GenTree* gtFoldExprSpecialFloating(GenTree* tree);
     GenTree* gtFoldBoxNullable(GenTree* tree);
     GenTree* gtFoldExprCompare(GenTree* tree);
     GenTree* gtFoldExprConditional(GenTree* tree);
     GenTree* gtFoldExprCall(GenTreeCall* call);
     GenTree* gtFoldTypeCompare(GenTree* tree);
     GenTree* gtFoldTypeEqualityCall(bool isEq, GenTree* op1, GenTree* op2);
+
+#if defined(FEATURE_HW_INTRINSICS)
+    GenTree* gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree);
+#endif // FEATURE_HW_INTRINSICS
 
     // Options to control behavior of gtTryRemoveBoxUpstreamEffects
     enum BoxRemovalOptions
@@ -3917,6 +3930,7 @@ public:
 
 #ifdef SWIFT_SUPPORT
     unsigned lvaSwiftSelfArg;
+    unsigned lvaSwiftIndirectResultArg;
     unsigned lvaSwiftErrorArg;
     unsigned lvaSwiftErrorLocal;
 #endif
@@ -4551,8 +4565,7 @@ protected:
         GenTreeLclVarCommon* data, WCHAR* cns, int len, int dataOffset, StringComparison cmpMode);
     GenTreeStrCon* impGetStrConFromSpan(GenTree* span);
 
-    GenTree* impIntrinsic(GenTree*                newobjThis,
-                          CORINFO_CLASS_HANDLE    clsHnd,
+    GenTree* impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                           CORINFO_METHOD_HANDLE   method,
                           CORINFO_SIG_INFO*       sig,
                           unsigned                methodFlags,
@@ -4617,7 +4630,6 @@ protected:
                                   CORINFO_CLASS_HANDLE  clsHnd,
                                   CORINFO_METHOD_HANDLE method,
                                   CORINFO_SIG_INFO*     sig,
-                                  GenTree*              newobjThis,
                                   bool                  mustExpand);
 
 protected:
@@ -4629,7 +4641,6 @@ protected:
                                          var_types            retType,
                                          CorInfoType          simdBaseJitType,
                                          unsigned             simdSize,
-                                         GenTree*             newobjThis,
                                          bool                 mustExpand);
 
     GenTree* impSpecialIntrinsic(NamedIntrinsic        intrinsic,
@@ -4642,10 +4653,7 @@ protected:
                                  unsigned              simdSize,
                                  bool                  mustExpand);
 
-    GenTree* getArgForHWIntrinsic(var_types            argType,
-                                  CORINFO_CLASS_HANDLE argClass,
-                                  bool                 expectAddr = false,
-                                  GenTree*             newobjThis = nullptr);
+    GenTree* getArgForHWIntrinsic(var_types argType, CORINFO_CLASS_HANDLE argClass);
     GenTree* impNonConstFallback(NamedIntrinsic intrinsic, var_types simdType, CorInfoType simdBaseJitType);
     GenTree* addRangeCheckIfNeeded(
         NamedIntrinsic intrinsic, GenTree* immOp, bool mustExpand, int immLowerBound, int immUpperBound);
@@ -4772,8 +4780,10 @@ public:
     bool impIsCastHelperEligibleForClassProbe(GenTree* tree);
     bool impIsCastHelperMayHaveProfileData(CorInfoHelpFunc helper);
 
+    bool impMatchIsInstBooleanConversion(const BYTE* codeAddr, const BYTE* codeEndp, int* consumed);
+
     GenTree* impCastClassOrIsInstToTree(
-        GenTree* op1, GenTree* op2, CORINFO_RESOLVED_TOKEN* pResolvedToken, bool isCastClass, IL_OFFSET ilOffset);
+        GenTree* op1, GenTree* op2, CORINFO_RESOLVED_TOKEN* pResolvedToken, bool isCastClass, bool* booleanCheck, IL_OFFSET ilOffset);
 
     GenTree* impOptimizeCastClassOrIsInst(GenTree* op1, CORINFO_RESOLVED_TOKEN* pResolvedToken, bool isCastClass);
 
@@ -6141,7 +6151,7 @@ public:
     void fgMoveColdBlocks();
 
     template <bool hasEH>
-    void fgMoveBackwardJumpsToSuccessors();
+    void fgMoveHotJumps();
 
     bool fgFuncletsAreCold();
 
@@ -8317,14 +8327,14 @@ public:
             return reg;
         }
 
-        _regMask_enum GetRegMask() const
+        regMaskTP GetRegMask() const
         {
             return regMask;
         }
 
     private:
-        regNumber     reg;
-        _regMask_enum regMask;
+        regNumber reg;
+        regMaskTP regMask;
     };
 
     VirtualStubParamInfo* virtualStubParamInfo;
@@ -9943,7 +9953,8 @@ public:
             // On these platforms we assume the register that the target is
             // passed in is preserved by the validator and take care to get the
             // target from the register for the call (even in debug mode).
-            static_assert_no_msg((RBM_VALIDATE_INDIRECT_CALL_TRASH & (1 << REG_VALIDATE_INDIRECT_CALL_ADDR)) == 0);
+            static_assert_no_msg((RBM_VALIDATE_INDIRECT_CALL_TRASH & regMaskTP(1 << REG_VALIDATE_INDIRECT_CALL_ADDR)) ==
+                                 RBM_NONE);
             if (JitConfig.JitForceControlFlowGuard())
                 return true;
 
@@ -11111,6 +11122,7 @@ public:
     bool compJitHaltMethod();
 
     void dumpRegMask(regMaskTP regs) const;
+    void dumpRegMask(SingleTypeRegSet regs, var_types type) const;
 
 #endif
 

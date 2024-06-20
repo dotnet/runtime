@@ -6078,11 +6078,15 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static float RoundToZero(float op1) => MathF.Round(op1, MidpointRounding.ToZero);
 
-        private static int ConvertToInt32(float op1) => (int)Math.Clamp(op1, int.MinValue, int.MaxValue);
+        public static int ConvertDoubleToInt32(double op1) => (int)Math.Clamp(op1, long.MinValue, long.MaxValue);
+
+        public static int ConvertToInt32(float op1) => (int)Math.Clamp(op1, int.MinValue, int.MaxValue);
 
         private static long ConvertToInt64(double op1) => (long)Math.Clamp(op1, long.MinValue, long.MaxValue);
 
-        private static uint ConvertToUInt32(float op1) => (uint)Math.Clamp(op1, uint.MinValue, uint.MaxValue);
+        public static uint ConvertDoubleToUInt32(double op1) => (uint)Math.Clamp(op1, ulong.MinValue, ulong.MaxValue);
+
+        public static uint ConvertToUInt32(float op1) => (uint)Math.Clamp(op1, uint.MinValue, uint.MaxValue);
 
         private static ulong ConvertToUInt64(double op1) => (ulong)Math.Clamp(op1, ulong.MinValue, ulong.MaxValue);
 
@@ -6579,9 +6583,9 @@ namespace JIT.HardwareIntrinsics.Arm
             return (float)(BitConverter.Int32BitsToSingle(TestLibrary.Generator.GetInt32()%(int)2));
         }
 
-        public static float getMaskDouble()
+        public static double getMaskDouble()
         {
-            return (float)(BitConverter.Int64BitsToDouble(TestLibrary.Generator.GetInt64()%(long)2));
+            return (double)(BitConverter.Int64BitsToDouble(TestLibrary.Generator.GetInt64()%(long)2));
         }
 
         public static int MaskNumberOfElementsVector(int elems, SveMaskPattern pattern)
@@ -6835,6 +6839,126 @@ namespace JIT.HardwareIntrinsics.Arm
             }
 
             return result;
+        }
+
+        public static int LoadInt32FromByteArray(byte[] array, int offset)
+        {
+            int ret = 0;
+            for (int i = 3; i >= 0; i--)
+            {
+                ret = (ret << 8) + (int)array[offset+i];
+            }
+            return ret;
+        }
+
+        public static int LoadInt32FromByteArray(byte[] array, uint offset)
+        {
+            int ret = 0;
+            for (int i = 3; i >= 0; i--)
+            {
+                ret = (ret << 8) + (int)array[offset+i];
+            }
+            return ret;
+        }
+
+        public static long LoadInt64FromByteArray(byte[] array, long offset)
+        {
+            long ret = 0;
+            for (long i = 7; i >= 0; i--)
+            {
+                ret = (ret << 8) + (long)array[offset+i];
+            }
+            return ret;
+        }
+
+        public static long LoadInt64FromByteArray(byte[] array, ulong offset)
+        {
+            long ret = 0;
+            for (long i = 7; i >= 0; i--)
+            {
+                ret = (ret << 8) + (long)array[offset+(ulong)i];
+            }
+            return ret;
+        }
+
+        public static uint LoadUInt32FromByteArray(byte[] array, int offset)
+        {
+            uint ret = 0;
+            for (int i = 3; i >= 0; i--)
+            {
+                ret = (ret << 8) + (uint)array[offset+i];
+            }
+            return ret;
+        }
+
+        public static uint LoadUInt32FromByteArray(byte[] array, uint offset)
+        {
+            uint ret = 0;
+            for (int i = 3; i >= 0; i--)
+            {
+                ret = (ret << 8) + (uint)array[offset+i];
+            }
+            return ret;
+        }
+
+        public static ulong LoadUInt64FromByteArray(byte[] array, long offset)
+        {
+            ulong ret = 0;
+            for (long i = 7; i >= 0; i--)
+            {
+                ret = (ret << 8) + (ulong)array[offset+i];
+            }
+            return ret;
+        }
+
+        public static ulong LoadUInt64FromByteArray(byte[] array, ulong offset)
+        {
+            ulong ret = 0;
+            for (long i = 7; i >= 0; i--)
+            {
+                ret = (ret << 8) + (ulong)array[offset+(ulong)i];
+            }
+            return ret;
+        }
+
+        public static float LoadSingleFromByteArray(byte[] array, int offset)
+        {
+            int ret = 0;
+            for (int i = 3; i >= 0; i--)
+            {
+                ret = (ret << 8) + (int)array[offset+i];
+            }
+            return BitConverter.Int32BitsToSingle(ret);
+        }
+
+        public static float LoadSingleFromByteArray(byte[] array, uint offset)
+        {
+            int ret = 0;
+            for (int i = 3; i >= 0; i--)
+            {
+                ret = (ret << 8) + (int)array[offset+i];
+            }
+            return BitConverter.Int32BitsToSingle(ret);
+        }
+
+        public static double LoadDoubleFromByteArray(byte[] array, long offset)
+        {
+            long ret = 0;
+            for (long i = 7; i >= 0; i--)
+            {
+                ret = (ret << 8) + (long)array[offset+i];
+            }
+            return BitConverter.Int64BitsToDouble(ret);
+        }
+
+        public static double LoadDoubleFromByteArray(byte[] array, ulong offset)
+        {
+            long ret = 0;
+            for (long i = 7; i >= 0; i--)
+            {
+                ret = (ret << 8) + (long)array[offset+(ulong)i];
+            }
+            return BitConverter.Int64BitsToDouble(ret);
         }
 
     }

@@ -293,15 +293,11 @@ namespace System.Text.Json
             StringBuilder listOfMissingPropertiesBuilder = new();
             bool first = true;
 
-            Debug.Assert(parent.PropertyCache != null);
-
             // Soft cut-off length - once message becomes longer than that we won't be adding more elements
             const int CutOffLength = 60;
 
-            foreach (KeyValuePair<string, JsonPropertyInfo> kvp in parent.PropertyCache.List)
+            foreach (JsonPropertyInfo property in parent.PropertyCache)
             {
-                JsonPropertyInfo property = kvp.Value;
-
                 if (!property.IsRequired || requiredPropertiesSet[property.RequiredPropertyIndex])
                 {
                     continue;
@@ -935,6 +931,18 @@ namespace System.Text.Json
         public static void ThrowInvalidOperationException_PipeWriterDoesNotImplementUnflushedBytes(PipeWriter pipeWriter)
         {
             throw new InvalidOperationException(SR.Format(SR.PipeWriter_DoesNotImplementUnflushedBytes, pipeWriter.GetType().Name));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowNotSupportedException_JsonSchemaExporterDoesNotSupportReferenceHandlerPreserve()
+        {
+            throw new NotSupportedException(SR.JsonSchemaExporter_ReferenceHandlerPreserve_NotSupported);
+        }
+
+        [DoesNotReturn]
+        public static void ThrowInvalidOperationException_JsonSchemaExporterDepthTooLarge()
+        {
+            throw new InvalidOperationException(SR.JsonSchemaExporter_DepthTooLarge);
         }
     }
 }
