@@ -41,7 +41,9 @@ namespace System.Runtime.CompilerServices
             if (totalSize > size)
                 throw new ArgumentException(SR.Argument_BadFieldForInitializeArray);
 
-            void* src = (void*)address;
+            ref byte src = ref *(byte*)address;
+            GC.KeepAlive(fldInfo);
+
             ref byte dst = ref MemoryMarshal.GetArrayDataReference(array);
 
             Debug.Assert(!elementTH.AsMethodTable()->ContainsGCPointers);
@@ -59,17 +61,17 @@ namespace System.Runtime.CompilerServices
                         break;
                     case 2:
                         BinaryPrimitives.ReverseEndianness(
-                            new ReadOnlySpan<ushort>(src, array.Length),
+                            new ReadOnlySpan<ushort>(ref Unsafe.As<byte, ushort>(ref src), array.Length),
                             new Span<ushort>(ref Unsafe.As<byte, ushort>(ref dst), array.Length));
                         break;
                     case 4:
                         BinaryPrimitives.ReverseEndianness(
-                            new ReadOnlySpan<uint>(src, array.Length),
+                            new ReadOnlySpan<uint>(ref Unsafe.As<byte, uint>(ref src), array.Length),
                             new Span<uint>(ref Unsafe.As<byte, uint>(ref dst), array.Length));
                         break;
                     case 8:
                         BinaryPrimitives.ReverseEndianness(
-                            new ReadOnlySpan<ulong>(src, array.Length),
+                            new ReadOnlySpan<ulong>(ref Unsafe.As<byte, ulong>(ref src), array.Length),
                             new Span<ulong>(ref Unsafe.As<byte, ulong>(ref dst), array.Length));
                         break;
                     default:
@@ -107,7 +109,10 @@ namespace System.Runtime.CompilerServices
             }
 
             count = (int)(totalSize / targetTypeSize);
-            return ref *(byte*)data;
+            ref byte dataRef = ref *(byte*)data;
+            GC.KeepAlive(fldInfo);
+
+            return ref dataRef;
         }
 
         // GetObjectValue is intended to allow value classes to be manipulated as 'Object'
