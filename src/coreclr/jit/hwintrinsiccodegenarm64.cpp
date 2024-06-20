@@ -2132,6 +2132,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_Sve_InsertIntoShiftedVector:
             {
                 assert(isRMW);
+                assert(emitter::isFloatReg(op2Reg) == varTypeIsFloating(intrin.baseType));
                 if (targetReg != op1Reg)
                 {
                     assert(targetReg != op2Reg);
