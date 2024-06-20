@@ -10,6 +10,12 @@ namespace System.Numerics.Tensors
 {
     internal readonly struct TensorShape
     {
+        // Used to determine when we need to allocate a metadata array
+        public const int MaxInlineArraySize = 5;
+
+        // Used to determine when we can stack alloc for indexing vs when we need to allocate
+        public const int MaxInlineRank = 8;
+
         internal readonly nint[]? _metadata;      // 8 bytes
 
         internal readonly nint _memoryLength;   // 8 bytes
@@ -22,7 +28,7 @@ namespace System.Numerics.Tensors
         {
             _memoryLength = memoryLength;
             _rank = lengths.Length;
-            if (lengths.Length > 5)
+            if (lengths.Length > MaxInlineArraySize)
             {
                 _metadata = new nint[lengths.Length + strides.Length];
                 lengths.CopyTo(MemoryMarshal.CreateSpan(ref _metadata[0], lengths.Length));
@@ -35,7 +41,7 @@ namespace System.Numerics.Tensors
             }
         }
 
-        [InlineArray(5)] // 5x8 bytes (40)
+        [InlineArray(MaxInlineArraySize)] // 5x8 bytes (40)
         private struct NintBuffer
         {
             public nint e0;
@@ -52,5 +58,7 @@ namespace System.Numerics.Tensors
                                            : MemoryMarshal.CreateReadOnlySpan(ref MemoryMarshal.GetArrayDataReference(_metadata), _rank * 2).Slice(_rank);
 
         public nint FlattenedLength => TensorSpanHelpers.CalculateTotalLength(Lengths);
+
+        public bool IsEmpty => FlattenedLength == 0;
     }
 }

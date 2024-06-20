@@ -377,7 +377,7 @@ namespace System.Numerics.Tensors
         /// Gets a value indicating whether this <see cref="TensorSpan{T}"/> is empty.
         /// </summary>
         /// <value><see langword="true"/> if this span is empty; otherwise, <see langword="false"/>.</value>
-        public bool IsEmpty => _shape.FlattenedLength == 0;
+        public bool IsEmpty => _shape.IsEmpty;
 
         /// <summary>
         /// Gets the length of each dimension in this <see cref="TensorSpan{T}"/>.
@@ -410,6 +410,7 @@ namespace System.Numerics.Tensors
             left._shape.FlattenedLength == right._shape.FlattenedLength &&
             left.Rank == right.Rank &&
             left._shape.Lengths.SequenceEqual(right._shape.Lengths) &&
+            left._shape.Strides.SequenceEqual(right._shape.Strides) &&
             Unsafe.AreSame(ref left._reference, ref right._reference);
 
         /// <summary>
@@ -505,7 +506,7 @@ namespace System.Numerics.Tensors
         {
             scoped Span<nint> curIndexes;
             nint[]? curIndexesArray;
-            if (Rank > TensorSpan.MaxRankForStackAlloc)
+            if (Rank > TensorShape.MaxInlineRank)
             {
                 curIndexesArray = ArrayPool<nint>.Shared.Rent(Rank);
                 curIndexes = curIndexesArray;
@@ -524,10 +525,6 @@ namespace System.Numerics.Tensors
                 TensorSpanHelpers.AdjustIndexes(Rank - 2, 1, curIndexes, _shape.Lengths);
                 clearedValues += Lengths[Rank - 1];
             }
-            Debug.Assert(clearedValues == _shape.FlattenedLength, "Didn't clear the right amount");
-
-            if (curIndexesArray != null)
-                ArrayPool<nint>.Shared.Return(curIndexesArray);
         }
 
         /// <summary>
@@ -536,18 +533,7 @@ namespace System.Numerics.Tensors
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Fill(T value)
         {
-            Span<nint> curIndexes = stackalloc nint[Rank];
-            nint filledValues = 0;
-            // REVIEW: If we track the actual length of the backing data, because FlattenedLength doesn't always equal the actual length, we could use that here to not need to loop.
-            while (filledValues < _shape.FlattenedLength)
-            {
-                TensorSpanHelpers.Fill(ref Unsafe.Add(ref _reference, TensorSpanHelpers.ComputeLinearIndex(curIndexes, Strides, Lengths)), (nuint)Lengths[Rank - 1], value);
-                TensorSpanHelpers.AdjustIndexes(Rank - 2, 1, curIndexes, _shape.Lengths);
-                filledValues += Lengths[Rank - 1];
-            }
-
-            Debug.Assert(filledValues == _shape.FlattenedLength, "Didn't copy the right amount to the array.");
-
+            MemoryMarshal.CreateSpan<T>(ref _reference, (int)_shape._memoryLength).Fill(value);
         }
 
         /// <summary>
@@ -565,12 +551,12 @@ namespace System.Numerics.Tensors
             // Using "if (!TryCopyTo(...))" results in two branches: one for the length
             // check, and one for the result of TryCopyTo. Since these checks are equivalent,
             // we can optimize by performing the check once ourselves then calling Memmove directly.
-            if (_shape.FlattenedLength > destination.FlattenedLength)
+            if (_shape.FlattenedLength > destination._shape._memoryLength)
                 ThrowHelper.ThrowArgumentException_DestinationTooShort();
 
             scoped Span<nint> curIndexes;
             nint[]? curIndexesArray;
-            if (Rank > TensorSpan.MaxRankForStackAlloc)
+            if (Rank > TensorShape.MaxInlineRank)
             {
                 curIndexesArray = ArrayPool<nint>.Shared.Rent(Rank);
                 curIndexes = curIndexesArray;
@@ -613,7 +599,7 @@ namespace System.Numerics.Tensors
             {
                 scoped Span<nint> curIndexes;
                 nint[]? curIndexesArray;
-                if (Rank > TensorSpan.MaxRankForStackAlloc)
+                if (Rank > TensorShape.MaxInlineRank)
                 {
                     curIndexesArray = ArrayPool<nint>.Shared.Rent(Rank);
                     curIndexes = curIndexesArray;
@@ -703,7 +689,7 @@ namespace System.Numerics.Tensors
 
             scoped Span<nint> lengths;
             scoped Span<nint> offsets;
-            if (Rank > TensorSpan.MaxRankForStackAlloc)
+            if (Rank > TensorShape.MaxInlineRank)
             {
                 lengths = stackalloc nint[Rank];
                 offsets = stackalloc nint[Rank];
@@ -741,32 +727,9 @@ namespace System.Numerics.Tensors
         public bool TryFlattenTo(scoped Span<T> destination)
         {
             bool retVal = false;
-            if (destination.Length < _shape.FlattenedLength)
+            if (destination.Length <= _shape.FlattenedLength)
             {
-                scoped Span<nint> curIndexes;
-                nint[]? curIndexesArray;
-                if (Rank > TensorSpan.MaxRankForStackAlloc)
-                {
-                    curIndexesArray = ArrayPool<nint>.Shared.Rent(Rank);
-                    curIndexes = curIndexesArray;
-                    curIndexes = curIndexes.Slice(0, Rank);
-                }
-                else
-                {
-                    curIndexesArray = null;
-                    curIndexes = stackalloc nint[Rank];
-                }
-
-                nint copiedValues = 0;
-                while (copiedValues < _shape.FlattenedLength)
-                {
-                    TensorSpanHelpers.Memmove(destination.Slice(checked((int)copiedValues)), ref Unsafe.Add(ref _reference, TensorSpanHelpers.ComputeLinearIndex(curIndexes, Strides, Lengths)), Lengths[Rank - 1]);
-                    TensorSpanHelpers.AdjustIndexes(Rank - 2, 1, curIndexes, _shape.Lengths);
-                    copiedValues += Lengths[Rank - 1];
-                }
-
-                if (curIndexesArray != null)
-                    ArrayPool<nint>.Shared.Return(curIndexesArray);
+                FlattenTo(destination);
                 retVal = true;
             }
             return retVal;
@@ -786,7 +749,7 @@ namespace System.Numerics.Tensors
 
             scoped Span<nint> curIndexes;
             nint[]? curIndexesArray;
-            if (Rank > TensorSpan.MaxRankForStackAlloc)
+            if (Rank > TensorShape.MaxInlineRank)
             {
                 curIndexesArray = ArrayPool<nint>.Shared.Rent(Rank);
                 curIndexes = curIndexesArray;

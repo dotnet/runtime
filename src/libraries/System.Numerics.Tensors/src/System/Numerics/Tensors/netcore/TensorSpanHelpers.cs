@@ -14,7 +14,6 @@ namespace System.Numerics.Tensors
 {
     internal static partial class TensorSpanHelpers
     {
-
         internal static bool AreShapesTheSame<T>(ReadOnlyTensorSpan<T> tensor1, ReadOnlyTensorSpan<T> tensor2)
             where T : IEquatable<T>, IEqualityOperators<T, T, bool> => tensor1._shape.Lengths.SequenceEqual(tensor2._shape.Lengths);
 
