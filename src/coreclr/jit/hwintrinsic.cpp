@@ -469,6 +469,117 @@ CorInfoType Compiler::getBaseJitTypeFromArgIfNeeded(NamedIntrinsic       intrins
     return (diffInsCount >= 2);
 }
 
+struct IntrinsicKey
+{
+    CORINFO_InstructionSet Isa;
+    int                    NumArgs;
+    const char*            Name;
+
+    IntrinsicKey(CORINFO_InstructionSet isa, int numArgs, const char* name)
+        : Isa(isa)
+        , NumArgs(numArgs)
+        , Name(name)
+    {
+    }
+};
+
+struct IntrinsicKeyFuncs
+{
+    static bool Equals(const IntrinsicKey& lhs, const IntrinsicKey& rhs)
+    {
+        return (lhs.Isa == rhs.Isa) && (lhs.NumArgs == rhs.NumArgs) && (strcmp(lhs.Name, rhs.Name) == 0);
+    }
+
+    static int GetHashCode(const IntrinsicKey& key)
+    {
+        uint32_t hash = static_cast<uint32_t>(key.Isa);
+        hash ^= key.NumArgs + 0x9e3779b9 + (hash << 19) + (hash >> 13);
+        hash ^= HashStringA(key.Name) + 0x9e3779b9 + (hash << 19) + (hash >> 13);
+        return static_cast<int>(hash);
+    }
+};
+
+struct MallocAllocator
+{
+    template <typename T>
+    T* allocate(size_t count)
+    {
+        void* p = malloc(count * sizeof(T));
+        if (p == nullptr)
+        {
+            NOMEM();
+        }
+
+        return static_cast<T*>(p);
+    }
+
+    void deallocate(void* p)
+    {
+        free(p);
+    }
+};
+
+typedef JitHashTable<IntrinsicKey, IntrinsicKeyFuncs, NamedIntrinsic, MallocAllocator> IntrinsicsHashTable;
+
+static IntrinsicsHashTable* volatile s_intrinsicsHashTable;
+
+//------------------------------------------------------------------------
+// getIntrinsicsHashTable: Get the hash table for name -> ID lookups.
+//
+// Return Value:
+//  Hash table.
+//
+static IntrinsicsHashTable* getIntrinsicsHashTable()
+{
+    if (s_intrinsicsHashTable != nullptr)
+    {
+        return s_intrinsicsHashTable;
+    }
+
+    MallocAllocator mallocator;
+    char*           mem = mallocator.allocate<char>(sizeof(IntrinsicsHashTable));
+    if (mem == nullptr)
+    {
+        NOMEM();
+    }
+
+    IntrinsicsHashTable* hashTable = new (mem, jitstd::placement_t()) IntrinsicsHashTable(mallocator);
+
+    hashTable->Reallocate(NI_HW_INTRINSIC_END - NI_HW_INTRINSIC_START - 1);
+
+    for (int i = 0; i < (NI_HW_INTRINSIC_END - NI_HW_INTRINSIC_START - 1); i++)
+    {
+        const HWIntrinsicInfo& intrinsicInfo = hwIntrinsicInfoArray[i];
+        hashTable->Set(IntrinsicKey(static_cast<CORINFO_InstructionSet>(intrinsicInfo.isa), intrinsicInfo.numArgs,
+                                    intrinsicInfo.name),
+                       intrinsicInfo.id);
+    }
+
+    IntrinsicsHashTable* observed = InterlockedCompareExchangeT(&s_intrinsicsHashTable, hashTable, nullptr);
+    if (observed != nullptr)
+    {
+        hashTable->~IntrinsicsHashTable();
+        mallocator.deallocate(hashTable);
+        return observed;
+    }
+
+    return hashTable;
+}
+
+//------------------------------------------------------------------------
+// onJitShutdown: Free the intrinsics hash table on JIT shutdown.
+//
+void HWIntrinsicInfo::onJitShutdown()
+{
+    IntrinsicsHashTable* hashTable = s_intrinsicsHashTable;
+    if (hashTable != nullptr)
+    {
+        hashTable->~IntrinsicsHashTable();
+        free(hashTable);
+        s_intrinsicsHashTable = nullptr;
+    }
+}
+
 //------------------------------------------------------------------------
 // lookupId: Gets the NamedIntrinsic for a given method name and InstructionSet
 //
@@ -621,35 +732,20 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
     }
 #endif
 
-    for (int i = 0; i < (NI_HW_INTRINSIC_END - NI_HW_INTRINSIC_START - 1); i++)
+    IntrinsicsHashTable* hashTable = getIntrinsicsHashTable();
+    NamedIntrinsic       ni;
+    if (hashTable->Lookup(IntrinsicKey(isa, sig->numArgs, methodName), &ni) ||
+        hashTable->Lookup(IntrinsicKey(isa, -1, methodName), &ni))
     {
-        const HWIntrinsicInfo& intrinsicInfo = hwIntrinsicInfoArray[i];
-
-        if (isa != hwIntrinsicInfoArray[i].isa)
-        {
-            continue;
-        }
-
-        int numArgs = static_cast<unsigned>(intrinsicInfo.numArgs);
-
-        if ((numArgs != -1) && (sig->numArgs != static_cast<unsigned>(intrinsicInfo.numArgs)))
-        {
-            continue;
-        }
-
-        if (strcmp(methodName, intrinsicInfo.name) == 0)
-        {
-            NamedIntrinsic ni = intrinsicInfo.id;
-
 #if defined(TARGET_XARCH)
-            // on AVX1-only CPUs we only support a subset of intrinsics in Vector256
-            if (isLimitedVector256Isa && !AvxOnlyCompatible(ni))
-            {
-                return NI_Illegal;
-            }
-#endif
-            return ni;
+        // on AVX1-only CPUs we only support a subset of intrinsics in Vector256
+        if (isLimitedVector256Isa && !AvxOnlyCompatible(ni))
+        {
+            return NI_Illegal;
         }
+#endif
+
+        return ni;
     }
 
     // There are several helper intrinsics that are implemented in managed code

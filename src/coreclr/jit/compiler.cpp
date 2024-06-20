@@ -1393,6 +1393,8 @@ void Compiler::compShutdown()
     DisplayNowayAssertMap();
 #endif // MEASURE_NOWAY
 
+    HWIntrinsicInfo::onJitShutdown();
+
     /* Shut down the emitter */
 
     emitter::emitDone();
