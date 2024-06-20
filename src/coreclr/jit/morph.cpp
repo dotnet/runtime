@@ -2143,12 +2143,12 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
                 else
                 {
                     assert(arg.NewAbiInfo.NumSegments == 1);
-                    structBaseType = arg.NewAbiInfo.Segments[0].GetRegisterType();
+                    structBaseType = arg.NewAbiInfo.Segment(0).GetRegisterType();
                 }
 
                 for (unsigned i = 0; i < arg.NewAbiInfo.NumSegments; ++i)
                 {
-                    arg.AbiInfo.StructFloatFieldType[i] = arg.NewAbiInfo.Segments[i].GetRegisterType();
+                    arg.AbiInfo.StructFloatFieldType[i] = arg.NewAbiInfo.Segment(i).GetRegisterType();
                 }
             }
 #endif // defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
