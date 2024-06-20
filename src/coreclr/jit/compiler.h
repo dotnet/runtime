@@ -4831,6 +4831,28 @@ private:
     bool impIsThis(GenTree* obj);
 
     void impPopCallArgs(CORINFO_SIG_INFO* sig, GenTreeCall* call);
+    
+    typedef JitHashTable<mdMethodDef, JitSmallPrimitiveKeyFuncs<mdMethodDef>, NamedIntrinsic> MethodTokenToNamedIntrinsicMap;
+    typedef JitHashTable<CORINFO_MODULE_HANDLE, JitPtrKeyFuncs<CORINFO_MODULE_STRUCT_>, MethodTokenToNamedIntrinsicMap*> ScopeToIntrinsicLookupMap;
+
+    ScopeToIntrinsicLookupMap* m_scopeToIntrinsicLookupMap;
+
+    MethodTokenToNamedIntrinsicMap* GetMethodTokenToNamedIntrinsicMap()
+    {
+        if (m_scopeToIntrinsicLookupMap == nullptr)
+        {
+            m_scopeToIntrinsicLookupMap = new (getAllocator()) ScopeToIntrinsicLookupMap(getAllocator());
+        }
+
+        MethodTokenToNamedIntrinsicMap* methodTokenToNamedIntrinsicMap = nullptr;
+        if (!m_scopeToIntrinsicLookupMap->Lookup(info.compScopeHnd, &methodTokenToNamedIntrinsicMap))
+        {
+            methodTokenToNamedIntrinsicMap = new (getAllocator()) MethodTokenToNamedIntrinsicMap(getAllocator());
+            m_scopeToIntrinsicLookupMap->Set(info.compScopeHnd, methodTokenToNamedIntrinsicMap);
+        }
+
+        return methodTokenToNamedIntrinsicMap;
+    }
 
 public:
     static bool impCheckImplicitArgumentCoercion(var_types sigType, var_types nodeType);

@@ -1834,6 +1834,8 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     info.compClassName  = eeGetClassName(info.compClassHnd);
     info.compFullName   = eeGetMethodFullName(methodHnd);
 
+    m_scopeToIntrinsicLookupMap = nullptr;
+
     info.compMethodSuperPMIIndex = g_jitHost->getIntConfigValue(W("SuperPMIMethodContextNumber"), -1);
 
     if (!compIsForInlining())
