@@ -35,6 +35,9 @@ public class GenerateWasmBootJson : Task
     public ITaskItem[] Resources { get; set; }
 
     [Required]
+    public ITaskItem[] Endpoints { get; set; }
+
+    [Required]
     public bool DebugBuild { get; set; }
 
     public string DebugLevel { get; set; }
@@ -169,6 +172,8 @@ public class GenerateWasmBootJson : Task
         //     - ContentHash (e.g., "3448f339acf512448")
         if (Resources != null)
         {
+            var endpointByAsset = Endpoints.ToDictionary(e => e.GetMetadata("AssetFile"));
+
             var remainingLazyLoadAssemblies = new List<ITaskItem>(LazyLoadedAssemblies ?? Array.Empty<ITaskItem>());
             var resourceData = result.resources;
             foreach (var resource in Resources)
@@ -181,6 +186,7 @@ public class GenerateWasmBootJson : Task
                 var assetTraitName = resource.GetMetadata("AssetTraitName");
                 var assetTraitValue = resource.GetMetadata("AssetTraitValue");
                 var resourceName = Path.GetFileName(resource.GetMetadata("RelativePath"));
+                var resourceRoute = Path.GetFileName(endpointByAsset[resource.ItemSpec].ItemSpec);
 
                 if (TryGetLazyLoadedAssembly(resourceName, out var lazyLoad))
                 {
@@ -195,7 +201,7 @@ public class GenerateWasmBootJson : Task
                     resourceData.satelliteResources ??= new Dictionary<string, ResourceHashesByNameDictionary>(StringComparer.OrdinalIgnoreCase);
 
                     if (!IsTargeting80OrLater())
-                        resourceName = assetTraitValue + "/" + resourceName;
+                        resourceRoute = assetTraitValue + "/" + resourceRoute;
 
                     if (!resourceData.satelliteResources.TryGetValue(assetTraitValue, out resourceList))
                     {
@@ -324,13 +330,13 @@ public class GenerateWasmBootJson : Task
 
                 if (resourceList != null)
                 {
-                    AddResourceToList(resource, resourceList, resourceName);
+                    AddResourceToList(resource, resourceList, resourceRoute);
                 }
 
                 if (!string.IsNullOrEmpty(behavior))
                 {
                     resourceData.runtimeAssets ??= new Dictionary<string, AdditionalAsset>();
-                    AddToAdditionalResources(resource, resourceData.runtimeAssets, resourceName, behavior);
+                    AddToAdditionalResources(resource, resourceData.runtimeAssets, resourceRoute, behavior);
                 }
             }
 
@@ -406,7 +412,7 @@ public class GenerateWasmBootJson : Task
             if (!resourceList.ContainsKey(resourceKey))
             {
                 Log.LogMessage(MessageImportance.Low, "Added resource '{0}' to the manifest.", resource.ItemSpec);
-                resourceList.Add(resourceKey, $"sha256-{resource.GetMetadata("FileHash")}");
+                resourceList.Add(resourceKey, $"sha256-{resource.GetMetadata("Integrity")}");
             }
         }
     }
