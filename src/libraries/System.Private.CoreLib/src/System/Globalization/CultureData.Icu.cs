@@ -379,11 +379,14 @@ namespace System.Globalization
                                 i++;
                                 return true;
                             }
+                            result[resultPos++] = '\'';
                             return false;
                         }
 
-                        if (HandleQuoteLiteral(icuFormatString, ref i, result, ref resultPos)) break;
-                        result[resultPos++] = '\'';
+                        if (HandleQuoteLiteral(icuFormatString, ref i, result, ref resultPos))
+                        {
+                            break;
+                        }
                         for (i++; i < icuFormatString.Length; i++)
                         {
                             current = icuFormatString[i];
@@ -393,7 +396,6 @@ namespace System.Globalization
                                 {
                                     continue;
                                 }
-                                result[resultPos++] = '\'';
                                 break;
                             }
                             if (current == '\\')
