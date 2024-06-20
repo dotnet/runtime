@@ -43,12 +43,14 @@ typedef unsigned int size_t;
 typedef int ModuleMapType;
 typedef int VCSHeapType;
 typedef int LoaderHeapKind;
+typedef int MethodTableInitializationFlags;
 cpp_quote("#endif")
 
 
 cpp_quote("typedef enum { TYPEDEFTOMETHODTABLE, TYPEREFTOMETHODTABLE } ModuleMapType;")
 cpp_quote("typedef enum {IndcellHeap, LookupHeap, ResolveHeap, DispatchHeap, CacheEntryHeap, VtableHeap} VCSHeapType;")
 cpp_quote("typedef enum {LoaderHeapKindNormal = 0, LoaderHeapKindExplicitControl = 1} LoaderHeapKind;")
+cpp_quote("typedef enum {MethodTableInitialized = 1, MethodTableInitializationFailed = 2} MethodTableInitializationFlags;")
 cpp_quote("typedef enum {FreeUnknownRegion = 0, FreeGlobalHugeRegion = 1, FreeGlobalRegion = 2, FreeRegion = 3, FreeSohSegment = 4, FreeUohSegment = 5 } FreeRegionKind;")
 
 typedef void (*MODULEMAPTRAVERSE)(UINT index, CLRDATA_ADDRESS methodTable,LPVOID token);
@@ -442,7 +444,7 @@ interface ISOSDacInterface8 : IUnknown
 // Increment anytime there is a change in the data structures that SOS depends on like
 // stress log structs (StressMsg, StressLogChunck, ThreadStressLog, etc), exception
 // stack traces (StackTraceElement), the PredefinedTlsSlots enums, etc.
-cpp_quote("#define SOS_BREAKING_CHANGE_VERSION 4")
+cpp_quote("#define SOS_BREAKING_CHANGE_VERSION 5")
 
 [
     object,
@@ -504,4 +506,16 @@ interface ISOSDacInterface13 : IUnknown
     HRESULT GetGCBookkeepingMemoryRegions(ISOSMemoryEnum **ppEnum);
     HRESULT GetGCFreeRegions(ISOSMemoryEnum **ppEnum);
     HRESULT LockedFlush();
+}
+
+[
+    object,
+    local,
+    uuid(9aa22aca-6dc6-4a0c-b4e0-70d2416b9837)
+]
+interface ISOSDacInterface14 : IUnknown
+{
+    HRESULT GetStaticBaseAddress(CLRDATA_ADDRESS methodTable, CLRDATA_ADDRESS *nonGCStaticsAddress, CLRDATA_ADDRESS *GCStaticsAddress);
+    HRESULT GetThreadStaticBaseAddress(CLRDATA_ADDRESS methodTable, CLRDATA_ADDRESS thread, CLRDATA_ADDRESS *nonGCStaticsAddress, CLRDATA_ADDRESS *GCStaticsAddress);
+    HRESULT GetMethodTableInitializationFlags(CLRDATA_ADDRESS methodTable, MethodTableInitializationFlags *initializationStatus);
 }

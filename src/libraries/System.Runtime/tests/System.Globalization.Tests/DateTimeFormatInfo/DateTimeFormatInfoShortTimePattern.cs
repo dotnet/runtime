@@ -138,9 +138,10 @@ namespace System.Globalization.Tests
             yield return new object[] { new CultureInfo("en-ZM").DateTimeFormat, "h:mm tt" };
             yield return new object[] { new CultureInfo("en-ZW").DateTimeFormat, "HH:mm" };
             yield return new object[] { new CultureInfo("en-US").DateTimeFormat, "h:mm tt" };
-            yield return new object[] { new CultureInfo("es-419").DateTimeFormat, "HH:mm" };
+            string latinAmericanSpanishPattern = PlatformDetection.IsFirefox || PlatformDetection.IsNodeJS ? "HH:mm" : "h:mm tt"; // "HH:mm"
+            yield return new object[] { new CultureInfo("es-419").DateTimeFormat, latinAmericanSpanishPattern };
             yield return new object[] { new CultureInfo("es-ES").DateTimeFormat, "H:mm" };
-            yield return new object[] { new CultureInfo("es-MX").DateTimeFormat, "HH:mm" }; // H:mm
+            yield return new object[] { new CultureInfo("es-MX").DateTimeFormat, latinAmericanSpanishPattern };
             yield return new object[] { new CultureInfo("et-EE").DateTimeFormat, "HH:mm" };
             yield return new object[] { new CultureInfo("fa-IR").DateTimeFormat, "H:mm" };
             yield return new object[] { new CultureInfo("fi-FI").DateTimeFormat, "H.mm" };
@@ -252,6 +253,20 @@ namespace System.Globalization.Tests
         public void ShortTimePattern_SetReadOnly_ThrowsInvalidOperationException()
         {
             Assert.Throws<InvalidOperationException>(() => DateTimeFormatInfo.InvariantInfo.ShortTimePattern = "HH:mm");
+        }
+
+        [Fact]
+        public void ShortTimePattern_CheckTimeFormatWithSpaces()
+        {
+            var date = DateTime.Today + TimeSpan.FromHours(15) + TimeSpan.FromMinutes(15);
+            var culture = new CultureInfo("en-US");
+            string formattedDate = date.ToString("t", culture);
+            bool containsSpace = formattedDate.Contains(' ');
+            bool containsNoBreakSpace = formattedDate.Contains('\u00A0');
+            bool containsNarrowNoBreakSpace = formattedDate.Contains('\u202F');
+
+            Assert.True(containsSpace || containsNoBreakSpace || containsNarrowNoBreakSpace,
+                $"Formatted date string '{formattedDate}' does not contain any of the specified spaces.");
         }
     }
 }

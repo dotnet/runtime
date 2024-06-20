@@ -1,3 +1,11 @@
+parameters:
+- name: runPrivateJobs
+  type: boolean
+  default: false
+- name: runScheduledJobs
+  type: boolean
+  default: false
+
 trigger:
   batch: true
   branches:
@@ -34,14 +42,13 @@ extends:
     - stage: Build
       jobs:
 
-      - ${{ if and(ne(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'Schedule')) }}:
-
+      - ${{ if and(ne(variables['System.TeamProject'], 'public'), or(in(variables['Build.Reason'], 'Schedule'), parameters.runScheduledJobs)) }}:
+        # build mono
         - template: /eng/pipelines/common/platform-matrix.yml
           parameters:
             jobTemplate: /eng/pipelines/common/global-build-job.yml
             buildConfig: release
             runtimeFlavor: mono
-            runtimeVariant: monointerpreter
             platforms:
             - linux_arm64
             jobParameters:
@@ -78,7 +85,7 @@ extends:
               logicalmachine: 'perfampere'
               timeoutInMinutes: 720
 
-      - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'Schedule')) }}:
+      - ${{ if and(ne(variables['System.TeamProject'], 'public'), or(notin(variables['Build.Reason'], 'Schedule', 'Manual'), parameters.runPrivateJobs)) }}:
 
         # build coreclr and libraries
         - template: /eng/pipelines/common/platform-matrix.yml
@@ -114,7 +121,7 @@ extends:
             platforms:
             - linux_arm64
             jobParameters:
-              buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) /p:MonoAOTEnableLLVM=true /p:MonoEnableLLVM=true /p:BuildMonoAOTCrossCompiler=true /p:MonoLibClang="/usr/local/lib/libclang.so.16" /p:AotHostArchitecture=arm64 /p:AotHostOS=linux
+              buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) /p:MonoAOTEnableLLVM=true /p:MonoEnableLLVM=true /p:BuildMonoAOTCrossCompiler=true /p:MonoLibClang="/usr/local/lib/libclang.so" /p:AotHostArchitecture=arm64 /p:AotHostOS=linux
               nameSuffix: AOT
               isOfficialBuild: false
               postBuildSteps:

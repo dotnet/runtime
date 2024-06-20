@@ -2,14 +2,7 @@
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props, $(MSBuildThisFileDirectory)..))" />
 
   <PropertyGroup>
-    <TestDir>$(InstallerProjectRoot)tests\</TestDir>
-    <TestAssetsDir>$(TestDir)Assets\</TestAssetsDir>
     <TestArtifactsOutputRoot>$(ArtifactsDir)tests\host\$(TargetOS).$(TargetArchitecture).$(Configuration)\</TestArtifactsOutputRoot>
-    <TestStabilizedLegacyPackagesDir>$(ArtifactsObjDir)TestStabilizedPackages\</TestStabilizedLegacyPackagesDir>
-    <TestRestorePackagesPath>$(ArtifactsObjDir)TestPackageCache\</TestRestorePackagesPath>
-    <TestRestoreNuGetConfigFile>$(ArtifactsObjDir)TestNuGetConfig\NuGet.config</TestRestoreNuGetConfigFile>
-    <InternalNupkgCacheDir>$(ArtifactsObjDir)ExtraNupkgsForTestRestore\</InternalNupkgCacheDir>
-    <TestArchitectures>$(TargetArchitecture)</TestArchitectures>
     <TestInfraTargetFramework>$(NetCoreAppToolCurrent)</TestInfraTargetFramework>
     <TestCaseFilter>category!=failing</TestCaseFilter>
     <TestRunnerAdditionalArguments>--filter $(TestCaseFilter) -v detailed</TestRunnerAdditionalArguments>

@@ -129,8 +129,8 @@ PALTEST(file_io_ReadFile_test2_paltest_readfile_test2, "file_io/ReadFile/test2/p
 
     DWORD dwByteCount[] = { 0,
                             10,
-                            strlen(szStringTest),
-                            pageSize
+                            (DWORD)strlen(szStringTest),
+                            (DWORD)pageSize
     // Commented out two negative test cases : Refer VSW 312690
     //                            2 * pageSize,
     //                           -1

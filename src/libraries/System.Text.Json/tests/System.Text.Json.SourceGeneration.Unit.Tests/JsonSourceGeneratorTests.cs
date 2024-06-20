@@ -574,6 +574,40 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         }
 
         [Fact]
+        public static void NoErrorsWhenUsingTypesWithMultipleEqualsOperators()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/103515
+            string source = """
+                using System.Text.Json.Serialization;
+                
+                namespace Test
+                {
+                    public class Foo
+                    {
+                        public override bool Equals(object obj) => false;
+                
+                        public static bool operator ==(Foo left, Foo right) => false;
+                        public static bool operator !=(Foo left, Foo right) => false;
+                    
+                        public static bool operator ==(Foo left, string right) => false;
+                        public static bool operator !=(Foo left, string right) => false;
+                    
+                        public override int GetHashCode() => 1;
+                    }
+
+                    [JsonSourceGenerationOptions(WriteIndented = true)]
+                    [JsonSerializable(typeof(Foo))]
+                    internal partial class JsonSourceGenerationContext : JsonSerializerContext
+                    {
+                    }
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            CompilationHelper.RunJsonSourceGenerator(compilation);
+        }
+
+        [Fact]
         public static void NoErrorsWhenUsingIgnoredReservedCSharpKeywords()
         {
             string source = """
@@ -711,7 +745,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         [InlineData("public ref partial struct MyGenericRefStruct<T>")]
         [InlineData("public readonly partial struct MyReadOnlyStruct")]
         [InlineData("public readonly ref partial struct MyReadOnlyRefStruct")]
-#if ROSLYN4_0_OR_GREATER && NETCOREAPP
+#if ROSLYN4_0_OR_GREATER && NET
         [InlineData("public partial record MyRecord(int x)", LanguageVersion.CSharp10)]
         [InlineData("public partial record struct MyRecordStruct(int x)", LanguageVersion.CSharp10)]
 #endif
@@ -771,7 +805,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             CompilationHelper.RunJsonSourceGenerator(compilation);
         }
 
-#if ROSLYN4_4_OR_GREATER && NETCOREAPP
+#if ROSLYN4_4_OR_GREATER && NET
         [Fact]
         public void ShadowedMemberInitializers()
         {

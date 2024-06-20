@@ -592,7 +592,7 @@ StubDispatchFrame::StubDispatchFrame(TransitionBlock * pTransitionBlock)
     m_representativeSlot = 0;
 
     m_pZapModule = NULL;
-    m_pIndirection = NULL;
+    m_pIndirection = (TADDR)NULL;
 
     m_pGCRefMap = NULL;
 }
@@ -668,7 +668,7 @@ PTR_BYTE StubDispatchFrame::GetGCRefMap()
 
     if (pGCRefMap == NULL)
     {
-        if (m_pIndirection != NULL)
+        if (m_pIndirection != (TADDR)NULL)
         {
             if (m_pZapModule == NULL)
             {
@@ -688,7 +688,7 @@ PTR_BYTE StubDispatchFrame::GetGCRefMap()
             else
             {
                 // Clear the indirection to avoid retrying
-                m_pIndirection = NULL;
+                m_pIndirection = (TADDR)NULL;
             }
 #endif
         }
@@ -770,7 +770,7 @@ ExternalMethodFrame::ExternalMethodFrame(TransitionBlock * pTransitionBlock)
 {
     LIMITED_METHOD_CONTRACT;
 
-    m_pIndirection = NULL;
+    m_pIndirection = (TADDR)NULL;
     m_pZapModule = NULL;
 
     m_pGCRefMap = NULL;
@@ -798,7 +798,7 @@ PTR_BYTE ExternalMethodFrame::GetGCRefMap()
 
     if (pGCRefMap == NULL)
     {
-        if (m_pIndirection != NULL)
+        if (m_pIndirection != (TADDR)NULL)
         {
             pGCRefMap = FindGCRefMap(m_pZapModule, m_pIndirection);
 #ifndef DACCESS_COMPILE
@@ -1546,7 +1546,7 @@ PInvokeCalliFrame::PInvokeCalliFrame(TransitionBlock * pTransitionBlock, VASigCo
 #ifdef FEATURE_COMINTEROP
 
 #ifndef DACCESS_COMPILE
-ComPlusMethodFrame::ComPlusMethodFrame(TransitionBlock * pTransitionBlock, MethodDesc * pMD)
+CLRToCOMMethodFrame::CLRToCOMMethodFrame(TransitionBlock * pTransitionBlock, MethodDesc * pMD)
     : FramedMethodFrame(pTransitionBlock, pMD)
 {
     LIMITED_METHOD_CONTRACT;
@@ -1554,11 +1554,11 @@ ComPlusMethodFrame::ComPlusMethodFrame(TransitionBlock * pTransitionBlock, Metho
 #endif // #ifndef DACCESS_COMPILE
 
 //virtual
-void ComPlusMethodFrame::GcScanRoots(promote_func* fn, ScanContext* sc)
+void CLRToCOMMethodFrame::GcScanRoots(promote_func* fn, ScanContext* sc)
 {
     WRAPPER_NO_CONTRACT;
 
-    // ComPlusMethodFrame is only used in the event call / late bound call code path where we do not have IL stub
+    // CLRToCOMMethodFrame is only used in the event call / late bound call code path where we do not have IL stub
     // so we need to promote the arguments and return value manually.
 
     FramedMethodFrame::GcScanRoots(fn, sc);
@@ -1586,7 +1586,7 @@ void ComPlusMethodFrame::GcScanRoots(promote_func* fn, ScanContext* sc)
 
 #if defined (_DEBUG) && !defined (DACCESS_COMPILE)
 // For IsProtectedByGCFrame, we need to know whether a given object ref is protected
-// by a ComPlusMethodFrame or a ComMethodFrame. Since GCScanRoots for those frames are
+// by a CLRToCOMMethodFrame or a ComMethodFrame. Since GCScanRoots for those frames are
 // quite complicated, we don't want to duplicate their logic so we call GCScanRoots with
 // IsObjRefProtected (a fake promote function) and an extended ScanContext to do the checking.
 
@@ -1811,27 +1811,18 @@ MethodDesc* HelperMethodFrame::GetFunction()
 //             This is used when the HelperMethodFrame is first created.
 //         * false: complete any initialization that was left to do, if any.
 //      * unwindState - [out] DAC builds use this to return the unwound machine state.
-//      * hostCallPreference - (See code:HelperMethodFrame::HostCallPreference.)
 //
 // Return Value:
 //     Normally, the function always returns TRUE meaning the initialization succeeded.
 //
-//     However, if hostCallPreference is NoHostCalls, AND if a callee (like
-//     LazyMachState::unwindLazyState) needed to acquire a JIT reader lock and was unable
-//     to do so (lest it re-enter the host), then InsureInit will abort and return FALSE.
-//     So any callers that specify hostCallPreference = NoHostCalls (which is not the
-//     default), should check for FALSE return, and refuse to use the HMF in that case.
-//     Currently only asynchronous calls made by profilers use that code path.
 //
 
 BOOL HelperMethodFrame::InsureInit(bool initialInit,
-                                    MachState * unwindState,
-                                    HostCallPreference hostCallPreference /* = AllowHostCalls */)
+                                    MachState * unwindState)
 {
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        if ((hostCallPreference == AllowHostCalls) && !m_MachState.isValid()) { HOST_CALLS; } else { HOST_NOCALLS; }
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
@@ -1872,8 +1863,7 @@ BOOL HelperMethodFrame::InsureInit(bool initialInit,
             lazy,
             &unwound,
             threadId,
-            0,
-            hostCallPreference);
+            0);
 
 #if !defined(DACCESS_COMPILE)
         if (!unwound.isValid())
@@ -1890,7 +1880,6 @@ BOOL HelperMethodFrame::InsureInit(bool initialInit,
             // will commonly return an unwound state with _pRetAddr==NULL (which counts
             // as an "invalid" MachState). So have DAC builds deliberately fall through
             // rather than aborting when unwound is invalid.
-            _ASSERTE(hostCallPreference == NoHostCalls);
             return FALSE;
         }
 #endif // !defined(DACCESS_COMPILE)
@@ -2006,7 +1995,7 @@ VOID InlinedCallFrame::Init()
 
     m_Datum = NULL;
     m_pCallSiteSP = NULL;
-    m_pCallerReturnAddress = NULL;
+    m_pCallerReturnAddress = (TADDR)NULL;
 }
 
 

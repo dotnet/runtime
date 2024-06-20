@@ -249,8 +249,6 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
                     variant.SetAsByrefVariant(ref value);
                     return;
                 case VarEnum.VT_RECORD:
-                    // VT_RECORD's are weird in that regardless of is the VT_BYREF flag is set or not
-                    // they have the same internal representation.
                     variant = ComVariant.CreateRaw(value.VarType | VarEnum.VT_BYREF, value.GetRawDataRef<Record>());
                     break;
                 case VarEnum.VT_DECIMAL:

@@ -15,6 +15,17 @@
 #include "ep-session.h"
 #include "ep-sample-profiler.h"
 
+//! This is CoreCLR specific keywords for native ETW events (ending up in event pipe).
+//! The keywords below seems to correspond to:
+//!  GCKeyword                          (0x00000001)
+//!  LoaderKeyword                      (0x00000008)
+//!  JitKeyword                         (0x00000010)
+//!  NgenKeyword                        (0x00000020)
+//!  unused_keyword                     (0x00000100)
+//!  JittedMethodILToNativeMapKeyword   (0x00020000)
+//!  ThreadTransferKeyword              (0x80000000)
+uint64_t ep_default_rundown_keyword = 0x80020139;
+
 static bool _ep_can_start_threads = false;
 
 static dn_vector_t *_ep_deferred_enable_session_ids = NULL;
@@ -494,7 +505,7 @@ enable (
 		options->stream,
 		options->session_type,
 		options->format,
-		options->rundown_requested,
+		options->rundown_keyword,
 		options->stackwalk_requested,
 		options->circular_buffer_size_in_mb,
 		options->providers,
@@ -589,7 +600,7 @@ disable_holding_lock (
 		ep_session_disable (session); // WriteAllBuffersToFile, and remove providers.
 
 		// Do rundown before fully stopping the session unless rundown wasn't requested
-		if (ep_session_get_rundown_requested (session) && _ep_can_start_threads) {
+		if ((ep_session_get_rundown_keyword (session) != 0) && _ep_can_start_threads) {
 			ep_session_enable_rundown (session); // Set Rundown provider.
 			EventPipeThread *const thread = ep_thread_get_or_create ();
 			if (thread != NULL) {
@@ -908,7 +919,7 @@ enable_default_session_via_env_variables (void)
 			ep_config,
 			ep_rt_config_value_get_output_streaming () ? EP_SESSION_TYPE_FILESTREAM : EP_SESSION_TYPE_FILE,
 			EP_SERIALIZATION_FORMAT_NETTRACE_V4,
-			true,
+			ep_default_rundown_keyword,
 			NULL,
 			NULL,
 			NULL);
@@ -959,7 +970,7 @@ ep_enable (
 	uint32_t providers_len,
 	EventPipeSessionType session_type,
 	EventPipeSerializationFormat format,
-	bool rundown_requested,
+	uint64_t rundown_keyword,
 	IpcStream *stream,
 	EventPipeSessionSynchronousCallback sync_callback,
 	void *callback_additional_data)
@@ -975,7 +986,7 @@ ep_enable (
 		providers_len,
 		session_type,
 		format,
-		rundown_requested,
+		rundown_keyword,
 		true, // stackwalk_requested
 		stream,
 		sync_callback,
@@ -995,7 +1006,7 @@ ep_enable_2 (
 	const ep_char8_t *providers_config,
 	EventPipeSessionType session_type,
 	EventPipeSerializationFormat format,
-	bool rundown_requested,
+	uint64_t rundown_keyword,
 	IpcStream *stream,
 	EventPipeSessionSynchronousCallback sync_callback,
 	void *callback_additional_data)
@@ -1073,7 +1084,7 @@ ep_enable_2 (
 		providers_len,
 		session_type,
 		format,
-		rundown_requested,
+		rundown_keyword,
 		stream,
 		sync_callback,
 		callback_additional_data);
@@ -1105,7 +1116,7 @@ ep_session_options_init (
 	uint32_t providers_len,
 	EventPipeSessionType session_type,
 	EventPipeSerializationFormat format,
-	bool rundown_requested,
+	uint64_t rundown_keyword,
 	bool stackwalk_requested,
 	IpcStream* stream,
 	EventPipeSessionSynchronousCallback sync_callback,
@@ -1119,7 +1130,7 @@ ep_session_options_init (
 	options->providers_len = providers_len;
 	options->session_type = session_type;
 	options->format = format;
-	options->rundown_requested = rundown_requested;
+	options->rundown_keyword = rundown_keyword;
 	options->stackwalk_requested = stackwalk_requested;
 	options->stream = stream;
 	options->sync_callback = sync_callback;

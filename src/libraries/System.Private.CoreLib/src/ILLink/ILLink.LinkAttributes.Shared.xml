@@ -250,6 +250,12 @@
     <type fullname="System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>
+    <type fullname="System.Diagnostics.CodeAnalysis.FeatureGuardAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.Diagnostics.CodeAnalysis.FeatureSwitchDefinitionAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
     <type fullname="System.Diagnostics.CodeAnalysis.RequiresAssemblyFilesAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>

@@ -140,7 +140,6 @@
 //              ModeViolation
 //              FaultViolation
 //              FaultNotFatal
-//              HostViolation
 //              LoadsTypeViolation
 //              TakesLockViolation
 //
@@ -233,7 +232,6 @@
 
 #include "specstrings.h"
 #include "clrtypes.h"
-#include "malloc.h"
 #include "check.h"
 #include "debugreturn.h"
 #include "staticcontract.h"
@@ -378,7 +376,7 @@ public:
 
 #define CONTRACT_BITMASK_OK_TO_THROW          0x1 << 0
 #define CONTRACT_BITMASK_FAULT_FORBID         0x1 << 1
-#define CONTRACT_BITMASK_HOSTCALLS            0x1 << 2
+// Unused                                     0x1 << 2
 #define CONTRACT_BITMASK_SOTOLERANT           0x1 << 3
 #define CONTRACT_BITMASK_DEBUGONLY            0x1 << 4
 #define CONTRACT_BITMASK_SONOTMAINLINE        0x1 << 5
@@ -422,7 +420,6 @@ public:
         // By default, GetThread() is perfectly fine to call
         // By default, it's ok to take a lock (or call someone who does)
         m_flags             = CONTRACT_BITMASK_OK_TO_THROW|
-                              CONTRACT_BITMASK_HOSTCALLS|
                               CONTRACT_BITMASK_SOTOLERANT|
                               CONTRACT_BITMASK_OK_TO_LOCK|
                               CONTRACT_BITMASK_OK_TO_RETAKE_LOCK;
@@ -510,30 +507,6 @@ public:
     void ResetFaultForbid()
     {
         CONTRACT_BITMASK_RESET(CONTRACT_BITMASK_FAULT_FORBID);
-    }
-
-    //--//
-    BOOL IsHostCaller()
-    {
-        return CONTRACT_BITMASK_IS_SET(CONTRACT_BITMASK_HOSTCALLS);
-    }
-
-    void SetHostCaller()
-    {
-        CONTRACT_BITMASK_SET(CONTRACT_BITMASK_HOSTCALLS);
-    }
-
-
-    BOOL SetHostCaller(BOOL value)
-    {
-        BOOL prevState = CONTRACT_BITMASK_IS_SET(CONTRACT_BITMASK_HOSTCALLS);
-        CONTRACT_BITMASK_UPDATE(CONTRACT_BITMASK_HOSTCALLS,value);
-        return prevState;
-    }
-
-    void ResetHostCaller()
-    {
-        CONTRACT_BITMASK_RESET(CONTRACT_BITMASK_HOSTCALLS);
     }
 
     //--//
@@ -896,11 +869,8 @@ class BaseContract
 
         SO_MAINLINE_No          = 0x00000800,  // code is not part of our mainline SO scenario
 
-        // Any place where we can't safely call into the host should have a HOST_NoCalls contract
-        HOST_Mask               = 0x00003000,
-        HOST_Calls              = 0x00002000,
-        HOST_NoCalls            = 0x00001000,
-        HOST_Disabled           = 0x00000000,   // the default
+        // Unused               = 0x00002000,
+        // Unused               = 0x00001000,
 
         // These enforce the CAN_TAKE_LOCK / CANNOT_TAKE_LOCK contracts
         CAN_TAKE_LOCK_Mask      = 0x00060000,
@@ -920,7 +890,7 @@ class BaseContract
         LOADS_TYPE_Disabled     = 0x00000000,   // the default
 
         ALL_Disabled            = THROWS_Disabled|GC_Disabled|FAULT_Disabled|MODE_Disabled|LOADS_TYPE_Disabled|
-                                  HOST_Disabled|CAN_TAKE_LOCK_Disabled|CAN_RETAKE_LOCK_No_Disabled
+                                  CAN_TAKE_LOCK_Disabled|CAN_RETAKE_LOCK_No_Disabled
 
     };
 
@@ -1124,7 +1094,6 @@ enum ContractViolationBits
     FaultNotFatal   = 0x00000010,  // suppress INJECT_FAULT but not fault injection by harness
     LoadsTypeViolation      = 0x00000040,  // suppress LOADS_TYPE tags in this scope
     TakesLockViolation      = 0x00000080,  // suppress CAN_TAKE_LOCK tags in this scope
-    HostViolation           = 0x00000100,  // suppress HOST_CALLS tags in this scope
 
     //These are not violation bits. We steal some bits out of the violation mask to serve as
     // general flag bits.
@@ -1667,7 +1636,7 @@ protected:
     FORCEINLINE void EnterInternal(UINT_PTR violationMask)
     {
         _ASSERTE(0 == (violationMask & ~(ThrowsViolation | GCViolation | ModeViolation | FaultViolation |
-            FaultNotFatal | HostViolation |
+            FaultNotFatal |
             TakesLockViolation | LoadsTypeViolation)) ||
             violationMask == AllViolation);
 
@@ -1738,9 +1707,6 @@ enum PermanentContractViolationReason
     ReasonIBC,                           // Code runs in IBC scenarios only and the violation is safe.
     ReasonNGEN,                          // Code runs in NGEN scenarios only and the violation is safe.
     ReasonProfilerCallout,               // Profiler implementers are guaranteed not to throw.
-    ReasonUnsupportedForSQLF1Profiling,  // This code path violates HOST_NOCALLS, but that's ok b/c SQL will never
-                                         // invoke it, and thus SQL/F1 profiling (the primary reason to enforce
-                                         // HOST_NOCALLS) is not in danger.
     ReasonRuntimeReentrancy,             // e.g. SafeQueryInterface
     ReasonShutdownOnly,                  // Code path only runs as part of Shutdown and the violation is safe.
     ReasonSOTolerance,                   // We would like to redesign SO contracts anyways
@@ -2006,54 +1972,6 @@ inline ClrDebugState *GetClrDebugState(BOOL fAlloc)
 
     return NULL;
 }
-#endif // ENABLE_CONTRACTS_IMPL
-
-#ifdef ENABLE_CONTRACTS_IMPL
-
-class HostNoCallHolder
-{
-    public:
-    DEBUG_NOINLINE HostNoCallHolder()
-        {
-        SCAN_SCOPE_BEGIN;
-        STATIC_CONTRACT_HOST_NOCALLS;
-
-            m_clrDebugState = GetClrDebugState();
-            m_previousState = m_clrDebugState->SetHostCaller(FALSE);
-        }
-
-    DEBUG_NOINLINE ~HostNoCallHolder()
-        {
-        SCAN_SCOPE_END;
-
-            m_clrDebugState->SetHostCaller(m_previousState);
-        }
-
-     private:
-        BOOL m_previousState;
-        ClrDebugState* m_clrDebugState;
-
-};
-
-#define BEGIN_HOST_NOCALL_CODE \
-    {                             \
-        HostNoCallHolder __hostNoCallHolder;        \
-        CantAllocHolder __cantAlloc;
-
-#define END_HOST_NOCALL_CODE   \
-    }
-
-#else // ENABLE_CONTRACTS_IMPL
-#define BEGIN_HOST_NOCALL_CODE                      \
-    {                                               \
-        CantAllocHolder __cantAlloc;                \
-
-#define END_HOST_NOCALL_CODE                        \
-    }
-#endif
-
-
-#if defined(ENABLE_CONTRACTS_IMPL)
 
 // Macros to indicate we're taking or releasing locks
 

@@ -31,7 +31,7 @@ namespace Microsoft.Extensions.Caching.Memory
         /// <param name="key">An object identifying the entry.</param>
         void Remove(object key);
 
-#if NET6_0_OR_GREATER
+#if NET
         /// <summary>
         /// Gets a snapshot of the cache statistics if available.
         /// </summary>

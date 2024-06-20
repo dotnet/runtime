@@ -41,6 +41,7 @@ using System.Runtime.Serialization.Formatters.Binary;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 using System.Tests;
+using System.Reflection;
 
 namespace System.Data.Tests
 {
@@ -1590,7 +1591,10 @@ namespace System.Data.Tests
 #pragma warning restore SYSLIB0038
         }
 
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static bool RemoteExecutorBinaryFormatter =>
+            RemoteExecutor.IsSupported && PlatformDetection.IsBinaryFormatterSupported;
+
+        [ConditionalFact(nameof(RemoteExecutorBinaryFormatter))]
         public void SerializationFormat_Binary_works_with_appconfig_switch()
         {
             RemoteExecutor.Invoke(RunTest).Dispose();
@@ -1619,6 +1623,21 @@ namespace System.Data.Tests
 
                 Assert.Equal(dc.DataType, dsDeserialized.Tables[0].Columns[0].DataType);
             }
+        }
+
+        [Fact]
+        public void MethodsCalledByReflectionSerializersAreNotTrimmed()
+        {
+            Assert.True(ShouldSerializeExists(nameof(DataSet.Relations)));
+            Assert.True(ShouldSerializeExists(nameof(DataSet.Tables)));
+            Assert.True(ShouldSerializeExists(nameof(DataSet.Locale)));
+
+            Assert.True(ResetExists(nameof(DataSet.Relations)));
+            Assert.True(ResetExists(nameof(DataSet.Tables)));
+            Assert.False(ResetExists(nameof(DataSet.Locale)));
+
+            bool ShouldSerializeExists(string name) => typeof(DataSet).GetMethod("ShouldSerialize" + name, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public) != null;
+            bool ResetExists(string name) => typeof(DataSet).GetMethod("Reset" + name, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public) != null;
         }
 
         #region DataSet.CreateDataReader Tests and DataSet.Load Tests

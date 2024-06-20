@@ -185,6 +185,7 @@ namespace System.Text.Json.Serialization.Converters
                             unescapedPropertyName,
                             ref state,
                             options,
+                            out byte[] _,
                             out bool useExtensionProperty);
 
                         state.Current.UseExtensionProperty = useExtensionProperty;
@@ -296,6 +297,7 @@ namespace System.Text.Json.Serialization.Converters
                     unescapedPropertyName,
                     ref state,
                     options,
+                    out byte[] _,
                     out bool useExtensionProperty);
 
                 ReadPropertyValue(obj, ref state, ref reader, jsonPropertyInfo, useExtensionProperty);
@@ -333,10 +335,8 @@ namespace System.Text.Json.Serialization.Converters
 
                 jsonTypeInfo.OnSerializing?.Invoke(obj);
 
-                List<KeyValuePair<string, JsonPropertyInfo>> properties = jsonTypeInfo.PropertyCache!.List;
-                for (int i = 0; i < properties.Count; i++)
+                foreach (JsonPropertyInfo jsonPropertyInfo in jsonTypeInfo.PropertyCache)
                 {
-                    JsonPropertyInfo jsonPropertyInfo = properties[i].Value;
                     if (jsonPropertyInfo.CanSerialize)
                     {
                         // Remember the current property for JsonPath support if an exception is thrown.
@@ -383,10 +383,10 @@ namespace System.Text.Json.Serialization.Converters
                     state.Current.ProcessedStartToken = true;
                 }
 
-                List<KeyValuePair<string, JsonPropertyInfo>> propertyList = jsonTypeInfo.PropertyCache!.List;
-                while (state.Current.EnumeratorIndex < propertyList.Count)
+                ReadOnlySpan<JsonPropertyInfo> propertyCache = jsonTypeInfo.PropertyCache;
+                while (state.Current.EnumeratorIndex < propertyCache.Length)
                 {
-                    JsonPropertyInfo jsonPropertyInfo = propertyList[state.Current.EnumeratorIndex].Value;
+                    JsonPropertyInfo jsonPropertyInfo = propertyCache[state.Current.EnumeratorIndex];
                     if (jsonPropertyInfo.CanSerialize)
                     {
                         state.Current.JsonPropertyInfo = jsonPropertyInfo;
@@ -401,7 +401,7 @@ namespace System.Text.Json.Serialization.Converters
                         state.Current.EndProperty();
                         state.Current.EnumeratorIndex++;
 
-                        if (ShouldFlush(writer, ref state))
+                        if (ShouldFlush(ref state, writer))
                         {
                             return false;
                         }
@@ -413,7 +413,7 @@ namespace System.Text.Json.Serialization.Converters
                 }
 
                 // Write extension data after the normal properties.
-                if (state.Current.EnumeratorIndex == propertyList.Count)
+                if (state.Current.EnumeratorIndex == propertyCache.Length)
                 {
                     JsonPropertyInfo? extensionDataProperty = jsonTypeInfo.ExtensionDataProperty;
                     if (extensionDataProperty?.CanSerialize == true)
@@ -430,7 +430,7 @@ namespace System.Text.Json.Serialization.Converters
                         state.Current.EndProperty();
                         state.Current.EnumeratorIndex++;
 
-                        if (ShouldFlush(writer, ref state))
+                        if (ShouldFlush(ref state, writer))
                         {
                             return false;
                         }

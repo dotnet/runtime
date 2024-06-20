@@ -674,7 +674,7 @@ namespace System.Diagnostics
             // problems (it specifies exactly which part of the string
             // is the file to execute).
             ReadOnlySpan<char> fileName = startInfo.FileName.AsSpan().Trim();
-            bool fileNameIsQuoted = fileName.Length > 0 && fileName[0] == '\"' && fileName[fileName.Length - 1] == '\"';
+            bool fileNameIsQuoted = fileName.StartsWith('"') && fileName.EndsWith('"');
             if (!fileNameIsQuoted)
             {
                 commandLine.Append('"');
@@ -860,7 +860,7 @@ namespace System.Diagnostics
 
         private static string GetEnvironmentVariablesBlock(DictionaryWrapper sd)
         {
-            // https://docs.microsoft.com/en-us/windows/win32/procthread/changing-environment-variables
+            // https://learn.microsoft.com/windows/win32/procthread/changing-environment-variables
             // "All strings in the environment block must be sorted alphabetically by name. The sort is
             //  case-insensitive, Unicode order, without regard to locale. Because the equal sign is a
             //  separator, it must not be used in the name of an environment variable."
@@ -873,7 +873,13 @@ namespace System.Diagnostics
             var result = new StringBuilder(8 * keys.Length);
             foreach (string key in keys)
             {
-                result.Append(key).Append('=').Append(sd[key]).Append('\0');
+                string? value = sd[key];
+
+                // Ignore null values for consistency with Environment.SetEnvironmentVariable
+                if (value != null)
+                {
+                    result.Append(key).Append('=').Append(value).Append('\0');
+                }
             }
 
             return result.ToString();

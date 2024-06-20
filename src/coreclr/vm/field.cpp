@@ -138,6 +138,7 @@ TypeHandle FieldDesc::LookupFieldTypeHandle(ClassLoadLevel level, BOOL dropGener
              type == ELEMENT_TYPE_STRING ||
              type == ELEMENT_TYPE_TYPEDBYREF ||
              type == ELEMENT_TYPE_SZARRAY ||
+             type == ELEMENT_TYPE_ARRAY ||
              type == ELEMENT_TYPE_VAR
              );
 
@@ -620,17 +621,17 @@ VOID    FieldDesc::SetValue8(OBJECTREF o, DWORD dwValue)
 }
 #endif // #ifndef DACCESS_COMPILE
 
-__int64 FieldDesc::GetValue64(OBJECTREF o)
+int64_t FieldDesc::GetValue64(OBJECTREF o)
 {
     WRAPPER_NO_CONTRACT;
-    __int64 val;
+    int64_t val;
     GetInstanceField(o, (LPVOID)&val);
     return val;
 
 }
 
 #ifndef DACCESS_COMPILE
-VOID    FieldDesc::SetValue64(OBJECTREF o, __int64 value)
+VOID    FieldDesc::SetValue64(OBJECTREF o, int64_t value)
 {
     CONTRACTL
     {

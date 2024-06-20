@@ -300,6 +300,11 @@ namespace System.Net.Http
 
         private void OnServerGoAway(long firstRejectedStreamId)
         {
+            if (NetEventSource.Log.IsEnabled())
+            {
+                Trace($"GOAWAY received. First rejected stream ID = {firstRejectedStreamId}");
+            }
+
             // Stop sending requests to this connection.
             _pool.InvalidateHttp3Connection(this);
 
@@ -649,6 +654,10 @@ namespace System.Net.Http
                             case Http3FrameType.ReservedHttp2Ping:
                             case Http3FrameType.ReservedHttp2WindowUpdate:
                             case Http3FrameType.ReservedHttp2Continuation:
+                                if (NetEventSource.Log.IsEnabled())
+                                {
+                                    Trace($"Received reserved frame: {frameType}");
+                                }
                                 throw HttpProtocolException.CreateHttp3ConnectionException(Http3ErrorCode.UnexpectedFrame);
                             case Http3FrameType.PushPromise:
                             case Http3FrameType.CancelPush:
@@ -663,6 +672,10 @@ namespace System.Net.Http
                                 }
                                 if (!shuttingDown)
                                 {
+                                    if (NetEventSource.Log.IsEnabled())
+                                    {
+                                        Trace($"Control stream closed by the server.");
+                                    }
                                     throw HttpProtocolException.CreateHttp3ConnectionException(Http3ErrorCode.ClosedCriticalStream);
                                 }
                                 return;

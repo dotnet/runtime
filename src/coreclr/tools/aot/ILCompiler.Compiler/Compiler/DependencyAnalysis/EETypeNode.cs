@@ -426,6 +426,10 @@ namespace ILCompiler.DependencyAnalysis
                             factory.TentativeMethodEntrypoint(canonImpl, impl.OwningType.IsValueType) :
                             factory.MethodEntrypoint(canonImpl, impl.OwningType.IsValueType);
                         result.Add(new CombinedDependencyListEntry(implNode, factory.VirtualMethodUse(decl), "Virtual method"));
+
+                        result.Add(new CombinedDependencyListEntry(
+                            factory.AddressTakenMethodEntrypoint(canonImpl, impl.OwningType.IsValueType),
+                            factory.DelegateTargetVirtualMethod(decl.GetCanonMethodTarget(CanonicalFormKind.Specific)), "Slot is a delegate target"));
                     }
 
                     if (impl.OwningType == defType)
@@ -498,11 +502,22 @@ namespace ILCompiler.DependencyAnalysis
 
                                 // If the interface method is used virtually, the implementation body is used
                                 result.Add(new CombinedDependencyListEntry(factory.MethodEntrypoint(defaultIntfMethod), factory.VirtualMethodUse(interfaceMethod), "Interface method"));
+
+                                // If the interface method is virtual delegate target, the implementation is address taken
+                                result.Add(new CombinedDependencyListEntry(
+                                    factory.AddressTakenMethodEntrypoint(defaultIntfMethod),
+                                    factory.DelegateTargetVirtualMethod(interfaceMethod.GetCanonMethodTarget(CanonicalFormKind.Specific)), "Interface slot is delegate target"));
                             }
                             else
                             {
                                 // If the interface method is used virtually, the slot is used virtually
                                 result.Add(new CombinedDependencyListEntry(factory.VirtualMethodUse(implMethod), factory.VirtualMethodUse(interfaceMethod), "Interface method"));
+
+                                // If the interface method is virtual delegate target, the slot is virtual delegate target
+                                result.Add(new CombinedDependencyListEntry(
+                                    factory.DelegateTargetVirtualMethod(implMethod.GetCanonMethodTarget(CanonicalFormKind.Specific)),
+                                    factory.DelegateTargetVirtualMethod(interfaceMethod.GetCanonMethodTarget(CanonicalFormKind.Specific)),
+                                    "Interface slot is delegate target"));
                             }
 
                             // If any of the implemented interfaces have variance, calls against compatible interface methods
@@ -549,6 +564,11 @@ namespace ILCompiler.DependencyAnalysis
                                     }
                                 }
                                 result.Add(new CombinedDependencyListEntry(factory.MethodEntrypoint(defaultIntfMethod), factory.VirtualMethodUse(interfaceMethod), "Interface method"));
+
+                                result.Add(new CombinedDependencyListEntry(
+                                    factory.AddressTakenMethodEntrypoint(defaultIntfMethod),
+                                    factory.DelegateTargetVirtualMethod(interfaceMethod.GetCanonMethodTarget(CanonicalFormKind.Specific)),
+                                    "Slot is delegate target"));
 
                                 factory.MetadataManager.NoteOverridingMethod(interfaceMethod, implMethod);
 
@@ -603,6 +623,19 @@ namespace ILCompiler.DependencyAnalysis
 
             if (_type.IsInterface)
                 dependencies.Add(factory.InterfaceUse(_type.GetTypeDefinition()), "Interface is used");
+
+            // Array types that don't have generic interface methods can be created out of thin air
+            // at runtime by the type loader. We should never emit non-constructed forms of these MethodTables.
+            // There's similar logic for generic types, but that one is a conditional dependency conditioned
+            // on the presence of the type loader template for the canonical form of the type.
+            if (_type.IsArrayTypeWithoutGenericInterfaces())
+            {
+                IEETypeNode maximallyConstructableType = factory.MaximallyConstructableType(_type);
+                if (maximallyConstructableType != this)
+                {
+                    dependencies.Add(maximallyConstructableType, "Type is template-loadable");
+                }
+            }
 
             if (EmitVirtualSlots)
             {
@@ -1103,9 +1136,14 @@ namespace ILCompiler.DependencyAnalysis
                         && implMethod.OwningType is MetadataType mdImplMethodType && mdImplMethodType.IsAbstract
                         && factory.CompilationModuleGroup.AllowVirtualMethodOnAbstractTypeOptimization(canonImplMethod);
 
-                    IMethodNode implSymbol = canUseTentativeEntrypoint ?
-                        factory.TentativeMethodEntrypoint(canonImplMethod, implMethod.OwningType.IsValueType) :
-                        factory.MethodEntrypoint(canonImplMethod, implMethod.OwningType.IsValueType);
+                    IMethodNode implSymbol;
+                    if (canUseTentativeEntrypoint)
+                        implSymbol = factory.TentativeMethodEntrypoint(canonImplMethod, implMethod.OwningType.IsValueType);
+                    else if (factory.DelegateTargetVirtualMethod(declMethod.GetCanonMethodTarget(CanonicalFormKind.Specific)).Marked)
+                        implSymbol = factory.AddressTakenMethodEntrypoint(canonImplMethod, implMethod.OwningType.IsValueType);
+                    else
+                        implSymbol = factory.MethodEntrypoint(canonImplMethod, implMethod.OwningType.IsValueType);
+
                     objData.EmitPointerReloc(implSymbol);
                 }
                 else
@@ -1469,7 +1507,7 @@ namespace ILCompiler.DependencyAnalysis
 
             public override bool StaticDependenciesAreComputed => true;
             public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
-                => sb.Append("__writableData").Append(nameMangler.GetMangledTypeName(_type.Type));
+                => sb.Append("__writableData"u8).Append(nameMangler.GetMangledTypeName(_type.Type));
             public int Offset => 0;
             public override bool IsShareable => true;
             public override bool ShouldSkipEmittingObjectNode(NodeFactory factory) => _type.ShouldSkipEmittingObjectNode(factory);
@@ -1484,7 +1522,8 @@ namespace ILCompiler.DependencyAnalysis
                 // If the whole program view contains a reference to a preallocated RuntimeType
                 // instance for this type, generate a reference to it.
                 // Otherwise, generate as zero to save size.
-                if (_type.GetFrozenRuntimeTypeNode(factory) is { Marked: true } runtimeTypeObject)
+                if (!_type.Type.IsCanonicalSubtype(CanonicalFormKind.Any)
+                    && _type.GetFrozenRuntimeTypeNode(factory) is { Marked: true } runtimeTypeObject)
                 {
                     builder.EmitPointerReloc(runtimeTypeObject);
                 }

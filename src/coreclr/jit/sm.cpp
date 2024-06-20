@@ -130,8 +130,8 @@ SM_STATE_ID CodeSeqSM::GetDestState(SM_STATE_ID srcState, SM_OPCODE opcode)
 
     if (cell->srcState != srcState)
     {
-        assert(cell->srcState == 0 ||
-               cell->srcState != srcState); // Either way means there is not outgoing edge from srcState.
+        assert(cell->srcState == 0 || cell->srcState != srcState); // Either way means there is not outgoing edge from
+                                                                   // srcState.
         return 0;
     }
     else

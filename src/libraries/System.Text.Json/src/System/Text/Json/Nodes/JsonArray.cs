@@ -40,6 +40,16 @@ namespace System.Text.Json.Nodes
         }
 
         /// <summary>
+        ///   Initializes a new instance of the <see cref="JsonArray"/> class that contains items from the specified params span.
+        /// </summary>
+        /// <param name="options">Options to control the behavior.</param>
+        /// <param name="items">The items to add to the new <see cref="JsonArray"/>.</param>
+        public JsonArray(JsonNodeOptions options, params ReadOnlySpan<JsonNode?> items) : base(options)
+        {
+            InitializeFromSpan(items);
+        }
+
+        /// <summary>
         ///   Initializes a new instance of the <see cref="JsonArray"/> class that contains items from the specified array.
         /// </summary>
         /// <param name="items">The items to add to the new <see cref="JsonArray"/>.</param>
@@ -48,7 +58,16 @@ namespace System.Text.Json.Nodes
             InitializeFromArray(items);
         }
 
-        internal override JsonValueKind GetValueKindCore() => JsonValueKind.Array;
+        /// <summary>
+        ///   Initializes a new instance of the <see cref="JsonArray"/> class that contains items from the specified span.
+        /// </summary>
+        /// <param name="items">The items to add to the new <see cref="JsonArray"/>.</param>
+        public JsonArray(params ReadOnlySpan<JsonNode?> items) : base()
+        {
+            InitializeFromSpan(items);
+        }
+
+        private protected override JsonValueKind GetValueKindCore() => JsonValueKind.Array;
 
         internal override JsonNode DeepCloneCore()
         {
@@ -129,9 +148,30 @@ namespace System.Text.Json.Nodes
         {
             var list = new List<JsonNode?>(items);
 
-            for (int i = 0; i < items.Length; i++)
+            for (int i = 0; i < list.Count; i++)
             {
-                items[i]?.AssignParent(this);
+                list[i]?.AssignParent(this);
+            }
+
+            _list = list;
+        }
+
+        private void InitializeFromSpan(ReadOnlySpan<JsonNode?> items)
+        {
+            List<JsonNode?> list = new(items.Length);
+
+#if NET8_0_OR_GREATER
+            list.AddRange(items);
+#else
+            foreach (JsonNode? item in items)
+            {
+                list.Add(item);
+            }
+#endif
+
+            for (int i = 0; i < list.Count; i++)
+            {
+                list[i]?.AssignParent(this);
             }
 
             _list = list;
@@ -182,14 +222,14 @@ namespace System.Text.Json.Nodes
         /// <summary>
         /// Gets or creates the underlying list containing the element nodes of the array.
         /// </summary>
-        internal List<JsonNode?> List => _list is { } list ? list : InitializeList();
+        private List<JsonNode?> List => _list ?? InitializeList();
 
-        internal JsonNode? GetItem(int index)
+        private protected override JsonNode? GetItem(int index)
         {
             return List[index];
         }
 
-        internal void SetItem(int index, JsonNode? value)
+        private protected override void SetItem(int index, JsonNode? value)
         {
             value?.AssignParent(this);
             DetachParent(List[index]);
@@ -206,7 +246,7 @@ namespace System.Text.Json.Nodes
                 Debug.Assert(index >= 0);
 
                 path.Append('[');
-#if NETCOREAPP
+#if NET
                 Span<char> chars = stackalloc char[JsonConstants.MaximumFormatUInt32Length];
                 bool formatted = ((uint)index).TryFormat(chars, out int charsWritten);
                 Debug.Assert(formatted);

@@ -2,6 +2,7 @@
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <TestRuntime>true</TestRuntime>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- SYSLIB0013: Uri.EscapeUriString is obsolete
          SYSLIB0037: AssemblyName members HashAlgorithm, ProcessorArchitecture, and VersionCompatibility are obsolete. -->
@@ -76,6 +77,7 @@
     <ProjectReference Include="UnloadableAssembly\UnloadableAssembly.csproj" />
     <ProjectReference Include="TestExe\System.Reflection.TestExe.csproj" />
     <ProjectReference Include="TestAssembly\TestAssembly.csproj" />
+    <ProjectReference Include="Hello工程123\Hello工程123.csproj" />
   </ItemGroup>
     <ItemGroup Condition="'$(TargetOS)' == 'browser'">
     <WasmFilesToIncludeFromPublishDir Include="$(AssemblyName).dll" />
@@ -86,5 +88,6 @@
 
     <!-- Assemblies that should be excluded from the bundle -->
     <__ExcludeFromBundle Include="TestAssembly.dll" />
+    <__ExcludeFromBundle Include="Hello工程123.dll" />
   </ItemGroup>
 </Project>

@@ -7,6 +7,8 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text.Encodings.Web;
+using System.Text.Json.Nodes;
+using System.Text.Json.Schema;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -17,6 +19,7 @@ namespace System.Text.Json.Serialization.Converters
 
         // Odd type codes are conveniently signed types (for enum backing types).
         private static readonly bool s_isSignedEnum = ((int)s_enumTypeCode % 2) == 1;
+        private static readonly bool s_isFlagsEnum = typeof(T).IsDefined(typeof(FlagsAttribute), inherit: false);
 
         private const string ValueSeparator = ", ";
 
@@ -61,7 +64,7 @@ namespace System.Text.Json.Serialization.Converters
                 _nameCacheForReading = new ConcurrentDictionary<string, T>();
             }
 
-#if NETCOREAPP
+#if NET
             string[] names = Enum.GetNames<T>();
             T[] values = Enum.GetValues<T>();
 #else
@@ -74,7 +77,7 @@ namespace System.Text.Json.Serialization.Converters
 
             for (int i = 0; i < names.Length; i++)
             {
-#if NETCOREAPP
+#if NET
                 T value = values[i];
 #else
                 T value = (T)values.GetValue(i)!;
@@ -106,7 +109,7 @@ namespace System.Text.Json.Serialization.Converters
                     return default;
                 }
 
-#if NETCOREAPP
+#if NET
                 if (TryParseEnumCore(ref reader, out T value))
 #else
                 string? enumString = reader.GetString();
@@ -116,7 +119,7 @@ namespace System.Text.Json.Serialization.Converters
                     return value;
                 }
 
-#if NETCOREAPP
+#if NET
                 return ReadEnumUsingNamingPolicy(reader.GetString());
 #else
                 return ReadEnumUsingNamingPolicy(enumString);
@@ -270,7 +273,7 @@ namespace System.Text.Json.Serialization.Converters
 
         internal override T ReadAsPropertyNameCore(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-#if NETCOREAPP
+#if NET
             if (TryParseEnumCore(ref reader, out T value))
 #else
             string? enumString = reader.GetString();
@@ -280,7 +283,7 @@ namespace System.Text.Json.Serialization.Converters
                 return value;
             }
 
-#if NETCOREAPP
+#if NET
             return ReadEnumUsingNamingPolicy(reader.GetString());
 #else
             return ReadEnumUsingNamingPolicy(enumString);
@@ -362,14 +365,14 @@ namespace System.Text.Json.Serialization.Converters
         }
 
         private bool TryParseEnumCore(
-#if NETCOREAPP
+#if NET
             ref Utf8JsonReader reader,
 #else
             string? source,
 #endif
             out T value)
         {
-#if NETCOREAPP
+#if NET
             char[]? rentedBuffer = null;
             int bufferLength = reader.ValueLength;
 
@@ -393,7 +396,7 @@ namespace System.Text.Json.Serialization.Converters
                 value = default;
             }
 
-#if NETCOREAPP
+#if NET
             if (rentedBuffer != null)
             {
                 charBuffer.Slice(0, charsWritten).Clear();
@@ -401,6 +404,39 @@ namespace System.Text.Json.Serialization.Converters
             }
 #endif
             return success;
+        }
+
+        internal override JsonSchema? GetSchema(JsonNumberHandling numberHandling)
+        {
+            if ((_converterOptions & EnumConverterOptions.AllowStrings) != 0)
+            {
+                // This explicitly ignores the integer component in converters configured as AllowNumbers | AllowStrings
+                // which is the default for JsonStringEnumConverter. This sacrifices some precision in the schema for simplicity.
+
+                if (s_isFlagsEnum)
+                {
+                    // Do not report enum values in case of flags.
+                    return new() { Type = JsonSchemaType.String };
+                }
+
+                JsonNamingPolicy? namingPolicy = _namingPolicy;
+                JsonArray enumValues = [];
+#if NET
+                string[] names = Enum.GetNames<T>();
+#else
+                string[] names = Enum.GetNames(Type);
+#endif
+
+                for (int i = 0; i < names.Length; i++)
+                {
+                    JsonNode name = FormatJsonName(names[i], namingPolicy);
+                    enumValues.Add(name);
+                }
+
+                return new() { Enum = enumValues };
+            }
+
+            return new() { Type = JsonSchemaType.Integer };
         }
 
         private T ReadEnumUsingNamingPolicy(string? enumString)
@@ -525,7 +561,7 @@ namespace System.Text.Json.Serialization.Converters
         {
             // todo: optimize implementation here by leveraging https://github.com/dotnet/runtime/issues/934.
             return value.Split(
-#if NETCOREAPP
+#if NET
                 ValueSeparator
 #else
                 new string[] { ValueSeparator }, StringSplitOptions.None

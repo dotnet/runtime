@@ -761,7 +761,7 @@ void COMDelegate::Init()
 }
 
 #ifdef FEATURE_COMINTEROP
-ComPlusCallInfo * COMDelegate::PopulateComPlusCallInfo(MethodTable * pDelMT)
+CLRToCOMCallInfo * COMDelegate::PopulateCLRToCOMCallInfo(MethodTable * pDelMT)
 {
     CONTRACTL
     {
@@ -773,21 +773,21 @@ ComPlusCallInfo * COMDelegate::PopulateComPlusCallInfo(MethodTable * pDelMT)
 
     DelegateEEClass * pClass = (DelegateEEClass *)pDelMT->GetClass();
 
-    // set up the ComPlusCallInfo if it does not exist already
-    if (pClass->m_pComPlusCallInfo == NULL)
+    // set up the CLRToCOMCallInfo if it does not exist already
+    if (pClass->m_pCLRToCOMCallInfo == NULL)
     {
         LoaderHeap *pHeap = pDelMT->GetLoaderAllocator()->GetHighFrequencyHeap();
-        ComPlusCallInfo *pTemp = (ComPlusCallInfo *)(void *)pHeap->AllocMem(S_SIZE_T(sizeof(ComPlusCallInfo)));
+        CLRToCOMCallInfo *pTemp = (CLRToCOMCallInfo *)(void *)pHeap->AllocMem(S_SIZE_T(sizeof(CLRToCOMCallInfo)));
 
         pTemp->m_cachedComSlot = ComMethodTable::GetNumExtraSlots(ifVtable);
         pTemp->InitStackArgumentSize();
 
-        InterlockedCompareExchangeT(&pClass->m_pComPlusCallInfo, pTemp, NULL);
+        InterlockedCompareExchangeT(&pClass->m_pCLRToCOMCallInfo, pTemp, NULL);
     }
 
-    pClass->m_pComPlusCallInfo->m_pInterfaceMT = pDelMT;
+    pClass->m_pCLRToCOMCallInfo->m_pInterfaceMT = pDelMT;
 
-    return pClass->m_pComPlusCallInfo;
+    return pClass->m_pCLRToCOMCallInfo;
 }
 #endif // FEATURE_COMINTEROP
 
@@ -1172,7 +1172,7 @@ void COMDelegate::BindToMethod(DELEGATEREF   *pRefThis,
     }
     else
     {
-        PCODE pTargetCode = NULL;
+        PCODE pTargetCode = (PCODE)NULL;
 
         // For virtual methods we can (and should) virtualize the call now (so we don't have to insert a thunk to do so at runtime).
         // <TODO>
@@ -1283,7 +1283,7 @@ LPVOID COMDelegate::ConvertToCallback(OBJECTREF pDelegateObj)
             _ASSERTE(objhnd != NULL);
 
             // This target should not ever be used. We are storing it in the thunk for better diagnostics of "call on collected delegate" crashes.
-            PCODE pManagedTargetForDiagnostics = (pDelegate->GetMethodPtrAux() != NULL) ? pDelegate->GetMethodPtrAux() : pDelegate->GetMethodPtr();
+            PCODE pManagedTargetForDiagnostics = (pDelegate->GetMethodPtrAux() != (PCODE)NULL) ? pDelegate->GetMethodPtrAux() : pDelegate->GetMethodPtr();
 
             ExecutableWriterHolder<UMEntryThunk> uMEntryThunkWriterHolder(pUMEntryThunk, sizeof(UMEntryThunk));
 
@@ -1380,14 +1380,14 @@ OBJECTREF COMDelegate::ConvertToDelegate(LPVOID pCallback, MethodTable* pMT)
     //
 
     PCODE pMarshalStub = pClass->m_pMarshalStub;
-    if (pMarshalStub == NULL)
+    if (pMarshalStub == (PCODE)NULL)
     {
         GCX_PREEMP();
 
         pMarshalStub = GetStubForInteropMethod(pMD);
 
         // Save this new stub on the DelegateEEClass.
-        InterlockedCompareExchangeT<PCODE>(&pClass->m_pMarshalStub, pMarshalStub, NULL);
+        InterlockedCompareExchangeT<PCODE>(&pClass->m_pMarshalStub, pMarshalStub, (PCODE)NULL);
 
         pMarshalStub = pClass->m_pMarshalStub;
     }
@@ -1595,7 +1595,7 @@ FCIMPL3(void, COMDelegate::DelegateConstruct, Object* refThisUNSAFE, Object* tar
 
     // via reflection you can pass in just about any value for the method.
     // we can do some basic verification up front to prevent EE exceptions.
-    if (method == NULL)
+    if (method == (PCODE)NULL)
         COMPlusThrowArgumentNull(W("method"));
 
     _ASSERTE(gc.refThis);
@@ -1798,7 +1798,7 @@ MethodDesc *COMDelegate::GetMethodDesc(OBJECTREF orDelegate)
         // Next, check for an open delegate
         PCODE code = thisDel->GetMethodPtrAux();
 
-        if (code != NULL)
+        if (code != (PCODE)NULL)
         {
             // Note that MethodTable::GetMethodDescForSlotAddress is significantly faster than Entry2MethodDesc
             pMethodHandle = MethodTable::GetMethodDescForSlotAddress(code);
@@ -1936,7 +1936,7 @@ PCODE COMDelegate::GetInvokeMethodStub(EEImplMethodDesc* pMD)
     }
     CONTRACT_END;
 
-    PCODE               ret = NULL;
+    PCODE               ret = (PCODE)NULL;
     MethodTable *       pDelMT = pMD->GetMethodTable();
     DelegateEEClass*    pClass = (DelegateEEClass*) pDelMT->GetClass();
 

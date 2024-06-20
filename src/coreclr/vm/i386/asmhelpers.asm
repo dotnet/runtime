@@ -24,7 +24,6 @@ EXTERN __imp__RtlUnwind@16:DWORD
 ifdef _DEBUG
 EXTERN _HelperMethodFrameConfirmState@20:PROC
 endif
-EXTERN _StubRareEnableWorker@4:PROC
 ifdef FEATURE_COMINTEROP
 EXTERN _StubRareDisableHRWorker@4:PROC
 endif ; FEATURE_COMINTEROP
@@ -394,29 +393,6 @@ endif
         retn    8
 _CallJitEHFinallyHelper@8 ENDP
 
-;-----------------------------------------------------------------------
-; The out-of-line portion of the code to enable preemptive GC.
-; After the work is done, the code jumps back to the "pRejoinPoint"
-; which should be emitted right after the inline part is generated.
-;
-; Assumptions:
-;      ebx = Thread
-; Preserves
-;      all registers except ecx.
-;
-;-----------------------------------------------------------------------
-_StubRareEnable proc public
-        push    eax
-        push    edx
-
-        push    ebx
-        call    _StubRareEnableWorker@4
-
-        pop     edx
-        pop     eax
-        retn
-_StubRareEnable ENDP
-
 ifdef FEATURE_COMINTEROP
 _StubRareDisableHR proc public
         push    edx
@@ -448,39 +424,6 @@ InternalExceptionWorker proc public
         push    edx             ; restore RETADDR
         jmp     @JIT_InternalThrow@4
 InternalExceptionWorker endp
-
-; EAX -> number of caller arg bytes on the stack that we must remove before going
-; to the throw helper, which assumes the stack is clean.
-_ArrayOpStubNullException proc public
-        ; kFactorReg and kTotalReg could not have been modified, but let's pop
-        ; them anyway for consistency and to avoid future bugs.
-        pop     esi
-        pop     edi
-        mov     ecx, CORINFO_NullReferenceException_ASM
-        jmp     InternalExceptionWorker
-_ArrayOpStubNullException endp
-
-; EAX -> number of caller arg bytes on the stack that we must remove before going
-; to the throw helper, which assumes the stack is clean.
-_ArrayOpStubRangeException proc public
-        ; kFactorReg and kTotalReg could not have been modified, but let's pop
-        ; them anyway for consistency and to avoid future bugs.
-        pop     esi
-        pop     edi
-        mov     ecx, CORINFO_IndexOutOfRangeException_ASM
-        jmp     InternalExceptionWorker
-_ArrayOpStubRangeException endp
-
-; EAX -> number of caller arg bytes on the stack that we must remove before going
-; to the throw helper, which assumes the stack is clean.
-_ArrayOpStubTypeMismatchException proc public
-        ; kFactorReg and kTotalReg could not have been modified, but let's pop
-        ; them anyway for consistency and to avoid future bugs.
-        pop     esi
-        pop     edi
-        mov     ecx, CORINFO_ArrayTypeMismatchException_ASM
-        jmp     InternalExceptionWorker
-_ArrayOpStubTypeMismatchException endp
 
 ;------------------------------------------------------------------------------
 ; This helper routine enregisters the appropriate arguments and makes the
@@ -1074,11 +1017,11 @@ _GenericPInvokeCalliHelper@0 endp
 _CopyConstructorCallStub@0 proc public
     ; there may be an argument in ecx - save it
     push    ecx
-    
+
     ; push pointer to arguments
     lea     edx, [esp + 8]
     push    edx
-    
+
     call    _CallCopyConstructorsWorker@4
 
     ; restore ecx and tail call to the target
@@ -1290,7 +1233,7 @@ _TheUMEntryPrestub@0 endp
 ifdef FEATURE_COMINTEROP
 ;==========================================================================
 ; CLR -> COM generic or late-bound call
-_GenericComPlusCallStub@0 proc public
+_GenericCLRToCOMCallStub@0 proc public
 
     STUB_PROLOG
 
@@ -1312,19 +1255,19 @@ _GenericComPlusCallStub@0 proc public
 
     ; From here on, mustn't trash eax:edx
 
-    ; Get pComPlusCallInfo for return thunk
-    mov         ecx, [ebx + ComPlusCallMethodDesc__m_pComPlusCallInfo]
+    ; Get pCLRToCOMCallInfo for return thunk
+    mov         ecx, [ebx + CLRToCOMCallMethodDesc__m_pCLRToCOMCallInfo]
 
     STUB_EPILOG_RETURN
 
     ; Tailcall return thunk
-    jmp [ecx + ComPlusCallInfo__m_pRetThunk]
+    jmp [ecx + CLRToCOMCallInfo__m_pRetThunk]
 
     ; This will never be executed. It is just to help out stack-walking logic
     ; which disassembles the epilog to unwind the stack.
     ret
 
-_GenericComPlusCallStub@0 endp
+_GenericCLRToCOMCallStub@0 endp
 endif ; FEATURE_COMINTEROP
 
 

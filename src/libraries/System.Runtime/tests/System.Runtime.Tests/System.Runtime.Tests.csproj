@@ -12,9 +12,7 @@
      <!-- some tests require full ICU data, force it -->
     <WasmIncludeFullIcuData>true</WasmIncludeFullIcuData>
 
-    <!-- The test is looking for debugger attributes we would have stripped with NativeAOT -->
-    <IlcKeepManagedDebuggerSupport>true</IlcKeepManagedDebuggerSupport>
-    <!-- Same for ILLink -->
+    <!-- The test is looking for debugger attributes we would have stripped -->
     <DebuggerSupport>true</DebuggerSupport>
     <!-- Active issue: https://github.com/dotnet/runtime/issues/97809 -->
     <ShouldILStrip>false</ShouldILStrip>
@@ -185,6 +183,7 @@
     <Compile Include="System\AppContext\AppContextTests.cs" />
     <Compile Include="System\AppContext\AppContextTests.Switch.cs" />
     <Compile Include="System\AppContext\AppContextTests.Switch.Validation.cs" />
+    <Compile Include="System\Collections\Generic\IEnumerableTests.cs" />
     <Compile Include="System\Collections\Generic\KeyNotFoundExceptionTests.cs" />
     <Compile Include="System\Collections\Generic\KeyValuePairTests.cs" />
     <Compile Include="System\Collections\ObjectModel\CollectionTests.cs" />
@@ -338,7 +337,9 @@
     <Compile Include="System\RealParserTests.cs" />
 
     <TrimmerRootDescriptor Include="$(ILLinkDescriptorsPath)ILLink.Descriptors.Castle.xml" />
-    <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
+    <TrimmerRootDescriptor Condition="'$(TargetsAppleMobile)' != 'true' or '$(EnableAggressiveTrimming)' != 'true' or '$(UseNativeAotRuntime)' == 'true'" Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
+    <!-- Apple mobile trimming descriptor for Mono runtime -->
+    <TrimmerRootDescriptor Condition="'$(TargetsAppleMobile)' == 'true' and '$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAotRuntime)' != 'true'" Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.iOS.xml" />
   </ItemGroup>
 
   <ItemGroup>

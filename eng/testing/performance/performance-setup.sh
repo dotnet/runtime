@@ -451,7 +451,7 @@ if [[ -n "$wasm_bundle_directory" ]]; then
 
         # get required version
         if [[ -z "$v8_version" ]]; then
-            v8_version=`grep linux_V8Version $source_directory/eng/testing/ChromeVersions.props | sed -e 's,.*>\([^\<]*\)<.*,\1,g' | cut -d. -f 1-3`
+            v8_version=`grep linux_V8Version $source_directory/eng/testing/BrowserVersions.props | sed -e 's,.*>\([^\<]*\)<.*,\1,g' | cut -d. -f 1-3`
             echo "V8 version: $v8_version"
         fi
         if [[ -z "$javascript_engine_path" ]]; then

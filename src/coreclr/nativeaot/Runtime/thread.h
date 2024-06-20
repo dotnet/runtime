@@ -83,7 +83,7 @@ struct InlinedThreadStaticRoot
     TypeManager* m_typeManager;
 };
 
-struct ThreadBuffer
+struct RuntimeThreadLocals
 {
     uint8_t                 m_rgbAllocContextBuffer[SIZEOF_ALLOC_CONTEXT];
     uint32_t volatile       m_ThreadStateFlags;                     // see Thread::ThreadStateFlags enum
@@ -92,9 +92,11 @@ struct ThreadBuffer
     PInvokeTransitionFrame* m_pCachedTransitionFrame;
     PTR_Thread              m_pNext;                                // used by ThreadStore's SList<Thread>
     HANDLE                  m_hPalThread;                           // WARNING: this may legitimately be INVALID_HANDLE_VALUE
+#ifdef FEATURE_HIJACK
     void **                 m_ppvHijackedReturnAddressLocation;
     void *                  m_pvHijackedReturnAddress;
     uintptr_t               m_uHijackedReturnValueFlags;
+#endif // FEATURE_HIJACK
     PTR_ExInfo              m_pExInfoStackHead;
     Object*                 m_threadAbortException;                 // ThreadAbortException instance -set only during thread abort
 #ifdef TARGET_X86
@@ -124,7 +126,7 @@ struct ReversePInvokeFrame
     Thread* m_savedThread;
 };
 
-class Thread : private ThreadBuffer
+class Thread : private RuntimeThreadLocals
 {
     friend class AsmOffsets;
     friend struct DefaultSListTraits<Thread>;
@@ -156,7 +158,7 @@ public:
                                                     // For suspension APCs it is mostly harmless, but wasteful and in extreme
                                                     // cases may force the target thread into stack oveflow.
                                                     // We use this flag to avoid sending another APC when one is still going through.
-                                                    // 
+                                                    //
                                                     // On Unix this is an optimization to not queue up more signals when one is
                                                     // still being processed.
     };
@@ -168,7 +170,7 @@ private:
     void ClearState(ThreadStateFlags flags);
     bool IsStateSet(ThreadStateFlags flags);
 
-
+#ifdef FEATURE_HIJACK
     static void HijackCallback(NATIVE_CONTEXT* pThreadContext, void* pThreadToHijack);
 
     //
@@ -181,6 +183,11 @@ private:
     void HijackReturnAddress(NATIVE_CONTEXT* pSuspendCtx, HijackFunc* pfnHijackFunction);
     void HijackReturnAddressWorker(StackFrameIterator* frameIterator, HijackFunc* pfnHijackFunction);
     bool InlineSuspend(NATIVE_CONTEXT* interruptedContext);
+    void CrossThreadUnhijack();
+    void UnhijackWorker();
+#else // FEATURE_HIJACK
+    void CrossThreadUnhijack() { }
+#endif // FEATURE_HIJACK
 
 #ifdef FEATURE_SUSPEND_REDIRECTION
     bool Redirect();
@@ -188,8 +195,6 @@ private:
 
     bool CacheTransitionFrameForSuspend();
     void ResetCachedTransitionFrame();
-    void CrossThreadUnhijack();
-    void UnhijackWorker();
     void EnsureRuntimeInitialized();
 
     //
@@ -222,10 +227,17 @@ public:
 
     void                GcScanRoots(ScanFunc* pfnEnumCallback, ScanContext * pvCallbackData);
 
+#ifdef FEATURE_HIJACK
     void                Hijack();
     void                Unhijack();
     bool                IsHijacked();
     void*               GetHijackedReturnAddress();
+    static bool         IsHijackTarget(void * address);
+#else // FEATURE_HIJACK
+    void                Unhijack() { }
+    bool                IsHijacked() { return false; }
+    static bool         IsHijackTarget(void * address) { return false; }
+#endif // FEATURE_HIJACK
 
 #ifdef FEATURE_GC_STRESS
     static void         HijackForGcStress(PAL_LIMITED_CONTEXT * pSuspendCtx);
@@ -262,8 +274,6 @@ public:
     PInvokeTransitionFrame* GetTransitionFrameForStackTrace();
     void *              GetCurrentThreadPInvokeReturnAddress();
 
-    static bool         IsHijackTarget(void * address);
-
     //
     // The set of operations used to support unmanaged code running in cooperative mode
     //
@@ -287,7 +297,6 @@ public:
     //
     void SetGCSpecial();
     bool IsGCSpecial();
-    bool CatchAtSafePoint();
 
     //
     // Managed/unmanaged interop transitions support APIs

@@ -17,7 +17,7 @@ class CrawlFrame;
 struct EE_ILEXCEPTION_CLAUSE;
 struct TransitionBlock;
 struct VASigCookie;
-class ComPlusCallMethodDesc;
+class CLRToCOMCallMethodDesc;
 
 #include <cgencpu.h>
 
@@ -33,8 +33,8 @@ void CallJitEHFinally(CrawlFrame* pCf, BYTE* startPC, EE_ILEXCEPTION_CLAUSE *EHC
 #endif // TARGET_X86
 
 #ifdef FEATURE_COMINTEROP
-extern "C" UINT32 STDCALL CLRToCOMWorker(TransitionBlock * pTransitionBlock, ComPlusCallMethodDesc * pMD);
-extern "C" void GenericComPlusCallStub(void);
+extern "C" UINT32 STDCALL CLRToCOMWorker(TransitionBlock * pTransitionBlock, CLRToCOMCallMethodDesc * pMD);
+extern "C" void GenericCLRToCOMCallStub(void);
 
 extern "C" void GenericComCallStub(void);
 #endif // FEATURE_COMINTEROP
@@ -83,8 +83,6 @@ extern "C" DWORD avx512StateSupport();
 BOOL GetAnyThunkTarget (T_CONTEXT *pctx, TADDR *pTarget, TADDR *pTargetMethodDesc);
 
 #endif // DACCESS_COMPILE
-
-
 
 //
 // ResetProcessorStateHolder saves/restores processor state around calls to

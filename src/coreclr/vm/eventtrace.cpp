@@ -227,10 +227,14 @@ extern "C"
     CallStackFrame* GetEbp()
     {
         CallStackFrame *frame=NULL;
+#ifdef TARGET_WINDOWS
         __asm
         {
             mov frame, ebp
         }
+#else
+        frame = (CallStackFrame*)__builtin_frame_address(0);
+#endif
         return frame;
     }
 }
@@ -263,11 +267,6 @@ ETW::SamplingLog::EtwStackWalkStatus ETW::SamplingLog::GetCurrentThreadsCallStac
         MODE_ANY;
     }
     CONTRACTL_END;
-
-    // The stack walk performed below can cause allocations (thus entering the host). But
-    // this is acceptable, since we're not supporting the use of SQL/F1 profiling and
-    // full-blown ETW CLR stacks (which would be redundant).
-    PERMANENT_CONTRACT_VIOLATION(HostViolation, ReasonUnsupportedForSQLF1Profiling);
 
     m_FrameCount = 0;
     ETW::SamplingLog::EtwStackWalkStatus stackwalkStatus = SaveCurrentStack();
@@ -582,7 +581,7 @@ VOID ETW::ThreadLog::FireThreadCreated(Thread * pThread)
 
     FireEtwThreadCreated(
         (ULONGLONG)pThread,
-        (ULONGLONG)pThread->GetDomain(),
+        (ULONGLONG)AppDomain::GetCurrentDomain(),
         GetEtwThreadFlags(pThread),
         pThread->GetThreadId(),
         pThread->GetOSThreadId(),
@@ -595,7 +594,7 @@ VOID ETW::ThreadLog::FireThreadDC(Thread * pThread)
 
     FireEtwThreadDC(
         (ULONGLONG)pThread,
-        (ULONGLONG)pThread->GetDomain(),
+        (ULONGLONG)AppDomain::GetCurrentDomain(),
         GetEtwThreadFlags(pThread),
         pThread->GetThreadId(),
         pThread->GetOSThreadId(),
@@ -648,7 +647,7 @@ public:
     static bool IsNull(const element_t &e)
     {
         LIMITED_METHOD_CONTRACT;
-        return (e.th.AsTAddr() == NULL);
+        return (e.th.AsTAddr() == 0);
     }
 
     static const element_t Null()
@@ -4216,7 +4215,7 @@ static void GetCodeViewInfo(Module * pModule, CV_INFO_PDB70 * pCvInfoIL, CV_INFO
 
         // Some compilers set PointerToRawData but not AddressOfRawData as they put the
         // data at the end of the file in an unmapped part of the file
-        RVA rvaOfRawData = (rgDebugEntries[i].AddressOfRawData != NULL) ?
+        RVA rvaOfRawData = (rgDebugEntries[i].AddressOfRawData != 0) ?
             rgDebugEntries[i].AddressOfRawData :
             pLayout->OffsetToRva(rgDebugEntries[i].PointerToRawData);
 
@@ -5805,6 +5804,30 @@ bool EventPipeHelper::IsEnabled(DOTNET_TRACE_CONTEXT Context, UCHAR Level, ULONG
 
     return false;
 }
+
+#ifdef TARGET_LINUX
+#include "user_events.h"
+bool UserEventsHelper::Enabled()
+{
+    return IsUserEventsEnabled();
+}
+
+bool UserEventsHelper::IsEnabled(DOTNET_TRACE_CONTEXT Context, UCHAR Level, ULONGLONG Keyword)
+{
+    return IsUserEventsEnabledByKeyword(Context.UserEventsProvider.id, Level, Keyword);
+}
+#else // TARGET_LINUX
+bool UserEventsHelper::Enabled()
+{
+    return false;
+}
+
+bool UserEventsHelper::IsEnabled(DOTNET_TRACE_CONTEXT Context, UCHAR Level, ULONGLONG Keyword)
+{
+    return false;
+}
+#endif // TARGET_LINUX
+
 #endif // FEATURE_PERFTRACING
 
 #if defined(HOST_UNIX)  && defined(FEATURE_PERFTRACING)

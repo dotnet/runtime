@@ -98,7 +98,7 @@ namespace System.Collections.Immutable
         /// <typeparam name="T">The type of items stored by the collection.</typeparam>
         /// <param name="items">The items to prepopulate.</param>
         /// <returns>The new immutable collection.</returns>
-        public static ImmutableHashSet<T> Create<T>(ReadOnlySpan<T> items)
+        public static ImmutableHashSet<T> Create<T>(params ReadOnlySpan<T> items)
         {
             return ImmutableHashSet<T>.Empty.Union(items);
         }
@@ -124,7 +124,7 @@ namespace System.Collections.Immutable
         /// <param name="equalityComparer">The equality comparer.</param>
         /// <param name="items">The items to prepopulate.</param>
         /// <returns>The new immutable collection.</returns>
-        public static ImmutableHashSet<T> Create<T>(IEqualityComparer<T>? equalityComparer, ReadOnlySpan<T> items)
+        public static ImmutableHashSet<T> Create<T>(IEqualityComparer<T>? equalityComparer, params ReadOnlySpan<T> items)
         {
             return ImmutableHashSet<T>.Empty.WithComparer(equalityComparer).Union(items);
         }

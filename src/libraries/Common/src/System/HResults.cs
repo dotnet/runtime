@@ -109,7 +109,10 @@ namespace System
         internal const int COR_E_VERIFICATION = unchecked((int)0x8013150D);
         internal const int COR_E_WAITHANDLECANNOTBEOPENED = unchecked((int)0x8013152C);
         internal const int CO_E_NOTINITIALIZED = unchecked((int)0x800401F0);
+        internal const int DISP_E_TYPEMISMATCH = unchecked((int)0x80020005);
+        internal const int DISP_E_BADVARTYPE = unchecked((int)0x80020008);
         internal const int DISP_E_OVERFLOW = unchecked((int)0x8002000A);
+        internal const int DISP_E_DIVBYZERO = unchecked((int)0x80020012);
         internal const int E_BOUNDS = unchecked((int)0x8000000B);
         internal const int E_CHANGED_STATE = unchecked((int)0x8000000C);
         internal const int E_FILENOTFOUND = unchecked((int)0x80070002);
@@ -127,7 +130,6 @@ namespace System
         internal const int CTL_E_PATHNOTFOUND = unchecked((int)0x800A004C);
         internal const int CTL_E_FILENOTFOUND = unchecked((int)0x800A0035);
         internal const int FUSION_E_INVALID_NAME = unchecked((int)0x80131047);
-        internal const int FUSION_E_PRIVATE_ASM_DISALLOWED = unchecked((int)0x80131044);
         internal const int FUSION_E_REF_DEF_MISMATCH = unchecked((int)0x80131040);
         internal const int ERROR_TOO_MANY_OPEN_FILES = unchecked((int)0x80070004);
         internal const int ERROR_SHARING_VIOLATION = unchecked((int)0x80070020);

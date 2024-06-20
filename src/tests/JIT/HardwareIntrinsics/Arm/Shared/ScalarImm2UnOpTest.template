@@ -1,0 +1,240 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+/******************************************************************************
+ * This file is auto-generated from a template file by the GenerateTests.csx  *
+ * script in tests\src\JIT\HardwareIntrinsics\Arm\Shared. In order to make    *
+ * changes, please update the corresponding template and run according to the *
+ * directions listed in the file.                                             *
+ ******************************************************************************/
+
+using System;
+using System.Numerics;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
+using Xunit;
+
+namespace JIT.HardwareIntrinsics.Arm
+{
+    public static partial class Program
+    {
+        [Fact]
+        public static void {TestName}()
+        {
+            var test = new ScalarImm2UnaryOpTest__{TestName}();
+
+            if (test.IsSupported)
+            {
+                // Validates basic functionality works, using Unsafe.ReadUnaligned
+                test.RunBasicScenario_UnsafeRead();
+
+                // Validates calling via reflection works, using Unsafe.ReadUnaligned
+                test.RunReflectionScenario_UnsafeRead();
+
+                // Validates passing a local works, using Unsafe.ReadUnaligned
+                test.RunLclVarScenario_UnsafeRead();
+
+                // Validates passing an instance member of a class works
+                test.RunClassFldScenario();
+
+                // Validates passing the field of a local struct works
+                test.RunStructLclFldScenario();
+
+                // Validates passing an instance member of a struct works
+                test.RunStructFldScenario();
+
+                // Validates basic functionality fails with an invalid imm1, using Unsafe.ReadUnaligned
+                test.RunBasicScenario_UnsafeRead_InvalidImm1();
+
+                // Validates basic functionality fails with an invalid imm2, using Unsafe.ReadUnaligned
+                test.RunBasicScenario_UnsafeRead_InvalidImm2();
+            }
+            else
+            {
+                // Validates we throw on unsupported hardware
+                test.RunUnsupportedScenario();
+            }
+
+            if (!test.Succeeded)
+            {
+                throw new Exception("One or more scenarios did not complete as expected.");
+            }
+        }
+    }
+
+    public sealed unsafe class ScalarImm2UnaryOpTest__{TestName}
+    {
+        private struct TestStruct
+        {
+            public {Op1BaseType} _fld;
+
+            public static TestStruct Create()
+            {
+                var testStruct = new TestStruct();
+
+                testStruct._fld = {NextValueOp1};
+                return testStruct;
+            }
+
+            public void RunStructFldScenario(ScalarImm2UnaryOpTest__{TestName} testClass)
+            {
+                var result = {Isa}.{Method}(_fld, {Imm}, {Imm2});
+                testClass.ValidateResult(_fld, {Imm}, {Imm2}, result);
+            }
+        }
+
+        private static {Op1BaseType} _data;
+
+        private {Op1BaseType} _fld;
+
+        public ScalarImm2UnaryOpTest__{TestName}()
+        {
+            Succeeded = true;
+
+
+            _fld = {NextValueOp1};
+            _data = {NextValueOp1};
+        }
+
+        public bool IsSupported => {Isa}.IsSupported;
+
+        public bool Succeeded { get; set; }
+
+        public void RunBasicScenario_UnsafeRead()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_UnsafeRead));
+
+            var result = {Isa}.{Method}(
+                Unsafe.ReadUnaligned<{Op1BaseType}>(ref Unsafe.As<{Op1BaseType}, byte>(ref _data)), {Imm}, {Imm2}
+            );
+
+            ValidateResult(_data, {Imm}, {Imm2}, result);
+        }
+
+        public void RunReflectionScenario_UnsafeRead()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario_UnsafeRead));
+
+            var result = typeof({Isa}).GetMethod(nameof({Isa}.{Method}), new Type[] { typeof({Op1BaseType}), typeof({Op2BaseType}),  typeof({Op3BaseType}) })
+                                     .Invoke(null, new object[] {
+                                        Unsafe.ReadUnaligned<{Op1BaseType}>(ref Unsafe.As<{Op1BaseType}, byte>(ref _data)),
+                                        {Imm},
+                                        {Imm2},
+                                     });
+
+            ValidateResult(_data, {Imm}, {Imm2}, ({RetBaseType})result);
+        }
+
+        public void RunLclVarScenario_UnsafeRead()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_UnsafeRead));
+
+            var data = Unsafe.ReadUnaligned<{Op1BaseType}>(ref Unsafe.As<{Op1BaseType}, byte>(ref _data));
+            var result = {Isa}.{Method}(data, {Imm}, {Imm2});
+
+            ValidateResult(data, {Imm}, {Imm2}, result);
+        }
+
+        public void RunClassFldScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunClassFldScenario));
+
+            var result = {Isa}.{Method}(_fld, {Imm}, {Imm2});
+            ValidateResult(_fld, {Imm}, {Imm2}, result);
+        }
+
+        public void RunStructLclFldScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunStructLclFldScenario));
+
+            var test = TestStruct.Create();
+            var result = {Isa}.{Method}(test._fld, {Imm}, {Imm2});
+
+            ValidateResult(test._fld, {Imm}, {Imm2}, result);
+        }
+
+        public void RunStructFldScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunStructFldScenario));
+
+            var test = TestStruct.Create();
+            test.RunStructFldScenario(this);
+        }
+
+        public void RunBasicScenario_UnsafeRead_InvalidImm1()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_UnsafeRead_InvalidImm1));
+
+            bool succeeded = false;
+
+            try
+            {
+                var result = {Isa}.{Method}(
+                Unsafe.ReadUnaligned<{Op1BaseType}>(ref Unsafe.As<{Op1BaseType}, byte>(ref _data)), {InvalidImm}, {Imm2}
+                );
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                succeeded = true;
+            }
+        }
+
+        public void RunBasicScenario_UnsafeRead_InvalidImm2()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_UnsafeRead_InvalidImm2));
+
+            bool succeeded = false;
+
+            try
+            {
+                var result = {Isa}.{Method}(
+                Unsafe.ReadUnaligned<{Op1BaseType}>(ref Unsafe.As<{Op1BaseType}, byte>(ref _data)), {Imm}, {InvalidImm2}
+                );
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                succeeded = true;
+            }
+        }
+
+        public void RunUnsupportedScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunUnsupportedScenario));
+
+            bool succeeded = false;
+
+            try
+            {
+                RunBasicScenario_UnsafeRead();
+            }
+            catch (PlatformNotSupportedException)
+            {
+                succeeded = true;
+            }
+
+            if (!succeeded)
+            {
+                Succeeded = false;
+            }
+        }
+
+        private void ValidateResult({Op1BaseType} data, {Op2BaseType} imm1, {Op3BaseType} imm2, {RetBaseType} result, [CallerMemberName] string method = "")
+        {
+            var isUnexpectedResult = false;
+
+            {ValidateResult}
+
+            if (isUnexpectedResult)
+            {
+                TestLibrary.TestFramework.LogInformation($"{nameof({Isa})}.{nameof({Isa}.{Method})}<{RetBaseType}>({Op1BaseType}, {Imm}, {Imm2}): {Method} failed:");
+                TestLibrary.TestFramework.LogInformation($"    data: {data}");
+                TestLibrary.TestFramework.LogInformation($"  result: {result}");
+                TestLibrary.TestFramework.LogInformation(string.Empty);
+
+                Succeeded = false;
+            }
+        }
+    }
+}

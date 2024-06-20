@@ -290,8 +290,8 @@ static size_t GetRestrictedPhysicalMemoryLimit()
                 (job_process_memory_limit != (size_t)UINTPTR_MAX) ||
                 (job_workingset_limit != (size_t)UINTPTR_MAX))
             {
-                job_physical_memory_limit = min (job_memory_limit, job_process_memory_limit);
-                job_physical_memory_limit = min (job_physical_memory_limit, job_workingset_limit);
+                job_physical_memory_limit = std::min (job_memory_limit, job_process_memory_limit);
+                job_physical_memory_limit = std::min (job_physical_memory_limit, job_workingset_limit);
 
                 MEMORYSTATUSEX ms;
                 ::GetProcessMemoryLoad(&ms);
@@ -299,7 +299,7 @@ static size_t GetRestrictedPhysicalMemoryLimit()
                 total_physical = ms.ullAvailPhys;
 
                 // A sanity check in case someone set a larger limit than there is actual physical memory.
-                job_physical_memory_limit = (size_t) min (job_physical_memory_limit, ms.ullTotalPhys);
+                job_physical_memory_limit = (size_t) std::min (job_physical_memory_limit, (size_t)ms.ullTotalPhys);
             }
         }
     }
@@ -969,7 +969,7 @@ size_t GCToOSInterface::GetVirtualMemoryLimit()
 // Remarks:
 //  If a process runs with a restricted memory limit, it returns the limit. If there's no limit
 //  specified, it returns amount of actual physical memory.
-uint64_t GCToOSInterface::GetPhysicalMemoryLimit(bool* is_restricted)
+uint64_t GCToOSInterface::GetPhysicalMemoryLimit(bool* is_restricted, bool refresh)
 {
     if (is_restricted)
         *is_restricted = false;
@@ -1139,7 +1139,7 @@ bool GCToOSInterface::GetNumaInfo(uint16_t* total_nodes, uint32_t* max_procs_per
                     mask &= mask - 1;
                 }
 
-                currentProcsOnNode = max(currentProcsOnNode, procsOnNode);
+                currentProcsOnNode = std::max(currentProcsOnNode, procsOnNode);
             }
             *max_procs_per_node = currentProcsOnNode;
             *total_nodes = (uint16_t)g_nNodes;
@@ -1163,7 +1163,7 @@ bool GCToOSInterface::GetCPUGroupInfo(uint16_t* total_groups, uint32_t* max_proc
         DWORD currentProcsInGroup = 0;
         for (WORD i = 0; i < g_nGroups; i++)
         {
-            currentProcsInGroup = max(currentProcsInGroup, g_CPUGroupInfoArray[i].nr_active);
+            currentProcsInGroup = std::max(currentProcsInGroup, (DWORD)g_CPUGroupInfoArray[i].nr_active);
         }
         *max_procs_per_group = currentProcsInGroup;
         return true;

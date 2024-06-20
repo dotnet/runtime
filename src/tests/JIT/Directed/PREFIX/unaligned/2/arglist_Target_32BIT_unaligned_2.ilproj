@@ -8,6 +8,8 @@
     <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' == 'arm' or '$(TargetArchitecture)' == 'armel'">true</CLRTestTargetUnsupported>
     <DebugType>PdbOnly</DebugType>
     <Optimize>True</Optimize>
+    <!-- Test uses varargs -->
+    <NativeAotIncompatible>true</NativeAotIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="arglist.il" />
