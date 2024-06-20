@@ -83,10 +83,11 @@ namespace System.Net.Security
                     // We can try to rebuild the chain with making all extra certificates trused.
                     // We do not try to evaluate trust here, we jsut need to construct the chain so it should not matter.
                     chain.ChainPolicy.CustomTrustStore.AddRange(additionalCertificates);
+                    chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
                     chainStatus = chain.Build(target);
                     if (!chainStatus && NetEventSource.Log.IsEnabled())
                     {
-                        NetEventSource.Error(null, $"Failed to build chain for {target.Subject}");
+                        NetEventSource.Error(null, $"Failed to build chain for {target.Subject} while trusting additional certificates");
                     }
                 }
 
