@@ -5769,6 +5769,39 @@ void FlowGraphNaturalLoop::Duplicate(BasicBlock** insertAfter, BlockToBlockMap* 
 }
 
 //------------------------------------------------------------------------
+// MayExecuteBlockMultipleTimesPerIteration:
+//   Check if the loop may execute a particular loop block multiple times for
+//   each iteration.
+//
+// Parameters:
+//   block - The basic block
+//
+// Returns:
+//   True if so. May return true even if the true answer is false.
+//
+bool FlowGraphNaturalLoop::MayExecuteBlockMultipleTimesPerIteration(BasicBlock* block)
+{
+    assert(ContainsBlock(block));
+
+    if (ContainsImproperHeader())
+    {
+        // To be more precise we could check if 'block' can reach itself
+        // without going through the header, but this case is rare.
+        return true;
+    }
+
+    for (FlowGraphNaturalLoop* child = GetChild(); child != nullptr; child = child->GetSibling())
+    {
+        if (child->ContainsBlock(block))
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
 // IterConst: Get the constant with which the iterator is modified
 //
 // Returns:

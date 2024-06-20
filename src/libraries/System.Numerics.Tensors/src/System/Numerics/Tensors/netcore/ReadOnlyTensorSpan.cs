@@ -775,7 +775,14 @@ namespace System.Numerics.Tensors
             nint copiedValues = 0;
             while (copiedValues < _flattenedLength)
             {
-                TensorSpanHelpers.Memmove(destination.Slice(checked((int)copiedValues)), ref Unsafe.Add(ref _reference, TensorSpanHelpers.ComputeLinearIndex(curIndexes, Strides, Lengths)), Lengths[Rank - 1]);
+                if (Strides[Rank - 1] == 0)
+                {
+                    destination.Slice(checked((int)copiedValues), (int)Lengths[Rank - 1]).Fill(Unsafe.Add(ref _reference, TensorSpanHelpers.ComputeLinearIndex(curIndexes, Strides, Lengths)));
+                }
+                else
+                {
+                    TensorSpanHelpers.Memmove(destination.Slice(checked((int)copiedValues)), ref Unsafe.Add(ref _reference, TensorSpanHelpers.ComputeLinearIndex(curIndexes, Strides, Lengths)), Lengths[Rank - 1]);
+                }
                 TensorSpanHelpers.AdjustIndexes(Rank - 2, 1, curIndexes, _lengths);
                 copiedValues += Lengths[Rank - 1];
             }
