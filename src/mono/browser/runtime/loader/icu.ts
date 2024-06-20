@@ -5,6 +5,7 @@ import { mono_log_error } from "./logging";
 import { GlobalizationMode, MonoConfig } from "../types";
 import { ENVIRONMENT_IS_WEB, loaderHelpers } from "./globals";
 import { mono_log_info, mono_log_debug } from "./logging";
+import { getNonFingerprintedAssetName } from "./assets";
 
 export function init_globalization () {
     loaderHelpers.preferredIcuAsset = getIcuResourceName(loaderHelpers.config);
@@ -50,7 +51,18 @@ export function getIcuResourceName (config: MonoConfig): string | null {
         // TODO: when starting on sidecar, we should pass default culture from UI thread
         const culture = config.applicationCulture || (ENVIRONMENT_IS_WEB ? (globalThis.navigator && globalThis.navigator.languages && globalThis.navigator.languages[0]) : Intl.DateTimeFormat().resolvedOptions().locale);
 
-        const icuFiles = Object.keys(config.resources.icu);
+        let icuFiles = Object.keys(config.resources.icu);
+        const fileMapping: {
+            [k: string]: string
+        } = {};
+        for (let index = 0; index < icuFiles.length; index++) {
+            const icuFile = icuFiles[index];
+            if (config.resources.fingerprinting) {
+                fileMapping[getNonFingerprintedAssetName(icuFile)] = icuFile;
+            } else {
+                fileMapping[icuFile] = icuFile;
+            }
+        }
 
         let icuFile = null;
         if (config.globalizationMode === GlobalizationMode.Custom) {
@@ -65,8 +77,8 @@ export function getIcuResourceName (config: MonoConfig): string | null {
             icuFile = getShardedIcuResourceName(culture);
         }
 
-        if (icuFile && icuFiles.includes(icuFile)) {
-            return icuFile;
+        if (icuFile && fileMapping[icuFile]) {
+            return fileMapping[icuFile];
         }
     }
 

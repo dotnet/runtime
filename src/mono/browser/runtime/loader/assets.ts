@@ -319,9 +319,7 @@ export function prepareAssets () {
 
         const addAsset = (asset: AssetEntryInternal, isCore: boolean) => {
             if (resources.fingerprinting && asset.behavior == "assembly") {
-                const indexOfExtension = asset.name.lastIndexOf(".");
-                const indexOfFingerprint = asset.name.lastIndexOf(".", indexOfExtension - 1);
-                asset.virtualPath = asset.name.substring(0, indexOfFingerprint) + asset.name.substring(indexOfExtension);
+                asset.virtualPath = getNonFingerprintedAssetName(asset.name);
             }
             if (isCore) {
                 asset.isCore = true;
@@ -463,6 +461,16 @@ export function prepareAssets () {
     }
 
     config.assets = [...coreAssetsToLoad, ...assetsToLoad, ...modulesAssets];
+}
+
+export function getNonFingerprintedAssetName(assetName: string) {
+    if (loaderHelpers.config.resources?.fingerprinting) {
+        const indexOfExtension = assetName.lastIndexOf(".");
+        const indexOfFingerprint = assetName.lastIndexOf(".", indexOfExtension - 1);
+        return assetName.substring(0, indexOfFingerprint) + assetName.substring(indexOfExtension);
+    }
+
+    return assetName;
 }
 
 export function prepareAssetsWorker () {
