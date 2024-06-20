@@ -994,6 +994,24 @@ namespace System.Runtime.Intrinsics
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static T Round(T value)
+        {
+            if (typeof(T) == typeof(double))
+            {
+                return (T)(object)Math.Round((double)(object)value);
+            }
+            else if (typeof(T) == typeof(float))
+            {
+                return (T)(object)MathF.Round((float)(object)value);
+            }
+            else
+            {
+                ThrowHelper.ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
+                return default!;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T ShiftLeft(T value, int shiftCount)
         {
             if (typeof(T) == typeof(byte))
@@ -1287,6 +1305,24 @@ namespace System.Runtime.Intrinsics
             else if (typeof(T) == typeof(ulong))
             {
                 return (T)(object)((ulong)(object)left - (ulong)(object)right);
+            }
+            else
+            {
+                ThrowHelper.ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
+                return default!;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static T Truncate(T value)
+        {
+            if (typeof(T) == typeof(double))
+            {
+                return (T)(object)Math.Truncate((double)(object)value);
+            }
+            else if (typeof(T) == typeof(float))
+            {
+                return (T)(object)MathF.Truncate((float)(object)value);
             }
             else
             {

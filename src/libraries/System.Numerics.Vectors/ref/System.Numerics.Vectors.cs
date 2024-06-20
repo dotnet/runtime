@@ -351,6 +351,10 @@ namespace System.Numerics
         public static System.Numerics.Vector<T> OnesComplement<T>(System.Numerics.Vector<T> value) { throw null; }
         public static System.Numerics.Vector<double> RadiansToDegrees(System.Numerics.Vector<double> radians) { throw null; }
         public static System.Numerics.Vector<float> RadiansToDegrees(System.Numerics.Vector<float> radians) { throw null; }
+        public static System.Numerics.Vector<double> Round(System.Numerics.Vector<double> vector) { throw null; }
+        public static System.Numerics.Vector<float> Round(System.Numerics.Vector<float> vector) { throw null; }
+        public static System.Numerics.Vector<double> Round(System.Numerics.Vector<double> vector, System.MidpointRounding mode) { throw null; }
+        public static System.Numerics.Vector<float> Round(System.Numerics.Vector<float> vector, System.MidpointRounding mode) { throw null; }
         public static System.Numerics.Vector<System.Byte> ShiftLeft(System.Numerics.Vector<System.Byte> value, int shiftCount) { throw null; }
         public static System.Numerics.Vector<System.Int16> ShiftLeft(System.Numerics.Vector<System.Int16> value, int shiftCount) { throw null; }
         public static System.Numerics.Vector<System.Int32> ShiftLeft(System.Numerics.Vector<System.Int32> value, int shiftCount) { throw null; }
@@ -402,6 +406,8 @@ namespace System.Numerics
         public static System.Numerics.Vector<T> Subtract<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
         public static T Sum<T>(System.Numerics.Vector<T> value) { throw null; }
         public static T ToScalar<T>(this System.Numerics.Vector<T> vector) { throw null; }
+        public static System.Numerics.Vector<double> Truncate(System.Numerics.Vector<double> vector) { throw null; }
+        public static System.Numerics.Vector<float> Truncate(System.Numerics.Vector<float> vector) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static void Widen(System.Numerics.Vector<System.Byte> source, out System.Numerics.Vector<System.UInt16> low, out System.Numerics.Vector<System.UInt16> high) { throw null; }
         public static void Widen(System.Numerics.Vector<System.Int16> source, out System.Numerics.Vector<System.Int32> low, out System.Numerics.Vector<System.Int32> high) { throw null; }
@@ -506,6 +512,8 @@ namespace System.Numerics
         public static System.Numerics.Vector2 operator -(System.Numerics.Vector2 left, System.Numerics.Vector2 right) { throw null; }
         public static System.Numerics.Vector2 operator -(System.Numerics.Vector2 value) { throw null; }
         public static System.Numerics.Vector2 RadiansToDegrees(System.Numerics.Vector2 radians) { throw null; }
+        public static System.Numerics.Vector2 Round(System.Numerics.Vector2 vector) { throw null; }
+        public static System.Numerics.Vector2 Round(System.Numerics.Vector2 vector, System.MidpointRounding mode) { throw null; }
         public static System.Numerics.Vector2 Reflect(System.Numerics.Vector2 vector, System.Numerics.Vector2 normal) { throw null; }
         public static System.Numerics.Vector2 SquareRoot(System.Numerics.Vector2 value) { throw null; }
         public static System.Numerics.Vector2 Subtract(System.Numerics.Vector2 left, System.Numerics.Vector2 right) { throw null; }
@@ -517,6 +525,7 @@ namespace System.Numerics
         public static System.Numerics.Vector2 Transform(System.Numerics.Vector2 value, System.Numerics.Quaternion rotation) { throw null; }
         public static System.Numerics.Vector2 TransformNormal(System.Numerics.Vector2 normal, System.Numerics.Matrix3x2 matrix) { throw null; }
         public static System.Numerics.Vector2 TransformNormal(System.Numerics.Vector2 normal, System.Numerics.Matrix4x4 matrix) { throw null; }
+        public static System.Numerics.Vector2 Truncate(System.Numerics.Vector2 vector) { throw null; }
     }
     public partial struct Vector3 : System.IEquatable<System.Numerics.Vector3>, System.IFormattable
     {
@@ -592,6 +601,8 @@ namespace System.Numerics
         public static System.Numerics.Vector3 operator -(System.Numerics.Vector3 value) { throw null; }
         public static System.Numerics.Vector3 RadiansToDegrees(System.Numerics.Vector3 radians) { throw null; }
         public static System.Numerics.Vector3 Reflect(System.Numerics.Vector3 vector, System.Numerics.Vector3 normal) { throw null; }
+        public static System.Numerics.Vector3 Round(System.Numerics.Vector3 vector) { throw null; }
+        public static System.Numerics.Vector3 Round(System.Numerics.Vector3 vector, System.MidpointRounding mode) { throw null; }
         public static System.Numerics.Vector3 SquareRoot(System.Numerics.Vector3 value) { throw null; }
         public static System.Numerics.Vector3 Subtract(System.Numerics.Vector3 left, System.Numerics.Vector3 right) { throw null; }
         public override readonly string ToString() { throw null; }
@@ -600,6 +611,7 @@ namespace System.Numerics
         public static System.Numerics.Vector3 Transform(System.Numerics.Vector3 position, System.Numerics.Matrix4x4 matrix) { throw null; }
         public static System.Numerics.Vector3 Transform(System.Numerics.Vector3 value, System.Numerics.Quaternion rotation) { throw null; }
         public static System.Numerics.Vector3 TransformNormal(System.Numerics.Vector3 normal, System.Numerics.Matrix4x4 matrix) { throw null; }
+        public static System.Numerics.Vector3 Truncate(System.Numerics.Vector3 vector) { throw null; }
     }
     public partial struct Vector4 : System.IEquatable<System.Numerics.Vector4>, System.IFormattable
     {
@@ -677,6 +689,8 @@ namespace System.Numerics
         public static System.Numerics.Vector4 operator -(System.Numerics.Vector4 left, System.Numerics.Vector4 right) { throw null; }
         public static System.Numerics.Vector4 operator -(System.Numerics.Vector4 value) { throw null; }
         public static System.Numerics.Vector4 RadiansToDegrees(System.Numerics.Vector4 radians) { throw null; }
+        public static System.Numerics.Vector4 Round(System.Numerics.Vector4 vector) { throw null; }
+        public static System.Numerics.Vector4 Round(System.Numerics.Vector4 vector, System.MidpointRounding mode) { throw null; }
         public static System.Numerics.Vector4 SquareRoot(System.Numerics.Vector4 value) { throw null; }
         public static System.Numerics.Vector4 Subtract(System.Numerics.Vector4 left, System.Numerics.Vector4 right) { throw null; }
         public override readonly string ToString() { throw null; }
@@ -688,6 +702,7 @@ namespace System.Numerics
         public static System.Numerics.Vector4 Transform(System.Numerics.Vector3 value, System.Numerics.Quaternion rotation) { throw null; }
         public static System.Numerics.Vector4 Transform(System.Numerics.Vector4 vector, System.Numerics.Matrix4x4 matrix) { throw null; }
         public static System.Numerics.Vector4 Transform(System.Numerics.Vector4 value, System.Numerics.Quaternion rotation) { throw null; }
+        public static System.Numerics.Vector4 Truncate(System.Numerics.Vector4 vector) { throw null; }
     }
     public readonly partial struct Vector<T> : System.IEquatable<System.Numerics.Vector<T>>, System.IFormattable
     {

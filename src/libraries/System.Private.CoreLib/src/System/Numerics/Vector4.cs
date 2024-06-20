@@ -517,6 +517,14 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector4 RadiansToDegrees(Vector4 radians) => Vector128.RadiansToDegrees(radians.AsVector128()).AsVector4();
 
+        /// <inheritdoc cref="Vector128.Round(Vector128{float})" />
+        [Intrinsic]
+        public static Vector4 Round(Vector4 vector) => Vector128.Round(vector.AsVector128()).AsVector4();
+
+        /// <inheritdoc cref="Vector128.Round(Vector128{float}, MidpointRounding)" />
+        [Intrinsic]
+        public static Vector4 Round(Vector4 vector, MidpointRounding mode) => Vector128.Round(vector.AsVector128(), mode).AsVector4();
+
         /// <summary>Returns a vector whose elements are the square root of each of a specified vector's elements.</summary>
         /// <param name="value">A vector.</param>
         /// <returns>The square root vector.</returns>
@@ -613,6 +621,10 @@ namespace System.Numerics
             Quaternion temp = Quaternion.Concatenate(conjuagate, value.AsQuaternion());
             return Quaternion.Concatenate(temp, rotation).AsVector4();
         }
+
+        /// <inheritdoc cref="Vector128.Truncate(Vector128{float})" />
+        [Intrinsic]
+        public static Vector4 Truncate(Vector4 vector) => Vector128.Truncate(vector.AsVector128()).AsVector4();
 
         /// <summary>Copies the elements of the vector to a specified array.</summary>
         /// <param name="array">The destination array.</param>

@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Runtime.Intrinsics.Arm;
 
 namespace System.Runtime.Intrinsics
 {
@@ -1024,6 +1025,98 @@ namespace System.Runtime.Intrinsics
             // which elaborates on why this implementation was chosen
 
             return (radians * TVector.Create(T.CreateTruncating(180))) / TVector.Create(T.Pi);
+        }
+
+        public static TVectorDouble RoundDouble<TVectorDouble>(TVectorDouble vector, MidpointRounding mode)
+            where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
+        {
+            switch (mode)
+            {
+                // Rounds to the nearest value; if the number falls midway,
+                // it is rounded to the nearest value above (for positive numbers) or below (for negative numbers)
+                case MidpointRounding.AwayFromZero:
+                {
+                    // manually fold BitDecrement(0.5)
+                    return TVectorDouble.Truncate(vector + CopySign<TVectorDouble, double>(TVectorDouble.Create(0.49999999999999994), vector));
+                }
+
+                // Rounds to the nearest value; if the number falls midway,
+                // it is rounded to the nearest value with an even least significant digit
+                case MidpointRounding.ToEven:
+                {
+                    return TVectorDouble.Round(vector);
+                }
+
+                // Directed rounding: Round to the nearest value, toward to zero
+                case MidpointRounding.ToZero:
+                {
+                    return TVectorDouble.Truncate(vector);
+                }
+
+                // Directed Rounding: Round down to the next value, toward negative infinity
+                case MidpointRounding.ToNegativeInfinity:
+                {
+                    return TVectorDouble.Floor(vector);
+                }
+
+                // Directed rounding: Round up to the next value, toward positive infinity
+                case MidpointRounding.ToPositiveInfinity:
+                {
+                    return TVectorDouble.Ceiling(vector);
+                }
+
+                default:
+                {
+                    ThrowHelper.ThrowArgumentException_InvalidEnumValue(mode);
+                    return default;
+                }
+            }
+        }
+
+        public static TVectorSingle RoundSingle<TVectorSingle>(TVectorSingle vector, MidpointRounding mode)
+            where TVectorSingle : unmanaged, ISimdVector<TVectorSingle, float>
+        {
+            switch (mode)
+            {
+                // Rounds to the nearest value; if the number falls midway,
+                // it is rounded to the nearest value above (for positive numbers) or below (for negative numbers)
+                case MidpointRounding.AwayFromZero:
+                {
+                    // manually fold BitDecrement(0.5)
+                    return TVectorSingle.Truncate(vector + CopySign<TVectorSingle, float>(TVectorSingle.Create(0.49999997f), vector));
+                }
+
+                // Rounds to the nearest value; if the number falls midway,
+                // it is rounded to the nearest value with an even least significant digit
+                case MidpointRounding.ToEven:
+                {
+                    return TVectorSingle.Round(vector);
+                }
+
+                // Directed rounding: Round to the nearest value, toward to zero
+                case MidpointRounding.ToZero:
+                {
+                    return TVectorSingle.Truncate(vector);
+                }
+
+                // Directed Rounding: Round down to the next value, toward negative infinity
+                case MidpointRounding.ToNegativeInfinity:
+                {
+                    return TVectorSingle.Floor(vector);
+                }
+
+                // Directed rounding: Round up to the next value, toward positive infinity
+                case MidpointRounding.ToPositiveInfinity:
+                {
+                    return TVectorSingle.Ceiling(vector);
+                }
+
+                default:
+                {
+                    ThrowHelper.ThrowArgumentException_InvalidEnumValue(mode);
+                    return default;
+                }
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

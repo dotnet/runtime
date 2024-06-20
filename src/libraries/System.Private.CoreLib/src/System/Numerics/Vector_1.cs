@@ -963,6 +963,9 @@ namespace System.Numerics
         /// <inheritdoc cref="ISimdVector{TSelf, T}.OnesComplement(TSelf)" />
         static Vector<T> ISimdVector<Vector<T>, T>.OnesComplement(Vector<T> vector) => ~vector;
 
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.Round(TSelf)" />
+        static Vector<T> ISimdVector<Vector<T>, T>.Round(Vector<T> vector) => Vector.Round(vector);
+
         /// <inheritdoc cref="ISimdVector{TSelf, T}.ShiftLeft(TSelf, int)" />
         static Vector<T> ISimdVector<Vector<T>, T>.ShiftLeft(Vector<T> vector, int shiftCount) => vector << shiftCount;
 
@@ -1000,6 +1003,9 @@ namespace System.Numerics
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.ToScalar(TSelf)" />
         static T ISimdVector<Vector<T>, T>.ToScalar(Vector<T> vector) => vector.ToScalar();
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.Truncate(TSelf)" />
+        static Vector<T> ISimdVector<Vector<T>, T>.Truncate(Vector<T> vector) => Vector.Truncate(vector);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.TryCopyTo(TSelf, Span{T})" />
         static bool ISimdVector<Vector<T>, T>.TryCopyTo(Vector<T> vector, Span<T> destination) => vector.TryCopyTo(destination);

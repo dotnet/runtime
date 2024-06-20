@@ -467,6 +467,14 @@ namespace System.Numerics
             return MultiplyAddEstimate(-tmp, normal, vector);
         }
 
+        /// <inheritdoc cref="Vector4.Round(Vector4)" />
+        [Intrinsic]
+        public static Vector2 Round(Vector2 vector) => Vector128.Round(vector.AsVector128Unsafe()).AsVector2();
+
+        /// <inheritdoc cref="Vector4.Round(Vector4, MidpointRounding)" />
+        [Intrinsic]
+        public static Vector2 Round(Vector2 vector, MidpointRounding mode) => Vector128.Round(vector.AsVector128Unsafe(), mode).AsVector2();
+
         /// <summary>Returns a vector whose elements are the square root of each of a specified vector's elements.</summary>
         /// <param name="value">A vector.</param>
         /// <returns>The square root vector.</returns>
@@ -536,6 +544,10 @@ namespace System.Numerics
             result = Vector4.MultiplyAddEstimate(matrix.Y, Vector4.Create(normal.Y), result);
             return result.AsVector2();
         }
+
+        /// <inheritdoc cref="Vector4.Truncate(Vector4)" />
+        [Intrinsic]
+        public static Vector2 Truncate(Vector2 vector) => Vector128.Truncate(vector.AsVector128Unsafe()).AsVector2();
 
         /// <summary>Copies the elements of the vector to a specified array.</summary>
         /// <param name="array">The destination array.</param>

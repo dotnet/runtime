@@ -667,6 +667,9 @@ namespace System.Runtime.Intrinsics
         /// <inheritdoc cref="ISimdVector{TSelf, T}.OnesComplement(TSelf)" />
         static Vector64<T> ISimdVector<Vector64<T>, T>.OnesComplement(Vector64<T> vector) => ~vector;
 
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.Round(TSelf)" />
+        static Vector64<T> ISimdVector<Vector64<T>, T>.Round(Vector64<T> vector) => Vector64.Round(vector);
+
         /// <inheritdoc cref="ISimdVector{TSelf, T}.ShiftLeft(TSelf, int)" />
         static Vector64<T> ISimdVector<Vector64<T>, T>.ShiftLeft(Vector64<T> vector, int shiftCount) => vector << shiftCount;
 
@@ -704,6 +707,9 @@ namespace System.Runtime.Intrinsics
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.ToScalar(TSelf)" />
         static T ISimdVector<Vector64<T>, T>.ToScalar(Vector64<T> vector) => vector.ToScalar();
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.Truncate(TSelf)" />
+        static Vector64<T> ISimdVector<Vector64<T>, T>.Truncate(Vector64<T> vector) => Vector64.Truncate(vector);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.TryCopyTo(TSelf, Span{T})" />
         static bool ISimdVector<Vector64<T>, T>.TryCopyTo(Vector64<T> vector, Span<T> destination) => vector.TryCopyTo(destination);

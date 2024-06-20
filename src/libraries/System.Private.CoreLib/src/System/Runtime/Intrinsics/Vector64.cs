@@ -2282,6 +2282,59 @@ namespace System.Runtime.Intrinsics
             }
         }
 
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector64<T> Round<T>(Vector64<T> vector)
+        {
+            if ((typeof(T) == typeof(byte))
+             || (typeof(T) == typeof(short))
+             || (typeof(T) == typeof(int))
+             || (typeof(T) == typeof(long))
+             || (typeof(T) == typeof(nint))
+             || (typeof(T) == typeof(nuint))
+             || (typeof(T) == typeof(sbyte))
+             || (typeof(T) == typeof(ushort))
+             || (typeof(T) == typeof(uint))
+             || (typeof(T) == typeof(ulong)))
+            {
+                return vector;
+            }
+            else
+            {
+                Unsafe.SkipInit(out Vector64<T> result);
+
+                for (int index = 0; index < Vector64<T>.Count; index++)
+                {
+                    T value = Scalar<T>.Round(vector.GetElementUnsafe(index));
+                    result.SetElementUnsafe(index, value);
+                }
+
+                return result;
+            }
+        }
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.Round(TSelf)" />
+        [Intrinsic]
+        public static Vector64<double> Round(Vector64<double> vector) => Round<double>(vector);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.Round(TSelf)" />
+        [Intrinsic]
+        public static Vector64<float> Round(Vector64<float> vector) => Round<float>(vector);
+
+        /// <summary>Rounds each element in a vector to the nearest integer using the specified rounding mode.</summary>
+        /// <param name="vector">The vector to round.</param>
+        /// <param name="mode">The mode under which <paramref name="vector" /> should be rounded.</param>
+        /// <returns>The result of rounding each element in <paramref name="vector" /> to the nearest integer using <paramref name="mode" />.</returns>
+        [Intrinsic]
+        public static Vector64<double> Round(Vector64<double> vector, MidpointRounding mode) => VectorMath.RoundDouble(vector, mode);
+
+        /// <summary>Rounds each element in a vector to the nearest integer using the specified rounding mode.</summary>
+        /// <param name="vector">The vector to round.</param>
+        /// <param name="mode">The mode under which <paramref name="vector" /> should be rounded.</param>
+        /// <returns>The result of rounding each element in <paramref name="vector" /> to the nearest integer using <paramref name="mode" />.</returns>
+        [Intrinsic]
+        public static Vector64<float> Round(Vector64<float> vector, MidpointRounding mode) => VectorMath.RoundSingle(vector, mode);
+
         /// <summary>Shifts each element of a vector left by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
         /// <param name="shiftCount">The number of bits by which to shift each element.</param>
@@ -2825,6 +2878,45 @@ namespace System.Runtime.Intrinsics
             result.SetLowerUnsafe(vector);
             return result;
         }
+
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector64<T> Truncate<T>(Vector64<T> vector)
+        {
+            if ((typeof(T) == typeof(byte))
+             || (typeof(T) == typeof(short))
+             || (typeof(T) == typeof(int))
+             || (typeof(T) == typeof(long))
+             || (typeof(T) == typeof(nint))
+             || (typeof(T) == typeof(nuint))
+             || (typeof(T) == typeof(sbyte))
+             || (typeof(T) == typeof(ushort))
+             || (typeof(T) == typeof(uint))
+             || (typeof(T) == typeof(ulong)))
+            {
+                return vector;
+            }
+            else
+            {
+                Unsafe.SkipInit(out Vector64<T> result);
+
+                for (int index = 0; index < Vector64<T>.Count; index++)
+                {
+                    T value = Scalar<T>.Truncate(vector.GetElementUnsafe(index));
+                    result.SetElementUnsafe(index, value);
+                }
+
+                return result;
+            }
+        }
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.Truncate(TSelf)" />
+        [Intrinsic]
+        public static Vector64<double> Truncate(Vector64<double> vector) => Truncate<double>(vector);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.Truncate(TSelf)" />
+        [Intrinsic]
+        public static Vector64<float> Truncate(Vector64<float> vector) => Truncate<float>(vector);
 
         /// <summary>Tries to copy a <see cref="Vector{T}" /> to a given span.</summary>
         /// <typeparam name="T">The type of the input vector.</typeparam>

@@ -450,6 +450,11 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         static virtual TSelf OnesComplement(TSelf vector) => ~vector;
 
+        /// <summary>Rounds each element in a vector to the nearest integer using the default rounding mode (<see cref="MidpointRounding.ToEven" />).</summary>
+        /// <param name="vector">The vector to round.</param>
+        /// <returns>The result of rounding each element in <paramref name="vector" /> to the nearest integer using the default rounding mode.</returns>
+        static abstract TSelf Round(TSelf vector);
+
         /// <summary>Shifts each element of a vector left by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
         /// <param name="shiftCount">The number of bits by which to shift each element.</param>
@@ -533,6 +538,11 @@ namespace System.Runtime.Intrinsics
         /// <returns>A scalar <typeparamref name="T" /> containing the value of the first element.</returns>
         /// <exception cref="NotSupportedException">The type of the elements in the vector (<typeparamref name="T" />) is not supported.</exception>
         static virtual T ToScalar(TSelf vector) => TSelf.GetElement(vector, 0);
+
+        /// <summary>Truncates each element in a vector.</summary>
+        /// <param name="vector">The vector to truncate.</param>
+        /// <returns>The truncation of each element in <paramref name="vector" />.</returns>
+        static abstract TSelf Truncate(TSelf vector);
 
         /// <summary>Tries to copy a <see cref="Vector{T}" /> to a given span.</summary>
         /// <param name="vector">The vector to copy.</param>
