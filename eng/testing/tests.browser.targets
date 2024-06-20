@@ -71,6 +71,7 @@
     See also eng\testing\WasmRunnerTemplate.sh
     -->
   <ItemGroup Condition="'$(OS)' != 'Windows_NT'">
+    <SetScriptCommands Include="df -h" />
     <SetScriptCommands Condition="'$(Scenario)' != '' and '$(ContinuousIntegrationBuild)' != 'true'" Include="export SCENARIO=$(Scenario)" />
     <SetScriptCommands Condition="'$(JSEngine)' != ''" Include="export JS_ENGINE=--engine=$(JSEngine)" />
     <SetScriptCommands Condition="'$(JSEngineArgs)' != ''" Include="export JS_ENGINE_ARGS=$(JSEngineArgs)" />
@@ -80,6 +81,7 @@
     <SetScriptCommands Condition="'$(BuildAOTTestsOnHelix)' == 'true'" Include="export DOTNET_CLI_DO_NOT_USE_MSBUILD_SERVER=1" />
   </ItemGroup>
   <ItemGroup Condition="'$(OS)' == 'Windows_NT'">
+    <SetScriptCommands Include="powershell -command &quot;Get-Counter -Counter '\Memory\*' | Format-List -Force&quot;" />
     <SetScriptCommands Condition="'$(Scenario)' != '' and '$(ContinuousIntegrationBuild)' != 'true'" Include="set &quot;SCENARIO=$(Scenario)&quot;" />
     <SetScriptCommands Condition="'$(JSEngine)' != ''" Include="set &quot;JS_ENGINE=--engine^=$(JSEngine)&quot;" />
     <SetScriptCommands Condition="'$(JSEngineArgs)' != ''" Include="set &quot;JS_ENGINE_ARGS=$(JSEngineArgs)&quot;" />
