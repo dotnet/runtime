@@ -12,7 +12,7 @@ namespace System.Text.Json.Nodes
     {
         internal readonly TValue Value; // keep as a field for direct access to avoid copies
 
-        protected JsonValue(TValue value, JsonNodeOptions? options = null) : base(options)
+        protected JsonValue(TValue value, JsonNodeOptions? options) : base(options)
         {
             Debug.Assert(value != null);
             Debug.Assert(value is not JsonElement or JsonElement { ValueKind: not JsonValueKind.Null });
@@ -51,38 +51,6 @@ namespace System.Text.Json.Nodes
             return false;
         }
 
-        internal override bool DeepEqualsCore(JsonNode? otherNode)
-        {
-            if (otherNode is null)
-            {
-                return false;
-            }
-
-            if (GetValueKind() != otherNode.GetValueKind())
-            {
-                return false;
-            }
-
-            // Fall back to slow path equality comparison:
-            // Serialize both nodes and compare the resulting JSON.
-            using PooledByteBufferWriter thisOutput = WriteToPooledBuffer(this);
-            using PooledByteBufferWriter otherOutput = WriteToPooledBuffer(otherNode);
-            return thisOutput.WrittenMemory.Span.SequenceEqual(otherOutput.WrittenMemory.Span);
-
-            static PooledByteBufferWriter WriteToPooledBuffer(
-                JsonNode node,
-                JsonSerializerOptions? options = null,
-                JsonWriterOptions writerOptions = default,
-                int bufferSize = JsonSerializerOptions.BufferSizeDefault)
-            {
-                var bufferWriter = new PooledByteBufferWriter(bufferSize);
-                using var writer = new Utf8JsonWriter(bufferWriter, writerOptions);
-                node.WriteTo(writer, options);
-                writer.Flush();
-                return bufferWriter;
-            }
-        }
-
         /// <summary>
         /// Whether <typeparamref name="TValue"/> is a built-in type that admits primitive JsonValue representation.
         /// </summary>
@@ -110,11 +78,32 @@ namespace System.Text.Json.Nodes
         /// </summary>
         private static JsonValueKind? DetermineValueKindForType(Type type)
         {
-            if (type == typeof(Guid) || type == typeof(DateTimeOffset))
+            if (type.IsEnum)
+            {
+                return null; // Can vary depending on converter configuration and value.
+            }
+
+            if (Nullable.GetUnderlyingType(type) is Type underlyingType)
+            {
+                // Because JsonNode excludes null values, we can identify with the value kind of the underlying type.
+                return DetermineValueKindForType(underlyingType);
+            }
+
+            if (type == typeof(DateTime) || type == typeof(DateTimeOffset) || type == typeof(TimeSpan) ||
+#if NET
+                type == typeof(DateOnly) || type == typeof(TimeOnly) ||
+#endif
+                type == typeof(Guid) || type == typeof(Uri) || type == typeof(Version))
             {
                 return JsonValueKind.String;
             }
 
+#if NET
+            if (type == typeof(Half) || type == typeof(UInt128) || type == typeof(Int128))
+            {
+                return JsonValueKind.Number;
+            }
+#endif
             return Type.GetTypeCode(type) switch
             {
                 TypeCode.Boolean => JsonValueKind.Undefined, // Can vary dependending on value.
@@ -130,7 +119,6 @@ namespace System.Text.Json.Nodes
                 TypeCode.Double => JsonValueKind.Number,
                 TypeCode.Decimal => JsonValueKind.Number,
                 TypeCode.String => JsonValueKind.String,
-                TypeCode.DateTime => JsonValueKind.String,
                 TypeCode.Char => JsonValueKind.String,
                 _ => null,
             };

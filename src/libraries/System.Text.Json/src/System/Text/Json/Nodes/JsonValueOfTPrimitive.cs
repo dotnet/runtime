@@ -15,9 +15,8 @@ namespace System.Text.Json.Nodes
         private readonly JsonConverter<TValue> _converter;
         private readonly JsonValueKind _valueKind;
 
-        public JsonValuePrimitive(TValue value, JsonConverter<TValue> converter, JsonNodeOptions? options = null) : base(value, options)
+        public JsonValuePrimitive(TValue value, JsonConverter<TValue> converter, JsonNodeOptions? options) : base(value, options)
         {
-            Debug.Assert(typeof(IEquatable<TValue>).IsAssignableFrom(typeof(TValue)), $"{typeof(TValue)} is not equatable.");
             Debug.Assert(TypeIsSupportedPrimitive, $"The type {typeof(TValue)} is not a supported primitive.");
             Debug.Assert(converter is { IsInternalConverter: true, ConverterStrategy: ConverterStrategy.Value });
 
@@ -28,7 +27,7 @@ namespace System.Text.Json.Nodes
         private protected override JsonValueKind GetValueKindCore() => _valueKind;
         internal override JsonNode DeepCloneCore() => new JsonValuePrimitive<TValue>(Value, _converter, Options);
 
-        internal override bool DeepEqualsCore(JsonNode? otherNode)
+        internal override bool DeepEqualsCore(JsonNode otherNode)
         {
             if (otherNode is JsonValue otherValue && otherValue.TryGetValue(out TValue? v))
             {

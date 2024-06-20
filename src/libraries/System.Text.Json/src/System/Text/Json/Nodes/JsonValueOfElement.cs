@@ -11,52 +11,27 @@ namespace System.Text.Json.Nodes
     /// </summary>
     internal sealed class JsonValueOfElement : JsonValue<JsonElement>
     {
-        public JsonValueOfElement(JsonElement value, JsonNodeOptions? options = null) : base(value, options)
+        public JsonValueOfElement(JsonElement value, JsonNodeOptions? options) : base(value, options)
         {
             Debug.Assert(value.ValueKind is JsonValueKind.False or JsonValueKind.True or JsonValueKind.Number or JsonValueKind.String);
         }
 
-        private protected override JsonValueKind GetValueKindCore() => Value.ValueKind;
+        internal override JsonElement? UnderlyingElement => Value;
         internal override JsonNode DeepCloneCore() => new JsonValueOfElement(Value.Clone(), Options);
+        private protected override JsonValueKind GetValueKindCore() => Value.ValueKind;
 
-        internal override bool DeepEqualsCore(JsonNode? otherNode)
+        internal override bool DeepEqualsCore(JsonNode otherNode)
         {
-            if (otherNode is JsonValueOfElement { Value: JsonElement otherElement })
+            if (otherNode.UnderlyingElement is JsonElement otherElement)
             {
-                JsonElement thisElement = Value;
-                if (thisElement.ValueKind != otherElement.ValueKind)
-                {
-                    return false;
-                }
+                return JsonElement.DeepEquals(Value, otherElement);
+            }
 
-                switch (thisElement.ValueKind)
-                {
-                    case JsonValueKind.Null:
-                    case JsonValueKind.True:
-                    case JsonValueKind.False:
-                        return true;
-
-                    case JsonValueKind.String:
-                        if (otherElement.ValueIsEscaped)
-                        {
-                            if (thisElement.ValueIsEscaped)
-                            {
-                                // Both values contain escaping, force an allocation to unescape the RHS.
-                                return thisElement.ValueEquals(otherElement.GetString());
-                            }
-
-                            // Swap values so that unescaping is handled by the LHS.
-                            (thisElement, otherElement) = (otherElement, thisElement);
-                        }
-
-                        return thisElement.ValueEquals(otherElement.ValueSpan);
-
-                    case JsonValueKind.Number:
-                        return thisElement.GetRawValue().Span.SequenceEqual(otherElement.GetRawValue().Span);
-                    default:
-                        Debug.Fail("Object and Array JsonElements cannot be contained in JsonValue.");
-                        break;
-                }
+            if (otherNode is JsonValue)
+            {
+                // Dispatch to the other value in case it knows
+                // how to convert JsonElement to its own type.
+                return otherNode.DeepEqualsCore(this);
             }
 
             return base.DeepEqualsCore(otherNode);

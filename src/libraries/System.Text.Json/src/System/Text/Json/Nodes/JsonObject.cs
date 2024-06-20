@@ -20,6 +20,8 @@ namespace System.Text.Json.Nodes
     {
         private JsonElement? _jsonElement;
 
+        internal override JsonElement? UnderlyingElement => _jsonElement;
+
         /// <summary>
         ///   Initializes a new instance of the <see cref="JsonObject"/> class that is empty.
         /// </summary>
@@ -165,11 +167,11 @@ namespace System.Text.Json.Nodes
 
         private protected override JsonValueKind GetValueKindCore() => JsonValueKind.Object;
 
-        internal override bool DeepEqualsCore(JsonNode? node)
+        internal override bool DeepEqualsCore(JsonNode node)
         {
             switch (node)
             {
-                case null or JsonArray:
+                case JsonArray:
                     return false;
                 case JsonValue value:
                     // JsonValue instances have special comparison semantics, dispatch to their implementation.

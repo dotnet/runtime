@@ -21,6 +21,11 @@ namespace System.Text.Json.Nodes
         private JsonNodeOptions? _options;
 
         /// <summary>
+        /// The underlying JsonElement if the node is backed by a JsonElement.
+        /// </summary>
+        internal virtual JsonElement? UnderlyingElement => null;
+
+        /// <summary>
         ///   Options to control the behavior.
         /// </summary>
         public JsonNodeOptions? Options
@@ -303,11 +308,15 @@ namespace System.Text.Json.Nodes
             {
                 return node2 is null;
             }
+            else if (node2 is null)
+            {
+                return false;
+            }
 
             return node1.DeepEqualsCore(node2);
         }
 
-        internal abstract bool DeepEqualsCore(JsonNode? node);
+        internal abstract bool DeepEqualsCore(JsonNode node);
 
         /// <summary>
         /// Replaces this node with a new value.
