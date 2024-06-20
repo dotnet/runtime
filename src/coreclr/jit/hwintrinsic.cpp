@@ -748,7 +748,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
 #endif
 
     size_t isaIndex = static_cast<size_t>(isa) - 1;
-    assert(isaIndex < _countof(hwintrinsicIsaRangeArray));
+    assert(isaIndex < (sizeof(hwintrinsicIsaRangeArray) / sizeof(hwintrinsicIsaRangeArray[0])));
 
     const HWIntrinsicIsaRange& isaRange = hwintrinsicIsaRangeArray[isaIndex];
 
