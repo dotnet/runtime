@@ -316,7 +316,7 @@ namespace System.Diagnostics.Metrics
                     }
                 };
             }
-            else if (genericDefType == typeof(ObservableGauge<>))
+            else if (genericDefType == typeof(ObservableGauge<>) || genericDefType == typeof(Gauge<>))
             {
                 return () =>
                 {

@@ -3802,7 +3802,7 @@ void CodeGen::genJmpPlaceVarArgs()
         const ABIPassingInformation& abiInfo = compiler->lvaGetParameterABIInfo(varNum);
         for (unsigned i = 0; i < abiInfo.NumSegments; i++)
         {
-            const ABIPassingSegment& segment = abiInfo.Segments[i];
+            const ABIPassingSegment& segment = abiInfo.Segment(i);
             if (segment.IsPassedInRegister())
             {
                 potentialArgs &= ~segment.GetRegisterMask();

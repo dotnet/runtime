@@ -346,19 +346,91 @@ class DeadCodeElimination
 
         sealed class Never { }
 
-        static Type s_type = null;
+        class Never2 { }
+        class Canary2 { }
+        class Never3 { }
+        class Canary3 { }
+
+        class Maybe1<T, U> { }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static Type GetTheType() => null;
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static Type GetThePointerType() => typeof(void*);
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static object GetTheObject() => new object();
+
+        static volatile object s_sink;
 
         public static void Run()
         {
             // This was asserting the BCL because Never would not have reflection metadata
             // despite the typeof
-            Console.WriteLine(s_type == typeof(Never));
+            Console.WriteLine(GetTheType() == typeof(Never));
 
             // This was a compiler crash
             Console.WriteLine(typeof(object) == typeof(Gen<>));
 
 #if !DEBUG
             ThrowIfPresent(typeof(TestTypeEquals), nameof(Never));
+
+            {
+                RunCheck(GetTheType());
+
+                static void RunCheck(Type t)
+                {
+                    if (t == typeof(Never2))
+                    {
+                        s_sink = new Canary2();
+                    }
+                }
+
+                ThrowIfPresentWithUsableMethodTable(typeof(TestTypeEquals), nameof(Canary2));
+            }
+
+            {
+
+                RunCheck(GetTheObject());
+
+                static void RunCheck(object o)
+                {
+                    if (o.GetType() == typeof(Never3))
+                    {
+                        s_sink = new Canary3();
+                    }
+                }
+
+                ThrowIfPresentWithUsableMethodTable(typeof(TestTypeEquals), nameof(Canary3));
+            }
+
+            {
+                RunCheck(GetThePointerType());
+
+                static void RunCheck(Type t)
+                {
+                    if (t == typeof(void*))
+                    {
+                        return;
+                    }
+                    throw new Exception();
+                }
+            }
+
+            {
+                RunCheck<object>(typeof(Maybe1<object, string>));
+
+                [MethodImpl(MethodImplOptions.NoInlining)]
+                static void RunCheck<T>(Type t)
+                {
+                    if (t == typeof(Maybe1<T, string>))
+                    {
+                        return;
+                    }
+                    throw new Exception();
+                }
+            }
 #endif
         }
     }
