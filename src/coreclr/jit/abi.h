@@ -45,8 +45,8 @@ struct ABIPassingInformation
 private:
     union
     {
-        ABIPassingSegment* Segments;
-        ABIPassingSegment  SingleSegment;
+        ABIPassingSegment* m_segments;
+        ABIPassingSegment  m_singleSegment;
     };
 
 public:
