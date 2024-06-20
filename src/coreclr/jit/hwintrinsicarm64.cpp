@@ -258,6 +258,7 @@ void Compiler::getHWIntrinsicImmOps(NamedIntrinsic    intrinsic,
 //    immNumber                -- Which immediate to use (1 for most intrinsics)
 //    simdBaseType             -- base type of the intrinsic
 //    simdType                 -- vector size of the intrinsic
+//    op1ClsHnd                -- cls handler for op1
 //    op2ClsHnd                -- cls handler for op2
 //    op2ClsHnd                -- cls handler for op3
 //    immSimdSize [IN/OUT]     -- Size of the immediate to override
@@ -268,6 +269,7 @@ void Compiler::getHWIntrinsicImmTypes(NamedIntrinsic       intrinsic,
                                       unsigned             immNumber,
                                       var_types            simdBaseType,
                                       CorInfoType          simdBaseJitType,
+                                      CORINFO_CLASS_HANDLE op1ClsHnd,
                                       CORINFO_CLASS_HANDLE op2ClsHnd,
                                       CORINFO_CLASS_HANDLE op3ClsHnd,
                                       unsigned*            immSimdSize,
@@ -283,7 +285,12 @@ void Compiler::getHWIntrinsicImmTypes(NamedIntrinsic       intrinsic,
         var_types   indexedElementBaseType;
         *immSimdSize = 0;
 
-        if (sig->numArgs == 3)
+        if (sig->numArgs == 2)
+        {
+            indexedElementBaseJitType = getBaseJitTypeAndSizeOfSIMDType(op1ClsHnd, immSimdSize);
+            indexedElementBaseType    = JitType2PreciseVarType(indexedElementBaseJitType);
+        }
+        else if (sig->numArgs == 3)
         {
             indexedElementBaseJitType = getBaseJitTypeAndSizeOfSIMDType(op2ClsHnd, immSimdSize);
             indexedElementBaseType    = JitType2PreciseVarType(indexedElementBaseJitType);
@@ -368,7 +375,15 @@ void HWIntrinsicInfo::lookupImmBounds(
     }
     else if (category == HW_Category_SIMDByIndexedElement)
     {
-        immUpperBound = Compiler::getSIMDVectorLength(simdSize, baseType) - 1;
+        if (intrinsic == NI_Sve_DuplicateSelectedScalarToVector)
+        {
+            // For SVE_DUP, the upper bound on index does not depend on the vector length.
+            immUpperBound = (512 / (BITS_PER_BYTE * genTypeSize(baseType))) - 1;
+        }
+        else
+        {
+            immUpperBound = Compiler::getSIMDVectorLength(simdSize, baseType) - 1;
+        }
     }
     else
     {
@@ -413,10 +428,6 @@ void HWIntrinsicInfo::lookupImmBounds(
             case NI_Sve_Count8BitElements:
                 immLowerBound = (int)SVE_PATTERN_POW2;
                 immUpperBound = (int)SVE_PATTERN_ALL;
-                break;
-
-            case NI_Sve_DuplicateSelectedScalarToVector:
-                immUpperBound = (512 / (genTypeSize(baseType) * BITS_PER_BYTE)) - 1;
                 break;
 
             case NI_Sve_SaturatingDecrementBy16BitElementCount:
