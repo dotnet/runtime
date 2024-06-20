@@ -1946,10 +1946,16 @@ mono_class_interface_offset (MonoClass *klass, MonoClass *itf)
 int
 mono_class_interface_offset_with_variance (MonoClass *klass, MonoClass *itf, gboolean *non_exact_match)
 {
-	int i = mono_class_interface_offset (klass, itf);
+	// const char *iname = mono_type_get_name_full (m_class_get_byval_arg (itf), MONO_TYPE_NAME_FORMAT_FULL_NAME);
+	gboolean has_variance = mono_class_has_variant_generic_params (itf);
+	int exact_match = mono_class_interface_offset (klass, itf), i = -1;
 	*non_exact_match = FALSE;
-	if (i >= 0)
-		return i;
+
+	if (exact_match >= 0) {
+		// g_print ("exact match for %s on %s\n", iname, m_class_get_name (klass));
+		if (!has_variance)
+			return exact_match;
+	}
 
 	int klass_interface_offsets_count = m_class_get_interface_offsets_count (klass);
 
@@ -1957,10 +1963,17 @@ mono_class_interface_offset_with_variance (MonoClass *klass, MonoClass *itf, gbo
 		MonoClass *gtd = mono_class_get_generic_type_definition (itf);
 		int found = -1;
 
-		for (i = 0; i < klass_interface_offsets_count; i++) {
+		for (i = klass_interface_offsets_count - 1; i >= 0; i--) {
 			if (mono_class_is_variant_compatible (itf, m_class_get_interfaces_packed (klass) [i], FALSE)) {
+				/*
+				g_print (
+					"is_variant_compatible (%s, %s, FALSE) == true\n",
+					iname,
+					mono_type_get_name_full (m_class_get_byval_arg (m_class_get_interfaces_packed (klass) [i]), MONO_TYPE_NAME_FORMAT_FULL_NAME)
+				);
+				*/
 				found = i;
-				*non_exact_match = TRUE;
+				*non_exact_match = (i != exact_match);
 				break;
 			}
 
@@ -1968,10 +1981,17 @@ mono_class_interface_offset_with_variance (MonoClass *klass, MonoClass *itf, gbo
 		if (found != -1)
 			return m_class_get_interface_offsets_packed (klass) [found];
 
-		for (i = 0; i < klass_interface_offsets_count; i++) {
+		for (i = klass_interface_offsets_count - 1; i >= 0; i--) {
 			if (mono_class_get_generic_type_definition (m_class_get_interfaces_packed (klass) [i]) == gtd) {
+				/*
+				g_print (
+					"gtd_of (%s) == gtd_of (%s)\n",
+					mono_type_get_name_full (m_class_get_byval_arg (m_class_get_interfaces_packed (klass) [i]), MONO_TYPE_NAME_FORMAT_FULL_NAME),
+					iname
+				);
+				*/
 				found = i;
-				*non_exact_match = TRUE;
+				*non_exact_match = (i != exact_match);
 				break;
 			}
 		}
@@ -1982,12 +2002,19 @@ mono_class_interface_offset_with_variance (MonoClass *klass, MonoClass *itf, gbo
 		return m_class_get_interface_offsets_packed (klass) [found];
 	}
 
-	if (!mono_class_has_variant_generic_params (itf))
+	if (!has_variance)
 		return -1;
 
-	for (i = 0; i < klass_interface_offsets_count; i++) {
+	for (i = klass_interface_offsets_count - 1; i >= 0; i--) {
 		if (mono_class_is_variant_compatible (itf, m_class_get_interfaces_packed (klass) [i], FALSE)) {
-			*non_exact_match = TRUE;
+			/*
+			g_print (
+				"is_variant_compatible (%s, %s, FALSE) == true\n",
+				iname,
+				mono_type_get_name_full (m_class_get_byval_arg (m_class_get_interfaces_packed (klass) [i]), MONO_TYPE_NAME_FORMAT_FULL_NAME)
+			);
+			*/
+			*non_exact_match = (i != exact_match);
 			return m_class_get_interface_offsets_packed (klass) [i];
 		}
 	}
