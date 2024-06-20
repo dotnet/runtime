@@ -9764,6 +9764,7 @@ void CallArgs::InternalCopyFrom(Compiler* comp, CallArgs* other, CopyNodeFunc co
         carg->m_isTmp           = arg.m_isTmp;
         carg->m_processed       = arg.m_processed;
         carg->AbiInfo           = arg.AbiInfo;
+        carg->NewAbiInfo        = arg.NewAbiInfo;
         *tail                   = carg;
         tail                    = &carg->m_next;
     }
