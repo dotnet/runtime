@@ -9,7 +9,7 @@ using System.Runtime.CompilerServices;
 namespace System.Collections.Frozen
 {
     /// <summary>The base class for the specialized frozen string dictionaries.</summary>
-    internal abstract class OrdinalStringFrozenDictionary<TValue> : FrozenDictionary<string, TValue>
+    internal abstract partial class OrdinalStringFrozenDictionary<TValue> : FrozenDictionary<string, TValue>
     {
         private readonly FrozenHashTable _hashTable;
         private readonly string[] _keys;
@@ -63,19 +63,28 @@ namespace System.Collections.Frozen
         private protected int HashIndex { get; }
         private protected int HashCount { get; }
         private protected abstract bool Equals(string? x, string? y);
+        private protected abstract bool Equals(ReadOnlySpan<char> x, string? y);
         private protected abstract int GetHashCode(string s);
-        private protected virtual bool CheckLengthQuick(string key) => true;
+        private protected abstract int GetHashCode(ReadOnlySpan<char> s);
+        private protected virtual bool CheckLengthQuick(uint length) => true;
         private protected override string[] KeysCore => _keys;
         private protected override TValue[] ValuesCore => _values;
         private protected override Enumerator GetEnumeratorCore() => new Enumerator(_keys, _values);
         private protected override int CountCore => _hashTable.Count;
+
+        // We want to avoid having to implement GetValueRefOrNullRefCore for each of the multiple types
+        // that derive from this one, but each of those needs to supply its own notion of Equals/GetHashCode.
+        // To avoid lots of virtual calls, we have every derived type override GetValueRefOrNullRefCore and
+        // call to that span-based method that's aggressively inlined. That then exposes the implementation
+        // to the sealed Equals/GetHashCodes on each derived type, allowing them to be devirtualized and inlined
+        // into each unique copy of the code.
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private protected override ref readonly TValue GetValueRefOrNullRefCore(string key)
         {
             if ((uint)(key.Length - _minimumLength) <= (uint)_maximumLengthDiff)
             {
-                if (CheckLengthQuick(key))
+                if (CheckLengthQuick((uint)key.Length))
                 {
                     int hashCode = GetHashCode(key);
                     _hashTable.FindMatchingEntries(hashCode, out int index, out int endIndex);

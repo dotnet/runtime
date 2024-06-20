@@ -308,7 +308,7 @@ const char* dspRegRange(regMaskTP regMask, size_t& minSiz, const char* sep, regN
     {
         regMaskTP regBit = genRegMask(regNum);
 
-        if ((regMask & regBit) != 0)
+        if ((regMask & regBit).IsNonEmpty())
         {
             // We have a register to display. It gets displayed now if:
             // 1. This is the first register to display of a new range of registers (possibly because
@@ -1216,8 +1216,8 @@ void NodeCounts::record(genTreeOps oper)
 
 struct DumpOnShutdownEntry
 {
-    const char* Name;
-    Dumpable*   Dumpable;
+    const char*     Name;
+    class Dumpable* Dumpable;
 };
 
 static DumpOnShutdownEntry s_dumpOnShutdown[16];
@@ -1691,20 +1691,17 @@ void HelperCallProperties::init()
             // Helpers that load the base address for static variables.
             // We divide these between those that may and may not invoke
             // static class constructors.
-            case CORINFO_HELP_GETSHARED_GCSTATIC_BASE:
-            case CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE:
-            case CORINFO_HELP_GETSHARED_GCSTATIC_BASE_DYNAMICCLASS:
-            case CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_DYNAMICCLASS:
-            case CORINFO_HELP_GETGENERICS_GCTHREADSTATIC_BASE:
-            case CORINFO_HELP_GETGENERICS_NONGCTHREADSTATIC_BASE:
-            case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE:
-            case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE:
-            case CORINFO_HELP_CLASSINIT_SHARED_DYNAMICCLASS:
-            case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_DYNAMICCLASS:
-            case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_DYNAMICCLASS:
+            case CORINFO_HELP_GET_GCSTATIC_BASE:
+            case CORINFO_HELP_GET_NONGCSTATIC_BASE:
+            case CORINFO_HELP_GETDYNAMIC_GCSTATIC_BASE:
+            case CORINFO_HELP_GETDYNAMIC_NONGCSTATIC_BASE:
+            case CORINFO_HELP_GETPINNED_GCSTATIC_BASE:
+            case CORINFO_HELP_GETPINNED_NONGCSTATIC_BASE:
+            case CORINFO_HELP_GET_GCTHREADSTATIC_BASE:
+            case CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE:
+            case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE:
+            case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE:
             case CORINFO_HELP_GETSTATICFIELDADDR_TLS:
-            case CORINFO_HELP_GETGENERICS_GCSTATIC_BASE:
-            case CORINFO_HELP_GETGENERICS_NONGCSTATIC_BASE:
             case CORINFO_HELP_READYTORUN_GCSTATIC_BASE:
             case CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE:
             case CORINFO_HELP_READYTORUN_THREADSTATIC_BASE:
@@ -1719,12 +1716,25 @@ void HelperCallProperties::init()
                 mayRunCctor   = true;
                 break;
 
-            case CORINFO_HELP_GETSHARED_GCSTATIC_BASE_NOCTOR:
-            case CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_NOCTOR:
-            case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR:
-            case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
-            case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR:
-            case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
+            case CORINFO_HELP_INITCLASS:
+            case CORINFO_HELP_INITINSTCLASS:
+                isPure      = true;
+                mayRunCctor = true;
+                break;
+
+            case CORINFO_HELP_GET_GCSTATIC_BASE_NOCTOR:
+            case CORINFO_HELP_GET_NONGCSTATIC_BASE_NOCTOR:
+            case CORINFO_HELP_GETDYNAMIC_GCSTATIC_BASE_NOCTOR:
+            case CORINFO_HELP_GETDYNAMIC_NONGCSTATIC_BASE_NOCTOR:
+            case CORINFO_HELP_GETPINNED_GCSTATIC_BASE_NOCTOR:
+            case CORINFO_HELP_GETPINNED_NONGCSTATIC_BASE_NOCTOR:
+            case CORINFO_HELP_GET_GCTHREADSTATIC_BASE_NOCTOR:
+            case CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE_NOCTOR:
+            case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR:
+            case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR:
+            case CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
+            case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
+            case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2:
             case CORINFO_HELP_READYTORUN_THREADSTATIC_BASE_NOCTOR:
 
                 // These do not invoke static class constructors

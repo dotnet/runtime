@@ -65,7 +65,7 @@ namespace System.Text.Json.Nodes
             return false;
         }
 
-        internal sealed override JsonValueKind GetValueKindCore()
+        private protected sealed override JsonValueKind GetValueKindCore()
         {
             if (Value is JsonElement element)
             {

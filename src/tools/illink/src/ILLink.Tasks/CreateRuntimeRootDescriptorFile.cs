@@ -302,7 +302,7 @@ namespace ILLink.Tasks
 		{
 			XmlDocument doc = new XmlDocument ();
 			using (var sr = new StreamReader (iLLinkTrimXmlFilePath)) {
-				XmlReader reader = XmlReader.Create (sr, new XmlReaderSettings () { XmlResolver = null });
+				using XmlReader reader = XmlReader.Create (sr, new XmlReaderSettings () { XmlResolver = null });
 				doc.Load (reader);
 			}
 
