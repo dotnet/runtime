@@ -290,16 +290,28 @@ namespace System.Globalization.Tests
             foreach (var culture in CultureInfo.GetCultures(CultureTypes.AllCultures))
             {
                 var pattern = culture.DateTimeFormat.LongTimePattern;
-                var segments = pattern.Split('\'');
+                bool use24Hour = false;
                 bool use12Hour = false;
                 bool useAMPM = false;
-                for (var i = 0; i < segments.Length; i += 2)
+                for (var i = 0; i < pattern.Length; i++)
                 {
-                    var segment = segments[i];
-                    use12Hour |= segment.Contains('h', StringComparison.Ordinal);
-                    useAMPM |= segment.Contains('t', StringComparison.Ordinal);
+                    switch (pattern[i])
+                    {
+                        case 'H': use24Hour = true; break;
+                        case 'h': use12Hour = true; break;
+                        case 't': useAMPM = true; break;
+                        case '\\': i++; break;
+                        case '\'':
+                            for (i++; i < pattern.Length; i++)
+                            {
+                                var c = pattern[i];
+                                if (c == '\'') break;
+                                if (c == '\\') i++;
+                            }
+                            break;
+                    }
                 }
-                Assert.True(!use12Hour || useAMPM, $"Bad long time pattern for culture {culture.Name}: '{pattern}'");
+                Assert.True((use24Hour || useAMPM) && (use12Hour ^ use24Hour), $"Bad long time pattern for culture {culture.Name}: '{pattern}'");
             }
         }
 
