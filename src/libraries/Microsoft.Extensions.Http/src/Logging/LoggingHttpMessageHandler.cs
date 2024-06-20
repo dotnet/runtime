@@ -154,8 +154,18 @@ namespace Microsoft.Extensions.Http.Logging
                     return null;
                 }
 
-                Debug.Assert(uri.IsAbsoluteUri, "HttpClient should not forward relative Uri to its handlers.");
-                return s_logQueryString ? uri.AbsoluteUri : $"{uri.Scheme}://{uri.Host}{uri.AbsolutePath}";
+                if (uri.IsAbsoluteUri)
+                {
+                    return s_logQueryString
+                        ? uri.AbsoluteUri
+                        : uri.GetComponents(UriComponents.AbsoluteUri & ~UriComponents.Query, UriFormat.UriEscaped);
+                }
+
+                string uriString = uri.ToString();
+                int queryOffset = s_logQueryString ? -1 : uriString.IndexOf('?');
+                return queryOffset < 0
+                    ? uriString
+                    : uriString.Substring(0, queryOffset);
             }
         }
     }
