@@ -965,8 +965,28 @@ void ObjectAllocator::RewriteUses()
                                                           m_compiler->gtNewIconNode(TARGET_POINTER_SIZE, TYP_I_IMPL));
                             GenTree* const comma = m_compiler->gtNewOperNode(GT_COMMA, TYP_BYREF, call, payloadAddr);
                             *use                 = comma;
+
+                            // flag this comma so we can find it later
+                            comma->gtFlags |= GTF_MAKE_CSE;
                         }
                     }
+                }
+            }
+            else if (tree->OperIsIndir())
+            {
+                GenTreeIndir* const indir = tree->AsIndir();
+                GenTree* const      addr  = indir->Addr();
+
+                if (addr->OperIs(GT_COMMA) && ((addr->gtFlags & GTF_MAKE_CSE) != 0))
+                {
+                    GenTree* const actualAddr  = addr->gtEffectiveVal();
+                    GenTree*       sideEffects = nullptr;
+                    m_compiler->gtExtractSideEffList(indir, &sideEffects, GTF_SIDE_EFFECT, /* ignore root */ true);
+
+                    indir->Addr() = actualAddr;
+                    indir->gtFlags &= ~GTF_SIDE_EFFECT;
+                    GenTree* const newComma = m_compiler->gtNewOperNode(GT_COMMA, indir->TypeGet(), sideEffects, indir);
+                    *use                    = newComma;
                 }
             }
 

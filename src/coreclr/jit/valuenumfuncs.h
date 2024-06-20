@@ -161,6 +161,7 @@ ValueNumFuncDef(LazyStrCns, 2, false, true, false, false)            // Lazy-ini
 ValueNumFuncDef(InvariantLoad, 1, false, false, false, false)        // Args: 0: (VN of) the address.
 ValueNumFuncDef(InvariantNonNullLoad, 1, false, true, false, false)  // Args: 0: (VN of) the address.
 ValueNumFuncDef(Unbox, 2, false, false, false, false)
+ValueNumFuncDef(Unbox_TypeTest, 2, false, false, false, false)
 
 ValueNumFuncDef(LT_UN, 2, false, false, false, false)      // unsigned or unordered comparisons
 ValueNumFuncDef(LE_UN, 2, false, false, false, false)
