@@ -208,7 +208,7 @@ namespace System.Reflection.Tests
             }).Dispose();
         }
 
-        private static SetEntryAssembly(Assembly assembly)
+        private static void SetEntryAssembly(Assembly assembly)
         {
             typeof(Assembly)
                 .GetMethod("SetEntryAssembly", BindingFlags.Public | BindingFlags.Static)
