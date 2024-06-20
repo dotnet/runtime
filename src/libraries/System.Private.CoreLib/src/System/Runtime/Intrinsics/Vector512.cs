@@ -1829,6 +1829,42 @@ namespace System.Runtime.Intrinsics
             }
         }
 
+        /// <inheritdoc cref="Vector256.Lerp(Vector256{double}, Vector256{double}, Vector256{double})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector512<double> Lerp(Vector512<double> x, Vector512<double> y, Vector512<double> amount)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.Lerp<Vector512<double>, double>(x, y, amount);
+            }
+            else
+            {
+                return Create(
+                    Vector256.Lerp(x._lower, y._lower, amount._lower),
+                    Vector256.Lerp(x._upper, y._upper, amount._upper)
+                );
+            }
+        }
+
+        /// <inheritdoc cref="Vector256.Lerp(Vector256{float}, Vector256{float}, Vector256{float})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector512<float> Lerp(Vector512<float> x, Vector512<float> y, Vector512<float> amount)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.Lerp<Vector512<float>, float>(x, y, amount);
+            }
+            else
+            {
+                return Create(
+                    Vector256.Lerp(x._lower, y._lower, amount._lower),
+                    Vector256.Lerp(x._upper, y._upper, amount._upper)
+                );
+            }
+        }
+
         /// <summary>Compares two vectors to determine which is less on a per-element basis.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="left">The vector to compare with <paramref name="left" />.</param>
@@ -2125,6 +2161,16 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="left" /> and <paramref name="right" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         public static Vector512<T> Multiply<T>(T left, Vector512<T> right) => right * left;
+
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector512<T> MultiplyAddEstimate<T>(Vector512<T> left, Vector512<T> right, Vector512<T> addend)
+        {
+            return Create(
+                Vector256.MultiplyAddEstimate(left._lower, right._lower, addend._lower),
+                Vector256.MultiplyAddEstimate(left._upper, right._upper, addend._upper)
+            );
+        }
 
         /// <inheritdoc cref="Vector256.MultiplyAddEstimate(Vector256{double}, Vector256{double}, Vector256{double})" />
         [Intrinsic]

@@ -432,14 +432,15 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 Hypot(Vector3 x, Vector3 y) => Vector128.Hypot(x.AsVector128Unsafe(), y.AsVector128Unsafe()).AsVector3();
 
-        /// <summary>Performs a linear interpolation between two vectors based on the given weighting.</summary>
-        /// <param name="value1">The first vector.</param>
-        /// <param name="value2">The second vector.</param>
-        /// <param name="amount">A value between 0 and 1 that indicates the weight of <paramref name="value2" />.</param>
-        /// <returns>The interpolated vector.</returns>
+        /// <inheritdoc cref="Vector4.Lerp(Vector4, Vector4, float)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector3 Lerp(Vector3 value1, Vector3 value2, float amount) => MultiplyAddEstimate(value1, Create(1.0f - amount), value2 * amount);
+        public static Vector3 Lerp(Vector3 value1, Vector3 value2, float amount) => Lerp(value1, value2, Create(amount));
+
+        /// <inheritdoc cref="Vector4.Lerp(Vector4, Vector4, Vector4)" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector3 Lerp(Vector3 value1, Vector3 value2, Vector3 amount) => Vector128.Lerp(value1.AsVector128Unsafe(), value2.AsVector128Unsafe(), amount.AsVector128Unsafe()).AsVector3();
 
         /// <inheritdoc cref="Vector4.Log2(Vector4)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

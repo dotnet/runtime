@@ -446,6 +446,13 @@ namespace System.Runtime.Intrinsics
             return result;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static TVector Lerp<TVector, T>(TVector x, TVector y, TVector amount)
+            where TVector : unmanaged, ISimdVector<TVector, T>
+        {
+            return TVector.MultiplyAddEstimate(x, TVector.One - amount, y * amount);
+        }
+
         public static TVectorDouble LogDouble<TVectorDouble, TVectorInt64, TVectorUInt64>(TVectorDouble x)
             where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
             where TVectorInt64 : unmanaged, ISimdVector<TVectorInt64, long>

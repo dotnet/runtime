@@ -954,6 +954,9 @@ namespace System.Numerics
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Multiply(TSelf, TSelf)" />
         static Vector<T> ISimdVector<Vector<T>, T>.Multiply(Vector<T> left, T right) => left * right;
 
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.MultiplyAddEstimate(TSelf, TSelf, TSelf)" />
+        static Vector<T> ISimdVector<Vector<T>, T>.MultiplyAddEstimate(Vector<T> left, Vector<T> right, Vector<T> addend) => Vector.MultiplyAddEstimate(left, right, addend);
+
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Negate(TSelf)" />
         static Vector<T> ISimdVector<Vector<T>, T>.Negate(Vector<T> vector) => -vector;
 

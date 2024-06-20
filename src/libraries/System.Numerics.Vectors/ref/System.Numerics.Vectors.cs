@@ -298,6 +298,8 @@ namespace System.Numerics
         public static System.Numerics.Vector<T> GreaterThan<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
         public static System.Numerics.Vector<double> Hypot(System.Numerics.Vector<double> x, System.Numerics.Vector<double> y) { throw null; }
         public static System.Numerics.Vector<float> Hypot(System.Numerics.Vector<float> x, System.Numerics.Vector<float> y) { throw null; }
+        public static System.Numerics.Vector<double> Lerp(System.Numerics.Vector<double> x, System.Numerics.Vector<double> y, System.Numerics.Vector<double> amount) { throw null; }
+        public static System.Numerics.Vector<float> Lerp(System.Numerics.Vector<float> x, System.Numerics.Vector<float> y, System.Numerics.Vector<float> amount) { throw null; }
         public static System.Numerics.Vector<System.Int64> LessThan(System.Numerics.Vector<System.Double> left, System.Numerics.Vector<System.Double> right) { throw null; }
         public static System.Numerics.Vector<System.Int32> LessThan(System.Numerics.Vector<System.Int32> left, System.Numerics.Vector<System.Int32> right) { throw null; }
         public static System.Numerics.Vector<System.Int64> LessThan(System.Numerics.Vector<System.Int64> left, System.Numerics.Vector<System.Int64> right) { throw null; }
@@ -482,6 +484,7 @@ namespace System.Numerics
         public readonly float Length() { throw null; }
         public readonly float LengthSquared() { throw null; }
         public static System.Numerics.Vector2 Lerp(System.Numerics.Vector2 value1, System.Numerics.Vector2 value2, float amount) { throw null; }
+        public static System.Numerics.Vector2 Lerp(System.Numerics.Vector2 value1, System.Numerics.Vector2 value2, System.Numerics.Vector2 amount) { throw null; }
         public static System.Numerics.Vector2 Log(System.Numerics.Vector2 vector) { throw null; }
         public static System.Numerics.Vector2 Log2(System.Numerics.Vector2 vector) { throw null; }
         public static System.Numerics.Vector2 Max(System.Numerics.Vector2 value1, System.Numerics.Vector2 value2) { throw null; }
@@ -566,6 +569,7 @@ namespace System.Numerics
         public readonly float LengthSquared() { throw null; }
         public static System.Numerics.Vector3 Hypot(System.Numerics.Vector3 x, System.Numerics.Vector3 y) { throw null; }
         public static System.Numerics.Vector3 Lerp(System.Numerics.Vector3 value1, System.Numerics.Vector3 value2, float amount) { throw null; }
+        public static System.Numerics.Vector3 Lerp(System.Numerics.Vector3 value1, System.Numerics.Vector3 value2, System.Numerics.Vector3 amount) { throw null; }
         public static System.Numerics.Vector3 Log(System.Numerics.Vector3 vector) { throw null; }
         public static System.Numerics.Vector3 Log2(System.Numerics.Vector3 vector) { throw null; }
         public static System.Numerics.Vector3 Max(System.Numerics.Vector3 value1, System.Numerics.Vector3 value2) { throw null; }
@@ -651,6 +655,7 @@ namespace System.Numerics
         public readonly float LengthSquared() { throw null; }
         public static System.Numerics.Vector4 Hypot(System.Numerics.Vector4 x, System.Numerics.Vector4 y) { throw null; }
         public static System.Numerics.Vector4 Lerp(System.Numerics.Vector4 value1, System.Numerics.Vector4 value2, float amount) { throw null; }
+        public static System.Numerics.Vector4 Lerp(System.Numerics.Vector4 value1, System.Numerics.Vector4 value2, System.Numerics.Vector4 amount) { throw null; }
         public static System.Numerics.Vector4 Log(System.Numerics.Vector4 vector) { throw null; }
         public static System.Numerics.Vector4 Log2(System.Numerics.Vector4 vector) { throw null; }
         public static System.Numerics.Vector4 Max(System.Numerics.Vector4 value1, System.Numerics.Vector4 value2) { throw null; }

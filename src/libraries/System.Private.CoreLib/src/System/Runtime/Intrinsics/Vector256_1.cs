@@ -590,6 +590,9 @@ namespace System.Runtime.Intrinsics
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Multiply(TSelf, TSelf)" />
         static Vector256<T> ISimdVector<Vector256<T>, T>.Multiply(Vector256<T> left, T right) => left * right;
 
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.MultiplyAddEstimate(TSelf, TSelf, TSelf)" />
+        static Vector256<T> ISimdVector<Vector256<T>, T>.MultiplyAddEstimate(Vector256<T> left, Vector256<T> right, Vector256<T> addend) => Vector256.MultiplyAddEstimate(left, right, addend);
+
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Negate(TSelf)" />
         static Vector256<T> ISimdVector<Vector256<T>, T>.Negate(Vector256<T> vector) => -vector;
 

@@ -187,6 +187,8 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector128<T> GreaterThan<T>(System.Runtime.Intrinsics.Vector128<T> left, System.Runtime.Intrinsics.Vector128<T> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<double> Hypot(System.Runtime.Intrinsics.Vector128<double> x, System.Runtime.Intrinsics.Vector128<double> y) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<float> Hypot(System.Runtime.Intrinsics.Vector128<float> x, System.Runtime.Intrinsics.Vector128<float> y) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<double> Lerp(System.Runtime.Intrinsics.Vector128<double> x, System.Runtime.Intrinsics.Vector128<double> y, System.Runtime.Intrinsics.Vector128<double> amount) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<float> Lerp(System.Runtime.Intrinsics.Vector128<float> x, System.Runtime.Intrinsics.Vector128<float> y, System.Runtime.Intrinsics.Vector128<float> amount) { throw null; }
         public static bool LessThanAll<T>(System.Runtime.Intrinsics.Vector128<T> left, System.Runtime.Intrinsics.Vector128<T> right) { throw null; }
         public static bool LessThanAny<T>(System.Runtime.Intrinsics.Vector128<T> left, System.Runtime.Intrinsics.Vector128<T> right) { throw null; }
         public static bool LessThanOrEqualAll<T>(System.Runtime.Intrinsics.Vector128<T> left, System.Runtime.Intrinsics.Vector128<T> right) { throw null; }
@@ -541,6 +543,8 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector256<T> GreaterThan<T>(System.Runtime.Intrinsics.Vector256<T> left, System.Runtime.Intrinsics.Vector256<T> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<double> Hypot(System.Runtime.Intrinsics.Vector256<double> x, System.Runtime.Intrinsics.Vector256<double> y) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<float> Hypot(System.Runtime.Intrinsics.Vector256<float> x, System.Runtime.Intrinsics.Vector256<float> y) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<double> Lerp(System.Runtime.Intrinsics.Vector256<double> x, System.Runtime.Intrinsics.Vector256<double> y, System.Runtime.Intrinsics.Vector256<double> amount) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<float> Lerp(System.Runtime.Intrinsics.Vector256<float> x, System.Runtime.Intrinsics.Vector256<float> y, System.Runtime.Intrinsics.Vector256<float> amount) { throw null; }
         public static bool LessThanAll<T>(System.Runtime.Intrinsics.Vector256<T> left, System.Runtime.Intrinsics.Vector256<T> right) { throw null; }
         public static bool LessThanAny<T>(System.Runtime.Intrinsics.Vector256<T> left, System.Runtime.Intrinsics.Vector256<T> right) { throw null; }
         public static bool LessThanOrEqualAll<T>(System.Runtime.Intrinsics.Vector256<T> left, System.Runtime.Intrinsics.Vector256<T> right) { throw null; }
@@ -896,6 +900,8 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector512<T> GreaterThan<T>(System.Runtime.Intrinsics.Vector512<T> left, System.Runtime.Intrinsics.Vector512<T> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<double> Hypot(System.Runtime.Intrinsics.Vector512<double> x, System.Runtime.Intrinsics.Vector512<double> y) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<float> Hypot(System.Runtime.Intrinsics.Vector512<float> x, System.Runtime.Intrinsics.Vector512<float> y) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<double> Lerp(System.Runtime.Intrinsics.Vector512<double> x, System.Runtime.Intrinsics.Vector512<double> y, System.Runtime.Intrinsics.Vector512<double> amount) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<float> Lerp(System.Runtime.Intrinsics.Vector512<float> x, System.Runtime.Intrinsics.Vector512<float> y, System.Runtime.Intrinsics.Vector512<float> amount) { throw null; }
         public static bool LessThanAll<T>(System.Runtime.Intrinsics.Vector512<T> left, System.Runtime.Intrinsics.Vector512<T> right) { throw null; }
         public static bool LessThanAny<T>(System.Runtime.Intrinsics.Vector512<T> left, System.Runtime.Intrinsics.Vector512<T> right) { throw null; }
         public static bool LessThanOrEqualAll<T>(System.Runtime.Intrinsics.Vector512<T> left, System.Runtime.Intrinsics.Vector512<T> right) { throw null; }
@@ -1220,6 +1226,8 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector64<T> GreaterThan<T>(System.Runtime.Intrinsics.Vector64<T> left, System.Runtime.Intrinsics.Vector64<T> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<double> Hypot(System.Runtime.Intrinsics.Vector64<double> x, System.Runtime.Intrinsics.Vector64<double> y) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<float> Hypot(System.Runtime.Intrinsics.Vector64<float> x, System.Runtime.Intrinsics.Vector64<float> y) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<double> Lerp(System.Runtime.Intrinsics.Vector64<double> x, System.Runtime.Intrinsics.Vector64<double> y, System.Runtime.Intrinsics.Vector64<double> amount) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<float> Lerp(System.Runtime.Intrinsics.Vector64<float> x, System.Runtime.Intrinsics.Vector64<float> y, System.Runtime.Intrinsics.Vector64<float> amount) { throw null; }
         public static bool LessThanAll<T>(System.Runtime.Intrinsics.Vector64<T> left, System.Runtime.Intrinsics.Vector64<T> right) { throw null; }
         public static bool LessThanAny<T>(System.Runtime.Intrinsics.Vector64<T> left, System.Runtime.Intrinsics.Vector64<T> right) { throw null; }
         public static bool LessThanOrEqualAll<T>(System.Runtime.Intrinsics.Vector64<T> left, System.Runtime.Intrinsics.Vector64<T> right) { throw null; }
