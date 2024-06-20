@@ -7,6 +7,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Testing;
@@ -25,6 +26,46 @@ namespace Microsoft.Extensions.Http.Logging
         public HttpClientLoggerTest(ITestOutputHelper output)
         {
             _output = output;
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task QueryStringIsNotLoggedByDefault(bool enableQueryStringLogging)
+        {
+            await RemoteExecutor.Invoke(static async (enableQueryStringLoggingStr) =>
+            {
+                bool enableQueryStringLogging = bool.Parse(enableQueryStringLoggingStr);
+
+                if (enableQueryStringLogging)
+                {
+                    AppContext.SetSwitch("Microsoft.Extensions.Http.LogQueryString", true);
+                }
+
+                var sink = new TestSink();
+                var serviceCollection = new ServiceCollection();
+                serviceCollection.AddLogging();
+                serviceCollection.AddSingleton<ILoggerFactory>(new TestLoggerFactory(sink, enabled: true));
+                serviceCollection.AddTransient<TestMessageHandler>();
+
+                serviceCollection.AddHttpClient("test").ConfigurePrimaryHttpMessageHandler<TestMessageHandler>();
+
+                var services = serviceCollection.BuildServiceProvider();
+                var factory = services.GetRequiredService<IHttpClientFactory>();
+
+                var client = factory.CreateClient("test");
+
+                string queryString = "a=1&b=2";
+                _ = await client.GetAsync($"{Url}?{queryString}");
+
+                string[] writes = sink.Writes.Select(w => w.Message).Where(m => m.Contains(Url)).ToArray();
+                Assert.NotEmpty(writes);
+                bool writesContainQueryString = writes.Any(w => w.Contains(queryString));
+                bool scopeContainsQueryString = sink.Scopes.Single().Scope.ToString().Contains(queryString);
+                Assert.Equal(enableQueryStringLogging, writesContainQueryString);
+                Assert.Equal(scopeContainsQueryString, writesContainQueryString);
+
+            }, enableQueryStringLogging.ToString()).DisposeAsync();
         }
 
         [Fact]

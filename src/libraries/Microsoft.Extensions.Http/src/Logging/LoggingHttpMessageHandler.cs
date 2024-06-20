@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
@@ -88,6 +89,8 @@ namespace Microsoft.Extensions.Http.Logging
         // Used in tests.
         internal static class Log
         {
+            private static readonly bool s_logQueryString = AppContext.TryGetSwitch("Microsoft.Extensions.Http.LogQueryString", out bool value) && value;
+
             public static class EventIds
             {
                 public static readonly EventId RequestStart = new EventId(100, "RequestStart");
@@ -144,11 +147,15 @@ namespace Microsoft.Extensions.Http.Logging
                 }
             }
 
-            private static string? GetUriString(Uri? requestUri)
+            internal static string? GetUriString(Uri? uri)
             {
-                return requestUri?.IsAbsoluteUri == true
-                    ? requestUri.AbsoluteUri
-                    : requestUri?.ToString();
+                if (uri is null)
+                {
+                    return null;
+                }
+
+                Debug.Assert(uri.IsAbsoluteUri, "HttpClient should not forward relative Uri to its handlers.");
+                return s_logQueryString ? uri.AbsoluteUri : $"{uri.Scheme}://{uri.Host}{uri.AbsolutePath}";
             }
         }
     }
