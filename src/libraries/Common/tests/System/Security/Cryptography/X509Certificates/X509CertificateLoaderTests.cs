@@ -248,7 +248,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue("macOS seems to not like the PEM post-EB not followed by a newline or EOF", TestPlatforms.OSX)]
         public void LoadCertificate_WithTrailingData()
         {
             // Find the PEM-encoded certificate embedded within NestedCertificates, and
@@ -258,6 +257,13 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             // The offset could be hard-coded, but it's not expensive to do the find and saves on test maintenance.
             Span<byte> needle = stackalloc byte[] { 0x2D, 0x2D, 0x2D, 0x2D, 0x2D };
             int offset = data.AsSpan().IndexOf(needle);
+
+            // The macOS PEM loader seems to be rejecting the trailing data.
+            if (OperatingSystem.IsMacOS())
+            {
+                Assert.ThrowsAny<CryptographicException>(() => LoadCertificateAtOffset(data, offset));
+                return;
+            }
 
             using (X509Certificate2 cert = LoadCertificateAtOffset(data, offset))
             {
@@ -302,6 +308,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             byte[] data = System.Text.Encoding.ASCII.GetBytes(
                 ByteUtils.PemEncode("CERTIFICATE", source));
 
+            // OpenSSL is being more strict here than other platforms.
             if (OperatingSystem.IsLinux())
             {
                 Assert.Throws<CryptographicException>(() => LoadCertificateNoFile(data));
