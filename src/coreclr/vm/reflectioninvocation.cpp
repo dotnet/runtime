@@ -1257,7 +1257,7 @@ FCIMPL1(void*, RuntimeFieldHandle::GetStaticFieldAddress, ReflectFieldObject *pF
 }
 FCIMPLEND
 
-extern "C" BOOL QCALLTYPE RuntimeFieldHandle_GetRVAFieldInfo(QCall::FieldHandle pField, void** address, UINT* size)
+extern "C" BOOL QCALLTYPE RuntimeFieldHandle_GetRVAFieldInfo(FieldDesc* pField, void** address, UINT* size)
 {
     QCALL_CONTRACT;
 
@@ -1265,16 +1265,14 @@ extern "C" BOOL QCALLTYPE RuntimeFieldHandle_GetRVAFieldInfo(QCall::FieldHandle 
 
     BEGIN_QCALL;
 
-    FieldDesc* pFieldDesc = pField.m_pField;
-
-    if (pFieldDesc != NULL && pFieldDesc->IsRVA())
+    if (pField != NULL && pField->IsRVA())
     {
         ret = TRUE;
         
-        Module* pModule = pFieldDesc->GetModule();
-        *address = pModule->GetRvaField(pFieldDesc->GetOffset());
+        Module* pModule = pField->GetModule();
+        *address = pModule->GetRvaField(pField->GetOffset());
 
-        *size = pFieldDesc->LoadSize();
+        *size = pField->LoadSize();
     }
 
     END_QCALL;

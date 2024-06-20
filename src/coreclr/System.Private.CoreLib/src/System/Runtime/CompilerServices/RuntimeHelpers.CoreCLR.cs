@@ -16,12 +16,15 @@ namespace System.Runtime.CompilerServices
         [Intrinsic]
         public static unsafe void InitializeArray(Array array, RuntimeFieldHandle fldHandle)
         {
-            IRuntimeFieldInfo fldInfo = fldHandle.GetRuntimeFieldInfo();
-
             if (array is null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
 
-            if (!RuntimeFieldHandle.GetRVAFieldInfo(new QCallFieldHandle(ref fldInfo), out IntPtr address, out uint size))
+            if (fldHandle.IsNullHandle())
+                throw new ArgumentException(SR.Argument_InvalidHandle);
+
+            IRuntimeFieldInfo fldInfo = fldHandle.GetRuntimeFieldInfo();
+
+            if (!RuntimeFieldHandle.GetRVAFieldInfo(fldInfo.Value, out IntPtr address, out uint size))
                 throw new ArgumentException(SR.Argument_BadFieldForInitializeArray);
 
             // Note that we do not check that the field is actually in the PE file that is initializing
@@ -86,9 +89,12 @@ namespace System.Runtime.CompilerServices
             RuntimeTypeHandle targetTypeHandle,
             out int count)
         {
+            if (fldHandle.IsNullHandle())
+                throw new ArgumentException(SR.Argument_InvalidHandle);
+
             IRuntimeFieldInfo fldInfo = fldHandle.GetRuntimeFieldInfo();
 
-            if (!RuntimeFieldHandle.GetRVAFieldInfo(new QCallFieldHandle(ref fldInfo), out IntPtr data, out uint totalSize))
+            if (!RuntimeFieldHandle.GetRVAFieldInfo(fldInfo.Value, out IntPtr data, out uint totalSize))
                 throw new ArgumentException(SR.Argument_BadFieldForInitializeArray);
 
             TypeHandle th = targetTypeHandle.GetNativeTypeHandle();
