@@ -376,7 +376,8 @@ Copyright (c) .NET Foundation. All rights reserved.
       ModuleAfterRuntimeReady="@(WasmModuleAfterRuntimeReady)"
       IsPublish="false"
       IsAot="$(RunAOTCompilation)"
-      IsMultiThreaded="$(WasmEnableThreads)" />
+      IsMultiThreaded="$(WasmEnableThreads)"
+      IsFingerprintingEnabled="$(_WasmFingerprintAssets)" />
 
     <ItemGroup>
       <FileWrites Include="$(_WasmBuildBootJsonPath)" />
@@ -667,7 +668,8 @@ Copyright (c) .NET Foundation. All rights reserved.
       ModuleAfterRuntimeReady="@(WasmModuleAfterRuntimeReady)"
       IsPublish="true"
       IsAot="$(RunAOTCompilation)"
-      IsMultiThreaded="$(WasmEnableThreads)" />
+      IsMultiThreaded="$(WasmEnableThreads)"
+      IsFingerprintingEnabled="$(_WasmFingerprintAssets)" />
 
     <ItemGroup>
       <FileWrites Include="$(IntermediateOutputPath)blazor.publish.boot.json" />

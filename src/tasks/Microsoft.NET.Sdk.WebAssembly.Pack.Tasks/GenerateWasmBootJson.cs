@@ -84,6 +84,8 @@ public class GenerateWasmBootJson : Task
 
     public bool IsMultiThreaded { get; set; }
 
+    public bool IsFingerprintingEnabled { get; set; }
+
     public override bool Execute()
     {
         using var fileStream = File.Create(OutputPath);
@@ -176,6 +178,7 @@ public class GenerateWasmBootJson : Task
 
             var remainingLazyLoadAssemblies = new List<ITaskItem>(LazyLoadedAssemblies ?? Array.Empty<ITaskItem>());
             var resourceData = result.resources;
+            resourceData.fingerprinting = IsFingerprintingEnabled;
             foreach (var resource in Resources)
             {
                 ResourceHashesByNameDictionary resourceList = null;
@@ -185,7 +188,7 @@ public class GenerateWasmBootJson : Task
                 var fileExtension = resource.GetMetadata("Extension");
                 var assetTraitName = resource.GetMetadata("AssetTraitName");
                 var assetTraitValue = resource.GetMetadata("AssetTraitValue");
-                var resourceName = Path.GetFileName(resource.GetMetadata("RelativePath"));
+                var resourceName = Path.GetFileName(resource.ItemSpec);
                 var resourceRoute = Path.GetFileName(endpointByAsset[resource.ItemSpec].ItemSpec);
 
                 if (TryGetLazyLoadedAssembly(resourceName, out var lazyLoad))
