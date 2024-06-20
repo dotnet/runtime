@@ -2714,15 +2714,15 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
                 if ((simdSize == 32) && compOpportunisticallyDependsOn(InstructionSet_AVX2))
                 {
-                    // We'll use AVX2 routine to emulate NI_AVX512DQ_VL_MultiplyLow
+                    // Emulate NI_AVX512DQ_VL_MultiplyLow with AVX2 for SIMD32
                 }
                 else if ((simdSize == 16) && compOpportunisticallyDependsOn(InstructionSet_SSE41))
                 {
-                    // We'll use SSE41 routine to emulate NI_AVX512DQ_VL_MultiplyLow
+                    // Emulate NI_AVX512DQ_VL_MultiplyLow with SSE41 for SIMD16
                 }
                 else
                 {
-                    // Fallback
+                    // Software fallback
                     break;
                 }
             }
