@@ -252,7 +252,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     <PropertyGroup>
       <_WasmBuildWebCilPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'webcil'))</_WasmBuildWebCilPath>
       <_WasmBuildTmpWebCilPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'tmp-webcil'))</_WasmBuildTmpWebCilPath>
-      <_WasmBuildOuputPath>$([MSBuild]::EnsureTrailingSlash('$(OutputPath)'))wwwroot\</_WasmBuildOuputPath>
+      <_WasmBuildOuputPath>$([MSBuild]::NormalizeDirectory('$(OutputPath)', 'wwwroot'))</_WasmBuildOuputPath>
     </PropertyGroup>
 
     <ConvertDllsToWebCil Candidates="@(_BuildAssetsCandidates)" IntermediateOutputPath="$(_WasmBuildTmpWebCilPath)" OutputPath="$(_WasmBuildWebCilPath)" IsEnabled="$(_WasmEnableWebcil)">
