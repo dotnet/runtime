@@ -487,7 +487,7 @@ static X509* ReadNextPublicCert(DIR* dir, X509Stack* tmpStack, char* pathTmp, si
             // if d_name was full-length it might not have a trailing null.
             nextFileWrite[len] = 0;
 
-            FILE* fp = g_fopen(pathTmp, "r");
+            FILE* fp = fopen(pathTmp, "r");
 
             if (fp != NULL)
             {
