@@ -6639,6 +6639,8 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
 
     genTreeOps HWOperGet(bool* isScalar) const;
 
+    bool ShouldConstantProp(GenTree* operand, GenTreeVecCon* vecCon);
+
 private:
     void SetHWIntrinsicId(NamedIntrinsic intrinsicId);
 

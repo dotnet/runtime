@@ -10516,7 +10516,6 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithConst(GenTreeOp* cmp)
 }
 
 #ifdef FEATURE_HW_INTRINSICS
-
 //------------------------------------------------------------------------
 // fgOptimizeHWIntrinsic: optimize a HW intrinsic node
 //
@@ -10535,27 +10534,7 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithConst(GenTreeOp* cmp)
 GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
 {
     assert(!optValnumCSE_phase);
-
-    if (opts.OptimizationDisabled())
-    {
-        return node;
-    }
-
-    simd_t simdVal = {};
-
-    if (GenTreeVecCon::IsHWIntrinsicCreateConstant<simd_t>(node, simdVal))
-    {
-        GenTreeVecCon* vecCon = gtNewVconNode(node->TypeGet());
-
-        for (GenTree* arg : node->Operands())
-        {
-            DEBUG_DESTROY_NODE(arg);
-        }
-
-        vecCon->gtSimdVal = simdVal;
-        INDEBUG(vecCon->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
-        return vecCon;
-    }
+    assert(opts.OptimizationEnabled());
 
     NamedIntrinsic intrinsicId  = node->GetHWIntrinsicId();
     var_types      simdBaseType = node->GetSimdBaseType();
@@ -10790,88 +10769,6 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
 
                 INDEBUG(node->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
                 return node;
-            }
-
-            if (node->OperIsConvertMaskToVector())
-            {
-                GenTree* op = node->Op(1);
-
-                if (!op->OperIsHWIntrinsic())
-                {
-                    break;
-                }
-
-                unsigned            simdBaseTypeSize = genTypeSize(node->GetSimdBaseType());
-                GenTreeHWIntrinsic* cvtOp            = op->AsHWIntrinsic();
-
-                if (!cvtOp->OperIsConvertVectorToMask())
-                {
-                    break;
-                }
-
-                if ((genTypeSize(cvtOp->GetSimdBaseType()) != simdBaseTypeSize))
-                {
-                    // We need the operand to be the same kind of mask; otherwise
-                    // the bitwise operation can differ in how it performs
-                    break;
-                }
-
-#if defined(TARGET_XARCH)
-                GenTree* vectorNode = cvtOp->Op(1);
-#elif defined(TARGET_ARM64)
-                GenTree* vectorNode = cvtOp->Op(2);
-#else
-#error Unsupported platform
-#endif // !TARGET_XARCH && !TARGET_ARM64
-
-                DEBUG_DESTROY_NODE(op, node);
-                INDEBUG(vectorNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
-
-                return vectorNode;
-            }
-
-            if (node->OperIsConvertVectorToMask())
-            {
-                GenTree* op = node->Op(1);
-
-#if defined(TARGET_ARM64)
-                if (!op->OperIsHWIntrinsic(NI_Sve_CreateTrueMaskAll))
-                {
-                    break;
-                }
-                op = node->Op(2);
-#endif // TARGET_ARM64
-
-                if (!op->OperIsHWIntrinsic())
-                {
-                    break;
-                }
-
-                unsigned            simdBaseTypeSize = genTypeSize(node->GetSimdBaseType());
-                GenTreeHWIntrinsic* cvtOp            = op->AsHWIntrinsic();
-
-                if (!cvtOp->OperIsConvertMaskToVector())
-                {
-                    break;
-                }
-
-                if ((genTypeSize(cvtOp->GetSimdBaseType()) != simdBaseTypeSize))
-                {
-                    // We need the operand to be the same kind of mask; otherwise
-                    // the bitwise operation can differ in how it performs
-                    break;
-                }
-
-                GenTree* maskNode = cvtOp->Op(1);
-
-#if defined(TARGET_ARM64)
-                DEBUG_DESTROY_NODE(node->Op(1));
-#endif // TARGET_ARM64
-
-                DEBUG_DESTROY_NODE(op, node);
-                INDEBUG(maskNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
-
-                return maskNode;
             }
             break;
         }
@@ -11952,46 +11849,57 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree, bool* optAssertionPropD
     return tree;
 }
 
-#if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
+#if defined(FEATURE_HW_INTRINSICS)
 //------------------------------------------------------------------------
-// fgMorphMultiOp: Morph a GenTreeMultiOp (SIMD/HWINTRINSIC) tree.
+// fgMorphHWIntrinsic: Morph a GenTreeHWIntrinsic tree.
 //
 // Arguments:
-//    multiOp - The tree to morph
+//    tree - The tree to morph
 //
 // Return Value:
 //    The fully morphed tree.
 //
-GenTree* Compiler::fgMorphMultiOp(GenTreeMultiOp* multiOp)
+GenTree* Compiler::fgMorphHWIntrinsic(GenTreeHWIntrinsic* tree)
 {
-    bool dontCseConstArguments = false;
-#if defined(FEATURE_HW_INTRINSICS)
-    // Opportunistically, avoid unexpected CSE for hw intrinsics with IMM arguments
-    if (multiOp->OperIs(GT_HWINTRINSIC))
-    {
-        NamedIntrinsic hwIntrinsic = multiOp->AsHWIntrinsic()->GetHWIntrinsicId();
-#if defined(TARGET_XARCH)
-        if (HWIntrinsicInfo::lookupCategory(hwIntrinsic) == HW_Category_IMM)
-        {
-            dontCseConstArguments = true;
-        }
-#elif defined(TARGET_ARMARCH)
-        if (HWIntrinsicInfo::HasImmediateOperand(hwIntrinsic))
-        {
-            dontCseConstArguments = true;
-        }
-#endif
-    }
-#endif
+    bool allArgsAreConst            = true;
+    bool canBenefitFromConstantProp = false;
+    bool hasImmediateOperand        = false;
 
-    for (GenTree** use : multiOp->UseEdges())
+    // Opportunistically, avoid unexpected CSE for hwintrinsics with certain const arguments
+    NamedIntrinsic intrinsicId = tree->GetHWIntrinsicId();
+
+    if (HWIntrinsicInfo::CanBenefitFromConstantProp(intrinsicId))
+    {
+        canBenefitFromConstantProp = true;
+    }
+
+    if (HWIntrinsicInfo::HasImmediateOperand(intrinsicId))
+    {
+        hasImmediateOperand = true;
+    }
+
+    for (GenTree** use : tree->UseEdges())
     {
         *use             = fgMorphTree(*use);
         GenTree* operand = *use;
 
-        if (dontCseConstArguments && operand->IsCnsIntOrI())
+        if (operand->OperIsConst())
         {
-            operand->SetDoNotCSE();
+            if (hasImmediateOperand && operand->IsCnsIntOrI())
+            {
+                operand->SetDoNotCSE();
+            }
+            else if (canBenefitFromConstantProp && operand->IsVectorConst())
+            {
+                if (tree->ShouldConstantProp(operand, operand->AsVecCon()))
+                {
+                    operand->SetDoNotCSE();
+                }
+            }
+        }
+        else
+        {
+            allArgsAreConst = false;
         }
 
         // Promoted structs after morph must be in one of two states:
@@ -12001,28 +11909,30 @@ GenTree* Compiler::fgMorphMultiOp(GenTreeMultiOp* multiOp)
         //
         // So here we preserve this invariant and mark any promoted structs as do-not-enreg.
         //
-        if (operand->OperIs(GT_LCL_VAR) && lvaGetDesc(operand->AsLclVar())->lvPromoted)
+        if (operand->OperIs(GT_LCL_VAR))
         {
-            lvaSetVarDoNotEnregister(operand->AsLclVar()->GetLclNum()
-                                         DEBUGARG(DoNotEnregisterReason::SimdUserForcesDep));
+            GenTreeLclVar* lclVar = operand->AsLclVar();
+
+            if (lvaGetDesc(lclVar)->lvPromoted)
+            {
+                lvaSetVarDoNotEnregister(lclVar->GetLclNum() DEBUGARG(DoNotEnregisterReason::SimdUserForcesDep));
+            }
         }
     }
 
-    gtUpdateNodeOperSideEffects(multiOp);
+    gtUpdateNodeOperSideEffects(tree);
 
-    for (GenTree** use : multiOp->UseEdges())
+    for (GenTree* operand : tree->Operands())
     {
-        GenTree* operand = *use;
-        multiOp->AddAllEffectsFlags(operand);
+        tree->AddAllEffectsFlags(operand);
     }
 
-#if defined(FEATURE_HW_INTRINSICS)
-    if (opts.OptimizationEnabled() && multiOp->OperIsHWIntrinsic())
+    if (opts.OptimizationEnabled())
     {
         // Try to fold it, maybe we get lucky,
-        GenTree* foldedTree = gtFoldExpr(multiOp);
+        GenTree* foldedTree = gtFoldExpr(tree);
 
-        if (foldedTree != multiOp)
+        if (foldedTree != tree)
         {
             assert(!fgIsCommaThrow(foldedTree));
             INDEBUG(foldedTree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
@@ -12034,78 +11944,38 @@ GenTree* Compiler::fgMorphMultiOp(GenTreeMultiOp* multiOp)
             return foldedTree;
         }
 
-        GenTreeHWIntrinsic* hw = foldedTree->AsHWIntrinsic();
-
         // Move constant vectors from op1 to op2 for commutative and compare operations
-        if ((hw->GetOperandCount() == 2) && hw->Op(1)->IsVectorConst() &&
-            HWIntrinsicInfo::IsCommutative(hw->GetHWIntrinsicId()))
+        if (tree->isCommutativeHWIntrinsic())
         {
-            std::swap(hw->Op(1), hw->Op(2));
-        }
+            assert(tree->GetOperandCount() == 2);
+            GenTree*& op1 = tree->Op(1);
 
-        switch (hw->GetHWIntrinsicId())
-        {
-#if defined(TARGET_XARCH)
-            case NI_SSE_Xor:
-            case NI_SSE2_Xor:
-            case NI_AVX_Xor:
-            case NI_AVX2_Xor:
+            if (op1->IsVectorConst())
             {
-                // Transform XOR(X, 0) to X for vectors
-                GenTree* op1 = hw->Op(1);
-                GenTree* op2 = hw->Op(2);
-                if (!gtIsActiveCSE_Candidate(hw))
-                {
-                    if (op2->IsVectorZero() && !gtIsActiveCSE_Candidate(op2))
-                    {
-                        DEBUG_DESTROY_NODE(hw);
-                        DEBUG_DESTROY_NODE(op2);
-                        return op1;
-                    }
-                }
-                break;
-            }
-#endif
-
-            default:
-                break;
-        }
-    }
-#endif // defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
-
-    if (opts.OptimizationEnabled() && multiOp->IsVectorCreate())
-    {
-        bool allArgsAreConst = true;
-        for (GenTree* arg : multiOp->Operands())
-        {
-            if (!arg->OperIsConst())
-            {
-                allArgsAreConst = false;
-                break;
+                std::swap(op1, tree->Op(2));
             }
         }
 
-        // Avoid unexpected CSE for constant arguments for Vector_.Create
-        // but only if all arguments are constants.
-        if (allArgsAreConst)
+        if (allArgsAreConst && tree->IsVectorCreate())
         {
-            for (GenTree* arg : multiOp->Operands())
+            // Avoid unexpected CSE for constant arguments for Vector_.Create
+            // but only if all arguments are constants.
+
+            for (GenTree* arg : tree->Operands())
             {
                 arg->SetDoNotCSE();
             }
         }
+
+        if (!optValnumCSE_phase)
+        {
+            return fgOptimizeHWIntrinsic(tree->AsHWIntrinsic());
+        }
     }
 
-#ifdef FEATURE_HW_INTRINSICS
-    if (multiOp->OperIsHWIntrinsic() && !optValnumCSE_phase)
-    {
-        return fgOptimizeHWIntrinsic(multiOp->AsHWIntrinsic());
-    }
-#endif
-
-    return multiOp;
+    return tree;
 }
-#endif // defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
+#endif // FEATURE_HW_INTRINSICS
 
 //------------------------------------------------------------------------
 // fgMorphModToZero: Transform 'a % 1' into the equivalent '0'.
@@ -12813,7 +12683,7 @@ GenTree* Compiler::fgMorphTree(GenTree* tree, MorphAddrContext* mac)
 
 #if defined(FEATURE_HW_INTRINSICS)
         case GT_HWINTRINSIC:
-            tree = fgMorphMultiOp(tree->AsMultiOp());
+            tree = fgMorphHWIntrinsic(tree->AsHWIntrinsic());
             break;
 #endif // FEATURE_HW_INTRINSICS
 
