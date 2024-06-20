@@ -17,7 +17,7 @@ static void
 slow_get_thread_bounds (guint8 *current, guint8 **staddr, size_t *stsize)
 {
 	char buff [1024];
-	FILE *f = fopen ("/proc/self/maps", "r");
+	FILE *f = g_fopen ("/proc/self/maps", "r");
 	if (!f)
 		g_error ("Could not determine thread bounds, failed to open /proc/self/maps");
 

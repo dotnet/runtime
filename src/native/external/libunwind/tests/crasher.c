@@ -18,8 +18,8 @@ void write_maps(char *fname)
     char buf[512], path[128];
     char exec;
     uintmax_t addr;
-    FILE *maps = fopen("/proc/self/maps", "r");
-    FILE *out = fopen(fname, "w");
+    FILE *maps = g_fopen("/proc/self/maps", "r");
+    FILE *out = g_fopen(fname, "w");
 
     if (!maps || !out)
         exit(EXIT_FAILURE);
@@ -50,7 +50,7 @@ write_maps(char *fname)
     int mib[4], error;
     size_t len;
 
-    out = fopen(fname, "w");
+    out = g_fopen(fname, "w");
     if (out == NULL)
         exit(EXIT_FAILURE);
 

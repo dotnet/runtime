@@ -172,7 +172,7 @@ mono_hwcap_arch_init (void)
 	char buf [512];
 	char *line;
 
-	FILE *file = fopen ("/proc/cpuinfo", "r");
+	FILE *file = g_fopen ("/proc/cpuinfo", "r");
 
 	if (file) {
 		while ((line = fgets (buf, 512, file))) {

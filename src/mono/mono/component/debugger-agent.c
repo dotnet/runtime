@@ -819,7 +819,7 @@ mono_debugger_agent_init_internal (void)
 	disconnected = TRUE;
 
 	if (agent_config.log_file) {
-		log_file = fopen (agent_config.log_file, "w+");
+		log_file = g_fopen (agent_config.log_file, "w+");
 		if (!log_file) {
 			PRINT_ERROR_MSG ("Unable to create log file '%s': %s.\n", agent_config.log_file, strerror (errno));
 			exit (1);

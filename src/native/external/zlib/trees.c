@@ -385,7 +385,7 @@ local void tr_static_init(void) {
        ((i) % (width) == (width) - 1 ? ",\n" : ", "))
 
 void gen_trees_header(void) {
-    FILE *header = fopen("trees.h", "w");
+    FILE *header = g_fopen("trees.h", "w");
     int i;
 
     Assert (header != NULL, "Can't open trees.h");

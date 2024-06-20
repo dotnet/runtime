@@ -19,7 +19,7 @@ int main(int argc, char* *argv) {
     exit(EXIT_FAILURE);
   }
 
-  FILE* f = fopen(argv[1], "r");
+  FILE* f = g_fopen(argv[1], "r");
   if (!f) {
     fprintf(stderr, "Failed to open input file.");
     exit(EXIT_FAILURE);

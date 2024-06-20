@@ -3127,7 +3127,7 @@ mono_threads_perform_thread_dump (void)
 		strftime(time_str, sizeof(time_str), MONO_STRFTIME_F "_" MONO_STRFTIME_T, &tod);
 		ms = tv.tv_usec / 1000;
 		g_string_append_printf (path, "%s/%s.%03ld.tdump", thread_dump_dir, time_str, ms);
-		output_file = fopen (path->str, "w");
+		output_file = g_fopen (path->str, "w");
 		g_string_free (path, TRUE);
 	}
 	if (output_file == NULL) {

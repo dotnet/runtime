@@ -384,7 +384,7 @@ mono_profiler_init_aot (const char *desc)
 		}  else if (*aot_profiler.outfile_name == '#') {
 			aot_profiler.outfile = fdopen (strtol (aot_profiler.outfile_name + 1, NULL, 10), "a");
 		} else {
-			aot_profiler.outfile = fopen (aot_profiler.outfile_name, "w");
+			aot_profiler.outfile = g_fopen (aot_profiler.outfile_name, "w");
 		}
 
 		if (!aot_profiler.outfile && aot_profiler.outfile_name) {

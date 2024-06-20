@@ -3232,7 +3232,7 @@ load_file (char *name)
 	if (strcmp (name, "-") == 0)
 		ctx->file = stdin;
 	else
-		ctx->file = fopen (name, "rb");
+		ctx->file = g_fopen (name, "rb");
 	if (!ctx->file) {
 		printf ("Cannot open file: %s\n", name);
 		exit (1);
@@ -4070,7 +4070,7 @@ main (int argc, char *argv[])
 			reports = val;
 		} else if (strncmp ("--out=", argv [i], 6) == 0) {
 			const char *val = argv [i] + 6;
-			outfile = fopen (val, "w");
+			outfile = g_fopen (val, "w");
 			if (!outfile) {
 				printf ("Cannot open output file: %s\n", val);
 				return 1;

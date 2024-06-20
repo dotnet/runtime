@@ -204,7 +204,7 @@ mono_draw_graph (MonoCompile *cfg, MonoGraphOptions draw_options)
 	FILE *fp;
 
 	fn = "/tmp/minidtree.graph";
-	fp = fopen (fn, "w+");
+	fp = g_fopen (fn, "w+");
 	g_assert (fp);
 
 	switch (draw_options) {

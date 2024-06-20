@@ -315,7 +315,7 @@ mono_sha1_get_digest_from_file (const gchar *filename, guchar digest [20])
 	FILE *fp;
 
 	mono_sha1_init (&ctx);
-	fp = fopen(filename, "r");
+	fp = g_fopen(filename, "r");
 	if (!fp) {
 		return;
 	}

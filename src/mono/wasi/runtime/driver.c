@@ -174,7 +174,7 @@ void load_icu_data (void)
 	char filename[256];
 	sprintf(filename, "./icudt.dat");
 
-	fileptr = fopen(filename, "rb");
+	fileptr = g_fopen(filename, "rb");
 	if (fileptr == 0) {
 		printf("Failed to load %s\n", filename);
 		fflush(stdout);
@@ -378,7 +378,7 @@ void add_assembly(const char* base_dir, const char *name) {
 	sprintf(filename, "%s/%s", base_dir, name);
 	// printf("Loading %s...\n", filename);
 
-	fileptr = fopen(filename, "rb");
+	fileptr = g_fopen(filename, "rb");
 	if (fileptr == 0) {
 		printf("Failed to load %s\n", filename);
 		fflush(stdout);

@@ -49,7 +49,7 @@ int32_t SystemNative_GetAllMountPoints(MountPointFound onFound, void* context)
 
 #elif HAVE_SYS_MNTENT_H
     int result = -1;
-    FILE* fp = fopen("/proc/mounts", MNTOPT_RO);
+    FILE* fp = g_fopen("/proc/mounts", MNTOPT_RO);
     if (fp != NULL)
     {
         char buffer[STRING_BUFFER_SIZE] = {0};
