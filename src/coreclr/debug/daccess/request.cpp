@@ -1843,6 +1843,11 @@ ClrDataAccess::GetMethodTableDataImpl(CLRDATA_ADDRESS mt, struct DacpMethodTable
     {
         ZeroMemory(MTData,sizeof(DacpMethodTableData));
         MTData->BaseSize = pMT->GetBaseSize();
+        // [compat] SOS DAC APIs added this base size adjustment for strings
+        // due to: "2008/09/25 Title: New implementation of StringBuilder and improvements in String class"
+        // which changed StringBuilder not to use a String as an internal buffer and in the process
+        // changed the String internals so that StringObject::GetBaseSize() now includes the nul terminator character,
+        // which is apparently not expected by SOS.
         if(pMT->IsString())
             MTData->BaseSize -= sizeof(WCHAR);
         MTData->ComponentSize = (DWORD)pMT->GetComponentSize();

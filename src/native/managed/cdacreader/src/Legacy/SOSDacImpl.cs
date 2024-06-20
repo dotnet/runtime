@@ -93,8 +93,14 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface9
 
             DacpMethodTableData result = default;
             result.baseSize = contract.GetBaseSize(methodTable);
+            // [compat] SOS DAC APIs added this base size adjustment for strings
+            // due to: "2008/09/25 Title: New implementation of StringBuilder and improvements in String class"
+            // which changed StringBuilder not to use a String as an internal buffer and in the process
+            // changed the String internals so that StringObject::GetBaseSize() now includes the nul terminator character,
+            // which is apparently not expected by SOS.
             if (contract.IsString(methodTable))
-                result.baseSize -= 2 /*sizeof(WCHAR) */;
+                result.baseSize -= sizeof(char);
+
             result.componentSize = contract.GetComponentSize(methodTable);
             bool isFreeObjectMT = contract.IsFreeObjectMethodTable(methodTable);
             result.bIsFree = isFreeObjectMT ? 1 : 0;
