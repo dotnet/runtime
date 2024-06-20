@@ -920,53 +920,51 @@ void ObjectAllocator::RewriteUses()
                     *use = boxLcl;
                 }
             }
-
             // Make box accesses explicit for UNBOX_HELPER
             //
-            if (tree->IsCall())
+            else if (tree->IsCall())
             {
                 GenTreeCall* const call = tree->AsCall();
-                assert(call->IsHelperCall());
-                if (call->IsHelperCall(m_compiler, CORINFO_HELP_BOX))
+
+                if (call->IsHelperCall(m_compiler, CORINFO_HELP_UNBOX))
                 {
-                    // See if first arg is our stack allocated box.
+                    JITDUMP("Found unbox helper call [%06u]\n", m_compiler->dspTreeID(call));
+
+                    // See if first arg is possibly a stack allocated box.
+                    // (arg will have been retyped local or local address)
                     //
-                    GenTree* const firstArg = call->gtArgs.GetArgByIndex(0)->GetNode();
+                    CallArg*       secondArg     = call->gtArgs.GetArgByIndex(1);
+                    GenTree* const secondArgNode = secondArg->GetNode();
 
-                    if (firstArg->OperIs(GT_LCL_ADDR))
+                    if (secondArgNode->OperIsLocal() && !secondArgNode->TypeIs(TYP_REF))
                     {
-                        GenTreeLclVarCommon* const lcl    = firstArg->AsLclVarCommon();
-                        unsigned const             lclNum = lcl->GetLclNum();
-                        LclVarDsc*                 dsc    = m_compiler->lvaGetDesc(lclNum);
+                        GenTreeLclVarCommon* const lcl     = secondArgNode->AsLclVarCommon();
+                        GenTree* const             lclCopy = (user == nullptr) ? nullptr : m_compiler->gtClone(lcl);
 
-                        // assert this?
-                        if (dsc->IsStackAllocatedBox())
+                        // Rewrite the call to make the box accesses explicit in jitted code.
+                        // user = COMMA(
+                        //           CALL(UNBOX_HELPER_TYPETEST, obj->MethodTable, type),
+                        //           ADD(&obj, TARGET_POINTER_SIZE))
+                        //
+                        JITDUMP("Rewriting to invoke box type test helper\n");
+
+                        call->gtCallMethHnd = m_compiler->eeFindHelper(CORINFO_HELP_UNBOX_TYPETEST);
+                        lcl->ChangeOper(GT_LCL_VAR);
+                        GenTree* const mt = m_compiler->gtNewMethodTableLookup(lcl);
+                        call->gtArgs.Remove(secondArg);
+                        call->gtArgs.PushBack(m_compiler, NewCallArg::Primitive(mt));
+
+                        if (user == nullptr)
                         {
-                            // Yes -- rewrite the call to make the box accesses explicit in jitted code.
-                            // user = COMMA(CALL(UNBOX_HELPER_TYPETEST, obj->MethodTable, type), &obj +
-                            // TARGET_POINTER_SIZE)
-                            //
-                            JITDUMP("Rewriting [%06u] to invoke box type test helper\n", m_compiler->dspTreeID(tree));
-
-                            call->gtCallMethHnd = m_compiler->eeFindHelper(CORINFO_HELP_UNBOX_TYPETEST);
-                            lcl->ChangeOper(GT_LCL_VAR);
-                            GenTree* const mt = m_compiler->gtNewMethodTableLookup(lcl);
-
-                            if (user == nullptr)
-                            {
-                                // call was just for effect, we're done.
-                            }
-                            else
-                            {
-                                GenTree* const boxAddr = m_compiler->gtNewLclVarAddrNode(lclNum);
-                                GenTree* const payloadAddr =
-                                    m_compiler->gtNewOperNode(GT_ADD, TYP_BYREF, boxAddr,
-                                                              m_compiler->gtNewIconNode(TARGET_POINTER_SIZE,
-                                                                                        TYP_I_IMPL));
-                                GenTree* const comma =
-                                    m_compiler->gtNewOperNode(GT_COMMA, TYP_BYREF, call, payloadAddr);
-                                *use = comma;
-                            }
+                            // call was just for effect, we're done.
+                        }
+                        else
+                        {
+                            GenTree* const payloadAddr =
+                                m_compiler->gtNewOperNode(GT_ADD, TYP_BYREF, lclCopy,
+                                                          m_compiler->gtNewIconNode(TARGET_POINTER_SIZE, TYP_I_IMPL));
+                            GenTree* const comma = m_compiler->gtNewOperNode(GT_COMMA, TYP_BYREF, call, payloadAddr);
+                            *use                 = comma;
                         }
                     }
                 }
