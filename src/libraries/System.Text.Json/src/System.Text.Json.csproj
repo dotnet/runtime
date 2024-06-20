@@ -75,6 +75,7 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="System\Text\Json\JsonTokenType.cs" />
     <Compile Include="System\Text\Json\Nodes\JsonArray.cs" />
     <Compile Include="System\Text\Json\Nodes\JsonArray.IList.cs" />
+    <Compile Include="System\Text\Json\Nodes\JsonValueOfElement.cs" />
     <Compile Include="System\Text\Json\Nodes\JsonNode.cs" />
     <Compile Include="System\Text\Json\Nodes\JsonNode.Operators.cs" />
     <Compile Include="System\Text\Json\Nodes\JsonNode.Parse.cs" />
@@ -378,12 +379,6 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\StringSyntaxAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\RequiresDynamicCodeAttribute.cs" />
     <Compile Include="System\Text\Json\Reader\JsonReaderHelper.netstandard.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Include="System\Text\Json\OrderedDictionary.cs" />
-    <None Include="System\Text\Json\OrderedDictionary.KeyCollection.cs" />
-    <None Include="System\Text\Json\OrderedDictionary.ValueCollection.cs" />
   </ItemGroup>
 
   <!-- Application tfms (.NETCoreApp, .NETFramework) need to use the same or higher version of .NETStandard's dependencies. -->
