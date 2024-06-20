@@ -186,7 +186,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 }
 
                 CertificateRequest req = new CertificateRequest(
-                    $"CN={testName}",
+                    $"CN={testName}-{keyName}-{friendlyName}",
                     key,
                     HashAlgorithmName.SHA256,
                     RSASignaturePadding.Pkcs1);
