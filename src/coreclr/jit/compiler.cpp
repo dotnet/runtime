@@ -21,6 +21,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "lower.h"
 #include "stacklevelsetter.h"
 #include "patchpointinfo.h"
+#include "hwintrinsic.h"
 #include "jitstd/algorithm.h"
 
 extern ICorJitHost* g_jitHost;
