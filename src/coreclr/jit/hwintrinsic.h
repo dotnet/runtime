@@ -508,8 +508,6 @@ struct HWIntrinsicInfo
     int8_t              numArgs;  // 1-byte
     HWIntrinsicCategory category; // 1-byte
 
-    static void onJitShutdown();
-
     static const HWIntrinsicInfo& lookup(NamedIntrinsic id);
 
     static NamedIntrinsic         lookupId(Compiler*         comp,

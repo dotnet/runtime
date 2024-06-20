@@ -563,20 +563,6 @@ static IntrinsicsHashTable* getIntrinsicsHashTable()
 }
 
 //------------------------------------------------------------------------
-// onJitShutdown: Free the intrinsics hash table on JIT shutdown.
-//
-void HWIntrinsicInfo::onJitShutdown()
-{
-    IntrinsicsHashTable* hashTable = s_intrinsicsHashTable;
-    if (hashTable != nullptr)
-    {
-        hashTable->~IntrinsicsHashTable();
-        free(hashTable);
-        s_intrinsicsHashTable = nullptr;
-    }
-}
-
-//------------------------------------------------------------------------
 // lookupId: Gets the NamedIntrinsic for a given method name and InstructionSet
 //
 // Arguments:
