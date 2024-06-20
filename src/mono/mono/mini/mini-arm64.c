@@ -1638,7 +1638,7 @@ is_hfa (MonoType *t, int *out_nfields, int *out_esize, int *field_offsets)
 }
 
 static void
-add_valuetype (CallInfo *cinfo, ArgInfo *ainfo, MonoType *t, gboolean is_return)
+add_valuetype (CallInfo *cinfo, ArgInfo *ainfo, MonoType *t, gboolean is_return, MonoMethodSignature *sig)
 {
 	int i, size, align_size, nregs, nfields, esize;
 	int field_offsets [16];
@@ -1660,6 +1660,49 @@ add_valuetype (CallInfo *cinfo, ArgInfo *ainfo, MonoType *t, gboolean is_return)
 	}
 #endif
 
+#ifdef MONO_ARCH_HAVE_SWIFTCALL
+	// Handle Swift struct lowering in function returns
+	if (sig && mono_method_signature_has_ext_callconv (sig, MONO_EXT_CALLCONV_SWIFTCALL) && is_return && sig->pinvoke) {
+		SwiftPhysicalLowering lowered_swift_struct = mono_marshal_get_swift_physical_lowering (t, FALSE);
+		// The structs that cannot be lowered, we pass them by reference
+		if (lowered_swift_struct.by_reference) {
+			ainfo->storage = ArgVtypeByRef;
+			ainfo->size = size;
+			return;
+		}
+
+		g_assert (lowered_swift_struct.num_lowered_elements > 0 && lowered_swift_struct.num_lowered_elements <= 4);
+
+		ainfo->storage = ArgSwiftVtypeLoweredRet;
+		ainfo->nregs = lowered_swift_struct.num_lowered_elements;
+		ainfo->size = size;
+
+		// Record the lowered elements of the struct
+		for (uint32_t idx_lowered_elem = 0; idx_lowered_elem < lowered_swift_struct.num_lowered_elements; ++idx_lowered_elem) {
+			MonoTypeEnum lowered_elem = lowered_swift_struct.lowered_elements [idx_lowered_elem]->type;
+			if (lowered_elem == MONO_TYPE_R4) {
+				ainfo->lowered_fields [idx_lowered_elem] = ArgInFRegR4;
+				++cinfo->fr;
+			} else if (lowered_elem == MONO_TYPE_R8) {
+				ainfo->lowered_fields [idx_lowered_elem] = ArgInFReg;
+				++cinfo->fr;
+			} else {
+				ainfo->lowered_fields [idx_lowered_elem] = ArgInIReg;
+				++cinfo->gr;
+			}
+			ainfo->offsets [idx_lowered_elem] = GUINT32_TO_UINT8 (lowered_swift_struct.offsets [idx_lowered_elem]);
+		}
+		/*
+		 * Verify that we didn't exceed the number of available registers.
+		 * This should never happen because we are lowering the struct to a maximum of 4 registers
+		 * and we only do the lowering here for the return value.
+		 */ 
+		g_assert (cinfo->fr <= FP_PARAM_REGS);
+		g_assert (cinfo->gr <= PARAM_REGS);
+		return;
+	}
+#endif
+
 	nregs = align_size / 8;
 	if (is_hfa (t, &nfields, &esize, field_offsets)) {
 		/*
@@ -1673,7 +1716,7 @@ add_valuetype (CallInfo *cinfo, ArgInfo *ainfo, MonoType *t, gboolean is_return)
 			ainfo->size = size;
 			ainfo->esize = esize;
 			for (i = 0; i < nfields; ++i)
-				ainfo->foffsets [i] = GINT_TO_UINT8 (field_offsets [i]);
+				ainfo->offsets [i] = GINT_TO_UINT8 (field_offsets [i]);
 			cinfo->fr += ainfo->nregs;
 		} else {
 			ainfo->nfregs_to_skip = FP_PARAM_REGS > cinfo->fr ? FP_PARAM_REGS - cinfo->fr : 0;
@@ -1716,7 +1759,7 @@ add_valuetype (CallInfo *cinfo, ArgInfo *ainfo, MonoType *t, gboolean is_return)
 }
 
 static void
-add_param (CallInfo *cinfo, ArgInfo *ainfo, MonoType *t, gboolean is_return)
+add_param (CallInfo *cinfo, ArgInfo *ainfo, MonoType *t, gboolean is_return, MonoMethodSignature *sig)
 {
 	MonoType *ptype;
 
@@ -1768,7 +1811,7 @@ add_param (CallInfo *cinfo, ArgInfo *ainfo, MonoType *t, gboolean is_return)
 		break;
 	case MONO_TYPE_VALUETYPE:
 	case MONO_TYPE_TYPEDBYREF:
-		add_valuetype (cinfo, ainfo, ptype, is_return);
+		add_valuetype (cinfo, ainfo, ptype, is_return, sig);
 		break;
 	case MONO_TYPE_VOID:
 		ainfo->storage = ArgNone;
@@ -1783,7 +1826,7 @@ add_param (CallInfo *cinfo, ArgInfo *ainfo, MonoType *t, gboolean is_return)
 			ainfo->storage = ArgVtypeByRef;
 			ainfo->gsharedvt = TRUE;
 		} else {
-			add_valuetype (cinfo, ainfo, ptype, is_return);
+			add_valuetype (cinfo, ainfo, ptype, is_return, sig);
 		}
 		break;
 	case MONO_TYPE_VAR:
@@ -1834,7 +1877,7 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 #endif
 
 	/* Return value */
-	add_param (cinfo, &cinfo->ret, sig->ret, TRUE);
+	add_param (cinfo, &cinfo->ret, sig->ret, TRUE, sig);
 	if (cinfo->ret.storage == ArgVtypeByRef)
 		cinfo->ret.reg = ARMREG_R8;
 	/* Reset state */
@@ -1855,7 +1898,7 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 			cinfo->gr = PARAM_REGS;
 			cinfo->fr = FP_PARAM_REGS;
 			/* Emit the signature cookie just before the implicit arguments */
-			add_param (cinfo, &cinfo->sig_cookie, mono_get_int_type (), FALSE);
+			add_param (cinfo, &cinfo->sig_cookie, mono_get_int_type (), FALSE, NULL);
 		}
 
 #ifdef MONO_ARCH_HAVE_SWIFTCALL
@@ -1879,14 +1922,14 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 				if (sig->pinvoke)
 					ainfo->reg = ARMREG_R21;
 				else
-					add_param (cinfo, ainfo, sig->params [pindex], FALSE);
+					add_param (cinfo, ainfo, sig->params [pindex], FALSE, NULL);
 				ainfo->storage = ArgSwiftError;
 				continue;
 			}
 		}
 #endif
 
-		add_param (cinfo, ainfo, sig->params [pindex], FALSE);
+		add_param (cinfo, ainfo, sig->params [pindex], FALSE, NULL);
 		if (ainfo->storage == ArgVtypeByRef) {
 			/* Pass the argument address in the next register */
 			if (cinfo->gr >= PARAM_REGS) {
@@ -1908,7 +1951,7 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 		cinfo->gr = PARAM_REGS;
 		cinfo->fr = FP_PARAM_REGS;
 		/* Emit the signature cookie just before the implicit arguments */
-		add_param (cinfo, &cinfo->sig_cookie, mono_get_int_type (), FALSE);
+		add_param (cinfo, &cinfo->sig_cookie, mono_get_int_type (), FALSE, NULL);
 	}
 
 	cinfo->stack_usage = ALIGN_TO (cinfo->stack_usage, MONO_ARCH_FRAME_ALIGNMENT);
@@ -2422,10 +2465,10 @@ mono_arch_start_dyn_call (MonoDynCallInfo *info, gpointer **args, guint8 *ret, g
 			case ArgHFA:
 				if (ainfo->esize == 4) {
 					for (i = 0; i < ainfo->nregs; ++i)
-						p->fpregs [ainfo->reg + i] = bitcast_r4_to_r8 (((float*)arg) [ainfo->foffsets [i] / 4]);
+						p->fpregs [ainfo->reg + i] = bitcast_r4_to_r8 (((float*)arg) [ainfo->offsets [i] / 4]);
 				} else {
 					for (i = 0; i < ainfo->nregs; ++i)
-						p->fpregs [ainfo->reg + i] = ((double*)arg) [ainfo->foffsets [i] / 8];
+						p->fpregs [ainfo->reg + i] = ((double*)arg) [ainfo->offsets [i] / 8];
 				}
 				p->n_fpargs += ainfo->nregs;
 				break;
@@ -2520,10 +2563,10 @@ mono_arch_finish_dyn_call (MonoDynCallInfo *info, guint8 *buf)
 			/* Use the same area for returning fp values */
 			if (cinfo->ret.esize == 4) {
 				for (i = 0; i < cinfo->ret.nregs; ++i)
-					((float*)ret) [cinfo->ret.foffsets [i] / 4] = bitcast_r8_to_r4 (args->fpregs [i]);
+					((float*)ret) [cinfo->ret.offsets [i] / 4] = bitcast_r8_to_r4 (args->fpregs [i]);
 			} else {
 				for (i = 0; i < cinfo->ret.nregs; ++i)
-					((double*)ret) [cinfo->ret.foffsets [i] / 8] = args->fpregs [i];
+					((double*)ret) [cinfo->ret.offsets [i] / 8] = args->fpregs [i];
 			}
 			break;
 		default:
@@ -2781,6 +2824,13 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			mono_print_ins (cfg->vret_addr);
 		}
 		break;
+	case ArgSwiftVtypeLoweredRet: {
+		cfg->ret->opcode = OP_REGOFFSET;
+		cfg->ret->inst_basereg = cfg->frame_reg;
+		cfg->ret->inst_offset = offset;
+		offset += 16;
+		break;
+	}
 	default:
 		g_assert_not_reached ();
 		break;
@@ -3154,6 +3204,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 	switch (cinfo->ret.storage) {
 	case ArgVtypeInIRegs:
 	case ArgHFA:
+	case ArgSwiftVtypeLoweredRet:
 		if (MONO_IS_TAILCALL_OPCODE (call))
 			break;
 		/*
@@ -3293,7 +3344,7 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 				MONO_INST_NEW (cfg, load, OP_LOADR8_MEMBASE);
 			load->dreg = mono_alloc_freg (cfg);
 			load->inst_basereg = src->dreg;
-			load->inst_offset = ainfo->foffsets [i];
+			load->inst_offset = ainfo->offsets [i];
 			MONO_ADD_INS (cfg->cbb, load);
 			add_outarg_reg (cfg, call, ainfo->esize == 4 ? ArgInFRegR4 : ArgInFReg, ainfo->reg + i, load);
 		}
@@ -3793,9 +3844,34 @@ emit_move_return_value (MonoCompile *cfg, guint8 * code, MonoInst *ins)
 		code = emit_ldrx (code, ARMREG_LR, loc->inst_basereg, GTMREG_TO_INT (loc->inst_offset));
 		for (i = 0; i < cinfo->ret.nregs; ++i) {
 			if (cinfo->ret.esize == 4)
-				arm_strfpw (code, cinfo->ret.reg + i, ARMREG_LR, cinfo->ret.foffsets [i]);
+				arm_strfpw (code, cinfo->ret.reg + i, ARMREG_LR, cinfo->ret.offsets [i]);
 			else
-				arm_strfpx (code, cinfo->ret.reg + i, ARMREG_LR, cinfo->ret.foffsets [i]);
+				arm_strfpx (code, cinfo->ret.reg + i, ARMREG_LR, cinfo->ret.offsets [i]);
+		}
+		break;
+	}
+	case ArgSwiftVtypeLoweredRet: {
+		MonoInst *loc = cfg->arch.vret_addr_loc;
+		int i;
+		int gr = 0, fr = 0; // We can start from 0 since we are handling the return value
+
+		/* Load the destination address */
+		g_assert (loc && loc->opcode == OP_REGOFFSET);
+		code = emit_ldrx (code, ARMREG_LR, loc->inst_basereg, GTMREG_TO_INT (loc->inst_offset));
+		for (i = 0; i < cinfo->ret.nregs; ++i) {
+			switch (cinfo->ret.lowered_fields [i]) {
+				case ArgInIReg:
+					code = emit_strx (code, gr++, ARMREG_LR, cinfo->ret.offsets [i]);
+					break;
+				case ArgInFRegR4:
+					code = emit_strfpw (code, fr++, ARMREG_LR, cinfo->ret.offsets [i]);
+					break;
+				case ArgInFReg:
+					code = emit_strfpx (code, fr++, ARMREG_LR, cinfo->ret.offsets [i]);
+					break;
+				default:
+					g_assert_not_reached ();
+			}
 		}
 		break;
 	}
@@ -5945,9 +6021,9 @@ emit_move_args (MonoCompile *cfg, guint8 *code)
 			case ArgHFA:
 				for (part = 0; part < ainfo->nregs; part ++) {
 					if (ainfo->esize == 4)
-						code = emit_strfpw (code, ainfo->reg + part, ins->inst_basereg, GTMREG_TO_INT (ins->inst_offset + ainfo->foffsets [part]));
+						code = emit_strfpw (code, ainfo->reg + part, ins->inst_basereg, GTMREG_TO_INT (ins->inst_offset + ainfo->offsets [part]));
 					else
-						code = emit_strfpx (code, ainfo->reg + part, ins->inst_basereg, GTMREG_TO_INT (ins->inst_offset + ainfo->foffsets [part]));
+						code = emit_strfpx (code, ainfo->reg + part, ins->inst_basereg, GTMREG_TO_INT (ins->inst_offset + ainfo->offsets [part]));
 				}
 				break;
 			case ArgInSIMDReg:
@@ -6357,9 +6433,9 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 
 		for (i = 0; i < cinfo->ret.nregs; ++i) {
 			if (cinfo->ret.esize == 4)
-				code = emit_ldrfpw (code, cinfo->ret.reg + i, ins->inst_basereg, GTMREG_TO_INT (ins->inst_offset + cinfo->ret.foffsets [i]));
+				code = emit_ldrfpw (code, cinfo->ret.reg + i, ins->inst_basereg, GTMREG_TO_INT (ins->inst_offset + cinfo->ret.offsets [i]));
 			else
-				code = emit_ldrfpx (code, cinfo->ret.reg + i, ins->inst_basereg, GTMREG_TO_INT (ins->inst_offset + cinfo->ret.foffsets [i]));
+				code = emit_ldrfpx (code, cinfo->ret.reg + i, ins->inst_basereg, GTMREG_TO_INT (ins->inst_offset + cinfo->ret.offsets [i]));
 		}
 		break;
 	}

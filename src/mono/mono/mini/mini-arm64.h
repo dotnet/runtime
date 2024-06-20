@@ -242,6 +242,12 @@ typedef enum {
 	ArgVtypeOnStack,
 	ArgHFA,
 	ArgSwiftError,
+	/* Swift lowered Vtype returned in 
+	 * multiple int and float registers.
+	 * ainfo->nregs is the number of used registers.
+	 * ainfo->offsets offsets of the struct fields.
+	 */
+	ArgSwiftVtypeLoweredRet,
 	ArgNone
 } ArgStorage;
 
@@ -254,9 +260,9 @@ typedef struct {
 	int nregs, size;
 	/* ArgHFA */
 	int esize;
-	/* ArgHFA */
-	/* The offsets of the float values inside the arg */
-	guint16 foffsets [4];
+	/* ArgHFA, ArgSwiftVtypeLoweredRet */
+	/* The offsets of the float and int values inside the arg */
+	guint16 offsets [4];
 	/* ArgOnStack */
 	int slot_size;
 	/* hfa */
@@ -264,6 +270,8 @@ typedef struct {
 	gboolean sign;
 	gboolean gsharedvt;
 	gboolean hfa;
+	/* ArgSwiftVtypeLoweredRet */
+	ArgStorage lowered_fields [4]; // TODO better encoding of int and floats
 } ArgInfo;
 
 struct CallInfo {
