@@ -123,7 +123,8 @@ namespace System.Reflection.Tests
             Assert.Equal(expected, fieldInfo.GetValue(obj));
         }
 
-        [Fact]
+        // RVA field reflection is not supported in NativeAot
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
         public void GetValueFromRvaField()
         {
             byte[] valueArray = new byte[] { 1, 2, 3, 4, 5 };
