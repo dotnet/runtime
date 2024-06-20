@@ -207,6 +207,25 @@ bool ABIPassingInformation::HasAnyRegisterSegment() const
 }
 
 //-----------------------------------------------------------------------------
+// HasAnyFloatingRegisterSegment:
+//   Check if any part of this value is passed in a floating-point register.
+//
+// Return Value:
+//   True if so.
+//
+bool ABIPassingInformation::HasAnyFloatingRegisterSegment() const
+{
+    for (unsigned i = 0; i < NumSegments; i++)
+    {
+        if (Segments[i].IsPassedInRegister() && genIsValidFloatReg(Segments[i].GetRegister()))
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+//-----------------------------------------------------------------------------
 // HasAnyStackSegment:
 //   Check if any part of this value is passed on the stack.
 //

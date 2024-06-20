@@ -2126,6 +2126,33 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
             Compiler::structPassingKind howToPassStruct;
             var_types                   structBaseType =
                 comp->getArgTypeForStruct(argSigClass, &howToPassStruct, IsVarArgs(), argLayout->GetSize());
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+            if (arg.NewAbiInfo.HasAnyFloatingRegisterSegment())
+            {
+                // Struct passed according to hardware floating-point calling convention
+                assert(arg.NewAbiInfo.NumSegments <= 2);
+                assert(!arg.NewAbiInfo.HasAnyStackSegment());
+                if (arg.NewAbiInfo.NumSegments == 2)
+                {
+                    // On LoongArch64, "getPrimitiveTypeForStruct" will incorrectly return "TYP_LONG"
+                    // for "struct { float, float }", and retyping to a primitive here will cause the
+                    // multi-reg morphing to not kick in (the struct in question needs to be passed in
+                    // two FP registers). Here is just keep "structBaseType" as "TYP_STRUCT".
+                    // TODO-LoongArch64: fix "getPrimitiveTypeForStruct".
+                    structBaseType = TYP_STRUCT;
+                }
+                else
+                {
+                    assert(arg.NewAbiInfo.NumSegments == 1);
+                    structBaseType = arg.NewAbiInfo.Segments[0].GetRegisterType();
+                }
+
+                for (unsigned i = 0; i < arg.NewAbiInfo.NumSegments; ++i)
+                {
+                    arg.AbiInfo.StructFloatFieldType[i] = arg.NewAbiInfo.Segments[i].GetRegisterType();
+                }
+            }
+#endif // defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
             arg.AbiInfo.PassedByRef = howToPassStruct == Compiler::SPK_ByReference;
             arg.AbiInfo.ArgType     = structBaseType == TYP_UNKNOWN ? argx->TypeGet() : structBaseType;
 

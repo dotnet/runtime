@@ -64,6 +64,7 @@ struct ABIPassingInformation
     }
 
     bool HasAnyRegisterSegment() const;
+    bool HasAnyFloatingRegisterSegment() const;
     bool HasAnyStackSegment() const;
     bool HasExactlyOneRegisterSegment() const;
     bool HasExactlyOneStackSegment() const;
