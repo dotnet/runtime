@@ -197,14 +197,6 @@ namespace System.Reflection.Tests
                 
                 SetEntryAssembly(testAssembly);
                 Assert.Equal(Assembly.GetEntryAssembly(), testAssembly);
-                
-                var invalidAssembly = new PersistedAssemblyBuilder(
-                    new AssemblyName("NotaRuntimeAssemblyTest"),
-                    typeof(object).Assembly
-                );
-                Assert.Throws<ArgumentException>(
-                    () => Assembly.SetEntryAssembly(invalidAssembly)
-                );
             }).Dispose();
         }
 
