@@ -81,8 +81,6 @@ class GCScan
     // post-promotions callback some roots were demoted
     static void GcDemote (int condemned, int max_gen, ScanContext* sc);
 
-    static size_t AskForMoreReservedMemory (size_t old_size, size_t need_size);
-
     static void VerifyHandleTable(int condemned, int max_gen, ScanContext* sc);
 
     static VOLATILE(int32_t) m_GcStructuresInvalidCnt;

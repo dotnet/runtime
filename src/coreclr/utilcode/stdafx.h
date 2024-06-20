@@ -22,4 +22,3 @@ using std::max;
 
 #include "volatile.h"
 #include "static_assert.h"
-

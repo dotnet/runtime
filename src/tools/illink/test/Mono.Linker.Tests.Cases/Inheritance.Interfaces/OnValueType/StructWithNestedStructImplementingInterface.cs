@@ -1,4 +1,5 @@
 using System;
+using System.Reflection;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
 namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnValueType
@@ -33,7 +34,10 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnValueType
 		}
 
 		[Kept]
-		public interface IBuildable<T> : IBuildable where T : IBuilder, new()
+		public interface IBuildable<
+			[KeptGenericParamAttributes (GenericParameterAttributes.DefaultConstructorConstraint)]
+			T
+		> : IBuildable where T : IBuilder, new()
 		{
 		}
 
