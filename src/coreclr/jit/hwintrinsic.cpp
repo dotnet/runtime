@@ -616,7 +616,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
         {
             isHardwareAcceleratedProp = true;
         }
-        else if (strcmp(methodName + 6, "IsSupported") == 0)
+        else if (strcmp(methodName + 6, "Supported") == 0)
         {
             isSupportedProp = true;
         }

@@ -163,7 +163,7 @@ static CORINFO_InstructionSet lookupInstructionSet(const char* className)
             {
                 return InstructionSet_AVX2;
             }
-            else if (strncmp(className + 3, "512", 3))
+            else if (strncmp(className + 3, "512", 3) == 0)
             {
                 if (strcmp(className + 6, "BW") == 0)
                 {
@@ -328,10 +328,7 @@ CORINFO_InstructionSet HWIntrinsicInfo::lookupIsa(const char* className, const c
     {
         if (strcmp(className, "V512") == 0)
         {
-            if (strcmp(className + 2, "12") == 0)
-            {
-                return V512VersionOfIsa(enclosingIsa);
-            }
+            return V512VersionOfIsa(enclosingIsa);
         }
         else if (strcmp(className, "VL") == 0)
         {
