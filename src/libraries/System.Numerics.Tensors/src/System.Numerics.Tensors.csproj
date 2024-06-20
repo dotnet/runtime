@@ -16,6 +16,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <Compile Include="System\Numerics\Tensors\netcore\TensorShape.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorHelpers.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorExtensions.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\Tensor.Factory.cs" />
