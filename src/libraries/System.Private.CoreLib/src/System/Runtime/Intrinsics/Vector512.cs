@@ -1795,6 +1795,40 @@ namespace System.Runtime.Intrinsics
                 || Vector256.GreaterThanOrEqualAny(left._upper, right._upper);
         }
 
+        /// <inheritdoc cref="Vector256.Hypot(Vector256{double}, Vector256{double})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector512<double> Hypot(Vector512<double> x, Vector512<double> y)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.HypotDouble<Vector512<double>, Vector512<ulong>>(x, y);
+            }
+            else
+            {
+                return Create(
+                    Vector256.Hypot(x._lower, y._lower),
+                    Vector256.Hypot(x._upper, y._upper)
+                );
+            }
+        }
+
+        /// <inheritdoc cref="Vector256.Hypot(Vector256{float}, Vector256{float})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector512<float> Hypot(Vector512<float> x, Vector512<float> y)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.HypotSingle<Vector512<float>, Vector512<double>>(x, y);
+            }
+            else
+            {
+                return Create(
+                    Vector256.Hypot(x._lower, y._lower),
+                    Vector256.Hypot(x._upper, y._upper)
+                );
+            }
+        }
+
         /// <summary>Compares two vectors to determine which is less on a per-element basis.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="left">The vector to compare with <paramref name="left" />.</param>

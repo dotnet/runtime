@@ -432,6 +432,11 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector4 FusedMultiplyAdd(Vector4 left, Vector4 right, Vector4 addend) => Vector128.FusedMultiplyAdd(left.AsVector128(), right.AsVector128(), addend.AsVector128()).AsVector4();
 
+        /// <inheritdoc cref="Vector128.Hypot(Vector128{float}, Vector128{float})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector4 Hypot(Vector4 x, Vector4 y) => Vector128.Hypot(x.AsVector128(), y.AsVector128()).AsVector4();
+
         /// <summary>Performs a linear interpolation between two vectors based on the given weighting.</summary>
         /// <param name="value1">The first vector.</param>
         /// <param name="value2">The second vector.</param>

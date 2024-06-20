@@ -1518,6 +1518,54 @@ namespace System.Runtime.Intrinsics
             return false;
         }
 
+        internal static Vector64<T> Hypot<T>(Vector64<T> x, Vector64<T> y)
+            where T : IRootFunctions<T>
+        {
+            Unsafe.SkipInit(out Vector64<T> result);
+
+            for (int index = 0; index < Vector64<T>.Count; index++)
+            {
+                T value = T.Hypot(x.GetElementUnsafe(index), y.GetElementUnsafe(index));
+                result.SetElementUnsafe(index, value);
+            }
+
+            return result;
+        }
+
+        /// <summary>Computes the hypotenuse given two vectors representing the lengths of the shorter sides in a right-angled triangle.</summary>
+        /// <param name="x">The vector to square and add to <paramref name="y" />.</param>
+        /// <param name="y">The vector to square and add to <paramref name="x" />.</param>
+        /// <returns>The square root of <paramref name="x" />-squared plus <paramref name="y" />-squared.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector64<double> Hypot(Vector64<double> x, Vector64<double> y)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.HypotDouble<Vector64<double>, Vector64<ulong>>(x, y);
+            }
+            else
+            {
+                return Hypot<double>(x, y);
+            }
+        }
+
+        /// <summary>Computes the hypotenuse given two vectors representing the lengths of the shorter sides in a right-angled triangle.</summary>
+        /// <param name="x">The vector to square and add to <paramref name="y" />.</param>
+        /// <param name="y">The vector to square and add to <paramref name="x" />.</param>
+        /// <returns>The square root of <paramref name="x" />-squared plus <paramref name="y" />-squared.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector64<float> Hypot(Vector64<float> x, Vector64<float> y)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.HypotSingle<Vector64<float>, Vector64<double>>(x, y);
+            }
+            else
+            {
+                return Hypot<float>(x, y);
+            }
+        }
+
         /// <summary>Compares two vectors to determine which is less on a per-element basis.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="left">The vector to compare with <paramref name="left" />.</param>

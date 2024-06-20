@@ -282,6 +282,170 @@ namespace System.Runtime.Intrinsics
             return ret;
         }
 
+        public static TVectorDouble HypotDouble<TVectorDouble, TVectorUInt64>(TVectorDouble x, TVectorDouble y)
+            where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
+            where TVectorUInt64 : unmanaged, ISimdVector<TVectorUInt64, ulong>
+        {
+            // This code is based on `hypot` from amd/aocl-libm-ose
+            // Copyright (C) 2008-2020 Advanced Micro Devices, Inc. All rights reserved.
+            //
+            // Licensed under the BSD 3-Clause "New" or "Revised" License
+            // See THIRD-PARTY-NOTICES.TXT for the full license text
+
+            TVectorDouble ax = TVectorDouble.Abs(x);
+            TVectorDouble ay = TVectorDouble.Abs(y);
+
+            TVectorDouble positiveInfinity = TVectorDouble.Create(float.PositiveInfinity);
+            TVectorDouble infinityMask = TVectorDouble.Equals(ax, positiveInfinity) | TVectorDouble.Equals(ay, positiveInfinity);
+            TVectorDouble notNaNMask = TVectorDouble.Equals(ax, ax) & TVectorDouble.Equals(ay, ay);
+
+            TVectorUInt64 xBits = Unsafe.BitCast<TVectorDouble, TVectorUInt64>(ax);
+            TVectorUInt64 yBits = Unsafe.BitCast<TVectorDouble, TVectorUInt64>(ay);
+
+            TVectorUInt64 shiftedExponentMask = TVectorUInt64.Create(double.ShiftedExponentMask);
+            TVectorUInt64 xExp = (xBits >> double.BiasedExponentShift) & shiftedExponentMask;
+            TVectorUInt64 yExp = (yBits >> double.BiasedExponentShift) & shiftedExponentMask;
+
+            TVectorUInt64 expDiff = xExp - yExp;
+
+            // To prevent overflow, scale down by 2^+600
+            TVectorUInt64 expBiasP500 = TVectorUInt64.Create(double.ExponentBias + 500);
+            TVectorUInt64 scaleDownMask = TVectorUInt64.GreaterThan(xExp, expBiasP500) | TVectorUInt64.GreaterThan(yExp, expBiasP500);
+            TVectorDouble expFix = TVectorDouble.ConditionalSelect(Unsafe.BitCast<TVectorUInt64, TVectorDouble>(scaleDownMask), TVectorDouble.Create(4.149515568880993E+180), TVectorDouble.One);
+            TVectorUInt64 bitsFix = scaleDownMask & TVectorUInt64.Create(0xDA80000000000000);
+
+            // To prevent underflow, scale up by 2^-600, but only if we didn't scale down already
+            TVectorUInt64 expBiasM500 = TVectorUInt64.Create(double.ExponentBias - 500);
+            TVectorUInt64 scaleUpMask = TVectorUInt64.AndNot(TVectorUInt64.LessThan(xExp, expBiasM500) | TVectorUInt64.LessThan(yExp, expBiasM500), scaleDownMask);
+            expFix = TVectorDouble.ConditionalSelect(Unsafe.BitCast<TVectorUInt64, TVectorDouble>(scaleUpMask), TVectorDouble.Create(2.409919865102884E-181), expFix);
+            bitsFix = TVectorUInt64.ConditionalSelect(scaleUpMask, TVectorUInt64.Create(0x2580000000000000), bitsFix);
+
+            xBits += bitsFix;
+            yBits += bitsFix;
+
+            // For subnormal values when scaling up, do an additional fixing
+            // up changing the adjustment to scale up by 2^601 instead and then
+            // subtract a correction of 2^601 to account for the implicit bit.
+
+            TVectorDouble subnormalFix = TVectorDouble.Create(9.232978617785736E-128);
+            TVectorUInt64 subnormalBitsFix = TVectorUInt64.Create(0x0010000000000000);
+
+            TVectorUInt64 xSubnormalMask = TVectorUInt64.Equals(xExp, TVectorUInt64.Zero) & scaleUpMask;
+            xBits += subnormalBitsFix & xSubnormalMask;
+            ax = Unsafe.BitCast<TVectorUInt64, TVectorDouble>(xBits);
+            ax -= subnormalFix & Unsafe.BitCast<TVectorUInt64, TVectorDouble>(xSubnormalMask);
+
+            TVectorUInt64 ySubnormalMask = TVectorUInt64.Equals(yExp, TVectorUInt64.Zero) & scaleUpMask;
+            yBits += subnormalBitsFix & ySubnormalMask;
+            ay = Unsafe.BitCast<TVectorUInt64, TVectorDouble>(yBits);
+            ay -= subnormalFix & Unsafe.BitCast<TVectorUInt64, TVectorDouble>(ySubnormalMask);
+
+            xBits = Unsafe.BitCast<TVectorDouble, TVectorUInt64>(ax);
+            yBits = Unsafe.BitCast<TVectorDouble, TVectorUInt64>(ay);
+
+            // Sort so ax is greater than ay
+            TVectorDouble lessThanMask = TVectorDouble.LessThan(ax, ay);
+
+            TVectorDouble tmp = ax;
+            ax = TVectorDouble.ConditionalSelect(lessThanMask, ay, ax);
+            ay = TVectorDouble.ConditionalSelect(lessThanMask, tmp, ay);
+
+            TVectorUInt64 tmpBits = xBits;
+            xBits = TVectorUInt64.ConditionalSelect(Unsafe.BitCast<TVectorDouble, TVectorUInt64>(lessThanMask), yBits, xBits);
+            yBits = TVectorUInt64.ConditionalSelect(Unsafe.BitCast<TVectorDouble, TVectorUInt64>(lessThanMask), tmpBits, yBits);
+
+            Debug.Assert(TVectorDouble.GreaterThanOrEqualAll(ax, ay));
+
+            // Split ax and ay into a head and tail portion
+
+            TVectorUInt64 headMask = TVectorUInt64.Create(0xFFFF_FFFF_F800_0000);
+            TVectorDouble xHead = Unsafe.BitCast<TVectorUInt64, TVectorDouble>(xBits & headMask);
+            TVectorDouble yHead = Unsafe.BitCast<TVectorUInt64, TVectorDouble>(yBits & headMask);
+
+            TVectorDouble xTail = ax - xHead;
+            TVectorDouble yTail = ay - yHead;
+
+            // Compute (x * x) + (y * y) with extra precision
+            //
+            // This includes taking into account expFix which may
+            // cause an underflow or overflow, but if it does that
+            // will still be the correct result.
+
+            TVectorDouble xx = ax * ax;
+            TVectorDouble yy = ay * ay;
+
+            TVectorDouble rHead = xx + yy;
+            TVectorDouble rTail = (xx - rHead) + yy;
+
+            rTail += (xHead * xHead) - xx;
+            rTail += xHead * 2 * xTail;
+            rTail += xTail * xTail;
+
+            // We only need to do extra accounting when ax and ay have equal exponents
+            TVectorDouble equalExponentsMask = Unsafe.BitCast<TVectorUInt64, TVectorDouble>(TVectorUInt64.Equals(expDiff, TVectorUInt64.Zero));
+
+            TVectorDouble rTailTmp = rTail;
+
+            rTailTmp += (yHead * yHead) - yy;
+            rTailTmp += yHead * 2 * yTail;
+            rTailTmp += yTail * yTail;
+
+            rTail = TVectorDouble.ConditionalSelect(equalExponentsMask, rTailTmp, rTail);
+
+            TVectorDouble result = TVectorDouble.Sqrt(rHead + rTail) * expFix;
+
+            // IEEE 754 requires that we return +Infinity
+            // if either input is Infinity, even if one of
+            // the inputs is NaN. Otherwise if either input
+            // is NaN, we return NaN
+
+            result = TVectorDouble.ConditionalSelect(notNaNMask, result, TVectorDouble.Create(double.NaN));
+            result = TVectorDouble.ConditionalSelect(infinityMask, TVectorDouble.Create(double.PositiveInfinity), result);
+
+            return result;
+        }
+
+        public static TVectorSingle HypotSingle<TVectorSingle, TVectorDouble>(TVectorSingle x, TVectorSingle y)
+            where TVectorSingle : unmanaged, ISimdVector<TVectorSingle, float>
+            where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
+        {
+            // This code is based on `hypotf` from amd/aocl-libm-ose
+            // Copyright (C) 2008-2020 Advanced Micro Devices, Inc. All rights reserved.
+            //
+            // Licensed under the BSD 3-Clause "New" or "Revised" License
+            // See THIRD-PARTY-NOTICES.TXT for the full license text
+
+            TVectorSingle ax = TVectorSingle.Abs(x);
+            TVectorSingle ay = TVectorSingle.Abs(y);
+
+            TVectorSingle positiveInfinity = TVectorSingle.Create(float.PositiveInfinity);
+            TVectorSingle infinityMask = TVectorSingle.Equals(ax, positiveInfinity) | TVectorSingle.Equals(ay, positiveInfinity);
+            TVectorSingle notNaNMask = TVectorSingle.Equals(ax, ax) & TVectorSingle.Equals(ay, ay);
+
+            (TVectorDouble xxLower, TVectorDouble xxUpper) = Widen<TVectorSingle, TVectorDouble>(ax);
+            xxLower *= xxLower;
+            xxUpper *= xxUpper;
+
+            (TVectorDouble yyLower, TVectorDouble yyUpper) = Widen<TVectorSingle, TVectorDouble>(ay);
+            yyLower *= yyLower;
+            yyUpper *= yyUpper;
+
+            TVectorSingle result = Narrow<TVectorDouble, TVectorSingle>(
+                TVectorDouble.Sqrt(xxLower + yyLower),
+                TVectorDouble.Sqrt(xxUpper + yyUpper)
+            );
+
+            // IEEE 754 requires that we return +Infinity
+            // if either input is Infinity, even if one of
+            // the inputs is NaN. Otherwise if either input
+            // is NaN, we return NaN
+
+            result = TVectorSingle.ConditionalSelect(notNaNMask, result, TVectorSingle.Create(float.NaN));
+            result = TVectorSingle.ConditionalSelect(infinityMask, TVectorSingle.Create(float.PositiveInfinity), result);
+
+            return result;
+        }
+
         public static TVectorDouble LogDouble<TVectorDouble, TVectorInt64, TVectorUInt64>(TVectorDouble x)
             where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
             where TVectorInt64 : unmanaged, ISimdVector<TVectorInt64, long>

@@ -1128,6 +1128,48 @@ namespace System.Numerics
             return false;
         }
 
+        internal static Vector<T> Hypot<T>(Vector<T> x, Vector<T> y)
+            where T : IRootFunctions<T>
+        {
+            Unsafe.SkipInit(out Vector<T> result);
+
+            for (int index = 0; index < Vector<T>.Count; index++)
+            {
+                T value = T.Hypot(x.GetElementUnsafe(index), y.GetElementUnsafe(index));
+                result.SetElementUnsafe(index, value);
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="Vector128.Hypot(Vector128{double}, Vector128{double})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<double> Hypot(Vector<double> x, Vector<double> y)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.HypotDouble<Vector<double>, Vector<ulong>>(x, y);
+            }
+            else
+            {
+                return Hypot<double>(x, y);
+            }
+        }
+
+        /// <inheritdoc cref="Vector128.Hypot(Vector128{float}, Vector128{float})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<float> Hypot(Vector<float> x, Vector<float> y)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.HypotSingle<Vector<float>, Vector<double>>(x, y);
+            }
+            else
+            {
+                return Hypot<float>(x, y);
+            }
+        }
+
         /// <summary>Compares two vectors to determine which is less on a per-element basis.</summary>
         /// <param name="left">The vector to compare with <paramref name="left" />.</param>
         /// <param name="right">The vector to compare with <paramref name="right" />.</param>
