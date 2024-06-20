@@ -950,7 +950,7 @@ void ObjectAllocator::RewriteUses()
 
                         call->gtCallMethHnd = m_compiler->eeFindHelper(CORINFO_HELP_UNBOX_TYPETEST);
                         lcl->ChangeOper(GT_LCL_VAR);
-                        GenTree* const mt = m_compiler->gtNewMethodTableLookup(lcl);
+                        GenTree* const mt = m_compiler->gtNewMethodTableLookup(lcl, /* onStack */ true);
                         call->gtArgs.Remove(secondArg);
                         call->gtArgs.PushBack(m_compiler, NewCallArg::Primitive(mt));
 
