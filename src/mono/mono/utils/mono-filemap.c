@@ -27,11 +27,16 @@
 MonoFileMap *
 mono_file_map_open (const char* name)
 {
-#ifdef WIN32
+#ifdef HOST_WIN32
 	gchar *name_mod;
-	name_mod = g_malloc(strlen(name) + 5);
-	strcpy(name_mod, "\\\\?\\");
-	strcat(name_mod, name);
+	if (g_path_is_absolute (name)) {
+		name_mod = g_malloc(strlen(name) + 5);
+		strcpy(name_mod, "\\\\?\\");
+    		strcat(name_mod, name);
+	} else {
+		name_mod = g_malloc(strlen(name));
+        	strcpy(name_mod, name);
+	}
 	gunichar2 *wname = g_utf8_to_utf16 (name_mod, -1, 0, 0, 0);
 	MonoFileMap *result;
 
