@@ -5,15 +5,11 @@
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <PublishAot>true</PublishAot>
+    <SuppressTrimAnalysisWarnings>false</SuppressTrimAnalysisWarnings>
   </PropertyGroup>
 
-  <ItemGroup>
-    <Compile Include="XUnitLogChecker.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Compile Include="../Coreclr.TestWrapper/CoreclrTestWrapperLib.cs" Link="CoreclrTestWrapperLib.cs" />
-    <Compile Include="../Coreclr.TestWrapper/MobileAppHandler.cs" Link="MobileAppHandler.cs" />
-  </ItemGroup>
+  <!-- Share with AOT project. -->
+  <Import Project="XUnitLogChecker.props" />
 
 </Project>
