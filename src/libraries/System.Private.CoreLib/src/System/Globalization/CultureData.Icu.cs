@@ -369,34 +369,37 @@ namespace System.Globalization
                         result[resultPos++] = '\\';
                         break;
                     case '\'':
-                        int i0 = i;
-                        result[resultPos++] = icuFormatString[i++];
-                        while (i < icuFormatString.Length)
+                        static bool HandleQuoteLiteral(ReadOnlySpan<char> icuFormatString, ref int i, Span<char> result, ref int resultPos)
+                        {
+                            if (i + 1 < icuFormatString.Length && icuFormatString[i + 1] == '\'')
+                            {
+                                result[resultPos++] = '\\';
+                                result[resultPos++] = '\'';
+                                i++;
+                                return true;
+                            }
+                            return false;
+                        }
+
+                        if (HandleQuoteLiteral(icuFormatString, ref i, result, ref resultPos)) break;
+                        result[resultPos++] = '\'';
+                        for (i++; i < icuFormatString.Length; i++)
                         {
                             current = icuFormatString[i];
-                            result[resultPos++] = current;
                             if (current == '\'')
                             {
-                                if (i - i0 <= 1)
+                                if (HandleQuoteLiteral(icuFormatString, ref i, result, ref resultPos))
                                 {
-                                    // Two adjacent single vertical quotes ('') represents a literal single quote, outside quoted text.
-                                    result[resultPos - 2] = '\\';
-                                    break;
+                                    continue;
                                 }
-                                if (i + 1 < icuFormatString.Length && icuFormatString[i + 1] == '\'')
-                                {
-                                    // Two adjacent single vertical quotes ('') represents a literal single quote, inside quoted text.
-                                    result[resultPos - 1] = '\\';
-                                    result[resultPos++] = '\'';
-                                    i++;
-                                }
-                                else break;
+                                result[resultPos++] = '\'';
+                                break;
                             }
-                            else if (current == '\\')
+                            if (current == '\\')
                             {
                                 result[resultPos++] = '\\';
                             }
-                            i++;
+                            result[resultPos++] = current;
                         }
                         break;
 
