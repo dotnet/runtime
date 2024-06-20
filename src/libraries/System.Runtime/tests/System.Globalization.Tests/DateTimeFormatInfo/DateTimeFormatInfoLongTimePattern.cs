@@ -287,8 +287,7 @@ namespace System.Globalization.Tests
         [Fact]
         public void LongTimePattern_VerifyTimePatterns()
         {
-            foreach (var culture in CultureInfo.GetCultures(CultureTypes.AllCultures))
-            {
+            Assert.All(CultureInfo.GetCultures(CultureTypes.AllCultures), culture => {
                 var pattern = culture.DateTimeFormat.LongTimePattern;
                 bool use24Hour = false;
                 bool use12Hour = false;
@@ -312,7 +311,7 @@ namespace System.Globalization.Tests
                     }
                 }
                 Assert.True((use24Hour || useAMPM) && (use12Hour ^ use24Hour), $"Bad long time pattern for culture {culture.Name}: '{pattern}'");
-            }
+            });
         }
 
         [Fact]
