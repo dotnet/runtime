@@ -390,31 +390,7 @@ encode_value (gint32 value, guint8 *buf, guint8 **endbuf)
 static gint32
 decode_value (guint8 *ptr, guint8 **rptr)
 {
-	guint8 b = *ptr;
-	gint32 len;
-
-	if ((b & 0x80) == 0){
-		len = b;
-		++ptr;
-	} else if ((b & 0x40) == 0){
-		len = ((b & 0x3f) << 8 | ptr [1]);
-		ptr += 2;
-	} else if (b != 0xff) {
-		len = ((b & 0x1f) << 24) |
-			(ptr [1] << 16) |
-			(ptr [2] << 8) |
-			ptr [3];
-		ptr += 4;
-	}
-	else {
-		len = (ptr [1] << 24) | (ptr [2] << 16) | (ptr [3] << 8) | ptr [4];
-		ptr += 5;
-	}
-	if (rptr)
-		*rptr = ptr;
-
-	//printf ("DECODE: %d.\n", len);
-	return len;
+	return mono_metadata_decode_value_simd ((const guint8 *)ptr, (const guint8 **)rptr);
 }
 
 static void
