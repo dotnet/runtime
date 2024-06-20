@@ -326,7 +326,12 @@ double YieldProcessorNormalization::AtomicLoad(double *valueRef)
 #ifdef TARGET_64BIT
     return VolatileLoadWithoutBarrier(valueRef);
 #else
+#ifdef FEATURE_NATIVEAOT
+    // return *PalInterlockedCompareExchange(valueRef, 0.0, 0.0);
+    return *valueRef; // TODO: fix this
+#else
     return InterlockedCompareExchangeT(valueRef, 0.0, 0.0);
+#endif
 #endif
 }
 
@@ -337,7 +342,11 @@ void YieldProcessorNormalization::AtomicStore(double *valueRef, double value)
 #ifdef TARGET_64BIT
     *valueRef = value;
 #else
+#ifdef FEATURE_NATIVEAOT
+    PalInterlockedExchangePointer(valueRef, value); // TODO: verify it works or fix it
+#else
     InterlockedExchangeT(valueRef, value);
+#endif
 #endif
 }
 
