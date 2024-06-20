@@ -76,7 +76,6 @@
       <_CommonLinkerArgs Include="-framework Foundation" />
       <_CommonLinkerArgs Include="-framework Security" />
       <_CommonLinkerArgs Include="-framework UIKit" />
-      <_CommonLinkerArgs Include="libz.a" />
     </ItemGroup>
   </Target>
 

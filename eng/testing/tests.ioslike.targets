@@ -214,6 +214,7 @@
       </AppleAssembliesToBundle>
 
       <AppleNativeFilesToBundle Include="$(PublishDir)\**\*.*" Exclude="$(PublishDir)\*.dll" />
+      <AppleNativeFilesToBundle Include="$(CoreCLRArtifactsPath)\aotsdk\libz.a" />
     </ItemGroup>
   </Target>
 
