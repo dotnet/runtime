@@ -92,6 +92,11 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe (float Sin, float Cos) SinCos(float x)
         {
+            if (RuntimeHelpers.IsKnownConstant(x))
+            {
+                return (Sin(x), Cos(x));
+            }
+
             float sin, cos;
             SinCos(x, &sin, &cos);
             return (sin, cos);
