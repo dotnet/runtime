@@ -10,6 +10,9 @@ namespace System.Diagnostics
     [DebuggerDisplay("{DebuggerDisplay,nq}")]
     public partial class Stopwatch
     {
+        private const long TicksPerMillisecond = 10000;
+        private const long TicksPerSecond = TicksPerMillisecond * 1000;
+
         private long _elapsed;
         private long _startTimeStamp;
         private bool _isRunning;
@@ -24,7 +27,7 @@ namespace System.Diagnostics
         // performance-counter frequency, in counts per ticks.
         // This can speed up conversion from high frequency performance-counter
         // to ticks.
-        private static readonly double s_tickFrequency = (double)TimeSpan.TicksPerSecond / Frequency;
+        private static readonly double s_tickFrequency = (double)TicksPerSecond / Frequency;
 
         public Stopwatch()
         {
@@ -106,7 +109,7 @@ namespace System.Diagnostics
 
         public long ElapsedMilliseconds
         {
-            get { return GetElapsedDateTimeTicks() / TimeSpan.TicksPerMillisecond; }
+            get { return GetElapsedDateTimeTicks() / TicksPerMillisecond; }
         }
 
         public long ElapsedTicks

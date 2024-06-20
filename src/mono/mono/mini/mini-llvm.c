@@ -11776,7 +11776,8 @@ MONO_RESTORE_WARNING
 			values [ins->dreg] = result;
 			break;
 		}
-		case OP_ARM64_STM: {
+		case OP_ARM64_STM:
+		case OP_ARM64_STM_ZIP: {
 			LLVMTypeRef tuple_t = simd_class_to_llvm_type (ctx, ins->klass);
 			LLVMTypeRef vec_t = LLVMGetElementType (tuple_t);
 
@@ -11794,7 +11795,7 @@ MONO_RESTORE_WARNING
 			}
 			args [len] = lhs;
 
-			IntrinsicId iid = (IntrinsicId) ins->inst_c0;
+			IntrinsicId iid = 0;
 			if (iid == 0) {
 				unsigned int n_elem_vector = LLVMGetVectorSize (vec_t);
 				LLVMTypeRef elem_t = LLVMGetElementType (vec_t);
@@ -11804,13 +11805,25 @@ MONO_RESTORE_WARNING
 				case 64: {
 					switch (len) {
 					case 2:
-						iid = INTRINS_AARCH64_ADV_SIMD_ST2_V64;
+						switch (ins->opcode) {
+						case OP_ARM64_STM: iid = INTRINS_AARCH64_ADV_SIMD_ST1X2_V64; break;
+						case OP_ARM64_STM_ZIP: iid = INTRINS_AARCH64_ADV_SIMD_ST2_V64; break;
+						default: g_assert_not_reached ();
+						}
 						break;
 					case 3:
-						iid = INTRINS_AARCH64_ADV_SIMD_ST3_V64;
+						switch (ins->opcode) {
+						case OP_ARM64_STM: iid = INTRINS_AARCH64_ADV_SIMD_ST1X3_V64; break;
+						case OP_ARM64_STM_ZIP: iid = INTRINS_AARCH64_ADV_SIMD_ST3_V64; break;
+						default: g_assert_not_reached ();
+						}
 						break;
 					case 4:
-						iid = INTRINS_AARCH64_ADV_SIMD_ST4_V64;
+						switch (ins->opcode) {
+						case OP_ARM64_STM: iid = INTRINS_AARCH64_ADV_SIMD_ST1X4_V64; break;
+						case OP_ARM64_STM_ZIP: iid = INTRINS_AARCH64_ADV_SIMD_ST4_V64; break;
+						default: g_assert_not_reached ();
+						}
 						break;
 					default:
 						g_assert_not_reached ();
@@ -11821,13 +11834,25 @@ MONO_RESTORE_WARNING
 				case 128: {
 					switch (len) {
 					case 2:
-						iid = INTRINS_AARCH64_ADV_SIMD_ST2_V128;
+						switch (ins->opcode) {
+						case OP_ARM64_STM: iid = INTRINS_AARCH64_ADV_SIMD_ST1X2_V128; break;
+						case OP_ARM64_STM_ZIP: iid = INTRINS_AARCH64_ADV_SIMD_ST2_V128; break;
+						default: g_assert_not_reached ();
+						}
 						break;
 					case 3:
-						iid = INTRINS_AARCH64_ADV_SIMD_ST3_V128;
+						switch (ins->opcode) {
+						case OP_ARM64_STM: iid = INTRINS_AARCH64_ADV_SIMD_ST1X3_V128; break;
+						case OP_ARM64_STM_ZIP: iid = INTRINS_AARCH64_ADV_SIMD_ST3_V128; break;
+						default: g_assert_not_reached ();
+						}
 						break;
 					case 4:
-						iid = INTRINS_AARCH64_ADV_SIMD_ST4_V128;
+						switch (ins->opcode) {
+						case OP_ARM64_STM: iid = INTRINS_AARCH64_ADV_SIMD_ST1X4_V128; break;
+						case OP_ARM64_STM_ZIP: iid = INTRINS_AARCH64_ADV_SIMD_ST4_V128; break;
+						default: g_assert_not_reached ();
+						}
 						break;
 					default:
 						g_assert_not_reached ();

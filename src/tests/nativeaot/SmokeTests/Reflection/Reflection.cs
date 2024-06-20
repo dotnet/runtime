@@ -66,6 +66,7 @@ internal static class ReflectionTest
         TestGenericMethodOnGenericType.Run();
         TestIsValueTypeWithoutTypeHandle.Run();
         TestMdArrayLoad.Run();
+        TestMdArrayLoad2.Run();
         TestByRefTypeLoad.Run();
         TestGenericLdtoken.Run();
         TestAbstractGenericLdtoken.Run();
@@ -2438,6 +2439,21 @@ internal static class ReflectionTest
         {
             var mi = typeof(TestMdArrayLoad).GetMethod(nameof(MakeMdArray)).MakeGenericMethod(GetAtom());
             if ((Type)mi.Invoke(null, Array.Empty<object>()) != typeof(Atom[,,]))
+                throw new Exception();
+            static Type GetAtom() => typeof(Atom);
+        }
+    }
+
+    class TestMdArrayLoad2
+    {
+        class Atom { }
+
+        public static object MakeMdArray<T>() => new T[1,1,1];
+
+        public static void Run()
+        {
+            var mi = typeof(TestMdArrayLoad2).GetMethod(nameof(MakeMdArray)).MakeGenericMethod(GetAtom());
+            if (mi.Invoke(null, Array.Empty<object>()) is not Atom[,,])
                 throw new Exception();
             static Type GetAtom() => typeof(Atom);
         }

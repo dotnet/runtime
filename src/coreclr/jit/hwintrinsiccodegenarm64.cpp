@@ -1280,40 +1280,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
-            case NI_AdvSimd_StoreVector64x2:
-            case NI_AdvSimd_StoreVector64x3:
-            case NI_AdvSimd_StoreVector64x4:
-            case NI_AdvSimd_Arm64_StoreVector128x2:
-            case NI_AdvSimd_Arm64_StoreVector128x3:
-            case NI_AdvSimd_Arm64_StoreVector128x4:
-            {
-                unsigned regCount = 0;
-
-                assert(intrin.op2->OperIsFieldList());
-
-                GenTreeFieldList* fieldList  = intrin.op2->AsFieldList();
-                GenTree*          firstField = fieldList->Uses().GetHead()->GetNode();
-                op2Reg                       = firstField->GetRegNum();
-
-#ifdef DEBUG
-                regNumber argReg = op2Reg;
-                for (GenTreeFieldList::Use& use : fieldList->Uses())
-                {
-                    regCount++;
-
-                    GenTree* argNode = use.GetNode();
-                    assert(argReg == argNode->GetRegNum());
-                    argReg = getNextSIMDRegWithWraparound(argReg);
-                }
-                assert((ins == INS_st1_2regs && regCount == 2) || (ins == INS_st2 && regCount == 2) ||
-                       (ins == INS_st1_3regs && regCount == 3) || (ins == INS_st3 && regCount == 3) ||
-                       (ins == INS_st1_4regs && regCount == 4) || (ins == INS_st4 && regCount == 4));
-#endif
-
-                GetEmitter()->emitIns_R_R(ins, emitSize, op2Reg, op1Reg, opt);
-                break;
-            }
-
+            case NI_AdvSimd_Store:
+            case NI_AdvSimd_Arm64_Store:
             case NI_AdvSimd_StoreVectorAndZip:
             case NI_AdvSimd_Arm64_StoreVectorAndZip:
             {
@@ -1336,24 +1304,24 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 #endif
                 }
 
+                bool isSequentialStore = (intrin.id == NI_AdvSimd_Arm64_Store || intrin.id == NI_AdvSimd_Store);
                 switch (regCount)
                 {
                     case 2:
-                        ins = INS_st2;
+                        ins = isSequentialStore ? INS_st1_2regs : INS_st2;
                         break;
 
                     case 3:
-                        ins = INS_st3;
+                        ins = isSequentialStore ? INS_st1_3regs : INS_st3;
                         break;
 
                     case 4:
-                        ins = INS_st4;
+                        ins = isSequentialStore ? INS_st1_4regs : INS_st4;
                         break;
 
                     default:
                         unreached();
                 }
-
                 GetEmitter()->emitIns_R_R(ins, emitSize, op2Reg, op1Reg, opt);
                 break;
             }
