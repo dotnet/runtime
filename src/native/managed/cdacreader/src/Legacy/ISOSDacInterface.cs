@@ -47,7 +47,7 @@ internal struct DacpMethodTableData
 {
     public int bIsFree; // everything else is NULL if this is true.
     public ulong module;
-    public ulong @class;
+    public ulong klass;
     public ulong parentMethodTable;
     public ushort wNumInterfaces;
     public ushort wNumMethods;

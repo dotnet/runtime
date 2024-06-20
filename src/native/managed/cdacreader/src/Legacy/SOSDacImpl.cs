@@ -102,7 +102,7 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface9
             {
                 result.module = contract.GetModule(methodTable);
                 // Note: really the canonical method table, not the EEClass, which we don't expose
-                result.@class = contract.GetCanonicalMethodTable(methodTable);
+                result.klass = contract.GetCanonicalMethodTable(methodTable);
                 result.parentMethodTable = contract.GetParentMethodTable(methodTable);
                 result.wNumInterfaces = contract.GetNumInterfaces(methodTable);
                 result.wNumMethods = contract.GetNumMethods(methodTable);
