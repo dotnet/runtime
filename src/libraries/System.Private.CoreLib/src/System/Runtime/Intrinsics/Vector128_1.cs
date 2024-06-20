@@ -276,15 +276,15 @@ namespace System.Runtime.Intrinsics
                                 Sse41.MultiplyLow(a.AsUInt32(),
                                     Sse2.Shuffle(b.AsUInt32(), 0xB1)).AsInt32(), Vector128<int>.Zero), 0x73).AsUInt64()));
             }
-            if (AdvSimd.Arm64.IsSupported && typeof(T) == typeof(ulong))
+            if (AdvSimd.Arm64.IsSupported && (typeof(T) == typeof(long) || typeof(T) == typeof(ulong)))
             {
-                Vector128<ulong> a = left.AsUInt64();
-                Vector128<ulong> b = right.AsUInt64();
-                return AdvSimd.Arm64.UnzipEven(
-                    AdvSimd.MultiplyWideningLower(
-                        a.GetLower().AsUInt32(), b.GetLower().AsUInt32()).AsUInt16(),
-                    AdvSimd.MultiplyWideningUpper(
-                        a.AsUInt32(), b.AsUInt32()).AsUInt16()).AsUInt64().As<ulong, T>();
+                Vector64<uint> aHi = AdvSimd.ShiftRightLogicalNarrowingLower(a.AsUInt64(), 32);
+                Vector64<uint> aLo = AdvSimd.ExtractNarrowingLower(a.AsUInt64());
+                Vector64<uint> bHi = AdvSimd.ShiftRightLogicalNarrowingLower(b.AsUInt64(), 32);
+                Vector64<uint> bLo = AdvSimd.ExtractNarrowingLower(b.AsUInt64());
+                Vector128<ulong> ret64 = AdvSimd.MultiplyWideningLower(aHi, bLo);
+                ret64 = AdvSimd.MultiplyWideningLowerAndAdd(ret64, aLo, bHi);
+                return AdvSimd.MultiplyWideningLowerAndAdd(ret64 << 32, aLo, bLo).As<ulong, T>();
             }
 
             return Vector128.Create(
