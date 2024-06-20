@@ -22,7 +22,7 @@ namespace Wasm.Build.Tests;
 public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string? _projectDir)
 {
     public static string WasmAssemblyExtension = BuildTestBase.s_buildEnv.UseWebcil ? ".wasm" : ".dll";
-    protected const string s_dotnetVersionHashRegex = @"\.(?<version>[0-9]+\.[0-9]+\.[a-zA-Z0-9\.-]+)\.(?<hash>[a-zA-Z0-9]+)\.";
+    protected const string s_dotnetVersionHashRegex = @"\.(?<hash>[a-zA-Z0-9]+)\.";
 
     private const string s_runtimePackPathPattern = "\\*\\* MicrosoftNetCoreAppRuntimePackDir : '([^ ']*)'";
     private static Regex s_runtimePackPathRegex = new Regex(s_runtimePackPathPattern);
