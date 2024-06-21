@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
@@ -143,25 +144,39 @@ namespace Microsoft.Extensions.Http.Logging
             }
         }
 
-        private static string? GetRedactedUriString(Uri? uri)
+        internal static string? GetRedactedUriString(Uri? uri)
         {
             if (uri is null)
             {
                 return null;
             }
 
-            if (uri.IsAbsoluteUri)
+            string uriString = uri.IsAbsoluteUri ? uri.AbsoluteUri : uri.ToString();
+
+            if (s_logQueryString)
             {
-                return s_logQueryString
-                    ? uri.AbsoluteUri
-                    : uri.GetComponents(UriComponents.AbsoluteUri & ~UriComponents.Query, UriFormat.UriEscaped);
+                return uriString;
             }
 
-            string uriString = uri.ToString();
-            int queryOffset = s_logQueryString ? -1 : uriString.IndexOf('?');
-            return queryOffset < 0
-                ? uriString
-                : uriString.Substring(0, queryOffset);
+            int queryOffset = uriString.IndexOf('?');
+
+            if (queryOffset < 0 || queryOffset == uriString.Length - 1)
+            {
+                // No query string or empty query string.
+                return uriString;
+            }
+
+#if NET
+            return string.Create(queryOffset + 2, (uriString, queryOffset), (result, s) =>
+            {
+                ReadOnlySpan<char> withoutQuery = s.uriString.AsSpan(0, s.queryOffset + 1);
+                withoutQuery.CopyTo(result);
+                Debug.Assert(result[^2] == '?');
+                result[^1] = '*';
+            });
+#else
+            return $"{uriString.Substring(0, queryOffset)}?*";
+#endif
         }
     }
 }

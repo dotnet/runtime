@@ -25,9 +25,32 @@ namespace Microsoft.Extensions.Http.Tests.Logging
             public static readonly EventId PipelineEnd = new EventId(101, "RequestPipelineEnd");
         }
 
-        public static TheoryData<bool, bool, bool, string> Handlers_LogAbsoluteUri_Data()
+        public static readonly TheoryData<string, string> GetRedactedUriString_Data = new TheoryData<string, string>()
         {
-            TheoryData<bool, bool, bool, string> result = new();
+            { null, null },
+            { "http://q.app/foo", "http://q.app/foo" },
+            { "http://q.app/foo?", "http://q.app/foo?" },
+            { "http://q.app/foo?XXX", "http://q.app/foo?*" },
+            { "http://q.app/a/b/c?a=b%20c&x=1", "http://q.app/a/b/c?*" },
+            { "/cat/1/2", "/cat/1/2" },
+            { "/cat/1/2?", "/cat/1/2?" },
+            { "/cat/1/2?X", "/cat/1/2?*" },
+            { "/cat/1/2?a=b%20c&x=1", "/cat/1/2?*" },
+        };
+
+        [Theory]
+        [MemberData(nameof(GetRedactedUriString_Data))]
+        public void GetRedactedUriString(string original, string expected)
+        {
+            Uri? uri = original != null ? new Uri(original, UriKind.RelativeOrAbsolute) : null;
+            string? actual = LogHelper.GetRedactedUriString(uri);
+
+            Assert.Equal(expected, actual);
+        }
+
+        public static TheoryData<bool, bool, string> Handlers_LogExpectedUri_Data()
+        {
+            TheoryData<bool, bool, string> result = new();
             bool[] booleans = { true, false };
             bool[] syncApiVals =
 #if NET
@@ -37,45 +60,39 @@ namespace Microsoft.Extensions.Http.Tests.Logging
 #endif
             foreach (bool syncApi in syncApiVals)
             {
-                foreach (bool absoluteUri in booleans)
+                foreach (bool scopeHandler in booleans)
                 {
-                    foreach (bool scopeHandler in booleans)
+                    // valid values for logQueryStringEnabler:
+                    // ""           - Do not enable query string logging.
+                    // "AppCtx"     - Enable via AppContext switch.
+                    // "EnvVarTrue" - Enable by setting the environment *_LOGQUERYSTRING variable to 'true'.
+                    // "EnvVar1"    - Enable by setting the environment *_LOGQUERYSTRING variable to '1'.
+                    string[] lqs = ["", "AppCtx"];
+                    foreach (string logQueryStringEnabler in lqs)
                     {
-                        // valid values for logQueryStringEnabler:
-                        // ""           - Do not enable query string logging.
-                        // "AppCtx"     - Enable via AppContext switch.
-                        // "EnvVarTrue" - Enable by setting the environment *_LOGQUERYSTRING variable to 'true'.
-                        // "EnvVar1"    - Enable by setting the environment *_LOGQUERYSTRING variable to '1'.
-
-
-                        string[] lqs = ["", "AppCtx"];
-                        foreach (string logQueryStringEnabler in lqs)
-                        {
-                            result.Add(syncApi, absoluteUri, scopeHandler, logQueryStringEnabler);
-                        }
+                        result.Add(syncApi, scopeHandler, logQueryStringEnabler);
                     }
                 }
             }
 
-            result.Add(false, false, false, "EnvVarTrue");
-            result.Add(false, false, false, "EnvVar1");
-            result.Add(false, false, true, "EnvVarTrue");
-            result.Add(false, false, true, "EnvVar1");
+            result.Add(false, false, "EnvVarTrue");
+            result.Add(false, false, "EnvVar1");
+            result.Add(false, true, "EnvVarTrue");
+            result.Add(false, true, "EnvVar1");
 
             return result;
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [MemberData(nameof(Handlers_LogAbsoluteUri_Data))]
-        public async Task Handlers_LogExpectedUri(bool syncApi, bool absoluteUri, bool scopeHandler, string logQueryStringEnabler)
+        [MemberData(nameof(Handlers_LogExpectedUri_Data))]
+        public async Task Handlers_LogExpectedUri(bool syncApi, bool scopeHandler, string logQueryStringEnabler)
         {
-            await RemoteExecutor.Invoke(static async (syncApiStr, absoluteUriStr, scopeHandlerStr, logQueryStringEnabler) =>
+            await RemoteExecutor.Invoke(static async (syncApiStr, scopeHandlerStr, logQueryStringEnabler) =>
             {
                 bool syncApi = bool.Parse(syncApiStr);
-                bool absoluteUri = bool.Parse(absoluteUriStr);
                 bool scopeHandler = bool.Parse(scopeHandlerStr);
 
-                string baseUri = absoluteUri ? "http://api.example.com/search" : "/search";
+                string baseUri = "http://api.example.com/search";
                 const string queryString = "term=Western%20Australia";
                 string destinationUri = $"{baseUri}?{queryString}";
 
@@ -113,7 +130,7 @@ namespace Microsoft.Extensions.Http.Tests.Logging
                     _ = await invoker.SendAsync(request, default);
                 }
 
-                string expectedUri = !string.IsNullOrEmpty(logQueryStringEnabler) ? destinationUri : baseUri;
+                string expectedUri = !string.IsNullOrEmpty(logQueryStringEnabler) ? destinationUri : $"{baseUri}?*";
 
                 if (scopeHandler)
                 {
@@ -126,7 +143,7 @@ namespace Microsoft.Extensions.Http.Tests.Logging
                     var requestStartMessage = Assert.Single(sink.Writes.Where(m => m.EventId == EventIds.RequestStart));
                     Assert.Equal($"Sending HTTP request GET {expectedUri}", requestStartMessage.Message);
                 }
-            }, syncApi.ToString(), absoluteUri.ToString(), scopeHandler.ToString(), logQueryStringEnabler).DisposeAsync();
+            }, syncApi.ToString(), scopeHandler.ToString(), logQueryStringEnabler).DisposeAsync();
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -184,7 +201,7 @@ namespace Microsoft.Extensions.Http.Tests.Logging
                         m.EventId == EventIds.RequestStart &&
                         m.LoggerName == "System.Net.Http.HttpClient.test.ClientHandler"));
 
-                string expectedUri = logQueryString ? destinationUri : baseUri;
+                string expectedUri = logQueryString ? destinationUri : $"{baseUri}?*";
 
                 Assert.Equal($"HTTP GET {expectedUri}", pipelineStartMessage.Scope.ToString());
                 Assert.Equal($"Start processing HTTP request GET {expectedUri}", pipelineStartMessage.Message);
