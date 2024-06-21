@@ -23,7 +23,7 @@ namespace System.Net.NetworkInformation
         // We don't want to pick up an arbitrary or malicious ping
         // command, so that's why we do the path probing ourselves.
         private static string? GetPingUtilityPath(bool ipv4)
-        {   
+        {
             string fileName = ipv4 ? s_ipv4PingFile : s_ipv6PingFile;
             foreach (string folder in s_binFolders)
             {
