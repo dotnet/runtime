@@ -12,8 +12,6 @@
     <DefineConstants Condition="'$(FeatureWasmManagedThreads)' == 'true'">$(DefineConstants);FEATURE_WASM_MANAGED_THREADS</DefineConstants>
     <!-- Use following lines to write the generated files to disk. -->
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
-    <!-- to see timing and which test aborted the runtime -->
-    <XunitShowProgress>true</XunitShowProgress>
     <WasmXHarnessMaxParallelThreads>1</WasmXHarnessMaxParallelThreads>
   </PropertyGroup>
   <!-- Make debugging easier -->

@@ -17,9 +17,9 @@ internal sealed class Thread : IData<Thread>
         State = target.Read<uint>(address + (ulong)type.Fields[nameof(State)].Offset);
         PreemptiveGCDisabled = target.Read<uint>(address + (ulong)type.Fields[nameof(PreemptiveGCDisabled)].Offset);
 
-        TargetPointer allocContextPointer = target.ReadPointer(address + (ulong)type.Fields[nameof(AllocContext)].Offset);
-        if (allocContextPointer != TargetPointer.Null)
-            AllocContext = target.ProcessedData.GetOrAdd<GCAllocContext>(allocContextPointer);
+        TargetPointer runtimeThreadLocalsPointer = target.ReadPointer(address + (ulong)type.Fields[nameof(RuntimeThreadLocals)].Offset);
+        if (runtimeThreadLocalsPointer != TargetPointer.Null)
+            RuntimeThreadLocals = target.ProcessedData.GetOrAdd<RuntimeThreadLocals>(runtimeThreadLocalsPointer);
 
         Frame = target.ReadPointer(address + (ulong)type.Fields[nameof(Frame)].Offset);
 
@@ -38,7 +38,7 @@ internal sealed class Thread : IData<Thread>
     public TargetNUInt OSId { get; init; }
     public uint State { get; init; }
     public uint PreemptiveGCDisabled { get; init; }
-    public GCAllocContext? AllocContext { get; init; }
+    public RuntimeThreadLocals? RuntimeThreadLocals { get; init; }
     public TargetPointer Frame { get; init; }
     public TargetPointer TEB { get; init; }
     public TargetPointer LastThrownObject { get; init; }
