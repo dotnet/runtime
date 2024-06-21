@@ -289,8 +289,8 @@ public:
 
 public:
     // Methods expected by the GC
-    uint32_t ContainsPointers() { return HasReferenceFields(); }
-    uint32_t ContainsPointersOrCollectible() { return HasReferenceFields(); }
+    uint32_t ContainsGCPointers() { return HasReferenceFields(); }
+    uint32_t ContainsGCPointersOrCollectible() { return HasReferenceFields(); }
     UInt32_BOOL SanityCheck() { return Validate(); }
 };
 

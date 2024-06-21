@@ -161,7 +161,7 @@ public:
         // If it doesn't contain pointers, there isn't a GCDesc
         PTR_MethodTable mt(pMT);
 
-        _ASSERTE(mt->ContainsPointers());
+        _ASSERTE(mt->ContainsGCPointers());
 
         return PTR_CGCDesc(mt);
     }
@@ -195,7 +195,7 @@ public:
     {
         size_t NumOfPointers = 0;
 
-        if (pMT->ContainsPointers())
+        if (pMT->ContainsGCPointers())
         {
             CGCDesc* map = GetCGCDescFromMT(pMT);
             CGCDescSeries* cur = map->GetHighestSeries();

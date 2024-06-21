@@ -658,7 +658,7 @@ void MethodTable::AllocateAuxiliaryData(LoaderAllocator *pAllocator, Module *pLo
     }
 
     prependedAllocationSpace = prependedAllocationSpace + sizeofStaticsStructure;
-    
+
     cbAuxiliaryData = cbAuxiliaryData + S_SIZE_T(prependedAllocationSpace) + extraAllocation;
     if (cbAuxiliaryData.IsOverflow())
         ThrowHR(COR_E_OVERFLOW);
@@ -1569,7 +1569,7 @@ MethodTable::IsExternallyVisible()
 
 BOOL MethodTable::IsAllGCPointers()
 {
-    if (this->ContainsPointers())
+    if (this->ContainsGCPointers())
     {
         // check for canonical GC encoding for all-pointer types
         CGCDesc* pDesc = CGCDesc::GetCGCDescFromMT(this);
@@ -3351,7 +3351,7 @@ void MethodTable::AllocateRegularStaticBox(FieldDesc* pField, Object** boxedStat
     bool hasFixedAddr = HasFixedAddressVTStatics();
 
     LOG((LF_CLASSLOADER, LL_INFO10000, "\tInstantiating static of type %s\n", pFieldMT->GetDebugClassName()));
-    const bool canBeFrozen = !pFieldMT->ContainsPointers() && !Collectible();
+    const bool canBeFrozen = !pFieldMT->ContainsGCPointers() && !Collectible();
     OBJECTREF obj = AllocateStaticBox(pFieldMT, hasFixedAddr, canBeFrozen);
     SetObjectReference((OBJECTREF*)(boxedStaticHandle), obj);
     GCPROTECT_END();
@@ -3377,7 +3377,7 @@ OBJECTREF MethodTable::AllocateStaticBox(MethodTable* pFieldMT, BOOL fPinned, bo
     if (canBeFrozen)
     {
         // In case if we don't plan to collect this handle we may try to allocate it on FOH
-        _ASSERT(!pFieldMT->ContainsPointers());
+        _ASSERT(!pFieldMT->ContainsGCPointers());
         FrozenObjectHeapManager* foh = SystemDomain::GetFrozenObjectHeapManager();
         obj = ObjectToOBJECTREF(foh->TryAllocateObject(pFieldMT, pFieldMT->GetBaseSize()));
         // obj can be null in case if struct is huge (>64kb)
@@ -3796,7 +3796,7 @@ void MethodTable::AttemptToPreinit()
         // If there is a class constructor, then the class cannot be preinitted.
         return;
     }
-    
+
     if (GetClass()->GetNonGCRegularStaticFieldBytes() == 0 && GetClass()->GetNumHandleRegularStatics() == 0)
     {
         // If there are static fields that are not thread statics, then the class is preinitted.
@@ -7417,7 +7417,7 @@ MethodTable::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     DacEnumMemoryRegion(dac_cast<TADDR>(this), size);
 
     // Make sure the GCDescs are added to the dump
-    if (ContainsPointers())
+    if (ContainsGCPointers())
     {
         PTR_CGCDesc gcdesc = CGCDesc::GetCGCDescFromMT(this);
         size_t size = gcdesc->GetSize();

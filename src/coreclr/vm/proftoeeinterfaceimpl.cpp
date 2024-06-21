@@ -1166,7 +1166,7 @@ bool HeapWalkHelper(Object * pBO, void * pvContext)
 
     ProfilerWalkHeapContext * pProfilerWalkHeapContext = (ProfilerWalkHeapContext *) pvContext;
 
-    if (pMT->ContainsPointersOrCollectible())
+    if (pMT->ContainsGCPointersOrCollectible())
     {
         // First round through calculates the number of object refs for this class
         GCHeapUtilities::GetGCHeap()->DiagWalkObject(pBO, &CountContainedObjectRef, (void *)&cNumRefs);
@@ -6747,7 +6747,7 @@ HRESULT ProfToEEInterfaceImpl::EnumerateObjectReferences(ObjectID objectId, Obje
     Object* pBO = (Object*)objectId;
     MethodTable *pMT = pBO->GetMethodTable();
 
-    if (pMT->ContainsPointersOrCollectible())
+    if (pMT->ContainsGCPointersOrCollectible())
     {
         GCHeapUtilities::GetGCHeap()->DiagWalkObject2(pBO, (walk_fn2)callback, clientData);
         return S_OK;

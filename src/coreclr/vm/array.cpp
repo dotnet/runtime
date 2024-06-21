@@ -238,7 +238,7 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
     }
 
     BOOL            containsPointers = CorTypeInfo::IsObjRef(elemType);
-    if (elemType == ELEMENT_TYPE_VALUETYPE && pElemMT->ContainsPointers())
+    if (elemType == ELEMENT_TYPE_VALUETYPE && pElemMT->ContainsGCPointers())
         containsPointers = TRUE;
 
     // this is the base for every array type
@@ -520,7 +520,7 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
     if (CorTypeInfo::IsObjRef(elemType) ||
         ((elemType == ELEMENT_TYPE_VALUETYPE) && pElemMT->IsAllGCPointers()))
     {
-        pMT->SetContainsPointers();
+        pMT->SetContainsGCPointers();
 
         // This array is all GC Pointers
         CGCDesc::GetCGCDescFromMT(pMT)->Init( pMT, 1 );
@@ -536,9 +536,9 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
     else if (elemType == ELEMENT_TYPE_VALUETYPE)
     {
         // If it's an array of value classes, there is a different format for the GCDesc if it contains pointers
-        if (pElemMT->ContainsPointers())
+        if (pElemMT->ContainsGCPointers())
         {
-            pMT->SetContainsPointers();
+            pMT->SetContainsGCPointers();
 
             CGCDescSeries* pElemSeries = CGCDesc::GetCGCDescFromMT(pElemMT)->GetHighestSeries();
 

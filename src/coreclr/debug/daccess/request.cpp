@@ -1864,7 +1864,7 @@ ClrDataAccess::GetMethodTableDataImpl(CLRDATA_ADDRESS mt, struct DacpMethodTable
             MTData->wNumVirtuals = pMT->GetNumVirtuals();
             MTData->cl = pMT->GetCl();
             MTData->dwAttrClass = pMT->GetAttrClass();
-            MTData->bContainsPointers = pMT->ContainsPointers();
+            MTData->bContainsPointers = pMT->ContainsGCPointers();
             MTData->bIsShared = FALSE;
             MTData->bIsDynamic = pMT->IsDynamicStatics();
         }

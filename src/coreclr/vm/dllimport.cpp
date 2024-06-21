@@ -3368,7 +3368,7 @@ BOOL NDirect::MarshalingRequired(
                 // as long as they aren't auto-layout and don't have any auto-layout fields.
                 if (!runtimeMarshallingEnabled &&
                     !hndArgType.IsEnum() &&
-                    (hndArgType.GetMethodTable()->ContainsPointers()
+                    (hndArgType.GetMethodTable()->ContainsGCPointers()
                         || hndArgType.GetMethodTable()->IsAutoLayoutOrHasAutoLayoutField()))
                 {
                     return TRUE;
