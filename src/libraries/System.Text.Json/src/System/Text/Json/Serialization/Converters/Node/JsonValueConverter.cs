@@ -28,8 +28,7 @@ namespace System.Text.Json.Serialization.Converters
             }
 
             JsonElement element = JsonElement.ParseValue(ref reader);
-            JsonValue value = new JsonValuePrimitive<JsonElement>(element, JsonMetadataServices.JsonElementConverter, options.GetNodeOptions());
-            return value;
+            return JsonValue.CreateFromElement(ref element, options.GetNodeOptions());
         }
 
         internal override JsonSchema? GetSchema(JsonNumberHandling _) => JsonSchema.True;
