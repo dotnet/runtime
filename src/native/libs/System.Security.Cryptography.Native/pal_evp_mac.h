@@ -148,6 +148,15 @@ remarks: This uses EVP_MAC_CTX_dup and calls CryptoNative_EvpMacFinal on the dup
 PALEXPORT int32_t CryptoNative_EvpMacCurrent(EVP_MAC_CTX* ctx, uint8_t* mac, int32_t macLength);
 
 /*
+Clone the current MAC state context and returns the clone.
+
+ctx: A pointer to the context to clone.
+return: A pointer to the clone EVP_MAC_CTX, or NULL if the operation failed.
+remarks: This method will assert that the platform has EVP_MAC_CTX_dup.
+*/
+PALEXPORT EVP_MAC_CTX* CryptoNative_EvpMacCtxDup(const EVP_MAC_CTX* ctx);
+
+/*
 Computes the MAC of data with a key and customization string in a single step.
 
 mac: The MAC algorithm to use to compute the MAC.

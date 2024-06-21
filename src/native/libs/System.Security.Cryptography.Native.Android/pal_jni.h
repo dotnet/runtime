@@ -426,6 +426,9 @@ extern jmethodID g_HostnameVerifierVerify;
 extern jclass    g_HttpsURLConnection;
 extern jmethodID g_HttpsURLConnectionGetDefaultHostnameVerifier;
 
+// javax/net/ssl/KeyManager
+extern jclass    g_KeyManager;
+
 // javax/net/ssl/KeyManagerFactory
 extern jclass    g_KeyManagerFactory;
 extern jmethodID g_KeyManagerFactoryGetInstance;
@@ -502,6 +505,14 @@ extern jclass g_TrustManager;
 // net/dot/android/crypto/DotnetProxyTrustManager
 extern jclass    g_DotnetProxyTrustManager;
 extern jmethodID g_DotnetProxyTrustManagerCtor;
+
+// net/dot/android/crypto/DotnetX509KeyManager
+extern jclass    g_DotnetX509KeyManager;
+extern jmethodID g_DotnetX509KeyManagerCtor;
+
+// net/dot/android/crypto/PalPbkdf2
+extern jclass    g_PalPbkdf2;
+extern jmethodID g_PalPbkdf2Pbkdf2OneShot;
 
 // Compatibility macros
 #if !defined (__mallocfunc)

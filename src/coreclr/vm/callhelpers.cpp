@@ -40,12 +40,8 @@ void AssertMulticoreJitAllowedModule(PCODE pTarget)
 // out of managed code.  Instead, we rely on explicit cleanup like CLRException::HandlerState::CleanupTry
 // or UMThunkUnwindFrameChainHandler.
 //
-// So most callers should call through CallDescrWorkerWithHandler (or a wrapper like MethodDesc::Call)
-// and get the platform-appropriate exception handling.  A few places try to optimize by calling direct
-// to managed methods (see ArrayInitializeWorker or FastCallFinalize).  This sort of thing is
-// dangerous.  You have to worry about marking yourself as a legal managed caller and you have to
-// worry about how exceptions will be handled on a FEATURE_EH_FUNCLETS plan.  It is generally only suitable
-// for X86.
+// So all callers should call through CallDescrWorkerWithHandler (or a wrapper like MethodDesc::Call)
+// and get the platform-appropriate exception handling.
 
 //*******************************************************************************
 void CallDescrWorkerWithHandler(

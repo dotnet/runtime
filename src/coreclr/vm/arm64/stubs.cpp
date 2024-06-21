@@ -295,7 +295,7 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
     context.X27 = unwoundstate->captureX19_X29[8] = baseState->captureX19_X29[8];
     context.X28 = unwoundstate->captureX19_X29[9] = baseState->captureX19_X29[9];
     context.Fp  = unwoundstate->captureX19_X29[10] = baseState->captureX19_X29[10];
-    context.Lr = NULL; // Filled by the unwinder
+    context.Lr = 0; // Filled by the unwinder
 
     context.Sp = baseState->captureSp;
     context.Pc = baseState->captureIp;
@@ -316,7 +316,7 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
     nonVolContextPtrs.X27 = &unwoundstate->captureX19_X29[8];
     nonVolContextPtrs.X28 = &unwoundstate->captureX19_X29[9];
     nonVolContextPtrs.Fp  = &unwoundstate->captureX19_X29[10];
-    nonVolContextPtrs.Lr = NULL; // Filled by the unwinder
+    nonVolContextPtrs.Lr = 0; // Filled by the unwinder
 
 #endif // DACCESS_COMPILE
 
@@ -464,7 +464,7 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloat
         pRD->pCurrentContext->X27 = (DWORD64)(pUnwoundState->captureX19_X29[8]);
         pRD->pCurrentContext->X28 = (DWORD64)(pUnwoundState->captureX19_X29[9]);
         pRD->pCurrentContext->Fp = (DWORD64)(pUnwoundState->captureX19_X29[10]);
-        pRD->pCurrentContext->Lr = NULL; // Unwind again to get Caller's PC
+        pRD->pCurrentContext->Lr = 0; // Unwind again to get Caller's PC
 
         pRD->pCurrentContextPointers->X19 = &pRD->pCurrentContext->X19;
         pRD->pCurrentContextPointers->X20 = &pRD->pCurrentContext->X20;
@@ -503,7 +503,7 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloat
     pRD->pCurrentContext->X27 = (DWORD64)(m_MachState.unwoundX19_X29[8]);
     pRD->pCurrentContext->X28 = (DWORD64)(m_MachState.unwoundX19_X29[9]);
     pRD->pCurrentContext->Fp = (DWORD64)(m_MachState.unwoundX19_X29[10]);
-    pRD->pCurrentContext->Lr = NULL; // Unwind again to get Caller's PC
+    pRD->pCurrentContext->Lr = 0; // Unwind again to get Caller's PC
 #else // __APPLE__
     pRD->pCurrentContext->X19 = *m_MachState.ptrX19_X29[0];
     pRD->pCurrentContext->X20 = *m_MachState.ptrX19_X29[1];
@@ -516,7 +516,7 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloat
     pRD->pCurrentContext->X27 = *m_MachState.ptrX19_X29[8];
     pRD->pCurrentContext->X28 = *m_MachState.ptrX19_X29[9];
     pRD->pCurrentContext->Fp  = *m_MachState.ptrX19_X29[10];
-    pRD->pCurrentContext->Lr = NULL; // Unwind again to get Caller's PC
+    pRD->pCurrentContext->Lr = 0; // Unwind again to get Caller's PC
 #endif // __APPLE__
 
 #if !defined(DACCESS_COMPILE)
@@ -531,7 +531,7 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloat
     pRD->pCurrentContextPointers->X27 = m_MachState.ptrX19_X29[8];
     pRD->pCurrentContextPointers->X28 = m_MachState.ptrX19_X29[9];
     pRD->pCurrentContextPointers->Fp = m_MachState.ptrX19_X29[10];
-    pRD->pCurrentContextPointers->Lr = NULL; // Unwind again to get Caller's PC
+    pRD->pCurrentContextPointers->Lr = 0; // Unwind again to get Caller's PC
 #endif
 
     ClearRegDisplayArgumentAndScratchRegisters(pRD);
@@ -895,6 +895,7 @@ void InitJITHelpers1()
             SetJitHelperFunction(CORINFO_HELP_NEWSFAST_ALIGN8, JIT_NewS_MP_FastPortable);
             SetJitHelperFunction(CORINFO_HELP_NEWARR_1_VC, JIT_NewArr1VC_MP_FastPortable);
             SetJitHelperFunction(CORINFO_HELP_NEWARR_1_OBJ, JIT_NewArr1OBJ_MP_FastPortable);
+            SetJitHelperFunction(CORINFO_HELP_BOX, JIT_Box_MP_FastPortable);
 
             ECall::DynamicallyAssignFCallImpl(GetEEFuncEntryPoint(AllocateString_MP_FastPortable), ECall::FastAllocateString);
         }

@@ -14,6 +14,7 @@ namespace System.Numerics.Tensors.Tests
         public static IEnumerable<int> TensorLengthsIncluding0 => Enumerable.Range(0, 257);
 
         public static IEnumerable<int> TensorLengths => Enumerable.Range(1, 256);
+        public static IEnumerable<nint[]> TensorShapes => [[1], [2], [10], [1,1], [1,2], [2,2], [5, 5], [2, 2, 2], [5, 5, 5], [3, 3, 3, 3], [4, 4, 4, 4, 4], [1, 2, 3, 4, 5, 6, 7]];
 
         // Tolerances taken from testing in the scalar math routines:
         // cf. https://github.com/dotnet/runtime/blob/89f7ad3b276fb0b48f20cb4e8408bdce85c2b415/src/libraries/System.Runtime/tests/System.Runtime.Extensions.Tests/System/Math.cs

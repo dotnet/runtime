@@ -15,11 +15,13 @@ namespace System.Diagnostics.Metrics
     /// </remarks>
     public sealed class Histogram<T> : Instrument<T> where T : struct
     {
-        internal Histogram(Meter meter, string name, string? unit, string? description) : this(meter, name, unit, description, tags: null)
+        internal Histogram(Meter meter, string name, string? unit, string? description)
+            : this(meter, name, unit, description, tags: null, advice: null)
         {
         }
 
-        internal Histogram(Meter meter, string name, string? unit, string? description, IEnumerable<KeyValuePair<string, object?>>? tags) : base(meter, name, unit, description, tags)
+        internal Histogram(Meter meter, string name, string? unit, string? description, IEnumerable<KeyValuePair<string, object?>>? tags, InstrumentAdvice<T>? advice)
+            : base(meter, name, unit, description, tags, advice)
         {
             Publish();
         }

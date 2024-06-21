@@ -745,16 +745,11 @@ bool HWIntrinsicInfo::isImmOp(NamedIntrinsic id, const GenTree* op)
 // Arguments:
 //    argType    -- the required type of argument
 //    argClass   -- the class handle of argType
-//    expectAddr -- if true indicates we are expecting type stack entry to be a TYP_BYREF.
-//    newobjThis -- For CEE_NEWOBJ, this is the temp grabbed for the allocated uninitialized object.
 //
 // Return Value:
 //     the validated argument
 //
-GenTree* Compiler::getArgForHWIntrinsic(var_types            argType,
-                                        CORINFO_CLASS_HANDLE argClass,
-                                        bool                 expectAddr,
-                                        GenTree*             newobjThis)
+GenTree* Compiler::getArgForHWIntrinsic(var_types argType, CORINFO_CLASS_HANDLE argClass)
 {
     GenTree* arg = nullptr;
 
@@ -768,31 +763,12 @@ GenTree* Compiler::getArgForHWIntrinsic(var_types            argType,
         }
         assert(varTypeIsSIMD(argType));
 
-        if (newobjThis == nullptr)
-        {
-            if (expectAddr)
-            {
-                arg = gtNewLoadValueNode(argType, impPopStack().val);
-            }
-            else
-            {
-                arg = impSIMDPopStack();
-            }
-            assert(varTypeIsSIMDOrMask(arg));
-        }
-        else
-        {
-            assert(newobjThis->IsLclVarAddr());
-            arg = newobjThis;
-
-            // push newobj result on type stack
-            unsigned lclNum = arg->AsLclVarCommon()->GetLclNum();
-            impPushOnStack(gtNewLclvNode(lclNum, lvaGetRealType(lclNum)), verMakeTypeInfo(argClass));
-        }
+        arg = impSIMDPopStack();
+        assert(varTypeIsSIMDOrMask(arg));
     }
     else
     {
-        assert(varTypeIsArithmetic(argType) || ((argType == TYP_BYREF) && (newobjThis == nullptr)));
+        assert(varTypeIsArithmetic(argType) || (argType == TYP_BYREF));
 
         arg = impPopStack().val;
         assert(varTypeIsArithmetic(arg->TypeGet()) || ((argType == TYP_BYREF) && arg->TypeIs(TYP_BYREF)));
@@ -835,7 +811,7 @@ GenTree* Compiler::addRangeCheckIfNeeded(
     )
     {
         assert(!immOp->IsCnsIntOrI());
-        assert(varTypeIsUnsigned(immOp));
+        assert(varTypeIsIntegral(immOp));
 
         return addRangeCheckForHWIntrinsic(immOp, immLowerBound, immUpperBound);
     }
@@ -1601,13 +1577,37 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                                    : gtNewSimdHWIntrinsicNode(nodeRetType, op1, op2, op3, intrinsic, simdBaseJitType,
                                                               simdSize);
 
-#ifdef TARGET_XARCH
-                if ((intrinsic == NI_AVX2_GatherVector128) || (intrinsic == NI_AVX2_GatherVector256))
+                switch (intrinsic)
                 {
-                    assert(varTypeIsSIMD(op2->TypeGet()));
-                    retNode->AsHWIntrinsic()->SetAuxiliaryJitType(getBaseJitTypeOfSIMDType(sigReader.op2ClsHnd));
-                }
+#if defined(TARGET_XARCH)
+                    case NI_AVX2_GatherVector128:
+                    case NI_AVX2_GatherVector256:
+                        assert(varTypeIsSIMD(op2->TypeGet()));
+                        retNode->AsHWIntrinsic()->SetAuxiliaryJitType(getBaseJitTypeOfSIMDType(sigReader.op2ClsHnd));
+                        break;
+
+#elif defined(TARGET_ARM64)
+                    case NI_Sve_GatherVector:
+                    case NI_Sve_GatherVectorByteZeroExtend:
+                    case NI_Sve_GatherVectorInt16SignExtend:
+                    case NI_Sve_GatherVectorInt16WithByteOffsetsSignExtend:
+                    case NI_Sve_GatherVectorInt32SignExtend:
+                    case NI_Sve_GatherVectorInt32WithByteOffsetsSignExtend:
+                    case NI_Sve_GatherVectorSByteSignExtend:
+                    case NI_Sve_GatherVectorUInt16WithByteOffsetsZeroExtend:
+                    case NI_Sve_GatherVectorUInt16ZeroExtend:
+                    case NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtend:
+                    case NI_Sve_GatherVectorUInt32ZeroExtend:
+                    case NI_Sve_GatherVectorWithByteOffsets:
+                        assert(varTypeIsSIMD(op3->TypeGet()));
+                        retNode->AsHWIntrinsic()->SetAuxiliaryJitType(getBaseJitTypeOfSIMDType(sigReader.op3ClsHnd));
+                        break;
 #endif
+
+                    default:
+                        break;
+                }
+
                 break;
             }
 
@@ -1658,14 +1658,14 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
             if (!varTypeIsMask(op2))
             {
                 retNode->AsHWIntrinsic()->Op(2) =
-                    gtNewSimdConvertVectorToMaskNode(retType, op2, simdBaseJitType, simdSize);
+                    gtNewSimdCvtVectorToMaskNode(TYP_MASK, op2, simdBaseJitType, simdSize);
             }
         }
 
         if (!varTypeIsMask(op1))
         {
             // Op1 input is a vector. HWInstrinsic requires a mask.
-            retNode->AsHWIntrinsic()->Op(1) = gtNewSimdConvertVectorToMaskNode(retType, op1, simdBaseJitType, simdSize);
+            retNode->AsHWIntrinsic()->Op(1) = gtNewSimdCvtVectorToMaskNode(TYP_MASK, op1, simdBaseJitType, simdSize);
         }
 
         if (HWIntrinsicInfo::IsMultiReg(intrinsic))
@@ -1682,7 +1682,13 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         // HWInstrinsic returns a mask, but all returns must be vectors, so convert mask to vector.
         assert(HWIntrinsicInfo::ReturnsPerElementMask(intrinsic));
         assert(nodeRetType == TYP_MASK);
-        retNode = gtNewSimdConvertMaskToVectorNode(retNode->AsHWIntrinsic(), retType);
+
+        GenTreeHWIntrinsic* op = retNode->AsHWIntrinsic();
+
+        CorInfoType simdBaseJitType = op->GetSimdBaseJitType();
+        unsigned    simdSize        = op->GetSimdSize();
+
+        retNode = gtNewSimdCvtMaskToVectorNode(retType, op, simdBaseJitType, simdSize);
     }
 #endif // defined(TARGET_ARM64)
 

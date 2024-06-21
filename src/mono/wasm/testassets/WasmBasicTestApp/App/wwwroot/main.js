@@ -84,6 +84,15 @@ switch (testCase) {
             .withRuntimeOptions(['--interp-pgo-logging'])
             .withInterpreterPgo(true);
         break;
+    case "DownloadThenInit":
+        const originalFetch = globalThis.fetch;
+        globalThis.fetch = (url, fetchArgs) => {
+            testOutput("fetching " + url);
+            return originalFetch(url, fetchArgs);
+        };
+        await dotnet.download();
+        testOutput("download finished");
+        break;
 }
 
 const { setModuleImports, getAssemblyExports, getConfig, INTERNAL } = await dotnet.create();
@@ -130,11 +139,12 @@ try {
                     }
                 }
             });
-            const iterationCount = params.get("iterationCount") ?? 70;
-            for (let i = 0; i < iterationCount; i++) {
-                exports.InterpPgoTest.Greeting();
-            };
+            const iterationCount = params.get("iterationCount") ?? "70";
+            exports.InterpPgoTest.TryToTier(parseInt(iterationCount));
             await INTERNAL.interp_pgo_save_data();
+            exit(0);
+            break;
+        case "DownloadThenInit":
             exit(0);
             break;
         default:

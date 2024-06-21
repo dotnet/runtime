@@ -171,7 +171,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
         {
             // Fast tail call - make sure that call target is always computed in volatile registers
             // that will not be overridden by epilog sequence.
-            ctrlExprCandidates = allRegs(TYP_INT) & RBM_INT_CALLEE_TRASH & ~RBM_LR;
+            ctrlExprCandidates = allRegs(TYP_INT) & RBM_INT_CALLEE_TRASH.GetIntRegSet() & ~SRBM_LR;
             if (compiler->getNeedsGSSecurityCookie())
             {
                 ctrlExprCandidates &=
@@ -186,7 +186,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
         {
             // For R2R and VSD we have stub address in REG_R2R_INDIRECT_PARAM
             // and will load call address into the temp register from this register.
-            SingleTypeRegSet candidates = allRegs(TYP_INT) & RBM_INT_CALLEE_TRASH;
+            SingleTypeRegSet candidates = allRegs(TYP_INT) & RBM_INT_CALLEE_TRASH.getLow();
             assert(candidates != RBM_NONE);
             buildInternalIntRegisterDefForNode(call, candidates);
         }
@@ -214,7 +214,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
         // the target. We do not handle these constraints on the same
         // refposition too well so we help ourselves a bit here by forcing the
         // null check with LR.
-        SingleTypeRegSet candidates = call->IsFastTailCall() ? RBM_LR : RBM_NONE;
+        SingleTypeRegSet candidates = call->IsFastTailCall() ? SRBM_LR : RBM_NONE;
         buildInternalIntRegisterDefForNode(call, candidates);
     }
 #endif // TARGET_ARM
@@ -228,7 +228,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
     {
         // The ARM CORINFO_HELP_INIT_PINVOKE_FRAME helper uses a custom calling convention that returns with
         // TCB in REG_PINVOKE_TCB. fgMorphCall() sets the correct argument registers.
-        singleDstCandidates = RBM_PINVOKE_TCB;
+        singleDstCandidates = RBM_PINVOKE_TCB.GetIntRegSet();
     }
     else
 #endif // TARGET_ARM
@@ -236,15 +236,15 @@ int LinearScan::BuildCall(GenTreeCall* call)
         {
             if (varTypeUsesFloatArgReg(registerType))
             {
-                singleDstCandidates = RBM_FLOATRET;
+                singleDstCandidates = RBM_FLOATRET.GetFloatRegSet();
             }
             else if (registerType == TYP_LONG)
             {
-                singleDstCandidates = RBM_LNGRET;
+                singleDstCandidates = RBM_LNGRET.GetIntRegSet();
             }
             else
             {
-                singleDstCandidates = RBM_INTRET;
+                singleDstCandidates = RBM_INTRET.GetIntRegSet();
             }
         }
 
@@ -370,7 +370,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
         // Don't assign the call target to any of the argument registers because
         // we will use them to also pass floating point arguments as required
         // by Arm64 ABI.
-        ctrlExprCandidates = allRegs(TYP_INT) & ~(RBM_ARG_REGS);
+        ctrlExprCandidates = allRegs(TYP_INT) & ~(RBM_ARG_REGS.GetIntRegSet());
     }
 
     if (ctrlExpr != nullptr)
@@ -698,7 +698,8 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                 // a temporary register to perform the sequence of loads and stores.
                 // We can't use the special Write Barrier registers, so exclude them from the mask
                 SingleTypeRegSet internalIntCandidates =
-                    allRegs(TYP_INT) & ~(RBM_WRITE_BARRIER_DST_BYREF | RBM_WRITE_BARRIER_SRC_BYREF);
+                    allRegs(TYP_INT) &
+                    ~(RBM_WRITE_BARRIER_DST_BYREF | RBM_WRITE_BARRIER_SRC_BYREF).GetRegSetForType(IntRegisterType);
                 buildInternalIntRegisterDefForNode(blkNode, internalIntCandidates);
 
                 if (size >= 2 * REGSIZE_BYTES)
@@ -716,7 +717,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                 }
 
                 // If we have a dest address we want it in RBM_WRITE_BARRIER_DST_BYREF.
-                dstAddrRegMask = RBM_WRITE_BARRIER_DST_BYREF;
+                dstAddrRegMask = RBM_WRITE_BARRIER_DST_BYREF.GetIntRegSet();
 
                 // If we have a source address we want it in REG_WRITE_BARRIER_SRC_BYREF.
                 // Otherwise, if it is a local, codegen will put its address in REG_WRITE_BARRIER_SRC_BYREF,
@@ -724,7 +725,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                 if (srcAddrOrFill != nullptr)
                 {
                     assert(!srcAddrOrFill->isContained());
-                    srcRegMask = RBM_WRITE_BARRIER_SRC_BYREF;
+                    srcRegMask = RBM_WRITE_BARRIER_SRC_BYREF.GetIntRegSet();
                 }
             }
             break;
@@ -881,7 +882,7 @@ int LinearScan::BuildCast(GenTreeCast* cast)
     // Floating point to integer casts requires a temporary register.
     if (varTypeIsFloating(srcType) && !varTypeIsFloating(castType))
     {
-        buildInternalFloatRegisterDefForNode(cast, RBM_ALLFLOAT);
+        buildInternalFloatRegisterDefForNode(cast, RBM_ALLFLOAT.GetFloatRegSet());
         setInternalRegsDelayFree = true;
     }
 #endif
