@@ -7550,8 +7550,8 @@ PhaseStatus Lowering::DoPhase()
     const bool setSlotNumbers = false;
     comp->lvaComputeRefCounts(isRecompute, setSlotNumbers);
 
-    // Remove dead blocks and compute DFS (we want to remove empty blocks even
-    // in MinOpts).
+    // Remove dead blocks and compute DFS (we want to remove unreachable blocks
+    // even in MinOpts).
     comp->fgDfsBlocksAndRemove();
 
     if (comp->backendRequiresLocalVarLifetimes())
