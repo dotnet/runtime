@@ -3047,6 +3047,29 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector128_Round:
+        case NI_Vector256_Round:
+        case NI_Vector512_Round:
+        {
+            assert(sig->numArgs == 1);
+
+            if (!varTypeIsFloating(simdBaseType))
+            {
+                retNode = impSIMDPopStack();
+                break;
+            }
+
+            if ((simdSize < 32) && !compOpportunisticallyDependsOn(InstructionSet_SSE41))
+            {
+                // Round is only supported for floating-point types on SSE4.1 or later
+                break;
+            }
+
+            op1     = impSIMDPopStack();
+            retNode = gtNewSimdRoundNode(retType, op1, simdBaseJitType, simdSize);
+            break;
+        }
+
         case NI_Vector128_Shuffle:
         case NI_Vector256_Shuffle:
         case NI_Vector512_Shuffle:
@@ -3275,6 +3298,29 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             op1     = impSIMDPopStack();
             retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize);
+            break;
+        }
+
+        case NI_Vector128_Truncate:
+        case NI_Vector256_Truncate:
+        case NI_Vector512_Truncate:
+        {
+            assert(sig->numArgs == 1);
+
+            if (!varTypeIsFloating(simdBaseType))
+            {
+                retNode = impSIMDPopStack();
+                break;
+            }
+
+            if ((simdSize < 32) && !compOpportunisticallyDependsOn(InstructionSet_SSE41))
+            {
+                // Truncate is only supported for floating-point types on SSE4.1 or later
+                break;
+            }
+
+            op1     = impSIMDPopStack();
+            retNode = gtNewSimdTruncNode(retType, op1, simdBaseJitType, simdSize);
             break;
         }
 

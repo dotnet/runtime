@@ -3353,6 +3353,9 @@ public:
                                  CorInfoType simdBaseJitType,
                                  unsigned    simdSize);
 
+    GenTree* gtNewSimdRoundNode(
+        var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize);
+
     GenTree* gtNewSimdShuffleNode(var_types   type,
                                   GenTree*    op1,
                                   GenTree*    op2,
@@ -3389,6 +3392,9 @@ public:
                                    GenTree*    op1,
                                    CorInfoType simdBaseJitType,
                                    unsigned    simdSize);
+
+    GenTree* gtNewSimdTruncNode(
+        var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize);
 
     GenTree* gtNewSimdUnOpNode(genTreeOps  op,
                                var_types   type,

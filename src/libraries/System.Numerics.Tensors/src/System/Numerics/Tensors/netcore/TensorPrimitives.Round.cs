@@ -171,8 +171,10 @@ namespace System.Numerics.Tensors
 
             public static T Invoke(T x) => T.Round(x);
 
+#if !NET9_0_OR_GREATER
             private const float SingleBoundary = 8388608.0f; // 2^23
             private const double DoubleBoundary = 4503599627370496.0; // 2^52
+#endif
 
             public static Vector128<T> Invoke(Vector128<T> x)
             {

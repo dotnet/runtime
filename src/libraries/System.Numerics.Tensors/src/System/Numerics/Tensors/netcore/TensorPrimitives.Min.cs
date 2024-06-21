@@ -91,7 +91,7 @@ namespace System.Numerics.Tensors
                 if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
                 {
                     return Vector128.ConditionalSelect(
-                        (Vector128.Equals(x, y) & Vector128.IsNegative(x)) | Vector128.IsNaN(x) | Vector128.LessThan(x, y),
+                        Vector128.LessThan(x, y) | IsNaN(x) | (Vector128.Equals(x, y) & IsNegative(x)),
                         x,
                         y
                     );
@@ -108,7 +108,7 @@ namespace System.Numerics.Tensors
                 if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
                 {
                     return Vector256.ConditionalSelect(
-                        (Vector256.Equals(x, y) & Vector256.IsNegative(x)) | Vector256.IsNaN(x) | Vector256.LessThan(x, y),
+                        Vector256.LessThan(x, y) | IsNaN(x) | (Vector256.Equals(x, y) & IsNegative(x)),
                         x,
                         y
                     );
@@ -125,7 +125,7 @@ namespace System.Numerics.Tensors
                 if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
                 {
                     return Vector512.ConditionalSelect(
-                        (Vector512.Equals(x, y) & Vector512.IsNegative(x)) | Vector512.IsNaN(x) | Vector512.LessThan(x, y),
+                        Vector512.LessThan(x, y) | IsNaN(x) | (Vector512.Equals(x, y) & IsNegative(x)),
                         x,
                         y
                     );

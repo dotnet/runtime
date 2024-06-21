@@ -1956,6 +1956,22 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector64_Round:
+        case NI_Vector128_Round:
+        {
+            assert(sig->numArgs == 1);
+
+            if (!varTypeIsFloating(simdBaseType))
+            {
+                retNode = impSIMDPopStack();
+                break;
+            }
+
+            op1     = impSIMDPopStack();
+            retNode = gtNewSimdRoundNode(retType, op1, simdBaseJitType, simdSize);
+            break;
+        }
+
         case NI_Vector64_Shuffle:
         case NI_Vector128_Shuffle:
         {
@@ -2295,6 +2311,22 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             op1     = impSIMDPopStack();
             retNode = gtNewSimdSumNode(retType, op1, simdBaseJitType, simdSize);
+            break;
+        }
+
+        case NI_Vector64_Truncate:
+        case NI_Vector128_Truncate:
+        {
+            assert(sig->numArgs == 1);
+
+            if (!varTypeIsFloating(simdBaseType))
+            {
+                retNode = impSIMDPopStack();
+                break;
+            }
+
+            op1     = impSIMDPopStack();
+            retNode = gtNewSimdTruncNode(retType, op1, simdBaseJitType, simdSize);
             break;
         }
 

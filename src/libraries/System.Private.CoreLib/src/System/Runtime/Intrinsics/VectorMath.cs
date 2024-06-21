@@ -1122,7 +1122,7 @@ namespace System.Runtime.Intrinsics
             if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
             {
                 return TVector.ConditionalSelect(
-                    (TVector.Equals(x, y) & TVector.IsNegative(y)) | TVector.IsNaN(x) | TVector.LessThan(y, x),
+                    TVector.LessThan(y, x) | TVector.IsNaN(x) | (TVector.Equals(x, y) & TVector.IsNegative(y)),
                     x,
                     y
                 );
@@ -1192,7 +1192,7 @@ namespace System.Runtime.Intrinsics
             if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
             {
                 return TVector.ConditionalSelect(
-                    (TVector.Equals(x, y) & TVector.IsNegative(y)) | TVector.IsNaN(y) | TVector.LessThan(y, x),
+                    TVector.LessThan(y, x) | TVector.IsNaN(y) | (TVector.Equals(x, y) & TVector.IsNegative(y)),
                     x,
                     y
                 );
@@ -1208,7 +1208,7 @@ namespace System.Runtime.Intrinsics
             if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
             {
                 return TVector.ConditionalSelect(
-                    (TVector.Equals(x, y) & TVector.IsNegative(x)) | TVector.IsNaN(x) | TVector.LessThan(x, y),
+                    TVector.LessThan(x, y) | TVector.IsNaN(x) | (TVector.Equals(x, y) & TVector.IsNegative(x)),
                     x,
                     y
                 );
@@ -1279,7 +1279,7 @@ namespace System.Runtime.Intrinsics
             if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
             {
                 return TVector.ConditionalSelect(
-                    (TVector.Equals(x, y) & TVector.IsNegative(x)) | TVector.IsNaN(y) | TVector.LessThan(x, y),
+                    TVector.LessThan(x, y) | TVector.IsNaN(y) | (TVector.Equals(x, y) & TVector.IsNegative(x)),
                     x,
                     y
                 );

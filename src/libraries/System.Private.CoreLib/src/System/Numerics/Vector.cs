@@ -1189,7 +1189,7 @@ namespace System.Numerics
         /// <inheritdoc cref="ISimdVector{TSelf, T}.IsNaN(TSelf)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static Vector<T> IsNaN<T>(Vector<T> vector)
+        public static Vector<T> IsNaN<T>(Vector<T> vector)
         {
             if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
             {
@@ -1201,7 +1201,7 @@ namespace System.Numerics
         /// <inheritdoc cref="ISimdVector{TSelf, T}.IsNegative(TSelf)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static Vector<T> IsNegative<T>(Vector<T> vector)
+        public static Vector<T> IsNegative<T>(Vector<T> vector)
         {
             if ((typeof(T) == typeof(byte))
              || (typeof(T) == typeof(ushort))
@@ -1228,7 +1228,7 @@ namespace System.Numerics
         /// <inheritdoc cref="ISimdVector{TSelf, T}.IsPositive(TSelf)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static Vector<T> IsPositive<T>(Vector<T> vector)
+        public static Vector<T> IsPositive<T>(Vector<T> vector)
         {
             if ((typeof(T) == typeof(byte))
              || (typeof(T) == typeof(ushort))
@@ -1255,7 +1255,7 @@ namespace System.Numerics
         /// <inheritdoc cref="ISimdVector{TSelf, T}.IsPositiveInfinity(TSelf)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static Vector<T> IsPositiveInfinity<T>(Vector<T> vector)
+        public static Vector<T> IsPositiveInfinity<T>(Vector<T> vector)
         {
             if (typeof(T) == typeof(float))
             {
@@ -1271,7 +1271,7 @@ namespace System.Numerics
         /// <inheritdoc cref="ISimdVector{TSelf, T}.IsZero(TSelf)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static Vector<T> IsZero<T>(Vector<T> vector) => Equals(vector, Vector<T>.Zero);
+        public static Vector<T> IsZero<T>(Vector<T> vector) => Equals(vector, Vector<T>.Zero);
 
         internal static Vector<T> Lerp<T>(Vector<T> x, Vector<T> y, Vector<T> amount)
             where T : IFloatingPointIeee754<T>

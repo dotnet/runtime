@@ -1664,7 +1664,13 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			return NULL;
 		return emit_simd_ins (cfg, klass, OP_XCAST, args [0]->dreg, -1);
 	}
-	case SN_AsVector2:
+	case SN_AsVector2: {
+		if (!mini_class_is_simd (cfg, mono_class_from_mono_type_internal (fsig->ret))) {
+			// FIXME: Support Vector2 and Vector3 for WASM and AMD64
+			return NULL;
+		}
+		return emit_simd_ins_for_sig (cfg, klass, OP_XLOWER, 0, arg0_type, fsig, args);
+	}
 	case SN_AsVector3: {
 		if (!mini_class_is_simd (cfg, mono_class_from_mono_type_internal (fsig->ret))) {
 			// FIXME: Support Vector2 and Vector3 for WASM and AMD64
@@ -1680,11 +1686,12 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			return NULL;
 		}
 		MonoClass *input_class = mono_class_from_mono_type_internal (fsig->params [0]);
-		int input_size = mono_class_value_size (vector_class, NULL);
+		int input_size = mono_class_value_size (input_class, NULL);
 		if (input_size == 16)
 			return emit_simd_ins (cfg, klass, OP_XCAST, args [0]->dreg, -1);
-		if (COMPILE_LLVM (cfg) && (inputSize == 8)) {
-			return emit_simd_ins (cfg, klass, OP_XWIDEN, args [0]->dreg, -1);
+		if (input_size == 8) {
+			if (COMPILE_LLVM (cfg))
+				return emit_simd_ins (cfg, klass, OP_XWIDEN, args [0]->dreg, -1);
 		}
 		static float r4_0 = 0;
 		MonoInst *zero;
@@ -1693,10 +1700,11 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		zero->inst_p0 = (void*)&r4_0;
 		zero->dreg = zero_dreg;
 		MONO_ADD_INS (cfg->cbb, zero);
+		MonoInst* vec_ins = args [0];
 		if (input_size == 8) {
-			args [0] = emit_vector_insert_element (cfg, klass, args [0], MONO_TYPE_R4, zero, 2, FALSE);
+			vec_ins = emit_vector_insert_element (cfg, klass, vec_ins, MONO_TYPE_R4, zero, 2, FALSE);
 		}
-		return emit_vector_insert_element (cfg, klass, args [0], MONO_TYPE_R4, zero, 3, FALSE);
+		return emit_vector_insert_element (cfg, klass, vec_ins, MONO_TYPE_R4, zero, 3, FALSE);
 	}
 	case SN_AsVector128Unsafe: {
 		if (!is_element_type_primitive (fsig->ret) || !is_element_type_primitive (fsig->params [0]))
@@ -1706,9 +1714,10 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			return NULL;
 		}
 		MonoClass *input_class = mono_class_from_mono_type_internal (fsig->params [0]);
-		int input_size = mono_class_value_size (vector_class, NULL);
-		if (COMPILE_LLVM (cfg) && (inputSize == 8)) {
-			return emit_simd_ins (cfg, klass, OP_XWIDEN_UNSAFE, args [0]->dreg, -1);
+		int input_size = mono_class_value_size (input_class, NULL);
+		if (input_size == 8) {
+			if (COMPILE_LLVM (cfg))
+				return emit_simd_ins (cfg, klass, OP_XWIDEN_UNSAFE, args [0]->dreg, -1);
 		}
 		return emit_simd_ins (cfg, klass, OP_XCAST, args [0]->dreg, -1);
 	}
@@ -2229,7 +2238,8 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	case SN_IsPositiveInfinity: {
 		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
-		if (etype == MONO_TYPE_R4) {
+		MonoType *etype = get_vector_t_elem_type(fsig->params [0]);
+		if (etype->type == MONO_TYPE_R4) {
 			guint32 value[4];
 
 			value [0] = 0x7F800000;
@@ -2240,7 +2250,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			MonoInst* arg1 = emit_xconst_v128 (cfg, klass, (guint8*)value);
 			return emit_xcompare (cfg, klass, arg0_type, args [0], arg1);
 		}
-		if (etype == MONO_TYPE_R8) {
+		if (etype->type == MONO_TYPE_R8) {
 			guint64 value[2];
 
 			value [0] = 0x7FF0000000000000;
@@ -2822,6 +2832,7 @@ static guint16 vector_2_3_4_methods[] = {
 	SN_Abs,
 	SN_Add,
 	SN_Clamp,
+	SN_ClampNative,
 	SN_Conjugate,
 	SN_CopyTo,
 	SN_Distance,
@@ -3196,9 +3207,14 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 	}
 	case SN_CopyTo:
 		return NULL;
-	case SN_Clamp: {
+	case SN_Clamp:
+	case SN_ClampNative: {
 		if (!(!fsig->hasthis && fsig->param_count == 3 && mono_metadata_type_equal (fsig->ret, type) && mono_metadata_type_equal (fsig->params [0], type) && mono_metadata_type_equal (fsig->params [1], type) && mono_metadata_type_equal (fsig->params [2], type)))
 			return NULL;
+#ifndef TARGET_ARM64
+		if (id == SN_Clamp)
+			return NULL;
+#endif
 
 		MonoInst *max = emit_simd_ins (cfg, klass, OP_XBINOP, args[0]->dreg, args[1]->dreg);
 		max->inst_c0 = OP_FMAX;

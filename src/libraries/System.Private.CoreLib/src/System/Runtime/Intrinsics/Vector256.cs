@@ -1785,7 +1785,7 @@ namespace System.Runtime.Intrinsics
         /// <inheritdoc cref="ISimdVector{TSelf, T}.IsNaN(TSelf)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static Vector256<T> IsNaN<T>(Vector256<T> vector)
+        public static Vector256<T> IsNaN<T>(Vector256<T> vector)
         {
             if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
             {
@@ -1797,7 +1797,7 @@ namespace System.Runtime.Intrinsics
         /// <inheritdoc cref="ISimdVector{TSelf, T}.IsNegative(TSelf)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static Vector256<T> IsNegative<T>(Vector256<T> vector)
+        public static Vector256<T> IsNegative<T>(Vector256<T> vector)
         {
             if ((typeof(T) == typeof(byte))
              || (typeof(T) == typeof(ushort))
@@ -1824,7 +1824,7 @@ namespace System.Runtime.Intrinsics
         /// <inheritdoc cref="ISimdVector{TSelf, T}.IsPositive(TSelf)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static Vector256<T> IsPositive<T>(Vector256<T> vector)
+        public static Vector256<T> IsPositive<T>(Vector256<T> vector)
         {
             if ((typeof(T) == typeof(byte))
              || (typeof(T) == typeof(ushort))
@@ -1851,7 +1851,7 @@ namespace System.Runtime.Intrinsics
         /// <inheritdoc cref="ISimdVector{TSelf, T}.IsPositiveInfinity(TSelf)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static Vector256<T> IsPositiveInfinity<T>(Vector256<T> vector)
+        public static Vector256<T> IsPositiveInfinity<T>(Vector256<T> vector)
         {
             if (typeof(T) == typeof(float))
             {
@@ -1867,7 +1867,7 @@ namespace System.Runtime.Intrinsics
         /// <inheritdoc cref="ISimdVector{TSelf, T}.IsZero(TSelf)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static Vector256<T> IsZero<T>(Vector256<T> vector) => Equals(vector, Vector256<T>.Zero);
+        public static Vector256<T> IsZero<T>(Vector256<T> vector) => Equals(vector, Vector256<T>.Zero);
 
         /// <inheritdoc cref="Vector128.Lerp(Vector128{double}, Vector128{double}, Vector128{double})" />
         [Intrinsic]

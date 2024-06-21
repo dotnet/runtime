@@ -25965,6 +25965,67 @@ GenTree* Compiler::gtNewSimdNarrowNode(
 #endif // !TARGET_XARCH && !TARGET_ARM64
 }
 
+//------------------------------------------------------------------------
+// gtNewSimdRoundNode: Creates a new simd Round node
+//
+// Arguments:
+//    type            -- The type of the node
+//    op1             -- The node to round
+//    simdBaseJitType -- the base jit type of the node
+//    simdSize        -- the simd size of the node
+//
+// Return Value:
+//    The round node
+//
+GenTree* Compiler::gtNewSimdRoundNode(var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize)
+{
+    assert(IsBaselineSimdIsaSupportedDebugOnly());
+
+    assert(varTypeIsSIMD(type));
+    assert(getSIMDTypeForSize(simdSize) == type);
+
+    assert(op1 != nullptr);
+    assert(op1->TypeIs(type));
+
+    var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
+    assert(varTypeIsFloating(simdBaseType));
+
+    NamedIntrinsic intrinsic = NI_Illegal;
+
+#if defined(TARGET_XARCH)
+    if (simdSize == 32)
+    {
+        assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
+        intrinsic = NI_AVX_RoundToNearestInteger;
+    }
+    else if (simdSize == 64)
+    {
+        assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F));
+        GenTree* op2 = gtNewIconNode(static_cast<int32_t>(FloatRoundingMode::ToNearestInteger));
+        return gtNewSimdHWIntrinsicNode(type, op1, op2, NI_AVX512F_RoundScale, simdBaseJitType, simdSize);
+    }
+    else
+    {
+        assert(compIsaSupportedDebugOnly(InstructionSet_SSE41));
+        intrinsic = NI_SSE41_RoundToNearestInteger;
+    }
+#elif defined(TARGET_ARM64)
+    if (simdBaseType == TYP_DOUBLE)
+    {
+        intrinsic = (simdSize == 8) ? NI_AdvSimd_RoundToNearestScalar : NI_AdvSimd_Arm64_RoundToNearest;
+    }
+    else
+    {
+        intrinsic = NI_AdvSimd_RoundToNearest;
+    }
+#else
+#error Unsupported platform
+#endif // !TARGET_XARCH && !TARGET_ARM64
+
+    assert(intrinsic != NI_Illegal);
+    return gtNewSimdHWIntrinsicNode(type, op1, intrinsic, simdBaseJitType, simdSize);
+}
+
 GenTree* Compiler::gtNewSimdShuffleNode(
     var_types type, GenTree* op1, GenTree* op2, CorInfoType simdBaseJitType, unsigned simdSize)
 {
@@ -26895,6 +26956,67 @@ GenTree* Compiler::gtNewSimdToScalarNode(var_types type, GenTree* op1, CorInfoTy
     else
     {
         intrinsic = NI_Vector128_ToScalar;
+    }
+#else
+#error Unsupported platform
+#endif // !TARGET_XARCH && !TARGET_ARM64
+
+    assert(intrinsic != NI_Illegal);
+    return gtNewSimdHWIntrinsicNode(type, op1, intrinsic, simdBaseJitType, simdSize);
+}
+
+//------------------------------------------------------------------------
+// gtNewSimdTruncNode: Creates a new simd Truncate node
+//
+// Arguments:
+//    type            -- The type of the node
+//    op1             -- The node to truncate
+//    simdBaseJitType -- the base jit type of the node
+//    simdSize        -- the simd size of the node
+//
+// Return Value:
+//    The truncate node
+//
+GenTree* Compiler::gtNewSimdTruncNode(var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize)
+{
+    assert(IsBaselineSimdIsaSupportedDebugOnly());
+
+    assert(varTypeIsSIMD(type));
+    assert(getSIMDTypeForSize(simdSize) == type);
+
+    assert(op1 != nullptr);
+    assert(op1->TypeIs(type));
+
+    var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
+    assert(varTypeIsFloating(simdBaseType));
+
+    NamedIntrinsic intrinsic = NI_Illegal;
+
+#if defined(TARGET_XARCH)
+    if (simdSize == 32)
+    {
+        assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
+        intrinsic = NI_AVX_RoundToZero;
+    }
+    else if (simdSize == 64)
+    {
+        assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F));
+        GenTree* op2 = gtNewIconNode(static_cast<int32_t>(FloatRoundingMode::ToZero));
+        return gtNewSimdHWIntrinsicNode(type, op1, op2, NI_AVX512F_RoundScale, simdBaseJitType, simdSize);
+    }
+    else
+    {
+        assert(compIsaSupportedDebugOnly(InstructionSet_SSE41));
+        intrinsic = NI_SSE41_RoundToZero;
+    }
+#elif defined(TARGET_ARM64)
+    if (simdBaseType == TYP_DOUBLE)
+    {
+        intrinsic = (simdSize == 8) ? NI_AdvSimd_RoundToZeroScalar : NI_AdvSimd_Arm64_RoundToZero;
+    }
+    else
+    {
+        intrinsic = NI_AdvSimd_RoundToZero;
     }
 #else
 #error Unsupported platform

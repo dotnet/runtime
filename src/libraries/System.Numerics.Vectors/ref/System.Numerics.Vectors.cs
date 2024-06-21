@@ -300,6 +300,11 @@ namespace System.Numerics
         public static System.Numerics.Vector<T> GreaterThan<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
         public static System.Numerics.Vector<double> Hypot(System.Numerics.Vector<double> x, System.Numerics.Vector<double> y) { throw null; }
         public static System.Numerics.Vector<float> Hypot(System.Numerics.Vector<float> x, System.Numerics.Vector<float> y) { throw null; }
+        public static System.Numerics.Vector<T> IsNaN<T>(System.Numerics.Vector<T> vector) { throw null; }
+        public static System.Numerics.Vector<T> IsNegative<T>(System.Numerics.Vector<T> vector) { throw null; }
+        public static System.Numerics.Vector<T> IsPositive<T>(System.Numerics.Vector<T> vector) { throw null; }
+        public static System.Numerics.Vector<T> IsPositiveInfinity<T>(System.Numerics.Vector<T> vector) { throw null; }
+        public static System.Numerics.Vector<T> IsZero<T>(System.Numerics.Vector<T> vector) { throw null; }
         public static System.Numerics.Vector<double> Lerp(System.Numerics.Vector<double> x, System.Numerics.Vector<double> y, System.Numerics.Vector<double> amount) { throw null; }
         public static System.Numerics.Vector<float> Lerp(System.Numerics.Vector<float> x, System.Numerics.Vector<float> y, System.Numerics.Vector<float> amount) { throw null; }
         public static System.Numerics.Vector<System.Int64> LessThan(System.Numerics.Vector<System.Double> left, System.Numerics.Vector<System.Double> right) { throw null; }

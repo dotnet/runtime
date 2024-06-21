@@ -1,5 +1,6 @@
 METHOD2(".ctor", ctor)
 METHOD(Clamp)
+METHOD(ClampNative)
 METHOD(Conjugate)
 METHOD(CopyTo)
 METHOD(Distance)
