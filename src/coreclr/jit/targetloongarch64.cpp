@@ -180,7 +180,7 @@ ABIPassingInformation LoongArch64Classifier::Classify(Compiler*    comp,
             assert(regs->Count() > 0);
 
             passedSize       = genTypeSize(argRegTypeInStruct1);
-            info.Segments(0) = ABIPassingSegment::InRegister(regs->Dequeue(), 0, passedSize);
+            info.Segment(0) = ABIPassingSegment::InRegister(regs->Dequeue(), 0, passedSize);
 
             if (argRegTypeInStruct2 != TYP_UNKNOWN)
             {
