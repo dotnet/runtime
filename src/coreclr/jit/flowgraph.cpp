@@ -6018,23 +6018,19 @@ bool NaturalLoopIterInfo::ArrLenLimit(Compiler* comp, ArrIndex* index)
 //
 BasicBlock* FlowGraphDominatorTree::IntersectDom(BasicBlock* finger1, BasicBlock* finger2)
 {
+    assert((finger1 != nullptr) && (finger2 != nullptr));
+
     while (finger1 != finger2)
     {
-        if ((finger1 == nullptr) || (finger2 == nullptr))
-        {
-            return nullptr;
-        }
-        while ((finger1 != nullptr) && (finger1->bbPostorderNum < finger2->bbPostorderNum))
+        while (finger1->bbPostorderNum < finger2->bbPostorderNum)
         {
             finger1 = finger1->bbIDom;
+            assert(finger1 != nullptr);
         }
-        if (finger1 == nullptr)
-        {
-            return nullptr;
-        }
-        while ((finger2 != nullptr) && (finger2->bbPostorderNum < finger1->bbPostorderNum))
+        while (finger2->bbPostorderNum < finger1->bbPostorderNum)
         {
             finger2 = finger2->bbIDom;
+            assert(finger2 != nullptr);
         }
     }
     return finger1;
@@ -6136,8 +6132,8 @@ FlowGraphDominatorTree* FlowGraphDominatorTree::Build(const FlowGraphDfsTree* df
 
     // First compute immediate dominators.
     unsigned numIters = 0;
-    bool     changed  = true;
-    while (changed)
+    bool     changed;
+    do
     {
         changed = false;
 
@@ -6182,7 +6178,7 @@ FlowGraphDominatorTree* FlowGraphDominatorTree::Build(const FlowGraphDfsTree* df
         }
 
         numIters++;
-    }
+    } while (changed && dfsTree->HasCycle());
 
     // Now build dominator tree.
     DomTreeNode* domTree = new (comp, CMK_DominatorMemory) DomTreeNode[count]{};
