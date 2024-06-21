@@ -205,7 +205,7 @@ namespace System.Net.Http
                 return true;
             }
 
-            // The read-ahead task has started, and we failed to transition back to CompletionReserved.
+            // The read-ahead task has started, and we failed to transition back to Started.
             // This means that the read-ahead task has completed, and we can't reuse the connection. The caller must dispose it.
             // We're still responsible for observing potential exceptions thrown by the read-ahead task to avoid leaking unobserved exceptions.
             LogExceptions(_readAheadTask.AsTask());
