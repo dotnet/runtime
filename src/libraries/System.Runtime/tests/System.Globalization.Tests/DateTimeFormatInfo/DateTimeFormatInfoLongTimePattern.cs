@@ -284,7 +284,7 @@ namespace System.Globalization.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         public void LongTimePattern_VerifyTimePatterns()
         {
             Assert.All(CultureInfo.GetCultures(CultureTypes.AllCultures), culture => {

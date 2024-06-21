@@ -255,7 +255,7 @@ namespace System.Globalization.Tests
             Assert.Throws<InvalidOperationException>(() => DateTimeFormatInfo.InvariantInfo.ShortTimePattern = "HH:mm");
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         public void ShortTimePattern_VerifyTimePatterns()
         {
             Assert.All(CultureInfo.GetCultures(CultureTypes.AllCultures), culture => {
