@@ -44,8 +44,6 @@ T Max(T v1, T v2)
     return v1 > v2 ? v1 : v2;
 }
 
-void InitializeYieldProcessorNormalizedCrst();
-void EnsureYieldProcessorNormalizedInitialized();
 #endif
 
 class YieldProcessorNormalization

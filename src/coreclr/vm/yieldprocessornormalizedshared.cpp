@@ -1,7 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#ifndef FEATURE_NATIVEAOT
 #include "finalizerthread.h"
+#endif
 
 enum class NormalizationState : UINT8
 {
@@ -36,16 +38,6 @@ inline unsigned int GetTickCountPortable()
 
 static UINT64 GetPerformanceCounter()
 {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-#ifndef FEATURE_NATIVEAOT
-        MODE_PREEMPTIVE;
-#endif
-    }
-    CONTRACTL_END;
-
 #ifdef FEATURE_NATIVEAOT
     return PalQueryPerformanceCounter();
 #else
@@ -279,7 +271,9 @@ void YieldProcessorNormalization::ScheduleMeasurementIfNecessary()
     }
 
     s_isMeasurementScheduled = true;
+#ifndef FEATURE_NATIVEAOT
     FinalizerThread::EnableFinalization();
+#endif
 }
 
 // EventEnabledYieldProcessorMeasurement and FireEtwYieldProcessorMeasurement aren't available for AOT
