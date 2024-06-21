@@ -108,22 +108,6 @@ internal struct MethodTable_1
     }
 }
 
-internal struct EEClass_1
-{
-    internal TargetPointer MethodTable { get; }
-    internal ushort NumMethods { get; }
-    internal ushort NumNonVirtualSlots { get; }
-    internal uint TypeDefTypeAttributes { get; }
-    internal EEClass_1(Data.EEClass eeClassData)
-    {
-        MethodTable = eeClassData.MethodTable;
-        NumMethods = eeClassData.NumMethods;
-        NumNonVirtualSlots = eeClassData.NumNonVirtualSlots;
-        TypeDefTypeAttributes = eeClassData.DwAttrClass;
-    }
-}
-
-
 internal partial struct Metadata_1 : IMetadata
 {
     private readonly Target _target;
@@ -303,16 +287,16 @@ internal partial struct Metadata_1 : IMetadata
     public uint GetComponentSize(MethodTableHandle methodTableHandle) => GetComponentSize(_methodTables[methodTableHandle.Address]);
 
     // only called on trusted method tables, so we always trust the resulting EEClass
-    private EEClass_1 GetClassData(MethodTableHandle methodTableHandle)
+    private Data.EEClass GetClassData(MethodTableHandle methodTableHandle)
     {
         TargetPointer clsPtr = GetClass(methodTableHandle);
         // Check if we cached it already
         if (_target.ProcessedData.TryGet(clsPtr, out Data.EEClass? eeClassData))
         {
-            return new EEClass_1(eeClassData);
+            return eeClassData;
         }
         eeClassData = _target.ProcessedData.GetOrAdd<Data.EEClass>(clsPtr);
-        return new EEClass_1(eeClassData);
+        return eeClassData;
     }
 
     private TargetPointer GetClass(MethodTableHandle methodTableHandle)
@@ -347,11 +331,7 @@ internal partial struct Metadata_1 : IMetadata
         return (uint)(methodTable.Flags.GetTypeDefRid() | ((int)TableIndex.TypeDef << 24));
     }
 
-    public ushort GetNumMethods(MethodTableHandle methodTableHandle)
-    {
-        EEClass_1 cls = GetClassData(methodTableHandle);
-        return cls.NumMethods;
-    }
+    public ushort GetNumMethods(MethodTableHandle methodTableHandle) => GetClassData(methodTableHandle).NumMethods;
 
     public ushort GetNumInterfaces(MethodTableHandle methodTableHandle) => _methodTables[methodTableHandle.Address].NumInterfaces;
 
@@ -375,10 +355,7 @@ internal partial struct Metadata_1 : IMetadata
         return checked((ushort)(GetNumVirtuals(methodTableHandle) + GetNumNonVirtualSlots(methodTableHandle)));
     }
 
-    public uint GetTypeDefTypeAttributes(MethodTableHandle methodTableHandle)
-    {
-        return GetClassData(methodTableHandle).TypeDefTypeAttributes;
-    }
+    public uint GetTypeDefTypeAttributes(MethodTableHandle methodTableHandle) => GetClassData(methodTableHandle).DwAttrClass;
 
     public bool IsDynamicStatics(MethodTableHandle methodTableHandle) => _methodTables[methodTableHandle.Address].Flags.GetFlag(WFLAGS2_ENUM.DynamicStatics) != 0;
 
