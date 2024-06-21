@@ -76,6 +76,9 @@ struct sve_context {
 
 #define __SVE_VQ_BYTES      16  /* number of bytes per quadword */
 
+#define __SVE_NUM_ZREGS     32
+#define __SVE_NUM_PREGS     16
+
 #define sve_vq_from_vl(vl)    ((vl) / __SVE_VQ_BYTES)
 #define sve_vl_from_vq(vq)    ((vq) * __SVE_VQ_BYTES)
 
