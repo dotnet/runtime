@@ -231,6 +231,70 @@ namespace System.Numerics.Tensors.Tests
         #endregion
 
         [Fact]
+        public static void TensorLargeDimensionsTests()
+        {
+            int[] a = { 91, 92, -93, 94, 95, -96 };
+            int[] results = new int[6];
+            Tensor<int> tensor = Tensor.Create<int>(a,[1, 1, 1, 1, 1, 6]);
+            Assert.Equal(6, tensor.Rank);
+
+            Assert.Equal(6, tensor.Lengths.Length);
+            Assert.Equal(1, tensor.Lengths[0]);
+            Assert.Equal(1, tensor.Lengths[1]);
+            Assert.Equal(1, tensor.Lengths[2]);
+            Assert.Equal(1, tensor.Lengths[3]);
+            Assert.Equal(1, tensor.Lengths[4]);
+            Assert.Equal(6, tensor.Lengths[5]);
+            Assert.Equal(6, tensor.Strides.Length);
+            Assert.Equal(6, tensor.Strides[0]);
+            Assert.Equal(6, tensor.Strides[1]);
+            Assert.Equal(6, tensor.Strides[2]);
+            Assert.Equal(6, tensor.Strides[3]);
+            Assert.Equal(6, tensor.Strides[4]);
+            Assert.Equal(1, tensor.Strides[5]);
+            Assert.Equal(91, tensor[0, 0, 0, 0, 0, 0]);
+            Assert.Equal(92, tensor[0, 0, 0, 0, 0, 1]);
+            Assert.Equal(-93, tensor[0, 0, 0, 0, 0, 2]);
+            Assert.Equal(94, tensor[0, 0, 0, 0, 0, 3]);
+            Assert.Equal(95, tensor[0, 0, 0, 0, 0, 4]);
+            Assert.Equal(-96, tensor[0, 0, 0, 0, 0, 5]);
+            tensor.FlattenTo(results);
+            Assert.Equal(a, results);
+
+            a = [91, 92, -93, 94, 95, -96, -91, -92, 93, -94, -95, 96];
+            results = new int[12];
+            tensor = Tensor.Create<int>(a, [1, 2, 2, 1, 1, 3]);
+            Assert.Equal(6, tensor.Lengths.Length);
+            Assert.Equal(1, tensor.Lengths[0]);
+            Assert.Equal(2, tensor.Lengths[1]);
+            Assert.Equal(2, tensor.Lengths[2]);
+            Assert.Equal(1, tensor.Lengths[3]);
+            Assert.Equal(1, tensor.Lengths[4]);
+            Assert.Equal(3, tensor.Lengths[5]);
+            Assert.Equal(6, tensor.Strides.Length);
+            Assert.Equal(12, tensor.Strides[0]);
+            Assert.Equal(6, tensor.Strides[1]);
+            Assert.Equal(3, tensor.Strides[2]);
+            Assert.Equal(3, tensor.Strides[3]);
+            Assert.Equal(3, tensor.Strides[4]);
+            Assert.Equal(1, tensor.Strides[5]);
+            Assert.Equal(91, tensor[0, 0, 0, 0, 0, 0]);
+            Assert.Equal(92, tensor[0, 0, 0, 0, 0, 1]);
+            Assert.Equal(-93, tensor[0, 0, 0, 0, 0, 2]);
+            Assert.Equal(94, tensor[0, 0, 1, 0, 0, 0]);
+            Assert.Equal(95, tensor[0, 0, 1, 0, 0, 1]);
+            Assert.Equal(-96, tensor[0, 0, 1, 0, 0, 2]);
+            Assert.Equal(-91, tensor[0, 1, 0, 0, 0, 0]);
+            Assert.Equal(-92, tensor[0, 1, 0, 0, 0, 1]);
+            Assert.Equal(93, tensor[0, 1, 0, 0, 0, 2]);
+            Assert.Equal(-94, tensor[0, 1, 1, 0, 0, 0]);
+            Assert.Equal(-95, tensor[0, 1, 1, 0, 0, 1]);
+            Assert.Equal(96, tensor[0, 1, 1, 0, 0, 2]);
+            tensor.FlattenTo(results);
+            Assert.Equal(a, results);
+        }
+
+        [Fact]
         public static void TensorFactoryCreateUninitializedTests()
         {
             // Basic tensor creation
