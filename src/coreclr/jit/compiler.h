@@ -6086,9 +6086,9 @@ public:
 
     void fgPrepareCallFinallyRetForRemoval(BasicBlock* block);
 
-    bool fgCanCompactBlocks(BasicBlock* block, BasicBlock* bNext);
+    bool fgCanCompactBlock(BasicBlock* block);
 
-    void fgCompactBlocks(BasicBlock* block, BasicBlock* bNext DEBUGARG(bool doDebugCheck = true));
+    void fgCompactBlock(BasicBlock* block);
 
     BasicBlock* fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst);
 
@@ -6157,7 +6157,7 @@ public:
 
     bool fgIsForwardBranch(BasicBlock* bJump, BasicBlock* bDest, BasicBlock* bSrc = nullptr);
 
-    bool fgUpdateFlowGraph(bool doTailDup = false, bool isPhase = false);
+    bool fgUpdateFlowGraph(bool doTailDup = false, bool isPhase = false, bool doAggressiveCompaction = true);
     PhaseStatus fgUpdateFlowGraphPhase();
 
     PhaseStatus fgDfsBlocksAndRemove();
