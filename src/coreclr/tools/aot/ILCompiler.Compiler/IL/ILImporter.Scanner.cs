@@ -887,7 +887,7 @@ namespace Internal.IL
                     analyzer.Advance(opcode, reader, _methodIL);
                     reader.Skip(opcode);
 
-                    if (analyzer.IsTypeEqualityCheCCCC)
+                    if (analyzer.IsTypeEqualityCheck)
                     {
                         isTypeEquals = true;
                         break;
