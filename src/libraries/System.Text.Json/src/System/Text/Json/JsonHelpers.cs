@@ -5,6 +5,7 @@ using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 
@@ -209,6 +210,41 @@ namespace System.Text.Json
                     return Encoding.UTF8.GetString(bytesPtr, bytes.Length);
                 }
             }
+#endif
+        }
+
+        public static bool TryLookupUtf8Key<TValue>(
+            this Dictionary<string, TValue> dictionary,
+            ReadOnlySpan<byte> utf8Key,
+            [MaybeNullWhen(false)] out TValue result)
+        {
+#if NET9_0_OR_GREATER
+            Debug.Assert(dictionary.Comparer is IAlternateEqualityComparer<ReadOnlySpan<char>, string>);
+
+            Dictionary<string, TValue>.AlternateLookup<ReadOnlySpan<char>> spanLookup =
+                dictionary.GetAlternateLookup<string, TValue, ReadOnlySpan<char>>();
+
+            char[]? rentedBuffer = null;
+
+            Span<char> charBuffer = utf8Key.Length <= JsonConstants.StackallocCharThreshold ?
+                stackalloc char[JsonConstants.StackallocCharThreshold] :
+                (rentedBuffer = ArrayPool<char>.Shared.Rent(utf8Key.Length));
+
+            int charsWritten = Encoding.UTF8.GetChars(utf8Key, charBuffer);
+            Span<char> decodedKey = charBuffer[0..charsWritten];
+
+            bool success = spanLookup.TryGetValue(decodedKey, out result);
+
+            if (rentedBuffer != null)
+            {
+                decodedKey.Clear();
+                ArrayPool<char>.Shared.Return(rentedBuffer);
+            }
+
+            return success;
+#else
+            string key = Utf8GetString(utf8Key);
+            return dictionary.TryGetValue(key, out result);
 #endif
         }
 

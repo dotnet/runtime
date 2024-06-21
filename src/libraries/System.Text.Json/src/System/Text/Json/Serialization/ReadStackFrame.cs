@@ -65,7 +65,9 @@ namespace System.Text.Json
 
         // For performance, we order the properties by the first deserialize and PropertyIndex helps find the right slot quicker.
         public int PropertyIndex;
-        public List<PropertyRef>? PropertyRefCache;
+
+        // Tracks newly encounentered UTF-8 encoded properties during the current deserialization, to be appended to the cache.
+        public PropertyRefList? NewPropertyRefs;
 
         // Holds relevant state when deserializing objects with parameterized constructors.
         public ArgumentState? CtorArgumentState;
