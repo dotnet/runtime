@@ -3,11 +3,6 @@
 
 #pragma once
 
-// not sure if necessary
-#include <limits.h>
-
-// Undefine YieldProcessor to encourage using the normalized versions below instead. System_YieldProcessor() can be used where
-// the intention is to use the system-default implementation of YieldProcessor().
 #define HAS_SYSTEM_YIELDPROCESSOR
 #ifdef FEATURE_NATIVEAOT
 FORCEINLINE void System_YieldProcessor() { PalYieldProcessor(); }
@@ -24,9 +19,7 @@ FORCEINLINE void System_YieldProcessor() { YieldProcessor(); }
     DISABLE_COPY(T)
 
 #ifdef FEATURE_NATIVEAOT
-#define static_assert_no_msg( cond ) static_assert( cond, #cond )
 #define SIZE_T uintptr_t
-// verify these are correct
 typedef BYTE UINT8;
 typedef ULONGLONG UINT64;
 
@@ -43,7 +36,6 @@ T Max(T v1, T v2)
     // STATIC_CONTRACT_LEAF;
     return v1 > v2 ? v1 : v2;
 }
-
 #endif
 
 class YieldProcessorNormalization
@@ -295,10 +287,10 @@ FORCEINLINE void YieldProcessorWithBackOffNormalized(
 {
     // This shift value should be adjusted based on the asserted conditions below
     const UINT8 MaxShift = 3;
-    static_assert_no_msg(
-        ((unsigned int)1 << MaxShift) <= YieldProcessorNormalization::MaxOptimalMaxNormalizedYieldsPerSpinIteration);
-    static_assert_no_msg(
-        ((unsigned int)1 << (MaxShift + 1)) > YieldProcessorNormalization::MaxOptimalMaxNormalizedYieldsPerSpinIteration);
+    static_assert(
+        ((unsigned int)1 << MaxShift) <= YieldProcessorNormalization::MaxOptimalMaxNormalizedYieldsPerSpinIteration, "");
+    static_assert(
+        ((unsigned int)1 << (MaxShift + 1)) > YieldProcessorNormalization::MaxOptimalMaxNormalizedYieldsPerSpinIteration, "");
 
     unsigned int n;
     if (spinIteration <= MaxShift &&

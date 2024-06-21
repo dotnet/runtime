@@ -5,15 +5,6 @@
 #ifndef _FINALIZER_THREAD_H_
 #define _FINALIZER_THREAD_H_
 
-#ifdef FEATURE_NATIVEAOT
-typedef void VOID;
-
-// #ifdef TARGET_WINDOWS
-// GPTR_IMPL(Thread, g_pFinalizerThread);
-// #endif
-
-#endif
-
 class FinalizerThread
 {
     static BOOL fQuitFinalizer;
@@ -44,14 +35,12 @@ class FinalizerThread
     static void FinalizeAllObjects();
 
 public:
-#ifndef FEATURE_NATIVEAOT
     static Thread* GetFinalizerThread()
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(g_pFinalizerThread != 0);
         return g_pFinalizerThread;
     }
-#endif
 
     static BOOL IsCurrentThreadFinalizer();
 
@@ -61,7 +50,6 @@ public:
 
     static OBJECTREF GetNextFinalizableObject();
 
-#ifndef FEATURE_NATIVEAOT
     static void RaiseShutdownEvents()
     {
         WRAPPER_NO_CONTRACT;
@@ -76,7 +64,6 @@ public:
             hEventFinalizerToShutDown->Wait(INFINITE, /*alertable*/ TRUE);
         }
     }
-#endif
 
     static void FinalizerThreadWait(DWORD timeout = INFINITE);
 
