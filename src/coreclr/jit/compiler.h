@@ -8481,9 +8481,10 @@ public:
     {
         return eeRunWithSPMIErrorTrap<Functor>(
             [](Functor* pf) {
-            (*pf)();
+             (*pf)();
         },
             &f);
+
     }
 
     bool eeRunWithSPMIErrorTrapImp(void (*function)(void*), void* param);
@@ -11370,6 +11371,8 @@ public:
         CORINFO_CLASS_HANDLE typeHnd, var_types* type0, var_types* type1, uint8_t* offset0, uint8_t* offset1);
 
 #elif defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+    FpStructInRegistersInfo GetPassFpStructInRegistersInfo(CORINFO_CLASS_HANDLE structHandle);
+
     static void GetTypesFromFpStructInRegistersInfo(FpStructInRegistersInfo info,
                                                     var_types*              type1st,
                                                     var_types*              type2nd);

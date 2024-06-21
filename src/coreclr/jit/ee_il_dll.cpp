@@ -431,7 +431,7 @@ unsigned Compiler::eeGetArgSize(CorInfoType corInfoType, CORINFO_CLASS_HANDLE ty
 #ifdef TARGET_RISCV64
             // ... unless on RISC-V they are still eligible for passing according to hardware floating-point calling
             // convention, e.g. struct {long; struct{}; double; }.
-            FpStructInRegistersInfo fpInfo = info.compCompHnd->getRiscV64PassFpStructInRegistersInfo(typeHnd);
+            FpStructInRegistersInfo fpInfo = GetPassFpStructInRegistersInfo(typeHnd);
             if (fpInfo.flags == FpStruct::UseIntCallConv)
 #endif
             {
@@ -1383,7 +1383,7 @@ void Compiler::eeGetSystemVAmd64PassStructInRegisterDescriptor(
                 printf("        eightByte #%d -- classification: ", i);
                 dumpSystemVClassificationType(structPassInRegDescPtr->eightByteClassifications[i]);
                 printf(", byteSize: %d, byteOffset: %d\n", structPassInRegDescPtr->eightByteSizes[i],
-                       structPassInRegDescPtr->eightByteOffsets[i]);
+                       structPassInRegDescPtr->eightByteOffsetn[i]);
             }
         }
     }

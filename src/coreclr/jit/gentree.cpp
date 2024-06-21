@@ -28625,13 +28625,7 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler*                comp,
             m_regType[0] = returnType;
 
 #if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
-#ifdef TARGET_LOONGARCH64
-            uint32_t floatFieldFlags = comp->info.compCompHnd->getLoongArch64PassStructInRegisterFlags(retClsHnd);
-            FpStructInRegistersInfo fpInfo =
-                FpStructInRegistersInfo::FromOldFlags((StructFloatFieldInfoFlags)floatFieldFlags);
-#else // TARGET_RISCV64
-            FpStructInRegistersInfo fpInfo = comp->info.compCompHnd->getRiscV64PassFpStructInRegistersInfo(retClsHnd);
-#endif
+            FpStructInRegistersInfo fpInfo = comp->GetPassFpStructInRegistersInfo(retClsHnd);
             if (fpInfo.flags != FpStruct::UseIntCallConv)
             {
                 assert((fpInfo.flags & FpStruct::OnlyOne) != 0);
@@ -28704,15 +28698,8 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler*                comp,
 
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
             assert(structSize >= TARGET_POINTER_SIZE);
-
-#ifdef TARGET_LOONGARCH64
-            assert(structSize <= (2 * TARGET_POINTER_SIZE));
-            uint32_t floatFieldFlags = comp->info.compCompHnd->getLoongArch64PassStructInRegisterFlags(retClsHnd);
-            FpStructInRegistersInfo fpInfo =
-                FpStructInRegistersInfo::FromOldFlags((StructFloatFieldInfoFlags)floatFieldFlags);
-#else // TARGET_RISCV64
-            FpStructInRegistersInfo fpInfo = comp->info.compCompHnd->getRiscV64PassFpStructInRegistersInfo(retClsHnd);
-#endif
+            LOONGARCH64_ONLY(assert(structSize <= (2 * TARGET_POINTER_SIZE));)
+            FpStructInRegistersInfo fpInfo = comp->GetPassFpStructInRegistersInfo(retClsHnd);
             if (fpInfo.flags != FpStruct::UseIntCallConv)
             {
                 comp->compFloatingPointUsed = true;

@@ -769,8 +769,8 @@ var_types Compiler::getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
 #ifdef TARGET_RISCV64
             // Struct larger than 16 can still be passed in registers according to FP call conv if it has empty fields
             // or more padding
-            uint32_t flags = info.compCompHnd->getRiscV64PassFpStructInRegistersInfo(clsHnd).ToOldFlags();
-            if (flags != STRUCT_NO_FLOAT_FIELD)
+            FpStructInRegistersInfo info = GetPassFpStructInRegistersInfo(clsHnd);
+            if (info.flags != FpStruct::UseIntCallConv)
             {
                 howToPassStruct = SPK_ByValue;
                 useType         = TYP_STRUCT;
@@ -956,15 +956,15 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
     }
 
 #elif defined(TARGET_RISCV64)
-    uint32_t floatFieldFlags = (uint32_t)info.compCompHnd->getRiscV64PassFpStructInRegistersInfo(clsHnd).ToOldFlags();
-    if ((floatFieldFlags & STRUCT_FLOAT_FIELD_ONLY_ONE) != 0)
+    FpStructInRegistersInfo info = GetPassFpStructInRegistersInfo(clsHnd);
+    if ((info.flags & FpStruct::OnlyOne) != 0)
     {
         howToReturnStruct = SPK_PrimitiveType;
-        useType           = ((floatFieldFlags & STRUCT_FIRST_FIELD_SIZE_IS8) != 0) ? TYP_DOUBLE : TYP_FLOAT;
+        useType           = (info.SizeShift1st() == 3) ? TYP_DOUBLE : TYP_FLOAT;
     }
-    else if (floatFieldFlags != STRUCT_NO_FLOAT_FIELD)
+    else if (info.flags != FpStruct::UseIntCallConv)
     {
-        assert((floatFieldFlags & (STRUCT_HAS_FLOAT_FIELDS_MASK ^ STRUCT_FLOAT_FIELD_ONLY_ONE)) != 0);
+        assert((info.flags & (FpStruct::BothFloat | FpStruct::FloatInt | FpStruct::IntFloat)) != 0);
         howToReturnStruct = SPK_ByValue;
         useType           = TYP_STRUCT;
     }
@@ -8310,6 +8310,48 @@ void Compiler::GetStructTypeOffset(
 }
 
 #elif defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+//------------------------------------------------------------------------
+// GetPassFpStructInRegistersInfo: Gets the information on passing of a struct according to hardware floating-point
+// calling convention.
+//
+// Arguments:
+//      structHandle - type handle
+//
+// Return value:
+//      The passing info
+FpStructInRegistersInfo Compiler::GetPassFpStructInRegistersInfo(CORINFO_CLASS_HANDLE structHandle)
+{
+#ifdef TARGET_RISCV64
+#define getInfoFunc getRiscV64PassFpStructInRegistersInfo
+#else
+#define getInfoFunc getLoongArchPassFpStructInRegistersInfo
+#endif
+
+    FpStructInRegistersInfo ret = info.compCompHnd->getInfoFunc(structHandle);
+#ifdef DEBUG
+    if (VERBOSE)
+    {
+        logf("**** " STRINGIFY(getInfoFunc) "(0x%x (%s, %u bytes)) =>\n", dspPtr(structHandle),
+             eeGetClassName(structHandle), info.compCompHnd->getClassSize(structHandle));
+#undef getInfoFunc
+        if (ret.flags == FpStruct::UseIntCallConv)
+        {
+            logf("        pass by integer calling convention\n");
+        }
+        else
+        {
+            bool hasOne    = ((ret.flags & FpStruct::OnlyOne) != 0);
+            long size2nd   = hasOne ? -1l : ret.Size2nd();
+            long offset2nd = hasOne ? -1l : ret.offset2nd;
+            logf("        may be passed by floating-point calling convention:\n"
+                 "        flags=%#03x; %s, field sizes={%u, %li}, field offsets={%u, %li}, IntFieldKind=%s\n",
+                 ret.flags, ret.FlagName(), ret.Size1st(), size2nd, ret.offset1st, offset2nd, ret.IntFieldKindName());
+        }
+    }
+#endif // DEBUG
+    return ret;
+}
+
 //------------------------------------------------------------------------
 // GetTypesFromFpStructInRegistersInfo: Gets the field types of a struct passed in registers according to hardware
 // floating-point calling convention.

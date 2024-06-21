@@ -415,7 +415,9 @@ struct FpStructInRegistersInfo
     const char* IntFieldKindName() const
     {
         static const char* intKindNames[] = { "Signed", "Unsigned", "GcRef", "GcByRef" };
-        return intKindNames[(int)IntFieldKind()];
+        return (flags & (FpStruct::FloatInt | FpStruct::IntFloat))
+            ? intKindNames[(int)IntFieldKind()]
+            : "None";
     }
 
     const char* FlagName() const

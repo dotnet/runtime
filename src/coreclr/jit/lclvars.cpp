@@ -905,12 +905,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
 
         if ((strip(corInfoType) == CORINFO_TYPE_VALUECLASS) LOONGARCH64_ONLY(&&(argSize <= MAX_PASS_MULTIREG_BYTES)))
         {
-#if defined(TARGET_LOONGARCH64)
-            uint32_t floatFlagFields = info.compCompHnd->getLoongArch64PassStructInRegisterFlags(typeHnd);
-            fpInfo = FpStructInRegistersInfo::FromOldFlags((StructFloatFieldInfoFlags)floatFieldFlags);
-#else
-            fpInfo = info.compCompHnd->getRiscV64PassFpStructInRegistersInfo(typeHnd);
-#endif
+            fpInfo = GetPassFpStructInRegistersInfo(typeHnd);
         }
 
         if (fpInfo.flags != FpStruct::UseIntCallConv)
@@ -1263,7 +1258,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                 }
                 printf("\n");
             }
-#endif    // DEBUG
+#endif // DEBUG
         } // end if (canPassArgInRegisters)
         else
         {
