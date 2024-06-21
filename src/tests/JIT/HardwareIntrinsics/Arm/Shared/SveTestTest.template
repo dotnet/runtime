@@ -29,10 +29,10 @@ namespace JIT.HardwareIntrinsics.Arm
             if (test.IsSupported)
             {
                 // Validates basic functionality works
-                test.RunBasicScenario_Load();
+                test.RunBasicScenario();
 
                 // Validates calling via reflection works
-                test.RunReflectionScenario_Load();
+                test.RunReflectionScenario();
 
                 // Validates passing an instance member of a class works
                 test.RunClassFldScenario();
@@ -93,9 +93,9 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public bool Succeeded { get; set; }
 
-        public void RunBasicScenario_Load()
+        public void RunBasicScenario()
         {
-            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_Load));
+            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario));
 
             Vector<{MaskBaseType}> op1 = {Op1Value};
             Vector<{MaskBaseType}> op2 = {Op2Value};
@@ -105,9 +105,9 @@ namespace JIT.HardwareIntrinsics.Arm
             ValidateResult(op1, op2, result);
         }
 
-        public void RunReflectionScenario_Load()
+        public void RunReflectionScenario()
         {
-            TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario_Load));
+            TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario));
 
             Vector<{MaskBaseType}> op1 = {Op1Value};
             Vector<{MaskBaseType}> op2 = {Op2Value};
@@ -155,15 +155,20 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunUnsupportedScenario));
 
-            Succeeded = false;
+            bool succeeded = false;
 
             try
             {
-                RunBasicScenario_Load();
+                RunBasicScenario();
             }
             catch (PlatformNotSupportedException)
             {
-                Succeeded = true;
+                succeeded = true;
+            }
+
+            if (!succeeded)
+            {
+                Succeeded = false;
             }
         }
 
