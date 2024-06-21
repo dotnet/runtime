@@ -419,7 +419,7 @@ class DeadCodeElimination
                     }
                 }
 
-                ThrowIfPresentWithUsableMethodTable(typeof(TestTypeEquals), nameof(Canary3));
+                ThrowIfPresentWithUsableMethodTable(typeof(TestTypeEquals), nameof(Canary4));
             }
 
             {
