@@ -665,5 +665,15 @@ namespace System.Runtime.Intrinsics
             uint mask = vector.ExtractMostSignificantBits();
             return 31 - BitOperations.LeadingZeroCount(mask); // 31 = 32 (bits in Int32) - 1 (indexing from zero)
         }
+
+        static Vector256<T> ISimdVector<Vector256<T>, T>.IsNaN(Vector256<T> vector) => Vector256.IsNaN(vector);
+
+        static Vector256<T> ISimdVector<Vector256<T>, T>.IsNegative(Vector256<T> vector) => Vector256.IsNegative(vector);
+
+        static Vector256<T> ISimdVector<Vector256<T>, T>.IsPositive(Vector256<T> vector) => Vector256.IsPositive(vector);
+
+        static Vector256<T> ISimdVector<Vector256<T>, T>.IsPositiveInfinity(Vector256<T> vector) => Vector256.IsPositiveInfinity(vector);
+
+        static Vector256<T> ISimdVector<Vector256<T>, T>.IsZero(Vector256<T> vector) => Vector256.IsZero(vector);
     }
 }

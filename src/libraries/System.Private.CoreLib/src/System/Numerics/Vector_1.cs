@@ -1043,5 +1043,15 @@ namespace System.Numerics
                 return 31 - BitOperations.LeadingZeroCount(mask); // 31 = 32 (bits in Int32) - 1 (indexing from zero)
             }
         }
+
+        static Vector<T> ISimdVector<Vector<T>, T>.IsNaN(Vector<T> vector) => Vector.IsNaN(vector);
+
+        static Vector<T> ISimdVector<Vector<T>, T>.IsNegative(Vector<T> vector) => Vector.IsNegative(vector);
+
+        static Vector<T> ISimdVector<Vector<T>, T>.IsPositive(Vector<T> vector) => Vector.IsPositive(vector);
+
+        static Vector<T> ISimdVector<Vector<T>, T>.IsPositiveInfinity(Vector<T> vector) => Vector.IsPositiveInfinity(vector);
+
+        static Vector<T> ISimdVector<Vector<T>, T>.IsZero(Vector<T> vector) => Vector.IsZero(vector);
     }
 }

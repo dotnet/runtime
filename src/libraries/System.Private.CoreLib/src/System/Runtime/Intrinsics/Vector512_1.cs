@@ -665,5 +665,15 @@ namespace System.Runtime.Intrinsics
             ulong mask = vector.ExtractMostSignificantBits();
             return 63 - BitOperations.LeadingZeroCount(mask); // 63 = 64 (bits in Int64) - 1 (indexing from zero)
         }
+
+        static Vector512<T> ISimdVector<Vector512<T>, T>.IsNaN(Vector512<T> vector) => Vector512.IsNaN(vector);
+
+        static Vector512<T> ISimdVector<Vector512<T>, T>.IsNegative(Vector512<T> vector) => Vector512.IsNegative(vector);
+
+        static Vector512<T> ISimdVector<Vector512<T>, T>.IsPositive(Vector512<T> vector) => Vector512.IsPositive(vector);
+
+        static Vector512<T> ISimdVector<Vector512<T>, T>.IsPositiveInfinity(Vector512<T> vector) => Vector512.IsPositiveInfinity(vector);
+
+        static Vector512<T> ISimdVector<Vector512<T>, T>.IsZero(Vector512<T> vector) => Vector512.IsZero(vector);
     }
 }

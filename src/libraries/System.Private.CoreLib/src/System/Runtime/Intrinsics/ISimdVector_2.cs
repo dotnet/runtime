@@ -316,6 +316,31 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of the elements in the vector (<typeparamref name="T" />) is not supported.</exception>
         static abstract bool GreaterThanOrEqualAny(TSelf left, TSelf right);
 
+        /// <summary>Determines which elements in a vector are NaN.</summary>
+        /// <param name="vector">The vector to be checked.</param>
+        /// <returns>A vector whose elements are all-bits-set or zero, depending on if the corresponding elements in <paramref name="vector" /> were NaN.</returns>
+        static abstract TSelf IsNaN(TSelf vector);
+
+        /// <summary>Determines which elements in a vector represents negative real numbers.</summary>
+        /// <param name="vector">The vector to be checked.</param>
+        /// <returns>A vector whose elements are all-bits-set or zero, depending on if the corresponding elements in <paramref name="vector" /> were negative.</returns>
+        static abstract TSelf IsNegative(TSelf vector);
+
+        /// <summary>Determines which elements in a vector represents positive real numbers.</summary>
+        /// <param name="vector">The vector to be checked.</param>
+        /// <returns>A vector whose elements are all-bits-set or zero, depending on if the corresponding elements in <paramref name="vector" /> were positive.</returns>
+        static abstract TSelf IsPositive(TSelf vector);
+
+        /// <summary>Determines which elements in a vector are positive infinity.</summary>
+        /// <param name="vector">The vector to be checked.</param>
+        /// <returns>A vector whose elements are all-bits-set or zero, depending on if the corresponding elements in <paramref name="vector" /> were positive infinity.</returns>
+        static abstract TSelf IsPositiveInfinity(TSelf vector);
+
+        /// <summary>Determines which elements in a vector are zero.</summary>
+        /// <param name="vector">The vector to be checked.</param>
+        /// <returns>A vector whose elements are all-bits-set or zero, depending on if the corresponding elements in <paramref name="vector" /> were zero.</returns>
+        static abstract TSelf IsZero(TSelf vector);
+
         /// <summary>Compares two vectors to determine which is less on a per-element basis.</summary>
         /// <param name="left">The vector to compare with <paramref name="left" />.</param>
         /// <param name="right">The vector to compare with <paramref name="right" />.</param>

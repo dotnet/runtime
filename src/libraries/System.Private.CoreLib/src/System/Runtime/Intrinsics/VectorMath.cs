@@ -5,10 +5,11 @@ using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.X86;
 
 namespace System.Runtime.Intrinsics
 {
-    internal static class VectorMath
+    internal static unsafe class VectorMath
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static TVector CopySign<TVector, T>(TVector value, TVector sign)
@@ -33,7 +34,7 @@ namespace System.Runtime.Intrinsics
                 // All values are two's complement and so `value ^ sign` will produce a positive
                 // number if the signs match and a negative number if the signs differ. When the
                 // signs differ we want to negate the value and otherwise take the value as is.
-                return TVector.ConditionalSelect(TVector.LessThan(value ^ sign, TVector.Zero), -value, value);
+                return TVector.ConditionalSelect(TVector.IsNegative(value ^ sign), -value, value);
             }
         }
 
@@ -99,21 +100,19 @@ namespace System.Runtime.Intrinsics
             const double V_LN2_HEAD = +0.693359375;
             const double V_LN2_TAIL = -0.00021219444005469057;
 
-            const double C3  = 0.5000000000000018;
-            const double C4  = 0.1666666666666617;
-            const double C5  = 0.04166666666649277;
-            const double C6  = 0.008333333333559272;
-            const double C7  = 0.001388888895122404;
-            const double C8  = 0.00019841269432677495;
-            const double C9  = 2.4801486521374483E-05;
+            const double C03  = 0.5000000000000018;
+            const double C04  = 0.1666666666666617;
+            const double C05  = 0.04166666666649277;
+            const double C06  = 0.008333333333559272;
+            const double C07  = 0.001388888895122404;
+            const double C08  = 0.00019841269432677495;
+            const double C09  = 2.4801486521374483E-05;
             const double C10 = 2.7557622532543023E-06;
             const double C11 = 2.7632293298250954E-07;
             const double C12 = 2.499430431958571E-08;
 
             // x * (64.0 / ln(2))
-            TVectorDouble z = x * TVectorDouble.Create(V_TBL_LN2);
-
-            TVectorDouble dn = z + TVectorDouble.Create(V_EXPF_HUGE);
+            TVectorDouble dn = TVectorDouble.MultiplyAddEstimate(x, TVectorDouble.Create(V_TBL_LN2), TVectorDouble.Create(V_EXPF_HUGE));
 
             // n = (int)z
             TVectorUInt64 n = Unsafe.BitCast<TVectorDouble, TVectorUInt64>(dn);
@@ -123,18 +122,33 @@ namespace System.Runtime.Intrinsics
 
             // r = x - (dn * (ln(2) / 64))
             // where ln(2) / 64 is split into Head and Tail values
-            TVectorDouble r = x - (dn * TVectorDouble.Create(V_LN2_HEAD)) - (dn * TVectorDouble.Create(V_LN2_TAIL));
+            TVectorDouble r = TVectorDouble.MultiplyAddEstimate(dn, TVectorDouble.Create(-V_LN2_HEAD), x);
+            r = TVectorDouble.MultiplyAddEstimate(dn, TVectorDouble.Create(-V_LN2_TAIL), r);
 
             TVectorDouble r2 = r * r;
             TVectorDouble r4 = r2 * r2;
             TVectorDouble r8 = r4 * r4;
 
             // Compute polynomial
-            TVectorDouble poly = ((TVectorDouble.Create(C12) * r + TVectorDouble.Create(C11)) * r2 +
-                                   TVectorDouble.Create(C10) * r + TVectorDouble.Create(C9))  * r8 +
-                                 ((TVectorDouble.Create(C8)  * r + TVectorDouble.Create(C7))  * r2 +
-                                  (TVectorDouble.Create(C6)  * r + TVectorDouble.Create(C5))) * r4 +
-                                 ((TVectorDouble.Create(C4)  * r + TVectorDouble.Create(C3))  * r2 + (r + TVectorDouble.One));
+            TVectorDouble poly = TVectorDouble.MultiplyAddEstimate(
+                TVectorDouble.MultiplyAddEstimate(
+                    TVectorDouble.MultiplyAddEstimate(TVectorDouble.Create(C12), r, TVectorDouble.Create(C11)),
+                    r2,
+                    TVectorDouble.MultiplyAddEstimate(TVectorDouble.Create(C10), r, TVectorDouble.Create(C09))),
+                r8,
+                TVectorDouble.MultiplyAddEstimate(
+                    TVectorDouble.MultiplyAddEstimate(
+                        TVectorDouble.MultiplyAddEstimate(TVectorDouble.Create(C08), r, TVectorDouble.Create(C07)),
+                        r2,
+                        TVectorDouble.MultiplyAddEstimate(TVectorDouble.Create(C06), r, TVectorDouble.Create(C05))),
+                    r4,
+                    TVectorDouble.MultiplyAddEstimate(
+                        TVectorDouble.MultiplyAddEstimate(TVectorDouble.Create(C04), r, TVectorDouble.Create(C03)),
+                        r2,
+                        r + TVectorDouble.One
+                    )
+                )
+            );
 
             // m = (n - j) / 64
             // result = polynomial * 2^m
@@ -244,19 +258,32 @@ namespace System.Runtime.Intrinsics
             TVectorDouble rl2 = rl * rl;
             TVectorDouble rl4 = rl2 * rl2;
 
-            TVectorDouble polyl = (c4 * rl + c3) * rl2
-                               + ((c6 * rl + c5) * rl4
-                                + (c2 * rl + c1));
+            // TVectorDouble polyl =
 
+            TVectorDouble polyl = TVectorDouble.MultiplyAddEstimate(
+                rl4,
+                TVectorDouble.MultiplyAddEstimate(c6, rl, c5),
+                TVectorDouble.MultiplyAddEstimate(
+                    rl2,
+                    TVectorDouble.MultiplyAddEstimate(c4, rl, c3),
+                    TVectorDouble.MultiplyAddEstimate(c2, rl, c1)
+                )
+            );
 
             TVectorDouble ru = zu - dnu;
 
             TVectorDouble ru2 = ru * ru;
             TVectorDouble ru4 = ru2 * ru2;
 
-            TVectorDouble polyu = (c4 * ru + c3) * ru2
-                               + ((c6 * ru + c5) * ru4
-                                + (c2 * ru + c1));
+            TVectorDouble polyu = TVectorDouble.MultiplyAddEstimate(
+                ru4,
+                TVectorDouble.MultiplyAddEstimate(c6, ru, c5),
+                TVectorDouble.MultiplyAddEstimate(
+                    ru2,
+                    TVectorDouble.MultiplyAddEstimate(c4, ru, c3),
+                    TVectorDouble.MultiplyAddEstimate(c2, ru, c1)
+                )
+            );
 
             // result = (float)(poly + (n << 52))
             TVectorSingle ret = Narrow<TVectorDouble, TVectorSingle>(
@@ -296,9 +323,8 @@ namespace System.Runtime.Intrinsics
             TVectorDouble ax = TVectorDouble.Abs(x);
             TVectorDouble ay = TVectorDouble.Abs(y);
 
-            TVectorDouble positiveInfinity = TVectorDouble.Create(float.PositiveInfinity);
-            TVectorDouble infinityMask = TVectorDouble.Equals(ax, positiveInfinity) | TVectorDouble.Equals(ay, positiveInfinity);
-            TVectorDouble notNaNMask = TVectorDouble.Equals(ax, ax) & TVectorDouble.Equals(ay, ay);
+            TVectorDouble infinityMask = TVectorDouble.IsPositiveInfinity(ax) | TVectorDouble.IsPositiveInfinity(ay);
+            TVectorDouble nanMask = TVectorDouble.IsNaN(ax) | TVectorDouble.IsNaN(ay);
 
             TVectorUInt64 xBits = Unsafe.BitCast<TVectorDouble, TVectorUInt64>(ax);
             TVectorUInt64 yBits = Unsafe.BitCast<TVectorDouble, TVectorUInt64>(ay);
@@ -331,12 +357,12 @@ namespace System.Runtime.Intrinsics
             TVectorDouble subnormalFix = TVectorDouble.Create(9.232978617785736E-128);
             TVectorUInt64 subnormalBitsFix = TVectorUInt64.Create(0x0010000000000000);
 
-            TVectorUInt64 xSubnormalMask = TVectorUInt64.Equals(xExp, TVectorUInt64.Zero) & scaleUpMask;
+            TVectorUInt64 xSubnormalMask = TVectorUInt64.IsZero(xExp) & scaleUpMask;
             xBits += subnormalBitsFix & xSubnormalMask;
             ax = Unsafe.BitCast<TVectorUInt64, TVectorDouble>(xBits);
             ax -= subnormalFix & Unsafe.BitCast<TVectorUInt64, TVectorDouble>(xSubnormalMask);
 
-            TVectorUInt64 ySubnormalMask = TVectorUInt64.Equals(yExp, TVectorUInt64.Zero) & scaleUpMask;
+            TVectorUInt64 ySubnormalMask = TVectorUInt64.IsZero(yExp) & scaleUpMask;
             yBits += subnormalBitsFix & ySubnormalMask;
             ay = Unsafe.BitCast<TVectorUInt64, TVectorDouble>(yBits);
             ay -= subnormalFix & Unsafe.BitCast<TVectorUInt64, TVectorDouble>(ySubnormalMask);
@@ -378,18 +404,18 @@ namespace System.Runtime.Intrinsics
             TVectorDouble rHead = xx + yy;
             TVectorDouble rTail = (xx - rHead) + yy;
 
-            rTail += (xHead * xHead) - xx;
-            rTail += xHead * 2 * xTail;
-            rTail += xTail * xTail;
+            rTail += TVectorDouble.MultiplyAddEstimate(xHead, xHead, -xx);
+            rTail = TVectorDouble.MultiplyAddEstimate(xHead * 2, xTail, rTail);
+            rTail = TVectorDouble.MultiplyAddEstimate(xTail, xTail, rTail);
 
             // We only need to do extra accounting when ax and ay have equal exponents
-            TVectorDouble equalExponentsMask = Unsafe.BitCast<TVectorUInt64, TVectorDouble>(TVectorUInt64.Equals(expDiff, TVectorUInt64.Zero));
+            TVectorDouble equalExponentsMask = Unsafe.BitCast<TVectorUInt64, TVectorDouble>(TVectorUInt64.IsZero(expDiff));
 
             TVectorDouble rTailTmp = rTail;
 
-            rTailTmp += (yHead * yHead) - yy;
-            rTailTmp += yHead * 2 * yTail;
-            rTailTmp += yTail * yTail;
+            rTailTmp += TVectorDouble.MultiplyAddEstimate(yHead, yHead, -yy);
+            rTailTmp = TVectorDouble.MultiplyAddEstimate(yHead * 2, yTail, rTailTmp);
+            rTailTmp = TVectorDouble.MultiplyAddEstimate(yTail, yTail, rTailTmp);
 
             rTail = TVectorDouble.ConditionalSelect(equalExponentsMask, rTailTmp, rTail);
 
@@ -400,7 +426,7 @@ namespace System.Runtime.Intrinsics
             // the inputs is NaN. Otherwise if either input
             // is NaN, we return NaN
 
-            result = TVectorDouble.ConditionalSelect(notNaNMask, result, TVectorDouble.Create(double.NaN));
+            result = TVectorDouble.ConditionalSelect(nanMask, TVectorDouble.Create(double.NaN), result);
             result = TVectorDouble.ConditionalSelect(infinityMask, TVectorDouble.Create(double.PositiveInfinity), result);
 
             return result;
@@ -419,21 +445,15 @@ namespace System.Runtime.Intrinsics
             TVectorSingle ax = TVectorSingle.Abs(x);
             TVectorSingle ay = TVectorSingle.Abs(y);
 
-            TVectorSingle positiveInfinity = TVectorSingle.Create(float.PositiveInfinity);
-            TVectorSingle infinityMask = TVectorSingle.Equals(ax, positiveInfinity) | TVectorSingle.Equals(ay, positiveInfinity);
-            TVectorSingle notNaNMask = TVectorSingle.Equals(ax, ax) & TVectorSingle.Equals(ay, ay);
+            TVectorSingle infinityMask = TVectorSingle.IsPositiveInfinity(ax) | TVectorSingle.IsPositiveInfinity(ay);
+            TVectorSingle nanMask = TVectorSingle.IsNaN(ax) | TVectorSingle.IsNaN(ay);
 
             (TVectorDouble xxLower, TVectorDouble xxUpper) = Widen<TVectorSingle, TVectorDouble>(ax);
-            xxLower *= xxLower;
-            xxUpper *= xxUpper;
-
             (TVectorDouble yyLower, TVectorDouble yyUpper) = Widen<TVectorSingle, TVectorDouble>(ay);
-            yyLower *= yyLower;
-            yyUpper *= yyUpper;
 
             TVectorSingle result = Narrow<TVectorDouble, TVectorSingle>(
-                TVectorDouble.Sqrt(xxLower + yyLower),
-                TVectorDouble.Sqrt(xxUpper + yyUpper)
+                TVectorDouble.Sqrt(TVectorDouble.MultiplyAddEstimate(xxLower, xxLower, yyLower * yyLower)),
+                TVectorDouble.Sqrt(TVectorDouble.MultiplyAddEstimate(xxUpper, xxUpper, yyUpper * yyUpper))
             );
 
             // IEEE 754 requires that we return +Infinity
@@ -441,7 +461,7 @@ namespace System.Runtime.Intrinsics
             // the inputs is NaN. Otherwise if either input
             // is NaN, we return NaN
 
-            result = TVectorSingle.ConditionalSelect(notNaNMask, result, TVectorSingle.Create(float.NaN));
+            result = TVectorSingle.ConditionalSelect(nanMask, TVectorSingle.Create(float.NaN), result);
             result = TVectorSingle.ConditionalSelect(infinityMask, TVectorSingle.Create(float.PositiveInfinity), result);
 
             return result;
@@ -521,19 +541,17 @@ namespace System.Runtime.Intrinsics
 
             if (specialMask != TVectorUInt64.Zero)
             {
-                TVectorInt64 xBits = Unsafe.BitCast<TVectorDouble, TVectorInt64>(x);
-
-                // (x < 0) ? float.NaN : x
-                TVectorDouble lessThanZeroMask = Unsafe.BitCast<TVectorInt64, TVectorDouble>(TVectorInt64.LessThan(xBits, TVectorInt64.Zero));
+                // double.IsNegative(x) ? double.NaN : x
+                TVectorDouble isNegativeMask = TVectorDouble.IsNegative(x);
 
                 specialResult = TVectorDouble.ConditionalSelect(
-                    lessThanZeroMask,
+                    isNegativeMask,
                     TVectorDouble.Create(double.NaN),
                     specialResult
                 );
 
                 // double.IsZero(x) ? double.NegativeInfinity : x
-                TVectorDouble zeroMask = Unsafe.BitCast<TVectorInt64, TVectorDouble>(TVectorInt64.Equals(xBits << 1, TVectorInt64.Zero));
+                TVectorDouble zeroMask = TVectorDouble.IsZero(x);
 
                 specialResult = TVectorDouble.ConditionalSelect(
                     zeroMask,
@@ -541,10 +559,11 @@ namespace System.Runtime.Intrinsics
                     specialResult
                 );
 
-                // double.IsZero(x) | (x < 0) | double.IsNaN(x) | double.IsPositiveInfinity(x)
+                // double.IsZero(x) | double.IsNegative(x) | double.IsNaN(x) | double.IsPositiveInfinity(x)
                 TVectorDouble temp = zeroMask
-                                   | lessThanZeroMask
-                                   | Unsafe.BitCast<TVectorInt64, TVectorDouble>(TVectorInt64.GreaterThanOrEqual(xBits, TVectorInt64.Create((long)double.PositiveInfinityBits)));
+                                   | isNegativeMask
+                                   | TVectorDouble.IsNaN(x)
+                                   | TVectorDouble.IsPositiveInfinity(x);
 
                 // subnormal
                 TVectorDouble subnormalMask = TVectorDouble.AndNot(Unsafe.BitCast<TVectorUInt64, TVectorDouble>(specialMask), temp);
@@ -575,21 +594,50 @@ namespace System.Runtime.Intrinsics
             // Compute log(x + 1) using Polynomial approximation
             //      C0 + (r * C1) + (r^2 * C2) + ... + (r^20 * C20)
 
-            TVectorDouble poly = (((r04 * C20)
-                                + ((((r * C19) + TVectorDouble.Create(C18)) * r02)
-                                  + ((r * C17) + TVectorDouble.Create(C16)))) * r16)
-                             + (((((((r * C15) + TVectorDouble.Create(C14)) * r02)
-                                  + ((r * C13) + TVectorDouble.Create(C12))) * r04)
-                                + ((((r * C11) + TVectorDouble.Create(C10)) * r02)
-                                  + ((r * C09) + TVectorDouble.Create(C08)))) * r08)
-                               + (((((r * C07) + TVectorDouble.Create(C06)) * r02)
-                                  + ((r * C05) + TVectorDouble.Create(C04))) * r04)
-                                + ((((r * C03) + TVectorDouble.Create(C02)) * r02) + r);
+            TVectorDouble poly = TVectorDouble.MultiplyAddEstimate(
+                r16,
+                TVectorDouble.MultiplyAddEstimate(
+                    TVectorDouble.Create(C20),
+                    r04,
+                    TVectorDouble.MultiplyAddEstimate(
+                        TVectorDouble.MultiplyAddEstimate(TVectorDouble.Create(C19), r, TVectorDouble.Create(C18)),
+                         r02,
+                         TVectorDouble.MultiplyAddEstimate(TVectorDouble.Create(C17), r, TVectorDouble.Create(C16)))),
+                TVectorDouble.MultiplyAddEstimate(
+                    r08,
+                    TVectorDouble.MultiplyAddEstimate(
+                        r04,
+                        TVectorDouble.MultiplyAddEstimate(
+                            TVectorDouble.MultiplyAddEstimate(TVectorDouble.Create(C15), r, TVectorDouble.Create(C14)),
+                            r02,
+                            TVectorDouble.MultiplyAddEstimate(TVectorDouble.Create(C13), r, TVectorDouble.Create(C12))),
+                        TVectorDouble.MultiplyAddEstimate(
+                            TVectorDouble.MultiplyAddEstimate(TVectorDouble.Create(C11), r, TVectorDouble.Create(C10)),
+                            r02,
+                            TVectorDouble.MultiplyAddEstimate(TVectorDouble.Create(C09), r, TVectorDouble.Create(C08)))),
+                    TVectorDouble.MultiplyAddEstimate(
+                        r04,
+                        TVectorDouble.MultiplyAddEstimate(
+                            TVectorDouble.MultiplyAddEstimate(TVectorDouble.Create(C07), r, TVectorDouble.Create(C06)),
+                            r02,
+                            TVectorDouble.MultiplyAddEstimate(TVectorDouble.Create(C05), r, TVectorDouble.Create(C04))),
+                        TVectorDouble.MultiplyAddEstimate(
+                            TVectorDouble.MultiplyAddEstimate(TVectorDouble.Create(C03), r, TVectorDouble.Create(C02)),
+                            r02,
+                            r
+                        )
+                    )
+                )
+            );
 
             return TVectorDouble.ConditionalSelect(
                 Unsafe.BitCast<TVectorUInt64, TVectorDouble>(specialMask),
                 specialResult,
-                (n * LN2_HEAD) + ((n * LN2_TAIL) + poly)
+                TVectorDouble.MultiplyAddEstimate(
+                    n,
+                    TVectorDouble.Create(LN2_HEAD),
+                    TVectorDouble.MultiplyAddEstimate(n, TVectorDouble.Create(LN2_TAIL), poly)
+                )
             );
         }
 
@@ -657,16 +705,14 @@ namespace System.Runtime.Intrinsics
 
             const float V_LN2 = 0.6931472f;
 
-            const float C0 = 0.0f;
-            const float C1 = 1.0f;
-            const float C2 = -0.5000001f;
-            const float C3 = 0.33332965f;
-            const float C4 = -0.24999046f;
-            const float C5 = 0.20018855f;
-            const float C6 = -0.16700386f;
-            const float C7 = 0.13902695f;
-            const float C8 = -0.1197452f;
-            const float C9 = 0.14401625f;
+            const float C02 = -0.5000001f;
+            const float C03 = +0.33332965f;
+            const float C04 = -0.24999046f;
+            const float C05 = +0.20018855f;
+            const float C06 = -0.16700386f;
+            const float C07 = +0.13902695f;
+            const float C08 = -0.1197452f;
+            const float C09 = +0.14401625f;
             const float C10 = -0.13657966f;
 
             TVectorSingle specialResult = x;
@@ -676,8 +722,17 @@ namespace System.Runtime.Intrinsics
 
             if (specialMask != TVectorUInt32.Zero)
             {
+                // float.IsNegative(x) ? float.NaN : x
+                TVectorSingle isNegativeMask = TVectorSingle.IsNegative(x);
+
+                specialResult = TVectorSingle.ConditionalSelect(
+                    isNegativeMask,
+                    TVectorSingle.Create(float.NaN),
+                    specialResult
+                );
+
                 // float.IsZero(x) ? float.NegativeInfinity : x
-                TVectorSingle zeroMask = TVectorSingle.Equals(x, TVectorSingle.Zero);
+                TVectorSingle zeroMask = TVectorSingle.IsZero(x);
 
                 specialResult = TVectorSingle.ConditionalSelect(
                     zeroMask,
@@ -685,20 +740,11 @@ namespace System.Runtime.Intrinsics
                     specialResult
                 );
 
-                // (x < 0) ? float.NaN : x
-                TVectorSingle lessThanZeroMask = TVectorSingle.LessThan(x, TVectorSingle.Zero);
-
-                specialResult = TVectorSingle.ConditionalSelect(
-                    lessThanZeroMask,
-                    TVectorSingle.Create(float.NaN),
-                    specialResult
-                );
-
-                // float.IsZero(x) | (x < 0) | float.IsNaN(x) | float.IsPositiveInfinity(x)
+                // float.IsZero(x) | float.IsNegative(x) | float.IsNaN(x) | float.IsPositiveInfinity(x)
                 TVectorSingle temp = zeroMask
-                                   | lessThanZeroMask
-                                   | ~TVectorSingle.Equals(x, x)
-                                   | TVectorSingle.Equals(x, TVectorSingle.Create(float.PositiveInfinity));
+                                   | isNegativeMask
+                                   | TVectorSingle.IsNaN(x)
+                                   | TVectorSingle.IsPositiveInfinity(x);
 
                 // subnormal
                 TVectorSingle subnormalMask = TVectorSingle.AndNot(Unsafe.BitCast<TVectorUInt32, TVectorSingle>(specialMask), temp);
@@ -723,16 +769,30 @@ namespace System.Runtime.Intrinsics
             TVectorSingle r4 = r2 * r2;
             TVectorSingle r8 = r4 * r4;
 
-            TVectorSingle q = (TVectorSingle.Create(C10) * r2 + (TVectorSingle.Create(C9) * r + TVectorSingle.Create(C8)))
-                                                       * r8 + (((TVectorSingle.Create(C7) * r + TVectorSingle.Create(C6))
-                                                         * r2 + (TVectorSingle.Create(C5) * r + TVectorSingle.Create(C4)))
-                                                        * r4 + ((TVectorSingle.Create(C3) * r + TVectorSingle.Create(C2))
-                                                         * r2 + (TVectorSingle.Create(C1) * r + TVectorSingle.Create(C0))));
+            TVectorSingle q = TVectorSingle.MultiplyAddEstimate(
+                TVectorSingle.MultiplyAddEstimate(
+                    r2,
+                    TVectorSingle.Create(C10),
+                    TVectorSingle.MultiplyAddEstimate(TVectorSingle.Create(C09), r, TVectorSingle.Create(C08))),
+                r8,
+                TVectorSingle.MultiplyAddEstimate(
+                    TVectorSingle.MultiplyAddEstimate(
+                        TVectorSingle.MultiplyAddEstimate(TVectorSingle.Create(C07), r, TVectorSingle.Create(C06)),
+                        r2,
+                        TVectorSingle.MultiplyAddEstimate(TVectorSingle.Create(C05), r, TVectorSingle.Create(C04))),
+                    r4,
+                    TVectorSingle.MultiplyAddEstimate(
+                        TVectorSingle.MultiplyAddEstimate(TVectorSingle.Create(C03), r, TVectorSingle.Create(C02)),
+                        r2,
+                        r
+                    )
+                )
+            );
 
             return TVectorSingle.ConditionalSelect(
                 Unsafe.BitCast<TVectorUInt32, TVectorSingle>(specialMask),
                 specialResult,
-                n * TVectorSingle.Create(V_LN2) + q
+                TVectorSingle.MultiplyAddEstimate(n, TVectorSingle.Create(V_LN2), q)
             );
         }
 
@@ -801,19 +861,17 @@ namespace System.Runtime.Intrinsics
 
             if (specialMask != TVectorUInt64.Zero)
             {
-                TVectorInt64 xBits = Unsafe.BitCast<TVectorDouble, TVectorInt64>(x);
-
-                // (x < 0) ? float.NaN : x
-                TVectorDouble lessThanZeroMask = Unsafe.BitCast<TVectorInt64, TVectorDouble>(TVectorInt64.LessThan(xBits, TVectorInt64.Zero));
+                // double.IsNegative(x) ? double.NaN : x
+                TVectorDouble isNegativeMask = TVectorDouble.IsNegative(x);
 
                 specialResult = TVectorDouble.ConditionalSelect(
-                    lessThanZeroMask,
+                    isNegativeMask,
                     TVectorDouble.Create(double.NaN),
                     specialResult
                 );
 
                 // double.IsZero(x) ? double.NegativeInfinity : x
-                TVectorDouble zeroMask = Unsafe.BitCast<TVectorInt64, TVectorDouble>(TVectorInt64.Equals(xBits << 1, TVectorInt64.Zero));
+                TVectorDouble zeroMask = TVectorDouble.IsZero(x);
 
                 specialResult = TVectorDouble.ConditionalSelect(
                     zeroMask,
@@ -821,10 +879,11 @@ namespace System.Runtime.Intrinsics
                     specialResult
                 );
 
-                // double.IsZero(x) | (x < 0) | double.IsNaN(x) | double.IsPositiveInfinity(x)
+                // double.IsZero(x) | double.IsNegative(x) | double.IsNaN(x) | double.IsPositiveInfinity(x)
                 TVectorDouble temp = zeroMask
-                                   | lessThanZeroMask
-                                   | Unsafe.BitCast<TVectorInt64, TVectorDouble>(TVectorInt64.GreaterThanOrEqual(xBits, TVectorInt64.Create((long)double.PositiveInfinityBits)));
+                                   | isNegativeMask
+                                   | TVectorDouble.IsNaN(x)
+                                   | TVectorDouble.IsPositiveInfinity(x);
 
                 // subnormal
                 TVectorDouble subnormalMask = TVectorDouble.AndNot(Unsafe.BitCast<TVectorUInt64, TVectorDouble>(specialMask), temp);
@@ -855,21 +914,50 @@ namespace System.Runtime.Intrinsics
             // Compute log(x + 1) using polynomial approximation
             //      C0 + (r * C1) + (r^2 * C2) + ... + (r^20 * C20)
 
-            TVectorDouble poly = (((r04 * C20)
-                                + ((((r * C19) + TVectorDouble.Create(C18)) * r02)
-                                  + ((r * C17) + TVectorDouble.Create(C16)))) * r16)
-                             + (((((((r * C15) + TVectorDouble.Create(C14)) * r02)
-                                  + ((r * C13) + TVectorDouble.Create(C12))) * r04)
-                                + ((((r * C11) + TVectorDouble.Create(C10)) * r02)
-                                  + ((r * C09) + TVectorDouble.Create(C08)))) * r08)
-                               + (((((r * C07) + TVectorDouble.Create(C06)) * r02)
-                                  + ((r * C05) + TVectorDouble.Create(C04))) * r04)
-                                + ((((r * C03) + TVectorDouble.Create(C02)) * r02) + r);
+            TVectorDouble poly = TVectorDouble.MultiplyAddEstimate(
+                r16,
+                TVectorDouble.MultiplyAddEstimate(
+                    TVectorDouble.Create(C20),
+                    r04,
+                    TVectorDouble.MultiplyAddEstimate(
+                        TVectorDouble.MultiplyAddEstimate(TVectorDouble.Create(C19), r, TVectorDouble.Create(C18)),
+                         r02,
+                         TVectorDouble.MultiplyAddEstimate(TVectorDouble.Create(C17), r, TVectorDouble.Create(C16)))),
+                TVectorDouble.MultiplyAddEstimate(
+                    r08,
+                    TVectorDouble.MultiplyAddEstimate(
+                        r04,
+                        TVectorDouble.MultiplyAddEstimate(
+                            TVectorDouble.MultiplyAddEstimate(TVectorDouble.Create(C15), r, TVectorDouble.Create(C14)),
+                            r02,
+                            TVectorDouble.MultiplyAddEstimate(TVectorDouble.Create(C13), r, TVectorDouble.Create(C12))),
+                        TVectorDouble.MultiplyAddEstimate(
+                            TVectorDouble.MultiplyAddEstimate(TVectorDouble.Create(C11), r, TVectorDouble.Create(C10)),
+                            r02,
+                            TVectorDouble.MultiplyAddEstimate(TVectorDouble.Create(C09), r, TVectorDouble.Create(C08)))),
+                    TVectorDouble.MultiplyAddEstimate(
+                        r04,
+                        TVectorDouble.MultiplyAddEstimate(
+                            TVectorDouble.MultiplyAddEstimate(TVectorDouble.Create(C07), r, TVectorDouble.Create(C06)),
+                            r02,
+                            TVectorDouble.MultiplyAddEstimate(TVectorDouble.Create(C05), r, TVectorDouble.Create(C04))),
+                        TVectorDouble.MultiplyAddEstimate(
+                            TVectorDouble.MultiplyAddEstimate(TVectorDouble.Create(C03), r, TVectorDouble.Create(C02)),
+                            r02,
+                            r
+                        )
+                    )
+                )
+            );
 
             return TVectorDouble.ConditionalSelect(
                 Unsafe.BitCast<TVectorUInt64, TVectorDouble>(specialMask),
                 specialResult,
-                (poly * LN2_HEAD) + ((poly * LN2_TAIL) + n)
+                TVectorDouble.MultiplyAddEstimate(
+                    poly,
+                    TVectorDouble.Create(LN2_HEAD),
+                    TVectorDouble.MultiplyAddEstimate(poly, TVectorDouble.Create(LN2_TAIL), n)
+                )
             );
         }
 
@@ -950,19 +1038,17 @@ namespace System.Runtime.Intrinsics
 
             if (specialMask != TVectorUInt32.Zero)
             {
-                TVectorInt32 xBits = Unsafe.BitCast<TVectorSingle, TVectorInt32>(x);
-
-                // (x < 0) ? float.NaN : x
-                TVectorSingle lessThanZeroMask = Unsafe.BitCast<TVectorInt32, TVectorSingle>(TVectorInt32.LessThan(xBits, TVectorInt32.Zero));
+                // float.IsNegative(x) ? float.NaN : x
+                TVectorSingle isNegativeMask = TVectorSingle.IsNegative(x);
 
                 specialResult = TVectorSingle.ConditionalSelect(
-                    lessThanZeroMask,
+                    isNegativeMask,
                     TVectorSingle.Create(float.NaN),
                     specialResult
                 );
 
                 // float.IsZero(x) ? float.NegativeInfinity : x
-                TVectorSingle zeroMask = Unsafe.BitCast<TVectorInt32, TVectorSingle>(TVectorInt32.Equals(xBits << 1, TVectorInt32.Zero));
+                TVectorSingle zeroMask = TVectorSingle.IsZero(x);
 
                 specialResult = TVectorSingle.ConditionalSelect(
                     zeroMask,
@@ -970,10 +1056,11 @@ namespace System.Runtime.Intrinsics
                     specialResult
                 );
 
-                // (x < 0) | float.IsZero(x) | float.IsNaN(x) | float.IsPositiveInfinity(x)
+                // float.IsZero(x) | float.IsNegative(x) | float.IsNaN(x) | float.IsPositiveInfinity(x)
                 TVectorSingle temp = zeroMask
-                                   | lessThanZeroMask
-                                   | Unsafe.BitCast<TVectorInt32, TVectorSingle>(TVectorInt32.GreaterThanOrEqual(xBits, TVectorInt32.Create((int)float.PositiveInfinityBits)));
+                                   | isNegativeMask
+                                   | TVectorSingle.IsNaN(x)
+                                   | TVectorSingle.IsPositiveInfinity(x);
 
                 // subnormal
                 TVectorSingle subnormalMask = TVectorSingle.AndNot(Unsafe.BitCast<TVectorUInt32, TVectorSingle>(specialMask), temp);
@@ -1003,11 +1090,22 @@ namespace System.Runtime.Intrinsics
             TVectorSingle r4 = r2 * r2;
             TVectorSingle r8 = r4 * r4;
 
-            TVectorSingle poly = (((TVectorSingle.Create(C9) * r) + TVectorSingle.Create(C8)) * r8)
-                            + ((((((TVectorSingle.Create(C7) * r) + TVectorSingle.Create(C6)) * r2)
-                                + ((TVectorSingle.Create(C5) * r) + TVectorSingle.Create(C4))) * r4)
-                              + ((((TVectorSingle.Create(C3) * r) + TVectorSingle.Create(C2)) * r2)
-                                 + (TVectorSingle.Create(C1) * r)));
+            TVectorSingle poly = TVectorSingle.MultiplyAddEstimate(
+                TVectorSingle.MultiplyAddEstimate(TVectorSingle.Create(C9), r, TVectorSingle.Create(C8)),
+                r8,
+                TVectorSingle.MultiplyAddEstimate(
+                    TVectorSingle.MultiplyAddEstimate(
+                        TVectorSingle.MultiplyAddEstimate(TVectorSingle.Create(C7), r, TVectorSingle.Create(C6)),
+                        r2,
+                        TVectorSingle.MultiplyAddEstimate(TVectorSingle.Create(C5), r, TVectorSingle.Create(C4))),
+                    r4,
+                    TVectorSingle.MultiplyAddEstimate(
+                        TVectorSingle.MultiplyAddEstimate(TVectorSingle.Create(C3), r, TVectorSingle.Create(C2)),
+                        r2,
+                        TVectorSingle.Create(C1) * r
+                    )
+                )
+            );
 
             return TVectorSingle.ConditionalSelect(
                 Unsafe.BitCast<TVectorUInt32, TVectorSingle>(specialMask),
