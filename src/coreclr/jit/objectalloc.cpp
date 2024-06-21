@@ -36,14 +36,24 @@ PhaseStatus ObjectAllocator::DoPhase()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
-    if (IsObjectStackAllocationEnabled())
+    bool enabled = IsObjectStackAllocationEnabled();
+
+#ifdef DEBUG
+    static ConfigMethodRange JitObjectStackAllocationRange;
+    JitObjectStackAllocationRange.EnsureInit(JitConfig.JitObjectStackAllocationRange());
+    const unsigned hash = comp->info.compMethodHash();
+    enabled &= JitObjectStackAllocationRange.Contains(hash);
+#endif
+
+    if (enabled)
     {
         JITDUMP("enabled, analyzing...\n");
         DoAnalysis();
     }
     else
     {
-        JITDUMP("disabled, punting\n");
+        JITDUMP("disabled%s, punting\n", IsObjectStackAllocationEnabled() ? " by range config" : "");
+        m_IsObjectStackAllocationEnabled = false;
     }
 
     const bool didStackAllocate = MorphAllocObjNodes();
@@ -431,10 +441,10 @@ bool ObjectAllocator::MorphAllocObjNodes()
                 {
                     JITDUMP("Allocating V%02u on the stack\n", lclNum);
                     canStack = true;
-                    // #ifdef DEBUG
-                    //                     printf("@@@ SA V%02u (%s) in %s\n", lclNum, comp->eeGetClassName(clsHnd),
-                    //                     comp->info.compFullName);
-                    // #endif
+#ifdef DEBUG
+                    // printf("@@@ SA V%02u (%s) in %s (0x%08x)\n", lclNum, comp->eeGetClassName(clsHnd),
+                    //        comp->info.compFullName, comp->info.compMethodHash());
+#endif
 
                     const unsigned int stackLclNum =
                         MorphAllocObjNodeIntoStackAlloc(asAllocObj, stackClsHnd, isValueClass, block, stmt);

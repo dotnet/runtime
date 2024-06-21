@@ -2360,7 +2360,7 @@ HCIMPL2(void, JIT_Unbox_TypeTest, CORINFO_CLASS_HANDLE type, CORINFO_CLASS_HANDL
 
     // Fall back to a framed helper that can also handle GC suspension and type equivalence.
     ENDFORBIDGC();
-    HCCALL2(JIT_Unbox_TypeTest_Framed, pMT1, pMT1);
+    HCCALL2(JIT_Unbox_TypeTest_Framed, pMT1, pMT2);
 }
 HCIMPLEND
 
