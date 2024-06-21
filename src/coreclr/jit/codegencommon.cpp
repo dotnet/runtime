@@ -3171,8 +3171,11 @@ var_types CodeGen::genParamStackType(LclVarDsc* dsc, const ABIPassingSegment& se
             // use stp more often.
             return TYP_I_IMPL;
 #elif defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
-            // On RISC-V/LoongArch struct { struct{} e1,e2,e3; byte b; float f; } is passed in 2 registers so the
-            // load/store instruction for 'b' needs to be exact in size or it will overlap 'f'.
+            // On RISC-V/LoongArch structs passed according to floating-point calling convention are enregistered one
+            // field per register regardless of the layout of the fields in memory, so the small int load/store
+            // instructions must not be upsized to 4 bytes, otherwise for example:
+            // * struct { struct{} e1,e2,e3; byte b; float f; } -- 4-byte store for 'b' would trash 'f'
+            // * struct { float f; struct{} e1,e2,e3; byte b; } -- 4-byte store for 'b' would trash adjacent stack slot
             return seg.GetRegisterType();
 #else
             return genActualType(seg.GetRegisterType());
