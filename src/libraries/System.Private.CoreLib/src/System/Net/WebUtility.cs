@@ -282,9 +282,7 @@ namespace System.Net
                 char ch = input[i];
                 if (ch <= '>')
                 {
-                    // Matches any of <>&'"
-                    uint charMinusLowUInt32 = (ushort)(ch - '"');
-                    if ((int)((0x8C000028U << (short)charMinusLowUInt32) & (charMinusLowUInt32 - 32)) < 0)
+                    if (ch == '<' || ch == '>' || ch == '"' || ch == '\'' || ch == '&')
                     {
                         return i;
                     }
