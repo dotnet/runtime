@@ -258,14 +258,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             Span<byte> needle = stackalloc byte[] { 0x2D, 0x2D, 0x2D, 0x2D, 0x2D };
             int offset = data.AsSpan().IndexOf(needle);
 
-#if NET
             // The macOS PEM loader seems to be rejecting the trailing data.
             if (OperatingSystem.IsMacOS())
             {
                 Assert.ThrowsAny<CryptographicException>(() => LoadCertificateAtOffset(data, offset));
                 return;
             }
-#endif
 
             using (X509Certificate2 cert = LoadCertificateAtOffset(data, offset))
             {
@@ -310,14 +308,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             byte[] data = System.Text.Encoding.ASCII.GetBytes(
                 ByteUtils.PemEncode("CERTIFICATE", source));
 
-#if NET
             // OpenSSL is being more strict here than other platforms.
             if (OperatingSystem.IsLinux())
             {
                 Assert.Throws<CryptographicException>(() => LoadCertificateNoFile(data));
                 return;
             }
-#endif
 
             using (X509Certificate2 cert = LoadCertificateNoFile(data))
             {

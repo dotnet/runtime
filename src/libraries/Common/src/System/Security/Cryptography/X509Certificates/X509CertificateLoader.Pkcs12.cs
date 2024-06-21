@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Formats.Asn1;
 using System.Security.Cryptography.Asn1;
@@ -389,47 +388,6 @@ namespace System.Security.Cryptography.X509Certificates
                             // Array.Resize
                             bag.BagAttributes[attrIdx] = attr;
 #endif
-                        }
-                    }
-                }
-
-                {
-                    // Look for duplicates in any attributes that were accepted by the filter.
-                    // For known-values-only (the default), the limit is 3 for keys and 2 for certs.
-                    //
-                    // Allowing for a minimal amount of unknown attributes to be preserved, we can
-                    // no-alloc check for duplicates with the N^2 algorithm, and use HashSet for
-                    // degenerate cases.
-                    const int NoAllocComparisonLimit = 5;
-
-                    if (attrIdx <= 0)
-                    {
-                        // -1: No attributes, no duplicates.
-                        // 0: One attribute, no duplicates
-                    }
-                    else if (attrIdx < NoAllocComparisonLimit)
-                    {
-                        for (int i = attrIdx; i >= 0; i--)
-                        {
-                            for (int j = i - 1; j >= 0; j--)
-                            {
-                                if (bag.BagAttributes[i].AttrType == bag.BagAttributes[j].AttrType)
-                                {
-                                    ThrowWithHResult(SR.Cryptography_Der_Invalid_Encoding, CRYPT_E_BAD_DECODE);
-                                }
-                            }
-                        }
-                    }
-                    else
-                    {
-                        HashSet<string> dedup = new HashSet<string>();
-
-                        for (int i = attrIdx; i >= 0; i--)
-                        {
-                            if (!dedup.Add(bag.BagAttributes[i].AttrType))
-                            {
-                                ThrowWithHResult(SR.Cryptography_Der_Invalid_Encoding, CRYPT_E_BAD_DECODE);
-                            }
                         }
                     }
                 }
