@@ -3,7 +3,6 @@
   <PropertyGroup>
     <LibrariesConfiguration>Release</LibrariesConfiguration>
     <InstallV8ForTests>false</InstallV8ForTests>
-    <LinkerFlavor Condition="'$(CrossBuild)' == 'true' and '$(TargetsLinux)' == 'true'">lld</LinkerFlavor>
   </PropertyGroup>
 
   <Import Project="$(MSBuildThisFileDirectory)\Common\dir.sdkbuild.props" Condition="'$(UsingMicrosoftNETSdk)' == 'true'"  />
