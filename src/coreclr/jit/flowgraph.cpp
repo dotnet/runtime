@@ -6004,13 +6004,10 @@ bool NaturalLoopIterInfo::ArrLenLimit(Compiler* comp, ArrIndex* index)
 //   finger2 - A basic block that might share IDom ancestor with finger1.
 //
 // Returns:
-//   A basic block whose IDom is the dominator for finger1 and finger2, or else
-//   nullptr. This may be called while immediate dominators are being computed,
-//   and if the input values are members of the same loop (each reachable from
-//   the other), then one may not yet have its immediate dominator computed
-//   when we are attempting to find the immediate dominator of the other. So a
-//   nullptr return value means that the the two inputs are in a cycle, not
-//   that they don't have a common dominator ancestor.
+//   A basic block that is the dominator for finger1 and finger2. This can be
+//   called while the dominator tree is still being computed, in which case the
+//   returned result may not be the "latest" such dominator (but will converge
+//   towards it with more iterations over the basic blocks).
 //
 // Remarks:
 //   See "A simple, fast dominance algorithm" by Keith D. Cooper, Timothy J.
