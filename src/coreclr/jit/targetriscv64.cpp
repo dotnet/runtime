@@ -130,9 +130,8 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
             regNumber firstReg  = (isFirstFloat ? m_floatRegs : m_intRegs).Dequeue();
             regNumber secondReg = (isSecondFloat ? m_floatRegs : m_intRegs).Dequeue();
 
-            return {2, new (comp, CMK_ABI)
-                           ABIPassingSegment[2]{ABIPassingSegment::InRegister(firstReg, 0, firstSize),
-                                                ABIPassingSegment::InRegister(secondReg, offset, secondSize)}};
+            return ABIPassingInformation::FromSegments(comp, ABIPassingSegment::InRegister(firstReg, 0, firstSize),
+                                                       ABIPassingSegment::InRegister(secondReg, offset, secondSize));
         }
     }
     else
@@ -164,7 +163,7 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
                     (m_intRegs.Count() > 0)
                         ? ABIPassingSegment::InRegister(m_intRegs.Dequeue(), TARGET_POINTER_SIZE, tailSize)
                         : passOnStack(TARGET_POINTER_SIZE, tailSize);
-                return {2, new (comp, CMK_ABI) ABIPassingSegment[2]{head, tail}};
+                return ABIPassingInformation::FromSegments(comp, head, tail);
             }
         }
         else

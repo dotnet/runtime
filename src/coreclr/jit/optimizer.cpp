@@ -3320,10 +3320,7 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
                 if (doit)
                 {
                     tree->BashToConst(static_cast<int32_t>(lval));
-                    if (vnStore != nullptr)
-                    {
-                        fgValueNumberTreeConst(tree);
-                    }
+                    fgUpdateConstTreeValueNumber(tree);
                 }
 
                 return true;
@@ -3372,10 +3369,8 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
                 {
                     tree->gtType                = TYP_INT;
                     tree->AsIntCon()->gtIconVal = (int)ival;
-                    if (vnStore != nullptr)
-                    {
-                        fgValueNumberTreeConst(tree);
-                    }
+
+                    fgUpdateConstTreeValueNumber(tree);
                 }
 #endif // TARGET_64BIT
 
