@@ -387,7 +387,8 @@ namespace System.Globalization
                         {
                             break;
                         }
-                        for (i++; i < icuFormatString.Length; i++)
+                        i++;
+                        for (; i < icuFormatString.Length; i++)
                         {
                             current = icuFormatString[i];
                             if (current == '\'')

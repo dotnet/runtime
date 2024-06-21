@@ -276,7 +276,8 @@ namespace System.Globalization.Tests
                         case 't': useAMPM = true; break;
                         case '\\': i++; break;
                         case '\'':
-                            for (i++; i < pattern.Length; i++)
+                            i++;
+                            for (; i < pattern.Length; i++)
                             {
                                 var c = pattern[i];
                                 if (c == '\'') break;
