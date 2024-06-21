@@ -26,14 +26,6 @@ namespace System.Text.Json
             bool createExtensionProperty = true)
         {
             JsonTypeInfo jsonTypeInfo = state.Current.JsonTypeInfo;
-#if DEBUG
-            if (jsonTypeInfo.Kind != JsonTypeInfoKind.Object)
-            {
-                string objTypeName = obj?.GetType().FullName ?? "<null>";
-                Debug.Fail($"obj.GetType() => {objTypeName}; {jsonTypeInfo.GetPropertyDebugInfo(unescapedPropertyName)}");
-            }
-#endif
-
             useExtensionProperty = false;
 
             JsonPropertyInfo jsonPropertyInfo = jsonTypeInfo.GetProperty(

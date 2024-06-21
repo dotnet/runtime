@@ -37,7 +37,7 @@
     <ILLinkRewritePDBs Condition="'$(ILLinkRewritePDBs)' == ''">true</ILLinkRewritePDBs>
 
     <ILLinkResourcesSubstitutionIntermediatePath>$(IntermediateOutputPath)ILLink.Resources.Substitutions.xml</ILLinkResourcesSubstitutionIntermediatePath>
-    <GenerateResourcesSubstitutions Condition="'$(GenerateResourcesSubstitutions)' == '' and '$(StringResourcesPath)' != ''">true</GenerateResourcesSubstitutions>
+    <GenerateResourcesSubstitutions Condition="'$(GenerateResourcesSubstitutions)' == '' and '$(StringResourcesPath)' != '' and '$(OmitResources)' != 'true'">true</GenerateResourcesSubstitutions>
   </PropertyGroup>
 
    <ItemGroup>

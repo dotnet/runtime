@@ -1062,9 +1062,9 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
     m_b2->CopyFlags(m_b1, BBF_COPY_PROPAGATE);
 
     // Join the two blocks. This is done now to ensure that additional conditions can be chained.
-    if (m_b1->NextIs(m_b2) && m_comp->fgCanCompactBlocks(m_b1, m_b2))
+    if (m_comp->fgCanCompactBlock(m_b1))
     {
-        m_comp->fgCompactBlocks(m_b1, m_b2);
+        m_comp->fgCompactBlock(m_b1);
     }
 
 #ifdef DEBUG

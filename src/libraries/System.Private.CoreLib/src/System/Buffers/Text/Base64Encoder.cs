@@ -509,7 +509,7 @@ namespace System.Buffers.Text
             {
                 // Load 48 bytes and deinterleave:
                 AssertRead<Vector128<byte>>(src, srcStart, sourceLength);
-                (str1, str2, str3) = AdvSimd.Arm64.LoadVector128x3AndUnzip(src);
+                (str1, str2, str3) = AdvSimd.Arm64.Load3xVector128AndUnzip(src);
 
                 // Divide bits of three input bytes over four output bytes:
                 res1 = AdvSimd.ShiftRightLogical(str1, 2);
@@ -802,7 +802,7 @@ namespace System.Buffers.Text
                 Vector128<byte> res1, Vector128<byte> res2, Vector128<byte> res3, Vector128<byte> res4)
             {
                 AssertWrite<Vector128<byte>>(dest, destStart, destLength);
-                AdvSimd.Arm64.StoreVector128x4AndZip(dest, (res1, res2, res3, res4));
+                AdvSimd.Arm64.StoreVectorAndZip(dest, (res1, res2, res3, res4));
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]

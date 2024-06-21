@@ -1598,6 +1598,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                     case NI_Sve_GatherVectorUInt16ZeroExtend:
                     case NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtend:
                     case NI_Sve_GatherVectorUInt32ZeroExtend:
+                    case NI_Sve_GatherVectorWithByteOffsets:
                         assert(varTypeIsSIMD(op3->TypeGet()));
                         retNode->AsHWIntrinsic()->SetAuxiliaryJitType(getBaseJitTypeOfSIMDType(sigReader.op3ClsHnd));
                         break;
