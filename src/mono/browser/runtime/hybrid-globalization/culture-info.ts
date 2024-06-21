@@ -13,6 +13,7 @@ const PREFIX_12H = "hh";
 const SECONDS_CODE = "ss";
 const MINUTES_CODE = "mm";
 const DESIGNATOR_CODE = "tt";
+const keyWords = [SECONDS_CODE, MINUTES_CODE, DESIGNATOR_CODE, PREFIX_24H];
 
 export function mono_wasm_get_culture_info (culture: number, cultureLength: number, dst: number, dstMaxLength: number, dstLength: Int32Ptr): VoidPtr {
     try {
@@ -125,8 +126,7 @@ function getShortTimePattern (pattern: string): string {
 // problem with "h" that can be both hour code and a fixed (quoted) part of the format
 // workaround for "fr-CA" by preventing quoting of "HH"
 function wrapSubstrings (str: string) {
-    const keyWords = [SECONDS_CODE, MINUTES_CODE, DESIGNATOR_CODE, PREFIX_24H];
-    const words = str.split(" ");
+    const words = str.split(/\s+/);
 
     for (let i = 0; i < words.length; i++) {
         if (!words[i].includes(":") && !words[i].includes(".") && !keyWords.includes(words[i])) {

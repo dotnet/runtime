@@ -2,7 +2,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/* eslint-disable no-inner-declarations */
 import { VoidPtrNull } from "../types/internal";
 import { runtimeHelpers } from "./module-exports";
 import { Int32Ptr, VoidPtr } from "../types/emscripten";
@@ -12,6 +11,7 @@ const MONTH_CODE = "MMMM";
 const YEAR_CODE = "yyyy";
 const DAY_CODE = "d";
 const WEEKDAY_CODE = "dddd";
+const keyWords = [MONTH_CODE, YEAR_CODE, DAY_CODE, WEEKDAY_CODE];
 
 // this function joins all calendar info with OUTER_SEPARATOR into one string and returns it back to managed code
 export function mono_wasm_get_calendar_info (culture: number, cultureLength: number, calendarId: number, dst: number, dstMaxLength: number, dstLength: Int32Ptr): VoidPtr {
@@ -333,14 +333,13 @@ function getEraNames (date: Date, locale: string | undefined, calendarId: number
 // wraps all substrings in the format in quotes, except for key words
 // transform e.g. "dddd, d MMMM yyyy г." into "dddd, d MMMM yyyy 'г'."
 function wrapSubstrings (str: string, locale: string | undefined) {
-    const words = str.split(" ");
+    const words = str.split(/\s+/);
     // locales that write date nearly without spaces should not have format parts quoted - "ja", "zh"
     // "ko" format parts should not be quoted but processing it would overcomplicate the logic
     if (words.length <= 2 || locale?.startsWith("ko")) {
         return str;
     }
 
-    const keyWords = [MONTH_CODE, YEAR_CODE, DAY_CODE, WEEKDAY_CODE];
     for (let i = 0; i < words.length; i++) {
         if (!keyWords.includes(words[i].replace(",", "")) &&
             !keyWords.includes(words[i].replace(".", "")) &&
