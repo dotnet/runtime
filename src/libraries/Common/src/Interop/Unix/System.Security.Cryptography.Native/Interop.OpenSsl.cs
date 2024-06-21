@@ -160,7 +160,6 @@ internal static partial class Interop
             if (sslAuthenticationOptions.IsClient)
             {
                 var key = new SslContextCacheKey(protocols, sslAuthenticationOptions.CertificateContext?.TargetCertificate.GetCertHash(HashAlgorithmName.SHA256));
-
                 return s_clientSslContexts.GetOrCreate(key, static (args) =>
                 {
                     var (sslAuthOptions, protocols, allowCached) = args;
@@ -173,14 +172,13 @@ internal static partial class Interop
 
             bool hasAlpn = sslAuthenticationOptions.ApplicationProtocols != null && sslAuthenticationOptions.ApplicationProtocols.Count != 0;
 
-            SafeSslContextHandle? handle = AllocateSslContext(sslAuthenticationOptions, protocols, allowCached);
-
-            if (!sslAuthenticationOptions.CertificateContext!.SslContexts!.TryGetValue(protocols | (hasAlpn ? FakeAlpnSslProtocol : SslProtocols.None), out handle))
+            SslProtocols serverCacheKey = protocols | (hasAlpn ? FakeAlpnSslProtocol : SslProtocols.None);
+            if (!sslAuthenticationOptions.CertificateContext!.SslContexts!.TryGetValue(serverCacheKey, out SafeSslContextHandle? handle))
             {
                 // not found in cache, create and insert
                 handle = AllocateSslContext(sslAuthenticationOptions, protocols, allowCached);
 
-                SafeSslContextHandle cached = sslAuthenticationOptions.CertificateContext!.SslContexts!.GetOrAdd(protocols | (hasAlpn ? FakeAlpnSslProtocol : SslProtocols.None), handle);
+                SafeSslContextHandle cached = sslAuthenticationOptions.CertificateContext!.SslContexts!.GetOrAdd(serverCacheKey, handle);
 
                 if (handle != cached)
                 {

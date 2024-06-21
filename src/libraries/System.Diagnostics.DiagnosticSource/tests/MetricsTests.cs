@@ -3,7 +3,6 @@
 
 using Microsoft.DotNet.RemoteExecutor;
 using System.Collections.Generic;
-using System.Diagnostics.Metrics;
 using System.Diagnostics.Tests;
 using System.Linq;
 using System.Threading;
@@ -1686,6 +1685,26 @@ namespace System.Diagnostics.Metrics.Tests
                     Assert.True(string.Compare(insArray[i].Key, insArray[i + 1].Key, StringComparison.Ordinal) <= 0);
                 }
             }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestHistogramCreationWithAdvice()
+        {
+           RemoteExecutor.Invoke(() =>
+           {
+               using Meter meter = new Meter(nameof(TestHistogramCreationWithAdvice));
+
+               Histogram<int> histogramWithoutAdvice = meter.CreateHistogram<int>(name: nameof(histogramWithoutAdvice));
+
+               Assert.Null(histogramWithoutAdvice.Advice);
+
+               int[] explicitBucketBoundaries = new int[] { 0, 100, 1000, 10000 };
+
+               Histogram<int> histogramWithAdvice = meter.CreateHistogram<int>(name: nameof(histogramWithAdvice), advice: new InstrumentAdvice<int> { HistogramBucketBoundaries = explicitBucketBoundaries });
+
+               Assert.NotNull(histogramWithAdvice.Advice?.HistogramBucketBoundaries);
+               Assert.Equal(explicitBucketBoundaries, histogramWithAdvice.Advice.HistogramBucketBoundaries);
+           }).Dispose();
         }
 
         private void PublishCounterMeasurement<T>(Counter<T> counter, T value, KeyValuePair<string, object?>[] tags) where T : struct

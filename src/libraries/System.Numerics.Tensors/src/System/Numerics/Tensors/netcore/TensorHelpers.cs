@@ -17,7 +17,7 @@ namespace System.Numerics.Tensors
         /// <returns>How many boolean values are true.</returns>
         public static nint CountTrueElements(scoped in ReadOnlyTensorSpan<bool> filter)
         {
-            Span<bool> filterSpan = MemoryMarshal.CreateSpan(ref filter._reference, (int)filter._flattenedLength);
+            Span<bool> filterSpan = MemoryMarshal.CreateSpan(ref filter._reference, (int)filter._shape._memoryLength);
             nint count = 0;
             for (int i = 0; i < filterSpan.Length; i++)
             {
@@ -83,11 +83,14 @@ namespace System.Numerics.Tensors
             return newShape;
         }
 
-        internal static bool IsUnderlyingStorageSameSize<T>(Tensor<T> tensor1, Tensor<T> tensor2)
-            => tensor1.Lengths.Length == tensor2.Lengths.Length;
+        internal static bool IsUnderlyingStorageSameSize<T>(scoped in ReadOnlyTensorSpan<T> tensor1, scoped in ReadOnlyTensorSpan<T> tensor2)
+            => tensor1._shape._memoryLength == tensor2._shape._memoryLength;
 
-        internal static bool AreLengthsTheSame<T>(ReadOnlyTensorSpan<T> tensor1, ReadOnlyTensorSpan<T> tensor2)
-            => tensor1._lengths.SequenceEqual(tensor2._lengths);
+        internal static bool IsUnderlyingStorageSameSize<T>(Tensor<T> tensor1, Tensor<T> tensor2)
+    => tensor1._values.Length == tensor2._values.Length;
+
+        internal static bool AreLengthsTheSame<T>(scoped in ReadOnlyTensorSpan<T> tensor1, scoped in ReadOnlyTensorSpan<T> tensor2)
+            => tensor1.Lengths.SequenceEqual(tensor2.Lengths);
 
         internal static bool AreLengthsTheSame(ReadOnlySpan<nint> lengths1, ReadOnlySpan<nint> lengths2)
             => lengths1.SequenceEqual(lengths2);
