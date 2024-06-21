@@ -680,18 +680,36 @@ class LiveVarAnalysis
         } while (changed && dfsTree->HasCycle());
 
         // If we had unremovable blocks that are not in the DFS tree then make
-        // 'this' alive in them if we need to keep it alive.
-        // This would normally not be necessary assuming those blocks are
-        // actually unreachable; however, throw helpers fall into this category
-        // because we do not model them correctly, and those will actually end
-        // up reachable. Fix that up here.
-        if (keepAliveThis && (dfsTree->GetPostOrderCount() != m_compiler->fgBBcount))
+        // the 'keepAlive' set live in them. This would normally not be
+        // necessary assuming those blocks are actually unreachable; however,
+        // throw helpers fall into this category because we do not model them
+        // correctly, and those will actually end up reachable. Fix that up
+        // here.
+        if (m_compiler->fgBBcount != dfsTree->GetPostOrderCount())
         {
-            unsigned thisIndex = m_compiler->lvaGetDesc(m_compiler->info.compThisArg)->lvVarIndex;
             for (BasicBlock* block : m_compiler->Blocks())
             {
-                VarSetOps::AddElemD(m_compiler, block->bbLiveIn, thisIndex);
-                VarSetOps::AddElemD(m_compiler, block->bbLiveOut, thisIndex);
+                if (dfsTree->Contains(block))
+                {
+                    continue;
+                }
+
+                VarSetOps::ClearD(m_compiler, block->bbLiveOut);
+                if (keepAliveThis)
+                {
+                    unsigned thisVarIndex = m_compiler->lvaGetDesc(m_compiler->info.compThisArg)->lvVarIndex;
+                    VarSetOps::AddElemD(m_compiler, block->bbLiveOut, thisVarIndex);
+                }
+
+                if (block->HasPotentialEHSuccs(m_compiler))
+                {
+                    block->VisitEHSuccs(m_compiler, [=](BasicBlock* succ) {
+                        VarSetOps::UnionD(m_compiler, block->bbLiveOut, succ->bbLiveIn);
+                        return BasicBlockVisit::Continue;
+                    });
+                }
+
+                VarSetOps::Assign(m_compiler, block->bbLiveIn, block->bbLiveOut);
             }
         }
     }
