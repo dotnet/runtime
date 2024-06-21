@@ -274,6 +274,7 @@ struct MSLAYOUT DacpMethodTableData
 {
     BOOL bIsFree = FALSE; // everything else is NULL if this is true.
     CLRDATA_ADDRESS Module = 0;
+    // Note: DacpMethodTableData::Class is really a pointer to the canonical method table
     CLRDATA_ADDRESS Class = 0;
     CLRDATA_ADDRESS ParentMethodTable = 0;
     WORD wNumInterfaces = 0;

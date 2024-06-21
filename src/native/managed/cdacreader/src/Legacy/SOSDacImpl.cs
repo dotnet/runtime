@@ -86,6 +86,7 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface9
     {
         if (mt == 0 || data == null)
             return HResults.E_INVALIDARG;
+
         try
         {
             Contracts.IMetadata contract = _target.Contracts.Metadata;
@@ -133,6 +134,7 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface9
     {
         if (eeClassReallyCanonMT == 0 || value == null)
             return HResults.E_INVALIDARG;
+
         try
         {
             Contracts.IMetadata contract = _target.Contracts.Metadata;

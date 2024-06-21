@@ -30,7 +30,7 @@ internal struct UntrustedMethodTable_1
         _methodTableFlags = null;
     }
 
-    private Metadata_1.MethodTableFlags EnsureFlags()
+    private Metadata_1.MethodTableFlags GetOrCreateFlags()
     {
         if (_methodTableFlags == null)
         {
@@ -46,7 +46,7 @@ internal struct UntrustedMethodTable_1
         return _methodTableFlags.Value;
     }
 
-    internal Metadata_1.MethodTableFlags Flags => EnsureFlags();
+    internal Metadata_1.MethodTableFlags Flags => GetOrCreateFlags();
 
     internal TargetPointer EEClassOrCanonMT => _target.ReadPointer(Address + (ulong)_type.Fields[nameof(EEClassOrCanonMT)].Offset);
     internal TargetPointer EEClass => Metadata_1.GetEEClassOrCanonMTBits(EEClassOrCanonMT) == Metadata_1.EEClassOrCanonMTBits.EEClass ? EEClassOrCanonMT : throw new InvalidOperationException("not an EEClass");

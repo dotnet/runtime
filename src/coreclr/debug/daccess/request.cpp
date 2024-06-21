@@ -1839,37 +1839,34 @@ ClrDataAccess::GetMethodTableDataImpl(CLRDATA_ADDRESS mt, struct DacpMethodTable
     {
         return E_INVALIDARG;
     }
-    else
-    {
-        ZeroMemory(MTData,sizeof(DacpMethodTableData));
-        MTData->BaseSize = pMT->GetBaseSize();
-        // [compat] SOS DAC APIs added this base size adjustment for strings
-        // due to: "2008/09/25 Title: New implementation of StringBuilder and improvements in String class"
-        // which changed StringBuilder not to use a String as an internal buffer and in the process
-        // changed the String internals so that StringObject::GetBaseSize() now includes the nul terminator character,
-        // which is apparently not expected by SOS.
-        if(pMT->IsString())
-            MTData->BaseSize -= sizeof(WCHAR);
-        MTData->ComponentSize = (DWORD)pMT->GetComponentSize();
-        MTData->bIsFree = bIsFree;
-        if(!bIsFree)
-        {
-            MTData->Module = HOST_CDADDR(pMT->GetModule());
-            // Note: DacpMethodTableData::Class is really a pointer to the canonical method table
-            MTData->Class = HOST_CDADDR(pMT->GetClass()->GetMethodTable());
-            MTData->ParentMethodTable = HOST_CDADDR(pMT->GetParentMethodTable());;
-            MTData->wNumInterfaces = (WORD)pMT->GetNumInterfaces();
-            MTData->wNumMethods = pMT->GetNumMethods();
-            MTData->wNumVtableSlots = pMT->GetNumVtableSlots();
-            MTData->wNumVirtuals = pMT->GetNumVirtuals();
-            MTData->cl = pMT->GetCl();
-            MTData->dwAttrClass = pMT->GetAttrClass();
-            MTData->bContainsPointers = pMT->ContainsGCPointers();
-            MTData->bIsShared = FALSE;
-            MTData->bIsDynamic = pMT->IsDynamicStatics();
-        }
-    }
 
+    ZeroMemory(MTData,sizeof(DacpMethodTableData));
+    MTData->BaseSize = pMT->GetBaseSize();
+    // [compat] SOS DAC APIs added this base size adjustment for strings
+    // due to: "2008/09/25 Title: New implementation of StringBuilder and improvements in String class"
+    // which changed StringBuilder not to use a String as an internal buffer and in the process
+    // changed the String internals so that StringObject::GetBaseSize() now includes the nul terminator character,
+    // which is apparently not expected by SOS.
+    if(pMT->IsString())
+        MTData->BaseSize -= sizeof(WCHAR);
+    MTData->ComponentSize = (DWORD)pMT->GetComponentSize();
+    MTData->bIsFree = bIsFree;
+    if(!bIsFree)
+    {
+        MTData->Module = HOST_CDADDR(pMT->GetModule());
+        // Note: DacpMethodTableData::Class is really a pointer to the canonical method table
+        MTData->Class = HOST_CDADDR(pMT->GetClass()->GetMethodTable());
+        MTData->ParentMethodTable = HOST_CDADDR(pMT->GetParentMethodTable());;
+        MTData->wNumInterfaces = (WORD)pMT->GetNumInterfaces();
+        MTData->wNumMethods = pMT->GetNumMethods();
+        MTData->wNumVtableSlots = pMT->GetNumVtableSlots();
+        MTData->wNumVirtuals = pMT->GetNumVirtuals();
+        MTData->cl = pMT->GetCl();
+        MTData->dwAttrClass = pMT->GetAttrClass();
+        MTData->bContainsPointers = pMT->ContainsGCPointers();
+        MTData->bIsShared = FALSE;
+        MTData->bIsDynamic = pMT->IsDynamicStatics();
+    }
     return S_OK;
 }
 
@@ -2157,11 +2154,8 @@ ClrDataAccess::GetMethodTableForEEClassImpl(CLRDATA_ADDRESS eeClassReallyCanonMT
     {
         return E_INVALIDARG;
     }
-    else
-    {
-        *value = HOST_CDADDR(pCanonMT);
-    }
 
+    *value = HOST_CDADDR(pCanonMT);
     return S_OK;
 }
 
