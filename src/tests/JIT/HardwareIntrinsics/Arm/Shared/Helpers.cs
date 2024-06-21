@@ -5516,6 +5516,24 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static double AddAcross(double[] op1) => Reduce(Add, op1);
 
+        public static double AddRotateComplex(double[] op1, double[] op2, int op3) {
+            for(int i = 0; i < op1.size() - 1; i+=2){
+                Complex c1 = new Complex(op1[i], op1[i+1]);
+                Complex c2 = new Complex(op2[i], op2[i+1]);
+
+                if(op3 == 0){
+                    c2.Phase += 90;
+                } 
+                else if (op3 == 1){
+                    c2.Phase += 270;
+                }
+
+                Complex res = Complex.Add(c1, c2);
+                op1[i] = res.Real;
+                op1[i+1] = res.Imaginary;
+            }
+        }
+
         public static double MaxAcross(double[] op1) => Reduce(Max, op1);
 
         public static double MinAcross(double[] op1) => Reduce(Min, op1);
