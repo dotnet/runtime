@@ -105,10 +105,12 @@ internal sealed unsafe partial class MsQuicApi
                     NetEventSource.Info(null, $"Attempting to load MsQuic library from '{path}'.");
                 }
 
+                System.Console.WriteLine($"Attempting to load MsQuic library from '{path}'.");
                 loaded = NativeLibrary.TryLoad(path, out msQuicHandle);
             }
             else
             {
+                System.Console.WriteLine("Loading from assembly directory");
                 loaded = NativeLibrary.TryLoad(Interop.Libraries.MsQuic, typeof(MsQuicApi).Assembly, DllImportSearchPath.AssemblyDirectory, out msQuicHandle);
             }
         }

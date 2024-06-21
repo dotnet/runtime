@@ -52,6 +52,7 @@ namespace System.Net.Quic.Tests
             // This has to happen here in order to be called before QuicTestBase.IsSupported
             if (PlatformDetection.IsWindows10OrLater && !QuicTestCollection.IsWindowsVersionWithSchannelSupport())
             {
+                System.Console.WriteLine("Setting AppContext switch to use OpenSSL version of MsQuic on Windows.");
                 AppContext.SetSwitch("System.Net.Quic.AppLocalMsQuic", true);
             }
         }
