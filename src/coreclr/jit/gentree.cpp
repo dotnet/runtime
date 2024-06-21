@@ -1259,87 +1259,6 @@ void CallArgABIInformation::SetHfaType(var_types type, unsigned hfaSlots)
 }
 
 //---------------------------------------------------------------
-// SetByteSize: Set information related to this argument's size and alignment.
-//
-// Arguments:
-//   byteSize      - The size in bytes of the argument.
-//   byteAlignment - The alignment in bytes of the argument.
-//   isStruct      - Whether this arg is a struct.
-//   isFloatHfa    - Whether this is a float HFA.
-//
-// Remarks:
-//   This function will determine how the argument size needs to be rounded. On
-//   most ABIs all arguments are rounded to stack pointer size, but Apple arm64
-//   ABI is an exception as it allows packing some small arguments into the
-//   same stack slot.
-//
-void CallArgABIInformation::SetByteSize(unsigned byteSize, unsigned byteAlignment, bool isStruct, bool isFloatHfa)
-{
-    unsigned roundedByteSize;
-    if (compAppleArm64Abi())
-    {
-        // Only struct types need extension or rounding to pointer size, but HFA<float> does not.
-        if (isStruct && !isFloatHfa)
-        {
-            roundedByteSize = roundUp(byteSize, TARGET_POINTER_SIZE);
-        }
-        else
-        {
-            roundedByteSize = byteSize;
-        }
-    }
-    else
-    {
-        roundedByteSize = roundUp(byteSize, TARGET_POINTER_SIZE);
-    }
-
-#if !defined(TARGET_ARM)
-    // Arm32 could have a struct with 8 byte alignment
-    // which rounded size % 8 is not 0.
-    assert(byteAlignment != 0);
-    assert(roundedByteSize % byteAlignment == 0);
-#endif // TARGET_ARM
-
-    ByteSize      = roundedByteSize;
-    ByteAlignment = byteAlignment;
-}
-
-//---------------------------------------------------------------
-// SetMultiRegsNumw: Set the registers for a multi-reg arg using 'sequential' registers.
-//
-// Remarks:
-//   This assumes that `NumRegs` and the first reg num has already been set and
-//   determines how many sequential registers are necessary to pass the
-//   argument.
-//   Note that on ARM the registers set may skip odd float registers if the arg
-//   is a HFA of doubles, since double and float registers overlap.
-void CallArgABIInformation::SetMultiRegNums()
-{
-#if FEATURE_MULTIREG_ARGS && !defined(UNIX_AMD64_ABI) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
-    if (NumRegs == 1)
-    {
-        return;
-    }
-
-    regNumber argReg = GetRegNum(0);
-#ifdef TARGET_ARM
-    unsigned int regSize = (GetHfaType() == TYP_DOUBLE) ? 2 : 1;
-#else
-    unsigned int regSize = 1;
-#endif
-
-    if (NumRegs > MAX_ARG_REG_COUNT)
-        NO_WAY("Multireg argument exceeds the maximum length");
-
-    for (unsigned int regIndex = 1; regIndex < NumRegs; regIndex++)
-    {
-        argReg = (regNumber)(argReg + regSize);
-        SetRegNum(regIndex, argReg);
-    }
-#endif // FEATURE_MULTIREG_ARGS && !defined(UNIX_AMD64_ABI) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
-}
-
-//---------------------------------------------------------------
 // GetStackByteSize: Get the number of stack bytes used to pass this argument.
 //
 // Returns:
@@ -1468,7 +1387,7 @@ void CallArg::CheckIsStruct()
 CallArgs::CallArgs()
     : m_head(nullptr)
     , m_lateHead(nullptr)
-    , m_nextStackByteOffset(0)
+    , m_argsStackSize(0)
 #ifdef UNIX_X86_ABI
     , m_stkSizeBytes(0)
     , m_padStkAlign(0)
@@ -9817,7 +9736,7 @@ void CallArgs::InternalCopyFrom(Compiler* comp, CallArgs* other, CopyNodeFunc co
 {
     assert((m_head == nullptr) && (m_lateHead == nullptr));
 
-    m_nextStackByteOffset      = other->m_nextStackByteOffset;
+    m_argsStackSize            = other->m_argsStackSize;
     m_hasThisPointer           = other->m_hasThisPointer;
     m_hasRetBuffer             = other->m_hasRetBuffer;
     m_isVarArgs                = other->m_isVarArgs;
@@ -9845,6 +9764,7 @@ void CallArgs::InternalCopyFrom(Compiler* comp, CallArgs* other, CopyNodeFunc co
         carg->m_isTmp           = arg.m_isTmp;
         carg->m_processed       = arg.m_processed;
         carg->AbiInfo           = arg.AbiInfo;
+        carg->NewAbiInfo        = arg.NewAbiInfo;
         *tail                   = carg;
         tail                    = &carg->m_next;
     }
@@ -13174,6 +13094,8 @@ const char* Compiler::gtGetWellKnownArgNameForArgMsg(WellKnownArg arg)
             return "swift error";
         case WellKnownArg::SwiftSelf:
             return "swift self";
+        case WellKnownArg::X86TailCallSpecialArg:
+            return "tail call";
         default:
             return nullptr;
     }
