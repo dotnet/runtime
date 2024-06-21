@@ -72,10 +72,10 @@ target_link_libraries(
     "-framework Foundation"
     "-framework Security"
     "-framework UIKit"
+    "-lz"
     "-lc++"
     "-liconv"
     "-licucore"
-    "libz.a"
     %NativeLibrariesToLink%
     %APP_LINK_LIBRARIES%
 )

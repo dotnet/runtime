@@ -1,16 +1,23 @@
 project(System.IO.Compression.Native C)
 
 include(${CMAKE_CURRENT_LIST_DIR}/extra_libs.cmake)
-include(${CLR_SRC_NATIVE_DIR}/external/zlib-ng.cmake)
 
-add_compile_definitions(ZLIB_COMPAT)
+set(IS_ZLIBNG_ENABLED TRUE)
+if (CLR_CMAKE_TARGET_ANDROID OR HOST_ANDROID OR CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+    set(IS_ZLIBNG_ENABLED FALSE)
+endif()
+
+if (IS_ZLIBNG_ENABLED)
+    include(${CLR_SRC_NATIVE_DIR}/external/zlib-ng.cmake)
+    add_compile_definitions(ZLIB_COMPAT)
+endif()
 
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/../Common/pal_config.h.in
     ${CMAKE_CURRENT_BINARY_DIR}/pal_config.h)
 
 set(NATIVECOMPRESSION_SOURCES
-  pal_zlib.c
+    pal_zlib.c
 )
 
 if (HOST_WIN32 OR CLR_CMAKE_TARGET_WIN32)
@@ -41,10 +48,6 @@ endif ()
 if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
     set(NATIVE_LIBS_EXTRA)
     append_extra_compression_libs(NATIVE_LIBS_EXTRA)
-
-    if (CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
-        set(NATIVECOMPRESSION_SOURCES ${NATIVECOMPRESSION_SOURCES})
-    endif()
 
     # Disable implicit fallthrough warning for Zlib and Brotli
     set(FLAGS -Wno-implicit-fallthrough)
@@ -104,17 +107,18 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
         STATIC
         ${NATIVECOMPRESSION_SOURCES}
     )
-    target_link_libraries(System.IO.Compression.Native-Static
-        PRIVATE
-        zlibstatic
-    )
+
+    if (IS_ZLIBNG_ENABLED)
+        target_link_libraries(System.IO.Compression.Native-Static
+            PRIVATE
+            zlibstatic)
+    endif()
     set_target_properties(System.IO.Compression.Native-Static PROPERTIES OUTPUT_NAME System.IO.Compression.Native CLEAN_DIRECT_OUTPUT 1)
 else ()
     if (GEN_SHARED_LIB)
         include (GenerateExportHeader)
     endif ()
 
-    set(NATIVECOMPRESSION_SOURCES ${NATIVECOMPRESSION_SOURCES})
 
     if (GEN_SHARED_LIB)
         add_definitions(-DVER_FILEDESCRIPTION_STR="System.IO.Compression.Native")
@@ -124,10 +128,11 @@ else ()
             System.IO.Compression.Native.def
             ${VERSION_FILE_RC_PATH}
         )
-        target_link_libraries(System.IO.Compression.Native
-            PRIVATE
-            zlib
-        )
+        if (IS_ZLIBNG_ENABLED)
+            target_link_libraries(System.IO.Compression.Native
+                PRIVATE
+                zlib)
+        endif()
     endif ()
 
     if (NOT GEN_SHARED_LIB AND NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI)
@@ -138,20 +143,24 @@ else ()
         STATIC
         ${NATIVECOMPRESSION_SOURCES}
     )
+    if (IS_ZLIBNG_ENABLED)
     target_link_libraries(System.IO.Compression.Native-Static
         PRIVATE
-        zlibstatic
-    )
+        zlibstatic)
+    endif()
 
     if(STATIC_LIBS_ONLY)
         add_library(System.IO.Compression.Native.Aot
             STATIC
             ${NATIVECOMPRESSION_SOURCES}
         )
+
+        if (IS_ZLIBNG_ENABLED)
         target_link_libraries(System.IO.Compression.Native.Aot
             PRIVATE
-            zlibstatic
-        )
+            zlibstatic)
+        endif()
+
         set_target_properties(System.IO.Compression.Native.Aot PROPERTIES CLR_CONTROL_FLOW_GUARD OFF)
         set_target_properties(System.IO.Compression.Native.Aot PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF)
 
@@ -159,10 +168,13 @@ else ()
             STATIC
             ${NATIVECOMPRESSION_SOURCES}
         )
-        target_link_libraries(System.IO.Compression.Native.Aot.GuardCF
-            PRIVATE
-            zlibstatic
-        )
+
+        if (IS_ZLIBNG_ENABLED)
+            target_link_libraries(System.IO.Compression.Native.Aot.GuardCF
+                PRIVATE
+                zlibstatic)
+        endif()
+
         set_target_properties(System.IO.Compression.Native.Aot.GuardCF PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF)
     endif()
 
@@ -185,7 +197,7 @@ else ()
 
 endif ()
 
-if(STATIC_LIBS_ONLY)
+if(IS_ZLIBNG_ENABLED AND STATIC_LIBS_ONLY)
     install_static_library(zlib aotsdk nativeaot)
 endif()
 

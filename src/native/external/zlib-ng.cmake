@@ -15,14 +15,9 @@ add_compile_options($<$<COMPILE_LANG_AND_ID:C,MSVC>:/wd4127>) # warning C4127: c
 add_compile_options($<$<COMPILE_LANG_AND_ID:C,MSVC>:/wd4242>) # 'function': conversion from 'unsigned int' to 'Pos', possible loss of data, in various deflate_*.c files
 add_compile_options($<$<COMPILE_LANG_AND_ID:C,MSVC>:/wd4244>) # 'function': conversion from 'unsigned int' to 'Pos', possible loss of data, in various deflate_*.c files
 
-# 'aligned_alloc' is only available on iOS 13.0 or newer and in some cases it is not available on Android, yet it is set by zlib-ng/CMakeLists.txt.
-if (CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS OR CLR_CMAKE_TARGET_ANDROID OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
+# 'aligned_alloc' is not available in browser/wasi, yet it is set by zlib-ng/CMakeLists.txt.
+if (CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
   set(HAVE_ALIGNED_ALLOC FALSE CACHE BOOL "have aligned_alloc" FORCE)
-endif()
-
-# Workaround: Some SIMD types for ARM are not being found
-if (CLR_CMAKE_TARGET_ANDROID)
-  set(WITH_ARMV6 OFF CACHE BOOL "with armv6" FORCE)
 endif()
 
 set(BUILD_SHARED_LIBS OFF) # Shared libraries aren't supported in wasm
