@@ -284,6 +284,41 @@ namespace System.Globalization.Tests
             }
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        public void LongTimePattern_VerifyTimePatterns()
+        {
+            Assert.All(CultureInfo.GetCultures(CultureTypes.AllCultures), culture => {
+                if (DateTimeFormatInfoData.HasBadIcuTimePatterns(culture))
+                {
+                    return;
+                }
+                var pattern = culture.DateTimeFormat.LongTimePattern;
+                bool use24Hour = false;
+                bool use12Hour = false;
+                bool useAMPM = false;
+                for (var i = 0; i < pattern.Length; i++)
+                {
+                    switch (pattern[i])
+                    {
+                        case 'H': use24Hour = true; break;
+                        case 'h': use12Hour = true; break;
+                        case 't': useAMPM = true; break;
+                        case '\\': i++; break;
+                        case '\'':
+                            i++;
+                            for (; i < pattern.Length; i++)
+                            {
+                                var c = pattern[i];
+                                if (c == '\'') break;
+                                if (c == '\\') i++;
+                            }
+                            break;
+                    }
+                }
+                Assert.True((use24Hour || useAMPM) && (use12Hour ^ use24Hour), $"Bad long time pattern for culture {culture.Name}: '{pattern}'");
+            });
+        }
+
         [Fact]
         public void LongTimePattern_CheckTimeFormatWithSpaces()
         {
