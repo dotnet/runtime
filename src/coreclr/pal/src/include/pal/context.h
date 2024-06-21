@@ -751,7 +751,7 @@ void _GetNativeSigSimdContext(uint8_t *data, uint32_t size, fpsimd_context **fp_
 inline
 void GetNativeSigSimdContext(native_context_t *mc, fpsimd_context **fp_ptr, sve_context **sve_ptr)
 {
-    _GetNativeSigSimdContext(&mc->uc_mcontext.__reserved[0], sizeof(mc->uc_mcontext.__reserved), fp_ptr, sve_ptr);
+    _GetNativeSigSimdContext((uint8_t *)&mc->uc_mcontext.__reserved[0], sizeof(mc->uc_mcontext.__reserved), fp_ptr, sve_ptr);
 }
 
 inline
