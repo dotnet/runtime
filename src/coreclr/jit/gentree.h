@@ -6657,8 +6657,8 @@ struct GenTreeVecCon : public GenTree
         simd16_t gtSimd16Val;
 
 #if defined(TARGET_XARCH)
-        simd32_t   gtSimd32Val;
-        simd64_t   gtSimd64Val;
+        simd32_t gtSimd32Val;
+        simd64_t gtSimd64Val;
 #endif // TARGET_XARCH
 
 #if defined(FEATURE_MASKED_HW_INTRINSICS)

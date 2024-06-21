@@ -367,8 +367,8 @@ public:
     simd12_t GetConstantSimd12(ValueNum argVN);
     simd16_t GetConstantSimd16(ValueNum argVN);
 #if defined(TARGET_XARCH)
-    simd32_t   GetConstantSimd32(ValueNum argVN);
-    simd64_t   GetConstantSimd64(ValueNum argVN);
+    simd32_t GetConstantSimd32(ValueNum argVN);
+    simd64_t GetConstantSimd64(ValueNum argVN);
 #endif // TARGET_XARCH
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
     simdmask_t GetConstantSimdMask(ValueNum argVN);
