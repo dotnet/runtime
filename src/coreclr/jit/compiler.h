@@ -5525,7 +5525,7 @@ public:
 
     void fgAddHandlerLiveVars(BasicBlock* block, VARSET_TP& ehHandlerLiveVars, MemoryKindSet& memoryLiveness);
 
-    void fgLiveVarAnalysis(bool updateInternalOnly = false);
+    void fgLiveVarAnalysis();
 
     void fgComputeLifeCall(VARSET_TP& life, GenTreeCall* call);
 
@@ -5915,8 +5915,6 @@ protected:
     bool fgRemoveUnreachableBlocks(CanRemoveBlockBody canRemoveBlock);
 
     PhaseStatus fgComputeDominators(); // Compute dominators
-
-    bool fgRemoveDeadBlocks(); // Identify and remove dead blocks.
 
 public:
     enum GCPollType
@@ -6677,19 +6675,6 @@ private:
     PhaseStatus fgEarlyLiveness();
 
     void fgMarkUseDef(GenTreeLclVarCommon* tree);
-
-    void fgBeginScopeLife(VARSET_TP* inScope, VarScopeDsc* var);
-    void fgEndScopeLife(VARSET_TP* inScope, VarScopeDsc* var);
-
-    void fgMarkInScope(BasicBlock* block, VARSET_VALARG_TP inScope);
-    void fgUnmarkInScope(BasicBlock* block, VARSET_VALARG_TP unmarkScope);
-
-    void fgExtendDbgScopes();
-    void fgExtendDbgLifetimes();
-
-#ifdef DEBUG
-    void fgDispDebugScopes();
-#endif // DEBUG
 
     //-------------------------------------------------------------------------
     //

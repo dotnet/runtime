@@ -7550,29 +7550,31 @@ PhaseStatus Lowering::DoPhase()
     const bool setSlotNumbers = false;
     comp->lvaComputeRefCounts(isRecompute, setSlotNumbers);
 
-    comp->fgLocalVarLiveness();
-    // local var liveness can delete code, which may create empty blocks
-    if (comp->opts.OptimizationEnabled())
-    {
-        bool modified = comp->fgUpdateFlowGraph(/* doTailDuplication */ false, /* isPhase */ false);
-        modified |= comp->fgRemoveDeadBlocks();
+    // Remove dead blocks and compute DFS (we want to remove empty blocks even
+    // in MinOpts).
+    comp->fgDfsBlocksAndRemove();
 
+    if (comp->backendRequiresLocalVarLifetimes())
+    {
+        assert(comp->opts.OptimizationEnabled());
+
+        comp->fgLocalVarLiveness();
+        // local var liveness can delete code, which may create empty blocks
+        bool modified = comp->fgUpdateFlowGraph(/* doTailDuplication */ false, /* isPhase */ false);
         if (modified)
         {
+            comp->fgDfsBlocksAndRemove();
             JITDUMP("had to run another liveness pass:\n");
             comp->fgLocalVarLiveness();
         }
-    }
-    else
-    {
-        // If we are not optimizing, remove the dead blocks regardless.
-        comp->fgRemoveDeadBlocks();
+
+        // Recompute local var ref counts again after liveness to reflect
+        // impact of any dead code removal. Note this may leave us with
+        // tracked vars that have zero refs.
+        comp->lvaComputeRefCounts(isRecompute, setSlotNumbers);
     }
 
-    // Recompute local var ref counts again after liveness to reflect
-    // impact of any dead code removal. Note this may leave us with
-    // tracked vars that have zero refs.
-    comp->lvaComputeRefCounts(isRecompute, setSlotNumbers);
+    comp->fgInvalidateDfsTree();
 
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
