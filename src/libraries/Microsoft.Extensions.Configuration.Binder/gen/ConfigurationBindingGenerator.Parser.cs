@@ -522,8 +522,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 return conversion.IsReference && conversion.IsImplicit;
             }
 
-            private bool IsUnsupportedType(ITypeSymbol type)
+            private bool IsUnsupportedType(ITypeSymbol type, int recursionDepth = 0)
             {
+                recursionDepth++;
+
+                if (recursionDepth > 10)
+                {
+                    // Prevent stack overflow on recursive types, such as:
+                    // public sealed class TreeElement : Dictionary<string, TreeElement>
+                    return false;
+                }
+
                 if (type.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T)
                 {
                     type = ((INamedTypeSymbol)type).TypeArguments[0]; // extract the T from a Nullable<T>
@@ -541,7 +550,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 if (type is IArrayTypeSymbol arrayTypeSymbol)
                 {
-                    return arrayTypeSymbol.Rank > 1 || IsUnsupportedType(arrayTypeSymbol.ElementType);
+                    return arrayTypeSymbol.Rank > 1 || IsUnsupportedType(arrayTypeSymbol.ElementType, recursionDepth);
                 }
 
                 if (IsCollection(type))
@@ -550,11 +559,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                     if (IsCandidateDictionary(collectionType, out ITypeSymbol? keyType, out ITypeSymbol? elementType))
                     {
-                        return IsUnsupportedType(keyType) || IsUnsupportedType(elementType);
+                        return IsUnsupportedType(keyType, recursionDepth) || IsUnsupportedType(elementType, recursionDepth);
                     }
                     else if (TryGetElementType(collectionType, out elementType))
                     {
-                        return IsUnsupportedType(elementType);
+                        return IsUnsupportedType(elementType, recursionDepth);
                     }
                 }
 
