@@ -3864,15 +3864,15 @@ public:
 
 template<> struct cdac_offsets<MethodTable>
 {
-    static constexpr size_t m_dwFlags = offsetof(MethodTable, m_dwFlags);
-    static constexpr size_t m_BaseSize = offsetof(MethodTable, m_BaseSize);
-    static constexpr size_t m_dwFlags2 = offsetof(MethodTable, m_dwFlags2);
-    static constexpr size_t m_pEEClassOrCanonMT = offsetof(MethodTable, m_pEEClass);
-    static constexpr size_t m_pModule = offsetof(MethodTable, m_pModule);
-    static constexpr size_t m_pAuxiliaryData = offsetof(MethodTable, m_pAuxiliaryData);
-    static constexpr size_t m_pParentMethodTable = offsetof(MethodTable, m_pParentMethodTable);
-    static constexpr size_t m_wNumInterfaces = offsetof(MethodTable, m_wNumInterfaces);
-    static constexpr size_t m_wNumVirtuals = offsetof(MethodTable, m_wNumVirtuals);
+    static constexpr size_t DwFlags = offsetof(MethodTable, m_dwFlags);
+    static constexpr size_t BaseSize = offsetof(MethodTable, m_BaseSize);
+    static constexpr size_t DwFlags2 = offsetof(MethodTable, m_dwFlags2);
+    static constexpr size_t EEClassOrCanonMT = offsetof(MethodTable, m_pEEClass);
+    static constexpr size_t Module = offsetof(MethodTable, m_pModule);
+    static constexpr size_t AuxiliaryData = offsetof(MethodTable, m_pAuxiliaryData);
+    static constexpr size_t ParentMethodTable = offsetof(MethodTable, m_pParentMethodTable);
+    static constexpr size_t NumInterfaces = offsetof(MethodTable, m_wNumInterfaces);
+    static constexpr size_t NumVirtuals = offsetof(MethodTable, m_wNumVirtuals);
 };
 
 #ifndef CROSSBITNESS_COMPILE
