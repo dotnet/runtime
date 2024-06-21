@@ -38,7 +38,7 @@ internal struct UntrustedMethodTable_1
             Metadata_1.MethodTableFlags flags = new Metadata_1.MethodTableFlags
             {
                 DwFlags = _target.Read<uint>(Address + (ulong)_type.Fields[nameof(Metadata_1.MethodTableFlags.DwFlags)].Offset),
-                DwFlags2 = _target.Read<uint>(Address + (ulong)_type.Fields[nameof(Metadata_1.MethodTableFlags.DwFlags)].Offset),
+                DwFlags2 = _target.Read<uint>(Address + (ulong)_type.Fields[nameof(Metadata_1.MethodTableFlags.DwFlags2)].Offset),
                 BaseSize = _target.Read<uint>(Address + (ulong)_type.Fields[nameof(Metadata_1.MethodTableFlags.BaseSize)].Offset),
             };
             _methodTableFlags = flags;
