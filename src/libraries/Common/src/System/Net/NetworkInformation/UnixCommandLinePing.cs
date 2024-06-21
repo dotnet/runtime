@@ -11,7 +11,9 @@ namespace System.Net.NetworkInformation
     {
         // Ubuntu has ping under /bin, OSX under /sbin, ArchLinux under /usr/bin, Android under /system/bin, NixOS under /run/current-system/sw/bin.
         private static readonly string[] s_binFolders = { "/bin", "/sbin", "/usr/bin", "/system/bin", "/run/current-system/sw/bin" };
-        private const string s_ipv4PingFile = "ping";
+
+        private const string s_ipv4PingFile = "ping4";
+        private const string s_ipv4v6PingFile = "ping";
         private const string s_ipv6PingFile = "ping6";
 
         private static readonly string? s_discoveredPing4UtilityPath = GetPingUtilityPath(ipv4: true);
@@ -21,11 +23,18 @@ namespace System.Net.NetworkInformation
         // We don't want to pick up an arbitrary or malicious ping
         // command, so that's why we do the path probing ourselves.
         private static string? GetPingUtilityPath(bool ipv4)
-        {
+        {   
             string fileName = ipv4 ? s_ipv4PingFile : s_ipv6PingFile;
             foreach (string folder in s_binFolders)
             {
+                string pathv4v6 = Path.Combine(folder, s_ipv4v6PingFile);
                 string path = Path.Combine(folder, fileName);
+                
+                if (File.Exists(pathv4v6))
+                {
+                    return pathv4v6;
+                }
+
                 if (File.Exists(path))
                 {
                     return path;
