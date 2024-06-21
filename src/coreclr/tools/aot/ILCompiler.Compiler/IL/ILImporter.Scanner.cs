@@ -32,7 +32,7 @@ namespace Internal.IL
 
         private readonly byte[] _ilBytes;
 
-        private ILPatternAnalyzer<ILPatternAnalyzerState> _patternAnalyzer;
+        private TypeEqualityPatternAnalyzer _typeEqualityPatternAnalyzer;
 
         private sealed class BasicBlock
         {
@@ -51,16 +51,6 @@ namespace Internal.IL
             public bool TryStart;
             public bool FilterStart;
             public bool HandlerStart;
-        }
-
-        private struct ILPatternAnalyzerState : ILPatternAnalyzerTraits
-        {
-            public readonly BasicBlock[] BasicBlocks;
-
-            public ILPatternAnalyzerState(BasicBlock[] basicBlocks) => BasicBlocks = basicBlocks;
-
-            public bool IsBasicBlockStart(int offset) => BasicBlocks[offset] != null;
-            public bool IsInstructionStart(int offset) => throw new System.NotImplementedException();
         }
 
         private bool _isReadOnly;
@@ -181,8 +171,6 @@ namespace Internal.IL
 
             FindBasicBlocks();
 
-            _patternAnalyzer = new ILPatternAnalyzer<ILPatternAnalyzerState>(new ILPatternAnalyzerState(_basicBlocks), _methodIL, _ilBytes);
-
             ImportBasicBlocks();
 
             CodeBasedDependencyAlgorithm.AddDependenciesDueToMethodCodePresence(ref _dependencies, _factory, _canonMethod, _canonMethodIL);
@@ -242,6 +230,13 @@ namespace Internal.IL
                     }
                 }
             }
+
+            _typeEqualityPatternAnalyzer = default;
+        }
+
+        partial void StartImportingInstruction(ILOpcode opcode)
+        {
+            _typeEqualityPatternAnalyzer.Advance(opcode, new ILReader(_ilBytes, _currentOffset), _methodIL);
         }
 
         private void EndImportingInstruction()
@@ -882,10 +877,22 @@ namespace Internal.IL
 
             if (obj is TypeDesc type)
             {
-                int offsetOfLdtoken = _currentOffset - 5;
-
                 // We might also be able to optimize this a little if this is a ldtoken/GetTypeFromHandle/Equals sequence.
-                bool isTypeEquals = _patternAnalyzer.IsLdTokenConsumedByTypeEqualityCheck(offsetOfLdtoken);
+                bool isTypeEquals = false;
+                TypeEqualityPatternAnalyzer analyzer = _typeEqualityPatternAnalyzer;
+                ILReader reader = new ILReader(_ilBytes, _currentOffset);
+                while (!analyzer.IsDefault)
+                {
+                    ILOpcode opcode = reader.ReadILOpcode();
+                    analyzer.Advance(opcode, reader, _methodIL);
+                    reader.Skip(opcode);
+
+                    if (analyzer.IsTypeEqualityCheCCCC)
+                    {
+                        isTypeEquals = true;
+                        break;
+                    }
+                }
 
                 _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.GetRuntimeTypeHandle), "ldtoken");
                 _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.GetRuntimeType), "ldtoken");
