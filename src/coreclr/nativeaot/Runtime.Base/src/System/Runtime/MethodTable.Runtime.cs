@@ -11,6 +11,13 @@ namespace Internal.Runtime
     // Extensions to MethodTable that are specific to the use in Runtime.Base.
     internal unsafe partial struct MethodTable
     {
+#pragma warning disable CA1822
+        internal Exception GetClasslibException(ExceptionIDs id)
+        {
+            return RuntimeExceptionHelpers.GetRuntimeException(id);
+        }
+#pragma warning restore CA1822
+
         internal IntPtr GetClasslibFunction(ClassLibFunctionId id)
         {
             return (IntPtr)InternalCalls.RhpGetClasslibFunctionFromEEType((MethodTable*)Unsafe.AsPointer(ref this), id);

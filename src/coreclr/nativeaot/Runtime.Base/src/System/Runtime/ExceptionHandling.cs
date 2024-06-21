@@ -316,14 +316,8 @@ namespace System.Runtime
             Exception? e = id switch
             {
                 ExceptionIDs.AccessViolation => new AccessViolationException(),
-                ExceptionIDs.Arithmetic => new ArithmeticException(),
-                ExceptionIDs.AmbiguousImplementation => new AmbiguousImplementationException(),
-                ExceptionIDs.ArrayTypeMismatch => new ArrayTypeMismatchException(),
                 ExceptionIDs.DataMisaligned => new DataMisalignedException(),
                 ExceptionIDs.DivideByZero => new DivideByZeroException(),
-                ExceptionIDs.EntrypointNotFound => new EntryPointNotFoundException(),
-                ExceptionIDs.IndexOutOfRange => new IndexOutOfRangeException(),
-                ExceptionIDs.InvalidCast => new InvalidCastException(),
                 ExceptionIDs.NullReference => new NullReferenceException(),
                 ExceptionIDs.OutOfMemory => new OutOfMemoryException(),
                 ExceptionIDs.Overflow => new OverflowException(),
@@ -342,12 +336,13 @@ namespace System.Runtime
 #if NATIVEAOT
         [StackTraceHidden]
         [RuntimeExport("RhExceptionHandling_FailedAllocation")]
-#pragma warning disable IDE0060
         public static void FailedAllocation(MethodTable* pEEType, bool fIsOverflow)
-#pragma warning restore IDE0060
         {
             ExceptionIDs exID = fIsOverflow ? ExceptionIDs.Overflow : ExceptionIDs.OutOfMemory;
-            throw RuntimeExceptionHelpers.GetRuntimeException(exID)!;
+
+            // Throw the out of memory exception defined by the classlib, using the input MethodTable*
+            // to find the correct classlib.
+            throw pEEType->GetClasslibException(exID);
         }
 #endif // NATIVEAOT
 

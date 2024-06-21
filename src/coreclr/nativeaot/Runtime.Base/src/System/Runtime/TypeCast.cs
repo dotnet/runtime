@@ -382,7 +382,7 @@ namespace System.Runtime
         {
             // If object type implements IDynamicInterfaceCastable then there's one more way to check whether it implements
             // the interface.
-            // This will throw NullReferenceException if obj is null.
+            Debug.Assert(obj is not null);
             if (!obj.GetMethodTable()->IsIDynamicInterfaceCastable
                 || !IsInstanceOfInterfaceViaIDynamicInterfaceCastable(pTargetType, obj, throwing: true))
             {
@@ -872,7 +872,7 @@ namespace System.Runtime
 
         private static unsafe object IsInstanceOfVariantType(MethodTable* pTargetType, object obj)
         {
-            // This will throw NullReferenceException if obj is null.
+            Debug.Assert(obj is not null);
             if (!AreTypesAssignableInternal(obj.GetMethodTable(), pTargetType, AssignmentVariation.BoxedSource, null)
                 && (!obj.GetMethodTable()->IsIDynamicInterfaceCastable
                 || !IsInstanceOfInterfaceViaIDynamicInterfaceCastable(pTargetType, obj, throwing: false)))
@@ -885,7 +885,7 @@ namespace System.Runtime
 
         private static unsafe object CheckCastVariantType(MethodTable* pTargetType, object obj)
         {
-            // This will throw NullReferenceException if obj is null.
+            Debug.Assert(obj is not null);
             if (!AreTypesAssignableInternal(obj.GetMethodTable(), pTargetType, AssignmentVariation.BoxedSource, null)
                 && (!obj.GetMethodTable()->IsIDynamicInterfaceCastable
                 || !IsInstanceOfInterfaceViaIDynamicInterfaceCastable(pTargetType, obj, throwing: true)))

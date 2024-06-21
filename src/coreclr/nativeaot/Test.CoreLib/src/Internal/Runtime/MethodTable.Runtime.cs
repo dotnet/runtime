@@ -13,10 +13,5 @@ namespace Internal.Runtime
         {
             return MethodTable.Of<Array>();
         }
-
-        internal Exception GetClasslibException(ExceptionIDs id)
-        {
-            return RuntimeExceptionHelpers.GetRuntimeException(id);
-        }
     }
 }

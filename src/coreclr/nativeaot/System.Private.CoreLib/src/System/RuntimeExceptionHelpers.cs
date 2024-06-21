@@ -71,20 +71,8 @@ namespace System
 
                         return outOfMemoryException;
 
-                    case ExceptionIDs.Arithmetic:
-                        return new ArithmeticException();
-
-                    case ExceptionIDs.ArrayTypeMismatch:
-                        return new ArrayTypeMismatchException();
-
                     case ExceptionIDs.DivideByZero:
                         return new DivideByZeroException();
-
-                    case ExceptionIDs.IndexOutOfRange:
-                        return new IndexOutOfRangeException();
-
-                    case ExceptionIDs.InvalidCast:
-                        return new InvalidCastException();
 
                     case ExceptionIDs.Overflow:
                         return new OverflowException();
@@ -98,12 +86,6 @@ namespace System
 
                     case ExceptionIDs.DataMisaligned:
                         return new DataMisalignedException();
-
-                    case ExceptionIDs.EntrypointNotFound:
-                        return new EntryPointNotFoundException();
-
-                    case ExceptionIDs.AmbiguousImplementation:
-                        return new AmbiguousImplementationException();
 
                     default:
                         FailFast("The runtime requires an exception for a case that this class library does not understand.");
