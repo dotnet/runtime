@@ -4778,7 +4778,7 @@ namespace JIT.HardwareIntrinsics.Arm
             return result;
         }
 
-        public static uint UnsignedRSqrtEstimate(uint op1)
+        public static uint UnsignedReciprocalSqrtEstimate(uint op1)
         {
             uint result;
 
