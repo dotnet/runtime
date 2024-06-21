@@ -649,7 +649,7 @@ namespace Microsoft.Extensions.Logging.Test
                 // Write some MessageJson events with null string.
                 for (var i = 0; i < 100; i++)
                 {
-                    LoggingEventSource.Instance.MessageJson(LogLevel.Trace, 1, "MyLogger", 5, null, "testJson", "testJson", "formattedMessage", null, null, null);
+                    LoggingEventSource.Instance.MessageJson(LogLevel.Trace, 1, "MyLogger", 5, null, "testJson", "testJson", "formattedMessage", string.Empty, string.Empty, string.Empty);
                 }
 
                 bool containsNullEventName = false;
