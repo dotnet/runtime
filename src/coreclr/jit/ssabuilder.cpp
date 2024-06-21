@@ -131,6 +131,7 @@ SsaBuilder::SsaBuilder(Compiler* pCompiler)
     , m_allocator(pCompiler->getAllocator(CMK_SSA))
     , m_visitedTraits(0, pCompiler) // at this point we do not know the size, SetupBBRoot can add a block
     , m_renameStack(m_allocator, pCompiler->lvaCount)
+    , m_hasCycle(false)
 {
 }
 
@@ -179,6 +180,7 @@ int SsaBuilder::TopologicalSort(BasicBlock** postOrder, int count)
     };
 
     // Compute order.
+    int         preIndex  = 0;
     int         postIndex = 0;
     BasicBlock* block     = comp->fgFirstBB;
     BitVecOps::AddElemD(&m_visitedTraits, m_visited, block->bbNum);
@@ -189,11 +191,26 @@ int SsaBuilder::TopologicalSort(BasicBlock** postOrder, int count)
 
     while (!blocks.Empty())
     {
-        BasicBlock* block = blocks.TopRef().Block();
-        BasicBlock* succ  = blocks.TopRef().NextSuccessor(comp);
+        AllSuccessorEnumerator& e     = blocks.TopRef();
+        BasicBlock*             block = e.Block();
+
+        if (e.AtStart())
+        {
+            DBG_SSA_JITDUMP("[SsaBuilder::TopologicalSort] preOrder[%d] = " FMT_BB "\n", preIndex, block->bbNum);
+            block->bbPreorderNum  = preIndex;
+            block->bbPostorderNum = UINT_MAX;
+            preIndex++;
+        }
+
+        BasicBlock* succ = e.NextSuccessor(comp);
 
         if (succ != nullptr)
         {
+            if ((succ->bbPreorderNum <= block->bbPreorderNum) && (succ->bbPostorderNum == UINT_MAX))
+            {
+                m_hasCycle = true;
+            }
+
             // if the block on TOS still has unreached successors, visit them
             if (BitVecOps::TryAddElemD(&m_visitedTraits, m_visited, succ->bbNum))
             {
@@ -1541,7 +1558,7 @@ void SsaBuilder::Build()
     m_pCompiler->fgLocalVarLiveness();
     EndPhase(PHASE_BUILD_SSA_LIVENESS);
 
-    m_pCompiler->optRemoveRedundantZeroInits();
+    m_pCompiler->optRemoveRedundantZeroInits(m_hasCycle);
     EndPhase(PHASE_ZERO_INITS);
 
     // Mark all variables that will be tracked by SSA

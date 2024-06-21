@@ -1883,6 +1883,12 @@ public:
         return m_block;
     }
 
+    // True if NextSuccessor will return the first successor or null
+    bool AtStart() const
+    {
+        return m_curSucc == UINT_MAX;
+    }
+
     // Returns the next available successor or `nullptr` if there are no more successors.
     BasicBlock* NextSuccessor(Compiler* comp)
     {
