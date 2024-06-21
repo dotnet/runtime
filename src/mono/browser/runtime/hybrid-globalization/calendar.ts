@@ -1,7 +1,7 @@
-/* eslint-disable no-console */
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+/* eslint-disable no-inner-declarations */
 import { VoidPtrNull } from "../types/internal";
 import { runtimeHelpers } from "./module-exports";
 import { Int32Ptr, VoidPtr } from "../types/emscripten";
