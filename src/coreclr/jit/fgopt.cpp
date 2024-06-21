@@ -915,8 +915,16 @@ bool Compiler::fgCanCompactBlock(BasicBlock* block)
         return false;
     }
 
+    // Don't bother compacting a call-finally pair if it doesn't succeed block
+    //
+    if (target->isBBCallFinallyPair() && !block->NextIs(target))
+    {
+        return false;
+    }
+
     // If target has multiple incoming edges, we can still compact if block is empty.
     // However, not if it is the beginning of a handler.
+    //
     if (target->countOfInEdges() != 1 &&
         (!block->isEmpty() || block->HasFlag(BBF_FUNCLET_BEG) || (block->bbCatchTyp != BBCT_NONE)))
     {
@@ -929,6 +937,7 @@ bool Compiler::fgCanCompactBlock(BasicBlock* block)
     }
 
     // Don't compact the first block if it was specially created as a scratch block.
+    //
     if (fgBBisScratch(block))
     {
         return false;
@@ -950,6 +959,7 @@ bool Compiler::fgCanCompactBlock(BasicBlock* block)
 
     // If there is a switch predecessor don't bother because we'd have to update the uniquesuccs as well
     // (if they are valid).
+    //
     for (BasicBlock* const predBlock : target->PredBlocks())
     {
         if (predBlock->KindIs(BBJ_SWITCH))
