@@ -195,6 +195,24 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
+        [ConditionalFact(typeof(Environment), nameof(Environment.HasShutdownStarted))]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "The PKCS#12 Exportable flag is not supported on iOS/MacCatalyst/tvOS")]
+        public void OneCert_NoKeys_EncryptedEmptyPassword_NullMac()
+        {
+            using (X509Certificate2 cert = new X509Certificate2(TestData.MsCertificate))
+            {
+                Pkcs12Builder builder = new Pkcs12Builder();
+                Pkcs12SafeContents certContents = new Pkcs12SafeContents();
+                certContents.AddCertificate(cert);
+                builder.AddSafeContentsEncrypted(certContents, string.Empty, s_windowsPbe);
+                builder.SealWithMac(null, HashAlgorithmName.SHA1, 37);
+                byte[] pfxBytes = builder.Encode();
+
+                ReadPfx(pfxBytes, null, cert);
+                ReadPfx(pfxBytes, string.Empty, cert);
+            }
+        }
+
         [Theory]
         [InlineData(false, false)]
         [InlineData(false, true)]
@@ -1226,6 +1244,53 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                         followup);
                 }
             }
+        }
+
+        [ConditionalTheory(typeof(Environment), nameof(Environment.HasShutdownStarted))]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(3)]
+        public void TwoCerts_TwoKeys_DuplicateLocalKeyId(int itemIndex)
+        {
+            string pw = nameof(TwoCerts_TwoKeys_DuplicateLocalKeyId);
+            byte[] pfx;
+
+            using (ImportedCollection ic = Cert.Import(TestData.MultiPrivateKeyPfx, null, s_exportableImportFlags))
+            {
+                X509Certificate2Collection certs = ic.Collection;
+                X509Certificate2 first = certs[0];
+                X509Certificate2 second = certs[1];
+
+                using (AsymmetricAlgorithm firstKey = first.GetRSAPrivateKey())
+                using (AsymmetricAlgorithm secondKey = second.GetRSAPrivateKey())
+                {
+                    Pkcs12Builder builder = new Pkcs12Builder();
+                    Pkcs12SafeContents certContents = new Pkcs12SafeContents();
+                    Pkcs12SafeContents keyContents = new Pkcs12SafeContents();
+
+                    Pkcs12CertBag certBagOne = certContents.AddCertificate(first);
+                    Pkcs12CertBag certBagTwo = certContents.AddCertificate(second);
+                    Pkcs12ShroudedKeyBag keyBagOne = keyContents.AddShroudedKey(firstKey, pw, s_windowsPbe);
+                    Pkcs12ShroudedKeyBag keyBagTwo = keyContents.AddShroudedKey(secondKey, pw, s_windowsPbe);
+
+                    Pkcs12SafeBag[] bags = { certBagOne, certBagTwo, keyBagOne, keyBagTwo };
+                    bags[itemIndex].Attributes.Add(s_keyIdOne);
+
+                    certBagOne.Attributes.Add(s_keyIdOne);
+                    keyBagOne.Attributes.Add(s_keyIdOne);
+                    certBagTwo.Attributes.Add(s_keyIdTwo);
+                    keyBagTwo.Attributes.Add(s_keyIdTwo);
+
+                    builder.AddSafeContentsUnencrypted(keyContents);
+                    builder.AddSafeContentsEncrypted(certContents, pw, s_windowsPbe);
+
+                    builder.SealWithMac(pw, HashAlgorithmName.SHA1, 22);
+                    pfx = builder.Encode();
+                }
+            }
+
+            ReadUnreadablePfx(pfx, pw);
         }
 
         private static void CheckKeyConsistency(X509Certificate2 cert)
