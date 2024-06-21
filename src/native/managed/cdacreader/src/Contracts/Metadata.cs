@@ -48,7 +48,7 @@ internal interface IMetadata : IContract
     public virtual bool IsFreeObjectMethodTable(MethodTableHandle methodTable) => throw new NotImplementedException();
     public virtual bool IsString(MethodTableHandle methodTable) => throw new NotImplementedException();
     // True if the MethodTable represents a type that contains managed references
-    public virtual bool ContainsPointers(MethodTableHandle methodTable) => throw new NotImplementedException();
+    public virtual bool ContainsGCPointers(MethodTableHandle methodTable) => throw new NotImplementedException();
     public virtual bool IsDynamicStatics(MethodTableHandle methodTable) => throw new NotImplementedException();
     public virtual ushort GetNumMethods(MethodTableHandle methodTable) => throw new NotImplementedException();
     public virtual ushort GetNumInterfaces(MethodTableHandle methodTable) => throw new NotImplementedException();

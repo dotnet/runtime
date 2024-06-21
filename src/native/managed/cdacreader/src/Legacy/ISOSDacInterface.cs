@@ -59,7 +59,7 @@ internal struct DacpMethodTableData
     public uint dwAttrClass; // cached metadata
     public int bIsShared;  // Always false, preserved for backward compatibility
     public int bIsDynamic;
-    public int bContainsPointers;
+    public int bContainsGCPointers;
 }
 #pragma warning restore CS0649 // Field is never assigned to, and will always have its default value
 

@@ -25,7 +25,7 @@ internal partial struct Metadata_1
         Category_Array = 0x00080000,
         Category_Array_Mask = 0x000C0000,
         Category_Interface = 0x000C0000,
-        ContainsPointers = 0x01000000, // Contains object references
+        ContainsGCPointers = 0x01000000, // Contains object references
         HasComponentSize = 0x80000000, // This is set if component size is used for flags.
     }
 
@@ -78,6 +78,6 @@ internal partial struct Metadata_1
 
         public bool HasInstantiation => !TestFlagWithMask(WFLAGS_LOW.GenericsMask, WFLAGS_LOW.GenericsMask_NonGeneric);
 
-        public bool ContainsPointers => GetFlag(WFLAGS_HIGH.ContainsPointers) != 0;
+        public bool ContainsGCPointers => GetFlag(WFLAGS_HIGH.ContainsGCPointers) != 0;
     }
 }

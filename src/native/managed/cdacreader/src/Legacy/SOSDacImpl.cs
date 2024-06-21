@@ -116,7 +116,7 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface9
                 result.wNumVirtuals = contract.GetNumVirtuals(methodTable);
                 result.cl = contract.GetTypeDefToken(methodTable);
                 result.dwAttrClass = contract.GetTypeDefTypeAttributes(methodTable);
-                result.bContainsPointers = contract.ContainsPointers(methodTable) ? 1 : 0;
+                result.bContainsGCPointers = contract.ContainsGCPointers(methodTable) ? 1 : 0;
                 result.bIsShared = 0;
                 result.bIsDynamic = contract.IsDynamicStatics(methodTable) ? 1 : 0;
             }
