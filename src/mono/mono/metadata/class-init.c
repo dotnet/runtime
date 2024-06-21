@@ -1039,18 +1039,14 @@ class_composite_fixup_cast_class (MonoClass *klass, gboolean for_ptr)
 	case MONO_TYPE_U2:
 		klass->cast_class = mono_defaults.int16_class;
 		break;
-	case MONO_TYPE_U4:
-#if TARGET_SIZEOF_VOID_P == 4
 	case MONO_TYPE_I:
 	case MONO_TYPE_U:
-#endif
+		klass->cast_class = mono_defaults.int_class;
+		break;
+	case MONO_TYPE_U4:
 		klass->cast_class = mono_defaults.int32_class;
 		break;
 	case MONO_TYPE_U8:
-#if TARGET_SIZEOF_VOID_P == 8
-	case MONO_TYPE_I:
-	case MONO_TYPE_U:
-#endif
 		klass->cast_class = mono_defaults.int64_class;
 		break;
 	default:
