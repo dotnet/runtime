@@ -506,7 +506,7 @@ Copyright (c) .NET Foundation. All rights reserved.
         RemoveMetadata="Integrity;Fingerprint" />
     </ItemGroup>
 
-    <DefineStaticWebAssets CandidateAssets="@(_NewWebCilPublishStaticWebAssetsCandidates);@(_PromotedWasmPublishStaticWebAssets)">
+    <DefineStaticWebAssets CandidateAssets="@(_NewWebCilPublishStaticWebAssetsCandidatesNoMetadata);@(_PromotedWasmPublishStaticWebAssets)">
       <Output TaskParameter="Assets" ItemName="_NewWebCilPublishStaticWebAssets" />
     </DefineStaticWebAssets>
 
