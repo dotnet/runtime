@@ -2514,6 +2514,11 @@ inline bool Compiler::lvaKeepAliveAndReportThis()
         return false;
     }
 
+    if ((info.compCompHnd->getClassAttribs(info.compClassHnd) & CORINFO_FLG_ABSTRACT) != 0)
+    {
+        return true;
+    }
+
     const bool genericsContextIsThis = (info.compMethodInfo->options & CORINFO_GENERICS_CTXT_FROM_THIS) != 0;
 
 #ifdef JIT32_GCENCODER

@@ -837,7 +837,7 @@ enum CorInfoFlag
     CORINFO_FLG_SYNCH                 = 0x00000020,
     CORINFO_FLG_VIRTUAL               = 0x00000040,
 //  CORINFO_FLG_UNUSED                = 0x00000080,
-//  CORINFO_FLG_UNUSED                = 0x00000100,
+    CORINFO_FLG_HAS_FINALIZER         = 0x00000100,
     CORINFO_FLG_INTRINSIC_TYPE        = 0x00000200, // This type is marked by [Intrinsic]
     CORINFO_FLG_ABSTRACT              = 0x00000400,
 

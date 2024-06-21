@@ -4283,7 +4283,6 @@ void GCInfo::gcMakeRegPtrTable(
         {
             // We need to report the cached copy as an untracked pointer
             assert(compiler->info.compThisArg != BAD_VAR_NUM);
-            assert(!compiler->lvaReportParamTypeArg());
             GcSlotFlags flags = GC_SLOT_UNTRACKED;
 
             if (compiler->lvaTable[compiler->info.compThisArg].TypeGet() == TYP_BYREF)

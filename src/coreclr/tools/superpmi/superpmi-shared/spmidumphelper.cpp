@@ -162,6 +162,7 @@ std::string SpmiDumpHelper::DumpCorInfoFlag(CorInfoFlag flags)
     AddFlag(CORINFO_FLG_FINAL);
     AddFlag(CORINFO_FLG_SYNCH);
     AddFlag(CORINFO_FLG_VIRTUAL);
+    AddFlag(CORINFO_FLG_HAS_FINALIZER);
     AddFlag(CORINFO_FLG_INTRINSIC_TYPE);
     AddFlag(CORINFO_FLG_ABSTRACT);
     AddFlag(CORINFO_FLG_EnC);

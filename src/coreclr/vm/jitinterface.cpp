@@ -3829,6 +3829,9 @@ uint32_t CEEInfo::getClassAttribsInternal (CORINFO_CLASS_HANDLE clsHnd)
         if (pClass->IsAbstract())
             ret |= CORINFO_FLG_ABSTRACT;
 
+        if (pMT->HasFinalizer())
+            ret |= CORINFO_FLG_HAS_FINALIZER;
+
         if (pClass->IsSealed())
             ret |= CORINFO_FLG_FINAL;
 

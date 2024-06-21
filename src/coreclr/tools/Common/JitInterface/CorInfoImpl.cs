@@ -2062,6 +2062,9 @@ namespace Internal.JitInterface
             if (type.IsIntrinsic)
                 result |= CorInfoFlag.CORINFO_FLG_INTRINSIC_TYPE;
 
+            if (type.HasFinalizer)
+                result |= CorInfoFlag.CORINFO_FLG_HAS_FINALIZER;
+
             if (metadataType != null)
             {
                 if (metadataType.ContainsGCPointers)
