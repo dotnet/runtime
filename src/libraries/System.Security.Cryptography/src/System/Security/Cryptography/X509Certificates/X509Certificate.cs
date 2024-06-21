@@ -253,7 +253,6 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-
         public IntPtr Handle => Pal is null ? IntPtr.Zero : Pal.Handle;
 
         public string Issuer
