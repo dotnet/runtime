@@ -51,7 +51,7 @@ export function getIcuResourceName (config: MonoConfig): string | null {
         // TODO: when starting on sidecar, we should pass default culture from UI thread
         const culture = config.applicationCulture || (ENVIRONMENT_IS_WEB ? (globalThis.navigator && globalThis.navigator.languages && globalThis.navigator.languages[0]) : Intl.DateTimeFormat().resolvedOptions().locale);
 
-        let icuFiles = Object.keys(config.resources.icu);
+        const icuFiles = Object.keys(config.resources.icu);
         const fileMapping: {
             [k: string]: string
         } = {};

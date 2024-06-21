@@ -463,7 +463,7 @@ export function prepareAssets () {
     config.assets = [...coreAssetsToLoad, ...assetsToLoad, ...modulesAssets];
 }
 
-export function getNonFingerprintedAssetName(assetName: string) {
+export function getNonFingerprintedAssetName (assetName: string) {
     if (loaderHelpers.config.resources?.fingerprinting) {
         const indexOfExtension = assetName.lastIndexOf(".");
         const indexOfFingerprint = assetName.lastIndexOf(".", indexOfExtension - 1);
