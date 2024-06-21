@@ -113,6 +113,7 @@ public:
         FpStructInRegistersInfo info = m_argLocDescForStructInRegs->m_structFields;
         _ASSERTE(m_argLocDescForStructInRegs->m_cFloatReg == ((info.flags & BothFloat) ? 2 : 1));
         _ASSERTE(m_argLocDescForStructInRegs->m_cGenReg == ((info.flags & (FloatInt | IntFloat)) ? 1 : 0));
+        _ASSERTE(info.offset2nd + info.GetSize2nd() <= fieldBytes);
 
         int floatRegOffset = TransitionBlock::GetOffsetOfFloatArgumentRegisters() +
             m_argLocDescForStructInRegs->m_idxFloatReg * FLOAT_REGISTER_SIZE;
@@ -137,12 +138,18 @@ public:
             INT64* intReg = (INT64*)((char*)m_base + intRegOffset);
 
             void* field = (char*)src + ((info.flags & IntFloat) ? info.offset1st : info.offset2nd);
-            switch ((info.flags & IntFloat) ? info.GetSizeShift1st() : info.GetSizeShift2nd())
+            unsigned sizeShift = (info.flags & IntFloat) ? info.GetSizeShift1st() : info.GetSizeShift2nd();
+            bool isSigned = (info.GetIntFieldKind() == FpStruct::IntKind::Signed);
+            switch ((sizeShift << 1) + isSigned)
             {
-                case 0: *intReg = *(INT8* )field; break;
-                case 1: *intReg = *(INT16*)field; break;
-                case 2: *intReg = *(INT32*)field; break;
-                case 3: *intReg = *(INT64*)field; break;
+                case (0 << 1) + 1: *intReg = *(INT8* )field; break;
+                case (1 << 1) + 1: *intReg = *(INT16*)field; break;
+                case (2 << 1) + 1: *intReg = *(INT32*)field; break;
+                case (3 << 1) + 1: *intReg = *(INT64*)field; break;
+                case (0 << 1) + 0: *intReg = *(UINT8* )field; break;
+                case (1 << 1) + 0: *intReg = *(UINT16*)field; break;
+                case (2 << 1) + 0: *intReg = *(UINT32*)field; break;
+                case (3 << 1) + 0: *intReg = *(UINT64*)field; break;
                 default: _ASSERTE(false);
             }
         }

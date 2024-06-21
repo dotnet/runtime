@@ -8324,30 +8324,33 @@ void Compiler::GetTypesFromFpStructInRegistersInfo(FpStructInRegistersInfo info,
 
     if ((info.flags & (FpStruct::FloatInt | FpStruct::IntFloat)) != 0)
     {
-        bool      isInt1st = ((info.flags & FpStruct::FloatInt) == 0);
-        FpStruct::IntKind kind = info.GetIntFieldKind();
-        var_types intType;
-        if (kind == FpStruct::IntKind::GcRef)
+        bool              isInt1st = ((info.flags & FpStruct::IntFloat) != 0);
+        FpStruct::IntKind kind     = info.GetIntFieldKind();
+        var_types*        intType  = isInt1st ? type1st : type2nd;
+        if (kind < FpStruct::IntKind::GcRef)
         {
-            intType = TYP_REF;
-        }
-        else if (kind == FpStruct::IntKind::GcByRef)
-        {
-            intType = TYP_BYREF;
+            assert(kind == FpStruct::IntKind::Signed || kind == FpStruct::IntKind::Unsigned);
+            struct IntType
+            {
+                // Ignore signedness because Compiler::fgDebugCheckTypes doesn't allow unsigned types
+                static constexpr var_types Get(unsigned sizeShift)
+                {
+                    return (var_types)(TYP_BYTE + (sizeShift * 2));
+                }
+            };
+            static_assert(IntType::Get(0) == TYP_BYTE, "");
+            static_assert(IntType::Get(1) == TYP_SHORT, "");
+            static_assert(IntType::Get(2) == TYP_INT, "");
+            static_assert(IntType::Get(3) == TYP_LONG, "");
+
+            unsigned sizeShift = isInt1st ? info.GetSizeShift1st() : info.GetSizeShift2nd();
+            *intType           = IntType::Get(sizeShift);
         }
         else
         {
-            static const var_types intTypesLookUpTable[] = {
-                /*[0] =*/TYP_BYTE,
-                /*[1] =*/TYP_SHORT,
-                /*[2] =*/TYP_INT,
-                /*[3] =*/TYP_LONG,
-            };
-            unsigned sizeShift = isInt1st ? info.GetSizeShift1st() : info.GetSizeShift2nd();
-            intType            = intTypesLookUpTable[sizeShift];
+            assert(kind == FpStruct::IntKind::GcRef || kind == FpStruct::IntKind::GcByRef);
+            *intType = (kind == FpStruct::IntKind::GcRef) ? TYP_REF : TYP_BYREF;
         }
-        var_types* typePtr = isInt1st ? type1st : type2nd;
-        *typePtr           = intType;
     }
 }
 
