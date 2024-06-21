@@ -15,9 +15,9 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="filter"></param>
         /// <returns>How many boolean values are true.</returns>
-        public static nint CountTrueElements(Tensor<bool> filter)
+        public static nint CountTrueElements(scoped in ReadOnlyTensorSpan<bool> filter)
         {
-            Span<bool> filterSpan = MemoryMarshal.CreateSpan(ref filter._values[0], (int)filter._flattenedLength);
+            Span<bool> filterSpan = MemoryMarshal.CreateSpan(ref filter._reference, (int)filter._shape._memoryLength);
             nint count = 0;
             for (int i = 0; i < filterSpan.Length; i++)
             {
@@ -28,31 +28,31 @@ namespace System.Numerics.Tensors
             return count;
         }
 
-        internal static bool AreShapesBroadcastCompatible<T>(Tensor<T> tensor1, Tensor<T> tensor2)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool> => AreShapesBroadcastCompatible(tensor1.Lengths, tensor2.Lengths);
+        internal static bool IsBroadcastableTo<T>(Tensor<T> tensor1, Tensor<T> tensor2)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool> => IsBroadcastableTo(tensor1.Lengths, tensor2.Lengths);
 
-        internal static bool AreShapesBroadcastCompatible(ReadOnlySpan<nint> shape1, ReadOnlySpan<nint> shape2)
+        internal static bool IsBroadcastableTo(ReadOnlySpan<nint> lengths1, ReadOnlySpan<nint> lengths2)
         {
-            int shape1Index = shape1.Length - 1;
-            int shape2Index = shape2.Length - 1;
+            int lengths1Index = lengths1.Length - 1;
+            int lengths2Index = lengths2.Length - 1;
 
             bool areCompatible = true;
 
             nint s1;
             nint s2;
 
-            while (shape1Index >= 0 || shape2Index >= 0)
+            while (lengths1Index >= 0 || lengths2Index >= 0)
             {
                 // if a dimension is missing in one of the shapes, it is considered to be 1
-                if (shape1Index < 0)
+                if (lengths1Index < 0)
                     s1 = 1;
                 else
-                    s1 = shape1[shape1Index--];
+                    s1 = lengths1[lengths1Index--];
 
-                if (shape2Index < 0)
+                if (lengths2Index < 0)
                     s2 = 1;
                 else
-                    s2 = shape2[shape2Index--];
+                    s2 = lengths2[lengths2Index--];
 
                 if (s1 == s2 || (s1 == 1 && s2 != 1) || (s2 == 1 && s1 != 1)) { }
                 else
@@ -63,24 +63,6 @@ namespace System.Numerics.Tensors
             }
 
             return areCompatible;
-        }
-
-        internal static nint[] GetSmallestBroadcastableSize(ReadOnlySpan<nint> shape1, ReadOnlySpan<nint> shape2)
-        {
-            if (!AreShapesBroadcastCompatible(shape1, shape2))
-                throw new Exception("Shapes are not broadcast compatible");
-
-            nint[] intermediateShape = GetIntermediateShape(shape1, shape2.Length);
-            for (int i = 1; i <= shape1.Length; i++)
-            {
-                intermediateShape[^i] = Math.Max(intermediateShape[^i], shape1[^i]);
-            }
-            for (int i = 1; i <= shape2.Length; i++)
-            {
-                intermediateShape[^i] = Math.Max(intermediateShape[^i], shape2[^i]);
-            }
-
-            return intermediateShape;
         }
 
         internal static nint[] GetIntermediateShape(ReadOnlySpan<nint> shape1, int shape2Length)
@@ -101,12 +83,17 @@ namespace System.Numerics.Tensors
             return newShape;
         }
 
+        internal static bool IsUnderlyingStorageSameSize<T>(scoped in ReadOnlyTensorSpan<T> tensor1, scoped in ReadOnlyTensorSpan<T> tensor2)
+            => tensor1._shape._memoryLength == tensor2._shape._memoryLength;
+
         internal static bool IsUnderlyingStorageSameSize<T>(Tensor<T> tensor1, Tensor<T> tensor2)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool> => tensor1.Lengths.Length == tensor2.Lengths.Length;
+    => tensor1._values.Length == tensor2._values.Length;
 
-        internal static bool AreShapesTheSame<T>(Tensor<T> tensor1, Tensor<T> tensor2)
-            where T : IEquatable<T>, IEqualityOperators<T, T, bool> => tensor1._lengths.SequenceEqual(tensor2._lengths);
+        internal static bool AreLengthsTheSame<T>(scoped in ReadOnlyTensorSpan<T> tensor1, scoped in ReadOnlyTensorSpan<T> tensor2)
+            => tensor1.Lengths.SequenceEqual(tensor2.Lengths);
 
+        internal static bool AreLengthsTheSame(ReadOnlySpan<nint> lengths1, ReadOnlySpan<nint> lengths2)
+            => lengths1.SequenceEqual(lengths2);
 
         internal static void PermuteIndices(Span<nint> indices, Span<nint> permutedIndices, ReadOnlySpan<int> permutation)
         {

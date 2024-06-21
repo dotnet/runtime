@@ -308,6 +308,25 @@ namespace System.Collections.Tests
             }
         }
 
+        [Fact]
+        public void OrderedDictionary_SetAt_KeyValuePairSubsequentlyAvailable()
+        {
+            TKey key0 = CreateTKey(0), key1 = CreateTKey(1);
+            TValue value0 = CreateTValue(0), value1 = CreateTValue(1);
+
+            var dict = new OrderedDictionary<TKey, TValue>
+            {
+                [key0] = value0,
+            };
+
+            dict.SetAt(index: 0, key1, value1);
+
+            Assert.Equal(1, dict.Count);
+            Assert.Equal([new(key1, value1)], dict);
+            Assert.False(dict.ContainsKey(key0));
+            Assert.True(dict.ContainsKey(key1));
+        }
+
         #endregion
 
         #region Remove(..., out TValue)
