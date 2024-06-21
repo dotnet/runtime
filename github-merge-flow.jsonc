@@ -1,0 +1,20 @@
+// IMPORTANT: This file is read by the merge flow from main branch only. 
+{
+    "merge-flow-configurations": {
+        // Automate merging runtime release/6.0 branch into release/6.0-staging
+        "release/6.0":{
+            "MergeToBranch": "release/6.0-staging",
+            "ExtraSwitches": "-QuietComments"
+        },
+        // Automate merging runtime release/8.0 branch into release/8.0-staging
+        "release/8.0":{
+            "MergeToBranch": "release/8.0-staging",
+            "ExtraSwitches": "-QuietComments"
+        },
+        // Automate merging runtime release/8.0-rc branches back to release/8.0
+        "release/8.0-rc":{
+            "MergeToBranch": "release/8.0",
+            "ExtraSwitches": "-QuietComments"
+        }
+    }
+}
