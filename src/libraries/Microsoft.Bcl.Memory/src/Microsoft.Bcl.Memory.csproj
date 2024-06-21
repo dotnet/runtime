@@ -26,9 +26,27 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
-    <Compile Include="System\Buffers\Text\Base64UrlDecoder.cs" />
-    <Compile Include="System\Buffers\Text\Base64UrlEncoder.cs" />
-    <Compile Include="System\Buffers\Text\Base64UrlValidator.cs" />
+    <Compile Include="..\..\System.Private.CoreLib\src\System\Buffers\Text\Base64Helper\Base64Helper.cs">
+      <Link>System\Buffers\Text\Base64Helper\Base64Helper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\System.Private.CoreLib\src\System\Buffers\Text\Base64Helper\Base64DecoderHelper.cs">
+      <Link>System\Buffers\Text\Base64Helper\Base64DecoderHelper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\System.Private.CoreLib\src\System\Buffers\Text\Base64Helper\Base64EncoderHelper.cs">
+      <Link>System\Buffers\Text\Base64Helper\Base64EncoderHelper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\System.Private.CoreLib\src\System\Buffers\Text\Base64Helper\Base64ValidatorHelper.cs">
+      <Link>System\Buffers\Text\Base64Helper\Base64ValidatorHelper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\System.Private.CoreLib\src\System\Buffers\Text\Base64Url\Base64UrlDecoder.cs">
+      <Link>System\Buffers\Text\Base64Url\Base64UrlDecoder.cs</Link>
+    </Compile>
+    <Compile Include="..\..\System.Private.CoreLib\src\System\Buffers\Text\Base64Url\Base64UrlEncoder.cs">
+      <Link>System\Buffers\Text\Base64Url\Base64UrlEncoder.cs</Link>
+    </Compile>
+    <Compile Include="..\..\System.Private.CoreLib\src\System\Buffers\Text\Base64Url\Base64UrlValidator.cs">
+      <Link>System\Buffers\Text\Base64Url\Base64UrlValidator.cs</Link>
+    </Compile>
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
