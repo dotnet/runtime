@@ -988,6 +988,70 @@ namespace System.Numerics.Tensors.Tests
         }
 
         [Fact]
+        public static void TensorSpanLargeDimensionsTests()
+        {
+            int[] a = { 91, 92, -93, 94, 95, -96 };
+            int[] results = new int[6];
+            TensorSpan<int> spanInt = a.AsTensorSpan(1, 1, 1, 1, 1, 6);
+            Assert.Equal(6, spanInt.Rank);
+
+            Assert.Equal(6, spanInt.Lengths.Length);
+            Assert.Equal(1, spanInt.Lengths[0]);
+            Assert.Equal(1, spanInt.Lengths[1]);
+            Assert.Equal(1, spanInt.Lengths[2]);
+            Assert.Equal(1, spanInt.Lengths[3]);
+            Assert.Equal(1, spanInt.Lengths[4]);
+            Assert.Equal(6, spanInt.Lengths[5]);
+            Assert.Equal(6, spanInt.Strides.Length);
+            Assert.Equal(6, spanInt.Strides[0]);
+            Assert.Equal(6, spanInt.Strides[1]);
+            Assert.Equal(6, spanInt.Strides[2]);
+            Assert.Equal(6, spanInt.Strides[3]);
+            Assert.Equal(6, spanInt.Strides[4]);
+            Assert.Equal(1, spanInt.Strides[5]);
+            Assert.Equal(91, spanInt[0, 0, 0, 0, 0, 0]);
+            Assert.Equal(92, spanInt[0, 0, 0, 0, 0, 1]);
+            Assert.Equal(-93, spanInt[0, 0, 0, 0, 0, 2]);
+            Assert.Equal(94, spanInt[0, 0, 0, 0, 0, 3]);
+            Assert.Equal(95, spanInt[0, 0, 0, 0, 0, 4]);
+            Assert.Equal(-96, spanInt[0, 0, 0, 0, 0, 5]);
+            spanInt.FlattenTo(results);
+            Assert.Equal(a, results);
+
+            a = [91, 92, -93, 94, 95, -96, -91, -92, 93, -94, -95, 96];
+            results = new int[12];
+            spanInt = a.AsTensorSpan(1, 2, 2, 1, 1, 3);
+            Assert.Equal(6, spanInt.Lengths.Length);
+            Assert.Equal(1, spanInt.Lengths[0]);
+            Assert.Equal(2, spanInt.Lengths[1]);
+            Assert.Equal(2, spanInt.Lengths[2]);
+            Assert.Equal(1, spanInt.Lengths[3]);
+            Assert.Equal(1, spanInt.Lengths[4]);
+            Assert.Equal(3, spanInt.Lengths[5]);
+            Assert.Equal(6, spanInt.Strides.Length);
+            Assert.Equal(12, spanInt.Strides[0]);
+            Assert.Equal(6, spanInt.Strides[1]);
+            Assert.Equal(3, spanInt.Strides[2]);
+            Assert.Equal(3, spanInt.Strides[3]);
+            Assert.Equal(3, spanInt.Strides[4]);
+            Assert.Equal(1, spanInt.Strides[5]);
+            Assert.Equal(91, spanInt[0, 0, 0, 0, 0, 0]);
+            Assert.Equal(92, spanInt[0, 0, 0, 0, 0, 1]);
+            Assert.Equal(-93, spanInt[0, 0, 0, 0, 0, 2]);
+            Assert.Equal(94, spanInt[0, 0, 1, 0, 0, 0]);
+            Assert.Equal(95, spanInt[0, 0, 1, 0, 0, 1]);
+            Assert.Equal(-96, spanInt[0, 0, 1, 0, 0, 2]);
+            Assert.Equal(-91, spanInt[0, 1, 0, 0, 0, 0]);
+            Assert.Equal(-92, spanInt[0, 1, 0, 0, 0, 1]);
+            Assert.Equal(93, spanInt[0, 1, 0, 0, 0, 2]);
+            Assert.Equal(-94, spanInt[0, 1, 1, 0, 0, 0]);
+            Assert.Equal(-95, spanInt[0, 1, 1, 0, 0, 1]);
+            Assert.Equal(96, spanInt[0, 1, 1, 0, 0, 2]);
+            spanInt.FlattenTo(results);
+            Assert.Equal(a, results);
+        }
+
+        [Fact]
         public static void IntArrayAsTensorSpan()
         {
             int[] a = { 91, 92, -93, 94 };

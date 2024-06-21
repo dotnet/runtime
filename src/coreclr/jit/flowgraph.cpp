@@ -6004,13 +6004,10 @@ bool NaturalLoopIterInfo::ArrLenLimit(Compiler* comp, ArrIndex* index)
 //   finger2 - A basic block that might share IDom ancestor with finger1.
 //
 // Returns:
-//   A basic block whose IDom is the dominator for finger1 and finger2, or else
-//   nullptr. This may be called while immediate dominators are being computed,
-//   and if the input values are members of the same loop (each reachable from
-//   the other), then one may not yet have its immediate dominator computed
-//   when we are attempting to find the immediate dominator of the other. So a
-//   nullptr return value means that the the two inputs are in a cycle, not
-//   that they don't have a common dominator ancestor.
+//   A basic block that is the dominator for finger1 and finger2. This can be
+//   called while the dominator tree is still being computed, in which case the
+//   returned result may not be the "latest" such dominator (but will converge
+//   towards it with more iterations over the basic blocks).
 //
 // Remarks:
 //   See "A simple, fast dominance algorithm" by Keith D. Cooper, Timothy J.
@@ -6018,23 +6015,19 @@ bool NaturalLoopIterInfo::ArrLenLimit(Compiler* comp, ArrIndex* index)
 //
 BasicBlock* FlowGraphDominatorTree::IntersectDom(BasicBlock* finger1, BasicBlock* finger2)
 {
+    assert((finger1 != nullptr) && (finger2 != nullptr));
+
     while (finger1 != finger2)
     {
-        if ((finger1 == nullptr) || (finger2 == nullptr))
-        {
-            return nullptr;
-        }
-        while ((finger1 != nullptr) && (finger1->bbPostorderNum < finger2->bbPostorderNum))
+        while (finger1->bbPostorderNum < finger2->bbPostorderNum)
         {
             finger1 = finger1->bbIDom;
+            assert(finger1 != nullptr);
         }
-        if (finger1 == nullptr)
-        {
-            return nullptr;
-        }
-        while ((finger2 != nullptr) && (finger2->bbPostorderNum < finger1->bbPostorderNum))
+        while (finger2->bbPostorderNum < finger1->bbPostorderNum)
         {
             finger2 = finger2->bbIDom;
+            assert(finger2 != nullptr);
         }
     }
     return finger1;
@@ -6136,8 +6129,8 @@ FlowGraphDominatorTree* FlowGraphDominatorTree::Build(const FlowGraphDfsTree* df
 
     // First compute immediate dominators.
     unsigned numIters = 0;
-    bool     changed  = true;
-    while (changed)
+    bool     changed;
+    do
     {
         changed = false;
 
@@ -6182,7 +6175,7 @@ FlowGraphDominatorTree* FlowGraphDominatorTree::Build(const FlowGraphDfsTree* df
         }
 
         numIters++;
-    }
+    } while (changed && dfsTree->HasCycle());
 
     // Now build dominator tree.
     DomTreeNode* domTree = new (comp, CMK_DominatorMemory) DomTreeNode[count]{};
