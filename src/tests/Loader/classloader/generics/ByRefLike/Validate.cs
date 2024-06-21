@@ -68,10 +68,12 @@ public class Validate
     ref struct RS_I1 : I1 { }
     ref struct RS_I1<T> : I1 { }
 
+    sealed class Ignored { }
+
     [Fact]
-    public static void Validate_RecognizedOpCodeSequences_Scenarios()
+    public static void Validate_RecognizedOpCodeSequences()
     {
-        Console.WriteLine($"{nameof(Validate_RecognizedOpCodeSequences_Scenarios)}...");
+        Console.WriteLine($"{nameof(Validate_RecognizedOpCodeSequences)}...");
 
         Exec.BoxUnboxAny();
         Exec.BoxBranch();
@@ -122,6 +124,33 @@ public class Validate
         Assert.True(Exec.BoxIsinstBranch<RS_I1, I1>(default));
         Assert.True(Exec.BoxIsinstBranch<RS_I1<int>, I1>(default));
         Assert.True(Exec.BoxIsinstBranch<RS_I1<object>, I1>(default));
+    }
+
+    [Fact]
+    public static void Validate_RecognizedOpCodeSequences_TypeCheckAndLocal()
+    {
+        Console.WriteLine($"{nameof(Validate_RecognizedOpCodeSequences_TypeCheckAndLocal)}...");
+
+        // Hard coded local variables in function
+        Assert.True(Exec.BoxIsinstBranchCapture<int, Ignored>(1));
+        Assert.True(Exec.BoxIsinstBranchCapture<Span<char>, Ignored>(new Span<char>()));
+        Assert.True(Exec.BoxIsinstBranchCapture<string, Ignored>(string.Empty));
+
+        // Using generic parameter local.
+        Assert.False(Exec.BoxIsinstBranchCapture<S, I1>(default));
+        Assert.False(Exec.BoxIsinstBranchCapture<S<int>, I1>(default));
+        Assert.False(Exec.BoxIsinstBranchCapture<S<object>, I1>(default));
+        Assert.True(Exec.BoxIsinstBranchCapture<S_I1, I1>(default));
+        Assert.True(Exec.BoxIsinstBranchCapture<S_I1<int>, I1>(default));
+        Assert.True(Exec.BoxIsinstBranchCapture<S_I1<object>, I1>(default));
+
+        // These are not support due to issues with "box; isinst; box.any"
+        // Assert.False(Exec.BoxIsinstBranchCapture<RS, I1>(default));
+        // Assert.False(Exec.BoxIsinstBranchCapture<RS<int>, I1>(default));
+        // Assert.False(Exec.BoxIsinstBranchCapture<RS<object>, I1>(default));
+        // Assert.True(Exec.BoxIsinstBranchCapture<RS_I1, I1>(default));
+        // Assert.True(Exec.BoxIsinstBranchCapture<RS_I1<int>, I1>(default));
+        // Assert.True(Exec.BoxIsinstBranchCapture<RS_I1<object>, I1>(default));
     }
 
     [Fact]

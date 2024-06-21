@@ -1043,20 +1043,6 @@ Update the `SpecialConstraintMask` flag value and description, and add a new fla
 | ... | ... | ... |
 | `AllowByRefLike`        | `0x20` | The generic parameter is allowed to be ByRefLike |
 
-### III.4
-New sub-section should be added after III.4.33 that describes sequences of IL instructions that can be used on ByRefLike types when using within a generic context.
-
-#### III.4.X
-The following are IL sequences involving the `box` instruction. They are used for ByRefLike types and shall be valid in cases where the result can be computed at run-time and elided safely&mdash;through JIT compilation or interpretation. These sequences **must** now be elided when the target type is ByRefLike. The conditions where each sequence is elided are described below.
-
-`box` ; `unbox.any` &ndash; Becomes a NOP, if the box target type is equal to the unboxed target type.
-
-`box` ; `br_true/false` &ndash; Becomes the constant `true`, if the box target type is non-`Nullable<T>`.
-
-`box` ; `isinst` ; `unbox.any` &ndash; Becomes a NOP, if the box, `isinst`, and unbox target types are all equal.
-
-`box` ; `isinst` ; `br_true/false` &ndash; Can become a constant, if the box target type is ByRefLike or the box target type is `Nullable<T>` and target type equalities are computed to be equal. This sequence can be interpreted as behaving as if the ByRefLike nature of the input type doesn't exist.
-
 ## Rules for IL Rewriters
 
 There are apis such as `System.Runtime.CompilerServices.RuntimeHelpers.CreateSpan<T>(...)` which require that the PE file have a particular structure. In particular, that api requires that the associated RVA of a FieldDef which is used to create a span must be naturally aligned over the data type that `CreateSpan` is instantiated over. There are 2 major concerns.

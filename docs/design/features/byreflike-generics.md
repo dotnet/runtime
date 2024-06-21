@@ -24,7 +24,7 @@ The following instructions are already set up to support this feature since thei
 - `isinst`
 - `castclass`
 
-**NOTE** There are sequences involving some of the above instructions that will remain valid regardless of a `T` being ByRefLike&mdash;see ["Special IL Sequences" section](#special_il_sequences) below for details.
+**NOTE** There are sequences involving some of the above instructions that may remain valid regardless of a `T` being ByRefLike&mdash;see ["Options for invalid IL" section](#invalid_il_options) below for details.
 
 The expansion of ByRefLike types as Generic parameters does not relax restrictions on where ByRefLike types can be used. When `T` is ByRefLike, the use of `T` as a field will require the enclosing type to be ByRefLike.
 
@@ -114,21 +114,103 @@ Adding `gpAcceptByRefLike` to the metadata of a Generic parameter will be consid
 
 Enumerating of constructors/methods on `Span<T>` and `ReadOnlySpan<T>` may throw `TypeLoadException` if `T` is a ByRefLike type. See "Troublesome APIs" above for the list of APIs that cause this condition.
 
-## <a name="special_il_sequences"></a> Special IL Sequences
+## <a name="invalid_il_options"></a> Options for invalid IL
 
-The following are IL sequences involving the `box` instruction. They are used for common C# language constructs and shall continue to be valid, even with ByRefLike types, in cases where the result can be computed at JIT compile time or interpretation and elided safely. These sequences **must** now be elided when the target type is ByRefLike. The conditions where each sequence is elided are described below and each condition will be added to the ECMA-335 addendum.
+There are two potential options below for how to address this issue.
 
-`box` ; `unbox.any` &ndash; Becomes a NOP, if the box target type is equal to the unboxed target type.
+The first indented IL sequences below represents the `is-type` sequence. Combining the first with the second indented section represents the "type pattern matching" scenario in C#. The below sequence performs a type check and then, if successful, consumes the unboxed instance.
 
-`box` ; `br_true/false` &ndash; Becomes the constant `true`, if the box target type is non-`Nullable<T>`.
+```IL
+// Type check
+ldarg.0
+    box <Source>
+    isinst <Target_A>
+    brfalse.s NOT_INST
 
-`box` ; `isinst` ; `unbox.any` &ndash; Becomes a NOP, if the box, `isinst`, and unbox target types are all equal.
+// Unbox and store unboxed instance
+ldarg.0
+    box <Source>
+    isinst <Target_A>
+    unbox.any <Target_A>
+stloc.X
 
-`box` ; `isinst` ; `br_true/false` &ndash; Can become a constant, if the box target type is ByRefLike or the box target type is `Nullable<T>` and target type equalities are computed to be equal. This sequence can be interpreted as behaving as if the ByRefLike nature of the input type doesn't exist.
+NOT_INST:
+ret
+```
+
+With the above IL composition implemented, the following C# describes the following "type pattern matching" scenarios and what one might expect given current C# semantics.
+
+```csharp
+struct S {}
+ref struct RS {}
+interface I {}
+class C {}
+class C<T> {}
+
+// Not currently valid C#
+void M<T, U>(T t) where T: allows ref struct
+{
+    if (t is int i)        // Valid
+    if (t is S vc)         // Valid
+    if (t is RS rs)        // Valid
+    if (t is Span<char> s) // Valid
+    if (t is string str)   // Valid
+    if (t is I itf)        // Valid
+    if (t is C c)          // Valid
+    if (t is C<I> ci)      // Valid
+    if (t is C<U> cu)      // Invalid
+    if (t is U u)          // Invalid
+    if (t is Span<U> su)   // Invalid
+}
+```
+
+### Option 1) Compiler helpers
+
+The following two helper functions could be introduced and would replace currently invalid IL sequences. Their behavior would broadly be defined to operate as if the ByRefLike aspect of either the `TFrom` and `TTo` is not present.
+
+```csharp
+namespace System.Runtime.CompilerServices
+{
+    public static class RuntimeHelpers
+    {
+        // Replacement for the [box; isinst; brfalse/true] sequence.
+        public static bool IsInstanceOf<TFrom, TTo>(TFrom source)
+            where TFrom: allows ref struct
+            where TTo: allows ref struct;
+
+        // Replacement for the [box; isinst; unbox.any] sequence.
+        public static TTo CastTo<TFrom, TTo>(TFrom source)
+            where TFrom: allows ref struct
+            where TTo: allows ref struct;
+    }
+}
+```
+
+Example usage of the above methods.
+
+```csharp
+TTo result;
+if (RuntimeHelpers.IsInstanceOf<TFrom, TTo>(source))
+{
+    result = RuntimeHelpers.CastTo<TFrom, TTo>(source);
+}
+```
+
+### Option 2) Special IL sequences
+
+The following are IL sequences involving the `box` instruction. They are used for common C# language constructs and would continue to be valid, even with ByRefLike types. These sequences would be **required** to be valid when the target type is ByRefLike. Each sequence would be added to the ECMA-335 addendum.
+
+`box` ; `isinst` ; `br_true/false` &ndash; Passing a ByRefLike type as the argument to the `box` instruction is permitted to accomplish a type check, in C# `x is Y`. **Note** ByRefLike types would evaluate to `true` when compared against `System.Object`.
+
+`box` ; `isinst` ; `unbox.any` &ndash; In order to permit "type pattern matching", in C# `x is Y y`, this sequence will permit use of a ByRefLike type on any instruction, but does not permit the use of generic parameters being exposed to `isinst` or `unbox.any`.
+
+`box` ; `unbox.any` &ndash; Valid to use ByRefLike types.
+
+`box` ; `br_true/false` &ndash; Valid to use ByRefLike types.
 
 ## Examples
 
-Below are valid and invalid examples of ByRefLike as Generic parameters.
+Below are currently (.NET 9) valid and invalid examples of ByRefLike as Generic parameters.
 
 **1) Valid**
 ```csharp
@@ -249,14 +331,5 @@ class B : A
     // If a user has an instance of A, they are
     // not aware they could be calling B.
     override void M<T2>();
-}
-```
-
-**8) Valid**
-```csharp
-class A
-{
-    public bool M<T, U>(T t) where T: allows ref struct
-        => t is U;
 }
 ```
