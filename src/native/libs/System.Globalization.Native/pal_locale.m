@@ -16,24 +16,34 @@
 
 char* DetectDefaultAppleLocaleName(void)
 {
-    NSLocale *currentLocale = [NSLocale currentLocale];
-    NSString *localeName = @"";
-
-    if (!currentLocale)
+    @autoreleasepool
     {
-        return strdup([localeName UTF8String]);
-    }
+        if (NSLocale.preferredLanguages.count > 0)
+        {
+            return strdup([NSLocale.preferredLanguages[0] UTF8String]);
+        }
+        else
+        {
+            NSLocale *currentLocale = [NSLocale currentLocale];
+            NSString *localeName = @"";
 
-    if ([currentLocale.languageCode length] > 0 && [currentLocale.countryCode length] > 0)
-    {
-        localeName = [NSString stringWithFormat:@"%@-%@", currentLocale.languageCode, currentLocale.countryCode];
-    }
-    else
-    {
-        localeName = currentLocale.localeIdentifier;
-    }
+            if (!currentLocale)
+            {
+                return strdup([localeName UTF8String]);
+            }
 
-    return strdup([localeName UTF8String]);
+            if ([currentLocale.languageCode length] > 0 && [currentLocale.countryCode length] > 0)
+            {
+                localeName = [NSString stringWithFormat:@"%@-%@", currentLocale.languageCode, currentLocale.countryCode];
+            }
+            else
+            {
+                localeName = currentLocale.localeIdentifier;
+            }
+
+            return strdup([localeName UTF8String]);
+        }
+    }
 }
 
 #if defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
