@@ -94,7 +94,7 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface9
     {
         try
         {
-            Contracts.IThread contract = _target.Contracts.Thread;
+            Contracts.IException contract = _target.Contracts.Exception;
             TargetPointer exceptionObjectLocal = contract.GetExceptionInfo(exception, out TargetPointer nextNestedExceptionLocal);
             *exceptionObject = exceptionObjectLocal;
             *nextNestedException = nextNestedExceptionLocal;

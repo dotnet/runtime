@@ -46,7 +46,6 @@ record struct ThreadData (
 ThreadStoreData GetThreadStoreData();
 ThreadStoreCounts GetThreadCounts();
 ThreadData GetThreadData(TargetPointer threadPointer);
-TargetPointer GetNestedExceptionInfo(TargetPointer nestedExceptionPointer, out TargetPointer nextNestedException);
 TargetPointer GetManagedThreadObject(TargetPointer threadPointer);
 ```
 
@@ -114,26 +113,6 @@ ThreadData GetThreadData(TargetPointer threadPointer)
         FirstNestedException : firstNestedException,
         NextThread : ThreadListReader.GetHead.GetNext(threadPointer)
     );
-}
-
-TargetPointer GetNestedExceptionInfo(TargetPointer nestedExceptionPointer, out TargetPointer nextNestedException)
-{
-    if (nestedExceptionPointer == TargetPointer.Null)
-    {
-        throw new InvalidArgumentException();
-    }
-    if (Target.ReadGlobalInt32("FEATURE_EH_FUNCLETS"))
-    {
-        var exData = new ExceptionTrackerBase(Target, nestedExceptionPointer);
-        nextNestedException = exData.m_pPrevNestedInfo;
-        return Contracts.GCHandle.GetObject(exData.m_hThrowable);
-    }
-    else
-    {
-        var exData = new ExInfo(Target, nestedExceptionPointer);
-        nextNestedException = exData.m_pPrevNestedInfo;
-        return Contracts.GCHandle.GetObject(exData.m_hThrowable);
-    }
 }
 
 TargetPointer GetManagedThreadObject(TargetPointer threadPointer)
