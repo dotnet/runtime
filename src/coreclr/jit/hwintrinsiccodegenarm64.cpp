@@ -2126,7 +2126,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
                 break;
             }
-            
+
             case NI_Sve_InsertIntoShiftedVector:
             {
                 assert(isRMW);

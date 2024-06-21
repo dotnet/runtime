@@ -85,7 +85,14 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public TestTest__{TestName}()
         {
-            _fld1 = {Op1Value};
+            if ({Isa}.IsSupported)
+            {
+                _fld1 = {Op1Value};
+            }
+            else
+            {
+                _fld1 = default;
+            }
             Succeeded = true;
         }
 
