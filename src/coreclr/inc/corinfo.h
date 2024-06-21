@@ -361,7 +361,10 @@ namespace FpStruct
 {
     enum class IntKind
     {
-        Signed, Unsigned, GcRef, GcByRef
+        Signed,
+        Unsigned,
+        GcRef,
+        GcByRef,
     };
 
     enum Flags

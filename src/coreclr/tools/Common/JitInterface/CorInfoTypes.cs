@@ -1265,7 +1265,10 @@ namespace Internal.JitInterface
 
     public enum FpStruct_IntKind
     {
-        Signed, Unsigned, GcRef, GcByRef
+        Signed,
+        Unsigned,
+        GcRef,
+        GcByRef,
     }
 
     // Bitfields for FpStructInRegistersInfo.flags
