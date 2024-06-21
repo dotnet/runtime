@@ -70,6 +70,7 @@ namespace System.Text.Json.SourceGeneration
             private const string JsonPropertyInfoValuesTypeRef = "global::System.Text.Json.Serialization.Metadata.JsonPropertyInfoValues";
             private const string JsonTypeInfoTypeRef = "global::System.Text.Json.Serialization.Metadata.JsonTypeInfo";
             private const string JsonTypeInfoResolverTypeRef = "global::System.Text.Json.Serialization.Metadata.IJsonTypeInfoResolver";
+            private const string EmptyTypeArray = "global::System.Array.Empty<global::System.Type>()";
 
             /// <summary>
             /// Contains an index from TypeRef to TypeGenerationSpec for the current ContextGenerationSpec.
@@ -519,7 +520,7 @@ namespace System.Text.Json.SourceGeneration
                                              or ObjectConstructionStrategy.ParameterizedConstructor)
                     {
                         string argTypes = typeMetadata.CtorParamGenSpecs.Count == 0
-                            ? "global::System.Array.Empty<global::System.Type>()"
+                            ? EmptyTypeArray
                             : $$"""new[] {{{string.Join(", ", typeMetadata.CtorParamGenSpecs.Select(p => $"typeof({p.ParameterType.FullyQualifiedName})"))}}}""";
 
                         constructorInfoFactoryFunc = $"static () => typeof({typeMetadata.TypeRef.FullyQualifiedName}).GetConstructor({InstanceMemberBindingFlagsVariableName}, binder: null, {argTypes}, modifiers: null)";
@@ -649,6 +650,10 @@ namespace System.Text.Json.SourceGeneration
                             : $"({JsonConverterTypeRef}<{propertyTypeFQN}>){ExpandConverterMethodName}(typeof({propertyTypeFQN}), new {converterFQN}(), {OptionsLocalVariableName})";
                     }
 
+                    string attributeProviderFactoryExpr = property.IsProperty
+                        ? $"typeof({property.DeclaringType.FullyQualifiedName}).GetProperty({FormatStringLiteral(property.MemberName)}, {InstanceMemberBindingFlagsVariableName}, null, typeof({property.PropertyType.FullyQualifiedName}), {EmptyTypeArray}, null)"
+                        : $"typeof({property.DeclaringType.FullyQualifiedName}).GetField({FormatStringLiteral(property.MemberName)}, {InstanceMemberBindingFlagsVariableName})";
+
                     writer.WriteLine($$"""
                         var {{InfoVarName}}{{i}} = new {{JsonPropertyInfoValuesTypeRef}}<{{propertyTypeFQN}}>
                         {
@@ -665,7 +670,7 @@ namespace System.Text.Json.SourceGeneration
                             NumberHandling = {{FormatNumberHandling(property.NumberHandling)}},
                             PropertyName = {{FormatStringLiteral(property.MemberName)}},
                             JsonPropertyName = {{FormatStringLiteral(property.JsonPropertyName)}},
-                            AttributeProviderFactory = static () => typeof({{property.DeclaringType.FullyQualifiedName}}).GetMember({{FormatStringLiteral(property.MemberName)}}, {{InstanceMemberBindingFlagsVariableName}}) is { Length: > 0 } results ? results[0] : null,
+                            AttributeProviderFactory = static () => {{attributeProviderFactoryExpr}},
                         };
 
                         properties[{{i}}] = {{JsonMetadataServicesTypeRef}}.CreatePropertyInfo<{{propertyTypeFQN}}>({{OptionsLocalVariableName}}, {{InfoVarName}}{{i}});

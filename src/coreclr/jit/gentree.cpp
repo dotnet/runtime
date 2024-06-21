@@ -15923,10 +15923,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
 
                         // Fold into GT_IND of null byref.
                         tree->BashToConst(0, TYP_BYREF);
-                        if (vnStore != nullptr)
-                        {
-                            fgValueNumberTreeConst(tree);
-                        }
+                        fgUpdateConstTreeValueNumber(tree);
 
                         JITDUMP("\nFolded to null byref:\n");
                         DISPTREE(tree);
@@ -16128,10 +16125,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
             tree->BashToConst(static_cast<int>(i1));
             tree->AsIntCon()->gtFieldSeq = fieldSeq;
 
-            if (vnStore != nullptr)
-            {
-                fgValueNumberTreeConst(tree);
-            }
+            fgUpdateConstTreeValueNumber(tree);
 
             JITDUMP("Bashed to int constant:\n");
             DISPTREE(tree);
@@ -16351,10 +16345,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
 #ifdef TARGET_64BIT
             tree->AsIntCon()->gtFieldSeq = fieldSeq;
 #endif
-            if (vnStore != nullptr)
-            {
-                fgValueNumberTreeConst(tree);
-            }
+            fgUpdateConstTreeValueNumber(tree);
 
             JITDUMP("Bashed to long constant:\n");
             DISPTREE(tree);
@@ -16509,10 +16500,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
                    (tree->gtDebugFlags & GTF_DEBUG_NODE_LARGE));
 
             tree->BashToConst(d1, tree->TypeGet());
-            if (vnStore != nullptr)
-            {
-                fgValueNumberTreeConst(tree);
-            }
+            fgUpdateConstTreeValueNumber(tree);
 
             JITDUMP("Bashed to fp constant:\n");
             DISPTREE(tree);
@@ -20349,6 +20337,12 @@ bool GenTree::isCommutativeHWIntrinsic() const
             case NI_AVX512F_Min:
             {
                 return !varTypeIsFloating(node->GetSimdBaseType());
+            }
+
+            case NI_AVX512F_Add:
+            case NI_AVX512F_Multiply:
+            {
+                return node->GetOperandCount() == 2;
             }
 #endif // TARGET_XARCH
 
@@ -25989,6 +25983,18 @@ GenTree* Compiler::gtNewSimdShuffleNode(
     uint64_t value  = 0;
     simd_t   vecCns = {};
 
+    if (simdSize == 16)
+    {
+        // Vector128.Shuffle(a, Vector128.Create(2, 3, 0, 1)) -> ExtractVector128(v.AsUInt64(), v.AsUInt64(), 1)
+        if ((op2->GetIntegralVectorConstElement(0, TYP_ULONG) == 0x300000002) &&
+            (op2->GetIntegralVectorConstElement(1, TYP_ULONG) == 0x100000000))
+        {
+            GenTree* op1Clone = fgMakeMultiUse(&op1);
+            return gtNewSimdHWIntrinsicNode(type, op1, op1Clone, gtNewIconNode(1), NI_AdvSimd_ExtractVector128,
+                                            CORINFO_TYPE_ULONG, simdSize);
+        }
+    }
+
     for (size_t index = 0; index < elementCount; index++)
     {
         value = op2->GetIntegralVectorConstElement(index, simdBaseType);
@@ -26307,13 +26313,13 @@ GenTree* Compiler::gtNewSimdSumNode(var_types type, GenTree* op1, CorInfoType si
             {
                 assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
                 // The permute below gives us  [0, 1, 2, 3] -> [1, 0, 3, 2]
-                op1 = gtNewSimdHWIntrinsicNode(type, op1, gtNewIconNode((int)0b10110001, TYP_INT), NI_AVX_Permute,
+                op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, gtNewIconNode((int)0b10110001, TYP_INT), NI_AVX_Permute,
                                                simdBaseJitType, simdSize);
                 // The add below now results in [0 + 1, 1 + 0, 2 + 3, 3 + 2]
                 op1         = gtNewSimdBinOpNode(GT_ADD, TYP_SIMD16, op1, op1Shuffled, simdBaseJitType, simdSize);
                 op1Shuffled = fgMakeMultiUse(&op1);
                 // The permute below gives us  [0 + 1, 1 + 0, 2 + 3, 3 + 2] -> [2 + 3, 3 + 2, 0 + 1, 1 + 0]
-                op1 = gtNewSimdHWIntrinsicNode(type, op1, gtNewIconNode((int)0b01001110, TYP_INT), NI_AVX_Permute,
+                op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, gtNewIconNode((int)0b01001110, TYP_INT), NI_AVX_Permute,
                                                simdBaseJitType, simdSize);
             }
             else
@@ -26345,7 +26351,7 @@ GenTree* Compiler::gtNewSimdSumNode(var_types type, GenTree* op1, CorInfoType si
             {
                 assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
                 // The permute below gives us  [0, 1] -> [1, 0]
-                op1 = gtNewSimdHWIntrinsicNode(type, op1, gtNewIconNode((int)0b0001, TYP_INT), NI_AVX_Permute,
+                op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, gtNewIconNode((int)0b0001, TYP_INT), NI_AVX_Permute,
                                                simdBaseJitType, simdSize);
             }
             else
@@ -27476,6 +27482,7 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad(GenTree** pAddr) const
                 addr = Op(3);
                 break;
 
+            case NI_Sve_GatherVectorWithByteOffsets:
             case NI_Sve_LoadVector:
             case NI_Sve_LoadVectorNonTemporal:
             case NI_Sve_LoadVector128AndReplicateToVector:
@@ -27525,12 +27532,6 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad(GenTree** pAddr) const
             case NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtend:
             case NI_Sve_GatherVectorUInt32ZeroExtend:
                 addr = Op(2);
-                if (varTypeIsSIMD(addr->gtType))
-                {
-                    // The address is a vector of addresses.
-                    // Return true, but do not set pAddr.
-                    return true;
-                }
                 break;
 
 #endif // TARGET_ARM64
@@ -27610,7 +27611,18 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad(GenTree** pAddr) const
 
     if (addr != nullptr)
     {
+#ifdef TARGET_ARM64
+        static_assert_no_msg(
+            AreContiguous(NI_Sve_GatherVector, NI_Sve_GatherVectorByteZeroExtend, NI_Sve_GatherVectorInt16SignExtend,
+                          NI_Sve_GatherVectorInt16WithByteOffsetsSignExtend, NI_Sve_GatherVectorInt32SignExtend,
+                          NI_Sve_GatherVectorInt32WithByteOffsetsSignExtend, NI_Sve_GatherVectorSByteSignExtend,
+                          NI_Sve_GatherVectorUInt16WithByteOffsetsZeroExtend, NI_Sve_GatherVectorUInt16ZeroExtend,
+                          NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtend, NI_Sve_GatherVectorUInt32ZeroExtend));
+        assert(varTypeIsI(addr) || (varTypeIsSIMD(addr) && ((intrinsicId >= NI_Sve_GatherVector) &&
+                                                            (intrinsicId <= NI_Sve_GatherVectorUInt32ZeroExtend))));
+#else
         assert(varTypeIsI(addr));
+#endif
         return true;
     }
 
@@ -28056,38 +28068,38 @@ ClassLayout* GenTreeHWIntrinsic::GetLayout(Compiler* compiler) const
         case NI_AdvSimd_Arm64_LoadPairScalarVector64NonTemporal:
         case NI_AdvSimd_Arm64_LoadPairVector64:
         case NI_AdvSimd_Arm64_LoadPairVector64NonTemporal:
-        case NI_AdvSimd_LoadVector64x2AndUnzip:
-        case NI_AdvSimd_LoadVector64x2:
+        case NI_AdvSimd_Load2xVector64AndUnzip:
+        case NI_AdvSimd_Load2xVector64:
         case NI_AdvSimd_LoadAndInsertScalarVector64x2:
         case NI_AdvSimd_LoadAndReplicateToVector64x2:
             return compiler->typGetBlkLayout(16);
 
         case NI_AdvSimd_Arm64_LoadPairVector128:
         case NI_AdvSimd_Arm64_LoadPairVector128NonTemporal:
-        case NI_AdvSimd_Arm64_LoadVector128x2AndUnzip:
-        case NI_AdvSimd_Arm64_LoadVector128x2:
-        case NI_AdvSimd_LoadVector64x4:
-        case NI_AdvSimd_LoadVector64x4AndUnzip:
+        case NI_AdvSimd_Arm64_Load2xVector128AndUnzip:
+        case NI_AdvSimd_Arm64_Load2xVector128:
+        case NI_AdvSimd_Load4xVector64:
+        case NI_AdvSimd_Load4xVector64AndUnzip:
         case NI_AdvSimd_LoadAndReplicateToVector64x4:
         case NI_AdvSimd_Arm64_LoadAndReplicateToVector128x2:
         case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x2:
         case NI_AdvSimd_LoadAndInsertScalarVector64x4:
             return compiler->typGetBlkLayout(32);
 
-        case NI_AdvSimd_LoadVector64x3AndUnzip:
-        case NI_AdvSimd_LoadVector64x3:
+        case NI_AdvSimd_Load3xVector64AndUnzip:
+        case NI_AdvSimd_Load3xVector64:
         case NI_AdvSimd_LoadAndInsertScalarVector64x3:
         case NI_AdvSimd_LoadAndReplicateToVector64x3:
             return compiler->typGetBlkLayout(24);
 
-        case NI_AdvSimd_Arm64_LoadVector128x3AndUnzip:
-        case NI_AdvSimd_Arm64_LoadVector128x3:
+        case NI_AdvSimd_Arm64_Load3xVector128AndUnzip:
+        case NI_AdvSimd_Arm64_Load3xVector128:
         case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x3:
         case NI_AdvSimd_Arm64_LoadAndReplicateToVector128x3:
             return compiler->typGetBlkLayout(48);
 
-        case NI_AdvSimd_Arm64_LoadVector128x4AndUnzip:
-        case NI_AdvSimd_Arm64_LoadVector128x4:
+        case NI_AdvSimd_Arm64_Load4xVector128AndUnzip:
+        case NI_AdvSimd_Arm64_Load4xVector128:
         case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x4:
         case NI_AdvSimd_Arm64_LoadAndReplicateToVector128x4:
             return compiler->typGetBlkLayout(64);
@@ -28518,6 +28530,110 @@ genTreeOps GenTreeHWIntrinsic::HWOperGet(bool* isScalar) const
     }
 }
 
+//---------------------------------------------------------------------------------------
+// GenTreeHWIntrinsic::ShouldConstantProp:
+//    Determines if a given operand should be constant propagated
+//
+// Arguments
+//    operand     - The operand to check
+//    vecCon      - The vector constant to check
+//
+// Return Value
+//    true if operand should be constant propagated, otherwise false
+//
+// Remarks
+//    This method takes the operand and vector constant given that assertion prop
+//    may be checking if the underlying constant for a lcl_var should be propagated
+//
+bool GenTreeHWIntrinsic::ShouldConstantProp(GenTree* operand, GenTreeVecCon* vecCon)
+{
+    assert(HWIntrinsicInfo::CanBenefitFromConstantProp(gtHWIntrinsicId));
+
+    var_types simdBaseType = GetSimdBaseType();
+
+    switch (gtHWIntrinsicId)
+    {
+#if defined(TARGET_ARM64)
+        case NI_Vector64_op_Equality:
+        case NI_Vector64_op_Inequality:
+#endif // TARGET_ARM64
+        case NI_Vector128_op_Equality:
+        case NI_Vector128_op_Inequality:
+#if defined(TARGET_XARCH)
+        case NI_Vector256_op_Equality:
+        case NI_Vector256_op_Inequality:
+        case NI_Vector512_op_Equality:
+        case NI_Vector512_op_Inequality:
+#endif // TARGET_XARCH
+        {
+            // We can optimize when the constant is zero, but only
+            // for non floating-point since +0.0 == -0.0.
+            return vecCon->IsZero() && !varTypeIsFloating(simdBaseType);
+        }
+
+#if defined(TARGET_ARM64)
+        case NI_AdvSimd_CompareEqual:
+        case NI_AdvSimd_Arm64_CompareEqual:
+        case NI_AdvSimd_Arm64_CompareEqualScalar:
+        {
+            // We can optimize when the constant is zero due to a
+            // specialized encoding for the instruction
+            return vecCon->IsZero();
+        }
+
+        case NI_AdvSimd_CompareGreaterThan:
+        case NI_AdvSimd_CompareGreaterThanOrEqual:
+        case NI_AdvSimd_Arm64_CompareGreaterThan:
+        case NI_AdvSimd_Arm64_CompareGreaterThanOrEqual:
+        case NI_AdvSimd_Arm64_CompareGreaterThanScalar:
+        case NI_AdvSimd_Arm64_CompareGreaterThanOrEqualScalar:
+        {
+            // We can optimize when the constant is zero, but only
+            // for signed types, due to a specialized encoding for
+            // the instruction
+            return vecCon->IsZero() && !varTypeIsUnsigned(simdBaseType);
+        }
+#endif // TARGET_ARM64
+
+#if defined(TARGET_XARCH)
+        case NI_SSE41_Insert:
+        {
+            // We can optimize for float when the constant is zero
+            // due to a specialized encoding for the instruction
+            return (simdBaseType == TYP_FLOAT) && vecCon->IsZero();
+        }
+
+        case NI_EVEX_CompareEqualMask:
+        case NI_EVEX_CompareNotEqualMask:
+        {
+            // We can optimize when the constant is zero, but only
+            // for non floating-point since +0.0 == -0.0
+            return vecCon->IsZero() && !varTypeIsFloating(simdBaseType);
+        }
+#endif // TARGET_XARCH
+
+        case NI_Vector128_Shuffle:
+#if defined(TARGET_XARCH)
+        case NI_Vector256_Shuffle:
+        case NI_Vector512_Shuffle:
+#elif defined(TARGET_ARM64)
+        case NI_Vector64_Shuffle:
+#endif
+        {
+            // The shuffle indices need to be constant so we can preserve
+            // the node as a hwintrinsic instead of rewriting as a user call.
+            assert(GetOperandCount() == 2);
+            return IsUserCall() && (operand == Op(2));
+        }
+
+        default:
+        {
+            break;
+        }
+    }
+
+    return false;
+}
 #endif // FEATURE_HW_INTRINSICS
 
 //---------------------------------------------------------------------------------------
@@ -29555,6 +29671,34 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
         return tree;
     }
 
+    NamedIntrinsic ni              = tree->GetHWIntrinsicId();
+    var_types      retType         = tree->TypeGet();
+    var_types      simdBaseType    = tree->GetSimdBaseType();
+    CorInfoType    simdBaseJitType = tree->GetSimdBaseJitType();
+    unsigned int   simdSize        = tree->GetSimdSize();
+
+    simd_t simdVal = {};
+
+    if (GenTreeVecCon::IsHWIntrinsicCreateConstant<simd_t>(tree, simdVal))
+    {
+        GenTreeVecCon* vecCon = gtNewVconNode(retType);
+
+        for (GenTree* arg : tree->Operands())
+        {
+            DEBUG_DESTROY_NODE(arg);
+        }
+
+        vecCon->gtSimdVal = simdVal;
+
+        if (fgGlobalMorph)
+        {
+            INDEBUG(vecCon->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+        }
+
+        fgUpdateConstTreeValueNumber(vecCon);
+        return vecCon;
+    }
+
     GenTree* op1     = nullptr;
     GenTree* op2     = nullptr;
     GenTree* op3     = nullptr;
@@ -29584,6 +29728,86 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
         {
             return tree;
         }
+    }
+
+    if (tree->OperIsConvertMaskToVector())
+    {
+        GenTree* op = op1;
+
+        if (!op->OperIsHWIntrinsic())
+        {
+            return tree;
+        }
+
+        unsigned            simdBaseTypeSize = genTypeSize(simdBaseType);
+        GenTreeHWIntrinsic* cvtOp            = op->AsHWIntrinsic();
+
+        if (!cvtOp->OperIsConvertVectorToMask())
+        {
+            return tree;
+        }
+
+        if ((genTypeSize(cvtOp->GetSimdBaseType()) != simdBaseTypeSize))
+        {
+            // We need the operand to be the same kind of mask; otherwise
+            // the bitwise operation can differ in how it performs
+            return tree;
+        }
+
+#if defined(TARGET_XARCH)
+        GenTree* vectorNode = cvtOp->Op(1);
+#elif defined(TARGET_ARM64)
+        GenTree* vectorNode = cvtOp->Op(2);
+#else
+#error Unsupported platform
+#endif // !TARGET_XARCH && !TARGET_ARM64
+
+        DEBUG_DESTROY_NODE(op, tree);
+        INDEBUG(vectorNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+
+        return vectorNode;
+    }
+
+    if (tree->OperIsConvertVectorToMask())
+    {
+        GenTree* op = op1;
+
+#if defined(TARGET_ARM64)
+        if (!op->OperIsHWIntrinsic(NI_Sve_CreateTrueMaskAll))
+        {
+            return tree;
+        }
+        op = op2;
+#endif // TARGET_ARM64
+
+        if (!op->OperIsHWIntrinsic())
+        {
+            return tree;
+        }
+
+        unsigned            simdBaseTypeSize = genTypeSize(simdBaseType);
+        GenTreeHWIntrinsic* cvtOp            = op->AsHWIntrinsic();
+
+        if (!cvtOp->OperIsConvertMaskToVector())
+        {
+            return tree;
+        }
+
+        if ((genTypeSize(cvtOp->GetSimdBaseType()) != simdBaseTypeSize))
+        {
+            // We need the operand to be the same kind of mask; otherwise
+            // the bitwise operation can differ in how it performs
+            return tree;
+        }
+
+        GenTree* maskNode = cvtOp->Op(1);
+
+#if defined(TARGET_ARM64)
+        DEBUG_DESTROY_NODE(op1);
+#endif // TARGET_ARM64
+
+        DEBUG_DESTROY_NODE(op, tree);
+        return maskNode;
     }
 
     bool       isScalar = false;
@@ -29617,12 +29841,6 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
     }
 
     GenTree* resultNode = tree;
-
-    NamedIntrinsic ni              = tree->GetHWIntrinsicId();
-    var_types      retType         = tree->TypeGet();
-    var_types      simdBaseType    = tree->GetSimdBaseType();
-    CorInfoType    simdBaseJitType = tree->GetSimdBaseJitType();
-    unsigned int   simdSize        = tree->GetSimdSize();
 
     if (otherNode == nullptr)
     {
@@ -29922,7 +30140,9 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 
                     // MultiplyByScalar takes a vector as the second operand but only utilizes element 0
                     // We need to extract it and then functionally broadcast it up for the evaluation to
-                    // work as expected.
+                    // work as expected. Ensuring we broadcast up to the target vector size.
+
+                    otherNode->gtType = retType;
 
                     if (varTypeIsFloating(simdBaseType))
                     {
@@ -30400,10 +30620,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 
         if (resultNode->OperIsConst())
         {
-            if (vnStore != nullptr)
-            {
-                fgValueNumberTreeConst(resultNode);
-            }
+            fgUpdateConstTreeValueNumber(resultNode);
 
             // Make sure no side effect flags are set on this constant node.
             resultNode->gtFlags &= ~GTF_ALL_EFFECT;

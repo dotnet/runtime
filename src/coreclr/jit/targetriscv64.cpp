@@ -131,7 +131,7 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
 
             ABIPassingSegment seg1st = ABIPassingSegment::InRegister(firstReg, info.offset1st, info.Size1st());
             ABIPassingSegment seg2nd = ABIPassingSegment::InRegister(secondReg, info.offset2nd, info.Size2nd());
-            return {2, new (comp, CMK_ABI) ABIPassingSegment[]{seg1st, seg2nd}};
+            return ABIPassingInformation::FromSegments(comp, seg1st, seg2nd);
         }
     }
     else
@@ -166,7 +166,7 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
                     (m_intRegs.Count() > 0)
                         ? ABIPassingSegment::InRegister(m_intRegs.Dequeue(), TARGET_POINTER_SIZE, tailSize)
                         : passOnStack(TARGET_POINTER_SIZE, tailSize);
-                return {2, new (comp, CMK_ABI) ABIPassingSegment[2]{head, tail}};
+                return ABIPassingInformation::FromSegments(comp, head, tail);
             }
         }
         else

@@ -89,6 +89,7 @@ namespace System.Numerics
         public float this[int index]
         {
             [Intrinsic]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             readonly get
             {
                 if ((uint)index >= Count)
@@ -99,6 +100,7 @@ namespace System.Numerics
             }
 
             [Intrinsic]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             set
             {
                 if ((uint)index >= Count)
@@ -133,6 +135,7 @@ namespace System.Numerics
         /// <returns>The result of the division.</returns>
         /// <remarks>The <see cref="Vector2.op_Division" /> method defines the division operation for <see cref="Vector2" /> objects.</remarks>
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector2 operator /(Vector2 value1, float value2) => (value1.AsVector128Unsafe() / value2).AsVector2();
 
         /// <summary>Returns a value that indicates whether each pair of elements in two specified vectors is equal.</summary>
@@ -166,6 +169,7 @@ namespace System.Numerics
         /// <returns>The scaled vector.</returns>
         /// <remarks>The <see cref="Vector2.op_Multiply" /> method defines the multiplication operation for <see cref="Vector2" /> objects.</remarks>
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector2 operator *(Vector2 left, float right) => (left.AsVector128Unsafe() * right).AsVector2();
 
         /// <summary>Multiplies the scalar value by the specified vector.</summary>
@@ -190,6 +194,7 @@ namespace System.Numerics
         /// <returns>The negated vector.</returns>
         /// <remarks>The <see cref="op_UnaryNegation" /> method defines the unary negation operation for <see cref="Vector2" /> objects.</remarks>
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector2 operator -(Vector2 value) => (-value.AsVector128Unsafe()).AsVector2();
 
         /// <summary>Returns a vector whose elements are the absolute values of each of the specified vector's elements.</summary>
@@ -234,6 +239,7 @@ namespace System.Numerics
         /// <summary>Constructs a vector from the given <see cref="ReadOnlySpan{Single}" />. The span must contain at least 2 elements.</summary>
         /// <param name="values">The span of elements to assign to the vector.</param>
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector2 Create(ReadOnlySpan<float> values)
         {
             if (values.Length < Count)
@@ -306,7 +312,7 @@ namespace System.Numerics
         /// ]]></format></remarks>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector2 Lerp(Vector2 value1, Vector2 value2, float amount) => (value1 * (1.0f - amount)) + (value2 * amount);
+        public static Vector2 Lerp(Vector2 value1, Vector2 value2, float amount) => MultiplyAddEstimate(value1, Create(1.0f - amount), value2 * amount);
 
         /// <summary>Returns a vector whose elements are the maximum of each of the pairs of elements in two specified vectors.</summary>
         /// <param name="value1">The first vector.</param>
@@ -367,7 +373,15 @@ namespace System.Numerics
         /// <param name="normal">The normal of the surface being reflected off.</param>
         /// <returns>The reflected vector.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector2 Reflect(Vector2 vector, Vector2 normal) => vector - (2.0f * (Dot(vector, normal) * normal));
+        public static Vector2 Reflect(Vector2 vector, Vector2 normal)
+        {
+            // This implementation is based on the DirectX Math Library XMVector2Reflect method
+            // https://github.com/microsoft/DirectXMath/blob/master/Inc/DirectXMathVector.inl
+
+            Vector2 tmp = Create(Dot(vector, normal));
+            tmp += tmp;
+            return MultiplyAddEstimate(-tmp, normal, vector);
+        }
 
         /// <summary>Returns a vector whose elements are the square root of each of a specified vector's elements.</summary>
         /// <param name="value">A vector.</param>
@@ -393,11 +407,8 @@ namespace System.Numerics
         internal static Vector2 Transform(Vector2 position, in Matrix3x2.Impl matrix)
         {
             Vector2 result = matrix.X * position.X;
-
-            result += matrix.Y * position.Y;
-            result += matrix.Z;
-
-            return result;
+            result = MultiplyAddEstimate(matrix.Y, Create(position.Y), result);
+            return result + matrix.Z;
         }
 
         /// <summary>Transforms a vector by a specified 4x4 matrix.</summary>
@@ -412,23 +423,7 @@ namespace System.Numerics
         /// <param name="rotation">The rotation to apply.</param>
         /// <returns>The transformed vector.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector2 Transform(Vector2 value, Quaternion rotation)
-        {
-            float x2 = rotation.X + rotation.X;
-            float y2 = rotation.Y + rotation.Y;
-            float z2 = rotation.Z + rotation.Z;
-
-            float wz2 = rotation.W * z2;
-            float xx2 = rotation.X * x2;
-            float xy2 = rotation.X * y2;
-            float yy2 = rotation.Y * y2;
-            float zz2 = rotation.Z * z2;
-
-            return Create(
-                value.X * (1.0f - yy2 - zz2) + value.Y * (xy2 - wz2),
-                value.X * (xy2 + wz2) + value.Y * (1.0f - xx2 - zz2)
-            );
-        }
+        public static Vector2 Transform(Vector2 value, Quaternion rotation) => Vector4.Transform(value, rotation).AsVector2();
 
         /// <summary>Transforms a vector normal by the given 3x2 matrix.</summary>
         /// <param name="normal">The source vector.</param>
@@ -440,9 +435,7 @@ namespace System.Numerics
         internal static Vector2 TransformNormal(Vector2 normal, in Matrix3x2.Impl matrix)
         {
             Vector2 result = matrix.X * normal.X;
-
-            result += matrix.Y * normal.Y;
-
+            result = MultiplyAddEstimate(matrix.Y, Create(normal.Y), result);
             return result;
         }
 
@@ -456,10 +449,8 @@ namespace System.Numerics
         internal static Vector2 TransformNormal(Vector2 normal, in Matrix4x4.Impl matrix)
         {
             Vector4 result = matrix.X * normal.X;
-
-            result += matrix.Y * normal.Y;
-
-            return result.AsVector128().AsVector2();
+            result = Vector4.MultiplyAddEstimate(matrix.Y, Vector4.Create(normal.Y), result);
+            return result.AsVector2();
         }
 
         /// <summary>Copies the elements of the vector to a specified array.</summary>
