@@ -173,7 +173,7 @@ void CopyReturnedFpStructFromRegisters(void* dest, UINT64 returnRegs[2], FpStruc
     if ((info.flags & FpStruct::OnlyOne) == 0)
     {
         char* field2ndDest = (char*)dest + info.offset2nd;
-        if (handleGcRefs && (info.flags & FpStruct::GcRef))
+        if (handleGcRefs && info.GetIntFieldKind() == FpStruct::IntKind::GcRef)
         {
             _ASSERTE(info.flags & (FpStruct::Float1st | FpStruct::Float2nd));
             _ASSERTE(info.GetSize2nd() == TARGET_POINTER_SIZE);

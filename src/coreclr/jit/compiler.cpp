@@ -8325,12 +8325,13 @@ void Compiler::GetTypesFromFpStructInRegistersInfo(FpStructInRegistersInfo info,
     if ((info.flags & (FpStruct::Float1st | FpStruct::Float2nd)) != 0)
     {
         bool      isInt1st = ((info.flags & FpStruct::Float1st) == 0);
+        FpStruct::IntKind kind = info.GetIntFieldKind();
         var_types intType;
-        if ((info.flags & FpStruct::GcRef) != 0)
+        if (kind == FpStruct::IntKind::GcRef)
         {
             intType = TYP_REF;
         }
-        else if ((info.flags & FpStruct::GcByRef) != 0)
+        else if (kind == FpStruct::IntKind::GcByRef)
         {
             intType = TYP_BYREF;
         }

@@ -359,6 +359,11 @@ enum StructFloatFieldInfoFlags
 // Bitfields for FpStructInRegistersInfo::flags
 namespace FpStruct
 {
+    enum class IntKind
+    {
+        Signed, Unsigned, GcRef, GcByRef
+    };
+
     enum Flags
     {
         // Positions of bitfields
@@ -368,8 +373,7 @@ namespace FpStruct
         PosSizeShift1st = 3, // 2 bits
         PosFloat2nd     = 5,
         PosSizeShift2nd = 6, // 2 bits
-        PosGcRef        = 8,
-        PosGcByRef      = 9,
+        PosIntFieldKind = 8, // 2 bits
 
         UseIntCallConv = 0, // struct is passed according to integer calling convention
 
@@ -380,10 +384,8 @@ namespace FpStruct
         SizeShift1st = 0b11 << PosSizeShift1st, // log2(size) of 1st field
         Float2nd     =    1 << PosFloat2nd,     // has two fields, 2nd is floating (and 1st is integer)
         SizeShift2nd = 0b11 << PosSizeShift2nd, // log2(size) of 2nd field
-        GcRef        =    1 << PosGcRef,        // the integer field is a GC object reference
-        GcByRef      =    1 << PosGcByRef,      // the integer field is a GC interior pointer
+        IntFieldKind =    1 << PosIntFieldKind, // the kind of the integer field (FpStruct::IntKind)
         // Note: flags OnlyOne, BothFloat, Float1st, and Float2nd are mutually exclusive
-        // Note: flags GcRef, and ByRef are mutually exclusive and may only co-exist with either Float1st or Float2nd
     };
 }
 
@@ -424,6 +426,11 @@ struct FpStructInRegistersInfo
     bool IsSize2nd8() const
     {
         return (flags & FpStruct::SizeShift2nd) == (3 << FpStruct::PosSizeShift2nd);
+    }
+
+    FpStruct::IntKind GetIntFieldKind() const
+    {
+        return (FpStruct::IntKind)((flags >> FpStruct::PosIntFieldKind) & 0b11);
     }
 
     StructFloatFieldInfoFlags ToOldFlags() const

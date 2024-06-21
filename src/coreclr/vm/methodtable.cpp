@@ -2928,10 +2928,14 @@ static int GetRiscV64PassStructInRegisterFlags(TypeHandle th)
 
 #if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
 static void SetFpStructInRegistersInfoField(FpStructInRegistersInfo& info, int index,
-    bool isFloating, bool isGcRef, bool isGcByRef, unsigned size, uint32_t offset)
+    bool isFloating, FpStruct::IntKind intKind, unsigned size, uint32_t offset)
 {
     assert(index < 2);
-    assert(!isFloating || size == sizeof(float) || size == sizeof(double));
+    if (isFloating)
+    {
+        assert(size == sizeof(float) || size == sizeof(double));
+        assert(intKind == FpStruct::IntKind::Signed);
+    }
 
     assert(size >= 1 && size <= 8);
     assert((size & (size - 1)) == 0); // size needs to be a power of 2
@@ -2944,10 +2948,7 @@ static void SetFpStructInRegistersInfoField(FpStructInRegistersInfo& info, int i
         "1st flags need to be 2nd flags shifted by typeSize");
 
     int type = (isFloating << PosFloat1st) | (sizeShift << PosSizeShift1st);
-    info.flags = FpStruct::Flags(info.flags |
-        (type << (typeSize * index)) |
-        (isGcRef << PosGcRef) |
-        (isGcByRef << PosGcByRef));
+    info.flags = FpStruct::Flags(info.flags | (type << (typeSize * index)) | ((int)intKind << PosIntFieldKind));
     (index == 0 ? info.offset1st : info.offset2nd) = offset;
 }
 
@@ -3038,13 +3039,23 @@ static bool FlattenFields(TypeHandle th, uint32_t offset, FpStructInRegistersInf
                     return false;
                 }
 
+                bool isFloating = CorTypeInfo::IsFloat_NoThrow(type);
+                bool isSignedInt = (
+                    type == ELEMENT_TYPE_I1 ||
+                    type == ELEMENT_TYPE_I2 ||
+                    type == ELEMENT_TYPE_I4 ||
+                    type == ELEMENT_TYPE_I8 ||
+                    type == ELEMENT_TYPE_I);
                 CorInfoGCType gcType = CorTypeInfo::GetGCType_NoThrow(type);
+
+                FpStruct::IntKind intKind =
+                    (gcType == TYPE_GC_REF)   ? FpStruct::IntKind::GcRef :
+                    (gcType == TYPE_GC_BYREF) ? FpStruct::IntKind::GcByRef :
+                    (isSignedInt || isFloating) ? FpStruct::IntKind::Signed : FpStruct::IntKind::Unsigned;
+
                 SetFpStructInRegistersInfoField(info, typeIndex++,
-                    CorTypeInfo::IsFloat_NoThrow(type),
-                    (gcType == TYPE_GC_REF),
-                    (gcType == TYPE_GC_BYREF),
-                    CorTypeInfo::Size_NoThrow(type),
-                    offset + fields[i].GetOffset());
+                    isFloating, intKind, CorTypeInfo::Size_NoThrow(type), offset + fields[i].GetOffset());
+
                 LOG((LF_JIT, LL_EVERYTHING, "FpStructInRegistersInfo:%*s  * found field %s [%i..%i), type: %s\n",
                     nestingLevel * 4, "", fields[i].GetDebugName(),
                     fields[i].GetOffset(), fields[i].GetOffset() + fields[i].GetSize(), CorTypeInfo::GetName(type)));
@@ -3119,8 +3130,7 @@ static bool FlattenFields(TypeHandle th, uint32_t offset, FpStructInRegistersInf
 
                 SetFpStructInRegistersInfoField(info, typeIndex++,
                     (category == NativeFieldCategory::FLOAT),
-                    false,
-                    false,
+                    FpStruct::IntKind::Signed, // NativeFieldDescriptor doesn't save signedness, TODO: should it?
                     fields[i].NativeSize(),
                     offset + fields[i].GetExternalOffset());
                 LOG((LF_JIT, LL_EVERYTHING, "FpStructInRegistersInfo:%*s  * found field %s [%i..%i), type: %s\n",
@@ -3172,10 +3182,10 @@ static FpStructInRegistersInfo GetRiscV64PassFpStructInRegistersInfoImpl(TypeHan
         assert(info.offset2nd == 0);
         info.flags = FpStruct::Flags(info.flags ^ (Float1st | OnlyOne)); // replace Float1st with OnlyOne
     }
-    assert(nFields == 1+ !(info.flags & OnlyOne));
+    assert(nFields == ((info.flags & OnlyOne) != 0 ? 1 : 2));
     int floatFlags = info.flags & (OnlyOne | BothFloat | Float1st | Float2nd);
     assert(floatFlags != 0);
-    assert((floatFlags & (floatFlags - 1)) == 0); // there can be only one of the above flags
+    assert((floatFlags & (floatFlags - 1)) == 0); // there can be only one of (OnlyOne | BothFloat | Float1st | Float2nd)
     if (nFields == 2)
     {
         unsigned end1st = info.offset1st + info.GetSize1st();
@@ -3184,27 +3194,32 @@ static FpStructInRegistersInfo GetRiscV64PassFpStructInRegistersInfoImpl(TypeHan
     }
     assert(info.offset1st + info.GetSize1st() <= th.GetSize());
     assert(info.offset2nd + info.GetSize2nd() <= th.GetSize());
-    if (info.flags & (GcRef | GcByRef))
+    if (info.GetIntFieldKind() != FpStruct::IntKind::Signed)
     {
-        assert(info.flags ^ (GcRef | GcByRef)); // either Ref or ByRef, not both
         assert(info.flags & (Float1st | Float2nd));
-        assert((info.flags & Float1st) || (info.IsSize1st8() && IS_ALIGNED(info.offset1st, TARGET_POINTER_SIZE)));
-        assert((info.flags & Float2nd) || (info.IsSize2nd8() && IS_ALIGNED(info.offset2nd, TARGET_POINTER_SIZE)));
+        if (info.GetIntFieldKind() >= FpStruct::IntKind::GcRef)
+        {
+            assert((info.flags & Float2nd) != 0
+                ? (info.IsSize1st8() && IS_ALIGNED(info.offset1st, TARGET_POINTER_SIZE))
+                : (info.IsSize2nd8() && IS_ALIGNED(info.offset2nd, TARGET_POINTER_SIZE)));
+        }
     }
+    if (info.flags & (OnlyOne | BothFloat))
+        assert(info.GetIntFieldKind() == FpStruct::IntKind::Signed);
 
+    static const char* intKindNames[] = { "Signed", "Unsigned", "GcRef", "GcByRef" };
     LOG((LF_JIT, LL_EVERYTHING, "FpStructInRegistersInfo: "
-        "struct %s (%u bytes) can be passed with floating-point calling convention, flags=%#02x, "
-        "%s, sizes={%u, %u}, GcRef=%i, GcByRef=%i, offsets={%u, %u}\n",
+        "struct %s (%u bytes) can be passed with floating-point calling convention, flags=%#02x; "
+        "%s, sizes={%u, %u}, offsets={%u, %u}, IntFieldKind=%s\n",
         (!th.IsTypeDesc() ? th.AsMethodTable() : th.AsNativeValueType())->GetDebugClassName(), th.GetSize(), info.flags,
-        ( (info.flags & FpStruct::OnlyOne) ? "OnlyFloat"
-        : (info.flags & FpStruct::BothFloat) ? "BothFloat"
-        : (info.flags & FpStruct::Float1st) ? "Float1st"
+        ( (info.flags & OnlyOne) ? "OnlyFloat"
+        : (info.flags & BothFloat) ? "BothFloat"
+        : (info.flags & Float1st) ? "Float1st"
         : "Float2nd" ),
         info.GetSize1st(), info.GetSize2nd(),
-        (info.flags & FpStruct::GcRef),
-        (info.flags & FpStruct::GcByRef),
-        info.offset1st, info.offset2nd));
-
+        info.offset1st, info.offset2nd,
+        intKindNames[(int)info.GetIntFieldKind()]
+    ));
     return info;
 }
 
