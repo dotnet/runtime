@@ -678,6 +678,22 @@ class LiveVarAnalysis
                 }
             }
         } while (changed && dfsTree->HasCycle());
+
+        // If we had unremovable blocks that are not in the DFS tree then make
+        // 'this' alive in them if we need to keep it alive.
+        // This would normally not be necessary assuming those blocks are
+        // actually unreachable; however, throw helpers fall into this category
+        // because we do not model them correctly, and those will actually end
+        // up reachable. Fix that up here.
+        if (keepAliveThis && (dfsTree->GetPostOrderCount() != m_compiler->fgBBcount))
+        {
+            unsigned thisIndex = m_compiler->lvaGetDesc(m_compiler->info.compThisArg)->lvVarIndex;
+            for (BasicBlock* block : m_compiler->Blocks())
+            {
+                VarSetOps::AddElemD(m_compiler, block->bbLiveIn, thisIndex);
+                VarSetOps::AddElemD(m_compiler, block->bbLiveOut, thisIndex);
+            }
+        }
     }
 
 public:
@@ -1095,12 +1111,10 @@ GenTree* Compiler::fgTryRemoveDeadStoreEarly(Statement* stmt, GenTreeLclVarCommo
 void Compiler::fgComputeLife(VARSET_TP&           life,
                              GenTree*             startNode,
                              GenTree*             endNode,
-                             VARSET_VALARG_TP     volatileVars,
+                             VARSET_VALARG_TP     keepAliveVars,
                              bool* pStmtInfoDirty DEBUGARG(bool* treeModf))
 {
     // Don't kill vars in scope
-    VARSET_TP keepAliveVars(VarSetOps::Union(this, volatileVars, compCurBB->bbScope));
-
     noway_assert(VarSetOps::IsSubset(this, keepAliveVars, life));
     noway_assert(endNode || (startNode == compCurStmt->GetRootNode()));
     assert(!fgIsDoingEarlyLiveness);
@@ -1161,11 +1175,8 @@ void Compiler::fgComputeLife(VARSET_TP&           life,
     }
 }
 
-void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALARG_TP volatileVars)
+void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALARG_TP keepAliveVars)
 {
-    // Don't kill volatile vars and vars in scope.
-    VARSET_TP keepAliveVars(VarSetOps::Union(this, volatileVars, block->bbScope));
-
     noway_assert(VarSetOps::IsSubset(this, keepAliveVars, life));
 
     LIR::Range& blockRange = LIR::AsRange(block);
@@ -1837,7 +1848,7 @@ void Compiler::fgInterBlockLocalVarLiveness()
      * Now fill in liveness info within each basic block - Backward DataFlow
      */
 
-    VARSET_TP volatileVars(VarSetOps::MakeEmpty(this));
+    VARSET_TP keepAliveVars(VarSetOps::MakeEmpty(this));
 
     for (unsigned i = m_dfsTree->GetPostOrderCount(); i != 0; i--)
     {
@@ -1848,15 +1859,15 @@ void Compiler::fgInterBlockLocalVarLiveness()
 
         /* Remember those vars live on entry to exception handlers */
         /* if we are part of a try block */
-        VarSetOps::ClearD(this, volatileVars);
+        VarSetOps::ClearD(this, keepAliveVars);
 
         if (block->HasPotentialEHSuccs(this))
         {
             MemoryKindSet memoryLiveness = 0;
-            fgAddHandlerLiveVars(block, volatileVars, memoryLiveness);
+            fgAddHandlerLiveVars(block, keepAliveVars, memoryLiveness);
 
-            // volatileVars is a subset of exceptVars
-            noway_assert(VarSetOps::IsSubset(this, volatileVars, exceptVars));
+            // keepAliveVars is a subset of exceptVars
+            noway_assert(VarSetOps::IsSubset(this, keepAliveVars, exceptVars));
         }
 
         /* Start with the variables live on exit from the block */
@@ -1867,7 +1878,7 @@ void Compiler::fgInterBlockLocalVarLiveness()
 
         if (block->IsLIR())
         {
-            fgComputeLifeLIR(life, block, volatileVars);
+            fgComputeLifeLIR(life, block, keepAliveVars);
         }
         else if (fgNodeThreading == NodeThreading::AllTrees)
         {
@@ -1897,7 +1908,7 @@ void Compiler::fgInterBlockLocalVarLiveness()
                 /* Compute the liveness for each tree node in the statement */
                 bool stmtInfoDirty = false;
 
-                fgComputeLife(life, compCurStmt->GetRootNode(), nullptr, volatileVars,
+                fgComputeLife(life, compCurStmt->GetRootNode(), nullptr, keepAliveVars,
                               &stmtInfoDirty DEBUGARG(&treeModf));
 
                 if (stmtInfoDirty)
@@ -1921,7 +1932,6 @@ void Compiler::fgInterBlockLocalVarLiveness()
         {
             assert(fgIsDoingEarlyLiveness && (fgNodeThreading == NodeThreading::AllLocals));
             compCurStmt = nullptr;
-            VARSET_TP keepAliveVars(VarSetOps::Union(this, volatileVars, compCurBB->bbScope));
 
             Statement* firstStmt = block->firstStmt();
 
@@ -2054,9 +2064,8 @@ void Compiler::fgDispBBLiveness(BasicBlock* block)
 
 void Compiler::fgDispBBLiveness()
 {
-    for (unsigned i = m_dfsTree->GetPostOrderCount(); i != 0; i--)
+    for (BasicBlock* const block : Blocks())
     {
-        BasicBlock* block = m_dfsTree->GetPostOrder(i - 1);
         fgDispBBLiveness(block);
     }
 }

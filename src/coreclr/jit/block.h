@@ -1611,8 +1611,6 @@ public:
     unsigned bbMemorySsaNumIn[MemoryKindCount];  // The SSA # of memory on entry to the block.
     unsigned bbMemorySsaNumOut[MemoryKindCount]; // The SSA # of memory on exit from the block.
 
-    VARSET_TP bbScope; // variables in scope over the block
-
     void InitVarSets(class Compiler* comp);
 
     /* The following are the standard bit sets for dataflow analysis.
