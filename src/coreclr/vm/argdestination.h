@@ -112,32 +112,32 @@ public:
         using namespace FpStruct;
         FpStructInRegistersInfo info = m_argLocDescForStructInRegs->m_structFields;
         _ASSERTE(m_argLocDescForStructInRegs->m_cFloatReg == ((info.flags & BothFloat) ? 2 : 1));
-        _ASSERTE(m_argLocDescForStructInRegs->m_cGenReg == ((info.flags & (Float1st | Float2nd)) ? 1 : 0));
+        _ASSERTE(m_argLocDescForStructInRegs->m_cGenReg == ((info.flags & (FloatInt | IntFloat)) ? 1 : 0));
 
         int floatRegOffset = TransitionBlock::GetOffsetOfFloatArgumentRegisters() +
             m_argLocDescForStructInRegs->m_idxFloatReg * FLOAT_REGISTER_SIZE;
         INT64* floatReg = (INT64*)((char*)m_base + floatRegOffset);
 
-        if (info.flags & (OnlyOne | BothFloat | Float1st)) // copy first floating field
+        if (info.flags & (OnlyOne | BothFloat | FloatInt)) // copy first floating field
         {
             void* field = (char*)src + info.offset1st;
             *floatReg++ = info.IsSize1st8() ? *(INT64*)field : NanBox | *(INT32*)field;
         }
 
-        if (info.flags & (BothFloat | Float2nd)) // copy second floating field
+        if (info.flags & (BothFloat | IntFloat)) // copy second floating field
         {
             void* field = (char*)src + info.offset2nd;
             *floatReg = info.IsSize2nd8() ? *(INT64*)field : NanBox | *(INT32*)field;
         }
 
-        if (info.flags & (Float1st | Float2nd)) // copy integer field
+        if (info.flags & (FloatInt | IntFloat)) // copy integer field
         {
             int intRegOffset = TransitionBlock::GetOffsetOfArgumentRegisters() +
                 m_argLocDescForStructInRegs->m_idxGenReg * TARGET_POINTER_SIZE;
             INT64* intReg = (INT64*)((char*)m_base + intRegOffset);
 
-            void* field = (char*)src + ((info.flags & Float2nd) ? info.offset1st : info.offset2nd);
-            switch ((info.flags & Float2nd) ? info.GetSizeShift1st() : info.GetSizeShift2nd())
+            void* field = (char*)src + ((info.flags & IntFloat) ? info.offset1st : info.offset2nd);
+            switch ((info.flags & IntFloat) ? info.GetSizeShift1st() : info.GetSizeShift2nd())
             {
                 case 0: *intReg = *(INT8* )field; break;
                 case 1: *intReg = *(INT16*)field; break;

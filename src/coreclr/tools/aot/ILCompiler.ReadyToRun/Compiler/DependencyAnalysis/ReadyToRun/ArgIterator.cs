@@ -1510,7 +1510,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         if (cFPRegs > 0)
                         {
                             // Pass according to hardware floating-point calling convention iff the argument can be fully enregistered
-                            if ((info.flags & (FpStruct.Float1st | FpStruct.Float2nd)) != 0)
+                            if ((info.flags & (FpStruct.FloatInt | FpStruct.IntFloat)) != 0)
                             {
                                 Debug.Assert(cFPRegs == 1);
 
@@ -1526,7 +1526,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                                     _argLocDescForStructInRegs.m_structFields = info;
                                     _hasArgLocDescForStructInRegs = true;
 
-                                    int regOffset = ((info.flags & FpStruct.Float2nd) != 0)
+                                    int regOffset = ((info.flags & FpStruct.IntFloat) != 0)
                                         ? _transitionBlock.OffsetOfArgumentRegisters + _riscv64IdxGenReg * _transitionBlock.PointerSize
                                         : _transitionBlock.OffsetOfFloatArgumentRegisters + _riscv64IdxFPReg * _transitionBlock.FloatRegisterSize;
 

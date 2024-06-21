@@ -137,6 +137,8 @@ namespace Internal.JitInterface
             {
                 Debug.Assert(size == sizeof(float) || size == sizeof(double));
                 Debug.Assert(intKind == FpStruct_IntKind.Signed);
+                Debug.Assert((int)FpStruct_IntKind.Signed == 0,
+                    "IntKind for floating fields should not clobber IntKind for int fields");
             }
 
             Debug.Assert(size >= 1 && size <= 8);
@@ -144,12 +146,14 @@ namespace Internal.JitInterface
             const int sizeShiftLUT = (0 << (1*2)) | (1 << (2*2)) | (2 << (4*2)) | (3 << (8*2));
             int sizeShift = (sizeShiftLUT >> ((int)size * 2)) & 0b11;
 
-            const int typeSize = (int)PosFloat2nd - (int)PosFloat1st;
-            Debug.Assert((Float2nd | SizeShift2nd) == (FpStruct)((uint)(Float1st | SizeShift1st) << typeSize),
-                "1st flags need to be 2nd flags shifted by typeSize");
+            // Use FloatInt and IntFloat as marker flags for 1st and 2nd field respectively being floating.
+            // Fix to real flags (with OnlyOne and BothFloat) after flattening is complete.
+            Debug.Assert((int)PosIntFloat == (int)PosFloatInt + 1, "FloatInt and IntFloat need to be adjacent");
+            Debug.Assert((int)PosSizeShift2nd == (int)PosSizeShift1st + 2, "SizeShift1st and 2nd need to be adjacent");
+            int floatFlag = Convert.ToInt32(isFloating) << ((int)PosFloatInt + index);
+            int sizeShiftMask = sizeShift << ((int)PosSizeShift1st + 2 * index);
 
-            int type = (Convert.ToInt32(isFloating) << (int)PosFloat1st) | (sizeShift << (int)PosSizeShift1st);
-            info.flags |= (FpStruct)((type << (typeSize * index)) | ((int)intKind << (int)PosIntFieldKind));
+            info.flags |= (FpStruct)(floatFlag | sizeShiftMask | ((int)intKind << (int)PosIntFieldKind));
             (index == 0 ? ref info.offset1st : ref info.offset2nd) = offset;
         }
 
@@ -176,7 +180,7 @@ namespace Internal.JitInterface
                 Debug.Assert(typeIndex == 1);
 
                 // duplicate the array element info
-                const int typeSize = (int)PosFloat2nd - (int)PosFloat1st;
+                const int typeSize = (int)PosIntFloat - (int)PosFloatInt;
                 info.flags |= (FpStruct)((int)info.flags << typeSize);
                 info.offset2nd = info.offset1st + info.GetSize1st();
             }
@@ -266,28 +270,28 @@ namespace Internal.JitInterface
             if (!FlattenFields(td, 0, ref info, ref nFields))
                 return new FpStructInRegistersInfo{};
 
-            if ((info.flags & (Float1st | Float2nd)) == 0)
+            if ((info.flags & (FloatInt | IntFloat)) == 0)
                 return new FpStructInRegistersInfo{}; // struct has no floating fields
 
             Debug.Assert(nFields == 1 || nFields == 2);
 
-            if ((info.flags & (Float1st | Float2nd)) == (Float1st | Float2nd))
+            if ((info.flags & (FloatInt | IntFloat)) == (FloatInt | IntFloat))
             {
                 Debug.Assert(nFields == 2);
-                info.flags ^= (Float1st | Float2nd | BothFloat); // replace Float(1st|2nd) with BothFloat
+                info.flags ^= (FloatInt | IntFloat | BothFloat); // replace (FloatInt | IntFloat) with BothFloat
             }
             else if (nFields == 1)
             {
-                Debug.Assert((info.flags & Float1st) != 0);
-                Debug.Assert((info.flags & (Float2nd | SizeShift2nd)) == 0);
+                Debug.Assert((info.flags & FloatInt) != 0);
+                Debug.Assert((info.flags & (IntFloat | SizeShift2ndMask)) == 0);
                 Debug.Assert(info.offset2nd == 0);
-                info.flags ^= (Float1st | OnlyOne); // replace Float1st with OnlyOne
+                info.flags ^= (FloatInt | OnlyOne); // replace FloatInt with OnlyOne
             }
             Debug.Assert(nFields == ((info.flags & OnlyOne) != 0 ? 1 : 2));
-            FpStruct floatFlags = info.flags & (OnlyOne | BothFloat | Float1st | Float2nd);
+            FpStruct floatFlags = info.flags & (OnlyOne | BothFloat | FloatInt | IntFloat);
             Debug.Assert(floatFlags != 0);
             Debug.Assert(((uint)floatFlags & ((uint)floatFlags - 1)) == 0,
-                "there can be only one of (OnlyOne | BothFloat | Float1st | Float2nd)");
+                "there can be only one of (OnlyOne | BothFloat | FloatInt | IntFloat)");
             if (nFields == 2)
             {
                 uint end1st = info.offset1st + info.GetSize1st();
@@ -298,10 +302,10 @@ namespace Internal.JitInterface
             Debug.Assert(info.offset2nd + info.GetSize2nd() <= td.GetElementSize().AsInt);
             if (info.GetIntFieldKind() != FpStruct_IntKind.Signed)
             {
-                Debug.Assert((info.flags & (Float1st | Float2nd)) != 0);
+                Debug.Assert((info.flags & (FloatInt | IntFloat)) != 0);
                 if (info.GetIntFieldKind() >= FpStruct_IntKind.GcRef)
                 {
-                    Debug.Assert((info.flags & Float2nd) != 0
+                    Debug.Assert((info.flags & IntFloat) != 0
                         ? (info.IsSize1st8() && IsAligned(info.offset1st, TARGET_POINTER_SIZE))
                         : (info.IsSize2nd8() && IsAligned(info.offset2nd, TARGET_POINTER_SIZE)));
                 }

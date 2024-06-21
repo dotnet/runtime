@@ -164,9 +164,9 @@ void CopyReturnedFpStructFromRegisters(void* dest, UINT64 returnRegs[2], FpStruc
 {
     _ASSERTE(info.flags != FpStruct::UseIntCallConv);
 
-    // Float2nd is the only case where returnRegs[0] (fa0) represents the second field, not the first.
-    UINT64* returnField1st = &returnRegs[(info.flags & FpStruct::Float2nd) ? 1 : 0];
-    UINT64* returnField2nd = &returnRegs[(info.flags & FpStruct::Float2nd) ? 0 : 1];
+    // IntFloat is the only case where returnRegs[0] (fa0) represents the second field, not the first.
+    UINT64* returnField1st = &returnRegs[(info.flags & FpStruct::IntFloat) ? 1 : 0];
+    UINT64* returnField2nd = &returnRegs[(info.flags & FpStruct::IntFloat) ? 0 : 1];
 
     memcpyNoGCRefs((char*)dest + info.offset1st, returnField1st, info.GetSize1st());
 
@@ -175,7 +175,7 @@ void CopyReturnedFpStructFromRegisters(void* dest, UINT64 returnRegs[2], FpStruc
         char* field2ndDest = (char*)dest + info.offset2nd;
         if (handleGcRefs && info.GetIntFieldKind() == FpStruct::IntKind::GcRef)
         {
-            _ASSERTE(info.flags & (FpStruct::Float1st | FpStruct::Float2nd));
+            _ASSERTE(info.flags & (FpStruct::FloatInt | FpStruct::IntFloat));
             _ASSERTE(info.GetSize2nd() == TARGET_POINTER_SIZE);
             memmoveGCRefs(field2ndDest, returnField2nd, TARGET_POINTER_SIZE);
         }

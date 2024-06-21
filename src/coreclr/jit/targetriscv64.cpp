@@ -80,7 +80,7 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
             }
             else if (info.flags != UseIntCallConv)
             {
-                assert((info.flags & (Float1st | Float2nd)) != 0);
+                assert((info.flags & (FloatInt | IntFloat)) != 0);
                 floatFields = 1;
                 intFields   = 1;
             }
@@ -122,8 +122,8 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
             assert(info.flags != UseIntCallConv);
             assert((info.flags & OnlyOne) == 0);
 
-            bool isFirstFloat  = (info.flags & (BothFloat | Float1st)) != 0;
-            bool isSecondFloat = (info.flags & (BothFloat | Float2nd)) != 0;
+            bool isFirstFloat  = (info.flags & (BothFloat | FloatInt)) != 0;
+            bool isSecondFloat = (info.flags & (BothFloat | IntFloat)) != 0;
             assert(isFirstFloat || isSecondFloat);
 
             regNumber firstReg  = (isFirstFloat ? m_floatRegs : m_intRegs).Dequeue();

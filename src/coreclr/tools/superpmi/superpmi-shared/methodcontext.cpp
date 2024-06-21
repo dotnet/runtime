@@ -6374,12 +6374,12 @@ void MethodContext::recGetRiscV64PassFpStructInRegistersInfo(CORINFO_CLASS_HANDL
 void MethodContext::dmpGetRiscV64PassFpStructInRegistersInfo(DWORDLONG key, FpStructInRegistersInfo value)
 {
     printf("GetRiscV64PassFpStructInRegistersInfo key %016" PRIX64 " value-%#02x-"
-        "{OnlyOne=%i, BothFloat=%i, Float1st=%i, Size1st=%u, Float2nd=%i, Size2nd=%u, IntFieldKind=%i, offset1st=%u, offset2nd=%u}",
+        "{OnlyOne=%i, BothFloat=%i, FloatInt=%i, Size1st=%u, IntFloat=%i, Size2nd=%u, IntFieldKindMask=%i, offset1st=%u, offset2nd=%u}",
         key, value.flags,
         (value.flags & FpStruct::OnlyOne) != 0,
         (value.flags & FpStruct::BothFloat) != 0,
-        (value.flags & FpStruct::Float1st) != 0, value.GetSize1st(),
-        (value.flags & FpStruct::Float2nd) != 0, value.GetSize2nd(),
+        (value.flags & FpStruct::FloatInt) != 0, value.GetSize1st(),
+        (value.flags & FpStruct::IntFloat) != 0, value.GetSize2nd(),
         (int)value.GetIntFieldKind(),
         value.offset1st, value.offset2nd);
 }

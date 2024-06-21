@@ -1859,7 +1859,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
     if (cFPRegs > 0)
     {
         // Pass according to hardware floating-point calling convention iff the argument can be fully enregistered
-        if (info.flags & (FpStruct::Float1st | FpStruct::Float2nd))
+        if (info.flags & (FpStruct::FloatInt | FpStruct::IntFloat))
         {
             assert(cFPRegs == 1);
 
@@ -1875,7 +1875,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
                 m_argLocDescForStructInRegs.m_structFields = info;
                 m_hasArgLocDescForStructInRegs = true;
 
-                int regOffset = (info.flags & FpStruct::Float2nd)
+                int regOffset = (info.flags & FpStruct::IntFloat)
                     ? TransitionBlock::GetOffsetOfArgumentRegisters() + m_idxGenReg * TARGET_POINTER_SIZE
                     : TransitionBlock::GetOffsetOfFloatArgumentRegisters() + m_idxFPReg * FLOAT_REGISTER_SIZE;
                 m_idxFPReg++;

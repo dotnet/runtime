@@ -2935,6 +2935,8 @@ static void SetFpStructInRegistersInfoField(FpStructInRegistersInfo& info, int i
     {
         assert(size == sizeof(float) || size == sizeof(double));
         assert(intKind == FpStruct::IntKind::Signed);
+        static_assert((int)FpStruct::IntKind::Signed == 0,
+            "IntKind for floating fields should not clobber IntKind for int fields");
     }
 
     assert(size >= 1 && size <= 8);
@@ -2943,12 +2945,14 @@ static void SetFpStructInRegistersInfoField(FpStructInRegistersInfo& info, int i
     int sizeShift = (sizeShiftLUT >> (size * 2)) & 0b11;
 
     using namespace FpStruct;
-    static const int typeSize = PosFloat2nd - PosFloat1st;
-    static_assert((Float2nd | SizeShift2nd) == (Float1st | SizeShift1st) << typeSize,
-        "1st flags need to be 2nd flags shifted by typeSize");
+    // Use FloatInt and IntFloat as marker flags for 1st and 2nd field respectively being floating.
+    // Fix to real flags (with OnlyOne and BothFloat) after flattening is complete.
+    static_assert(PosIntFloat == PosFloatInt + 1, "FloatInt and IntFloat need to be adjacent");
+    static_assert(PosSizeShift2nd == PosSizeShift1st + 2, "SizeShift1st and 2nd need to be adjacent");
+    int floatFlag = isFloating << (PosFloatInt + index);
+    int sizeShiftMask = sizeShift << (PosSizeShift1st + 2 * index);
 
-    int type = (isFloating << PosFloat1st) | (sizeShift << PosSizeShift1st);
-    info.flags = FpStruct::Flags(info.flags | (type << (typeSize * index)) | ((int)intKind << PosIntFieldKind));
+    info.flags = FpStruct::Flags(info.flags | floatFlag | sizeShiftMask | ((int)intKind << PosIntFieldKind));
     (index == 0 ? info.offset1st : info.offset2nd) = offset;
 }
 
@@ -2986,7 +2990,7 @@ static bool HandleInlineArray(int elementTypeIndex, int nElements, FpStructInReg
         assert(typeIndex == 1);
 
         // duplicate the array element info
-        static const int typeSize = FpStruct::PosFloat2nd - FpStruct::PosFloat1st;
+        static const int typeSize = FpStruct::PosIntFloat - FpStruct::PosFloatInt;
         info.flags = FpStruct::Flags(info.flags | (info.flags << typeSize));
         info.offset2nd = info.offset1st + info.GetSize1st();
         LOG((LF_JIT, LL_EVERYTHING, "FpStructInRegistersInfo:%*s  * duplicated array element type\n",
@@ -3161,7 +3165,7 @@ static FpStructInRegistersInfo GetRiscV64PassFpStructInRegistersInfoImpl(TypeHan
         return FpStructInRegistersInfo{};
 
     using namespace FpStruct;
-    if ((info.flags & (Float1st | Float2nd)) == 0)
+    if ((info.flags & (FloatInt | IntFloat)) == 0)
     {
         LOG((LF_JIT, LL_EVERYTHING, "FpStructInRegistersInfo: struct %s (%u bytes) has no floating fields\n",
             (!th.IsTypeDesc() ? th.AsMethodTable() : th.AsNativeValueType())->GetDebugClassName(), th.GetSize()));
@@ -3170,22 +3174,22 @@ static FpStructInRegistersInfo GetRiscV64PassFpStructInRegistersInfoImpl(TypeHan
 
     assert(nFields == 1 || nFields == 2);
 
-    if ((info.flags & (Float1st | Float2nd)) == (Float1st | Float2nd))
+    if ((info.flags & (FloatInt | IntFloat)) == (FloatInt | IntFloat))
     {
         assert(nFields == 2);
-        info.flags = FpStruct::Flags(info.flags ^ (Float1st | Float2nd | BothFloat)); // replace Float(1st|2nd) with BothFloat
+        info.flags = FpStruct::Flags(info.flags ^ (FloatInt | IntFloat | BothFloat)); // replace (FloatInt | IntFloat) with BothFloat
     }
     else if (nFields == 1)
     {
-        assert((info.flags & Float1st) != 0);
-        assert((info.flags & (Float2nd | SizeShift2nd)) == 0);
+        assert((info.flags & FloatInt) != 0);
+        assert((info.flags & (IntFloat | SizeShift2ndMask)) == 0);
         assert(info.offset2nd == 0);
-        info.flags = FpStruct::Flags(info.flags ^ (Float1st | OnlyOne)); // replace Float1st with OnlyOne
+        info.flags = FpStruct::Flags(info.flags ^ (FloatInt | OnlyOne)); // replace FloatInt with OnlyOne
     }
     assert(nFields == ((info.flags & OnlyOne) != 0 ? 1 : 2));
-    int floatFlags = info.flags & (OnlyOne | BothFloat | Float1st | Float2nd);
+    int floatFlags = info.flags & (OnlyOne | BothFloat | FloatInt | IntFloat);
     assert(floatFlags != 0);
-    assert((floatFlags & (floatFlags - 1)) == 0); // there can be only one of (OnlyOne | BothFloat | Float1st | Float2nd)
+    assert((floatFlags & (floatFlags - 1)) == 0); // there can be only one of (OnlyOne | BothFloat | FloatInt | IntFloat)
     if (nFields == 2)
     {
         unsigned end1st = info.offset1st + info.GetSize1st();
@@ -3196,10 +3200,10 @@ static FpStructInRegistersInfo GetRiscV64PassFpStructInRegistersInfoImpl(TypeHan
     assert(info.offset2nd + info.GetSize2nd() <= th.GetSize());
     if (info.GetIntFieldKind() != FpStruct::IntKind::Signed)
     {
-        assert(info.flags & (Float1st | Float2nd));
+        assert(info.flags & (FloatInt | IntFloat));
         if (info.GetIntFieldKind() >= FpStruct::IntKind::GcRef)
         {
-            assert((info.flags & Float2nd) != 0
+            assert((info.flags & IntFloat) != 0
                 ? (info.IsSize1st8() && IS_ALIGNED(info.offset1st, TARGET_POINTER_SIZE))
                 : (info.IsSize2nd8() && IS_ALIGNED(info.offset2nd, TARGET_POINTER_SIZE)));
         }
@@ -3210,12 +3214,12 @@ static FpStructInRegistersInfo GetRiscV64PassFpStructInRegistersInfoImpl(TypeHan
     static const char* intKindNames[] = { "Signed", "Unsigned", "GcRef", "GcByRef" };
     LOG((LF_JIT, LL_EVERYTHING, "FpStructInRegistersInfo: "
         "struct %s (%u bytes) can be passed with floating-point calling convention, flags=%#02x; "
-        "%s, sizes={%u, %u}, offsets={%u, %u}, IntFieldKind=%s\n",
+        "%s, sizes={%u, %u}, offsets={%u, %u}, IntFieldKindMask=%s\n",
         (!th.IsTypeDesc() ? th.AsMethodTable() : th.AsNativeValueType())->GetDebugClassName(), th.GetSize(), info.flags,
         ( (info.flags & OnlyOne) ? "OnlyFloat"
         : (info.flags & BothFloat) ? "BothFloat"
-        : (info.flags & Float1st) ? "Float1st"
-        : "Float2nd" ),
+        : (info.flags & FloatInt) ? "FloatInt"
+        : "IntFloat" ),
         info.GetSize1st(), info.GetSize2nd(),
         info.offset1st, info.offset2nd,
         intKindNames[(int)info.GetIntFieldKind()]

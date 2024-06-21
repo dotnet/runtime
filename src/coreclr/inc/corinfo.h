@@ -369,23 +369,23 @@ namespace FpStruct
         // Positions of bitfields
         PosOnlyOne      = 0,
         PosBothFloat    = 1,
-        PosFloat1st     = 2,
-        PosSizeShift1st = 3, // 2 bits
-        PosFloat2nd     = 5,
+        PosFloatInt     = 2,
+        PosIntFloat     = 3,
+        PosSizeShift1st = 4, // 2 bits
         PosSizeShift2nd = 6, // 2 bits
         PosIntFieldKind = 8, // 2 bits
 
         UseIntCallConv = 0, // struct is passed according to integer calling convention
 
         // The bitfields
-        OnlyOne      =    1 << PosOnlyOne,      // has only one field, which is floating-point
-        BothFloat    =    1 << PosBothFloat,    // has two fields, both are floating-point
-        Float1st     =    1 << PosFloat1st,     // has two fields, 1st is floating (and 2nd is integer)
-        SizeShift1st = 0b11 << PosSizeShift1st, // log2(size) of 1st field
-        Float2nd     =    1 << PosFloat2nd,     // has two fields, 2nd is floating (and 1st is integer)
-        SizeShift2nd = 0b11 << PosSizeShift2nd, // log2(size) of 2nd field
-        IntFieldKind =    1 << PosIntFieldKind, // the kind of the integer field (FpStruct::IntKind)
-        // Note: flags OnlyOne, BothFloat, Float1st, and Float2nd are mutually exclusive
+        OnlyOne          =    1 << PosOnlyOne,      // has only one field, which is floating-point
+        BothFloat        =    1 << PosBothFloat,    // has two fields, both are floating-point
+        FloatInt         =    1 << PosFloatInt,     // has two fields, 1st is floating and 2nd is integer
+        IntFloat         =    1 << PosIntFloat,     // has two fields, 2nd is floating and 1st is integer
+        SizeShift1stMask = 0b11 << PosSizeShift1st, // log2(size) of 1st field
+        SizeShift2ndMask = 0b11 << PosSizeShift2nd, // log2(size) of 2nd field
+        IntFieldKindMask = 0b11 << PosIntFieldKind, // the kind of the integer field (FpStruct::IntKind)
+        // Note: flags OnlyOne, BothFloat, FloatInt, and IntFloat are mutually exclusive
     };
 }
 
@@ -420,12 +420,12 @@ struct FpStructInRegistersInfo
 
     bool IsSize1st8() const
     {
-        return (flags & FpStruct::SizeShift1st) == (3 << FpStruct::PosSizeShift1st);
+        return (flags & FpStruct::SizeShift1stMask) == (3 << FpStruct::PosSizeShift1st);
     }
 
     bool IsSize2nd8() const
     {
-        return (flags & FpStruct::SizeShift2nd) == (3 << FpStruct::PosSizeShift2nd);
+        return (flags & FpStruct::SizeShift2ndMask) == (3 << FpStruct::PosSizeShift2nd);
     }
 
     FpStruct::IntKind GetIntFieldKind() const
@@ -438,8 +438,8 @@ struct FpStructInRegistersInfo
         return StructFloatFieldInfoFlags(
             ((flags & FpStruct::OnlyOne) ? STRUCT_FLOAT_FIELD_ONLY_ONE : 0) |
             ((flags & FpStruct::BothFloat) ? STRUCT_FLOAT_FIELD_ONLY_TWO : 0) |
-            ((flags & FpStruct::Float1st) ? STRUCT_FLOAT_FIELD_FIRST : 0) |
-            ((flags & FpStruct::Float2nd) ? STRUCT_FLOAT_FIELD_SECOND : 0) |
+            ((flags & FpStruct::FloatInt) ? STRUCT_FLOAT_FIELD_FIRST : 0) |
+            ((flags & FpStruct::IntFloat) ? STRUCT_FLOAT_FIELD_SECOND : 0) |
             (IsSize1st8() ? STRUCT_FIRST_FIELD_SIZE_IS8 : 0) |
             (IsSize2nd8() ? STRUCT_SECOND_FIELD_SIZE_IS8 : 0));
     }
@@ -453,8 +453,8 @@ struct FpStructInRegistersInfo
             FpStruct::Flags(
                 ((flags & STRUCT_FLOAT_FIELD_ONLY_ONE) ? FpStruct::OnlyOne : 0) |
                 ((flags & STRUCT_FLOAT_FIELD_ONLY_TWO) ? FpStruct::BothFloat : 0) |
-                ((flags & STRUCT_FLOAT_FIELD_FIRST) ? FpStruct::Float1st : 0) |
-                ((flags & STRUCT_FLOAT_FIELD_SECOND) ? FpStruct::Float2nd : 0) |
+                ((flags & STRUCT_FLOAT_FIELD_FIRST) ? FpStruct::FloatInt : 0) |
+                ((flags & STRUCT_FLOAT_FIELD_SECOND) ? FpStruct::IntFloat : 0) |
                 (sizeShift1st << FpStruct::PosSizeShift1st) |
                 (hasTwo ? (sizeShift2nd << FpStruct::PosSizeShift2nd) : 0)
                 // No GC ref info in old flags

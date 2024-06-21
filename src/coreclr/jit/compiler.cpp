@@ -8316,15 +8316,15 @@ void Compiler::GetStructTypeOffset(
 //
 void Compiler::GetTypesFromFpStructInRegistersInfo(FpStructInRegistersInfo info, var_types* type1st, var_types* type2nd)
 {
-    if ((info.flags & (FpStruct::BothFloat | FpStruct::Float1st | FpStruct::OnlyOne)) != 0)
+    if ((info.flags & (FpStruct::BothFloat | FpStruct::FloatInt | FpStruct::OnlyOne)) != 0)
         *type1st = info.IsSize1st8() ? TYP_DOUBLE : TYP_FLOAT;
 
-    if ((info.flags & (FpStruct::BothFloat | FpStruct::Float2nd)) != 0)
+    if ((info.flags & (FpStruct::BothFloat | FpStruct::IntFloat)) != 0)
         *type2nd = info.IsSize2nd8() ? TYP_DOUBLE : TYP_FLOAT;
 
-    if ((info.flags & (FpStruct::Float1st | FpStruct::Float2nd)) != 0)
+    if ((info.flags & (FpStruct::FloatInt | FpStruct::IntFloat)) != 0)
     {
-        bool      isInt1st = ((info.flags & FpStruct::Float1st) == 0);
+        bool      isInt1st = ((info.flags & FpStruct::FloatInt) == 0);
         FpStruct::IntKind kind = info.GetIntFieldKind();
         var_types intType;
         if (kind == FpStruct::IntKind::GcRef)

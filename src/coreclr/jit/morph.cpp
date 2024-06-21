@@ -2446,7 +2446,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
                     passUsingFloatRegs = comp->compFloatingPointUsed = true;
                     if ((fpInfo.flags & FpStruct::OnlyOne) == 0)
                     {
-                        assert((fpInfo.flags & (FpStruct::BothFloat | FpStruct::Float1st | FpStruct::Float2nd)) != 0);
+                        assert((fpInfo.flags & (FpStruct::BothFloat | FpStruct::FloatInt | FpStruct::IntFloat)) != 0);
                         // On LoongArch64 and RISC-V64, "getPrimitiveTypeForStruct" will incorrectly return "TYP_LONG"
                         // for "struct { float, float }", and retyping to a primitive here will cause the
                         // multi-reg morphing to not kick in (the struct in question needs to be passed in
@@ -2612,7 +2612,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
 
                 if (isStructArg)
                 {
-                    if ((fpInfo.flags & (FpStruct::Float1st | FpStruct::Float2nd)) != 0 && passUsingFloatRegs)
+                    if ((fpInfo.flags & (FpStruct::FloatInt | FpStruct::IntFloat)) != 0 && passUsingFloatRegs)
                     {
                         passUsingFloatRegs = isRegArg = intArgRegNum < maxRegArgs;
                     }
@@ -2629,14 +2629,14 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
                         {
                             nextOtherRegNum = genMapFloatRegArgNumToRegNum(nextFltArgRegNum + 1);
                         }
-                        else if ((fpInfo.flags & FpStruct::Float2nd) != 0)
+                        else if ((fpInfo.flags & FpStruct::IntFloat) != 0)
                         {
                             assert(size == 1);
                             size               = 2;
                             passUsingFloatRegs = false;
                             nextOtherRegNum    = genMapFloatRegArgNumToRegNum(nextFltArgRegNum);
                         }
-                        else if ((fpInfo.flags & FpStruct::Float1st) != 0)
+                        else if ((fpInfo.flags & FpStruct::FloatInt) != 0)
                         {
                             assert(size == 1);
                             size            = 2;
@@ -2894,7 +2894,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
                             structBaseType = arg.AbiInfo.StructFloatFieldType[0];
 
                         unsigned fltRegs = ((fpInfo.flags & FpStruct::BothFloat) != 0) ? 2 : 1;
-                        unsigned intRegs = ((fpInfo.flags & (FpStruct::Float1st | FpStruct::Float2nd)) != 0) ? 1 : 0;
+                        unsigned intRegs = ((fpInfo.flags & (FpStruct::FloatInt | FpStruct::IntFloat)) != 0) ? 1 : 0;
                         fltArgRegNum += fltRegs;
                         intArgRegNum += intRegs;
                     }

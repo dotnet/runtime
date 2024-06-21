@@ -920,7 +920,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
 
             int floatNum          = ((fpInfo.flags & FpStruct::BothFloat) != 0) ? 2 : 1;
             canPassArgInRegisters = varDscInfo->canEnreg(TYP_DOUBLE, floatNum);
-            if (canPassArgInRegisters && ((fpInfo.flags & (FpStruct::Float1st | FpStruct::Float2nd)) != 0))
+            if (canPassArgInRegisters && ((fpInfo.flags & (FpStruct::FloatInt | FpStruct::IntFloat)) != 0))
                 canPassArgInRegisters = varDscInfo->canEnreg(TYP_I_IMPL, 1);
 
             Compiler::GetTypesFromFpStructInRegistersInfo(fpInfo, &argRegTypeInStruct1, &argRegTypeInStruct2);
