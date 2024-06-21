@@ -65,6 +65,15 @@ bool Xstate_IsAvx512Supported();
 
 // Add the missing SVE defines
 
+#define EXTRA_MAGIC 0x45585401
+
+struct extra_context {
+    struct _aarch64_ctx head;
+    __u64 datap; /* 16-byte aligned pointer to extra space cast to __u64 */
+    __u32 size; /* size in bytes of the extra space */
+    __u32 __reserved[3];
+};
+
 #define SVE_MAGIC   0x53564501
 
 struct sve_context {
