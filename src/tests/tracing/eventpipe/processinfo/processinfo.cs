@@ -224,10 +224,11 @@ namespace Tracing.Tests.ProcessInfoValidation
                 Architecture.X64 => "x64",
                 Architecture.Arm => "arm32",
                 Architecture.Arm64 => "arm64",
+                Architecture.RiscV64 => "riscv64",
                 _ => "Unknown"
             };
 
-            Utils.Assert(expectedArchValue.Equals(arch), $"OS must match current Operating System. Expected: \"{expectedArchValue}\", Received: \"{arch}\"");
+            Utils.Assert(expectedArchValue.Equals(arch), $"Arch must match current Architecture. Expected: \"{expectedArchValue}\", Received: \"{arch}\"");
 
             Utils.Assert(end == totalSize, $"Full payload should have been read. Expected: {totalSize}, Received: {end}");
 
