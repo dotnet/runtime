@@ -37,6 +37,7 @@
     <Compile Include="System\Numerics\Tensors\netcore\Common\TensorPrimitives.ITernaryOperator.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\Common\TensorPrimitives.IUnaryInputBinaryOutput.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\Common\TensorPrimitives.IUnaryOneToTwoOperator.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\Common\TensorPrimitives.IUnaryOneToFourOperator.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\Common\TensorPrimitives.IUnaryOperator.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\Common\TensorPrimitives.IUnaryTwoToOneOperator.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Abs.cs" />
