@@ -1156,7 +1156,7 @@ namespace System.Runtime.Intrinsics
              || (typeof(T) == typeof(ulong))
              || (typeof(T) == typeof(nuint)))
             {
-                return TVector.ConditionalSelect(TVector.LessThan(y, x), x, y);
+                return TVector.Max(x, y);
             }
 
             TVector xMag = TVector.Abs(x);
@@ -1198,7 +1198,7 @@ namespace System.Runtime.Intrinsics
                 );
             }
 
-            return TVector.ConditionalSelect(TVector.LessThan(y, x), x, y);
+            return TVector.Max(x, y);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1244,7 +1244,7 @@ namespace System.Runtime.Intrinsics
              || (typeof(T) == typeof(ulong))
              || (typeof(T) == typeof(nuint)))
             {
-                return TVector.ConditionalSelect(TVector.LessThan(x, y), x, y);
+                return TVector.Min(x, y);
             }
 
             TVector xMag = TVector.Abs(x);
@@ -1284,7 +1284,7 @@ namespace System.Runtime.Intrinsics
                     y
                 );
             }
-            return TVector.ConditionalSelect(TVector.LessThan(x, y), x, y);
+            return TVector.Min(x, y);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
