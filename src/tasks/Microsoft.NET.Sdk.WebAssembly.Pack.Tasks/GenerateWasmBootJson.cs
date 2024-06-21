@@ -178,7 +178,10 @@ public class GenerateWasmBootJson : Task
 
             var remainingLazyLoadAssemblies = new List<ITaskItem>(LazyLoadedAssemblies ?? Array.Empty<ITaskItem>());
             var resourceData = result.resources;
-            resourceData.fingerprinting = IsFingerprintingEnabled;
+
+            if (IsFingerprintingEnabled)
+                resourceData.fingerprinting = new();
+
             foreach (var resource in Resources)
             {
                 ResourceHashesByNameDictionary resourceList = null;
@@ -193,6 +196,7 @@ public class GenerateWasmBootJson : Task
 
                 if (TryGetLazyLoadedAssembly(resourceName, out var lazyLoad))
                 {
+                    MapFingerprintedAsset(resourceData, resourceRoute, resourceName);
                     Log.LogMessage(MessageImportance.Low, "Candidate '{0}' is defined as a lazy loaded assembly.", resource.ItemSpec);
                     remainingLazyLoadAssemblies.Remove(lazyLoad);
                     resourceData.lazyAssembly ??= new ResourceHashesByNameDictionary();
@@ -200,6 +204,7 @@ public class GenerateWasmBootJson : Task
                 }
                 else if (string.Equals("Culture", assetTraitName, StringComparison.OrdinalIgnoreCase))
                 {
+                    MapFingerprintedAsset(resourceData, resourceRoute, resourceName);
                     Log.LogMessage(MessageImportance.Low, "Candidate '{0}' is defined as satellite assembly with culture '{1}'.", resource.ItemSpec, assetTraitValue);
                     resourceData.satelliteResources ??= new Dictionary<string, ResourceHashesByNameDictionary>(StringComparer.OrdinalIgnoreCase);
 
@@ -214,6 +219,7 @@ public class GenerateWasmBootJson : Task
                 }
                 else if (string.Equals("symbol", assetTraitValue, StringComparison.OrdinalIgnoreCase))
                 {
+                    MapFingerprintedAsset(resourceData, resourceRoute, resourceName);
                     if (TryGetLazyLoadedAssembly($"{fileName}.dll", out _) || TryGetLazyLoadedAssembly($"{fileName}{Utils.WebcilInWasmExtension}", out _))
                     {
                         Log.LogMessage(MessageImportance.Low, "Candidate '{0}' is defined as a lazy loaded symbols file.", resource.ItemSpec);
@@ -238,6 +244,7 @@ public class GenerateWasmBootJson : Task
                 }
                 else if (string.Equals("runtime", assetTraitValue, StringComparison.OrdinalIgnoreCase))
                 {
+                    MapFingerprintedAsset(resourceData, resourceRoute, resourceName);
                     if (IsTargeting90OrLater() && (IsAot || helper.IsCoreAssembly(resourceName)))
                     {
                         Log.LogMessage(MessageImportance.Low, "Candidate '{0}' is defined as core assembly.", resource.ItemSpec);
@@ -252,6 +259,7 @@ public class GenerateWasmBootJson : Task
                 else if (string.Equals(assetTraitName, "WasmResource", StringComparison.OrdinalIgnoreCase) &&
                         string.Equals(assetTraitValue, "native", StringComparison.OrdinalIgnoreCase))
                 {
+                    MapFingerprintedAsset(resourceData, resourceRoute, resourceName);
                     Log.LogMessage(MessageImportance.Low, "Candidate '{0}' is defined as a native application resource.", resource.ItemSpec);
 
                     if (IsTargeting80OrLater())
@@ -418,6 +426,14 @@ public class GenerateWasmBootJson : Task
                 resourceList.Add(resourceKey, $"sha256-{resource.GetMetadata("Integrity")}");
             }
         }
+    }
+
+    private void MapFingerprintedAsset(ResourcesData resources, string resourceRoute, string resourceName)
+    {
+        if (!IsTargeting90OrLater())
+            return;
+
+        resources.fingerprinting[resourceRoute] = resourceName;
     }
 
     private GlobalizationMode GetGlobalizationMode()

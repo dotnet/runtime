@@ -464,10 +464,9 @@ export function prepareAssets () {
 }
 
 export function getNonFingerprintedAssetName (assetName: string) {
-    if (loaderHelpers.config.resources?.fingerprinting) {
-        const indexOfExtension = assetName.lastIndexOf(".");
-        const indexOfFingerprint = assetName.lastIndexOf(".", indexOfExtension - 1);
-        return assetName.substring(0, indexOfFingerprint) + assetName.substring(indexOfExtension);
+    const fingerprinting = loaderHelpers.config.resources?.fingerprinting;
+    if (fingerprinting && fingerprinting[assetName]) {
+        return fingerprinting[assetName];
     }
 
     return assetName;
