@@ -30,9 +30,18 @@ mono_file_map_open (const char* name)
 #ifdef HOST_WIN32
 	gchar *name_mod;
 	if (g_path_is_absolute (name)) {
-		name_mod = g_malloc(strlen(name) + 5);
-		strcpy(name_mod, "\\\\?\\");
-    		strcat(name_mod, name);
+		
+		// Check if it's a network path
+    		if (name[0] == '\\' && name[1] == '\\') {
+			name_mod = g_malloc(strlen(name) + 8 - 2);
+            		strcpy(name_mod, "\\\\?\\UNC\\");
+        		strcat(name_mod, name + 2);
+		}
+		else{
+			name_mod = g_malloc(strlen(name) + 5);
+			strcpy(name_mod, "\\\\?\\");
+        		strcat(name_mod, name);
+		}
 	} else {
 		name_mod = g_malloc(strlen(name));
         	strcpy(name_mod, name);

@@ -129,9 +129,17 @@ g_fopen (const gchar *path, const gchar *mode)
 #ifdef HOST_WIN32
 	gchar *path_mod;
 	if (g_path_is_absolute (path)) {
-		path_mod = g_malloc(strlen(path) + 5);
-		strcpy(path_mod, "\\\\?\\");
-        	strcat(path_mod, path);
+		// Check if it's a network path
+    		if (path[0] == '\\' && path[1] == '\\') {
+			path_mod = g_malloc(strlen(path) + 8 - 2);
+            		strcpy(path_mod, "\\\\?\\UNC\\");
+        		strcat(path_mod, path + 2);
+		}
+		else{
+			path_mod = g_malloc(strlen(path) + 5);
+			strcpy(path_mod, "\\\\?\\");
+        		strcat(path_mod, path);
+		}
 	} else {
 		path_mod = g_malloc(strlen(path));
 		strcpy(path_mod, path);
