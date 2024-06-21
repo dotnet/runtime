@@ -14,7 +14,7 @@ namespace System.IO
     {
         internal const int DefaultBufferSize = 4096;
         internal const FileShare DefaultShare = FileShare.Read;
-        private const bool DefaultIsAsync = false;
+        private const bool DefaultIsAsync = true;
 
         private readonly FileStreamStrategy _strategy;
 
