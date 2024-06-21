@@ -2514,7 +2514,7 @@ inline bool Compiler::lvaKeepAliveAndReportThis()
         return false;
     }
 
-    if ((info.compCompHnd->getClassAttribs(info.compClassHnd) & CORINFO_FLG_ABSTRACT) != 0)
+    if ((info.compCompHnd->getClassAttribs(info.compClassHnd) & CORINFO_FLG_HAS_FINALIZER) != 0)
     {
         return true;
     }
