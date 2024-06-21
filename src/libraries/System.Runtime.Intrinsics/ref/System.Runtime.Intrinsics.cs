@@ -4826,15 +4826,6 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe void PrefetchInt32(System.Numerics.Vector<uint> mask, void* address, [ConstantExpected] SvePrefetchType prefetchType) { throw null; }
         public static unsafe void PrefetchInt64(System.Numerics.Vector<ulong> mask, void* address, [ConstantExpected] SvePrefetchType prefetchType) { throw null; }
 
-        public static System.Numerics.Vector<byte> ReverseBits(System.Numerics.Vector<byte> value) { throw null; }
-        public static System.Numerics.Vector<short> ReverseBits(System.Numerics.Vector<short> value) { throw null; }
-        public static System.Numerics.Vector<int> ReverseBits(System.Numerics.Vector<int> value) { throw null; }
-        public static System.Numerics.Vector<long> ReverseBits(System.Numerics.Vector<long> value) { throw null; }
-        public static System.Numerics.Vector<sbyte> ReverseBits(System.Numerics.Vector<sbyte> value) { throw null; }
-        public static System.Numerics.Vector<ushort> ReverseBits(System.Numerics.Vector<ushort> value) { throw null; }
-        public static System.Numerics.Vector<uint> ReverseBits(System.Numerics.Vector<uint> value) { throw null; }
-        public static System.Numerics.Vector<ulong> ReverseBits(System.Numerics.Vector<ulong> value) { throw null; }
-
         public static System.Numerics.Vector<byte> ReverseElement(System.Numerics.Vector<byte> value) { throw null; }
         public static System.Numerics.Vector<double> ReverseElement(System.Numerics.Vector<double> value) { throw null; }
         public static System.Numerics.Vector<short> ReverseElement(System.Numerics.Vector<short> value) { throw null; }
