@@ -438,9 +438,9 @@ ValueNumStore::ValueNumStore(Compiler* comp, CompAllocator alloc)
     , m_simd32CnsMap(nullptr)
     , m_simd64CnsMap(nullptr)
 #endif // TARGET_XARCH
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
     , m_simdMaskCnsMap(nullptr)
-#endif // TARGET_XARCH  || TARGET_ARM64
+#endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_SIMD
     , m_VNFunc0Map(nullptr)
     , m_VNFunc1Map(nullptr)
@@ -1715,13 +1715,13 @@ ValueNumStore::Chunk::Chunk(CompAllocator alloc, ValueNum* pNextBaseVN, var_type
                 }
 #endif // TARGET_XARCH
 
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
                 case TYP_MASK:
                 {
                     m_defs = new (alloc) Alloc<TYP_MASK>::Type[ChunkSize];
                     break;
                 }
-#endif // TARGET_XARCH  || TARGET_ARM64
+#endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_SIMD
 
                 default:
@@ -1887,12 +1887,12 @@ ValueNum ValueNumStore::VNForSimd64Con(const simd64_t& cnsVal)
 }
 #endif // TARGET_XARCH
 
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
 ValueNum ValueNumStore::VNForSimdMaskCon(const simdmask_t& cnsVal)
 {
     return VnForConst(cnsVal, GetSimdMaskCnsMap(), TYP_MASK);
 }
-#endif // TARGET_XARCH || TARGET_ARM64
+#endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_SIMD
 
 ValueNum ValueNumStore::VNForGenericCon(var_types typ, uint8_t* cnsVal)
@@ -1995,13 +1995,13 @@ ValueNum ValueNumStore::VNForGenericCon(var_types typ, uint8_t* cnsVal)
         }
 #endif // TARGET_XARCH
 
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
         case TYP_MASK:
         {
             READ_VALUE(simdmask_t);
             return VNForSimdMaskCon(val);
         }
-#endif // TARGET_XARCH  || TARGET_ARM64
+#endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_SIMD
         default:
             unreached();
@@ -2117,12 +2117,12 @@ ValueNum ValueNumStore::VNZeroForType(var_types typ)
         }
 #endif // TARGET_XARCH
 
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
         case TYP_MASK:
         {
             return VNForSimdMaskCon(simdmask_t::Zero());
         }
-#endif // TARGET_XARCH || TARGET_ARM64
+#endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_SIMD
 
         // These should be unreached.
@@ -2214,12 +2214,12 @@ ValueNum ValueNumStore::VNAllBitsForType(var_types typ)
         }
 #endif // TARGET_XARCH
 
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
         case TYP_MASK:
         {
             return VNForSimdMaskCon(simdmask_t::AllBitsSet());
         }
-#endif // TARGET_XARCH || TARGET_ARM64
+#endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_SIMD
 
         default:
@@ -2334,12 +2334,12 @@ ValueNum ValueNumStore::VNBroadcastForSimdType(var_types simdType, var_types sim
 
 #endif // TARGET_XARCH
 
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
         case TYP_MASK:
         {
             unreached();
         }
-#endif // TARGET_XARCH || TARGET_ARM64
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
         default:
         {
@@ -2408,12 +2408,12 @@ bool ValueNumStore::VNIsVectorNaN(var_types simdType, var_types simdBaseType, Va
         }
 #endif // TARGET_XARCH
 
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
         case TYP_MASK:
         {
             unreached();
         }
-#endif // TARGET_XARCH || TARGET_ARM64
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
         default:
         {
@@ -3945,7 +3945,7 @@ simd64_t ValueNumStore::GetConstantSimd64(ValueNum argVN)
 }
 #endif // TARGET_XARCH
 
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
 // Given a simdmask constant value number return its value as a simdmask.
 //
 simdmask_t ValueNumStore::GetConstantSimdMask(ValueNum argVN)
@@ -3955,7 +3955,7 @@ simdmask_t ValueNumStore::GetConstantSimdMask(ValueNum argVN)
 
     return ConstantValue<simdmask_t>(argVN);
 }
-#endif // TARGET_XARCH || TARGET_ARM64
+#endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_SIMD
 
 // Compute the proper value number when the VNFunc has all constant arguments
@@ -9508,14 +9508,14 @@ void ValueNumStore::vnDump(Compiler* comp, ValueNum vn, bool isPtr)
             }
 #endif // TARGET_XARCH
 
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
             case TYP_MASK:
             {
                 simdmask_t cnsVal = GetConstantSimdMask(vn);
                 printf("SimdMaskCns[0x%08x, 0x%08x]", cnsVal.u32[0], cnsVal.u32[1]);
                 break;
             }
-#endif // TARGET_XARCH  || TARGET_ARM64
+#endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_SIMD
 
             // These should be unreached.
@@ -10958,7 +10958,7 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
         }
 #endif // TARGET_XARCH
 
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
         case TYP_MASK:
         {
             simdmask_t simdmaskVal;
@@ -10967,7 +10967,7 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
             tree->gtVNPair.SetBoth(vnStore->VNForSimdMaskCon(simdmaskVal));
             break;
         }
-#endif // TARGET_XARCH  || TARGET_ARM64
+#endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_SIMD
 
         case TYP_FLOAT:
