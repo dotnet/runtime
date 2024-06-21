@@ -4671,7 +4671,7 @@ struct NewCallArg
     // The class handle if SignatureType == TYP_STRUCT.
     CORINFO_CLASS_HANDLE SignatureClsHnd = NO_CLASS_HANDLE;
     // The type of well known arg
-    WellKnownArg WellKnownArg = ::WellKnownArg::None;
+    enum class WellKnownArg WellKnownArg = ::WellKnownArg::None;
 
     NewCallArg WellKnown(::WellKnownArg type) const
     {
@@ -6638,6 +6638,8 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     static bool Equals(GenTreeHWIntrinsic* op1, GenTreeHWIntrinsic* op2);
 
     genTreeOps HWOperGet(bool* isScalar) const;
+
+    bool ShouldConstantProp(GenTree* operand, GenTreeVecCon* vecCon);
 
 private:
     void SetHWIntrinsicId(NamedIntrinsic intrinsicId);

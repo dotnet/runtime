@@ -62,6 +62,5 @@ namespace System.Buffers.Text
         /// </returns>
         public static OperationStatus DecodeFromUtf8InPlace(Span<byte> buffer, out int bytesWritten) =>
             Base64Helper.DecodeFromUtf8InPlace(Base64Helper.s_base64ByteDecoder, buffer, out bytesWritten, ignoreWhiteSpace: true);
-
     }
 }

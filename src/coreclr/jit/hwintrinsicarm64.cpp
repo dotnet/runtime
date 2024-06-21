@@ -389,13 +389,7 @@ void HWIntrinsicInfo::lookupImmBounds(
             case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x3:
             case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x4:
             case NI_AdvSimd_StoreSelectedScalar:
-            case NI_AdvSimd_StoreSelectedScalarVector64x2:
-            case NI_AdvSimd_StoreSelectedScalarVector64x3:
-            case NI_AdvSimd_StoreSelectedScalarVector64x4:
             case NI_AdvSimd_Arm64_StoreSelectedScalar:
-            case NI_AdvSimd_Arm64_StoreSelectedScalarVector128x2:
-            case NI_AdvSimd_Arm64_StoreSelectedScalarVector128x3:
-            case NI_AdvSimd_Arm64_StoreSelectedScalarVector128x4:
             case NI_AdvSimd_Arm64_DuplicateSelectedScalarToVector128:
             case NI_AdvSimd_Arm64_InsertSelectedScalar:
             case NI_Sve_FusedMultiplyAddBySelectedScalar:
@@ -718,6 +712,18 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 }
             }
 
+            break;
+        }
+
+        case NI_Vector128_AsVector128Unsafe:
+        {
+            assert(sig->numArgs == 1);
+            assert(retType == TYP_SIMD16);
+            assert(simdBaseJitType == CORINFO_TYPE_FLOAT);
+            assert((simdSize == 8) || (simdSize == 12));
+
+            op1     = impSIMDPopStack();
+            retNode = gtNewSimdHWIntrinsicNode(retType, op1, NI_Vector128_AsVector128Unsafe, simdBaseJitType, simdSize);
             break;
         }
 
@@ -1903,22 +1909,63 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         }
 
         case NI_AdvSimd_Store:
+        case NI_AdvSimd_Arm64_Store:
         {
-            assert(retType == TYP_VOID);
-            assert(sig->numArgs == 2);
+            CORINFO_ARG_LIST_HANDLE arg1     = sig->args;
+            CORINFO_ARG_LIST_HANDLE arg2     = info.compCompHnd->getArgNext(arg1);
+            var_types               argType  = TYP_UNKNOWN;
+            CORINFO_CLASS_HANDLE    argClass = NO_CLASS_HANDLE;
+            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
+            op2     = impPopStack().val;
 
-            var_types simdType = getSIMDTypeForSize(simdSize);
-
-            op2 = impSIMDPopStack();
-            op1 = impPopStack().val;
-
-            if (op1->OperIs(GT_CAST) && op1->gtGetOp1()->TypeIs(TYP_BYREF))
+            if (op2->TypeGet() == TYP_STRUCT)
             {
-                // If what we have is a BYREF, that's what we really want, so throw away the cast.
-                op1 = op1->gtGetOp1();
-            }
+                info.compNeedsConsecutiveRegisters = true;
+                unsigned fieldCount                = info.compCompHnd->getClassNumInstanceFields(argClass);
 
-            retNode = gtNewSimdStoreNode(op1, op2, simdBaseJitType, simdSize);
+                if (!op2->OperIs(GT_LCL_VAR))
+                {
+                    unsigned tmp = lvaGrabTemp(true DEBUGARG("StoreVectorN"));
+
+                    impStoreToTemp(tmp, op2, CHECK_SPILL_NONE);
+                    op2 = gtNewLclvNode(tmp, argType);
+                }
+                op2     = gtConvertTableOpToFieldList(op2, fieldCount);
+                argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg1, &argClass)));
+                op1     = getArgForHWIntrinsic(argType, argClass);
+
+                if (op1->OperIs(GT_CAST))
+                {
+                    // Although the API specifies a pointer, if what we have is a BYREF, that's what
+                    // we really want, so throw away the cast.
+                    if (op1->gtGetOp1()->TypeGet() == TYP_BYREF)
+                    {
+                        op1 = op1->gtGetOp1();
+                    }
+                }
+
+                retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseJitType, simdSize);
+            }
+            else
+            {
+                if (op2->TypeGet() == TYP_SIMD16)
+                {
+                    // Update the simdSize explicitly as Vector128 variant of Store() is present in AdvSimd instead of
+                    // AdvSimd.Arm64.
+                    simdSize = 16;
+                }
+
+                var_types simdType = getSIMDTypeForSize(simdSize);
+                op1                = impPopStack().val;
+
+                if (op1->OperIs(GT_CAST) && op1->gtGetOp1()->TypeIs(TYP_BYREF))
+                {
+                    // If what we have is a BYREF, that's what we really want, so throw away the cast.
+                    op1 = op1->gtGetOp1();
+                }
+
+                retNode = gtNewSimdStoreNode(op1, op2, simdBaseJitType, simdSize);
+            }
             break;
         }
 
@@ -2030,18 +2077,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_AdvSimd_StoreVector64x2AndZip:
-        case NI_AdvSimd_StoreVector64x3AndZip:
-        case NI_AdvSimd_StoreVector64x4AndZip:
-        case NI_AdvSimd_Arm64_StoreVector128x2AndZip:
-        case NI_AdvSimd_Arm64_StoreVector128x3AndZip:
-        case NI_AdvSimd_Arm64_StoreVector128x4AndZip:
-        case NI_AdvSimd_StoreVector64x2:
-        case NI_AdvSimd_StoreVector64x3:
-        case NI_AdvSimd_StoreVector64x4:
-        case NI_AdvSimd_Arm64_StoreVector128x2:
-        case NI_AdvSimd_Arm64_StoreVector128x3:
-        case NI_AdvSimd_Arm64_StoreVector128x4:
+        case NI_AdvSimd_StoreVectorAndZip:
+        case NI_AdvSimd_Arm64_StoreVectorAndZip:
         {
             assert(sig->numArgs == 2);
             assert(retType == TYP_VOID);
@@ -2077,6 +2114,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             }
             op2 = gtConvertTableOpToFieldList(op2, fieldCount);
 
+            intrinsic = simdSize == 8 ? NI_AdvSimd_StoreVectorAndZip : NI_AdvSimd_Arm64_StoreVectorAndZip;
+
             info.compNeedsConsecutiveRegisters = true;
             retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseJitType, simdSize);
             break;
@@ -2111,23 +2150,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             if (op2->TypeGet() == TYP_STRUCT)
             {
                 info.compNeedsConsecutiveRegisters = true;
-                switch (fieldCount)
-                {
-                    case 2:
-                        intrinsic = simdSize == 8 ? NI_AdvSimd_StoreSelectedScalarVector64x2
-                                                  : NI_AdvSimd_Arm64_StoreSelectedScalarVector128x2;
-                        break;
-                    case 3:
-                        intrinsic = simdSize == 8 ? NI_AdvSimd_StoreSelectedScalarVector64x3
-                                                  : NI_AdvSimd_Arm64_StoreSelectedScalarVector128x3;
-                        break;
-                    case 4:
-                        intrinsic = simdSize == 8 ? NI_AdvSimd_StoreSelectedScalarVector64x4
-                                                  : NI_AdvSimd_Arm64_StoreSelectedScalarVector128x4;
-                        break;
-                    default:
-                        assert("unsupported");
-                }
+                intrinsic = simdSize == 8 ? NI_AdvSimd_StoreSelectedScalar : NI_AdvSimd_Arm64_StoreSelectedScalar;
 
                 if (!op2->OperIs(GT_LCL_VAR))
                 {
@@ -2272,18 +2295,18 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_AdvSimd_LoadVector64x2AndUnzip:
-        case NI_AdvSimd_LoadVector64x3AndUnzip:
-        case NI_AdvSimd_LoadVector64x4AndUnzip:
-        case NI_AdvSimd_Arm64_LoadVector128x2AndUnzip:
-        case NI_AdvSimd_Arm64_LoadVector128x3AndUnzip:
-        case NI_AdvSimd_Arm64_LoadVector128x4AndUnzip:
-        case NI_AdvSimd_LoadVector64x2:
-        case NI_AdvSimd_LoadVector64x3:
-        case NI_AdvSimd_LoadVector64x4:
-        case NI_AdvSimd_Arm64_LoadVector128x2:
-        case NI_AdvSimd_Arm64_LoadVector128x3:
-        case NI_AdvSimd_Arm64_LoadVector128x4:
+        case NI_AdvSimd_Load2xVector64AndUnzip:
+        case NI_AdvSimd_Load3xVector64AndUnzip:
+        case NI_AdvSimd_Load4xVector64AndUnzip:
+        case NI_AdvSimd_Arm64_Load2xVector128AndUnzip:
+        case NI_AdvSimd_Arm64_Load3xVector128AndUnzip:
+        case NI_AdvSimd_Arm64_Load4xVector128AndUnzip:
+        case NI_AdvSimd_Load2xVector64:
+        case NI_AdvSimd_Load3xVector64:
+        case NI_AdvSimd_Load4xVector64:
+        case NI_AdvSimd_Arm64_Load2xVector128:
+        case NI_AdvSimd_Arm64_Load3xVector128:
+        case NI_AdvSimd_Arm64_Load4xVector128:
         case NI_AdvSimd_LoadAndReplicateToVector64x2:
         case NI_AdvSimd_LoadAndReplicateToVector64x3:
         case NI_AdvSimd_LoadAndReplicateToVector64x4:

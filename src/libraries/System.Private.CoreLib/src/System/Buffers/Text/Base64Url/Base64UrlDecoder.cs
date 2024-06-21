@@ -10,7 +10,6 @@ using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
 #endif
 using System.Text;
-using static System.Buffers.Text.Base64;
 
 namespace System.Buffers.Text
 {
@@ -705,8 +704,8 @@ namespace System.Buffers.Text
                 out Vector128<byte> str1, out Vector128<byte> str2, out Vector128<byte> str3, out Vector128<byte> str4)
             {
                 Base64Helper.AssertRead<Vector128<sbyte>>(src, srcStart, sourceLength);
-                var (s11, s12, s21, s22) = AdvSimd.Arm64.LoadVector128x4AndUnzip(src);
-                var (s31, s32, s41, s42) = AdvSimd.Arm64.LoadVector128x4AndUnzip(src + 32);
+                var (s11, s12, s21, s22) = AdvSimd.Arm64.Load4xVector128AndUnzip(src);
+                var (s31, s32, s41, s42) = AdvSimd.Arm64.Load4xVector128AndUnzip(src + 32);
 
                 if (Ascii.VectorContainsNonAsciiChar(s11 | s12 | s21 | s22 | s31 | s32 | s41 | s42))
                 {

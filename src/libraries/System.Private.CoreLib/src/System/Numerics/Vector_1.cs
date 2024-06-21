@@ -52,7 +52,7 @@ namespace System.Numerics
         /// <param name="values">The array from which the vector is created.</param>
         /// <returns>A new <see cref="Vector{T}" /> with its elements set to the first <see cref="Vector{T}.Count" /> elements from <paramref name="values" />.</returns>
         /// <exception cref="NullReferenceException"><paramref name="values" /> is <c>null</c>.</exception>
-        /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="values" /> is less than <see cref="Vector128{T}.Count" />.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="values" /> is less than <see cref="Vector{T}.Count" />.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Vector(T[] values)
         {
@@ -71,7 +71,7 @@ namespace System.Numerics
         /// <param name="index">The index in <paramref name="values" /> at which to being reading elements.</param>
         /// <returns>A new <see cref="Vector{T}" /> with its elements set to the first <see cref="Vector{T}.Count" /> elements from <paramref name="values" />.</returns>
         /// <exception cref="NullReferenceException"><paramref name="values" /> is <c>null</c>.</exception>
-        /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="values" />, starting from <paramref name="index" />, is less than <see cref="Vector128{T}.Count" />.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="values" />, starting from <paramref name="index" />, is less than <see cref="Vector{T}.Count" />.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Vector(T[] values, int index)
         {
@@ -133,7 +133,7 @@ namespace System.Numerics
         public static Vector<T> AllBitsSet
         {
             [Intrinsic]
-            get => new Vector<T>(Scalar<T>.AllBitsSet);
+            get => Vector.Create(Scalar<T>.AllBitsSet);
         }
 
 #pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
@@ -195,7 +195,7 @@ namespace System.Numerics
         public static Vector<T> One
         {
             [Intrinsic]
-            get => new Vector<T>(Scalar<T>.One);
+            get => Vector.Create(Scalar<T>.One);
         }
 
         /// <summary>Gets a new <see cref="Vector{T}" /> with all elements initialized to zero.</summary>
@@ -506,7 +506,7 @@ namespace System.Numerics
         /// <param name="factor">The scalar to multiply with <paramref name="value" />.</param>
         /// <returns>The product of <paramref name="value" /> and <paramref name="factor" />.</returns>
         [Intrinsic]
-        public static Vector<T> operator *(Vector<T> value, T factor) => value * new Vector<T>(factor);
+        public static Vector<T> operator *(Vector<T> value, T factor) => value * Vector.Create(factor);
 
         /// <summary>Multiplies a vector by a scalar to compute their product.</summary>
         /// <param name="factor">The scalar to multiply with <paramref name="value" />.</param>

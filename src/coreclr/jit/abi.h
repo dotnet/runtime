@@ -39,6 +39,14 @@ public:
 
 struct ABIPassingInformation
 {
+private:
+    union
+    {
+        ABIPassingSegment* Segments;
+        ABIPassingSegment  SingleSegment;
+    };
+
+public:
     // The number of segments used to pass the value. Examples:
     // - On SysV x64, structs can be passed in two registers, resulting in two
     // register segments
@@ -51,14 +59,17 @@ struct ABIPassingInformation
     // - On loongarch64/riscv64, structs can be passed in two registers or
     // can be split out over register and stack, giving
     // multiple register segments and a struct segment.
-    unsigned           NumSegments;
-    ABIPassingSegment* Segments;
+    unsigned NumSegments;
 
-    ABIPassingInformation(unsigned numSegments = 0, ABIPassingSegment* segments = nullptr)
-        : NumSegments(numSegments)
-        , Segments(segments)
+    ABIPassingInformation()
+        : NumSegments(0)
     {
     }
+
+    ABIPassingInformation(Compiler* comp, unsigned numSegments);
+
+    const ABIPassingSegment& Segment(unsigned index) const;
+    ABIPassingSegment&       Segment(unsigned index);
 
     bool HasAnyRegisterSegment() const;
     bool HasAnyStackSegment() const;
@@ -67,6 +78,9 @@ struct ABIPassingInformation
     bool IsSplitAcrossRegistersAndStack() const;
 
     static ABIPassingInformation FromSegment(Compiler* comp, const ABIPassingSegment& segment);
+    static ABIPassingInformation FromSegments(Compiler*                comp,
+                                              const ABIPassingSegment& firstSegment,
+                                              const ABIPassingSegment& secondSegment);
 
 #ifdef WINDOWS_AMD64_ABI
     static bool GetShadowSpaceCallerOffsetForReg(regNumber reg, int* offset);
