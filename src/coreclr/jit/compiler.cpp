@@ -8317,10 +8317,10 @@ void Compiler::GetStructTypeOffset(
 void Compiler::GetTypesFromFpStructInRegistersInfo(FpStructInRegistersInfo info, var_types* type1st, var_types* type2nd)
 {
     if ((info.flags & (FpStruct::BothFloat | FpStruct::FloatInt | FpStruct::OnlyOne)) != 0)
-        *type1st = info.IsSize1st8() ? TYP_DOUBLE : TYP_FLOAT;
+        *type1st = (info.GetSizeShift1st() == 3) ? TYP_DOUBLE : TYP_FLOAT;
 
     if ((info.flags & (FpStruct::BothFloat | FpStruct::IntFloat)) != 0)
-        *type2nd = info.IsSize2nd8() ? TYP_DOUBLE : TYP_FLOAT;
+        *type2nd = (info.GetSizeShift2nd() == 3) ? TYP_DOUBLE : TYP_FLOAT;
 
     if ((info.flags & (FpStruct::FloatInt | FpStruct::IntFloat)) != 0)
     {

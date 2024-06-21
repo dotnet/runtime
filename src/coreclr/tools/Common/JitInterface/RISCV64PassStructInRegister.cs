@@ -306,8 +306,8 @@ namespace Internal.JitInterface
                 if (info.GetIntFieldKind() >= FpStruct_IntKind.GcRef)
                 {
                     Debug.Assert((info.flags & IntFloat) != 0
-                        ? (info.IsSize1st8() && IsAligned(info.offset1st, TARGET_POINTER_SIZE))
-                        : (info.IsSize2nd8() && IsAligned(info.offset2nd, TARGET_POINTER_SIZE)));
+                        ? ((info.GetSizeShift1st() == 3) && IsAligned(info.offset1st, TARGET_POINTER_SIZE))
+                        : ((info.GetSizeShift2nd() == 3) && IsAligned(info.offset2nd, TARGET_POINTER_SIZE)));
                 }
             }
             if ((info.flags & (OnlyOne | BothFloat)) != 0)

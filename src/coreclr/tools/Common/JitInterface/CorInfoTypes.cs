@@ -1325,16 +1325,6 @@ namespace Internal.JitInterface
             return 1u << shift;
         }
 
-        public bool IsSize1st8()
-        {
-            return (flags & FpStruct.SizeShift1stMask) == (FpStruct)(3 << (int)FpStruct.PosSizeShift1st);
-        }
-
-        public bool IsSize2nd8()
-        {
-            return (flags & FpStruct.SizeShift2ndMask) == (FpStruct)(3 << (int)FpStruct.PosSizeShift2nd);
-        }
-
         public FpStruct_IntKind GetIntFieldKind()
         {
             return (FpStruct_IntKind)(((int)flags >> (int)FpStruct.PosIntFieldKind) & 0b11);
@@ -1347,8 +1337,8 @@ namespace Internal.JitInterface
                 ((flags & FpStruct.BothFloat) != 0 ? StructFloatFieldInfoFlags.STRUCT_FLOAT_FIELD_ONLY_TWO : 0) |
                 ((flags & FpStruct.FloatInt) != 0 ? StructFloatFieldInfoFlags.STRUCT_FLOAT_FIELD_FIRST : 0) |
                 ((flags & FpStruct.IntFloat) != 0 ? StructFloatFieldInfoFlags.STRUCT_FLOAT_FIELD_SECOND : 0) |
-                (IsSize1st8() ? StructFloatFieldInfoFlags.STRUCT_FIRST_FIELD_SIZE_IS8 : 0) |
-                (IsSize2nd8() ? StructFloatFieldInfoFlags.STRUCT_SECOND_FIELD_SIZE_IS8 : 0);
+                ((GetSizeShift1st() == 3) ? StructFloatFieldInfoFlags.STRUCT_FIRST_FIELD_SIZE_IS8 : 0) |
+                ((GetSizeShift2nd() == 3) ? StructFloatFieldInfoFlags.STRUCT_SECOND_FIELD_SIZE_IS8 : 0);
         }
     }
 

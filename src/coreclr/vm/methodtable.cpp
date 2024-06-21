@@ -3204,8 +3204,8 @@ static FpStructInRegistersInfo GetRiscV64PassFpStructInRegistersInfoImpl(TypeHan
         if (info.GetIntFieldKind() >= FpStruct::IntKind::GcRef)
         {
             assert((info.flags & IntFloat) != 0
-                ? (info.IsSize1st8() && IS_ALIGNED(info.offset1st, TARGET_POINTER_SIZE))
-                : (info.IsSize2nd8() && IS_ALIGNED(info.offset2nd, TARGET_POINTER_SIZE)));
+                ? ((info.GetSizeShift1st() == 3) && IS_ALIGNED(info.offset1st, TARGET_POINTER_SIZE))
+                : ((info.GetSizeShift2nd() == 3) && IS_ALIGNED(info.offset2nd, TARGET_POINTER_SIZE)));
         }
     }
     if (info.flags & (OnlyOne | BothFloat))

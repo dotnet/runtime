@@ -122,13 +122,13 @@ public:
         if (info.flags & (OnlyOne | BothFloat | FloatInt)) // copy first floating field
         {
             void* field = (char*)src + info.offset1st;
-            *floatReg++ = info.IsSize1st8() ? *(INT64*)field : NanBox | *(INT32*)field;
+            *floatReg++ = (info.GetSizeShift1st() == 3) ? *(INT64*)field : NanBox | *(INT32*)field;
         }
 
         if (info.flags & (BothFloat | IntFloat)) // copy second floating field
         {
             void* field = (char*)src + info.offset2nd;
-            *floatReg = info.IsSize2nd8() ? *(INT64*)field : NanBox | *(INT32*)field;
+            *floatReg = (info.GetSizeShift2nd() == 3) ? *(INT64*)field : NanBox | *(INT32*)field;
         }
 
         if (info.flags & (FloatInt | IntFloat)) // copy integer field
