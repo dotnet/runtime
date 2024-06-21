@@ -1272,7 +1272,7 @@ namespace Internal.JitInterface
     [Flags]
     public enum FpStruct
     {
-        // Positions of bitfields
+        // Positions of flags and bitfields
         PosOnlyOne      = 0,
         PosBothFloat    = 1,
         PosFloatInt     = 2,
@@ -1283,7 +1283,7 @@ namespace Internal.JitInterface
 
         UseIntCallConv = 0, // struct is passed according to integer calling convention
 
-        // The bitfields
+        // The flags and bitfields
         OnlyOne          =    1 << PosOnlyOne,      // has only one field, which is floating-point
         BothFloat        =    1 << PosBothFloat,    // has two fields, both are floating-point
         FloatInt         =    1 << PosFloatInt,     // has two fields, 1st is floating and 2nd is integer

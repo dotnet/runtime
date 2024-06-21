@@ -3213,18 +3213,11 @@ static FpStructInRegistersInfo GetRiscV64PassFpStructInRegistersInfoImpl(TypeHan
     if (info.flags & (OnlyOne | BothFloat))
         assert(info.IntFieldKind() == FpStruct::IntKind::Signed);
 
-    static const char* intKindNames[] = { "Signed", "Unsigned", "GcRef", "GcByRef" };
     LOG((LF_JIT, LL_EVERYTHING, "FpStructInRegistersInfo: "
         "struct %s (%u bytes) can be passed with floating-point calling convention, flags=%#02x; "
         "%s, sizes={%u, %u}, offsets={%u, %u}, IntFieldKindMask=%s\n",
         (!th.IsTypeDesc() ? th.AsMethodTable() : th.AsNativeValueType())->GetDebugClassName(), th.GetSize(), info.flags,
-        ( (info.flags & OnlyOne) ? "OnlyFloat"
-        : (info.flags & BothFloat) ? "BothFloat"
-        : (info.flags & FloatInt) ? "FloatInt"
-        : "IntFloat" ),
-        info.Size1st(), info.Size2nd(),
-        info.offset1st, info.offset2nd,
-        intKindNames[(int)info.IntFieldKind()]
+        info.FlagName(), info.Size1st(), info.Size2nd(), info.offset1st, info.offset2nd, info.IntFieldKindName()
     ));
     return info;
 }

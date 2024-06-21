@@ -366,7 +366,7 @@ namespace FpStruct
 
     enum Flags
     {
-        // Positions of bitfields
+        // Positions of flags and bitfields
         PosOnlyOne      = 0,
         PosBothFloat    = 1,
         PosFloatInt     = 2,
@@ -377,7 +377,7 @@ namespace FpStruct
 
         UseIntCallConv = 0, // struct is passed according to integer calling convention
 
-        // The bitfields
+        // The flags and bitfields
         OnlyOne          =    1 << PosOnlyOne,      // has only one field, which is floating-point
         BothFloat        =    1 << PosBothFloat,    // has two fields, both are floating-point
         FloatInt         =    1 << PosFloatInt,     // has two fields, 1st is floating and 2nd is integer
@@ -407,6 +407,24 @@ struct FpStructInRegistersInfo
     FpStruct::IntKind IntFieldKind() const
     {
         return (FpStruct::IntKind)((flags >> FpStruct::PosIntFieldKind) & 0b11);
+    }
+
+    const char* IntFieldKindName() const
+    {
+        static const char* intKindNames[] = { "Signed", "Unsigned", "GcRef", "GcByRef" };
+        return intKindNames[(int)IntFieldKind()];
+    }
+
+    const char* FlagName() const
+    {
+        switch (flags & (FpStruct::OnlyOne | FpStruct::BothFloat | FpStruct::FloatInt | FpStruct::IntFloat))
+        {
+            case FpStruct::OnlyOne: return "OnlyOne";
+            case FpStruct::BothFloat: return "BothFloat";
+            case FpStruct::FloatInt: return "FloatInt";
+            case FpStruct::IntFloat: return "IntFloat";
+            default: return "?";
+        }
     }
 
     StructFloatFieldInfoFlags ToOldFlags() const
