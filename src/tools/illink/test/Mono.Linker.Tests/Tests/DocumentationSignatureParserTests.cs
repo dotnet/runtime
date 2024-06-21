@@ -12,14 +12,6 @@ using NUnit.Framework;
 
 namespace Mono.Linker.Tests
 {
-	sealed class TestResolver : ITryResolveMetadata
-	{
-		public static TestResolver Instance => new TestResolver ();
-
-		public MethodDefinition TryResolve (MethodReference methodReference) => methodReference.Resolve ();
-		public TypeDefinition TryResolve (TypeReference typeReference) => typeReference.Resolve ();
-	}
-
 	[TestFixture]
 	public class DocumentationSignatureParserTests
 	{

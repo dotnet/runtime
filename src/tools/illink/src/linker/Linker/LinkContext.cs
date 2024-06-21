@@ -59,17 +59,6 @@ namespace Mono.Linker
 		public const int NET6 = 6;
 	}
 
-	public interface ITryResolveMetadata
-	{
-		MethodDefinition? TryResolve (MethodReference methodReference);
-		TypeDefinition? TryResolve (TypeReference typeReference);
-	}
-
-	internal interface ITryResolveAssemblyName
-	{
-		AssemblyDefinition? TryResolve (string assemblyName);
-	}
-
 	public class LinkContext : IMetadataResolver, ITryResolveMetadata, ITryResolveAssemblyName, IDisposable
 	{
 

@@ -47,29 +47,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		{
 			_originalsResolver = originalsResolver;
 			_linkedResolver = linkedResolver;
-			var testResolver = new TestResolver (_linkedResolver);
-			_linkedTypeNameResolver = new TypeNameResolver (testResolver, testResolver);
+			_linkedTypeNameResolver = new TypeNameResolver (new TestResolver (), new TestAssemblyNameResolver (_linkedResolver));
 			_originalReaderParameters = originalReaderParameters;
 			_linkedReaderParameters = linkedReaderParameters;
-		}
-
-		struct TestResolver : ITryResolveAssemblyName, ITryResolveMetadata
-		{
-			readonly BaseAssemblyResolver _assemblyResolver;
-
-			public TestResolver (BaseAssemblyResolver resolver)
-			{
-				_assemblyResolver = resolver;
-			}
-
-			public AssemblyDefinition TryResolve (string assemblyName)
-				=> _assemblyResolver.Resolve (new AssemblyNameReference (assemblyName, null), new ReaderParameters ());
-
-			public MethodDefinition TryResolve (MethodReference methodReference) => methodReference.Resolve ();
-
-			public FieldDefinition TryResolve (FieldReference fieldReference) => fieldReference.Resolve ();
-
-			public TypeDefinition TryResolve (TypeReference typeReference) => typeReference.Resolve ();
 		}
 
 		protected static void ValidateTypeRefsHaveValidAssemblyRefs (AssemblyDefinition linked)
