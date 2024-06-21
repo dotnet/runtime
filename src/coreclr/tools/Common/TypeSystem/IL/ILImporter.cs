@@ -314,6 +314,8 @@ namespace Internal.IL
             }
         }
 
+        partial void StartImportingInstruction(ILOpcode opcode);
+
         private void ImportBasicBlock(BasicBlock basicBlock)
         {
             _currentBasicBlock = basicBlock;
@@ -324,6 +326,8 @@ namespace Internal.IL
                 StartImportingInstruction();
 
                 ILOpcode opCode = (ILOpcode)ReadILByte();
+
+                StartImportingInstruction(opCode);
 
             again:
                 switch (opCode)

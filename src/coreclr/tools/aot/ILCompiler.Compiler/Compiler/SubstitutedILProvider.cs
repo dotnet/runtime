@@ -235,8 +235,6 @@ namespace ILCompiler
                 }
             }
 
-            var analyzer = new ILPatternAnalyzer<ILPatternAnalyzerState>(new ILPatternAnalyzerState(flags), method, methodBytes);
-
             bool hasGetResourceStringCall = false;
 
             // Mark all reachable basic blocks
@@ -254,12 +252,16 @@ namespace ILCompiler
                 if ((flags[offset] & OpcodeFlags.Mark) != 0)
                     continue;
 
+                TypeEqualityPatternAnalyzer typeEqualityAnalyzer = default;
+
                 ILReader reader = new ILReader(methodBytes, offset);
                 while (reader.HasNext)
                 {
                     offset = reader.Offset;
                     flags[offset] |= OpcodeFlags.Mark;
                     ILOpcode opcode = reader.ReadILOpcode();
+
+                    typeEqualityAnalyzer.Advance(opcode, reader, method);
 
                     // Mark any applicable EH blocks
                     foreach (ILExceptionRegion ehRegion in ehRegions)
@@ -299,7 +301,8 @@ namespace ILCompiler
                         || opcode == ILOpcode.brtrue || opcode == ILOpcode.brtrue_s)
                     {
                         int destination = reader.ReadBranchDestination(opcode);
-                        if (!TryGetConstantArgument(analyzer, offset, 0, out int constant))
+                        if (!TryGetConstantArgument(method, methodBytes, flags, offset, 0, out int constant)
+                            && !TryExpandTypeEquality(typeEqualityAnalyzer, method, out constant))
                         {
                             // Can't get the constant - both branches are live.
                             offsetsToVisit.Push(destination);
@@ -325,8 +328,8 @@ namespace ILCompiler
                         || opcode == ILOpcode.bne_un || opcode == ILOpcode.bne_un_s)
                     {
                         int destination = reader.ReadBranchDestination(opcode);
-                        if (!TryGetConstantArgument(analyzer, offset, 0, out int left)
-                            || !TryGetConstantArgument(analyzer, offset, 1, out int right))
+                        if (!TryGetConstantArgument(method, methodBytes, flags, offset, 0, out int left)
+                            || !TryGetConstantArgument(method, methodBytes, flags, offset, 1, out int right))
                         {
                             // Can't get the constant - both branches are live.
                             offsetsToVisit.Push(destination);
@@ -656,9 +659,9 @@ namespace ILCompiler
             return new SubstitutedMethodIL(method.GetMethodILDefinition(), newBody, newEHRegions.ToArray(), debugInfo, newStrings.ToArray());
         }
 
-        private bool TryGetConstantArgument(ILPatternAnalyzer<ILPatternAnalyzerState> analyzer, int offset, int argIndex, out int constant)
+        private bool TryGetConstantArgument(MethodIL methodIL, byte[] body, OpcodeFlags[] flags, int offset, int argIndex, out int constant)
         {
-            if (analyzer.State.IsBasicBlockStart(offset))
+            if ((flags[offset] & OpcodeFlags.BasicBlockStart) != 0)
             {
                 constant = 0;
                 return false;
@@ -666,14 +669,14 @@ namespace ILCompiler
 
             for (int currentOffset = offset - 1; currentOffset >= 0; currentOffset--)
             {
-                if (!analyzer.State.IsInstructionStart(currentOffset))
+                if ((flags[currentOffset] & OpcodeFlags.InstructionStart) == 0)
                     continue;
 
-                ILReader reader = new ILReader(analyzer.ILBytes, currentOffset);
+                ILReader reader = new ILReader(body, currentOffset);
                 ILOpcode opcode = reader.ReadILOpcode();
                 if (opcode == ILOpcode.call || opcode == ILOpcode.callvirt)
                 {
-                    MethodDesc method = (MethodDesc)analyzer.Method.GetObject(reader.ReadILToken());
+                    MethodDesc method = (MethodDesc)methodIL.GetObject(reader.ReadILToken());
                     if (argIndex == 0)
                     {
                         BodySubstitution substitution = _substitutionProvider.GetSubstitution(method);
@@ -683,17 +686,10 @@ namespace ILCompiler
                             constant = (int)substitution.Value;
                             return true;
                         }
-                        else if (method.IsIntrinsic && method.Name is "op_Inequality" or "op_Equality"
-                            && method.OwningType is MetadataType mdType
-                            && mdType.Name == "Type" && mdType.Namespace == "System" && mdType.Module == mdType.Context.SystemModule
-                            && TryExpandTypeEquality(analyzer, currentOffset, method.Name, out constant))
-                        {
-                            return true;
-                        }
                         else if (method.IsIntrinsic && method.Name is "get_IsValueType" or "get_IsEnum"
                             && method.OwningType is MetadataType mdt
                             && mdt.Name == "Type" && mdt.Namespace == "System" && mdt.Module == mdt.Context.SystemModule
-                            && TryExpandTypeIs(analyzer, currentOffset, method.Name, out constant))
+                            && TryExpandTypeIs(methodIL, body, flags, currentOffset, method.Name, out constant))
                         {
                             return true;
                         }
@@ -714,7 +710,7 @@ namespace ILCompiler
                 }
                 else if (opcode == ILOpcode.ldsfld)
                 {
-                    FieldDesc field = (FieldDesc)analyzer.Method.GetObject(reader.ReadILToken());
+                    FieldDesc field = (FieldDesc)methodIL.GetObject(reader.ReadILToken());
                     if (argIndex == 0)
                     {
                         object substitution = _substitutionProvider.GetSubstitution(field);
@@ -764,7 +760,7 @@ namespace ILCompiler
                 }
                 else if ((opcode == ILOpcode.ldloc || opcode == ILOpcode.ldloc_s ||
                     (opcode >= ILOpcode.ldloc_0 && opcode <= ILOpcode.ldloc_3)) &&
-                    !analyzer.State.IsBasicBlockStart(currentOffset))
+                    ((flags[currentOffset] & OpcodeFlags.BasicBlockStart) == 0))
                 {
                     // Paired stloc/ldloc that the C# compiler generates in debug code?
                     int locIndex = opcode switch
@@ -776,10 +772,10 @@ namespace ILCompiler
 
                     for (int potentialStlocOffset = currentOffset - 1; potentialStlocOffset >= 0; potentialStlocOffset--)
                     {
-                        if (!analyzer.State.IsInstructionStart(potentialStlocOffset))
+                        if ((flags[potentialStlocOffset] & OpcodeFlags.InstructionStart) == 0)
                             continue;
 
-                        ILReader nestedReader = new ILReader(analyzer.ILBytes, potentialStlocOffset);
+                        ILReader nestedReader = new ILReader(body, potentialStlocOffset);
                         ILOpcode otherOpcode = nestedReader.ReadILOpcode();
                         if ((otherOpcode == ILOpcode.stloc || otherOpcode == ILOpcode.stloc_s ||
                             (otherOpcode >= ILOpcode.stloc_0 && otherOpcode <= ILOpcode.stloc_3))
@@ -805,8 +801,8 @@ namespace ILCompiler
                 {
                     if (argIndex == 0)
                     {
-                        if (!TryGetConstantArgument(analyzer, currentOffset, 0, out int left)
-                                || !TryGetConstantArgument(analyzer, currentOffset, 1, out int right))
+                        if (!TryGetConstantArgument(methodIL, body, flags, currentOffset, 0, out int left)
+                                || !TryGetConstantArgument(methodIL, body, flags, currentOffset, 1, out int right))
                         {
                             constant = 0;
                             return false;
@@ -828,7 +824,7 @@ namespace ILCompiler
                     return false;
                 }
 
-                if (analyzer.State.IsBasicBlockStart(currentOffset))
+                if ((flags[currentOffset] & OpcodeFlags.BasicBlockStart) != 0)
                     break;
             }
 
@@ -836,7 +832,7 @@ namespace ILCompiler
             return false;
         }
 
-        private static bool TryExpandTypeIs(ILPatternAnalyzer<ILPatternAnalyzerState> analyzer, int offset, string name, out int constant)
+        private static bool TryExpandTypeIs(MethodIL methodIL, byte[] body, OpcodeFlags[] flags, int offset, string name, out int constant)
         {
             // We expect to see a sequence:
             // ldtoken Foo
@@ -847,16 +843,16 @@ namespace ILCompiler
             if (offset < SequenceLength)
                 return false;
 
-            if (!analyzer.State.IsInstructionStart(offset - SequenceLength))
+            if ((flags[offset - SequenceLength] & OpcodeFlags.InstructionStart) == 0)
                 return false;
 
-            ILReader reader = new ILReader(analyzer.ILBytes, offset - SequenceLength);
+            ILReader reader = new ILReader(body, offset - SequenceLength);
 
-            TypeDesc type = ReadLdToken(ref reader, analyzer);
+            TypeDesc type = ReadLdToken(ref reader, methodIL, flags);
             if (type == null)
                 return false;
 
-            if (!ReadGetTypeFromHandle(ref reader, analyzer))
+            if (!ReadGetTypeFromHandle(ref reader, methodIL, flags))
                 return false;
 
             // Dataflow runs on top of uninstantiated IL and we can't answer some questions there.
@@ -875,103 +871,92 @@ namespace ILCompiler
             return true;
         }
 
-        private bool TryExpandTypeEquality(ILPatternAnalyzer<ILPatternAnalyzerState> analyzer, int offset, string op, out int constant)
+        private bool TryExpandTypeEquality(in TypeEqualityPatternAnalyzer analyzer, MethodIL methodIL, out int constant)
         {
-            if (TryExpandTypeEquality_TokenToken(analyzer, offset, out constant)
-                || TryExpandTypeEquality_TokenOther(analyzer, offset, out constant))
-            {
-                if (op == "op_Inequality")
-                    constant ^= 1;
+            constant = 0;
+            if (!analyzer.IsTypeEqualityCheck)
+                return false;
 
-                return true;
+            if (analyzer.IsTwoTokens)
+            {
+                var type1 = (TypeDesc)methodIL.GetObject(analyzer.Token1);
+                var type2 = (TypeDesc)methodIL.GetObject(analyzer.Token2);
+
+                // No value in making this work for definitions
+                if (type1.IsGenericDefinition || type2.IsGenericDefinition)
+                    return false;
+
+                // Dataflow runs on top of uninstantiated IL and we can't answer some questions there.
+                // Unfortunately this means dataflow will still see code that the rest of the system
+                // might have optimized away. It should not be a problem in practice.
+                if (type1.ContainsSignatureVariables() || type2.ContainsSignatureVariables())
+                    return false;
+
+                bool? equality = TypeExtensions.CompareTypesForEquality(type1, type2);
+                if (!equality.HasValue)
+                    return false;
+
+                constant = equality.Value ? 1 : 0;
+            }
+            else
+            {
+                var knownType = (TypeDesc)methodIL.GetObject(analyzer.Token1);
+
+                // No value in making this work for definitions
+                if (knownType.IsGenericDefinition)
+                    return false;
+
+                // Dataflow runs on top of uninstantiated IL and we can't answer some questions there.
+                // Unfortunately this means dataflow will still see code that the rest of the system
+                // might have optimized away. It should not be a problem in practice.
+                if (knownType.ContainsSignatureVariables())
+                    return false;
+
+                if (knownType.IsCanonicalDefinitionType(CanonicalFormKind.Any))
+                    return false;
+
+                // We don't track types without a constructed MethodTable very well.
+                if (!ConstructedEETypeNode.CreationAllowed(knownType))
+                    return false;
+
+                if (_devirtualizationManager.CanReferenceConstructedTypeOrCanonicalFormOfType(knownType.NormalizeInstantiation()))
+                    return false;
+
+                constant = 0;
             }
 
-            return false;
-        }
-
-        private static bool TryExpandTypeEquality_TokenToken(ILPatternAnalyzer<ILPatternAnalyzerState> analyzer, int offset, out int constant)
-        {
-            constant = 0;
-
-            if (!analyzer.TryAnalyzeTypeEquality_TokenToken(offset, offsetIsAtTypeEquals: true, out TypeDesc type1, out TypeDesc type2))
-                return false;
-
-            // No value in making this work for definitions
-            if (type1.IsGenericDefinition || type2.IsGenericDefinition)
-                return false;
-
-            // Dataflow runs on top of uninstantiated IL and we can't answer some questions there.
-            // Unfortunately this means dataflow will still see code that the rest of the system
-            // might have optimized away. It should not be a problem in practice.
-            if (type1.ContainsSignatureVariables() || type2.ContainsSignatureVariables())
-                return false;
-
-            bool? equality = TypeExtensions.CompareTypesForEquality(type1, type2);
-            if (!equality.HasValue)
-                return false;
-
-            constant = equality.Value ? 1 : 0;
+            if (analyzer.IsInequality)
+                constant ^= 1;
 
             return true;
         }
 
-        private bool TryExpandTypeEquality_TokenOther(ILPatternAnalyzer<ILPatternAnalyzerState> analyzer, int offset, out int constant)
-        {
-            constant = 0;
-
-            if (!analyzer.TryAnalyzeTypeEquality_TokenOther(offset, offsetIsAtTypeEquals: true, out TypeDesc knownType))
-                return false;
-
-            // No value in making this work for definitions
-            if (knownType.IsGenericDefinition)
-                return false;
-
-            // Dataflow runs on top of uninstantiated IL and we can't answer some questions there.
-            // Unfortunately this means dataflow will still see code that the rest of the system
-            // might have optimized away. It should not be a problem in practice.
-            if (knownType.ContainsSignatureVariables())
-                return false;
-
-            if (knownType.IsCanonicalDefinitionType(CanonicalFormKind.Any))
-                return false;
-
-            // We don't track types without a constructed MethodTable very well.
-            if (!ConstructedEETypeNode.CreationAllowed(knownType))
-                return false;
-
-            if (_devirtualizationManager.CanReferenceConstructedTypeOrCanonicalFormOfType(knownType.NormalizeInstantiation()))
-                return false;
-
-            constant = 0;
-            return true;
-        }
-
-        private static TypeDesc ReadLdToken(ref ILReader reader, ILPatternAnalyzer<ILPatternAnalyzerState> analyzer)
+        private static TypeDesc ReadLdToken(ref ILReader reader, MethodIL methodIL, OpcodeFlags[] flags)
         {
             ILOpcode opcode = reader.ReadILOpcode();
             if (opcode != ILOpcode.ldtoken)
                 return null;
 
-            TypeDesc t = (TypeDesc)analyzer.Method.GetObject(reader.ReadILToken());
+            TypeDesc t = (TypeDesc)methodIL.GetObject(reader.ReadILToken());
 
-            if (analyzer.State.IsBasicBlockStart(reader.Offset))
+            if ((flags[reader.Offset] & OpcodeFlags.BasicBlockStart) != 0)
                 return null;
 
             return t;
         }
 
-        private static bool ReadGetTypeFromHandle(ref ILReader reader, ILPatternAnalyzer<ILPatternAnalyzerState> analyzer)
+        private static bool ReadGetTypeFromHandle(ref ILReader reader, MethodIL methodIL, OpcodeFlags[] flags)
         {
             ILOpcode opcode = reader.ReadILOpcode();
             if (opcode != ILOpcode.call)
                 return false;
 
-            MethodDesc method = (MethodDesc)analyzer.Method.GetObject(reader.ReadILToken());
+            MethodDesc method = (MethodDesc)methodIL.GetObject(reader.ReadILToken());
 
             if (!method.IsIntrinsic || method.Name != "GetTypeFromHandle")
                 return false;
 
-            if (analyzer.State.IsBasicBlockStart(reader.Offset))
+            if ((flags[reader.Offset] & OpcodeFlags.BasicBlockStart) != 0)
                 return false;
 
             return true;
@@ -1034,15 +1019,6 @@ namespace ILCompiler
             public override IEnumerable<Internal.IL.ILLocalVariable> GetLocalVariables() => _originalDebugInformation.GetLocalVariables();
             public override IEnumerable<string> GetParameterNames() => _originalDebugInformation.GetParameterNames();
             public override IEnumerable<ILSequencePoint> GetSequencePoints() => _sequencePoints;
-        }
-
-        private struct ILPatternAnalyzerState : ILPatternAnalyzerTraits
-        {
-            private readonly OpcodeFlags[] _flags;
-            public ILPatternAnalyzerState(OpcodeFlags[] flags) => _flags = flags;
-
-            public bool IsBasicBlockStart(int offset) => (_flags[offset] & OpcodeFlags.BasicBlockStart) != 0;
-            public bool IsInstructionStart(int offset) => (_flags[offset] & OpcodeFlags.InstructionStart) != 0;
         }
 
         private const int TokenTypeString = 0x70; // CorTokenType for strings
