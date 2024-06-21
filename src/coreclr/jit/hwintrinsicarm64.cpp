@@ -1778,7 +1778,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-
         case NI_Vector64_MinNative:
         case NI_Vector128_MinNative:
         {
@@ -1835,10 +1834,10 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             if (varTypeIsFloating(simdBaseType))
             {
                 impSpillSideEffect(true, verCurrentState.esStackDepth -
-                                            3 DEBUGARG("Spilling op1 side effects for MultiplyAddEstimate"));
+                                             3 DEBUGARG("Spilling op1 side effects for MultiplyAddEstimate"));
 
                 impSpillSideEffect(true, verCurrentState.esStackDepth -
-                                            2 DEBUGARG("Spilling op2 side effects for MultiplyAddEstimate"));
+                                             2 DEBUGARG("Spilling op2 side effects for MultiplyAddEstimate"));
             }
 
             op3 = impSIMDPopStack();

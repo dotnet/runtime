@@ -24571,10 +24571,7 @@ GenTree* Compiler::gtNewSimdGetUpperNode(var_types type, GenTree* op1, CorInfoTy
 // Returns:
 //    The created IsNaN node
 //
-GenTree* Compiler::gtNewSimdIsNaNNode(var_types   type,
-                                      GenTree*    op1,
-                                      CorInfoType simdBaseJitType,
-                                      unsigned    simdSize)
+GenTree* Compiler::gtNewSimdIsNaNNode(var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize)
 {
     assert(IsBaselineSimdIsaSupportedDebugOnly());
 
@@ -24607,10 +24604,7 @@ GenTree* Compiler::gtNewSimdIsNaNNode(var_types   type,
 // Returns:
 //    The created IsNegative node
 //
-GenTree* Compiler::gtNewSimdIsNegativeNode(var_types   type,
-                                           GenTree*    op1,
-                                           CorInfoType simdBaseJitType,
-                                           unsigned    simdSize)
+GenTree* Compiler::gtNewSimdIsNegativeNode(var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize)
 {
     assert(IsBaselineSimdIsaSupportedDebugOnly());
 
@@ -24651,10 +24645,7 @@ GenTree* Compiler::gtNewSimdIsNegativeNode(var_types   type,
 // Returns:
 //    The created IsPositive node
 //
-GenTree* Compiler::gtNewSimdIsPositiveNode(var_types   type,
-                                           GenTree*    op1,
-                                           CorInfoType simdBaseJitType,
-                                           unsigned    simdSize)
+GenTree* Compiler::gtNewSimdIsPositiveNode(var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize)
 {
     assert(IsBaselineSimdIsaSupportedDebugOnly());
 
@@ -24733,10 +24724,7 @@ GenTree* Compiler::gtNewSimdIsPositiveInfinityNode(var_types   type,
 // Returns:
 //    The created IsZero node
 //
-GenTree* Compiler::gtNewSimdIsZeroNode(var_types   type,
-                                       GenTree*    op1,
-                                       CorInfoType simdBaseJitType,
-                                       unsigned    simdSize)
+GenTree* Compiler::gtNewSimdIsZeroNode(var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize)
 {
     assert(IsBaselineSimdIsaSupportedDebugOnly());
 
@@ -24966,10 +24954,10 @@ GenTree* Compiler::gtNewSimdMaxNode(
         GenTree* op2Dup2 = fgMakeMultiUse(&op2);
         GenTree* op2Dup3 = fgMakeMultiUse(&op2);
 
-        GenTree* equalsMask = gtNewSimdCmpOpNode(GT_EQ, type, op1, op2, simdBaseJitType, simdSize);
+        GenTree* equalsMask     = gtNewSimdCmpOpNode(GT_EQ, type, op1, op2, simdBaseJitType, simdSize);
         GenTree* isNegativeMask = gtNewSimdIsNegativeNode(type, op2Dup1, simdBaseJitType, simdSize);
-        GenTree* isNaNMask = gtNewSimdIsNaNNode(type, op1Dup1, simdBaseJitType, simdSize);
-        GenTree* lessThanMask = gtNewSimdCmpOpNode(GT_LT, type, op2Dup2, op1Dup2, simdBaseJitType, simdSize);
+        GenTree* isNaNMask      = gtNewSimdIsNaNNode(type, op1Dup1, simdBaseJitType, simdSize);
+        GenTree* lessThanMask   = gtNewSimdCmpOpNode(GT_LT, type, op2Dup2, op1Dup2, simdBaseJitType, simdSize);
 
         GenTree* mask = gtNewSimdBinOpNode(GT_AND, type, equalsMask, isNegativeMask, simdBaseJitType, simdSize);
         mask          = gtNewSimdBinOpNode(GT_OR, type, mask, isNaNMask, simdBaseJitType, simdSize);
@@ -25225,10 +25213,10 @@ GenTree* Compiler::gtNewSimdMinNode(
         GenTree* op2Dup1 = fgMakeMultiUse(&op2);
         GenTree* op2Dup2 = fgMakeMultiUse(&op2);
 
-        GenTree* equalsMask = gtNewSimdCmpOpNode(GT_EQ, type, op1, op2, simdBaseJitType, simdSize);
+        GenTree* equalsMask     = gtNewSimdCmpOpNode(GT_EQ, type, op1, op2, simdBaseJitType, simdSize);
         GenTree* isNegativeMask = gtNewSimdIsNegativeNode(type, op1Dup1, simdBaseJitType, simdSize);
-        GenTree* isNaNMask = gtNewSimdIsNaNNode(type, op1Dup2, simdBaseJitType, simdSize);
-        GenTree* lessThanMask = gtNewSimdCmpOpNode(GT_LT, type, op1Dup3, op2Dup1, simdBaseJitType, simdSize);
+        GenTree* isNaNMask      = gtNewSimdIsNaNNode(type, op1Dup2, simdBaseJitType, simdSize);
+        GenTree* lessThanMask   = gtNewSimdCmpOpNode(GT_LT, type, op1Dup3, op2Dup1, simdBaseJitType, simdSize);
 
         GenTree* mask = gtNewSimdBinOpNode(GT_AND, type, equalsMask, isNegativeMask, simdBaseJitType, simdSize);
         mask          = gtNewSimdBinOpNode(GT_OR, type, mask, isNaNMask, simdBaseJitType, simdSize);
