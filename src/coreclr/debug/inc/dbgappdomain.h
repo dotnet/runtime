@@ -117,7 +117,7 @@ struct RemoteHANDLE {
     BOOL DuplicateToLocalProcess(HANDLE hProcess, HANDLE* pHandle)
     {
         return DuplicateHandle(hProcess, m_hLocal, GetCurrentProcess(), pHandle,
-                        NULL, FALSE, DUPLICATE_SAME_ACCESS);
+                        0, FALSE, DUPLICATE_SAME_ACCESS);
     }
 
     void CloseInRemoteProcess(HANDLE hProcess)
@@ -127,7 +127,7 @@ struct RemoteHANDLE {
 
         HANDLE hTmp;
         if (DuplicateHandle(hProcess, hHandle, GetCurrentProcess(), &hTmp,
-                NULL, FALSE, DUPLICATE_SAME_ACCESS | DUPLICATE_CLOSE_SOURCE))
+                0, FALSE, DUPLICATE_SAME_ACCESS | DUPLICATE_CLOSE_SOURCE))
         {
             CloseHandle(hTmp);
         }

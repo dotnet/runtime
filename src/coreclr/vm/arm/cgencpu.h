@@ -21,6 +21,27 @@
 #define RESOLVE_STUB_THIRD_WORD 0xb460
 #define LOOKUP_STUB_FIRST_WORD 0xf8df
 
+#define ENUM_CALLEE_SAVED_REGISTERS() \
+    CALLEE_SAVED_REGISTER(R4) \
+    CALLEE_SAVED_REGISTER(R5) \
+    CALLEE_SAVED_REGISTER(R6) \
+    CALLEE_SAVED_REGISTER(R7) \
+    CALLEE_SAVED_REGISTER(R8) \
+    CALLEE_SAVED_REGISTER(R9) \
+    CALLEE_SAVED_REGISTER(R10) \
+    CALLEE_SAVED_REGISTER(R11) \
+    CALLEE_SAVED_REGISTER(Lr)
+
+#define ENUM_FP_CALLEE_SAVED_REGISTERS() \
+    CALLEE_SAVED_REGISTER(D[8]) \
+    CALLEE_SAVED_REGISTER(D[9]) \
+    CALLEE_SAVED_REGISTER(D[10]) \
+    CALLEE_SAVED_REGISTER(D[11]) \
+    CALLEE_SAVED_REGISTER(D[12]) \
+    CALLEE_SAVED_REGISTER(D[13]) \
+    CALLEE_SAVED_REGISTER(D[14]) \
+    CALLEE_SAVED_REGISTER(D[15])
+
 class MethodDesc;
 class FramedMethodFrame;
 class Module;
@@ -53,9 +74,6 @@ EXTERN_C void checkStack(void);
 #define HAS_COMPACT_ENTRYPOINTS                 1
 
 #define HAS_NDIRECT_IMPORT_PRECODE              1
-
-#define USE_INDIRECT_CODEHEADER
-
 
 EXTERN_C void getFPReturn(int fpSize, INT64 *pRetVal);
 EXTERN_C void setFPReturn(int fpSize, INT64 retVal);
@@ -345,7 +363,6 @@ inline PCODE decodeBackToBackJump(PCODE pBuffer)
 
 //----------------------------------------------------------------------
 #include "stublink.h"
-struct ArrayOpScript;
 
 inline BOOL IsThumbCode(PCODE pCode)
 {
@@ -1005,11 +1022,6 @@ inline BOOL ClrFlushInstructionCache(LPCVOID pCodeAddr, size_t sizeOfCode, bool 
 //
 // Create alias for optimized implementations of helpers provided on this platform
 //
-#define JIT_GetSharedGCStaticBase           JIT_GetSharedGCStaticBase_SingleAppDomain
-#define JIT_GetSharedNonGCStaticBase        JIT_GetSharedNonGCStaticBase_SingleAppDomain
-#define JIT_GetSharedGCStaticBaseNoCtor     JIT_GetSharedGCStaticBaseNoCtor_SingleAppDomain
-#define JIT_GetSharedNonGCStaticBaseNoCtor  JIT_GetSharedNonGCStaticBaseNoCtor_SingleAppDomain
-
 
 //------------------------------------------------------------------------
 //

@@ -553,11 +553,11 @@ FORCEINLINE void CPListDoNothing(CPArray*)
     LIMITED_METHOD_CONTRACT;
 }
 
-class CPListHolder : public Wrapper<CPArray*, CPListDoNothing, CPListRelease, NULL>
+class CPListHolder : public Wrapper<CPArray*, CPListDoNothing, CPListRelease, 0>
 {
 public:
     CPListHolder(CPArray* p = NULL)
-        : Wrapper<CPArray*, CPListDoNothing, CPListRelease, NULL>(p)
+        : Wrapper<CPArray*, CPListDoNothing, CPListRelease, 0>(p)
     {
         WRAPPER_NO_CONTRACT;
     }
@@ -565,7 +565,7 @@ public:
     FORCEINLINE void operator=(CPArray* p)
     {
         WRAPPER_NO_CONTRACT;
-        Wrapper<CPArray*, CPListDoNothing, CPListRelease, NULL>::operator=(p);
+        Wrapper<CPArray*, CPListDoNothing, CPListRelease, 0>::operator=(p);
     }
 };
 

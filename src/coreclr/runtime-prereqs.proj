@@ -15,6 +15,7 @@
 
   <ItemGroup>
     <ProjectReference Include="$(RepoRoot)\src\native\managed\compile-native.proj" ReferenceOutputAssembly="false"/>
+    <ProjectReference Include="tools\cdac-build-tool\cdac-build-tool.csproj" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
   <Target Name="BuildPrereqs" BeforeTargets="Build" DependsOnTargets="GenerateRuntimeVersionFile;GenerateNativeSourcelinkFile;OutputPgoPathForCI" />

@@ -20,6 +20,7 @@ namespace System.Runtime.InteropServices.Marshalling
     /// </remarks>
     [CLSCompliant(false)]
     [CustomMarshaller(typeof(ReadOnlySpan<>), MarshalMode.ManagedToUnmanagedIn, typeof(ReadOnlySpanMarshaller<,>.ManagedToUnmanagedIn))]
+    [CustomMarshaller(typeof(ReadOnlySpan<>), MarshalMode.ManagedToUnmanagedOut, typeof(ReadOnlySpanMarshaller<,>.ManagedToUnmanagedOut))]
     [CustomMarshaller(typeof(ReadOnlySpan<>), MarshalMode.UnmanagedToManagedOut, typeof(ReadOnlySpanMarshaller<,>.UnmanagedToManagedOut))]
     [ContiguousCollectionMarshaller]
     public static unsafe class ReadOnlySpanMarshaller<T, TUnmanagedElement>
@@ -87,7 +88,7 @@ namespace System.Runtime.InteropServices.Marshalling
             private Span<TUnmanagedElement> _span;
 
             /// <summary>
-            /// Initializes the <see cref="SpanMarshaller{T, TUnmanagedElement}.ManagedToUnmanagedIn"/> marshaller.
+            /// Initializes the <see cref="ReadOnlySpanMarshaller{T, TUnmanagedElement}.ManagedToUnmanagedIn"/> marshaller.
             /// </summary>
             /// <param name="managed">The span to be marshalled.</param>
             /// <param name="buffer">The buffer that may be used for marshalling.</param>
@@ -164,6 +165,59 @@ namespace System.Runtime.InteropServices.Marshalling
             public static ref T GetPinnableReference(ReadOnlySpan<T> managed)
             {
                 return ref MemoryMarshal.GetReference(managed);
+            }
+        }
+
+        /// <summary>
+        /// Supports marshalling from unmanaged to managed in a call from managed code to unmanaged code. For example, return values and `out` parameters in P/Invoke methods.
+        /// </summary>
+        public struct ManagedToUnmanagedOut
+        {
+            private TUnmanagedElement* _unmanagedArray;
+            private T[]? _managedValues;
+
+            /// <summary>
+            /// Initializes the <see cref="ReadOnlySpanMarshaller{T, TUnmanagedElement}.ManagedToUnmanagedOut"/> marshaller.
+            /// </summary>
+            /// <param name="unmanaged">A pointer to the array to be unmarshalled from native to managed.</param>
+            public void FromUnmanaged(TUnmanagedElement* unmanaged)
+            {
+                _unmanagedArray = unmanaged;
+            }
+
+            /// <summary>
+            /// Returns the managed value representing the native array.
+            /// </summary>
+            public ReadOnlySpan<T> ToManaged()
+            {
+                return new ReadOnlySpan<T>(_managedValues!);
+            }
+
+            /// <summary>
+            /// Returns a span that points to the memory where the unmanaged elements of the array are stored.
+            /// </summary>
+            /// <returns>A span over unmanaged values of the array.</returns>
+            public ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(int numElements)
+            {
+                return new ReadOnlySpan<TUnmanagedElement>(_unmanagedArray, numElements);
+            }
+
+            /// <summary>
+            /// Returns a span that points to the memory where the managed elements of the array should be stored.
+            /// </summary>
+            /// <returns>A span where managed values of the array should be stored.</returns>
+            public Span<T> GetManagedValuesDestination(int numElements)
+            {
+                _managedValues = new T[numElements];
+                return _managedValues;
+            }
+
+            /// <summary>
+            /// Frees resources.
+            /// </summary>
+            public void Free()
+            {
+                Marshal.FreeCoTaskMem((IntPtr)_unmanagedArray);
             }
         }
     }

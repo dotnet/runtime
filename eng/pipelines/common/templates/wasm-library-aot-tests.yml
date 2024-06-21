@@ -1,7 +1,7 @@
 parameters:
   alwaysRun: false
   extraBuildArgs: ''
-  extraHelixArgs: ''
+  extraHelixArguments: ''
   isExtraPlatformsBuild: false
   isWasmOnlyBuild: false
   buildAOTOnHelix: true
@@ -10,6 +10,7 @@ parameters:
   runAOT: false
   shouldRunSmokeOnly: false
   shouldContinueOnError: false
+  scenarios: []
 
 jobs:
 
@@ -26,12 +27,17 @@ jobs:
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
       extraBuildArgs: /p:EnableAggressiveTrimming=true /p:BuildAOTTestsOnHelix=${{ parameters.buildAOTOnHelix }} /p:RunAOTCompilation=${{ parameters.runAOT }} ${{ parameters.extraBuildArgs }}
-      extraHelixArgs: /p:NeedsToBuildWasmAppsOnHelix=true ${{ parameters.extraHelixArgs }}
+      extraHelixArguments: /p:NeedsToBuildWasmAppsOnHelix=true ${{ parameters.extraHelixArguments }}
       alwaysRun: ${{ parameters.alwaysRun }}
       shouldRunSmokeOnly: ${{ parameters.shouldRunSmokeOnly }}
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       scenarios:
-        - ${{ if eq(platform, 'browser_wasm_win') }}:
-          - WasmTestOnBrowser
-        - ${{ if ne(platform, 'browser_wasm_win') }}:
-          - normal
+        - ${{ if ne(parameters.scenarios[0], '') }}:
+          - ${{ parameters.scenarios }}
+        - ${{ else }}:
+          - ${{ if eq(platform, 'browser_wasm') }}:
+            - WasmTestOnV8
+          - ${{ if eq(platform, 'browser_wasm_win') }}:
+            - WasmTestOnChrome
+          - ${{ if or(eq(platform, 'wasi_wasm_win'), eq(platform, 'wasi_wasm')) }}:
+            - WasmTestOnWasmtime

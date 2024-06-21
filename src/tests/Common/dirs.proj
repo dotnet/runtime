@@ -96,24 +96,20 @@
         <GroupNumber>5</GroupNumber>
       </_GroupStartsWith>
 
-      <_GroupStartsWith Include="$(TestRoot)JIT\Methodical\flowgraph">
+      <_GroupStartsWith Include="$(TestRoot)JIT\opt">
         <GroupNumber>6</GroupNumber>
       </_GroupStartsWith>
 
-      <_GroupStartsWith Include="$(TestRoot)JIT\opt">
+      <_GroupStartsWith Include="$(TestRoot)JIT\Regression\CLR-x86-JIT\V1-M11-Beta2">
         <GroupNumber>7</GroupNumber>
       </_GroupStartsWith>
 
-      <_GroupStartsWith Include="$(TestRoot)JIT\Regression\CLR-x86-JIT\V1-M11-Beta2">
+      <_GroupStartsWith Include="$(TestRoot)JIT\SIMD">
         <GroupNumber>8</GroupNumber>
       </_GroupStartsWith>
 
-      <_GroupStartsWith Include="$(TestRoot)JIT\SIMD">
-        <GroupNumber>9</GroupNumber>
-      </_GroupStartsWith>
-
       <_GroupStartsWith Include="$(TestRoot)Loader\classloader\TypeGeneratorTests\TypeGeneratorTest200">
-        <GroupNumber>10</GroupNumber>
+        <GroupNumber>9</GroupNumber>
       </_GroupStartsWith>
     </ItemGroup>
 

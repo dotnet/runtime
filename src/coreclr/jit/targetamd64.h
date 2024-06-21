@@ -32,7 +32,7 @@
   #define FEATURE_SET_FLAGS        0       // Set to true to force the JIT to mark the trees with GTF_SET_FLAGS when the flags need to be set
   #define MAX_PASS_SINGLEREG_BYTES      8  // Maximum size of a struct passed in a single register (double).
 #ifdef    UNIX_AMD64_ABI
-  #define FEATURE_IMPLICIT_BYREFS       0  // Support for struct parameters passed via pointers to shadow copies
+  #define FEATURE_IMPLICIT_BYREFS       1  // Support for struct parameters passed via pointers to shadow copies
   #define FEATURE_MULTIREG_ARGS_OR_RET  1  // Support for passing and/or returning single values in more than one register
   #define FEATURE_MULTIREG_ARGS         1  // Support for passing a single argument in more than one register
   #define FEATURE_MULTIREG_RET          1  // Support for returning a single value in more than one register
@@ -68,7 +68,6 @@
   #define EMIT_TRACK_STACK_DEPTH   1
   #define TARGET_POINTER_SIZE      8       // equal to sizeof(void*) and the managed pointer size in bytes for this target
   #define FEATURE_EH               1       // To aid platform bring-up, eliminate exceptional EH clauses (catch, filter, filter-handler, fault) and directly execute 'finally' clauses.
-  #define FEATURE_EH_CALLFINALLY_THUNKS 1  // Generate call-to-finally code in "thunks" in the enclosing EH region, protected by "cloned finally" clauses.
 #ifdef    UNIX_AMD64_ABI
   #define ETW_EBP_FRAMED           1       // if 1 we cannot use EBP as a scratch register and must create EBP based frames for most methods
 #else // !UNIX_AMD64_ABI
@@ -296,13 +295,14 @@
   #define CNT_CALLEE_SAVED         (5 + REG_ETW_FRAMED_EBP_COUNT)
   #define CNT_CALLEE_TRASH         (9)
   #define CNT_CALLEE_ENREG         (CNT_CALLEE_SAVED)
+  #define CNT_CALL_GC_REGS         (CNT_CALLEE_SAVED + 2)
 
   #define CNT_CALLEE_SAVED_FLOAT   (0)
   #define CNT_CALLEE_TRASH_FLOAT_INIT (16)
   #define CNT_CALLEE_TRASH_HIGHFLOAT    (16)
   /* NOTE: Sync with variable name defined in compiler.h */
-  #define REG_CALLEE_SAVED_ORDER   REG_EBX,REG_ETW_FRAMED_EBP_LIST REG_R12,REG_R13,REG_R14,REG_R15
-  #define RBM_CALLEE_SAVED_ORDER   RBM_EBX,RBM_ETW_FRAMED_EBP_LIST RBM_R12,RBM_R13,RBM_R14,RBM_R15
+  #define RBM_CALL_GC_REGS_ORDER   RBM_EBX,RBM_ETW_FRAMED_EBP_LIST RBM_R12,RBM_R13,RBM_R14,RBM_R15,RBM_INTRET,RBM_INTRET_1
+  #define RBM_CALL_GC_REGS         (RBM_EBX|RBM_ETW_FRAMED_EBP|RBM_R12|RBM_R13|RBM_R14|RBM_R15|RBM_INTRET|RBM_INTRET_1)
 
   // For SysV we have more volatile registers so we do not save any callee saves for EnC.
   #define RBM_ENC_CALLEE_SAVED     0
@@ -310,13 +310,14 @@
   #define CNT_CALLEE_SAVED         (7 + REG_ETW_FRAMED_EBP_COUNT)
   #define CNT_CALLEE_TRASH         (7)
   #define CNT_CALLEE_ENREG         (CNT_CALLEE_SAVED)
+  #define CNT_CALL_GC_REGS         (CNT_CALLEE_SAVED + 1)
 
   #define CNT_CALLEE_SAVED_FLOAT        (10)
   #define CNT_CALLEE_TRASH_FLOAT_INIT   (6)
   #define CNT_CALLEE_TRASH_HIGHFLOAT    (16)
   /* NOTE: Sync with variable name defined in compiler.h */
-  #define REG_CALLEE_SAVED_ORDER   REG_EBX,REG_ESI,REG_EDI,REG_ETW_FRAMED_EBP_LIST REG_R12,REG_R13,REG_R14,REG_R15
-  #define RBM_CALLEE_SAVED_ORDER   RBM_EBX,RBM_ESI,RBM_EDI,RBM_ETW_FRAMED_EBP_LIST RBM_R12,RBM_R13,RBM_R14,RBM_R15
+  #define RBM_CALL_GC_REGS_ORDER   RBM_EBX,RBM_ESI,RBM_EDI,RBM_ETW_FRAMED_EBP_LIST RBM_R12,RBM_R13,RBM_R14,RBM_R15,RBM_INTRET
+  #define RBM_CALL_GC_REGS         (RBM_EBX|RBM_ESI|RBM_EDI|RBM_ETW_FRAMED_EBP|RBM_R12|RBM_R13|RBM_R14|RBM_R15|RBM_INTRET)
 
   // Callee-preserved registers we always save and allow use of for EnC code, since there are quite few volatile registers.
   #define RBM_ENC_CALLEE_SAVED     (RBM_RSI | RBM_RDI)
@@ -381,14 +382,6 @@
   // IL stub's secret MethodDesc parameter (JitFlags::JIT_FLAG_PUBLISH_SECRET_PARAM)
   #define REG_SECRET_STUB_PARAM    REG_R10
   #define RBM_SECRET_STUB_PARAM    RBM_R10
-
-  // Registers used by PInvoke frame setup
-  #define REG_PINVOKE_FRAME        REG_EDI
-  #define RBM_PINVOKE_FRAME        RBM_EDI
-  #define REG_PINVOKE_TCB          REG_EAX
-  #define RBM_PINVOKE_TCB          RBM_EAX
-  #define REG_PINVOKE_SCRATCH      REG_EAX
-  #define RBM_PINVOKE_SCRATCH      RBM_EAX
 
   // The following defines are useful for iterating a regNumber
   #define REG_FIRST                REG_EAX
@@ -511,12 +504,6 @@
   #define RBM_FLTARG_REGS         (RBM_FLTARG_0|RBM_FLTARG_1|RBM_FLTARG_2|RBM_FLTARG_3)
 #endif // !UNIX_AMD64_ABI
 
-  // The registers trashed by profiler enter/leave/tailcall hook
-  // See vm\amd64\asmhelpers.asm for more details.
-  #define RBM_PROFILER_ENTER_TRASH          RBM_CALLEE_TRASH
-
-  #define RBM_PROFILER_TAILCALL_TRASH       RBM_PROFILER_LEAVE_TRASH
-
   // The registers trashed by the CORINFO_HELP_STOP_FOR_GC helper.
 #ifdef UNIX_AMD64_ABI
   // See vm\amd64\unixasmhelpers.S for more details.
@@ -525,11 +512,20 @@
   // The return registers could be any two from the set { RAX, RDX, XMM0, XMM1 }.
   // STOP_FOR_GC helper preserves all the 4 possible return registers.
   #define RBM_STOP_FOR_GC_TRASH (RBM_CALLEE_TRASH & ~(RBM_FLOATRET | RBM_INTRET | RBM_FLOATRET_1 | RBM_INTRET_1))
+
+  // The registers trashed by profiler enter/leave/tailcall hook
+  // See vm\amd64\asmhelpers.S for more details.
+  #define RBM_PROFILER_ENTER_TRASH  (RBM_CALLEE_TRASH & ~(RBM_ARG_REGS|RBM_FLTARG_REGS))
   #define RBM_PROFILER_LEAVE_TRASH  (RBM_CALLEE_TRASH & ~(RBM_FLOATRET | RBM_INTRET | RBM_FLOATRET_1 | RBM_INTRET_1))
+  #define RBM_PROFILER_TAILCALL_TRASH RBM_PROFILER_LEAVE_TRASH
+
 #else
   // See vm\amd64\asmhelpers.asm for more details.
   #define RBM_STOP_FOR_GC_TRASH (RBM_CALLEE_TRASH & ~(RBM_FLOATRET | RBM_INTRET))
+
+  #define RBM_PROFILER_ENTER_TRASH  RBM_CALLEE_TRASH
   #define RBM_PROFILER_LEAVE_TRASH  (RBM_CALLEE_TRASH & ~(RBM_FLOATRET | RBM_INTRET))
+  #define RBM_PROFILER_TAILCALL_TRASH RBM_PROFILER_LEAVE_TRASH
 #endif
 
   // The registers trashed by the CORINFO_HELP_INIT_PINVOKE_FRAME helper.
@@ -575,6 +571,6 @@
   #define REG_SWIFT_ARG_RET_BUFF REG_RAX
   #define RBM_SWIFT_ARG_RET_BUFF RBM_RAX
   #define SWIFT_RET_BUFF_ARGNUM  MAX_REG_ARG
-#endif
+#endif // UNIX_AMD64_ABI
 
 // clang-format on

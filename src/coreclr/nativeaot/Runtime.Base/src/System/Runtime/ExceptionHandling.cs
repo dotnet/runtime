@@ -340,6 +340,7 @@ namespace System.Runtime
         }
 
 #if NATIVEAOT
+        [StackTraceHidden]
         [RuntimeExport("RhExceptionHandling_FailedAllocation")]
 #pragma warning disable IDE0060
         public static void FailedAllocation(MethodTable* pEEType, bool fIsOverflow)

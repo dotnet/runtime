@@ -33,6 +33,7 @@
 
   <ItemGroup>
     <Reference Include="System.Collections" />
+    <Reference Include="System.Memory" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Threading" />
   </ItemGroup>

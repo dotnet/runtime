@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
@@ -16,7 +17,6 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 using Mono.Linker.Tests.Extensions;
 using Mono.Linker.Tests.TestCasesRunner.ILVerification;
 using NUnit.Framework;
-using WellKnownType = ILLink.Shared.TypeSystemProxy.WellKnownType;
 
 namespace Mono.Linker.Tests.TestCasesRunner
 {
@@ -66,13 +66,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
 						throw new NotImplementedException ($"Unexpected scope type '{exportedType.Scope.GetType ()}' for exported type '{exportedType.FullName}'");
 					}
 					continue;
-				case AssemblyNameReference:
-				{
-					// There should be an AssemblyRef row for this assembly
-					var assemblyRef = linked.MainModule.AssemblyReferences.Single (ar => ar.Name == typeRef.Scope.Name);
-					Assert.IsNotNull (assemblyRef, $"Type reference '{typeRef.FullName}' has a reference to assembly '{typeRef.Scope.Name}' which is not a reference of '{linked.FullName}'");
-					continue;
-				}
+				case AssemblyNameReference: {
+						// There should be an AssemblyRef row for this assembly
+						var assemblyRef = linked.MainModule.AssemblyReferences.Single (ar => ar.Name == typeRef.Scope.Name);
+						Assert.IsNotNull (assemblyRef, $"Type reference '{typeRef.FullName}' has a reference to assembly '{typeRef.Scope.Name}' which is not a reference of '{linked.FullName}'");
+						continue;
+					}
 				default:
 					throw new NotImplementedException ($"Unexpected scope type '{typeRef.Scope.GetType ()}' for type reference '{typeRef.FullName}'");
 				}
@@ -98,10 +97,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					PerformOutputAssemblyChecks (original, linkResult.OutputAssemblyPath.Parent);
 					PerformOutputSymbolChecks (original, linkResult.OutputAssemblyPath.Parent);
 
-					if (!HasActiveSkipKeptItemsValidationAttribute(linkResult.TestCase.FindTypeDefinition (original))) {
+					if (!HasActiveSkipKeptItemsValidationAttribute (linkResult.TestCase.FindTypeDefinition (original))) {
 						CreateAssemblyChecker (original, linked, linkResult).Verify ();
 					}
-					CreateILChecker ().Check(linkResult, original);
+					CreateILChecker ().Check (linkResult, original);
+
+					VerifyExpectedDependencyTrace (linkResult.MetadataProvider, linkResult.OutputAssemblyPath);
 				}
 
 				VerifyLinkingOfOtherAssemblies (original);
@@ -218,12 +219,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		void VerifyExitCode (TrimmedTestCaseResult linkResult, AssemblyDefinition original)
 		{
-			if (TryGetCustomAttribute (original, nameof(ExpectNonZeroExitCodeAttribute), out var attr)) {
+			if (TryGetCustomAttribute (original, nameof (ExpectNonZeroExitCodeAttribute), out var attr)) {
 				var expectedExitCode = (int) attr.ConstructorArguments[0].Value;
-				Assert.AreEqual (expectedExitCode, linkResult.ExitCode, $"Expected exit code {expectedExitCode} but got {linkResult.ExitCode}.  Output was:\n{FormatLinkerOutput()}");
+				Assert.AreEqual (expectedExitCode, linkResult.ExitCode, $"Expected exit code {expectedExitCode} but got {linkResult.ExitCode}.  Output was:\n{FormatLinkerOutput ()}");
 			} else {
 				if (linkResult.ExitCode != 0) {
-					Assert.Fail($"Linker exited with an unexpected non-zero exit code of {linkResult.ExitCode} and output:\n{FormatLinkerOutput()}");
+					Assert.Fail ($"Linker exited with an unexpected non-zero exit code of {linkResult.ExitCode} and output:\n{FormatLinkerOutput ()}");
 				}
 			}
 
@@ -385,6 +386,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
 								Assert.Fail ($"Type `{expectedTypeName}` should have been kept in assembly {assemblyName}");
 							VerifyExpectedInstructionSequenceOnMemberInAssembly (checkAttrInAssembly, linkedType);
 							break;
+						case nameof (RemovedOverrideOnMethodInAssemblyAttribute):
+							VerifyRemovedOverrideOnMethodInAssembly (checkAttrInAssembly, linkedType);
+							break;
+						case nameof (KeptOverrideOnMethodInAssemblyAttribute):
+							VerifyKeptOverrideOnMethodInAssembly (checkAttrInAssembly, linkedType);
+							break;
 						default:
 							UnhandledOtherAssemblyAssertion (expectedTypeName, checkAttrInAssembly, linkedType);
 							break;
@@ -527,18 +534,18 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 			var interfaceAssemblyName = inAssemblyAttribute.ConstructorArguments[2].Value.ToString ();
 			var interfaceType = inAssemblyAttribute.ConstructorArguments[3].Value;
+			string originalInterfaceName = interfaceType as string ?? GetOriginalTypeFromInAssemblyAttribute (interfaceAssemblyName, interfaceType).FullName;
 
-			var originalInterface = GetOriginalTypeFromInAssemblyAttribute (interfaceAssemblyName, interfaceType);
 			if (!originalType.HasInterfaces)
 				Assert.Fail ("Invalid assertion.  Original type does not have any interfaces");
 
-			var originalInterfaceImpl = GetMatchingInterfaceImplementationOnType (originalType, originalInterface.FullName);
+			var originalInterfaceImpl = GetMatchingInterfaceImplementationOnType (originalType, originalInterfaceName);
 			if (originalInterfaceImpl == null)
-				Assert.Fail ($"Invalid assertion.  Original type never had an interface of type `{originalInterface}`");
+				Assert.Fail ($"Invalid assertion.  Original type never had an interface of type `{interfaceType}`");
 
-			var linkedInterfaceImpl = GetMatchingInterfaceImplementationOnType (linkedType, originalInterface.FullName);
+			var linkedInterfaceImpl = GetMatchingInterfaceImplementationOnType (linkedType, originalInterfaceName);
 			if (linkedInterfaceImpl == null)
-				Assert.Fail ($"Expected `{linkedType}` to have interface of type {originalInterface.FullName}");
+				Assert.Fail ($"Expected `{linkedType}` to have interface of type {originalInterfaceName}");
 		}
 
 		void VerifyKeptBaseOnTypeInAssembly (CustomAttribute inAssemblyAttribute, TypeDefinition linkedType)
@@ -559,12 +566,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		protected static InterfaceImplementation GetMatchingInterfaceImplementationOnType (TypeDefinition type, string expectedInterfaceTypeName)
 		{
 			return type.Interfaces.FirstOrDefault (impl => {
-				var resolvedImpl = impl.InterfaceType.Resolve ();
-
-				if (resolvedImpl == null)
-					Assert.Fail ($"Failed to resolve interface : `{impl.InterfaceType}` on `{type}`");
-
-				return resolvedImpl.FullName == expectedInterfaceTypeName;
+				return impl.InterfaceType.FullName == expectedInterfaceTypeName;
 			});
 		}
 
@@ -628,6 +630,26 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					continue;
 
 				Assert.Fail ($"Invalid test assertion.  No member named `{memberName}` exists on the original type `{originalType}`");
+			}
+		}
+
+		void VerifyRemovedOverrideOnMethodInAssembly (CustomAttribute attr, TypeDefinition type)
+		{
+			var methodname = (string) attr.ConstructorArguments[2].Value;
+			var method = type.Methods.FirstOrDefault (m => m.Name == methodname);
+			var overriddenMethodName = (string) attr.ConstructorArguments[3].Value;
+			if (method.Overrides.Any (m => m.FullName == overriddenMethodName)) {
+				Assert.Fail ($"Expected method {method.FullName} to not have .override for {overriddenMethodName}");
+			}
+		}
+
+		void VerifyKeptOverrideOnMethodInAssembly (CustomAttribute attr, TypeDefinition type)
+		{
+			var methodname = (string) attr.ConstructorArguments[2].Value;
+			var method = type.Methods.FirstOrDefault (m => m.Name == methodname);
+			var overriddenMethodName = (string) attr.ConstructorArguments[3].Value;
+			if (!method.Overrides.Any (m => m.FullName == overriddenMethodName)) {
+				Assert.Fail ($"Expected method {method.FullName} to have .override for {overriddenMethodName}");
 			}
 		}
 
@@ -734,6 +756,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		static bool IsProducedByLinker (CustomAttribute attr)
 		{
+			if (attr.Constructor.Parameters.Count > 2 && attr.ConstructorArguments[^2].Type.Name == "Tool") {
+				return ((Tool) attr.ConstructorArguments[^2].Value).HasFlag (Tool.Trimmer) == true;
+			}
 			var producedBy = attr.GetPropertyValue ("ProducedBy");
 			return producedBy is null ? true : ((Tool) producedBy).HasFlag (Tool.Trimmer);
 		}
@@ -755,8 +780,11 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		void VerifyLoggedMessages (AssemblyDefinition original, TrimmingTestLogger logger, bool checkRemainingErrors)
 		{
-			List<MessageContainer> loggedMessages = logger.GetLoggedMessages ();
+			ImmutableArray<MessageContainer> allMessages = logger.GetLoggedMessages ();
+			List<MessageContainer> unmatchedMessages = [.. allMessages];
 			List<(ICustomAttributeProvider, CustomAttribute)> expectedNoWarningsAttributes = new ();
+			List<string> missingMessageWarnings = [];
+			List<string> unexpectedMessageWarnings = [];
 			foreach (var attrProvider in GetAttributeProviders (original)) {
 				foreach (var attr in attrProvider.CustomAttributes) {
 					if (!IsProducedByLinker (attr))
@@ -769,37 +797,53 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 							List<MessageContainer> matchedMessages;
 							if ((bool) attr.ConstructorArguments[1].Value)
-								matchedMessages = loggedMessages.Where (m => Regex.IsMatch (m.ToString (), expectedMessage)).ToList ();
+								matchedMessages = unmatchedMessages.Where (m => Regex.IsMatch (m.ToString (), expectedMessage)).ToList ();
 							else
-								matchedMessages = loggedMessages.Where (m => m.ToString ().Contains (expectedMessage)).ToList (); ;
-							Assert.IsTrue (
-								matchedMessages.Count > 0,
-								$"Expected to find logged message matching `{expectedMessage}`, but no such message was found.{Environment.NewLine}Logged messages:{Environment.NewLine}{string.Join (Environment.NewLine, loggedMessages)}");
+								matchedMessages = unmatchedMessages.Where (m => m.ToString ().Contains (expectedMessage)).ToList (); ;
+							if (matchedMessages.Count == 0)
+								missingMessageWarnings.Add ($"Expected to find logged message matching `{expectedMessage}`, but no such message was found.{Environment.NewLine}");
 
 							foreach (var matchedMessage in matchedMessages)
-								loggedMessages.Remove (matchedMessage);
+								unmatchedMessages.Remove (matchedMessage);
 						}
 						break;
 
 					case nameof (LogDoesNotContainAttribute): {
 							var unexpectedMessage = (string) attr.ConstructorArguments[0].Value;
-							foreach (var loggedMessage in loggedMessages) {
-								Assert.That (() => {
-									if ((bool) attr.ConstructorArguments[1].Value)
-										return !Regex.IsMatch (loggedMessage.ToString (), unexpectedMessage);
-									return !loggedMessage.ToString ().Contains (unexpectedMessage);
-								},
-								$"Expected to not find logged message matching `{unexpectedMessage}`, but found:{Environment.NewLine}{loggedMessage.ToString ()}{Environment.NewLine}Logged messages:{Environment.NewLine}{string.Join (Environment.NewLine, loggedMessages)}");
+							foreach (var loggedMessage in unmatchedMessages) {
+								bool isRegex = (bool) attr.ConstructorArguments[1].Value;
+								bool foundMatch = isRegex
+									? Regex.IsMatch (loggedMessage.ToString (), unexpectedMessage)
+									: loggedMessage.ToString ().Contains (unexpectedMessage);
+
+								if (foundMatch)
+									unexpectedMessageWarnings.Add ($"Expected to not find logged message matching `{unexpectedMessage}`, but found:{Environment.NewLine}{loggedMessage.ToString ()}");
 							}
 						}
 						break;
 
-					case nameof (ExpectedWarningAttribute): {
+					case nameof (ExpectedWarningAttribute) or nameof (UnexpectedWarningAttribute): {
 							var expectedWarningCode = (string) attr.GetConstructorArgumentValue (0);
 							if (!expectedWarningCode.StartsWith ("IL")) {
-								Assert.Fail ($"The warning code specified in {nameof (ExpectedWarningAttribute)} must start with the 'IL' prefix. Specified value: '{expectedWarningCode}'.");
+								Assert.Fail ($"The warning code specified in {attr.AttributeType.Name} must start with the 'IL' prefix. Specified value: '{expectedWarningCode}'.");
 							}
-							var expectedMessageContains = ((CustomAttributeArgument[]) attr.GetConstructorArgumentValue (1)).Select (a => (string) a.Value).ToArray ();
+							IEnumerable<string> expectedMessageContains = attr.Constructor.Parameters switch {
+							// ExpectedWarningAttribute(string warningCode, params string[] expectedMessages)
+							// ExpectedWarningAttribute(string warningCode, string[] expectedMessages, Tool producedBy, string issueLink)
+							[_, { ParameterType.IsArray: true }, ..]
+								=> ((CustomAttributeArgument[]) attr.ConstructorArguments[1].Value)
+									.Select (caa => (string) caa.Value),
+									// ExpectedWarningAttribute(string warningCode, string expectedMessage1, string expectedMessage2, Tool producedBy, string issueLink)
+									[_, { ParameterType.Name: "String" }, { ParameterType.Name: "String" }, { ParameterType.Name: "Tool" }, _]
+											=> [(string) attr.GetConstructorArgumentValue (1), (string) attr.GetConstructorArgumentValue (2)],
+											// ExpectedWarningAttribute(string warningCode, string expectedMessage, Tool producedBy, string issueLink)
+											[_, { ParameterType.Name: "String" }, { ParameterType.Name: "Tool" }, _]
+										=> [(string) attr.GetConstructorArgumentValue (1)],
+										// ExpectedWarningAttribute(string warningCode, Tool producedBy, string issueLink)
+										[_, { ParameterType.Name: "Tool" }, _]
+										=> [],
+								_ => throw new UnreachableException (),
+							};
 							string fileName = (string) attr.GetPropertyValue ("FileName");
 							int? sourceLine = (int?) attr.GetPropertyValue ("SourceLine");
 							int? sourceColumn = (int?) attr.GetPropertyValue ("SourceColumn");
@@ -809,7 +853,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 							string expectedOrigin = null;
 							bool expectedWarningFound = false;
 
-							foreach (var loggedMessage in loggedMessages) {
+							foreach (var loggedMessage in unmatchedMessages) {
 
 								if (loggedMessage.Category != MessageCategory.Warning || loggedMessage.Code != expectedWarningCodeNumber)
 									continue;
@@ -868,7 +912,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 											 actualName.EndsWith ("get_" + expectedMember.Name) ||
 											 actualName.EndsWith ("set_" + expectedMember.Name))) {
 											expectedWarningFound = true;
-											loggedMessages.Remove (loggedMessage);
+											unmatchedMessages.Remove (loggedMessage);
 											break;
 										}
 										if (memberDefinition is not MethodDefinition)
@@ -877,13 +921,13 @@ namespace Mono.Linker.Tests.TestCasesRunner
 											if (memberDefinition.Name == ".cctor" &&
 												(expectedMember is FieldDefinition || expectedMember is PropertyDefinition)) {
 												expectedWarningFound = true;
-												loggedMessages.Remove (loggedMessage);
+												unmatchedMessages.Remove (loggedMessage);
 												break;
 											}
 											if (memberDefinition.Name == ".ctor" &&
 												(expectedMember is FieldDefinition || expectedMember is PropertyDefinition || memberDefinition.DeclaringType.FullName == expectedMember.FullName)) {
 												expectedWarningFound = true;
-												loggedMessages.Remove (loggedMessage);
+												unmatchedMessages.Remove (loggedMessage);
 												break;
 											}
 										}
@@ -893,7 +937,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 											memberDefinition.DeclaringType.FullName == "Program" &&
 											memberDefinition.DeclaringType.Module.Assembly.Name.Name == expectedAssembly.Name.Name) {
 											expectedWarningFound = true;
-											loggedMessages.Remove (loggedMessage);
+											unmatchedMessages.Remove (loggedMessage);
 											break;
 										}
 									}
@@ -901,14 +945,14 @@ namespace Mono.Linker.Tests.TestCasesRunner
 								} else {
 									if (LogMessageHasSameOriginMember (loggedMessage, attrProvider)) {
 										expectedWarningFound = true;
-										loggedMessages.Remove (loggedMessage);
+										unmatchedMessages.Remove (loggedMessage);
 										break;
 									}
 									continue;
 								}
 
 								expectedWarningFound = true;
-								loggedMessages.Remove (loggedMessage);
+								unmatchedMessages.Remove (loggedMessage);
 								break;
 							}
 
@@ -921,11 +965,11 @@ namespace Mono.Linker.Tests.TestCasesRunner
 								} + ": "
 								: "";
 
-							Assert.IsTrue (expectedWarningFound,
-								$"Expected to find warning: {(fileName != null ? fileName + (sourceLine != null ? $"({sourceLine},{sourceColumn})" : "") + ": " : "")}" +
+							if (!expectedWarningFound)
+								missingMessageWarnings.Add ($"Expected to find warning: {(fileName != null ? fileName + (sourceLine != null ? $"({sourceLine},{sourceColumn})" : "") + ": " : "")}" +
 								$"warning {expectedWarningCode}: {expectedOriginString}" +
 								$"and message containing {string.Join (" ", expectedMessageContains.Select (m => "'" + m + "'"))}, " +
-								$"but no such message was found.{Environment.NewLine}Logged messages:{Environment.NewLine}{string.Join (Environment.NewLine, loggedMessages)}");
+								$"but no such message was found.");
 						}
 						break;
 
@@ -948,7 +992,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				int? unexpectedWarningCodeNumber = unexpectedWarningCode == null ? null : int.Parse (unexpectedWarningCode.Substring (2));
 
 				MessageContainer? unexpectedWarningMessage = null;
-				foreach (var mc in logger.GetLoggedMessages ()) {
+				foreach (var mc in unmatchedMessages) {
 					if (mc.Category != MessageCategory.Warning)
 						continue;
 
@@ -963,12 +1007,25 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					break;
 				}
 
-				Assert.IsNull (unexpectedWarningMessage,
-					$"Unexpected warning found: {unexpectedWarningMessage}");
+				if (unexpectedWarningMessage is not null) {
+					unexpectedMessageWarnings.Add ($"Unexpected warning found: {unexpectedWarningMessage}");
+				}
+			}
+
+			if (missingMessageWarnings.Any ()) {
+				missingMessageWarnings.Add ("Unmatched Messages:" + Environment.NewLine);
+				missingMessageWarnings.AddRange (unmatchedMessages.Select (m => m.ToString ()));
+				missingMessageWarnings.Add (Environment.NewLine + "All Messages:" + Environment.NewLine);
+				missingMessageWarnings.AddRange (allMessages.Select (m => m.ToString ()));
+				Assert.Fail (string.Join (Environment.NewLine, missingMessageWarnings));
+			}
+
+			if (unexpectedMessageWarnings.Any ()) {
+				Assert.Fail (string.Join (Environment.NewLine, unexpectedMessageWarnings));
 			}
 
 			if (checkRemainingErrors) {
-				var remainingErrors = loggedMessages.Where (m => Regex.IsMatch (m.ToString (), @".*(error | warning): \d{4}.*"));
+				var remainingErrors = unmatchedMessages.Where (m => Regex.IsMatch (m.ToString (), @".*(error | warning): \d{4}.*"));
 				Assert.IsEmpty (remainingErrors, $"Found unexpected errors:{Environment.NewLine}{string.Join (Environment.NewLine, remainingErrors)}");
 			}
 
@@ -1029,6 +1086,22 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			{
 				return $"{dependency.Source} -> {dependency.Target} Marked: {dependency.Marked}";
 			}
+		}
+
+		void VerifyExpectedDependencyTrace (TestCaseMetadataProvider testCaseMetadata, NPath outputAssemblyPath)
+		{
+			if (!AppContext.TryGetSwitch ("ValidateDependencyTraces", out var validateDependencyTraces) || !validateDependencyTraces)
+				return;
+
+			var expectedTracePath = testCaseMetadata.GetExpectedDependencyTrace ();
+			Assert.IsTrue (expectedTracePath.FileExists (), $"Expected dependency trace file '{expectedTracePath}' does not exist.");
+
+			// linker-dependencies.xml in same dir as output
+			var tracePath = outputAssemblyPath.Parent.Combine ("linker-dependencies.xml");
+			Assert.IsTrue (tracePath.FileExists (), $"Dependency trace file '{tracePath}' does not exist.");
+
+			Assert.That (File.ReadAllLines (tracePath), Is.EquivalentTo (
+				File.ReadAllLines (expectedTracePath)));
 		}
 
 		void VerifyExpectedInstructionSequenceOnMemberInAssembly (CustomAttribute inAssemblyAttribute, TypeDefinition linkedType)

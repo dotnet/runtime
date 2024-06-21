@@ -1,9 +1,11 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using System.Text.Json.Serialization;
-using System.Xml.Linq;
+using System.Text.Json.Serialization.Metadata;
 using Xunit;
 
 namespace System.Text.Json.Nodes.Tests
@@ -417,6 +419,20 @@ namespace System.Text.Json.Nodes.Tests
             }
         }
 
+        [Theory]
+        [InlineData(JsonNumberHandling.Strict, JsonValueKind.Number)]
+        [InlineData(JsonNumberHandling.AllowReadingFromString, JsonValueKind.Number)]
+        [InlineData(JsonNumberHandling.AllowNamedFloatingPointLiterals, JsonValueKind.Number)]
+        [InlineData(JsonNumberHandling.WriteAsString, JsonValueKind.String)]
+        [InlineData(JsonNumberHandling.WriteAsString | JsonNumberHandling.AllowNamedFloatingPointLiterals, JsonValueKind.String)]
+        public static void GetValueKind_NumberHandling(JsonNumberHandling numberHandling, JsonValueKind expectedKind)
+        {
+            JsonSerializerOptions options = new(JsonSerializerOptions.Default) { NumberHandling = numberHandling };
+            JsonTypeInfo<int> typeInfo = (JsonTypeInfo<int>)options.GetTypeInfo(typeof(int));
+            JsonValue value = JsonValue.Create(42, typeInfo);
+            Assert.Equal(expectedKind, value.GetValueKind());
+        }
+
         [Fact]
         public static void DeepEquals_EscapedString()
         {
@@ -428,7 +444,89 @@ namespace System.Text.Json.Nodes.Tests
         private class Student
         {
             public int Id { get; set; }
-            public string Name { get; set; }
+            public string? Name { get; set; }
+        }
+
+        [Theory]
+        [MemberData(nameof(GetPrimitiveTypes))]
+        public static void PrimitiveTypes_ReturnExpectedTypeKind<T>(T value, JsonValueKind expectedKind)
+        {
+            JsonNode node = JsonValue.Create(value);
+            Assert.Equal(expectedKind, node.GetValueKind());
+        }
+
+        [Theory]
+        [MemberData(nameof(GetPrimitiveTypes))]
+        public static void PrimitiveTypes_EqualThemselves<T>(T value, JsonValueKind _)
+        {
+            JsonNode node = JsonValue.Create(value);
+            Assert.True(JsonNode.DeepEquals(node, node));
+        }
+
+        [Theory]
+        [MemberData(nameof(GetPrimitiveTypes))]
+        public static void PrimitiveTypes_EqualClonedValue<T>(T value, JsonValueKind _)
+        {
+            JsonNode node = JsonValue.Create(value);
+            JsonNode clone = node.DeepClone();
+
+            Assert.True(JsonNode.DeepEquals(clone, clone));
+            Assert.True(JsonNode.DeepEquals(node, clone));
+            Assert.True(JsonNode.DeepEquals(clone, node));
+        }
+
+        [Theory]
+        [MemberData(nameof(GetPrimitiveTypes))]
+        public static void PrimitiveTypes_EqualDeserializedValue<T>(T value, JsonValueKind _)
+        {
+            JsonNode node = JsonValue.Create(value);
+            JsonNode clone = JsonSerializer.Deserialize<JsonNode>(node.ToJsonString());
+
+            Assert.True(JsonNode.DeepEquals(clone, clone));
+            Assert.True(JsonNode.DeepEquals(node, clone));
+            Assert.True(JsonNode.DeepEquals(clone, node));
+        }
+
+        public static IEnumerable<object[]> GetPrimitiveTypes()
+        {
+            yield return Wrap(false, JsonValueKind.False);
+            yield return Wrap(true, JsonValueKind.True);
+            yield return Wrap((bool?)false, JsonValueKind.False);
+            yield return Wrap((bool?)true, JsonValueKind.True);
+            yield return Wrap((byte)42, JsonValueKind.Number);
+            yield return Wrap((sbyte)42, JsonValueKind.Number);
+            yield return Wrap((short)42, JsonValueKind.Number);
+            yield return Wrap((ushort)42, JsonValueKind.Number);
+            yield return Wrap(42, JsonValueKind.Number);
+            yield return Wrap((int?)42, JsonValueKind.Number);
+            yield return Wrap((uint)42, JsonValueKind.Number);
+            yield return Wrap((long)42, JsonValueKind.Number);
+            yield return Wrap((ulong)42, JsonValueKind.Number);
+            yield return Wrap(42.0f, JsonValueKind.Number);
+            yield return Wrap(42.0, JsonValueKind.Number);
+            yield return Wrap(42.0m, JsonValueKind.Number);
+            yield return Wrap('A', JsonValueKind.String);
+            yield return Wrap((char?)'A', JsonValueKind.String);
+            yield return Wrap("A", JsonValueKind.String);
+            yield return Wrap(new byte[] { 1, 2, 3 }, JsonValueKind.String);
+            yield return Wrap(new DateTimeOffset(2024, 06, 20, 10, 29, 0, TimeSpan.Zero), JsonValueKind.String);
+            yield return Wrap(new DateTime(2024, 06, 20, 10, 29, 0), JsonValueKind.String);
+            yield return Wrap(Guid.Empty, JsonValueKind.String);
+            yield return Wrap((Guid?)Guid.Empty, JsonValueKind.String);
+            yield return Wrap(new Uri("http://example.com"), JsonValueKind.String);
+            yield return Wrap(new Version(1, 2, 3, 4), JsonValueKind.String);
+            yield return Wrap(BindingFlags.Public, JsonValueKind.Number);
+            yield return Wrap((BindingFlags?)BindingFlags.Public, JsonValueKind.Number);
+#if NET
+            yield return Wrap(Half.MaxValue, JsonValueKind.Number);
+            yield return Wrap((Int128)42, JsonValueKind.Number);
+            yield return Wrap((Int128)42, JsonValueKind.Number);
+            yield return Wrap((Memory<byte>)new byte[] { 1, 2, 3 }, JsonValueKind.String);
+            yield return Wrap((ReadOnlyMemory<byte>)new byte[] { 1, 2, 3 }, JsonValueKind.String);
+            yield return Wrap(new DateOnly(2024, 06, 20), JsonValueKind.String);
+            yield return Wrap(new TimeOnly(10, 29), JsonValueKind.String);
+#endif
+            static object[] Wrap<T>(T value, JsonValueKind expectedKind) => [value, expectedKind];
         }
     }
 }

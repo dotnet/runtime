@@ -354,7 +354,7 @@ namespace Microsoft.Extensions
             public ISet<string> InstantiatedISet { get; set; } = s_instantiatedISet;
             public bool IsSameInstantiatedISet() => object.ReferenceEquals(s_instantiatedISet, InstantiatedISet);
 
-#if NETCOREAPP
+#if NET
             private static IReadOnlySet<string> s_instantiatedIReadOnlySet = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "a", "A", "b" };
             public IReadOnlySet<string> InstantiatedIReadOnlySet { get; set; } = s_instantiatedIReadOnlySet;
             public bool IsSameInstantiatedIReadOnlySet() => object.ReferenceEquals(s_instantiatedIReadOnlySet, InstantiatedIReadOnlySet);

@@ -404,7 +404,6 @@ namespace System.Threading
             }
         }
 
-#if !CORECLR
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void ResetThreadPoolThread()
         {
@@ -416,7 +415,6 @@ namespace System.Threading
                 ResetThreadPoolThreadSlow();
             }
         }
-#endif
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         private void ResetThreadPoolThreadSlow()
@@ -729,26 +727,46 @@ namespace System.Threading
         [ThreadStatic]
         public static bool ThrowOnBlockingWaitOnJSInteropThread;
 
-        public static void AssureBlockingPossible()
+        [ThreadStatic]
+        public static bool WarnOnBlockingWaitOnJSInteropThread;
+
+#pragma warning disable CS3001
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        private static extern unsafe void WarnAboutBlockingWait(char* stack, int length);
+
+        public static unsafe void AssureBlockingPossible()
         {
             if (ThrowOnBlockingWaitOnJSInteropThread)
             {
                 throw new PlatformNotSupportedException(SR.WasmThreads_BlockingWaitNotSupportedOnJSInterop);
             }
+            else if (WarnOnBlockingWaitOnJSInteropThread)
+            {
+                var st = $"Blocking the thread with JS interop is dangerous and could lead to deadlock. ManagedThreadId: {Environment.CurrentManagedThreadId}\n{Environment.StackTrace}";
+                fixed (char* stack = st)
+                {
+                    WarnAboutBlockingWait(stack, st.Length);
+                }
+            }
         }
+
+#pragma warning restore CS3001
 
         public static void ForceBlockingWait(Action<object?> action, object? state = null)
         {
             var flag = ThrowOnBlockingWaitOnJSInteropThread;
+            var wflag = WarnOnBlockingWaitOnJSInteropThread;
             try
             {
                 ThrowOnBlockingWaitOnJSInteropThread = false;
+                WarnOnBlockingWaitOnJSInteropThread = false;
 
                 action(state);
             }
             finally
             {
                 ThrowOnBlockingWaitOnJSInteropThread = flag;
+                WarnOnBlockingWaitOnJSInteropThread = wflag;
             }
         }
 #endif

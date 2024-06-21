@@ -252,25 +252,6 @@ namespace System
     {
         internal const int DecimalPrecision = 29; // Decimal.DecCalc also uses this value
 
-        // SinglePrecision and DoublePrecision represent the maximum number of digits required
-        // to guarantee that any given Single or Double can roundtrip. Some numbers may require
-        // less, but none will require more.
-        private const int HalfPrecision = 5;
-        private const int SinglePrecision = 9;
-        private const int DoublePrecision = 17;
-
-        // SinglePrecisionCustomFormat and DoublePrecisionCustomFormat are used to ensure that
-        // custom format strings return the same string as in previous releases when the format
-        // would return x digits or less (where x is the value of the corresponding constant).
-        // In order to support more digits, we would need to update ParseFormatSpecifier to pre-parse
-        // the format and determine exactly how many digits are being requested and whether they
-        // represent "significant digits" or "digits after the decimal point".
-        private const int HalfPrecisionCustomFormat = 5;
-        private const int SinglePrecisionCustomFormat = 7;
-        private const int DoublePrecisionCustomFormat = 15;
-
-        private const int CharStackBufferSize = 32;
-
         /// <summary>The non-inclusive upper bound of <see cref="s_smallNumberCache"/>.</summary>
         /// <remarks>
         /// This is a semi-arbitrary bound. For mono, which is often used for more size-constrained workloads,
@@ -396,28 +377,6 @@ namespace System
             number.CheckConsistency();
         }
 
-        public static string FormatDouble(double value, string? format, NumberFormatInfo info)
-        {
-            var vlb = new ValueListBuilder<char>(stackalloc char[CharStackBufferSize]);
-            string result = FormatDouble(ref vlb, value, format, info) ?? vlb.AsSpan().ToString();
-            vlb.Dispose();
-            return result;
-        }
-
-        public static bool TryFormatDouble<TChar>(double value, ReadOnlySpan<char> format, NumberFormatInfo info, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
-        {
-            var vlb = new ValueListBuilder<TChar>(stackalloc TChar[CharStackBufferSize]);
-            string? s = FormatDouble(ref vlb, value, format, info);
-
-            Debug.Assert(s is null || typeof(TChar) == typeof(char));
-            bool success = s != null ?
-                TryCopyTo(s, destination, out charsWritten) :
-                vlb.TryCopyTo(destination, out charsWritten);
-
-            vlb.Dispose();
-            return success;
-        }
-
         private static int GetFloatingPointMaxDigitsAndPrecision(char fmt, ref int precision, NumberFormatInfo info, out bool isSignificantDigits)
         {
             if (fmt == 0)
@@ -539,105 +498,23 @@ namespace System
             return maxDigits;
         }
 
-        /// <summary>Formats the specified value according to the specified format and info.</summary>
-        /// <returns>
-        /// Non-null if an existing string can be returned, in which case the builder will be unmodified.
-        /// Null if no existing string was returned, in which case the formatted output is in the builder.
-        /// </returns>
-        private static unsafe string? FormatDouble<TChar>(ref ValueListBuilder<TChar> vlb, double value, ReadOnlySpan<char> format, NumberFormatInfo info) where TChar : unmanaged, IUtfChar<TChar>
-        {
-            if (!double.IsFinite(value))
-            {
-                if (double.IsNaN(value))
-                {
-                    if (typeof(TChar) == typeof(char))
-                    {
-                        return info.NaNSymbol;
-                    }
-                    else
-                    {
-                        vlb.Append(info.NaNSymbolTChar<TChar>());
-                        return null;
-                    }
-                }
-
-                if (typeof(TChar) == typeof(char))
-                {
-                    return double.IsNegative(value) ? info.NegativeInfinitySymbol : info.PositiveInfinitySymbol;
-                }
-                else
-                {
-                    vlb.Append(double.IsNegative(value) ? info.NegativeInfinitySymbolTChar<TChar>() : info.PositiveInfinitySymbolTChar<TChar>());
-                    return null;
-                }
-            }
-
-            char fmt = ParseFormatSpecifier(format, out int precision);
-            byte* pDigits = stackalloc byte[DoubleNumberBufferLength];
-
-            if (fmt == '\0')
-            {
-                // For back-compat we currently specially treat the precision for custom
-                // format specifiers. The constant has more details as to why.
-                precision = DoublePrecisionCustomFormat;
-            }
-
-            NumberBuffer number = new NumberBuffer(NumberBufferKind.FloatingPoint, pDigits, DoubleNumberBufferLength);
-            number.IsNegative = double.IsNegative(value);
-
-            // We need to track the original precision requested since some formats
-            // accept values like 0 and others may require additional fixups.
-            int nMaxDigits = GetFloatingPointMaxDigitsAndPrecision(fmt, ref precision, info, out bool isSignificantDigits);
-
-            if ((value != 0.0) && (!isSignificantDigits || !Grisu3.TryRunDouble(value, precision, ref number)))
-            {
-                Dragon4Double(value, precision, isSignificantDigits, ref number);
-            }
-
-            number.CheckConsistency();
-
-            // When the number is known to be roundtrippable (either because we requested it be, or
-            // because we know we have enough digits to satisfy roundtrippability), we should validate
-            // that the number actually roundtrips back to the original result.
-
-            Debug.Assert(((precision != -1) && (precision < DoublePrecision)) || (BitConverter.DoubleToInt64Bits(value) == BitConverter.DoubleToInt64Bits(NumberToFloat<double>(ref number))));
-
-            if (fmt != 0)
-            {
-                if (precision == -1)
-                {
-                    Debug.Assert((fmt == 'G') || (fmt == 'g') || (fmt == 'R') || (fmt == 'r'));
-
-                    // For the roundtrip and general format specifiers, when returning the shortest roundtrippable
-                    // string, we need to update the maximum number of digits to be the greater of number.DigitsCount
-                    // or DoublePrecision. This ensures that we continue returning "pretty" strings for values with
-                    // less digits. One example this fixes is "-60", which would otherwise be formatted as "-6E+01"
-                    // since DigitsCount would be 1 and the formatter would almost immediately switch to scientific notation.
-
-                    nMaxDigits = Math.Max(number.DigitsCount, DoublePrecision);
-                }
-                NumberToString(ref vlb, ref number, fmt, nMaxDigits, info);
-            }
-            else
-            {
-                Debug.Assert(precision == DoublePrecisionCustomFormat);
-                NumberToStringFormat(ref vlb, ref number, format, info);
-            }
-            return null;
-        }
-
-        public static string FormatSingle(float value, string? format, NumberFormatInfo info)
+        public static string FormatFloat<TNumber>(TNumber value, string? format, NumberFormatInfo info)
+            where TNumber : unmanaged, IBinaryFloatParseAndFormatInfo<TNumber>
         {
             var vlb = new ValueListBuilder<char>(stackalloc char[CharStackBufferSize]);
-            string result = FormatSingle(ref vlb, value, format, info) ?? vlb.AsSpan().ToString();
+            string result = FormatFloat(ref vlb, value, format, info) ?? vlb.AsSpan().ToString();
             vlb.Dispose();
             return result;
         }
 
-        public static bool TryFormatSingle<TChar>(float value, ReadOnlySpan<char> format, NumberFormatInfo info, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
+        public static bool TryFormatFloat<TNumber, TChar>(TNumber value, ReadOnlySpan<char> format, NumberFormatInfo info, Span<TChar> destination, out int charsWritten)
+            where TNumber : unmanaged, IBinaryFloatParseAndFormatInfo<TNumber>
+            where TChar : unmanaged, IUtfChar<TChar>
         {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+
             var vlb = new ValueListBuilder<TChar>(stackalloc TChar[CharStackBufferSize]);
-            string? s = FormatSingle(ref vlb, value, format, info);
+            string? s = FormatFloat(ref vlb, value, format, info);
 
             Debug.Assert(s is null || typeof(TChar) == typeof(char));
             bool success = s != null ?
@@ -653,13 +530,15 @@ namespace System
         /// Non-null if an existing string can be returned, in which case the builder will be unmodified.
         /// Null if no existing string was returned, in which case the formatted output is in the builder.
         /// </returns>
-        private static unsafe string? FormatSingle<TChar>(ref ValueListBuilder<TChar> vlb, float value, ReadOnlySpan<char> format, NumberFormatInfo info) where TChar : unmanaged, IUtfChar<TChar>
+        private static unsafe string? FormatFloat<TNumber, TChar>(ref ValueListBuilder<TChar> vlb, TNumber value, ReadOnlySpan<char> format, NumberFormatInfo info)
+            where TNumber : unmanaged, IBinaryFloatParseAndFormatInfo<TNumber>
+            where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
 
-            if (!float.IsFinite(value))
+            if (!TNumber.IsFinite(value))
             {
-                if (float.IsNaN(value))
+                if (TNumber.IsNaN(value))
                 {
                     if (typeof(TChar) == typeof(char))
                     {
@@ -674,35 +553,33 @@ namespace System
 
                 if (typeof(TChar) == typeof(char))
                 {
-                    return float.IsNegative(value) ? info.NegativeInfinitySymbol : info.PositiveInfinitySymbol;
+                    return TNumber.IsNegative(value) ? info.NegativeInfinitySymbol : info.PositiveInfinitySymbol;
                 }
                 else
                 {
-                    vlb.Append(float.IsNegative(value) ? info.NegativeInfinitySymbolTChar<TChar>() : info.PositiveInfinitySymbolTChar<TChar>());
+                    vlb.Append(TNumber.IsNegative(value) ? info.NegativeInfinitySymbolTChar<TChar>() : info.PositiveInfinitySymbolTChar<TChar>());
                     return null;
                 }
             }
 
             char fmt = ParseFormatSpecifier(format, out int precision);
-            byte* pDigits = stackalloc byte[SingleNumberBufferLength];
+            byte* pDigits = stackalloc byte[TNumber.NumberBufferLength];
 
             if (fmt == '\0')
             {
-                // For back-compat we currently specially treat the precision for custom
-                // format specifiers. The constant has more details as to why.
-                precision = SinglePrecisionCustomFormat;
+                precision = TNumber.MaxPrecisionCustomFormat;
             }
 
-            NumberBuffer number = new NumberBuffer(NumberBufferKind.FloatingPoint, pDigits, SingleNumberBufferLength);
-            number.IsNegative = float.IsNegative(value);
+            NumberBuffer number = new NumberBuffer(NumberBufferKind.FloatingPoint, pDigits, TNumber.NumberBufferLength);
+            number.IsNegative = TNumber.IsNegative(value);
 
             // We need to track the original precision requested since some formats
             // accept values like 0 and others may require additional fixups.
             int nMaxDigits = GetFloatingPointMaxDigitsAndPrecision(fmt, ref precision, info, out bool isSignificantDigits);
 
-            if ((value != default) && (!isSignificantDigits || !Grisu3.TryRunSingle(value, precision, ref number)))
+            if ((value != default) && (!isSignificantDigits || !Grisu3.TryRun(value, precision, ref number)))
             {
-                Dragon4Single(value, precision, isSignificantDigits, ref number);
+                Dragon4(value, precision, isSignificantDigits, ref number);
             }
 
             number.CheckConsistency();
@@ -711,7 +588,7 @@ namespace System
             // because we know we have enough digits to satisfy roundtrippability), we should validate
             // that the number actually roundtrips back to the original result.
 
-            Debug.Assert(((precision != -1) && (precision < SinglePrecision)) || (BitConverter.SingleToInt32Bits(value) == BitConverter.SingleToInt32Bits(NumberToFloat<float>(ref number))));
+            Debug.Assert(((precision != -1) && (precision < TNumber.MaxRoundTripDigits)) || (TNumber.FloatToBits(value) == TNumber.FloatToBits(NumberToFloat<TNumber>(ref number))));
 
             if (fmt != 0)
             {
@@ -725,127 +602,16 @@ namespace System
                     // less digits. One example this fixes is "-60", which would otherwise be formatted as "-6E+01"
                     // since DigitsCount would be 1 and the formatter would almost immediately switch to scientific notation.
 
-                    nMaxDigits = Math.Max(number.DigitsCount, SinglePrecision);
+                    nMaxDigits = Math.Max(number.DigitsCount, TNumber.MaxRoundTripDigits);
                 }
                 NumberToString(ref vlb, ref number, fmt, nMaxDigits, info);
             }
             else
             {
-                Debug.Assert(precision == SinglePrecisionCustomFormat);
+                Debug.Assert(precision == TNumber.MaxPrecisionCustomFormat);
                 NumberToStringFormat(ref vlb, ref number, format, info);
             }
             return null;
-        }
-
-        public static string FormatHalf(Half value, string? format, NumberFormatInfo info)
-        {
-            var vlb = new ValueListBuilder<char>(stackalloc char[CharStackBufferSize]);
-            string result = FormatHalf(ref vlb, value, format, info) ?? vlb.AsSpan().ToString();
-            vlb.Dispose();
-            return result;
-        }
-
-        /// <summary>Formats the specified value according to the specified format and info.</summary>
-        /// <returns>
-        /// Non-null if an existing string can be returned, in which case the builder will be unmodified.
-        /// Null if no existing string was returned, in which case the formatted output is in the builder.
-        /// </returns>
-        private static unsafe string? FormatHalf<TChar>(ref ValueListBuilder<TChar> vlb, Half value, ReadOnlySpan<char> format, NumberFormatInfo info) where TChar : unmanaged, IUtfChar<TChar>
-        {
-            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
-
-            if (!Half.IsFinite(value))
-            {
-                if (Half.IsNaN(value))
-                {
-                    if (typeof(TChar) == typeof(char))
-                    {
-                        return info.NaNSymbol;
-                    }
-                    else
-                    {
-                        vlb.Append(info.NaNSymbolTChar<TChar>());
-                        return null;
-                    }
-                }
-
-                if (typeof(TChar) == typeof(char))
-                {
-                    return Half.IsNegative(value) ? info.NegativeInfinitySymbol : info.PositiveInfinitySymbol;
-                }
-                else
-                {
-                    vlb.Append(Half.IsNegative(value) ? info.NegativeInfinitySymbolTChar<TChar>() : info.PositiveInfinitySymbolTChar<TChar>());
-                    return null;
-                }
-            }
-
-            char fmt = ParseFormatSpecifier(format, out int precision);
-            byte* pDigits = stackalloc byte[HalfNumberBufferLength];
-
-            if (fmt == '\0')
-            {
-                precision = HalfPrecisionCustomFormat;
-            }
-
-            NumberBuffer number = new NumberBuffer(NumberBufferKind.FloatingPoint, pDigits, HalfNumberBufferLength);
-            number.IsNegative = Half.IsNegative(value);
-
-            // We need to track the original precision requested since some formats
-            // accept values like 0 and others may require additional fixups.
-            int nMaxDigits = GetFloatingPointMaxDigitsAndPrecision(fmt, ref precision, info, out bool isSignificantDigits);
-
-            if ((value != default) && (!isSignificantDigits || !Grisu3.TryRunHalf(value, precision, ref number)))
-            {
-                Dragon4Half(value, precision, isSignificantDigits, ref number);
-            }
-
-            number.CheckConsistency();
-
-            // When the number is known to be roundtrippable (either because we requested it be, or
-            // because we know we have enough digits to satisfy roundtrippability), we should validate
-            // that the number actually roundtrips back to the original result.
-
-            Debug.Assert(((precision != -1) && (precision < HalfPrecision)) || (BitConverter.HalfToInt16Bits(value) == BitConverter.HalfToInt16Bits(NumberToFloat<Half>(ref number))));
-
-            if (fmt != 0)
-            {
-                if (precision == -1)
-                {
-                    Debug.Assert((fmt == 'G') || (fmt == 'g') || (fmt == 'R') || (fmt == 'r'));
-
-                    // For the roundtrip and general format specifiers, when returning the shortest roundtrippable
-                    // string, we need to update the maximum number of digits to be the greater of number.DigitsCount
-                    // or SinglePrecision. This ensures that we continue returning "pretty" strings for values with
-                    // less digits. One example this fixes is "-60", which would otherwise be formatted as "-6E+01"
-                    // since DigitsCount would be 1 and the formatter would almost immediately switch to scientific notation.
-
-                    nMaxDigits = Math.Max(number.DigitsCount, HalfPrecision);
-                }
-                NumberToString(ref vlb, ref number, fmt, nMaxDigits, info);
-            }
-            else
-            {
-                Debug.Assert(precision == HalfPrecisionCustomFormat);
-                NumberToStringFormat(ref vlb, ref number, format, info);
-            }
-            return null;
-        }
-
-        public static bool TryFormatHalf<TChar>(Half value, ReadOnlySpan<char> format, NumberFormatInfo info, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
-        {
-            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
-
-            var vlb = new ValueListBuilder<TChar>(stackalloc TChar[CharStackBufferSize]);
-            string? s = FormatHalf(ref vlb, value, format, info);
-
-            Debug.Assert(s is null || typeof(TChar) == typeof(char));
-            bool success = s != null ?
-                TryCopyTo(s, destination, out charsWritten) :
-                vlb.TryCopyTo(destination, out charsWritten);
-
-            vlb.Dispose();
-            return success;
         }
 
         private static bool TryCopyTo<TChar>(string source, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
@@ -855,7 +621,7 @@ namespace System
 
             if (typeof(TChar) == typeof(char))
             {
-                if (source.TryCopyTo(MemoryMarshal.Cast<TChar, char>(destination)))
+                if (source.TryCopyTo(Unsafe.BitCast<Span<TChar>, Span<char>>(destination)))
                 {
                     charsWritten = source.Length;
                     return true;
@@ -866,7 +632,7 @@ namespace System
             }
             else
             {
-                return Encoding.UTF8.TryGetBytes(source, MemoryMarshal.Cast<TChar, byte>(destination), out charsWritten);
+                return Encoding.UTF8.TryGetBytes(source, Unsafe.BitCast<Span<TChar>, Span<byte>>(destination), out charsWritten);
             }
         }
 
@@ -2865,6 +2631,39 @@ namespace System
                 //       = mantissa * 2^(-149)
                 // So f = mantissa, e = -149
                 exponent = -149;
+            }
+
+            return fraction;
+        }
+
+        private static ulong ExtractFractionAndBiasedExponent<TNumber>(TNumber value, out int exponent)
+            where TNumber : unmanaged, IBinaryFloatParseAndFormatInfo<TNumber>
+        {
+            ulong bits = TNumber.FloatToBits(value);
+            ulong fraction = (bits & TNumber.DenormalMantissaMask);
+            exponent = ((int)(bits >> TNumber.DenormalMantissaBits) & TNumber.InfinityExponent);
+
+            if (exponent != 0)
+            {
+                // For normalized value,
+                // value = 1.fraction * 2^(exp - ExponentBias)
+                //       = (1 + mantissa / 2^TrailingSignificandLength) * 2^(exp - ExponentBias)
+                //       = (2^TrailingSignificandLength + mantissa) * 2^(exp - ExponentBias - TrailingSignificandLength)
+                //
+                // So f = (2^TrailingSignificandLength + mantissa), e = exp - ExponentBias - TrailingSignificandLength;
+
+                fraction |= (1UL << TNumber.DenormalMantissaBits);
+                exponent -= TNumber.ExponentBias + TNumber.DenormalMantissaBits;
+            }
+            else
+            {
+                // For denormalized value,
+                // value = 0.fraction * 2^(MinBinaryExponent)
+                //       = (mantissa / 2^TrailingSignificandLength) * 2^(MinBinaryExponent)
+                //       = mantissa * 2^(MinBinaryExponent - TrailingSignificandLength)
+                //       = mantissa * 2^(MinBinaryExponent - TrailingSignificandLength)
+                // So f = mantissa, e = MinBinaryExponent - TrailingSignificandLength
+                exponent = TNumber.MinBinaryExponent - TNumber.DenormalMantissaBits;
             }
 
             return fraction;

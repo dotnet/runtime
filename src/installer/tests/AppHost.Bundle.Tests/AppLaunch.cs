@@ -80,6 +80,28 @@ namespace AppHost.Bundle.Tests
             }
         }
 
+        [ConditionalTheory(typeof(Binaries.CetCompat), nameof(Binaries.CetCompat.IsSupported))]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void DisableCetCompat(bool selfContained)
+        {
+            SingleFileTestApp app = selfContained
+                ? sharedTestState.SelfContainedApp.Copy()
+                : sharedTestState.FrameworkDependentApp.Copy();
+            app.CreateAppHost(disableCetCompat: true);
+
+            string singleFile = app.Bundle();
+            Command.Create(singleFile)
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .DotNetRoot(TestContext.BuiltDotNet.BinPath, TestContext.BuildArchitecture)
+                .MultilevelLookup(false)
+                .Execute()
+                .Should().Pass()
+                .And.HaveStdOutContaining("Hello World")
+                .And.HaveStdOutContaining(TestContext.MicrosoftNETCoreAppVersion);
+        }
+
         [Theory]
         [InlineData(true)]
         [InlineData(false)]

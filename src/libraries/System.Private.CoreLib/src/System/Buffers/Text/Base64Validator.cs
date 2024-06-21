@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.CompilerServices;
+
 namespace System.Buffers.Text
 {
     public static partial class Base64
@@ -53,7 +55,7 @@ namespace System.Buffers.Text
         public static bool IsValid(ReadOnlySpan<byte> base64TextUtf8, out int decodedLength) =>
             IsValid<byte, Base64ByteValidatable>(base64TextUtf8, out decodedLength);
 
-        private static bool IsValid<T, TBase64Validatable>(ReadOnlySpan<T> base64Text, out int decodedLength)
+        internal static bool IsValid<T, TBase64Validatable>(ReadOnlySpan<T> base64Text, out int decodedLength)
             where TBase64Validatable : IBase64Validatable<T>
         {
             int length = 0, paddingCount = 0;
@@ -116,14 +118,15 @@ namespace System.Buffers.Text
                     break;
                 }
 
-                if (length % 4 != 0)
+                if (!TBase64Validatable.ValidateAndDecodeLength(length, paddingCount, out decodedLength))
                 {
                     goto Fail;
                 }
+
+                return true;
             }
 
-            // Remove padding to get exact length.
-            decodedLength = (int)((uint)length / 4 * 3) - paddingCount;
+            decodedLength = 0;
             return true;
 
             Fail:
@@ -131,11 +134,12 @@ namespace System.Buffers.Text
             return false;
         }
 
-        private interface IBase64Validatable<T>
+        internal interface IBase64Validatable<T>
         {
             static abstract int IndexOfAnyExcept(ReadOnlySpan<T> span);
             static abstract bool IsWhiteSpace(T value);
             static abstract bool IsEncodingPad(T value);
+            static abstract bool ValidateAndDecodeLength(int length, int paddingCount, out int decodedLength);
         }
 
         private readonly struct Base64CharValidatable : IBase64Validatable<char>
@@ -145,15 +149,30 @@ namespace System.Buffers.Text
             public static int IndexOfAnyExcept(ReadOnlySpan<char> span) => span.IndexOfAnyExcept(s_validBase64Chars);
             public static bool IsWhiteSpace(char value) => Base64.IsWhiteSpace(value);
             public static bool IsEncodingPad(char value) => value == EncodingPad;
+            public static bool ValidateAndDecodeLength(int length, int paddingCount, out int decodedLength) =>
+                Base64ByteValidatable.ValidateAndDecodeLength(length, paddingCount, out decodedLength);
         }
 
         private readonly struct Base64ByteValidatable : IBase64Validatable<byte>
         {
-            private static readonly SearchValues<byte> s_validBase64Chars = SearchValues.Create(EncodingMap);
+            private static readonly SearchValues<byte> s_validBase64Chars = SearchValues.Create(Base64EncoderByte.EncodingMap);
 
             public static int IndexOfAnyExcept(ReadOnlySpan<byte> span) => span.IndexOfAnyExcept(s_validBase64Chars);
             public static bool IsWhiteSpace(byte value) => Base64.IsWhiteSpace(value);
             public static bool IsEncodingPad(byte value) => value == EncodingPad;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static bool ValidateAndDecodeLength(int length, int paddingCount, out int decodedLength)
+            {
+                if (length % 4 == 0)
+                {
+                    // Remove padding to get exact length.
+                    decodedLength = (int)((uint)length / 4 * 3) - paddingCount;
+                    return true;
+                }
+
+                decodedLength = 0;
+                return false;
+            }
         }
     }
 }

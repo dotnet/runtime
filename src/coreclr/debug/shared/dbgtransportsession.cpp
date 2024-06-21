@@ -119,7 +119,7 @@ HRESULT DbgTransportSession::Init(DebuggerIPCControlBlock *pDCB, AppDomainEnumer
     m_fInitStateLock = true;
 
 #ifdef RIGHT_SIDE_COMPILE
-    m_hSessionOpenEvent = WszCreateEvent(NULL, TRUE, FALSE, NULL); // Manual reset, not signalled
+    m_hSessionOpenEvent = CreateEvent(NULL, TRUE, FALSE, NULL); // Manual reset, not signalled
     if (m_hSessionOpenEvent == NULL)
         return E_OUTOFMEMORY;
 #else // RIGHT_SIDE_COMPILE
@@ -139,11 +139,11 @@ HRESULT DbgTransportSession::Init(DebuggerIPCControlBlock *pDCB, AppDomainEnumer
     if (m_pEventBuffers == NULL)
         return E_OUTOFMEMORY;
 
-    m_rghEventReadyEvent[IPCET_OldStyle] = WszCreateEvent(NULL, FALSE, FALSE, NULL); // Auto reset, not signalled
+    m_rghEventReadyEvent[IPCET_OldStyle] = CreateEvent(NULL, FALSE, FALSE, NULL); // Auto reset, not signalled
     if (m_rghEventReadyEvent[IPCET_OldStyle] == NULL)
         return E_OUTOFMEMORY;
 
-    m_rghEventReadyEvent[IPCET_DebugEvent] = WszCreateEvent(NULL, FALSE, FALSE, NULL); // Auto reset, not signalled
+    m_rghEventReadyEvent[IPCET_DebugEvent] = CreateEvent(NULL, FALSE, FALSE, NULL); // Auto reset, not signalled
     if (m_rghEventReadyEvent[IPCET_DebugEvent] == NULL)
         return E_OUTOFMEMORY;
 
@@ -720,7 +720,7 @@ HRESULT DbgTransportSession::SendMessage(Message *pMessage, bool fWaitsForReply)
 HRESULT DbgTransportSession::SendRequestMessageAndWait(Message *pMessage)
 {
     // Allocate event to wait for reply on.
-    pMessage->m_hReplyEvent = WszCreateEvent(NULL, FALSE, FALSE, NULL); // Auto-reset, not signalled
+    pMessage->m_hReplyEvent = CreateEvent(NULL, FALSE, FALSE, NULL); // Auto-reset, not signalled
     if (pMessage->m_hReplyEvent == NULL)
         return E_OUTOFMEMORY;
 
@@ -1949,7 +1949,7 @@ void DbgTransportSession::TransportWorker()
                     DWORD   cbBytesToRead = sReceiveHeader.TypeSpecificData.MemoryAccess.m_cbLeftSideBuffer;
                     while (cbBytesToRead)
                     {
-                        DWORD cbTransfer = min(cbBytesToRead, sizeof(rgDummy));
+                        DWORD cbTransfer = min(cbBytesToRead, (DWORD)sizeof(rgDummy));
                         if (!ReceiveBlock(rgDummy, cbTransfer))
                             HANDLE_TRANSIENT_ERROR();
                         cbBytesToRead -= cbTransfer;
@@ -2203,6 +2203,7 @@ DWORD DbgTransportSession::GetEventSize(DebuggerIPCEvent *pEvent)
     case DB_IPCE_BEFORE_GARBAGE_COLLECTION:
     case DB_IPCE_AFTER_GARBAGE_COLLECTION:
     case DB_IPCE_DISABLE_OPTS_RESULT:
+    case DB_IPCE_CATCH_HANDLER_FOUND_RESULT:
         cbAdditionalSize = 0;
         break;
 
@@ -2500,6 +2501,14 @@ DWORD DbgTransportSession::GetEventSize(DebuggerIPCEvent *pEvent)
 
     case DB_IPCE_DISABLE_OPTS:
         cbAdditionalSize = sizeof(pEvent->DisableOptData);
+        break;
+
+    case DB_IPCE_FORCE_CATCH_HANDLER_FOUND:
+        cbAdditionalSize = sizeof(pEvent->ForceCatchHandlerFoundData);
+        break;
+
+    case DB_IPCE_SET_ENABLE_CUSTOM_NOTIFICATION:
+        cbAdditionalSize = sizeof(pEvent->CustomNotificationData);
         break;
 
     default:
