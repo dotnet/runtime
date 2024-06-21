@@ -2800,7 +2800,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 }
                 else if (isRMW)
                 {
-                    if (!op2->isContained() && HWIntrinsicInfo::IsCommutative(intrinsicId))
+                    if (!op2->isContained() && intrinsicTree->isCommutativeHWIntrinsic())
                     {
                         // When op2 is not contained and we are commutative, we can set op2
                         // to also be a tgtPrefUse. Codegen will then swap the operands.

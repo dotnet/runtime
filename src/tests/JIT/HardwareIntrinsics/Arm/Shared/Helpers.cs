@@ -323,6 +323,24 @@ namespace JIT.HardwareIntrinsics.Arm
             return (byte)result;
         }
 
+        public static short ReverseElementBits(short op1)
+        {
+            short val = (short)op1;
+            short result = 0;
+            const int bitsize = sizeof(short) * 8;
+            const short cst_one = 1;
+
+            for (int i = 0; i < bitsize; i++)
+            {
+                if ((val & (cst_one << i)) != 0)
+                {
+                    result |= (short)(cst_one << (bitsize  - 1 - i));
+                }
+            }
+
+            return (short)result;
+        }
+
         public static int ReverseElementBits(int op1)
         {
             uint val = (uint)op1;
@@ -375,6 +393,24 @@ namespace JIT.HardwareIntrinsics.Arm
             }
 
             return (sbyte)result;
+        }
+
+        public static ushort ReverseElementBits(ushort op1)
+        {
+            ushort val = (ushort)op1;
+            ushort result = 0;
+            const int bitsize = sizeof(ushort) * 8;
+            const ushort cst_one = 1;
+
+            for (int i = 0; i < bitsize; i++)
+            {
+                if ((val & (cst_one << i)) != 0)
+                {
+                    result |= (ushort)(cst_one << (bitsize  - 1 - i));
+                }
+            }
+
+            return (ushort)result;
         }
 
         public static uint ReverseElementBits(uint op1)
@@ -3351,6 +3387,18 @@ namespace JIT.HardwareIntrinsics.Arm
             }
 
             return result;
+        }
+
+        public static T[] ShiftAndInsert<T>(T[] op1, T op2)
+        {
+            T nextValue = op2;
+
+            for (int i = 0; i < op1.Length; i++)
+            {
+                (op1[i], nextValue) = (nextValue, op1[i]);
+            }
+
+            return op1;
         }
 
         public static sbyte ShiftLeftLogical(sbyte op1, byte op2) => UnsignedShift(op1, (sbyte)op2);
