@@ -6378,9 +6378,9 @@ void MethodContext::dmpGetRiscV64PassFpStructInRegistersInfo(DWORDLONG key, FpSt
         key, value.flags,
         (value.flags & FpStruct::OnlyOne) != 0,
         (value.flags & FpStruct::BothFloat) != 0,
-        (value.flags & FpStruct::FloatInt) != 0, value.GetSize1st(),
-        (value.flags & FpStruct::IntFloat) != 0, value.GetSize2nd(),
-        (int)value.GetIntFieldKind(),
+        (value.flags & FpStruct::FloatInt) != 0, value.Size1st(),
+        (value.flags & FpStruct::IntFloat) != 0, value.Size2nd(),
+        (int)value.IntFieldKind(),
         value.offset1st, value.offset2nd);
 }
 

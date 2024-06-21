@@ -168,20 +168,20 @@ void CopyReturnedFpStructFromRegisters(void* dest, UINT64 returnRegs[2], FpStruc
     UINT64* returnField1st = &returnRegs[(info.flags & FpStruct::IntFloat) ? 1 : 0];
     UINT64* returnField2nd = &returnRegs[(info.flags & FpStruct::IntFloat) ? 0 : 1];
 
-    memcpyNoGCRefs((char*)dest + info.offset1st, returnField1st, info.GetSize1st());
+    memcpyNoGCRefs((char*)dest + info.offset1st, returnField1st, info.Size1st());
 
     if ((info.flags & FpStruct::OnlyOne) == 0)
     {
         char* field2ndDest = (char*)dest + info.offset2nd;
-        if (handleGcRefs && info.GetIntFieldKind() == FpStruct::IntKind::GcRef)
+        if (handleGcRefs && info.IntFieldKind() == FpStruct::IntKind::GcRef)
         {
             _ASSERTE(info.flags & (FpStruct::FloatInt | FpStruct::IntFloat));
-            _ASSERTE(info.GetSize2nd() == TARGET_POINTER_SIZE);
+            _ASSERTE(info.Size2nd() == TARGET_POINTER_SIZE);
             memmoveGCRefs(field2ndDest, returnField2nd, TARGET_POINTER_SIZE);
         }
         else
         {
-            memcpyNoGCRefs(field2ndDest, returnField2nd, info.GetSize2nd());
+            memcpyNoGCRefs(field2ndDest, returnField2nd, info.Size2nd());
         }
     }
 }

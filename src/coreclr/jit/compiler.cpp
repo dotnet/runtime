@@ -8317,15 +8317,15 @@ void Compiler::GetStructTypeOffset(
 void Compiler::GetTypesFromFpStructInRegistersInfo(FpStructInRegistersInfo info, var_types* type1st, var_types* type2nd)
 {
     if ((info.flags & (FpStruct::BothFloat | FpStruct::FloatInt | FpStruct::OnlyOne)) != 0)
-        *type1st = (info.GetSizeShift1st() == 3) ? TYP_DOUBLE : TYP_FLOAT;
+        *type1st = (info.SizeShift1st() == 3) ? TYP_DOUBLE : TYP_FLOAT;
 
     if ((info.flags & (FpStruct::BothFloat | FpStruct::IntFloat)) != 0)
-        *type2nd = (info.GetSizeShift2nd() == 3) ? TYP_DOUBLE : TYP_FLOAT;
+        *type2nd = (info.SizeShift2nd() == 3) ? TYP_DOUBLE : TYP_FLOAT;
 
     if ((info.flags & (FpStruct::FloatInt | FpStruct::IntFloat)) != 0)
     {
         bool              isInt1st = ((info.flags & FpStruct::IntFloat) != 0);
-        FpStruct::IntKind kind     = info.GetIntFieldKind();
+        FpStruct::IntKind kind     = info.IntFieldKind();
         var_types*        intType  = isInt1st ? type1st : type2nd;
         if (kind < FpStruct::IntKind::GcRef)
         {
@@ -8343,7 +8343,7 @@ void Compiler::GetTypesFromFpStructInRegistersInfo(FpStructInRegistersInfo info,
             static_assert(IntType::Get(2) == TYP_INT, "");
             static_assert(IntType::Get(3) == TYP_LONG, "");
 
-            unsigned sizeShift = isInt1st ? info.GetSizeShift1st() : info.GetSizeShift2nd();
+            unsigned sizeShift = isInt1st ? info.SizeShift1st() : info.SizeShift2nd();
             *intType           = IntType::Get(sizeShift);
         }
         else

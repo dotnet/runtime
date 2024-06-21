@@ -108,7 +108,7 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
             else
             {
                 assert((info.flags & OnlyOne) != 0); // struct containing just one FP real
-                passedSize = info.GetSize1st();
+                passedSize = info.Size1st();
                 offset     = info.offset1st;
             }
 
@@ -129,8 +129,8 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
             regNumber firstReg  = (isFirstFloat ? m_floatRegs : m_intRegs).Dequeue();
             regNumber secondReg = (isSecondFloat ? m_floatRegs : m_intRegs).Dequeue();
 
-            ABIPassingSegment seg1st = ABIPassingSegment::InRegister(firstReg, info.offset1st, info.GetSize1st());
-            ABIPassingSegment seg2nd = ABIPassingSegment::InRegister(secondReg, info.offset2nd, info.GetSize2nd());
+            ABIPassingSegment seg1st = ABIPassingSegment::InRegister(firstReg, info.offset1st, info.Size1st());
+            ABIPassingSegment seg2nd = ABIPassingSegment::InRegister(secondReg, info.offset2nd, info.Size2nd());
             return {2, new (comp, CMK_ABI) ABIPassingSegment[]{seg1st, seg2nd}};
         }
     }

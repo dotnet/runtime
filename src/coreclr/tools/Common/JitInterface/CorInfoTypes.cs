@@ -1303,29 +1303,14 @@ namespace Internal.JitInterface
         public uint offset1st;
         public uint offset2nd;
 
-        public uint GetSizeShift1st()
-        {
-            return (uint)((int)flags >> (int)FpStruct.PosSizeShift1st) & 0b11;
-        }
+        public uint SizeShift1st() { return (uint)((int)flags >> (int)FpStruct.PosSizeShift1st) & 0b11; }
 
-        public uint GetSizeShift2nd()
-        {
-            return (uint)((int)flags >> (int)FpStruct.PosSizeShift2nd) & 0b11;
-        }
+        public uint SizeShift2nd() { return (uint)((int)flags >> (int)FpStruct.PosSizeShift2nd) & 0b11; }
 
-        public uint GetSize1st()
-        {
-            int shift = ((int)flags >> (int)FpStruct.PosSizeShift1st) & 0b11;
-            return 1u << shift;
-        }
+        public uint Size1st() { return 1u << (int)SizeShift1st(); }
+        public uint Size2nd() { return 1u << (int)SizeShift2nd(); }
 
-        public uint GetSize2nd()
-        {
-            int shift = ((int)flags >> (int)FpStruct.PosSizeShift2nd) & 0b11;
-            return 1u << shift;
-        }
-
-        public FpStruct_IntKind GetIntFieldKind()
+        public FpStruct_IntKind IntFieldKind()
         {
             return (FpStruct_IntKind)(((int)flags >> (int)FpStruct.PosIntFieldKind) & 0b11);
         }
@@ -1337,8 +1322,8 @@ namespace Internal.JitInterface
                 ((flags & FpStruct.BothFloat) != 0 ? StructFloatFieldInfoFlags.STRUCT_FLOAT_FIELD_ONLY_TWO : 0) |
                 ((flags & FpStruct.FloatInt) != 0 ? StructFloatFieldInfoFlags.STRUCT_FLOAT_FIELD_FIRST : 0) |
                 ((flags & FpStruct.IntFloat) != 0 ? StructFloatFieldInfoFlags.STRUCT_FLOAT_FIELD_SECOND : 0) |
-                ((GetSizeShift1st() == 3) ? StructFloatFieldInfoFlags.STRUCT_FIRST_FIELD_SIZE_IS8 : 0) |
-                ((GetSizeShift2nd() == 3) ? StructFloatFieldInfoFlags.STRUCT_SECOND_FIELD_SIZE_IS8 : 0);
+                ((SizeShift1st() == 3) ? StructFloatFieldInfoFlags.STRUCT_FIRST_FIELD_SIZE_IS8 : 0) |
+                ((SizeShift2nd() == 3) ? StructFloatFieldInfoFlags.STRUCT_SECOND_FIELD_SIZE_IS8 : 0);
         }
     }
 

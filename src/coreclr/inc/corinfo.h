@@ -398,27 +398,13 @@ struct FpStructInRegistersInfo
     uint32_t offset1st;
     uint32_t offset2nd;
 
-    unsigned GetSizeShift1st() const
-    {
-        return (flags >> FpStruct::PosSizeShift1st) & 0b11;
-    }
+    unsigned SizeShift1st() const { return (flags >> FpStruct::PosSizeShift1st) & 0b11; }
+    unsigned SizeShift2nd() const { return (flags >> FpStruct::PosSizeShift2nd) & 0b11; }
 
-    unsigned GetSizeShift2nd() const
-    {
-        return (flags >> FpStruct::PosSizeShift2nd) & 0b11;
-    }
+    unsigned Size1st() const { return 1u << SizeShift1st(); }
+    unsigned Size2nd() const { return 1u << SizeShift2nd(); }
 
-    unsigned GetSize1st() const
-    {
-        return 1u << GetSizeShift1st();
-    }
-
-    unsigned GetSize2nd() const
-    {
-        return 1u << GetSizeShift2nd();
-    }
-
-    FpStruct::IntKind GetIntFieldKind() const
+    FpStruct::IntKind IntFieldKind() const
     {
         return (FpStruct::IntKind)((flags >> FpStruct::PosIntFieldKind) & 0b11);
     }
@@ -430,8 +416,8 @@ struct FpStructInRegistersInfo
             ((flags & FpStruct::BothFloat) ? STRUCT_FLOAT_FIELD_ONLY_TWO : 0) |
             ((flags & FpStruct::FloatInt) ? STRUCT_FLOAT_FIELD_FIRST : 0) |
             ((flags & FpStruct::IntFloat) ? STRUCT_FLOAT_FIELD_SECOND : 0) |
-            ((GetSizeShift1st() == 3) ? STRUCT_FIRST_FIELD_SIZE_IS8 : 0) |
-            ((GetSizeShift2nd() == 3) ? STRUCT_SECOND_FIELD_SIZE_IS8 : 0));
+            ((SizeShift1st() == 3) ? STRUCT_FIRST_FIELD_SIZE_IS8 : 0) |
+            ((SizeShift2nd() == 3) ? STRUCT_SECOND_FIELD_SIZE_IS8 : 0));
     }
 
     static FpStructInRegistersInfo FromOldFlags(StructFloatFieldInfoFlags flags)

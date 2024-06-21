@@ -113,7 +113,7 @@ public:
         FpStructInRegistersInfo info = m_argLocDescForStructInRegs->m_structFields;
         _ASSERTE(m_argLocDescForStructInRegs->m_cFloatReg == ((info.flags & BothFloat) ? 2 : 1));
         _ASSERTE(m_argLocDescForStructInRegs->m_cGenReg == ((info.flags & (FloatInt | IntFloat)) ? 1 : 0));
-        _ASSERTE(info.offset2nd + info.GetSize2nd() <= fieldBytes);
+        _ASSERTE(info.offset2nd + info.Size2nd() <= fieldBytes);
 
         int floatRegOffset = TransitionBlock::GetOffsetOfFloatArgumentRegisters() +
             m_argLocDescForStructInRegs->m_idxFloatReg * FLOAT_REGISTER_SIZE;
@@ -122,13 +122,13 @@ public:
         if (info.flags & (OnlyOne | BothFloat | FloatInt)) // copy first floating field
         {
             void* field = (char*)src + info.offset1st;
-            *floatReg++ = (info.GetSizeShift1st() == 3) ? *(INT64*)field : NanBox | *(INT32*)field;
+            *floatReg++ = (info.SizeShift1st() == 3) ? *(INT64*)field : NanBox | *(INT32*)field;
         }
 
         if (info.flags & (BothFloat | IntFloat)) // copy second floating field
         {
             void* field = (char*)src + info.offset2nd;
-            *floatReg = (info.GetSizeShift2nd() == 3) ? *(INT64*)field : NanBox | *(INT32*)field;
+            *floatReg = (info.SizeShift2nd() == 3) ? *(INT64*)field : NanBox | *(INT32*)field;
         }
 
         if (info.flags & (FloatInt | IntFloat)) // copy integer field
@@ -138,8 +138,8 @@ public:
             INT64* intReg = (INT64*)((char*)m_base + intRegOffset);
 
             void* field = (char*)src + ((info.flags & IntFloat) ? info.offset1st : info.offset2nd);
-            unsigned sizeShift = (info.flags & IntFloat) ? info.GetSizeShift1st() : info.GetSizeShift2nd();
-            bool isSigned = (info.GetIntFieldKind() == FpStruct::IntKind::Signed);
+            unsigned sizeShift = (info.flags & IntFloat) ? info.SizeShift1st() : info.SizeShift2nd();
+            bool isSigned = (info.IntFieldKind() == FpStruct::IntKind::Signed);
             switch ((sizeShift << 1) + isSigned)
             {
                 case (0 << 1) + 1: *intReg = *(INT8* )field; break;

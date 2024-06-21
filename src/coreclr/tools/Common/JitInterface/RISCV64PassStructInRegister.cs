@@ -182,7 +182,7 @@ namespace Internal.JitInterface
                 // duplicate the array element info
                 const int typeSize = (int)PosIntFloat - (int)PosFloatInt;
                 info.flags |= (FpStruct)((int)info.flags << typeSize);
-                info.offset2nd = info.offset1st + info.GetSize1st();
+                info.offset2nd = info.offset1st + info.Size1st();
             }
             return true;
         }
@@ -294,24 +294,24 @@ namespace Internal.JitInterface
                 "there can be only one of (OnlyOne | BothFloat | FloatInt | IntFloat)");
             if (nFields == 2)
             {
-                uint end1st = info.offset1st + info.GetSize1st();
-                uint end2nd = info.offset2nd + info.GetSize2nd();
+                uint end1st = info.offset1st + info.Size1st();
+                uint end2nd = info.offset2nd + info.Size2nd();
                 Debug.Assert(end1st <= info.offset2nd || end2nd <= info.offset1st, "fields must not overlap");
             }
-            Debug.Assert(info.offset1st + info.GetSize1st() <= td.GetElementSize().AsInt);
-            Debug.Assert(info.offset2nd + info.GetSize2nd() <= td.GetElementSize().AsInt);
-            if (info.GetIntFieldKind() != FpStruct_IntKind.Signed)
+            Debug.Assert(info.offset1st + info.Size1st() <= td.GetElementSize().AsInt);
+            Debug.Assert(info.offset2nd + info.Size2nd() <= td.GetElementSize().AsInt);
+            if (info.IntFieldKind() != FpStruct_IntKind.Signed)
             {
                 Debug.Assert((info.flags & (FloatInt | IntFloat)) != 0);
-                if (info.GetIntFieldKind() >= FpStruct_IntKind.GcRef)
+                if (info.IntFieldKind() >= FpStruct_IntKind.GcRef)
                 {
                     Debug.Assert((info.flags & IntFloat) != 0
-                        ? ((info.GetSizeShift1st() == 3) && IsAligned(info.offset1st, TARGET_POINTER_SIZE))
-                        : ((info.GetSizeShift2nd() == 3) && IsAligned(info.offset2nd, TARGET_POINTER_SIZE)));
+                        ? ((info.SizeShift1st() == 3) && IsAligned(info.offset1st, TARGET_POINTER_SIZE))
+                        : ((info.SizeShift2nd() == 3) && IsAligned(info.offset2nd, TARGET_POINTER_SIZE)));
                 }
             }
             if ((info.flags & (OnlyOne | BothFloat)) != 0)
-                Debug.Assert(info.GetIntFieldKind() == FpStruct_IntKind.Signed);
+                Debug.Assert(info.IntFieldKind() == FpStruct_IntKind.Signed);
 
             return info;
         }

@@ -2992,7 +2992,7 @@ static bool HandleInlineArray(int elementTypeIndex, int nElements, FpStructInReg
         // duplicate the array element info
         static const int typeSize = FpStruct::PosIntFloat - FpStruct::PosFloatInt;
         info.flags = FpStruct::Flags(info.flags | (info.flags << typeSize));
-        info.offset2nd = info.offset1st + info.GetSize1st();
+        info.offset2nd = info.offset1st + info.Size1st();
         LOG((LF_JIT, LL_EVERYTHING, "FpStructInRegistersInfo:%*s  * duplicated array element type\n",
             nestingLevel * 4, ""));
     }
@@ -3192,24 +3192,24 @@ static FpStructInRegistersInfo GetRiscV64PassFpStructInRegistersInfoImpl(TypeHan
     assert((floatFlags & (floatFlags - 1)) == 0); // there can be only one of (OnlyOne | BothFloat | FloatInt | IntFloat)
     if (nFields == 2)
     {
-        unsigned end1st = info.offset1st + info.GetSize1st();
-        unsigned end2nd = info.offset2nd + info.GetSize2nd();
+        unsigned end1st = info.offset1st + info.Size1st();
+        unsigned end2nd = info.offset2nd + info.Size2nd();
         assert(end1st <= info.offset2nd || end2nd <= info.offset1st); // fields must not overlap
     }
-    assert(info.offset1st + info.GetSize1st() <= th.GetSize());
-    assert(info.offset2nd + info.GetSize2nd() <= th.GetSize());
-    if (info.GetIntFieldKind() != FpStruct::IntKind::Signed)
+    assert(info.offset1st + info.Size1st() <= th.GetSize());
+    assert(info.offset2nd + info.Size2nd() <= th.GetSize());
+    if (info.IntFieldKind() != FpStruct::IntKind::Signed)
     {
         assert(info.flags & (FloatInt | IntFloat));
-        if (info.GetIntFieldKind() >= FpStruct::IntKind::GcRef)
+        if (info.IntFieldKind() >= FpStruct::IntKind::GcRef)
         {
             assert((info.flags & IntFloat) != 0
-                ? ((info.GetSizeShift1st() == 3) && IS_ALIGNED(info.offset1st, TARGET_POINTER_SIZE))
-                : ((info.GetSizeShift2nd() == 3) && IS_ALIGNED(info.offset2nd, TARGET_POINTER_SIZE)));
+                ? ((info.SizeShift1st() == 3) && IS_ALIGNED(info.offset1st, TARGET_POINTER_SIZE))
+                : ((info.SizeShift2nd() == 3) && IS_ALIGNED(info.offset2nd, TARGET_POINTER_SIZE)));
         }
     }
     if (info.flags & (OnlyOne | BothFloat))
-        assert(info.GetIntFieldKind() == FpStruct::IntKind::Signed);
+        assert(info.IntFieldKind() == FpStruct::IntKind::Signed);
 
     static const char* intKindNames[] = { "Signed", "Unsigned", "GcRef", "GcByRef" };
     LOG((LF_JIT, LL_EVERYTHING, "FpStructInRegistersInfo: "
@@ -3220,9 +3220,9 @@ static FpStructInRegistersInfo GetRiscV64PassFpStructInRegistersInfoImpl(TypeHan
         : (info.flags & BothFloat) ? "BothFloat"
         : (info.flags & FloatInt) ? "FloatInt"
         : "IntFloat" ),
-        info.GetSize1st(), info.GetSize2nd(),
+        info.Size1st(), info.Size2nd(),
         info.offset1st, info.offset2nd,
-        intKindNames[(int)info.GetIntFieldKind()]
+        intKindNames[(int)info.IntFieldKind()]
     ));
     return info;
 }
