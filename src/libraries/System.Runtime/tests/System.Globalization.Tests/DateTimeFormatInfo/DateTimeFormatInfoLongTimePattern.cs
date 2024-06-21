@@ -288,6 +288,10 @@ namespace System.Globalization.Tests
         public void LongTimePattern_VerifyTimePatterns()
         {
             Assert.All(CultureInfo.GetCultures(CultureTypes.AllCultures), culture => {
+                if (DateTimeFormatInfoData.HasBadIcuTimePatterns(culture))
+                {
+                    return;
+                }
                 var pattern = culture.DateTimeFormat.LongTimePattern;
                 bool use24Hour = false;
                 bool use12Hour = false;

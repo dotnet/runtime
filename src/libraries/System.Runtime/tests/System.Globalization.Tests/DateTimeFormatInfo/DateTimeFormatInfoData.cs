@@ -58,5 +58,19 @@ namespace System.Globalization.Tests
                 cultureInfo.Name,
                 cultureInfo.Calendar.GetType().Name));
         }
+
+        // These cultures have bad ICU time patterns below the corresponding versions
+        // They are excluded from the VerifyTimePatterns tests
+        public static readonly Dictionary<string, Version> _badIcuTimePatterns = new Dictionary<string, Version>()
+        {
+            { "mi", new Version(65, 0) },
+            { "mi-NZ", new Version(65, 0) },
+        };
+        public static bool HasBadIcuTimePatterns(CultureInfo culture)
+        {
+            return PlatformDetection.IsIcuGlobalizationAndNotHybridOnBrowser
+                && _badIcuTimePatterns.TryGetValue(culture.Name, out var version)
+                && PlatformDetection.ICUVersion < version;
+        }
     }
 }

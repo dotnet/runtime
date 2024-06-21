@@ -259,6 +259,10 @@ namespace System.Globalization.Tests
         public void ShortTimePattern_VerifyTimePatterns()
         {
             Assert.All(CultureInfo.GetCultures(CultureTypes.AllCultures), culture => {
+                if (DateTimeFormatInfoData.HasBadIcuTimePatterns(culture))
+                {
+                    return;
+                }
                 var pattern = culture.DateTimeFormat.ShortTimePattern;
                 bool use24Hour = false;
                 bool use12Hour = false;
