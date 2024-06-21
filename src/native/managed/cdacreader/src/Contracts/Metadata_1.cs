@@ -12,7 +12,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 // may point to garbage. So this struct represents a MethodTable that we don't necessarily
 // trust to be valid.
 // see Metadata_1.ValidateMethodTablePointer
-// This doesn't need as many properties as MethodTable because we dont' want to be operating on
+// This doesn't need as many properties as MethodTable because we don't want to be operating on
 // an UntrustedMethodTable for too long
 internal struct UntrustedMethodTable_1
 {
@@ -339,7 +339,7 @@ internal partial struct Metadata_1 : IMetadata
     public bool IsFreeObjectMethodTable(MethodTableHandle methodTableHandle) => FreeObjectMethodTablePointer == methodTableHandle.Address;
 
     public bool IsString(MethodTableHandle methodTableHandle) => _methodTables[methodTableHandle.Address].Flags.IsString;
-    public bool ContainsPointers(MethodTableHandle methodTableHandle) => _methodTables[methodTableHandle.Address].Flags.ContainsPointers;
+    public bool ContainsGCPointers(MethodTableHandle methodTableHandle) => _methodTables[methodTableHandle.Address].Flags.ContainsGCPointers;
 
     public uint GetTypeDefToken(MethodTableHandle methodTableHandle)
     {
