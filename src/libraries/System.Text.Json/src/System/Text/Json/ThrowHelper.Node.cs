@@ -70,5 +70,17 @@ namespace System.Text.Json
         {
             return new NotSupportedException(SR.CollectionIsReadOnly);
         }
+
+        [DoesNotReturn]
+        public static void ThrowInvalidOperationException_NodeUnableToConvert(Type sourceType, Type destinationType)
+        {
+            throw new InvalidOperationException(SR.Format(SR.NodeUnableToConvert, sourceType, destinationType));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowInvalidOperationException_NodeUnableToConvertElement(JsonValueKind valueKind, Type destinationType)
+        {
+            throw new InvalidOperationException(SR.Format(SR.NodeUnableToConvertElement, valueKind, destinationType));
+        }
     }
 }

@@ -5873,6 +5873,13 @@ void Thread::ApcActivationCallback(ULONG_PTR Parameter)
     ActivationReason reason = (ActivationReason)pData->Parameter;
     PCONTEXT pContext = pData->ContextRecord;
 
+#if defined(TARGET_ARM64)
+    // Windows incorrectly set the CONTEXT_UNWOUND_TO_CALL in the flags of the context it passes to us.
+    // That results in incorrect compensation of PC at some places and sometimes incorrect unwinding 
+    // and GC holes due to that.
+    pContext->ContextFlags &= ~CONTEXT_UNWOUND_TO_CALL;
+#endif // TARGET_ARM64
+
     if (!CheckActivationSafePoint(GetIP(pContext)))
     {
         return;
