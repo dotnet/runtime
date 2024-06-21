@@ -283,7 +283,10 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 ServiceCallSite[] callSites;
 
                 // If item type is not generic we can safely use descriptor cache
+                // Special case for KeyedService.AnyKey, we don't want to check the cache because a KeyedService.AnyKey registration
+                // will "hide" all the other service registration
                 if (!itemType.IsConstructedGenericType &&
+                    !KeyedService.AnyKey.Equals(cacheKey.ServiceKey) &&
                     _descriptorLookup.TryGetValue(cacheKey, out ServiceDescriptorCacheItem descriptors))
                 {
                     callSites = new ServiceCallSite[descriptors.Count];
@@ -694,7 +697,11 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 return true;
 
             if (key1 != null && key2 != null)
-                return key1.Equals(KeyedService.AnyKey) || key1.Equals(key2);
+            {
+                return key1.Equals(key2)
+                    || key1.Equals(KeyedService.AnyKey)
+                    || key2.Equals(KeyedService.AnyKey);
+            }
 
             return false;
         }
