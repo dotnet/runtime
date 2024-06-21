@@ -61,9 +61,7 @@ internal partial struct Metadata_1
         GenericsMask = 0x00000030,
         GenericsMask_NonGeneric = 0x00000000,   // no instantiation
 
-        StringArrayValues =
-            GenericsMask_NonGeneric |
-            0,
+        StringArrayValues = GenericsMask_NonGeneric,
     }
 
     [Flags]
@@ -83,20 +81,13 @@ internal partial struct Metadata_1
         DynamicStatics = 0x0002,
     }
 
+    // Encapsulates the MethodTable flags v1 uses
     internal struct MethodTableFlags
     {
-        public uint DwFlags { get; init; }
-        public uint DwFlags2 { get; init; }
-        public uint BaseSize { get; init; }
+        public WFLAGS_LOW GetFlag(WFLAGS_LOW mask) { ... }
+        public WFLAGS_HIGH GetFlag(WFLAGS_HIGH mask) { ... }
 
-        private WFLAGS_HIGH FlagsHigh => (WFLAGS_HIGH)DwFlags;
-        private WFLAGS_LOW FlagsLow => (WFLAGS_LOW)DwFlags;
-        public int GetTypeDefRid() => (int)(DwFlags2 >> Constants.MethodTableDwFlags2TypeDefRidShift);
-
-        public WFLAGS_LOW GetFlag(WFLAGS_LOW mask) => throw new NotImplementedException("TODO");
-        public WFLAGS_HIGH GetFlag(WFLAGS_HIGH mask) => FlagsHigh & mask;
-
-        public WFLAGS2_ENUM GetFlag(WFLAGS2_ENUM mask) => (WFLAGS2_ENUM)DwFlags2 & mask;
+        public WFLAGS2_ENUM GetFlag(WFLAGS2_ENUM mask) { ... }
         public bool IsInterface => GetFlag(WFLAGS_HIGH.Category_Mask) == WFLAGS_HIGH.Category_Interface;
         public bool IsString => HasComponentSize && !IsArray && RawGetComponentSize() == 2;
 
@@ -107,7 +98,7 @@ internal partial struct Metadata_1
         public bool IsStringOrArray => HasComponentSize;
         public ushort RawGetComponentSize() => (ushort)(DwFlags >> 16);
 
-        public bool TestFlagWithMask(WFLAGS_LOW mask, WFLAGS_LOW flag)
+        private bool TestFlagWithMask(WFLAGS_LOW mask, WFLAGS_LOW flag)
         {
             if (IsStringOrArray)
             {
@@ -119,19 +110,9 @@ internal partial struct Metadata_1
             }
         }
 
-        public bool TestFlagWithMask(WFLAGS2_ENUM mask, WFLAGS2_ENUM flag)
-        {
-            return ((WFLAGS2_ENUM)DwFlags2 & mask) == flag;
-        }
-
         public bool HasInstantiation => !TestFlagWithMask(WFLAGS_LOW.GenericsMask, WFLAGS_LOW.GenericsMask_NonGeneric);
 
-        public bool ContainsPointers => GetFlag(WFLAGS_HIGH.ContainsPointers) != 0;
-    }
-
-    internal static class Constants
-    {
-        internal const int MethodTableDwFlags2TypeDefRidShift = 8;
+        public bool ContainsGCPointers => GetFlag(WFLAGS_HIGH.ContainsGCPointers) != 0;
     }
 
     [Flags]
@@ -143,7 +124,7 @@ internal partial struct Metadata_1
     }
 ```
 
-Internally the contract has structs `MethodTable_1` and `EEClass_1`
+Internally the contract has a `MethodTable_1` struct that depends on the `MethodTable` data descriptor
 
 ```csharp
 internal struct MethodTable_1
@@ -169,28 +150,15 @@ internal struct MethodTable_1
         ParentMethodTable = data.ParentMethodTable;
     }
 }
-
-internal struct EEClass_1
-{
-    internal TargetPointer MethodTable { get; }
-    internal ushort NumMethods { get; }
-    internal ushort NumNonVirtualSlots { get; }
-    internal uint TypeDefTypeAttributes { get; }
-    internal EEClass_1(Data.EEClass eeClassData)
-    {
-        MethodTable = eeClassData.MethodTable;
-        NumMethods = eeClassData.NumMethods;
-        NumNonVirtualSlots = eeClassData.NumNonVirtualSlots;
-        TypeDefTypeAttributes = eeClassData.DwAttrClass;
-    }
-}
 ```
+
+The contract depends on the global pointer value `FreeObjectMethodTablePointer`.
+The contract additionally depends on the `EEClass` data descriptor.
 
 ```csharp
     private readonly Dictionary<TargetPointer, MethodTable_1> _methodTables;
-    private readonly TargetPointer _freeObjectMethodTablePointer;
 
-    internal TargetPointer FreeObjectMethodTablePointer => _freeObjectMethodTablePointer;
+    internal TargetPointer FreeObjectMethodTablePointer {get; }
 
     public MethodTableHandle GetMethodTableHandle(TargetPointer methodTablePointer)
     {
@@ -206,34 +174,19 @@ internal struct EEClass_1
 
     public uint GetComponentSize(MethodTableHandle methodTableHandle) => GetComponentSize(_methodTables[methodTableHandle.Address]);
 
-    private EEClass_1 GetClassData(MethodTableHandle methodTableHandle)
+    private Data.EEClass GetClassData(MethodTableHandle methodTableHandle)
     {
-        TargetPointer clsPtr = GetClass(methodTableHandle);
-        // Check if we cached it already
-        if (_target.ProcessedData.TryGet(clsPtr, out Data.EEClass? eeClassData))
-        {
-            return new EEClass_1(eeClassData);
-        }
-        eeClassData = _target.ProcessedData.GetOrAdd<Data.EEClass>(clsPtr);
-        return new EEClass_1(eeClassData);
+        ...
     }
 
     private TargetPointer GetClass(MethodTableHandle methodTableHandle)
     {
-        MethodTable_1 methodTable = _methodTables[methodTableHandle.Address];
-        switch (GetEEClassOrCanonMTBits(methodTable.EEClassOrCanonMT))
-        {
-            case EEClassOrCanonMTBits.EEClass:
-                return methodTable.EEClassOrCanonMT;
-            case EEClassOrCanonMTBits.CanonMT:
-                TargetPointer canonMTPtr = new TargetPointer((ulong)methodTable.EEClassOrCanonMT & ~(ulong)Metadata_1.EEClassOrCanonMTBits.Mask);
-                MethodTableHandle canonMTHandle = GetMethodTableHandle(canonMTPtr);
-                MethodTable_1 canonMT = _methodTables[canonMTHandle.Address];
-                return canonMT.EEClassOrCanonMT; // canonical method table EEClassOrCanonMT is always EEClass
-            default:
-                throw new InvalidOperationException();
-        }
+        ... // if the MethodTable stores a pointer to the EEClass, return it
+            // otherwise the MethodTable stores a pointer to the canonical MethodTable
+            // in that case, return the canonical MethodTable's EEClass.
+            // Canonical MethodTables always store an EEClass pointer.
     }
+
     public TargetPointer GetCanonicalMethodTable(MethodTableHandle methodTableHandle) => GetClassData(methodTableHandle).MethodTable;
 
     public TargetPointer GetModule(MethodTableHandle methodTableHandle) => _methodTables[methodTableHandle.Address].Module;
@@ -280,7 +233,7 @@ internal struct EEClass_1
 
     public uint GetTypeDefTypeAttributes(MethodTableHandle methodTableHandle)
     {
-        return GetClassData(methodTableHandle).TypeDefTypeAttributes;
+        return GetClassData(methodTableHandle).AttrClass;
     }
 
     public bool IsDynamicStatics(MethodTableHandle methodTableHandle) => _methodTables[methodTableHandle.Address].Flags.GetFlag(WFLAGS2_ENUM.DynamicStatics) != 0;
