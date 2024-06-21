@@ -745,7 +745,7 @@ enum _COR_PRF_HANDLE_TYPE
 
 typedef void **ObjectHandleID;
 
-typedef BOOL ( *object_callback )( 
+typedef BOOL ( *ObjectCallback )( 
     ObjectID object,
     void *callbackState);
 
@@ -24494,7 +24494,7 @@ EXTERN_C const IID IID_ICorProfilerInfo15;
     {
     public:
         virtual HRESULT STDMETHODCALLTYPE EnumerateGCHeapObjects( 
-            /* [in] */ object_callback callback,
+            /* [in] */ ObjectCallback callback,
             /* [in] */ void *callbackState) = 0;
         
     };
@@ -25322,7 +25322,7 @@ EXTERN_C const IID IID_ICorProfilerInfo15;
         DECLSPEC_XFGVIRT(ICorProfilerInfo15, EnumerateGCHeapObjects)
         HRESULT ( STDMETHODCALLTYPE *EnumerateGCHeapObjects )( 
             ICorProfilerInfo15 * This,
-            /* [in] */ object_callback callback,
+            /* [in] */ ObjectCallback callback,
             /* [in] */ void *callbackState);
         
         END_INTERFACE

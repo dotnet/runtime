@@ -7619,7 +7619,7 @@ HRESULT ProfToEEInterfaceImpl::GetNonGCHeapBounds(ULONG cObjectRanges,
     return S_OK;
 }
 
-HRESULT ProfToEEInterfaceImpl::EnumerateGCHeapObjects(object_callback callback, void* callbackState)
+HRESULT ProfToEEInterfaceImpl::EnumerateGCHeapObjects(ObjectCallback callback, void* callbackState)
 {
     CONTRACTL
     {

@@ -745,7 +745,7 @@ public:
     // begin ICorProfilerInfo15
 
     COM_METHOD EnumerateGCHeapObjects(
-        object_callback callback,
+        ObjectCallback callback,
         void* callbackState);
 
     // end ICorProfilerInfo15
