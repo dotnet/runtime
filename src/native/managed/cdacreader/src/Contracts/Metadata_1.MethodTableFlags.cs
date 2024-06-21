@@ -59,7 +59,7 @@ internal partial struct Metadata_1
         public bool IsStringOrArray => HasComponentSize;
         public ushort RawGetComponentSize() => (ushort)(DwFlags >> 16);
 
-        public bool TestFlagWithMask(WFLAGS_LOW mask, WFLAGS_LOW flag)
+        private bool TestFlagWithMask(WFLAGS_LOW mask, WFLAGS_LOW flag)
         {
             if (IsStringOrArray)
             {
@@ -71,7 +71,7 @@ internal partial struct Metadata_1
             }
         }
 
-        public bool TestFlagWithMask(WFLAGS2_ENUM mask, WFLAGS2_ENUM flag)
+        private bool TestFlagWithMask(WFLAGS2_ENUM mask, WFLAGS2_ENUM flag)
         {
             return ((WFLAGS2_ENUM)DwFlags2 & mask) == flag;
         }
