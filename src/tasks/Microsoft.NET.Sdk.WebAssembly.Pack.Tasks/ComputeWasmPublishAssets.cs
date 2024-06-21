@@ -331,7 +331,7 @@ public class ComputeWasmPublishAssets : Task
         }
     }
 
-    private ITaskItem CreatePromotedAsset(ITaskItem asset)
+    private TaskItem CreatePromotedAsset(ITaskItem asset)
     {
         string newAssetItemSpec = asset.ItemSpec;
         string newAssetRelativePath = asset.GetMetadata("RelativePath");
@@ -459,7 +459,7 @@ public class ComputeWasmPublishAssets : Task
             {
                 assetsToUpdate.Add(satelliteAssembly.ItemSpec, satelliteAssembly);
                 var culture = satelliteAssembly.GetMetadata("AssetTraitValue");
-                var fileName = Path.GetFileName(satelliteAssembly.GetMetadata("RelativePath"));
+                var fileName = Path.GetFileName(satelliteAssembly.ItemSpec);
                 if (IsWebCilEnabled)
                     fileName = Path.ChangeExtension(fileName, ".dll");
 
@@ -511,13 +511,12 @@ public class ComputeWasmPublishAssets : Task
                     break;
                 default:
                     // Satellite assembliess and compressed assets
-                    var dependentAsset = new TaskItem(asset);
-                    ApplyPublishProperties(dependentAsset);
-                    UpdateRelatedAssetProperty(asset, dependentAsset, updatedAssetsMap);
+                    TaskItem newAsset = CreatePromotedAsset(asset);
+                    UpdateRelatedAssetProperty(asset, newAsset, updatedAssetsMap);
                     Log.LogMessage(MessageImportance.Low, "Promoting asset '{0}' to Publish asset.", asset.ItemSpec);
 
-                    promotedAssets.Add(dependentAsset);
-                    updatedAssetsMap.Add(asset.ItemSpec, dependentAsset);
+                    promotedAssets.Add(newAsset);
+                    updatedAssetsMap.Add(asset.ItemSpec, newAsset);
                     break;
             }
         }

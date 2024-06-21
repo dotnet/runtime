@@ -329,13 +329,13 @@ Copyright (c) .NET Foundation. All rights reserved.
         Condition="'%(StaticWebAsset.AssetTraitName)' == 'JSModule' and '%(StaticWebAsset.AssetTraitValue)' == 'JSLibraryModule' and '%(AssetKind)' != 'Publish'" />
     </ItemGroup>
 
-    <ComputeStaticWebAssetsTargetPaths
+    <FilterStaticWebAssetEndpoints Condition="'@(_WasmJsModuleCandidatesForBuild)' != ''"
+      Endpoints="@(StaticWebAssetEndpoint)"
       Assets="@(_WasmJsModuleCandidatesForBuild)"
-      PathPrefix=""
-      UseAlternatePathDirectorySeparator="true"
+      Filters=""
     >
-      <Output TaskParameter="AssetsWithTargetPath" ItemName="_WasmJsModuleCandidatesForBuildWithTargetPath" />
-    </ComputeStaticWebAssetsTargetPaths>
+      <Output TaskParameter="FilteredEndpoints" ItemName="_WasmJsModuleCandidatesForBuildEndpoint" />
+    </FilterStaticWebAssetEndpoints>
 
     <DefineStaticWebAssetEndpoints
       CandidateAssets="@(WasmStaticWebAsset)"
@@ -346,8 +346,8 @@ Copyright (c) .NET Foundation. All rights reserved.
     </DefineStaticWebAssetEndpoints>
 
     <ResolveFingerprintedStaticWebAssetEndpointsForAssets
-      CandidateEndpoints="@(WasmStaticWebAssetEndpoint)"
-      CandidateAssets="@(WasmStaticWebAsset)"
+      CandidateEndpoints="@(WasmStaticWebAssetEndpoint);@(_WasmJsModuleCandidatesForBuildEndpoint)"
+      CandidateAssets="@(WasmStaticWebAsset);@(_WasmJsModuleCandidatesForBuild)"
       IsStandalone="$(StaticWebAssetStandaloneHosting)"
     >
       <Output TaskParameter="ResolvedEndpoints" ItemName="_WasmResolvedEndpoints" />
@@ -355,7 +355,7 @@ Copyright (c) .NET Foundation. All rights reserved.
 
     <GenerateWasmBootJson
       AssemblyPath="@(IntermediateAssembly)"
-      Resources="@(WasmStaticWebAsset);@(_WasmJsModuleCandidatesForBuildWithTargetPath)"
+      Resources="@(WasmStaticWebAsset);@(_WasmJsModuleCandidatesForBuild)"
       Endpoints="@(_WasmResolvedEndpoints)"
       DebugBuild="true"
       DebugLevel="$(WasmDebugLevel)"
@@ -626,22 +626,19 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmJsModuleCandidatesForPublish
         Include="@(StaticWebAsset)"
         Condition="'%(StaticWebAsset.AssetTraitName)' == 'JSModule' and '%(StaticWebAsset.AssetTraitValue)' == 'JSLibraryModule' and '%(AssetKind)' != 'Build'" />
-
-      <!-- We remove the extensions since they are added to the list of static web assets but we need to compute the target path for them -->
-      <_WasmPublishAsset Remove="@(_BlazorExtensionsCandidatesForPublish)" />
     </ItemGroup>
 
-    <ComputeStaticWebAssetsTargetPaths
-      Assets="@(_WasmJsModuleCandidatesForPublish);@(_BlazorExtensionsCandidatesForPublish)"
-      PathPrefix=""
-      UseAlternatePathDirectorySeparator="true"
+    <FilterStaticWebAssetEndpoints Condition="'@(_WasmJsModuleCandidatesForPublish)' != ''"
+      Endpoints="@(StaticWebAssetEndpoint)"
+      Assets="@(_WasmJsModuleCandidatesForPublish)"
+      Filters=""
     >
-      <Output TaskParameter="AssetsWithTargetPath" ItemName="_WasmCandidatesForPublishWithTargetPath" />
-    </ComputeStaticWebAssetsTargetPaths>
+      <Output TaskParameter="FilteredEndpoints" ItemName="_WasmJsModuleCandidatesForPublishEndpoint" />
+    </FilterStaticWebAssetEndpoints>
 
     <ResolveFingerprintedStaticWebAssetEndpointsForAssets
-      CandidateEndpoints="@(StaticWebAssetEndpoint)"
-      CandidateAssets="@(_WasmPublishAsset);@(_WasmCandidatesForPublishWithTargetPath)"
+      CandidateEndpoints="@(StaticWebAssetEndpoint);@(_WasmJsModuleCandidatesForPublishEndpoint)"
+      CandidateAssets="@(_WasmPublishAsset);@(_WasmJsModuleCandidatesForPublish)"
       IsStandalone="$(StaticWebAssetStandaloneHosting)"
     >
       <Output TaskParameter="ResolvedEndpoints" ItemName="_WasmResolvedEndpointsForPublish" />
@@ -649,7 +646,7 @@ Copyright (c) .NET Foundation. All rights reserved.
 
     <GenerateWasmBootJson
       AssemblyPath="@(IntermediateAssembly)"
-      Resources="@(_WasmPublishAsset);@(_WasmCandidatesForPublishWithTargetPath)"
+      Resources="@(_WasmPublishAsset);@(_WasmJsModuleCandidatesForPublish)"
       Endpoints="@(_WasmResolvedEndpointsForPublish)"
       DebugBuild="false"
       DebugLevel="$(WasmDebugLevel)"

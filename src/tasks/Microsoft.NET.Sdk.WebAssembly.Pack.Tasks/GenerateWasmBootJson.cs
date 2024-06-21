@@ -273,7 +273,7 @@ public class GenerateWasmBootJson : Task
                 {
                     Log.LogMessage(MessageImportance.Low, "Candidate '{0}' is defined as a library initializer resource.", resource.ItemSpec);
 
-                    var targetPath = resource.GetMetadata("TargetPath");
+                    var targetPath = endpointByAsset[resource.ItemSpec].ItemSpec;
                     Debug.Assert(!string.IsNullOrEmpty(targetPath), "Target path for '{0}' must exist.", resource.ItemSpec);
 
                     resourceList = resourceData.libraryInitializers ??= new ResourceHashesByNameDictionary();
