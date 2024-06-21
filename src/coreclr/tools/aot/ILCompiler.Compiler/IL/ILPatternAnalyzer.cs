@@ -14,14 +14,10 @@ namespace ILCompiler
         {
             LdToken = 1,
             TypeOf,
-            PushedOne,
 
             TypeOf_LdToken,
             TypeOf_TypeOf,
             TypeOf_PushedOne,
-
-            PushedOne_LdToken,
-            PushedOne_TypeOf,
 
             TypeEqualityCheck,
 
@@ -39,12 +35,12 @@ namespace ILCompiler
         private int _token1;
         private int _token2;
 
-        public readonly int Token1 => IsTypeEqualityCheck ? _token1 : throw new UnreachableException();
+        public readonly int Token1 => IsTypeEqualityBranch ? _token1 : throw new UnreachableException();
         public readonly int Token2 => IsTwoTokens ? _token2 : throw new UnreachableException();
 
         public readonly bool IsDefault => _state == default;
-        public readonly bool IsTypeEqualityCheCCCC => _state is State.TypeEqualityCheck;
-        public readonly bool IsTypeEqualityCheck => _state is State.Branch;
+        public readonly bool IsTypeEqualityCheck => _state is State.TypeEqualityCheck;
+        public readonly bool IsTypeEqualityBranch => _state is State.Branch;
         public readonly bool IsTwoTokens => (_flags & Flags.TwoTokens) != 0;
         public readonly bool IsInequality => (_flags & Flags.Inequality) != 0;
 
@@ -55,8 +51,6 @@ namespace ILCompiler
                 case 0:
                     if (opcode == ILOpcode.ldtoken)
                         (_state, _token1) = (State.LdToken, reader.PeekILToken());
-                    else if (IsArgumentOrLocalLoad(opcode))
-                        _state = State.PushedOne;
                     return;
                 case State.LdToken:
                     if (IsTypeGetTypeFromHandle(opcode, reader, methodIL))
@@ -69,16 +63,10 @@ namespace ILCompiler
                         (_state, _token2) = (State.TypeOf_LdToken, reader.PeekILToken());
                     else if (IsArgumentOrLocalLoad(opcode))
                         _state = State.TypeOf_PushedOne;
-                    else
-                        break;
-                    return;
-                case State.PushedOne:
-                    if (opcode == ILOpcode.ldtoken)
-                        (_state, _token1) = (State.PushedOne_LdToken, reader.PeekILToken());
-                    else if (IsObjectGetType(opcode, reader, methodIL))
-                    {
-                        // Nothing, state stays PushedOne
-                    }
+                    else if (IsTypeEquals(opcode, reader, methodIL))
+                        _state = State.TypeEqualityCheck;
+                    else if (IsTypeInequals(opcode, reader, methodIL))
+                        (_state, _flags) = (State.TypeEqualityCheck, _flags | Flags.Inequality);
                     else
                         break;
                     return;
@@ -98,7 +86,7 @@ namespace ILCompiler
                     else if (IsTypeInequals(opcode, reader, methodIL))
                         (_state, _flags) = (State.TypeEqualityCheck, _flags | Flags.Inequality);
                     else
-                        goto case State.PushedOne;
+                        break;
                     return;
                 case State.TypeOf_TypeOf:
                     if (IsTypeEquals(opcode, reader, methodIL))
@@ -107,20 +95,6 @@ namespace ILCompiler
                         (_state, _flags) = (State.TypeEqualityCheck, _flags | Flags.TwoTokens | Flags.Inequality);
                     else
                         goto case State.TypeOf;
-                    return;
-                case State.PushedOne_TypeOf:
-                    if (IsTypeEquals(opcode, reader, methodIL))
-                        _state = State.TypeEqualityCheck;
-                    else if (IsTypeInequals(opcode, reader, methodIL))
-                        (_state, _flags) = (State.TypeEqualityCheck, _flags | Flags.Inequality);
-                    else
-                        goto case State.TypeOf;
-                    return;
-                case State.PushedOne_LdToken:
-                    if (IsTypeGetTypeFromHandle(opcode, reader, methodIL))
-                        _state = State.PushedOne_TypeOf;
-                    else
-                        break;
                     return;
                 case State.TypeEqualityCheck:
                     if (opcode is ILOpcode.brfalse or ILOpcode.brfalse_s or ILOpcode.brtrue or ILOpcode.brtrue_s)
@@ -148,7 +122,7 @@ namespace ILCompiler
                 && method.OwningType is MetadataType { Name: "Type", Namespace: "System" };
 
             static bool IsObjectGetType(ILOpcode opcode, in ILReader reader, MethodIL methodIL)
-                => opcode == ILOpcode.call && methodIL.GetObject(reader.PeekILToken()) is MethodDesc method
+                => opcode is ILOpcode.call or ILOpcode.callvirt && methodIL.GetObject(reader.PeekILToken()) is MethodDesc method
                 && method.IsIntrinsic && method.Name is "GetType" && method.OwningType.IsObject;
 
             static bool IsArgumentOrLocalLoad(ILOpcode opcode)

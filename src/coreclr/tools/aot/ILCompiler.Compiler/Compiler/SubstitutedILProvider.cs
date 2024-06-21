@@ -874,7 +874,7 @@ namespace ILCompiler
         private bool TryExpandTypeEquality(in TypeEqualityPatternAnalyzer analyzer, MethodIL methodIL, out int constant)
         {
             constant = 0;
-            if (!analyzer.IsTypeEqualityCheck)
+            if (!analyzer.IsTypeEqualityBranch)
                 return false;
 
             if (analyzer.IsTwoTokens)
