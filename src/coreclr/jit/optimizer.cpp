@@ -5925,9 +5925,11 @@ void Compiler::optRemoveRedundantZeroInits()
             // See if this block is a cycle entry
             //
             bool stop = false;
-            for (BasicBlock* const pred : block->PredBlocks())
+            for (FlowEdge* predEdge = BlockPredsWithEH(block); predEdge != nullptr;
+                 predEdge           = predEdge->getNextPredEdge())
             {
-                if (m_dfsTree->IsAncestor(block, pred))
+                BasicBlock* const predBlock = predEdge->getSourceBlock();
+                if (m_dfsTree->IsAncestor(block, predBlock))
                 {
                     JITDUMP(FMT_BB " is part of a cycle, stopping the block scan\n", block->bbNum);
                     stop = true;
