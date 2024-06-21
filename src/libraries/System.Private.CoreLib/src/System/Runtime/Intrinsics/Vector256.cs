@@ -2127,36 +2127,184 @@ namespace System.Runtime.Intrinsics
             }
         }
 
-        /// <summary>Computes the maximum of two vectors on a per-element basis.</summary>
-        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
-        /// <param name="left">The vector to compare with <paramref name="right" />.</param>
-        /// <param name="right">The vector to compare with <paramref name="left" />.</param>
-        /// <returns>A vector whose elements are the maximum of the corresponding elements in <paramref name="left" /> and <paramref name="right" />.</returns>
-        /// <exception cref="NotSupportedException">The type of <paramref name="left" /> and <paramref name="right" /> (<typeparamref name="T" />) is not supported.</exception>
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.Max(TSelf, TSelf)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> Max<T>(Vector256<T> left, Vector256<T> right)
         {
-            return Create(
-                Vector128.Max(left._lower, right._lower),
-                Vector128.Max(left._upper, right._upper)
-            );
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.Max<Vector256<T>, T>(left, right);
+            }
+            else
+            {
+                return Create(
+                    Vector128.Max(left._lower, right._lower),
+                    Vector128.Max(left._upper, right._upper)
+                );
+            }
         }
 
-        /// <summary>Computes the minimum of two vectors on a per-element basis.</summary>
-        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
-        /// <param name="left">The vector to compare with <paramref name="right" />.</param>
-        /// <param name="right">The vector to compare with <paramref name="left" />.</param>
-        /// <returns>A vector whose elements are the minimum of the corresponding elements in <paramref name="left" /> and <paramref name="right" />.</returns>
-        /// <exception cref="NotSupportedException">The type of <paramref name="left" /> and <paramref name="right" /> (<typeparamref name="T" />) is not supported.</exception>
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.MaxMagnitude(TSelf, TSelf)" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<T> MaxMagnitude<T>(Vector256<T> left, Vector256<T> right)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.MaxMagnitude<Vector256<T>, T>(left, right);
+            }
+            else
+            {
+                return Create(
+                    Vector128.MaxMagnitude(left._lower, right._lower),
+                    Vector128.MaxMagnitude(left._upper, right._upper)
+                );
+            }
+        }
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.MaxMagnitudeNumber(TSelf, TSelf)" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<T> MaxMagnitudeNumber<T>(Vector256<T> left, Vector256<T> right)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.MaxMagnitudeNumber<Vector256<T>, T>(left, right);
+            }
+            else
+            {
+                return Create(
+                    Vector128.MaxMagnitudeNumber(left._lower, right._lower),
+                    Vector128.MaxMagnitudeNumber(left._upper, right._upper)
+                );
+            }
+        }
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.MaxNative(TSelf, TSelf)" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<T> MaxNative<T>(Vector256<T> left, Vector256<T> right)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return ConditionalSelect(GreaterThan(left, right), left, right);
+            }
+            else
+            {
+                return Create(
+                    Vector128.MaxNative(left._lower, right._lower),
+                    Vector128.MaxNative(left._upper, right._upper)
+                );
+            }
+        }
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.MaxNumber(TSelf, TSelf)" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<T> MaxNumber<T>(Vector256<T> left, Vector256<T> right)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.MaxNumber<Vector256<T>, T>(left, right);
+            }
+            else
+            {
+                return Create(
+                    Vector128.MaxNumber(left._lower, right._lower),
+                    Vector128.MaxNumber(left._upper, right._upper)
+                );
+            }
+        }
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.Min(TSelf, TSelf)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> Min<T>(Vector256<T> left, Vector256<T> right)
         {
-            return Create(
-                Vector128.Min(left._lower, right._lower),
-                Vector128.Min(left._upper, right._upper)
-            );
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.Min<Vector256<T>, T>(left, right);
+            }
+            else
+            {
+                return Create(
+                    Vector128.Min(left._lower, right._lower),
+                    Vector128.Min(left._upper, right._upper)
+                );
+            }
+        }
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.MinMagnitude(TSelf, TSelf)" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<T> MinMagnitude<T>(Vector256<T> left, Vector256<T> right)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.MinMagnitude<Vector256<T>, T>(left, right);
+            }
+            else
+            {
+                return Create(
+                    Vector128.MinMagnitude(left._lower, right._lower),
+                    Vector128.MinMagnitude(left._upper, right._upper)
+                );
+            }
+        }
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.MinMagnitudeNumber(TSelf, TSelf)" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<T> MinMagnitudeNumber<T>(Vector256<T> left, Vector256<T> right)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.MinMagnitudeNumber<Vector256<T>, T>(left, right);
+            }
+            else
+            {
+                return Create(
+                    Vector128.MinMagnitudeNumber(left._lower, right._lower),
+                    Vector128.MinMagnitudeNumber(left._upper, right._upper)
+                );
+            }
+        }
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.MinNative(TSelf, TSelf)" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<T> MinNative<T>(Vector256<T> left, Vector256<T> right)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return ConditionalSelect(LessThan(left, right), left, right);
+            }
+            else
+            {
+                return Create(
+                    Vector128.MinNative(left._lower, right._lower),
+                    Vector128.MinNative(left._upper, right._upper)
+                );
+            }
+        }
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.MinNumber(TSelf, TSelf)" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<T> MinNumber<T>(Vector256<T> left, Vector256<T> right)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.MinNumber<Vector256<T>, T>(left, right);
+            }
+            else
+            {
+                return Create(
+                    Vector128.MinNumber(left._lower, right._lower),
+                    Vector128.MinNumber(left._upper, right._upper)
+                );
+            }
         }
 
         /// <summary>Multiplies two vectors to compute their element-wise product.</summary>

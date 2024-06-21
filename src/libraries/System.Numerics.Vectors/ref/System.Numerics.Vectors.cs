@@ -330,7 +330,15 @@ namespace System.Numerics
         public static System.Numerics.Vector<double> Log2(System.Numerics.Vector<double> vector) { throw null; }
         public static System.Numerics.Vector<float> Log2(System.Numerics.Vector<float> vector) { throw null; }
         public static System.Numerics.Vector<T> Max<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
+        public static System.Numerics.Vector<T> MaxMagnitude<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
+        public static System.Numerics.Vector<T> MaxMagnitudeNumber<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
+        public static System.Numerics.Vector<T> MaxNative<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
+        public static System.Numerics.Vector<T> MaxNumber<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
         public static System.Numerics.Vector<T> Min<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
+        public static System.Numerics.Vector<T> MinMagnitude<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
+        public static System.Numerics.Vector<T> MinMagnitudeNumber<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
+        public static System.Numerics.Vector<T> MinNative<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
+        public static System.Numerics.Vector<T> MinNumber<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
         public static System.Numerics.Vector<T> Multiply<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
         public static System.Numerics.Vector<T> Multiply<T>(System.Numerics.Vector<T> left, T right) { throw null; }
         public static System.Numerics.Vector<T> Multiply<T>(T left, System.Numerics.Vector<T> right) { throw null; }
@@ -494,7 +502,15 @@ namespace System.Numerics
         public static System.Numerics.Vector2 Log(System.Numerics.Vector2 vector) { throw null; }
         public static System.Numerics.Vector2 Log2(System.Numerics.Vector2 vector) { throw null; }
         public static System.Numerics.Vector2 Max(System.Numerics.Vector2 value1, System.Numerics.Vector2 value2) { throw null; }
+        public static System.Numerics.Vector2 MaxMagnitude(System.Numerics.Vector2 value1, System.Numerics.Vector2 value2) { throw null; }
+        public static System.Numerics.Vector2 MaxMagnitudeNumber(System.Numerics.Vector2 value1, System.Numerics.Vector2 value2) { throw null; }
+        public static System.Numerics.Vector2 MaxNative(System.Numerics.Vector2 value1, System.Numerics.Vector2 value2) { throw null; }
+        public static System.Numerics.Vector2 MaxNumber(System.Numerics.Vector2 value1, System.Numerics.Vector2 value2) { throw null; }
         public static System.Numerics.Vector2 Min(System.Numerics.Vector2 value1, System.Numerics.Vector2 value2) { throw null; }
+        public static System.Numerics.Vector2 MinMagnitude(System.Numerics.Vector2 value1, System.Numerics.Vector2 value2) { throw null; }
+        public static System.Numerics.Vector2 MinMagnitudeNumber(System.Numerics.Vector2 value1, System.Numerics.Vector2 value2) { throw null; }
+        public static System.Numerics.Vector2 MinNative(System.Numerics.Vector2 value1, System.Numerics.Vector2 value2) { throw null; }
+        public static System.Numerics.Vector2 MinNumber(System.Numerics.Vector2 value1, System.Numerics.Vector2 value2) { throw null; }
         public static System.Numerics.Vector2 Multiply(System.Numerics.Vector2 left, System.Numerics.Vector2 right) { throw null; }
         public static System.Numerics.Vector2 Multiply(System.Numerics.Vector2 left, float right) { throw null; }
         public static System.Numerics.Vector2 Multiply(float left, System.Numerics.Vector2 right) { throw null; }
@@ -582,7 +598,15 @@ namespace System.Numerics
         public static System.Numerics.Vector3 Log(System.Numerics.Vector3 vector) { throw null; }
         public static System.Numerics.Vector3 Log2(System.Numerics.Vector3 vector) { throw null; }
         public static System.Numerics.Vector3 Max(System.Numerics.Vector3 value1, System.Numerics.Vector3 value2) { throw null; }
+        public static System.Numerics.Vector3 MaxMagnitude(System.Numerics.Vector3 value1, System.Numerics.Vector3 value2) { throw null; }
+        public static System.Numerics.Vector3 MaxMagnitudeNumber(System.Numerics.Vector3 value1, System.Numerics.Vector3 value2) { throw null; }
+        public static System.Numerics.Vector3 MaxNative(System.Numerics.Vector3 value1, System.Numerics.Vector3 value2) { throw null; }
+        public static System.Numerics.Vector3 MaxNumber(System.Numerics.Vector3 value1, System.Numerics.Vector3 value2) { throw null; }
         public static System.Numerics.Vector3 Min(System.Numerics.Vector3 value1, System.Numerics.Vector3 value2) { throw null; }
+        public static System.Numerics.Vector3 MinMagnitude(System.Numerics.Vector3 value1, System.Numerics.Vector3 value2) { throw null; }
+        public static System.Numerics.Vector3 MinMagnitudeNumber(System.Numerics.Vector3 value1, System.Numerics.Vector3 value2) { throw null; }
+        public static System.Numerics.Vector3 MinNative(System.Numerics.Vector3 value1, System.Numerics.Vector3 value2) { throw null; }
+        public static System.Numerics.Vector3 MinNumber(System.Numerics.Vector3 value1, System.Numerics.Vector3 value2) { throw null; }
         public static System.Numerics.Vector3 Multiply(System.Numerics.Vector3 left, System.Numerics.Vector3 right) { throw null; }
         public static System.Numerics.Vector3 Multiply(System.Numerics.Vector3 left, float right) { throw null; }
         public static System.Numerics.Vector3 Multiply(float left, System.Numerics.Vector3 right) { throw null; }
@@ -671,7 +695,15 @@ namespace System.Numerics
         public static System.Numerics.Vector4 Log(System.Numerics.Vector4 vector) { throw null; }
         public static System.Numerics.Vector4 Log2(System.Numerics.Vector4 vector) { throw null; }
         public static System.Numerics.Vector4 Max(System.Numerics.Vector4 value1, System.Numerics.Vector4 value2) { throw null; }
+        public static System.Numerics.Vector4 MaxMagnitude(System.Numerics.Vector4 value1, System.Numerics.Vector4 value2) { throw null; }
+        public static System.Numerics.Vector4 MaxMagnitudeNumber(System.Numerics.Vector4 value1, System.Numerics.Vector4 value2) { throw null; }
+        public static System.Numerics.Vector4 MaxNative(System.Numerics.Vector4 value1, System.Numerics.Vector4 value2) { throw null; }
+        public static System.Numerics.Vector4 MaxNumber(System.Numerics.Vector4 value1, System.Numerics.Vector4 value2) { throw null; }
         public static System.Numerics.Vector4 Min(System.Numerics.Vector4 value1, System.Numerics.Vector4 value2) { throw null; }
+        public static System.Numerics.Vector4 MinMagnitude(System.Numerics.Vector4 value1, System.Numerics.Vector4 value2) { throw null; }
+        public static System.Numerics.Vector4 MinMagnitudeNumber(System.Numerics.Vector4 value1, System.Numerics.Vector4 value2) { throw null; }
+        public static System.Numerics.Vector4 MinNative(System.Numerics.Vector4 value1, System.Numerics.Vector4 value2) { throw null; }
+        public static System.Numerics.Vector4 MinNumber(System.Numerics.Vector4 value1, System.Numerics.Vector4 value2) { throw null; }
         public static System.Numerics.Vector4 Multiply(System.Numerics.Vector4 left, System.Numerics.Vector4 right) { throw null; }
         public static System.Numerics.Vector4 Multiply(System.Numerics.Vector4 left, float right) { throw null; }
         public static System.Numerics.Vector4 Multiply(float left, System.Numerics.Vector4 right) { throw null; }

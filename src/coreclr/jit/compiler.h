@@ -3329,11 +3329,23 @@ public:
                               CorInfoType simdBaseJitType,
                               unsigned    simdSize);
 
+    GenTree* gtNewSimdMaxNativeNode(var_types   type,
+                                    GenTree*    op1,
+                                    GenTree*    op2,
+                                    CorInfoType simdBaseJitType,
+                                    unsigned    simdSize);
+
     GenTree* gtNewSimdMinNode(var_types   type,
                               GenTree*    op1,
                               GenTree*    op2,
                               CorInfoType simdBaseJitType,
                               unsigned    simdSize);
+
+    GenTree* gtNewSimdMinNativeNode(var_types   type,
+                                    GenTree*    op1,
+                                    GenTree*    op2,
+                                    CorInfoType simdBaseJitType,
+                                    unsigned    simdSize);
 
     GenTree* gtNewSimdNarrowNode(var_types   type,
                                  GenTree*    op1,

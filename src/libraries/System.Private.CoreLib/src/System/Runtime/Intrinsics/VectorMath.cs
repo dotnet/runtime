@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Numerics;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
@@ -1112,6 +1113,178 @@ namespace System.Runtime.Intrinsics
                 specialResult,
                 n + poly
             );
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static TVector Max<TVector, T>(TVector x, TVector y)
+            where TVector : unmanaged, ISimdVector<TVector, T>
+        {
+            if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
+            {
+                return TVector.ConditionalSelect(
+                    (TVector.Equals(x, y) & TVector.IsNegative(y)) | TVector.IsNaN(x) | TVector.LessThan(y, x),
+                    x,
+                    y
+                );
+            }
+            return TVector.ConditionalSelect(TVector.GreaterThan(x, y), x, y);
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static TVector MaxMagnitude<TVector, T>(TVector x, TVector y)
+            where TVector : unmanaged, ISimdVector<TVector, T>
+        {
+            if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
+            {
+                TVector xMag = TVector.Abs(x);
+                TVector yMag = TVector.Abs(y);
+                return TVector.ConditionalSelect(
+                    TVector.GreaterThan(xMag, yMag) | TVector.IsNaN(xMag) | (TVector.Equals(xMag, yMag) & TVector.IsPositive(x)),
+                    x,
+                    y
+                );
+            }
+            return MaxMagnitudeNumber<TVector, T>(x, y);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static TVector MaxMagnitudeNumber<TVector, T>(TVector x, TVector y)
+            where TVector : unmanaged, ISimdVector<TVector, T>
+        {
+            if ((typeof(T) == typeof(byte))
+             || (typeof(T) == typeof(ushort))
+             || (typeof(T) == typeof(uint))
+             || (typeof(T) == typeof(ulong))
+             || (typeof(T) == typeof(nuint)))
+            {
+                return TVector.ConditionalSelect(TVector.LessThan(y, x), x, y);
+            }
+
+            TVector xMag = TVector.Abs(x);
+            TVector yMag = TVector.Abs(y);
+
+            if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double))
+            )
+            {
+                return TVector.ConditionalSelect(
+                    TVector.GreaterThan(xMag, yMag) | TVector.IsNaN(yMag) | (TVector.Equals(xMag, yMag) & TVector.IsPositive(x)),
+                    x,
+                    y
+                );
+            }
+
+            Debug.Assert((typeof(T) == typeof(sbyte))
+                      || (typeof(T) == typeof(short))
+                      || (typeof(T) == typeof(int))
+                      || (typeof(T) == typeof(long))
+                      || (typeof(T) == typeof(nint)));
+
+            return TVector.ConditionalSelect(
+                (TVector.GreaterThan(xMag, yMag) & TVector.IsPositive(yMag)) | TVector.IsNegative(xMag),
+                x,
+                y
+            );
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static TVector MaxNumber<TVector, T>(TVector x, TVector y)
+            where TVector : unmanaged, ISimdVector<TVector, T>
+        {
+            if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
+            {
+                return TVector.ConditionalSelect(
+                    (TVector.Equals(x, y) & TVector.IsNegative(y)) | TVector.IsNaN(y) | TVector.LessThan(y, x),
+                    x,
+                    y
+                );
+            }
+
+            return TVector.ConditionalSelect(TVector.LessThan(y, x), x, y);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static TVector Min<TVector, T>(TVector x, TVector y)
+            where TVector : unmanaged, ISimdVector<TVector, T>
+        {
+            if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
+            {
+                return TVector.ConditionalSelect(
+                    (TVector.Equals(x, y) & TVector.IsNegative(x)) | TVector.IsNaN(x) | TVector.LessThan(x, y),
+                    x,
+                    y
+                );
+            }
+            return TVector.ConditionalSelect(TVector.LessThan(x, y), x, y);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static TVector MinMagnitude<TVector, T>(TVector x, TVector y)
+            where TVector : unmanaged, ISimdVector<TVector, T>
+        {
+            if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
+            {
+                TVector xMag = TVector.Abs(x);
+                TVector yMag = TVector.Abs(y);
+
+                return TVector.ConditionalSelect(
+                    TVector.LessThan(xMag, yMag) | TVector.IsNaN(xMag) | (TVector.Equals(xMag, yMag) & TVector.IsNegative(x)),
+                    x,
+                    y
+                );
+            }
+            return MinMagnitudeNumber<TVector, T>(x, y);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static TVector MinMagnitudeNumber<TVector, T>(TVector x, TVector y)
+            where TVector : unmanaged, ISimdVector<TVector, T>
+        {
+            if ((typeof(T) == typeof(byte))
+             || (typeof(T) == typeof(ushort))
+             || (typeof(T) == typeof(uint))
+             || (typeof(T) == typeof(ulong))
+             || (typeof(T) == typeof(nuint)))
+            {
+                return TVector.ConditionalSelect(TVector.LessThan(x, y), x, y);
+            }
+
+            TVector xMag = TVector.Abs(x);
+            TVector yMag = TVector.Abs(y);
+
+            if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
+            {
+                return TVector.ConditionalSelect(
+                    TVector.LessThan(xMag, yMag) | TVector.IsNaN(yMag) | (TVector.Equals(xMag, yMag) & TVector.IsNegative(x)),
+                    x,
+                    y
+                );
+            }
+
+            Debug.Assert((typeof(T) == typeof(sbyte))
+                      || (typeof(T) == typeof(short))
+                      || (typeof(T) == typeof(int))
+                      || (typeof(T) == typeof(long))
+                      || (typeof(T) == typeof(nint)));
+
+            return TVector.ConditionalSelect(
+                (TVector.LessThan(xMag, yMag) & TVector.IsPositive(xMag)) | TVector.IsNegative(yMag),
+                x,
+                y
+            );
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static TVector MinNumber<TVector, T>(TVector x, TVector y)
+            where TVector : unmanaged, ISimdVector<TVector, T>
+        {
+            if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
+            {
+                return TVector.ConditionalSelect(
+                    (TVector.Equals(x, y) & TVector.IsNegative(x)) | TVector.IsNaN(y) | TVector.LessThan(x, y),
+                    x,
+                    y
+                );
+            }
+            return TVector.ConditionalSelect(TVector.LessThan(x, y), x, y);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

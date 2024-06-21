@@ -355,10 +355,16 @@ emit_simd_ins_for_binary_op (MonoCompile *cfg, MonoClass *klass, MonoMethodSigna
 				instc0 = OP_FDIV;
 				break;
 			}
+#ifdef TARGET_ARM64
 			case SN_Max:
+#endif
+			case SN_MaxNative:
 				instc0 = OP_FMAX;
 				break;
+#ifdef TARGET_ARM64
 			case SN_Min:
+#endif
+			case SN_MinNative:
 				instc0 = OP_FMIN;
 				break;
 			case SN_Multiply:
@@ -396,6 +402,7 @@ emit_simd_ins_for_binary_op (MonoCompile *cfg, MonoClass *klass, MonoMethodSigna
 			case SN_op_Division:
 				return NULL;
 			case SN_Max:
+			case SN_MaxNative:
 				instc0 = type_enum_is_unsigned (arg_type) ? OP_IMAX_UN : OP_IMAX;
 #ifdef TARGET_AMD64
 				if (!COMPILE_LLVM (cfg) && instc0 == OP_IMAX_UN)
@@ -403,6 +410,7 @@ emit_simd_ins_for_binary_op (MonoCompile *cfg, MonoClass *klass, MonoMethodSigna
 #endif
 				break;
 			case SN_Min:
+			case SN_MinNative:
 				instc0 = type_enum_is_unsigned (arg_type) ? OP_IMIN_UN : OP_IMIN;
 #ifdef TARGET_AMD64
 				if (!COMPILE_LLVM (cfg) && instc0 == OP_IMIN_UN)
@@ -1231,7 +1239,9 @@ static guint16 sri_vector_methods [] = {
 	SN_LessThanOrEqualAll,
 	SN_LessThanOrEqualAny,
 	SN_Max,
+	SN_MaxNative,
 	SN_Min,
+	SN_MinNative,
 	SN_Multiply,
 	SN_Narrow,
 	SN_Negate,
@@ -1593,12 +1603,18 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	case SN_BitwiseOr:
 	case SN_Divide:
 	case SN_Max:
+	case SN_MaxNative:
 	case SN_Min:
+	case SN_MinNative:
 	case SN_Multiply:
 	case SN_Subtract:
 	case SN_Xor:
 		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
+#ifndef TARGET_ARM64
+		if (((id == SN_Max) || (id == SN_Min)) && type_enum_is_float(arg0_type))
+			return NULL;
+#endif
 		return emit_simd_ins_for_binary_op (cfg, klass, fsig, args, arg0_type, id);
 	case SN_AndNot: {
 		if (!is_element_type_primitive (fsig->params [0]))
@@ -2752,7 +2768,9 @@ static guint16 vector_2_3_4_methods[] = {
 	SN_LengthSquared,
 	SN_Lerp,
 	SN_Max,
+	SN_MaxNative,
 	SN_Min,
+	SN_MinNative,
 	SN_Multiply,
 	SN_Negate,
 	SN_Normalize,
@@ -3047,11 +3065,17 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 	case SN_op_Multiply:
 	case SN_op_Subtraction:
 	case SN_Max:
-	case SN_Min: {
+	case SN_MaxNative:
+	case SN_Min:
+	case SN_MinNative: {
 		const char *klass_name = m_class_get_name (klass);
 		// FIXME https://github.com/dotnet/runtime/issues/82408
 		if ((id == SN_op_Multiply || id == SN_Multiply || id == SN_op_Division || id == SN_Divide) && !strcmp (klass_name, "Quaternion"))
 			return NULL;
+#ifndef TARGET_ARM64
+		if ((id == SN_Max) || (id == SN_Min))
+			return NULL;
+#endif
 		return emit_simd_ins_for_binary_op (cfg, klass, fsig, args, MONO_TYPE_R4, id);
 	}
 	case SN_Dot: {

@@ -592,8 +592,32 @@ namespace System.Runtime.Intrinsics
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Max(TSelf, TSelf)" />
         static Vector128<T> ISimdVector<Vector128<T>, T>.Max(Vector128<T> left, Vector128<T> right) => Vector128.Max(left, right);
 
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.MaxMagnitude(TSelf, TSelf)" />
+        static Vector128<T> ISimdVector<Vector128<T>, T>.MaxMagnitude(Vector128<T> left, Vector128<T> right) => Vector128.MaxMagnitude(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.MaxMagnitudeNumber(TSelf, TSelf)" />
+        static Vector128<T> ISimdVector<Vector128<T>, T>.MaxMagnitudeNumber(Vector128<T> left, Vector128<T> right) => Vector128.MaxMagnitudeNumber(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.MaxNative(TSelf, TSelf)" />
+        static Vector128<T> ISimdVector<Vector128<T>, T>.MaxNative(Vector128<T> left, Vector128<T> right) => Vector128.MaxNative(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.MaxNumber(TSelf, TSelf)" />
+        static Vector128<T> ISimdVector<Vector128<T>, T>.MaxNumber(Vector128<T> left, Vector128<T> right) => Vector128.MaxNumber(left, right);
+
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Min(TSelf, TSelf)" />
         static Vector128<T> ISimdVector<Vector128<T>, T>.Min(Vector128<T> left, Vector128<T> right) => Vector128.Min(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.MinMagnitude(TSelf, TSelf)" />
+        static Vector128<T> ISimdVector<Vector128<T>, T>.MinMagnitude(Vector128<T> left, Vector128<T> right) => Vector128.MinMagnitude(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.MinMagnitudeNumber(TSelf, TSelf)" />
+        static Vector128<T> ISimdVector<Vector128<T>, T>.MinMagnitudeNumber(Vector128<T> left, Vector128<T> right) => Vector128.MinMagnitudeNumber(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.MinNative(TSelf, TSelf)" />
+        static Vector128<T> ISimdVector<Vector128<T>, T>.MinNative(Vector128<T> left, Vector128<T> right) => Vector128.MinNative(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.MinNumber(TSelf, TSelf)" />
+        static Vector128<T> ISimdVector<Vector128<T>, T>.MinNumber(Vector128<T> left, Vector128<T> right) => Vector128.MinNumber(left, right);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Multiply(TSelf, T)" />
         static Vector128<T> ISimdVector<Vector128<T>, T>.Multiply(Vector128<T> left, Vector128<T> right) => left * right;

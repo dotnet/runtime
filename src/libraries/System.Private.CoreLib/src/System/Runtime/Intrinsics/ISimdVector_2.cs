@@ -124,7 +124,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="right">The vector that is selected when the corresponding bit in <paramref name="condition" /> is zero.</param>
         /// <returns>A vector whose bits come from <paramref name="left" /> or <paramref name="right" /> based on the value of <paramref name="condition" />.</returns>
         /// <exception cref="NotSupportedException">The type of the elements in the vector (<typeparamref name="T" />) is not supported.</exception>
-        static virtual TSelf ConditionalSelect(TSelf condition, TSelf left, TSelf right) => (left & condition) | And(right & ~condition);
+        static virtual TSelf ConditionalSelect(TSelf condition, TSelf left, TSelf right) => (left & condition) | (right & ~condition);
 
         /// <summary>Copies the per-element sign of a vector to the per-element sign of another vector.</summary>
         /// <param name="value">The vector whose magnitude is used in the result.</param>
@@ -424,19 +424,83 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of the elements in the vector (<typeparamref name="T" />) is not supported.</exception>
         static abstract TSelf LoadUnsafe(ref readonly T source, nuint elementOffset);
 
-        /// <summary>Computes the maximum of two vectors on a per-element basis.</summary>
+        /// <summary>Compare two vectors to determine which is greater on a per-element basis.</summary>
         /// <param name="left">The vector to compare with <paramref name="right" />.</param>
         /// <param name="right">The vector to compare with <paramref name="left" />.</param>
-        /// <returns>A vector whose elements are the maximum of the corresponding elements in <paramref name="left" /> and <paramref name="right" />.</returns>
+        /// <returns>A vector where the corresponding element comes from <paramref name="left" /> if it is greater than <paramref name="right" />; otherwise, <paramref name="right" />.</returns>
+        /// <remarks>For <see cref ="IFloatingPoint{T}" /> this method matches the IEEE 754:2019 <c>maximum</c> function.This requires NaN inputs to be propagated back to the caller and for <c>-0.0</c> to be treated as less than <c>+0.0</c>.</remarks>
         /// <exception cref="NotSupportedException">The type of the elements in the vector (<typeparamref name="T" />) is not supported.</exception>
         static abstract TSelf Max(TSelf left, TSelf right);
 
-        /// <summary>Computes the minimum of two vectors on a per-element basis.</summary>
+        /// <summary>Compares two vectors to compute which has the greater magnitude on a per-element basis.</summary>
         /// <param name="left">The vector to compare with <paramref name="right" />.</param>
         /// <param name="right">The vector to compare with <paramref name="left" />.</param>
-        /// <returns>A vector whose elements are the minimum of the corresponding elements in <paramref name="left" /> and <paramref name="right" />.</returns>
+        /// <returns>A vector where the corresponding element comes from <paramref name="left" /> if it has a greater magnitude than <paramref name="right" />; otherwise, <paramref name="right" />.</returns>
+        /// <remarks>For <see cref="IFloatingPointIeee754{T}" /> this method matches the IEEE 754:2019 <c>maximumMagnitude</c> function. This requires NaN inputs to be propagated back to the caller and for <c>-0.0</c> to be treated as less than <c>+0.0</c>.</remarks>
+        /// <exception cref="NotSupportedException">The type of the elements in the vector (<typeparamref name="T" />) is not supported.</exception>
+        static abstract TSelf MaxMagnitude(TSelf left, TSelf right);
+
+        /// <summary>Compares two vectors, on a per-element basis, to compute which has the greater magnitude and returning the other value if an input is <c>NaN</c>.</summary>
+        /// <param name="left">The vector to compare with <paramref name="right" />.</param>
+        /// <param name="right">The vector to compare with <paramref name="left" />.</param>
+        /// <returns>A vector where the corresponding element comes from <paramref name="left" /> if it has a greater magnitude than <paramref name="right" />; otherwise, <paramref name="right" />.</returns>
+        /// <remarks>For <see cref="IFloatingPointIeee754{T}" /> this method matches the IEEE 754:2019 <c>maximumMagnitudeNumber</c> function. This requires NaN inputs to not be propagated back to the caller and for <c>-0.0</c> to be treated as less than <c>+0.0</c>.</remarks>
+        /// <exception cref="NotSupportedException">The type of the elements in the vector (<typeparamref name="T" />) is not supported.</exception>
+        static abstract TSelf MaxMagnitudeNumber(TSelf left, TSelf right);
+
+        /// <summary>Compare two vectors to determine which is greater on a per-element basis using platform specific behavior for <c>NaN</c> and <c>NegativeZero</c>.</summary>
+        /// <param name="left">The vector to compare with <paramref name="right" />.</param>
+        /// <param name="right">The vector to compare with <paramref name="left" />.</param>
+        /// <returns>A vector where the corresponding element comes from <paramref name="left" /> if it is greater than <paramref name="right" />; otherwise, <paramref name="right" />.</returns>
+        /// <exception cref="NotSupportedException">The type of the elements in the vector (<typeparamref name="T" />) is not supported.</exception>
+        static abstract TSelf MaxNative(TSelf left, TSelf right);
+
+        /// <summary>Compares two vectors, on a per-element basis, to compute which is greater and returning the other value if an element is <c>NaN</c>.</summary>
+        /// <param name="left">The vector to compare with <paramref name="right" />.</param>
+        /// <param name="right">The vector to compare with <paramref name="left" />.</param>
+        /// <returns>A vector where the corresponding element comes from <paramref name="left" /> if it is greater than <paramref name="right" />; otherwise, <paramref name="right" />.</returns>
+        /// <remarks>For <see cref="IFloatingPoint{T}" /> this method matches the IEEE 754:2019 <c>maximumNumber</c> function. This requires NaN inputs to not be propagated back to the caller and for <c>-0.0</c> to be treated as less than <c>+0.0</c>.</remarks>
+        /// <exception cref="NotSupportedException">The type of the elements in the vector (<typeparamref name="T" />) is not supported.</exception>
+        static abstract TSelf MaxNumber(TSelf left, TSelf right);
+
+        /// <summary>Compare two vectors to determine which is lesser on a per-element basis.</summary>
+        /// <param name="left">The vector to compare with <paramref name="right" />.</param>
+        /// <param name="right">The vector to compare with <paramref name="left" />.</param>
+        /// <returns>A vector where the corresponding element comes from <paramref name="left" /> if it is lesser than <paramref name="right" />; otherwise, <paramref name="right" />.</returns>
+        /// <remarks>For <see cref ="IFloatingPoint{T}" /> this method matches the IEEE 754:2019 <c>minimum</c> function.This requires NaN inputs to be propagated back to the caller and for <c>-0.0</c> to be treated as less than <c>+0.0</c>.</remarks>
         /// <exception cref="NotSupportedException">The type of the elements in the vector (<typeparamref name="T" />) is not supported.</exception>
         static abstract TSelf Min(TSelf left, TSelf right);
+
+        /// <summary>Compares two vectors to compute which has the lesser magnitude on a per-element basis.</summary>
+        /// <param name="left">The vector to compare with <paramref name="right" />.</param>
+        /// <param name="right">The vector to compare with <paramref name="left" />.</param>
+        /// <returns>A vector where the corresponding element comes from <paramref name="left" /> if it has a lesser magnitude than <paramref name="right" />; otherwise, <paramref name="right" />.</returns>
+        /// <remarks>For <see cref="IFloatingPointIeee754{T}" /> this method matches the IEEE 754:2019 <c>minimumMagnitude</c> function. This requires NaN inputs to be propagated back to the caller and for <c>-0.0</c> to be treated as less than <c>+0.0</c>.</remarks>
+        /// <exception cref="NotSupportedException">The type of the elements in the vector (<typeparamref name="T" />) is not supported.</exception>
+        static abstract TSelf MinMagnitude(TSelf left, TSelf right);
+
+        /// <summary>Compares two vectors, on a per-element basis, to compute which has the lesser magnitude and returning the other value if an input is <c>NaN</c>.</summary>
+        /// <param name="left">The vector to compare with <paramref name="right" />.</param>
+        /// <param name="right">The vector to compare with <paramref name="left" />.</param>
+        /// <returns>A vector where the corresponding element comes from <paramref name="left" /> if it has a lesser magnitude than <paramref name="right" />; otherwise, <paramref name="right" />.</returns>
+        /// <remarks>For <see cref="IFloatingPointIeee754{T}" /> this method matches the IEEE 754:2019 <c>minimumMagnitudeNumber</c> function. This requires NaN inputs to not be propagated back to the caller and for <c>-0.0</c> to be treated as less than <c>+0.0</c>.</remarks>
+        /// <exception cref="NotSupportedException">The type of the elements in the vector (<typeparamref name="T" />) is not supported.</exception>
+        static abstract TSelf MinMagnitudeNumber(TSelf left, TSelf right);
+
+        /// <summary>Compare two vectors to determine which is lesser on a per-element basis using platform specific behavior for <c>NaN</c> and <c>NegativeZero</c>.</summary>
+        /// <param name="left">The vector to compare with <paramref name="right" />.</param>
+        /// <param name="right">The vector to compare with <paramref name="left" />.</param>
+        /// <returns>A vector where the corresponding element comes from <paramref name="left" /> if it is lesser than <paramref name="right" />; otherwise, <paramref name="right" />.</returns>
+        /// <exception cref="NotSupportedException">The type of the elements in the vector (<typeparamref name="T" />) is not supported.</exception>
+        static abstract TSelf MinNative(TSelf left, TSelf right);
+
+        /// <summary>Compares two vectors, on a per-element basis, to compute which is lesser and returning the other value if an element is <c>NaN</c>.</summary>
+        /// <param name="left">The vector to compare with <paramref name="right" />.</param>
+        /// <param name="right">The vector to compare with <paramref name="left" />.</param>
+        /// <returns>A vector where the corresponding element comes from <paramref name="left" /> if it is lesser than <paramref name="right" />; otherwise, <paramref name="right" />.</returns>
+        /// <remarks>For <see cref="IFloatingPoint{T}" /> this method matches the IEEE 754:2019 <c>minimumNumber</c> function. This requires NaN inputs to not be propagated back to the caller and for <c>-0.0</c> to be treated as less than <c>+0.0</c>.</remarks>
+        /// <exception cref="NotSupportedException">The type of the elements in the vector (<typeparamref name="T" />) is not supported.</exception>
+        static abstract TSelf MinNumber(TSelf left, TSelf right);
 
         /// <summary>Multiplies two vectors to compute their element-wise product.</summary>
         /// <param name="left">The vector to multiply with <paramref name="right" />.</param>

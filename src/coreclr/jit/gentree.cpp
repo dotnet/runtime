@@ -24955,6 +24955,50 @@ GenTree* Compiler::gtNewSimdMaxNode(
     var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
     assert(varTypeIsArithmetic(simdBaseType));
 
+#if defined(TARGET_XARCH)
+    if (varTypeIsFloating(simdBaseType))
+    {
+        GenTree* op1Dup1 = fgMakeMultiUse(&op1);
+        GenTree* op1Dup2 = fgMakeMultiUse(&op1);
+        GenTree* op1Dup3 = fgMakeMultiUse(&op1);
+
+        GenTree* op2Dup1 = fgMakeMultiUse(&op2);
+        GenTree* op2Dup2 = fgMakeMultiUse(&op2);
+        GenTree* op2Dup3 = fgMakeMultiUse(&op2);
+
+        GenTree* equalsMask = gtNewSimdCmpOpNode(GT_EQ, type, op1, op2, simdBaseJitType, simdSize);
+        GenTree* isNegativeMask = gtNewSimdIsNegativeNode(type, op2Dup1, simdBaseJitType, simdSize);
+        GenTree* isNaNMask = gtNewSimdIsNaNNode(type, op1Dup1, simdBaseJitType, simdSize);
+        GenTree* lessThanMask = gtNewSimdCmpOpNode(GT_LT, type, op2Dup2, op1Dup2, simdBaseJitType, simdSize);
+
+        GenTree* mask = gtNewSimdBinOpNode(GT_AND, type, equalsMask, isNegativeMask, simdBaseJitType, simdSize);
+        mask          = gtNewSimdBinOpNode(GT_OR, type, mask, isNaNMask, simdBaseJitType, simdSize);
+        mask          = gtNewSimdBinOpNode(GT_OR, type, mask, lessThanMask, simdBaseJitType, simdSize);
+
+        return gtNewSimdCndSelNode(type, mask, op1Dup3, op2Dup3, simdBaseJitType, simdSize);
+    }
+#endif // TARGET_XARCH
+
+    return gtNewSimdMaxNativeNode(type, op1, op2, simdBaseJitType, simdSize);
+}
+
+GenTree* Compiler::gtNewSimdMaxNativeNode(
+    var_types type, GenTree* op1, GenTree* op2, CorInfoType simdBaseJitType, unsigned simdSize)
+{
+    assert(IsBaselineSimdIsaSupportedDebugOnly());
+
+    assert(varTypeIsSIMD(type));
+    assert(getSIMDTypeForSize(simdSize) == type);
+
+    assert(op1 != nullptr);
+    assert(op1->TypeIs(type));
+
+    assert(op2 != nullptr);
+    assert(op2->TypeIs(type));
+
+    var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
+    assert(varTypeIsArithmetic(simdBaseType));
+
     NamedIntrinsic intrinsic = NI_Illegal;
 
 #if defined(TARGET_XARCH)
@@ -25154,6 +25198,50 @@ GenTree* Compiler::gtNewSimdMaxNode(
 }
 
 GenTree* Compiler::gtNewSimdMinNode(
+    var_types type, GenTree* op1, GenTree* op2, CorInfoType simdBaseJitType, unsigned simdSize)
+{
+    assert(IsBaselineSimdIsaSupportedDebugOnly());
+
+    assert(varTypeIsSIMD(type));
+    assert(getSIMDTypeForSize(simdSize) == type);
+
+    assert(op1 != nullptr);
+    assert(op1->TypeIs(type));
+
+    assert(op2 != nullptr);
+    assert(op2->TypeIs(type));
+
+    var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
+    assert(varTypeIsArithmetic(simdBaseType));
+
+#if defined(TARGET_XARCH)
+    if (varTypeIsFloating(simdBaseType))
+    {
+        GenTree* op1Dup1 = fgMakeMultiUse(&op1);
+        GenTree* op1Dup2 = fgMakeMultiUse(&op1);
+        GenTree* op1Dup3 = fgMakeMultiUse(&op1);
+        GenTree* op1Dup4 = fgMakeMultiUse(&op1);
+
+        GenTree* op2Dup1 = fgMakeMultiUse(&op2);
+        GenTree* op2Dup2 = fgMakeMultiUse(&op2);
+
+        GenTree* equalsMask = gtNewSimdCmpOpNode(GT_EQ, type, op1, op2, simdBaseJitType, simdSize);
+        GenTree* isNegativeMask = gtNewSimdIsNegativeNode(type, op1Dup1, simdBaseJitType, simdSize);
+        GenTree* isNaNMask = gtNewSimdIsNaNNode(type, op1Dup2, simdBaseJitType, simdSize);
+        GenTree* lessThanMask = gtNewSimdCmpOpNode(GT_LT, type, op1Dup3, op2Dup1, simdBaseJitType, simdSize);
+
+        GenTree* mask = gtNewSimdBinOpNode(GT_AND, type, equalsMask, isNegativeMask, simdBaseJitType, simdSize);
+        mask          = gtNewSimdBinOpNode(GT_OR, type, mask, isNaNMask, simdBaseJitType, simdSize);
+        mask          = gtNewSimdBinOpNode(GT_OR, type, mask, lessThanMask, simdBaseJitType, simdSize);
+
+        return gtNewSimdCndSelNode(type, mask, op1Dup4, op2Dup2, simdBaseJitType, simdSize);
+    }
+#endif // TARGET_XARCH
+
+    return gtNewSimdMinNativeNode(type, op1, op2, simdBaseJitType, simdSize);
+}
+
+GenTree* Compiler::gtNewSimdMinNativeNode(
     var_types type, GenTree* op1, GenTree* op2, CorInfoType simdBaseJitType, unsigned simdSize)
 {
     assert(IsBaselineSimdIsaSupportedDebugOnly());

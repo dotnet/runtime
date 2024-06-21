@@ -945,8 +945,32 @@ namespace System.Numerics
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Max(TSelf, TSelf)" />
         static Vector<T> ISimdVector<Vector<T>, T>.Max(Vector<T> left, Vector<T> right) => Vector.Max(left, right);
 
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.MaxMagnitude(TSelf, TSelf)" />
+        static Vector<T> ISimdVector<Vector<T>, T>.MaxMagnitude(Vector<T> left, Vector<T> right) => Vector.MaxMagnitude(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.MaxMagnitudeNumber(TSelf, TSelf)" />
+        static Vector<T> ISimdVector<Vector<T>, T>.MaxMagnitudeNumber(Vector<T> left, Vector<T> right) => Vector.MaxMagnitudeNumber(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.MaxNative(TSelf, TSelf)" />
+        static Vector<T> ISimdVector<Vector<T>, T>.MaxNative(Vector<T> left, Vector<T> right) => Vector.MaxNative(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.MaxNumber(TSelf, TSelf)" />
+        static Vector<T> ISimdVector<Vector<T>, T>.MaxNumber(Vector<T> left, Vector<T> right) => Vector.MaxNumber(left, right);
+
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Min(TSelf, TSelf)" />
         static Vector<T> ISimdVector<Vector<T>, T>.Min(Vector<T> left, Vector<T> right) => Vector.Min(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.MinMagnitude(TSelf, TSelf)" />
+        static Vector<T> ISimdVector<Vector<T>, T>.MinMagnitude(Vector<T> left, Vector<T> right) => Vector.MinMagnitude(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.MinMagnitudeNumber(TSelf, TSelf)" />
+        static Vector<T> ISimdVector<Vector<T>, T>.MinMagnitudeNumber(Vector<T> left, Vector<T> right) => Vector.MinMagnitudeNumber(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.MinNative(TSelf, TSelf)" />
+        static Vector<T> ISimdVector<Vector<T>, T>.MinNative(Vector<T> left, Vector<T> right) => Vector.MinNative(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.MinNumber(TSelf, TSelf)" />
+        static Vector<T> ISimdVector<Vector<T>, T>.MinNumber(Vector<T> left, Vector<T> right) => Vector.MinNumber(left, right);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Multiply(TSelf, T)" />
         static Vector<T> ISimdVector<Vector<T>, T>.Multiply(Vector<T> left, Vector<T> right) => left * right;

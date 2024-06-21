@@ -447,6 +447,8 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
     switch (intrinsic)
     {
         case NI_VectorT_ConvertToInt32Native:
+        case NI_VectorT_MaxNative:
+        case NI_VectorT_MinNative:
         {
             if (BlockNonDeterministicIntrinsics(mustExpand))
             {
@@ -1343,9 +1345,19 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     return gtNewSimdMaxNode(retType, op1, op2, simdBaseJitType, simdSize);
                 }
 
+                case NI_VectorT_MaxNative:
+                {
+                    return gtNewSimdMaxNativeNode(retType, op1, op2, simdBaseJitType, simdSize);
+                }
+
                 case NI_VectorT_Min:
                 {
                     return gtNewSimdMinNode(retType, op1, op2, simdBaseJitType, simdSize);
+                }
+
+                case NI_VectorT_MinNative:
+                {
+                    return gtNewSimdMinNativeNode(retType, op1, op2, simdBaseJitType, simdSize);
                 }
 
                 case NI_VectorT_op_Multiply:
