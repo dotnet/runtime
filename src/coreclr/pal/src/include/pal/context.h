@@ -60,6 +60,78 @@ using asm_sigcontext::_xstate;
 bool Xstate_IsAvx512Supported();
 #endif // XSTATE_SUPPORTED || (HOST_AMD64 && HAVE_MACH_EXCEPTIONS)
 
+#if defined(HOST_64BIT) && defined(HOST_ARM64) && !defined(TARGET_FREEBSD) && !defined(TARGET_OSX)
+#if !defined(SVE_MAGIC)
+
+// Add the missing SVE defines
+
+#define SVE_MAGIC   0x53564501
+
+struct sve_context {
+    struct _aarch64_ctx head;
+    __u16 vl;
+    __u16 flags;
+    __u16 __reserved[2];
+};
+
+#define __SVE_VQ_BYTES      16  /* number of bytes per quadword */
+
+#define sve_vq_from_vl(vl)    ((vl) / __SVE_VQ_BYTES)
+#define sve_vl_from_vq(vq)    ((vq) * __SVE_VQ_BYTES)
+
+#define __SVE_ZREG_SIZE(vq) ((__u32)(vq) * __SVE_VQ_BYTES)
+#define __SVE_PREG_SIZE(vq) ((__u32)(vq) * (__SVE_VQ_BYTES / 8))
+#define __SVE_FFR_SIZE(vq)  __SVE_PREG_SIZE(vq)
+
+#define __SVE_ZREGS_OFFSET  0
+#define __SVE_ZREG_OFFSET(vq, n) \
+    (__SVE_ZREGS_OFFSET + __SVE_ZREG_SIZE(vq) * (n))
+#define __SVE_ZREGS_SIZE(vq) \
+    (__SVE_ZREG_OFFSET(vq, __SVE_NUM_ZREGS) - __SVE_ZREGS_OFFSET)
+
+#define __SVE_PREGS_OFFSET(vq) \
+    (__SVE_ZREGS_OFFSET + __SVE_ZREGS_SIZE(vq))
+#define __SVE_PREG_OFFSET(vq, n) \
+    (__SVE_PREGS_OFFSET(vq) + __SVE_PREG_SIZE(vq) * (n))
+#define __SVE_PREGS_SIZE(vq) \
+    (__SVE_PREG_OFFSET(vq, __SVE_NUM_PREGS) - __SVE_PREGS_OFFSET(vq))
+
+#define __SVE_FFR_OFFSET(vq) \
+    (__SVE_PREGS_OFFSET(vq) + __SVE_PREGS_SIZE(vq))
+
+
+#define SVE_SIG_ZREG_SIZE(vq)   __SVE_ZREG_SIZE(vq)
+#define SVE_SIG_PREG_SIZE(vq)   __SVE_PREG_SIZE(vq)
+#define SVE_SIG_FFR_SIZE(vq)    __SVE_FFR_SIZE(vq)
+
+#define SVE_SIG_REGS_OFFSET                 \
+    ((sizeof(struct sve_context) + (__SVE_VQ_BYTES - 1))    \
+        / __SVE_VQ_BYTES * __SVE_VQ_BYTES)
+
+#define SVE_SIG_ZREGS_OFFSET \
+        (SVE_SIG_REGS_OFFSET + __SVE_ZREGS_OFFSET)
+#define SVE_SIG_ZREG_OFFSET(vq, n) \
+        (SVE_SIG_REGS_OFFSET + __SVE_ZREG_OFFSET(vq, n))
+#define SVE_SIG_ZREGS_SIZE(vq) __SVE_ZREGS_SIZE(vq)
+
+#define SVE_SIG_PREGS_OFFSET(vq) \
+        (SVE_SIG_REGS_OFFSET + __SVE_PREGS_OFFSET(vq))
+#define SVE_SIG_PREG_OFFSET(vq, n) \
+        (SVE_SIG_REGS_OFFSET + __SVE_PREG_OFFSET(vq, n))
+#define SVE_SIG_PREGS_SIZE(vq) __SVE_PREGS_SIZE(vq)
+
+#define SVE_SIG_FFR_OFFSET(vq) \
+        (SVE_SIG_REGS_OFFSET + __SVE_FFR_OFFSET(vq))
+
+#define SVE_SIG_REGS_SIZE(vq) \
+        (__SVE_FFR_OFFSET(vq) + __SVE_FFR_SIZE(vq))
+
+#define SVE_SIG_CONTEXT_SIZE(vq) \
+        (SVE_SIG_REGS_OFFSET + SVE_SIG_REGS_SIZE(vq))
+
+#endif // SVE_MAGIC
+#endif // HOST_64BIT && HOST_ARM64 && !TARGET_FREEBSD && !TARGET_OSX
+
 #ifdef HOST_S390X
 
 #define MCREG_PSWMask(mc)   ((mc).psw.mask)
