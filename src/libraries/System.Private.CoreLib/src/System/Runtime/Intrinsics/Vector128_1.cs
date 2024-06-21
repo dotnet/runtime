@@ -7,8 +7,6 @@ using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Runtime.Intrinsics.X86;
-using System.Runtime.Intrinsics.Arm;
 using System.Text;
 
 namespace System.Runtime.Intrinsics
