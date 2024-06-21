@@ -3,7 +3,7 @@
 
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-#if NETCOREAPP
+#if NET
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
@@ -13,10 +13,6 @@ namespace System.Buffers.Text
 {
     internal static partial class Base64Helper
     {
-#pragma warning disable CA1805 // Member 's_base64ByteEncoder' is explicitly initialized to its default value
-        internal static Base64EncoderByte s_base64ByteEncoder = default;
-#pragma warning restore CA1805
-
         internal static unsafe OperationStatus EncodeTo<TBase64Encoder, T>(TBase64Encoder encoder, ReadOnlySpan<byte> source,
             Span<T> destination, out int bytesConsumed, out int bytesWritten, bool isFinalBlock = true)
             where TBase64Encoder : IBase64Encoder<T>
@@ -41,7 +37,7 @@ namespace System.Buffers.Text
                 byte* srcEnd = srcBytes + (uint)srcLength;
                 byte* srcMax = srcBytes + (uint)maxSrcLength;
 
-#if NETCOREAPP
+#if NET
                 if (maxSrcLength >= 16)
                 {
                     byte* end = srcMax - 64;
@@ -132,13 +128,13 @@ namespace System.Buffers.Text
             }
         }
 
-#if NETCOREAPP
+#if NET
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Avx512BW))]
         [CompExactlyDependsOn(typeof(Avx512Vbmi))]
         private static unsafe void Avx512Encode<TBase64Encoder, T>(TBase64Encoder encoder, ref byte* srcBytes, ref T* destBytes, byte* srcEnd, int sourceLength, int destLength, byte* srcStart, T* destStart)
-    where TBase64Encoder : IBase64Encoder<T>
-    where T : unmanaged
+            where TBase64Encoder : IBase64Encoder<T>
+            where T : unmanaged
         {
             // Reference for VBMI implementation : https://github.com/WojciechMula/base64simd/tree/master/encode
             // If we have AVX512 support, pick off 48 bytes at a time for as long as we can.
@@ -664,21 +660,12 @@ namespace System.Buffers.Text
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public int GetMaxSrcLength(int srcLength, int destLength) =>
-#if NETCOREAPP
                 srcLength <= MaximumEncodeLength && destLength >= Base64.GetMaxEncodedToUtf8Length(srcLength) ?
                 srcLength : (destLength >> 2) * 3;
-#else
-                0;
-#endif
 
             public uint GetInPlaceDestinationLength(int encodedLength, int _) => (uint)(encodedLength - 4);
 
-            public int GetMaxEncodedLength(int srcLength) =>
-#if NETCOREAPP
-                Base64.GetMaxEncodedToUtf8Length(srcLength);
-#else
-                0;
-#endif
+            public int GetMaxEncodedLength(int srcLength) => Base64.GetMaxEncodedToUtf8Length(srcLength);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public unsafe void EncodeOneOptionallyPadTwo(byte* oneByte, byte* dest, ref byte encodingMap)
@@ -734,7 +721,7 @@ namespace System.Buffers.Text
                 }
             }
 
-#if NETCOREAPP
+#if NET
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public unsafe void StoreVector512ToDestination(byte* dest, byte* destStart, int destLength, Vector512<byte> str)
             {

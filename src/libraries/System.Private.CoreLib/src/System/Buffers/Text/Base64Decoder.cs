@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.CompilerServices;
+using static System.Buffers.Text.Base64Helper;
 
 namespace System.Buffers.Text
 {
@@ -29,7 +30,7 @@ namespace System.Buffers.Text
         ///   or if the input is incomplete (i.e. not a multiple of 4) and <paramref name="isFinalBlock"/> is <see langword="true"/>.
         /// </returns>
         public static OperationStatus DecodeFromUtf8(ReadOnlySpan<byte> utf8, Span<byte> bytes, out int bytesConsumed, out int bytesWritten, bool isFinalBlock = true) =>
-            Base64Helper.DecodeFrom(Base64Helper.s_base64ByteDecoder, utf8, bytes, out bytesConsumed, out bytesWritten, isFinalBlock, ignoreWhiteSpace: true);
+            DecodeFrom(default(Base64DecoderByte), utf8, bytes, out bytesConsumed, out bytesWritten, isFinalBlock, ignoreWhiteSpace: true);
 
         /// <summary>
         /// Returns the maximum length (in bytes) of the result if you were to decode base 64 encoded text within a byte span of size "length".
@@ -61,6 +62,6 @@ namespace System.Buffers.Text
         /// hence can only be called once with all the data in the buffer.
         /// </returns>
         public static OperationStatus DecodeFromUtf8InPlace(Span<byte> buffer, out int bytesWritten) =>
-            Base64Helper.DecodeFromUtf8InPlace(Base64Helper.s_base64ByteDecoder, buffer, out bytesWritten, ignoreWhiteSpace: true);
+            Base64Helper.DecodeFromUtf8InPlace(default(Base64DecoderByte), buffer, out bytesWritten, ignoreWhiteSpace: true);
     }
 }

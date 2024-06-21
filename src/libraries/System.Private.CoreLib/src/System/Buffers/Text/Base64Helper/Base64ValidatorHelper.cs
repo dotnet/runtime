@@ -7,11 +7,6 @@ namespace System.Buffers.Text
 {
     internal static partial class Base64Helper
     {
-#pragma warning disable CA1805 // Member 's_base64ByteEncoder' is explicitly initialized to its default value
-        internal static Base64ByteValidatable s_base64ByteValidatable = default;
-        internal static Base64CharValidatable s_base64CharValidatable = default;
-#pragma warning restore CA1805
-
         internal static bool IsValid<T, TBase64Validatable>(TBase64Validatable validatable, ReadOnlySpan<T> base64Text, out int decodedLength)
             where TBase64Validatable : IBase64Validatable<T>
         {
@@ -19,7 +14,7 @@ namespace System.Buffers.Text
 
             if (!base64Text.IsEmpty)
             {
-#if NETCOREAPP
+#if NET
                 while (true)
                 {
 
@@ -128,7 +123,7 @@ namespace System.Buffers.Text
 
         internal interface IBase64Validatable<T>
         {
-#if NETCOREAPP
+#if NET
             int IndexOfAnyExcept(ReadOnlySpan<T> span);
 #else
             int DecodeValue(T value);
@@ -140,7 +135,7 @@ namespace System.Buffers.Text
 
         internal readonly struct Base64CharValidatable : IBase64Validatable<char>
         {
-#if NETCOREAPP
+#if NET
             private static readonly SearchValues<char> s_validBase64Chars = SearchValues.Create("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/");
 
             public int IndexOfAnyExcept(ReadOnlySpan<char> span) => span.IndexOfAnyExcept(s_validBase64Chars);
@@ -153,24 +148,23 @@ namespace System.Buffers.Text
                     return -2;
                 }
 
-                return s_base64ByteDecoder.DecodingMap[value];
+                return default(Base64DecoderByte).DecodingMap[value];
             }
 #endif
             public bool IsWhiteSpace(char value) => Base64Helper.IsWhiteSpace(value);
             public bool IsEncodingPad(char value) => value == EncodingPad;
             public bool ValidateAndDecodeLength(int length, int paddingCount, out int decodedLength) =>
-                s_base64ByteValidatable.ValidateAndDecodeLength(length, paddingCount, out decodedLength);
+                default(Base64ByteValidatable).ValidateAndDecodeLength(length, paddingCount, out decodedLength);
         }
 
         internal readonly struct Base64ByteValidatable : IBase64Validatable<byte>
         {
-#if NETCOREAPP
-            private static readonly SearchValues<byte> s_validBase64Chars = SearchValues.Create(s_base64ByteEncoder.EncodingMap);
+#if NET
+            private static readonly SearchValues<byte> s_validBase64Chars = SearchValues.Create(default(Base64EncoderByte).EncodingMap);
 
             public int IndexOfAnyExcept(ReadOnlySpan<byte> span) => span.IndexOfAnyExcept(s_validBase64Chars);
 #else
-            public int DecodeValue(byte value) =>
-                s_base64ByteDecoder.DecodingMap[value];
+            public int DecodeValue(byte value) => default(Base64DecoderByte).DecodingMap[value];
 #endif
             public bool IsWhiteSpace(byte value) => Base64Helper.IsWhiteSpace(value);
             public bool IsEncodingPad(byte value) => value == EncodingPad;

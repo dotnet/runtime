@@ -4,7 +4,7 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-#if NETCOREAPP
+#if NET
 using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
 using System.Runtime.Intrinsics;
@@ -14,10 +14,6 @@ namespace System.Buffers.Text
 {
     internal static partial class Base64Helper
     {
-#pragma warning disable CA1805 // Member 's_base64ByteDecoder' is explicitly initialized to its default value
-        internal static Base64DecoderByte s_base64ByteDecoder = default;
-#pragma warning restore CA1805
-
         internal static unsafe OperationStatus DecodeFrom<TBase64Decoder, T>(TBase64Decoder decoder, ReadOnlySpan<T> source, Span<byte> bytes,
             out int bytesConsumed, out int bytesWritten, bool isFinalBlock, bool ignoreWhiteSpace)
             where TBase64Decoder : IBase64Decoder<T>
@@ -50,7 +46,7 @@ namespace System.Buffers.Text
                 T* srcEnd = srcBytes + (uint)srcLength;
                 T* srcMax = srcBytes + (uint)maxSrcLength;
 
-#if NETCOREAPP
+#if NET
                 if (maxSrcLength >= 24)
                 {
                     T* end = srcMax - 88;
@@ -112,7 +108,7 @@ namespace System.Buffers.Text
                     // This should never overflow since destLength here is less than int.MaxValue / 4 * 3 (i.e. 1610612733)
                     // Therefore, (destLength / 3) * 4 will always be less than 2147483641
                     Debug.Assert(destLength < (int.MaxValue / 4 * 3));
-#if NETCOREAPP
+#if NET
                     (maxSrcLength, int remainder) = int.DivRem(destLength, 3);
                     maxSrcLength *= 4;
 #else
@@ -643,13 +639,13 @@ namespace System.Buffers.Text
             return status;
         }
 
-#if NETCOREAPP
+#if NET
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Avx512BW))]
         [CompExactlyDependsOn(typeof(Avx512Vbmi))]
         private static unsafe void Avx512Decode<TBase64Decoder, T>(TBase64Decoder decoder, ref T* srcBytes, ref byte* destBytes, T* srcEnd, int sourceLength, int destLength, T* srcStart, byte* destStart)
-     where TBase64Decoder : IBase64Decoder<T>
-     where T : unmanaged
+            where TBase64Decoder : IBase64Decoder<T>
+            where T : unmanaged
         {
             // Reference for VBMI implementation : https://github.com/WojciechMula/base64simd/tree/master/decode
             // If we have AVX512 support, pick off 64 bytes at a time for as long as we can,
@@ -1243,12 +1239,7 @@ namespace System.Buffers.Text
 
             public uint AdvSimdLutTwo3Uint1 => 0x1B1AFFFF;
 
-            public int GetMaxDecodedLength(int utf8Length) =>
-#if NETCOREAPP
-                Base64.GetMaxDecodedFromUtf8Length(utf8Length);
-#else
-                0;
-#endif
+            public int GetMaxDecodedLength(int utf8Length) => Base64.GetMaxDecodedFromUtf8Length(utf8Length);
 
             public bool IsInvalidLength(int bufferLength) => bufferLength % 4 != 0; // only decode input if it is a multiple of 4
 
@@ -1256,7 +1247,7 @@ namespace System.Buffers.Text
 
             public int SrcLength(bool _, int utf8Length) => utf8Length & ~0x3;  // only decode input up to the closest multiple of 4.
 
-#if NETCOREAPP
+#if NET
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
             [CompExactlyDependsOn(typeof(Ssse3))]

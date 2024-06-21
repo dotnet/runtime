@@ -3,7 +3,7 @@
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-#if NETCOREAPP
+#if NET
 using System.Runtime.Intrinsics;
 #endif
 
@@ -82,7 +82,7 @@ namespace System.Buffers.Text
             unsafe void EncodeThreeAndWrite(byte* threeBytes, T* destination, ref byte encodingMap);
             int IncrementPadTwo { get; }
             int IncrementPadOne { get; }
-#if NETCOREAPP
+#if NET
             unsafe void StoreVector512ToDestination(T* dest, T* destStart, int destLength, Vector512<byte> str);
             unsafe void StoreVector256ToDestination(T* dest, T* destStart, int destLength, Vector256<byte> str);
             unsafe void StoreVector128ToDestination(T* dest, T* destStart, int destLength, Vector128<byte> str);
@@ -109,7 +109,7 @@ namespace System.Buffers.Text
             int GetMaxDecodedLength(int sourceLength);
             bool IsInvalidLength(int bufferLength);
             bool IsValidPadding(uint padChar);
-#if NETCOREAPP
+#if NET
             bool TryDecode128Core(
                 Vector128<byte> str,
                 Vector128<byte> hiNibbles,

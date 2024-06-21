@@ -4,12 +4,13 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-#if NETCOREAPP
+#if NET
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
 #endif
 using System.Text;
+using static System.Buffers.Text.Base64Helper;
 
 namespace System.Buffers.Text
 {
@@ -18,10 +19,6 @@ namespace System.Buffers.Text
     public static partial class Base64Url
     {
         private const int MaxStackallocThreshold = 256;
-#pragma warning disable CA1805 // Member 's_base64UrlByteDecoder' is explicitly initialized to its default value
-        private static Base64UrlDecoderByte s_base64UrlByteDecoder = default;
-        private static Base64UrlDecoderChar s_base64UrlCharDecoder = default;
-#pragma warning restore CA1805
 
         /// <summary>
         /// Returns the maximum length (in bytes) of the result if you were to decode base 64 encoded text from a span of size <paramref name="base64Length"/>.
@@ -30,7 +27,7 @@ namespace System.Buffers.Text
         /// </exception>
         public static int GetMaxDecodedLength(int base64Length)
         {
-#if NETCOREAPP
+#if NET
             ArgumentOutOfRangeException.ThrowIfNegative(base64Length);
 
             (uint whole, uint remainder) = uint.DivRem((uint)base64Length, 4);
@@ -66,7 +63,7 @@ namespace System.Buffers.Text
         /// - Remainder of 1 byte - will cause OperationStatus.InvalidData result.
         /// </remarks>
         public static OperationStatus DecodeFromUtf8(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesConsumed, out int bytesWritten, bool isFinalBlock = true) =>
-            Base64Helper.DecodeFrom(s_base64UrlByteDecoder, source, destination, out bytesConsumed, out bytesWritten, isFinalBlock, ignoreWhiteSpace: true);
+            DecodeFrom(default(Base64UrlDecoderByte), source, destination, out bytesConsumed, out bytesWritten, isFinalBlock, ignoreWhiteSpace: true);
 
         /// <summary>
         /// Decodes the span of UTF-8 encoded text in Base64Url into binary data, in-place.
@@ -85,7 +82,7 @@ namespace System.Buffers.Text
         /// </remarks>
         public static int DecodeFromUtf8InPlace(Span<byte> buffer)
         {
-            OperationStatus status = Base64Helper.DecodeFromUtf8InPlace<Base64UrlDecoderByte>(s_base64UrlByteDecoder, buffer, out int bytesWritten, ignoreWhiteSpace: true);
+            OperationStatus status = DecodeFromUtf8InPlace<Base64UrlDecoderByte>(default, buffer, out int bytesWritten, ignoreWhiteSpace: true);
 
             // Base64.DecodeFromUtf8InPlace returns OperationStatus, therefore doesn't throw.
             // For Base64Url, this is not an OperationStatus API and thus throws.
@@ -201,10 +198,12 @@ namespace System.Buffers.Text
         /// </remarks>
         public static OperationStatus DecodeFromChars(ReadOnlySpan<char> source, Span<byte> destination,
             out int charsConsumed, out int bytesWritten, bool isFinalBlock = true) =>
-            Base64Helper.DecodeFrom(s_base64UrlCharDecoder, MemoryMarshal.Cast<char, ushort>(source), destination, out charsConsumed, out bytesWritten, isFinalBlock, ignoreWhiteSpace: true);
+            DecodeFrom(default(Base64UrlDecoderChar), MemoryMarshal.Cast<char, ushort>(source), destination,
+                out charsConsumed, out bytesWritten, isFinalBlock, ignoreWhiteSpace: true);
 
-        private static OperationStatus DecodeWithWhiteSpaceBlockwise<TBase64Decoder>(TBase64Decoder decoder, ReadOnlySpan<ushort> source, Span<byte> bytes, ref int bytesConsumed, ref int bytesWritten, bool isFinalBlock = true)
-            where TBase64Decoder : Base64Helper.IBase64Decoder<ushort>
+        private static OperationStatus DecodeWithWhiteSpaceBlockwise<TBase64Decoder>(TBase64Decoder decoder,
+            ReadOnlySpan<ushort> source, Span<byte> bytes, ref int bytesConsumed, ref int bytesWritten, bool isFinalBlock = true)
+            where TBase64Decoder : IBase64Decoder<ushort>
         {
             const int BlockSize = 4;
             Span<ushort> buffer = stackalloc ushort[BlockSize];
@@ -218,7 +217,7 @@ namespace System.Buffers.Text
 
                 for (; encodedIdx < source.Length && (uint)bufferIdx < (uint)buffer.Length; ++encodedIdx)
                 {
-                    if (Base64Helper.IsWhiteSpace(source[encodedIdx]))
+                    if (IsWhiteSpace(source[encodedIdx]))
                     {
                         skipped++;
                     }
@@ -239,7 +238,7 @@ namespace System.Buffers.Text
 
                 bool hasAnotherBlock;
 
-                if (decoder is Base64Helper.Base64DecoderByte)
+                if (decoder is Base64DecoderByte)
                 {
                     hasAnotherBlock = source.Length >= BlockSize;
                 }
@@ -266,7 +265,7 @@ namespace System.Buffers.Text
                     localIsFinalBlock = false;
                 }
 
-                status = Base64Helper.DecodeFrom<TBase64Decoder, ushort>(decoder, buffer.Slice(0, bufferIdx), bytes, out int localConsumed, out int localWritten, localIsFinalBlock, ignoreWhiteSpace: false);
+                status = DecodeFrom<TBase64Decoder, ushort>(decoder, buffer.Slice(0, bufferIdx), bytes, out int localConsumed, out int localWritten, localIsFinalBlock, ignoreWhiteSpace: false);
                 bytesConsumed += localConsumed;
                 bytesWritten += localWritten;
 
@@ -280,7 +279,7 @@ namespace System.Buffers.Text
                 {
                     for (int i = 0; i < source.Length; ++i)
                     {
-                        if (!Base64Helper.IsWhiteSpace(source[i]))
+                        if (!IsWhiteSpace(source[i]))
                         {
                             // Revert previous dest increment, since an invalid state followed.
                             bytesConsumed -= localConsumed;
@@ -303,7 +302,7 @@ namespace System.Buffers.Text
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int GetPaddingCount<TBase64Decoder>(TBase64Decoder decoder, ref ushort ptrToLastElement)
-            where TBase64Decoder : Base64Helper.IBase64Decoder<ushort>
+            where TBase64Decoder : IBase64Decoder<ushort>
         {
             int padding = 0;
 
@@ -395,7 +394,7 @@ namespace System.Buffers.Text
             return status == OperationStatus.Done ? ret : throw new FormatException(SR.Format_BadBase64Char);
         }
 
-        private readonly struct Base64UrlDecoderByte : Base64Helper.IBase64Decoder<byte>
+        private readonly struct Base64UrlDecoderByte : IBase64Decoder<byte>
         {
             public ReadOnlySpan<sbyte> DecodingMap =>
                 [
@@ -485,11 +484,11 @@ namespace System.Buffers.Text
 
             public bool IsInvalidLength(int bufferLength) => (bufferLength & 3) == 1; // One byte cannot be decoded completely
 
-            public bool IsValidPadding(uint padChar) => padChar is Base64Helper.EncodingPad or UrlEncodingPad;
+            public bool IsValidPadding(uint padChar) => padChar is EncodingPad or UrlEncodingPad;
 
             public int SrcLength(bool isFinalBlock, int sourceLength) => isFinalBlock ? sourceLength : sourceLength & ~0x3;
 
-#if NETCOREAPP
+#if NET
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
             [CompExactlyDependsOn(typeof(Ssse3))]
@@ -504,8 +503,8 @@ namespace System.Buffers.Text
                 Vector128<byte> shiftForUnderscore,
                 out Vector128<byte> result)
             {
-                Vector128<byte> lowerBound = Base64Helper.SimdShuffle(lutLow, hiNibbles, mask8F);
-                Vector128<byte> upperBound = Base64Helper.SimdShuffle(lutHigh, hiNibbles, mask8F);
+                Vector128<byte> lowerBound = SimdShuffle(lutLow, hiNibbles, mask8F);
+                Vector128<byte> upperBound = SimdShuffle(lutHigh, hiNibbles, mask8F);
 
                 Vector128<byte> below = Vector128.LessThan(str, lowerBound);
                 Vector128<byte> above = Vector128.GreaterThan(str, upperBound);
@@ -520,7 +519,7 @@ namespace System.Buffers.Text
                     return false;
                 }
 
-                Vector128<byte> shift = Base64Helper.SimdShuffle(lutShift.AsByte(), hiNibbles, mask8F);
+                Vector128<byte> shift = SimdShuffle(lutShift.AsByte(), hiNibbles, mask8F);
                 str += shift;
 
                 result = str + (eq5F & shiftForUnderscore);
@@ -564,93 +563,93 @@ namespace System.Buffers.Text
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public unsafe bool TryLoadVector512(byte* src, byte* srcStart, int sourceLength, out Vector512<sbyte> str) =>
-                Base64Helper.s_base64ByteDecoder.TryLoadVector512(src, srcStart, sourceLength, out str);
+                default(Base64DecoderByte).TryLoadVector512(src, srcStart, sourceLength, out str);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             [CompExactlyDependsOn(typeof(Avx2))]
             public unsafe bool TryLoadAvxVector256(byte* src, byte* srcStart, int sourceLength, out Vector256<sbyte> str) =>
-                Base64Helper.s_base64ByteDecoder.TryLoadAvxVector256(src, srcStart, sourceLength, out str);
+                default(Base64DecoderByte).TryLoadAvxVector256(src, srcStart, sourceLength, out str);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public unsafe bool TryLoadVector128(byte* src, byte* srcStart, int sourceLength, out Vector128<byte> str) =>
-                Base64Helper.s_base64ByteDecoder.TryLoadVector128(src, srcStart, sourceLength, out str);
+                default(Base64DecoderByte).TryLoadVector128(src, srcStart, sourceLength, out str);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
             public unsafe bool TryLoadArmVector128x4(byte* src, byte* srcStart, int sourceLength,
                 out Vector128<byte> str1, out Vector128<byte> str2, out Vector128<byte> str3, out Vector128<byte> str4) =>
-                Base64Helper.s_base64ByteDecoder.TryLoadArmVector128x4(src, srcStart, sourceLength, out str1, out str2, out str3, out str4);
+                default(Base64DecoderByte).TryLoadArmVector128x4(src, srcStart, sourceLength, out str1, out str2, out str3, out str4);
 #endif
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public unsafe int DecodeFourElements(byte* source, ref sbyte decodingMap) =>
-                Base64Helper.s_base64ByteDecoder.DecodeFourElements(source, ref decodingMap);
+                default(Base64DecoderByte).DecodeFourElements(source, ref decodingMap);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public unsafe int DecodeRemaining(byte* srcEnd, ref sbyte decodingMap, long remaining, out uint t2, out uint t3)
-                => Base64Helper.s_base64ByteDecoder.DecodeRemaining(srcEnd, ref decodingMap, remaining, out t2, out t3);
+            public unsafe int DecodeRemaining(byte* srcEnd, ref sbyte decodingMap, long remaining, out uint t2, out uint t3) =>
+                default(Base64DecoderByte).DecodeRemaining(srcEnd, ref decodingMap, remaining, out t2, out t3);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public int IndexOfAnyExceptWhiteSpace(ReadOnlySpan<byte> span) => Base64Helper.s_base64ByteDecoder.IndexOfAnyExceptWhiteSpace(span);
+            public int IndexOfAnyExceptWhiteSpace(ReadOnlySpan<byte> span) => default(Base64DecoderByte).IndexOfAnyExceptWhiteSpace(span);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public OperationStatus DecodeWithWhiteSpaceBlockwiseWrapper<TBase64Decoder>(TBase64Decoder decoder, ReadOnlySpan<byte> utf8, Span<byte> bytes,
-                ref int bytesConsumed, ref int bytesWritten, bool isFinalBlock = true) where TBase64Decoder : Base64Helper.IBase64Decoder<byte> =>
+                ref int bytesConsumed, ref int bytesWritten, bool isFinalBlock = true) where TBase64Decoder : IBase64Decoder<byte> =>
                 Base64Helper.DecodeWithWhiteSpaceBlockwise(decoder, utf8, bytes, ref bytesConsumed, ref bytesWritten, isFinalBlock);
         }
 
-        private readonly struct Base64UrlDecoderChar : Base64Helper.IBase64Decoder<ushort>
+        private readonly struct Base64UrlDecoderChar : IBase64Decoder<ushort>
         {
-            public ReadOnlySpan<sbyte> DecodingMap => s_base64UrlByteDecoder.DecodingMap;
+            public ReadOnlySpan<sbyte> DecodingMap => default(Base64UrlDecoderByte).DecodingMap;
 
-            public ReadOnlySpan<uint> VbmiLookup0 => s_base64UrlByteDecoder.VbmiLookup0;
+            public ReadOnlySpan<uint> VbmiLookup0 => default(Base64UrlDecoderByte).VbmiLookup0;
 
-            public ReadOnlySpan<uint> VbmiLookup1 => s_base64UrlByteDecoder.VbmiLookup1;
+            public ReadOnlySpan<uint> VbmiLookup1 => default(Base64UrlDecoderByte).VbmiLookup1;
 
-            public ReadOnlySpan<sbyte> Avx2LutHigh => s_base64UrlByteDecoder.Avx2LutHigh;
+            public ReadOnlySpan<sbyte> Avx2LutHigh => default(Base64UrlDecoderByte).Avx2LutHigh;
 
-            public ReadOnlySpan<sbyte> Avx2LutLow => s_base64UrlByteDecoder.Avx2LutLow;
+            public ReadOnlySpan<sbyte> Avx2LutLow => default(Base64UrlDecoderByte).Avx2LutLow;
 
-            public ReadOnlySpan<sbyte> Avx2LutShift => s_base64UrlByteDecoder.Avx2LutShift;
+            public ReadOnlySpan<sbyte> Avx2LutShift => default(Base64UrlDecoderByte).Avx2LutShift;
 
-            public byte MaskSlashOrUnderscore => s_base64UrlByteDecoder.MaskSlashOrUnderscore;
+            public byte MaskSlashOrUnderscore => default(Base64UrlDecoderByte).MaskSlashOrUnderscore;
 
-            public ReadOnlySpan<int> Vector128LutHigh => s_base64UrlByteDecoder.Vector128LutHigh;
+            public ReadOnlySpan<int> Vector128LutHigh => default(Base64UrlDecoderByte).Vector128LutHigh;
 
-            public ReadOnlySpan<int> Vector128LutLow => s_base64UrlByteDecoder.Vector128LutLow;
+            public ReadOnlySpan<int> Vector128LutLow => default(Base64UrlDecoderByte).Vector128LutLow;
 
-            public ReadOnlySpan<uint> Vector128LutShift => s_base64UrlByteDecoder.Vector128LutShift;
+            public ReadOnlySpan<uint> Vector128LutShift => default(Base64UrlDecoderByte).Vector128LutShift;
 
-            public ReadOnlySpan<uint> AdvSimdLutOne3 => s_base64UrlByteDecoder.AdvSimdLutOne3;
+            public ReadOnlySpan<uint> AdvSimdLutOne3 => default(Base64UrlDecoderByte).AdvSimdLutOne3;
 
-            public uint AdvSimdLutTwo3Uint1 => s_base64UrlByteDecoder.AdvSimdLutTwo3Uint1;
+            public uint AdvSimdLutTwo3Uint1 => default(Base64UrlDecoderByte).AdvSimdLutTwo3Uint1;
 
-            public int GetMaxDecodedLength(int sourceLength) => s_base64UrlByteDecoder.GetMaxDecodedLength(sourceLength);
+            public int GetMaxDecodedLength(int sourceLength) => default(Base64UrlDecoderByte).GetMaxDecodedLength(sourceLength);
 
-            public bool IsInvalidLength(int bufferLength) => s_base64UrlByteDecoder.IsInvalidLength(bufferLength);
+            public bool IsInvalidLength(int bufferLength) => default(Base64UrlDecoderByte).IsInvalidLength(bufferLength);
 
-            public bool IsValidPadding(uint padChar) => s_base64UrlByteDecoder.IsValidPadding(padChar);
+            public bool IsValidPadding(uint padChar) => default(Base64UrlDecoderByte).IsValidPadding(padChar);
 
-            public int SrcLength(bool isFinalBlock, int sourceLength) => s_base64UrlByteDecoder.SrcLength(isFinalBlock, sourceLength);
+            public int SrcLength(bool isFinalBlock, int sourceLength) => default(Base64UrlDecoderByte).SrcLength(isFinalBlock, sourceLength);
 
-#if NETCOREAPP
+#if NET
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
             [CompExactlyDependsOn(typeof(Ssse3))]
             public bool TryDecode128Core(Vector128<byte> str, Vector128<byte> hiNibbles, Vector128<byte> maskSlashOrUnderscore, Vector128<byte> mask8F,
                 Vector128<byte> lutLow, Vector128<byte> lutHigh, Vector128<sbyte> lutShift, Vector128<byte> shiftForUnderscore, out Vector128<byte> result) =>
-                s_base64UrlByteDecoder.TryDecode128Core(str, hiNibbles, maskSlashOrUnderscore, mask8F, lutLow, lutHigh, lutShift, shiftForUnderscore, out result);
+                default(Base64UrlDecoderByte).TryDecode128Core(str, hiNibbles, maskSlashOrUnderscore, mask8F, lutLow, lutHigh, lutShift, shiftForUnderscore, out result);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             [CompExactlyDependsOn(typeof(Avx2))]
             public bool TryDecode256Core(Vector256<sbyte> str, Vector256<sbyte> hiNibbles, Vector256<sbyte> maskSlashOrUnderscore, Vector256<sbyte> lutLow,
                 Vector256<sbyte> lutHigh, Vector256<sbyte> lutShift, Vector256<sbyte> shiftForUnderscore, out Vector256<sbyte> result) =>
-                s_base64UrlByteDecoder.TryDecode256Core(str, hiNibbles, maskSlashOrUnderscore, lutLow, lutHigh, lutShift, shiftForUnderscore, out result);
+                default(Base64UrlDecoderByte).TryDecode256Core(str, hiNibbles, maskSlashOrUnderscore, lutLow, lutHigh, lutShift, shiftForUnderscore, out result);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public unsafe bool TryLoadVector512(ushort* src, ushort* srcStart, int sourceLength, out Vector512<sbyte> str)
             {
-                Base64Helper.AssertRead<Vector512<ushort>>(src, srcStart, sourceLength);
+                AssertRead<Vector512<ushort>>(src, srcStart, sourceLength);
                 Vector512<ushort> utf16VectorLower = Vector512.Load(src);
                 Vector512<ushort> utf16VectorUpper = Vector512.Load(src + 32);
 
@@ -668,7 +667,7 @@ namespace System.Buffers.Text
             [CompExactlyDependsOn(typeof(Avx2))]
             public unsafe bool TryLoadAvxVector256(ushort* src, ushort* srcStart, int sourceLength, out Vector256<sbyte> str)
             {
-                Base64Helper.AssertRead<Vector256<sbyte>>(src, srcStart, sourceLength);
+                AssertRead<Vector256<sbyte>>(src, srcStart, sourceLength);
                 Vector256<ushort> utf16VectorLower = Avx.LoadVector256(src);
                 Vector256<ushort> utf16VectorUpper = Avx.LoadVector256(src + 16);
 
@@ -685,7 +684,7 @@ namespace System.Buffers.Text
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public unsafe bool TryLoadVector128(ushort* src, ushort* srcStart, int sourceLength, out Vector128<byte> str)
             {
-                Base64Helper.AssertRead<Vector128<sbyte>>(src, srcStart, sourceLength);
+                AssertRead<Vector128<sbyte>>(src, srcStart, sourceLength);
                 Vector128<ushort> utf16VectorLower = Vector128.LoadUnsafe(ref *src);
                 Vector128<ushort> utf16VectorUpper = Vector128.LoadUnsafe(ref *src, 8);
                 if (Ascii.VectorContainsNonAsciiChar(utf16VectorLower | utf16VectorUpper))
@@ -703,7 +702,7 @@ namespace System.Buffers.Text
             public unsafe bool TryLoadArmVector128x4(ushort* src, ushort* srcStart, int sourceLength,
                 out Vector128<byte> str1, out Vector128<byte> str2, out Vector128<byte> str3, out Vector128<byte> str4)
             {
-                Base64Helper.AssertRead<Vector128<sbyte>>(src, srcStart, sourceLength);
+                AssertRead<Vector128<sbyte>>(src, srcStart, sourceLength);
                 var (s11, s12, s21, s22) = AdvSimd.Arm64.Load4xVector128AndUnzip(src);
                 var (s31, s32, s41, s42) = AdvSimd.Arm64.Load4xVector128AndUnzip(src + 32);
 
@@ -757,8 +756,8 @@ namespace System.Buffers.Text
             {
                 uint t0;
                 uint t1;
-                t2 = Base64Helper.EncodingPad;
-                t3 = Base64Helper.EncodingPad;
+                t2 = EncodingPad;
+                t3 = EncodingPad;
                 switch (remaining)
                 {
                     case 2:
@@ -800,7 +799,7 @@ namespace System.Buffers.Text
             {
                 for (int i = 0; i < span.Length; i++)
                 {
-                    if (!Base64Helper.IsWhiteSpace(span[i]))
+                    if (!IsWhiteSpace(span[i]))
                     {
                         return i;
                     }
@@ -811,8 +810,8 @@ namespace System.Buffers.Text
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public OperationStatus DecodeWithWhiteSpaceBlockwiseWrapper<TBase64Decoder>(TBase64Decoder decoder, ReadOnlySpan<ushort> source, Span<byte> bytes,
-                ref int bytesConsumed, ref int bytesWritten, bool isFinalBlock = true) where TBase64Decoder : Base64Helper.IBase64Decoder<ushort> =>
-                DecodeWithWhiteSpaceBlockwise<TBase64Decoder>(decoder, source, bytes, ref bytesConsumed, ref bytesWritten, isFinalBlock);
+                ref int bytesConsumed, ref int bytesWritten, bool isFinalBlock = true) where TBase64Decoder : IBase64Decoder<ushort> =>
+                DecodeWithWhiteSpaceBlockwise(decoder, source, bytes, ref bytesConsumed, ref bytesWritten, isFinalBlock);
         }
     }
 }

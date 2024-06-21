@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.CompilerServices;
+using static System.Buffers.Text.Base64Helper;
 
 namespace System.Buffers.Text
 {
@@ -13,7 +14,6 @@ namespace System.Buffers.Text
     /// </summary>
     public static partial class Base64
     {
-
         /// <summary>
         /// Encode the span of binary data into UTF-8 encoded text represented as base64.
         /// </summary>
@@ -32,7 +32,7 @@ namespace System.Buffers.Text
         /// It does not return InvalidData since that is not possible for base64 encoding.
         /// </returns>
         public static OperationStatus EncodeToUtf8(ReadOnlySpan<byte> bytes, Span<byte> utf8, out int bytesConsumed, out int bytesWritten, bool isFinalBlock = true) =>
-            Base64Helper.EncodeTo(Base64Helper.s_base64ByteEncoder, bytes, utf8, out bytesConsumed, out bytesWritten, isFinalBlock);
+            EncodeTo(default(Base64EncoderByte), bytes, utf8, out bytesConsumed, out bytesWritten, isFinalBlock);
 
         /// <summary>
         /// Returns the maximum length (in bytes) of the result if you were to encode binary data within a byte span of size "length".
@@ -43,7 +43,7 @@ namespace System.Buffers.Text
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int GetMaxEncodedToUtf8Length(int length)
         {
-            ArgumentOutOfRangeException.ThrowIfGreaterThan<uint>((uint)length, Base64Helper.MaximumEncodeLength);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan<uint>((uint)length, MaximumEncodeLength);
 
             return ((length + 2) / 3) * 4;
         }
@@ -64,6 +64,6 @@ namespace System.Buffers.Text
         /// It does not return InvalidData since that is not possible for base 64 encoding.
         /// </returns>
         public static OperationStatus EncodeToUtf8InPlace(Span<byte> buffer, int dataLength, out int bytesWritten) =>
-            Base64Helper.EncodeToUtf8InPlace(Base64Helper.s_base64ByteEncoder, buffer, dataLength, out bytesWritten);
+            Base64Helper.EncodeToUtf8InPlace(default(Base64EncoderByte), buffer, dataLength, out bytesWritten);
     }
 }
