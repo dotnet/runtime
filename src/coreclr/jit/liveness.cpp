@@ -462,37 +462,6 @@ void Compiler::fgPerBlockLocalVarLiveness()
             }
         }
 
-#ifdef DEBUG
-        if (verbose)
-        {
-            VARSET_TP allVars(VarSetOps::Union(this, fgCurUseSet, fgCurDefSet));
-            printf(FMT_BB, block->bbNum);
-            printf(" USE(%d)=", VarSetOps::Count(this, fgCurUseSet));
-            lvaDispVarSet(fgCurUseSet, allVars);
-            for (MemoryKind memoryKind : allMemoryKinds())
-            {
-                if ((fgCurMemoryUse & memoryKindSet(memoryKind)) != 0)
-                {
-                    printf(" + %s", memoryKindNames[memoryKind]);
-                }
-            }
-            printf("\n     DEF(%d)=", VarSetOps::Count(this, fgCurDefSet));
-            lvaDispVarSet(fgCurDefSet, allVars);
-            for (MemoryKind memoryKind : allMemoryKinds())
-            {
-                if ((fgCurMemoryDef & memoryKindSet(memoryKind)) != 0)
-                {
-                    printf(" + %s", memoryKindNames[memoryKind]);
-                }
-                if ((fgCurMemoryHavoc & memoryKindSet(memoryKind)) != 0)
-                {
-                    printf("*");
-                }
-            }
-            printf("\n\n");
-        }
-#endif // DEBUG
-
         VarSetOps::Assign(this, block->bbVarUse, fgCurUseSet);
         VarSetOps::Assign(this, block->bbVarDef, fgCurDefSet);
         block->bbMemoryUse   = fgCurMemoryUse;
@@ -509,6 +478,35 @@ void Compiler::fgPerBlockLocalVarLiveness()
 #ifdef DEBUG
     if (verbose)
     {
+        for (BasicBlock* block : Blocks())
+        {
+            VARSET_TP allVars(VarSetOps::Union(this, block->bbVarUse, block->bbVarDef));
+            printf(FMT_BB, block->bbNum);
+            printf(" USE(%d)=", VarSetOps::Count(this, block->bbVarUse));
+            lvaDispVarSet(block->bbVarUse, allVars);
+            for (MemoryKind memoryKind : allMemoryKinds())
+            {
+                if ((block->bbMemoryUse & memoryKindSet(memoryKind)) != 0)
+                {
+                    printf(" + %s", memoryKindNames[memoryKind]);
+                }
+            }
+            printf("\n     DEF(%d)=", VarSetOps::Count(this, block->bbVarDef));
+            lvaDispVarSet(block->bbVarDef, allVars);
+            for (MemoryKind memoryKind : allMemoryKinds())
+            {
+                if ((block->bbMemoryDef & memoryKindSet(memoryKind)) != 0)
+                {
+                    printf(" + %s", memoryKindNames[memoryKind]);
+                }
+                if ((block->bbMemoryHavoc & memoryKindSet(memoryKind)) != 0)
+                {
+                    printf("*");
+                }
+            }
+            printf("\n\n");
+        }
+
         printf("** Memory liveness computed, GcHeap states and ByrefExposed states %s\n",
                (byrefStatesMatchGcHeapStates ? "match" : "diverge"));
     }
