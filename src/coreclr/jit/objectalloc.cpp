@@ -940,36 +940,37 @@ void ObjectAllocator::RewriteUses()
                 {
                     JITDUMP("Found unbox helper call [%06u]\n", m_compiler->dspTreeID(call));
 
-                    // See if first arg is possibly a stack allocated box.
+                    // See if first arg is possibly a stack allocated box or ref class
                     // (arg will have been retyped local or local address)
                     //
                     CallArg*       secondArg     = call->gtArgs.GetArgByIndex(1);
                     GenTree* const secondArgNode = secondArg->GetNode();
 
-                    if (secondArgNode->OperIsLocal() && !secondArgNode->TypeIs(TYP_REF))
+                    if ((secondArgNode->OperIsLocal() || secondArgNode->OperIs(GT_LCL_ADDR)) &&
+                        !secondArgNode->TypeIs(TYP_REF))
                     {
-                        GenTreeLclVarCommon* const lcl     = secondArgNode->AsLclVarCommon();
-                        GenTree* const             lclCopy = (user == nullptr) ? nullptr : m_compiler->gtClone(lcl);
+                        const bool                 isForEffect = (user == nullptr) || call->TypeIs(TYP_VOID);
+                        GenTreeLclVarCommon* const lcl         = secondArgNode->AsLclVarCommon();
 
                         // Rewrite the call to make the box accesses explicit in jitted code.
                         // user = COMMA(
                         //           CALL(UNBOX_HELPER_TYPETEST, obj->MethodTable, type),
-                        //           ADD(&obj, TARGET_POINTER_SIZE))
+                        //           ADD(obj, TARGET_POINTER_SIZE))
                         //
-                        JITDUMP("Rewriting to invoke box type test helper\n");
+                        JITDUMP("Rewriting to invoke box type test helper%s\n", isForEffect ? " for side effect" : "");
 
                         call->gtCallMethHnd = m_compiler->eeFindHelper(CORINFO_HELP_UNBOX_TYPETEST);
-                        lcl->ChangeOper(GT_LCL_VAR);
-                        GenTree* const mt = m_compiler->gtNewMethodTableLookup(lcl, /* onStack */ true);
+                        GenTree* const mt   = m_compiler->gtNewMethodTableLookup(lcl, /* onStack */ true);
                         call->gtArgs.Remove(secondArg);
                         call->gtArgs.PushBack(m_compiler, NewCallArg::Primitive(mt));
 
-                        if (user == nullptr)
+                        if (isForEffect)
                         {
                             // call was just for effect, we're done.
                         }
                         else
                         {
+                            GenTree* const lclCopy = m_compiler->gtClone(lcl);
                             GenTree* const payloadAddr =
                                 m_compiler->gtNewOperNode(GT_ADD, TYP_BYREF, lclCopy,
                                                           m_compiler->gtNewIconNode(TARGET_POINTER_SIZE, TYP_I_IMPL));
