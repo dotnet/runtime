@@ -20,6 +20,7 @@ namespace ILCompiler
             TypeOf_PushedOne,
 
             TypeEqualityCheck,
+            TypeEqualityCheck_StlocLdloc,
 
             Branch,
         }
@@ -99,8 +100,16 @@ namespace ILCompiler
                 case State.TypeEqualityCheck:
                     if (opcode is ILOpcode.brfalse or ILOpcode.brfalse_s or ILOpcode.brtrue or ILOpcode.brtrue_s)
                         _state = State.Branch;
+                    else if (IsStlocLdlocSequence(opcode, reader, methodIL))
+                        _state = State.TypeEqualityCheck_StlocLdloc;
                     else
                         break;
+                    return;
+                case State.TypeEqualityCheck_StlocLdloc:
+                    if (opcode == ILOpcode.ldloc || opcode == ILOpcode.ldloc_s || (opcode >= ILOpcode.ldloc_0 && opcode <= ILOpcode.ldloc_3))
+                        _state = State.TypeEqualityCheck;
+                    else
+                        throw new UnreachableException();
                     return;
                 default:
                     throw new UnreachableException();
@@ -127,6 +136,29 @@ namespace ILCompiler
 
             static bool IsArgumentOrLocalLoad(ILOpcode opcode)
                 => opcode is (>= ILOpcode.ldloc_0 and <= ILOpcode.ldloc_3) or (>= ILOpcode.ldarg_0 and <= ILOpcode.ldarg_3);
+
+            static bool IsStlocLdlocSequence(ILOpcode opcode, in ILReader reader, MethodIL methodIL)
+            {
+                if (opcode == ILOpcode.stloc || opcode == ILOpcode.stloc_s || (opcode >= ILOpcode.stloc_0 && opcode <= ILOpcode.stloc_3))
+                {
+                    ILReader nestedReader = reader;
+                    int locIndex = opcode switch
+                    {
+                        ILOpcode.stloc => nestedReader.ReadILUInt16(),
+                        ILOpcode.stloc_s => nestedReader.ReadILByte(),
+                        _ => opcode - ILOpcode.stloc_0,
+                    };
+                    ILOpcode otherOpcode = nestedReader.ReadILOpcode();
+                    return (otherOpcode == ILOpcode.ldloc || otherOpcode == ILOpcode.ldloc_s || (otherOpcode >= ILOpcode.ldloc_0 && otherOpcode <= ILOpcode.ldloc_3))
+                        && otherOpcode switch
+                        {
+                            ILOpcode.ldloc => nestedReader.ReadILUInt16(),
+                            ILOpcode.ldloc_s => nestedReader.ReadILByte(),
+                            _ => otherOpcode - ILOpcode.ldloc_0,
+                        } == locIndex;
+                }
+                return false;
+            }
 
             _state = default;
             _flags = default;
