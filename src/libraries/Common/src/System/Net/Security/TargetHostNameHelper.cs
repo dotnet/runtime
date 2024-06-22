@@ -40,7 +40,7 @@ namespace System.Net.Security
 
         // Simplified version of IPAddressParser.Parse to avoid allocations and dependencies.
         // It purposely ignores scopeId as we don't really use so we do not need to map it to actual interface id.
-        internal static unsafe bool IsValidAddress(string? hostname)
+        internal static bool IsValidAddress(string? hostname)
         {
             if (string.IsNullOrEmpty(hostname))
             {
@@ -59,10 +59,7 @@ namespace System.Net.Security
             }
             else if (char.IsDigit(ipSpan[0]))
             {
-                long tmpAddr;
-                int end = ipSpan.Length;
-
-                tmpAddr = IPv4AddressHelper.ParseNonCanonical(ipSpan, ref end, notImplicitFile: true);
+                long tmpAddr = IPv4AddressHelper.ParseNonCanonical(ipSpan, out int end, notImplicitFile: true);
 
                 if (tmpAddr != IPv4AddressHelper.Invalid && end == ipSpan.Length)
                 {

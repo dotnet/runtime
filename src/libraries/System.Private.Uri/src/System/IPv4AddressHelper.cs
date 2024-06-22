@@ -40,18 +40,11 @@ namespace System.Net
             where TChar : unmanaged, IBinaryInteger<TChar>
         {
             // "name" parameter includes ports, so bytesConsumed may be different from span length
-            int bytesConsumed = 0;
-            long result = ParseNonCanonical(name, ref bytesConsumed, true);
+            long result = ParseNonCanonical(name, out _, true);
 
             Debug.Assert(result != Invalid, $"Failed to parse after already validated: {string.Join(string.Empty, name.ToArray())}");
 
-            unchecked
-            {
-                numbers[0] = (byte)(result >> 24);
-                numbers[1] = (byte)(result >> 16);
-                numbers[2] = (byte)(result >> 8);
-                numbers[3] = (byte)(result);
-            }
+            System.Buffers.Binary.BinaryPrimitives.WriteUInt32BigEndian(numbers, (uint)result);
 
             return numbers[0] == 127;
         }

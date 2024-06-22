@@ -47,10 +47,9 @@ namespace System.Net
         private static bool TryParseIpv4<TChar>(ReadOnlySpan<TChar> ipSpan, out long address)
             where TChar : unmanaged, IBinaryInteger<TChar>
         {
-            int end = ipSpan.Length;
             long tmpAddr;
 
-            tmpAddr = IPv4AddressHelper.ParseNonCanonical(ipSpan, ref end, notImplicitFile: true);
+            tmpAddr = IPv4AddressHelper.ParseNonCanonical(ipSpan, out int end, notImplicitFile: true);
 
             if (tmpAddr != IPv4AddressHelper.Invalid && end == ipSpan.Length)
             {

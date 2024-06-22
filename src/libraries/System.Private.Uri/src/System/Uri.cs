@@ -1283,8 +1283,7 @@ namespace System
                     }
                 }
 
-                end = name.Length;
-                if (IPv4AddressHelper.IsValid(name.AsSpan(), ref end, false, false, false) && end == name.Length)
+                if (IPv4AddressHelper.IsValid(name.AsSpan(), out end, false, false, false) && end == name.Length)
                 {
                     return UriHostNameType.IPv4;
                 }
@@ -3851,8 +3850,6 @@ namespace System
                 }
             }
 
-            int bytesConsumed = 0;
-
             if (ch == '[' && syntax.InFact(UriSyntaxFlags.AllowIPv6Host) &&
                 IPv6AddressHelper.IsValid(pString, start + 1, ref end))
             {
@@ -3864,7 +3861,7 @@ namespace System
                 }
             }
             else if (char.IsAsciiDigit(ch) && syntax.InFact(UriSyntaxFlags.AllowIPv4Host) &&
-                IPv4AddressHelper.IsValid(new ReadOnlySpan<char>(pString + start, end - start), ref bytesConsumed, false, StaticNotAny(flags, Flags.ImplicitFile), syntax.InFact(UriSyntaxFlags.V1_UnknownUri)))
+                IPv4AddressHelper.IsValid(new ReadOnlySpan<char>(pString + start, end - start), out int bytesConsumed, false, StaticNotAny(flags, Flags.ImplicitFile), syntax.InFact(UriSyntaxFlags.V1_UnknownUri)))
             {
                 end = start + bytesConsumed;
                 flags |= Flags.IPv4HostType;

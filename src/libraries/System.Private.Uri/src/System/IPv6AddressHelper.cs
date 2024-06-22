@@ -240,14 +240,12 @@ namespace System.Net
                             break;
 
                         case '.':
-                            int ipv4AddressLength = i;
-
                             if (haveIPv4Address)
                             {
                                 return false;
                             }
 
-                            if (!IPv4AddressHelper.IsValid(new ReadOnlySpan<char>(name + lastSequence, end - lastSequence), ref ipv4AddressLength, true, false, false))
+                            if (!IPv4AddressHelper.IsValid(new ReadOnlySpan<char>(name + lastSequence, end - lastSequence), out int ipv4AddressLength, true, false, false))
                             {
                                 return false;
                             }

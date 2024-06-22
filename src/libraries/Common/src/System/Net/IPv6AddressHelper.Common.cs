@@ -243,14 +243,12 @@ namespace System.Net
                     }
                     else if (name[i] == IPv4ComponentSeparator)
                     {
-                        int ipv4AddressLength = i;
-
                         if (haveIPv4Address)
                         {
                             return false;
                         }
 
-                        if (!IPv4AddressHelper.IsValid(name.Slice(lastSequence), ref ipv4AddressLength, true, false, false))
+                        if (!IPv4AddressHelper.IsValid(name.Slice(lastSequence), out int ipv4AddressLength, true, false, false))
                         {
                             return false;
                         }
