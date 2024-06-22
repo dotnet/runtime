@@ -256,7 +256,7 @@ namespace System.Text.Json.Serialization.Converters
             value = (T)obj;
 
             // Check if we are trying to update the UTF-8 property cache.
-            if (state.Current.NewPropertyRefs != null)
+            if (state.Current.PropertyRefCacheBuilder != null)
             {
                 jsonTypeInfo.UpdateUtf8PropertyCache(ref state.Current);
             }

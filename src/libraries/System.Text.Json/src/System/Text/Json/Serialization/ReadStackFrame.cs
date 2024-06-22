@@ -67,7 +67,7 @@ namespace System.Text.Json
         public int PropertyIndex;
 
         // Tracks newly encounentered UTF-8 encoded properties during the current deserialization, to be appended to the cache.
-        public PropertyRefList? NewPropertyRefs;
+        public PropertyRefCacheBuilder? PropertyRefCacheBuilder;
 
         // Holds relevant state when deserializing objects with parameterized constructors.
         public ArgumentState? CtorArgumentState;
