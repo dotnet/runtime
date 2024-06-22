@@ -633,6 +633,11 @@
       Projects="$(MSBuildProjectFile)"
       Targets="EmitTestExclusionList"
       Properties="XunitTestBinBase=$(XunitTestBinBase)" />
+
+    <MSBuild
+      Projects="Common\XUnitLogChecker\XUnitLogChecker.csproj"
+      Targets="Publish"
+      AdditionalProperties="%(AdditionalProperties);_IsPublishing=true;Configuration=Release" />
   </Target>
 
   <Target Name="BuildTestWrappers"
