@@ -1312,14 +1312,28 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                 GenTree*    trueVal         = node;
                 GenTree*    falseVal        = comp->gtNewZeroConNode(simdType);
 
-                GenTreeHWIntrinsic* condSelNode =
-                    comp->gtNewSimdHWIntrinsicNode(simdType, trueMask, trueVal, falseVal, NI_Sve_ConditionalSelect,
-                                                   simdBaseJitType, simdSize);
+                switch (intrinsicId)
+                {
+                    case NI_Sve_ExtractLastScalar:
+                    case NI_Sve_ExtractAfterLastScalar:
+                    {
 
-                BlockRange().InsertBefore(node, trueMask);
-                BlockRange().InsertBefore(node, falseVal);
-                BlockRange().InsertAfter(node, condSelNode);
-                use.ReplaceWith(condSelNode);
+                    }
+                    break;
+
+                    default:
+                    {
+                        GenTreeHWIntrinsic* condSelNode =
+                            comp->gtNewSimdHWIntrinsicNode(simdType, trueMask, trueVal, falseVal,
+                                                           NI_Sve_ConditionalSelect, simdBaseJitType, simdSize);
+
+                        BlockRange().InsertBefore(node, trueMask);
+                        BlockRange().InsertBefore(node, falseVal);
+                        BlockRange().InsertAfter(node, condSelNode);
+                        use.ReplaceWith(condSelNode);
+                    }
+                    break;
+                }
             }
         }
     }

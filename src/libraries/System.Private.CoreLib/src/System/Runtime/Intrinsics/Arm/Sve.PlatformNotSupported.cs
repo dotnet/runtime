@@ -1402,6 +1402,348 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<ulong> DotProductBySelectedScalar(Vector<ulong> addend, Vector<ushort> left, Vector<ushort> right, [ConstantExpected] byte rightIndex) { throw new PlatformNotSupportedException(); }
 
+
+        /// <summary>
+        /// uint8_t svlasta[_u8](svbool_t pg, svuint8_t op)
+        ///   LASTA Wresult, Pg, Zop.B
+        ///   LASTA Bresult, Pg, Zop.B
+        /// </summary>
+        public static unsafe byte ExtractAfterLastScalar(Vector<byte> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float64_t svlasta[_f64](svbool_t pg, svfloat64_t op)
+        ///   LASTA Xresult, Pg, Zop.D
+        ///   LASTA Dresult, Pg, Zop.D
+        /// </summary>
+        public static unsafe double ExtractAfterLastScalar(Vector<double> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16_t svlasta[_s16](svbool_t pg, svint16_t op)
+        ///   LASTA Wresult, Pg, Zop.H
+        ///   LASTA Hresult, Pg, Zop.H
+        /// </summary>
+        public static unsafe short ExtractAfterLastScalar(Vector<short> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32_t svlasta[_s32](svbool_t pg, svint32_t op)
+        ///   LASTA Wresult, Pg, Zop.S
+        ///   LASTA Sresult, Pg, Zop.S
+        /// </summary>
+        public static unsafe int ExtractAfterLastScalar(Vector<int> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64_t svlasta[_s64](svbool_t pg, svint64_t op)
+        ///   LASTA Xresult, Pg, Zop.D
+        ///   LASTA Dresult, Pg, Zop.D
+        /// </summary>
+        public static unsafe long ExtractAfterLastScalar(Vector<long> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8_t svlasta[_s8](svbool_t pg, svint8_t op)
+        ///   LASTA Wresult, Pg, Zop.B
+        ///   LASTA Bresult, Pg, Zop.B
+        /// </summary>
+        public static unsafe sbyte ExtractAfterLastScalar(Vector<sbyte> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32_t svlasta[_f32](svbool_t pg, svfloat32_t op)
+        ///   LASTA Wresult, Pg, Zop.S
+        ///   LASTA Sresult, Pg, Zop.S
+        /// </summary>
+        public static unsafe float ExtractAfterLastScalar(Vector<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16_t svlasta[_u16](svbool_t pg, svuint16_t op)
+        ///   LASTA Wresult, Pg, Zop.H
+        ///   LASTA Hresult, Pg, Zop.H
+        /// </summary>
+        public static unsafe ushort ExtractAfterLastScalar(Vector<ushort> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32_t svlasta[_u32](svbool_t pg, svuint32_t op)
+        ///   LASTA Wresult, Pg, Zop.S
+        ///   LASTA Sresult, Pg, Zop.S
+        /// </summary>
+        public static unsafe uint ExtractAfterLastScalar(Vector<uint> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint64_t svlasta[_u64](svbool_t pg, svuint64_t op)
+        ///   LASTA Xresult, Pg, Zop.D
+        ///   LASTA Dresult, Pg, Zop.D
+        /// </summary>
+        public static unsafe ulong ExtractAfterLastScalar(Vector<ulong> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint8_t svlasta[_u8](svbool_t pg, svuint8_t op)
+        ///   LASTA Wresult, Pg, Zop.B
+        ///   LASTA Bresult, Pg, Zop.B
+        /// </summary>
+        public static unsafe Vector<byte> ExtractAfterLastVector(Vector<byte> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float64_t svlasta[_f64](svbool_t pg, svfloat64_t op)
+        ///   LASTA Xresult, Pg, Zop.D
+        ///   LASTA Dresult, Pg, Zop.D
+        /// </summary>
+        public static unsafe Vector<double> ExtractAfterLastVector(Vector<double> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16_t svlasta[_s16](svbool_t pg, svint16_t op)
+        ///   LASTA Wresult, Pg, Zop.H
+        ///   LASTA Hresult, Pg, Zop.H
+        /// </summary>
+        public static unsafe Vector<short> ExtractAfterLastVector(Vector<short> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32_t svlasta[_s32](svbool_t pg, svint32_t op)
+        ///   LASTA Wresult, Pg, Zop.S
+        ///   LASTA Sresult, Pg, Zop.S
+        /// </summary>
+        public static unsafe Vector<int> ExtractAfterLastVector(Vector<int> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64_t svlasta[_s64](svbool_t pg, svint64_t op)
+        ///   LASTA Xresult, Pg, Zop.D
+        ///   LASTA Dresult, Pg, Zop.D
+        /// </summary>
+        public static unsafe Vector<long> ExtractAfterLastVector(Vector<long> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8_t svlasta[_s8](svbool_t pg, svint8_t op)
+        ///   LASTA Wresult, Pg, Zop.B
+        ///   LASTA Bresult, Pg, Zop.B
+        /// </summary>
+        public static unsafe Vector<sbyte> ExtractAfterLastVector(Vector<sbyte> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32_t svlasta[_f32](svbool_t pg, svfloat32_t op)
+        ///   LASTA Wresult, Pg, Zop.S
+        ///   LASTA Sresult, Pg, Zop.S
+        /// </summary>
+        public static unsafe Vector<float> ExtractAfterLastVector(Vector<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16_t svlasta[_u16](svbool_t pg, svuint16_t op)
+        ///   LASTA Wresult, Pg, Zop.H
+        ///   LASTA Hresult, Pg, Zop.H
+        /// </summary>
+        public static unsafe Vector<ushort> ExtractAfterLastVector(Vector<ushort> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32_t svlasta[_u32](svbool_t pg, svuint32_t op)
+        ///   LASTA Wresult, Pg, Zop.S
+        ///   LASTA Sresult, Pg, Zop.S
+        /// </summary>
+        public static unsafe Vector<uint> ExtractAfterLastVector(Vector<uint> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint64_t svlasta[_u64](svbool_t pg, svuint64_t op)
+        ///   LASTA Xresult, Pg, Zop.D
+        ///   LASTA Dresult, Pg, Zop.D
+        /// </summary>
+        public static unsafe Vector<ulong> ExtractAfterLastVector(Vector<ulong> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint8_t svlastb[_u8](svbool_t pg, svuint8_t op)
+        ///   LASTB Wresult, Pg, Zop.B
+        ///   LASTB Bresult, Pg, Zop.B
+        /// </summary>
+        public static unsafe byte ExtractLastScalar(Vector<byte> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float64_t svlastb[_f64](svbool_t pg, svfloat64_t op)
+        ///   LASTB Xresult, Pg, Zop.D
+        ///   LASTB Dresult, Pg, Zop.D
+        /// </summary>
+        public static unsafe double ExtractLastScalar(Vector<double> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16_t svlastb[_s16](svbool_t pg, svint16_t op)
+        ///   LASTB Wresult, Pg, Zop.H
+        ///   LASTB Hresult, Pg, Zop.H
+        /// </summary>
+        public static unsafe short ExtractLastScalar(Vector<short> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32_t svlastb[_s32](svbool_t pg, svint32_t op)
+        ///   LASTB Wresult, Pg, Zop.S
+        ///   LASTB Sresult, Pg, Zop.S
+        /// </summary>
+        public static unsafe int ExtractLastScalar(Vector<int> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64_t svlastb[_s64](svbool_t pg, svint64_t op)
+        ///   LASTB Xresult, Pg, Zop.D
+        ///   LASTB Dresult, Pg, Zop.D
+        /// </summary>
+        public static unsafe long ExtractLastScalar(Vector<long> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8_t svlastb[_s8](svbool_t pg, svint8_t op)
+        ///   LASTB Wresult, Pg, Zop.B
+        ///   LASTB Bresult, Pg, Zop.B
+        /// </summary>
+        public static unsafe sbyte ExtractLastScalar(Vector<sbyte> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32_t svlastb[_f32](svbool_t pg, svfloat32_t op)
+        ///   LASTB Wresult, Pg, Zop.S
+        ///   LASTB Sresult, Pg, Zop.S
+        /// </summary>
+        public static unsafe float ExtractLastScalar(Vector<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16_t svlastb[_u16](svbool_t pg, svuint16_t op)
+        ///   LASTB Wresult, Pg, Zop.H
+        ///   LASTB Hresult, Pg, Zop.H
+        /// </summary>
+        public static unsafe ushort ExtractLastScalar(Vector<ushort> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32_t svlastb[_u32](svbool_t pg, svuint32_t op)
+        ///   LASTB Wresult, Pg, Zop.S
+        ///   LASTB Sresult, Pg, Zop.S
+        /// </summary>
+        public static unsafe uint ExtractLastScalar(Vector<uint> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint64_t svlastb[_u64](svbool_t pg, svuint64_t op)
+        ///   LASTB Xresult, Pg, Zop.D
+        ///   LASTB Dresult, Pg, Zop.D
+        /// </summary>
+        public static unsafe ulong ExtractLastScalar(Vector<ulong> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint8_t svlastb[_u8](svbool_t pg, svuint8_t op)
+        ///   LASTB Wresult, Pg, Zop.B
+        ///   LASTB Bresult, Pg, Zop.B
+        /// </summary>
+        public static unsafe Vector<byte> ExtractLastVector(Vector<byte> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float64_t svlastb[_f64](svbool_t pg, svfloat64_t op)
+        ///   LASTB Xresult, Pg, Zop.D
+        ///   LASTB Dresult, Pg, Zop.D
+        /// </summary>
+        public static unsafe Vector<double> ExtractLastVector(Vector<double> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16_t svlastb[_s16](svbool_t pg, svint16_t op)
+        ///   LASTB Wresult, Pg, Zop.H
+        ///   LASTB Hresult, Pg, Zop.H
+        /// </summary>
+        public static unsafe Vector<short> ExtractLastVector(Vector<short> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32_t svlastb[_s32](svbool_t pg, svint32_t op)
+        ///   LASTB Wresult, Pg, Zop.S
+        ///   LASTB Sresult, Pg, Zop.S
+        /// </summary>
+        public static unsafe Vector<int> ExtractLastVector(Vector<int> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64_t svlastb[_s64](svbool_t pg, svint64_t op)
+        ///   LASTB Xresult, Pg, Zop.D
+        ///   LASTB Dresult, Pg, Zop.D
+        /// </summary>
+        public static unsafe Vector<long> ExtractLastVector(Vector<long> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8_t svlastb[_s8](svbool_t pg, svint8_t op)
+        ///   LASTB Wresult, Pg, Zop.B
+        ///   LASTB Bresult, Pg, Zop.B
+        /// </summary>
+        public static unsafe Vector<sbyte> ExtractLastVector(Vector<sbyte> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32_t svlastb[_f32](svbool_t pg, svfloat32_t op)
+        ///   LASTB Wresult, Pg, Zop.S
+        ///   LASTB Sresult, Pg, Zop.S
+        /// </summary>
+        public static unsafe Vector<float> ExtractLastVector(Vector<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16_t svlastb[_u16](svbool_t pg, svuint16_t op)
+        ///   LASTB Wresult, Pg, Zop.H
+        ///   LASTB Hresult, Pg, Zop.H
+        /// </summary>
+        public static unsafe Vector<ushort> ExtractLastVector(Vector<ushort> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32_t svlastb[_u32](svbool_t pg, svuint32_t op)
+        ///   LASTB Wresult, Pg, Zop.S
+        ///   LASTB Sresult, Pg, Zop.S
+        /// </summary>
+        public static unsafe Vector<uint> ExtractLastVector(Vector<uint> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint64_t svlastb[_u64](svbool_t pg, svuint64_t op)
+        ///   LASTB Xresult, Pg, Zop.D
+        ///   LASTB Dresult, Pg, Zop.D
+        /// </summary>
+        public static unsafe Vector<ulong> ExtractLastVector(Vector<ulong> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint8_t svext[_u8](svuint8_t op1, svuint8_t op2, uint64_t imm3)
+        ///   EXT Ztied1.B, Ztied1.B, Zop2.B, #imm3
+        /// </summary>
+        public static unsafe Vector<byte> ExtractVector(Vector<byte> upper, Vector<byte> lower, [ConstantExpected] byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svfloat64_t svext[_f64](svfloat64_t op1, svfloat64_t op2, uint64_t imm3)
+        ///   EXT Ztied1.B, Ztied1.B, Zop2.B, #imm3 * 8
+        /// </summary>
+        public static unsafe Vector<double> ExtractVector(Vector<double> upper, Vector<double> lower, [ConstantExpected] byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint16_t svext[_s16](svint16_t op1, svint16_t op2, uint64_t imm3)
+        ///   EXT Ztied1.B, Ztied1.B, Zop2.B, #imm3 * 2
+        /// </summary>
+        public static unsafe Vector<short> ExtractVector(Vector<short> upper, Vector<short> lower, [ConstantExpected] byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svext[_s32](svint32_t op1, svint32_t op2, uint64_t imm3)
+        ///   EXT Ztied1.B, Ztied1.B, Zop2.B, #imm3 * 4
+        /// </summary>
+        public static unsafe Vector<int> ExtractVector(Vector<int> upper, Vector<int> lower, [ConstantExpected] byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svext[_s64](svint64_t op1, svint64_t op2, uint64_t imm3)
+        ///   EXT Ztied1.B, Ztied1.B, Zop2.B, #imm3 * 8
+        /// </summary>
+        public static unsafe Vector<long> ExtractVector(Vector<long> upper, Vector<long> lower, [ConstantExpected] byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint8_t svext[_s8](svint8_t op1, svint8_t op2, uint64_t imm3)
+        ///   EXT Ztied1.B, Ztied1.B, Zop2.B, #imm3
+        /// </summary>
+        public static unsafe Vector<sbyte> ExtractVector(Vector<sbyte> upper, Vector<sbyte> lower, [ConstantExpected] byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svfloat32_t svext[_f32](svfloat32_t op1, svfloat32_t op2, uint64_t imm3)
+        ///   EXT Ztied1.B, Ztied1.B, Zop2.B, #imm3 * 4
+        /// </summary>
+        public static unsafe Vector<float> ExtractVector(Vector<float> upper, Vector<float> lower, [ConstantExpected] byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svext[_u16](svuint16_t op1, svuint16_t op2, uint64_t imm3)
+        ///   EXT Ztied1.B, Ztied1.B, Zop2.B, #imm3 * 2
+        /// </summary>
+        public static unsafe Vector<ushort> ExtractVector(Vector<ushort> upper, Vector<ushort> lower, [ConstantExpected] byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svext[_u32](svuint32_t op1, svuint32_t op2, uint64_t imm3)
+        ///   EXT Ztied1.B, Ztied1.B, Zop2.B, #imm3 * 4
+        /// </summary>
+        public static unsafe Vector<uint> ExtractVector(Vector<uint> upper, Vector<uint> lower, [ConstantExpected] byte index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svext[_u64](svuint64_t op1, svuint64_t op2, uint64_t imm3)
+        ///   EXT Ztied1.B, Ztied1.B, Zop2.B, #imm3 * 8
+        /// </summary>
+        public static unsafe Vector<ulong> ExtractVector(Vector<ulong> upper, Vector<ulong> lower, [ConstantExpected] byte index) { throw new PlatformNotSupportedException(); }
+
+
         ///  FusedMultiplyAdd : Multiply-add, addend first
 
         /// <summary>
@@ -5597,6 +5939,150 @@ namespace System.Runtime.Intrinsics.Arm
         ///   SUNPKHI Zresult.D, Zop.S
         /// </summary>
         public static unsafe Vector<long> SignExtendWideningUpper(Vector<int> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// bool svptest_any(svbool_t pg, svbool_t op)
+        ///   PTEST
+        /// </summary>
+        public static unsafe bool TestAnyTrue(Vector<byte> mask, Vector<byte> srcMask) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// bool svptest_any(svbool_t pg, svbool_t op)
+        ///   PTEST
+        /// </summary>
+        public static unsafe bool TestAnyTrue(Vector<short> mask, Vector<short> srcMask) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// bool svptest_any(svbool_t pg, svbool_t op)
+        ///   PTEST
+        /// </summary>
+        public static unsafe bool TestAnyTrue(Vector<int> mask, Vector<int> srcMask) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// bool svptest_any(svbool_t pg, svbool_t op)
+        ///   PTEST
+        /// </summary>
+        public static unsafe bool TestAnyTrue(Vector<long> mask, Vector<long> srcMask) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// bool svptest_any(svbool_t pg, svbool_t op)
+        ///   PTEST
+        /// </summary>
+        public static unsafe bool TestAnyTrue(Vector<sbyte> mask, Vector<sbyte> srcMask) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// bool svptest_any(svbool_t pg, svbool_t op)
+        ///   PTEST
+        /// </summary>
+        public static unsafe bool TestAnyTrue(Vector<ushort> mask, Vector<ushort> srcMask) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// bool svptest_any(svbool_t pg, svbool_t op)
+        ///   PTEST
+        /// </summary>
+        public static unsafe bool TestAnyTrue(Vector<uint> mask, Vector<uint> srcMask) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// bool svptest_any(svbool_t pg, svbool_t op)
+        ///   PTEST
+        /// </summary>
+        public static unsafe bool TestAnyTrue(Vector<ulong> mask, Vector<ulong> srcMask) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// bool svptest_first(svbool_t pg, svbool_t op)
+        ///   PTEST
+        /// </summary>
+        public static unsafe bool TestFirstTrue(Vector<byte> mask, Vector<byte> srcMask) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// bool svptest_first(svbool_t pg, svbool_t op)
+        ///   PTEST
+        /// </summary>
+        public static unsafe bool TestFirstTrue(Vector<short> mask, Vector<short> srcMask) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// bool svptest_first(svbool_t pg, svbool_t op)
+        ///   PTEST
+        /// </summary>
+        public static unsafe bool TestFirstTrue(Vector<int> mask, Vector<int> srcMask) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// bool svptest_first(svbool_t pg, svbool_t op)
+        ///   PTEST
+        /// </summary>
+        public static unsafe bool TestFirstTrue(Vector<long> mask, Vector<long> srcMask) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// bool svptest_first(svbool_t pg, svbool_t op)
+        ///   PTEST
+        /// </summary>
+        public static unsafe bool TestFirstTrue(Vector<sbyte> mask, Vector<sbyte> srcMask) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// bool svptest_first(svbool_t pg, svbool_t op)
+        ///   PTEST
+        /// </summary>
+        public static unsafe bool TestFirstTrue(Vector<ushort> mask, Vector<ushort> srcMask) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// bool svptest_first(svbool_t pg, svbool_t op)
+        ///   PTEST
+        /// </summary>
+        public static unsafe bool TestFirstTrue(Vector<uint> mask, Vector<uint> srcMask) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// bool svptest_first(svbool_t pg, svbool_t op)
+        ///   PTEST
+        /// </summary>
+        public static unsafe bool TestFirstTrue(Vector<ulong> mask, Vector<ulong> srcMask) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// bool svptest_last(svbool_t pg, svbool_t op)
+        ///   PTEST
+        /// </summary>
+        public static unsafe bool TestLastTrue(Vector<byte> mask, Vector<byte> srcMask) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// bool svptest_last(svbool_t pg, svbool_t op)
+        ///   PTEST
+        /// </summary>
+        public static unsafe bool TestLastTrue(Vector<short> mask, Vector<short> srcMask) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// bool svptest_last(svbool_t pg, svbool_t op)
+        ///   PTEST
+        /// </summary>
+        public static unsafe bool TestLastTrue(Vector<int> mask, Vector<int> srcMask) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// bool svptest_last(svbool_t pg, svbool_t op)
+        ///   PTEST
+        /// </summary>
+        public static unsafe bool TestLastTrue(Vector<long> mask, Vector<long> srcMask) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// bool svptest_last(svbool_t pg, svbool_t op)
+        ///   PTEST
+        /// </summary>
+        public static unsafe bool TestLastTrue(Vector<sbyte> mask, Vector<sbyte> srcMask) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// bool svptest_last(svbool_t pg, svbool_t op)
+        ///   PTEST
+        /// </summary>
+        public static unsafe bool TestLastTrue(Vector<ushort> mask, Vector<ushort> srcMask) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// bool svptest_last(svbool_t pg, svbool_t op)
+        ///   PTEST
+        /// </summary>
+        public static unsafe bool TestLastTrue(Vector<uint> mask, Vector<uint> srcMask) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// bool svptest_last(svbool_t pg, svbool_t op)
+        ///   PTEST
+        /// </summary>
+        public static unsafe bool TestLastTrue(Vector<ulong> mask, Vector<ulong> srcMask) { throw new PlatformNotSupportedException(); }
 
 
         ///  Interleave even elements from two inputs
