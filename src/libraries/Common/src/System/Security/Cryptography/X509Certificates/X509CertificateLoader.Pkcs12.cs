@@ -377,17 +377,11 @@ namespace System.Security.Cryptography.X509Certificates
                         {
                             AttributeAsn attr = bag.BagAttributes[i];
                             bag.BagAttributes[i] = bag.BagAttributes[attrIdx];
+                            bag.BagAttributes[attrIdx] = attr;
 
                             // After swapping, back up one position to check if the attribute
                             // swapped into this position should also be preserved.
                             i++;
-
-#if DEBUG
-                            // In debug we'll do a full swap, just so the full set of input
-                            // attributes can be seen under a debugger before the reducing
-                            // Array.Resize
-                            bag.BagAttributes[attrIdx] = attr;
-#endif
                         }
                     }
                 }
