@@ -1319,7 +1319,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                     {
                         // Create the same node with an additional operand to pass the mask.
                         GenTreeHWIntrinsic* newNode =
-                            comp->gtNewSimdHWIntrinsicNode(node->TypeGet(), node->Op(1), trueMask, intrinsicId,
+                            comp->gtNewSimdHWIntrinsicNode(node->TypeGet(), trueMask, node->Op(1), intrinsicId,
                                                            simdBaseJitType, simdSize);
 
                         BlockRange().InsertAfter(node->Op(1), trueMask);
