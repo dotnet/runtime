@@ -2075,7 +2075,14 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 assert(op1Reg != REG_NA); // this is the embedded mask
                 assert(op2Reg != REG_NA);
 
-                GetEmitter()->emitIns_R_R_R(ins, emitTypeSize(node), targetReg, /* mask */ op1Reg, op2Reg, opt);
+                if (varTypeIsFloating(node))
+                {
+                    GetEmitter()->emitIns_R_R_R(ins, EA_SCALABLE, targetReg, /* mask */ op1Reg, op2Reg, opt, INS_SCALABLE_OPTS_WITH_SIMD_SCALAR);
+                }
+                else
+                {
+                    GetEmitter()->emitIns_R_R_R(ins, emitTypeSize(node), targetReg, /* mask */ op1Reg, op2Reg, opt);
+                }
                 break;
 
             default:
