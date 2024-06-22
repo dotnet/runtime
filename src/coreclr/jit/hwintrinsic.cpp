@@ -640,7 +640,12 @@ static void ValidateHWIntrinsicIsaRange(CORINFO_InstructionSet isa, const HWIntr
 
     // The ID after the range should not be part of the expected ISA
     NamedIntrinsic nextId = static_cast<NamedIntrinsic>(isaRange.LastId + 1);
+#if defined(TARGET_ARM64)
+    assert((nextId == NI_HW_INTRINSIC_END) || (HWIntrinsicInfo::lookupIsa(nextId) != isa) ||
+           (nextId == SPECIAL_NI_Sve));
+#else
     assert((nextId == NI_HW_INTRINSIC_END) || (HWIntrinsicInfo::lookupIsa(nextId) != isa));
+#endif
 
     NamedIntrinsic         ni       = static_cast<NamedIntrinsic>(isaRange.FirstId);
     const HWIntrinsicInfo* prevInfo = &HWIntrinsicInfo::lookup(ni);
