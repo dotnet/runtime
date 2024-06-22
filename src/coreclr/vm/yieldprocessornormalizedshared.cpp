@@ -5,7 +5,7 @@
 #include "finalizerthread.h"
 #endif
 
-enum class NormalizationState : UINT8
+enum class NormalizationState : uint8_t
 {
     Uninitialized,
     Initialized,
@@ -20,7 +20,7 @@ static const unsigned int NsPerS = 1000 * 1000 * 1000;
 static NormalizationState s_normalizationState = NormalizationState::Uninitialized;
 static unsigned int s_previousNormalizationTimeMs;
 
-static UINT64 s_performanceCounterTicksPerS;
+static uint64_t s_performanceCounterTicksPerS;
 static double s_nsPerYieldMeasurements[NsPerYieldMeasurementCount];
 static int s_nextMeasurementIndex;
 static double s_establishedNsPerYield = YieldProcessorNormalization::TargetNsPerNormalizedYield;
@@ -36,7 +36,7 @@ inline unsigned int GetTickCountPortable()
 #endif
 }
 
-static UINT64 GetPerformanceCounter()
+static uint64_t GetPerformanceCounter()
 {
 #ifdef FEATURE_NATIVEAOT
     return PalQueryPerformanceCounter();
@@ -63,8 +63,8 @@ static unsigned int DetermineMeasureDurationUs()
     // On some systems, querying the high performance counter has relatively significant overhead. Increase the measure duration
     // if the overhead seems high relative to the measure duration.
     unsigned int measureDurationUs = 1;
-    UINT64 startTicks = GetPerformanceCounter();
-    UINT64 elapsedTicks = GetPerformanceCounter() - startTicks;
+    uint64_t startTicks = GetPerformanceCounter();
+    uint64_t elapsedTicks = GetPerformanceCounter() - startTicks;
     if (elapsedTicks >= s_performanceCounterTicksPerS * measureDurationUs * (1000 / 4) / NsPerS) // elapsed >= 1/4 of the measure duration
     {
         measureDurationUs *= 4;
@@ -87,17 +87,17 @@ static double MeasureNsPerYield(unsigned int measureDurationUs)
     _ASSERTE(s_normalizationState != NormalizationState::Failed);
 
     int yieldCount = (int)(measureDurationUs * 1000 / s_establishedNsPerYield) + 1;
-    UINT64 ticksPerS = s_performanceCounterTicksPerS;
-    UINT64 measureDurationTicks = ticksPerS * measureDurationUs / (1000 * 1000);
+    uint64_t ticksPerS = s_performanceCounterTicksPerS;
+    uint64_t measureDurationTicks = ticksPerS * measureDurationUs / (1000 * 1000);
 
-    UINT64 startTicks = GetPerformanceCounter();
+    uint64_t startTicks = GetPerformanceCounter();
 
     for (int i = 0; i < yieldCount; ++i)
     {
         System_YieldProcessor();
     }
 
-    UINT64 elapsedTicks = GetPerformanceCounter() - startTicks;
+    uint64_t elapsedTicks = GetPerformanceCounter() - startTicks;
     while (elapsedTicks < measureDurationTicks)
     {
         int nextYieldCount =
@@ -321,8 +321,7 @@ double YieldProcessorNormalization::AtomicLoad(double *valueRef)
     return VolatileLoadWithoutBarrier(valueRef);
 #else
 #ifdef FEATURE_NATIVEAOT
-    // return *PalInterlockedCompareExchange(valueRef, 0.0, 0.0);
-    return *valueRef; // TODO: fix this
+    return *PalInterlockedCompareExchange64((int64_t *)valueRef, 0, 0);
 #else
     return InterlockedCompareExchangeT(valueRef, 0.0, 0.0);
 #endif
@@ -337,7 +336,7 @@ void YieldProcessorNormalization::AtomicStore(double *valueRef, double value)
     *valueRef = value;
 #else
 #ifdef FEATURE_NATIVEAOT
-    PalInterlockedExchangePointer(valueRef, value); // TODO: verify it works or fix it
+    PalInterlockedExchange64((int64_t *) valueRef, value);
 #else
     InterlockedExchangeT(valueRef, value);
 #endif

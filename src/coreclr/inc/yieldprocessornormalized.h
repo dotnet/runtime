@@ -3,7 +3,6 @@
 
 #pragma once
 
-#define HAS_SYSTEM_YIELDPROCESSOR
 #ifdef FEATURE_NATIVEAOT
 FORCEINLINE void System_YieldProcessor() { PalYieldProcessor(); }
 #else
@@ -19,10 +18,6 @@ FORCEINLINE void System_YieldProcessor() { YieldProcessor(); }
     DISABLE_COPY(T)
 
 #ifdef FEATURE_NATIVEAOT
-#define SIZE_T uintptr_t
-typedef BYTE UINT8;
-typedef ULONGLONG UINT64;
-
 template <typename T>
 T Min(T v1, T v2)
 {
@@ -162,9 +157,9 @@ FORCEINLINE void YieldProcessorNormalized(const YieldProcessorNormalizationInfo 
 {
     _ASSERTE(count != 0);
 
-    if (sizeof(SIZE_T) <= sizeof(unsigned int))
+    if (sizeof(size_t) <= sizeof(unsigned int))
     {
-        // On platforms with a small SIZE_T, prevent overflow on the multiply below
+        // On platforms with a small size_t, prevent overflow on the multiply below
         const unsigned int MaxCount = UINT_MAX / YieldProcessorNormalization::MaxYieldsPerNormalizedYield;
         if (count > MaxCount)
         {
@@ -172,7 +167,7 @@ FORCEINLINE void YieldProcessorNormalized(const YieldProcessorNormalizationInfo 
         }
     }
 
-    SIZE_T n = (SIZE_T)count * normalizationInfo.yieldsPerNormalizedYield;
+    size_t n = (size_t)count * normalizationInfo.yieldsPerNormalizedYield;
     _ASSERTE(n != 0);
     do
     {
@@ -207,9 +202,9 @@ FORCEINLINE void YieldProcessorNormalizedForPreSkylakeCount(
 {
     _ASSERTE(preSkylakeCount != 0);
 
-    if (sizeof(SIZE_T) <= sizeof(unsigned int))
+    if (sizeof(size_t) <= sizeof(unsigned int))
     {
-        // On platforms with a small SIZE_T, prevent overflow on the multiply below
+        // On platforms with a small size_t, prevent overflow on the multiply below
         const unsigned int MaxCount = UINT_MAX / YieldProcessorNormalization::MaxYieldsPerNormalizedYield;
         if (preSkylakeCount > MaxCount)
         {
@@ -218,7 +213,7 @@ FORCEINLINE void YieldProcessorNormalizedForPreSkylakeCount(
     }
 
     const unsigned int PreSkylakeCountToSkylakeCountDivisor = 8;
-    SIZE_T n = (SIZE_T)preSkylakeCount * normalizationInfo.yieldsPerNormalizedYield / PreSkylakeCountToSkylakeCountDivisor;
+    size_t n = (size_t)preSkylakeCount * normalizationInfo.yieldsPerNormalizedYield / PreSkylakeCountToSkylakeCountDivisor;
     if (n == 0)
     {
         n = 1;
@@ -245,9 +240,9 @@ FORCEINLINE void YieldProcessorNormalizedForPreSkylakeCount(unsigned int preSkyl
 
     _ASSERTE(preSkylakeCount != 0);
 
-    if (sizeof(SIZE_T) <= sizeof(unsigned int))
+    if (sizeof(size_t) <= sizeof(unsigned int))
     {
-        // On platforms with a small SIZE_T, prevent overflow on the multiply below
+        // On platforms with a small size_t, prevent overflow on the multiply below
         const unsigned int MaxCount = UINT_MAX / YieldProcessorNormalization::MaxYieldsPerNormalizedYield;
         if (preSkylakeCount > MaxCount)
         {
@@ -256,8 +251,8 @@ FORCEINLINE void YieldProcessorNormalizedForPreSkylakeCount(unsigned int preSkyl
     }
 
     const unsigned int PreSkylakeCountToSkylakeCountDivisor = 8;
-    SIZE_T n =
-        (SIZE_T)preSkylakeCount *
+    size_t n =
+        (size_t)preSkylakeCount *
         YieldProcessorNormalization::s_yieldsPerNormalizedYield /
         PreSkylakeCountToSkylakeCountDivisor;
     if (n == 0)
@@ -286,7 +281,7 @@ FORCEINLINE void YieldProcessorWithBackOffNormalized(
     unsigned int spinIteration)
 {
     // This shift value should be adjusted based on the asserted conditions below
-    const UINT8 MaxShift = 3;
+    const uint8_t MaxShift = 3;
     static_assert(
         ((unsigned int)1 << MaxShift) <= YieldProcessorNormalization::MaxOptimalMaxNormalizedYieldsPerSpinIteration, "");
     static_assert(

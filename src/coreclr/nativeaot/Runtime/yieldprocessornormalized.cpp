@@ -14,6 +14,5 @@
 #include "slist.h"
 #include "volatile.h"
 #include "yieldprocessornormalized.h"
-#include "../../vm/synch.h"
 
 #include "../../vm/yieldprocessornormalizedshared.cpp"
