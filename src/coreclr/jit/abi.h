@@ -80,6 +80,7 @@ public:
     bool HasExactlyOneRegisterSegment() const;
     bool HasExactlyOneStackSegment() const;
     bool IsSplitAcrossRegistersAndStack() const;
+    unsigned CountRegsAndStackSlots() const;
 
     static ABIPassingInformation FromSegment(Compiler* comp, const ABIPassingSegment& segment);
     static ABIPassingInformation FromSegments(Compiler*                comp,
