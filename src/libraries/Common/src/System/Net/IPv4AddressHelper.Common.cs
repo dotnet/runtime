@@ -7,23 +7,16 @@ using System.Numerics;
 
 namespace System.Net
 {
-    internal static partial class IPv4AddressHelper<TChar>
-            where TChar : unmanaged, IBinaryInteger<TChar>
+    internal static partial class IPv4AddressHelper
     {
-        // IPv4 address-specific generic constants.
-        public static readonly TChar ComponentSeparator = TChar.CreateTruncating('.');
-        public static readonly TChar[] PrefixSeparators = [TChar.CreateTruncating('/'), TChar.CreateTruncating('\\')];
-        public static readonly TChar[] UrlSeparators = [TChar.CreateTruncating(':'), TChar.CreateTruncating('?'), TChar.CreateTruncating('#')];
-        public static readonly TChar[] HexadecimalPrefix = [TChar.CreateTruncating('0'), TChar.CreateTruncating('x')];
-        public static readonly TChar OctalPrefix = HexadecimalPrefix[0];
-
         internal const long Invalid = -1;
         private const long MaxIPv4Value = uint.MaxValue; // the native parser cannot handle MaxIPv4Value, only MaxIPv4Value - 1
 
         private const int NumberOfLabels = 4;
 
         // Only called from the IPv6Helper, only parse the canonical format
-        internal static int ParseHostNumber(ReadOnlySpan<TChar> str)
+        internal static int ParseHostNumber<TChar>(ReadOnlySpan<TChar> str)
+            where TChar : unmanaged, IBinaryInteger<TChar>
         {
             Span<byte> numbers = stackalloc byte[NumberOfLabels];
             int start = 0;
@@ -33,9 +26,9 @@ namespace System.Net
                 int b = 0;
                 TChar ch;
 
-                for (; (start < str.Length) && (ch = str[start]) != TChar.CreateTruncating('.') && ch != TChar.CreateTruncating(':'); ++start)
+                for (; (start < str.Length) && (ch = str[start]) != TChar.CreateChecked('.') && ch != TChar.CreateChecked(':'); ++start)
                 {
-                    b = (b * 10) + int.CreateTruncating(ch - TChar.CreateTruncating('0'));
+                    b = (b * 10) + int.CreateTruncating(ch - TChar.CreateChecked('0'));
                 }
 
                 numbers[i] = (byte)b;
@@ -87,7 +80,8 @@ namespace System.Net
         //
 
         //Remark: MUST NOT be used unless all input indexes are verified and trusted.
-        internal static bool IsValid(ReadOnlySpan<TChar> name, ref int bytesConsumed, bool allowIPv6, bool notImplicitFile, bool unknownScheme)
+        internal static bool IsValid<TChar>(ReadOnlySpan<TChar> name, ref int bytesConsumed, bool allowIPv6, bool notImplicitFile, bool unknownScheme)
+            where TChar : unmanaged, IBinaryInteger<TChar>
         {
             // IPv6 can only have canonical IPv4 embedded. Unknown schemes will not attempt parsing of non-canonical IPv4 addresses.
             if (allowIPv6 || unknownScheme)
@@ -113,8 +107,16 @@ namespace System.Net
         //                 / "2" %x30-34 DIGIT     ; 200-249
         //                 / "25" %x30-35          ; 250-255
         //
-        internal static bool IsValidCanonical(ReadOnlySpan<TChar> name, ref int bytesConsumed, bool allowIPv6, bool notImplicitFile)
+        internal static bool IsValidCanonical<TChar>(ReadOnlySpan<TChar> name, ref int bytesConsumed, bool allowIPv6, bool notImplicitFile)
+            where TChar : unmanaged, IBinaryInteger<TChar>
         {
+            TChar ComponentSeparator = TChar.CreateChecked('.');
+            ReadOnlySpan<TChar> PrefixSeparators = [TChar.CreateChecked('/'), TChar.CreateChecked('\\')];
+            ReadOnlySpan<TChar> UrlSeparators = [TChar.CreateChecked(':'), TChar.CreateChecked('?'), TChar.CreateChecked('#')];
+            TChar OctalPrefix = TChar.CreateChecked('0');
+
+            ReadOnlySpan<TChar> IPv6Terminators = [TChar.CreateChecked('%'), TChar.CreateChecked('/'), TChar.CreateChecked(']')];
+
             int dots = 0;
             int number = 0;
             bool haveNumber = false;
@@ -129,15 +131,15 @@ namespace System.Net
                 if (allowIPv6)
                 {
                     // for ipv4 inside ipv6 the terminator is either ScopeId, prefix or ipv6 terminator
-                    if (ch == IPv6AddressHelper<TChar>.AddressEndCharacter || ch == IPv6AddressHelper<TChar>.PrefixSeparator || ch == IPv6AddressHelper<TChar>.ScopeSeparator)
+                    if (IPv6Terminators.Contains(ch))
                         break;
                 }
-                else if (Array.IndexOf(PrefixSeparators, ch) != -1 || (notImplicitFile && (Array.IndexOf(UrlSeparators, ch) != -1)))
+                else if (PrefixSeparators.Contains(ch) || (notImplicitFile && UrlSeparators.Contains(ch)))
                 {
                     break;
                 }
 
-                if (IPAddressParser<TChar>.TryParseInteger(IPAddressParser<TChar>.Decimal, ch, out int parsedCharacter))
+                if (IPAddressParser.TryParseInteger(IPAddressParser.Decimal, ch, out int parsedCharacter))
                 {
                     if (!haveNumber && ch == OctalPrefix)
                     {
@@ -151,7 +153,7 @@ namespace System.Net
                     }
 
                     haveNumber = true;
-                    number = number * IPAddressParser<TChar>.Decimal + parsedCharacter;
+                    number = number * IPAddressParser.Decimal + parsedCharacter;
                     if (number > byte.MaxValue)
                     {
                         return false;
@@ -186,9 +188,16 @@ namespace System.Net
         // Return Invalid (-1) for failures.
         // If the address has less than three dots, only the rightmost section is assumed to contain the combined value for
         // the missing sections: 0xFF00FFFF == 0xFF.0x00.0xFF.0xFF == 0xFF.0xFFFF
-        internal static long ParseNonCanonical(ReadOnlySpan<TChar> name, ref int bytesConsumed, bool notImplicitFile)
+        internal static long ParseNonCanonical<TChar>(ReadOnlySpan<TChar> name, ref int bytesConsumed, bool notImplicitFile)
+            where TChar : unmanaged, IBinaryInteger<TChar>
         {
-            int numberBase = IPAddressParser<TChar>.Decimal;
+            TChar ComponentSeparator = TChar.CreateChecked('.');
+            ReadOnlySpan<TChar> PrefixSeparators = [TChar.CreateChecked('/'), TChar.CreateChecked('\\')];
+            ReadOnlySpan<TChar> UrlSeparators = [TChar.CreateChecked(':'), TChar.CreateChecked('?'), TChar.CreateChecked('#')];
+            ReadOnlySpan<TChar> HexadecimalPrefix = [TChar.CreateChecked('0'), TChar.CreateChecked('x')];
+            TChar OctalPrefix = TChar.CreateChecked('0');
+
+            int numberBase = IPAddressParser.Decimal;
             Span<long> parts = stackalloc long[4];
             long currentValue = 0;
             bool atLeastOneChar = false;
@@ -203,10 +212,10 @@ namespace System.Net
                 currentValue = 0;
 
                 // Figure out what base this section is in
-                numberBase = IPAddressParser<TChar>.Decimal;
+                numberBase = IPAddressParser.Decimal;
                 if (ch == OctalPrefix)
                 {
-                    numberBase = IPAddressParser<TChar>.Octal;
+                    numberBase = IPAddressParser.Octal;
                     current++;
                     atLeastOneChar = true;
                     if (current < name.Length)
@@ -215,7 +224,7 @@ namespace System.Net
 
                         if (ch == HexadecimalPrefix[1])
                         {
-                            numberBase = IPAddressParser<TChar>.Hex;
+                            numberBase = IPAddressParser.Hex;
                             current++;
                             atLeastOneChar = false;
                         }
@@ -227,7 +236,7 @@ namespace System.Net
                 {
                     ch = name[current];
 
-                    if (!IPAddressParser<TChar>.TryParseInteger(numberBase, ch, out int digitValue))
+                    if (!IPAddressParser.TryParseInteger(numberBase, ch, out int digitValue))
                     {
                         break; // Invalid/terminator
                     }
@@ -269,8 +278,7 @@ namespace System.Net
             {
                 // end of string, allowed
             }
-            else if ((!notImplicitFile && (name[current] == PrefixSeparators[0] || name[current] == PrefixSeparators[1]))
-                || (notImplicitFile && (name[current] == UrlSeparators[0] || name[current] == UrlSeparators[1] || name[current] == UrlSeparators[2])))
+            else if (PrefixSeparators.Contains(name[current]) || (notImplicitFile && UrlSeparators.Contains(name[current])))
             {
                 bytesConsumed = current;
             }

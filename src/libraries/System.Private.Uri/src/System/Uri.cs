@@ -1276,7 +1276,7 @@ namespace System
                     if (name.StartsWith('[') && name.EndsWith(']'))
                     {
                         // we require that _entire_ name is recognized as ipv6 address
-                        if (IPv6AddressHelper<char>.IsValid(fixedName, 1, ref end) && end == name.Length)
+                        if (IPv6AddressHelper.IsValid(fixedName, 1, ref end) && end == name.Length)
                         {
                             return UriHostNameType.IPv6;
                         }
@@ -1284,7 +1284,7 @@ namespace System
                 }
 
                 end = name.Length;
-                if (IPv4AddressHelper<char>.IsValid(name.AsSpan(), ref end, false, false, false) && end == name.Length)
+                if (IPv4AddressHelper.IsValid(name.AsSpan(), ref end, false, false, false) && end == name.Length)
                 {
                     return UriHostNameType.IPv4;
                 }
@@ -1305,7 +1305,7 @@ namespace System
                 name = "[" + name + "]";
                 fixed (char* newFixedName = name)
                 {
-                    if (IPv6AddressHelper<char>.IsValid(newFixedName, 1, ref end) && end == name.Length)
+                    if (IPv6AddressHelper.IsValid(newFixedName, 1, ref end) && end == name.Length)
                     {
                         return UriHostNameType.IPv6;
                     }
@@ -2515,12 +2515,12 @@ namespace System
 
                 case Flags.IPv6HostType:
                     // The helper will return [...] string that is not suited for Dns.Resolve()
-                    host = IPv6AddressHelper<char>.ParseCanonicalName(str.AsSpan(idx), ref loopback, out ReadOnlySpan<char> scopeIdSpan);
+                    host = IPv6AddressHelper.ParseCanonicalName(str.AsSpan(idx), ref loopback, out ReadOnlySpan<char> scopeIdSpan);
                     scopeId = scopeIdSpan.IsEmpty ? null : new string(scopeIdSpan);
                     break;
 
                 case Flags.IPv4HostType:
-                    host = IPv4AddressHelper<char>.ParseCanonicalName(str.AsSpan(idx), ref loopback);
+                    host = IPv4AddressHelper.ParseCanonicalName(str.AsSpan(idx), ref loopback);
                     break;
 
                 case Flags.UncHostType:
@@ -3854,7 +3854,7 @@ namespace System
             int bytesConsumed = 0;
 
             if (ch == '[' && syntax.InFact(UriSyntaxFlags.AllowIPv6Host) &&
-                IPv6AddressHelper<char>.IsValid(pString, start + 1, ref end))
+                IPv6AddressHelper.IsValid(pString, start + 1, ref end))
             {
                 flags |= Flags.IPv6HostType;
 
@@ -3864,7 +3864,7 @@ namespace System
                 }
             }
             else if (char.IsAsciiDigit(ch) && syntax.InFact(UriSyntaxFlags.AllowIPv4Host) &&
-                IPv4AddressHelper<char>.IsValid(new ReadOnlySpan<char>(pString + start, end - start), ref bytesConsumed, false, StaticNotAny(flags, Flags.ImplicitFile), syntax.InFact(UriSyntaxFlags.V1_UnknownUri)))
+                IPv4AddressHelper.IsValid(new ReadOnlySpan<char>(pString + start, end - start), ref bytesConsumed, false, StaticNotAny(flags, Flags.ImplicitFile), syntax.InFact(UriSyntaxFlags.V1_UnknownUri)))
             {
                 end = start + bytesConsumed;
                 flags |= Flags.IPv4HostType;

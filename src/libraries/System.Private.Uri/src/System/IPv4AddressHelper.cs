@@ -2,16 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Numerics;
 
 namespace System.Net
 {
     // The class designed as to keep minimal the working set of Uri class.
     // The idea is to stay with static helper methods and strings
-    internal static partial class IPv4AddressHelper<TChar>
+    internal static partial class IPv4AddressHelper
     {
         // methods
         // Parse and canonicalize
-        internal static string ParseCanonicalName(ReadOnlySpan<TChar> str, ref bool isLoopback)
+        internal static string ParseCanonicalName<TChar>(ReadOnlySpan<TChar> str, ref bool isLoopback)
+            where TChar : unmanaged, IBinaryInteger<TChar>
         {
             Span<byte> numbers = stackalloc byte[NumberOfLabels];
             isLoopback = Parse(str, numbers);
@@ -34,7 +36,8 @@ namespace System.Net
         //
         //  Convert this IPv4 address into a sequence of 4 8-bit numbers
         //
-        private static bool Parse(ReadOnlySpan<TChar> name, Span<byte> numbers)
+        private static bool Parse<TChar>(ReadOnlySpan<TChar> name, Span<byte> numbers)
+            where TChar : unmanaged, IBinaryInteger<TChar>
         {
             // "name" parameter includes ports, so bytesConsumed may be different from span length
             int bytesConsumed = 0;

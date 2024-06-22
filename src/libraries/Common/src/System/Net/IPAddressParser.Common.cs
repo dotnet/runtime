@@ -6,8 +6,7 @@ using System.Numerics;
 
 namespace System.Net
 {
-    internal static partial class IPAddressParser<TChar>
-        where TChar : unmanaged, IBinaryInteger<TChar>
+    internal static partial class IPAddressParser
     {
         public const int Octal = 8;
         public const int Decimal = 10;
@@ -16,7 +15,8 @@ namespace System.Net
         internal const int MaxIPv4StringLength = 15; // 4 numbers separated by 3 periods, with up to 3 digits per number
         internal const int MaxIPv6StringLength = 65;
 
-        public static bool IsValidInteger(int numericBase, TChar ch)
+        public static bool IsValidInteger<TChar>(int numericBase, TChar ch)
+            where TChar : unmanaged, IBinaryInteger<TChar>
             => IsValidInteger(numericBase, int.CreateTruncating(ch));
 
         private static bool IsValidInteger(int numericBase, int characterValue)
@@ -28,7 +28,8 @@ namespace System.Net
                 : HexConverter.IsHexChar(characterValue);
         }
 
-        public static bool TryParseInteger(int numericBase, TChar ch, out int parsedNumber)
+        public static bool TryParseInteger<TChar>(int numericBase, TChar ch, out int parsedNumber)
+            where TChar : unmanaged, IBinaryInteger<TChar>
         {
             int characterValue = int.CreateTruncating(ch);
             bool validNumber = IsValidInteger(numericBase, characterValue);

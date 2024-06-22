@@ -2,14 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Numerics;
 
 namespace System.Net
 {
     // The class designed as to keep minimal the working set of Uri class.
     // The idea is to stay with static helper methods and strings
-    internal static partial class IPv6AddressHelper<TChar>
+    internal static partial class IPv6AddressHelper
     {
-        internal static string ParseCanonicalName(ReadOnlySpan<TChar> str, ref bool isLoopback, out ReadOnlySpan<TChar> scopeId)
+        internal static string ParseCanonicalName<TChar>(ReadOnlySpan<TChar> str, ref bool isLoopback, out ReadOnlySpan<TChar> scopeId)
+            where TChar : unmanaged, IBinaryInteger<TChar>
         {
             Span<ushort> numbers = stackalloc ushort[NumberOfLabels];
             numbers.Clear();
@@ -245,7 +247,7 @@ namespace System.Net
                                 return false;
                             }
 
-                            if (!IPv4AddressHelper<TChar>.IsValid(new ReadOnlySpan<TChar>(name + lastSequence, end - lastSequence), ref ipv4AddressLength, true, false, false))
+                            if (!IPv4AddressHelper.IsValid(new ReadOnlySpan<char>(name + lastSequence, end - lastSequence), ref ipv4AddressLength, true, false, false))
                             {
                                 return false;
                             }
