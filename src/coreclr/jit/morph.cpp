@@ -2857,7 +2857,8 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
 
     bool isSplit = arg->NewAbiInfo.IsSplitAcrossRegistersAndStack();
 #ifdef TARGET_ARM
-    if ((isSplit && (arg->NewAbiInfo.CountRegsAndStackSlots() > 4)) || (!isSplit && arg->NewAbiInfo.HasAnyStackSegment()))
+    if ((isSplit && (arg->NewAbiInfo.CountRegsAndStackSlots() > 4)) ||
+        (!isSplit && arg->NewAbiInfo.HasAnyStackSegment()))
 #else
     if (!arg->NewAbiInfo.HasAnyRegisterSegment())
 #endif
@@ -2993,24 +2994,24 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
 
                     switch (structSize - offset)
                     {
-                    case 1:
-                        type = TYP_UBYTE;
-                        break;
-                    case 2:
-                        type = TYP_USHORT;
-                        break;
-                    case 3:
-                    case 4:
-                        type = TYP_INT;
-                        break;
-                    case 5:
-                    case 6:
-                    case 7:
-                    case 8:
-                        type = TYP_LONG;
-                        break;
-                    default:
-                        unreached();
+                        case 1:
+                            type = TYP_UBYTE;
+                            break;
+                        case 2:
+                            type = TYP_USHORT;
+                            break;
+                        case 3:
+                        case 4:
+                            type = TYP_INT;
+                            break;
+                        case 5:
+                        case 6:
+                        case 7:
+                        case 8:
+                            type = TYP_LONG;
+                            break;
+                        default:
+                            unreached();
                     }
 
 #ifdef TARGET_ARM64
@@ -3034,8 +3035,7 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
 
             if (argNode->OperIsLocalRead())
             {
-                GenTreeLclFld* lclFld = gtNewLclFldNode(argNode->AsLclVarCommon()->GetLclNum(),
-                                                        genActualType(type),
+                GenTreeLclFld* lclFld = gtNewLclFldNode(argNode->AsLclVarCommon()->GetLclNum(), genActualType(type),
                                                         argNode->AsLclVarCommon()->GetLclOffs() + offset);
                 return lclFld;
             }
@@ -3074,7 +3074,7 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
                 // If passed in a float reg then keep that type; otherwise let
                 // createSlotAccess get the type from the layout.
                 var_types slotType = varTypeUsesFloatReg(regType) ? regType : TYP_UNDEF;
-                GenTree* access = createSlotAccess(seg.Offset, slotType);
+                GenTree*  access   = createSlotAccess(seg.Offset, slotType);
                 newArg->AddField(this, access, seg.Offset, access->TypeGet());
             }
             else
@@ -3090,7 +3090,8 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
 
         if (argNode->OperIsLocalRead())
         {
-            lvaSetVarDoNotEnregister(argNode->AsLclVarCommon()->GetLclNum() DEBUGARG(DoNotEnregisterReason::LocalField));
+            lvaSetVarDoNotEnregister(argNode->AsLclVarCommon()->GetLclNum()
+                                         DEBUGARG(DoNotEnregisterReason::LocalField));
         }
     }
 
