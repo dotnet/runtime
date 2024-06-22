@@ -225,6 +225,7 @@ namespace Tracing.Tests.ProcessInfoValidation
                 Architecture.Arm => "arm32",
                 Architecture.Arm64 => "arm64",
                 Architecture.RiscV64 => "riscv64",
+                Architecture.LoongArch64 => "loongarch64",
                 _ => "Unknown"
             };
 
