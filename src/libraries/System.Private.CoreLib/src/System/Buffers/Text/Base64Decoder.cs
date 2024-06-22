@@ -1003,7 +1003,7 @@ namespace System.Buffers.Text
 
                 // Step 6: Interleave and store decoded results.
                 AssertWrite<Vector128<byte>>(dest, destStart, destLength);
-                AdvSimd.Arm64.StoreVector128x3AndZip(dest, (res1, res2, res3));
+                AdvSimd.Arm64.StoreVectorAndZip(dest, (res1, res2, res3));
 
                 src += 64;
                 dest += 48;
@@ -1487,7 +1487,7 @@ namespace System.Buffers.Text
                 out Vector128<byte> str1, out Vector128<byte> str2, out Vector128<byte> str3, out Vector128<byte> str4)
             {
                 AssertRead<Vector128<byte>>(src, srcStart, sourceLength);
-                (str1, str2, str3, str4) = AdvSimd.Arm64.LoadVector128x4AndUnzip(src);
+                (str1, str2, str3, str4) = AdvSimd.Arm64.Load4xVector128AndUnzip(src);
 
                 return true;
             }

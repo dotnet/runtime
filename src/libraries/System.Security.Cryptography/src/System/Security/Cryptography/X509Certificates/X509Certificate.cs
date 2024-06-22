@@ -25,6 +25,7 @@ namespace System.Security.Cryptography.X509Certificates
         private volatile string? _lazyKeyAlgorithm;
         private volatile byte[]? _lazyKeyAlgorithmParameters;
         private volatile byte[]? _lazyPublicKey;
+        private volatile byte[]? _lazyRawData;
         private DateTime _lazyNotBefore = DateTime.MinValue;
         private DateTime _lazyNotAfter = DateTime.MinValue;
 
@@ -37,6 +38,7 @@ namespace System.Security.Cryptography.X509Certificates
             _lazyKeyAlgorithm = null;
             _lazyKeyAlgorithmParameters = null;
             _lazyPublicKey = null;
+            _lazyRawData = null;
             _lazyNotBefore = DateTime.MinValue;
             _lazyNotAfter = DateTime.MinValue;
 
@@ -242,6 +244,15 @@ namespace System.Security.Cryptography.X509Certificates
             throw new PlatformNotSupportedException();
         }
 
+        private protected ReadOnlyMemory<byte> PalRawDataMemory
+        {
+            get
+            {
+                ThrowIfInvalid();
+                return _lazyRawData ??= Pal.RawData;
+            }
+        }
+
         public IntPtr Handle => Pal is null ? IntPtr.Zero : Pal.Handle;
 
         public string Issuer
@@ -343,12 +354,7 @@ namespace System.Security.Cryptography.X509Certificates
         public virtual byte[] GetCertHash(HashAlgorithmName hashAlgorithm)
         {
             ThrowIfInvalid();
-            return GetCertHash(hashAlgorithm, Pal);
-        }
-
-        private static byte[] GetCertHash(HashAlgorithmName hashAlgorithm, ICertificatePalCore certPal)
-        {
-            return CryptographicOperations.HashData(hashAlgorithm, certPal.RawData);
+            return CryptographicOperations.HashData(hashAlgorithm, PalRawDataMemory.Span);
         }
 
         public virtual bool TryGetCertHash(
@@ -358,7 +364,7 @@ namespace System.Security.Cryptography.X509Certificates
         {
             ThrowIfInvalid();
 
-            return CryptographicOperations.TryHashData(hashAlgorithm, Pal.RawData, destination, out bytesWritten);
+            return CryptographicOperations.TryHashData(hashAlgorithm, PalRawDataMemory.Span, destination, out bytesWritten);
         }
 
         public virtual string GetCertHashString()
@@ -370,13 +376,15 @@ namespace System.Security.Cryptography.X509Certificates
         public virtual string GetCertHashString(HashAlgorithmName hashAlgorithm)
         {
             ThrowIfInvalid();
-
-            return GetCertHashString(hashAlgorithm, Pal);
+            return GetCertHashString(hashAlgorithm, PalRawDataMemory.Span);
         }
 
-        internal static string GetCertHashString(HashAlgorithmName hashAlgorithm, ICertificatePalCore certPal)
+        internal static string GetCertHashString(HashAlgorithmName hashAlgorithm, ReadOnlySpan<byte> rawData)
         {
-            return GetCertHash(hashAlgorithm, certPal).ToHexStringUpper();
+            Span<byte> buffer = stackalloc byte[64]; // Largest supported hash size is 512 bits
+
+            int written = CryptographicOperations.HashData(hashAlgorithm, rawData, buffer);
+            return Convert.ToHexString(buffer.Slice(0, written));
         }
 
         // Only use for internal purposes when the returned byte[] will not be mutated
@@ -409,7 +417,7 @@ namespace System.Security.Cryptography.X509Certificates
         {
             ThrowIfInvalid();
 
-            return Pal.RawData.CloneByteArray();
+            return PalRawDataMemory.ToArray();
         }
 
         public override int GetHashCode()
