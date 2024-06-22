@@ -2117,7 +2117,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
                 if (varTypeIsFloating(node))
                 {
-                    GetEmitter()->emitIns_R_R_R(ins, EA_SCALABLE, targetReg, /* mask */ op1Reg, op2Reg, opt, INS_SCALABLE_OPTS_WITH_SIMD_SCALAR);
+                    GetEmitter()->emitIns_R_R_R(ins, EA_SCALABLE, targetReg, /* mask */ op1Reg, op2Reg, opt,
+                                                INS_SCALABLE_OPTS_WITH_SIMD_SCALAR);
                 }
                 else
                 {
