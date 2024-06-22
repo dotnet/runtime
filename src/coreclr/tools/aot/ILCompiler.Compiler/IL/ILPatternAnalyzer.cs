@@ -100,7 +100,7 @@ namespace ILCompiler
                 case State.TypeEqualityCheck:
                     if (opcode is ILOpcode.brfalse or ILOpcode.brfalse_s or ILOpcode.brtrue or ILOpcode.brtrue_s)
                         _state = State.Branch;
-                    else if (IsStlocLdlocSequence(opcode, reader, methodIL))
+                    else if (IsStlocLdlocSequence(opcode, reader))
                         _state = State.TypeEqualityCheck_StlocLdloc;
                     else
                         break;
@@ -137,7 +137,7 @@ namespace ILCompiler
             static bool IsArgumentOrLocalLoad(ILOpcode opcode)
                 => opcode is (>= ILOpcode.ldloc_0 and <= ILOpcode.ldloc_3) or (>= ILOpcode.ldarg_0 and <= ILOpcode.ldarg_3);
 
-            static bool IsStlocLdlocSequence(ILOpcode opcode, in ILReader reader, MethodIL methodIL)
+            static bool IsStlocLdlocSequence(ILOpcode opcode, in ILReader reader)
             {
                 if (opcode == ILOpcode.stloc || opcode == ILOpcode.stloc_s || (opcode >= ILOpcode.stloc_0 && opcode <= ILOpcode.stloc_3))
                 {
