@@ -580,6 +580,99 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     // clang-format on
 };
 
+#if defined(DEBUG)
+static void ValidateHWIntrinsicInfo(CORINFO_InstructionSet isa, NamedIntrinsic ni, const HWIntrinsicInfo& info)
+{
+    // We should have found the entry we expected to find here
+    assert(info.id == ni);
+
+    // It should belong to the expected ISA
+    assert(info.isa == isa);
+
+    if ((info.simdSize != -1) && (info.simdSize != 0))
+    {
+        // We should only have known SIMD sizes
+#if defined(TARGET_ARM64)
+        assert((info.simdSize == 8) || (info.simdSize == 16));
+#elif defined(TARGET_XARCH)
+        assert((info.simdSize == 16) || (info.simdSize == 32) || (info.simdSize == 64));
+#else
+        unreached();
+#endif
+    }
+
+    if (info.numArgs != -1)
+    {
+        // We should only have an expected number of arguments
+#if defined(TARGET_ARM64)
+        assert((info.numArgs >= 0) && (info.numArgs <= 4));
+#elif defined(TARGET_XARCH)
+        assert((info.numArgs >= 0) && (info.numArgs <= 5));
+#else
+        unreached();
+#endif
+    }
+
+    // TODO: There's more we could validate here in terms of flags, instructions used, etc.
+    // Some of this is already done ad-hoc elsewhere throughout the JIT
+}
+
+static void ValidateHWIntrinsicIsaRange(CORINFO_InstructionSet isa, const HWIntrinsicIsaRange& isaRange)
+{
+    // Both entries should be illegal if either is
+    if (isaRange.FirstId == NI_Illegal)
+    {
+        assert(isaRange.LastId == NI_Illegal);
+        return;
+    }
+    assert(isaRange.LastId != NI_Illegal);
+
+    // Both entries should belong to the expected ISA
+    assert(HWIntrinsicInfo::lookupIsa(isaRange.FirstId) == isa);
+    assert(HWIntrinsicInfo::lookupIsa(isaRange.LastId) == isa);
+
+    // The last ID should be the same as or after the first ID
+    assert(isaRange.FirstId <= isaRange.LastId);
+
+    // The ID before the range should not be part of the expected ISA
+    NamedIntrinsic prevId = static_cast<NamedIntrinsic>(isaRange.FirstId - 1);
+    assert((prevId == NI_HW_INTRINSIC_START) || (HWIntrinsicInfo::lookupIsa(prevId) != isa));
+
+    // The ID after the range should not be part of the expected ISA
+    NamedIntrinsic nextId = static_cast<NamedIntrinsic>(isaRange.LastId + 1);
+    assert((nextId == NI_HW_INTRINSIC_END) || (HWIntrinsicInfo::lookupIsa(nextId) != isa));
+
+    NamedIntrinsic         ni       = static_cast<NamedIntrinsic>(isaRange.FirstId);
+    const HWIntrinsicInfo* prevInfo = &HWIntrinsicInfo::lookup(ni);
+    ValidateHWIntrinsicInfo(isa, ni, *prevInfo);
+
+    size_t count = (isaRange.LastId - isaRange.FirstId) + 1;
+
+    for (size_t i = 1; i < count; i++)
+    {
+        ni                          = static_cast<NamedIntrinsic>(isaRange.FirstId + i);
+        const HWIntrinsicInfo* info = &HWIntrinsicInfo::lookup(ni);
+        ValidateHWIntrinsicInfo(isa, ni, *info);
+
+        // The current name should be sorted after the previous
+        assert(strcmp(info->name, prevInfo->name) > 0);
+
+        prevInfo = info;
+    }
+}
+
+static void ValidateHWIntrinsicIsaRangeArray()
+{
+    size_t count = sizeof(hwintrinsicIsaRangeArray) / sizeof(hwintrinsicIsaRangeArray[0]);
+
+    for (size_t i = 0; i < count; i++)
+    {
+        CORINFO_InstructionSet isa = static_cast<CORINFO_InstructionSet>(i + 1);
+        ValidateHWIntrinsicIsaRange(isa, hwintrinsicIsaRangeArray[i]);
+    }
+}
+#endif
+
 //------------------------------------------------------------------------
 // lookupId: Gets the NamedIntrinsic for a given method name and InstructionSet
 //
@@ -598,6 +691,16 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
                                          const char*       methodName,
                                          const char*       enclosingClassName)
 {
+#if defined(DEBUG)
+    static bool validationCompleted = false;
+
+    if (!validationCompleted)
+    {
+        ValidateHWIntrinsicIsaRangeArray();
+        validationCompleted = true;
+    }
+#endif // DEBUG
+
     CORINFO_InstructionSet isa = lookupIsa(className, enclosingClassName);
 
     if (isa == InstructionSet_ILLEGAL)
@@ -754,26 +857,8 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
 
     if (isaRange.FirstId == NI_Illegal)
     {
-        assert(isaRange.LastId == NI_Illegal);
         return NI_Illegal;
     }
-    assert(isaRange.LastId != NI_Illegal);
-
-#if defined(DEBUG)
-    // This should be the range for the ISA we expect
-    assert(HWIntrinsicInfo::lookupIsa(isaRange.FirstId) == isa);
-    assert(HWIntrinsicInfo::lookupIsa(isaRange.LastId) == isa);
-
-    // The ID before/after the range should not part of the ISA we expect
-    NamedIntrinsic prevId = static_cast<NamedIntrinsic>(isaRange.FirstId - 1);
-    NamedIntrinsic nextId = static_cast<NamedIntrinsic>(isaRange.LastId + 1);
-
-    assert((prevId == NI_HW_INTRINSIC_START) || (HWIntrinsicInfo::lookupIsa(prevId) != isa));
-    assert((nextId == NI_HW_INTRINSIC_END) || (HWIntrinsicInfo::lookupIsa(nextId) != isa));
-
-    // The last id should be the same as or after the first id
-    assert(isaRange.FirstId <= isaRange.LastId);
-#endif // DEBUG
 
     size_t rangeLower = isaRange.FirstId;
     size_t rangeUpper = isaRange.LastId;
@@ -785,9 +870,6 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
 
         NamedIntrinsic         ni            = static_cast<NamedIntrinsic>(rangeIndex);
         const HWIntrinsicInfo& intrinsicInfo = HWIntrinsicInfo::lookup(ni);
-
-        // We should have found the entry we expected to find here
-        assert(ni == intrinsicInfo.id);
 
         int sortOrder = strcmp(methodName, intrinsicInfo.name);
 
