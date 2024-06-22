@@ -1659,7 +1659,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	case SN_AsUInt32:
 	case SN_AsUInt64:
 	case SN_AsVector:
-	case SN_AsVector4: {
+	{
 		if (!is_element_type_primitive (fsig->ret) || !is_element_type_primitive (fsig->params [0]))
 			return NULL;
 		return emit_simd_ins (cfg, klass, OP_XCAST, args [0]->dreg, -1);
@@ -1674,6 +1674,13 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	case SN_AsVector3: {
 		if (!mini_class_is_simd (cfg, mono_class_from_mono_type_internal (fsig->ret))) {
 			// FIXME: Support Vector2 and Vector3 for WASM and AMD64
+			return NULL;
+		}
+		return emit_simd_ins (cfg, klass, OP_XCAST, args [0]->dreg, -1);
+	}
+	case SN_AsVector4: {
+		if (!COMPILE_LLVM (cfg)) {
+			// This can assert for load opcodes needing OP_LOADV_MEMBASE
 			return NULL;
 		}
 		return emit_simd_ins (cfg, klass, OP_XCAST, args [0]->dreg, -1);
