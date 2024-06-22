@@ -100,7 +100,7 @@ namespace System.Numerics.Tensors
                         y
                     );
                 }
-                return MinMagnitudeOperator<T>.Invoke(x, y);
+                return MinMagnitudeNumberOperator<T>.Invoke(x, y);
 #endif
             }
 
@@ -122,7 +122,7 @@ namespace System.Numerics.Tensors
                         y
                     );
                 }
-                return MinMagnitudeOperator<T>.Invoke(x, y);
+                return MinMagnitudeNumberOperator<T>.Invoke(x, y);
 #endif
             }
 
@@ -144,7 +144,7 @@ namespace System.Numerics.Tensors
                         y
                     );
                 }
-                return MinMagnitudeOperator<T>.Invoke(x, y);
+                return MinMagnitudeNumberOperator<T>.Invoke(x, y);
 #endif
             }
 

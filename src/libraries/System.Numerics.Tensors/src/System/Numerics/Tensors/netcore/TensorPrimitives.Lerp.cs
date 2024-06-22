@@ -90,7 +90,7 @@ namespace System.Numerics.Tensors
                     return Vector128.Lerp(x.AsSingle(), y.AsSingle(), amount.AsSingle()).As<float, T>();
                 }
 #else
-                return (x * (Vector128<T>.One - amount)) + (y * amount);
+                return MultiplyAddEstimateOperator<T>.Invoke(x, Vector128<T>.One - amount, y * amount);
 #endif
             }
 
@@ -107,7 +107,7 @@ namespace System.Numerics.Tensors
                     return Vector256.Lerp(x.AsSingle(), y.AsSingle(), amount.AsSingle()).As<float, T>();
                 }
 #else
-                return (x * (Vector256<T>.One - amount)) + (y * amount);
+                return MultiplyAddEstimateOperator<T>.Invoke(x, Vector256<T>.One - amount, y * amount);
 #endif
             }
 
@@ -124,7 +124,7 @@ namespace System.Numerics.Tensors
                     return Vector512.Lerp(x.AsSingle(), y.AsSingle(), amount.AsSingle()).As<float, T>();
                 }
 #else
-                return (x * (Vector512<T>.One - amount)) + (y * amount);
+                return MultiplyAddEstimateOperator<T>.Invoke(x, Vector512<T>.One - amount, y * amount);
 #endif
             }
         }

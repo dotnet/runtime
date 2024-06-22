@@ -52,7 +52,7 @@ namespace System.Numerics.Tensors
                           || (typeof(T) == typeof(nint)));
 
                 return Vector128.ConditionalSelect(
-                    (Vector128.LessThan(xMag, yMag) & IsPositive(xMag)) | IsNegative(yMag),
+                    (Vector128.LessThan(xMag, yMag) & IsPositive(xMag)) | (Vector128.Equals(xMag, yMag) & IsNegative(x)) | IsNegative(yMag),
                     x,
                     y
                 );
@@ -71,7 +71,7 @@ namespace System.Numerics.Tensors
                  || (typeof(T) == typeof(ulong))
                  || (typeof(T) == typeof(nuint)))
                 {
-                    return Vector256.ConditionalSelect(Vector256.LessThan(y, x), x, y);
+                    return Vector256.Min(x, y);
                 }
 
                 Vector256<T> xMag = Vector256.Abs(x);
@@ -81,7 +81,7 @@ namespace System.Numerics.Tensors
                 )
                 {
                     return Vector256.ConditionalSelect(
-                        Vector256.GreaterThan(xMag, yMag) | IsNaN(yMag) | (Vector256.Equals(xMag, yMag) & IsPositive(x)),
+                        Vector256.LessThan(xMag, yMag) | IsNaN(yMag) | (Vector256.Equals(xMag, yMag) & IsNegative(x)),
                         x,
                         y
                     );
@@ -94,7 +94,7 @@ namespace System.Numerics.Tensors
                           || (typeof(T) == typeof(nint)));
 
                 return Vector256.ConditionalSelect(
-                    (Vector256.LessThan(xMag, yMag) & IsPositive(xMag)) | IsNegative(yMag),
+                    (Vector256.LessThan(xMag, yMag) & IsPositive(xMag)) | (Vector256.Equals(xMag, yMag) & IsNegative(x)) | IsNegative(yMag),
                     x,
                     y
                 );
@@ -113,7 +113,7 @@ namespace System.Numerics.Tensors
                  || (typeof(T) == typeof(ulong))
                  || (typeof(T) == typeof(nuint)))
                 {
-                    return Vector512.ConditionalSelect(Vector512.LessThan(y, x), x, y);
+                    return Vector512.Min(x, y);
                 }
 
                 Vector512<T> xMag = Vector512.Abs(x);
@@ -123,7 +123,7 @@ namespace System.Numerics.Tensors
                 )
                 {
                     return Vector512.ConditionalSelect(
-                        Vector512.GreaterThan(xMag, yMag) | IsNaN(yMag) | (Vector512.Equals(xMag, yMag) & IsPositive(x)),
+                        Vector512.LessThan(xMag, yMag) | IsNaN(yMag) | (Vector512.Equals(xMag, yMag) & IsNegative(x)),
                         x,
                         y
                     );
@@ -136,7 +136,7 @@ namespace System.Numerics.Tensors
                           || (typeof(T) == typeof(nint)));
 
                 return Vector512.ConditionalSelect(
-                    (Vector512.LessThan(xMag, yMag) & IsPositive(xMag)) | IsNegative(yMag),
+                    (Vector512.LessThan(xMag, yMag) & IsPositive(xMag)) | (Vector512.Equals(xMag, yMag) & IsNegative(x)) | IsNegative(yMag),
                     x,
                     y
                 );

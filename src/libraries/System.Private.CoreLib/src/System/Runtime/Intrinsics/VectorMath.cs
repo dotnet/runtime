@@ -101,13 +101,13 @@ namespace System.Runtime.Intrinsics
             const double V_LN2_HEAD = +0.693359375;
             const double V_LN2_TAIL = -0.00021219444005469057;
 
-            const double C03  = 0.5000000000000018;
-            const double C04  = 0.1666666666666617;
-            const double C05  = 0.04166666666649277;
-            const double C06  = 0.008333333333559272;
-            const double C07  = 0.001388888895122404;
-            const double C08  = 0.00019841269432677495;
-            const double C09  = 2.4801486521374483E-05;
+            const double C03 = 0.5000000000000018;
+            const double C04 = 0.1666666666666617;
+            const double C05 = 0.04166666666649277;
+            const double C06 = 0.008333333333559272;
+            const double C07 = 0.001388888895122404;
+            const double C08 = 0.00019841269432677495;
+            const double C09 = 2.4801486521374483E-05;
             const double C10 = 2.7557622532543023E-06;
             const double C11 = 2.7632293298250954E-07;
             const double C12 = 2.499430431958571E-08;
@@ -259,8 +259,6 @@ namespace System.Runtime.Intrinsics
             TVectorDouble rl2 = rl * rl;
             TVectorDouble rl4 = rl2 * rl2;
 
-            // TVectorDouble polyl =
-
             TVectorDouble polyl = TVectorDouble.MultiplyAddEstimate(
                 rl4,
                 TVectorDouble.MultiplyAddEstimate(c6, rl, c5),
@@ -335,6 +333,13 @@ namespace System.Runtime.Intrinsics
             TVectorUInt64 yExp = (yBits >> double.BiasedExponentShift) & shiftedExponentMask;
 
             TVectorUInt64 expDiff = xExp - yExp;
+
+            // Cover cases where x or y is insignifican compared to the other
+            TVectorDouble insignificanMask = Unsafe.BitCast<TVectorUInt64, TVectorDouble>(
+                TVectorUInt64.GreaterThanOrEqual(expDiff, TVectorUInt64.Create(double.SignificandLength + 1)) &
+                TVectorUInt64.LessThanOrEqual(expDiff, TVectorUInt64.Create(unchecked((ulong)(-double.SignificandLength - 1))))
+            );
+            TVectorDouble insignificantResult = ax + ay;
 
             // To prevent overflow, scale down by 2^+600
             TVectorUInt64 expBiasP500 = TVectorUInt64.Create(double.ExponentBias + 500);
@@ -427,6 +432,7 @@ namespace System.Runtime.Intrinsics
             // the inputs is NaN. Otherwise if either input
             // is NaN, we return NaN
 
+            result = TVectorDouble.ConditionalSelect(insignificanMask, insignificantResult, result);
             result = TVectorDouble.ConditionalSelect(nanMask, TVectorDouble.Create(double.NaN), result);
             result = TVectorDouble.ConditionalSelect(infinityMask, TVectorDouble.Create(double.PositiveInfinity), result);
 
@@ -1179,7 +1185,7 @@ namespace System.Runtime.Intrinsics
                       || (typeof(T) == typeof(nint)));
 
             return TVector.ConditionalSelect(
-                (TVector.GreaterThan(xMag, yMag) & TVector.IsPositive(yMag)) | TVector.IsNegative(xMag),
+                (TVector.GreaterThan(xMag, yMag) & TVector.IsPositive(yMag)) | (TVector.Equals(xMag, yMag) & TVector.IsNegative(y)) | TVector.IsNegative(xMag),
                 x,
                 y
             );
@@ -1266,7 +1272,7 @@ namespace System.Runtime.Intrinsics
                       || (typeof(T) == typeof(nint)));
 
             return TVector.ConditionalSelect(
-                (TVector.LessThan(xMag, yMag) & TVector.IsPositive(xMag)) | TVector.IsNegative(yMag),
+                (TVector.LessThan(xMag, yMag) & TVector.IsPositive(xMag)) | (TVector.Equals(xMag, yMag) & TVector.IsNegative(x)) | TVector.IsNegative(yMag),
                 x,
                 y
             );

@@ -53,7 +53,7 @@ namespace System.Numerics.Tensors
                           || (typeof(T) == typeof(nint)));
 
                 return Vector128.ConditionalSelect(
-                    (Vector128.GreaterThan(xMag, yMag) & IsPositive(yMag)) | IsNegative(xMag),
+                    (Vector128.GreaterThan(xMag, yMag) & IsPositive(yMag)) | (Vector128.Equals(xMag, yMag) & IsNegative(y)) | IsNegative(xMag),
                     x,
                     y
                 );
@@ -95,7 +95,7 @@ namespace System.Numerics.Tensors
                           || (typeof(T) == typeof(nint)));
 
                 return Vector256.ConditionalSelect(
-                    (Vector256.GreaterThan(xMag, yMag) & IsPositive(yMag)) | IsNegative(xMag),
+                    (Vector256.GreaterThan(xMag, yMag) & IsPositive(yMag)) | (Vector256.Equals(xMag, yMag) & IsNegative(y)) | IsNegative(xMag),
                     x,
                     y
                 );
@@ -137,7 +137,7 @@ namespace System.Numerics.Tensors
                           || (typeof(T) == typeof(nint)));
 
                 return Vector512.ConditionalSelect(
-                    (Vector512.GreaterThan(xMag, yMag) & IsPositive(yMag)) | IsNegative(xMag),
+                    (Vector512.GreaterThan(xMag, yMag) & IsPositive(yMag)) | (Vector512.Equals(xMag, yMag) & IsNegative(y)) | IsNegative(xMag),
                     x,
                     y
                 );

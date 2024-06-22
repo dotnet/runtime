@@ -20857,7 +20857,7 @@ GenTree* Compiler::gtNewSimdAbsNode(var_types type, GenTree* op1, CorInfoType si
         GenTree* op1Dup2 = fgMakeMultiUse(&op1Dup1);
 
         // op1 = IsNegative(op1)
-        op1 = gtNewSimdIsPositiveInfinityNode(type, op1, simdBaseJitType, simdSize);
+        op1 = gtNewSimdIsNegativeNode(type, op1, simdBaseJitType, simdSize);
 
         // tmp = -op1Dup1
         tmp = gtNewSimdUnOpNode(GT_NEG, type, op1Dup1, simdBaseJitType, simdSize);
@@ -23138,17 +23138,16 @@ GenTree* Compiler::gtNewSimdCmpOpNode(
 
         case GT_NE:
         {
-            if (!varTypeIsFloating(simdBaseType) && (simdSize != 64))
-            {
-                GenTree* result = gtNewSimdCmpOpNode(GT_EQ, type, op1, op2, simdBaseJitType, simdSize);
-                return gtNewSimdUnOpNode(GT_NEG, type, result, simdBaseJitType, simdSize);
-            }
-
             if (simdSize == 64)
             {
                 assert(canUseEvexEncodingDebugOnly());
                 intrinsic                = NI_EVEX_CompareNotEqualMask;
                 needsConvertMaskToVector = true;
+            }
+            else if (!varTypeIsFloating(simdBaseType))
+            {
+                GenTree* result = gtNewSimdCmpOpNode(GT_EQ, type, op1, op2, simdBaseJitType, simdSize);
+                return gtNewSimdUnOpNode(GT_NOT, type, result, simdBaseJitType, simdSize);
             }
             else if (simdSize == 32)
             {
@@ -23240,7 +23239,7 @@ GenTree* Compiler::gtNewSimdCmpOpNode(
         case GT_NE:
         {
             GenTree* result = gtNewSimdCmpOpNode(GT_EQ, type, op1, op2, simdBaseJitType, simdSize);
-            return gtNewSimdUnOpNode(GT_NEG, type, result, simdBaseJitType, simdSize);
+            return gtNewSimdUnOpNode(GT_NOT, type, result, simdBaseJitType, simdSize);
         }
 #else
 #error Unsupported platform
@@ -24704,7 +24703,7 @@ GenTree* Compiler::gtNewSimdIsPositiveInfinityNode(var_types   type,
 
     if (varTypeIsFloating(simdBaseType))
     {
-        double   infinity = FloatingPointUtils::convertUInt64ToDouble(0x7FF0000000000000);
+        double   infinity = BitOperations::UInt64BitsToDouble(0x7FF0000000000000);
         GenTree* cnsNode  = gtNewDconNode(infinity, simdBaseType);
         cnsNode           = gtNewSimdCreateBroadcastNode(type, cnsNode, simdBaseJitType, simdSize);
         return gtNewSimdCmpOpNode(GT_EQ, type, op1, cnsNode, simdBaseJitType, simdSize);
@@ -24713,7 +24712,7 @@ GenTree* Compiler::gtNewSimdIsPositiveInfinityNode(var_types   type,
 }
 
 //----------------------------------------------------------------------------------------------
-// Compiler::gtNewSimdIsPositiveInfinityNode: Creates a new simd IsZero node
+// Compiler::gtNewSimdIsZeroNode: Creates a new simd IsZero node
 //
 //  Arguments:
 //    type                - The return type of SIMD node being created

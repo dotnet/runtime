@@ -78,7 +78,7 @@ namespace System.Numerics
         /// <param name="amount">A value, intended to be between 0 and 1, that indicates the weight of the interpolation.</param>
         /// <returns>The interpolated value.</returns>
         /// <remarks>This method presumes inputs are well formed and does not validate that <c>value1 &lt; value2</c> nor that <c>0 &lt;= amount &lt;= 1</c>.</remarks>
-        static virtual TSelf Lerp(TSelf value1, TSelf value2, TSelf amount) => (value1 * (TSelf.One - amount)) + (value2 * amount);
+        static virtual TSelf Lerp(TSelf value1, TSelf value2, TSelf amount) => TSelf.MultiplyAddEstimate(value1, TSelf.One - amount, value2 * amount);
 
         /// <summary>Computes an estimate of the reciprocal of a value.</summary>
         /// <param name="x">The value whose estimate of the reciprocal is to be computed.</param>
