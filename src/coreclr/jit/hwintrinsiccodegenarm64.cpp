@@ -2070,6 +2070,17 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
+            case NI_Sve_ExtractAfterLastScalar:
+            case NI_Sve_ExtractLastScalar:
+                assert(op1Reg != REG_NA);
+                assert(op2Reg != REG_NA); // this is the embedded mask
+
+                // op1 will now be the mask
+                std::swap(op1Reg, op2Reg);
+
+                GetEmitter()->emitIns_R_R_R(ins, emitTypeSize(node), targetReg, /* mask */ op1Reg, op2Reg, opt);
+                break;
+
             default:
                 unreached();
         }

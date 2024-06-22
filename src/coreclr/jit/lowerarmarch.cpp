@@ -1309,20 +1309,32 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                 unsigned    simdSize        = node->GetSimdSize();
                 var_types   simdType        = Compiler::getSIMDTypeForSize(simdSize);
                 GenTree*    trueMask        = comp->gtNewSimdAllTrueMaskNode(simdBaseJitType, simdSize);
-                GenTree*    trueVal         = node;
-                GenTree*    falseVal        = comp->gtNewZeroConNode(simdType);
 
                 switch (intrinsicId)
                 {
+                    // These are special cases where we need to handle the embedded mask differently
+                    // because ConditionalSelect expects a vector, but these APIs return a scalar.
                     case NI_Sve_ExtractLastScalar:
                     case NI_Sve_ExtractAfterLastScalar:
                     {
+                        // Create the same node with an additional operand to pass the mask.
+                        GenTreeHWIntrinsic* newNode =
+                            comp->gtNewSimdHWIntrinsicNode(node->TypeGet(), node->Op(1), trueMask, intrinsicId,
+                                                           simdBaseJitType, simdSize);
 
+                        BlockRange().InsertAfter(node->Op(1), trueMask);
+                        BlockRange().InsertAfter(trueMask, newNode);
+                        BlockRange().Remove(node);
+                        use.ReplaceWith(newNode);
+
+                        node = newNode;
                     }
                     break;
 
                     default:
                     {
+                        GenTree*            trueVal  = node;
+                        GenTree*            falseVal = comp->gtNewZeroConNode(simdType);
                         GenTreeHWIntrinsic* condSelNode =
                             comp->gtNewSimdHWIntrinsicNode(simdType, trueMask, trueVal, falseVal,
                                                            NI_Sve_ConditionalSelect, simdBaseJitType, simdSize);
