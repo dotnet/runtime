@@ -970,7 +970,7 @@ void ObjectAllocator::RewriteUses()
                         }
                         else
                         {
-                            GenTree* const lclCopy = m_compiler->gtClone(lcl);
+                            GenTree* const lclCopy = m_compiler->gtClone(lcl, /* complexOk */ true);
                             GenTree* const payloadAddr =
                                 m_compiler->gtNewOperNode(GT_ADD, TYP_BYREF, lclCopy,
                                                           m_compiler->gtNewIconNode(TARGET_POINTER_SIZE, TYP_I_IMPL));
