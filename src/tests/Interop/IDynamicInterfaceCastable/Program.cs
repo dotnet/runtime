@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -337,10 +338,10 @@ namespace IDynamicInterfaceCastableTests
     public struct ValueTypeDynamicInterfaceCastable : IDynamicInterfaceCastable
     {
         public bool IsInterfaceImplemented(RuntimeTypeHandle interfaceType, bool throwIfNotImplemented)
-            => throw new Exception("ValueType implementations are ignored");
+            => throw new UnreachableException("ValueType implementations are ignored");
 
         public RuntimeTypeHandle GetInterfaceImplementation(RuntimeTypeHandle interfaceType)
-            => throw new Exception("ValueType implementations are ignored");
+            => throw new UnreachableException("ValueType implementations are ignored");
     }
 
     [ActiveIssue("https://github.com/dotnet/runtime/issues/55742", TestRuntimes.Mono)]
