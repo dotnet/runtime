@@ -7477,9 +7477,8 @@ void CodeGen::genCallPlaceRegArgs(GenTreeCall* call)
                 assert(putArgRegNode->OperIs(GT_PUTARG_REG));
 
                 genConsumeReg(putArgRegNode);
-                inst_Mov_Extend(putArgRegNode->TypeGet(), /* srcInReg */ true, seg.GetRegister(),
-                                putArgRegNode->GetRegNum(),
-                                /* canSkip */ true, emitActualTypeSize(TYP_I_IMPL));
+                inst_Mov(genActualType(putArgRegNode), seg.GetRegister(), putArgRegNode->GetRegNum(),
+                         /* canSkip */ true);
 
                 use = use->GetNext();
             }
@@ -7504,8 +7503,8 @@ void CodeGen::genCallPlaceRegArgs(GenTreeCall* call)
                 }
 
                 regNumber allocReg = argNode->AsPutArgSplit()->GetRegNumByIdx(regIndex);
-                inst_Mov_Extend(argNode->TypeGet(), /* srcInReg */ true, seg.GetRegister(), allocReg,
-                                /* canSkip */ true, emitActualTypeSize(TYP_I_IMPL));
+                var_types type     = argNode->AsPutArgSplit()->GetRegType(regIndex);
+                inst_Mov(genActualType(type), seg.GetRegister(), allocReg, /* canSkip */ true);
 
                 regIndex++;
             }
@@ -7518,9 +7517,7 @@ void CodeGen::genCallPlaceRegArgs(GenTreeCall* call)
         {
             regNumber argReg = abiInfo.Segment(0).GetRegister();
             genConsumeReg(argNode);
-            inst_Mov_Extend(argNode->TypeGet(), /* srcInReg */ true, argReg, argNode->GetRegNum(), /* canSkip */ true,
-                            emitActualTypeSize(TYP_I_IMPL));
-
+            inst_Mov(genActualType(argNode), argReg, argNode->GetRegNum(), /* canSkip */ true);
             continue;
         }
 
