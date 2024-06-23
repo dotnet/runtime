@@ -7445,6 +7445,99 @@ void CodeGen::genStructReturn(GenTree* treeNode)
 }
 
 //------------------------------------------------------------------------
+// genCallPlaceRegArgs: Place all arguments into their initial (ABI-decided)
+// registers in preparation for a GT_CALL node.
+//
+// Arguments:
+//   call - The GT_CALL node
+//
+void CodeGen::genCallPlaceRegArgs(GenTreeCall* call)
+{
+    // Consume all the arg regs
+    for (CallArg& arg : call->gtArgs.LateArgs())
+    {
+        ABIPassingInformation& abiInfo = arg.NewAbiInfo;
+        GenTree*               argNode = arg.GetLateNode();
+
+#if FEATURE_MULTIREG_ARGS
+        // Deal with multi register passed struct args.
+        if (argNode->OperIs(GT_FIELD_LIST))
+        {
+            GenTreeFieldList::Use* use = argNode->AsFieldList()->Uses().begin().GetUse();
+            for (const ABIPassingSegment& seg : abiInfo.RegisterSegments())
+            {
+                assert(use != nullptr);
+                GenTree* putArgRegNode = use->GetNode();
+                assert(putArgRegNode->OperIs(GT_PUTARG_REG));
+
+                genConsumeReg(putArgRegNode);
+                inst_Mov_Extend(putArgRegNode->TypeGet(), /* srcInReg */ true, seg.GetRegister(),
+                                putArgRegNode->GetRegNum(),
+                                /* canSkip */ true, emitActualTypeSize(TYP_I_IMPL));
+
+                use = use->GetNext();
+            }
+
+            assert(use == nullptr);
+            continue;
+        }
+#endif
+
+#if FEATURE_ARG_SPLIT
+        if (argNode->OperIs(GT_PUTARG_SPLIT))
+        {
+            assert(compFeatureArgSplit());
+            genConsumeArgSplitStruct(argNode->AsPutArgSplit());
+            unsigned regIndex = 0;
+            for (const ABIPassingSegment& seg : abiInfo.RegisterSegments())
+            {
+                regNumber allocReg = argNode->AsPutArgSplit()->GetRegNumByIdx(regIndex);
+                inst_Mov_Extend(argNode->TypeGet(), /* srcInReg */ true, seg.GetRegister(), allocReg,
+                                /* canSkip */ true, emitActualTypeSize(TYP_I_IMPL));
+
+                regIndex++;
+            }
+
+            continue;
+        }
+#endif
+
+        if (abiInfo.HasExactlyOneRegisterSegment())
+        {
+            regNumber argReg = abiInfo.Segment(0).GetRegister();
+            genConsumeReg(argNode);
+            inst_Mov_Extend(argNode->TypeGet(), /* srcInReg */ true, argReg, argNode->GetRegNum(), /* canSkip */ true,
+                            emitActualTypeSize(TYP_I_IMPL));
+
+            continue;
+        }
+
+        // Should be a stack argument then.
+        assert(!abiInfo.HasAnyRegisterSegment());
+    }
+
+#ifdef WINDOWS_AMD64_ABI
+    // On win-x64, for varargs, if we placed any arguments in float registers
+    // they must also be placed in corresponding integer registers.
+    if (call->IsVarargs())
+    {
+        for (CallArg& arg : call->gtArgs.Args())
+        {
+            for (const ABIPassingSegment& seg : arg.NewAbiInfo.RegisterSegments())
+            {
+                if (genIsValidFloatReg(seg.GetRegister()))
+                {
+                    regNumber targetReg = compiler->getCallArgIntRegister(seg.GetRegister());
+                    inst_Mov(TYP_LONG, targetReg, seg.GetRegister(), /* canSkip */ false,
+                             emitActualTypeSize(TYP_I_IMPL));
+                }
+            }
+        }
+    }
+#endif
+}
+
+//------------------------------------------------------------------------
 // genJmpPlaceArgs: Place all parameters into their initial (ABI-decided)
 // registers in preparation for a GT_JMP node.
 //
