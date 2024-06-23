@@ -46,7 +46,11 @@ A `.vsconfig` file is included in the root of the _dotnet/runtime_ repository th
 
 ### Build Tools
 
-These steps are required only in case the tools have not been installed as Visual Studio **Individual Components** (described above).
+These steps are required only in case the tools have not been installed as Visual Studio **Individual Components** (described above). You can install the minimum prerequisites using the following winget command:
+
+```shell
+winget install --accept-package-agreements cmake ninja-build.ninja python git.git
+```
 
 #### CMake
 
