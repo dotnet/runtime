@@ -141,7 +141,7 @@ namespace ILCompiler.ObjectWriter
                 {
                     Type = type,
                     Flags = flags,
-                    Alignment = section.Type == SectionType.Debug ? 1 : 0
+                    Alignment = 1
                 },
                 Name = sectionName,
                 Stream = sectionStream,
