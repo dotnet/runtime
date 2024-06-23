@@ -28,7 +28,7 @@ namespace System.Net
 
                 for (; (start < str.Length) && (ch = str[start]) != TChar.CreateTruncating('.') && ch != TChar.CreateTruncating(':'); ++start)
                 {
-                    b = (b * 10) + int.CreateTruncating(ch - TChar.CreateTruncating('0'));
+                    b = (b * 10) + int.CreateTruncating(ch) - '0';
                 }
 
                 numbers[i] = (byte)b;
@@ -58,7 +58,7 @@ namespace System.Net
         //      the check is made on an unknown scheme (suppress IPv4 canonicalization)
         //
         // Outputs:
-        //  <argument>  bytesConsumed
+        //  <argument>  charsConsumed
         //      index of last character in <name> we checked
         //
         // Assumes:
@@ -74,17 +74,17 @@ namespace System.Net
         //
 
         //Remark: MUST NOT be used unless all input indexes are verified and trusted.
-        internal static bool IsValid<TChar>(ReadOnlySpan<TChar> name, out int bytesConsumed, bool allowIPv6, bool notImplicitFile, bool unknownScheme)
+        internal static bool IsValid<TChar>(ReadOnlySpan<TChar> name, out int charsConsumed, bool allowIPv6, bool notImplicitFile, bool unknownScheme)
             where TChar : unmanaged, IBinaryInteger<TChar>
         {
             // IPv6 can only have canonical IPv4 embedded. Unknown schemes will not attempt parsing of non-canonical IPv4 addresses.
             if (allowIPv6 || unknownScheme)
             {
-                return IsValidCanonical(name, out bytesConsumed, allowIPv6, notImplicitFile);
+                return IsValidCanonical(name, out charsConsumed, allowIPv6, notImplicitFile);
             }
             else
             {
-                return ParseNonCanonical(name, out bytesConsumed, notImplicitFile) != Invalid;
+                return ParseNonCanonical(name, out charsConsumed, notImplicitFile) != Invalid;
             }
         }
 
@@ -101,7 +101,7 @@ namespace System.Net
         //                 / "2" %x30-34 DIGIT     ; 200-249
         //                 / "25" %x30-35          ; 250-255
         //
-        internal static bool IsValidCanonical<TChar>(ReadOnlySpan<TChar> name, out int bytesConsumed, bool allowIPv6, bool notImplicitFile)
+        internal static bool IsValidCanonical<TChar>(ReadOnlySpan<TChar> name, out int charsConsumed, bool allowIPv6, bool notImplicitFile)
             where TChar : unmanaged, IBinaryInteger<TChar>
         {
             int dots = 0;
@@ -112,7 +112,7 @@ namespace System.Net
 
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
 
-            bytesConsumed = 0;
+            charsConsumed = 0;
             for (current = 0; current < name.Length; current++)
             {
                 TChar ch = name[current];
@@ -175,7 +175,7 @@ namespace System.Net
             bool res = (dots == 3) && haveNumber;
             if (res)
             {
-                bytesConsumed = current;
+                charsConsumed = current;
             }
             return res;
         }
@@ -184,7 +184,7 @@ namespace System.Net
         // Return Invalid (-1) for failures.
         // If the address has less than three dots, only the rightmost section is assumed to contain the combined value for
         // the missing sections: 0xFF00FFFF == 0xFF.0x00.0xFF.0xFF == 0xFF.0xFFFF
-        internal static long ParseNonCanonical<TChar>(ReadOnlySpan<TChar> name, out int bytesConsumed, bool notImplicitFile)
+        internal static long ParseNonCanonical<TChar>(ReadOnlySpan<TChar> name, out int charsConsumed, bool notImplicitFile)
             where TChar : unmanaged, IBinaryInteger<TChar>
         {
             int numberBase = IPAddressParser.Decimal;
@@ -196,7 +196,7 @@ namespace System.Net
             int dotCount = 0; // Limit 3
             int current;
 
-            bytesConsumed = 0;
+            charsConsumed = 0;
             for (current = 0; current < name.Length; current++)
             {
                 TChar ch = name[current];
@@ -277,7 +277,7 @@ namespace System.Net
             else if (name[current] == TChar.CreateTruncating('/') || name[current] == TChar.CreateTruncating('\\')
                     || (notImplicitFile && (name[current] == TChar.CreateTruncating(':') || name[current] == TChar.CreateTruncating('?') || name[current] == TChar.CreateTruncating('#'))))
             {
-                bytesConsumed = current;
+                charsConsumed = current;
             }
             else
             {
@@ -295,28 +295,28 @@ namespace System.Net
                     {
                         return Invalid;
                     }
-                    bytesConsumed = current;
+                    charsConsumed = current;
                     return parts[0];
                 case 1: // 0xFF.0xFFFFFF
                     if (parts[1] > 0xffffff)
                     {
                         return Invalid;
                     }
-                    bytesConsumed = current;
+                    charsConsumed = current;
                     return (parts[0] << 24) | (parts[1] & 0xffffff);
                 case 2: // 0xFF.0xFF.0xFFFF
                     if (parts[2] > 0xffff)
                     {
                         return Invalid;
                     }
-                    bytesConsumed = current;
+                    charsConsumed = current;
                     return (parts[0] << 24) | ((parts[1] & 0xff) << 16) | (parts[2] & 0xffff);
                 case 3: // 0xFF.0xFF.0xFF.0xFF
                     if (parts[3] > 0xff)
                     {
                         return Invalid;
                     }
-                    bytesConsumed = current;
+                    charsConsumed = current;
                     return (parts[0] << 24) | ((parts[1] & 0xff) << 16) | ((parts[2] & 0xff) << 8) | (parts[3] & 0xff);
                 default:
                     return Invalid;

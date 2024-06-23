@@ -403,7 +403,7 @@ namespace System.Net
                 }
                 else
                 {
-                    number = number * IPAddressParser.Hex + Uri.FromHex((char)short.CreateTruncating(address[i++]));
+                    number = number * IPAddressParser.Hex + Uri.FromHex((char)ushort.CreateTruncating(address[i++]));
                 }
             }
 

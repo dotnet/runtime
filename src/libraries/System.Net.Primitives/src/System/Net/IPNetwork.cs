@@ -224,7 +224,7 @@ namespace System.Net
         /// <returns><see langword="true"/> if the conversion was successful; otherwise, <see langword="false"/>.</returns>
         public static bool TryParse(ReadOnlySpan<byte> utf8Text, [MaybeNullWhen(false)] out IPNetwork result)
         {
-            int separatorIndex = utf8Text.IndexOf(byte.CreateTruncating('/'));
+            int separatorIndex = utf8Text.LastIndexOf((byte)'/');
             if (separatorIndex >= 0)
             {
                 ReadOnlySpan<byte> ipAddressSpan = utf8Text.Slice(0, separatorIndex);
