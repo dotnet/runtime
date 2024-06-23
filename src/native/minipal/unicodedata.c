@@ -2385,7 +2385,7 @@ static const UnicodeDataRec UnicodeData[] =
 
 #define UNICODE_DATA_SIZE 2359
 
-static int CALLBACK_CALLCONV UnicodeDataComp(const void *opposingCode, const void *elem)
+static int LIBC_CALLBACK UnicodeDataComp(const void *opposingCode, const void *elem)
 {
     CHAR16_T code = ((UnicodeDataRec*)elem)->code;
 
