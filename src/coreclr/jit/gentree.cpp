@@ -888,15 +888,8 @@ int GenTree::GetRegisterDstCount(Compiler* compiler) const
 #if !defined(TARGET_64BIT)
     else if (OperIsMultiRegOp())
     {
-        // A MultiRegOp is a GT_MUL_LONG, GT_PUTARG_REG, or GT_BITCAST.
-        // For the latter two (ARM-only), they only have multiple registers if they produce a long value
-        // (GT_MUL_LONG always produces a long value).
-#ifdef TARGET_ARM
-        return (TypeGet() == TYP_LONG) ? 2 : 1;
-#else
         assert(OperIs(GT_MUL_LONG));
         return 2;
-#endif
     }
 #endif
 #ifdef FEATURE_HW_INTRINSICS

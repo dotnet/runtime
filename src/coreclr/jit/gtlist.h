@@ -60,11 +60,7 @@ GTNODE(INTRINSIC        , GenTreeIntrinsic   ,0,0,GTK_BINOP|GTK_EXOP)
 GTNODE(KEEPALIVE        , GenTree            ,0,0,GTK_UNOP|GTK_NOVALUE)   // keep operand alive, generate no code, produce no result
 
 GTNODE(CAST             , GenTreeCast        ,0,0,GTK_UNOP|GTK_EXOP)      // conversion to another type
-#if defined(TARGET_ARM)
-GTNODE(BITCAST          , GenTreeMultiRegOp  ,0,1,GTK_UNOP)               // reinterpretation of bits as another type
-#else
 GTNODE(BITCAST          , GenTreeOp          ,0,1,GTK_UNOP)               // reinterpretation of bits as another type
-#endif
 GTNODE(CKFINITE         , GenTreeOp          ,0,1,GTK_UNOP|DBK_NOCONTAIN) // Check for NaN
 GTNODE(LCLHEAP          , GenTreeOp          ,0,1,GTK_UNOP|DBK_NOCONTAIN) // alloca()
 

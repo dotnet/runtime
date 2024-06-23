@@ -1200,23 +1200,6 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
             {
                 var_types type   = treeNode->GetRegType(regIndex);
                 regNumber argReg = treeNode->GetRegNumByIdx(regIndex);
-#ifdef TARGET_ARM
-                if (type == TYP_LONG)
-                {
-                    // We should only see long fields for DOUBLEs passed in 2 integer registers, via bitcast.
-                    // All other LONGs should have been decomposed.
-                    // Handle the first INT, and then handle the 2nd below.
-                    assert(nextArgNode->OperIs(GT_BITCAST));
-                    type = TYP_INT;
-                    inst_Mov(type, argReg, fieldReg, /* canSkip */ true);
-
-                    // Now set up the next register for the 2nd INT
-                    argReg = REG_NEXT(argReg);
-                    regIndex++;
-                    assert(argReg == treeNode->GetRegNumByIdx(regIndex));
-                    fieldReg = nextArgNode->AsMultiRegOp()->GetRegNumByIdx(1);
-                }
-#endif // TARGET_ARM
 
                 // If child node is not already in the register we need, move it
                 inst_Mov(type, argReg, fieldReg, /* canSkip */ true);
