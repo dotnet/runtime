@@ -133,10 +133,13 @@ namespace System.Net
                 if (allowIPv6)
                 {
                     // for ipv4 inside ipv6 the terminator is either ScopeId, prefix or ipv6 terminator
-                    if (IPv6Terminators.Contains(ch))
+                    if (ch == IPv6Terminators[0] || ch == IPv6Terminators[1] || ch == IPv6Terminators[2])
+                    {
                         break;
+                    }
                 }
-                else if (PrefixSeparators.Contains(ch) || (notImplicitFile && UrlSeparators.Contains(ch)))
+                else if (ch == PrefixSeparators[0] || ch == PrefixSeparators[1]
+                    || (notImplicitFile && (ch == UrlSeparators[0] || ch == UrlSeparators[1] || ch == UrlSeparators[2])))
                 {
                     break;
                 }
@@ -196,8 +199,8 @@ namespace System.Net
             TChar ComponentSeparator = TChar.CreateChecked('.');
             ReadOnlySpan<TChar> PrefixSeparators = [TChar.CreateChecked('/'), TChar.CreateChecked('\\')];
             ReadOnlySpan<TChar> UrlSeparators = [TChar.CreateChecked(':'), TChar.CreateChecked('?'), TChar.CreateChecked('#')];
-            ReadOnlySpan<TChar> HexadecimalPrefix = [TChar.CreateChecked('0'), TChar.CreateChecked('x')];
             TChar OctalPrefix = TChar.CreateChecked('0');
+            ReadOnlySpan<TChar> HexadecimalPrefix = [OctalPrefix, TChar.CreateChecked('x')];
 
             int numberBase = IPAddressParser.Decimal;
             Span<long> parts = stackalloc long[4];
@@ -281,7 +284,8 @@ namespace System.Net
             {
                 // end of string, allowed
             }
-            else if (PrefixSeparators.Contains(name[current]) || (notImplicitFile && UrlSeparators.Contains(name[current])))
+            else if (name[current] == PrefixSeparators[0] || name[current] == PrefixSeparators[1]
+                    || (notImplicitFile && (name[current] == UrlSeparators[0] || name[current] == UrlSeparators[1] || name[current] == UrlSeparators[2])))
             {
                 bytesConsumed = current;
             }
