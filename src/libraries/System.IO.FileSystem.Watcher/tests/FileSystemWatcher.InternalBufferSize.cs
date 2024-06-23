@@ -110,7 +110,7 @@ namespace System.IO.Tests
         {
             return () =>
             {
-                List<Task> tasks = new ();
+                List<Task> tasks = new();
 
                 // Generate enough file change events to overflow the default buffer
                 // For speed, do this on multiple threads
