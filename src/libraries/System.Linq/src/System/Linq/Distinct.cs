@@ -22,7 +22,7 @@ namespace System.Linq
                 return [];
             }
 
-            return new DistinctIterator<TSource>(source, comparer);
+            return DistinctIterator<TSource>(source, comparer);
         }
 
         private static IEnumerable<TSource> DistinctIterator<TSource>(IEnumerable<TSource> source, IEqualityComparer<TSource>? comparer)
