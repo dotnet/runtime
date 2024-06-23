@@ -5013,9 +5013,20 @@ void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
     {
         assert(op2->IsIntegralConst(0));
 
-        instruction ins = (cc.GetCode() == GenCondition::EQ) ? INS_cbz : INS_cbnz;
+        // It's possible the descendant node (op1) set the flags. If so, we don't need to compare again
+        bool genBranchOnly = (op1->gtFlags & GTF_SET_FLAGS) != 0;
 
-        GetEmitter()->emitIns_J_R(ins, attr, compiler->compCurBB->GetTrueTarget(), reg);
+        instruction ins;
+        if (!genBranchOnly)
+        {
+            ins = (cc.GetCode() == GenCondition::EQ) ? INS_cbz : INS_cbnz;
+            GetEmitter()->emitIns_J_R(ins, attr, compiler->compCurBB->GetTrueTarget(), reg);
+        }
+        else
+        {
+            ins = (cc.GetCode() == GenCondition::EQ) ? INS_beq : INS_bne;
+            GetEmitter()->emitIns_J(ins, compiler->compCurBB->GetTrueTarget());
+        }
     }
 
     // If we cannot fall into the false target, emit a jump to it

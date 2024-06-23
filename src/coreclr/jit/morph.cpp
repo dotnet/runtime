@@ -8122,15 +8122,16 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
                 }
             }
 
-            // Pattern-matching optimization:
-            //    (a % c) ==/!= 0
-            // for power-of-2 constant `c`
-            // =>
-            //    a & (c - 1) ==/!= 0
-            // For integer `a`, even if negative.
             if (opts.OptimizationEnabled() && !optValnumCSE_phase)
             {
                 assert(tree->OperIs(GT_EQ, GT_NE));
+
+                // Pattern-matching optimization:
+                //    (a % c) ==/!= 0
+                // for power-of-2 constant `c`
+                // =>
+                //    a & (c - 1) ==/!= 0
+                // For integer `a`, even if negative.
                 if (op1->OperIs(GT_MOD) && varTypeIsIntegral(op1) && op2->IsIntegralConst(0))
                 {
                     GenTree* op1op2 = op1->AsOp()->gtOp2;
@@ -8149,6 +8150,34 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
                             JITDUMP("\ninto:\n");
                             DISPTREE(tree);
                         }
+                    }
+                }
+
+                // Optimization for:
+                //    a & c ==/!= c
+                // =>
+                //    ~a & c ==/!= 0
+                // where c is a constant
+                // The optimization could also take the form of a & ~c but the comparison would have to switch between EQ to NE/NE to EQ
+                if (op1->OperIs(GT_AND) && varTypeIsIntegral(op1) && op2->IsIntegralConst())
+                {
+                    GenTree* andOp1 = op1->AsOp()->gtOp1;
+                    GenTree* andOp2 = op1->AsOp()->gtOp2;
+
+                    ssize_t cnsVal = op2->AsIntCon()->IconValue();
+
+                    if (andOp1->TypeIs(TYP_INT, TYP_LONG) && andOp2->IsIntegralConst() && andOp2->AsIntCon()->IconValue() == cnsVal)
+                    {
+                        // Want GT_AND to look like AND(NOT(a), c) ==/!= a. The non-matching constant must be the one wrapped in NOT node
+                        // so 2nd andOp will be the constant, so 1st andOp will have the NOT
+                        GenTree* tmpNode = andOp2;
+                        op1->AsOp()->gtOp2 = gtNewOperNode(GT_NOT, andOp1->TypeGet(), andOp1);
+                        op1->AsOp()->gtOp1 = tmpNode;
+                        op2->AsIntConCommon()->SetIconValue(0);
+#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+                        // If set for XARCH it will prevent ANDN instruction from being emitted
+                        op1->gtFlags |= GTF_SET_FLAGS;
+#endif
                     }
                 }
             }
