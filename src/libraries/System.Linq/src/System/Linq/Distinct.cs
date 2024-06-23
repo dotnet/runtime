@@ -22,7 +22,7 @@ namespace System.Linq
                 return [];
             }
 
-            return DistinctIterator<TSource>(source, comparer);
+            return DistinctIterator(source, comparer);
         }
 
         private static IEnumerable<TSource> DistinctIterator<TSource>(IEnumerable<TSource> source, IEqualityComparer<TSource>? comparer)
@@ -31,7 +31,7 @@ namespace System.Linq
 
             if (enumerator.MoveNext())
             {
-                var set = new HashSet<TKey>(DefaultInternalSetCapacity, comparer);
+                var set = new HashSet<TSource>(DefaultInternalSetCapacity, comparer);
                 do
                 {
                     TSource element = enumerator.Current;
