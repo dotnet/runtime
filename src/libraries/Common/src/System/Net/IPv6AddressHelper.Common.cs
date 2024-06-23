@@ -112,7 +112,7 @@ namespace System.Net
 
             // An IPv6 address may begin with a start character ('['). If it does, it must end with an end
             // character (']').
-            if (start < name.Length && name[start] == TChar.CreateChecked('['))
+            if (start < name.Length && name[start] == TChar.CreateTruncating('['))
             {
                 start++;
                 needsClosingBracket = true;
@@ -124,7 +124,7 @@ namespace System.Net
             }
 
             // Starting with a colon character is only valid if another colon follows.
-            if (name[start] == TChar.CreateChecked(':') && (start + 1 >= name.Length || name[start + 1] != TChar.CreateChecked(':')))
+            if (name[start] == TChar.CreateTruncating(':') && (start + 1 >= name.Length || name[start + 1] != TChar.CreateTruncating(':')))
             {
                 return false;
             }
@@ -153,7 +153,7 @@ namespace System.Net
                     // An IPv6 address is separated from its scope by a '%' character. The scope
                     // is terminated by the natural end of the address, the address end character (']')
                     // or the start of the prefix ('/').
-                    if (name[i] == TChar.CreateChecked('%'))
+                    if (name[i] == TChar.CreateTruncating('%'))
                     {
                         bool moveToNextCharacter = true;
 
@@ -161,8 +161,8 @@ namespace System.Net
                         {
                             i++;
 
-                            if (name[i] == TChar.CreateChecked(']')
-                                || name[i] == TChar.CreateChecked('/'))
+                            if (name[i] == TChar.CreateTruncating(']')
+                                || name[i] == TChar.CreateTruncating('/'))
                             {
                                 moveToNextCharacter = false;
                                 break;
@@ -175,7 +175,7 @@ namespace System.Net
                         }
                     }
 
-                    if (name[i] == TChar.CreateChecked(']'))
+                    if (name[i] == TChar.CreateTruncating(']'))
                     {
                         if (!needsClosingBracket)
                         {
@@ -185,7 +185,7 @@ namespace System.Net
 
                         // If there's more after the closing bracket, it must be a port.
                         // We don't use the port, but we still validate it.
-                        if (i + 1 < name.Length && name[i + 1] != TChar.CreateChecked(':'))
+                        if (i + 1 < name.Length && name[i + 1] != TChar.CreateTruncating(':'))
                         {
                             return false;
                         }
@@ -196,7 +196,7 @@ namespace System.Net
                         i += 2;
                         // If there is a port, it must either be a hexadecimal or decimal number.
                         // If the next two characters are '0x' or '0X' then it's a hexadecimal number. Skip the prefix.
-                        if (i + 1 < name.Length && name[i] == TChar.CreateChecked('0') && (name[i + 1] | TChar.CreateChecked(0x20)) == TChar.CreateChecked('x'))
+                        if (i + 1 < name.Length && name[i] == TChar.CreateTruncating('0') && (name[i + 1] | TChar.CreateTruncating(0x20)) == TChar.CreateTruncating('x'))
                         {
                             i += 2;
 
@@ -213,15 +213,15 @@ namespace System.Net
                         continue;
                     }
                     // A prefix in an IPv6 address is invalid.
-                    else if (name[i] == TChar.CreateChecked('/'))
+                    else if (name[i] == TChar.CreateTruncating('/'))
                     {
                         return false;
                     }
                     // IPv6 address components are separated by at least one colon.
-                    else if (name[i] == TChar.CreateChecked(':'))
+                    else if (name[i] == TChar.CreateTruncating(':'))
                     {
                         // If the next character after a colon is another colon, the address contains a compressor ('::').
-                        if (i > 0 && name[i - 1] == TChar.CreateChecked(':'))
+                        if (i > 0 && name[i - 1] == TChar.CreateTruncating(':'))
                         {
                             if (haveCompressor)
                             {
@@ -240,7 +240,7 @@ namespace System.Net
                         continue;
                     }
                     // Encountering a '.' indicates that an IPv6 address may contain an embedded IPv4 address.
-                    else if (name[i] == TChar.CreateChecked('.'))
+                    else if (name[i] == TChar.CreateTruncating('.'))
                     {
                         if (haveIPv4Address)
                         {
@@ -320,10 +320,10 @@ namespace System.Net
 
             scopeId = ReadOnlySpan<TChar>.Empty;
             // Skip the start '[' character, if present. Stop parsing at the end IPv6 address terminator (']').
-            for (int i = (address[0] == TChar.CreateChecked('[') ? 1 : 0); i < address.Length && address[i] != TChar.CreateChecked(']');)
+            for (int i = (address[0] == TChar.CreateTruncating('[') ? 1 : 0); i < address.Length && address[i] != TChar.CreateTruncating(']');)
             {
-                if (address[i] == TChar.CreateChecked('%')
-                    || address[i] == TChar.CreateChecked('/'))
+                if (address[i] == TChar.CreateTruncating('%')
+                    || address[i] == TChar.CreateTruncating('/'))
                 {
                     if (numberIsValid)
                     {
@@ -332,28 +332,28 @@ namespace System.Net
                     }
 
                     // The scope follows a '%' and terminates at the natural end of the address, the address terminator (']') or the prefix delimiter ('/').
-                    if (address[i] == TChar.CreateChecked('%'))
+                    if (address[i] == TChar.CreateTruncating('%'))
                     {
                         int scopeStart = i;
 
-                        for (++i; i < address.Length && address[i] != TChar.CreateChecked(']') && address[i] != TChar.CreateChecked('/'); ++i)
+                        for (++i; i < address.Length && address[i] != TChar.CreateTruncating(']') && address[i] != TChar.CreateTruncating('/'); ++i)
                         {
                         }
                         scopeId = address.Slice(scopeStart, i - scopeStart);
                     }
                     // ignore prefix if any
-                    for (; i < address.Length && address[i] != TChar.CreateChecked(']'); ++i)
+                    for (; i < address.Length && address[i] != TChar.CreateTruncating(']'); ++i)
                     {
                     }
                 }
                 // IPv6 address components are separated by at least one colon.
-                else if (address[i] == TChar.CreateChecked(':'))
+                else if (address[i] == TChar.CreateTruncating(':'))
                 {
                     numbers[index++] = (ushort)number;
                     number = 0;
                     // Two sequential colons form a compressor ('::').
                     ++i;
-                    if (address[i] == TChar.CreateChecked(':'))
+                    if (address[i] == TChar.CreateTruncating(':'))
                     {
                         compressorIndex = index;
                         ++i;
@@ -369,14 +369,14 @@ namespace System.Net
                     // check to see if the upcoming number is really an IPv4
                     // address. If it is, convert it to 2 ushort numbers
                     for (int j = i; j < address.Length &&
-                                    (address[j] != TChar.CreateChecked(']')) &&
-                                    (address[j] != TChar.CreateChecked(':')) &&
-                                    (address[j] != TChar.CreateChecked('%')) &&
-                                    (address[j] != TChar.CreateChecked('/')) &&
+                                    (address[j] != TChar.CreateTruncating(']')) &&
+                                    (address[j] != TChar.CreateTruncating(':')) &&
+                                    (address[j] != TChar.CreateTruncating('%')) &&
+                                    (address[j] != TChar.CreateTruncating('/')) &&
                                     (j < i + 4); ++j)
                     {
 
-                        if (address[j] == TChar.CreateChecked('.'))
+                        if (address[j] == TChar.CreateTruncating('.'))
                         {
                             // we have an IPv4 address. Find the end of it:
                             // we know that since we have a valid IPv6
@@ -384,7 +384,7 @@ namespace System.Net
                             // the IPv4 address are the prefix delimiter '/'
                             // or the end-of-string (which we conveniently
                             // delimited with ']')
-                            while (j < address.Length && (address[j] != TChar.CreateChecked(']')) && (address[j] != TChar.CreateChecked('/')) && (address[j] != TChar.CreateChecked('%')))
+                            while (j < address.Length && (address[j] != TChar.CreateTruncating(']')) && (address[j] != TChar.CreateTruncating('/')) && (address[j] != TChar.CreateTruncating('%')))
                             {
                                 ++j;
                             }
@@ -403,7 +403,7 @@ namespace System.Net
                 }
                 else
                 {
-                    number = number * IPAddressParser.Hex + Uri.FromHex((char)short.CreateChecked(address[i++]));
+                    number = number * IPAddressParser.Hex + Uri.FromHex((char)short.CreateTruncating(address[i++]));
                 }
             }
 
