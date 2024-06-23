@@ -49322,10 +49322,10 @@ bool GCHeap::StressHeap(gc_alloc_context * context)
 
         int rgen = StressRNG(100);
 
-        // gen0:gen1:gen2 distribution: 80:15:5
-        if (rgen >= 95)
+        // gen0:gen1:gen2 distribution: 90:8:2
+        if (rgen >= 98)
             rgen = 2;
-        else if (rgen >= 80)
+        else if (rgen >= 90)
             rgen = 1;
         else
             rgen = 0;
