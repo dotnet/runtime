@@ -3275,6 +3275,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
 #ifdef CONFIGURABLE_ARM_ABI
     opts.compUseSoftFP        = jitFlags->IsSet(JitFlags::JIT_FLAG_SOFTFP_ABI);
+    opts.compUseSoftFP = true;
     unsigned int softFPConfig = opts.compUseSoftFP ? 2 : 1;
     unsigned int oldSoftFPConfig =
         InterlockedCompareExchange(&GlobalJitOptions::compUseSoftFPConfigured, softFPConfig, 0);
