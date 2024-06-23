@@ -36,13 +36,20 @@ PhaseStatus ObjectAllocator::DoPhase()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
-    bool enabled = IsObjectStackAllocationEnabled();
+    bool        enabled       = IsObjectStackAllocationEnabled();
+    const char* disableReason = ": global config";
 
 #ifdef DEBUG
-    static ConfigMethodRange JitObjectStackAllocationRange;
-    JitObjectStackAllocationRange.EnsureInit(JitConfig.JitObjectStackAllocationRange());
-    const unsigned hash = comp->info.compMethodHash();
-    enabled &= JitObjectStackAllocationRange.Contains(hash);
+    // Allow disabling based on method hash
+    //
+    if (enabled)
+    {
+        static ConfigMethodRange JitObjectStackAllocationRange;
+        JitObjectStackAllocationRange.EnsureInit(JitConfig.JitObjectStackAllocationRange());
+        const unsigned hash = comp->info.compMethodHash();
+        enabled &= JitObjectStackAllocationRange.Contains(hash);
+        disableReason = ": range config";
+    }
 #endif
 
     if (enabled)
@@ -52,7 +59,7 @@ PhaseStatus ObjectAllocator::DoPhase()
     }
     else
     {
-        JITDUMP("disabled%s, punting\n", IsObjectStackAllocationEnabled() ? " by range config" : "");
+        JITDUMP("disabled%s, punting\n", IsObjectStackAllocationEnabled() ? disableReason : "");
         m_IsObjectStackAllocationEnabled = false;
     }
 
@@ -315,7 +322,9 @@ void ObjectAllocator::ComputeStackObjectPointers(BitVecTraits* bitVecTraits)
                     MarkLclVarAsPossiblyStackPointing(lclNum);
 
                     // Check if this pointer always points to the stack.
-                    if (lclVarDsc->lvSingleDef == 1)
+                    // For OSR the reference may be pointing at the heap-allocated Tier0 version.
+                    //
+                    if ((lclVarDsc->lvSingleDef == 1) && !comp->opts.IsOSR())
                     {
                         // Check if we know what is assigned to this pointer.
                         unsigned bitCount = BitVecOps::Count(bitVecTraits, m_ConnGraphAdjacencyMatrix[lclNum]);
