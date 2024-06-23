@@ -176,7 +176,7 @@ private:
 
     static bool AcceptableEndSentinel(PTR_VolatileEntry entry, TADDR expectedEndSentinel)
     {
-        _ASSERTE(expectedEndSentinel != NULL);
+        _ASSERTE(expectedEndSentinel != 0);
         _ASSERTE(entry != NULL);
 
         TADDR endSentinelEntry = dac_cast<TADDR>(entry);

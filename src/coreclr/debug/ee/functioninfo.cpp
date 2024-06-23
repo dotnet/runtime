@@ -906,7 +906,7 @@ void DebuggerJitInfo::LazyInitBounds()
         MethodDesc * mdesc = this->m_nativeCodeVersion.GetMethodDesc();
         DebugInfoRequest request;
 
-        _ASSERTE(this->m_addrOfCode != NULL); // must have address to disambguate the Enc cases.
+        _ASSERTE(this->m_addrOfCode != 0); // must have address to disambguate the Enc cases.
         // Caller already resolved generics when they craeted the DJI, so we don't need to repeat.
         // Note the MethodDesc may not yet have the jitted info, so we'll also use the starting address we got in the jit complete callback.
         request.InitFromStartingAddr(mdesc, (PCODE)this->m_addrOfCode);
@@ -1643,7 +1643,7 @@ DebuggerJitInfo *DebuggerMethodInfo::CreateInitAndAddJitInfo(NativeCodeVersion n
     _ASSERTE(fd != NULL);
 
     // May or may-not be jitted, that's why we passed in the start addr & size explicitly.
-    _ASSERTE(startAddr != NULL);
+    _ASSERTE(startAddr != 0);
 
     *jitInfoWasCreated = FALSE;
 

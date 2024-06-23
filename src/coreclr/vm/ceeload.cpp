@@ -2683,7 +2683,7 @@ void LookupMapBase::DebugGetRidMapOccupancy(DWORD *pdwOccupied, DWORD *pdwSize)
 
         for (DWORD i = 0; i < dwIterCount; i++)
         {
-            if (pMap->pTable[i] != NULL)
+            if (pMap->pTable[i] != 0)
                 (*pdwOccupied)++;
         }
 
@@ -3565,7 +3565,7 @@ void Module::RunEagerFixupsUnlocked()
             }
             else
             {
-                _ASSERTE(*fixupCell != NULL);
+                _ASSERTE(*fixupCell != 0);
             }
         }
     }

@@ -1134,7 +1134,7 @@ void DebugStackTrace::DebugStackTraceElement::InitPass1(
     _ASSERTE(pFunc != NULL);
 
     // May have a null IP for ecall frames. If IP is null, then dwNativeOffset should be 0 too.
-    _ASSERTE ( (ip != NULL) || (dwNativeOffset == 0) );
+    _ASSERTE ( (ip != 0) || (dwNativeOffset == 0) );
 
     this->pFunc = pFunc;
     this->dwOffset = dwNativeOffset;

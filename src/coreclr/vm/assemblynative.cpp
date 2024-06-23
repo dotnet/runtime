@@ -236,9 +236,9 @@ extern "C" void QCALLTYPE AssemblyNative_LoadFromStream(INT_PTR ptrNativeAssembl
     BEGIN_QCALL;
 
     // Ensure that the invariants are in place
-    _ASSERTE(ptrNativeAssemblyBinder != NULL);
-    _ASSERTE((ptrAssemblyArray != NULL) && (cbAssemblyArrayLength > 0));
-    _ASSERTE((ptrSymbolArray == NULL) || (cbSymbolArrayLength > 0));
+    _ASSERTE(ptrNativeAssemblyBinder != 0);
+    _ASSERTE((ptrAssemblyArray != 0) && (cbAssemblyArrayLength > 0));
+    _ASSERTE((ptrSymbolArray == 0) || (cbSymbolArrayLength > 0));
 
     PEImageHolder pILImage(PEImage::CreateFromByteArray((BYTE*)ptrAssemblyArray, (COUNT_T)cbAssemblyArrayLength));
 
@@ -1252,7 +1252,7 @@ extern "C" INT_PTR QCALLTYPE AssemblyNative_InitializeAssemblyLoadContext(INT_PT
     {
         // We are initializing the managed instance of Assembly Load Context that would represent the TPA binder.
         // First, confirm we do not have an existing managed ALC attached to the TPA binder.
-        _ASSERTE(pDefaultBinder->GetManagedAssemblyLoadContext() == NULL);
+        _ASSERTE(pDefaultBinder->GetManagedAssemblyLoadContext() == 0);
 
         // Attach the managed TPA binding context with the native one.
         pDefaultBinder->SetManagedAssemblyLoadContext(ptrManagedAssemblyLoadContext);
@@ -1299,7 +1299,7 @@ extern "C" INT_PTR QCALLTYPE AssemblyNative_GetLoadContextForAssembly(QCall::Ass
     {
         // Fetch the managed binder reference from the native binder instance
         ptrManagedAssemblyLoadContext = pAssemblyBinder->GetManagedAssemblyLoadContext();
-        _ASSERTE(ptrManagedAssemblyLoadContext != NULL);
+        _ASSERTE(ptrManagedAssemblyLoadContext != 0);
     }
 
     END_QCALL;

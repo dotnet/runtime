@@ -608,7 +608,7 @@ BOOL StubManager::FollowTrace(TraceDestination *trace)
         }
     }
 
-    LOG_TRACE_DESTINATION(trace, NULL, "StubManager::FollowTrace");
+    LOG_TRACE_DESTINATION(trace, 0, "StubManager::FollowTrace");
 
     return trace->GetTraceType() != TRACE_OTHER;
 }

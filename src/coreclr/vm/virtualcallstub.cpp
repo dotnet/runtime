@@ -1186,7 +1186,7 @@ size_t VirtualCallStubManager::GetTokenFromStub(PCODE stub)
     }
     CONTRACTL_END
 
-    _ASSERTE(stub != NULL);
+    _ASSERTE(stub != 0);
     StubCodeBlockKind         stubKind = STUB_CODE_BLOCK_UNKNOWN;
     VirtualCallStubManager *  pMgr     = FindStubManager(stub, &stubKind);
 
@@ -1204,7 +1204,7 @@ size_t VirtualCallStubManager::GetTokenFromStubQuick(VirtualCallStubManager * pM
     CONTRACTL_END
 
     _ASSERTE(pMgr != NULL);
-    _ASSERTE(stub != NULL);
+    _ASSERTE(stub != 0);
     _ASSERTE(kind != STUB_CODE_BLOCK_UNKNOWN);
 
 #ifndef DACCESS_COMPILE
@@ -1364,7 +1364,7 @@ PCODE VSD_ResolveWorker(TransitionBlock * pTransitionBlock,
     GCStress<vsd_on_resolve>::MaybeTriggerAndProtect(pObj);
 
     PCODE callSiteTarget = callSite.GetSiteTarget();
-    CONSISTENCY_CHECK(callSiteTarget != NULL);
+    CONSISTENCY_CHECK(callSiteTarget != 0);
 
     StubCodeBlockKind   stubKind = STUB_CODE_BLOCK_UNKNOWN;
     VirtualCallStubManager *pMgr = VirtualCallStubManager::FindStubManager(callSiteTarget, &stubKind);
@@ -1410,7 +1410,7 @@ void VirtualCallStubManager::BackPatchWorkerStatic(PCODE returnAddress, TADDR si
     StubCallSite callSite(siteAddrForRegisterIndirect, returnAddress);
 
     PCODE callSiteTarget = callSite.GetSiteTarget();
-    CONSISTENCY_CHECK(callSiteTarget != NULL);
+    CONSISTENCY_CHECK(callSiteTarget != 0);
 
     VirtualCallStubManager *pMgr = VirtualCallStubManager::FindStubManager(callSiteTarget);
     PREFIX_ASSUME(pMgr != NULL);
@@ -1577,7 +1577,7 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
 #endif // _DEBUG
     }
 
-    CONSISTENCY_CHECK(target != NULL);
+    CONSISTENCY_CHECK(target != 0);
 
     // Now that we've successfully determined the target, we will wrap the remaining logic in a giant
     // TRY/CATCH statement because it is there purely to emit stubs and cache entries. In the event
@@ -1672,7 +1672,7 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
                         }
                         CONSISTENCY_CHECK(CheckPointer(pResolveHolder));
                         stub = pResolveHolder->stub()->resolveEntryPoint();
-                        CONSISTENCY_CHECK(stub != NULL);
+                        CONSISTENCY_CHECK(stub != 0);
                     }
 
                     // Only create a dispatch stub if:
@@ -1714,7 +1714,7 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
                             // Now assign the entrypoint to stub
                             CONSISTENCY_CHECK(CheckPointer(pDispatchHolder));
                             stub = pDispatchHolder->stub()->entryPoint();
-                            CONSISTENCY_CHECK(stub != NULL);
+                            CONSISTENCY_CHECK(stub != 0);
                         }
                         else
                         {
@@ -1852,7 +1852,7 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
     EX_END_CATCH (SwallowAllExceptions);
 
     // Target can be NULL only if we can't resolve to an address
-    _ASSERTE(target != NULL);
+    _ASSERTE(target != 0);
 
     return target;
 }
@@ -2232,7 +2232,7 @@ VirtualCallStubManager::GetTarget(
     // TODO: passing NULL as protectedObj here can lead to incorrect behavior for ICastable objects
     // We need to review if this is the case and refactor this code if we want ICastable to become officially supported
     fPatch = Resolver(pMT, token, NULL, &target, throwOnConflict);
-    _ASSERTE(!throwOnConflict || target != NULL);
+    _ASSERTE(!throwOnConflict || target != 0);
 
 #ifndef STUB_DISPATCH_PORTABLE
     if (fPatch)

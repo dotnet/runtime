@@ -597,7 +597,7 @@ static BASEARRAYREF ReadArray(Assembly *pCtorAssembly,
             th = th.GetArrayElementTypeHandle();
         for (int i = 0; i < size; i++) {
             element = GetDataFromBlob(pCtorAssembly, arrayType, th, pBlob, endBlob, pModule, &isObject);
-            _ASSERTE(isObject || element == NULL);
+            _ASSERTE(isObject || element == 0);
             ((PTRARRAYREF)(array))->SetAt(i, ArgSlotToObj(element));
         }
         break;
@@ -978,7 +978,7 @@ extern "C" void QCALLTYPE CustomAttribute_CreateCustomAttributeInstance(
             {
                 if (argToProtect[i] != NULL)
                 {
-                    _ASSERTE(args[i] == NULL);
+                    _ASSERTE(args[i] == 0);
                     args[i] = ObjToArgSlot(argToProtect[i]);
                 }
             }

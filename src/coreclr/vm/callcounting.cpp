@@ -365,7 +365,7 @@ NOINLINE LoaderHeap *CallCountingManager::CallCountingStubAllocator::AllocateHea
 bool CallCountingManager::CallCountingStubAllocator::IsStub(TADDR entryPoint)
 {
     WRAPPER_NO_CONTRACT;
-    _ASSERTE(entryPoint != NULL);
+    _ASSERTE(entryPoint != 0);
 
     return !!m_heapRangeList.IsInRange(entryPoint);
 }
@@ -562,7 +562,7 @@ bool CallCountingManager::SetCodeEntryPoint(
     _ASSERTE(
         activeCodeVersion ==
         methodDesc->GetCodeVersionManager()->GetActiveILCodeVersion(methodDesc).GetActiveNativeCodeVersion(methodDesc));
-    _ASSERTE(codeEntryPoint != NULL);
+    _ASSERTE(codeEntryPoint != 0);
     _ASSERTE(codeEntryPoint == activeCodeVersion.GetNativeCode());
     _ASSERTE(!wasMethodCalled || createTieringBackgroundWorkerRef != nullptr);
     _ASSERTE(createTieringBackgroundWorkerRef == nullptr || !*createTieringBackgroundWorkerRef);
@@ -1253,7 +1253,7 @@ bool CallCountingManager::IsCallCountingStub(PCODE entryPoint)
     CONTRACTL_END;
 
     TADDR entryAddress = PCODEToPINSTR(entryPoint);
-    _ASSERTE(entryAddress != NULL);
+    _ASSERTE(entryAddress != 0);
 
     CodeVersionManager::LockHolder codeVersioningLockHolder;
 
