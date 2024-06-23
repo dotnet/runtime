@@ -48,16 +48,6 @@ namespace System.Net
         //  <argument>  name
         //      string containing possible IPv4 address
         //
-        //  <argument>  start
-        //      offset in <name> to start checking for IPv4 address
-        //
-        //  <argument>  end
-        //      offset in <name> of the last character we can touch in the check
-        //
-        // Outputs:
-        //  <argument>  end
-        //      index of last character in <name> we checked
-        //
         //  <argument>  allowIPv6
         //      enables parsing IPv4 addresses embedded in IPv6 address literals
         //
@@ -66,6 +56,10 @@ namespace System.Net
         //
         //  <argument>  unknownScheme
         //      the check is made on an unknown scheme (suppress IPv4 canonicalization)
+        //
+        // Outputs:
+        //  <argument>  bytesConsumed
+        //      index of last character in <name> we checked
         //
         // Assumes:
         // The address string is terminated by either
@@ -110,13 +104,6 @@ namespace System.Net
         internal static bool IsValidCanonical<TChar>(ReadOnlySpan<TChar> name, out int bytesConsumed, bool allowIPv6, bool notImplicitFile)
             where TChar : unmanaged, IBinaryInteger<TChar>
         {
-            TChar ComponentSeparator = TChar.CreateChecked('.');
-            ReadOnlySpan<TChar> PrefixSeparators = [TChar.CreateChecked('/'), TChar.CreateChecked('\\')];
-            ReadOnlySpan<TChar> UrlSeparators = [TChar.CreateChecked(':'), TChar.CreateChecked('?'), TChar.CreateChecked('#')];
-            TChar OctalPrefix = TChar.CreateChecked('0');
-
-            ReadOnlySpan<TChar> IPv6Terminators = [TChar.CreateChecked('%'), TChar.CreateChecked('/'), TChar.CreateChecked(']')];
-
             int dots = 0;
             int number = 0;
             bool haveNumber = false;
@@ -132,23 +119,26 @@ namespace System.Net
 
                 if (allowIPv6)
                 {
-                    // for ipv4 inside ipv6 the terminator is either ScopeId, prefix or ipv6 terminator
-                    if (ch == IPv6Terminators[0] || ch == IPv6Terminators[1] || ch == IPv6Terminators[2])
+                    // For an IPv4 address nested inside an IPv6, the terminator is either ScopeId ('%'), prefix ('/') or ipv6 address terminator (']')
+                    if (ch == TChar.CreateChecked('%') || ch == TChar.CreateChecked('/') || ch == TChar.CreateChecked(']'))
                     {
                         break;
                     }
                 }
-                else if (ch == PrefixSeparators[0] || ch == PrefixSeparators[1]
-                    || (notImplicitFile && (ch == UrlSeparators[0] || ch == UrlSeparators[1] || ch == UrlSeparators[2])))
+                // For a normal IPv4 address, the terminator is the prefix ('/' or its counterpart, '\'). If notImplicitFile is set, the terminator
+                // is one of the characters which signify the start of the rest of the URI - the port number (':'), query string ('?') or fragment ('#')
+                else if (ch == TChar.CreateChecked('/') || ch == TChar.CreateChecked('\\')
+                    || (notImplicitFile && (ch == TChar.CreateChecked(':') || ch == TChar.CreateChecked('?') || ch == TChar.CreateChecked('#'))))
                 {
                     break;
                 }
 
                 if (IPAddressParser.TryParseInteger(IPAddressParser.Decimal, ch, out int parsedCharacter))
                 {
-                    if (!haveNumber && ch == OctalPrefix)
+                    // A number starting with zero should be interpreted in base 8 / octal
+                    if (!haveNumber && ch == TChar.CreateChecked('0'))
                     {
-                        if (current + 1 < name.Length && name[current + 1] == OctalPrefix)
+                        if (current + 1 < name.Length && name[current + 1] == TChar.CreateChecked('0'))
                         {
                             // 00 is not allowed as a prefix.
                             return false;
@@ -164,7 +154,8 @@ namespace System.Net
                         return false;
                     }
                 }
-                else if (ch == ComponentSeparator)
+                // If the current character is not an integer, it may be the IPv4 component separator ('.')
+                else if (ch == TChar.CreateChecked('.'))
                 {
                     if (!haveNumber || (number > 0 && firstCharIsZero))
                     {
@@ -196,12 +187,6 @@ namespace System.Net
         internal static long ParseNonCanonical<TChar>(ReadOnlySpan<TChar> name, out int bytesConsumed, bool notImplicitFile)
             where TChar : unmanaged, IBinaryInteger<TChar>
         {
-            TChar ComponentSeparator = TChar.CreateChecked('.');
-            ReadOnlySpan<TChar> PrefixSeparators = [TChar.CreateChecked('/'), TChar.CreateChecked('\\')];
-            ReadOnlySpan<TChar> UrlSeparators = [TChar.CreateChecked(':'), TChar.CreateChecked('?'), TChar.CreateChecked('#')];
-            TChar OctalPrefix = TChar.CreateChecked('0');
-            ReadOnlySpan<TChar> HexadecimalPrefix = [OctalPrefix, TChar.CreateChecked('x')];
-
             int numberBase = IPAddressParser.Decimal;
             Span<long> parts = stackalloc long[4];
             long currentValue = 0;
@@ -217,18 +202,21 @@ namespace System.Net
                 TChar ch = name[current];
                 currentValue = 0;
 
-                // Figure out what base this section is in
+                // Figure out what base this section is in, default to base 10
                 numberBase = IPAddressParser.Decimal;
-                if (ch == OctalPrefix)
+                // A number starting with zero should be interpreted in base 8 / octal
+                // If the number starts with 0x, it should be interpreted in base 16 / hex
+                if (ch == TChar.CreateChecked('0'))
                 {
                     numberBase = IPAddressParser.Octal;
                     current++;
                     atLeastOneChar = true;
                     if (current < name.Length)
                     {
-                        ch = name[current] | TChar.CreateTruncating(0x20);
+                        // Force an uppercase 'X' to lowercase 'x'.
+                        ch = name[current] | TChar.CreateChecked(0x20);
 
-                        if (ch == HexadecimalPrefix[1])
+                        if (ch == TChar.CreateChecked('x'))
                         {
                             numberBase = IPAddressParser.Hex;
                             current++;
@@ -257,7 +245,7 @@ namespace System.Net
                     atLeastOneChar = true;
                 }
 
-                if (current < name.Length && name[current] == ComponentSeparator)
+                if (current < name.Length && name[current] == TChar.CreateChecked('.'))
                 {
                     if (dotCount >= 3 // Max of 3 dots and 4 segments
                         || !atLeastOneChar // No empty segmets: 1...1
@@ -284,8 +272,10 @@ namespace System.Net
             {
                 // end of string, allowed
             }
-            else if (name[current] == PrefixSeparators[0] || name[current] == PrefixSeparators[1]
-                    || (notImplicitFile && (name[current] == UrlSeparators[0] || name[current] == UrlSeparators[1] || name[current] == UrlSeparators[2])))
+            // For a normal IPv4 address, the terminator is the prefix ('/' or its counterpart, '\'). If notImplicitFile is set, the terminator
+            // is one of the characters which signify the start of the rest of the URI - the port number (':'), query string ('?') or fragment ('#')
+            else if (name[current] == TChar.CreateChecked('/') || name[current] == TChar.CreateChecked('\\')
+                    || (notImplicitFile && (name[current] == TChar.CreateChecked(':') || name[current] == TChar.CreateChecked('?') || name[current] == TChar.CreateChecked('#'))))
             {
                 bytesConsumed = current;
             }

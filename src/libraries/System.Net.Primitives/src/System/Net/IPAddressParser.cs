@@ -16,11 +16,9 @@ namespace System.Net
         internal static IPAddress? Parse<TChar>(ReadOnlySpan<TChar> ipSpan, bool tryParse)
             where TChar : unmanaged, IBinaryInteger<TChar>
         {
-            TChar IPv6ComponentSeparator = TChar.CreateChecked(':');
-
             Debug.Assert(typeof(TChar) == typeof(byte) || typeof(TChar) == typeof(char));
 
-            if (ipSpan.Contains(IPv6ComponentSeparator))
+            if (ipSpan.Contains(TChar.CreateChecked(':')))
             {
                 // The address is parsed as IPv6 if and only if it contains a colon. This is valid because
                 // we don't support/parse a port specification at the end of an IPv4 address.
