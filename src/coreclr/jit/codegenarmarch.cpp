@@ -3512,9 +3512,10 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 
         for (CallArg& arg : call->gtArgs.Args())
         {
-            for (const ABIPassingSegment& seg : arg.NewAbiInfo.RegisterSegments())
+            for (unsigned i = 0; i < arg.NewAbiInfo.NumSegments; i++)
             {
-                if ((trashedByEpilog & seg.GetRegisterMask()) != 0)
+                const ABIPassingSegment& seg = arg.NewAbiInfo.Segment(i);
+                if (seg.IsPassedInRegister() && ((trashedByEpilog & seg.GetRegisterMask()) != 0))
                 {
                     JITDUMP("Tail call node:\n");
                     DISPTREE(call);
