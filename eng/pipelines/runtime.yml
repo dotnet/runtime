@@ -1906,7 +1906,7 @@ extends:
         #
         # Sourcebuild legs
         # We have 3 important legs for source-build:
-        # - Centos.8 (ensures that known non-portable RID is working)
+        # - Centos.9 (ensures that known non-portable RID is working)
         # - Linux-x64 portable (used for dependency flow and downstream PR verification)
         # - Banana.24 - Non-existent RID to ensure we don't break RIDs we don't know about.
         #
@@ -1915,8 +1915,8 @@ extends:
         - template: /eng/common/templates/jobs/source-build.yml
           parameters:
             platforms:
-              - name: CentOS8
-                targetRid: centos.8-x64
+              - name: CentOS9
+                targetRid: centos.9-x64
                 nonPortable: true
                 container: SourceBuild_centos_x64
               - name: NonexistentRID
