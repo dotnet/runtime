@@ -7464,8 +7464,14 @@ void CodeGen::genCallPlaceRegArgs(GenTreeCall* call)
         if (argNode->OperIs(GT_FIELD_LIST))
         {
             GenTreeFieldList::Use* use = argNode->AsFieldList()->Uses().begin().GetUse();
-            for (const ABIPassingSegment& seg : abiInfo.RegisterSegments())
+            for (unsigned i = 0; i < abiInfo.NumSegments; i++)
             {
+                const ABIPassingSegment& seg = abiInfo.Segment(i);
+                if (!seg.IsPassedInRegister())
+                {
+                    continue;
+                }
+
                 assert(use != nullptr);
                 GenTree* putArgRegNode = use->GetNode();
                 assert(putArgRegNode->OperIs(GT_PUTARG_REG));
@@ -7489,8 +7495,14 @@ void CodeGen::genCallPlaceRegArgs(GenTreeCall* call)
             assert(compFeatureArgSplit());
             genConsumeArgSplitStruct(argNode->AsPutArgSplit());
             unsigned regIndex = 0;
-            for (const ABIPassingSegment& seg : abiInfo.RegisterSegments())
+            for (unsigned i = 0; i < abiInfo.NumSegments; i++)
             {
+                const ABIPassingSegment& seg = abiInfo.Segment(i);
+                if (!seg.IsPassedInRegister())
+                {
+                    continue;
+                }
+
                 regNumber allocReg = argNode->AsPutArgSplit()->GetRegNumByIdx(regIndex);
                 inst_Mov_Extend(argNode->TypeGet(), /* srcInReg */ true, seg.GetRegister(), allocReg,
                                 /* canSkip */ true, emitActualTypeSize(TYP_I_IMPL));
@@ -7523,9 +7535,10 @@ void CodeGen::genCallPlaceRegArgs(GenTreeCall* call)
     {
         for (CallArg& arg : call->gtArgs.Args())
         {
-            for (const ABIPassingSegment& seg : arg.NewAbiInfo.RegisterSegments())
+            for (unsigned i = 0; i < arg.NewAbiInfo.NumSegments; i++)
             {
-                if (genIsValidFloatReg(seg.GetRegister()))
+                const ABIPassingSegment& seg = arg.NewAbiInfo.Segment(i);
+                if (seg.IsPassedInRegister() && genIsValidFloatReg(seg.GetRegister()))
                 {
                     regNumber targetReg = compiler->getCallArgIntRegister(seg.GetRegister());
                     inst_Mov(TYP_LONG, targetReg, seg.GetRegister(), /* canSkip */ false,

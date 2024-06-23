@@ -354,36 +354,6 @@ bool ABIPassingInformation::IsSplitAcrossRegistersAndStack() const
 }
 
 //-----------------------------------------------------------------------------
-// RegisterSegments:
-//   Get an iterable that allows convenient iteration of the register segments.
-//
-// Return Value:
-//   An iterable that can be used in a "for (const ABIPassingSegment& seg :
-//   RegisterSegments())" style.
-//
-ABIPassingInformation::RegisterSegmentsIterable ABIPassingInformation::RegisterSegments()
-{
-    ABIPassingSegment* begin;
-    if (NumSegments <= 1)
-    {
-        begin = &m_singleSegment;
-    }
-    else
-    {
-        begin = m_segments;
-    }
-
-    ABIPassingSegment* end = &begin[NumSegments];
-
-    while ((begin != end) && !begin->IsPassedInRegister())
-    {
-        begin++;
-    }
-
-    return RegisterSegmentsIterable(begin, end);
-}
-
-//-----------------------------------------------------------------------------
 // FromSegment:
 //   Create ABIPassingInformation from a single segment.
 //
