@@ -668,9 +668,7 @@ static void ValidateHWIntrinsicIsaRange(CORINFO_InstructionSet isa, const HWIntr
 
 static void ValidateHWIntrinsicIsaRangeArray()
 {
-    size_t count = sizeof(hwintrinsicIsaRangeArray) / sizeof(hwintrinsicIsaRangeArray[0]);
-
-    for (size_t i = 0; i < count; i++)
+    for (size_t i = 0; i < ARRAY_SIZE(hwintrinsicIsaRangeArray); i++)
     {
         CORINFO_InstructionSet isa = static_cast<CORINFO_InstructionSet>(i + 1);
         ValidateHWIntrinsicIsaRange(isa, hwintrinsicIsaRangeArray[i]);
@@ -856,7 +854,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
 #endif
 
     size_t isaIndex = static_cast<size_t>(isa) - 1;
-    assert(isaIndex < (sizeof(hwintrinsicIsaRangeArray) / sizeof(hwintrinsicIsaRangeArray[0])));
+    assert(isaIndex < ARRAY_SIZE(hwintrinsicIsaRangeArray));
 
     const HWIntrinsicIsaRange& isaRange = hwintrinsicIsaRangeArray[isaIndex];
 
