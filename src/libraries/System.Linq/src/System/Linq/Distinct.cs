@@ -25,6 +25,25 @@ namespace System.Linq
             return new DistinctIterator<TSource>(source, comparer);
         }
 
+        private static IEnumerable<TSource> DistinctIterator<TSource>(IEnumerable<TSource> source, IEqualityComparer<TSource>? comparer)
+        {
+            using IEnumerator<TSource> enumerator = source.GetEnumerator();
+
+            if (enumerator.MoveNext())
+            {
+                var set = new HashSet<TKey>(DefaultInternalSetCapacity, comparer);
+                do
+                {
+                    TSource element = enumerator.Current;
+                    if (set.Add(element))
+                    {
+                        yield return element;
+                    }
+                }
+                while (enumerator.MoveNext());
+            }
+        }
+
         /// <summary>Returns distinct elements from a sequence according to a specified key selector function.</summary>
         /// <typeparam name="TSource">The type of the elements of <paramref name="source" />.</typeparam>
         /// <typeparam name="TKey">The type of key to distinguish elements by.</typeparam>
@@ -85,77 +104,6 @@ namespace System.Linq
                     }
                 }
                 while (enumerator.MoveNext());
-            }
-        }
-
-        /// <summary>
-        /// An iterator that yields the distinct values in an <see cref="IEnumerable{TSource}"/>.
-        /// </summary>
-        /// <typeparam name="TSource">The type of the source enumerable.</typeparam>
-        private sealed partial class DistinctIterator<TSource> : Iterator<TSource>
-        {
-            private readonly IEnumerable<TSource> _source;
-            private readonly IEqualityComparer<TSource>? _comparer;
-            private HashSet<TSource>? _set;
-            private IEnumerator<TSource>? _enumerator;
-
-            public DistinctIterator(IEnumerable<TSource> source, IEqualityComparer<TSource>? comparer)
-            {
-                Debug.Assert(source is not null);
-                _source = source;
-                _comparer = comparer;
-            }
-
-            private protected override Iterator<TSource> Clone() => new DistinctIterator<TSource>(_source, _comparer);
-
-            public override bool MoveNext()
-            {
-                switch (_state)
-                {
-                    case 1:
-                        _enumerator = _source.GetEnumerator();
-                        if (!_enumerator.MoveNext())
-                        {
-                            Dispose();
-                            return false;
-                        }
-
-                        TSource element = _enumerator.Current;
-                        _set = new HashSet<TSource>(DefaultInternalSetCapacity, _comparer);
-                        _set.Add(element);
-                        _current = element;
-                        _state = 2;
-                        return true;
-                    case 2:
-                        Debug.Assert(_enumerator is not null);
-                        Debug.Assert(_set is not null);
-                        while (_enumerator.MoveNext())
-                        {
-                            element = _enumerator.Current;
-                            if (_set.Add(element))
-                            {
-                                _current = element;
-                                return true;
-                            }
-                        }
-
-                        break;
-                }
-
-                Dispose();
-                return false;
-            }
-
-            public override void Dispose()
-            {
-                if (_enumerator is not null)
-                {
-                    _enumerator.Dispose();
-                    _enumerator = null;
-                    _set = null;
-                }
-
-                base.Dispose();
             }
         }
     }
