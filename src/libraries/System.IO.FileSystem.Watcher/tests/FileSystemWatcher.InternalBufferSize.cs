@@ -39,7 +39,7 @@ namespace System.IO.Tests
 
         // At some point we might decide to improve how FSW handles this at which point we'll need
         // a better test for Error (perhaps just a mock), but for now there is some value in forcing this limit.
-        private const int ExcessEventsMultiplier = 250; // 100 does not reliably trigger the error
+        private const int ExcessEventsMultiplier = 200; // 100 does not reliably trigger the error
 
         [Theory]
         [InlineData(true)]
@@ -52,6 +52,7 @@ namespace System.IO.Tests
             string file = CreateTestFile(TestDirectory, "file");
             using (FileSystemWatcher watcher = CreateWatcher(TestDirectory, file, unblockHandler))
             {
+                watcher.InternalBufferSize = 4096; // Minimum
                 int internalBufferOperationCapacity = watcher.InternalBufferSize / (12 + 2 * (Path.GetFileName(file).Length + 1));
 
                 if (setToHigherCapacity)
@@ -82,6 +83,7 @@ namespace System.IO.Tests
                 TestISynchronizeInvoke invoker = new TestISynchronizeInvoke();
                 watcher.SynchronizingObject = invoker;
 
+                watcher.InternalBufferSize = 4096; // Minimum
                 int internalBufferOperationCapacity = watcher.InternalBufferSize / (12 + 2 * (Path.GetFileName(file).Length + 1));
 
                 Action action = GetAction(unblockHandler, internalBufferOperationCapacity, file);
