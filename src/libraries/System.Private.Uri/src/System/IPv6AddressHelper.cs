@@ -251,7 +251,6 @@ namespace System.Net
                             i = lastSequence + ipv4AddressLength;
                             // ipv4 address takes 2 slots in ipv6 address, one was just counted meeting the '.'
                             ++sequenceCount;
-                            lastSequence = i - sequenceLength;
                             haveIPv4Address = true;
                             --i;            // it will be incremented back on the next loop
                             break;
