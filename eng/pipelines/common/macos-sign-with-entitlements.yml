@@ -28,10 +28,15 @@ steps:
       includeRootFolder: true
       replaceExistingArchive: true
 
-  - task: SFP.build-tasks.custom-build-task-1.EsrpCodeSigning@1
+  - task: EsrpCodeSigning@5
     displayName: 'ESRP CodeSigning'
     inputs:
-      ConnectedServiceName: 'ESRP CodeSigning'
+      ConnectedServiceName: 'DotNet-Engineering-Services_KeyVault'
+      AppRegistrationClientId: '28ec6507-2167-4eaa-a294-34408cf5dd0e'
+      AppRegistrationTenantId: '72f988bf-86f1-41af-91ab-2d7cd011db47'
+      AuthAKVName: 'EngKeyVault'
+      AuthCertName: 'DotNetCore-ESRP-AuthCert'
+      AuthSignCertName: 'DotNetCore-ESRP-AuthSignCert'
       FolderPath: '$(Build.ArtifactStagingDirectory)/'
       Pattern: 'mac_entitled_to_sign.zip'
       UseMinimatch: true
