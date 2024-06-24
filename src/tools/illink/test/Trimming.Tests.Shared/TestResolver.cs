@@ -7,8 +7,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
 {
 	struct TestResolver : ITryResolveMetadata
 	{
-		public static TestResolver Instance => new TestResolver ();
-
 		public MethodDefinition TryResolve (MethodReference methodReference) => methodReference.Resolve ();
 
 		public TypeDefinition TryResolve (TypeReference typeReference) => typeReference.Resolve ();

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
@@ -13,6 +13,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 	[SetupCompileBefore ("library.dll", new[] { "Dependencies/EscapedTypeNames.il" })]
 	[KeptTypeInAssembly ("library", "Library.Not\\+Nested")]
 	[KeptTypeInAssembly ("library", "Library.Not\\+Nested+Nes\\\\ted")]
+	[KeptTypeInAssembly ("library", "Library.Not\\+Nested+Nes/ted")]
 	[KeptDelegateCacheField ("0", nameof (AssemblyResolver))]
 	[KeptDelegateCacheField ("1", nameof (GetTypeFromAssembly))]
 	public class TypeUsedViaReflection
@@ -476,6 +477,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		{
 			var typeKept = Type.GetType ("Library.Not\\+Nested, library");
 			typeKept = Type.GetType ("Library.Not\\+Nested+Nes\\\\ted, library");
+			typeKept = Type.GetType ("Library.Not\\+Nested+Nes/ted, library");
 		}
 	}
 }

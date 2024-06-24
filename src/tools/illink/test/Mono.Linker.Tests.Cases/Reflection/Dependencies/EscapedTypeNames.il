@@ -20,4 +20,9 @@
        extends [System.Runtime]System.Object
   {
   }
+
+  .class nested public auto ansi sealed beforefieldinit 'Nes/ted'
+       extends [System.Runtime]System.Object
+  {
+  }
 } // end of class Library.TypeInfoCalls
