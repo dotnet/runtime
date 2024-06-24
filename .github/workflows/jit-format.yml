@@ -1,0 +1,55 @@
+on:
+  pull_request:
+    paths:
+      - 'src/coreclr/jit/**'
+    branches: [ main ]
+
+jobs:
+  format:
+    strategy:
+      matrix:
+        os:
+          - name: linux
+            image: ubuntu-latest
+            container: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-cross-amd64-net9.0
+            extension: '.sh'
+            cross: '--cross'
+          - name: windows
+            image: windows-latest
+            extension: '.cmd'
+            cross: ''
+    runs-on: ${{ matrix.os.image }}
+    container: ${{ matrix.os.container }}
+    steps:
+      - name: Checkout jitutils
+        uses: actions/checkout@v4
+        with:
+          path: jitutils
+          repository: dotnet/jitutils
+          ref: main
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install .NET
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build jitutils
+        run: |
+          cd jitutils
+          ./bootstrap${{ matrix.os.extension }}
+      - name: Checkout runtime
+        uses: actions/checkout@v4
+        with:
+          path: runtime
+      - name: Install Python
+        uses: actions/setup-python@v5
+      
+      - name: Run jitformat.py
+        run: |
+          python3 runtime/src/coreclr/scripts/jitformat.py --jitutils jitutils -r ${{ github.workspace }}/runtime -o ${{ matrix.os.name }} -a x64 ${{ matrix.os.cross }}
+      
+      - name: Publish format.patch
+        uses: actions/upload-artifact@v2
+        with:
+          path: format.patch
+          name: format.${{matrix.os.name}}.patch
+        if: failure()
