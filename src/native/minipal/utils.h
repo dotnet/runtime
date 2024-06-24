@@ -33,6 +33,12 @@
 #endif
 
 #if defined(_MSC_VER)
+#define LIBC_CALLBACK _cdecl
+#else
+#define LIBC_CALLBACK
+#endif
+
+#if defined(_MSC_VER)
 #  if defined(__SANITIZE_ADDRESS__)
 #    define HAS_ADDRESS_SANITIZER
 #    define DISABLE_ASAN __declspec(no_sanitize_address)
@@ -51,18 +57,12 @@
 #endif
 
 #if defined(_MSC_VER)
-#define LIBC_CALLBACK _cdecl
-#else
-#define LIBC_CALLBACK
-#endif
-
-#if defined(_MSC_VER)
 #  ifdef SANITIZER_SHARED_RUNTIME
-#    define SANITIZER_CALLBACK_CALLCONV __declspec(dllexport no_sanitize_address) LIBC_CALLBACK
-#    define SANITIZER_INTERFACE_CALLCONV __declspec(dllimport) LIBC_CALLBACK
+#    define SANITIZER_CALLBACK_CALLCONV __declspec(dllexport no_sanitize_address) _cdecl
+#    define SANITIZER_INTERFACE_CALLCONV __declspec(dllimport) _cdecl
 #  else
-#    define SANITIZER_CALLBACK_CALLCONV __declspec(no_sanitize_address) LIBC_CALLBACK
-#    define SANITIZER_INTERFACE_CALLCONV LIBC_CALLBACK
+#    define SANITIZER_CALLBACK_CALLCONV __declspec(no_sanitize_address) _cdecl
+#    define SANITIZER_INTERFACE_CALLCONV _cdecl
 #  endif
 #else
 #  ifdef SANITIZER_SHARED_RUNTIME
