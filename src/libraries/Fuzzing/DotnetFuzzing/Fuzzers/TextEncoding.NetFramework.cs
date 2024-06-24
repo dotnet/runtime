@@ -21,8 +21,11 @@ internal sealed class TextEncodingNetFramework : IFuzzer
             Console.WriteLine($"Cannot find the .NET Framework test executable at {path}");
         }
 
-        string encoded = Convert.ToBase64String(bytes);
-        Process.Start(path, encoded);
+        if (bytes.Length > 0)
+        {
+            string encoded = Convert.ToBase64String(bytes);
+            Process.Start(path, encoded);
+        }
     }
 
     private static string GetRepoRootDirectory()

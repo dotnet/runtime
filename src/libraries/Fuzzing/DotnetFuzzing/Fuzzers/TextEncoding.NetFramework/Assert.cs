@@ -22,7 +22,7 @@ namespace DotnetFuzzing
             {
                 Equal(expected.Length, actual.Length);
                 int diffIndex = expected.CommonPrefixLength(actual);
-                throw new Exception($"Expected={expected[diffIndex]} Actual={actual[diffIndex]} at index {diffIndex}");
+                throw new Exception($"Expected={expected[diffIndex]} 0x{(byte)expected[diffIndex]} Actual={actual[diffIndex]} 0x{(byte)actual[diffIndex]} at index {diffIndex}");
             }
         }
 
