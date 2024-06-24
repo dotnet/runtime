@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk" TreatAsLocalProperty="MonoForceInterpreter">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <RuntimeIdentifier>$(TargetOS)-$(TargetArchitecture)</RuntimeIdentifier>
+    <TargetOS Condition="'$(TargetOS)' == ''">ios</TargetOS>
+    <IncludesTestRunner>false</IncludesTestRunner>
+    <ExpectedExitCode>42</ExpectedExitCode>
+    <SelfContained>true</SelfContained>
+    <UseConsoleUITemplate>true</UseConsoleUITemplate>
+    <Optimized Condition="'$(Configuration)' == 'Release'">true</Optimized>
+    <NativeMainSource>$(MSBuildProjectDirectory)/main.m</NativeMainSource>
+    <PublishTrimmed>true</PublishTrimmed>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(RunAOTCompilation)' == 'true'">
+    <MonoEnableLLVM>true</MonoEnableLLVM>
+    <MainLibraryFileName>iOS.Device.GetSpecialFolder.Test.dll</MainLibraryFileName>
+    <MonoForceInterpreter>false</MonoForceInterpreter>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+  </ItemGroup>
+</Project>
