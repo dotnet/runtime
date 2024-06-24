@@ -6,7 +6,6 @@
 
 #include "stublink.h"
 
-struct ArrayOpScript;
 class MetaSig;
 
 extern PCODE GetPreStubEntryPoint();
@@ -218,6 +217,8 @@ class StubLinkerCPU : public StubLinker
 
         VOID X86EmitCurrentThreadFetch(X86Reg dstreg, unsigned preservedRegSet);
 
+        VOID X86EmitCurrentThreadAllocContextFetch(X86Reg dstreg, unsigned preservedRegSet);
+
         VOID X86EmitIndexRegLoad(X86Reg dstreg, X86Reg srcreg, int32_t ofs = 0);
         VOID X86EmitIndexRegStore(X86Reg dstreg, int32_t ofs, X86Reg srcreg);
 #if defined(TARGET_AMD64)
@@ -398,15 +399,6 @@ class StubLinkerCPU : public StubLinker
         // Emits code to adjust for a static delegate target.
         VOID EmitShuffleThunk(struct ShuffleEntry *pShuffleEntryArray);
 
-
-#ifndef FEATURE_ARRAYSTUB_AS_IL
-        //===========================================================================
-        // Emits code to do an array operation.
-        VOID EmitArrayOpStub(const ArrayOpScript*);
-
-        //Worker function to emit throw helpers for array ops.
-        VOID EmitArrayOpStubThrow(unsigned exConst, unsigned cbRetArg);
-#endif
 
 #ifndef FEATURE_STUBS_AS_IL
         //===========================================================================

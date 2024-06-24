@@ -2833,8 +2833,8 @@ bool emitter::emitNoGChelper(CorInfoHelpFunc helpFunc)
         case CORINFO_HELP_CHECKED_ASSIGN_REF:
         case CORINFO_HELP_ASSIGN_BYREF:
 
-        case CORINFO_HELP_GETSHARED_GCSTATIC_BASE_NOCTOR:
-        case CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_NOCTOR:
+        case CORINFO_HELP_GET_GCSTATIC_BASE_NOCTOR:
+        case CORINFO_HELP_GET_NONGCSTATIC_BASE_NOCTOR:
 
         case CORINFO_HELP_INIT_PINVOKE_FRAME:
 
@@ -8225,6 +8225,9 @@ CORINFO_FIELD_HANDLE emitter::emitSimd64Const(simd64_t constValue)
     return emitComp->eeFindJitDataOffs(cnum);
 }
 
+#endif // TARGET_XARCH
+
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
 CORINFO_FIELD_HANDLE emitter::emitSimdMaskConst(simdmask_t constValue)
 {
     unsigned cnsSize  = 8;
@@ -8240,7 +8243,7 @@ CORINFO_FIELD_HANDLE emitter::emitSimdMaskConst(simdmask_t constValue)
     UNATIVE_OFFSET cnum = emitDataConst(&constValue, cnsSize, cnsAlign, TYP_MASK);
     return emitComp->eeFindJitDataOffs(cnum);
 }
-#endif // TARGET_XARCH
+#endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_SIMD
 
 /*****************************************************************************

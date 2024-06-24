@@ -39,7 +39,7 @@ class LoopLocalOccurrences
     struct Occurrence
     {
         BasicBlock*          Block;
-        Statement*           Statement;
+        struct Statement*    Statement;
         GenTreeLclVarCommon* Node;
         Occurrence*          Next;
     };
@@ -1055,6 +1055,12 @@ bool Compiler::optMakeLoopDownwardsCounted(ScalarEvolutionContext& scevContext,
 
     // At this point we know that the single exit dominates all backedges.
     JITDUMP("  All backedges are dominated by exiting block " FMT_BB "\n", exiting->bbNum);
+
+    if (loop->MayExecuteBlockMultipleTimesPerIteration(exiting))
+    {
+        JITDUMP("  Exiting block may be executed multiple times per iteration; cannot place decrement in it\n");
+        return false;
+    }
 
     Scev* backedgeCount = scevContext.ComputeExitNotTakenCount(exiting);
     if (backedgeCount == nullptr)

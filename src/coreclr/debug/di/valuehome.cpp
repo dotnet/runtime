@@ -518,11 +518,19 @@ void FloatRegValueHome::SetEnregisteredValue(MemoryRange newValue,
 
     while (i <= m_floatIndex)
     {
+        #ifdef _MSC_VER
         __asm fstp td
+        #else
+        __asm("fstpl %0" : "=m" (td));
+        #endif
         popArea[i++] = td;
     }
 
+    #ifdef _MSC_VER
     __asm fld newVal; // push on the new value.
+    #else
+    __asm("fldl %0" : "=m" (newVal));
+    #endif
 
     // Push any values that we popled off back onto the stack,
     // _except_ the last one, which was the one we changed.
@@ -531,7 +539,11 @@ void FloatRegValueHome::SetEnregisteredValue(MemoryRange newValue,
     while (i > 0)
     {
         td = popArea[--i];
+        #ifdef _MSC_VER
         __asm fld td
+        #else
+        __asm("fldl %0" : "=m" (td));
+        #endif
     }
 
     // Save out the modified float area.

@@ -1175,6 +1175,13 @@
         </ExcludeList>
     </ItemGroup>
 
+    <!-- NativeAOT arm32 specific -->
+    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TestBuildMode)' == 'nativeaot' and '$(RuntimeFlavor)' == 'coreclr' and '$(TargetArchitecture)' == 'arm'">
+        <ExcludeList Include="$(XunitTestBinBase)/GC/API/GC/GetTotalAllocatedBytes/**">
+            <Issue>https://github.com/dotnet/runtime/issues/103333</Issue>
+        </ExcludeList>
+    </ItemGroup>
+
     <!-- NativeAOT x86 specific -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TestBuildMode)' == 'nativeaot' and '$(RuntimeFlavor)' == 'coreclr' and '$(TargetArchitecture)' == 'x86'">
         <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/perf/doublealign/Arrays/**">
@@ -1909,6 +1916,9 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/Swift/SwiftCallbackAbiStress/**">
             <Issue>https://github.com/dotnet/runtime/issues/93631: Swift reverse pinvokes are not implemented on Mono yet</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/Swift/SwiftIndirectResult/**">
+            <Issue>https://github.com/dotnet/runtime/issues/93631: SwiftIndirectResult is not implemented on Mono yet</Issue>
         </ExcludeList>
     </ItemGroup>
 

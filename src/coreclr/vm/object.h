@@ -732,9 +732,7 @@ public:
     }
 
     friend class StubLinkerCPU;
-#ifdef FEATURE_ARRAYSTUB_AS_IL
     friend class ArrayOpLinker;
-#endif
 public:
     OBJECTREF    m_Array[1];
 };
@@ -1344,12 +1342,6 @@ public:
     {
         LIMITED_METHOD_CONTRACT
         m_StartHelper = NULL;
-    }
-
-    void ResetName()
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_Name = NULL;
     }
 
     void SetPriority(INT32 priority)

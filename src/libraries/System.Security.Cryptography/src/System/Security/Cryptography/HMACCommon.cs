@@ -39,6 +39,17 @@ namespace System.Security.Cryptography
             ActualKey = ChangeKeyImpl(key);
         }
 
+        private HMACCommon(string hashAlgorithmId, HashProvider hmacProvider, int blockSize, byte[]? actualKey)
+        {
+            Debug.Assert(!string.IsNullOrEmpty(hashAlgorithmId));
+            Debug.Assert(blockSize is > 0 or -1);
+
+            _hashAlgorithmId = hashAlgorithmId;
+            _hMacProvider = hmacProvider;
+            _blockSize = blockSize;
+            ActualKey = Helpers.CloneByteArray(actualKey);
+        }
+
         public int HashSizeInBits => _hMacProvider.HashSizeInBytes * 8;
         public int HashSizeInBytes => _hMacProvider.HashSizeInBytes;
 
@@ -124,6 +135,11 @@ namespace System.Security.Cryptography
             _hMacProvider.GetCurrentHash(destination);
 
         public void Reset() => _hMacProvider.Reset();
+
+        public HMACCommon Clone()
+        {
+            return new HMACCommon(_hashAlgorithmId, _hMacProvider.Clone(), _blockSize, ActualKey);
+        }
 
         public void Dispose(bool disposing)
         {

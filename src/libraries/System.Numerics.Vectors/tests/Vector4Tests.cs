@@ -800,7 +800,7 @@ namespace System.Numerics.Tests
         {
             Vector4 v = new Vector4(1.0f, 2.0f, 3.0f, 0.0f);
             Quaternion q = new Quaternion();
-            Vector4 expected = v;
+            Vector4 expected = Vector4.Zero;
 
             Vector4 actual = Vector4.Transform(v, q);
             Assert.True(MathHelper.Equal(expected, actual), "Vector4f.Transform did not return the expected value.");
@@ -844,7 +844,7 @@ namespace System.Numerics.Tests
         {
             Vector3 v = new Vector3(1.0f, 2.0f, 3.0f);
             Quaternion q = new Quaternion();
-            Vector4 expected = new Vector4(v, 1.0f);
+            Vector4 expected = Vector4.Zero;
 
             Vector4 actual = Vector4.Transform(v, q);
             Assert.True(MathHelper.Equal(expected, actual), "Vector4f.Transform did not return the expected value.");
@@ -888,7 +888,7 @@ namespace System.Numerics.Tests
         {
             Vector2 v = new Vector2(1.0f, 2.0f);
             Quaternion q = new Quaternion();
-            Vector4 expected = new Vector4(1.0f, 2.0f, 0, 1.0f);
+            Vector4 expected = Vector4.Zero;
 
             Vector4 actual = Vector4.Transform(v, q);
             Assert.True(MathHelper.Equal(expected, actual), "Vector4f.Transform did not return the expected value.");

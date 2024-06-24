@@ -151,10 +151,12 @@ namespace System.Net.Primitives.Functional.Tests
 
         [Theory]
         [InlineData("0.0.0.0/0", "0.0.0.0", "127.127.127.127", "255.255.255.255")] // the whole IPv4 space
+        [InlineData("0.0.0.0/0", "0.0.0.0", "::ffff:127.127.127.127", "::ffff:255.255.255.255")] // the whole IPv4 space
         [InlineData("::/0", "::", "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff")] // the whole IPv6 space
         [InlineData("255.255.255.255/32", "255.255.255.255")] // single IPv4 address
         [InlineData("ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff/128", "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff")] // single IPv6 address
         [InlineData("255.255.255.0/24", "255.255.255.0", "255.255.255.255")]
+        [InlineData("255.255.255.0/24", "::ffff:255.255.255.0", "::ffff:255.255.255.255")]
         [InlineData("198.51.248.0/22", "198.51.248.0", "198.51.250.42", "198.51.251.255")]
         [InlineData("255.255.255.128/25", "255.255.255.128", "255.255.255.129", "255.255.255.255")]
         [InlineData("2a00::/13", "2a00::", "2a00::1", "2a01::", "2a07::", "2a07:ffff:ffff:ffff:ffff:ffff:ffff:ffff")]

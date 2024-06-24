@@ -58,406 +58,6 @@ class RCWRefCache;
 #endif
 
 
-GPTR_DECL(IdDispenser,       g_pModuleIndexDispenser);
-
-// We would like *ALLOCATECLASS_FLAG to AV (in order to catch errors), so don't change it
-struct ClassInitFlags {
-    enum
-    {
-        INITIALIZED_FLAG_BIT    = 0,
-        INITIALIZED_FLAG        = 1<<INITIALIZED_FLAG_BIT,
-        ERROR_FLAG_BIT          = 1,
-        ERROR_FLAG              = 1<<ERROR_FLAG_BIT,
-        ALLOCATECLASS_FLAG_BIT  = 2,                    // Bit to avoid racing for InstantiateStaticHandles
-        ALLOCATECLASS_FLAG      = 1<<ALLOCATECLASS_FLAG_BIT,
-        COLLECTIBLE_FLAG_BIT    = 3,
-        COLLECTIBLE_FLAG        = 1<<COLLECTIBLE_FLAG_BIT
-    };
-};
-
-struct DomainLocalModule
-{
-    friend class ClrDataAccess;
-    friend class CheckAsmOffsets;
-    friend struct ThreadLocalModule;
-
-// After these macros complete, they may have returned an interior pointer into a gc object. This pointer will have been cast to a byte pointer
-// It is critically important that no GC is allowed to occur before this pointer is used.
-#define GET_DYNAMICENTRY_GCSTATICS_BASEPOINTER(pLoaderAllocator, dynamicClassInfoParam, pGCStatics) \
-    {\
-        DomainLocalModule::PTR_DynamicClassInfo dynamicClassInfo = dac_cast<DomainLocalModule::PTR_DynamicClassInfo>(dynamicClassInfoParam);\
-        DomainLocalModule::PTR_DynamicEntry pDynamicEntry = dac_cast<DomainLocalModule::PTR_DynamicEntry>((DomainLocalModule::DynamicEntry*)dynamicClassInfo->m_pDynamicEntry.Load()); \
-        if ((dynamicClassInfo->m_dwFlags) & ClassInitFlags::COLLECTIBLE_FLAG) \
-        {\
-            PTRARRAYREF objArray;\
-            objArray = (PTRARRAYREF)pLoaderAllocator->GetHandleValueFastCannotFailType2( \
-                                        (dac_cast<DomainLocalModule::PTR_CollectibleDynamicEntry>(pDynamicEntry))->m_hGCStatics);\
-            *(pGCStatics) = dac_cast<PTR_BYTE>(PTR_READ(PTR_TO_TADDR(OBJECTREFToObject( objArray )) + offsetof(PtrArray, m_Array), objArray->GetNumComponents() * sizeof(void*))) ;\
-        }\
-        else\
-        {\
-            *(pGCStatics) = (dac_cast<DomainLocalModule::PTR_NormalDynamicEntry>(pDynamicEntry))->GetGCStaticsBasePointer();\
-        }\
-    }\
-
-#define GET_DYNAMICENTRY_NONGCSTATICS_BASEPOINTER(pLoaderAllocator, dynamicClassInfoParam, pNonGCStatics) \
-    {\
-        DomainLocalModule::PTR_DynamicClassInfo dynamicClassInfo = dac_cast<DomainLocalModule::PTR_DynamicClassInfo>(dynamicClassInfoParam);\
-        DomainLocalModule::PTR_DynamicEntry pDynamicEntry = dac_cast<DomainLocalModule::PTR_DynamicEntry>((DomainLocalModule::DynamicEntry*)(dynamicClassInfo)->m_pDynamicEntry.Load()); \
-        if (((dynamicClassInfo)->m_dwFlags) & ClassInitFlags::COLLECTIBLE_FLAG) \
-        {\
-            if ((dac_cast<DomainLocalModule::PTR_CollectibleDynamicEntry>(pDynamicEntry))->m_hNonGCStatics != 0) \
-            { \
-                U1ARRAYREF objArray;\
-                objArray = (U1ARRAYREF)pLoaderAllocator->GetHandleValueFastCannotFailType2( \
-                                            (dac_cast<DomainLocalModule::PTR_CollectibleDynamicEntry>(pDynamicEntry))->m_hNonGCStatics);\
-                *(pNonGCStatics) = dac_cast<PTR_BYTE>(PTR_READ( \
-                        PTR_TO_TADDR(OBJECTREFToObject( objArray )) + sizeof(ArrayBase) - DomainLocalModule::DynamicEntry::GetOffsetOfDataBlob(), \
-                            objArray->GetNumComponents() * (DWORD)objArray->GetComponentSize() + DomainLocalModule::DynamicEntry::GetOffsetOfDataBlob())); \
-            } else (*pNonGCStatics) = NULL; \
-        }\
-        else\
-        {\
-            *(pNonGCStatics) = dac_cast<DomainLocalModule::PTR_NormalDynamicEntry>(pDynamicEntry)->GetNonGCStaticsBasePointer();\
-        }\
-    }\
-
-    struct DynamicEntry
-    {
-        static DWORD GetOffsetOfDataBlob();
-    };
-    typedef DPTR(DynamicEntry) PTR_DynamicEntry;
-
-    struct CollectibleDynamicEntry : public DynamicEntry
-    {
-        LOADERHANDLE    m_hGCStatics;
-        LOADERHANDLE    m_hNonGCStatics;
-    };
-    typedef DPTR(CollectibleDynamicEntry) PTR_CollectibleDynamicEntry;
-
-    struct NormalDynamicEntry : public DynamicEntry
-    {
-        PTR_OBJECTREF   m_pGCStatics;
-#ifdef FEATURE_64BIT_ALIGNMENT
-        // Padding to make m_pDataBlob aligned at MAX_PRIMITIVE_FIELD_SIZE
-        // code:MethodTableBuilder::PlaceRegularStaticFields assumes that the start of the data blob is aligned
-        SIZE_T          m_padding;
-#endif
-        BYTE            m_pDataBlob[0];
-
-        inline PTR_BYTE GetGCStaticsBasePointer()
-        {
-            LIMITED_METHOD_CONTRACT;
-            SUPPORTS_DAC;
-            return dac_cast<PTR_BYTE>(m_pGCStatics);
-        }
-        inline PTR_BYTE GetNonGCStaticsBasePointer()
-        {
-            LIMITED_METHOD_CONTRACT
-            SUPPORTS_DAC;
-            return dac_cast<PTR_BYTE>(this);
-        }
-    };
-    typedef DPTR(NormalDynamicEntry) PTR_NormalDynamicEntry;
-
-    struct DynamicClassInfo
-    {
-        VolatilePtr<DynamicEntry, PTR_DynamicEntry>  m_pDynamicEntry;
-        Volatile<DWORD>             m_dwFlags;
-    };
-    typedef DPTR(DynamicClassInfo) PTR_DynamicClassInfo;
-
-    inline UMEntryThunk * GetADThunkTable()
-    {
-        LIMITED_METHOD_CONTRACT
-        return m_pADThunkTable;
-    }
-
-    inline void SetADThunkTable(UMEntryThunk* pADThunkTable)
-    {
-        LIMITED_METHOD_CONTRACT
-        InterlockedCompareExchangeT(m_pADThunkTable.GetPointer(), pADThunkTable, NULL);
-    }
-
-    // Note the difference between:
-    //
-    //  GetPrecomputedNonGCStaticsBasePointer() and
-    //  GetPrecomputedStaticsClassData()
-    //
-    //  GetPrecomputedNonGCStaticsBasePointer returns the pointer that should be added to field offsets to retrieve statics
-    //  GetPrecomputedStaticsClassData returns a pointer to the first byte of the precomputed statics block
-    inline TADDR GetPrecomputedNonGCStaticsBasePointer()
-    {
-        LIMITED_METHOD_CONTRACT
-        return dac_cast<TADDR>(this);
-    }
-
-    inline PTR_BYTE GetPrecomputedStaticsClassData()
-    {
-        LIMITED_METHOD_CONTRACT
-        return dac_cast<PTR_BYTE>(this) + offsetof(DomainLocalModule, m_pDataBlob);
-    }
-
-    static SIZE_T GetOffsetOfDataBlob() { return offsetof(DomainLocalModule, m_pDataBlob); }
-    static SIZE_T GetOffsetOfGCStaticPointer() { return offsetof(DomainLocalModule, m_pGCStatics); }
-
-    inline DomainAssembly* GetDomainAssembly()
-    {
-        LIMITED_METHOD_CONTRACT
-        SUPPORTS_DAC;
-        return m_pDomainAssembly;
-    }
-
-#ifndef DACCESS_COMPILE
-    inline void        SetDomainAssembly(DomainAssembly* pDomainAssembly)
-    {
-        LIMITED_METHOD_CONTRACT
-        m_pDomainAssembly = pDomainAssembly;
-    }
-#endif
-
-    inline PTR_OBJECTREF  GetPrecomputedGCStaticsBasePointer()
-    {
-        LIMITED_METHOD_CONTRACT
-        return m_pGCStatics;
-    }
-
-    inline PTR_OBJECTREF * GetPrecomputedGCStaticsBasePointerAddress()
-    {
-        LIMITED_METHOD_CONTRACT
-        return &m_pGCStatics;
-    }
-
-    // Returns bytes so we can add offsets
-    inline PTR_BYTE GetGCStaticsBasePointer(MethodTable * pMT)
-    {
-        WRAPPER_NO_CONTRACT
-        SUPPORTS_DAC;
-
-        if (pMT->IsDynamicStatics())
-        {
-            _ASSERTE(GetDomainAssembly()->GetModule() == pMT->GetModuleForStatics());
-            return GetDynamicEntryGCStaticsBasePointer(pMT->GetModuleDynamicEntryID(), pMT->GetLoaderAllocator());
-        }
-        else
-        {
-            return dac_cast<PTR_BYTE>(m_pGCStatics);
-        }
-    }
-
-    inline PTR_BYTE GetNonGCStaticsBasePointer(MethodTable * pMT)
-    {
-        WRAPPER_NO_CONTRACT
-        SUPPORTS_DAC;
-
-        if (pMT->IsDynamicStatics())
-        {
-            _ASSERTE(GetDomainAssembly()->GetModule() == pMT->GetModuleForStatics());
-            return GetDynamicEntryNonGCStaticsBasePointer(pMT->GetModuleDynamicEntryID(), pMT->GetLoaderAllocator());
-        }
-        else
-        {
-            return dac_cast<PTR_BYTE>(this);
-        }
-    }
-
-    inline DynamicClassInfo* GetDynamicClassInfo(DWORD n)
-    {
-        LIMITED_METHOD_CONTRACT
-        SUPPORTS_DAC;
-        _ASSERTE(m_pDynamicClassTable.Load() && m_aDynamicEntries > n);
-        dac_cast<PTR_DynamicEntry>(m_pDynamicClassTable[n].m_pDynamicEntry.Load());
-
-        return &m_pDynamicClassTable[n];
-    }
-
-    // These helpers can now return null, as the debugger may do queries on a type
-    // before the calls to PopulateClass happen
-    inline PTR_BYTE GetDynamicEntryGCStaticsBasePointer(DWORD n, PTR_LoaderAllocator pLoaderAllocator)
-    {
-        CONTRACTL
-        {
-            NOTHROW;
-            GC_NOTRIGGER;
-            MODE_COOPERATIVE;
-            SUPPORTS_DAC;
-        }
-        CONTRACTL_END;
-
-
-        if (n >= m_aDynamicEntries)
-        {
-            return NULL;
-        }
-
-        DynamicClassInfo* pClassInfo = GetDynamicClassInfo(n);
-        if (!pClassInfo->m_pDynamicEntry)
-        {
-            return NULL;
-        }
-
-        PTR_BYTE retval = NULL;
-
-        GET_DYNAMICENTRY_GCSTATICS_BASEPOINTER(pLoaderAllocator, pClassInfo, &retval);
-
-        return retval;
-    }
-
-    inline PTR_BYTE GetDynamicEntryNonGCStaticsBasePointer(DWORD n, PTR_LoaderAllocator pLoaderAllocator)
-    {
-        CONTRACTL
-        {
-            NOTHROW;
-            GC_NOTRIGGER;
-            MODE_COOPERATIVE;
-            SUPPORTS_DAC;
-        }
-        CONTRACTL_END;
-
-
-        if (n >= m_aDynamicEntries)
-        {
-            return NULL;
-        }
-
-        DynamicClassInfo* pClassInfo = GetDynamicClassInfo(n);
-        if (!pClassInfo->m_pDynamicEntry)
-        {
-            return NULL;
-        }
-
-        PTR_BYTE retval = NULL;
-
-        GET_DYNAMICENTRY_NONGCSTATICS_BASEPOINTER(pLoaderAllocator, pClassInfo, &retval);
-
-        return retval;
-    }
-
-    FORCEINLINE PTR_DynamicClassInfo GetDynamicClassInfoIfInitialized(DWORD n)
-    {
-        WRAPPER_NO_CONTRACT;
-
-        // m_aDynamicEntries is set last, it needs to be checked first
-        if (n >= m_aDynamicEntries)
-        {
-            return NULL;
-        }
-
-        _ASSERTE(m_pDynamicClassTable.Load() != NULL);
-        PTR_DynamicClassInfo pDynamicClassInfo = (PTR_DynamicClassInfo)(m_pDynamicClassTable.Load() + n);
-
-        // INITIALIZED_FLAG is set last, it needs to be checked first
-        if ((pDynamicClassInfo->m_dwFlags & ClassInitFlags::INITIALIZED_FLAG) == 0)
-        {
-            return NULL;
-        }
-
-        PREFIX_ASSUME(pDynamicClassInfo != NULL);
-        return pDynamicClassInfo;
-    }
-
-    // iClassIndex is slightly expensive to compute, so if we already know
-    // it, we can use this helper
-    inline BOOL IsClassInitialized(MethodTable* pMT, DWORD iClassIndex = (DWORD)-1)
-    {
-        WRAPPER_NO_CONTRACT;
-        return (GetClassFlags(pMT, iClassIndex) & ClassInitFlags::INITIALIZED_FLAG) != 0;
-    }
-
-    inline BOOL IsPrecomputedClassInitialized(DWORD classID)
-    {
-        return GetPrecomputedStaticsClassData()[classID] & ClassInitFlags::INITIALIZED_FLAG;
-    }
-
-    inline BOOL IsClassAllocated(MethodTable* pMT, DWORD iClassIndex = (DWORD)-1)
-    {
-        WRAPPER_NO_CONTRACT;
-        return (GetClassFlags(pMT, iClassIndex) & ClassInitFlags::ALLOCATECLASS_FLAG) != 0;
-    }
-
-    BOOL IsClassInitError(MethodTable* pMT, DWORD iClassIndex = (DWORD)-1)
-    {
-        WRAPPER_NO_CONTRACT;
-        return (GetClassFlags(pMT, iClassIndex) & ClassInitFlags::ERROR_FLAG) != 0;
-    }
-
-    void    SetClassInitialized(MethodTable* pMT);
-    void    SetClassInitError(MethodTable* pMT);
-
-    void    EnsureDynamicClassIndex(DWORD dwID);
-
-    void    AllocateDynamicClass(MethodTable *pMT);
-
-    void    PopulateClass(MethodTable *pMT);
-
-#ifdef DACCESS_COMPILE
-    void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
-#endif
-
-    static DWORD OffsetOfDataBlob()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return offsetof(DomainLocalModule, m_pDataBlob);
-    }
-
-    FORCEINLINE MethodTable * GetMethodTableFromClassDomainID(DWORD dwClassDomainID)
-    {
-        DWORD rid = (DWORD)(dwClassDomainID) + 1;
-        TypeHandle th = GetDomainAssembly()->GetModule()->LookupTypeDef(TokenFromRid(rid, mdtTypeDef));
-        _ASSERTE(!th.IsNull());
-        MethodTable * pMT = th.AsMethodTable();
-        PREFIX_ASSUME(pMT != NULL);
-        return pMT;
-    }
-
-private:
-    friend void EmitFastGetSharedStaticBase(CPUSTUBLINKER *psl, CodeLabel *init, bool bCCtorCheck);
-
-    void SetClassFlags(MethodTable* pMT, DWORD dwFlags);
-    DWORD GetClassFlags(MethodTable* pMT, DWORD iClassIndex);
-
-    PTR_DomainAssembly           m_pDomainAssembly;
-    VolatilePtr<DynamicClassInfo, PTR_DynamicClassInfo> m_pDynamicClassTable;   // used for generics and reflection.emit in memory
-    Volatile<SIZE_T>         m_aDynamicEntries;      // number of entries in dynamic table
-    VolatilePtr<UMEntryThunk> m_pADThunkTable;
-    PTR_OBJECTREF            m_pGCStatics;           // Handle to GC statics of the module
-
-    // In addition to storing the ModuleIndex in the Module class, we also
-    // keep a copy of the ModuleIndex in the DomainLocalModule class. This
-    // allows the thread static JIT helpers to quickly convert a pointer to
-    // a DomainLocalModule into a ModuleIndex.
-    ModuleIndex             m_ModuleIndex;
-
-    // Note that the static offset calculation in code:Module::BuildStaticsOffsets takes the offset m_pDataBlob
-    // into consideration for alignment so we do not need any padding to ensure that the start of the data blob is aligned
-
-    BYTE                     m_pDataBlob[0];         // First byte of the statics blob
-
-    // Layout of m_pDataBlob is:
-    //              ClassInit bytes (hold flags for cctor run, cctor error, etc)
-    //              Non GC Statics
-
-public:
-
-    // The Module class need to be able to initialized ModuleIndex,
-    // so for now I will make it a friend..
-    friend class Module;
-
-    FORCEINLINE ModuleIndex GetModuleIndex()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return m_ModuleIndex;
-    }
-
-};  // struct DomainLocalModule
-
-#define OFFSETOF__DomainLocalModule__m_pDataBlob_                    (6 * TARGET_POINTER_SIZE)
-#ifdef FEATURE_64BIT_ALIGNMENT
-#define OFFSETOF__DomainLocalModule__NormalDynamicEntry__m_pDataBlob (TARGET_POINTER_SIZE /* m_pGCStatics */ + TARGET_POINTER_SIZE /* m_padding */)
-#else
-#define OFFSETOF__DomainLocalModule__NormalDynamicEntry__m_pDataBlob TARGET_POINTER_SIZE /* m_pGCStatics */
-#endif
-
 #ifdef _MSC_VER
 #pragma warning(pop)
 #endif
@@ -604,60 +204,6 @@ FORCEINLINE  void PinnedHeapHandleBlockHolder__StaticFree(PinnedHeapHandleBlockH
     pHolder->FreeData();
 };
 
-
-
-
-
-// The large heap handle bucket class is used to contain handles allocated
-// from an array contained in the large heap.
-class ThreadStaticHandleBucket
-{
-public:
-    // Constructor and desctructor.
-    ThreadStaticHandleBucket(ThreadStaticHandleBucket *pNext, DWORD Size, BaseDomain *pDomain);
-    ~ThreadStaticHandleBucket();
-
-    // This returns the next bucket.
-    ThreadStaticHandleBucket *GetNext()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return m_pNext;
-    }
-
-    // Allocate handles from the bucket.
-    OBJECTHANDLE GetHandles();
-
-private:
-    ThreadStaticHandleBucket *m_pNext;
-    int m_ArraySize;
-    OBJECTHANDLE m_hndHandleArray;
-};
-
-
-// The large heap handle table is used to allocate handles that are pointers
-// to objects stored in an array in the large object heap.
-class ThreadStaticHandleTable
-{
-public:
-    // Constructor and desctructor.
-    ThreadStaticHandleTable(BaseDomain *pDomain);
-    ~ThreadStaticHandleTable();
-
-    // Allocate handles from the large heap handle table.
-    OBJECTHANDLE AllocateHandles(DWORD nRequested);
-
-private:
-    // The buckets of object handles.
-    ThreadStaticHandleBucket *m_pHead;
-
-    // We need to know the containing domain so we know where to allocate handles
-    BaseDomain *m_pDomain;
-};
-
-
-
-
 //--------------------------------------------------------------------------------------
 // Base class for domains. It provides an abstract way of finding the first assembly and
 // for creating assemblies in the domain. The system domain only has one assembly, it
@@ -675,11 +221,14 @@ private:
 #define LOW_FREQUENCY_HEAP_RESERVE_SIZE        (3 * GetOsPageSize())
 #define LOW_FREQUENCY_HEAP_COMMIT_SIZE         (1 * GetOsPageSize())
 
-#define HIGH_FREQUENCY_HEAP_RESERVE_SIZE       (10 * GetOsPageSize())
+#define HIGH_FREQUENCY_HEAP_RESERVE_SIZE       (8 * GetOsPageSize())
 #define HIGH_FREQUENCY_HEAP_COMMIT_SIZE        (1 * GetOsPageSize())
 
 #define STUB_HEAP_RESERVE_SIZE                 (3 * GetOsPageSize())
 #define STUB_HEAP_COMMIT_SIZE                  (1 * GetOsPageSize())
+
+#define STATIC_FIELD_HEAP_RESERVE_SIZE         (2 * GetOsPageSize())
+#define STATIC_FIELD_HEAP_COMMIT_SIZE          (1 * GetOsPageSize())
 
 // --------------------------------------------------------------------------------
 // PE File List lock - for creating list locks on PE files
@@ -938,15 +487,6 @@ public:
         return m_pMngStdInterfacesInfo;
     }
 #endif // FEATURE_COMINTEROP
-#ifdef _DEBUG
-    BOOL OwnDomainLocalBlockLock()
-    {
-        WRAPPER_NO_CONTRACT;
-
-        return m_DomainLocalBlockCrst.OwnedByCurrentThread();
-    }
-#endif
-
     //****************************************************************************************
     // Get the class init lock. The method is limited to friends because inappropriate use
     // will cause deadlocks in the system
@@ -980,9 +520,9 @@ public:
 
     // Returns an array of OBJECTREF* that can be used to store domain specific data.
     // Statics and reflection info (Types, MemberInfo,..) are stored this way
-    // If ppLazyAllocate != 0, allocation will only take place if *ppLazyAllocate != 0 (and the allocation
+    // If pStaticsInfo != 0, allocation will only take place if GC statics in the DynamicStaticsInfo are NULL (and the allocation
     // will be properly serialized)
-    OBJECTREF *AllocateObjRefPtrsInLargeTable(int nRequested, OBJECTREF** ppLazyAllocate = NULL);
+    OBJECTREF *AllocateObjRefPtrsInLargeTable(int nRequested, DynamicStaticsInfo* pStaticsInfo = NULL, MethodTable *pMTToFillWithStaticBoxes = NULL);
 
     //****************************************************************************************
     // Handles
@@ -1085,10 +625,10 @@ public:
         return &m_crstLoaderAllocatorReferences;
     }
 
-    CrstExplicitInit* GetStaticBoxInitLock()
+    CrstExplicitInit* GetGenericDictionaryExpansionLock()
     {
         LIMITED_METHOD_CONTRACT;
-        return &m_crstStaticBoxInitLock;
+        return &m_crstGenericDictionaryExpansionLock;
     }
 
     static CrstStatic* GetMethodTableExposedClassObjectLock()
@@ -1112,10 +652,9 @@ protected:
     PEFileListLock   m_FileLoadLock;            // Protects the list of assemblies in the domain
     CrstExplicitInit m_DomainCrst;              // General Protection for the Domain
     CrstExplicitInit m_DomainCacheCrst;         // Protects the Assembly and Unmanaged caches
-    CrstExplicitInit m_DomainLocalBlockCrst;
     // Used to protect the reference lists in the collectible loader allocators attached to this appdomain
     CrstExplicitInit m_crstLoaderAllocatorReferences;
-    CrstExplicitInit m_crstStaticBoxInitLock;
+    CrstExplicitInit m_crstGenericDictionaryExpansionLock;
 
     //#AssemblyListLock
     // Used to protect the assembly list. Taken also by GC or debugger thread, therefore we have to avoid
@@ -1184,17 +723,6 @@ public:
         }
     };
 
-    class DomainLocalBlockLockHolder : public CrstHolder
-    {
-    public:
-        DomainLocalBlockLockHolder(BaseDomain *pD)
-            : CrstHolder(&pD->m_DomainLocalBlockCrst)
-        {
-            WRAPPER_NO_CONTRACT;
-        }
-    };
-    friend class DomainLocalBlockLockHolder;
-
     class LoadLockHolder :  public PEFileListLockHolder
     {
     public:
@@ -1218,21 +746,8 @@ public:
 private:
     TypeIDMap m_typeIDMap;
 
-    // MethodTable to `typeIndex` map. `typeIndex` is embedded in the code during codegen.
-    // During execution corresponding thread static data blocks are stored in `t_NonGCThreadStaticBlocks`
-    // and `t_GCThreadStaticBlocks` array at the `typeIndex`.
-    TypeIDMap m_NonGCThreadStaticBlockTypeIDMap;
-    TypeIDMap m_GCThreadStaticBlockTypeIDMap;
-
 public:
 
-    void InitThreadStaticBlockTypeMap();
-
-    UINT32 GetNonGCThreadStaticTypeIndex(PTR_MethodTable pMT);
-    UINT32 GetGCThreadStaticTypeIndex(PTR_MethodTable pMT);
-
-    PTR_MethodTable LookupNonGCThreadStaticBlockType(UINT32 id);
-    PTR_MethodTable LookupGCThreadStaticBlockType(UINT32 id);
 
     UINT32 GetTypeID(PTR_MethodTable pMT);
     UINT32 LookupTypeID(PTR_MethodTable pMT);
@@ -1921,11 +1436,11 @@ public:
 #endif // DEBUGGING_SUPPORTED
 
 #ifndef DACCESS_COMPILE
-    OBJECTREF* AllocateStaticFieldObjRefPtrs(int nRequested, OBJECTREF** ppLazyAllocate = NULL)
+    OBJECTREF* AllocateStaticFieldObjRefPtrs(int nRequested)
     {
         WRAPPER_NO_CONTRACT;
 
-        return AllocateObjRefPtrsInLargeTable(nRequested, ppLazyAllocate);
+        return AllocateObjRefPtrsInLargeTable(nRequested);
     }
 #endif // DACCESS_COMPILE
 
@@ -2160,10 +1675,10 @@ public:
     }
 #endif
 
-private:
     // The one and only AppDomain
     SPTR_DECL(AppDomain, m_pTheAppDomain);
 
+private:
     SString         m_friendlyName;
     PTR_Assembly    m_pRootAssembly;
 
