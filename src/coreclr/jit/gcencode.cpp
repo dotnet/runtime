@@ -4011,11 +4011,12 @@ void GCInfo::gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder, unsigned methodSiz
 //
 // Encoder should be either GcInfoEncoder or GcInfoEncoderWithLogging
 //
-struct InterruptibleRangeReporter
+class InterruptibleRangeReporter
 {
     unsigned m_uninterruptibleEnd;
     Encoder* m_gcInfoEncoder;
 
+public:
     InterruptibleRangeReporter(unsigned prologSize, Encoder* gcInfo)
         : m_uninterruptibleEnd(prologSize)
         , m_gcInfoEncoder(gcInfo)
@@ -4051,6 +4052,11 @@ struct InterruptibleRangeReporter
         }
         m_uninterruptibleEnd = igOffs + igSize;
         return true;
+    }
+
+    unsigned UninterruptibleEnd()
+    {
+        return m_uninterruptibleEnd;
     }
 };
 
@@ -4406,7 +4412,7 @@ void GCInfo::gcMakeRegPtrTable(
 
             InterruptibleRangeReporter reporter(prologSize, gcInfoEncoderWithLog);
             compiler->GetEmitter()->emitGenNoGCLst(reporter);
-            unsigned uninterruptibleEnd = reporter.m_uninterruptibleEnd;
+            unsigned uninterruptibleEnd = reporter.UninterruptibleEnd();
 
             // Report any remainder
             if (uninterruptibleEnd < codeSize)
