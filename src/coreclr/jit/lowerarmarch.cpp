@@ -1303,17 +1303,32 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
         {
             GenTree* user = use.User();
             // Wrap the intrinsic in ConditionalSelect only if it is not already inside another ConditionalSelect
-            if (!user->OperIsHWIntrinsic() || (user->AsHWIntrinsic()->GetHWIntrinsicId() != NI_Sve_ConditionalSelect))
+            // If it is inside ConditionalSelect, then make sure that it is the `mask` operation of it.
+            if (!user->OperIsHWIntrinsic(NI_Sve_ConditionalSelect) ||
+                (HWIntrinsicInfo::ReturnsPerElementMask(node->GetHWIntrinsicId())))
             {
                 CorInfoType simdBaseJitType = node->GetSimdBaseJitType();
                 unsigned    simdSize        = node->GetSimdSize();
                 var_types   simdType        = Compiler::getSIMDTypeForSize(simdSize);
                 GenTree*    trueMask        = comp->gtNewSimdAllTrueMaskNode(simdBaseJitType, simdSize);
-                GenTree*    trueVal         = node;
                 GenTree*    falseVal        = comp->gtNewZeroConNode(simdType);
+                GenTree*    trueVal         = node;
+                var_types   nodeType        = simdType;
+
+                if (HWIntrinsicInfo::ReturnsPerElementMask(node->GetHWIntrinsicId()))
+                {
+                    nodeType = TYP_MASK;
+
+                    GenTree* trueMaskForOp1 = comp->gtNewSimdAllTrueMaskNode(simdBaseJitType, simdSize);
+                    BlockRange().InsertBefore(node, trueMaskForOp1);
+                    BlockRange().InsertBefore(node, falseVal);
+
+                    falseVal = comp->gtNewSimdHWIntrinsicNode(TYP_MASK, trueMaskForOp1, falseVal,
+                                                              NI_Sve_ConvertVectorToMask, simdBaseJitType, simdSize);
+                }
 
                 GenTreeHWIntrinsic* condSelNode =
-                    comp->gtNewSimdHWIntrinsicNode(simdType, trueMask, trueVal, falseVal, NI_Sve_ConditionalSelect,
+                    comp->gtNewSimdHWIntrinsicNode(nodeType, trueMask, trueVal, falseVal, NI_Sve_ConditionalSelect,
                                                    simdBaseJitType, simdSize);
 
                 BlockRange().InsertBefore(node, trueMask);
@@ -3359,6 +3374,32 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
 
                 // Handle op3
+                if (op1->IsMaskAllBitsSet())
+                {
+                    bool isZeroValue = false;
+                    if (op3->IsVectorZero())
+                    {
+                        isZeroValue = true;
+                    }
+                    else if (op3->OperIsHWIntrinsic(NI_Sve_ConvertVectorToMask))
+                    {
+                        GenTreeHWIntrinsic* gtVectorToMask = op3->AsHWIntrinsic();
+
+                        if (gtVectorToMask->Op(1)->IsMaskAllBitsSet() && gtVectorToMask->Op(2)->IsVectorZero())
+                        {
+                            isZeroValue = true;
+                        }
+                    }
+
+                    if (isZeroValue)
+                    {
+                        // When we are merging with zero, we can specialize
+                        // and avoid instantiating the vector constant.
+                        // Do this only if op1 was AllTrueMask
+                        MakeSrcContained(node, op3);
+                    }
+                }
+
                 if (op3->IsVectorZero() && op1->IsMaskAllBitsSet())
                 {
                     // When we are merging with zero, we can specialize
@@ -3402,6 +3443,22 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 {
                     MakeSrcContained(node, intrin.op2);
                     MakeSrcContained(node, intrin.op3);
+                }
+                break;
+            case NI_Sve_ConvertVectorToMask:
+                assert(varTypeIsMask(intrin.op1));
+                assert(varTypeIsSIMD(intrin.op2));
+                if (intrin.op1->IsMaskAllBitsSet() && intrin.op2->IsVectorZero())
+                {
+                    MakeSrcContained(node, intrin.op2);
+                }
+                break;
+
+            case NI_Sve_ConvertMaskToVector:
+                assert(varTypeIsMask(intrin.op1));
+                if (intrin.op1->IsVectorZero())
+                {
+                    MakeSrcContained(node, intrin.op1);
                 }
                 break;
 

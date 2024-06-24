@@ -4202,6 +4202,15 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<float> Abs(System.Numerics.Vector<float> value) { throw null; }
         public static System.Numerics.Vector<double> Abs(System.Numerics.Vector<double> value) { throw null; }
 
+        public static System.Numerics.Vector<float> AbsoluteCompareGreaterThan(System.Numerics.Vector<float> left, System.Numerics.Vector<float> right) { throw null; }
+        public static System.Numerics.Vector<double> AbsoluteCompareGreaterThan(System.Numerics.Vector<double> left, System.Numerics.Vector<double> right) { throw null; }
+        public static System.Numerics.Vector<float> AbsoluteCompareGreaterThanOrEqual(System.Numerics.Vector<float> left, System.Numerics.Vector<float> right) { throw null; }
+        public static System.Numerics.Vector<double> AbsoluteCompareGreaterThanOrEqual(System.Numerics.Vector<double> left, System.Numerics.Vector<double> right) { throw null; }
+        public static System.Numerics.Vector<float> AbsoluteCompareLessThan(System.Numerics.Vector<float> left, System.Numerics.Vector<float> right) { throw null; }
+        public static System.Numerics.Vector<double> AbsoluteCompareLessThan(System.Numerics.Vector<double> left, System.Numerics.Vector<double> right) { throw null; }
+        public static System.Numerics.Vector<float> AbsoluteCompareLessThanOrEqual(System.Numerics.Vector<float> left, System.Numerics.Vector<float> right) { throw null; }
+        public static System.Numerics.Vector<double> AbsoluteCompareLessThanOrEqual(System.Numerics.Vector<double> left, System.Numerics.Vector<double> right) { throw null; }
+
         public static System.Numerics.Vector<byte> AbsoluteDifference(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
         public static System.Numerics.Vector<double> AbsoluteDifference(System.Numerics.Vector<double> left, System.Numerics.Vector<double> right) { throw null; }
         public static System.Numerics.Vector<short> AbsoluteDifference(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
