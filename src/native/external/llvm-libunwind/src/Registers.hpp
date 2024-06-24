@@ -5268,7 +5268,8 @@ public:
 
   bool validRegister(int num) const;
   uint64_t getRegister(int num) const;
-  void setRegister(int num, uint64_t value);
+  void setRegister(int num, uint64_t value, uint64_t location);
+  uint64_t  getRegisterLocation(int num) const { return 0; }
   bool validFloatRegister(int num) const;
   double getFloatRegister(int num) const;
   void setFloatRegister(int num, double value);
@@ -5283,9 +5284,9 @@ public:
   static int getArch() { return REGISTERS_LOONGARCH; }
 
   uint64_t getSP() const { return _registers.__r[3]; }
-  void setSP(uint64_t value) { _registers.__r[3] = value; }
+  void setSP(uint64_t value, uint64_t location) { _registers.__r[3] = value; }
   uint64_t getIP() const { return _registers.__pc; }
-  void setIP(uint64_t value) { _registers.__pc = value; }
+  void setIP(uint64_t value, uint64_t location) { _registers.__pc = value; }
 
 private:
   struct loongarch_thread_state_t {
@@ -5337,7 +5338,7 @@ inline uint64_t Registers_loongarch::getRegister(int regNum) const {
   _LIBUNWIND_ABORT("unsupported loongarch register");
 }
 
-inline void Registers_loongarch::setRegister(int regNum, uint64_t value) {
+inline void Registers_loongarch::setRegister(int regNum, uint64_t value, uint64_t location) {
   if (regNum >= UNW_LOONGARCH_R0 && regNum <= UNW_LOONGARCH_R31)
     _registers.__r[regNum - UNW_LOONGARCH_R0] = value;
   else if (regNum == UNW_REG_IP)

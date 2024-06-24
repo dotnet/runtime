@@ -35,6 +35,12 @@
 #define ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE
 #define ENREGISTERED_PARAMTYPE_MAXSIZE
 #elif TARGET_WASM
+#elif TARGET_LOONGARCH64
+#define CALLDESCR_ARGREGS                          // CallDescrWorker has ArgumentRegister parameter
+#define CALLDESCR_FPARGREGS                        // CallDescrWorker has FloatArgumentRegisters parameter
+#define ENREGISTERED_RETURNTYPE_MAXSIZE
+#define ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE
+#define ENREGISTERED_PARAMTYPE_MAXSIZE
 #else
 #error Unknown architecture!
 #endif
@@ -300,6 +306,60 @@ namespace Internal.Runtime
         public const int STACK_ELEM_SIZE = 4;
         public static int StackElemSize(int size) { return (((size) + STACK_ELEM_SIZE - 1) & ~(STACK_ELEM_SIZE - 1)); }
     }
+#elif TARGET_LOONGARCH64
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct ReturnBlock
+    {
+        private IntPtr returnValue;
+        private IntPtr returnValue2;
+        private IntPtr returnValue3;
+        private IntPtr returnValue4;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct ArgumentRegisters
+    {
+        private IntPtr r4;
+        private IntPtr r5;
+        private IntPtr r6;
+        private IntPtr r7;
+        private IntPtr r8;
+        private IntPtr r9;
+        private IntPtr r10;
+        private IntPtr r11;
+        public static unsafe int GetOffsetOfr11()
+        {
+            return sizeof(IntPtr) * 7;
+        }
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct FloatArgumentRegisters
+    {
+        private double f0;
+        private double f1;
+        private double f2;
+        private double f3;
+        private double f4;
+        private double f5;
+        private double f6;
+        private double f7;
+    }
+
+    internal struct ArchitectureConstants
+    {
+        // To avoid corner case bugs, limit maximum size of the arguments with sufficient margin
+        public const int MAX_ARG_SIZE = 0xFFFFFF;
+
+        public const int NUM_ARGUMENT_REGISTERS = 8;
+        public const int ARGUMENTREGISTERS_SIZE = NUM_ARGUMENT_REGISTERS * 8;
+        public const int ENREGISTERED_RETURNTYPE_MAXSIZE = 32;                  // bytes (four FP registers: d0,d1,d2 and d3)
+        public const int ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE = 16;          // bytes (two int registers: x0 and x1)
+        public const int ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE_PRIMITIVE = 8;
+        public const int ENREGISTERED_PARAMTYPE_MAXSIZE = 16;                   // bytes (max value type size that can be passed by value)
+        public const int STACK_ELEM_SIZE = 8;
+        public static int StackElemSize(int size) { return (((size) + STACK_ELEM_SIZE - 1) & ~(STACK_ELEM_SIZE - 1)); }
+    }
 #endif
 
     //
@@ -392,6 +452,20 @@ namespace Internal.Runtime
         {
             return sizeof(ReturnBlock);
         }
+#elif TARGET_LOONGARCH64
+        public ReturnBlock m_returnBlock;
+        public static unsafe int GetOffsetOfReturnValuesBlock()
+        {
+            return 0;
+        }
+
+        public ArgumentRegisters m_argumentRegisters;
+        public static unsafe int GetOffsetOfArgumentRegisters()
+        {
+            return sizeof(ReturnBlock);
+        }
+
+        public IntPtr m_alignmentPad;
 #else
 #error Portability problem
 #endif

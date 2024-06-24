@@ -692,6 +692,10 @@ int CompactUnwinder_arm64<A, R>::stepWithCompactEncodingFrame(
 }
 #endif // _LIBUNWIND_TARGET_AARCH64
 
+#if defined(_LIBUNWIND_TARGET_LOONGARCH64)
+    // TODO-LOONGARCH64: support libunwind on LoongArch64.(nativeaot)
+#endif // _LIBUNWIND_TARGET_LOONGARCH64
+
 
 } // namespace libunwind
 

@@ -48,30 +48,37 @@ namespace ILCompiler.DependencyAnalysis
                 case ReadyToRunHelperId.GetThreadStaticBase:
                     {
                         MetadataType target = (MetadataType)Target;
-                        encoder.EmitMOV(encoder.TargetRegister.Arg2, factory.TypeThreadStaticIndex(target));
-
-                        // First arg: address of the TypeManager slot that provides the helper with
-                        // information about module index and the type manager instance (which is used
-                        // for initialization on first access).
-                        encoder.EmitLD(encoder.TargetRegister.Arg0, encoder.TargetRegister.Arg2, 0);
-
-                        // Second arg: index of the type in the ThreadStatic section of the modules
-                        encoder.EmitLD(encoder.TargetRegister.Arg1, encoder.TargetRegister.Arg2, factory.Target.PointerSize);
-
-                        if (!factory.PreinitializationManager.HasLazyStaticConstructor(target))
+                        if (factory.TypeThreadStaticIndex(target) is TypeThreadStaticIndexNode ti && ti.IsInlined)
                         {
-                            encoder.EmitJMP(factory.HelperEntrypoint(HelperEntrypoint.GetThreadStaticBaseForType));
+                            throw new NotImplementedException();
                         }
                         else
                         {
-                            encoder.EmitMOV(encoder.TargetRegister.Arg2, factory.TypeNonGCStaticsSymbol(target));
-                            encoder.EmitADD(encoder.TargetRegister.Arg2, encoder.TargetRegister.Arg2, -NonGCStaticsNode.GetClassConstructorContextSize(factory.Target));
+                            encoder.EmitMOV(encoder.TargetRegister.Arg2, factory.TypeThreadStaticIndex(target));
 
-                            encoder.EmitLD(encoder.TargetRegister.Arg3, encoder.TargetRegister.Arg2, 0);
-                            encoder.EmitXOR(encoder.TargetRegister.IntraProcedureCallScratch1, encoder.TargetRegister.Arg3, 0);
-                            encoder.EmitJE(encoder.TargetRegister.IntraProcedureCallScratch1, factory.HelperEntrypoint(HelperEntrypoint.GetThreadStaticBaseForType));
+                            // First arg: address of the TypeManager slot that provides the helper with
+                            // information about module index and the type manager instance (which is used
+                            // for initialization on first access).
+                            encoder.EmitLD(encoder.TargetRegister.Arg0, encoder.TargetRegister.Arg2, 0);
 
-                            encoder.EmitJMP(factory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnThreadStaticBase));
+                            // Second arg: index of the type in the ThreadStatic section of the modules
+                            encoder.EmitLD(encoder.TargetRegister.Arg1, encoder.TargetRegister.Arg2, factory.Target.PointerSize);
+
+                            if (!factory.PreinitializationManager.HasLazyStaticConstructor(target))
+                            {
+                                encoder.EmitJMP(factory.HelperEntrypoint(HelperEntrypoint.GetThreadStaticBaseForType));
+                            }
+                            else
+                            {
+                                encoder.EmitMOV(encoder.TargetRegister.Arg2, factory.TypeNonGCStaticsSymbol(target));
+                                encoder.EmitADD(encoder.TargetRegister.Arg2, encoder.TargetRegister.Arg2, -NonGCStaticsNode.GetClassConstructorContextSize(factory.Target));
+
+                                encoder.EmitLD(encoder.TargetRegister.Arg3, encoder.TargetRegister.Arg2, 0);
+                                encoder.EmitXOR(encoder.TargetRegister.IntraProcedureCallScratch1, encoder.TargetRegister.Arg3, 0);
+                                encoder.EmitJE(encoder.TargetRegister.IntraProcedureCallScratch1, factory.HelperEntrypoint(HelperEntrypoint.GetThreadStaticBaseForType));
+
+                                encoder.EmitJMP(factory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnThreadStaticBase));
+                            }
                         }
                     }
                     break;

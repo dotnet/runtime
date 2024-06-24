@@ -105,6 +105,12 @@ namespace ILCompiler.ObjectWriter
                     // TODO: Floating point
                     return CV_REG_NONE;
 
+                case TargetArchitecture.LoongArch64:
+                    if (regNum <= 32)
+                        return (CodeViewRegister)(regNum + (uint)CV_LOONGARCH64_R0);
+                    // TODO: Floating point
+                    return CV_REG_NONE;
+
                 default:
                     return CV_REG_NONE;
             }

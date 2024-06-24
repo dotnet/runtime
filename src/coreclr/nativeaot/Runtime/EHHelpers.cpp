@@ -187,6 +187,22 @@ FCIMPL3(void, RhpCopyContextFromExInfo, void * pOSContext, int32_t cbOSContext, 
     pContext->Sp = pPalContext->SP;
     pContext->Lr = pPalContext->LR;
     pContext->Pc = pPalContext->IP;
+#elif defined(HOST_LOONGARCH64)
+    pContext->R4 = pPalContext->R4;
+    pContext->R5 = pPalContext->R5;
+    pContext->R23 = pPalContext->R23;
+    pContext->R24 = pPalContext->R24;
+    pContext->R25 = pPalContext->R25;
+    pContext->R26 = pPalContext->R26;
+    pContext->R27 = pPalContext->R27;
+    pContext->R28 = pPalContext->R28;
+    pContext->R29 = pPalContext->R29;
+    pContext->R30 = pPalContext->R30;
+    pContext->R31 = pPalContext->R31;
+    pContext->Fp = pPalContext->FP;
+    pContext->Sp = pPalContext->SP;
+    pContext->Ra = pPalContext->RA;
+    pContext->Pc = pPalContext->IP;
 #elif defined(HOST_WASM)
     // No registers, no work to do yet
 #else
@@ -195,7 +211,7 @@ FCIMPL3(void, RhpCopyContextFromExInfo, void * pOSContext, int32_t cbOSContext, 
 }
 FCIMPLEND
 
-#if defined(HOST_AMD64) || defined(HOST_ARM) || defined(HOST_X86) || defined(HOST_ARM64)
+#if defined(HOST_AMD64) || defined(HOST_ARM) || defined(HOST_X86) || defined(HOST_ARM64) || defined(HOST_LOONGARCH64)
 struct DISPATCHER_CONTEXT
 {
     uintptr_t  ControlPc;
@@ -266,7 +282,7 @@ EXTERN_C int32_t RhpPInvokeExceptionGuard()
 }
 #endif
 
-#if defined(HOST_AMD64) || defined(HOST_ARM) || defined(HOST_X86) || defined(HOST_ARM64) || defined(HOST_WASM)
+#if defined(HOST_AMD64) || defined(HOST_ARM) || defined(HOST_X86) || defined(HOST_ARM64) || defined(HOST_WASM) || defined(HOST_LOONGARCH64)
 FCDECL2(void, RhpThrowHwEx, int exceptionCode, TADDR faultingIP);
 #else
 FCIMPL0(void, RhpThrowHwEx)
@@ -328,7 +344,7 @@ EXTERN_C CODE_LOCATION RhpCheckedAssignRefEBPAVLocation;
 #endif
 EXTERN_C CODE_LOCATION RhpByRefAssignRefAVLocation1;
 
-#if !defined(HOST_ARM64)
+#if !defined(HOST_ARM64) && !defined(HOST_LOONGARCH64)
 EXTERN_C CODE_LOCATION RhpByRefAssignRefAVLocation2;
 #endif
 
@@ -361,7 +377,7 @@ static bool InWriteBarrierHelper(uintptr_t faultingIP)
         (uintptr_t)&RhpCheckedAssignRefEBPAVLocation,
 #endif
         (uintptr_t)&RhpByRefAssignRefAVLocation1,
-#if !defined(HOST_ARM64)
+#if !defined(HOST_ARM64) && !defined(HOST_LOONGARCH64)
         (uintptr_t)&RhpByRefAssignRefAVLocation2,
 #endif
     };
@@ -443,6 +459,8 @@ static uintptr_t UnwindSimpleHelperToCaller(
     pContext->SetSp(sp+sizeof(uintptr_t)); // pop the stack
 #elif defined(HOST_ARM) || defined(HOST_ARM64)
     uintptr_t adjustedFaultingIP = pContext->GetLr();
+#elif defined(HOST_LOONGARCH64)
+    uintptr_t adjustedFaultingIP = pContext->GetRa();
 #else
     uintptr_t adjustedFaultingIP = 0; // initializing to make the compiler happy
     PORTABILITY_ASSERT("UnwindSimpleHelperToCaller");
