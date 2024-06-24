@@ -37,18 +37,22 @@ internal partial struct Metadata_1
 
     internal struct MethodTableFlags
     {
-        public uint DwFlags { get; init; }
-        public uint DwFlags2 { get; init; }
+
+
+        public uint MTFlags { get; init; }
+        public uint MTFlags2 { get; init; }
         public uint BaseSize { get; init; }
 
-        private WFLAGS_HIGH FlagsHigh => (WFLAGS_HIGH)DwFlags;
-        private WFLAGS_LOW FlagsLow => (WFLAGS_LOW)DwFlags;
-        public int GetTypeDefRid() => (int)(DwFlags2 >> Constants.MethodTableDwFlags2TypeDefRidShift);
+        private const int MTFlags2TypeDefRidShift = 8;
+        private const int MTFlagsComponentSizeShift = 16;
+        private WFLAGS_HIGH FlagsHigh => (WFLAGS_HIGH)MTFlags;
+        private WFLAGS_LOW FlagsLow => (WFLAGS_LOW)MTFlags;
+        public int GetTypeDefRid() => (int)(MTFlags2 >> MTFlags2TypeDefRidShift);
 
         public WFLAGS_LOW GetFlag(WFLAGS_LOW mask) => throw new NotImplementedException("TODO");
         public WFLAGS_HIGH GetFlag(WFLAGS_HIGH mask) => FlagsHigh & mask;
 
-        public WFLAGS2_ENUM GetFlag(WFLAGS2_ENUM mask) => (WFLAGS2_ENUM)DwFlags2 & mask;
+        public WFLAGS2_ENUM GetFlag(WFLAGS2_ENUM mask) => (WFLAGS2_ENUM)MTFlags2 & mask;
         public bool IsInterface => GetFlag(WFLAGS_HIGH.Category_Mask) == WFLAGS_HIGH.Category_Interface;
         public bool IsString => HasComponentSize && !IsArray && RawGetComponentSize() == 2;
 
@@ -57,7 +61,7 @@ internal partial struct Metadata_1
         public bool IsArray => GetFlag(WFLAGS_HIGH.Category_Array_Mask) == WFLAGS_HIGH.Category_Array;
 
         public bool IsStringOrArray => HasComponentSize;
-        public ushort RawGetComponentSize() => (ushort)(DwFlags >> 16);
+        public ushort RawGetComponentSize() => (ushort)(MTFlags >> MTFlagsComponentSizeShift);
 
         private bool TestFlagWithMask(WFLAGS_LOW mask, WFLAGS_LOW flag)
         {
@@ -73,7 +77,7 @@ internal partial struct Metadata_1
 
         private bool TestFlagWithMask(WFLAGS2_ENUM mask, WFLAGS2_ENUM flag)
         {
-            return ((WFLAGS2_ENUM)DwFlags2 & mask) == flag;
+            return ((WFLAGS2_ENUM)MTFlags2 & mask) == flag;
         }
 
         public bool HasInstantiation => !TestFlagWithMask(WFLAGS_LOW.GenericsMask, WFLAGS_LOW.GenericsMask_NonGeneric);

@@ -3864,9 +3864,9 @@ public:
 
 template<> struct cdac_offsets<MethodTable>
 {
-    static constexpr size_t DwFlags = offsetof(MethodTable, m_dwFlags);
+    static constexpr size_t MTFlags = offsetof(MethodTable, m_dwFlags);
     static constexpr size_t BaseSize = offsetof(MethodTable, m_BaseSize);
-    static constexpr size_t DwFlags2 = offsetof(MethodTable, m_dwFlags2);
+    static constexpr size_t MTFlags2 = offsetof(MethodTable, m_dwFlags2);
     static constexpr size_t EEClassOrCanonMT = offsetof(MethodTable, m_pEEClass);
     static constexpr size_t Module = offsetof(MethodTable, m_pModule);
     static constexpr size_t AuxiliaryData = offsetof(MethodTable, m_pAuxiliaryData);

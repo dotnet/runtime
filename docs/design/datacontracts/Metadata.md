@@ -17,34 +17,34 @@ struct MethodTableHandle
 
 ``` csharp
     #region MethodTable inspection APIs
-    public virtual MethodTableHandle GetMethodTableHandle(TargetPointer targetPointer) => throw new NotImplementedException();
+    public virtual MethodTableHandle GetMethodTableHandle(TargetPointer targetPointer);
 
-    public virtual TargetPointer GetModule(MethodTableHandle methodTable) => throw new NotImplementedException();
+    public virtual TargetPointer GetModule(MethodTableHandle methodTable);
     // A canonical method table is either the MethodTable itself, or in the case of a generic instantiation, it is the
     // MethodTable of the prototypical instance.
-    public virtual TargetPointer GetCanonicalMethodTable(MethodTableHandle methodTable) => throw new NotImplementedException();
-    public virtual TargetPointer GetParentMethodTable(MethodTableHandle methodTable) => throw new NotImplementedException();
+    public virtual TargetPointer GetCanonicalMethodTable(MethodTableHandle methodTable);
+    public virtual TargetPointer GetParentMethodTable(MethodTableHandle methodTable);
 
-    public virtual uint GetBaseSize(MethodTableHandle methodTable) => throw new NotImplementedException();
+    public virtual uint GetBaseSize(MethodTableHandle methodTable);
     // The component size is only available for strings and arrays.  It is the size of the element type of the array, or the size of an ECMA 335 character (2 bytes)
-    public virtual uint GetComponentSize(MethodTableHandle methodTable) => throw new NotImplementedException();
+    public virtual uint GetComponentSize(MethodTableHandle methodTable);
 
     // True if the MethodTable is the sentinel value associated with unallocated space in the managed heap
-    public virtual bool IsFreeObjectMethodTable(MethodTableHandle methodTable) => throw new NotImplementedException();
-    public virtual bool IsString(MethodTableHandle methodTable) => throw new NotImplementedException();
+    public virtual bool IsFreeObjectMethodTable(MethodTableHandle methodTable);
+    public virtual bool IsString(MethodTableHandle methodTable);
     // True if the MethodTable represents a type that contains managed references
-    public virtual bool ContainsGCPointers(MethodTableHandle methodTable) => throw new NotImplementedException();
-    public virtual bool IsDynamicStatics(MethodTableHandle methodTable) => throw new NotImplementedException();
-    public virtual ushort GetNumMethods(MethodTableHandle methodTable) => throw new NotImplementedException();
-    public virtual ushort GetNumInterfaces(MethodTableHandle methodTable) => throw new NotImplementedException();
-    public virtual ushort GetNumVirtuals(MethodTableHandle methodTable) => throw new NotImplementedException();
-    public virtual ushort GetNumVtableSlots(MethodTableHandle methodTable) => throw new NotImplementedException();
+    public virtual bool ContainsGCPointers(MethodTableHandle methodTable);
+    public virtual bool IsDynamicStatics(MethodTableHandle methodTable);
+    public virtual ushort GetNumMethods(MethodTableHandle methodTable);
+    public virtual ushort GetNumInterfaces(MethodTableHandle methodTable);
+    public virtual ushort GetNumVirtuals(MethodTableHandle methodTable);
+    public virtual ushort GetNumVtableSlots(MethodTableHandle methodTable);
 
     // Returns an ECMA-335 TypeDef table token for this type, or for its generic type definition if it is a generic instantiation
-    public virtual uint GetTypeDefToken(MethodTableHandle methodTable) => throw new NotImplementedException();
+    public virtual uint GetTypeDefToken(MethodTableHandle methodTable);
     // Returns the ECMA 335 TypeDef table Flags value (a bitmask of TypeAttributes) for this type,
     // or for its generic type definition if it is a generic instantiation
-    public virtual uint GetTypeDefTypeAttributes(MethodTableHandle methodTable) => throw new NotImplementedException();
+    public virtual uint GetTypeDefTypeAttributes(MethodTableHandle methodTable);
     #endregion MethodTable inspection APIs
 ```
 
@@ -96,7 +96,7 @@ internal partial struct Metadata_1
         public bool IsArray => GetFlag(WFLAGS_HIGH.Category_Array_Mask) == WFLAGS_HIGH.Category_Array;
 
         public bool IsStringOrArray => HasComponentSize;
-        public ushort RawGetComponentSize() => (ushort)(DwFlags >> 16);
+        public ushort RawGetComponentSize() => (ushort)(MTFlags >> 16);
 
         private bool TestFlagWithMask(WFLAGS_LOW mask, WFLAGS_LOW flag)
         {
@@ -139,8 +139,8 @@ internal struct MethodTable_1
     {
         Flags = new Metadata_1.MethodTableFlags
         {
-            DwFlags = data.DwFlags,
-            DwFlags2 = data.DwFlags2,
+            MTFlags = data.MTFlags,
+            MTFlags2 = data.MTFlags2,
             BaseSize = data.BaseSize,
         };
         NumInterfaces = data.NumInterfaces;

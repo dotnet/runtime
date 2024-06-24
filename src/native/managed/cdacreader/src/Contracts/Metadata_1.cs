@@ -37,8 +37,8 @@ internal struct UntrustedMethodTable_1
             // note: may throw if the method table Address is corrupted
             Metadata_1.MethodTableFlags flags = new Metadata_1.MethodTableFlags
             {
-                DwFlags = _target.Read<uint>(Address + (ulong)_type.Fields[nameof(Metadata_1.MethodTableFlags.DwFlags)].Offset),
-                DwFlags2 = _target.Read<uint>(Address + (ulong)_type.Fields[nameof(Metadata_1.MethodTableFlags.DwFlags2)].Offset),
+                MTFlags = _target.Read<uint>(Address + (ulong)_type.Fields[nameof(Metadata_1.MethodTableFlags.MTFlags)].Offset),
+                MTFlags2 = _target.Read<uint>(Address + (ulong)_type.Fields[nameof(Metadata_1.MethodTableFlags.MTFlags2)].Offset),
                 BaseSize = _target.Read<uint>(Address + (ulong)_type.Fields[nameof(Metadata_1.MethodTableFlags.BaseSize)].Offset),
             };
             _methodTableFlags = flags;
@@ -96,8 +96,8 @@ internal struct MethodTable_1
     {
         Flags = new Metadata_1.MethodTableFlags
         {
-            DwFlags = data.DwFlags,
-            DwFlags2 = data.DwFlags2,
+            MTFlags = data.MTFlags,
+            MTFlags2 = data.MTFlags2,
             BaseSize = data.BaseSize,
         };
         NumInterfaces = data.NumInterfaces;
@@ -115,11 +115,6 @@ internal partial struct Metadata_1 : IMetadata
 
     // FIXME: we mutate this dictionary - copies of the Metadata_1 struct share this instance
     private readonly Dictionary<TargetPointer, MethodTable_1> _methodTables = new();
-
-    internal static class Constants
-    {
-        internal const int MethodTableDwFlags2TypeDefRidShift = 8;
-    }
 
     [Flags]
     internal enum EEClassOrCanonMTBits
