@@ -1622,14 +1622,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                     predMask = RBM_LOWMASK.GetPredicateRegSet();
                 }
 
-                if (tgtPrefOp2)
-                {
-                    srcCount += BuildDelayFreeUses(intrin.op1, intrin.op2, predMask);
-                }
-                else
-                {
-                    srcCount += BuildOperandUses(intrin.op1, predMask);
-                }
+                srcCount += BuildOperandUses(intrin.op1, predMask);
             }
         }
         else if (intrinsicTree->OperIsMemoryLoadOrStore())
@@ -2021,14 +2014,13 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         {
             SingleTypeRegSet candidates = lowVectorOperandNum == 3 ? lowVectorCandidates : RBM_NONE;
 
-            if (tgtPrefOp2)
+            if (isRMW)
             {
-                srcCount += BuildDelayFreeUses(intrin.op3, intrin.op2, candidates);
+                srcCount +=  BuildDelayFreeUses(intrin.op3, (tgtPrefOp2 ? intrin.op2 : intrin.op1), candidates);
             }
             else
             {
-                srcCount += isRMW ? BuildDelayFreeUses(intrin.op3, intrin.op1, candidates)
-                                  : BuildOperandUses(intrin.op3, candidates);
+                srcCount += BuildOperandUses(intrin.op3, candidates);
             }
 
             if (intrin.op4 != nullptr)
