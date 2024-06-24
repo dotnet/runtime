@@ -1296,7 +1296,8 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             break;
     }
 
-    if (HWIntrinsicInfo::IsEmbeddedMaskedOperation(intrinsicId))
+    if (HWIntrinsicInfo::IsEmbeddedMaskedOperation(intrinsicId) ||
+        HWIntrinsicInfo::IsEmbeddedMaskedOperationForScalarResult(intrinsicId))
     {
         LIR::Use use;
         if (BlockRange().TryGetUse(node, &use))
@@ -1310,41 +1311,33 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                 var_types   simdType        = Compiler::getSIMDTypeForSize(simdSize);
                 GenTree*    trueMask        = comp->gtNewSimdAllTrueMaskNode(simdBaseJitType, simdSize);
 
-                switch (intrinsicId)
+
+                if (HWIntrinsicInfo::IsEmbeddedMaskedOperationForScalarResult(intrinsicId))
                 {
-                    // These are special cases where we need to handle the embedded mask differently
-                    // because ConditionalSelect expects a vector, but these APIs return a scalar.
-                    case NI_Sve_ExtractLastScalar:
-                    case NI_Sve_ExtractAfterLastScalar:
-                    {
-                        // Create the same node with an additional operand to pass the mask.
-                        GenTreeHWIntrinsic* newNode =
-                            comp->gtNewSimdHWIntrinsicNode(node->TypeGet(), trueMask, node->Op(1), intrinsicId,
-                                                           simdBaseJitType, simdSize);
+                    // Create the same node with an additional operand to pass the mask.
+                    GenTreeHWIntrinsic* newNode =
+                        comp->gtNewSimdHWIntrinsicNode(node->TypeGet(), trueMask, node->Op(1), intrinsicId,
+                                                       simdBaseJitType, simdSize);
 
-                        BlockRange().InsertAfter(node->Op(1), trueMask);
-                        BlockRange().InsertAfter(trueMask, newNode);
-                        BlockRange().Remove(node);
-                        use.ReplaceWith(newNode);
+                    BlockRange().InsertAfter(node->Op(1), trueMask);
+                    BlockRange().InsertAfter(trueMask, newNode);
+                    BlockRange().Remove(node);
+                    use.ReplaceWith(newNode);
 
-                        node = newNode;
-                    }
-                    break;
+                    node = newNode;
+                }
+                else
+                {
+                    GenTree*            trueVal  = node;
+                    GenTree*            falseVal = comp->gtNewZeroConNode(simdType);
+                    GenTreeHWIntrinsic* condSelNode =
+                        comp->gtNewSimdHWIntrinsicNode(simdType, trueMask, trueVal, falseVal,
+                                                        NI_Sve_ConditionalSelect, simdBaseJitType, simdSize);
 
-                    default:
-                    {
-                        GenTree*            trueVal  = node;
-                        GenTree*            falseVal = comp->gtNewZeroConNode(simdType);
-                        GenTreeHWIntrinsic* condSelNode =
-                            comp->gtNewSimdHWIntrinsicNode(simdType, trueMask, trueVal, falseVal,
-                                                           NI_Sve_ConditionalSelect, simdBaseJitType, simdSize);
-
-                        BlockRange().InsertBefore(node, trueMask);
-                        BlockRange().InsertBefore(node, falseVal);
-                        BlockRange().InsertAfter(node, condSelNode);
-                        use.ReplaceWith(condSelNode);
-                    }
-                    break;
+                    BlockRange().InsertBefore(node, trueMask);
+                    BlockRange().InsertBefore(node, falseVal);
+                    BlockRange().InsertAfter(node, condSelNode);
+                    use.ReplaceWith(condSelNode);
                 }
             }
         }

@@ -2112,6 +2112,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
             case NI_Sve_ExtractAfterLastScalar:
             case NI_Sve_ExtractLastScalar:
+                assert(HWIntrinsicInfo::IsEmbeddedMaskedOperationForScalarResult(intrin.id));
                 assert(op1Reg != REG_NA); // this is the embedded mask
                 assert(op2Reg != REG_NA);
 

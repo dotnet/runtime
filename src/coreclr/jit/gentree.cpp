@@ -20588,7 +20588,8 @@ bool GenTree::isEmbeddedMaskingCompatibleHWIntrinsic() const
         }
 #elif defined(TARGET_ARM64)
         return HWIntrinsicInfo::IsEmbeddedMaskedOperation(AsHWIntrinsic()->GetHWIntrinsicId()) ||
-               HWIntrinsicInfo::IsOptionalEmbeddedMaskedOperation(AsHWIntrinsic()->GetHWIntrinsicId());
+               HWIntrinsicInfo::IsOptionalEmbeddedMaskedOperation(AsHWIntrinsic()->GetHWIntrinsicId()) ||
+               HWIntrinsicInfo::IsEmbeddedMaskedOperationForScalarResult(AsHWIntrinsic()->GetHWIntrinsicId());
 #endif
     }
     return false;
