@@ -60,6 +60,7 @@ if (CLR_CMAKE_TARGET_WIN32)
   add_dependencies(standalonegc-enabled.GuardCF aot_eventing_headers)
   add_dependencies(standalonegc-enabled.GuardCF aot_etw_headers)
   add_library(Runtime.ServerGC.GuardCF STATIC ${COMMON_RUNTIME_SOURCES} ${FULL_RUNTIME_SOURCES} ${RUNTIME_SOURCES_ARCH_ASM} ${SERVER_GC_SOURCES} ${RUNTIME_ARCH_ASM_OBJECTS})
+  add_dependencies(Runtime.ServerGC.GuardCF eventpipe-enabled)
   target_compile_definitions(Runtime.ServerGC.GuardCF PRIVATE -DFEATURE_SVR_GC)
   set_target_properties(Runtime.ServerGC.GuardCF PROPERTIES CLR_CONTROL_FLOW_GUARD ON)
 
