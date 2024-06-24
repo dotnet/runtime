@@ -3,6 +3,7 @@ name: Format jit codebase
 on:
   pull_request:
     paths:
+      - '.github/workflows/jit-format.yml'
       - 'src/coreclr/jit/**'
     branches: [ main ]
 
