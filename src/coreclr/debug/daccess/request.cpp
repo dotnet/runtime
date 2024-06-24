@@ -720,8 +720,18 @@ ClrDataAccess::GetThreadAllocData(CLRDATA_ADDRESS addr, struct DacpAllocData *da
 
     Thread* thread = PTR_Thread(TO_TADDR(addr));
 
-    data->allocBytes = TO_CDADDR(thread->m_alloc_context.alloc_bytes);
-    data->allocBytesLoh = TO_CDADDR(thread->m_alloc_context.alloc_bytes_uoh);
+    PTR_gc_alloc_context pAllocContext = thread->GetAllocContext();
+
+    if (pAllocContext != NULL)
+    {
+        data->allocBytes = TO_CDADDR(pAllocContext->alloc_bytes);
+        data->allocBytesLoh = TO_CDADDR(pAllocContext->alloc_bytes_uoh);
+    }
+    else
+    {
+        data->allocBytes = TO_CDADDR(0);
+        data->allocBytesLoh = TO_CDADDR(0);
+    }
 
     SOSDacLeave();
     return hr;
@@ -816,8 +826,18 @@ HRESULT ClrDataAccess::GetThreadDataImpl(CLRDATA_ADDRESS threadAddr, struct Dacp
     threadData->osThreadId = (DWORD)thread->m_OSThreadId;
     threadData->state = thread->m_State;
     threadData->preemptiveGCDisabled = thread->m_fPreemptiveGCDisabled;
-    threadData->allocContextPtr = TO_CDADDR(thread->m_alloc_context.alloc_ptr);
-    threadData->allocContextLimit = TO_CDADDR(thread->m_alloc_context.alloc_limit);
+
+    PTR_gc_alloc_context allocContext = thread->GetAllocContext();
+    if (allocContext)
+    {
+        threadData->allocContextPtr = TO_CDADDR(allocContext->alloc_ptr);
+        threadData->allocContextLimit = TO_CDADDR(allocContext->alloc_limit);
+    }
+    else
+    {
+        threadData->allocContextPtr = TO_CDADDR(0);
+        threadData->allocContextLimit = TO_CDADDR(0);
+    }
 
     threadData->fiberData = (CLRDATA_ADDRESS)NULL;
 
@@ -1702,11 +1722,11 @@ ClrDataAccess::GetModuleData(CLRDATA_ADDRESS addr, struct DacpModuleData *Module
 
     ZeroMemory(ModuleData,sizeof(DacpModuleData));
     ModuleData->Address = addr;
-    ModuleData->PEAssembly = HOST_CDADDR(pModule->GetPEAssembly());
+    ModuleData->PEAssembly = addr; // Module address in .NET 9+ - correspondingly, SOS-DAC APIs for PE assemblies expect a module address
     COUNT_T metadataSize = 0;
     if (!pModule->GetPEAssembly()->IsDynamic())
     {
-        ModuleData->ilBase = (CLRDATA_ADDRESS)(ULONG_PTR) pModule->GetPEAssembly()->GetIJWBase();
+        ModuleData->ilBase = TO_CDADDR(dac_cast<TADDR>(pModule->GetPEAssembly()->GetLoadedLayout()->GetBase()));
     }
 
     ModuleData->metadataStart = (CLRDATA_ADDRESS)dac_cast<TADDR>(pModule->GetPEAssembly()->GetLoadedMetadata(&metadataSize));
@@ -1715,8 +1735,8 @@ ClrDataAccess::GetModuleData(CLRDATA_ADDRESS addr, struct DacpModuleData *Module
     ModuleData->bIsReflection = pModule->IsReflection();
     ModuleData->bIsPEFile = pModule->IsPEFile();
     ModuleData->Assembly = HOST_CDADDR(pModule->GetAssembly());
-    ModuleData->dwModuleID = pModule->GetModuleID();
-    ModuleData->dwModuleIndex = pModule->GetModuleIndex().m_dwIndex;
+    ModuleData->dwModuleID = 0; // CoreCLR no longer has this concept
+    ModuleData->dwModuleIndex = 0; // CoreCLR no longer has this concept
     ModuleData->dwTransientFlags = pModule->m_dwTransientFlags;
     ModuleData->LoaderAllocator = HOST_CDADDR(pModule->m_loaderAllocator);
     ModuleData->ThunkHeap = HOST_CDADDR(pModule->m_pThunkHeap);
@@ -2105,13 +2125,14 @@ ClrDataAccess::GetFrameName(CLRDATA_ADDRESS vtable, unsigned int count, _Inout_u
 }
 
 HRESULT
-ClrDataAccess::GetPEFileName(CLRDATA_ADDRESS addr, unsigned int count, _Inout_updates_z_(count) WCHAR *fileName, unsigned int *pNeeded)
+ClrDataAccess::GetPEFileName(CLRDATA_ADDRESS moduleAddr, unsigned int count, _Inout_updates_z_(count) WCHAR *fileName, unsigned int *pNeeded)
 {
-    if (addr == 0 || (fileName == NULL && pNeeded == NULL) || (fileName != NULL && count == 0))
+    if (moduleAddr == 0 || (fileName == NULL && pNeeded == NULL) || (fileName != NULL && count == 0))
         return E_INVALIDARG;
 
     SOSDacEnter();
-    PEAssembly* pPEAssembly = PTR_PEAssembly(TO_TADDR(addr));
+    PTR_Module pModule = PTR_Module(TO_TADDR(moduleAddr));
+    PEAssembly* pPEAssembly = pModule->GetPEAssembly();
 
     // Turn from bytes to wide characters
     if (!pPEAssembly->GetPath().IsEmpty())
@@ -2162,20 +2183,25 @@ ClrDataAccess::GetPEFileName(CLRDATA_ADDRESS addr, unsigned int count, _Inout_up
 }
 
 HRESULT
-ClrDataAccess::GetPEFileBase(CLRDATA_ADDRESS addr, CLRDATA_ADDRESS *base)
+ClrDataAccess::GetPEFileBase(CLRDATA_ADDRESS moduleAddr, CLRDATA_ADDRESS *base)
 {
-    if (addr == 0 || base == NULL)
+    if (moduleAddr == 0 || base == NULL)
         return E_INVALIDARG;
 
     SOSDacEnter();
 
-    PEAssembly* pPEAssembly = PTR_PEAssembly(TO_TADDR(addr));
+    PTR_Module pModule = PTR_Module(TO_TADDR(moduleAddr));
+    PEAssembly* pPEAssembly = pModule->GetPEAssembly();
 
     // More fields later?
     if (!pPEAssembly->IsDynamic())
-        *base = TO_CDADDR(pPEAssembly->GetIJWBase());
+    {
+        *base = TO_CDADDR(dac_cast<TADDR>(pPEAssembly->GetLoadedLayout()->GetBase()));
+    }
     else
+    {
         *base = (CLRDATA_ADDRESS)NULL;
+    }
 
     SOSDacLeave();
     return hr;
@@ -3246,47 +3272,16 @@ ClrDataAccess::GetNestedExceptionData(CLRDATA_ADDRESS exception, CLRDATA_ADDRESS
 HRESULT
 ClrDataAccess::GetDomainLocalModuleData(CLRDATA_ADDRESS addr, struct DacpDomainLocalModuleData *pLocalModuleData)
 {
-    if (addr == 0 || pLocalModuleData == NULL)
-        return E_INVALIDARG;
-
-    SOSDacEnter();
-
-    DomainLocalModule* pLocalModule = PTR_DomainLocalModule(TO_TADDR(addr));
-
-    pLocalModuleData->pGCStaticDataStart    = TO_CDADDR(PTR_TO_TADDR(pLocalModule->GetPrecomputedGCStaticsBasePointer()));
-    pLocalModuleData->pNonGCStaticDataStart = TO_CDADDR(pLocalModule->GetPrecomputedNonGCStaticsBasePointer());
-    pLocalModuleData->pDynamicClassTable    = PTR_CDADDR(pLocalModule->m_pDynamicClassTable.Load());
-    pLocalModuleData->pClassData            = (TADDR) (PTR_HOST_MEMBER_TADDR(DomainLocalModule, pLocalModule, m_pDataBlob));
-
-    SOSDacLeave();
-    return hr;
+    // CoreCLR does not use domain local modules anymore
+    return E_NOTIMPL;
 }
 
 
 HRESULT
 ClrDataAccess::GetDomainLocalModuleDataFromModule(CLRDATA_ADDRESS addr, struct DacpDomainLocalModuleData *pLocalModuleData)
 {
-    if (addr == 0 || pLocalModuleData == NULL)
-        return E_INVALIDARG;
-
-    SOSDacEnter();
-
-    Module* pModule = PTR_Module(TO_TADDR(addr));
-    DomainLocalModule* pLocalModule = PTR_DomainLocalModule(pModule->GetDomainLocalModule());
-    if (!pLocalModule)
-    {
-        hr = E_INVALIDARG;
-    }
-    else
-    {
-        pLocalModuleData->pGCStaticDataStart    = TO_CDADDR(PTR_TO_TADDR(pLocalModule->GetPrecomputedGCStaticsBasePointer()));
-        pLocalModuleData->pNonGCStaticDataStart = TO_CDADDR(pLocalModule->GetPrecomputedNonGCStaticsBasePointer());
-        pLocalModuleData->pDynamicClassTable    = PTR_CDADDR(pLocalModule->m_pDynamicClassTable.Load());
-        pLocalModuleData->pClassData            = (TADDR) (PTR_HOST_MEMBER_TADDR(DomainLocalModule, pLocalModule, m_pDataBlob));
-    }
-
-    SOSDacLeave();
-    return hr;
+    // CoreCLR does not use domain local modules anymore
+    return E_NOTIMPL;
 }
 
 HRESULT
@@ -3299,31 +3294,8 @@ ClrDataAccess::GetDomainLocalModuleDataFromAppDomain(CLRDATA_ADDRESS appDomainAd
 HRESULT
 ClrDataAccess::GetThreadLocalModuleData(CLRDATA_ADDRESS thread, unsigned int index, struct DacpThreadLocalModuleData *pLocalModuleData)
 {
-    if (pLocalModuleData == NULL)
-        return E_INVALIDARG;
-
-    SOSDacEnter();
-
-    pLocalModuleData->threadAddr = thread;
-    pLocalModuleData->ModuleIndex = index;
-
-    PTR_Thread pThread = PTR_Thread(TO_TADDR(thread));
-    PTR_ThreadLocalBlock pLocalBlock = ThreadStatics::GetCurrentTLB(pThread);
-    PTR_ThreadLocalModule pLocalModule = pLocalBlock->GetTLMIfExists(ModuleIndex(index));
-    if (!pLocalModule)
-    {
-        hr = E_INVALIDARG;
-    }
-    else
-    {
-        pLocalModuleData->pGCStaticDataStart    = TO_CDADDR(PTR_TO_TADDR(pLocalModule->GetPrecomputedGCStaticsBasePointer()));
-        pLocalModuleData->pNonGCStaticDataStart = TO_CDADDR(pLocalModule->GetPrecomputedNonGCStaticsBasePointer());
-        pLocalModuleData->pDynamicClassTable    = PTR_CDADDR(pLocalModule->m_pDynamicClassTable);
-        pLocalModuleData->pClassData            = (TADDR) (PTR_HOST_MEMBER_TADDR(ThreadLocalModule, pLocalModule, m_pDataBlob));
-    }
-
-    SOSDacLeave();
-    return hr;
+    // CoreCLR does not use thread local modules anymore
+    return E_NOTIMPL;
 }
 
 
@@ -3656,6 +3628,7 @@ static const char *LoaderAllocatorLoaderHeapNames[] =
 {
     "LowFrequencyHeap",
     "HighFrequencyHeap",
+    "StaticsHeap",
     "StubHeap",
     "ExecutableHeap",
     "FixupPrecodeHeap",
@@ -3690,6 +3663,7 @@ HRESULT ClrDataAccess::GetLoaderAllocatorHeaps(CLRDATA_ADDRESS loaderAllocatorAd
             int i = 0;
             pLoaderHeaps[i++] = HOST_CDADDR(pLoaderAllocator->GetLowFrequencyHeap());
             pLoaderHeaps[i++] = HOST_CDADDR(pLoaderAllocator->GetHighFrequencyHeap());
+            pLoaderHeaps[i++] = HOST_CDADDR(pLoaderAllocator->GetStaticsHeap());
             pLoaderHeaps[i++] = HOST_CDADDR(pLoaderAllocator->GetStubHeap());
             pLoaderHeaps[i++] = HOST_CDADDR(pLoaderAllocator->GetExecutableHeap());
             pLoaderHeaps[i++] = HOST_CDADDR(pLoaderAllocator->GetFixupPrecodeHeap());

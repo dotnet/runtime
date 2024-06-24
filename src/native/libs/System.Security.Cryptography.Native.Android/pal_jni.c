@@ -412,6 +412,9 @@ jmethodID g_HostnameVerifierVerify;
 jclass    g_HttpsURLConnection;
 jmethodID g_HttpsURLConnectionGetDefaultHostnameVerifier;
 
+// javax/net/ssl/KeyManager
+jclass    g_KeyManager;
+
 // javax/net/ssl/KeyManagerFactory
 jclass    g_KeyManagerFactory;
 jmethodID g_KeyManagerFactoryGetInstance;
@@ -488,6 +491,14 @@ jclass g_TrustManager;
 // net/dot/android/crypto/DotnetProxyTrustManager
 jclass    g_DotnetProxyTrustManager;
 jmethodID g_DotnetProxyTrustManagerCtor;
+
+// net/dot/android/crypto/DotnetX509KeyManager
+jclass    g_DotnetX509KeyManager;
+jmethodID g_DotnetX509KeyManagerCtor;
+
+// net/dot/android/crypto/PalPbkdf2
+jclass    g_PalPbkdf2;
+jmethodID g_PalPbkdf2Pbkdf2OneShot;
 
 jobject ToGRef(JNIEnv *env, jobject lref)
 {
@@ -1024,6 +1035,8 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_HttpsURLConnection =                              GetClassGRef(env, "javax/net/ssl/HttpsURLConnection");
     g_HttpsURLConnectionGetDefaultHostnameVerifier =    GetMethod(env, true, g_HttpsURLConnection, "getDefaultHostnameVerifier", "()Ljavax/net/ssl/HostnameVerifier;");
 
+    g_KeyManager = GetClassGRef(env, "javax/net/ssl/KeyManager");
+
     g_KeyManagerFactory =               GetClassGRef(env, "javax/net/ssl/KeyManagerFactory");
     g_KeyManagerFactoryGetInstance =    GetMethod(env, true, g_KeyManagerFactory, "getInstance", "(Ljava/lang/String;)Ljavax/net/ssl/KeyManagerFactory;");
     g_KeyManagerFactoryInit =           GetMethod(env, false, g_KeyManagerFactory, "init", "(Ljava/security/KeyStore;[C)V");
@@ -1095,6 +1108,12 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
 
     g_DotnetProxyTrustManager =     GetClassGRef(env, "net/dot/android/crypto/DotnetProxyTrustManager");
     g_DotnetProxyTrustManagerCtor = GetMethod(env, false, g_DotnetProxyTrustManager, "<init>", "(J)V");
+
+    g_DotnetX509KeyManager =     GetClassGRef(env, "net/dot/android/crypto/DotnetX509KeyManager");
+    g_DotnetX509KeyManagerCtor = GetMethod(env, false, g_DotnetX509KeyManager, "<init>", "(Ljava/security/KeyStore$PrivateKeyEntry;)V");
+
+    g_PalPbkdf2              = GetClassGRef(env, "net/dot/android/crypto/PalPbkdf2");
+    g_PalPbkdf2Pbkdf2OneShot = GetMethod(env, true, g_PalPbkdf2, "pbkdf2OneShot", "(Ljava/lang/String;[BLjava/nio/ByteBuffer;ILjava/nio/ByteBuffer;)I");
 
     return JNI_VERSION_1_6;
 }

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.IO.Pipes;
 using System.Runtime.Serialization.Formatters.Binary;
@@ -265,7 +266,6 @@ namespace System.Net.Sockets.Tests
         public abstract class PolymorphicTests<T> where T : SocketHelperBase, new()
         {
             private static readonly T Helper = new T();
-            private readonly string _ipcPipeName = Path.GetRandomFileName();
 
             private static void WriteSocketInfo(Stream stream, SocketInformation socketInfo)
             {
@@ -317,44 +317,58 @@ namespace System.Net.Sockets.Tests
                 // Async is allowed on the listener:
                 using Socket handlerOriginal = await listener.AcceptAsync();
 
-                // pipe used to exchange socket info
-                await using NamedPipeServerStream pipeServerStream =
-                    new NamedPipeServerStream(_ipcPipeName, PipeDirection.Out);
+                // socket used to exchange duplicated socket info with server code
+                using Socket ipcServerListener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                ipcServerListener.BindToAnonymousPort(IPAddress.Loopback);
+                ipcServerListener.Listen(1);
+                string ipcPortString = ((IPEndPoint)ipcServerListener.LocalEndPoint).Port.ToString(CultureInfo.InvariantCulture);
 
                 if (sameProcess)
                 {
-                    Task handlerCode = Task.Run(() => HandlerServerCode(_ipcPipeName));
-                    await RunCommonHostLogic(Environment.ProcessId);
+                    Task handlerCode = Task.Run(() => HandlerServerCode(ipcPortString));
+                    RunCommonHostLogic(Environment.ProcessId);
                     await handlerCode;
                 }
                 else
                 {
-                    RemoteInvokeHandle hServerProc = RemoteExecutor.Invoke(HandlerServerCode, _ipcPipeName);
-                    await RunCommonHostLogic(hServerProc.Process.Id);
-                    await hServerProc.DisposeAsync();
+                    RemoteInvokeHandle hServerProc = RemoteExecutor.Invoke(HandlerServerCode, ipcPortString);
+
+                    // Since RunCommonHostLogic can throw, we need to make sure the server process is disposed
+                    try
+                    {
+                        RunCommonHostLogic(hServerProc.Process.Id);
+                    }
+                    finally
+                    {
+                        await hServerProc.DisposeAsync();
+                    }
                 }
 
-                async Task RunCommonHostLogic(int processId)
+                void RunCommonHostLogic(int processId)
                 {
-                    await Task.CompletedTask.ConfigureAwait(ConfigureAwaitOptions.ForceYielding);
-                    
-                    pipeServerStream.WaitForConnection();
+                    using Socket ipcServer = ipcServerListener.Accept();
+                    ipcServer.NoDelay = true;
 
                     // Duplicate the socket:
                     SocketInformation socketInfo = handlerOriginal.DuplicateAndClose(processId);
-                    WriteSocketInfo(pipeServerStream, socketInfo);
+                    // Send socketInfo to server code
+                    using var ipcStream = new NetworkStream(ipcServer, false);
+                    WriteSocketInfo(new NetworkStream(ipcServer), socketInfo);
 
                     // Send client data:
                     client.Send(TestBytes);
                 }
 
-                static async Task<int> HandlerServerCode(string ipcPipeName)
+                static async Task<int> HandlerServerCode(string ipcPortString)
                 {
-                    await using NamedPipeClientStream pipeClientStream =
-                        new NamedPipeClientStream(".", ipcPipeName, PipeDirection.In);
-                    pipeClientStream.Connect();
+                    int ipcPort = int.Parse(ipcPortString, CultureInfo.InvariantCulture);
+                    using Socket ipcClient = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                    ipcClient.NoDelay = true;
+                    await ipcClient.ConnectAsync(IPAddress.Loopback, ipcPort);
 
-                    SocketInformation socketInfo = ReadSocketInfo(pipeClientStream);
+                    await using var ipcStream = new NetworkStream(ipcClient, true);
+                    SocketInformation socketInfo = ReadSocketInfo(ipcStream);
+
                     using Socket handler = new Socket(socketInfo);
 
                     Assert.True(handler.IsBound);

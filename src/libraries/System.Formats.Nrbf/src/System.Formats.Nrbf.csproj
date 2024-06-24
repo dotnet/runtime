@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+    <EnableDefaultItems>true</EnableDefaultItems>
+    <CLSCompliant>false</CLSCompliant>
+    <UseCompilerGeneratedDocXmlFile>true</UseCompilerGeneratedDocXmlFile>
+    <IsPackable>true</IsPackable>
+    <PackageDescription>Provides a safe reader for .NET Remoting Binary Format (NRBF) payloads.
+
+Commonly Used Types:
+System.Formats.Nrbf.NrbfDecoder</PackageDescription>    
+
+    <!-- Disabling baseline validation since this is a brand new package.
+         Once this package has shipped a stable version, the following line
+         should be removed in order to re-enable validation. -->
+    <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)\System.Reflection.Metadata\src\System.Reflection.Metadata.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <PackageReference Include="System.ValueTuple" Version="$(SystemValueTupleVersion)" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\RequiresDynamicCodeAttribute.cs"
+         Link="System\Diagnostics\CodeAnalysis\RequiresDynamicCodeAttribute.cs" />
+    <PackageReference Include="Microsoft.Bcl.HashCode" Version="$(MicrosoftBclHashCodeVersion)" />
+  </ItemGroup>
+</Project>

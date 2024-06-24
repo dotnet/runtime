@@ -89,7 +89,7 @@ The _dotnet/runtime_ repository requires at least Git 2.22.0.
 
 While not strictly needed to build or test this repository, having the .NET SDK installed lets you browse solution files in this repository with Visual Studio and use the `dotnet.exe` command to run .NET applications in the 'normal' way.
 
-We use this in the [build testing with the installed SDK](/docs/workflow/testing/using-your-build-with-installed-sdk.md), and [build testing with dev shipping packages](/docs/workflow/testing/using-dev-shipping-packages.md) instructions. The minimum required version of the SDK is specified in the [global.json file](https://github.com/dotnet/runtime/blob/main/global.json#L3). You can find the installers and binaries for latest development builds of .NET SDK in the [installer repo](https://github.com/dotnet/installer#installers-and-binaries).
+We use this in the [build testing with the installed SDK](/docs/workflow/testing/using-your-build-with-installed-sdk.md), and [build testing with dev shipping packages](/docs/workflow/testing/using-dev-shipping-packages.md) instructions. The minimum required version of the SDK is specified in the [global.json file](https://github.com/dotnet/runtime/blob/main/global.json#L3). You can find the installers and binaries for latest development builds of .NET SDK in the [sdk repo](https://github.com/dotnet/sdk#installing-the-sdk).
 
 Alternatively, to avoid modifying your machine state, you can use the repository's locally acquired SDK by passing in the solution to load via the `-vs` switch. For example:
 

@@ -7,9 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.Marshalling;
-using System.Runtime.Versioning;
-using System.Text;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 using EditorBrowsableAttribute = System.ComponentModel.EditorBrowsableAttribute;
 using EditorBrowsableState = System.ComponentModel.EditorBrowsableState;
 
@@ -28,14 +26,8 @@ namespace System.Numerics.Tensors
     {
         /// <summary>A byref or a native ptr.</summary>
         internal readonly ref T _reference;
-        /// <summary>The number of elements this ReadOnlyTensorSpan contains.</summary>
-        internal readonly nint _flattenedLength;
-        /// <summary>The length of the underlying memory. Can be different than the number of elements in the span.</summary>
-        internal readonly nint _memoryLength;
-        /// <summary>The lengths of each dimension.</summary>
-        internal readonly ReadOnlySpan<nint> _lengths;
-        /// <summary>The strides representing the memory offsets for each dimension.</summary>
-        private readonly ReadOnlySpan<nint> _strides;
+        internal readonly TensorShape _shape;
+
 
         /// <summary>
         /// Creates a new span over the entirety of the target array.
@@ -43,7 +35,7 @@ namespace System.Numerics.Tensors
         /// <param name="array">The target array.</param>
         /// <remarks>Returns default when <paramref name="array"/> is null.</remarks>
         /// <exception cref="ArrayTypeMismatchException">Thrown when <paramref name="array"/> is covariant and array's type is not exactly T[].</exception>
-        public ReadOnlyTensorSpan(T[]? array) : this(array, 0, [], [])
+        public ReadOnlyTensorSpan(T[]? array) : this(array, 0, [array?.Length ?? 0], [])
         {
         }
 
@@ -81,6 +73,9 @@ namespace System.Numerics.Tensors
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ReadOnlyTensorSpan(T[]? array, int start, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides)
         {
+            if (lengths.IsEmpty && array != null)
+                lengths = [array.Length];
+
             nint linearLength = TensorSpanHelpers.CalculateTotalLength(lengths);
             if (array == null)
             {
@@ -92,31 +87,29 @@ namespace System.Numerics.Tensors
             if (!typeof(T).IsValueType && array.GetType() != typeof(T[]))
                 ThrowHelper.ThrowArrayTypeMismatchException();
 
-            strides = strides.IsEmpty ? (ReadOnlySpan<nint>)TensorSpanHelpers.CalculateStrides(lengths) : strides;
-            nint maxElements = TensorSpanHelpers.ComputeMaxElementCount(strides, lengths);
+            strides = strides.IsEmpty ? (ReadOnlySpan<nint>)TensorSpanHelpers.CalculateStrides(lengths, linearLength) : strides;
+            TensorSpanHelpers.ValidateStrides(strides, lengths);
+            nint maxElements = TensorSpanHelpers.ComputeMaxLinearIndex(strides, lengths);
+
             if (Environment.Is64BitProcess)
             {
                 // See comment in Span<T>.Slice for how this works.
-                if ((ulong)(uint)start + (ulong)(uint)maxElements > (ulong)(uint)array.Length)
-                    ThrowHelper.ThrowArgumentOutOfRangeException();
+                if ((ulong)(uint)start + (ulong)(uint)maxElements >= (ulong)(uint)array.Length && array.Length != 0)
+                    ThrowHelper.ThrowArgument_InvalidStridesAndLengths();
             }
             else
             {
-                if ((uint)start > (uint)array.Length || (uint)maxElements > (uint)(array.Length - start))
-                    ThrowHelper.ThrowArgumentOutOfRangeException();
+                if (((uint)start > (uint)array.Length || (uint)maxElements >= (uint)(array.Length - start)) && array.Length != 0)
+                    ThrowHelper.ThrowArgument_InvalidStridesAndLengths();
             }
 
-            _flattenedLength = linearLength;
-            _memoryLength = array.Length;
+            _shape = new TensorShape(array.Length - start, lengths, strides);
             _reference = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(array), (nint)(uint)start /* force zero-extension */);
-
-            _lengths = lengths.ToArray();
-            _strides = strides.ToArray();
         }
 
         /// <summary>
-        /// Creates a new <see cref="ReadOnlyTensorSpan{T}"/> over the provided <see cref="Span{T}"/>. The new <see cref="ReadOnlyTensorSpan{T}"/> will
-        /// have a rank of 1 and a length equal to the length of the provided <see cref="Span{T}"/>.
+        /// Creates a new <see cref="ReadOnlyTensorSpan{T}"/> over the provided <see cref="ReadOnlySpan{T}"/>. The new <see cref="ReadOnlyTensorSpan{T}"/> will
+        /// have a rank of 1 and a length equal to the length of the provided <see cref="ReadOnlySpan{T}"/>.
         /// </summary>
         /// <param name="span">The target span.</param>
         public ReadOnlyTensorSpan(ReadOnlySpan<T> span) : this(span, [span.Length], []) { }
@@ -130,26 +123,19 @@ namespace System.Numerics.Tensors
         /// <param name="strides">The strides for each dimension. Will be automatically calculated if not provided.</param>
         public ReadOnlyTensorSpan(ReadOnlySpan<T> span, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides)
         {
-            nint linearLength = TensorSpanHelpers.CalculateTotalLength(lengths);
-            if (span.IsEmpty)
-            {
-                if (linearLength != 0)
-                    ThrowHelper.ThrowArgumentOutOfRangeException();
-                this = default;
-                return; // returns default
-            }
+            if (lengths.IsEmpty)
+                lengths = [span.Length];
 
-            strides = strides.IsEmpty ? (ReadOnlySpan<nint>)TensorSpanHelpers.CalculateStrides(lengths) : strides;
-            nint maxElements = TensorSpanHelpers.ComputeMaxElementCount(strides, lengths);
-            if (maxElements >= span.Length)
+            nint linearLength = TensorSpanHelpers.CalculateTotalLength(lengths);
+
+            strides = strides.IsEmpty ? (ReadOnlySpan<nint>)TensorSpanHelpers.CalculateStrides(lengths, linearLength) : strides;
+            TensorSpanHelpers.ValidateStrides(strides, lengths);
+            nint maxElements = TensorSpanHelpers.ComputeMaxLinearIndex(strides, lengths);
+            if (maxElements >= span.Length && span.Length != 0)
                 ThrowHelper.ThrowArgument_InvalidStridesAndLengths();
 
-            _flattenedLength = linearLength;
-            _memoryLength = span.Length;
+            _shape = new TensorShape(span.Length, lengths, strides);
             _reference = ref MemoryMarshal.GetReference(span);
-
-            _lengths = lengths.ToArray();
-            _strides = strides.ToArray();
         }
 
         /// <summary>
@@ -157,7 +143,7 @@ namespace System.Numerics.Tensors
         /// have a rank of 1 and a length equal to the length of the provided <see cref="Array"/>.
         /// </summary>
         /// <param name="array">The target array.</param>
-        public ReadOnlyTensorSpan(Array? array) : this(array, ReadOnlySpan<int>.Empty, [], []) { }
+        public ReadOnlyTensorSpan(Array? array) : this(array, ReadOnlySpan<int>.Empty, array == null ? [0] : (from dim in Enumerable.Range(0, array.Rank) select (nint)array.GetLength(dim)).ToArray(), []) { }
 
         /// <summary>
         /// Creates a new <see cref="ReadOnlyTensorSpan{T}"/> over the provided <see cref="Array"/> using the specified start offsets, lengths, and strides.
@@ -169,9 +155,10 @@ namespace System.Numerics.Tensors
         /// <param name="strides">The strides for each dimension. Will be automatically calculated if not provided.</param>
         public ReadOnlyTensorSpan(Array? array, scoped ReadOnlySpan<int> start, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides)
         {
+            if (lengths.IsEmpty && array != null)
+                lengths = (from dim in Enumerable.Range(0, array.Rank) select (nint)array.GetLength(dim)).ToArray();
+
             nint linearLength = TensorSpanHelpers.CalculateTotalLength(lengths);
-            strides = strides.IsEmpty ? (ReadOnlySpan<nint>)TensorSpanHelpers.CalculateStrides(lengths) : strides;
-            nint startOffset = TensorSpanHelpers.ComputeLinearIndex(start, strides, lengths);
             if (array == null)
             {
                 if (!start.IsEmpty || linearLength != 0)
@@ -182,25 +169,25 @@ namespace System.Numerics.Tensors
             if (!typeof(T).IsValueType && array.GetType() != typeof(T[]))
                 ThrowHelper.ThrowArrayTypeMismatchException();
 
-            nint maxElements = TensorSpanHelpers.ComputeMaxElementCount(strides, lengths);
+            strides = strides.IsEmpty ? (ReadOnlySpan<nint>)TensorSpanHelpers.CalculateStrides(lengths, linearLength) : strides;
+            TensorSpanHelpers.ValidateStrides(strides, lengths);
+
+            nint startOffset = TensorSpanHelpers.ComputeStartOffsetSystemArray(array, start);
+            nint maxElements = TensorSpanHelpers.ComputeMaxLinearIndex(strides, lengths);
             if (Environment.Is64BitProcess)
             {
                 // See comment in Span<T>.Slice for how this works.
-                if ((ulong)(uint)startOffset + (ulong)(uint)maxElements > (ulong)(uint)array.Length)
+                if ((ulong)(uint)startOffset + (ulong)(uint)maxElements >= (ulong)(uint)array.Length && array.Length != 0)
                     ThrowHelper.ThrowArgumentOutOfRangeException();
             }
             else
             {
-                if ((uint)startOffset > (uint)array.Length || (uint)maxElements > (uint)(array.Length - startOffset))
+                if (((uint)startOffset > (uint)array.Length || (uint)maxElements >= (uint)(array.Length - startOffset)) && array.Length != 0)
                     ThrowHelper.ThrowArgumentOutOfRangeException();
             }
 
-            _flattenedLength = linearLength;
-            _memoryLength = array.Length;
+            _shape = new TensorShape(array.Length - startOffset, lengths, strides);
             _reference = ref Unsafe.Add(ref Unsafe.As<byte, T>(ref MemoryMarshal.GetArrayDataReference(array)), (nint)(uint)startOffset /* force zero-extension */);
-
-            _lengths = lengths.ToArray();
-            _strides = strides.ToArray();
         }
 
         /// <summary>
@@ -213,9 +200,10 @@ namespace System.Numerics.Tensors
         /// <param name="strides">The strides for each dimension. Will be automatically calculated if not provided.</param>
         public ReadOnlyTensorSpan(Array? array, scoped ReadOnlySpan<NIndex> startIndex, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides)
         {
+            if (lengths.IsEmpty && array != null)
+                lengths = (from dim in Enumerable.Range(0, array.Rank) select (nint)array.GetLength(dim)).ToArray();
+
             nint linearLength = TensorSpanHelpers.CalculateTotalLength(lengths);
-            strides = strides.IsEmpty ? (ReadOnlySpan<nint>)TensorSpanHelpers.CalculateStrides(lengths) : strides;
-            nint start = TensorSpanHelpers.ComputeLinearIndex(startIndex, strides, lengths);
             if (array == null)
             {
                 if (!startIndex.IsEmpty || linearLength != 0)
@@ -226,25 +214,25 @@ namespace System.Numerics.Tensors
             if (!typeof(T).IsValueType && array.GetType() != typeof(T[]))
                 ThrowHelper.ThrowArrayTypeMismatchException();
 
-            nint maxElements = TensorSpanHelpers.ComputeMaxElementCount(strides, lengths);
+            strides = strides.IsEmpty ? (ReadOnlySpan<nint>)TensorSpanHelpers.CalculateStrides(lengths, linearLength) : strides;
+            TensorSpanHelpers.ValidateStrides(strides, lengths);
+
+            nint startOffset = TensorSpanHelpers.ComputeStartOffsetSystemArray(array, startIndex);
+            nint maxElements = TensorSpanHelpers.ComputeMaxLinearIndex(strides, lengths);
             if (Environment.Is64BitProcess)
             {
                 // See comment in Span<T>.Slice for how this works.
-                if ((ulong)(uint)start + (ulong)(uint)maxElements > (ulong)(uint)array.Length)
+                if ((ulong)(uint)startOffset + (ulong)(uint)maxElements > (ulong)(uint)array.Length)
                     ThrowHelper.ThrowArgumentOutOfRangeException();
             }
             else
             {
-                if ((uint)start > (uint)array.Length || (uint)maxElements > (uint)(array.Length - start))
+                if ((uint)startOffset > (uint)array.Length || (uint)maxElements >= (uint)(array.Length - startOffset))
                     ThrowHelper.ThrowArgumentOutOfRangeException();
             }
 
-            _flattenedLength = linearLength;
-            _memoryLength = array.Length;
-            _reference = ref Unsafe.Add(ref Unsafe.As<byte, T>(ref MemoryMarshal.GetArrayDataReference(array)), (nint)(uint)start /* force zero-extension */);
-
-            _lengths = lengths.ToArray();
-            _strides = strides.ToArray();
+            _shape = new TensorShape(array.Length - startOffset, lengths, strides);
+            _reference = ref Unsafe.Add(ref Unsafe.As<byte, T>(ref MemoryMarshal.GetArrayDataReference(array)), (nint)(uint)startOffset /* force zero-extension */);
         }
 
         /// <summary>
@@ -276,22 +264,25 @@ namespace System.Numerics.Tensors
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe ReadOnlyTensorSpan(T* data, nint dataLength, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides)
         {
-            nint linearLength = TensorSpanHelpers.CalculateTotalLength(lengths);
+            if (dataLength < 0)
+                ThrowHelper.ThrowArgumentOutOfRangeException();
+
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
                 ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(T));
 
-            strides = strides.IsEmpty ? (ReadOnlySpan<nint>)TensorSpanHelpers.CalculateStrides(lengths) : strides;
-            nint maxElements = TensorSpanHelpers.ComputeMaxElementCount(strides, lengths);
-            if (maxElements >= dataLength)
+            if (lengths.IsEmpty)
+                lengths = [dataLength];
+
+            nint linearLength = TensorSpanHelpers.CalculateTotalLength(lengths);
+
+            strides = strides.IsEmpty ? (ReadOnlySpan<nint>)TensorSpanHelpers.CalculateStrides(lengths, linearLength) : strides;
+            TensorSpanHelpers.ValidateStrides(strides, lengths);
+            nint maxElements = TensorSpanHelpers.ComputeMaxLinearIndex(strides, lengths);
+            if (maxElements >= dataLength && dataLength != 0)
                 ThrowHelper.ThrowArgument_InvalidStridesAndLengths();
 
-            _flattenedLength = linearLength;
-            _memoryLength = dataLength;
-
+            _shape = new TensorShape(dataLength, lengths, strides);
             _reference = ref *data;
-
-            _lengths = lengths.ToArray();
-            _strides = strides.ToArray();
         }
 
         // Constructor for internal use only. It is not safe to expose publicly.
@@ -300,12 +291,8 @@ namespace System.Numerics.Tensors
         {
             nint linearLength = TensorSpanHelpers.CalculateTotalLength(lengths);
 
-            _flattenedLength = linearLength;
-            _memoryLength = memoryLength;
+            _shape = new TensorShape(memoryLength, lengths, strides);
             _reference = ref reference;
-
-            _lengths = lengths.ToArray();
-            _strides = strides.ToArray();
         }
 
         /// <summary>
@@ -325,7 +312,7 @@ namespace System.Numerics.Tensors
                     ThrowHelper.ThrowIndexOutOfRangeException();
 
                 nint index = TensorSpanHelpers.ComputeLinearIndex(indexes, Strides, Lengths);
-                if (index >= _memoryLength || index < 0)
+                if (index >= _shape._memoryLength || index < 0)
                     ThrowHelper.ThrowIndexOutOfRangeException();
 
                 return ref Unsafe.Add(ref _reference, index /* force zero-extension */);
@@ -348,7 +335,7 @@ namespace System.Numerics.Tensors
                     ThrowHelper.ThrowIndexOutOfRangeException();
 
                 nint index = TensorSpanHelpers.ComputeLinearIndex(indexes, Strides, Lengths);
-                if (index >= _memoryLength || index < 0)
+                if (index >= _shape._memoryLength || index < 0)
                     ThrowHelper.ThrowIndexOutOfRangeException();
 
                 return ref Unsafe.Add(ref _reference, index /* force zero-extension */);
@@ -377,19 +364,19 @@ namespace System.Numerics.Tensors
         /// <summary>
         /// The number of items in the span.
         /// </summary>
-        public nint FlattenedLength => _flattenedLength;
+        public nint FlattenedLength => _shape.FlattenedLength;
 
         /// <summary>
         /// Gets a value indicating whether this <see cref="TensorSpan{T}"/> is empty.
         /// </summary>
         /// <value><see langword="true"/> if this span is empty; otherwise, <see langword="false"/>.</value>
-        public bool IsEmpty => _flattenedLength == 0;
+        public bool IsEmpty => _shape.IsEmpty;
 
         /// <summary>
         /// Gets the length of each dimension in this <see cref="TensorSpan{T}"/>.
         /// </summary>
         [UnscopedRef]
-        public ReadOnlySpan<nint> Lengths => _lengths;
+        public ReadOnlySpan<nint> Lengths => _shape.Lengths;
 
         /// <summary>
         /// Gets the rank, aka the number of dimensions, of this <see cref="TensorSpan{T}"/>.
@@ -400,7 +387,7 @@ namespace System.Numerics.Tensors
         /// Gets the strides of this <see cref="TensorSpan{T}"/>
         /// </summary>
         [UnscopedRef]
-        public ReadOnlySpan<nint> Strides => _strides;
+        public ReadOnlySpan<nint> Strides => _shape.Strides;
 
         /// <summary>
         /// Returns false if left and right point at the same memory and have the same length.  Note that
@@ -413,9 +400,9 @@ namespace System.Numerics.Tensors
         /// this does *not* check to see if the *contents* are equal.
         /// </summary>
         public static bool operator ==(ReadOnlyTensorSpan<T> left, ReadOnlyTensorSpan<T> right) =>
-            left._flattenedLength == right._flattenedLength &&
+            left._shape.FlattenedLength == right._shape.FlattenedLength &&
             left.Rank == right.Rank &&
-            left._lengths.SequenceEqual(right._lengths )&&
+            left._shape.Lengths.SequenceEqual(right._shape.Lengths )&&
             Unsafe.AreSame(ref left._reference, ref right._reference);
 
         /// <summary>
@@ -456,7 +443,7 @@ namespace System.Numerics.Tensors
         /// <remarks>This method uses a covariant cast, producing a read-only span that shares the same memory as the source. The relationships expressed in the type constraints ensure that the cast is a safe operation.</remarks>
         public static ReadOnlyTensorSpan<T> CastUp<TDerived>(ReadOnlyTensorSpan<TDerived> items) where TDerived : class?, T
         {
-            return new ReadOnlyTensorSpan<T>(ref Unsafe.As<TDerived, T>(ref items._reference), items._lengths, items._strides, items._memoryLength);
+            return new ReadOnlyTensorSpan<T>(ref Unsafe.As<TDerived, T>(ref items._reference), items._shape.Lengths, items._shape.Strides, items._shape._memoryLength);
         }
 
         /// <summary>Gets an enumerator for this span.</summary>
@@ -512,7 +499,7 @@ namespace System.Numerics.Tensors
         {
             // Ensure that the native code has just one forward branch that is predicted-not-taken.
             ref T ret = ref Unsafe.NullRef<T>();
-            if (_flattenedLength != 0) ret = ref _reference;
+            if (_shape.FlattenedLength != 0) ret = ref _reference;
             return ref ret;
         }
 
@@ -531,14 +518,15 @@ namespace System.Numerics.Tensors
             // Using "if (!TryCopyTo(...))" results in two branches: one for the length
             // check, and one for the result of TryCopyTo. Since these checks are equivalent,
             // we can optimize by performing the check once ourselves then calling Memmove directly.
-            if (_flattenedLength <= destination.FlattenedLength)
+            if (_shape.FlattenedLength <= destination.FlattenedLength)
             {
                 scoped Span<nint> curIndexes;
                 nint[]? curIndexesArray;
-                if (Rank > 6)
+                if (Rank > TensorShape.MaxInlineRank)
                 {
                     curIndexesArray = ArrayPool<nint>.Shared.Rent(Rank);
                     curIndexes = curIndexesArray;
+                    curIndexes = curIndexes.Slice(0, Rank);
                 }
                 else
                 {
@@ -547,14 +535,14 @@ namespace System.Numerics.Tensors
                 }
 
                 nint copiedValues = 0;
-                TensorSpan<T> slice = destination.Slice(_lengths);
-                while (copiedValues < _flattenedLength)
+                TensorSpan<T> slice = destination.Slice(_shape.Lengths);
+                while (copiedValues < _shape.FlattenedLength)
                 {
                     TensorSpanHelpers.Memmove(ref Unsafe.Add(ref slice._reference, TensorSpanHelpers.ComputeLinearIndex(curIndexes, Strides, Lengths)), ref Unsafe.Add(ref _reference, TensorSpanHelpers.ComputeLinearIndex(curIndexes, Strides, Lengths)), Lengths[Rank - 1]);
-                    TensorSpanHelpers.AdjustIndexes(Rank - 2, 1, curIndexes, _lengths);
+                    TensorSpanHelpers.AdjustIndexes(Rank - 2, 1, curIndexes, _shape.Lengths);
                     copiedValues += Lengths[Rank - 1];
                 }
-                Debug.Assert(copiedValues == _flattenedLength, "Didn't copy the right amount to the array.");
+                Debug.Assert(copiedValues == _shape.FlattenedLength, "Didn't copy the right amount to the array.");
 
                 if (curIndexesArray != null)
                     ArrayPool<nint>.Shared.Return(curIndexesArray);
@@ -577,14 +565,15 @@ namespace System.Numerics.Tensors
         {
             bool retVal = false;
 
-            if (_flattenedLength <= destination.FlattenedLength)
+            if (_shape.FlattenedLength <= destination.FlattenedLength)
             {
                 scoped Span<nint> curIndexes;
                 nint[]? curIndexesArray;
-                if (Rank > 6)
+                if (Rank > TensorShape.MaxInlineRank)
                 {
                     curIndexesArray = ArrayPool<nint>.Shared.Rent(Rank);
                     curIndexes = curIndexesArray;
+                    curIndexes = curIndexes.Slice(0, Rank);
                 }
                 else
                 {
@@ -593,15 +582,15 @@ namespace System.Numerics.Tensors
                 }
 
                 nint copiedValues = 0;
-                TensorSpan<T> slice = destination.Slice(_lengths);
-                while (copiedValues < _flattenedLength)
+                TensorSpan<T> slice = destination.Slice(_shape.Lengths);
+                while (copiedValues < _shape.FlattenedLength)
                 {
                     TensorSpanHelpers.Memmove(ref Unsafe.Add(ref slice._reference, TensorSpanHelpers.ComputeLinearIndex(curIndexes, Strides, Lengths)), ref Unsafe.Add(ref _reference, TensorSpanHelpers.ComputeLinearIndex(curIndexes, Strides, Lengths)), Lengths[Rank - 1]);
-                    TensorSpanHelpers.AdjustIndexes(Rank - 2, 1, curIndexes, _lengths);
+                    TensorSpanHelpers.AdjustIndexes(Rank - 2, 1, curIndexes, _shape.Lengths);
                     copiedValues += Lengths[Rank - 1];
                 }
                 retVal = true;
-                Debug.Assert(copiedValues == _flattenedLength, "Didn't copy the right amount to the array.");
+                Debug.Assert(copiedValues == _shape.FlattenedLength, "Didn't copy the right amount to the array.");
 
                 if (curIndexesArray != null)
                     ArrayPool<nint>.Shared.Return(curIndexesArray);
@@ -616,7 +605,7 @@ namespace System.Numerics.Tensors
         /// <summary>
         /// Returns a <see cref="string"/> with the name of the type and the number of elements.
         /// </summary>
-        public override string ToString() => $"System.Numerics.Tensors.ReadOnlyTensorSpan<{typeof(T).Name}>[{_flattenedLength}]";
+        public override string ToString() => $"System.Numerics.Tensors.ReadOnlyTensorSpan<{typeof(T).Name}>[{_shape.FlattenedLength}]";
 
         /// <summary>
         /// Returns a reference to specified element of the TensorSpan.
@@ -662,22 +651,22 @@ namespace System.Numerics.Tensors
             if (ranges.Length != Lengths.Length)
                 throw new ArgumentOutOfRangeException(nameof(ranges), "Number of dimensions to slice does not equal the number of dimensions in the span");
 
-            scoped Span<nint> shape;
+            scoped Span<nint> lengths;
             scoped Span<nint> offsets;
-            if (Rank > 6)
+            if (Rank > TensorShape.MaxInlineRank)
             {
-                shape = stackalloc nint[Rank];
+                lengths = stackalloc nint[Rank];
                 offsets = stackalloc nint[Rank];
             }
             else
             {
-                shape = new nint[Rank];
+                lengths = new nint[Rank];
                 offsets = new nint[Rank];
             }
 
             for (int i = 0; i < ranges.Length; i++)
             {
-                (offsets[i], shape[i]) = ranges[i].GetOffsetAndLength(Lengths[i]);
+                (offsets[i], lengths[i]) = ranges[i].GetOffsetAndLength(Lengths[i]);
             }
 
             nint index = 0;
@@ -686,10 +675,10 @@ namespace System.Numerics.Tensors
                 index += Strides[i] * (offsets[i]);
             }
 
-            if (index >= _memoryLength || index < 0)
+            if (index >= _shape._memoryLength || index < 0)
                 ThrowHelper.ThrowIndexOutOfRangeException();
 
-            return new ReadOnlyTensorSpan<T>(ref Unsafe.Add(ref _reference, index), shape, _strides, _memoryLength - index);
+            return new ReadOnlyTensorSpan<T>(ref Unsafe.Add(ref _reference, index), lengths, _shape.Strides, _shape._memoryLength - index);
         }
 
         /// <summary>
@@ -699,14 +688,15 @@ namespace System.Numerics.Tensors
         public bool TryFlattenTo(scoped Span<T> destination)
         {
             bool retVal = false;
-            if (destination.Length < _flattenedLength)
+            if (destination.Length < _shape.FlattenedLength)
             {
                 scoped Span<nint> curIndexes;
                 nint[]? curIndexesArray;
-                if (Rank > 6)
+                if (Rank > TensorShape.MaxInlineRank)
                 {
                     curIndexesArray = ArrayPool<nint>.Shared.Rent(Rank);
                     curIndexes = curIndexesArray;
+                    curIndexes = curIndexes.Slice(0, Rank);
                 }
                 else
                 {
@@ -715,10 +705,10 @@ namespace System.Numerics.Tensors
                 }
 
                 nint copiedValues = 0;
-                while (copiedValues < _flattenedLength)
+                while (copiedValues < _shape.FlattenedLength)
                 {
                     TensorSpanHelpers.Memmove(destination.Slice(checked((int)copiedValues)), ref Unsafe.Add(ref _reference, TensorSpanHelpers.ComputeLinearIndex(curIndexes, Strides, Lengths)), Lengths[Rank - 1]);
-                    TensorSpanHelpers.AdjustIndexes(Rank - 2, 1, curIndexes, _lengths);
+                    TensorSpanHelpers.AdjustIndexes(Rank - 2, 1, curIndexes, _shape.Lengths);
                     copiedValues += Lengths[Rank - 1];
                 }
 
@@ -735,18 +725,19 @@ namespace System.Numerics.Tensors
         /// <param name="destination">The span to copy items into.</param>
         public void FlattenTo(scoped Span<T> destination)
         {
-            if (destination.Length < _flattenedLength)
+            if (destination.Length < _shape.FlattenedLength)
                 ThrowHelper.ThrowArgumentException_DestinationTooShort();
 
-            if (_flattenedLength == 0)
+            if (_shape.FlattenedLength == 0)
                 return;
 
             scoped Span<nint> curIndexes;
             nint[]? curIndexesArray;
-            if (Rank > 6)
+            if (Rank > TensorShape.MaxInlineRank)
             {
                 curIndexesArray = ArrayPool<nint>.Shared.Rent(Rank);
                 curIndexes = curIndexesArray;
+                curIndexes = curIndexes.Slice(0, Rank);
             }
             else
             {
@@ -755,10 +746,17 @@ namespace System.Numerics.Tensors
             }
 
             nint copiedValues = 0;
-            while (copiedValues < _flattenedLength)
+            while (copiedValues < _shape.FlattenedLength)
             {
-                TensorSpanHelpers.Memmove(destination.Slice(checked((int)copiedValues)), ref Unsafe.Add(ref _reference, TensorSpanHelpers.ComputeLinearIndex(curIndexes, Strides, Lengths)), Lengths[Rank - 1]);
-                TensorSpanHelpers.AdjustIndexes(Rank - 2, 1, curIndexes, _lengths);
+                if (Strides[Rank - 1] == 0)
+                {
+                    destination.Slice(checked((int)copiedValues), (int)Lengths[Rank - 1]).Fill(Unsafe.Add(ref _reference, TensorSpanHelpers.ComputeLinearIndex(curIndexes, Strides, Lengths)));
+                }
+                else
+                {
+                    TensorSpanHelpers.Memmove(destination.Slice(checked((int)copiedValues)), ref Unsafe.Add(ref _reference, TensorSpanHelpers.ComputeLinearIndex(curIndexes, Strides, Lengths)), Lengths[Rank - 1]);
+                }
+                TensorSpanHelpers.AdjustIndexes(Rank - 2, 1, curIndexes, _shape.Lengths);
                 copiedValues += Lengths[Rank - 1];
             }
 

@@ -67,6 +67,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(JsonUnmappedMemberHandling.Skip, options.UnmappedMemberHandling);
             Assert.False(options.WriteIndented);
             Assert.False(options.RespectNullableAnnotations);
+            Assert.False(options.RespectRequiredConstructorParameters);
 
             TestIListNonThrowingOperationsWhenImmutable(options.Converters, tc);
             TestIListNonThrowingOperationsWhenImmutable(options.TypeInfoResolverChain, options.TypeInfoResolver);
@@ -87,6 +88,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<InvalidOperationException>(() => options.WriteIndented = options.WriteIndented);
             Assert.Throws<InvalidOperationException>(() => options.TypeInfoResolver = options.TypeInfoResolver);
             Assert.Throws<InvalidOperationException>(() => options.RespectNullableAnnotations = options.RespectNullableAnnotations);
+            Assert.Throws<InvalidOperationException>(() => options.RespectRequiredConstructorParameters = options.RespectRequiredConstructorParameters);
 
             TestIListThrowingOperationsWhenImmutable(options.Converters, tc);
             TestIListThrowingOperationsWhenImmutable(options.TypeInfoResolverChain, options.TypeInfoResolver);
@@ -984,6 +986,46 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.Null(value.Property);
 
             }, options).Dispose();
+        }
+
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(null)]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void Options_RespectRequiredConstructorParameters_FeatureSwitch(bool? state)
+        {
+            var options = new RemoteInvokeOptions();
+            if (state.HasValue)
+            {
+                options.RuntimeConfigurationOptions["System.Text.Json.Serialization.RespectRequiredConstructorParametersDefault"] = state.Value;
+            }
+
+            string arg = state ?? false ? "true" : "false";
+            RemoteExecutor.Invoke(static arg =>
+            {
+                bool shouldRespectRequiredConstructorParameters = bool.Parse(arg);
+
+                var jsonOptions = new JsonSerializerOptions();
+                Assert.Equal(shouldRespectRequiredConstructorParameters, jsonOptions.RespectRequiredConstructorParameters);
+                Assert.Equal(shouldRespectRequiredConstructorParameters, JsonSerializerOptions.Default.RespectRequiredConstructorParameters);
+
+                string json = """{"X":1,"Z":3}""";
+
+                if (shouldRespectRequiredConstructorParameters)
+                {
+                    JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Point_3D>(json));
+                    Assert.Contains("'Y'", ex.Message);
+                }
+                else
+                {
+                    Point_3D result = JsonSerializer.Deserialize<Point_3D>(json);
+                    Assert.Equal(1, result.X);
+                    Assert.Equal(0, result.Y);
+                    Assert.Equal(3, result.Z);
+                }
+
+            }, arg, options).Dispose();
         }
 
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]

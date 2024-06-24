@@ -40,7 +40,7 @@ This will place several installers, Nuget packages, compressed archives, and oth
 
 ### Acquire the latest development .NET SDK
 
-The [installer repo](https://github.com/dotnet/installer) has downloads to all nightly builds for all the currently supported platforms. Find the one that matches your machine and download it.
+The [sdk repo](https://github.com/dotnet/sdk#installing-the-sdk) has downloads to all nightly builds for all the currently supported platforms. Find the one that matches your machine and download it.
 
 To setup the nightly SDK, you can either install it to your machine or use a portable build. If you downloaded the _installer_, then just follow the usual installation instructions, and you're done.
 
@@ -80,7 +80,7 @@ This config file will require a handful of modifications to work as we need it t
     <clear />
 
     <!-- Any packages that might be required, but not present in your build, will have to be taken from the latest NuGet feed. -->
-    <!-- More info on: https://github.com/dotnet/installer#installers-and-binaries -->
+    <!-- More info on: https://github.com/dotnet/sdk#installing-the-sdk -->
     <add key="dotnet8" value="https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet8/nuget/v3/index.json" />
 
     <!-- Set this path to where your Shipping Artifacts are located. Note that we are assuming a 'Debug' build in this example. -->

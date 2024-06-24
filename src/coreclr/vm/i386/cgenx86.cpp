@@ -45,8 +45,6 @@
 // if someone changes the frame size.  You are expected to keep this hard coded constant
 // up to date so that changes in the frame size trigger errors at compile time if the code is not altered
 
-void generate_noref_copy (unsigned nbytes, StubLinkerCPU* sl);
-
 #ifdef FEATURE_EH_FUNCLETS
 void UpdateRegDisplayFromCalleeSavedRegisters(REGDISPLAY * pRD, CalleeSavedRegisters * regs)
 {
