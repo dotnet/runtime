@@ -2005,7 +2005,7 @@ mono_class_interface_offset_with_variance (MonoClass *klass, MonoClass *itf, gbo
 		int vst_count;
 		mono_class_get_variance_search_table (klass, &vst, &vst_count);
 
-		for (int i = 0; i < vst_count; i++) {
+		for (i = 0; i < vst_count; i++) {
 			if (!mono_class_is_variant_compatible (itf, vst [i].klass, FALSE))
 				continue;
 
