@@ -258,7 +258,7 @@ namespace System.Threading
         /// signed integer to measure the time interval.
         /// </summary>
         /// <param name="millisecondsTimeout">The number of milliseconds to wait, or <see
-        /// cref="Timeout.Infinite"/>(-1) to wait indefinitely.</param>
+        /// cref="Timeout.Infinite"/> (-1) to wait indefinitely.</param>
         /// <returns>true if the current thread successfully entered the <see cref="SemaphoreSlim"/>;
         /// otherwise, false.</returns>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="millisecondsTimeout"/> is a
@@ -274,7 +274,7 @@ namespace System.Threading
         /// using a 32-bit signed integer to measure the time interval,
         /// while observing a <see cref="CancellationToken"/>.
         /// </summary>
-        /// <param name="millisecondsTimeout">The number of milliseconds to wait, or <see cref="Timeout.Infinite"/>(-1) to
+        /// <param name="millisecondsTimeout">The number of milliseconds to wait, or <see cref="Timeout.Infinite"/> (-1) to
         /// wait indefinitely.</param>
         /// <param name="cancellationToken">The <see cref="CancellationToken"/> to observe.</param>
         /// <returns>true if the current thread successfully entered the <see cref="SemaphoreSlim"/>; otherwise, false.</returns>
@@ -503,7 +503,7 @@ namespace System.Threading
         /// using a 32-bit signed integer to measure the time interval.
         /// </summary>
         /// <param name="millisecondsTimeout">
-        /// The number of milliseconds to wait, or <see cref="Timeout.Infinite"/>(-1) to wait indefinitely.
+        /// The number of milliseconds to wait, or <see cref="Timeout.Infinite"/> (-1) to wait indefinitely.
         /// </param>
         /// <returns>
         /// A task that will complete with a result of true if the current thread successfully entered
@@ -583,7 +583,7 @@ namespace System.Threading
         /// while observing a <see cref="CancellationToken"/>.
         /// </summary>
         /// <param name="millisecondsTimeout">
-        /// The number of milliseconds to wait, or <see cref="Timeout.Infinite"/>(-1) to wait indefinitely.
+        /// The number of milliseconds to wait, or <see cref="Timeout.Infinite"/> (-1) to wait indefinitely.
         /// </param>
         /// <param name="cancellationToken">The <see cref="CancellationToken"/> to observe.</param>
         /// <returns>
