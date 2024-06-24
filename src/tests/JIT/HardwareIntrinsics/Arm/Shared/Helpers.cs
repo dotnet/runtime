@@ -4683,9 +4683,9 @@ namespace JIT.HardwareIntrinsics.Arm
             }
         }
 
-        public static float FPRecipStepFused(float op1, float op2) => FusedMultiplySubtract(2, op1, op2);
+        public static float FPReciprocalStepFused(float op1, float op2) => FusedMultiplySubtract(2, op1, op2);
 
-        public static float FPRSqrtStepFused(float op1, float op2) => FusedMultiplySubtract(3, op1, op2) / 2;
+        public static float FPReciprocalSqrtStepFused(float op1, float op2) => FusedMultiplySubtract(3, op1, op2) / 2;
 
         public static double AbsoluteDifference(double op1, double op2) => Math.Abs(op1 - op2);
 
@@ -4727,11 +4727,11 @@ namespace JIT.HardwareIntrinsics.Arm
             }
         }
 
-        public static double FPRecipStepFused(double op1, double op2) => FusedMultiplySubtract(2, op1, op2);
+        public static double FPReciprocalStepFused(double op1, double op2) => FusedMultiplySubtract(2, op1, op2);
 
-        public static double FPRSqrtStepFused(double op1, double op2) => FusedMultiplySubtract(3, op1, op2) / 2;
+        public static double FPReciprocalSqrtStepFused(double op1, double op2) => FusedMultiplySubtract(3, op1, op2) / 2;
 
-        private static uint RecipEstimate(uint a)
+        private static uint ReciprocalEstimate(uint a)
         {
             a = a * 2 + 1;
 
@@ -4741,7 +4741,7 @@ namespace JIT.HardwareIntrinsics.Arm
             return r;
         }
 
-        private static uint RecipSqrtEstimate(uint a)
+        private static uint ReciprocalSqrtEstimate(uint a)
         {
             if (a < 256)
             {
@@ -4765,6 +4765,38 @@ namespace JIT.HardwareIntrinsics.Arm
             return r;
         }
 
+        public static double ReciprocalEstimate(double op1) => Math.ReciprocalEstimate(op1);
+        
+        public static float ReciprocalEstimate(float op1) => MathF.ReciprocalEstimate(op1);
+
+        public static double ReciprocalExponent(double op1)
+        {
+            ulong bits = (ulong)BitConverter.DoubleToUInt64Bits(op1);
+
+            // Invert the exponent
+            bits ^= 0x7FF0000000000000;
+            // Zero the fraction
+            bits &= 0xFFF0000000000000;
+
+            return BitConverter.UInt64BitsToDouble(bits);
+        }
+
+        public static float ReciprocalExponent(float op1)
+        {
+            uint bits = BitConverter.SingleToUInt32Bits(op1);
+
+            // Invert the exponent
+            bits ^= 0x7F800000;
+            // Zero the fraction
+            bits &= 0xFF800000;
+
+            return BitConverter.UInt32BitsToSingle(bits);
+        }
+
+        public static double ReciprocalSqrtEstimate(double op1) => Math.ReciprocalSqrtEstimate(op1);
+        
+        public static float ReciprocalSqrtEstimate(float op1) => MathF.ReciprocalSqrtEstimate(op1);
+
         private static uint ExtractBits(uint val, byte msbPos, byte lsbPos)
         {
             uint andMask = 0;
@@ -4777,7 +4809,7 @@ namespace JIT.HardwareIntrinsics.Arm
             return (val & andMask) >> lsbPos;
         }
 
-        public static uint UnsignedRecipEstimate(uint op1)
+        public static uint UnsignedReciprocalEstimate(uint op1)
         {
             uint result;
 
@@ -4787,14 +4819,14 @@ namespace JIT.HardwareIntrinsics.Arm
             }
             else
             {
-                uint estimate = RecipEstimate(ExtractBits(op1, 31, 23));
+                uint estimate = ReciprocalEstimate(ExtractBits(op1, 31, 23));
                 result = ExtractBits(estimate, 8, 0) << 31;
             }
 
             return result;
         }
 
-        public static uint UnsignedRSqrtEstimate(uint op1)
+        public static uint UnsignedReciprocalSqrtEstimate(uint op1)
         {
             uint result;
 
@@ -4804,7 +4836,7 @@ namespace JIT.HardwareIntrinsics.Arm
             }
             else
             {
-                uint estimate = RecipSqrtEstimate(ExtractBits(op1, 31, 23));
+                uint estimate = ReciprocalSqrtEstimate(ExtractBits(op1, 31, 23));
                 result = ExtractBits(estimate, 8, 0) << 31;
             }
 

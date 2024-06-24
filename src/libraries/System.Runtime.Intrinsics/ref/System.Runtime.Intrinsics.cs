@@ -4840,6 +4840,17 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe void PrefetchInt32(System.Numerics.Vector<uint> mask, void* address, [ConstantExpected] SvePrefetchType prefetchType) { throw null; }
         public static unsafe void PrefetchInt64(System.Numerics.Vector<ulong> mask, void* address, [ConstantExpected] SvePrefetchType prefetchType) { throw null; }
 
+        public static System.Numerics.Vector<double> ReciprocalEstimate(System.Numerics.Vector<double> value) { throw null; }
+        public static System.Numerics.Vector<float> ReciprocalEstimate(System.Numerics.Vector<float> value) { throw null; }
+        public static System.Numerics.Vector<double> ReciprocalExponent(System.Numerics.Vector<double> value) { throw null; }
+        public static System.Numerics.Vector<float> ReciprocalExponent(System.Numerics.Vector<float> value) { throw null; }
+        public static System.Numerics.Vector<double> ReciprocalSqrtEstimate(System.Numerics.Vector<double> value) { throw null; }
+        public static System.Numerics.Vector<float> ReciprocalSqrtEstimate(System.Numerics.Vector<float> value) { throw null; }
+        public static System.Numerics.Vector<double> ReciprocalSqrtStep(System.Numerics.Vector<double> left, System.Numerics.Vector<double> right) { throw null; }
+        public static System.Numerics.Vector<float> ReciprocalSqrtStep(System.Numerics.Vector<float> left, System.Numerics.Vector<float> right) { throw null; }
+        public static System.Numerics.Vector<double> ReciprocalStep(System.Numerics.Vector<double> left, System.Numerics.Vector<double> right) { throw null; }
+        public static System.Numerics.Vector<float> ReciprocalStep(System.Numerics.Vector<float> left, System.Numerics.Vector<float> right) { throw null; }
+        
         public static System.Numerics.Vector<byte> ReverseBits(System.Numerics.Vector<byte> value) { throw null; }
         public static System.Numerics.Vector<short> ReverseBits(System.Numerics.Vector<short> value) { throw null; }
         public static System.Numerics.Vector<int> ReverseBits(System.Numerics.Vector<int> value) { throw null; }

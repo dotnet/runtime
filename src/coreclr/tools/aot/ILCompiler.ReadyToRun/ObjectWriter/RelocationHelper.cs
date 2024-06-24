@@ -221,6 +221,11 @@ namespace ILCompiler.PEWriter
                     }
 
                 case RelocType.IMAGE_REL_BASED_LOONGARCH64_PC:
+                    {
+                        relocationLength = 8;
+                        delta = (int)(targetRVA - (sourceRVA & ~0xfff) + ((targetRVA & 0x800) << 1));
+                        break;
+                    }
                 case RelocType.IMAGE_REL_BASED_LOONGARCH64_JIR:
                     {
                         relocationLength = 8;
