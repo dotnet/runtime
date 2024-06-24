@@ -954,7 +954,7 @@ unsigned EECodeManager::FindEndOfLastInterruptibleRegion(unsigned curOffset,
     return state.lastRangeOffset;
 #else
     DacNotImpl();
-    return NULL;
+    return 0;
 #endif // #ifndef DACCESS_COMPILE
 }
 
