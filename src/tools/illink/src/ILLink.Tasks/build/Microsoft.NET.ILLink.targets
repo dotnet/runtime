@@ -55,6 +55,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     <_ComObjectDescriptorSupport Condition="'$(_ComObjectDescriptorSupport)' == ''">false</_ComObjectDescriptorSupport>
     <_DesignerHostSupport Condition="'$(_DesignerHostSupport)' == ''">false</_DesignerHostSupport>
     <_DefaultValueAttributeSupport Condition="'$(_DefaultValueAttributeSupport)' == ''">false</_DefaultValueAttributeSupport>
+    <DynamicCodeSupport Condition="'$(DynamicCodeSupport)' == ''">true</DynamicCodeSupport>
     <UseSystemResourceKeys Condition="'$(UseSystemResourceKeys)' == ''">false</UseSystemResourceKeys>
   </PropertyGroup>
 

@@ -1155,8 +1155,6 @@ void CoreLibBinder::AttachModule(Module * pModule)
         c_rgCoreLibFieldDescriptions,  c_nCoreLibFieldDescriptions);
 
     pGlobalBinder->AllocateTables();
-
-    pModule->m_pBinder = pGlobalBinder;
 }
 
 void CoreLibBinder::SetDescriptions(Module * pModule,

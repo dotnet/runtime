@@ -4555,6 +4555,17 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<ulong> LeadingZeroCount(System.Numerics.Vector<long> value) { throw null; }
         public static System.Numerics.Vector<ulong> LeadingZeroCount(System.Numerics.Vector<ulong> value) { throw null; }
 
+        public static System.Numerics.Vector<byte> InsertIntoShiftedVector(System.Numerics.Vector<byte> left, byte right) { throw null; }
+        public static System.Numerics.Vector<double> InsertIntoShiftedVector(System.Numerics.Vector<double> left, double right) { throw null; }
+        public static System.Numerics.Vector<short> InsertIntoShiftedVector(System.Numerics.Vector<short> left, short right) { throw null; }
+        public static System.Numerics.Vector<int> InsertIntoShiftedVector(System.Numerics.Vector<int> left, int right) { throw null; }
+        public static System.Numerics.Vector<long> InsertIntoShiftedVector(System.Numerics.Vector<long> left, long right) { throw null; }
+        public static System.Numerics.Vector<sbyte> InsertIntoShiftedVector(System.Numerics.Vector<sbyte> left, sbyte right) { throw null; }
+        public static System.Numerics.Vector<float> InsertIntoShiftedVector(System.Numerics.Vector<float> left, float right) { throw null; }
+        public static System.Numerics.Vector<ushort> InsertIntoShiftedVector(System.Numerics.Vector<ushort> left, ushort right) { throw null; }
+        public static System.Numerics.Vector<uint> InsertIntoShiftedVector(System.Numerics.Vector<uint> left, uint right) { throw null; }
+        public static System.Numerics.Vector<ulong> InsertIntoShiftedVector(System.Numerics.Vector<ulong> left, ulong right) { throw null; }
+
         public static unsafe System.Numerics.Vector<sbyte> LoadVector(System.Numerics.Vector<sbyte> mask, sbyte* address) { throw null; }
         public static unsafe System.Numerics.Vector<short> LoadVector(System.Numerics.Vector<short> mask, short* address) { throw null; }
         public static unsafe System.Numerics.Vector<int> LoadVector(System.Numerics.Vector<int> mask, int* address) { throw null; }
@@ -4772,6 +4783,15 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<sbyte> Negate(System.Numerics.Vector<sbyte> value) { throw null; }
         public static System.Numerics.Vector<float> Negate(System.Numerics.Vector<float> value) { throw null; }
 
+        public static System.Numerics.Vector<byte> Not(System.Numerics.Vector<byte> value) { throw null; }
+        public static System.Numerics.Vector<short> Not(System.Numerics.Vector<short> value) { throw null; }
+        public static System.Numerics.Vector<int> Not(System.Numerics.Vector<int> value) { throw null; }
+        public static System.Numerics.Vector<long> Not(System.Numerics.Vector<long> value) { throw null; }
+        public static System.Numerics.Vector<sbyte> Not(System.Numerics.Vector<sbyte> value) { throw null; }
+        public static System.Numerics.Vector<ushort> Not(System.Numerics.Vector<ushort> value) { throw null; }
+        public static System.Numerics.Vector<uint> Not(System.Numerics.Vector<uint> value) { throw null; }
+        public static System.Numerics.Vector<ulong> Not(System.Numerics.Vector<ulong> value) { throw null; }
+
         public static System.Numerics.Vector<byte> Or(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
         public static System.Numerics.Vector<short> Or(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
         public static System.Numerics.Vector<int> Or(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
@@ -4805,6 +4825,26 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe void PrefetchInt16(System.Numerics.Vector<ushort> mask, void* address, [ConstantExpected] SvePrefetchType prefetchType) { throw null; }
         public static unsafe void PrefetchInt32(System.Numerics.Vector<uint> mask, void* address, [ConstantExpected] SvePrefetchType prefetchType) { throw null; }
         public static unsafe void PrefetchInt64(System.Numerics.Vector<ulong> mask, void* address, [ConstantExpected] SvePrefetchType prefetchType) { throw null; }
+
+        public static System.Numerics.Vector<double> ReciprocalEstimate(System.Numerics.Vector<double> value) { throw null; }
+        public static System.Numerics.Vector<float> ReciprocalEstimate(System.Numerics.Vector<float> value) { throw null; }
+        public static System.Numerics.Vector<double> ReciprocalExponent(System.Numerics.Vector<double> value) { throw null; }
+        public static System.Numerics.Vector<float> ReciprocalExponent(System.Numerics.Vector<float> value) { throw null; }
+        public static System.Numerics.Vector<double> ReciprocalSqrtEstimate(System.Numerics.Vector<double> value) { throw null; }
+        public static System.Numerics.Vector<float> ReciprocalSqrtEstimate(System.Numerics.Vector<float> value) { throw null; }
+        public static System.Numerics.Vector<double> ReciprocalSqrtStep(System.Numerics.Vector<double> left, System.Numerics.Vector<double> right) { throw null; }
+        public static System.Numerics.Vector<float> ReciprocalSqrtStep(System.Numerics.Vector<float> left, System.Numerics.Vector<float> right) { throw null; }
+        public static System.Numerics.Vector<double> ReciprocalStep(System.Numerics.Vector<double> left, System.Numerics.Vector<double> right) { throw null; }
+        public static System.Numerics.Vector<float> ReciprocalStep(System.Numerics.Vector<float> left, System.Numerics.Vector<float> right) { throw null; }
+        
+        public static System.Numerics.Vector<byte> ReverseBits(System.Numerics.Vector<byte> value) { throw null; }
+        public static System.Numerics.Vector<short> ReverseBits(System.Numerics.Vector<short> value) { throw null; }
+        public static System.Numerics.Vector<int> ReverseBits(System.Numerics.Vector<int> value) { throw null; }
+        public static System.Numerics.Vector<long> ReverseBits(System.Numerics.Vector<long> value) { throw null; }
+        public static System.Numerics.Vector<sbyte> ReverseBits(System.Numerics.Vector<sbyte> value) { throw null; }
+        public static System.Numerics.Vector<ushort> ReverseBits(System.Numerics.Vector<ushort> value) { throw null; }
+        public static System.Numerics.Vector<uint> ReverseBits(System.Numerics.Vector<uint> value) { throw null; }
+        public static System.Numerics.Vector<ulong> ReverseBits(System.Numerics.Vector<ulong> value) { throw null; }
 
         public static System.Numerics.Vector<byte> ReverseElement(System.Numerics.Vector<byte> value) { throw null; }
         public static System.Numerics.Vector<double> ReverseElement(System.Numerics.Vector<double> value) { throw null; }

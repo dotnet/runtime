@@ -3,6 +3,9 @@
 
 #pragma once
 
+class ClassLayout;
+enum class WellKnownArg : unsigned;
+
 class ABIPassingSegment
 {
     regNumber m_register    = REG_NA;
@@ -42,8 +45,8 @@ struct ABIPassingInformation
 private:
     union
     {
-        ABIPassingSegment* Segments;
-        ABIPassingSegment  SingleSegment;
+        ABIPassingSegment* m_segments;
+        ABIPassingSegment  m_singleSegment;
     };
 
 public:
@@ -72,6 +75,7 @@ public:
     ABIPassingSegment&       Segment(unsigned index);
 
     bool HasAnyRegisterSegment() const;
+    bool HasAnyFloatingRegisterSegment() const;
     bool HasAnyStackSegment() const;
     bool HasExactlyOneRegisterSegment() const;
     bool HasExactlyOneStackSegment() const;
