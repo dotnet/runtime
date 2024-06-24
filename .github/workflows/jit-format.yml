@@ -48,7 +48,7 @@ jobs:
           python3 runtime/src/coreclr/scripts/jitformat.py --jitutils jitutils -r ${{ github.workspace }}/runtime -o ${{ matrix.os.name }} -a x64 ${{ matrix.os.cross }}
       
       - name: Publish format.patch
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           path: format.patch
           name: format.${{matrix.os.name}}.patch
