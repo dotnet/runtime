@@ -167,13 +167,7 @@ namespace Microsoft.Extensions.Http.Logging
             }
 
 #if NET
-            return string.Create(queryOffset + 2, (uriString, queryOffset), (result, s) =>
-            {
-                ReadOnlySpan<char> withoutQuery = s.uriString.AsSpan(0, s.queryOffset + 1);
-                withoutQuery.CopyTo(result);
-                Debug.Assert(result[^2] == '?');
-                result[^1] = '*';
-            });
+            return $"{uriString.AsSpan(0, queryOffset + 1)}*";
 #else
             return $"{uriString.Substring(0, queryOffset)}?*";
 #endif
