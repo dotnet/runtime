@@ -443,27 +443,6 @@ extends:
                 eq(variables['isRollingBuild'], true))
 
       #
-      # Build CoreCLR Formatting Job
-      # Only when CoreCLR is changed, and only in the 'main' branch (no release branches;
-      # both Rolling and PR builds).
-      #
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/coreclr/templates/format-job.yml
-          platforms:
-          - linux_x64
-          - windows_x64
-          jobParameters:
-            condition: >-
-              and(
-                or(
-                  eq(variables['Build.SourceBranchName'], 'main'),
-                  eq(variables['System.PullRequest.TargetBranch'], 'main')),
-                or(
-                  eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr_jit.containsChange'], true),
-                  eq(variables['isRollingBuild'], true)))
-
-      #
       # Build CoreCLR with no R2R
       #
       - template: /eng/pipelines/common/platform-matrix.yml

@@ -147,7 +147,7 @@ namespace System.Globalization.Tests
             yield return new object[] { new CultureInfo("fi-FI").DateTimeFormat, "H.mm" };
             yield return new object[] { new CultureInfo("fil-PH").DateTimeFormat, "h:mm tt" };
             yield return new object[] { new CultureInfo("fr-BE").DateTimeFormat, "HH:mm" };
-            yield return new object[] { new CultureInfo("fr-CA").DateTimeFormat, "HH h mm min" }; // HH 'h' mm
+            yield return new object[] { new CultureInfo("fr-CA").DateTimeFormat, "HH 'h' mm 'min'" }; // HH 'h' mm
             yield return new object[] { new CultureInfo("fr-CH").DateTimeFormat, "HH:mm" };
             yield return new object[] { new CultureInfo("fr-FR").DateTimeFormat, "HH:mm" };
             yield return new object[] { new CultureInfo("gu-IN").DateTimeFormat, "hh:mm tt" };
@@ -255,7 +255,7 @@ namespace System.Globalization.Tests
             Assert.Throws<InvalidOperationException>(() => DateTimeFormatInfo.InvariantInfo.ShortTimePattern = "HH:mm");
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Fact]
         public void ShortTimePattern_VerifyTimePatterns()
         {
             Assert.All(CultureInfo.GetCultures(CultureTypes.AllCultures), culture => {

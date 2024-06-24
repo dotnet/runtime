@@ -14299,6 +14299,14 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
     // Here `op` is the non-constant operand, `cons` is the constant operand
     // and `val` is the constant value.
 
+    if (((op->gtFlags & GTF_SIDE_EFFECT) != 0) && tree->OperIsCompare() && ((tree->gtFlags & GTF_RELOP_JMP_USED) != 0))
+    {
+        // TODO-CQ: Some phases currently have an invariant that JTRUE(x)
+        // must have x be a relational operator. As such, we cannot currently
+        // fold such cases and need to preserve the tree as is.
+        return tree;
+    }
+
     switch (oper)
     {
         case GT_LE:

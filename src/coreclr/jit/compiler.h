@@ -6223,7 +6223,7 @@ public:
 
     static fgWalkPreFn fgStress64RsltMulCB;
     void               fgStress64RsltMul();
-    void               fgDebugCheckUpdate();
+    void               fgDebugCheckUpdate(const bool doAggressiveCompaction);
 
     void fgDebugCheckBBNumIncreasing();
     void fgDebugCheckBBlist(bool checkBBNum = false, bool checkBBRefs = true);
@@ -7574,6 +7574,10 @@ public:
     bool optMakeLoopDownwardsCounted(ScalarEvolutionContext& scevContext,
                                      FlowGraphNaturalLoop*   loop,
                                      LoopLocalOccurrences*   loopLocals);
+    bool optMakeExitTestDownwardsCounted(ScalarEvolutionContext& scevContext,
+                                         FlowGraphNaturalLoop*   loop,
+                                         BasicBlock*             exiting,
+                                         LoopLocalOccurrences*   loopLocals);
     bool optWidenPrimaryIV(FlowGraphNaturalLoop* loop,
                            unsigned              lclNum,
                            ScevAddRec*           addRec,
