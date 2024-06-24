@@ -3360,7 +3360,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         }
                         else
                         {
-                            // Else check if this operation has an auxilary type that matches the
+                            // Else check if this operation has an auxiliary type that matches the
                             // mask size.
                             GenTreeHWIntrinsic* embOp = op2->AsHWIntrinsic();
 
