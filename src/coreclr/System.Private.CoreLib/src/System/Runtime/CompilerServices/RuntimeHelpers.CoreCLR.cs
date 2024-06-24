@@ -24,7 +24,7 @@ namespace System.Runtime.CompilerServices
 
             IRuntimeFieldInfo fldInfo = fldHandle.GetRuntimeFieldInfo();
 
-            if (!RuntimeFieldHandle.GetRVAFieldInfo(fldInfo.Value, out IntPtr address, out uint size))
+            if (!RuntimeFieldHandle.GetRVAFieldInfo(fldInfo.Value, out void* address, out uint size))
                 throw new ArgumentException(SR.Argument_BadFieldForInitializeArray);
 
             // Note that we do not check that the field is actually in the PE file that is initializing
@@ -94,7 +94,7 @@ namespace System.Runtime.CompilerServices
 
             IRuntimeFieldInfo fldInfo = fldHandle.GetRuntimeFieldInfo();
 
-            if (!RuntimeFieldHandle.GetRVAFieldInfo(fldInfo.Value, out IntPtr data, out uint totalSize))
+            if (!RuntimeFieldHandle.GetRVAFieldInfo(fldInfo.Value, out void* data, out uint totalSize))
                 throw new ArgumentException(SR.Argument_BadFieldForInitializeArray);
 
             TypeHandle th = targetTypeHandle.GetNativeTypeHandle();
@@ -105,8 +105,9 @@ namespace System.Runtime.CompilerServices
                 throw new ArgumentException(SR.Argument_BadArrayForInitializeArray);
 
             uint targetTypeSize = targetMT->GetNumInstanceFieldBytes();
+            Debug.Assert(uint.IsPow2(targetTypeSize));
 
-            if (data % targetTypeSize != 0)
+            if (((nuint)data & (targetTypeSize - 1)) != 0)
                 throw new ArgumentException(SR.Argument_BadFieldForInitializeArray);
 
             if (!BitConverter.IsLittleEndian)
