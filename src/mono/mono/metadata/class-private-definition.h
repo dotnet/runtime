@@ -130,7 +130,7 @@ struct _MonoClass {
 	MonoPropertyBag infrequent_data;
 
 	void *variant_search_table;
-	guint variant_search_table_length;
+	int variant_search_table_length;
 };
 
 struct _MonoClassDef {
