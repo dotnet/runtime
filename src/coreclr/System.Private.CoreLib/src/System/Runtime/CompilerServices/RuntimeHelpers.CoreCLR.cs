@@ -817,7 +817,7 @@ namespace System.Runtime.CompilerServices
     /// <summary>
     /// A type handle, which can wrap either a pointer to a <c>TypeDesc</c> or to a <see cref="MethodTable"/>.
     /// </summary>
-    internal readonly unsafe partial struct TypeHandle
+    internal unsafe struct TypeHandle
     {
         // Subset of src\vm\typehandle.h
 
@@ -864,8 +864,6 @@ namespace System.Runtime.CompilerServices
         {
             return new TypeHandle((void*)RuntimeTypeHandle.ToIntPtr(typeof(T).TypeHandle));
         }
-
-        public static bool AreSameType(TypeHandle left, TypeHandle right) => left.m_asTAddr == right.m_asTAddr;
     }
 
     // Helper structs used for tail calls via helper.
