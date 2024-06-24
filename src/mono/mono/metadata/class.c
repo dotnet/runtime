@@ -2002,10 +2002,10 @@ mono_class_interface_offset_with_variance (MonoClass *klass, MonoClass *itf, gbo
 		return m_class_get_interface_offsets_packed (klass) [found];
 	} else if (has_variance) {
 		MonoVarianceSearchEntry *vst;
-		guint vst_count;
+		int vst_count;
 		mono_class_get_variance_search_table (klass, &vst, &vst_count);
 
-		for (guint i = 0; i < vst_count; i++) {
+		for (int i = 0; i < vst_count; i++) {
 			if (!mono_class_is_variant_compatible (itf, vst [i].klass, FALSE))
 				continue;
 
