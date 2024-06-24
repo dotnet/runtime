@@ -2727,6 +2727,7 @@ void emitter::emitInsSve_R_R_I(instruction     ins,
             if (sopt == INS_SCALABLE_OPTS_WITH_VECTOR_PAIR)
             {
                 fmt = IF_SVE_BQ_2A;
+                unreached(); // Not supported yet.
             }
             else
             {

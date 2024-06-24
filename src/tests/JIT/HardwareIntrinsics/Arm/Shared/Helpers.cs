@@ -17,46 +17,13 @@ namespace JIT.HardwareIntrinsics.Arm
 {
     static class Helpers
     {
-        public static Vector<T> CreateAndFillMaskFromFirstElement<T>(T value) where T: unmanaged
+        public static Vector<T> InitVector<T>(Func<int, T> f)
         {
             var count = Vector<T>.Count;
             var arr = new T[count];
             for (var i = 0; i < count; i++)
             {
-                arr[i] = value;
-            }
-            return new Vector<T>(arr);
-        }
-
-        public static Vector<T> CreateAndFillMaskFromSecondElement<T>(T value) where T: unmanaged
-        {
-            var count = Vector<T>.Count;
-            var arr = new T[count];
-            for (var i = 1; i < count; i++)
-            {
-                arr[i] = value;
-            }
-            return new Vector<T>(arr);
-        }
-
-        public static Vector<T> CreateAndFillMaskFromLastElement<T>(T value) where T: unmanaged
-        {
-            var count = Vector<T>.Count;
-            var arr = new T[count];
-            for (var i = count - 1; i >= 0; i--)
-            {
-                arr[i] = value;
-            }
-            return new Vector<T>(arr);
-        }
-
-        public static Vector<T> CreateAndFillMaskFromSecondToLastElement<T>(T value) where T: unmanaged
-        {
-            var count = Vector<T>.Count;
-            var arr = new T[count];
-            for (var i = count - 2; i >= 0; i--)
-            {
-                arr[i] = value;
+                arr[i] = f(i);
             }
             return new Vector<T>(arr);
         }

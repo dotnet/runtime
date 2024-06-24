@@ -179,6 +179,36 @@ namespace JIT.HardwareIntrinsics.Arm
             }
         }
 
+        /// Find any occurrence where both left and right and set
+        static bool TestAnyTrue(Vector<{MaskBaseType}> left, Vector<{MaskBaseType}> right)
+        {
+            for (var i = 0; i < Vector<{MaskBaseType}>.Count; i++)
+            {
+                if ((left[i] > 0) && (right[i] > 0)) return true;
+            }
+            return false;
+        }
+
+        /// Find first true value in left, and return contents of right
+        static bool TestFirstTrue(Vector<{MaskBaseType}> left, Vector<{MaskBaseType}> right)
+        {
+            for (var i = 0; i < Vector<{MaskBaseType}>.Count; i++)
+            {
+                if (left[i] > 0) return (right[i] > 0) ? true : false;
+            }
+            return false;
+        }
+
+        /// Find last true value in left, and return contents of right
+        static bool TestLastTrue(Vector<{MaskBaseType}> left, Vector<{MaskBaseType}> right)
+        {
+            for (var i = Vector<{MaskBaseType}>.Count - 1; i > 0; i--)
+            {
+                if (left[i] > 0) return (right[i] > 0) ? true : false;
+            }
+            return false;
+        }
+
         private void ValidateResult(Vector<{MaskBaseType}> op1, Vector<{MaskBaseType}> op2, bool result, [CallerMemberName] string method = "")
         {
             bool succeeded = true;

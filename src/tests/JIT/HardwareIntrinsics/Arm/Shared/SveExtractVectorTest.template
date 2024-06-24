@@ -34,6 +34,8 @@ namespace JIT.HardwareIntrinsics.Arm
                 {
                     // Validates basic functionality works, using Load
                     test.RunBasicScenario_Load();
+                    test.RunBasicScenario_Load_Wrapper();
+                    test.RunBasicScenario_Load_WrapperWithIndex();
                 }
 
                 // Validates calling via reflection works, using Unsafe.Read
@@ -201,6 +203,46 @@ namespace JIT.HardwareIntrinsics.Arm
                 {LoadIsa}.Load{Op2VectorType}(Sve.CreateTrueMask{Op2BaseType}(SveMaskPattern.All), ({Op2BaseType}*)(_dataTable.inArray2Ptr)),
                 ElementIndex
             );
+
+            Unsafe.Write(_dataTable.outArrayPtr, result);
+            ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, _dataTable.outArrayPtr);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        {RetVectorType}<{RetBaseType}> Wrapper<T>()
+        {
+            return {Isa}.{Method}(
+                {LoadIsa}.Load{Op1VectorType}(Sve.CreateTrueMask{Op1BaseType}(SveMaskPattern.All), ({Op1BaseType}*)(_dataTable.inArray1Ptr)),
+                {LoadIsa}.Load{Op2VectorType}(Sve.CreateTrueMask{Op2BaseType}(SveMaskPattern.All), ({Op2BaseType}*)(_dataTable.inArray2Ptr)),
+                {ElementIndex}
+            );
+        }
+
+        public void RunBasicScenario_Load_Wrapper()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_Load_Wrapper));
+
+            var result = Wrapper<{RetBaseType}>();
+
+            Unsafe.Write(_dataTable.outArrayPtr, result);
+            ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, _dataTable.outArrayPtr);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        {RetVectorType}<{RetBaseType}> WrapperWithIndex<T>(byte index)
+        {
+            return {Isa}.{Method}(
+                {LoadIsa}.Load{Op1VectorType}(Sve.CreateTrueMask{Op1BaseType}(SveMaskPattern.All), ({Op1BaseType}*)(_dataTable.inArray1Ptr)),
+                {LoadIsa}.Load{Op2VectorType}(Sve.CreateTrueMask{Op2BaseType}(SveMaskPattern.All), ({Op2BaseType}*)(_dataTable.inArray2Ptr)),
+                index
+            );
+        }
+
+        public void RunBasicScenario_Load_WrapperWithIndex()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_Load_WrapperWithIndex));
+
+            var result = WrapperWithIndex<{RetBaseType}>(ElementIndex);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, _dataTable.outArrayPtr);
