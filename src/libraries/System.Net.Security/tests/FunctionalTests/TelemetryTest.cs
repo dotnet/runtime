@@ -5,6 +5,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.Tracing;
 using System.Linq;
+using System.Net.Test.Common;
 using System.Security.Authentication;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
@@ -15,6 +16,9 @@ namespace System.Net.Security.Tests
 {
     public class TelemetryTest
     {
+        private const string ActivitySourceName = "System.Net.Security";
+        private const string ActivityName = ActivitySourceName + ".TlsHandshake";
+
         [Fact]
         public static void EventSource_ExistsWithCorrectId()
         {
@@ -25,6 +29,35 @@ namespace System.Net.Security.Tests
             Assert.Equal(Guid.Parse("7beee6b1-e3fa-5ddb-34be-1404ad0e2520"), EventSource.GetGuid(esType));
 
             Assert.NotEmpty(EventSource.GenerateManifest(esType, esType.Assembly.Location));
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "X509 certificate store is not supported on iOS or tvOS.")] // Match SslStream_StreamToStream_Authentication_Success
+        public async Task SuccessfulHandshake_ActivityRecorded()
+        {
+            await RemoteExecutor.Invoke(async () =>
+            {
+                using ActivityRecorder recorder = new ActivityRecorder(ActivitySourceName, ActivityName);
+
+                var test = new SslStreamStreamToStreamTest_Async();
+                await test.SslStream_StreamToStream_Authentication_Success();
+
+                recorder.VerifyActivityRecorded(2); // client + server
+            }).DisposeAsync();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public async Task FailingHandshake_ActivityRecorded()
+        {
+            await RemoteExecutor.Invoke(async () =>
+            {
+                using ActivityRecorder recorder = new ActivityRecorder(ActivitySourceName, ActivityName);
+
+                var test = new SslStreamStreamToStreamTest_Async();
+                await test.SslStream_ServerLocalCertificateSelectionCallbackReturnsNull_Throw();
+
+                recorder.VerifyActivityRecorded(2); // client + server
+            }).DisposeAsync();
         }
 
         [OuterLoop]

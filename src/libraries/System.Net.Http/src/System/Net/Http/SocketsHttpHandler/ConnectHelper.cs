@@ -55,7 +55,7 @@ namespace System.Net.Http
             return sslOptions;
         }
 
-        public static async ValueTask<SslStream> EstablishSslConnectionAsync(SslClientAuthenticationOptions sslOptions, HttpRequestMessage request, bool async, Stream stream, CancellationToken cancellationToken)
+        public static async ValueTask<SslStream> EstablishSslConnectionAsync(SslClientAuthenticationOptions sslOptions, HttpRequestMessage request, bool async, Stream stream, Activity? activity, CancellationToken cancellationToken)
         {
             sslOptions = SetUpRemoteCertificateValidationCallback(sslOptions, request);
 
@@ -78,6 +78,7 @@ namespace System.Net.Http
             catch (Exception e)
             {
                 sslStream.Dispose();
+                activity?.Stop();
 
                 if (e is OperationCanceledException)
                 {

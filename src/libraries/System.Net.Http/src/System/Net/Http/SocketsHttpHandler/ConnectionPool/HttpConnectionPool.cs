@@ -32,6 +32,7 @@ namespace System.Net.Http
         private static readonly List<SslApplicationProtocol> s_http3ApplicationProtocols = new List<SslApplicationProtocol>() { SslApplicationProtocol.Http3 };
         private static readonly List<SslApplicationProtocol> s_http2ApplicationProtocols = new List<SslApplicationProtocol>() { SslApplicationProtocol.Http2, SslApplicationProtocol.Http11 };
         private static readonly List<SslApplicationProtocol> s_http2OnlyApplicationProtocols = new List<SslApplicationProtocol>() { SslApplicationProtocol.Http2 };
+        private static readonly ActivitySource s_connectionActivitySource = new ActivitySource(DiagnosticsHandlerLoggingStrings.ConnectionNamespace);
 
         private readonly HttpConnectionPoolManager _poolManager;
         private readonly HttpConnectionKind _kind;
@@ -561,31 +562,37 @@ namespace System.Net.Http
             }
         }
 
-        private async ValueTask<(Stream, TransportContext?, IPEndPoint?)> ConnectAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
+        private async ValueTask<(Stream, TransportContext?, Activity?, IPEndPoint?)> ConnectAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
             Stream? stream = null;
             IPEndPoint? remoteEndPoint = null;
+
+            // Connection activities should be new roots and not parented under whatever
+            // request happens to be in progress when the connection is started.
+            Activity.Current = null;
+            Activity? activity = s_connectionActivitySource.StartActivity(DiagnosticsHandlerLoggingStrings.ConnectionActivityName);
+
             switch (_kind)
             {
                 case HttpConnectionKind.Http:
                 case HttpConnectionKind.Https:
                 case HttpConnectionKind.ProxyConnect:
-                    stream = await ConnectToTcpHostAsync(_originAuthority.IdnHost, _originAuthority.Port, request, async, cancellationToken).ConfigureAwait(false);
+                    stream = await ConnectToTcpHostAsync(_originAuthority.IdnHost, _originAuthority.Port, request, async, activity, cancellationToken).ConfigureAwait(false);
                     // remoteEndPoint is returned for diagnostic purposes.
                     remoteEndPoint = GetRemoteEndPoint(stream);
                     if (_kind == HttpConnectionKind.ProxyConnect && _sslOptionsProxy != null)
                     {
-                        stream = await ConnectHelper.EstablishSslConnectionAsync(_sslOptionsProxy, request, async, stream, cancellationToken).ConfigureAwait(false);
+                        stream = await ConnectHelper.EstablishSslConnectionAsync(_sslOptionsProxy, request, async, stream, activity, cancellationToken).ConfigureAwait(false);
                     }
                     break;
 
                 case HttpConnectionKind.Proxy:
-                    stream = await ConnectToTcpHostAsync(_proxyUri!.IdnHost, _proxyUri.Port, request, async, cancellationToken).ConfigureAwait(false);
+                    stream = await ConnectToTcpHostAsync(_proxyUri!.IdnHost, _proxyUri.Port, request, async, activity, cancellationToken).ConfigureAwait(false);
                     // remoteEndPoint is returned for diagnostic purposes.
                     remoteEndPoint = GetRemoteEndPoint(stream);
                     if (_sslOptionsProxy != null)
                     {
-                        stream = await ConnectHelper.EstablishSslConnectionAsync(_sslOptionsProxy, request, async, stream, cancellationToken).ConfigureAwait(false);
+                        stream = await ConnectHelper.EstablishSslConnectionAsync(_sslOptionsProxy, request, async, stream, activity, cancellationToken).ConfigureAwait(false);
                     }
                     break;
 
@@ -602,7 +609,7 @@ namespace System.Net.Http
 
                 case HttpConnectionKind.SocksTunnel:
                 case HttpConnectionKind.SslSocksTunnel:
-                    stream = await EstablishSocksTunnel(request, async, cancellationToken).ConfigureAwait(false);
+                    stream = await EstablishSocksTunnel(request, async, activity, cancellationToken).ConfigureAwait(false);
                     // remoteEndPoint is returned for diagnostic purposes.
                     remoteEndPoint = GetRemoteEndPoint(stream);
                     break;
@@ -616,7 +623,7 @@ namespace System.Net.Http
                 SslStream? sslStream = stream as SslStream;
                 if (sslStream == null)
                 {
-                    sslStream = await ConnectHelper.EstablishSslConnectionAsync(GetSslOptionsForRequest(request), request, async, stream, cancellationToken).ConfigureAwait(false);
+                    sslStream = await ConnectHelper.EstablishSslConnectionAsync(GetSslOptionsForRequest(request), request, async, stream, activity, cancellationToken).ConfigureAwait(false);
                 }
                 else
                 {
@@ -631,10 +638,10 @@ namespace System.Net.Http
 
             static IPEndPoint? GetRemoteEndPoint(Stream stream) => (stream as NetworkStream)?.Socket?.RemoteEndPoint as IPEndPoint;
 
-            return (stream, transportContext, remoteEndPoint);
+            return (stream, transportContext, activity, remoteEndPoint);
         }
 
-        private async ValueTask<Stream> ConnectToTcpHostAsync(string host, int port, HttpRequestMessage initialRequest, bool async, CancellationToken cancellationToken)
+        private async ValueTask<Stream> ConnectToTcpHostAsync(string host, int port, HttpRequestMessage initialRequest, bool async, Activity? activity, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -670,9 +677,10 @@ namespace System.Net.Http
                         }
                         else
                         {
+                            IPAddress[] addresses = Dns.GetHostAddresses(host);
                             using (cancellationToken.UnsafeRegister(static s => ((Socket)s!).Dispose(), socket))
                             {
-                                socket.Connect(endPoint);
+                                socket.Connect(addresses, port);
                             }
                         }
 
@@ -689,9 +697,10 @@ namespace System.Net.Http
             }
             catch (Exception ex)
             {
+                activity?.Stop();
                 throw ex is OperationCanceledException oce && oce.CancellationToken == cancellationToken ?
                     CancellationHelper.CreateOperationCanceledException(innerException: null, cancellationToken) :
-                    ConnectHelper.CreateWrappedException(ex, endPoint.Host, endPoint.Port, cancellationToken);
+                    ConnectHelper.CreateWrappedException(ex, host, port, cancellationToken);
             }
         }
 
@@ -785,11 +794,11 @@ namespace System.Net.Http
             }
         }
 
-        private async ValueTask<Stream> EstablishSocksTunnel(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
+        private async ValueTask<Stream> EstablishSocksTunnel(HttpRequestMessage request, bool async, Activity? activity, CancellationToken cancellationToken)
         {
             Debug.Assert(_proxyUri != null);
 
-            Stream stream = await ConnectToTcpHostAsync(_proxyUri.IdnHost, _proxyUri.Port, request, async, cancellationToken).ConfigureAwait(false);
+            Stream stream = await ConnectToTcpHostAsync(_proxyUri.IdnHost, _proxyUri.Port, request, async, activity, cancellationToken).ConfigureAwait(false);
 
             try
             {

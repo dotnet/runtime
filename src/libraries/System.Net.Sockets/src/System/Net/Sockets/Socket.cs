@@ -2782,7 +2782,7 @@ namespace System.Net.Sockets
 
                 WildcardBindForConnectIfNecessary(endPointSnapshot.AddressFamily);
 
-                SocketsTelemetry.Log.ConnectStart(e._socketAddress!);
+                e._activity = SocketsTelemetry.Log.ConnectStart(e._socketAddress!, keepActivityCurrent: true);
 
                 // Prepare for the native call.
                 try
@@ -2792,7 +2792,8 @@ namespace System.Net.Sockets
                 }
                 catch (Exception ex)
                 {
-                    SocketsTelemetry.Log.AfterConnect(SocketError.NotSocket, ex.Message);
+                    SocketsTelemetry.Log.AfterConnect(SocketError.NotSocket, e._activity, ex.Message);
+                    e._activity = null;
                     throw;
                 }
 
@@ -2808,7 +2809,8 @@ namespace System.Net.Sockets
                 }
                 catch (Exception ex)
                 {
-                    SocketsTelemetry.Log.AfterConnect(SocketError.NotSocket, ex.Message);
+                    SocketsTelemetry.Log.AfterConnect(SocketError.NotSocket, e._activity, ex.Message);
+                    e._activity = null;
 
                     _localEndPoint = null;
 
@@ -3189,7 +3191,7 @@ namespace System.Net.Sockets
 
         private void DoConnect(EndPoint endPointSnapshot, SocketAddress socketAddress)
         {
-            SocketsTelemetry.Log.ConnectStart(socketAddress);
+            Activity? activity = SocketsTelemetry.Log.ConnectStart(socketAddress, keepActivityCurrent: false);
             SocketError errorCode;
             try
             {
@@ -3197,7 +3199,7 @@ namespace System.Net.Sockets
             }
             catch (Exception ex)
             {
-                SocketsTelemetry.Log.AfterConnect(SocketError.NotSocket, ex.Message);
+                SocketsTelemetry.Log.AfterConnect(SocketError.NotSocket, activity, ex.Message);
                 throw;
             }
 
@@ -3210,12 +3212,12 @@ namespace System.Net.Sockets
                 UpdateStatusAfterSocketError(socketException);
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, socketException);
 
-                SocketsTelemetry.Log.AfterConnect(errorCode);
+                SocketsTelemetry.Log.AfterConnect(errorCode, activity);
 
                 throw socketException;
             }
 
-            SocketsTelemetry.Log.AfterConnect(SocketError.Success);
+            SocketsTelemetry.Log.AfterConnect(SocketError.Success, activity);
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"connection to:{endPointSnapshot}");
 

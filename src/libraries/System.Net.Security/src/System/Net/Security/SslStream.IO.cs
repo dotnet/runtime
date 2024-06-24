@@ -15,6 +15,11 @@ namespace System.Net.Security
 {
     public partial class SslStream
     {
+        private const string ActivitySourceName = "System.Net.Security";
+        private const string ActivityName = ActivitySourceName + ".TlsHandshake";
+
+        private static readonly ActivitySource s_activitySource = new(ActivitySourceName);
+
         private readonly SslAuthenticationOptions _sslAuthenticationOptions = new SslAuthenticationOptions();
         private int _nestedAuth;
         private bool _isRenego;
@@ -106,15 +111,23 @@ namespace System.Net.Security
         {
             ThrowIfExceptional();
 
-            if (NetSecurityTelemetry.Log.IsEnabled())
+            Activity? activity = s_activitySource.StartActivity(ActivityName, IsServer ? ActivityKind.Server : ActivityKind.Client);
+            try
             {
-                return ProcessAuthenticationWithTelemetryAsync(isAsync, cancellationToken);
+                if (NetSecurityTelemetry.Log.IsEnabled())
+                {
+                    return ProcessAuthenticationWithTelemetryAsync(isAsync, cancellationToken);
+                }
+                else
+                {
+                    return isAsync ?
+                        ForceAuthenticationAsync<AsyncReadWriteAdapter>(IsServer, null, cancellationToken) :
+                        ForceAuthenticationAsync<SyncReadWriteAdapter>(IsServer, null, cancellationToken);
+                }
             }
-            else
+            finally
             {
-                return isAsync ?
-                    ForceAuthenticationAsync<AsyncReadWriteAdapter>(IsServer, null, cancellationToken) :
-                    ForceAuthenticationAsync<SyncReadWriteAdapter>(IsServer, null, cancellationToken);
+                activity?.Stop();
             }
         }
 

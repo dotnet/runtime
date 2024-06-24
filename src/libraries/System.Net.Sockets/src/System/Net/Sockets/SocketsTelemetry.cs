@@ -10,6 +10,10 @@ namespace System.Net.Sockets
     [EventSource(Name = "System.Net.Sockets")]
     internal sealed class SocketsTelemetry : EventSource
     {
+        private const string ActivitySourceName = "System.Net.Sockets";
+        private const string ConnectActivityName = ActivitySourceName + ".Connect";
+        private static readonly ActivitySource s_connectActivitySource = new(ActivitySourceName);
+
         public static readonly SocketsTelemetry Log = new SocketsTelemetry();
 
         private PollingCounter? _currentOutgoingConnectAttemptsCounter;
@@ -77,7 +81,7 @@ namespace System.Net.Sockets
         }
 
         [NonEvent]
-        public void ConnectStart(SocketAddress address)
+        public Activity? ConnectStart(SocketAddress address, bool keepActivityCurrent)
         {
             Interlocked.Increment(ref _currentOutgoingConnectAttempts);
 
@@ -85,13 +89,29 @@ namespace System.Net.Sockets
             {
                 ConnectStart(address.ToString());
             }
+
+            Activity? activity = null;
+            if (s_connectActivitySource.HasListeners())
+            {
+                Activity? activityToReset = keepActivityCurrent ? Activity.Current : null;
+                activity = s_connectActivitySource.StartActivity(ConnectActivityName);
+                if (keepActivityCurrent)
+                {
+                    // Do not overwrite Activity.Current in the caller's ExecutionContext.
+                    Activity.Current = activityToReset;
+                }
+            }
+
+            return activity;
         }
 
         [NonEvent]
-        public void AfterConnect(SocketError error, string? exceptionMessage = null)
+        public void AfterConnect(SocketError error, Activity? activity, string? exceptionMessage = null)
         {
             long newCount = Interlocked.Decrement(ref _currentOutgoingConnectAttempts);
             Debug.Assert(newCount >= 0);
+
+            activity?.Stop();
 
             if (error == SocketError.Success)
             {
