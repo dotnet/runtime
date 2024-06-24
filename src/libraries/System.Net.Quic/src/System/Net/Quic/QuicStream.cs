@@ -349,7 +349,7 @@ public sealed partial class QuicStream
     /// <param name="buffer">The region of memory to write data from.</param>
     /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None"/>.</param>
     /// <param name="completeWrites">Notifies the peer about gracefully closing the write side, i.e.: sends FIN flag with the data.</param>
-    public async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, bool completeWrites, CancellationToken cancellationToken = default)
+    public ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, bool completeWrites, CancellationToken cancellationToken = default)
     {
         ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
@@ -379,8 +379,7 @@ public sealed partial class QuicStream
         // No need to call anything since we already have a result, most likely an exception.
         if (valueTask.IsCompleted)
         {
-            await valueTask.ConfigureAwait(false);
-            return;
+            return valueTask;
         }
 
         // For an empty buffer complete immediately, close the writing side of the stream if necessary.
@@ -391,8 +390,7 @@ public sealed partial class QuicStream
             {
                 CompleteWrites();
             }
-            await valueTask.ConfigureAwait(false);
-            return;
+            return valueTask;
         }
 
         // We own the lock, abort might happen, but exception will get stored instead.
@@ -428,7 +426,7 @@ public sealed partial class QuicStream
             }
         }
 
-        await valueTask.ConfigureAwait(false);
+        return valueTask;
     }
 
     /// <summary>
