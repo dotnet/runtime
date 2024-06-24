@@ -223,7 +223,7 @@ void CodeGen::genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowe
         regNum += 1;
     } while (maskSaveRegs != 0);
 
-    maskSaveRegs = (int64_t)(regsToSaveMask.getLow() & RBM_FLT_CALLEE_SAVED) >> FIRST_FLT_CALLEE_SAVED;
+    maskSaveRegs = (int64_t)(regsToSaveMask.getLow() & (int64_t)RBM_FLT_CALLEE_SAVED) >> FIRST_FLT_CALLEE_SAVED;
     regNum       = FIRST_FLT_CALLEE_SAVED;
     do
     {
