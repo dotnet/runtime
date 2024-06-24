@@ -4189,6 +4189,55 @@ mono_class_set_runtime_vtable (MonoClass *klass, MonoVTable *vtable)
 	klass->runtime_vtable = vtable;
 }
 
+static void
+build_variance_search_table (MonoClass *klass) {
+	int buf_size = m_class_get_interface_offsets_count (klass), buf_count = 0;
+	MonoVarianceSearchEntry *buf = g_alloca (buf_size * sizeof(MonoVarianceSearchEntry));
+	memset (buf, 0, buf_size * sizeof(MonoVarianceSearchEntry));
+
+	MonoClass *current = klass;
+	while (current) {
+		// g_print ("%s.%s:\n", m_class_get_name_space (current), m_class_get_name (current));
+		MonoClass **ifaces = m_class_get_interfaces (current);
+		for (guint i = 0, c = m_class_get_interface_count (current); i < c; i++) {
+			MonoClass *iface = ifaces [i];
+			if (!mono_class_has_variant_generic_params (iface))
+				continue;
+
+			// FIXME: Avoid adding duplicates.
+			// g_print ("-> %s.%s\n", m_class_get_name_space (iface), m_class_get_name (iface));
+			g_assert (buf_count < buf_size);
+			buf[buf_count].klass = iface;
+			buf[buf_count].interface_offset = mono_class_interface_offset (klass, iface);
+			buf_count++;
+		}
+
+		current = current->parent;
+	}
+
+	if (buf_count) {
+		guint bytes = buf_count * sizeof(MonoVarianceSearchEntry);
+		klass->variant_search_table = g_malloc (bytes);
+		memcpy (klass->variant_search_table, buf, bytes);
+	} else
+		klass->variant_search_table = NULL;
+	klass->variant_search_table_length = buf_count;
+	klass->variant_search_table_inited = TRUE;
+}
+
+void
+mono_class_get_variance_search_table (MonoClass *klass, MonoVarianceSearchEntry **table, int *table_size) {
+	g_assert (klass);
+	g_assert (table);
+	g_assert (table_size);
+
+	if (!klass->variant_search_table_inited)
+		build_variance_search_table (klass);
+
+	*table = (MonoVarianceSearchEntry *)klass->variant_search_table;
+	*table_size = klass->variant_search_table_length;
+}
+
 /**
  * mono_classes_init:
  *
