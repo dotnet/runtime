@@ -2012,6 +2012,8 @@ mono_class_interface_offset_with_variance (MonoClass *klass, MonoClass *itf, gbo
 			*non_exact_match = (vst [i].interface_offset != exact_match);
 			return vst [i].interface_offset;
 		}
+
+		return exact_match;
 	}
 
 	return -1;
