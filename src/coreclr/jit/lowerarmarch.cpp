@@ -3365,7 +3365,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                             GenTreeHWIntrinsic* embOp = op2->AsHWIntrinsic();
 
                             // For now, make sure that we get here only for intrinsics that we are
-                            // sure about to rely on auxilary type's size.
+                            // sure about to rely on auxiliary type's size.
                             assert((embOp->GetHWIntrinsicId() == NI_Sve_ConvertToInt32) ||
                                    (embOp->GetHWIntrinsicId() == NI_Sve_ConvertToUInt32));
 
