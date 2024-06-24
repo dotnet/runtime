@@ -1933,6 +1933,60 @@ mono_class_interface_offset (MonoClass *klass, MonoClass *itf)
 	return -1;
 }
 
+typedef struct VarianceSearchEntry {
+	MonoClass *klass;
+	int interface_offset;
+} VarianceSearchEntry;
+
+static void
+build_variance_search_table (MonoClass *klass) {
+	guint buf_size = m_class_get_interface_offsets_count (klass), buf_count = 0;
+	VarianceSearchEntry *buf = g_alloca (buf_size * sizeof(VarianceSearchEntry));
+	memset (buf, 0, buf_size * sizeof(VarianceSearchEntry));
+
+	MonoClass *current = klass;
+	while (current) {
+		// g_print ("%s.%s:\n", m_class_get_name_space (current), m_class_get_name (current));
+		MonoClass **ifaces = m_class_get_interfaces (current);
+		for (guint i = 0, c = m_class_get_interface_count (current); i < c; i++) {
+			MonoClass *iface = ifaces [i];
+			if (!mono_class_has_variant_generic_params (iface))
+				continue;
+
+			// FIXME: Avoid adding duplicates.
+			// g_print ("-> %s.%s\n", m_class_get_name_space (iface), m_class_get_name (iface));
+			g_assert (buf_count < buf_size);
+			buf[buf_count].klass = iface;
+			buf[buf_count].interface_offset = mono_class_interface_offset (klass, iface);
+			buf_count++;
+		}
+
+		current = current->parent;
+	}
+
+	if (buf_count) {
+		guint bytes = buf_count * sizeof(VarianceSearchEntry);
+		klass->variant_search_table = g_malloc (bytes);
+		memcpy (klass->variant_search_table, buf, bytes);
+	} else
+		klass->variant_search_table = NULL;
+	klass->variant_search_table_length = buf_count;
+	klass->variant_search_table_inited = TRUE;
+}
+
+static void
+get_variance_search_table (MonoClass *klass, VarianceSearchEntry **table, guint *table_size) {
+	g_assert (klass);
+	g_assert (table);
+	g_assert (table_size);
+
+	if (!klass->variant_search_table_inited)
+		build_variance_search_table (klass);
+
+	*table = (VarianceSearchEntry *)klass->variant_search_table;
+	*table_size = klass->variant_search_table_length;
+}
+
 /**
  * mono_class_interface_offset_with_variance:
  *
@@ -1959,11 +2013,11 @@ mono_class_interface_offset_with_variance (MonoClass *klass, MonoClass *itf, gbo
 
 	int klass_interface_offsets_count = m_class_get_interface_offsets_count (klass);
 
-	if (m_class_is_array_special_interface  (itf) && m_class_get_rank (klass) < 2) {
+	if (m_class_is_array_special_interface (itf) && m_class_get_rank (klass) < 2) {
 		MonoClass *gtd = mono_class_get_generic_type_definition (itf);
 		int found = -1;
 
-		for (i = klass_interface_offsets_count - 1; i >= 0; i--) {
+		for (i = 0; i < klass_interface_offsets_count; i++) {
 			if (mono_class_is_variant_compatible (itf, m_class_get_interfaces_packed (klass) [i], FALSE)) {
 				/*
 				g_print (
@@ -1981,7 +2035,7 @@ mono_class_interface_offset_with_variance (MonoClass *klass, MonoClass *itf, gbo
 		if (found != -1)
 			return m_class_get_interface_offsets_packed (klass) [found];
 
-		for (i = klass_interface_offsets_count - 1; i >= 0; i--) {
+		for (i = 0; i < klass_interface_offsets_count; i++) {
 			if (mono_class_get_generic_type_definition (m_class_get_interfaces_packed (klass) [i]) == gtd) {
 				/*
 				g_print (
@@ -2000,22 +2054,17 @@ mono_class_interface_offset_with_variance (MonoClass *klass, MonoClass *itf, gbo
 			return -1;
 
 		return m_class_get_interface_offsets_packed (klass) [found];
-	}
+	} else if (has_variance) {
+		VarianceSearchEntry *vst;
+		guint vst_count;
+		get_variance_search_table (klass, &vst, &vst_count);
 
-	if (!has_variance)
-		return -1;
+		for (guint i = 0; i < vst_count; i++) {
+			if (!mono_class_is_variant_compatible (itf, vst [i].klass, FALSE))
+				continue;
 
-	for (i = klass_interface_offsets_count - 1; i >= 0; i--) {
-		if (mono_class_is_variant_compatible (itf, m_class_get_interfaces_packed (klass) [i], FALSE)) {
-			/*
-			g_print (
-				"is_variant_compatible (%s, %s, FALSE) == true\n",
-				iname,
-				mono_type_get_name_full (m_class_get_byval_arg (m_class_get_interfaces_packed (klass) [i]), MONO_TYPE_NAME_FORMAT_FULL_NAME)
-			);
-			*/
-			*non_exact_match = (i != exact_match);
-			return m_class_get_interface_offsets_packed (klass) [i];
+			*non_exact_match = (vst [i].interface_offset != exact_match);
+			return vst [i].interface_offset;
 		}
 	}
 
