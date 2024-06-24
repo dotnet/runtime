@@ -947,7 +947,6 @@ struct HWIntrinsicInfo
                 default:
                     break;
             }
-            return false;
         }
         return false;
     }
