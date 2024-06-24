@@ -1580,6 +1580,10 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static double Divide(double op1, double op2) => op1 / op2;
 
+        public static float Scale(float op1, int op2) => op1 * MathF.Pow((float)2.0, op2);
+
+        public static double Scale(double op1, long op2) =>  op1 * Math.Pow(2.0, op2);
+
         public static float Sqrt(float value) => MathF.Sqrt(value);
 
         public static double Sqrt(double value) => Math.Sqrt(value);

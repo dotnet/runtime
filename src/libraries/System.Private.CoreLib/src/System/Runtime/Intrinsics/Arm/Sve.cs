@@ -5437,6 +5437,27 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> SaturatingIncrementByActiveElementCount(Vector<ulong> value, Vector<ulong> from) => SaturatingIncrementByActiveElementCount(value, from);
 
 
+        ///  Scale : Adjust exponent
+
+        /// <summary>
+        /// svfloat64_t svscale[_f64]_m(svbool_t pg, svfloat64_t op1, svint64_t op2)
+        ///   FSCALE Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        /// svfloat64_t svscale[_f64]_x(svbool_t pg, svfloat64_t op1, svint64_t op2)
+        ///   FSCALE Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        /// svfloat64_t svscale[_f64]_z(svbool_t pg, svfloat64_t op1, svint64_t op2)
+        /// </summary>
+        public static unsafe Vector<double> Scale(Vector<double> left, Vector<long> right) => Scale(left, right);
+
+        /// <summary>
+        /// svfloat32_t svscale[_f32]_m(svbool_t pg, svfloat32_t op1, svint32_t op2)
+        ///   FSCALE Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        /// svfloat32_t svscale[_f32]_x(svbool_t pg, svfloat32_t op1, svint32_t op2)
+        ///   FSCALE Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        /// svfloat32_t svscale[_f32]_z(svbool_t pg, svfloat32_t op1, svint32_t op2)
+        /// </summary>
+        public static unsafe Vector<float> Scale(Vector<float> left, Vector<int> right) => Scale(left, right);
+
+
         ///  SignExtend16 : Sign-extend the low 16 bits
 
         /// <summary>
@@ -5557,6 +5578,27 @@ namespace System.Runtime.Intrinsics.Arm
         ///   SUNPKHI Zresult.D, Zop.S
         /// </summary>
         public static unsafe Vector<long> SignExtendWideningUpper(Vector<int> value) => SignExtendWideningUpper(value);
+
+
+        ///  Sqrt : Square root
+
+        /// <summary>
+        /// svfloat64_t svsqrt[_f64]_m(svfloat64_t inactive, svbool_t pg, svfloat64_t op)
+        ///   FSQRT Ztied.D, Pg/M, Zop.D
+        /// svfloat64_t svsqrt[_f64]_x(svbool_t pg, svfloat64_t op)
+        ///   FSQRT Ztied.D, Pg/M, Ztied.D
+        /// svfloat64_t svsqrt[_f64]_z(svbool_t pg, svfloat64_t op)
+        /// </summary>
+        public static unsafe Vector<double> Sqrt(Vector<double> value) => Sqrt(value);
+
+        /// <summary>
+        /// svfloat32_t svsqrt[_f32]_m(svfloat32_t inactive, svbool_t pg, svfloat32_t op)
+        ///   FSQRT Ztied.S, Pg/M, Zop.S
+        /// svfloat32_t svsqrt[_f32]_x(svbool_t pg, svfloat32_t op)
+        ///   FSQRT Ztied.S, Pg/M, Ztied.S
+        /// svfloat32_t svsqrt[_f32]_z(svbool_t pg, svfloat32_t op)
+        /// </summary>
+        public static unsafe Vector<float> Sqrt(Vector<float> value) => Sqrt(value);
 
 
         ///  Non-truncating store
