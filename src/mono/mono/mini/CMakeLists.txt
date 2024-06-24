@@ -167,6 +167,16 @@ set(arm64_sources
     tramp-arm64-gsharedvt.c
     cpu-arm64.h)
 
+set(loongarch64_sources
+    mini-loongarch64.c
+    mini-loongarch64.h
+    exceptions-loongarch64.c
+    tramp-loongarch64.c
+    mini-loongarch64-gsharedvt.c
+    mini-loongarch64-gsharedvt.h
+    tramp-loongarch64-gsharedvt.c
+    cpu-loongarch64.h)
+
 set(arm_sources
     mini-arm.c
     mini-arm.h
@@ -209,6 +219,8 @@ elseif(TARGET_X86)
 set(arch_sources ${x86_sources})
 elseif(TARGET_ARM64)
 set(arch_sources ${arm64_sources})
+elseif(TARGET_LOONGARCH64)
+set(arch_sources ${loongarch64_sources})
 elseif(TARGET_ARM)
 set(arch_sources ${arm_sources})
 elseif(TARGET_RISCV64)
@@ -490,6 +502,13 @@ add_custom_command(
   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cpu-arm64.h
   COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py TARGET_ARM64 ${CMAKE_CURRENT_SOURCE_DIR} cpu-arm64.h arm64_cpu_desc ${CMAKE_CURRENT_SOURCE_DIR}/cpu-arm64.mdesc
   DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py mini-ops.h ${CMAKE_CURRENT_SOURCE_DIR}/cpu-arm64.mdesc
+  VERBATIM
+)
+
+add_custom_command(
+  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cpu-loongarch64.h
+  COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py TARGET_LOONGARCH64 ${CMAKE_CURRENT_SOURCE_DIR} cpu-loongarch64.h loongarch64_desc ${CMAKE_CURRENT_SOURCE_DIR}/cpu-loongarch64.mdesc
+  DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py mini-ops.h ${CMAKE_CURRENT_SOURCE_DIR}/cpu-loongarch64.mdesc
   VERBATIM
 )
 

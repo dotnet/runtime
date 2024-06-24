@@ -59,6 +59,10 @@
 
 #define REDZONE_SIZE (0)
 
+#elif defined (TARGET_LOONGARCH64)
+
+#define REDZONE_SIZE (0)
+
 #elif defined (TARGET_WASM)
 
 #define REDZONE_SIZE	0
