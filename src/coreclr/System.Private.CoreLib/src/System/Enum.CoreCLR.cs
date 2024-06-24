@@ -14,9 +14,6 @@ namespace System
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Enum_GetValuesAndNames")]
         private static partial void GetEnumValuesAndNames(QCallTypeHandle enumType, ObjectHandleOnStack values, ObjectHandleOnStack names, Interop.BOOL getNames);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern unsafe CorElementType InternalGetCorElementType(MethodTable* pMT);
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe CorElementType InternalGetCorElementType(RuntimeType rt)
         {
