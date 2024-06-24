@@ -49,7 +49,7 @@ jobs:
       - name: Run jitformat.py
         run: |
           cd runtime
-          python3 src/coreclr/scripts/jitformat.py --jitutils jitutils -r $(pwd) -o ${{ matrix.os.name }} -a x64 ${{ matrix.os.cross }}
+          python3 src/coreclr/scripts/jitformat.py --jitutils $(pwd)/../jitutils -r $(pwd) -o ${{ matrix.os.name }} -a x64 ${{ matrix.os.cross }}
       
       - name: Publish format.patch
         uses: actions/upload-artifact@v2
