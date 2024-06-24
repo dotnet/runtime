@@ -10492,7 +10492,7 @@ regMaskTP emitter::emitGetGCRegsKilledByNoGCCall(CorInfoHelpFunc helper)
 //    A completion of an epilog will close NoGC region in progress and clear the request count
 //    regardless of request nesting. If a block after the epilog needs to be no-GC, it needs
 //    to call emitDisableGC() again.
-// 
+//
 // Notes:
 //    The semantic of NoGC region is that once the first instruction executes,
 //    some tracking invariants are violated and GC cannot happen, until the execution
