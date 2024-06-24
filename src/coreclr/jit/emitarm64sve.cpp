@@ -10294,7 +10294,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             dst += emitOutput_Instr(dst, code);
             break;
 
-        case IF_SVE_CV_3A: // ........xx...... ...VVVnnnnnddddd -- SVE vector splice (destructive)
+        case IF_SVE_CV_3A: // ........xx...... ...VVVnnnnnddddd -- SVE vector splice (constructive)
         case IF_SVE_CV_3B: // ........xx...... ...VVVmmmmmddddd -- SVE vector splice (destructive)
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V<4, 0>(id->idReg1());                   // ddddd
@@ -13257,7 +13257,7 @@ void emitter::emitInsSveSanityCheck(instrDesc* id)
             assert(isScalableVectorSize(id->idOpSize()));
             break;
 
-        case IF_SVE_CV_3A: // ........xx...... ...VVVnnnnnddddd -- SVE vector splice (destructive)
+        case IF_SVE_CV_3A: // ........xx...... ...VVVnnnnnddddd -- SVE vector splice (constructive)
         case IF_SVE_CV_3B: // ........xx...... ...VVVmmmmmddddd -- SVE vector splice (destructive)
             assert(isScalableVectorSize(id->idOpSize())); // xx
             assert(insOptsScalableStandard(id->idInsOpt()));
@@ -14944,7 +14944,7 @@ void emitter::emitDispInsSveHelp(instrDesc* id)
             break;
 
         // <Zd>.<T>, <Pv>, {<Zn1>.<T>, <Zn2>.<T>}
-        case IF_SVE_CV_3A: // ........xx...... ...VVVnnnnnddddd -- SVE vector splice (destructive)
+        case IF_SVE_CV_3A: // ........xx...... ...VVVnnnnnddddd -- SVE vector splice (constructive)
             emitDispSveReg(id->idReg1(), id->idInsOpt(), true);                                             // ddddd
             emitDispPredicateReg(id->idReg2(), insGetPredicateType(fmt), id->idInsOpt(), true);             // VVV
             emitDispSveConsecutiveRegList(id->idReg3(), insGetSveReg1ListSize(ins), id->idInsOpt(), false); // nnnnn
@@ -16805,7 +16805,7 @@ void emitter::getInsSveExecutionCharacteristics(instrDesc* id, insExecutionChara
             result.insLatency    = PERFSCORE_LATENCY_140C;
             break;
 
-        case IF_SVE_CV_3A: // ........xx...... ...VVVnnnnnddddd -- SVE vector splice (destructive)
+        case IF_SVE_CV_3A: // ........xx...... ...VVVnnnnnddddd -- SVE vector splice (constructive)
         case IF_SVE_CV_3B: // ........xx...... ...VVVmmmmmddddd -- SVE vector splice (destructive)
             result.insLatency    = PERFSCORE_LATENCY_3C;
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
