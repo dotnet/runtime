@@ -1486,6 +1486,8 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                         // ConditionalSelect.
                         retNode->AsHWIntrinsic()->SetAuxiliaryJitType(getBaseJitTypeOfSIMDType(sig->retTypeSigClass));
                         break;
+                    default:
+                        break;
                 }
 #endif // TARGET_XARCH
 
