@@ -142,7 +142,9 @@ With the above IL composition implemented, the following C# describes the follow
 
 ```csharp
 struct S {}
+struct S<T> {}
 ref struct RS {}
+ref struct RS<T> {}
 interface I {}
 class C {}
 class C<T> {}
@@ -150,17 +152,29 @@ class C<T> {}
 // Not currently valid C#
 void M<T, U>(T t) where T: allows ref struct
 {
-    if (t is int i)        // Valid
-    if (t is S vc)         // Valid
-    if (t is RS rs)        // Valid
-    if (t is Span<char> s) // Valid
-    if (t is string str)   // Valid
-    if (t is I itf)        // Valid
-    if (t is C c)          // Valid
-    if (t is C<I> ci)      // Valid
-    if (t is C<U> cu)      // Invalid
-    if (t is U u)          // Invalid
-    if (t is Span<U> su)   // Invalid
+    // Valid
+    if (t is int i)
+
+    if (t is S s)
+    if (t is S<char> sc)
+    if (t is S<U> su)
+
+    if (t is RS rs)
+    if (t is RS<char> rsc)
+    if (t is RS<U> rsu)
+
+    if (t is string str)
+    if (t is C c)
+    if (t is C<I> ci)
+    if (t is C<U> cu)
+
+    // Can be made to work in IL.
+    if (t is I itf) // A new local "I" would not be used for ByRefLike scenarios.
+                    // The local would be the ByRefLike type, not "I".
+
+    // Invalid
+    if (t is object o)  // ByRefLike types evaluate "true" for object.
+    if (t is U u)
 }
 ```
 
@@ -179,6 +193,10 @@ namespace System.Runtime.CompilerServices
             where TTo: allows ref struct;
 
         // Replacement for the [box; isinst; unbox.any] sequence.
+        // Would throw InvalidCastException for invalid use at run-time.
+        // For example:
+        //  TFrom: RS, TTo: object      => always throws
+        //  TFrom: RS, TTo: <interface> => always throws
         public static TTo CastTo<TFrom, TTo>(TFrom source)
             where TFrom: allows ref struct
             where TTo: allows ref struct;
