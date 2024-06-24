@@ -40,8 +40,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                                   CORINFO_CALL_INFO*      callInfo,
                                   IL_OFFSET               rawILOffset)
 {
-    assert(opcode == CEE_CALL || opcode == CEE_CALLVIRT
-        || opcode == CEE_NEWOBJ || opcode == CEE_CALLI);
+    assert(opcode == CEE_CALL || opcode == CEE_CALLVIRT || opcode == CEE_NEWOBJ || opcode == CEE_CALLI);
 
     // The current statement DI may not refer to the exact call, but for calls
     // we wish to be able to attach the exact IL instruction to get "return
