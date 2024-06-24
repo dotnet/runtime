@@ -5691,7 +5691,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */,
         fgVerifyHandlerTab();
         // Make sure that the predecessor lists are accurate
         fgDebugCheckBBlist();
-        fgDebugCheckUpdate();
+        fgDebugCheckUpdate(doAggressiveCompaction);
     }
 #endif // DEBUG
 
