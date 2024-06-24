@@ -220,13 +220,9 @@ namespace Tracing.Tests.ProcessInfoValidation
             // see eventpipeeventsource.cpp for these values
             string expectedArchValue = RuntimeInformation.ProcessArchitecture switch
             {
-                Architecture.X86 => "x86",
-                Architecture.X64 => "x64",
                 Architecture.Arm => "arm32",
-                Architecture.Arm64 => "arm64",
-                Architecture.RiscV64 => "riscv64",
-                Architecture.LoongArch64 => "loongarch64",
-                _ => "Unknown"
+                // All other architectures match the enum member name
+                _ => RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant()
             };
 
             Utils.Assert(expectedArchValue.Equals(arch), $"Arch must match current Architecture. Expected: \"{expectedArchValue}\", Received: \"{arch}\"");
