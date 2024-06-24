@@ -58,8 +58,9 @@ namespace System.Net
         private bool IsPrefix(Uri uri, int prefixLen)
         {
             Debug.Assert(uri != null);
+            Uri uriPrefix = UriPrefix;
 
-            if (UriPrefix.Scheme != uri.Scheme || UriPrefix.Host != uri.Host || UriPrefix.Port != uri.Port)
+            if (uriPrefix.Scheme != uri.Scheme || uriPrefix.Host != uri.Host || uriPrefix.Port != uri.Port)
             {
                 return false;
             }
@@ -69,7 +70,7 @@ namespace System.Net
                 return false;
             }
 
-            return string.Compare(uri.AbsolutePath, 0, UriPrefix.AbsolutePath, 0, UriPrefixLength, StringComparison.OrdinalIgnoreCase) == 0;
+            return string.Compare(uri.AbsolutePath, 0, uriPrefix.AbsolutePath, 0, UriPrefixLength, StringComparison.OrdinalIgnoreCase) == 0;
         }
 
         public override int GetHashCode() =>
@@ -106,6 +107,12 @@ namespace System.Net
             mostSpecificMatch = null;
             mostSpecificMatchUri = null;
 
+            if (cache.Count == 0)
+            {
+                return false;
+            }
+
+            // precompute the length of the prefix
             int uriPrefixLength = uriPrefix.AbsolutePath.LastIndexOf('/');
 
             // Enumerate through every credential in the cache, get match with longest prefix
