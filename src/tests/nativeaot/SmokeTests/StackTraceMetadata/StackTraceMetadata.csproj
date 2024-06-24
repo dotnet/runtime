@@ -12,4 +12,8 @@
     <Compile Include="StackTraceMetadata.cs" />
     <Compile Include="BodyFoldingTest.cs" />
   </ItemGroup>
+
+  <ItemGroup>
+    <IlcArg Include="--export-unmanaged-entrypoints" />
+  </ItemGroup>
 </Project>
