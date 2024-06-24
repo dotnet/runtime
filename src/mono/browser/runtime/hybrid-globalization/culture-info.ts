@@ -13,6 +13,9 @@ const PREFIX_12H = "hh";
 const SECONDS_CODE = "ss";
 const MINUTES_CODE = "mm";
 const DESIGNATOR_CODE = "tt";
+// Note: wrapSubstrings
+// The character "h" can be ambiguous as it might represent an hour code hour code and a fixed (quoted) part of the format.
+// Special Case for "fr-CA": Always recognize "HH" as a keyword and do not quote it, to avoid formatting issues.
 const keyWords = [SECONDS_CODE, MINUTES_CODE, DESIGNATOR_CODE, PREFIX_24H];
 
 export function mono_wasm_get_culture_info (culture: number, cultureLength: number, dst: number, dstMaxLength: number, dstLength: Int32Ptr): VoidPtr {
@@ -123,8 +126,6 @@ function getShortTimePattern (pattern: string): string {
 
 // wraps all substrings in the format in quotes, except for key words
 // transform e.g. "HH h mm min ss s" into "HH 'h' mm 'min' ss 's'"
-// problem with "h" that can be both hour code and a fixed (quoted) part of the format
-// workaround for "fr-CA" by preventing quoting of "HH"
 function wrapSubstrings (str: string) {
     const words = str.split(/\s+/);
 
