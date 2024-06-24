@@ -125,6 +125,9 @@ public class ResourcesData
     /// </summary>
     public string hash { get; set; }
 
+    [DataMember(EmitDefaultValue = false)]
+    public Dictionary<string, string> fingerprinting { get; set; }
+
     /// <summary>
     /// .NET Wasm runtime resources (dotnet.wasm, dotnet.js) etc.
     /// </summary>

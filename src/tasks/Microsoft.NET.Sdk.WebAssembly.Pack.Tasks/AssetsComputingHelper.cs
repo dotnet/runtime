@@ -94,12 +94,29 @@ public class AssetsComputingHelper
 
     public static string GetCandidateRelativePath(ITaskItem candidate)
     {
+        const string optionalFingerprint = "#[.{fingerprint}]?";
+        const string requiredFingerprint = "#[.{fingerprint}]!";
+
+        string fileName = candidate.GetMetadata("FileName");
+        string extension = candidate.GetMetadata("Extension");
+        string subPath = string.Empty;
+
         var destinationSubPath = candidate.GetMetadata("DestinationSubPath");
         if (!string.IsNullOrEmpty(destinationSubPath))
-            return $"_framework/{destinationSubPath}";
+        {
+            fileName = Path.GetFileNameWithoutExtension(destinationSubPath);
+            extension = Path.GetExtension(destinationSubPath);
+            subPath = destinationSubPath.Substring(fileName.Length + extension.Length);
+        }
 
-        var relativePath = candidate.GetMetadata("FileName") + candidate.GetMetadata("Extension");
-        return $"_framework/{relativePath}";
+        string relativePath = (fileName, extension) switch {
+            ("dotnet", ".js") => string.Concat(fileName, optionalFingerprint, extension),
+            ("dotnet.runtime", ".js") => string.Concat(fileName, requiredFingerprint, extension),
+            ("dotnet.native", ".js") => string.Concat(fileName, requiredFingerprint, extension),
+            ("dotnet.worker", ".js") => string.Concat(fileName, requiredFingerprint, extension),
+            _ => string.Concat(fileName, extension)
+        };
+        return $"_framework/{subPath}{relativePath}";
     }
 
     public static ITaskItem GetCustomIcuAsset(ITaskItem candidate)

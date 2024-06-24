@@ -12,6 +12,16 @@ export async function loadLazyAssembly (assemblyNameToLoad: string): Promise<boo
         throw new Error("No assemblies have been marked as lazy-loadable. Use the 'BlazorWebAssemblyLazyLoad' item group in your project file to enable lazy loading an assembly.");
     }
 
+    if (loaderHelpers.config.resources!.fingerprinting) {
+        const map = loaderHelpers.config.resources!.fingerprinting;
+        for (const fingerprintedName in map) {
+            const nonFingerprintedName = map[fingerprintedName];
+            if (nonFingerprintedName == assemblyNameToLoad) {
+                assemblyNameToLoad = fingerprintedName;
+            }
+        }
+    }
+
     if (!lazyAssemblies[assemblyNameToLoad]) {
         throw new Error(`${assemblyNameToLoad} must be marked with 'BlazorWebAssemblyLazyLoad' item group in your project file to allow lazy-loading.`);
     }
