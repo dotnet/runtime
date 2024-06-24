@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -8,6 +9,7 @@ using System.Formats.Asn1;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.Asn1;
+using System.Security.Cryptography.X509Certificates.Asn1;
 using System.Text;
 using Microsoft.Win32.SafeHandles;
 
@@ -131,8 +133,25 @@ namespace System.Security.Cryptography.X509Certificates
         }
 
         // Handles both DER and PEM
-        internal static bool TryReadX509(ReadOnlySpan<byte> rawData, [NotNullWhen(true)] out ICertificatePal? handle)
+        internal static unsafe bool TryReadX509(ReadOnlySpan<byte> rawData, [NotNullWhen(true)] out ICertificatePal? handle)
         {
+            if (rawData.IsEmpty)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+            }
+
+            // Prevent Android PKCS7 content sniffing
+            if (rawData[0] == 0x30)
+            {
+                fixed (byte* rawDataPtr = rawData)
+                {
+                    using (PointerMemoryManager<byte> manager = new(rawDataPtr, rawData.Length))
+                    {
+                        CertificateAsn.Decode(manager.Memory, AsnEncodingRules.DER);
+                    }
+                }
+            }
+
             handle = null;
             SafeX509Handle certHandle = Interop.AndroidCrypto.X509Decode(
                 ref MemoryMarshal.GetReference(rawData),
