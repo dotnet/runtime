@@ -4,9 +4,21 @@
 #ifndef _SIMD_H_
 #define _SIMD_H_
 
+template <typename T>
+static bool ElementsAreSame(T* array, size_t size)
+{
+    for (size_t i = 1; i < size; i++)
+    {
+        if (array[0] != array[i])
+            return false;
+    }
+    return true;
+}
+
 struct simd8_t
 {
-    union {
+    union
+    {
         float    f32[2];
         double   f64[1];
         int8_t   i8[8];
@@ -58,7 +70,8 @@ static_assert_no_msg(sizeof(simd8_t) == 8);
 #include <pshpack4.h>
 struct simd12_t
 {
-    union {
+    union
+    {
         float    f32[3];
         int8_t   i8[12];
         int16_t  i16[6];
@@ -116,7 +129,8 @@ static_assert_no_msg(sizeof(simd12_t) == 12);
 
 struct simd16_t
 {
-    union {
+    union
+    {
         float    f32[4];
         double   f64[2];
         int8_t   i8[16];
@@ -170,7 +184,8 @@ static_assert_no_msg(sizeof(simd16_t) == 16);
 #if defined(TARGET_XARCH)
 struct simd32_t
 {
-    union {
+    union
+    {
         float    f32[8];
         double   f64[4];
         int8_t   i8[32];
@@ -224,7 +239,8 @@ static_assert_no_msg(sizeof(simd32_t) == 32);
 
 struct simd64_t
 {
-    union {
+    union
+    {
         float    f32[16];
         double   f64[8];
         int8_t   i8[64];
@@ -276,10 +292,13 @@ struct simd64_t
     }
 };
 static_assert_no_msg(sizeof(simd64_t) == 64);
+#endif // TARGET_XARCH
 
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
 struct simdmask_t
 {
-    union {
+    union
+    {
         int8_t   i8[8];
         int16_t  i16[4];
         int32_t  i32[2];
@@ -325,7 +344,9 @@ struct simdmask_t
     }
 };
 static_assert_no_msg(sizeof(simdmask_t) == 8);
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
+#if defined(TARGET_XARCH)
 typedef simd64_t simd_t;
 #else
 typedef simd16_t simd_t;
@@ -398,7 +419,7 @@ TBase EvaluateUnaryScalar(genTreeOps oper, TBase arg0)
 }
 
 template <typename TSimd, typename TBase>
-void EvaluateUnarySimd(genTreeOps oper, bool scalar, TSimd* result, TSimd arg0)
+void EvaluateUnarySimd(genTreeOps oper, bool scalar, TSimd* result, const TSimd& arg0)
 {
     uint32_t count = sizeof(TSimd) / sizeof(TBase);
 
@@ -428,7 +449,7 @@ void EvaluateUnarySimd(genTreeOps oper, bool scalar, TSimd* result, TSimd arg0)
 }
 
 template <typename TSimd>
-void EvaluateUnarySimd(genTreeOps oper, bool scalar, var_types baseType, TSimd* result, TSimd arg0)
+void EvaluateUnarySimd(genTreeOps oper, bool scalar, var_types baseType, TSimd* result, const TSimd& arg0)
 {
     switch (baseType)
     {
@@ -515,7 +536,8 @@ TBase EvaluateBinaryScalarRSZ(TBase arg0, TBase arg1)
     }
 #else
     // Other platforms enforce masking in their encoding
-    assert((arg1 >= 0) && (arg1 < (sizeof(TBase) * 8)));
+    unsigned shiftCountMask = (sizeof(TBase) * 8) - 1;
+    arg1 &= shiftCountMask;
 #endif
 
     return arg0 >> arg1;
@@ -591,7 +613,8 @@ TBase EvaluateBinaryScalarSpecialized(genTreeOps oper, TBase arg0, TBase arg1)
             }
 #else
             // Other platforms enforce masking in their encoding
-            assert((arg1 >= 0) && (arg1 < (sizeof(TBase) * 8)));
+            unsigned shiftCountMask = (sizeof(TBase) * 8) - 1;
+            arg1 &= shiftCountMask;
 #endif
             return arg0 << arg1;
         }
@@ -630,7 +653,8 @@ TBase EvaluateBinaryScalarSpecialized(genTreeOps oper, TBase arg0, TBase arg1)
             }
 #else
             // Other platforms enforce masking in their encoding
-            assert((arg1 >= 0) && (arg1 < (sizeof(TBase) * 8)));
+            unsigned shiftCountMask = (sizeof(TBase) * 8) - 1;
+            arg1 &= shiftCountMask;
 #endif
             return arg0 >> arg1;
         }
@@ -705,7 +729,7 @@ TBase EvaluateBinaryScalar(genTreeOps oper, TBase arg0, TBase arg1)
 }
 
 template <typename TSimd, typename TBase>
-void EvaluateBinarySimd(genTreeOps oper, bool scalar, TSimd* result, TSimd arg0, TSimd arg1)
+void EvaluateBinarySimd(genTreeOps oper, bool scalar, TSimd* result, const TSimd& arg0, const TSimd& arg1)
 {
     uint32_t count = sizeof(TSimd) / sizeof(TBase);
 
@@ -738,7 +762,8 @@ void EvaluateBinarySimd(genTreeOps oper, bool scalar, TSimd* result, TSimd arg0,
 }
 
 template <typename TSimd>
-void EvaluateBinarySimd(genTreeOps oper, bool scalar, var_types baseType, TSimd* result, TSimd arg0, TSimd arg1)
+void EvaluateBinarySimd(
+    genTreeOps oper, bool scalar, var_types baseType, TSimd* result, const TSimd& arg0, const TSimd& arg1)
 {
     switch (baseType)
     {
@@ -799,6 +824,168 @@ void EvaluateBinarySimd(genTreeOps oper, bool scalar, var_types baseType, TSimd*
         case TYP_ULONG:
         {
             EvaluateBinarySimd<TSimd, uint64_t>(oper, scalar, result, arg0, arg1);
+            break;
+        }
+
+        default:
+        {
+            unreached();
+        }
+    }
+}
+
+template <typename TSimd>
+double EvaluateGetElementFloating(var_types simdBaseType, const TSimd& arg0, int32_t arg1)
+{
+    switch (simdBaseType)
+    {
+        case TYP_FLOAT:
+        {
+            return arg0.f32[arg1];
+        }
+
+        case TYP_DOUBLE:
+        {
+            return arg0.f64[arg1];
+        }
+
+        default:
+        {
+            unreached();
+        }
+    }
+}
+
+template <typename TSimd>
+int64_t EvaluateGetElementIntegral(var_types simdBaseType, const TSimd& arg0, int32_t arg1)
+{
+    switch (simdBaseType)
+    {
+        case TYP_BYTE:
+        {
+            return arg0.i8[arg1];
+        }
+
+        case TYP_UBYTE:
+        {
+            return arg0.u8[arg1];
+        }
+
+        case TYP_SHORT:
+        {
+            return arg0.i16[arg1];
+        }
+
+        case TYP_USHORT:
+        {
+            return arg0.u16[arg1];
+        }
+
+        case TYP_INT:
+        {
+            return arg0.i32[arg1];
+        }
+
+        case TYP_UINT:
+        {
+            return arg0.u32[arg1];
+        }
+
+        case TYP_LONG:
+        {
+            return arg0.i64[arg1];
+        }
+
+        case TYP_ULONG:
+        {
+            return static_cast<int64_t>(arg0.u64[arg1]);
+        }
+
+        default:
+        {
+            unreached();
+        }
+    }
+}
+
+template <typename TSimd>
+void EvaluateWithElementFloating(var_types simdBaseType, TSimd* result, const TSimd& arg0, int32_t arg1, double arg2)
+{
+    *result = arg0;
+
+    switch (simdBaseType)
+    {
+        case TYP_FLOAT:
+        {
+            result->f32[arg1] = static_cast<float>(arg2);
+            break;
+        }
+
+        case TYP_DOUBLE:
+        {
+            result->f64[arg1] = static_cast<float>(arg2);
+            break;
+        }
+
+        default:
+        {
+            unreached();
+        }
+    }
+}
+
+template <typename TSimd>
+void EvaluateWithElementIntegral(var_types simdBaseType, TSimd* result, const TSimd& arg0, int32_t arg1, int64_t arg2)
+{
+    *result = arg0;
+
+    switch (simdBaseType)
+    {
+        case TYP_BYTE:
+        {
+            result->i8[arg1] = static_cast<int8_t>(arg2);
+            break;
+        }
+
+        case TYP_UBYTE:
+        {
+            result->u8[arg1] = static_cast<uint8_t>(arg2);
+            break;
+        }
+
+        case TYP_SHORT:
+        {
+            result->i16[arg1] = static_cast<int16_t>(arg2);
+            break;
+        }
+
+        case TYP_USHORT:
+        {
+            result->u16[arg1] = static_cast<uint16_t>(arg2);
+            break;
+        }
+
+        case TYP_INT:
+        {
+            result->i32[arg1] = static_cast<int32_t>(arg2);
+            break;
+        }
+
+        case TYP_UINT:
+        {
+            result->u32[arg1] = static_cast<uint32_t>(arg2);
+            break;
+        }
+
+        case TYP_LONG:
+        {
+            result->i64[arg1] = static_cast<int64_t>(arg2);
+            break;
+        }
+
+        case TYP_ULONG:
+        {
+            result->u64[arg1] = static_cast<uint64_t>(arg2);
             break;
         }
 

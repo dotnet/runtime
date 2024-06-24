@@ -3,7 +3,7 @@
 
 namespace System.Security
 {
-#if NETCOREAPP
+#if NET
     [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
 #endif
     public abstract partial class CodeAccessPermission : IPermission, ISecurityEncodable, IStackWalk

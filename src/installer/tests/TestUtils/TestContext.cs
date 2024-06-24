@@ -43,8 +43,9 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
             TestAssetsOutput = GetTestContextVariable("TEST_ASSETS_OUTPUT");
             TestArtifactsPath = GetTestContextVariable("TEST_ARTIFACTS");
+            Directory.CreateDirectory(TestArtifactsPath);
 
-            BuiltDotNet = new DotNetCli(Path.Combine(TestArtifactsPath, "sharedFrameworkPublish"));
+            BuiltDotNet = new DotNetCli(Path.Combine(TestAssetsOutput, "sharedFrameworkPublish"));
         }
 
         public static string GetTestContextVariable(string name)

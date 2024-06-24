@@ -17,22 +17,17 @@ import { mono_wasm_diagnostic_server_on_runtime_server_init, mono_wasm_event_pip
 import { mono_wasm_diagnostic_server_stream_signal_work_available } from "./diagnostics/server_pthread/stream-queue";
 import { mono_log_warn, mono_wasm_console_clear, mono_wasm_trace_logger } from "./logging";
 import { mono_wasm_profiler_leave, mono_wasm_profiler_enter } from "./profiler";
-import { mono_wasm_change_case, mono_wasm_change_case_invariant } from "./hybrid-globalization/change-case";
-import { mono_wasm_compare_string, mono_wasm_ends_with, mono_wasm_starts_with, mono_wasm_index_of } from "./hybrid-globalization/collations";
-import { mono_wasm_get_calendar_info } from "./hybrid-globalization/calendar";
-
-import { mono_wasm_get_culture_info } from "./hybrid-globalization/culture-info";
-import { mono_wasm_get_locale_info, mono_wasm_get_first_day_of_week, mono_wasm_get_first_week_of_year } from "./hybrid-globalization/locales";
 import { mono_wasm_browser_entropy } from "./crypto";
 import { mono_wasm_cancel_promise } from "./cancelable-promise";
 
 import {
     mono_wasm_start_deputy_thread_async,
     mono_wasm_pthread_on_pthread_attached, mono_wasm_pthread_on_pthread_unregistered,
-    mono_wasm_pthread_on_pthread_registered, mono_wasm_pthread_set_name, mono_wasm_install_js_worker_interop, mono_wasm_uninstall_js_worker_interop, mono_wasm_start_io_thread_async
+    mono_wasm_pthread_on_pthread_registered, mono_wasm_pthread_set_name, mono_wasm_install_js_worker_interop, mono_wasm_uninstall_js_worker_interop, mono_wasm_start_io_thread_async, mono_wasm_warn_about_blocking_wait
 } from "./pthreads";
 import { mono_wasm_dump_threads } from "./pthreads/ui-thread";
-
+import { mono_wasm_schedule_synchronization_context } from "./pthreads/shared";
+import { mono_wasm_hybrid_globalization_imports } from "./globalization";
 
 // the JS methods would be visible to EMCC linker and become imports of the WASM module
 
@@ -44,6 +39,7 @@ export const mono_wasm_threads_imports = !WasmEnableThreads ? [] : [
     mono_wasm_pthread_set_name,
     mono_wasm_start_deputy_thread_async,
     mono_wasm_start_io_thread_async,
+    mono_wasm_schedule_synchronization_context,
 
     // mono-threads.c
     mono_wasm_dump_threads,
@@ -56,6 +52,7 @@ export const mono_wasm_threads_imports = !WasmEnableThreads ? [] : [
     mono_wasm_install_js_worker_interop,
     mono_wasm_uninstall_js_worker_interop,
     mono_wasm_invoke_jsimport_MT,
+    mono_wasm_warn_about_blocking_wait,
 ];
 
 export const mono_wasm_imports = [
@@ -99,23 +96,15 @@ export const mono_wasm_imports = [
     mono_wasm_invoke_jsimport_ST,
     mono_wasm_resolve_or_reject_promise,
     mono_wasm_cancel_promise,
-    mono_wasm_change_case_invariant,
-    mono_wasm_change_case,
-    mono_wasm_compare_string,
-    mono_wasm_starts_with,
-    mono_wasm_ends_with,
-    mono_wasm_index_of,
-    mono_wasm_get_calendar_info,
-    mono_wasm_get_culture_info,
-    mono_wasm_get_locale_info,
-    mono_wasm_get_first_day_of_week,
-    mono_wasm_get_first_week_of_year,
 ];
+
 
 const wasmImports: Function[] = [
     ...mono_wasm_imports,
     // threading exports, if threading is enabled
     ...mono_wasm_threads_imports,
+    // hybrid globalization exports
+    ...mono_wasm_hybrid_globalization_imports,
 ];
 
 export function replace_linker_placeholders (imports: WebAssembly.Imports) {

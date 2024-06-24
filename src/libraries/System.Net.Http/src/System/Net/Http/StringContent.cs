@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.IO;
 using System.Net.Http.Headers;
 using System.Text;
@@ -26,7 +27,7 @@ namespace System.Net.Http
         /// <summary>Creates a new instance of the <see cref="StringContent"/> class.</summary>
         /// <param name="content">The content used to initialize the <see cref="StringContent"/>.</param>
         /// <param name="mediaType">The media type to use for the content.</param>
-        public StringContent(string content, MediaTypeHeaderValue mediaType)
+        public StringContent(string content, MediaTypeHeaderValue? mediaType)
             : this(content, DefaultStringEncoding, mediaType)
         {
         }
@@ -44,16 +45,39 @@ namespace System.Net.Http
         /// <param name="content">The content used to initialize the <see cref="StringContent"/>.</param>
         /// <param name="encoding">The encoding to use for the content.</param>
         /// <param name="mediaType">The media type to use for the content.</param>
-        public StringContent(string content, Encoding? encoding, string mediaType)
-            : this(content, encoding, new MediaTypeHeaderValue(mediaType ?? DefaultMediaType, (encoding ?? DefaultStringEncoding).WebName))
+        public StringContent(string content, Encoding? encoding, string? mediaType)
+            : base(GetContentByteArray(content, encoding))
         {
+            Debug.Assert(DefaultStringEncoding.WebName == "utf-8");
+
+            encoding ??= DefaultStringEncoding;
+            mediaType ??= DefaultMediaType;
+
+            // Avoid allocating MediaTypeHeaderValue and related objects for common media types.
+            if (ReferenceEquals(encoding, DefaultStringEncoding))
+            {
+                string? knownValue = mediaType switch
+                {
+                    "text/plain" => "text/plain; charset=utf-8",
+                    "application/json" => "application/json; charset=utf-8",
+                    _ => null
+                };
+
+                if (knownValue is not null)
+                {
+                    Headers.TryAddWithoutValidation(KnownHeaders.ContentType.Descriptor, knownValue);
+                    return;
+                }
+            }
+
+            Headers.ContentType = new MediaTypeHeaderValue(mediaType, encoding.WebName);
         }
 
         /// <summary>Creates a new instance of the <see cref="StringContent"/> class.</summary>
         /// <param name="content">The content used to initialize the <see cref="StringContent"/>.</param>
         /// <param name="encoding">The encoding to use for the content.</param>
         /// <param name="mediaType">The media type to use for the content.</param>
-        public StringContent(string content, Encoding? encoding, MediaTypeHeaderValue mediaType)
+        public StringContent(string content, Encoding? encoding, MediaTypeHeaderValue? mediaType)
             : base(GetContentByteArray(content, encoding))
         {
             Headers.ContentType = mediaType;

@@ -62,7 +62,7 @@ namespace System.DirectoryServices.AccountManagement
             TranslateSids(null, pSids);
         }
 
-        private void TranslateSids(string target, IntPtr[] pSids)
+        private unsafe void TranslateSids(string target, IntPtr[] pSids)
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "AuthZSet", "SidList: processing {0} SIDs", pSids.Length);
 
@@ -157,8 +157,8 @@ namespace System.DirectoryServices.AccountManagement
 
                 for (int i = 0; i < domainCount; i++)
                 {
-                    domains[i] = (Interop.LSA_TRUST_INFORMATION)Marshal.PtrToStructure(pCurrentDomain, typeof(Interop.LSA_TRUST_INFORMATION));
-                    pCurrentDomain = new IntPtr(pCurrentDomain.ToInt64() + Marshal.SizeOf(typeof(Interop.LSA_TRUST_INFORMATION)));
+                    domains[i] = *(Interop.LSA_TRUST_INFORMATION*)pCurrentDomain;
+                    pCurrentDomain += sizeof(Interop.LSA_TRUST_INFORMATION);
                 }
 
                 GlobalDebug.WriteLineIf(GlobalDebug.Info, "AuthZSet", "SidList: got {0} groups in {1} domains", sidCount, domainCount);

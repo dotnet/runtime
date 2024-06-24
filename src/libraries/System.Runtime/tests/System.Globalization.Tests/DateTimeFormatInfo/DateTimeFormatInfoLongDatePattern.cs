@@ -28,199 +28,202 @@ namespace System.Globalization.Tests
         public static IEnumerable<object[]> LongDatePattern_Get_TestData_HybridGlobalization()
         {
             // see the comments on the right to check the non-Hybrid result, if it differs
-            yield return new object[] { new CultureInfo("ar-SA").DateTimeFormat, "dddd، d MMMM yyyy" }; // dddd، d MMMM yyyy g
-            yield return new object[] { new CultureInfo("am-ET").DateTimeFormat, "yyyy MMMM d, dddd" };
-            yield return new object[] { new CultureInfo("bg-BG").DateTimeFormat, "dddd, d MMMM yyyy г." }; // "dddd, d MMMM yyyy 'г'." 
-            yield return new object[] { new CultureInfo("bn-BD").DateTimeFormat, "dddd, d MMMM, yyyy" };
-            yield return new object[] { new CultureInfo("bn-IN").DateTimeFormat, "dddd, d MMMM, yyyy" };
-            yield return new object[] { new CultureInfo("ca-AD").DateTimeFormat, "dddd, d de MMMM de yyyy" }; // "dddd, d MMMM 'de' yyyy"
-            yield return new object[] { new CultureInfo("ca-ES").DateTimeFormat, "dddd, d de MMMM de yyyy" }; // "dddd, d MMMM 'de' yyyy"
-            yield return new object[] { new CultureInfo("cs-CZ").DateTimeFormat, "dddd d. MMMM yyyy" };
-            yield return new object[] { new CultureInfo("da-DK").DateTimeFormat, "dddd den d. MMMM yyyy" }; // dddd 'den' d. MMMM yyyy
-            yield return new object[] { new CultureInfo("de-AT").DateTimeFormat, "dddd, d. MMMM yyyy" };
-            yield return new object[] { new CultureInfo("de-BE").DateTimeFormat, "dddd, d. MMMM yyyy" };
-            yield return new object[] { new CultureInfo("de-CH").DateTimeFormat, "dddd, d. MMMM yyyy" };
-            yield return new object[] { new CultureInfo("de-DE").DateTimeFormat, "dddd, d. MMMM yyyy" };
-            yield return new object[] { new CultureInfo("de-IT").DateTimeFormat, "dddd, d. MMMM yyyy" };
-            yield return new object[] { new CultureInfo("de-LI").DateTimeFormat, "dddd, d. MMMM yyyy" };
-            yield return new object[] { new CultureInfo("de-LU").DateTimeFormat, "dddd, d. MMMM yyyy" };
-            yield return new object[] { new CultureInfo("el-CY").DateTimeFormat, "dddd d MMMM yyyy" }; // "dddd, d MMMM yyyy"
-            yield return new object[] { new CultureInfo("el-GR").DateTimeFormat, "dddd d MMMM yyyy" }; // "dddd, d MMMM yyyy"
-            yield return new object[] { new CultureInfo("en-AE").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-AG").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-AI").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-AS").DateTimeFormat, "dddd, MMMM d, yyyy" };
-            yield return new object[] { new CultureInfo("en-AT").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-AU").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-BB").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-BE").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-BI").DateTimeFormat, "dddd, MMMM d, yyyy" };
-            yield return new object[] { new CultureInfo("en-BM").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-BS").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-BW").DateTimeFormat, "dddd, d MMMM yyyy" }; // "dddd, dd MMMM yyyy"
-            yield return new object[] { new CultureInfo("en-BZ").DateTimeFormat, "dddd, d MMMM yyyy" }; // "dddd, dd MMMM yyyy"
-            yield return new object[] { new CultureInfo("en-CA").DateTimeFormat, "dddd, MMMM d, yyyy" };
-            yield return new object[] { new CultureInfo("en-CC").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-CH").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-CK").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-CM").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-CX").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-CY").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-DE").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-DK").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-DM").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-ER").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-FI").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-FJ").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-FK").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-FM").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-GB").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-GD").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-GG").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-GH").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-GI").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-GM").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-GU").DateTimeFormat, "dddd, MMMM d, yyyy" };
-            yield return new object[] { new CultureInfo("en-GY").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-HK").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-IE").DateTimeFormat, "dddd d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-IL").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-IM").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-IN").DateTimeFormat, "dddd, d MMMM, yyyy" };
-            yield return new object[] { new CultureInfo("en-IO").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-JE").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-JM").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-KE").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-KI").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-KN").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-KY").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-LC").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-LR").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-LS").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-MG").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-MH").DateTimeFormat, "dddd, MMMM d, yyyy" };
-            yield return new object[] { new CultureInfo("en-MO").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-MP").DateTimeFormat, "dddd, MMMM d, yyyy" };
-            yield return new object[] { new CultureInfo("en-MS").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-MT").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-MU").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-MW").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-MY").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-NA").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-NF").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-NG").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-NL").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-NR").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-NU").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-NZ").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-PG").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-PH").DateTimeFormat, "dddd, MMMM d, yyyy" }; // "dddd, d MMMM yyyy"
-            yield return new object[] { new CultureInfo("en-PK").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-PN").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-PR").DateTimeFormat, "dddd, MMMM d, yyyy" };
-            yield return new object[] { new CultureInfo("en-PW").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-RW").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-SB").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-SC").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-SD").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-SE").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-SG").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-SH").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-SI").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-SL").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-SS").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-SX").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-SZ").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-TC").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-TK").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-TO").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-TT").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-TV").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-TZ").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-UG").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-UM").DateTimeFormat, "dddd, MMMM d, yyyy" };
-            yield return new object[] { new CultureInfo("en-US").DateTimeFormat, "dddd, MMMM d, yyyy" };
-            yield return new object[] { new CultureInfo("en-VC").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-VG").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-VI").DateTimeFormat, "dddd, MMMM d, yyyy" };
-            yield return new object[] { new CultureInfo("en-VU").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-WS").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-ZA").DateTimeFormat, "dddd, d MMMM yyyy" }; // "dddd, dd MMMM yyyy"
-            yield return new object[] { new CultureInfo("en-ZM").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("en-ZW").DateTimeFormat, "dddd, d MMMM yyyy" }; // "dddd, dd MMMM yyyy"
-            yield return new object[] { new CultureInfo("en-US").DateTimeFormat, "dddd, MMMM d, yyyy" };
-            yield return new object[] { new CultureInfo("es-419").DateTimeFormat, "dddd, d de MMMM de yyyy" }; // dddd, d 'de' MMMM 'de' yyyy
-            yield return new object[] { new CultureInfo("es-ES").DateTimeFormat, "dddd, d de MMMM de yyyy" }; // dddd, d 'de' MMMM 'de' yyyy
-            yield return new object[] { new CultureInfo("es-MX").DateTimeFormat, "dddd, d de MMMM de yyyy" }; // dddd, d 'de' MMMM 'de' yyyy
-            yield return new object[] { new CultureInfo("et-EE").DateTimeFormat, "dddd, d. MMMM yyyy" };
-            yield return new object[] { new CultureInfo("fa-IR").DateTimeFormat, "yyyy MMMM d, dddd" };
-            yield return new object[] { new CultureInfo("fi-FI").DateTimeFormat, "dddd d. MMMM yyyy" };
-            yield return new object[] { new CultureInfo("fil-PH").DateTimeFormat, "dddd, MMMM d, yyyy" };
-            yield return new object[] { new CultureInfo("fr-BE").DateTimeFormat, "dddd d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("fr-CA").DateTimeFormat, "dddd d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("fr-CH").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("fr-FR").DateTimeFormat, "dddd d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("gu-IN").DateTimeFormat, "dddd, d MMMM, yyyy" };
-            yield return new object[] { new CultureInfo("he-IL").DateTimeFormat, "dddd, d בMMMM yyyy" };
-            yield return new object[] { new CultureInfo("hi-IN").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("hr-BA").DateTimeFormat, "dddd, d. MMMM yyyy." };
-            yield return new object[] { new CultureInfo("hr-HR").DateTimeFormat, "dddd, d. MMMM yyyy." };
-            yield return new object[] { new CultureInfo("hu-HU").DateTimeFormat, "yyyy. MMMM d., dddd" };
-            yield return new object[] { new CultureInfo("id-ID").DateTimeFormat, "dddd, d MMMM yyyy" }; // "dddd, dd MMMM yyyy"
-            yield return new object[] { new CultureInfo("it-CH").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("it-IT").DateTimeFormat, "dddd d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("ja-JP").DateTimeFormat, "yyyy年M月d日dddd" };
-            yield return new object[] { new CultureInfo("kn-IN").DateTimeFormat, "dddd, MMMM d, yyyy" };
-            yield return new object[] { new CultureInfo("ko-KR").DateTimeFormat, "yyyy년 M월 d일 dddd" };
-            yield return new object[] { new CultureInfo("lt-LT").DateTimeFormat, "yyyy m. MMMM d d., dddd" }; // "yyyy 'm'. MMMM d 'd'., dddd"
-            yield return new object[] { new CultureInfo("lv-LV").DateTimeFormat, "dddd, yyyy. gada d. MMMM" }; // "dddd, yyyy. 'gada' d. MMMM"
-            yield return new object[] { new CultureInfo("ml-IN").DateTimeFormat, "yyyy, MMMM d, dddd" };
-            yield return new object[] { new CultureInfo("mr-IN").DateTimeFormat, "dddd, d MMMM, yyyy" };
-            yield return new object[] { new CultureInfo("ms-BN").DateTimeFormat, "dddd, d MMMM yyyy" }; // "dd MMMM yyyy"
-            yield return new object[] { new CultureInfo("ms-MY").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("ms-SG").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("nb-NO").DateTimeFormat, "dddd d. MMMM yyyy" };
-            yield return new object[] { new CultureInfo("no-NO").DateTimeFormat, "dddd d. MMMM yyyy" };
-            yield return new object[] { new CultureInfo("nl-AW").DateTimeFormat, "dddd d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("nl-BE").DateTimeFormat, "dddd d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("nl-NL").DateTimeFormat, "dddd d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("pl-PL").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("pt-BR").DateTimeFormat, "dddd, d de MMMM de yyyy" }; // dddd, d 'de' MMMM 'de' yyyy
-            yield return new object[] { new CultureInfo("pt-PT").DateTimeFormat, "dddd, d de MMMM de yyyy" }; // dddd, d 'de' MMMM 'de' yyyy
-            yield return new object[] { new CultureInfo("ro-RO").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("ru-RU").DateTimeFormat, "dddd, d MMMM yyyy г." }; // "dddd, d MMMM yyyy 'г'."
-            yield return new object[] { new CultureInfo("sk-SK").DateTimeFormat, "dddd d. MMMM yyyy" };
-            yield return new object[] { new CultureInfo("sl-SI").DateTimeFormat, "dddd, d. MMMM yyyy" }; // "dddd, dd. MMMM yyyy"
-            yield return new object[] { new CultureInfo("sr-Cyrl-RS").DateTimeFormat, "dddd, d. MMMM yyyy." }; // "dddd, dd. MMMM yyyy"
-            yield return new object[] { new CultureInfo("sr-Latn-RS").DateTimeFormat, "dddd, d. MMMM yyyy." }; // "dddd, dd. MMMM yyyy"
-            yield return new object[] { new CultureInfo("sv-AX").DateTimeFormat, "dddd d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("sv-SE").DateTimeFormat, "dddd d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("sw-CD").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("sw-KE").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("sw-TZ").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("sw-UG").DateTimeFormat, "dddd, d MMMM yyyy" };
-            yield return new object[] { new CultureInfo("ta-IN").DateTimeFormat, "dddd, d MMMM, yyyy" };
-            yield return new object[] { new CultureInfo("ta-LK").DateTimeFormat, "dddd, d MMMM, yyyy" };
-            yield return new object[] { new CultureInfo("ta-MY").DateTimeFormat, "dddd, d MMMM, yyyy" };
-            yield return new object[] { new CultureInfo("ta-SG").DateTimeFormat, "dddd, d MMMM, yyyy" };
-            yield return new object[] { new CultureInfo("te-IN").DateTimeFormat, "d, MMMM yyyy, dddd" };
-            yield return new object[] { new CultureInfo("th-TH").DateTimeFormat, "ddddที่ d MMMM g yyyy" };
-            yield return new object[] { new CultureInfo("tr-CY").DateTimeFormat, "d MMMM yyyy dddd" };
-            yield return new object[] { new CultureInfo("tr-TR").DateTimeFormat, "d MMMM yyyy dddd" };
-            yield return new object[] { new CultureInfo("uk-UA").DateTimeFormat, "dddd, d MMMM yyyy р." }; // "dddd, d MMMM yyyy 'р'."
-            yield return new object[] { new CultureInfo("vi-VN").DateTimeFormat, "dddd, d MMMM, yyyy" };
-            yield return new object[] { new CultureInfo("zh-CN").DateTimeFormat, "yyyy年M月d日dddd" };
-            yield return new object[] { new CultureInfo("zh-Hans-HK").DateTimeFormat, "yyyy年M月d日dddd" };
-            yield return new object[] { new CultureInfo("zh-SG").DateTimeFormat, "yyyy年M月d日dddd" };
-            yield return new object[] { new CultureInfo("zh-HK").DateTimeFormat, "yyyy年M月d日dddd" };
-            yield return new object[] { new CultureInfo("zh-TW").DateTimeFormat, "yyyy年M月d日 dddd" };
+            yield return new object[] {"ar-SA", "dddd، d MMMM yyyy" }; // dddd، d MMMM yyyy g
+            yield return new object[] {"am-ET", "yyyy MMMM d, dddd" };
+            yield return new object[] {"bg-BG", "dddd, d MMMM yyyy 'г'." };
+            yield return new object[] {"bn-BD", "dddd, d MMMM, yyyy" };
+            yield return new object[] {"bn-IN", "dddd, d MMMM, yyyy" };
+            string catalanianPattern = PlatformDetection.IsFirefox || PlatformDetection.IsNodeJS ? "dddd, d 'de' MMMM 'de' yyyy" : "dddd, d 'de' MMMM 'del' yyyy"; // "dddd, d MMMM 'de' yyyy"
+            yield return new object[] {"ca-AD", catalanianPattern };
+            yield return new object[] {"ca-ES", catalanianPattern };
+            yield return new object[] {"cs-CZ", "dddd d. MMMM yyyy" };
+            yield return new object[] {"da-DK", "dddd 'den' d. MMMM yyyy" };
+            yield return new object[] {"de-AT", "dddd, d. MMMM yyyy" };
+            yield return new object[] {"de-BE", "dddd, d. MMMM yyyy" };
+            yield return new object[] {"de-CH", "dddd, d. MMMM yyyy" };
+            yield return new object[] {"de-DE", "dddd, d. MMMM yyyy" };
+            yield return new object[] {"de-IT", "dddd, d. MMMM yyyy" };
+            yield return new object[] {"de-LI", "dddd, d. MMMM yyyy" };
+            yield return new object[] {"de-LU", "dddd, d. MMMM yyyy" };
+            yield return new object[] {"el-CY", "dddd d MMMM yyyy" }; // "dddd, d MMMM yyyy"
+            yield return new object[] {"el-GR", "dddd d MMMM yyyy" }; // "dddd, d MMMM yyyy"
+            yield return new object[] {"en-AE", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-AG", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-AI", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-AS", "dddd, MMMM d, yyyy" };
+            yield return new object[] {"en-AT", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-AU", PlatformDetection.IsFirefox || PlatformDetection.IsNodeJS ? "dddd, d MMMM yyyy" : "dddd d MMMM yyyy" };
+            yield return new object[] {"en-BB", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-BE", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-BI", "dddd, MMMM d, yyyy" };
+            yield return new object[] {"en-BM", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-BS", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-BW", "dddd, d MMMM yyyy" }; // "dddd, dd MMMM yyyy"
+            yield return new object[] {"en-BZ", "dddd, d MMMM yyyy" }; // "dddd, dd MMMM yyyy"
+            yield return new object[] {"en-CA", "dddd, MMMM d, yyyy" };
+            yield return new object[] {"en-CC", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-CH", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-CK", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-CM", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-CX", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-CY", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-DE", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-DK", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-DM", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-ER", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-FI", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-FJ", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-FK", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-FM", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-GB", PlatformDetection.IsFirefox || PlatformDetection.IsNodeJS ? "dddd, d MMMM yyyy" :"dddd d MMMM yyyy" };
+            yield return new object[] {"en-GD", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-GG", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-GH", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-GI", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-GM", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-GU", "dddd, MMMM d, yyyy" };
+            yield return new object[] {"en-GY", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-HK", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-IE", "dddd d MMMM yyyy" };
+            yield return new object[] {"en-IL", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-IM", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-IN", PlatformDetection.IsFirefox || PlatformDetection.IsNodeJS ? "dddd, d MMMM, yyyy" : "dddd d MMMM, yyyy" }; // dddd, d MMMM, yyyy
+            yield return new object[] {"en-IO", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-JE", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-JM", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-KE", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-KI", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-KN", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-KY", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-LC", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-LR", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-LS", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-MG", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-MH", "dddd, MMMM d, yyyy" };
+            yield return new object[] {"en-MO", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-MP", "dddd, MMMM d, yyyy" };
+            yield return new object[] {"en-MS", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-MT", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-MU", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-MW", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-MY", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-NA", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-NF", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-NG", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-NL", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-NR", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-NU", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-NZ", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-PG", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-PH", "dddd, MMMM d, yyyy" }; // "dddd, d MMMM yyyy"
+            yield return new object[] {"en-PK", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-PN", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-PR", "dddd, MMMM d, yyyy" };
+            yield return new object[] {"en-PW", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-RW", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-SB", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-SC", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-SD", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-SE", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-SG", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-SH", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-SI", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-SL", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-SS", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-SX", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-SZ", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-TC", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-TK", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-TO", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-TT", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-TV", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-TZ", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-UG", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-UM", "dddd, MMMM d, yyyy" };
+            yield return new object[] {"en-US", "dddd, MMMM d, yyyy" };
+            yield return new object[] {"en-VC", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-VG", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-VI", "dddd, MMMM d, yyyy" };
+            yield return new object[] {"en-VU", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-WS", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-ZA", "dddd, d MMMM yyyy" }; // "dddd, dd MMMM yyyy"
+            yield return new object[] {"en-ZM", "dddd, d MMMM yyyy" };
+            yield return new object[] {"en-ZW", "dddd, d MMMM yyyy" }; // "dddd, dd MMMM yyyy"
+            yield return new object[] {"en-US", "dddd, MMMM d, yyyy" };
+            string spanishPattern = "dddd, d 'de' MMMM 'de' yyyy";
+            yield return new object[] {"es-419", spanishPattern };
+            yield return new object[] {"es-ES", spanishPattern };
+            yield return new object[] {"es-MX", spanishPattern };
+            yield return new object[] {"et-EE", "dddd, d. MMMM yyyy" };
+            yield return new object[] {"fa-IR", "yyyy MMMM d, dddd" };
+            yield return new object[] {"fi-FI", "dddd d. MMMM yyyy" };
+            yield return new object[] {"fil-PH", "dddd, MMMM d, yyyy" };
+            yield return new object[] {"fr-BE", "dddd d MMMM yyyy" };
+            yield return new object[] {"fr-CA", "dddd d MMMM yyyy" };
+            yield return new object[] {"fr-CH", "dddd, d MMMM yyyy" };
+            yield return new object[] {"fr-FR", "dddd d MMMM yyyy" };
+            yield return new object[] {"gu-IN", "dddd, d MMMM, yyyy" };
+            yield return new object[] {"he-IL", "dddd, d בMMMM yyyy" };
+            yield return new object[] {"hi-IN", "dddd, d MMMM yyyy" };
+            yield return new object[] {"hr-BA", "dddd, d. MMMM yyyy." };
+            yield return new object[] {"hr-HR", "dddd, d. MMMM yyyy." };
+            yield return new object[] {"hu-HU", "yyyy. MMMM d., dddd" };
+            yield return new object[] {"id-ID", "dddd, d MMMM yyyy" }; // "dddd, dd MMMM yyyy"
+            yield return new object[] {"it-CH", "dddd, d MMMM yyyy" };
+            yield return new object[] {"it-IT", "dddd d MMMM yyyy" };
+            yield return new object[] {"ja-JP", "yyyy年M月d日dddd" };
+            yield return new object[] {"kn-IN", "dddd, MMMM d, yyyy" };
+            yield return new object[] {"ko-KR", "yyyy년 M월 d일 dddd" };
+            yield return new object[] {"lt-LT", "yyyy 'm'. MMMM d 'd'., dddd" };
+            yield return new object[] {"lv-LV", "dddd, yyyy. 'gada' d. MMMM" };
+            yield return new object[] {"ml-IN", "yyyy, MMMM d, dddd" };
+            yield return new object[] {"mr-IN", "dddd, d MMMM, yyyy" };
+            yield return new object[] {"ms-BN", "dddd, d MMMM yyyy" }; // "dd MMMM yyyy"
+            yield return new object[] {"ms-MY", "dddd, d MMMM yyyy" };
+            yield return new object[] {"ms-SG", "dddd, d MMMM yyyy" };
+            yield return new object[] {"nb-NO", "dddd d. MMMM yyyy" };
+            yield return new object[] {"no-NO", "dddd d. MMMM yyyy" };
+            yield return new object[] {"nl-AW", "dddd d MMMM yyyy" };
+            yield return new object[] {"nl-BE", "dddd d MMMM yyyy" };
+            yield return new object[] {"nl-NL", "dddd d MMMM yyyy" };
+            yield return new object[] {"pl-PL", "dddd, d MMMM yyyy" };
+            yield return new object[] {"pt-BR", "dddd, d 'de' MMMM 'de' yyyy" };
+            yield return new object[] {"pt-PT", "dddd, d 'de' MMMM 'de' yyyy" };
+            yield return new object[] {"ro-RO", "dddd, d MMMM yyyy" };
+            yield return new object[] {"ru-RU", "dddd, d MMMM yyyy 'г'." };
+            yield return new object[] {"sk-SK", "dddd d. MMMM yyyy" };
+            yield return new object[] {"sl-SI", "dddd, d. MMMM yyyy" }; // "dddd, dd. MMMM yyyy"
+            yield return new object[] {"sr-Cyrl-RS", "dddd, d. MMMM yyyy." }; // "dddd, dd. MMMM yyyy"
+            yield return new object[] {"sr-Latn-RS", "dddd, d. MMMM yyyy." }; // "dddd, dd. MMMM yyyy"
+            yield return new object[] {"sv-AX", "dddd d MMMM yyyy" };
+            yield return new object[] {"sv-SE", "dddd d MMMM yyyy" };
+            yield return new object[] {"sw-CD", "dddd, d MMMM yyyy" };
+            yield return new object[] {"sw-KE", "dddd, d MMMM yyyy" };
+            yield return new object[] {"sw-TZ", "dddd, d MMMM yyyy" };
+            yield return new object[] {"sw-UG", "dddd, d MMMM yyyy" };
+            yield return new object[] {"ta-IN", "dddd, d MMMM, yyyy" };
+            yield return new object[] {"ta-LK", "dddd, d MMMM, yyyy" };
+            yield return new object[] {"ta-MY", "dddd, d MMMM, yyyy" };
+            yield return new object[] {"ta-SG", "dddd, d MMMM, yyyy" };
+            yield return new object[] {"te-IN", "d, MMMM yyyy, dddd" };
+            yield return new object[] {"th-TH", "ddddที่ d MMMM g yyyy" };
+            yield return new object[] {"tr-CY", "d MMMM yyyy dddd" };
+            yield return new object[] {"tr-TR", "d MMMM yyyy dddd" };
+            yield return new object[] {"uk-UA", "dddd, d MMMM yyyy 'р'." };
+            yield return new object[] {"vi-VN", "dddd, d MMMM, yyyy" };
+            yield return new object[] {"zh-CN", "yyyy年M月d日dddd" };
+            yield return new object[] {"zh-Hans-HK", "yyyy年M月d日dddd" };
+            yield return new object[] {"zh-SG", "yyyy年M月d日dddd" };
+            yield return new object[] {"zh-HK", "yyyy年M月d日dddd" };
+            yield return new object[] {"zh-TW", "yyyy年M月d日 dddd" };
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
         [MemberData(nameof(LongDatePattern_Get_TestData_HybridGlobalization))]
-        public void LongDatePattern_Get_ReturnsExpected_HybridGlobalization(DateTimeFormatInfo format, string expected)
+        public void LongDatePattern_Get_ReturnsExpected_HybridGlobalization(string cultureName, string expected)
         {
-            Assert.Equal(expected, format.LongDatePattern);
+            var format = new CultureInfo(cultureName).DateTimeFormat;
+            Assert.True(expected == format.LongDatePattern, $"Failed for culture: {cultureName}. Expected: {expected}, Actual: {format.LongDatePattern}");
         }
 
         [Theory]

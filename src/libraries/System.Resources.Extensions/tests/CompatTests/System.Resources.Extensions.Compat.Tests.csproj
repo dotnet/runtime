@@ -1,0 +1,56 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;</TargetFrameworks>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <CustomResourceTypesSupport Condition="'$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAotRuntime)' != 'true'">true</CustomResourceTypesSupport>
+    <!-- some of the embeded resources have this assembly name hardcoded -->
+    <AssemblyName>System.Resources.Extensions.Tests</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\**\*.cs" />
+    <Compile Remove="..\BinaryFormatTests\**\*.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Numerics\Hashing\HashHelpers.cs"
+             Link="System\Numerics\Hashing\HashHelpers.cs" />
+    <Compile Include="..\..\src\System\Resources\Extensions\TypeNameComparer.cs"
+         Link="TypeNameComparer.cs" />
+    <EmbeddedResource Include="..\TestData.resources" WithCulture="false" Type="Non-Resx" LogicalName="System.Resources.Extensions.Tests.%(FileName)%(Extension)" />
+    <None Include="runtimeconfig.template.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="System.Drawing.Common.TestData" Version="$(SystemDrawingCommonTestDataVersion)" />
+    <ProjectReference Include="..\..\src\System.Resources.Extensions.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <PackageReference Include="System.Drawing.Common" Version="$(SystemDrawingCommonVersion)" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Windows.Extensions\src\System.Windows.Extensions.csproj" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <PackageReference Include="System.ValueTuple" Version="$(SystemValueTupleVersion)" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Apple mobile trimming descriptor for Mono runtime -->
+    <TrimmerRootDescriptor Condition="'$(TargetsAppleMobile)' == 'true' and '$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAotRuntime)' != 'true'" Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
+  </ItemGroup>
+  <!-- Use the following target to regenerate the test resources file.
+       This is done from a test application and checked in so that we don't run
+       product code during the build.
+       Important:
+       When invoking this target, pass the target framework in as well, substituting
+       the X with the current major version:
+           dotnet build -f netX.0-windows && cd outputdir && dotnet build -f netX.0-windows /t:GenerateTestResourcesFile. -->
+  <Target Name="GenerateTestResourcesFile">
+    <PropertyGroup>
+      <_executor>Microsoft.DotNet.RemoteExecutor.dll</_executor>
+    </PropertyGroup>
+    <ItemGroup>
+      <ExecuteMethod Class="System.Resources.Extensions.Tests.TestData" Include="WriteResources" Parameters="$(MSBuildProjectDirectory)\..\TestData.resources" />
+      <ExecuteMethod>
+        <ExceptionFile>$(TargetDir)%(Class)%(Identity).exception.txt</ExceptionFile>
+      </ExecuteMethod>
+      <ExecuteMethod>
+        <Command>$(NetCoreAppCurrentTestHostPath)dotnet exec --runtimeconfig $(TargetDir)$(TargetName).runtimeconfig.json $(_executor) $(AssemblyName) %(Class) %(Identity) %(ExceptionFile) %(Parameters)</Command>
+      </ExecuteMethod>
+    </ItemGroup>
+    <Exec Command="%(ExecuteMethod.Command)" WorkingDirectory="$(TargetDir)" />
+  </Target>
+</Project>

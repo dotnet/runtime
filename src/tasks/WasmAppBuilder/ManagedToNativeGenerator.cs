@@ -33,10 +33,10 @@ public class ManagedToNativeGenerator : Task
     public string? InterpToNativeOutputPath { get; set; }
     public string? CacheFilePath { get; set; }
 
+    public bool IsLibraryMode { get; set; }
+
     [Output]
     public string[]? FileWrites { get; private set; }
-
-    private static readonly char[] s_charsToReplace = new[] { '.', '-', '+', '<', '>' };
 
     public override bool Execute()
     {
@@ -71,7 +71,7 @@ public class ManagedToNativeGenerator : Task
         List<string> managedAssemblies = FilterOutUnmanagedBinaries(Assemblies);
         if (ShouldRun(managedAssemblies))
         {
-            var pinvoke = new PInvokeTableGenerator(FixupSymbolName, log);
+            var pinvoke = new PInvokeTableGenerator(FixupSymbolName, log, IsLibraryMode);
             var icall = new IcallTableGenerator(RuntimeIcallTableFile, FixupSymbolName, log);
 
             var resolver = new PathAssemblyResolver(managedAssemblies);
@@ -108,30 +108,7 @@ public class ManagedToNativeGenerator : Task
             if (_symbolNameFixups.TryGetValue(name, out string? fixedName))
                 return fixedName;
 
-            UTF8Encoding utf8 = new();
-            byte[] bytes = utf8.GetBytes(name);
-            StringBuilder sb = new();
-
-            foreach (byte b in bytes)
-            {
-                if ((b >= (byte)'0' && b <= (byte)'9') ||
-                    (b >= (byte)'a' && b <= (byte)'z') ||
-                    (b >= (byte)'A' && b <= (byte)'Z') ||
-                    (b == (byte)'_'))
-                {
-                    sb.Append((char)b);
-                }
-                else if (s_charsToReplace.Contains((char)b))
-                {
-                    sb.Append('_');
-                }
-                else
-                {
-                    sb.Append($"_{b:X}_");
-                }
-            }
-
-            fixedName = sb.ToString();
+            fixedName = Utils.FixupSymbolName(name);
             _symbolNameFixups[name] = fixedName;
             return fixedName;
         }

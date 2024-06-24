@@ -44,6 +44,12 @@ namespace System.Security.Cryptography
             Interop.Crypto.CheckValidOpenSslHandle(_ctx);
         }
 
+        private LiteXof(SafeEvpMdCtxHandle ctx, IntPtr algorithm)
+        {
+            _ctx = ctx;
+            _algorithm = algorithm;
+        }
+
         public void Append(ReadOnlySpan<byte> data)
         {
             if (data.IsEmpty)
@@ -68,6 +74,18 @@ namespace System.Security.Cryptography
         public void Current(Span<byte> destination)
         {
             Check(Interop.Crypto.EvpDigestCurrentXOF(_ctx, destination));
+        }
+
+        public LiteXof Clone()
+        {
+            SafeEvpMdCtxHandle clone = Interop.Crypto.EvpMdCtxCopyEx(_ctx);
+            Interop.Crypto.CheckValidOpenSslHandle(clone);
+            return new LiteXof(clone, _algorithm);
+        }
+
+        public void Read(Span<byte> destination)
+        {
+            Check(Interop.Crypto.EvpDigestSqueeze(_ctx, destination));
         }
 
         public void Dispose()
@@ -112,6 +130,13 @@ namespace System.Security.Cryptography
             Interop.Crypto.CheckValidOpenSslHandle(_ctx);
         }
 
+        private LiteHash(SafeEvpMdCtxHandle ctx, IntPtr algorithm, int hashSizeInBytes)
+        {
+            _ctx = ctx;
+            _algorithm = algorithm;
+            _hashSizeInBytes = hashSizeInBytes;
+        }
+
         public void Append(ReadOnlySpan<byte> data)
         {
             if (data.IsEmpty)
@@ -144,6 +169,13 @@ namespace System.Security.Cryptography
             Check(Interop.Crypto.EvpDigestCurrent(_ctx, ref MemoryMarshal.GetReference(destination), ref length));
             Debug.Assert(length == _hashSizeInBytes);
             return _hashSizeInBytes;
+        }
+
+        public LiteHash Clone()
+        {
+            SafeEvpMdCtxHandle clone = Interop.Crypto.EvpMdCtxCopyEx(_ctx);
+            Interop.Crypto.CheckValidOpenSslHandle(clone);
+            return new LiteHash(clone, _algorithm, _hashSizeInBytes);
         }
 
         public void Dispose()
@@ -185,6 +217,12 @@ namespace System.Security.Cryptography
             Interop.Crypto.CheckValidOpenSslHandle(_ctx);
         }
 
+        private LiteHmac(SafeHmacCtxHandle ctx, int hashSizeInBytes)
+        {
+            _ctx = ctx;
+            _hashSizeInBytes = hashSizeInBytes;
+        }
+
         public void Append(ReadOnlySpan<byte> data)
         {
             if (data.IsEmpty)
@@ -218,6 +256,13 @@ namespace System.Security.Cryptography
         public void Reset()
         {
             Check(Interop.Crypto.HmacReset(_ctx));
+        }
+
+        public LiteHmac Clone()
+        {
+            SafeHmacCtxHandle clone = Interop.Crypto.HmacCopy(_ctx);
+            Interop.Crypto.CheckValidOpenSslHandle(clone);
+            return new LiteHmac(clone, _hashSizeInBytes);
         }
 
         public void Dispose()

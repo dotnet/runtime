@@ -280,7 +280,7 @@ extern "C" void QCALLTYPE AssemblyNative_LoadFromStream(INT_PTR ptrNativeAssembl
     {
 #ifdef DEBUGGING_SUPPORTED
         // If we were given symbols, save a copy of them.
-        if (ptrSymbolArray != NULL)
+        if (ptrSymbolArray != 0)
         {
             PBYTE pSymbolArray = reinterpret_cast<PBYTE>(ptrSymbolArray);
             pLoadedAssembly->GetModule()->SetSymbolBytes(pSymbolArray, (DWORD)cbSymbolArrayLength);
@@ -1197,7 +1197,7 @@ extern "C" INT_PTR QCALLTYPE AssemblyNative_InitializeAssemblyLoadContext(INT_PT
 {
     QCALL_CONTRACT;
 
-    INT_PTR ptrNativeAssemblyBinder = NULL;
+    INT_PTR ptrNativeAssemblyBinder = 0;
 
     BEGIN_QCALL;
 
@@ -1287,7 +1287,7 @@ extern "C" INT_PTR QCALLTYPE AssemblyNative_GetLoadContextForAssembly(QCall::Ass
 {
     QCALL_CONTRACT;
 
-    INT_PTR ptrManagedAssemblyLoadContext = NULL;
+    INT_PTR ptrManagedAssemblyLoadContext = 0;
 
     BEGIN_QCALL;
 

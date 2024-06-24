@@ -291,18 +291,34 @@ namespace System.Globalization
             Debug.Assert(!GlobalizationMode.UseNls);
             Debug.Assert(_sWindowsName != null, "[CultureData.GetTimeFormatString(bool shortFormat)] Expected _sWindowsName to be populated already");
 
-            char* buffer = stackalloc char[ICU_ULOC_KEYWORD_AND_VALUES_CAPACITY];
-
-            bool result = Interop.Globalization.GetLocaleTimeFormat(_sWindowsName, shortFormat, buffer, ICU_ULOC_KEYWORD_AND_VALUES_CAPACITY);
-            if (!result)
+            ReadOnlySpan<char> span;
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+            if (GlobalizationMode.Hybrid)
             {
-                // Failed, just use empty string
-                Debug.Fail("[CultureData.GetTimeFormatString(bool shortFormat)] Failed");
-                return string.Empty;
+                string res = Interop.Globalization.GetLocaleTimeFormatNative(_sWindowsName, shortFormat);
+                if (string.IsNullOrEmpty(res))
+                {
+                    Debug.Fail("[CultureData.GetTimeFormatString(bool shortFormat)] Failed");
+                    return string.Empty;
+                }
+                span = res.AsSpan();
+            }
+            else
+#endif
+            {
+                char* buffer = stackalloc char[ICU_ULOC_KEYWORD_AND_VALUES_CAPACITY];
+                bool result = Interop.Globalization.GetLocaleTimeFormat(_sWindowsName, shortFormat, buffer, ICU_ULOC_KEYWORD_AND_VALUES_CAPACITY);
+                if (!result)
+                {
+                    // Failed, just use empty string
+                    Debug.Fail("[CultureData.GetTimeFormatString(bool shortFormat)] Failed");
+                    return string.Empty;
+                }
+                span = new ReadOnlySpan<char>(buffer, ICU_ULOC_KEYWORD_AND_VALUES_CAPACITY);
+                span = span.Slice(0, span.IndexOf('\0'));
             }
 
-            var span = new ReadOnlySpan<char>(buffer, ICU_ULOC_KEYWORD_AND_VALUES_CAPACITY);
-            return ConvertIcuTimeFormatString(span.Slice(0, span.IndexOf('\0')));
+            return ConvertIcuTimeFormatString(span);
         }
 
         // no support to lookup by region name, other than the hard-coded list in CultureData
@@ -310,7 +326,7 @@ namespace System.Globalization
 
         private string IcuGetLanguageDisplayName(string cultureName)
         {
-#if TARGET_BROWSER && !FEATURE_WASM_MANAGED_THREADS
+#if TARGET_BROWSER
             return JSGetNativeDisplayName(CultureInfo.CurrentUICulture.Name, cultureName);
 #else
             return IcuGetLocaleInfo(cultureName, LocaleStringData.LocalizedDisplayName, CultureInfo.CurrentUICulture.Name);
@@ -348,33 +364,59 @@ namespace System.Globalization
                 char current = icuFormatString[i];
                 switch (current)
                 {
+                    case '\\':
+                        // The ICU format does not use backslashes to escape while the .NET format does
+                        result[resultPos++] = '\\';
+                        result[resultPos++] = '\\';
+                        break;
                     case '\'':
-                        result[resultPos++] = icuFormatString[i++];
-                        while (i < icuFormatString.Length)
+                        static bool HandleQuoteLiteral(ReadOnlySpan<char> icuFormatString, ref int i, Span<char> result, ref int resultPos)
+                        {
+                            if (i + 1 < icuFormatString.Length && icuFormatString[i + 1] == '\'')
+                            {
+                                result[resultPos++] = '\\';
+                                result[resultPos++] = '\'';
+                                i++;
+                                return true;
+                            }
+                            result[resultPos++] = '\'';
+                            return false;
+                        }
+
+                        if (HandleQuoteLiteral(icuFormatString, ref i, result, ref resultPos))
+                        {
+                            break;
+                        }
+                        i++;
+                        for (; i < icuFormatString.Length; i++)
                         {
                             current = icuFormatString[i];
-                            result[resultPos++] = current;
                             if (current == '\'')
                             {
+                                if (HandleQuoteLiteral(icuFormatString, ref i, result, ref resultPos))
+                                {
+                                    continue;
+                                }
                                 break;
                             }
-                            i++;
+                            if (current == '\\')
+                            {
+                                // The same backslash escaping mentioned above
+                                result[resultPos++] = '\\';
+                            }
+                            result[resultPos++] = current;
                         }
                         break;
 
-                    case ':':
-                    case '.':
                     case 'H':
                     case 'h':
                     case 'm':
                     case 's':
-                    case ' ':
-                    case '\u00A0': // no-break space
-                    case '\u202F': // narrow no-break space
                         result[resultPos++] = current;
                         break;
-
                     case 'a': // AM/PM
+                    case 'b': // am, pm, noon, midnight
+                    case 'B': // flexible day periods
                         if (!amPmAdded)
                         {
                             amPmAdded = true;
@@ -383,6 +425,13 @@ namespace System.Globalization
                         }
                         break;
 
+                    default:
+                        // Characters that are not ASCII letters are literal texts
+                        if (!char.IsAsciiLetter(current))
+                        {
+                            result[resultPos++] = current;
+                        }
+                        break;
                 }
             }
 

@@ -1,25 +1,5 @@
 <Project>
 
-  <Target Name="SetUpSharedFrameworkPublish"
-          DependsOnTargets="DetermineTestOutputDirectory"
-          BeforeTargets="RunTests">
-
-    <!--
-      Explicitly restore before PublishToDisk. IsRestoring property ensures that this evaluation won't be reused.
-      See https://github.com/dotnet/msbuild/issues/2811
-    -->
-    <MSBuild Projects="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Runtime.sfxproj"
-             Targets="Restore"
-             Properties="IsRestoring=true" />
-    <!--
-      Set up the shared framework copy this set of tests should use. There's no known reason to have
-      one per test project, but RepoDirectoriesProvider may need some tweaking to share.
-    -->
-    <MSBuild Projects="$(InstallerProjectRoot)pkg\sfx\bundle\Microsoft.NETCore.App.Bundle.bundleproj"
-             Targets="PublishToDisk"
-             Properties="OutputPath=$(TestsOutputDir)sharedFrameworkPublish/" />
-  </Target>
-
   <Target Name="SetupTestContextVariables"
           Condition="'$(IsTestProject)' == 'true'"
           DependsOnTargets="

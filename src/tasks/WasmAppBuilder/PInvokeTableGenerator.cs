@@ -24,12 +24,14 @@ internal sealed class PInvokeTableGenerator
     private readonly List<PInvoke> pinvokes = new();
     private readonly List<PInvokeCallback> callbacks = new();
     private readonly PInvokeCollector _pinvokeCollector;
+    private readonly bool _isLibraryMode;
 
-    public PInvokeTableGenerator(Func<string, string> fixupSymbolName, LogAdapter log)
+    public PInvokeTableGenerator(Func<string, string> fixupSymbolName, LogAdapter log, bool isLibraryMode = false)
     {
         Log = log;
         _fixupSymbolName = fixupSymbolName;
         _pinvokeCollector = new(log);
+        _isLibraryMode = isLibraryMode;
     }
 
     public void ScanAssembly(Assembly asm)
@@ -179,7 +181,7 @@ internal sealed class PInvokeTableGenerator
         if (pinvoke.WasmLinkage)
         {
             // We mangle the name to avoid collisions with symbols in other modules
-            return _fixupSymbolName($"{pinvoke.Module}_{pinvoke.EntryPoint}");
+            return _fixupSymbolName($"{pinvoke.Module}#{pinvoke.EntryPoint}");
         }
         return _fixupSymbolName(pinvoke.EntryPoint);
     }
@@ -304,7 +306,7 @@ internal sealed class PInvokeTableGenerator
         // it needs to match the key generated in get_native_to_interp
         var method = export.Method;
         string module_symbol = method.DeclaringType!.Module!.Assembly!.GetName()!.Name!;
-        return $"\"{module_symbol}_{method.DeclaringType.Name}_{method.Name}\"".Replace('.', '_');
+        return $"\"{_fixupSymbolName($"{module_symbol}_{method.DeclaringType.Name}_{method.Name}")}\"";
     }
 
 #pragma warning disable SYSLIB1045 // framework doesn't support GeneratedRegexAttribute
@@ -378,6 +380,11 @@ internal sealed class PInvokeTableGenerator
             sb.Append(") { \n");
             if (!is_void)
                 sb.Append($"  {MapType(method.ReturnType)} res;\n");
+
+            if (_isLibraryMode && HasAttribute(method, "System.Runtime.InteropServices.UnmanagedCallersOnlyAttribute"))
+            {
+                sb.Append($"  initialize_runtime(); \n");
+            }
 
             // In case when null force interpreter to initialize the pointers
             sb.Append($"  if (!(WasmInterpEntrySig_{cb_index})wasm_native_to_interp_ftndescs [{cb_index}].func) {{\n");

@@ -9,7 +9,7 @@ namespace Microsoft.Extensions.DependencyInjection
 {
     internal sealed class CallSiteJsonFormatter : CallSiteVisitor<CallSiteJsonFormatter.CallSiteFormatterContext, object?>
     {
-        internal static CallSiteJsonFormatter Instance = new CallSiteJsonFormatter();
+        internal static readonly CallSiteJsonFormatter Instance = new CallSiteJsonFormatter();
 
         private CallSiteJsonFormatter()
         {

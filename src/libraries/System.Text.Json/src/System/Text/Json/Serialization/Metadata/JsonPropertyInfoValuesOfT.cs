@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
+using System.Reflection;
 
 namespace System.Text.Json.Serialization.Metadata
 {
@@ -81,5 +82,10 @@ namespace System.Text.Json.Serialization.Metadata
         /// The name to be used when processing the property or field, specified by <see cref="JsonPropertyNameAttribute"/>.
         /// </summary>
         public string? JsonPropertyName { get; init; }
+
+        /// <summary>
+        /// Provides a <see cref="ICustomAttributeProvider"/> factory that maps to <see cref="JsonPropertyInfo.AttributeProvider"/>.
+        /// </summary>
+        public Func<ICustomAttributeProvider>? AttributeProviderFactory { get; init; }
     }
 }

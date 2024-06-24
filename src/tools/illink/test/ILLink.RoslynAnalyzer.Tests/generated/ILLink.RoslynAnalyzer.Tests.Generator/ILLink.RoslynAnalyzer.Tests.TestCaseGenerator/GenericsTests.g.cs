@@ -16,6 +16,12 @@ namespace ILLink.RoslynAnalyzer.Tests
 		}
 
 		[Fact]
+		public Task ByRefLike ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
 		public Task CorrectOverloadedMethodGetsStrippedInGenericClass ()
 		{
 			return RunTest (allowMissingWarnings: true);

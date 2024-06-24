@@ -107,7 +107,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 return;
             }
             slot.Length = value.Length;
-            int bytes = value.Length * Marshal.SizeOf(typeof(JSMarshalerArgument));
+            int bytes = value.Length * sizeof(JSMarshalerArgument);
             slot.Type = MarshalerType.Array;
             slot.ElementType = MarshalerType.JSObject;
             JSMarshalerArgument* payload = (JSMarshalerArgument*)Marshal.AllocHGlobal(bytes);

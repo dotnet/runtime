@@ -253,7 +253,7 @@ DebuggerJitInfo::DebuggerJitInfo(DebuggerMethodInfo *minfo, NativeCodeVersion na
     m_encBreakpointsApplied(false),
 #endif //FEATURE_METADATA_UPDATER
     m_methodInfo(minfo),
-    m_addrOfCode(NULL),
+    m_addrOfCode((CORDB_ADDRESS)NULL),
     m_sizeOfCode(0), m_prevJitInfo(NULL), m_nextJitInfo(NULL),
     m_lastIL(0),
     m_sequenceMap(NULL),
@@ -1572,10 +1572,10 @@ DebuggerJitInfo *DebuggerMethodInfo::FindOrCreateInitAndAddJitInfo(MethodDesc* f
         return NULL;
     }
 
-    if (startAddr == NULL)
+    if (startAddr == (PCODE)NULL)
     {
         startAddr = g_pEEInterface->GetFunctionAddress(fd);
-        if (startAddr == NULL)
+        if (startAddr == (PCODE)NULL)
         {
             //The only case this should happen is if we are trying to get the DJI for a method that has not been jitted yet.
             return NULL;
@@ -2355,7 +2355,7 @@ PTR_DebuggerJitInfo DebuggerMethodInfo::GetLatestJitInfo(MethodDesc *mdesc)
 
     // This ensures that there is an entry in the DJI list for this particular MethodDesc.
     // in the case of generic code it may not be the first entry in the list.
-    FindOrCreateInitAndAddJitInfo(mdesc, NULL /* startAddr */);
+    FindOrCreateInitAndAddJitInfo(mdesc, (PCODE)NULL /* startAddr */);
 
 #endif // #ifndef DACCESS_COMPILE
 
