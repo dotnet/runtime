@@ -490,6 +490,20 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 {
                     assert(!instrIsRMW);
 
+                    // Special handling for ConvertTo* APIs
+                    // Just need to change the opt here.
+                    switch (intrinEmbMask.id)
+                    {
+                        case NI_Sve_ConvertToInt32:
+                        case NI_Sve_ConvertToUInt32:
+                        {
+                            opt = intrinEmbMask.baseType == TYP_DOUBLE ? INS_OPTS_D_TO_S : INS_OPTS_SCALABLE_S;
+                            break;
+                        }
+                        default:
+                            break;
+                    }
+
                     if (targetReg != falseReg)
                     {
                         // If targetReg is not the same as `falseReg` then need to move
@@ -2088,11 +2102,11 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_Sve_Compute32BitAddresses:
             case NI_Sve_Compute64BitAddresses:
             {
-                static_assert_no_msg(AreContiguous(NI_Sve_Compute8BitAddresses, NI_Sve_Compute16BitAddresses,
-                                                   NI_Sve_Compute32BitAddresses, NI_Sve_Compute64BitAddresses));
+                static_assert_no_msg(AreContiguous(NI_Sve_Compute16BitAddresses, NI_Sve_Compute32BitAddresses,
+                                                   NI_Sve_Compute64BitAddresses, NI_Sve_Compute8BitAddresses));
 
                 GetEmitter()->emitInsSve_R_R_R_I(ins, EA_SCALABLE, targetReg, op1Reg, op2Reg,
-                                                 (intrin.id - NI_Sve_Compute8BitAddresses), opt,
+                                                 (intrin.id - NI_Sve_Compute16BitAddresses), opt,
                                                  INS_SCALABLE_OPTS_LSL_N);
                 break;
             }

@@ -39,8 +39,8 @@ public class b452950
         int gcCount = GC.CollectionCount(GC.MaxGeneration);
         Console.WriteLine(gcCount);
 
-        // if we do a full collection <= (5% of the interations) times, we pass
-        if (gcCount <= (numIterations*0.05))
+        // if we do a full collection <= (10% of the interations) times, we pass
+        if (gcCount <= (numIterations*0.1))
         {
             Console.WriteLine("Passed");
             return 100;

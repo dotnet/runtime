@@ -990,13 +990,16 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
                         return OperandDesc(emit->emitSimd64Const(constValue));
                     }
 
+#endif // TARGET_XARCH
+
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
                     case TYP_MASK:
                     {
                         simdmask_t constValue;
                         memcpy(&constValue, &op->AsVecCon()->gtSimdVal, sizeof(simdmask_t));
                         return OperandDesc(emit->emitSimdMaskConst(constValue));
                     }
-#endif // TARGET_XARCH
+#endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_SIMD
 
                     default:

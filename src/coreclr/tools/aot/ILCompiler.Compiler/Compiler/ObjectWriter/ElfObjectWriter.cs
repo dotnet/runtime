@@ -141,6 +141,7 @@ namespace ILCompiler.ObjectWriter
                 {
                     Type = type,
                     Flags = flags,
+                    Alignment = 1
                 },
                 Name = sectionName,
                 Stream = sectionStream,
@@ -689,7 +690,7 @@ namespace ILCompiler.ObjectWriter
             {
                 _stringTable.ReserveString(section.Name);
 
-                if (section.SectionHeader.Alignment > 0)
+                if (section.SectionHeader.Alignment > 1)
                 {
                     currentOffset = (ulong)((currentOffset + (ulong)section.SectionHeader.Alignment - 1) & ~(ulong)(section.SectionHeader.Alignment - 1));
                 }
