@@ -448,7 +448,7 @@ FCFuncEnd()
 
 FCFuncStart(gMethodTableFuncs)
     FCFuncElement("GetNumInstanceFieldBytes", MethodTableNative::GetNumInstanceFieldBytes)
-    FCFuncElement("GetVerifierCorElementType", MethodTableNative::GetVerifierCorElementType)
+    FCFuncElement("GetPrimitiveCorElementType", MethodTableNative::GetPrimitiveCorElementType)
 FCFuncEnd()
 
 FCFuncStart(gStubHelperFuncs)

@@ -489,8 +489,8 @@ namespace System
                     if (!pValueMethodTable->IsPrimitive || !pElementMethodTable->IsTruePrimitive)
                         throw new InvalidCastException(SR.InvalidCast_StoreArrayElement);
 
-                    CorElementType srcType = pValueMethodTable->GetVerifierCorElementType();
-                    CorElementType targetType = pElementMethodTable->GetVerifierCorElementType();
+                    CorElementType srcType = pValueMethodTable->GetPrimitiveCorElementType();
+                    CorElementType targetType = pElementMethodTable->GetPrimitiveCorElementType();
 
                     // Get a properly widened type
                     if (!InvokeUtils.CanPrimitiveWiden(srcType, targetType))

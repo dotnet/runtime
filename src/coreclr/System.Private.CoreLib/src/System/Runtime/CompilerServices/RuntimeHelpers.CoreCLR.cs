@@ -785,11 +785,11 @@ namespace System.Runtime.CompilerServices
         public extern uint GetNumInstanceFieldBytes();
 
         /// <summary>
-        /// Get the <see cref="CorElementType"/> representing this type. Enums are represented by underlying type.
+        /// Get the <see cref="CorElementType"/> representing primitive-like type. Enums are represented by underlying type.
         /// </summary>
-        /// <remarks>This method is optimized in favor of primitive types and enums.</remarks>
+        /// <remarks>This method should only be called when <see cref="IsPrimitive"/> returns <see langword="true"/>.</remarks>
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public extern CorElementType GetVerifierCorElementType();
+        public extern CorElementType GetPrimitiveCorElementType();
     }
 
     // Subset of src\vm\methodtable.h
