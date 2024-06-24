@@ -21,6 +21,7 @@ FORCEINLINE void System_YieldProcessor() { YieldProcessor(); }
 template <typename T>
 T Min(T v1, T v2)
 {
+    // TODO: check it's safe to remove STATIC_CONTRACT_LEAF
     // STATIC_CONTRACT_LEAF;
     return v1 < v2 ? v1 : v2;
 }
@@ -28,6 +29,7 @@ T Min(T v1, T v2)
 template <typename T>
 T Max(T v1, T v2)
 {
+    // TODO: check it's safe to remove STATIC_CONTRACT_LEAF
     // STATIC_CONTRACT_LEAF;
     return v1 > v2 ? v1 : v2;
 }
