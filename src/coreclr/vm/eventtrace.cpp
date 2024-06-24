@@ -4321,7 +4321,6 @@ VOID ETW::LoaderLog::SendModuleEvent(Module *pModule, DWORD dwEventOptions, BOOL
 
     PCWSTR szDtraceOutput1=W(""),szDtraceOutput2=W("");
     BOOL bIsDynamicAssembly = pModule->GetAssembly()->IsDynamic();
-    BOOL bIsManifestModule = TRUE; // Always the manifest module - multi-module assemblies are no longer supported
     ULONGLONG ullModuleId = (ULONGLONG)(TADDR) pModule;
     ULONGLONG ullAssemblyId = (ULONGLONG)pModule->GetAssembly();
     BOOL bIsIbcOptimized = FALSE;
@@ -4333,7 +4332,8 @@ VOID ETW::LoaderLog::SendModuleEvent(Module *pModule, DWORD dwEventOptions, BOOL
     }
     ULONG ulReservedFlags = 0;
     ULONG ulFlags = ((bIsDynamicAssembly ? ETW::LoaderLog::LoaderStructs::DynamicModule : 0) |
-                     (bIsManifestModule ? ETW::LoaderLog::LoaderStructs::ManifestModule : 0) |
+                     // Always the manifest module - multi-module assemblies are no longer supported
+                     ETW::LoaderLog::LoaderStructs::ManifestModule |
                      (bIsIbcOptimized ? ETW::LoaderLog::LoaderStructs::IbcOptimized : 0) |
                      (bIsReadyToRun ? ETW::LoaderLog::LoaderStructs::ReadyToRunModule : 0) |
                      (bIsPartialReadyToRun ? ETW::LoaderLog::LoaderStructs::PartialReadyToRunModule : 0));
