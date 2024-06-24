@@ -9,6 +9,7 @@ on:
 jobs:
   format:
     strategy:
+      fail-fast: false
       matrix:
         os:
           - name: linux
@@ -34,13 +35,13 @@ jobs:
           ref: main
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Install .NET
-        uses: actions/setup-dotnet@v1
+        uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
       - name: Build jitutils
         run: |
-          cd jitutils
           ./bootstrap${{ matrix.os.extension }}
+        working-directory: jitutils
       - name: Checkout runtime
         uses: actions/checkout@v4
         with:
@@ -50,8 +51,7 @@ jobs:
       
       - name: Run jitformat.py
         run: |
-          cd runtime
-          python3 src/coreclr/scripts/jitformat.py --jitutils $(pwd)/../jitutils -r $(pwd) -o ${{ matrix.os.name }} -a x64 ${{ matrix.os.cross }}
+          python3 runtime/src/coreclr/scripts/jitformat.py --jitutils jitutils -r runtime -o ${{ matrix.os.name }} -a x64 ${{ matrix.os.cross }}
         env:
           ROOTFS_DIR: ${{ matrix.os.rootfs }}
       
