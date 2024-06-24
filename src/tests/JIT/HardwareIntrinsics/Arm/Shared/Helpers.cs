@@ -3673,6 +3673,8 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static ushort ShiftLeftLogical(ushort op1, byte op2) => UnsignedShift(op1, (short)op2);
 
+        public static ushort ShiftLeftLogical(ushort op1, ushort op2) => UnsignedShift(op1, (short)op2);
+
         public static short ShiftLeftLogicalSaturate(short op1, byte op2) => SignedShift(op1, (short)op2, saturating: true);
 
         public static ushort ShiftLeftLogicalSaturate(ushort op1, byte op2) => UnsignedShift(op1, (short)op2, saturating: true);
@@ -3941,6 +3943,8 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static uint ShiftLeftLogical(uint op1, byte op2) => UnsignedShift(op1, (int)op2);
 
+        public static uint ShiftLeftLogical(uint op1, uint op2) => UnsignedShift(op1, (int)op2);
+
         public static int ShiftLeftLogicalSaturate(int op1, byte op2) => SignedShift(op1, (int)op2, saturating: true);
 
         public static uint ShiftLeftLogicalSaturate(uint op1, byte op2) => UnsignedShift(op1, (int)op2, saturating: true);
@@ -4208,6 +4212,8 @@ namespace JIT.HardwareIntrinsics.Arm
         public static long ShiftLeftLogical(long op1, byte op2) => UnsignedShift(op1, (long)op2);
 
         public static ulong ShiftLeftLogical(ulong op1, byte op2) => UnsignedShift(op1, (long)op2);
+
+        public static ulong ShiftLeftLogical(ulong op1, ulong op2) => UnsignedShift(op1, (long)op2);
 
         public static long ShiftLeftLogicalSaturate(long op1, byte op2) => SignedShift(op1, (long)op2, saturating: true);
 
@@ -4641,6 +4647,28 @@ namespace JIT.HardwareIntrinsics.Arm
             }
 
             return (result, ovf);
+        }
+
+        public static ulong LeftShift(ulong value, ulong shift)
+        {
+            for (ulong i = 0; (value != 0) && (i < shift); i++)
+            {
+                value <<= 1;
+            }
+
+            return value;
+        }
+
+        public static T1 RightShift<T1, T2>(T1 value, T2 shift) where T1 : INumber<T1> where T2 : INumber<T2>
+        {
+            T1 two = T1.One + T1.One;
+
+            for (T2 i = T2.Zero; (value != T1.Zero) && (i < shift); i++)
+            {
+                value /= two;
+            }
+
+            return value;
         }
 
         public static float AbsoluteDifference(float op1, float op2) => MathF.Abs(op1 - op2);

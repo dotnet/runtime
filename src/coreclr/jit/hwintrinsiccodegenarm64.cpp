@@ -2112,6 +2112,11 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
+            case NI_Sve_ShiftLeftLogical:
+            // case NI_Sve_ShiftRightLogical:
+                GetEmitter()->emitInsSve_R_R_R(ins, EA_SCALABLE, targetReg, op1Reg, op2Reg, opt);
+                break;
+
             default:
                 unreached();
         }
