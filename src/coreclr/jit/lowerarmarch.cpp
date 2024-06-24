@@ -1297,7 +1297,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
     }
 
     if (HWIntrinsicInfo::IsEmbeddedMaskedOperation(intrinsicId) ||
-        HWIntrinsicInfo::IsEmbeddedMaskedOperationForScalarResult(intrinsicId))
+        HWIntrinsicInfo::IsEmbeddedMaskForScalarResultOperation(intrinsicId))
     {
         LIR::Use use;
         if (BlockRange().TryGetUse(node, &use))
@@ -1312,7 +1312,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                 GenTree*    trueMask        = comp->gtNewSimdAllTrueMaskNode(simdBaseJitType, simdSize);
 
 
-                if (HWIntrinsicInfo::IsEmbeddedMaskedOperationForScalarResult(intrinsicId))
+                if (HWIntrinsicInfo::IsEmbeddedMaskForScalarResultOperation(intrinsicId))
                 {
                     // Create the same node with an additional operand to pass the mask.
                     GenTreeHWIntrinsic* newNode =
