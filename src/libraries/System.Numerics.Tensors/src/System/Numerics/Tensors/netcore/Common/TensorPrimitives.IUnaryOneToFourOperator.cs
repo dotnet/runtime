@@ -13,7 +13,7 @@ namespace System.Numerics.Tensors
     public static unsafe partial class TensorPrimitives
     {
         /// <summary>Operator that takes one input value and returns a single value.</summary>
-        /// <remarks>The input type must be half the size of the output type.</remarks>
+        /// <remarks>The input type must be a quarter of the size of the output type.</remarks>
         private interface IUnaryOneToFourOperator<TInput, TOutput>
         {
             static abstract bool Vectorizable { get; }
