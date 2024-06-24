@@ -465,22 +465,22 @@ typedef DECLSPEC_ALIGN(16) struct {
     /* +0x314 */ DWORD Fpsr;
 
     //
-    // Sve Registers
-    //
-    //TODO-SVE: How does this structure handle variable sized Z/P/FFR registers?
-    /* +0x318 */ DWORD Vl;
-    /* +0x32C */ DT_SVE128 Z[32];
-    /* +0x? */ WORD P[32];
-    /* +0x? */ WORD Ffr;
-
-    //
     // Debug registers
     //
 
-    /* +0x? */ DWORD Bcr[DT_ARM64_MAX_BREAKPOINTS];
-    /* +0x? */ DWORD64 Bvr[DT_ARM64_MAX_BREAKPOINTS];
-    /* +0x? */ DWORD Wcr[DT_ARM64_MAX_WATCHPOINTS];
-    /* +0x? */ DWORD64 Wvr[DT_ARM64_MAX_WATCHPOINTS];
+    /* +0x318 */ DWORD Bcr[DT_ARM64_MAX_BREAKPOINTS];
+    /* +0x338 */ DWORD64 Bvr[DT_ARM64_MAX_BREAKPOINTS];
+    /* +0x378 */ DWORD Wcr[DT_ARM64_MAX_WATCHPOINTS];
+    /* +0x380 */ DWORD64 Wvr[DT_ARM64_MAX_WATCHPOINTS];
+
+    //
+    // Sve Registers
+    //
+    //TODO-SVE: Support Vector register sizes >128bit
+    /* +0x390 */ DWORD Vl;
+    /* +0x3a0 */ SVE128 Z[32];
+    /* +0x5a0 */ DWORD P[16];
+    /* +0x5e0 */ DWORD Ffr;
     /* +0x5e0 */
 
 } DT_CONTEXT;
