@@ -16,7 +16,6 @@
     <!-- Disable native AOT on FreeBSD when cross building from Linux. -->
     <NativeAotSupported Condition="'$(TargetOS)' == 'freebsd' and '$(CrossBuild)' == 'true'">false</NativeAotSupported>
     <PublishAot Condition="'$(NativeAotSupported)' == 'true'">true</PublishAot>
-    <StripSymbols Condition="'$(DotNetBuildSourceOnly)' == 'true' and '$(KeepNativeSymbols)' == 'true'">false</StripSymbols>
     <SysRoot Condition="'$(NativeAotSupported)' == 'true' and '$(CrossBuild)' == 'true' and '$(HostOS)' != 'windows'">$(ROOTFS_DIR)</SysRoot>
     <PublishReadyToRun Condition="'$(NativeAotSupported)' != 'true'">true</PublishReadyToRun>
     <PublishSingleFile Condition="'$(NativeAotSupported)' != 'true'">true</PublishSingleFile>
