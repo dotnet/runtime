@@ -159,16 +159,7 @@ internal static partial class Interop
 
             if (sslAuthenticationOptions.IsClient)
             {
-                byte[]? hash = null;
-
-                if (sslAuthenticationOptions.CertificateContext?.TargetCertificate is X509Certificate2 cert)
-                {
-                    // This is equivalent to cert.GetCertHash(HashAlgorithmName.Sha256), but this
-                    // way the code does not allocate a new byte[] with raw cert contents.every time
-                    hash = SHA256.HashData(cert.RawDataMemory.Span);
-                }
-
-                var key = new SslContextCacheKey(protocols, hash);
+                var key = new SslContextCacheKey(protocols, sslAuthenticationOptions.CertificateContext?.TargetCertificate.GetCertHash(HashAlgorithmName.SHA256));
                 return s_clientSslContexts.GetOrCreate(key, static (args) =>
                 {
                     var (sslAuthOptions, protocols, allowCached) = args;
