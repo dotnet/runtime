@@ -2019,7 +2019,7 @@ void DebuggerMethodInfo::CreateDJIsForNativeBlobs(AppDomain * pAppDomain, Module
     // If we're not stopped and the module we're iterating over allows types to load,
     // then it's possible new native blobs are being created underneath us.
     _ASSERTE(g_pDebugger->IsStopped() ||
-             ((pLoaderModuleFilter != NULL) && !pLoaderModuleFilter->IsReadyForTypeLoad()) ||
+             (pLoaderModuleFilter != NULL && pLoaderModuleFilter->GetDomainAssembly() != NULL && pLoaderModuleFilter->GetDomainAssembly()->GetLoadLevel() < FILE_LOADED) ||
              pMethodDescFilter != NULL);
 
     if (pMethodDescFilter != NULL)
