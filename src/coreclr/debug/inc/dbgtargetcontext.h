@@ -478,7 +478,7 @@ typedef DECLSPEC_ALIGN(16) struct {
     //
     //TODO-SVE: Support Vector register sizes >128bit
     /* +0x390 */ DWORD Vl;
-    /* +0x3a0 */ SVE128 Z[32];
+    /* +0x3a0 */ DT_SVE128 Z[32];
     /* +0x5a0 */ DWORD P[16];
     /* +0x5e0 */ DWORD Ffr;
     /* +0x5e0 */
