@@ -24,6 +24,9 @@ internal sealed unsafe partial class MsQuicApi
     private static readonly delegate* unmanaged[Cdecl]<uint, QUIC_API_TABLE**, int> MsQuicOpenVersion;
     private static readonly delegate* unmanaged[Cdecl]<QUIC_API_TABLE*, void> MsQuicClose;
 
+    [LibraryImport("Kernel32.dll", EntryPoint = "GetModuleFileNameW")]
+    internal static partial int GetModuleNameW(IntPtr hModule, char* lpFilename, int nSize);
+
     public MsQuicSafeHandle Registration { get; }
 
     public QUIC_API_TABLE* ApiTable { get; }
@@ -130,6 +133,22 @@ internal sealed unsafe partial class MsQuicApi
                 NetEventSource.Info(null, NotSupportedReason);
             }
             return;
+        }
+
+        if (OperatingSystem.IsWindows())
+        {
+            Span<char> pathBuffer = stackalloc char[260];
+            int len;
+            fixed (char* pathBufferPtr = pathBuffer)
+            {
+                len = GetModuleNameW(msQuicHandle, pathBufferPtr, pathBuffer.Length);
+            }
+
+            if (len > 0)
+            {
+                string path = new string(pathBuffer.Slice(0, len));
+                System.Console.WriteLine($"Loaded MsQuic library from '{path}'.");
+            }
         }
 
         MsQuicOpenVersion = (delegate* unmanaged[Cdecl]<uint, QUIC_API_TABLE**, int>)NativeLibrary.GetExport(msQuicHandle, nameof(MsQuicOpenVersion));
