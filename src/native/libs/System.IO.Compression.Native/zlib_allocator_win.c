@@ -7,7 +7,9 @@
 #include <winnt.h>
 #include <crtdbg.h> /* _ASSERTE */
 
-#include <external/zlib-ng/zutil.h>
+#include <string.h>
+#include <stdlib.h>
+#include <zconf.h>
 #include <zlib_allocator.h>
 
 /* A custom allocator for zlib that provides some defense-in-depth over standard malloc / free.

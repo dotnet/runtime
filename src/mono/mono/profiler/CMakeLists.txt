@@ -26,7 +26,11 @@ if(NOT DISABLE_LIBS)
     install(TARGETS mono-profiler-log-static LIBRARY)
 
     if(NOT DISABLE_LOG_PROFILER_GZ)
-      target_link_libraries(mono-profiler-log PRIVATE zlib)
+      if (INTERNAL_ZLIB_NG)
+        target_link_libraries(mono-profiler-log PRIVATE zlib)
+      else()
+        target_link_libraries(mono-profiler-log PRIVATE ${Z_LIBS})
+      endif()
     endif()
   endif()
 

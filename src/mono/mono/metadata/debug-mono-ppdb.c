@@ -31,7 +31,7 @@
 
 #ifndef DISABLE_EMBEDDED_PDB
 #include <zlib.h>
-#endif
+#endif // DISABLE_EMBEDDED_PDB
 
 #include "debug-mono-ppdb.h"
 

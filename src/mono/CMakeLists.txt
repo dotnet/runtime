@@ -508,9 +508,21 @@ if ((HOST_MACCAT AND HOST_ARM64) OR (TARGET_MACCAT AND TARGET_ARM64))
   set(TARGET_APPLE_MOBILE 1)
 endif()
 
+if (INTERNAL_ZLIB_NG)
+  add_definitions(-DINTERNAL_ZLIB_NG)
+  add_definitions(-DZLIB_COMPAT)
+endif()
+
 # Decide if we need zlib-ng.
 if(NOT DISABLE_EMBEDDED_PDB OR NOT DISABLE_LOG_PROFILER_GZ)
+  if (INTERNAL_ZLIB_NG)
     include(${CLR_SRC_NATIVE_DIR}/external/zlib-ng.cmake)
+  else()
+    # if we're not on a platform where we use the in-tree zlib, require system zlib
+    include(${CLR_SRC_NATIVE_DIR}/libs/System.IO.Compression.Native/extra_libs.cmake)
+    set(Z_LIBS)
+    append_extra_compression_libs(Z_LIBS)
+  endif()
 endif()
 
 ######################################
@@ -653,12 +665,17 @@ if(LLVM_PREFIX)
   endif()
   set(llvm_includedir "${LLVM_PREFIX}/include")
 
+  set(llvm_system_libs "")
   if(HOST_LINUX)
     # llvm-config --system-libs
-    set(llvm_system_libs ${MONO_cxx_lib} "-lrt" "-ldl" "-lpthread" "-lm")
+    list(APPEND llvm_system_libs ${MONO_cxx_lib} "-lrt" "-ldl" "-lpthread" "-lm")
   elseif(HOST_OSX)
     # llvm-config --system-libs
-    set(llvm_system_libs "-lm")
+    list(APPEND llvm_system_libs "-lm")
+  endif()
+
+  if (NOT INTERNAL_ZLIB_NG AND (HOST_LINUX OR HOST_OSX))
+    list(APPEND llvm_system_libs "-lz")
   endif()
 
   # llvm-config --libs analysis core bitwriter mcjit orcjit

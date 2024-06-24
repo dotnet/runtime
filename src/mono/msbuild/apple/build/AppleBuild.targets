@@ -70,7 +70,7 @@
     </ItemGroup>
 
     <ItemGroup Condition="'$(_IsLibraryMode)' == 'true'">
-      <_CommonLinkerArgs Include="-lz" />
+      <_CommonLinkerArgs Include="-lz" Condition="'$(UseSystemZlib)' == 'true'" />
       <_CommonLinkerArgs Include="-lc++" />
       <_CommonLinkerArgs Include="-liconv" />
       <_CommonLinkerArgs Include="-licucore" />

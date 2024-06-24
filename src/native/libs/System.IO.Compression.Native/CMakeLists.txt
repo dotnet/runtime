@@ -2,14 +2,10 @@ project(System.IO.Compression.Native C)
 
 include(${CMAKE_CURRENT_LIST_DIR}/extra_libs.cmake)
 
-set(IS_ZLIBNG_ENABLED TRUE)
-if (CLR_CMAKE_TARGET_ANDROID OR HOST_ANDROID OR CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
-    set(IS_ZLIBNG_ENABLED FALSE)
-endif()
-
-if (IS_ZLIBNG_ENABLED)
+if (INTERNAL_ZLIB_NG)
     include(${CLR_SRC_NATIVE_DIR}/external/zlib-ng.cmake)
-    add_compile_definitions(ZLIB_COMPAT)
+    add_definitions(-DINTERNAL_ZLIB_NG)
+    add_definitions(-DZLIB_COMPAT)
 endif()
 
 configure_file(
@@ -108,17 +104,15 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
         ${NATIVECOMPRESSION_SOURCES}
     )
 
-    if (IS_ZLIBNG_ENABLED)
-        target_link_libraries(System.IO.Compression.Native-Static
-            PRIVATE
-            zlibstatic)
+    if (INTERNAL_ZLIB_NG)
+        target_link_libraries(System.IO.Compression.Native-Static PRIVATE zlibstatic)
     endif()
+
     set_target_properties(System.IO.Compression.Native-Static PROPERTIES OUTPUT_NAME System.IO.Compression.Native CLEAN_DIRECT_OUTPUT 1)
 else ()
     if (GEN_SHARED_LIB)
         include (GenerateExportHeader)
     endif ()
-
 
     if (GEN_SHARED_LIB)
         add_definitions(-DVER_FILEDESCRIPTION_STR="System.IO.Compression.Native")
@@ -128,10 +122,9 @@ else ()
             System.IO.Compression.Native.def
             ${VERSION_FILE_RC_PATH}
         )
-        if (IS_ZLIBNG_ENABLED)
-            target_link_libraries(System.IO.Compression.Native
-                PRIVATE
-                zlib)
+
+        if (INTERNAL_ZLIB_NG)
+            target_link_libraries(System.IO.Compression.Native PRIVATE zlib)
         endif()
     endif ()
 
@@ -143,10 +136,9 @@ else ()
         STATIC
         ${NATIVECOMPRESSION_SOURCES}
     )
-    if (IS_ZLIBNG_ENABLED)
-    target_link_libraries(System.IO.Compression.Native-Static
-        PRIVATE
-        zlibstatic)
+
+    if (INTERNAL_ZLIB_NG)
+        target_link_libraries(System.IO.Compression.Native-Static PRIVATE zlibstatic)
     endif()
 
     if(STATIC_LIBS_ONLY)
@@ -155,10 +147,8 @@ else ()
             ${NATIVECOMPRESSION_SOURCES}
         )
 
-        if (IS_ZLIBNG_ENABLED)
-        target_link_libraries(System.IO.Compression.Native.Aot
-            PRIVATE
-            zlibstatic)
+        if (INTERNAL_ZLIB_NG)
+            target_link_libraries(System.IO.Compression.Native.Aot PRIVATE zlibstatic)
         endif()
 
         set_target_properties(System.IO.Compression.Native.Aot PROPERTIES CLR_CONTROL_FLOW_GUARD OFF)
@@ -169,10 +159,8 @@ else ()
             ${NATIVECOMPRESSION_SOURCES}
         )
 
-        if (IS_ZLIBNG_ENABLED)
-            target_link_libraries(System.IO.Compression.Native.Aot.GuardCF
-                PRIVATE
-                zlibstatic)
+        if (INTERNAL_ZLIB_NG)
+            target_link_libraries(System.IO.Compression.Native.Aot.GuardCF PRIVATE zlibstatic)
         endif()
 
         set_target_properties(System.IO.Compression.Native.Aot.GuardCF PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF)
@@ -197,7 +185,7 @@ else ()
 
 endif ()
 
-if(IS_ZLIBNG_ENABLED AND STATIC_LIBS_ONLY)
+if(INTERNAL_ZLIB_NG AND STATIC_LIBS_ONLY)
     install_static_library(zlib aotsdk nativeaot)
 endif()
 

@@ -1034,3 +1034,8 @@ elseif (NOT CLR_CMAKE_HOST_BROWSER AND NOT CLR_CMAKE_HOST_WASI)
     enable_language(ASM)
 
 endif(CLR_CMAKE_HOST_WIN32)
+
+if (INTERNAL_ZLIB_NG)
+  add_definitions(-DINTERNAL_ZLIB_NG)
+  add_definitions(-DZLIB_COMPAT)
+endif()

@@ -72,8 +72,12 @@
 #include <sys/socket.h>
 #endif
 #ifndef DISABLE_LOG_PROFILER_GZ
+#ifdef INTERNAL_ZLIB_NG
+#include <external/zlib-ng/zlib.h>
+#else
 #include <zlib.h>
-#endif
+#endif // INTERNAL_ZLIB_NG
+#endif // DISABLE_LOG_PROFILER_GZ
 
 #ifdef HOST_WIN32
 #include <winsock2.h>
