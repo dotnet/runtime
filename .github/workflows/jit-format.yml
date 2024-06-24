@@ -58,6 +58,6 @@ jobs:
       - name: Publish format.patch
         uses: actions/upload-artifact@v2
         with:
-          path: format.patch
+          path: runtime/format.patch
           name: format.${{matrix.os.name}}.patch
         if: failure()
