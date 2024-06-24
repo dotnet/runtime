@@ -91,6 +91,9 @@ AllocatePalThread(CPalThread **ppThread)
 
     PROCAddThread(pThread, pThread);
 
+    // Unmask the activation signal so that GC can suspend this thread
+    UnmaskActivationSignal();
+
 exit:
     *ppThread = pThread;
     return palError;

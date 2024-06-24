@@ -496,6 +496,19 @@ static void sigfpe_handler(int code, siginfo_t *siginfo, void *context)
     invoke_previous_action(&g_previous_sigfpe, code, siginfo, context);
 }
 
+void UnmaskActivationSignal()
+{
+    sigset_t signal_set;
+    sigemptyset(&signal_set);
+    sigaddset(&signal_set, INJECT_ACTIVATION_SIGNAL);
+
+    int sigmaskRet = pthread_sigmask(SIG_UNBLOCK, &signal_set, NULL);
+    if (sigmaskRet != 0)
+    {
+        ASSERT("pthread_sigmask failed; error number is %d\n", sigmaskRet);
+    }
+}
+
 #if !HAVE_MACH_EXCEPTIONS
 
 /*++
@@ -518,15 +531,7 @@ extern "C" void signal_handler_worker(int code, siginfo_t *siginfo, void *contex
     // to correctly fill in this value.
 
     // Unmask the activation signal now that we are running on the original stack of the thread
-    sigset_t signal_set;
-    sigemptyset(&signal_set);
-    sigaddset(&signal_set, INJECT_ACTIVATION_SIGNAL);
-
-    int sigmaskRet = pthread_sigmask(SIG_UNBLOCK, &signal_set, NULL);
-    if (sigmaskRet != 0)
-    {
-        ASSERT("pthread_sigmask failed; error number is %d\n", sigmaskRet);
-    }
+    UnmaskActivationSignal();
 
     returnPoint->returnFromHandler = common_signal_handler(code, siginfo, context, 2, (size_t)0, (size_t)siginfo->si_addr);
 
