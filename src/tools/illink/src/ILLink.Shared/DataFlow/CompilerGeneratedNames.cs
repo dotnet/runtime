@@ -1,7 +1,7 @@
 // Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-namespace Mono.Linker.Dataflow
+namespace ILLink.Shared.DataFlow
 {
 	sealed class CompilerGeneratedNames
 	{
@@ -53,12 +53,14 @@ namespace Mono.Linker.Dataflow
 
 		// Lambda methods have generated names like "<UserMethod>b__0_1" where "UserMethod" is the name
 		// of the original user code that contains the lambda method declaration.
+		// The user method name may include a (potentially generic) interface type name for
+		// explicitly implemented interface methods.
 		internal static bool IsLambdaMethod (string methodName)
 		{
 			if (!IsGeneratedMemberName (methodName))
 				return false;
 
-			int i = methodName.IndexOf ('>', 1);
+			int i = methodName.LastIndexOf ('>');
 			if (i == -1)
 				return false;
 
@@ -69,12 +71,14 @@ namespace Mono.Linker.Dataflow
 		// Local functions have generated names like "<UserMethod>g__LocalFunction|0_1" where "UserMethod" is the name
 		// of the original user code that contains the lambda method declaration, and "LocalFunction" is the name of
 		// the local function.
+		// The user method name may include a (potentially generic) interface type name for
+		// explicitly implemented interface methods.
 		internal static bool IsLocalFunction (string methodName)
 		{
 			if (!IsGeneratedMemberName (methodName))
 				return false;
 
-			int i = methodName.IndexOf ('>', 1);
+			int i = methodName.LastIndexOf ('>');
 			if (i == -1)
 				return false;
 
