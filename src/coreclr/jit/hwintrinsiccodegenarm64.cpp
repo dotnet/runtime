@@ -490,6 +490,20 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 {
                     assert(!instrIsRMW);
 
+                    // Special handling for ConvertTo* APIs
+                    // Just need to change the opt here.
+                    switch (intrinEmbMask.id)
+                    {
+                        case NI_Sve_ConvertToInt32:
+                        case NI_Sve_ConvertToUInt32:
+                        {
+                            opt = intrinEmbMask.baseType == TYP_DOUBLE ? INS_OPTS_D_TO_S : INS_OPTS_SCALABLE_S;
+                            break;
+                        }
+                        default:
+                            break;
+                    }
+
                     if (targetReg != falseReg)
                     {
                         // If targetReg is not the same as `falseReg` then need to move

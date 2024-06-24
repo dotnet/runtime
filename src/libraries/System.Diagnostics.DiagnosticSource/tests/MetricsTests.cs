@@ -1707,6 +1707,29 @@ namespace System.Diagnostics.Metrics.Tests
            }).Dispose();
         }
 
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestRecordingWithEmptyTagList()
+        {
+           RemoteExecutor.Invoke(() =>
+           {
+                using MeterListener meterListener = new MeterListener();
+                using Meter meter = new Meter("demo");
+
+                int count = 0;
+
+                Counter<int> counter = meter.CreateCounter<int>("counter");
+                meterListener.SetMeasurementEventCallback<int>((instrument, measurement, tags,state) => count += measurement);
+                meterListener.EnableMeasurementEvents(counter);
+
+                counter.Add(1);
+                counter.Add(1, new TagList());
+                counter.Add(1, Array.Empty<KeyValuePair<string, object>>());
+                counter.Add(1, new TagList(Array.Empty<KeyValuePair<string, object>>()));
+
+                Assert.Equal(4, count);
+           }).Dispose();
+        }
+
         private void PublishCounterMeasurement<T>(Counter<T> counter, T value, KeyValuePair<string, object?>[] tags) where T : struct
         {
             switch (tags.Length)
