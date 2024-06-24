@@ -1477,6 +1477,18 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                         break;
                     }
                 }
+#elif defined(TARGET_ARM64)
+                switch (intrinsic)
+                {
+                    case NI_Sve_ConvertToInt32:
+                    case NI_Sve_ConvertToUInt32:
+                        // Save the base type of return SIMD. It is used to contain this intrinsic inside
+                        // ConditionalSelect.
+                        retNode->AsHWIntrinsic()->SetAuxiliaryJitType(getBaseJitTypeOfSIMDType(sig->retTypeSigClass));
+                        break;
+                    default:
+                        break;
+                }
 #endif // TARGET_XARCH
 
                 break;
