@@ -8,8 +8,31 @@ using Internal.TypeSystem;
 
 namespace ILCompiler
 {
+    /// <summary>
+    /// Simple state machine to analyze IL sequences that represent runtime type equality checks.
+    /// </summary>
     internal struct TypeEqualityPatternAnalyzer
     {
+        // Captures following sequence:
+        //
+        // ldtoken Foo
+        // call GetTypeFromHandle
+        // One Of:
+        //     ldtoken Bar
+        //     call GetTypeFromHandle
+        //   Or:
+        //     ldarg/ldloc X
+        //     Optional:
+        //       call object.GetType()
+        //   Or:
+        //     (nothing)
+        // End One Of
+        // call op_Equality/op_Inequality
+        // Optional:
+        //   stloc X
+        //   ldloc X
+        // brtrue/brfalse
+
         private enum State : byte
         {
             LdToken = 1,
