@@ -5757,23 +5757,12 @@ emit_handler_start (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef builder
 static LLVMValueRef
 get_double_const (MonoCompile *cfg, double val)
 {
-	//#ifdef TARGET_WASM
-#if 0
-	//Wasm requires us to canonicalize NaNs.
-	if (mono_isnan (val))
-		*(gint64 *)&val = 0x7FF8000000000000ll;
-#endif
 	return LLVMConstReal (LLVMDoubleType (), val);
 }
 
 static LLVMValueRef
 get_float_const (MonoCompile *cfg, float val)
 {
-	//#ifdef TARGET_WASM
-#if 0
-	if (mono_isnan (val))
-		*(int *)&val = 0x7FC00000;
-#endif
 	return LLVMConstReal (LLVMFloatType (), val);
 }
 

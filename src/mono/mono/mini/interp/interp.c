@@ -5556,6 +5556,22 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			LOCAL_VAR (ip [1], gint64) = ~ LOCAL_VAR (ip [2], gint64);
 			ip += 3;
 			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BITCAST_I4_R4)
+			memcpy (&LOCAL_VAR (ip [1], gint32), &LOCAL_VAR (ip [2], float), sizeof (float));
+			ip += 3;
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BITCAST_I8_R8)
+			memcpy (&LOCAL_VAR (ip [1], gint64), &LOCAL_VAR (ip [2], double), sizeof (double));
+			ip += 3;
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BITCAST_R4_I4)
+			memcpy (&LOCAL_VAR (ip [1], float), &LOCAL_VAR (ip [2], gint32), sizeof (gint32));
+			ip += 3;
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BITCAST_R8_I8)
+			memcpy (&LOCAL_VAR (ip [1], double), &LOCAL_VAR (ip [2], gint64), sizeof (gint64));
+			ip += 3;
+			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_I1_I4)
 			// FIXME read casted var directly and remove redundant conv opcodes
 			LOCAL_VAR (ip [1], gint32) = (gint8)LOCAL_VAR (ip [2], gint32);

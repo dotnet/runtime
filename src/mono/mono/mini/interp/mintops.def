@@ -548,6 +548,11 @@ OPDEF(MINT_NEG_R8, "neg.r8", 3, 1, 1, MintOpNoArgs)
 OPDEF(MINT_NOT_I4, "not.i4", 3, 1, 1, MintOpNoArgs)
 OPDEF(MINT_NOT_I8, "not.i8", 3, 1, 1, MintOpNoArgs)
 
+OPDEF(MINT_BITCAST_I4_R4, "bitcast.i4.r4", 3, 1, 1, MintOpNoArgs)
+OPDEF(MINT_BITCAST_I8_R8, "bitcast.i8.r8", 3, 1, 1, MintOpNoArgs)
+OPDEF(MINT_BITCAST_R4_I4, "bitcast.r4.i4", 3, 1, 1, MintOpNoArgs)
+OPDEF(MINT_BITCAST_R8_I8, "bitcast.r8.i8", 3, 1, 1, MintOpNoArgs)
+
 OPDEF(MINT_CONV_R_UN_I4, "conv.r.un.i4", 3, 1, 1, MintOpNoArgs)
 OPDEF(MINT_CONV_R_UN_I8, "conv.r.un.i8", 3, 1, 1, MintOpNoArgs)
 

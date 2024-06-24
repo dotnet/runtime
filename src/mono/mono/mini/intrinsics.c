@@ -428,6 +428,40 @@ emit_span_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature
 }
 
 static MonoInst*
+emit_bitconverter_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
+{
+	MonoInst *ins;
+
+	if (!strcmp (cmethod->name, "DoubleToInt64Bits") || !strcmp (cmethod->name, "DoubleToUInt64Bits")) {
+		g_assert (fsig->param_count == 1);
+		int dreg = mono_alloc_dreg (cfg, STACK_I8);
+		EMIT_NEW_UNALU (cfg, ins, OP_MOVE_F_TO_I8, dreg, args [0]->dreg);
+		ins->type = STACK_I8;
+		return ins;
+	} else if (!strcmp (cmethod->name, "Int32BitsToSingle") || !strcmp (cmethod->name, "UInt32BitsToSingle")) {
+		g_assert (fsig->param_count == 1);
+		int dreg = mono_alloc_dreg (cfg, STACK_R4);
+		EMIT_NEW_UNALU (cfg, ins, OP_MOVE_I4_TO_F, dreg, args [0]->dreg);
+		ins->type = STACK_R4;
+		return ins;
+	} else if (!strcmp (cmethod->name, "Int64BitsToDouble") || !strcmp (cmethod->name, "UInt64BitsToDouble")) {
+		g_assert (fsig->param_count == 1);
+		int dreg = mono_alloc_dreg (cfg, STACK_R8);
+		EMIT_NEW_UNALU (cfg, ins, OP_MOVE_I8_TO_F, dreg, args [0]->dreg);
+		ins->type = STACK_R8;
+		return ins;
+	} else if (!strcmp (cmethod->name, "SingleToInt32Bits") || !strcmp (cmethod->name, "SingleToUInt32Bits")) {
+		g_assert (fsig->param_count == 1);
+		int dreg = mono_alloc_dreg (cfg, STACK_I4);
+		EMIT_NEW_UNALU (cfg, ins, OP_MOVE_F_TO_I4, dreg, args [0]->dreg);
+		ins->type = STACK_I4;
+		return ins;
+	}
+
+	return NULL;
+}
+
+static MonoInst*
 emit_unsafe_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
 	MonoInst *ins;
@@ -487,6 +521,142 @@ emit_unsafe_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatu
 		int dreg = alloc_ireg (cfg);
 		EMIT_NEW_BIALU (cfg, ins, OP_COMPARE, -1, args [0]->dreg, args [1]->dreg);
 		EMIT_NEW_UNALU (cfg, ins, OP_PCEQ, dreg, -1);
+		return ins;
+	} else if (!strcmp (cmethod->name, "BitCast")) {
+		g_assert (ctx);
+		g_assert (ctx->method_inst);
+		g_assert (ctx->method_inst->type_argc == 2);
+		g_assert (fsig->param_count == 1);
+
+		// We explicitly do not handle gsharedvt as it is meant as a slow fallback strategy
+		// instead we fallback to the managed implementation which will do the right things
+
+		MonoType *tfrom = ctx->method_inst->type_argv [0];
+		if (mini_is_gsharedvt_variable_type (tfrom)) {
+			return NULL;
+		}
+
+		MonoType *tto = ctx->method_inst->type_argv [1];
+		if (mini_is_gsharedvt_variable_type (tto)) {
+			return NULL;
+		}
+
+		// The underlying API always throws for reference type inputs, so we
+		// fallback to the managed implementation to let that handling occur
+		
+		MonoTypeEnum tfrom_type = tfrom->type;
+		if (MONO_TYPE_IS_REFERENCE (tfrom)) {
+			return NULL;
+		}
+
+		MonoTypeEnum tto_type = tto->type;
+		if (MONO_TYPE_IS_REFERENCE (tto)) {
+			return NULL;
+		}
+
+		// We also always throw for Nullable<T> inputs, so fallback to the
+		// managed implementation here as well.
+
+		MonoClass *tfrom_klass = mono_class_from_mono_type_internal (tfrom);
+		if (mono_class_is_nullable (tfrom_klass)) {
+			return NULL;
+		}
+
+		MonoClass *tto_klass = mono_class_from_mono_type_internal (tto);
+		if (mono_class_is_nullable (tto_klass)) {
+			return NULL;
+		}
+
+		// The same applies for when the type sizes do not match, as this will always throw
+		// and so its not an expected case and we can fallback to the managed implementation
+
+		int tfrom_align, tto_align;
+		gint32 size = mono_type_size (tfrom, &tfrom_align);
+
+		if (size != mono_type_size (tto, &tto_align)) {
+			return FALSE;
+		}
+		g_assert (size < G_MAXUINT16);
+
+		// We have several different move opcodes to handle the data depending on the
+		// source and target types, so detect and optimize the most common ones falling
+		// back to what is effectively `ReadUnaligned<TTo>(ref As<TFrom, byte>(ref source))`
+		// for anything that can't be special cased as potentially zero-cost move.
+
+		guint32 opcode = OP_LDADDR;
+		MonoStackType tto_stack = STACK_OBJ;
+
+		bool tfrom_is_primitive_or_enum = false;
+		if (m_class_is_primitive(tfrom_klass)) {
+			tfrom_is_primitive_or_enum = true;
+		} else if (m_class_is_enumtype(tfrom_klass)) {
+			tfrom_is_primitive_or_enum = true;
+			tfrom_type = mono_class_enum_basetype_internal(tfrom_klass)->type;
+		}
+
+		bool tto_is_primitive_or_enum = false;
+		if (m_class_is_primitive(tto_klass)) {
+			tto_is_primitive_or_enum = true;
+		} else if (m_class_is_enumtype(tto_klass)) {
+			tto_is_primitive_or_enum = true;
+			tto_type = mono_class_enum_basetype_internal(tto_klass)->type;
+		}
+
+		if (tfrom_is_primitive_or_enum && tto_is_primitive_or_enum) {
+			if (size == 1) {
+				// FIXME: This doesn't work
+				//
+				// opcode = OP_MOVE;
+				// tto_stack = STACK_I4;
+			} else if (size == 2) {
+				// FIXME: This doesn't work
+				//
+				// opcode = OP_MOVE;
+				// tto_stack = STACK_I4;
+			} else if (size == 4) {
+				if ((tfrom_type == MONO_TYPE_R4) && ((tto_type == MONO_TYPE_I4) || (tto_type == MONO_TYPE_U4))) {
+					opcode = OP_MOVE_F_TO_I4;
+					tto_stack = STACK_I4;
+				} else if ((tto_type == MONO_TYPE_R4) && ((tfrom_type == MONO_TYPE_I4) || (tfrom_type == MONO_TYPE_U4))) {
+					opcode = OP_MOVE_I4_TO_F;
+					tto_stack = STACK_R4;
+				} else {
+					opcode = OP_MOVE;
+					tto_stack = STACK_I4;
+				}
+			} else if (size == 8) {
+				if ((tfrom_type == MONO_TYPE_R8) && ((tto_type == MONO_TYPE_I8) || (tto_type == MONO_TYPE_U8))) {
+					opcode = OP_MOVE_F_TO_I8;
+					tto_stack = STACK_I8;
+				} else if ((tto_type == MONO_TYPE_R8) && ((tfrom_type == MONO_TYPE_I8) || (tfrom_type == MONO_TYPE_U8))) {
+					opcode = OP_MOVE_I8_TO_F;
+					tto_stack = STACK_R8;
+				} else {
+					opcode = OP_MOVE;
+					tto_stack = STACK_I8;
+				}
+			}
+		} else if (mini_class_is_simd (cfg, tfrom_klass) && mini_class_is_simd (cfg, tto_klass)) {
+			opcode = OP_XMOVE;
+			tto_stack = STACK_VTYPE;
+		}
+
+		if (opcode == OP_LDADDR) {
+			MonoInst *addr;
+			EMIT_NEW_VARLOADA_VREG (cfg, addr, args [0]->dreg, tfrom);
+			addr->klass = tfrom_klass;
+
+			// We don't need to call mini_get_underlying_type on tto
+			// since we have skipped handling for gsharedvt further up
+			assert(MONO_TYPE_ISSTRUCT (tto));
+
+			return mini_emit_memory_load (cfg, tto, addr, 0, MONO_INST_UNALIGNED);
+		}
+		
+		int dreg = mono_alloc_dreg (cfg, tto_stack);
+		EMIT_NEW_UNALU (cfg, ins, opcode, dreg, args [0]->dreg);
+		ins->type = tto_stack;
+		ins->klass = tto_klass;
 		return ins;
 	} else if (!strcmp (cmethod->name, "IsAddressLessThan")) {
 		g_assert (ctx);
@@ -2087,6 +2257,10 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			   !strcmp (cmethod_klass_name_space, "System") &&
 			   (!strcmp (cmethod_klass_name, "Span`1") || !strcmp (cmethod_klass_name, "ReadOnlySpan`1"))) {
 		return emit_span_intrinsics (cfg, cmethod, fsig, args);
+	} else if (in_corlib &&
+			   !strcmp (cmethod_klass_name_space, "System") &&
+			   !strcmp (cmethod_klass_name, "BitConverter")) {
+		return emit_bitconverter_intrinsics (cfg, cmethod, fsig, args);
 	} else if (in_corlib &&
 			   !strcmp (cmethod_klass_name_space, "System.Runtime.CompilerServices") &&
 			   !strcmp (cmethod_klass_name, "Unsafe")) {
