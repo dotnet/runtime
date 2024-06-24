@@ -422,7 +422,7 @@ public:
     // Remarks:
     //  If a process runs with a restricted memory limit, it returns the limit. If there's no limit
     //  specified, it returns amount of actual physical memory.
-    static uint64_t GetPhysicalMemoryLimit(bool* is_restricted=NULL, bool refresh=false);
+    static uint64_t GetPhysicalMemoryLimit(bool* is_restricted=NULL);
 
     // Get memory status
     // Parameters:
