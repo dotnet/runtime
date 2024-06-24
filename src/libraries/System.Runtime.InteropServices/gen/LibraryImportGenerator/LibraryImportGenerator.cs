@@ -445,30 +445,8 @@ namespace Microsoft.Interop
                     Token(SyntaxKind.ExternKeyword),
                     Token(SyntaxKind.UnsafeKeyword))
                 .WithSemicolonToken(Token(SyntaxKind.SemicolonToken))
-                .WithAttributeLists(
-                    SingletonList(AttributeList(
-                        SingletonSeparatedList(
-                                Attribute(
-                                    NameSyntaxes.DllImportAttribute,
-                                    AttributeArgumentList(
-                                        SeparatedList(
-                                            new[]
-                                            {
-                                                AttributeArgument(LiteralExpression(
-                                                        SyntaxKind.StringLiteralExpression,
-                                                        Literal(libraryImportData.ModuleName))),
-                                                AttributeArgument(
-                                                    NameEquals(nameof(DllImportAttribute.EntryPoint)),
-                                                    null,
-                                                    LiteralExpression(
-                                                        SyntaxKind.StringLiteralExpression,
-                                                        Literal(libraryImportData.EntryPoint ?? stubMethodName))),
-                                                AttributeArgument(
-                                                    NameEquals(nameof(DllImportAttribute.ExactSpelling)),
-                                                    null,
-                                                    LiteralExpression(SyntaxKind.TrueLiteralExpression))
-                                            }
-                                            )))))))
+                .WithAttributeLists(SingletonList(AttributeList(SingletonSeparatedList(
+                    CreateForwarderDllImport(libraryImportData, stubMethodName)))))
                 .WithParameterList(parameterList);
             if (returnTypeAttributes is not null)
             {
@@ -477,7 +455,7 @@ namespace Microsoft.Interop
             return localDllImport;
         }
 
-        private static AttributeSyntax CreateForwarderDllImport(LibraryImportData target)
+        private static AttributeSyntax CreateForwarderDllImport(LibraryImportData target, string? stubMethodName = null)
         {
             var newAttributeArgs = new List<AttributeArgumentSyntax>
             {
@@ -487,7 +465,7 @@ namespace Microsoft.Interop
                 AttributeArgument(
                     NameEquals(nameof(DllImportAttribute.EntryPoint)),
                     null,
-                    CreateStringExpressionSyntax(target.EntryPoint)),
+                    CreateStringExpressionSyntax(target.EntryPoint ?? stubMethodName)),
                 AttributeArgument(
                     NameEquals(nameof(DllImportAttribute.ExactSpelling)),
                     null,
