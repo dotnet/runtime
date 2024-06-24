@@ -1,3 +1,5 @@
+name: Format jit codebase
+
 on:
   pull_request:
     paths:
@@ -20,6 +22,7 @@ jobs:
             cross: ''
     runs-on: ${{ matrix.os.image }}
     container: ${{ matrix.os.container }}
+    name: Format jit codebase ${{ matrix.os.name }}
     steps:
       - name: Checkout jitutils
         uses: actions/checkout@v4
@@ -45,7 +48,8 @@ jobs:
       
       - name: Run jitformat.py
         run: |
-          python3 runtime/src/coreclr/scripts/jitformat.py --jitutils jitutils -r ${{ github.workspace }} -o ${{ matrix.os.name }} -a x64 ${{ matrix.os.cross }}
+          cd runtime
+          python3 src/coreclr/scripts/jitformat.py --jitutils jitutils -r $(pwd) -o ${{ matrix.os.name }} -a x64 ${{ matrix.os.cross }}
       
       - name: Publish format.patch
         uses: actions/upload-artifact@v2
