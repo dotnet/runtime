@@ -187,9 +187,17 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
 
         Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
         {
-            GenTree* tree       = *use;
-            unsigned lclNum     = tree->AsLclVarCommon()->GetLclNum();
-            bool     lclEscapes = true;
+            GenTree* const tree   = *use;
+            unsigned const lclNum = tree->AsLclVarCommon()->GetLclNum();
+
+            // If this local already escapes, no need to look further.
+            //
+            if (m_allocator->CanLclVarEscape(lclNum))
+            {
+                return Compiler::fgWalkResult::WALK_CONTINUE;
+            }
+
+            bool lclEscapes = true;
 
             if (tree->OperIsLocalStore())
             {
