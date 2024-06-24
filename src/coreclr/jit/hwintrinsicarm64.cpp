@@ -132,15 +132,24 @@ CORINFO_InstructionSet HWIntrinsicInfo::lookupIsa(const char* className, const c
 {
     assert(className != nullptr);
 
-    if (strcmp(className, "Arm64") == 0)
+    if (enclosingClassName == nullptr)
     {
-        assert(enclosingClassName != nullptr);
-        return Arm64VersionOfIsa(lookupInstructionSet(enclosingClassName));
-    }
-    else
-    {
+        // No nested class is the most common, so fast path it
         return lookupInstructionSet(className);
     }
+
+    // Since lookupId is only called for the xplat intrinsics
+    // or intrinsics in the platform specific namespace, we assume
+    // that it will be one we can handle and don't try to early out.
+
+    CORINFO_InstructionSet enclosingIsa = lookupInstructionSet(enclosingClassName);
+
+    if (strcmp(className, "Arm64") == 0)
+    {
+        return Arm64VersionOfIsa(enclosingIsa);
+    }
+
+    return InstructionSet_ILLEGAL;
 }
 
 //------------------------------------------------------------------------
@@ -1959,7 +1968,10 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector64_Round:
         case NI_Vector128_Round:
         {
-            assert(sig->numArgs == 1);
+            if (sig->numArgs != 1)
+            {
+                break;
+            }
 
             if (!varTypeIsFloating(simdBaseType))
             {
