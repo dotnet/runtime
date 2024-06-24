@@ -53,17 +53,9 @@ namespace System.Text.Json.Serialization.Metadata
                 WriteStack state = default;
                 state.Initialize(this, rootValueBoxed);
 
-                try
-                {
-                    bool success = EffectiveConverter.WriteCore(writer, rootValue, Options, ref state);
-                    Debug.Assert(success);
-                    writer.Flush();
-                }
-                catch
-                {
-                    state.DisposePendingDisposablesOnException();
-                    throw;
-                }
+                bool success = EffectiveConverter.WriteCore(writer, rootValue, Options, ref state);
+                Debug.Assert(success);
+                writer.Flush();
             }
         }
 
@@ -313,6 +305,7 @@ namespace System.Text.Json.Serialization.Metadata
                 {
                     ThrowHelper.ThrowInvalidOperationException_PipeWriterDoesNotImplementUnflushedBytes(bufferWriter);
                 }
+
                 state.PipeWriter = bufferWriter;
                 state.FlushThreshold = (int)(bufferWriter.Capacity * JsonSerializer.FlushThreshold);
 
