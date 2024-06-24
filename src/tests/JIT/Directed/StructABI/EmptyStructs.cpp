@@ -17,8 +17,8 @@ static_assert(sizeof(Empty) == 1, "Empty struct must be sized like in .NET");
 
 struct IntEmpty
 {
-	int32_t FieldI0;
-	Empty FieldE0;
+	int32_t Int0;
+	Empty Empty0;
 };
 
 extern "C" DLLEXPORT IntEmpty EchoIntEmptySysV(int i0, IntEmpty val)
@@ -29,8 +29,8 @@ extern "C" DLLEXPORT IntEmpty EchoIntEmptySysV(int i0, IntEmpty val)
 
 struct IntEmptyPair
 {
-	IntEmpty FieldIE0;
-	IntEmpty FieldIE1;
+	IntEmpty IntEmpty0;
+	IntEmpty IntEmpty1;
 };
 
 extern "C" DLLEXPORT IntEmptyPair EchoIntEmptyPairSysV(int i0, IntEmptyPair val)
@@ -41,10 +41,10 @@ extern "C" DLLEXPORT IntEmptyPair EchoIntEmptyPairSysV(int i0, IntEmptyPair val)
 
 struct EmptyFloatIntInt
 {
-	Empty FieldE0;
-	float FieldF0;
-	int32_t FieldI0;
-	int32_t FieldI1;
+	Empty Empty0;
+	float Float0;
+	int32_t Int0;
+	int32_t Int1;
 };
 
 extern "C" DLLEXPORT EmptyFloatIntInt EchoEmptyFloatIntIntSysV(int i0, float f0, EmptyFloatIntInt val)
@@ -55,10 +55,10 @@ extern "C" DLLEXPORT EmptyFloatIntInt EchoEmptyFloatIntIntSysV(int i0, float f0,
 
 struct FloatFloatEmptyFloat
 {
-	float FieldF0;
-	float FieldF1;
-	Empty FieldE0;
-	float FieldF2;
+	float Float0;
+	float Float1;
+	Empty Empty0;
+	float Float2;
 };
 
 extern "C" DLLEXPORT FloatFloatEmptyFloat EchoFloatFloatEmptyFloatSysV(float f0, FloatFloatEmptyFloat val)
