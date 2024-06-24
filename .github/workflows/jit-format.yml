@@ -16,10 +16,12 @@ jobs:
             container: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-cross-amd64-net9.0
             extension: '.sh'
             cross: '--cross'
+            rootfs: '/crossrootfs/x64'
           - name: windows
             image: windows-latest
             extension: '.cmd'
             cross: ''
+            rootfs: ''
     runs-on: ${{ matrix.os.image }}
     container: ${{ matrix.os.container }}
     name: Format jit codebase ${{ matrix.os.name }}
@@ -50,6 +52,8 @@ jobs:
         run: |
           cd runtime
           python3 src/coreclr/scripts/jitformat.py --jitutils $(pwd)/../jitutils -r $(pwd) -o ${{ matrix.os.name }} -a x64 ${{ matrix.os.cross }}
+        env:
+          ROOTFS_DIR: ${{ matrix.os.rootfs }}
       
       - name: Publish format.patch
         uses: actions/upload-artifact@v2
