@@ -7,7 +7,7 @@ The dotnet-pgo tool is a cross-platform CLI global tool that enables conversion 
 
 ## Installing dotnet-pgo
 
-The only way to use dotnet-pgo is to build it in the runtime repo. To learn how to build the runtime, consult the [how to build](https://github.com/dotnet/runtime/tree/main/docs/workflow/building/coreclr) docs for Windows, MacOS, or Linux.
+The only way to use dotnet-pgo is to build it in the runtime repo. To learn how to build the runtime, consult the [how to build](https://github.com/dotnet/runtime/tree/main/docs/workflow/building/coreclr) docs for Windows, macOS, or Linux.
 
 ## Using dotnet-pgo to optimize an application
 
