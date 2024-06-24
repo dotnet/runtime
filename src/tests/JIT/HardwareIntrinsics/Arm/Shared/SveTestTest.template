@@ -194,7 +194,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             for (var i = 0; i < Vector<{MaskBaseType}>.Count; i++)
             {
-                if (left[i] > 0) return (right[i] > 0) ? true : false;
+                if (left[i] > 0) return (right[i] > 0);
             }
             return false;
         }
@@ -202,9 +202,9 @@ namespace JIT.HardwareIntrinsics.Arm
         /// Find last true value in left, and return contents of right
         static bool TestLastTrue(Vector<{MaskBaseType}> left, Vector<{MaskBaseType}> right)
         {
-            for (var i = Vector<{MaskBaseType}>.Count - 1; i > 0; i--)
+            for (var i = Vector<{MaskBaseType}>.Count - 1; i >= 0; i--)
             {
-                if (left[i] > 0) return (right[i] > 0) ? true : false;
+                if (left[i] > 0) return (right[i] > 0);
             }
             return false;
         }
@@ -221,8 +221,8 @@ namespace JIT.HardwareIntrinsics.Arm
             if (!succeeded)
             {
                 TestLibrary.TestFramework.LogInformation($"{nameof({Isa})}.{nameof({Isa}.{Method})}(Vector<{MaskBaseType}>, Vector<{MaskBaseType}>): {method} failed:");
-                TestLibrary.TestFramework.LogInformation($"      op1: ({op1})");
-                TestLibrary.TestFramework.LogInformation($"      op2: ({op2})");
+                TestLibrary.TestFramework.LogInformation($"     mask: ({op1})");
+                TestLibrary.TestFramework.LogInformation($"  srcMask: ({op2})");
                 TestLibrary.TestFramework.LogInformation($"   result: ({result})");
                 TestLibrary.TestFramework.LogInformation(string.Empty);
 
