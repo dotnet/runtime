@@ -132,7 +132,7 @@ public:
 #ifdef FEATURE_COMINTEROP
     IErrorInfo *GetErrorInfo();
     HRESULT SetErrorInfo();
-#endif
+#endif // FEATURE_COMINTEROP
 
     void GetMessage(SString &result);
 
@@ -226,7 +226,7 @@ class EEException : public CLRException
     HRESULT GetHR();
 #ifdef FEATURE_COMINTEROP
     IErrorInfo *GetErrorInfo();
-#endif
+#endif // FEATURE_COMINTEROP
     void GetMessage(SString &result);
     OBJECTREF CreateThrowable();
 
@@ -867,9 +867,6 @@ LONG CLRNoCatchHandler(EXCEPTION_POINTERS* pExceptionInfo, PVOID pv);
     EX_CATCH                                                                    \
     {                                                                           \
         (_hr) = GET_EXCEPTION()->GetHR();                                       \
-        {                                                                       \
-            FAULT_NOT_FATAL();                                                  \
-        }                                                                       \
         _ASSERTE(FAILED(_hr));                                                  \
     }                                                                           \
     EX_END_CATCH(SwallowAllExceptions)

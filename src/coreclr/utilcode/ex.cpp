@@ -817,7 +817,7 @@ IErrorInfo *SEHException::GetErrorInfo()
     LIMITED_METHOD_CONTRACT;
     return NULL;
 }
-#endif
+#endif // FEATURE_COMINTEROP
 
 void SEHException::GetMessage(SString &string)
 {
@@ -912,7 +912,7 @@ IErrorInfo *DelegatingException::GetErrorInfo()
     return pDelegate ? pDelegate->GetErrorInfo() : NULL;
 
 } // IErrorInfo *DelegatingException::GetErrorInfo()
-#endif
+#endif // FEATURE_COMINTEROP
 
 //------------------------------------------------------------------------------
 void DelegatingException::GetMessage(SString &result)

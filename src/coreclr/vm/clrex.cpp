@@ -694,7 +694,7 @@ OBJECTREF CLRException::GetThrowableFromException(Exception *pException)
                         GetExceptionForHR(hr, pErrInfo, &oRetVal);
                     }
                     else
-#endif
+#endif // FEATURE_COMINTEROP
                     {
                         SString message;
                         pException->GetMessage(message);
@@ -935,7 +935,7 @@ IErrorInfo *EEException::GetErrorInfo()
 
     return NULL;
 }
-#endif
+#endif // FEATURE_COMINTEROP
 
 BOOL EEException::GetThrowableMessage(SString &result)
 {
