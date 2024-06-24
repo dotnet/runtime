@@ -14,7 +14,7 @@ namespace Microsoft.Extensions.Http.Logging
     internal static class LogHelper
     {
         private static readonly LogDefineOptions s_skipEnabledCheckLogDefineOptions = new LogDefineOptions() { SkipEnabledCheck = true };
-        private static readonly bool s_logQueryString = GetLogQueryStringSettingValue();
+        private static readonly bool s_logQueryString = GetDisableUriQueryRedactionSettingValue();
 
         private static class EventIds
         {
@@ -54,14 +54,14 @@ namespace Microsoft.Extensions.Http.Logging
             EventIds.PipelineEnd,
             "End processing HTTP request after {ElapsedMilliseconds}ms - {StatusCode}");
 
-        private static bool GetLogQueryStringSettingValue()
+        private static bool GetDisableUriQueryRedactionSettingValue()
         {
-            if (AppContext.TryGetSwitch("Microsoft.Extensions.Http.LogQueryString", out bool value))
+            if (AppContext.TryGetSwitch("Microsoft.Extensions.Http.DisableUriQueryRedaction", out bool value))
             {
                 return value;
             }
 
-            string? envVar = Environment.GetEnvironmentVariable("DOTNET_MICROSOFT_EXTENSIONS_HTTP_LOGQUERYSTRING");
+            string? envVar = Environment.GetEnvironmentVariable("DOTNET_MICROSOFT_EXTENSIONS_HTTP_DISABLEURIQUERYREDACTION");
 
             if (bool.TryParse(envVar, out value))
             {
@@ -169,7 +169,7 @@ namespace Microsoft.Extensions.Http.Logging
 #if NET
             return $"{uriString.AsSpan(0, queryOffset + 1)}*";
 #else
-            return $"{uriString.Substring(0, queryOffset)}?*";
+            return $"{uriString.Substring(0, queryOffset + 1)}*";
 #endif
         }
     }

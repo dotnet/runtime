@@ -99,13 +99,13 @@ namespace Microsoft.Extensions.Http.Tests.Logging
                 switch (logQueryStringEnabler)
                 {
                     case "AppCtx":
-                        AppContext.SetSwitch("Microsoft.Extensions.Http.LogQueryString", true);
+                        AppContext.SetSwitch("Microsoft.Extensions.Http.DisableUriQueryRedaction", true);
                         break;
                     case "EnvVarTrue":
-                        Environment.SetEnvironmentVariable("DOTNET_MICROSOFT_EXTENSIONS_HTTP_LOGQUERYSTRING", "True");
+                        Environment.SetEnvironmentVariable("DOTNET_MICROSOFT_EXTENSIONS_HTTP_DISABLEURIQUERYREDACTION", "True");
                         break;
                     case "EnvVar1":
-                        Environment.SetEnvironmentVariable("DOTNET_MICROSOFT_EXTENSIONS_HTTP_LOGQUERYSTRING", "1");
+                        Environment.SetEnvironmentVariable("DOTNET_MICROSOFT_EXTENSIONS_HTTP_DISABLEURIQUERYREDACTION", "1");
                         break;
                 }
 
@@ -166,7 +166,7 @@ namespace Microsoft.Extensions.Http.Tests.Logging
 
                 if (logQueryString)
                 {
-                    AppContext.SetSwitch("Microsoft.Extensions.Http.LogQueryString", true);
+                    AppContext.SetSwitch("Microsoft.Extensions.Http.DisableUriQueryRedaction", true);
                 }
 
                 var sink = new TestSink();
