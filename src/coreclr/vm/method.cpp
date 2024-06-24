@@ -2932,7 +2932,7 @@ void MethodDesc::SetTemporaryEntryPoint(LoaderAllocator *pLoaderAllocator, Alloc
     GetMethodDescChunk()->EnsureTemporaryEntryPointsCreated(pLoaderAllocator, pamTracker);
 
     PTR_PCODE pSlot = GetAddrOfSlot();
-    _ASSERTE(*pSlot == (PTR_PCODE)NULL);
+    _ASSERTE(*pSlot == 0);
     *pSlot = GetTemporaryEntryPoint();
 
     if (RequiresStableEntryPoint())
