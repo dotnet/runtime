@@ -293,7 +293,6 @@ void Module::NotifyProfilerLoadFinished(HRESULT hr)
 
         {
             BEGIN_PROFILER_CALLBACK(CORProfilerTrackAssemblyLoads());
-            if (IsManifest())
             {
                 GCX_COOP();
                 (&g_profControlBlock)->AssemblyLoadFinished((AssemblyID) m_pAssembly, hr);
@@ -822,13 +821,6 @@ BOOL Module::IsCollectible()
 {
     LIMITED_METHOD_DAC_CONTRACT;
     return GetAssembly()->IsCollectible();
-}
-
-BOOL Module::IsManifest()
-{
-    WRAPPER_NO_CONTRACT;
-    return dac_cast<TADDR>(GetAssembly()->GetModule()) ==
-           dac_cast<TADDR>(this);
 }
 
 DomainAssembly* Module::GetDomainAssembly()

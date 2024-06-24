@@ -3867,7 +3867,7 @@ VOID ETW::LoaderLog::ModuleLoad(Module *pModule, LONG liReportedSharedModule)
                 if(bTraceFlagNgenMethodSet && bTraceFlagStartRundownSet)
                     enumerationOptions |= ETW::EnumerationLog::EnumerationStructs::NgenMethodLoad;
 
-                if(pModule->IsManifest() && bTraceFlagLoaderSet)
+                if(bTraceFlagLoaderSet)
                     ETW::LoaderLog::SendAssemblyEvent(pModule->GetAssembly(), enumerationOptions);
 
                 if(bTraceFlagLoaderSet || bTraceFlagPerfTrackSet)
@@ -4321,7 +4321,7 @@ VOID ETW::LoaderLog::SendModuleEvent(Module *pModule, DWORD dwEventOptions, BOOL
 
     PCWSTR szDtraceOutput1=W(""),szDtraceOutput2=W("");
     BOOL bIsDynamicAssembly = pModule->GetAssembly()->IsDynamic();
-    BOOL bIsManifestModule = pModule->IsManifest();
+    BOOL bIsManifestModule = TRUE; // Always the manifest module - multi-module assemblies are no longer supported
     ULONGLONG ullModuleId = (ULONGLONG)(TADDR) pModule;
     ULONGLONG ullAssemblyId = (ULONGLONG)pModule->GetAssembly();
     BOOL bIsIbcOptimized = FALSE;
