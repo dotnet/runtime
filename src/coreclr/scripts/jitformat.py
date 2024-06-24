@@ -208,7 +208,7 @@ def main(argv):
         logging.info("Creating patch file {}".format(patchFilePath))
         jitSrcPath = os.path.join(runtime, "src", "coreclr", "jit")
         patchFile = open(patchFilePath, "w")
-        proc = subprocess.Popen(["git", "diff", "--patch", "-U20", "--", jitSrcPath], env=my_env, stdout=patchFile)
+        proc = subprocess.Popen(["git", "diff", "--patch", "-U20", "--", jitSrcPath], cwd=runtime, env=my_env, stdout=patchFile)
         output,error = proc.communicate()
 
     if returncode != 0:
