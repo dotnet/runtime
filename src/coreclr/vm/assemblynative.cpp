@@ -236,9 +236,9 @@ extern "C" void QCALLTYPE AssemblyNative_LoadFromStream(INT_PTR ptrNativeAssembl
     BEGIN_QCALL;
 
     // Ensure that the invariants are in place
-    _ASSERTE(ptrNativeAssemblyBinder != 0);
-    _ASSERTE((ptrAssemblyArray != 0) && (cbAssemblyArrayLength > 0));
-    _ASSERTE((ptrSymbolArray == 0) || (cbSymbolArrayLength > 0));
+    _ASSERTE(ptrNativeAssemblyBinder != (INT_PTR)NULL);
+    _ASSERTE((ptrAssemblyArray != (INT_PTR)NULL) && (cbAssemblyArrayLength > 0));
+    _ASSERTE((ptrSymbolArray == (INT_PTR)NULL) || (cbSymbolArrayLength > 0));
 
     PEImageHolder pILImage(PEImage::CreateFromByteArray((BYTE*)ptrAssemblyArray, (COUNT_T)cbAssemblyArrayLength));
 
@@ -1299,7 +1299,7 @@ extern "C" INT_PTR QCALLTYPE AssemblyNative_GetLoadContextForAssembly(QCall::Ass
     {
         // Fetch the managed binder reference from the native binder instance
         ptrManagedAssemblyLoadContext = pAssemblyBinder->GetManagedAssemblyLoadContext();
-        _ASSERTE(ptrManagedAssemblyLoadContext != 0);
+        _ASSERTE(ptrManagedAssemblyLoadContext != (INT_PTR)NULL);
     }
 
     END_QCALL;

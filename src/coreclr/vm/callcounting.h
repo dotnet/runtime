@@ -397,7 +397,7 @@ public:
 inline const CallCountingStub *CallCountingStub::From(TADDR stubIdentifyingToken)
 {
     WRAPPER_NO_CONTRACT;
-    _ASSERTE(stubIdentifyingToken != 0);
+    _ASSERTE(stubIdentifyingToken != (TADDR)NULL);
 
     // The stubIdentifyingToken is the pointer to the CallCount
     const CallCountingStub *stub = CallCountingManager::GetCallCountingStub((CallCount*)stubIdentifyingToken);

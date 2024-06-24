@@ -1643,7 +1643,7 @@ DebuggerJitInfo *DebuggerMethodInfo::CreateInitAndAddJitInfo(NativeCodeVersion n
     _ASSERTE(fd != NULL);
 
     // May or may-not be jitted, that's why we passed in the start addr & size explicitly.
-    _ASSERTE(startAddr != 0);
+    _ASSERTE(startAddr != (TADDR)NULL);
 
     *jitInfoWasCreated = FALSE;
 

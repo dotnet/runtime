@@ -41,7 +41,7 @@ CORDB_ADDRESS IsEventDebuggerNotification(
     _ASSERTE(pRecord != NULL);
 
     // Must specify a CLR instance.
-    _ASSERTE(pClrBaseAddress != 0);
+    _ASSERTE(pClrBaseAddress != (CORDB_ADDRESS)NULL);
 
     // If it's not even our exception code, then it's not ours.
     if (pRecord->ExceptionCode != CLRDBG_NOTIFICATION_EXCEPTION_CODE)

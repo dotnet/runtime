@@ -913,7 +913,7 @@ void HandleValueHome::GetValue(MemoryRange dest)
 
     _ASSERTE(dest.Size() <= sizeof(void *));
     _ASSERTE(dest.StartAddress() != NULL);
-    _ASSERTE(objPtr != 0);
+    _ASSERTE(objPtr != (CORDB_ADDRESS)NULL);
     m_pProcess->SafeReadBuffer(TargetBuffer(objPtr, sizeof(void *)), (BYTE *)dest.StartAddress());
 } // HandleValueHome::GetValue
 

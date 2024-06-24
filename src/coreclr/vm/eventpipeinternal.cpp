@@ -116,7 +116,7 @@ extern "C" INT_PTR QCALLTYPE EventPipeInternal_DefineEvent(
 
     BEGIN_QCALL;
 
-    _ASSERTE(provHandle != 0);
+    _ASSERTE(provHandle != (INT_PTR)NULL);
     EventPipeProvider *pProvider = reinterpret_cast<EventPipeProvider *>(provHandle);
     pEvent = EventPipeAdapter::AddEvent(pProvider, eventID, keywords, eventVersion, (EventPipeEventLevel)level, /* needStack = */ true, (BYTE *)pMetadata, metadataLength);
     _ASSERTE(pEvent != NULL);

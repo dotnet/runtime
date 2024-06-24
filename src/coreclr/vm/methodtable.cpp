@@ -7591,7 +7591,7 @@ PCODE MethodTable::GetRestoredSlot(DWORD slotNumber)
     //
 
     PCODE slot = GetCanonicalMethodTable()->GetSlot(slotNumber);
-    _ASSERTE(slot != 0);
+    _ASSERTE(slot != (PCODE)NULL);
     return slot;
 }
 

@@ -2836,7 +2836,7 @@ HRESULT Debugger::GetILToNativeMapping(PCODE pNativeCodeStartAddress, ULONG32 cM
     }
     CONTRACTL_END;
 
-    _ASSERTE(pNativeCodeStartAddress != 0);
+    _ASSERTE(pNativeCodeStartAddress != (PCODE)NULL);
 
 #ifdef PROFILING_SUPPORTED
     // At this point, we're pulling in the debugger.
@@ -3004,7 +3004,7 @@ HRESULT Debugger::GetILToNativeMappingIntoArrays(
     _ASSERTE(pcMap != NULL);
     _ASSERTE(prguiILOffset != NULL);
     _ASSERTE(prguiNativeOffset != NULL);
-    _ASSERTE(pNativeCodeStartAddress != 0);
+    _ASSERTE(pNativeCodeStartAddress != (PCODE)NULL);
 
     // Any caller of GetILToNativeMappingIntoArrays had better call
     // InitializeLazyDataIfNecessary first!
@@ -7820,7 +7820,7 @@ void Debugger::FirstChanceManagedExceptionCatcherFound(Thread *pThread,
     // Implements DebugInterface
     // Call by EE/exception. Must be on managed thread
     _ASSERTE(GetThreadNULLOk() != NULL);
-    _ASSERTE(pMethodAddr != 0);
+    _ASSERTE(pMethodAddr != (TADDR)NULL);
 
     // Quick check.
     if (!CORDebuggerAttached())

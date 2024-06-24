@@ -496,7 +496,7 @@ PCODE ECall::GetFCallImpl(MethodDesc * pMD, BOOL * pfSharedOrDynamicFCallImpl /*
             *pfSharedOrDynamicFCallImpl = TRUE;
 
         pImplementation = g_FCDynamicallyAssignedImplementations[iDynamicID];
-        _ASSERTE(pImplementation != 0);
+        _ASSERTE(pImplementation != (PCODE)NULL);
         return pImplementation;
     }
 
@@ -547,7 +547,7 @@ PCODE ECall::GetFCallImpl(MethodDesc * pMD, BOOL * pfSharedOrDynamicFCallImpl /*
     if (pfSharedOrDynamicFCallImpl)
         *pfSharedOrDynamicFCallImpl = FALSE;
 
-    _ASSERTE(pImplementation != 0);
+    _ASSERTE(pImplementation != (PCODE)NULL);
     return pImplementation;
 }
 
