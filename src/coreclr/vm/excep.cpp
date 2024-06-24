@@ -3070,7 +3070,7 @@ void GetExceptionForHR(HRESULT hr, OBJECTREF* pProtectedThrowable)
     CONTRACTL
     {
         THROWS;
-        GC_TRIGGERS;        // because of IErrorInfo
+        GC_TRIGGERS;        // be consistent with COM interop enabled
         MODE_ANY;
     }
     CONTRACTL_END;
