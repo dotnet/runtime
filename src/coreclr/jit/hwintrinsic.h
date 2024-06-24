@@ -247,12 +247,6 @@ enum HWIntrinsicFlag : unsigned int
 #endif
 
     HW_Flag_CanBenefitFromConstantProp = 0x80000000,
-
-#if defined(TARGET_ARM64)
-    // The intrinsic uses a mask in arg1 to select elements present in the result, which is not present in the API call
-    // The result of the API returns a scalar
-    HW_Flag_EmbeddedMaskForScalarResultOperation = 0x100000000
-#endif
 };
 
 #if defined(TARGET_XARCH)
@@ -939,10 +933,23 @@ struct HWIntrinsicInfo
         return (flags & HW_Flag_ExplicitMaskedOperation) != 0;
     }
 
+    // Checks if the intrinsic has an embedded mask operation and the intrinsic returns a scalar.
     static bool IsEmbeddedMaskForScalarResultOperation(NamedIntrinsic id)
     {
-        const HWIntrinsicFlag flags = lookupFlags(id);
-        return (flags & HW_Flag_EmbeddedMaskForScalarResultOperation) != 0;
+        if (IsEmbeddedMaskedOperation(id))
+        {
+            switch (id)
+            {
+                case NI_Sve_ExtractAfterLastScalar:
+                case NI_Sve_ExtractLastScalar:
+                    return true;
+
+                default:
+                    break;
+            }
+            return false;
+        }
+        return false;
     }
 
     static bool HasEnumOperand(NamedIntrinsic id)

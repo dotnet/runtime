@@ -1296,8 +1296,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             break;
     }
 
-    if (HWIntrinsicInfo::IsEmbeddedMaskedOperation(intrinsicId) ||
-        HWIntrinsicInfo::IsEmbeddedMaskForScalarResultOperation(intrinsicId))
+    if (HWIntrinsicInfo::IsEmbeddedMaskedOperation(intrinsicId))
     {
         LIR::Use use;
         if (BlockRange().TryGetUse(node, &use))
