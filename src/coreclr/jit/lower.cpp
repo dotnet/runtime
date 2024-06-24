@@ -7554,7 +7554,9 @@ PhaseStatus Lowering::DoPhase()
     // local var liveness can delete code, which may create empty blocks
     if (comp->opts.OptimizationEnabled())
     {
-        bool modified = comp->fgUpdateFlowGraph(/* doTailDuplication */ false, /* isPhase */ false);
+        // Don't churn the flowgraph with aggressive compaction since we've already run block layout
+        bool modified = comp->fgUpdateFlowGraph(/* doTailDuplication */ false, /* isPhase */ false,
+                                                /* doAggressiveCompaction */ false);
         modified |= comp->fgRemoveDeadBlocks();
 
         if (modified)

@@ -4445,6 +4445,136 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe void PrefetchInt64(Vector<ulong> mask, void* address, [ConstantExpected] SvePrefetchType prefetchType) { throw new PlatformNotSupportedException(); }
 
 
+        ///  ReciprocalEstimate : Reciprocal estimate
+
+        /// <summary>
+        /// svfloat64_t svrecpe[_f64](svfloat64_t op)
+        ///   FRECPE Zresult.D, Zop.D
+        /// </summary>
+        public static unsafe Vector<double> ReciprocalEstimate(Vector<double> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svfloat32_t svrecpe[_f32](svfloat32_t op)
+        ///   FRECPE Zresult.S, Zop.S
+        /// </summary>
+        public static unsafe Vector<float> ReciprocalEstimate(Vector<float> value) { throw new PlatformNotSupportedException(); }
+
+
+        ///  ReciprocalExponent : Reciprocal exponent
+
+        /// <summary>
+        /// svfloat64_t svrecpx[_f64]_m(svfloat64_t inactive, svbool_t pg, svfloat64_t op)
+        ///   FRECPX Ztied.D, Pg/M, Zop.D
+        /// svfloat64_t svrecpx[_f64]_x(svbool_t pg, svfloat64_t op)
+        ///   FRECPX Ztied.D, Pg/M, Ztied.D
+        /// svfloat64_t svrecpx[_f64]_z(svbool_t pg, svfloat64_t op)
+        /// </summary>
+        public static unsafe Vector<double> ReciprocalExponent(Vector<double> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svfloat32_t svrecpx[_f32]_m(svfloat32_t inactive, svbool_t pg, svfloat32_t op)
+        ///   FRECPX Ztied.S, Pg/M, Zop.S
+        /// svfloat32_t svrecpx[_f32]_x(svbool_t pg, svfloat32_t op)
+        ///   FRECPX Ztied.S, Pg/M, Ztied.S
+        /// svfloat32_t svrecpx[_f32]_z(svbool_t pg, svfloat32_t op)
+        /// </summary>
+        public static unsafe Vector<float> ReciprocalExponent(Vector<float> value) { throw new PlatformNotSupportedException(); }
+
+
+        ///  ReciprocalSqrtEstimate : Reciprocal square root estimate
+
+        /// <summary>
+        /// svfloat64_t svrsqrte[_f64](svfloat64_t op)
+        ///   FRSQRTE Zresult.D, Zop.D
+        /// </summary>
+        public static unsafe Vector<double> ReciprocalSqrtEstimate(Vector<double> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svfloat32_t svrsqrte[_f32](svfloat32_t op)
+        ///   FRSQRTE Zresult.S, Zop.S
+        /// </summary>
+        public static unsafe Vector<float> ReciprocalSqrtEstimate(Vector<float> value) { throw new PlatformNotSupportedException(); }
+
+
+        ///  ReciprocalSqrtStep : Reciprocal square root step
+
+        /// <summary>
+        /// svfloat64_t svrsqrts[_f64](svfloat64_t op1, svfloat64_t op2)
+        ///   FRSQRTS Zresult.D, Zop1.D, Zop2.D
+        /// </summary>
+        public static unsafe Vector<double> ReciprocalSqrtStep(Vector<double> left, Vector<double> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svfloat32_t svrsqrts[_f32](svfloat32_t op1, svfloat32_t op2)
+        ///   FRSQRTS Zresult.S, Zop1.S, Zop2.S
+        /// </summary>
+        public static unsafe Vector<float> ReciprocalSqrtStep(Vector<float> left, Vector<float> right) { throw new PlatformNotSupportedException(); }
+
+
+        ///  ReciprocalStep : Reciprocal step
+
+        /// <summary>
+        /// svfloat64_t svrecps[_f64](svfloat64_t op1, svfloat64_t op2)
+        ///   FRECPS Zresult.D, Zop1.D, Zop2.D
+        /// </summary>
+        public static unsafe Vector<double> ReciprocalStep(Vector<double> left, Vector<double> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svfloat32_t svrecps[_f32](svfloat32_t op1, svfloat32_t op2)
+        ///   FRECPS Zresult.S, Zop1.S, Zop2.S
+        /// </summary>
+        public static unsafe Vector<float> ReciprocalStep(Vector<float> left, Vector<float> right) { throw new PlatformNotSupportedException(); }
+        ///  Reverse bits
+
+        /// <summary>
+        /// svuint8_t svrbit[_u8]_m(svuint8_t inactive, svbool_t pg, svuint8_t op)
+        ///   RBIT Ztied.B, Pg/M, Zop.B
+        /// </summary>
+        public static unsafe Vector<byte> ReverseBits(Vector<byte> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint16_t svrbit[_s16]_m(svint16_t inactive, svbool_t pg, svint16_t op)
+        ///   RBIT Ztied.H, Pg/M, Zop.H
+        /// </summary>
+        public static unsafe Vector<short> ReverseBits(Vector<short> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svrbit[_s32]_m(svint32_t inactive, svbool_t pg, svint32_t op)
+        ///   RBIT Ztied.S, Pg/M, Zop.S
+        /// </summary>
+        public static unsafe Vector<int> ReverseBits(Vector<int> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svrbit[_s64]_m(svint64_t inactive, svbool_t pg, svint64_t op)
+        ///   RBIT Ztied.D, Pg/M, Zop.D
+        /// </summary>
+        public static unsafe Vector<long> ReverseBits(Vector<long> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint8_t svrbit[_s8]_m(svint8_t inactive, svbool_t pg, svint8_t op)
+        ///   RBIT Ztied.B, Pg/M, Zop.B
+        /// </summary>
+        public static unsafe Vector<sbyte> ReverseBits(Vector<sbyte> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svrbit[_u16]_m(svuint16_t inactive, svbool_t pg, svuint16_t op)
+        ///   RBIT Ztied.H, Pg/M, Zop.H
+        /// </summary>
+        public static unsafe Vector<ushort> ReverseBits(Vector<ushort> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svrbit[_u32]_m(svuint32_t inactive, svbool_t pg, svuint32_t op)
+        ///   RBIT Ztied.S, Pg/M, Zop.S
+        /// </summary>
+        public static unsafe Vector<uint> ReverseBits(Vector<uint> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svrbit[_u64]_m(svuint64_t inactive, svbool_t pg, svuint64_t op)
+        ///   RBIT Ztied.D, Pg/M, Zop.D
+        /// </summary>
+        public static unsafe Vector<ulong> ReverseBits(Vector<ulong> value) { throw new PlatformNotSupportedException(); }
+
+
         ///  Reverse all elements
 
         /// <summary>
