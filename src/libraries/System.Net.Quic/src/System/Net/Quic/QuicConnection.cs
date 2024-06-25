@@ -470,7 +470,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
     /// <param name="streamType">Type of the stream to decrement appropriate field.</param>
     private void DecrementStreamCapacity(QuicStreamType streamType)
     {
-        if (streamType == QuicStreamType.Unidirectional && _unidirectionalStreamCapacity > 0)
+        if (streamType == QuicStreamType.Unidirectional)
         {
             --_unidirectionalStreamCapacity;
             if (NetEventSource.Log.IsEnabled())
@@ -478,7 +478,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
                 NetEventSource.Info(this, $"{this} decremented stream count for {streamType} to {_unidirectionalStreamCapacity}.");
             }
         }
-        if (streamType == QuicStreamType.Bidirectional && _bidirectionalStreamCapacity > 0)
+        if (streamType == QuicStreamType.Bidirectional)
         {
             --_bidirectionalStreamCapacity;
             if (NetEventSource.Log.IsEnabled())
@@ -689,10 +689,18 @@ public sealed partial class QuicConnection : IAsyncDisposable
     }
     private unsafe int HandleEventStreamsAvailable(ref STREAMS_AVAILABLE_DATA data)
     {
-        int bidirectionalIncrement = data.BidirectionalCount - _bidirectionalStreamCapacity;
-        int unidirectionalIncrement = data.UnidirectionalCount - _unidirectionalStreamCapacity;
-        _bidirectionalStreamCapacity = data.BidirectionalCount;
-        _unidirectionalStreamCapacity = data.UnidirectionalCount;
+        int bidirectionalIncrement = 0;
+        int unidirectionalIncrement = 0;
+        if (data.BidirectionalCount > 0)
+        {
+            bidirectionalIncrement = data.BidirectionalCount - _bidirectionalStreamCapacity;
+            _bidirectionalStreamCapacity = data.BidirectionalCount;
+        }
+        if (data.UnidirectionalCount > 0)
+        {
+            unidirectionalIncrement = data.UnidirectionalCount - _unidirectionalStreamCapacity;
+            _unidirectionalStreamCapacity = data.UnidirectionalCount;
+        }
         OnStreamCapacityIncreased(bidirectionalIncrement, unidirectionalIncrement);
         return QUIC_STATUS_SUCCESS;
     }
