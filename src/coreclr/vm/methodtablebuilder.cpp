@@ -10841,16 +10841,13 @@ MethodTableBuilder::SetupMethodTable2(
     // Keep bmtInterface data around since we no longer write the flags (IsDeclaredOnType and
     // IsImplementedByParent) into the interface map (these flags are only required during type loading).
 
-#ifdef HAS_COMPACT_ENTRYPOINTS
     {
         for (MethodDescChunk *pChunk = GetHalfBakedClass()->GetChunks(); pChunk != NULL; pChunk = pChunk->GetNextChunk())
         {
-            // Make sure that temporary entrypoints are create for methods. NGEN uses temporary
-            // entrypoints as surrogate keys for precodes.
-            pChunk->EnsureTemporaryEntryPointsCreated(GetLoaderAllocator(), GetMemTracker());
+            // Make sure that eligibility for versionability is computed
+            pChunk->DetermineAndSetIsEligibleForTieredCompilation();
         }
     }
-#endif
 
     {   // copy onto the real vtable (methods only)
         //@GENERICS: Because we sometimes load an inexact parent (see ClassLoader::GetParent) the inherited slots might

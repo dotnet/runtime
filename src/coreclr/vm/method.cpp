@@ -964,6 +964,44 @@ WORD MethodDesc::InterlockedUpdateFlags3(WORD wMask, BOOL fSet)
     return wOldState;
 }
 
+WORD MethodDescChunk::InterlockedUpdateFlags(WORD wMask, BOOL fSet)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    WORD    wOldState = m_flagsAndTokenRange;
+    DWORD   dwMask = wMask;
+
+    // We need to make this operation atomic (multiple threads can play with the flags field at the same time). But the flags field
+    // is a word and we only have interlock operations over dwords. So we round down the flags field address to the nearest aligned
+    // dword (along with the intended bitfield mask). Note that we make the assumption that the flags word is aligned itself, so we
+    // only have two possibilities: the field already lies on a dword boundary or it's precisely one word out.
+    LONG* pdwFlags = (LONG*)((ULONG_PTR)&m_flagsAndTokenRange - (offsetof(MethodDescChunk, m_flagsAndTokenRange) & 0x3));
+
+#ifdef _PREFAST_
+#pragma warning(push)
+#pragma warning(disable:6326) // "Suppress PREFast warning about comparing two constants"
+#endif // _PREFAST_
+
+#if BIGENDIAN
+    if ((offsetof(MethodDescChunk, m_flagsAndTokenRange) & 0x3) == 0) {
+#else // !BIGENDIAN
+    if ((offsetof(MethodDescChunk, m_flagsAndTokenRange) & 0x3) != 0) {
+#endif // !BIGENDIAN
+        static_assert_no_msg(sizeof(m_flagsAndTokenRange) == 2);
+        dwMask <<= 16;
+    }
+#ifdef _PREFAST_
+#pragma warning(pop)
+#endif
+
+    if (fSet)
+        InterlockedOr(pdwFlags, dwMask);
+    else
+        InterlockedAnd(pdwFlags, ~dwMask);
+
+    return wOldState;
+}
+
 #endif // !DACCESS_COMPILE
 
 //*******************************************************************************
@@ -3036,11 +3074,7 @@ void MethodDesc::SetTemporaryEntryPoint(LoaderAllocator *pLoaderAllocator, Alloc
 {
     WRAPPER_NO_CONTRACT;
 
-#ifdef HAS_COMPACT_ENTRYPOINTS
-    GetMethodDescChunk()->EnsureTemporaryEntryPointsCreated(pLoaderAllocator, pamTracker);
-#else
     EnsureTemporaryEntryPointCore(pLoaderAllocator, pamTracker);
-#endif
 
     PTR_PCODE pSlot = GetAddrOfSlot();
 #ifdef HAS_COMPACT_ENTRYPOINTS
@@ -3085,6 +3119,7 @@ void MethodDesc::EnsureTemporaryEntryPointCore(LoaderAllocator *pLoaderAllocator
 
     if (GetTemporaryEntryPoint_NoAlloc() == (PCODE)NULL)
     {
+        GetMethodDescChunk()->DetermineAndSetIsEligibleForTieredCompilation();
         PTR_PCODE pSlot = GetAddrOfSlot();
 
         AllocMemTracker amt;
@@ -3108,28 +3143,63 @@ void MethodDesc::EnsureTemporaryEntryPointCore(LoaderAllocator *pLoaderAllocator
 #endif
 
 //*******************************************************************************
-#ifdef HAS_COMPACT_ENTRYPOINTS
-void MethodDescChunk::CreateTemporaryEntryPoints(LoaderAllocator *pLoaderAllocator, AllocMemTracker *pamTracker)
+void MethodDescChunk::DetermineAndSetIsEligibleForTieredCompilation()
 {
     WRAPPER_NO_CONTRACT;
 
-    _ASSERTE(GetTemporaryEntryPoints() == NULL);
-
-    TADDR temporaryEntryPoints = Precode::AllocateTemporaryEntryPoints(this, pLoaderAllocator, pamTracker);
-
-#ifdef HAS_COMPACT_ENTRYPOINTS
-    // Precodes allocated only if they provide more compact representation or if it is required
-    if (temporaryEntryPoints == NULL)
+    if (!DeterminedIfMethodsAreEligibleForTieredCompilation())
     {
-        temporaryEntryPoints = AllocateCompactEntryPoints(pLoaderAllocator, pamTracker);
+        int count = GetCount();
+
+        // Determine eligibility for tiered compilation
+        {
+            MethodDesc *pMD = GetFirstMethodDesc();
+            bool chunkContainsEligibleMethods = pMD->DetermineIsEligibleForTieredCompilationInvariantForAllMethodsInChunk();
+
+    #ifdef _DEBUG
+            // Validate every MethodDesc has the same result for DetermineIsEligibleForTieredCompilationInvariantForAllMethodsInChunk
+            MethodDesc *pMDDebug = GetFirstMethodDesc();
+            for (int i = 0; i < count; ++i)
+            {
+                _ASSERTE(chunkContainsEligibleMethods == pMDDebug->DetermineIsEligibleForTieredCompilationInvariantForAllMethodsInChunk());
+                pMDDebug = (MethodDesc *)(dac_cast<TADDR>(pMDDebug) + pMDDebug->SizeOf());
+            }
+    #endif
+            if (chunkContainsEligibleMethods)
+            {
+                for (int i = 0; i < count; ++i)
+                {
+                    if (pMD->DetermineAndSetIsEligibleForTieredCompilation())
+                    {
+                        _ASSERTE(pMD->IsEligibleForTieredCompilation_NoCheckMethodDescChunk());
+                    }
+                    else
+                    {
+                        _ASSERTE(!pMD->IsEligibleForTieredCompilation_NoCheckMethodDescChunk());
+                    }
+
+                    pMD = (MethodDesc *)(dac_cast<TADDR>(pMD) + pMD->SizeOf());
+                }
+            }
+        }
+
+        InterlockedUpdateFlags(enum_flag_DeterminedIsEligibleForTieredCompilation, TRUE);
+
+#ifdef _DEBUG
+        {
+            MethodDesc *pMD = GetFirstMethodDesc();
+            for (int i = 0; i < count; ++i)
+            {
+                _ASSERTE(pMD->IsEligibleForTieredCompilation() == pMD->IsEligibleForTieredCompilation_NoCheckMethodDescChunk());
+                if (pMD->IsEligibleForTieredCompilation())
+                {
+                    _ASSERTE(!pMD->IsVersionableWithPrecode() || pMD->RequiresStableEntryPoint());
+                }
+            }
+        }
+#endif
     }
-#endif // HAS_COMPACT_ENTRYPOINTS
-
-    m_pTemporaryEntryPoints = temporaryEntryPoints;
-
-    _ASSERTE(GetTemporaryEntryPoints() != NULL);
 }
-#endif // HAS_COMPACT_ENTRYPOINTS
 
 
 //*******************************************************************************
@@ -3231,8 +3301,7 @@ bool MethodDesc::DetermineAndSetIsEligibleForTieredCompilation()
         // Functions with NoOptimization or AggressiveOptimization don't participate in tiering
         !IsJitOptimizationLevelRequested())
     {
-        m_wFlags3AndTokenRemainder |= enum_flag3_IsEligibleForTieredCompilation;
-        _ASSERTE(IsVersionable());
+        InterlockedUpdateFlags3(enum_flag3_IsEligibleForTieredCompilation, TRUE);
         return true;
     }
 #endif

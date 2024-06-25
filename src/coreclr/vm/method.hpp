@@ -1090,16 +1090,8 @@ public:
 
 public:
 
-    bool IsEligibleForTieredCompilation()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-
-#ifdef FEATURE_TIERED_COMPILATION
-        return (m_wFlags3AndTokenRemainder & enum_flag3_IsEligibleForTieredCompilation) != 0;
-#else
-        return false;
-#endif
-    }
+    bool IsEligibleForTieredCompilation();
+    bool IsEligibleForTieredCompilation_NoCheckMethodDescChunk();
 
     // This method must return the same value for all methods in one MethodDescChunk
     bool DetermineIsEligibleForTieredCompilationInvariantForAllMethodsInChunk();
@@ -2205,9 +2197,13 @@ class MethodDescChunk
                                                                      // These are separate to allow the flags space available and used to be obvious here
                                                                      // and for the logic that splits the token to be algorithmically generated based on the
                                                                      // #define
-        enum_flag_HasCompactEntrypoints                    = 0x4000, // Compact temporary entry points
+        enum_flag_DeterminedIsEligibleForTieredCompilation = 0x4000, // Has this chunk had its methods been determined eligible for tiered compilation or not
         // unused                                          = 0x8000,
     };
+
+#ifndef DACCESS_COMPILE
+    WORD InterlockedUpdateFlags(WORD wMask, BOOL fSet);
+#endif
 
 public:
     //
@@ -2220,6 +2216,12 @@ public:
                                         BOOL fNativeCodeSlot,
                                         MethodTable *initialMT,
                                         class AllocMemTracker *pamTracker);
+
+    bool DeterminedIfMethodsAreEligibleForTieredCompilation()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return (VolatileLoadWithoutBarrier(&m_flagsAndTokenRange) & enum_flag_DeterminedIsEligibleForTieredCompilation) != 0;
+    }
 
 #ifdef HAS_COMPACT_ENTRYPOINTS
     TADDR GetTemporaryEntryPoints()
@@ -2244,8 +2246,8 @@ public:
             CreateTemporaryEntryPoints(pLoaderAllocator, pamTracker);
     }
 
-    void CreateTemporaryEntryPoints(LoaderAllocator *pLoaderAllocator, AllocMemTracker *pamTracker);
 #endif
+    void DetermineAndSetIsEligibleForTieredCompilation();
 
 #ifdef HAS_COMPACT_ENTRYPOINTS
     //
@@ -2363,12 +2365,6 @@ public:
 #endif
 
 private:
-    void SetHasCompactEntryPoints()
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_flagsAndTokenRange |= enum_flag_HasCompactEntrypoints;
-    }
-
     void SetTokenRange(UINT16 tokenRange)
     {
         LIMITED_METHOD_CONTRACT;
