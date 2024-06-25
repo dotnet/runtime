@@ -422,7 +422,7 @@ namespace Microsoft.Interop
                 .AddAttributeLists(
                     AttributeList(
                         SingletonSeparatedList(
-                            CreateDllImportAttribute(pinvokeData, isForwarder: true))));
+                            CreateDllImportAttribute(pinvokeData))));
 
             MemberDeclarationSyntax toPrint = stub.ContainingSyntaxContext.WrapMemberInContainingSyntaxWithUnsafeModifier(stubMethod);
 
@@ -438,6 +438,15 @@ namespace Microsoft.Interop
         {
             Debug.Assert(!options.GenerateForwarders, "GenerateForwarders should have already been handled to use a forwarder stub");
 
+            // StringMarshalling.Utf16 is the only value that has a supported analogue in DllImportAttribute.CharSet. If it's not Utf16, consider StringMarshalling unset
+            var stringMarshallingMask = libraryImportData.StringMarshalling == StringMarshalling.Utf16 ? InteropAttributeMember.All : ~InteropAttributeMember.StringMarshalling;
+            var dllImportData = libraryImportData with
+            {
+                // If setLastError was set in LibraryImport, we will call the Marshal API to handle that, the DllImport should not.
+                IsUserDefined = libraryImportData.IsUserDefined & ~InteropAttributeMember.SetLastError & stringMarshallingMask,
+                EntryPoint = libraryImportData.EntryPoint ?? stubMethodName
+            };
+
             (ParameterListSyntax parameterList, TypeSyntax returnType, AttributeListSyntax returnTypeAttributes) = stubGenerator.GenerateTargetMethodSignatureData();
             LocalFunctionStatementSyntax localDllImport = LocalFunctionStatement(returnType, stubTargetName)
                 .AddModifiers(
@@ -446,7 +455,7 @@ namespace Microsoft.Interop
                     Token(SyntaxKind.UnsafeKeyword))
                 .WithSemicolonToken(Token(SyntaxKind.SemicolonToken))
                 .WithAttributeLists(SingletonList(AttributeList(SingletonSeparatedList(
-                    CreateDllImportAttribute(libraryImportData, isForwarder: false, stubMethodName)))))
+                    CreateDllImportAttribute(dllImportData)))))
                 .WithParameterList(parameterList);
             if (returnTypeAttributes is not null)
             {
@@ -455,7 +464,7 @@ namespace Microsoft.Interop
             return localDllImport;
         }
 
-        private static AttributeSyntax CreateDllImportAttribute(LibraryImportData target, bool isForwarder = true, string? stubMethodName = null)
+        private static AttributeSyntax CreateDllImportAttribute(LibraryImportData target)
         {
             var newAttributeArgs = new List<AttributeArgumentSyntax>
             {
@@ -465,21 +474,22 @@ namespace Microsoft.Interop
                 AttributeArgument(
                     NameEquals(nameof(DllImportAttribute.EntryPoint)),
                     null,
-                    CreateStringExpressionSyntax(target.EntryPoint ?? stubMethodName)),
+                    CreateStringExpressionSyntax(target.EntryPoint)),
                 AttributeArgument(
                     NameEquals(nameof(DllImportAttribute.ExactSpelling)),
                     null,
                     LiteralExpression(SyntaxKind.TrueLiteralExpression))
             };
 
-            if (target.IsUserDefined.HasFlag(InteropAttributeMember.StringMarshalling) && target.StringMarshalling == StringMarshalling.Utf16)
+            if (target.IsUserDefined.HasFlag(InteropAttributeMember.StringMarshalling))
             {
+                Debug.Assert(target.StringMarshalling == StringMarshalling.Utf16);
                 NameEqualsSyntax name = NameEquals(nameof(DllImportAttribute.CharSet));
                 ExpressionSyntax value = CreateEnumExpressionSyntax(CharSet.Unicode);
                 newAttributeArgs.Add(AttributeArgument(name, null, value));
             }
 
-            if (isForwarder && target.IsUserDefined.HasFlag(InteropAttributeMember.SetLastError))
+            if (target.IsUserDefined.HasFlag(InteropAttributeMember.SetLastError))
             {
                 NameEqualsSyntax name = NameEquals(nameof(DllImportAttribute.SetLastError));
                 ExpressionSyntax value = CreateBoolExpressionSyntax(target.SetLastError);
