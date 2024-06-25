@@ -442,27 +442,6 @@ struct FpStructInRegistersInfo
             ((SizeShift1st() == 3) ? STRUCT_FIRST_FIELD_SIZE_IS8 : 0) |
             ((SizeShift2nd() == 3) ? STRUCT_SECOND_FIELD_SIZE_IS8 : 0));
     }
-
-    static FpStructInRegistersInfo FromOldFlags(StructFloatFieldInfoFlags flags)
-    {
-        unsigned sizeShift1st = (flags & STRUCT_FIRST_FIELD_SIZE_IS8) ? 3 : 2;
-        unsigned sizeShift2nd = (flags & STRUCT_SECOND_FIELD_SIZE_IS8) ? 3 : 2;
-        bool hasTwo = !(flags & STRUCT_FLOAT_FIELD_ONLY_ONE);
-        return {
-            FpStruct::Flags(
-                ((flags & STRUCT_FLOAT_FIELD_ONLY_ONE) ? FpStruct::OnlyOne : 0) |
-                ((flags & STRUCT_FLOAT_FIELD_ONLY_TWO) ? FpStruct::BothFloat : 0) |
-                ((flags & STRUCT_FLOAT_FIELD_FIRST) ? FpStruct::FloatInt : 0) |
-                ((flags & STRUCT_FLOAT_FIELD_SECOND) ? FpStruct::IntFloat : 0) |
-                (sizeShift1st << FpStruct::PosSizeShift1st) |
-                (hasTwo ? (sizeShift2nd << FpStruct::PosSizeShift2nd) : 0)
-                // No GC ref info in old flags
-            ),
-            // Lacking actual field offsets, assume fields are naturally aligned without empty fields or padding
-            0,
-            hasTwo ? (1u << (sizeShift1st > sizeShift2nd ? sizeShift1st : sizeShift2nd)) : 0,
-        };
-    }
 };
 
 static_assert(sizeof(FpStructInRegistersInfo) == 3 * sizeof(uint32_t), "");
