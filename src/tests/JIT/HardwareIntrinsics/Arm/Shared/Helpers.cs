@@ -17,6 +17,17 @@ namespace JIT.HardwareIntrinsics.Arm
 {
     static class Helpers
     {
+        public static Vector<T> InitVector<T>(Func<int, T> f)
+        {
+            var count = Vector<T>.Count;
+            var arr = new T[count];
+            for (var i = 0; i < count; i++)
+            {
+                arr[i] = f(i);
+            }
+            return new Vector<T>(arr);
+        }
+
         public static sbyte CountLeadingSignBits(sbyte op1)
         {
             return (sbyte)(CountLeadingZeroBits((sbyte)((ulong)op1 ^ ((ulong)op1 >> 1))) - 1);

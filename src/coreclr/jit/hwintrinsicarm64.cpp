@@ -403,6 +403,7 @@ void HWIntrinsicInfo::lookupImmBounds(
             case NI_AdvSimd_Arm64_InsertSelectedScalar:
             case NI_Sve_FusedMultiplyAddBySelectedScalar:
             case NI_Sve_FusedMultiplySubtractBySelectedScalar:
+            case NI_Sve_ExtractVector:
                 immUpperBound = Compiler::getSIMDVectorLength(simdSize, baseType) - 1;
                 break;
 
