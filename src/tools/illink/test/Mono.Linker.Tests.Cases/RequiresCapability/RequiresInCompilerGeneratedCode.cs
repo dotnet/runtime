@@ -45,6 +45,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			ComplexCases.GenericAsyncEnumerableBodyCallingRequiresWithAnnotations.Test ();
 
 			RUCOnDelegateCacheFields.Test ();
+
+			ExplicitInterfaceMethod.Test ();
 		}
 
 		class WarnInIteratorBody
@@ -2217,6 +2219,95 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			public static void Test ()
 			{
 				typeof (TargetType).RequiresAll ();
+			}
+		}
+
+		// Regression test for https://github.com/dotnet/runtime/issues/98368
+		class ExplicitInterfaceMethod
+		{
+			interface IG<T> {
+				[RequiresUnreferencedCode ("IG.M")]
+				[RequiresAssemblyFiles ("IG.M")]
+				[RequiresDynamicCode ("IG.M")]
+				void M ();
+			}
+
+			class ExplicitImplWithLambda : IG<object>
+			{
+				[RequiresUnreferencedCode ("IG<object>.M")]
+				[RequiresAssemblyFiles ("IG<object>.M")]
+				[RequiresDynamicCode ("IG<object>.M")]
+				void IG<object>.M () {
+					var f = () => MethodWithRequires ();
+				}
+			}
+
+			[ExpectedWarning ("IL2026")]
+			[ExpectedWarning ("IL3002", Tool.Analyzer | Tool.NativeAot, "NativeAOT Specific Warnings")]
+			[ExpectedWarning ("IL3050", Tool.Analyzer | Tool.NativeAot, "NativeAOT Specific Warnings")]
+			static void TestExplicitImplWithLambda () => ((IG<object>) new ExplicitImplWithLambda ()).M ();
+
+			class ExplicitImplWithLocalFunction : IG<object>
+			{
+				[RequiresUnreferencedCode ("IG<object>.M")]
+				[RequiresAssemblyFiles ("IG<object>.M")]
+				[RequiresDynamicCode ("IG<object>.M")]
+				void IG<object>.M () {
+					void LocalFunction () => MethodWithRequires ();
+					LocalFunction ();
+				}
+			}
+
+			[ExpectedWarning ("IL2026")]
+			[ExpectedWarning ("IL3002", Tool.Analyzer | Tool.NativeAot, "NativeAOT Specific Warnings")]
+			[ExpectedWarning ("IL3050", Tool.Analyzer | Tool.NativeAot, "NativeAOT Specific Warnings")]
+			static void TestExplicitImplWithLocalFunction () => ((IG<object>) new ExplicitImplWithLocalFunction ()).M ();
+
+			class Generic<T> {}
+
+			class ExplicitImplNestedGeneric<T> : IG<Generic<T>>
+			{
+				[RequiresUnreferencedCode ("IG<Generic<T>>.M")]
+				[RequiresAssemblyFiles ("IG<Generic<T>>.M")]
+				[RequiresDynamicCode ("IG<Generic<T>>.M")]
+				void IG<Generic<T>>.M () {
+					var f = () => MethodWithRequires ();
+				}
+			}
+
+			[ExpectedWarning ("IL2026")]
+			[ExpectedWarning ("IL3002", Tool.Analyzer | Tool.NativeAot, "NativeAOT Specific Warnings")]
+			[ExpectedWarning ("IL3050", Tool.Analyzer | Tool.NativeAot, "NativeAOT Specific Warnings")]
+			static void TestExplicitImplNestedGeneric () => ((IG<Generic<object>>) new ExplicitImplNestedGeneric<object> ()).M ();
+
+			interface IGAsync<T> {
+				[RequiresUnreferencedCode ("IGAsync.M")]
+				[RequiresAssemblyFiles ("IGAsync.M")]
+				[RequiresDynamicCode ("IGAsync.M")]
+				Task M ();
+			}
+
+			class ExplicitImplAsync : IGAsync<object>
+			{
+				[RequiresUnreferencedCode ("IGAsync<object>.M")]
+				[RequiresAssemblyFiles ("IGAsync<object>.M")]
+				[RequiresDynamicCode ("IGAsync<object>.M")]
+				async Task IGAsync<object>.M () {
+					MethodWithRequires ();
+				}
+			}
+
+			[ExpectedWarning ("IL2026")]
+			[ExpectedWarning ("IL3002", Tool.Analyzer | Tool.NativeAot, "NativeAOT Specific Warnings")]
+			[ExpectedWarning ("IL3050", Tool.Analyzer | Tool.NativeAot, "NativeAOT Specific Warnings")]
+			static void TestExplicitImplAsync () => ((IGAsync<object>) new ExplicitImplAsync ()).M ();
+
+			public static void Test ()
+			{
+				TestExplicitImplWithLambda ();
+				TestExplicitImplWithLocalFunction ();
+				TestExplicitImplNestedGeneric ();
+				TestExplicitImplAsync ();
 			}
 		}
 
