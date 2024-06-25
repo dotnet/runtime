@@ -1414,11 +1414,19 @@ static_assert(count_free_region_kinds == FREE_REGION_KINDS, "Keep count_free_reg
 enum snapshot_stage
 {
     distribute_free_regions_start,
+    aggressive_end,
+    added_surplus,
+    moved_old_oom,
+    processed_balance,
+    sorted,
+    distribute_free_regions_end,
 };
 
 enum freelist_type
 {
     free_regions_basic,
+    global_decommit_basic,
+    surplus_basic,
 };
 
 class region_free_list

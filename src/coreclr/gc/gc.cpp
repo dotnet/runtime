@@ -12784,12 +12784,12 @@ void region_free_list::verify (bool empty_p)
         {
             last_region = region;
             actual_count++;
-	    actual_size += get_region_size (region);
-	    actual_size_committed += get_region_committed_size (region);
+            actual_size += get_region_size (region);
+            actual_size_committed += get_region_committed_size (region);
         }
         region_assert (num_free_regions == actual_count);
-	region_assert (size_free_regions == actual_size);
-	region_assert (size_committed_in_free_regions == actual_size_committed);
+        region_assert (size_free_regions == actual_size);
+        region_assert (size_committed_in_free_regions == actual_size_committed);
         region_assert (last_region == tail_free_region);
         heap_segment* first_region = nullptr;
         for (heap_segment* region = tail_free_region; region != nullptr; region = heap_segment_prev_free_region(region))
@@ -13300,15 +13300,15 @@ void free_list_snapshot::record(snapshot_stage stage, freelist_type type, region
     int i;
     heap_segment* current;
     for (i = 0, current = free_list->head_free_region;
-	 (i < SNAPSHOT_SIZE) && (current != nullptr);
-	 ++i, current = current->next)
+         (i < SNAPSHOT_SIZE) && (current != nullptr);
+         ++i, current = current->next)
     {
         record(&s_buffer[s_counter].start[i], current);
     }
 
     for (i = 0, current = free_list->tail_free_region;
-	 (i < SNAPSHOT_SIZE) && (current != nullptr);
-	 ++i, current = current->prev_free_region)
+         (i < SNAPSHOT_SIZE) && (current != nullptr);
+         ++i, current = current->prev_free_region)
     {
         record(&s_buffer[s_counter].end[SNAPSHOT_SIZE - i - 1], current);
     }
@@ -13326,6 +13326,10 @@ void free_list_snapshot::record(snapshot_stage stage, freelist_type type, region
 void gc_heap::distribute_free_regions()
 {
 #ifdef USE_REGIONS
+#ifndef MULTIPLE_HEAPS
+    free_list_snapshot::record(distribute_free_regions_start, free_regions_basic, &free_regions[(int)basic_free_region]);
+    free_list_snapshot::record(distribute_free_regions_start, global_decommit_basic, &global_regions_to_decommit[(int)basic_free_region]);
+#endif
     const int kind_count = large_free_region + 1;
 
 #ifdef MULTIPLE_HEAPS
@@ -13389,6 +13393,11 @@ void gc_heap::distribute_free_regions()
             }
         }
 
+#ifndef MULTIPLE_HEAPS
+        free_list_snapshot::record(aggressive_end, free_regions_basic, &free_regions[(int)basic_free_region]);
+        free_list_snapshot::record(aggressive_end, global_decommit_basic, &global_regions_to_decommit[(int)basic_free_region]);
+#endif
+
         return;
     }
 
@@ -13409,6 +13418,11 @@ void gc_heap::distribute_free_regions()
         // use these to fill the budget as well
         surplus_regions[kind].transfer_regions (&global_regions_to_decommit[kind]);
     }
+#ifndef MULTIPLE_HEAPS
+    free_list_snapshot::record(added_surplus, free_regions_basic, &free_regions[(int)basic_free_region]);
+    free_list_snapshot::record(added_surplus, global_decommit_basic, &global_regions_to_decommit[(int)basic_free_region]);
+    free_list_snapshot::record(added_surplus, surplus_basic, &surplus_regions[(int)basic_free_region]);
+#endif
 #ifdef MULTIPLE_HEAPS
     for (int i = 0; i < n_heaps; i++)
     {
@@ -13452,6 +13466,11 @@ void gc_heap::distribute_free_regions()
         min_heap_budget_in_region_units[i] = 0;
         heap_budget_in_region_units[i][large_free_region] = 0;
     }
+
+#ifndef MULTIPLE_HEAPS
+    free_list_snapshot::record(moved_old_oom, free_regions_basic, &free_regions[(int)basic_free_region]);
+    free_list_snapshot::record(moved_old_oom, global_decommit_basic, &global_regions_to_decommit[(int)basic_free_region]);
+#endif
 
     for (int gen = soh_gen0; gen < total_generation_count; gen++)
     {
@@ -13624,6 +13643,12 @@ void gc_heap::distribute_free_regions()
         }
     }
 
+#ifndef MULTIPLE_HEAPS
+    free_list_snapshot::record(processed_balance, free_regions_basic, &free_regions[(int)basic_free_region]);
+    free_list_snapshot::record(processed_balance, global_decommit_basic, &global_regions_to_decommit[(int)basic_free_region]);
+    free_list_snapshot::record(processed_balance, surplus_basic, &surplus_regions[(int)basic_free_region]);
+#endif
+
     for (int kind = basic_free_region; kind < kind_count; kind++)
     {
 #ifdef MULTIPLE_HEAPS
@@ -13644,6 +13669,7 @@ void gc_heap::distribute_free_regions()
                 remove_surplus_regions (&hp->free_regions[kind], &surplus_regions[kind], heap_budget_in_region_units[i][kind]);
             }
         }
+
         // finally go through all the heaps and distribute any surplus regions to heaps having too few free regions
         for (int i = 0; i < n_heaps; i++)
         {
@@ -13674,6 +13700,12 @@ void gc_heap::distribute_free_regions()
             global_regions_to_decommit[kind].transfer_regions (&surplus_regions[kind]);
         }
     }
+
+#ifndef MULTIPLE_HEAPS
+    free_list_snapshot::record(sorted, free_regions_basic, &free_regions[(int)basic_free_region]);
+    free_list_snapshot::record(sorted, global_decommit_basic, &global_regions_to_decommit[(int)basic_free_region]);
+    free_list_snapshot::record(sorted, surplus_basic, &surplus_regions[(int)basic_free_region]);
+#endif
 
 #ifdef MULTIPLE_HEAPS
     for (int kind = basic_free_region; kind < count_free_region_kinds; kind++)
@@ -13709,6 +13741,11 @@ void gc_heap::distribute_free_regions()
             free_regions[kind].transfer_regions (&global_regions_to_decommit[kind]);
         }
     }
+
+    free_list_snapshot::record(distribute_free_regions_end, free_regions_basic, &free_regions[(int)basic_free_region]);
+    free_list_snapshot::record(distribute_free_regions_end, global_decommit_basic, &global_regions_to_decommit[(int)basic_free_region]);
+    free_list_snapshot::record(distribute_free_regions_end, surplus_basic, &surplus_regions[(int)basic_free_region]);
+
 #endif //MULTIPLE_HEAPS
 #endif //USE_REGIONS
 }
