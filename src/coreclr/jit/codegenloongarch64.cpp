@@ -217,9 +217,10 @@ void CodeGen::genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowe
     assert(!(regsToSaveMask & (~RBM_CALLEE_SAVED)));
     assert(lowestCalleeSavedOffset >= 0);
 
-    emitter* emit         = GetEmitter();
-    int      regNum       = FIRST_INT_CALLEE_SAVED;
-    int64_t  maskSaveRegs = (int64_t)(regsToSaveMask.getLow() & RBM_INT_CALLEE_SAVED) >> FIRST_INT_CALLEE_SAVED;
+    emitter*  emit         = GetEmitter();
+    int       regNum       = FIRST_INT_CALLEE_SAVED;
+    regMaskTP regsMask     = regsToSaveMask & RBM_INT_CALLEE_SAVED;
+    int64_t   maskSaveRegs = (int64_t)regsMask.getLow() >> FIRST_INT_CALLEE_SAVED;
     do
     {
         if (maskSaveRegs & 1)
@@ -232,7 +233,8 @@ void CodeGen::genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowe
         regNum += 1;
     } while (maskSaveRegs != 0);
 
-    maskSaveRegs = (int64_t)(regsToSaveMask.getLow() & RBM_FLT_CALLEE_SAVED) >> FIRST_FLT_CALLEE_SAVED;
+    regsMask     = regsToSaveMask & RBM_FLT_CALLEE_SAVED;
+    maskSaveRegs = (int64_t)regsMask.getLow() >> FIRST_FLT_CALLEE_SAVED;
     regNum       = FIRST_FLT_CALLEE_SAVED;
     do
     {
@@ -281,9 +283,10 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, in
     assert((highestCalleeSavedOffset & 7) == 0);
     assert(highestCalleeSavedOffset >= 16);
 
-    emitter* emit        = GetEmitter();
-    int64_t maskSaveRegs = (int64_t)(regsToRestoreMask.getLow() & RBM_FLT_CALLEE_SAVED) << (63 - LAST_FLT_CALLEE_SAVED);
-    int     regNum       = LAST_FLT_CALLEE_SAVED;
+    emitter*  emit         = GetEmitter();
+    regMaskTP regsMask     = regsToRestoreMask & RBM_FLT_CALLEE_SAVED;
+    int64_t   maskSaveRegs = (int64_t)regsMask.getLow() << (63 - LAST_FLT_CALLEE_SAVED);
+    int       regNum       = LAST_FLT_CALLEE_SAVED;
     do
     {
         if (maskSaveRegs < 0)
@@ -296,7 +299,8 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, in
         regNum -= 1;
     } while (maskSaveRegs != 0);
 
-    maskSaveRegs = (int64_t)((regsToRestoreMask.getLow() & RBM_INT_CALLEE_SAVED) << (63 - LAST_INT_CALLEE_SAVED));
+    regsMask     = regsToRestoreMask & RBM_INT_CALLEE_SAVED;
+    maskSaveRegs = (int64_t)regsMask.getLow() << (63 - LAST_INT_CALLEE_SAVED);
     regNum       = LAST_INT_CALLEE_SAVED;
     do
     {
