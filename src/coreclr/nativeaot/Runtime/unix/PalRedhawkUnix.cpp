@@ -97,7 +97,7 @@ static void UnmaskActivationSignal()
     sigaddset(&signal_set, INJECT_ACTIVATION_SIGNAL);
 
     int sigmaskRet = pthread_sigmask(SIG_UNBLOCK, &signal_set, NULL);
-    _ASSERTE(sigmaskRet != 0);
+    _ASSERTE(sigmaskRet == 0);
 }
 
 static void TimeSpecAdd(timespec* time, uint32_t milliseconds)
