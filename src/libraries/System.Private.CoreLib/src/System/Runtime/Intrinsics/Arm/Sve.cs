@@ -1458,6 +1458,68 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<ulong> DotProductBySelectedScalar(Vector<ulong> addend, Vector<ushort> left, Vector<ushort> right, [ConstantExpected] byte rightIndex) => DotProductBySelectedScalar(addend, left, right, rightIndex);
 
+
+        /// <summary>
+        /// svuint8_t svext[_u8](svuint8_t op1, svuint8_t op2, uint64_t imm3)
+        ///   EXT Ztied1.B, Ztied1.B, Zop2.B, #imm3
+        /// </summary>
+        public static unsafe Vector<byte> ExtractVector(Vector<byte> upper, Vector<byte> lower, [ConstantExpected] byte index) => ExtractVector(upper, lower, index);
+
+        /// <summary>
+        /// svfloat64_t svext[_f64](svfloat64_t op1, svfloat64_t op2, uint64_t imm3)
+        ///   EXT Ztied1.B, Ztied1.B, Zop2.B, #imm3 * 8
+        /// </summary>
+        public static unsafe Vector<double> ExtractVector(Vector<double> upper, Vector<double> lower, [ConstantExpected] byte index) => ExtractVector(upper, lower, index);
+
+        /// <summary>
+        /// svint16_t svext[_s16](svint16_t op1, svint16_t op2, uint64_t imm3)
+        ///   EXT Ztied1.B, Ztied1.B, Zop2.B, #imm3 * 2
+        /// </summary>
+        public static unsafe Vector<short> ExtractVector(Vector<short> upper, Vector<short> lower, [ConstantExpected] byte index) => ExtractVector(upper, lower, index);
+
+        /// <summary>
+        /// svint32_t svext[_s32](svint32_t op1, svint32_t op2, uint64_t imm3)
+        ///   EXT Ztied1.B, Ztied1.B, Zop2.B, #imm3 * 4
+        /// </summary>
+        public static unsafe Vector<int> ExtractVector(Vector<int> upper, Vector<int> lower, [ConstantExpected] byte index) => ExtractVector(upper, lower, index);
+
+        /// <summary>
+        /// svint64_t svext[_s64](svint64_t op1, svint64_t op2, uint64_t imm3)
+        ///   EXT Ztied1.B, Ztied1.B, Zop2.B, #imm3 * 8
+        /// </summary>
+        public static unsafe Vector<long> ExtractVector(Vector<long> upper, Vector<long> lower, [ConstantExpected] byte index) => ExtractVector(upper, lower, index);
+
+        /// <summary>
+        /// svint8_t svext[_s8](svint8_t op1, svint8_t op2, uint64_t imm3)
+        ///   EXT Ztied1.B, Ztied1.B, Zop2.B, #imm3
+        /// </summary>
+        public static unsafe Vector<sbyte> ExtractVector(Vector<sbyte> upper, Vector<sbyte> lower, [ConstantExpected] byte index) => ExtractVector(upper, lower, index);
+
+        /// <summary>
+        /// svfloat32_t svext[_f32](svfloat32_t op1, svfloat32_t op2, uint64_t imm3)
+        ///   EXT Ztied1.B, Ztied1.B, Zop2.B, #imm3 * 4
+        /// </summary>
+        public static unsafe Vector<float> ExtractVector(Vector<float> upper, Vector<float> lower, [ConstantExpected] byte index) => ExtractVector(upper, lower, index);
+
+        /// <summary>
+        /// svuint16_t svext[_u16](svuint16_t op1, svuint16_t op2, uint64_t imm3)
+        ///   EXT Ztied1.B, Ztied1.B, Zop2.B, #imm3 * 2
+        /// </summary>
+        public static unsafe Vector<ushort> ExtractVector(Vector<ushort> upper, Vector<ushort> lower, [ConstantExpected] byte index) => ExtractVector(upper, lower, index);
+
+        /// <summary>
+        /// svuint32_t svext[_u32](svuint32_t op1, svuint32_t op2, uint64_t imm3)
+        ///   EXT Ztied1.B, Ztied1.B, Zop2.B, #imm3 * 4
+        /// </summary>
+        public static unsafe Vector<uint> ExtractVector(Vector<uint> upper, Vector<uint> lower, [ConstantExpected] byte index) => ExtractVector(upper, lower, index);
+
+        /// <summary>
+        /// svuint64_t svext[_u64](svuint64_t op1, svuint64_t op2, uint64_t imm3)
+        ///   EXT Ztied1.B, Ztied1.B, Zop2.B, #imm3 * 8
+        /// </summary>
+        public static unsafe Vector<ulong> ExtractVector(Vector<ulong> upper, Vector<ulong> lower, [ConstantExpected] byte index) => ExtractVector(upper, lower, index);
+
+
         ///  FusedMultiplyAdd : Multiply-add, addend first
 
         /// <summary>
@@ -5437,6 +5499,27 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> SaturatingIncrementByActiveElementCount(Vector<ulong> value, Vector<ulong> from) => SaturatingIncrementByActiveElementCount(value, from);
 
 
+        ///  Scale : Adjust exponent
+
+        /// <summary>
+        /// svfloat64_t svscale[_f64]_m(svbool_t pg, svfloat64_t op1, svint64_t op2)
+        ///   FSCALE Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        /// svfloat64_t svscale[_f64]_x(svbool_t pg, svfloat64_t op1, svint64_t op2)
+        ///   FSCALE Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        /// svfloat64_t svscale[_f64]_z(svbool_t pg, svfloat64_t op1, svint64_t op2)
+        /// </summary>
+        public static unsafe Vector<double> Scale(Vector<double> left, Vector<long> right) => Scale(left, right);
+
+        /// <summary>
+        /// svfloat32_t svscale[_f32]_m(svbool_t pg, svfloat32_t op1, svint32_t op2)
+        ///   FSCALE Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        /// svfloat32_t svscale[_f32]_x(svbool_t pg, svfloat32_t op1, svint32_t op2)
+        ///   FSCALE Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        /// svfloat32_t svscale[_f32]_z(svbool_t pg, svfloat32_t op1, svint32_t op2)
+        /// </summary>
+        public static unsafe Vector<float> Scale(Vector<float> left, Vector<int> right) => Scale(left, right);
+
+
         ///  SignExtend16 : Sign-extend the low 16 bits
 
         /// <summary>
@@ -5557,6 +5640,27 @@ namespace System.Runtime.Intrinsics.Arm
         ///   SUNPKHI Zresult.D, Zop.S
         /// </summary>
         public static unsafe Vector<long> SignExtendWideningUpper(Vector<int> value) => SignExtendWideningUpper(value);
+
+
+        ///  Sqrt : Square root
+
+        /// <summary>
+        /// svfloat64_t svsqrt[_f64]_m(svfloat64_t inactive, svbool_t pg, svfloat64_t op)
+        ///   FSQRT Ztied.D, Pg/M, Zop.D
+        /// svfloat64_t svsqrt[_f64]_x(svbool_t pg, svfloat64_t op)
+        ///   FSQRT Ztied.D, Pg/M, Ztied.D
+        /// svfloat64_t svsqrt[_f64]_z(svbool_t pg, svfloat64_t op)
+        /// </summary>
+        public static unsafe Vector<double> Sqrt(Vector<double> value) => Sqrt(value);
+
+        /// <summary>
+        /// svfloat32_t svsqrt[_f32]_m(svfloat32_t inactive, svbool_t pg, svfloat32_t op)
+        ///   FSQRT Ztied.S, Pg/M, Zop.S
+        /// svfloat32_t svsqrt[_f32]_x(svbool_t pg, svfloat32_t op)
+        ///   FSQRT Ztied.S, Pg/M, Ztied.S
+        /// svfloat32_t svsqrt[_f32]_z(svbool_t pg, svfloat32_t op)
+        /// </summary>
+        public static unsafe Vector<float> Sqrt(Vector<float> value) => Sqrt(value);
 
 
         ///  Non-truncating store
@@ -6112,6 +6216,151 @@ namespace System.Runtime.Intrinsics.Arm
         ///   UQSUB Zresult.D, Zop1.D, Zop2.D
         /// </summary>
         public static unsafe Vector<ulong> SubtractSaturate(Vector<ulong> left, Vector<ulong> right) => SubtractSaturate(left, right);
+
+
+        /// <summary>
+        /// bool svptest_any(svbool_t pg, svbool_t op)
+        ///   PTEST
+        /// </summary>
+        public static unsafe bool TestAnyTrue(Vector<byte> mask, Vector<byte> srcMask) => TestAnyTrue(mask, srcMask);
+
+        /// <summary>
+        /// bool svptest_any(svbool_t pg, svbool_t op)
+        ///   PTEST
+        /// </summary>
+        public static unsafe bool TestAnyTrue(Vector<short> mask, Vector<short> srcMask) => TestAnyTrue(mask, srcMask);
+
+        /// <summary>
+        /// bool svptest_any(svbool_t pg, svbool_t op)
+        ///   PTEST
+        /// </summary>
+        public static unsafe bool TestAnyTrue(Vector<int> mask, Vector<int> srcMask) => TestAnyTrue(mask, srcMask);
+
+        /// <summary>
+        /// bool svptest_any(svbool_t pg, svbool_t op)
+        ///   PTEST
+        /// </summary>
+        public static unsafe bool TestAnyTrue(Vector<long> mask, Vector<long> srcMask) => TestAnyTrue(mask, srcMask);
+
+        /// <summary>
+        /// bool svptest_any(svbool_t pg, svbool_t op)
+        ///   PTEST
+        /// </summary>
+        public static unsafe bool TestAnyTrue(Vector<sbyte> mask, Vector<sbyte> srcMask) => TestAnyTrue(mask, srcMask);
+
+        /// <summary>
+        /// bool svptest_any(svbool_t pg, svbool_t op)
+        ///   PTEST
+        /// </summary>
+        public static unsafe bool TestAnyTrue(Vector<ushort> mask, Vector<ushort> srcMask) => TestAnyTrue(mask, srcMask);
+
+        /// <summary>
+        /// bool svptest_any(svbool_t pg, svbool_t op)
+        ///   PTEST
+        /// </summary>
+        public static unsafe bool TestAnyTrue(Vector<uint> mask, Vector<uint> srcMask) => TestAnyTrue(mask, srcMask);
+
+        /// <summary>
+        /// bool svptest_any(svbool_t pg, svbool_t op)
+        ///   PTEST
+        /// </summary>
+        public static unsafe bool TestAnyTrue(Vector<ulong> mask, Vector<ulong> srcMask) => TestAnyTrue(mask, srcMask);
+
+        /// <summary>
+        /// bool svptest_first(svbool_t pg, svbool_t op)
+        ///   PTEST
+        /// </summary>
+        public static unsafe bool TestFirstTrue(Vector<byte> mask, Vector<byte> srcMask) => TestFirstTrue(mask, srcMask);
+
+        /// <summary>
+        /// bool svptest_first(svbool_t pg, svbool_t op)
+        ///   PTEST
+        /// </summary>
+        public static unsafe bool TestFirstTrue(Vector<short> mask, Vector<short> srcMask) => TestFirstTrue(mask, srcMask);
+
+        /// <summary>
+        /// bool svptest_first(svbool_t pg, svbool_t op)
+        ///   PTEST
+        /// </summary>
+        public static unsafe bool TestFirstTrue(Vector<int> mask, Vector<int> srcMask) => TestFirstTrue(mask, srcMask);
+
+        /// <summary>
+        /// bool svptest_first(svbool_t pg, svbool_t op)
+        ///   PTEST
+        /// </summary>
+        public static unsafe bool TestFirstTrue(Vector<long> mask, Vector<long> srcMask) => TestFirstTrue(mask, srcMask);
+
+        /// <summary>
+        /// bool svptest_first(svbool_t pg, svbool_t op)
+        ///   PTEST
+        /// </summary>
+        public static unsafe bool TestFirstTrue(Vector<sbyte> mask, Vector<sbyte> srcMask) => TestFirstTrue(mask, srcMask);
+
+        /// <summary>
+        /// bool svptest_first(svbool_t pg, svbool_t op)
+        ///   PTEST
+        /// </summary>
+        public static unsafe bool TestFirstTrue(Vector<ushort> mask, Vector<ushort> srcMask) => TestFirstTrue(mask, srcMask);
+
+        /// <summary>
+        /// bool svptest_first(svbool_t pg, svbool_t op)
+        ///   PTEST
+        /// </summary>
+        public static unsafe bool TestFirstTrue(Vector<uint> mask, Vector<uint> srcMask) => TestFirstTrue(mask, srcMask);
+
+        /// <summary>
+        /// bool svptest_first(svbool_t pg, svbool_t op)
+        ///   PTEST
+        /// </summary>
+        public static unsafe bool TestFirstTrue(Vector<ulong> mask, Vector<ulong> srcMask) => TestFirstTrue(mask, srcMask);
+
+        /// <summary>
+        /// bool svptest_last(svbool_t pg, svbool_t op)
+        ///   PTEST
+        /// </summary>
+        public static unsafe bool TestLastTrue(Vector<byte> mask, Vector<byte> srcMask) => TestLastTrue(mask, srcMask);
+
+        /// <summary>
+        /// bool svptest_last(svbool_t pg, svbool_t op)
+        ///   PTEST
+        /// </summary>
+        public static unsafe bool TestLastTrue(Vector<short> mask, Vector<short> srcMask) => TestLastTrue(mask, srcMask);
+
+        /// <summary>
+        /// bool svptest_last(svbool_t pg, svbool_t op)
+        ///   PTEST
+        /// </summary>
+        public static unsafe bool TestLastTrue(Vector<int> mask, Vector<int> srcMask) => TestLastTrue(mask, srcMask);
+
+        /// <summary>
+        /// bool svptest_last(svbool_t pg, svbool_t op)
+        ///   PTEST
+        /// </summary>
+        public static unsafe bool TestLastTrue(Vector<long> mask, Vector<long> srcMask) => TestLastTrue(mask, srcMask);
+
+        /// <summary>
+        /// bool svptest_last(svbool_t pg, svbool_t op)
+        ///   PTEST
+        /// </summary>
+        public static unsafe bool TestLastTrue(Vector<sbyte> mask, Vector<sbyte> srcMask) => TestLastTrue(mask, srcMask);
+
+        /// <summary>
+        /// bool svptest_last(svbool_t pg, svbool_t op)
+        ///   PTEST
+        /// </summary>
+        public static unsafe bool TestLastTrue(Vector<ushort> mask, Vector<ushort> srcMask) => TestLastTrue(mask, srcMask);
+
+        /// <summary>
+        /// bool svptest_last(svbool_t pg, svbool_t op)
+        ///   PTEST
+        /// </summary>
+        public static unsafe bool TestLastTrue(Vector<uint> mask, Vector<uint> srcMask) => TestLastTrue(mask, srcMask);
+
+        /// <summary>
+        /// bool svptest_last(svbool_t pg, svbool_t op)
+        ///   PTEST
+        /// </summary>
+        public static unsafe bool TestLastTrue(Vector<ulong> mask, Vector<ulong> srcMask) => TestLastTrue(mask, srcMask);
 
 
         ///  Interleave even elements from two inputs

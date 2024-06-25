@@ -1266,6 +1266,27 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             return LowerHWIntrinsicCmpOp(node, GT_NE);
         }
 
+        case NI_Sve_TestAnyTrue:
+        {
+            LowerNodeCC(node, GenCondition::NE);
+            node->gtType = TYP_VOID;
+            return node->gtNext;
+        }
+
+        case NI_Sve_TestFirstTrue:
+        {
+            LowerNodeCC(node, GenCondition::SLT);
+            node->gtType = TYP_VOID;
+            return node->gtNext;
+        }
+
+        case NI_Sve_TestLastTrue:
+        {
+            LowerNodeCC(node, GenCondition::ULT);
+            node->gtType = TYP_VOID;
+            return node->gtNext;
+        }
+
         case NI_Vector128_WithLower:
         case NI_Vector128_WithUpper:
         {
@@ -3192,6 +3213,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_Sve_PrefetchInt16:
             case NI_Sve_PrefetchInt32:
             case NI_Sve_PrefetchInt64:
+            case NI_Sve_ExtractVector:
                 assert(hasImmediateOperand);
                 assert(varTypeIsIntegral(intrin.op3));
                 if (intrin.op3->IsCnsIntOrI())

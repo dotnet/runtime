@@ -17,6 +17,17 @@ namespace JIT.HardwareIntrinsics.Arm
 {
     static class Helpers
     {
+        public static Vector<T> InitVector<T>(Func<int, T> f)
+        {
+            var count = Vector<T>.Count;
+            var arr = new T[count];
+            for (var i = 0; i < count; i++)
+            {
+                arr[i] = f(i);
+            }
+            return new Vector<T>(arr);
+        }
+
         public static sbyte CountLeadingSignBits(sbyte op1)
         {
             return (sbyte)(CountLeadingZeroBits((sbyte)((ulong)op1 ^ ((ulong)op1 >> 1))) - 1);
@@ -1579,6 +1590,10 @@ namespace JIT.HardwareIntrinsics.Arm
         public static float Divide(float op1, float op2) => op1 / op2;
 
         public static double Divide(double op1, double op2) => op1 / op2;
+
+        public static float Scale(float op1, int op2) => op1 * MathF.Pow((float)2.0, op2);
+
+        public static double Scale(double op1, long op2) =>  op1 * Math.Pow(2.0, op2);
 
         public static float Sqrt(float value) => MathF.Sqrt(value);
 
