@@ -17,3 +17,4 @@ public class NormalizationTests
         Assert.False(x is IntPtr[]);
         Assert.False(x1 is IntPtr[]);
     }
+}
