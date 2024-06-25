@@ -136,7 +136,7 @@ namespace System.Net.Security
                 startingTimestamp = 0;
             }
 
-            Activity? activity = s_activitySource.StartActivity(ActivityName, IsServer ? ActivityKind.Server : ActivityKind.Client);
+            using Activity? activity = s_activitySource.StartActivity(ActivityName, IsServer ? ActivityKind.Server : ActivityKind.Client);
 
             try
             {
@@ -162,10 +162,6 @@ namespace System.Net.Security
                 }
 
                 throw;
-            }
-            finally
-            {
-                activity?.Stop();
             }
         }
 
