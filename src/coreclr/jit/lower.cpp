@@ -1815,6 +1815,28 @@ void Lowering::LowerArg(GenTreeCall* call, CallArg* callArg, bool late)
     assert(!arg->OperIsPutArg());
 
 #if !defined(TARGET_64BIT)
+    if (comp->opts.compUseSoftFP && (type == TYP_DOUBLE))
+    {
+        // Unlike TYP_LONG we do no decomposition for doubles, yet we maintain
+        // it as a primitive type until lowering. So we need to get it into the
+        // right form here.
+
+        unsigned argLclNum = comp->lvaGrabTemp(false DEBUGARG("double arg on softFP"));
+        GenTree* store     = comp->gtNewTempStore(argLclNum, arg);
+        GenTree* low       = comp->gtNewLclFldNode(argLclNum, TYP_INT, 0);
+        GenTree* high      = comp->gtNewLclFldNode(argLclNum, TYP_INT, 4);
+        GenTree* longNode  = new (comp, GT_LONG) GenTreeOp(GT_LONG, TYP_LONG, low, high);
+        BlockRange().InsertAfter(arg, store, low, high, longNode);
+
+        *ppArg = arg = longNode;
+        type         = TYP_LONG;
+
+        comp->lvaSetVarDoNotEnregister(argLclNum DEBUGARG(DoNotEnregisterReason::LocalField));
+
+        JITDUMP("Created new nodes for double-typed arg on softFP:\n");
+        DISPRANGE(LIR::ReadOnlyRange(store, longNode));
+    }
+
     if (varTypeIsLong(type))
     {
         noway_assert(arg->OperIs(GT_LONG));
@@ -1969,18 +1991,6 @@ GenTree* Lowering::LowerFloatArgReg(GenTree* arg, regNumber regNum)
     GenTree*  intArg    = comp->gtNewBitCastNode(intType, arg);
     intArg->SetRegNum(regNum);
 
-#ifdef TARGET_ARM
-    if (floatType == TYP_DOUBLE)
-    {
-        // A special case when we introduce TYP_LONG
-        // during lowering for arm32 softFP to pass double
-        // in int registers.
-        assert(comp->opts.compUseSoftFP);
-
-        regNumber nextReg                  = REG_NEXT(regNum);
-        intArg->AsMultiRegOp()->gtOtherReg = nextReg;
-    }
-#endif
     return intArg;
 }
 #endif

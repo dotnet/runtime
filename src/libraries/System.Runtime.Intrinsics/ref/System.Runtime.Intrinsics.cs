@@ -4391,6 +4391,17 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<uint> DotProductBySelectedScalar(System.Numerics.Vector<uint> addend, System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right, [ConstantExpected] byte rightIndex) { throw null; }
         public static System.Numerics.Vector<ulong> DotProductBySelectedScalar(System.Numerics.Vector<ulong> addend, System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right, [ConstantExpected] byte rightIndex) { throw null; }
 
+        public static unsafe System.Numerics.Vector<byte> ExtractVector(System.Numerics.Vector<byte> upper, System.Numerics.Vector<byte> lower, [ConstantExpected] byte index) { throw null; }
+        public static unsafe System.Numerics.Vector<double> ExtractVector(System.Numerics.Vector<double> upper, System.Numerics.Vector<double> lower, [ConstantExpected] byte index) { throw null; }
+        public static unsafe System.Numerics.Vector<short> ExtractVector(System.Numerics.Vector<short> upper, System.Numerics.Vector<short> lower, [ConstantExpected] byte index) { throw null; }
+        public static unsafe System.Numerics.Vector<int> ExtractVector(System.Numerics.Vector<int> upper, System.Numerics.Vector<int> lower, [ConstantExpected] byte index) { throw null; }
+        public static unsafe System.Numerics.Vector<long> ExtractVector(System.Numerics.Vector<long> upper, System.Numerics.Vector<long> lower, [ConstantExpected] byte index) { throw null; }
+        public static unsafe System.Numerics.Vector<sbyte> ExtractVector(System.Numerics.Vector<sbyte> upper, System.Numerics.Vector<sbyte> lower, [ConstantExpected] byte index) { throw null; }
+        public static unsafe System.Numerics.Vector<float> ExtractVector(System.Numerics.Vector<float> upper, System.Numerics.Vector<float> lower, [ConstantExpected] byte index) { throw null; }
+        public static unsafe System.Numerics.Vector<ushort> ExtractVector(System.Numerics.Vector<ushort> upper, System.Numerics.Vector<ushort> lower, [ConstantExpected] byte index) { throw null; }
+        public static unsafe System.Numerics.Vector<uint> ExtractVector(System.Numerics.Vector<uint> upper, System.Numerics.Vector<uint> lower, [ConstantExpected] byte index) { throw null; }
+        public static unsafe System.Numerics.Vector<ulong> ExtractVector(System.Numerics.Vector<ulong> upper, System.Numerics.Vector<ulong> lower, [ConstantExpected] byte index) { throw null; }
+
         public static System.Numerics.Vector<double> FusedMultiplyAdd(System.Numerics.Vector<double> addend, System.Numerics.Vector<double> left, System.Numerics.Vector<double> right) { throw null; }
         public static System.Numerics.Vector<float> FusedMultiplyAdd(System.Numerics.Vector<float> addend, System.Numerics.Vector<float> left, System.Numerics.Vector<float> right) { throw null; }
         public static System.Numerics.Vector<double> FusedMultiplyAddBySelectedScalar(System.Numerics.Vector<double> addend, System.Numerics.Vector<double> left, System.Numerics.Vector<double> right, [ConstantExpected] byte rightIndex) { throw null; }
@@ -5076,6 +5087,31 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<ushort> SubtractSaturate(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
         public static System.Numerics.Vector<uint> SubtractSaturate(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
         public static System.Numerics.Vector<ulong> SubtractSaturate(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
+
+        public static bool TestAnyTrue(System.Numerics.Vector<byte> mask, System.Numerics.Vector<byte> srcMask) { throw null; }
+        public static bool TestAnyTrue(System.Numerics.Vector<short> mask, System.Numerics.Vector<short> srcMask) { throw null; }
+        public static bool TestAnyTrue(System.Numerics.Vector<int> mask, System.Numerics.Vector<int> srcMask) { throw null; }
+        public static bool TestAnyTrue(System.Numerics.Vector<long> mask, System.Numerics.Vector<long> srcMask) { throw null; }
+        public static bool TestAnyTrue(System.Numerics.Vector<sbyte> mask, System.Numerics.Vector<sbyte> srcMask) { throw null; }
+        public static bool TestAnyTrue(System.Numerics.Vector<ushort> mask, System.Numerics.Vector<ushort> srcMask) { throw null; }
+        public static bool TestAnyTrue(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> srcMask) { throw null; }
+        public static bool TestAnyTrue(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> srcMask) { throw null; }
+        public static bool TestFirstTrue(System.Numerics.Vector<byte> mask, System.Numerics.Vector<byte> srcMask) { throw null; }
+        public static bool TestFirstTrue(System.Numerics.Vector<short> mask, System.Numerics.Vector<short> srcMask) { throw null; }
+        public static bool TestFirstTrue(System.Numerics.Vector<int> mask, System.Numerics.Vector<int> srcMask) { throw null; }
+        public static bool TestFirstTrue(System.Numerics.Vector<long> mask, System.Numerics.Vector<long> srcMask) { throw null; }
+        public static bool TestFirstTrue(System.Numerics.Vector<sbyte> mask, System.Numerics.Vector<sbyte> srcMask) { throw null; }
+        public static bool TestFirstTrue(System.Numerics.Vector<ushort> mask, System.Numerics.Vector<ushort> srcMask) { throw null; }
+        public static bool TestFirstTrue(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> srcMask) { throw null; }
+        public static bool TestFirstTrue(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> srcMask) { throw null; }
+        public static bool TestLastTrue(System.Numerics.Vector<byte> mask, System.Numerics.Vector<byte> srcMask) { throw null; }
+        public static bool TestLastTrue(System.Numerics.Vector<short> mask, System.Numerics.Vector<short> srcMask) { throw null; }
+        public static bool TestLastTrue(System.Numerics.Vector<int> mask, System.Numerics.Vector<int> srcMask) { throw null; }
+        public static bool TestLastTrue(System.Numerics.Vector<long> mask, System.Numerics.Vector<long> srcMask) { throw null; }
+        public static bool TestLastTrue(System.Numerics.Vector<sbyte> mask, System.Numerics.Vector<sbyte> srcMask) { throw null; }
+        public static bool TestLastTrue(System.Numerics.Vector<ushort> mask, System.Numerics.Vector<ushort> srcMask) { throw null; }
+        public static bool TestLastTrue(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> srcMask) { throw null; }
+        public static bool TestLastTrue(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> srcMask) { throw null; }
 
         public static System.Numerics.Vector<byte> TransposeEven(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
         public static System.Numerics.Vector<double> TransposeEven(System.Numerics.Vector<double> left, System.Numerics.Vector<double> right) { throw null; }

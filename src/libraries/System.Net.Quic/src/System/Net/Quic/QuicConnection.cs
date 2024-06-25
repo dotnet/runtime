@@ -60,7 +60,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
     {
         if (!IsSupported)
         {
-            throw new PlatformNotSupportedException(SR.Format(SR.SystemNetQuic_PlatformNotSupported, MsQuicApi.NotSupportedReason));
+            throw new PlatformNotSupportedException(SR.Format(SR.SystemNetQuic_PlatformNotSupported, MsQuicApi.NotSupportedReason ?? "General loading failure."));
         }
 
         // Validate and fill in defaults for the options.
