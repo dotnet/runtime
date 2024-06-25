@@ -104,16 +104,14 @@ namespace System.Diagnostics.Metrics
             KeyValuePair<string, object?>[] array = ArrayPool<KeyValuePair<string, object?>>.Shared.Rent(32);
             int length = array.Length;
 
-            IEnumerator<KeyValuePair<string, object?>> enumerator = tags.GetEnumerator();
-
             try
             {
-                while (enumerator.MoveNext())
+                foreach (KeyValuePair<string, object?> item in tags)
                 {
                     if (count == length)
                         Grow(ref array, ref length);
 
-                    array[count++] = enumerator.Current;
+                    array[count++] = item;
                 }
 
                 if (count == 0)
@@ -125,7 +123,6 @@ namespace System.Diagnostics.Metrics
             }
             finally
             {
-                enumerator.Dispose();
                 ArrayPool<KeyValuePair<string, object?>>.Shared.Return(array);
             }
 
