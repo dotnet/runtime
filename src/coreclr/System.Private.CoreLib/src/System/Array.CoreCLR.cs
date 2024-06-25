@@ -99,17 +99,10 @@ namespace System
             // Array Primitive types such as E_T_I4 and E_T_U4 are interchangeable
             // Enums with interchangeable underlying types are interchangeable
             // BOOL is NOT interchangeable with I1/U1, neither CHAR -- with I2/U2
-            switch (elementType)
-            {
-                case CorElementType.ELEMENT_TYPE_U1:
-                case CorElementType.ELEMENT_TYPE_U2:
-                case CorElementType.ELEMENT_TYPE_U4:
-                case CorElementType.ELEMENT_TYPE_U8:
-                case CorElementType.ELEMENT_TYPE_U:
-                    return elementType - 1; // normalize to signed type
-                default:
-                    return elementType;
-            }
+
+            // U1/U2/U4/U8/U
+            int shift = (0b0001_0000_0000_0000_1010_1010_0000 >> (int)elementType) & 1;
+            return (CorElementType)((int)elementType - shift);
         }
 
         // Reliability-wise, this method will either possibly corrupt your
@@ -188,12 +181,12 @@ namespace System
                     return ArrayAssignType.WrongType;
             }
 
-            CorElementType srcElType = srcTH.GetVerifierCorElementType();
-            CorElementType destElType = destTH.GetVerifierCorElementType();
-
             // Copying primitives from one type to another
-            if (srcElType.IsPrimitiveType() && destElType.IsPrimitiveType())
+            if (!srcTH.IsTypeDesc && srcTH.AsMethodTable()->IsPrimitive && !destTH.IsTypeDesc && destTH.AsMethodTable()->IsPrimitive)
             {
+                CorElementType srcElType = srcTH.AsMethodTable()->GetPrimitiveCorElementType();
+                CorElementType destElType = destTH.AsMethodTable()->GetPrimitiveCorElementType();
+
                 if (GetNormalizedIntegralArrayElementType(srcElType) == GetNormalizedIntegralArrayElementType(destElType))
                     return ArrayAssignType.SimpleCopy;
                 else if (RuntimeHelpers.CanPrimitiveWiden(srcElType, destElType))
@@ -211,11 +204,11 @@ namespace System
                 return ArrayAssignType.MustCast;
 
             // class X extends/implements src and implements dest.
-            if (destTH.IsInterface && srcElType != CorElementType.ELEMENT_TYPE_VALUETYPE)
+            if (destTH.IsInterface)
                 return ArrayAssignType.MustCast;
 
             // class X implements src and extends/implements dest
-            if (srcTH.IsInterface && srcElType != CorElementType.ELEMENT_TYPE_VALUETYPE)
+            if (srcTH.IsInterface)
                 return ArrayAssignType.MustCast;
 
             return ArrayAssignType.WrongType;
