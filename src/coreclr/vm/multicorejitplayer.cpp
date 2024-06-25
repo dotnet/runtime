@@ -444,7 +444,7 @@ bool MulticoreJitManager::IsSupportedModule(Module * pModule, bool fMethodJit)
     PEAssembly * pPEAssembly = pModule->GetPEAssembly();
 
     // dynamic module.
-    if (pPEAssembly->IsDynamic()) // Ignore dynamic modules
+    if (pPEAssembly->IsReflectionEmit()) // Ignore dynamic modules
     {
         return false;
     }

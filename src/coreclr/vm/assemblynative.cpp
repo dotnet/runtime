@@ -529,7 +529,7 @@ FCIMPL1(FC_BOOL_RET, AssemblyNative::IsDynamic, AssemblyBaseObject* pAssemblyUNS
     if (refAssembly == NULL)
         FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
 
-    FC_RETURN_BOOL(refAssembly->GetDomainAssembly()->GetPEAssembly()->IsDynamic());
+    FC_RETURN_BOOL(refAssembly->GetDomainAssembly()->GetPEAssembly()->IsReflectionEmit());
 }
 FCIMPLEND
 

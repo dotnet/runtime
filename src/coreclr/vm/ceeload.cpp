@@ -535,7 +535,7 @@ static BOOL IsEditAndContinueCapable(Assembly *pAssembly, PEAssembly *pPEAssembl
     // Some modules are never EnC-capable
     return ! (pAssembly->GetDebuggerInfoBits() & DACF_ALLOW_JIT_OPTS ||
               pPEAssembly->IsSystem() ||
-              pPEAssembly->IsDynamic());
+              pPEAssembly->IsReflectionEmit());
 }
 
 /* static */
@@ -3727,7 +3727,7 @@ ReflectionModule *ReflectionModule::Create(Assembly *pAssembly, PEAssembly *pPEA
         STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pAssembly));
         PRECONDITION(CheckPointer(pPEAssembly));
-        PRECONDITION(pPEAssembly->IsDynamic());
+        PRECONDITION(pPEAssembly->IsReflectionEmit());
         POSTCONDITION(CheckPointer(RETVAL));
     }
     CONTRACT_END;
