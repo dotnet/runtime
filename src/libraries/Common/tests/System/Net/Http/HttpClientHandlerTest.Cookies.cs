@@ -148,6 +148,17 @@ namespace System.Net.Http.Functional.Tests
                 });
         }
 
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        public void AddCookieHeader_MissingValue_Throws(string? cookieValue)
+        {
+            var requestMessage = new HttpRequestMessage(HttpMethod.Get, "http://foo/bar") { Version = UseVersion };
+            Assert.Throws<FormatException>(
+                () => requestMessage.Headers.Add("Cookie", cookieValue)
+            );
+        }
+
         [Fact]
         public async Task GetAsync_AddMultipleCookieHeaders_CookiesSent()
         {
