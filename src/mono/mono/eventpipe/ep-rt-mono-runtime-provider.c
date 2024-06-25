@@ -815,7 +815,7 @@ get_module_event_data (
 		module_data->module_flags = MODULE_FLAGS_MANIFEST_MODULE;
 		if (image && image->dynamic)
 			module_data->module_flags |= MODULE_FLAGS_DYNAMIC_MODULE;
-		if (image && image->aot_module)
+		if (image && image->aot_module && (image->aot_module != AOT_MODULE_NOT_FOUND))
 			module_data->module_flags |= MODULE_FLAGS_NATIVE_MODULE;
 
 		module_data->module_il_path = NULL;
@@ -905,7 +905,7 @@ fire_assembly_events (
 	if (assembly->dynamic)
 		assembly_flags |= ASSEMBLY_FLAGS_DYNAMIC_ASSEMBLY;
 
-	if (assembly->image && assembly->image->aot_module) {
+	if (assembly->image && assembly->image->aot_module && (assembly->image->aot_module != AOT_MODULE_NOT_FOUND)) {
 		assembly_flags |= ASSEMBLY_FLAGS_NATIVE_ASSEMBLY;
 	}
 
@@ -2152,7 +2152,7 @@ get_assembly_event_data (
 		if (assembly->dynamic)
 			assembly_data->assembly_flags |= ASSEMBLY_FLAGS_DYNAMIC_ASSEMBLY;
 
-		if (assembly->image && assembly->image->aot_module)
+		if (assembly->image && assembly->image->aot_module && (assembly->image->aot_module != AOT_MODULE_NOT_FOUND))
 			assembly_data->assembly_flags |= ASSEMBLY_FLAGS_NATIVE_ASSEMBLY;
 
 		assembly_data->assembly_name = mono_stringify_assembly_name (&assembly->aname);
