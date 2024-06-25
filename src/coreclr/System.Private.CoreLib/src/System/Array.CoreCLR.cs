@@ -101,7 +101,7 @@ namespace System
             // BOOL is NOT interchangeable with I1/U1, neither CHAR -- with I2/U2
 
             // U1/U2/U4/U8/U
-            int shift = (0b0001_0000_0000_0000_1010_1010_0000 >> (int)elementType) & 1;
+            int shift = (0b0010_0000_0000_0000_1010_1010_0000 >> (int)elementType) & 1;
             return (CorElementType)((int)elementType - shift);
         }
 
