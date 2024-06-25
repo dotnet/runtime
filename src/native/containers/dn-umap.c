@@ -318,7 +318,7 @@ dn_umap_begin (dn_umap_t *map)
 		index ++;
 	}
 
-	dn_umap_it_t it = { map, map->_internal._buckets [index], index };
+	dn_umap_it_t it = { { map, map->_internal._buckets [index], index } };
 	return it;
 }
 
@@ -541,7 +541,7 @@ dn_umap_custom_find (
 
 	for (dn_umap_node_t *node = map->_internal._buckets [hashcode]; node; node = node->next) {
 		if (equal_func (node->key, key)) {
-			dn_umap_it_t found = { map, node, hashcode };
+			dn_umap_it_t found = { { map, node, hashcode } };
 			return found;
 		}
 	}
