@@ -25,9 +25,15 @@ class AsmOffsets
     public const int OFFSETOF__REGDISPLAY__ControlPC = 0xbe0;
 #endif // TARGET_UNIX
 #elif TARGET_ARM64
+#if TARGET_UNIX
     public const int SIZEOF__REGDISPLAY = 0xa00;
     public const int OFFSETOF__REGDISPLAY__SP = 0x958;
     public const int OFFSETOF__REGDISPLAY__ControlPC = 0x960;
+#else // TARGET_UNIX
+    public const int SIZEOF__REGDISPLAY = 0x930;
+    public const int OFFSETOF__REGDISPLAY__SP = 0x890;
+    public const int OFFSETOF__REGDISPLAY__ControlPC = 0x898;
+#endif // TARGET_UNIX
 #elif TARGET_ARM
     public const int SIZEOF__REGDISPLAY = 0x410;
     public const int OFFSETOF__REGDISPLAY__SP = 0x3ec;
@@ -111,9 +117,13 @@ class AsmOffsets
     public const int SIZEOF__PAL_LIMITED_CONTEXT = 0xc20;
 #else // TARGET_UNIX
     public const int SIZEOF__PAL_LIMITED_CONTEXT = 0x4d0;
-#endif // TARGET_UNIx
+#endif // TARGET_UNIX
 #elif TARGET_ARM64
+#if TARGET_UNIX
     public const int SIZEOF__PAL_LIMITED_CONTEXT = 0x3f0;
+#else // TARGET_UNIX
+    public const int SIZEOF__PAL_LIMITED_CONTEXT = 0x390;
+#endif // TARGET_UNIX
 #elif TARGET_ARM
     public const int SIZEOF__PAL_LIMITED_CONTEXT = 0x1a0;
 #elif TARGET_X86
