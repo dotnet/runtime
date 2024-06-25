@@ -111,8 +111,8 @@ struct PAL_LIMITED_CONTEXT
     uintptr_t  SP;
     uintptr_t  IP;
 
-    uint64_t      F[16 - 8];  // Only the bottom 64-bit value of the V registers V8..V15 needs to be preserved
-                            // (V0-V7 and V16-V31 are not preserved according to the ABI spec).
+    uint64_t      F[32 - 24]; // Only the F registers F24..F31 needs to be preserved
+                              // (F0-F23 are not preserved according to the ABI spec).
 
 
     uintptr_t GetIp() const { return IP; }

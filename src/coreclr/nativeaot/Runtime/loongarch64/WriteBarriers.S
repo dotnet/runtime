@@ -198,14 +198,14 @@
 // WARNING: Code in EHHelpers.cpp makes assumptions about write barrier code, in particular:
 // - Function "InWriteBarrierHelper" assumes an AV due to passed in null pointer will happen at RhpByRefAssignRefAVLocation1
 // - Function "UnwindSimpleHelperToCaller" assumes no registers were pushed and RA contains the return address
-LEAF_ENTRY RhpByRefAssignRefLoongArch64, _TEXT
+LEAF_ENTRY RhpByRefAssignRef, _TEXT
 
     ALTERNATE_ENTRY RhpByRefAssignRefAVLocation1
         ld.d  $t7, $t8, 0
         addi.d  $t8, $t8, 8
-        b  C_FUNC(RhpCheckedAssignRefLoongArch64)
+        b  C_FUNC(RhpCheckedAssignRef)
 
-LEAF_END RhpByRefAssignRefLoongArch64, _TEXT
+LEAF_END RhpByRefAssignRef, _TEXT
 
 // JIT_CheckedWriteBarrier(Object** dst, Object* src)
 //
@@ -220,7 +220,7 @@ LEAF_END RhpByRefAssignRefLoongArch64, _TEXT
 // On exit:
 //   t3, t4 : trashed
 //   t6      : incremented by 8
- LEAF_ENTRY RhpCheckedAssignRefLoongArch64, _TEXT
+ LEAF_ENTRY RhpCheckedAssignRef, _TEXT
 
         // is destReg within the heap?
         PREPARE_EXTERNAL_VAR_INDIRECT g_lowest_address, $t3
@@ -237,7 +237,7 @@ NotInHeap:
         addi.d $t6, $t6, 8
         jirl  $r0, $ra, 0
 
-LEAF_END RhpCheckedAssignRefLoongArch64, _TEXT
+LEAF_END RhpCheckedAssignRef, _TEXT
 
 // JIT_WriteBarrier(Object** dst, Object* src)
 //

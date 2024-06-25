@@ -462,11 +462,6 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
 #define LOONGARCH64_MAX_BREAKPOINTS     8
 #define LOONGARCH64_MAX_WATCHPOINTS     2
 
-typedef struct _NEON128 {
-    uint64_t Low;
-    int64_t High;
-} NEON128, *PNEON128;
-
 typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
     //
     // Control flags.
@@ -520,9 +515,9 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
     uint64_t Pc;
 
     //
-    // Floating Point/NEON Registers
+    // Floating Point Registers
     //
-    NEON128 V[32];
+    uint64_t F[32];
     uint32_t Fpcr;
     uint32_t Fpsr;
 

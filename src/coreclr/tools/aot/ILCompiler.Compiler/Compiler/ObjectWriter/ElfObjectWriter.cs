@@ -801,11 +801,10 @@ namespace ILCompiler.ObjectWriter
                 SectionHeaderEntrySize = (ushort)ElfSectionHeader.GetSize<TSize>(),
                 SectionHeaderEntryCount = sectionCount < SHN_LORESERVE ? (ushort)sectionCount : (ushort)0u,
                 StringTableIndex = strTabSectionIndex < SHN_LORESERVE ? (ushort)strTabSectionIndex : (ushort)SHN_XINDEX,
-                // For ARM32 claim conformance with the EABI specification
                 Flags = _machine switch
                 {
-                    EM_ARM => 0x05000000u,
-                    EM_LOONGARCH => 0x43u,
+                    EM_ARM => 0x05000000u, // For ARM32 claim conformance with the EABI specification
+                    EM_LOONGARCH => 0x43u, // For LoongArch claim conformance with the EABI specification
                     _ => 0u
                 },
             };

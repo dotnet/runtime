@@ -19,7 +19,7 @@
 
         // Setup a PAL_LIMITED_CONTEXT on the stack {
         .if \exceptionType == HARDWARE_EXCEPTION
-            addi.d  $sp, $sp, -80
+            addi.d  $sp, $sp, -0x50
             .cfi_adjust_cfa_offset  0x50
             st.d  $a3, $sp, 0      // a3 is the SP and a1 is the IP of the fault site
             st.d  $a1, $sp, 8

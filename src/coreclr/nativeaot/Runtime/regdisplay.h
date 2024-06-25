@@ -211,11 +211,11 @@ struct REGDISPLAY
 
     PCODE        IP;
 
-    uint64_t       F[16-8]; // Only the bottom 64-bit value of the V registers V8..V15 needs to be preserved
-                          // (V0-V7 and V16-V31 are not preserved according to the ABI spec).
-                          // These need to be unwound during a stack walk
-                          // for EH, but not adjusted, so we only need
-                          // their values, not their addresses
+    uint64_t       F[32-24]; // Only the F registers F24..F31 needs to be preserved
+                             // (F0-F23 are not preserved according to the ABI spec).
+                             // These need to be unwound during a stack walk
+                             // for EH, but not adjusted, so we only need
+                             // their values, not their addresses
 
     inline PCODE GetIP() { return IP; }
     inline uintptr_t GetSP() { return SP; }

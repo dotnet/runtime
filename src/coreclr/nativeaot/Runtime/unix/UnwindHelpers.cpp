@@ -36,7 +36,6 @@ using libunwind::Registers_arm64;
 using libunwind::CompactUnwinder_arm64;
 #elif defined(TARGET_LOONGARCH64)
 using libunwind::Registers_loongarch;
-//using libunwind::CompactUnwinder_loongarch64;  //TODO-LOONGARCH64
 #elif defined(TARGET_X86)
 using libunwind::Registers_x86;
 #else

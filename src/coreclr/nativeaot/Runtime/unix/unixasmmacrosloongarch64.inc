@@ -264,9 +264,9 @@ C_FUNC(\Name):
 .endm
 
 // Note: these must match the defs in PInvokeTransitionFrameFlags
-PTFF_SAVE_SP            = 0x00000400
-PTFF_SAVE_R4            = 0x00000800
-PTFF_SAVE_R5            = 0x00001000
+PTFF_SAVE_SP            = 0x00000200
+PTFF_SAVE_R4            = 0x00001000
+PTFF_SAVE_R5            = 0x00002000
 PTFF_SAVE_ALL_PRESERVED = 0x000001FF // NOTE: r23-r31
 
 DEFAULT_FRAME_SAVE_FLAGS = PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_SP

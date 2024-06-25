@@ -84,12 +84,12 @@ namespace ILCompiler.ObjectWriter
                     CodeAlignFactor = 1;
                     DataAlignFactor = -4;
                     ReturnAddressRegister = 1; // RA
-                    Instructions = new byte[]
-                    {
+                    Instructions =
+                    [
                         DW_CFA_def_cfa,
                         3, // SP
                         0, // Offset from SP
-                    };
+                    ];
                     InitialCFAOffset = 0;
                     break;
 

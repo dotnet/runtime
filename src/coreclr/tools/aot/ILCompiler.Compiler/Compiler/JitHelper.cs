@@ -70,23 +70,13 @@ namespace ILCompiler
                     };
                     break;
                 case ReadyToRunHelper.CheckedWriteBarrier:
-                    mangledName = context.Target.Architecture switch
-                    {
-                        TargetArchitecture.ARM64 => "RhpCheckedAssignRefArm64",
-                        TargetArchitecture.LoongArch64 => "RhpCheckedAssignRefLoongArch64",
-                        _ => "RhpCheckedAssignRef"
-                    };
+                    mangledName = context.Target.Architecture == TargetArchitecture.ARM64 ? "RhpCheckedAssignRefArm64" : "RhpCheckedAssignRef";
                     break;
                 case ReadyToRunHelper.BulkWriteBarrier:
                     mangledName = "RhBuffer_BulkMoveWithWriteBarrier";
                     break;
                 case ReadyToRunHelper.ByRefWriteBarrier:
-                    mangledName = context.Target.Architecture switch
-                    {
-                        TargetArchitecture.ARM64 => "RhpByRefAssignRefArm64",
-                        TargetArchitecture.LoongArch64 => "RhpByRefAssignRefLoongArch64",
-                        _ => "RhpByRefAssignRef"
-                    };
+                    mangledName = context.Target.Architecture == TargetArchitecture.ARM64 ? "RhpByRefAssignRefArm64" : "RhpByRefAssignRef";
                     break;
                 case ReadyToRunHelper.WriteBarrier_EAX:
                     mangledName = "RhpAssignRefEAX";
