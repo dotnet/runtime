@@ -865,7 +865,7 @@ protected:
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
 
-        _ASSERTE(IsReflection());
+        _ASSERTE(IsReflectionEmit());
         return dac_cast<PTR_ReflectionModule>(this);
     }
 
@@ -885,7 +885,7 @@ protected:
     CodeVersionManager * GetCodeVersionManager();
 #endif
 
-    BOOL IsReflection() const { WRAPPER_NO_CONTRACT; SUPPORTS_DAC; return GetPEAssembly()->IsDynamic(); }
+    BOOL IsReflectionEmit() const { WRAPPER_NO_CONTRACT; SUPPORTS_DAC; return GetPEAssembly()->IsDynamic(); }
     BOOL IsSystem() { WRAPPER_NO_CONTRACT; SUPPORTS_DAC; return m_pPEAssembly->IsSystem(); }
     // Returns true iff the debugger can see this module.
     BOOL IsVisibleToDebugger();
@@ -976,7 +976,7 @@ public:
         SUPPORTS_DAC;
 
 #ifdef DACCESS_COMPILE
-        if (IsReflection())
+        if (IsReflectionEmit())
         {
             return DacGetMDImport(GetReflectionModule(), true);
         }

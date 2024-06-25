@@ -1187,7 +1187,7 @@ void Module::AllocateMaps()
 
     PTR_TADDR pTable = NULL;
 
-    if (IsReflection())
+    if (IsReflectionEmit())
     {
         // For dynamic modules, it is essential that we at least have a TypeDefToMethodTable
         // map with an initial block.  Otherwise, all the iterators will abort on an
@@ -1646,7 +1646,7 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
             if (GetInMemorySymbolStream() )
             {
 
-                if( IsReflection() )
+                if( IsReflectionEmit() )
                 {
                     // If this is Reflection.Emit, we must clone the stream because another thread may
                     // update it when someone is using the reader we create here leading to AVs.
@@ -1999,7 +1999,7 @@ PTR_VOID Module::GetRvaField(DWORD rva)
 CHECK Module::CheckRvaField(RVA field)
 {
     WRAPPER_NO_CONTRACT;
-    if (!IsReflection())
+    if (!IsReflectionEmit())
         CHECK(m_pPEAssembly->CheckRvaField(field));
     CHECK_OK;
 }
@@ -2013,7 +2013,7 @@ CHECK Module::CheckRvaField(RVA field, COUNT_T size)
     }
     CONTRACTL_END;
 
-    if (!IsReflection())
+    if (!IsReflectionEmit())
         CHECK(m_pPEAssembly->CheckRvaField(field, size));
     CHECK_OK;
 }
@@ -2840,7 +2840,7 @@ void Module::UpdateDynamicMetadataIfNeeded()
     CONTRACTL_END;
 
     // Only need to serializing metadata for dynamic modules. For non-dynamic modules, metadata is already available.
-    if (!IsReflection())
+    if (!IsReflectionEmit())
     {
         return;
     }

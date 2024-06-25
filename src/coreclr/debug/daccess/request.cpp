@@ -1732,7 +1732,7 @@ ClrDataAccess::GetModuleData(CLRDATA_ADDRESS addr, struct DacpModuleData *Module
     ModuleData->metadataStart = (CLRDATA_ADDRESS)dac_cast<TADDR>(pModule->GetPEAssembly()->GetLoadedMetadata(&metadataSize));
     ModuleData->metadataSize = (SIZE_T) metadataSize;
 
-    ModuleData->bIsReflection = pModule->IsReflection();
+    ModuleData->bIsReflection = pModule->IsReflectionEmit();
     ModuleData->bIsPEFile = !pModule->GetPEAssembly()->IsDynamic();
     ModuleData->Assembly = HOST_CDADDR(pModule->GetAssembly());
     ModuleData->dwModuleID = 0; // CoreCLR no longer has this concept
