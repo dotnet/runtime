@@ -422,7 +422,7 @@ namespace Microsoft.Interop
                 .AddAttributeLists(
                     AttributeList(
                         SingletonSeparatedList(
-                            CreateForwarderDllImport(pinvokeData))));
+                            CreateDllImportAttribute(pinvokeData, isForwarder: true))));
 
             MemberDeclarationSyntax toPrint = stub.ContainingSyntaxContext.WrapMemberInContainingSyntaxWithUnsafeModifier(stubMethod);
 
@@ -446,7 +446,7 @@ namespace Microsoft.Interop
                     Token(SyntaxKind.UnsafeKeyword))
                 .WithSemicolonToken(Token(SyntaxKind.SemicolonToken))
                 .WithAttributeLists(SingletonList(AttributeList(SingletonSeparatedList(
-                    CreateForwarderDllImport(libraryImportData, stubMethodName)))))
+                    CreateDllImportAttribute(libraryImportData, isForwarder: false, stubMethodName)))))
                 .WithParameterList(parameterList);
             if (returnTypeAttributes is not null)
             {
@@ -455,7 +455,7 @@ namespace Microsoft.Interop
             return localDllImport;
         }
 
-        private static AttributeSyntax CreateForwarderDllImport(LibraryImportData target, string? stubMethodName = null)
+        private static AttributeSyntax CreateDllImportAttribute(LibraryImportData target, bool isForwarder = true, string? stubMethodName = null)
         {
             var newAttributeArgs = new List<AttributeArgumentSyntax>
             {
@@ -472,15 +472,14 @@ namespace Microsoft.Interop
                     LiteralExpression(SyntaxKind.TrueLiteralExpression))
             };
 
-            if (target.IsUserDefined.HasFlag(InteropAttributeMember.StringMarshalling))
+            if (target.IsUserDefined.HasFlag(InteropAttributeMember.StringMarshalling) && target.StringMarshalling == StringMarshalling.Utf16)
             {
-                Debug.Assert(target.StringMarshalling == StringMarshalling.Utf16);
                 NameEqualsSyntax name = NameEquals(nameof(DllImportAttribute.CharSet));
                 ExpressionSyntax value = CreateEnumExpressionSyntax(CharSet.Unicode);
                 newAttributeArgs.Add(AttributeArgument(name, null, value));
             }
 
-            if (target.IsUserDefined.HasFlag(InteropAttributeMember.SetLastError))
+            if (isForwarder && target.IsUserDefined.HasFlag(InteropAttributeMember.SetLastError))
             {
                 NameEqualsSyntax name = NameEquals(nameof(DllImportAttribute.SetLastError));
                 ExpressionSyntax value = CreateBoolExpressionSyntax(target.SetLastError);
