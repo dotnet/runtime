@@ -13266,6 +13266,8 @@ void free_list_snapshot::record(heap_segment_snapshot* dst, heap_segment* src)
     dst->next = src->next;
     dst->prev_free_region = src->prev_free_region;
 
+    dst->heap_segment = src;
+
     dst->allocated = src->allocated;
     dst->committed = src->committed;
     dst->reserved = src->reserved;

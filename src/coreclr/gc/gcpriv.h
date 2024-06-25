@@ -1476,7 +1476,7 @@ public:
     PTR_heap_segment next;
     PTR_heap_segment prev_free_region;
 
-    heap_segment* start;
+    heap_segment* heap_segment;
 
     uint8_t* allocated;
     uint8_t* committed;
