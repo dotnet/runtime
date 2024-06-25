@@ -132,9 +132,10 @@
           Condition="'$(NativeLib)' == 'Static' and '$(SkipLinkingInstructions)' != 'true'">
 
     <ItemGroup Condition="'$(OS)' != 'Windows_NT'">
-      <_TransformedList Include="$([System.Text.RegularExpressions.Regex]::Replace(
+      <_TransformedList Condition="'%(CustomLinkerArg.ExcludeFromStaticInstructions)' != 'true'"
+        Include="$([System.Text.RegularExpressions.Regex]::Replace(
             $([System.Text.RegularExpressions.Regex]::Replace('$([MSBuild]::Escape(&quot;%(CustomLinkerArg.Identity)&quot;))', '^$(IlcFrameworkNativePath)', '&quot;${IlcFrameworkPath}&quot;')),
-            '^$(IlcSdkPath)', '&quot;${IlcSdkPath}&quot;'))" Condition="'%(CustomLinkerArg.ExcludeFromStaticInstructions)' != 'true'" />
+            '^$(IlcSdkPath)', '&quot;${IlcSdkPath}&quot;'))" />
     </ItemGroup>
 
     <PropertyGroup Condition="'$(OS)' != 'Windows_NT'">
@@ -163,9 +164,10 @@ $(_LinkerArgs)
     </PropertyGroup>
 
     <ItemGroup Condition="'$(OS)' == 'Windows_NT'">
-      <_TransformedList Include="$([System.Text.RegularExpressions.Regex]::Replace(
+      <_TransformedList Condition="'%(CustomLinkerArg.ExcludeFromStaticInstructions)' != 'true'"
+        Include="$([System.Text.RegularExpressions.Regex]::Replace(
             $([System.Text.RegularExpressions.Regex]::Replace('$([MSBuild]::Escape(&quot;%(CustomLinkerArg.Identity)&quot;))', '^$(IlcFrameworkNativePath)', '&quot;%IlcFrameworkPath%&quot;')),
-            '^$(IlcSdkPath)', '&quot;%IlcSdkPath%&quot;'))" Condition="'%(CustomLinkerArg.ExcludeFromStaticInstructions)' != 'true'" />
+            '^$(IlcSdkPath)', '&quot;%IlcSdkPath%&quot;'))" />
     </ItemGroup>
 
     <PropertyGroup Condition="'$(OS)' == 'Windows_NT'">
