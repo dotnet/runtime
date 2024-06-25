@@ -351,11 +351,14 @@ public sealed partial class QuicStream
     /// <param name="completeWrites">Notifies the peer about gracefully closing the write side, i.e.: sends FIN flag with the data.</param>
     public ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, bool completeWrites, CancellationToken cancellationToken = default)
     {
-        ObjectDisposedException.ThrowIf(_disposed == 1, this);
+        if (_disposed == 1)
+        {
+            return ValueTask.FromException(new ObjectDisposedException(nameof(QuicStream)));
+        }
 
         if (!_canWrite)
         {
-            throw new InvalidOperationException(SR.net_quic_writing_notallowed);
+            return ValueTask.FromException(new InvalidOperationException(SR.net_quic_writing_notallowed));
         }
 
         if (NetEventSource.Log.IsEnabled())
@@ -363,17 +366,17 @@ public sealed partial class QuicStream
             NetEventSource.Info(this, $"{this} Stream writing memory of '{buffer.Length}' bytes while {(completeWrites ? "completing" : "not completing")} writes.");
         }
 
-        if (_sendTcs.IsCompleted)
+        if (_sendTcs.IsCompleted && cancellationToken.IsCancellationRequested)
         {
             // Special case exception type for pre-canceled token while we've already transitioned to a final state and don't need to abort write.
             // It must happen before we try to get the value task, since the task source is versioned and each instance must be awaited.
-            cancellationToken.ThrowIfCancellationRequested();
+            return ValueTask.FromCanceled(cancellationToken);
         }
 
         // Concurrent call, this one lost the race.
         if (!_sendTcs.TryGetValueTask(out ValueTask valueTask, this, cancellationToken))
         {
-            throw new InvalidOperationException(SR.Format(SR.net_io_invalidnestedcall, "write"));
+            return ValueTask.FromException(new InvalidOperationException(SR.Format(SR.net_io_invalidnestedcall, "write")));
         }
 
         // No need to call anything since we already have a result, most likely an exception.
