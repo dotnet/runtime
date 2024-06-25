@@ -476,10 +476,10 @@ namespace System.Net.Http
         public Task LoadIntoBufferAsync(long maxBufferSize) =>
             LoadIntoBufferAsync(maxBufferSize, CancellationToken.None);
 
-        internal Task LoadIntoBufferAsync(CancellationToken cancellationToken) =>
+        public Task LoadIntoBufferAsync(CancellationToken cancellationToken) =>
             LoadIntoBufferAsync(MaxBufferSize, cancellationToken);
 
-        internal Task LoadIntoBufferAsync(long maxBufferSize, CancellationToken cancellationToken)
+        public Task LoadIntoBufferAsync(long maxBufferSize, CancellationToken cancellationToken)
         {
             CheckDisposed();
 

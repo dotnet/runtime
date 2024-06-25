@@ -509,6 +509,98 @@ namespace System.Net.Http.Functional.Tests
             Assert.IsType<IOException>(ex.InnerException);
         }
 
+        [Fact]
+        public async Task LoadIntoBufferAsync_Buffered_IgnoresCancellationToken()
+        {
+            string content = Guid.NewGuid().ToString();
+
+            await LoopbackServer.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    using HttpClient httpClient = CreateHttpClient();
+
+                    HttpResponseMessage response = await httpClient.GetAsync(
+                        uri,
+                        HttpCompletionOption.ResponseContentRead);
+
+                    var cts = new CancellationTokenSource();
+                    cts.Cancel();
+
+                    await response.Content.LoadIntoBufferAsync(cts.Token);
+                },
+                async server =>
+                {
+                    await server.AcceptConnectionSendResponseAndCloseAsync(content: content);
+                });
+        }
+
+        [Fact]
+        public async Task LoadIntoBufferAsync_Unbuffered_CanBeCanceled_AlreadyCanceledCts()
+        {
+            await LoopbackServer.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    using HttpClient httpClient = CreateHttpClient();
+
+                    HttpResponseMessage response = await httpClient.GetAsync(
+                        uri,
+                        HttpCompletionOption.ResponseHeadersRead);
+
+                    var cts = new CancellationTokenSource();
+                    cts.Cancel();
+
+                    await Assert.ThrowsAsync<TaskCanceledException>(() => response.Content.LoadIntoBufferAsync(cts.Token));
+                },
+                async server =>
+                {
+                    try
+                    {
+                        await server.AcceptConnectionSendResponseAndCloseAsync();
+                    }
+                    catch (Exception ex)
+                    {
+                        _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
+                    }
+                });
+        }
+
+        [Fact]
+        public async Task LoadIntoBufferAsync_Unbuffered_CanBeCanceled()
+        {
+            var cts = new CancellationTokenSource();
+
+            await LoopbackServer.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    using HttpClient httpClient = CreateHttpClient();
+
+                    HttpResponseMessage response = await httpClient.GetAsync(
+                        uri,
+                        HttpCompletionOption.ResponseHeadersRead);
+
+                    await Assert.ThrowsAsync<TaskCanceledException>(() => response.Content.LoadIntoBufferAsync(cts.Token));
+                },
+                async server =>
+                {
+                    await server.AcceptConnectionAsync(async connection =>
+                    {
+                        await connection.ReadRequestHeaderAsync();
+                        await connection.SendResponseAsync(LoopbackServer.GetHttpResponseHeaders(contentLength: 100));
+                        await Task.Delay(250);
+                        cts.Cancel();
+                        await Task.Delay(500);
+                        try
+                        {
+                            await connection.SendResponseAsync(new string('a', 100));
+                        }
+                        catch (Exception ex)
+                        {
+                            _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
+                        }
+                    });
+                });
+        }
+
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
