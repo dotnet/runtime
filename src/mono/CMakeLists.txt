@@ -453,6 +453,11 @@ if(GCC)
   endif()
   set(WERROR "-Werror=return-type -Werror-implicit-function-declaration")
 
+  check_c_compiler_flag("-Wno-unused-but-set-variable" WNO_UNUSED_BUT_SET_VARIABLE)
+  if(WNO_UNUSED_BUT_SET_VARIABLE)
+    set(WARNINGS "${WARNINGS} -Wno-unused-but-set-variable")
+  endif()
+
   append("${WARNINGS} ${WERROR}" CMAKE_C_FLAGS CMAKE_CXX_FLAGS)
 
   set(MONO_ZERO_LEN_ARRAY 0)
