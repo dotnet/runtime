@@ -57,6 +57,12 @@ This section will go over cross-compiling on Linux. Currently, Linux allows you 
 
 Before you can attempt to do any Linux cross-building, you will need to generate the _ROOTFS_ corresponding to the platform you want to target. The script located in `eng/common/cross/build-rootfs.sh` is in charge of effectuating this task. Note that this script must be run with `sudo`, as it needs to make some symlinks to the system that would not be allowed otherwise.
 
+Before running the script, make sure you have the dependency installed:
+
+```bash
+sudo apt install debootstrap
+```
+
 For example, let's try generating a _ROOTFS_ targeting Ubuntu 18 (Bionic) for ARM64:
 
 ```bash
