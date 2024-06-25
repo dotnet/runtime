@@ -231,7 +231,9 @@ if (ENABLE_PERFTRACING AND "${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}" IN_LIST 
         list(APPEND mono-components-objects $<TARGET_OBJECTS:eventpipe-mono-objects> $<TARGET_OBJECTS:dn-containers>)
     endif()
     if (TARGET mono-component-${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}-static)
-        target_sources(mono-component-${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}-static PRIVATE $<TARGET_OBJECTS:eventpipe-mono-objects> $<TARGET_OBJECTS:dn-containers>)
+        # We don't add dn-containers here as any scenario that uses this target will also use the monosgen-static target,
+        # which will also have dn-containers linked into it.
+        target_sources(mono-component-${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}-static PRIVATE $<TARGET_OBJECTS:eventpipe-mono-objects>)
     endif()
     if (TARGET mono-component-${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME})
         target_sources(mono-component-${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME} PRIVATE $<TARGET_OBJECTS:eventpipe-mono-objects> $<TARGET_OBJECTS:dn-containers>)
