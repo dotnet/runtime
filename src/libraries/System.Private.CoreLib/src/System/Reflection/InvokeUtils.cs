@@ -124,7 +124,7 @@ namespace System.Reflection
             return false;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] // Two callers, one of them is potentially perf sensitive
         public static void PrimitiveWiden(ref byte srcElement, ref byte destElement, CorElementType srcElType, CorElementType destElType)
         {
             switch (srcElType)
@@ -147,7 +147,7 @@ namespace System.Reflection
                         case CorElementType.ELEMENT_TYPE_R8:
                             Unsafe.As<byte, double>(ref destElement) = srcElement; break;
                         default:
-                            Debug.Fail("Array.Copy from U1 to another type hit unsupported widening conversion"); break;
+                            Debug.Fail("Expected to be unreachable"); break;
                     }
                     break;
 
