@@ -9,36 +9,18 @@ using System.Text;
 
 namespace DotnetFuzzing.Fuzzers;
 
-internal sealed class TextEncoding : IFuzzer
+// The fuzzing infrastructure currently does not support fuzzing .NET Framework.
+// However, this test class, while running under .NET Core, was used to foward the fuzzing
+// input to a .NET Framework console app. That app had the same test semantics as the tests
+// here, although used slightly different supporting APIs since not all supporting library
+// and language features are present in .NET Framework.
+// This fowarding approach and .NET Framework test code is presevered in the original Pull
+// Request for this file. The approach used Base64 encoding to convert the incoming
+// ReadOnlySpan<byte> to a string which was then passed to the Main() method of the .NET
+// Framework app which was then converted back to bytes before being passed to the .NET
+// Framework fuzzing tests.
+internal sealed class TextEncodingFuzzer : IFuzzer
 {
-#if FORWARD_TO_NETFRAMEWORK
-    const string TestSubDirectory = @"src\libraries\Fuzzing\DotnetFuzzing\Fuzzers\TextEncoding.NetFramework\bin\Release\TextEncodingNetFramework.exe";
-    //string[] IFuzzer.TargetAssemblies => ["mscorlib"]; // Not sure if this does anything.
-    //string[] IFuzzer.TargetCoreLibPrefixes { get; } = [];
-
-    private static string GetRepoRootDirectory()
-    {
-        string? currentDirectory = Directory.GetCurrentDirectory();
-
-        while (currentDirectory != null)
-        {
-            string gitDirOrFile = Path.Combine(currentDirectory, ".git");
-            if (Directory.Exists(gitDirOrFile) || File.Exists(gitDirOrFile))
-            {
-                break;
-            }
-            currentDirectory = Directory.GetParent(currentDirectory)?.FullName;
-        }
-
-        if (currentDirectory == null)
-        {
-            throw new Exception("Cannot find the git repository root");
-        }
-
-        return currentDirectory;
-    }    
-#endif
-
     string[] IFuzzer.TargetAssemblies => [];
     string[] IFuzzer.TargetCoreLibPrefixes { get; } = ["System.Text"];
 
@@ -52,24 +34,9 @@ internal sealed class TextEncoding : IFuzzer
         TestUtf32(poisonAfter.Span);
         TestUtf7(poisonAfter.Span);
         TestUtf8(poisonAfter.Span);
-
-#if FORWARD_TO_NETFRAMEWORK
-        string path = GetRepoRootDirectory();
-        path = Path.Combine(path, TestSubDirectory);
-        if (!File.Exists(path))
-        {
-            Console.WriteLine($"Cannot find the .NET Framework test executable at {path}");
-        }
-
-        if (bytes.Length > 0)
-        {
-            string encoded = Convert.ToBase64String(bytes);
-            Process.Start(path, encoded);
-        }
-#endif       
     }
 
-    // Use individual methods for each encoding, so if there's an exception then 
+    // We use individual methods for each encoding, so if there's an exception then
     // it's clear which encoding failed based on the call stack.
 
     private static void TestLatin1(ReadOnlySpan<byte> input)

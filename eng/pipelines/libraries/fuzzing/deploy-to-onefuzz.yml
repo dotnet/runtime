@@ -101,17 +101,9 @@ extends:
           inputs:
             onefuzzOSes: 'Windows'
           env:
-            onefuzzDropDirectory: $(fuzzerProject)/deployment/TextEncoding
+            onefuzzDropDirectory: $(fuzzerProject)/deployment/TextEncodingFuzzer
             SYSTEM_ACCESSTOKEN: $(System.AccessToken)
-          displayName: Send TextEncoding to OneFuzz
-
-        - task: onefuzz-task@0
-          inputs:
-            onefuzzOSes: 'Windows'
-          env:
-            onefuzzDropDirectory: $(fuzzerProject)/deployment/TextEncodingNetFramework
-            SYSTEM_ACCESSTOKEN: $(System.AccessToken)
-          displayName: Send TextEncodingNetFramework to OneFuzz
+          displayName: Send TextEncodingFuzzer to OneFuzz
 
         - task: onefuzz-task@0
           inputs:
