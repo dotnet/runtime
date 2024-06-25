@@ -7098,11 +7098,11 @@ TP_RESULT DebuggerStepper::TriggerPatch(DebuggerControllerPatch *patch,
                         {
                             // Find the method that the return is to.
                             mdNative = g_pEEInterface->GetNativeCodeMethodDesc(dac_cast<PCODE>(traceManagerRetAddr));
-                            _ASSERTE(g_pEEInterface->GetFunctionAddress(mdNative) != 0);
+                            _ASSERTE(g_pEEInterface->GetFunctionAddress(mdNative) != (PCODE)NULL);
                             pcodeNative = g_pEEInterface->GetFunctionAddress(mdNative);
                         }
 
-                        _ASSERTE(mdNative != NULL && pcodeNative != 0);
+                        _ASSERTE(mdNative != NULL && pcodeNative != (PCODE)NULL);
                         SIZE_T offsetRet = dac_cast<TADDR>(traceManagerRetAddr - pcodeNative);
                         LOG((LF_CORDB, LL_INFO10000,
                              "DS::TP: Before normally managed code AddPatch"

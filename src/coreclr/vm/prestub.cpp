@@ -2976,7 +2976,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
     }
 
     /**************************   POSTJIT *************************/
-    _ASSERTE(pCode == (PCODE)NULL || GetNativeCode() == 0 || pCode == GetNativeCode());
+    _ASSERTE(pCode == (PCODE)NULL || GetNativeCode() == (PCODE)NULL || pCode == GetNativeCode());
 
     // At this point we must have either a pointer to managed code or to a stub. All of the above code
     // should have thrown an exception if it couldn't make a stub.
@@ -3961,7 +3961,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
 
 #ifdef _DEBUG
             // Always execute the reliable fallback in debug builds
-            pHelper = 0;
+            pHelper = (PCODE)NULL;
 #endif
         }
         EX_CATCH

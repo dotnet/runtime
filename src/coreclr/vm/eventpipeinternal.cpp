@@ -223,7 +223,7 @@ extern "C" void QCALLTYPE EventPipeInternal_WriteEventData(
     QCALL_CONTRACT;
     BEGIN_QCALL;
 
-    _ASSERTE(eventHandle != 0);
+    _ASSERTE(eventHandle != (INT_PTR)NULL);
     EventPipeEvent *pEvent = reinterpret_cast<EventPipeEvent *>(eventHandle);
     EventPipeAdapter::WriteEvent(pEvent, pEventData, eventDataCount, pActivityId, pRelatedActivityId);
 

@@ -2932,7 +2932,7 @@ void MethodDesc::SetTemporaryEntryPoint(LoaderAllocator *pLoaderAllocator, Alloc
     GetMethodDescChunk()->EnsureTemporaryEntryPointsCreated(pLoaderAllocator, pamTracker);
 
     PTR_PCODE pSlot = GetAddrOfSlot();
-    _ASSERTE(*pSlot == 0);
+    _ASSERTE(*pSlot == (PCODE)NULL);
     *pSlot = GetTemporaryEntryPoint();
 
     if (RequiresStableEntryPoint())
@@ -2948,7 +2948,7 @@ void MethodDescChunk::CreateTemporaryEntryPoints(LoaderAllocator *pLoaderAllocat
 {
     WRAPPER_NO_CONTRACT;
 
-    _ASSERTE(GetTemporaryEntryPoints() == 0);
+    _ASSERTE(GetTemporaryEntryPoints() == (TADDR)NULL);
 
     TADDR temporaryEntryPoints = Precode::AllocateTemporaryEntryPoints(this, pLoaderAllocator, pamTracker);
 
@@ -2962,7 +2962,7 @@ void MethodDescChunk::CreateTemporaryEntryPoints(LoaderAllocator *pLoaderAllocat
 
     *(((TADDR *)this)-1) = temporaryEntryPoints;
 
-    _ASSERTE(GetTemporaryEntryPoints() != 0);
+    _ASSERTE(GetTemporaryEntryPoints() != (TADDR)NULL);
 }
 
 //*******************************************************************************

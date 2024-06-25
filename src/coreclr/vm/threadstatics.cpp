@@ -687,7 +687,7 @@ void* GetThreadLocalStaticBase(TLSIndex index)
         }
     }
     GCPROTECT_END();
-    _ASSERTE(gcBaseAddresses.pTLSBaseAddress != 0);
+    _ASSERTE(gcBaseAddresses.pTLSBaseAddress != (TADDR)NULL);
     return reinterpret_cast<void*>(gcBaseAddresses.pTLSBaseAddress);
 }
 

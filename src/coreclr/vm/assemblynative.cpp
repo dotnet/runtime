@@ -1252,7 +1252,7 @@ extern "C" INT_PTR QCALLTYPE AssemblyNative_InitializeAssemblyLoadContext(INT_PT
     {
         // We are initializing the managed instance of Assembly Load Context that would represent the TPA binder.
         // First, confirm we do not have an existing managed ALC attached to the TPA binder.
-        _ASSERTE(pDefaultBinder->GetManagedAssemblyLoadContext() == 0);
+        _ASSERTE(pDefaultBinder->GetManagedAssemblyLoadContext() == (INT_PTR)NULL);
 
         // Attach the managed TPA binding context with the native one.
         pDefaultBinder->SetManagedAssemblyLoadContext(ptrManagedAssemblyLoadContext);
