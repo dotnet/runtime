@@ -24,7 +24,7 @@ namespace System.Net.Http
         // May be null if none of the counters were enabled when the connection was established.
         private ConnectionMetrics? _connectionMetrics;
 
-        protected readonly Activity? _activity;
+        protected Activity? _activity;
 
         // Indicates whether we've counted this connection as established, so that we can
         // avoid decrementing the counter once it's closed in case telemetry was enabled in between.
@@ -46,14 +46,15 @@ namespace System.Net.Http
             Debug.Assert(pool != null);
             _pool = pool;
         }
-        public HttpConnectionBase(HttpConnectionPool pool, IPEndPoint? remoteEndPoint)
+        public HttpConnectionBase(HttpConnectionPool pool, Activity? activity, IPEndPoint? remoteEndPoint)
             : this(pool)
         {
-            MarkConnectionAsEstablished(remoteEndPoint);
+            MarkConnectionAsEstablished(activity, remoteEndPoint);
         }
 
-        protected void MarkConnectionAsEstablished(IPEndPoint? remoteEndPoint)
+        protected void MarkConnectionAsEstablished(Activity? activity, IPEndPoint? remoteEndPoint)
         {
+            _activity = activity;
             Debug.Assert(_pool.Settings._metrics is not null);
 
             SocketsHttpHandlerMetrics metrics = _pool.Settings._metrics;
