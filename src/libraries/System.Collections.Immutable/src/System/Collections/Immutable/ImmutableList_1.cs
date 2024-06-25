@@ -305,7 +305,7 @@ namespace System.Collections.Immutable
         public ImmutableList<T> RemoveRange(int index, int count)
         {
             Requires.Range(index >= 0 && index <= this.Count, nameof(index));
-            Requires.Range(count >= 0 && index + count <= this.Count, nameof(count));
+            Requires.Range(count >= 0 && index <= this.Count - count, nameof(count));
 
             ImmutableList<T>.Node result = _root;
             int remaining = count;

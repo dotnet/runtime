@@ -232,10 +232,11 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
         {
             GetEmitter()->emitIns_R_S(ins_Load(TYP_I_IMPL), EA_PTRSIZE, REG_ARG_0, compiler->lvaPSPSym, 0);
         }
-        GetEmitter()->emitIns_J(INS_call, block->GetTarget());
 
         if (block->HasFlag(BBF_RETLESS_CALL))
         {
+            GetEmitter()->emitIns_J(INS_call, block->GetTarget());
+
             // We have a retless call, and the last instruction generated was a call.
             // If the next block is in a different EH region (or is the end of the code
             // block), then we need to generate a breakpoint here (since it will never
@@ -253,13 +254,14 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
 #ifndef JIT32_GCENCODER
             // Because of the way the flowgraph is connected, the liveness info for this one instruction
             // after the call is not (can not be) correct in cases where a variable has a last use in the
-            // handler.  So turn off GC reporting for this single instruction.
+            // handler.  So turn off GC reporting once we execute the call and reenable after the jmp/nop
             GetEmitter()->emitDisableGC();
 #endif // JIT32_GCENCODER
 
-            BasicBlock* const finallyContinuation = nextBlock->GetFinallyContinuation();
+            GetEmitter()->emitIns_J(INS_call, block->GetTarget());
 
             // Now go to where the finally funclet needs to return to.
+            BasicBlock* const finallyContinuation = nextBlock->GetFinallyContinuation();
             if (nextBlock->NextIs(finallyContinuation) &&
                 !compiler->fgInDifferentRegions(nextBlock, finallyContinuation))
             {
