@@ -19,6 +19,7 @@ using LOCAL_ADDRESS_CHANGED_DATA = Microsoft.Quic.QUIC_CONNECTION_EVENT._Anonymo
 using PEER_ADDRESS_CHANGED_DATA = Microsoft.Quic.QUIC_CONNECTION_EVENT._Anonymous_e__Union._PEER_ADDRESS_CHANGED_e__Struct;
 using PEER_CERTIFICATE_RECEIVED_DATA = Microsoft.Quic.QUIC_CONNECTION_EVENT._Anonymous_e__Union._PEER_CERTIFICATE_RECEIVED_e__Struct;
 using PEER_STREAM_STARTED_DATA = Microsoft.Quic.QUIC_CONNECTION_EVENT._Anonymous_e__Union._PEER_STREAM_STARTED_e__Struct;
+using STREAMS_AVAILABLE_DATA = Microsoft.Quic.QUIC_CONNECTION_EVENT._Anonymous_e__Union._STREAMS_AVAILABLE_e__Struct;
 using SHUTDOWN_COMPLETE_DATA = Microsoft.Quic.QUIC_CONNECTION_EVENT._Anonymous_e__Union._SHUTDOWN_COMPLETE_e__Struct;
 using SHUTDOWN_INITIATED_BY_PEER_DATA = Microsoft.Quic.QUIC_CONNECTION_EVENT._Anonymous_e__Union._SHUTDOWN_INITIATED_BY_PEER_e__Struct;
 using SHUTDOWN_INITIATED_BY_TRANSPORT_DATA = Microsoft.Quic.QUIC_CONNECTION_EVENT._Anonymous_e__Union._SHUTDOWN_INITIATED_BY_TRANSPORT_e__Struct;
@@ -183,6 +184,23 @@ public sealed partial class QuicConnection : IAsyncDisposable
     /// </summary>
     private IPEndPoint _localEndPoint = null!;
     /// <summary>
+    /// Occurres when an additional stream capacity has been released by the peer. Corresponds to receiving a MAX_STREAMS frame.
+    /// </summary>
+    private Action<QuicConnection, QuicStreamCapacityChangedArgs>? _streamCapacityCallback;
+    /// <summary>
+    /// Optimization to avoid `Action` instantiation with every <see cref="OpenOutboundStreamAsync(QuicStreamType, CancellationToken)"/>.
+    /// Holds <see cref="DecrementStreamCapacity(QuicStreamType)"/> method.
+    /// </summary>
+    private Action<QuicStreamType> _decrementStreamCapacity;
+    /// <summary>
+    /// Represents how many bidirectional streams can be accepted by the peer. Is only manipulated from MsQuic thread.
+    /// </summary>
+    private int _bidirectionalStreamCapacity;
+    /// <summary>
+    /// Represents how many unidirectional streams can be accepted by the peer. Is only manipulated from MsQuic thread.
+    /// </summary>
+    private int _unidirectionalStreamCapacity;
+    /// <summary>
     /// Keeps track whether <see cref="RemoteCertificate"/> has been accessed so that we know whether to dispose the certificate or not.
     /// </summary>
     private bool _remoteCertificateExposed;
@@ -210,6 +228,40 @@ public sealed partial class QuicConnection : IAsyncDisposable
     /// The local endpoint used for this connection.
     /// </summary>
     public IPEndPoint LocalEndPoint => _localEndPoint;
+
+    private async void OnStreamCapacityIncreased(int bidirectionalIncrement, int unidirectionalIncrement)
+    {
+        // Bail out early to avoid queueing work on the thread pool as well as event args instantiation.
+        if (_streamCapacityCallback is null)
+        {
+            return;
+        }
+        // No increment, nothing to report.
+        if (bidirectionalIncrement == 0 && unidirectionalIncrement == 0)
+        {
+            return;
+        }
+
+        // Do not invoke user-defined event handler code on MsQuic thread.
+        await Task.CompletedTask.ConfigureAwait(ConfigureAwaitOptions.ForceYielding);
+
+        try
+        {
+            if (NetEventSource.Log.IsEnabled())
+            {
+                NetEventSource.Info(this, $"{this} Signaling StreamCapacityIncreased with {bidirectionalIncrement} bidirectional increment (absolute value {_bidirectionalStreamCapacity}) and {unidirectionalIncrement} unidirectional increment (absolute value {_unidirectionalStreamCapacity}).");
+            }
+            _streamCapacityCallback(this, new QuicStreamCapacityChangedArgs { BidirectionalIncrement = bidirectionalIncrement, UnidirectionalIncrement = unidirectionalIncrement });
+        }
+        catch (Exception ex)
+        {
+            // Just log the exception, we're on a thread-pool thread and there's no way to report this to anyone.
+            if (NetEventSource.Log.IsEnabled())
+            {
+                NetEventSource.Info(this, $"{this} {nameof(QuicConnectionOptions.StreamCapacityCallback)} failed with {ex}.");
+            }
+        }
+    }
 
     /// <summary>
     /// Gets the name of the server the client is trying to connect to. That name is used for server certificate validation. It can be a DNS name or an IP address.
@@ -266,6 +318,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
             NetEventSource.Info(this, $"{this} New outbound connection.");
         }
 
+        _decrementStreamCapacity = DecrementStreamCapacity;
         _tlsSecret = MsQuicTlsSecret.Create(_handle);
     }
 
@@ -294,6 +347,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
 
         _remoteEndPoint = MsQuicHelpers.QuicAddrToIPEndPoint(info->RemoteAddress);
         _localEndPoint = MsQuicHelpers.QuicAddrToIPEndPoint(info->LocalAddress);
+        _decrementStreamCapacity = DecrementStreamCapacity;
         _tlsSecret = MsQuicTlsSecret.Create(_handle);
     }
 
@@ -304,6 +358,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
             _canAccept = options.MaxInboundBidirectionalStreams > 0 || options.MaxInboundUnidirectionalStreams > 0;
             _defaultStreamErrorCode = options.DefaultStreamErrorCode;
             _defaultCloseErrorCode = options.DefaultCloseErrorCode;
+            _streamCapacityCallback = options.StreamCapacityCallback;
 
             if (!options.RemoteEndPoint.TryParse(out string? host, out IPAddress? address, out int port))
             {
@@ -380,6 +435,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
             _canAccept = options.MaxInboundBidirectionalStreams > 0 || options.MaxInboundUnidirectionalStreams > 0;
             _defaultStreamErrorCode = options.DefaultStreamErrorCode;
             _defaultCloseErrorCode = options.DefaultCloseErrorCode;
+            _streamCapacityCallback = options.StreamCapacityCallback;
 
             // RFC 6066 forbids IP literals, avoid setting IP address here for consistency with SslStream
             if (TargetHostNameHelper.IsValidAddress(targetHost))
@@ -410,6 +466,33 @@ public sealed partial class QuicConnection : IAsyncDisposable
     }
 
     /// <summary>
+    /// In order to provide meaningful increments in <see cref="_streamCapacityCallback"/>, available streams count can be only manipulated from MsQuic thread.
+    /// For that purpose we pass this function to <see cref="QuicStream"/> so that it can call it from <c>START_COMPLETE</c> event handler.
+    ///
+    /// Note that MsQuic itself manipulates stream counts right before indicating <c>START_COMPLETE</c> event.
+    /// </summary>
+    /// <param name="streamType">Type of the stream to decrement appropriate field.</param>
+    private void DecrementStreamCapacity(QuicStreamType streamType)
+    {
+        if (streamType == QuicStreamType.Unidirectional)
+        {
+            --_unidirectionalStreamCapacity;
+            if (NetEventSource.Log.IsEnabled())
+            {
+                NetEventSource.Info(this, $"{this} decremented stream count for {streamType} to {_unidirectionalStreamCapacity}.");
+            }
+        }
+        if (streamType == QuicStreamType.Bidirectional)
+        {
+            --_bidirectionalStreamCapacity;
+            if (NetEventSource.Log.IsEnabled())
+            {
+                NetEventSource.Info(this, $"{this} decremented stream count for {streamType} to {_bidirectionalStreamCapacity}.");
+            }
+        }
+    }
+
+    /// <summary>
     /// Create an outbound uni/bidirectional <see cref="QuicStream" />.
     /// In case the connection doesn't have any available stream capacity, i.e.: the peer limits the concurrent stream count,
     /// the operation will pend until the stream can be opened (other stream gets closed or peer increases the stream limit).
@@ -431,7 +514,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
                 NetEventSource.Info(this, $"{this} New outbound {type} stream {stream}.");
             }
 
-            await stream.StartAsync(cancellationToken).ConfigureAwait(false);
+            await stream.StartAsync(_decrementStreamCapacity, cancellationToken).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
@@ -608,11 +691,28 @@ public sealed partial class QuicConnection : IAsyncDisposable
         data.Flags |= QUIC_STREAM_OPEN_FLAGS.DELAY_ID_FC_UPDATES;
         return QUIC_STATUS_SUCCESS;
     }
+    private unsafe int HandleEventStreamsAvailable(ref STREAMS_AVAILABLE_DATA data)
+    {
+        int bidirectionalIncrement = 0;
+        int unidirectionalIncrement = 0;
+        if (data.BidirectionalCount > 0)
+        {
+            bidirectionalIncrement = data.BidirectionalCount - _bidirectionalStreamCapacity;
+            _bidirectionalStreamCapacity = data.BidirectionalCount;
+        }
+        if (data.UnidirectionalCount > 0)
+        {
+            unidirectionalIncrement = data.UnidirectionalCount - _unidirectionalStreamCapacity;
+            _unidirectionalStreamCapacity = data.UnidirectionalCount;
+        }
+        OnStreamCapacityIncreased(bidirectionalIncrement, unidirectionalIncrement);
+        return QUIC_STATUS_SUCCESS;
+    }
     private unsafe int HandleEventPeerCertificateReceived(ref PEER_CERTIFICATE_RECEIVED_DATA data)
     {
         //
         // The certificate validation is an expensive operation and we don't want to delay MsQuic
-        // worker thread. So we offload the validation to the .NET threadpool. Incidentally, this
+        // worker thread. So we offload the validation to the .NET thread pool. Incidentally, this
         // also prevents potential user RemoteCertificateValidationCallback from blocking MsQuic
         // worker threads.
         //
@@ -639,6 +739,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
             QUIC_CONNECTION_EVENT_TYPE.LOCAL_ADDRESS_CHANGED => HandleEventLocalAddressChanged(ref connectionEvent.LOCAL_ADDRESS_CHANGED),
             QUIC_CONNECTION_EVENT_TYPE.PEER_ADDRESS_CHANGED => HandleEventPeerAddressChanged(ref connectionEvent.PEER_ADDRESS_CHANGED),
             QUIC_CONNECTION_EVENT_TYPE.PEER_STREAM_STARTED => HandleEventPeerStreamStarted(ref connectionEvent.PEER_STREAM_STARTED),
+            QUIC_CONNECTION_EVENT_TYPE.STREAMS_AVAILABLE => HandleEventStreamsAvailable(ref connectionEvent.STREAMS_AVAILABLE),
             QUIC_CONNECTION_EVENT_TYPE.PEER_CERTIFICATE_RECEIVED => HandleEventPeerCertificateReceived(ref connectionEvent.PEER_CERTIFICATE_RECEIVED),
             _ => QUIC_STATUS_SUCCESS,
         };

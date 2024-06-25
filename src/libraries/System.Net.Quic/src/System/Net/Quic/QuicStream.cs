@@ -121,6 +121,12 @@ public sealed partial class QuicStream
     private readonly QuicStreamType _type;
 
     /// <summary>
+    /// Provided via <see cref="StartAsync(Action{QuicStreamType}, CancellationToken)" /> from <see cref="QuicConnection" /> so that <see cref="QuicStream"/> can decrement its available stream count field.
+    /// When <see cref="HandleEventStartComplete(ref START_COMPLETE_DATA)">START_COMPLETE</see> arrives it gets invoked and unset back to <c>null</c> to not to hold any unintended reference to <see cref="QuicConnection"/>.
+    /// </summary>
+    private Action<QuicStreamType>? _decrementStreamCapacity;
+
+    /// <summary>
     /// Stream id, see <see href="https://www.rfc-editor.org/rfc/rfc9000.html#name-stream-types-and-identifier" />.
     /// </summary>
     public long Id => _id;
@@ -239,22 +245,26 @@ public sealed partial class QuicStream
     /// If no more concurrent streams can be opened at the moment, the operation will wait until it can,
     /// either by closing some existing streams or receiving more available stream ids from the peer.
     /// </summary>
+    /// <param name="decrementStreamCapacity"></param>
     /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation.</param>
     /// <returns>An asynchronous task that completes with the opened <see cref="QuicStream" />.</returns>
-    internal ValueTask StartAsync(CancellationToken cancellationToken = default)
+    internal ValueTask StartAsync(Action<QuicStreamType> decrementStreamCapacity, CancellationToken cancellationToken = default)
     {
-        _startedTcs.TryInitialize(out ValueTask valueTask, this, cancellationToken);
-        {
-            unsafe
-            {
-                int status = MsQuicApi.Api.StreamStart(
-                    _handle,
-                    QUIC_STREAM_START_FLAGS.SHUTDOWN_ON_FAIL | QUIC_STREAM_START_FLAGS.INDICATE_PEER_ACCEPT);
+        Debug.Assert(!_startedTcs.IsCompleted);
 
-                if (ThrowHelper.TryGetStreamExceptionForMsQuicStatus(status, out Exception? exception, streamWasSuccessfullyStarted: false))
-                {
-                    _startedTcs.TrySetException(exception);
-                }
+        // Always call StreamStart to get consistent behavior (events, stream count, frames send to peer) regardless of cancellation.
+        _startedTcs.TryInitialize(out ValueTask valueTask, this, cancellationToken);
+        _decrementStreamCapacity = decrementStreamCapacity;
+        unsafe
+        {
+            int status = MsQuicApi.Api.StreamStart(
+                _handle,
+                QUIC_STREAM_START_FLAGS.SHUTDOWN_ON_FAIL | QUIC_STREAM_START_FLAGS.INDICATE_PEER_ACCEPT);
+
+            if (ThrowHelper.TryGetStreamExceptionForMsQuicStatus(status, out Exception? exception, streamWasSuccessfullyStarted: false))
+            {
+                _decrementStreamCapacity = null;
+                _startedTcs.TrySetException(exception);
             }
         }
 
@@ -525,9 +535,13 @@ public sealed partial class QuicStream
 
     private unsafe int HandleEventStartComplete(ref START_COMPLETE_DATA data)
     {
+        Debug.Assert(_decrementStreamCapacity is not null);
+
         _id = unchecked((long)data.ID);
         if (StatusSucceeded(data.Status))
         {
+            _decrementStreamCapacity(Type);
+
             if (data.PeerAccepted != 0)
             {
                 _startedTcs.TrySetResult();
@@ -542,6 +556,7 @@ public sealed partial class QuicStream
             }
         }
 
+        _decrementStreamCapacity = null;
         return QUIC_STATUS_SUCCESS;
     }
     private unsafe int HandleEventReceive(ref RECEIVE_DATA data)
@@ -628,7 +643,7 @@ public sealed partial class QuicStream
             _receiveTcs.TrySetException(exception, final: true);
             _sendTcs.TrySetException(exception, final: true);
         }
-        _startedTcs.TrySetResult();
+        _startedTcs.TrySetException(ThrowHelper.GetOperationAbortedException());
         _shutdownTcs.TrySetResult();
         return QUIC_STATUS_SUCCESS;
     }
