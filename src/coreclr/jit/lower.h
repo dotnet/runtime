@@ -175,17 +175,19 @@ private:
                                       GenTreeCall* callNode);
     void     InsertProfTailCallHook(GenTreeCall* callNode, GenTree* insertionPoint);
     GenTree* FindEarliestPutArg(GenTreeCall* call);
+    size_t   MarkCallPutArgNodes(GenTreeCall* call);
     size_t   MarkPutArgNodes(GenTree* node);
     GenTree* LowerVirtualVtableCall(GenTreeCall* call);
     GenTree* LowerVirtualStubCall(GenTreeCall* call);
     void     LowerArgsForCall(GenTreeCall* call);
-    void     ReplaceArgWithPutArgOrBitcast(GenTreeCall* call, GenTree** ppChild, GenTree* newNode);
+    void     ReplaceArgWithPutArgOrBitcast(GenTree** ppChild, GenTree* newNode);
     GenTree* NewPutArg(GenTreeCall* call, GenTree* arg, CallArg* callArg, var_types type);
     void     LowerArg(GenTreeCall* call, CallArg* callArg, bool late);
 #if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     GenTree* LowerFloatArg(GenTreeCall* call, GenTree** pArg, CallArg* callArg);
     GenTree* LowerFloatArgReg(GenTree* arg, regNumber regNum);
 #endif
+    void     LegalizeArgPlacement(GenTreeCall* call);
 
     void     InsertPInvokeCallProlog(GenTreeCall* call);
     void     InsertPInvokeCallEpilog(GenTreeCall* call);

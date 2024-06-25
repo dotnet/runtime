@@ -1500,11 +1500,10 @@ bool Lowering::TryLowerSwitchToBitTest(FlowEdge*   jumpTable[],
 // and replace the call operand with that node.
 //
 // Arguments:
-//    call            - the call whose arg is being rewritten.
 //    argSlot         - slot in call of argument
 //    putArgOrBitcast - the node that is being inserted
 //
-void Lowering::ReplaceArgWithPutArgOrBitcast(GenTreeCall* call, GenTree** argSlot, GenTree* putArgOrBitcast)
+void Lowering::ReplaceArgWithPutArgOrBitcast(GenTree** argSlot, GenTree* putArgOrBitcast)
 {
     assert(argSlot != nullptr);
     assert(*argSlot != nullptr);
@@ -1517,24 +1516,7 @@ void Lowering::ReplaceArgWithPutArgOrBitcast(GenTreeCall* call, GenTree** argSlo
     putArgOrBitcast->AsOp()->gtOp1 = arg;
 
     // Insert the putarg/copy into the block
-    bool interferingCall = false;
-    for (GenTree* cur = arg->gtNext; cur != call; cur = cur->gtNext)
-    {
-        if (cur->IsCall())
-        {
-            interferingCall = true;
-            break;
-        }
-    }
-
-    if (interferingCall)
-    {
-        BlockRange().InsertBefore(call, putArgOrBitcast);
-    }
-    else
-    {
-        BlockRange().InsertAfter(arg, putArgOrBitcast);
-    }
+    BlockRange().InsertAfter(arg, putArgOrBitcast);
 }
 
 //------------------------------------------------------------------------
@@ -1648,7 +1630,7 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, CallArg* callArg, 
                     GenTree* newOper = comp->gtNewPutArgReg(curTyp, curOp, argReg);
 
                     // Splice in the new GT_PUTARG_REG node in the GT_FIELD_LIST
-                    ReplaceArgWithPutArgOrBitcast(call, &use.NodeRef(), newOper);
+                    ReplaceArgWithPutArgOrBitcast(&use.NodeRef(), newOper);
                     regIndex++;
                 }
 
@@ -1892,7 +1874,7 @@ void Lowering::LowerArg(GenTreeCall* call, CallArg* callArg, bool late)
         // If an extra node is returned, splice it in the right place in the tree.
         if (arg != putArg)
         {
-            ReplaceArgWithPutArgOrBitcast(call, ppArg, putArg);
+            ReplaceArgWithPutArgOrBitcast(ppArg, putArg);
         }
     }
 
@@ -1944,7 +1926,7 @@ GenTree* Lowering::LowerFloatArg(GenTreeCall* call, GenTree** pArg, CallArg* cal
                     GenTree* intNode = LowerFloatArgReg(node, currRegNumber);
                     assert(intNode != nullptr);
 
-                    ReplaceArgWithPutArgOrBitcast(call, &use.NodeRef(), intNode);
+                    ReplaceArgWithPutArgOrBitcast(&use.NodeRef(), intNode);
                 }
 
                 if (node->TypeGet() == TYP_DOUBLE)
@@ -1965,7 +1947,7 @@ GenTree* Lowering::LowerFloatArg(GenTreeCall* call, GenTree** pArg, CallArg* cal
         {
             GenTree* intNode = LowerFloatArgReg(arg, callArg->AbiInfo.GetRegNum());
             assert(intNode != nullptr);
-            ReplaceArgWithPutArgOrBitcast(call, pArg, intNode);
+            ReplaceArgWithPutArgOrBitcast(pArg, intNode);
             return *pArg;
         }
     }
@@ -2009,6 +1991,111 @@ void Lowering::LowerArgsForCall(GenTreeCall* call)
     {
         LowerArg(call, &arg, true);
     }
+
+    LegalizeArgPlacement(call);
+}
+
+//------------------------------------------------------------------------
+// LegalizeArgPlacement: Move arg placement nodes (PUTARG_*) into a legal
+// ordering after they have been created.
+//
+// Arguments:
+//   call - GenTreeCall node that has had PUTARG_* nodes created for arguments.
+//
+// Remarks:
+//   PUTARG_* nodes are created and inserted right after the definitions of the
+//   argument values. However, there are constraints on how the PUTARG nodes
+//   can appear:
+//
+//   - No other GT_CALL nodes are allowed between a PUTARG_REG/PUTARG_SPLIT
+//   node and the call. For FEATURE_FIXED_OUT_ARGS this condition is also true
+//   for PUTARG_STK.
+//   - For !FEATURE_FIXED_OUT_ARGS, the PUTARG_STK nodes must come in push
+//   order.
+//
+//   Morph has mostly already solved this problem, but transformations on LIR
+//   can make the ordering we end up with here illegal. This function legalizes
+//   the placement while trying to minimize the distance between an argument
+//   definition and its corresponding placement node.
+//
+void Lowering::LegalizeArgPlacement(GenTreeCall* call)
+{
+    size_t numMarked = MarkCallPutArgNodes(call);
+
+    // We currently do not try to resort the PUTARG_STK nodes, but rather just
+    // assert here that they are ordered.
+#if defined(DEBUG) && !FEATURE_FIXED_OUT_ARGS
+    unsigned nextPushOffset = UINT_MAX;
+#endif
+
+    GenTree* cur = call->gtPrev;
+    while (numMarked > 0)
+    {
+        assert(cur != nullptr);
+
+        if ((cur->gtLIRFlags & LIR::Flags::Mark) != 0)
+        {
+            numMarked--;
+            cur->gtLIRFlags &= ~LIR::Flags::Mark;
+
+#if defined(DEBUG) && !FEATURE_FIXED_OUT_ARGS
+            if (cur->OperIs(GT_PUTARG_STK))
+            {
+                // For !FEATURE_FIXED_OUT_ARGS (only x86) byte offsets are
+                // subtracted from the top of the stack frame; so last pushed
+                // arg has highest offset.
+                assert(nextPushOffset > cur->AsPutArgStk()->getArgOffset());
+                nextPushOffset = cur->AsPutArgStk()->getArgOffset();
+            }
+#endif
+        }
+
+        if (cur->IsCall())
+        {
+            break;
+        }
+
+        cur = cur->gtPrev;
+    }
+
+    if (numMarked == 0)
+    {
+        // Already legal; common case
+        return;
+    }
+
+    JITDUMP("Call [%06u] has %zu PUTARG nodes that interfere with [%06u]; will move them after it\n", Compiler::dspTreeID(call), numMarked, Compiler::dspTreeID(cur));
+
+    // We found interference; remaining PUTARG nodes need to be moved after
+    // this point.
+    GenTree* insertionPoint = cur;
+
+    while (numMarked > 0)
+    {
+        assert(cur != nullptr);
+
+        GenTree* prev = cur->gtPrev;
+        if ((cur->gtLIRFlags & LIR::Flags::Mark) != 0)
+        {
+            numMarked--;
+            cur->gtLIRFlags &= ~LIR::Flags::Mark;
+
+            // For FEATURE_FIXED_OUT_ARGS: all PUTARG nodes must be moved after the interfering call
+            // For !FEATURE_FIXED_OUT_ARGS: only PUTARG_REG nodes must be moved after the interfering call
+            if (FEATURE_FIXED_OUT_ARGS || cur->OperIs(GT_PUTARG_REG))
+            {
+                JITDUMP("Relocating [%06u] after [%06u]\n", Compiler::dspTreeID(cur), Compiler::dspTreeID(insertionPoint));
+
+                BlockRange().Remove(cur);
+                BlockRange().InsertAfter(insertionPoint, cur);
+            }
+        }
+
+        cur = prev;
+    }
+
+    JITDUMP("Final result after legalization:\n");
+    DISPTREERANGE(BlockRange(), call);
 }
 
 // helper that create a node representing a relocatable physical address computation
@@ -2025,6 +2112,7 @@ GenTree* Lowering::AddrGen(void* addr)
     return AddrGen((ssize_t)addr);
 }
 
+//------------------------------------------------------------------------
 // LowerCallMemset: Replaces the following memset-like special intrinsics:
 //
 //    SpanHelpers.Fill<T>(ref dstRef, CNS_SIZE, CNS_VALUE)
@@ -2808,19 +2896,7 @@ void Lowering::InsertProfTailCallHook(GenTreeCall* call, GenTree* insertionPoint
 //
 GenTree* Lowering::FindEarliestPutArg(GenTreeCall* call)
 {
-    size_t numMarkedNodes = 0;
-    for (CallArg& arg : call->gtArgs.Args())
-    {
-        if (arg.GetEarlyNode() != nullptr)
-        {
-            numMarkedNodes += MarkPutArgNodes(arg.GetEarlyNode());
-        }
-
-        if (arg.GetLateNode() != nullptr)
-        {
-            numMarkedNodes += MarkPutArgNodes(arg.GetLateNode());
-        }
-    }
+    size_t numMarkedNodes = MarkCallPutArgNodes(call);
 
     if (numMarkedNodes <= 0)
     {
@@ -2843,6 +2919,35 @@ GenTree* Lowering::FindEarliestPutArg(GenTreeCall* call)
 
     assert(node->OperIsPutArg());
     return node;
+}
+
+//------------------------------------------------------------------------
+// MarkCallPutArgNodes: Mark all PUTARG_* operand nodes corresponding to a
+// call.
+//
+// Arguments:
+//    call - the call
+//
+// Returns:
+//    The number of nodes marked.
+//
+size_t Lowering::MarkCallPutArgNodes(GenTreeCall* call)
+{
+    size_t numMarkedNodes = 0;
+    for (CallArg& arg : call->gtArgs.Args())
+    {
+        if (arg.GetEarlyNode() != nullptr)
+        {
+            numMarkedNodes += MarkPutArgNodes(arg.GetEarlyNode());
+        }
+
+        if (arg.GetLateNode() != nullptr)
+        {
+            numMarkedNodes += MarkPutArgNodes(arg.GetLateNode());
+        }
+    }
+
+    return numMarkedNodes;
 }
 
 //------------------------------------------------------------------------
