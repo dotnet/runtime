@@ -278,7 +278,7 @@ namespace System.Text.Json
             => (CompletedAsyncDisposables ??= new List<IAsyncDisposable>()).Add(asyncDisposable);
 
         // Asynchronously dispose of any AsyncDisposables that have been scheduled for disposal
-        public async ValueTask DisposeCompletedAsyncDisposables()
+        public readonly async ValueTask DisposeCompletedAsyncDisposables()
         {
             Debug.Assert(CompletedAsyncDisposables?.Count > 0);
             Exception? exception = null;
@@ -307,7 +307,7 @@ namespace System.Text.Json
         /// Walks the stack cleaning up any leftover IDisposables
         /// in the event of an exception on serialization
         /// </summary>
-        public void DisposePendingDisposablesOnException()
+        public readonly void DisposePendingDisposablesOnException()
         {
             Exception? exception = null;
 
@@ -346,7 +346,7 @@ namespace System.Text.Json
         /// Walks the stack cleaning up any leftover I(Async)Disposables
         /// in the event of an exception on async serialization
         /// </summary>
-        public async ValueTask DisposePendingDisposablesOnExceptionAsync()
+        public readonly async ValueTask DisposePendingDisposablesOnExceptionAsync()
         {
             Exception? exception = null;
 
