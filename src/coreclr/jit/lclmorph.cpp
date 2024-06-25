@@ -799,62 +799,7 @@ public:
             break;
 
             case GT_QMARK:
-            {
-                // We have to inline the pre/postorder visit here to handle
-                // assertions properly.
-                GenTreeQmark* qmark = node->AsQmark();
-
-                assert(!node->IsReverseOp());
-                if (WalkTree(&qmark->gtOp1, qmark) == Compiler::WALK_ABORT)
-                {
-                    return Compiler::WALK_ABORT;
-                }
-
-                if (m_lclAddrAssertions != nullptr)
-                {
-                    uint64_t origAssertions = m_lclAddrAssertions->CurrentAssertions;
-
-                    if (WalkTree(&qmark->gtOp2->AsOp()->gtOp1, qmark->gtOp2) == Compiler::WALK_ABORT)
-                    {
-                        return Compiler::WALK_ABORT;
-                    }
-
-                    uint64_t op1Assertions                 = m_lclAddrAssertions->CurrentAssertions;
-                    m_lclAddrAssertions->CurrentAssertions = origAssertions;
-
-                    if (WalkTree(&qmark->gtOp2->AsOp()->gtOp2, qmark->gtOp2) == Compiler::WALK_ABORT)
-                    {
-                        return Compiler::WALK_ABORT;
-                    }
-
-                    uint64_t op2Assertions                 = m_lclAddrAssertions->CurrentAssertions;
-                    m_lclAddrAssertions->CurrentAssertions = op1Assertions & op2Assertions;
-                }
-                else
-                {
-                    if ((WalkTree(&qmark->gtOp2->AsOp()->gtOp1, qmark->gtOp2) == Compiler::WALK_ABORT) ||
-                        (WalkTree(&qmark->gtOp2->AsOp()->gtOp2, qmark->gtOp2) == Compiler::WALK_ABORT))
-                    {
-                        return Compiler::WALK_ABORT;
-                    }
-                }
-
-                assert(TopValue(0).Node() == qmark->gtGetOp2()->gtGetOp2());
-                assert(TopValue(1).Node() == qmark->gtGetOp2()->gtGetOp1());
-                assert(TopValue(2).Node() == qmark->gtGetOp1());
-
-                EscapeValue(TopValue(0), qmark->gtGetOp2());
-                PopValue();
-
-                EscapeValue(TopValue(0), qmark->gtGetOp2());
-                PopValue();
-
-                EscapeValue(TopValue(0), qmark);
-                PopValue();
-
-                PushValue(use);
-                return Compiler::WALK_SKIP_SUBTREES;
-            }
+                return HandleQMarkSubTree(use);
 
             default:
                 break;
@@ -1097,6 +1042,82 @@ public:
     }
 
 private:
+    //------------------------------------------------------------------------
+    // HandleQMarkSubTree: Process a sub-tree rooted at a GT_QMARK.
+    //
+    // Arguments:
+    //   use - the use of the qmark
+    //
+    // Returns:
+    //   The walk result.
+    //
+    // Remarks:
+    //   GT_QMARK needs special handling due to the conditional nature of it.
+    //   Particularly when we are optimizing and propagating LCL_ADDRs we need
+    //   to take care that assertions created inside the conditionally executed
+    //   parts are handled appropriately. This function inlines the pre and
+    //   post-order visit logic here to make that handling work.
+    //
+    fgWalkResult HandleQMarkSubTree(GenTree** use)
+    {
+        assert((*use)->OperIs(GT_QMARK));
+        GenTreeQmark* qmark = (*use)->AsQmark();
+
+        // We have to inline the pre/postorder visit here to handle
+        // assertions properly.
+        assert(!qmark->IsReverseOp());
+        if (WalkTree(&qmark->gtOp1, qmark) == Compiler::WALK_ABORT)
+        {
+            return Compiler::WALK_ABORT;
+        }
+
+        if (m_lclAddrAssertions != nullptr)
+        {
+            uint64_t origAssertions = m_lclAddrAssertions->CurrentAssertions;
+
+            if (WalkTree(&qmark->gtOp2->AsOp()->gtOp1, qmark->gtOp2) == Compiler::WALK_ABORT)
+            {
+                return Compiler::WALK_ABORT;
+            }
+
+            uint64_t op1Assertions                 = m_lclAddrAssertions->CurrentAssertions;
+            m_lclAddrAssertions->CurrentAssertions = origAssertions;
+
+            if (WalkTree(&qmark->gtOp2->AsOp()->gtOp2, qmark->gtOp2) == Compiler::WALK_ABORT)
+            {
+                return Compiler::WALK_ABORT;
+            }
+
+            uint64_t op2Assertions                 = m_lclAddrAssertions->CurrentAssertions;
+            m_lclAddrAssertions->CurrentAssertions = op1Assertions & op2Assertions;
+        }
+        else
+        {
+            if ((WalkTree(&qmark->gtOp2->AsOp()->gtOp1, qmark->gtOp2) == Compiler::WALK_ABORT) ||
+                (WalkTree(&qmark->gtOp2->AsOp()->gtOp2, qmark->gtOp2) == Compiler::WALK_ABORT))
+            {
+                return Compiler::WALK_ABORT;
+            }
+        }
+
+        assert(TopValue(0).Node() == qmark->gtGetOp2()->gtGetOp2());
+        assert(TopValue(1).Node() == qmark->gtGetOp2()->gtGetOp1());
+        assert(TopValue(2).Node() == qmark->gtGetOp1());
+
+        EscapeValue(TopValue(0), qmark->gtGetOp2());
+        PopValue();
+
+        EscapeValue(TopValue(0), qmark->gtGetOp2());
+        PopValue();
+
+        EscapeValue(TopValue(0), qmark);
+        PopValue();
+
+        PushValue(use);
+        return Compiler::WALK_SKIP_SUBTREES;
+    }
+
+
     void PushValue(GenTree** use)
     {
         m_valueStack.Push(use);
