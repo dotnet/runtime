@@ -1856,10 +1856,9 @@ void Lowering::LowerArg(GenTreeCall* call, CallArg* callArg, bool late)
 #if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         if (call->IsVarargs() || comp->opts.compUseSoftFP || callArg->AbiInfo.IsMismatchedArgType())
         {
-            // For vararg call or on armel, reg args should be all integer.
-            // For arg type and arg reg mismatch, reg arg should be integer on riscv64
-            // Insert copies as needed to move float value to integer register.
-            GenTree* newNode = LowerFloatArg(call, ppArg, callArg);
+            // Insert copies as needed to move float value to integer register
+            // if the ABI requires it.
+            GenTree* newNode = LowerFloatArg(ppArg, callArg);
             if (newNode != nullptr)
             {
                 type = newNode->TypeGet();
@@ -1891,7 +1890,6 @@ void Lowering::LowerArg(GenTreeCall* call, CallArg* callArg, bool late)
 // LowerFloatArg: Lower float call arguments on the arm/LoongArch64/RiscV64 platform.
 //
 // Arguments:
-//    call - the call
 //    arg  - The arg node
 //    callArg - call argument info
 //
@@ -1904,7 +1902,7 @@ void Lowering::LowerArg(GenTreeCall* call, CallArg* callArg, bool late)
 //    This must handle scalar float arguments as well as GT_FIELD_LISTs
 //    with floating point fields.
 //
-GenTree* Lowering::LowerFloatArg(GenTreeCall* call, GenTree** pArg, CallArg* callArg)
+GenTree* Lowering::LowerFloatArg(GenTree** pArg, CallArg* callArg)
 {
     GenTree* arg = *pArg;
     if (callArg->AbiInfo.GetRegNum() != REG_STK)
