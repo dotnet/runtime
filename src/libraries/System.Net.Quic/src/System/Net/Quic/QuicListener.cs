@@ -225,9 +225,9 @@ public sealed partial class QuicListener : IAsyncDisposable
         // https://github.com/microsoft/msquic/discussions/2705.
         // This will be assigned to before the linked CTS is cancelled
         TimeSpan handshakeTimeout = QuicDefaults.HandshakeTimeout;
+        using CancellationTokenSource linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_disposeCts.Token, connection.ConnectionShutdownToken);
         try
         {
-            using CancellationTokenSource linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_disposeCts.Token, connection.ConnectionShutdownToken);
             cancellationToken = linkedCts.Token;
             // Initial timeout for retrieving connection options.
             linkedCts.CancelAfter(handshakeTimeout);
@@ -249,7 +249,7 @@ public sealed partial class QuicListener : IAsyncDisposable
                 await connection.DisposeAsync().ConfigureAwait(false);
             }
         }
-        catch (OperationCanceledException) when (connection.ConnectionShutdownToken.IsCancellationRequested)
+        catch (OperationCanceledException) when (connection.ConnectionShutdownToken.IsCancellationRequested && !linkedCts.IsCancellationRequested)
         {
             // Connection closed by peer
             if (NetEventSource.Log.IsEnabled())
