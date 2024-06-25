@@ -170,7 +170,7 @@ namespace System.IO.Compression
                 _entries = new List<ZipArchiveEntry>();
                 _entriesCollection = new ReadOnlyCollection<ZipArchiveEntry>(_entries);
                 _entriesDictionary = new Dictionary<string, ZipArchiveEntry>();
-                Dirty = 0;
+                Changed = ChangeState.Unchanged;
                 _readEntries = false;
                 _leaveOpen = leaveOpen;
                 _centralDirectoryStart = 0; // invalid until ReadCentralDirectory
@@ -228,7 +228,7 @@ namespace System.IO.Compression
             set
             {
                 _archiveComment = ZipHelper.GetEncodedTruncatedBytesFromString(value, EntryNameAndCommentEncoding, ZipEndOfCentralDirectoryBlock.ZipFileCommentMaxLength, out _);
-                Dirty |= DirtyState.DynamicLengthMetadata;
+                Changed |= ChangeState.DynamicLengthMetadata;
             }
         }
 
@@ -399,7 +399,7 @@ namespace System.IO.Compression
 
         // This property's value only relates to the top-level fields of the archive (such as the archive comment.)
         // New entries in the archive won't change its state.
-        internal DirtyState Dirty { get; private set; }
+        internal ChangeState Changed { get; private set; }
 
         private ZipArchiveEntry DoCreateEntry(string entryName, CompressionLevel? compressionLevel)
         {
@@ -670,7 +670,7 @@ namespace System.IO.Compression
                 {
                     if (entry._originallyInArchive)
                     {
-                        if (entry.Dirty == 0)
+                        if (entry.Changed == ChangeState.Unchanged)
                         {
                             // Keep track of the expected position of the file entry after the final untouched file entry so that when the loop completes,
                             // we'll know which position to start writing new entries from.
@@ -688,7 +688,7 @@ namespace System.IO.Compression
                         {
                             // If the pending data to write is fixed-length metadata in the header, there's no need to load the full file for
                             // inflation and deflation.
-                            if ((entry.Dirty & (DirtyState.DynamicLengthMetadata | DirtyState.StoredData)) != 0)
+                            if ((entry.Changed & (ChangeState.DynamicLengthMetadata | ChangeState.StoredData)) != 0)
                             {
                                 dynamicDirtyStartingOffset = Math.Min(dynamicDirtyStartingOffset, entry._offsetOfLocalHeader);
                             }
@@ -781,7 +781,7 @@ namespace System.IO.Compression
             }
 
             // write normal eocd
-            if (centralDirectoryChanged | (Dirty != 0))
+            if (centralDirectoryChanged | (Changed != ChangeState.Unchanged))
             {
                 ZipEndOfCentralDirectoryBlock.WriteBlock(_archiveStream, _entries.Count, startOfCentralDirectory, sizeOfCentralDirectory, _archiveComment);
             }
@@ -792,8 +792,9 @@ namespace System.IO.Compression
         }
 
         [Flags]
-        internal enum DirtyState
+        internal enum ChangeState
         {
+            Unchanged = 0x0,
             FixedLengthMetadata = 0x1,
             DynamicLengthMetadata = 0x2,
             StoredData = 0x4

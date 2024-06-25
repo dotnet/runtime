@@ -88,7 +88,7 @@ namespace System.IO.Compression
 
             _compressionLevel = MapCompressionLevel(_generalPurposeBitFlag, CompressionMethod);
 
-            Dirty = 0;
+            Changed = ZipArchive.ChangeState.Unchanged;
         }
 
         // Initializes a ZipArchiveEntry instance for a new archive entry with a specified compression level.
@@ -151,7 +151,7 @@ namespace System.IO.Compression
                 _archive.AcquireArchiveStream(this);
             }
 
-            Dirty = 0;
+            Changed = ZipArchive.ChangeState.Unchanged;
         }
 
         /// <summary>
@@ -191,7 +191,7 @@ namespace System.IO.Compression
             {
                 ThrowIfInvalidArchive();
                 _externalFileAttr = (uint)value;
-                Dirty |= ZipArchive.DirtyState.FixedLengthMetadata;
+                Changed |= ZipArchive.ChangeState.FixedLengthMetadata;
             }
         }
 
@@ -214,7 +214,7 @@ namespace System.IO.Compression
                 {
                     _generalPurposeBitFlag |= BitFlagValues.UnicodeFileNameAndComment;
                 }
-                Dirty |= ZipArchive.DirtyState.DynamicLengthMetadata;
+                Changed |= ZipArchive.ChangeState.DynamicLengthMetadata;
             }
         }
 
@@ -279,7 +279,7 @@ namespace System.IO.Compression
                     throw new ArgumentOutOfRangeException(nameof(value), SR.DateTimeOutOfRange);
 
                 _lastModified = value;
-                Dirty |= ZipArchive.DirtyState.FixedLengthMetadata;
+                Changed |= ZipArchive.ChangeState.FixedLengthMetadata;
             }
         }
 
@@ -302,7 +302,7 @@ namespace System.IO.Compression
         /// </summary>
         public string Name => ParseFileName(FullName, _versionMadeByPlatform);
 
-        internal ZipArchive.DirtyState Dirty { get; private set; }
+        internal ZipArchive.ChangeState Changed { get; private set; }
 
         /// <summary>
         /// Deletes the entry from the archive.
@@ -533,7 +533,7 @@ namespace System.IO.Compression
                 extraFieldLength = (ushort)bigExtraFieldLength;
             }
 
-            if (_originallyInArchive && Dirty == 0 && !forceWrite)
+            if (_originallyInArchive && Changed == ZipArchive.ChangeState.Unchanged && !forceWrite)
             {
                 long centralDirectoryHeaderLength = 46
                     + _storedEntryNameBytes.Length
@@ -716,7 +716,7 @@ namespace System.IO.Compression
             _archive.DebugAssertIsStillArchiveStreamOwner(this);
 
             _everOpenedForWrite = true;
-            Dirty |= ZipArchive.DirtyState.StoredData;
+            Changed |= ZipArchive.ChangeState.StoredData;
             CheckSumAndSizeWriteStream crcSizeStream = GetDataCompressor(_archive.ArchiveStream, true, (object? o, EventArgs e) =>
             {
                 // release the archive stream
@@ -737,7 +737,7 @@ namespace System.IO.Compression
             ThrowIfNotOpenable(needToUncompress: true, needToLoadIntoMemory: true);
 
             _everOpenedForWrite = true;
-            Dirty |= ZipArchive.DirtyState.StoredData;
+            Changed |= ZipArchive.ChangeState.StoredData;
             _currentlyOpenForWrite = true;
             // always put it at the beginning for them
             UncompressedData.Seek(0, SeekOrigin.Begin);
@@ -946,7 +946,7 @@ namespace System.IO.Compression
 
             // If this is an existing, unchanged entry then silently skip forwards.
             // If it's new or changed, write the header.
-            if (_originallyInArchive && Dirty == 0 && !forceWrite)
+            if (_originallyInArchive && Changed == ZipArchive.ChangeState.Unchanged && !forceWrite)
             {
                 writer.Seek(30 + _storedEntryNameBytes.Length, SeekOrigin.Current);
 
