@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -353,12 +354,12 @@ public sealed partial class QuicStream
     {
         if (_disposed == 1)
         {
-            return ValueTask.FromException(new ObjectDisposedException(nameof(QuicStream)));
+            return ValueTask.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new ObjectDisposedException(nameof(QuicStream))));
         }
 
         if (!_canWrite)
         {
-            return ValueTask.FromException(new InvalidOperationException(SR.net_quic_writing_notallowed));
+            return ValueTask.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new InvalidOperationException(SR.net_quic_writing_notallowed)));
         }
 
         if (NetEventSource.Log.IsEnabled())
@@ -376,7 +377,7 @@ public sealed partial class QuicStream
         // Concurrent call, this one lost the race.
         if (!_sendTcs.TryGetValueTask(out ValueTask valueTask, this, cancellationToken))
         {
-            return ValueTask.FromException(new InvalidOperationException(SR.Format(SR.net_io_invalidnestedcall, "write")));
+            return ValueTask.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new InvalidOperationException(SR.Format(SR.net_io_invalidnestedcall, "write"))));
         }
 
         // No need to call anything since we already have a result, most likely an exception.
