@@ -460,9 +460,9 @@ namespace System.IO.Compression
 
             _entriesDictionary.Remove(entry.FullName);
             // Keep track of the offset of the earliest deleted entry in the archive
-            if (entry._originallyInArchive && entry._offsetOfLocalHeader < _firstDeletedEntryOffset)
+            if (entry.OriginallyInArchive && entry.OffsetOfLocalHeader < _firstDeletedEntryOffset)
             {
-                _firstDeletedEntryOffset = entry._offsetOfLocalHeader;
+                _firstDeletedEntryOffset = entry.OffsetOfLocalHeader;
             }
         }
 
@@ -668,7 +668,7 @@ namespace System.IO.Compression
                 entriesToWrite = new(_entries.Count);
                 foreach (ZipArchiveEntry entry in _entries)
                 {
-                    if (entry._originallyInArchive)
+                    if (entry.OriginallyInArchive)
                     {
                         if (entry.Changed == ChangeState.Unchanged)
                         {
@@ -679,20 +679,20 @@ namespace System.IO.Compression
                         // When calculating the starting offset to load the files from, only look at dirty entries which are already in the archive.
                         else
                         {
-                            startingOffset = Math.Min(startingOffset, entry._offsetOfLocalHeader);
+                            startingOffset = Math.Min(startingOffset, entry.OffsetOfLocalHeader);
                         }
 
                         // We want to re-write entries which are after the starting offset of the first entry which has pending data to write.
                         // NB: the existing ZipArchiveEntries are sorted in _entries by their position ascending.
-                        if (entry._offsetOfLocalHeader >= startingOffset)
+                        if (entry.OffsetOfLocalHeader >= startingOffset)
                         {
                             // If the pending data to write is fixed-length metadata in the header, there's no need to load the full file for
                             // inflation and deflation.
                             if ((entry.Changed & (ChangeState.DynamicLengthMetadata | ChangeState.StoredData)) != 0)
                             {
-                                dynamicDirtyStartingOffset = Math.Min(dynamicDirtyStartingOffset, entry._offsetOfLocalHeader);
+                                dynamicDirtyStartingOffset = Math.Min(dynamicDirtyStartingOffset, entry.OffsetOfLocalHeader);
                             }
-                            if (entry._offsetOfLocalHeader >= dynamicDirtyStartingOffset)
+                            if (entry.OffsetOfLocalHeader >= dynamicDirtyStartingOffset)
                             {
                                 entry.LoadLocalHeaderExtraFieldAndCompressedBytesIfNeeded();
                             }
@@ -721,7 +721,7 @@ namespace System.IO.Compression
                 // We don't always need to write the local header entry, ZipArchiveEntry is usually able to work out when it doesn't need to.
                 // We want to force this header entry to be written (even for completely untouched entries) if the entry comes after one
                 // which had a pending dynamically-sized write.
-                bool forceWriteLocalEntry = !entry._originallyInArchive || (entry._originallyInArchive && entry._offsetOfLocalHeader >= dynamicDirtyStartingOffset);
+                bool forceWriteLocalEntry = !entry.OriginallyInArchive || (entry.OriginallyInArchive && entry.OffsetOfLocalHeader >= dynamicDirtyStartingOffset);
 
                 entry.WriteAndFinishLocalEntry(forceWriteLocalEntry);
             }
@@ -734,7 +734,7 @@ namespace System.IO.Compression
             {
                 // The central directory needs to be rewritten if its position has moved, if there's a new entry in the archive, or if the entry might be different.
                 bool centralDirectoryEntryRequiresUpdate = startOfCentralDirectory != _centralDirectoryStart
-                    | (!entry._originallyInArchive || (entry._originallyInArchive && entry._offsetOfLocalHeader >= dynamicDirtyStartingOffset));
+                    | (!entry.OriginallyInArchive || (entry.OriginallyInArchive && entry.OffsetOfLocalHeader >= dynamicDirtyStartingOffset));
 
                 entry.WriteCentralDirectoryFileHeader(centralDirectoryEntryRequiresUpdate);
                 archiveEpilogueRequiresUpdate |= centralDirectoryEntryRequiresUpdate;

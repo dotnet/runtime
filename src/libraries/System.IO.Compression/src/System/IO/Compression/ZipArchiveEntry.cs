@@ -17,18 +17,18 @@ namespace System.IO.Compression
     public partial class ZipArchiveEntry
     {
         private ZipArchive _archive;
-        internal readonly bool _originallyInArchive;
+        private readonly bool _originallyInArchive;
         private readonly uint _diskNumberStart;
         private readonly ZipVersionMadeByPlatform _versionMadeByPlatform;
         private ZipVersionNeededValues _versionMadeBySpecification;
-        internal ZipVersionNeededValues _versionToExtract;
+        private ZipVersionNeededValues _versionToExtract;
         private BitFlagValues _generalPurposeBitFlag;
         private readonly bool _isEncrypted;
         private CompressionMethodValues _storedCompressionMethod;
         private DateTimeOffset _lastModified;
         private long _compressedSize;
         private long _uncompressedSize;
-        internal long _offsetOfLocalHeader;
+        private long _offsetOfLocalHeader;
         private long? _storedOffsetOfCompressedData;
         private uint _crc32;
         // An array of buffers, each a maximum of MaxSingleBufferSize in size
@@ -303,6 +303,10 @@ namespace System.IO.Compression
         public string Name => ParseFileName(FullName, _versionMadeByPlatform);
 
         internal ZipArchive.ChangeState Changed { get; private set; }
+
+        internal bool OriginallyInArchive => _originallyInArchive;
+
+        internal long OffsetOfLocalHeader => _offsetOfLocalHeader;
 
         /// <summary>
         /// Deletes the entry from the archive.
@@ -1422,8 +1426,8 @@ namespace System.IO.Compression
             // Newly added ZipArchiveEntry records should always go to the end of the file.
             public override int Compare(ZipArchiveEntry? x, ZipArchiveEntry? y)
             {
-                long xOffset = x != null && !x._originallyInArchive ? long.MaxValue : x?._offsetOfLocalHeader ?? long.MinValue;
-                long yOffset = y != null && !y._originallyInArchive ? long.MaxValue : y?._offsetOfLocalHeader ?? long.MinValue;
+                long xOffset = x != null && !x.OriginallyInArchive ? long.MaxValue : x?.OffsetOfLocalHeader ?? long.MinValue;
+                long yOffset = y != null && !y.OriginallyInArchive ? long.MaxValue : y?.OffsetOfLocalHeader ?? long.MinValue;
 
                 return xOffset.CompareTo(yOffset);
             }
