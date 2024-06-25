@@ -2172,6 +2172,32 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
+            case NI_Sve_CreateMaskForFirstActiveElement:
+            {
+                assert(isRMW);
+                if (targetReg != op2Reg)
+                {
+                    assert(targetReg != op1Reg);
+                    GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op2Reg, /* canSkip */ true);
+                }
+
+                GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg, INS_OPTS_SCALABLE_B);
+                break;
+            }
+
+            case NI_Sve_CreateMaskForNextActiveElement:
+            {
+                assert(isRMW);
+                if (targetReg != op2Reg)
+                {
+                    assert(targetReg != op1Reg);
+                    GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op2Reg, /* canSkip */ true);
+                }
+
+                GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg, opt);
+                break;
+            }
+
             default:
                 unreached();
         }
