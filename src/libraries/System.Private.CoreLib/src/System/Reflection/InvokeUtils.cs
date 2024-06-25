@@ -273,7 +273,11 @@ namespace System.Reflection
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool CanPrimitiveWiden(CorElementType srcET, CorElementType dstET)
         {
-            ReadOnlySpan<short> primitiveAttributes =
+            // The primitive widen table
+            //  The index represents source type. The value in the table is a bit vector of destination types.
+            //  If corresponding bit is set in the bit vector, source type can be widened into that type.
+            //  All types widen to themselves.
+            ReadOnlySpan<short> primitiveWidenTable =
             [
                 0x00,      // ELEMENT_TYPE_END
                 0x00,      // ELEMENT_TYPE_VOID
@@ -292,12 +296,12 @@ namespace System.Reflection
             ];
 
             Debug.Assert(srcET.IsPrimitiveType() && dstET.IsPrimitiveType());
-            if ((int)srcET >= primitiveAttributes.Length)
+            if ((int)srcET >= primitiveWidenTable.Length)
             {
                 // I or U
                 return srcET == dstET;
             }
-            return (primitiveAttributes[(int)srcET] & (1 << (int)dstET)) != 0;
+            return (primitiveWidenTable[(int)srcET] & (1 << (int)dstET)) != 0;
         }
     }
 }
