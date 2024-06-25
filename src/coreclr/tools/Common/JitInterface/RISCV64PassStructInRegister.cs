@@ -6,7 +6,6 @@ using System.Diagnostics;
 using ILCompiler;
 using Internal.TypeSystem;
 using static Internal.JitInterface.FpStruct;
-using static Internal.JitInterface.StructFloatFieldInfoFlags;
 
 namespace Internal.JitInterface
 {
@@ -144,6 +143,9 @@ namespace Internal.JitInterface
 
         public static FpStructInRegistersInfo GetRiscV64PassFpStructInRegistersInfo(TypeDesc td)
         {
+            if (td.GetElementSize().AsInt > ENREGISTERED_PARAMTYPE_MAXSIZE)
+                return new FpStructInRegistersInfo{};
+
             FpStructInRegistersInfo info = new FpStructInRegistersInfo{};
             int nFields = 0;
             if (!FlattenFields(td, 0, ref info, ref nFields))
