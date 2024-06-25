@@ -58,33 +58,29 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
                                                   ClassLayout* structLayout,
                                                   WellKnownArg /*wellKnownParam*/)
 {
-    StructFloatFieldInfoFlags flags     = STRUCT_NO_FLOAT_FIELD;
-    unsigned                  intFields = 0, floatFields = 0;
-    unsigned                  passedSize;
+    FpStructInRegistersInfo info      = {};
+    unsigned                intFields = 0, floatFields = 0;
+    unsigned                passedSize;
 
+    using namespace FpStruct;
     if (varTypeIsStruct(type))
     {
         passedSize = structLayout->GetSize();
-        if (passedSize > MAX_PASS_MULTIREG_BYTES)
+        if (!structLayout->IsBlockLayout())
         {
-            passedSize = TARGET_POINTER_SIZE; // pass by reference
-        }
-        else if (!structLayout->IsBlockLayout())
-        {
-            flags = (StructFloatFieldInfoFlags)comp->info.compCompHnd->getRISCV64PassStructInRegisterFlags(
-                structLayout->GetClassHandle());
+            info = comp->GetPassFpStructInRegistersInfo(structLayout->GetClassHandle());
 
-            if ((flags & STRUCT_FLOAT_FIELD_ONLY_ONE) != 0)
+            if ((info.flags & OnlyOne) != 0)
             {
                 floatFields = 1;
             }
-            else if ((flags & STRUCT_FLOAT_FIELD_ONLY_TWO) != 0)
+            else if ((info.flags & BothFloat) != 0)
             {
                 floatFields = 2;
             }
-            else if (flags != STRUCT_NO_FLOAT_FIELD)
+            else if (info.flags != UseIntCallConv)
             {
-                assert((flags & (STRUCT_FLOAT_FIELD_FIRST | STRUCT_FLOAT_FIELD_SECOND)) != 0);
+                assert((info.flags & (FloatInt | IntFloat)) != 0);
                 floatFields = 1;
                 intFields   = 1;
             }
@@ -104,34 +100,38 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
         // Hardware floating-point calling convention
         if ((floatFields == 1) && (intFields == 0))
         {
-            if (flags == STRUCT_NO_FLOAT_FIELD)
+            unsigned offset = 0;
+            if (info.flags == UseIntCallConv)
+            {
                 assert(varTypeIsFloating(type)); // standalone floating-point real
+            }
             else
-                assert((flags & STRUCT_FLOAT_FIELD_ONLY_ONE) != 0); // struct containing just one FP real
+            {
+                assert((info.flags & OnlyOne) != 0); // struct containing just one FP real
+                passedSize = info.Size1st();
+                offset     = info.offset1st;
+            }
 
-            return ABIPassingInformation::FromSegment(comp, ABIPassingSegment::InRegister(m_floatRegs.Dequeue(), 0,
+            return ABIPassingInformation::FromSegment(comp, ABIPassingSegment::InRegister(m_floatRegs.Dequeue(), offset,
                                                                                           passedSize));
         }
         else
         {
             assert(varTypeIsStruct(type));
             assert((floatFields + intFields) == 2);
-            assert(flags != STRUCT_NO_FLOAT_FIELD);
-            assert((flags & STRUCT_FLOAT_FIELD_ONLY_ONE) == 0);
+            assert(info.flags != UseIntCallConv);
+            assert((info.flags & OnlyOne) == 0);
 
-            unsigned firstSize  = ((flags & STRUCT_FIRST_FIELD_SIZE_IS8) != 0) ? 8 : 4;
-            unsigned secondSize = ((flags & STRUCT_SECOND_FIELD_SIZE_IS8) != 0) ? 8 : 4;
-            unsigned offset = max(firstSize, secondSize); // TODO: cover empty fields and custom offsets / alignments
-
-            bool isFirstFloat  = (flags & (STRUCT_FLOAT_FIELD_ONLY_TWO | STRUCT_FLOAT_FIELD_FIRST)) != 0;
-            bool isSecondFloat = (flags & (STRUCT_FLOAT_FIELD_ONLY_TWO | STRUCT_FLOAT_FIELD_SECOND)) != 0;
+            bool isFirstFloat  = (info.flags & (BothFloat | FloatInt)) != 0;
+            bool isSecondFloat = (info.flags & (BothFloat | IntFloat)) != 0;
             assert(isFirstFloat || isSecondFloat);
 
             regNumber firstReg  = (isFirstFloat ? m_floatRegs : m_intRegs).Dequeue();
             regNumber secondReg = (isSecondFloat ? m_floatRegs : m_intRegs).Dequeue();
 
-            return ABIPassingInformation::FromSegments(comp, ABIPassingSegment::InRegister(firstReg, 0, firstSize),
-                                                       ABIPassingSegment::InRegister(secondReg, offset, secondSize));
+            ABIPassingSegment seg1st = ABIPassingSegment::InRegister(firstReg, info.offset1st, info.Size1st());
+            ABIPassingSegment seg2nd = ABIPassingSegment::InRegister(secondReg, info.offset2nd, info.Size2nd());
+            return ABIPassingInformation::FromSegments(comp, seg1st, seg2nd);
         }
     }
     else
@@ -145,6 +145,9 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
             m_stackArgSize += (size > TARGET_POINTER_SIZE) ? (2 * TARGET_POINTER_SIZE) : TARGET_POINTER_SIZE;
             return seg;
         };
+
+        if (passedSize > MAX_PASS_MULTIREG_BYTES)
+            passedSize = TARGET_POINTER_SIZE; // pass by implicit reference
 
         if (m_intRegs.Count() > 0)
         {

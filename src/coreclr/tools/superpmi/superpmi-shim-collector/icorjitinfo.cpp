@@ -1418,11 +1418,11 @@ uint32_t interceptor_ICJI::getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS
     return temp;
 }
 
-uint32_t interceptor_ICJI::getRISCV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE structHnd)
+FpStructInRegistersInfo interceptor_ICJI::getRiscV64PassFpStructInRegistersInfo(CORINFO_CLASS_HANDLE structHnd)
 {
-    mc->cr->AddCall("getRISCV64PassStructInRegisterFlags");
-    uint32_t temp = original_ICorJitInfo->getRISCV64PassStructInRegisterFlags(structHnd);
-    mc->recGetRISCV64PassStructInRegisterFlags(structHnd, temp);
+    mc->cr->AddCall("getRiscV64PassFpStructInRegistersInfo");
+    FpStructInRegistersInfo temp = original_ICorJitInfo->getRiscV64PassFpStructInRegistersInfo(structHnd);
+    mc->recGetRiscV64PassFpStructInRegistersInfo(structHnd, temp);
     return temp;
 }
 

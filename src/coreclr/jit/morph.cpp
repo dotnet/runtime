@@ -2126,10 +2126,10 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
             var_types                   structBaseType =
                 comp->getArgTypeForStruct(argSigClass, &howToPassStruct, IsVarArgs(), argLayout->GetSize());
 #if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+            arg.AbiInfo.PassedByRef = false;
             if (arg.NewAbiInfo.HasAnyFloatingRegisterSegment())
             {
                 // Struct passed according to hardware floating-point calling convention
-                assert(arg.NewAbiInfo.NumSegments <= 2);
                 assert(!arg.NewAbiInfo.HasAnyStackSegment());
                 if (arg.NewAbiInfo.NumSegments == 2)
                 {
@@ -2148,8 +2148,17 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
 
                 for (unsigned i = 0; i < arg.NewAbiInfo.NumSegments; ++i)
                 {
-                    arg.AbiInfo.StructFloatFieldType[i] = arg.NewAbiInfo.Segment(i).GetRegisterType();
+                    arg.AbiInfo.StructFloatFieldType[i]   = arg.NewAbiInfo.Segment(i).GetRegisterType();
+                    arg.AbiInfo.StructFloatFieldOffset[i] = arg.NewAbiInfo.Segment(i).Offset;
                 }
+                assert(howToPassStruct == Compiler::SPK_ByValue || howToPassStruct == Compiler::SPK_PrimitiveType);
+            }
+            else if (argLayout->GetSize() > MAX_PASS_MULTIREG_BYTES)
+            {
+                // Struct passed according to integer calling convention by reference
+                assert(arg.NewAbiInfo.NumSegments == 1);
+                assert(arg.NewAbiInfo.Segment(0).Size == TARGET_POINTER_SIZE);
+                howToPassStruct = Compiler::SPK_ByReference;
             }
 #endif // defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
             arg.AbiInfo.PassedByRef = howToPassStruct == Compiler::SPK_ByReference;
@@ -2587,7 +2596,13 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                     // We have a struct argument that fits into a register, and it is either a power of 2,
                     // or a local.
                     // Change our argument, as needed, into a value of the appropriate type.
-                    assert((structBaseType != TYP_STRUCT) && (genTypeSize(structBaseType) >= originalSize));
+                    assert(structBaseType != TYP_STRUCT);
+
+                    // On RISC-V / LoongArch the passing size may be smaller than the original size if we pass a struct
+                    // according to hardware FP calling convention and it has empty fields
+#if !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
+                    assert(genTypeSize(structBaseType) >= originalSize);
+#endif
 
                     if (argObj->OperIsLoad())
                     {
@@ -2649,6 +2664,9 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                             if (argObj->OperIs(GT_LCL_VAR))
                             {
                                 argObj->SetOper(GT_LCL_FLD);
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+                                argObj->AsLclFld()->SetLclOffs(arg.AbiInfo.StructFloatFieldOffset[0]);
+#endif
                             }
                             lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::SwizzleArg));
                         }
@@ -2920,7 +2938,10 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
     }
     else
     {
+#ifndef TARGET_RISCV64
         assert(structSize <= MAX_ARG_REG_COUNT * TARGET_POINTER_SIZE);
+#endif
+        assert(arg->AbiInfo.NumRegs <= MAX_ARG_REG_COUNT);
 
         auto getSlotType = [layout](unsigned inx) {
             return (layout != nullptr) ? layout->GetGCPtrType(inx) : TYP_I_IMPL;
@@ -2941,11 +2962,11 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
             }
             else
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-            if ((arg->AbiInfo.StructFloatFieldType[inx] != TYP_UNDEF) &&
-                !varTypeIsGC(getSlotType(offset / TARGET_POINTER_SIZE)))
+            if (arg->AbiInfo.StructFloatFieldType[inx] != TYP_UNDEF)
             {
-                elems[inx].Type = arg->AbiInfo.StructFloatFieldType[inx];
-                offset += (structSize > TARGET_POINTER_SIZE) ? 8 : 4;
+                var_types slotType = getSlotType(arg->AbiInfo.StructFloatFieldOffset[inx] / TARGET_POINTER_SIZE);
+                elems[inx].Offset  = arg->AbiInfo.StructFloatFieldOffset[inx];
+                elems[inx].Type    = varTypeIsGC(slotType) ? slotType : arg->AbiInfo.StructFloatFieldType[inx];
             }
             else
 #endif // TARGET_LOONGARCH64 || TARGET_RISCV64
@@ -3002,9 +3023,9 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
     }
 
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    // For LoongArch64's ABI, the struct {long a; float b;} may be passed
-    // by integer and float registers and it needs to include the padding here.
-    assert(roundUp(structSize, TARGET_POINTER_SIZE) == roundUp(loadExtent, TARGET_POINTER_SIZE));
+    // For LoongArch64's and RISC-V ABI, struct { long a; float b; } or struct { int a; float b; struct {/*empty*/}; }
+    // may be passed by integer and float registers and it needs to include the padding here.
+    assert(roundUp(structSize, TARGET_POINTER_SIZE) >= roundUp(loadExtent, TARGET_POINTER_SIZE));
 #else
     if (argNode->IsLocal())
     {

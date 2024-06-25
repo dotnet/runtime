@@ -520,7 +520,7 @@ void getSwiftLowering(
 uint32_t getLoongArch64PassStructInRegisterFlags(
           CORINFO_CLASS_HANDLE structHnd) override;
 
-uint32_t getRISCV64PassStructInRegisterFlags(
+FpStructInRegistersInfo getRiscV64PassFpStructInRegistersInfo(
           CORINFO_CLASS_HANDLE structHnd) override;
 
 uint32_t getThreadTLSIndex(

@@ -668,6 +668,228 @@ struct Nested9
 	}
 }
 
+public struct Empty
+{
+}
+
+public struct Empty8Float
+{
+	public Empty e0, e1, e2, e3, e4, e5, e6, e7;
+	public float FieldF;
+
+	public static Empty8Float Get()
+	{
+		return new Empty8Float { FieldF = 3.14159f };
+	}
+
+	public bool Equals(Empty8Float other)
+	{
+		return FieldF.Equals(other.FieldF);
+	}
+}
+
+public struct EmptyFloatEmpty5Byte
+{
+	public Empty e;
+	public float FieldF;
+	public Empty e0, e1, e2, e3, e4;
+	public sbyte FieldB;
+
+	public static EmptyFloatEmpty5Byte Get()
+	{
+		return new EmptyFloatEmpty5Byte { FieldF = 3.14159f, FieldB = -123 };
+	}
+
+	public bool Equals(EmptyFloatEmpty5Byte other)
+	{
+		return FieldF.Equals(other.FieldF) && FieldB == other.FieldB;
+	}
+}
+
+public struct EmptyFloatEmpty5UByte
+{
+	public Empty e;
+	public float FieldF;
+	public Empty e0, e1, e2, e3, e4;
+	public byte FieldB;
+
+	public static EmptyFloatEmpty5UByte Get()
+	{
+		return new EmptyFloatEmpty5UByte { FieldF = 3.14159f, FieldB = 234 };
+	}
+
+	public bool Equals(EmptyFloatEmpty5UByte other)
+	{
+		return FieldF.Equals(other.FieldF) && FieldB == other.FieldB;
+	}
+}
+
+public struct LongEmptyDouble
+{
+	public long FieldL;
+	public Empty FieldE;
+	public double FieldD;
+
+	public static LongEmptyDouble Get()
+	{
+		return new LongEmptyDouble { FieldL = 0xcafef00d, FieldD = 3.14159d };
+	}
+
+	public bool Equals(LongEmptyDouble other)
+	{
+		return FieldL == other.FieldL && FieldD.Equals(other.FieldD);
+	}
+}
+
+public struct NestedEmpty
+{
+	public struct InnerEmpty
+	{
+		public Empty e;
+	}
+	public InnerEmpty e;
+}
+
+public struct NestedEmptyFloatDouble
+{
+	public NestedEmpty FieldNE;
+	public float FieldF;
+	public double FieldD;
+
+	public static NestedEmptyFloatDouble Get()
+	{
+		return new NestedEmptyFloatDouble { FieldF = 3.14159f, FieldD = 3.14159d };
+	}
+
+	public bool Equals(NestedEmptyFloatDouble other)
+	{
+		return FieldF.Equals(other.FieldF) && FieldD.Equals(other.FieldD);
+	}
+}
+
+public struct EmptyIntAndFloat
+{
+	public struct EmptyInt
+	{
+		public Empty FieldE;
+		public int FieldI;
+	}
+	public EmptyInt FieldEI;
+	public float FieldF;
+
+	public static EmptyIntAndFloat Get()
+	{
+		return new EmptyIntAndFloat { FieldEI = new EmptyInt { FieldI = 0xcafe }, FieldF = 3.14159f };
+	}
+
+	public bool Equals(EmptyIntAndFloat other)
+	{
+		return FieldEI.FieldI == other.FieldEI.FieldI && FieldF.Equals(other.FieldF);
+	}
+}
+
+public struct LongEmptyAndFloat
+{
+	public struct LongEmpty
+	{
+		public long FieldL;
+		public Empty FieldE;
+	}
+	public LongEmpty FieldLE;
+	public float FieldF;
+
+	public static LongEmptyAndFloat Get()
+	{
+		return new LongEmptyAndFloat { FieldLE = new LongEmpty { FieldL = 0xcafef00d }, FieldF = 3.14159f };
+	}
+
+	public bool Equals(LongEmptyAndFloat other)
+	{
+		return FieldLE.FieldL == other.FieldLE.FieldL && FieldF.Equals(other.FieldF);
+	}
+}
+
+[InlineArray(1)]
+public struct ArrayOfEmpties
+{
+	public Empty e;
+};
+
+public struct ArrayOfEmptiesFloatDouble
+{
+	public ArrayOfEmpties FieldAoE;
+	public float FieldF;
+	public double FieldD;
+
+	public static ArrayOfEmptiesFloatDouble Get()
+	{
+		return new ArrayOfEmptiesFloatDouble { FieldF = 3.14159f, FieldD = 3.14159 };
+	}
+
+	public bool Equals(ArrayOfEmptiesFloatDouble other)
+	{
+		return FieldF.Equals(other.FieldF) && FieldD.Equals(other.FieldD);
+	}
+}
+
+public struct Eight<T>
+{
+	public T e1, e2, e3, e4, e5, e6, e7, e8;
+}
+
+public struct FloatEmpty32kInt
+{
+	public float FieldF;
+	public Eight<Eight<Eight<Eight<Eight<Empty>>>>> FieldEmpty32k;
+	public int FieldI;
+
+	public static FloatEmpty32kInt Get()
+	{
+		return new FloatEmpty32kInt { FieldF = 3.14159f, FieldI = 0xcafe };
+	}
+
+	public bool Equals(FloatEmpty32kInt other)
+	{
+		return FieldF.Equals(other.FieldF) && FieldI == other.FieldI;
+	}
+}
+
+[StructLayout(LayoutKind.Sequential, Pack=1)]
+public struct PackedEmptyFloatLong
+{
+	public Empty FieldE;
+	public float FieldF;
+	public long FieldL;
+
+	public static PackedEmptyFloatLong Get()
+	{
+		return new PackedEmptyFloatLong { FieldF = 3.14159f, FieldL = 0xcafef00d };
+	}
+
+	public bool Equals(PackedEmptyFloatLong other)
+	{
+		return FieldF.Equals(other.FieldF) && FieldL == other.FieldL;
+	}
+}
+
+[StructLayout(LayoutKind.Explicit, Pack=1)]
+public struct ExplicitFloatLong
+{
+	[FieldOffset(1)] public float FieldF;
+	[FieldOffset(5)] public long FieldL;
+
+	public static ExplicitFloatLong Get()
+	{
+		return new ExplicitFloatLong { FieldF = 3.14159f, FieldL = 0xcafef00d };
+	}
+
+	public bool Equals(ExplicitFloatLong other)
+	{
+		return FieldF.Equals(other.FieldF) && FieldL == other.FieldL;
+	}
+}
+
+
 public static partial class StructABI
 {
 	[DllImport("StructABILib")]
@@ -798,6 +1020,92 @@ public static partial class StructABI
 
 	[DllImport("StructABILib")]
 	static extern DoubleAndByte EnoughRegistersSysV4(double a, double b, double c, double d, double e, double f, double g, DoubleAndByte value);
+
+	[DllImport("StructABILib")]
+	public static extern Empty8Float EchoEmpty8FloatRiscV(int a0, float fa0, Empty8Float fa1);
+
+	[DllImport("StructABILib")]
+	public static extern Empty8Float EchoEmpty8FloatInIntegerRegsRiscV(
+		int a0,
+		float fa0, float fa1, float fa2, float fa3, float fa4, float fa5, float fa6, float fa7, Empty8Float a1_a2);
+
+	[DllImport("StructABILib")]
+	public static extern Empty8Float EchoEmpty8FloatSplitRiscV(
+		int a0, int a1, int a2, int a3, int a4, int a5, int a6,
+		float fa0, float fa1, float fa2, float fa3, float fa4, float fa5, float fa6, float fa7, Empty8Float a7_stack0);
+
+	[DllImport("StructABILib")]
+	public static extern Empty8Float EchoEmpty8FloatOnStackRiscV(
+		int a0, int a1, int a2, int a3, int a4, int a5, int a6, int a7,
+		float fa0, float fa1, float fa2, float fa3, float fa4, float fa5, float fa6, float fa7, Empty8Float stack0_stack1);
+
+	[DllImport("StructABILib")]
+	public static extern EmptyFloatEmpty5Byte EchoEmptyFloatEmpty5ByteRiscV(int a0, float fa0, EmptyFloatEmpty5Byte fa1_a1);
+
+	[DllImport("StructABILib")]
+	public static extern EmptyFloatEmpty5UByte EchoEmptyFloatEmpty5UByteRiscV(int a0, float fa0, EmptyFloatEmpty5UByte fa1_a1);
+
+	[DllImport("StructABILib")]
+	public static extern EmptyFloatEmpty5Byte EchoEmptyFloatEmpty5ByteInIntegerRegsRiscV(
+		int a0,
+		float fa0, float fa1, float fa2, float fa3, float fa4, float fa5, float fa6, float fa7, EmptyFloatEmpty5Byte a1_a2);
+
+	[DllImport("StructABILib")]
+	public static extern EmptyFloatEmpty5Byte EchoEmptyFloatEmpty5ByteSplitRiscV(
+		int a0, int a1, int a2, int a3, int a4, int a5, int a6,
+		float fa0, float fa1, float fa2, float fa3, float fa4, float fa5, float fa6, float fa7, EmptyFloatEmpty5Byte a7_stack0);
+
+	[DllImport("StructABILib")]
+	public static extern EmptyFloatEmpty5Byte EchoEmptyFloatEmpty5ByteOnStackRiscV(
+		int a0, int a1, int a2, int a3, int a4, int a5, int a6, int a7,
+		float fa0, float fa1, float fa2, float fa3, float fa4, float fa5, float fa6, float fa7, EmptyFloatEmpty5Byte stack0_stack1);
+
+	[DllImport("StructABILib")]
+	public static extern LongEmptyDouble EchoLongEmptyDoubleRiscV(int a0, float fa0, LongEmptyDouble a1_fa1);
+
+	[DllImport("StructABILib")]
+	public static extern LongEmptyDouble EchoLongEmptyDoubleByImplicitRefRiscV(
+		int a0, float fa0, float fa1, float fa2, float fa3, float fa4, float fa5, float fa6, float fa7, LongEmptyDouble a1);
+
+	[DllImport("StructABILib")]
+	public static extern NestedEmptyFloatDouble EchoNestedEmptyFloatDoubleRiscV(int a0, float fa0, NestedEmptyFloatDouble fa1_fa2);
+
+	[DllImport("StructABILib")]
+	public static extern NestedEmptyFloatDouble EchoNestedEmptyFloatDoubleInIntegerRegsRiscV(
+		int a0, float fa0, float fa1, float fa2, float fa3, float fa4, float fa5, float fa6, NestedEmptyFloatDouble a1_a2);
+
+	[DllImport("StructABILib")]
+	public static extern EmptyIntAndFloat EchoEmptyIntAndFloatRiscV(int a0, float fa0, EmptyIntAndFloat a1_fa1);
+
+	[DllImport("StructABILib")]
+	public static extern LongEmptyAndFloat EchoLongEmptyAndFloatRiscV(int a0, float fa0, LongEmptyAndFloat a1_fa1);
+
+	[DllImport("StructABILib")]
+	public static extern ArrayOfEmptiesFloatDouble EchoArrayOfEmptiesFloatDoubleRiscV(int a0, float fa0, ArrayOfEmptiesFloatDouble a1_a2);
+
+	[DllImport("StructABILib")]
+	public static extern FloatEmpty32kInt EchoFloatEmpty32kIntRiscV(int a0, float fa0, FloatEmpty32kInt fa1_a1);
+
+	[DllImport("StructABILib")]
+	public static extern PackedEmptyFloatLong EchoPackedEmptyFloatLongRiscV(int a0, float fa0, PackedEmptyFloatLong fa1_a1);
+
+	[DllImport("StructABILib")]
+	public static extern PackedEmptyFloatLong EchoPackedEmptyFloatLongInIntegerRegsRiscV(
+		int a0,
+		float fa0, float fa1, float fa2, float fa3, float fa4, float fa5, float fa6, float fa7, PackedEmptyFloatLong a1_a2);
+
+	[DllImport("StructABILib")]
+	public static extern PackedEmptyFloatLong EchoPackedEmptyFloatLongSplitRiscV(
+		int a0, int a1, int a2, int a3, int a4, int a5, int a6,
+		float fa0, float fa1, float fa2, float fa3, float fa4, float fa5, float fa6, float fa7, PackedEmptyFloatLong a7_stack0);
+
+	[DllImport("StructABILib")]
+	public static extern PackedEmptyFloatLong EchoPackedEmptyFloatLongOnStackRiscV(
+		int a0, int a1, int a2, int a3, int a4, int a5, int a6, int a7,
+		float fa0, float fa1, float fa2, float fa3, float fa4, float fa5, float fa6, float fa7, PackedEmptyFloatLong stack0_stack1);
+
+	[DllImport("StructABILib")]
+	public static extern ExplicitFloatLong EchoExplicitFloatLongRiscV(int a0, float fa0, ExplicitFloatLong fa1_a1);
 
 	////////////////////////////////////////////////////////////////////////////
 	// Managed echo tests.
@@ -1060,6 +1368,158 @@ public static partial class StructABI
 	static DoubleAndByte EnoughRegistersSysV4Managed(double a, double b, double c, double d, double e, double f, double g, DoubleAndByte value)
 	{
 		return value;
+	}
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	public static Empty8Float EchoEmpty8FloatRiscVManaged(int a0, float fa0, Empty8Float fa1)
+	{
+		return fa1;
+	}
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	public static Empty8Float EchoEmpty8FloatInIntegerRegsRiscVManaged(
+		int a0,
+		float fa0, float fa1, float fa2, float fa3, float fa4, float fa5, float fa6, float fa7, Empty8Float a1_a2)
+	{
+		return a1_a2;
+	}
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	public static Empty8Float EchoEmpty8FloatSplitRiscVManaged(
+		int a0, int a1, int a2, int a3, int a4, int a5, int a6,
+		float fa0, float fa1, float fa2, float fa3, float fa4, float fa5, float fa6, float fa7, Empty8Float a7_stack0)
+	{
+		return a7_stack0;
+	}
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	public static Empty8Float EchoEmpty8FloatOnStackRiscVManaged(
+		int a0, int a1, int a2, int a3, int a4, int a5, int a6, int a7,
+		float fa0, float fa1, float fa2, float fa3, float fa4, float fa5, float fa6, float fa7, Empty8Float stack0_stack1)
+	{
+		return stack0_stack1;
+	}
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	public static EmptyFloatEmpty5Byte EchoEmptyFloatEmpty5ByteRiscVManaged(int a0, float fa0, EmptyFloatEmpty5Byte fa1_a1)
+	{
+		return fa1_a1;
+	}
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	public static EmptyFloatEmpty5UByte EchoEmptyFloatEmpty5UByteRiscVManaged(int a0, float fa0, EmptyFloatEmpty5UByte fa1_a1)
+	{
+		return fa1_a1;
+	}
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	public static EmptyFloatEmpty5Byte EchoEmptyFloatEmpty5ByteInIntegerRegsRiscVManaged(
+		int a0,
+		float fa0, float fa1, float fa2, float fa3, float fa4, float fa5, float fa6, float fa7, EmptyFloatEmpty5Byte a1_a2)
+	{
+		return a1_a2;
+	}
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	public static EmptyFloatEmpty5Byte EchoEmptyFloatEmpty5ByteSplitRiscVManaged(
+		int a0, int a1, int a2, int a3, int a4, int a5, int a6,
+		float fa0, float fa1, float fa2, float fa3, float fa4, float fa5, float fa6, float fa7, EmptyFloatEmpty5Byte a7_stack0)
+	{
+		return a7_stack0;
+	}
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	public static EmptyFloatEmpty5Byte EchoEmptyFloatEmpty5ByteOnStackRiscVManaged(
+		int a0, int a1, int a2, int a3, int a4, int a5, int a6, int a7,
+		float fa0, float fa1, float fa2, float fa3, float fa4, float fa5, float fa6, float fa7, EmptyFloatEmpty5Byte stack0_stack1)
+	{
+		return stack0_stack1;
+	}
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	public static LongEmptyDouble EchoLongEmptyDoubleRiscVManaged(int a0, float fa0, LongEmptyDouble a1_fa1)
+	{
+		return a1_fa1;
+	}
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	public static LongEmptyDouble EchoLongEmptyDoubleByImplicitRefRiscVManaged(
+		int a0, float fa0, float fa1, float fa2, float fa3, float fa4, float fa5, float fa6, float fa7, LongEmptyDouble a1)
+	{
+		return a1;
+	}
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	public static NestedEmptyFloatDouble EchoNestedEmptyFloatDoubleRiscVManaged(int a0, float fa0, NestedEmptyFloatDouble fa1_fa2)
+	{
+		return fa1_fa2;
+	}
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	public static NestedEmptyFloatDouble EchoNestedEmptyFloatDoubleInIntegerRegsRiscVManaged(
+		int a0, float fa0, float fa1, float fa2, float fa3, float fa4, float fa5, float fa6, NestedEmptyFloatDouble a1_a2)
+	{
+		return a1_a2;
+	}
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	public static EmptyIntAndFloat EchoEmptyIntAndFloatRiscVManaged(int a0, float fa0, EmptyIntAndFloat a1_fa1)
+	{
+		return a1_fa1;
+	}
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	public static LongEmptyAndFloat EchoLongEmptyAndFloatRiscVManaged(int a0, float fa0, LongEmptyAndFloat a1_fa1)
+	{
+		return a1_fa1;
+	}
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	public static ArrayOfEmptiesFloatDouble EchoArrayOfEmptiesFloatDoubleRiscVManaged(int a0, float fa0, ArrayOfEmptiesFloatDouble a1_a2)
+	{
+		return a1_a2;
+	}
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	public static FloatEmpty32kInt EchoFloatEmpty32kIntRiscVManaged(int a0, float fa0, FloatEmpty32kInt fa1_a1)
+	{
+		return fa1_a1;
+	}
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	public static PackedEmptyFloatLong EchoPackedEmptyFloatLongRiscVManaged(int a0, float fa0, PackedEmptyFloatLong fa1_a1)
+	{
+		return fa1_a1;
+	}
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	public static PackedEmptyFloatLong EchoPackedEmptyFloatLongInIntegerRegsRiscVManaged(
+		int a0,
+		float fa0, float fa1, float fa2, float fa3, float fa4, float fa5, float fa6, float fa7, PackedEmptyFloatLong a1_a2)
+	{
+		return a1_a2;
+	}
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	public static PackedEmptyFloatLong EchoPackedEmptyFloatLongSplitRiscVManaged(
+		int a0, int a1, int a2, int a3, int a4, int a5, int a6,
+		float fa0, float fa1, float fa2, float fa3, float fa4, float fa5, float fa6, float fa7, PackedEmptyFloatLong a7_stack0)
+	{
+		return a7_stack0;
+	}
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	public static PackedEmptyFloatLong EchoPackedEmptyFloatLongOnStackRiscVManaged(
+		int a0, int a1, int a2, int a3, int a4, int a5, int a6, int a7,
+		float fa0, float fa1, float fa2, float fa3, float fa4, float fa5, float fa6, float fa7, PackedEmptyFloatLong stack0_stack1)
+	{
+		return stack0_stack1;
+	}
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	public static ExplicitFloatLong EchoExplicitFloatLongRiscVManaged(int a0, float fa0, ExplicitFloatLong fa1_a1)
+	{
+		return fa1_a1;
 	}
 
 	////////////////////////////////////////////////////////////////////////////
@@ -2154,6 +2614,1035 @@ public static partial class StructABI
 		return ok;
 	}
 
+	static bool EchoEmpty8FloatRiscVWrapper()
+	{
+		bool ok = true;
+		Empty8Float expected = Empty8Float.Get();
+		Empty8Float native = EchoEmpty8FloatRiscV(0, 0f, expected);
+		Empty8Float managed = EchoEmpty8FloatRiscVManaged(0, 0f, expected);
+
+		if (!expected.Equals(native))
+		{
+			Console.WriteLine("Native call for EchoEmpty8FloatRiscV failed");
+			ok = false;
+		}
+
+		if (!expected.Equals(managed))
+		{
+			Console.WriteLine("Managed call for EchoEmpty8FloatRiscV failed");
+			ok = false;
+		}
+
+		return ok;
+	}
+
+	static bool EchoEmpty8FloatRiscVReflectionWrapper()
+	{
+		bool ok = true;
+		var expected = Empty8Float.Get();
+		var native = (Empty8Float)typeof(StructABI).GetMethod("EchoEmpty8FloatRiscV")
+			.Invoke(null, new object[] {0, 0f, expected});
+		var managed = (Empty8Float)typeof(StructABI).GetMethod("EchoEmpty8FloatRiscVManaged")
+			.Invoke(null, new object[] {0, 0f, expected});
+
+		if (!expected.Equals(native))
+		{
+			Console.WriteLine("Native call by reflection for EchoEmpty8FloatRiscV failed");
+			ok = false;
+		}
+
+		if (!expected.Equals(managed))
+		{
+			Console.WriteLine("Managed call by reflection for EchoEmpty8FloatRiscV failed");
+			ok = false;
+		}
+
+		return ok;
+	}
+
+	static bool EchoEmpty8FloatInIntegerRegsRiscVWrapper()
+	{
+		bool ok = true;
+		Empty8Float expected = Empty8Float.Get();
+		Empty8Float native = EchoEmpty8FloatInIntegerRegsRiscV(
+			0, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected);
+		Empty8Float managed = EchoEmpty8FloatInIntegerRegsRiscVManaged(
+			0, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected);
+
+		if (!expected.Equals(native))
+		{
+			Console.WriteLine("Native call for EchoEmpty8FloatInIntegerRegsRiscV failed");
+			ok = false;
+		}
+
+		if (!expected.Equals(managed))
+		{
+			Console.WriteLine("Managed call for EchoEmpty8FloatInIntegerRegsRiscV failed");
+			ok = false;
+		}
+
+		return ok;
+	}
+
+	static bool EchoEmpty8FloatInIntegerRegsRiscVReflectionWrapper()
+	{
+		bool ok = true;
+		var expected = Empty8Float.Get();
+		var native = (Empty8Float)typeof(StructABI).GetMethod("EchoEmpty8FloatInIntegerRegsRiscV")
+			.Invoke(null, new object[] {0, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected});
+		var managed = (Empty8Float)typeof(StructABI).GetMethod("EchoEmpty8FloatInIntegerRegsRiscVManaged")
+			.Invoke(null, new object[] {0, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected});
+
+		if (!expected.Equals(native))
+		{
+			Console.WriteLine("Native call by reflection for EchoEmpty8FloatInIntegerRegsRiscV failed");
+			ok = false;
+		}
+
+		if (!expected.Equals(managed))
+		{
+			Console.WriteLine("Managed call by reflection for EchoEmpty8FloatInIntegerRegsRiscV failed");
+			ok = false;
+		}
+
+		return ok;
+	}
+
+	static bool EchoEmpty8FloatSplitRiscVWrapper()
+	{
+		bool ok = true;
+		Empty8Float expected = Empty8Float.Get();
+		Empty8Float native = EchoEmpty8FloatSplitRiscV(
+			0, 1, 2, 3, 4, 5, 6, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected);
+		Empty8Float managed = EchoEmpty8FloatSplitRiscVManaged(
+			0, 1, 2, 3, 4, 5, 6, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected);
+
+		if (!expected.Equals(native))
+		{
+			Console.WriteLine("Native call for EchoEmpty8FloatSplitRiscV failed");
+			ok = false;
+		}
+
+		if (!expected.Equals(managed))
+		{
+			Console.WriteLine("Managed call for EchoEmpty8FloatSplitRiscV failed");
+			ok = false;
+		}
+
+		return ok;
+	}
+
+	static bool EchoEmpty8FloatSplitRiscVReflectionWrapper()
+	{
+		bool ok = true;
+		var expected = Empty8Float.Get();
+		var native = (Empty8Float)typeof(StructABI).GetMethod("EchoEmpty8FloatSplitRiscV")
+			.Invoke(null, new object[] {0, 1, 2, 3, 4, 5, 6, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected});
+		var managed = (Empty8Float)typeof(StructABI).GetMethod("EchoEmpty8FloatSplitRiscVManaged")
+			.Invoke(null, new object[] {0, 1, 2, 3, 4, 5, 6, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected});
+
+		if (!expected.Equals(native))
+		{
+			Console.WriteLine("Native call by reflection for EchoEmpty8FloatSplitRiscV failed");
+			ok = false;
+		}
+
+		if (!expected.Equals(managed))
+		{
+			Console.WriteLine("Managed call by reflection for EchoEmpty8FloatSplitRiscV failed");
+			ok = false;
+		}
+
+		return ok;
+	}
+
+	static bool EchoEmpty8FloatOnStackRiscVWrapper()
+	{
+		bool ok = true;
+		Empty8Float expected = Empty8Float.Get();
+		Empty8Float native = EchoEmpty8FloatOnStackRiscV(
+			0, 1, 2, 3, 4, 5, 6, 7, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected);
+		Empty8Float managed = EchoEmpty8FloatOnStackRiscVManaged(
+			0, 1, 2, 3, 4, 5, 6, 7, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected);
+
+		if (!expected.Equals(native))
+		{
+			Console.WriteLine("Native call for EchoEmpty8FloatOnStackRiscV failed");
+			ok = false;
+		}
+
+		if (!expected.Equals(managed))
+		{
+			Console.WriteLine("Managed call for EchoEmpty8FloatOnStackRiscV failed");
+			ok = false;
+		}
+
+		return ok;
+	}
+
+	static bool EchoEmpty8FloatOnStackRiscVReflectionWrapper()
+	{
+		bool ok = true;
+		var expected = Empty8Float.Get();
+		var native = (Empty8Float)typeof(StructABI).GetMethod("EchoEmpty8FloatOnStackRiscV")
+			.Invoke(null, new object[] {0, 1, 2, 3, 4, 5, 6, 7, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected});
+		var managed = (Empty8Float)typeof(StructABI).GetMethod("EchoEmpty8FloatOnStackRiscVManaged")
+			.Invoke(null, new object[] {0, 1, 2, 3, 4, 5, 6, 7, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected});
+
+		if (!expected.Equals(native))
+		{
+			Console.WriteLine("Native call by reflection for EchoEmpty8FloatOnStackRiscV failed");
+			ok = false;
+		}
+
+		if (!expected.Equals(managed))
+		{
+			Console.WriteLine("Managed call by reflection for EchoEmpty8FloatOnStackRiscV failed");
+			ok = false;
+		}
+
+		return ok;
+	}
+
+	static bool EchoEmptyFloatEmpty5ByteRiscVWrapper()
+	{
+		bool ok = true;
+		EmptyFloatEmpty5Byte expected = EmptyFloatEmpty5Byte.Get();
+		EmptyFloatEmpty5Byte native = EchoEmptyFloatEmpty5ByteRiscV(0, 0f, expected);
+		EmptyFloatEmpty5Byte managed = EchoEmptyFloatEmpty5ByteRiscVManaged(0, 0f, expected);
+
+		if (!expected.Equals(native))
+		{
+			Console.WriteLine("Native call for EchoEmptyFloatEmpty5ByteRiscV failed");
+			ok = false;
+		}
+
+		if (!expected.Equals(managed))
+		{
+			Console.WriteLine("Managed call for EchoEmptyFloatEmpty5ByteRiscV failed");
+			ok = false;
+		}
+
+		return ok;
+	}
+
+	static bool EchoEmptyFloatEmpty5ByteRiscVReflectionWrapper()
+	{
+		bool ok = true;
+		var expected = EmptyFloatEmpty5Byte.Get();
+		var native = (EmptyFloatEmpty5Byte)typeof(StructABI).GetMethod("EchoEmptyFloatEmpty5ByteRiscV")
+			.Invoke(null, new object[] {0, 0f, expected});
+		var managed = (EmptyFloatEmpty5Byte)typeof(StructABI).GetMethod("EchoEmptyFloatEmpty5ByteRiscVManaged")
+			.Invoke(null, new object[] {0, 0f, expected});
+
+		if (!expected.Equals(native))
+		{
+			Console.WriteLine("Native call by reflection for EchoEmptyFloatEmpty5ByteRiscV failed");
+			ok = false;
+		}
+
+		if (!expected.Equals(managed))
+		{
+			Console.WriteLine("Managed call by reflection for EchoEmptyFloatEmpty5ByteRiscV failed");
+			ok = false;
+		}
+
+		return ok;
+	}
+
+	static bool EchoEmptyFloatEmpty5UByteRiscVWrapper()
+	{
+		bool ok = true;
+		EmptyFloatEmpty5UByte expected = EmptyFloatEmpty5UByte.Get();
+		EmptyFloatEmpty5UByte native = EchoEmptyFloatEmpty5UByteRiscV(0, 0f, expected);
+		EmptyFloatEmpty5UByte managed = EchoEmptyFloatEmpty5UByteRiscVManaged(0, 0f, expected);
+
+		if (!expected.Equals(native))
+		{
+			Console.WriteLine("Native call for EchoEmptyFloatEmpty5UByteRiscV failed");
+			ok = false;
+		}
+
+		if (!expected.Equals(managed))
+		{
+			Console.WriteLine("Managed call for EchoEmptyFloatEmpty5UByteRiscV failed");
+			ok = false;
+		}
+
+		return ok;
+	}
+
+	static bool EchoEmptyFloatEmpty5UByteRiscVReflectionWrapper()
+	{
+		bool ok = true;
+		var expected = EmptyFloatEmpty5UByte.Get();
+		var native = (EmptyFloatEmpty5UByte)typeof(StructABI).GetMethod("EchoEmptyFloatEmpty5UByteRiscV")
+			.Invoke(null, new object[] {0, 0f, expected});
+		var managed = (EmptyFloatEmpty5UByte)typeof(StructABI).GetMethod("EchoEmptyFloatEmpty5UByteRiscVManaged")
+			.Invoke(null, new object[] {0, 0f, expected});
+
+		if (!expected.Equals(native))
+		{
+			Console.WriteLine("Native call by reflection for EchoEmptyFloatEmpty5UByteRiscV failed");
+			ok = false;
+		}
+
+		if (!expected.Equals(managed))
+		{
+			Console.WriteLine("Managed call by reflection for EchoEmptyFloatEmpty5UByteRiscV failed");
+			ok = false;
+		}
+
+		return ok;
+	}
+
+	static bool EchoEmptyFloatEmpty5ByteInIntegerRegsRiscVWrapper()
+	{
+		bool ok = true;
+		EmptyFloatEmpty5Byte expected = EmptyFloatEmpty5Byte.Get();
+		EmptyFloatEmpty5Byte native = EchoEmptyFloatEmpty5ByteInIntegerRegsRiscV(
+			0, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected);
+		EmptyFloatEmpty5Byte managed = EchoEmptyFloatEmpty5ByteInIntegerRegsRiscVManaged(
+			0, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected);
+
+		if (!expected.Equals(native))
+		{
+			Console.WriteLine("Native call for EchoEmptyFloatEmpty5ByteInIntegerRegsRiscV failed");
+			ok = false;
+		}
+
+		if (!expected.Equals(managed))
+		{
+			Console.WriteLine("Managed call for EchoEmptyFloatEmpty5ByteInIntegerRegsRiscV failed");
+			ok = false;
+		}
+
+		return ok;
+	}
+
+	static bool EchoEmptyFloatEmpty5ByteInIntegerRegsRiscVReflectionWrapper()
+	{
+		bool ok = true;
+		var expected = EmptyFloatEmpty5Byte.Get();
+		var native = (EmptyFloatEmpty5Byte)typeof(StructABI).GetMethod("EchoEmptyFloatEmpty5ByteInIntegerRegsRiscV")
+			.Invoke(null, new object[] {0, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected});
+		var managed = (EmptyFloatEmpty5Byte)typeof(StructABI).GetMethod("EchoEmptyFloatEmpty5ByteInIntegerRegsRiscVManaged")
+			.Invoke(null, new object[] {0, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected});
+
+		if (!expected.Equals(native))
+		{
+			Console.WriteLine("Native call by reflection for EchoEmptyFloatEmpty5ByteInIntegerRegsRiscV failed");
+			ok = false;
+		}
+
+		if (!expected.Equals(managed))
+		{
+			Console.WriteLine("Managed call by reflection for EchoEmptyFloatEmpty5ByteInIntegerRegsRiscV failed");
+			ok = false;
+		}
+
+		return ok;
+	}
+
+	static bool EchoEmptyFloatEmpty5ByteSplitRiscVWrapper()
+	{
+		bool ok = true;
+		EmptyFloatEmpty5Byte expected = EmptyFloatEmpty5Byte.Get();
+		EmptyFloatEmpty5Byte native = EchoEmptyFloatEmpty5ByteSplitRiscV(
+			0, 1, 2, 3, 4, 5, 6, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected);
+		EmptyFloatEmpty5Byte managed = EchoEmptyFloatEmpty5ByteSplitRiscVManaged(
+			0, 1, 2, 3, 4, 5, 6, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected);
+
+		if (!expected.Equals(native))
+		{
+			Console.WriteLine("Native call for EchoEmptyFloatEmpty5ByteSplitRiscV failed");
+			ok = false;
+		}
+
+		if (!expected.Equals(managed))
+		{
+			Console.WriteLine("Managed call for EchoEmptyFloatEmpty5ByteSplitRiscV failed");
+			ok = false;
+		}
+
+		return ok;
+	}
+
+	static bool EchoEmptyFloatEmpty5ByteSplitRiscVReflectionWrapper()
+	{
+		bool ok = true;
+		var expected = EmptyFloatEmpty5Byte.Get();
+		var native = (EmptyFloatEmpty5Byte)typeof(StructABI).GetMethod("EchoEmptyFloatEmpty5ByteSplitRiscV")
+			.Invoke(null, new object[] {0, 1, 2, 3, 4, 5, 6, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected});
+		var managed = (EmptyFloatEmpty5Byte)typeof(StructABI).GetMethod("EchoEmptyFloatEmpty5ByteSplitRiscVManaged")
+			.Invoke(null, new object[] {0, 1, 2, 3, 4, 5, 6, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected});
+
+		if (!expected.Equals(native))
+		{
+			Console.WriteLine("Native call by reflection for EchoEmptyFloatEmpty5ByteSplitRiscV failed");
+			ok = false;
+		}
+
+		if (!expected.Equals(managed))
+		{
+			Console.WriteLine("Managed call by reflection for EchoEmptyFloatEmpty5ByteSplitRiscV failed");
+			ok = false;
+		}
+
+		return ok;
+	}
+
+	static bool EchoEmptyFloatEmpty5ByteOnStackRiscVWrapper()
+	{
+		bool ok = true;
+		EmptyFloatEmpty5Byte expected = EmptyFloatEmpty5Byte.Get();
+		EmptyFloatEmpty5Byte native = EchoEmptyFloatEmpty5ByteOnStackRiscV(
+			0, 1, 2, 3, 4, 5, 6, 7, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected);
+		EmptyFloatEmpty5Byte managed = EchoEmptyFloatEmpty5ByteOnStackRiscVManaged(
+			0, 1, 2, 3, 4, 5, 6, 7, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected);
+
+		if (!expected.Equals(native))
+		{
+			Console.WriteLine("Native call for EchoEmptyFloatEmpty5ByteOnStackRiscV failed");
+			ok = false;
+		}
+
+		if (!expected.Equals(managed))
+		{
+			Console.WriteLine("Managed call for EchoEmptyFloatEmpty5ByteOnStackRiscV failed");
+			ok = false;
+		}
+
+		return ok;
+	}
+
+	static bool EchoEmptyFloatEmpty5ByteOnStackRiscVReflectionWrapper()
+	{
+		bool ok = true;
+		var expected = EmptyFloatEmpty5Byte.Get();
+		var native = (EmptyFloatEmpty5Byte)typeof(StructABI).GetMethod("EchoEmptyFloatEmpty5ByteOnStackRiscV")
+			.Invoke(null, new object[] {0, 1, 2, 3, 4, 5, 6, 7, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected});
+		var managed = (EmptyFloatEmpty5Byte)typeof(StructABI).GetMethod("EchoEmptyFloatEmpty5ByteOnStackRiscVManaged")
+			.Invoke(null, new object[] {0, 1, 2, 3, 4, 5, 6, 7, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected});
+
+		if (!expected.Equals(native))
+		{
+			Console.WriteLine("Native call by reflection for EchoEmptyFloatEmpty5ByteOnStackRiscV failed");
+			ok = false;
+		}
+
+		if (!expected.Equals(managed))
+		{
+			Console.WriteLine("Managed call by reflection for EchoEmptyFloatEmpty5ByteOnStackRiscV failed");
+			ok = false;
+		}
+
+		return ok;
+	}
+
+	static bool EchoLongEmptyDoubleRiscVWrapper()
+	{
+		bool ok = true;
+		LongEmptyDouble expected = LongEmptyDouble.Get();
+		LongEmptyDouble native = EchoLongEmptyDoubleRiscV(0, 0f, expected);
+		LongEmptyDouble managed = EchoLongEmptyDoubleRiscVManaged(0, 0f, expected);
+
+		if (!expected.Equals(native))
+		{
+			Console.WriteLine("Native call for EchoLongEmptyDoubleRiscV failed");
+			ok = false;
+		}
+
+		if (!expected.Equals(managed))
+		{
+			Console.WriteLine("Managed call for EchoLongEmptyDoubleRiscV failed");
+			ok = false;
+		}
+
+		return ok;
+	}
+
+	static bool EchoLongEmptyDoubleRiscVReflectionWrapper()
+	{
+		bool ok = true;
+		var expected = LongEmptyDouble.Get();
+		var native = (LongEmptyDouble)typeof(StructABI).GetMethod("EchoLongEmptyDoubleRiscV")
+			.Invoke(null, new object[] {0, 0f, expected});
+		var managed = (LongEmptyDouble)typeof(StructABI).GetMethod("EchoLongEmptyDoubleRiscVManaged")
+			.Invoke(null, new object[] {0, 0f, expected});
+
+		if (!expected.Equals(native))
+		{
+			Console.WriteLine("Native call by reflection for EchoLongEmptyDoubleRiscV failed");
+			ok = false;
+		}
+
+		if (!expected.Equals(managed))
+		{
+			Console.WriteLine("Managed call by reflection for EchoLongEmptyDoubleRiscV failed");
+			ok = false;
+		}
+
+		return ok;
+	}
+
+	static bool EchoLongEmptyDoubleByImplicitRefRiscVWrapper()
+	{
+		bool ok = true;
+		LongEmptyDouble expected = LongEmptyDouble.Get();
+		LongEmptyDouble native = EchoLongEmptyDoubleByImplicitRefRiscV(0, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected);
+		LongEmptyDouble managed = EchoLongEmptyDoubleByImplicitRefRiscVManaged(0, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected);
+		if (!expected.Equals(native))
+		{
+			Console.WriteLine("Native call for EchoLongEmptyDoubleByImplicitRefRiscV failed");
+			ok = false;
+		}
+
+		if (!expected.Equals(managed))
+		{
+			Console.WriteLine("Managed call for EchoLongEmptyDoubleByImplicitRefRiscV failed");
+			ok = false;
+		}
+
+		return ok;
+	}
+
+	static bool EchoLongEmptyDoubleByImplicitRefRiscVReflectionWrapper()
+	{
+		bool ok = true;
+		var expected = LongEmptyDouble.Get();
+		var native = (LongEmptyDouble)typeof(StructABI).GetMethod("EchoLongEmptyDoubleByImplicitRefRiscV")
+			.Invoke(null, new object[] {0, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected});
+		var managed = (LongEmptyDouble)typeof(StructABI).GetMethod("EchoLongEmptyDoubleByImplicitRefRiscVManaged")
+			.Invoke(null, new object[] {0, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected});
+
+		if (!expected.Equals(native))
+		{
+			Console.WriteLine("Native call by reflection for EchoLongEmptyDoubleByImplicitRefRiscV failed");
+			ok = false;
+		}
+
+		if (!expected.Equals(managed))
+		{
+			Console.WriteLine("Managed call by reflection for EchoLongEmptyDoubleByImplicitRefRiscV failed");
+			ok = false;
+		}
+
+		return ok;
+	}
+
+	static bool EchoNestedEmptyFloatDoubleRiscVWrapper()
+	{
+		bool ok = true;
+		NestedEmptyFloatDouble expected = NestedEmptyFloatDouble.Get();
+		NestedEmptyFloatDouble native = EchoNestedEmptyFloatDoubleRiscV(0, 0f, expected);
+		NestedEmptyFloatDouble managed = EchoNestedEmptyFloatDoubleRiscVManaged(0, 0f, expected);
+
+		if (!expected.Equals(native))
+		{
+			Console.WriteLine("Native call for EchoNestedEmptyFloatDoubleRiscV failed");
+			ok = false;
+		}
+
+		if (!expected.Equals(managed))
+		{
+			Console.WriteLine("Managed call for EchoNestedEmptyFloatDoubleRiscV failed");
+			ok = false;
+		}
+
+		return ok;
+	}
+
+	static bool EchoNestedEmptyFloatDoubleRiscVReflectionWrapper()
+	{
+		bool ok = true;
+		var expected = NestedEmptyFloatDouble.Get();
+		var native = (NestedEmptyFloatDouble)typeof(StructABI).GetMethod("EchoNestedEmptyFloatDoubleRiscV")
+			.Invoke(null, new object[] {0, 0f, expected});
+		var managed = (NestedEmptyFloatDouble)typeof(StructABI).GetMethod("EchoNestedEmptyFloatDoubleRiscVManaged")
+			.Invoke(null, new object[] {0, 0f, expected});
+
+		if (!expected.Equals(native))
+		{
+			Console.WriteLine("Native call by reflection for EchoNestedEmptyFloatDoubleRiscV failed");
+			ok = false;
+		}
+
+		if (!expected.Equals(managed))
+		{
+			Console.WriteLine("Managed call by reflection for EchoNestedEmptyFloatDoubleRiscV failed");
+			ok = false;
+		}
+
+		return ok;
+	}
+
+	static bool EchoNestedEmptyFloatDoubleInIntegerRegsRiscVWrapper()
+	{
+		bool ok = true;
+		NestedEmptyFloatDouble expected = NestedEmptyFloatDouble.Get();
+		NestedEmptyFloatDouble native = EchoNestedEmptyFloatDoubleInIntegerRegsRiscV(0, 0f, 1f, 2f, 3f, 4f, 5f, 6f, expected);
+		NestedEmptyFloatDouble managed = EchoNestedEmptyFloatDoubleInIntegerRegsRiscVManaged(0, 0f, 1f, 2f, 3f, 4f, 5f, 6f, expected);
+
+		if (!expected.Equals(native))
+		{
+			Console.WriteLine("Native call for EchoNestedEmptyFloatDoubleInIntegerRegsRiscV failed");
+			ok = false;
+		}
+
+		if (!expected.Equals(managed))
+		{
+			Console.WriteLine("Managed call for EchoNestedEmptyFloatDoubleInIntegerRegsRiscV failed");
+			ok = false;
+		}
+
+		return ok;
+	}
+
+	static bool EchoNestedEmptyFloatDoubleInIntegerRegsRiscVReflectionWrapper()
+	{
+		bool ok = true;
+		var expected = NestedEmptyFloatDouble.Get();
+		var native = (NestedEmptyFloatDouble)typeof(StructABI).GetMethod("EchoNestedEmptyFloatDoubleInIntegerRegsRiscV")
+			.Invoke(null, new object[] {0, 0f, 1f, 2f, 3f, 4f, 5f, 6f, expected});
+		var managed = (NestedEmptyFloatDouble)typeof(StructABI).GetMethod("EchoNestedEmptyFloatDoubleInIntegerRegsRiscVManaged")
+			.Invoke(null, new object[] {0, 0f, 1f, 2f, 3f, 4f, 5f, 6f, expected});
+
+		if (!expected.Equals(native))
+		{
+			Console.WriteLine("Native call by reflection for EchoNestedEmptyFloatDoubleInIntegerRegsRiscV failed");
+			ok = false;
+		}
+
+		if (!expected.Equals(managed))
+		{
+			Console.WriteLine("Managed call by reflection for EchoNestedEmptyFloatDoubleInIntegerRegsRiscV failed");
+			ok = false;
+		}
+
+		return ok;
+	}
+
+	static bool EchoEmptyIntAndFloatRiscVWrapper()
+	{
+		bool ok = true;
+		EmptyIntAndFloat expected = EmptyIntAndFloat.Get();
+		EmptyIntAndFloat native = EchoEmptyIntAndFloatRiscV(0, 0f, expected);
+		EmptyIntAndFloat managed = EchoEmptyIntAndFloatRiscVManaged(0, 0f, expected);
+
+		if (!expected.Equals(native))
+		{
+			Console.WriteLine("Native call for EchoEmptyIntAndFloatRiscV failed");
+			ok = false;
+		}
+
+		if (!expected.Equals(managed))
+		{
+			Console.WriteLine("Managed call for EchoEmptyIntAndFloatRiscV failed");
+			ok = false;
+		}
+
+		return ok;
+	}
+
+	static bool EchoEmptyIntAndFloatRiscVReflectionWrapper()
+	{
+		bool ok = true;
+		var expected = EmptyIntAndFloat.Get();
+		var native = (EmptyIntAndFloat)typeof(StructABI).GetMethod("EchoEmptyIntAndFloatRiscV")
+			.Invoke(null, new object[] {0, 0f, expected});
+		var managed = (EmptyIntAndFloat)typeof(StructABI).GetMethod("EchoEmptyIntAndFloatRiscVManaged")
+			.Invoke(null, new object[] {0, 0f, expected});
+
+		if (!expected.Equals(native))
+		{
+			Console.WriteLine("Native call by reflection for EchoEmptyIntAndFloatRiscV failed");
+			ok = false;
+		}
+
+		if (!expected.Equals(managed))
+		{
+			Console.WriteLine("Managed call by reflection for EchoEmptyIntAndFloatRiscV failed");
+			ok = false;
+		}
+
+		return ok;
+	}
+
+	static bool EchoLongEmptyAndFloatRiscVWrapper()
+	{
+		bool ok = true;
+		LongEmptyAndFloat expected = LongEmptyAndFloat.Get();
+		LongEmptyAndFloat native = EchoLongEmptyAndFloatRiscV(0, 0f, expected);
+		LongEmptyAndFloat managed = EchoLongEmptyAndFloatRiscVManaged(0, 0f, expected);
+
+		if (!expected.Equals(native))
+		{
+			Console.WriteLine("Native call for EchoLongEmptyAndFloatRiscV failed");
+			ok = false;
+		}
+
+		if (!expected.Equals(managed))
+		{
+			Console.WriteLine("Managed call for EchoLongEmptyAndFloatRiscV failed");
+			ok = false;
+		}
+
+		return ok;
+	}
+
+	static bool EchoLongEmptyAndFloatRiscVReflectionWrapper()
+	{
+		bool ok = true;
+		var expected = LongEmptyAndFloat.Get();
+		var native = (LongEmptyAndFloat)typeof(StructABI).GetMethod("EchoLongEmptyAndFloatRiscV")
+			.Invoke(null, new object[] {0, 0f, expected});
+		var managed = (LongEmptyAndFloat)typeof(StructABI).GetMethod("EchoLongEmptyAndFloatRiscVManaged")
+			.Invoke(null, new object[] {0, 0f, expected});
+
+		if (!expected.Equals(native))
+		{
+			Console.WriteLine("Native call by reflection for EchoLongEmptyAndFloatRiscV failed");
+			ok = false;
+		}
+
+		if (!expected.Equals(managed))
+		{
+			Console.WriteLine("Managed call by reflection for EchoLongEmptyAndFloatRiscV failed");
+			ok = false;
+		}
+
+		return ok;
+	}
+
+	static bool EchoArrayOfEmptiesFloatDoubleRiscVWrapper()
+	{
+		bool ok = true;
+		ArrayOfEmptiesFloatDouble expected = ArrayOfEmptiesFloatDouble.Get();
+		ArrayOfEmptiesFloatDouble native = EchoArrayOfEmptiesFloatDoubleRiscV(0, 0f, expected);
+		ArrayOfEmptiesFloatDouble managed = EchoArrayOfEmptiesFloatDoubleRiscVManaged(0, 0f, expected);
+
+		if (!expected.Equals(native))
+		{
+			Console.WriteLine("Native call for EchoArrayOfEmptiesFloatDouble failed");
+			ok = false;
+		}
+
+		if (!expected.Equals(managed))
+		{
+			Console.WriteLine("Managed call for EchoArrayOfEmptiesFloatDouble failed");
+			ok = false;
+		}
+
+		return ok;
+	}
+
+	static bool EchoArrayOfEmptiesFloatDoubleRiscVReflectionWrapper()
+	{
+		bool ok = true;
+		var expected = ArrayOfEmptiesFloatDouble.Get();
+		var native = (ArrayOfEmptiesFloatDouble)typeof(StructABI).GetMethod("EchoArrayOfEmptiesFloatDoubleRiscV")
+			.Invoke(null, new object[] {0, 0f, expected});
+		var managed = (ArrayOfEmptiesFloatDouble)typeof(StructABI).GetMethod("EchoArrayOfEmptiesFloatDoubleRiscVManaged")
+			.Invoke(null, new object[] {0, 0f, expected});
+
+		if (!expected.Equals(native))
+		{
+			Console.WriteLine("Native call by reflection for EchoArrayOfEmptiesFloatDoubleRiscV failed");
+			ok = false;
+		}
+
+		if (!expected.Equals(managed))
+		{
+			Console.WriteLine("Managed call by reflection for EchoArrayOfEmptiesFloatDoubleRiscV failed");
+			ok = false;
+		}
+
+		return ok;
+	}
+
+	static bool EchoFloatEmpty32kIntRiscVWrapper()
+	{
+		bool ok = true;
+		FloatEmpty32kInt expected = FloatEmpty32kInt.Get();
+		FloatEmpty32kInt native = EchoFloatEmpty32kIntRiscV(0, 0f, expected);
+		FloatEmpty32kInt managed = EchoFloatEmpty32kIntRiscVManaged(0, 0f, expected);
+
+		if (!expected.Equals(native))
+		{
+			Console.WriteLine("Native call for EchoFloatEmpty32kInt failed");
+			ok = false;
+		}
+
+		if (!expected.Equals(managed))
+		{
+			Console.WriteLine("Managed call for EchoFloatEmpty32kInt failed");
+			ok = false;
+		}
+
+		return ok;
+	}
+
+	static bool EchoFloatEmpty32kIntRiscVReflectionWrapper()
+	{
+		bool ok = true;
+		var expected = FloatEmpty32kInt.Get();
+		var native = (FloatEmpty32kInt)typeof(StructABI).GetMethod("EchoFloatEmpty32kIntRiscV")
+			.Invoke(null, new object[] {0, 0f, expected});
+		var managed = (FloatEmpty32kInt)typeof(StructABI).GetMethod("EchoFloatEmpty32kIntRiscVManaged")
+			.Invoke(null, new object[] {0, 0f, expected});
+
+		if (!expected.Equals(native))
+		{
+			Console.WriteLine("Native call by reflection for EchoFloatEmpty32kIntRiscV failed");
+			ok = false;
+		}
+
+		if (!expected.Equals(managed))
+		{
+			Console.WriteLine("Managed call by reflection for EchoFloatEmpty32kIntRiscV failed");
+			ok = false;
+		}
+
+		return ok;
+	}
+
+	static bool EchoPackedEmptyFloatLongRiscVWrapper()
+	{
+		bool ok = true;
+		PackedEmptyFloatLong expected = PackedEmptyFloatLong.Get();
+		PackedEmptyFloatLong native = EchoPackedEmptyFloatLongRiscV(0, 0f, expected);
+		PackedEmptyFloatLong managed = EchoPackedEmptyFloatLongRiscVManaged(0, 0f, expected);
+
+		if (!expected.Equals(native))
+		{
+			Console.WriteLine("Native call for EchoPackedEmptyFloatLong failed");
+			ok = false;
+		}
+
+		if (!expected.Equals(managed))
+		{
+			Console.WriteLine("Managed call for EchoPackedEmptyFloatLong failed");
+			ok = false;
+		}
+
+		return ok;
+	}
+
+	static bool EchoPackedEmptyFloatLongRiscVReflectionWrapper()
+	{
+		bool ok = true;
+		var expected = PackedEmptyFloatLong.Get();
+		var native = (PackedEmptyFloatLong)typeof(StructABI).GetMethod("EchoPackedEmptyFloatLongRiscV")
+			.Invoke(null, new object[] {0, 0f, expected});
+		var managed = (PackedEmptyFloatLong)typeof(StructABI).GetMethod("EchoPackedEmptyFloatLongRiscVManaged")
+			.Invoke(null, new object[] {0, 0f, expected});
+
+		if (!expected.Equals(native))
+		{
+			Console.WriteLine("Native call by reflection for EchoPackedEmptyFloatLongRiscV failed");
+			ok = false;
+		}
+
+		if (!expected.Equals(managed))
+		{
+			Console.WriteLine("Managed call by reflection for EchoPackedEmptyFloatLongRiscV failed");
+			ok = false;
+		}
+
+		return ok;
+	}
+
+	static bool EchoPackedEmptyFloatLongInIntegerRegsRiscVWrapper()
+	{
+		bool ok = true;
+		PackedEmptyFloatLong expected = PackedEmptyFloatLong.Get();
+		PackedEmptyFloatLong native = EchoPackedEmptyFloatLongInIntegerRegsRiscV(
+			0, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected);
+		PackedEmptyFloatLong managed = EchoPackedEmptyFloatLongInIntegerRegsRiscVManaged(
+			0, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected);
+
+		if (!expected.Equals(native))
+		{
+			Console.WriteLine("Native call for EchoPackedEmptyFloatLongInIntegerRegsRiscV failed");
+			ok = false;
+		}
+
+		if (!expected.Equals(managed))
+		{
+			Console.WriteLine("Managed call for EchoPackedEmptyFloatLongInIntegerRegsRiscV failed");
+			ok = false;
+		}
+
+		return ok;
+	}
+
+	static bool EchoPackedEmptyFloatLongInIntegerRegsRiscVReflectionWrapper()
+	{
+		bool ok = true;
+		var expected = PackedEmptyFloatLong.Get();
+		var native = (PackedEmptyFloatLong)typeof(StructABI).GetMethod("EchoPackedEmptyFloatLongInIntegerRegsRiscV")
+			.Invoke(null, new object[] {0, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected});
+		var managed = (PackedEmptyFloatLong)typeof(StructABI).GetMethod("EchoPackedEmptyFloatLongInIntegerRegsRiscVManaged")
+			.Invoke(null, new object[] {0, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected});
+
+		if (!expected.Equals(native))
+		{
+			Console.WriteLine("Native call by reflection for EchoPackedEmptyFloatLongInIntegerRegsRiscV failed");
+			ok = false;
+		}
+
+		if (!expected.Equals(managed))
+		{
+			Console.WriteLine("Managed call by reflection for EchoPackedEmptyFloatLongInIntegerRegsRiscV failed");
+			ok = false;
+		}
+
+		return ok;
+	}
+
+	static bool EchoPackedEmptyFloatLongSplitRiscVWrapper()
+	{
+		bool ok = true;
+		PackedEmptyFloatLong expected = PackedEmptyFloatLong.Get();
+		PackedEmptyFloatLong native = EchoPackedEmptyFloatLongSplitRiscV(
+			0, 1, 2, 3, 4, 5, 6, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected);
+		PackedEmptyFloatLong managed = EchoPackedEmptyFloatLongSplitRiscVManaged(
+			0, 1, 2, 3, 4, 5, 6, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected);
+
+		if (!expected.Equals(native))
+		{
+			Console.WriteLine("Native call for EchoPackedEmptyFloatLongSplitRiscV failed");
+			ok = false;
+		}
+
+		if (!expected.Equals(managed))
+		{
+			Console.WriteLine("Managed call for EchoPackedEmptyFloatLongSplitRiscV failed");
+			ok = false;
+		}
+
+		return ok;
+	}
+
+	static bool EchoPackedEmptyFloatLongSplitRiscVReflectionWrapper()
+	{
+		bool ok = true;
+		var expected = PackedEmptyFloatLong.Get();
+		var native = (PackedEmptyFloatLong)typeof(StructABI).GetMethod("EchoPackedEmptyFloatLongSplitRiscV")
+			.Invoke(null, new object[] {0, 1, 2, 3, 4, 5, 6, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected});
+		var managed = (PackedEmptyFloatLong)typeof(StructABI).GetMethod("EchoPackedEmptyFloatLongSplitRiscVManaged")
+			.Invoke(null, new object[] {0, 1, 2, 3, 4, 5, 6, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected});
+
+		if (!expected.Equals(native))
+		{
+			Console.WriteLine("Native call by reflection for EchoPackedEmptyFloatLongSplitRiscV failed");
+			ok = false;
+		}
+
+		if (!expected.Equals(managed))
+		{
+			Console.WriteLine("Managed call by reflection for EchoPackedEmptyFloatLongSplitRiscV failed");
+			ok = false;
+		}
+
+		return ok;
+	}
+
+	static bool EchoPackedEmptyFloatLongOnStackRiscVWrapper()
+	{
+		bool ok = true;
+		PackedEmptyFloatLong expected = PackedEmptyFloatLong.Get();
+		PackedEmptyFloatLong native = EchoPackedEmptyFloatLongOnStackRiscV(
+			0, 1, 2, 3, 4, 5, 6, 7, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected);
+		PackedEmptyFloatLong managed = EchoPackedEmptyFloatLongOnStackRiscVManaged(
+			0, 1, 2, 3, 4, 5, 6, 7, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected);
+
+		if (!expected.Equals(native))
+		{
+			Console.WriteLine("Native call for EchoPackedEmptyFloatLongOnStackRiscV failed");
+			ok = false;
+		}
+
+		if (!expected.Equals(managed))
+		{
+			Console.WriteLine("Managed call for EchoPackedEmptyFloatLongOnStackRiscV failed");
+			ok = false;
+		}
+
+		return ok;
+	}
+
+	static bool EchoPackedEmptyFloatLongOnStackRiscVReflectionWrapper()
+	{
+		bool ok = true;
+		var expected = PackedEmptyFloatLong.Get();
+		var native = (PackedEmptyFloatLong)typeof(StructABI).GetMethod("EchoPackedEmptyFloatLongOnStackRiscV")
+			.Invoke(null, new object[] {0, 1, 2, 3, 4, 5, 6, 7, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected});
+		var managed = (PackedEmptyFloatLong)typeof(StructABI).GetMethod("EchoPackedEmptyFloatLongOnStackRiscVManaged")
+			.Invoke(null, new object[] {0, 1, 2, 3, 4, 5, 6, 7, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected});
+
+		if (!expected.Equals(native))
+		{
+			Console.WriteLine("Native call by reflection for EchoPackedEmptyFloatLongOnStackRiscV failed");
+			ok = false;
+		}
+
+		if (!expected.Equals(managed))
+		{
+			Console.WriteLine("Managed call by reflection for EchoPackedEmptyFloatLongOnStackRiscV failed");
+			ok = false;
+		}
+
+		return ok;
+	}
+
+	static bool EchoExplicitFloatLongRiscVWrapper()
+	{
+		bool ok = true;
+		ExplicitFloatLong expected = ExplicitFloatLong.Get();
+		ExplicitFloatLong native = EchoExplicitFloatLongRiscV(0, 0f, expected);
+		ExplicitFloatLong managed = EchoExplicitFloatLongRiscVManaged(0, 0f, expected);
+
+		if (!expected.Equals(native))
+		{
+			Console.WriteLine("Native call for EchoExplicitFloatLong failed");
+			ok = false;
+		}
+
+		if (!expected.Equals(managed))
+		{
+			Console.WriteLine("Managed call for EchoExplicitFloatLong failed");
+			ok = false;
+		}
+
+		return ok;
+	}
+
+	static bool EchoExplicitFloatLongRiscVReflectionWrapper()
+	{
+		bool ok = true;
+		var expected = ExplicitFloatLong.Get();
+		var native = (ExplicitFloatLong)typeof(StructABI).GetMethod("EchoExplicitFloatLongRiscV")
+			.Invoke(null, new object[] {0, 0f, expected});
+		var managed = (ExplicitFloatLong)typeof(StructABI).GetMethod("EchoExplicitFloatLongRiscVManaged")
+			.Invoke(null, new object[] {0, 0f, expected});
+
+		if (!expected.Equals(native))
+		{
+			Console.WriteLine("Native call by reflection for EchoExplicitFloatLongRiscV failed");
+			ok = false;
+		}
+
+		if (!expected.Equals(managed))
+		{
+			Console.WriteLine("Managed call by reflection for EchoExplicitFloatLongRiscV failed");
+			ok = false;
+		}
+
+		return ok;
+	}
+
 	[Fact]
 	public static int TestEntryPoint()
 	{
@@ -2202,6 +3691,48 @@ public static partial class StructABI
 		if (!EnoughRegistersSysV2Wrapper()) ok = false;
 		if (!EnoughRegistersSysV3Wrapper()) ok = false;
 		if (!EnoughRegistersSysV4Wrapper()) ok = false;
+		if (!EchoEmpty8FloatRiscVWrapper()) ok = false;
+		if (!EchoEmpty8FloatRiscVReflectionWrapper()) ok = false;
+		if (!EchoEmpty8FloatInIntegerRegsRiscVWrapper()) ok = false;
+		if (!EchoEmpty8FloatInIntegerRegsRiscVReflectionWrapper()) ok = false;
+		if (!EchoEmpty8FloatSplitRiscVWrapper()) ok = false;
+		if (!EchoEmpty8FloatSplitRiscVReflectionWrapper()) ok = false;
+		if (!EchoEmpty8FloatOnStackRiscVWrapper()) ok = false;
+		if (!EchoEmpty8FloatOnStackRiscVReflectionWrapper()) ok = false;
+		if (!EchoEmptyFloatEmpty5ByteRiscVWrapper()) ok = false;
+		if (!EchoEmptyFloatEmpty5ByteRiscVReflectionWrapper()) ok = false;
+		if (!EchoEmptyFloatEmpty5UByteRiscVWrapper()) ok = false;
+		if (!EchoEmptyFloatEmpty5UByteRiscVReflectionWrapper()) ok = false;
+		if (!EchoEmptyFloatEmpty5ByteInIntegerRegsRiscVWrapper()) ok = false;
+		if (!EchoEmptyFloatEmpty5ByteInIntegerRegsRiscVReflectionWrapper()) ok = false;
+		if (!EchoEmptyFloatEmpty5ByteSplitRiscVWrapper()) ok = false;
+		if (!EchoEmptyFloatEmpty5ByteSplitRiscVReflectionWrapper()) ok = false;
+		if (!EchoEmptyFloatEmpty5ByteOnStackRiscVWrapper()) ok = false;
+		if (!EchoEmptyFloatEmpty5ByteOnStackRiscVReflectionWrapper()) ok = false;
+		if (!EchoLongEmptyDoubleRiscVWrapper()) ok = false;
+		if (!EchoLongEmptyDoubleRiscVReflectionWrapper()) ok = false;
+		if (!EchoLongEmptyDoubleByImplicitRefRiscVWrapper()) ok = false;
+		if (!EchoLongEmptyDoubleByImplicitRefRiscVReflectionWrapper()) ok = false;
+		if (!EchoNestedEmptyFloatDoubleInIntegerRegsRiscVWrapper()) ok = false;
+		if (!EchoNestedEmptyFloatDoubleInIntegerRegsRiscVReflectionWrapper()) ok = false;
+		if (!EchoEmptyIntAndFloatRiscVWrapper()) ok = false;
+		if (!EchoEmptyIntAndFloatRiscVReflectionWrapper()) ok = false;
+		if (!EchoLongEmptyAndFloatRiscVWrapper()) ok = false;
+		if (!EchoLongEmptyAndFloatRiscVReflectionWrapper()) ok = false;
+		if (!EchoArrayOfEmptiesFloatDoubleRiscVWrapper()) ok = false;
+		if (!EchoArrayOfEmptiesFloatDoubleRiscVReflectionWrapper()) ok = false;
+		if (!EchoFloatEmpty32kIntRiscVWrapper()) ok = false;
+		if (!EchoFloatEmpty32kIntRiscVReflectionWrapper()) ok = false;
+		if (!EchoPackedEmptyFloatLongRiscVWrapper()) ok = false;
+		if (!EchoPackedEmptyFloatLongRiscVReflectionWrapper()) ok = false;
+		if (!EchoPackedEmptyFloatLongInIntegerRegsRiscVWrapper()) ok = false;
+		if (!EchoPackedEmptyFloatLongInIntegerRegsRiscVReflectionWrapper()) ok = false;
+		if (!EchoPackedEmptyFloatLongSplitRiscVWrapper()) ok = false;
+		if (!EchoPackedEmptyFloatLongSplitRiscVReflectionWrapper()) ok = false;
+		if (!EchoPackedEmptyFloatLongOnStackRiscVWrapper()) ok = false;
+		if (!EchoPackedEmptyFloatLongOnStackRiscVReflectionWrapper()) ok = false;
+		if (!EchoExplicitFloatLongRiscVWrapper()) ok = false;
+		if (!EchoExplicitFloatLongRiscVReflectionWrapper()) ok = false;
 		
 		return ok ? 100 : -1;
 	}

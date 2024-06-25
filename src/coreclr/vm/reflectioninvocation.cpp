@@ -632,7 +632,6 @@ FCIMPL4(Object*, RuntimeMethodHandle::InvokeMethod,
 
         UINT structSize = argit.GetArgSize();
 
-        bool needsStackCopy = false;
         ArgDestination argDest(pTransitionBlock, ofs, argit.GetArgLocDescForStructInRegs());
 
 #ifdef ENREGISTERED_PARAMTYPE_MAXSIZE
@@ -704,7 +703,17 @@ FCIMPL4(Object*, RuntimeMethodHandle::InvokeMethod,
         // we have allocated for this purpose.
         else if (!fHasRetBuffArg)
         {
-            CopyValueClass(gc.retVal->GetData(), &callDescrData.returnValue, gc.retVal->GetMethodTable());
+#if defined(TARGET_RISCV64)
+            if (callDescrData.fpReturnSize != FpStruct::UseIntCallConv)
+            {
+                FpStructInRegistersInfo info = argit.GetReturnFpStructInRegistersInfo();
+                CopyReturnedFpStructFromRegisters(gc.retVal->GetData(), callDescrData.returnValue, info, true);
+            }
+            else
+#endif // TARGET_RISCV64
+            {
+                CopyValueClass(gc.retVal->GetData(), &callDescrData.returnValue, gc.retVal->GetMethodTable());
+            }
         }
         // From here on out, it is OK to have GCs since the return object (which may have had
         // GC pointers has been put into a GC object and thus protected.

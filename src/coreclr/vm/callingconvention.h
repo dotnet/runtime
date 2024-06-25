@@ -42,7 +42,7 @@ struct ArgLocDesc
     int     m_byteStackIndex;     // Stack offset in bytes (or -1)
     int     m_byteStackSize;      // Stack size in bytes
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    int     m_structFields;       // Struct field info when using Float-register except two-doubles case.
+    FpStructInRegistersInfo m_structFields; // Struct field info when using floating-point register(s)
 #endif
 
 #if defined(UNIX_AMD64_ABI)
@@ -97,7 +97,7 @@ struct ArgLocDesc
         m_hfaFieldSize = 0;
 #endif // defined(TARGET_ARM64)
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-        m_structFields = STRUCT_NO_FLOAT_FIELD;
+        m_structFields = {};
 #endif
 #if defined(UNIX_AMD64_ABI)
         m_eeClass = NULL;
@@ -374,6 +374,10 @@ public:
     {
         WRAPPER_NO_CONTRACT;
         m_dwFlags = 0;
+#if defined(TARGET_RISCV64)
+        m_returnedFpFieldOffsets[0] = 0;
+        m_returnedFpFieldOffsets[1] = 0;
+#endif
     }
 
     UINT SizeOfArgStack()
@@ -435,6 +439,21 @@ public:
             ComputeReturnFlags();
         return m_dwFlags >> RETURN_FP_SIZE_SHIFT;
     }
+
+#if defined(TARGET_RISCV64)
+    FpStructInRegistersInfo GetReturnFpStructInRegistersInfo()
+    {
+        WRAPPER_NO_CONTRACT;
+        if (!(m_dwFlags & RETURN_FLAGS_COMPUTED))
+            ComputeReturnFlags();
+
+        return {
+            FpStruct::Flags(m_dwFlags >> RETURN_FP_SIZE_SHIFT),
+            m_returnedFpFieldOffsets[0],
+            m_returnedFpFieldOffsets[1],
+        };
+    }
+#endif // TARGET_RISCV64
 
 #ifdef TARGET_X86
     //=========================================================================
@@ -534,7 +553,22 @@ public:
         // Composites greater than 16 bytes are passed by reference
         return (size > ENREGISTERED_PARAMTYPE_MAXSIZE);
 #elif defined(TARGET_RISCV64)
-        return (size > ENREGISTERED_PARAMTYPE_MAXSIZE);
+        if (th.GetSignatureCorElementType() == ELEMENT_TYPE_VALUETYPE)
+        {
+            if (size <= ENREGISTERED_PARAMTYPE_MAXSIZE)
+                return FALSE;
+
+            // Structs larger than 16 bytes can still be passed in registers according to FP call conv if it has empty
+            // fields or more padding, so make sure it's passed according to integer call conv which bounds structs
+            // passed by value to 16 bytes.
+            //
+            // Note: if it's larger than 16 bytes and elegible for passing according to FP call conv, it still does not
+            // mean it will not be passed by reference. We need to know if there's enough free registers, otherwise
+            // it will fall back to passing according to integer calling convention (by implicit reference).
+            // (see the non-static overload of IsArgPassedByRef())
+            return MethodTable::GetRiscV64PassFpStructInRegistersInfo(th).flags == FpStruct::UseIntCallConv;
+        }
+        return FALSE;
 #else
         PORTABILITY_ASSERT("ArgIteratorTemplate::IsArgPassedByRef");
         return FALSE;
@@ -593,7 +627,10 @@ public:
         if (m_argType == ELEMENT_TYPE_VALUETYPE)
         {
             _ASSERTE(!m_argTypeHandle.IsNull());
-            return (m_argSize > ENREGISTERED_PARAMTYPE_MAXSIZE);
+            // On RISC-V structs larger than 16 bytes can still be passed in registers according to FP call conv if it
+            // has empty fields or more padding, so also check for m_hasArgLocDescForStructInRegs.
+            return (m_argSize > ENREGISTERED_PARAMTYPE_MAXSIZE)
+                RISCV64_ONLY(&& !m_hasArgLocDescForStructInRegs);
         }
         return FALSE;
 #else
@@ -909,6 +946,11 @@ public:
 protected:
     DWORD               m_dwFlags;              // Cached flags
     int                 m_nSizeOfArgStack;      // Cached value of SizeOfArgStack
+#if defined(TARGET_RISCV64)
+    // Offsets of fields returned according to hardware floating-point calling convention
+    // (FpStruct::Flags are embedded in m_dwFlags)
+    unsigned m_returnedFpFieldOffsets[2];
+#endif
 
     DWORD               m_argNum;
 
@@ -1790,121 +1832,108 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
 
     return argOfs;
 #elif defined(TARGET_RISCV64)
-
+    assert(!this->IsVarArg()); // Varargs on RISC-V not supported yet
     int cFPRegs = 0;
-    int flags = 0;
+    FpStructInRegistersInfo info = {};
 
     switch (argType)
     {
-
     case ELEMENT_TYPE_R4:
-        // 32-bit floating point argument.
-        cFPRegs = 1;
-        break;
-
     case ELEMENT_TYPE_R8:
-        // 64-bit floating point argument.
+        // Floating point argument
         cFPRegs = 1;
         break;
 
     case ELEMENT_TYPE_VALUETYPE:
-    {
-        // Handle struct which containing floats or doubles that can be passed
-        // in FP registers if possible.
-
-        // Composite greater than 16bytes should be passed by reference
-        if (argSize > ENREGISTERED_PARAMTYPE_MAXSIZE)
+        info = MethodTable::GetRiscV64PassFpStructInRegistersInfo(thValueType);
+        if (info.flags != FpStruct::UseIntCallConv)
         {
-            argSize = sizeof(TADDR);
+            cFPRegs = (info.flags & FpStruct::BothFloat) ? 2 : 1;
         }
-        else
-        {
-            flags = MethodTable::GetRiscV64PassStructInRegisterFlags(thValueType);
-            if (flags & STRUCT_HAS_FLOAT_FIELDS_MASK)
-            {
-                cFPRegs = (flags & STRUCT_FLOAT_FIELD_ONLY_TWO) ? 2 : 1;
-            }
-        }
-
         break;
-    }
 
     default:
         break;
     }
 
-    const bool isValueType = (argType == ELEMENT_TYPE_VALUETYPE);
-    const bool isFloatHfa = thValueType.IsFloatHfa();
-    const int cbArg = StackElemSize(argSize, isValueType, isFloatHfa);
-
-    if (cFPRegs > 0 && !this->IsVarArg())
+    if (cFPRegs > 0)
     {
-        if (flags & (STRUCT_FLOAT_FIELD_FIRST | STRUCT_FLOAT_FIELD_SECOND))
+        // Pass according to hardware floating-point calling convention iff the argument can be fully enregistered
+        if (info.flags & (FpStruct::FloatInt | FpStruct::IntFloat))
         {
             assert(cFPRegs == 1);
-            assert((STRUCT_FLOAT_FIELD_FIRST == (flags & STRUCT_HAS_FLOAT_FIELDS_MASK)) || (STRUCT_FLOAT_FIELD_SECOND == (flags & STRUCT_HAS_FLOAT_FIELDS_MASK)));
 
-            if ((1 + m_idxFPReg <= NUM_ARGUMENT_REGISTERS) && (m_idxGenReg + 1 <= NUM_ARGUMENT_REGISTERS))
+            if ((1 + m_idxFPReg <= NUM_ARGUMENT_REGISTERS) && (1 + m_idxGenReg <= NUM_ARGUMENT_REGISTERS))
             {
                 m_argLocDescForStructInRegs.Init();
                 m_argLocDescForStructInRegs.m_idxFloatReg = m_idxFPReg;
                 m_argLocDescForStructInRegs.m_cFloatReg = 1;
-                int argOfs = (flags & STRUCT_FLOAT_FIELD_SECOND)
-                    ? TransitionBlock::GetOffsetOfArgumentRegisters() + m_idxGenReg * 8
-                    : TransitionBlock::GetOffsetOfFloatArgumentRegisters() + m_idxFPReg * 8;
-                m_idxFPReg += 1;
-
-                m_argLocDescForStructInRegs.m_structFields = flags;
 
                 m_argLocDescForStructInRegs.m_idxGenReg = m_idxGenReg;
                 m_argLocDescForStructInRegs.m_cGenReg = 1;
-                m_idxGenReg += 1;
 
+                m_argLocDescForStructInRegs.m_structFields = info;
                 m_hasArgLocDescForStructInRegs = true;
 
-                return argOfs;
+                int regOffset = (info.flags & FpStruct::IntFloat)
+                    ? TransitionBlock::GetOffsetOfArgumentRegisters() + m_idxGenReg * TARGET_POINTER_SIZE
+                    : TransitionBlock::GetOffsetOfFloatArgumentRegisters() + m_idxFPReg * FLOAT_REGISTER_SIZE;
+                m_idxFPReg++;
+                m_idxGenReg++;
+                return regOffset;
             }
         }
         else if (cFPRegs + m_idxFPReg <= NUM_ARGUMENT_REGISTERS)
         {
-            int argOfs = TransitionBlock::GetOffsetOfFloatArgumentRegisters() + m_idxFPReg * 8;
-            if (flags == STRUCT_FLOAT_FIELD_ONLY_TWO) // struct with two float-fields.
+            int regOffset = TransitionBlock::GetOffsetOfFloatArgumentRegisters() + m_idxFPReg * FLOAT_REGISTER_SIZE;
+
+            if (info.flags & (FpStruct::BothFloat | FpStruct::OnlyOne))
             {
                 m_argLocDescForStructInRegs.Init();
-                m_hasArgLocDescForStructInRegs = true;
                 m_argLocDescForStructInRegs.m_idxFloatReg = m_idxFPReg;
-                assert(cFPRegs == 2);
-                m_argLocDescForStructInRegs.m_cFloatReg = 2;
-                assert(argSize == 8);
-                m_argLocDescForStructInRegs.m_structFields = STRUCT_FLOAT_FIELD_ONLY_TWO;
+                m_argLocDescForStructInRegs.m_cFloatReg = cFPRegs;
+
+                m_argLocDescForStructInRegs.m_structFields = info;
+                m_hasArgLocDescForStructInRegs = true;
             }
             m_idxFPReg += cFPRegs;
-            return argOfs;
+            return regOffset;
         }
     }
 
+    // Pass according to integer calling convention
+
+    if (argSize > ENREGISTERED_PARAMTYPE_MAXSIZE)
+        argSize = sizeof(TADDR); // pass by implicit reference
+
+    bool isValueType = (argType == ELEMENT_TYPE_VALUETYPE);
+    int cbArg = StackElemSize(argSize, isValueType, false);
+    assert((cbArg % TARGET_POINTER_SIZE) == 0);
+
+    int regSlots = ALIGN_UP(cbArg, TARGET_POINTER_SIZE) / TARGET_POINTER_SIZE;
+    assert(regSlots <= 2);
+    if (m_idxGenReg + regSlots <= NUM_ARGUMENT_REGISTERS) // pass in register(s)
     {
-        const int regSlots = ALIGN_UP(cbArg, TARGET_POINTER_SIZE) / TARGET_POINTER_SIZE;
-        if (m_idxGenReg + regSlots <= NUM_ARGUMENT_REGISTERS)
-        {
-            int argOfs = TransitionBlock::GetOffsetOfArgumentRegisters() + m_idxGenReg * 8;
-            m_idxGenReg += regSlots;
-            return argOfs;
-        }
-        else if (m_idxGenReg < NUM_ARGUMENT_REGISTERS)
-        {
-            int argOfs = TransitionBlock::GetOffsetOfArgumentRegisters() + m_idxGenReg * 8;
-            m_ofsStack += (m_idxGenReg + regSlots - NUM_ARGUMENT_REGISTERS)*8;
-            assert(m_ofsStack == 8);
-            m_idxGenReg = NUM_ARGUMENT_REGISTERS;
-            return argOfs;
-        }
+        int regOffset = TransitionBlock::GetOffsetOfArgumentRegisters() + m_idxGenReg * TARGET_POINTER_SIZE;
+        m_idxGenReg += regSlots;
+        return regOffset;
+    }
+    else if (m_idxGenReg < NUM_ARGUMENT_REGISTERS) // pass split; head in register, tail on stack
+    {
+        assert(regSlots == 2);
+        assert(m_idxGenReg + 1 == NUM_ARGUMENT_REGISTERS); // last argument register should be free
+        assert((m_idxGenReg + regSlots - NUM_ARGUMENT_REGISTERS) == 1); // one stack slot needed
+        assert(m_ofsStack == 0); // tail of a split argument should be the first slot on the stack
+
+        int regOffset = TransitionBlock::GetOffsetOfArgumentRegisters() + m_idxGenReg * TARGET_POINTER_SIZE;
+        m_ofsStack = 8;
+        m_idxGenReg = NUM_ARGUMENT_REGISTERS;
+        return regOffset;
     }
 
-    int argOfs = TransitionBlock::GetOffsetOfArgs() + m_ofsStack;
+    int stackOffset = TransitionBlock::GetOffsetOfArgs() + m_ofsStack; // pass entirely on stack
     m_ofsStack += ALIGN_UP(cbArg, TARGET_POINTER_SIZE);
-
-    return argOfs;
+    return stackOffset;
 #else
     PORTABILITY_ASSERT("ArgIteratorTemplate::GetNextOffset");
     return TransitionBlock::InvalidOffset;
@@ -2028,12 +2057,14 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ComputeReturnFlags()
                 break;
             }
 #elif defined(TARGET_RISCV64)
-            if  (size <= ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE)
-            {
-                assert(!thValueType.IsTypeDesc());
-                flags = (MethodTable::GetRiscV64PassStructInRegisterFlags(thValueType) & 0xff) << RETURN_FP_SIZE_SHIFT;
+            assert(!thValueType.IsTypeDesc());
+            FpStructInRegistersInfo info = MethodTable::GetRiscV64PassFpStructInRegistersInfo(thValueType);
+            flags |= info.flags << RETURN_FP_SIZE_SHIFT;
+            m_returnedFpFieldOffsets[0] = info.offset1st;
+            m_returnedFpFieldOffsets[1] = info.offset2nd;
+
+            if  (info.flags != FpStruct::UseIntCallConv || size <= ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE)
                 break;
-            }
 #else
             if  (size <= ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE)
                 break;

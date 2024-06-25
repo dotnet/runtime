@@ -158,6 +158,35 @@ void DispatchCallDebuggerWrapper(
     PAL_ENDTRY
 }
 
+#if defined(TARGET_RISCV64)
+void CopyReturnedFpStructFromRegisters(void* dest, UINT64 returnRegs[2], FpStructInRegistersInfo info,
+    bool handleGcRefs)
+{
+    _ASSERTE(info.flags != FpStruct::UseIntCallConv);
+
+    // IntFloat is the only case where returnRegs[0] (fa0) represents the second field, not the first.
+    UINT64* returnField1st = &returnRegs[(info.flags & FpStruct::IntFloat) ? 1 : 0];
+    UINT64* returnField2nd = &returnRegs[(info.flags & FpStruct::IntFloat) ? 0 : 1];
+
+    memcpyNoGCRefs((char*)dest + info.offset1st, returnField1st, info.Size1st());
+
+    if ((info.flags & FpStruct::OnlyOne) == 0)
+    {
+        char* field2ndDest = (char*)dest + info.offset2nd;
+        if (handleGcRefs && info.IntFieldKind() == FpStruct::IntKind::GcRef)
+        {
+            _ASSERTE(info.flags & (FpStruct::FloatInt | FpStruct::IntFloat));
+            _ASSERTE(info.Size2nd() == TARGET_POINTER_SIZE);
+            memmoveGCRefs(field2ndDest, returnField2nd, TARGET_POINTER_SIZE);
+        }
+        else
+        {
+            memcpyNoGCRefs(field2ndDest, returnField2nd, info.Size2nd());
+        }
+    }
+}
+#endif // TARGET_RISCV64
+
 // Helper for VM->managed calls with simple signatures.
 void * DispatchCallSimple(
                     SIZE_T *pSrc,
@@ -549,15 +578,27 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
         CallDescrWorkerWithHandler(&callDescrData);
     }
 
+#ifdef FEATURE_HFA
     if (pvRetBuff != NULL)
     {
         memcpyNoGCRefs(pvRetBuff, &callDescrData.returnValue, sizeof(callDescrData.returnValue));
     }
+#endif // FEATURE_HFA
 
     if (pReturnValue != NULL)
     {
-        _ASSERTE((DWORD)cbReturnValue <= sizeof(callDescrData.returnValue));
-        memcpyNoGCRefs(pReturnValue, &callDescrData.returnValue, cbReturnValue);
+        NOT_RISCV64(_ASSERTE((DWORD)cbReturnValue <= sizeof(callDescrData.returnValue));)
+#if defined(TARGET_RISCV64)
+        if (callDescrData.fpReturnSize != FpStruct::UseIntCallConv)
+        {
+            FpStructInRegistersInfo info = m_argIt.GetReturnFpStructInRegistersInfo();
+            CopyReturnedFpStructFromRegisters(pReturnValue, callDescrData.returnValue, info, false);
+        }
+        else
+#endif // TARGET_RISCV64
+        {
+            memcpyNoGCRefs(pReturnValue, &callDescrData.returnValue, cbReturnValue);
+        }
 
 #if !defined(HOST_64BIT) && BIGENDIAN
         {

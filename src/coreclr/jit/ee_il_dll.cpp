@@ -425,11 +425,19 @@ unsigned Compiler::eeGetArgSize(CorInfoType corInfoType, CORINFO_CLASS_HANDLE ty
             }
         }
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-        // Any structs that are larger than MAX_PASS_MULTIREG_BYTES are always passed by reference
+        // Any structs that are larger than MAX_PASS_MULTIREG_BYTES are always passed by reference...
         if (structSize > MAX_PASS_MULTIREG_BYTES)
         {
-            // This struct is passed by reference using a single 'slot'
-            return TARGET_POINTER_SIZE;
+#ifdef TARGET_RISCV64
+            // ... unless on RISC-V they are still eligible for passing according to hardware floating-point calling
+            // convention, e.g. struct {long; struct{}; double; }.
+            FpStructInRegistersInfo fpInfo = GetPassFpStructInRegistersInfo(typeHnd);
+            if (fpInfo.flags == FpStruct::UseIntCallConv)
+#endif
+            {
+                // This struct is passed by reference using a single 'slot'
+                return TARGET_POINTER_SIZE;
+            }
         }
 //  otherwise will we pass this struct by value in multiple registers
 #elif !defined(TARGET_ARM)
@@ -1375,7 +1383,7 @@ void Compiler::eeGetSystemVAmd64PassStructInRegisterDescriptor(
                 printf("        eightByte #%d -- classification: ", i);
                 dumpSystemVClassificationType(structPassInRegDescPtr->eightByteClassifications[i]);
                 printf(", byteSize: %d, byteOffset: %d\n", structPassInRegDescPtr->eightByteSizes[i],
-                       structPassInRegDescPtr->eightByteOffsets[i]);
+                       structPassInRegDescPtr->eightByteOffsetn[i]);
             }
         }
     }

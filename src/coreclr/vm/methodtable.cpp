@@ -2114,11 +2114,14 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
 
     DWORD numIntroducedFields = GetNumIntroducedInstanceFields();
 
-    // It appears the VM gives a struct with no fields of size 1.
-    // Don't pass in register such structure.
     if (numIntroducedFields == 0)
     {
-        return false;
+        helperPtr->largestFieldOffset = startOffsetOfStruct;
+        LOG((LF_JIT, LL_EVERYTHING, "%*s**** Classify empty struct %s (%p) like padding, startOffset %d, total struct size %d\n",
+            nestingLevel * 5, "", this->GetDebugClassName(), this, startOffsetOfStruct, helperPtr->structSize));
+
+        AssignClassifiedEightByteTypes(helperPtr, nestingLevel);
+        return true;
     }
 
     // The SIMD Intrinsic types are meant to be handled specially and should not be passed as struct registers
@@ -2334,7 +2337,12 @@ bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassin
     // No fields.
     if (numIntroducedFields == 0)
     {
-        return false;
+        helperPtr->largestFieldOffset = startOffsetOfStruct;
+        LOG((LF_JIT, LL_EVERYTHING, "%*s**** Classify empty struct %s (%p) like padding, startOffset %d, total struct size %d\n",
+            nestingLevel * 5, "", this->GetDebugClassName(), this, startOffsetOfStruct, helperPtr->structSize));
+
+        AssignClassifiedEightByteTypes(helperPtr, nestingLevel);
+        return true;
     }
 
     bool hasImpliedRepeatedFields = HasImpliedRepeatedFields(this);
@@ -2586,8 +2594,12 @@ void  MethodTable::AssignClassifiedEightByteTypes(SystemVStructRegisterPassingHe
         // Calculate the eightbytes and their types.
 
         int lastFieldOrdinal = sortedFieldOrder[largestFieldOffset];
-        unsigned int offsetAfterLastFieldByte = largestFieldOffset + helperPtr->fieldSizes[lastFieldOrdinal];
-        SystemVClassificationType lastFieldClassification = helperPtr->fieldClassifications[lastFieldOrdinal];
+        unsigned int lastFieldSize = (lastFieldOrdinal >= 0) ? helperPtr->fieldSizes[lastFieldOrdinal] : 0;
+        unsigned int offsetAfterLastFieldByte = largestFieldOffset + lastFieldSize;
+        _ASSERTE(offsetAfterLastFieldByte <= helperPtr->structSize);
+        SystemVClassificationType lastFieldClassification = (lastFieldOrdinal >= 0)
+            ? helperPtr->fieldClassifications[lastFieldOrdinal]
+            : SystemVClassificationTypeNoClass;
 
         unsigned int usedEightBytes = 0;
         unsigned int accumulatedSizeForEightBytes = 0;
@@ -2614,6 +2626,8 @@ void  MethodTable::AssignClassifiedEightByteTypes(SystemVStructRegisterPassingHe
                 // the SysV ABI spec.
                 fieldSize = 1;
                 fieldClassificationType = offset < offsetAfterLastFieldByte ? SystemVClassificationTypeNoClass : lastFieldClassification;
+                if (offset % SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES == 0) // new eightbyte
+                    foundFieldInEightByte = false;
             }
             else
             {
@@ -2666,13 +2680,16 @@ void  MethodTable::AssignClassifiedEightByteTypes(SystemVStructRegisterPassingHe
                 }
             }
 
-            if ((offset + 1) % SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES == 0) // If we just finished checking the last byte of an eightbyte
+            //  If we just finished checking the last byte of an eightbyte or the entire struct
+            if ((offset + 1) % SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES == 0 || (offset + 1) == helperPtr->structSize)
             {
                 if (!foundFieldInEightByte)
                 {
-                    // If we didn't find a field in an eight-byte (i.e. there are no explicit offsets that start a field in this eightbyte)
+                    // If we didn't find a field in an eightbyte (i.e. there are no explicit offsets that start a field in this eightbyte)
                     // then the classification of this eightbyte might be NoClass. We can't hand a classification of NoClass to the JIT
                     // so set the class to Integer (as though the struct has a char[8] padding) if the class is NoClass.
+                    //
+                    // TODO: Fix JIT, NoClass eightbytes are valid and passing them is now broken because of this.
                     if (helperPtr->eightByteClassifications[offset / SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES] == SystemVClassificationTypeNoClass)
                     {
                         helperPtr->eightByteClassifications[offset / SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES] = SystemVClassificationTypeInteger;
@@ -2705,9 +2722,9 @@ void  MethodTable::AssignClassifiedEightByteTypes(SystemVStructRegisterPassingHe
         LOG((LF_JIT, LL_EVERYTHING, "     **** Number EightBytes: %d\n", helperPtr->eightByteCount));
         for (unsigned i = 0; i < helperPtr->eightByteCount; i++)
         {
-            _ASSERTE(helperPtr->eightByteClassifications[i] != SystemVClassificationTypeNoClass);
             LOG((LF_JIT, LL_EVERYTHING, "     **** eightByte %d -- classType: %s, eightByteOffset: %d, eightByteSize: %d\n",
                 i, GetSystemVClassificationTypeName(helperPtr->eightByteClassifications[i]), helperPtr->eightByteOffsets[i], helperPtr->eightByteSizes[i]));
+            _ASSERTE(helperPtr->eightByteClassifications[i] != SystemVClassificationTypeNoClass);
         }
 #endif // _DEBUG
     }
@@ -2716,11 +2733,14 @@ void  MethodTable::AssignClassifiedEightByteTypes(SystemVStructRegisterPassingHe
 #endif // defined(UNIX_AMD64_ABI_ITF)
 
 #if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
-static bool HandleInlineArray(int elementTypeIndex, int nElements, StructFloatFieldInfoFlags types[2], int& typeIndex)
+static bool HandleInlineArrayOld(int elementTypeIndex, int nElements, StructFloatFieldInfoFlags types[2], int& typeIndex)
 {
     int nFlattenedFieldsPerElement = typeIndex - elementTypeIndex;
     if (nFlattenedFieldsPerElement == 0)
-        return true;
+    {
+        assert(nElements == 1); // HasImpliedRepeatedFields must have returned a false positive
+        return true; // ignoring empty struct
+    }
 
     assert(nFlattenedFieldsPerElement == 1 || nFlattenedFieldsPerElement == 2);
 
@@ -2739,7 +2759,7 @@ static bool HandleInlineArray(int elementTypeIndex, int nElements, StructFloatFi
     return true;
 }
 
-static bool FlattenFieldTypes(TypeHandle th, StructFloatFieldInfoFlags types[2], int& typeIndex)
+static bool FlattenFieldTypesOld(TypeHandle th, StructFloatFieldInfoFlags types[2], int& typeIndex)
 {
     bool isManaged = !th.IsTypeDesc();
     MethodTable* pMT = isManaged ? th.AsMethodTable() : th.AsNativeValueType();
@@ -2760,7 +2780,7 @@ static bool FlattenFieldTypes(TypeHandle th, StructFloatFieldInfoFlags types[2],
             if (type == ELEMENT_TYPE_VALUETYPE)
             {
                 MethodTable* nested = fields[i].GetApproxFieldTypeHandleThrowing().GetMethodTable();
-                if (!FlattenFieldTypes(TypeHandle(nested), types, typeIndex))
+                if (!FlattenFieldTypesOld(TypeHandle(nested), types, typeIndex))
                     return false;
             }
             else if (fields[i].GetSize() <= TARGET_POINTER_SIZE)
@@ -2783,7 +2803,15 @@ static bool FlattenFieldTypes(TypeHandle th, StructFloatFieldInfoFlags types[2],
         {
             assert(nFields == 1);
             int nElements = pMT->GetNumInstanceFieldBytes() / fields[0].GetSize();
-            if (!HandleInlineArray(elementTypeIndex, nElements, types, typeIndex))
+
+            // Only InlineArrays can have an element type of an empty struct, fixed-size buffers take only primitives
+            if ((typeIndex - elementTypeIndex) == 0 && pMT->GetClass()->IsInlineArray())
+            {
+                assert(nElements > 0);
+                return false;
+            }
+
+            if (!HandleInlineArrayOld(elementTypeIndex, nElements, types, typeIndex))
                 return false;
         }
     }
@@ -2801,12 +2829,12 @@ static bool FlattenFieldTypes(TypeHandle th, StructFloatFieldInfoFlags types[2],
                 int elementTypeIndex = typeIndex;
 
                 MethodTable* nested = fields[i].GetNestedNativeMethodTable();
-                if (!FlattenFieldTypes(TypeHandle(nested), types, typeIndex))
+                if (!FlattenFieldTypesOld(TypeHandle(nested), types, typeIndex))
                     return false;
 
                 // In native layout fixed arrays are marked as NESTED just like structs
                 int nElements = fields[i].GetNumElements();
-                if (!HandleInlineArray(elementTypeIndex, nElements, types, typeIndex))
+                if (!HandleInlineArrayOld(elementTypeIndex, nElements, types, typeIndex))
                     return false;
             }
             else if (fields[i].NativeSize() <= TARGET_POINTER_SIZE)
@@ -2837,7 +2865,7 @@ int MethodTable::GetLoongArch64PassStructInRegisterFlags(TypeHandle th)
 
     StructFloatFieldInfoFlags types[2] = {STRUCT_NO_FLOAT_FIELD, STRUCT_NO_FLOAT_FIELD};
     int nFields = 0;
-    if (!FlattenFieldTypes(th, types, nFields) || nFields == 0)
+    if (!FlattenFieldTypesOld(th, types, nFields) || nFields == 0)
         return STRUCT_NO_FLOAT_FIELD;
 
     assert(nFields == 1 || nFields == 2);
@@ -2867,14 +2895,11 @@ int MethodTable::GetLoongArch64PassStructInRegisterFlags(TypeHandle th)
 #endif
 
 #if defined(TARGET_RISCV64)
-int MethodTable::GetRiscV64PassStructInRegisterFlags(TypeHandle th)
+static int GetRiscV64PassStructInRegisterFlags(TypeHandle th)
 {
-    if (th.GetSize() > ENREGISTERED_PARAMTYPE_MAXSIZE)
-        return STRUCT_NO_FLOAT_FIELD;
-
     StructFloatFieldInfoFlags types[2] = {STRUCT_NO_FLOAT_FIELD, STRUCT_NO_FLOAT_FIELD};
     int nFields = 0;
-    if (!FlattenFieldTypes(th, types, nFields) || nFields == 0)
+    if (!FlattenFieldTypesOld(th, types, nFields) || nFields == 0)
         return STRUCT_NO_FLOAT_FIELD;
 
     assert(nFields == 1 || nFields == 2);
@@ -2902,6 +2927,311 @@ int MethodTable::GetRiscV64PassStructInRegisterFlags(TypeHandle th)
     return flags;
 }
 #endif
+
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+static void SetFpStructInRegistersInfoField(FpStructInRegistersInfo& info, int index,
+    bool isFloating, FpStruct::IntKind intKind, unsigned size, uint32_t offset)
+{
+    assert(index < 2);
+    if (isFloating)
+    {
+        assert(size == sizeof(float) || size == sizeof(double));
+        assert(intKind == FpStruct::IntKind::Signed);
+        static_assert((int)FpStruct::IntKind::Signed == 0,
+            "IntKind for floating fields should not clobber IntKind for int fields");
+    }
+
+    assert(size >= 1 && size <= 8);
+    assert((size & (size - 1)) == 0); // size needs to be a power of 2
+    static const int sizeShiftLUT = (0 << (1*2)) | (1 << (2*2)) | (2 << (4*2)) | (3 << (8*2));
+    int sizeShift = (sizeShiftLUT >> (size * 2)) & 0b11;
+
+    using namespace FpStruct;
+    // Use FloatInt and IntFloat as marker flags for 1st and 2nd field respectively being floating.
+    // Fix to real flags (with OnlyOne and BothFloat) after flattening is complete.
+    static_assert(PosIntFloat == PosFloatInt + 1, "FloatInt and IntFloat need to be adjacent");
+    static_assert(PosSizeShift2nd == PosSizeShift1st + 2, "SizeShift1st and 2nd need to be adjacent");
+    int floatFlag = isFloating << (PosFloatInt + index);
+    int sizeShiftMask = sizeShift << (PosSizeShift1st + 2 * index);
+
+    info.flags = FpStruct::Flags(info.flags | floatFlag | sizeShiftMask | ((int)intKind << PosIntFieldKind));
+    (index == 0 ? info.offset1st : info.offset2nd) = offset;
+}
+
+static bool HandleInlineArray(int elementTypeIndex, int nElements, FpStructInRegistersInfo& info, int& typeIndex
+    DEBUG_ARG(int nestingLevel))
+{
+    int nFlattenedFieldsPerElement = typeIndex - elementTypeIndex;
+    if (nFlattenedFieldsPerElement == 0)
+    {
+        assert(nElements == 1); // HasImpliedRepeatedFields must have returned a false positive
+        LOG((LF_JIT, LL_EVERYTHING, "FpStructInRegistersInfo:%*s  * ignoring empty struct\n",
+            nestingLevel * 4, ""));
+        return true;
+    }
+
+    assert(nFlattenedFieldsPerElement == 1 || nFlattenedFieldsPerElement == 2);
+
+    if (nElements > 2)
+    {
+        LOG((LF_JIT, LL_EVERYTHING, "FpStructInRegistersInfo:%*s  * array has too many elements: %i\n",
+            nestingLevel * 4, "", nElements));
+        return false;
+    }
+
+    if (nElements == 2)
+    {
+        if (typeIndex + nFlattenedFieldsPerElement > 2)
+        {
+            LOG((LF_JIT, LL_EVERYTHING, "FpStructInRegistersInfo:%*s  * array has too many fields per element: %i, fields already found: %i\n",
+                nestingLevel * 4, "", nFlattenedFieldsPerElement, typeIndex));
+            return false;
+        }
+
+        assert(elementTypeIndex == 0);
+        assert(typeIndex == 1);
+
+        // duplicate the array element info
+        static const int typeSize = FpStruct::PosIntFloat - FpStruct::PosFloatInt;
+        info.flags = FpStruct::Flags(info.flags | (info.flags << typeSize));
+        info.offset2nd = info.offset1st + info.Size1st();
+        LOG((LF_JIT, LL_EVERYTHING, "FpStructInRegistersInfo:%*s  * duplicated array element type\n",
+            nestingLevel * 4, ""));
+    }
+    return true;
+}
+
+static bool FlattenFields(TypeHandle th, uint32_t offset, FpStructInRegistersInfo& info, int& typeIndex
+    DEBUG_ARG(int nestingLevel))
+{
+    bool isManaged = !th.IsTypeDesc();
+    MethodTable* pMT = isManaged ? th.AsMethodTable() : th.AsNativeValueType();
+    int nFields = isManaged ? pMT->GetNumIntroducedInstanceFields() : pMT->GetNativeLayoutInfo()->GetNumFields();
+
+    LOG((LF_JIT, LL_EVERYTHING, "FpStructInRegistersInfo:%*s flattening %s (%s, %i fields)\n",
+        nestingLevel * 4, "", pMT->GetDebugClassName(), (isManaged ? "managed" : "native"), nFields));
+
+    // TODO: templatize isManaged and use if constexpr for differences when we migrate to C++17
+    // because the logic for both branches is nearly the same.
+    if (isManaged)
+    {
+        FieldDesc* fields = pMT->GetApproxFieldDescListRaw();
+        int elementTypeIndex = typeIndex;
+        for (int i = 0; i < nFields; ++i)
+        {
+            if (i > 0 && fields[i-1].GetOffset() + fields[i-1].GetSize() > fields[i].GetOffset())
+            {
+                LOG((LF_JIT, LL_EVERYTHING, "FpStructInRegistersInfo:%*s "
+                    " * fields %s [%i..%i) and %s [%i..%i) overlap, treat as union\n",
+                    nestingLevel * 4, "",
+                    fields[i-1].GetDebugName(), fields[i-1].GetOffset(), fields[i-1].GetOffset() + fields[i-1].GetSize(),
+                    fields[i].GetDebugName(), fields[i].GetOffset(), fields[i].GetOffset() + fields[i].GetSize()));
+                return false;
+            }
+
+            CorElementType type = fields[i].GetFieldType();
+            if (type == ELEMENT_TYPE_VALUETYPE)
+            {
+                MethodTable* nested = fields[i].GetApproxFieldTypeHandleThrowing().GetMethodTable();
+                if (!FlattenFields(TypeHandle(nested), offset + fields[i].GetOffset(), info, typeIndex DEBUG_ARG(nestingLevel + 1)))
+                    return false;
+            }
+            else if (fields[i].GetSize() <= TARGET_POINTER_SIZE)
+            {
+                if (typeIndex >= 2)
+                {
+                    LOG((LF_JIT, LL_EVERYTHING, "FpStructInRegistersInfo:%*s  * too many fields\n",
+                        nestingLevel * 4, ""));
+                    return false;
+                }
+
+                bool isFloating = CorTypeInfo::IsFloat_NoThrow(type);
+                bool isSignedInt = (
+                    type == ELEMENT_TYPE_I1 ||
+                    type == ELEMENT_TYPE_I2 ||
+                    type == ELEMENT_TYPE_I4 ||
+                    type == ELEMENT_TYPE_I8 ||
+                    type == ELEMENT_TYPE_I);
+                CorInfoGCType gcType = CorTypeInfo::GetGCType_NoThrow(type);
+
+                FpStruct::IntKind intKind =
+                    (gcType == TYPE_GC_REF)   ? FpStruct::IntKind::GcRef :
+                    (gcType == TYPE_GC_BYREF) ? FpStruct::IntKind::GcByRef :
+                    (isSignedInt || isFloating) ? FpStruct::IntKind::Signed : FpStruct::IntKind::Unsigned;
+
+                SetFpStructInRegistersInfoField(info, typeIndex++,
+                    isFloating, intKind, CorTypeInfo::Size_NoThrow(type), offset + fields[i].GetOffset());
+
+                LOG((LF_JIT, LL_EVERYTHING, "FpStructInRegistersInfo:%*s  * found field %s [%i..%i), type: %s\n",
+                    nestingLevel * 4, "", fields[i].GetDebugName(),
+                    fields[i].GetOffset(), fields[i].GetOffset() + fields[i].GetSize(), CorTypeInfo::GetName(type)));
+            }
+            else
+            {
+                LOG((LF_JIT, LL_EVERYTHING, "FpStructInRegistersInfo:%*s "
+                    " * field %s, type: %s, is too big (%i bytes)\n",
+                    nestingLevel * 4, "", fields[i].GetDebugName(),
+                    CorTypeInfo::GetName(type), fields[i].GetSize()));
+                return false;
+            }
+        }
+
+        if (HasImpliedRepeatedFields(pMT)) // inline array or fixed buffer
+        {
+            assert(nFields == 1);
+            int nElements = pMT->GetNumInstanceFieldBytes() / fields[0].GetSize();
+
+            // Only InlineArrays can have an element type of an empty struct, fixed-size buffers take only primitives
+            if ((typeIndex - elementTypeIndex) == 0 && pMT->GetClass()->IsInlineArray())
+            {
+                assert(nElements > 0); // InlineArray length must be > 0
+                LOG((LF_JIT, LL_EVERYTHING, "FpStructInRegistersInfo:%*s "
+                    " * struct %s containing a %i-element array of empty structs %s is passed by integer calling convention\n",
+                    nestingLevel * 4, "", pMT->GetDebugClassName(), nElements, fields[0].GetDebugName()));
+                return false;
+            }
+
+            if (!HandleInlineArray(elementTypeIndex, nElements, info, typeIndex DEBUG_ARG(nestingLevel + 1)))
+                return false;
+        }
+    }
+    else // native layout
+    {
+        const NativeFieldDescriptor* fields = pMT->GetNativeLayoutInfo()->GetNativeFieldDescriptors();
+        for (int i = 0; i < nFields; ++i)
+        {
+            if (i > 0 && fields[i-1].GetExternalOffset() + fields[i-1].NativeSize() > fields[i].GetExternalOffset())
+            {
+                LOG((LF_JIT, LL_EVERYTHING, "FpStructInRegistersInfo:%*s "
+                    " * fields %s [%i..%i) and %s [%i..%i) overlap, treat as union\n",
+                    nestingLevel * 4, "",
+                    fields[i-1].GetFieldDesc()->GetDebugName(), fields[i-1].GetExternalOffset(), fields[i-1].GetExternalOffset() + fields[i-1].NativeSize(),
+                    fields[i].GetFieldDesc()->GetDebugName(), fields[i].GetExternalOffset(), fields[i].GetExternalOffset() + fields[i].NativeSize()));
+                return false;
+            }
+
+            static const char* categoryNames[] = {"FLOAT", "NESTED", "INTEGER", "ILLEGAL"};
+            NativeFieldCategory category = fields[i].GetCategory();
+            if (category == NativeFieldCategory::NESTED)
+            {
+                int elementTypeIndex = typeIndex;
+
+                MethodTable* nested = fields[i].GetNestedNativeMethodTable();
+                if (!FlattenFields(TypeHandle(nested), offset + fields[i].GetExternalOffset(), info, typeIndex DEBUG_ARG(nestingLevel + 1)))
+                    return false;
+
+                // In native layout fixed arrays are marked as NESTED just like structs
+                int nElements = fields[i].GetNumElements();
+                if (!HandleInlineArray(elementTypeIndex, nElements, info, typeIndex DEBUG_ARG(nestingLevel + 1)))
+                    return false;
+            }
+            else if (fields[i].NativeSize() <= TARGET_POINTER_SIZE)
+            {
+                if (typeIndex >= 2)
+                {
+                    LOG((LF_JIT, LL_EVERYTHING, "FpStructInRegistersInfo:%*s  * too many fields\n",
+                        nestingLevel * 4, ""));
+                    return false;
+                }
+
+                SetFpStructInRegistersInfoField(info, typeIndex++,
+                    (category == NativeFieldCategory::FLOAT),
+                    FpStruct::IntKind::Signed, // NativeFieldDescriptor doesn't save signedness, TODO: should it?
+                    fields[i].NativeSize(),
+                    offset + fields[i].GetExternalOffset());
+                LOG((LF_JIT, LL_EVERYTHING, "FpStructInRegistersInfo:%*s  * found field %s [%i..%i), type: %s\n",
+                    nestingLevel * 4, "", fields[i].GetFieldDesc()->GetDebugName(),
+                    fields[i].GetExternalOffset(), fields[i].GetExternalOffset() + fields[i].NativeSize(), categoryNames[(int)category]));
+            }
+            else
+            {
+                LOG((LF_JIT, LL_EVERYTHING, "FpStructInRegistersInfo:%*s "
+                    " * field %s, type: %s, is too big (%i bytes)\n",
+                    nestingLevel * 4, "", fields[i].GetFieldDesc()->GetDebugName(),
+                    categoryNames[(int)category], fields[i].NativeSize()));
+                return false;
+            }
+        }
+    }
+    return true;
+}
+#endif
+
+#if defined(TARGET_RISCV64)
+
+static FpStructInRegistersInfo GetRiscV64PassFpStructInRegistersInfoImpl(TypeHandle th)
+{
+    FpStructInRegistersInfo info = {};
+    int nFields = 0;
+    if (!FlattenFields(th, 0, info, nFields DEBUG_ARG(0)))
+        return FpStructInRegistersInfo{};
+
+    using namespace FpStruct;
+    if ((info.flags & (FloatInt | IntFloat)) == 0)
+    {
+        LOG((LF_JIT, LL_EVERYTHING, "FpStructInRegistersInfo: struct %s (%u bytes) has no floating fields\n",
+            (!th.IsTypeDesc() ? th.AsMethodTable() : th.AsNativeValueType())->GetDebugClassName(), th.GetSize()));
+        return FpStructInRegistersInfo{};
+    }
+
+    assert(nFields == 1 || nFields == 2);
+
+    if ((info.flags & (FloatInt | IntFloat)) == (FloatInt | IntFloat))
+    {
+        assert(nFields == 2);
+        info.flags = FpStruct::Flags(info.flags ^ (FloatInt | IntFloat | BothFloat)); // replace (FloatInt | IntFloat) with BothFloat
+    }
+    else if (nFields == 1)
+    {
+        assert((info.flags & FloatInt) != 0);
+        assert((info.flags & (IntFloat | SizeShift2ndMask)) == 0);
+        assert(info.offset2nd == 0);
+        info.flags = FpStruct::Flags(info.flags ^ (FloatInt | OnlyOne)); // replace FloatInt with OnlyOne
+    }
+    assert(nFields == ((info.flags & OnlyOne) != 0 ? 1 : 2));
+    int floatFlags = info.flags & (OnlyOne | BothFloat | FloatInt | IntFloat);
+    assert(floatFlags != 0);
+    assert((floatFlags & (floatFlags - 1)) == 0); // there can be only one of (OnlyOne | BothFloat | FloatInt | IntFloat)
+    if (nFields == 2)
+    {
+        unsigned end1st = info.offset1st + info.Size1st();
+        unsigned end2nd = info.offset2nd + info.Size2nd();
+        assert(end1st <= info.offset2nd || end2nd <= info.offset1st); // fields must not overlap
+    }
+    assert(info.offset1st + info.Size1st() <= th.GetSize());
+    assert(info.offset2nd + info.Size2nd() <= th.GetSize());
+    if (info.IntFieldKind() != FpStruct::IntKind::Signed)
+    {
+        assert(info.flags & (FloatInt | IntFloat));
+        if (info.IntFieldKind() >= FpStruct::IntKind::GcRef)
+        {
+            assert((info.flags & IntFloat) != 0
+                ? ((info.SizeShift1st() == 3) && IS_ALIGNED(info.offset1st, TARGET_POINTER_SIZE))
+                : ((info.SizeShift2nd() == 3) && IS_ALIGNED(info.offset2nd, TARGET_POINTER_SIZE)));
+        }
+    }
+    if (info.flags & (OnlyOne | BothFloat))
+        assert(info.IntFieldKind() == FpStruct::IntKind::Signed);
+
+    LOG((LF_JIT, LL_EVERYTHING, "FpStructInRegistersInfo: "
+        "struct %s (%u bytes) can be passed with floating-point calling convention, flags=%#03x; "
+        "%s, sizes={%u, %u}, offsets={%u, %u}, IntFieldKindMask=%s\n",
+        (!th.IsTypeDesc() ? th.AsMethodTable() : th.AsNativeValueType())->GetDebugClassName(), th.GetSize(), info.flags,
+        info.FlagName(), info.Size1st(), info.Size2nd(), info.offset1st, info.offset2nd, info.IntFieldKindName()
+    ));
+    return info;
+}
+
+FpStructInRegistersInfo MethodTable::GetRiscV64PassFpStructInRegistersInfo(TypeHandle th)
+{
+    FpStructInRegistersInfo info = GetRiscV64PassFpStructInRegistersInfoImpl(th);
+    int flags = GetRiscV64PassStructInRegisterFlags(th);
+
+    assert(flags == info.ToOldFlags());
+
+    return info;
+}
+#endif // TARGET_RISCV64
 
 #if !defined(DACCESS_COMPILE)
 namespace

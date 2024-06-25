@@ -11,6 +11,7 @@ using System.Diagnostics;
 using Internal.TypeSystem;
 using Internal.CorConstants;
 using Internal.JitInterface;
+using static Internal.JitInterface.StructFloatFieldInfoFlags;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
@@ -303,10 +304,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return size > EnregisteredParamTypeMaxSize;
         }
 
-        public void ComputeReturnValueTreatment(CorElementType type, TypeHandle thRetType, bool isVarArgMethod, out bool usesRetBuffer, out uint fpReturnSize)
+        public void ComputeReturnValueTreatment(CorElementType type, TypeHandle thRetType, bool isVarArgMethod, out bool usesRetBuffer, out uint fpReturnSize, out uint returnedFpFieldOffset1st, out uint returnedFpFieldOffset2nd)
         {
             usesRetBuffer = false;
             fpReturnSize = 0;
+            returnedFpFieldOffset1st = 0;
+            returnedFpFieldOffset2nd = 0;
 
             switch (type)
             {
@@ -385,15 +388,24 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                                     break;
                                 }
                             }
-
-                            if (size <= EnregisteredReturnTypeIntegerMaxSize)
+                            else if (IsLoongArch64)
                             {
-                                if (IsLoongArch64)
+                                if (size <= EnregisteredReturnTypeIntegerMaxSize)
+                                {
                                     fpReturnSize = LoongArch64PassStructInRegister.GetLoongArch64PassStructInRegisterFlags(thRetType.GetRuntimeTypeHandle()) & 0xff;
-                                else if (IsRiscV64)
-                                    fpReturnSize = RISCV64PassStructInRegister.GetRISCV64PassStructInRegisterFlags(thRetType.GetRuntimeTypeHandle()) & 0xff;
-                                break;
+                                    break;
+                                }
+                            }
+                            else if (IsRiscV64)
+                            {
+                                TypeDesc td = thRetType.GetRuntimeTypeHandle();
+                                FpStructInRegistersInfo info = RISCV64PassStructInRegister.GetRiscV64PassFpStructInRegistersInfo(td);
+                                fpReturnSize = (uint)info.flags;
+                                returnedFpFieldOffset1st = info.offset1st;
+                                returnedFpFieldOffset2nd = info.offset2nd;
 
+                                if (info.flags != FpStruct.UseIntCallConv || size <= EnregisteredReturnTypeIntegerMaxSize)
+                                    break;
                             }
 
                         }
@@ -714,9 +726,20 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 Debug.Assert(!th.IsNull());
                 Debug.Assert(th.IsValueType());
+                if (th.GetSize() <= EnregisteredParamTypeMaxSize)
+                    return false;
 
-                // Composites greater than 16 bytes are passed by reference
-                return th.GetSize() > EnregisteredParamTypeMaxSize;
+                // Structs larger than 16 bytes can still be passed in registers according to FP call conv if it has empty
+                // fields or more padding, so make sure it's passed according to integer call conv which bounds structs
+                // passed by value to 16 bytes.
+                //
+                // Note: if it's larger than 16 bytes and elegible for passing according to FP call conv, it still does not
+                // mean it will not be passed by reference. We need to know if there's enough free registers, otherwise
+                // it will fall back to passing according to integer calling convention (by implicit reference).
+                // (see ArgIterator.IsArgPassedByRef())
+                TypeDesc td = th.GetRuntimeTypeHandle();
+                FpStructInRegistersInfo info = RISCV64PassStructInRegister.GetRiscV64PassFpStructInRegistersInfo(td);
+                return (info.flags == FpStruct.UseIntCallConv);
             }
 
             public sealed override int GetRetBuffArgOffset(bool hasThis) => OffsetOfFirstGCRefMapSlot + (hasThis ? 8 : 0);
