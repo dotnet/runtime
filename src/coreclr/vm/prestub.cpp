@@ -145,10 +145,8 @@ PCODE MethodDesc::DoBackpatch(MethodTable * pMT, MethodTable *pDispatchingMT, BO
                 }
             }
 
-#ifndef HAS_COMPACT_ENTRYPOINTS
             // Patch the fake entrypoint if necessary
             Precode::GetPrecodeFromEntryPoint(pExpected)->SetTargetInterlocked(pTarget);
-#endif // HAS_COMPACT_ENTRYPOINTS
         }
 
         if (HasNonVtableSlot())
@@ -2553,21 +2551,6 @@ Stub * MakeInstantiatingStubWorker(MethodDesc *pMD)
 }
 #endif // defined(FEATURE_SHARE_GENERIC_CODE)
 
-#if defined (HAS_COMPACT_ENTRYPOINTS) && defined (TARGET_ARM)
-
-extern "C" MethodDesc * STDCALL PreStubGetMethodDescForCompactEntryPoint (PCODE pCode)
-{
-    _ASSERTE (pCode >= PC_REG_RELATIVE_OFFSET);
-
-    pCode = (PCODE) (pCode - PC_REG_RELATIVE_OFFSET + THUMB_CODE);
-
-    _ASSERTE (MethodDescChunk::IsCompactEntryPointAtAddress (pCode));
-
-    return MethodDescChunk::GetMethodDescFromCompactEntryPoint(pCode, FALSE);
-}
-
-#endif // defined (HAS_COMPACT_ENTRYPOINTS) && defined (TARGET_ARM)
-
 //=============================================================================
 // This function generates the real code when from Preemptive mode.
 // It is specifically designed to work with the UnmanagedCallersOnlyAttribute.
@@ -2859,9 +2842,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
     {
         pCode = GetStubForInteropMethod(this);
 
-#ifndef HAS_COMPACT_ENTRYPOINTS
         EnsureSlotFilled();
-#endif
         GetPrecode()->SetTargetInterlocked(pCode);
 
         RETURN GetStableEntryPoint();

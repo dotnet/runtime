@@ -162,9 +162,7 @@ enum MethodDescFlags
 struct MethodDescCodeData final
 {
     PTR_MethodDescVersioningState VersioningState;
-#ifndef HAS_COMPACT_ENTRYPOINTS
     PCODE m_pTemporaryEntryPoint;
-#endif
 };
 using PTR_MethodDescCodeData = DPTR(MethodDescCodeData);
 
@@ -220,14 +218,10 @@ public:
     PCODE GetTemporaryEntryPoint_NoAlloc()
     {
         LIMITED_METHOD_CONTRACT;
-#ifdef HAS_COMPACT_ENTRYPOINTS
-        return GetTemporaryEntryPoint();
-#else
         PTR_MethodDescCodeData codeData = VolatileLoadWithoutBarrier(&m_codeData);
         if (codeData == NULL)
             return (PCODE)NULL;
         return VolatileLoadWithoutBarrier(&codeData->m_pTemporaryEntryPoint);
-#endif
     }
 
     void SetTemporaryEntryPoint(LoaderAllocator *pLoaderAllocator, AllocMemTracker *pamTracker);
@@ -1413,17 +1407,8 @@ public:
     //
     PCODE GetMethodEntryPoint();
 
-    PCODE GetMethodEntryPoint_NoAlloc()
-#ifdef HAS_COMPACT_ENTRYPOINTS
-    {
-        WRAPPER_NO_CONTRACT;
-        return GetMethodEntryPoint();
-    }
-#else
-    ;
-#endif
+    PCODE GetMethodEntryPoint_NoAlloc();
 
-#ifndef HAS_COMPACT_ENTRYPOINTS
     void EnsureTemporaryEntryPoint(LoaderAllocator *pLoaderAllocator);
 
     // pamTracker must be NULL for a MethodDesc which cannot be freed by an external AllocMemTracker
@@ -1459,7 +1444,6 @@ public:
         }
     }
 #endif // DACCESS_COMPILE
-#endif
 
     //*******************************************************************************
     // Returns the address of the native code.
@@ -1680,15 +1664,11 @@ protected:
 
     BYTE        m_chunkIndex;
 
-#ifndef HAS_COMPACT_ENTRYPOINTS
     enum {
         enum_flag4_ComputedRequiresStableEntryPoint         = 0x01,
         enum_flag4_RequiresStableEntryPoint                 = 0x02,
     };
     BYTE        m_bFlags4; // Used to hold more flags
-#else
-    BYTE        m_methodIndex; // Used to hold the index into the chunk of this MethodDesc. Currently all 8 bits are used, but we could likely work with only 7 bits
-#endif
 
     WORD m_wSlotNumber; // The slot number of this MethodDesc in the vtable array.
     WORD m_wFlags; // See MethodDescFlags
@@ -1697,21 +1677,6 @@ protected:
 public:
 #ifdef DACCESS_COMPILE
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
-#endif
-
-#ifdef HAS_COMPACT_ENTRYPOINTS
-    BYTE GetMethodDescIndex()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_methodIndex;
-    }
-
-    void SetMethodDescIndex(COUNT_T index)
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(index <= 255);
-        m_methodIndex = (BYTE)index;
-    }
 #endif
 
 #ifndef DACCESS_COMPILE
@@ -2223,57 +2188,7 @@ public:
         return (VolatileLoadWithoutBarrier(&m_flagsAndTokenRange) & enum_flag_DeterminedIsEligibleForTieredCompilation) != 0;
     }
 
-#ifdef HAS_COMPACT_ENTRYPOINTS
-    TADDR GetTemporaryEntryPoints()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pTemporaryEntryPoints;
-    }
-
-    PCODE GetTemporaryEntryPoint(int index);
-
-    void EnsureTemporaryEntryPointsCreated(LoaderAllocator *pLoaderAllocator, AllocMemTracker *pamTracker)
-    {
-        CONTRACTL
-        {
-            THROWS;
-            GC_NOTRIGGER;
-            MODE_ANY;
-        }
-        CONTRACTL_END;
-
-        if (GetTemporaryEntryPoints() == (TADDR)0)
-            CreateTemporaryEntryPoints(pLoaderAllocator, pamTracker);
-    }
-
-#endif
     void DetermineAndSetIsEligibleForTieredCompilation();
-
-#ifdef HAS_COMPACT_ENTRYPOINTS
-    //
-    // There two implementation options for temporary entrypoints:
-    //
-    // (1) Compact entrypoints. They provide as dense entrypoints as possible, but can't be patched
-    // to point to the final code. The call to unjitted method is indirect call via slot.
-    //
-    // (2) Precodes. The precode will be patched to point to the final code eventually, thus
-    // the temporary entrypoint can be embedded in the code. The call to unjitted method is
-    // direct call to direct jump.
-    //
-    // We use (1) for x86 and (2) for 64-bit to get the best performance on each platform.
-    // For ARM (1) is used.
-
-    TADDR AllocateCompactEntryPoints(LoaderAllocator *pLoaderAllocator, AllocMemTracker *pamTracker);
-
-    static MethodDesc* GetMethodDescFromCompactEntryPoint(PCODE addr, BOOL fSpeculative = FALSE);
-    static SIZE_T SizeOfCompactEntryPoints(int count);
-
-    static BOOL IsCompactEntryPointAtAddress(PCODE addr);
-
-#ifdef TARGET_ARM
-    static int GetCompactEntryPointMaxCount ();
-#endif // TARGET_ARM
-#endif // HAS_COMPACT_ENTRYPOINTS
 
     FORCEINLINE PTR_MethodTable GetMethodTable()
     {
@@ -2328,17 +2243,6 @@ public:
         return m_count + 1;
     }
 
-    inline BOOL HasCompactEntryPoints()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-
-#ifdef HAS_COMPACT_ENTRYPOINTS
-        return (m_flagsAndTokenRange & enum_flag_HasCompactEntrypoints) != 0;
-#else
-        return FALSE;
-#endif
-    }
-
     inline UINT16 GetTokRange()
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -2376,10 +2280,6 @@ private:
     PTR_MethodTable m_methodTable;
 
     PTR_MethodDescChunk  m_next;
-
-#ifdef HAS_COMPACT_ENTRYPOINTS
-    TADDR m_pTemporaryEntryPoints;
-#endif
 
     BYTE                 m_size;        // The size of this chunk minus 1 (in multiples of MethodDesc::ALIGNMENT)
     BYTE                 m_count;       // The number of MethodDescs in this chunk minus 1

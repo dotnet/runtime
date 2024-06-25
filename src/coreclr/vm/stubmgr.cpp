@@ -1009,13 +1009,6 @@ BOOL PrecodeStubManager::DoTraceStub(PCODE stubStartAddress,
 
     MethodDesc* pMD = NULL;
 
-#ifdef HAS_COMPACT_ENTRYPOINTS
-    if (MethodDescChunk::IsCompactEntryPointAtAddress(stubStartAddress))
-    {
-        pMD = MethodDescChunk::GetMethodDescFromCompactEntryPoint(stubStartAddress);
-    }
-    else
-#endif // HAS_COMPACT_ENTRYPOINTS
     {
         // When the target slot points to the fixup part of the fixup precode, we need to compensate
         // for that to get the actual stub address

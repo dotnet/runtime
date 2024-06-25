@@ -13,10 +13,6 @@
 DEFINE_DACGFN(DACNotifyCompilationFinished)
 DEFINE_DACGFN(ThePreStub)
 
-#if defined(HAS_COMPACT_ENTRYPOINTS) && defined(TARGET_ARM)
-DEFINE_DACGFN(ThePreStubCompactARM)
-#endif
-
 DEFINE_DACGFN(ThePreStubPatchLabel)
 #ifdef FEATURE_COMINTEROP
 DEFINE_DACGFN(Unknown_AddRef)

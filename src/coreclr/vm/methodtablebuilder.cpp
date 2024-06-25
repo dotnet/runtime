@@ -6955,9 +6955,6 @@ VOID MethodTableBuilder::AllocAndInitMethodDescs()
     SIZE_T sizeOfMethodDescs = 0; // current running size of methodDesc chunk
     int startIndex = 0; // start of the current chunk (index into bmtMethod array)
 
-    // Limit the maximum MethodDescs per chunk by the number of precodes that can fit to a single memory page,
-    // since we allocate consecutive temporary entry points for all MethodDescs in the whole chunk.
-    DWORD maxPrecodesPerPage = Precode::GetMaxTemporaryEntryPointsCount();
     DWORD methodDescCount = 0;
 
     DeclaredMethodIterator it(*this);
@@ -6998,8 +6995,7 @@ VOID MethodTableBuilder::AllocAndInitMethodDescs()
         }
 
         if (tokenRange != currentTokenRange ||
-            sizeOfMethodDescs + size > MethodDescChunk::MaxSizeOfMethodDescs ||
-            methodDescCount + currentSlotMethodDescCount > maxPrecodesPerPage)
+            sizeOfMethodDescs + size > MethodDescChunk::MaxSizeOfMethodDescs)
         {
             if (sizeOfMethodDescs != 0)
             {
@@ -7065,10 +7061,6 @@ VOID MethodTableBuilder::AllocAndInitMethodDescChunk(COUNT_T startIndex, COUNT_T
         MethodDesc * pMD = (MethodDesc *)((BYTE *)pChunk + offset);
 
         pMD->SetChunkIndex(pChunk);
-#ifdef HAS_COMPACT_ENTRYPOINTS
-        pMD->SetMethodDescIndex(methodDescCount);
-#endif
-
         InitNewMethodDesc(pMDMethod, pMD);
 
 #ifdef _PREFAST_
@@ -7111,9 +7103,6 @@ VOID MethodTableBuilder::AllocAndInitMethodDescChunk(COUNT_T startIndex, COUNT_T
 
             // Reset the chunk index
             pUnboxedMD->SetChunkIndex(pChunk);
-#ifdef HAS_COMPACT_ENTRYPOINTS
-            pUnboxedMD->SetMethodDescIndex(methodDescCount);
-#endif
 
             if (bmtGenerics->GetNumGenericArgs() == 0) {
                 pUnboxedMD->SetHasNonVtableSlot();
@@ -10897,9 +10886,7 @@ MethodTableBuilder::SetupMethodTable2(
                 if ((pMD->GetSlot() == iCurSlot) && (GetParentMethodTable() == NULL || iCurSlot >= GetParentMethodTable()->GetNumVirtuals()))
                     continue; // For cases where the method is defining the method desc slot, we don't need to fill it in yet
 
-#ifndef HAS_COMPACT_ENTRYPOINTS
                 pMD->EnsureTemporaryEntryPointCore(GetLoaderAllocator(), GetMemTracker());
-#endif // HAS_COMPACT_ENTRYPOINTS
                 PCODE addr = pMD->GetTemporaryEntryPoint();
                 _ASSERTE(addr != NULL);
 

@@ -8695,9 +8695,7 @@ void CEEInfo::getMethodVTableOffset (CORINFO_METHOD_HANDLE methodHnd,
     JIT_TO_EE_TRANSITION();
 
     MethodDesc* method = GetMethod(methodHnd);
-#ifndef HAS_COMPACT_ENTRYPOINTS
     method->EnsureSlotFilled();
-#endif
 
     //@GENERICS: shouldn't be doing this for instantiated methods as they live elsewhere
     _ASSERTE(!method->HasMethodInstantiation());
@@ -9156,9 +9154,7 @@ void CEEInfo::getFunctionEntryPoint(CORINFO_METHOD_HANDLE  ftnHnd,
             // should never get here for EnC methods or if interception via remoting stub is required
             _ASSERTE(!ftn->InEnCEnabledModule());
 
-#ifndef HAS_COMPACT_ENTRYPOINTS
             ftn->EnsureSlotFilled();
-#endif
             ret = (void *)ftn->GetAddrOfSlot();
 
             accessType = IAT_PVALUE;

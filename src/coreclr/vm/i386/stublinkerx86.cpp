@@ -3060,9 +3060,7 @@ VOID StubLinkerCPU::EmitComputedInstantiatingMethodStub(MethodDesc* pSharedMD, s
 #ifdef TARGET_AMD64
 VOID StubLinkerCPU::EmitLoadMethodAddressIntoAX(MethodDesc *pMD)
 {
-#ifndef HAS_COMPACT_ENTRYPOINTS
     pMD->EnsureSlotFilled();
-#endif
 
     if (pMD->HasStableEntryPoint())
     {
@@ -3083,9 +3081,7 @@ VOID StubLinkerCPU::EmitTailJumpToMethod(MethodDesc *pMD)
     EmitLoadMethodAddressIntoAX(pMD);
     Emit16(X86_INSTR_JMP_EAX);
 #else
-#ifndef HAS_COMPACT_ENTRYPOINTS
     pMD->EnsureSlotFilled();
-#endif
     // Use direct call if possible
     if (pMD->HasStableEntryPoint())
     {
