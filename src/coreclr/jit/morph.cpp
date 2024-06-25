@@ -180,7 +180,7 @@ public:
 // Return value:
 //   The call (which is the same as `tree`).
 //
-GenTree* Compiler::fgMorphIntoHelperCall(GenTree* tree, int helper, bool morphArgs, GenTree* arg1, GenTree* arg2)
+GenTreeCall* Compiler::fgMorphIntoHelperCall(GenTree* tree, int helper, bool morphArgs, GenTree* arg1, GenTree* arg2)
 {
     // The helper call ought to be semantically equivalent to the original node, so preserve its VN.
     tree->ChangeOper(GT_CALL, GenTree::PRESERVE_VN);
@@ -250,10 +250,10 @@ GenTree* Compiler::fgMorphIntoHelperCall(GenTree* tree, int helper, bool morphAr
     if (morphArgs)
     {
         SharedTempsScope scope(this);
-        tree = fgMorphArgs(call);
+        call = fgMorphArgs(call);
     }
 
-    return tree;
+    return call;
 }
 
 //------------------------------------------------------------------------

@@ -152,13 +152,14 @@ namespace ObjectStackAllocation
 
             CallTestAndVerifyAllocation(AllocateClassWithGcFieldAndInt, 5, expectedAllocationKind);
 
-            // The remaining tests currently never allocate on the stack
-            if (expectedAllocationKind == AllocationKind.Stack) {
-                expectedAllocationKind = AllocationKind.Heap;
-            }
-
             // This test calls CORINFO_HELP_ISINSTANCEOFCLASS
             CallTestAndVerifyAllocation(AllocateSimpleClassAndCheckTypeHelper, 1, expectedAllocationKind);
+
+            // The remaining tests currently never allocate on the stack
+            if (expectedAllocationKind == AllocationKind.Stack)
+            {
+                expectedAllocationKind = AllocationKind.Heap;
+            }
 
             // This test calls CORINFO_HELP_CHKCASTCLASS_SPECIAL
             CallTestAndVerifyAllocation(AllocateSimpleClassAndCast, 7, expectedAllocationKind);

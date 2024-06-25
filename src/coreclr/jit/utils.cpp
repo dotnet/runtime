@@ -1519,6 +1519,7 @@ void HelperCallProperties::init()
         bool isAllocator   = false; // true if the result is usually a newly created heap item, or may throw OutOfMemory
         bool mutatesHeap   = false; // true if any previous heap objects [are|can be] modified
         bool mayRunCctor   = false; // true if the helper call may cause a static constructor to be run.
+        bool isNoEscape    = false; // true if none of the GC ref arguments can escape
 
         switch (helper)
         {
@@ -1643,8 +1644,9 @@ void HelperCallProperties::init()
             case CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE:
             case CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE:
 
-                isPure  = true;
-                noThrow = true; // These return null for a failing cast
+                isNoEscape = true;
+                isPure     = true;
+                noThrow    = true; // These return null for a failing cast
                 break;
 
             case CORINFO_HELP_GETCURRENTMANAGEDTHREADID:
@@ -1662,14 +1664,15 @@ void HelperCallProperties::init()
 
                 // These throw for a failing cast
                 // But if given a null input arg will return null
+                // if they throw they cause the object to escape
                 isPure = true;
                 break;
 
             // helpers returning addresses, these can also throw
             case CORINFO_HELP_UNBOX:
             case CORINFO_HELP_LDELEMA_REF:
-
-                isPure = true;
+                isNoEscape = true;
+                isPure     = true;
                 break;
 
             // GETREFANY is pure up to the value of the struct argument. We
@@ -1751,7 +1754,6 @@ void HelperCallProperties::init()
             case CORINFO_HELP_ASSIGN_REF_ENSURE_NONHEAP:
             case CORINFO_HELP_ASSIGN_BYREF:
             case CORINFO_HELP_BULK_WRITEBARRIER:
-
                 mutatesHeap = true;
                 break;
 
@@ -1830,6 +1832,7 @@ void HelperCallProperties::init()
         m_isAllocator[helper]   = isAllocator;
         m_mutatesHeap[helper]   = mutatesHeap;
         m_mayRunCctor[helper]   = mayRunCctor;
+        m_isNoEscape[helper]    = isNoEscape;
     }
 }
 
