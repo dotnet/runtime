@@ -1876,11 +1876,6 @@ typedef struct _NEON128 {
     LONGLONG High;
 } NEON128, *PNEON128;
 
-typedef struct _SVE128 {
-    ULONGLONG Low;
-    LONGLONG High;
-} SVE128, *PSVE128;
-
 typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
 
     //
