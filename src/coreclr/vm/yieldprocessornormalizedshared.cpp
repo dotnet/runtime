@@ -27,6 +27,8 @@ static double s_establishedNsPerYield = YieldProcessorNormalization::TargetNsPer
 
 static LARGE_INTEGER li;
 
+void RhEnableFinalization();
+
 inline unsigned int GetTickCountPortable()
 {
 #ifdef FEATURE_NATIVEAOT
@@ -101,7 +103,7 @@ static double MeasureNsPerYield(unsigned int measureDurationUs)
     while (elapsedTicks < measureDurationTicks)
     {
         int nextYieldCount =
-            Max(4,
+            max(4,
                 elapsedTicks == 0
                     ? yieldCount / 4
                     : (int)(yieldCount * (measureDurationTicks - elapsedTicks) / (double)elapsedTicks) + 1);
@@ -121,7 +123,7 @@ static double MeasureNsPerYield(unsigned int measureDurationUs)
     // really take this long. Limit the maximum to keep the recorded values reasonable.
     const double MaxNsPerYield = YieldProcessorNormalization::TargetMaxNsPerSpinIteration / 1.5 + 1;
 
-    return Max(MinNsPerYield, Min((double)elapsedTicks * NsPerS / ((double)yieldCount * ticksPerS), MaxNsPerYield));
+    return max(MinNsPerYield, min((double)elapsedTicks * NsPerS / ((double)yieldCount * ticksPerS), MaxNsPerYield));
 }
 
 void YieldProcessorNormalization::PerformMeasurement()
@@ -214,7 +216,7 @@ void YieldProcessorNormalization::PerformMeasurement()
 #endif
 
     // Calculate the number of yields required to span the duration of a normalized yield
-    unsigned int yieldsPerNormalizedYield = Max(1u, (unsigned int)(TargetNsPerNormalizedYield / establishedNsPerYield + 0.5));
+    unsigned int yieldsPerNormalizedYield = max(1u, (unsigned int)(TargetNsPerNormalizedYield / establishedNsPerYield + 0.5));
     _ASSERTE(yieldsPerNormalizedYield <= MaxYieldsPerNormalizedYield);
     s_yieldsPerNormalizedYield = yieldsPerNormalizedYield;
 
@@ -222,7 +224,7 @@ void YieldProcessorNormalization::PerformMeasurement()
     // spend excessive amounts of time (thousands of cycles) doing only YieldProcessor, as SwitchToThread/Sleep would do a
     // better job of allowing other work to run.
     s_optimalMaxNormalizedYieldsPerSpinIteration =
-        Max(1u, (unsigned int)(TargetMaxNsPerSpinIteration / (yieldsPerNormalizedYield * establishedNsPerYield) + 0.5));
+        max(1u, (unsigned int)(TargetMaxNsPerSpinIteration / (yieldsPerNormalizedYield * establishedNsPerYield) + 0.5));
     _ASSERTE(s_optimalMaxNormalizedYieldsPerSpinIteration <= MaxOptimalMaxNormalizedYieldsPerSpinIteration);
 
     GCHeapUtilities::GetGCHeap()->SetYieldProcessorScalingFactor((float)yieldsPerNormalizedYield);
@@ -271,7 +273,9 @@ void YieldProcessorNormalization::ScheduleMeasurementIfNecessary()
     }
 
     s_isMeasurementScheduled = true;
-#ifndef FEATURE_NATIVEAOT
+#ifdef FEATURE_NATIVEAOT
+    RhEnableFinalization();
+#else
     FinalizerThread::EnableFinalization();
 #endif
 }
