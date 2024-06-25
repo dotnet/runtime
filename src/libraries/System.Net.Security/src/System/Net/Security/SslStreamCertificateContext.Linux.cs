@@ -18,6 +18,7 @@ namespace System.Net.Security
     public partial class SslStreamCertificateContext
     {
         private const bool TrimRootCertificate = true;
+        private const bool ChainBuildNeedsTrustedRoot = false;
         internal readonly ConcurrentDictionary<SslProtocols, SafeSslContextHandle> SslContexts;
         internal readonly SafeX509Handle CertificateHandle;
         internal readonly SafeEvpPKeyHandle KeyHandle;

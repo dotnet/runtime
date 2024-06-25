@@ -51,9 +51,19 @@ namespace System.Net.Security
             {
                 if (additionalCertificates != null)
                 {
-                    foreach (X509Certificate cert in additionalCertificates)
+                    chain.ChainPolicy.ExtraStore.AddRange(additionalCertificates);
+                }
+
+                if (trust != null)
+                {
+                    chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
+                    if (trust._store != null)
                     {
-                        chain.ChainPolicy.ExtraStore.Add(cert);
+                        chain.ChainPolicy.CustomTrustStore.AddRange(trust._store.Certificates);
+                    }
+                    if (trust._trustList != null)
+                    {
+                        chain.ChainPolicy.CustomTrustStore.AddRange(trust._trustList);
                     }
                 }
 
@@ -65,6 +75,20 @@ namespace System.Net.Security
                 if (!chainStatus && NetEventSource.Log.IsEnabled())
                 {
                     NetEventSource.Error(null, $"Failed to build chain for {target.Subject}");
+                }
+
+                if (!chainStatus && ChainBuildNeedsTrustedRoot && additionalCertificates != null)
+                {
+                    // Some platforms like Android may not be able to build the chain unless the chain root is trusted.
+                    // We can try to rebuild the chain with making all extra certificates trused.
+                    // We do not try to evaluate trust here, we jsut need to construct the chain so it should not matter.
+                    chain.ChainPolicy.CustomTrustStore.AddRange(additionalCertificates);
+                    chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
+                    chainStatus = chain.Build(target);
+                    if (!chainStatus && NetEventSource.Log.IsEnabled())
+                    {
+                        NetEventSource.Error(null, $"Failed to build chain for {target.Subject} while trusting additional certificates");
+                    }
                 }
 
                 int count = chain.ChainElements.Count - 1;
