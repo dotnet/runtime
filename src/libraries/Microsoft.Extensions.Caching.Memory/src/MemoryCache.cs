@@ -474,8 +474,8 @@ namespace Microsoft.Extensions.Caching.Memory
             return true;
         }
 
-        private int lockFlag = 0;
-        
+        private int lockFlag;
+
         private void TriggerOvercapacityCompaction()
         {
             if (_logger.IsEnabled(LogLevel.Debug))
@@ -483,7 +483,7 @@ namespace Microsoft.Extensions.Caching.Memory
 
             // If no threads are currently running compact - enter lock and start compact
             // If there is already a thread that is running compact - do nothing
-            if (Interlocked.CompareExchange(ref lockFlag, 1, 0) == 0) 
+            if (Interlocked.CompareExchange(ref lockFlag, 1, 0) == 0)
                 // Spawn background thread for compaction
                 ThreadPool.QueueUserWorkItem(s =>
                 {
