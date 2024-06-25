@@ -3286,7 +3286,14 @@ mono_class_setup_interface_id_nolock (MonoClass *klass)
 	    * 	a != b ==> true
 		*/
 		const char *name = m_class_get_name (klass);
-		if (!strcmp (name, "IList`1") || !strcmp (name, "ICollection`1") || !strcmp (name, "IEnumerable`1") || !strcmp (name, "IEnumerator`1"))
+		if (
+			!strcmp (name, "IList`1") ||
+			!strcmp (name, "IReadOnlyList`1") ||
+			!strcmp (name, "ICollection`1") ||
+			!strcmp (name, "IReadOnlyCollection`1") ||
+			!strcmp (name, "IEnumerable`1") ||
+			!strcmp (name, "IEnumerator`1")
+		)
 			klass->is_array_special_interface = 1;
 	}
 }
