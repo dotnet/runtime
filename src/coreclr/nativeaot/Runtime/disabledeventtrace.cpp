@@ -13,6 +13,8 @@
 void EventTracing_Initialize() { }
 
 void ETW::GCLog::FireGcStart(ETW_GC_INFO * pGcInfo) { }
+bool IsRuntimeProviderEnabled(uint8_t level, uint64_t keyword) { return false; }
+
 
 #ifdef FEATURE_ETW
 BOOL ETW::GCLog::ShouldTrackMovementForEtw() { return FALSE; }
