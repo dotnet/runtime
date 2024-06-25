@@ -1623,7 +1623,14 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                     predMask = RBM_LOWMASK.GetPredicateRegSet();
                 }
 
-                srcCount += BuildOperandUses(intrin.op1, predMask);
+                if (tgtPrefOp2)
+                {
+                    srcCount += BuildDelayFreeUses(intrin.op1, intrin.op2, predMask);
+                }
+                else
+                {
+                    srcCount += BuildOperandUses(intrin.op1, predMask);
+                }
             }
         }
         else if (intrinsicTree->OperIsMemoryLoadOrStore())

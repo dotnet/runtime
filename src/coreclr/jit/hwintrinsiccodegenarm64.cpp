@@ -2175,10 +2175,12 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_Sve_CreateMaskForFirstActiveElement:
             {
                 assert(isRMW);
+                assert(HWIntrinsicInfo::IsExplicitMaskedOperation(intrin.id));
+
                 if (targetReg != op2Reg)
                 {
                     assert(targetReg != op1Reg);
-                    GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op2Reg, /* canSkip */ true);
+                    GetEmitter()->emitIns_Mov(INS_sve_mov, emitTypeSize(node), targetReg, op2Reg, /* canSkip */ true);
                 }
 
                 GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg, INS_OPTS_SCALABLE_B);
@@ -2188,10 +2190,12 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_Sve_CreateMaskForNextActiveElement:
             {
                 assert(isRMW);
+                assert(HWIntrinsicInfo::IsExplicitMaskedOperation(intrin.id));
+
                 if (targetReg != op2Reg)
                 {
                     assert(targetReg != op1Reg);
-                    GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op2Reg, /* canSkip */ true);
+                    GetEmitter()->emitIns_Mov(INS_sve_mov, emitTypeSize(node), targetReg, op2Reg, /* canSkip */ true);
                 }
 
                 GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg, opt);
