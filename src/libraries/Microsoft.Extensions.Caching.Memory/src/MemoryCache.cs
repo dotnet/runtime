@@ -474,13 +474,27 @@ namespace Microsoft.Extensions.Caching.Memory
             return true;
         }
 
+        private int lockFlag = 0;
+        
         private void TriggerOvercapacityCompaction()
         {
             if (_logger.IsEnabled(LogLevel.Debug))
                 _logger.LogDebug("Overcapacity compaction triggered");
 
-            // Spawn background thread for compaction
-            ThreadPool.QueueUserWorkItem(s => ((MemoryCache)s!).OvercapacityCompaction(), this);
+            // If no threads are currently running compact - enter lock and start compact
+            // If there is already a thread that is running compact - do nothing
+            if (Interlocked.CompareExchange(ref lockFlag, 1, 0) == 0) 
+                // Spawn background thread for compaction
+                ThreadPool.QueueUserWorkItem(s =>
+                {
+                    try
+                    {
+                        ((MemoryCache)s!).OvercapacityCompaction();
+                    }
+                    finally {
+                        lockFlag = 0; // Release the lock
+                    }
+                }, this);
         }
 
         private void OvercapacityCompaction()
