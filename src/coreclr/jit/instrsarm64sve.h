@@ -280,7 +280,7 @@ INST6(ld1b,              "ld1b",                  0,                       IF_SV
 
 
 //    enum               name                     info                                              SVE_HY_3A        SVE_HY_3A_A      SVE_HY_3B        SVE_HZ_2A_B      SVE_IA_2A        SVE_IB_3A        
-INST6(prfb,              "prfb",                  0,                       IF_SVE_6E,               0x84200000,      0xC4200000,      0xC4608000,      0x8400E000,      0x85C00000,      0x8400C000       )
+INST6(prfb,              "prfb",                  0,                       IF_SVE_6E,               0xffffffff,      0xffffffff,      0xffffffff,      0xffffffff,      0xffffffff,      0xffffffff       )
     // PRFB    <prfop>, <Pg>, [<Xn|SP>, <Zm>.S, <mod>]                                   SVE_HY_3A           100001000h1mmmmm 000gggnnnnn0oooo     8420 0000   
     // PRFB    <prfop>, <Pg>, [<Xn|SP>, <Zm>.D, <mod>]                                   SVE_HY_3A_A         110001000h1mmmmm 000gggnnnnn0oooo     C420 0000   
     // PRFB    <prfop>, <Pg>, [<Xn|SP>, <Zm>.D]                                          SVE_HY_3B           11000100011mmmmm 100gggnnnnn0oooo     C460 8000   

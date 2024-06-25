@@ -55,6 +55,7 @@
 #define CONTEXT_Lr           CONTEXT_Fp+8
 #define CONTEXT_Sp           CONTEXT_Lr+8
 #define CONTEXT_Pc           CONTEXT_Sp+8
+
 #define CONTEXT_NEON_OFFSET  CONTEXT_Pc+8
 #define CONTEXT_V0           0
 #define CONTEXT_V1           CONTEXT_V0+16
@@ -93,63 +94,29 @@
 #define CONTEXT_Fpsr         CONTEXT_Fpcr+8
 
 // TODO-SVE: Support Vector register sizes >128bit
+// SVE register offsets are multiples of the vector length
+// For 128bit, Z and V registers fully overlap, so there is no need to load/store both.
 
-#define CONTEXT_SVE_OFFSET   CONTEXT_FLOAT_CONTROL_OFFSET+16 // Align to 128bits
-#define CONTEXT_VL           0
-#define CONTEXT_FFR          CONTEXT_Z0+8
+#define CONTEXT_SVE_OFFSET   CONTEXT_NEON_OFFSET+CONTEXT_Fpsr+8
+#define CONTEXT_FFR_VL       0
 
-#define CONTEXT_Z_OFFSET     CONTEXT_SVE_OFFSET+16 // Align to 128bits
-#define CONTEXT_Z0           0
-#define CONTEXT_Z1           CONTEXT_Z0+16
-#define CONTEXT_Z2           CONTEXT_Z1+16
-#define CONTEXT_Z3           CONTEXT_Z2+16
-#define CONTEXT_Z4           CONTEXT_Z3+16
-#define CONTEXT_Z5           CONTEXT_Z4+16
-#define CONTEXT_Z6           CONTEXT_Z5+16
-#define CONTEXT_Z7           CONTEXT_Z6+16
-#define CONTEXT_Z8           CONTEXT_Z7+16
-#define CONTEXT_Z9           CONTEXT_Z8+16
-#define CONTEXT_Z10          CONTEXT_Z9+16
-#define CONTEXT_Z11          CONTEXT_Z10+16
-#define CONTEXT_Z12          CONTEXT_Z11+16
-#define CONTEXT_Z13          CONTEXT_Z12+16
-#define CONTEXT_Z14          CONTEXT_Z13+16
-#define CONTEXT_Z15          CONTEXT_Z14+16
-#define CONTEXT_Z16          CONTEXT_Z15+16
-#define CONTEXT_Z17          CONTEXT_Z16+16
-#define CONTEXT_Z18          CONTEXT_Z17+16
-#define CONTEXT_Z19          CONTEXT_Z18+16
-#define CONTEXT_Z20          CONTEXT_Z19+16
-#define CONTEXT_Z21          CONTEXT_Z20+16
-#define CONTEXT_Z22          CONTEXT_Z21+16
-#define CONTEXT_Z23          CONTEXT_Z22+16
-#define CONTEXT_Z24          CONTEXT_Z23+16
-#define CONTEXT_Z25          CONTEXT_Z24+16
-#define CONTEXT_Z26          CONTEXT_Z25+16
-#define CONTEXT_Z27          CONTEXT_Z26+16
-#define CONTEXT_Z28          CONTEXT_Z27+16
-#define CONTEXT_Z29          CONTEXT_Z28+16
-#define CONTEXT_Z30          CONTEXT_Z29+16
-#define CONTEXT_Z31          CONTEXT_Z30+16
+#define CONTEXT_P0_VL        CONTEXT_FFR_VL+1
+#define CONTEXT_P1_VL        CONTEXT_P0_VL+1
+#define CONTEXT_P2_VL        CONTEXT_P1_VL+1
+#define CONTEXT_P3_VL        CONTEXT_P2_VL+1
+#define CONTEXT_P4_VL        CONTEXT_P3_VL+1
+#define CONTEXT_P5_VL        CONTEXT_P4_VL+1
+#define CONTEXT_P6_VL        CONTEXT_P5_VL+1
+#define CONTEXT_P7_VL        CONTEXT_P6_VL+1
+#define CONTEXT_P8_VL        CONTEXT_P7_VL+1
+#define CONTEXT_P9_VL        CONTEXT_P8_VL+1
+#define CONTEXT_P10_VL       CONTEXT_P9_VL+1
+#define CONTEXT_P11_VL       CONTEXT_P10_VL+1
+#define CONTEXT_P12_VL       CONTEXT_P11_VL+1
+#define CONTEXT_P13_VL       CONTEXT_P12_VL+1
+#define CONTEXT_P14_VL       CONTEXT_P13_VL+1
+#define CONTEXT_P15_VL       CONTEXT_P14_VL+1
 
-#define CONTEXT_P_OFFSET     CONTEXT_Z_OFFSET + CONTEXT_Z31 + 16
-#define CONTEXT_P0           0
-#define CONTEXT_P1           CONTEXT_P0+4
-#define CONTEXT_P2           CONTEXT_P1+4
-#define CONTEXT_P3           CONTEXT_P2+4
-#define CONTEXT_P4           CONTEXT_P3+4
-#define CONTEXT_P5           CONTEXT_P4+4
-#define CONTEXT_P6           CONTEXT_P5+4
-#define CONTEXT_P7           CONTEXT_P6+4
-#define CONTEXT_P8           CONTEXT_P7+4
-#define CONTEXT_P9           CONTEXT_P8+4
-#define CONTEXT_P10          CONTEXT_P9+4
-#define CONTEXT_P11          CONTEXT_P10+4
-#define CONTEXT_P12          CONTEXT_P11+4
-#define CONTEXT_P13          CONTEXT_P12+4
-#define CONTEXT_P14          CONTEXT_P13+4
-#define CONTEXT_P15          CONTEXT_P14+4
-
-#define CONTEXT_Size         (CONTEXT_P_OFFSET + CONTEXT_P15 + 4)
+#define CONTEXT_Size         CONTEXT_SVE_OFFSET + ((CONTEXT_P15_VL+1) * 4)
 
 #endif
