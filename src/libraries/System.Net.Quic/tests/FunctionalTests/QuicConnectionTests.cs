@@ -235,8 +235,6 @@ namespace System.Net.Quic.Tests
         [InlineData(false)]
         public async Task GetStreamCapacity_OpenCloseStreamIntoNegative_CountsCorrectly(bool unidirectional)
         {
-            using var _ = new TestEventListener(Console.Out, TestEventListener.NetworkingEvents);
-
             SemaphoreSlim streamsAvailableFired = new SemaphoreSlim(0);
             int bidiIncrement = -1, unidiIncrement = -1;
             int bidiTotal = 0;
@@ -307,8 +305,6 @@ namespace System.Net.Quic.Tests
         [InlineData(false)]
         public async Task GetStreamCapacity_OpenCloseStreamCanceledIntoNegative_CountsCorrectly(bool unidirectional)
         {
-            using var _ = new TestEventListener(Console.Out, TestEventListener.NetworkingEvents);
-
             SemaphoreSlim streamsAvailableFired = new SemaphoreSlim(0);
             int bidiIncrement = -1, unidiIncrement = -1;
             int bidiTotal = 0;
