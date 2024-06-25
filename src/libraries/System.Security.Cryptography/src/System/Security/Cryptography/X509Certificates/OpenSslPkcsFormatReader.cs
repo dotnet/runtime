@@ -1,12 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Security.Cryptography;
-using System.Security.Cryptography.X509Certificates;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Security.Cryptography.X509Certificates
@@ -235,117 +232,6 @@ namespace System.Security.Cryptography.X509Certificates
 
             certPal = null;
             certPals = readPals;
-            return true;
-        }
-
-        internal static bool TryReadPkcs12(
-            ReadOnlySpan<byte> rawData,
-            SafePasswordHandle password,
-            bool ephemeralSpecified,
-            bool readingFromFile,
-            [NotNullWhen(true)] out ICertificatePal? certPal,
-            out Exception? openSslException)
-        {
-            return TryReadPkcs12(
-                rawData,
-                password,
-                single: true,
-                ephemeralSpecified,
-                readingFromFile,
-                out certPal!,
-                out _,
-                out openSslException);
-        }
-
-        internal static bool TryReadPkcs12(
-            ReadOnlySpan<byte> rawData,
-            SafePasswordHandle password,
-            bool ephemeralSpecified,
-            bool readingFromFile,
-            [NotNullWhen(true)] out List<ICertificatePal>? certPals,
-            out Exception? openSslException)
-        {
-            return TryReadPkcs12(
-                rawData,
-                password,
-                single: false,
-                ephemeralSpecified,
-                readingFromFile,
-                out _,
-                out certPals!,
-                out openSslException);
-        }
-
-        private static bool TryReadPkcs12(
-            ReadOnlySpan<byte> rawData,
-            SafePasswordHandle password,
-            bool single,
-            bool ephemeralSpecified,
-            bool readingFromFile,
-            out ICertificatePal? readPal,
-            out List<ICertificatePal>? readCerts,
-            out Exception? openSslException)
-        {
-            // DER-PKCS12
-            OpenSslPkcs12Reader? pfx;
-
-            if (!OpenSslPkcs12Reader.TryRead(rawData, out pfx, out openSslException))
-            {
-                readPal = null;
-                readCerts = null;
-                return false;
-            }
-
-            using (pfx)
-            {
-                return TryReadPkcs12(rawData, pfx, password, single, ephemeralSpecified, readingFromFile, out readPal, out readCerts);
-            }
-        }
-
-        private static bool TryReadPkcs12(
-            ReadOnlySpan<byte> rawData,
-            OpenSslPkcs12Reader pfx,
-            SafePasswordHandle password,
-            bool single,
-            bool ephemeralSpecified,
-            bool readingFromFile,
-            out ICertificatePal? readPal,
-            out List<ICertificatePal>? readCerts)
-        {
-            X509Certificate.EnforceIterationCountLimit(ref rawData, readingFromFile, password.PasswordProvided);
-            pfx.Decrypt(password, ephemeralSpecified);
-
-            if (single)
-            {
-                UnixPkcs12Reader.CertAndKey certAndKey = pfx.GetSingleCert();
-                OpenSslX509CertificateReader pal = (OpenSslX509CertificateReader)certAndKey.Cert!;
-
-                if (certAndKey.Key != null)
-                {
-                    pal.SetPrivateKey(OpenSslPkcs12Reader.GetPrivateKey(certAndKey.Key));
-                }
-
-                readPal = pal;
-                readCerts = null;
-                return true;
-            }
-
-            readPal = null;
-            List<ICertificatePal> certs = new List<ICertificatePal>(pfx.GetCertCount());
-
-            foreach (UnixPkcs12Reader.CertAndKey certAndKey in pfx.EnumerateAll())
-            {
-                OpenSslX509CertificateReader pal = (OpenSslX509CertificateReader)certAndKey.Cert!;
-
-                if (certAndKey.Key != null)
-                {
-                    pal.SetPrivateKey(OpenSslPkcs12Reader.GetPrivateKey(certAndKey.Key));
-                }
-
-                certs.Add(pal);
-            }
-
-            readCerts = certs;
             return true;
         }
     }
