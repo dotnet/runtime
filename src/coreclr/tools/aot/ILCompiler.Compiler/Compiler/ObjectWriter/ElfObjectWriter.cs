@@ -804,7 +804,7 @@ namespace ILCompiler.ObjectWriter
                 Flags = _machine switch
                 {
                     EM_ARM => 0x05000000u, // For ARM32 claim conformance with the EABI specification
-                    EM_LOONGARCH => 0x43u, // For LoongArch claim conformance with the EABI specification
+                    EM_LOONGARCH => 0x43u, // For LoongArch ELF psABI specify the ABI version (1) and modifiers (64-bit GPRs, 64-bit FPRs)
                     _ => 0u
                 },
             };
