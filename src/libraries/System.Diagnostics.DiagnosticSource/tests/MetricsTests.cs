@@ -16,7 +16,7 @@ namespace System.Diagnostics.Metrics.Tests
         [Fact]
         public void MeasurementConstructionTest()
         {
-            for (int i = 0; i < 30; i++)
+            for (int i = 0; i < 35; i++)
             {
                 TagListTests.CreateTagList(i, out TagList tags);
                 TagListTests.ValidateTags(in tags, i);
