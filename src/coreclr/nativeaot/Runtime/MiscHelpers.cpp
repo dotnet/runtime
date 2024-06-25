@@ -37,7 +37,6 @@
 #include "RhConfig.h"
 #include <minipal/cpuid.h>
 
-// TODO: Check if there's a better way to use this file
 #include "../../utilcode/yieldprocessornormalized.cpp"
 
 FCIMPL0(void, RhDebugBreak)
