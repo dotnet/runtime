@@ -324,6 +324,9 @@ protected:
     // The LoaderAllocator specific string literal map.
     StringLiteralMap   *m_pStringLiteralMap;
     CrstExplicitInit    m_crstLoaderAllocator;
+
+    // Protect the handle table data structures, seperated from m_crstLoaderAllocator to allow thread cleanup to use the lock
+    CrstExplicitInit    m_crstLoaderAllocatorHandleTable;
     bool                m_fGCPressure;
     bool                m_fUnloaded;
     bool                m_fTerminated;

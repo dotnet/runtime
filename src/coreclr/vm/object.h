@@ -2081,6 +2081,7 @@ class LoaderAllocatorObject : public Object
     friend class CoreLibBinder;
 
 public:
+    // All uses of this must be protected by m_crstLoaderAllocatorHandleTable or be safe lock-free reads
     PTRARRAYREF GetHandleTable()
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -2099,6 +2100,7 @@ public:
         return m_slotsUsed;
     }
 
+    // All uses of this must be protected by m_crstLoaderAllocatorHandleTable
     void SetSlotsUsed(INT32 newSlotsUsed)
     {
         LIMITED_METHOD_CONTRACT;
