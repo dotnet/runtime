@@ -1411,8 +1411,20 @@ enum free_region_kind
 
 static_assert(count_free_region_kinds == FREE_REGION_KINDS, "Keep count_free_region_kinds in sync with FREE_REGION_KINDS, changing this is not a version breaking change.");
 
+enum snapshot_stage
+{
+    distribute_free_regions_start,
+};
+
+enum freelist_type
+{
+    free_regions_basic,
+};
+
 class region_free_list
 {
+    friend class free_list_snapshot;
+
     size_t  num_free_regions;
     size_t  size_free_regions;
     size_t  size_committed_in_free_regions;
@@ -1449,6 +1461,61 @@ public:
 };
 
 static_assert(sizeof(region_free_list) == sizeof(dac_region_free_list), "The DAC relies on the size of these two types matching for pointer arithmetic.");
+
+class heap_segment_snapshot
+{
+public:
+    PTR_heap_segment next;
+    PTR_heap_segment prev_free_region;
+
+    heap_segment* start;
+
+    uint8_t* allocated;
+    uint8_t* committed;
+    uint8_t* reserved;
+    uint8_t* used;
+    uint8_t* mem;
+
+    uint8_t gen_num;
+    uint8_t valid;
+    int age_in_free;
+};
+
+const int NUM_SNAPSHOTS = 10000;
+const int SNAPSHOT_SIZE = 3;
+
+class free_list_snapshot
+{
+private:
+    static int* s_nullptr;
+    static int s_dummy;
+
+    static VOLATILE(int32_t) s_lock;
+
+    static free_list_snapshot* s_buffer;
+
+    static int s_counter_full;
+    static int s_counter;
+
+    int index;
+    snapshot_stage stage;
+    freelist_type type;
+
+    region_free_list* free_list;
+    size_t num_free_regions;
+    size_t size_free_regions;
+    size_t size_committed_in_free_regions;
+    size_t num_free_regions_added;
+    size_t num_free_regions_removed;
+    heap_segment_snapshot start[SNAPSHOT_SIZE];
+    heap_segment_snapshot end[SNAPSHOT_SIZE];
+
+public:
+    static void init();
+    static void fail();
+    static void record(heap_segment_snapshot* dst, heap_segment* src);
+    static void record(snapshot_stage stage, freelist_type type, region_free_list* free_list);
+};
 #endif
 
 enum bookkeeping_element

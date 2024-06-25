@@ -12747,6 +12747,11 @@ static int64_t add_regions (region_free_list* free_list, region_free_list* surpl
     return added_count;
 }
 
+void region_assert(bool value)
+{
+    if (!value) free_list_snapshot::fail();
+}
+
 region_free_list::region_free_list() : num_free_regions (0),
                                        size_free_regions (0),
                                        size_committed_in_free_regions (0),
@@ -12759,38 +12764,42 @@ region_free_list::region_free_list() : num_free_regions (0),
 
 void region_free_list::verify (bool empty_p)
 {
-#ifdef _DEBUG
-    assert ((num_free_regions == 0) == empty_p);
-    assert ((size_free_regions == 0) == empty_p);
-    assert ((size_committed_in_free_regions == 0) == empty_p);
-    assert ((head_free_region == nullptr) == empty_p);
-    assert ((tail_free_region == nullptr) == empty_p);
-    assert (num_free_regions == (num_free_regions_added - num_free_regions_removed));
+    region_assert ((num_free_regions == 0) == empty_p);
+    region_assert ((size_free_regions == 0) == empty_p);
+    region_assert ((size_committed_in_free_regions == 0) == empty_p);
+    region_assert ((head_free_region == nullptr) == empty_p);
+    region_assert ((tail_free_region == nullptr) == empty_p);
+    region_assert (num_free_regions == (num_free_regions_added - num_free_regions_removed));
 
     if (!empty_p)
     {
-        assert (heap_segment_next (tail_free_region) == nullptr);
-        assert (heap_segment_prev_free_region (head_free_region) == nullptr);
+        region_assert (heap_segment_next (tail_free_region) == nullptr);
+        region_assert (heap_segment_prev_free_region (head_free_region) == nullptr);
 
         size_t actual_count = 0;
+        size_t actual_size = 0;
+        size_t actual_size_committed = 0;
         heap_segment* last_region = nullptr;
         for (heap_segment* region = head_free_region; region != nullptr; region = heap_segment_next(region))
         {
             last_region = region;
             actual_count++;
+	    actual_size += get_region_size (region);
+	    actual_size_committed += get_region_committed_size (region);
         }
-        assert (num_free_regions == actual_count);
-        assert (last_region == tail_free_region);
+        region_assert (num_free_regions == actual_count);
+	region_assert (size_free_regions == actual_size);
+	region_assert (size_committed_in_free_regions == actual_size_committed);
+        region_assert (last_region == tail_free_region);
         heap_segment* first_region = nullptr;
         for (heap_segment* region = tail_free_region; region != nullptr; region = heap_segment_prev_free_region(region))
         {
             first_region = region;
             actual_count--;
         }
-        assert (actual_count == 0);
-        assert (head_free_region == first_region);
+        region_assert (actual_count == 0);
+        region_assert (head_free_region == first_region);
     }
-#endif
 }
 
 void region_free_list::reset()
@@ -12820,12 +12829,13 @@ void region_free_list::update_added_region_info (heap_segment* region)
 
 void region_free_list::add_region_front (heap_segment* region)
 {
-    assert (heap_segment_containing_free_list (region) == nullptr);
+    verify (num_free_regions == 0);
+    region_assert (heap_segment_containing_free_list (region) == nullptr);
     heap_segment_containing_free_list(region) = this;
     if (head_free_region != nullptr)
     {
         heap_segment_prev_free_region(head_free_region) = region;
-        assert (tail_free_region != nullptr);
+        region_assert (tail_free_region != nullptr);
     }
     else
     {
@@ -12842,7 +12852,8 @@ void region_free_list::add_region_front (heap_segment* region)
 // we find a region whose committed size is >= this region's committed or we reach the head.
 void region_free_list::add_region_in_descending_order (heap_segment* region_to_add)
 {
-    assert (heap_segment_containing_free_list (region_to_add) == nullptr);
+    verify (num_free_regions == 0);
+    region_assert (heap_segment_containing_free_list (region_to_add) == nullptr);
     heap_segment_containing_free_list (region_to_add) = this;
     heap_segment_age_in_free (region_to_add) = 0;
     heap_segment* prev_region = nullptr;
@@ -12878,7 +12889,7 @@ void region_free_list::add_region_in_descending_order (heap_segment* region_to_a
     }
     else
     {
-        assert (region == head_free_region);
+        region_assert (region == head_free_region);
         head_free_region = region_to_add;
     }
 
@@ -12891,7 +12902,7 @@ void region_free_list::add_region_in_descending_order (heap_segment* region_to_a
     }
     else
     {
-        assert (prev_region == tail_free_region);
+        region_assert (prev_region == tail_free_region);
         tail_free_region = region_to_add;
     }
 
@@ -12903,7 +12914,7 @@ heap_segment* region_free_list::unlink_region_front()
     heap_segment* region = head_free_region;
     if (region != nullptr)
     {
-        assert (heap_segment_containing_free_list (region) == this);
+        region_assert (heap_segment_containing_free_list (region) == this);
         unlink_region (region);
     }
     return region;
@@ -12919,25 +12930,25 @@ void region_free_list::unlink_region (heap_segment* region)
 
     if (prev != nullptr)
     {
-        assert (region != rfl->head_free_region);
-        assert (heap_segment_next (prev) == region);
+        region_assert (region != rfl->head_free_region);
+        region_assert (heap_segment_next (prev) == region);
         heap_segment_next (prev) = next;
     }
     else
     {
-        assert (region == rfl->head_free_region);
+        region_assert (region == rfl->head_free_region);
         rfl->head_free_region = next;
     }
 
     if (next != nullptr)
     {
-        assert (region != rfl->tail_free_region);
-        assert (heap_segment_prev_free_region (next) == region);
+        region_assert (region != rfl->tail_free_region);
+        region_assert (heap_segment_prev_free_region (next) == region);
         heap_segment_prev_free_region (next) = prev;
     }
     else
     {
-        assert (region == rfl->tail_free_region);
+        region_assert (region == rfl->tail_free_region);
         rfl->tail_free_region = prev;
     }
     heap_segment_containing_free_list (region) = nullptr;
@@ -12946,12 +12957,14 @@ void region_free_list::unlink_region (heap_segment* region)
     rfl->num_free_regions_removed++;
 
     size_t region_size = get_region_size (region);
-    assert (rfl->size_free_regions >= region_size);
+    region_assert (rfl->size_free_regions >= region_size);
     rfl->size_free_regions -= region_size;
 
     size_t region_committed_size = get_region_committed_size (region);
-    assert (rfl->size_committed_in_free_regions >= region_committed_size);
+    region_assert (rfl->size_committed_in_free_regions >= region_committed_size);
     rfl->size_committed_in_free_regions -= region_committed_size;
+
+    rfl->verify (rfl->num_free_regions == 0);
 }
 
 free_region_kind region_free_list::get_region_kind (heap_segment* region)
@@ -12966,7 +12979,7 @@ free_region_kind region_free_list::get_region_kind (heap_segment* region)
         return large_free_region;
     else
     {
-        assert(region_size > LARGE_REGION_SIZE);
+        region_assert(region_size > LARGE_REGION_SIZE);
         return huge_free_region;
     }
 }
@@ -12985,7 +12998,7 @@ heap_segment* region_free_list::unlink_smallest_region (size_t minimum_size)
 
         size_t region_size = get_region_size (region);
         const size_t LARGE_REGION_SIZE = global_region_allocator.get_large_region_alignment();
-        assert (region_size >= LARGE_REGION_SIZE * 2);
+        region_assert (region_size >= LARGE_REGION_SIZE * 2);
         if (region_size >= minimum_size)
         {
             // found a region that is large enough - see if it's smaller than the smallest so far
@@ -12998,7 +13011,7 @@ heap_segment* region_free_list::unlink_smallest_region (size_t minimum_size)
             if (region_size == LARGE_REGION_SIZE * 2)
             {
                 // we won't find a smaller one on this list
-                assert (region == smallest_region);
+                region_assert (region == smallest_region);
                 break;
             }
         }
@@ -13197,7 +13210,7 @@ static heap_segment* merge_sort_by_committed_and_age (heap_segment *head, size_t
 
     if (head != nullptr)
     {
-        assert (mid == nullptr);
+        region_assert (mid == nullptr);
         heap_segment_next (new_tail) = head;
     }
     else
@@ -13219,11 +13232,95 @@ void region_free_list::sort_by_committed_and_age()
     for (heap_segment* region = new_head; region != nullptr; region = heap_segment_next (region))
     {
         heap_segment_prev_free_region (region) = prev;
-        assert ((prev == nullptr) || (compare_by_committed_and_age (prev, region) <= 0));
+        region_assert ((prev == nullptr) || (compare_by_committed_and_age (prev, region) <= 0));
         prev = region;
     }
     tail_free_region = prev;
 }
+
+int* free_list_snapshot::s_nullptr;
+int free_list_snapshot::s_dummy;
+
+VOLATILE(int32_t) free_list_snapshot::s_lock;
+
+free_list_snapshot* free_list_snapshot::s_buffer;
+
+int free_list_snapshot::s_counter_full;
+int free_list_snapshot::s_counter;
+
+void free_list_snapshot::init()
+{
+    s_nullptr = nullptr;
+    s_lock = 0;
+    s_counter = 0;
+    s_buffer = new free_list_snapshot[NUM_SNAPSHOTS];
+}
+
+void free_list_snapshot::fail()
+{
+    s_dummy = *s_nullptr;
+}
+
+void free_list_snapshot::record(heap_segment_snapshot* dst, heap_segment* src)
+{
+    dst->next = src->next;
+    dst->prev_free_region = src->prev_free_region;
+
+    dst->allocated = src->allocated;
+    dst->committed = src->committed;
+    dst->reserved = src->reserved;
+    dst->used = src->used;
+    dst->mem = src->mem;
+
+    dst->gen_num = src->gen_num;
+    dst->valid = 1;
+    dst->age_in_free = src->age_in_free;
+}
+
+void free_list_snapshot::record(snapshot_stage stage, freelist_type type, region_free_list* free_list)
+{
+    // Enter, should be no contention
+    if (Interlocked::CompareExchange(&s_lock, 1, 0) != 0) fail();
+
+    s_buffer[s_counter].index = s_counter_full;
+    s_buffer[s_counter].stage = stage;
+    s_buffer[s_counter].type = type;
+
+    s_buffer[s_counter].free_list = free_list;
+    s_buffer[s_counter].num_free_regions = free_list->num_free_regions;
+    s_buffer[s_counter].size_free_regions = free_list->size_free_regions;
+    s_buffer[s_counter].size_committed_in_free_regions = free_list->size_committed_in_free_regions;
+    s_buffer[s_counter].num_free_regions_added = free_list->num_free_regions_added;
+    s_buffer[s_counter].num_free_regions_removed = free_list->num_free_regions_removed;
+
+    // Zero these because the writes below are conditional
+    memset(s_buffer[s_counter].start, 0, SNAPSHOT_SIZE * sizeof(heap_segment_snapshot));
+    memset(s_buffer[s_counter].end, 0, SNAPSHOT_SIZE * sizeof(heap_segment_snapshot));
+
+    int i;
+    heap_segment* current;
+    for (i = 0, current = free_list->head_free_region;
+	 (i < SNAPSHOT_SIZE) && (current != nullptr);
+	 ++i, current = current->next)
+    {
+        record(&s_buffer[s_counter].start[i], current);
+    }
+
+    for (i = 0, current = free_list->tail_free_region;
+	 (i < SNAPSHOT_SIZE) && (current != nullptr);
+	 ++i, current = current->prev_free_region)
+    {
+        record(&s_buffer[s_counter].end[SNAPSHOT_SIZE - i - 1], current);
+    }
+
+    // Increment counters.  Keep both for easy debugger inspection.
+    s_counter_full++;
+    s_counter = (s_counter + 1) % NUM_SNAPSHOTS;
+    
+    // Exit, should have no corruption
+    if (Interlocked::CompareExchange(&s_lock, 0, 1) != 1) fail();
+}
+
 #endif //USE_REGIONS
 
 void gc_heap::distribute_free_regions()
@@ -48282,6 +48379,10 @@ HRESULT GCHeap::Initialize()
 #ifndef MULTIPLE_HEAPS
     GCConfig::SetServerGC(false);
 #else //!MULTIPLE_HEAPS
+#ifdef USE_REGIONS
+    free_list_snapshot::init();
+#endif
+    
     GCConfig::SetServerGC(true);
     AffinitySet config_affinity_set;
     GCConfigStringHolder cpu_index_ranges_holder(GCConfig::GetGCHeapAffinitizeRanges());
