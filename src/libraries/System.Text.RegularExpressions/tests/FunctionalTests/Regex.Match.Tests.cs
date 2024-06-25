@@ -870,6 +870,11 @@ namespace System.Text.RegularExpressions.Tests
                 yield return (@"\s+\d+", " asdf12 ", RegexOptions.RightToLeft, 0, 6, false, string.Empty);
                 yield return ("aaa", "aaabbb", RegexOptions.None, 3, 3, false, string.Empty);
                 yield return ("abc|def", "123def456", RegexOptions.RightToLeft | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, 9, true, "def");
+                yield return (@"^says?$", "says", RegexOptions.RightToLeft, 0, 4, true, "says");
+                yield return (@"^says?$", "say", RegexOptions.RightToLeft, 0, 3, true, "say");
+                yield return (@"^say(s?)$", "says", RegexOptions.RightToLeft, 0, 4, true, "says");
+                yield return (@"^(say)s?$", "says", RegexOptions.RightToLeft, 0, 4, true, "says");
+                yield return (@"^(.+?) (says?),\s'(.+)'$", "User says, 'adventure'", RegexOptions.RightToLeft, 0, 22, true, "User says, 'adventure'");
 
                 // .* : RTL, Case-sensitive
                 yield return (@".*\nfoo", "This shouldn't match", RegexOptions.None | RegexOptions.RightToLeft, 0, 20, false, "");

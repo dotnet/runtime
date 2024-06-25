@@ -22,11 +22,13 @@ namespace ILCompiler
     {
         private readonly ILProvider _nestedILProvider;
         private readonly SubstitutionProvider _substitutionProvider;
+        private readonly DevirtualizationManager _devirtualizationManager;
 
-        public SubstitutedILProvider(ILProvider nestedILProvider, SubstitutionProvider substitutionProvider)
+        public SubstitutedILProvider(ILProvider nestedILProvider, SubstitutionProvider substitutionProvider, DevirtualizationManager devirtualizationManager)
         {
             _nestedILProvider = nestedILProvider;
             _substitutionProvider = substitutionProvider;
+            _devirtualizationManager = devirtualizationManager;
         }
 
         public override MethodIL GetMethodIL(MethodDesc method)
@@ -871,7 +873,26 @@ namespace ILCompiler
             return true;
         }
 
-        private static bool TryExpandTypeEquality(MethodIL methodIL, byte[] body, OpcodeFlags[] flags, int offset, string op, out int constant)
+        private bool TryExpandTypeEquality(MethodIL methodIL, byte[] body, OpcodeFlags[] flags, int offset, string op, out int constant)
+        {
+            if (TryExpandTypeEquality_TokenToken(methodIL, body, flags, offset, out constant)
+                || TryExpandTypeEquality_TokenOther(methodIL, body, flags, offset, 1, expectGetType: false, out constant)
+                || TryExpandTypeEquality_TokenOther(methodIL, body, flags, offset, 2, expectGetType: false, out constant)
+                || TryExpandTypeEquality_TokenOther(methodIL, body, flags, offset, 3, expectGetType: false, out constant)
+                || TryExpandTypeEquality_TokenOther(methodIL, body, flags, offset, 1, expectGetType: true, out constant)
+                || TryExpandTypeEquality_TokenOther(methodIL, body, flags, offset, 2, expectGetType: true, out constant)
+                || TryExpandTypeEquality_TokenOther(methodIL, body, flags, offset, 3, expectGetType: true, out constant))
+            {
+                if (op == "op_Inequality")
+                    constant ^= 1;
+
+                return true;
+            }
+
+            return false;
+        }
+
+        private static bool TryExpandTypeEquality_TokenToken(MethodIL methodIL, byte[] body, OpcodeFlags[] flags, int offset, out int constant)
         {
             // We expect to see a sequence:
             // ldtoken Foo
@@ -919,9 +940,108 @@ namespace ILCompiler
 
             constant = equality.Value ? 1 : 0;
 
-            if (op == "op_Inequality")
-                constant ^= 1;
+            return true;
+        }
 
+        private bool TryExpandTypeEquality_TokenOther(MethodIL methodIL, byte[] body, OpcodeFlags[] flags, int offset, int ldInstructionSize, bool expectGetType, out int constant)
+        {
+            // We expect to see a sequence:
+            // ldtoken Foo
+            // call GetTypeFromHandle
+            // ldloc.X/ldloc_s X/ldarg.X/ldarg_s X
+            // [optional] call Object.GetType
+            // -> offset points here
+            //
+            // The ldtoken part can potentially be in the second argument position
+
+            constant = 0;
+            int sequenceLength = 5 + 5 + ldInstructionSize + (expectGetType ? 5 : 0);
+            if (offset < sequenceLength)
+                return false;
+
+            if ((flags[offset - sequenceLength] & OpcodeFlags.InstructionStart) == 0)
+                return false;
+
+            ILReader reader = new ILReader(body, offset - sequenceLength);
+
+            TypeDesc knownType = null;
+
+            // Is the ldtoken in the first position?
+            if (reader.PeekILOpcode() == ILOpcode.ldtoken)
+            {
+                knownType = ReadLdToken(ref reader, methodIL, flags);
+                if (knownType == null)
+                    return false;
+
+                if (!ReadGetTypeFromHandle(ref reader, methodIL, flags))
+                    return false;
+            }
+
+            ILOpcode opcode = reader.ReadILOpcode();
+            if (ldInstructionSize == 1 && opcode is (>= ILOpcode.ldloc_0 and <= ILOpcode.ldloc_3) or (>= ILOpcode.ldarg_0 and <= ILOpcode.ldarg_3))
+            {
+                // Nothing to read
+            }
+            else if (ldInstructionSize == 2 && opcode is ILOpcode.ldloc_s or ILOpcode.ldarg_s)
+            {
+                reader.ReadILByte();
+            }
+            else if (ldInstructionSize == 3 && opcode is ILOpcode.ldloc or ILOpcode.ldarg)
+            {
+                reader.ReadILUInt16();
+            }
+            else
+            {
+                return false;
+            }
+
+            if ((flags[reader.Offset] & OpcodeFlags.BasicBlockStart) != 0)
+                return false;
+
+            if (expectGetType)
+            {
+                if (reader.ReadILOpcode() is not ILOpcode.callvirt and not ILOpcode.call)
+                    return false;
+
+                // We don't actually mind if this is not Object.GetType
+                reader.ReadILToken();
+
+                if ((flags[reader.Offset] & OpcodeFlags.BasicBlockStart) != 0)
+                    return false;
+            }
+
+            // If the ldtoken wasn't in the first position, it must be in the other
+            if (knownType == null)
+            {
+                knownType = ReadLdToken(ref reader, methodIL, flags);
+                if (knownType == null)
+                    return false;
+
+                if (!ReadGetTypeFromHandle(ref reader, methodIL, flags))
+                    return false;
+            }
+
+            // No value in making this work for definitions
+            if (knownType.IsGenericDefinition)
+                return false;
+
+            // Dataflow runs on top of uninstantiated IL and we can't answer some questions there.
+            // Unfortunately this means dataflow will still see code that the rest of the system
+            // might have optimized away. It should not be a problem in practice.
+            if (knownType.ContainsSignatureVariables())
+                return false;
+
+            if (knownType.IsCanonicalDefinitionType(CanonicalFormKind.Any))
+                return false;
+
+            // We don't track types without a constructed MethodTable very well.
+            if (!ConstructedEETypeNode.CreationAllowed(knownType))
+                return false;
+
+            if (_devirtualizationManager.CanReferenceConstructedTypeOrCanonicalFormOfType(knownType.NormalizeInstantiation()))
+                return false;
+
+            constant = 0;
             return true;
         }
 

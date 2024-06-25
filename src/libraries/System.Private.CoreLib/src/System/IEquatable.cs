@@ -3,7 +3,7 @@
 
 namespace System
 {
-    public interface IEquatable<T> // invariant due to questionable semantics around equality and inheritance
+    public interface IEquatable<T> where T : allows ref struct // invariant due to questionable semantics around equality and inheritance
     {
         /// <summary>Indicates whether the current object is equal to another object of the same type.</summary>
         /// <param name="other">An object to compare with this object.</param>

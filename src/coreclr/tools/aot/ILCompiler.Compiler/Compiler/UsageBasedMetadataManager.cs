@@ -581,7 +581,7 @@ namespace ILCompiler
 
                 if (target.IsVirtual)
                 {
-                    DelegateTargetVirtualMethodNode targetVirtualMethod = factory.DelegateTargetVirtualMethod(target.GetCanonMethodTarget(CanonicalFormKind.Specific));
+                    DelegateTargetVirtualMethodNode targetVirtualMethod = factory.ReflectedDelegateTargetVirtualMethod(target.GetCanonMethodTarget(CanonicalFormKind.Specific));
 
                     dependencies.Add(new DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry(
                         targetVirtualMethod,
@@ -615,7 +615,7 @@ namespace ILCompiler
                 dependencies ??= new CombinedDependencyList();
                 dependencies.Add(new DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry(
                     factory.ReflectedMethod(impl.GetCanonMethodTarget(CanonicalFormKind.Specific)),
-                    factory.DelegateTargetVirtualMethod(decl.GetCanonMethodTarget(CanonicalFormKind.Specific)),
+                    factory.ReflectedDelegateTargetVirtualMethod(decl.GetCanonMethodTarget(CanonicalFormKind.Specific)),
                     "Virtual method declaration is reflectable"));
             }
         }

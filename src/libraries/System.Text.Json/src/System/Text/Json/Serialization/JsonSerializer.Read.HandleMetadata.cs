@@ -496,15 +496,7 @@ namespace System.Text.Json
                             return value;
                         }
 
-                        JsonValueKind metadataValueKind = jsonNode switch
-                        {
-                            null => JsonValueKind.Null,
-                            JsonObject => JsonValueKind.Object,
-                            JsonArray => JsonValueKind.Array,
-                            JsonValue<JsonElement> element => element.Value.ValueKind,
-                            _ => JsonValueKind.Undefined,
-                        };
-
+                        JsonValueKind metadataValueKind = jsonNode?.GetValueKind() ?? JsonValueKind.Null;
                         Debug.Assert(metadataValueKind != JsonValueKind.Undefined);
                         ThrowHelper.ThrowJsonException_MetadataValueWasNotString(metadataValueKind);
                         return null!;

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Formats.Nrbf;
 using System.Runtime.Serialization;
 
 namespace System.Resources.Extensions.BinaryFormat.Deserializer;
@@ -30,7 +31,7 @@ internal interface IDeserializer
     ///   <see cref="SerializationInfo"/> has not yet been applied.
     ///  </para>
     /// </remarks>
-    HashSet<int> IncompleteObjects { get; }
+    HashSet<SerializationRecordId> IncompleteObjects { get; }
 
     /// <summary>
     ///  The set of objects that have been deserialized, indexed by record id.
@@ -42,7 +43,7 @@ internal interface IDeserializer
     ///   be ready if there are cycles in the object graph).
     ///  </para>
     /// </remarks>
-    IDictionary<int, object> DeserializedObjects { get; }
+    IDictionary<SerializationRecordId, object> DeserializedObjects { get; }
 
     /// <summary>
     ///  Resolver for types.
@@ -62,7 +63,7 @@ internal interface IDeserializer
     /// <summary>
     ///  Mark the object id as complete. This will check dependencies and resolve relevant <see cref="ValueUpdater"/>s.
     /// </summary>
-    void CompleteObject(Id id);
+    void CompleteObject(SerializationRecordId id);
 
     /// <summary>
     ///  Check for a surrogate for the given type. If none exists, returns <see langword="null"/>.

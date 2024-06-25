@@ -9,7 +9,9 @@ namespace System.Collections.Generic
     /// </summary>
     /// <typeparam name="TAlternate">The alternate type to compare.</typeparam>
     /// <typeparam name="T">The type to compare.</typeparam>
-    public interface IAlternateEqualityComparer<in TAlternate, T> where TAlternate : allows ref struct
+    public interface IAlternateEqualityComparer<in TAlternate, T>
+        where TAlternate : allows ref struct
+        where T : allows ref struct
     {
         /// <summary>Determines whether the specified <paramref name="alternate"/> equals the specified <paramref name="other"/>.</summary>
         /// <param name="alternate">The instance of type <typeparamref name="TAlternate"/> to compare.</param>

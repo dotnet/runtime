@@ -110,7 +110,6 @@
   // Temporary registers used for the GS cookie check.
   #define REG_GSCOOKIE_TMP_0       REG_T0
   #define REG_GSCOOKIE_TMP_1       REG_T1
-  #define RBM_GSCOOKIE_TMP         (RBM_T0|RBM_T1)
 
   // register to hold shift amount; no special register is required on LOONGARCH64.
   #define REG_SHIFT                REG_NA
@@ -194,14 +193,6 @@
   #define RBM_R2R_INDIRECT_PARAM          RBM_T8
 
   #define REG_INDIRECT_CALL_TARGET_REG    REG_T6
-
-  // Registers used by PInvoke frame setup
-  #define REG_PINVOKE_FRAME        REG_T0
-  #define RBM_PINVOKE_FRAME        RBM_T0
-  #define REG_PINVOKE_TCB          REG_T1
-  #define RBM_PINVOKE_TCB          RBM_T1
-  #define REG_PINVOKE_SCRATCH      REG_T1
-  #define RBM_PINVOKE_SCRATCH      RBM_T1
 
   // The following defines are useful for iterating a regNumber
   #define REG_FIRST                REG_R0

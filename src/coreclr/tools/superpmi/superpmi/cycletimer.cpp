@@ -22,7 +22,7 @@ void CycleTimer::Start()
     if (retVal == FALSE)
     {
         LogError("CycleTimer::Start unable to QPC. error was 0x%08x", ::GetLastError());
-        ::__debugbreak();
+        DEBUG_BREAK;
     }
 }
 
@@ -33,7 +33,7 @@ void CycleTimer::Stop()
     if (retVal == FALSE)
     {
         LogError("CycleTimer::Stop unable to QPC. error was 0x%08x", ::GetLastError());
-        ::__debugbreak();
+        DEBUG_BREAK;
     }
 }
 

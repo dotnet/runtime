@@ -30,14 +30,14 @@ namespace System.Globalization.Tests
             // see the comments on the right to check the non-Hybrid result, if it differs
             yield return new object[] {"ar-SA", "dddd، d MMMM yyyy" }; // dddd، d MMMM yyyy g
             yield return new object[] {"am-ET", "yyyy MMMM d, dddd" };
-            yield return new object[] {"bg-BG", "dddd, d MMMM yyyy г." }; // "dddd, d MMMM yyyy 'г'."
+            yield return new object[] {"bg-BG", "dddd, d MMMM yyyy 'г'." };
             yield return new object[] {"bn-BD", "dddd, d MMMM, yyyy" };
             yield return new object[] {"bn-IN", "dddd, d MMMM, yyyy" };
-            string catalanianPattern = PlatformDetection.IsFirefox || PlatformDetection.IsNodeJS ? "dddd, d de MMMM de yyyy" : "dddd, d de MMMM del yyyy"; // "dddd, d MMMM 'de' yyyy"
+            string catalanianPattern = PlatformDetection.IsFirefox || PlatformDetection.IsNodeJS ? "dddd, d 'de' MMMM 'de' yyyy" : "dddd, d 'de' MMMM 'del' yyyy"; // "dddd, d MMMM 'de' yyyy"
             yield return new object[] {"ca-AD", catalanianPattern };
             yield return new object[] {"ca-ES", catalanianPattern };
             yield return new object[] {"cs-CZ", "dddd d. MMMM yyyy" };
-            yield return new object[] {"da-DK", "dddd den d. MMMM yyyy" }; // dddd 'den' d. MMMM yyyy
+            yield return new object[] {"da-DK", "dddd 'den' d. MMMM yyyy" };
             yield return new object[] {"de-AT", "dddd, d. MMMM yyyy" };
             yield return new object[] {"de-BE", "dddd, d. MMMM yyyy" };
             yield return new object[] {"de-CH", "dddd, d. MMMM yyyy" };
@@ -150,9 +150,10 @@ namespace System.Globalization.Tests
             yield return new object[] {"en-ZM", "dddd, d MMMM yyyy" };
             yield return new object[] {"en-ZW", "dddd, d MMMM yyyy" }; // "dddd, dd MMMM yyyy"
             yield return new object[] {"en-US", "dddd, MMMM d, yyyy" };
-            yield return new object[] {"es-419", "dddd, d de MMMM de yyyy" }; // dddd, d 'de' MMMM 'de' yyyy
-            yield return new object[] {"es-ES", "dddd, d de MMMM de yyyy" }; // dddd, d 'de' MMMM 'de' yyyy
-            yield return new object[] {"es-MX", "dddd, d de MMMM de yyyy" }; // dddd, d 'de' MMMM 'de' yyyy
+            string spanishPattern = "dddd, d 'de' MMMM 'de' yyyy";
+            yield return new object[] {"es-419", spanishPattern };
+            yield return new object[] {"es-ES", spanishPattern };
+            yield return new object[] {"es-MX", spanishPattern };
             yield return new object[] {"et-EE", "dddd, d. MMMM yyyy" };
             yield return new object[] {"fa-IR", "yyyy MMMM d, dddd" };
             yield return new object[] {"fi-FI", "dddd d. MMMM yyyy" };
@@ -173,8 +174,8 @@ namespace System.Globalization.Tests
             yield return new object[] {"ja-JP", "yyyy年M月d日dddd" };
             yield return new object[] {"kn-IN", "dddd, MMMM d, yyyy" };
             yield return new object[] {"ko-KR", "yyyy년 M월 d일 dddd" };
-            yield return new object[] {"lt-LT", "yyyy m. MMMM d d., dddd" }; // "yyyy 'm'. MMMM d 'd'., dddd"
-            yield return new object[] {"lv-LV", "dddd, yyyy. gada d. MMMM" }; // "dddd, yyyy. 'gada' d. MMMM"
+            yield return new object[] {"lt-LT", "yyyy 'm'. MMMM d 'd'., dddd" };
+            yield return new object[] {"lv-LV", "dddd, yyyy. 'gada' d. MMMM" };
             yield return new object[] {"ml-IN", "yyyy, MMMM d, dddd" };
             yield return new object[] {"mr-IN", "dddd, d MMMM, yyyy" };
             yield return new object[] {"ms-BN", "dddd, d MMMM yyyy" }; // "dd MMMM yyyy"
@@ -186,10 +187,10 @@ namespace System.Globalization.Tests
             yield return new object[] {"nl-BE", "dddd d MMMM yyyy" };
             yield return new object[] {"nl-NL", "dddd d MMMM yyyy" };
             yield return new object[] {"pl-PL", "dddd, d MMMM yyyy" };
-            yield return new object[] {"pt-BR", "dddd, d de MMMM de yyyy" }; // dddd, d 'de' MMMM 'de' yyyy
-            yield return new object[] {"pt-PT", "dddd, d de MMMM de yyyy" }; // dddd, d 'de' MMMM 'de' yyyy
+            yield return new object[] {"pt-BR", "dddd, d 'de' MMMM 'de' yyyy" };
+            yield return new object[] {"pt-PT", "dddd, d 'de' MMMM 'de' yyyy" };
             yield return new object[] {"ro-RO", "dddd, d MMMM yyyy" };
-            yield return new object[] {"ru-RU", "dddd, d MMMM yyyy г." }; // "dddd, d MMMM yyyy 'г'."
+            yield return new object[] {"ru-RU", "dddd, d MMMM yyyy 'г'." };
             yield return new object[] {"sk-SK", "dddd d. MMMM yyyy" };
             yield return new object[] {"sl-SI", "dddd, d. MMMM yyyy" }; // "dddd, dd. MMMM yyyy"
             yield return new object[] {"sr-Cyrl-RS", "dddd, d. MMMM yyyy." }; // "dddd, dd. MMMM yyyy"
@@ -208,7 +209,7 @@ namespace System.Globalization.Tests
             yield return new object[] {"th-TH", "ddddที่ d MMMM g yyyy" };
             yield return new object[] {"tr-CY", "d MMMM yyyy dddd" };
             yield return new object[] {"tr-TR", "d MMMM yyyy dddd" };
-            yield return new object[] {"uk-UA", "dddd, d MMMM yyyy р." }; // "dddd, d MMMM yyyy 'р'."
+            yield return new object[] {"uk-UA", "dddd, d MMMM yyyy 'р'." };
             yield return new object[] {"vi-VN", "dddd, d MMMM, yyyy" };
             yield return new object[] {"zh-CN", "yyyy年M月d日dddd" };
             yield return new object[] {"zh-Hans-HK", "yyyy年M月d日dddd" };

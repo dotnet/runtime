@@ -346,3 +346,28 @@ static void FindCertStart(const uint8_t** buffer, int32_t* len)
         }
     }
 }
+
+jobject /*X509Certificate*/ AndroidCryptoNative_X509GetCertificateForPrivateKeyEntry(jobject /*PrivateKeyEntry*/ privateKeyEntry)
+{
+    abort_if_invalid_pointer_argument (privateKeyEntry);
+
+    JNIEnv* env = GetJNIEnv();
+
+    jobject cert = (*env)->CallObjectMethod(env, privateKeyEntry, g_PrivateKeyEntryGetCertificate);
+    if (CheckJNIExceptions(env) || !cert)
+    {
+        return NULL;
+    }
+
+    return ToGRef(env, cert);
+}
+
+int32_t AndroidCryptoNative_X509IsKeyStorePrivateKeyEntry(jobject entry)
+{
+    if (!entry)
+        return 0;
+
+    JNIEnv* env = GetJNIEnv();
+
+    return (*env)->IsInstanceOf(env, entry, g_PrivateKeyEntryClass) ? 1 : 0;
+}

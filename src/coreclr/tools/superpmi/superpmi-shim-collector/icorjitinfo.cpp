@@ -905,6 +905,15 @@ bool interceptor_ICJI::isExactType(CORINFO_CLASS_HANDLE cls)
     return temp;
 }
 
+// Returns whether a class handle represents a generic type, if that can be statically determined.
+TypeCompareState interceptor_ICJI::isGenericType(CORINFO_CLASS_HANDLE cls)
+{
+    mc->cr->AddCall("isGenericType");
+    TypeCompareState temp = original_ICorJitInfo->isGenericType(cls);
+    mc->recIsGenericType(cls, temp);
+    return temp;
+}
+
 // Returns whether a class handle represents a Nullable type, if that can be statically determined.
 TypeCompareState interceptor_ICJI::isNullableType(CORINFO_CLASS_HANDLE cls)
 {

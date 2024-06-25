@@ -383,14 +383,6 @@
   #define REG_SECRET_STUB_PARAM    REG_R10
   #define RBM_SECRET_STUB_PARAM    RBM_R10
 
-  // Registers used by PInvoke frame setup
-  #define REG_PINVOKE_FRAME        REG_EDI
-  #define RBM_PINVOKE_FRAME        RBM_EDI
-  #define REG_PINVOKE_TCB          REG_EAX
-  #define RBM_PINVOKE_TCB          RBM_EAX
-  #define REG_PINVOKE_SCRATCH      REG_EAX
-  #define RBM_PINVOKE_SCRATCH      RBM_EAX
-
   // The following defines are useful for iterating a regNumber
   #define REG_FIRST                REG_EAX
   #define REG_INT_FIRST            REG_EAX

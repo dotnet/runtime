@@ -2997,6 +2997,9 @@ GenTree* Compiler::optVNBasedFoldConstExpr(BasicBlock* block, GenTree* parent, G
         }
         break;
 
+#endif // TARGET_XARCH
+
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
         case TYP_MASK:
         {
             simdmask_t value = vnStore->ConstantValue<simdmask_t>(vnCns);
@@ -3008,7 +3011,7 @@ GenTree* Compiler::optVNBasedFoldConstExpr(BasicBlock* block, GenTree* parent, G
             break;
         }
         break;
-#endif // TARGET_XARCH
+#endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_SIMD
 
         case TYP_BYREF:
@@ -3117,101 +3120,19 @@ bool Compiler::optIsProfitableToSubstitute(GenTree* dest, BasicBlock* destBlock,
 
         if (inspectIntrinsic)
         {
-            GenTreeHWIntrinsic* parent = destParent->AsHWIntrinsic();
-            GenTreeVecCon*      vecCon = value->AsVecCon();
-
-            NamedIntrinsic intrinsicId  = parent->GetHWIntrinsicId();
-            var_types      simdBaseType = parent->GetSimdBaseType();
+            GenTreeHWIntrinsic* parent      = destParent->AsHWIntrinsic();
+            NamedIntrinsic      intrinsicId = parent->GetHWIntrinsicId();
 
             if (!HWIntrinsicInfo::CanBenefitFromConstantProp(intrinsicId))
             {
                 return false;
             }
 
-            // For several of the scenarios below we may skip the costing logic
+            // For several of the scenarios we may skip the costing logic
             // since we know that the operand is always containable and therefore
             // is always cost effective to propagate.
 
-            switch (intrinsicId)
-            {
-#if defined(TARGET_ARM64)
-                case NI_Vector64_op_Equality:
-                case NI_Vector64_op_Inequality:
-#endif // TARGET_ARM64
-                case NI_Vector128_op_Equality:
-                case NI_Vector128_op_Inequality:
-#if defined(TARGET_XARCH)
-                case NI_Vector256_op_Equality:
-                case NI_Vector256_op_Inequality:
-                case NI_Vector512_op_Equality:
-                case NI_Vector512_op_Inequality:
-#endif // TARGET_XARCH
-                {
-                    // We can optimize when the constant is zero, but only
-                    // for non floating-point since +0.0 == -0.0.
-                    return vecCon->IsZero() && !varTypeIsFloating(simdBaseType);
-                }
-
-#if defined(TARGET_ARM64)
-                case NI_AdvSimd_CompareEqual:
-                case NI_AdvSimd_Arm64_CompareEqual:
-                case NI_AdvSimd_Arm64_CompareEqualScalar:
-                {
-                    // We can optimize when the constant is zero due to a
-                    // specialized encoding for the instruction
-                    return vecCon->IsZero();
-                }
-
-                case NI_AdvSimd_CompareGreaterThan:
-                case NI_AdvSimd_CompareGreaterThanOrEqual:
-                case NI_AdvSimd_Arm64_CompareGreaterThan:
-                case NI_AdvSimd_Arm64_CompareGreaterThanOrEqual:
-                case NI_AdvSimd_Arm64_CompareGreaterThanScalar:
-                case NI_AdvSimd_Arm64_CompareGreaterThanOrEqualScalar:
-                {
-                    // We can optimize when the constant is zero, but only
-                    // for signed types, due to a specialized encoding for
-                    // the instruction
-                    return vecCon->IsZero() && !varTypeIsUnsigned(simdBaseType);
-                }
-#endif // TARGET_ARM64
-
-#if defined(TARGET_XARCH)
-                case NI_SSE41_Insert:
-                {
-                    // We can optimize for float when the constant is zero
-                    // due to a specialized encoding for the instruction
-                    return (simdBaseType == TYP_FLOAT) && vecCon->IsZero();
-                }
-
-                case NI_EVEX_CompareEqualMask:
-                case NI_EVEX_CompareNotEqualMask:
-                {
-                    // We can optimize when the constant is zero, but only
-                    // for non floating-point since +0.0 == -0.0
-                    return vecCon->IsZero() && !varTypeIsFloating(simdBaseType);
-                }
-#endif // TARGET_XARCH
-
-                case NI_Vector128_Shuffle:
-#if defined(TARGET_XARCH)
-                case NI_Vector256_Shuffle:
-                case NI_Vector512_Shuffle:
-#elif defined(TARGET_ARM64)
-                case NI_Vector64_Shuffle:
-#endif
-                {
-                    // The shuffle indices need to be constant so we can preserve
-                    // the node as a hwintrinsic instead of rewriting as a user call.
-                    assert(parent->GetOperandCount() == 2);
-                    return parent->IsUserCall() && (dest == parent->Op(2));
-                }
-
-                default:
-                {
-                    break;
-                }
-            }
+            return parent->ShouldConstantProp(dest, value->AsVecCon());
         }
 #endif // FEATURE_HW_INTRINSICS
     }

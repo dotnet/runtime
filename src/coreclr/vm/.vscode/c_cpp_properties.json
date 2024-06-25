@@ -41,7 +41,6 @@
                 "TARGET_64BIT=1",
                 "DEBUGGING_SUPPORTED",
                 "FEATURE_METADATA_UPDATER",
-                "FEATURE_ARRAYSTUB_AS_IL",
                 "FEATURE_BASICFREEZE",
                 "FEATURE_CODE_VERSIONING",
                 "FEATURE_COLLECTIBLE_TYPES",

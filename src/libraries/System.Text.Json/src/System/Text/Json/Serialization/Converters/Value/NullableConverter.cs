@@ -20,6 +20,7 @@ namespace System.Text.Json.Serialization.Converters
         public NullableConverter(JsonConverter<T> elementConverter)
         {
             _elementConverter = elementConverter;
+            IsInternalConverter = elementConverter.IsInternalConverter;
             IsInternalConverterForNumberType = elementConverter.IsInternalConverterForNumberType;
             ConverterStrategy = elementConverter.ConverterStrategy;
         }

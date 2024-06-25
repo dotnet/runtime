@@ -33,6 +33,12 @@
 #endif
 
 #if defined(_MSC_VER)
+#define LIBC_CALLBACK __cdecl
+#else
+#define LIBC_CALLBACK
+#endif
+
+#if defined(_MSC_VER)
 #  if defined(__SANITIZE_ADDRESS__)
 #    define HAS_ADDRESS_SANITIZER
 #    define DISABLE_ASAN __declspec(no_sanitize_address)

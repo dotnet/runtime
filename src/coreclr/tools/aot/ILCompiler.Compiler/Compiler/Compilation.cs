@@ -105,12 +105,12 @@ namespace ILCompiler
 
         public bool CanReferenceConstructedMethodTable(TypeDesc type)
         {
-            return NodeFactory.DevirtualizationManager.CanReferenceConstructedMethodTable(type);
+            return NodeFactory.DevirtualizationManager.CanReferenceConstructedMethodTable(type.NormalizeInstantiation());
         }
 
         public bool CanReferenceConstructedTypeOrCanonicalFormOfType(TypeDesc type)
         {
-            return NodeFactory.DevirtualizationManager.CanReferenceConstructedTypeOrCanonicalFormOfType(type);
+            return NodeFactory.DevirtualizationManager.CanReferenceConstructedTypeOrCanonicalFormOfType(type.NormalizeInstantiation());
         }
 
         public DelegateCreationInfo GetDelegateCtor(TypeDesc delegateType, MethodDesc target, TypeDesc constrainedType, bool followVirtualDispatch)
@@ -266,9 +266,7 @@ namespace ILCompiler
 
         public ReadyToRunHelperId GetLdTokenHelperForType(TypeDesc type)
         {
-            bool canConstructPerWholeProgramAnalysis = NodeFactory.DevirtualizationManager.CanReferenceConstructedMethodTable(type);
-            bool creationAllowed = ConstructedEETypeNode.CreationAllowed(type);
-            return (canConstructPerWholeProgramAnalysis && creationAllowed)
+            return (ConstructedEETypeNode.CreationAllowed(type) && NodeFactory.DevirtualizationManager.CanReferenceConstructedMethodTable(type.NormalizeInstantiation()))
                 ? ReadyToRunHelperId.TypeHandle
                 : ReadyToRunHelperId.NecessaryTypeHandle;
         }

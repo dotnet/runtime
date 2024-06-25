@@ -462,5 +462,35 @@ namespace System.Runtime.CompilerServices
 
             WriteBarrier(ref element, obj);
         }
+
+        [DebuggerHidden]
+        private static unsafe void ArrayTypeCheck(object obj, Array array)
+        {
+            Debug.Assert(obj != null);
+
+            void* elementType = RuntimeHelpers.GetMethodTable(array)->ElementType;
+            Debug.Assert(elementType != RuntimeHelpers.GetMethodTable(obj)); // Should be handled by caller
+
+            CastResult result = CastCache.TryGet(s_table!, (nuint)RuntimeHelpers.GetMethodTable(obj), (nuint)elementType);
+            if (result == CastResult.CanCast)
+            {
+                return;
+            }
+
+            ArrayTypeCheck_Helper(obj, elementType);
+        }
+
+        [DebuggerHidden]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static unsafe void ArrayTypeCheck_Helper(object obj, void* elementType)
+        {
+            Debug.Assert(obj != null);
+
+            obj = IsInstanceOfAny_NoCacheLookup(elementType, obj);
+            if (obj == null)
+            {
+                ThrowArrayMismatchException();
+            }
+        }
     }
 }

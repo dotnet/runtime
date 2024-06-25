@@ -230,7 +230,7 @@ typedef uint64_t regMaskSmall;
 #endif
 
 #ifdef TARGET_ARM64
-// #define HAS_MORE_THAN_64_REGISTERS 1
+#define HAS_MORE_THAN_64_REGISTERS 1
 #endif // TARGET_ARM64
 
 // TODO: Rename regMaskSmall as RegSet64 (at least for 64-bit)
@@ -267,14 +267,7 @@ public:
     static constexpr regMaskTP CreateFromRegNum(regNumber reg, regMaskSmall mask)
     {
 #ifdef HAS_MORE_THAN_64_REGISTERS
-        if (reg < 64)
-        {
-            return regMaskTP(mask, RBM_NONE);
-        }
-        else
-        {
-            return regMaskTP(RBM_NONE, mask);
-        }
+        return (reg < 64) ? regMaskTP(mask, RBM_NONE) : regMaskTP(RBM_NONE, mask);
 #else
         return regMaskTP(mask, RBM_NONE);
 #endif

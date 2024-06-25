@@ -632,7 +632,7 @@ namespace System.Numerics.Tests
         {
             Vector2 v = new Vector2(1.0f, 2.0f);
             Quaternion q = new Quaternion();
-            Vector2 expected = v;
+            Vector2 expected = Vector2.Zero;
 
             Vector2 actual = Vector2.Transform(v, q);
             Assert.True(MathHelper.Equal(expected, actual), "Vector2f.Transform did not return the expected value.");

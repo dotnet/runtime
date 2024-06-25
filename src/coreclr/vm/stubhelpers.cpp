@@ -808,32 +808,6 @@ FCIMPL1(DWORD, StubHelpers::CalcVaListSize, VARARGS *varargs)
 }
 FCIMPLEND
 
-#ifdef FEATURE_ARRAYSTUB_AS_IL
-NOINLINE static void ArrayTypeCheckSlow(Object* element, PtrArray* arr)
-{
-    FC_INNER_PROLOG(StubHelpers::ArrayTypeCheck);
-    HELPER_METHOD_FRAME_BEGIN_ATTRIB(Frame::FRAME_ATTR_EXACT_DEPTH|Frame::FRAME_ATTR_CAPTURE_DEPTH_2);
-
-    if (!ObjIsInstanceOf(element, arr->GetArrayElementTypeHandle()))
-        COMPlusThrow(kArrayTypeMismatchException);
-
-    HELPER_METHOD_FRAME_END();
-
-    FC_INNER_EPILOG();
-}
-
-FCIMPL2(void, StubHelpers::ArrayTypeCheck, Object* element, PtrArray* arr)
-{
-    FCALL_CONTRACT;
-
-    if (ObjIsInstanceOfCached(element, arr->GetArrayElementTypeHandle()) == TypeHandle::CanCast)
-        return;
-
-    FC_INNER_RETURN_VOID(ArrayTypeCheckSlow(element, arr));
-}
-FCIMPLEND
-#endif // FEATURE_ARRAYSTUB_AS_IL
-
 #ifdef FEATURE_MULTICASTSTUB_AS_IL
 FCIMPL2(void, StubHelpers::MulticastDebuggerTraceHelper, Object* element, INT32 count)
 {

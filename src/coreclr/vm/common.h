@@ -201,15 +201,6 @@ Thread * const CURRENT_THREAD = NULL;
 EXTERN_C AppDomain* STDCALL GetAppDomain();
 #endif //!DACCESS_COMPILE
 
-inline void RetailBreak()
-{
-#ifdef TARGET_X86
-    __asm int 3
-#else
-    DebugBreak();
-#endif
-}
-
 extern BOOL isMemoryReadable(const TADDR start, unsigned len);
 
 #ifndef memcpyUnsafe_f

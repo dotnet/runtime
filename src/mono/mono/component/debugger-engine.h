@@ -270,7 +270,6 @@ typedef struct {
 	long il_offset, native_offset;
 	guint8 *ip;
 	MonoJitInfo *ji;
-	MonoDomain *domain;
 } BreakpointInstance;
 
 /*

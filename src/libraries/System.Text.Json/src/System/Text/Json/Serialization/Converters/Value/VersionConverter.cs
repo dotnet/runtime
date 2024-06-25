@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Text.Json.Nodes;
+using System.Text.Json.Schema;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -123,5 +125,13 @@ namespace System.Text.Json.Serialization.Converters
             writer.WritePropertyName(value.ToString());
 #endif
         }
+
+        internal override JsonSchema? GetSchema(JsonNumberHandling _) =>
+            new()
+            {
+                Type = JsonSchemaType.String,
+                Comment = "Represents a version string.",
+                Pattern = @"^\d+(\.\d+){1,3}$",
+            };
     }
 }

@@ -24,7 +24,7 @@ public:
     template <typename U>
     struct rebind
     {
-        typedef allocator<U> allocator;
+        typedef class allocator<U> allocator;
     };
 
 private:
@@ -105,7 +105,7 @@ public:
     template <typename U>
     struct rebind
     {
-        typedef allocator<U> allocator;
+        typedef class allocator<U> allocator;
     };
 
 private:

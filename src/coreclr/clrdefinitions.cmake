@@ -70,11 +70,9 @@ endif(CLR_CMAKE_TARGET_WIN32 AND CLR_CMAKE_TARGET_ARCH_AMD64)
 # Features - please keep them alphabetically sorted
 if(CLR_CMAKE_TARGET_WIN32)
   if(NOT CLR_CMAKE_TARGET_ARCH_I386)
-    add_definitions(-DFEATURE_ARRAYSTUB_AS_IL)
     add_definitions(-DFEATURE_MULTICASTSTUB_AS_IL)
   endif()
 else(CLR_CMAKE_TARGET_WIN32)
-  add_definitions(-DFEATURE_ARRAYSTUB_AS_IL)
   add_definitions(-DFEATURE_MULTICASTSTUB_AS_IL)
 endif(CLR_CMAKE_TARGET_WIN32)
 

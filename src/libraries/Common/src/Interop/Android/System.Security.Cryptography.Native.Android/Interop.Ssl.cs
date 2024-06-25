@@ -56,6 +56,17 @@ internal static partial class Interop
                 certificates.Length);
         }
 
+        [LibraryImport(Interop.Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_SSLStreamCreateWithKeyStorePrivateKeyEntry")]
+        private static partial SafeSslHandle SSLStreamCreateWithKeyStorePrivateKeyEntry(
+            IntPtr sslStreamProxyHandle,
+            IntPtr keyStorePrivateKeyEntryHandle);
+        internal static SafeSslHandle SSLStreamCreateWithKeyStorePrivateKeyEntry(
+            SslStream.JavaProxy sslStreamProxy,
+            IntPtr keyStorePrivateKeyEntryHandle)
+        {
+            return SSLStreamCreateWithKeyStorePrivateKeyEntry(sslStreamProxy.Handle, keyStorePrivateKeyEntryHandle);
+        }
+
         [LibraryImport(Interop.Libraries.AndroidCryptoNative, EntryPoint = "AndroidCryptoNative_RegisterRemoteCertificateValidationCallback")]
         internal static unsafe partial void RegisterRemoteCertificateValidationCallback(
             delegate* unmanaged<IntPtr, bool> verifyRemoteCertificate);

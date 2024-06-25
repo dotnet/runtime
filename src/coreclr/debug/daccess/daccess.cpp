@@ -7913,7 +7913,7 @@ void DacStackReferenceWalker::WalkStack()
     // Setup GCCONTEXT structs for the stackwalk.
     GCCONTEXT gcctx = {0};
     DacScanContext dsc(this, &mList, mResolvePointers);
-    dsc.pEnumFunc = DacStackReferenceWalker::GCEnumCallback;
+    dsc.pEnumFunc = DacStackReferenceWalker::GCEnumCallbackFunc;
     gcctx.f = DacStackReferenceWalker::GCReportCallback;
     gcctx.sc = &dsc;
 
@@ -7960,7 +7960,7 @@ CLRDATA_ADDRESS DacStackReferenceWalker::ReadPointer(TADDR addr)
 }
 
 
-void DacStackReferenceWalker::GCEnumCallback(LPVOID hCallback, OBJECTREF *pObject, uint32_t flags, DacSlotLocation loc)
+void DacStackReferenceWalker::GCEnumCallbackFunc(LPVOID hCallback, OBJECTREF *pObject, uint32_t flags, DacSlotLocation loc)
 {
     GCCONTEXT *gcctx = (GCCONTEXT *)hCallback;
     DacScanContext *dsc = (DacScanContext*)gcctx->sc;

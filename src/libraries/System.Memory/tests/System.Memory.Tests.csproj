@@ -7,7 +7,6 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
-    <XunitShowProgress>true</XunitShowProgress>
     <!-- This WASM test is problematic and slow right now. This sets the xharness timeout but there is also override in sendtohelix-browser.targets -->
     <WasmXHarnessTestsTimeout>01:15:00</WasmXHarnessTestsTimeout>
   </PropertyGroup>
@@ -20,6 +19,10 @@
     <Compile Include="ArrayBufferWriter\ArrayBufferWriterTests.Char.cs" />
     <Compile Include="ArrayBufferWriter\ArrayBufferWriterTests.String.cs" />
     <Compile Include="ArrayBufferWriter\ArrayBufferWriterTests.T.cs" />
+    <Compile Include="Base64Url\Base64UrlDecoderUnitTests.cs" />
+    <Compile Include="Base64Url\Base64UrlEncoderUnitTests.cs" />
+    <Compile Include="Base64Url\Base64UrlUnicodeAPIsUnitTests.cs" />
+    <Compile Include="Base64Url\Base64UrlValidationUnitTests.cs" />
     <Compile Include="MemoryMarshal\AsRef.cs" />
     <Compile Include="MemoryMarshal\AsReadOnlyRef.cs" />
     <Compile Include="MemoryMarshal\CreateSpan.cs" />

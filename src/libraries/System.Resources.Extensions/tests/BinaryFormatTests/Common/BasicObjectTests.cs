@@ -16,7 +16,8 @@ public abstract class BasicObjectTests<T> : SerializationTest<T> where T : ISeri
     [MemberData(nameof(SerializableObjects))]
     public void DeserializeStoredObjects(object value, TypeSerializableValue[] serializedData)
     {
-        _ = value;
+        // Following call may change the contents of the fields by invoking lazy-evaluated properties.
+        EqualityExtensions.CheckEquals(value, value);
 
         int platformIndex = serializedData.GetPlatformIndex();
         for (int i = 0; i < serializedData.Length; i++)
@@ -48,6 +49,9 @@ public abstract class BasicObjectTests<T> : SerializationTest<T> where T : ISeri
         FormatterAssemblyStyle assemblyMatching,
         FormatterTypeStyle typeStyle)
     {
+        // Following call may change the contents of the fields by invoking lazy-evaluated properties.
+        EqualityExtensions.CheckEquals(value, value);
+
         object deserialized = RoundTrip(value, typeStyle: typeStyle, assemblyMatching: assemblyMatching);
 
         // string.Empty and DBNull are both singletons

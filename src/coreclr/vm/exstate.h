@@ -12,6 +12,7 @@ class DebuggerExState;
 class EHClauseInfo;
 
 #include "exceptionhandling.h"
+#include "cdacoffsets.h"
 
 #if !defined(FEATURE_EH_FUNCLETS)
 // ExInfo contains definitions for 32bit
@@ -49,6 +50,8 @@ class ThreadExceptionState
     // ProfToEEInterfaceImpl::GetNotifiedExceptionClauseInfo needs access so that it can fetch the
     // ExceptionTracker or the ExInfo as appropriate for the platform
     friend class ProfToEEInterfaceImpl;
+
+    template<typename T> friend struct ::cdac_offsets;
 
 #ifdef FEATURE_EH_FUNCLETS
     friend class ExceptionTracker;

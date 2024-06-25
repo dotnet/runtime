@@ -256,9 +256,7 @@ public:
 
     friend class StubLinkerCPU;
 
-#ifdef FEATURE_ARRAYSTUB_AS_IL
     friend class ArrayOpLinker;
-#endif
 protected:
 
     // the m_typeAndFlags field in TypeDesc tell what kind of parameterized type we have

@@ -5158,8 +5158,11 @@ namespace System.Diagnostics.Tracing
             if (dllName != null)
                 sb.Append($" resourceFileName=\"{dllName}\" messageFileName=\"{dllName}\"");
 
-            string symbolsName = providerName.Replace("-", "").Replace('.', '_');  // Period and - are illegal replace them.
-            sb.AppendLine($" symbol=\"{symbolsName}\">");
+            sb.Append(" symbol=\"");
+            int pos = sb.Length;
+            sb.Append(providerName); // Period and dash are illegal; replace them.
+            sb.Replace('.', '_', pos, sb.Length - pos).Replace("-", "", pos, sb.Length - pos);
+            sb.AppendLine("\">");
         }
 
         /// <summary>

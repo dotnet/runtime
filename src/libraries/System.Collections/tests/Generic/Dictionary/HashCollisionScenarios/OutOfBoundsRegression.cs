@@ -10,27 +10,21 @@ using Xunit;
 
 namespace System.Collections.Tests
 {
-    public class InternalHashCodeTests
+    #region Dictionary
+    public class InternalHashCodeTests_Dictionary_NullComparer : InternalHashCodeTests<Dictionary<string, string>>
     {
-        private static Type nonRandomizedDefaultComparerType = typeof(object).Assembly.GetType("System.Collections.Generic.NonRandomizedStringEqualityComparer+DefaultComparer", throwOnError: true);
-        private static Type nonRandomizedOrdinalComparerType = typeof(object).Assembly.GetType("System.Collections.Generic.NonRandomizedStringEqualityComparer+OrdinalComparer", throwOnError: true);
-        private static Type nonRandomizedOrdinalIgnoreCaseComparerType = typeof(object).Assembly.GetType("System.Collections.Generic.NonRandomizedStringEqualityComparer+OrdinalIgnoreCaseComparer", throwOnError: true);
-        private static Type randomizedOrdinalComparerType = typeof(object).Assembly.GetType("System.Collections.Generic.RandomizedStringEqualityComparer+OrdinalComparer", throwOnError: true);
-        private static Type randomizedOrdinalIgnoreCaseComparerType = typeof(object).Assembly.GetType("System.Collections.Generic.RandomizedStringEqualityComparer+OrdinalIgnoreCaseComparer", throwOnError: true);
+        protected override Dictionary<string, string> CreateCollection() => new Dictionary<string, string>();
+        protected override void AddKey(Dictionary<string, string> collection, string key) => collection.Add(key, key);
+        protected override bool ContainsKey(Dictionary<string, string> collection, string key) => collection.ContainsKey(key);
+        protected override IEqualityComparer<string> GetComparer(Dictionary<string, string> collection) => collection.Comparer;
 
-        /// <summary>
-        /// Given a byte array, copies it to the string, without messing with any encoding.  This issue was hit on a x64 machine
-        /// </summary>
-        private static string GetString(byte[] bytes)
-        {
-            var chars = new char[bytes.Length / sizeof(char)];
-            Buffer.BlockCopy(bytes, 0, chars, 0, bytes.Length);
-            return new string(chars);
-        }
+        protected override Type ExpectedInternalComparerTypeBeforeCollisionThreshold => nonRandomizedDefaultComparerType;
+        protected override IEqualityComparer<string> ExpectedPublicComparerBeforeCollisionThreshold => EqualityComparer<string>.Default;
+        protected override Type ExpectedInternalComparerTypeAfterCollisionThreshold => randomizedOrdinalComparerType;
 
         [Fact]
         [OuterLoop("Takes over 55% of System.Collections.Tests testing time")]
-        public static void OutOfBoundsRegression()
+        public void OutOfBoundsRegression()
         {
             var dictionary = new Dictionary<string, string>();
 
@@ -48,147 +42,225 @@ namespace System.Collections.Tests
             }
         }
 
-        [Fact]
-        public static void ComparerImplementations_Dictionary_WithWellKnownStringComparers()
+        /// <summary>
+        /// Given a byte array, copies it to the string, without messing with any encoding.  This issue was hit on a x64 machine
+        /// </summary>
+        private static string GetString(byte[] bytes)
         {
-            // null comparer
-
-            RunDictionaryTest(
-                equalityComparer: null,
-                expectedInternalComparerTypeBeforeCollisionThreshold: nonRandomizedDefaultComparerType,
-                expectedPublicComparerBeforeCollisionThreshold: EqualityComparer<string>.Default,
-                expectedInternalComparerTypeAfterCollisionThreshold: randomizedOrdinalComparerType);
-
-            // EqualityComparer<string>.Default comparer
-
-            RunDictionaryTest(
-                equalityComparer: EqualityComparer<string>.Default,
-                expectedInternalComparerTypeBeforeCollisionThreshold: nonRandomizedDefaultComparerType,
-                expectedPublicComparerBeforeCollisionThreshold: EqualityComparer<string>.Default,
-                expectedInternalComparerTypeAfterCollisionThreshold: randomizedOrdinalComparerType);
-
-            // Ordinal comparer
-
-            RunDictionaryTest(
-                equalityComparer: StringComparer.Ordinal,
-                expectedInternalComparerTypeBeforeCollisionThreshold: nonRandomizedOrdinalComparerType,
-                expectedPublicComparerBeforeCollisionThreshold: StringComparer.Ordinal,
-                expectedInternalComparerTypeAfterCollisionThreshold: randomizedOrdinalComparerType);
-
-            // OrdinalIgnoreCase comparer
-
-            RunDictionaryTest(
-                equalityComparer: StringComparer.OrdinalIgnoreCase,
-                expectedInternalComparerTypeBeforeCollisionThreshold: nonRandomizedOrdinalIgnoreCaseComparerType,
-                expectedPublicComparerBeforeCollisionThreshold: StringComparer.OrdinalIgnoreCase,
-                expectedInternalComparerTypeAfterCollisionThreshold: randomizedOrdinalIgnoreCaseComparerType);
-
-            // linguistic comparer (not optimized)
-
-            RunDictionaryTest(
-                equalityComparer: StringComparer.InvariantCulture,
-                expectedInternalComparerTypeBeforeCollisionThreshold: StringComparer.InvariantCulture.GetType(),
-                expectedPublicComparerBeforeCollisionThreshold: StringComparer.InvariantCulture,
-                expectedInternalComparerTypeAfterCollisionThreshold: StringComparer.InvariantCulture.GetType());
-
-            // CollectionsMarshal.GetValueRefOrAddDefault
-
-            RunCollectionTestCommon(
-                () => new Dictionary<string, object>(StringComparer.Ordinal),
-                (dictionary, key) => CollectionsMarshal.GetValueRefOrAddDefault(dictionary, key, out _) = null,
-                (dictionary, key) => dictionary.ContainsKey(key),
-                dictionary => dictionary.Comparer,
-                expectedInternalComparerTypeBeforeCollisionThreshold: nonRandomizedOrdinalComparerType,
-                expectedPublicComparerBeforeCollisionThreshold: StringComparer.Ordinal,
-                expectedInternalComparerTypeAfterCollisionThreshold: randomizedOrdinalComparerType);
-
-            static void RunDictionaryTest(
-                IEqualityComparer<string> equalityComparer,
-                Type expectedInternalComparerTypeBeforeCollisionThreshold,
-                IEqualityComparer<string> expectedPublicComparerBeforeCollisionThreshold,
-                Type expectedInternalComparerTypeAfterCollisionThreshold)
-            {
-                RunCollectionTestCommon(
-                    () => new Dictionary<string, object>(equalityComparer),
-                    (dictionary, key) => dictionary.Add(key, null),
-                    (dictionary, key) => dictionary.ContainsKey(key),
-                    dictionary => dictionary.Comparer,
-                    expectedInternalComparerTypeBeforeCollisionThreshold,
-                    expectedPublicComparerBeforeCollisionThreshold,
-                    expectedInternalComparerTypeAfterCollisionThreshold);
-            }
+            var chars = new char[bytes.Length / sizeof(char)];
+            Buffer.BlockCopy(bytes, 0, chars, 0, bytes.Length);
+            return new string(chars);
         }
+    }
+
+    public class InternalHashCodeTests_Dictionary_DefaultComparer : InternalHashCodeTests<Dictionary<string, string>>
+    {
+        protected override Dictionary<string, string> CreateCollection() => new Dictionary<string, string>(EqualityComparer<string>.Default);
+        protected override void AddKey(Dictionary<string, string> collection, string key) => collection.Add(key, key);
+        protected override bool ContainsKey(Dictionary<string, string> collection, string key) => collection.ContainsKey(key);
+        protected override IEqualityComparer<string> GetComparer(Dictionary<string, string> collection) => collection.Comparer;
+
+        protected override Type ExpectedInternalComparerTypeBeforeCollisionThreshold => nonRandomizedDefaultComparerType;
+        protected override IEqualityComparer<string> ExpectedPublicComparerBeforeCollisionThreshold => EqualityComparer<string>.Default;
+        protected override Type ExpectedInternalComparerTypeAfterCollisionThreshold => randomizedOrdinalComparerType;
+    }
+
+    public class InternalHashCodeTests_Dictionary_OrdinalComparer : InternalHashCodeTests<Dictionary<string, string>>
+    {
+        protected override Dictionary<string, string> CreateCollection() => new Dictionary<string, string>(StringComparer.Ordinal);
+        protected override void AddKey(Dictionary<string, string> collection, string key) => collection.Add(key, key);
+        protected override bool ContainsKey(Dictionary<string, string> collection, string key) => collection.ContainsKey(key);
+        protected override IEqualityComparer<string> GetComparer(Dictionary<string, string> collection) => collection.Comparer;
+
+        protected override Type ExpectedInternalComparerTypeBeforeCollisionThreshold => nonRandomizedOrdinalComparerType;
+        protected override IEqualityComparer<string> ExpectedPublicComparerBeforeCollisionThreshold => StringComparer.Ordinal;
+        protected override Type ExpectedInternalComparerTypeAfterCollisionThreshold => randomizedOrdinalComparerType;
+    }
+
+    public class InternalHashCodeTests_Dictionary_OrdinalIgnoreCaseComparer : InternalHashCodeTests<Dictionary<string, string>>
+    {
+        protected override Dictionary<string, string> CreateCollection() => new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        protected override void AddKey(Dictionary<string, string> collection, string key) => collection.Add(key, key);
+        protected override bool ContainsKey(Dictionary<string, string> collection, string key) => collection.ContainsKey(key);
+        protected override IEqualityComparer<string> GetComparer(Dictionary<string, string> collection) => collection.Comparer;
+
+        protected override Type ExpectedInternalComparerTypeBeforeCollisionThreshold => nonRandomizedOrdinalIgnoreCaseComparerType;
+        protected override IEqualityComparer<string> ExpectedPublicComparerBeforeCollisionThreshold => StringComparer.OrdinalIgnoreCase;
+        protected override Type ExpectedInternalComparerTypeAfterCollisionThreshold => randomizedOrdinalIgnoreCaseComparerType;
+    }
+
+    public class InternalHashCodeTests_Dictionary_LinguisticComparer : InternalHashCodeTests<Dictionary<string, string>> // (not optimized)
+    {
+        protected override Dictionary<string, string> CreateCollection() => new Dictionary<string, string>(StringComparer.InvariantCulture);
+        protected override void AddKey(Dictionary<string, string> collection, string key) => collection.Add(key, key);
+        protected override bool ContainsKey(Dictionary<string, string> collection, string key) => collection.ContainsKey(key);
+        protected override IEqualityComparer<string> GetComparer(Dictionary<string, string> collection) => collection.Comparer;
+
+        protected override Type ExpectedInternalComparerTypeBeforeCollisionThreshold => StringComparer.InvariantCulture.GetType();
+        protected override IEqualityComparer<string> ExpectedPublicComparerBeforeCollisionThreshold => StringComparer.InvariantCulture;
+        protected override Type ExpectedInternalComparerTypeAfterCollisionThreshold => StringComparer.InvariantCulture.GetType();
+    }
+
+
+
+    public class InternalHashCodeTests_Dictionary_GetValueRefOrAddDefault : InternalHashCodeTests<Dictionary<string, string>>
+    {
+        protected override Dictionary<string, string> CreateCollection() => new Dictionary<string, string>(StringComparer.Ordinal);
+        protected override void AddKey(Dictionary<string, string> collection, string key) => CollectionsMarshal.GetValueRefOrAddDefault(collection, key, out _) = null;
+        protected override bool ContainsKey(Dictionary<string, string> collection, string key) => collection.ContainsKey(key);
+        protected override IEqualityComparer<string> GetComparer(Dictionary<string, string> collection) => collection.Comparer;
+
+        protected override Type ExpectedInternalComparerTypeBeforeCollisionThreshold => nonRandomizedOrdinalComparerType;
+        protected override IEqualityComparer<string> ExpectedPublicComparerBeforeCollisionThreshold => StringComparer.Ordinal;
+        protected override Type ExpectedInternalComparerTypeAfterCollisionThreshold => randomizedOrdinalComparerType;
+    }
+    #endregion
+
+    #region HashSet
+    public class InternalHashCodeTests_HashSet_NullComparer : InternalHashCodeTests<HashSet<string>>
+    {
+        protected override HashSet<string> CreateCollection() => new HashSet<string>();
+        protected override void AddKey(HashSet<string> collection, string key) => collection.Add(key);
+        protected override bool ContainsKey(HashSet<string> collection, string key) => collection.Contains(key);
+        protected override IEqualityComparer<string> GetComparer(HashSet<string> collection) => collection.Comparer;
+
+        protected override Type ExpectedInternalComparerTypeBeforeCollisionThreshold => nonRandomizedDefaultComparerType;
+        protected override IEqualityComparer<string> ExpectedPublicComparerBeforeCollisionThreshold => EqualityComparer<string>.Default;
+        protected override Type ExpectedInternalComparerTypeAfterCollisionThreshold => randomizedOrdinalComparerType;
+    }
+
+    public class InternalHashCodeTests_HashSet_DefaultComparer : InternalHashCodeTests<HashSet<string>>
+    {
+        protected override HashSet<string> CreateCollection() => new HashSet<string>(EqualityComparer<string>.Default);
+        protected override void AddKey(HashSet<string> collection, string key) => collection.Add(key);
+        protected override bool ContainsKey(HashSet<string> collection, string key) => collection.Contains(key);
+        protected override IEqualityComparer<string> GetComparer(HashSet<string> collection) => collection.Comparer;
+
+        protected override Type ExpectedInternalComparerTypeBeforeCollisionThreshold => nonRandomizedDefaultComparerType;
+        protected override IEqualityComparer<string> ExpectedPublicComparerBeforeCollisionThreshold => EqualityComparer<string>.Default;
+        protected override Type ExpectedInternalComparerTypeAfterCollisionThreshold => randomizedOrdinalComparerType;
+    }
+
+    public class InternalHashCodeTests_HashSet_OrdinalComparer : InternalHashCodeTests<HashSet<string>>
+    {
+        protected override HashSet<string> CreateCollection() => new HashSet<string>(StringComparer.Ordinal);
+        protected override void AddKey(HashSet<string> collection, string key) => collection.Add(key);
+        protected override bool ContainsKey(HashSet<string> collection, string key) => collection.Contains(key);
+        protected override IEqualityComparer<string> GetComparer(HashSet<string> collection) => collection.Comparer;
+
+        protected override Type ExpectedInternalComparerTypeBeforeCollisionThreshold => nonRandomizedOrdinalComparerType;
+        protected override IEqualityComparer<string> ExpectedPublicComparerBeforeCollisionThreshold => StringComparer.Ordinal;
+        protected override Type ExpectedInternalComparerTypeAfterCollisionThreshold => randomizedOrdinalComparerType;
+    }
+
+    public class InternalHashCodeTests_HashSet_OrdinalIgnoreCaseComparer : InternalHashCodeTests<HashSet<string>>
+    {
+        protected override HashSet<string> CreateCollection() => new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        protected override void AddKey(HashSet<string> collection, string key) => collection.Add(key);
+        protected override bool ContainsKey(HashSet<string> collection, string key) => collection.Contains(key);
+        protected override IEqualityComparer<string> GetComparer(HashSet<string> collection) => collection.Comparer;
+
+        protected override Type ExpectedInternalComparerTypeBeforeCollisionThreshold => nonRandomizedOrdinalIgnoreCaseComparerType;
+        protected override IEqualityComparer<string> ExpectedPublicComparerBeforeCollisionThreshold => StringComparer.OrdinalIgnoreCase;
+        protected override Type ExpectedInternalComparerTypeAfterCollisionThreshold => randomizedOrdinalIgnoreCaseComparerType;
+    }
+
+    public class InternalHashCodeTests_HashSet_LinguisticComparer : InternalHashCodeTests<HashSet<string>> // (not optimized)
+    {
+        protected override HashSet<string> CreateCollection() => new HashSet<string>(StringComparer.InvariantCulture);
+        protected override void AddKey(HashSet<string> collection, string key) => collection.Add(key);
+        protected override bool ContainsKey(HashSet<string> collection, string key) => collection.Contains(key);
+        protected override IEqualityComparer<string> GetComparer(HashSet<string> collection) => collection.Comparer;
+
+        protected override Type ExpectedInternalComparerTypeBeforeCollisionThreshold => StringComparer.InvariantCulture.GetType();
+        protected override IEqualityComparer<string> ExpectedPublicComparerBeforeCollisionThreshold => StringComparer.InvariantCulture;
+        protected override Type ExpectedInternalComparerTypeAfterCollisionThreshold => StringComparer.InvariantCulture.GetType();
+    }
+    #endregion
+
+    #region OrderedDictionary
+    public class InternalHashCodeTests_OrderedDictionary_NullComparer : InternalHashCodeTests<OrderedDictionary<string, string>>
+    {
+        protected override OrderedDictionary<string, string> CreateCollection() => new OrderedDictionary<string, string>();
+        protected override void AddKey(OrderedDictionary<string, string> collection, string key) => collection.Add(key, key);
+        protected override bool ContainsKey(OrderedDictionary<string, string> collection, string key) => collection.ContainsKey(key);
+        protected override IEqualityComparer<string> GetComparer(OrderedDictionary<string, string> collection) => collection.Comparer;
+
+        protected override Type ExpectedInternalComparerTypeBeforeCollisionThreshold => nonRandomizedDefaultComparerType;
+        protected override IEqualityComparer<string> ExpectedPublicComparerBeforeCollisionThreshold => EqualityComparer<string>.Default;
+        protected override Type ExpectedInternalComparerTypeAfterCollisionThreshold => EqualityComparer<string>.Default.GetType();
+    }
+
+    public class InternalHashCodeTests_OrderedDictionary_DefaultComparer : InternalHashCodeTests<OrderedDictionary<string, string>>
+    {
+        protected override OrderedDictionary<string, string> CreateCollection() => new OrderedDictionary<string, string>(EqualityComparer<string>.Default);
+        protected override void AddKey(OrderedDictionary<string, string> collection, string key) => collection.Add(key, key);
+        protected override bool ContainsKey(OrderedDictionary<string, string> collection, string key) => collection.ContainsKey(key);
+        protected override IEqualityComparer<string> GetComparer(OrderedDictionary<string, string> collection) => collection.Comparer;
+
+        protected override Type ExpectedInternalComparerTypeBeforeCollisionThreshold => nonRandomizedDefaultComparerType;
+        protected override IEqualityComparer<string> ExpectedPublicComparerBeforeCollisionThreshold => EqualityComparer<string>.Default;
+        protected override Type ExpectedInternalComparerTypeAfterCollisionThreshold => EqualityComparer<string>.Default.GetType();
+    }
+
+    public class InternalHashCodeTests_OrderedDictionary_OrdinalComparer : InternalHashCodeTests<OrderedDictionary<string, string>>
+    {
+        protected override OrderedDictionary<string, string> CreateCollection() => new OrderedDictionary<string, string>(StringComparer.Ordinal);
+        protected override void AddKey(OrderedDictionary<string, string> collection, string key) => collection.Add(key, key);
+        protected override bool ContainsKey(OrderedDictionary<string, string> collection, string key) => collection.ContainsKey(key);
+        protected override IEqualityComparer<string> GetComparer(OrderedDictionary<string, string> collection) => collection.Comparer;
+
+        protected override Type ExpectedInternalComparerTypeBeforeCollisionThreshold => nonRandomizedOrdinalComparerType;
+        protected override IEqualityComparer<string> ExpectedPublicComparerBeforeCollisionThreshold => StringComparer.Ordinal;
+        protected override Type ExpectedInternalComparerTypeAfterCollisionThreshold => StringComparer.Ordinal.GetType();
+    }
+
+    public class InternalHashCodeTests_OrderedDictionary_OrdinalIgnoreCaseComparer : InternalHashCodeTests<OrderedDictionary<string, string>>
+    {
+        protected override OrderedDictionary<string, string> CreateCollection() => new OrderedDictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        protected override void AddKey(OrderedDictionary<string, string> collection, string key) => collection.Add(key, key);
+        protected override bool ContainsKey(OrderedDictionary<string, string> collection, string key) => collection.ContainsKey(key);
+        protected override IEqualityComparer<string> GetComparer(OrderedDictionary<string, string> collection) => collection.Comparer;
+
+        protected override Type ExpectedInternalComparerTypeBeforeCollisionThreshold => nonRandomizedOrdinalIgnoreCaseComparerType;
+        protected override IEqualityComparer<string> ExpectedPublicComparerBeforeCollisionThreshold => StringComparer.OrdinalIgnoreCase;
+        protected override Type ExpectedInternalComparerTypeAfterCollisionThreshold => StringComparer.OrdinalIgnoreCase.GetType();
+    }
+
+    public class InternalHashCodeTests_OrderedDictionary_LinguisticComparer : InternalHashCodeTests<OrderedDictionary<string, string>> // (not optimized)
+    {
+        protected override OrderedDictionary<string, string> CreateCollection() => new OrderedDictionary<string, string>(StringComparer.InvariantCulture);
+        protected override void AddKey(OrderedDictionary<string, string> collection, string key) => collection.Add(key, key);
+        protected override bool ContainsKey(OrderedDictionary<string, string> collection, string key) => collection.ContainsKey(key);
+        protected override IEqualityComparer<string> GetComparer(OrderedDictionary<string, string> collection) => collection.Comparer;
+
+        protected override Type ExpectedInternalComparerTypeBeforeCollisionThreshold => StringComparer.InvariantCulture.GetType();
+        protected override IEqualityComparer<string> ExpectedPublicComparerBeforeCollisionThreshold => StringComparer.InvariantCulture;
+        protected override Type ExpectedInternalComparerTypeAfterCollisionThreshold => StringComparer.InvariantCulture.GetType();
+    }
+    #endregion
+
+    public abstract class InternalHashCodeTests<TCollection>
+    {
+        protected static Type nonRandomizedDefaultComparerType = typeof(object).Assembly.GetType("System.Collections.Generic.NonRandomizedStringEqualityComparer+DefaultComparer", throwOnError: true);
+        protected static Type nonRandomizedOrdinalComparerType = typeof(object).Assembly.GetType("System.Collections.Generic.NonRandomizedStringEqualityComparer+OrdinalComparer", throwOnError: true);
+        protected static Type nonRandomizedOrdinalIgnoreCaseComparerType = typeof(object).Assembly.GetType("System.Collections.Generic.NonRandomizedStringEqualityComparer+OrdinalIgnoreCaseComparer", throwOnError: true);
+        protected static Type randomizedOrdinalComparerType = typeof(object).Assembly.GetType("System.Collections.Generic.RandomizedStringEqualityComparer+OrdinalComparer", throwOnError: true);
+        protected static Type randomizedOrdinalIgnoreCaseComparerType = typeof(object).Assembly.GetType("System.Collections.Generic.RandomizedStringEqualityComparer+OrdinalIgnoreCaseComparer", throwOnError: true);
+
+        protected abstract TCollection CreateCollection();
+        protected abstract void AddKey(TCollection collection, string key);
+        protected abstract bool ContainsKey(TCollection collection, string key);
+        protected abstract IEqualityComparer<string> GetComparer(TCollection collection);
+
+        protected abstract Type ExpectedInternalComparerTypeBeforeCollisionThreshold { get; }
+        protected abstract IEqualityComparer<string> ExpectedPublicComparerBeforeCollisionThreshold { get; }
+        protected abstract Type ExpectedInternalComparerTypeAfterCollisionThreshold { get; }
 
         [Fact]
-        public static void ComparerImplementations_HashSet_WithWellKnownStringComparers()
+        public void ComparerImplementations_Dictionary_WithWellKnownStringComparers()
         {
-            // null comparer
-
-            RunHashSetTest(
-                equalityComparer: null,
-                expectedInternalComparerTypeBeforeCollisionThreshold: nonRandomizedDefaultComparerType,
-                expectedPublicComparerBeforeCollisionThreshold: EqualityComparer<string>.Default,
-                expectedInternalComparerTypeAfterCollisionThreshold: randomizedOrdinalComparerType);
-
-            // EqualityComparer<string>.Default comparer
-
-            RunHashSetTest(
-                equalityComparer: EqualityComparer<string>.Default,
-                expectedInternalComparerTypeBeforeCollisionThreshold: nonRandomizedDefaultComparerType,
-                expectedPublicComparerBeforeCollisionThreshold: EqualityComparer<string>.Default,
-                expectedInternalComparerTypeAfterCollisionThreshold: randomizedOrdinalComparerType);
-
-            // Ordinal comparer
-
-            RunHashSetTest(
-                equalityComparer: StringComparer.Ordinal,
-                expectedInternalComparerTypeBeforeCollisionThreshold: nonRandomizedOrdinalComparerType,
-                expectedPublicComparerBeforeCollisionThreshold: StringComparer.Ordinal,
-                expectedInternalComparerTypeAfterCollisionThreshold: randomizedOrdinalComparerType);
-
-            // OrdinalIgnoreCase comparer
-
-            RunHashSetTest(
-                equalityComparer: StringComparer.OrdinalIgnoreCase,
-                expectedInternalComparerTypeBeforeCollisionThreshold: nonRandomizedOrdinalIgnoreCaseComparerType,
-                expectedPublicComparerBeforeCollisionThreshold: StringComparer.OrdinalIgnoreCase,
-                expectedInternalComparerTypeAfterCollisionThreshold: randomizedOrdinalIgnoreCaseComparerType);
-
-            // linguistic comparer (not optimized)
-
-            RunHashSetTest(
-                equalityComparer: StringComparer.InvariantCulture,
-                expectedInternalComparerTypeBeforeCollisionThreshold: StringComparer.InvariantCulture.GetType(),
-                expectedPublicComparerBeforeCollisionThreshold: StringComparer.InvariantCulture,
-                expectedInternalComparerTypeAfterCollisionThreshold: StringComparer.InvariantCulture.GetType());
-
-            static void RunHashSetTest(
-                IEqualityComparer<string> equalityComparer,
-                Type expectedInternalComparerTypeBeforeCollisionThreshold,
-                IEqualityComparer<string> expectedPublicComparerBeforeCollisionThreshold,
-                Type expectedInternalComparerTypeAfterCollisionThreshold)
-            {
-                RunCollectionTestCommon(
-                    () => new HashSet<string>(equalityComparer),
-                    (set, key) => Assert.True(set.Add(key)),
-                    (set, key) => set.Contains(key),
-                    set => set.Comparer,
-                    expectedInternalComparerTypeBeforeCollisionThreshold,
-                    expectedPublicComparerBeforeCollisionThreshold,
-                    expectedInternalComparerTypeAfterCollisionThreshold);
-            }
-        }
-
-        private static void RunCollectionTestCommon<TCollection>(
-            Func<TCollection> collectionFactory,
-            Action<TCollection, string> addKeyCallback,
-            Func<TCollection, string, bool> containsKeyCallback,
-            Func<TCollection, IEqualityComparer<string>> getComparerCallback,
-            Type expectedInternalComparerTypeBeforeCollisionThreshold,
-            IEqualityComparer<string> expectedPublicComparerBeforeCollisionThreshold,
-            Type expectedInternalComparerTypeAfterCollisionThreshold)
-        {
-            TCollection collection = collectionFactory();
+            TCollection collection = CreateCollection();
             List<string> allKeys = new List<string>();
 
             // First, go right up to the collision threshold, but don't exceed it.
@@ -196,7 +268,7 @@ namespace System.Collections.Tests
             for (int i = 0; i < 100; i++)
             {
                 string newKey = _collidingStrings[i];
-                addKeyCallback(collection, newKey);
+                AddKey(collection, newKey);
                 allKeys.Add(newKey);
             }
 
@@ -204,10 +276,10 @@ namespace System.Collections.Tests
             Assert.NotNull(internalComparerField);
 
             IEqualityComparer<string> actualInternalComparerBeforeCollisionThreshold = (IEqualityComparer<string>)internalComparerField.GetValue(collection);
-            ValidateBehaviorOfInternalComparerVsPublicComparer(actualInternalComparerBeforeCollisionThreshold, expectedPublicComparerBeforeCollisionThreshold);
+            ValidateBehaviorOfInternalComparerVsPublicComparer(actualInternalComparerBeforeCollisionThreshold, ExpectedPublicComparerBeforeCollisionThreshold);
 
-            Assert.Equal(expectedInternalComparerTypeBeforeCollisionThreshold, actualInternalComparerBeforeCollisionThreshold?.GetType());
-            Assert.Equal(expectedPublicComparerBeforeCollisionThreshold, getComparerCallback(collection));
+            Assert.Equal(ExpectedInternalComparerTypeBeforeCollisionThreshold, actualInternalComparerBeforeCollisionThreshold?.GetType());
+            Assert.Equal(ExpectedPublicComparerBeforeCollisionThreshold, GetComparer(collection));
 
             // Now exceed the collision threshold, which should rebucket entries.
             // Continue adding a few more entries to ensure we didn't corrupt internal state.
@@ -218,31 +290,34 @@ namespace System.Collections.Tests
                 Assert.Equal(0, _lazyGetNonRandomizedHashCodeDel.Value(newKey)); // ensure has a zero hash code Ordinal
                 Assert.Equal(0x24716ca0, _lazyGetNonRandomizedOrdinalIgnoreCaseHashCodeDel.Value(newKey)); // ensure has a zero hash code OrdinalIgnoreCase
 
-                addKeyCallback(collection, newKey);
+                AddKey(collection, newKey);
                 allKeys.Add(newKey);
             }
 
             IEqualityComparer<string> actualInternalComparerAfterCollisionThreshold = (IEqualityComparer<string>)internalComparerField.GetValue(collection);
-            ValidateBehaviorOfInternalComparerVsPublicComparer(actualInternalComparerAfterCollisionThreshold, expectedPublicComparerBeforeCollisionThreshold);
+            ValidateBehaviorOfInternalComparerVsPublicComparer(actualInternalComparerAfterCollisionThreshold, ExpectedPublicComparerBeforeCollisionThreshold);
 
-            Assert.Equal(expectedInternalComparerTypeAfterCollisionThreshold, actualInternalComparerAfterCollisionThreshold?.GetType());
-            Assert.Equal(expectedPublicComparerBeforeCollisionThreshold, getComparerCallback(collection)); // shouldn't change this return value after collision threshold met
+            Assert.Equal(ExpectedInternalComparerTypeAfterCollisionThreshold, actualInternalComparerAfterCollisionThreshold?.GetType());
+            Assert.Equal(ExpectedPublicComparerBeforeCollisionThreshold, GetComparer(collection)); // shouldn't change this return value after collision threshold met
 
             // And validate that all strings are present in the dictionary.
 
             foreach (string key in allKeys)
             {
-                Assert.True(containsKeyCallback(collection, key));
+                Assert.True(ContainsKey(collection, key));
             }
 
             // Also make sure we didn't accidentally put the internal comparer in the serialized object data.
 
-            collection = collectionFactory();
-            SerializationInfo si = new SerializationInfo(collection.GetType(), new FormatterConverter());
-            ((ISerializable)collection).GetObjectData(si, new StreamingContext());
+            collection = CreateCollection();
+            if (collection is ISerializable)
+            {
+                SerializationInfo si = new SerializationInfo(collection.GetType(), new FormatterConverter());
+                ((ISerializable)collection).GetObjectData(si, new StreamingContext());
 
-            object serializedComparer = si.GetValue("Comparer", typeof(IEqualityComparer<string>));
-            Assert.Equal(expectedPublicComparerBeforeCollisionThreshold, serializedComparer);
+                object serializedComparer = si.GetValue("Comparer", typeof(IEqualityComparer<string>));
+                Assert.Equal(ExpectedPublicComparerBeforeCollisionThreshold, serializedComparer);
+            }
         }
 
         private static Lazy<Func<string, int>> _lazyGetNonRandomizedHashCodeDel = new Lazy<Func<string, int>>(

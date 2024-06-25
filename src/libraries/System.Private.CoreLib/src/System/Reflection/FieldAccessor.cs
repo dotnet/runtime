@@ -48,7 +48,12 @@ namespace System.Reflection
                 {
                     _addressOrOffset = RuntimeFieldHandle.GetStaticFieldAddress(_fieldInfo);
 
-                    if (fieldType.IsValueType)
+                    if ((_fieldInfo.Attributes & FieldAttributes.HasFieldRVA) != 0)
+                    {
+                        _methodTable = (MethodTable*)fieldType.TypeHandle.Value;
+                        _fieldAccessType = FieldAccessorType.StaticValueType;
+                    }
+                    else if (fieldType.IsValueType)
                     {
                         if (fieldType.IsEnum)
                         {

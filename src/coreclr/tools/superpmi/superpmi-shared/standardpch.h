@@ -9,6 +9,12 @@
 // itself are probably inappropriate, because if you change them, the entire
 // project will require a recompile. Generally just put SDK style stuff here...
 
+#ifdef _MSC_VER
+#define DEBUG_BREAK __debugbreak()
+#else
+#define DEBUG_BREAK DebugBreak()
+#endif
+
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif // WIN32_LEAN_AND_MEAN
@@ -109,13 +115,6 @@
 
 #define DEFAULT_REAL_JIT_NAME_A MAKEDLLNAME_A("clrjit2")
 #define DEFAULT_REAL_JIT_NAME_W MAKEDLLNAME_W("clrjit2")
-
-#if !defined(_MSC_VER) && !defined(__llvm__)
-static inline void __debugbreak()
-{
-  DebugBreak();
-}
-#endif
 
 using std::min;
 using std::max;

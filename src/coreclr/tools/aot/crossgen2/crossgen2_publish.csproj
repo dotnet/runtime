@@ -44,6 +44,9 @@
     <IlcFrameworkPath>$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)</IlcFrameworkPath>
     <IlcFrameworkNativePath>$(MicrosoftNetCoreAppRuntimePackNativeDir)</IlcFrameworkNativePath>
     <TrimmerSingleWarn>false</TrimmerSingleWarn>
+    <!-- Prevent getting DynamicCodeSupport=true default from ILLink targets that are imported
+         with the Sdk.targets import above, before Native AOT defaults get a chance to set it -->
+    <DynamicCodeSupport>false</DynamicCodeSupport>
   </PropertyGroup>
 
   <Import Project="$(CoreCLRBuildIntegrationDir)Microsoft.DotNet.ILCompiler.SingleEntry.targets"

@@ -5,7 +5,7 @@ using System.Collections;
 using System.Drawing;
 using System.Resources.Extensions.BinaryFormat;
 using System.Runtime.Serialization;
-using System.Runtime.Serialization.BinaryFormat;
+using System.Formats.Nrbf;
 using System.Resources.Extensions.Tests.Common;
 
 namespace System.Resources.Extensions.Tests.FormattedObject;
@@ -68,12 +68,12 @@ public class HashtableTests : SerializationTest<FormattedObjectSerializer>
 
         BinaryFormattedObject format = new(Serialize(hashtable));
         ClassRecord systemClass = (ClassRecord)format.RootRecord;
-        systemClass.RecordType.Should().Be(RecordType.SystemClassWithMembersAndTypes);
+        systemClass.RecordType.Should().Be(SerializationRecordType.SystemClassWithMembersAndTypes);
         systemClass.TypeName.FullName.Should().Be("System.Collections.Hashtable");
         systemClass.GetSerializationRecord("Comparer")!.Should().BeAssignableTo<ClassRecord>().Which.TypeName.FullName.Should().Be("System.OrdinalComparer");
         systemClass.GetSerializationRecord("HashCodeProvider")!.Should().BeAssignableTo<ClassRecord>().Which.TypeName.FullName.Should().Be("System.Resources.Extensions.Tests.FormattedObject.HashtableTests+CustomHashCodeProvider");
-        systemClass.GetSerializationRecord("Keys")!.Should().BeAssignableTo<ArrayRecord<object>>();
-        systemClass.GetSerializationRecord("Values")!.Should().BeAssignableTo<ArrayRecord<object>>();
+        systemClass.GetSerializationRecord("Keys")!.Should().BeAssignableTo<SZArrayRecord<object>>();
+        systemClass.GetSerializationRecord("Values")!.Should().BeAssignableTo<SZArrayRecord<object>>();
     }
 
     [Serializable]

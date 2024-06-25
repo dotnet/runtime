@@ -6,13 +6,13 @@
 struct CallsiteDetails
 {
     // The signature of the current call
-    MetaSig MetaSig;
+    class MetaSig MetaSig;
 
     // The current call frame
     FramedMethodFrame *Frame;
 
     // The relevant method for the callsite
-    MethodDesc *MethodDesc;
+    class MethodDesc *MethodDesc;
 
     // Is the callsite for a delegate
     // Note the relevant method may _not_ be a delegate

@@ -202,9 +202,6 @@ jobs:
       - src/coreclr/jit/*
       - src/coreclr/pal/*
       - src/coreclr/vm/*
-    - subset: coreclr_jit
-      include:
-      - src/coreclr/jit/*
 
     #
     # ** WASM **

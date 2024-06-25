@@ -653,9 +653,7 @@ private:
         WRAP_EXCEPTIONS             = 0x00000020,
 
         // unused                   = 0x00000040,
-
-        // This flag applies to assembly, but is also stored here so that it can be cached in ngen image
-        COLLECTIBLE_MODULE          = 0x00000080,
+        // unused                   = 0x00000080,
 
         //If attribute value has been cached before
         DEFAULT_DLL_IMPORT_SEARCH_PATHS_IS_CACHED   = 0x00000400,
@@ -679,7 +677,6 @@ private:
     PTR_Assembly            m_pAssembly;
 
     CrstExplicitInit        m_Crst;
-    CrstExplicitInit        m_FixupCrst;
 
     // Debugging symbols reader interface. This will only be
     // initialized if needed, either by the debugging subsystem or for
@@ -808,16 +805,8 @@ private:
     // m_pAvailableClasses.
     PTR_EEClassHashTable    m_pAvailableClassesCaseIns;
 
-    // Pointer to binder, if we have one
-    friend class CoreLibBinder;
-    PTR_CoreLibBinder      m_pBinder;
-
 public:
-    BOOL IsCollectible()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return (m_dwPersistedFlags & COLLECTIBLE_MODULE) != 0;
-    }
+    BOOL IsCollectible();
 
 #ifdef FEATURE_READYTORUN
 private:
@@ -1505,11 +1494,6 @@ public:
     InstrumentedILOffsetMapping GetInstrumentedILOffsetMapping(mdMethodDef token);
 
 public:
-    CrstBase*           GetFixupCrst()
-    {
-        return &m_FixupCrst;
-    }
-
     // LoaderHeap for storing IJW thunks
     PTR_LoaderHeap           m_pThunkHeap;
 

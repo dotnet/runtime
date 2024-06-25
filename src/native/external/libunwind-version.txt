@@ -9,3 +9,4 @@ Revert https://github.com/libunwind/libunwind/pull/503 # issue: https://github.c
 Apply https://github.com/libunwind/libunwind/pull/714
 Revert https://github.com/libunwind/libunwind/commit/ec03043244082b8f552881ba9fb790aa49c85468 and follow up changes in the same file # issue: https://github.com/libunwind/libunwind/issues/715
 Apply https://github.com/libunwind/libunwind/pull/734
+Apply https://github.com/libunwind/libunwind/pull/758

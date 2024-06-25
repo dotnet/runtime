@@ -1629,7 +1629,7 @@ GetProcessIdDisambiguationKey(DWORD processId, UINT64 *disambiguationKey)
     // since the start of the Unix epoch).
     struct kinfo_proc info = {};
     size_t size = sizeof(info);
-    int mib[4] = { CTL_KERN, KERN_PROC, KERN_PROC_PID, processId };
+    int mib[4] = { CTL_KERN, KERN_PROC, KERN_PROC_PID, (int)processId };
     int ret = ::sysctl(mib, sizeof(mib)/sizeof(*mib), &info, &size, nullptr, 0);
 
     if (ret == 0)

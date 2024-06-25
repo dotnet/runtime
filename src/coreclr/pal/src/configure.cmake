@@ -30,7 +30,6 @@ endif()
 
 list(APPEND CMAKE_REQUIRED_DEFINITIONS -D_FILE_OFFSET_BITS=64)
 
-check_include_files(ieeefp.h HAVE_IEEEFP_H)
 check_include_files(sys/vmparam.h HAVE_SYS_VMPARAM_H)
 check_include_files(mach/vm_types.h HAVE_MACH_VM_TYPES_H)
 check_include_files(mach/vm_param.h HAVE_MACH_VM_PARAM_H)
@@ -48,9 +47,6 @@ check_include_files(semaphore.h HAVE_SEMAPHORE_H)
 check_include_files(sys/prctl.h HAVE_PRCTL_H)
 check_include_files("sys/auxv.h;asm/hwcap.h" HAVE_AUXV_HWCAP_H)
 check_include_files("sys/ptrace.h" HAVE_SYS_PTRACE_H)
-check_include_files("sys/ucontext.h" HAVE_SYS_UCONTEXT_H)
-check_include_files("sys/user.h" HAVE_SYS_USER_H)
-check_include_files("sys/mount.h" HAVE_SYS_MOUNT_H)
 check_include_files(ucontext.h HAVE_UCONTEXT_H)
 check_symbol_exists(getauxval sys/auxv.h HAVE_GETAUXVAL)
 
@@ -101,25 +97,13 @@ elseif (HAVE_PTHREAD_IN_LIBC)
   set(PTHREAD_LIBRARY c)
 endif()
 
-check_library_exists(${PTHREAD_LIBRARY} pthread_suspend "" HAVE_PTHREAD_SUSPEND)
-check_library_exists(${PTHREAD_LIBRARY} pthread_suspend_np "" HAVE_PTHREAD_SUSPEND_NP)
-check_library_exists(${PTHREAD_LIBRARY} pthread_continue "" HAVE_PTHREAD_CONTINUE)
-check_library_exists(${PTHREAD_LIBRARY} pthread_continue_np "" HAVE_PTHREAD_CONTINUE_NP)
-check_library_exists(${PTHREAD_LIBRARY} pthread_resume_np "" HAVE_PTHREAD_RESUME_NP)
 check_library_exists(${PTHREAD_LIBRARY} pthread_attr_get_np "" HAVE_PTHREAD_ATTR_GET_NP)
 check_library_exists(${PTHREAD_LIBRARY} pthread_getattr_np "" HAVE_PTHREAD_GETATTR_NP)
 check_library_exists(${PTHREAD_LIBRARY} pthread_getcpuclockid "" HAVE_PTHREAD_GETCPUCLOCKID)
-check_library_exists(${PTHREAD_LIBRARY} pthread_sigqueue "" HAVE_PTHREAD_SIGQUEUE)
 check_library_exists(${PTHREAD_LIBRARY} pthread_getaffinity_np "" HAVE_PTHREAD_GETAFFINITY_NP)
 
-check_function_exists(sigreturn HAVE_SIGRETURN)
-check_function_exists(_thread_sys_sigreturn HAVE__THREAD_SYS_SIGRETURN)
-set(CMAKE_REQUIRED_LIBRARIES m)
-check_function_exists(copysign HAVE_COPYSIGN)
-set(CMAKE_REQUIRED_LIBRARIES)
 check_function_exists(fsync HAVE_FSYNC)
 check_function_exists(futimes HAVE_FUTIMES)
-check_function_exists(utimes HAVE_UTIMES)
 if(CLR_CMAKE_TARGET_LINUX)
   # sysctl is deprecated on Linux
   set(HAVE_SYSCTL 0)
@@ -128,7 +112,6 @@ else()
 endif()
 check_function_exists(sysconf HAVE_SYSCONF)
 check_function_exists(gmtime_r HAVE_GMTIME_R)
-check_function_exists(timegm HAVE_TIMEGM)
 check_function_exists(poll HAVE_POLL)
 check_function_exists(statvfs HAVE_STATVFS)
 check_function_exists(thread_self HAVE_THREAD_SELF)
@@ -155,7 +138,6 @@ int main(int argc, char **argv) {
 check_struct_has_member ("struct stat" st_atimespec "sys/types.h;sys/stat.h" HAVE_STAT_TIMESPEC)
 check_struct_has_member ("struct stat" st_atim "sys/types.h;sys/stat.h" HAVE_STAT_TIM)
 check_struct_has_member ("struct stat" st_atimensec "sys/types.h;sys/stat.h" HAVE_STAT_NSEC)
-check_struct_has_member ("struct tm" tm_gmtoff time.h HAVE_TM_GMTOFF)
 check_struct_has_member ("ucontext_t" uc_mcontext.gregs[0] ucontext.h HAVE_GREGSET_T)
 check_struct_has_member ("ucontext_t" uc_mcontext.__gregs[0] ucontext.h HAVE___GREGSET_T)
 check_struct_has_member ("ucontext_t" uc_mcontext.fpregs->__glibc_reserved1[0] ucontext.h HAVE_FPSTATE_GLIBC_RESERVED1)
@@ -184,7 +166,6 @@ check_type_size(off_t SIZEOF_OFF_T)
 
 check_cxx_symbol_exists(SYS_yield sys/syscall.h HAVE_YIELD_SYSCALL)
 check_cxx_symbol_exists(INFTIM poll.h HAVE_INFTIM)
-check_cxx_symbol_exists(CHAR_BIT limits.h HAVE_CHAR_BIT)
 check_cxx_symbol_exists(_DEBUG sys/user.h USER_H_DEFINES_DEBUG)
 check_cxx_symbol_exists(_SC_PHYS_PAGES unistd.h HAVE__SC_PHYS_PAGES)
 check_cxx_symbol_exists(_SC_AVPHYS_PAGES unistd.h HAVE__SC_AVPHYS_PAGES)
@@ -418,22 +399,6 @@ int main()
   exit((ret == 0) ? 1 : 0);
 }" HAVE_CLOCK_GETTIME_NSEC_NP)
 
-set(CMAKE_REQUIRED_LIBRARIES ${CMAKE_RT_LIBS})
-check_cxx_source_runs("
-#include <stdlib.h>
-#include <time.h>
-#include <sys/time.h>
-
-int main()
-{
-  int ret;
-  struct timespec ts;
-  ret = clock_gettime(CLOCK_THREAD_CPUTIME_ID, &ts);
-
-  exit(ret);
-}" HAVE_CLOCK_THREAD_CPUTIME)
-set(CMAKE_REQUIRED_LIBRARIES)
-
 check_cxx_source_runs("
 #include <sys/types.h>
 #include <sys/mman.h>
@@ -623,32 +588,6 @@ int main(void) {
   exit(0);
 }" HAVE_PROCFS_STAT)
 set(CMAKE_REQUIRED_LIBRARIES)
-check_cxx_source_runs("
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-
-int main(void)
-{
-  char* szFileName;
-  FILE* pFile = NULL;
-  int ret = 1;
-
-  szFileName = tempnam(\".\", \"tmp\");
-
-  /* open the file write-only */
-  pFile = fopen(szFileName, \"a\");
-  if (pFile == NULL)
-  {
-    exit(0);
-  }
-  if (ungetc('A', pFile) != EOF)
-  {
-    ret = 0;
-  }
-  unlink(szFileName);
-  exit(ret);
-}" UNGETC_NOT_RETURN_EOF)
 
 set(CMAKE_REQUIRED_LIBRARIES ${PTHREAD_LIBRARY})
 check_cxx_source_runs("
@@ -664,41 +603,6 @@ int main() {
   exit(0);
 }" HAS_POSIX_SEMAPHORES)
 set(CMAKE_REQUIRED_LIBRARIES)
-check_cxx_source_runs("
-#include <stdio.h>
-#include <stdlib.h>
-
-int main()
-{
-  FILE *fp = NULL;
-  char *fileName = \"/dev/zero\";
-  char buf[10];
-
-  /*
-   * Open the file in append mode and try to read some text.
-   * And, make sure ferror() is set.
-   */
-  fp = fopen (fileName, \"a\");
-  if ( (NULL == fp) ||
-       (fread (buf, sizeof(buf), 1, fp) > 0) ||
-       (!ferror(fp))
-     )
-  {
-    return 0;
-  }
-
-  /*
-   * Now that ferror() is set, try to close the file.
-   * If we get an error, we can conclude that this
-   * fgets() depended on the previous ferror().
-   */
-  if ( fclose(fp) != 0 )
-  {
-    return 0;
-  }
-
-  return 1;
-}" FILE_OPS_CHECK_FERROR_OF_PREVIOUS_CALL)
 
 set(SYNCHMGR_SUSPENSION_SAFE_CONDITION_SIGNALING 1)
 set(ERROR_FUNC_FOR_GLOB_HAS_FIXED_PARAMS 1)
@@ -985,21 +889,11 @@ if(CLR_CMAKE_TARGET_OSX)
   set(HAVE__NSGETENVIRON 1)
   set(DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX 1)
   set(PAL_PTRACE "ptrace((cmd), (pid), (caddr_t)(addr), (data))")
-  set(PAL_PT_ATTACH PT_ATTACH)
-  set(PAL_PT_DETACH PT_DETACH)
-  set(PAL_PT_READ_D PT_READ_D)
-  set(PAL_PT_WRITE_D PT_WRITE_D)
-  set(HAS_FTRUNCATE_LENGTH_ISSUE 1)
   set(HAVE_SCHED_OTHER_ASSIGNABLE 1)
 
 elseif(CLR_CMAKE_TARGET_FREEBSD)
   set(DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX 0)
   set(PAL_PTRACE "ptrace((cmd), (pid), (caddr_t)(addr), (data))")
-  set(PAL_PT_ATTACH PT_ATTACH)
-  set(PAL_PT_DETACH PT_DETACH)
-  set(PAL_PT_READ_D PT_READ_D)
-  set(PAL_PT_WRITE_D PT_WRITE_D)
-  set(HAS_FTRUNCATE_LENGTH_ISSUE 0)
   if (CLR_CMAKE_HOST_ARCH_AMD64)
     set(BSD_REGS_STYLE "((reg).r_##rr)")
   elseif(CLR_CMAKE_HOST_ARCH_ARM64)
@@ -1011,26 +905,15 @@ elseif(CLR_CMAKE_TARGET_FREEBSD)
 elseif(CLR_CMAKE_TARGET_NETBSD)
   set(DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX 0)
   set(PAL_PTRACE "ptrace((cmd), (pid), (void*)(addr), (data))")
-  set(PAL_PT_ATTACH PT_ATTACH)
-  set(PAL_PT_DETACH PT_DETACH)
-  set(PAL_PT_READ_D PT_READ_D)
-  set(PAL_PT_WRITE_D PT_WRITE_D)
-  set(HAS_FTRUNCATE_LENGTH_ISSUE 0)
   set(BSD_REGS_STYLE "((reg).regs[_REG_##RR])")
   set(HAVE_SCHED_OTHER_ASSIGNABLE 0)
 
 elseif(CLR_CMAKE_TARGET_SUNOS)
   set(DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX 0)
   set(PAL_PTRACE "ptrace((cmd), (pid), (caddr_t)(addr), (data))")
-  set(PAL_PT_ATTACH PT_ATTACH)
-  set(PAL_PT_DETACH PT_DETACH)
-  set(PAL_PT_READ_D PT_READ_D)
-  set(PAL_PT_WRITE_D PT_WRITE_D)
-  set(HAS_FTRUNCATE_LENGTH_ISSUE 0)
 elseif(CLR_CMAKE_TARGET_HAIKU)
   # Haiku does not have ptrace.
   set(DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX 0)
-  set(HAS_FTRUNCATE_LENGTH_ISSUE 0)
   set(HAVE_SCHED_OTHER_ASSIGNABLE 1)
 else() # Anything else is Linux
   if(NOT HAVE_LTTNG_TRACEPOINT_H AND FEATURE_EVENT_TRACE)
@@ -1039,11 +922,6 @@ else() # Anything else is Linux
   endif()
   set(DEADLOCK_WHEN_THREAD_IS_SUSPENDED_WHILE_BLOCKED_ON_MUTEX 0)
   set(PAL_PTRACE "ptrace((cmd), (pid), (void*)(addr), (data))")
-  set(PAL_PT_ATTACH PTRACE_ATTACH)
-  set(PAL_PT_DETACH PTRACE_DETACH)
-  set(PAL_PT_READ_D PTRACE_PEEKDATA)
-  set(PAL_PT_WRITE_D PTRACE_POKEDATA)
-  set(HAS_FTRUNCATE_LENGTH_ISSUE 0)
   set(HAVE_SCHED_OTHER_ASSIGNABLE 1)
 endif(CLR_CMAKE_TARGET_OSX)
 

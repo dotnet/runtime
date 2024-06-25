@@ -168,7 +168,7 @@ namespace System.IO
             return HasHiddenFlag;
         }
 
-        internal static bool IsNameHidden(ReadOnlySpan<char> fileName) => fileName.Length > 0 && fileName[0] == '.';
+        internal static bool IsNameHidden(ReadOnlySpan<char> fileName) => fileName.StartsWith('.');
 
         // Returns true if the path points to a directory, or if the path is a symbolic link
         // that points to a directory

@@ -2,8 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-
-using Internal.Runtime.CompilerServices;
+using System.Diagnostics;
 
 namespace Internal.Runtime.Augments
 {
@@ -26,5 +25,7 @@ namespace Internal.Runtime.Augments
         /// <param name="isStackTraceHidden">Returns a value indicating whether the method should be hidden in stack traces</param>
         /// <returns>Formatted method name or null if metadata for the method is not available</returns>
         public abstract string TryGetMethodNameFromStartAddress(IntPtr methodStartAddress, out bool isStackTraceHidden);
+
+        public abstract DiagnosticMethodInfo TryGetDiagnosticMethodInfoFromStartAddress(IntPtr methodStartAddress);
     }
 }
