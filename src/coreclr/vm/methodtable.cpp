@@ -2966,10 +2966,16 @@ static bool HandleInlineArray(int elementTypeIndex, int nElements, FpStructInReg
         assert(elementTypeIndex == 0);
         assert(typeIndex == 1);
 
-        // duplicate the array element info
-        static const int typeSize = FpStruct::PosIntFloat - FpStruct::PosFloatInt;
-        info.flags = FpStruct::Flags(info.flags | (info.flags << typeSize));
-        info.offset2nd = info.offset1st + info.Size1st();
+        // Duplicate the array element info
+        static_assert(FpStruct::IntFloat == (FpStruct::FloatInt << 1),
+            "FloatInt and IntFloat need to be adjacent");
+        static_assert(FpStruct::SizeShift2ndMask == (FpStruct::SizeShift1stMask << 2),
+            "SizeShift1st and 2nd need to be adjacent");
+        // Take the 1st field info and shift up to the 2nd field's positions
+        int floatFlag = (info.flags & FpStruct::FloatInt) << 1;
+        int sizeShiftMask = (info.flags & FpStruct::SizeShift1stMask) << 2;
+        info.flags = FpStruct::Flags(info.flags | floatFlag | sizeShiftMask); // merge with 1st field
+        info.offset2nd = info.offset1st + info.Size1st(); // bump up the field offset
         LOG((LF_JIT, LL_EVERYTHING, "FpStructInRegistersInfo:%*s  * duplicated array element type\n",
             nestingLevel * 4, ""));
     }

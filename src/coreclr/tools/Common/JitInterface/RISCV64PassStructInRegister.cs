@@ -176,10 +176,16 @@ namespace Internal.JitInterface
                 Debug.Assert(elementTypeIndex == 0);
                 Debug.Assert(typeIndex == 1);
 
-                // duplicate the array element info
-                const int typeSize = (int)PosIntFloat - (int)PosFloatInt;
-                info.flags |= (FpStruct)((int)info.flags << typeSize);
-                info.offset2nd = info.offset1st + info.Size1st();
+                // Duplicate the array element info
+                Debug.Assert((int)FpStruct.IntFloat == ((int)FpStruct.FloatInt << 1),
+                    "FloatInt and IntFloat need to be adjacent");
+                Debug.Assert((int)FpStruct.SizeShift2ndMask == ((int)FpStruct.SizeShift1stMask << 2),
+                    "SizeShift1st and 2nd need to be adjacent");
+                // Take the 1st field info and shift up to the 2nd field's positions
+                int floatFlag = (int)(info.flags & FpStruct.FloatInt) << 1;
+                int sizeShiftMask = (int)(info.flags & FpStruct.SizeShift1stMask) << 2;
+                info.flags |= (FpStruct)(floatFlag | sizeShiftMask); // merge with 1st field
+                info.offset2nd = info.offset1st + info.Size1st(); // bump up the field offset
             }
             return true;
         }
