@@ -677,10 +677,9 @@ namespace System.Net.Http
                         }
                         else
                         {
-                            IPAddress[] addresses = Dns.GetHostAddresses(host);
                             using (cancellationToken.UnsafeRegister(static s => ((Socket)s!).Dispose(), socket))
                             {
-                                socket.Connect(addresses, port);
+                                socket.Connect(endPoint);
                             }
                         }
 
