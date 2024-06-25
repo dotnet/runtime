@@ -5736,6 +5736,27 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> SaturatingIncrementByActiveElementCount(Vector<ulong> value, Vector<ulong> from) { throw new PlatformNotSupportedException(); }
 
 
+        ///  Scale : Adjust exponent
+
+        /// <summary>
+        /// svfloat64_t svscale[_f64]_m(svbool_t pg, svfloat64_t op1, svint64_t op2)
+        ///   FSCALE Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        /// svfloat64_t svscale[_f64]_x(svbool_t pg, svfloat64_t op1, svint64_t op2)
+        ///   FSCALE Ztied1.D, Pg/M, Ztied1.D, Zop2.D
+        /// svfloat64_t svscale[_f64]_z(svbool_t pg, svfloat64_t op1, svint64_t op2)
+        /// </summary>
+        public static unsafe Vector<double> Scale(Vector<double> left, Vector<long> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svfloat32_t svscale[_f32]_m(svbool_t pg, svfloat32_t op1, svint32_t op2)
+        ///   FSCALE Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        /// svfloat32_t svscale[_f32]_x(svbool_t pg, svfloat32_t op1, svint32_t op2)
+        ///   FSCALE Ztied1.S, Pg/M, Ztied1.S, Zop2.S
+        /// svfloat32_t svscale[_f32]_z(svbool_t pg, svfloat32_t op1, svint32_t op2)
+        /// </summary>
+        public static unsafe Vector<float> Scale(Vector<float> left, Vector<int> right) { throw new PlatformNotSupportedException(); }
+
+
         ///  SignExtend16 : Sign-extend the low 16 bits
 
         /// <summary>
@@ -5815,6 +5836,90 @@ namespace System.Runtime.Intrinsics.Arm
         ///   MOVPRFX Zresult.D, Pg/Z, Zop.D; SXTB Zresult.D, Pg/M, Zop.D
         /// </summary>
         public static unsafe Vector<long> SignExtend8(Vector<long> value) { throw new PlatformNotSupportedException(); }
+
+
+        ///  Splice two vectors under predicate control
+
+        /// <summary>
+        /// svuint8_t svsplice[_u8](svbool_t pg, svuint8_t op1, svuint8_t op2)
+        ///   SPLICE Ztied1.B, Pg, Ztied1.B, Zop2.B
+        /// </summary>
+        public static unsafe Vector<byte> Splice(Vector<byte> mask, Vector<byte> left, Vector<byte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svfloat64_t svsplice[_f64](svbool_t pg, svfloat64_t op1, svfloat64_t op2)
+        ///   SPLICE Ztied1.D, Pg, Ztied1.D, Zop2.D
+        /// </summary>
+        public static unsafe Vector<double> Splice(Vector<double> mask, Vector<double> left, Vector<double> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint16_t svsplice[_s16](svbool_t pg, svint16_t op1, svint16_t op2)
+        ///   SPLICE Ztied1.H, Pg, Ztied1.H, Zop2.H
+        /// </summary>
+        public static unsafe Vector<short> Splice(Vector<short> mask, Vector<short> left, Vector<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svsplice[_s32](svbool_t pg, svint32_t op1, svint32_t op2)
+        ///   SPLICE Ztied1.S, Pg, Ztied1.S, Zop2.S
+        /// </summary>
+        public static unsafe Vector<int> Splice(Vector<int> mask, Vector<int> left, Vector<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svsplice[_s64](svbool_t pg, svint64_t op1, svint64_t op2)
+        ///   SPLICE Ztied1.D, Pg, Ztied1.D, Zop2.D
+        /// </summary>
+        public static unsafe Vector<long> Splice(Vector<long> mask, Vector<long> left, Vector<long> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint8_t svsplice[_s8](svbool_t pg, svint8_t op1, svint8_t op2)
+        ///   SPLICE Ztied1.B, Pg, Ztied1.B, Zop2.B
+        /// </summary>
+        public static unsafe Vector<sbyte> Splice(Vector<sbyte> mask, Vector<sbyte> left, Vector<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svfloat32_t svsplice[_f32](svbool_t pg, svfloat32_t op1, svfloat32_t op2)
+        ///   SPLICE Ztied1.S, Pg, Ztied1.S, Zop2.S
+        /// </summary>
+        public static unsafe Vector<float> Splice(Vector<float> mask, Vector<float> left, Vector<float> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svsplice[_u16](svbool_t pg, svuint16_t op1, svuint16_t op2)
+        ///   SPLICE Ztied1.H, Pg, Ztied1.H, Zop2.H
+        /// </summary>
+        public static unsafe Vector<ushort> Splice(Vector<ushort> mask, Vector<ushort> left, Vector<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svsplice[_u32](svbool_t pg, svuint32_t op1, svuint32_t op2)
+        ///   SPLICE Ztied1.S, Pg, Ztied1.S, Zop2.S
+        /// </summary>
+        public static unsafe Vector<uint> Splice(Vector<uint> mask, Vector<uint> left, Vector<uint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svsplice[_u64](svbool_t pg, svuint64_t op1, svuint64_t op2)
+        ///   SPLICE Ztied1.D, Pg, Ztied1.D, Zop2.D
+        /// </summary>
+        public static unsafe Vector<ulong> Splice(Vector<ulong> mask, Vector<ulong> left, Vector<ulong> right) { throw new PlatformNotSupportedException(); }
+
+
+        ///  Sqrt : Square root
+
+        /// <summary>
+        /// svfloat64_t svsqrt[_f64]_m(svfloat64_t inactive, svbool_t pg, svfloat64_t op)
+        ///   FSQRT Ztied.D, Pg/M, Zop.D
+        /// svfloat64_t svsqrt[_f64]_x(svbool_t pg, svfloat64_t op)
+        ///   FSQRT Ztied.D, Pg/M, Ztied.D
+        /// svfloat64_t svsqrt[_f64]_z(svbool_t pg, svfloat64_t op)
+        /// </summary>
+        public static unsafe Vector<double> Sqrt(Vector<double> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svfloat32_t svsqrt[_f32]_m(svfloat32_t inactive, svbool_t pg, svfloat32_t op)
+        ///   FSQRT Ztied.S, Pg/M, Zop.S
+        /// svfloat32_t svsqrt[_f32]_x(svbool_t pg, svfloat32_t op)
+        ///   FSQRT Ztied.S, Pg/M, Ztied.S
+        /// svfloat32_t svsqrt[_f32]_z(svbool_t pg, svfloat32_t op)
+        /// </summary>
+        public static unsafe Vector<float> Sqrt(Vector<float> value) { throw new PlatformNotSupportedException(); }
 
 
         ///  Non-truncating store

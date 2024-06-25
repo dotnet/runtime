@@ -1733,7 +1733,7 @@ ClrDataAccess::GetModuleData(CLRDATA_ADDRESS addr, struct DacpModuleData *Module
     ModuleData->metadataSize = (SIZE_T) metadataSize;
 
     ModuleData->bIsReflection = pModule->IsReflection();
-    ModuleData->bIsPEFile = pModule->IsPEFile();
+    ModuleData->bIsPEFile = !pModule->GetPEAssembly()->IsDynamic();
     ModuleData->Assembly = HOST_CDADDR(pModule->GetAssembly());
     ModuleData->dwModuleID = 0; // CoreCLR no longer has this concept
     ModuleData->dwModuleIndex = 0; // CoreCLR no longer has this concept
@@ -1744,7 +1744,7 @@ ClrDataAccess::GetModuleData(CLRDATA_ADDRESS addr, struct DacpModuleData *Module
     EX_TRY
     {
         //
-        // In minidump's case, these data structure is not avaiable.
+        // In minidump's case, these data structures are not available.
         //
         ModuleData->TypeDefToMethodTableMap = PTR_CDADDR(pModule->m_TypeDefToMethodTableMap.pTable);
         ModuleData->TypeRefToMethodTableMap = PTR_CDADDR(pModule->m_TypeRefToMethodTableMap.pTable);

@@ -56,16 +56,33 @@ namespace System.Formats.Tar.Tests
 
         protected void SetGnuProperties(GnuTarEntry entry)
         {
+            // The octal format limits the representable range.
+            bool formatIsOctalOnly = entry.Format is not TarEntryFormat.Pax and not TarEntryFormat.Gnu;
+
             DateTimeOffset approxNow = DateTimeOffset.UtcNow.Subtract(TimeSpan.FromHours(6));
 
             // ATime: Verify the default value was approximately "now"
             Assert.True(entry.AccessTime > approxNow);
-            Assert.Throws<ArgumentOutOfRangeException>(() => entry.AccessTime = DateTimeOffset.MinValue);
+            if (formatIsOctalOnly)
+            {
+                Assert.Throws<ArgumentOutOfRangeException>(() => entry.AccessTime = DateTimeOffset.MinValue);
+            }
+            else
+            {
+                entry.AccessTime = DateTimeOffset.MinValue;
+            }
             entry.AccessTime = TestAccessTime;
 
             // CTime: Verify the default value was approximately "now"
             Assert.True(entry.ChangeTime > approxNow);
-            Assert.Throws<ArgumentOutOfRangeException>(() => entry.ChangeTime = DateTimeOffset.MinValue);
+            if (formatIsOctalOnly)
+            {
+                Assert.Throws<ArgumentOutOfRangeException>(() => entry.ChangeTime = DateTimeOffset.MinValue);
+            }
+            else
+            {
+                entry.ChangeTime = DateTimeOffset.MinValue;
+            }
             entry.ChangeTime = TestChangeTime;
         }
 
