@@ -1,7 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 namespace System.Diagnostics.Metrics
 {
@@ -76,6 +78,66 @@ namespace System.Diagnostics.Metrics
         public T Value { get; }
 
         // Private helper to copy IEnumerable to array. We have it to avoid adding dependencies on System.Linq
-        private static KeyValuePair<string, object?>[] ToArray(IEnumerable<KeyValuePair<string, object?>>? tags) => tags is null ? Instrument.EmptyTags : new List<KeyValuePair<string, object?>>(tags).ToArray();
+        private static KeyValuePair<string, object?>[] ToArray(IEnumerable<KeyValuePair<string, object?>>? tags)
+        {
+            if (tags is null)
+                return Instrument.EmptyTags;
+
+            // When the input is a collection, we can allocate a correctly sized array and copy directly into it.
+            if (tags is ICollection<KeyValuePair<string, object?>> collection)
+            {
+                int items = collection.Count;
+
+                if (items == 0)
+                    return Instrument.EmptyTags;
+
+                KeyValuePair<string, object?>[] result = new KeyValuePair<string, object?>[items];
+                collection.CopyTo(result, 0);
+                return result;
+            }
+
+            // In any other case, we must enumerate the input.
+            // We use a pooled array as a buffer to avoid allocating until we know the final size we need.
+            // This assumes that there are 32 or fewer tags, which is a reasonable assumption for most cases.
+            // In the worst case, we will grow the buffer by renting a larger array.
+            int count = 0;
+            KeyValuePair<string, object?>[] array = ArrayPool<KeyValuePair<string, object?>>.Shared.Rent(32);
+            int length = array.Length;
+
+            IEnumerator<KeyValuePair<string, object?>> enumerator = tags.GetEnumerator();
+
+            try
+            {
+                while (enumerator.MoveNext())
+                {
+                    if (count == length)
+                        Grow(ref array, ref length);
+
+                    array[count++] = enumerator.Current;
+                }
+
+                if (count == 0)
+                    return Instrument.EmptyTags;
+
+                KeyValuePair<string, object?>[] result = new KeyValuePair<string, object?>[count];
+                array.AsSpan().Slice(0, count).CopyTo(result.AsSpan());
+                return result;
+            }
+            finally
+            {
+                enumerator.Dispose();
+                ArrayPool<KeyValuePair<string, object?>>.Shared.Return(array);
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static void Grow(ref KeyValuePair<string, object?>[] array, ref int length)
+            {
+                KeyValuePair<string, object?>[] newArray = ArrayPool<KeyValuePair<string, object?>>.Shared.Rent(length * 2);
+                array.CopyTo(newArray, 0);
+                ArrayPool<KeyValuePair<string, object?>>.Shared.Return(array);
+                array = newArray;
+                length = array.Length;
+            }
+        }
     }
 }

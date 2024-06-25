@@ -3,7 +3,6 @@
 
 using Microsoft.DotNet.RemoteExecutor;
 using System.Collections.Generic;
-using System.Diagnostics.Metrics;
 using System.Diagnostics.Tests;
 using System.Linq;
 using System.Threading;
