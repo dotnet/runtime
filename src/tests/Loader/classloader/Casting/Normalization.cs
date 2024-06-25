@@ -14,7 +14,7 @@ public class NormalizationTests
         object x0 = new long[1];
         object x1 = new ulong[1]; 
         
-        Assert.False(x is IntPtr[]);
+        Assert.False(x0 is IntPtr[]);
         Assert.False(x1 is IntPtr[]);
     }
 }
