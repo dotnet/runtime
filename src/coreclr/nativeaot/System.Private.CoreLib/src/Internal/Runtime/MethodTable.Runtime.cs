@@ -16,11 +16,6 @@ namespace Internal.Runtime
         {
             return MethodTable.Of<Array>();
         }
-
-        internal Exception GetClasslibException(ExceptionIDs id)
-        {
-            return RuntimeExceptionHelpers.GetRuntimeException(id);
-        }
 #pragma warning restore CA1822
 
         internal static bool AreSameType(MethodTable* mt1, MethodTable* mt2)

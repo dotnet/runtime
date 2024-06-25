@@ -43,20 +43,8 @@ namespace System
                     case ExceptionIDs.OutOfMemory:
                         return PreallocatedOutOfMemoryException.Instance;
 
-                    case ExceptionIDs.Arithmetic:
-                        return new ArithmeticException();
-
-                    case ExceptionIDs.ArrayTypeMismatch:
-                        return new ArrayTypeMismatchException();
-
                     case ExceptionIDs.DivideByZero:
                         return new DivideByZeroException();
-
-                    case ExceptionIDs.IndexOutOfRange:
-                        return new IndexOutOfRangeException();
-
-                    case ExceptionIDs.InvalidCast:
-                        return new InvalidCastException();
 
                     case ExceptionIDs.Overflow:
                         return new OverflowException();

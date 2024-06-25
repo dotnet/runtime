@@ -86,4 +86,14 @@ namespace System
     {
         public OutOfMemoryException() { }
     }
+
+    internal class EntryPointNotFoundException : Exception
+    {
+        public EntryPointNotFoundException() { }
+    }
+
+    internal class AmbiguousImplementationException : Exception
+    {
+        public AmbiguousImplementationException() { }
+    }
 }

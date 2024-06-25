@@ -186,18 +186,15 @@ enum class ClasslibFunctionId
 {
     GetRuntimeException = 0,
     FailFast = 1,
-    UnhandledExceptionHandler = 2,
-    AppendExceptionStackFrame = 3,
-    // unused = 4,
-    GetSystemArrayEEType = 5,
-    OnFirstChanceException = 6,
-    OnUnhandledException = 7,
-    IDynamicCastableIsInterfaceImplemented = 8,
-    IDynamicCastableGetInterfaceImplementation = 9,
-    ObjectiveCMarshalTryGetTaggedMemory = 10,
-    ObjectiveCMarshalGetIsTrackedReferenceCallback = 11,
-    ObjectiveCMarshalGetOnEnteredFinalizerQueueCallback = 12,
-    ObjectiveCMarshalGetUnhandledExceptionPropagationHandler = 13,
+    AppendExceptionStackFrame = 2,
+    OnFirstChanceException = 3,
+    OnUnhandledException = 4,
+    IDynamicCastableIsInterfaceImplemented = 5,
+    IDynamicCastableGetInterfaceImplementation = 6,
+    ObjectiveCMarshalTryGetTaggedMemory = 7,
+    ObjectiveCMarshalGetIsTrackedReferenceCallback = 8,
+    ObjectiveCMarshalGetOnEnteredFinalizerQueueCallback = 9,
+    ObjectiveCMarshalGetUnhandledExceptionPropagationHandler = 10,
 };
 
 enum class AssociatedDataFlags : unsigned char

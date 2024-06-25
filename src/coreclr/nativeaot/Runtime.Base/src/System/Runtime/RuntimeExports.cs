@@ -169,7 +169,7 @@ namespace System.Runtime
         {
             if (pUnboxToEEType->IsValueType)
             {
-                bool isValid = false;
+                bool isValid;
 
                 if (pUnboxToEEType->IsNullable)
                 {
@@ -177,17 +177,13 @@ namespace System.Runtime
                 }
                 else
                 {
-                    isValid = (o != null) && UnboxAnyTypeCompare(o.GetMethodTable(), pUnboxToEEType);
+                    // This will throw NullReferenceException if obj is null.
+                    isValid = UnboxAnyTypeCompare(o.GetMethodTable(), pUnboxToEEType);
                 }
 
                 if (!isValid)
                 {
-                    // Throw the invalid cast exception defined by the classlib, using the input unbox MethodTable*
-                    // to find the correct classlib.
-
-                    ExceptionIDs exID = o == null ? ExceptionIDs.NullReference : ExceptionIDs.InvalidCast;
-
-                    throw pUnboxToEEType->GetClasslibException(exID);
+                    ThrowHelper.ThrowInvalidCastException();
                 }
 
                 RhUnbox(o, ref data, pUnboxToEEType);
@@ -196,7 +192,7 @@ namespace System.Runtime
             {
                 if (o != null && (TypeCast.IsInstanceOfAny(pUnboxToEEType, o) == null))
                 {
-                    throw pUnboxToEEType->GetClasslibException(ExceptionIDs.InvalidCast);
+                    ThrowHelper.ThrowInvalidCastException();
                 }
 
                 Unsafe.As<byte, object?>(ref data) = o;
@@ -209,11 +205,12 @@ namespace System.Runtime
         [RuntimeExport("RhUnbox2")]
         public static unsafe ref byte RhUnbox2(MethodTable* pUnboxToEEType, object obj)
         {
-            if ((obj == null) || !UnboxAnyTypeCompare(obj.GetMethodTable(), pUnboxToEEType))
+            // This will throw NullReferenceException if obj is null.
+            if (!UnboxAnyTypeCompare(obj.GetMethodTable(), pUnboxToEEType))
             {
-                ExceptionIDs exID = obj == null ? ExceptionIDs.NullReference : ExceptionIDs.InvalidCast;
-                throw pUnboxToEEType->GetClasslibException(exID);
+                ThrowHelper.ThrowInvalidCastException();
             }
+
             return ref obj.GetRawData();
         }
 
@@ -222,7 +219,7 @@ namespace System.Runtime
         {
             if (obj != null && obj.GetMethodTable() != pUnboxToEEType->NullableType)
             {
-                throw pUnboxToEEType->GetClasslibException(ExceptionIDs.InvalidCast);
+                ThrowHelper.ThrowInvalidCastException();
             }
             RhUnbox(obj, ref data, pUnboxToEEType);
         }
