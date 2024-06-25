@@ -7,8 +7,6 @@ namespace System.Globalization
 {
     internal sealed partial class CultureData
     {
-        private const int LOC_FULLNAME_CAPACITY = 157;           // max size of locale name
-
         /// <summary>
         /// This method uses the sRealName field (which is initialized by the constructor before this is called) to
         /// initialize the rest of the state of CultureData based on the underlying OS globalization library.
@@ -77,72 +75,6 @@ namespace System.Globalization
             }
 
             return new int[] { primaryGroupingSize, secondaryGroupingSize };
-        }
-
-        private string GetTimeFormatStringNative() => GetTimeFormatStringNative(shortFormat: false);
-
-        private string GetTimeFormatStringNative(bool shortFormat)
-        {
-            Debug.Assert(_sWindowsName != null, "[CultureData.GetTimeFormatStringNative(bool shortFormat)] Expected _sWindowsName to be populated already");
-
-            string result = Interop.Globalization.GetLocaleTimeFormatNative(_sWindowsName, shortFormat);
-
-            return ConvertNativeTimeFormatString(result);
-        }
-
-        private static string ConvertNativeTimeFormatString(string nativeFormatString)
-        {
-            Span<char> result = stackalloc char[LOC_FULLNAME_CAPACITY];
-
-            bool amPmAdded = false;
-            int resultPos = 0;
-
-            for (int i = 0; i < nativeFormatString.Length; i++)
-            {
-                switch (nativeFormatString[i])
-                {
-                    case '\'':
-                        result[resultPos++] = nativeFormatString[i++];
-                        while (i < nativeFormatString.Length)
-                        {
-                            char current = nativeFormatString[i];
-                            result[resultPos++] = current;
-                            if (current == '\'')
-                            {
-                                break;
-                            }
-                            i++;
-                        }
-                        break;
-
-                    case ':':
-                    case '.':
-                    case 'H':
-                    case 'h':
-                    case 'm':
-                    case 's':
-                        result[resultPos++] = nativeFormatString[i];
-                        break;
-
-                    case ' ':
-                    case '\u00A0':
-                        // Convert nonbreaking spaces into regular spaces
-                        result[resultPos++] = ' ';
-                        break;
-
-                    case 'a': // AM/PM
-                        if (!amPmAdded)
-                        {
-                            amPmAdded = true;
-                            result[resultPos++] = 't';
-                            result[resultPos++] = 't';
-                        }
-                        break;
-
-                }
-            }
-
-            return result.Slice(0, resultPos).ToString();
         }
     }
 }
