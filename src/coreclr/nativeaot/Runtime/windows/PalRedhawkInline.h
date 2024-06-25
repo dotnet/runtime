@@ -42,6 +42,13 @@ FORCEINLINE int32_t PalInterlockedExchange(_Inout_ int32_t volatile *pDst, int32
     return _InterlockedExchange((long volatile *)pDst, iValue);
 }
 
+EXTERN_C int64_t _InterlockedExchange64(int64_t volatile *, int64_t);
+#pragma intrinsic(_InterlockedExchange)
+FORCEINLINE int64_t PalInterlockedExchange64(_Inout_ int64_t volatile *pDst, int64_t iValue)
+{
+    return _InterlockedExchange64(pDst, iValue);
+}
+
 EXTERN_C long __PN__MACHINECALL_CDECL_OR_DEFAULT _InterlockedCompareExchange(long volatile *, long, long);
 #pragma intrinsic(_InterlockedCompareExchange)
 FORCEINLINE int32_t PalInterlockedCompareExchange(_Inout_ int32_t volatile *pDst, int32_t iValue, int32_t iComparand)
