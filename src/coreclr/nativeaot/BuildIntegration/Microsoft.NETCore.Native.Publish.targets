@@ -166,8 +166,8 @@ $(_LinkerArgs)
     <ItemGroup Condition="'$(OS)' == 'Windows_NT'">
       <_TransformedList Condition="'%(CustomLinkerArg.ExcludeFromStaticInstructions)' != 'true'"
         Include="$([System.Text.RegularExpressions.Regex]::Replace(
-            $([System.Text.RegularExpressions.Regex]::Replace('$([MSBuild]::Escape(&quot;%(CustomLinkerArg.Identity)&quot;))', '^$(IlcFrameworkNativePath)', '&quot;%IlcFrameworkPath%&quot;')),
-            '^$(IlcSdkPath)', '&quot;%IlcSdkPath%&quot;'))" />
+            $([System.Text.RegularExpressions.Regex]::Replace('$([MSBuild]::Escape(`%(CustomLinkerArg.Identity)`))', '^&quot;$(IlcFrameworkNativePath.Replace(`\`, `\\`))', '&quot;%IlcFrameworkPath%')),
+            '^&quot;$(IlcSdkPath.Replace(`\`, `\\`))', '&quot;%IlcSdkPath%'))" />
     </ItemGroup>
 
     <PropertyGroup Condition="'$(OS)' == 'Windows_NT'">
@@ -178,15 +178,15 @@ $(_LinkerArgs)
 
 Follow these steps to link your code with the statically compiled AOT binaries:
 
-```cmd
-# Set some ILCompiler paths for convenience
-set IlcSdkPath="$(IlcSdkPath)"
-set IlcFrameworkPath="$(IlcFrameworkNativePath)"
+```batch
+:: Set some ILCompiler paths for convenience
+set IlcSdkPath=$(IlcSdkPath)
+set IlcFrameworkPath=$(IlcFrameworkNativePath)
 
-# Compile your native code, e.g.
+:: Compile your native code, e.g.
 cl.exe -c glue.c /Foglue.o
 
-# Link your glue with AOT static libs
+:: Link your glue with AOT static libs
 cl.exe glue.o /Fe:"myexe.exe" %5E
     "$(PublishDir)\$(TargetName)$(NativeBinaryExt)" %5E
 $(_LinkerArgs)
