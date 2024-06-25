@@ -909,11 +909,6 @@ public:
 protected:
     DWORD               m_dwFlags;              // Cached flags
     int                 m_nSizeOfArgStack;      // Cached value of SizeOfArgStack
-#if defined(TARGET_RISCV64)
-    // Offsets of fields returned according to hardware floating-point calling convention
-    // (FpStruct::Flags are embedded in m_dwFlags)
-    unsigned m_returnedFpFieldOffsets[2];
-#endif
 
     DWORD               m_argNum;
 
