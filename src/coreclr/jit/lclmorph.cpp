@@ -1117,7 +1117,6 @@ private:
         return Compiler::WALK_SKIP_SUBTREES;
     }
 
-
     void PushValue(GenTree** use)
     {
         m_valueStack.Push(use);
