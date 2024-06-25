@@ -4972,6 +4972,9 @@ namespace System.Runtime.Intrinsics.Arm
         public static ulong SaturatingIncrementByActiveElementCount(ulong value, System.Numerics.Vector<ulong> from) { throw null; }
         public static System.Numerics.Vector<ulong> SaturatingIncrementByActiveElementCount(System.Numerics.Vector<ulong> value, System.Numerics.Vector<ulong> from) { throw null; }
 
+        public static System.Numerics.Vector<double> Scale(System.Numerics.Vector<double> left, System.Numerics.Vector<long> right) { throw null; }
+        public static System.Numerics.Vector<float> Scale(System.Numerics.Vector<float> left, System.Numerics.Vector<int> right) { throw null; }
+
         public static System.Numerics.Vector<int> SignExtend16(System.Numerics.Vector<int> value) { throw null; }
         public static System.Numerics.Vector<long> SignExtend16(System.Numerics.Vector<long> value) { throw null; }
         public static System.Numerics.Vector<long> SignExtend32(System.Numerics.Vector<long> value) { throw null; }
@@ -4996,6 +4999,9 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<ushort> Splice(System.Numerics.Vector<ushort> mask, System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
         public static System.Numerics.Vector<uint> Splice(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
         public static System.Numerics.Vector<ulong> Splice(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
+
+        public static System.Numerics.Vector<double> Sqrt(System.Numerics.Vector<double> value) { throw null; }
+        public static System.Numerics.Vector<float> Sqrt(System.Numerics.Vector<float> value) { throw null; }
 
         public static unsafe void StoreAndZip(System.Numerics.Vector<byte> mask, byte* address, System.Numerics.Vector<byte> data) { throw null; }
         public static unsafe void StoreAndZip(System.Numerics.Vector<byte> mask, byte* address, (System.Numerics.Vector<byte> Value1, System.Numerics.Vector<byte> Value2) data) { throw null; }
