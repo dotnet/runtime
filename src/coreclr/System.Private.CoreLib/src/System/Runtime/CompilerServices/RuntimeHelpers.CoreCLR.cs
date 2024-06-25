@@ -882,29 +882,6 @@ namespace System.Runtime.CompilerServices
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeHandle_CanCastTo")]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool CanCastTo_NoCacheLookup(void* fromTypeHnd, void* toTypeHnd);
-
-        public bool IsValueType
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                return IsTypeDesc
-                    ? AsTypeDesc()->GetInternalCorElementType() == CorElementType.ELEMENT_TYPE_VALUETYPE
-                    : AsMethodTable()->IsValueType;
-            }
-        }
-
-        public bool IsInterface => !IsTypeDesc && AsMethodTable()->IsInterface;
-    }
-
-    internal unsafe struct TypeDesc
-    {
-        private readonly int m_typeAndFlags;
-
-        // This is the ELEMENT_TYPE* that would be used in the type sig for this type
-        // For enums this is the underlying type
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public CorElementType GetInternalCorElementType() => (CorElementType)(m_typeAndFlags & 0xFF);
     }
 
     // Helper structs used for tail calls via helper.
