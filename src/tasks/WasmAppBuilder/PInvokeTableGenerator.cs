@@ -182,9 +182,7 @@ internal sealed class PInvokeTableGenerator
         {
             // We mangle the name to avoid collisions with symbols in other modules
             string namespaceName = pinvoke.Method.DeclaringType?.Namespace ?? string.Empty;
-            return _fixupSymbolName(string.IsNullOrEmpty(namespaceName)
-                ? $"{pinvoke.Module}#{pinvoke.EntryPoint}"
-                : $"{namespaceName}#{pinvoke.Module}#{pinvoke.EntryPoint}");
+            return _fixupSymbolName($"{namespaceName}#{pinvoke.Module}#{pinvoke.EntryPoint}");
         }
         return _fixupSymbolName(pinvoke.EntryPoint);
     }
@@ -302,9 +300,7 @@ internal sealed class PInvokeTableGenerator
         string assemblyName = method.DeclaringType?.Module?.Assembly?.GetName()?.Name ?? string.Empty;
         string declaringTypeName = method.DeclaringType?.Name ?? string.Empty;
 
-        string entryPoint = string.IsNullOrEmpty(namespaceName)
-            ? $"wasm_native_to_interp_{assemblyName}_{declaringTypeName}_{method.Name}"
-            : $"wasm_native_to_interp_{namespaceName}_{assemblyName}_{declaringTypeName}_{method.Name}";
+        string entryPoint = $"wasm_native_to_interp_{namespaceName}_{assemblyName}_{declaringTypeName}_{method.Name}";
 
         return _fixupSymbolName(entryPoint);
     }
