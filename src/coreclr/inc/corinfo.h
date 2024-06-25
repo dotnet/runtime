@@ -361,8 +361,7 @@ namespace FpStruct
 {
     enum class IntKind
     {
-        Signed,
-        Unsigned,
+        Integer,
         GcRef,
         GcByRef,
     };
@@ -414,7 +413,7 @@ struct FpStructInRegistersInfo
 
     const char* IntFieldKindName() const
     {
-        static const char* intKindNames[] = { "Signed", "Unsigned", "GcRef", "GcByRef" };
+        static const char* intKindNames[] = { "Integer", "GcRef", "GcByRef" };
         return (flags & (FpStruct::FloatInt | FpStruct::IntFloat))
             ? intKindNames[(int)IntFieldKind()]
             : "None";

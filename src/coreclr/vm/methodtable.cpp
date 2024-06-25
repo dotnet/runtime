@@ -2911,8 +2911,8 @@ static void SetFpStructInRegistersInfoField(FpStructInRegistersInfo& info, int i
     if (isFloating)
     {
         assert(size == sizeof(float) || size == sizeof(double));
-        assert(intKind == FpStruct::IntKind::Signed);
-        static_assert((int)FpStruct::IntKind::Signed == 0,
+        assert(intKind == FpStruct::IntKind::Integer);
+        static_assert((int)FpStruct::IntKind::Integer == 0,
             "IntKind for floating fields should not clobber IntKind for int fields");
     }
 
@@ -3027,18 +3027,11 @@ static bool FlattenFields(TypeHandle th, uint32_t offset, FpStructInRegistersInf
                 }
 
                 bool isFloating = CorTypeInfo::IsFloat_NoThrow(type);
-                bool isSignedInt = (
-                    type == ELEMENT_TYPE_I1 ||
-                    type == ELEMENT_TYPE_I2 ||
-                    type == ELEMENT_TYPE_I4 ||
-                    type == ELEMENT_TYPE_I8 ||
-                    type == ELEMENT_TYPE_I);
                 CorInfoGCType gcType = CorTypeInfo::GetGCType_NoThrow(type);
-
                 FpStruct::IntKind intKind =
                     (gcType == TYPE_GC_REF)   ? FpStruct::IntKind::GcRef :
                     (gcType == TYPE_GC_BYREF) ? FpStruct::IntKind::GcByRef :
-                    (isSignedInt || isFloating) ? FpStruct::IntKind::Signed : FpStruct::IntKind::Unsigned;
+                    FpStruct::IntKind::Integer;
 
                 SetFpStructInRegistersInfoField(info, typeIndex++,
                     isFloating, intKind, CorTypeInfo::Size_NoThrow(type), offset + fields[i].GetOffset());
@@ -3104,11 +3097,11 @@ static bool FlattenFields(TypeHandle th, uint32_t offset, FpStructInRegistersInf
                     return false;
                 }
 
+                bool isFloating = (category == NativeFieldCategory::FLOAT);
+
                 SetFpStructInRegistersInfoField(info, typeIndex++,
-                    (category == NativeFieldCategory::FLOAT),
-                    FpStruct::IntKind::Signed, // NativeFieldDescriptor doesn't save signedness, TODO: should it?
-                    fields[i].NativeSize(),
-                    offset + fields[i].GetExternalOffset());
+                    isFloating, FpStruct::IntKind::Integer, fields[i].NativeSize(), offset + fields[i].GetExternalOffset());
+
                 LOG((LF_JIT, LL_EVERYTHING, "FpStructInRegistersInfo:%*s  * found field %s [%i..%i), type: %s\n",
                     nestingLevel * 4, "", fields[i].GetFieldDesc()->GetDebugName(),
                     fields[i].GetExternalOffset(), fields[i].GetExternalOffset() + fields[i].NativeSize(), categoryNames[(int)category]));
@@ -3170,18 +3163,18 @@ static FpStructInRegistersInfo GetRiscV64PassFpStructInRegistersInfoImpl(TypeHan
     }
     assert(info.offset1st + info.Size1st() <= th.GetSize());
     assert(info.offset2nd + info.Size2nd() <= th.GetSize());
-    if (info.IntFieldKind() != FpStruct::IntKind::Signed)
+
+    FpStruct::IntKind intKind = info.IntFieldKind();
+    if (intKind != FpStruct::IntKind::Integer)
     {
         assert(info.flags & (FloatInt | IntFloat));
-        if (info.IntFieldKind() >= FpStruct::IntKind::GcRef)
-        {
-            assert((info.flags & IntFloat) != 0
-                ? ((info.SizeShift1st() == 3) && IS_ALIGNED(info.offset1st, TARGET_POINTER_SIZE))
-                : ((info.SizeShift2nd() == 3) && IS_ALIGNED(info.offset2nd, TARGET_POINTER_SIZE)));
-        }
+        assert(intKind == FpStruct::IntKind::GcRef || intKind == FpStruct::IntKind::GcByRef);
+        assert((info.flags & IntFloat) != 0
+            ? ((info.SizeShift1st() == 3) && IS_ALIGNED(info.offset1st, TARGET_POINTER_SIZE))
+            : ((info.SizeShift2nd() == 3) && IS_ALIGNED(info.offset2nd, TARGET_POINTER_SIZE)));
     }
     if (info.flags & (OnlyOne | BothFloat))
-        assert(info.IntFieldKind() == FpStruct::IntKind::Signed);
+        assert(intKind == FpStruct::IntKind::Integer);
 
     LOG((LF_JIT, LL_EVERYTHING, "FpStructInRegistersInfo: "
         "struct %s (%u bytes) can be passed with floating-point calling convention, flags=%#03x; "

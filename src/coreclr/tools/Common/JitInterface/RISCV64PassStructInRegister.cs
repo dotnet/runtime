@@ -133,8 +133,8 @@ namespace Internal.JitInterface
             if (isFloating)
             {
                 Debug.Assert(size == sizeof(float) || size == sizeof(double));
-                Debug.Assert(intKind == FpStruct_IntKind.Signed);
-                Debug.Assert((int)FpStruct_IntKind.Signed == 0,
+                Debug.Assert(intKind == FpStruct_IntKind.Integer);
+                Debug.Assert((int)FpStruct_IntKind.Integer == 0,
                     "IntKind for floating fields should not clobber IntKind for int fields");
             }
 
@@ -220,12 +220,6 @@ namespace Internal.JitInterface
                         return false; // too many fields
 
                     bool isFloating = category is TypeFlags.Single or TypeFlags.Double;
-                    bool isSignedInt = category is
-                        TypeFlags.SByte or
-                        TypeFlags.Int16 or
-                        TypeFlags.Int32 or
-                        TypeFlags.Int64 or
-                        TypeFlags.IntPtr;
                     bool isGcRef = category is
                         TypeFlags.Class or
                         TypeFlags.Interface or
@@ -235,7 +229,7 @@ namespace Internal.JitInterface
                     FpStruct_IntKind intKind =
                         isGcRef ? FpStruct_IntKind.GcRef :
                         (category is TypeFlags.ByRef) ? FpStruct_IntKind.GcByRef :
-                        (isSignedInt || isFloating) ? FpStruct_IntKind.Signed : FpStruct_IntKind.Unsigned;
+                        FpStruct_IntKind.Integer;
 
                     SetFpStructInRegistersInfoField(ref info, typeIndex++,
                         isFloating, intKind, (uint)field.FieldType.GetElementSize().AsInt, offset + (uint)field.Offset.AsInt);
@@ -295,18 +289,19 @@ namespace Internal.JitInterface
             }
             Debug.Assert(info.offset1st + info.Size1st() <= td.GetElementSize().AsInt);
             Debug.Assert(info.offset2nd + info.Size2nd() <= td.GetElementSize().AsInt);
-            if (info.IntFieldKind() != FpStruct_IntKind.Signed)
+
+            FpStruct_IntKind intKind = info.IntFieldKind();
+            if (intKind != FpStruct_IntKind.Integer)
             {
                 Debug.Assert((info.flags & (FloatInt | IntFloat)) != 0);
-                if (info.IntFieldKind() >= FpStruct_IntKind.GcRef)
-                {
-                    Debug.Assert((info.flags & IntFloat) != 0
-                        ? ((info.SizeShift1st() == 3) && IsAligned(info.offset1st, TARGET_POINTER_SIZE))
-                        : ((info.SizeShift2nd() == 3) && IsAligned(info.offset2nd, TARGET_POINTER_SIZE)));
-                }
+
+                Debug.Assert(intKind == FpStruct_IntKind.GcRef || intKind == FpStruct_IntKind.GcByRef);
+                Debug.Assert((info.flags & IntFloat) != 0
+                    ? ((info.SizeShift1st() == 3) && IsAligned(info.offset1st, TARGET_POINTER_SIZE))
+                    : ((info.SizeShift2nd() == 3) && IsAligned(info.offset2nd, TARGET_POINTER_SIZE)));
             }
             if ((info.flags & (OnlyOne | BothFloat)) != 0)
-                Debug.Assert(info.IntFieldKind() == FpStruct_IntKind.Signed);
+                Debug.Assert(intKind == FpStruct_IntKind.Integer);
 
             return info;
         }

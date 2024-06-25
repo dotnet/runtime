@@ -1265,8 +1265,7 @@ namespace Internal.JitInterface
 
     public enum FpStruct_IntKind
     {
-        Signed,
-        Unsigned,
+        Integer,
         GcRef,
         GcByRef,
     }
