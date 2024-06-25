@@ -724,9 +724,12 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
         {
             //TODO-SVE: This only handles vector lengths of 128bits.
 
+            _ASSERT((lpContext->XStateFeaturesMask & XSTATE_MASK_SVE) == XSTATE_MASK_SVE);
+
             uint16_t vq = sve_vq_from_vl(lpContext->Vl);
 
-            sve->vl = lpContext->Vl;
+            // Vector length should not have changed.
+            _ASSERTE(lpContext->Vl == sve->vl);
 
             //Note: Size of ffr register is SVE_SIG_FFR_SIZE(vq) bytes.
             *(WORD*) (((uint8_t*)sve) + SVE_SIG_FFR_OFFSET(vq)) = lpContext->Ffr;
@@ -1047,9 +1050,12 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
         {
             //TODO-SVE: This only handles vector lengths of 128bits.
 
+            lpContext->XStateFeaturesMask |= XSTATE_MASK_SVE;
+
             uint16_t vq = sve_vq_from_vl(sve->vl);
 
-            lpContext->Vl = sve->vl;
+            _ASSERTE(sve->vl > 0);
+            lpContext->Vl  = sve->vl;
 
             //Note: Size of ffr register is SVE_SIG_FFR_SIZE(vq) bytes.
             lpContext->Ffr = *(WORD*) (((uint8_t*)sve) + SVE_SIG_FFR_OFFSET(vq));

@@ -10,7 +10,6 @@
 #define CONTEXT_INTEGER_BIT (1)
 #define CONTEXT_FLOATING_POINT_BIT (2)
 #define CONTEXT_DEBUG_REGISTERS_BIT (3)
-#define CONTEXT_SVE_BIT (4)
 
 #define CONTEXT_CONTROL (CONTEXT_ARM64 | (1L << CONTEXT_CONTROL_BIT))
 #define CONTEXT_INTEGER (CONTEXT_ARM64 | (1 << CONTEXT_INTEGER_BIT))
@@ -18,6 +17,10 @@
 #define CONTEXT_DEBUG_REGISTERS (CONTEXT_ARM64 | (1 << CONTEXT_DEBUG_REGISTERS_BIT))
 
 #define CONTEXT_FULL (CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT)
+
+#define XSTATE_SVE (0)
+
+#define XSTATE_MASK_SVE (UI64(1) << (XSTATE_SVE))
 
 
 #define CONTEXT_ContextFlags 0
@@ -93,11 +96,13 @@
 #define CONTEXT_Fpcr         0
 #define CONTEXT_Fpsr         CONTEXT_Fpcr+8
 
+#define CONTEXT_XSTATEFEATURESMASK_OFFSET CONTEXT_NEON_OFFSET+CONTEXT_FLOAT_CONTROL_OFFSET+CONTEXT_Fpsr+8
+
 // TODO-SVE: Support Vector register sizes >128bit
 // SVE register offsets are multiples of the vector length
 // For 128bit, Z and V registers fully overlap, so there is no need to load/store both.
 
-#define CONTEXT_SVE_OFFSET   CONTEXT_NEON_OFFSET+CONTEXT_Fpsr+8
+#define CONTEXT_SVE_OFFSET   CONTEXT_XSTATEFEATURESMASK_OFFSET+8
 #define CONTEXT_FFR_VL       0
 
 #define CONTEXT_P0_VL        CONTEXT_FFR_VL+1
