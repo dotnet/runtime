@@ -42,7 +42,7 @@ struct ArgLocDesc
     int     m_byteStackIndex;     // Stack offset in bytes (or -1)
     int     m_byteStackSize;      // Stack size in bytes
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    int     m_structFields;       // Struct field info when using Float-register except two-doubles case.
+    FpStructInRegistersInfo m_structFields; // Struct field info when using floating-point register(s)
 #endif
 
 #if defined(UNIX_AMD64_ABI)
@@ -97,7 +97,7 @@ struct ArgLocDesc
         m_hfaFieldSize = 0;
 #endif // defined(TARGET_ARM64)
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-        m_structFields = STRUCT_NO_FLOAT_FIELD;
+        m_structFields = {};
 #endif
 #if defined(UNIX_AMD64_ABI)
         m_eeClass = NULL;
@@ -909,6 +909,11 @@ public:
 protected:
     DWORD               m_dwFlags;              // Cached flags
     int                 m_nSizeOfArgStack;      // Cached value of SizeOfArgStack
+#if defined(TARGET_RISCV64)
+    // Offsets of fields returned according to hardware floating-point calling convention
+    // (FpStruct::Flags are embedded in m_dwFlags)
+    unsigned m_returnedFpFieldOffsets[2];
+#endif
 
     DWORD               m_argNum;
 
@@ -1790,20 +1795,15 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
 
     return argOfs;
 #elif defined(TARGET_RISCV64)
-
+    assert(!this->IsVarArg()); // Varargs on RISC-V not supported yet
     int cFPRegs = 0;
-    int flags = 0;
+    FpStructInRegistersInfo info = {};
 
     switch (argType)
     {
-
     case ELEMENT_TYPE_R4:
-        // 32-bit floating point argument.
-        cFPRegs = 1;
-        break;
-
     case ELEMENT_TYPE_R8:
-        // 64-bit floating point argument.
+        // Floating point argument
         cFPRegs = 1;
         break;
 
@@ -1819,10 +1819,10 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
         }
         else
         {
-            flags = MethodTable::GetRiscV64PassStructInRegisterFlags(thValueType);
-            if (flags & STRUCT_HAS_FLOAT_FIELDS_MASK)
+            info = MethodTable::GetRiscV64PassFpStructInRegistersInfo(thValueType);
+            if (info.flags != FpStruct::UseIntCallConv)
             {
-                cFPRegs = (flags & STRUCT_FLOAT_FIELD_ONLY_TWO) ? 2 : 1;
+                cFPRegs = (info.flags & FpStruct::BothFloat) ? 2 : 1;
             }
         }
 
@@ -1839,22 +1839,22 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
 
     if (cFPRegs > 0 && !this->IsVarArg())
     {
-        if (flags & (STRUCT_FLOAT_FIELD_FIRST | STRUCT_FLOAT_FIELD_SECOND))
+        if (info.flags & (FpStruct::FloatInt | FpStruct::IntFloat))
         {
             assert(cFPRegs == 1);
-            assert((STRUCT_FLOAT_FIELD_FIRST == (flags & STRUCT_HAS_FLOAT_FIELDS_MASK)) || (STRUCT_FLOAT_FIELD_SECOND == (flags & STRUCT_HAS_FLOAT_FIELDS_MASK)));
+            assert((info.flags & (FpStruct::OnlyOne | FpStruct::BothFloat)) == 0);
 
-            if ((1 + m_idxFPReg <= NUM_ARGUMENT_REGISTERS) && (m_idxGenReg + 1 <= NUM_ARGUMENT_REGISTERS))
+            if ((1 + m_idxFPReg <= NUM_ARGUMENT_REGISTERS) && (1 + m_idxGenReg <= NUM_ARGUMENT_REGISTERS))
             {
                 m_argLocDescForStructInRegs.Init();
                 m_argLocDescForStructInRegs.m_idxFloatReg = m_idxFPReg;
                 m_argLocDescForStructInRegs.m_cFloatReg = 1;
-                int argOfs = (flags & STRUCT_FLOAT_FIELD_SECOND)
+                int argOfs = (info.flags & FpStruct::IntFloat)
                     ? TransitionBlock::GetOffsetOfArgumentRegisters() + m_idxGenReg * 8
                     : TransitionBlock::GetOffsetOfFloatArgumentRegisters() + m_idxFPReg * 8;
                 m_idxFPReg += 1;
 
-                m_argLocDescForStructInRegs.m_structFields = flags;
+                m_argLocDescForStructInRegs.m_structFields = info;
 
                 m_argLocDescForStructInRegs.m_idxGenReg = m_idxGenReg;
                 m_argLocDescForStructInRegs.m_cGenReg = 1;
@@ -1868,7 +1868,10 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
         else if (cFPRegs + m_idxFPReg <= NUM_ARGUMENT_REGISTERS)
         {
             int argOfs = TransitionBlock::GetOffsetOfFloatArgumentRegisters() + m_idxFPReg * 8;
-            if (flags == STRUCT_FLOAT_FIELD_ONLY_TWO) // struct with two float-fields.
+            static const FpStruct::Flags twoFloats = FpStruct::Flags(FpStruct::BothFloat
+                | (2 << FpStruct::PosSizeShift1st)
+                | (2 << FpStruct::PosSizeShift2nd));
+            if (info.flags == twoFloats) // struct with two float-fields.
             {
                 m_argLocDescForStructInRegs.Init();
                 m_hasArgLocDescForStructInRegs = true;
@@ -1876,7 +1879,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
                 assert(cFPRegs == 2);
                 m_argLocDescForStructInRegs.m_cFloatReg = 2;
                 assert(argSize == 8);
-                m_argLocDescForStructInRegs.m_structFields = STRUCT_FLOAT_FIELD_ONLY_TWO;
+                m_argLocDescForStructInRegs.m_structFields = info;
             }
             m_idxFPReg += cFPRegs;
             return argOfs;
@@ -2031,7 +2034,7 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ComputeReturnFlags()
             if  (size <= ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE)
             {
                 assert(!thValueType.IsTypeDesc());
-                flags = (MethodTable::GetRiscV64PassStructInRegisterFlags(thValueType) & 0xff) << RETURN_FP_SIZE_SHIFT;
+                flags = (MethodTable::GetRiscV64PassFpStructInRegistersInfo(thValueType).flags & 0xff) << RETURN_FP_SIZE_SHIFT;
                 break;
             }
 #else

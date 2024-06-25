@@ -110,20 +110,23 @@ public:
 
         int argOfs = TransitionBlock::GetOffsetOfFloatArgumentRegisters() + m_argLocDescForStructInRegs->m_idxFloatReg * 8;
 
-        if (m_argLocDescForStructInRegs->m_structFields == STRUCT_FLOAT_FIELD_ONLY_TWO)
+        static const FpStruct::Flags twoFloats = FpStruct::Flags(FpStruct::BothFloat
+            | (2 << FpStruct::PosSizeShift1st)
+            | (2 << FpStruct::PosSizeShift2nd));
+        if (m_argLocDescForStructInRegs->m_structFields.flags == twoFloats)
         { // struct with two floats.
             _ASSERTE(m_argLocDescForStructInRegs->m_cFloatReg == 2);
             _ASSERTE(m_argLocDescForStructInRegs->m_cGenReg == 0);
             *(INT64*)((char*)m_base + argOfs) = NanBox | *(INT32*)src;
             *(INT64*)((char*)m_base + argOfs + 8) = NanBox | *((INT32*)src + 1);
         }
-        else if ((m_argLocDescForStructInRegs->m_structFields & STRUCT_FLOAT_FIELD_FIRST) != 0)
+        else if ((m_argLocDescForStructInRegs->m_structFields.flags & FpStruct::FloatInt) != 0)
         { // the first field is float or double.
             _ASSERTE(m_argLocDescForStructInRegs->m_cFloatReg == 1);
             _ASSERTE(m_argLocDescForStructInRegs->m_cGenReg == 1);
-            _ASSERTE((m_argLocDescForStructInRegs->m_structFields & STRUCT_FLOAT_FIELD_SECOND) == 0);//the second field is integer.
+            _ASSERTE((m_argLocDescForStructInRegs->m_structFields.flags & FpStruct::IntFloat) == 0);//the second field is integer.
 
-            if ((m_argLocDescForStructInRegs->m_structFields & STRUCT_FIRST_FIELD_SIZE_IS8) == 0)
+            if (m_argLocDescForStructInRegs->m_structFields.SizeShift1st() == 3)
             {
                 *(INT64*)((char*)m_base + argOfs) = NanBox | *(INT32*)src; // the first field is float
             }
@@ -133,7 +136,8 @@ public:
             }
 
             argOfs = TransitionBlock::GetOffsetOfArgumentRegisters() + m_argLocDescForStructInRegs->m_idxGenReg * 8;
-            if ((m_argLocDescForStructInRegs->m_structFields & STRUCT_HAS_8BYTES_FIELDS_MASK) != 0)
+            if (m_argLocDescForStructInRegs->m_structFields.SizeShift1st() == 3 ||
+                m_argLocDescForStructInRegs->m_structFields.SizeShift2nd() == 3)
             {
                 *(UINT64*)((char*)m_base + argOfs) = *((UINT64*)src + 1);
             }
@@ -142,15 +146,16 @@ public:
                 *(INT64*)((char*)m_base + argOfs) = *((INT32*)src + 1); // the second field is int32.
             }
         }
-        else if ((m_argLocDescForStructInRegs->m_structFields & STRUCT_FLOAT_FIELD_SECOND) != 0)
+        else if ((m_argLocDescForStructInRegs->m_structFields.flags & FpStruct::IntFloat) != 0)
         { // the second field is float or double.
             _ASSERTE(m_argLocDescForStructInRegs->m_cFloatReg == 1);
             _ASSERTE(m_argLocDescForStructInRegs->m_cGenReg == 1);
-            _ASSERTE((m_argLocDescForStructInRegs->m_structFields & STRUCT_FLOAT_FIELD_FIRST) == 0);//the first field is integer.
+            _ASSERTE((m_argLocDescForStructInRegs->m_structFields.flags & FpStruct::FloatInt) == 0);//the first field is integer.
 
             // destOffset - nonzero when copying values into Nullable<T>, it is the offset of the T value inside of the Nullable<T>.
             // here the first field maybe Nullable.
-            if ((m_argLocDescForStructInRegs->m_structFields & STRUCT_HAS_8BYTES_FIELDS_MASK) == 0)
+            if (m_argLocDescForStructInRegs->m_structFields.SizeShift1st() < 3 &&
+                m_argLocDescForStructInRegs->m_structFields.SizeShift2nd() < 3)
             {
                 // the second field is float.
                 *(INT64*)((char*)m_base + argOfs) = NanBox | (destOffset == 0 ? *((INT32*)src + 1) : *(INT32*)src);

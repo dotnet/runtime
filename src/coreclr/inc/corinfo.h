@@ -356,6 +356,117 @@ enum StructFloatFieldInfoFlags
     STRUCT_HAS_8BYTES_FIELDS_MASK = (STRUCT_FIRST_FIELD_SIZE_IS8 | STRUCT_SECOND_FIELD_SIZE_IS8),
 };
 
+// Bitfields for FpStructInRegistersInfo::flags
+namespace FpStruct
+{
+    enum class IntKind
+    {
+        Signed,
+        Unsigned,
+        GcRef,
+        GcByRef,
+    };
+
+    enum Flags
+    {
+        // Positions of flags and bitfields
+        PosOnlyOne      = 0,
+        PosBothFloat    = 1,
+        PosFloatInt     = 2,
+        PosIntFloat     = 3,
+        PosSizeShift1st = 4, // 2 bits
+        PosSizeShift2nd = 6, // 2 bits
+        PosIntFieldKind = 8, // 2 bits
+
+        UseIntCallConv = 0, // struct is passed according to integer calling convention
+
+        // The flags and bitfields
+        OnlyOne          =    1 << PosOnlyOne,      // has only one field, which is floating-point
+        BothFloat        =    1 << PosBothFloat,    // has two fields, both are floating-point
+        FloatInt         =    1 << PosFloatInt,     // has two fields, 1st is floating and 2nd is integer
+        IntFloat         =    1 << PosIntFloat,     // has two fields, 2nd is floating and 1st is integer
+        SizeShift1stMask = 0b11 << PosSizeShift1st, // log2(size) of 1st field
+        SizeShift2ndMask = 0b11 << PosSizeShift2nd, // log2(size) of 2nd field
+        IntFieldKindMask = 0b11 << PosIntFieldKind, // the kind of the integer field (FpStruct::IntKind)
+        // Note: flags OnlyOne, BothFloat, FloatInt, and IntFloat are mutually exclusive
+    };
+}
+
+// On RISC-V and LoongArch a struct with up to two non-empty fields, at least one of them floating-point,
+// can be passed in registers according to hardware FP calling convention. FpStructInRegistersInfo represents
+// passing information for such parameters.
+struct FpStructInRegistersInfo
+{
+    FpStruct::Flags flags;
+    uint32_t offset1st;
+    uint32_t offset2nd;
+
+    unsigned SizeShift1st() const { return (flags >> FpStruct::PosSizeShift1st) & 0b11; }
+    unsigned SizeShift2nd() const { return (flags >> FpStruct::PosSizeShift2nd) & 0b11; }
+
+    unsigned Size1st() const { return 1u << SizeShift1st(); }
+    unsigned Size2nd() const { return 1u << SizeShift2nd(); }
+
+    FpStruct::IntKind IntFieldKind() const
+    {
+        return (FpStruct::IntKind)((flags >> FpStruct::PosIntFieldKind) & 0b11);
+    }
+
+    const char* IntFieldKindName() const
+    {
+        static const char* intKindNames[] = { "Signed", "Unsigned", "GcRef", "GcByRef" };
+        return (flags & (FpStruct::FloatInt | FpStruct::IntFloat))
+            ? intKindNames[(int)IntFieldKind()]
+            : "None";
+    }
+
+    const char* FlagName() const
+    {
+        switch (flags & (FpStruct::OnlyOne | FpStruct::BothFloat | FpStruct::FloatInt | FpStruct::IntFloat))
+        {
+            case FpStruct::OnlyOne: return "OnlyOne";
+            case FpStruct::BothFloat: return "BothFloat";
+            case FpStruct::FloatInt: return "FloatInt";
+            case FpStruct::IntFloat: return "IntFloat";
+            default: return "?";
+        }
+    }
+
+    StructFloatFieldInfoFlags ToOldFlags() const
+    {
+        return StructFloatFieldInfoFlags(
+            ((flags & FpStruct::OnlyOne) ? STRUCT_FLOAT_FIELD_ONLY_ONE : 0) |
+            ((flags & FpStruct::BothFloat) ? STRUCT_FLOAT_FIELD_ONLY_TWO : 0) |
+            ((flags & FpStruct::FloatInt) ? STRUCT_FLOAT_FIELD_FIRST : 0) |
+            ((flags & FpStruct::IntFloat) ? STRUCT_FLOAT_FIELD_SECOND : 0) |
+            ((SizeShift1st() == 3) ? STRUCT_FIRST_FIELD_SIZE_IS8 : 0) |
+            ((SizeShift2nd() == 3) ? STRUCT_SECOND_FIELD_SIZE_IS8 : 0));
+    }
+
+    static FpStructInRegistersInfo FromOldFlags(StructFloatFieldInfoFlags flags)
+    {
+        unsigned sizeShift1st = (flags & STRUCT_FIRST_FIELD_SIZE_IS8) ? 3 : 2;
+        unsigned sizeShift2nd = (flags & STRUCT_SECOND_FIELD_SIZE_IS8) ? 3 : 2;
+        bool hasTwo = !(flags & STRUCT_FLOAT_FIELD_ONLY_ONE);
+        return {
+            FpStruct::Flags(
+                ((flags & STRUCT_FLOAT_FIELD_ONLY_ONE) ? FpStruct::OnlyOne : 0) |
+                ((flags & STRUCT_FLOAT_FIELD_ONLY_TWO) ? FpStruct::BothFloat : 0) |
+                ((flags & STRUCT_FLOAT_FIELD_FIRST) ? FpStruct::FloatInt : 0) |
+                ((flags & STRUCT_FLOAT_FIELD_SECOND) ? FpStruct::IntFloat : 0) |
+                (sizeShift1st << FpStruct::PosSizeShift1st) |
+                (hasTwo ? (sizeShift2nd << FpStruct::PosSizeShift2nd) : 0)
+                // No GC ref info in old flags
+            ),
+            // Lacking actual field offsets, assume fields are naturally aligned without empty fields or padding
+            0,
+            hasTwo ? (1u << (sizeShift1st > sizeShift2nd ? sizeShift1st : sizeShift2nd)) : 0,
+        };
+    }
+};
+
+static_assert(sizeof(FpStructInRegistersInfo) == 3 * sizeof(uint32_t), "");
+
 #include "corinfoinstructionset.h"
 
 // CorInfoHelpFunc defines the set of helpers (accessed via the ICorDynamicInfo::getHelperFtn())
@@ -3075,7 +3186,7 @@ public:
     virtual void getSwiftLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_SWIFT_LOWERING* pLowering) = 0;
 
     virtual uint32_t getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls) = 0;
-    virtual uint32_t getRISCV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls) = 0;
+    virtual FpStructInRegistersInfo getRiscV64PassFpStructInRegistersInfo(CORINFO_CLASS_HANDLE cls) = 0;
 };
 
 /*****************************************************************************

@@ -3453,10 +3453,10 @@ namespace Internal.JitInterface
             return LoongArch64PassStructInRegister.GetLoongArch64PassStructInRegisterFlags(typeDesc);
         }
 
-        private uint getRISCV64PassStructInRegisterFlags(CORINFO_CLASS_STRUCT_* cls)
+        private FpStructInRegistersInfo getRiscV64PassFpStructInRegistersInfo(CORINFO_CLASS_STRUCT_* cls)
         {
             TypeDesc typeDesc = HandleToObject(cls);
-            return RISCV64PassStructInRegister.GetRISCV64PassStructInRegisterFlags(typeDesc);
+            return RISCV64PassStructInRegister.GetRiscV64PassFpStructInRegistersInfo(typeDesc);
         }
 
         private uint getThreadTLSIndex(ref void* ppIndirection)

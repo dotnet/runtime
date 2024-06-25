@@ -787,6 +787,10 @@ public:
     void dmpGetRISCV64PassStructInRegisterFlags(DWORDLONG key, DWORD value);
     DWORD repGetRISCV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE structHnd);
 
+    void recGetRiscV64PassFpStructInRegistersInfo(CORINFO_CLASS_HANDLE structHnd, FpStructInRegistersInfo value);
+    void dmpGetRiscV64PassFpStructInRegistersInfo(DWORDLONG key, FpStructInRegistersInfo value);
+    FpStructInRegistersInfo repGetRiscV64PassFpStructInRegistersInfo(CORINFO_CLASS_HANDLE structHnd);
+
     void recGetRelocTypeHint(void* target, WORD result);
     void dmpGetRelocTypeHint(DWORDLONG key, DWORD value);
     WORD repGetRelocTypeHint(void* target);
@@ -1170,7 +1174,7 @@ enum mcPackets
     Packet_GetThreadLocalFieldInfo = 207,
     Packet_GetThreadLocalStaticBlocksInfo = 208,
     Packet_GetThreadLocalStaticInfo_NativeAOT = 209,
-    Packet_GetRISCV64PassStructInRegisterFlags = 210,
+    // Packet_GetRISCV64PassStructInRegisterFlags = 210,
     Packet_GetObjectContent = 211,
     Packet_GetTypeLayout = 212,
     Packet_HaveSameMethodDefinition = 213,
@@ -1181,6 +1185,7 @@ enum mcPackets
     Packet_GetClassStaticDynamicInfo = 218,
     Packet_GetClassThreadStaticDynamicInfo = 219,
     Packet_IsGenericType = 220,
+    Packet_GetRiscV64PassFpStructInRegistersInfo = 221,
 };
 
 void SetDebugDumpVariables();
