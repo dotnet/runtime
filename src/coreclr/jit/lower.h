@@ -187,7 +187,7 @@ private:
     GenTree* LowerFloatArg(GenTreeCall* call, GenTree** pArg, CallArg* callArg);
     GenTree* LowerFloatArgReg(GenTree* arg, regNumber regNum);
 #endif
-    void     LegalizeArgPlacement(GenTreeCall* call);
+    void LegalizeArgPlacement(GenTreeCall* call);
 
     void     InsertPInvokeCallProlog(GenTreeCall* call);
     void     InsertPInvokeCallEpilog(GenTreeCall* call);

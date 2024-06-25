@@ -2064,7 +2064,8 @@ void Lowering::LegalizeArgPlacement(GenTreeCall* call)
         return;
     }
 
-    JITDUMP("Call [%06u] has %zu PUTARG nodes that interfere with [%06u]; will move them after it\n", Compiler::dspTreeID(call), numMarked, Compiler::dspTreeID(cur));
+    JITDUMP("Call [%06u] has %zu PUTARG nodes that interfere with [%06u]; will move them after it\n",
+            Compiler::dspTreeID(call), numMarked, Compiler::dspTreeID(cur));
 
     // We found interference; remaining PUTARG nodes need to be moved after
     // this point.
@@ -2084,7 +2085,8 @@ void Lowering::LegalizeArgPlacement(GenTreeCall* call)
             // For !FEATURE_FIXED_OUT_ARGS: only PUTARG_REG nodes must be moved after the interfering call
             if (FEATURE_FIXED_OUT_ARGS || cur->OperIs(GT_PUTARG_REG))
             {
-                JITDUMP("Relocating [%06u] after [%06u]\n", Compiler::dspTreeID(cur), Compiler::dspTreeID(insertionPoint));
+                JITDUMP("Relocating [%06u] after [%06u]\n", Compiler::dspTreeID(cur),
+                        Compiler::dspTreeID(insertionPoint));
 
                 BlockRange().Remove(cur);
                 BlockRange().InsertAfter(insertionPoint, cur);
