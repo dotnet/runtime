@@ -3858,6 +3858,9 @@ void emitter::emitInsSve_R_R_R(instruction     ins,
             assert(isLowPredicateRegister(reg2));
             assert(isVectorRegister(reg3));
             assert(insOptsScalableStandard(opt));
+            // TODO-SVE: We currently support only the destructive version of splice. Remove the following assert when
+            // the constructive version is added, as described in https://github.com/dotnet/runtime/issues/103850.
+            assert(sopt != INS_SCALABLE_OPTS_WITH_VECTOR_PAIR);
             fmt = (sopt == INS_SCALABLE_OPTS_WITH_VECTOR_PAIR) ? IF_SVE_CV_3A : IF_SVE_CV_3B;
             break;
 
