@@ -4929,7 +4929,8 @@ mono_aot_get_method (MonoMethod *method, MonoError *error)
 
 	if (!(image->aot_module)) {
 		// aot_module was uninitialized
-		MonoMethodHeader *header = mono_method_get_header_checked (method, error);
+		MonoMethodHeader *header = mono_method_get_header_checked (method, inner_error);
+		mono_error_cleanup (inner_error);
 		if (!header) {
 			return NULL;
 		} else if (header->code_size != 0) {
