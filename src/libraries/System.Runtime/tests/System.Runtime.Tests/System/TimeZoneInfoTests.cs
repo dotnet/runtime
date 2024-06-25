@@ -3060,7 +3060,7 @@ namespace System.Tests
             // Note we cannot test the DisplayName, as it will contain the ID.
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))]
+        [Theory]
         [PlatformSpecific(TestPlatforms.Browser)]
         [InlineData("America/Buenos_Aires")]
         [InlineData("America/Catamarca")]
@@ -3071,38 +3071,45 @@ namespace System.Tests
         public static void ChangeLocalTimeZone(string id)
         {
             string originalTZ = Environment.GetEnvironmentVariable("TZ");
-            try
+            object lockObject = new object();
+            lock (lockObject)
             {
-                TimeZoneInfo.ClearCachedData();
-                Environment.SetEnvironmentVariable("TZ", id);
+                try
+                {
+                    TimeZoneInfo.ClearCachedData();
+                    Environment.SetEnvironmentVariable("TZ", id);
 
-                TimeZoneInfo localtz = TimeZoneInfo.Local;
-                TimeZoneInfo tz = TimeZoneInfo.FindSystemTimeZoneById(id);
+                    TimeZoneInfo localtz = TimeZoneInfo.Local;
+                    TimeZoneInfo tz = TimeZoneInfo.FindSystemTimeZoneById(id);
 
-                Assert.Equal(tz.StandardName, localtz.StandardName);
-                Assert.Equal(tz.DisplayName, localtz.DisplayName);
+                    Assert.Equal(tz.StandardName, localtz.StandardName);
+                    Assert.Equal(tz.DisplayName, localtz.DisplayName);
+                }
+                finally
+                {
+                    TimeZoneInfo.ClearCachedData();
+                    Environment.SetEnvironmentVariable("TZ", originalTZ);
+                }
             }
-            finally
-            {
-                TimeZoneInfo.ClearCachedData();
-                Environment.SetEnvironmentVariable("TZ", originalTZ);
-            }
 
-            try
+            lock (lockObject)
             {
-                TimeZoneInfo.ClearCachedData();
-                Environment.SetEnvironmentVariable("TZ", id);
+                try
+                {
+                    TimeZoneInfo.ClearCachedData();
+                    Environment.SetEnvironmentVariable("TZ", id);
 
-                TimeZoneInfo localtz = TimeZoneInfo.Local;
-                Assert.True(TimeZoneInfo.TryFindSystemTimeZoneById(id, out TimeZoneInfo tz));
+                    TimeZoneInfo localtz = TimeZoneInfo.Local;
+                    Assert.True(TimeZoneInfo.TryFindSystemTimeZoneById(id, out TimeZoneInfo tz));
 
-                Assert.Equal(tz.StandardName, localtz.StandardName);
-                Assert.Equal(tz.DisplayName, localtz.DisplayName);
-            }
-            finally
-            {
-                TimeZoneInfo.ClearCachedData();
-                Environment.SetEnvironmentVariable("TZ", originalTZ);
+                    Assert.Equal(tz.StandardName, localtz.StandardName);
+                    Assert.Equal(tz.DisplayName, localtz.DisplayName);
+                }
+                finally
+                {
+                    TimeZoneInfo.ClearCachedData();
+                    Environment.SetEnvironmentVariable("TZ", originalTZ);
+                }
             }
         }
 
