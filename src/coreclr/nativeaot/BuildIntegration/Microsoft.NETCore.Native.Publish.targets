@@ -131,7 +131,7 @@
   <Target Name="_WriteLinkingInstructionsAsMarkdown" AfterTargets="_CopyAotSymbols"
           Condition="'$(NativeLib)' == 'Static' and '$(SkipLinkingInstructions)' != 'true'">
 
-    <ItemGroup>
+    <ItemGroup Condition="'$(OS)' != 'Windows_NT'">
       <_TransformedList Include="$([System.Text.RegularExpressions.Regex]::Replace(
             $([System.Text.RegularExpressions.Regex]::Replace('$([MSBuild]::Escape(&quot;%(CustomLinkerArg.Identity)&quot;))', '^$(IlcFrameworkNativePath)', '&quot;${IlcFrameworkPath}&quot;')),
             '^$(IlcSdkPath)', '&quot;${IlcSdkPath}&quot;'))" Condition="'%(CustomLinkerArg.ExcludeFromStaticInstructions)' != 'true'" />
@@ -161,6 +161,12 @@ $(_LinkerArgs)
         ]]>
       </MarkdownContent>
     </PropertyGroup>
+
+    <ItemGroup Condition="'$(OS)' == 'Windows_NT'">
+      <_TransformedList Include="$([System.Text.RegularExpressions.Regex]::Replace(
+            $([System.Text.RegularExpressions.Regex]::Replace('$([MSBuild]::Escape(&quot;%(CustomLinkerArg.Identity)&quot;))', '^$(IlcFrameworkNativePath)', '&quot;%IlcFrameworkPath%&quot;')),
+            '^$(IlcSdkPath)', '&quot;%IlcSdkPath%&quot;'))" Condition="'%(CustomLinkerArg.ExcludeFromStaticInstructions)' != 'true'" />
+    </ItemGroup>
 
     <PropertyGroup Condition="'$(OS)' == 'Windows_NT'">
       <_LinkerArgs>@(_TransformedList -> '    %(Identity)', ' %5E%0D%0A')</_LinkerArgs>
