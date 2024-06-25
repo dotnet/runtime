@@ -59,20 +59,20 @@ namespace System.Runtime.CompilerServices
             {
                 switch (pMT->ComponentSize)
                 {
-                    case 1:
+                    case sizeof(byte):
                         SpanHelpers.Memmove(ref dst, ref src, totalSize);
                         break;
-                    case 2:
+                    case sizeof(ushort):
                         BinaryPrimitives.ReverseEndianness(
                             new ReadOnlySpan<ushort>(ref Unsafe.As<byte, ushort>(ref src), array.Length),
                             new Span<ushort>(ref Unsafe.As<byte, ushort>(ref dst), array.Length));
                         break;
-                    case 4:
+                    case sizeof(uint):
                         BinaryPrimitives.ReverseEndianness(
                             new ReadOnlySpan<uint>(ref Unsafe.As<byte, uint>(ref src), array.Length),
                             new Span<uint>(ref Unsafe.As<byte, uint>(ref dst), array.Length));
                         break;
-                    case 8:
+                    case sizeof(ulong):
                         BinaryPrimitives.ReverseEndianness(
                             new ReadOnlySpan<ulong>(ref Unsafe.As<byte, ulong>(ref src), array.Length),
                             new Span<ulong>(ref Unsafe.As<byte, ulong>(ref dst), array.Length));
