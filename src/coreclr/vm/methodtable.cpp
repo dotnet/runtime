@@ -2716,194 +2716,6 @@ void  MethodTable::AssignClassifiedEightByteTypes(SystemVStructRegisterPassingHe
 #endif // defined(UNIX_AMD64_ABI_ITF)
 
 #if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
-static bool HandleInlineArrayOld(int elementTypeIndex, int nElements, StructFloatFieldInfoFlags types[2], int& typeIndex)
-{
-    int nFlattenedFieldsPerElement = typeIndex - elementTypeIndex;
-    if (nFlattenedFieldsPerElement == 0)
-        return true;
-
-    assert(nFlattenedFieldsPerElement == 1 || nFlattenedFieldsPerElement == 2);
-
-    if (nElements > 2)
-        return false;
-
-    if (nElements == 2)
-    {
-        if (typeIndex + nFlattenedFieldsPerElement > 2)
-            return false;
-
-        assert(elementTypeIndex == 0);
-        assert(typeIndex == 1);
-        types[typeIndex] = types[elementTypeIndex]; // duplicate the array element type
-    }
-    return true;
-}
-
-static bool FlattenFieldTypesOld(TypeHandle th, StructFloatFieldInfoFlags types[2], int& typeIndex)
-{
-    bool isManaged = !th.IsTypeDesc();
-    MethodTable* pMT = isManaged ? th.AsMethodTable() : th.AsNativeValueType();
-    int nFields = isManaged ? pMT->GetNumIntroducedInstanceFields() : pMT->GetNativeLayoutInfo()->GetNumFields();
-
-    // TODO: templatize isManaged and use if constexpr for differences when we migrate to C++17
-    // because the logic for both branches is nearly the same.
-    if (isManaged)
-    {
-        FieldDesc* fields = pMT->GetApproxFieldDescListRaw();
-        int elementTypeIndex = typeIndex;
-        for (int i = 0; i < nFields; ++i)
-        {
-            if (i > 0 && fields[i-1].GetOffset() + fields[i-1].GetSize() > fields[i].GetOffset())
-                return false; // overlapping fields
-
-            CorElementType type = fields[i].GetFieldType();
-            if (type == ELEMENT_TYPE_VALUETYPE)
-            {
-                MethodTable* nested = fields[i].GetApproxFieldTypeHandleThrowing().GetMethodTable();
-                if (!FlattenFieldTypesOld(TypeHandle(nested), types, typeIndex))
-                    return false;
-            }
-            else if (fields[i].GetSize() <= TARGET_POINTER_SIZE)
-            {
-                if (typeIndex >= 2)
-                    return false;
-
-                StructFloatFieldInfoFlags retType = StructFloatFieldInfoFlags(
-                    (CorTypeInfo::IsFloat_NoThrow(type) ? STRUCT_FLOAT_FIELD_FIRST : 0) |
-                    (CorTypeInfo::Size_NoThrow(type) == TARGET_POINTER_SIZE ? STRUCT_FIRST_FIELD_SIZE_IS8 : 0));
-                types[typeIndex++] = retType;
-            }
-            else
-            {
-                return false;
-            }
-        }
-
-        if (HasImpliedRepeatedFields(pMT)) // inline array or fixed buffer
-        {
-            assert(nFields == 1);
-            int nElements = pMT->GetNumInstanceFieldBytes() / fields[0].GetSize();
-            if (!HandleInlineArrayOld(elementTypeIndex, nElements, types, typeIndex))
-                return false;
-        }
-    }
-    else // native layout
-    {
-        const NativeFieldDescriptor* fields = pMT->GetNativeLayoutInfo()->GetNativeFieldDescriptors();
-        for (int i = 0; i < nFields; ++i)
-        {
-            if (i > 0 && fields[i-1].GetExternalOffset() + fields[i-1].NativeSize() > fields[i].GetExternalOffset())
-                return false; // overlapping fields
-
-            NativeFieldCategory category = fields[i].GetCategory();
-            if (category == NativeFieldCategory::NESTED)
-            {
-                int elementTypeIndex = typeIndex;
-
-                MethodTable* nested = fields[i].GetNestedNativeMethodTable();
-                if (!FlattenFieldTypesOld(TypeHandle(nested), types, typeIndex))
-                    return false;
-
-                // In native layout fixed arrays are marked as NESTED just like structs
-                int nElements = fields[i].GetNumElements();
-                if (!HandleInlineArrayOld(elementTypeIndex, nElements, types, typeIndex))
-                    return false;
-            }
-            else if (fields[i].NativeSize() <= TARGET_POINTER_SIZE)
-            {
-                if (typeIndex >= 2)
-                    return false;
-
-                StructFloatFieldInfoFlags type = StructFloatFieldInfoFlags(
-                    (category == NativeFieldCategory::FLOAT ? STRUCT_FLOAT_FIELD_FIRST : 0) |
-                    (fields[i].NativeSize() == TARGET_POINTER_SIZE ? STRUCT_FIRST_FIELD_SIZE_IS8 : 0));
-                types[typeIndex++] = type;
-            }
-            else
-            {
-                return false;
-            }
-        }
-    }
-    return true;
-}
-#endif
-
-#if defined(TARGET_LOONGARCH64)
-int MethodTable::GetLoongArch64PassStructInRegisterFlags(TypeHandle th)
-{
-    if (th.GetSize() > ENREGISTERED_PARAMTYPE_MAXSIZE)
-        return STRUCT_NO_FLOAT_FIELD;
-
-    StructFloatFieldInfoFlags types[2] = {STRUCT_NO_FLOAT_FIELD, STRUCT_NO_FLOAT_FIELD};
-    int nFields = 0;
-    if (!FlattenFieldTypesOld(th, types, nFields) || nFields == 0)
-        return STRUCT_NO_FLOAT_FIELD;
-
-    assert(nFields == 1 || nFields == 2);
-
-    static_assert((STRUCT_FLOAT_FIELD_SECOND | STRUCT_SECOND_FIELD_SIZE_IS8)
-        == (STRUCT_FLOAT_FIELD_FIRST | STRUCT_FIRST_FIELD_SIZE_IS8) << 1,
-        "SECOND flags need to be FIRST shifted by 1");
-    int flags = types[0] | (types[1] << 1);
-
-    static const int bothFloat = STRUCT_FLOAT_FIELD_FIRST | STRUCT_FLOAT_FIELD_SECOND;
-    if ((flags & bothFloat) == 0)
-        return STRUCT_NO_FLOAT_FIELD;
-
-    if ((flags & bothFloat) == bothFloat)
-    {
-        assert(nFields == 2);
-        flags ^= (bothFloat | STRUCT_FLOAT_FIELD_ONLY_TWO); // replace bothFloat with ONLY_TWO
-    }
-    else if (nFields == 1)
-    {
-        assert((flags & STRUCT_FLOAT_FIELD_FIRST) != 0);
-        flags ^= (STRUCT_FLOAT_FIELD_FIRST | STRUCT_FLOAT_FIELD_ONLY_ONE); // replace FIRST with ONLY_ONE
-    }
-
-    return flags;
-}
-#endif
-
-#if defined(TARGET_RISCV64)
-static int GetRiscV64PassStructInRegisterFlags(TypeHandle th)
-{
-    if (th.GetSize() > ENREGISTERED_PARAMTYPE_MAXSIZE)
-        return STRUCT_NO_FLOAT_FIELD;
-
-    StructFloatFieldInfoFlags types[2] = {STRUCT_NO_FLOAT_FIELD, STRUCT_NO_FLOAT_FIELD};
-    int nFields = 0;
-    if (!FlattenFieldTypesOld(th, types, nFields) || nFields == 0)
-        return STRUCT_NO_FLOAT_FIELD;
-
-    assert(nFields == 1 || nFields == 2);
-
-    static_assert((STRUCT_FLOAT_FIELD_SECOND | STRUCT_SECOND_FIELD_SIZE_IS8)
-        == (STRUCT_FLOAT_FIELD_FIRST | STRUCT_FIRST_FIELD_SIZE_IS8) << 1,
-        "SECOND flags need to be FIRST shifted by 1");
-    int flags = types[0] | (types[1] << 1);
-
-    static const int bothFloat = STRUCT_FLOAT_FIELD_FIRST | STRUCT_FLOAT_FIELD_SECOND;
-    if ((flags & bothFloat) == 0)
-        return STRUCT_NO_FLOAT_FIELD;
-
-    if ((flags & bothFloat) == bothFloat)
-    {
-        assert(nFields == 2);
-        flags ^= (bothFloat | STRUCT_FLOAT_FIELD_ONLY_TWO); // replace bothFloat with ONLY_TWO
-    }
-    else if (nFields == 1)
-    {
-        assert((flags & STRUCT_FLOAT_FIELD_FIRST) != 0);
-        flags ^= (STRUCT_FLOAT_FIELD_FIRST | STRUCT_FLOAT_FIELD_ONLY_ONE); // replace FIRST with ONLY_ONE
-    }
-
-    return flags;
-}
-#endif
-
-#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
 static void SetFpStructInRegistersInfoField(FpStructInRegistersInfo& info, int index,
     bool isFloating, FpStruct::IntKind intKind, unsigned size, uint32_t offset)
 {
@@ -3118,11 +2930,12 @@ static bool FlattenFields(TypeHandle th, uint32_t offset, FpStructInRegistersInf
     }
     return true;
 }
-#endif
 
 #if defined(TARGET_RISCV64)
-
-static FpStructInRegistersInfo GetRiscV64PassFpStructInRegistersInfoImpl(TypeHandle th)
+FpStructInRegistersInfo MethodTable::GetRiscV64PassFpStructInRegistersInfo(TypeHandle th)
+#elif defined(TARGET_LOONGARCH64)
+FpStructInRegistersInfo MethodTable::GetLoongArch64PassFpStructInRegistersInfo(TypeHandle th)
+#endif
 {
     FpStructInRegistersInfo info = {};
     int nFields = 0;
@@ -3184,17 +2997,7 @@ static FpStructInRegistersInfo GetRiscV64PassFpStructInRegistersInfoImpl(TypeHan
     ));
     return info;
 }
-
-FpStructInRegistersInfo MethodTable::GetRiscV64PassFpStructInRegistersInfo(TypeHandle th)
-{
-    FpStructInRegistersInfo info = GetRiscV64PassFpStructInRegistersInfoImpl(th);
-    int flags = GetRiscV64PassStructInRegisterFlags(th);
-
-    assert(flags == info.ToOldFlags());
-
-    return info;
-}
-#endif // TARGET_RISCV64
+#endif // defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
 
 #if !defined(DACCESS_COMPILE)
 namespace
