@@ -1858,9 +1858,9 @@ ClrDataAccess::GetMethodTableDataImpl(CLRDATA_ADDRESS mt, struct DacpMethodTable
         MTData->Class = HOST_CDADDR(pMT->GetClass()->GetMethodTable());
         MTData->ParentMethodTable = HOST_CDADDR(pMT->GetParentMethodTable());;
         MTData->wNumInterfaces = (WORD)pMT->GetNumInterfaces();
-        MTData->wNumMethods = pMT->GetNumMethods();
-        MTData->wNumVtableSlots = pMT->GetNumVtableSlots();
-        MTData->wNumVirtuals = pMT->GetNumVirtuals();
+        MTData->wNumMethods = pMT->GetNumMethods(); // printed as "number of vtable slots" and used to iterate over method slots
+        MTData->wNumVtableSlots = 0; // always return 0 since .NET 9
+        MTData->wNumVirtuals = 0; // always return 0 since .NET 9
         MTData->cl = pMT->GetCl();
         MTData->dwAttrClass = pMT->GetAttrClass();
         MTData->bContainsPointers = pMT->ContainsGCPointers();

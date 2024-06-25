@@ -52,8 +52,6 @@ internal interface IMetadata : IContract
     public virtual bool IsDynamicStatics(MethodTableHandle methodTable) => throw new NotImplementedException();
     public virtual ushort GetNumMethods(MethodTableHandle methodTable) => throw new NotImplementedException();
     public virtual ushort GetNumInterfaces(MethodTableHandle methodTable) => throw new NotImplementedException();
-    public virtual ushort GetNumVirtuals(MethodTableHandle methodTable) => throw new NotImplementedException();
-    public virtual ushort GetNumVtableSlots(MethodTableHandle methodTable) => throw new NotImplementedException();
 
     // Returns an ECMA-335 TypeDef table token for this type, or for its generic type definition if it is a generic instantiation
     public virtual uint GetTypeDefToken(MethodTableHandle methodTable) => throw new NotImplementedException();

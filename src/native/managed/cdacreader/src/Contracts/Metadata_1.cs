@@ -330,26 +330,6 @@ internal partial struct Metadata_1 : IMetadata
 
     public ushort GetNumInterfaces(MethodTableHandle methodTableHandle) => _methodTables[methodTableHandle.Address].NumInterfaces;
 
-    public ushort GetNumVirtuals(MethodTableHandle methodTableHandle) => _methodTables[methodTableHandle.Address].NumVirtuals;
-    private ushort GetNumNonVirtualSlots(MethodTableHandle methodTableHandle)
-    {
-        MethodTable_1 methodTable = _methodTables[methodTableHandle.Address];
-        TargetPointer eeClassOrCanonMT = methodTable.EEClassOrCanonMT;
-        if (GetEEClassOrCanonMTBits(eeClassOrCanonMT) == EEClassOrCanonMTBits.EEClass)
-        {
-            return GetClassData(methodTableHandle).NumNonVirtualSlots;
-        }
-        else
-        {
-            return 0;
-        }
-    }
-
-    public ushort GetNumVtableSlots(MethodTableHandle methodTableHandle)
-    {
-        return checked((ushort)(GetNumVirtuals(methodTableHandle) + GetNumNonVirtualSlots(methodTableHandle)));
-    }
-
     public uint GetTypeDefTypeAttributes(MethodTableHandle methodTableHandle) => GetClassData(methodTableHandle).AttrClass;
 
     public bool IsDynamicStatics(MethodTableHandle methodTableHandle) => _methodTables[methodTableHandle.Address].Flags.GetFlag(WFLAGS2_ENUM.DynamicStatics) != 0;

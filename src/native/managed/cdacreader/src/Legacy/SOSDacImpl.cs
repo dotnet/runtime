@@ -113,8 +113,8 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface9
                 result.parentMethodTable = contract.GetParentMethodTable(methodTable);
                 result.wNumInterfaces = contract.GetNumInterfaces(methodTable);
                 result.wNumMethods = contract.GetNumMethods(methodTable);
-                result.wNumVtableSlots = contract.GetNumVtableSlots(methodTable);
-                result.wNumVirtuals = contract.GetNumVirtuals(methodTable);
+                result.wNumVtableSlots = 0; // always return 0 since .NET 9
+                result.wNumVirtuals = 0; // always return 0 since .NET 9
                 result.cl = contract.GetTypeDefToken(methodTable);
                 result.dwAttrClass = contract.GetTypeDefTypeAttributes(methodTable);
                 result.bContainsGCPointers = contract.ContainsGCPointers(methodTable) ? 1 : 0;

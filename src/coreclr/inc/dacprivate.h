@@ -279,7 +279,9 @@ struct MSLAYOUT DacpMethodTableData
     CLRDATA_ADDRESS ParentMethodTable = 0;
     WORD wNumInterfaces = 0;
     WORD wNumMethods = 0;
+    // Note: Always 0, since .NET 9
     WORD wNumVtableSlots = 0;
+    // Note: Always 0, since .NET 9
     WORD wNumVirtuals = 0;
     DWORD BaseSize = 0;
     DWORD ComponentSize = 0;
