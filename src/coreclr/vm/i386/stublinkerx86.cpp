@@ -2434,7 +2434,7 @@ namespace
 {
     gc_alloc_context* STDCALL GetAllocContextHelper()
     {
-        return &t_thread_alloc_context;
+        return &t_runtime_thread_locals.alloc_context;
     }
 }
 #endif
@@ -2490,8 +2490,8 @@ VOID StubLinkerCPU::X86EmitCurrentThreadAllocContextFetch(X86Reg dstreg, unsigne
 
     X86EmitIndexRegLoad(dstreg, dstreg, sizeof(void *) * _tls_index);
 
-    _ASSERTE(Thread::GetOffsetOfThreadStatic(&t_thread_alloc_context) < INT_MAX);
-    X86EmitAddReg(dstreg, (int32_t)Thread::GetOffsetOfThreadStatic(&t_thread_alloc_context));
+    _ASSERTE(Thread::GetOffsetOfThreadStatic(&t_runtime_thread_locals.alloc_context) < INT_MAX);
+    X86EmitAddReg(dstreg, (int32_t)Thread::GetOffsetOfThreadStatic(&t_runtime_thread_locals.alloc_context));
 
 #endif // TARGET_UNIX
 }

@@ -293,7 +293,6 @@ void Module::NotifyProfilerLoadFinished(HRESULT hr)
 
         {
             BEGIN_PROFILER_CALLBACK(CORProfilerTrackAssemblyLoads());
-            if (IsManifest())
             {
                 GCX_COOP();
                 (&g_profControlBlock)->AssemblyLoadFinished((AssemblyID) m_pAssembly, hr);
@@ -345,9 +344,6 @@ Module::Module(Assembly *pAssembly, PEAssembly *pPEAssembly)
     m_pAssembly = pAssembly;
     m_pPEAssembly      = pPEAssembly;
     m_dwTransientFlags = CLASSES_FREED;
-
-    // Memory allocated on LoaderHeap is zero-filled. Spot-check it here.
-    _ASSERTE(m_pBinder == NULL);
 
     pPEAssembly->AddRef();
 }
@@ -418,19 +414,11 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
 
     m_Crst.Init(CrstModule);
     m_LookupTableCrst.Init(CrstModuleLookupTable, CrstFlags(CRST_UNSAFE_ANYMODE | CRST_DEBUGGER_THREAD));
-    m_FixupCrst.Init(CrstModuleFixup, (CrstFlags)(CRST_HOST_BREAKABLE|CRST_REENTRANCY));
     m_InstMethodHashTableCrst.Init(CrstInstMethodHashTable, CRST_REENTRANCY);
     m_ISymUnmanagedReaderCrst.Init(CrstISymUnmanagedReader, CRST_DEBUGGER_THREAD);
 
     AllocateMaps();
     m_dwTransientFlags &= ~((DWORD)CLASSES_FREED);  // Set flag indicating LookupMaps are now in a consistent and destructable state
-
-#ifdef FEATURE_COLLECTIBLE_TYPES
-    if (GetAssembly()->IsCollectible())
-    {
-        InterlockedOr((LONG*)&m_dwPersistedFlags, COLLECTIBLE_MODULE);
-    }
-#endif // FEATURE_COLLECTIBLE_TYPES
 
 #ifdef FEATURE_READYTORUN
     m_pNativeImage = NULL;
@@ -723,7 +711,6 @@ void Module::Destruct()
     ClearInMemorySymbolStream();
 
     m_Crst.Destroy();
-    m_FixupCrst.Destroy();
     m_LookupTableCrst.Destroy();
     m_InstMethodHashTableCrst.Destroy();
     m_ISymUnmanagedReaderCrst.Destroy();
@@ -830,11 +817,10 @@ MethodTable *Module::GetGlobalMethodTable()
 
 #endif // !DACCESS_COMPILE
 
-BOOL Module::IsManifest()
+BOOL Module::IsCollectible()
 {
-    WRAPPER_NO_CONTRACT;
-    return dac_cast<TADDR>(GetAssembly()->GetModule()) ==
-           dac_cast<TADDR>(this);
+    LIMITED_METHOD_DAC_CONTRACT;
+    return GetAssembly()->IsCollectible();
 }
 
 DomainAssembly* Module::GetDomainAssembly()
@@ -3925,13 +3911,10 @@ private:
 //      The debugger can slip this thread outside the locks to ensure the data is consistent.
 //
 //    This does not raise a debug notification to invalidate the metadata. Reasoning is that this only
-//    happens in two cases:
-//    1) manifest module is updated with the name of a new dynamic module.
-//    2) on each class load, in which case we already send a debug event. In this case, we already send a
-//    class-load notification, so sending a separate "metadata-refresh" would make the eventing twice as
-//    chatty. Class-load events are high-volume and events are slow.
-//    Thus we can avoid the chatiness by ensuring the debugger knows that Class-load also means "refresh
-//    metadata".
+//    happens in one case: on each class load. In this case, we already send a class-load notification
+//    debug event, so sending a separate "metadata-refresh" would make the eventing twice as chatty.
+//    Class-load events are high-volume and events are slow. We can avoid the chattiness by ensuring
+//    the debugger knows that Class-load also means "refresh metadata".
 //
 void ReflectionModule::CaptureModuleMetaDataToMemory()
 {
@@ -4542,10 +4525,6 @@ void Module::EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
         if (m_pAvailableClassesCaseIns.IsValid())
         {
             m_pAvailableClassesCaseIns->EnumMemoryRegions(flags);
-        }
-        if (m_pBinder.IsValid())
-        {
-            m_pBinder->EnumMemoryRegions(flags);
         }
 
         // Save the LookupMap structures.

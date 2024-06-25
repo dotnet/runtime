@@ -3451,7 +3451,7 @@ namespace System
     {
         int CompareTo(object? obj);
     }
-    public partial interface IComparable<in T>
+    public partial interface IComparable<in T> where T : allows ref struct
     {
         int CompareTo(T? other);
     }
@@ -3484,7 +3484,7 @@ namespace System
     {
         void Dispose();
     }
-    public partial interface IEquatable<T>
+    public partial interface IEquatable<T> where T : allows ref struct
     {
         bool Equals(T? other);
     }
@@ -8170,7 +8170,7 @@ namespace System.Collections
 }
 namespace System.Collections.Generic
 {
-    public interface IAlternateEqualityComparer<in TAlternate, T> where TAlternate : allows ref struct
+    public interface IAlternateEqualityComparer<in TAlternate, T> where TAlternate : allows ref struct where T : allows ref struct
     {
         bool Equals(TAlternate alternate, T other);
         int GetHashCode(TAlternate alternate);
@@ -8195,7 +8195,7 @@ namespace System.Collections.Generic
         void CopyTo(T[] array, int arrayIndex);
         bool Remove(T item);
     }
-    public partial interface IComparer<in T>
+    public partial interface IComparer<in T> where T : allows ref struct
     {
         int Compare(T? x, T? y);
     }
@@ -8217,7 +8217,7 @@ namespace System.Collections.Generic
     {
         new T Current { get; }
     }
-    public partial interface IEqualityComparer<in T>
+    public partial interface IEqualityComparer<in T> where T : allows ref struct
     {
         bool Equals(T? x, T? y);
         int GetHashCode([System.Diagnostics.CodeAnalysis.DisallowNullAttribute] T obj);

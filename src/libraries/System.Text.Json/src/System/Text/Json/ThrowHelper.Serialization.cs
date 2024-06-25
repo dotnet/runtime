@@ -293,15 +293,11 @@ namespace System.Text.Json
             StringBuilder listOfMissingPropertiesBuilder = new();
             bool first = true;
 
-            Debug.Assert(parent.PropertyCache != null);
-
             // Soft cut-off length - once message becomes longer than that we won't be adding more elements
             const int CutOffLength = 60;
 
-            foreach (KeyValuePair<string, JsonPropertyInfo> kvp in parent.PropertyCache.List)
+            foreach (JsonPropertyInfo property in parent.PropertyCache)
             {
-                JsonPropertyInfo property = kvp.Value;
-
                 if (!property.IsRequired || requiredPropertiesSet[property.RequiredPropertyIndex])
                 {
                     continue;
@@ -590,9 +586,9 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
-        public static void ThrowNotSupportedException(ref WriteStack state, NotSupportedException ex)
+        public static void ThrowNotSupportedException(ref WriteStack state, Exception innerException)
         {
-            string message = ex.Message;
+            string message = innerException.Message;
 
             // The caller should check to ensure path is not already set.
             Debug.Assert(!message.Contains(" Path: "));
@@ -612,7 +608,7 @@ namespace System.Text.Json
 
             message += $" Path: {state.PropertyPath()}.";
 
-            throw new NotSupportedException(message, ex);
+            throw new NotSupportedException(message, innerException);
         }
 
         [DoesNotReturn]

@@ -720,7 +720,7 @@ ClrDataAccess::GetThreadAllocData(CLRDATA_ADDRESS addr, struct DacpAllocData *da
 
     Thread* thread = PTR_Thread(TO_TADDR(addr));
 
-    gc_alloc_context* pAllocContext = thread->GetAllocContext();
+    PTR_gc_alloc_context pAllocContext = thread->GetAllocContext();
 
     if (pAllocContext != NULL)
     {
@@ -827,7 +827,7 @@ HRESULT ClrDataAccess::GetThreadDataImpl(CLRDATA_ADDRESS threadAddr, struct Dacp
     threadData->state = thread->m_State;
     threadData->preemptiveGCDisabled = thread->m_fPreemptiveGCDisabled;
 
-    gc_alloc_context* allocContext = thread->GetAllocContext();
+    PTR_gc_alloc_context allocContext = thread->GetAllocContext();
     if (allocContext)
     {
         threadData->allocContextPtr = TO_CDADDR(allocContext->alloc_ptr);
@@ -1722,18 +1722,18 @@ ClrDataAccess::GetModuleData(CLRDATA_ADDRESS addr, struct DacpModuleData *Module
 
     ZeroMemory(ModuleData,sizeof(DacpModuleData));
     ModuleData->Address = addr;
-    ModuleData->PEAssembly = HOST_CDADDR(pModule->GetPEAssembly());
+    ModuleData->PEAssembly = addr; // Module address in .NET 9+ - correspondingly, SOS-DAC APIs for PE assemblies expect a module address
     COUNT_T metadataSize = 0;
     if (!pModule->GetPEAssembly()->IsDynamic())
     {
-        ModuleData->ilBase = (CLRDATA_ADDRESS)(ULONG_PTR) pModule->GetPEAssembly()->GetIJWBase();
+        ModuleData->ilBase = TO_CDADDR(dac_cast<TADDR>(pModule->GetPEAssembly()->GetLoadedLayout()->GetBase()));
     }
 
     ModuleData->metadataStart = (CLRDATA_ADDRESS)dac_cast<TADDR>(pModule->GetPEAssembly()->GetLoadedMetadata(&metadataSize));
     ModuleData->metadataSize = (SIZE_T) metadataSize;
 
     ModuleData->bIsReflection = pModule->IsReflection();
-    ModuleData->bIsPEFile = pModule->IsPEFile();
+    ModuleData->bIsPEFile = !pModule->GetPEAssembly()->IsDynamic();
     ModuleData->Assembly = HOST_CDADDR(pModule->GetAssembly());
     ModuleData->dwModuleID = 0; // CoreCLR no longer has this concept
     ModuleData->dwModuleIndex = 0; // CoreCLR no longer has this concept
@@ -1744,7 +1744,7 @@ ClrDataAccess::GetModuleData(CLRDATA_ADDRESS addr, struct DacpModuleData *Module
     EX_TRY
     {
         //
-        // In minidump's case, these data structure is not avaiable.
+        // In minidump's case, these data structures are not available.
         //
         ModuleData->TypeDefToMethodTableMap = PTR_CDADDR(pModule->m_TypeDefToMethodTableMap.pTable);
         ModuleData->TypeRefToMethodTableMap = PTR_CDADDR(pModule->m_TypeRefToMethodTableMap.pTable);
@@ -2125,13 +2125,14 @@ ClrDataAccess::GetFrameName(CLRDATA_ADDRESS vtable, unsigned int count, _Inout_u
 }
 
 HRESULT
-ClrDataAccess::GetPEFileName(CLRDATA_ADDRESS addr, unsigned int count, _Inout_updates_z_(count) WCHAR *fileName, unsigned int *pNeeded)
+ClrDataAccess::GetPEFileName(CLRDATA_ADDRESS moduleAddr, unsigned int count, _Inout_updates_z_(count) WCHAR *fileName, unsigned int *pNeeded)
 {
-    if (addr == 0 || (fileName == NULL && pNeeded == NULL) || (fileName != NULL && count == 0))
+    if (moduleAddr == 0 || (fileName == NULL && pNeeded == NULL) || (fileName != NULL && count == 0))
         return E_INVALIDARG;
 
     SOSDacEnter();
-    PEAssembly* pPEAssembly = PTR_PEAssembly(TO_TADDR(addr));
+    PTR_Module pModule = PTR_Module(TO_TADDR(moduleAddr));
+    PEAssembly* pPEAssembly = pModule->GetPEAssembly();
 
     // Turn from bytes to wide characters
     if (!pPEAssembly->GetPath().IsEmpty())
@@ -2182,20 +2183,25 @@ ClrDataAccess::GetPEFileName(CLRDATA_ADDRESS addr, unsigned int count, _Inout_up
 }
 
 HRESULT
-ClrDataAccess::GetPEFileBase(CLRDATA_ADDRESS addr, CLRDATA_ADDRESS *base)
+ClrDataAccess::GetPEFileBase(CLRDATA_ADDRESS moduleAddr, CLRDATA_ADDRESS *base)
 {
-    if (addr == 0 || base == NULL)
+    if (moduleAddr == 0 || base == NULL)
         return E_INVALIDARG;
 
     SOSDacEnter();
 
-    PEAssembly* pPEAssembly = PTR_PEAssembly(TO_TADDR(addr));
+    PTR_Module pModule = PTR_Module(TO_TADDR(moduleAddr));
+    PEAssembly* pPEAssembly = pModule->GetPEAssembly();
 
     // More fields later?
     if (!pPEAssembly->IsDynamic())
-        *base = TO_CDADDR(pPEAssembly->GetIJWBase());
+    {
+        *base = TO_CDADDR(dac_cast<TADDR>(pPEAssembly->GetLoadedLayout()->GetBase()));
+    }
     else
+    {
         *base = (CLRDATA_ADDRESS)NULL;
+    }
 
     SOSDacLeave();
     return hr;

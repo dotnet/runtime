@@ -1246,14 +1246,16 @@ FCIMPL1(void*, RuntimeFieldHandle::GetStaticFieldAddress, ReflectFieldObject *pF
     // IsFastPathSupported needs to checked before calling this method.
     _ASSERTE(IsFastPathSupportedHelper(pFieldDesc));
 
-    PTR_BYTE base = 0;
-    if (!pFieldDesc->IsRVA())
+    if (pFieldDesc->IsRVA())
     {
-        // For RVA the base is ignored and offset is used.
-        base = pFieldDesc->GetBase();
+        Module* pModule = pFieldDesc->GetModule();
+        return pModule->GetRvaField(pFieldDesc->GetOffset());
     }
-
-    return PTR_VOID(base + pFieldDesc->GetOffset());
+    else
+    {
+        PTR_BYTE base = pFieldDesc->GetBase();
+        return PTR_VOID(base + pFieldDesc->GetOffset());
+    }
 }
 FCIMPLEND
 
