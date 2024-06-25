@@ -1,13 +1,44 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#define FORWARD_TO_NETFRAMEWORK
+
 using System.Buffers;
+using System.Diagnostics;
 using System.Text;
 
 namespace DotnetFuzzing.Fuzzers;
 
 internal sealed class TextEncoding : IFuzzer
 {
+#if FORWARD_TO_NETFRAMEWORK
+    const string TestSubDirectory = @"src\libraries\Fuzzing\DotnetFuzzing\Fuzzers\TextEncoding.NetFramework\bin\Release\TextEncodingNetFramework.exe";
+    //string[] IFuzzer.TargetAssemblies => ["mscorlib"]; // Not sure if this does anything.
+    //string[] IFuzzer.TargetCoreLibPrefixes { get; } = [];
+
+    private static string GetRepoRootDirectory()
+    {
+        string? currentDirectory = Directory.GetCurrentDirectory();
+
+        while (currentDirectory != null)
+        {
+            string gitDirOrFile = Path.Combine(currentDirectory, ".git");
+            if (Directory.Exists(gitDirOrFile) || File.Exists(gitDirOrFile))
+            {
+                break;
+            }
+            currentDirectory = Directory.GetParent(currentDirectory)?.FullName;
+        }
+
+        if (currentDirectory == null)
+        {
+            throw new Exception("Cannot find the git repository root");
+        }
+
+        return currentDirectory;
+    }    
+#endif
+
     string[] IFuzzer.TargetAssemblies => [];
     string[] IFuzzer.TargetCoreLibPrefixes { get; } = ["System.Text"];
 
@@ -21,6 +52,21 @@ internal sealed class TextEncoding : IFuzzer
         TestUtf32(poisonAfter.Span);
         TestUtf7(poisonAfter.Span);
         TestUtf8(poisonAfter.Span);
+
+#if FORWARD_TO_NETFRAMEWORK
+        string path = GetRepoRootDirectory();
+        path = Path.Combine(path, TestSubDirectory);
+        if (!File.Exists(path))
+        {
+            Console.WriteLine($"Cannot find the .NET Framework test executable at {path}");
+        }
+
+        if (bytes.Length > 0)
+        {
+            string encoded = Convert.ToBase64String(bytes);
+            Process.Start(path, encoded);
+        }
+#endif       
     }
 
     // Use individual methods for each encoding, so if there's an exception then 
