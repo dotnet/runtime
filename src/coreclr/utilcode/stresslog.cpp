@@ -34,13 +34,27 @@ thread_local bool t_triedToCreateThreadStressLog;
    variable-speed CPUs (for power management), this is not accurate, but may
    be good enough.
 */
-__forceinline __declspec(naked) uint64_t getTimeStamp() {
+__forceinline
+#ifdef HOST_WINDOWS
+__declspec(naked)
+#else
+__attribute__((naked))
+#endif
+uint64_t getTimeStamp() {
     STATIC_CONTRACT_LEAF;
 
-   __asm {
+#ifdef HOST_WINDOWS
+    __asm {
         RDTSC   // read time stamp counter
         ret
-    };
+    }
+#else
+    __asm (
+        "rdtsc\n\t"   // read time stamp counter
+        "ret\n\t"
+    );
+#endif
+
 }
 
 #else // HOST_X86

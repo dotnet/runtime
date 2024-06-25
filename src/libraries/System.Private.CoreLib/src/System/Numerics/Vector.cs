@@ -3,9 +3,9 @@
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
-using static Interop;
 
 namespace System.Numerics
 {
@@ -210,7 +210,7 @@ namespace System.Numerics
         /// <summary>Computes the ceiling of each element in a vector.</summary>
         /// <param name="value">The vector that will have its ceiling computed.</param>
         /// <returns>A vector whose elements are the ceiling of the elements in <paramref name="value" />.</returns>
-        /// <seealso cref="Math.Ceiling(double)" />
+        /// <seealso cref="double.Ceiling(double)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<double> Ceiling(Vector<double> value)
@@ -229,7 +229,7 @@ namespace System.Numerics
         /// <summary>Computes the ceiling of each element in a vector.</summary>
         /// <param name="value">The vector that will have its ceiling computed.</param>
         /// <returns>A vector whose elements are the ceiling of the elements in <paramref name="value" />.</returns>
-        /// <seealso cref="MathF.Ceiling(float)" />
+        /// <seealso cref="float.Ceiling(float)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<float> Ceiling(Vector<float> value)
@@ -487,6 +487,72 @@ namespace System.Numerics
             return result;
         }
 
+        /// <summary>Creates a new <see cref="Vector{T}" /> instance with all elements initialized to the specified value.</summary>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <param name="value">The value that all elements will be initialized to.</param>
+        /// <returns>A new <see cref="Vector{T}" /> with all elements initialized to <paramref name="value" />.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
+        public static Vector<T> Create<T>(T value)
+        {
+            Unsafe.SkipInit(out Vector<T> result);
+
+            for (int index = 0; index < Vector<T>.Count; index++)
+            {
+                result.SetElementUnsafe(index, value);
+            }
+
+            return result;
+        }
+
+        /// <summary>Creates a new <see cref="Vector{T}" /> from a given readonly span.</summary>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <param name="values">The readonly span from which the vector is created.</param>
+        /// <returns>A new <see cref="Vector{T}" /> with its elements set to the first <see cref="Vector{T}.Count" /> elements from <paramref name="values" />.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="values" /> is less than <see cref="Vector128{T}.Count" />.</exception>
+        /// <exception cref="NotSupportedException">The type of <paramref name="values" /> (<typeparamref name="T" />) is not supported.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<T> Create<T>(ReadOnlySpan<T> values)
+        {
+            if (values.Length < Vector<T>.Count)
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.values);
+            }
+            return Unsafe.ReadUnaligned<Vector<T>>(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(values)));
+        }
+
+        /// <summary>Creates a new <see cref="Vector{T}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <param name="value">The value that element 0 will be initialized to.</param>
+        /// <returns>A new <see cref="Vector{T}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements initialized to zero.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
+        internal static unsafe Vector<T> CreateScalar<T>(T value)
+        {
+            Vector<T> result = Vector<T>.Zero;
+            result.SetElementUnsafe(0, value);
+            return result;
+        }
+
+        /// <summary>Creates a new <see cref="Vector{T}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <param name="value">The value that element 0 will be initialized to.</param>
+        /// <returns>A new <see cref="Vector{T}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements left uninitialized.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector<T> CreateScalarUnsafe<T>(T value)
+        {
+            // This relies on us stripping the "init" flag from the ".locals"
+            // declaration to let the upper bits be uninitialized.
+
+            ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
+            Unsafe.SkipInit(out Vector<T> result);
+
+            result.SetElementUnsafe(0, value);
+            return result;
+        }
+
         /// <summary>Creates a new <see cref="Vector{T}" /> instance where the elements begin at a specified value and which are spaced apart according to another specified value.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="start">The value that element 0 will be initialized to.</param>
@@ -494,7 +560,7 @@ namespace System.Numerics
         /// <returns>A new <see cref="Vector{T}" /> instance with the first element initialized to <paramref name="start" /> and each subsequent element initialized to the the value of the previous element plus <paramref name="step" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector<T> CreateSequence<T>(T start, T step) => (Vector<T>.Indices * step) + new Vector<T>(start);
+        public static Vector<T> CreateSequence<T>(T start, T step) => (Vector<T>.Indices * step) + Create(start);
 
         /// <summary>Divides two vectors to compute their quotient.</summary>
         /// <param name="left">The vector that will be divided by <paramref name="right" />.</param>
@@ -599,7 +665,7 @@ namespace System.Numerics
         /// <summary>Computes the floor of each element in a vector.</summary>
         /// <param name="value">The vector that will have its floor computed.</param>
         /// <returns>A vector whose elements are the floor of the elements in <paramref name="value" />.</returns>
-        /// <seealso cref="Math.Floor(double)" />
+        /// <seealso cref="double.Floor(double)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<double> Floor(Vector<double> value)
@@ -618,7 +684,7 @@ namespace System.Numerics
         /// <summary>Computes the floor of each element in a vector.</summary>
         /// <param name="value">The vector that will have its floor computed.</param>
         /// <returns>A vector whose elements are the floor of the elements in <paramref name="value" />.</returns>
-        /// <seealso cref="MathF.Floor(float)" />
+        /// <seealso cref="float.Floor(float)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<float> Floor(Vector<float> value)

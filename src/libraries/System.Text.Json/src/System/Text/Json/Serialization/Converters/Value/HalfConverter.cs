@@ -4,6 +4,8 @@
 using System.Buffers;
 using System.Diagnostics;
 using System.Globalization;
+using System.Text.Json.Nodes;
+using System.Text.Json.Schema;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -142,6 +144,9 @@ namespace System.Text.Json.Serialization.Converters
                 WriteCore(writer, value);
             }
         }
+
+        internal override JsonSchema? GetSchema(JsonNumberHandling numberHandling) =>
+            GetSchemaForNumericType(JsonSchemaType.Number, numberHandling, isIeeeFloatingPoint: true);
 
         private static bool TryGetFloatingPointConstant(ref Utf8JsonReader reader, out Half value)
         {

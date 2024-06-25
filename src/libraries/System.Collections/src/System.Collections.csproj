@@ -10,15 +10,16 @@
 
   <ItemGroup>
     <Compile Include="System\Collections\BitArray.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\DebugViewDictionaryItem.cs"
-             Link="Common\System\Collections\Generic\DebugViewDictionaryItem.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ICollectionDebugView.cs"
-             Link="Common\System\Collections\Generic\ICollectionDebugView.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\IDictionaryDebugView.cs"
-             Link="Common\System\Collections\Generic\IDictionaryDebugView.cs" />
+    <Compile Include="System\Collections\ThrowHelper.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\DebugViewDictionaryItem.cs" Link="Common\System\Collections\Generic\DebugViewDictionaryItem.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ICollectionDebugView.cs" Link="Common\System\Collections\Generic\ICollectionDebugView.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\IDictionaryDebugView.cs" Link="Common\System\Collections\Generic\IDictionaryDebugView.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Collections\ObjectModel\CollectionHelpers.cs" Link="Common\System\Collections\ObjectModel\CollectionHelpers.cs" />
     <Compile Include="System\Collections\Generic\LinkedList.cs" />
+    <Compile Include="System\Collections\Generic\OrderedDictionary.cs" />
     <Compile Include="System\Collections\Generic\PriorityQueue.cs" />
     <Compile Include="System\Collections\Generic\PriorityQueueDebugView.cs" />
+    <Compile Include="System\Collections\Generic\ReadOnlySet.cs" />
     <Compile Include="System\Collections\Generic\SortedDictionary.cs" />
     <Compile Include="System\Collections\Generic\SortedList.cs" />
     <Compile Include="System\Collections\Generic\SortedSet.cs" />
@@ -28,14 +29,10 @@
     <Compile Include="System\Collections\Generic\StackDebugView.cs" />
     <Compile Include="System\Collections\StructuralComparisons.cs" />
     <!-- Shared Common -->
-    <Compile Include="$(CoreLibSharedDir)System\Collections\HashHelpers.cs"
-             Link="Common\System\Collections\HashHelpers.cs" />
-    <Compile Include="$(CommonPath)System\Collections\Generic\BitHelper.cs"
-             Link="Common\System\Collections\Generic\BitHelper.cs" />
-    <Compile Include="$(CommonPath)System\Collections\Generic\EnumerableHelpers.cs"
-             Link="Common\System\Collections\Generic\EnumerableHelpers.cs" />
-    <Compile Include="$(CommonPath)System\Obsoletions.cs"
-             Link="Common\System\Obsoletions.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Collections\HashHelpers.cs" Link="Common\System\Collections\HashHelpers.cs" />
+    <Compile Include="$(CommonPath)System\Collections\Generic\BitHelper.cs" Link="Common\System\Collections\Generic\BitHelper.cs" />
+    <Compile Include="$(CommonPath)System\Collections\Generic\EnumerableHelpers.cs" Link="Common\System\Collections\Generic\EnumerableHelpers.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
   </ItemGroup>
 
   <ItemGroup>

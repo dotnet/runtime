@@ -26,6 +26,8 @@ namespace System.Net
 {
     public delegate void HttpContinueDelegate(int StatusCode, WebHeaderCollection httpHeaders);
 
+    // NOTE: While this class is not explicitly marked as obsolete,
+    // it effectively is by virtue of WebRequest.Create being obsolete.
     public class HttpWebRequest : WebRequest, ISerializable
     {
         private const int DefaultContinueTimeout = 350; // Current default value from .NET Desktop.

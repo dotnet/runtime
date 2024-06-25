@@ -197,6 +197,10 @@
 #include "diagnosticserveradapter.h"
 #include "eventpipeadapter.h"
 
+#if defined(FEATURE_PERFTRACING) && defined(TARGET_LINUX)
+#include "user_events.h"
+#endif // defined(FEATURE_PERFTRACING) && defined(TARGET_LINUX)
+
 #ifndef TARGET_UNIX
 // Included for referencing __security_cookie
 #include "process.h"
@@ -661,6 +665,9 @@ void EEStartupHelper()
 #ifdef FEATURE_PERFTRACING
         // Initialize the event pipe.
         EventPipeAdapter::Initialize();
+#if defined(TARGET_LINUX)
+        InitUserEvents();
+#endif // TARGET_LINUX
 #endif // FEATURE_PERFTRACING
 
 #ifdef TARGET_UNIX
@@ -932,6 +939,8 @@ void EEStartupHelper()
         SystemDomain::System()->DefaultDomain()->LoadSystemAssemblies();
 
         SystemDomain::System()->DefaultDomain()->SetupSharedStatics();
+
+        InitializeThreadStaticData();
 
 #ifdef FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
         // retrieve configured max size for the mini-metadata buffer (defaults to 64KB)
@@ -1720,10 +1729,27 @@ struct TlsDestructionMonitor
                     thread->m_pFrame = FRAME_TOP;
                     GCX_COOP_NO_DTOR_END();
                 }
+#ifdef _DEBUG
+                BOOL oldGCOnTransitionsOK = thread->m_GCOnTransitionsOK;
+                thread->m_GCOnTransitionsOK = FALSE;
+#endif
+                if (!IsAtProcessExit() && !g_fEEShutDown)
+                {
+                    GCX_COOP_NO_DTOR();
+                    FreeThreadStaticData(&t_ThreadStatics, thread);
+                    GCX_COOP_NO_DTOR_END();
+                }
+#ifdef _DEBUG
+                thread->m_GCOnTransitionsOK = oldGCOnTransitionsOK;
+#endif
                 thread->DetachThread(TRUE);
             }
+            else
+            {
+                // Since we don't actually cleanup the TLS data along this path, verify that it is already cleaned up
+                AssertThreadStaticDataFreed(&t_ThreadStatics);
+            }
 
-            DeleteThreadLocalMemory();
             ThreadDetaching();
         }
     }
@@ -1736,30 +1762,6 @@ thread_local TlsDestructionMonitor tls_destructionMonitor;
 void EnsureTlsDestructionMonitor()
 {
     tls_destructionMonitor.Activate();
-}
-
-#ifdef _MSC_VER
-__declspec(thread)  ThreadStaticBlockInfo t_ThreadStatics;
-#else
-__thread ThreadStaticBlockInfo t_ThreadStatics;
-#endif // _MSC_VER
-
-// Delete the thread local memory only if we the current thread
-// is the one executing this code. If we do not guard it, it will
-// end up deleting the thread local memory of the calling thread.
-void DeleteThreadLocalMemory()
-{
-    t_NonGCThreadStaticBlocksSize = 0;
-    t_GCThreadStaticBlocksSize = 0;
-
-    t_ThreadStatics.NonGCMaxThreadStaticBlocks = 0;
-    t_ThreadStatics.GCMaxThreadStaticBlocks = 0;
-
-    delete[] t_ThreadStatics.NonGCThreadStaticBlocks;
-    t_ThreadStatics.NonGCThreadStaticBlocks = nullptr;
-
-    delete[] t_ThreadStatics.GCThreadStaticBlocks;
-    t_ThreadStatics.GCThreadStaticBlocks = nullptr;
 }
 
 #ifdef DEBUGGING_SUPPORTED

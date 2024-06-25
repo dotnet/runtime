@@ -24,6 +24,7 @@
     <Compile Include="NIndexTests.cs" />
     <Compile Include="TensorPrimitives.ConvertTo.cs" />
     <Compile Include="TensorPrimitives.Generic.cs" />
+    <Compile Include="TensorPrimitivesTests.Reference.cs" />
   </ItemGroup>
 
   <ItemGroup>
