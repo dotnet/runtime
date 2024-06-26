@@ -6124,7 +6124,7 @@ BOOL IsSafeToUnwindFrameChain(Thread* pThread, LPVOID MemoryStackFpForFrameChain
     for (Frame* pf = pThread->m_pFrame; pf < MemoryStackFpForFrameChain; pf = pf->PtrNextFrame())
     {
         PCODE retAddr = pf->GetReturnAddress();
-        if (retAddr != NULL && ExecutionManager::IsManagedCode(retAddr))
+        if (retAddr != (PCODE)NULL && ExecutionManager::IsManagedCode(retAddr))
         {
             pLastFrameOfInterest = pf;
         }

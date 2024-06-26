@@ -132,15 +132,24 @@ CORINFO_InstructionSet HWIntrinsicInfo::lookupIsa(const char* className, const c
 {
     assert(className != nullptr);
 
-    if (strcmp(className, "Arm64") == 0)
+    if (enclosingClassName == nullptr)
     {
-        assert(enclosingClassName != nullptr);
-        return Arm64VersionOfIsa(lookupInstructionSet(enclosingClassName));
-    }
-    else
-    {
+        // No nested class is the most common, so fast path it
         return lookupInstructionSet(className);
     }
+
+    // Since lookupId is only called for the xplat intrinsics
+    // or intrinsics in the platform specific namespace, we assume
+    // that it will be one we can handle and don't try to early out.
+
+    CORINFO_InstructionSet enclosingIsa = lookupInstructionSet(enclosingClassName);
+
+    if (strcmp(className, "Arm64") == 0)
+    {
+        return Arm64VersionOfIsa(enclosingIsa);
+    }
+
+    return InstructionSet_ILLEGAL;
 }
 
 //------------------------------------------------------------------------
@@ -394,6 +403,7 @@ void HWIntrinsicInfo::lookupImmBounds(
             case NI_AdvSimd_Arm64_InsertSelectedScalar:
             case NI_Sve_FusedMultiplyAddBySelectedScalar:
             case NI_Sve_FusedMultiplySubtractBySelectedScalar:
+            case NI_Sve_ExtractVector:
                 immUpperBound = Compiler::getSIMDVectorLength(simdSize, baseType) - 1;
                 break;
 

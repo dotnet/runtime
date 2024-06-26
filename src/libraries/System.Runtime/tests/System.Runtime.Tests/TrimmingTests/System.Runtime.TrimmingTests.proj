@@ -56,21 +56,13 @@
       <!-- Reflection.Emit doesn't work with native AOT -->
       <NativeAotIncompatible>true</NativeAotIncompatible>
     </TestConsoleAppSourceFiles>
-    <TestConsoleAppSourceFiles Include="NullabilityInfoContextSupportFalse.cs">
-      <DisabledProperties>NullabilityInfoContextSupport</DisabledProperties>
-    </TestConsoleAppSourceFiles>
-    <TestConsoleAppSourceFiles Include="NullabilityInfoContextSupportTrue.cs">
-      <EnabledProperties>NullabilityInfoContextSupport</EnabledProperties>
-    </TestConsoleAppSourceFiles>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <TestConsoleAppSourceFiles Include="UseWindowsThreadPoolFalse.cs">
-      <DisabledFeatureSwitches>System.Threading.ThreadPool.UseWindowsThreadPool</DisabledFeatureSwitches>
-      <!-- https://github.com/dotnet/runtime/issues/101591 -->
-      <NativeAotIncompatible>true</NativeAotIncompatible>
+      <DisabledProperties>UseWindowsThreadPool</DisabledProperties>
     </TestConsoleAppSourceFiles>
     <TestConsoleAppSourceFiles Include="UseWindowsThreadPoolTrue.cs">
-      <EnabledFeatureSwitches>System.Threading.ThreadPool.UseWindowsThreadPool</EnabledFeatureSwitches>
+      <EnabledProperties>UseWindowsThreadPool</EnabledProperties>
     </TestConsoleAppSourceFiles>
   </ItemGroup>
 

@@ -370,13 +370,13 @@ mono_wasm_assembly_find_method (MonoClass *klass, const char *name, int argument
  * This wrapper ensures that the interpreter initializes the pointers.
  */
 void
-mono_wasm_marshal_get_managed_wrapper (const char* assemblyName, const char* typeName, const char* methodName, int num_params)
+mono_wasm_marshal_get_managed_wrapper (const char* assemblyName, const char* namespaceName, const char* typeName, const char* methodName, int num_params)
 {
 	MonoError error;
 	mono_error_init (&error);
 	MonoAssembly* assembly = mono_wasm_assembly_load (assemblyName);
 	assert (assembly);
-	MonoClass* class = mono_wasm_assembly_find_class (assembly, "", typeName);
+	MonoClass* class = mono_wasm_assembly_find_class (assembly, namespaceName, typeName);
 	assert (class);
 	MonoMethod* method = mono_wasm_assembly_find_method (class, methodName, num_params);
 	assert (method);

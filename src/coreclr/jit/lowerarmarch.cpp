@@ -1266,6 +1266,27 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             return LowerHWIntrinsicCmpOp(node, GT_NE);
         }
 
+        case NI_Sve_TestAnyTrue:
+        {
+            LowerNodeCC(node, GenCondition::NE);
+            node->gtType = TYP_VOID;
+            return node->gtNext;
+        }
+
+        case NI_Sve_TestFirstTrue:
+        {
+            LowerNodeCC(node, GenCondition::SLT);
+            node->gtType = TYP_VOID;
+            return node->gtNext;
+        }
+
+        case NI_Sve_TestLastTrue:
+        {
+            LowerNodeCC(node, GenCondition::ULT);
+            node->gtType = TYP_VOID;
+            return node->gtNext;
+        }
+
         case NI_Vector128_WithLower:
         case NI_Vector128_WithUpper:
         {
@@ -3192,6 +3213,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_Sve_PrefetchInt16:
             case NI_Sve_PrefetchInt32:
             case NI_Sve_PrefetchInt64:
+            case NI_Sve_ExtractVector:
                 assert(hasImmediateOperand);
                 assert(varTypeIsIntegral(intrin.op3));
                 if (intrin.op3->IsCnsIntOrI())
@@ -3347,14 +3369,35 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 // Handle op2
                 if (op2->OperIsHWIntrinsic())
                 {
-                    uint32_t maskSize = genTypeSize(node->GetSimdBaseType());
-                    uint32_t operSize = genTypeSize(op2->AsHWIntrinsic()->GetSimdBaseType());
-
-                    if ((maskSize == operSize) && IsInvariantInRange(op2, node) &&
-                        op2->isEmbeddedMaskingCompatibleHWIntrinsic())
+                    if (IsInvariantInRange(op2, node) && op2->isEmbeddedMaskingCompatibleHWIntrinsic())
                     {
-                        MakeSrcContained(node, op2);
-                        op2->MakeEmbMaskOp();
+                        uint32_t maskSize = genTypeSize(node->GetSimdBaseType());
+                        uint32_t operSize = genTypeSize(op2->AsHWIntrinsic()->GetSimdBaseType());
+                        if (maskSize == operSize)
+                        {
+                            // If the size of baseType of operation matches that of maskType, then contain
+                            // the operation
+                            MakeSrcContained(node, op2);
+                            op2->MakeEmbMaskOp();
+                        }
+                        else
+                        {
+                            // Else check if this operation has an auxiliary type that matches the
+                            // mask size.
+                            GenTreeHWIntrinsic* embOp = op2->AsHWIntrinsic();
+
+                            // For now, make sure that we get here only for intrinsics that we are
+                            // sure about to rely on auxiliary type's size.
+                            assert((embOp->GetHWIntrinsicId() == NI_Sve_ConvertToInt32) ||
+                                   (embOp->GetHWIntrinsicId() == NI_Sve_ConvertToUInt32));
+
+                            uint32_t auxSize = genTypeSize(embOp->GetAuxiliaryType());
+                            if (maskSize == auxSize)
+                            {
+                                MakeSrcContained(node, op2);
+                                op2->MakeEmbMaskOp();
+                            }
+                        }
                     }
                 }
 

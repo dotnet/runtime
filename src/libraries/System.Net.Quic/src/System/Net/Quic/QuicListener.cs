@@ -52,7 +52,7 @@ public sealed partial class QuicListener : IAsyncDisposable
     {
         if (!IsSupported)
         {
-            throw new PlatformNotSupportedException(SR.Format(SR.SystemNetQuic_PlatformNotSupported, MsQuicApi.NotSupportedReason));
+            throw new PlatformNotSupportedException(SR.Format(SR.SystemNetQuic_PlatformNotSupported, MsQuicApi.NotSupportedReason ?? "General loading failure."));
         }
 
         // Validate and fill in defaults for the options.
@@ -225,9 +225,9 @@ public sealed partial class QuicListener : IAsyncDisposable
         // https://github.com/microsoft/msquic/discussions/2705.
         // This will be assigned to before the linked CTS is cancelled
         TimeSpan handshakeTimeout = QuicDefaults.HandshakeTimeout;
+        using CancellationTokenSource linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_disposeCts.Token, connection.ConnectionShutdownToken);
         try
         {
-            using CancellationTokenSource linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_disposeCts.Token, connection.ConnectionShutdownToken);
             cancellationToken = linkedCts.Token;
             // Initial timeout for retrieving connection options.
             linkedCts.CancelAfter(handshakeTimeout);
@@ -249,7 +249,7 @@ public sealed partial class QuicListener : IAsyncDisposable
                 await connection.DisposeAsync().ConfigureAwait(false);
             }
         }
-        catch (OperationCanceledException) when (connection.ConnectionShutdownToken.IsCancellationRequested)
+        catch (OperationCanceledException) when (connection.ConnectionShutdownToken.IsCancellationRequested && !linkedCts.IsCancellationRequested)
         {
             // Connection closed by peer
             if (NetEventSource.Log.IsEnabled())
