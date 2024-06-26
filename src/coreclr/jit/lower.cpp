@@ -2018,7 +2018,7 @@ void Lowering::LowerArgsForCall(GenTreeCall* call)
 //
 void Lowering::LegalizeArgPlacement(GenTreeCall* call)
 {
-    size_t numMarked = MarkCallPutArgNodes(call);
+    size_t numMarked = MarkCallPutArgAndFieldListNodes(call);
 
     // We currently do not try to resort the PUTARG_STK nodes, but rather just
     // assert here that they are ordered.
@@ -2081,7 +2081,7 @@ void Lowering::LegalizeArgPlacement(GenTreeCall* call)
 
             // For FEATURE_FIXED_OUT_ARGS: all PUTARG nodes must be moved after the interfering call
             // For !FEATURE_FIXED_OUT_ARGS: only PUTARG_REG nodes must be moved after the interfering call
-            if (FEATURE_FIXED_OUT_ARGS || cur->OperIs(GT_PUTARG_REG))
+            if (FEATURE_FIXED_OUT_ARGS || cur->OperIs(GT_FIELD_LIST, GT_PUTARG_REG))
             {
                 JITDUMP("Relocating [%06u] after [%06u]\n", Compiler::dspTreeID(cur),
                         Compiler::dspTreeID(insertionPoint));
@@ -2896,7 +2896,7 @@ void Lowering::InsertProfTailCallHook(GenTreeCall* call, GenTree* insertionPoint
 //
 GenTree* Lowering::FindEarliestPutArg(GenTreeCall* call)
 {
-    size_t numMarkedNodes = MarkCallPutArgNodes(call);
+    size_t numMarkedNodes = MarkCallPutArgAndFieldListNodes(call);
 
     if (numMarkedNodes <= 0)
     {
@@ -2922,28 +2922,32 @@ GenTree* Lowering::FindEarliestPutArg(GenTreeCall* call)
 }
 
 //------------------------------------------------------------------------
-// MarkCallPutArgNodes: Mark all PUTARG_* operand nodes corresponding to a
-// call.
+// MarkCallPutArgNodes: Mark all operand FIELD_LIST and PUTARG nodes
+// corresponding to a call.
 //
 // Arguments:
-//    call - the call
+//   call - the call
 //
 // Returns:
-//    The number of nodes marked.
+//   The number of nodes marked.
 //
-size_t Lowering::MarkCallPutArgNodes(GenTreeCall* call)
+// Remarks:
+//   FIELD_LIST operands are marked too, and their PUTARG operands are in turn
+//   marked as well.
+//
+size_t Lowering::MarkCallPutArgAndFieldListNodes(GenTreeCall* call)
 {
     size_t numMarkedNodes = 0;
     for (CallArg& arg : call->gtArgs.Args())
     {
         if (arg.GetEarlyNode() != nullptr)
         {
-            numMarkedNodes += MarkPutArgNodes(arg.GetEarlyNode());
+            numMarkedNodes += MarkPutArgAndFieldListNodes(arg.GetEarlyNode());
         }
 
         if (arg.GetLateNode() != nullptr)
         {
-            numMarkedNodes += MarkPutArgNodes(arg.GetLateNode());
+            numMarkedNodes += MarkPutArgAndFieldListNodes(arg.GetLateNode());
         }
     }
 
@@ -2951,32 +2955,34 @@ size_t Lowering::MarkCallPutArgNodes(GenTreeCall* call)
 }
 
 //------------------------------------------------------------------------
-// MarkPutArgNodes: Mark all direct operand PUTARG nodes with a LIR mark.
+// MarkPutArgAndFieldListNodes: Mark all operand FIELD_LIST and PUTARG nodes
+// with a LIR mark.
 //
 // Arguments:
-//    node - the node (either a field list or PUTARG node)
+//   node - the node (either a FIELD_LIST or PUTARG operand)
 //
 // Returns:
-//    The number of marks added.
+//   The number of marks added.
 //
-size_t Lowering::MarkPutArgNodes(GenTree* node)
+// Remarks:
+//   FIELD_LIST operands are marked too, and their PUTARG operands are in turn
+//   marked as well.
+//
+size_t Lowering::MarkPutArgAndFieldListNodes(GenTree* node)
 {
     assert(node->OperIsPutArg() || node->OperIsFieldList());
 
-    size_t result = 0;
+    assert((node->gtLIRFlags & LIR::Flags::Mark) == 0);
+    node->gtLIRFlags |= LIR::Flags::Mark;
+
+    size_t result = 1;
     if (node->OperIsFieldList())
     {
         for (GenTreeFieldList::Use& operand : node->AsFieldList()->Uses())
         {
             assert(operand.GetNode()->OperIsPutArg());
-            result += MarkPutArgNodes(operand.GetNode());
+            result += MarkPutArgAndFieldListNodes(operand.GetNode());
         }
-    }
-    else
-    {
-        assert((node->gtLIRFlags & LIR::Flags::Mark) == 0);
-        node->gtLIRFlags |= LIR::Flags::Mark;
-        result++;
     }
 
     return result;
