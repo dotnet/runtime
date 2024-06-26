@@ -208,8 +208,6 @@ extends:
               - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
                 parameters:
                   name: $(osGroup)$(osSubgroup)_$(archType)
-            extraVariablesTemplates:
-              - template: /eng/pipelines/coreclr/templates/crossdac-hostarch.yml
 
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -242,8 +240,6 @@ extends:
               - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
                 parameters:
                   name: $(osGroup)$(osSubgroup)_$(archType)
-            extraVariablesTemplates:
-              - template: /eng/pipelines/coreclr/templates/crossdac-hostarch.yml
 
       #
       # Build and Pack CrossDac
