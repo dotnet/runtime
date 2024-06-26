@@ -1759,6 +1759,7 @@ public:
     inline bool IsVectorNaN(var_types simdBaseType) const;
     inline bool IsVectorCreate() const;
     inline bool IsVectorAllBitsSet() const;
+    inline bool IsVectorPerElementMask(var_types simdBaseType, unsigned simdSize) const;
     inline bool IsVectorBroadcast(var_types simdBaseType) const;
     inline bool IsMaskAllBitsSet() const;
     inline bool IsVectorConst();
@@ -9629,6 +9630,62 @@ inline bool GenTree::IsVectorAllBitsSet() const
 #endif // FEATURE_SIMD
 
     return false;
+}
+
+//-------------------------------------------------------------------
+// IsVectorPerElementMask: returns true if this node is a vector constant per-element mask
+// (every element has either all bits set or none of them).
+//
+// Returns:
+//     True if this node is a vector constant per-element mask
+//
+inline bool GenTree::IsVectorPerElementMask(var_types simdBaseType, unsigned simdSize) const
+{
+#ifdef FEATURE_SIMD
+    if (IsCnsVec())
+    {
+        const GenTreeVecCon* vecCon = AsVecCon();
+        if (vecCon->IsAllBitsSet() || vecCon->IsZero())
+        {
+            return true;
+        }
+
+        int elementCount = vecCon->ElementCount(simdSize, simdBaseType);
+
+        switch (simdBaseType)
+        {
+            case TYP_BYTE:
+            case TYP_UBYTE:
+                return AreAllElementsAllBitsSetOrZero(&vecCon->gtSimdVal.u8[0], elementCount);
+            case TYP_SHORT:
+            case TYP_USHORT:
+                return AreAllElementsAllBitsSetOrZero(&vecCon->gtSimdVal.u16[0], elementCount);
+            case TYP_INT:
+            case TYP_UINT:
+            case TYP_FLOAT:
+                return AreAllElementsAllBitsSetOrZero(&vecCon->gtSimdVal.u32[0], elementCount);
+            case TYP_LONG:
+            case TYP_ULONG:
+            case TYP_DOUBLE:
+                return AreAllElementsAllBitsSetOrZero(&vecCon->gtSimdVal.u64[0], elementCount);
+            default:
+                unreached();
+        }
+    }
+#endif // FEATURE_SIMD
+
+    return false;
+}
+
+template <typename T>
+bool AreAllElementsAllBitsSetOrZero(T* array, size_t size)
+{
+    for (size_t i = 0; i < size; i++)
+    {
+        if (array[i] != default(T) && array[i] != ~default(T))
+            return false;
+    }
+    return true;
 }
 
 //-------------------------------------------------------------------

@@ -2998,68 +2998,10 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* node)
     // we can optimize the entire conditional select to
     // a single BlendVariable instruction (if supported by the architecture)
 
-    // Also if the condition vector is a constant we can actually find out whether it is a per-element mask
-    bool constPerElementMask = false;
-    if (op1->OperIsConst())
-    {
-        // All vector creation calls gets lowered to GT_CNS_VEC
-        assert(op1->OperGet() == GT_CNS_VEC);
-
-        GenTreeVecCon* vecCon = op1->AsVecCon();
-        switch (simdBaseType)
-        {
-            case TYP_BYTE:
-            case TYP_UBYTE:
-                for (size_t i = 0; i < simdSize; i++)
-                {
-                    if (vecCon->gtSimdVal.u8[i] != UINT8_MAX && vecCon->gtSimdVal.u8[i] != UINT8_MIN)
-                        goto perElementMaskCheckEnd;
-                }
-
-                constPerElementMask = true;
-                break;
-            case TYP_SHORT:
-            case TYP_USHORT:
-                for (size_t i = 0; i < simdSize / 2; i++)
-                {
-                    if (vecCon->gtSimdVal.u16[i] != UINT16_MAX && vecCon->gtSimdVal.u16[i] != UINT16_MIN)
-                        goto perElementMaskCheckEnd;
-                }
-
-                constPerElementMask = true;
-                break;
-            case TYP_INT:
-            case TYP_UINT:
-            case TYP_FLOAT:
-                for (size_t i = 0; i < simdSize / 4; i++)
-                {
-                    if (vecCon->gtSimdVal.u32[i] != UINT32_MAX && vecCon->gtSimdVal.u32[i] != UINT32_MIN)
-                        goto perElementMaskCheckEnd;
-                }
-
-                constPerElementMask = true;
-                break;
-            case TYP_LONG:
-            case TYP_ULONG:
-            case TYP_DOUBLE:
-                for (size_t i = 0; i < simdSize / 8; i++)
-                {
-                    if (vecCon->gtSimdVal.u64[i] != UINT64_MAX && vecCon->gtSimdVal.u64[i] != UINT64_MIN)
-                        goto perElementMaskCheckEnd;
-                }
-
-                constPerElementMask = true;
-                break;
-            default:
-                unreached();
-        }
-    }
-
-    perElementMaskCheckEnd:
     // TODO-XARCH-AVX512 Use VPBLENDM* and take input directly from K registers if cond is from MoveMaskToVectorSpecial.
     // First, determine if the condition is a per-element mask
     if (op1->OperIsHWIntrinsic() && HWIntrinsicInfo::ReturnsPerElementMask(op1->AsHWIntrinsic()->GetHWIntrinsicId()) ||
-        constPerElementMask)
+        op1->IsVectorPerElementMask())
     {
         // Next, determine if the target architecture supports BlendVariable
         NamedIntrinsic blendVariableId = NI_Illegal;
