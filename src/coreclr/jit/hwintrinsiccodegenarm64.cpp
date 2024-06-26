@@ -853,22 +853,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         {
                             // This generates an unpredicated version
                             // Implicitly predicated should be taken care above `intrin.op2->IsEmbMaskOp()`
-                            if (isRMW)
-                            {
-                                if (targetReg != op1Reg)
-                                {
-                                    assert(targetReg != op2Reg);
-
-                                    GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op1Reg,
-                                                              /* canSkip */ true);
-                                }
-
-                                GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op2Reg, opt);
-                            }
-                            else
-                            {
-                                GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
-                            }
+                            GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
                         }
                     }
                     else if (isRMW)
