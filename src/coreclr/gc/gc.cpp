@@ -48441,12 +48441,11 @@ HRESULT GCHeap::Initialize()
     uint32_t max_nhp_from_config = (uint32_t)GCConfig::GetMaxHeapCount();
 
 #ifndef MULTIPLE_HEAPS
-    GCConfig::SetServerGC(false);
-#else //!MULTIPLE_HEAPS
 #ifdef USE_REGIONS
     free_list_snapshot::init();
 #endif
-    
+    GCConfig::SetServerGC(false);
+#else //!MULTIPLE_HEAPS
     GCConfig::SetServerGC(true);
     AffinitySet config_affinity_set;
     GCConfigStringHolder cpu_index_ranges_holder(GCConfig::GetGCHeapAffinitizeRanges());
