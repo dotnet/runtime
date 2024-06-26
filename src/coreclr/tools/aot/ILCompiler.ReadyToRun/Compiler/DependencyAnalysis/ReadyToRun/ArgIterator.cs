@@ -1485,7 +1485,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                                     }
                                     else
                                     {
-                                        info = RISCV64PassStructInRegister.GetRiscV64PassFpStructInRegistersInfo(_argTypeHandle.GetRuntimeTypeHandle());
+                                        info = RiscV64PassFpStructInRegisters.GetRiscV64PassFpStructInRegistersInfo(_argTypeHandle.GetRuntimeTypeHandle());
                                         if (info.flags != FpStruct.UseIntCallConv)
                                         {
                                             cFPRegs = ((info.flags & FpStruct.BothFloat) != 0) ? 2 : 1;

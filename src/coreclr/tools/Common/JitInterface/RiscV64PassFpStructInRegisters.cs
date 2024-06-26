@@ -9,7 +9,7 @@ using static Internal.JitInterface.FpStruct;
 
 namespace Internal.JitInterface
 {
-    internal static class RISCV64PassStructInRegister
+    internal static class RiscV64PassFpStructInRegisters
     {
         private const int
             ENREGISTERED_PARAMTYPE_MAXSIZE = 16,
