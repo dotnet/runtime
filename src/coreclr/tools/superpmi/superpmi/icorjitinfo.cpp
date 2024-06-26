@@ -1251,10 +1251,10 @@ void MyICJI::getSwiftLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_SWIFT_LOWE
     jitInstance->mc->repGetSwiftLowering(structHnd, pLowering);
 }
 
-uint32_t MyICJI::getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE structHnd)
+FpStructInRegistersInfo MyICJI::getLoongArch64PassFpStructInRegistersInfo(CORINFO_CLASS_HANDLE structHnd)
 {
-    jitInstance->mc->cr->AddCall("getLoongArch64PassStructInRegisterFlags");
-    return jitInstance->mc->repGetLoongArch64PassStructInRegisterFlags(structHnd);
+    jitInstance->mc->cr->AddCall("getLoongArch64PassFpStructInRegistersInfo");
+    return jitInstance->mc->repGetLoongArch64PassFpStructInRegistersInfo(structHnd);
 }
 
 FpStructInRegistersInfo MyICJI::getRiscV64PassFpStructInRegistersInfo(CORINFO_CLASS_HANDLE structHnd)

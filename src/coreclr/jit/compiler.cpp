@@ -927,24 +927,7 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
         howToReturnStruct   = SPK_ByReference;
         useType             = TYP_UNKNOWN;
     }
-#elif defined(TARGET_LOONGARCH64)
-    if (structSize <= (TARGET_POINTER_SIZE * 2))
-    {
-        uint32_t floatFieldFlags = info.compCompHnd->getLoongArch64PassStructInRegisterFlags(clsHnd);
-
-        if ((floatFieldFlags & STRUCT_FLOAT_FIELD_ONLY_ONE) != 0)
-        {
-            howToReturnStruct = SPK_PrimitiveType;
-            useType           = (structSize > 4) ? TYP_DOUBLE : TYP_FLOAT;
-        }
-        else if (floatFieldFlags & (STRUCT_HAS_FLOAT_FIELDS_MASK ^ STRUCT_FLOAT_FIELD_ONLY_ONE))
-        {
-            howToReturnStruct = SPK_ByValue;
-            useType           = TYP_STRUCT;
-        }
-    }
-
-#elif defined(TARGET_RISCV64)
+#elif defined(TARGET_RISCV64) | defined(TARGET_LOONGARCH64)
     if (structSize <= (TARGET_POINTER_SIZE * 2))
     {
         FpStructInRegistersInfo info = GetPassFpStructInRegistersInfo(clsHnd);

@@ -234,7 +234,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public int m_byteStackSize;      // Stack size in bytes
 
         public uint m_floatFlags;        // struct with two-fields can be passed by registers.
-        public FpStructInRegistersInfo m_structFields; // RISC-V - Struct field info when using floating-point register(s)
+        public FpStructInRegistersInfo m_structFields; // RISC-V and LoongArch - Struct field info when using floating-point register(s)
 
         // Initialize to represent a non-placed argument (no register or stack slots referenced).
         public void Init()
@@ -1331,18 +1331,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 case TargetArchitecture.LoongArch64:
                     {
                         int cFPRegs = 0;
-                        uint floatFieldFlags = (uint)StructFloatFieldInfoFlags.STRUCT_NO_FLOAT_FIELD;
+                        FpStructInRegistersInfo info = new FpStructInRegistersInfo{};
                         _hasArgLocDescForStructInRegs = false;
 
                         switch (argType)
                         {
                             case CorElementType.ELEMENT_TYPE_R4:
-                                // 32-bit floating point argument.
-                                cFPRegs = 1;
-                                break;
-
                             case CorElementType.ELEMENT_TYPE_R8:
-                                // 64-bit floating point argument.
+                                // Floating point argument
                                 cFPRegs = 1;
                                 break;
 
@@ -1355,14 +1351,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                                     }
                                     else
                                     {
-                                        floatFieldFlags = LoongArch64PassStructInRegister.GetLoongArch64PassStructInRegisterFlags(_argTypeHandle.GetRuntimeTypeHandle());
-                                        if ((floatFieldFlags & (uint)StructFloatFieldInfoFlags.STRUCT_FLOAT_FIELD_ONLY_TWO) != 0)
+                                        info = LoongArch64PassStructInRegister.GetLoongArch64PassFpStructInRegistersInfo(_argTypeHandle.GetRuntimeTypeHandle());
+                                        if (info.flags != FpStruct.UseIntCallConv)
                                         {
-                                            cFPRegs = 2;
-                                        }
-                                        else if ((floatFieldFlags & (uint)StructFloatFieldInfoFlags.STRUCT_HAS_FLOAT_FIELDS_MASK) != 0)
-                                        {
-                                            cFPRegs = 1;
+                                            cFPRegs = ((info.flags & FpStruct.BothFloat) != 0) ? 2 : 1;
                                         }
                                     }
 
@@ -1378,10 +1370,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                         if (cFPRegs > 0 && !IsVarArg)
                         {
-                            if (isValueType && ((floatFieldFlags & (uint)StructFloatFieldInfoFlags.STRUCT_HAS_ONE_FLOAT_MASK) != 0))
+                            if ((info.flags & (FpStruct.FloatInt | FpStruct.IntFloat)) != 0)
                             {
                                 Debug.Assert(cFPRegs == 1);
-                                if ((_loongarch64IdxFPReg < 8) && (_loongarch64IdxGenReg < 8))
+                                if ((_loongarch64IdxFPReg < _transitionBlock.NumArgumentRegisters) && (_loongarch64IdxGenReg < _transitionBlock.NumArgumentRegisters))
                                 {
                                     _argLocDescForStructInRegs = new ArgLocDesc();
                                     _argLocDescForStructInRegs.m_idxFloatReg = _loongarch64IdxFPReg;
@@ -1391,16 +1383,16 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                                     _argLocDescForStructInRegs.m_cGenReg = 1;
 
                                     _hasArgLocDescForStructInRegs = true;
-                                    _argLocDescForStructInRegs.m_floatFlags = floatFieldFlags;
+                                    _argLocDescForStructInRegs.m_structFields = info;
 
                                     int argOfsInner = 0;
-                                    if ((floatFieldFlags & (uint)StructFloatFieldInfoFlags.STRUCT_FLOAT_FIELD_SECOND) != 0)
+                                    if ((info.flags & FpStruct.IntFloat) != 0)
                                     {
-                                        argOfsInner = _transitionBlock.OffsetOfArgumentRegisters + _loongarch64IdxGenReg * 8;
+                                        argOfsInner = _transitionBlock.OffsetOfArgumentRegisters + _loongarch64IdxGenReg * _transitionBlock.PointerSize;
                                     }
                                     else
                                     {
-                                        argOfsInner = _transitionBlock.OffsetOfFloatArgumentRegisters + _loongarch64IdxFPReg * 8;
+                                        argOfsInner = _transitionBlock.OffsetOfFloatArgumentRegisters + _loongarch64IdxFPReg * _transitionBlock.FloatRegisterSize;
                                     }
 
                                     _loongarch64IdxFPReg++;
@@ -1408,11 +1400,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                                     return argOfsInner;
                                 }
                             }
-                            else if (cFPRegs + _loongarch64IdxFPReg <= 8)
+                            else if (cFPRegs + _loongarch64IdxFPReg <= _transitionBlock.NumArgumentRegisters)
                             {
                                 // Each floating point register in the argument area is 8 bytes.
-                                int argOfsInner = _transitionBlock.OffsetOfFloatArgumentRegisters + _loongarch64IdxFPReg * 8;
-                                if (floatFieldFlags == (uint)StructFloatFieldInfoFlags.STRUCT_FLOAT_FIELD_ONLY_TWO)
+                                int argOfsInner = _transitionBlock.OffsetOfFloatArgumentRegisters + _loongarch64IdxFPReg * _transitionBlock.FloatRegisterSize;
+                                const FpStruct twoFloats = FpStruct.BothFloat
+                                    | (FpStruct)(2 << (int)FpStruct.PosSizeShift1st)
+                                    | (FpStruct)(2 << (int)FpStruct.PosSizeShift2nd);
+                                if (info.flags == twoFloats)
                                 {
                                     // struct with two single-float fields.
                                     _argLocDescForStructInRegs = new ArgLocDesc();
@@ -1422,7 +1417,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                                     Debug.Assert(argSize == 8);
 
                                     _hasArgLocDescForStructInRegs = true;
-                                    _argLocDescForStructInRegs.m_floatFlags = (uint)StructFloatFieldInfoFlags.STRUCT_FLOAT_FIELD_ONLY_TWO;
+                                    _argLocDescForStructInRegs.m_structFields = info;
                                 }
                                 _loongarch64IdxFPReg += cFPRegs;
                                 return argOfsInner;
@@ -1533,7 +1528,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                             else if (cFPRegs + _riscv64IdxFPReg <= _transitionBlock.NumArgumentRegisters)
                             {
                                 // Each floating point register in the argument area is 8 bytes.
-                                int argOfsInner = _transitionBlock.OffsetOfFloatArgumentRegisters + _riscv64IdxFPReg * 8;
+                                int argOfsInner = _transitionBlock.OffsetOfFloatArgumentRegisters + _riscv64IdxFPReg * _transitionBlock.FloatRegisterSize;
                                 const FpStruct twoFloats = FpStruct.BothFloat
                                     | (FpStruct)(2 << (int)FpStruct.PosSizeShift1st)
                                     | (FpStruct)(2 << (int)FpStruct.PosSizeShift2nd);

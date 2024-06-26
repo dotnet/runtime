@@ -2937,6 +2937,13 @@ FpStructInRegistersInfo MethodTable::GetRiscV64PassFpStructInRegistersInfo(TypeH
 FpStructInRegistersInfo MethodTable::GetLoongArch64PassFpStructInRegistersInfo(TypeHandle th)
 #endif
 {
+    if (th.GetSize() > ENREGISTERED_PARAMTYPE_MAXSIZE)
+    {
+        LOG((LF_JIT, LL_EVERYTHING, "FpStructInRegistersInfo: struct %s (%u bytes) is too big\n",
+            (!th.IsTypeDesc() ? th.AsMethodTable() : th.AsNativeValueType())->GetDebugClassName(), th.GetSize()));
+        return FpStructInRegistersInfo{};
+    }
+
     FpStructInRegistersInfo info = {};
     int nFields = 0;
     if (!FlattenFields(th, 0, info, nFields DEBUG_ARG(0)))

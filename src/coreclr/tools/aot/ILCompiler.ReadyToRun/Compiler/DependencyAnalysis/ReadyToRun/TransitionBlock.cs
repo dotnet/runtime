@@ -397,7 +397,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                             if (size <= EnregisteredReturnTypeIntegerMaxSize)
                             {
                                 if (IsLoongArch64)
-                                    fpReturnSize = LoongArch64PassStructInRegister.GetLoongArch64PassStructInRegisterFlags(thRetType.GetRuntimeTypeHandle()) & 0xff;
+                                    fpReturnSize = (uint)LoongArch64PassStructInRegister.GetLoongArch64PassFpStructInRegistersInfo(thRetType.GetRuntimeTypeHandle()).flags;
                                 else if (IsRiscV64)
                                     fpReturnSize = (uint)RiscV64PassFpStructInRegisters.GetRiscV64PassFpStructInRegistersInfo(thRetType.GetRuntimeTypeHandle()).flags;
                                 break;

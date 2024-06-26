@@ -6335,28 +6335,31 @@ void MethodContext::repGetSwiftLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_
     }
 }
 
-void MethodContext::recGetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE structHnd, DWORD value)
+void MethodContext::recGetLoongArch64PassFpStructInRegistersInfo(CORINFO_CLASS_HANDLE structHnd, FpStructInRegistersInfo value)
 {
-    if (GetLoongArch64PassStructInRegisterFlags == nullptr)
-        GetLoongArch64PassStructInRegisterFlags = new LightWeightMap<DWORDLONG, DWORD>();
+    if (GetLoongArch64PassFpStructInRegistersInfo == nullptr)
+        GetLoongArch64PassFpStructInRegistersInfo = new LightWeightMap<DWORDLONG, FpStructInRegistersInfo>();
 
     DWORDLONG key = CastHandle(structHnd);
 
-    GetLoongArch64PassStructInRegisterFlags->Add(key, value);
-    DEBUG_REC(dmpGetLoongArch64PassStructInRegisterFlags(key, value));
+    GetLoongArch64PassFpStructInRegistersInfo->Add(key, value);
+    DEBUG_REC(dmpGetLoongArch64PassFpStructInRegistersInfo(key, value));
 }
 
-void MethodContext::dmpGetLoongArch64PassStructInRegisterFlags(DWORDLONG key, DWORD value)
+void MethodContext::dmpGetLoongArch64PassFpStructInRegistersInfo(DWORDLONG key, FpStructInRegistersInfo value)
 {
-    printf("GetLoongArch64PassStructInRegisterFlags key %016" PRIX64 " value-%08X", key, value);
+    printf("GetLoongArch64PassFpStructInRegistersInfo key %016" PRIX64 " value-%#03x-"
+        "{%s, sizes={%u, %u}, offsets={%u, %u}, IntFieldKind=%s}\n",
+        key, value.flags,
+        value.FlagName(), value.Size1st(), value.Size2nd(), value.offset1st, value.offset2nd, value.IntFieldKindName());
 }
 
-DWORD MethodContext::repGetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE structHnd)
+FpStructInRegistersInfo MethodContext::repGetLoongArch64PassFpStructInRegistersInfo(CORINFO_CLASS_HANDLE structHnd)
 {
     DWORDLONG key = CastHandle(structHnd);
 
-    DWORD value = LookupByKeyOrMissNoMessage(GetLoongArch64PassStructInRegisterFlags, key);
-    DEBUG_REP(dmpGetLoongArch64PassStructInRegisterFlags(key, value));
+    FpStructInRegistersInfo value = LookupByKeyOrMissNoMessage(GetLoongArch64PassFpStructInRegistersInfo, key);
+    DEBUG_REP(dmpGetLoongArch64PassFpStructInRegistersInfo(key, value));
     return value;
 }
 
