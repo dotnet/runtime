@@ -44,7 +44,7 @@ namespace System.Runtime.CompilerServices
             if (totalSize > size)
                 throw new ArgumentException(SR.Argument_BadFieldForInitializeArray);
 
-            ref byte src = ref *(byte*)address;
+            ref byte src = ref *(byte*)address; // Ref is extending the lifetime of the static field.
             GC.KeepAlive(fldInfo);
 
             ref byte dst = ref MemoryMarshal.GetArrayDataReference(array);
@@ -116,7 +116,7 @@ namespace System.Runtime.CompilerServices
             }
 
             count = (int)(totalSize / targetTypeSize);
-            ref byte dataRef = ref *(byte*)data;
+            ref byte dataRef = ref *(byte*)data; // Ref is extending the lifetime of the static field.
             GC.KeepAlive(fldInfo);
 
             return ref dataRef;
