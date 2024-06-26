@@ -59,12 +59,10 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <TestConsoleAppSourceFiles Include="UseWindowsThreadPoolFalse.cs">
-      <DisabledFeatureSwitches>System.Threading.ThreadPool.UseWindowsThreadPool</DisabledFeatureSwitches>
-      <!-- https://github.com/dotnet/runtime/issues/101591 -->
-      <NativeAotIncompatible>true</NativeAotIncompatible>
+      <DisabledProperties>UseWindowsThreadPool</DisabledProperties>
     </TestConsoleAppSourceFiles>
     <TestConsoleAppSourceFiles Include="UseWindowsThreadPoolTrue.cs">
-      <EnabledFeatureSwitches>System.Threading.ThreadPool.UseWindowsThreadPool</EnabledFeatureSwitches>
+      <EnabledProperties>UseWindowsThreadPool</EnabledProperties>
     </TestConsoleAppSourceFiles>
   </ItemGroup>
 

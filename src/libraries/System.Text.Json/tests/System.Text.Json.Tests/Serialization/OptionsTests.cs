@@ -1174,10 +1174,10 @@ namespace System.Text.Json.Serialization.Tests
                 string effectiveMaxDepthAsStr = effectiveMaxDepth.ToString();
 
                 JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Serialize(myList, options));
-                Assert.Contains(effectiveMaxDepthAsStr, ex.ToString());
+                Assert.Contains(effectiveMaxDepthAsStr, ex.Message);
 
                 ex = Assert.Throws<JsonException>(() => JsonSerializer.Serialize(myList, newOptions));
-                Assert.Contains(effectiveMaxDepthAsStr, ex.ToString());
+                Assert.Contains(effectiveMaxDepthAsStr, ex.Message);
             }
 
             // Zero max depth
@@ -1219,7 +1219,7 @@ namespace System.Text.Json.Serialization.Tests
         public static void CopyConstructor_NullInput()
         {
             ArgumentNullException ex = Assert.Throws<ArgumentNullException>(() => new JsonSerializerOptions(null));
-            Assert.Contains("options", ex.ToString());
+            Assert.Contains("options", ex.Message);
         }
 
         [Fact]
