@@ -525,10 +525,10 @@
   <data name="XmlMoreThanOneReturnElementForMethodMessage" xml:space="preserve">
     <value>There is more than one 'return' child element specified for method '{0}'.</value>
   </data>
-  <data name="XmlMoreThanOneValyForParameterOfMethodTitle" xml:space="preserve">
+  <data name="XmlMoreThanOneValueForParameterOfMethodTitle" xml:space="preserve">
     <value>Method has more than one parameter for the XML element 'parameter'. There can only be one value specified for each parameter.</value>
   </data>
-  <data name="XmlMoreThanOneValyForParameterOfMethodMessage" xml:space="preserve">
+  <data name="XmlMoreThanOneValueForParameterOfMethodMessage" xml:space="preserve">
     <value>More than one value specified for parameter '{0}' of method '{1}'.</value>
   </data>
   <data name="XmlDuplicatePreserveMemberTitle" xml:space="preserve">

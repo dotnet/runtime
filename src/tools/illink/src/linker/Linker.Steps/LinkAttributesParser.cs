@@ -296,7 +296,7 @@ namespace Mono.Linker.Steps
 					goto default;
 
 				var diagnosticContext = new DiagnosticContext (new MessageOrigin (provider), diagnosticsEnabled: true, _context);
-				if (!_context.TypeNameResolver.TryResolveTypeName (svalue, diagnosticContext, out TypeReference? type, out _, needsAssemblyName: true)) {
+				if (!_context.TypeNameResolver.TryResolveTypeName (svalue, diagnosticContext, out TypeReference? type, out _, needsAssemblyName: false)) {
 					_context.LogError (GetMessageOriginForPosition (nav), DiagnosticId.CouldNotResolveCustomAttributeTypeValue, svalue);
 					return null;
 				}
