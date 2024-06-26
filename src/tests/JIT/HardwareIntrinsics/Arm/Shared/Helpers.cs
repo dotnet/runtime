@@ -196,7 +196,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             for (var i = v.Length - 1; i >= 0; i--)
             {
-                if (v[i] > 0)
+                if (v[i] != 0)
                 {
                     return i;
                 }
