@@ -169,7 +169,7 @@ int HWIntrinsicInfo::lookupIval(NamedIntrinsic id)
         case NI_Sve_Compute32BitAddresses:
             return 2;
         case NI_Sve_Compute64BitAddresses:
-            return 4;
+            return 3;
         case NI_Sve_Compute8BitAddresses:
             return 0;
         default:
