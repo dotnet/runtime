@@ -1411,24 +1411,6 @@ enum free_region_kind
 
 static_assert(count_free_region_kinds == FREE_REGION_KINDS, "Keep count_free_region_kinds in sync with FREE_REGION_KINDS, changing this is not a version breaking change.");
 
-enum snapshot_stage
-{
-    distribute_free_regions_start,
-    aggressive_end,
-    added_surplus,
-    moved_old_oom,
-    processed_balance,
-    sorted,
-    distribute_free_regions_end,
-};
-
-enum freelist_type
-{
-    free_regions_basic,
-    global_decommit_basic,
-    surplus_basic,
-};
-
 class region_free_list
 {
     friend class free_list_snapshot;
@@ -1470,6 +1452,30 @@ public:
 
 static_assert(sizeof(region_free_list) == sizeof(dac_region_free_list), "The DAC relies on the size of these two types matching for pointer arithmetic.");
 
+enum snapshot_stage
+{
+    distribute_free_regions_start = 1,
+    aggressive_end = 2,
+    added_surplus = 3,
+    moved_old_oom = 4,
+    processed_balance = 5,
+    sorted = 6,
+    distribute_free_regions_end = 7,
+    plan_should_sweep_start = 8,
+    plan_should_sweep_end = 9,
+    get_free_region_start = 10,
+    get_free_region_end = 11,
+    return_free_region_start = 12,
+    return_free_region_end = 13,
+};
+
+enum freelist_type
+{
+    free_regions_basic = 0x101,    // "1" 257
+    global_decommit_basic = 0x102, // "2" 258
+    surplus_basic = 0x103,         // "3" 259
+};
+
 class heap_segment_snapshot
 {
 public:
@@ -1489,8 +1495,18 @@ public:
     int age_in_free;
 };
 
-const int NUM_SNAPSHOTS = 10000;
-const int SNAPSHOT_SIZE = 3;
+template<size_t A, size_t B> struct TAssertEquality {
+    static_assert(A==B, "Not equal");
+    static constexpr bool _cResult = (A==B);
+};
+
+#ifdef HOST_64BIT
+static constexpr bool _sizeof_heapsegment_snapshot_equal = 
+    TAssertEquality<sizeof(heap_segment_snapshot), 72>::_cResult;
+#endif
+
+const int NUM_SNAPSHOTS = 1000;
+const int SNAPSHOT_SIZE = 50;
 
 class free_list_snapshot
 {
@@ -1524,6 +1540,15 @@ public:
     static void record(heap_segment_snapshot* dst, heap_segment* src);
     static void record(snapshot_stage stage, freelist_type type, region_free_list* free_list);
 };
+
+#ifdef HOST_64BIT
+static constexpr bool _sizeof_freelist_snapshot_symbolic_equal = 
+    TAssertEquality<sizeof(free_list_snapshot), 64 + (2 * SNAPSHOT_SIZE * sizeof(heap_segment_snapshot))>::_cResult;
+static constexpr bool _sizeof_freelist_snapshot_value_equal = 
+    TAssertEquality<sizeof(free_list_snapshot), 7264>::_cResult;
+static constexpr bool _sizeof_freelist_snapshot_buffer_equal = 
+    TAssertEquality<sizeof(free_list_snapshot) * NUM_SNAPSHOTS, 7264000>::_cResult;
+#endif
 #endif
 
 enum bookkeeping_element

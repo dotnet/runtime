@@ -11856,7 +11856,13 @@ void gc_heap::return_free_region (heap_segment* region)
     }
     clear_region_info (region);
 
+#ifndef MULTIPLE_HEAPS
+    free_list_snapshot::record(return_free_region_start, free_regions_basic, &free_regions[(int)basic_free_region]);
+#endif
     region_free_list::add_region_descending (region, free_regions);
+#ifndef MULTIPLE_HEAPS
+    free_list_snapshot::record(return_free_region_end, free_regions_basic, &free_regions[(int)basic_free_region]);
+#endif
 
     uint8_t* region_start = get_region_start (region);
     uint8_t* region_end = heap_segment_reserved (region);
@@ -11887,8 +11893,14 @@ heap_segment* gc_heap::get_free_region (int gen_number, size_t size)
 
     if (gen_number <= max_generation)
     {
+#ifndef MULTIPLE_HEAPS
+        free_list_snapshot::record(get_free_region_start, free_regions_basic, &free_regions[(int)basic_free_region]);
+#endif
         assert (size == 0);
         region = free_regions[basic_free_region].unlink_region_front();
+#ifndef MULTIPLE_HEAPS
+        free_list_snapshot::record(get_free_region_end, free_regions_basic, &free_regions[(int)basic_free_region]);
+#endif
     }
     else
     {
@@ -32532,6 +32544,9 @@ void gc_heap::plan_phase (int condemned_gen_number)
     dprintf(3,( " From %zx to %zx", (size_t)x, (size_t)end));
 
 #ifdef USE_REGIONS
+#ifndef MULTIPLE_HEAPS
+    free_list_snapshot::record(plan_should_sweep_start, free_regions_basic, &free_regions[(int)basic_free_region]);
+#endif
     if (should_sweep_in_plan (seg1))
     {
         sweep_region_in_plan (seg1, use_mark_list, mark_list_next, mark_list_index);
@@ -33104,6 +33119,12 @@ void gc_heap::plan_phase (int condemned_gen_number)
 
         x = find_next_marked (x, end, use_mark_list, mark_list_next, mark_list_index);
     }
+
+#ifdef USE_REGIONS
+#ifndef MULTIPLE_HEAPS
+    free_list_snapshot::record(plan_should_sweep_start, free_regions_basic, &free_regions[(int)basic_free_region]);
+#endif
+#endif
 
 #ifndef USE_REGIONS
     while (!pinned_plug_que_empty_p())
