@@ -463,6 +463,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             regNumber embMaskOp3Reg = REG_NA;
             regNumber falseReg      = op3Reg;
 
+            insOpts optEmb = opt;
+
             switch (intrinEmbMask.numOperands)
             {
                 case 3:
@@ -505,7 +507,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         case NI_Sve_ConvertToInt32:
                         case NI_Sve_ConvertToUInt32:
                         {
-                            opt = intrinEmbMask.baseType == TYP_DOUBLE ? INS_OPTS_D_TO_S : INS_OPTS_SCALABLE_S;
+                            optEmb = intrinEmbMask.baseType == TYP_DOUBLE ? INS_OPTS_D_TO_S : INS_OPTS_SCALABLE_S;
                             break;
                         }
 
@@ -534,7 +536,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                                 // If falseValue is zero, just zero out those lanes of targetReg using `movprfx`
                                 // and /Z
                                 GetEmitter()->emitIns_R_R_R(INS_sve_movprfx, emitSize, targetReg, maskReg, targetReg,
-                                                            opt, soptEmb);
+                                                            opt);
                             }
                         }
                         else if (emitter::isVectorRegister(embMaskOp1Reg) && (targetReg == embMaskOp1Reg))
@@ -545,7 +547,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
                             // We cannot use use `movprfx` here to move falseReg to targetReg because that will
                             // overwrite the value of embMaskOp1Reg which is present in targetReg.
-                            GetEmitter()->emitIns_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp1Reg, opt,
+                            GetEmitter()->emitIns_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp1Reg, optEmb,
                                                         soptEmb);
 
                             GetEmitter()->emitIns_R_R_R_R(INS_sve_sel, emitSize, targetReg, maskReg, targetReg,
@@ -560,7 +562,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         }
                     }
 
-                    GetEmitter()->emitIns_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp1Reg, opt, soptEmb);
+                    GetEmitter()->emitIns_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp1Reg, optEmb,
+                                                soptEmb);
                     break;
                 }
 
@@ -578,7 +581,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
                         // Finally, perform the actual "predicated" operation so that `targetReg` is the first operand
                         // and `embMaskOp2Reg` is the second operand.
-                        GetEmitter()->emitIns_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp2Reg, opt);
+                        GetEmitter()->emitIns_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp2Reg, optEmb);
                     }
                     else if (targetReg != falseReg)
                     {
@@ -593,7 +596,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                                 // If the embedded instruction supports optional mask operation, use the "unpredicated"
                                 // version of the instruction, followed by "sel" to select the active lanes.
                                 GetEmitter()->emitIns_R_R_R(insEmbMask, emitSize, targetReg, embMaskOp1Reg,
-                                                            embMaskOp2Reg, opt);
+                                                            embMaskOp2Reg, optEmb);
                             }
                             else
                             {
@@ -608,7 +611,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                                 GetEmitter()->emitIns_R_R(INS_sve_movprfx, EA_SCALABLE, targetReg, embMaskOp1Reg);
 
                                 GetEmitter()->emitIns_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp2Reg,
-                                                            opt);
+                                                            optEmb);
                             }
 
                             GetEmitter()->emitIns_R_R_R_R(INS_sve_sel, emitSize, targetReg, maskReg, targetReg,
@@ -625,13 +628,13 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
                         // Finally, perform the actual "predicated" operation so that `targetReg` is the first operand
                         // and `embMaskOp2Reg` is the second operand.
-                        GetEmitter()->emitIns_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp2Reg, opt);
+                        GetEmitter()->emitIns_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp2Reg, optEmb);
                     }
                     else
                     {
                         // Just perform the actual "predicated" operation so that `targetReg` is the first operand
                         // and `embMaskOp2Reg` is the second operand.
-                        GetEmitter()->emitIns_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp2Reg, opt);
+                        GetEmitter()->emitIns_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp2Reg, optEmb);
                     }
 
                     break;
@@ -800,7 +803,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
                     // Finally, perform the desired operation.
                     GetEmitter()->emitIns_R_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp2Reg,
-                                                  embMaskOp3Reg, opt);
+                                                  embMaskOp3Reg, optEmb);
 
                     break;
                 }
@@ -2139,9 +2142,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
             case NI_Sve_ExtractAfterLastScalar:
             case NI_Sve_ExtractLastScalar:
-                assert(HWIntrinsicInfo::IsEmbeddedMaskForScalarResultOperation(intrin.id));
-                assert(op1Reg != REG_NA); // this is the embedded mask
-                assert(op2Reg != REG_NA);
+                assert(HWIntrinsicInfo::IsEmbeddedMaskForScalarResult(intrin.id));
 
                 if (varTypeIsFloating(node))
                 {

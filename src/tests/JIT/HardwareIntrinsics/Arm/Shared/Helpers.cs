@@ -7316,5 +7316,164 @@ namespace JIT.HardwareIntrinsics.Arm
             return (index < rangeSize) ? first[start + index] : second[index - rangeSize];
         }
 
+        public static byte[] ExtractLastVector(byte[] value)
+        {
+            var count = Vector<byte>.Count;
+            var arr = new byte[count];
+            arr[0] = value[count - 1];
+            return arr;
+        }
+
+        public static double[] ExtractLastVector(double[] value)
+        {
+            var count = Vector<double>.Count;
+            var arr = new double[count];
+            arr[0] = value[count - 1];
+            return arr;
+        }
+
+        public static short[] ExtractLastVector(short[] value)
+        {
+            var count = Vector<short>.Count;
+            var arr = new short[count];
+            arr[0] = value[count - 1];
+            return arr;
+        }
+
+        public static int[] ExtractLastVector(int[] value)
+        {
+            var count = Vector<int>.Count;
+            var arr = new int[count];
+            arr[0] = value[count - 1];
+            return arr;
+        }
+
+        public static long[] ExtractLastVector(long[] value)
+        {
+            var count = Vector<long>.Count;
+            var arr = new long[count];
+            arr[0] = value[count - 1];
+            return arr;
+        }
+
+        public static sbyte[] ExtractLastVector(sbyte[] value)
+        {
+            var count = Vector<sbyte>.Count;
+            var arr = new sbyte[count];
+            arr[0] = value[count - 1];
+            return arr;
+        }
+
+        public static float[] ExtractLastVector(float[] value)
+        {
+            var count = Vector<float>.Count;
+            var arr = new float[count];
+            arr[0] = value[count - 1];
+            return arr;
+        }
+
+        public static ushort[] ExtractLastVector(ushort[] value)
+        {
+            var count = Vector<ushort>.Count;
+            var arr = new ushort[count];
+            arr[0] = value[count - 1];
+            return arr;
+        }
+
+        public static uint[] ExtractLastVector(uint[] value)
+        {
+            var count = Vector<uint>.Count;
+            var arr = new uint[count];
+            arr[0] = value[count - 1];
+            return arr;
+        }
+        
+        public static ulong[] ExtractLastVector(ulong[] value)
+        {
+            var count = Vector<ulong>.Count;
+            var arr = new ulong[count];
+            arr[0] = value[count - 1];
+            return arr;
+        }
+
+        public static byte[] ExtractAfterLastVector(byte[] value)
+        {
+            var count = Vector<byte>.Count;
+            var arr = new byte[count];
+            arr[0] = value[0];
+            return arr;
+        }
+
+        public static double[] ExtractAfterLastVector(double[] value)
+        {
+            var count = Vector<double>.Count;
+            var arr = new double[count];
+            arr[0] = value[0];
+            return arr;
+        }
+
+        public static short[] ExtractAfterLastVector(short[] value)
+        {
+            var count = Vector<short>.Count;
+            var arr = new short[count];
+            arr[0] = value[0];
+            return arr;
+        }
+
+        public static int[] ExtractAfterLastVector(int[] value)
+        {
+            var count = Vector<int>.Count;
+            var arr = new int[count];
+            arr[0] = value[0];
+            return arr;
+        }
+
+        public static long[] ExtractAfterLastVector(long[] value)
+        {
+            var count = Vector<long>.Count;
+            var arr = new long[count];
+            arr[0] = value[count - 1];
+            return arr;
+        }
+
+        public static sbyte[] ExtractAfterLastVector(sbyte[] value)
+        {
+            var count = Vector<sbyte>.Count;
+            var arr = new sbyte[count];
+            arr[0] = value[0];
+            return arr;
+        }
+
+        public static float[] ExtractAfterLastVector(float[] value)
+        {
+            var count = Vector<float>.Count;
+            var arr = new float[count];
+            arr[0] = value[0];
+            return arr;
+        }
+
+        public static ushort[] ExtractAfterLastVector(ushort[] value)
+        {
+            var count = Vector<ushort>.Count;
+            var arr = new ushort[count];
+            arr[0] = value[0];
+            return arr;
+        }
+
+        public static uint[] ExtractAfterLastVector(uint[] value)
+        {
+            var count = Vector<uint>.Count;
+            var arr = new uint[count];
+            arr[0] = value[0];
+            return arr;
+        }
+        
+        public static ulong[] ExtractAfterLastVector(ulong[] value)
+        {
+            var count = Vector<ulong>.Count;
+            var arr = new ulong[count];
+            arr[0] = value[0];
+            return arr;
+        }
     }
 }

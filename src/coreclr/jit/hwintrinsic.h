@@ -934,7 +934,7 @@ struct HWIntrinsicInfo
     }
 
     // Checks if the intrinsic has an embedded mask operation and the intrinsic returns a scalar.
-    static bool IsEmbeddedMaskForScalarResultOperation(NamedIntrinsic id)
+    static bool IsEmbeddedMaskForScalarResult(NamedIntrinsic id)
     {
         if (IsEmbeddedMaskedOperation(id))
         {

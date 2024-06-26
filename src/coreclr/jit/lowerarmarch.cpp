@@ -1331,8 +1331,10 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                 var_types   simdType        = Compiler::getSIMDTypeForSize(simdSize);
                 GenTree*    trueMask        = comp->gtNewSimdAllTrueMaskNode(simdBaseJitType, simdSize);
 
-
-                if (HWIntrinsicInfo::IsEmbeddedMaskForScalarResultOperation(intrinsicId))
+                // The instruction uses "predicate" to pick lanes, but at the same time returns a scalar result.
+                // As such, we cannot wrap it inside ConditionalSelect because that node operates on TYP_SIMD.
+                // Hence, we will just add an operand so that we have a predicate register for such instructions.
+                if (HWIntrinsicInfo::IsEmbeddedMaskForScalarResult(intrinsicId))
                 {
                     // Create the same node with an additional operand to pass the mask.
                     GenTreeHWIntrinsic* newNode =
