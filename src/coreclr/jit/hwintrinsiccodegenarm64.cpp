@@ -830,15 +830,10 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                                 {
                                     assert(targetReg != op1Reg);
 
-                                    instruction insMov = INS_mov;
+                                    assert(GetEmitter()->isPredicateRegister(targetReg) &&
+                                           GetEmitter()->isPredicateRegister(op2Reg));
 
-                                    if (GetEmitter()->isPredicateRegister(targetReg) &&
-                                        GetEmitter()->isPredicateRegister(op2Reg))
-                                    {
-                                        insMov = INS_sve_mov;
-                                    }
-
-                                    GetEmitter()->emitIns_Mov(insMov, emitTypeSize(node), targetReg, op2Reg,
+                                    GetEmitter()->emitIns_Mov(INS_sve_mov, emitTypeSize(node), targetReg, op2Reg,
                                                               /* canSkip */ true);
                                 }
 
