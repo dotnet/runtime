@@ -128,33 +128,49 @@ namespace Microsoft.Extensions.Logging.EventSource
         /// FormattedMessage() is called when ILogger.Log() is called. and the FormattedMessage keyword is active
         /// This only gives you the human readable formatted message.
         /// </summary>
-        [Event(1, Keywords = Keywords.FormattedMessage, Level = EventLevel.LogAlways)]
+        [Event(1, Keywords = Keywords.FormattedMessage, Level = EventLevel.LogAlways, Version = 2)]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = WriteEventCoreSuppressionJustification)]
-        internal unsafe void FormattedMessage(LogLevel Level, int FactoryID, string LoggerName, int EventId, string? EventName, string FormattedMessage)
+        internal unsafe void FormattedMessage(
+            LogLevel Level,
+            int FactoryID,
+            string LoggerName,
+            int EventId,
+            string? EventName,
+            string? FormattedMessage,
+            string ActivityTraceId,
+            string ActivitySpanId,
+            string ActivityTraceFlags)
         {
-            if (IsEnabled())
+            Debug.Assert(LoggerName != null);
+            Debug.Assert(ActivityTraceId != null);
+            Debug.Assert(ActivitySpanId != null);
+            Debug.Assert(ActivityTraceFlags != null);
+
+            EventName ??= string.Empty;
+            FormattedMessage ??= string.Empty;
+
+            fixed (char* loggerName = LoggerName)
+            fixed (char* eventName = EventName)
+            fixed (char* formattedMessage = FormattedMessage)
+            fixed (char* activityTraceId = ActivityTraceId)
+            fixed (char* activitySpanId = ActivitySpanId)
+            fixed (char* activityTraceFlags = ActivityTraceFlags)
             {
-                LoggerName ??= "";
-                EventName ??= "";
-                FormattedMessage ??= "";
+                const int eventDataCount = 9;
+                EventData* eventData = stackalloc EventData[eventDataCount];
 
-                fixed (char* loggerName = LoggerName)
-                fixed (char* eventName = EventName)
-                fixed (char* formattedMessage = FormattedMessage)
-                {
-                    const int eventDataCount = 6;
-                    EventData* eventData = stackalloc EventData[eventDataCount];
+                SetEventData(ref eventData[0], ref Level);
+                SetEventData(ref eventData[1], ref FactoryID);
+                SetEventData(ref eventData[2], ref LoggerName, loggerName);
+                SetEventData(ref eventData[3], ref EventId);
+                SetEventData(ref eventData[4], ref EventName, eventName);
+                SetEventData(ref eventData[5], ref FormattedMessage, formattedMessage);
+                SetEventData(ref eventData[6], ref ActivityTraceId, activityTraceId);
+                SetEventData(ref eventData[7], ref ActivitySpanId, activitySpanId);
+                SetEventData(ref eventData[8], ref ActivityTraceFlags, activityTraceFlags);
 
-                    SetEventData(ref eventData[0], ref Level);
-                    SetEventData(ref eventData[1], ref FactoryID);
-                    SetEventData(ref eventData[2], ref LoggerName, loggerName);
-                    SetEventData(ref eventData[3], ref EventId);
-                    SetEventData(ref eventData[4], ref EventName, eventName);
-                    SetEventData(ref eventData[5], ref FormattedMessage, formattedMessage);
-
-                    WriteEventCore(1, eventDataCount, eventData);
-                }
+                WriteEventCore(1, eventDataCount, eventData);
             }
         }
 
@@ -162,16 +178,31 @@ namespace Microsoft.Extensions.Logging.EventSource
         /// Message() is called when ILogger.Log() is called. and the Message keyword is active
         /// This gives you the logged information in a programmatic format (arguments are key-value pairs)
         /// </summary>
-        [Event(2, Keywords = Keywords.Message, Level = EventLevel.LogAlways)]
+        [Event(2, Keywords = Keywords.Message, Level = EventLevel.LogAlways, Version = 2)]
         [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(KeyValuePair<string, string>))]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = WriteEventDynamicDependencySuppressionJustification)]
-        internal void Message(LogLevel Level, int FactoryID, string LoggerName, int EventId, string? EventName, ExceptionInfo Exception, IEnumerable<KeyValuePair<string, string?>> Arguments)
+        internal void Message(
+            LogLevel Level,
+            int FactoryID,
+            string LoggerName,
+            int EventId,
+            string? EventName,
+            ExceptionInfo Exception,
+            IEnumerable<KeyValuePair<string, string?>> Arguments,
+            string ActivityTraceId,
+            string ActivitySpanId,
+            string ActivityTraceFlags)
         {
-            if (IsEnabled())
-            {
-                WriteEvent(2, Level, FactoryID, LoggerName, EventId, EventName, Exception, Arguments);
-            }
+            Debug.Assert(LoggerName != null);
+            Debug.Assert(Exception != null);
+            Debug.Assert(ActivityTraceId != null);
+            Debug.Assert(ActivitySpanId != null);
+            Debug.Assert(ActivityTraceFlags != null);
+
+            EventName ??= string.Empty;
+
+            WriteEvent(2, Level, FactoryID, LoggerName, EventId, EventName, Exception, Arguments, ActivityTraceId, ActivitySpanId, ActivityTraceFlags);
         }
 
         /// <summary>
@@ -212,39 +243,57 @@ namespace Microsoft.Extensions.Logging.EventSource
             }
         }
 
-        [Event(5, Keywords = Keywords.JsonMessage, Level = EventLevel.LogAlways)]
+        [Event(5, Keywords = Keywords.JsonMessage, Level = EventLevel.LogAlways, Version = 2)]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = WriteEventCoreSuppressionJustification)]
-        internal unsafe void MessageJson(LogLevel Level, int FactoryID, string LoggerName, int EventId, string? EventName, string ExceptionJson, string ArgumentsJson, string FormattedMessage)
+        internal unsafe void MessageJson(
+            LogLevel Level,
+            int FactoryID,
+            string LoggerName,
+            int EventId,
+            string? EventName,
+            string ExceptionJson,
+            string ArgumentsJson,
+            string? FormattedMessage,
+            string ActivityTraceId,
+            string ActivitySpanId,
+            string ActivityTraceFlags)
         {
-            if (IsEnabled())
+            Debug.Assert(LoggerName != null);
+            Debug.Assert(ExceptionJson != null);
+            Debug.Assert(ArgumentsJson != null);
+            Debug.Assert(ActivityTraceId != null);
+            Debug.Assert(ActivitySpanId != null);
+            Debug.Assert(ActivityTraceFlags != null);
+
+            EventName ??= string.Empty;
+            FormattedMessage ??= string.Empty;
+
+            fixed (char* loggerName = LoggerName)
+            fixed (char* eventName = EventName)
+            fixed (char* exceptionJson = ExceptionJson)
+            fixed (char* argumentsJson = ArgumentsJson)
+            fixed (char* formattedMessage = FormattedMessage)
+            fixed (char* activityTraceId = ActivityTraceId)
+            fixed (char* activitySpanId = ActivitySpanId)
+            fixed (char* activityTraceFlags = ActivityTraceFlags)
             {
-                LoggerName ??= "";
-                EventName ??= "";
-                ExceptionJson ??= "";
-                ArgumentsJson ??= "";
-                FormattedMessage ??= "";
+                const int eventDataCount = 11;
+                EventData* eventData = stackalloc EventData[eventDataCount];
 
-                fixed (char* loggerName = LoggerName)
-                fixed (char* eventName = EventName)
-                fixed (char* exceptionJson = ExceptionJson)
-                fixed (char* argumentsJson = ArgumentsJson)
-                fixed (char* formattedMessage = FormattedMessage)
-                {
-                    const int eventDataCount = 8;
-                    EventData* eventData = stackalloc EventData[eventDataCount];
+                SetEventData(ref eventData[0], ref Level);
+                SetEventData(ref eventData[1], ref FactoryID);
+                SetEventData(ref eventData[2], ref LoggerName, loggerName);
+                SetEventData(ref eventData[3], ref EventId);
+                SetEventData(ref eventData[4], ref EventName, eventName);
+                SetEventData(ref eventData[5], ref ExceptionJson, exceptionJson);
+                SetEventData(ref eventData[6], ref ArgumentsJson, argumentsJson);
+                SetEventData(ref eventData[7], ref FormattedMessage, formattedMessage);
+                SetEventData(ref eventData[8], ref ActivityTraceId, activityTraceId);
+                SetEventData(ref eventData[9], ref ActivitySpanId, activitySpanId);
+                SetEventData(ref eventData[10], ref ActivityTraceFlags, activityTraceFlags);
 
-                    SetEventData(ref eventData[0], ref Level);
-                    SetEventData(ref eventData[1], ref FactoryID);
-                    SetEventData(ref eventData[2], ref LoggerName, loggerName);
-                    SetEventData(ref eventData[3], ref EventId);
-                    SetEventData(ref eventData[4], ref EventName, eventName);
-                    SetEventData(ref eventData[5], ref ExceptionJson, exceptionJson);
-                    SetEventData(ref eventData[6], ref ArgumentsJson, argumentsJson);
-                    SetEventData(ref eventData[7], ref FormattedMessage, formattedMessage);
-
-                    WriteEventCore(5, eventDataCount, eventData);
-                }
+                WriteEventCore(5, eventDataCount, eventData);
             }
         }
 
@@ -505,6 +554,8 @@ namespace Microsoft.Extensions.Logging.EventSource
             {
                 string str = (value as string)!;
 #if DEBUG
+                Debug.Assert(str != null);
+
                 fixed (char* rePinnedString = str)
                 {
                     Debug.Assert(pinnedString == rePinnedString);

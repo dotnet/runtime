@@ -1,22 +1,19 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Formats.Asn1;
 using System.Globalization;
 using System.Runtime.Serialization;
 using System.Runtime.Versioning;
-using System.Security.Cryptography.Asn1.Pkcs12;
 using System.Text;
 using Internal.Cryptography;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Security.Cryptography.X509Certificates
 {
-    public class X509Certificate : IDisposable, IDeserializationCallback, ISerializable
+    public partial class X509Certificate : IDisposable, IDeserializationCallback, ISerializable
     {
         private volatile byte[]? _lazyCertHash;
         private volatile string? _lazyIssuer;
@@ -25,6 +22,7 @@ namespace System.Security.Cryptography.X509Certificates
         private volatile string? _lazyKeyAlgorithm;
         private volatile byte[]? _lazyKeyAlgorithmParameters;
         private volatile byte[]? _lazyPublicKey;
+        private volatile byte[]? _lazyRawData;
         private DateTime _lazyNotBefore = DateTime.MinValue;
         private DateTime _lazyNotAfter = DateTime.MinValue;
 
@@ -37,6 +35,7 @@ namespace System.Security.Cryptography.X509Certificates
             _lazyKeyAlgorithm = null;
             _lazyKeyAlgorithmParameters = null;
             _lazyPublicKey = null;
+            _lazyRawData = null;
             _lazyNotBefore = DateTime.MinValue;
             _lazyNotAfter = DateTime.MinValue;
 
@@ -242,6 +241,15 @@ namespace System.Security.Cryptography.X509Certificates
             throw new PlatformNotSupportedException();
         }
 
+        private protected ReadOnlyMemory<byte> PalRawDataMemory
+        {
+            get
+            {
+                ThrowIfInvalid();
+                return _lazyRawData ??= Pal.RawData;
+            }
+        }
+
         public IntPtr Handle => Pal is null ? IntPtr.Zero : Pal.Handle;
 
         public string Issuer
@@ -343,12 +351,7 @@ namespace System.Security.Cryptography.X509Certificates
         public virtual byte[] GetCertHash(HashAlgorithmName hashAlgorithm)
         {
             ThrowIfInvalid();
-            return GetCertHash(hashAlgorithm, Pal);
-        }
-
-        private static byte[] GetCertHash(HashAlgorithmName hashAlgorithm, ICertificatePalCore certPal)
-        {
-            return CryptographicOperations.HashData(hashAlgorithm, certPal.RawData);
+            return CryptographicOperations.HashData(hashAlgorithm, PalRawDataMemory.Span);
         }
 
         public virtual bool TryGetCertHash(
@@ -358,7 +361,7 @@ namespace System.Security.Cryptography.X509Certificates
         {
             ThrowIfInvalid();
 
-            return CryptographicOperations.TryHashData(hashAlgorithm, Pal.RawData, destination, out bytesWritten);
+            return CryptographicOperations.TryHashData(hashAlgorithm, PalRawDataMemory.Span, destination, out bytesWritten);
         }
 
         public virtual string GetCertHashString()
@@ -370,13 +373,15 @@ namespace System.Security.Cryptography.X509Certificates
         public virtual string GetCertHashString(HashAlgorithmName hashAlgorithm)
         {
             ThrowIfInvalid();
-
-            return GetCertHashString(hashAlgorithm, Pal);
+            return GetCertHashString(hashAlgorithm, PalRawDataMemory.Span);
         }
 
-        internal static string GetCertHashString(HashAlgorithmName hashAlgorithm, ICertificatePalCore certPal)
+        internal static string GetCertHashString(HashAlgorithmName hashAlgorithm, ReadOnlySpan<byte> rawData)
         {
-            return GetCertHash(hashAlgorithm, certPal).ToHexStringUpper();
+            Span<byte> buffer = stackalloc byte[64]; // Largest supported hash size is 512 bits
+
+            int written = CryptographicOperations.HashData(hashAlgorithm, rawData, buffer);
+            return Convert.ToHexString(buffer.Slice(0, written));
         }
 
         // Only use for internal purposes when the returned byte[] will not be mutated
@@ -409,7 +414,7 @@ namespace System.Security.Cryptography.X509Certificates
         {
             ThrowIfInvalid();
 
-            return Pal.RawData.CloneByteArray();
+            return PalRawDataMemory.ToArray();
         }
 
         public override int GetHashCode()
@@ -662,125 +667,15 @@ namespace System.Security.Cryptography.X509Certificates
             return date.ToString(culture);
         }
 
-        internal static void ValidateKeyStorageFlags(X509KeyStorageFlags keyStorageFlags)
-        {
-            if ((keyStorageFlags & ~KeyStorageFlagsAll) != 0)
-                throw new ArgumentException(SR.Argument_InvalidFlag, nameof(keyStorageFlags));
-
-            const X509KeyStorageFlags EphemeralPersist =
-                X509KeyStorageFlags.EphemeralKeySet | X509KeyStorageFlags.PersistKeySet;
-
-            X509KeyStorageFlags persistenceFlags = keyStorageFlags & EphemeralPersist;
-
-            if (persistenceFlags == EphemeralPersist)
-            {
-                throw new ArgumentException(
-                    SR.Format(SR.Cryptography_X509_InvalidFlagCombination, persistenceFlags),
-                    nameof(keyStorageFlags));
-            }
-        }
+#pragma warning disable CA1416 // Not callable on browser.
+        internal static void ValidateKeyStorageFlags(X509KeyStorageFlags keyStorageFlags) =>
+            X509CertificateLoader.ValidateKeyStorageFlags(keyStorageFlags);
+#pragma warning restore CA1416
 
         private static void VerifyContentType(X509ContentType contentType)
         {
             if (!(contentType == X509ContentType.Cert || contentType == X509ContentType.SerializedCert || contentType == X509ContentType.Pkcs12))
                 throw new CryptographicException(SR.Cryptography_X509_InvalidContentType);
         }
-
-        internal static void EnforceIterationCountLimit(ref ReadOnlySpan<byte> pkcs12, bool readingFromFile, bool passwordProvided)
-        {
-            if (readingFromFile || passwordProvided)
-            {
-                return;
-            }
-
-            long pkcs12UnspecifiedPasswordIterationLimit = LocalAppContextSwitches.Pkcs12UnspecifiedPasswordIterationLimit;
-
-            // -1 = no limit
-            if (LocalAppContextSwitches.Pkcs12UnspecifiedPasswordIterationLimit == -1)
-            {
-                return;
-            }
-
-            // any other negative number means use default limits
-            if (pkcs12UnspecifiedPasswordIterationLimit < 0)
-            {
-                pkcs12UnspecifiedPasswordIterationLimit = LocalAppContextSwitches.DefaultPkcs12UnspecifiedPasswordIterationLimit;
-            }
-
-            try
-            {
-                try
-                {
-                    checked
-                    {
-                        KdfWorkLimiter.SetIterationLimit((ulong)pkcs12UnspecifiedPasswordIterationLimit);
-                        ulong observedIterationCount = GetIterationCount(pkcs12, out int bytesConsumed);
-                        pkcs12 = pkcs12.Slice(0, bytesConsumed);
-
-                        // Check both conditions: we want a KDF-exceeded failure anywhere in the system to produce a failure here.
-                        // There are some places within the GetIterationCount method where we optimistically try processing the
-                        // PFX in one manner, and if we see failures we'll swallow any exceptions and try a different manner
-                        // instead. The problem with this is that when we swallow failures, we don't have the ability to add the
-                        // so-far-observed iteration count back to the running total returned by GetIterationCount. This
-                        // potentially allows a clever adversary a window through which to squeeze in work beyond our configured
-                        // limits. To mitigate this risk, we'll fail now if we observed *any* KDF-exceeded failure while processing
-                        // this PFX.
-                        if (observedIterationCount > (ulong)pkcs12UnspecifiedPasswordIterationLimit || KdfWorkLimiter.WasWorkLimitExceeded())
-                        {
-                            throw new X509IterationCountExceededException(); // iteration count exceeded
-                        }
-                    }
-                }
-                finally
-                {
-                    KdfWorkLimiter.ResetIterationLimit();
-                }
-            }
-            catch (X509IterationCountExceededException)
-            {
-                throw new CryptographicException(SR.Cryptography_X509_PfxWithoutPassword_MaxAllowedIterationsExceeded);
-            }
-            catch (Exception ex)
-            {
-                // It's important for this catch-all block to be *outside* the inner try/finally
-                // so that we can prevent exception filters from running before we've had a chance
-                // to clean up the threadstatic.
-                throw new CryptographicException(SR.Cryptography_X509_PfxWithoutPassword_ProblemFound, ex);
-            }
-        }
-
-        internal static ulong GetIterationCount(ReadOnlySpan<byte> pkcs12, out int bytesConsumed)
-        {
-            ulong iterations;
-
-            unsafe
-            {
-                fixed (byte* pin = pkcs12)
-                {
-                    using (var manager = new PointerMemoryManager<byte>(pin, pkcs12.Length))
-                    {
-                        AsnValueReader reader = new AsnValueReader(pkcs12, AsnEncodingRules.BER);
-                        int encodedLength = reader.PeekEncodedValue().Length;
-                        PfxAsn.Decode(ref reader, manager.Memory, out PfxAsn pfx);
-
-                        // Don't throw when trailing data is present.
-                        // Windows doesn't have such enforcement as well.
-
-                        iterations = pfx.CountTotalIterations();
-                        bytesConsumed = encodedLength;
-                    }
-                }
-            }
-
-            return iterations;
-        }
-
-        internal const X509KeyStorageFlags KeyStorageFlagsAll =
-            X509KeyStorageFlags.UserKeySet |
-            X509KeyStorageFlags.MachineKeySet |
-            X509KeyStorageFlags.Exportable |
-            X509KeyStorageFlags.UserProtected |
-            X509KeyStorageFlags.PersistKeySet |
-            X509KeyStorageFlags.EphemeralKeySet;
     }
 }

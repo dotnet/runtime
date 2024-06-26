@@ -19,7 +19,6 @@ namespace System.Formats.Tar
     {
         internal const short RecordSize = 512;
         internal const int MaxBufferLength = 4096;
-        internal const long MaxSizeLength = (1L << 33) - 1; // Max value of 11 octal digits = 2^33 - 1 or 8 Gb.
 
         internal const UnixFileMode ValidUnixFileModes =
             UnixFileMode.UserRead |
@@ -213,6 +212,29 @@ namespace System.Formats.Tar
             }
 
             return entryType;
+        }
+
+        /// <summary>Parses a numeric field.</summary>
+        internal static T ParseNumeric<T>(ReadOnlySpan<byte> buffer) where T : struct, INumber<T>, IBinaryInteger<T>
+        {
+            // The tar standard specifies that numeric fields are stored using an octal representation.
+            // This limits the range of values that can be stored in the fields.
+            // To increase the supported range, a GNU extension defines that when the leading byte is
+            // '0xff'/'0x80' the remaining bytes are a negative/positive big formatted endian value.
+            // Like the 'tar' tool we are permissive when encountering this representation in non GNU formats.
+            byte leadingByte = buffer[0];
+            if (leadingByte == 0xff)
+            {
+                return T.ReadBigEndian(buffer, isUnsigned: false);
+            }
+            else if (leadingByte == 0x80)
+            {
+                return T.ReadBigEndian(buffer.Slice(1), isUnsigned: true);
+            }
+            else
+            {
+                return ParseOctal<T>(buffer);
+            }
         }
 
         /// <summary>Parses a byte span that represents an ASCII string containing a number in octal base.</summary>

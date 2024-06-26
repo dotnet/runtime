@@ -107,7 +107,7 @@ extends:
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: release
+          buildConfig: debug
           platforms:
           - linux_musl_x64_dev_innerloop
           jobParameters:

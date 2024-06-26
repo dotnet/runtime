@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Xunit;
 
 #pragma warning disable 0414
@@ -119,6 +121,30 @@ namespace System.Reflection.Tests
 
             // Perform a second time to rule out cases of slow-path vs. fast-path.
             Assert.Equal(expected, fieldInfo.GetValue(obj));
+        }
+
+        // RVA field reflection is not supported in NativeAot
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
+        public void GetValueFromRvaField()
+        {
+            byte[] valueArray = new byte[] { 1, 2, 3, 4, 5 };
+
+            // Roslyn uses SHA256 of raw data as data field name
+            FieldInfo fieldInfo = GetField(
+                typeof(FieldInfoTests).Assembly.GetType("<PrivateImplementationDetails>"),
+                "74F81FE167D99B4CB41D6D0CCDA82278CAEE9F3E2F25D5E5A3936FF3DCEC60D0");
+            Assert.NotNull(fieldInfo);
+            Assert.True(fieldInfo.IsStatic);
+            Assert.True((fieldInfo.Attributes & FieldAttributes.HasFieldRVA) != 0);
+
+            for (int i = 0; i < 5; i++)
+            {
+                // FieldAccessor uses slow path until the class is initialized.
+                // Make sure subsequent invocations also succeed.
+
+                object value = fieldInfo.GetValue(null);
+                Assert.Equal(valueArray, MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<object, RawData>(ref value).Data, valueArray.Length));
+            }
         }
 
         [Fact]
@@ -838,6 +864,11 @@ namespace System.Reflection.Tests
         public static class SettingsForMyTypeThatThrowsInClassInitializer
         {
             public static bool s_shouldThrow = true;
+        }
+
+        private class RawData
+        {
+            public byte Data;
         }
     }
 }

@@ -1898,7 +1898,7 @@ BOOL DebuggerController::AddILPatch(AppDomain * pAppDomain, Module *module,
                                   BOOL offsetIsIL)
 {
     _ASSERTE(g_patches != NULL);
-    _ASSERTE(md != NULL);
+    _ASSERTE(md != 0);
     _ASSERTE(module != NULL);
 
     BOOL fOk = FALSE;
@@ -1930,7 +1930,7 @@ BOOL DebuggerController::AddILPatch(AppDomain * pAppDomain, Module *module,
         // Iterate through every existing NativeCodeBlob (with the same EnC version).
         // This includes generics + prejitted code.
         DebuggerMethodInfo::DJIIterator it;
-        dmi->IterateAllDJIs(pAppDomain, NULL /* module filter */, pMethodDescFilter, &it);
+        dmi->IterateAllDJIs(pAppDomain, pMethodDescFilter, &it);
 
         if (it.IsAtEnd())
         {
@@ -7098,11 +7098,11 @@ TP_RESULT DebuggerStepper::TriggerPatch(DebuggerControllerPatch *patch,
                         {
                             // Find the method that the return is to.
                             mdNative = g_pEEInterface->GetNativeCodeMethodDesc(dac_cast<PCODE>(traceManagerRetAddr));
-                            _ASSERTE(g_pEEInterface->GetFunctionAddress(mdNative) != NULL);
+                            _ASSERTE(g_pEEInterface->GetFunctionAddress(mdNative) != (PCODE)NULL);
                             pcodeNative = g_pEEInterface->GetFunctionAddress(mdNative);
                         }
 
-                        _ASSERTE(mdNative != NULL && pcodeNative != NULL);
+                        _ASSERTE(mdNative != NULL && pcodeNative != (PCODE)NULL);
                         SIZE_T offsetRet = dac_cast<TADDR>(traceManagerRetAddr - pcodeNative);
                         LOG((LF_CORDB, LL_INFO10000,
                              "DS::TP: Before normally managed code AddPatch"

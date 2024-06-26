@@ -879,20 +879,57 @@ bool Compiler::optMakeLoopDownwardsCounted(ScalarEvolutionContext& scevContext,
 {
     JITDUMP("Checking if we should make " FMT_LP " downwards counted\n", loop->GetIndex());
 
-    if (loop->ExitEdges().size() != 1)
+    BasicBlock* dominates = nullptr;
+
+    for (FlowEdge* backEdge : loop->BackEdges())
     {
-        // With multiple exits we generally can only compute an upper bound on
-        // the backedge count.
-        JITDUMP("  No; has multiple exits\n");
-        return false;
+        if (dominates == nullptr)
+        {
+            dominates = backEdge->getSourceBlock();
+        }
+        else
+        {
+            dominates = m_domTree->Intersect(dominates, backEdge->getSourceBlock());
+        }
     }
 
-    BasicBlock* exiting = loop->ExitEdge(0)->getSourceBlock();
-    if (!exiting->KindIs(BBJ_COND))
+    bool changed = false;
+    while ((dominates != nullptr) && loop->ContainsBlock(dominates))
     {
-        JITDUMP("  No; exit is not BBJ_COND\n");
-        return false;
+        if (dominates->KindIs(BBJ_COND) &&
+            (!loop->ContainsBlock(dominates->GetTrueTarget()) || !loop->ContainsBlock(dominates->GetFalseTarget())))
+        {
+            JITDUMP("  Considering exiting block " FMT_BB "\n", dominates->bbNum);
+            // 'dominates' is an exiting block that dominates all backedges.
+            changed |= optMakeExitTestDownwardsCounted(scevContext, loop, dominates, loopLocals);
+        }
+
+        dominates = dominates->bbIDom;
     }
+
+    return changed;
+}
+
+//------------------------------------------------------------------------
+// optMakeExitTestDownwardsCounted:
+//   Try to modify the condition of a specific BBJ_COND exiting block to be on
+//   a downwards counted IV if profitable.
+//
+// Parameters:
+//   scevContext - SCEV context
+//   loop        - The specific loop
+//   exiting     - Exiting block
+//   loopLocals  - Data structure tracking local uses
+//
+// Returns:
+//   True if any modification was made.
+//
+bool Compiler::optMakeExitTestDownwardsCounted(ScalarEvolutionContext& scevContext,
+                                               FlowGraphNaturalLoop*   loop,
+                                               BasicBlock*             exiting,
+                                               LoopLocalOccurrences*   loopLocals)
+{
+    assert(exiting->KindIs(BBJ_COND));
 
     Statement* jtrueStmt = exiting->lastStmt();
     GenTree*   jtrue     = jtrueStmt->GetRootNode();
@@ -1014,43 +1051,6 @@ bool Compiler::optMakeLoopDownwardsCounted(ScalarEvolutionContext& scevContext,
     {
         JITDUMP("  Found no potentially removable locals when making this loop downwards counted\n");
         return false;
-    }
-
-    // Commonly there is only a single shared exit and backedge. In that case
-    // we do not even need to compute dominators since all backedges are
-    // definitely dominated by the exit.
-    if ((loop->BackEdges().size() == 1) && loop->BackEdge(0)->getSourceBlock() == loop->ExitEdge(0)->getSourceBlock())
-    {
-        // Exit definitely dominates the latch since they are the same block.
-        // Fall through.
-        JITDUMP("  Loop exit is also the only backedge\n");
-    }
-    else
-    {
-        for (FlowEdge* backedge : loop->BackEdges())
-        {
-            // We know dom(x, y) => ancestor(x, y), so we can utilize the
-            // contrapositive !ancestor(x, y) => !dom(x, y) to avoid computing
-            // dominators in some cases.
-            if (!m_dfsTree->IsAncestor(exiting, backedge->getSourceBlock()))
-            {
-                JITDUMP("  No; exiting block " FMT_BB " is not an ancestor of backedge source " FMT_BB "\n",
-                        exiting->bbNum, backedge->getSourceBlock()->bbNum);
-                return false;
-            }
-
-            if (m_domTree == nullptr)
-            {
-                m_domTree = FlowGraphDominatorTree::Build(m_dfsTree);
-            }
-
-            if (!m_domTree->Dominates(exiting, backedge->getSourceBlock()))
-            {
-                JITDUMP("  No; exiting block " FMT_BB " does not dominate backedge source " FMT_BB "\n", exiting->bbNum,
-                        backedge->getSourceBlock()->bbNum);
-                return false;
-            }
-        }
     }
 
     // At this point we know that the single exit dominates all backedges.
@@ -1177,6 +1177,7 @@ PhaseStatus Compiler::optInductionVariables()
 
     optReachableBitVecTraits = nullptr;
     m_dfsTree                = fgComputeDfs();
+    m_domTree                = FlowGraphDominatorTree::Build(m_dfsTree);
     m_loops                  = FlowGraphNaturalLoops::Find(m_dfsTree);
 
     LoopLocalOccurrences loopLocals(m_loops);

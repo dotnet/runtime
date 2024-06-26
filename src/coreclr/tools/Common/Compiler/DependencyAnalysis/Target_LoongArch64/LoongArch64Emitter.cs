@@ -40,18 +40,18 @@ namespace ILCompiler.DependencyAnalysis.LoongArch64
         public void EmitMOV(Register regDst, ISymbolNode symbol)
         {
             Builder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_LOONGARCH64_PC);
-            // pcaddu12i  reg, off-hi-20bits
-            Builder.EmitUInt(0x1c000000u | (uint)regDst);
+            // pcalau12i  reg, off-hi-20bits
+            Builder.EmitUInt(0x1a000000u | (uint)regDst);
 
             // addi_d  reg, reg, off-lo-12bits
             Builder.EmitUInt(0x02c00000u | (uint)(((uint)regDst << 5) | (uint)regDst));
         }
 
-        // pcaddi regDst, 0
+        // pcalau12i regDst, 0
         public void EmitPC(Register regDst)
         {
             Debug.Assert((uint)regDst > 0 && (uint)regDst < 32);
-            Builder.EmitUInt(0x18000000 | (uint)regDst);
+            Builder.EmitUInt(0x1a000000 | (uint)regDst);
         }
 
         // addi.d regDst, regSrc, imm12
@@ -93,7 +93,7 @@ namespace ILCompiler.DependencyAnalysis.LoongArch64
         {
             if (symbol.RepresentsIndirectionCell)
             {
-                // pcaddi R21, 0
+                // pcalau12i R21, 0
                 EmitPC(Register.R21);
 
                 EmitLD(Register.R21, Register.R21, 0x10);

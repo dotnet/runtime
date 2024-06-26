@@ -44,6 +44,11 @@ namespace ILCompiler.DependencyAnalysis
             ObjectDataInterner dataInterner)
         {
             _target = context.Target;
+
+            InitialInterfaceDispatchStub = _target.Architecture == TargetArchitecture.ARM
+                ? new InitialInterfaceDispatchStubNode()
+                : new AddressTakenExternSymbolNode("RhpInitialDynamicInterfaceDispatch");
+
             _context = context;
             _compilationModuleGroup = compilationModuleGroup;
             _vtableSliceProvider = vtableSliceProvider;
@@ -98,6 +103,11 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public NameMangler NameMangler
+        {
+            get;
+        }
+
+        public ISymbolNode InitialInterfaceDispatchStub
         {
             get;
         }
