@@ -7645,7 +7645,6 @@ HRESULT ProfToEEInterfaceImpl::EnumerateGCHeapObjects(ObjectCallback callback, v
         LL_INFO1000,
         "**PROF: EnumerateGCHeapObjects.\n"));
 
-    // Checks
     if (callback == nullptr)
     {
         return E_INVALIDARG;
