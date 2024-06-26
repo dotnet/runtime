@@ -13335,6 +13335,7 @@ void free_list_snapshot::record(snapshot_stage stage, freelist_type type, region
     s_counter_full++;
     s_counter = (s_counter + 1) % NUM_SNAPSHOTS;
 
+#ifndef MULTIPLE_HEAPS
     static bool sabotaged = false;
     if (!sabotaged
         && (s_counter_full >= 2700)
@@ -13343,6 +13344,8 @@ void free_list_snapshot::record(snapshot_stage stage, freelist_type type, region
         heap_segment_prev_free_region(heap_segment_next(heap_segment_next(gc_heap::free_regions[(int)basic_free_region]))) = nullptr;
         sabotaged = true;
     }
+#endif
+
     // Exit, should have no corruption
     if (Interlocked::CompareExchange(&s_lock, 0, 1) != 1) fail();
 }
