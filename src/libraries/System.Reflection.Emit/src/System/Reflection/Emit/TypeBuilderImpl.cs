@@ -645,6 +645,7 @@ namespace System.Reflection.Emit
         protected override bool IsByRefImpl() => false;
         protected override bool IsPointerImpl() => false;
         protected override bool IsPrimitiveImpl() => false;
+        protected override bool IsValueTypeImpl() => IsSubclassOf(_module.GetTypeFromCoreAssembly(CoreTypeId.ValueType));
         protected override bool HasElementTypeImpl() => false;
         protected override TypeAttributes GetAttributeFlagsImpl() => _attributes;
         protected override bool IsCOMObjectImpl()

@@ -314,5 +314,6 @@ namespace System.Reflection.Emit
         IntPtr,
         UIntPtr,
         TypedReference,
+        ValueType
     }
 }

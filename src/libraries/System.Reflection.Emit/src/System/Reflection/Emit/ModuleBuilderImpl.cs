@@ -37,8 +37,10 @@ namespace System.Reflection.Emit
         private bool _hasGlobalBeenCreated;
         private Type?[]? _coreTypes;
         private MetadataBuilder _pdbBuilder = new();
-        private static readonly Type[] s_coreTypes = { typeof(void), typeof(object), typeof(bool), typeof(char), typeof(sbyte), typeof(byte), typeof(short), typeof(ushort), typeof(int),
-                                                       typeof(uint), typeof(long), typeof(ulong), typeof(float), typeof(double), typeof(string), typeof(nint), typeof(nuint), typeof(TypedReference) };
+        private static readonly Type[] s_coreTypes = { typeof(void), typeof(object), typeof(bool), typeof(char), typeof(sbyte),
+                                                       typeof(byte), typeof(short), typeof(ushort), typeof(int), typeof(uint),
+                                                       typeof(long), typeof(ulong), typeof(float), typeof(double), typeof(string),
+                                                       typeof(nint), typeof(nuint), typeof(TypedReference), typeof(ValueType) };
 
         internal ModuleBuilderImpl(string name, Assembly coreAssembly, MetadataBuilder builder, PersistedAssemblyBuilder assemblyBuilder)
         {
