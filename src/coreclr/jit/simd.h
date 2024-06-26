@@ -15,6 +15,17 @@ static bool ElementsAreSame(T* array, size_t size)
     return true;
 }
 
+template <typename T>
+static bool ElementsAreAllBitsSetOrZero(T* array, size_t size)
+{
+    for (size_t i = 0; i < size; i++)
+    {
+        if (array[i] != T() && array[i] != ~T())
+            return false;
+    }
+    return true;
+}
+
 struct simd8_t
 {
     union

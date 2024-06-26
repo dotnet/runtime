@@ -3001,7 +3001,7 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* node)
     // TODO-XARCH-AVX512 Use VPBLENDM* and take input directly from K registers if cond is from MoveMaskToVectorSpecial.
     // First, determine if the condition is a per-element mask
     if (op1->OperIsHWIntrinsic() && HWIntrinsicInfo::ReturnsPerElementMask(op1->AsHWIntrinsic()->GetHWIntrinsicId()) ||
-        op1->IsVectorPerElementMask())
+        op1->IsVectorPerElementMask(simdBaseType, simdSize))
     {
         // Next, determine if the target architecture supports BlendVariable
         NamedIntrinsic blendVariableId = NI_Illegal;

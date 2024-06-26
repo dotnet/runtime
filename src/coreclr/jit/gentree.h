@@ -9656,18 +9656,18 @@ inline bool GenTree::IsVectorPerElementMask(var_types simdBaseType, unsigned sim
         {
             case TYP_BYTE:
             case TYP_UBYTE:
-                return AreAllElementsAllBitsSetOrZero(&vecCon->gtSimdVal.u8[0], elementCount);
+                return ElementsAreAllBitsSetOrZero(&vecCon->gtSimdVal.u8[0], elementCount);
             case TYP_SHORT:
             case TYP_USHORT:
-                return AreAllElementsAllBitsSetOrZero(&vecCon->gtSimdVal.u16[0], elementCount);
+                return ElementsAreAllBitsSetOrZero(&vecCon->gtSimdVal.u16[0], elementCount);
             case TYP_INT:
             case TYP_UINT:
             case TYP_FLOAT:
-                return AreAllElementsAllBitsSetOrZero(&vecCon->gtSimdVal.u32[0], elementCount);
+                return ElementsAreAllBitsSetOrZero(&vecCon->gtSimdVal.u32[0], elementCount);
             case TYP_LONG:
             case TYP_ULONG:
             case TYP_DOUBLE:
-                return AreAllElementsAllBitsSetOrZero(&vecCon->gtSimdVal.u64[0], elementCount);
+                return ElementsAreAllBitsSetOrZero(&vecCon->gtSimdVal.u64[0], elementCount);
             default:
                 unreached();
         }
@@ -9675,17 +9675,6 @@ inline bool GenTree::IsVectorPerElementMask(var_types simdBaseType, unsigned sim
 #endif // FEATURE_SIMD
 
     return false;
-}
-
-template <typename T>
-bool AreAllElementsAllBitsSetOrZero(T* array, size_t size)
-{
-    for (size_t i = 0; i < size; i++)
-    {
-        if (array[i] != default(T) && array[i] != ~default(T))
-            return false;
-    }
-    return true;
 }
 
 //-------------------------------------------------------------------
