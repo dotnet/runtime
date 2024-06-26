@@ -656,6 +656,7 @@ public:
     bool HasHandleTableLock()
     {
         WRAPPER_NO_CONTRACT;
+        if (this == NULL) return true; // During initialization of the LoaderAllocator object, callers may call this with a null this pointer.
         return m_crstLoaderAllocatorHandleTable.OwnedByCurrentThread();
     }
 #endif
