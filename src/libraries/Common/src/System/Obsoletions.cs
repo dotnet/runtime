@@ -180,5 +180,8 @@ namespace System
 
         internal const string LoadFromHashAlgorithmMessage = "LoadFrom with a custom AssemblyHashAlgorithm is obsolete. Use overloads without an AssemblyHashAlgorithm.";
         internal const string LoadFromHashAlgorithmDiagId = "SYSLIB0056";
+
+        // When adding a new diagnostic ID, add it to the table in docs\project\list-of-diagnostics.md as well.
+        // Keep new const identifiers above this comment.
     }
 }
