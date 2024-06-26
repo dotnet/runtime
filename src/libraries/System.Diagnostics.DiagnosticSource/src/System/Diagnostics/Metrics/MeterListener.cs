@@ -33,6 +33,11 @@ namespace System.Diagnostics.Metrics
         private MeasurementCallback<double>  _doubleMeasurementCallback  = (instrument, measurement, tags, state) => { /* no-op */ };
         private MeasurementCallback<decimal> _decimalMeasurementCallback = (instrument, measurement, tags, state) => { /* no-op */ };
 
+        static MeterListener()
+        {
+            _ = RuntimeMetrics.IsEnabled();
+        }
+
         /// <summary>
         /// Creates a MeterListener object.
         /// </summary>

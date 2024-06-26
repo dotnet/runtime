@@ -45,6 +45,7 @@ System.Diagnostics.DiagnosticSource</PackageDescription>
     <Compile Include="System\Diagnostics\DiagLinkedList.cs" />
     <Compile Include="System\Diagnostics\DistributedContextPropagator.cs" />
     <Compile Include="System\Diagnostics\LegacyPropagator.cs" />
+    <Compile Include="System\Diagnostics\Metrics\RuntimeMetrics.cs" />
     <Compile Include="System\Diagnostics\NoOutputPropagator.cs" />
     <Compile Include="System\Diagnostics\PassThroughPropagator.cs" />
     <Compile Include="System\Diagnostics\RandomNumberGenerator.cs" />
