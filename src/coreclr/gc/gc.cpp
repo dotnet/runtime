@@ -12778,18 +12778,22 @@ void region_free_list::verify (bool empty_p)
 
         size_t actual_count = 0;
         size_t actual_size = 0;
-        size_t actual_size_committed = 0;
+        size_t actual_committed_size = 0;
         heap_segment* last_region = nullptr;
         for (heap_segment* region = head_free_region; region != nullptr; region = heap_segment_next(region))
         {
             last_region = region;
             actual_count++;
-            actual_size += get_region_size (region);
-            actual_size_committed += get_region_committed_size (region);
+            size_t region_size = get_region_size (region);
+            actual_size += region_size;
+            size_t region_committed_size = get_region_committed_size (region);
+            actual_committed_size += region_committed_size;
+            region_assert (region_size >= region_committed_size);
         }
         region_assert (num_free_regions == actual_count);
         region_assert (size_free_regions == actual_size);
-        region_assert (size_committed_in_free_regions == actual_size_committed);
+        region_assert (size_committed_in_free_regions == actual_committed_size);
+        region_assert (actual_size >= actual_committed_size);
         region_assert (last_region == tail_free_region);
         heap_segment* first_region = nullptr;
         for (heap_segment* region = tail_free_region; region != nullptr; region = heap_segment_prev_free_region(region))
@@ -13318,7 +13322,7 @@ void free_list_snapshot::record(snapshot_stage stage, freelist_type type, region
     // Increment counters.  Keep both for easy debugger inspection.
     s_counter_full++;
     s_counter = (s_counter + 1) % NUM_SNAPSHOTS;
-    
+
     // Exit, should have no corruption
     if (Interlocked::CompareExchange(&s_lock, 0, 1) != 1) fail();
 }
