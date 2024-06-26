@@ -2092,6 +2092,7 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 				g_free (aot_name);
 			}
 #endif
+			assembly->image->aot_module = AOT_MODULE_NOT_FOUND;
 			return;
 		}
 	}
@@ -4938,7 +4939,7 @@ mono_aot_get_method (MonoMethod *method, MonoError *error)
 		} else {
 			// IL code for the method body doesn't exist. Try waiting for aot_module to be loaded probably by another thread
 			int count = 0;
-			while (!(image->aot_module) && (count < 10)) {
+			while (!(image->aot_module) && (count < 10)) { // The threshold of count should never be removed to prevent deadlock.
 				g_usleep (100);
 				count++;
 			}
