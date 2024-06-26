@@ -1616,6 +1616,7 @@ namespace System.Security.Cryptography
         public void AppendData(byte[] data) { }
         public void AppendData(byte[] data, int offset, int count) { }
         public void AppendData(System.ReadOnlySpan<byte> data) { }
+        public System.Security.Cryptography.IncrementalHash Clone() { throw null; }
         public static System.Security.Cryptography.IncrementalHash CreateHash(System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { throw null; }
         public static System.Security.Cryptography.IncrementalHash CreateHMAC(System.Security.Cryptography.HashAlgorithmName hashAlgorithm, byte[] key) { throw null; }
         public static System.Security.Cryptography.IncrementalHash CreateHMAC(System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.ReadOnlySpan<byte> key) { throw null; }
@@ -1658,6 +1659,7 @@ namespace System.Security.Cryptography
         public static bool IsSupported { get { throw null; } }
         public void AppendData(byte[] data) { }
         public void AppendData(System.ReadOnlySpan<byte> data) { }
+        public System.Security.Cryptography.Kmac128 Clone() { throw null; }
         public void Dispose() { }
         public byte[] GetCurrentHash(int outputLength) { throw null; }
         public void GetCurrentHash(System.Span<byte> destination) { }
@@ -1680,6 +1682,7 @@ namespace System.Security.Cryptography
         public static bool IsSupported { get { throw null; } }
         public void AppendData(byte[] data) { }
         public void AppendData(System.ReadOnlySpan<byte> data) { }
+        public System.Security.Cryptography.Kmac256 Clone() { throw null; }
         public void Dispose() { }
         public byte[] GetCurrentHash(int outputLength) { throw null; }
         public void GetCurrentHash(System.Span<byte> destination) { }
@@ -1702,6 +1705,7 @@ namespace System.Security.Cryptography
         public static bool IsSupported { get { throw null; } }
         public void AppendData(byte[] data) { }
         public void AppendData(System.ReadOnlySpan<byte> data) { }
+        public System.Security.Cryptography.KmacXof128 Clone() { throw null; }
         public void Dispose() { }
         public byte[] GetCurrentHash(int outputLength) { throw null; }
         public void GetCurrentHash(System.Span<byte> destination) { }
@@ -1724,6 +1728,7 @@ namespace System.Security.Cryptography
         public static bool IsSupported { get { throw null; } }
         public void AppendData(byte[] data) { }
         public void AppendData(System.ReadOnlySpan<byte> data) { }
+        public System.Security.Cryptography.KmacXof256 Clone() { throw null; }
         public void Dispose() { }
         public byte[] GetCurrentHash(int outputLength) { throw null; }
         public void GetCurrentHash(System.Span<byte> destination) { }
@@ -2882,6 +2887,30 @@ namespace System.Security.Cryptography.X509Certificates
         OpenExistingOnly = 4,
         IncludeArchived = 8,
     }
+    public sealed partial class Pkcs12LoaderLimits
+    {
+        public Pkcs12LoaderLimits() { }
+        public Pkcs12LoaderLimits(System.Security.Cryptography.X509Certificates.Pkcs12LoaderLimits copyFrom) { }
+        public static System.Security.Cryptography.X509Certificates.Pkcs12LoaderLimits DangerousNoLimits { get { throw null; } }
+        public static System.Security.Cryptography.X509Certificates.Pkcs12LoaderLimits Defaults { get { throw null; } }
+        public bool IgnoreEncryptedAuthSafes { get { throw null; } set { } }
+        public bool IgnorePrivateKeys { get { throw null; } set { } }
+        public int? IndividualKdfIterationLimit { get { throw null; } set { } }
+        public bool IsReadOnly { get { throw null; } }
+        public int? MacIterationLimit { get { throw null; } set { } }
+        public int? MaxCertificates { get { throw null; } set { } }
+        public int? MaxKeys { get { throw null; } set { } }
+        public bool PreserveCertificateAlias { get { throw null; } set { } }
+        public bool PreserveKeyName { get { throw null; } set { } }
+        public bool PreserveStorageProvider { get { throw null; } set { } }
+        public bool PreserveUnknownAttributes { get { throw null; } set { } }
+        public int? TotalKdfIterationLimit { get { throw null; } set { } }
+        public void MakeReadOnly() { }
+    }
+    public sealed partial class Pkcs12LoadLimitExceededException : System.Security.Cryptography.CryptographicException
+    {
+        public Pkcs12LoadLimitExceededException(string propertyName) { }
+    }
     public sealed partial class PublicKey
     {
         public PublicKey(System.Security.Cryptography.AsymmetricAlgorithm key) { }
@@ -3303,6 +3332,21 @@ namespace System.Security.Cryptography.X509Certificates
             bool System.Collections.IEnumerator.MoveNext() { throw null; }
             void System.Collections.IEnumerator.Reset() { }
         }
+    }
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+    public static partial class X509CertificateLoader
+    {
+        public static System.Security.Cryptography.X509Certificates.X509Certificate2 LoadCertificate(byte[] data) { throw null; }
+        public static System.Security.Cryptography.X509Certificates.X509Certificate2 LoadCertificate(System.ReadOnlySpan<byte> data) { throw null; }
+        public static System.Security.Cryptography.X509Certificates.X509Certificate2 LoadCertificateFromFile(string path) { throw null; }
+        public static System.Security.Cryptography.X509Certificates.X509Certificate2 LoadPkcs12(byte[] data, string? password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags = System.Security.Cryptography.X509Certificates.X509KeyStorageFlags.DefaultKeySet, System.Security.Cryptography.X509Certificates.Pkcs12LoaderLimits? loaderLimits = null) { throw null; }
+        public static System.Security.Cryptography.X509Certificates.X509Certificate2 LoadPkcs12(System.ReadOnlySpan<byte> data, System.ReadOnlySpan<char> password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags = System.Security.Cryptography.X509Certificates.X509KeyStorageFlags.DefaultKeySet, System.Security.Cryptography.X509Certificates.Pkcs12LoaderLimits? loaderLimits = null) { throw null; }
+        public static System.Security.Cryptography.X509Certificates.X509Certificate2Collection LoadPkcs12Collection(byte[] data, string? password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags = System.Security.Cryptography.X509Certificates.X509KeyStorageFlags.DefaultKeySet, System.Security.Cryptography.X509Certificates.Pkcs12LoaderLimits? loaderLimits = null) { throw null; }
+        public static System.Security.Cryptography.X509Certificates.X509Certificate2Collection LoadPkcs12Collection(System.ReadOnlySpan<byte> data, System.ReadOnlySpan<char> password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags = System.Security.Cryptography.X509Certificates.X509KeyStorageFlags.DefaultKeySet, System.Security.Cryptography.X509Certificates.Pkcs12LoaderLimits? loaderLimits = null) { throw null; }
+        public static System.Security.Cryptography.X509Certificates.X509Certificate2Collection LoadPkcs12CollectionFromFile(string path, System.ReadOnlySpan<char> password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags = System.Security.Cryptography.X509Certificates.X509KeyStorageFlags.DefaultKeySet, System.Security.Cryptography.X509Certificates.Pkcs12LoaderLimits? loaderLimits = null) { throw null; }
+        public static System.Security.Cryptography.X509Certificates.X509Certificate2Collection LoadPkcs12CollectionFromFile(string path, string? password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags = System.Security.Cryptography.X509Certificates.X509KeyStorageFlags.DefaultKeySet, System.Security.Cryptography.X509Certificates.Pkcs12LoaderLimits? loaderLimits = null) { throw null; }
+        public static System.Security.Cryptography.X509Certificates.X509Certificate2 LoadPkcs12FromFile(string path, System.ReadOnlySpan<char> password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags = System.Security.Cryptography.X509Certificates.X509KeyStorageFlags.DefaultKeySet, System.Security.Cryptography.X509Certificates.Pkcs12LoaderLimits? loaderLimits = null) { throw null; }
+        public static System.Security.Cryptography.X509Certificates.X509Certificate2 LoadPkcs12FromFile(string path, string? password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags = System.Security.Cryptography.X509Certificates.X509KeyStorageFlags.DefaultKeySet, System.Security.Cryptography.X509Certificates.Pkcs12LoaderLimits? loaderLimits = null) { throw null; }
     }
     public partial class X509Chain : System.IDisposable
     {

@@ -291,8 +291,10 @@ void GCToEEInterface::GcScanRoots(promote_func* fn, int condemned, int max_gen, 
     Thread* pThread = NULL;
     while ((pThread = ThreadStore::GetThreadList(pThread)) != NULL)
     {
-        if (GCHeapUtilities::GetGCHeap()->IsThreadUsingAllocationContextHeap(
-            pThread->GetAllocContext(), sc->thread_number))
+        gc_alloc_context* palloc_context = pThread->GetAllocContext();
+        if (palloc_context != nullptr
+            && GCHeapUtilities::GetGCHeap()->IsThreadUsingAllocationContextHeap(
+                palloc_context, sc->thread_number))
         {
             STRESS_LOG2(LF_GC | LF_GCROOTS, LL_INFO100, "{ Starting scan of Thread %p ID = %x\n", pThread, pThread->GetThreadId());
 
@@ -436,13 +438,12 @@ gc_alloc_context * GCToEEInterface::GetAllocContext()
 {
     WRAPPER_NO_CONTRACT;
 
-    Thread* pThread = ::GetThreadNULLOk();
-    if (!pThread)
+    if (!::GetThreadNULLOk())
     {
         return nullptr;
     }
 
-    return pThread->GetAllocContext();
+    return &t_runtime_thread_locals.alloc_context;
 }
 
 void InvokeGCAllocCallback(ee_alloc_context* pEEAllocContext, enum_alloc_context_func* fn, void* param)

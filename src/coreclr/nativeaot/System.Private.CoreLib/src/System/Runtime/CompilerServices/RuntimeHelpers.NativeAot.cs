@@ -266,8 +266,6 @@ namespace System.Runtime.CompilerServices
         {
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2059:UnrecognizedReflectionPattern",
-            Justification = "We keep class constructors of all types with an MethodTable")]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:UnrecognizedReflectionPattern",
             Justification = "Constructed MethodTable of a Nullable forces a constructed MethodTable of the element type")]
         public static unsafe object GetUninitializedObject(

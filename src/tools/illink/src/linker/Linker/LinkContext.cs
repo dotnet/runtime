@@ -59,13 +59,7 @@ namespace Mono.Linker
 		public const int NET6 = 6;
 	}
 
-	public interface ITryResolveMetadata
-	{
-		MethodDefinition? TryResolve (MethodReference methodReference);
-		TypeDefinition? TryResolve (TypeReference typeReference);
-	}
-
-	public class LinkContext : IMetadataResolver, ITryResolveMetadata, IDisposable
+	public class LinkContext : IMetadataResolver, ITryResolveMetadata, ITryResolveAssemblyName, IDisposable
 	{
 
 		readonly Pipeline _pipeline;
@@ -107,6 +101,8 @@ namespace Mono.Linker
 		public AssemblyAction DefaultAction { get; set; }
 
 		public bool LinkSymbols { get; set; }
+
+		public bool PreserveSymbolPaths { get; set; }
 
 		public bool KeepComInterfaces { get; set; }
 
@@ -209,7 +205,7 @@ namespace Mono.Linker
 			_logger = logger ?? throw new ArgumentNullException (nameof (logger));
 
 			_resolver = factory.CreateResolver (this);
-			_typeNameResolver = new TypeNameResolver (this);
+			_typeNameResolver = new TypeNameResolver (this, this);
 			_actions = new Dictionary<string, AssemblyAction> ();
 			_parameters = new Dictionary<string, string> (StringComparer.Ordinal);
 			_customAttributes = new CustomAttributeSource (this);
@@ -800,8 +796,11 @@ namespace Mono.Linker
 			if (methodReference is null)
 				return null;
 
-			if (methodresolveCache.TryGetValue (methodReference, out MethodDefinition? md))
+			if (methodresolveCache.TryGetValue (methodReference, out MethodDefinition? md)) {
+				if (md == null && !IgnoreUnresolved)
+					ReportUnresolved (methodReference);
 				return md;
+			}
 
 #pragma warning disable RS0030 // Cecil's resolve is banned -- this provides the wrapper
 			md = methodReference.Resolve ();
@@ -845,8 +844,11 @@ namespace Mono.Linker
 			if (fieldReference is null)
 				return null;
 
-			if (fieldresolveCache.TryGetValue (fieldReference, out FieldDefinition? fd))
+			if (fieldresolveCache.TryGetValue (fieldReference, out FieldDefinition? fd)) {
+				if (fd == null && !IgnoreUnresolved)
+					ReportUnresolved (fieldReference);
 				return fd;
+			}
 
 			fd = fieldReference.Resolve ();
 			if (fd == null && !IgnoreUnresolved)
@@ -886,8 +888,11 @@ namespace Mono.Linker
 			if (typeReference is null)
 				return null;
 
-			if (typeresolveCache.TryGetValue (typeReference, out TypeDefinition? td))
+			if (typeresolveCache.TryGetValue (typeReference, out TypeDefinition? td)) {
+				if (td == null && !IgnoreUnresolved)
+					ReportUnresolved (typeReference);
 				return td;
+			}
 
 			//
 			// Types which never have TypeDefinition or can have ambiguous definition should not be passed in

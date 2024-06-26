@@ -693,7 +693,7 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
                     pLoadedPeSize[iNumValidFrames] = (CLR_I4)peSize;
 
                     // Set flag indicating PE file in memory has the on disk layout
-                    if (!pPEAssembly->IsDynamic())
+                    if (!pPEAssembly->IsReflectionEmit())
                     {
                         // This flag is only available for non-dynamic assemblies.
                         CLR_U1 *pIsFileLayout = (CLR_U1 *)((BOOLARRAYREF)pStackFrameHelper->rgiIsFileLayout)->GetDirectPointerToNonObjectElements();
@@ -1134,7 +1134,7 @@ void DebugStackTrace::DebugStackTraceElement::InitPass1(
     _ASSERTE(pFunc != NULL);
 
     // May have a null IP for ecall frames. If IP is null, then dwNativeOffset should be 0 too.
-    _ASSERTE ( (ip != NULL) || (dwNativeOffset == 0) );
+    _ASSERTE ( (ip != (PCODE)NULL) || (dwNativeOffset == 0) );
 
     this->pFunc = pFunc;
     this->dwOffset = dwNativeOffset;

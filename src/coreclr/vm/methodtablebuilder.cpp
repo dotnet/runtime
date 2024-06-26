@@ -10873,7 +10873,7 @@ MethodTableBuilder::SetupMethodTable2(
                 _ASSERTE(iCurSlot >= bmtVT->cVirtualSlots || ChangesImplementationOfVirtualSlot(iCurSlot));
 
                 PCODE addr = pMD->GetTemporaryEntryPoint();
-                _ASSERTE(addr != NULL);
+                _ASSERTE(addr != (PCODE)NULL);
 
                 if (pMD->HasNonVtableSlot())
                 {

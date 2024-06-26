@@ -111,6 +111,9 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__Thread__m_pFrame
 #define Thread_m_pFrame OFFSETOF__Thread__m_pFrame
 
 
+// ----------------------------------
+// TODO: all these offsets are now invalid because the allocation context is now in a TLS instead of being relative to a Thread instance
+
 #define               OFFSET__Thread__m_alloc_context__alloc_ptr 0x50
 ASMCONSTANTS_C_ASSERT(OFFSET__Thread__m_alloc_context__alloc_ptr == offsetof(Thread, m_alloc_context) + offsetof(ee_alloc_context, gc_alloc_context) + offsetof(gc_alloc_context, alloc_ptr));
 
@@ -119,6 +122,10 @@ ASMCONSTANTS_C_ASSERT(OFFSET__Thread__m_alloc_context__combined_limit == offseto
 
 #define               OFFSETOF__ee_alloc_context__alloc_ptr 0x8
 ASMCONSTANTS_C_ASSERT(OFFSETOF__ee_alloc_context__alloc_ptr == offsetof(ee_alloc_context, gc_alloc_context) + offsetof(gc_alloc_context, alloc_ptr));
+
+// if we keep the ee_alloc_context idea, this should be the offset of the alloc_ptr (after the combined_limit field
+#define               OFFSETOF__gc_alloc_context__alloc_ptr 0x8
+// ----------------------------------
 
 #define               OFFSETOF__ee_alloc_context__combined_limit 0x0
 ASMCONSTANTS_C_ASSERT(OFFSETOF__ee_alloc_context__combined_limit == offsetof(ee_alloc_context, combined_limit));

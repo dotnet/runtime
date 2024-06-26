@@ -799,7 +799,7 @@ void Thread::DebugLogStackWalkInfo(CrawlFrame* pCF, _In_z_ LPCSTR pszTag, UINT32
             DBG_ADDR(GetControlPC(pCF->pRD)),
             DBG_ADDR(GetRegdisplaySP(pCF->pRD)),
             DBG_ADDR(pCF->pFrame),
-            DBG_ADDR((pCF->pFrame != FRAME_TOP) ? pCF->pFrame->GetVTablePtr() : NULL)));
+            DBG_ADDR((pCF->pFrame != FRAME_TOP) ? pCF->pFrame->GetVTablePtr() : (TADDR)NULL)));
     }
 }
 #endif // _DEBUG
