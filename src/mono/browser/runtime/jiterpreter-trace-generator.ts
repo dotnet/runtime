@@ -3858,15 +3858,19 @@ function emit_shuffle (builder: WasmBuilder, ip: MintOpcodePtr, elementCount: nu
                 builder.appendU8(i);
         }
         builder.appendSimd(WasmSimdOpcode.i8x16_swizzle);
-        // multiply indices by 2 to scale from char indices to byte indices
+        // multiply indices by 2 or 4 to scale from elt indices to byte indices
         builder.i32_const(elementCount === 4 ? 2 : 1);
         builder.appendSimd(WasmSimdOpcode.i8x16_shl);
-        // now add 1 to the secondary lane of each char
+        // now add an offset to the additional bytes of each lane, i.e.
+        // 0 1 2 3 0 1 2 3 ...
         builder.appendSimd(WasmSimdOpcode.v128_const);
         for (let i = 0; i < elementCount; i++) {
             for (let j = 0; j < elementSize; j++)
                 builder.appendU8(j);
         }
+        // we can do a bitwise or since we know we previously multiplied all the lanes by 2 or 4,
+        //  so the 1 and 2 bits are already clear
+        builder.appendSimd(WasmSimdOpcode.v128_or);
     }
     // we now have two vectors on the stack, the values and the byte indices
     builder.appendSimd(WasmSimdOpcode.i8x16_swizzle);
