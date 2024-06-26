@@ -18,29 +18,29 @@ namespace System.Text.Json.Serialization.Tests
                 JsonSerializer.Deserialize(ref reader, returnType: null);
             });
 
-            Assert.Contains("returnType", ex.ToString());
+            Assert.Contains("returnType", ex.Message);
 
             ex = Assert.Throws<ArgumentNullException>(() => JsonSerializer.Deserialize("", returnType: null));
-            Assert.Contains("returnType", ex.ToString());
+            Assert.Contains("returnType", ex.Message);
 
             ex = Assert.Throws<ArgumentNullException>(() => JsonSerializer.Deserialize(new char[] { '1' }, returnType: null));
-            Assert.Contains("returnType", ex.ToString());
+            Assert.Contains("returnType", ex.Message);
 
             ex = Assert.Throws<ArgumentNullException>(() => JsonSerializer.Deserialize(new byte[] { 1 }, returnType: null));
-            Assert.Contains("returnType", ex.ToString());
+            Assert.Contains("returnType", ex.Message);
 
             ex = Assert.Throws<ArgumentNullException>(() => JsonSerializer.DeserializeAsync(new MemoryStream(), returnType: null));
-            Assert.Contains("returnType", ex.ToString());
+            Assert.Contains("returnType", ex.Message);
         }
 
         [Fact]
         public static void NullJsonThrows()
         {
             ArgumentNullException ex = Assert.Throws<ArgumentNullException>(() => JsonSerializer.Deserialize(json: (string)null, returnType: typeof(string)));
-            Assert.Contains("json", ex.ToString());
+            Assert.Contains("json", ex.Message);
 
             ex = Assert.Throws<ArgumentNullException>(() => JsonSerializer.DeserializeAsync(utf8Json: null, returnType: null));
-            Assert.Contains("utf8Json", ex.ToString());
+            Assert.Contains("utf8Json", ex.Message);
         }
 
         [Fact]
