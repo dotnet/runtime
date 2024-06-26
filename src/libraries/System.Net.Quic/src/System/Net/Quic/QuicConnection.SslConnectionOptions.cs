@@ -129,7 +129,7 @@ public partial class QuicConnection
                 if (certData.Length > 0)
                 {
                     Debug.Assert(certificate == null);
-                    certificate = new X509Certificate2(certData.Span);
+                    certificate = X509CertificateLoader.LoadCertificate(certData.Span);
                 }
 
                 result = _connection._sslConnectionOptions.ValidateCertificate(certificate, certData.Span, chainData.Span);
