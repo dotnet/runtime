@@ -7,10 +7,8 @@ using System.Diagnostics.CodeAnalysis;
 using ILLink.Shared;
 using ILLink.Shared.TrimAnalysis;
 using Mono.Cecil;
-using Mono.Linker;
 
 using TypeName = System.Reflection.Metadata.TypeName;
-using AssemblyNameInfo = System.Reflection.Metadata.AssemblyNameInfo;
 
 namespace Mono.Linker
 {

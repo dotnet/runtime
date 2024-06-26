@@ -519,15 +519,48 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			}
 
 			[Kept]
+			[ExpectedWarning ("IL2122", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95118")]
+			static void TestRequireTypeWithNonAssemblyQualifiedArrayType () {
+				RequireHelper.RequireType ("Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+AssemblyTypeResolutionBehavior+Generic`1["
+						+ "[Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+AssemblyTypeResolutionBehavior+ArrayElementType[]]"
+					+ "], test");
+			}
+
+			[Kept]
+			[ExpectedWarning ("IL2122", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95118")]
+			static void TestRequireTypeWithNonAssemblyQualifiedPointerType () {
+				RequireHelper.RequireType ("Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+AssemblyTypeResolutionBehavior+Generic`1["
+						+ "[Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+AssemblyTypeResolutionBehavior+PointerElementType*]"
+					+ "], test");
+			}
+
+			[Kept]
+			[ExpectedWarning ("IL2122", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/95118")]
+			static void TestRequireTypeWithNonAssemblyQualifiedByRefType () {
+				RequireHelper.RequireType ("Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+AssemblyTypeResolutionBehavior+Generic`1["
+						+ "[Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+AssemblyTypeResolutionBehavior+ByRefElementType&]"
+					+ "], test");
+			}
+
+			[Kept]
 			public static void Test () {
 				TestRequireTypeInSameAssemblyAsGetType ();
 				TestRequireTypeInSameAssemblyAsCallToRequireType ();
 				TestRequireTypeWithNonAssemblyQualifiedGenericArguments ();
+				TestRequireTypeWithNonAssemblyQualifiedArrayType ();
+				TestRequireTypeWithNonAssemblyQualifiedPointerType ();
+				TestRequireTypeWithNonAssemblyQualifiedByRefType ();
 			}
 
 			class TypeDefinedInSameAssemblyAsCallToRequireType {}
 
 			class Generic<T> {}
+
+			class ArrayElementType {}
+
+			class PointerElementType {}
+
+			class ByRefElementType {}
 		}
 	}
 }
