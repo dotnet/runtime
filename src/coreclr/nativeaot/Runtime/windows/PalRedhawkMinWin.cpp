@@ -335,13 +335,13 @@ REDHAWK_PALEXPORT HANDLE REDHAWK_PALAPI PalCreateEventW(_In_opt_ LPSECURITY_ATTR
 REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalAreShadowStacksEnabled()
 {
 #if defined(TARGET_AMD64)
-        // The SSP is null when CET shadow stacks are not enabled. On processors that don't support shadow stacks, this is a
-        // no-op and the intrinsic returns 0. CET shadow stacks are enabled or disabled for all threads, so the result is the
-        // same from any thread.
-        return _rdsspq() != 0;
+    // The SSP is null when CET shadow stacks are not enabled. On processors that don't support shadow stacks, this is a
+    // no-op and the intrinsic returns 0. CET shadow stacks are enabled or disabled for all threads, so the result is the
+    // same from any thread.
+    return _rdsspq() != 0;
 #else
-        // When implementing AreShadowStacksEnabled() on other architectures, review all the places where this is used.
-        return false;
+    // When implementing AreShadowStacksEnabled() on other architectures, review all the places where this is used.
+    return false;
 #endif
 }
 
