@@ -652,6 +652,14 @@ public:
     LOADERALLOCATORREF GetExposedObject();
     bool IsExposedObjectLive();
 
+#ifdef _DEBUG
+    bool HasHandleTableLock()
+    {
+        WRAPPER_NO_CONTRACT;
+        return m_crstLoaderAllocatorHandleTable.OwnedByCurrentThread();
+    }
+#endif
+
 #ifndef DACCESS_COMPILE
     bool InsertObjectIntoFieldWithLifetimeOfCollectibleLoaderAllocator(OBJECTREF value, Object** pField);
     LOADERHANDLE AllocateHandle(OBJECTREF value);
