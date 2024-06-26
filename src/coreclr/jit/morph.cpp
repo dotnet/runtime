@@ -7738,7 +7738,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
         case GT_STOREIND:
             if (op1->OperIs(GT_FIELD_ADDR) && varTypeIsGC(tree))
             {
-                CORINFO_FIELD_HANDLE fieldHandle = tree->AsFieldAddr()->gtFldHnd;
+                CORINFO_FIELD_HANDLE fieldHandle = op1->AsFieldAddr()->gtFldHnd;
                 if (eeIsByrefLike(info.compCompHnd->getFieldClass(fieldHandle)))
                 {
                     JITDUMP("Marking [%06u] STOREIND as GTF_IND_TGT_NOT_HEAP: field's owner is a byref-like struct\n",
