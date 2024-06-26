@@ -13267,6 +13267,7 @@ int free_list_snapshot::s_counter;
 void free_list_snapshot::init()
 {
     s_nullptr = nullptr;
+    s_dummy = 0;
     s_lock = 0;
     s_counter = 0;
     s_buffer = new free_list_snapshot[NUM_SNAPSHOTS];
@@ -13291,7 +13292,7 @@ void free_list_snapshot::record(heap_segment_snapshot* dst, heap_segment* src)
     dst->mem = src->mem;
 
     dst->gen_num = src->gen_num;
-    dst->valid = 1;
+    dst->valid = 1 + static_cast<uint8_t>(free_list_snapshot::s_dummy);
     dst->age_in_free = src->age_in_free;
 }
 
