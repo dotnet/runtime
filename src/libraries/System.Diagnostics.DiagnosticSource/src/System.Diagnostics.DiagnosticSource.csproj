@@ -26,6 +26,7 @@ System.Diagnostics.DiagnosticSource</PackageDescription>
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="Properties\InternalsVisibleTo.cs" />
     <Compile Include="System\Diagnostics\Activity.cs" />
     <Compile Include="System\Diagnostics\Activity.Current.net46.cs" />
     <Compile Include="System\Diagnostics\ActivityStatusCode.cs" />

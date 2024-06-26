@@ -5,6 +5,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Tracing;
+using System.Globalization;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -61,7 +62,11 @@ namespace System.Diagnostics
     ///       * ACTIVITY_SOURCE_NAME can be empty string which will listen to ActivitySource that create Activities using "new Activity(...)"
     ///       * ACTIVITY_NAME is the activity operation name to filter with.
     ///       * ACTIVITY_EVENT_NAME either "Start" to listen to Activity Start event, or "Stop" to listen to Activity Stop event, or empty string to listen to both Start and Stop Activity events.
-    ///       * SAMPLING_RESULT either "Propagate" to create the Activity with PropagationData, or "Record" to create the Activity with AllData, or empty string to create the Activity with AllDataAndRecorded
+    ///       * SAMPLING_RESULT either:
+    ///         * "Propagate" to create the Activity with PropagationData
+    ///         * "Record" to create the Activity with AllData
+    ///         * "ParentRatioSampler([ratio])" to create the Activity based on OTel parent + TraceId ratio algorithm. [ratio] should be a value between 0.0 (0%) and 1.0 (100%).
+    ///         * Empty string to create the Activity with AllDataAndRecorded
     ///   * TRANSFORM_SPEC is a semicolon separated list of TRANSFORM_SPEC, which can be
     ///       * - TRANSFORM_SPEC               - the '-' indicates that implicit payload elements should be suppressed
     ///       * VARIABLE_NAME = PROPERTY_SPEC  - indicates that a payload element 'VARIABLE_NAME' is created from PROPERTY_SPEC
@@ -544,6 +549,7 @@ namespace System.Diagnostics
             {
                 Debug.Assert(filterAndPayloadSpec != null && startIdx >= 0 && startIdx <= endIdx && endIdx <= filterAndPayloadSpec.Length);
                 Next = next;
+                SampleFunc = null;
                 _eventSource = eventSource;
 
                 string? listenerNameFilter = null;       // Means WildCard.
@@ -669,7 +675,7 @@ namespace System.Diagnostics
                 }));
             }
 
-            internal FilterAndTransform(string filterAndPayloadSpec, int endIdx, int colonIdx, string activitySourceName, string? activityName, ActivityEvents events, ActivitySamplingResult samplingResult, DiagnosticSourceEventSource eventSource)
+            internal FilterAndTransform(string filterAndPayloadSpec, int endIdx, int colonIdx, string activitySourceName, string? activityName, ActivityEvents events, SampleActivityFunc sampleFunc, DiagnosticSourceEventSource eventSource)
             {
                 _eventSource = eventSource;
 
@@ -679,7 +685,7 @@ namespace System.Diagnostics
                 SourceName = activitySourceName;
                 ActivityName = activityName;
                 Events = events;
-                SamplingResult = samplingResult;
+                SampleFunc = sampleFunc;
 
                 if (colonIdx >= 0)
                 {
@@ -732,7 +738,8 @@ namespace System.Diagnostics
                 ReadOnlySpan<char> activitySourceName;
 
                 ActivityEvents supportedEvent = ActivityEvents.All; // Default events
-                ActivitySamplingResult samplingResult = ActivitySamplingResult.AllDataAndRecorded; // Default sampling results
+                SampleActivityFunc sampleFunc = static (bool hasActivityContext, ref ActivityCreationOptions<ActivityContext> options)
+                    => ActivitySamplingResult.AllDataAndRecorded; // Default sampling results
 
                 int colonIdx = filterAndPayloadSpec.IndexOf(':', startIdx + c_ActivitySourcePrefix.Length, endIdx - startIdx - c_ActivitySourcePrefix.Length);
 
@@ -758,11 +765,49 @@ namespace System.Diagnostics
                         {
                             if (suffixPart.Equals("Propagate".AsSpan(), StringComparison.OrdinalIgnoreCase))
                             {
-                                samplingResult = ActivitySamplingResult.PropagationData;
+                                sampleFunc = static (bool hasActivityContext, ref ActivityCreationOptions<ActivityContext> options) => ActivitySamplingResult.PropagationData;
                             }
                             else if (suffixPart.Equals("Record".AsSpan(), StringComparison.OrdinalIgnoreCase))
                             {
-                                samplingResult = ActivitySamplingResult.AllData;
+                                sampleFunc = static (bool hasActivityContext, ref ActivityCreationOptions<ActivityContext> options) => ActivitySamplingResult.AllData;
+                            }
+                            else if (suffixPart.StartsWith("ParentRatioSampler(".AsSpan(), StringComparison.OrdinalIgnoreCase))
+                            {
+                                int endingLocation = suffixPart.IndexOf(')');
+                                if (endingLocation < 0
+#if NETFRAMEWORK || NETSTANDARD
+                                    || !double.TryParse(suffixPart.Slice(19, endingLocation - 19).ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out double ratio))
+#else
+                                    || !double.TryParse(suffixPart.Slice(19, endingLocation - 19), NumberStyles.Float, CultureInfo.InvariantCulture, out double ratio))
+#endif
+                                {
+                                    // Invalid format
+                                    return;
+                                }
+
+                                long idUpperBound = ratio <= 0.0
+                                    ? long.MinValue
+                                    : ratio >= 1.0
+                                        ? long.MaxValue
+                                        : (long)(ratio * long.MaxValue);
+
+                                sampleFunc = (bool hasActivityContext, ref ActivityCreationOptions<ActivityContext> options) =>
+                                {
+                                    if (hasActivityContext && options.IdFormat == ActivityIdFormat.W3C)
+                                    {
+                                        ActivityContext parentContext = options.Parent;
+
+                                        ActivitySamplingResult samplingDecision = ParentRatioSampler(idUpperBound, in parentContext, options.TraceId);
+
+                                        return samplingDecision == ActivitySamplingResult.None
+                                            && (parentContext == default || parentContext.IsRemote)
+                                            ? ActivitySamplingResult.PropagationData // If it is the root span or the parent is remote select PropagationData so the trace ID is preserved
+                                                                                     // even if no activity of the trace is recorded
+                                            : samplingDecision;
+                                    }
+
+                                    return ActivitySamplingResult.None;
+                                };
                             }
                             else
                             {
@@ -808,11 +853,27 @@ namespace System.Diagnostics
                     activitySourceName = activitySourceName.Slice(0, plusSignIndex).Trim();
                 }
 
-                new FilterAndTransform(filterAndPayloadSpec, endIdx, colonIdx, activitySourceName.ToString(), activityName, supportedEvent, samplingResult, eventSource);
+                new FilterAndTransform(filterAndPayloadSpec, endIdx, colonIdx, activitySourceName.ToString(), activityName, supportedEvent, sampleFunc, eventSource);
             }
 
-            // Check if we are interested to listen to such ActivitySource
-            private static ActivitySamplingResult Sample(string activitySourceName, string activityName, DiagnosticSourceEventSource eventSource)
+            private static ActivitySamplingResult Sample(ref ActivityCreationOptions<string> options, DiagnosticSourceEventSource eventSource)
+            {
+                ActivityCreationOptions<ActivityContext> activityContextOptions = default;
+
+                return Sample(options.Source.Name, options.Name, hasActivityContext: false, ref activityContextOptions, eventSource);
+            }
+
+            private static ActivitySamplingResult Sample(ref ActivityCreationOptions<ActivityContext> options, DiagnosticSourceEventSource eventSource)
+            {
+                return Sample(options.Source.Name, options.Name, hasActivityContext: true, ref options, eventSource);
+            }
+
+            private static ActivitySamplingResult Sample(
+                string activitySourceName,
+                string activityName,
+                bool hasActivityContext,
+                ref ActivityCreationOptions<ActivityContext> options,
+                DiagnosticSourceEventSource eventSource)
             {
                 FilterAndTransform? list = eventSource._activitySourceSpecs;
                 ActivitySamplingResult specificResult = ActivitySamplingResult.None;
@@ -822,19 +883,21 @@ namespace System.Diagnostics
                 {
                     if (list.ActivityName == null || list.ActivityName == activityName)
                     {
+                        var samplingResult = list.SampleFunc?.Invoke(hasActivityContext, ref options) ?? ActivitySamplingResult.None;
+
                         if (activitySourceName == list.SourceName)
                         {
-                                if (list.SamplingResult > specificResult)
-                                {
-                                    specificResult = list.SamplingResult;
-                                }
-
-                                if (specificResult >= ActivitySamplingResult.AllDataAndRecorded)
-                                {
-                                    return specificResult; // highest possible value
-                                }
-                                // We don't break here as we can have more than one entry with the same source name.
+                            if (samplingResult > specificResult)
+                            {
+                                specificResult = samplingResult;
                             }
+
+                            if (specificResult >= ActivitySamplingResult.AllDataAndRecorded)
+                            {
+                                return specificResult; // highest possible value
+                            }
+                            // We don't break here as we can have more than one entry with the same source name.
+                        }
                         else if (list.SourceName == "*")
                         {
                             if (specificResult != ActivitySamplingResult.None)
@@ -844,9 +907,9 @@ namespace System.Diagnostics
                                 return specificResult;
                             }
 
-                            if (list.SamplingResult > wildResult)
+                            if (samplingResult > wildResult)
                             {
-                                wildResult = list.SamplingResult;
+                                wildResult = samplingResult;
                             }
                         }
                     }
@@ -857,6 +920,37 @@ namespace System.Diagnostics
                 return specificResult != ActivitySamplingResult.None ? specificResult : wildResult;
             }
 
+            internal static ActivitySamplingResult ParentRatioSampler(long idUpperBound, in ActivityContext parentContext, ActivityTraceId traceId)
+            {
+                if (parentContext.TraceId != default)
+                {
+                    return parentContext.TraceFlags.HasFlag(ActivityTraceFlags.Recorded)
+                        ? ActivitySamplingResult.AllDataAndRecorded
+                        : ActivitySamplingResult.None;
+                }
+
+                Span<byte> traceIdBytes = stackalloc byte[16];
+                traceId.CopyTo(traceIdBytes);
+
+                return Math.Abs(GetLowerLong(traceIdBytes)) < idUpperBound
+                    ? ActivitySamplingResult.AllDataAndRecorded
+                    : ActivitySamplingResult.None;
+
+                static long GetLowerLong(ReadOnlySpan<byte> bytes)
+                {
+                    long result = 0;
+                    for (int i = 0; i < 8; i++)
+                    {
+                        result <<= 8;
+#pragma warning disable CS0675 // Bitwise-or operator used on a sign-extended operand
+                        result |= bytes[i] & 0xff;
+#pragma warning restore CS0675 // Bitwise-or operator used on a sign-extended operand
+                    }
+
+                    return result;
+                }
+            }
+
             internal static void CreateActivityListener(DiagnosticSourceEventSource eventSource)
             {
                 Debug.Assert(eventSource._activityListener == null);
@@ -864,8 +958,8 @@ namespace System.Diagnostics
 
                 eventSource._activityListener = new ActivityListener();
 
-                eventSource._activityListener.SampleUsingParentId = (ref ActivityCreationOptions<string> activityOptions) => Sample(activityOptions.Source.Name, activityOptions.Name, eventSource);
-                eventSource._activityListener.Sample = (ref ActivityCreationOptions<ActivityContext> activityOptions) => Sample(activityOptions.Source.Name, activityOptions.Name, eventSource);
+                eventSource._activityListener.SampleUsingParentId = (ref ActivityCreationOptions<string> options) => Sample(ref options, eventSource);
+                eventSource._activityListener.Sample = (ref ActivityCreationOptions<ActivityContext> options) => Sample(ref options, eventSource);
 
                 eventSource._activityListener.ShouldListenTo = (activitySource) =>
                 {
@@ -1088,8 +1182,8 @@ namespace System.Diagnostics
             internal const string c_ActivitySourcePrefix = "[AS]";
             internal string? SourceName { get; set; }
             internal string? ActivityName { get; set; }
-            internal DiagnosticSourceEventSource.ActivityEvents Events  { get; set; }
-            internal ActivitySamplingResult SamplingResult { get; set; }
+            internal DiagnosticSourceEventSource.ActivityEvents Events { get; set; }
+            internal SampleActivityFunc? SampleFunc { get; set; }
 
             #region private
 
@@ -1136,6 +1230,10 @@ namespace System.Diagnostics
             private readonly DiagnosticSourceEventSource _eventSource;      // Where the data is written to.
             #endregion
         }
+
+        internal delegate ActivitySamplingResult SampleActivityFunc(
+            bool hasActivityContext,
+            ref ActivityCreationOptions<ActivityContext> options);
 
         // This olds one the implicit transform for one type of object.
         // We remember this type-transform pair in the _firstImplicitTransformsEntry cache.
