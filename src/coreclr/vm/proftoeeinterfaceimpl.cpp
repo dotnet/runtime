@@ -7663,7 +7663,7 @@ HRESULT ProfToEEInterfaceImpl::EnumerateGCHeapObjects(ObjectCallback callback, v
 
     IGCHeap *hp = GCHeapUtilities::GetGCHeap();
     unsigned max_generation = hp->GetMaxGeneration();
-    hp->DiagWalkHeapStandalone((walk_fn)callback, callbackState, max_generation, TRUE);
+    hp->DiagWalkHeapWithACHandling((walk_fn)callback, callbackState, max_generation, TRUE);
 
     ThreadSuspend::RestartEE(FALSE /* bFinishedGC */, TRUE /* SuspendSucceeded */);
 

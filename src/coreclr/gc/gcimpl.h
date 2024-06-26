@@ -313,11 +313,11 @@ protected:
 
     virtual void DiagWalkHeap(walk_fn fn, void* context, int gen_number, bool walk_large_object_heap_p);
 
-    virtual void DiagWalkHeapStandalone(walk_fn fn, void* context, int gen_number, bool walk_large_object_heap_p);
-
     virtual void DiagGetGCSettings(EtwGCSettingsInfo* etw_settings);
 
     virtual unsigned int GetGenerationWithRange(Object* object, uint8_t** ppStart, uint8_t** ppAllocated, uint8_t** ppReserved);
+
+    virtual void DiagWalkHeapWithACHandling(walk_fn fn, void* context, int gen_number, bool walk_large_object_heap_p);
 public:
     Object * NextObj (Object * object);
 

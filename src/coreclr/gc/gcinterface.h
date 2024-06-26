@@ -1027,7 +1027,7 @@ public:
     virtual size_t GetLOHThreshold() PURE_VIRTUAL
 
     // Walk the heap object by object outside of a GC.
-    virtual void DiagWalkHeapStandalone(walk_fn fn, void* context, int gen_number, bool walk_large_object_heap_p) PURE_VIRTUAL
+    virtual void DiagWalkHeapWithACHandling(walk_fn fn, void* context, int gen_number, bool walk_large_object_heap_p) PURE_VIRTUAL
 };
 
 #ifdef WRITE_BARRIER_CHECK
