@@ -72,7 +72,7 @@ namespace Mono.Linker.Steps
 						continue;
 				}
 
-				CustomAttribute? customAttribute = CreateCustomAttribute (attributeNav, attributeType);
+				CustomAttribute? customAttribute = CreateCustomAttribute (attributeNav, attributeType, provider);
 				if (customAttribute != null) {
 					_context.LogMessage ($"Assigning external custom attribute '{FormatCustomAttribute (customAttribute)}' instance to '{provider}'.");
 					customAttributesBuilder.Add (customAttribute);
@@ -153,9 +153,9 @@ namespace Mono.Linker.Steps
 			return _context.MarkedKnownMembers.RemoveAttributeInstancesAttributeDefinition = td;
 		}
 
-		CustomAttribute? CreateCustomAttribute (XPathNavigator nav, TypeDefinition attributeType)
+		CustomAttribute? CreateCustomAttribute (XPathNavigator nav, TypeDefinition attributeType, ICustomAttributeProvider provider)
 		{
-			CustomAttributeArgument[] arguments = ReadCustomAttributeArguments (nav, attributeType);
+			CustomAttributeArgument[] arguments = ReadCustomAttributeArguments (nav, provider);
 
 			MethodDefinition? constructor = FindBestMatchingConstructor (attributeType, arguments);
 			if (constructor == null) {
@@ -223,12 +223,12 @@ namespace Mono.Linker.Steps
 			}
 		}
 
-		CustomAttributeArgument[] ReadCustomAttributeArguments (XPathNavigator nav, TypeDefinition attributeType)
+		CustomAttributeArgument[] ReadCustomAttributeArguments (XPathNavigator nav, ICustomAttributeProvider provider)
 		{
 			ArrayBuilder<CustomAttributeArgument> args = default;
 
 			foreach (XPathNavigator argumentNav in nav.SelectChildren ("argument", string.Empty)) {
-				CustomAttributeArgument? caa = ReadCustomAttributeArgument (argumentNav, attributeType);
+				CustomAttributeArgument? caa = ReadCustomAttributeArgument (argumentNav, provider);
 				if (caa is not null)
 					args.Add (caa.Value);
 			}
@@ -236,9 +236,9 @@ namespace Mono.Linker.Steps
 			return args.ToArray () ?? Array.Empty<CustomAttributeArgument> ();
 		}
 
-		CustomAttributeArgument? ReadCustomAttributeArgument (XPathNavigator nav, IMemberDefinition memberWithAttribute)
+		CustomAttributeArgument? ReadCustomAttributeArgument (XPathNavigator nav, ICustomAttributeProvider provider)
 		{
-			TypeReference? typeref = ResolveArgumentType (nav, memberWithAttribute);
+			TypeReference? typeref = ResolveArgumentType (nav, provider);
 			if (typeref is null)
 				return null;
 
@@ -295,8 +295,8 @@ namespace Mono.Linker.Steps
 				if (!typeref.IsTypeOf (WellKnownType.System_Type))
 					goto default;
 
-				var diagnosticContext = new DiagnosticContext (new MessageOrigin (memberWithAttribute), diagnosticsEnabled: true, _context);
-				if (!_context.TypeNameResolver.TryResolveTypeName (svalue, diagnosticContext, out TypeReference? type, out _)) {
+				var diagnosticContext = new DiagnosticContext (new MessageOrigin (provider), diagnosticsEnabled: true, _context);
+				if (!_context.TypeNameResolver.TryResolveTypeName (svalue, diagnosticContext, out TypeReference? type, out _, needsAssemblyName: true)) {
 					_context.LogError (GetMessageOriginForPosition (nav), DiagnosticId.CouldNotResolveCustomAttributeTypeValue, svalue);
 					return null;
 				}
@@ -308,7 +308,7 @@ namespace Mono.Linker.Steps
 					var arrayArgumentIterator = nav.SelectChildren ("argument", string.Empty);
 					ArrayBuilder<CustomAttributeArgument> elements = default;
 					foreach (XPathNavigator elementNav in arrayArgumentIterator) {
-						if (ReadCustomAttributeArgument (elementNav, memberWithAttribute) is CustomAttributeArgument arg) {
+						if (ReadCustomAttributeArgument (elementNav, provider) is CustomAttributeArgument arg) {
 							// To match Cecil, elements of a list that are subclasses of the list type must be boxed in the base type
 							// e.g. object[] { 73 } translates to Cecil.CAA { Type: object[] : Value: CAA{ Type: object, Value: CAA{ Type: int, Value: 73} } }
 							if (arg.Type == elementType) {
@@ -338,14 +338,14 @@ namespace Mono.Linker.Steps
 				return null;
 			}
 
-			TypeReference? ResolveArgumentType (XPathNavigator nav, IMemberDefinition memberWithAttribute)
+			TypeReference? ResolveArgumentType (XPathNavigator nav, ICustomAttributeProvider provider)
 			{
 				string typeName = GetAttribute (nav, "type");
 				if (string.IsNullOrEmpty (typeName))
 					typeName = "System.String";
 
-				var diagnosticContext = new DiagnosticContext (new MessageOrigin (memberWithAttribute), diagnosticsEnabled: true, _context);
-				if (!_context.TypeNameResolver.TryResolveTypeName (typeName, diagnosticContext, out TypeReference? typeref, out _)) {
+				var diagnosticContext = new DiagnosticContext (new MessageOrigin (provider), diagnosticsEnabled: true, _context);
+				if (!_context.TypeNameResolver.TryResolveTypeName (typeName, diagnosticContext, out TypeReference? typeref, out _, needsAssemblyName: false)) {
 					_context.LogError (GetMessageOriginForPosition (nav), DiagnosticId.TypeUsedWithAttributeValueCouldNotBeFound, typeName, nav.Value);
 					return null;
 				}
@@ -501,7 +501,7 @@ namespace Mono.Linker.Steps
 					foreach (ParameterDefinition parameter in method.Parameters) {
 						if (paramName == parameter.Name) {
 							if (parameter.HasCustomAttributes || _attributeInfo.CustomAttributes.ContainsKey (parameter))
-								LogWarning (parameterNav, DiagnosticId.XmlMoreThanOneValyForParameterOfMethod, paramName, method.GetDisplayName ());
+								LogWarning (parameterNav, DiagnosticId.XmlMoreThanOneValueForParameterOfMethod, paramName, method.GetDisplayName ());
 							_attributeInfo.AddCustomAttributes (parameter, attributes, origins);
 							break;
 						}
@@ -513,11 +513,15 @@ namespace Mono.Linker.Steps
 
 		void ProcessReturnParameters (MethodDefinition method, XPathNavigator nav)
 		{
+			Debug.Assert (_attributeInfo != null);
 			bool firstAppearance = true;
 			foreach (XPathNavigator returnNav in nav.SelectChildren ("return", string.Empty)) {
 				if (firstAppearance) {
 					firstAppearance = false;
-					PopulateAttributeInfo (method.MethodReturnType, returnNav);
+					var (attributes, origins) = ProcessAttributes (returnNav, method);
+					if (attributes != null && origins != null) {
+						_attributeInfo.AddCustomAttributes (method.MethodReturnType, attributes, origins);
+					}
 				} else {
 					LogWarning (returnNav, DiagnosticId.XmlMoreThanOneReturnElementForMethod, method.GetDisplayName ());
 				}

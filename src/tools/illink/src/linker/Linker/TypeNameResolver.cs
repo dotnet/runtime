@@ -107,6 +107,17 @@ namespace Mono.Linker
 				return resolvedType;
 			}
 
+			// If it didn't resolve and wasn't assembly-qualified, we also try core library
+			if (topLevelTypeName.AssemblyName == null && assembly.Name.Name != PlatformAssemblies.CoreLib) {
+				if (_assemblyResolver.TryResolve (PlatformAssemblies.CoreLib) is AssemblyDefinition coreLib) {
+					resolvedType = GetSimpleTypeFromModule (typeName, coreLib.MainModule);
+					if (resolvedType != null) {
+						typeResolutionRecords.Add (new (coreLib, resolvedType));
+						return resolvedType;
+					}
+				}
+			}
+
 			return null;
 
 			TypeDefinition? GetSimpleTypeFromModule (TypeName typeName, ModuleDefinition module)

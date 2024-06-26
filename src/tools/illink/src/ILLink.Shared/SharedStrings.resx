@@ -1209,4 +1209,10 @@
   <data name="InvalidFeatureGuardTitle" xml:space="preserve">
     <value>Invalid FeatureGuardAttribute.</value>
   </data>
+  <data name="TypeNameIsNotAssemblyQualifiedMessage" xml:space="preserve">
+    <value>Type '{0}' is not assembly qualified. Type name strings used for dynamically accessing a type should be assembly qualified.</value>
+  </data>
+  <data name="TypeNameIsNotAssemblyQualifiedTitle" xml:space="preserve">
+    <value>Type name is not assembly qualified.</value>
+  </data>
 </root>

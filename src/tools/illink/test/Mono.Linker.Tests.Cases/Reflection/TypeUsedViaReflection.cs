@@ -4,16 +4,19 @@ using System.Reflection;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Helpers;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
+using Mono.Linker.Tests.Cases.Reflection.Dependencies;
 
 namespace Mono.Linker.Tests.Cases.Reflection
 {
 	[KeptMember (".cctor()")]
 	[ExpectedNoWarnings ()]
 	[Define ("IL_ASSEMBLY_AVAILABLE")]
-	[SetupCompileBefore ("library.dll", new[] { "Dependencies/EscapedTypeNames.il" })]
-	[KeptTypeInAssembly ("library", "Library.Not\\+Nested")]
-	[KeptTypeInAssembly ("library", "Library.Not\\+Nested+Nes\\\\ted")]
-	[KeptTypeInAssembly ("library", "Library.Not\\+Nested+Nes/ted")]
+	[SetupCompileBefore ("EscapedTypeNames.dll", new[] { "Dependencies/EscapedTypeNames.il" })]
+	[SetupCompileBefore ("RequireHelper.dll", new[] { "Dependencies/RequireHelper.cs" })]
+	[KeptTypeInAssembly ("EscapedTypeNames", "Library.Not\\+Nested")]
+	[KeptTypeInAssembly ("EscapedTypeNames", "Library.Not\\+Nested+Nes\\\\ted")]
+	[KeptTypeInAssembly ("EscapedTypeNames", "Library.Not\\+Nested+Nes/ted")]
+	[RemovedTypeInAssembly ("RequireHelper", typeof (TypeDefinedInSameAssemblyAsGetType))]
 	[KeptDelegateCacheField ("0", nameof (AssemblyResolver))]
 	[KeptDelegateCacheField ("1", nameof (GetTypeFromAssembly))]
 	public class TypeUsedViaReflection
@@ -55,6 +58,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 			TestInvalidTypeCombination ();
 			TestEscapedTypeName ();
+			AssemblyTypeResolutionBehavior.Test ();
 		}
 
 		[Kept]
@@ -475,9 +479,42 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		[Kept]
 		static void TestEscapedTypeName ()
 		{
-			var typeKept = Type.GetType ("Library.Not\\+Nested, library");
-			typeKept = Type.GetType ("Library.Not\\+Nested+Nes\\\\ted, library");
-			typeKept = Type.GetType ("Library.Not\\+Nested+Nes/ted, library");
+			var typeKept = Type.GetType ("Library.Not\\+Nested, EscapedTypeNames");
+			typeKept = Type.GetType ("Library.Not\\+Nested+Nes\\\\ted, EscapedTypeNames");
+			typeKept = Type.GetType ("Library.Not\\+Nested+Nes/ted, EscapedTypeNames");
+		}
+
+		[Kept]
+		class AssemblyTypeResolutionBehavior
+		{
+			[Kept]
+			[ExpectedWarning ("IL2122")]
+			static void TestRequireTypeInSameAssemblyAsGetType () {
+				RequireHelper.RequireType ("Mono.Linker.Tests.Cases.Reflection.Dependencies.TypeDefinedInSameAssemblyAsGetType");
+			}
+
+			[Kept]
+			[ExpectedWarning ("IL2122")]
+			static void TestRequireTypeInSameAssemblyAsCallToRequireType () {
+				RequireHelper.RequireType ("Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+AssemblyTypeResolutionBehavior+TypeDefinedInSameAssemblyAsCallToRequireType");
+			}
+
+			[Kept]
+			[ExpectedWarning ("IL2122")]
+			static void TestRequireTypeWithNonAssemblyQualifiedGenericArguments () {
+				RequireHelper.RequireType ("Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+AssemblyTypeResolutionBehavior+Generic`1[[System.Int32]], test");
+			}
+
+			[Kept]
+			public static void Test () {
+				TestRequireTypeInSameAssemblyAsGetType ();
+				TestRequireTypeInSameAssemblyAsCallToRequireType ();
+				TestRequireTypeWithNonAssemblyQualifiedGenericArguments ();
+			}
+
+			class TypeDefinedInSameAssemblyAsCallToRequireType {}
+
+			class Generic<T> {}
 		}
 	}
 }

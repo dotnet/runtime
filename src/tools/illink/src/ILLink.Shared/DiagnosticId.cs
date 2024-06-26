@@ -83,7 +83,7 @@ namespace ILLink.Shared
 		_unused_RearrangedXmlWarning2 = 2021,
 		XmlCouldNotFindMatchingConstructorForCustomAttribute = 2022,
 		XmlMoreThanOneReturnElementForMethod = 2023,
-		XmlMoreThanOneValyForParameterOfMethod = 2024,
+		XmlMoreThanOneValueForParameterOfMethod = 2024,
 		XmlDuplicatePreserveMember = 2025,
 		RequiresUnreferencedCode = 2026,
 		AttributeShouldOnlyBeUsedOnceOnMember = 2027,
@@ -186,6 +186,7 @@ namespace ILLink.Shared
 		DynamicallyAccessedMembersOnTypeReferencesCompilerGeneratedMember = 2119,
 		DynamicallyAccessedMembersOnTypeReferencesCompilerGeneratedMemberOnBase = 2120,
 		RedundantSuppression = 2121,
+		TypeNameIsNotAssemblyQualified = 2122,
 
 		// Single-file diagnostic ids.
 		AvoidAssemblyLocationInSingleFile = 3000,
