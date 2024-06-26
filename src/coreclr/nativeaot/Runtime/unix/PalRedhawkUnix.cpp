@@ -1047,10 +1047,10 @@ REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalRegisterHijackCallback(_In_ PalH
     g_pHijackCallback = callback;
 
 #ifdef __APPLE__
-    void *libdispatch = dlopen("/usr/lib/system/libdispatch.dylib", RTLD_LAZY);
-    if (libdispatch != NULL)
+    void *libSystem = dlopen("/usr/lib/libSystem.dylib", RTLD_LAZY);
+    if (libSystem != NULL)
     {
-        int (*dispatch_allow_send_signals_ptr)(int) = (int (*)(int))dlsym(libdispatch, "dispatch_allow_send_signals");
+        int (*dispatch_allow_send_signals_ptr)(int) = (int (*)(int))dlsym(libSystem, "dispatch_allow_send_signals");
         if (dispatch_allow_send_signals_ptr != NULL)
         {
             int status = dispatch_allow_send_signals_ptr(INJECT_ACTIVATION_SIGNAL);
