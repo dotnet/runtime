@@ -11,7 +11,7 @@ namespace System.Net.Security
 {
     internal sealed class SslAuthenticationOptions
     {
-        private const string EnableOcspStaplingContextSwitchName = "System.Net.Security.EnableOcspStaplingOnServerCertificate";
+        private const string EnableOcspStaplingContextSwitchName = "System.Net.Security.EnableServerOcspStaplingFromOnlyCertificateOnLinux";
         internal SslAuthenticationOptions()
         {
             TargetHost = string.Empty;
