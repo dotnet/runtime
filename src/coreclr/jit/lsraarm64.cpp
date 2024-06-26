@@ -1682,7 +1682,14 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         {
             assert(!isRMW);
 
-            srcCount += BuildOperandUses(intrin.op2, RBM_ASIMD_INDEXED_H_ELEMENT_ALLOWED_REGS.GetFloatRegSet());
+            if (intrin.id == NI_Sve_DuplicateSelectedScalarToVector)
+            {
+                srcCount += BuildOperandUses(intrin.op2);
+            }
+            else
+            {
+                srcCount += BuildOperandUses(intrin.op2, RBM_ASIMD_INDEXED_H_ELEMENT_ALLOWED_REGS.GetFloatRegSet());
+            }
 
             if (intrin.op3 != nullptr)
             {
