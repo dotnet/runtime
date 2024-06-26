@@ -3,6 +3,7 @@
 
 using System;
 using System.Globalization;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace Test.Cryptography
@@ -71,6 +72,16 @@ namespace Test.Cryptography
             }
 
             return value;
+        }
+
+        internal static string PemEncode(string label, byte[] data)
+        {
+#if NET
+            return PemEncoding.WriteString(label, data);
+#else
+            return
+                $"-----BEGIN {label}-----\n{Convert.ToBase64String(data, Base64FormattingOptions.InsertLineBreaks)}\n-----END {label}-----";
+#endif
         }
     }
 }

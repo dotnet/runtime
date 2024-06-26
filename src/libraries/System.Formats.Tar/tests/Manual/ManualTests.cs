@@ -22,8 +22,9 @@ public class ManualTests : TarTestsBase
                 yield return new object[] { entryFormat, LegacyMaxFileSize, unseekableStream };
             }
 
-            // Pax supports unlimited size files.
+            // Pax and Gnu supports unlimited size files.
             yield return new object[] { TarEntryFormat.Pax, LegacyMaxFileSize + 1, unseekableStream };
+            yield return new object[] { TarEntryFormat.Gnu, LegacyMaxFileSize + 1, unseekableStream };
         }
     }
 

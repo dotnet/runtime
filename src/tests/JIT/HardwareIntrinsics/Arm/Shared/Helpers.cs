@@ -17,6 +17,17 @@ namespace JIT.HardwareIntrinsics.Arm
 {
     static class Helpers
     {
+        public static Vector<T> InitVector<T>(Func<int, T> f)
+        {
+            var count = Vector<T>.Count;
+            var arr = new T[count];
+            for (var i = 0; i < count; i++)
+            {
+                arr[i] = f(i);
+            }
+            return new Vector<T>(arr);
+        }
+
         public static sbyte CountLeadingSignBits(sbyte op1)
         {
             return (sbyte)(CountLeadingZeroBits((sbyte)((ulong)op1 ^ ((ulong)op1 >> 1))) - 1);
@@ -1579,6 +1590,10 @@ namespace JIT.HardwareIntrinsics.Arm
         public static float Divide(float op1, float op2) => op1 / op2;
 
         public static double Divide(double op1, double op2) => op1 / op2;
+
+        public static float Scale(float op1, int op2) => op1 * MathF.Pow((float)2.0, op2);
+
+        public static double Scale(double op1, long op2) =>  op1 * Math.Pow(2.0, op2);
 
         public static float Sqrt(float value) => MathF.Sqrt(value);
 
@@ -7039,6 +7054,266 @@ namespace JIT.HardwareIntrinsics.Arm
                 ret = (ret << 8) + (long)array[offset+(ulong)i];
             }
             return BitConverter.Int64BitsToDouble(ret);
+        }
+
+        public static Byte Splice(Byte[] first, Byte[] second, Byte[] maskArray, Int32 index)
+        {
+            int start = -1;
+            int end   = -1;
+
+            for(var i = 0; i < maskArray.Length; i++)
+            {
+                if (maskArray[i] != 0)
+                {
+                    if (start == -1)
+                    {
+                        start = i;
+                    }
+                    end = i;
+                }
+            }
+
+            if (start == -1)
+            {
+                return second[index];
+            }
+
+            var rangeSize = end - start + 1;
+            return (index < rangeSize) ? first[start + index] : second[index - rangeSize];
+        }
+
+        public static double Splice(double[] first, double[] second, double[] maskArray, Int32 index)
+        {
+            int start = -1;
+            int end   = -1;
+
+            for(var i = 0; i < maskArray.Length; i++)
+            {
+                if (Double.IsNaN(maskArray[i]) || maskArray[i] > 0.0d)
+                {
+                    if (start == -1)
+                    {
+                        start = i;
+                    }
+                    end = i;
+                }
+            }
+
+            if (start == -1)
+            {
+                return second[index];
+            }
+
+            var rangeSize = end - start + 1;
+            return (index < rangeSize) ? first[start + index] : second[index - rangeSize];
+        }
+
+        public static float Splice(float[] first, float[] second, float[] maskArray, Int32 index)
+        {
+            int start = -1;
+            int end   = -1;
+
+            for(var i = 0; i < maskArray.Length; i++)
+            {
+                if (maskArray[i] != 0.0f)
+                {
+                    if (start == -1)
+                    {
+                        start = i;
+                    }
+                    end = i;
+                }
+            }
+
+            if (start == -1)
+            {
+                return second[index];
+            }
+
+            var rangeSize = end - start + 1;
+            return (index < rangeSize) ? first[start + index] : second[index - rangeSize];
+        }
+
+        public static Int16 Splice(Int16[] first, Int16[] second, Int16[] maskArray, Int32 index)
+        {
+            int start = -1;
+            int end   = -1;
+
+            for(var i = 0; i < maskArray.Length; i++)
+            {
+                if (maskArray[i] != 0)
+                {
+                    if (start == -1)
+                    {
+                        start = i;
+                    }
+                    end = i;
+                }
+            }
+
+            if (start == -1)
+            {
+                return second[index];
+            }
+
+            var rangeSize = end - start + 1;
+            return (index < rangeSize) ? first[start + index] : second[index - rangeSize];
+        }
+
+        public static Int32 Splice(Int32[] first, Int32[] second, Int32[] maskArray, Int32 index)
+        {
+            int start = -1;
+            int end   = -1;
+
+            for(var i = 0; i < maskArray.Length; i++)
+            {
+                if (maskArray[i] != 0)
+                {
+                    if (start == -1)
+                    {
+                        start = i;
+                    }
+                    end = i;
+                }
+            }
+
+            if (start == -1)
+            {
+                return second[index];
+            }
+
+            var rangeSize = end - start + 1;
+            return (index < rangeSize) ? first[start + index] : second[index - rangeSize];
+        }
+
+        public static Int64 Splice(Int64[] first, Int64[] second, Int64[] maskArray, Int32 index)
+        {
+            int start = -1;
+            int end   = -1;
+
+            for(var i = 0; i < maskArray.Length; i++)
+            {
+                if (maskArray[i] != 0)
+                {
+                    if (start == -1)
+                    {
+                        start = i;
+                    }
+                    end = i;
+                }
+            }
+
+            if (start == -1)
+            {
+                return second[index];
+            }
+
+            var rangeSize = end - start + 1;
+            return (index < rangeSize) ? first[start + index] : second[index - rangeSize];
+        }
+
+        public static SByte Splice(SByte[] first, SByte[] second, SByte[] maskArray, Int32 index)
+        {
+            int start = -1;
+            int end   = -1;
+
+            for(var i = 0; i < maskArray.Length; i++)
+            {
+                if (maskArray[i] != 0)
+                {
+                    if (start == -1)
+                    {
+                        start = i;
+                    }
+                    end = i;
+                }
+            }
+
+            if (start == -1)
+            {
+                return second[index];
+            }
+
+            var rangeSize = end - start + 1;
+            return (index < rangeSize) ? first[start + index] : second[index - rangeSize];
+        }
+
+        public static UInt16 Splice(UInt16[] first, UInt16[] second, UInt16[] maskArray, Int32 index)
+        {
+            int start = -1;
+            int end   = -1;
+
+            for(var i = 0; i < maskArray.Length; i++)
+            {
+                if (maskArray[i] != 0)
+                {
+                    if (start == -1)
+                    {
+                        start = i;
+                    }
+                    end = i;
+                }
+            }
+
+            if (start == -1)
+            {
+                return second[index];
+            }
+
+            var rangeSize = end - start + 1;
+            return (index < rangeSize) ? first[start + index] : second[index - rangeSize];
+        }
+
+        public static UInt32 Splice(UInt32[] first, UInt32[] second, UInt32[] maskArray, Int32 index)
+        {
+            int start = -1;
+            int end   = -1;
+
+            for(var i = 0; i < maskArray.Length; i++)
+            {
+                if (maskArray[i] != 0)
+                {
+                    if (start == -1)
+                    {
+                        start = i;
+                    }
+                    end = i;
+                }
+            }
+
+            if (start == -1)
+            {
+                return second[index];
+            }
+
+            var rangeSize = end - start + 1;
+            return (index < rangeSize) ? first[start + index] : second[index - rangeSize];
+        }
+
+        public static ulong Splice(ulong[] first, ulong[] second, ulong[] maskArray, int index)
+        {
+            int start = -1;
+            int end   = -1;
+
+            for(var i = 0; i < maskArray.Length; i++)
+            {
+                if (maskArray[i] != 0)
+                {
+                    if (start == -1)
+                    {
+                        start = i;
+                    }
+                    end = i;
+                }
+            }
+
+            if (start == -1)
+            {
+                return second[index];
+            }
+
+            var rangeSize = end - start + 1;
+            return (index < rangeSize) ? first[start + index] : second[index - rangeSize];
         }
 
     }

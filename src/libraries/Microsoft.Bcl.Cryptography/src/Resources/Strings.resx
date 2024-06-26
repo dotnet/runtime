@@ -57,6 +57,18 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="Arg_CryptographyException" xml:space="preserve">
+    <value>Error occurred during a cryptographic operation.</value>
+  </data>
+  <data name="Argument_InvalidOffLen" xml:space="preserve">
+    <value>Offset and length were out of bounds for the array or count is greater than the number of elements from index to the end of the source collection.</value>
+  </data>
+  <data name="Argument_InvalidValue" xml:space="preserve">
+    <value>Value was invalid.</value>
+  </data>
+  <data name="ArgumentOutOfRange_Generic_MustBeNonNegativeNonZero" xml:space="preserve">
+    <value>{0} ('{1}') must be a non-negative and non-zero value.</value>
+  </data>
   <data name="ArgumentOutOfRange_NeedNonNegNum" xml:space="preserve">
     <value>Non-negative number required.</value>
   </data>
@@ -66,7 +78,40 @@
   <data name="Argument_EmptyString" xml:space="preserve">
     <value>The value cannot be an empty string.</value>
   </data>
+  <data name="Cryptography_AlgKdfRequiresChars" xml:space="preserve">
+    <value>The KDF for algorithm '{0}' requires a char-based password input.</value>
+  </data>
+  <data name="Cryptography_AlgorithmNotSupported" xml:space="preserve">
+    <value>Algorithm '{0}' is not supported on this platform.</value>
+  </data>
+  <data name="Cryptography_Der_Invalid_Encoding" xml:space="preserve">
+    <value>ASN1 corrupted data.</value>
+  </data>
+  <data name="Cryptography_HashAlgorithmNameNullOrEmpty" xml:space="preserve">
+    <value>The hash algorithm name cannot be null or empty.</value>
+  </data>
+  <data name="Cryptography_NotValidPublicOrPrivateKey" xml:space="preserve">
+    <value>Key is not a valid public or private key.</value>
+  </data>
+  <data name="Cryptography_Pfx_BadPassword" xml:space="preserve">
+    <value>The certificate data cannot be read with the provided password, the password may be incorrect.</value>
+  </data>
+  <data name="Cryptography_Pfx_NoCertificates" xml:space="preserve">
+    <value>The provided PFX data contains no certificates.</value>
+  </data>
+  <data name="Cryptography_Pkcs8_EncryptedReadFailed" xml:space="preserve">
+    <value>The EncryptedPrivateKeyInfo structure was decoded but was not successfully interpreted, the password may be incorrect.</value>
+  </data>
+  <data name="Cryptography_UnknownAlgorithmIdentifier" xml:space="preserve">
+    <value>The algorithm identified by '{0}' is unknown, not valid for the requested usage, or was not handled.</value>
+  </data>
   <data name="Cryptography_UnknownHashAlgorithm" xml:space="preserve">
     <value>'{0}' is not a known hash algorithm.</value>
+  </data>
+  <data name="Cryptography_X509_PKCS12_LimitExceeded" xml:space="preserve">
+    <value>The PKCS#12/PFX violated the '{0}' limit.</value>
+  </data>
+  <data name="Cryptography_X509_PKCS12_LimitsReadOnly" xml:space="preserve">
+    <value>This Pkcs12LoaderLimits object has been made read-only and can no longer be modified.</value>
   </data>
 </root>

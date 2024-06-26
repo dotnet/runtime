@@ -59,13 +59,7 @@ namespace Mono.Linker
 		public const int NET6 = 6;
 	}
 
-	public interface ITryResolveMetadata
-	{
-		MethodDefinition? TryResolve (MethodReference methodReference);
-		TypeDefinition? TryResolve (TypeReference typeReference);
-	}
-
-	public class LinkContext : IMetadataResolver, ITryResolveMetadata, IDisposable
+	public class LinkContext : IMetadataResolver, ITryResolveMetadata, ITryResolveAssemblyName, IDisposable
 	{
 
 		readonly Pipeline _pipeline;
@@ -211,7 +205,7 @@ namespace Mono.Linker
 			_logger = logger ?? throw new ArgumentNullException (nameof (logger));
 
 			_resolver = factory.CreateResolver (this);
-			_typeNameResolver = new TypeNameResolver (this);
+			_typeNameResolver = new TypeNameResolver (this, this);
 			_actions = new Dictionary<string, AssemblyAction> ();
 			_parameters = new Dictionary<string, string> (StringComparer.Ordinal);
 			_customAttributes = new CustomAttributeSource (this);

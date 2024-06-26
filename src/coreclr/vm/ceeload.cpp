@@ -293,7 +293,6 @@ void Module::NotifyProfilerLoadFinished(HRESULT hr)
 
         {
             BEGIN_PROFILER_CALLBACK(CORProfilerTrackAssemblyLoads());
-            if (IsManifest())
             {
                 GCX_COOP();
                 (&g_profControlBlock)->AssemblyLoadFinished((AssemblyID) m_pAssembly, hr);
@@ -536,7 +535,7 @@ static BOOL IsEditAndContinueCapable(Assembly *pAssembly, PEAssembly *pPEAssembl
     // Some modules are never EnC-capable
     return ! (pAssembly->GetDebuggerInfoBits() & DACF_ALLOW_JIT_OPTS ||
               pPEAssembly->IsSystem() ||
-              pPEAssembly->IsDynamic());
+              pPEAssembly->IsReflectionEmit());
 }
 
 /* static */
@@ -822,13 +821,6 @@ BOOL Module::IsCollectible()
 {
     LIMITED_METHOD_DAC_CONTRACT;
     return GetAssembly()->IsCollectible();
-}
-
-BOOL Module::IsManifest()
-{
-    WRAPPER_NO_CONTRACT;
-    return dac_cast<TADDR>(GetAssembly()->GetModule()) ==
-           dac_cast<TADDR>(this);
 }
 
 DomainAssembly* Module::GetDomainAssembly()
@@ -1195,7 +1187,7 @@ void Module::AllocateMaps()
 
     PTR_TADDR pTable = NULL;
 
-    if (IsReflection())
+    if (IsReflectionEmit())
     {
         // For dynamic modules, it is essential that we at least have a TypeDefToMethodTable
         // map with an initial block.  Otherwise, all the iterators will abort on an
@@ -1654,7 +1646,7 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
             if (GetInMemorySymbolStream() )
             {
 
-                if( IsReflection() )
+                if( IsReflectionEmit() )
                 {
                     // If this is Reflection.Emit, we must clone the stream because another thread may
                     // update it when someone is using the reader we create here leading to AVs.
@@ -2007,7 +1999,7 @@ PTR_VOID Module::GetRvaField(DWORD rva)
 CHECK Module::CheckRvaField(RVA field)
 {
     WRAPPER_NO_CONTRACT;
-    if (!IsReflection())
+    if (!IsReflectionEmit())
         CHECK(m_pPEAssembly->CheckRvaField(field));
     CHECK_OK;
 }
@@ -2021,7 +2013,7 @@ CHECK Module::CheckRvaField(RVA field, COUNT_T size)
     }
     CONTRACTL_END;
 
-    if (!IsReflection())
+    if (!IsReflectionEmit())
         CHECK(m_pPEAssembly->CheckRvaField(field, size));
     CHECK_OK;
 }
@@ -2683,7 +2675,7 @@ void LookupMapBase::DebugGetRidMapOccupancy(DWORD *pdwOccupied, DWORD *pdwSize)
 
         for (DWORD i = 0; i < dwIterCount; i++)
         {
-            if (pMap->pTable[i] != NULL)
+            if (pMap->pTable[i] != 0)
                 (*pdwOccupied)++;
         }
 
@@ -2848,7 +2840,7 @@ void Module::UpdateDynamicMetadataIfNeeded()
     CONTRACTL_END;
 
     // Only need to serializing metadata for dynamic modules. For non-dynamic modules, metadata is already available.
-    if (!IsReflection())
+    if (!IsReflectionEmit())
     {
         return;
     }
@@ -3565,7 +3557,7 @@ void Module::RunEagerFixupsUnlocked()
             }
             else
             {
-                _ASSERTE(*fixupCell != NULL);
+                _ASSERTE(*fixupCell != 0);
             }
         }
     }
@@ -3735,7 +3727,7 @@ ReflectionModule *ReflectionModule::Create(Assembly *pAssembly, PEAssembly *pPEA
         STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pAssembly));
         PRECONDITION(CheckPointer(pPEAssembly));
-        PRECONDITION(pPEAssembly->IsDynamic());
+        PRECONDITION(pPEAssembly->IsReflectionEmit());
         POSTCONDITION(CheckPointer(RETVAL));
     }
     CONTRACT_END;
@@ -3919,13 +3911,10 @@ private:
 //      The debugger can slip this thread outside the locks to ensure the data is consistent.
 //
 //    This does not raise a debug notification to invalidate the metadata. Reasoning is that this only
-//    happens in two cases:
-//    1) manifest module is updated with the name of a new dynamic module.
-//    2) on each class load, in which case we already send a debug event. In this case, we already send a
-//    class-load notification, so sending a separate "metadata-refresh" would make the eventing twice as
-//    chatty. Class-load events are high-volume and events are slow.
-//    Thus we can avoid the chatiness by ensuring the debugger knows that Class-load also means "refresh
-//    metadata".
+//    happens in one case: on each class load. In this case, we already send a class-load notification
+//    debug event, so sending a separate "metadata-refresh" would make the eventing twice as chatty.
+//    Class-load events are high-volume and events are slow. We can avoid the chattiness by ensuring
+//    the debugger knows that Class-load also means "refresh metadata".
 //
 void ReflectionModule::CaptureModuleMetaDataToMemory()
 {
