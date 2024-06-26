@@ -914,19 +914,29 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [Fact]
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
-        public async Task SslStream_ClientCertificateContext_SendsChain()
+        public async Task SslStream_ClientCertificateContext_SendsChain(bool useTrust)
         {
             (X509Certificate2 clientCertificate, X509Certificate2Collection clientChain) = Configuration.Certificates.GenerateCertificates(nameof(SslStream_ClientCertificateContext_SendsChain), serverCertificate: false);
             TestHelper.CleanupCertificates(nameof(SslStream_ClientCertificateContext_SendsChain));
+
+            SslCertificateTrust? trust = null;
+            if (useTrust)
+            {
+                // This is simplification. We make all the intermediates trusted,
+                // normally just the root would go here.
+                trust = SslCertificateTrust.CreateForX509Collection(clientChain, false);
+            }
 
             var clientOptions = new SslClientAuthenticationOptions()
             {
                 TargetHost = "localhost",
             };
             clientOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
-            clientOptions.ClientCertificateContext = SslStreamCertificateContext.Create(clientCertificate, clientChain);
+            clientOptions.ClientCertificateContext = SslStreamCertificateContext.Create(clientCertificate, useTrust ? null : clientChain, offline:true, trust);
 
             await SslStream_ClientSendsChain_Core(clientOptions, clientChain);
 

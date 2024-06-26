@@ -927,13 +927,13 @@ void Assembly::PrepareModuleForAssembly(Module* module, AllocMemTracker *pamTrac
 {
     STANDARD_VM_CONTRACT;
 
+    _ASSERTE(module->GetAssembly() == this);
     if (module->m_pAvailableClasses != NULL)
     {
         // ! We intentionally do not take the AvailableClass lock here. It creates problems at
         // startup and we haven't yet published the module yet so nobody should be searching it.
         m_pClassLoader->PopulateAvailableClassHashTable(module, pamTracker);
     }
-
 
 #ifdef DEBUGGING_SUPPORTED
     // Modules take the DebuggerAssemblyControlFlags down from its

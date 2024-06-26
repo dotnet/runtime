@@ -626,7 +626,7 @@ extern "C" void QCALLTYPE RuntimeModule_GetFullyQualifiedName(QCall::ModuleHandl
 
     HRESULT hr = S_OK;
 
-    if (pModule->IsPEFile())
+    if (!pModule->GetPEAssembly()->IsDynamic())
     {
         LPCWSTR fileName = pModule->GetPath();
         if (*fileName != W('\0'))

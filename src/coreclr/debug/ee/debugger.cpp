@@ -9393,52 +9393,10 @@ void Debugger::LoadModule(Module* pRuntimeModule,
     if (CORDBUnrecoverableError(this))
         return;
 
-    // If this is a dynamic module, then it's part of a multi-module assembly. The manifest
-    // module within the assembly contains metadata for all the module names in the assembly.
-    // When a new dynamic module is created, the manifest module's metadata is updated to
-    // include the new module (see code:Assembly.CreateDynamicModule).
-    // So we need to update the RS's copy of the metadata. One place the manifest module's
-    // metadata gets used is in code:DacDbiInterfaceImpl.GetModuleSimpleName
-    //
-    // See code:ReflectionModule.CaptureModuleMetaDataToMemory for why we send the metadata-refresh here.
-    if (pRuntimeModule->IsReflection() && !pRuntimeModule->IsManifest() && !fAttaching)
-    {
-        HRESULT hr = S_OK;
-        EX_TRY
-        {
-            // The loader lookups may throw or togggle GC mode, so do them inside a TRY/Catch and
-            // outside any debugger locks.
-            Module * pManifestModule = pRuntimeModule->GetAssembly()->GetModule();
-
-            _ASSERTE(pManifestModule != pRuntimeModule);
-            _ASSERTE(pManifestModule->IsManifest());
-            _ASSERTE(pManifestModule->GetAssembly() == pRuntimeModule->GetAssembly());
-
-            DomainAssembly * pManifestDomainAssembly = pManifestModule->GetDomainAssembly();
-
-            DebuggerLockHolder dbgLockHolder(this);
-
-            // Raise the debug event.
-            // This still tells the debugger that the manifest module metadata is invalid and needs to
-            // be refreshed.
-            DebuggerIPCEvent eventMetadataUpdate;
-            InitIPCEvent(&eventMetadataUpdate, DB_IPCE_METADATA_UPDATE, NULL, pAppDomain);
-
-            eventMetadataUpdate.MetadataUpdateData.vmDomainAssembly.SetRawPtr(pManifestDomainAssembly);
-
-            SendRawEvent(&eventMetadataUpdate);
-        }
-        EX_CATCH_HRESULT(hr);
-        SIMPLIFYING_ASSUMPTION_SUCCEEDED(hr);
-    }
-
-
     DebuggerModule * module = NULL;
 
     Thread *pThread = g_pEEInterface->GetThread();
     SENDIPCEVENT_BEGIN(this, pThread);
-
-
 
     DebuggerIPCEvent* ipce = NULL;
 
