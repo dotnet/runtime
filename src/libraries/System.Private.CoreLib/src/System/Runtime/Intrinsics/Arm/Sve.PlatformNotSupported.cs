@@ -6624,6 +6624,69 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> UnzipOdd(Vector<ulong> left, Vector<ulong> right) { throw new PlatformNotSupportedException(); }
 
 
+        ///  Table lookup in single-vector table
+
+        /// <summary>
+        /// svuint8_t svtbl[_u8](svuint8_t data, svuint8_t indices)
+        ///   TBL Zresult.B, {Zdata.B}, Zindices.B
+        /// </summary>
+        public static unsafe Vector<byte> VectorTableLookup(Vector<byte> data, Vector<byte> indices) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svfloat64_t svtbl[_f64](svfloat64_t data, svuint64_t indices)
+        ///   TBL Zresult.D, {Zdata.D}, Zindices.D
+        /// </summary>
+        public static unsafe Vector<double> VectorTableLookup(Vector<double> data, Vector<ulong> indices) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint16_t svtbl[_s16](svint16_t data, svuint16_t indices)
+        ///   TBL Zresult.H, {Zdata.H}, Zindices.H
+        /// </summary>
+        public static unsafe Vector<short> VectorTableLookup(Vector<short> data, Vector<ushort> indices) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svtbl[_s32](svint32_t data, svuint32_t indices)
+        ///   TBL Zresult.S, {Zdata.S}, Zindices.S
+        /// </summary>
+        public static unsafe Vector<int> VectorTableLookup(Vector<int> data, Vector<uint> indices) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svtbl[_s64](svint64_t data, svuint64_t indices)
+        ///   TBL Zresult.D, {Zdata.D}, Zindices.D
+        /// </summary>
+        public static unsafe Vector<long> VectorTableLookup(Vector<long> data, Vector<ulong> indices) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint8_t svtbl[_s8](svint8_t data, svuint8_t indices)
+        ///   TBL Zresult.B, {Zdata.B}, Zindices.B
+        /// </summary>
+        public static unsafe Vector<sbyte> VectorTableLookup(Vector<sbyte> data, Vector<byte> indices) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svfloat32_t svtbl[_f32](svfloat32_t data, svuint32_t indices)
+        ///   TBL Zresult.S, {Zdata.S}, Zindices.S
+        /// </summary>
+        public static unsafe Vector<float> VectorTableLookup(Vector<float> data, Vector<uint> indices) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svtbl[_u16](svuint16_t data, svuint16_t indices)
+        ///   TBL Zresult.H, {Zdata.H}, Zindices.H
+        /// </summary>
+        public static unsafe Vector<ushort> VectorTableLookup(Vector<ushort> data, Vector<ushort> indices) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svtbl[_u32](svuint32_t data, svuint32_t indices)
+        ///   TBL Zresult.S, {Zdata.S}, Zindices.S
+        /// </summary>
+        public static unsafe Vector<uint> VectorTableLookup(Vector<uint> data, Vector<uint> indices) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svtbl[_u64](svuint64_t data, svuint64_t indices)
+        ///   TBL Zresult.D, {Zdata.D}, Zindices.D
+        /// </summary>
+        public static unsafe Vector<ulong> VectorTableLookup(Vector<ulong> data, Vector<ulong> indices) { throw new PlatformNotSupportedException(); }
+
+
         ///  Xor : Bitwise exclusive OR
 
         /// <summary>
