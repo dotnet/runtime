@@ -566,7 +566,7 @@ BOOL PrestubMethodFrame::TraceFrame(Thread *thread, BOOL fromPatch,
         // native code versions, even if they aren't the one that was reported by this trace, see
         // DebuggerController::PatchTrace() under case TRACE_MANAGED. This alleviates the StubManager from having to prevent the
         // race that occurs here.
-        trace->InitForStub(GetFunction()->GetMethodEntryPoint_NoAlloc());
+        trace->InitForStub(GetFunction()->GetMethodEntryPointIfExists());
     }
     else
     {

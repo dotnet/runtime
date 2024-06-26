@@ -497,7 +497,7 @@ Signature MethodDesc::GetSignature()
     return Signature(pSig, cSig);
 }
 
-PCODE MethodDesc::GetMethodEntryPoint_NoAlloc()
+PCODE MethodDesc::GetMethodEntryPointIfExists()
 {
     CONTRACTL
     {
@@ -511,7 +511,7 @@ PCODE MethodDesc::GetMethodEntryPoint_NoAlloc()
     // Similarly to SetMethodEntryPoint(), it is up to the caller to ensure that calls to this function are appropriately
     // synchronized
 
-    // Keep implementations of MethodDesc::GetMethodEntryPoint and MethodDesc::GetAddrOfSlot in sync!
+    // Keep implementations of MethodDesc::GetMethodEntryPoint, MethodDesc::GetMethodEntryPointIfExists, and MethodDesc::GetAddrOfSlot in sync!
 
     if (HasNonVtableSlot())
     {
@@ -541,7 +541,7 @@ PCODE MethodDesc::GetMethodEntryPoint()
     // Similarly to SetMethodEntryPoint(), it is up to the caller to ensure that calls to this function are appropriately
     // synchronized
 
-    // Keep implementations of MethodDesc::GetMethodEntryPoint and MethodDesc::GetAddrOfSlot in sync!
+    // Keep implementations of MethodDesc::GetMethodEntryPoint, MethodDesc::GetMethodEntryPointIfExists, and MethodDesc::GetAddrOfSlot in sync!
 
     if (HasNonVtableSlot())
     {
@@ -549,13 +549,11 @@ PCODE MethodDesc::GetMethodEntryPoint()
 
         TADDR pSlot = dac_cast<TADDR>(this) + size;
 
-#if !defined(DACCESS_COMPILE)
         if (*PTR_PCODE(pSlot) == (PCODE)NULL)
         {
             EnsureSlotFilled();
             _ASSERTE(*PTR_PCODE(pSlot) != (PCODE)NULL);
         }
-#endif
         return *PTR_PCODE(pSlot);
     }
 
@@ -575,7 +573,7 @@ PTR_PCODE MethodDesc::GetAddrOfSlot()
     }
     CONTRACTL_END;
 
-    // Keep implementations of MethodDesc::GetMethodEntryPoint and MethodDesc::GetAddrOfSlot in sync!
+    // Keep implementations of MethodDesc::GetMethodEntryPoint, MethodDesc::GetMethodEntryPointIfExists, and MethodDesc::GetAddrOfSlot in sync!
     if (HasNonVtableSlot())
     {
         SIZE_T size = GetBaseSize();
@@ -2284,8 +2282,8 @@ BOOL MethodDesc::IsPointingToPrestub()
     {
         if (IsVersionableWithVtableSlotBackpatch())
         {
-            PCODE methodEntrypoint = GetMethodEntryPoint_NoAlloc();
-            return methodEntrypoint == GetTemporaryEntryPoint_NoAlloc() && methodEntrypoint != (PCODE)NULL;
+            PCODE methodEntrypoint = GetMethodEntryPointIfExists();
+            return methodEntrypoint == GetTemporaryEntryPointIfExists() && methodEntrypoint != (PCODE)NULL;
         }
         return TRUE;
     }
@@ -2576,13 +2574,13 @@ PCODE MethodDesc::GetTemporaryEntryPoint()
     }
     CONTRACTL_END;
 
-    PCODE pEntryPoint = GetTemporaryEntryPoint_NoAlloc();
+    PCODE pEntryPoint = GetTemporaryEntryPointIfExists();
     if (pEntryPoint != (PCODE)NULL)
         return pEntryPoint;
 
 #ifndef DACCESS_COMPILE
     EnsureTemporaryEntryPoint(GetLoaderAllocator());
-    pEntryPoint = GetTemporaryEntryPoint_NoAlloc();
+    pEntryPoint = GetTemporaryEntryPointIfExists();
     _ASSERTE(pEntryPoint != (PCODE)NULL);
 
 #ifdef _DEBUG
@@ -2623,7 +2621,7 @@ void MethodDesc::EnsureTemporaryEntryPoint(LoaderAllocator *pLoaderAllocator)
     }
     CONTRACTL_END;
 
-    if (GetTemporaryEntryPoint_NoAlloc() == (PCODE)NULL)
+    if (GetTemporaryEntryPointIfExists() == (PCODE)NULL)
     {
         EnsureTemporaryEntryPointCore(pLoaderAllocator, NULL);
     }
@@ -2639,7 +2637,7 @@ void MethodDesc::EnsureTemporaryEntryPointCore(LoaderAllocator *pLoaderAllocator
     }
     CONTRACTL_END;
 
-    if (GetTemporaryEntryPoint_NoAlloc() == (PCODE)NULL)
+    if (GetTemporaryEntryPointIfExists() == (PCODE)NULL)
     {
         GetMethodDescChunk()->DetermineAndSetIsEligibleForTieredCompilation();
         PTR_PCODE pSlot = GetAddrOfSlot();
@@ -2650,10 +2648,10 @@ void MethodDesc::EnsureTemporaryEntryPointCore(LoaderAllocator *pLoaderAllocator
 
         IfFailThrow(EnsureCodeDataExists(pamTracker));
 
-        if (InterlockedCompareExchangeT(&m_codeData->m_pTemporaryEntryPoint, pPrecode->GetEntryPoint(), (PCODE)NULL) == (PCODE)NULL)
+        if (InterlockedCompareExchangeT(&m_codeData->TemporaryEntryPoint, pPrecode->GetEntryPoint(), (PCODE)NULL) == (PCODE)NULL)
             amt.SuppressRelease(); // We only need to suppress the release if we are working with a MethodDesc which is not newly allocated
 
-        PCODE tempEntryPoint = GetTemporaryEntryPoint_NoAlloc();
+        PCODE tempEntryPoint = GetTemporaryEntryPointIfExists();
         _ASSERTE(tempEntryPoint != (PCODE)NULL);
 
         if (*pSlot == (PCODE)NULL)
@@ -2735,7 +2733,7 @@ Precode* MethodDesc::GetOrCreatePrecode()
     }
 
     PTR_PCODE pSlot = GetAddrOfSlot();
-    PCODE tempEntry = GetTemporaryEntryPoint_NoAlloc();
+    PCODE tempEntry = GetTemporaryEntryPointIfExists();
 
     PrecodeType requiredType = GetPrecodeType();
     PrecodeType availableType = PRECODE_INVALID;

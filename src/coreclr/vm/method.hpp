@@ -162,7 +162,7 @@ enum MethodDescFlags
 struct MethodDescCodeData final
 {
     PTR_MethodDescVersioningState VersioningState;
-    PCODE m_pTemporaryEntryPoint;
+    PCODE TemporaryEntryPoint;
 };
 using PTR_MethodDescCodeData = DPTR(MethodDescCodeData);
 
@@ -207,7 +207,7 @@ public:
         _ASSERTE(HasStableEntryPoint());
         _ASSERTE(!IsVersionableWithVtableSlotBackpatch());
 
-        return GetMethodEntryPoint_NoAlloc();
+        return GetMethodEntryPointIfExists();
     }
 
     void SetMethodEntryPoint(PCODE addr);
@@ -215,13 +215,13 @@ public:
 
     PCODE GetTemporaryEntryPoint();
 
-    PCODE GetTemporaryEntryPoint_NoAlloc()
+    PCODE GetTemporaryEntryPointIfExists()
     {
         LIMITED_METHOD_CONTRACT;
         PTR_MethodDescCodeData codeData = VolatileLoadWithoutBarrier(&m_codeData);
         if (codeData == NULL)
             return (PCODE)NULL;
-        return VolatileLoadWithoutBarrier(&codeData->m_pTemporaryEntryPoint);
+        return VolatileLoadWithoutBarrier(&codeData->TemporaryEntryPoint);
     }
 
     void SetTemporaryEntryPoint(LoaderAllocator *pLoaderAllocator, AllocMemTracker *pamTracker);
@@ -1424,7 +1424,7 @@ public:
     // GetSingleCallableAddrOfCode() and GetStableEntryPoint() are aliases with stricter preconditions.
     // Use of these aliases is as appropriate.
     //
-    PCODE GetMethodEntryPoint_NoAlloc();
+    PCODE GetMethodEntryPointIfExists();
 
     void EnsureTemporaryEntryPoint(LoaderAllocator *pLoaderAllocator);
 
