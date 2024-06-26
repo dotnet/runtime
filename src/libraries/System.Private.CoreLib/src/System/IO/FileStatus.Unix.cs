@@ -582,9 +582,7 @@ namespace System.IO
 
         private static long UnixTimeSecondsToNanoseconds(DateTimeOffset time, long seconds)
         {
-            const long TicksPerMillisecond = 10000;
-            const long TicksPerSecond = TicksPerMillisecond * 1000;
-            return (time.UtcDateTime.Ticks - DateTimeOffset.UnixEpoch.Ticks - seconds * TicksPerSecond) * NanosecondsPerTick;
+            return (time.UtcDateTime.Ticks - DateTimeOffset.UnixEpoch.Ticks - seconds * TimeSpan.TicksPerSecond) * NanosecondsPerTick;
         }
 
         private void ThrowNotFound(string? path)
